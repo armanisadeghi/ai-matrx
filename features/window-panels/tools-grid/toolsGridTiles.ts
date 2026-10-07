@@ -504,7 +504,7 @@ export const TOOLS_GRID_TILES: ReadonlyArray<ToolsGridTile> = [
   },
   {
     id: "tile.agent-create-app",
-    label: "Create Agent App (new)",
+    label: "Create Applet (new)",
     icon: Clapperboard,
     category: "agents",
     overlayId: "agentCreateAppWindow",

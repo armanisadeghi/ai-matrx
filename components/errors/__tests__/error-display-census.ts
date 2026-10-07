@@ -802,7 +802,7 @@ export function findOrphanMenus(source: string, fileName = "file.tsx"): number[]
 }
 
 /**
- * Two menus on one box (`AgentAppsGrid`: one after the title and one at the
+ * Two menus on one box (`AppletsGrid`: one after the title and one at the
  * right edge) — the person sees two identical icons and does not know which
  * is the error. Menus in exclusive branches (`a ? <p>…<Menu/></p> : …`) are
  * never on screen together and do not count. An ErrorNotice / ErrorBox draws

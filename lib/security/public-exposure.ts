@@ -732,7 +732,7 @@ export const ANON_COLUMN_SURFACE: ReadonlyArray<AnonColumnSurface> = [
       "visibility", "published_to_web",
     ],
     why:
-      "lib/services/agent-apps-admin-service.ts, which builds its client with "
+      "lib/services/applets-admin-service.ts, which builds its client with "
       + "getScriptSupabaseClient() (publishable key ⇒ `anon`). DD-230 (2026-09-14) replaced DD-186's "
       + "unevidenced census sentence, which contradicted the reader B-116 itself had named.",
   },

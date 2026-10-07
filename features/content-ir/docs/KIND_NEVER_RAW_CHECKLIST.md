@@ -89,9 +89,9 @@ Every stream item below adds its case there.
       `selectAnswerText`, `selectLatestAnswerText`, `selectResultText`, `selectLatestAccumulatedText`).
       PARTIAL — selectors stay faithful to stored data by design (`__kind` is data; thunks/JSON parsers/scopes
       read them). Display/export consumers fixed: rich-document actions + copy, conversation export, hover
-      preview, Pro text actions, agent toast, AI code editor. Audited one by one: agent-app — shells render
+      preview, Pro text actions, agent toast, AI code editor. Audited one by one: applet — shells render
       `response` through `MarkdownStream`; the public renderer's copy now converts (`kindTextToMarkdown`);
-      `AgentAppSurfaceRuntime` feeds the workspace SCOPE (machine, kept). Run scope (`useAgentRunSurfaceScope`,
+      `AppletSurfaceRuntime` feeds the workspace SCOPE (machine, kept). Run scope (`useAgentRunSurfaceScope`,
       `agent-run-history-scope`) and the model-battle scope are agent context (kept). Comparison
       `battleMarkdown` → people get `battleMarkdownForPeople` (copy + .md export) and the CSV/sheet answer cell is the kind's
       markdown (full answer, like every kindless cell beside it — a title alone would say less); the agent payload
@@ -161,7 +161,7 @@ Every stream item below adds its case there.
       (complete kind → markdown, arriving kind → its loader line while the caller's `streaming` is true, then a
       one-line broken state "<Kind> did not finish"); expanded view was already `AgentRunner`.
 - [x] S4. AI code editor message list. `AnswerTextPreview` for text + stream, `AnswerValueView` for structured.
-- [x] S5. Fully custom agent-app shells. `response` into compiled app code is the app contract (left); the result
+- [x] S5. Fully custom applet shells. `response` into compiled app code is the app contract (left); the result
       bar's human copy converts with `kindTextToMarkdown`; `DefaultFallback` was already `MarkdownStream`. "Open in
       canvas" (custom shell + public renderer) goes through ONE door, `useOpenAppResponseInCanvas`: a kind answer
       opens as its kind (`detectKindInJsonText` → artifact canvas type, bound via `useOpenArtifactInCanvas` when
@@ -284,7 +284,7 @@ a machine; explicit raw controls ("Copy JSON", the extraction "JSON" download, t
       Guard `kind-text-to-markdown-hidden-forms.test.ts`.
 - [x] Y7. Tool ARGUMENTS human copy and the image result copy go through `resultToHuman`. Guard
       `tool-copy-human-callsites-never-raw-kind.test.tsx`.
-- [x] Y8. Copy sweep. Fixed: commerce + print kind block header copy, `TextActionResultModal` Copy, `AgentAppFullyCustomShell` result
+- [x] Y8. Copy sweep. Fixed: commerce + print kind block header copy, `TextActionResultModal` Copy, `AppletFullyCustomShell` result
       copy, `CleanupPad` "copy both". Guards `kind-block-copy-human-never-raw.test.tsx`, `text-action-result-copy-never-raw-kind.test.tsx`
       (the custom shell and cleanup pad edits have no render test — hosts too heavy). Kept as explicit raw controls: "Copy raw JSON"
       (`StructuredAgentAnswerBlock`), "Copy JSON" (`StructuredValueTabs`, `UnknownDataEventBlock`), "Raw AI Response" copies

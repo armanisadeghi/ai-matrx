@@ -4,7 +4,7 @@
  * Code Snippets virtual source. Backed by `code_files` (content) +
  * `code_file_folders` (hierarchy). Per the user's call we are NOT migrating
  * snippets to S3-backed cloud-files — they stay as Postgres rows and surface
- * here alongside Notes / Agent Apps / Tool UIs.
+ * here alongside Notes / Applets / Tool UIs.
  *
  * Hierarchy: real folder tree via `code_file_folders.parent_folder_id`.
  * Files at the root have `folder_id = null`.

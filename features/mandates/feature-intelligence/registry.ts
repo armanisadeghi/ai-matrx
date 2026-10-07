@@ -31,7 +31,7 @@ import { PROJECTS_PLACES } from "@/features/projects/intelligence-places";
 import { SURFACES_CLIENT_PLACES } from "@/features/surfaces/intelligence-places";
 import { MANDATES_PLACES } from "@/features/bindings/intelligence-places";
 import { CONTENT_IR_PLACES } from "@/features/content-ir/intelligence-places";
-import { AGENT_APPS_PLACES } from "@/features/agent-apps/intelligence-places";
+import { APPLETS_PLACES } from "@/features/applets/intelligence-places";
 import { CODE_EDITOR_PLACES } from "@/features/code-editor/intelligence-places";
 import { MESSAGING_PLACES } from "@/features/messaging/intelligence-places";
 import { CONVERSATION_PLACES } from "@/features/ai-work/intelligence-places";
@@ -80,7 +80,7 @@ export const DECLARED_FEATURES: readonly FeaturePlaces[] = [
   SURFACES_CLIENT_PLACES,
   MANDATES_PLACES,
   CONTENT_IR_PLACES,
-  AGENT_APPS_PLACES,
+  APPLETS_PLACES,
   CODE_EDITOR_PLACES,
   MESSAGING_PLACES,
   CONVERSATION_PLACES,

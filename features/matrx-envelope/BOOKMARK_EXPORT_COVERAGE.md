@@ -78,7 +78,7 @@ Source of truth for the entity set is the `Resource` union (`features/prompts/ty
 | **Project** | atomic | whole project (**1**) | ✅ | Workspace hero + bulk copy on `/projects` hub. |
 | **Note** | atomic | whole note (**1**); section later | ✅ | Desktop header + mobile editor. Section-level = fast follow. |
 | **Agent** | atomic | whole agent (**1**) | ✅ | Header button + options menu item. |
-| **Agent app** | atomic | whole app (**1**) | FE ✅ (BE pending) | `AgentAppHeaderActions`. |
+| **Applet** | atomic | whole app (**1**) | FE ✅ (BE pending) | `AppletHeaderActions`. |
 | **Transcript** | compound | whole (**1**); segment (**+1**) | FE both ✅ (segment BE pending) | Segment: `AdvancedTranscriptViewer` context menu. |
 | **Transcript session** | container | whole session (**1**); linked transcript (**+1**) | FE both ✅ (BE pending) | Scribe ⋮ — `session_transcript`. |
 | **Workbook** | compound | whole (**1**); sheet (**+1**) | FE both ✅ (sheet BE pending) | Active sheet in `WorkbookEditor`. |
@@ -131,7 +131,7 @@ Track every change here. Status: `done` | `in progress` | `blocked` | `pending`.
 | 4 | Note | done | `NotesView`, `MobileNotesView`, `NoteReferenceCopyButton` | |
 | 5 | Project | done | `ProjectWorkspace`, `ProjectsHub` (bulk) | |
 | 6 | Agent | done | `AgentHeader`, `AgentOptionsMenu`, `AgentReferenceCopyButton` | |
-| 7 | Agent app | FE done / BE pending | `AgentAppHeaderActions.tsx` | |
+| 7 | Applet | FE done / BE pending | `AppletHeaderActions.tsx` | |
 | 8 | Table `table_schema` (5th) | FE done / BE pending | `TableReferenceOverlay`, `TableReferenceModal` | |
 | 9 | Transcript whole | done | `TranscriptViewer.tsx` | |
 | 10 | Transcript segment | FE done / BE pending | `AdvancedTranscriptViewer.tsx` | |
@@ -145,13 +145,13 @@ Track every change here. Status: `done` | `in progress` | `blocked` | `pending`.
 | 18 | File PDF page | FE done / BE pending | `FilePageReferenceMenuSub.tsx` | PDF submenu pages 1–5. |
 | 19 | List V2 port | pending (UI) | — | Options in handoff doc; V2 unchanged. |
 | 20 | Bulk: projects hub | done | `ProjectsHub.tsx` | Pattern for other hubs. |
-| 21 | Bulk: transcripts/agents/apps hub | done | `TranscriptsListPage`, `AgentsGrid`, `AgentAppsGrid` | Transcripts uses mixed-type groups. |
+| 21 | Bulk: transcripts/agents/apps hub | done | `TranscriptsListPage`, `AgentsGrid`, `AppletsGrid` | Transcripts uses mixed-type groups. |
 | 22 | Scope/context layer | FE done / BE pending | `ScopesRouteHeader`, `scopeRouteReference.ts`, orgs bulk | 5 dimensions in aidream handoff. |
 | 23 | Externals | n/a | — | Attachments only. |
 
 ### Resolved / aidream handoff
 
-1. **Agent app:** wire type `agent_app` → table `aga_apps` — see handoff doc.
+1. **Applet:** wire type `agent_app` → table `aga_apps` — see handoff doc.
 2. **Sub-dimensions:** FE built for schema, segment, session_transcript, workbook_sheet, document_page; `file_page` spec only.
 3. **Picklist V2:** do not modify UI until finalized; full/group/item options documented in handoff doc.
 4. **Scope/context:** wire types `organization`, `scope_type`, `scope`, `context_item`, `context_value` — aidream handoff § Scope & context layer.

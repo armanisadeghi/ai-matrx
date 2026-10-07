@@ -88,13 +88,13 @@ admin hubs are intentionally absent.
   - New Agent Manual — `/administration/agents/system-agents/agents/new/manual`
   - New App — `/administration/agents/system-agents/apps/new`
   - All Shortcuts — `/administration/agents/system-agents/shortcuts/all`
-- **Published Agent Apps**
-  - Agent Apps Dashboard — `/administration/agents/agent-apps`
-  - All Agent Apps — `/administration/agents/agent-apps/apps`
-  - Agent App Categories — `/administration/agents/agent-apps/categories`
-  - Agent App Executions — `/administration/agents/agent-apps/executions`
-  - Agent App Analytics — `/administration/agents/agent-apps/analytics`
-  - Agent App Rate Limits — `/administration/agents/agent-apps/rate-limits`
+- **Published Applets**
+  - Applets Dashboard — `/administration/applets`
+  - All Applets — `/administration/applets/all`
+  - Applet Categories — `/administration/applets/categories`
+  - Applet Executions — `/administration/applets/executions`
+  - Applet Analytics — `/administration/applets/analytics`
+  - Applet Rate Limits — `/administration/applets/rate-limits`
 - **Skills**
   - Skills Registry — `/administration/agents/skills`
   - Categories — `/administration/agents/skills/categories`

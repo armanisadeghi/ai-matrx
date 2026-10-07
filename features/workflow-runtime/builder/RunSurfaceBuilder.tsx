@@ -3,7 +3,7 @@
 /**
  * RunSurfaceBuilder — build on the left, watch it on the right.
  *
- * The paradigm is the agent-apps LiveBuilder's, applied to a workflow's run
+ * The paradigm is the applets LiveBuilder's, applied to a workflow's run
  * page: the left column is a short flow of plain-language decisions, the right
  * column mounts the REAL run surface so every decision is visible before it is
  * saved. What it deliberately does NOT have is the thing it replaces — a

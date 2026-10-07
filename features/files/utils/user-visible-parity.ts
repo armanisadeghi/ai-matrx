@@ -85,7 +85,7 @@ const PATH_CORPUS = [
   "Images/Generated",
   "Images/GeneratedX/cat.png",
   "Generated/a.png",
-  "Agent Apps/blocks/b.png",
+  "Applets/blocks/b.png",
   "Images/agent-blocks/c.png",
   "/Transcripts/Recordings/x.m4a",
   "FastFire/responses/r.wav",

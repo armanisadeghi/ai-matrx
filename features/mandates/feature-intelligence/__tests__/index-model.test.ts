@@ -172,9 +172,9 @@ describe("directory sections (Arman, 2026-09-26)", () => {
     expect(sectionOf("execution-runtime")).toBe("Platform");
   });
 
-  it("Agent Apps, then Not yet assigned, close the page", () => {
+  it("Applets, then Not yet assigned, close the page", () => {
     expect(sections.slice(-2).map((section) => section.label)).toEqual([
-      "Agent Apps",
+      "Applets",
       "Not yet assigned",
     ]);
     expect(
@@ -190,8 +190,8 @@ describe("the card never promises more than the page shows", () => {
       [{ mandate_key: "app.mine" }, { mandate_key: "app.someone_elses" }],
       [{ mandateKey: "app.mine", holderName: "A", holderType: "agent", status: "active" }],
     ) as { feature: string; jobs: unknown[] }[];
-    expect(rows.find((row) => row.feature === "agent-apps")?.jobs).toHaveLength(1);
+    expect(rows.find((row) => row.feature === "applets")?.jobs).toHaveLength(1);
     const before = build([{ mandate_key: "app.mine" }, { mandate_key: "app.someone_elses" }]) as { feature: string; jobs: unknown[] }[];
-    expect(before.find((row) => row.feature === "agent-apps")?.jobs).toHaveLength(2);
+    expect(before.find((row) => row.feature === "applets")?.jobs).toHaveLength(2);
   });
 });

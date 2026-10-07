@@ -1,7 +1,7 @@
 /**
  * features/files/virtual-sources/adapters/prompt-apps.ts
  *
- * Prompt Apps virtual source. Mirror of the Agent Apps adapter against the
+ * Prompt Apps virtual source. Mirror of the Applets adapter against the
  * `prompt_apps` table.
  */
 

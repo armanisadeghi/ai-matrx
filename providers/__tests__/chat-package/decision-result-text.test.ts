@@ -5,7 +5,7 @@
  * `decision_answers` render block with `content: null` — no text at all.
  * Chat draws the block, but the surfaces that show a run as a string read
  * the text and got "": the toast preview said "Waiting..." forever over a
- * finished run, an agent app (public `/p/<slug>` included) painted nothing,
+ * finished run, an Applet (public `/p/<slug>` included) painted nothing,
  * and a shortcut handed its caller an empty `responseText`.
  *
  * THE USE CASE: All Green Recycling's feedback inbox — a resident reports a
@@ -115,7 +115,7 @@ test.each(RUNS)("a decision turn reads as its verdict ($model)", (r) => {
   expect(text).toContain(`owning_surface: ${r.surface} (60%)`);
   expect(text).toContain("urgency: not answered. The report does not say");
   expect(text).toContain(r.model);
-  // The string surfaces: agent apps + the toast preview + the launch result.
+  // The string surfaces: Applets + the toast preview + the launch result.
   expect(selectResultText(REQ)(state)).toBe(text);
   expect(selectLatestAccumulatedText(CONV)(state)).toBe(text);
   expect(deriveDecisionResultText(request)).toBe(text);

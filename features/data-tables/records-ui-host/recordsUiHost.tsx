@@ -36,7 +36,7 @@ import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
 import { useAgentLauncher } from "@ai-matrx/chat/agents/hooks/useAgentLauncher";
 import { recordPageHref } from "@/features/unified-data/table-page/recordPageHref";
 import { recordStoreShare } from "@/features/sharing/components/RecordStoreShareSurface";
-import { APPLETS_PORT } from "@/features/agent-apps/embed/appletsPort";
+import { APPLETS_PORT } from "@/features/applets/embed/appletsPort";
 import { RecordScopedChat } from "@/features/unified-data/record-chat/RecordScopedChat";
 import { RecordRunsSection } from "@/features/workflow-runtime/simple-builder/RecordRunsSection";
 import { LinkedRecordsSection } from "@/features/scopes/components/linked-records/LinkedRecordsSection";
@@ -142,7 +142,7 @@ export function recordsUiHostFor({ ports, merged, gridContext, rights }: Records
     runAgentAction: ports.runAgentAction,
     share: recordStoreShare,
     // Applets on a page built from tables (records-ui `applets`, v7 APPS-ON-DATA item 3): the person's
-    // agent apps, drawn by the one app renderer. Spread: a records-ui build before the port ignores it.
+    // Applets, drawn by the one app renderer. Spread: a records-ui build before the port ignores it.
     ...APPLETS_PORT,
     // EVERY RECORD OPENS ITS OWN PAGE (no-dead-ends): the grid's ⤢, a card's Open / new tab / Copy
     // link and the peek's Open all reach /data/<table>/r/<record> (records-ui `hrefForRecord`).

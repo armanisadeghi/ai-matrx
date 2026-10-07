@@ -6,7 +6,7 @@
 // fleet, and a unified audit history.
 //
 // Naming: "Applications" here means shipped Matrx clients. The word "app" is
-// reserved product-wide for user-created agent apps — never label anything in
+// reserved product-wide for user-created Applets — never label anything in
 // this hub "Apps".
 
 /** Copy-for-AI provenance location shared by every table in the hub. */

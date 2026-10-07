@@ -30,7 +30,7 @@
 | 2 | **Agent Shortcuts — UnifiedContextMenu integration** | Widget handle (0) | 🛠️ redux done, bridge missing |
 | 3 | **Agent Shortcuts — Admin + User management UIs** | Redux slice (done) | 🚧 not started |
 | 4 | **Built-in Shortcuts catalog (100+)** | Admin UI (3), UnifiedContextMenu (2) | 🚧 not started |
-| 5 | **Agent Apps — DB + server + UI** | Shortcuts (2–4) for embedding | 🛠️ provisional types + redux scaffold; no DB table |
+| 5 | **Applets — DB + server + UI** | Shortcuts (2–4) for embedding | 🛠️ provisional types + redux scaffold; no DB table |
 | 6 | **Legacy Waves 3–7** (rename + shim delete + folder flatten) | Waves 4–7 gate on Chat (1) | 🚧 pending; see [audit 04](audits/04-legacy-obliteration-plan.md) |
 | — | **Type duplication cleanup** (cross-cutting) | Parallelizable | 🚧 see [audit 03](audits/03-type-duplication-scan.md) |
 
@@ -58,7 +58,7 @@ callbacks: { widgetHandleId?; originalText? }
 
 `widget_text_replace` · `widget_text_insert_before` · `widget_text_insert_after` · `widget_text_prepend` · `widget_text_append` · `widget_text_patch` · `widget_update_field` · `widget_update_record` · `widget_attach_media` · `widget_create_artifact`
 
-**Unblocks:** ROADMAP §2 (UnifiedContextMenu → agent shortcut integration), §4 (shortcuts catalog), §5 (Agent Apps artifact rendering reuses the handle contract).
+**Unblocks:** ROADMAP §2 (UnifiedContextMenu → agent shortcut integration), §4 (shortcuts catalog), §5 (Applets artifact rendering reuses the handle contract).
 
 ---
 
@@ -293,9 +293,9 @@ For each of the 100+:
 
 ---
 
-## 5. Agent Apps System 🛠️
+## 5. Applets System 🛠️
 
-**Today.** Redux scaffold + provisional `AgentApp` type at [`features/agents/redux/agent-apps/`](features/agents/redux/agent-apps/). No backing DB table. Thunks currently stub and throw.
+**Today.** Redux scaffold + provisional `AppletRow` type at [`features/agents/redux/applets/`](features/agents/redux/applets/). No backing DB table. Thunks currently stub and throw.
 
 **Parallel / replaces:**
 - [`app/(authenticated)/prompt-apps/`](app/(authenticated)/prompt-apps/) — prompt-backed public apps (`/p/[slug]`).
@@ -308,7 +308,7 @@ For each of the 100+:
 ### 5.1 DB + server
 
 - **Table:** `agx_app` (or `cx_app`, decide with backend).
-  - Columns match current `AgentApp` type (including `origin`, `sourceCode`, `primaryAgentId`, `primaryAgentVersionId`, `embeddedShortcutIds`, scoping columns).
+  - Columns match current `AppletRow` type (including `origin`, `sourceCode`, `primaryAgentId`, `primaryAgentVersionId`, `embeddedShortcutIds`, scoping columns).
   - Plus: `slug` (for public URL), `status` (`draft`/`published`), `publicSettings` (rate limits, fingerprint rules), `telemetryConfig`.
 - **Sibling tables:** `agx_app_executions`, `agx_app_errors`, `agx_app_rate_limits` (port the `prompt_app_*` schema).
 - **RLS:** owner CRUD, public SELECT on published, admin full access.
@@ -319,7 +319,7 @@ For each of the 100+:
 
 ### 5.2 Creator UX — three paths
 
-Matching `AgentApp.origin`:
+Matching `AppletRow.origin`:
 
 1. **Template.** Library of scaffolded apps (form-to-output, chatbot-with-sidebar, flashcard-gen style, etc.). Clone → customize → publish.
 2. **AI-generated.** Creator describes the app. The in-app **App Builder Agent** (itself an agent) generates the `sourceCode` and `scopeMappings`, picks a primary agent, suggests embedded shortcuts. Creator reviews and publishes.
@@ -327,24 +327,24 @@ Matching `AgentApp.origin`:
 
 ### 5.3 Routes
 
-- `app/(authenticated)/agent-apps/` — creator's app list.
-- `app/(authenticated)/agent-apps/[id]/edit/page.tsx` — edit.
-- `app/(authenticated)/agent-apps/new/page.tsx` — create (pick a path).
-- `app/(authenticated)/agent-apps/templates/page.tsx` — template gallery.
+- `app/(authenticated)/applets/` — creator's app list.
+- `app/(authenticated)/applets/[id]/edit/page.tsx` — edit.
+- `app/(authenticated)/applets/new/page.tsx` — create (pick a path).
+- `app/(authenticated)/applets/templates/page.tsx` — template gallery.
 - `app/(public)/a/[slug]/page.tsx` — public surface (parallel to `/p/[slug]`).
 
 ### 5.4 Artifact rendering
 
-Agent Apps lean heavily on bidirectionally-interactive artifacts (see the mental model doc §6). The App framework needs:
+Applets lean heavily on bidirectionally-interactive artifacts (see the mental model doc §6). The App framework needs:
 - An `<AgentArtifactRenderer>` component that consumes model output and renders a structured artifact.
 - A registration system for artifact types (flashcard, quiz, task list, form, chart, etc.) — each with (a) model output schema, (b) React renderer, (c) user-interaction → model-feedback handler.
 - Bidirectional sync: user interaction updates local state, next agent turn receives the updated artifact state.
 
 ### 5.5 Work items
 
-- [ ] Finalize `agx_app` / `cx_app` schema with backend; migrate `AgentApp` type from provisional.
+- [ ] Finalize `agx_app` / `cx_app` schema with backend; migrate `AppletRow` type from provisional.
 - [ ] Create table + RLS + telemetry siblings.
-- [ ] Wire thunks (replace stubs in `features/agents/redux/agent-apps/thunks.ts`).
+- [ ] Wire thunks (replace stubs in `features/agents/redux/applets/thunks.ts`).
 - [ ] Creator routes + pages.
 - [ ] Public rendering route `/a/[slug]`.
 - [ ] Template gallery + seed initial templates (5–10).
@@ -383,7 +383,7 @@ Agent Apps lean heavily on bidirectionally-interactive artifacts (see the mental
 | Legacy no-op shims in `messageActionRegistry.ts` lines 41–64 | Chat (1) ships | Full path to new thunks. |
 | `lib/redux/thunks/openPromptExecutionThunk.ts` | UnifiedContextMenu migration (2) ships | Confirmed deprecated per TODO doc; delete after grep shows no consumers. |
 | `features/prompts/**` (gradually) | Shortcuts + Apps (3–5) ship | Per-subsystem retirement — some utilities may stay. |
-| `features/prompt-apps/` | Agent Apps (5) ships + migration proven | Keep public URL redirects from `/p/[slug]` → `/a/[slug]` for a deprecation window. |
+| `features/prompt-apps/` | Applets (5) ships + migration proven | Keep public URL redirects from `/p/[slug]` → `/a/[slug]` for a deprecation window. |
 | `features/prompt-builtins/` | Shortcuts catalog (4) ships | Full replacement. |
 | `app/(authenticated)/(admin-auth)/administration/prompt-builtins/` | Shortcuts admin (3) ships | Full replacement. |
 | Redux `agents/redux/old/` slices | Phase 3 migration (in progress per `PHASE-3-MIGRATION.md`) | Tracked separately. |

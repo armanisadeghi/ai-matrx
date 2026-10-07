@@ -28,7 +28,7 @@ export interface UsageTypeMeta {
 
 export const USAGE_TYPE_META: Record<AgentUsageType, UsageTypeMeta> = {
   shortcut: { label: "Shortcut", plural: "Shortcuts", icon: Link2, remediable: true },
-  app: { label: "Agent app", plural: "Agent apps", icon: AppWindow, remediable: true },
+  app: { label: "Applet", plural: "Applets", icon: AppWindow, remediable: true },
   scheduled_task: {
     label: "Scheduled task",
     plural: "Scheduled tasks",

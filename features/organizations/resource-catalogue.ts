@@ -281,8 +281,8 @@ export const ORG_RESOURCE_CATALOGUE: OrgResourceEntry[] = [
   {
     key: "agent_app",
     token: "app",
-    label: "Agent App",
-    labelPlural: "Agent Apps",
+    label: "Applet",
+    labelPlural: "Applets",
     role: "utility",
     icon: AppWindow,
     description: "Packaged agent experiences — forms, chatbots, widgets.",
@@ -294,7 +294,7 @@ export const ORG_RESOURCE_CATALOGUE: OrgResourceEntry[] = [
     // old drifted 'agent_app' FE key was deleted in the registry audit.
     shareKey: "app",
     titleColumn: "name",
-    orgRoute: "agent-apps",
+    orgRoute: "applets",
     scopeable: true,
   },
   {

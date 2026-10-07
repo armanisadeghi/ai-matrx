@@ -3,7 +3,7 @@
 /**
  * AgentCreateAppWindow — the Applet builder in a floating window.
  *
- * Wraps the ONE builder (`AppletBuilder`, the body of `/agent-apps/build`): describe what you want, the
+ * Wraps the ONE builder (`AppletBuilder`, the body of `/applets/build`): describe what you want, the
  * `applets.build` job drafts an Applet on your own tables, preview with held writes, Fix it, Use it.
  * The overlay id (`agentCreateAppWindow`) and registry slug (`agent-create-app-window`) are unchanged.
  */

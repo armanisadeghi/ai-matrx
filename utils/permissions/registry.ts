@@ -257,7 +257,7 @@ export const SHAREABLE_RESOURCE_REGISTRY = {
     ownerColumn: "created_by",
     isPublicColumn: null,
     displayLabel: "App",
-    urlPathTemplate: "/agent-apps/{id}",
+    urlPathTemplate: "/applets/manage/{id}",
     rlsUsesHasPermission: true,
   },
   assessment: {
@@ -3436,7 +3436,7 @@ export function getResourceTypeLabel(resourceType: string): string {
  * consulted first. `url_path_template` in `platform.shareable_resource_registry`
  * is a second, DB-side route authority that had drifted badly — 24 of 73 active
  * rows advertised routes that do not exist (`/apps/{id}` when the real route is
- * `/agent-apps/{id}`; `/skills/{id}`, `/workflows/{id}`, `/quizzes/{id}`,
+ * `/applets/manage/{id}`; `/skills/{id}`, `/workflows/{id}`, `/quizzes/{id}`,
  * `/canvas/{id}`, `/code/files/{id}`, `/runs/{id}`, `/scopes/{id}` …). Audited
  * and corrected against the live `app/` tree on 2026-08-14
  * (`migrations/sharing_registry_route_truth_d138.sql`): every row now either

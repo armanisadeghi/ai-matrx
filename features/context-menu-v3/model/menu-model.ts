@@ -1065,7 +1065,7 @@ export function buildMenuModel(
   if (registry) sections.push({ id: "registry", group: "document", nodes: registry });
   sections.push(...extras["after-clipboard"]);
   sections.push({ id: "tools", group: "tools", nodes: [chat] });
-  // THE SECTION IS ITS TITLE (page-pass 2026-09-27, /agent-apps/[id]/run):
+  // THE SECTION IS ITS TITLE (page-pass 2026-09-27, /applets/manage/[id]/run):
   // "History" held Compare, Export, Convert, Attach To and Share. History keeps
   // what is history; the rest sit in sections of their own kind.
   sections.push({

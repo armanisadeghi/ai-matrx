@@ -80,7 +80,7 @@ Cross-repo product plan: [`common-docs/systems/chat/ai-work/projects/ai-work-hub
 
 `/agent-connections/plugins` remains the technical provider-binding diagnostics route. The product `/work/conversations` surface now composes the canonical all-conversation history instead of reusing this capped diagnostics list; when a row is selected it calls this feature's narrow `fetchCodingSessionBindings(conversationId)` projection for exact provider facts. Provider conversation doors still open the read-only `/work/conversations/[conversationId]` transcript because external mirrors intentionally have no initial AI Matrx agent.
 
-Placeholders (empty-state copy, no data source): `SubAgentsSection`, `ResourcesSection` (inert slice — see Resources above), `InstructionsSection`, `PromptsSection`, `CommandsSection`, `HooksSection`, `RegistriesSection`. Prompts as a concept is superseded by agents + shortcuts + agent-apps; treat that tab as a slot to repurpose or remove.
+Placeholders (empty-state copy, no data source): `SubAgentsSection`, `ResourcesSection` (inert slice — see Resources above), `InstructionsSection`, `PromptsSection`, `CommandsSection`, `HooksSection`, `RegistriesSection`. Prompts as a concept is superseded by agents + shortcuts + applets; treat that tab as a slot to repurpose or remove.
 
 **A placeholder that promises a feature is a registered promise, never bare copy.** `HooksSection` and `SubAgentsSection` render their heading + body from `lib/coming-soon/registry.ts` (`agent-connections.hooks`, `agent-connections.sub-agents`) — the entry IS the copy, so shipping the feature and deleting the entry cannot leave a stale promise on screen. Any new placeholder here does the same; never hand-write "coming soon" (CLAUDE.md § Coming Soon).
 

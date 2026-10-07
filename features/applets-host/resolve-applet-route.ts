@@ -1,4 +1,4 @@
-// features/applets-host/resolve-applet-route.ts — which Applet `/apps/<slug>` names, for THIS viewer.
+// features/applets-host/resolve-applet-route.ts — which Applet `/applets/<slug>` names, for THIS viewer.
 //
 // Read through the viewer's own server client: row security decides whether the slug resolves. Shared by
 // the route's layout (which keeps the Applet mounted across its pages) and its page (which owns the

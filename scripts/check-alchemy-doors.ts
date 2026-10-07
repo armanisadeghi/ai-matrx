@@ -173,7 +173,7 @@ const ALLOW: Record<Rule, string[]> = {
   ],
   // QuickHtmlShareModal opens the author's HTML in a new tab as a PREVIEW of the page (a blob URL they look
   // at, with the real download one button over) - there is nothing to save, so it is not a download.
-  windowopen: ["features/agent-apps/components/QuickHtmlShareModal.tsx"],
+  windowopen: ["features/applets/components/QuickHtmlShareModal.tsx"],
   // The sandbox escape probe clicks a `javascript:` anchor on purpose, to PROVE the sandbox refuses it —
   // it saves nothing and navigates nowhere.
   anchorclick: ["features/content-ir/sandbox/browser/probes.ts"],

@@ -48,7 +48,7 @@ describe("fileIdentity", () => {
 
     it("aga-app / prompt-app tabs reproduce their id", () => {
       const aga = tabToFileIdentity(
-        makeTab("aga-app:row-1", "aga-app:/Agent App"),
+        makeTab("aga-app:row-1", "aga-app:/Applet"),
       )!;
       expect(aga.adapter).toBe("aga-app");
       expect(fileIdentityToTabId(aga)).toBe("aga-app:row-1");

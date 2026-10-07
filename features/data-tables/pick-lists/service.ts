@@ -71,7 +71,7 @@ function clientFor(organizationId: string, userId: string | null): RecordsClient
 }
 
 /**
- * Label-only read path for CONSUMERS (chat / agent apps / widgets). Returns
+ * Label-only read path for CONSUMERS (chat / Applets / widgets). Returns
  * labels / help_text / groups / icons but NEVER the secret item `description`.
  * Backed by the get_pick_list_for_selection RPC (SECURITY DEFINER) so it
  * works even for a private list bound to an agent the caller is running. Use this

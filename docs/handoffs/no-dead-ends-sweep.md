@@ -93,7 +93,7 @@ Each one is a registry line, not a per-call-site fix:
 | `scope` | 12 | Needs a canonical scope route decision first. |
 | `organization` | 10 | `/administration/users/organizations` is admin-only; a user-facing org route may not exist yet. |
 | `skill` | 3 | |
-| `app` | 2 | Agent apps — `/apps/{id}` exists in the transitional group; confirm the target before wiring. |
+| `app` | 2 | Applets — `/apps/{id}` exists in the transitional group; confirm the target before wiring. |
 | `agent_shortcut` | 2 | |
 | `folder` | 1 | |
 | `project` | 1 | |

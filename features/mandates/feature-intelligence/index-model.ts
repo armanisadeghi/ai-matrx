@@ -59,7 +59,7 @@ export interface DirectoryFeature {
 }
 
 export interface DirectoryDomain {
-  /** Section id: a registry Domain id, or `chat` / `agent-apps` / `unassigned`. */
+  /** Section id: a registry Domain id, or `chat` / `applets` / `unassigned`. */
   domain: string | null;
   label: string;
   features: DirectoryFeature[];
@@ -88,11 +88,11 @@ function humanizeKeyTail(key: string): string {
 const FIXTURES = "fixtures";
 
 /** Directory section ids that are not registry Domains (Arman, 2026-09-26). */
-export const AGENT_APPS_SECTION = "agent-apps";
+export const APPLETS_SECTION = "applets";
 export const UNASSIGNED_SECTION = "unassigned";
 
 const SECTION_LABELS: Readonly<Record<string, string>> = {
-  [AGENT_APPS_SECTION]: "Agent Apps",
+  [APPLETS_SECTION]: "Applets",
   [UNASSIGNED_SECTION]: "Not yet assigned",
 };
 
@@ -102,7 +102,7 @@ const SECTION_LABELS: Readonly<Record<string, string>> = {
  * they serve lives (Arman, 2026-09-26).
  */
 const SECTION_OF_FEATURE: Readonly<Record<string, string>> = {
-  "agent-apps": AGENT_APPS_SECTION,
+  "applets": APPLETS_SECTION,
   "agent-iteration": "agents", // improving an agent is authoring it
 };
 
@@ -186,7 +186,7 @@ export function buildDomains(
   // Sections follow the registry Domains, with Arman's rulings (2026-09-26)
   // on top: a job sits with the feature it serves, never under Agents because
   // an agent fills it. Agents shows only agent and system-prompt authoring;
-  // Chat is its own section; Agent Apps and every "not yet assigned" group
+  // Chat is its own section; Applets and every "not yet assigned" group
   // sit at the bottom, each in its own section.
   const bySection = new Map<string, DirectoryFeature[]>();
   const push = (section: string, row: DirectoryFeature) => {
@@ -216,18 +216,18 @@ export function buildDomains(
   const byName = (a: DirectoryFeature, b: DirectoryFeature) =>
     a.label.localeCompare(b.label);
   const out: DirectoryDomain[] = [...bySection.entries()]
-    .filter(([id]) => id !== AGENT_APPS_SECTION)
+    .filter(([id]) => id !== APPLETS_SECTION)
     .map(([id, features]) => ({
       domain: id,
       label: sectionLabel(id),
       features: features.sort(byName),
     }))
     .sort((a, b) => a.label.localeCompare(b.label));
-  const apps = bySection.get(AGENT_APPS_SECTION);
+  const apps = bySection.get(APPLETS_SECTION);
   if (apps)
     out.push({
-      domain: AGENT_APPS_SECTION,
-      label: sectionLabel(AGENT_APPS_SECTION),
+      domain: APPLETS_SECTION,
+      label: sectionLabel(APPLETS_SECTION),
       features: apps,
     });
   const orphans = [card(NO_DOMAIN_TARGET, null), card(FIXTURES, null)].filter(

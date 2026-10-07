@@ -495,7 +495,7 @@ When YOU change a shared piece (or a sibling route's code that renders into
 another page), look at every page that renders it, not just yours — a top bar
 added for the public route once doubled the title on the signed-in run page.
 
-When the page hosts content it does not own (a person's agent app, an
+When the page hosts content it does not own (a person's Applet, an
 embedded document), its quality limits are still yours to report: give the
 content the full width and the restored input through the host contract; what
 only the content's author can change goes in the report as `CONTENT-OWNED:`.

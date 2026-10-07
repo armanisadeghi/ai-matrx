@@ -324,7 +324,7 @@
 <summary>Importers (10)</summary>
 
 - `components/user-generated-table-data/TableListItem.tsx`
-- `features/agent-apps/components/agent-app-listings/AgentAppCard.tsx`
+- `features/applets/components/applet-listings/AppletListCard.tsx`
 - `features/content-templates/components/TemplateCard.tsx`
 - `../aidream/apps/shared/chat/src/cx-chat/components/ChatHeaderControls.tsx`
 - `../aidream/apps/shared/chat/src/cx-chat/components/SsrSidebarChats.tsx`
@@ -479,7 +479,7 @@
 
 </details>
 
-### `features/agent-apps/sample-code/templates/index.ts`
+### `features/applets/sample-code/templates/index.ts`
 
 - **Kind:** component-entry
 - **Lines:** 101
@@ -489,9 +489,9 @@
 <details>
 <summary>Importers (3)</summary>
 
-- `app/(core)/agent-apps/templates/[mode]/page.tsx`
-- `app/(core)/agent-apps/templates/page.tsx`
-- `features/agent-apps/components/CreateAgentAppForm.tsx`
+- `app/(core)/applets/templates/[mode]/page.tsx`
+- `app/(core)/applets/templates/page.tsx`
+- `features/applets/components/CreateAppletForm.tsx`
 
 </details>
 
@@ -573,7 +573,7 @@
 
 </details>
 
-### `features/agent-apps/components/shells/index.ts`
+### `features/applets/components/shells/index.ts`
 
 - **Kind:** component-entry
 - **Lines:** 73
@@ -583,8 +583,8 @@
 <details>
 <summary>Importers (2)</summary>
 
-- `features/agent-apps/components/AgentAppPublicRendererImpl.tsx`
-- `features/agent-apps/components/builder/ShellPicker.tsx`
+- `features/applets/components/AppletPublicRendererImpl.tsx`
+- `features/applets/components/builder/ShellPicker.tsx`
 
 </details>
 
@@ -875,8 +875,8 @@ _No static importers found._
 - `components/ui/JsonComponents/index.ts` — 17 importers
 - `features/administration/schema-visualizer/index.tsx` — 4 importers
 - `components/ui/star-rating/index.tsx` — 3 importers
-- `features/agent-apps/sample-code/templates/index.ts` — 3 importers
-- `features/agent-apps/components/shells/index.ts` — 2 importers
+- `features/applets/sample-code/templates/index.ts` — 3 importers
+- `features/applets/components/shells/index.ts` — 2 importers
 - `features/rich-document/actions/sources/index.ts` — 2 importers
 - `components/matrx/ConfigBuilder/index.tsx` — 1 importers
 - `components/matrx/delete-dialog/index.tsx` — 1 importers

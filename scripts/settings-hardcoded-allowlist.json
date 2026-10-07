@@ -4297,7 +4297,7 @@
       "name": "MAX_PAGES"
     },
     {
-      "file": "matrx-frontend/app/api/agent-apps/[id]/duplicate/route.ts",
+      "file": "matrx-frontend/app/api/applets/[id]/duplicate/route.ts",
       "name": "MAX_ATTEMPTS"
     },
     {
@@ -4517,7 +4517,7 @@
       "name": "PAGE_SIZE"
     },
     {
-      "file": "matrx-frontend/features/agent-apps/components/AutoCreateAgentAppForm.tsx",
+      "file": "matrx-frontend/features/applets/components/AutoCreateAppletForm.tsx",
       "name": "AUTO_FIRE_CLAIM_WINDOW_MS"
     },
     {

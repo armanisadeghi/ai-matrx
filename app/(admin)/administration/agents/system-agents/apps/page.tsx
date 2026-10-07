@@ -39,22 +39,22 @@ import {
 } from "@/components/ui/alert-dialog";
 import { toast } from "@/lib/toast-service";
 import {
-  fetchAgentAppsAdmin,
-  updateAgentAppAdmin,
-  type AgentAppAdminView,
-  type UpdateAgentAppAdminInput,
-} from "@/lib/services/agent-apps-admin-service";
+  fetchAppletsAdmin,
+  updateAppletAdmin,
+  type AppletAdminView,
+  type UpdateAppletAdminInput,
+} from "@/lib/services/applets-admin-service";
 import { csvExportItem, jsonExportItem } from "@/components/agent-copy/export";
 import {
-  AgentAppRef,
-  agentAppExecutionsHref,
-} from "@/features/agent-apps/components/AgentAppRef";
+  AppletRef,
+  appletExecutionsHref,
+} from "@/features/applets/components/AppletRef";
 import { pushAppHref } from "@/lib/deployment/navigate";
 import { ReadFailure } from "@/components/read-state/ReadFailure";
 import { StaleDataNotice } from "@/components/official/stale-data/StaleDataNotice";
 
 const STATUS_VARIANT: Record<
-  AgentAppAdminView["status"],
+  AppletAdminView["status"],
   "default" | "secondary" | "outline" | "destructive"
 > = {
   draft: "outline",
@@ -63,7 +63,7 @@ const STATUS_VARIANT: Record<
   suspended: "destructive",
 };
 
-const STATUS_OPTIONS: AgentAppAdminView["status"][] = [
+const STATUS_OPTIONS: AppletAdminView["status"][] = [
   "draft",
   "published",
   "archived",
@@ -72,11 +72,11 @@ const STATUS_OPTIONS: AgentAppAdminView["status"][] = [
 
 /**
  * Human-readable one-liner for a system app row — the "Copy" flavor for this
- * page only (per-row + copy-all). This page owns `AgentAppAdminView`
- * formatting since `features/agent-apps/**` is out of scope here; don't
+ * page only (per-row + copy-all). This page owns `AppletAdminView`
+ * formatting since `features/applets/**` is out of scope here; don't
  * duplicate this summary elsewhere.
  */
-function agentAppAdminSummary(a: AgentAppAdminView): string {
+function appletAdminSummary(a: AppletAdminView): string {
   return [
     `${a.name} (/${a.slug})`,
     `[${a.status}]`,
@@ -88,23 +88,23 @@ function agentAppAdminSummary(a: AgentAppAdminView): string {
     .join(" ");
 }
 
-function agentAppAdminCsvRow(
-  app: AgentAppAdminView,
+function appletAdminCsvRow(
+  app: AppletAdminView,
 ): Record<string, unknown> {
   return Object.fromEntries(Object.entries(app));
 }
 
-const systemAppsCopy: MatrxDataTableCopyConfig<AgentAppAdminView> = {
+const systemAppsCopy: MatrxDataTableCopyConfig<AppletAdminView> = {
   label: "System app",
   listLabel: "System apps (visible loaded view)",
   location:
     "AI Matrx Admin — System Agents · Apps (/administration/agents/system-agents/apps)",
-  rowKind: "agent-app",
-  listKind: "agent-apps",
-  rowDescription: "A single system agent app.",
+  rowKind: "applet",
+  listKind: "applets",
+  rowDescription: "A single system Applet.",
   listDescription: "The filtered and sorted loaded system-app view on this page.",
-  humanRow: agentAppAdminSummary,
-  listHuman: (visible) => visible.map(agentAppAdminSummary).join("\n"),
+  humanRow: appletAdminSummary,
+  listHuman: (visible) => visible.map(appletAdminSummary).join("\n"),
   listJson: (visible) => visible,
   agentRow: (app) => app,
   rowAttributes: (app) => ({ id: app.id, slug: app.slug }),
@@ -116,7 +116,7 @@ const systemAppsCopy: MatrxDataTableCopyConfig<AgentAppAdminView> = {
     items: [
       jsonExportItem(() => visible, "JSON (visible loaded view)"),
       csvExportItem(
-        () => visible.map(agentAppAdminCsvRow),
+        () => visible.map(appletAdminCsvRow),
         "CSV (visible loaded view)",
       ),
     ],
@@ -126,7 +126,7 @@ const systemAppsCopy: MatrxDataTableCopyConfig<AgentAppAdminView> = {
 export default function AdminSystemAppsListPage() {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
-  const [apps, setApps] = useState<AgentAppAdminView[]>([]);
+  const [apps, setApps] = useState<AppletAdminView[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   // The last read's failure (RC-B12 r13). A failed read is never "No system
@@ -135,7 +135,7 @@ export default function AdminSystemAppsListPage() {
   // Per-row inflight flags so a slow update on one row doesn't disable the
   // whole table.
   const [busyIds, setBusyIds] = useState<Set<string>>(new Set());
-  const [deleteTarget, setDeleteTarget] = useState<AgentAppAdminView | null>(
+  const [deleteTarget, setDeleteTarget] = useState<AppletAdminView | null>(
     null,
   );
   const [deleting, setDeleting] = useState(false);
@@ -144,7 +144,7 @@ export default function AdminSystemAppsListPage() {
     if (silent) setRefreshing(true);
     else setLoading(true);
     try {
-      const data = await fetchAgentAppsAdmin({ scope: "global", limit: 500 });
+      const data = await fetchAppletsAdmin({ scope: "global", limit: 500 });
       setApps(data);
       setReadError(null);
     } catch (error) {
@@ -163,7 +163,7 @@ export default function AdminSystemAppsListPage() {
 
   const handleOpenEditor = (id: string) => {
     startTransition(() => {
-      pushAppHref(router, `/administration/agents/agent-apps/edit/${id}`);
+      pushAppHref(router, `/administration/applets/edit/${id}`);
     });
   };
 
@@ -172,7 +172,7 @@ export default function AdminSystemAppsListPage() {
   const patchRow = useCallback(
     async (
       id: string,
-      patch: Omit<Partial<UpdateAgentAppAdminInput>, "id">,
+      patch: Omit<Partial<UpdateAppletAdminInput>, "id">,
       label: string,
     ) => {
       const prev = apps.find((a) => a.id === id);
@@ -182,7 +182,7 @@ export default function AdminSystemAppsListPage() {
         rows.map((r) => (r.id === id ? { ...r, ...patch } : r)),
       );
       try {
-        const updated = await updateAgentAppAdmin({ id, ...patch });
+        const updated = await updateAppletAdmin({ id, ...patch });
         setApps((rows) => rows.map((r) => (r.id === id ? updated : r)));
         toast.success(`${label} updated.`);
       } catch (err) {
@@ -208,7 +208,7 @@ export default function AdminSystemAppsListPage() {
     const id = deleteTarget.id;
     setDeleting(true);
     try {
-      const res = await fetch(`/api/agent-apps/${id}`, { method: "DELETE" });
+      const res = await fetch(`/api/applets/${id}`, { method: "DELETE" });
       if (!res.ok) {
         const payload = await res.json().catch(() => ({}));
         throw new Error(payload.error ?? `HTTP ${res.status}`);
@@ -225,14 +225,14 @@ export default function AdminSystemAppsListPage() {
     }
   };
 
-  const columns: MatrxColumnDef<AgentAppAdminView>[] = [
+  const columns: MatrxColumnDef<AppletAdminView>[] = [
     {
       id: "name",
       accessorKey: "name",
       header: "Name",
       width: 220,
       cell: (app) => (
-        <AgentAppRef appId={app.id} name={app.name} slug={app.slug} />
+        <AppletRef appId={app.id} name={app.name} slug={app.slug} />
       ),
     },
     {
@@ -246,7 +246,7 @@ export default function AdminSystemAppsListPage() {
         <MatrxUuidCell
           value={app.id}
           label="System app ID"
-          href={`/administration/agents/agent-apps/edit/${app.id}`}
+          href={`/administration/applets/edit/${app.id}`}
         />
       ),
     },
@@ -276,7 +276,7 @@ export default function AdminSystemAppsListPage() {
             onValueChange={(status) =>
               void patchRow(
                 app.id,
-                { status: status as AgentAppAdminView["status"] },
+                { status: status as AppletAdminView["status"] },
                 "Status",
               )
             }
@@ -347,7 +347,7 @@ export default function AdminSystemAppsListPage() {
       width: 65,
       cell: (app) => (
         <AppLink
-          href={agentAppExecutionsHref(app.id)}
+          href={appletExecutionsHref(app.id)}
           title={`Open the runs and errors for ${app.name}`}
           className="block text-right text-xs underline-offset-2 hover:text-primary hover:underline"
         >
@@ -407,7 +407,7 @@ export default function AdminSystemAppsListPage() {
                     shared table labels that window honestly; row actions remain the
                     existing explicit mutation and navigation doors. */}
                 <MatrxDataTable
-                  urlState={{ id: "system-agent-apps" }}
+                  urlState={{ id: "system-applets" }}
                   data={apps}
                   columns={[...(columns), { id: "custom-actions", header: "Actions", sortable: false, filter: false, customActions: (app) => (
                     <div className="flex items-center justify-end gap-0.5">
@@ -467,7 +467,7 @@ export default function AdminSystemAppsListPage() {
                       onAdd: () =>
                         pushAppHref(
                           router,
-                          "/agent-apps/build",
+                          "/applets/build",
                         ),
                     },
                     refresh: {

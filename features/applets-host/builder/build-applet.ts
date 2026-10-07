@@ -220,10 +220,10 @@ export async function saveBuiltApplet(
     if (!error) return data;
     if (error.code !== "23505") throw new Error(error.message);
   }
-  throw new Error(`Every address near "/apps/${base}" is taken.`);
+  throw new Error(`Every address near "/applets/${base}" is taken.`);
 }
 
-/** "Use it": the draft goes live at /apps/<slug>. */
+/** "Use it": the draft goes live at /applets/<slug>. */
 export async function publishApplet(client: Client, appletId: string): Promise<void> {
   const { error } = await client.schema("app").from("definition").update({ status: "published" }).eq("id", appletId);
   if (error) throw new Error(error.message);

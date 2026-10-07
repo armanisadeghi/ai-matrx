@@ -10,7 +10,7 @@ Read [`README.md`](./README.md) before touching anything here. Read [`INVENTORY.
 
 ## Where we are (2026-04-22)
 
-**All foundational phases are shipped to main.** The DB schema for shortcuts, content blocks, agent apps, the execution config bundle, and the feature/binding renames have all landed. Live shortcuts execute end-to-end with variable resolution, context overrides, LLM overrides, bypass-gate timer, and scope/context mappings wired through.
+**All foundational phases are shipped to main.** The DB schema for shortcuts, content blocks, Applets, the execution config bundle, and the feature/binding renames have all landed. Live shortcuts execute end-to-end with variable resolution, context overrides, LLM overrides, bypass-gate timer, and scope/context mappings wired through.
 
 - **Code-and-DB complete (11 phases):** 1, 2 (impl), 3, 3.5, 3.6, 5, 7 (with caveats), 8 (impl), 9, 11, 12, 13
 - **Blocked on user decision (3 phases):** 4 (quick actions re-scope), 6 (code-editor agent ids), 10 (applets)
@@ -24,7 +24,7 @@ Read [`README.md`](./README.md) before touching anything here. Read [`INVENTORY.
 - **State**: RTK only. Extend existing slices (`features/agents/redux/**`) — never create local/parallel state.
 - **Shortcuts are multi-scope from day 1**: admin / user / org. `agx_shortcut` + `shortcut_categories` + `content_blocks` all carry `user_id`, `organization_id`, `project_id`, `task_id`.
 - **CRUD components are shared**: built once in `features/agent-shortcuts/`, mounted by admin/user/org routes.
-- **Config is unified**: every surface that customizes an agent produces the same `AgentExecutionConfig` bundle (shortcuts, agent apps, tester, inline launches). See `../aidream/apps/shared/chat/src/agents/types/agent-execution-config.types.ts`.
+- **Config is unified**: every surface that customizes an agent produces the same `AgentExecutionConfig` bundle (shortcuts, Applets, tester, inline launches). See `../aidream/apps/shared/chat/src/agents/types/agent-execution-config.types.ts`.
 - **Runtime is separated**: `AgentExecutionRuntime` carries per-invocation data (applicationScope, userInput, widgetHandleId, originalText) — never persisted.
 - **Chat is the crown jewel**: `(a)/chat` route exists and runs on the execution-system.
 
@@ -42,8 +42,8 @@ Read [`README.md`](./README.md) before touching anything here. Read [`INVENTORY.
 | 5 | Context-menu integration sweep (notes, code editor, agent builder, SSR RPC) | ✅ complete | `phases/phase-05-integration-sweep.md` |
 | 6 | Code Editor quick wrapper (keep prompt-app editing working) | ⏸ **blocked** on agent-id decision for V2/V3/compact editors | `phases/phase-06-code-editor-quick-wrapper.md` |
 | 7 | `(a)/chat` — unified chat flagship route | 🟡 partially-complete (community stub; keybind registry deferred) | `phases/phase-07-chat-route.md` |
-| 8 | Agent Apps public runner (`/p/[slug]`) | ✅ implementation-complete; end-to-end smoke untested | `phases/phase-08-agent-apps-public.md` |
-| 9 | Admin Agent Apps management UI | ✅ complete | `phases/phase-09-admin-agent-apps.md` |
+| 8 | Applets public runner (`/p/[slug]`) | ✅ implementation-complete; end-to-end smoke untested | `phases/phase-08-applets-public.md` |
+| 9 | Admin Applets management UI | ✅ complete | `phases/phase-09-admin-applets.md` |
 | 10 | Applets capture (parent-app-with-children + shared context slots) | ⏸ design-complete; **5 user questions blocking implementation** | `phases/phase-10-applets-capture.md` |
 | 11 | Admin Shortcut management UI | ✅ complete | `phases/phase-11-admin-shortcuts-ui.md` |
 | 12 | User Shortcut management UI | ✅ complete | `phases/phase-12-user-shortcuts-ui.md` |
@@ -116,11 +116,11 @@ Phase 20 is the victory lap.
      - `hideReasoning` / `hideToolResults` hide the expected blocks.
      - `variablesPanelStyle` renders the selected style.
    - Run `/agents/shortcuts` admin page — edit a shortcut's new fields via ShortcutForm, confirm round-trip.
-   - Run `/agent-apps` — create + publish an agent app, load `/p/[slug]` as a guest, confirm Babel sandbox + rate limit trigger both fire.
+   - Run `/applets` — create + publish an Applet, load `/p/[slug]` as a guest, confirm Babel sandbox + rate limit trigger both fire.
 
 8. **Phase 7 `(a)/chat` full exercise** — multi-turn chat, tool use, conversation reuse, ephemeral mode.
 
-9. **Phase 8 agent apps end-to-end** — public runner was shipped code-complete but never exercised live.
+9. **Phase 8 Applets end-to-end** — public runner was shipped code-complete but never exercised live.
 
 ### ⏳ Blocked on 14
 

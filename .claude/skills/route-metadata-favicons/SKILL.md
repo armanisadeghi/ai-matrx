@@ -126,8 +126,8 @@ All primary routes use 2-letter favicon codes. The pattern:
 | `/dashboard`                | `Db`   | `#f97316` | Core-hub orange (`CORE_HUB_COLOR`) |
 | `/agents`                   | `AG`   | `#f43f5e` | Rose red (`AGENTS_COLOR`)          |
 | `/agents/[id]/build`        | `AB`   | `#f43f5e` | Agent Builder — inherits the family |
-| `/agent-apps`               | `AA`   | `#059669` | Dark emerald                       |
-| `/agent-apps/[id]/run`      | `AR`   | `#059669` | Agent Runner                       |
+| `/applets`               | `AA`   | `#059669` | Dark emerald                       |
+| `/applets/manage/[id]/run`      | `AR`   | `#059669` | Agent Runner                       |
 | `/chat`                     | `C`    | `#2563eb` | Deep blue (`CHAT_COLOR`)           |
 | `/notes`                    | `N`    | `#eab308` | Docs yellow (`DOCS_COLOR`)         |
 | `/documents`                | `DO`   | `#eab308` | Docs yellow (`DOCS_COLOR`)         |

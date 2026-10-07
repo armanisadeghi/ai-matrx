@@ -98,7 +98,7 @@ Read [presets.ts](presets.ts) for the full catalog (60+ across 10 categories). T
 | Host feature | Suggested `presetIds` | `primaryPresetId` |
 |---|---|---|
 | HTML pages / blog SEO | `["og-image", "fb-post", "tw-card-large", "ig-square"]` | `"og-image"` |
-| Agent app cover / preview | `["agent-app-cover", "fb-post", "ig-square"]` | `"agent-app-cover"` |
+| Applet cover / preview | `["applet-cover", "fb-post", "ig-square"]` | `"applet-cover"` |
 | Avatar / profile picture | `["avatar-xl", "avatar-lg", "avatar-md", "avatar-sm", "avatar-xs"]` | `"avatar-md"` |
 | Org logo | `["logo-xl", "logo-md", "logo-favicon"]` | `"logo-md"` |
 | Favicon set | `["favicon-32", "favicon-192", "apple-touch-icon", "android-chrome-192", "android-chrome-512"]` | `"favicon-192"` |

@@ -3,7 +3,7 @@
  *
  * Inline embed — no sidebar, no breadcrumbs, no preview panel. Renders a
  * scoped FileList (and optionally a Dropzone) for use inside other pages
- * like "attached files" on a task, or "assets" inside an agent app.
+ * like "attached files" on a task, or "assets" inside an Applet.
  *
  * Selection state is isolated: callers pass an `onSelect` / `onActivate`
  * instead of hooking into the global Redux active-file state. This is the

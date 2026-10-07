@@ -183,7 +183,7 @@ export function useFileBlob(fileId: string | null): UseFileBlobResult {
       return undefined;
     }
 
-    // Synthetic ids belong to virtual sources (Notes / Agent Apps / etc.).
+    // Synthetic ids belong to virtual sources (Notes / Applets / etc.).
     // They aren't real S3-backed bytes — `Files.downloadFileWithProgress`
     // would 404 against the Python backend. Callers should mount the
     // adapter's `inlinePreview` instead, or use `readAny` from

@@ -273,7 +273,7 @@ function currentCommit(): string | null {
  *
  * Segment-aware ON PURPOSE. A plain `startsWith` makes `--path=features/agents`
  * also match `features/agentsBackup/…`, and this repo is full of siblings that
- * share a prefix — `features/agent-apps`, `agent-comparison`, `agent-context`,
+ * share a prefix — `features/applets`, `agent-comparison`, `agent-context`,
  * `agent-settings`, `agent-shortcuts` all sit beside `features/agents`. A
  * scoped run would then silently judge the wrong files, and the dashboard's
  * repair briefs paste that same `--path` into their verify line, so a wrong

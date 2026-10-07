@@ -210,14 +210,14 @@
 **Evidence:** app/(admin)/administration/chat/cx-dashboard/requests/[id]/request-detail-content.tsx type Detail = {user_request, requests, tool_calls, cost_verification}; features/cx-dashboard/utils/export.ts exportToJSON expects an array.
 
 ## 42. app/(public)/p/[slug]/page.tsx:22
-**Defect:** Custom hand-rolled RPC wrapper type cast (as unknown as any + reinvented .rpc() signature) bypassed the real generated get_aga_public_data return type, and the resulting object was force-cast (as never) into PublicAgentApp, which requires 6 fields (app_kind, shared_context_slots, search_tsv, total_tokens_used, total_cost, unique_users_count) the RPC never returns.
-**Runtime consequence:** Not a crash today (the renderer never reads those 6 fields), but any future consumer of PublicAgentApp reading them would silently get undefined typed as a required field with no compiler warning, a latent contract violation.
-**Evidence:** RPC Returns shape in types/database.types.ts:25118 lists exactly 24 fields; PublicAgentApp (features/agent-apps/types.ts) requires 6 more that aren't in that list.
+**Defect:** Custom hand-rolled RPC wrapper type cast (as unknown as any + reinvented .rpc() signature) bypassed the real generated get_aga_public_data return type, and the resulting object was force-cast (as never) into PublicApplet, which requires 6 fields (app_kind, shared_context_slots, search_tsv, total_tokens_used, total_cost, unique_users_count) the RPC never returns.
+**Runtime consequence:** Not a crash today (the renderer never reads those 6 fields), but any future consumer of PublicApplet reading them would silently get undefined typed as a required field with no compiler warning, a latent contract violation.
+**Evidence:** RPC Returns shape in types/database.types.ts:25118 lists exactly 24 fields; PublicApplet (features/applets/types.ts) requires 6 more that aren't in that list.
 
 ## 43. app/(core)/agents/[id]/apps/page.tsx:27
-**Defect:** getAppsForAgent's partial Supabase select (a subset of app.definition columns) was force-cast via as unknown as AgentApp[] to the full AgentAppRecord shape. The DB's status column is a bare string (no enum) and tags is string[] | null, but AgentAppRecord.status: AppStatus (literal union) and tags: string[] (non-null) were asserted without validation.
-**Runtime consequence:** If app.definition.status ever held any value outside draft/published/archived/suspended, or if tags was null for a legacy row, downstream code trusting the typed AgentApp.status/tags would either silently mis-branch or throw on null.
-**Evidence:** types/database.types.ts:1866-1904 shows app.definition.status: string and tags: string[] | null vs features/agent-apps/types.ts AgentAppRecord requiring status: AppStatus and tags: string[].
+**Defect:** getAppsForAgent's partial Supabase select (a subset of app.definition columns) was force-cast via as unknown as AppletRow[] to the full AppletDefinition shape. The DB's status column is a bare string (no enum) and tags is string[] | null, but AppletDefinition.status: AppStatus (literal union) and tags: string[] (non-null) were asserted without validation.
+**Runtime consequence:** If app.definition.status ever held any value outside draft/published/archived/suspended, or if tags was null for a legacy row, downstream code trusting the typed AppletRow.status/tags would either silently mis-branch or throw on null.
+**Evidence:** types/database.types.ts:1866-1904 shows app.definition.status: string and tags: string[] | null vs features/applets/types.ts AppletDefinition requiring status: AppStatus and tags: string[].
 
 ## 44. app/(core)/podcast/[slug]/feed.xml/route.ts:97
 **Defect:** The public RSS feed route cast raw pc_shows/pc_episodes rows directly to PcShow/PcEpisode via as, bypassing the canonical mapPcShowRow/mapPcEpisodeRow converters that validate display_mode, parse speakers JSON, and parse rss_settings JSON, instead re-implementing a weaker unvalidated version of the rss_settings normalization inline with no shape check at all.

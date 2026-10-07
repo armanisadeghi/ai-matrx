@@ -22,7 +22,7 @@ function pluralize(label: string): string {
  */
 const AWAITING_A_NAMING_RULING = new Set<string>([
   "anon_form: Public form → Forms",
-  "app: App → Agent Apps",
+  "app: App → Applets",
   "content_ir_kind: Content-IR Kind → Shapes",
   "crm_sending_identity: Sending Identity → Sending Mailboxes",
   "fc_set: Flashcard Deck → Flashcard Sets",

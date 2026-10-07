@@ -32,8 +32,8 @@ function query(partial: Partial<EntityListQuery>): EntityListQuery {
 const wire: MandateMemberWireRow = {
   id: "6d6173ee-3807-4a99-9fb7-6b14abbb459a",
   mandate_key: "agent_apps.prompt_app_dev",
-  name: "Agent Apps — Auto Create",
-  feature_label: "Agent Apps",
+  name: "Applets — Auto Create",
+  feature_label: "Applets",
   goal: "Builds a complete Prompt App (UI code) from the app's prompt object.",
   created_by_me: null,
   organization_id: "39c38960-d30c-4840-b0c1-c9960de95582",

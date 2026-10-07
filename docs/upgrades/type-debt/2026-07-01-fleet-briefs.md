@@ -223,13 +223,13 @@ When a brief below is DECIDED as a rip-out: delete the dead system completely, f
 
 ## lib-services (2)
 
-### BRIEF 25: lib/agent-apps/data.ts:48 — as unknown as (whole-row cast, not RPC)
-**data:** app.definition table row (generated Database["app"]["Tables"]["definition"]["Row"]) vs AgentApp (= AgentAppRecord in features/agent-apps/types.ts), which narrows ~8 generated `string` columns (status, component_language, shell_kind, app_kind, etc.) to literal-union domain types
-**producedBy:** lib/agent-apps/data.ts getAgentApp() — supabase.schema("app").from("definition").select("*").single()
-**consumedBy:** features/agent-apps/types.ts AgentAppRecord (renderer/UI consumer of the narrowed literal fields)
-**conflict:** The DB guarantees a real DB column type (string, no runtime enum constraint visible to TS), but AgentAppRecord asserts a narrower literal union (e.g. AppStatus, ComponentLanguage) with no runtime validation at this read site. A DbRpcRow-style compile-time guard only applies to RPCs, not table selects, so there is no equivalent safety net here.
-**decisionNeeded:** Either (A) add a Zod/runtime validator for the ~8 narrowed fields at this read site (feature-owned, touches features/agent-apps/types.ts, outside my lib/-only scope), or (B) accept the existing informal contract (DB CHECK constraints presumably enforce the literal values) and leave the single documented cast as the intentional boundary. This is a product/architecture call for whoever owns features/agent-apps.
-**Status:** DECIDED: Add a Zod validator for the ~8 narrowed fields (status, component_language, shell_kind, app_kind, etc.) in `lib/agent-apps/data.ts` `getAgentApp()`, replacing the `as unknown as` cast — parse the row into `AgentAppRecord` and throw/log loudly on an unexpected value rather than trusting DB CHECK constraints silently.
+### BRIEF 25: lib/applets/data.ts:48 — as unknown as (whole-row cast, not RPC)
+**data:** app.definition table row (generated Database["app"]["Tables"]["definition"]["Row"]) vs AppletRow (= AppletDefinition in features/applets/types.ts), which narrows ~8 generated `string` columns (status, component_language, shell_kind, app_kind, etc.) to literal-union domain types
+**producedBy:** lib/applets/data.ts getApplet() — supabase.schema("app").from("definition").select("*").single()
+**consumedBy:** features/applets/types.ts AppletDefinition (renderer/UI consumer of the narrowed literal fields)
+**conflict:** The DB guarantees a real DB column type (string, no runtime enum constraint visible to TS), but AppletDefinition asserts a narrower literal union (e.g. AppStatus, ComponentLanguage) with no runtime validation at this read site. A DbRpcRow-style compile-time guard only applies to RPCs, not table selects, so there is no equivalent safety net here.
+**decisionNeeded:** Either (A) add a Zod/runtime validator for the ~8 narrowed fields at this read site (feature-owned, touches features/applets/types.ts, outside my lib/-only scope), or (B) accept the existing informal contract (DB CHECK constraints presumably enforce the literal values) and leave the single documented cast as the intentional boundary. This is a product/architecture call for whoever owns features/applets.
+**Status:** DECIDED: Add a Zod validator for the ~8 narrowed fields (status, component_language, shell_kind, app_kind, etc.) in `lib/applets/data.ts` `getApplet()`, replacing the `as unknown as` cast — parse the row into `AppletDefinition` and throw/log loudly on an unexpected value rather than trusting DB CHECK constraints silently.
 
 ### BRIEF 26: lib/api/call-api.ts:1132 — as any (wire-contract drift)
 **data:** callWarmAgent(agentId, source) builds body: { source } for POST /ai/agents/{agent_id}/warm

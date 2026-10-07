@@ -26,7 +26,7 @@ export const REGISTRY_DOMAINS: readonly RegistryDomain[] = [
     id: "agents",
     name: "Agents",
     features: [
-      { id: "agent-apps", name: "Agent Apps" },
+      { id: "applets", name: "Applets" },
       { id: "agent-context-binding", name: "Agent Context Binding" },
       { id: "agent-design", name: "Agent Design", proposed: true },
       { id: "agent-picker", name: "Agent Picker", proposed: true },

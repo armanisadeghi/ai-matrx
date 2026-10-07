@@ -57,7 +57,7 @@ Refinements he added along the way — each is now doctrine, with the why:
 |---|---|---|
 | system-agents detail panels | `AgentWidgetsPage` (463 L), `AgentShortcutsPanel` (424 L), `AgentVersionDiffPage` (426 L) — all zero-copy | `session_013zeU9ocv31tyhiUiaZafzf` |
 | ContentBlocksManager | `components/admin/ContentBlocksManager.tsx` (2,578 L, zero copy, mounted at TWO routes) | `session_01Qrb2QoRGxccu8afJdcGg3M` |
-| Form-heavy + what-I-see audit | `AgentAppSettingsContent` (641 L), `agent-apps/edit/[id]` (589 L); audit `FeedbackDetailDialog` (2,771 L) + mcp tool editors for live-state violations | `session_01HexSXPJ4EyPxpY4cxwpWAM` |
+| Form-heavy + what-I-see audit | `AppletSettingsContent` (641 L), `applets/edit/[id]` (589 L); audit `FeedbackDetailDialog` (2,771 L) + mcp tool editors for live-state violations | `session_01HexSXPJ4EyPxpY4cxwpWAM` |
 | Access + sharing | `SiteAccessWorkspace` (225 L) + `features/sharing/*` — **the largest zero-coverage hole left**; shared components, so every consumer benefits | `session_01QhBtmWNmuaW9MHoCJnNQ5D` |
 | content-plan module | Zero agent-copy imports module-wide; `NodePanel` (record detail) first, `BriefEditor` under the live-state rule | `session_017DNU1tqsZCKfYJbq53Yapw` |
 | Small verified gaps | `SiteCommandFeed.tsx:279` warnings `.slice(0,10)` with no show-all/export (**hard violation, errors-first class**); `SitesPortfolio.tsx:614` `MatrxDataTable` with no `copy` config | `session_01WZXQcgqYiiXKCLcHrt174Y` |
@@ -84,7 +84,7 @@ Plus 4 chips covering the **user-facing feature clusters** — a category the ro
 3. **Roadmap (design-gated, don't start without Arman):** `buildAgentPayload` auto-folding the active surface manifest's values into `<context>`; screenshot attach (`hooks/useScreenCapture.ts`); Copy-for-AI flipping from clipboard to live agent handoff (keep `kind` slugs stable — they become the tool vocabulary).
 4. **Release:** this work sits on `main` unreleased — ships via `./scripts/release.sh` on the next scheduled frontend release.
 
-Correctly left alone: `MarketingHub.tsx` (a nav map — non-record, plain pair is the right size), builders/composers (`LiveBuilder`, `AutoCreateAgentAppForm`, `[id]/code`), and `PageLinksCard` (truncates, but already states "+N more … in the copied and exported data" and keeps its existing export action).
+Correctly left alone: `MarketingHub.tsx` (a nav map — non-record, plain pair is the right size), builders/composers (`LiveBuilder`, `AutoCreateAppletForm`, `[id]/code`), and `PageLinksCard` (truncates, but already states "+N more … in the copied and exported data" and keeps its existing export action).
 
 ## Done
 
@@ -93,7 +93,7 @@ Correctly left alone: `MarketingHub.tsx` (a nav map — non-record, plain pair i
 - **Catalogue analysis stopped discarding data** (2026-08-15): `CatalogueAnalysisPanel` rendered `openByItem.slice(0, 8)` with no show-all and no export — now previews 8 with an "all N" toggle plus JSON + CSV over every open item. The upstream 5,000-finding sampling stays disclosed, and the JSON export carries `rollupTruncated`/`openFindingsTotal`.
 - **`AiCopyMenu` / graded variants** (PR #59): `aiVariants`/`aiCustom` on `CopyButtons` and `MatrxDataTable`, `groomerPresetVariants`, `keyFieldsAiVariant`. Live on 10 marketing surfaces + 12 non-marketing.
 - **Skill rewrite done** — module-audit protocol, sized-to-data doctrine, and the MISSION/what-I-see section folded in.
-- **App-wide rollout landed**: `tool-registry/mcp-admin` + `mcp-tools`, `feedback` (4 tabs + detail), `system-agents/*` (partial — gaps chipped above), `agent-apps/*` (partial — forms chipped above). None of these modules uses `MatrxDataTable`, so every addition is hand-wiring against each module's existing `format.ts`.
+- **App-wide rollout landed**: `tool-registry/mcp-admin` + `mcp-tools`, `feedback` (4 tabs + detail), `system-agents/*` (partial — gaps chipped above), `applets/*` (partial — forms chipped above). None of these modules uses `MatrxDataTable`, so every addition is hand-wiring against each module's existing `format.ts`.
 - **Marketing**: backlinks reference page; 11 fleet-shipped site tabs; Pages tab + all five CrawlSubnav sub-routes (the earlier "no copy layer yet" note was wrong); brands portfolio; surface manifests verified.
 
 ## Decisions needed

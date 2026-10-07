@@ -52,6 +52,6 @@ export interface AppletTemplateLink {
   bind: Record<string, string>;
 }
 
-export const APPLET_TEMPLATES_PATH = "/templates/apps";
+export const APPLET_TEMPLATES_PATH = "/templates/applets";
 export const appletIntroHref = (slug: string) => `/applets/${encodeURIComponent(slug)}`;
-export const appletOpenHref = (slug: string) => `/apps/${encodeURIComponent(slug)}`;
+export const appletOpenHref = (slug: string) => `/applets/${encodeURIComponent(slug)}`;

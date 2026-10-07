@@ -2,12 +2,12 @@
  * captureUnresolvedImports — the error-queue half of THE UNRESOLVED-IMPORT
  * RULE (Law 4, 2026-10-01).
  *
- * Stored component code (DB tool displays, agent-app slots and apps, emit
+ * Stored component code (DB tool displays, applet slots and apps, emit
  * renderers, kind components) is compiled in-page against an allowlisted
  * scope. When the code names something that scope cannot supply, the
  * component still renders with a visible stand-in in that spot
  * (`createUnresolvedImportStandIn`), and the compiler hands the list here
- * with its ORIGIN — `tool:<name>`, `agent-app:<id>`, `emit:<ref>`, … — so the
+ * with its ORIGIN — `tool:<name>`, `applet:<id>`, `emit:<ref>`, … — so the
  * row in the error queue says which stored component to fix and which import.
  *
  * ONCE PER PAGE SESSION per (origin, identifier, path) — the same key as the

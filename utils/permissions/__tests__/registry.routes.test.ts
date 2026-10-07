@@ -4,7 +4,7 @@
  * FOUND_DEFECTS D138. `platform.shareable_resource_registry.url_path_template`
  * was a second, DB-owned route authority that drifted from the `app/` tree: on
  * 2026-08-14, 24 of 73 active rows advertised URLs that resolve to no route at
- * all (`/apps/{id}` when the real route is `/agent-apps/{id}`, `/skills/{id}`,
+ * all (`/apps/{id}` when the real route is `/applets/manage/{id}`, `/skills/{id}`,
  * `/workflows/{id}`, `/quizzes/{id}`, `/canvas/{id}`, `/runs/{id}`, …). Those
  * templates are rendered as links on the org sharing surfaces, so each one was a
  * 404 in a real user's face.

@@ -2,7 +2,7 @@
  * features/files/virtual-sources/types.ts
  *
  * The `VirtualSourceAdapter` contract — one adapter per "fake file" surface
- * (Notes, Agent Apps, Prompt Apps, Tool UIs, code-files snippets, …). Each
+ * (Notes, Applets, Prompt Apps, Tool UIs, code-files snippets, …). Each
  * adapter exposes a Postgres-backed table (or set of tables) as if it were a
  * filesystem mounted under `/files`.
  *
@@ -40,7 +40,7 @@ export type VirtualId = string;
 // ---------------------------------------------------------------------------
 
 /** A node in a virtual tree — folder or file. Adapters that don't have nested
- *  hierarchy (Agent Apps, Prompt Apps) only emit `kind: "file"` nodes parented
+ *  hierarchy (Applets, Prompt Apps) only emit `kind: "file"` nodes parented
  *  at root. Adapters with hierarchy (Notes, code-files snippets) emit folders. */
 export interface VirtualNode {
   id: VirtualId;
@@ -214,7 +214,7 @@ export interface VirtualSourceAdapter {
    *  `"aga_apps"`. Lowercase + underscores. */
   sourceId: string;
   /** Human-facing label rendered as the tree-root name — `"Notes"`,
-   *  `"Agent Apps"`. Used in display paths (`/Notes/Idea.md`). */
+   *  `"Applets"`. Used in display paths (`/Notes/Idea.md`). */
   label: string;
   /** Lucide icon for the tree root. */
   icon: LucideIcon;

@@ -14,7 +14,7 @@ The sharing reference is `features/sharing/FEATURE.md` and
 | Tile | Resource type | Count source | List page | Share-with-org path | Status |
 |---|---|---|---|---|---|
 | Agents | `agent` (`agx_agent`) | `organization_id` + permissions | placeholder | `ShareModal` (registered) | **Count ✓ / List TODO / RLS broken on table** |
-| Agent Apps | not registered | — | placeholder | needs registration | **Blocked on DB migration A** |
+| Applets | not registered | — | placeholder | needs registration | **Blocked on DB migration A** |
 | Agent Shortcuts | n/a (scope-system) | `useAgentShortcuts({scope:'organization'})` | real page | n/a (built-in scope) | ✓ Complete |
 | Content Templates | not registered, table TBD | — | placeholder | needs registration | **Blocked on DB migration B** |
 | Notes | `note` (`notes`) | `organization_id` + permissions | **real page (this PR)** | `ShareNoteDialog` (already wires `shareWithOrg`) | ✓ Count + List complete; RLS still broken on table |
@@ -31,7 +31,7 @@ The sharing reference is `features/sharing/FEATURE.md` and
 Each follows the same pattern — `features/sharing/FEATURE.md` § "Adding a new
 shareable resource type" is the contract.
 
-### Migration A — register `agent-apps` (`aga_apps`)
+### Migration A — register `applets` (`aga_apps`)
 
 ```sql
 -- 1. Confirm the table has an `is_public boolean` column. If not, add it.
@@ -42,8 +42,8 @@ ALTER TABLE public.aga_apps
 INSERT INTO public.shareable_resource_registry
   (resource_type, table_name, id_column, owner_column, is_public_column, display_label, url_path_template, rls_uses_has_permission)
 VALUES
-  ('agent_app', 'aga_apps', 'id', 'user_id', 'is_public', 'Agent App',
-   '/agent-apps/{id}', true);
+  ('agent_app', 'aga_apps', 'id', 'user_id', 'is_public', 'Applet',
+   '/applets/manage/{id}', true);
 
 -- 3. RLS — replace SELECT/UPDATE/DELETE policies with the standard form:
 --    USING (user_id = auth.uid() OR is_public OR has_permission('aga_apps', id, 'viewer'))
@@ -53,10 +53,10 @@ VALUES
 Then mirror in `utils/permissions/registry.ts` (the parity test will block merge until you do).
 
 Frontend follow-up (separate change, post-migration):
-- Replace `/organizations/[orgId]/agent-apps/page.tsx` with a real list page using
+- Replace `/organizations/[orgId]/applets/page.tsx` with a real list page using
   `aga_apps.organization_id` (already exists on the row) + `listOrgSharedResources(orgId, 'agent_app')`.
-- Add `<ShareButton resourceType="agent_app" />` to each agent-app card on the
-  user-scoped `/agent-apps` list page.
+- Add `<ShareButton resourceType="agent_app" />` to each applet card on the
+  user-scoped `/applets` list page.
 
 ### Migration B — register Content Templates
 
@@ -131,4 +131,4 @@ TS mirror.
 - `app/(a)/organizations/[orgId]/page.tsx` — fetches all counts in parallel; tiles display them.
 - `app/(a)/organizations/[orgId]/notes/page.tsx` — real list of org-owned + shared-with-org notes.
 
-The 5 remaining TODOs (org list pages for agents, agent-apps, files, tasks, tables, workflows, content-templates) all follow the same pattern as the new notes page — clone, swap resource type and display fields.
+The 5 remaining TODOs (org list pages for agents, applets, files, tasks, tables, workflows, content-templates) all follow the same pattern as the new notes page — clone, swap resource type and display fields.

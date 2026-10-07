@@ -1,7 +1,7 @@
 /**
  * Organization admission for `useApiAuth().getHeaders()` — the choke point
  * every hand-rolled consumer inherits (pdf-extractor streamers,
- * features/pdf/api/client.ts, podcast studio, agent-app tracking, …).
+ * features/pdf/api/client.ts, podcast studio, applet tracking, …).
  *
  * Mirrors `lib/api/backend-client.ts` semantics exactly: both identified
  * lanes (JWT and guest fingerprint) run through the ONE fail-closed kernel,

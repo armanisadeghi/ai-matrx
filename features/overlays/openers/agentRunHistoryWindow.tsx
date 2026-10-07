@@ -22,7 +22,7 @@ export interface OpenAgentRunHistoryWindowOptions {
   initialSelectedConversationId?: string | null;
   /**
    * What the history is OF, in the person's words — the window reads
-   * "Run History — <subject>". An agent app passes its own name; without it
+   * "Run History — <subject>". An Applet passes its own name; without it
    * the window names the agent (an app's agent is often unnamed: "— Agent").
    */
   subject?: string | null;

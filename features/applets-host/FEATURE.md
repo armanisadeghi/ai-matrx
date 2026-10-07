@@ -8,7 +8,7 @@
 
 ## Purpose
 
-The web host for Applets: `aimatrx.com/apps/<slug>` opens an Applet that lives only in the database
+The web host for Applets: `aimatrx.com/applets/<slug>` opens an Applet that lives only in the database
 (`app.definition`) and renders it full-bleed through `@ai-matrx/applets`. No Applet code lives in this repo.
 
 Cross-repo system of record: `common-docs/projects/applets/` (PLAN AP-0, CONTRACTS v2.2 §1, §2, §8).
@@ -19,14 +19,14 @@ Package mechanics: `aidream/apps/shared/applets/FEATURE.md`.
 ## Entry points
 
 **Routes**
-- `app/(link)/apps/[app]/layout.tsx` — MOUNTS the Applet (signed in + slug resolves), so it is never
+- `app/(link)/applets/[slug]/layout.tsx` — MOUNTS the Applet (signed in + slug resolves), so it is never
   remounted when its page changes (a page under `[[...path]]` remounts per path; that rebuilt the host and
   re-read everything on every page change and on browser Back).
-- `app/(link)/apps/[app]/[[...path]]/page.tsx` — renders nothing; signed-in only (signed-out →
+- `app/(link)/applets/[slug]/[[...path]]/page.tsx` — renders nothing; signed-in only (signed-out →
   `/login?redirectTo=…`); resolves the slug (`resolve-applet-route.ts`, the viewer's server client — row
   security decides); a miss falls to `not-found.tsx`, which answers through `SlugAccessGate` (token `app`).
 
-- `app/(core)/agent-apps/build/page.tsx` — **build by talking** (`?applet=<id>` changes an existing one):
+- `app/(core)/applets/build/page.tsx` — **build by talking** (`?applet=<id>` changes an existing one):
   `builder/AppletBuilder.tsx`.
 
 **Components**
@@ -34,9 +34,9 @@ Package mechanics: `aidream/apps/shared/applets/FEATURE.md`.
   `mountAppletAsync(record, host, HOST_SCOPE, { renderKind, renderRun, openRun })`.
 - `AppletHostMount` props: `basePath`, `preview` (held writes, in-memory pages), `files` (unsaved buffers laid over
   the saved files — the code workspace's preview), `embedded` (a Space block: pages navigate in place, writes live;
-  `features/agent-apps/embed/AppletInPage.tsx` passes it). Always binds `renderDataPage` → `features/agent-apps/embed/DataPage.tsx`
+  `features/applets/embed/AppletInPage.tsx` passes it). Always binds `renderDataPage` → `features/applets/embed/DataPage.tsx`
   (`<DataPage id>` inside an Applet), and declares the record's `mandates` in the top Agents menu
-  (`useDeclaredSurfaceMandates`, `does` = the job's described goal) — no chips on the page. `/apps/<slug>` and `/p/<slug>` both mount it.
+  (`useDeclaredSurfaceMandates`, `does` = the job's described goal) — no chips on the page. `/applets/<slug>` and `/p/<slug>` both mount it.
 - `AppletForeignKind.tsx` — `renderKind` (`AppletKind`): a kind the app's registry routes renders through
   `KindInstanceRender`; a kind the APPLET's organization owns (read through `host.kinds` → `app.applet_kind`, so a
   viewer from another organization gets it too) compiles its stored web component with `compileStoredComponent`
@@ -60,7 +60,7 @@ Package mechanics: `aidream/apps/shared/applets/FEATURE.md`.
 | `agents` | `createIntelligencePort({ transport })` over `createMatrxTransport(store.getState)`, wrapped by `adoptAppletRunStreams`: every `POST /ai/mandates/*` and conversation turn `POST /ai/conversations/<id>` (`useConversation`) body is teed — one branch to the agents port (`useJob` state), one to `adoptForeignStream` under the server's `X-Request-ID` (the execution system, so the run renders canonically) |
 | `activeOrganizationId` | `selectActiveOrganizationId` at mount — reported to the frame; never narrows a read. The host is NOT rebuilt when it changes (a running job would die) |
 | job organization | `@ai-matrx/applets` 0.3.0 decides for EVERY run (direct and Action): a member of the Applet's organization runs there; anyone else is answered by `resolveOrganization` (`ensureOrganizationContext` — the gate asks), null refuses `organization_required`. No wrapper around `host.intelligence.run` |
-| `nav` | `go(to)` → `history.pushState` to `/apps/<slug><to>` (Next syncs `usePathname`; no server round trip, no remount); `current()` reads the URL; every URL change (incl. Back/Forward) is pushed to `subscribe` listeners. `hrefFor` gives every `<Link>` its real URL (`<basePath><to>`) |
+| `nav` | `go(to)` → `history.pushState` to `/applets/<slug><to>` (Next syncs `usePathname`; no server round trip, no remount); `current()` reads the URL; every URL change (incl. Back/Forward) is pushed to `subscribe` listeners. `hrefFor` gives every `<Link>` its real URL (`<basePath><to>`) |
 | `reportError` | `captureError({ source: "applet" })` |
 | `renderKind` | `AppletKind`: `KindInstanceRender` (the one kind pipeline, `variant="bare"`) for routable kinds; the Applet organization's own kinds through `host.kinds` + code-runtime |
 | `renderRun` | `AppletRunOutput` — `<JobOutput job>` inline (CONTRACTS amendment 2.4) |
@@ -100,5 +100,5 @@ record's own `scope` (`{ entries, shadowDangerousGlobals }`); app-owned modules 
 - 2026-10-06 — Adopted `@ai-matrx/applets` 0.3.0 `resolveOrganization`; deleted the hand-made `host.intelligence.run` wrapper.
 - 2026-10-06 — `@ai-matrx/applets` 0.4.0: job runs stream through the one live-run pipeline (`renderRun` /
   `openRun`, mandate streams adopted into the execution system).
-- 2026-10-07 — Build by talking (AP-0 lane D, G5): `/agent-apps/build`, `AppletBuilder`, preview mode on `AppletHostMount` (held writes via `@ai-matrx/applets/preview`, in-memory pages, errors to Fix it); `basePath` prop (default `/apps/<slug>`).
+- 2026-10-07 — Build by talking (AP-0 lane D, G5): `/applets/build`, `AppletBuilder`, preview mode on `AppletHostMount` (held writes via `@ai-matrx/applets/preview`, in-memory pages, errors to Fix it); `basePath` prop (default `/applets/<slug>`).
 - 2026-10-07 — Adopted `@ai-matrx/applets` 0.7.3: `hrefFor` on every Link; the code preview overlays the open unsaved file (`files`); the record's `scope` replaces `allowed_imports`/`component_code` (writers and DB readers rewritten).

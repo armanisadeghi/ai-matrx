@@ -9,7 +9,7 @@
  *   client paint.
  * - INACTIVE PANELS UNMOUNT; `forceMount` is opt-in. Force-mounting every
  *   panel kept hidden tabs live — effects running, subscriptions open — and on
- *   the agent-apps executions page a HIDDEN tab won a provider tie-break and
+ *   the applets executions page a HIDDEN tab won a provider tie-break and
  *   served the VISIBLE tab the other tab's rows (D193/D194).
  *
  * 🚨 AND ONE THIS FILE ADDS: A TAB ACTIVATES ON `click`, NOT ONLY ON

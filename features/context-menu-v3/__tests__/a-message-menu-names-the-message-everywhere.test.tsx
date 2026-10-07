@@ -1,7 +1,7 @@
 /**
  * THE SAME MESSAGE GETS THE SAME MENU HEADING EVERYWHERE — a forcing function.
  *
- * Reported 2026-09-28 on /agent-apps/<id>/run → Run History: a chat message's
+ * Reported 2026-09-28 on /applets/manage/<id>/run → Run History: a chat message's
  * right-click menu was headed "Content: <the whole text>" while the same kind
  * of message elsewhere read "AI answer · <time>". The per-answer registry menu
  * named its message (its content source is `chat-message`); the transcript's

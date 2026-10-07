@@ -84,7 +84,7 @@ cloud-sync `MsgBanner`. LargeIndicator's `LargeControls` had one call site and
 ~20 closure values, so it was inlined into that call site instead.
 
 The six "worst product files" this doc used to name
-(`ContainerComparisonDetails`, `agent-apps/apps/page.tsx`, `ShortcutDirectory`,
+(`ContainerComparisonDetails`, `applets/apps/page.tsx`, `ShortcutDirectory`,
 `ShortcutList`, `DeprecatedModelsAudit`, `TasksTableView`) were already at zero
 when this batch started — re-derive from the scoreboard, never from this list.
 

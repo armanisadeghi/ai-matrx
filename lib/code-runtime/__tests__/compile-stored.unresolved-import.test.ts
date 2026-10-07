@@ -1,7 +1,7 @@
 /**
  * THE UNRESOLVED-IMPORT RULE (Law 4, 2026-10-01).
  *
- * A stored tool display / agent-app slot that imports something the sandbox
+ * A stored tool display / applet slot that imports something the sandbox
  * cannot supply must (a) SHOW the gap where it renders — a marked stand-in
  * naming the missing import, with wrapped content still rendered — and
  * (b) land in the error queue with the import path and the stored component
@@ -82,7 +82,7 @@ describe("compileStoredComponent — unresolved imports announce themselves", ()
 
   it("files an icon the allowlisted module does not export", async () => {
     const result = compileStoredComponent({
-      origin: "agent-app:3f1c2a9e:slot:header",
+      origin: "applet:3f1c2a9e:slot:header",
       code: `
         import { CloudSunRainbow } from "lucide-react";
         export default function Header() {
@@ -98,7 +98,7 @@ describe("compileStoredComponent — unresolved imports announce themselves", ()
     await flushCaptures();
     const captures = unresolvedCaptures();
     expect(captures).toHaveLength(1);
-    expect(captures[0].relation).toBe("agent-app:3f1c2a9e:slot:header");
+    expect(captures[0].relation).toBe("applet:3f1c2a9e:slot:header");
     expect(captures[0].message).toContain('"lucide-react"');
   });
 
@@ -173,7 +173,7 @@ describe("compileStoredComponent — unresolved-import filing is once and out of
 
   it("files nothing synchronously inside the compile (it runs during render)", async () => {
     compileStoredComponent({
-      origin: "agent-app:7b2e41d0:slot:header",
+      origin: "applet:7b2e41d0:slot:header",
       code: HEADER,
       allowedImports: ["react"],
     });
@@ -186,7 +186,7 @@ describe("compileStoredComponent — unresolved-import filing is once and out of
   it("re-mounting the same slot does not raise the count or the unseen badge", async () => {
     for (let mount = 0; mount < 4; mount++) {
       compileStoredComponent({
-        origin: "agent-app:7b2e41d0:slot:header",
+        origin: "applet:7b2e41d0:slot:header",
         code: HEADER,
         allowedImports: ["react"],
       });
@@ -196,21 +196,21 @@ describe("compileStoredComponent — unresolved-import filing is once and out of
     const captures = unresolvedCaptures();
     expect(captures).toHaveLength(1);
     expect(captures[0].count).toBe(1);
-    expect(captures[0].relation).toBe("agent-app:7b2e41d0:slot:header");
+    expect(captures[0].relation).toBe("applet:7b2e41d0:slot:header");
   });
 
   it("still files the same import separately for a different stored component", async () => {
     for (const origin of [
-      "agent-app:7b2e41d0:slot:header",
-      "agent-app:c09a5f13:slot:header",
+      "applet:7b2e41d0:slot:header",
+      "applet:c09a5f13:slot:header",
     ]) {
       compileStoredComponent({ origin, code: HEADER, allowedImports: ["react"] });
     }
     await flushCaptures();
 
     expect(unresolvedCaptures().map((c) => c.relation).sort()).toEqual([
-      "agent-app:7b2e41d0:slot:header",
-      "agent-app:c09a5f13:slot:header",
+      "applet:7b2e41d0:slot:header",
+      "applet:c09a5f13:slot:header",
     ]);
   });
 });

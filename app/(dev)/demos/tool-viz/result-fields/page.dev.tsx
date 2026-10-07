@@ -2403,7 +2403,7 @@ export default function ResultFieldsGalleryPage() {
           fs_list (collection) · shell_execute (terminal) · memory (sparse
           status) · travel_get_weather (rich visual). Each is fetched by
           `tool_name` and compiled at runtime through the same Babel sandbox the
-          Agent Apps runtime uses — the code-first path that scales to user- and
+          Applets runtime uses — the code-first path that scales to user- and
           agent-authored components across every platform.
         </p>
         <div>

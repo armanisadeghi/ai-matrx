@@ -7,7 +7,7 @@
  * like `cat_delete` and every sibling writer already did." Same `cat_archive`
  * RPC family the prior lane already fixed for
  * components/admin/ContentBlocksManager.tsx (commit 8f48935eef) and this
- * lane fixed for the agent-app category dialog. Traced during
+ * lane fixed for the applet category dialog. Traced during
  * data-doctrine-adoption v5 lane UNDONE-COPY-CENSUS-3.
  *
  * Class guard: scans every file calling `deleteCategory(` (the org

@@ -115,9 +115,9 @@ const SUB_AREAS: ModuleSubArea[] = [
     ],
   },
   {
-    title: "Agent Apps",
+    title: "Applets",
     status: "Live",
-    href: "/agent-apps",
+    href: "/applets",
     items: [
       "Wrap agents as UI surfaces",
       "Public share links",
@@ -170,7 +170,7 @@ export default function AgentsLanding() {
       subAreas={SUB_AREAS}
       finalCtaHeading="Build the agents your team will actually use"
       finalCtaDescription="Templates, tools, models, output schemas — everything you need to ship a real agent. Free to start."
-      relatedModules={["/chat", "/agent-apps", "/scopes"]}
+      relatedModules={["/chat", "/applets", "/scopes"]}
     />
   );
 }

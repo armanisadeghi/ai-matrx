@@ -12,7 +12,7 @@
  *
  * RED against HEAD before the fix: 13 findings across 11 files — admin
  * breadcrumbs and the admin nav tree, the admin sidebar menu and its submenu,
- * the v3 menu's own submenu, the print section menu, the agent-apps filter
+ * the v3 menu's own submenu, the print section menu, the applets filter
  * popover, the attached-document chip, the shared-canvas popover, the
  * ProTextarea menu, and two hover cards. GREEN: 0.
  */

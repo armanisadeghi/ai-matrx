@@ -287,7 +287,7 @@ The "let user upload an image, optionally crop, then persist as an asset" flow l
 | `components/official/ImageAssetUploader.tsx` | Image upload |
 | `features/files/components/core/FileUploadDropzone/FileUploadDropzone.tsx` | **canonical for cloud-files** |
 | `features/image-manager/components/FullImageStudioTab.tsx` | Image manager hub |
-| `features/agent-apps/components/inputs/AgentAppImageField.tsx` | Agent app image input |
+| `features/applets/components/inputs/AppletImageField.tsx` | Applet image input |
 | `features/resource-manager/resource-picker/UploadResourcePicker.tsx` | Resource picker upload |
 | `features/public-chat/components/resource-picker/PublicUploadResourcePicker.tsx` | Public chat resource picker upload |
 | `packages/chat/src/agents/components/inputs/input-components/MediaVariableInput.tsx` | Agent variable input |

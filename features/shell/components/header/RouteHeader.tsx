@@ -7,7 +7,7 @@
 //     never paint over the title or the actions — not before the first
 //     measurement, not in a hidden tab whose ResizeObservers are frozen.
 //     (2026-09-27: the center used to be `absolute left-1/2`; a stale
-//     measurement drew /agent-apps/<id>'s "Switch view" over "Fact Checker
+//     measurement drew /applets/manage/<id>'s "Switch view" over "Fact Checker
 //     Published" at 768px.) Inside its clipping cell the center is inset to the
 //     symmetric slot (`total - 2 * max(left, right)`), so it still sits on the
 //     header's true center and never shifts when left/right widths change.

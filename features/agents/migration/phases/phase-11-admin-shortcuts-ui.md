@@ -53,7 +53,7 @@ No bugs discovered in the shared components during this phase.
 The admin shortcuts route was never a narrow "shortcuts only" surface — it's an umbrella for every global-scope agent artifact. Renamed to `system-agents` and expanded to cover:
 
 - Builtin agents (list, build, run, create) — reuses `AgentsGrid` + `AgentBuilderPage` + `AgentRunnerPage` from the `(a)/agents/` routes
-- System-scope agent apps — new `/apps` sub-route
+- System-scope Applets — new `/apps` sub-route
 - Existing shortcut/category/content-block surfaces (unchanged in behavior, just moved)
 
 See: `/Users/armanisadeghi/.claude/plans/i-need-you-to-binary-patterson.md` for the full plan.

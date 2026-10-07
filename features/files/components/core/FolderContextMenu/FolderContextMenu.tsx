@@ -6,7 +6,7 @@
  * folders get the same vocabulary (Open, Copy link, Share, Move, Rename,
  * Visibility, New inside, Delete) so users don't have to learn two menus.
  *
- * Virtual folders (Notes / Code Snippets / Agent Apps adapter roots) hide
+ * Virtual folders (Notes / Code Snippets / Applets adapter roots) hide
  * actions that don't apply to their backing store — Copy link / Share /
  * Visibility — because share-token semantics + the Python file ACL tables
  * only cover real cloud-folders today.

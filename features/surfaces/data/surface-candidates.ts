@@ -326,7 +326,7 @@ export const SURFACE_CANDIDATES: readonly SurfaceCandidate[] = [
   {
     name: "matrx-admin/system-agents/apps",
     client_name: "matrx-admin",
-    description: "System agent apps admin",
+    description: "System Applets admin",
     sort_order: 300,
     is_active: false,
     group: "page",

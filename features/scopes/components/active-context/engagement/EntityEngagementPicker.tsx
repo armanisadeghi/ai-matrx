@@ -3,9 +3,9 @@
 // features/scopes/components/active-context/engagement/EntityEngagementPicker.tsx
 //
 // An EngagementPicker for a RECORD that carries organization / project / task
-// foreign keys and scope tags (an agent app today; any entity tomorrow). Each
+// foreign keys and scope tags (an Applet today; any entity tomorrow). Each
 // dimension persists on its own channel, exactly as the replaced
-// AgentAppHierarchyCascade did (lane HIERARCHY-CASCADE, 2026-09-25):
+// AppletHierarchyCascade did (lane HIERARCHY-CASCADE, 2026-09-25):
 //   - organization / project / task → the host's FK columns, through the
 //     three callbacks (one write per dimension that actually changed);
 //   - scope tags → `useEntityScopes().setScopes` (the canonical association

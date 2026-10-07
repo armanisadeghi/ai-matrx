@@ -5,7 +5,7 @@
 // A guest gets a link through sign-up that comes back here with ?use=1. A signed-in person gets the
 // data template's own install door (TemplatePreview: the organization it saves to — held until one is
 // set — the live progress and the landing); when the install lands, the Applet is copied into that
-// organization with its sources rebound, and "Open your app" goes to /apps/<slug>. An organization
+// organization with its sources rebound, and "Open your app" goes to /applets/<slug>. An organization
 // that already has the data template gets "Add the app" over the install it has.
 
 import Link from "next/link";

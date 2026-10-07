@@ -9,7 +9,7 @@
 //   left  — the sentence box ("Build" for a new app, "Change it" for this one), the builder's one-line note,
 //           and Fix it when the preview reported an error;
 //   right — the preview: the saved version mounted through the real host with HELD writes; "Use it"
-//           publishes it at /apps/<slug>.
+//           publishes it at /applets/<slug>.
 // While the builder works its run streams in the floating LiveRunWindow (never a spinner).
 
 import { useEffect, useState } from "react";
@@ -94,7 +94,7 @@ export function AppletBuilder({ appletId: initialId }: { appletId: string | null
       const answer = await writer.run<BuildAnswer>({
         mandateKey: fix ? FIX : BUILD,
         surfaceKey: "applets:build",
-        sourceFeature: "agent-app",
+        sourceFeature: "applet",
         expect: "json",
         initiation: "user",
         organizationId: current?.organizationId ?? organizationId,
@@ -191,7 +191,7 @@ export function AppletBuilder({ appletId: initialId }: { appletId: string | null
                   Use it
                 </Button>
               ) : null}
-              <Link href={`/apps/${saved.slug}`} target="_blank" className="inline-flex items-center gap-1 text-primary">
+              <Link href={`/applets/${saved.slug}`} target="_blank" className="inline-flex items-center gap-1 text-primary">
                 <ExternalLink className="h-4 w-4" /> Open
               </Link>
             </div>

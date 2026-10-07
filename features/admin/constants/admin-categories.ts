@@ -464,7 +464,7 @@ export const adminCategoriesData: AdminCategory[] = [
       {
         title: "Agents Dashboard",
         description:
-          "Hub for every global-scope agent surface: builtin agents, shortcuts, categories, content blocks, and system agent apps.",
+          "Hub for every global-scope agent surface: builtin agents, shortcuts, categories, content blocks, and system Applets.",
         iconName: "Zap",
         link: "/administration/agents/system-agents",
         isNew: true,
@@ -520,7 +520,7 @@ export const adminCategoriesData: AdminCategory[] = [
       {
         title: "Agents Apps",
         description:
-          "Global-scope agent apps available to every user. Distinct from moderation of user-published apps.",
+          "Global-scope Applets available to every user. Distinct from moderation of user-published apps.",
         iconName: "Bot",
         link: "/administration/agents/system-agents/apps",
         isNew: true,
@@ -551,9 +551,9 @@ export const adminCategoriesData: AdminCategory[] = [
       },
       {
         title: "New App",
-        description: "Create a new global-scope system agent app.",
+        description: "Create a new global-scope system Applet.",
         iconName: "Plus",
-        link: "/agent-apps/build",
+        link: "/applets/build",
         isNew: true,
       },
       {
@@ -567,53 +567,53 @@ export const adminCategoriesData: AdminCategory[] = [
     ],
   },
   {
-    name: "Agent Apps",
-    landingPath: "/administration/agents/agent-apps",
+    name: "Applets",
+    landingPath: "/administration/applets",
     iconName: "Boxes",
     iconColor: "text-indigo-600",
     features: [
       {
-        title: "Agent Apps Dashboard",
+        title: "Applets Dashboard",
         description:
-          "Hub for moderating user-published agent apps: featured picks, verification, and quick stats.",
+          "Hub for moderating user-published Applets: featured picks, verification, and quick stats.",
         iconName: "LayoutDashboard",
-        link: "/administration/agents/agent-apps",
+        link: "/administration/applets",
         isNew: true,
       },
       {
-        title: "All Agent Apps",
+        title: "All Applets",
         description:
-          "Every agent app across the platform — filter, feature, verify, and moderate.",
+          "Every Applet across the platform — filter, feature, verify, and moderate.",
         iconName: "Boxes",
-        link: "/administration/agents/agent-apps/apps",
+        link: "/administration/applets/all",
       },
       {
-        title: "Agent App Categories",
+        title: "Applet Categories",
         description:
-          "Manage the static category list shown in public agent-app browsing.",
+          "Manage the static category list shown in public applet browsing.",
         iconName: "Folder",
-        link: "/administration/agents/agent-apps/categories",
+        link: "/administration/applets/categories",
       },
       {
-        title: "Agent App Executions",
+        title: "Applet Executions",
         description:
-          "Recent runs and errors across every agent app. Resolve incidents and inspect usage.",
+          "Recent runs and errors across every Applet. Resolve incidents and inspect usage.",
         iconName: "LineChart",
-        link: "/administration/agents/agent-apps/executions",
+        link: "/administration/applets/executions",
       },
       {
-        title: "Agent App Analytics",
+        title: "Applet Analytics",
         description:
-          "Usage and performance analytics across published agent apps.",
+          "Usage and performance analytics across published Applets.",
         iconName: "BarChart3",
-        link: "/administration/agents/agent-apps/analytics",
+        link: "/administration/applets/analytics",
       },
       {
-        title: "Agent App Rate Limits",
+        title: "Applet Rate Limits",
         description:
-          "Configure and audit rate limits for agent app invocations.",
+          "Configure and audit rate limits for Applet invocations.",
         iconName: "Shield",
-        link: "/administration/agents/agent-apps/rate-limits",
+        link: "/administration/applets/rate-limits",
       },
     ],
   },
