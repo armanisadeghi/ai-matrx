@@ -1,11 +1,10 @@
 // features/dictionary/utils/io.ts
 //
 // Import/export for the dictionary manager's "advanced" path: CSV (with a
-// downloadable template) and JSON. Parsing reuses papaparse (the same library
-// components/user-generated-table-data/ImportTableModal.tsx uses). All output
-// is a list of DictEntryDraft ready for dictionaryService.upsertEntries.
+// downloadable template) and JSON, through Alchemy's delimited parser and CSV writer.
+// All output is a list of DictEntryDraft ready for dictionaryService.upsertEntries.
 
-import Papa from "papaparse";
+import { parseDelimited, toDelimitedText } from "@ai-matrx/alchemy/operate/read";
 import type { DictEntry, DictEntryDraft } from "@/features/dictionary/types";
 import { downloadFile } from "@ai-matrx/kit/download";
 
@@ -47,7 +46,7 @@ export function parseDictCsv(csv: string): DictImportResult {
   const drafts: DictEntryDraft[] = [];
   const skipped: Array<{ row: number; reason: string }> = [];
 
-  const parsed = Papa.parse<Record<string, string>>(csv, {
+  const parsed = parseDelimited(csv, {
     header: true,
     skipEmptyLines: true,
     transformHeader: (h) => h.trim().toLowerCase(),
@@ -124,7 +123,7 @@ export function entriesToCsv(entries: DictEntry[]): string {
     category: e.category ?? "",
     is_active: e.is_active ? "true" : "false",
   }));
-  return Papa.unparse({ fields: [...DICT_CSV_COLUMNS], data: rows });
+  return toDelimitedText([...DICT_CSV_COLUMNS], rows);
 }
 
 /** Serialise entries to a pretty JSON string. */
@@ -146,9 +145,7 @@ export function entriesToJson(entries: DictEntry[]): string {
 
 /** The downloadable CSV template — header + two illustrative example rows. */
 export function dictCsvTemplate(): string {
-  return Papa.unparse({
-    fields: [...DICT_CSV_COLUMNS],
-    data: [
+  return toDelimitedText([...DICT_CSV_COLUMNS], [
       {
         term: "Rejuvina",
         sounds_like: "rejuvena|rejuvinah",
@@ -167,8 +164,7 @@ export function dictCsvTemplate(): string {
         category: "People",
         is_active: "true",
       },
-    ],
-  });
+  ]);
 }
 
 /** Trigger a client-side download of text content as a named file. */

@@ -2,7 +2,7 @@
  * An extraction export a person opens (CSV, XLSX, TSV, markdown table) never
  * holds raw `{"__kind":…}` JSON. The explicit "JSON" download stays data.
  */
-import * as XLSX from "xlsx";
+import { readWorkbook } from "@ai-matrx/alchemy/operate/read";
 import { cellToString, toCSV, toJSON, toMarkdownTable, toMatrix, toTSV, toXLSXBlob } from "./export";
 
 const KIND = { __kind: "checklist", title: "Packing", items: [{ text: "Passport" }] };
@@ -31,12 +31,19 @@ describe("extraction exports never hand a person raw kind JSON", () => {
       expect(out).toContain("Passport");
     }
   });
-  it("XLSX cells (toXLSXBlob builds its sheet from toMatrix) are the kind's markdown", () => {
-    const sheet = XLSX.utils.aoa_to_sheet(toMatrix(columns, rows));
-    const text = JSON.stringify(XLSX.utils.sheet_to_json(sheet, { header: 1 }));
+  it("XLSX cells (toXLSXBlob builds its sheet from toMatrix) are the kind's markdown", async () => {
+    const blob = await toXLSXBlob(columns, rows);
+    // jsdom's Blob has no arrayBuffer(); FileReader reads the same bytes.
+    const bytes = await new Promise<ArrayBuffer>((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result as ArrayBuffer);
+      reader.onerror = () => reject(reader.error);
+      reader.readAsArrayBuffer(blob);
+    });
+    const book = await readWorkbook(new Uint8Array(bytes));
+    const text = JSON.stringify(book.sheets[0]!.grid());
     expect(text).not.toContain("__kind");
     expect(text).toContain("Passport");
-    expect(toXLSXBlob(columns, rows).size).toBeGreaterThan(0);
   });
   it("kindless cells are untouched", () => {
     expect(toMatrix(columns, rows)[1][2]).toBe("just text");

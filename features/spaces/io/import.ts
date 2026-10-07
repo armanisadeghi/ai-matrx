@@ -54,8 +54,8 @@ async function fromHtml(html: string, fallbackTitle: string): Promise<ImportedPa
 }
 
 async function fromCsv(csv: string, title: string): Promise<ImportedPage> {
-  const { default: Papa } = await import("papaparse");
-  const parsed = Papa.parse<string[]>(csv.replace(/^﻿/, ""), { skipEmptyLines: true });
+  const { parseDelimited } = await import("@ai-matrx/alchemy/operate/read");
+  const parsed = parseDelimited(csv.replace(/^﻿/, ""), { skipEmptyLines: true });
   const rows = parsed.data.filter((r) => Array.isArray(r) && r.some((c) => String(c).trim() !== ""));
   if (!rows.length) return { title, blocks: [], warnings: ["The file has no rows."] };
   const width = Math.max(...rows.map((r) => r.length));

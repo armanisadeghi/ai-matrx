@@ -2,7 +2,7 @@
 
 **Status:** `active`
 **Tier:** `2`
-**Last updated:** `2026-10-06`
+**Last updated:** `2026-10-07`
 
 ---
 
@@ -26,11 +26,24 @@ Package mechanics: `aidream/apps/shared/applets/FEATURE.md`.
   `/login?redirectTo=…`); resolves the slug (`resolve-applet-route.ts`, the viewer's server client — row
   security decides); a miss falls to `not-found.tsx`, which answers through `SlugAccessGate` (token `app`).
 
+- `app/(core)/agent-apps/build/page.tsx` — **build by talking** (`?applet=<id>` changes an existing one):
+  `builder/AppletBuilder.tsx`.
+
 **Components**
 - `AppletHostMount.tsx` — builds ONE `createPlatformHost` per Applet and renders
   `mountAppletAsync(record, host, HOST_SCOPE, { renderKind, renderRun, openRun })`.
+- `AppletForeignKind.tsx` — `renderKind` (`AppletKind`): a kind the app's registry routes renders through
+  `KindInstanceRender`; a kind the APPLET's organization owns (read through `host.kinds` → `app.applet_kind`, so a
+  viewer from another organization gets it too) compiles its stored web component with `compileStoredComponent`
+  and renders it with `data={value}`; a build failure is captured (`foreign_kind_unbuilt`) and the shared floor shows.
 - `AppletRunOutput.tsx` — `renderRun`: a job run through `LiveRunDisplay` (→ `MarkdownStream` → kind
   registry) keyed on the run's requestId; before/without an adopted request, the run's settled kind or error.
+
+- `builder/AppletBuilder.tsx` + `builder/build-applet.ts` — one sentence → `readAppletCatalogue` (as the
+  viewer) → mandate `applets.build` (`applets.fix` for Fix it) via `useHeadlessAgentJson`, the run streaming
+  in the floating `LiveRunWindow` → the record saved as a draft (a change = UPDATE = new version) → preview
+  through `AppletHostMount preview` (live reads, writes held by `holdWrites`, errors → Fix it) → "Use it"
+  publishes.
 
 ---
 
@@ -44,7 +57,7 @@ Package mechanics: `aidream/apps/shared/applets/FEATURE.md`.
 | job organization | `@ai-matrx/applets` 0.3.0 decides for EVERY run (direct and Action): a member of the Applet's organization runs there; anyone else is answered by `resolveOrganization` (`ensureOrganizationContext` — the gate asks), null refuses `organization_required`. No wrapper around `host.intelligence.run` |
 | `nav` | `go(to)` → `history.pushState` to `/apps/<slug><to>` (Next syncs `usePathname`; no server round trip, no remount); `current()` reads the URL; every URL change (incl. Back/Forward) is pushed to `subscribe` listeners |
 | `reportError` | `captureError({ source: "applet" })` |
-| `renderKind` | `KindInstanceRender` (the one kind pipeline, `variant="bare"`) |
+| `renderKind` | `AppletKind`: `KindInstanceRender` (the one kind pipeline, `variant="bare"`) for routable kinds; the Applet organization's own kinds through `host.kinds` + code-runtime |
 | `renderRun` | `AppletRunOutput` — `<JobOutput job>` inline (CONTRACTS amendment 2.4) |
 | `openRun` | `openLiveRunWindowAction` — the floating `LiveRunWindow`, one instance per (Applet, mandate) |
 
@@ -57,7 +70,11 @@ record's own `allowed_imports`; app-owned modules come from `lib/code-runtime/st
 
 - One canonical path: an Applet is a row, never a code registry. The old person-apps registry is deleted.
 - Reads and writes run as the viewer; the host never picks an organization for a read.
-- The surface `applets/<id>` is written by `ui.save_applet_surface` when the record is saved (AP-2 writer).
+- The surface `applets/<id>` follows the record: trigger `zzz_applet_surface_follows_record` on `app.definition`
+  calls `ui.save_applet_surface` (AP-2's writer) on insert, rename, re-parent, archive and restore, carrying its
+  values and Actions forward. Values and Actions are edited through the writer itself.
+- Entity sources (`{ alias, entity }`) read and write platform records through `@ai-matrx/entity-data` inside the
+  package host (applets >= 0.7.0); custom tables through `@ai-matrx/records`. One hook family over both.
 - The host's surface is alchemy's `createSurfacePort` (applets >= 0.5.0); this mount binds `surfaces.live`
   to `liveValues`, so `surface.getValue` answers an unset name from the page's live capture.
 
@@ -65,6 +82,8 @@ record's own `allowed_imports`; app-owned modules come from `lib/code-runtime/st
 
 ## Change Log
 
+- 2026-10-07 — `renderKind` is `AppletKind` (foreign kinds, PLAN AP-0 item 11); the Applet surface follows its record
+  by trigger; entity sources documented (AP-0 lane A, contracts 2.5).
 - 2026-10-06 — Created (AP-0, gate G1). Replaced `features/person-apps` (code registry + `PersonAppMount`
   + `holloway-content`) with the database-backed host; Holloway is now the `holloway-content` Applet row.
 - 2026-10-06 — The Applet mounts in the route LAYOUT and navigates with `pushState`, so a page change or
@@ -73,3 +92,4 @@ record's own `allowed_imports`; app-owned modules come from `lib/code-runtime/st
 - 2026-10-06 — Adopted `@ai-matrx/applets` 0.3.0 `resolveOrganization`; deleted the hand-made `host.intelligence.run` wrapper.
 - 2026-10-06 — `@ai-matrx/applets` 0.4.0: job runs stream through the one live-run pipeline (`renderRun` /
   `openRun`, mandate streams adopted into the execution system).
+- 2026-10-07 — Build by talking (AP-0 lane D, G5): `/agent-apps/build`, `AppletBuilder`, preview mode on `AppletHostMount` (held writes via `@ai-matrx/applets/preview`, in-memory pages, errors to Fix it); `basePath` prop (default `/apps/<slug>`).

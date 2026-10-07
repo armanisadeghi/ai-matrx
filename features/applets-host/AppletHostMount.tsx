@@ -33,8 +33,7 @@ import { createMatrxTransport } from "@/lib/api/matrx-transport";
 import { captureError } from "@/lib/diagnostics/errorCaptureStore";
 import { provideStoredComponentScopeModules } from "@/lib/code-runtime/stored-scope";
 import { ensureOrganizationContext } from "@/lib/organization/organization-gate";
-import KindInstanceRender from "@/features/content-ir/studio/components/KindInstanceRender";
-import type { KindInstanceRenderProps } from "@ai-matrx/content-ir-react";
+import { AppletKind } from "@/features/applets-host/AppletForeignKind";
 
 /** What every Applet may import beside its own files (the record adds its own entries). */
 const HOST_SCOPE = {
@@ -52,17 +51,6 @@ function locationOf(slug: string, pathname: string, search: string): NavLocation
     params[k] = v;
   });
   return { path: rest.split("/").filter(Boolean).map(decodeURIComponent), params };
-}
-
-function renderKind(kind: string, value: unknown) {
-  return (
-    <KindInstanceRender
-      kind={kind}
-      value={value as KindInstanceRenderProps["value"]}
-      showRoutingNote={false}
-      variant="bare"
-    />
-  );
 }
 
 function renderRun(run: JobRunView) {
@@ -148,7 +136,8 @@ export function AppletHostMount({ appletId, slug }: { appletId: string; slug: st
       .record()
       .then((record) =>
         mountAppletAsync(record, host, HOST_SCOPE, {
-          renderKind,
+          // The app's kind registry, or — for a kind the Applet's organization owns — the Applet's own read.
+          renderKind: (kind: string, value: unknown) => <AppletKind host={host} kind={kind} value={value} />,
           renderRun,
           // Where an Applet has no room to stream inline: the floating run window, one per job.
           openRun(run) {

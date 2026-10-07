@@ -7,6 +7,8 @@
 // the image itself: a picture of an organization outlives the screen it was
 // taken from, and a filename does not survive being pasted into a deck.
 
+import { downloadFile } from "@ai-matrx/kit/download";
+
 export type ChartExportFormat = "png" | "pdf";
 
 function fileName(title: string, ext: string): string {
@@ -50,22 +52,16 @@ export async function exportChart(
   ctx.font = "28px system-ui, -apple-system, Segoe UI, sans-serif";
   ctx.fillText(caption, pad * 2, chart.height + 46);
 
+  const { canvasToBlob, pagesToPdf } = await import("@ai-matrx/alchemy/operate/capture");
   if (opts.format === "png") {
-    const blob = await new Promise<Blob | null>((r) => out.toBlob(r, "image/png"));
-    if (!blob) throw new Error("The image could not be encoded.");
-    save(blob, fileName(opts.title, "png"));
+    save(await canvasToBlob(out, "image/png"), fileName(opts.title, "png"));
     return;
   }
-  const { jsPDF } = await import("jspdf");
-  const landscape = out.width >= out.height;
-  const doc = new jsPDF({ orientation: landscape ? "landscape" : "portrait", unit: "pt", format: "a4" });
-  const pageW = doc.internal.pageSize.getWidth();
-  const pageH = doc.internal.pageSize.getHeight();
   // The whole chart on one page — cropping would silently drop boxes.
-  const scale = Math.min((pageW - 48) / out.width, (pageH - 48) / out.height);
   // JPEG + FAST: a PNG data URL embeds uncompressed (megabytes for a few cards).
-  doc.addImage(out.toDataURL("image/jpeg", 0.92), "JPEG", 24, 24, out.width * scale, out.height * scale, undefined, "FAST");
-  save(doc.output("blob"), fileName(opts.title, "pdf"));
+  const pdf = await pagesToPdf(
+    [{ image: out, imageType: "JPEG", quality: 0.92, compression: "FAST", placement: { top: 24, right: 24, bottom: 24, left: 24 } }],
+    { orientation: out.width >= out.height ? "landscape" : "portrait", unit: "pt", format: "a4" },
+  );
+  save(pdf, fileName(opts.title, "pdf"));
 }
-
-import { downloadFile } from "@ai-matrx/kit/download";

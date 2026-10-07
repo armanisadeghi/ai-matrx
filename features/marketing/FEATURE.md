@@ -8,6 +8,29 @@ Supporting-keyword chips in the Page Workspace may wrap their label and
 metadata, but keep their action buttons together and inside the phone viewport.
 The shared 44px touch floor must never make a keyword action unreachable.
 
+## Applet public face and app templates (AP-0 items 9-10, 2026-10-07)
+
+`features/marketing/applets/` is the public, search-built face of Applets (records in
+`app.definition`). Routes: `/applets/<slug>` (one Applet's introductory page) and `/templates/apps`
+(the app-template gallery, linked from `/templates`'s family). Both are server-rendered from two
+anon doors that answer ONLY what an owner published to the web (`published_to_web`):
+`public.applet_public_intro(p_slug)` and `public.applets_public(p_templates_only)` (registered in
+`platform.client_callable_door`). Never rows, code or sources. Columns on the record:
+`screenshots` (`[{url, alt}]`) and `template` (`{template_id, catalogue_id, template_slug, bind}`).
+
+- **"Use this template"** = the data template's own install door (`TemplatePreview`, its
+  `onInstalled` host step) into the organization the person sets (held when none), then
+  `copyAppletFromTemplate` copies the template Applet into that organization with each alias in
+  `template.bind` rebound to the table the install made for its token (`installResolver`).
+  Idempotent per install (`metadata.from_template`). An organization that already has the data
+  template gets "Add the app" over its install.
+- **Templates are ours first:** three platform Applets in the system organization over existing
+  data templates — `client-approval-portal` (T0015), `sales-pipeline-crm` (T0092),
+  `time-tracking-board` (T0400). Sources live in `scripts/applets-templates/templates.mjs`;
+  `seed-sql.mjs <slug>` prints the base64 upsert applied through the Supabase MCP.
+- Sitemap: the gallery, every template page, and every other published Applet that passes the
+  search-engine switch (`listSearchEngineIndexedRecords('app')`).
+
 ## Internal Authority Router
 
 The site layout's route-child boundary always provides a vertical-scroll

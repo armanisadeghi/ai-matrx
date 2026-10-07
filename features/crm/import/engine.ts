@@ -15,7 +15,7 @@
 //   * Within the file, the first row wins an identity; later rows are marked
 //     `duplicate_in_file` so one CSV can never create the same person twice.
 
-import Papa from "papaparse";
+import { parseDelimited, readWorkbook, toDelimitedText } from "@ai-matrx/alchemy/operate/read";
 import type { PartyKind, PartyRef } from "../types";
 import {
   addAffiliation,
@@ -130,9 +130,9 @@ export function parseDelimitedText(text: string): ParsedImportData {
     );
   }
   // Strip a UTF-8 BOM (Excel exports) and dedupe repeated header names —
-  // papaparse's object mode collapses duplicate keys. Parse as a matrix so
+  // a header-keyed parse collapses duplicate keys. Parse as a matrix so
   // every exported column survives and can be mapped independently.
-  const parsed = Papa.parse<string[]>(text.replace(/^﻿/, "").trim(), {
+  const parsed = parseDelimited(text.replace(/^﻿/, "").trim(), {
     skipEmptyLines: "greedy",
   });
   const { headers, rows, rowWarnings } = rowsFromMatrix(parsed.data);
@@ -327,15 +327,10 @@ export async function parseImportFile(
 
   // SheetJS is heavy; this user-triggered import keeps it out of the route's
   // initial bundle and loads it only after an Excel file is chosen.
-  const XLSX = await import("xlsx");
-  const workbook = XLSX.read(await file.arrayBuffer(), { type: "array" });
-  for (const sheetName of workbook.SheetNames) {
-    const sheet = workbook.Sheets[sheetName];
-    const matrix = XLSX.utils.sheet_to_json<unknown[]>(sheet, {
-      header: 1,
-      raw: false,
-      defval: "",
-    });
+  const workbook = await readWorkbook(await file.arrayBuffer());
+  for (const sheet of workbook.sheets) {
+    const sheetName = sheet.name;
+    const matrix = sheet.grid({ raw: false, defval: "" });
     if (matrix.length < 2) continue;
     const { headers, rows, rowWarnings } = rowsFromMatrix(matrix);
     const format = extension as "xlsx" | "xls";
@@ -343,7 +338,7 @@ export async function parseImportFile(
       headers,
       rows,
       parseWarnings: [
-        ...(workbook.SheetNames.length > 1
+        ...(workbook.sheetNames.length > 1
           ? [
               `Using worksheet “${sheetName}”. Import additional worksheets separately.`,
             ]
@@ -1025,8 +1020,8 @@ export async function commitImport(
 
 export function buildTemplateCsv(kind: PartyKind): string {
   if (kind === "person") {
-    return Papa.unparse({
-      fields: [
+    return toDelimitedText(
+      [
         "First name",
         "Last name",
         "Job title",
@@ -1034,7 +1029,7 @@ export function buildTemplateCsv(kind: PartyKind): string {
         "Email",
         "Phone",
       ],
-      data: [
+      [
         [
           "Ada",
           "Lovelace",
@@ -1044,11 +1039,11 @@ export function buildTemplateCsv(kind: PartyKind): string {
           "+13105551234",
         ],
       ],
-    });
+    );
   }
-  return Papa.unparse({
-    fields: ["Company name", "Website", "Email", "Phone"],
-    data: [
+  return toDelimitedText(
+    ["Company name", "Website", "Email", "Phone"],
+    [
       [
         "Analytical Engines Ltd",
         "analyticalengines.example",
@@ -1056,5 +1051,5 @@ export function buildTemplateCsv(kind: PartyKind): string {
         "+13105555678",
       ],
     ],
-  });
+  );
 }

@@ -263,7 +263,18 @@ function refusalLine(run: { answer: TemplateDoorAnswer | null; error?: { message
  * public page /templates/<slug> draws its own); `autoInstall` presses Install once the card is read
  * (a guest who signed up from "Use this template" comes back with ?install=1).
  */
-export function TemplatePreview({ templateId, bare = false, autoInstall = false }: { templateId: string; bare?: boolean; autoInstall?: boolean }) {
+export function TemplatePreview({
+  templateId,
+  bare = false,
+  autoInstall = false,
+  onInstalled,
+}: {
+  templateId: string;
+  bare?: boolean;
+  autoInstall?: boolean;
+  /** A host step after the install lands (an Applet template copies its Applet here); fires once per install. */
+  onInstalled?: (answer: TemplateDoorAnswer, organizationId: string) => void;
+}) {
   // org-filter: write-target the active organization is where this template installs; with none chosen the install asks
   const active = useOrganizationRequired();
   const organizationId = active.organizationState === "ready" ? active.organizationId : null;
@@ -387,6 +398,16 @@ export function TemplatePreview({ templateId, bare = false, autoInstall = false 
     install();
     // eslint-disable-next-line react-hooks/exhaustive-deps -- replays once, when the organization lands
   }, [askOrganization, organizationId]);
+
+  // The install landed and its own host steps are done: hand it to the caller's step, once per install.
+  const [handedOff, setHandedOff] = useState<string | null>(null);
+  useEffect(() => {
+    if (!onInstalled || run.phase !== "installed" || agent.phase === "copying" || !organizationId) return;
+    const key = run.answer.install_id ?? "installed";
+    if (handedOff === key) return;
+    setHandedOff(key);
+    onInstalled(run.answer, organizationId);
+  }, [onInstalled, run, agent.phase, organizationId, handedOff]);
 
   // A guest who came back from sign-up asked to install: press Install once, when the card is read.
   const [autoPressed, setAutoPressed] = useState(false);

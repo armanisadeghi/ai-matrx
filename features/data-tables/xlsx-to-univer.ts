@@ -22,7 +22,7 @@
  * applies.
  */
 
-import * as XLSX from "xlsx";
+import { readWorkbook, type WorkbookCell, type WorkbookSheet } from "@ai-matrx/alchemy/operate/read";
 import { CellValueType } from "@univerjs/core";
 import type { ICellData, IWorkbookData, IWorksheetData } from "@univerjs/core";
 import { LocaleType } from "@univerjs/presets";
@@ -38,18 +38,15 @@ type UniverSheet = Partial<IWorksheetData>;
 export async function xlsxToUniverWorkbook(
   file: File,
 ): Promise<Partial<IWorkbookData>> {
-  const buf = await file.arrayBuffer();
-  // `cellDates: true` so date cells come back as JS Dates rather than
-  // serial-number numerics. `cellFormula: true` keeps the formula source.
-  const wb = XLSX.read(buf, { type: "array", cellDates: true, cellFormula: true });
+  // `dates` so date cells come back as JS Dates rather than serial-number
+  // numerics. `formulas` keeps the formula source.
+  const wb = await readWorkbook(file, { dates: true, formulas: true });
 
   const sheets: Record<string, UniverSheet> = {};
   const sheetOrder: string[] = [];
 
-  for (const sheetName of wb.SheetNames) {
-    const ws = wb.Sheets[sheetName];
-    if (!ws) continue;
-
+  for (const ws of wb.sheets) {
+    const sheetName = ws.name;
     const id = sanitizeSheetId(sheetName);
     sheetOrder.push(id);
     sheets[id] = convertSheet(ws, sheetName, id);
@@ -67,12 +64,11 @@ export async function xlsxToUniverWorkbook(
 }
 
 function convertSheet(
-  ws: XLSX.WorkSheet,
+  ws: WorkbookSheet,
   displayName: string,
   id: string,
 ): UniverSheet {
-  const refRange = ws["!ref"] ?? "A1:A1";
-  const range = XLSX.utils.decode_range(refRange);
+  const range = ws.range ?? { s: { r: 0, c: 0 }, e: { r: 0, c: 0 } };
   // Univer's cellData is keyed by row index → column index → cell. We build
   // it as plain records; the type below mirrors what IWorksheetData.cellData
   // expects (the wider type accommodates style/merge metadata we don't set).
@@ -81,8 +77,7 @@ function convertSheet(
   for (let r = range.s.r; r <= range.e.r; r++) {
     const rowOut: Record<number, UniverCell> = {};
     for (let c = range.s.c; c <= range.e.c; c++) {
-      const addr = XLSX.utils.encode_cell({ r, c });
-      const cell = ws[addr] as XLSX.CellObject | undefined;
+      const cell = ws.cell(r, c);
       if (!cell || cell.v === undefined || cell.v === null) continue;
 
       rowOut[c] = toUniverCell(cell);
@@ -106,7 +101,7 @@ function convertSheet(
   };
 }
 
-function toUniverCell(cell: XLSX.CellObject): UniverCell {
+function toUniverCell(cell: WorkbookCell): UniverCell {
   const out: UniverCell = {};
 
   if (cell.f) {

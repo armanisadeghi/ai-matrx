@@ -137,7 +137,7 @@ export interface ChatUiSlots {
   // Functions and hooks
   confirm: AnyFn;
   copyRichContent: AnyFn;
-  copyToClipboard: AnyFn;
+  copyContent: AnyFn;
   useTablesEverywhere: AnyFn;
   useTextareaFormatting: AnyFn;
   useClipboardPaste: AnyFn;
@@ -499,7 +499,14 @@ const failingThunk = (name: string) => () => () => {
 const STAND_INS: Partial<Record<keyof ChatUiSlots, AnyFn>> = {
   confirm: async () => false,
   copyRichContent: async () => false,
-  copyToClipboard: (text: unknown) => copyText(String(text)),
+  // Content-shaped like the host's `copyContent(content, options)`: a string copies as text, anything
+  // else as JSON. A failed copy is reported through `onError` and returns false, never swallowed.
+  copyContent: async (content: unknown, options?: { onError?: (error: unknown) => void }) => {
+    const text = typeof content === "string" ? content : JSON.stringify(content, null, 2);
+    const landed = await copyText(text ?? "");
+    if (!landed) options?.onError?.(new Error("Failed to copy"));
+    return landed;
+  },
   useTablesEverywhere: () => NONE,
   useCenterControlFit: () => true,
   connectorDefinitionFromMcp: () => null,
@@ -676,7 +683,7 @@ export function hostFn<K extends keyof ChatUiSlots>(name: K, fallback?: AnyFn): 
 
 export const confirm = slotFn("confirm");
 export const copyRichContent = slotFn("copyRichContent");
-export const copyToClipboard = slotFn("copyToClipboard");
+export const copyContent = slotFn("copyContent");
 export const useTablesEverywhere = slotFn("useTablesEverywhere");
 export const useTextareaFormatting = slotFn("useTextareaFormatting", () => undefined);
 export const useClipboardPaste = slotFn("useClipboardPaste", () => undefined);
