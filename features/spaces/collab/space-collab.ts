@@ -96,6 +96,41 @@ function seedUpdate(snapshot: SpaceDoc): Uint8Array {
   return update;
 }
 
+/** Every block id in the fragment, in document order (blockContainer `id` attributes, any depth). */
+export function fragmentBlockIds(fragment: Y.XmlFragment): string[] {
+  const out: string[] = [];
+  const walk = (node: Y.XmlElement | Y.XmlFragment) => {
+    for (const child of node.toArray()) {
+      if (!(child instanceof Y.XmlElement)) continue;
+      if (child.nodeName === "blockContainer" || child.nodeName === "columnList" || child.nodeName === "column") {
+        const id = child.getAttribute("id");
+        if (typeof id === "string") out.push(id);
+      }
+      walk(child);
+    }
+  };
+  walk(fragment);
+  return out;
+}
+
+/**
+ * The room trace (round 28): when a page sets `window.__spacesCollabTrace = []` before load, every change
+ * to the body's block list after joining is recorded — when, from where (seed / room / this editor), the
+ * fragment's top-level shape, and which block ids came and went. Off (no array) costs nothing.
+ */
+function trace(entry: Record<string, unknown>): void {
+  const log = (globalThis as { __spacesCollabTrace?: unknown[] }).__spacesCollabTrace;
+  if (Array.isArray(log)) log.push({ t: Math.round(performance.now()), ...entry });
+}
+function countBlocks(blocks: ReadonlyArray<{ children?: unknown }>): number {
+  let n = 0;
+  for (const b of blocks) n += 1 + (Array.isArray(b.children) ? countBlocks(b.children as Array<{ children?: unknown }>) : 0);
+  return n;
+}
+function traceOn(): boolean {
+  return Array.isArray((globalThis as { __spacesCollabTrace?: unknown[] }).__spacesCollabTrace);
+}
+
 export interface SpaceCollabOptions {
   spaceId: string;
   userId: string;
@@ -130,6 +165,27 @@ export class SpaceCollabSession {
     this.awareness.setLocalStateField("canEdit", opts.canEdit);
     this.awareness.setLocalStateField("user", this.user);
     this.awareness.on("change", () => this.opts.onPeers());
+    if (traceOn()) {
+      let before = fragmentBlockIds(this.fragment);
+      this.doc.on("afterTransaction", (tr: Y.Transaction) => {
+        const ids = fragmentBlockIds(this.fragment);
+        if (ids.join(",") === before.join(",")) return;
+        const was = new Set(before);
+        const now = new Set(ids);
+        const o = tr.origin;
+        trace({
+          ev: "body",
+          origin: o === SEED ? "seed" : typeof o === "string" ? o : o && typeof o === "object" ? (o.constructor?.name ?? "object") : String(o),
+          local: tr.local,
+          top: this.fragment.toArray().map((n) => (n instanceof Y.XmlElement ? n.nodeName : "text")),
+          count: ids.length,
+          added: ids.filter((id) => !was.has(id)).length,
+          removed: before.filter((id) => !now.has(id)),
+          dupes: ids.length - now.size,
+        });
+        before = ids;
+      });
+    }
     this.meta.observe((event) => {
       if (event.transaction.origin === LOCAL_META) return;
       const patch: Partial<SpaceMeta> = {};
@@ -174,6 +230,7 @@ export class SpaceCollabSession {
       await this.rebuildProvider();
     }
     if (this.disposed) return;
+    trace({ ev: "answer", version: snapshot.version, stored: countBlocks(snapshot.blocks), roomTop: this.fragment.length, room: fragmentBlockIds(this.fragment).length, othersHere: othersHere() });
     if (this.fragment.length > 0) {
       this.fromRoom = true;
       const meta: Partial<SpaceMeta> = {};
