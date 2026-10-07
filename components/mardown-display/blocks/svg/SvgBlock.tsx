@@ -23,7 +23,7 @@ import { Skeleton } from "@ai-matrx/design-system";
 import SandboxedHtml from "@/components/mardown-display/blocks/common/SandboxedHtml";
 import { cn } from "@/lib/utils";
 import { Button } from "@ai-matrx/design-system/controls";
-import { downloadFile } from "@/components/agent-copy/export";
+import { downloadFile } from "@ai-matrx/kit/download";
 
 export interface SvgBlockProps {
   content?: string;

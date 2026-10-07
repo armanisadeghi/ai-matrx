@@ -48,6 +48,7 @@ import { createMatrxTransport } from "@/lib/api/matrx-transport";
 import { supabase } from "@/utils/supabase/client";
 import { adoptForeignStream } from "@ai-matrx/chat/agents/redux/execution-system/thunks/adopt-foreign-stream";
 import { openLiveRunWindowAction } from "@/features/overlays/openers/liveRunWindow";
+import { useOpenHtmlPreviewBridge } from "@/features/overlays/openers/htmlPreview";
 import { toast } from "@/lib/toast";
 import { createMatrxTransferActions } from "@ai-matrx/agents/content-transfer";
 import { createAlchemyDestinationPorts } from "./alchemy-destinations";
@@ -379,7 +380,13 @@ function AlchemyCapabilitiesGate({
   // PP-01a/b: the preparation workspace opens in a real WindowPanel (the same WindowPort the
   // Alchemy host ports carry), never a page-local dialog.
   const hostWindow = useContext(AlchemyHostPortsContext)?.window;
-  const nonAiCapabilities = { ...inheritedRest, formats, ...(hostWindow ? { window: hostWindow } : {}) };
+  // The menu's "HTML preview" action opens the app's one HTML preview overlay on the prepared text.
+  const openHtmlPreview = useOpenHtmlPreviewBridge();
+  const htmlPreview = useMemo(
+    () => ({ open: ({ content, title }: { content: string; title: string }) => { openHtmlPreview({ content, title, showSaveButton: false }); } }),
+    [openHtmlPreview],
+  );
+  const nonAiCapabilities = { ...inheritedRest, formats, htmlPreview, ...(hostWindow ? { window: hostWindow } : {}) };
   return (
     <ContentTransferCapabilitiesProvider
       value={

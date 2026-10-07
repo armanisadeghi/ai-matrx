@@ -102,7 +102,7 @@ import {
   type DeviceFallbackPhoto,
 } from "@/features/media-capture/components/DeviceFallbackInput";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
-import { downloadUrl } from "@/components/agent-copy/export";
+import { downloadUrl } from "@ai-matrx/kit/download";
 
 type StudioPhase = "starting" | "preview" | "review" | "error";
 

@@ -25,7 +25,7 @@ import { RichDocumentActions } from "@ai-matrx/chat/host/rich-document-slots";
 import { MessageTimestamp } from "../../../agents/components/messages-display/MessageTimestamp";
 import type { ConversationMessage } from "../../types/conversation";
 import { ErrorAlchemyMenu } from "@ai-matrx/chat/host/ui-slots";
-import { downloadFile } from "../../../agent-copy/export";
+import { downloadFile } from "@ai-matrx/kit/download";
 
 // ============================================================================
 // PROPS

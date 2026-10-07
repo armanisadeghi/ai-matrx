@@ -34,7 +34,7 @@ import {
   Image as ImageIcon,
 } from "lucide-react";
 import HtmlPreviewModal from "@/features/html-pages/components/HtmlPreviewModal";
-import { downloadFile } from "@/components/agent-copy/export";
+import { downloadFile } from "@ai-matrx/kit/download";
 
 interface ComponentDisplayProps {
   component?: ComponentEntry;

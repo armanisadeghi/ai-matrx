@@ -16,7 +16,7 @@
  */
 
 import JSZip from "jszip";
-import { downloadFile } from "@/components/agent-copy/export";
+import { downloadFile } from "@ai-matrx/kit/download";
 
 export interface BundleEntry {
     /** Sub-folder inside the ZIP. Omit for root. */

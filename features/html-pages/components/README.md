@@ -359,7 +359,7 @@ The hook provides these utilities:
 - React
 - lucide-react (icons)
 - @/components/mardown-display/code/SmallCodeEditor
-- @/components/matrx/buttons/markdown-copy-utils
+- @/components/agent-copy/copy-commands
 - @ai-matrx/print/markdown
 - @/features/html-pages/hooks/useHTMLPages
 - @/lib/redux/hooks (for user selector)

@@ -1,7 +1,7 @@
 // components/selection-toolbar/selection-copy.ts
 //
 // Copying a SELECTION of rendered rich content (Arman, 2026-10-04). Every
-// path goes through the one copy module (markdown-copy-utils.ts):
+// path goes through the one copy module (copy-commands.ts):
 //
 //   • the selection toolbar's Copy / Copy markdown / Copy text (common-actions.ts)
 //   • ⌘C / Ctrl+C on a selection in rendered content: the formatted HTML the
@@ -18,7 +18,7 @@ import {
   richCopyPlainText,
   writeClipboardFlavors,
   type CopyFlavor,
-} from "@/components/matrx/buttons/markdown-copy-utils";
+} from "@/components/agent-copy/copy-commands";
 import { liveSelectionShapeText } from "./selection-shape";
 import { stripOwnUtmSource } from "@/utils/url-utm";
 

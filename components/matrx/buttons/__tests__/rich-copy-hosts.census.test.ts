@@ -1,5 +1,5 @@
 // GUARD: every rich-content surface copies through THE one copy module
-// (`copyRichContent` in components/matrx/buttons/markdown-copy-utils.ts —
+// (`copyRichContent` in components/agent-copy/copy-commands.ts —
 // Copy = formatted + markdown, Copy markdown, Copy text). A raw
 // `navigator.clipboard.write*` in a rich-content host is a second copy that
 // gives the person one flavor and no choice (Arman, 2026-10-04).
@@ -73,7 +73,7 @@ describe("rich-content copy goes through the one module", () => {
     if (offenders.length) {
       throw new Error(
         "A rich-content surface writes the clipboard outside the one copy module. Route it through " +
-          "copyRichContent (components/matrx/buttons/markdown-copy-utils.ts) — or, if it copies an id, a link, " +
+          "copyRichContent (components/agent-copy/copy-commands.ts) — or, if it copies an id, a link, " +
           `raw code or JSON, list it in RAW_ALLOWED with the reason:\n  ${offenders.join("\n  ")}`,
       );
     }

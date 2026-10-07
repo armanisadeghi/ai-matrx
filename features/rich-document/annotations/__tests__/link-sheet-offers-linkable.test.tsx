@@ -17,6 +17,7 @@ const pickerProps: Array<{ tokens?: string[] }> = [];
 jest.mock("@ai-matrx/associations/react", () => ({
   UniversalAssociationPicker: (p: { tokens?: string[] }) => { pickerProps.push(p); return <div data-testid="picker">{(p.tokens ?? ["ALL"]).join(",")}</div>; },
 }));
+jest.mock("@/components/agent-copy/CopyButtons", () => ({ CopyButtons: () => null }));
 jest.mock("@ai-matrx/design-system", () => ({
   Sheet: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
   SheetContent: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,

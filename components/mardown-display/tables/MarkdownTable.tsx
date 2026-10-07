@@ -62,7 +62,7 @@ import {
   duplicateColumn,
   type TableShape,
 } from "./editing/tableMutations";
-import { downloadFile } from "@/components/agent-copy/export";
+import { downloadFile } from "@ai-matrx/kit/download";
 
 interface ExportDropdownMenuProps {
   tableData: {

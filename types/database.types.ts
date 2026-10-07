@@ -100858,6 +100858,11 @@ export type Database = {
           isSetofReturn: true
         }
       }
+      get_pick_list_for_selection: {
+        Args: { p_list_id: string }
+        Returns: Json
+      }
+      get_pick_lists_summary: { Args: { p_user_id: string }; Returns: Json }
       get_project_members_with_users: {
         Args: { p_project_id: string }
         Returns: {
@@ -100995,10 +101000,6 @@ export type Database = {
         Args: { p_bucket_id: string; p_name: string }
         Returns: Json
       }
-      get_pick_list_for_selection: {
-        Args: { p_list_id: string }
-        Returns: Json
-      }
       get_tables_and_columns: {
         Args: never
         Returns: {
@@ -101093,7 +101094,6 @@ export type Database = {
         Returns: Json
       }
       get_user_list_with_items: { Args: { p_list_id: string }; Returns: Json }
-      get_pick_lists_summary: { Args: { p_user_id: string }; Returns: Json }
       get_user_messages: {
         Args: { p_feedback_id: string }
         Returns: Database["users"]["Tables"]["feedback_user_messages"]["Row"][]

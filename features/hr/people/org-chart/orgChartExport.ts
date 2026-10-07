@@ -16,7 +16,7 @@
 // `hr.people.directory-export` in the coming-soon registry.
 
 import type { HrOrgChart } from "../../types";
-import { downloadFile } from "@/components/agent-copy/export";
+import { downloadFile } from "@ai-matrx/kit/download";
 
 function csvCell(value: unknown): string {
   if (value === null || value === undefined) return "";

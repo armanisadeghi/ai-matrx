@@ -46,9 +46,7 @@ jest.mock("next/dynamic", () => ({
     };
   },
 }));
-jest.mock("@/components/matrx/buttons/MarkdownCopyButton", () => ({
-  InlineCopyButton: () => null,
-}));
+jest.mock("@/components/agent-copy/CopyButtons", () => ({ CopyButtons: () => null }));
 jest.mock("@/features/code-editor/components/code-block/CodeBlock", () => ({
   __esModule: true,
   default: ({ code, language }: { code: string; language: string }) => (

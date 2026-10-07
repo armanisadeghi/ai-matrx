@@ -20,7 +20,7 @@ import {
   EditableRows,
   PanelSection,
 } from "./panel-primitives";
-import { downloadFile } from "@/components/agent-copy/export";
+import { downloadFile } from "@ai-matrx/kit/download";
 
 function downloadBlob(fileName: string, mime: string, content: string) {
   const blob = new Blob([content], { type: mime });

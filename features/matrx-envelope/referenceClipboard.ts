@@ -1,4 +1,4 @@
-import { copyToClipboard } from "@/components/matrx/buttons/markdown-copy-utils";
+import { copyToClipboard } from "@/components/agent-copy/copy-commands";
 
 /**
  * The single clipboard path for Matrx reference fences.

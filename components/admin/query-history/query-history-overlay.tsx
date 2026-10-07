@@ -48,7 +48,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 import FullScreenOverlay, { TabDefinition } from '@/components/official/FullScreenOverlay';
 import { ProTextarea } from "@/components/official/ProTextarea";
-import { downloadFile } from "@/components/agent-copy/export";
+import { downloadFile } from "@ai-matrx/kit/download";
 
 interface QueryHistoryOverlayProps {
   isOpen: boolean;

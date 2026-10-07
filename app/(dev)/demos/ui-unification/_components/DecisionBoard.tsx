@@ -30,7 +30,7 @@ import { toast } from "@/lib/toast";
 import { cn } from "@/lib/utils";
 import { AGREED, DECISIONS, type Decision, type DecisionStatus } from "./decisions";
 import { useAppRecordsConfig } from "@/features/data-tables/records-ui-host/recordsUiHost";
-import { downloadFile } from "@/components/agent-copy/export";
+import { downloadFile } from "@ai-matrx/kit/download";
 
 const STORAGE_KEY = "ui-unification-decisions-round2";
 

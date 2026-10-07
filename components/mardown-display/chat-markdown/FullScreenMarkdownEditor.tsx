@@ -16,7 +16,7 @@ import React, {
 } from "react";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { useThemeMode } from "@/styles/themes/useThemeMode";
-import { MarkdownCopyButton } from "@/components/matrx/buttons/MarkdownCopyButton";
+import { CopyButtons } from "@/components/agent-copy/CopyButtons";
 import FullScreenOverlay, {
   TabDefinition,
 } from "@/components/official/FullScreenOverlay";
@@ -1538,10 +1538,13 @@ const FullScreenMarkdownEditor: React.FC<FullScreenMarkdownEditorProps> = ({
         />
       )}
       {showCopyButton && (
-        <MarkdownCopyButton
-          markdownContent={editedContent}
+        <CopyButtons
+          label="Content"
+          human={editedContent}
+          contentFlavor="markdown"
+          stripThinking
           className="bg-inherit text-inherit"
-          iconOnly={isMobile}
+          {...(isMobile ? { size: "xs" as const } : {})}
         />
       )}
     </>

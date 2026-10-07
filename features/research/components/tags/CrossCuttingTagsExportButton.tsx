@@ -26,7 +26,7 @@ import {
   tagInputToAiText,
   tagInputExportFilename,
 } from "../../utils/tagInputExport";
-import { downloadFile } from "@/components/agent-copy/export";
+import { downloadFile } from "@ai-matrx/kit/download";
 
 interface CrossCuttingTagsExportButtonProps {
   topicId: string;

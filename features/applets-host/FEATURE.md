@@ -27,8 +27,10 @@ Package mechanics: `aidream/apps/shared/applets/FEATURE.md`.
   security decides); a miss falls to `not-found.tsx`, which answers through `SlugAccessGate` (token `app`).
 
 **Components**
-- `AppletHostMount.tsx` — builds ONE `createPlatformHost` per (Applet, active organization) and renders
-  `mountAppletAsync(record, host, HOST_SCOPE, { renderKind })`.
+- `AppletHostMount.tsx` — builds ONE `createPlatformHost` per Applet and renders
+  `mountAppletAsync(record, host, HOST_SCOPE, { renderKind, renderRun, openRun })`.
+- `AppletRunOutput.tsx` — `renderRun`: a job run through `LiveRunDisplay` (→ `MarkdownStream` → kind
+  registry) keyed on the run's requestId; before/without an adopted request, the run's settled kind or error.
 
 ---
 
@@ -37,12 +39,14 @@ Package mechanics: `aidream/apps/shared/applets/FEATURE.md`.
 | Port | Bound to |
 |---|---|
 | `supabase` | the browser client `@/utils/supabase/client` (the viewer's session) |
-| `agents` | `createIntelligencePort({ transport: createMatrxTransport(store.getState) })` from `@ai-matrx/agents/intelligence` |
+| `agents` | `createIntelligencePort({ transport })` over `createMatrxTransport(store.getState)`, wrapped by `adoptAppletRunStreams`: every `POST /ai/mandates/*` body is teed — one branch to the agents port (`useJob` state), one to `adoptForeignStream` under the server's `X-Request-ID` (the execution system, so the run renders canonically) |
 | `activeOrganizationId` | `selectActiveOrganizationId` at mount — reported to the frame; never narrows a read. The host is NOT rebuilt when it changes (a running job would die) |
-| job organization | `host.intelligence.run` is wrapped: a member of the Applet's organization runs its jobs there (entity-bound, like a table write); anyone else uses the selected organization, and with none the organization gate asks (`ensureOrganizationContext`). The agents transport stamps that same organization |
+| job organization | `@ai-matrx/applets` 0.3.0 decides for EVERY run (direct and Action): a member of the Applet's organization runs there; anyone else is answered by `resolveOrganization` (`ensureOrganizationContext` — the gate asks), null refuses `organization_required`. No wrapper around `host.intelligence.run` |
 | `nav` | `go(to)` → `history.pushState` to `/apps/<slug><to>` (Next syncs `usePathname`; no server round trip, no remount); `current()` reads the URL; every URL change (incl. Back/Forward) is pushed to `subscribe` listeners |
 | `reportError` | `captureError({ source: "applet" })` |
 | `renderKind` | `KindInstanceRender` (the one kind pipeline, `variant="bare"`) |
+| `renderRun` | `AppletRunOutput` — `<JobOutput job>` inline (CONTRACTS amendment 2.4) |
+| `openRun` | `openLiveRunWindowAction` — the floating `LiveRunWindow`, one instance per (Applet, mandate) |
 
 Scope: `react`, `lucide-react`, `@ai-matrx/design-system/controls`, `@ai-matrx/applets/react`, plus the
 record's own `allowed_imports`; app-owned modules come from `lib/code-runtime/stored-scope.ts`.
@@ -66,3 +70,6 @@ record's own `allowed_imports`; app-owned modules come from `lib/code-runtime/st
 - 2026-10-06 — The Applet mounts in the route LAYOUT and navigates with `pushState`, so a page change or
   browser Back no longer remounts it (owner saw Back show the old page, then an empty shell, then content at ~10 s).
 - 2026-10-07 — Binds `surfaces: { live: liveValues }` (applets 0.5.0, ALC-18): the Applet's SurfacePort is alchemy's.
+- 2026-10-06 — Adopted `@ai-matrx/applets` 0.3.0 `resolveOrganization`; deleted the hand-made `host.intelligence.run` wrapper.
+- 2026-10-06 — `@ai-matrx/applets` 0.4.0: job runs stream through the one live-run pipeline (`renderRun` /
+  `openRun`, mandate streams adopted into the execution system).

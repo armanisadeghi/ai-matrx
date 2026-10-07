@@ -42,7 +42,7 @@ import { useBase64Decoder } from "../hooks/useBase64Decoder";
 import { mimeTypeLabel } from "../utils/decode-base64";
 import { formatFileSize } from "@ai-matrx/kit/format";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
-import { downloadUrl } from "@/components/agent-copy/export";
+import { downloadUrl } from "@ai-matrx/kit/download";
 
 interface Base64DecoderShellProps {
   defaultFolder?: string;

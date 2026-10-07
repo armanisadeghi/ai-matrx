@@ -7,7 +7,7 @@ import {
   FolderContentsWithNodes,
   NodeStructure,
 } from "@/utils/file-operations/types";
-import { downloadFile } from "@/components/agent-copy/export";
+import { downloadFile } from "@ai-matrx/kit/download";
 
 const DEFAULT_HIDDEN_FILES = [
   "Thumbs.db",

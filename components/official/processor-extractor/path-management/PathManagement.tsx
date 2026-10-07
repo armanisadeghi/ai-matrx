@@ -11,7 +11,7 @@ import SaveBookmarkDialog from "./BookmarkDialog";
 import ManageBookmarksDialog from "./ManageBookmarksDialog";
 import { createPathBookmark, saveBookmarks, getValueByBookmark, exportBookmarks, loadBookmarks } from "../utils/json-path-navigation-util";
 import { TextIconButton, IconButton } from "@/components/official/TextIconButton";
-import { InlineCopyButton } from "@/components/matrx/buttons/InlineCopyButton";
+import { CopyButtons } from "@/components/agent-copy/CopyButtons";
 import { extractValueByPath } from "../utils/wildcard-utils";
 
 // Define a type for a callback function that will handle data and path updates
@@ -153,7 +153,7 @@ const PathManagement: React.FC<PathManagementProps> = ({ jsonStr, currentPath, o
                 <div className="flex-1 h-full">
                     <div className="relative h-full flex items-center px-2 bg-gray-100 dark:bg-gray-700 rounded type-secondary font-mono overflow-hidden">
                         {pathDetails.path}
-                        <InlineCopyButton content={pathDetails} position="center-right" size="xs" tooltipText="Copy Path With Details" />
+                        <CopyButtons label="Copy Path With Details" json={pathDetails} size="xs" className="absolute top-1/2 right-1 z-10 -translate-y-1/2" />
                     </div>
                 </div>
 

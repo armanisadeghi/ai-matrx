@@ -39,7 +39,7 @@ import {
   fetchTopicSourceCount,
   writeExportClipboard,
 } from "../../utils/authorityExportMenu";
-import { downloadFile } from "@/components/agent-copy/export";
+import { downloadFile } from "@ai-matrx/kit/download";
 
 interface CondensedAuthorityExportButtonProps {
   topicId: string;

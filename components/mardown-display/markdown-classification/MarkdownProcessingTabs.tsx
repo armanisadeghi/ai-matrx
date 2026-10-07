@@ -1,6 +1,6 @@
 "use client";
 
-import { InlineCopyButton } from "@/components/matrx/buttons/InlineCopyButton";
+import { CopyButtons } from "@/components/agent-copy/CopyButtons";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import ProcessorExtractor from "@/components/official/processor-extractor/ProcessorExtractor";
@@ -68,7 +68,7 @@ const MarkdownProcessingTabs = ({
                             <pre className="bg-gray-800 dark:bg-gray-950 text-gray-100 rounded-md overflow-x-auto h-full m-0 p-2 ">
                                 <code>{JSON.stringify(ast, null, 2)}</code>
                             </pre>
-                            <InlineCopyButton content={JSON.stringify(ast, null, 2)} position="top-right" size="md" />
+                            <CopyButtons label="AST" json={ast} size="sm" className="absolute top-1 right-1 z-10" />
                         </>
                     ) : (
                         <p className="text-gray-500 dark:text-gray-400 m-2">Click "Parse Markdown" to see the AST.</p>

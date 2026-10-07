@@ -5,7 +5,7 @@
 // lists keep their numbers, checklists as ☐ / ☑, links as "text (url)",
 // tables tab-separated (they paste into a spreadsheet as cells), code kept
 // verbatim (fences dropped), headings and quotes without their markers.
-// Pure: the copy module (markdown-copy-utils.ts) and its tests call it.
+// Pure: the copy module (copy-commands.ts) and its tests call it.
 
 import { unwrapKindEnvelopes } from "@/lib/markdown/plain-text";
 import {

@@ -47,7 +47,7 @@ import {
 } from "./signingService";
 
 import { Spinner } from "@/components/ui/loaders/Spinner";
-import { downloadUrl } from "@/components/agent-copy/export";
+import { downloadUrl } from "@ai-matrx/kit/download";
 // THE platform PDF viewer (pdf.js): it draws pages on a canvas, so a document never runs script on
 // our origin, and it renders on Android, whose Chrome shows nothing for a PDF in an iframe.
 const PdfDocumentRenderer = lazy(() => import("@/features/pdf/components/viewer/PdfDocumentRenderer"));

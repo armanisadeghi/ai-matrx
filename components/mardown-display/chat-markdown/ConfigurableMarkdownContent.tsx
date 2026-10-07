@@ -25,7 +25,7 @@ import {
 } from "@ai-matrx/kit/delimiter-guard";
 import { captureError } from "@/lib/diagnostics/errorCaptureStore";
 import { LinkComponent } from "@/components/mardown-display/blocks/links/LinkComponent";
-import { InlineCopyButton } from "@/components/matrx/buttons/MarkdownCopyButton";
+import { CopyButtons } from "@/components/agent-copy/CopyButtons";
 
 import type { Components } from "react-markdown";
 import {
@@ -1029,11 +1029,13 @@ const ConfigurableMarkdownContentBody: React.FC<
       {!isStreamActive && isHovering && (
         <div className="absolute top-0 right-0 p-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
           {showCopyButton && (
-            <InlineCopyButton
-              markdownContent={content}
-              position="top-right"
-              className="mt-1 mr-1"
-              isMarkdown={true}
+            <CopyButtons
+              label="Content"
+              human={content}
+              contentFlavor="markdown"
+              stripThinking
+              size="sm"
+              className="absolute top-1 right-1 z-10 mt-1 mr-1"
             />
           )}
           {onEditRequest && (

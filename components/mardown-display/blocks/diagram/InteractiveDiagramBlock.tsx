@@ -80,7 +80,7 @@ import {
 import { useCanvas } from "@/features/canvas/hooks/useCanvas";
 import { useOpenArtifactInCanvas } from "@/features/canvas/hooks/useOpenArtifactInCanvas";
 import { isMaterializedArtifactId } from "@/features/canvas/artifact-types/artifactId";
-import { downloadFile, downloadUrl } from "@/components/agent-copy/export";
+import { downloadFile, downloadUrl } from "@ai-matrx/kit/download";
 import { getArtifactDef } from "@/features/canvas/artifact-types/artifact-type-registry";
 import IconButton from "@/components/official/IconButton";
 import { IconResolver } from "@ai-matrx/icons";

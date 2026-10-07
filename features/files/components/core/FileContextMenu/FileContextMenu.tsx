@@ -87,7 +87,7 @@ import { useFileActions } from "@/features/files/components/core/FileActions/use
 import { FileInfoDialog } from "@/features/files/components/core/FileInfo/FileInfoDialog";
 import { RenameDialog } from "@/features/files/components/core/RenameDialog/RenameDialog";
 import { setClipboard } from "@/features/files/utils/clipboard";
-import { downloadUrl, downloadFile } from "@/components/agent-copy/export";
+import { downloadUrl, downloadFile } from "@ai-matrx/kit/download";
 
 export interface FileContextMenuProps {
   fileId: string;

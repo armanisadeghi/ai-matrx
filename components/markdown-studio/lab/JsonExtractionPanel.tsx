@@ -23,7 +23,7 @@ import {
   StreamingJsonTracker,
   type StreamingJsonState,
 } from "@ai-matrx/kit/json-extract";
-import { copyToClipboard } from "@/components/matrx/buttons/markdown-copy-utils";
+import { copyToClipboard } from "@/components/agent-copy/copy-commands";
 import { StreamSimControls } from "./StreamSimControls";
 import {
   DEFAULT_STREAM_SIM_SETTINGS,

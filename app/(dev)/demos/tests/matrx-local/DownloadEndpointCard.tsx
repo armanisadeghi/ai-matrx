@@ -8,7 +8,7 @@ import { Progress } from "@/components/ui/progress";
 import { Download, Check, AlertCircle } from "lucide-react";
 import { EndpointCardProps as DownloadEndpointCardProps } from './types';
 import { DirectoryStructureForm, DirectoryStructureParams } from './directory-structure';
-import { downloadFile } from "@/components/agent-copy/export";
+import { downloadFile } from "@ai-matrx/kit/download";
 
 export const DownloadEndpointCard = ({ endpoint, baseUrl }: DownloadEndpointCardProps) => {
     const [downloadStatus, setDownloadStatus] = useState<'idle' | 'downloading' | 'success' | 'error'>('idle');

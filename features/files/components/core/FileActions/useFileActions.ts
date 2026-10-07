@@ -36,7 +36,7 @@ import * as Files from "@/features/files/api/files";
 import { pythonShareUrl } from "@/features/files/handler/utils/python-base";
 import { apiFileRecordToCloudFile } from "@/features/files/redux/converters";
 import type { Visibility } from "@/features/files/types";
-import { downloadFile } from "@/components/agent-copy/export";
+import { downloadFile } from "@ai-matrx/kit/download";
 
 export interface FileActionHandlers {
   rename: (newName: string) => Promise<void>;

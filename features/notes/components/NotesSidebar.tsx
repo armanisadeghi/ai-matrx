@@ -51,7 +51,7 @@ import { getFolderIconAndColor } from '../utils/folderUtils';
 import { cn } from '@/lib/utils';
 import { RenameFolderDialog } from './RenameFolderDialog';
 import { MoveNoteDialog } from './MoveNoteDialog';
-import { downloadFile } from "@/components/agent-copy/export";
+import { downloadFile } from "@ai-matrx/kit/download";
 
 interface NotesSidebarProps {
     notes: Note[];

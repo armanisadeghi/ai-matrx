@@ -24,7 +24,8 @@ import { useState } from "react";
 import { AlertOctagon, Copy, Download, RefreshCw, RotateCw } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { toast } from "@/lib/toast";
-import { downloadFile, exportFilename } from "@/components/agent-copy/export";
+import { exportFilename } from "@/components/agent-copy/export";
+import { downloadFile } from "@ai-matrx/kit/download";
 import {
   selectNoteContent,
   selectNoteFirstSaveFailureAt,

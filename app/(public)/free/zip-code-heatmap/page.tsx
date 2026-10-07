@@ -19,7 +19,7 @@ import type { ViewMode } from "./components/ViewModeSelector";
 import { aggregateByZip3 } from "./utils/dataAggregation";
 import { toast } from "@/lib/toast";
 import type { ZipCodeData } from "./types";
-import { downloadFile } from "@/components/agent-copy/export";
+import { downloadFile } from "@ai-matrx/kit/download";
 
 
 export default function ZipCodeHeatmapPage() {

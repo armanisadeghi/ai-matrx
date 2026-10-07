@@ -18,7 +18,7 @@ import {
   Type,
 } from "lucide-react";
 import { toast } from "@/lib/toast";
-import { copyRichContent, copyToClipboard } from "@/components/matrx/buttons/markdown-copy-utils";
+import { copyRichContent, copyToClipboard } from "@/components/agent-copy/copy-commands";
 import { registerAction } from "../provider";
 import { contentFileName, deriveContentTitle, getErrorMessage, contentForDestination } from "../utils";
 import { hasTableShape } from "@ai-matrx/records-ui/table-shape";
@@ -26,7 +26,7 @@ import { liveSelectionShapeText } from "@/components/selection-toolbar/selection
 import { openOverlay } from "@/lib/redux/slices/overlaySlice";
 import { parseFirstMarkdownTable, tableToDelimited } from "../markdownTable";
 import type { RichDocumentActionContext } from "../../types";
-import { downloadFile } from "@/components/agent-copy/export";
+import { downloadFile } from "@ai-matrx/kit/download";
 
 async function copyText(text: string, done: string): Promise<void> {
   await copyToClipboard(text, {

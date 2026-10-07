@@ -13,7 +13,7 @@ import { copyText } from "@ai-matrx/kit/clipboard";
 
 import { fileHandler } from "@/features/files/handler/handler";
 import type { NormalizedFile } from "@/features/files/handler/types";
-import { downloadFile } from "@/components/agent-copy/export";
+import { downloadFile } from "@ai-matrx/kit/download";
 
 function svgBlob(svg: string): Blob {
   return new Blob([svg], { type: "image/svg+xml;charset=utf-8" });

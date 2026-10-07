@@ -20,7 +20,7 @@ import { Braces, Check, Copy, Download, Eye, EyeOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { formatCount } from "@ai-matrx/kit/format";
-import { downloadFile } from "@/components/agent-copy/export";
+import { downloadFile } from "@ai-matrx/kit/download";
 
 interface RawViewProps {
   /** What's being shown — gets stamped into copied JSON + the download filename. */

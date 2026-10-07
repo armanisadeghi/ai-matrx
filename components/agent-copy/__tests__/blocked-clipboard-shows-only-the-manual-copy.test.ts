@@ -17,7 +17,7 @@ jest.mock("@/lib/toast", () => ({
   toast: { error: jest.fn(), info: jest.fn(), success: jest.fn() },
 }));
 
-import { copyToClipboard } from "../markdown-copy-utils";
+import { copyToClipboard } from "../copy-commands";
 import { showManualCopy } from "@/components/dialogs/clipboard-fallback/manualCopyOpener";
 import { toast } from "@/lib/toast";
 

@@ -5,7 +5,7 @@
 // blocks; notes / prompts / artifacts don't).
 
 import { Copy, Brain } from "lucide-react";
-import { copyRichContent } from "@/components/matrx/buttons/markdown-copy-utils";
+import { copyRichContent } from "@/components/agent-copy/copy-commands";
 import { registerAction } from "../provider";
 import { extractFlatText } from "@ai-matrx/chat/agents/redux/execution-system/messages/messages.selectors";
 import { contentForDestination } from "../utils";

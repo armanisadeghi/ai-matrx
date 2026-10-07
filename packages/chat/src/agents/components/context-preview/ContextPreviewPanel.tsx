@@ -12,7 +12,7 @@
  * rules for this surface: content is FOREGROUND, not dimmed (muted is for
  * true hints only); primary accents mark the live/interactive bits; the
  * injected block and values AUTO-GROW (the panel scrolls — no nested scroll
- * areas); everything copyable gets a hover `InlineCopyButton`.
+ * areas); everything copyable gets a hover `CopyButtons`.
  *
  * Registered surface: `matrx-user/context-preview` (chat window
  * `contextPreviewPanel`) — the panel mounts `<SurfaceRuntimeProvider>` and
@@ -25,7 +25,7 @@ import { AlertTriangle, Braces, FileCode2, RefreshCw } from "lucide-react";
 import { cn } from "@ai-matrx/design-system";
 import { Skeleton } from "@ai-matrx/design-system";
 import { Badge, Button, Chip, SegmentedControl } from "@ai-matrx/design-system/controls";
-import { InlineCopyButton } from "@ai-matrx/chat/host/ui-slots";
+import { CopyButtons } from "@ai-matrx/chat/host/ui-slots";
 import { useAppSelector } from "../../../store/hooks";
 import { SurfaceRuntimeProvider } from "../../../surfaces/runtime/SurfaceRuntimeContext";
 import {
@@ -123,11 +123,11 @@ function VariableGroup({
                   <span className="italic text-muted-foreground">(empty)</span>
                 )}
               </div>
-              <InlineCopyButton
-                content={f.value}
-                formatJson={false}
+              <CopyButtons
+                label="Copy"
+                human={f.value}
                 size="xs"
-                className="opacity-0 transition-opacity pointer-coarse:opacity-100 group-hover/var:opacity-100"
+                className="absolute top-1 right-1 z-10 opacity-0 transition-opacity pointer-coarse:opacity-100 group-hover/var:opacity-100"
               />
             </li>
           );
@@ -314,11 +314,11 @@ function ResolvedView({
             className="relative h-7 w-7 shrink-0"
             title="Copy everything the agent receives"
           >
-            <InlineCopyButton
-              content={copyAllText}
-              formatJson={false}
+            <CopyButtons
+              label="Copy all for AI"
+              human={copyAllText}
               size="sm"
-              tooltipText="Copy all for AI"
+              className="absolute top-1 right-1 z-10"
             />
           </span>
         )}
@@ -436,11 +436,11 @@ function ResolvedBody({
             <pre className="whitespace-pre-wrap break-words rounded-md border border-primary/20 bg-muted/40 px-2.5 py-2 font-mono text-[11px] leading-relaxed text-foreground">
               {block}
             </pre>
-            <InlineCopyButton
-              content={block}
-              formatJson={false}
+            <CopyButtons
+              label="Copy"
+              human={block}
               size="sm"
-              className="opacity-0 transition-opacity pointer-coarse:opacity-100 group-hover/block:opacity-100"
+              className="absolute top-1 right-1 z-10 opacity-0 transition-opacity pointer-coarse:opacity-100 group-hover/block:opacity-100"
             />
           </div>
         ) : (

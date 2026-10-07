@@ -51,7 +51,7 @@ const COPY_FLAVORS = [
 ] as const;
 
 const ACTIONS: Action[] = [
-  // THE one copy module (markdown-copy-utils.ts, selection-copy.ts): Copy writes
+  // THE one copy module (copy-commands.ts, selection-copy.ts): Copy writes
   // the formatted selection AND the knob's plain flavor (markdown by default);
   // Copy markdown and Copy text are the explicit choices, under More.
   ...COPY_FLAVORS.map(
@@ -68,7 +68,7 @@ const ACTIONS: Action[] = [
         const common = commonOf(t);
         if (!common) return;
         const { copyRenderedSelection, renderedSelectionRange } = await import("./selection-copy");
-        const { copyRichContent } = await import("@/components/matrx/buttons/markdown-copy-utils");
+        const { copyRichContent } = await import("@/components/agent-copy/copy-commands");
         // Rendered content: its formatted DOM + its markdown. A text field: its text IS markdown.
         const ok = renderedSelectionRange()
           ? await copyRenderedSelection(flavor, common.shapeText ?? common.text)

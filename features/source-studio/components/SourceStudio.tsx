@@ -105,7 +105,8 @@ import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
 import { isOrganizationSelectionCancelled } from "@/lib/organization/organization-gate";
 import { presentOrganizationRefusal } from "@ai-matrx/chat/host/org";
 import { useScraperApi } from "@/features/scraper/hooks/useScraperApi";
-import { downloadFile, exportFilename } from "@/components/agent-copy/export";
+import { exportFilename } from "@/components/agent-copy/export";
+import { downloadFile } from "@ai-matrx/kit/download";
 import {
   useSourceChunks,
   useSourceDoc,

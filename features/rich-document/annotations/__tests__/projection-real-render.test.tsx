@@ -35,7 +35,7 @@ jest.mock("@ai-matrx/rich-content/markdown-core/MarkdownCore", () => {
     ),
   };
 });
-jest.mock("@/components/matrx/buttons/MarkdownCopyButton", () => ({ InlineCopyButton: () => null }));
+jest.mock("@/components/agent-copy/CopyButtons", () => ({ CopyButtons: () => null }));
 jest.mock("@/features/code-editor/components/code-block/CodeBlock", () => ({
   __esModule: true,
   default: ({ code, meta }: { code: string; meta?: string }) => <pre data-meta={meta}>{code}</pre>,

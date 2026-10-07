@@ -38,9 +38,7 @@ jest.mock("next/dynamic", () => ({
     };
   },
 }));
-jest.mock("@/components/matrx/buttons/MarkdownCopyButton", () => ({
-  InlineCopyButton: () => null,
-}));
+jest.mock("@/components/agent-copy/CopyButtons", () => ({ CopyButtons: () => null }));
 
 import { RichContent } from "@/components/rich-content/RichContent";
 

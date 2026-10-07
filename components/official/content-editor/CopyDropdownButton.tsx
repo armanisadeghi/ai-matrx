@@ -4,7 +4,7 @@
 import React, { useState, useRef, useLayoutEffect } from "react";
 import { createPortal } from "react-dom";
 import { Copy, ChevronDown, FileCode2, FileText, Code, Brain } from "lucide-react";
-import { copyRichContent, copyToClipboard, type CopyFlavor } from "@/components/matrx/buttons/markdown-copy-utils";
+import { copyRichContent, copyToClipboard, type CopyFlavor } from "@/components/agent-copy/copy-commands";
 
 import { Tile } from "@ai-matrx/design-system/controls";
 interface CopyDropdownButtonProps {
@@ -70,7 +70,7 @@ export function CopyDropdownButton({
     setTimeout(() => setCopied(false), 2000);
   };
 
-  // THE one copy module (markdown-copy-utils.ts): Copy = formatted + markdown
+  // THE one copy module (copy-commands.ts): Copy = formatted + markdown
   // (knob), then the two explicit flavors. "Google Docs" and "Microsoft Word"
   // wrote the same bytes as the formatted copy, so they are that one row.
   const copyAs = async (flavor: CopyFlavor) => {
