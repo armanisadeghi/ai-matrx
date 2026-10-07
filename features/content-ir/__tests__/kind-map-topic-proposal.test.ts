@@ -25,9 +25,9 @@ import {
 } from "@ai-matrx/content-ir";
 
 import {
-  BLOCK_DISPATCH_CLASSIFICATION,
   resolveBlockDispatch,
 } from "@ai-matrx/rich-content/display/chat-markdown/block-registry/block-dispatch";
+import { APP_BLOCK_DISPATCH_CLASSIFICATION } from "@/features/rich-content-host/domain-block-dispatch";
 import { DOCUMENTED_PROPOSAL } from "@/features/marketing/seo/topical-map/proposals/__fixtures__/mapTopicProposalDocumented";
 
 import {
@@ -112,6 +112,6 @@ describe("map_topic_proposal_v1 — registration", () => {
     expect(def?.legacyBlockType).toBe(MAP_TOPIC_PROPOSAL_BLOCK_TYPE);
     expect(SYSTEM_KIND_DEFINITIONS.some((d) => d.kind === MAP_TOPIC_NODE_KIND)).toBe(true);
     expect(resolveBlockDispatch(MAP_TOPIC_PROPOSAL_BLOCK_TYPE)).not.toBeNull();
-    expect(BLOCK_DISPATCH_CLASSIFICATION.shape).toContain(MAP_TOPIC_PROPOSAL_BLOCK_TYPE);
+    expect(APP_BLOCK_DISPATCH_CLASSIFICATION.shape).toContain(MAP_TOPIC_PROPOSAL_BLOCK_TYPE);
   });
 });

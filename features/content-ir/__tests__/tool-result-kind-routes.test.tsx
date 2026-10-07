@@ -58,6 +58,18 @@ jest.mock("next/dynamic", () => ({
   },
 }));
 
+// A string field reads through the package's markdown front door, which is
+// client-only (`clientLazy`: on the server it paints a pulse, never the text).
+// The next/dynamic mock above used to stand in for it when the app's own copy
+// sat behind next/dynamic; since the rich-content switch it does not, so render
+// the REAL markdown engine synchronously — the reader's text must surface.
+jest.mock("@ai-matrx/rich-content/markdown-core/MarkdownCore", () => {
+  const actual = jest.requireActual(
+    "@ai-matrx/rich-content/markdown-core/MarkdownCoreImpl",
+  ) as typeof import("@ai-matrx/rich-content/markdown-core/MarkdownCoreImpl");
+  return { __esModule: true, default: actual.default };
+});
+
 // A NESTED kind is drawn as its kind (C5/W4, Arman 2026-09-30): the floor
 // routes it through KindInstanceRender, whose lazy routes are stubbed by the
 // next/dynamic mock above. Stand in its unroutable floor — what these generic

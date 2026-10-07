@@ -20,7 +20,8 @@
  *
  * The render assertions go through the REAL path (`AgentResultBlock` →
  * `AgentContentList` → `KindInstanceRender` → `SafeBlockRenderer`); only the
- * `next/dynamic` boundary is stubbed, and the stub reports the block type and
+ * client-only boundaries (`next/dynamic`, and `SafeBlockRenderer`'s lazy
+ * BlockRenderer) are stubbed, and the stub reports the block type and
  * the routed kind so "rendered through its own component" is an assertion
  * rather than a hope.
  */
@@ -58,6 +59,27 @@ jest.mock("next/dynamic", () => ({
     };
   },
 }));
+
+// Since the rich-content switch the kind block's `ssr:false` boundary is no
+// longer next/dynamic: `SafeBlockRenderer` (in @ai-matrx/rich-content) owns it
+// through the package's own `clientLazy`, which a static render answers with
+// "Loading content…" forever. Stub THAT boundary the same way — report the kind
+// on the block's envelope, the identity production routes on.
+jest.mock(
+  "@ai-matrx/rich-content/display/chat-markdown/internal-handlers/SafeBlockRenderer",
+  () => {
+    const react = require("react") as typeof React;
+    return {
+      SafeBlockRenderer: ({ block }: { block: { metadata?: Record<string, unknown> } }) => {
+        const envelope = block.metadata?.["__ir"] as { root?: { kind?: string } } | undefined;
+        return react.createElement("div", {
+          "data-testid": "routed-block",
+          "data-kind": envelope?.root?.kind ?? "none",
+        });
+      },
+    };
+  },
+);
 
 import { componentRegistry } from "../registry/component-registry";
 import { kindRegistry } from "../registry/kind-registry";

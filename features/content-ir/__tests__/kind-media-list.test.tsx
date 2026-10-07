@@ -9,9 +9,9 @@ import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 
 import {
-  BLOCK_DISPATCH_CLASSIFICATION,
   resolveBlockDispatch,
 } from "@ai-matrx/rich-content/display/chat-markdown/block-registry/block-dispatch";
+import { APP_BLOCK_DISPATCH_CLASSIFICATION } from "@/features/rich-content-host/domain-block-dispatch";
 import {
   MediaCandidateVerdictBlock,
   MediaListRankingBlock,
@@ -58,7 +58,7 @@ describe("media list kinds — registration", () => {
       const def = SYSTEM_KIND_DEFINITIONS.find((d) => d.kind === kind);
       expect(def?.legacyBlockType).toBe(kind);
       expect(resolveBlockDispatch(kind)).not.toBeNull();
-      expect(BLOCK_DISPATCH_CLASSIFICATION.shape).toContain(kind);
+      expect(APP_BLOCK_DISPATCH_CLASSIFICATION.shape).toContain(kind);
     }
   });
 });

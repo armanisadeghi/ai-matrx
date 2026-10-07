@@ -91,18 +91,10 @@ jest.mock(
 import {
   resolveBlockDispatch,
   reportUnregisteredBlockType,
-  BLOCK_DISPATCH_CLASSIFICATION as ENGINE_CLASSIFICATION,
   isBlockLoading,
 } from "@ai-matrx/rich-content/display/chat-markdown/block-registry/block-dispatch";
-import { DOMAIN_BLOCK_DISPATCH_CLASSIFICATION } from "@/features/rich-content-host/domain-block-dispatch";
-
 // THE classification = the engine's generic half + this app's domain half (registered at load).
-const BLOCK_DISPATCH_CLASSIFICATION = Object.fromEntries(
-  Object.entries(ENGINE_CLASSIFICATION).map(([bucket, names]) => [
-    bucket,
-    [...names, ...(DOMAIN_BLOCK_DISPATCH_CLASSIFICATION[bucket as keyof typeof DOMAIN_BLOCK_DISPATCH_CLASSIFICATION] ?? [])],
-  ]),
-) as unknown as Record<keyof typeof ENGINE_CLASSIFICATION, readonly string[]>;
+import { APP_BLOCK_DISPATCH_CLASSIFICATION as BLOCK_DISPATCH_CLASSIFICATION } from "@/features/rich-content-host/domain-block-dispatch";
 
 interface CrosswalkRow {
   name: string;

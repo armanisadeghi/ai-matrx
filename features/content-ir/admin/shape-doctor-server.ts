@@ -65,8 +65,10 @@ import {
   artifactKindSlugsFromText,
   compiledKindSlugsFromText,
   compiledLoadingSlugsFromTexts,
+  SHAPE_SOURCE_FILES,
   extractDetectorTokensFromTexts,
-  extractDispatchKeysFromText,
+  DISPATCH_SOURCE_KEYS,
+  extractDispatchKeysFromTexts,
   extractHostSurfaceTokensFromTexts,
   type HostSurfaceTokens,
 } from "@/features/content-ir/registry/shape-doctor-extract";
@@ -86,15 +88,11 @@ const DB_KIND_COMPONENT_KEY = "db_kind_component";
 // ─── Code-derived inputs (fs, loud-degrade) ─────────────────────────────────
 
 const SOURCE_FILES = {
-  accumulator:
-    "../aidream/apps/shared/chat/src/agents/redux/execution-system/utils/stream-block-accumulator.ts",
-  splitter:
-    "components/mardown-display/markdown-classification/processors/utils/content-splitter-v2.ts",
+  accumulator: SHAPE_SOURCE_FILES.accumulator.path,
+  splitter: SHAPE_SOURCE_FILES.splitter.path,
   systemKinds: "features/content-ir/registry/system-kinds.ts",
   kindsDir: "features/content-ir/kinds",
   artifactRegistry: "features/canvas/artifact-types/artifact-type-registry.ts",
-  blockDispatch:
-    "components/mardown-display/chat-markdown/block-registry/block-dispatch.tsx",
 } as const;
 
 function readSource(relPath: string): string | null {
@@ -201,24 +199,27 @@ function gatherCodeInputs(): CodeInputs {
   // Dispatch keys — the code side of the dangling-component_key red. Unreadable
   // (or an extraction failure) means the check CANNOT run: it is skipped and
   // the Component column leaves the drift diff, never silently passed.
-  const dispatchText = readSource(SOURCE_FILES.blockDispatch);
+  const dispatchSources = DISPATCH_SOURCE_KEYS.map((key) => {
+    const file = SHAPE_SOURCE_FILES[key].path;
+    return { file, text: readSource(file) };
+  });
   let dispatchKeys: string[] | null = null;
-  if (dispatchText) {
-    const extraction = extractDispatchKeysFromText(dispatchText, {
-      DB_KIND_COMPONENT_KEY,
-      GENERIC_STRUCTURED_COMPONENT_KEY,
-    });
+  if (dispatchSources.every((s) => s.text !== null)) {
+    const extraction = extractDispatchKeysFromTexts(
+      dispatchSources.map((s) => ({ file: s.file, text: s.text ?? "" })),
+      { DB_KIND_COMPONENT_KEY, GENERIC_STRUCTURED_COMPONENT_KEY },
+    );
     if (extraction.failures.length === 0) {
       dispatchKeys = extraction.keys;
     } else {
       warnings.push(
         // access-errors: ok — admin shape-doctor census warning about source-code literals, developer-facing
-        `Dispatch table literal(s) ${extraction.failures.map((f) => f.literal).join(", ")} not found in ${SOURCE_FILES.blockDispatch} — the dangling-component_key check is blind (run pnpm check:shapes for the CLI red).`,
+        `Dispatch table literal(s) ${extraction.failures.map((f) => `${f.literal} (${f.file})`).join(", ")} not found — the dangling-component_key check is blind (run pnpm check:shapes for the CLI red).`,
       );
     }
   } else {
     warnings.push(
-      "block-dispatch.tsx unreadable in this runtime — the dangling-component_key check is omitted; run pnpm check:shapes locally.",
+      `${dispatchSources.filter((s) => s.text === null).map((s) => s.file).join(", ")} unreadable in this runtime — the dangling-component_key check is omitted; run pnpm check:shapes locally.`,
     );
   }
   if (!dispatchKeys) excluded.add("component");
