@@ -10,11 +10,12 @@ import { createRoot } from "react-dom/client";
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
 const push = jest.fn();
-jest.mock("next/navigation", () => ({ useRouter: () => ({ push }) }));
+let currentPath = "/board";
+jest.mock("next/navigation", () => ({ useRouter: () => ({ push }), usePathname: () => currentPath }));
 jest.mock("@/lib/redux/hooks", () => ({ useAppSelector: () => "org-1" }));
 jest.mock("@/lib/redux/slices/appContextSlice", () => ({ selectOrganizationId: () => "org-1" }));
 jest.mock("@/lib/organization/organization-gate", () => ({ isOrganizationSelectionCancelled: () => false }));
-jest.mock("@/lib/toast", () => ({ toast: { error: jest.fn() } }));
+jest.mock("@/lib/toast", () => ({ toast: { error: jest.fn(), warning: jest.fn() } }));
 const beginBoardCreate = jest.fn();
 jest.mock("../persistence/boardsService", () => ({
   beginBoardCreate: (...a: unknown[]) => beginBoardCreate(...a),
@@ -35,6 +36,7 @@ function renderHook<T>(use: () => T) {
 }
 
 beforeEach(() => {
+  currentPath = "/board";
   push.mockClear();
   beginBoardCreate.mockReset();
 });
@@ -85,5 +87,48 @@ describe("both New board doors use the one path", () => {
     const src = read(f);
     expect(src).toContain("useCreateBoard");
     expect(src).not.toMatch(/\bcreateBoard\(/);
+  });
+});
+
+describe("a slow route change never invites a second board", () => {
+  it("stays busy past the old 2 second window until the page is at the new board", async () => {
+    jest.useFakeTimers();
+    try {
+      beginBoardCreate.mockResolvedValue({ id: "slow-1" });
+      const { result } = renderHook(() => useCreateBoard());
+      await act(async () => {
+        await result.current.newBoard();
+      });
+      expect(push).toHaveBeenCalledWith("/board/slow-1");
+      await act(async () => {
+        jest.advanceTimersByTime(10_000); // the route is still compiling: the list is still showing
+      });
+      expect(result.current.creating).toBe(true);
+      await act(async () => {
+        await result.current.newBoard();
+      });
+      expect(beginBoardCreate).toHaveBeenCalledTimes(1);
+    } finally {
+      jest.useRealTimers();
+    }
+  });
+
+  it("is free again once the board is open", async () => {
+    beginBoardCreate.mockResolvedValue({ id: "ok-1" });
+    const el = document.createElement("div");
+    const result = { current: undefined as unknown as ReturnType<typeof useCreateBoard> };
+    function Probe() {
+      result.current = useCreateBoard();
+      return null;
+    }
+    const root = createRoot(el);
+    await act(async () => root.render(<Probe />));
+    await act(async () => {
+      await result.current.newBoard();
+    });
+    expect(result.current.creating).toBe(true);
+    currentPath = "/board/ok-1";
+    await act(async () => root.render(<Probe />));
+    expect(result.current.creating).toBe(false);
   });
 });
