@@ -306,6 +306,22 @@ response, capture that response → bake it into the system prompt as an example
 agent gets permanently better. Never let an agent (including you) pad a prompt with
 plausible-looking invented examples; that is fake specificity.
 
+### 10. Mandate's agent → bind it with an explicit map, then run it through the door
+
+An agent made for a mandate is not done until the mandate runs it. Two REQUIRED outputs:
+
+1. **The binding.** On the mandate's Binding tab (or `PUT /mandates/{key}/default-holder`,
+   the same writer), key every offered value the agent consumes to its variable, set
+   `when_absent` on each optional one, and Save. Done when the tab says "Every input this
+   Mandate Holder needs is fed" and aidream `scripts/check_mandate_default_maps.py --only <key>`
+   prints `ok`. An empty map still delivers by name at run time, but nobody can see or review
+   it — 2026-10-06, `spaces.writing_assist` shipped that way and read "0 of 7 fed".
+2. **One run through the mandate door**, never only `agent_run` on the agent:
+   `POST /ai/mandates/{key}` as `admin@admin.com` with `dry_run: true, store: false` (plus
+   `conversation_id`, `is_new: true`, `organization_id`). Done when each value you sent appears
+   in the returned `messages`/`system_prompt`. Record it in the approval package beside the
+   direct runs.
+
 ## Anatomy of a great agent
 
 What the Keyword Analysis Master shows, and every agent you create should have:
@@ -404,6 +420,7 @@ on the Masterwork Approach Selector and Coherence Partner (2026-08-22):
 | Kind emitted with no registered shape/component | A kind without a component is useless |
 | Invented category/tags | Reuse the live facet tree |
 | Never actually run | Two real runs minimum before "done" |
+| Mandate's agent tested only by running the agent directly ("not verified: a run through the mandate") | Direct runs skip the binding; bind with an explicit map and run the mandate door once (step 10) |
 | Agent asked a question its inputs cannot answer | The whole point of agent-manifest — it will answer anyway, and the fabrication gets STORED as evidence |
 | "Verified" meaning the response had the right shape | A response is not a result; measure input coverage and count fabricated entities |
 | Raw `agx_agent` insert / SQL | Everything goes through the MCP and the trained builder |
@@ -438,4 +455,5 @@ mandatory/optional marked · kind(s) registered and component rendering · agent
 via the builder with a pretty name, teaching description and help text, conversational
 embedded user message · model overridden and settings tuned · tools exact and minimal ·
 run at least twice on real sample data and judged against the deliverable · the save returns no contract `warnings` · `agent_id` +
-pinned `version_id` recorded for any code caller.
+pinned `version_id` recorded for any code caller · for a mandate's agent: bound with an explicit
+consumption map (`when_absent` on every optional) and one mandate-door run showing every value arrived.

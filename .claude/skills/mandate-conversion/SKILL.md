@@ -121,7 +121,9 @@ the **mandate** (`output_kind`, `required_output_keys`, `accepts_user_input`), t
 **provision** (offered values reconciled to what the call site really sends — see
 [agent-provision](/skills/agent-provision/SKILL.md)), the **agent** (its prompt must state
 the exact output shape it is now bound to; a prompt that describes a different shape than
-the schema is the drift this campaign keeps finding), and the **consumers** if a reader must
+the schema is the drift this campaign keeps finding), the **binding** (the default consumption
+map keyed to the agent's variables, `when_absent` on each optional value —
+[create-agent](/skills/create-agent/SKILL.md) step 10), and the **consumers** if a reader must
 change.
 
 **Report hygiene (adversarial findings, 2026-08-26):** run ids are `chat.agent_run` /
