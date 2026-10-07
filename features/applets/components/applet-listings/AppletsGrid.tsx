@@ -503,7 +503,7 @@ export function AppletsGrid({
                         kind: "applets-briefs",
                         location: "AI Matrx — Applets",
                         description:
-                          "One-line briefs for every Applet, regardless of the active filters.",
+                          "Briefs for every Applet, ignoring filters.",
                         data: allAppCardModels.map(appBrief),
                         attributes: { count: allAppCardModels.length },
                       }),
