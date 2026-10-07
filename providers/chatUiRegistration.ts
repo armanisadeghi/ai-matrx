@@ -392,11 +392,6 @@ registerChatUi({
   useLoginHref: Host_useLoginHref,
 });
 
-import { useAgentChangeReach as Host_useAgentChangeReach } from "@/features/mandates/admin/useAgentChangeReach";
-registerChatUi({
-  useAgentChangeReach: Host_useAgentChangeReach,
-});
-
 import { useAccess as Host_useAccess } from "@/utils/permissions/access";
 registerChatUi({
   useAccess: Host_useAccess,
@@ -475,43 +470,18 @@ registerChatUi({
   toastDoor: Host_toastDoor,
 });
 
-import { dismissDriftAlert as Host_dismissDriftAlert } from "@/features/agents/redux/usages/usages.thunks";
-import { fetchDriftAlerts as Host_fetchDriftAlerts } from "@/features/agents/redux/usages/usages.thunks";
-import { markDriftAlertViewed as Host_markDriftAlertViewed } from "@/features/agents/redux/usages/usages.thunks";
-import { fetchAgentUsages as Host_fetchAgentUsages } from "@/features/agents/redux/usages/usages.thunks";
-import { fetchAgentUsageReport as Host_fetchAgentUsageReport } from "@/features/agents/redux/usages/usages.thunks";
+// Agent builder contributions drawn into chat (AGENT-CORE-PLAN B1).
+import { AgentOptionsMenu as Host_AgentOptionsMenu } from "@/features/agents/components/shared/AgentOptionsMenu";
+import { AgentSaveStatus as Host_AgentSaveStatus } from "@/features/agents/components/shared/AgentSaveStatus";
+import { AgentSaveTapButton as Host_AgentSaveTapButton } from "@/features/agents/components/shared/AgentSaveTapButton";
+import { AgentPeekDuplicateButton as Host_AgentPeekDuplicateButton } from "@/features/agents/components/shared/AgentPeekDuplicateButton";
+import { CreatorRunPanelLazy as Host_CreatorRunPanel } from "@/features/agents/components/run-controls/CreatorRunPanelLazy";
 registerChatUi({
-  dismissDriftAlert: Host_dismissDriftAlert,
-  fetchDriftAlerts: Host_fetchDriftAlerts,
-  markDriftAlertViewed: Host_markDriftAlertViewed,
-  fetchAgentUsages: Host_fetchAgentUsages,
-  fetchAgentUsageReport: Host_fetchAgentUsageReport,
-});
-
-import { selectActiveBannerAlerts as Host_selectActiveBannerAlerts } from "@/features/agents/redux/usages/usages.selectors";
-import { selectDriftAlertsStatus as Host_selectDriftAlertsStatus } from "@/features/agents/redux/usages/usages.selectors";
-import { makeSelectUsageCache as Host_makeSelectUsageCache } from "@/features/agents/redux/usages/usages.selectors";
-import { makeSelectUsageGroups as Host_makeSelectUsageGroups } from "@/features/agents/redux/usages/usages.selectors";
-import { makeSelectUsageAggregates as Host_makeSelectUsageAggregates } from "@/features/agents/redux/usages/usages.selectors";
-import { makeSelectRedFlagSummary as Host_makeSelectRedFlagSummary } from "@/features/agents/redux/usages/usages.selectors";
-import { makeSelectReport as Host_makeSelectReport } from "@/features/agents/redux/usages/usages.selectors";
-import { makeSelectReportSorted as Host_makeSelectReportSorted } from "@/features/agents/redux/usages/usages.selectors";
-import { makeSelectReportTotals as Host_makeSelectReportTotals } from "@/features/agents/redux/usages/usages.selectors";
-registerChatUi({
-  selectActiveBannerAlerts: Host_selectActiveBannerAlerts,
-  selectDriftAlertsStatus: Host_selectDriftAlertsStatus,
-  makeSelectUsageCache: Host_makeSelectUsageCache,
-  makeSelectUsageGroups: Host_makeSelectUsageGroups,
-  makeSelectUsageAggregates: Host_makeSelectUsageAggregates,
-  makeSelectRedFlagSummary: Host_makeSelectRedFlagSummary,
-  makeSelectReport: Host_makeSelectReport,
-  makeSelectReportSorted: Host_makeSelectReportSorted,
-  makeSelectReportTotals: Host_makeSelectReportTotals,
-});
-
-import { AgentSettingsModal as Host_AgentSettingsModal } from "@/features/agents/components/settings-management/AgentSettingsModal";
-registerChatUi({
-  AgentSettingsModal: Host_AgentSettingsModal,
+  AgentOptionsMenu: Host_AgentOptionsMenu,
+  AgentSaveStatus: Host_AgentSaveStatus,
+  AgentSaveTapButton: Host_AgentSaveTapButton,
+  AgentPeekDuplicateButton: Host_AgentPeekDuplicateButton,
+  CreatorRunPanel: Host_CreatorRunPanel,
 });
 
 import { AgentSettingsCore as Host_AgentSettingsCore } from "@/features/agents/components/settings-management/AgentSettingsCore";

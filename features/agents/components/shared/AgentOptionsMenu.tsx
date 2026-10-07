@@ -2,7 +2,7 @@
 
 import { useAppDispatch, useAppSelector } from "@ai-matrx/chat/store/hooks";
 import { applyOrganizationContextHeader } from "@ai-matrx/chat/host/server/organization-context";
-import { getBuilderDoor } from "@ai-matrx/chat/host/builder-door";
+
 import { invalidateAgentCache } from "@ai-matrx/chat/agents/redux/agent-definition/invalidate-agent-cache.thunk";
 import { selectAgentById } from "@ai-matrx/chat/agents/redux/agent-definition/selectors";
 import { useOpenAgentSettingsWindow } from "@ai-matrx/chat/host/window-openers";
@@ -269,13 +269,9 @@ export function AgentOptionsMenu({
 
   const runDuplicate = duplicateFlow.openChooser;
 
-  // Without a registered builder door (a bare host) there is no Duplicate: the row is absent
-  // and the missing door is reported once (host/builder-door), never a button that does nothing.
-  const hasBuilderDoor = getBuilderDoor() !== null;
   const managementItems = AGENT_MANAGEMENT_ITEMS.filter(
     (item) =>
-      (!isBuiltin || item.label !== "Convert to Template") &&
-      (hasBuilderDoor || item.label !== "Duplicate"),
+      !isBuiltin || item.label !== "Convert to Template",
   );
 
   // Admin actions (incl. "Find Usages (Admin)") are super-admin only. The
@@ -722,13 +718,9 @@ function MobileMenuContent({
   // for the full rationale.
   const agent = useAppSelector((state) => selectAgentById(state, agentId));
   const isBuiltin = agent?.agentType === "builtin";
-  // Without a registered builder door (a bare host) there is no Duplicate: the row is absent
-  // and the missing door is reported once (host/builder-door), never a button that does nothing.
-  const hasBuilderDoor = getBuilderDoor() !== null;
   const managementItems = AGENT_MANAGEMENT_ITEMS.filter(
     (item) =>
-      (!isBuiltin || item.label !== "Convert to Template") &&
-      (hasBuilderDoor || item.label !== "Duplicate"),
+      !isBuiltin || item.label !== "Convert to Template",
   );
   // Admin actions (incl. "Find Usages (Admin)") are super-admin only. The
   // server RPCs enforce is_super_admin() regardless; this hides the entry.

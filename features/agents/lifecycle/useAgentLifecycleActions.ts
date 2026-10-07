@@ -26,7 +26,7 @@
 import { useCallback, useState } from "react";
 import { useRouter } from "@ai-matrx/chat/host/navigation";
 import { useAppDispatch, useAppSelector } from "@ai-matrx/chat/store/hooks";
-import { getBuilderDoor, requireBuilderDoor } from "@ai-matrx/chat/host/builder-door";
+import { deleteAgent, saveAgentField } from "@/features/agents/redux/builder-write.thunks";
 import { selectAgentById } from "@ai-matrx/chat/agents/redux/agent-definition/selectors";
 import { confirm } from "@ai-matrx/chat/host/ui-slots";
 import { buildAgentDeleteConfirm } from "@ai-matrx/chat/ui/agentDeleteConfirm";
@@ -57,7 +57,7 @@ export function useAgentLifecycleActions(
   const agent = useAppSelector((state) => selectAgentById(state, agentId));
   const [isBusy, setIsBusy] = useState(false);
 
-  const available = getBuilderDoor() !== null;
+  const available = true;
   const isArchived = Boolean(agent?.isArchived);
   const name = agent?.name ?? "";
 
@@ -65,7 +65,7 @@ export function useAgentLifecycleActions(
     setIsBusy(true);
     try {
       await dispatch(
-        requireBuilderDoor().saveAgentField({ agentId, field: "isArchived", value: !isArchived as never }),
+        saveAgentField({ agentId, field: "isArchived", value: !isArchived as never }),
       ).unwrap();
       toast.success(
         isArchived
@@ -88,7 +88,7 @@ export function useAgentLifecycleActions(
     if (!ok) return;
     setIsBusy(true);
     try {
-      await dispatch(requireBuilderDoor().deleteAgent(agentId)).unwrap();
+      await dispatch(deleteAgent(agentId)).unwrap();
       toast.success(name ? `Deleted "${name}"` : "Agent deleted");
       // This screen's subject is gone, so it does not stay on it pretending otherwise.
       router.push(basePath);

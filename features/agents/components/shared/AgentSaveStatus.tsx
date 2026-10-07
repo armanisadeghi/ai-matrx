@@ -18,7 +18,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@ai-matrx/design-system";
-import { AgentSettingsModal } from "@ai-matrx/chat/host/ui-slots";
+import { AgentSettingsModal } from "@/features/agents/components/settings-management/AgentSettingsModal";
 import { useAgentSaveAction } from "./useAgentSaveAction";
 import { ErrorAlchemyMenu } from "@ai-matrx/chat/host/ui-slots";
 
