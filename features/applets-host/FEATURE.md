@@ -96,6 +96,11 @@ record's own `scope` (`{ entries, shadowDangerousGlobals }`); app-owned modules 
   to `liveValues`, so `surface.getValue` answers an unset name from the page's live capture.
 
 ---
+- A stored Applet row may use a package export only once the DEPLOYED site has it. The deployed build carries the
+  `@ai-matrx/*` versions locked at its `/api/version` commit, not the ones installed locally (2026-10-07: `WritingBox`,
+  applets 0.8.0, broke 7 live Applets while live served 0.7.7). Before writing any row run
+  `pnpm -s tsx scripts/applets/applet-render-sweep.ts --against-live`; it names every row that would break and exits 1.
+  Self-test: `node scripts/applets/against-live.mjs --self-test`.
 
 ## Change Log
 
@@ -126,3 +131,4 @@ record's own `scope` (`{ entries, shadowDangerousGlobals }`); app-owned modules 
 - 2026-10-07 — Adopted `@ai-matrx/applets` 0.8.0: `renderWritingBox` → `AppletWritingBox` (ProTextarea), so `<WritingBox>` and `<ConversationComposer>` carry dictation and read-aloud.
 - 2026-10-07 — "agent app" retired (lane A): the Applet runs at `/applets/<slug>` (was `/apps/<slug>`), the old
   `(public)/applets/[slug]` intro folded into the same route; owner tools at `/applets/manage/<id>/…`.
+- 2026-10-07 — `applet-render-sweep.ts --against-live` (lane N): checks every row's `@ai-matrx` imports against the versions the deployed site's lockfile carries; self-tested red/green.

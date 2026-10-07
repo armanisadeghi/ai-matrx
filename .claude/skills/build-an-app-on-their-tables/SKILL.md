@@ -73,6 +73,10 @@ Contract: `common-docs/projects/applets/CONTRACTS.md` (§2 hooks, §8 record). H
    proof organization); switch pages, change one real value and re-read it from a second session, run
    the job. Restore any value you changed.
 
+## Before writing a row
+
+Run `pnpm -s tsx scripts/applets/applet-render-sweep.ts --against-live [--files <dir>]` before writing or updating any row. A row may use a new `@ai-matrx` export only once the DEPLOYED site has it: the plain sweep compiles against the local install and says ok while https://www.aimatrx.com (`/api/version` commit, its lockfile) may still serve an older package. Any `breaks_on_live` row means wait for the deploy.
+
 ## Who can open it
 
 Signed-in people only (`app/(link)/applets/[slug]/[[...path]]`): a signed-out visitor is sent to sign in
