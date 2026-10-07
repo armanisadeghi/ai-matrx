@@ -5,6 +5,8 @@
  * app diagnostics port and the real store; only the host lookup is stubbed.
  * Fresh module copies (jest.setup already loaded the seams).
  */
+export {};
+
 type Store = typeof import("@/lib/diagnostics/errorCaptureStore");
 type Persist = typeof import("@/lib/diagnostics/persistCapturedErrors");
 

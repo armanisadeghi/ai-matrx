@@ -85,14 +85,14 @@ beforeEach(() => {
 // ── the identity answer ─────────────────────────────────────────────────────
 
 test("production only when the Supabase URL is production's", () => {
-  expect(serverDatabase({ NEXT_PUBLIC_SUPABASE_URL: PROD_URL } as NodeJS.ProcessEnv).isProduction).toBe(true);
+  expect(serverDatabase({ NEXT_PUBLIC_SUPABASE_URL: PROD_URL }).isProduction).toBe(true);
   expect(
-    serverDatabase({ NEXT_PUBLIC_SUPABASE_URL: `https://${PRODUCTION_REF}.supabase.co` } as NodeJS.ProcessEnv).isProduction,
+    serverDatabase({ NEXT_PUBLIC_SUPABASE_URL: `https://${PRODUCTION_REF}.supabase.co` }).isProduction,
   ).toBe(true);
-  const clone = serverDatabase({ NEXT_PUBLIC_SUPABASE_URL: CLONE_URL } as NodeJS.ProcessEnv);
+  const clone = serverDatabase({ NEXT_PUBLIC_SUPABASE_URL: CLONE_URL });
   expect(clone).toMatchObject({ isProduction: false, ref: "nwvvyzngqicrmnbuzauy" });
-  expect(serverDatabase({ NEXT_PUBLIC_SUPABASE_URL: "http://localhost:54321" } as NodeJS.ProcessEnv).isProduction).toBe(false);
-  expect(serverDatabase({} as NodeJS.ProcessEnv).isProduction).toBe(false);
+  expect(serverDatabase({ NEXT_PUBLIC_SUPABASE_URL: "http://localhost:54321" }).isProduction).toBe(false);
+  expect(serverDatabase({}).isProduction).toBe(false);
 });
 
 test("the loopback handsets agree with aidream's single home", () => {

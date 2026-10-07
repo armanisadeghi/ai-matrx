@@ -69,8 +69,11 @@ export class OutboundSuppressedError extends Error {
   }
 }
 
+/** The slice of the environment the guard reads; a plain object satisfies it. */
+export type OutboundEnv = Readonly<Record<string, string | undefined>>;
+
 /** Which database this server is wired to, from the one URL its Supabase clients use. */
-export function serverDatabase(env: NodeJS.ProcessEnv = process.env): ServerDatabase {
+export function serverDatabase(env: OutboundEnv = process.env): ServerDatabase {
   const raw = env.NEXT_PUBLIC_SUPABASE_URL?.trim();
   let host: string | null = null;
   try {
@@ -93,7 +96,7 @@ function describe(db: ServerDatabase): string {
 export function outboundSuppression(
   channel: OutboundChannel,
   address: string | null | undefined,
-  env: NodeJS.ProcessEnv = process.env,
+  env: OutboundEnv = process.env,
 ): OutboundSuppression | null {
   const database = serverDatabase(env);
   if (database.isProduction) return null;
@@ -113,7 +116,7 @@ export function outboundSuppression(
 export function refuseOutboundOffProduction(
   channel: OutboundChannel,
   address: string | null | undefined,
-  env: NodeJS.ProcessEnv = process.env,
+  env: OutboundEnv = process.env,
 ): void {
   const suppression = outboundSuppression(channel, address, env);
   if (suppression) throw new OutboundSuppressedError(suppression);

@@ -31,7 +31,7 @@ function query(partial: Partial<EntityListQuery>): EntityListQuery {
 
 const wire: MandateMemberWireRow = {
   id: "6d6173ee-3807-4a99-9fb7-6b14abbb459a",
-  mandate_key: "agent_apps.auto_create",
+  mandate_key: "agent_apps.prompt_app_dev",
   name: "Agent Apps — Auto Create",
   feature_label: "Agent Apps",
   goal: "Builds a complete Prompt App (UI code) from the app's prompt object.",
@@ -222,11 +222,11 @@ describe("record tabs per seat", () => {
 
 describe("routes and Back", () => {
   it("each seat's record and create hrefs", () => {
-    expect(memberMandateRecordHref("person", "agent_apps.auto_create")).toBe(
-      "/mandates/record-preview/agent_apps.auto_create",
+    expect(memberMandateRecordHref("person", "agent_apps.prompt_app_dev")).toBe(
+      "/mandates/record-preview/agent_apps.prompt_app_dev",
     );
-    expect(memberMandateRecordHref("organization", "agent_apps.auto_create", ORG, "holder")).toBe(
-      `/organizations/${ORG}/mandates/agent_apps.auto_create?tab=holder`,
+    expect(memberMandateRecordHref("organization", "agent_apps.prompt_app_dev", ORG, "holder")).toBe(
+      `/organizations/${ORG}/mandates/agent_apps.prompt_app_dev?tab=holder`,
     );
     expect(newSoftMandateHref("organization", ORG)).toBe(`/organizations/${ORG}/mandates/new`);
     expect(newSoftMandateHref("person")).toBe("/mandates/new-preview");

@@ -12,6 +12,8 @@
  * the SAME jsdom sessionStorage — exactly what a reload is to this store.
  */
 
+export {};
+
 type Store = typeof import("./errorCaptureStore");
 
 function loadPage(): Store {

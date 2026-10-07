@@ -12,11 +12,6 @@ const K = MANDATE_KEYS;
 export const AGENT_APPS_PLACES: FeaturePlaces = {
   feature: "agent_apps",
   label: "Agent apps",
-  aliases: {
-    "prompt-app-auto-create": K.agent_apps__auto_create,
-    "prompt-app-auto-create-lightning": K.agent_apps__auto_create_lightning,
-    "prompt-app-metadata-generator": K.agent_apps__metadata,
-  },
   roots: ["features/agent-apps", "app/(core)/agent-apps"],
   places: [
     {

@@ -1,0 +1,11 @@
+import { open } from "./lib.mjs";
+const id = process.argv[2];
+const { browser, page } = await open({ next: `/spaces/${id}`, width: 1440, height: 900 });
+page.on("console", (m) => { if (m.type() === "error" || /space/i.test(m.text())) console.log("[console]", m.type(), m.text().slice(0, 300)); });
+page.on("response", async (r) => { if (/space_list|space_children|document\?/.test(r.url())) console.log("[resp]", r.status(), r.url().slice(0, 200)); });
+await page.locator(".bn-editor").first().waitFor({ timeout: 120_000 });
+await page.waitForTimeout(8000);
+const links = await page.locator(".spaces-page-link").evaluateAll((els) => els.map((e) => `${e.getAttribute("data-missing") ?? ""}|${e.getAttribute("href")}|${e.textContent}`));
+console.log(JSON.stringify(links, null, 1));
+await page.screenshot({ path: "/private/tmp/claude-501/sp2/xorg.png" });
+await browser.close();

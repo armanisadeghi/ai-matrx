@@ -17,9 +17,6 @@ import { MANDATE_KEYS, type MandateKey } from "@ai-matrx/agents/mandates";
  */
 
 export const SYSTEM_AGENT_MANDATES = {
-  "prompt-app-auto-create": MANDATE_KEYS.agent_apps__auto_create,
-  "prompt-app-auto-create-lightning": MANDATE_KEYS.agent_apps__auto_create_lightning,
-  "prompt-app-metadata-generator": MANDATE_KEYS.agent_apps__metadata,
   "prompt-app-ui-editor": MANDATE_KEYS.code_editor__prompt_app_ui_edit,
   "generic-code-editor": MANDATE_KEYS.code_editor__code_edit,
   "code-editor-dynamic-context": MANDATE_KEYS.code_editor__dynamic_context_edit,
