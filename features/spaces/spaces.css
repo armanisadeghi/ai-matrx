@@ -1532,3 +1532,13 @@ tr:hover .spaces-entity-openpill, .spaces-entity-open:focus-visible .spaces-enti
   font-size: 14px;
   font-weight: 500;
 }
+
+/* The database title typed in place (Notion): the title's own type, no field chrome. */
+.spaces-db-title .spaces-db-title-input {
+  font: inherit;
+  color: inherit;
+  padding: 0;
+  height: auto;
+  min-width: 0;
+  flex: 1;
+}

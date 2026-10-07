@@ -186,7 +186,23 @@ function DatabaseFrame({
       {props.showTitle !== false && !isChart ? (
         <div className="spaces-db-title">
           {props.linked ? <ArrowUpRight size={14} strokeWidth={2} className="spaces-db-linked" /> : null}
-          <span>{props.title || sourceName}</span>
+          {editable && !sample ? (
+            // Notion: the database's title is typed in place.
+            <Input
+              variant="bare"
+              key={props.title || sourceName}
+              defaultValue={props.title || sourceName}
+              aria-label="Database title"
+              className="spaces-db-title-input"
+              onBlur={(e) => {
+                const next = e.target.value.trim();
+                if (next && next !== (props.title || sourceName)) save({ title: next });
+              }}
+              onKeyDown={(e) => e.key === "Enter" && (e.currentTarget as HTMLInputElement).blur()}
+            />
+          ) : (
+            <span>{props.title || sourceName}</span>
+          )}
         </div>
       ) : null}
       <div className="spaces-db-bar">
