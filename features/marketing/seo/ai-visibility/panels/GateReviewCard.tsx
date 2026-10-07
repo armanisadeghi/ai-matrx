@@ -23,7 +23,6 @@ import { Input } from "@ai-matrx/design-system/controls";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
 import { formatDate } from "@/features/marketing/components/shared/MarketingUi";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { useCostDisplay } from "@/components/cost/useCostDisplay";
@@ -49,6 +48,7 @@ import type {
   Gate4Payload,
 } from "./types";
 
+import { ProTextarea } from "@/components/official/ProTextarea";
 function arr<T>(value: unknown): T[] {
   return Array.isArray(value) ? (value as T[]) : [];
 }
@@ -646,7 +646,7 @@ export function GateReviewCard({
       )}
 
       <div className="flex flex-col gap-2 border-t border-border/60 px-3 py-2">
-        <Textarea minHeight={56}
+        <ProTextarea minHeight={56}
           value={note}
           onChange={(event) => setNote(event.target.value)}
           placeholder="A note for the record (optional) — saved with your decision, your name and the time."

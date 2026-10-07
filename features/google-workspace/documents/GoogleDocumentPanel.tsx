@@ -16,7 +16,6 @@ import { Archive, ExternalLink, FolderOpen, Lock, Plug, TriangleAlert } from "lu
 
 import { Button } from "@ai-matrx/design-system";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
-import { Textarea } from "@/components/ui/textarea";
 import { toast } from "@/lib/toast";
 import { extractErrorMessage } from "@/utils/errors";
 import { isOrganizationRequiredError } from "@/lib/organizations/organizationRequiredError";
@@ -51,6 +50,7 @@ import { announceDocumentRefreshed, subscribeToDocumentRefresh } from "./refresh
 import type { GoogleDocumentRow } from "./types";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
+import { ProTextarea } from "@/components/official/ProTextarea";
 /**
  * 🚨 N12 — THE DOOR TO GOOGLE IS DERIVED FROM THE FILE ID WHEN THE ROW HAS NO URL.
  *
@@ -461,7 +461,7 @@ function AppendComposer({
 
   return (
     <div className="space-y-2" data-google-document-append>
-      <Textarea
+      <ProTextarea
         value={text}
         onChange={(event) => {
           setText(event.target.value);

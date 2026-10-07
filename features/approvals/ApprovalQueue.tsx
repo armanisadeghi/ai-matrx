@@ -49,7 +49,6 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
-import { Textarea } from "@/components/ui/textarea";
 import { toast } from "@/lib/toast";
 import { cn } from "@/lib/utils";
 import { ApprovalLoadError } from "./ApprovalLoadError";
@@ -69,6 +68,7 @@ import {
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { AGENT_ICON } from "@/components/icons/domain-icons";
 
+import { ProTextarea } from "@/components/official/ProTextarea";
 type Decision = "accept" | "reject";
 
 interface Slot {
@@ -1032,7 +1032,7 @@ export function ApprovalQueue({
                 ))}
               </div>
               {asksReason ? (
-                <Textarea
+                <ProTextarea
                   value={reason}
                   onChange={(event) => setReason(event.target.value)}
                   rows={3}

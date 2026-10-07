@@ -37,6 +37,19 @@ import {
   AutomationButton,
   notifyMissingAutomationMandate,
 } from "./AutomationButton";
+// ProTextarea needs the app's Redux store (its agent actions); this suite tests the host, so the
+// writing box renders as the plain textarea it wraps.
+jest.mock("@/components/official/ProTextarea", () => {
+  const ReactLib: typeof import("react") = jest.requireActual("react");
+  const ProTextarea = ReactLib.forwardRef<HTMLTextAreaElement, Record<string, unknown>>(function ProTextarea(
+    { surfaceName: _s, getApplicationScope: _g, autoGrow: _a, minHeight: _min, maxHeight: _max, wrapperClassName: _w, ...rest },
+    ref,
+  ) {
+    return ReactLib.createElement("textarea", { ...rest, ref });
+  });
+  return { ProTextarea };
+});
+
 import { KIND_CONVERTER_MANDATE_KEY } from "./constants";
 import { CHOOSE_WORKSPACE_LINE } from "./AutomationButton";
 import { ensureOrganizationContext } from "@/lib/organization/organization-gate";

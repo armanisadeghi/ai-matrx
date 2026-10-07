@@ -22,7 +22,6 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@ai-matrx/design-system/controls";
-import { Textarea } from "@/components/ui/textarea";
 import { sourceHref } from "@/features/sources/api/sourcesApi";
 
 import {
@@ -46,6 +45,7 @@ import {
 } from "./service";
 import { formatCount } from "@ai-matrx/kit/format";
 
+import { ProTextarea } from "@/components/official/ProTextarea";
 export interface VoicePageProps {
   scope: VoiceProfileScope;
   /** The brand id, or the person's own user id. */
@@ -553,7 +553,7 @@ function TryDraft({ fingerprintId, org }: { fingerprintId: string; org: () => Pr
           and re-checked. A draft that still fails comes back with a header naming what is left.
         </p>
       </div>
-      <Textarea value={draft} onChange={(e) => setDraft(e.target.value)} rows={6} placeholder="Paste a draft" aria-label="Draft" />
+      <ProTextarea value={draft} onChange={(e) => setDraft(e.target.value)} rows={6} placeholder="Paste a draft" aria-label="Draft" />
       <div className="flex flex-wrap items-center gap-3">
         <select aria-label="Where it will appear" className={selectClass} value={surface} onChange={(e) => setSurface(e.target.value as VoiceSurface)}>
           {SURFACES.map((s) => (

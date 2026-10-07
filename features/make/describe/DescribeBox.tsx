@@ -26,7 +26,6 @@ import { useHeadlessAgentJson } from "@ai-matrx/chat/agents/hooks/useHeadlessAge
 import { useDeclaredSurfaceMandates } from "@ai-matrx/chat/surfaces/runtime/surface-mandates";
 
 import { Button } from "@/components/ui/button";
-import { Textarea } from "@ai-matrx/design-system";
 import { useOrganizationRequired } from "@/features/organizations/useOrganizationRequired";
 import { OrganizationContextNotice } from "@/features/organizations/components/OrganizationRequiredNotice";
 import * as doors from "@/features/unified-data/hub/doors";
@@ -49,6 +48,7 @@ import {
   type DescribeAnswer,
 } from "./describeTemplate";
 
+import { ProTextarea } from "@/components/official/ProTextarea";
 const DESCRIBE = MANDATE_KEYS.make__describe_template;
 const DESCRIBE_DISCLOSURE = [{ mandateKey: DESCRIBE, does: "turns your sentence into tables, forms and a booking page" }] as const;
 
@@ -164,7 +164,7 @@ export function DescribeBox() {
           void start();
         }}
       >
-        <Textarea
+        <ProTextarea
           value={sentence}
           onChange={(e) => setSentence(e.target.value)}
           onKeyDown={(e) => {

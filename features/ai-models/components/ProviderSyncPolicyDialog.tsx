@@ -52,12 +52,12 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@ai-matrx/design-system/controls";
-import { Textarea } from "@/components/ui/textarea";
 import { recordToast, toast } from "@/lib/toast";
 import { extractErrorMessage } from "@/utils/errors";
 import { aiModelService } from "@/features/ai-models/service";
 import type { ProviderSyncPolicy } from "@/features/ai-models/types";
 
+import { ProTextarea } from "@/components/official/ProTextarea";
 export type ProviderSyncPolicyTarget = {
   providerId: string;
   providerName: string;
@@ -292,7 +292,7 @@ export default function ProviderSyncPolicyDialog({
             <label htmlFor="sync-policy-notes" className="text-xs font-medium">
               Notes
             </label>
-            <Textarea
+            <ProTextarea
               id="sync-policy-notes"
               value={notes}
               onChange={(e) => setNotes(e.target.value)}

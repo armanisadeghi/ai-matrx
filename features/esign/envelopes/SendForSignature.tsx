@@ -17,7 +17,7 @@ import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
 import { AlertTriangle, FileText, FolderOpen, Send, Trash2, Upload } from "lucide-react";
 
-import { Button, EmptyState, Field, SegmentedControl, Select, Textarea } from "@ai-matrx/design-system/controls";
+import { Button, EmptyState, Field, SegmentedControl, Select } from "@ai-matrx/design-system/controls";
 import PageHeader from "@/features/shell/components/header/PageHeader";
 import { useFileUpload } from "@/features/files/handler/hooks/useFileUpload";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
@@ -34,6 +34,7 @@ import { RecipientPicker } from "./send/RecipientPicker";
 import { FieldPlacementCanvas } from "./send/FieldPlacementCanvas";
 
 import { Spinner } from "@/components/ui/loaders/Spinner";
+import { ProTextarea } from "@/components/official/ProTextarea";
 // The picker window is heavy and opened on demand — kept out of this route's first bundle.
 const FilePickerWindow = dynamic(
   () => import("@/features/resource-manager/resource-picker/FilePickerWindow").then((m) => ({ default: m.FilePickerWindow })),
@@ -213,7 +214,7 @@ export function SendForSignature() {
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
                 />
-                <Textarea
+                <ProTextarea
                   aria-label="Note to signers"
                   value={message}
                   placeholder="Note to signers (optional)"
