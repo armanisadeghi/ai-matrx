@@ -595,13 +595,17 @@ export interface ConnectorsPreferences {
  * The bell's memory of this person (features/notifications), synced so it follows them to every
  * device. Notices carry their own server-side `seen_at`; these are for the bell's SOURCES (approvals,
  * record-store work, workflows waiting …), which have no "seen" of their own:
- *   - `sourcesSeen`    — each source's count when the bell was last opened (the badge counts above it)
- *   - `sourcesCleared` — each source's count when the person last cleared it (the list counts above it)
- *   - `hiddenSources`  — sources the person took out of the bell ("Hide from bell"); default none
+ *   - `sourcesSeen` / `sourcesSeenIds`       — each place's count (and item ids, where it has them)
+ *     when the bell was last opened; the badge counts what is new since
+ *   - `sourcesCleared` / `sourcesClearedIds` — the same, when the person last cleared the place
+ *   - `hiddenSources` — places the person took out of the bell ("Hide from bell"); default none
+ * Marks move only on open or clear (features/notifications/badge.ts).
  */
 export interface InboxPreferences {
   sourcesSeen: Record<string, number>;
+  sourcesSeenIds: Record<string, string[]>;
   sourcesCleared: Record<string, number>;
+  sourcesClearedIds: Record<string, string[]>;
   hiddenSources: string[];
 }
 
@@ -1388,7 +1392,7 @@ export const initializeUserPreferencesState = (
     // Nothing done yet: the first reversible action teaches.
     reversible: { verbs: {}, pairs: {} },
     // Nothing seen, cleared or hidden yet: every source shows in the bell.
-    inbox: { sourcesSeen: {}, sourcesCleared: {}, hiddenSources: [] },
+    inbox: { sourcesSeen: {}, sourcesSeenIds: {}, sourcesCleared: {}, sourcesClearedIds: {}, hiddenSources: [] },
   };
 
   // Merge with defaults to ensure all properties exist
@@ -1489,7 +1493,9 @@ export const initializeUserPreferencesState = (
     },
     inbox: {
       sourcesSeen: { ...preferences.inbox?.sourcesSeen },
+      sourcesSeenIds: { ...preferences.inbox?.sourcesSeenIds },
       sourcesCleared: { ...preferences.inbox?.sourcesCleared },
+      sourcesClearedIds: { ...preferences.inbox?.sourcesClearedIds },
       hiddenSources: [...(preferences.inbox?.hiddenSources ?? [])],
     },
   };

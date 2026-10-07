@@ -1,20 +1,25 @@
 /**
  * "38 waiting workflows" with no way to ignore them is the badge people learn to ignore
  * (Arman, 2026-10-07). Every place in the bell clears in one click and comes back only with
- * something new; Hide from bell takes it out entirely. Red before 2026-10-07: the place had no
- * menu and always showed its full count.
+ * something new; Hide from bell takes it out entirely. The row is never a button inside a button.
  */
 import React, { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
-import type { InboxPreferences } from "@/lib/redux/preferences/userPreferencesSlice";
+import type { PlaceMarks } from "../badge";
 
-const store: { prefs: InboxPreferences } = { prefs: { sourcesSeen: {}, sourcesCleared: {}, hiddenSources: [] } };
+const store: { cleared: PlaceMarks; hidden: string[] } = { cleared: { counts: {}, ids: {} }, hidden: [] };
 jest.mock("../useInboxMemory", () => ({
   useInboxMemory: () => ({
-    ...store.prefs,
     ready: true,
-    save: (patch: Partial<InboxPreferences>) => {
-      store.prefs = { ...store.prefs, ...patch };
+    seen: { counts: {}, ids: {} },
+    cleared: store.cleared,
+    hiddenSources: store.hidden,
+    saveSeen: () => undefined,
+    saveCleared: (marks: PlaceMarks) => {
+      store.cleared = marks;
+    },
+    saveHidden: (keys: string[]) => {
+      store.hidden = keys;
     },
   }),
 }));
@@ -31,18 +36,25 @@ jest.mock("@/features/workflow-runtime/discovery/useWaitingRuns", () => ({ useWa
 jest.mock("@/features/assists/service", () => ({ queryAssists: () => Promise.resolve({ rows: [], total: 0 }) }));
 jest.mock("@/features/tasks/services/taskUserStateService", () => ({ listMyTaskUserStates: () => Promise.resolve([]) }));
 jest.mock("../useInbox", () => ({ useWorkWaiting: () => ({ data: undefined, isLoading: false, isError: false }) }));
-jest.mock("@/lib/redux/hooks", () => ({ useAppSelector: () => null }));
+jest.mock("@/lib/redux/hooks", () => ({ useAppSelector: () => null, useAppDispatch: () => () => undefined }));
 
-import { SourceIndicatorView } from "../sources/registry";
+import { NOTICE_SOURCES } from "../sources/registry";
+import { SourceItem } from "../components/PlacesStrip";
 
-const view = (count: number) => (
-  <SourceIndicatorView state={{ count, hidden: null, loading: false, error: false }} bucket="needs_you" sourceKey="workflows" />
+const workflows = NOTICE_SOURCES.find((s) => s.key === "workflows")!;
+const runs = (n: number, from = 0) => Array.from({ length: n }, (_, i) => `run-${from + i}`);
+const view = (ids: string[]) => (
+  <SourceItem
+    source={workflows}
+    state={{ count: ids.length, ids, hidden: null, loading: false, error: false }}
+    layout="strip"
+  />
 );
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 let host: HTMLDivElement;
 let root: Root;
-const show = (count: number) => act(() => root.render(view(count)));
+const show = (ids: string[]) => act(() => root.render(view(ids)));
 const count = () => host.querySelector('[data-source-count="workflows"]')?.textContent ?? null;
 const press = (label: string) =>
   act(() => {
@@ -50,7 +62,8 @@ const press = (label: string) =>
   });
 
 beforeEach(() => {
-  store.prefs = { sourcesSeen: {}, sourcesCleared: {}, hiddenSources: [] };
+  store.cleared = { counts: {}, ids: {} };
+  store.hidden = [];
   host = document.createElement("div");
   document.body.appendChild(host);
   root = createRoot(host);
@@ -60,18 +73,25 @@ afterEach(() => {
   host.remove();
 });
 
-it("Clear takes 38 waiting workflows off the bell; one more brings back 1", () => {
-  show(38);
+it("Clear takes 38 waiting workflows off the bell; one handled + one new brings back 1", () => {
+  show(runs(38));
   expect(count()).toBe("38");
   press("Clear");
-  show(38);
+  show(runs(38));
   expect(count()).toBeNull();
-  show(39);
+  // run-0 handled elsewhere, run-38 arrived: the count is still 38, one is new.
+  show([...runs(37, 1), "run-38"]);
   expect(count()).toBe("1");
 });
 
 it("Hide from bell records the place as hidden", () => {
-  show(38);
+  show(runs(38));
   press("Hide from bell");
-  expect(store.prefs.hiddenSources).toEqual(["workflows"]);
+  expect(store.hidden).toEqual(["workflows"]);
+});
+
+it("the row is never a button inside a button", () => {
+  show(runs(3));
+  expect(host.querySelectorAll("button button").length).toBe(0);
+  expect(host.querySelector('[data-notice-source="workflows"]')?.tagName).toBe("DIV");
 });

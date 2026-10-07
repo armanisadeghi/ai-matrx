@@ -267,5 +267,5 @@ export const defaultUserPreferences: UserPreferences = {
   // Keep in sync with userPreferencesSlice.ts.
   reversible: { verbs: {}, pairs: {} },
   // The bell's source memory (features/notifications). Keep in sync with userPreferencesSlice.ts.
-  inbox: { sourcesSeen: {}, sourcesCleared: {}, hiddenSources: [] },
+  inbox: { sourcesSeen: {}, sourcesSeenIds: {}, sourcesCleared: {}, sourcesClearedIds: {}, hiddenSources: [] },
 };

@@ -13,12 +13,11 @@
  * when its list is route-bound (it writes the address) — in a new tab. Never a
  * same-tab navigation (ruling 4).
  *
- * Each source's live state comes from its own hook, rendered through its own
- * `Indicator` component — a component value, never a hook passed around, so the
- * React Compiler can memoise every row.
+ * Each source's live state comes from its own hook; `usePlaceStates` calls every
+ * one of them once, so the bell holds every place's state — folded under More or
+ * not — and Clear all can clear them all (BELL-OWNER review, 2026-10-07).
  */
 
-import { useEffect, type ComponentType } from "react";
 import type { LucideIcon } from "lucide-react";
 import {
   CheckCheck,
@@ -50,7 +49,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { useWorkWaiting } from "../useInbox";
 import { useInboxMemory } from "../useInboxMemory";
-import { above, lowerMarks, markAt } from "../badge";
+import { markPlaces, newIn, type PlaceReading } from "../badge";
 
 /** How a source interrupts: needs_you/direct add to the badge, updates a dot, quiet nothing. */
 export type SourceBucket = "needs_you" | "direct" | "updates" | "quiet";
@@ -62,6 +61,8 @@ export interface SourceState {
   hidden: number | null;
   loading: boolean;
   error: boolean;
+  /** Item ids, where the place answers with them: "new" is then compared by id (badge.ts). */
+  ids?: string[] | null;
 }
 
 export interface NoticeSource {
@@ -73,8 +74,6 @@ export interface NoticeSource {
   opensIn: "window" | "tab";
   /** Only for people this source exists for. */
   adminOnly?: boolean;
-  /** Its count and "N snoozed", from its own hook. */
-  Indicator: ComponentType;
   open: (dispatch: AppDispatch) => void;
 }
 
@@ -169,15 +168,13 @@ function useTasksState(): SourceState {
 
 function useWaitingRunsState(): SourceState {
   const { rows, loading, error } = useWaitingRuns();
-  return { count: error ? null : rows.length, hidden: null, loading, error: error !== null };
-}
-
-// What each mounted place last read, so the bell's Clear all can clear the places too (one click to
-// zero). Only places on screen register; one folded under More is cleared on its own.
-const shownCounts = new Map<string, number>();
-/** The count each mounted place last read (readable ones only). */
-export function placeCountsNow(): Record<string, number> {
-  return Object.fromEntries(shownCounts);
+  return {
+    count: error ? null : rows.length,
+    ids: error || loading ? null : rows.map((row) => row.runId),
+    hidden: null,
+    loading,
+    error: error !== null,
+  };
 }
 
 /**
@@ -196,23 +193,10 @@ export function SourceIndicatorView({
   sourceKey: string;
 }) {
   const memory = useInboxMemory();
-  // A source still reading (or unreadable) says nothing about its marks.
-  const counts: Record<string, number | null> = state.loading || state.error ? {} : { [sourceKey]: state.count };
-  const lowered = memory.ready ? lowerMarks(memory.sourcesCleared, counts) : null;
-  useEffect(() => {
-    // Items handled elsewhere lower the mark, so the next new one shows.
-    if (lowered) memory.save({ sourcesCleared: lowered });
-  }, [lowered, memory]);
-  const readable = sourceKey in counts && state.count !== null ? state.count : null;
-  useEffect(() => {
-    if (readable === null) return;
-    shownCounts.set(sourceKey, readable);
-    return () => {
-      shownCounts.delete(sourceKey);
-    };
-  }, [sourceKey, readable]);
-
-  const shown = memory.ready ? above(state.count, memory.sourcesCleared[sourceKey]) : (state.count ?? 0);
+  // A place still reading (or unreadable) shows no number and cannot be cleared.
+  const readable = !state.loading && !state.error && state.count !== null;
+  const reading: PlaceReading = { count: readable ? state.count : null, ids: state.ids };
+  const shown = memory.ready ? newIn(sourceKey, reading, memory.cleared) : (reading.count ?? 0);
   const loud = bucket === "needs_you" || bucket === "direct";
   return (
     <>
@@ -234,19 +218,25 @@ export function SourceIndicatorView({
           {shown > 99 ? "99+" : shown}
         </span>
       ) : null}
-      <SourceMenu
-        sourceKey={sourceKey}
-        canClear={memory.ready && shown > 0 && sourceKey in counts && state.count !== null}
-        onClear={() => {
-          if (!(sourceKey in counts)) return;
-          memory.save({ sourcesCleared: markAt(memory.sourcesCleared, counts) });
-        }}
-        onHide={() => {
-          if (memory.hiddenSources.includes(sourceKey)) return;
-          memory.save({ hiddenSources: [...memory.hiddenSources, sourceKey] });
-        }}
-      />
     </>
+  );
+}
+
+/** The ⋯ beside a place: Clear its number, or take it out of the bell. */
+export function SourceActions({ sourceKey, state }: { sourceKey: string; state: SourceState }) {
+  const memory = useInboxMemory();
+  const readable = !state.loading && !state.error && state.count !== null;
+  const reading: PlaceReading = { count: readable ? state.count : null, ids: state.ids };
+  const shown = memory.ready ? newIn(sourceKey, reading, memory.cleared) : 0;
+  return (
+    <SourceMenu
+      sourceKey={sourceKey}
+      canClear={memory.ready && readable && shown > 0}
+      onClear={() => memory.saveCleared(markPlaces(memory.cleared, { [sourceKey]: reading }))}
+      onHide={() => {
+        if (!memory.hiddenSources.includes(sourceKey)) memory.saveHidden([...memory.hiddenSources, sourceKey]);
+      }}
+    />
   );
 }
 
@@ -296,25 +286,6 @@ function SourceMenu({
   );
 }
 
-function ApprovalsIndicator() {
-  return <SourceIndicatorView state={useApprovalsState()} bucket="needs_you" sourceKey="approvals" />;
-}
-function WorkIndicator() {
-  return <SourceIndicatorView state={useWorkState()} bucket="needs_you" sourceKey="work" />;
-}
-function WaitingRunsIndicator() {
-  return <SourceIndicatorView state={useWaitingRunsState()} bucket="needs_you" sourceKey="workflows" />;
-}
-function AssistsIndicator() {
-  return <SourceIndicatorView state={useAssistsState()} bucket="updates" sourceKey="assists" />;
-}
-function TasksIndicator() {
-  return <SourceIndicatorView state={useTasksState()} bucket="quiet" sourceKey="tasks" />;
-}
-function NoIndicator() {
-  return null;
-}
-
 /**
  * THE REGISTRY. Order is display order. Census of what tells, asks or reminds:
  * common-docs/systems/communications/notifications/FEATURE.md §3.8.
@@ -326,7 +297,6 @@ export const NOTICE_SOURCES: readonly NoticeSource[] = [
     icon: ClipboardCheck,
     bucket: "needs_you",
     opensIn: "window",
-    Indicator: ApprovalsIndicator,
     open: openWindow("approvalsWindow"),
   },
   {
@@ -335,7 +305,6 @@ export const NOTICE_SOURCES: readonly NoticeSource[] = [
     icon: Table2,
     bucket: "needs_you",
     opensIn: "window",
-    Indicator: WorkIndicator,
     open: openWindow("workInboxWindow"),
   },
   {
@@ -344,7 +313,6 @@ export const NOTICE_SOURCES: readonly NoticeSource[] = [
     icon: Workflow,
     bucket: "needs_you",
     opensIn: "window",
-    Indicator: WaitingRunsIndicator,
     open: openWindow("waitingRunsWindow"),
   },
   {
@@ -353,7 +321,6 @@ export const NOTICE_SOURCES: readonly NoticeSource[] = [
     icon: Lightbulb,
     bucket: "updates",
     opensIn: "window",
-    Indicator: AssistsIndicator,
     open: openWindow("assistsWindow"),
   },
   {
@@ -362,7 +329,6 @@ export const NOTICE_SOURCES: readonly NoticeSource[] = [
     icon: CheckSquare,
     bucket: "quiet",
     opensIn: "window",
-    Indicator: TasksIndicator,
     open: openWindow("quickTasksWindow"),
   },
   {
@@ -372,10 +338,34 @@ export const NOTICE_SOURCES: readonly NoticeSource[] = [
     bucket: "quiet",
     // The HR inbox writes its scope into the address, so it opens in its own tab.
     opensIn: "tab",
-    Indicator: NoIndicator,
     open: openTab("/hr/tasks"),
   },
 ];
+
+/**
+ * Every place's live state at once, keyed by source key — read ONCE by the bell (or the inbox
+ * rail) and handed to each row, so Clear all sees every place, folded under More or not.
+ */
+export function usePlaceStates(): Record<string, SourceState> {
+  return {
+    approvals: useApprovalsState(),
+    work: useWorkState(),
+    workflows: useWaitingRunsState(),
+    assists: useAssistsState(),
+    tasks: useTasksState(),
+    hr_tasks: NONE,
+  };
+}
+
+/** What each readable place reads now — what Clear all records as cleared. */
+export function placeReadings(states: Readonly<Record<string, SourceState>>): Record<string, PlaceReading> {
+  const out: Record<string, PlaceReading> = {};
+  for (const [key, state] of Object.entries(states)) {
+    if (state.loading || state.error || state.count === null) continue;
+    out[key] = { count: state.count, ids: state.ids };
+  }
+  return out;
+}
 
 export function visibleSources(isAdmin: boolean): readonly NoticeSource[] {
   return NOTICE_SOURCES.filter((source) => !source.adminOnly || isAdmin);

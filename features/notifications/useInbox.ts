@@ -34,7 +34,7 @@ import { toast } from "@/lib/toast";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { usePendingApprovalCount } from "@/features/approvals/usePendingApprovalCount";
-import { bellBadge, lowerMarks, markAt, sameMarks } from "./badge";
+import { bellBadge, markPlaces, sameMarks, type PlaceReading } from "./badge";
 import { useInboxMemory } from "./useInboxMemory";
 import {
   clearInbox,
@@ -145,29 +145,24 @@ export function useInboxCounts(): InboxCounts {
       : workWaiting.data.reduce((sum, o) => sum + o.waiting, 0);
   const workSnoozed = (workWaiting.data ?? []).reduce((sum, o) => sum + o.snoozed, 0);
   const s = summary.data?.summary ?? null;
-  // Until the person's saved marks load, no source counts (empty marks would read all as new).
-  const sources: Record<string, number | null> = memory.ready ? { approvals: approvalCount, work } : {};
-
-  // Items handled elsewhere lower the mark, so the next new one counts. (The bell's per-source
-  // "cleared" marks are lowered where they are shown — `sources/registry.tsx`.)
-  const seenLowered = memory.ready ? lowerMarks(memory.sourcesSeen, sources) : null;
-  useEffect(() => {
-    // A write happens only when a mark is above its count; once it lands this is null.
-    if (seenLowered) memory.save({ sourcesSeen: seenLowered });
-  }, [seenLowered, memory]);
+  // Until the person's saved marks load, no place counts (empty marks would read all as new).
+  // Marks move only when the person opens the bell — never on a refetch (badge.ts).
+  const places: Record<string, PlaceReading> = memory.ready
+    ? { approvals: { count: approvalCount }, work: { count: work } }
+    : {};
 
   const badge = bellBadge({
     unseenNeedsYou: s?.unseenNeedsYou ?? 0,
     unseenDirect: s?.unseenDirect ?? 0,
-    sources,
-    seen: memory.sourcesSeen,
+    places,
+    seen: memory.seen,
     hidden: memory.hiddenSources,
   });
 
   const markSeen = () => {
     if (memory.ready) {
-      const next = markAt(memory.sourcesSeen, sources);
-      if (!sameMarks(next, memory.sourcesSeen)) memory.save({ sourcesSeen: next });
+      const next = markPlaces(memory.seen, places);
+      if (!sameMarks(next, memory.seen)) memory.saveSeen(next);
     }
     if (!s || !summary.data?.triage || s.unseenNeedsYou + s.unseenDirect + s.unseenUpdates === 0) return;
     // Optimistic: the badge clears the moment the bell opens.

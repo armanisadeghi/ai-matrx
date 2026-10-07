@@ -15,61 +15,82 @@ import { ChevronDown, ChevronUp, ExternalLink, EyeOff } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { selectIsAdminPerson } from "@/lib/redux/selectors/userSelectors";
-import { visibleSources, type NoticeSource } from "../sources/registry";
+import {
+  SourceActions,
+  SourceIndicatorView,
+  visibleSources,
+  type NoticeSource,
+  type SourceState,
+} from "../sources/registry";
+
+/** A place the host read nothing for: no number, nothing to clear. */
+export const NO_STATE: SourceState = { count: null, hidden: null, loading: false, error: false };
 import { useInboxMemory } from "../useInboxMemory";
 
 const FOLD_AT = 4;
 
 export function SourceItem({
   source,
+  state,
   onOpened,
   layout,
   active = false,
 }: {
   source: NoticeSource;
+  state: SourceState;
   onOpened?: () => void;
   layout: "strip" | "rail";
   active?: boolean;
 }) {
   const dispatch = useAppDispatch();
   const Icon = source.icon;
-  const open = () => {
-    source.open(dispatch);
-    onOpened?.();
-  };
-  // A row, not a <button>: its count carries its own Clear / Hide menu, and a button may not
-  // hold a button. Enter and Space open it like one.
+  // A plain row holding two buttons side by side — the place itself, and its ⋯ — never a button
+  // inside a button. The ⋯ shows on hover/focus (always on touch) over the row's right edge, so a
+  // long name keeps the full width.
   return (
     <div
-      role="button"
-      tabIndex={0}
-      data-clickable
       data-notice-source={source.key}
-      onClick={open}
-      onKeyDown={(event) => {
-        if (event.key === "Enter" || event.key === " ") {
-          event.preventDefault();
-          open();
-        }
-      }}
       className={cn(
-        "flex w-full items-center gap-2 rounded-md text-left text-xs transition-colors hover:bg-[var(--matrx-glass-bg-hover)]",
-        layout === "strip" ? "h-8 px-2" : "h-8 px-2.5",
+        "group relative flex w-full items-center rounded-md text-xs transition-colors hover:bg-[var(--matrx-glass-bg-hover)]",
         active ? "bg-accent" : undefined,
       )}
-      title={source.opensIn === "tab" ? `${source.label} (opens in a new tab)` : source.label}
     >
-      <Icon className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
-      <span className="min-w-0 flex-1 truncate text-foreground">{source.label}</span>
-      <source.Indicator />
-      {source.opensIn === "tab" ? (
-        <ExternalLink className="h-3 w-3 shrink-0 text-muted-foreground" aria-hidden />
-      ) : null}
+      <button
+        type="button"
+        onClick={() => {
+          source.open(dispatch);
+          onOpened?.();
+        }}
+        className={cn(
+          "flex h-8 min-w-0 flex-1 items-center gap-2 text-left",
+          layout === "strip" ? "px-2" : "px-2.5",
+        )}
+        title={source.opensIn === "tab" ? `${source.label} (opens in a new tab)` : source.label}
+      >
+        <Icon className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+        <span className="min-w-0 flex-1 truncate text-foreground">{source.label}</span>
+        <SourceIndicatorView state={state} bucket={source.bucket} sourceKey={source.key} />
+        {source.opensIn === "tab" ? (
+          <ExternalLink className="h-3 w-3 shrink-0 text-muted-foreground" aria-hidden />
+        ) : null}
+      </button>
+      <div className="absolute right-1 top-1/2 -translate-y-1/2 rounded-md bg-[var(--matrx-glass-bg,var(--background))] opacity-0 transition-opacity focus-within:opacity-100 group-hover:opacity-100 [@media(hover:none)]:static [@media(hover:none)]:translate-y-0 [@media(hover:none)]:opacity-100">
+        <SourceActions sourceKey={source.key} state={state} />
+      </div>
     </div>
   );
 }
 
-export function PlacesStrip({ onOpened, columns = 2 }: { onOpened?: () => void; columns?: 1 | 2 }) {
+export function PlacesStrip({
+  states,
+  onOpened,
+  columns = 2,
+}: {
+  /** Every place's state, read once by the host (`usePlaceStates`). */
+  states: Readonly<Record<string, SourceState>>;
+  onOpened?: () => void;
+  columns?: 1 | 2;
+}) {
   const isAdmin = useAppSelector(selectIsAdminPerson);
   const memory = useInboxMemory();
   const all = visibleSources(Boolean(isAdmin));
@@ -86,7 +107,13 @@ export function PlacesStrip({ onOpened, columns = 2 }: { onOpened?: () => void; 
       </div>
       <div className={cn("grid gap-x-1", columns === 2 ? "grid-cols-2" : "grid-cols-1")}>
         {shown.map((source) => (
-          <SourceItem key={source.key} source={source} layout="strip" onOpened={onOpened} />
+          <SourceItem
+            key={source.key}
+            source={source}
+            state={states[source.key] ?? NO_STATE}
+            layout="strip"
+            onOpened={onOpened}
+          />
         ))}
       </div>
       <div className="flex items-center">
@@ -123,9 +150,7 @@ export function PlacesStrip({ onOpened, columns = 2 }: { onOpened?: () => void; 
                 <button
                   type="button"
                   data-source-unhide={source.key}
-                  onClick={() =>
-                    memory.save({ hiddenSources: memory.hiddenSources.filter((key) => key !== source.key) })
-                  }
+                  onClick={() => memory.saveHidden(memory.hiddenSources.filter((key) => key !== source.key))}
                   className="h-6 rounded-md px-2 text-[11px] font-medium text-primary hover:bg-[var(--matrx-glass-bg-hover)]"
                 >
                   Show in bell
