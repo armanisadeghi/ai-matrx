@@ -212,6 +212,55 @@ describe("createMatrxTransport (global, callApi parity)", () => {
     expect(mockedFetch).not.toHaveBeenCalled();
   });
 
+  // An Applet job's run carries its own org (withRunOrganization). With no
+  // active org it must still reach fetch; with a different active org, the
+  // run's org must still win (2026-10-07).
+  const RUN_ORG = "33333333-3333-4333-8333-333333333333";
+
+  // These two spy on the GLOBAL fetch: the package's internal resilientFetch
+  // is not reached by the @ai-matrx/data/net module mock above.
+  function spyGlobalFetch(): jest.SpyInstance {
+    return jest
+      .spyOn(globalThis, "fetch")
+      .mockImplementation(async () => new Response("{}", { status: 200 }));
+  }
+  function sentOrg(spy: jest.SpyInstance): string | undefined {
+    const init = spy.mock.calls[0]?.[1] as RequestInit | undefined;
+    return new Headers(init?.headers).get("x-organization-id") ?? undefined;
+  }
+
+  it("a run's own org reaches fetch when no active org is selected", async () => {
+    const spy = spyGlobalFetch();
+    try {
+      const transport = createMatrxTransport(stateOf({ organizationId: null }));
+      await transport.fetch("/runtime/operations/r-1", {
+        method: "POST",
+        headers: { "X-Organization-Id": RUN_ORG },
+        body: "{}",
+      });
+      expect(spy).toHaveBeenCalledTimes(1);
+      expect(sentOrg(spy)).toBe(RUN_ORG);
+    } finally {
+      spy.mockRestore();
+    }
+  });
+
+  it("a run's own org wins over a different active org", async () => {
+    const spy = spyGlobalFetch();
+    try {
+      const transport = createMatrxTransport(stateOf());
+      await transport.fetch("/runtime/operations/r-1", {
+        method: "POST",
+        headers: { "X-Organization-Id": RUN_ORG },
+        body: "{}",
+      });
+      expect(spy).toHaveBeenCalledTimes(1);
+      expect(sentOrg(spy)).toBe(RUN_ORG);
+    } finally {
+      spy.mockRestore();
+    }
+  });
+
   it("feeds non-2xx responses to captureApiError, honoring expectedErrorStatuses", async () => {
     mockedFetch.mockResolvedValue({
       response: fakeResponse({

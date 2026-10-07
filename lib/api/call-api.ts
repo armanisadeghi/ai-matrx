@@ -644,7 +644,13 @@ async function readHasNoOrganization(getState: () => RootState): Promise<boolean
   return admission !== "ready" && !selectOrganizationId(getState());
 }
 
-async function ensureOrganizationContextForCall(
+/**
+ * THE ONE org resolution for a call (callApi and the global MatrxTransport):
+ * the call's own org wins, then the admin seat, then the selection; with none,
+ * a write the person just pressed HOLDS on the canonical picker, anything else
+ * refuses fail-closed. Never picks an organization for anybody.
+ */
+export async function ensureOrganizationContextForCall(
   selectedOrganizationId: string | null | undefined,
   overrideOrganizationId: string | undefined,
   method: string,
