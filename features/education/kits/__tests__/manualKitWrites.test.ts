@@ -101,7 +101,7 @@ function generatedArtifact(
 
 function kit(artifacts: GeneratedArtifact[]): StudyKit {
   return {
-    sourceType: "file",
+    sourceType: "file", sources: [],
     sourceId: "file-1",
     title: "Biology kit",
     artifacts,

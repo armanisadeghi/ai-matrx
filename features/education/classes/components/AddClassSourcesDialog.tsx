@@ -59,7 +59,7 @@ interface AddClassSourcesDialogProps {
    * File one picked Source under the target (and the class). Resolves on
    * success; rejects with a sentence on failure.
    */
-  onFile: (token: string, id: string) => Promise<void>;
+  onFile: (token: string, id: string, name: string) => Promise<void>;
 }
 
 export function AddClassSourcesDialog({
@@ -106,7 +106,7 @@ function AddClassSourcesBody({
           continue;
         }
         try {
-          await onFile(ref.token, ref.id);
+          await onFile(ref.token, ref.id, name);
           // Filed: it leaves the input, so a second "Add" never repeats it.
           set.remove(card.id);
           filed += 1;

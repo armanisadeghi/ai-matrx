@@ -93,9 +93,23 @@ export async function ensureOrgId(
         _sync?: { boot: () => Promise<void> };
       })
     | null;
-  await store?._sync?.boot();
-  activeOrgId = getActiveOrgId();
-  if (activeOrgId) return activeOrgId;
+  // 🚨 ANSWERED IS ANSWERED. When the app's own state already says the
+  // organization question was resolved ("none" included), both waits below are
+  // waiting for an answer that exists: `_sync.boot()` hydrates every persisted
+  // slice (seconds to tens of seconds on a heavy account), and a person adding
+  // a source with nothing selected sat on "Reading the page…" with no ask until
+  // it finished (2026-10-07). Ask at once.
+  const answered =
+    (
+      store?.getState() as
+        | { appContext?: { orgBootstrapResolved?: boolean } }
+        | undefined
+    )?.appContext?.orgBootstrapResolved === true;
+  if (!answered) {
+    await store?._sync?.boot();
+    activeOrgId = getActiveOrgId();
+    if (activeOrgId) return activeOrgId;
+  }
 
   // 🚨 "NOBODY HAS LOOKED YET" IS NOT "THERE IS NONE". The warm-cache boot
   // above answers a RETURNING session, where the last organization comes back
@@ -110,7 +124,7 @@ export async function ensureOrgId(
   // same lie wearing a dialog. So join the answer the boot path is already
   // fetching BEFORE asking anyone anything. This starts nothing: it waits on
   // the one promise the boot settles (bounded, so it can never hang).
-  if (!isOrgBootstrapResolved()) {
+  if (!answered && !isOrgBootstrapResolved()) {
     await whenOrgBootstrapResolved();
     activeOrgId = getActiveOrgId();
     if (activeOrgId) return activeOrgId;

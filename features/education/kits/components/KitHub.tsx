@@ -7,7 +7,7 @@
 // every claim tied to that mode's real library/study-spine evidence, and gives
 // the learner one inviting next move.
 
-import { useState, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { useDispatchThunk } from "@/lib/redux/hooks";
 import { refreshStoreRead } from "@/lib/redux/slices/storeReadsSlice";
 import { useStoreRead } from "@/lib/redux/store-reads/useStoreRead";
@@ -48,6 +48,7 @@ import {
 } from "@/features/scopes/registry/entityRegistry";
 import {
   kitArtifactKey,
+  kitHref,
   kitMembershipFingerprint,
   deleteKit,
   readKit,
@@ -61,6 +62,8 @@ import {
   type StudyKit,
 } from "../kitService";
 import { MakeMoreFromKit } from "./MakeMoreFromKit";
+import { KitSourcesPanel } from "./KitSourcesPanel";
+import { KIT_TOKEN } from "../kitScope";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { AGENT_ICON } from "@/components/icons/domain-icons";
@@ -290,6 +293,12 @@ export function KitHub({
   const statsKey = `education.kit_stats:${sourceType}:${sourceId}`;
   const kitRead = useStoreRead<StudyKit | null>(kitKey, () => readKit(sourceType, sourceId));
   const kit = kitRead.data ?? null;
+  // An older kit that was promoted to its own record answers its old link with
+  // that record — move the address to the kit's own.
+  const movedTo = kit && (kit.sourceType !== sourceType || kit.sourceId !== sourceId) ? kitHref(kit.sourceType, kit.sourceId) : null;
+  useEffect(() => {
+    if (movedTo) router.replace(movedTo);
+  }, [movedTo, router]);
   const statsRead = useStoreRead<KitArtifactStats>(statsKey, () => readKitArtifactStats(kit?.artifacts ?? []), {
     enabled: kit !== null,
     staleAfterMs: 60_000,
@@ -488,7 +497,9 @@ export function KitHub({
 
   const originToken = resolveEntityToken(kit.sourceType);
   const materialHref =
-    originToken === "file"
+    originToken === KIT_TOKEN
+      ? null // a kit's material is its Sources list
+      : originToken === "file"
       ? `/files/f/${kit.sourceId}`
       : (peekHref(originToken, kit.sourceId) ?? null);
   const MaterialIcon = tryGetEntityInfo(originToken)?.Icon ?? FileSearch;
@@ -585,6 +596,9 @@ export function KitHub({
         </Button>
       )}
       <MakeMoreFromKit
+        key={kit.sources.map((s) => s.edgeId).join("|")}
+        sources={kit.sources}
+        organizationId={kit.organizationId}
         sourceType={kit.sourceType}
         sourceId={kit.sourceId}
         kitTitle={kit.title}
@@ -637,6 +651,9 @@ export function KitHub({
             </Button>
           )}
           <MakeMoreFromKit
+            key={kit.sources.map((s) => s.edgeId).join("|")}
+            sources={kit.sources}
+            organizationId={kit.organizationId}
             sourceType={kit.sourceType}
             sourceId={kit.sourceId}
             kitTitle={kit.title}
@@ -692,6 +709,7 @@ export function KitHub({
       <KitBody className="space-y-7">
         {!proposedLayout && actionRow}
         {!proposedLayout && managePanel}
+        <KitSourcesPanel kit={kit} onChanged={reload} onMoved={(id) => router.replace(kitHref(KIT_TOKEN, id))} />
 
 
         <section className="relative overflow-hidden rounded-3xl border border-primary/20 bg-card-textured p-5 sm:p-7">
