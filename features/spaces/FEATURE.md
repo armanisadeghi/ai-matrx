@@ -174,3 +174,11 @@ Block document: a tree of `SpaceBlock` (`id`, `type`, `text: RichSpan[]`, `color
   of an open toggle's title writes its first child (`editor/toggle-enter.ts`). Inline tables at natural widths, scrolling
   sideways; grey toggle triangles; no selection ring between columns. Viewer search on table blocks (records-ui
   `searchOverride`); built-in Load more reads one 50-row page by offset.
+- 2026-10-06 — builder round 20 (Arman: Use template on the Traveling SMM™ OS "set up" but the first page was empty):
+  the sample page gets its content the moment it is made and every later write lands on its CURRENT version
+  (`store/sample.ts` `saveOnCurrent`) — opening it mid-install used to write the editor's empty starting line and the
+  last-step fill was refused ("This Space changed since it was opened"), leaving it blank for good. Opening a page
+  stored with no blocks writes nothing (`page/content-key.ts`). A blank sample left by an earlier add is completed in
+  place, never copied blank; a Use template copy in another organization reads that organization's own installed
+  tables (`pointCopyAtItsTables`); a screen opened mid-install re-opens on the finished content (`pageEpoch`); a failed
+  add toasts with Try again. Test `store/__tests__/sample-fill.test.ts`.
