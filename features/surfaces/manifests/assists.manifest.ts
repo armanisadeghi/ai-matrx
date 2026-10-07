@@ -41,6 +41,10 @@ const groups: SurfaceValueGroup[] = [
 ];
 
 const surfaceSpecific: SurfaceValue[] = [
+  { name: "assist_include_snoozed", label: "Include snoozed", description: "Whether snoozed assists are included in the current view. Always present.", valueType: "boolean", alwaysAvailable: true, typicalCharCount: 5, group: "inbox_view", sortOrder: 130 },
+  { name: "assist_starred_only", label: "Starred only", description: "Whether the view is limited to starred assists. Always present.", valueType: "boolean", alwaysAvailable: true, typicalCharCount: 5, group: "inbox_view", sortOrder: 140 },
+  { name: "assist_unseen_only", label: "Unseen only", description: "Whether the view is limited to unseen assists. Always present.", valueType: "boolean", alwaysAvailable: true, typicalCharCount: 5, group: "inbox_view", sortOrder: 150 },
+  { name: "assist_show_silenced", label: "Show silenced", description: "Whether the source-suppression panel is expanded. Always present.", valueType: "boolean", alwaysAvailable: true, typicalCharCount: 5, group: "inbox_view", sortOrder: 160 },
   {"name": "assist_load_state", "label": "Load state", "description": "Whether the current query is loading, ready, or failed. Old-query rows are not current results.", "valueType": "string", "alwaysAvailable": true, "typicalCharCount": 12, "group": "inbox_state", "sortOrder": 300},
   {"name": "assist_load_error", "label": "Load error", "description": "The current query failure message. Absent while loading or after success.", "valueType": "string", "alwaysAvailable": false, "typicalCharCount": 250, "group": "inbox_state", "sortOrder": 310},
   {"name": "assist_table_query", "label": "Table query", "description": "Current table search, sort, column filters, page and page size, including the pending query.", "valueType": "object", "alwaysAvailable": true, "typicalCharCount": 350, "group": "inbox_view", "sortOrder": 320},
@@ -153,6 +157,10 @@ export interface AssistSummaryEntry {
 
 /** Type-safe payload helper — required keys mirror `alwaysAvailable: true`. */
 export function createAssistsScope(values: {
+  assist_include_snoozed: boolean;
+  assist_starred_only: boolean;
+  assist_unseen_only: boolean;
+  assist_show_silenced: boolean;
   assist_load_state: "loading" | "ready" | "failed";
   assist_load_error?: string;
   assist_table_query: object;

@@ -142,7 +142,6 @@ export function useAssistsQuery(
       pageSize: tableState.pageSize,
     };
     // `statusKey` stands in for the array identity.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     tableState,
     statusKey,
