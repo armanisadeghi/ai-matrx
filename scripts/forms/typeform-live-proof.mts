@@ -11,6 +11,7 @@
 import fs from "node:fs";
 import pg from "pg";
 import { createClient } from "@supabase/supabase-js";
+import { createRecordsClient, ensureTable, supabaseDataSource } from "@ai-matrx/records/core";
 import { chromium, type Page } from "playwright";
 
 const ORIGIN = process.argv[2] ?? "http://localhost:3001";
@@ -58,17 +59,25 @@ const found = await pgc.query(
 );
 let tableId: string = found.rows[0]?.id;
 if (!tableId) {
-  tableId = await door<string>("table_declare", { p_organization_id: ORG, p_spec: { name: TABLE_NAME } });
-  const fields = [
-    { key: "company_name", label: "Company name", plain: "text" },
-    { key: "contact_email", label: "Contact email", plain: "text" },
-    { key: "service", label: "Service", parity_type: "choice", options: ["Social media management", "Paid ads", "Content creation"] },
-    { key: "platforms", label: "Platforms", plain: "text" },
-    { key: "monthly_budget", label: "Monthly budget", parity_type: "choice", options: ["Under $1k", "$1k–$5k", "Over $5k"] },
-    { key: "ad_goal", label: "Ad goal", plain: "long_text" },
-    { key: "notes", label: "Anything else", plain: "long_text" },
-  ];
-  for (const f of fields) await door("field_declare", { p_organization_id: ORG, p_table_id: tableId, p_spec: f });
+  // The records package's own table builder (Home, labels, sort, title field, then each Field).
+  const client = createRecordsClient({ dataSource: supabaseDataSource(sb as never), organizationId: ORG, actor: { actor: "user" }, onError: () => {} });
+  const made = await ensureTable(client, {
+    name: TABLE_NAME,
+    labelSingular: "Client intake",
+    labelPlural: "Client intakes",
+    titleField: "company_name",
+    fields: [
+      { key: "company_name", label: "Company name", type: "text", required: true },
+      { key: "contact_email", label: "Contact email", type: "text" },
+      { key: "service", label: "Service", type: "select", options: ["Social media management", "Paid ads", "Content creation"] },
+      { key: "platforms", label: "Platforms", type: "text" },
+      { key: "monthly_budget", label: "Monthly budget", type: "select", options: ["Under $1k", "$1k–$5k", "Over $5k"] },
+      { key: "ad_goal", label: "Ad goal", type: "long_text" },
+      { key: "notes", label: "Anything else", type: "long_text" },
+    ] as never,
+  });
+  if (!made.ok) throw new Error(`ensureTable: ${made.error.message}`);
+  tableId = made.data as string;
 }
 const fieldRows = await pgc.query(
   `select id, data->>'key' k from custom.record where organization_id = $1 and table_id = custom.field_kernel_id() and deleted_at is null and (data->>'entity_definition_id')::uuid = $2`,
@@ -110,6 +119,21 @@ const formId = await door<string>("form_declare", {
 });
 await door("anon_publish", { p_organization_id: ORG, p_form_id: formId, p_published: true });
 check("the intake form is declared and published", typeof formId === "string", { formId, link: `${ORIGIN}/f/${formId}` });
+
+// `--setup-only`: stop after the form exists, and ask the store's public route for both branches.
+if (process.argv.includes("--setup-only")) {
+  const routeOf = async (values: Record<string, unknown>) =>
+    (await pgc.query("select custom.form_public_route($1::uuid, $2::jsonb) r", [formId, JSON.stringify(values)])).rows[0].r as {
+      asks: Array<{ field_key: string; asked: boolean }>; ending: string | null; score: number | null;
+    };
+  const a = await routeOf({ company_name: "Juniper & Rye", contact_email: "x@y.z", service: "Social media management", platforms: "IG", monthly_budget: "Under $1k" });
+  const b = await routeOf({ company_name: "Northwind", contact_email: "x@y.z", service: "Paid ads", ad_goal: "40 cleanings", notes: "two sites" });
+  const on = (r: typeof a) => r.asks.filter((x) => x.asked).map((x) => x.field_key).join(",");
+  check("branch A routes to the starter ending, skipping ad goal and notes", a.ending === "starter" && on(a) === "company_name,contact_email,service,platforms,monthly_budget", { asked: on(a), ending: a.ending, score: a.score });
+  check("branch B jumps past platforms and budget to the ad goal, then the default ending", b.ending === "discovery-call" && on(b) === "company_name,contact_email,service,ad_goal,notes", { asked: on(b), ending: b.ending });
+  await pgc.end();
+  process.exit(failed ? 1 : 0);
+}
 
 // ── 2. BOTH BRANCHES, SIGNED OUT ──────────────────────────────────────────────────────────
 const browser = await chromium.launch({ headless: true });
