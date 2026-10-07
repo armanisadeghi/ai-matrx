@@ -11,11 +11,10 @@ import {
   Settings as SettingsIcon,
 } from "lucide-react";
 import {
-  EntityModeHeader,
-  type EntityHeaderAction,
-} from "@/features/shell/components/header/templates/EntityModeHeader";
+  RecordPageHeader,
+  type RecordPageAction,
+} from "@/features/shell/components/header/templates/RecordPageHeader";
 import type { RouteNavItem } from "@/features/shell/components/header/RouteModeNav";
-import { AppletReferenceCopySlot } from "./AppletReferenceCopySlot";
 import { useState } from "react";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { selectAppById } from "@/features/agents/redux/applets/selectors";
@@ -43,10 +42,11 @@ interface AppletHeaderProps {
 /**
  * Header shell for /applets/manage/[id] and its sub-routes.
  *
- * EntityModeHeader instance: back + entity name + RouteModeNav (Overview /
- * Run / Code / Versions / Settings) + the reference-copy action. Desktop
- * renders modes as a measurement-driven pill and the copy button as an
- * extra; mobile collapses everything into the back + name + "…" drawer.
+ * The RecordPageHeader template (one line): back + "Applets" + the Applet
+ * + its status + RouteModeNav (Overview /
+ * Run / Code / Versions / Settings) + Copy reference + Publish. Desktop
+ * renders modes as a measurement-driven pill; mobile collapses everything
+ * into the back + name + "…" drawer.
  */
 export function AppletHeader({
   appId,
@@ -76,11 +76,10 @@ export function AppletHeader({
       icon: SettingsIcon,
     },
   ];
-  const actions: EntityHeaderAction[] = [];
+  const actions: RecordPageAction[] = [];
   actions.push({
     label: "Copy reference",
     icon: Bookmark,
-    phoneOnly: true,
     onPress: async () => {
       const copied = await copyReferenceFence(
         buildRecordReferenceFence({ type: "agent_app", id: appId, label: appName }),
@@ -133,31 +132,13 @@ export function AppletHeader({
   });
 
   return (
-    <EntityModeHeader
+    <RecordPageHeader
       backHref={backHref}
-      entityLabel={appName}
-      entityStatus={
-        // One word on a desktop; on a phone the name needs the room, so the
-        // state is a colored dot with the same words for assistive tech
-        // (the chip used to clip to "Publis" and squeeze the name to "Fa…").
-        <span
-          aria-label={isPublished ? "Published" : "Unpublished"}
-          title={isPublished ? "Published" : "Unpublished"}
-          className={
-            isPublished
-              ? "inline-flex shrink-0 items-center gap-1 rounded-full bg-success/15 px-1.5 py-0.5 text-xs font-medium text-success-ink"
-              : "inline-flex shrink-0 items-center gap-1 rounded-full bg-warning/15 px-1.5 py-0.5 text-xs font-medium text-warning-ink"
-          }
-        >
-          <span aria-hidden className="size-1.5 rounded-full bg-current sm:hidden" />
-          <span className="hidden sm:inline">
-            {isPublished ? "Published" : "Unpublished"}
-          </span>
-        </span>
-      }
+      parents={[{ label: "Applets", href: backHref }]}
+      record={{ name: appName }}
+      status={isPublished ? { label: "Published", tone: "success" } : { label: "Draft" }}
       modes={modes}
       actions={actions}
-      right={<AppletReferenceCopySlot appId={appId} appName={appName} />}
     />
   );
 }

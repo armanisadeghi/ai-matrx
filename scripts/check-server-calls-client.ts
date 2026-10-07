@@ -135,7 +135,7 @@ function isUseClient(abs: string): boolean {
   if (clientCache.has(abs)) return clientCache.get(abs)!;
   let head = "";
   try {
-    head = readFileSync(abs, "utf8").slice(0, 400);
+    head = readFileSync(abs, "utf8").slice(0, 6000);
   } catch {
     /* unreadable → not client */
   }
@@ -156,6 +156,7 @@ export function findServerCallsClient(root: string): Finding[] {
   }
   const findings: Finding[] = [];
   for (const rel of files) {
+    if (rel.startsWith("scripts/")) continue;
     const abs = join(root, rel);
     let src: string;
     try {
@@ -185,13 +186,113 @@ export function findServerCallsClient(root: string): Finding[] {
   return findings;
 }
 
-function report(findings: Finding[]): number {
+/**
+ * THE VALUE-IMPORT HALF (2026-10-07). A server module reading ANY non-component value —
+ * a constant, a function referenced, a template-literal ingredient — from a "use client" file
+ * gets a client REFERENCE, not the value: `AppletIntroPage` (server) put USE_ON_RETURN into a
+ * sign-up URL and the link carried `function(){throw Error("Attempted to call ...")}=1`.
+ * "Server module" = reachable from a route entry (page/layout/route/…) or a "server-only" file
+ * without crossing a "use client" boundary. Allowed from a client file: JSX tags (<Foo />),
+ * types. Anything else (`USE_ON_RETURN`, `useThing()`, `Foo.bar`) is a finding.
+ */
+const ENTRY = /^app\/.*\/?(?:page|layout|route|template|default|loading|not-found|sitemap|robots|opengraph-image|twitter-image|icon)\.[cm]?[jt]sx?$/;
+
+export function findServerValueImports(root: string): Finding[] {
+  const files: string[] = [];
+  for (const dir of new Set(SOURCE_ROOTS as readonly string[])) walk(root, dir, files, true);
+  const read = new Map<string, string>();
+  const srcOf = (abs: string): string => {
+    let v = read.get(abs);
+    if (v === undefined) {
+      try {
+        v = readFileSync(abs, "utf8");
+      } catch {
+        v = "";
+      }
+      read.set(abs, v);
+    }
+    return v;
+  };
+  const queue: string[] = [];
+  const seen = new Set<string>();
+  for (const rel of files) {
+    const abs = join(root, rel);
+    if (rel.startsWith("scripts/") || isUseClient(abs)) continue;
+    if (ENTRY.test(rel) || /(?:^|\n)\s*import\s+["']server-only["']/.test(srcOf(abs))) {
+      seen.add(abs);
+      queue.push(abs);
+    }
+  }
+  const findings: Finding[] = [];
+  while (queue.length) {
+    const abs = queue.pop()!;
+    const body = srcOf(abs).replace(/\/\*[\s\S]*?\*\//g, "").replace(/^\s*\/\/.*$/gm, "");
+    IMPORT_RE.lastIndex = 0;
+    let m: RegExpExecArray | null;
+    while ((m = IMPORT_RE.exec(body))) {
+      const target = resolveFrom(root, abs, m[2]);
+      if (!target || !CODE.test(target)) continue;
+      if (!isUseClient(target)) {
+        if (!seen.has(target) && !target.includes("node_modules") && !relative(root, target).startsWith("scripts/")) {
+          seen.add(target);
+          queue.push(target);
+        }
+        continue;
+      }
+      const named = m[1].match(/\{([\s\S]*)\}/);
+      if (!named || target.includes("node_modules")) continue;
+      const tsrc = srcOf(target);
+      for (const part of named[1].split(",")) {
+        const p = part.trim();
+        if (!p || p.startsWith("type ")) continue;
+        const imported = p.split(/\s+as\s+/)[0].trim();
+        const local = (p.split(/\s+as\s+/)[1] ?? p).trim();
+        if (new RegExp(`export\\s+(?:interface|type)\\s+${imported}\\b`).test(tsrc)) continue;
+        const esc = local.replace(/\$/g, "\\$");
+        const rest = body.replace(new RegExp(IMPORT_RE.source, "g"), "");
+        const uses = [...rest.matchAll(new RegExp(`(?<![\\w$.])${esc}(?![\\w$])`, "g"))];
+        if (uses.some((u) => !/(?:<\/?|typeof\s+)$/.test(rest.slice(Math.max(0, u.index! - 8), u.index!)))) {
+          findings.push({ file: relative(root, abs), name: local, from: m[2], target: posix.normalize(relative(root, target)) });
+        }
+      }
+    }
+  }
+  return findings;
+}
+
+/**
+ * SHRINK-ONLY BASELINE for value imports (2026-10-07): server-reachable modules that read a value
+ * from a "use client" file, found when the value half landed. Each is either a real server-side
+ * read to move into a neutral module, or client-only code the graph cannot prove is never run on
+ * the server. A new finding fails; a baseline entry that no longer fires fails too (delete it).
+ * Key: "<file>|<name>".
+ */
+const BASELINE = new Set<string>([
+  "../aidream/apps/shared/chat/src/host/defaults/navigation.ts|useWindowPathname",
+  "../aidream/apps/shared/chat/src/host/defaults/navigation.ts|useWindowSearchParams",
+  "features/organizations/addressing/teamAddress.ts|getTeamOrganizationId",
+  "lib/coming-soon/announce.ts|confirm",
+  "app/(core)/chat/talk/a/[agentId]/page.tsx|voiceChatAgentHref",
+  "app/(core)/chat/talk/[conversationId]/page.tsx|voiceChatAgentHref",
+  "lib/scoped-config/effectiveKnobs.ts|registerDirectiveHandler",
+]);
+
+function report(all: Finding[]): number {
+  const keyOf = (f: Finding) => `${f.file}|${f.name}`;
+  const findings = all.filter((f) => !BASELINE.has(keyOf(f)));
+  const live = new Set(all.map(keyOf));
+  const stale = [...BASELINE].filter((k) => !live.has(k));
+  if (stale.length) {
+    console.error(`check:server-calls-client — ${stale.length} baseline entr${stale.length === 1 ? "y" : "ies"} no longer fire; delete from BASELINE:`);
+    for (const k of stale) console.error(`  ${k}`);
+    return 1;
+  }
   if (findings.length === 0) {
     console.log("check:server-calls-client — no server-only module calls a \"use client\" export.");
     return 0;
   }
   console.error(`check:server-calls-client — ${findings.length} server-only call(s) into a "use client" module; the build fails when the page renders.`);
-  for (const f of findings) console.error(`  ${f.file}: ${f.name}() from "${f.from}" (${f.target} is "use client")`);
+  for (const f of findings) console.error(`  ${f.file}: ${f.name} from "${f.from}" (${f.target} is "use client")`);
   console.error("\nFix: import the function from a server-safe module (no \"use client\"); a package fix ships IN the package.");
   return 1;
 }
@@ -225,6 +326,22 @@ function selfTest(): number {
       console.error("self-test FAILED: the server-safe import was reported", green);
       return 1;
     }
+    // The value-import half: a server module (route-reachable) using a client file's constant.
+    put("app/x/page.tsx", 'import { Intro } from "@/features/x/Intro";\nexport default function P() { return <Intro />; }\n');
+    put("features/x/Intro.tsx", 'import { Use, USE_ON_RETURN } from "./Use";\nexport function Intro() { return <Use href={`/a?${USE_ON_RETURN}=1`} />; }\n');
+    put("features/x/Use.tsx", '"use client";\nexport const USE_ON_RETURN = "use";\nexport function Use(p: { href: string }) { return <a href={p.href} />; }\nexport interface UseProps { a: 1 }\n');
+    const vRed = findServerValueImports(dir);
+    if (vRed.length !== 1 || vRed[0].name !== "USE_ON_RETURN") {
+      console.error("self-test FAILED: expected exactly the USE_ON_RETURN value import", vRed);
+      return 1;
+    }
+    put("features/x/Intro.tsx", 'import { Use } from "./Use";\nimport { USE_ON_RETURN } from "./consts";\nexport function Intro() { return <Use href={`/a?${USE_ON_RETURN}=1`} />; }\n');
+    put("features/x/consts.ts", 'export const USE_ON_RETURN = "use";\n');
+    const vGreen = findServerValueImports(dir);
+    if (vGreen.length !== 0) {
+      console.error("self-test FAILED: the neutral-module import was reported", vGreen);
+      return 1;
+    }
     console.log("check:server-calls-client self-test passed — red on a server-only call into \"use client\", green on the server-safe import and on rendering a client component.");
     return 0;
   } finally {
@@ -235,4 +352,5 @@ function selfTest(): number {
 const args = process.argv.slice(2);
 if (args.includes("--self-test")) process.exit(selfTest());
 const rootIdx = args.indexOf("--root");
-process.exit(report(findServerCallsClient(rootIdx >= 0 ? args[rootIdx + 1] : process.cwd())));
+const scanRoot = rootIdx >= 0 ? args[rootIdx + 1] : process.cwd();
+process.exit(report([...findServerCallsClient(scanRoot), ...findServerValueImports(scanRoot)]));

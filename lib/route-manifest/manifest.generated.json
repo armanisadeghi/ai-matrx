@@ -1,7 +1,7 @@
 {
   "version": 1,
   "app": "matrx-frontend",
-  "routeCount": 1345,
+  "routeCount": 1343,
   "routes": [
     {
       "pattern": "/",
@@ -52,41 +52,6 @@
       "pattern": "/administration/agents",
       "status": "live",
       "source": "app/(admin)/administration/agents/page.tsx"
-    },
-    {
-      "pattern": "/administration/applets",
-      "status": "live",
-      "source": "app/(admin)/administration/applets/page.tsx"
-    },
-    {
-      "pattern": "/administration/applets/analytics",
-      "status": "live",
-      "source": "app/(admin)/administration/applets/analytics/page.tsx"
-    },
-    {
-      "pattern": "/administration/applets/all",
-      "status": "live",
-      "source": "app/(admin)/administration/applets/all/page.tsx"
-    },
-    {
-      "pattern": "/administration/applets/categories",
-      "status": "live",
-      "source": "app/(admin)/administration/applets/categories/page.tsx"
-    },
-    {
-      "pattern": "/administration/applets/edit/[id]",
-      "status": "live",
-      "source": "app/(admin)/administration/applets/edit/[id]/page.tsx"
-    },
-    {
-      "pattern": "/administration/applets/executions",
-      "status": "live",
-      "source": "app/(admin)/administration/applets/executions/page.tsx"
-    },
-    {
-      "pattern": "/administration/applets/rate-limits",
-      "status": "live",
-      "source": "app/(admin)/administration/applets/rate-limits/page.tsx"
     },
     {
       "pattern": "/administration/agents/bundles",
@@ -397,6 +362,41 @@
       "pattern": "/administration/ai/ai-tasks",
       "status": "live",
       "source": "app/(admin)/administration/ai/ai-tasks/page.tsx"
+    },
+    {
+      "pattern": "/administration/applets",
+      "status": "live",
+      "source": "app/(admin)/administration/applets/page.tsx"
+    },
+    {
+      "pattern": "/administration/applets/all",
+      "status": "live",
+      "source": "app/(admin)/administration/applets/all/page.tsx"
+    },
+    {
+      "pattern": "/administration/applets/analytics",
+      "status": "live",
+      "source": "app/(admin)/administration/applets/analytics/page.tsx"
+    },
+    {
+      "pattern": "/administration/applets/categories",
+      "status": "live",
+      "source": "app/(admin)/administration/applets/categories/page.tsx"
+    },
+    {
+      "pattern": "/administration/applets/edit/[id]",
+      "status": "live",
+      "source": "app/(admin)/administration/applets/edit/[id]/page.tsx"
+    },
+    {
+      "pattern": "/administration/applets/executions",
+      "status": "live",
+      "source": "app/(admin)/administration/applets/executions/page.tsx"
+    },
+    {
+      "pattern": "/administration/applets/rate-limits",
+      "status": "live",
+      "source": "app/(admin)/administration/applets/rate-limits/page.tsx"
     },
     {
       "pattern": "/administration/applications",
@@ -1349,46 +1349,6 @@
       "source": "app/(admin)/administration/utilities/utils/text-cleaner/page.tsx"
     },
     {
-      "pattern": "/applets",
-      "status": "live",
-      "source": "app/(core)/applets/page.tsx"
-    },
-    {
-      "pattern": "/applets/manage/[id]",
-      "status": "live",
-      "source": "app/(core)/applets/manage/[id]/page.tsx"
-    },
-    {
-      "pattern": "/applets/manage/[id]/code",
-      "status": "live",
-      "source": "app/(core)/applets/manage/[id]/code/page.tsx"
-    },
-    {
-      "pattern": "/applets/manage/[id]/run",
-      "status": "live",
-      "source": "app/(core)/applets/manage/[id]/run/page.tsx"
-    },
-    {
-      "pattern": "/applets/manage/[id]/settings",
-      "status": "live",
-      "source": "app/(core)/applets/manage/[id]/settings/page.tsx"
-    },
-    {
-      "pattern": "/applets/manage/[id]/v/[version]",
-      "status": "live",
-      "source": "app/(core)/applets/manage/[id]/v/[version]/page.tsx"
-    },
-    {
-      "pattern": "/applets/manage/[id]/versions",
-      "status": "live",
-      "source": "app/(core)/applets/manage/[id]/versions/page.tsx"
-    },
-    {
-      "pattern": "/applets/build",
-      "status": "live",
-      "source": "app/(core)/applets/build/page.tsx"
-    },
-    {
       "pattern": "/agent-connections",
       "status": "live",
       "source": "app/(core)/agent-connections/page.tsx"
@@ -1794,9 +1754,49 @@
       "source": "app/(core)/agents/templates/[id]/page.tsx"
     },
     {
-      "pattern": "/applets/[slug]",
+      "pattern": "/applets",
       "status": "live",
-      "source": "app/(public)/applets/[slug]/page.tsx"
+      "source": "app/(core)/applets/page.tsx"
+    },
+    {
+      "pattern": "/applets/[slug]/[[...path]]",
+      "status": "live",
+      "source": "app/(link)/applets/[slug]/[[...path]]/page.tsx"
+    },
+    {
+      "pattern": "/applets/build",
+      "status": "live",
+      "source": "app/(core)/applets/build/page.tsx"
+    },
+    {
+      "pattern": "/applets/manage/[id]",
+      "status": "live",
+      "source": "app/(core)/applets/manage/[id]/page.tsx"
+    },
+    {
+      "pattern": "/applets/manage/[id]/code",
+      "status": "live",
+      "source": "app/(core)/applets/manage/[id]/code/page.tsx"
+    },
+    {
+      "pattern": "/applets/manage/[id]/run",
+      "status": "live",
+      "source": "app/(core)/applets/manage/[id]/run/page.tsx"
+    },
+    {
+      "pattern": "/applets/manage/[id]/settings",
+      "status": "live",
+      "source": "app/(core)/applets/manage/[id]/settings/page.tsx"
+    },
+    {
+      "pattern": "/applets/manage/[id]/v/[version]",
+      "status": "live",
+      "source": "app/(core)/applets/manage/[id]/v/[version]/page.tsx"
+    },
+    {
+      "pattern": "/applets/manage/[id]/versions",
+      "status": "live",
+      "source": "app/(core)/applets/manage/[id]/versions/page.tsx"
     },
     {
       "pattern": "/appointment-reminder",
@@ -1807,11 +1807,6 @@
       "pattern": "/approvals",
       "status": "live",
       "source": "app/(core)/approvals/page.tsx"
-    },
-    {
-      "pattern": "/apps/[app]/[[...path]]",
-      "status": "live",
-      "source": "app/(link)/applets/[slug]/[[...path]]/page.tsx"
     },
     {
       "pattern": "/artifacts",
@@ -5455,11 +5450,6 @@
       "pattern": "/organizations/[orgId]/workflows",
       "status": "live",
       "source": "app/(core)/organizations/[orgId]/workflows/page.tsx"
-    },
-    {
-      "pattern": "/p/[slug]",
-      "status": "live",
-      "source": "app/(link)/p/[slug]/page.tsx"
     },
     {
       "pattern": "/p/e/[resourceType]/[id]",

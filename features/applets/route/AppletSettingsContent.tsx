@@ -23,6 +23,7 @@ import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { toast } from "@/lib/toast-service";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
+import { archiveConfirmSentence } from "@/features/trash/archiveCopy";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
 import { appletJobs, appletPages, appletSources } from "@/features/applets/types";
 import {
@@ -127,7 +128,7 @@ export function AppletSettingsContent({
   const [isDeleting, setIsDeleting] = useState(false);
   // Controlled so the copy payload can state WHICH slice of the form the user
   // is actually in — "what is the user doing here" is half the context.
-  const [activeTab, setActiveTab] = useState("overview");
+  const [activeTab, setActiveTab] = useState("details");
 
   const [rateIp, setRateIp] = useState<string>(
     String(app?.rate_limit_per_ip ?? ""),
@@ -237,22 +238,23 @@ export function AppletSettingsContent({
   const handleDelete = async () => {
     if (!app) return;
     const ok = await confirm({
-      title: "Delete Applet",
-      description: `This archives "${app.name}". It stops running and disappears from your apps; an admin can restore it.`,
-      confirmLabel: "Delete",
+      title: `Archive "${app.name}"?`,
+      // The owner restores it from the Applets list (Filters → Archived) or Trash.
+      description: `${archiveConfirmSentence(`"${app.name}"`, { restoreFrom: "list_filters" })} It stops running for everyone.`,
+      confirmLabel: "Archive",
       variant: "destructive",
     });
     if (!ok) return;
     setIsDeleting(true);
     try {
       await dispatch(deleteApp(app.id)).unwrap();
-      toast.success("App deleted.");
+      toast.success("Applet archived.");
       window.location.href = "/applets";
     } catch (err) {
       toast.error(
         err instanceof Error
-          ? `Delete failed: ${err.message}`
-          : "Delete failed.",
+          ? `Archive failed: ${err.message}`
+          : "Archive failed.",
       );
       setIsDeleting(false);
     }
@@ -260,7 +262,7 @@ export function AppletSettingsContent({
 
   const handleCopyUrl = async () => {
     if (!app) return;
-    await copyText(`${siteConfig.url}/applets/${app.slug}`, "Public URL copied");
+    await copyText(`${siteConfig.url}/applets/${app.slug}`, "Link copied");
   };
 
   const handlePublicationChange = async (published: boolean) => {
@@ -387,7 +389,7 @@ export function AppletSettingsContent({
         >
           <div className="flex items-center justify-between gap-3">
             <TabsList>
-              <TabsTrigger value="overview">Overview</TabsTrigger>
+              <TabsTrigger value="details">Details</TabsTrigger>
               <TabsTrigger value="pages">Pages</TabsTrigger>
               <TabsTrigger value="jobs">Jobs</TabsTrigger>
               <TabsTrigger value="sources">Sources</TabsTrigger>
@@ -425,8 +427,8 @@ export function AppletSettingsContent({
             />
           </div>
 
-          {/* ── Overview ───────────────────────────────────────────────── */}
-          <TabsContent value="overview" className="space-y-5">
+          {/* ── Details (never "Overview": that is the header's first mode) ── */}
+          <TabsContent value="details" className="space-y-5">
             <FieldRow
               label="Name"
               busy={savingField === "name"}
@@ -518,17 +520,9 @@ export function AppletSettingsContent({
                 disabled={savingField === "preview_image_url"}
               />
             </Row>
-            <Row label="By talking">
-              <Button
-                variant="outline"
-                icon={<MessageSquare />}
-                asChild
-              >
-                <Link href={`/applets/build?applet=${app.id}`}>
-                  Change it by talking
-                </Link>
-              </Button>
-            </Row>
+            <Button variant="outline" icon={<MessageSquare />} asChild>
+              <Link href={`/applets/build?applet=${app.id}`}>Change it by talking</Link>
+            </Button>
           </TabsContent>
 
           <TabsContent value="pages">
@@ -552,7 +546,7 @@ export function AppletSettingsContent({
                 disabled={savingField === "publication"}
               />
             </Row>
-            <Row label="Public URL">
+            <Row label="Web address">
               <div className="flex items-center gap-2 px-3 py-2 rounded-md bg-muted/40 border border-border/60">
                 {app.status === "published" && app.published_to_web ? (
                   <>
@@ -568,7 +562,7 @@ export function AppletSettingsContent({
                       type="button"
                       onClick={handleCopyUrl}
                       className="p-1 hover:bg-muted rounded text-muted-foreground hover:text-foreground"
-                      aria-label="Copy public URL"
+                      aria-label="Copy the web address"
                     >
                       <Copy className="w-3.5 h-3.5" />
                     </button>
@@ -685,7 +679,7 @@ export function AppletSettingsContent({
           {/* ── Danger zone ────────────────────────────────────────────── */}
           <TabsContent value="danger">
             <div className="flex items-center justify-between gap-3 px-4 py-3 rounded-md border border-destructive/30 bg-destructive/5">
-              <span className="text-sm">Delete this Applet</span>
+              <span className="text-sm">Archive this Applet</span>
               <Button
                 icon={isDeleting ? (
                   <Loader2 className="animate-spin" />
@@ -696,7 +690,7 @@ export function AppletSettingsContent({
                 onClick={handleDelete}
                 disabled={isDeleting}
               >
-                Delete
+                Archive
               </Button>
             </div>
           </TabsContent>

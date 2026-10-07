@@ -52,6 +52,8 @@ export interface AppletTemplateLink {
   bind: Record<string, string>;
 }
 
+/** The query flag a sign-up round trip carries back to a template page. Lives here, not in the "use client" component, so the server page can read the value. */
+export const USE_ON_RETURN = "use";
 export const APPLET_TEMPLATES_PATH = "/templates/applets";
 /** An Applet's one address: it runs there, and a signed-out visitor or a template's visitor gets its introductory page. */
 export const appletHref = (slug: string) => `/applets/${encodeURIComponent(slug)}`;

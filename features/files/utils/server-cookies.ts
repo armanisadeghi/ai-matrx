@@ -7,7 +7,7 @@
  */
 
 import { cookies } from "next/headers";
-import { SIDEBAR_MODE_COOKIE } from "@/features/files/components/surfaces/desktop/SidebarModeToggle";
+import { SIDEBAR_MODE_COOKIE } from "@/features/files/components/surfaces/desktop/sidebarModeCookie";
 import type { SidebarMode } from "@/features/files/components/surfaces/desktop/SidebarModeToggle";
 
 export async function readSidebarModeCookie(): Promise<SidebarMode> {

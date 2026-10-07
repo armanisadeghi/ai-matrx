@@ -80,7 +80,7 @@ export const MODULE_LANDING_DIRECTORY: ModuleLandingDirectoryEntry[] = [
     href: "/applets",
     icon: AppWindow,
     teaser:
-      "Wrap a powerful agent as a one-click form your team and clients actually use.",
+      "Custom multi-page apps on your own data, built by talking.",
     group: "Conversational",
   },
   {
