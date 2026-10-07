@@ -1,4 +1,6 @@
 // components/admin/controls/LargeIndicator.tsx
+import { useClipboard } from "@ai-matrx/kit/clipboard";
+import { toast } from "@/lib/toast";
 import React, { Suspense, lazy, useState, useCallback, useMemo } from "react";
 import { formatRelativeTime } from "@ai-matrx/kit/format";
 import {
@@ -67,6 +69,10 @@ const LargeIndicator: React.FC<LargeIndicatorProps> = ({
   onSizeDown,
   onSizeSmall,
 }) => {
+  const { copyText } = useClipboard({
+    notify: (message, kind) =>
+      kind === "error" ? toast.error(message) : toast.success(message),
+  });
   const dispatch = useAppDispatch();
   const [copied, setCopied] = useState(false);
   const [showErrors, setShowErrors] = useState(false);
@@ -124,21 +130,9 @@ const LargeIndicator: React.FC<LargeIndicatorProps> = ({
     const context = page
       ? `${baseContext}\n\n## Page capture\n\n${pageCaptureMarkdown(page).replace(/^# /, "### ")}`
       : baseContext;
-    try {
-      await navigator.clipboard.writeText(context);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2500);
-    } catch {
-      // Fallback for browsers without clipboard API
-      const el = document.createElement("textarea");
-      el.value = context;
-      document.body.appendChild(el);
-      el.select();
-      document.execCommand("copy");
-      document.body.removeChild(el);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2500);
-    }
+    await copyText(context);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2500);
   }, [
     routeContext,
     debugData,

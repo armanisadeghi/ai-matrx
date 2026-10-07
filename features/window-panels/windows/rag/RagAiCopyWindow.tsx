@@ -1,5 +1,6 @@
 "use client";
 
+import { useClipboard } from "@ai-matrx/kit/clipboard";
 import { useState } from "react";
 import { Check, Copy, Database, ExternalLink, FileText, Layers3 } from "lucide-react";
 import { toast } from "@/lib/toast";
@@ -24,19 +25,6 @@ import { cn } from "@/lib/utils";
 import { ClampedNumberInput } from "@/components/official/ClampedNumberInput";
 
 const OVERLAY_ID = "ragAiCopyWindow" as const;
-
-async function writeClipboard(text: string): Promise<void> {
-  try {
-    await navigator.clipboard.writeText(text);
-  } catch {
-    const textarea = document.createElement("textarea");
-    textarea.value = text;
-    document.body.appendChild(textarea);
-    textarea.select();
-    document.execCommand("copy");
-    document.body.removeChild(textarea);
-  }
-}
 
 function initialOptions(
   bundle: RagAiCopyBundle,
@@ -96,6 +84,10 @@ function RagAiCopyWindowInner({
   initialSections: RagAiSectionKey[] | null;
   onClose: () => void;
 }) {
+  const { copyText } = useClipboard({
+    notify: (message, kind) =>
+      kind === "error" ? toast.error(message) : toast.success(message),
+  });
   const [options, setOptions] = useState<RagAiCopyOptions>(() =>
     initialOptions(bundle, initialSections),
   );
@@ -322,7 +314,7 @@ function RagAiCopyWindowInner({
             variant="outline"
             disabled={options.includedSections.length === 0}
             onClick={() => {
-              void writeClipboard(
+              void copyText(
                 combineSelectedHumanText(bundle, options),
               ).then(
                 () => {
@@ -344,7 +336,7 @@ function RagAiCopyWindowInner({
             variant="primary"
             type="button"
             onClick={() => {
-              void writeClipboard(
+              void copyText(
                 buildAgentPayload(buildRagAiPayload(bundle, options)),
               ).then(
                 () => {

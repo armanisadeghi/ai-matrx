@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Check, Copy } from "lucide-react";
+import { useClipboard } from "@ai-matrx/kit/clipboard";
 import { toast } from "@/lib/toast";
 import { Button } from "@ai-matrx/design-system";
 import { CopyForAiIcon } from "@/components/agent-copy/CopyForAiIcon";
@@ -11,19 +12,6 @@ import type {
   RagAiSectionKey,
 } from "@/features/rag/components/search/ragAiCopy";
 import { cn } from "@/lib/utils";
-
-async function writeClipboard(text: string): Promise<void> {
-  try {
-    await navigator.clipboard.writeText(text);
-  } catch {
-    const textarea = document.createElement("textarea");
-    textarea.value = text;
-    document.body.appendChild(textarea);
-    textarea.select();
-    document.execCommand("copy");
-    document.body.removeChild(textarea);
-  }
-}
 
 export function RagContentActions({
   humanText,
@@ -41,6 +29,10 @@ export function RagContentActions({
   stopPropagation?: boolean;
 }) {
   const [copied, setCopied] = useState(false);
+  const { copyText } = useClipboard({
+    notify: (message, kind) =>
+      kind === "error" ? toast.error(message) : toast.success(message),
+  });
   const openAiCopy = useOpenRagAiCopyWindow();
 
   const stop = (event: React.MouseEvent) => {
@@ -58,13 +50,9 @@ export function RagContentActions({
         title={`Copy ${label} to clipboard`}
         onClick={(event) => {
           stop(event);
-          void writeClipboard(humanText)
-            .then(() => {
-              setCopied(true);
-              window.setTimeout(() => setCopied(false), 1_500);
-              toast.success(`${label} copied to clipboard`);
-            })
-            .catch(() => toast.error(`Could not copy ${label}`));
+          void copyText(humanText, `${label} copied to clipboard`);
+          setCopied(true);
+          window.setTimeout(() => setCopied(false), 1_500);
         }}
       >
         {copied ? (

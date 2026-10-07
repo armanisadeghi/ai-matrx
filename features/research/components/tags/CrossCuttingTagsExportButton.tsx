@@ -1,5 +1,6 @@
 "use client";
 
+import { useClipboard } from "@ai-matrx/kit/clipboard";
 import { useCallback, useState } from "react";
 import {
   ChevronDown,
@@ -31,19 +32,6 @@ interface CrossCuttingTagsExportButtonProps {
   topicName: string | null;
 }
 
-async function writeClipboard(text: string): Promise<void> {
-  try {
-    await navigator.clipboard.writeText(text);
-  } catch {
-    const textarea = document.createElement("textarea");
-    textarea.value = text;
-    document.body.appendChild(textarea);
-    textarea.select();
-    document.execCommand("copy");
-    document.body.removeChild(textarea);
-  }
-}
-
 /**
  * Exports the EXACT input the Cross-Cutting Tag Generator agent receives — the
  * topic's keyword list plus its search results — so the user can run that agent
@@ -57,6 +45,10 @@ export function CrossCuttingTagsExportButton({
   topicId,
   topicName,
 }: CrossCuttingTagsExportButtonProps) {
+  const { copyText } = useClipboard({
+    notify: (message, kind) =>
+      kind === "error" ? toast.error(message) : toast.success(message),
+  });
   const api = useResearchApi();
   const [busy, setBusy] = useState(false);
 
@@ -73,7 +65,7 @@ export function CrossCuttingTagsExportButton({
           mode === "ai"
             ? tagInputToAiText(topicId, topicName, data)
             : tagInputToText(topicName, data);
-        await writeClipboard(text);
+        await copyText(text);
         toast.success(
           mode === "ai" ? "Copied tag input for AI" : "Copied tag input",
           {

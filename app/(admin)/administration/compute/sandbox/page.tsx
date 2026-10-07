@@ -1,5 +1,7 @@
 "use client";
 
+import { useClipboard } from "@ai-matrx/kit/clipboard";
+import { toast } from "@/lib/toast";
 import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 import { formatDurationSeconds } from "@ai-matrx/kit/format";
 import {
@@ -167,6 +169,10 @@ function toExpandedEntry(
 }
 
 export default function AdminSandboxManagementPage() {
+  const { copyText } = useClipboard({
+    notify: (message, kind) =>
+      kind === "error" ? toast.error(message) : toast.success(message),
+  });
   // THE DOOR LAW, with a hard limit this console must respect: `/sandbox/[id]`
   // reads `/api/sandbox/[id]`, which filters `.eq("user_id", user.id)`. This
   // table is RLS-bound, so linking every row there would 404 for every
@@ -312,16 +318,7 @@ export default function AdminSandboxManagementPage() {
   };
 
   const copyToClipboard = async (text: string, field: string) => {
-    try {
-      await navigator.clipboard.writeText(text);
-    } catch {
-      const textarea = document.createElement("textarea");
-      textarea.value = text;
-      document.body.appendChild(textarea);
-      textarea.select();
-      document.execCommand("copy");
-      document.body.removeChild(textarea);
-    }
+    await copyText(text);
     setCopiedField(field);
     setTimeout(() => setCopiedField(null), 2000);
   };

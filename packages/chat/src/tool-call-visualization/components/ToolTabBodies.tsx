@@ -19,6 +19,8 @@
  *   CopyButton     — kept for backward-compat; thin clipboard helper.
  */
 
+import { useClipboard } from "@ai-matrx/kit/clipboard";
+import { toast } from "@/lib/toast";
 import { resultToHuman } from "../utils/human-copy";
 import React, { useState } from "react";
 import { useToolConversationId } from "./ToolConversationContext";
@@ -69,19 +71,14 @@ export const CopyButton: React.FC<{ text: string; className?: string }> = ({
   text,
   className,
 }) => {
+  const { copyText } = useClipboard({
+    notify: (message, kind) =>
+      kind === "error" ? toast.error(message) : toast.success(message),
+  });
   const [copied, setCopied] = useState(false);
 
   const handleCopy = async () => {
-    try {
-      await navigator.clipboard.writeText(text);
-    } catch {
-      const textarea = document.createElement("textarea");
-      textarea.value = text;
-      document.body.appendChild(textarea);
-      textarea.select();
-      document.execCommand("copy");
-      document.body.removeChild(textarea);
-    }
+    await copyText(text);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };

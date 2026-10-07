@@ -8,7 +8,7 @@ import { shapeOfValue } from "@ai-matrx/records-ui/table-shape";
 import { useOpenSaveToTable } from "@/features/overlays/openers/saveToTable";
 import { KIND_KEY } from "@ai-matrx/content-ir";
 import { outputSchemaKeys } from "@ai-matrx/chat/mandates/output-contract";
-import { writeClipboard } from "@/components/agent-copy/clipboard";
+import { useClipboard } from "@ai-matrx/kit/clipboard";
 import { toast } from "@/lib/toast";
 import { isJsonObject } from "@/types/json";
 import { valueCarriesKind } from "@/features/content-ir/surfaces/json-kind-signal";
@@ -96,16 +96,18 @@ const STATUS_TONE_CLASS: Record<
  * The raw payload keeps a Copy control. Before this block existed the JSON
  * rendered through `JsonBlock`, whose header carried Copy — replacing it with
  * a bare `<pre>` would have taken a working affordance away while making the
- * answer prettier. `writeClipboard` is the ONE clipboard implementation.
+ * answer prettier. `useClipboard` (kit) is the ONE clipboard implementation.
  */
 function CopyRawButton({ rawContent }: { rawContent: string }) {
+  const { copyText } = useClipboard({
+    notify: (message, kind) =>
+      kind === "error" ? toast.error(message) : toast.success(message),
+  });
   return (
     <Button variant="quiet" icon={<Copy />} aria-label="Copy raw JSON" onClick={(event) => {
         event.preventDefault();
         event.stopPropagation();
-        void writeClipboard(rawContent).then(() => {
-          toast.success("Raw answer copied");
-        });
+        void copyText(rawContent, "Raw answer copied");
       }}>
       Copy
     </Button>

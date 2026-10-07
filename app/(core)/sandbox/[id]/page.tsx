@@ -1,5 +1,7 @@
 "use client";
 
+import { useClipboard } from "@ai-matrx/kit/clipboard";
+import { toast } from "@/lib/toast";
 import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 import { confirm as confirmDialog } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { formatDurationSeconds } from "@ai-matrx/kit/format";
@@ -84,6 +86,10 @@ const DEFAULT_CWD = "/home/agent";
 type TerminalEntry = SandboxConsoleEntry;
 
 export default function SandboxDetailPage() {
+  const { copyText } = useClipboard({
+    notify: (message, kind) =>
+      kind === "error" ? toast.error(message) : toast.success(message),
+  });
   const params = useParams();
   const router = useRouter();
   const id = params.id as string;
@@ -278,21 +284,9 @@ export default function SandboxDetailPage() {
       })
       .join("\n");
 
-    try {
-      await navigator.clipboard.writeText(text);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    } catch {
-      // Fallback for older browsers
-      const textarea = document.createElement("textarea");
-      textarea.value = text;
-      document.body.appendChild(textarea);
-      textarea.select();
-      document.execCommand("copy");
-      document.body.removeChild(textarea);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    }
+    await copyText(text);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
   }, [terminalHistory]);
 
   const handleStop = async (graceful = true) => {

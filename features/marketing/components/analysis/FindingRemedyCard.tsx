@@ -35,7 +35,7 @@ import { Badge } from "@/components/ui/badge";
 import { TextInputDialog } from "@/components/dialogs/text-input/TextInputDialog";
 import { AssistChip } from "@/features/assists/components/AssistChip";
 import { makeEphemeralAssist } from "@/features/assists/types";
-import { writeClipboard } from "@/components/agent-copy/clipboard";
+import { useClipboard } from "@ai-matrx/kit/clipboard";
 import { toast } from "@/lib/toast";
 import { extractErrorMessage } from "@/utils/errors";
 import {
@@ -58,6 +58,10 @@ export interface FindingRemedyCardProps {
 
 function CopyInstructionButton({ instruction }: { instruction: string }) {
   const [copied, setCopied] = useState(false);
+  const { copyText } = useClipboard({
+    notify: (message, kind) =>
+      kind === "error" ? toast.error(message) : toast.success(message),
+  });
   return (
     <Button
       icon={copied ? (
@@ -67,11 +71,9 @@ function CopyInstructionButton({ instruction }: { instruction: string }) {
       )}
       variant="outline"
       onClick={() => {
-        void writeClipboard(instruction).then(() => {
-          setCopied(true);
-          toast.success("Instructions copied");
-          setTimeout(() => setCopied(false), 1500);
-        });
+        void copyText(instruction, "Instructions copied");
+        setCopied(true);
+        setTimeout(() => setCopied(false), 1500);
       }}
     >
       {copied ? "Copied" : "Copy instructions"}

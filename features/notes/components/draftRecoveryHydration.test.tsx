@@ -36,7 +36,7 @@ jest.mock("../utils/notesDrafts", () => ({
 jest.mock("@/features/text-diff/service/versionService", () => ({ fetchVersions: jest.fn(async () => []) }));
 jest.mock("@/lib/toast", () => ({ toast: { success: jest.fn() } }));
 jest.mock("@/components/dialogs/confirm/ConfirmDialogHost", () => ({ confirm: jest.fn() }));
-jest.mock("@/components/agent-copy/clipboard", () => ({ writeClipboard: jest.fn() }));
+jest.mock("@ai-matrx/kit/clipboard", () => ({ useClipboard: () => ({ copyText: jest.fn() }) }));
 jest.mock("@/features/overlays/openers/diffViewerWindow", () => ({ useOpenDiffViewerWindow: () => jest.fn() }));
 jest.mock("@/utils/datetime", () => ({ formatRelativeTime: () => "an hour ago" }));
 

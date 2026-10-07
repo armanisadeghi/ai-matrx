@@ -1,5 +1,7 @@
 "use client";
 
+import { useClipboard } from "@ai-matrx/kit/clipboard";
+import { toast } from "@/lib/toast";
 import { useState, useCallback } from "react";
 import {
   KeyRound,
@@ -28,6 +30,10 @@ export function SshAccessPanel({
   apiBasePath = "/api/sandbox",
   disabled = false,
 }: SshAccessPanelProps) {
+  const { copyText } = useClipboard({
+    notify: (message, kind) =>
+      kind === "error" ? toast.error(message) : toast.success(message),
+  });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [access, setAccess] = useState<SandboxAccessResponse | null>(null);
@@ -73,20 +79,9 @@ export function SshAccessPanel({
   }, [sandboxId, apiBasePath]);
 
   const copyToClipboard = useCallback(async (text: string, field: string) => {
-    try {
-      await navigator.clipboard.writeText(text);
-      setCopiedField(field);
-      setTimeout(() => setCopiedField(null), 2000);
-    } catch {
-      const textarea = document.createElement("textarea");
-      textarea.value = text;
-      document.body.appendChild(textarea);
-      textarea.select();
-      document.execCommand("copy");
-      document.body.removeChild(textarea);
-      setCopiedField(field);
-      setTimeout(() => setCopiedField(null), 2000);
-    }
+    await copyText(text);
+    setCopiedField(field);
+    setTimeout(() => setCopiedField(null), 2000);
   }, []);
 
   const handleDownloadKey = useCallback(() => {

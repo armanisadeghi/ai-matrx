@@ -12,7 +12,7 @@ jest.mock("@/features/text-diff/service/versionService", () => ({
 jest.mock("@/lib/redux/hooks", () => ({ useAppSelector: jest.fn() }));
 jest.mock("@/lib/toast", () => ({ toast: { success: jest.fn() } }));
 jest.mock("@/components/dialogs/confirm/ConfirmDialogHost", () => ({ confirm: jest.fn() }));
-jest.mock("@/components/agent-copy/clipboard", () => ({ writeClipboard: jest.fn() }));
+jest.mock("@ai-matrx/kit/clipboard", () => ({ useClipboard: () => ({ copyText: jest.fn() }) }));
 jest.mock("@/features/overlays/openers/diffViewerWindow", () => ({ useOpenDiffViewerWindow: jest.fn() }));
 jest.mock("@ai-matrx/kit/drafts", () => ({ getDraftsVersion: jest.fn(), subscribeDrafts: jest.fn() }));
 jest.mock("@/utils/datetime", () => ({ formatRelativeTime: jest.fn() }));
