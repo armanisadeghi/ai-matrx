@@ -92,6 +92,14 @@ export interface PolicyConfig<TState = unknown> {
         /** Exact Redux `action.type` strings that should be broadcast across tabs. */
         actions: readonly string[];
     };
+    /**
+     * This slice belongs to ONE TAB: nothing is broadcast and no peer is asked,
+     * so a warm-cache policy may declare no broadcast actions. The cache still
+     * persists (it seeds the next load). First user: `appContext` — each tab
+     * keeps the organization it loaded with (active-organization plan,
+     * 2026-10-07).
+     */
+    perTab?: boolean;
 
     /**
      * Does this slice hold a PERSON'S data — data that must not outlive their

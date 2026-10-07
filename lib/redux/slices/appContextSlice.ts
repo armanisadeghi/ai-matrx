@@ -526,6 +526,8 @@ export const appContextPolicy = definePolicy<AppContextState>({
   sliceName: "appContext",
   preset: "warm-cache",
   version: 1, // Bump destroys client caches; Phase 6 adds migration hooks.
+  // Per tab: nothing is broadcast (see the header above).
+  perTab: true,
   storageKey: "matrx:appContext",
   partialize: [
     "organization_id",
