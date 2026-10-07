@@ -1319,6 +1319,11 @@
 .spaces-mention-muted { color: var(--spaces-ink-soft); }
 .spaces-db-host { width: 100%; min-width: 0; }
 .spaces-db-loading { min-height: 120px; }
+/* A chart view's loading state is its frame's own geometry (373px + the frame's 4px margins): the tile
+   is its final size before the data lands (round 26, CLS). */
+.spaces-db-host[data-layout="chart"] > .spaces-db-loading, .spaces-db-host[data-layout="chart"] .spaces-db-frame.spaces-db-note { min-height: 373px; margin: 4px 0; border: 1px solid transparent; }
+.spaces-db-host[data-layout="chart"] .spaces-db-frame.spaces-db-note { border-color: var(--spaces-rule); }
+.spaces-db-host[data-layout="chart"] .spaces-db-note .spaces-db-loading { min-height: 0; }
 
 /* ── Data blocks: database (C24/C25, F1–F9) and chart view (C26, G1–G4) ── */
 .spaces-db-frame { position: relative; display: flex; flex-direction: column; gap: 4px; padding: 14px 16px 10px; border: 1px solid var(--spaces-rule); border-radius: 10px; background: var(--spaces-page-bg); min-width: 0; margin: 4px 0; }

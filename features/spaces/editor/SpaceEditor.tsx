@@ -237,7 +237,9 @@ export function SpaceEditor({ spaceId, initialBlocks, editable, onChange, slash,
   };
   const [BlockMenu] = useState(() => makeBlockMenu({ spaceId, ...menu, comment: (id) => commentOnBlock(id) }));
   useEffect(() => columnDrop.attach(), [columnDrop]);
-  const [widths, setWidths] = useState(() => columnCss(editor.document as unknown as EngineBlock[]));
+  // The first paint already has the stored column widths (with a room the editor holds only its placeholder
+  // until the first sync, and the columns drew 50/50 then jumped: the page's largest layout shift).
+  const [widths, setWidths] = useState(() => columnCss((room ? toEngine(initialBlocks) : editor.document) as unknown as EngineBlock[]));
   // With a room the body arrives through the Yjs binding (the first sync, a peer's edit), which
   // BlockNoteView's onChange never reports — so a page opened in a room drew its columns 50/50. The
   // editor's own change feed, remote updates included, keeps the widths current.
