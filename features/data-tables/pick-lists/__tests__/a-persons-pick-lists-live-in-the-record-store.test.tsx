@@ -227,7 +227,7 @@ test("B2. a list menu targets the Table's real custom.record identity", async ()
     type: "record",
     id: STORE_LIST,
     title: "Hygiene Visit Types",
-    resourceType: "structured_list",
+    resourceType: "record",
   });
 });
 

@@ -65,7 +65,7 @@ export default function PickListManagerWindow({
                 type: "record",
                 id: forcedListId,
                 title: resolvedTitle,
-                resourceType: "structured_list",
+                resourceType: "record",
               }
             : undefined
         }

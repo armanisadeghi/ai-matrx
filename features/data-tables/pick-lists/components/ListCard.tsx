@@ -82,7 +82,7 @@ export function ListCard({
         type: "record",
         id: list.id,
         title: list.list_name,
-        resourceType: "structured_list",
+        resourceType: "record",
       }}
     >
       <div
