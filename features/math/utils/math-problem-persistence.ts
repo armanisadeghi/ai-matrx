@@ -5,7 +5,7 @@
  */
 
 import type { MathProblemProps } from "../types";
-import { copyText } from "@ai-matrx/kit/clipboard";
+import { copyText, readText } from "@ai-matrx/kit/clipboard";
 import { downloadFile } from "@/components/agent-copy/export";
 
 /**
@@ -78,7 +78,8 @@ export async function copyMathProblemToClipboard(problem: Omit<MathProblemProps,
  * Paste math problem from clipboard
  */
 export async function pasteMathProblemFromClipboard(): Promise<Omit<MathProblemProps, "id">> {
-    const text = await navigator.clipboard.readText();
+    const text = await readText();
+    if (text === null) throw new Error("Could not read the clipboard");
     const data = JSON.parse(text);
     
     // Handle both wrapped and unwrapped formats

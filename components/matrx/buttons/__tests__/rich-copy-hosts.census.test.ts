@@ -1,12 +1,12 @@
 // GUARD: every rich-content surface copies through THE one copy module
-// (`copyRichContent` in components/agent-copy/copy-commands.ts —
+// (`copyRichContent` in components/agent-copy/copy-commands.ts, which writes through kit's `copyRich` —
 // Copy = formatted + markdown, Copy markdown, Copy text). A raw
 // `navigator.clipboard.write*` in a rich-content host is a second copy that
 // gives the person one flavor and no choice (Arman, 2026-10-04).
 //
-// Not every clipboard write is rich text: an id, a link, raw code, JSON, a
-// diagnostics report keep their own raw copy. Those are listed below WITH the
-// reason; a new raw write in a host directory fails until it is routed or listed.
+// Not every clipboard write is rich text — an id, a link, raw code, JSON — but none of those is raw
+// either: they go through `copyToClipboard` (@/lib/clipboard/copy) / kit `copyText`. The allow-list
+// is empty; a new raw write in a host directory fails until it is routed (or listed WITH the reason).
 
 import fs from "node:fs";
 import os from "node:os";
@@ -30,13 +30,7 @@ const HOST_DIRS = [
 ];
 
 /** Raw writes that are NOT rich text — file → why. */
-const RAW_ALLOWED: Record<string, string> = {
-  "components/selection-toolbar/selection-copy.ts": "the module's own ⌘C markdown upgrade (formatted + markdown item)",
-  "features/rich-document/actions/handlers/share.ts": "a share link (URL)",
-  "features/notes/components/NoteInfoPanel.tsx": "a note's id / metadata value",
-  "features/notes/components/NoteTabItem.tsx": "a note's record-reference fence (an id), not its text",
-  "packages/chat/src/tool-call-visualization/result-fields/ShortId.tsx": "an id",
-};
+const RAW_ALLOWED: Record<string, string> = {};
 
 const RAW_WRITE = /navigator\.clipboard\s*\??\.\s*(?:write|writeText)\s*\(/;
 

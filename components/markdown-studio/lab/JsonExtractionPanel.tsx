@@ -23,7 +23,7 @@ import {
   StreamingJsonTracker,
   type StreamingJsonState,
 } from "@ai-matrx/kit/json-extract";
-import { copyToClipboard } from "@/components/agent-copy/copy-commands";
+import { copyContent } from "@/components/agent-copy/copy-commands";
 import { StreamSimControls } from "./StreamSimControls";
 import {
   DEFAULT_STREAM_SIM_SETTINGS,
@@ -245,7 +245,7 @@ function JsonResultCard({
   }
 
   const handleCopy = async () => {
-    await copyToClipboard(jsonStr);
+    await copyContent(jsonStr);
     setCopied(true);
     setTimeout(() => setCopied(false), 1200);
   };

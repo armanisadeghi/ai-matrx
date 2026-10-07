@@ -15,7 +15,7 @@ import { requestRaw } from "@/lib/python-client";
 import { getUserMessage } from "@ai-matrx/agents/matrx";
 import { ENDPOINTS } from "@/lib/api/endpoints";
 import { parseNdjsonStream } from "@/lib/api/stream-parser";
-import { copyToClipboard } from "@/components/agent-copy/copy-commands";
+import { copyContent } from "@/components/agent-copy/copy-commands";
 import type {
   RenderBlockEvent,
   TypedStreamEvent,
@@ -100,7 +100,7 @@ export function useBlockProcessing() {
     }
   };
 
-  const copyRaw = () => copyToClipboard(rawRef.current);
+  const copyRaw = () => copyContent(rawRef.current);
   const hasRaw = () => rawRef.current.length > 0;
 
   // The host door awaits the session token itself before sending, so the

@@ -52,7 +52,7 @@ import {
   CONTEXT_MENU_ENTITY_KEY,
   type ContextMenuExtraSection,
 } from "@/features/context-menu-v3/types";
-import { copyToClipboard } from "@/components/agent-copy/copy-commands";
+import { copyContent } from "@/components/agent-copy/copy-commands";
 import { toast } from "@/lib/toast";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
@@ -614,7 +614,7 @@ function SurfaceContextInspectorWindowInner({
         description: activeItemName ? undefined : "Select a value first",
         onSelect: () => {
           if (!activeItemName) return;
-          void copyToClipboard(
+          void copyContent(
             JSON.stringify(scope[activeItemName], null, 2),
             {
               formatJson: false,
@@ -630,7 +630,7 @@ function SurfaceContextInspectorWindowInner({
         label: "Copy full scope as JSON",
         icon: Copy,
         onSelect: () => {
-          void copyToClipboard(JSON.stringify(scope, null, 2), {
+          void copyContent(JSON.stringify(scope, null, 2), {
             formatJson: false,
             onSuccess: () => toast.success("Scope copied"),
             onError: () => toast.error("Could not copy scope"),
@@ -646,7 +646,7 @@ function SurfaceContextInspectorWindowInner({
         description: surfaceName ? undefined : "No surface name resolved",
         onSelect: () => {
           if (!surfaceName) return;
-          void copyToClipboard(
+          void copyContent(
             JSON.stringify(getRawManifest(surfaceName), null, 2),
             {
               formatJson: false,

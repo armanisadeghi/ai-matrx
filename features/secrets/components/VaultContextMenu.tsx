@@ -42,7 +42,7 @@ import type {
   ResolvedContextMenuContext,
 } from "@/features/context-menu-v3/types";
 import type { ApplicationScope } from "@ai-matrx/chat/agents/types/scope.types";
-import { copyToClipboard } from "@/components/agent-copy/copy-commands";
+import { copyContent } from "@/components/agent-copy/copy-commands";
 import { toast } from "@/lib/toast";
 
 import { credentialIdentity } from "../credential-identity";
@@ -174,7 +174,7 @@ export function VaultContextMenu({
         disabled: !clicked,
         onSelect: () => {
           if (!clicked) return;
-          void copyToClipboard(clicked.display_name, {
+          void copyContent(clicked.display_name, {
             formatJson: false,
             onSuccess: () => toast.success("Name copied"),
             onError: () => toast.error("Could not copy the name"),

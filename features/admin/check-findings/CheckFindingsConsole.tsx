@@ -36,7 +36,7 @@ import {
   XCircle,
 } from "lucide-react";
 import { toast } from "@/lib/toast";
-import { copyToClipboard } from "@/components/agent-copy/copy-commands";
+import { copyContent } from "@/components/agent-copy/copy-commands";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -134,7 +134,7 @@ function messageOf(error: unknown): string {
 
 /** THE copy primitive: on a refusal it opens the manual-copy dialog with the text selected. */
 function copyText(text: string, label: string) {
-  return copyToClipboard(text, {
+  return copyContent(text, {
     formatJson: false,
     onSuccess: () => toast.success(`${label} copied`),
   });

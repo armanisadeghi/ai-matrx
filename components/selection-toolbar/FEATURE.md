@@ -37,6 +37,7 @@
 
 ## Change Log
 
+- 2026-10-07 — ALC-19: the ⌘C markdown upgrade writes through kit `copyRich` (`plainFallback: false`, so a refused upgrade leaves the event's own copy standing); `selection-copy.ts` no longer builds a `ClipboardItem`.
 - 2026-10-04 — Copy is THE one rich copy (`components/agent-copy/copy-commands.ts` `copyRichContent`): the strip's Copy writes the formatted selection AND its markdown (knob `copy.default_flavor`, default markdown, seeded live); Copy markdown and Copy text sit under More. `selection-copy.ts` adds ⌘C on rendered content (formatted HTML + markdown text flavor, via the editor's HTML → markdown converter) and ⌘⇧C (readable plain text); installed lazily by the root. Formatting actions now come from the one command layer (`components/rich-editor/format`), so the strip formats Source and textarea selections too.
 
 - 2026-10-03 — Turn References: the comment composer on a chat answer carries "With next message" (knob `selection_toolbar.comment_sends_with_next_message`, org then person, default on; seeded live through the Supabase MCP) — the saved comment is also staged as a remark chip in that conversation. New reading action `selection:new-chat` ("New chat about this", chat answers only — present only when the annotation host's record is a `message` with a conversation) opens a new chat with the passage staged as a comment. The common host gained the `newChatAbout` door.

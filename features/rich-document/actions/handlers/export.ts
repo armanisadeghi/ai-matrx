@@ -9,7 +9,7 @@ import { Eye, Globe, Mail } from "lucide-react";
 import { toast } from "@/lib/toast";
 import { openOverlay } from "@/lib/redux/slices/overlaySlice";
 import { createFullScreenEditorCallbackGroup } from "@/features/overlays/callbacks/fullScreenEditor";
-import { copyToClipboard } from "@/components/agent-copy/copy-commands";
+import { copyContent } from "@/components/agent-copy/copy-commands";
 import { getMarkdownStylesheet } from "@ai-matrx/print/markdown";
 import { registerAction } from "../provider";
 import { getErrorMessage, serializeError, contentForDestination } from "../utils";
@@ -109,14 +109,14 @@ registerAction({
   order: 1,
   run: async (ctx) => {
     try {
-      await copyToClipboard(contentForDestination(ctx), {
+      await copyContent(contentForDestination(ctx), {
         isMarkdown: true,
         formatForWordPress: true,
         showHtmlPreview: true,
         onShowHtmlPreview: async (filteredHtml) => {
           const cssContent = getMarkdownStylesheet();
           const html = `<!DOCTYPE html>\n<html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">\n<title>Content</title><style>${cssContent}</style></head><body>${filteredHtml}</body></html>`;
-          await copyToClipboard(html, {
+          await copyContent(html, {
             onSuccess: () => {},
             onError: () => {},
           });

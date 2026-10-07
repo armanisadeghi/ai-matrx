@@ -1,10 +1,6 @@
 {
   "clipboard": {
-    "components/selection-toolbar/selection-copy.ts": 3,
-    "features/context-menu-v3/hooks/useContextMenuActions.ts": 8,
-    "features/math/utils/math-problem-persistence.ts": 1,
-    "features/rich-document/actions/handlers/compare.ts": 1,
-    "utils/browser-compat.ts": 2
+    "features/context-menu-v3/hooks/useContextMenuActions.ts": 8
   },
   "downloads": {},
   "formatlibs": {

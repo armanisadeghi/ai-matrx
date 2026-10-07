@@ -30,7 +30,7 @@ import { listAppRows, upsertAppRow } from "@ai-matrx/records/app-table";
 import { personActor, recordsDataSource } from "@ai-matrx/records-ui";
 
 import { InfoHint } from "@/components/official/InfoHint";
-import { copyToClipboard } from "@/components/agent-copy/copy-commands";
+import { copyContent } from "@/components/agent-copy/copy-commands";
 import {
   ensureOrganizationForWrite,
   isOrganizationSelectionCancelled,
@@ -265,7 +265,7 @@ export default function PageCleanupReview() {
       toast.info("Nothing to copy yet");
       return;
     }
-    const ok = await copyToClipboard(lines.join("\n"), { formatJson: false });
+    const ok = await copyContent(lines.join("\n"), { formatJson: false });
     if (ok) {
       setCopied(true);
       setTimeout(() => setCopied(false), 1500);

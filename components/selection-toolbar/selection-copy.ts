@@ -11,6 +11,7 @@
 // Selections inside editable text (textarea, input, contenteditable — every
 // editor) keep the browser's / editor's own copy.
 
+import { copyRich } from "@ai-matrx/kit/clipboard";
 import {
   copyRichContent,
   defaultCopyFlavor,
@@ -98,19 +99,12 @@ export function installRichCopyKeys(): () => void {
     event.clipboardData.setData("text/plain", quick);
     event.preventDefault();
     void rangeMarkdown(html).then(async (markdown) => {
-      if (!markdown || markdown === quick || typeof ClipboardItem === "undefined" || !navigator.clipboard?.write) return;
+      if (!markdown || markdown === quick) return;
       const plain = richCopyPlainText(markdown, "default", defaultCopyFlavor());
-      try {
-        await navigator.clipboard.write([
-          new ClipboardItem({
-            "text/html": new Blob([html], { type: "text/html" }),
-            "text/plain": new Blob([plain], { type: "text/plain" }),
-          }),
-        ]);
-      } catch (error) {
-        // The event's own flavors are already on the clipboard; only the upgrade was refused.
-        console.warn("[copy] the markdown flavor could not be added to this copy; the shape text stands:", error);
-      }
+      // An upgrade of the copy already on the clipboard: when the rich write is refused the event's
+      // own flavors stand (plainFallback: false never downgrades them).
+      const upgraded = await copyRich({ text: plain, html }, { plainFallback: false });
+      if (!upgraded) console.warn("[copy] the markdown flavor could not be added to this copy; the shape text stands");
     });
   };
   const onKeyDown = (event: KeyboardEvent) => {

@@ -24,7 +24,7 @@ import { CopyButtons } from "@/components/agent-copy/CopyButtons";
 
 The menu owns structured copy, exports, preparation, and destinations. Do not add a sibling JSON, AI, or export control. `CopyForAiIcon`, `AiCopyMenu`, and `ExportMenu` remain compatibility adapters for existing callers; new work uses the typed package menu through `CopyButtons`.
 
-`copy-commands.ts` is the command-shaped copy for code that has no menu to mount (an action handler, a keyboard shortcut): `copyToClipboard` (alchemy `capture` / `serialize` / transport, manual-copy fallback) and `copyRichContent` (Copy = formatted + markdown, Copy markdown, Copy text). A visible control is `CopyButtons`: `stripThinking` leaves reasoning blocks out and offers "Copy including thinking"; the host binds the HTML preview once in `AlchemyHost` (`htmlPreview`).
+`copy-commands.ts` is the command-shaped copy for code that has no menu to mount (an action handler, a keyboard shortcut): `copyContent` (alchemy `capture` / `serialize` / transport, manual-copy fallback) and `copyRichContent` (Copy = formatted + markdown, Copy markdown, Copy text; written through kit's `copyRich`, so the one clipboard item is never hand-built). The plain-string copy is the other door, `copyToClipboard` in `@/lib/clipboard/copy` (kit `copyText` bound to the app toast); reads are kit's `readText` / `readImage`. A visible control is `CopyButtons`: `stripThinking` leaves reasoning blocks out and offers "Copy including thinking"; the host binds the HTML preview once in `AlchemyHost` (`htmlPreview`).
 
 ## Host and declared surfaces
 
@@ -44,6 +44,7 @@ Source/package evidence does not establish deployed behavior. The current releas
 
 ## Change log
 
+- 2026-10-07 — ALC-19: the command-shaped `copyToClipboard` is now `copyContent` (no two functions share a name); `writeClipboardFlavors` and the selection toolbar's ⌘C upgrade write through `@ai-matrx/kit/clipboard` `copyRich`; the three non-component clipboard reads use kit `readText` / `readImage`; `CopySubsetWindow` copies through the plain door and shows "copied" only when it landed.
 - 2026-10-07 — ALC-19 T3: `MarkdownCopyButton`, `InlineCopyButton`, `InlineCopyButtonGoogle` and `markdown-copy-utils.ts` are gone. Visible controls are `CopyButtons` (alchemy 0.15.0: `stripThinking`, `htmlPreview`, bound once in `AlchemyHost`); the command-shaped `copyToClipboard` / `copyRichContent` moved to `copy-commands.ts` here; the chat package's `InlineCopyButton` slot is gone (its callers use the `CopyButtons` slot).
 - 2026-10-06 — Save to document / Save to workbook write through the door (`matrx-user/documents · create_documents`, `matrx-user/workbooks · create_workbooks`, headless handlers wrapping `export-targets`); the created record's id and link ride `receipt.result`. The direct `pushMarkdownToDocument` / `pushTableToWorkbook` calls in `alchemy-destinations.ts` are gone.
 - 2026-10-06 — Door bypasses closed (`check:alchemy-doors` rule `doorbypass`, 6 → 0): `writeToPageThroughDoor` in `alchemy-door.ts` is the one entry for every caller that is not a destination or the agent write thunk (the assist `surface_write` action, the board item bridge, the `apply_surface_write` Kind Action); the result carries the door's receipt, which the Kind Action forwards. Guard: `alchemy-door.test.ts`.

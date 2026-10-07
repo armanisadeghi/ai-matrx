@@ -1,6 +1,6 @@
 import { toast } from "@/lib/toast";
 import { Copy } from "lucide-react";
-import { copyToClipboard } from "@/components/agent-copy/copy-commands";
+import { copyContent } from "@/components/agent-copy/copy-commands";
 import type { ContextMenuExtraSection } from "@/features/context-menu-v3/types";
 
 export interface TranscriptsExtraSectionsArgs {
@@ -38,7 +38,7 @@ export function createTranscriptsExtraSections(
               toast.error("Transcript is empty");
               return;
             }
-            void copyToClipboard(text, {
+            void copyContent(text, {
               onSuccess: () => toast.success("Transcript copied"),
               onError: () => toast.error("Failed to copy"),
             });

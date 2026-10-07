@@ -12,7 +12,7 @@
  * agents (the overlay hazard the context-menu-v3 skill names).
  *
  * 🚨 NO NEW WRITE PATH LIVES HERE. Copy routes through the ONE clipboard
- * primitive (`copyToClipboard` → `showManualCopy` when the browser blocks it);
+ * primitive (`copyContent` → `showManualCopy` when the browser blocks it);
  * "reply" hands the text to the composer the surface already owns; navigation
  * uses the same `/messages/:id` route the rows already link to. There is no
  * conversation write path anywhere in the repo (see
@@ -31,7 +31,7 @@ import {
 } from "lucide-react";
 
 import { toast } from "@/lib/toast";
-import { copyToClipboard } from "@/components/agent-copy/copy-commands";
+import { copyContent } from "@/components/agent-copy/copy-commands";
 import { showManualCopy } from "@/components/dialogs/clipboard-fallback/manualCopyOpener";
 import { summarizeMatrxText } from "@/features/matrx-envelope/referenceText";
 import type {
@@ -145,7 +145,7 @@ export function conversationCopyLines(conv: ConversationSummary): string {
 
 /** The ONE copy path: clipboard, falling back to the manual-copy dialog. */
 async function copyOrShow(text: string, label: string, title: string) {
-  await copyToClipboard(text, {
+  await copyContent(text, {
     formatJson: false,
     onSuccess: () => toast.success(label),
     onError: () => showManualCopy({ text, title }),
