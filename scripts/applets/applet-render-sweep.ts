@@ -12,6 +12,11 @@
  * `--files <dir>` swaps each row's entry file for `<dir>/<slug>.tsx` when present — the converter's output
  * checked BEFORE it is written to the row.
  *
+ * `--against-live` ALSO checks every row's @ai-matrx named imports against the versions the DEPLOYED site carries
+ * (commit from https://www.aimatrx.com/api/version → pnpm-lock.yaml at that commit → those exact tarballs from
+ * npm). A row may use a new package export only once the deployed site has it; run this before writing any row.
+ * Rows that would break on the live site get verdict `breaks_on_live`. See scripts/applets/against-live.mjs.
+ *
  * Verdicts: ok · unresolved (rendered with named stand-ins) · gate_refused · compile_error · render_threw ·
  * legacy_contract (still reads the old prop contract). Exit 1 on anything but ok.
  * Reads NEXT_PUBLIC_SUPABASE_URL + SUPABASE_SECRET_KEY; all reads, no writes.
@@ -23,9 +28,10 @@ import { resolve } from "node:path";
 import { createElement } from "react";
 
 const args = process.argv.slice(2);
+const AGAINST_LIVE = args.includes("--against-live");
 const filesDirAt = args.indexOf("--files");
 const FILES_DIR = filesDirAt >= 0 ? args[filesDirAt + 1] : null;
-const REPORT = args.filter((_, i) => filesDirAt < 0 || (i !== filesDirAt && i !== filesDirAt + 1))[0] ?? resolve(process.cwd(), ".applet-render-sweep.json");
+const REPORT = args.filter((a, i) => a !== "--against-live" && (filesDirAt < 0 || (i !== filesDirAt && i !== filesDirAt + 1)))[0] ?? resolve(process.cwd(), ".applet-render-sweep.json");
 
 const dom = new JSDOM("<!doctype html><html><body></body></html>", { url: "http://localhost/" });
 const g = globalThis as unknown as Record<string, unknown>;
@@ -35,7 +41,7 @@ for (const key of ["window", "document", "navigator", "HTMLElement", "Node", "ge
 g.matchMedia ??= () => ({ matches: false, addListener() {}, removeListener() {}, addEventListener() {}, removeEventListener() {} });
 g.ResizeObserver ??= class { observe() {} unobserve() {} disconnect() {} };
 
-type Verdict = "ok" | "unresolved" | "gate_refused" | "compile_error" | "render_threw" | "legacy_contract";
+type Verdict = "ok" | "unresolved" | "gate_refused" | "compile_error" | "render_threw" | "legacy_contract" | "breaks_on_live";
 type Row = Record<string, unknown> & { id: string; slug: string; files: Record<string, string> | null; entry: string | null };
 
 const LEGACY_PROPS = /export\s+default\s+function\s+\w*\s*\(\s*\{[^}]*\b(onExecute|response|isStreaming|isExecuting|rateLimitInfo)\b/;
@@ -110,10 +116,36 @@ async function main() {
       verdict("render_threw", err instanceof Error ? err.message : String(err));
     }
   }
+  if (AGAINST_LIVE) {
+    // @ts-expect-error plain .mjs helper, no declarations
+    const { checkRowsAgainstLive, describeFinding } = await import("./against-live.mjs");
+    const effective = rows.map((row) => {
+      const entry = row.entry ?? "App.tsx";
+      const override = FILES_DIR ? resolve(FILES_DIR, `${row.slug}.tsx`) : null;
+      const files = { ...(row.files ?? {}) };
+      if (override && existsSync(override)) files[entry] = readFileSync(override, "utf8");
+      return { slug: row.slug, files };
+    });
+    const live = await checkRowsAgainstLive(effective);
+    const lines = Object.entries(live.versions as Record<string, string>).filter(([k]) => k.startsWith("@ai-matrx/")).map(([k, v]) => `${k.slice(10)}@${v}`);
+    console.log(`against live: deployed commit ${live.commit.slice(0, 10)}; ${lines.join(" ")}`);
+    const bySlug = new Map<string, string[]>();
+    for (const f of live.findings as { slug: string }[]) bySlug.set(f.slug, [...(bySlug.get(f.slug) ?? []), describeFinding(f)]);
+    for (const [slug, details] of bySlug) {
+      const res = results.filter((r) => r.slug === slug);
+      const detail = [...new Set(details)].join("; ");
+      if (res.length) {
+        for (const r of res) {
+          r.verdict = "breaks_on_live";
+          r.detail = detail;
+        }
+      } else results.push({ slug, id: "", public: false, verdict: "breaks_on_live", detail });
+    }
+  }
   writeFileSync(REPORT, JSON.stringify(results, null, 2));
   const count = (v: Verdict) => results.filter((r) => r.verdict === v).length;
-  console.log(`applet render sweep — ${results.length} rows (${results.filter((r) => r.public).length} public)${FILES_DIR ? `, files from ${FILES_DIR}` : ""}`);
-  for (const v of ["ok", "unresolved", "legacy_contract", "gate_refused", "compile_error", "render_threw"] as const) console.log(`  ${v.padEnd(16)} ${count(v)}`);
+  console.log(`applet render sweep — ${results.length} rows (${results.filter((r) => r.public).length} public)${FILES_DIR ? `, files from ${FILES_DIR}` : ""}${AGAINST_LIVE ? ", against the deployed site" : ""}`);
+  for (const v of ["ok", "unresolved", "legacy_contract", "gate_refused", "compile_error", "render_threw", "breaks_on_live"] as const) console.log(`  ${v.padEnd(16)} ${count(v)}`);
   for (const r of results.filter((x) => x.verdict !== "ok")) console.log(`  x ${r.slug}: ${r.verdict} ${r.detail}`);
   console.log(`report: ${REPORT}`);
   if (results.some((r) => r.verdict !== "ok")) process.exitCode = 1;
