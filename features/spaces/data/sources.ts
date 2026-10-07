@@ -81,6 +81,8 @@ export interface SpaceDbView {
   /** N5 the width a person dragged each column to (by property key) and the order they dragged them into. */
   widths?: Record<string, number>;
   columnOrder?: string[];
+  /** N5 Notion's per-column "Wrap column": the property keys whose cells wrap. */
+  wrapColumns?: string[];
   chart?: ChartSettings;
 }
 

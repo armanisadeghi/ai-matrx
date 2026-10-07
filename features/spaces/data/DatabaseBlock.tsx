@@ -409,7 +409,7 @@ function viewSpec(tableId: string, view: ViewWithSummaries, fields: Field[] = []
     ...(view.where ? { where: view.where as unknown as RuleExpression } : {}),
     // Notion's inline table: columns at their natural width, one line each, the table scrolling sideways
     // inside the block when it is wider than the column it sits in (screenshot 1) — never squeezed to "…".
-    presentation: { fit: "scroll", wrap: false, ...(view.hiddenFields?.length ? { hiddenFields: view.hiddenFields } : {}), ...(hasFormats ? { formats } : {}), ...(view.summaries && Object.keys(view.summaries).length ? { summaries: view.summaries } : {}), ...(view.widths && Object.keys(view.widths).length ? { widths: view.widths } : {}), ...(view.columnOrder?.length ? { columnOrder: view.columnOrder } : {}) },
+    presentation: { fit: "scroll", wrap: false, ...(view.hiddenFields?.length ? { hiddenFields: view.hiddenFields } : {}), ...(hasFormats ? { formats } : {}), ...(view.summaries && Object.keys(view.summaries).length ? { summaries: view.summaries } : {}), ...(view.widths && Object.keys(view.widths).length ? { widths: view.widths } : {}), ...(view.columnOrder?.length ? { columnOrder: view.columnOrder } : {}), ...(view.wrapColumns?.length ? { wrapColumns: view.wrapColumns } : {}) },
   };
 }
 
@@ -484,6 +484,9 @@ function DatabaseBody({
                 const look: Partial<SpaceDbView> = {};
                 if (widths && JSON.stringify(widths) !== JSON.stringify(view.widths ?? {})) look.widths = widths;
                 if (columnOrder && JSON.stringify(columnOrder) !== JSON.stringify(view.columnOrder ?? [])) look.columnOrder = columnOrder;
+                // N5 "Wrap column": present means these columns wrap; absent from a look patch means none do.
+                const wrapColumns = patch.presentation ? (patch.presentation.wrapColumns ?? []) : undefined;
+                if (wrapColumns && JSON.stringify(wrapColumns) !== JSON.stringify(view.wrapColumns ?? [])) look.wrapColumns = wrapColumns;
                 if (Object.keys(look).length) onLook(look);
               }
             : undefined
