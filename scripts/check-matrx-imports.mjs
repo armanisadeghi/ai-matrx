@@ -42,6 +42,11 @@
 //   node scripts/check-matrx-imports.mjs --root DIR   # audit another tree
 //   node scripts/check-matrx-imports.mjs --self-test  # RED then GREEN, temp tree
 //
+// A full (un-narrowed) run ALSO checks the installed package graph — every
+// `@ai-matrx/<dep>/<subpath>` one installed @ai-matrx package imports must be
+// exported by the <dep> installed beside it (the 2026-10-06 case; see
+// auditPackageGraph below).
+//
 // Exit codes: 0 clean · 1 an import names something the installed package does
 //             not ship · 2 the script itself could not run — never a silent pass.
 //
@@ -467,7 +472,120 @@ export function audit(root, { only = null } = {}) {
     if (!runtimeNames.has(imp.name)) findings.push({ ...imp, why: "runtime" });
   }
   skipped.runtimeOpen = runtimeOpen;
-  return { files: files.length, imports: imports.length, runtimeChecked, findings, skipped, narrowed: Boolean(only) };
+  // The package graph changes only with the lockfile, so a narrowed run leaves it alone.
+  const graph = only ? { packages: 0, specifiers: 0, findings: [] } : auditPackageGraph(root);
+  findings.push(...graph.findings);
+  return {
+    files: files.length,
+    imports: imports.length,
+    runtimeChecked,
+    findings,
+    skipped,
+    narrowed: Boolean(only),
+    graphPackages: graph.packages,
+    graphSpecifiers: graph.specifiers,
+  };
+}
+
+// ── the installed package graph: one @ai-matrx package importing another ─────
+//
+// THE DEFECT THIS EXISTS FOR (2026-10-06, v0.4.2925 red on all four Vercel projects)
+// design-system 0.69.1 shipped `import … from "@ai-matrx/kit/content-transfer"`;
+// it depends on kit `latest`, and kit 0.25.0 had renamed that subpath to
+// `./transfer-json`. Every app import was fine, so the scan above was green; the
+// break lived entirely INSIDE node_modules, and only `next build` saw it
+// ("Module not found: Can't resolve '@ai-matrx/kit/content-transfer'").
+//
+// So: every @ai-matrx package this tree resolves (and every @ai-matrx package
+// those resolve, transitively) has its shipped JavaScript read, and every
+// `@ai-matrx/<dep>/<subpath>` specifier in it must be in the exports map of
+// the copy of <dep> Node would resolve beside it.
+
+const GRAPH_SPECIFIER = /(?:\bfrom\s*|\bimport\s*\(\s*|\brequire\(\s*|\bimport\s+)["'](@ai-matrx\/[a-z0-9._-]+)(\/[^"'\s]*)?["']/g;
+
+function exportsHasSubpath(exportsField, sub) {
+  if (exportsField == null) return true; // no exports map: every path is reachable
+  if (typeof exportsField === "string" || Array.isArray(exportsField)) return sub === ".";
+  const keys = Object.keys(exportsField);
+  if (!keys.some((k) => k.startsWith("."))) return sub === "."; // a bare conditions object
+  for (const k of keys) {
+    if (k === sub) return exportsField[k] !== null;
+    const star = k.indexOf("*");
+    if (star !== -1 && sub.startsWith(k.slice(0, star)) && sub.endsWith(k.slice(star + 1)) && sub.length >= k.length - 1)
+      return exportsField[k] !== null;
+  }
+  return false;
+}
+
+function shippedScripts(pkgDir) {
+  const out = [];
+  const walk = (dir) => {
+    let entries;
+    try {
+      entries = readdirSync(dir, { withFileTypes: true });
+    } catch {
+      return;
+    }
+    for (const e of entries) {
+      if (e.isDirectory()) {
+        if (e.name !== "node_modules") walk(join(dir, e.name));
+      } else if (/\.(m?js|cjs)$/.test(e.name)) out.push(join(dir, e.name));
+    }
+  };
+  walk(pkgDir);
+  return out;
+}
+
+export function auditPackageGraph(root) {
+  const findings = [];
+  const seen = new Set();
+  const realRoot = realpathSync(root);
+  let specifiers = 0;
+  const queue = [];
+  const enqueueFrom = (fromDir) => {
+    const scopeDir = join(fromDir, "node_modules", "@ai-matrx");
+    if (!existsSync(scopeDir)) return;
+    for (const name of readdirSync(scopeDir)) {
+      const dir = join(scopeDir, name);
+      if (!existsSync(join(dir, "package.json")) || isWorkspaceSource(dir)) continue;
+      const real = realpathSync(dir);
+      if (seen.has(real)) continue;
+      seen.add(real);
+      queue.push(real);
+    }
+  };
+  enqueueFrom(root);
+  while (queue.length) {
+    const pkgDir = queue.shift();
+    const manifest = JSON.parse(readFileSync(join(pkgDir, "package.json"), "utf8"));
+    // pnpm puts a package's own dependencies beside it: <store>/node_modules/@ai-matrx/<dep>.
+    enqueueFrom(dirname(dirname(pkgDir)));
+    const specs = new Map();
+    for (const file of shippedScripts(pkgDir)) {
+      const text = readFileSync(file, "utf8");
+      if (!text.includes(SCOPE)) continue;
+      for (const m of text.matchAll(GRAPH_SPECIFIER)) {
+        const spec = m[1] + (m[2] ?? "");
+        if (!specs.has(spec)) specs.set(spec, file);
+      }
+    }
+    for (const [spec, file] of specs) {
+      const { name, sub } = splitSpecifier(spec);
+      if (name === manifest.name) continue;
+      specifiers++;
+      // Store copies live under the REAL root (macOS: /var → /private/var), so bound the walk by it.
+      const depDir = findInstalled(pkgDir, name, realRoot) ?? findInstalled(dirname(dirname(pkgDir)), name, realRoot);
+      const where = `${manifest.name}@${manifest.version}/${relative(pkgDir, file).split(sep).join("/")}`;
+      if (!depDir) {
+        findings.push({ file: where, line: 0, pkg: name, version: "(not installed)", sub, name: spec, why: "graph-missing", importer: manifest.name });
+        continue;
+      }
+      const dep = JSON.parse(readFileSync(join(depDir, "package.json"), "utf8"));
+      if (!exportsHasSubpath(dep.exports, sub))
+        findings.push({ file: where, line: 0, pkg: name, version: dep.version, sub, name: spec, why: "graph", importer: manifest.name });
+    }
+  }
+  return { packages: seen.size, specifiers, findings };
 }
 
 export function findingKey(f) {
@@ -479,6 +597,9 @@ function describe(f) {
   const target = f.sub === "." ? f.pkg : `${f.pkg}/${f.sub.slice(2)}`;
   if (f.why === "subpath") return `subpath "${f.sub}" is not in the package's exports map`;
   if (f.why === "not-installed") return `"${f.name}" from "${target}": ${f.pkg} is NOT INSTALLED (node_modules has no copy)`;
+  if (f.why === "graph")
+    return `${f.importer} imports "${f.name}", but the ${f.pkg}@${f.version} installed beside it does not export "${f.sub}"`;
+  if (f.why === "graph-missing") return `${f.importer} imports "${f.name}", but ${f.pkg} is not installed beside it`;
   if (f.why === "runtime")
     return `export "${f.name}" is declared in "${target}"'s types but MISSING from its runtime JavaScript`;
   return `export "${f.name}" is missing from "${target}"`;
@@ -509,7 +630,9 @@ function report(result) {
   if (findings.length === 0) {
     console.log(
       `[matrx-imports] OK — ${result.imports} @ai-matrx import name(s) exist in the installed packages` +
-        ` (${result.runtimeChecked} value import(s) also found in the runtime JavaScript)${scope}.`,
+        ` (${result.runtimeChecked} value import(s) also found in the runtime JavaScript)` +
+        (result.narrowed ? "" : `; ${result.graphSpecifiers} cross-package import(s) across ${result.graphPackages} installed @ai-matrx package(s) resolve`) +
+        `${scope}.`,
     );
     return 0;
   }
@@ -671,6 +794,47 @@ function selfTest() {
     r = audit(tmp, { only: ["features"] });
     if (!r.narrowed || r.findings.some((f) => f.file.startsWith("components")))
       failures.push("NARROWED: a run narrowed to features/ reported a components/ file");
+
+    // ── THE 2026-10-06 CASE: design-system 0.69.1 imports kit/content-transfer; kit 0.25.0 renamed it.
+    const graphPkg = (name, version, exportsMap, js) => {
+      const dir = join(tmp, "node_modules", "@ai-matrx", name);
+      rmSync(dir, { recursive: true, force: true });
+      mkdirSync(join(dir, "dist", "data-table"), { recursive: true });
+      writeFileSync(join(dir, "package.json"), JSON.stringify({ name: `@ai-matrx/${name}`, version, type: "module", exports: exportsMap }));
+      writeFileSync(join(dir, "dist", "data-table", "index.js"), js);
+    };
+    graphPkg("kit", "0.25.0", { "./transfer-json": "./dist/data-table/index.js", "./format": "./dist/data-table/index.js" }, "export const x = 1;\n");
+    graphPkg(
+      "design-system",
+      "0.69.1",
+      { "./data-table": "./dist/data-table/index.js" },
+      `import { normalizeTransferJson } from "@ai-matrx/kit/content-transfer";\nimport { f } from "@ai-matrx/kit/format";\nconst m = () => import("@ai-matrx/design-system/data-table");\n`,
+    );
+    pkgDirCache.clear();
+    let g = auditPackageGraph(tmp);
+    const ct = g.findings.find((f) => f.why === "graph" && f.sub === "./content-transfer");
+    if (!ct || ct.importer !== "@ai-matrx/design-system" || ct.version !== "0.25.0" || !ct.file.startsWith("@ai-matrx/design-system@0.69.1/"))
+      failures.push(`RED 2026-10-06: kit/content-transfer missing from kit 0.25.0 not reported with importer+version: ${JSON.stringify(g.findings)}`);
+    if (g.findings.some((f) => f.sub === "./format" || f.pkg === "@ai-matrx/design-system"))
+      failures.push("RED 2026-10-06: an exported subpath or a self-import was reported");
+    if (!audit(tmp).findings.some((f) => f.why === "graph")) failures.push("RED 2026-10-06: the full audit did not carry the graph finding");
+    if (audit(tmp, { only: ["features"] }).findings.some((f) => f.why === "graph"))
+      failures.push("NARROWED: a narrowed run scanned the package graph");
+    // GREEN: design-system 0.70.1 imports the renamed subpath.
+    graphPkg(
+      "design-system",
+      "0.70.1",
+      { "./data-table": "./dist/data-table/index.js" },
+      `import { normalizeTransferJson } from "@ai-matrx/kit/transfer-json";\n`,
+    );
+    pkgDirCache.clear();
+    g = auditPackageGraph(tmp);
+    if (g.findings.length || g.specifiers !== 1) failures.push(`GREEN 2026-10-06: expected 1 clean specifier, got ${JSON.stringify(g)}`);
+    // RED: the dependency is not installed beside the importer at all.
+    rmSync(join(tmp, "node_modules", "@ai-matrx", "kit"), { recursive: true, force: true });
+    pkgDirCache.clear();
+    if (!auditPackageGraph(tmp).findings.some((f) => f.why === "graph-missing"))
+      failures.push("RED graph-missing: an import of an uninstalled sibling package was not reported");
   } finally {
     rmSync(tmp, { recursive: true, force: true });
   }
@@ -679,7 +843,7 @@ function selfTest() {
     for (const f of failures) console.error(`  - ${f}`);
     return 1;
   }
-  console.log("check-matrx-imports --self-test OK — RED on a missing export, subpath, runtime-only gap and uninstalled package; GREEN once shipped.");
+  console.log("check-matrx-imports --self-test OK — RED on a missing export, subpath, runtime-only gap, uninstalled package and a broken package-to-package import; GREEN once shipped.");
   return 0;
 }
 
