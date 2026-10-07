@@ -112,7 +112,8 @@ jest.mock("../openers", () => ({
 }));
 const units: Record<string, unknown> = {};
 jest.mock("../transcripts", () => ({
-  useTranscriptUnit: (id: string | null) => (id ? (units[id] ?? { state: "none" }) : { state: "none" }),
+  useTranscriptUnit: ({ conversationId: id }: { conversationId: string | null }) =>
+    id ? (units[id] ?? { state: "none" }) : { state: "none" },
 }));
 
 import { resolveItemDetailType } from "@/features/item-presentation/detail";

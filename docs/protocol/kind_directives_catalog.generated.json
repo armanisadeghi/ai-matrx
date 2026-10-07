@@ -189,6 +189,12 @@
       "title": "Name",
       "type": "string"
      },
+     "output_format": {
+      "default": "",
+      "description": "The person's own words for the answer's format, e.g. 'a Markdown table with columns Owner | Task | Due'. Wins over response_format's prose meaning; the Agent Factory locks and proves it.",
+      "title": "Output Format",
+      "type": "string"
+     },
      "output_schema": {
       "anyOf": [
        {
@@ -3027,12 +3033,15 @@
   "dataset_cell": "table_cell",
   "document": "udt_document",
   "media": "file",
-  "picklist": "structured_list",
-  "picklist_group": "structured_list_group",
-  "picklist_item": "structured_list_item",
+  "picklist": "pick_list",
+  "picklist_group": "pick_list_group",
+  "picklist_item": "pick_list_item",
   "podcast_episode": "pc_episode",
   "podcast_show": "pc_show",
   "sandbox": "sandbox_instance",
+  "structured_list": "pick_list",
+  "structured_list_group": "pick_list_group",
+  "structured_list_item": "pick_list_item",
   "table": "dataset",
   "transcript_session": "studio_session",
   "war_room_thread": "thread"
@@ -3982,6 +3991,18 @@
        "default": null,
        "title": "Description"
       },
+      "follows_source": {
+       "anyOf": [
+        {
+         "type": "boolean"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": false,
+       "title": "Follows Source"
+      },
       "input_contract": {
        "anyOf": [
         {
@@ -4383,6 +4404,18 @@
        "default": null,
        "title": "Source Agent Id"
       },
+      "source_version": {
+       "anyOf": [
+        {
+         "type": "integer"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": null,
+       "title": "Source Version"
+      },
       "tags": {
        "anyOf": [
         {
@@ -4704,6 +4737,18 @@
        ],
        "default": null,
        "title": "Description"
+      },
+      "follows_source": {
+       "anyOf": [
+        {
+         "type": "boolean"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": null,
+       "title": "Follows Source"
       },
       "id": {
        "title": "Id",
@@ -5117,6 +5162,18 @@
        ],
        "default": null,
        "title": "Source Agent Id"
+      },
+      "source_version": {
+       "anyOf": [
+        {
+         "type": "integer"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": null,
+       "title": "Source Version"
       },
       "tags": {
        "anyOf": [
@@ -8413,54 +8470,6 @@
     "create": {
      "additionalProperties": false,
      "properties": {
-      "agent_id": {
-       "title": "Agent Id",
-       "type": "string"
-      },
-      "agent_version_id": {
-       "anyOf": [
-        {
-         "type": "string"
-        },
-        {
-         "type": "null"
-        }
-       ],
-       "default": null,
-       "title": "Agent Version Id"
-      },
-      "allowed_imports": {
-       "anyOf": [
-        {
-         "anyOf": [
-          {
-           "type": "null"
-          },
-          {
-           "type": "boolean"
-          },
-          {
-           "type": "number"
-          },
-          {
-           "type": "string"
-          },
-          {
-           "type": "array"
-          },
-          {
-           "type": "object"
-          }
-         ],
-         "description": "Any JSON value \u2014 this column is json/jsonb.",
-         "title": "JSON"
-        },
-        {
-         "type": "null"
-        }
-       ],
-       "default": []
-      },
       "app_kind": {
        "anyOf": [
         {
@@ -8500,10 +8509,6 @@
        ],
        "default": null,
        "title": "Category"
-      },
-      "component_code": {
-       "title": "Component Code",
-       "type": "string"
       },
       "component_language": {
        "anyOf": [
@@ -8561,6 +8566,18 @@
        "default": null,
        "title": "Description"
       },
+      "entry": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": null,
+       "title": "Entry"
+      },
       "favicon_url": {
        "anyOf": [
         {
@@ -8572,6 +8589,38 @@
        ],
        "default": null,
        "title": "Favicon Url"
+      },
+      "files": {
+       "anyOf": [
+        {
+         "anyOf": [
+          {
+           "type": "null"
+          },
+          {
+           "type": "boolean"
+          },
+          {
+           "type": "number"
+          },
+          {
+           "type": "string"
+          },
+          {
+           "type": "array"
+          },
+          {
+           "type": "object"
+          }
+         ],
+         "description": "Any JSON value \u2014 this column is json/jsonb.",
+         "title": "JSON"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": {}
       },
       "is_featured": {
        "anyOf": [
@@ -8642,17 +8691,37 @@
        ],
        "default": {}
       },
-      "mandate_id": {
+      "mandates": {
        "anyOf": [
         {
-         "type": "string"
+         "anyOf": [
+          {
+           "type": "null"
+          },
+          {
+           "type": "boolean"
+          },
+          {
+           "type": "number"
+          },
+          {
+           "type": "string"
+          },
+          {
+           "type": "array"
+          },
+          {
+           "type": "object"
+          }
+         ],
+         "description": "Any JSON value \u2014 this column is json/jsonb.",
+         "title": "JSON"
         },
         {
          "type": "null"
         }
        ],
-       "default": null,
-       "title": "Mandate Id"
+       "default": []
       },
       "metadata": {
        "anyOf": [
@@ -8689,6 +8758,50 @@
       "name": {
        "title": "Name",
        "type": "string"
+      },
+      "pages": {
+       "anyOf": [
+        {
+         "anyOf": [
+          {
+           "type": "null"
+          },
+          {
+           "type": "boolean"
+          },
+          {
+           "type": "number"
+          },
+          {
+           "type": "string"
+          },
+          {
+           "type": "array"
+          },
+          {
+           "type": "object"
+          }
+         ],
+         "description": "Any JSON value \u2014 this column is json/jsonb.",
+         "title": "JSON"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": []
+      },
+      "parent_applet_id": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": null,
+       "title": "Parent Applet Id"
       },
       "pinned_version": {
        "anyOf": [
@@ -8775,6 +8888,73 @@
        "default": 24,
        "title": "Rate Limit Window Hours"
       },
+      "scope": {
+       "anyOf": [
+        {
+         "anyOf": [
+          {
+           "type": "null"
+          },
+          {
+           "type": "boolean"
+          },
+          {
+           "type": "number"
+          },
+          {
+           "type": "string"
+          },
+          {
+           "type": "array"
+          },
+          {
+           "type": "object"
+          }
+         ],
+         "description": "Any JSON value \u2014 this column is json/jsonb.",
+         "title": "JSON"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": {
+        "entries": [],
+        "shadowDangerousGlobals": true
+       }
+      },
+      "screenshots": {
+       "anyOf": [
+        {
+         "anyOf": [
+          {
+           "type": "null"
+          },
+          {
+           "type": "boolean"
+          },
+          {
+           "type": "number"
+          },
+          {
+           "type": "string"
+          },
+          {
+           "type": "array"
+          },
+          {
+           "type": "object"
+          }
+         ],
+         "description": "Any JSON value \u2014 this column is json/jsonb.",
+         "title": "JSON"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": []
+      },
       "search_tsv": {
        "anyOf": [
         {
@@ -8819,131 +8999,41 @@
        ],
        "default": []
       },
-      "shell_config": {
-       "anyOf": [
-        {
-         "anyOf": [
-          {
-           "type": "null"
-          },
-          {
-           "type": "boolean"
-          },
-          {
-           "type": "number"
-          },
-          {
-           "type": "string"
-          },
-          {
-           "type": "array"
-          },
-          {
-           "type": "object"
-          }
-         ],
-         "description": "Any JSON value \u2014 this column is json/jsonb.",
-         "title": "JSON"
-        },
-        {
-         "type": "null"
-        }
-       ],
-       "default": {}
-      },
-      "shell_kind": {
-       "anyOf": [
-        {
-         "enum": [
-          "chat",
-          "form_to_result",
-          "widget",
-          "compact_modal",
-          "full_modal",
-          "sidebar_overlay",
-          "floating_bubble",
-          "inline_overlay",
-          "panel_overlay",
-          "toast_overlay",
-          "card_stack",
-          "fully_custom"
-         ],
-         "type": "string"
-        },
-        {
-         "type": "null"
-        }
-       ],
-       "default": "chat",
-       "title": "Shell Kind"
-      },
-      "slot_code": {
-       "anyOf": [
-        {
-         "anyOf": [
-          {
-           "type": "null"
-          },
-          {
-           "type": "boolean"
-          },
-          {
-           "type": "number"
-          },
-          {
-           "type": "string"
-          },
-          {
-           "type": "array"
-          },
-          {
-           "type": "object"
-          }
-         ],
-         "description": "Any JSON value \u2014 this column is json/jsonb.",
-         "title": "JSON"
-        },
-        {
-         "type": "null"
-        }
-       ],
-       "default": {}
-      },
-      "slot_overrides": {
-       "anyOf": [
-        {
-         "anyOf": [
-          {
-           "type": "null"
-          },
-          {
-           "type": "boolean"
-          },
-          {
-           "type": "number"
-          },
-          {
-           "type": "string"
-          },
-          {
-           "type": "array"
-          },
-          {
-           "type": "object"
-          }
-         ],
-         "description": "Any JSON value \u2014 this column is json/jsonb.",
-         "title": "JSON"
-        },
-        {
-         "type": "null"
-        }
-       ],
-       "default": {}
-      },
       "slug": {
        "title": "Slug",
        "type": "string"
+      },
+      "sources": {
+       "anyOf": [
+        {
+         "anyOf": [
+          {
+           "type": "null"
+          },
+          {
+           "type": "boolean"
+          },
+          {
+           "type": "number"
+          },
+          {
+           "type": "string"
+          },
+          {
+           "type": "array"
+          },
+          {
+           "type": "object"
+          }
+         ],
+         "description": "Any JSON value \u2014 this column is json/jsonb.",
+         "title": "JSON"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": []
       },
       "status": {
        "anyOf": [
@@ -9050,6 +9140,38 @@
        "default": null,
        "title": "Task Id"
       },
+      "template": {
+       "anyOf": [
+        {
+         "anyOf": [
+          {
+           "type": "null"
+          },
+          {
+           "type": "boolean"
+          },
+          {
+           "type": "number"
+          },
+          {
+           "type": "string"
+          },
+          {
+           "type": "array"
+          },
+          {
+           "type": "object"
+          }
+         ],
+         "description": "Any JSON value \u2014 this column is json/jsonb.",
+         "title": "JSON"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": null
+      },
       "total_cost": {
        "anyOf": [
         {
@@ -9101,57 +9223,11 @@
        ],
        "default": 0,
        "title": "Unique Users Count"
-      },
-      "use_latest": {
-       "anyOf": [
-        {
-         "type": "boolean"
-        },
-        {
-         "type": "null"
-        }
-       ],
-       "default": false,
-       "title": "Use Latest"
-      },
-      "variable_schema": {
-       "anyOf": [
-        {
-         "anyOf": [
-          {
-           "type": "null"
-          },
-          {
-           "type": "boolean"
-          },
-          {
-           "type": "number"
-          },
-          {
-           "type": "string"
-          },
-          {
-           "type": "array"
-          },
-          {
-           "type": "object"
-          }
-         ],
-         "description": "Any JSON value \u2014 this column is json/jsonb.",
-         "title": "JSON"
-        },
-        {
-         "type": "null"
-        }
-       ],
-       "default": []
       }
      },
      "required": [
-      "agent_id",
       "slug",
-      "name",
-      "component_code"
+      "name"
      ],
      "title": "CreateAppItem",
      "type": "object"
@@ -9173,62 +9249,6 @@
     "update": {
      "additionalProperties": false,
      "properties": {
-      "agent_id": {
-       "anyOf": [
-        {
-         "type": "string"
-        },
-        {
-         "type": "null"
-        }
-       ],
-       "default": null,
-       "title": "Agent Id"
-      },
-      "agent_version_id": {
-       "anyOf": [
-        {
-         "type": "string"
-        },
-        {
-         "type": "null"
-        }
-       ],
-       "default": null,
-       "title": "Agent Version Id"
-      },
-      "allowed_imports": {
-       "anyOf": [
-        {
-         "anyOf": [
-          {
-           "type": "null"
-          },
-          {
-           "type": "boolean"
-          },
-          {
-           "type": "number"
-          },
-          {
-           "type": "string"
-          },
-          {
-           "type": "array"
-          },
-          {
-           "type": "object"
-          }
-         ],
-         "description": "Any JSON value \u2014 this column is json/jsonb.",
-         "title": "JSON"
-        },
-        {
-         "type": "null"
-        }
-       ],
-       "default": null
-      },
       "app_kind": {
        "anyOf": [
         {
@@ -9268,18 +9288,6 @@
        ],
        "default": null,
        "title": "Category"
-      },
-      "component_code": {
-       "anyOf": [
-        {
-         "type": "string"
-        },
-        {
-         "type": "null"
-        }
-       ],
-       "default": null,
-       "title": "Component Code"
       },
       "component_language": {
        "anyOf": [
@@ -9337,6 +9345,18 @@
        "default": null,
        "title": "Description"
       },
+      "entry": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": null,
+       "title": "Entry"
+      },
       "favicon_url": {
        "anyOf": [
         {
@@ -9348,6 +9368,38 @@
        ],
        "default": null,
        "title": "Favicon Url"
+      },
+      "files": {
+       "anyOf": [
+        {
+         "anyOf": [
+          {
+           "type": "null"
+          },
+          {
+           "type": "boolean"
+          },
+          {
+           "type": "number"
+          },
+          {
+           "type": "string"
+          },
+          {
+           "type": "array"
+          },
+          {
+           "type": "object"
+          }
+         ],
+         "description": "Any JSON value \u2014 this column is json/jsonb.",
+         "title": "JSON"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": null
       },
       "id": {
        "title": "Id",
@@ -9422,17 +9474,37 @@
        ],
        "default": null
       },
-      "mandate_id": {
+      "mandates": {
        "anyOf": [
         {
-         "type": "string"
+         "anyOf": [
+          {
+           "type": "null"
+          },
+          {
+           "type": "boolean"
+          },
+          {
+           "type": "number"
+          },
+          {
+           "type": "string"
+          },
+          {
+           "type": "array"
+          },
+          {
+           "type": "object"
+          }
+         ],
+         "description": "Any JSON value \u2014 this column is json/jsonb.",
+         "title": "JSON"
         },
         {
          "type": "null"
         }
        ],
-       "default": null,
-       "title": "Mandate Id"
+       "default": null
       },
       "metadata": {
        "anyOf": [
@@ -9477,6 +9549,50 @@
        ],
        "default": null,
        "title": "Name"
+      },
+      "pages": {
+       "anyOf": [
+        {
+         "anyOf": [
+          {
+           "type": "null"
+          },
+          {
+           "type": "boolean"
+          },
+          {
+           "type": "number"
+          },
+          {
+           "type": "string"
+          },
+          {
+           "type": "array"
+          },
+          {
+           "type": "object"
+          }
+         ],
+         "description": "Any JSON value \u2014 this column is json/jsonb.",
+         "title": "JSON"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": null
+      },
+      "parent_applet_id": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": null,
+       "title": "Parent Applet Id"
       },
       "pinned_version": {
        "anyOf": [
@@ -9563,6 +9679,70 @@
        "default": null,
        "title": "Rate Limit Window Hours"
       },
+      "scope": {
+       "anyOf": [
+        {
+         "anyOf": [
+          {
+           "type": "null"
+          },
+          {
+           "type": "boolean"
+          },
+          {
+           "type": "number"
+          },
+          {
+           "type": "string"
+          },
+          {
+           "type": "array"
+          },
+          {
+           "type": "object"
+          }
+         ],
+         "description": "Any JSON value \u2014 this column is json/jsonb.",
+         "title": "JSON"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": null
+      },
+      "screenshots": {
+       "anyOf": [
+        {
+         "anyOf": [
+          {
+           "type": "null"
+          },
+          {
+           "type": "boolean"
+          },
+          {
+           "type": "number"
+          },
+          {
+           "type": "string"
+          },
+          {
+           "type": "array"
+          },
+          {
+           "type": "object"
+          }
+         ],
+         "description": "Any JSON value \u2014 this column is json/jsonb.",
+         "title": "JSON"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": null
+      },
       "search_tsv": {
        "anyOf": [
         {
@@ -9607,128 +9787,6 @@
        ],
        "default": null
       },
-      "shell_config": {
-       "anyOf": [
-        {
-         "anyOf": [
-          {
-           "type": "null"
-          },
-          {
-           "type": "boolean"
-          },
-          {
-           "type": "number"
-          },
-          {
-           "type": "string"
-          },
-          {
-           "type": "array"
-          },
-          {
-           "type": "object"
-          }
-         ],
-         "description": "Any JSON value \u2014 this column is json/jsonb.",
-         "title": "JSON"
-        },
-        {
-         "type": "null"
-        }
-       ],
-       "default": null
-      },
-      "shell_kind": {
-       "anyOf": [
-        {
-         "enum": [
-          "chat",
-          "form_to_result",
-          "widget",
-          "compact_modal",
-          "full_modal",
-          "sidebar_overlay",
-          "floating_bubble",
-          "inline_overlay",
-          "panel_overlay",
-          "toast_overlay",
-          "card_stack",
-          "fully_custom"
-         ],
-         "type": "string"
-        },
-        {
-         "type": "null"
-        }
-       ],
-       "default": null,
-       "title": "Shell Kind"
-      },
-      "slot_code": {
-       "anyOf": [
-        {
-         "anyOf": [
-          {
-           "type": "null"
-          },
-          {
-           "type": "boolean"
-          },
-          {
-           "type": "number"
-          },
-          {
-           "type": "string"
-          },
-          {
-           "type": "array"
-          },
-          {
-           "type": "object"
-          }
-         ],
-         "description": "Any JSON value \u2014 this column is json/jsonb.",
-         "title": "JSON"
-        },
-        {
-         "type": "null"
-        }
-       ],
-       "default": null
-      },
-      "slot_overrides": {
-       "anyOf": [
-        {
-         "anyOf": [
-          {
-           "type": "null"
-          },
-          {
-           "type": "boolean"
-          },
-          {
-           "type": "number"
-          },
-          {
-           "type": "string"
-          },
-          {
-           "type": "array"
-          },
-          {
-           "type": "object"
-          }
-         ],
-         "description": "Any JSON value \u2014 this column is json/jsonb.",
-         "title": "JSON"
-        },
-        {
-         "type": "null"
-        }
-       ],
-       "default": null
-      },
       "slug": {
        "anyOf": [
         {
@@ -9740,6 +9798,38 @@
        ],
        "default": null,
        "title": "Slug"
+      },
+      "sources": {
+       "anyOf": [
+        {
+         "anyOf": [
+          {
+           "type": "null"
+          },
+          {
+           "type": "boolean"
+          },
+          {
+           "type": "number"
+          },
+          {
+           "type": "string"
+          },
+          {
+           "type": "array"
+          },
+          {
+           "type": "object"
+          }
+         ],
+         "description": "Any JSON value \u2014 this column is json/jsonb.",
+         "title": "JSON"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": null
       },
       "status": {
        "anyOf": [
@@ -9846,6 +9936,38 @@
        "default": null,
        "title": "Task Id"
       },
+      "template": {
+       "anyOf": [
+        {
+         "anyOf": [
+          {
+           "type": "null"
+          },
+          {
+           "type": "boolean"
+          },
+          {
+           "type": "number"
+          },
+          {
+           "type": "string"
+          },
+          {
+           "type": "array"
+          },
+          {
+           "type": "object"
+          }
+         ],
+         "description": "Any JSON value \u2014 this column is json/jsonb.",
+         "title": "JSON"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": null
+      },
       "total_cost": {
        "anyOf": [
         {
@@ -9897,50 +10019,6 @@
        ],
        "default": null,
        "title": "Unique Users Count"
-      },
-      "use_latest": {
-       "anyOf": [
-        {
-         "type": "boolean"
-        },
-        {
-         "type": "null"
-        }
-       ],
-       "default": null,
-       "title": "Use Latest"
-      },
-      "variable_schema": {
-       "anyOf": [
-        {
-         "anyOf": [
-          {
-           "type": "null"
-          },
-          {
-           "type": "boolean"
-          },
-          {
-           "type": "number"
-          },
-          {
-           "type": "string"
-          },
-          {
-           "type": "array"
-          },
-          {
-           "type": "object"
-          }
-         ],
-         "description": "Any JSON value \u2014 this column is json/jsonb.",
-         "title": "JSON"
-        },
-        {
-         "type": "null"
-        }
-       ],
-       "default": null
       }
      },
      "required": [
@@ -10981,254 +11059,6 @@
   {
    "create": "planned",
    "delete": "planned",
-   "family": "Conversations",
-   "identity_fields": [
-    "id"
-   ],
-   "label": "Working Document",
-   "noun": "working_document",
-   "reference": "yes",
-   "schemas": {
-    "create": {
-     "additionalProperties": false,
-     "properties": {
-      "content": {
-       "title": "Content",
-       "type": "string"
-      },
-      "custom_fields": {
-       "anyOf": [
-        {
-         "anyOf": [
-          {
-           "type": "null"
-          },
-          {
-           "type": "boolean"
-          },
-          {
-           "type": "number"
-          },
-          {
-           "type": "string"
-          },
-          {
-           "type": "array"
-          },
-          {
-           "type": "object"
-          }
-         ],
-         "description": "Any JSON value \u2014 this column is json/jsonb.",
-         "title": "JSON"
-        },
-        {
-         "type": "null"
-        }
-       ],
-       "default": {}
-      },
-      "kind": {
-       "anyOf": [
-        {
-         "enum": [
-          "working",
-          "scratch"
-         ],
-         "type": "string"
-        },
-        {
-         "type": "null"
-        }
-       ],
-       "default": "working",
-       "title": "Kind"
-      },
-      "metadata": {
-       "anyOf": [
-        {
-         "anyOf": [
-          {
-           "type": "null"
-          },
-          {
-           "type": "boolean"
-          },
-          {
-           "type": "number"
-          },
-          {
-           "type": "string"
-          },
-          {
-           "type": "array"
-          },
-          {
-           "type": "object"
-          }
-         ],
-         "description": "Any JSON value \u2014 this column is json/jsonb.",
-         "title": "JSON"
-        },
-        {
-         "type": "null"
-        }
-       ],
-       "default": {}
-      },
-      "title": {
-       "title": "Title",
-       "type": "string"
-      }
-     },
-     "required": [
-      "title",
-      "content"
-     ],
-     "title": "CreateWorkingDocumentItem",
-     "type": "object"
-    },
-    "delete": {
-     "additionalProperties": false,
-     "properties": {
-      "id": {
-       "title": "Id",
-       "type": "string"
-      }
-     },
-     "required": [
-      "id"
-     ],
-     "title": "DeleteWorkingDocumentItem",
-     "type": "object"
-    },
-    "update": {
-     "additionalProperties": false,
-     "properties": {
-      "content": {
-       "anyOf": [
-        {
-         "type": "string"
-        },
-        {
-         "type": "null"
-        }
-       ],
-       "default": null,
-       "title": "Content"
-      },
-      "custom_fields": {
-       "anyOf": [
-        {
-         "anyOf": [
-          {
-           "type": "null"
-          },
-          {
-           "type": "boolean"
-          },
-          {
-           "type": "number"
-          },
-          {
-           "type": "string"
-          },
-          {
-           "type": "array"
-          },
-          {
-           "type": "object"
-          }
-         ],
-         "description": "Any JSON value \u2014 this column is json/jsonb.",
-         "title": "JSON"
-        },
-        {
-         "type": "null"
-        }
-       ],
-       "default": null
-      },
-      "id": {
-       "title": "Id",
-       "type": "string"
-      },
-      "kind": {
-       "anyOf": [
-        {
-         "enum": [
-          "working",
-          "scratch"
-         ],
-         "type": "string"
-        },
-        {
-         "type": "null"
-        }
-       ],
-       "default": null,
-       "title": "Kind"
-      },
-      "metadata": {
-       "anyOf": [
-        {
-         "anyOf": [
-          {
-           "type": "null"
-          },
-          {
-           "type": "boolean"
-          },
-          {
-           "type": "number"
-          },
-          {
-           "type": "string"
-          },
-          {
-           "type": "array"
-          },
-          {
-           "type": "object"
-          }
-         ],
-         "description": "Any JSON value \u2014 this column is json/jsonb.",
-         "title": "JSON"
-        },
-        {
-         "type": "null"
-        }
-       ],
-       "default": null
-      },
-      "title": {
-       "anyOf": [
-        {
-         "type": "string"
-        },
-        {
-         "type": "null"
-        }
-       ],
-       "default": null,
-       "title": "Title"
-      }
-     },
-     "required": [
-      "id"
-     ],
-     "title": "UpdateWorkingDocumentItem",
-     "type": "object"
-    }
-   },
-   "table": "workbench.working_documents",
-   "title_column": "title",
-   "update": "planned",
-   "view": "yes"
-  },
-  {
-   "create": "planned",
-   "delete": "planned",
    "family": "Custom Data",
    "identity_fields": [],
    "label": "Public form",
@@ -11568,7 +11398,8 @@
           "markdown",
           "html",
           "plain",
-          "univer"
+          "univer",
+          "spaces"
          ],
          "type": "string"
         },
@@ -11762,6 +11593,30 @@
        "title": "Title",
        "type": "string"
       },
+      "web_allow_duplicate": {
+       "anyOf": [
+        {
+         "type": "boolean"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": true,
+       "title": "Web Allow Duplicate"
+      },
+      "web_include_sub_pages": {
+       "anyOf": [
+        {
+         "type": "boolean"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": true,
+       "title": "Web Include Sub Pages"
+      },
       "word_count": {
        "anyOf": [
         {
@@ -11944,7 +11799,8 @@
           "markdown",
           "html",
           "plain",
-          "univer"
+          "univer",
+          "spaces"
          ],
          "type": "string"
         },
@@ -12158,6 +12014,30 @@
        "default": null,
        "title": "Title"
       },
+      "web_allow_duplicate": {
+       "anyOf": [
+        {
+         "type": "boolean"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": null,
+       "title": "Web Allow Duplicate"
+      },
+      "web_include_sub_pages": {
+       "anyOf": [
+        {
+         "type": "boolean"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": null,
+       "title": "Web Include Sub Pages"
+      },
       "word_count": {
        "anyOf": [
         {
@@ -12207,6 +12087,20 @@
    "reference": "no",
    "schemas": null,
    "table": "agent.message_template_detail",
+   "title_column": null,
+   "update": "no",
+   "view": "no"
+  },
+  {
+   "create": "no",
+   "delete": "no",
+   "family": "Documents",
+   "identity_fields": [],
+   "label": "Space Payload",
+   "noun": "space_payload",
+   "reference": "no",
+   "schemas": null,
+   "table": "content.space_payload",
    "title_column": null,
    "update": "no",
    "view": "no"
@@ -21718,6 +21612,25 @@
        ],
        "default": null
       },
+      "evidence_kind": {
+       "anyOf": [
+        {
+         "enum": [
+          "measured",
+          "reported",
+          "observed_external",
+          "inferred",
+          "opinion"
+         ],
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": null,
+       "title": "Evidence Kind"
+      },
       "expires_at": {
        "anyOf": [
         {
@@ -22172,6 +22085,25 @@
         }
        ],
        "default": null
+      },
+      "evidence_kind": {
+       "anyOf": [
+        {
+         "enum": [
+          "measured",
+          "reported",
+          "observed_external",
+          "inferred",
+          "opinion"
+         ],
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": null,
+       "title": "Evidence Kind"
       },
       "expires_at": {
        "anyOf": [
@@ -28035,6 +27967,305 @@
     }
    },
    "table": "billing.account_addon",
+   "title_column": null,
+   "update": "planned",
+   "view": "no"
+  },
+  {
+   "create": "planned",
+   "delete": "planned",
+   "family": "Other",
+   "identity_fields": [],
+   "label": "Account closure",
+   "noun": "account_closure",
+   "reference": "no",
+   "schemas": {
+    "create": {
+     "additionalProperties": false,
+     "properties": {
+      "closed_at": {
+       "format": "date-time",
+       "title": "Closed At",
+       "type": "string"
+      },
+      "erased_at": {
+       "anyOf": [
+        {
+         "format": "date-time",
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": null,
+       "title": "Erased At"
+      },
+      "metadata": {
+       "anyOf": [
+        {
+         "anyOf": [
+          {
+           "type": "null"
+          },
+          {
+           "type": "boolean"
+          },
+          {
+           "type": "number"
+          },
+          {
+           "type": "string"
+          },
+          {
+           "type": "array"
+          },
+          {
+           "type": "object"
+          }
+         ],
+         "description": "Any JSON value \u2014 this column is json/jsonb.",
+         "title": "JSON"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": {}
+      },
+      "reason": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": null,
+       "title": "Reason"
+      },
+      "reopened_at": {
+       "anyOf": [
+        {
+         "format": "date-time",
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": null,
+       "title": "Reopened At"
+      },
+      "request_ref": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": null,
+       "title": "Request Ref"
+      },
+      "revoked": {
+       "anyOf": [
+        {
+         "anyOf": [
+          {
+           "type": "null"
+          },
+          {
+           "type": "boolean"
+          },
+          {
+           "type": "number"
+          },
+          {
+           "type": "string"
+          },
+          {
+           "type": "array"
+          },
+          {
+           "type": "object"
+          }
+         ],
+         "description": "Any JSON value \u2014 this column is json/jsonb.",
+         "title": "JSON"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": {}
+      }
+     },
+     "required": [
+      "closed_at"
+     ],
+     "title": "CreateAccountClosureItem",
+     "type": "object"
+    },
+    "delete": {
+     "additionalProperties": false,
+     "properties": {
+      "id": {
+       "title": "Id",
+       "type": "string"
+      }
+     },
+     "required": [
+      "id"
+     ],
+     "title": "DeleteAccountClosureItem",
+     "type": "object"
+    },
+    "update": {
+     "additionalProperties": false,
+     "properties": {
+      "closed_at": {
+       "anyOf": [
+        {
+         "format": "date-time",
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": null,
+       "title": "Closed At"
+      },
+      "erased_at": {
+       "anyOf": [
+        {
+         "format": "date-time",
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": null,
+       "title": "Erased At"
+      },
+      "id": {
+       "title": "Id",
+       "type": "string"
+      },
+      "metadata": {
+       "anyOf": [
+        {
+         "anyOf": [
+          {
+           "type": "null"
+          },
+          {
+           "type": "boolean"
+          },
+          {
+           "type": "number"
+          },
+          {
+           "type": "string"
+          },
+          {
+           "type": "array"
+          },
+          {
+           "type": "object"
+          }
+         ],
+         "description": "Any JSON value \u2014 this column is json/jsonb.",
+         "title": "JSON"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": null
+      },
+      "reason": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": null,
+       "title": "Reason"
+      },
+      "reopened_at": {
+       "anyOf": [
+        {
+         "format": "date-time",
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": null,
+       "title": "Reopened At"
+      },
+      "request_ref": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": null,
+       "title": "Request Ref"
+      },
+      "revoked": {
+       "anyOf": [
+        {
+         "anyOf": [
+          {
+           "type": "null"
+          },
+          {
+           "type": "boolean"
+          },
+          {
+           "type": "number"
+          },
+          {
+           "type": "string"
+          },
+          {
+           "type": "array"
+          },
+          {
+           "type": "object"
+          }
+         ],
+         "description": "Any JSON value \u2014 this column is json/jsonb.",
+         "title": "JSON"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": null
+      }
+     },
+     "required": [
+      "id"
+     ],
+     "title": "UpdateAccountClosureItem",
+     "type": "object"
+    }
+   },
+   "table": "iam.account_closure",
    "title_column": null,
    "update": "planned",
    "view": "no"
@@ -34706,6 +34937,20 @@
    "delete": "planned",
    "family": "Other",
    "identity_fields": [],
+   "label": "Form visit",
+   "noun": "anon_form_visit",
+   "reference": "no",
+   "schemas": null,
+   "table": "custom.anon_form_visit",
+   "title_column": null,
+   "update": "planned",
+   "view": "no"
+  },
+  {
+   "create": "planned",
+   "delete": "planned",
+   "family": "Other",
+   "identity_fields": [],
    "label": "Anon Function Birth Grandfather",
    "noun": "anon_function_birth_grandfather",
    "reference": "no",
@@ -39574,6 +39819,38 @@
        "description": "Any JSON value \u2014 this column is json/jsonb.",
        "title": "JSON"
       },
+      "metadata": {
+       "anyOf": [
+        {
+         "anyOf": [
+          {
+           "type": "null"
+          },
+          {
+           "type": "boolean"
+          },
+          {
+           "type": "number"
+          },
+          {
+           "type": "string"
+          },
+          {
+           "type": "array"
+          },
+          {
+           "type": "object"
+          }
+         ],
+         "description": "Any JSON value \u2014 this column is json/jsonb.",
+         "title": "JSON"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": {}
+      },
       "plan_fingerprint": {
        "title": "Plan Fingerprint",
        "type": "string"
@@ -39735,6 +40012,38 @@
        "title": "Idempotency Key"
       },
       "materialized_plan": {
+       "anyOf": [
+        {
+         "anyOf": [
+          {
+           "type": "null"
+          },
+          {
+           "type": "boolean"
+          },
+          {
+           "type": "number"
+          },
+          {
+           "type": "string"
+          },
+          {
+           "type": "array"
+          },
+          {
+           "type": "object"
+          }
+         ],
+         "description": "Any JSON value \u2014 this column is json/jsonb.",
+         "title": "JSON"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": null
+      },
+      "metadata": {
        "anyOf": [
         {
          "anyOf": [
@@ -39969,6 +40278,25 @@
        ],
        "default": "assist",
        "title": "Disposition"
+      },
+      "evidence_kind": {
+       "anyOf": [
+        {
+         "enum": [
+          "measured",
+          "reported",
+          "observed_external",
+          "inferred",
+          "opinion"
+         ],
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": null,
+       "title": "Evidence Kind"
       },
       "feature_key": {
        "title": "Feature Key",
@@ -40215,6 +40543,25 @@
        ],
        "default": null,
        "title": "Disposition"
+      },
+      "evidence_kind": {
+       "anyOf": [
+        {
+         "enum": [
+          "measured",
+          "reported",
+          "observed_external",
+          "inferred",
+          "opinion"
+         ],
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": null,
+       "title": "Evidence Kind"
       },
       "feature_key": {
        "anyOf": [
@@ -43369,11 +43716,1214 @@
    "delete": "planned",
    "family": "Other",
    "identity_fields": [],
+   "label": "Coupon",
+   "noun": "billing_coupon",
+   "reference": "no",
+   "schemas": {
+    "create": {
+     "additionalProperties": false,
+     "properties": {
+      "code": {
+       "title": "Code",
+       "type": "string"
+      },
+      "expires_at": {
+       "anyOf": [
+        {
+         "format": "date-time",
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": null,
+       "title": "Expires At"
+      },
+      "kind": {
+       "enum": [
+        "existing_account",
+        "new_account"
+       ],
+       "title": "Kind",
+       "type": "string"
+      },
+      "link_token_hash": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": null,
+       "title": "Link Token Hash"
+      },
+      "max_redemptions": {
+       "anyOf": [
+        {
+         "type": "integer"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": 1,
+       "title": "Max Redemptions"
+      },
+      "metadata": {
+       "anyOf": [
+        {
+         "anyOf": [
+          {
+           "type": "null"
+          },
+          {
+           "type": "boolean"
+          },
+          {
+           "type": "number"
+          },
+          {
+           "type": "string"
+          },
+          {
+           "type": "array"
+          },
+          {
+           "type": "object"
+          }
+         ],
+         "description": "Any JSON value \u2014 this column is json/jsonb.",
+         "title": "JSON"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": {}
+      },
+      "months": {
+       "title": "Months",
+       "type": "integer"
+      },
+      "note": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": null,
+       "title": "Note"
+      },
+      "plan_key": {
+       "title": "Plan Key",
+       "type": "string"
+      },
+      "recipient_email": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": null,
+       "title": "Recipient Email"
+      },
+      "recipient_phone": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": null,
+       "title": "Recipient Phone"
+      },
+      "recipient_user_id": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": null,
+       "title": "Recipient User Id"
+      },
+      "redeemed_count": {
+       "anyOf": [
+        {
+         "type": "integer"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": 0,
+       "title": "Redeemed Count"
+      },
+      "revoked_at": {
+       "anyOf": [
+        {
+         "format": "date-time",
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": null,
+       "title": "Revoked At"
+      },
+      "revoked_by": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": null,
+       "title": "Revoked By"
+      },
+      "sent": {
+       "anyOf": [
+        {
+         "anyOf": [
+          {
+           "type": "null"
+          },
+          {
+           "type": "boolean"
+          },
+          {
+           "type": "number"
+          },
+          {
+           "type": "string"
+          },
+          {
+           "type": "array"
+          },
+          {
+           "type": "object"
+          }
+         ],
+         "description": "Any JSON value \u2014 this column is json/jsonb.",
+         "title": "JSON"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": []
+      }
+     },
+     "required": [
+      "code",
+      "kind",
+      "plan_key",
+      "months"
+     ],
+     "title": "CreateBillingCouponItem",
+     "type": "object"
+    },
+    "delete": {
+     "additionalProperties": false,
+     "properties": {
+      "id": {
+       "title": "Id",
+       "type": "string"
+      }
+     },
+     "required": [
+      "id"
+     ],
+     "title": "DeleteBillingCouponItem",
+     "type": "object"
+    },
+    "update": {
+     "additionalProperties": false,
+     "properties": {
+      "code": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": null,
+       "title": "Code"
+      },
+      "expires_at": {
+       "anyOf": [
+        {
+         "format": "date-time",
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": null,
+       "title": "Expires At"
+      },
+      "id": {
+       "title": "Id",
+       "type": "string"
+      },
+      "kind": {
+       "anyOf": [
+        {
+         "enum": [
+          "existing_account",
+          "new_account"
+         ],
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": null,
+       "title": "Kind"
+      },
+      "link_token_hash": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": null,
+       "title": "Link Token Hash"
+      },
+      "max_redemptions": {
+       "anyOf": [
+        {
+         "type": "integer"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": null,
+       "title": "Max Redemptions"
+      },
+      "metadata": {
+       "anyOf": [
+        {
+         "anyOf": [
+          {
+           "type": "null"
+          },
+          {
+           "type": "boolean"
+          },
+          {
+           "type": "number"
+          },
+          {
+           "type": "string"
+          },
+          {
+           "type": "array"
+          },
+          {
+           "type": "object"
+          }
+         ],
+         "description": "Any JSON value \u2014 this column is json/jsonb.",
+         "title": "JSON"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": null
+      },
+      "months": {
+       "anyOf": [
+        {
+         "type": "integer"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": null,
+       "title": "Months"
+      },
+      "note": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": null,
+       "title": "Note"
+      },
+      "plan_key": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": null,
+       "title": "Plan Key"
+      },
+      "recipient_email": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": null,
+       "title": "Recipient Email"
+      },
+      "recipient_phone": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": null,
+       "title": "Recipient Phone"
+      },
+      "recipient_user_id": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": null,
+       "title": "Recipient User Id"
+      },
+      "redeemed_count": {
+       "anyOf": [
+        {
+         "type": "integer"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": null,
+       "title": "Redeemed Count"
+      },
+      "revoked_at": {
+       "anyOf": [
+        {
+         "format": "date-time",
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": null,
+       "title": "Revoked At"
+      },
+      "revoked_by": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": null,
+       "title": "Revoked By"
+      },
+      "sent": {
+       "anyOf": [
+        {
+         "anyOf": [
+          {
+           "type": "null"
+          },
+          {
+           "type": "boolean"
+          },
+          {
+           "type": "number"
+          },
+          {
+           "type": "string"
+          },
+          {
+           "type": "array"
+          },
+          {
+           "type": "object"
+          }
+         ],
+         "description": "Any JSON value \u2014 this column is json/jsonb.",
+         "title": "JSON"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": null
+      }
+     },
+     "required": [
+      "id"
+     ],
+     "title": "UpdateBillingCouponItem",
+     "type": "object"
+    }
+   },
+   "table": "billing.coupon",
+   "title_column": null,
+   "update": "planned",
+   "view": "no"
+  },
+  {
+   "create": "planned",
+   "delete": "planned",
+   "family": "Other",
+   "identity_fields": [],
+   "label": "Coupon redemption",
+   "noun": "billing_coupon_redemption",
+   "reference": "no",
+   "schemas": {
+    "create": {
+     "additionalProperties": false,
+     "properties": {
+      "coupon_id": {
+       "title": "Coupon Id",
+       "type": "string"
+      },
+      "error": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": null,
+       "title": "Error"
+      },
+      "grant_id": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": null,
+       "title": "Grant Id"
+      },
+      "metadata": {
+       "anyOf": [
+        {
+         "anyOf": [
+          {
+           "type": "null"
+          },
+          {
+           "type": "boolean"
+          },
+          {
+           "type": "number"
+          },
+          {
+           "type": "string"
+          },
+          {
+           "type": "array"
+          },
+          {
+           "type": "object"
+          }
+         ],
+         "description": "Any JSON value \u2014 this column is json/jsonb.",
+         "title": "JSON"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": {}
+      },
+      "redeemed_at": {
+       "format": "date-time",
+       "title": "Redeemed At",
+       "type": "string"
+      },
+      "redeemer_user_id": {
+       "title": "Redeemer User Id",
+       "type": "string"
+      },
+      "status": {
+       "enum": [
+        "granted",
+        "stripe_pending",
+        "stripe_applied",
+        "released"
+       ],
+       "title": "Status",
+       "type": "string"
+      },
+      "stripe_coupon_id": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": null,
+       "title": "Stripe Coupon Id"
+      },
+      "stripe_subscription_id": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": null,
+       "title": "Stripe Subscription Id"
+      }
+     },
+     "required": [
+      "coupon_id",
+      "redeemer_user_id",
+      "redeemed_at",
+      "status"
+     ],
+     "title": "CreateBillingCouponRedemptionItem",
+     "type": "object"
+    },
+    "delete": {
+     "additionalProperties": false,
+     "properties": {
+      "id": {
+       "title": "Id",
+       "type": "string"
+      }
+     },
+     "required": [
+      "id"
+     ],
+     "title": "DeleteBillingCouponRedemptionItem",
+     "type": "object"
+    },
+    "update": {
+     "additionalProperties": false,
+     "properties": {
+      "coupon_id": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": null,
+       "title": "Coupon Id"
+      },
+      "error": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": null,
+       "title": "Error"
+      },
+      "grant_id": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": null,
+       "title": "Grant Id"
+      },
+      "id": {
+       "title": "Id",
+       "type": "string"
+      },
+      "metadata": {
+       "anyOf": [
+        {
+         "anyOf": [
+          {
+           "type": "null"
+          },
+          {
+           "type": "boolean"
+          },
+          {
+           "type": "number"
+          },
+          {
+           "type": "string"
+          },
+          {
+           "type": "array"
+          },
+          {
+           "type": "object"
+          }
+         ],
+         "description": "Any JSON value \u2014 this column is json/jsonb.",
+         "title": "JSON"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": null
+      },
+      "redeemed_at": {
+       "anyOf": [
+        {
+         "format": "date-time",
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": null,
+       "title": "Redeemed At"
+      },
+      "redeemer_user_id": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": null,
+       "title": "Redeemer User Id"
+      },
+      "status": {
+       "anyOf": [
+        {
+         "enum": [
+          "granted",
+          "stripe_pending",
+          "stripe_applied",
+          "released"
+         ],
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": null,
+       "title": "Status"
+      },
+      "stripe_coupon_id": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": null,
+       "title": "Stripe Coupon Id"
+      },
+      "stripe_subscription_id": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": null,
+       "title": "Stripe Subscription Id"
+      }
+     },
+     "required": [
+      "id"
+     ],
+     "title": "UpdateBillingCouponRedemptionItem",
+     "type": "object"
+    }
+   },
+   "table": "billing.coupon_redemption",
+   "title_column": null,
+   "update": "planned",
+   "view": "no"
+  },
+  {
+   "create": "planned",
+   "delete": "planned",
+   "family": "Other",
+   "identity_fields": [],
    "label": "Billing customer",
    "noun": "billing_customer",
    "reference": "no",
    "schemas": null,
    "table": "billing.customer",
+   "title_column": null,
+   "update": "planned",
+   "view": "no"
+  },
+  {
+   "create": "planned",
+   "delete": "planned",
+   "family": "Other",
+   "identity_fields": [],
+   "label": "Free period grant",
+   "noun": "billing_free_period_grant",
+   "reference": "no",
+   "schemas": {
+    "create": {
+     "additionalProperties": false,
+     "properties": {
+      "capped": {
+       "anyOf": [
+        {
+         "type": "boolean"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": false,
+       "title": "Capped"
+      },
+      "coupon_id": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": null,
+       "title": "Coupon Id"
+      },
+      "ends_at": {
+       "format": "date-time",
+       "title": "Ends At",
+       "type": "string"
+      },
+      "granted_by": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": null,
+       "title": "Granted By"
+      },
+      "metadata": {
+       "anyOf": [
+        {
+         "anyOf": [
+          {
+           "type": "null"
+          },
+          {
+           "type": "boolean"
+          },
+          {
+           "type": "number"
+          },
+          {
+           "type": "string"
+          },
+          {
+           "type": "array"
+          },
+          {
+           "type": "object"
+          }
+         ],
+         "description": "Any JSON value \u2014 this column is json/jsonb.",
+         "title": "JSON"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": {}
+      },
+      "months": {
+       "title": "Months",
+       "type": "integer"
+      },
+      "note": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": null,
+       "title": "Note"
+      },
+      "plan_key": {
+       "title": "Plan Key",
+       "type": "string"
+      },
+      "previous_expires_at": {
+       "anyOf": [
+        {
+         "format": "date-time",
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": null,
+       "title": "Previous Expires At"
+      },
+      "previous_plan_key": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": null,
+       "title": "Previous Plan Key"
+      },
+      "source": {
+       "enum": [
+        "admin",
+        "coupon",
+        "signup"
+       ],
+       "title": "Source",
+       "type": "string"
+      },
+      "starts_at": {
+       "format": "date-time",
+       "title": "Starts At",
+       "type": "string"
+      },
+      "subject_organization_id": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": null,
+       "title": "Subject Organization Id"
+      },
+      "subject_user_id": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": null,
+       "title": "Subject User Id"
+      }
+     },
+     "required": [
+      "plan_key",
+      "months",
+      "starts_at",
+      "ends_at",
+      "source"
+     ],
+     "title": "CreateBillingFreePeriodGrantItem",
+     "type": "object"
+    },
+    "delete": {
+     "additionalProperties": false,
+     "properties": {
+      "id": {
+       "title": "Id",
+       "type": "string"
+      }
+     },
+     "required": [
+      "id"
+     ],
+     "title": "DeleteBillingFreePeriodGrantItem",
+     "type": "object"
+    },
+    "update": {
+     "additionalProperties": false,
+     "properties": {
+      "capped": {
+       "anyOf": [
+        {
+         "type": "boolean"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": null,
+       "title": "Capped"
+      },
+      "coupon_id": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": null,
+       "title": "Coupon Id"
+      },
+      "ends_at": {
+       "anyOf": [
+        {
+         "format": "date-time",
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": null,
+       "title": "Ends At"
+      },
+      "granted_by": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": null,
+       "title": "Granted By"
+      },
+      "id": {
+       "title": "Id",
+       "type": "string"
+      },
+      "metadata": {
+       "anyOf": [
+        {
+         "anyOf": [
+          {
+           "type": "null"
+          },
+          {
+           "type": "boolean"
+          },
+          {
+           "type": "number"
+          },
+          {
+           "type": "string"
+          },
+          {
+           "type": "array"
+          },
+          {
+           "type": "object"
+          }
+         ],
+         "description": "Any JSON value \u2014 this column is json/jsonb.",
+         "title": "JSON"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": null
+      },
+      "months": {
+       "anyOf": [
+        {
+         "type": "integer"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": null,
+       "title": "Months"
+      },
+      "note": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": null,
+       "title": "Note"
+      },
+      "plan_key": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": null,
+       "title": "Plan Key"
+      },
+      "previous_expires_at": {
+       "anyOf": [
+        {
+         "format": "date-time",
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": null,
+       "title": "Previous Expires At"
+      },
+      "previous_plan_key": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": null,
+       "title": "Previous Plan Key"
+      },
+      "source": {
+       "anyOf": [
+        {
+         "enum": [
+          "admin",
+          "coupon",
+          "signup"
+         ],
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": null,
+       "title": "Source"
+      },
+      "starts_at": {
+       "anyOf": [
+        {
+         "format": "date-time",
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": null,
+       "title": "Starts At"
+      },
+      "subject_organization_id": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": null,
+       "title": "Subject Organization Id"
+      },
+      "subject_user_id": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": null,
+       "title": "Subject User Id"
+      }
+     },
+     "required": [
+      "id"
+     ],
+     "title": "UpdateBillingFreePeriodGrantItem",
+     "type": "object"
+    }
+   },
+   "table": "billing.free_period_grant",
    "title_column": null,
    "update": "planned",
    "view": "no"
@@ -44038,6 +45588,10 @@
        "default": 1,
        "title": "Interval Count"
       },
+      "livemode": {
+       "title": "Livemode",
+       "type": "boolean"
+      },
       "metadata": {
        "anyOf": [
         {
@@ -44112,7 +45666,8 @@
       }
      },
      "required": [
-      "product_id"
+      "product_id",
+      "livemode"
      ],
      "title": "CreateBillingPriceItem",
      "type": "object"
@@ -44185,6 +45740,18 @@
        ],
        "default": null,
        "title": "Interval Count"
+      },
+      "livemode": {
+       "anyOf": [
+        {
+         "type": "boolean"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": null,
+       "title": "Livemode"
       },
       "metadata": {
        "anyOf": [
@@ -44639,6 +46206,22 @@
        "title": "Purpose",
        "type": "string"
       },
+      "reserved_usd": {
+       "anyOf": [
+        {
+         "type": "number"
+        },
+        {
+         "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": 0,
+       "title": "Reserved Usd"
+      },
       "scope": {
        "anyOf": [
         {
@@ -44910,6 +46493,22 @@
        ],
        "default": null,
        "title": "Purpose"
+      },
+      "reserved_usd": {
+       "anyOf": [
+        {
+         "type": "number"
+        },
+        {
+         "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": null,
+       "title": "Reserved Usd"
       },
       "scope": {
        "anyOf": [
@@ -45644,7 +47243,226 @@
    "label": "Usage reset",
    "noun": "billing_usage_reset",
    "reference": "no",
-   "schemas": null,
+   "schemas": {
+    "create": {
+     "additionalProperties": false,
+     "properties": {
+      "metadata": {
+       "anyOf": [
+        {
+         "anyOf": [
+          {
+           "type": "null"
+          },
+          {
+           "type": "boolean"
+          },
+          {
+           "type": "number"
+          },
+          {
+           "type": "string"
+          },
+          {
+           "type": "array"
+          },
+          {
+           "type": "object"
+          }
+         ],
+         "description": "Any JSON value \u2014 this column is json/jsonb.",
+         "title": "JSON"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": {}
+      },
+      "note": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": null,
+       "title": "Note"
+      },
+      "period": {
+       "enum": [
+        "day",
+        "week",
+        "month",
+        "lifetime",
+        "rolling_1h",
+        "rolling_5h"
+       ],
+       "title": "Period",
+       "type": "string"
+      },
+      "reset_at": {
+       "format": "date-time",
+       "title": "Reset At",
+       "type": "string"
+      },
+      "reset_by": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": null,
+       "title": "Reset By"
+      },
+      "subject_user_id": {
+       "title": "Subject User Id",
+       "type": "string"
+      }
+     },
+     "required": [
+      "subject_user_id",
+      "period",
+      "reset_at"
+     ],
+     "title": "CreateBillingUsageResetItem",
+     "type": "object"
+    },
+    "delete": {
+     "additionalProperties": false,
+     "properties": {
+      "id": {
+       "title": "Id",
+       "type": "string"
+      }
+     },
+     "required": [
+      "id"
+     ],
+     "title": "DeleteBillingUsageResetItem",
+     "type": "object"
+    },
+    "update": {
+     "additionalProperties": false,
+     "properties": {
+      "id": {
+       "title": "Id",
+       "type": "string"
+      },
+      "metadata": {
+       "anyOf": [
+        {
+         "anyOf": [
+          {
+           "type": "null"
+          },
+          {
+           "type": "boolean"
+          },
+          {
+           "type": "number"
+          },
+          {
+           "type": "string"
+          },
+          {
+           "type": "array"
+          },
+          {
+           "type": "object"
+          }
+         ],
+         "description": "Any JSON value \u2014 this column is json/jsonb.",
+         "title": "JSON"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": null
+      },
+      "note": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": null,
+       "title": "Note"
+      },
+      "period": {
+       "anyOf": [
+        {
+         "enum": [
+          "day",
+          "week",
+          "month",
+          "lifetime",
+          "rolling_1h",
+          "rolling_5h"
+         ],
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": null,
+       "title": "Period"
+      },
+      "reset_at": {
+       "anyOf": [
+        {
+         "format": "date-time",
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": null,
+       "title": "Reset At"
+      },
+      "reset_by": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": null,
+       "title": "Reset By"
+      },
+      "subject_user_id": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": null,
+       "title": "Subject User Id"
+      }
+     },
+     "required": [
+      "id"
+     ],
+     "title": "UpdateBillingUsageResetItem",
+     "type": "object"
+    }
+   },
    "table": "billing.usage_reset",
    "title_column": null,
    "update": "planned",
@@ -45951,6 +47769,470 @@
     }
    },
    "table": "billing.user_plan",
+   "title_column": null,
+   "update": "planned",
+   "view": "no"
+  },
+  {
+   "create": "planned",
+   "delete": "planned",
+   "family": "Other",
+   "identity_fields": [],
+   "label": "Block State",
+   "noun": "block_state",
+   "reference": "no",
+   "schemas": {
+    "create": {
+     "additionalProperties": false,
+     "properties": {
+      "block_key": {
+       "title": "Block Key",
+       "type": "string"
+      },
+      "client_request_id": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": null,
+       "title": "Client Request Id"
+      },
+      "custom_fields": {
+       "anyOf": [
+        {
+         "anyOf": [
+          {
+           "type": "null"
+          },
+          {
+           "type": "boolean"
+          },
+          {
+           "type": "number"
+          },
+          {
+           "type": "string"
+          },
+          {
+           "type": "array"
+          },
+          {
+           "type": "object"
+          }
+         ],
+         "description": "Any JSON value \u2014 this column is json/jsonb.",
+         "title": "JSON"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": {}
+      },
+      "entity_id": {
+       "title": "Entity Id",
+       "type": "string"
+      },
+      "entity_type": {
+       "title": "Entity Type",
+       "type": "string"
+      },
+      "fingerprint": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": null,
+       "title": "Fingerprint"
+      },
+      "kind": {
+       "title": "Kind",
+       "type": "string"
+      },
+      "metadata": {
+       "anyOf": [
+        {
+         "anyOf": [
+          {
+           "type": "null"
+          },
+          {
+           "type": "boolean"
+          },
+          {
+           "type": "number"
+          },
+          {
+           "type": "string"
+          },
+          {
+           "type": "array"
+          },
+          {
+           "type": "object"
+          }
+         ],
+         "description": "Any JSON value \u2014 this column is json/jsonb.",
+         "title": "JSON"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": {}
+      },
+      "scope": {
+       "anyOf": [
+        {
+         "enum": [
+          "viewer",
+          "shared"
+         ],
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": "viewer",
+       "title": "Scope"
+      },
+      "sent_version": {
+       "anyOf": [
+        {
+         "type": "integer"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": 0,
+       "title": "Sent Version"
+      },
+      "state": {
+       "anyOf": [
+        {
+         "anyOf": [
+          {
+           "type": "null"
+          },
+          {
+           "type": "boolean"
+          },
+          {
+           "type": "number"
+          },
+          {
+           "type": "string"
+          },
+          {
+           "type": "array"
+          },
+          {
+           "type": "object"
+          }
+         ],
+         "description": "Any JSON value \u2014 this column is json/jsonb.",
+         "title": "JSON"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": {}
+      },
+      "state_version": {
+       "anyOf": [
+        {
+         "type": "integer"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": 0,
+       "title": "State Version"
+      },
+      "viewer_id": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": null,
+       "title": "Viewer Id"
+      }
+     },
+     "required": [
+      "entity_type",
+      "entity_id",
+      "block_key",
+      "kind"
+     ],
+     "title": "CreateBlockStateItem",
+     "type": "object"
+    },
+    "delete": {
+     "additionalProperties": false,
+     "properties": {
+      "id": {
+       "title": "Id",
+       "type": "string"
+      }
+     },
+     "required": [
+      "id"
+     ],
+     "title": "DeleteBlockStateItem",
+     "type": "object"
+    },
+    "update": {
+     "additionalProperties": false,
+     "properties": {
+      "block_key": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": null,
+       "title": "Block Key"
+      },
+      "client_request_id": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": null,
+       "title": "Client Request Id"
+      },
+      "custom_fields": {
+       "anyOf": [
+        {
+         "anyOf": [
+          {
+           "type": "null"
+          },
+          {
+           "type": "boolean"
+          },
+          {
+           "type": "number"
+          },
+          {
+           "type": "string"
+          },
+          {
+           "type": "array"
+          },
+          {
+           "type": "object"
+          }
+         ],
+         "description": "Any JSON value \u2014 this column is json/jsonb.",
+         "title": "JSON"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": null
+      },
+      "entity_id": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": null,
+       "title": "Entity Id"
+      },
+      "entity_type": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": null,
+       "title": "Entity Type"
+      },
+      "fingerprint": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": null,
+       "title": "Fingerprint"
+      },
+      "id": {
+       "title": "Id",
+       "type": "string"
+      },
+      "kind": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": null,
+       "title": "Kind"
+      },
+      "metadata": {
+       "anyOf": [
+        {
+         "anyOf": [
+          {
+           "type": "null"
+          },
+          {
+           "type": "boolean"
+          },
+          {
+           "type": "number"
+          },
+          {
+           "type": "string"
+          },
+          {
+           "type": "array"
+          },
+          {
+           "type": "object"
+          }
+         ],
+         "description": "Any JSON value \u2014 this column is json/jsonb.",
+         "title": "JSON"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": null
+      },
+      "scope": {
+       "anyOf": [
+        {
+         "enum": [
+          "viewer",
+          "shared"
+         ],
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": null,
+       "title": "Scope"
+      },
+      "sent_version": {
+       "anyOf": [
+        {
+         "type": "integer"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": null,
+       "title": "Sent Version"
+      },
+      "state": {
+       "anyOf": [
+        {
+         "anyOf": [
+          {
+           "type": "null"
+          },
+          {
+           "type": "boolean"
+          },
+          {
+           "type": "number"
+          },
+          {
+           "type": "string"
+          },
+          {
+           "type": "array"
+          },
+          {
+           "type": "object"
+          }
+         ],
+         "description": "Any JSON value \u2014 this column is json/jsonb.",
+         "title": "JSON"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": null
+      },
+      "state_version": {
+       "anyOf": [
+        {
+         "type": "integer"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": null,
+       "title": "State Version"
+      },
+      "viewer_id": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": null,
+       "title": "Viewer Id"
+      }
+     },
+     "required": [
+      "id"
+     ],
+     "title": "UpdateBlockStateItem",
+     "type": "object"
+    }
+   },
+   "table": "platform.block_states",
    "title_column": null,
    "update": "planned",
    "view": "no"
@@ -54200,6 +56482,38 @@
        "default": null,
        "title": "Last Request At"
       },
+      "metadata": {
+       "anyOf": [
+        {
+         "anyOf": [
+          {
+           "type": "null"
+          },
+          {
+           "type": "boolean"
+          },
+          {
+           "type": "number"
+          },
+          {
+           "type": "string"
+          },
+          {
+           "type": "array"
+          },
+          {
+           "type": "object"
+          }
+         ],
+         "description": "Any JSON value \u2014 this column is json/jsonb.",
+         "title": "JSON"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": {}
+      },
       "requests_24h": {
        "anyOf": [
         {
@@ -54415,6 +56729,38 @@
        ],
        "default": null,
        "title": "Last Request At"
+      },
+      "metadata": {
+       "anyOf": [
+        {
+         "anyOf": [
+          {
+           "type": "null"
+          },
+          {
+           "type": "boolean"
+          },
+          {
+           "type": "number"
+          },
+          {
+           "type": "string"
+          },
+          {
+           "type": "array"
+          },
+          {
+           "type": "object"
+          }
+         ],
+         "description": "Any JSON value \u2014 this column is json/jsonb.",
+         "title": "JSON"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": null
       },
       "requests_24h": {
        "anyOf": [
@@ -57511,6 +59857,18 @@
        "default": null,
        "title": "Client Request Id"
       },
+      "created_by_agent_id": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": null,
+       "title": "Created By Agent Id"
+      },
       "custom_fields": {
        "anyOf": [
         {
@@ -57726,6 +60084,18 @@
        ],
        "default": null,
        "title": "Client Request Id"
+      },
+      "created_by_agent_id": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": null,
+       "title": "Created By Agent Id"
       },
       "custom_fields": {
        "anyOf": [
@@ -78086,11 +80456,11 @@
    "delete": "planned",
    "family": "Other",
    "identity_fields": [],
-   "label": "Aggregate digest checked",
-   "noun": "custom_agg_digest_checked",
+   "label": "Agent table trust",
+   "noun": "custom_agent_table_trust",
    "reference": "no",
    "schemas": null,
-   "table": "custom.agg_digest_checked",
+   "table": "custom.agent_table_trust",
    "title_column": null,
    "update": "planned",
    "view": "no"
@@ -78100,630 +80470,11 @@
    "delete": "planned",
    "family": "Other",
    "identity_fields": [],
-   "label": "Custom Object",
-   "noun": "custom_entity_definition",
+   "label": "Aggregate digest checked",
+   "noun": "custom_agg_digest_checked",
    "reference": "no",
-   "schemas": {
-    "create": {
-     "additionalProperties": false,
-     "properties": {
-      "ai_exposure": {
-       "anyOf": [
-        {
-         "enum": [
-          "allowed",
-          "aggregate_only",
-          "never"
-         ],
-         "type": "string"
-        },
-        {
-         "type": "null"
-        }
-       ],
-       "default": "allowed",
-       "title": "Ai Exposure"
-      },
-      "allow_record_sharing": {
-       "anyOf": [
-        {
-         "type": "boolean"
-        },
-        {
-         "type": "null"
-        }
-       ],
-       "default": false,
-       "title": "Allow Record Sharing"
-      },
-      "archived_at": {
-       "anyOf": [
-        {
-         "format": "date-time",
-         "type": "string"
-        },
-        {
-         "type": "null"
-        }
-       ],
-       "default": null,
-       "title": "Archived At"
-      },
-      "color": {
-       "anyOf": [
-        {
-         "type": "string"
-        },
-        {
-         "type": "null"
-        }
-       ],
-       "default": null,
-       "title": "Color"
-      },
-      "custom_fields": {
-       "anyOf": [
-        {
-         "anyOf": [
-          {
-           "type": "null"
-          },
-          {
-           "type": "boolean"
-          },
-          {
-           "type": "number"
-          },
-          {
-           "type": "string"
-          },
-          {
-           "type": "array"
-          },
-          {
-           "type": "object"
-          }
-         ],
-         "description": "Any JSON value \u2014 this column is json/jsonb.",
-         "title": "JSON"
-        },
-        {
-         "type": "null"
-        }
-       ],
-       "default": {}
-      },
-      "description": {
-       "anyOf": [
-        {
-         "type": "string"
-        },
-        {
-         "type": "null"
-        }
-       ],
-       "default": null,
-       "title": "Description"
-      },
-      "icon": {
-       "anyOf": [
-        {
-         "type": "string"
-        },
-        {
-         "type": "null"
-        }
-       ],
-       "default": null,
-       "title": "Icon"
-      },
-      "is_searchable": {
-       "anyOf": [
-        {
-         "type": "boolean"
-        },
-        {
-         "type": "null"
-        }
-       ],
-       "default": true,
-       "title": "Is Searchable"
-      },
-      "max_fields": {
-       "anyOf": [
-        {
-         "type": "integer"
-        },
-        {
-         "type": "null"
-        }
-       ],
-       "default": null,
-       "title": "Max Fields"
-      },
-      "max_records": {
-       "anyOf": [
-        {
-         "type": "integer"
-        },
-        {
-         "type": "null"
-        }
-       ],
-       "default": null,
-       "title": "Max Records"
-      },
-      "metadata": {
-       "anyOf": [
-        {
-         "anyOf": [
-          {
-           "type": "null"
-          },
-          {
-           "type": "boolean"
-          },
-          {
-           "type": "number"
-          },
-          {
-           "type": "string"
-          },
-          {
-           "type": "array"
-          },
-          {
-           "type": "object"
-          }
-         ],
-         "description": "Any JSON value \u2014 this column is json/jsonb.",
-         "title": "JSON"
-        },
-        {
-         "type": "null"
-        }
-       ],
-       "default": {}
-      },
-      "name": {
-       "title": "Name",
-       "type": "string"
-      },
-      "name_plural": {
-       "title": "Name Plural",
-       "type": "string"
-      },
-      "record_name_backfill_done": {
-       "anyOf": [
-        {
-         "type": "integer"
-        },
-        {
-         "type": "null"
-        }
-       ],
-       "default": 0,
-       "title": "Record Name Backfill Done"
-      },
-      "record_name_backfill_error": {
-       "anyOf": [
-        {
-         "type": "string"
-        },
-        {
-         "type": "null"
-        }
-       ],
-       "default": null,
-       "title": "Record Name Backfill Error"
-      },
-      "record_name_backfill_state": {
-       "anyOf": [
-        {
-         "enum": [
-          "idle",
-          "pending",
-          "running",
-          "failed"
-         ],
-         "type": "string"
-        },
-        {
-         "type": "null"
-        }
-       ],
-       "default": "idle",
-       "title": "Record Name Backfill State"
-      },
-      "record_name_template": {
-       "anyOf": [
-        {
-         "type": "string"
-        },
-        {
-         "type": "null"
-        }
-       ],
-       "default": null,
-       "title": "Record Name Template"
-      },
-      "sensitivity_tier": {
-       "anyOf": [
-        {
-         "enum": [
-          "standard",
-          "confidential",
-          "restricted"
-         ],
-         "type": "string"
-        },
-        {
-         "type": "null"
-        }
-       ],
-       "default": "standard",
-       "title": "Sensitivity Tier"
-      },
-      "slug": {
-       "title": "Slug",
-       "type": "string"
-      },
-      "validation_mode": {
-       "anyOf": [
-        {
-         "enum": [
-          "advisory",
-          "strict"
-         ],
-         "type": "string"
-        },
-        {
-         "type": "null"
-        }
-       ],
-       "default": "advisory",
-       "title": "Validation Mode"
-      }
-     },
-     "required": [
-      "slug",
-      "name",
-      "name_plural"
-     ],
-     "title": "CreateCustomEntityDefinitionItem",
-     "type": "object"
-    },
-    "delete": {
-     "additionalProperties": false,
-     "properties": {
-      "id": {
-       "title": "Id",
-       "type": "string"
-      }
-     },
-     "required": [
-      "id"
-     ],
-     "title": "DeleteCustomEntityDefinitionItem",
-     "type": "object"
-    },
-    "update": {
-     "additionalProperties": false,
-     "properties": {
-      "ai_exposure": {
-       "anyOf": [
-        {
-         "enum": [
-          "allowed",
-          "aggregate_only",
-          "never"
-         ],
-         "type": "string"
-        },
-        {
-         "type": "null"
-        }
-       ],
-       "default": null,
-       "title": "Ai Exposure"
-      },
-      "allow_record_sharing": {
-       "anyOf": [
-        {
-         "type": "boolean"
-        },
-        {
-         "type": "null"
-        }
-       ],
-       "default": null,
-       "title": "Allow Record Sharing"
-      },
-      "archived_at": {
-       "anyOf": [
-        {
-         "format": "date-time",
-         "type": "string"
-        },
-        {
-         "type": "null"
-        }
-       ],
-       "default": null,
-       "title": "Archived At"
-      },
-      "color": {
-       "anyOf": [
-        {
-         "type": "string"
-        },
-        {
-         "type": "null"
-        }
-       ],
-       "default": null,
-       "title": "Color"
-      },
-      "custom_fields": {
-       "anyOf": [
-        {
-         "anyOf": [
-          {
-           "type": "null"
-          },
-          {
-           "type": "boolean"
-          },
-          {
-           "type": "number"
-          },
-          {
-           "type": "string"
-          },
-          {
-           "type": "array"
-          },
-          {
-           "type": "object"
-          }
-         ],
-         "description": "Any JSON value \u2014 this column is json/jsonb.",
-         "title": "JSON"
-        },
-        {
-         "type": "null"
-        }
-       ],
-       "default": null
-      },
-      "description": {
-       "anyOf": [
-        {
-         "type": "string"
-        },
-        {
-         "type": "null"
-        }
-       ],
-       "default": null,
-       "title": "Description"
-      },
-      "icon": {
-       "anyOf": [
-        {
-         "type": "string"
-        },
-        {
-         "type": "null"
-        }
-       ],
-       "default": null,
-       "title": "Icon"
-      },
-      "id": {
-       "title": "Id",
-       "type": "string"
-      },
-      "is_searchable": {
-       "anyOf": [
-        {
-         "type": "boolean"
-        },
-        {
-         "type": "null"
-        }
-       ],
-       "default": null,
-       "title": "Is Searchable"
-      },
-      "max_fields": {
-       "anyOf": [
-        {
-         "type": "integer"
-        },
-        {
-         "type": "null"
-        }
-       ],
-       "default": null,
-       "title": "Max Fields"
-      },
-      "max_records": {
-       "anyOf": [
-        {
-         "type": "integer"
-        },
-        {
-         "type": "null"
-        }
-       ],
-       "default": null,
-       "title": "Max Records"
-      },
-      "metadata": {
-       "anyOf": [
-        {
-         "anyOf": [
-          {
-           "type": "null"
-          },
-          {
-           "type": "boolean"
-          },
-          {
-           "type": "number"
-          },
-          {
-           "type": "string"
-          },
-          {
-           "type": "array"
-          },
-          {
-           "type": "object"
-          }
-         ],
-         "description": "Any JSON value \u2014 this column is json/jsonb.",
-         "title": "JSON"
-        },
-        {
-         "type": "null"
-        }
-       ],
-       "default": null
-      },
-      "name": {
-       "anyOf": [
-        {
-         "type": "string"
-        },
-        {
-         "type": "null"
-        }
-       ],
-       "default": null,
-       "title": "Name"
-      },
-      "name_plural": {
-       "anyOf": [
-        {
-         "type": "string"
-        },
-        {
-         "type": "null"
-        }
-       ],
-       "default": null,
-       "title": "Name Plural"
-      },
-      "record_name_backfill_done": {
-       "anyOf": [
-        {
-         "type": "integer"
-        },
-        {
-         "type": "null"
-        }
-       ],
-       "default": null,
-       "title": "Record Name Backfill Done"
-      },
-      "record_name_backfill_error": {
-       "anyOf": [
-        {
-         "type": "string"
-        },
-        {
-         "type": "null"
-        }
-       ],
-       "default": null,
-       "title": "Record Name Backfill Error"
-      },
-      "record_name_backfill_state": {
-       "anyOf": [
-        {
-         "enum": [
-          "idle",
-          "pending",
-          "running",
-          "failed"
-         ],
-         "type": "string"
-        },
-        {
-         "type": "null"
-        }
-       ],
-       "default": null,
-       "title": "Record Name Backfill State"
-      },
-      "record_name_template": {
-       "anyOf": [
-        {
-         "type": "string"
-        },
-        {
-         "type": "null"
-        }
-       ],
-       "default": null,
-       "title": "Record Name Template"
-      },
-      "sensitivity_tier": {
-       "anyOf": [
-        {
-         "enum": [
-          "standard",
-          "confidential",
-          "restricted"
-         ],
-         "type": "string"
-        },
-        {
-         "type": "null"
-        }
-       ],
-       "default": null,
-       "title": "Sensitivity Tier"
-      },
-      "slug": {
-       "anyOf": [
-        {
-         "type": "string"
-        },
-        {
-         "type": "null"
-        }
-       ],
-       "default": null,
-       "title": "Slug"
-      },
-      "validation_mode": {
-       "anyOf": [
-        {
-         "enum": [
-          "advisory",
-          "strict"
-         ],
-         "type": "string"
-        },
-        {
-         "type": "null"
-        }
-       ],
-       "default": null,
-       "title": "Validation Mode"
-      }
-     },
-     "required": [
-      "id"
-     ],
-     "title": "UpdateCustomEntityDefinitionItem",
-     "type": "object"
-    }
-   },
-   "table": "platform.custom_entity_definition",
+   "schemas": null,
+   "table": "custom.agg_digest_checked",
    "title_column": null,
    "update": "planned",
    "view": "no"
@@ -80074,20 +81825,6 @@
    "view": "no"
   },
   {
-   "create": "no",
-   "delete": "no",
-   "family": "Other",
-   "identity_fields": [],
-   "label": "Custom Record",
-   "noun": "custom_record",
-   "reference": "no",
-   "schemas": null,
-   "table": "platform.custom_record",
-   "title_column": null,
-   "update": "no",
-   "view": "no"
-  },
-  {
    "create": "planned",
    "delete": "planned",
    "family": "Other",
@@ -81297,6 +83034,38 @@
        "default": true,
        "title": "Is Active"
       },
+      "metadata": {
+       "anyOf": [
+        {
+         "anyOf": [
+          {
+           "type": "null"
+          },
+          {
+           "type": "boolean"
+          },
+          {
+           "type": "number"
+          },
+          {
+           "type": "string"
+          },
+          {
+           "type": "array"
+          },
+          {
+           "type": "object"
+          }
+         ],
+         "description": "Any JSON value \u2014 this column is json/jsonb.",
+         "title": "JSON"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": {}
+      },
       "pronunciation": {
        "anyOf": [
         {
@@ -81459,6 +83228,38 @@
        ],
        "default": null,
        "title": "Is Active"
+      },
+      "metadata": {
+       "anyOf": [
+        {
+         "anyOf": [
+          {
+           "type": "null"
+          },
+          {
+           "type": "boolean"
+          },
+          {
+           "type": "number"
+          },
+          {
+           "type": "string"
+          },
+          {
+           "type": "array"
+          },
+          {
+           "type": "object"
+          }
+         ],
+         "description": "Any JSON value \u2014 this column is json/jsonb.",
+         "title": "JSON"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": null
       },
       "pronunciation": {
        "anyOf": [
@@ -83878,6 +85679,34 @@
    "reference": "no",
    "schemas": null,
    "table": "platform.entity_grants",
+   "title_column": null,
+   "update": "planned",
+   "view": "no"
+  },
+  {
+   "create": "planned",
+   "delete": "planned",
+   "family": "Other",
+   "identity_fields": [],
+   "label": "Protected field value",
+   "noun": "entity_protected_value",
+   "reference": "no",
+   "schemas": null,
+   "table": "custom.entity_protected_value",
+   "title_column": null,
+   "update": "planned",
+   "view": "no"
+  },
+  {
+   "create": "planned",
+   "delete": "planned",
+   "family": "Other",
+   "identity_fields": [],
+   "label": "Protected field value version",
+   "noun": "entity_protected_value_version",
+   "reference": "no",
+   "schemas": null,
+   "table": "custom.entity_protected_value_version",
    "title_column": null,
    "update": "planned",
    "view": "no"
@@ -89654,6 +91483,38 @@
        "default": false,
        "title": "Is Blocked"
       },
+      "metadata": {
+       "anyOf": [
+        {
+         "anyOf": [
+          {
+           "type": "null"
+          },
+          {
+           "type": "boolean"
+          },
+          {
+           "type": "number"
+          },
+          {
+           "type": "string"
+          },
+          {
+           "type": "array"
+          },
+          {
+           "type": "object"
+          }
+         ],
+         "description": "Any JSON value \u2014 this column is json/jsonb.",
+         "title": "JSON"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": {}
+      },
       "notes": {
        "anyOf": [
         {
@@ -89786,6 +91647,38 @@
        "default": null,
        "title": "Is Blocked"
       },
+      "metadata": {
+       "anyOf": [
+        {
+         "anyOf": [
+          {
+           "type": "null"
+          },
+          {
+           "type": "boolean"
+          },
+          {
+           "type": "number"
+          },
+          {
+           "type": "string"
+          },
+          {
+           "type": "array"
+          },
+          {
+           "type": "object"
+          }
+         ],
+         "description": "Any JSON value \u2014 this column is json/jsonb.",
+         "title": "JSON"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": null
+      },
       "notes": {
        "anyOf": [
         {
@@ -89822,317 +91715,6 @@
    "title_column": null,
    "update": "planned",
    "view": "no"
-  },
-  {
-   "create": "planned",
-   "delete": "planned",
-   "family": "Other",
-   "identity_fields": [
-    "id"
-   ],
-   "label": "Flexible Data",
-   "noun": "flexible_data",
-   "reference": "yes",
-   "schemas": {
-    "create": {
-     "additionalProperties": false,
-     "properties": {
-      "category_id": {
-       "anyOf": [
-        {
-         "type": "string"
-        },
-        {
-         "type": "null"
-        }
-       ],
-       "default": null,
-       "title": "Category Id"
-      },
-      "custom_fields": {
-       "anyOf": [
-        {
-         "anyOf": [
-          {
-           "type": "null"
-          },
-          {
-           "type": "boolean"
-          },
-          {
-           "type": "number"
-          },
-          {
-           "type": "string"
-          },
-          {
-           "type": "array"
-          },
-          {
-           "type": "object"
-          }
-         ],
-         "description": "Any JSON value \u2014 this column is json/jsonb.",
-         "title": "JSON"
-        },
-        {
-         "type": "null"
-        }
-       ],
-       "default": {}
-      },
-      "data": {
-       "anyOf": [
-        {
-         "anyOf": [
-          {
-           "type": "null"
-          },
-          {
-           "type": "boolean"
-          },
-          {
-           "type": "number"
-          },
-          {
-           "type": "string"
-          },
-          {
-           "type": "array"
-          },
-          {
-           "type": "object"
-          }
-         ],
-         "description": "Any JSON value \u2014 this column is json/jsonb.",
-         "title": "JSON"
-        },
-        {
-         "type": "null"
-        }
-       ],
-       "default": {}
-      },
-      "label": {
-       "title": "Label",
-       "type": "string"
-      },
-      "metadata": {
-       "anyOf": [
-        {
-         "anyOf": [
-          {
-           "type": "null"
-          },
-          {
-           "type": "boolean"
-          },
-          {
-           "type": "number"
-          },
-          {
-           "type": "string"
-          },
-          {
-           "type": "array"
-          },
-          {
-           "type": "object"
-          }
-         ],
-         "description": "Any JSON value \u2014 this column is json/jsonb.",
-         "title": "JSON"
-        },
-        {
-         "type": "null"
-        }
-       ],
-       "default": {}
-      },
-      "slug": {
-       "anyOf": [
-        {
-         "type": "string"
-        },
-        {
-         "type": "null"
-        }
-       ],
-       "default": null,
-       "title": "Slug"
-      }
-     },
-     "required": [
-      "label"
-     ],
-     "title": "CreateFlexibleDataItem",
-     "type": "object"
-    },
-    "delete": {
-     "additionalProperties": false,
-     "properties": {
-      "id": {
-       "title": "Id",
-       "type": "string"
-      }
-     },
-     "required": [
-      "id"
-     ],
-     "title": "DeleteFlexibleDataItem",
-     "type": "object"
-    },
-    "update": {
-     "additionalProperties": false,
-     "properties": {
-      "category_id": {
-       "anyOf": [
-        {
-         "type": "string"
-        },
-        {
-         "type": "null"
-        }
-       ],
-       "default": null,
-       "title": "Category Id"
-      },
-      "custom_fields": {
-       "anyOf": [
-        {
-         "anyOf": [
-          {
-           "type": "null"
-          },
-          {
-           "type": "boolean"
-          },
-          {
-           "type": "number"
-          },
-          {
-           "type": "string"
-          },
-          {
-           "type": "array"
-          },
-          {
-           "type": "object"
-          }
-         ],
-         "description": "Any JSON value \u2014 this column is json/jsonb.",
-         "title": "JSON"
-        },
-        {
-         "type": "null"
-        }
-       ],
-       "default": null
-      },
-      "data": {
-       "anyOf": [
-        {
-         "anyOf": [
-          {
-           "type": "null"
-          },
-          {
-           "type": "boolean"
-          },
-          {
-           "type": "number"
-          },
-          {
-           "type": "string"
-          },
-          {
-           "type": "array"
-          },
-          {
-           "type": "object"
-          }
-         ],
-         "description": "Any JSON value \u2014 this column is json/jsonb.",
-         "title": "JSON"
-        },
-        {
-         "type": "null"
-        }
-       ],
-       "default": null
-      },
-      "id": {
-       "title": "Id",
-       "type": "string"
-      },
-      "label": {
-       "anyOf": [
-        {
-         "type": "string"
-        },
-        {
-         "type": "null"
-        }
-       ],
-       "default": null,
-       "title": "Label"
-      },
-      "metadata": {
-       "anyOf": [
-        {
-         "anyOf": [
-          {
-           "type": "null"
-          },
-          {
-           "type": "boolean"
-          },
-          {
-           "type": "number"
-          },
-          {
-           "type": "string"
-          },
-          {
-           "type": "array"
-          },
-          {
-           "type": "object"
-          }
-         ],
-         "description": "Any JSON value \u2014 this column is json/jsonb.",
-         "title": "JSON"
-        },
-        {
-         "type": "null"
-        }
-       ],
-       "default": null
-      },
-      "slug": {
-       "anyOf": [
-        {
-         "type": "string"
-        },
-        {
-         "type": "null"
-        }
-       ],
-       "default": null,
-       "title": "Slug"
-      }
-     },
-     "required": [
-      "id"
-     ],
-     "title": "UpdateFlexibleDataItem",
-     "type": "object"
-    }
-   },
-   "table": "platform.flexible_data",
-   "title_column": "label",
-   "update": "planned",
-   "view": "yes"
   },
   {
    "create": "planned",
@@ -144057,6 +145639,38 @@
        "default": null,
        "title": "Meta Keywords"
       },
+      "metadata": {
+       "anyOf": [
+        {
+         "anyOf": [
+          {
+           "type": "null"
+          },
+          {
+           "type": "boolean"
+          },
+          {
+           "type": "number"
+          },
+          {
+           "type": "string"
+          },
+          {
+           "type": "array"
+          },
+          {
+           "type": "object"
+          }
+         ],
+         "description": "Any JSON value \u2014 this column is json/jsonb.",
+         "title": "JSON"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": {}
+      },
       "title": {
        "anyOf": [
         {
@@ -144206,6 +145820,38 @@
        ],
        "default": null,
        "title": "Meta Keywords"
+      },
+      "metadata": {
+       "anyOf": [
+        {
+         "anyOf": [
+          {
+           "type": "null"
+          },
+          {
+           "type": "boolean"
+          },
+          {
+           "type": "number"
+          },
+          {
+           "type": "string"
+          },
+          {
+           "type": "array"
+          },
+          {
+           "type": "object"
+          }
+         ],
+         "description": "Any JSON value \u2014 this column is json/jsonb.",
+         "title": "JSON"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": null
       },
       "title": {
        "anyOf": [
@@ -146334,12 +147980,17 @@
       },
       "provider": {
        "enum": [
-        "google",
         "bing_webmaster",
-        "github",
-        "microsoft",
+        "box",
+        "cloudflare",
         "dropbox",
-        "box"
+        "github",
+        "godaddy",
+        "google",
+        "microsoft",
+        "name_com",
+        "namecheap",
+        "vercel"
        ],
        "title": "Provider",
        "type": "string"
@@ -146613,12 +148264,17 @@
        "anyOf": [
         {
          "enum": [
-          "google",
           "bing_webmaster",
-          "github",
-          "microsoft",
+          "box",
+          "cloudflare",
           "dropbox",
-          "box"
+          "github",
+          "godaddy",
+          "google",
+          "microsoft",
+          "name_com",
+          "namecheap",
+          "vercel"
          ],
          "type": "string"
         },
@@ -152575,7 +154231,8 @@
         "task",
         "project",
         "cx_message",
-        "research"
+        "research",
+        "document"
        ],
        "title": "Source Kind",
        "type": "string"
@@ -153109,7 +154766,8 @@
           "task",
           "project",
           "cx_message",
-          "research"
+          "research",
+          "document"
          ],
          "type": "string"
         },
@@ -158826,6 +160484,18 @@
        ],
        "default": null,
        "title": "Source Mandate Id"
+      },
+      "typed_input_complete": {
+       "anyOf": [
+        {
+         "type": "boolean"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": false,
+       "title": "Typed Input Complete"
       }
      },
      "required": [
@@ -159357,6 +161027,18 @@
        ],
        "default": null,
        "title": "Source Mandate Id"
+      },
+      "typed_input_complete": {
+       "anyOf": [
+        {
+         "type": "boolean"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": null,
+       "title": "Typed Input Complete"
       }
      },
      "required": [
@@ -173863,6 +175545,20 @@
    "delete": "planned",
    "family": "Other",
    "identity_fields": [],
+   "label": "Auth lock watchdog log",
+   "noun": "ops_auth_lock_watchdog_log",
+   "reference": "no",
+   "schemas": null,
+   "table": "ops.auth_lock_watchdog_log",
+   "title_column": null,
+   "update": "planned",
+   "view": "no"
+  },
+  {
+   "create": "planned",
+   "delete": "planned",
+   "family": "Other",
+   "identity_fields": [],
    "label": "Check Item",
    "noun": "ops_check_item",
    "reference": "no",
@@ -180926,7 +182622,7 @@
    "identity_fields": [
     "id"
    ],
-   "label": "Entity",
+   "label": "Contact",
    "noun": "party",
    "reference": "yes",
    "schemas": {
@@ -185737,6 +187433,327 @@
    "delete": "planned",
    "family": "Other",
    "identity_fields": [],
+   "label": "Personal data column",
+   "noun": "personal_data_column",
+   "reference": "no",
+   "schemas": {
+    "create": {
+     "additionalProperties": false,
+     "properties": {
+      "column_name": {
+       "title": "Column Name",
+       "type": "string"
+      },
+      "handling": {
+       "enum": [
+        "clear",
+        "replace",
+        "retain",
+        "gotrue",
+        "not_personal"
+       ],
+       "title": "Handling",
+       "type": "string"
+      },
+      "metadata": {
+       "anyOf": [
+        {
+         "anyOf": [
+          {
+           "type": "null"
+          },
+          {
+           "type": "boolean"
+          },
+          {
+           "type": "number"
+          },
+          {
+           "type": "string"
+          },
+          {
+           "type": "array"
+          },
+          {
+           "type": "object"
+          }
+         ],
+         "description": "Any JSON value \u2014 this column is json/jsonb.",
+         "title": "JSON"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": {}
+      },
+      "reason": {
+       "title": "Reason",
+       "type": "string"
+      },
+      "replacement": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": null,
+       "title": "Replacement"
+      },
+      "schema_name": {
+       "title": "Schema Name",
+       "type": "string"
+      },
+      "subject_column": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": null,
+       "title": "Subject Column"
+      },
+      "subject_filter": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": null,
+       "title": "Subject Filter"
+      },
+      "subject_match": {
+       "anyOf": [
+        {
+         "enum": [
+          "person",
+          "email",
+          "phone"
+         ],
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": "person",
+       "title": "Subject Match"
+      },
+      "table_name": {
+       "title": "Table Name",
+       "type": "string"
+      }
+     },
+     "required": [
+      "schema_name",
+      "table_name",
+      "column_name",
+      "handling",
+      "reason"
+     ],
+     "title": "CreatePersonalDataColumnItem",
+     "type": "object"
+    },
+    "delete": {
+     "additionalProperties": false,
+     "properties": {
+      "id": {
+       "title": "Id",
+       "type": "string"
+      }
+     },
+     "required": [
+      "id"
+     ],
+     "title": "DeletePersonalDataColumnItem",
+     "type": "object"
+    },
+    "update": {
+     "additionalProperties": false,
+     "properties": {
+      "column_name": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": null,
+       "title": "Column Name"
+      },
+      "handling": {
+       "anyOf": [
+        {
+         "enum": [
+          "clear",
+          "replace",
+          "retain",
+          "gotrue",
+          "not_personal"
+         ],
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": null,
+       "title": "Handling"
+      },
+      "id": {
+       "title": "Id",
+       "type": "string"
+      },
+      "metadata": {
+       "anyOf": [
+        {
+         "anyOf": [
+          {
+           "type": "null"
+          },
+          {
+           "type": "boolean"
+          },
+          {
+           "type": "number"
+          },
+          {
+           "type": "string"
+          },
+          {
+           "type": "array"
+          },
+          {
+           "type": "object"
+          }
+         ],
+         "description": "Any JSON value \u2014 this column is json/jsonb.",
+         "title": "JSON"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": null
+      },
+      "reason": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": null,
+       "title": "Reason"
+      },
+      "replacement": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": null,
+       "title": "Replacement"
+      },
+      "schema_name": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": null,
+       "title": "Schema Name"
+      },
+      "subject_column": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": null,
+       "title": "Subject Column"
+      },
+      "subject_filter": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": null,
+       "title": "Subject Filter"
+      },
+      "subject_match": {
+       "anyOf": [
+        {
+         "enum": [
+          "person",
+          "email",
+          "phone"
+         ],
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": null,
+       "title": "Subject Match"
+      },
+      "table_name": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": null,
+       "title": "Table Name"
+      }
+     },
+     "required": [
+      "id"
+     ],
+     "title": "UpdatePersonalDataColumnItem",
+     "type": "object"
+    }
+   },
+   "table": "iam.personal_data_column",
+   "title_column": null,
+   "update": "planned",
+   "view": "no"
+  },
+  {
+   "create": "planned",
+   "delete": "planned",
+   "family": "Other",
+   "identity_fields": [],
    "label": "Plan Entity",
    "noun": "plan_entity",
    "reference": "no",
@@ -187381,7 +189398,8 @@
         "confirm_details",
         "upload_file",
         "pick_time",
-        "browser_takeover"
+        "browser_takeover",
+        "questions"
        ],
        "title": "Kind",
        "type": "string"
@@ -187743,7 +189761,8 @@
           "confirm_details",
           "upload_file",
           "pick_time",
-          "browser_takeover"
+          "browser_takeover",
+          "questions"
          ],
          "type": "string"
         },
@@ -193882,6 +195901,235 @@
    "create": "planned",
    "delete": "planned",
    "family": "Other",
+   "identity_fields": [],
+   "label": "Position",
+   "noun": "position",
+   "reference": "no",
+   "schemas": {
+    "create": {
+     "additionalProperties": false,
+     "properties": {
+      "description": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": null,
+       "title": "Description"
+      },
+      "filled_by_user_id": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": null,
+       "title": "Filled By User Id"
+      },
+      "hr_job_title_id": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": null,
+       "title": "Hr Job Title Id"
+      },
+      "mandate_id": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": null,
+       "title": "Mandate Id"
+      },
+      "metadata": {
+       "anyOf": [
+        {
+         "anyOf": [
+          {
+           "type": "null"
+          },
+          {
+           "type": "boolean"
+          },
+          {
+           "type": "number"
+          },
+          {
+           "type": "string"
+          },
+          {
+           "type": "array"
+          },
+          {
+           "type": "object"
+          }
+         ],
+         "description": "Any JSON value \u2014 this column is json/jsonb.",
+         "title": "JSON"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": {}
+      },
+      "name": {
+       "title": "Name",
+       "type": "string"
+      }
+     },
+     "required": [
+      "name"
+     ],
+     "title": "CreatePositionItem",
+     "type": "object"
+    },
+    "delete": {
+     "additionalProperties": false,
+     "properties": {
+      "id": {
+       "title": "Id",
+       "type": "string"
+      }
+     },
+     "required": [
+      "id"
+     ],
+     "title": "DeletePositionItem",
+     "type": "object"
+    },
+    "update": {
+     "additionalProperties": false,
+     "properties": {
+      "description": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": null,
+       "title": "Description"
+      },
+      "filled_by_user_id": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": null,
+       "title": "Filled By User Id"
+      },
+      "hr_job_title_id": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": null,
+       "title": "Hr Job Title Id"
+      },
+      "id": {
+       "title": "Id",
+       "type": "string"
+      },
+      "mandate_id": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": null,
+       "title": "Mandate Id"
+      },
+      "metadata": {
+       "anyOf": [
+        {
+         "anyOf": [
+          {
+           "type": "null"
+          },
+          {
+           "type": "boolean"
+          },
+          {
+           "type": "number"
+          },
+          {
+           "type": "string"
+          },
+          {
+           "type": "array"
+          },
+          {
+           "type": "object"
+          }
+         ],
+         "description": "Any JSON value \u2014 this column is json/jsonb.",
+         "title": "JSON"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": null
+      },
+      "name": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": null,
+       "title": "Name"
+      }
+     },
+     "required": [
+      "id"
+     ],
+     "title": "UpdatePositionItem",
+     "type": "object"
+    }
+   },
+   "table": "agent.position",
+   "title_column": null,
+   "update": "planned",
+   "view": "no"
+  },
+  {
+   "create": "planned",
+   "delete": "planned",
+   "family": "Other",
    "identity_fields": [
     "id"
    ],
@@ -196650,6 +198898,62 @@
    "reference": "no",
    "schemas": null,
    "table": "platform.provision_vocabulary",
+   "title_column": null,
+   "update": "planned",
+   "view": "no"
+  },
+  {
+   "create": "planned",
+   "delete": "planned",
+   "family": "Other",
+   "identity_fields": [],
+   "label": "Public compat wrapper",
+   "noun": "public_compat_wrapper",
+   "reference": "no",
+   "schemas": null,
+   "table": "platform.public_compat_wrapper",
+   "title_column": null,
+   "update": "planned",
+   "view": "no"
+  },
+  {
+   "create": "planned",
+   "delete": "planned",
+   "family": "Other",
+   "identity_fields": [],
+   "label": "Public placement baseline",
+   "noun": "public_placement_baseline",
+   "reference": "no",
+   "schemas": null,
+   "table": "platform.public_placement_baseline",
+   "title_column": null,
+   "update": "planned",
+   "view": "no"
+  },
+  {
+   "create": "planned",
+   "delete": "planned",
+   "family": "Other",
+   "identity_fields": [],
+   "label": "Public placement domain",
+   "noun": "public_placement_domain",
+   "reference": "no",
+   "schemas": null,
+   "table": "platform.public_placement_domain",
+   "title_column": null,
+   "update": "planned",
+   "view": "no"
+  },
+  {
+   "create": "planned",
+   "delete": "planned",
+   "family": "Other",
+   "identity_fields": [],
+   "label": "Public restore permit",
+   "noun": "public_restore_permit",
+   "reference": "no",
+   "schemas": null,
+   "table": "platform.public_restore_permit",
    "title_column": null,
    "update": "planned",
    "view": "no"
@@ -224596,6 +226900,22 @@
        ],
        "default": {}
       },
+      "declared_by": {
+       "anyOf": [
+        {
+         "enum": [
+          "code",
+          "database"
+         ],
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": "code",
+       "title": "Declared By"
+      },
       "description": {
        "title": "Description",
        "type": "string"
@@ -224808,6 +227128,18 @@
        "default": null,
        "title": "Readiness Note"
       },
+      "situation": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": null,
+       "title": "Situation"
+      },
       "sort_order": {
        "anyOf": [
         {
@@ -224969,6 +227301,22 @@
         }
        ],
        "default": null
+      },
+      "declared_by": {
+       "anyOf": [
+        {
+         "enum": [
+          "code",
+          "database"
+         ],
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": null,
+       "title": "Declared By"
       },
       "description": {
        "anyOf": [
@@ -225193,6 +227541,18 @@
        ],
        "default": null,
        "title": "Readiness Note"
+      },
+      "situation": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": null,
+       "title": "Situation"
       },
       "sort_order": {
        "anyOf": [
@@ -227408,6 +229768,180 @@
    "delete": "planned",
    "family": "Other",
    "identity_fields": [],
+   "label": "Tag",
+   "noun": "tag",
+   "reference": "no",
+   "schemas": {
+    "create": {
+     "additionalProperties": false,
+     "properties": {
+      "color": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": null,
+       "title": "Color"
+      },
+      "metadata": {
+       "anyOf": [
+        {
+         "anyOf": [
+          {
+           "type": "null"
+          },
+          {
+           "type": "boolean"
+          },
+          {
+           "type": "number"
+          },
+          {
+           "type": "string"
+          },
+          {
+           "type": "array"
+          },
+          {
+           "type": "object"
+          }
+         ],
+         "description": "Any JSON value \u2014 this column is json/jsonb.",
+         "title": "JSON"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": {}
+      },
+      "name": {
+       "title": "Name",
+       "type": "string"
+      },
+      "slug": {
+       "title": "Slug",
+       "type": "string"
+      }
+     },
+     "required": [
+      "name",
+      "slug"
+     ],
+     "title": "CreateTagItem",
+     "type": "object"
+    },
+    "delete": {
+     "additionalProperties": false,
+     "properties": {
+      "id": {
+       "title": "Id",
+       "type": "string"
+      }
+     },
+     "required": [
+      "id"
+     ],
+     "title": "DeleteTagItem",
+     "type": "object"
+    },
+    "update": {
+     "additionalProperties": false,
+     "properties": {
+      "color": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": null,
+       "title": "Color"
+      },
+      "id": {
+       "title": "Id",
+       "type": "string"
+      },
+      "metadata": {
+       "anyOf": [
+        {
+         "anyOf": [
+          {
+           "type": "null"
+          },
+          {
+           "type": "boolean"
+          },
+          {
+           "type": "number"
+          },
+          {
+           "type": "string"
+          },
+          {
+           "type": "array"
+          },
+          {
+           "type": "object"
+          }
+         ],
+         "description": "Any JSON value \u2014 this column is json/jsonb.",
+         "title": "JSON"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": null
+      },
+      "name": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": null,
+       "title": "Name"
+      },
+      "slug": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": null,
+       "title": "Slug"
+      }
+     },
+     "required": [
+      "id"
+     ],
+     "title": "UpdateTagItem",
+     "type": "object"
+    }
+   },
+   "table": "platform.tag",
+   "title_column": null,
+   "update": "planned",
+   "view": "no"
+  },
+  {
+   "create": "planned",
+   "delete": "planned",
+   "family": "Other",
+   "identity_fields": [],
    "label": "Task user state",
    "noun": "task_user_state",
    "reference": "no",
@@ -227472,6 +230006,38 @@
        ],
        "default": null,
        "title": "Dismissed At"
+      },
+      "metadata": {
+       "anyOf": [
+        {
+         "anyOf": [
+          {
+           "type": "null"
+          },
+          {
+           "type": "boolean"
+          },
+          {
+           "type": "number"
+          },
+          {
+           "type": "string"
+          },
+          {
+           "type": "array"
+          },
+          {
+           "type": "object"
+          }
+         ],
+         "description": "Any JSON value \u2014 this column is json/jsonb.",
+         "title": "JSON"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": {}
       },
       "pinned_at": {
        "anyOf": [
@@ -227594,6 +230160,38 @@
       "id": {
        "title": "Id",
        "type": "string"
+      },
+      "metadata": {
+       "anyOf": [
+        {
+         "anyOf": [
+          {
+           "type": "null"
+          },
+          {
+           "type": "boolean"
+          },
+          {
+           "type": "number"
+          },
+          {
+           "type": "string"
+          },
+          {
+           "type": "array"
+          },
+          {
+           "type": "object"
+          }
+         ],
+         "description": "Any JSON value \u2014 this column is json/jsonb.",
+         "title": "JSON"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": null
       },
       "pinned_at": {
        "anyOf": [
@@ -229444,6 +232042,18 @@
        ],
        "default": {}
       },
+      "inherit_tools": {
+       "anyOf": [
+        {
+         "type": "boolean"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": true,
+       "title": "Inherit Tools"
+      },
       "is_active": {
        "anyOf": [
         {
@@ -229649,6 +232259,18 @@
        "title": "Id",
        "type": "string"
       },
+      "inherit_tools": {
+       "anyOf": [
+        {
+         "type": "boolean"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": null,
+       "title": "Inherit Tools"
+      },
       "is_active": {
        "anyOf": [
         {
@@ -229772,258 +232394,6 @@
    "reference": "no",
    "schemas": null,
    "table": "workflow.trigger_event",
-   "title_column": null,
-   "update": "no",
-   "view": "no"
-  },
-  {
-   "create": "planned",
-   "delete": "planned",
-   "family": "Other",
-   "identity_fields": [],
-   "label": "Dataset template",
-   "noun": "udt_dataset_template",
-   "reference": "no",
-   "schemas": {
-    "create": {
-     "additionalProperties": false,
-     "properties": {
-      "custom_fields": {
-       "anyOf": [
-        {
-         "anyOf": [
-          {
-           "type": "null"
-          },
-          {
-           "type": "boolean"
-          },
-          {
-           "type": "number"
-          },
-          {
-           "type": "string"
-          },
-          {
-           "type": "array"
-          },
-          {
-           "type": "object"
-          }
-         ],
-         "description": "Any JSON value \u2014 this column is json/jsonb.",
-         "title": "JSON"
-        },
-        {
-         "type": "null"
-        }
-       ],
-       "default": {}
-      },
-      "description": {
-       "title": "Description",
-       "type": "string"
-      },
-      "is_active": {
-       "anyOf": [
-        {
-         "type": "boolean"
-        },
-        {
-         "type": "null"
-        }
-       ],
-       "default": true,
-       "title": "Is Active"
-      },
-      "metadata": {
-       "anyOf": [
-        {
-         "anyOf": [
-          {
-           "type": "null"
-          },
-          {
-           "type": "boolean"
-          },
-          {
-           "type": "number"
-          },
-          {
-           "type": "string"
-          },
-          {
-           "type": "array"
-          },
-          {
-           "type": "object"
-          }
-         ],
-         "description": "Any JSON value \u2014 this column is json/jsonb.",
-         "title": "JSON"
-        },
-        {
-         "type": "null"
-        }
-       ],
-       "default": {}
-      },
-      "name": {
-       "title": "Name",
-       "type": "string"
-      }
-     },
-     "required": [
-      "name",
-      "description"
-     ],
-     "title": "CreateUdtDatasetTemplateItem",
-     "type": "object"
-    },
-    "delete": {
-     "additionalProperties": false,
-     "properties": {
-      "id": {
-       "title": "Id",
-       "type": "string"
-      }
-     },
-     "required": [
-      "id"
-     ],
-     "title": "DeleteUdtDatasetTemplateItem",
-     "type": "object"
-    },
-    "update": {
-     "additionalProperties": false,
-     "properties": {
-      "custom_fields": {
-       "anyOf": [
-        {
-         "anyOf": [
-          {
-           "type": "null"
-          },
-          {
-           "type": "boolean"
-          },
-          {
-           "type": "number"
-          },
-          {
-           "type": "string"
-          },
-          {
-           "type": "array"
-          },
-          {
-           "type": "object"
-          }
-         ],
-         "description": "Any JSON value \u2014 this column is json/jsonb.",
-         "title": "JSON"
-        },
-        {
-         "type": "null"
-        }
-       ],
-       "default": null
-      },
-      "description": {
-       "anyOf": [
-        {
-         "type": "string"
-        },
-        {
-         "type": "null"
-        }
-       ],
-       "default": null,
-       "title": "Description"
-      },
-      "id": {
-       "title": "Id",
-       "type": "string"
-      },
-      "is_active": {
-       "anyOf": [
-        {
-         "type": "boolean"
-        },
-        {
-         "type": "null"
-        }
-       ],
-       "default": null,
-       "title": "Is Active"
-      },
-      "metadata": {
-       "anyOf": [
-        {
-         "anyOf": [
-          {
-           "type": "null"
-          },
-          {
-           "type": "boolean"
-          },
-          {
-           "type": "number"
-          },
-          {
-           "type": "string"
-          },
-          {
-           "type": "array"
-          },
-          {
-           "type": "object"
-          }
-         ],
-         "description": "Any JSON value \u2014 this column is json/jsonb.",
-         "title": "JSON"
-        },
-        {
-         "type": "null"
-        }
-       ],
-       "default": null
-      },
-      "name": {
-       "anyOf": [
-        {
-         "type": "string"
-        },
-        {
-         "type": "null"
-        }
-       ],
-       "default": null,
-       "title": "Name"
-      }
-     },
-     "required": [
-      "id"
-     ],
-     "title": "UpdateUdtDatasetTemplateItem",
-     "type": "object"
-    }
-   },
-   "table": "workbench.udt_dataset_templates",
-   "title_column": null,
-   "update": "planned",
-   "view": "no"
-  },
-  {
-   "create": "no",
-   "delete": "no",
-   "family": "Other",
-   "identity_fields": [],
-   "label": "Udt Dataset Template Fields",
-   "noun": "udt_dataset_template_fields",
-   "reference": "no",
-   "schemas": null,
-   "table": "workbench.udt_dataset_template_fields",
    "title_column": null,
    "update": "no",
    "view": "no"
@@ -230509,6 +232879,20 @@
    "view": "no"
   },
   {
+   "create": "no",
+   "delete": "no",
+   "family": "Other",
+   "identity_fields": [],
+   "label": "Surface Action",
+   "noun": "ui_surface_action",
+   "reference": "no",
+   "schemas": null,
+   "table": "ui.ui_surface_action",
+   "title_column": null,
+   "update": "no",
+   "view": "no"
+  },
+  {
    "create": "planned",
    "delete": "planned",
    "family": "Other",
@@ -230924,6 +233308,22 @@
        "default": "user-choice",
        "title": "Auto Run"
       },
+      "declared_by": {
+       "anyOf": [
+        {
+         "enum": [
+          "code",
+          "database"
+         ],
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": "code",
+       "title": "Declared By"
+      },
       "default_agent_id": {
        "anyOf": [
         {
@@ -231106,6 +233506,22 @@
        "default": null,
        "title": "Auto Run"
       },
+      "declared_by": {
+       "anyOf": [
+        {
+         "enum": [
+          "code",
+          "database"
+         ],
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": null,
+       "title": "Declared By"
+      },
       "default_agent_id": {
        "anyOf": [
         {
@@ -231279,6 +233695,22 @@
     "create": {
      "additionalProperties": false,
      "properties": {
+      "declared_by": {
+       "anyOf": [
+        {
+         "enum": [
+          "code",
+          "database"
+         ],
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": "code",
+       "title": "Declared By"
+      },
       "description": {
        "title": "Description",
        "type": "string"
@@ -231421,6 +233853,22 @@
     "update": {
      "additionalProperties": false,
      "properties": {
+      "declared_by": {
+       "anyOf": [
+        {
+         "enum": [
+          "code",
+          "database"
+         ],
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": null,
+       "title": "Declared By"
+      },
       "description": {
        "anyOf": [
         {
@@ -231882,6 +234330,22 @@
     "create": {
      "additionalProperties": false,
      "properties": {
+      "declared_by": {
+       "anyOf": [
+        {
+         "enum": [
+          "code",
+          "database"
+         ],
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": "code",
+       "title": "Declared By"
+      },
       "description": {
        "title": "Description",
        "type": "string"
@@ -232028,6 +234492,22 @@
     "update": {
      "additionalProperties": false,
      "properties": {
+      "declared_by": {
+       "anyOf": [
+        {
+         "enum": [
+          "code",
+          "database"
+         ],
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": null,
+       "title": "Declared By"
+      },
       "description": {
        "anyOf": [
         {
@@ -232255,6 +234735,22 @@
        ],
        "default": "ordinary",
        "title": "Classification"
+      },
+      "declared_by": {
+       "anyOf": [
+        {
+         "enum": [
+          "code",
+          "database"
+         ],
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": "code",
+       "title": "Declared By"
       },
       "description": {
        "title": "Description",
@@ -232523,6 +235019,22 @@
        ],
        "default": null,
        "title": "Classification"
+      },
+      "declared_by": {
+       "anyOf": [
+        {
+         "enum": [
+          "code",
+          "database"
+         ],
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": null,
+       "title": "Declared By"
       },
       "description": {
        "anyOf": [
@@ -232801,6 +235313,22 @@
        "default": null,
        "title": "Approval Comparison"
       },
+      "declared_by": {
+       "anyOf": [
+        {
+         "enum": [
+          "code",
+          "database"
+         ],
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": "code",
+       "title": "Declared By"
+      },
       "description": {
        "title": "Description",
        "type": "string"
@@ -233036,6 +235564,22 @@
        ],
        "default": null,
        "title": "Approval Comparison"
+      },
+      "declared_by": {
+       "anyOf": [
+        {
+         "enum": [
+          "code",
+          "database"
+         ],
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": null,
+       "title": "Declared By"
       },
       "description": {
        "anyOf": [
@@ -235812,7 +238356,8 @@
         "feature",
         "suggestion",
         "other",
-        "request"
+        "request",
+        "page_story"
        ],
        "title": "Feedback Type",
        "type": "string"
@@ -236286,7 +238831,8 @@
           "feature",
           "suggestion",
           "other",
-          "request"
+          "request",
+          "page_story"
          ],
          "type": "string"
         },
@@ -245952,6 +248498,25 @@
        "default": null,
        "title": "Description"
       },
+      "evidence_kind": {
+       "anyOf": [
+        {
+         "enum": [
+          "measured",
+          "reported",
+          "observed_external",
+          "inferred",
+          "opinion"
+         ],
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": "measured",
+       "title": "Evidence Kind"
+      },
       "is_builtin": {
        "anyOf": [
         {
@@ -246108,6 +248673,24 @@
        "title": "Subcategory",
        "type": "string"
       },
+      "tier": {
+       "anyOf": [
+        {
+         "enum": [
+          "A",
+          "B",
+          "C",
+          "D"
+         ],
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": null,
+       "title": "Tier"
+      },
       "weight": {
        "anyOf": [
         {
@@ -246187,6 +248770,25 @@
        ],
        "default": null,
        "title": "Description"
+      },
+      "evidence_kind": {
+       "anyOf": [
+        {
+         "enum": [
+          "measured",
+          "reported",
+          "observed_external",
+          "inferred",
+          "opinion"
+         ],
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": null,
+       "title": "Evidence Kind"
       },
       "id": {
        "title": "Id",
@@ -246379,6 +248981,24 @@
        ],
        "default": null,
        "title": "Subcategory"
+      },
+      "tier": {
+       "anyOf": [
+        {
+         "enum": [
+          "A",
+          "B",
+          "C",
+          "D"
+         ],
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": null,
+       "title": "Tier"
       },
       "weight": {
        "anyOf": [
@@ -251219,10 +253839,6 @@
        ],
        "default": {}
       },
-      "owner_id": {
-       "title": "Owner Id",
-       "type": "string"
-      },
       "resource_types": {
        "anyOf": [
         {
@@ -251248,7 +253864,6 @@
       }
      },
      "required": [
-      "owner_id",
       "target_url",
       "secret"
      ],
@@ -251428,18 +254043,6 @@
         }
        ],
        "default": null
-      },
-      "owner_id": {
-       "anyOf": [
-        {
-         "type": "string"
-        },
-        {
-         "type": "null"
-        }
-       ],
-       "default": null,
-       "title": "Owner Id"
       },
       "resource_types": {
        "anyOf": [
@@ -252397,6 +255000,23 @@
         "y": 0,
         "zoom": 1
        }
+      },
+      "workflow_type": {
+       "anyOf": [
+        {
+         "enum": [
+          "user",
+          "builtin",
+          "generated"
+         ],
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": "user",
+       "title": "Workflow Type"
       }
      },
      "required": [
@@ -252993,6 +255613,23 @@
         }
        ],
        "default": null
+      },
+      "workflow_type": {
+       "anyOf": [
+        {
+         "enum": [
+          "user",
+          "builtin",
+          "generated"
+         ],
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": null,
+       "title": "Workflow Type"
       }
      },
      "required": [
@@ -258113,8 +260750,8 @@
    "identity_fields": [
     "list_id"
    ],
-   "label": "Structured List",
-   "noun": "structured_list",
+   "label": "Pick List",
+   "noun": "pick_list",
    "reference": "yes",
    "schemas": null,
    "table": "",
@@ -258130,8 +260767,8 @@
     "list_id",
     "group_name"
    ],
-   "label": "Structured List Group",
-   "noun": "structured_list_group",
+   "label": "Pick List Group",
+   "noun": "pick_list_group",
    "reference": "yes",
    "schemas": null,
    "table": "",
@@ -258147,8 +260784,8 @@
     "list_id",
     "item_id"
    ],
-   "label": "Structured List Item",
-   "noun": "structured_list_item",
+   "label": "Pick List Item",
+   "noun": "pick_list_item",
    "reference": "yes",
    "schemas": null,
    "table": "",

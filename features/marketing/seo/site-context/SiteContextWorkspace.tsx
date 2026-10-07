@@ -136,6 +136,7 @@ export function ExpertiseSection() {
     try {
       const result = await setOwnExpertise({ organizationId, userId, level: next });
       if (!result.ok) setRefusal(knobRefusalSentence(result));
+      // org-filter: write-target refreshes the setting this save just wrote in that organization
       await queryClient.invalidateQueries({ queryKey: siteContextKeys.expertise(organizationId, userId) });
     } catch (error) {
       setRefusal(extractErrorMessage(error));

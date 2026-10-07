@@ -231,6 +231,7 @@ function DecisionSection({
 
 export function DecisionBoard() {
   const userId = useAppSelector(selectUserId);
+  // org-filter: server-call the picks table lives in the one organization the person works in
   const active = useOrganizationRequired();
   const recordsConfig = useAppRecordsConfig(active.organizationId ?? null);
   if (!userId || active.organizationState !== "ready" || !active.organizationId) {

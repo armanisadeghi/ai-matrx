@@ -52,7 +52,17 @@ export const matrxContentIrHost: ContentIrHost = {
   // `directive_v…` slug through the package's `DirectiveRender`, so every
   // subtree under this provider gets Apply / open-item / copy / the noun
   // catalog without mounting `DirectiveHostProvider` itself.
-  directives: matrxDirectiveHost,
+  //
+  // 🚨 A GETTER, never a value read at module evaluation (G11C, 2026-10-07):
+  // `directiveHost` reaches this module back through its own import graph
+  // (… → components/official → content-ir), so on a fresh load of a note this
+  // object was built while `matrxDirectiveHost` was still in its TDZ —
+  // "Cannot access 'matrxDirectiveHost' before initialization" and the whole
+  // page fell to "This page stopped working". Read at use, it is always there.
+  // Guard: `__tests__/the-host-reads-its-directives-at-use.test.ts`.
+  get directives() {
+    return matrxDirectiveHost;
+  },
 
   // The production render path: SafeBlockRenderer owns the `ssr:false` dynamic
   // boundary, and BlockRenderer inside it runs `applyIrKindRoute` exactly as it
