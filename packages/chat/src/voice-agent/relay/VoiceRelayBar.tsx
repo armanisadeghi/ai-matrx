@@ -14,6 +14,9 @@
 // common-docs/systems/chat/voice/STATE.md
 
 import { useEffect, useRef, useState } from "react";
+import { useAppSelector } from "../../store/hooks";
+import { cn } from "@ai-matrx/design-system";
+import { selectVoiceInstructions } from "../state/selectors";
 import { Mic, Square, AudioLines } from "lucide-react";
 import { Button } from "@ai-matrx/design-system/controls";
 import { useMandate } from "../../mandates/useMandate";
@@ -61,6 +64,7 @@ function ActiveVoiceRelay({
   questionPacing,
   onEnd,
   autoStart,
+  variant,
 }: VoiceRelayBarProps & { communicatorAgentId: string; onEnd?: () => void; autoStart?: boolean }) {
   const relay = useVoiceRelaySession({
     communicatorAgentId,
@@ -72,13 +76,18 @@ function ActiveVoiceRelay({
   });
   const live = relay.status !== "idle" && relay.status !== "error";
   // The composer's Live audio press IS the request to talk: start once, no
-  // second "Talk" press.
+  // second "Talk" press — but only once the voice agent's instructions have
+  // loaded (starting earlier is refused, found live 2026-10-07). If they never
+  // load, "Talk" stays, and pressing it says why.
+  const instructionsReady = useAppSelector(
+    (state) => (selectVoiceInstructions(state, relay.instanceId) ?? "").trim().length > 0,
+  );
   const started = useRef(false);
   useEffect(() => {
-    if (!autoStart || started.current) return;
+    if (!autoStart || !instructionsReady || started.current) return;
     started.current = true;
     relay.toggle();
-  }, [autoStart, relay]);
+  }, [autoStart, instructionsReady, relay]);
 
   return (
     <>
@@ -104,9 +113,19 @@ function ActiveVoiceRelay({
       {/* A state word only when it says something: "idle" beside "Talk"
           says nothing. */}
       {relay.error || relay.brainBusy || relay.status !== "idle" ? (
-        <span className="text-xs text-muted-foreground">
+        // In the composer's row it is ONE line: the full sentence on hover.
+        <span
+          className={cn(
+            "text-xs",
+            relay.error ? "text-destructive" : "text-muted-foreground",
+            variant === "composer" && "min-w-0 max-w-[14rem] truncate",
+          )}
+          title={relay.error?.message}
+        >
           {relay.error
-            ? relay.error.message
+            ? variant === "composer"
+              ? "Voice did not start"
+              : relay.error.message
             : relay.brainBusy
               ? "thinking…"
               : relay.status}
@@ -162,13 +181,23 @@ export function VoiceRelayBar(props: VoiceRelayBarProps) {
 function EnabledVoiceRelay(props: VoiceRelayBarProps & { onEnd?: () => void }) {
   const communicator = useMandate(VOICE_COMMUNICATOR_MANDATE_KEY);
   if (communicator.loading) {
-    return <span className="text-xs text-muted-foreground">Connecting the voice layer…</span>;
+    return <span className="truncate text-xs text-muted-foreground">Connecting the voice layer…</span>;
   }
   if (communicator.error || !communicator.mandate) {
     // An unresolvable mandate REFUSES loudly — no fallback persona, ever.
     return (
-      <span className="text-xs text-destructive">
-        Voice is unavailable: {communicator.error ?? "no Communicator bound"}
+      <span
+        className={cn(
+          "flex min-w-0 items-center gap-1 text-xs text-destructive",
+          props.variant === "composer" && "max-w-[14rem]",
+        )}
+        title={`Voice is unavailable: ${communicator.error ?? "no Communicator bound"}`}
+      >
+        <span className="truncate">
+          {props.variant === "composer"
+            ? "Voice is unavailable"
+            : `Voice is unavailable: ${communicator.error ?? "no Communicator bound"}`}
+        </span>
         <ErrorAlchemyMenu error={communicator.error} />
       </span>
     );
