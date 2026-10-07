@@ -322,6 +322,11 @@ if $STRICT; then
         # sentence under a page title. Baseline scripts/page-top/baseline.json only shrinks.
         "Page top|pnpm check:page-top:strict"
         "Page top — self-test|pnpm check:page-top:self-test"
+        # EVERY BOX A PERSON WRITES IN IS ProTextarea / ProInput (Arman, 2026-10-07): a bare Textarea /
+        # <textarea> / text Field drops the mic, read-aloud and the page's agents. Raw values carry
+        # `ui-exception:`. Baseline scripts/writing-boxes/baseline.json only shrinks.
+        "Writing boxes|pnpm check:writing-boxes:strict"
+        "Writing boxes — self-test|pnpm check:writing-boxes:self-test"
         "UI drift — self-test|pnpm check:ui-drift:self-test"
         # No blocking layers (register ARE-008): a desktop dialog forced to
         # block, or built straight on Radix, hides every AI door on the page.
@@ -853,14 +858,14 @@ if $STRICT; then
         # RESERVED ICONS — BrainCircuit is the Intelligence icon only (Arman,
         # 2026-09-26). Baseline ratchet: exits 1 only on a NEW use; advisory here.
         "Reserved icon used outside its domain (BrainCircuit = Intelligence)|pnpm check:reserved-icons"
+        # LEXICON — a retired product name (the lexicon's "Retired aliases") in a
+        # route segment or visible string. Shrink-only baseline; advisory here.
+        "Retired product name in a route or visible string (platform lexicon)|pnpm check:lexicon"
         # THE WORD CONTEXT — on screen it names only what an agent receives (Arman,
         # 2026-10-02). Baseline ratchet: exits 1 only on a NEW use; advisory here.
         "On-screen \"context\" that is not context (scopes, rules, settings)|pnpm check:context-word --strict"
         # RAW IDENTIFIERS — a key, variable name, slug, kind or tool name never renders as words
         # (Arman, 2026-10-02): the label, else the one humanizer. Baseline ratchet; advisory here.
-        # LEXICON — a retired product name (the lexicon's "Retired aliases") in a
-        # route segment or visible string. Shrink-only baseline; advisory here.
-        "Retired product name in a route or visible string (platform lexicon)|pnpm check:lexicon"
         "Rendered raw identifier (snake_case key on screen)|pnpm check:raw-identifiers --strict"
         "Raw identifier guard self-test|pnpm check:raw-identifiers:self-test"
         # RETIRED WORDS — renamed schemas and actor tiers stay renamed (word list:
@@ -1164,6 +1169,8 @@ else
         "SSR viewport branch — self-test|pnpm check:ssr-viewport-branch:self-test"
         "UI drift|pnpm check:ui-drift"
         "One control|pnpm check:one-control"
+        "Writing boxes|pnpm check:writing-boxes"
+        "Writing boxes — self-test|pnpm check:writing-boxes:self-test"
         "Bare secret fill|pnpm check:fill-secret"
         "Bare secret fill — self-test|pnpm check:fill-secret:self-test"
         "UI drift — self-test|pnpm check:ui-drift:self-test"
@@ -1537,6 +1544,9 @@ else
         # RESERVED ICONS — BrainCircuit is the Intelligence icon only (Arman,
         # 2026-09-26). Baseline ratchet: exits 1 only on a NEW use; advisory here.
         "Reserved icon used outside its domain (BrainCircuit = Intelligence)|pnpm check:reserved-icons"
+        # LEXICON — a retired product name (the lexicon's "Retired aliases") in a
+        # route segment or visible string. Shrink-only baseline; advisory here.
+        "Retired product name in a route or visible string (platform lexicon)|pnpm check:lexicon"
         # THE WORD CONTEXT — on screen it names only what an agent receives (Arman,
         # 2026-10-02). Baseline ratchet: exits 1 only on a NEW use; advisory here.
         "On-screen \"context\" that is not context (scopes, rules, settings)|pnpm check:context-word --strict"
@@ -1544,9 +1554,6 @@ else
         # (Arman, 2026-10-02): the label, else the one humanizer. Baseline ratchet; advisory here.
         "Rendered raw identifier (snake_case key on screen)|pnpm check:raw-identifiers --strict"
         "Raw identifier guard self-test|pnpm check:raw-identifiers:self-test"
-        # LEXICON — a retired product name (the lexicon's "Retired aliases") in a
-        # route segment or visible string. Shrink-only baseline; advisory here.
-        "Retired product name in a route or visible string (platform lexicon)|pnpm check:lexicon"
         # RETIRED WORDS — renamed schemas and actor tiers stay renamed (word list:
         # common-docs retired-words.json; ONE-HOME, 2026-10-02). Baseline ratchet: exits 1 only on a NEW use; advisory here.
         "Retired word used (old schema or actor-tier name)|pnpm check:retired-words"

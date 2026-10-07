@@ -124,7 +124,7 @@ and enqueue retroactive rechecks; old ledger evidence is never relabeled.
 
 ## S7 · Text inputs — `components/official/ProTextarea.tsx` docstring + `surface-authoring` runtime rollout
 
-- MUST: every textarea that holds user text is `ProTextarea` (Tier 2 default); bare shadcn `Textarea` only for raw admin/debug cases — and then say why in a comment. Voice (`enableVoice`) stays on unless the field is a code/JSON editor.
+- MUST: every box a person writes in is `ProTextarea` / `ProInput`; a bare `Textarea`/`Field` only for a raw value (code, JSON, slug), marked `// ui-exception: <reason>` (`pnpm check:writing-boxes`). Voice (`enableVoice`) stays on unless the field is a code/JSON editor.
 - MUST: `surfaceName` + `getApplicationScope` passed so the "…" agent menu lists the same agents as the context menu.
 - DECIDE `enableTextStats` by THE LENGTH RULE: ON when the text's length will _matter_ — it becomes agent context in volume (long-form authoring, transcripts, pasted content, prompt/instruction bodies, anything a `typicalCharCount` ≥ ~1,000 value is built from). OFF for short fields, chat composers, titles, and any field inside chrome that already renders metrics (never stacked footers — notes incident). Log the decision per field.
 - MUST: no inline `fontSize` under 16px on a text field (THE iOS ZOOM FLOOR in `app/globals.css` handles zoom; author mobile-facing fields `text-base`), `ProInput` for single-line fields that feed agents.
