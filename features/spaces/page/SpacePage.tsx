@@ -48,6 +48,7 @@ import { editedAgo } from "./time";
 import { mayWrite, roomCanEdit, trashedByList } from "./trash-state";
 import { attemptSave, deviceStorage, forgetUnsaved, keepUnsaved, readUnsaved } from "./unsaved";
 import { sendOnLeave, trackAccessToken } from "./leave-save";
+import { contentKey } from "./content-key";
 
 type Editable = Pick<SpaceDoc, "title" | "icon" | "cover" | "settings" | "blocks">;
 
@@ -108,10 +109,6 @@ function pageCounts(doc: SpaceDoc): { words: number; characters: number } {
   const words = text.split(/\s+/).filter(Boolean).length;
   return { words, characters: text.replace(/\s/g, "").length };
 }
-
-/** What a save writes, as one comparable string: a save whose content is already stored is skipped. */
-const contentKey = (d: Pick<SpaceDoc, "title" | "icon" | "cover" | "settings" | "blocks">) =>
-  JSON.stringify([d.title, d.icon ?? null, d.cover ?? null, d.settings, d.blocks]);
 
 export function SpacePage({ spaceId }: { spaceId: string }) {
   const spaces = useSpaces();

@@ -18,7 +18,7 @@ import { toast } from "@/lib/toast";
 import type { SpaceDoc, SpaceId, SpaceSummary } from "../contract";
 import { between, byPosition } from "../store/position";
 import { installAgencySample, pageOrganizationId } from "../data/agency-install";
-import { addTravelingSmmSample, findSamplePage } from "../store/sample";
+import { addTravelingSmmSample, findSamplePage, pointCopyAtItsTables } from "../store/sample";
 import { createDatabaseSpacesStore } from "../store-db/create-store";
 import { createLiveSpacesStore, type LiveSpacesStore } from "./live-store";
 import { hasSignedInSession, isRefusal, onSignedIn, type LoadAccess } from "./load-access";
@@ -298,10 +298,23 @@ export function SpacesProvider({ children }: { children: ReactNode }) {
         (done, total) => setSampleProgress(`${done}/${total}`),
       );
       const plan = sampleTemplatePlan(Boolean(opts?.asTemplate), existed, root.id);
-      if (plan.kind === "copy") await applyTemplate(plan.of, root.title);
-      else open(plan.id);
+      if (plan.kind === "copy") {
+        const copyId = await copyTemplate(plan.of, root.title, orgRef.current);
+        // A copy filed in another organization reads that organization's own agency tables.
+        const copyOrg = await pageOrganizationId(copyId);
+        if (copyOrg && copyOrg !== (await pageOrganizationId(plan.of))) {
+          setSampleProgress("Making tables…");
+          await pointCopyAtItsTables(store, copyId, await installAgencySample(copyOrg, dispatch, setSampleProgress));
+        }
+        showCopy(copyId, root.title, plan.of);
+      } else open(plan.id);
     } catch (err) {
-      if (!isOrganizationSelectionCancelled(err)) toast.error(err instanceof Error ? err.message : "We couldn't add the sample.");
+      if (!isOrganizationSelectionCancelled(err)) {
+        toast.error(err instanceof Error ? err.message : "We couldn't add the sample.", {
+          duration: Infinity,
+          action: { label: "Try again", onClick: () => void addSample(opts) },
+        });
+      }
     } finally {
       setSampleProgress(null);
     }
@@ -319,15 +332,17 @@ export function SpacesProvider({ children }: { children: ReactNode }) {
     await setTemplate(id, on);
     setTemplateIds((prev) => (on ? [...new Set([...(prev ?? []), id])] : (prev ?? []).filter((t) => t !== id)));
   };
+  /** A template copy's sidebar row shows at once (top-level, last: created order), the tree re-reads, the copy opens. */
+  const showCopy = (copyId: SpaceId, title: string, sourceId: SpaceId) => {
+    const source = all.find((s) => s.id === sourceId);
+    const now = new Date().toISOString();
+    setAll((prev) => (prev.some((s) => s.id === copyId) ? prev : [...prev, { id: copyId, parentId: null, position: topLevelLast(prev), title: title || "Untitled", icon: source?.icon ?? null, isArchived: false, updatedAt: now }]));
+    store.notifyTree();
+    open(copyId);
+  };
   const applyTemplate = async (id: SpaceId, title: string) => {
     try {
-      const copyId = await copyTemplate(id, title, orgRef.current);
-      // The copy's sidebar row shows at once (top-level, last: created order), then the tree re-reads.
-      const source = all.find((s) => s.id === id);
-      const now = new Date().toISOString();
-      setAll((prev) => (prev.some((s) => s.id === copyId) ? prev : [...prev, { id: copyId, parentId: null, position: topLevelLast(prev), title: title || "Untitled", icon: source?.icon ?? null, isArchived: false, updatedAt: now }]));
-      store.notifyTree();
-      open(copyId);
+      showCopy(await copyTemplate(id, title, orgRef.current), title, id);
     } catch (err) {
       if (!isOrganizationSelectionCancelled(err)) toast.error(err instanceof Error ? err.message : "We couldn't use this template.");
     }
