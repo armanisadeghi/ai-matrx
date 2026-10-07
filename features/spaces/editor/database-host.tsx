@@ -34,63 +34,122 @@ export const DATABASE_EVENT_CLAIMS: Record<(typeof OWNED_BY_THE_TABLE)[number], 
 const heightKey = (blockId: string, width: number) => `spaces:blockh:${blockId}:${Math.round(width / 40)}`;
 
 /**
- * THE BLOCK HOLDS ITS FINAL SIZE BEFORE ITS DATA LANDS (round 26, CLS; round 27, D2). A view takes the
- * height it last had at this width on this device and keeps it until its content has grown back to it
- * (or a few seconds pass): a table draws its frame first and its rows a moment later, and a chart adds
- * its "Only showing" chip once its rows are counted — releasing at the first drawn frame let both push
- * the page down late (the 0.06–0.21 shifts 5 s after load). A first visit has nothing kept and grows.
+ * THE BLOCK HOLDS ITS FINAL SIZE BEFORE ITS DATA LANDS (round 26, CLS; round 27, D2; round 28). A table
+ * draws its frame, then its rows, then re-measures them (its body went 212 → 259 → 230 → 266 → 229 px in
+ * half a second), and a chart adds its "Only showing" chip once its rows are counted. Each step moved the
+ * blocks under it (a heading, a checklist, a callout) 0.03–0.14 a few seconds after load.
+ *  - Kept: a view takes the height it last settled at, at this width on this device, as its exact size
+ *    (min AND max, overflow clipped) until its content has been still for SETTLE_QUIET_MS — growing,
+ *    shrinking and re-measuring happen inside the block, never to the page.
+ *  - First visit (nothing kept) and in view: the block marks itself `data-settling` until the same
+ *    stillness; while any block settles the page body is held hidden (spaces.css) and then shown whole —
+ *    content appearing is not a shift, content moving is.
+ * SETTLE_MAX_MS ends either hold whatever the content does. The key follows the block's width: the column
+ * layout around a block can be drawn after its first layout, and a new width re-reads what is kept.
  */
-const RELEASE_AFTER_MS = 8000;
-function useReservedHeight(blockId: string | undefined, ref: React.RefObject<HTMLDivElement | null>): number | undefined {
-  const [reserve, setReserve] = useState<number | undefined>(undefined);
+const SETTLE_QUIET_MS = 450;
+const SAMPLE_MS = 150;
+const SETTLE_MAX_MS = 4000;
+function useHeldHeight(blockId: string | undefined, ref: React.RefObject<HTMLDivElement | null>): { hold: number | undefined; settling: boolean } {
+  const [hold, setHold] = useState<number | undefined>(undefined);
+  const [settling, setSettling] = useState(false);
   useLayoutEffect(() => {
     const el = ref.current;
     if (!el || !blockId) return;
-    const key = heightKey(blockId, el.getBoundingClientRect().width);
-    let held = 0;
-    try {
-      held = Number(window.localStorage.getItem(key)) || 0;
-    } catch {
-      // Storage blocked: the block grows as its content lands.
-    }
-    let landed = !(held > 0);
-    if (!landed) setReserve(held);
-    const release = () => {
-      if (landed) return;
-      landed = true;
-      setReserve(undefined);
-    };
-    const timer = window.setTimeout(release, RELEASE_AFTER_MS);
-    const ro = new ResizeObserver(() => {
-      if (el.querySelector(".spaces-db-loading")) return;
+    let key = "";
+    let done = false;
+    let quiet: number | undefined;
+    const measure = (): number | null => {
+      if (el.querySelector(".spaces-db-loading")) return null;
       const child = el.firstElementChild as HTMLElement | null;
-      if (!child) return;
+      if (!child) return null;
       const cs = getComputedStyle(child);
-      const h = Math.round(child.getBoundingClientRect().height + parseFloat(cs.marginTop) + parseFloat(cs.marginBottom));
-      if (!landed && h < held - 1) return; // still growing back into its space: nothing kept, nothing let go
-      release();
+      return Math.round(child.getBoundingClientRect().height + parseFloat(cs.marginTop) + parseFloat(cs.marginBottom));
+    };
+    const keep = (h: number) => {
       try {
         window.localStorage.setItem(key, String(h));
       } catch {
-        // nothing kept
+        // Storage blocked: nothing kept.
       }
+    };
+    const finish = () => {
+      if (done) return;
+      done = true;
+      window.clearTimeout(quiet);
+      window.clearTimeout(cap);
+      const h = measure();
+      if (h !== null) keep(h);
+      setHold(undefined);
+      setSettling(false);
+    };
+    // Stillness is sampled, not observed: the element the content lives in is replaced as it loads
+    // (loading → frame), and a held block's own box never changes size.
+    let last: number | null = null;
+    let still = 0;
+    const arm = () => {
+      if (done) return;
+      window.clearTimeout(quiet);
+      last = null;
+      still = 0;
+      const sample = () => {
+        if (done) return;
+        const h = measure();
+        still = h !== null && h === last ? still + SAMPLE_MS : 0;
+        last = h;
+        if (still >= SETTLE_QUIET_MS) finish();
+        else quiet = window.setTimeout(sample, SAMPLE_MS);
+      };
+      quiet = window.setTimeout(sample, SAMPLE_MS);
+    };
+    const begin = () => {
+      key = heightKey(blockId, el.getBoundingClientRect().width);
+      let held = 0;
+      try {
+        held = Number(window.localStorage.getItem(key)) || 0;
+      } catch {
+        held = 0;
+      }
+      setHold(held > 0 ? held : undefined);
+      setSettling(!(held > 0) && el.getBoundingClientRect().top < window.innerHeight);
+      arm();
+    };
+    begin();
+    const cap = window.setTimeout(finish, SETTLE_MAX_MS);
+    const ro = new ResizeObserver(() => {
+      if (done) {
+        // Settled: the view changed later (rows added, a filter): keep its new size for the next visit.
+        const h = measure();
+        if (h !== null) keep(h);
+        return;
+      }
+      if (heightKey(blockId, el.getBoundingClientRect().width) !== key) begin();
     });
     ro.observe(el);
     if (el.firstElementChild) ro.observe(el.firstElementChild);
     return () => {
-      window.clearTimeout(timer);
+      done = true;
+      window.clearTimeout(quiet);
+      window.clearTimeout(cap);
       ro.disconnect();
     };
   }, [blockId, ref]);
-  return reserve;
+  return { hold, settling };
 }
 
 /** The block's element. It stops nothing: every press and key reaches the table and React above it. */
 export function DatabaseHost({ children, blockId, layout }: { children: ReactNode; blockId?: string; layout?: string }) {
   const ref = useRef<HTMLDivElement>(null);
-  const reserve = useReservedHeight(blockId, ref);
+  const { hold, settling } = useHeldHeight(blockId, ref);
   return (
-    <div ref={ref} className={DATABASE_HOST_CLASS} contentEditable={false} data-layout={layout} style={reserve ? { minHeight: reserve } : undefined}>
+    <div
+      ref={ref}
+      className={DATABASE_HOST_CLASS}
+      contentEditable={false}
+      data-layout={layout}
+      data-settling={settling ? "" : undefined}
+      style={hold ? { height: hold, overflow: "clip" } : undefined}
+    >
       {children}
     </div>
   );

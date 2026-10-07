@@ -17,7 +17,7 @@ await context.addInitScript(() => {
     for (const e of list.getEntries()) {
       if (e.hadRecentInput) continue;
       window.__cls.total += e.value;
-      window.__cls.entries.push({ t: Math.round(e.startTime), v: +e.value.toFixed(4), txt: (e.sources ?? []).slice(0, 2).map((s) => (s.node?.textContent ?? "").slice(0, 24)) });
+      window.__cls.entries.push({ t: Math.round(e.startTime), v: +e.value.toFixed(4), src: (e.sources ?? []).slice(0, 3).map((s) => ({ ct: s.node?.querySelector?.("[data-content-type]")?.getAttribute("data-content-type") ?? s.node?.className?.toString().slice(0, 30), txt: (s.node?.textContent ?? "").slice(0, 24), from: [s.previousRect.x, s.previousRect.y, s.previousRect.width, s.previousRect.height].map(Math.round), to: [s.currentRect.x, s.currentRect.y, s.currentRect.width, s.currentRect.height].map(Math.round) })) });
     }
   }).observe({ type: "layout-shift", buffered: true });
   let last = -1;
