@@ -25,8 +25,8 @@ describe("Smart Code Editor Monaco host boundary", () => {
   });
 
   it.each([
-    ["missing cursor capability", { getModel: () => null, getSelection: () => null }],
-    ["non-callable buffer capability", { getModel: true, getSelection: () => null, getPosition: () => null }],
+    ["missing cursor capability", { getModel: (): null => null, getSelection: (): null => null }],
+    ["non-callable buffer capability", { getModel: true, getSelection: (): null => null, getPosition: (): null => null }],
   ])("rejects a non-Monaco host with %s", (_case, editor) => {
     const mounted = jest.fn();
 

@@ -42,7 +42,7 @@ import {
 } from "./resource-picker-menu-items";
 import { useRunControlCounts } from "./useRunControlCounts";
 import type { Resource } from "@ai-matrx/chat/agents/resources/types";
-import { noteResourceData, taskResourceData } from "./resource-adapters";
+import { noteResourceData, projectResourceData, taskResourceData } from "./resource-adapters";
 import { useKnowledgeAttachSearch } from "./useKnowledgeAttachSearch";
 import { useAttachedFileIds } from "@ai-matrx/chat/agents/components/inputs/resources/useAttachedFileIds";
 
@@ -340,7 +340,7 @@ export function ResourcePickerMenu({
             void selectOne(
               selection.type === "task"
                 ? { type: "task", data: taskResourceData(selection.data) }
-                : selection,
+                : { type: "project", data: projectResourceData(selection.data) },
             );
           }}
         />

@@ -71,7 +71,7 @@ function BackLinksSection({ entityToken, recordId, organizationId, className }: 
           title="Couldn't read linked records"
           line={links.error.message}
           action={
-            <Button size="sm" variant="quiet" onClick={() => links.reload()}>
+            <Button variant="quiet" onClick={() => links.reload()}>
               Retry
             </Button>
           }
@@ -110,7 +110,7 @@ function BackLinksSection({ entityToken, recordId, organizationId, className }: 
       )}
       {links.moreError ? <span className="text-xs text-muted-foreground">{links.moreError.message}</span> : null}
       {links.hasMore ? (
-        <Button size="sm" variant="quiet" disabled={links.loadingMore} onClick={() => void links.loadMore()}>
+        <Button variant="quiet" disabled={links.loadingMore} onClick={() => void links.loadMore()}>
           {links.moreError ? "Retry" : "Load more"}
         </Button>
       ) : null}

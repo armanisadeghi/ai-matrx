@@ -54,11 +54,21 @@ export default function PickListManagerWindow({
     >
       {/* 🚨 A WINDOW MOUNTS ITS OWN MENU (context-menu-v3 SKILL). Without
           this, a right-click here is answered by whatever page sits
-          underneath. A pick list is a record-store Table, not an association
-          entity, so this menu deliberately has no fabricated entity target. */}
+          underneath. A record-store Table is itself a custom.record kernel
+          record (REC-1), so a forced list can truthfully name that record. */}
       <NonEditableContextMenu
         sourceFeature="udt"
         contentSource={{ type: "raw" }}
+        entity={
+          forcedListId
+            ? {
+                type: "record",
+                id: forcedListId,
+                title: resolvedTitle,
+                resourceType: "structured_list",
+              }
+            : undefined
+        }
       >
         <PickListWindowBody forcedListId={forcedListId} />
       </NonEditableContextMenu>

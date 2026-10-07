@@ -233,8 +233,9 @@ function detailRecordHref(token: string, id: string): string {
 // Every token below is verified live against `platform.entity_types` +
 // information_schema (schema/table/title column all confirmed). Non-canonical
 // names (agent_app, picklist, website, canvas, research, sandbox) are
-// deliberately ABSENT — they are not registered tokens (`picklist` → use
-// `pick_list`), so they can never be a valid association edge endpoint.
+// deliberately ABSENT — they are not registered tokens. A pick list is a
+// record-store Table and its table id is the kernel `record` identity (REC-1),
+// not a made-up association token.
 const ENTITY_OVERLAY: Partial<Record<EntityTypeToken, EntityOverlay>> = {
   // ─── Agents / Apps / Skills (utilities) ───────────────────────────────────
   ai_model: {

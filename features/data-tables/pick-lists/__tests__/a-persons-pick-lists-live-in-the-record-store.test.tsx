@@ -16,6 +16,7 @@ import { createRoot, type Root } from "react-dom/client";
 const ME = "87a6e699-3622-4869-8843-d0867456c0dd"; // admin@admin.com
 const STORE_LIST = "5b7a3f1e-2c4d-4e8f-9a1b-3c5d7e9f1a2b";
 const push = jest.fn();
+const mockMenuEntities: unknown[] = [];
 
 const summary = [
   {
@@ -100,7 +101,10 @@ jest.mock("@/lib/toast", () => ({ toast: { error: jest.fn(), success: jest.fn() 
 jest.mock("@/lib/redux/hooks", () => ({ useAppSelector: () => "11f4e747-c13a-49c7-81a3-66e6391f8a9b" }));
 jest.mock("@/components/official/entity-ref/EntityDoorControls", () => ({ EntityDoorControls: () => null }));
 jest.mock("@/features/context-menu-v3/NonEditableContextMenu", () => ({
-  NonEditableContextMenu: ({ children }: { children: React.ReactNode }) => <>{children}</>,
+  NonEditableContextMenu: ({ children, entity }: { children: React.ReactNode; entity?: unknown }) => {
+    mockMenuEntities.push(entity);
+    return <>{children}</>;
+  },
 }));
 jest.mock("@/features/context-menu-v3/utils/open-context-menu", () => ({ openContextMenuForElement: jest.fn() }));
 jest.mock("@/components/errors/ErrorAlchemyMenu", () => ({ ErrorAlchemyMenu: () => null }));
@@ -174,6 +178,7 @@ test("A. getAccessibleLists lists the person's lists from the list index", async
 test("B. the Pick lists page lists a list in the new system at /pick-lists/<id> and reads no older table", async () => {
   olderReads.length = 0;
   indexReads.length = 0;
+  mockMenuEntities.length = 0;
   const { PickListsIndex } = await import("../components/PickListsIndex");
   await act(async () => {
     root.render(
@@ -192,6 +197,38 @@ test("B. the Pick lists page lists a list in the new system at /pick-lists/<id> 
   expect(olderReads.filter((t) => t.startsWith("workbench."))).toEqual([]);
   // The header's selected organization never narrows the list: it opens on every organization.
   expect(indexReads).toEqual(["pick_list_index_everywhere"]);
+});
+
+test("B2. a list menu targets the Table's real custom.record identity", async () => {
+  mockMenuEntities.length = 0;
+  const { ListCard } = await import("../components/ListCard");
+  await act(async () => {
+    root.render(
+      <ListCard
+        list={{
+          id: STORE_LIST,
+          list_name: "Hygiene Visit Types",
+          description: null,
+          user_id: ME,
+          is_public: false,
+          public_read: false,
+          created_at: "2026-09-26T15:40:00Z",
+          updated_at: null,
+        }}
+        isActive={false}
+        isAnyNavigating={false}
+        onNavigate={jest.fn()}
+      />,
+    );
+  });
+  // REC-1: the list id is the record-store Table's own custom.record id. It
+  // must never regress to the retired pick_list/structured_list entity token.
+  expect(mockMenuEntities).toContainEqual({
+    type: "record",
+    id: STORE_LIST,
+    title: "Hygiene Visit Types",
+    resourceType: "structured_list",
+  });
 });
 
 test("D. a NEW pick list carries the active organization (ensureOrgId), the list read never does", async () => {

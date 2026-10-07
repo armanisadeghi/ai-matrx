@@ -1,4 +1,4 @@
-import { noteResourceData, taskResourceData } from "../resource-adapters";
+import { noteResourceData, projectResourceData, taskResourceData } from "../resource-adapters";
 
 describe("chat resource DTO adapters", () => {
   it("keeps the note fields the chat attachment contract consumes", () => {
@@ -38,6 +38,32 @@ describe("chat resource DTO adapters", () => {
       due_date: task.due_date,
       project_id: task.project_id,
       description: task.description,
+    });
+  });
+
+  it("turns a project and its tasks into the exact chat resource DTO", () => {
+    const project = {
+      id: "d41f158d-c416-452c-b777-ab9172d1ac15",
+      name: "Harbor Dental intake",
+      description: "Prepare every new-patient visit.",
+      tasks: [
+        {
+          id: "c20b0419-33d4-45b5-8a50-b0c5e9fbe587",
+          title: "Verify insurance card",
+          status: "in_progress",
+          priority: "high",
+          due_date: "2026-10-08",
+          project_id: "d41f158d-c416-452c-b777-ab9172d1ac15",
+          description: "Confirm both sides are legible.",
+        },
+      ],
+    } satisfies Parameters<typeof projectResourceData>[0];
+
+    expect(projectResourceData(project)).toEqual({
+      id: project.id,
+      name: project.name,
+      description: project.description,
+      tasks: [taskResourceData(project.tasks[0])],
     });
   });
 });
