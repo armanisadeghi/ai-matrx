@@ -61,6 +61,8 @@ export interface AppletBuildSource {
   type: "table" | "entity" | "new";
   /** The entity token when `type` is "entity". */
   entity: string | null;
+  /** The table's id when `type` is "table" — the card reads its real name and organization by it. */
+  tableId: string | null;
   /** A new table's name and its column labels (applets 0.9.0 `new_table`). */
   newTable?: { name: string; fields: string[] };
 }
@@ -106,14 +108,15 @@ export function readAppletBuildResult(
                   alias: s.alias,
                   type: "new" as const,
                   entity: null,
+                  tableId: null,
                   newTable: {
                     name: text(s.new_table.name) || s.alias,
                     fields: list(s.new_table.fields).map((f) => text(f.label) || text(f.key)).filter(Boolean),
                   },
                 }
               : typeof s.entity === "string" && s.entity
-                ? { alias: s.alias, type: "entity" as const, entity: s.entity }
-                : { alias: s.alias, type: "table" as const, entity: null },
+                ? { alias: s.alias, type: "entity" as const, entity: s.entity, tableId: null }
+                : { alias: s.alias, type: "table" as const, entity: null, tableId: text(s.table_id) || null },
           ]
         : [],
     ),

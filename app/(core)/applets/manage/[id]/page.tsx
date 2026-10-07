@@ -1,3 +1,4 @@
+import { redirect } from "next/navigation";
 import { getApplet } from "@/lib/applets/data";
 import { AppletOverviewContent } from "@/features/applets/route/AppletOverviewContent";
 import { AppletHeader } from "@/features/applets/components/route-header/AppletHeader";
@@ -14,6 +15,8 @@ export default async function AppletOverviewPage({
   // owns Redux seeding; this server fetch primarily exists so 404s render
   // as the route's not-found.tsx instead of an empty Redux state.
   const app = await getApplet(id);
+  // A build that has not saved an app yet is still being built: it opens as its build.
+  if (!app.entry) redirect(`/applets/build/${app.id}`);
 
   return (
     <>

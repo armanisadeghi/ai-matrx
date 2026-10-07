@@ -22,7 +22,7 @@ export const APPLET_COLUMNS: EntityColumnSpec<AppletListRow>[] = [
       cell: (row) => (
         <div className="flex min-w-0 items-center gap-2">
           <span className="truncate font-medium">{row.name}</span>
-          {row.build_open && <Badge tone="info">Building</Badge>}
+          {row.build_open ? <Badge tone="info">Building</Badge> : row.unbuilt ? <Badge tone="warning">Not built</Badge> : null}
           {row.archived && <Badge>Archived</Badge>}
         </div>
       ),

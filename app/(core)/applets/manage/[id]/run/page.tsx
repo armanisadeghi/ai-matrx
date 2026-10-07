@@ -1,3 +1,4 @@
+import { redirect } from "next/navigation";
 import { getApplet } from "@/lib/applets/data";
 import { AppletHeader } from "@/features/applets/components/route-header/AppletHeader";
 import { AppletHostMount } from "@/features/applets-host/AppletHostMount";
@@ -14,6 +15,8 @@ interface RunPageProps {
 export default async function AppletRunPage({ params }: RunPageProps) {
   const { id } = await params;
   const app = await getApplet(id);
+  // A build that has not saved an app yet is still being built: it opens as its build.
+  if (!app.entry) redirect(`/applets/build/${app.id}`);
 
   return (
     <>

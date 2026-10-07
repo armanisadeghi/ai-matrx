@@ -15,6 +15,12 @@ import {
 } from "../kinds/applet-build-result";
 import { SYSTEM_KIND_DEFINITIONS } from "../registry/system-kinds";
 
+// Her tables are named by the one read of the tables she can see; the card never shows the code's alias.
+jest.mock("@/features/applets/hooks/useSourceTableNames", () => ({
+  useSourceTableNames: () => ({
+    "0b6f6a2e-4c1d-4f7a-9f55-3e2b1c9d8a71": { name: "Client Posts", organizationName: "Oak & River", organizationId: "344cfaa8-2b0c-4971-854a-9694614816f2" },
+  }),
+}));
 jest.mock("@ai-matrx/rich-content/code-block/CodeBlock", () => ({
   __esModule: true,
   default: ({ code }: { code: string }) => <pre data-testid="code">{code}</pre>,
@@ -50,7 +56,7 @@ describe("applet_build_result", () => {
     expect(data?.isComplete).toBe(true);
     expect(data?.name).toBe("Client Approvals");
     expect(data?.pages).toEqual([{ path: "/", title: "Approvals" }]);
-    expect(data?.sources).toEqual([{ alias: "posts", type: "table", entity: null }]);
+    expect(data?.sources).toEqual([{ alias: "posts", type: "table", entity: null, tableId: "0b6f6a2e-4c1d-4f7a-9f55-3e2b1c9d8a71" }]);
     expect(data?.files).toHaveLength(2);
   });
 
@@ -63,7 +69,7 @@ describe("applet_build_result", () => {
     const text = host.textContent ?? "";
     expect(text).toContain("Client Approvals");
     expect(text).toContain("Approvals");
-    expect(text).toContain("posts");
+    expect(text).toContain("Client Posts · Oak & River");
     expect(text).toContain(ANSWER.note);
     expect(host.querySelectorAll('[data-testid="code"]')).toHaveLength(0);
     expect(text).not.toContain("useRows");
