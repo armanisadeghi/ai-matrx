@@ -79,6 +79,8 @@ export function floatingBottomBoxes(doc: Document = document): FloatingBox[] {
   if (!viewportHeight) return [];
   const boxes: FloatingBox[] = [];
   for (const element of doc.querySelectorAll(FLOATING_BOTTOM_SELECTOR)) {
+    // A transient overlay never moves the page, even if someone marks it floating chrome.
+    if (element.closest(TRANSIENT_OVERLAY_SELECTOR)) continue;
     const rect = element.getBoundingClientRect();
     if (!isShown(element, rect)) continue;
     if (rect.bottom < viewportHeight - BOTTOM_ANCHOR_SLACK_PX) continue;

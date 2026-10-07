@@ -27,6 +27,20 @@ describe("transient overlays never move the page", () => {
     toaster.remove();
   });
 
+  it("a toast marked floating chrome by mistake is still never measured", () => {
+    const toaster = document.createElement("ol");
+    toaster.setAttribute("data-sonner-toaster", "");
+    const toast = document.createElement("li");
+    toast.setAttribute("data-sonner-toast", "");
+    toast.setAttribute("data-matrx-floating-bottom", "");
+    toast.getBoundingClientRect = () =>
+      ({ top: 720, bottom: 796, left: 16, right: 359, width: 343, height: 76, x: 16, y: 720, toJSON: () => ({}) }) as DOMRect;
+    toaster.appendChild(toast);
+    document.body.appendChild(toaster);
+    expect(floatingBottomBoxes()).toHaveLength(0);
+    toaster.remove();
+  });
+
   it("no transient overlay carries the floating-chrome marker", () => {
     for (const marker of ["data-sonner-toast", "data-sonner-toaster"]) {
       expect(FLOATING_BOTTOM_SELECTOR).not.toContain(marker);
