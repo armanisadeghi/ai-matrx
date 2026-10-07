@@ -146,7 +146,7 @@ export interface TableProps extends Record<string, unknown> {
 }
 
 /** The layouts a database view can show (`table` = `grid`, `board` = `kanban`; both spellings are accepted). */
-export const DATABASE_VIEW_LAYOUTS = ["grid", "table", "kanban", "board", "gallery", "list", "calendar", "timeline", "chart", "dashboard"] as const;
+export const DATABASE_VIEW_LAYOUTS = ["grid", "table", "kanban", "board", "gallery", "list", "calendar", "timeline", "chart", "dashboard", "form"] as const;
 export type DatabaseViewLayout = (typeof DATABASE_VIEW_LAYOUTS)[number];
 export const DATABASE_CHART_TYPES = ["donut", "bar", "hbar", "line"] as const;
 export const DATABASE_CHART_OPS = ["count", "sum", "avg", "min", "max"] as const;
