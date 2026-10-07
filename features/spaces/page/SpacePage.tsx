@@ -62,6 +62,7 @@ import { useRestoreKept } from "./useRestoreKept";
 import { sendOnLeave, trackAccessToken } from "./leave-save";
 import { contentKey } from "./content-key";
 import { usePageReminders } from "../editor/reminders";
+import { markNewSource, useSyncedEdges } from "../state/synced-sources";
 import { copyToClipboard } from "@/lib/clipboard/copy";
 
 type Editable = Pick<SpaceDoc, "title" | "icon" | "cover" | "settings" | "blocks">;
@@ -630,6 +631,7 @@ function SpacePageScreen({ spaceId }: { spaceId: string }) {
   const moveIn = useMoveIn();
   // N2 — Remind on a date mention: this person's reminders follow the page's date mentions.
   usePageReminders(spaceId, doc?.title ?? "", doc?.blocks, userId ?? null, !!doc && !trashedNow);
+  useSyncedEdges(spaceId, doc?.blocks, !!doc && !trashedNow && canEdit);
 
   if (doc === undefined) return <div className="spaces-page" aria-busy="true" />;
   if (doc === null) {
@@ -979,6 +981,12 @@ function SpacePageScreen({ spaceId }: { spaceId: string }) {
               pickSource,
               designDatabase: designer.wired ? () => saveSoon(designer.design({ spaceId: doc.id, ...pageForAi() })) : undefined,
               newDatabase: (fullPage) => saveSoon(newDatabase(fullPage)),
+              createSyncedSource: async () => {
+                // C18: the synced content is its own Space under this page (inherits its access), hidden from the tree.
+                const source = await spaces.createSpace(doc.id, { open: false, title: "Synced block", blocks: [{ id: crypto.randomUUID(), type: "text", text: [] }] });
+                await markNewSource(source.id, doc.id).catch((err: unknown) => toast.error(err instanceof Error ? err.message : "The synced block was not marked."));
+                return source.id;
+              },
             }}
             menu={{ moveBlocksTo, turnIntoPageIn, askAi: openAskAi }}
             onComment={startComment}

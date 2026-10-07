@@ -1840,3 +1840,32 @@ tr:hover .spaces-entity-openpill, .spaces-entity-open:focus-visible .spaces-enti
   outline: 2px solid var(--ring);
   outline-offset: 1px;
 }
+
+/* C18 synced block: Notion's outline + bar on hover (the body is its own editor). */
+.spaces-synced { position: relative; border-radius: 4px; outline: 2px solid transparent; outline-offset: 2px; transition: outline-color 120ms ease; margin: 2px 0; }
+.spaces-synced:hover, .spaces-synced:focus-within { outline-color: color-mix(in srgb, var(--destructive) 55%, transparent); }
+.spaces-synced-bar { position: absolute; top: -30px; left: 0; display: none; align-items: center; gap: 2px; height: 26px; padding: 0 4px; border-radius: 6px; background: var(--popover); color: var(--popover-foreground); box-shadow: 0 0 0 1px var(--border), 0 3px 8px var(--spaces-shadow-md); font-size: 12px; z-index: 5; white-space: nowrap; }
+.spaces-synced:hover .spaces-synced-bar, .spaces-synced:focus-within .spaces-synced-bar { display: inline-flex; }
+.spaces-synced-tag { display: inline-flex; align-items: center; gap: 4px; padding: 0 6px; color: var(--destructive); font-weight: 500; }
+.spaces-synced-count { padding: 0 6px; color: var(--muted-foreground); border-left: 1px solid var(--border); }
+.spaces-synced-action { display: inline-flex; align-items: center; gap: 4px; height: 22px; padding: 0 6px; border-radius: 4px; color: var(--muted-foreground); }
+.spaces-synced-action:hover { background: var(--muted); color: var(--foreground); }
+.spaces-synced-body .bn-container, .spaces-synced-body .bn-editor { padding-inline: 0 !important; }
+.spaces-synced-loading { min-height: 28px; }
+.spaces-synced-missing { padding: 6px 8px; font-size: 13px; color: var(--muted-foreground); }
+
+/* C19 button block: Notion's gray pill with a gear on hover; the editor opens under it. */
+.spaces-button-block { margin: 2px 0; }
+.spaces-button-row { display: inline-flex; align-items: center; gap: 2px; }
+.spaces-button-press { display: inline-flex; align-items: center; gap: 6px; height: 28px; padding: 0 10px; border-radius: 6px; background: var(--muted); color: var(--foreground); font-size: 14px; font-weight: 500; box-shadow: 0 0 0 1px var(--border); }
+.spaces-button-press:hover { background: var(--accent); }
+.spaces-button-press[aria-busy="true"] { opacity: 0.6; }
+.spaces-button-gear { display: inline-flex; align-items: center; justify-content: center; width: 24px; height: 24px; border-radius: 4px; color: var(--muted-foreground); opacity: 0; }
+.spaces-button-block:hover .spaces-button-gear { opacity: 1; }
+.spaces-button-gear:hover { background: var(--muted); }
+.spaces-button-editor { display: flex; flex-direction: column; gap: 8px; max-width: 460px; margin-top: 6px; padding: 10px; border-radius: 8px; background: var(--popover); box-shadow: 0 0 0 1px var(--border), 0 6px 16px var(--spaces-shadow-md); }
+.spaces-button-action { display: flex; flex-direction: column; gap: 4px; padding: 6px 0; border-top: 1px solid var(--border); }
+.spaces-button-action-head { display: flex; align-items: center; justify-content: space-between; font-size: 13px; font-weight: 500; }
+.spaces-button-agent { display: flex; flex-direction: column; gap: 4px; }
+.spaces-button-add { display: flex; flex-wrap: wrap; gap: 2px; }
+.spaces-button-done { display: flex; justify-content: flex-end; }

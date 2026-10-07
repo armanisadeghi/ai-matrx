@@ -17,6 +17,7 @@
  */
 
 import { useEffect, useState } from "react";
+import { ProInput } from "@/components/official/ProInput";
 import { Plus, Trash2 } from "lucide-react";
 import {
   Button,
@@ -142,6 +143,7 @@ export function AppletPagesEditor({ app }: { app: AppletDefinition }) {
         <RowGroup title="Pages">
           {pages.map((page, i) => (
             <div key={i} className="flex flex-wrap items-center gap-2 px-3 py-2">
+              {/* ui-exception: a route path is a raw value, not prose */}
               <Field
                 aria-label="Path"
                 value={page.path}
@@ -149,12 +151,12 @@ export function AppletPagesEditor({ app }: { app: AppletDefinition }) {
                 onChange={(e) => set(i, { path: e.target.value })}
                 className="w-40"
               />
-              <Field
+              <ProInput
                 aria-label="Title"
                 value={page.title}
                 placeholder="Title"
                 onChange={(e) => set(i, { title: e.target.value })}
-                className="min-w-32 flex-1"
+                wrapperClassName="min-w-32 flex-1"
               />
               <Select
                 aria-label="File"

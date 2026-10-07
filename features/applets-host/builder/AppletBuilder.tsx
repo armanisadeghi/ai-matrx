@@ -19,10 +19,12 @@ import type { HeldWrite } from "@ai-matrx/applets/preview";
 import { storedMandateKey } from "@ai-matrx/agents/mandates";
 import { useHeadlessAgentJson } from "@ai-matrx/chat/agents/hooks/useHeadlessAgentJson";
 import { useDeclaredSurfaceMandates } from "@ai-matrx/chat/surfaces/runtime/surface-mandates";
-import { Badge, Button, EmptyState, Textarea } from "@ai-matrx/design-system/controls";
+import { Badge, Button, EmptyState } from "@ai-matrx/design-system/controls";
 import { AppWindow, ExternalLink, Wrench } from "lucide-react";
 
 import { createClient } from "@/utils/supabase/client";
+import { ProTextarea } from "@/components/official/ProTextarea";
+import { APPLETS_SURFACE_NAME, createAppletsScope } from "@/features/surfaces/manifests/applets.manifest";
 import { useOrganizationRequired } from "@/features/organizations/useOrganizationRequired";
 import { OrganizationContextNotice } from "@/features/organizations/components/OrganizationRequiredNotice";
 import { useOpenLiveRunWindow, type LiveRunWindowHandle } from "@/features/overlays/openers/liveRunWindow";
@@ -150,12 +152,22 @@ export function AppletBuilder({ appletId: initialId }: { appletId: string | null
   return (
     <div className="grid h-full min-h-0 grid-cols-1 gap-3 p-3 lg:grid-cols-[minmax(320px,2fr)_5fr]">
       <div className="flex min-h-0 flex-col gap-3">
-        <Textarea
+        <ProTextarea
           aria-label="What you want"
           value={sentence}
           onChange={(e) => setSentence(e.target.value)}
           placeholder={appletId ? "Add a tab for this week's schedule" : "A page where I see my clients and approve their posts"}
           rows={4}
+          autoGrow
+          minHeight={96}
+          maxHeight={320}
+          surfaceName={APPLETS_SURFACE_NAME}
+          getApplicationScope={() =>
+            createAppletsScope({
+              ...(appletId ? { app_id: appletId } : {}),
+              ...(saved ? { app_slug: saved.slug, app_status: saved.status, app_version: saved.version } : {}),
+            })
+          }
         />
         <div className="flex flex-wrap items-center gap-2">
           <Button variant="primary" disabled={busy || !sentence.trim()} onClick={() => void run(sentence.trim(), null)}>
@@ -180,7 +192,7 @@ export function AppletBuilder({ appletId: initialId }: { appletId: string | null
         {saved ? (
           <div className="flex flex-col gap-2 rounded-lg border border-border bg-card p-3 text-sm">
             <div className="flex flex-wrap items-center gap-2">
-              <span className="font-medium">/apps/{saved.slug}</span>
+              <span className="font-medium">/applets/{saved.slug}</span>
               <Badge tone={saved.status === "published" ? "success" : "neutral"}>v{saved.version}</Badge>
               {saved.status === "published" ? <Badge tone="success">Live</Badge> : null}
             </div>

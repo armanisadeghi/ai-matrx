@@ -29,7 +29,7 @@ const TO_ENGINE: Record<string, string> = {
 const FROM_ENGINE: Record<string, string> = Object.fromEntries(Object.entries(TO_ENGINE).map(([k, v]) => [v, k]));
 
 /** Stored types drawn by a block of the same name whose stored props ride verbatim in `props.data`. */
-export const DATA_BLOCKS = new Set(["equation", "image", "video", "audio", "file", "pdf", "bookmark", "embed", "tableOfContents", "breadcrumb", "database"]);
+export const DATA_BLOCKS = new Set(["equation", "image", "video", "audio", "file", "pdf", "bookmark", "embed", "tableOfContents", "breadcrumb", "database", "synced", "button"]);
 
 /** Every engine block type the Spaces schema knows (editor/schema.tsx). Anything else is `unknownBlock`. */
 const ENGINE_TYPES = new Set([

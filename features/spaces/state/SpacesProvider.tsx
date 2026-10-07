@@ -6,6 +6,7 @@
 // quick-find switch. Favorites / recent / sidebar width are per-browser view state; the documents
 // themselves live only in the store.
 
+import { isSyncedSource, loadSyncedSources, useSyncedSourcesVersion } from "./synced-sources";
 import { useRouter } from "next/navigation";
 import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from "react";
 
@@ -222,7 +223,13 @@ export function SpacesProvider({ children }: { children: ReactNode }) {
     };
   }, [store]);
 
-  const summaries = all.filter((s) => !s.isArchived);
+  // C18: synced sources are content of a synced block, never pages of the tree (state/synced-sources.ts).
+  useSyncedSourcesVersion();
+  useEffect(() => {
+    const ids = all.map((s) => s.id);
+    if (ids.length) void loadSyncedSources(ids).catch((err: unknown) => console.error("[spaces] synced sources could not be read", err));
+  }, [all]);
+  const summaries = all.filter((s) => !s.isArchived && !isSyncedSource(s.id));
   const byId = new Map(summaries.map((s) => [s.id, s]));
   // A Space whose ancestor is in Trash is out of the tree too.
   const visible = summaries.filter((s) => {
@@ -235,7 +242,7 @@ export function SpacesProvider({ children }: { children: ReactNode }) {
     return true;
   });
   const visibleById = new Map(visible.map((s) => [s.id, s]));
-  const archived = all.filter((s) => s.isArchived).sort((a, b) => (a.updatedAt < b.updatedAt ? 1 : -1));
+  const archived = all.filter((s) => s.isArchived && !isSyncedSource(s.id)).sort((a, b) => (a.updatedAt < b.updatedAt ? 1 : -1));
   const childrenOf = (parentId: SpaceId | null) => visible.filter((s) => s.parentId === parentId).sort(byPosition);
   const pathTo = (id: SpaceId) => {
     const out: SpaceSummary[] = [];

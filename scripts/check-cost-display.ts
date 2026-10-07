@@ -84,6 +84,7 @@ export const DOMAIN_MONEY: Record<string, string> = {
   "features/crm/deals/types.ts": "a sales deal's value",
   "features/hr/me/MyPaySurface.tsx": "a worker's pay",
   "features/legal/wc/pd-ratings/components/workspace/RatingBreakdownTable.tsx": "a workers'-comp award amount",
+  "features/marketing/seo/domain-research/DomainResearchPage.tsx": "a keyword's cost-per-click in the ad market (the CPC column)",
   "features/marketing/ads/GoogleAdsWorkspace.tsx": "the customer's own Google Ads spend",
   "features/marketing/initiatives/columns.tsx": "a marketing initiative's budget",
   "features/marketing/initiatives/InitiativeDetail.tsx": "a marketing initiative's budget",

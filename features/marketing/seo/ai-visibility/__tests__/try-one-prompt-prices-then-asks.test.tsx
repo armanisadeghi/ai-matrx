@@ -36,6 +36,9 @@ jest.mock("@ai-matrx/chat/host/server/python-client", () => ({
 
 import { TryOnePrompt } from "../try-prompt/TryOnePrompt";
 
+// Platform cost reaches the screen in the viewer's unit (points); pin the rate.
+jest.mock("@/components/cost/pointsRate.client", () => ({ usePointsRate: () => 10000 }));
+
 type Call = { tool_name: string; arguments: Record<string, unknown> };
 const calls = (): Call[] => requestRaw.mock.calls.map((c) => JSON.parse((c[1] as { body: string }).body));
 const reply = (body: unknown) => ({ ok: true, status: 200, json: async () => body });
@@ -128,15 +131,15 @@ it("prices every engine for free, then asks only the selected unstored ones in o
       max_cost_usd: 0.0001,
     });
   }
-  expect(row("chat_gpt")).toContain("$0.0843");
-  expect(row("claude")).toContain("$0.05");
+  expect(row("chat_gpt")).toContain("843 points");
+  expect(row("claude")).toContain("500 points");
   expect(row("perplexity")).toContain("Stored · free");
   expect(row("perplexity")).toContain("Doesn't name you");
 
   // Deselect Gemini: the button names exactly what it will spend.
   await act(async () => { button("Gemini", host.querySelector('[data-engine="gemini"]')!)!.click(); });
   const ask = button("Ask 2 engines");
-  expect(ask?.textContent).toContain("$0.1343");
+  expect(ask?.textContent).toContain("1,343 points");
 
   await act(async () => { ask!.click(); });
   await settle();
@@ -146,7 +149,7 @@ it("prices every engine for free, then asks only the selected unstored ones in o
   ]);
   expect(row("chat_gpt")).toContain("Names you");
   expect(row("chat_gpt")).toContain("2 cited");
-  expect(row("gemini")).toContain("$0.04"); // never asked
+  expect(row("gemini")).toContain("400 points"); // never asked
   expect(text()).toContain("Nothing to ask");
 });
 

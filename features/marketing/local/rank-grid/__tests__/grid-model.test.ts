@@ -150,6 +150,7 @@ describe("gridPoints", () => {
 });
 
 describe("sourceLine", () => {
+  const fmt = (u: number | null | undefined) => `<${u}>`;
   const env = (reused: string[], evidence: { run_id: string; observed_at: string }[], charged = 0) => ({
     __kind: "seo.tool_envelope" as const,
     status: "ok" as const,
@@ -163,7 +164,7 @@ describe("sourceLine", () => {
       sourceLine(env(["r1", "r2"], [
         { run_id: "r1", observed_at: "2026-10-06T12:49:15Z" },
         { run_id: "r2", observed_at: "2026-10-06T12:49:59Z" },
-      ])),
+      ]), fmt),
     ).toEqual({ reused: true, text: "Reused from Oct 6, 2026" });
   });
 
@@ -171,11 +172,11 @@ describe("sourceLine", () => {
     const line = sourceLine(env(["r1"], [
       { run_id: "r1", observed_at: "2026-10-05T10:00:00Z" },
       { run_id: "r2", observed_at: "2026-10-06T12:00:00Z" },
-    ], 0.002));
-    expect(line.text).toBe("1 of 2 reused from Oct 5, 2026 · Bought Oct 6, 2026 · $0.002");
-    expect(sourceLine(env([], [{ run_id: "r2", observed_at: "2026-10-06T12:00:00Z" }], 0.05))).toEqual({
+    ], 0.002), fmt);
+    expect(line.text).toBe("1 of 2 reused from Oct 5, 2026 · Bought Oct 6, 2026 · <0.002>");
+    expect(sourceLine(env([], [{ run_id: "r2", observed_at: "2026-10-06T12:00:00Z" }], 0.05), fmt)).toEqual({
       reused: false,
-      text: "Bought Oct 6, 2026 · $0.05",
+      text: "Bought Oct 6, 2026 · <0.05>",
     });
   });
 });
