@@ -99,6 +99,13 @@ mutation→Y.Map translator. Out of scope.
 - **Catch-up:** broadcast a `y-request-state` message; first peer to respond
   with `y-state` payload supplies the in-flight CRDT updates. If no peers
   respond within 1500 ms, assume we're alone.
+- **Anti-entropy (while connected):** broadcast is at-most-once, so a member
+  probes the room with `y-sv` (state vector + delete-set digest) when it holds
+  pending structs (after a 400 ms reorder window), once after a burst of local
+  edits goes quiet (1.5 s), and on a jittered tick (knob
+  `collab.anti_entropy_interval_ms`, 15 s) only when the doc changed or
+  something is pending. A peer holding more answers with a targeted `y-state`
+  diff; equal vectors and digests send nothing, so an idle room is silent.
 - **Snapshot rewrite:** only the **host** writes snapshots. Host election is
   deterministic: lowest `uid` (lex) among connected Awareness peers. Schedule:
   the existing 2.5 s debounce after a local mutation, PLUS a forced rewrite
@@ -210,6 +217,13 @@ workbook routes pay zero bundle cost.
 ---
 
 ## Change log
+
+- `2026-10-06` — claude (yjs-anti-entropy): **frames lost while connected are
+  recovered.** `SupabaseYjsProvider` gained the `y-sv` anti-entropy probe
+  (pending-triggered, post-burst, knob-backed tick). Proof:
+  `features/spaces/collab/__tests__/convergence.test.ts` — the 2% drop case
+  (was `it.failing`) and a 10% drop / 500-keystroke case converge; an idle room
+  sends zero frames. Knob row `collab.anti_entropy_interval_ms` = 15000 seeded live.
 
 - `2026-06-12` — claude: **v2.1 polish.** Added `WorkbookCursorOverlay.tsx`
   — colored rings + name tags pinned to each remote peer's selected cell,

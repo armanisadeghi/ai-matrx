@@ -9,6 +9,7 @@
  *   event: "y-awareness"     — base64 awareness update
  *   event: "y-request-state" — new joiner asks existing peers for full state
  *   event: "y-state"         — full state response targeted at one clientId
+ *   event: "y-sv"            — anti-entropy probe: state vector + delete-set digest
  *
  * Design notes:
  *  - Outbound y-doc updates use a "remote" origin convention so the doc.update
@@ -39,6 +40,20 @@
  * are idempotent; "first answer wins" made the catch-up a no-op). The gap runs
  * both ways, so the catch-up also re-sends this member's whole state: its own
  * offline edits reach the peers.
+ *
+ * ANTI-ENTROPY. Broadcast is at-most-once, and a frame can be lost while the
+ * socket stays up (rate limit, a hiccup that never becomes a disconnect). Yjs
+ * parks every later update that builds on the lost one as pending, forever,
+ * and a lost delete leaves no trace at all. So while connected each member
+ * probes the room with `y-sv` — its state vector plus a digest of its delete
+ * set — (a) shortly after it holds pending structs, (b) once after a burst of
+ * local edits goes quiet, and (c) on a jittered knob-backed interval, but only
+ * if the doc changed since the last tick or something is still pending. A peer
+ * that holds structs or deletes the prober lacks answers with
+ * `encodeStateAsUpdateV2(doc, theirVector)` as a targeted `y-state`; a peer that
+ * lacks something answers once with its own probe (marked `reply`, which is never
+ * answered with another probe). Equal vectors and digests produce no frame, so an
+ * idle room is silent. Our own probes are rate-limited (MIN_PROBE_GAP_MS).
  *
  * TEARDOWN. `disconnect()` sends the pending awareness (the "leave") before it
  * closes, so a caller tears down synchronously — a deferred disconnect left an
@@ -98,6 +113,11 @@ export type SupabaseYjsProviderOptions = {
   manager?: RealtimeManager;
   /** Fires when this holder gains or loses tab leadership of its room. */
   onLeaderChange?: () => void;
+  /**
+   * Base period (ms) of the anti-entropy tick. Defaults to the
+   * `collab.anti_entropy_interval_ms` feature knob; tests pass a number.
+   */
+  antiEntropyIntervalMs?: number;
 };
 
 /** One place names this channel. A second, different declaration throws. */
@@ -117,6 +137,15 @@ const AWARENESS_THROTTLE_MS = 50;
 const CHUNK_BATCH_TTL_MS = 5000;
 const DEFAULT_CHUNK_SIZE = 200_000;
 
+/** Feature knob holding the anti-entropy tick period (ms). */
+const ANTI_ENTROPY_KNOB = { feature: "collab", key: "anti_entropy_interval_ms" } as const;
+/** Protocol timings, not policy: how long out-of-order frames get to fill a
+ *  gap before we probe, how long local typing must pause before the post-burst
+ *  probe, and the floor between two of our own probes. */
+const PENDING_PROBE_DELAY_MS = 400;
+const QUIET_PROBE_DELAY_MS = 1500;
+const MIN_PROBE_GAP_MS = 1000;
+
 type ChunkFrame = {
   batchId: string;
   seq: number;
@@ -134,6 +163,16 @@ type AwarenessFrame = {
 
 type RequestStateFrame = {
   clientId: string;
+};
+
+type StateVectorFrame = {
+  clientId: string;
+  /** base64 V1 state vector. */
+  sv: string;
+  /** Digest of the delete set — deletions never move the state vector. */
+  ds: string;
+  /** An answer to someone else's probe; never answered with another probe. */
+  reply?: boolean;
 };
 
 type PendingBatch = {
@@ -155,6 +194,20 @@ function toBase64(bytes: Uint8Array): string {
 
 function fromBase64(b64: string): Uint8Array {
   return Uint8Array.from(atob(b64), (c) => c.charCodeAt(0));
+}
+
+/** FNV-1a over bytes — a cheap equality digest, not a security hash. */
+function fnv1a(bytes: Uint8Array): string {
+  let h = 0x811c9dc5;
+  for (let i = 0; i < bytes.length; i++) {
+    h ^= bytes[i];
+    h = Math.imul(h, 0x01000193);
+  }
+  return `${bytes.length.toString(36)}.${(h >>> 0).toString(36)}`;
+}
+
+function hasPending(doc: Y.Doc): boolean {
+  return doc.store.pendingStructs !== null || doc.store.pendingDs !== null;
 }
 
 export class SupabaseYjsProvider {
@@ -182,13 +235,25 @@ export class SupabaseYjsProvider {
   private awarenessFlushTimer: ReturnType<typeof setTimeout> | null = null;
   private awarenessFlushQueue = new Set<number>();
 
+  // Anti-entropy state.
+  private readonly antiEntropyIntervalOption: number | undefined;
+  private antiEntropyIntervalMs: number | null = null;
+  private tickTimer: ReturnType<typeof setTimeout> | null = null;
+  private quietTimer: ReturnType<typeof setTimeout> | null = null;
+  private pendingTimer: ReturnType<typeof setTimeout> | null = null;
+  private pendingBackoffMs = MIN_PROBE_GAP_MS;
+  private lastProbeAt = 0;
+  private changedSinceTick = false;
+
   // Stable bound listeners so we can detach on disconnect.
   private readonly onDocDestroy = (): void => this.disconnect();
 
   private readonly onDocUpdate = (update: Uint8Array, origin: unknown): void => {
     if (this._disposed || !this.channel) return;
+    this.changedSinceTick = true;
     if (origin === REMOTE_DOC_ORIGIN) return; // don't echo
     this.broadcastChunked("y-update", update);
+    this.scheduleQuietProbe();
   };
 
   private readonly onAwarenessUpdate = (
@@ -211,6 +276,7 @@ export class SupabaseYjsProvider {
     this.chunkSize = options.chunkSize ?? DEFAULT_CHUNK_SIZE;
     this.manager = options.manager ?? currentRealtimeManager();
     this.onLeaderChange = options.onLeaderChange;
+    this.antiEntropyIntervalOption = options.antiEntropyIntervalMs;
     this.channelName = yjsChannel.topic({
       prefix: options.channelPrefix ?? "workbook",
       resourceId: this.workbookId,
@@ -265,6 +331,10 @@ export class SupabaseYjsProvider {
         {
           event: "y-state",
           onMessage: ({ data }) => this.handleStateResponse(data as StateFrame),
+        },
+        {
+          event: "y-sv",
+          onMessage: ({ data }) => this.handleStateVector(data as StateVectorFrame),
         },
       ],
       // Chunked frames must be reassembled IN ORDER; the package's queue
@@ -321,6 +391,7 @@ export class SupabaseYjsProvider {
     // Ask existing peers for the current doc; resolve solo if nobody answers.
     const req: RequestStateFrame = { clientId: this.clientId };
     this.channel.send("y-request-state", req);
+    this.startAntiEntropy();
 
     this.aloneTimer = setTimeout(() => {
       this.aloneTimer = null;
@@ -356,6 +427,10 @@ export class SupabaseYjsProvider {
       clearTimeout(this.aloneTimer);
       this.aloneTimer = null;
     }
+    for (const t of [this.tickTimer, this.quietTimer, this.pendingTimer]) {
+      if (t) clearTimeout(t);
+    }
+    this.tickTimer = this.quietTimer = this.pendingTimer = null;
 
     for (const batch of this.pendingDocBatches.values()) clearTimeout(batch.timer);
     for (const batch of this.pendingStateBatches.values()) clearTimeout(batch.timer);
@@ -421,6 +496,7 @@ export class SupabaseYjsProvider {
     // V2 decoder — outbound updates come from doc.on('updateV2'). Mixing V1
     // apply with V2 frames silently corrupts the doc.
     Y.applyUpdateV2(this.doc, update, REMOTE_DOC_ORIGIN);
+    this.checkPending();
   }
 
   private handleAwarenessFrame(frame: AwarenessFrame): void {
@@ -447,6 +523,7 @@ export class SupabaseYjsProvider {
     const update = fromBase64(assembled);
     // V2 decoder — state snapshots are encoded with encodeStateAsUpdateV2.
     Y.applyUpdateV2(this.doc, update, REMOTE_DOC_ORIGIN);
+    this.checkPending();
     if (this.hasInitialState) return;
     this.hasInitialState = true;
     if (this.aloneTimer) {
@@ -454,6 +531,147 @@ export class SupabaseYjsProvider {
       this.aloneTimer = null;
     }
     this.resolveReady?.();
+  }
+
+  // ─── Anti-entropy ────────────────────────────────────────────────────────
+
+  private startAntiEntropy(): void {
+    if (this.antiEntropyIntervalOption !== undefined) {
+      this.antiEntropyIntervalMs = this.antiEntropyIntervalOption;
+      this.scheduleTick();
+      return;
+    }
+    import("@/lib/knobs/featureKnobs")
+      .then(({ knobInt }) => knobInt(ANTI_ENTROPY_KNOB.feature, ANTI_ENTROPY_KNOB.key))
+      .then((ms) => {
+        if (this.inert()) return;
+        this.antiEntropyIntervalMs = ms;
+        this.scheduleTick();
+      })
+      .catch((err: unknown) => {
+        // Not silent: without the tick, a lost tail frame is only recovered by
+        // the next edit's probe or a reconnect.
+        console.warn(
+          `[collab] anti-entropy tick disabled for ${this.channelName}: ` +
+            `could not read knob ${ANTI_ENTROPY_KNOB.feature}.${ANTI_ENTROPY_KNOB.key}`,
+          err,
+        );
+      });
+  }
+
+  /** Jittered (±25%) so a room's members do not probe in lockstep. */
+  private scheduleTick(): void {
+    const base = this.antiEntropyIntervalMs;
+    if (this.inert() || !this.channel || base === null || base <= 0) return;
+    const delay = Math.round(base * (0.75 + Math.random() * 0.5));
+    this.tickTimer = setTimeout(() => {
+      this.tickTimer = null;
+      if (this.inert()) return;
+      if (this.changedSinceTick || hasPending(this.doc)) {
+        this.changedSinceTick = false;
+        this.probe(false);
+      }
+      this.scheduleTick();
+    }, delay);
+  }
+
+  /** One probe after a burst of local edits goes quiet (debounced). */
+  private scheduleQuietProbe(): void {
+    if (this.quietTimer) clearTimeout(this.quietTimer);
+    this.quietTimer = setTimeout(() => {
+      this.quietTimer = null;
+      this.probe(false);
+    }, QUIET_PROBE_DELAY_MS);
+  }
+
+  /** After a remote apply: a gap that survives the reorder window is probed. */
+  private checkPending(): void {
+    if (!hasPending(this.doc)) {
+      this.pendingBackoffMs = MIN_PROBE_GAP_MS;
+      return;
+    }
+    this.schedulePendingProbe(PENDING_PROBE_DELAY_MS);
+  }
+
+  private schedulePendingProbe(delay: number): void {
+    if (this.pendingTimer || this.inert()) return;
+    this.pendingTimer = setTimeout(() => {
+      this.pendingTimer = null;
+      if (this.inert() || !hasPending(this.doc)) {
+        this.pendingBackoffMs = MIN_PROBE_GAP_MS;
+        return;
+      }
+      this.probe(false);
+      // Still stuck after the answer window → probe again, backing off to the tick period.
+      const cap = this.antiEntropyIntervalMs ?? 30_000;
+      this.pendingBackoffMs = Math.min(this.pendingBackoffMs * 2, cap);
+      this.schedulePendingProbe(this.pendingBackoffMs);
+    }, delay);
+  }
+
+  private deleteSetDigest(): string {
+    // An update relative to our own vector carries no structs — only the delete set.
+    return fnv1a(Y.encodeStateAsUpdate(this.doc, Y.encodeStateVector(this.doc)));
+  }
+
+  /** Send our state vector + delete-set digest. Rate-limited unless it is a reply. */
+  private probe(reply: boolean): void {
+    if (this.inert() || !this.channel) return;
+    const now = Date.now();
+    const wait = this.lastProbeAt + MIN_PROBE_GAP_MS - now;
+    // Replies bypass the floor: they only ever answer a peer's (rate-limited) probe.
+    if (!reply && wait > 0) {
+      this.schedulePendingProbeAfterGap(wait);
+      return;
+    }
+    this.lastProbeAt = now;
+    const frame: StateVectorFrame = {
+      clientId: this.clientId,
+      sv: toBase64(Y.encodeStateVector(this.doc)),
+      ds: this.deleteSetDigest(),
+      ...(reply ? { reply: true } : {}),
+    };
+    this.channel.send("y-sv", frame);
+  }
+
+  /** A rate-limited non-reply probe is deferred, never dropped. */
+  private schedulePendingProbeAfterGap(wait: number): void {
+    if (this.quietTimer) return; // a probe is already coming
+    this.quietTimer = setTimeout(() => {
+      this.quietTimer = null;
+      this.probe(false);
+    }, wait);
+  }
+
+  private handleStateVector(frame: StateVectorFrame): void {
+    if (this.inert() || !this.channel) return;
+    if (frame.clientId === this.clientId) return;
+    const theirSvBytes = fromBase64(frame.sv);
+    const theirs = Y.decodeStateVector(theirSvBytes);
+    const ours = Y.decodeStateVector(Y.encodeStateVector(this.doc));
+    let weHaveMore = false;
+    for (const [client, clock] of ours) {
+      if (clock > (theirs.get(client) ?? 0)) {
+        weHaveMore = true;
+        break;
+      }
+    }
+    let theyHaveMore = false;
+    for (const [client, clock] of theirs) {
+      if (clock > (ours.get(client) ?? 0)) {
+        theyHaveMore = true;
+        break;
+      }
+    }
+    const dsDiffers = frame.ds !== this.deleteSetDigest();
+    if (weHaveMore || dsDiffers) {
+      this.broadcastChunked("y-state", Y.encodeStateAsUpdateV2(this.doc, theirSvBytes), {
+        forClientId: frame.clientId,
+      });
+    }
+    if (!frame.reply && (theyHaveMore || dsDiffers || hasPending(this.doc))) {
+      this.probe(true);
+    }
   }
 
   /** Reassemble chunked frames by batchId; returns the joined base64 string when complete. */
