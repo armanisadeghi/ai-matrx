@@ -3,9 +3,10 @@
   "updated": "2026-10-07",
   "sha": "e389e62b291c8f8958b40ae46c3c3cb67335a4b2",
   "sites": 33659,
-  "count": 8,
+  "count": 9,
   "ids": [
     "arbitrary-text-size|features/esign/signer/parts/PaperField.tsx",
+    "raw-color|features/esign/signer/parts/ControlInput.tsx",
     "raw-color|features/esign/signer/parts/Dialogs.tsx",
     "raw-color|features/esign/signer/parts/DocumentStack.tsx",
     "raw-color|features/esign/signer/parts/Panels.tsx",
@@ -10510,6 +10511,11 @@
       "date": "2026-10-07"
     },
     "raw-color|features/esign/signer/parts/Dialogs.tsx": {
+      "reason": "the e-sign page is paper in light and dark (contract/paper.ts, CONTRACT §12.6): fields, marks and page chrome drawn on it use paper inks, never theme tokens",
+      "accepted_by": "Armani Sadeghi",
+      "date": "2026-10-07"
+    },
+    "raw-color|features/esign/signer/parts/ControlInput.tsx": {
       "reason": "the e-sign page is paper in light and dark (contract/paper.ts, CONTRACT §12.6): fields, marks and page chrome drawn on it use paper inks, never theme tokens",
       "accepted_by": "Armani Sadeghi",
       "date": "2026-10-07"
