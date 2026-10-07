@@ -26,6 +26,7 @@ import { toast } from "@/lib/toast";
 
 import type { SpaceBlock } from "../contract";
 import { createDesignedDatabase, readDesign } from "../data/designed-database";
+import { adoptPageDatabase } from "../data/new-database";
 import { useSpaces } from "../state/SpacesProvider";
 import { MOVE_IN_KEY } from "./spaces-ai";
 
@@ -151,6 +152,8 @@ export function MoveInHost({ children, userId }: { children: ReactNode; userId: 
       }
       const { blocks, warnings } = movedBlocks(page.markdown, tables);
       const doc = await spaces.store.create({ parentId: null, title: page.title, blocks });
+      // The moved-in page owns the databases made for it (sharing the page shares them).
+      for (const t of tables) if (t) await adoptPageDatabase(doc.id, t.tableId).catch((err: unknown) => toast.warning(`${t.name}: not shared with the page`, { description: err instanceof Error ? err.message : undefined }));
       spaces.retryLoad();
       spaces.open(doc.id);
       const left = [...page.notes, ...warnings];

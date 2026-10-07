@@ -18,7 +18,7 @@ import { Fragment, useCallback, useEffect, useRef, useState, type PointerEvent a
 import { useScrollFade } from "@ai-matrx/design-system";
 import { ChevronDown, createLucideIcon } from "lucide-react";
 import { ALCHEMY_GLYPH_PATHS } from "@ai-matrx/design-system/content-transfer/icon";
-import { useMatrxTableRowAlchemy, useMatrxTableRowControls } from "@ai-matrx/design-system/data-table/host";
+import { declareLazyDataProps, useMatrxTableRowAlchemy, useMatrxTableRowControls } from "@ai-matrx/design-system/data-table/host";
 import { Slot } from "@radix-ui/react-slot";
 import { cn } from "@/lib/utils";
 import { useIsMobile } from "@ai-matrx/kit/media-query";
@@ -608,3 +608,9 @@ export function ItemContextMenu({
     </NonEditableContextMenu>
   );
 }
+
+// `config` may be a GETTER resolved only when the menu opens. Every list writes it inline
+// (`config={() => menuFor(row)}`), so the table compares it by what it returns, never by identity —
+// otherwise each host render redrew every row (/crm: 25 of 25 per checkbox tick).
+declareLazyDataProps(ItemMenu, ["config"]);
+declareLazyDataProps(ItemContextMenu, ["config"]);

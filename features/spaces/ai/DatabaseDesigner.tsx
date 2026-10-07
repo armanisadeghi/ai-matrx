@@ -24,6 +24,7 @@ import { useAppSelector } from "@/lib/redux/hooks";
 import { toast } from "@/lib/toast";
 
 import { applyRedesign, createDesignedDatabase, readDesign } from "../data/designed-database";
+import { adoptPageDatabase } from "../data/new-database";
 import type { SpaceDbView } from "../data/sources";
 import type { PickedSource } from "../data/SourcePicker";
 import { DESIGN_DATABASE_KEY } from "./spaces-ai";
@@ -115,6 +116,8 @@ export function DatabaseDesignerHost({ children, userId }: { children: ReactNode
       pending.current = null;
       if (p.kind === "design") {
         const made = await createDesignedDatabase(design, p.page.spaceId, activeOrg, userId);
+        // The page that asked owns the database it designed (sharing the page shares it).
+        if (p.page.spaceId) await adoptPageDatabase(p.page.spaceId, made.table.tableId).catch((err: unknown) => toast.warning("Not shared with the page", { description: err instanceof Error ? err.message : undefined }));
         p.resolve(made);
         toast.success(`${design.name} is ready`, design.summary ? { description: design.summary.slice(0, 140) } : undefined);
       } else {

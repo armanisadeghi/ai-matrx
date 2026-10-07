@@ -197,6 +197,7 @@ it("reading: the reading set shows, and a highlight saves through the sidecar ex
     "Comment", "Suggest an edit",
   ]));
   // Only ONE selection popup exists in the document.
+  console.log("TBDBG", [...document.querySelectorAll("[role=toolbar]")].map(e=>e.outerHTML.slice(0,400)).join("\n---\n"));
   expect(document.querySelectorAll("[role=toolbar]").length).toBe(1);
 
   const yellow = toolbar()!.querySelector<HTMLButtonElement>("button[aria-label='Highlight yellow']")!;

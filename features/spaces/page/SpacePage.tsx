@@ -22,7 +22,7 @@ import { FindInPage } from "./FindInPage";
 import { withPaintedSizes } from "../editor/database-host";
 import { useDatabaseDesigner } from "../ai/DatabaseDesigner";
 import { useMoveIn } from "../ai/MoveIn";
-import { createPageDatabase } from "../data/new-database";
+import { adoptPageDatabase, createPageDatabase } from "../data/new-database";
 import { newViewId } from "../data/sources";
 import { AskAiMenu, type AskAiTarget } from "../ai/AskAiMenu";
 import { AskPageButton } from "../ai/AskPageButton";
@@ -514,17 +514,23 @@ function SpacePageScreen({ spaceId }: { spaceId: string }) {
       }
       return value;
     });
+  const warnNotAdopted = (err: unknown) => toast.warning("Not shared with the page", { description: err instanceof Error ? err.message : undefined });
   /** "/" → Database (inline or full page): a new table in this page's organization, as a sub-page when asked. */
   const newDatabase = async (fullPage: boolean): Promise<{ table: PickedSource; pageId?: string } | null> => {
     try {
       const table = await createPageDatabase(spaceId, activeOrg, userId);
-      if (!fullPage) return { table };
+      // The page that holds the database owns it (sharing the page shares it): this page inline, else the new sub-page.
+      if (!fullPage) {
+        await adoptPageDatabase(spaceId, table.tableId).catch(warnNotAdopted);
+        return { table };
+      }
       const view = { id: newViewId(), name: "Table", layout: "grid" as const };
       const sub = await spaces.createSpace(spaceId, {
         open: false,
         title: table.name,
         blocks: [{ id: crypto.randomUUID(), type: "database", props: { source: { kind: "table", tableId: table.tableId }, inline: false, title: table.name, linked: false, views: [view], activeViewId: view.id } }],
       });
+      await adoptPageDatabase(sub.id, table.tableId).catch(warnNotAdopted);
       window.setTimeout(() => spaces.open(sub.id), 60);
       return { table, pageId: sub.id };
     } catch (err) {

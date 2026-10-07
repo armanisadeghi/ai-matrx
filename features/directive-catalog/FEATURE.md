@@ -11,7 +11,8 @@ The admin surface that shows the **Matrx Directive Catalog** — every noun (a t
 
 ## Backend contract (do NOT rebuild)
 
-- `GET /directives/catalog` on the Python brain. In-app path is **bare** (`/directives/catalog`); the public URL adds `/api` (stripped server-side). Non-sensitive, unauthenticated GET.
+- `GET /directives/catalog` on the Python brain — the SUMMARY (every noun's cells + identity, actions, aliases; NO item schemas; ~32 KB gzip, cached server-side, `ETag` = `catalog_version`). In-app path is **bare** (`/directives/catalog`); the public URL adds `/api` (stripped server-side). Non-sensitive, unauthenticated GET.
+- `GET /directives/catalog/{noun}` — ONE noun's write item schemas (`DirectiveNounSchemas.schemas[class]`), fetched only when a form/inspector for that noun opens: `catalogCache.ts::loadNounSchemas` (one request per noun per tab) via `hooks/useNounSchemas.ts`. Never read schemas off a summary row — it has none.
 - Base URL is resolved from the canonical `apiConfigSlice` (`selectResolvedBaseUrl`) — the admin server toggle routes this too. NEVER hardcoded.
 - Response shape aliased from OpenAPI in `types.ts` (`components["schemas"]["DirectiveCatalog"]` / `NounDirectives`; states `"yes" | "planned" | "no"`).
 
@@ -55,7 +56,7 @@ The admin surface that shows the **Matrx Directive Catalog** — every noun (a t
 
 
 - **Write forms are generated from the server's item schema — never hand-authored per noun.**
-  `schemaFields.ts::deriveSchemaFields` maps every property of `noun.schemas[verb]` to a typed
+  `schemaFields.ts::deriveSchemaFields` maps every property of the noun's `schemas[verb]` (`useNounSchemas`) to a typed
   field (text, number, yes/no, pick-list, date/time, record search, JSON); required + the
   noun's `title_column` lead, the rest sit under "More fields" ordered by kind. Id fields
   resolve to a record search via `identityPicker.ts::payloadFieldEntityInfo` (`assignee_id` →
@@ -93,8 +94,7 @@ The admin surface that shows the **Matrx Directive Catalog** — every noun (a t
 
 The catalog is COMPUTED server-side from `platform.entity_types` + the envelope shape
 registry, and the payload is enriched: per-noun `label` / `title_column` /
-`identity_fields` (required fields of the registered reference item model) / per-verb
-write `schemas`, plus an `actions` section (registered Kind Actions) and the server's
+`identity_fields` (required fields of the registered reference item model), plus an `actions` section (registered Kind Actions) and the server's
 alias map. Consequences here:
 
 - `buildEnvelope.ts::refFieldsForNoun(noun, catalogNoun)` derives identity fields from
@@ -108,6 +108,8 @@ alias map. Consequences here:
   reference resolvers derive from.
 
 ## Change Log
+
+- 2026-10-07 — **G12 catalog speed.** The summary carries no schemas (live before: 2.41 MB, 5.4–7.6 s; now ~292 KB raw / ~32 KB gzip, served from a server-side cache with ETag/304). Each form loads ONE noun's schemas: `service.ts::fetchDirectiveNounSchemas` → `catalogCache.ts::loadNounSchemas`/`peekNounSchemas` → `hooks/useNounSchemas.ts`, read by the picker's `WriteStep`, the builder (skeleton while loading) and the grid's Inspect (offered on every non-`no` write cell; `DirectiveCatalogClient` loads the schema, then opens the canvas tab). The mirrored manifest carries `noun_schemas` ({noun: {class: schema}}); `gen-directive-nouns.mjs` and the snapshot tests read it there (generated output unchanged). Live (local aidream): "Change…" for Task showed Create/Update/Delete 28 ms after the press on a cold tab; the Create form and the admin builder rendered every field.
 
 - 2026-10-07 — G10B review closed (resumed lane). Phone-first page: below lg the body is the one scroll area (type table at 70dvh, then Other actions, then the builder) and takes the shell's floating-clearance runway (`data-matrx-page-scroll`), so the builder's last line ends clear of the floating chips (dev `[floating-clearance]` guard fired on this scroller before). The family filter is full width on a phone (it had collapsed to a dot). The type table is PAGED (`DIRECTIVE_CATALOG_PAGE_SIZE` = 50): "show all" put ~69,000 nodes on the page, so every dialog's scroll lock cost an ~800 ms style pass — the builder's confirm opened ~950 ms after the click; now ~75 ms. The jargon header is "Other actions". Confirms come from the directive host's `ask` (Create a Task with no title? / Create Task X?).
 

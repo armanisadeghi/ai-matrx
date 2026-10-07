@@ -26,3 +26,24 @@ export async function createPageDatabase(spaceId: string | null, activeOrg: stri
   if (!made.ok) throw new Error(made.error.message || "The database could not be made.");
   return { tableId: made.data, name };
 }
+
+/** The association that makes a table its page's own (Notion: an inline database is part of its page). */
+export const PAGE_DATABASE = "page_database";
+
+/**
+ * The page owns the table it made: one conveying edge `document → record` (`page_database`, editor max,
+ * trash follows the page). Whoever the page is shared with then opens the table and its rows at the
+ * page's level (the access ladder's "children inherit their parent"). Only for a table THIS page made —
+ * a linked view of a table that lives elsewhere never calls this. Throws with the reason when refused.
+ */
+export async function adoptPageDatabase(spaceId: string, tableId: string, db: { rpc: (fn: "assoc_link", args: Record<string, unknown>) => PromiseLike<{ error: { message: string } | null }> } = createClient() as never): Promise<void> {
+  const { error } = await db.rpc("assoc_link", {
+    p_source_type: "document",
+    p_source_id: spaceId,
+    p_target_type: "record",
+    p_target_id: tableId,
+    p_role: PAGE_DATABASE,
+    p_label: PAGE_DATABASE,
+  });
+  if (error) throw new Error(`The database was made, but sharing this page won't share it: ${error.message}`);
+}
