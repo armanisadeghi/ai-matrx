@@ -31,4 +31,3 @@ Its files stay as they are.
 ## Docs and comments — both versions kept
 
 ## Held files
-- _conflicts/2026-10-07-081409-old-path-refused/features/agents/components/run-controls/CreatorRunPanelLazy.tsx.held — recreated moved path features/agents/components/run-controls/CreatorRunPanelLazy.tsx; belongs at ../aidream/apps/shared/chat/src/agents/components/run-controls/CreatorRunPanelLazy.tsx
