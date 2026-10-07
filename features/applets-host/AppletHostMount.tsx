@@ -35,6 +35,9 @@ import { captureError } from "@/lib/diagnostics/errorCaptureStore";
 import { provideStoredComponentScopeModules } from "@/lib/code-runtime/stored-scope";
 import { ensureOrganizationContext } from "@/lib/organization/organization-gate";
 import { AppletKind } from "@/features/applets-host/AppletForeignKind";
+import { DataPage } from "@/features/agent-apps/embed/DataPage";
+import { useDeclaredSurfaceMandates, type SurfaceMandateRef } from "@ai-matrx/chat/surfaces/runtime/surface-mandates";
+import { storedMandateKey } from "@ai-matrx/agents/mandates";
 
 /** What every Applet may import beside its own files (the record adds its own entries). */
 const HOST_SCOPE = {
@@ -103,12 +106,18 @@ export function AppletHostMount({
   slug,
   basePath = `/apps/${slug}`,
   preview,
+  files,
+  embedded = false,
 }: {
   appletId: string;
   slug: string;
   /** Where the Applet's pages live in the URL (default `/apps/<slug>`). */
   basePath?: string;
   preview?: AppletPreviewOptions;
+  /** Unsaved file buffers laid over the saved record's files (a code workspace previewing its edits). */
+  files?: Readonly<Record<string, string>>;
+  /** Placed inside another page (a Space block): its pages navigate in place; writes stay live. */
+  embedded?: boolean;
 }) {
   const pathname = usePathname();
   const search = useSearchParams().toString();
@@ -121,6 +130,11 @@ export function AppletHostMount({
     previewRef.current = preview;
   });
   const isPreview = preview != null;
+  // In preview and in an embedded block the Applet's pages navigate in memory, never the browser URL.
+  const inPlace = isPreview || embedded;
+  // Recompile only when the buffer's CONTENT changes, not its object identity.
+  const filesKey = files ? JSON.stringify(files) : "";
+  const [jobs, setJobs] = useState<SurfaceMandateRef[]>([]);
 
   // One host per Applet, kept for the page's life: switching organization must not remount the Applet
   // (a running job would die with it). Jobs read the organization at the moment they start (below).
@@ -146,7 +160,7 @@ export function AppletHostMount({
       nav: {
         async go(to) {
           const tail = to === "/" || to === "" ? "" : to.startsWith("/") ? to : `/${to}`;
-          if (isPreview) {
+          if (inPlace) {
             previewLocation = locationOf(basePath, `${basePath}${tail.split("?")[0] ?? ""}`, tail.split("?")[1] ?? "");
             for (const listener of listeners) listener(previewLocation);
             return;
@@ -154,7 +168,7 @@ export function AppletHostMount({
           pushAppletUrl(`${basePath}${tail}`);
         },
         async current() {
-          if (isPreview) return previewLocation;
+          if (inPlace) return previewLocation;
           return locationOf(basePath, window.location.pathname, window.location.search);
         },
         subscribe(listener) {
@@ -176,8 +190,20 @@ export function AppletHostMount({
     const channel: PlatformHost = held ? { ...host, data: held } : host;
     void host
       .record()
-      .then((record) =>
-        mountAppletAsync(record, channel, HOST_SCOPE, {
+      .then((record) => {
+        // The Applet's fixed jobs, declared in the top Agents menu (agent-disclosure; never page chips).
+        void Promise.all(
+          record.mandates.map(async (m): Promise<SurfaceMandateRef> => {
+            const d = await host.intelligence.describe(m.key);
+            return { mandateKey: storedMandateKey(m.key), does: d.ok ? d.data.goal || d.data.label : m.alias, surfaceName: record.surfaceName };
+          }),
+        ).then((refs) => {
+          if (!cancelled) setJobs(refs);
+        });
+        const buffer = filesKey ? (JSON.parse(filesKey) as Record<string, string>) : null;
+        return mountAppletAsync(buffer ? { ...record, files: { ...record.files, ...buffer } } : record, channel, HOST_SCOPE, {
+          // A page built from tables placed inside the Applet (`<DataPage id>`).
+          renderDataPage: (id: string) => <DataPage id={id} />,
           // The app's kind registry, or — for a kind the Applet's organization owns — the Applet's own read.
           renderKind: (kind: string, value: unknown) => <AppletKind host={host} kind={kind} value={value} />,
           renderRun,
@@ -192,8 +218,8 @@ export function AppletHostMount({
               }),
             );
           },
-        }),
-      )
+        });
+      })
       .then(
         (result) => {
           if (cancelled) return;
@@ -211,14 +237,16 @@ export function AppletHostMount({
       stopHeld?.();
       host.dispose();
     };
-  }, [appletId, basePath, store, isPreview]);
+  }, [appletId, basePath, store, isPreview, inPlace, filesKey]);
 
   // Route changes the browser makes (back, forward, a link) reach the Applet's pages.
   useEffect(() => {
-    if (isPreview) return;
+    if (inPlace) return;
     const location = locationOf(basePath, pathname, search);
     for (const listener of navListeners.current) listener(location);
-  }, [basePath, pathname, search, isPreview]);
+  }, [basePath, pathname, search, inPlace]);
+
+  useDeclaredSurfaceMandates(jobs);
 
   if (!mounted) {
     return (

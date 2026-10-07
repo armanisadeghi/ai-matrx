@@ -3,7 +3,7 @@
 // features/agent-apps/embed/AppletInPage.tsx — ONE APPLET DRAWN INSIDE A PAGE BUILT FROM TABLES (a Space's
 // `applet` block, records-ui `RecordsUiHost.applets`). Loaded on demand by `appletsPort.tsx`, so the Applet
 // host never rides a table page's own chunk. The Applet renders through the ONE host (`AppletHostMount`);
-// its pages live at `/apps/<slug>`, so following a link inside it opens the Applet itself.
+// it mounts `embedded`, so its own pages navigate in place inside the block and its writes stay live.
 
 import { useEffect, useState } from "react";
 import { createClient } from "@/utils/supabase/client";
@@ -36,7 +36,7 @@ export default function AppletInPage({ appId }: { appId: string }) {
   if (!slug) return <p className="text-xs text-muted-foreground">Opening the app…</p>;
   return (
     <div data-applet-in-page={appId} className="min-h-24">
-      <AppletHostMount appletId={appId} slug={slug} />
+      <AppletHostMount appletId={appId} slug={slug} embedded />
     </div>
   );
 }
