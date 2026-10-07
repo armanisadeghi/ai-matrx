@@ -22,6 +22,7 @@ import KeywordSerpIntentAnalysisBlock from "@/components/mardown-display/blocks/
 import SeoKeywordResearchResultBlock from "@/components/mardown-display/blocks/keyword-research/SeoKeywordResearchResultBlock";
 import PageBriefBlock from "@/components/mardown-display/blocks/page-brief/PageBriefBlock";
 import CmsHtmlPageResultBlock from "@/components/mardown-display/blocks/cms-html-page-result/CmsHtmlPageResultBlock";
+import AppletBuildResultBlock from "@/components/mardown-display/blocks/applet-build-result/AppletBuildResultBlock";
 import EpisodeTitleOptionsBlock from "@/components/mardown-display/blocks/episode-title-options/EpisodeTitleOptionsBlock";
 import MasterworkCheckupFindingBlock from "@/components/mardown-display/blocks/masterwork-checkup/MasterworkCheckupFindingBlock";
 import MasterworkResultBlock from "@/components/mardown-display/blocks/masterwork/MasterworkResultBlock";
@@ -381,6 +382,13 @@ const DOMAIN_BLOCK_COMPONENTS = {
   ) => (
     <LazyBlockWrapper>
       <CmsHtmlPageResultBlock {...props} />
+    </LazyBlockWrapper>
+  ),
+  AppletBuildResultBlock: (
+    props: React.ComponentProps<typeof AppletBuildResultBlock>,
+  ) => (
+    <LazyBlockWrapper>
+      <AppletBuildResultBlock {...props} />
     </LazyBlockWrapper>
   ),
   PlanPageResearchBlock: (
