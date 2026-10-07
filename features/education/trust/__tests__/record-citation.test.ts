@@ -91,9 +91,9 @@ describe("a saved result citation opens AT its field", () => {
 });
 
 describe("a document citation opens the route of ITS OWN kind", () => {
-  it("a markdown document opens in the Markdown Studio, never /documents (the cloud table)", () => {
+  it("a markdown document opens through /documents/<id>, the door that sends it to its own editor by format", () => {
     expect(recordCitationTarget(cite({ recordKind: "document", sourceId: `${ID}:2` }))?.href).toBe(
-      `/markdown-studio?source=document&id=${ID}`,
+      `/documents/${ID}`,
     );
   });
   it("a cloud document opens at /documents/<id>", () => {
@@ -112,8 +112,8 @@ describe("a document citation opens the route of ITS OWN kind", () => {
     });
     expect(env?.citations[0]?.recordKind).toBe("udt_document");
   });
-  it("the entity registry agrees: markdown document and cloud document have different doors", () => {
-    expect(tryGetEntityInfo("document")?.hrefFor?.(ID)).toBe(`/markdown-studio?source=document&id=${ID}`);
+  it("the entity registry agrees: both kinds enter through /documents/<id> (it resolves the content-store format)", () => {
+    expect(tryGetEntityInfo("document")?.hrefFor?.(ID)).toBe(`/documents/${ID}`);
     expect(tryGetEntityInfo("udt_document")?.hrefFor?.(ID)).toBe(`/documents/${ID}`);
   });
 });

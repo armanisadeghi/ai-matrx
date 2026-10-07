@@ -58,16 +58,36 @@ export interface PaintedSize {
   w: number;
   h: number;
   vw: number;
+  /** Measured with the built-in table's "+ New page" row (round 30, 92ab128fa7). Absent on older saves. */
+  nr?: 1;
 }
 /** A stored size counts at a width this close to the one it was painted at. */
 const PAINTED_WIDTH_SLACK = 24;
 const PAINTED_KEEP = 4;
+/** The built-in table's "+ New page" row (`.spaces-db-newrow`, 34px), which older saved sizes do not hold. */
+export const NEW_PAGE_ROW_PX = 34;
 
-export function readPaintedSizes(raw: unknown): PaintedSize[] {
+/**
+ * A block's stored sizes. `withNewRow`: the block draws the built-in table's "+ New page" row, so a size
+ * saved before that row existed (no `nr`) is short by the row and is read back with it added — no save
+ * is needed and nothing shifts when the row lands (round 31).
+ */
+export function readPaintedSizes(raw: unknown, withNewRow = false): PaintedSize[] {
   const list = Array.isArray(raw) ? raw : raw ? [raw] : [];
-  return list.flatMap((v: { w?: unknown; h?: unknown; vw?: unknown }) =>
-    v && typeof v.w === "number" && typeof v.h === "number" && v.h > 0 ? [{ w: v.w, h: v.h, vw: typeof v.vw === "number" ? v.vw : 0 }] : [],
+  return list.flatMap((v: { w?: unknown; h?: unknown; vw?: unknown; nr?: unknown }) =>
+    v && typeof v.w === "number" && typeof v.h === "number" && v.h > 0
+      ? [{ w: v.w, h: withNewRow && v.nr !== 1 ? v.h + NEW_PAGE_ROW_PX : v.h, vw: typeof v.vw === "number" ? v.vw : 0, ...(withNewRow || v.nr === 1 ? { nr: 1 as const } : {}) }]
+      : [],
   );
+}
+/** Whether a database block's props draw the built-in table's "+ New page" row (an entity source). */
+export function drawsNewPageRow(props: Record<string, unknown> | undefined): boolean {
+  const source = props?.["source"] as { kind?: unknown } | undefined;
+  return source?.kind === "entity";
+}
+/** A database block's stored sizes, read for what it draws now. */
+export function paintedSizesOf(props: Record<string, unknown> | undefined): PaintedSize[] {
+  return readPaintedSizes(props?.["paintedSize"], drawsNewPageRow(props));
 }
 /** The stored size for a block drawn `width` wide (else, before layout, in a window `vw` wide). */
 export function pickPainted(list: PaintedSize[], at: { width?: number; vw?: number }): PaintedSize | null {
@@ -203,8 +223,8 @@ export function withPaintedSizes<B extends { type: string; id: string; props?: R
         // Still holding (style.height set) or loading: not its own size yet.
         const r = el && !el.style.height && !el.querySelector(".spaces-db-loading") ? el.getBoundingClientRect() : null;
         if (r && r.height > 0) {
-          const now: PaintedSize = { w: Math.round(r.width), h: Math.round(r.height), vw: window.innerWidth };
-          const kept = readPaintedSizes(props?.paintedSize).filter((p) => Math.abs(p.w - now.w) > PAINTED_WIDTH_SLACK);
+          const now: PaintedSize = { w: Math.round(r.width), h: Math.round(r.height), vw: window.innerWidth, nr: 1 };
+          const kept = paintedSizesOf(props).filter((p) => Math.abs(p.w - now.w) > PAINTED_WIDTH_SLACK);
           props = { ...props, paintedSize: [now, ...kept].slice(0, PAINTED_KEEP) };
         }
       }

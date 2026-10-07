@@ -10,7 +10,7 @@ import { createExtension, defaultProps, type Extension, type ExtensionFactoryIns
 import { Plugin } from "@tiptap/pm/state";
 import { Decoration, DecorationSet } from "@tiptap/pm/view";
 import type { Node as PmNode } from "@tiptap/pm/model";
-import { DATABASE_EVENT_CLAIMS, DatabaseHost, activeLayout, pickPainted, readPaintedSizes } from "./database-host";
+import { DATABASE_EVENT_CLAIMS, DatabaseHost, activeLayout, paintedSizesOf, pickPainted } from "./database-host";
 import DisplayMath from "@/features/math/components/DisplayMath";
 import InlineMathText from "@/features/math/components/InlineMathText";
 import { FileText, Globe, Paperclip, TriangleAlert } from "lucide-react";
@@ -47,7 +47,7 @@ function paintedDecorations(doc: PmNode): DecorationSet {
   const decos: Decoration[] = [];
   doc.descendants((node, pos) => {
     if (node.type.name !== "database") return true;
-    const h = typeof window === "undefined" ? undefined : pickPainted(readPaintedSizes(readData(node.attrs.data).paintedSize), { vw: window.innerWidth })?.h;
+    const h = typeof window === "undefined" ? undefined : pickPainted(paintedSizesOf(readData(node.attrs.data)), { vw: window.innerWidth })?.h;
     if (h) decos.push(Decoration.node(pos, pos + node.nodeSize, { style: `--spaces-painted-h:${h}px` }));
     return false;
   });
@@ -353,7 +353,7 @@ export const storedBlockSpecs = {
   tableOfContents: storedSpec("tableOfContents", (_p, ctx) => <TableOfContents editor={ctx.editor} />),
   breadcrumb: storedSpec("breadcrumb", () => <Breadcrumb />),
   database: storedSpec("database", (p, ctx) => (
-    <DatabaseHost blockId={ctx.blockId} layout={activeLayout(p)} painted={readPaintedSizes(p.paintedSize)}>
+    <DatabaseHost blockId={ctx.blockId} layout={activeLayout(p)} painted={paintedSizesOf(p)}>
       <BlockBoundary>
         <DatabaseBlockView blockId={ctx.blockId} props={p} onChange={ctx.update} editable={(ctx.editor as unknown as { isEditable: boolean }).isEditable} />
       </BlockBoundary>
