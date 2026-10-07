@@ -45,6 +45,16 @@ Block document: a tree of `SpaceBlock` (`id`, `type`, `text: RichSpan[]`, `color
 
 ## Change log
 
+- 2026-10-07 — builder round 24: chart tiles on the reference (172px tile at 1699, 80px ring, 4px stroke, 20px centre number,
+  14px/600 name cut with an ellipsis, view-settings icon at rest; a column row inside a column takes a 62px gutter that narrows
+  with the window, five across keep 16px); a bar/line chart now follows the view's sort (rows reach ChartBlock in point order);
+  table rows start with the grey record circle (O14, `.spaces-row-dot`; a record's own icon still needs records-ui, NEEDS row);
+  image page icon 124px over the cover by 72px; toggle triangles in the text ink; the sort icon turns blue (the control's own
+  colour won over the button rule — the svg is coloured); built-in tables (`EntityDatabase`) now run on the same spreadsheet cell
+  cursor as a custom table's grid (the cause: it passed only `onRowOpen`, so a click opened the record) — one click selects,
+  Enter or a typed letter opens the record window, nothing reaches the page; colours in spaces.css are semantic tokens defined
+  once with dark values; the sample page is created with Small text (the reference's 14px set). Test
+  `data/__tests__/chart-wiring.test.tsx` renders ChartView over a fake client.
 - 2026-10-06 — builder round 23: column gutter 46px (Notion's spacer; a column row nested in a column takes 16px);
   a chart tile under 200px wraps its name (≤3 lines, 13px) so five-across KPI tiles stay readable; chart tiles carry
   Filter / Sort and count + order what their view shows (`data/chart-rules.ts`, test `data/__tests__/chart-follows-its-view.test.ts`,
