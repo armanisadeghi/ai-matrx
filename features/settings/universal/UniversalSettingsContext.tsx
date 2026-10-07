@@ -19,7 +19,7 @@
 import { createContext, useCallback, useContext, useEffect, useRef, useState } from "react";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
-import { selectIsSuperAdmin, selectUserId } from "@/lib/redux/selectors/userSelectors";
+import { selectAdminFeature, selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { useUserOrganizations } from "@/features/organizations/hooks";
 import { fetchFeatureKnobs } from "@/features/admin/limits/service";
 import type { FeatureKnob } from "@/features/admin/limits/types";
@@ -396,7 +396,9 @@ export function UniversalSettingsProvider({
   enabled?: boolean;
 }) {
   const userId = useAppSelector(selectUserId);
-  const canManageSystem = useAppSelector(selectIsSuperAdmin);
+  const canManageSystem = useAppSelector((s) =>
+    selectAdminFeature(s, "knob.system-default"),
+  );
   const {
     organizations,
     loading: organizationsLoading,

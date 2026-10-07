@@ -15,7 +15,7 @@ import { GOOGLE_SCOPE } from "@/lib/googleScopes";
 import { useClippedContentGuard } from "@/lib/layout/useClippedContentGuard";
 import { useAppSelector } from "@/lib/redux/hooks";
 import {
-  selectIsSuperAdmin,
+  selectAdminFeature,
   selectUserEmail,
   selectUserId,
 } from "@/lib/redux/selectors/userSelectors";
@@ -335,7 +335,9 @@ export function DirectoryReview({
   organizationId: string | null;
 }) {
   const actorId = useAppSelector(selectUserId);
-  const isSuperAdmin = useAppSelector(selectIsSuperAdmin);
+  const isSuperAdmin = useAppSelector((s) =>
+    selectAdminFeature(s, "google.internal-review"),
+  );
   const email = useAppSelector(selectUserEmail);
   const reviewerEligible = canUseGoogleOAuthInternalTest(isSuperAdmin, email);
   const inventory = useGoogleConnectionInventory();

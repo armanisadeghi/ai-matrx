@@ -22,7 +22,7 @@ import { canUseGoogleOAuthInternalTest } from "@/features/marketing/google/inter
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAppSelector } from "@/lib/redux/hooks";
 import {
-  selectIsSuperAdmin,
+  selectAdminFeature,
   selectUserEmail,
 } from "@/lib/redux/selectors/userSelectors";
 import type { GoogleContactsImportInitialView } from "@/features/overlays/openers/googleImportWindows";
@@ -42,7 +42,9 @@ export default function GoogleContactsImportWindow({
   initialExternalId,
   initialView = "contacts",
 }: GoogleContactsImportWindowProps) {
-  const isSuperAdmin = useAppSelector(selectIsSuperAdmin);
+  const isSuperAdmin = useAppSelector((s) =>
+    selectAdminFeature(s, "google.internal-review"),
+  );
   const email = useAppSelector(selectUserEmail);
   const canReviewDirectory = canUseGoogleOAuthInternalTest(isSuperAdmin, email);
   const [tabState, setTabState] = useState<{

@@ -86,7 +86,7 @@ describe("V2 G3 — the JOB cell says whether the offer covers the holder", () =
     );
   });
 
-  test("unfed but optional inputs are named as falling back, not as a problem", () => {
+  test("unfed but optional inputs are named as not fed, not as a problem", () => {
     expect(
       coverageLine({
         hasHolder: true,
@@ -98,7 +98,7 @@ describe("V2 G3 — the JOB cell says whether the offer covers the holder", () =
         offeredCount: 5,
       }),
     ).toBe(
-      "3 of the 5 inputs this Mandate Holder needs are fed. The other 2 fall back to the Mandate Holder's own defaults.",
+      "3 of the 5 inputs this Mandate Holder needs are fed. The other 2 are not fed.",
     );
   });
 });

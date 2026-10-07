@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import { copyText } from '@ai-matrx/kit/clipboard';
 import { ComponentEntry } from '../parts/component-list';
 import { ComponentDisplayWrapper } from '../component-usage';
 import AdvancedMenu from '@/components/official/AdvancedMenu';

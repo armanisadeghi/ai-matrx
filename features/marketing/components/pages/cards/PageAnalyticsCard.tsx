@@ -13,7 +13,7 @@ import {
 } from "@/features/marketing/data/hooks";
 import { useQueryClient } from "@tanstack/react-query";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import { selectIsSuperAdmin } from "@/lib/redux/selectors/userSelectors";
+import { selectAdminFeature } from "@/lib/redux/selectors/userSelectors";
 import type { MarketingPage } from "@/features/marketing/types";
 import { webAnalyticsTotals } from "@/features/marketing/lib/marketing-page-scope";
 import { marketingPageManifest } from "@/features/surfaces/manifests/marketing-page.manifest";
@@ -56,7 +56,9 @@ export function PageAnalyticsCard({ page }: { page: MarketingPage }) {
   const { site } = useMarketingSite();
   const dispatch = useAppDispatch();
   const queryClient = useQueryClient();
-  const isSuperAdmin = useAppSelector(selectIsSuperAdmin);
+  const isSuperAdmin = useAppSelector((s) =>
+    selectAdminFeature(s, "google.internal-review"),
+  );
   // Shared query cache — the PageWorkspace surface scope (ga4_metrics) reads
   // the exact same rows this card renders.
   const analytics = usePageWebAnalytics(site.id, page.id);

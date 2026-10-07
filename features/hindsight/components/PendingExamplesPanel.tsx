@@ -23,7 +23,7 @@ import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { Button } from "@/components/ui/button";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { toast } from "@/lib/toast";
-import { selectIsAdmin } from "@/lib/redux/selectors/userSelectors";
+import { selectAdminFeature, selectIsAdmin } from "@/lib/redux/selectors/userSelectors";
 import { cn } from "@/lib/utils";
 import { describeBackendFailure } from "@/lib/api/errors";
 
@@ -74,6 +74,9 @@ export function PendingExamplesPanel({
   className?: string;
 }) {
   const isAdmin = useAppSelector(selectIsAdmin);
+  const canReplayExamples = useAppSelector((s) =>
+    selectAdminFeature(s, "agent.hindsight-cases"),
+  );
   const queryClient = useQueryClient();
   const pending = useQuery({
     queryKey: ["hindsight", "pending-examples", enrollmentId],
@@ -200,7 +203,7 @@ export function PendingExamplesPanel({
                     Review just this
                   </Button>
                 )}
-                {isAdmin && REPLAYABLE_EXAMPLE_KINDS.has(ex.kind) && (
+                {canReplayExamples && REPLAYABLE_EXAMPLE_KINDS.has(ex.kind) && (
                   <Button
                     icon={<Repeat2
                       className={cn(

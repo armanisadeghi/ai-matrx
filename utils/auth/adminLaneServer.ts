@@ -24,6 +24,10 @@ import {
   adminLaneOpenForHeaders,
 } from "@/utils/supabase/adminLane";
 import { getAdminStatus } from "@/utils/supabase/userSessionData";
+import {
+  adminTierHoldsFeature,
+  type AdminFeatureOnUserPageId,
+} from "@/utils/auth/adminFeaturesOnUserPages";
 
 export { ADMIN_LANE_REFUSAL };
 
@@ -58,4 +62,20 @@ export async function hasAdminPower(
   if (!(await requestInAdminLane())) return false;
   const { isAdmin, level } = await getAdminStatus(supabase, userId);
   return bar === "any" ? isAdmin : level === "super_admin";
+}
+
+/**
+ * A REGISTERED admin feature on a user page (utils/auth/adminFeaturesOnUserPages.ts,
+ * Arman 2026-10-06): may this person use it? Admin IDENTITY at the feature's
+ * tier, no lane — server code for a registered feature asks THIS, never
+ * hasAdminPower. A write that runs as the person under RLS still wraps its
+ * builder in withAdminFeature so the database opens the lane for it.
+ */
+export async function hasAdminFeature(
+  supabase: SupabaseClient,
+  userId: string,
+  feature: AdminFeatureOnUserPageId,
+): Promise<boolean> {
+  const { level } = await getAdminStatus(supabase, userId);
+  return adminTierHoldsFeature(level, feature);
 }

@@ -14,7 +14,7 @@
 import { useCallback, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAppSelector } from "@/lib/redux/hooks";
-import { selectIsSuperAdmin } from "@/lib/redux/selectors/userSelectors";
+import { selectAdminFeature } from "@/lib/redux/selectors/userSelectors";
 import { toast } from "@/lib/toast";
 import { GuidedChecklist } from "@/lib/guided-setup/components/GuidedChecklist";
 import {
@@ -71,7 +71,9 @@ export function OutreachBringUpSection({
   onIdentitiesChanged?: () => void;
 }) {
   const router = useRouter();
-  const isSuperAdmin = useAppSelector(selectIsSuperAdmin);
+  const isSuperAdmin = useAppSelector((s) =>
+    selectAdminFeature(s, "outreach.bring-up"),
+  );
   const [connectOpen, setConnectOpen] = useState(false);
   const [rulesOpen, setRulesOpen] = useState(false);
   const dialogWaiters = useRef<(() => void)[]>([]);

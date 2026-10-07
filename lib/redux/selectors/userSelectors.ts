@@ -17,6 +17,10 @@ import { createSelector } from "reselect";
 import type { UserAuthState } from "@/lib/redux/slices/userAuthSlice";
 import type { UserProfileState } from "@/lib/redux/slices/userProfileSlice";
 import type { AdminLevel } from "@/utils/supabase/userSessionData";
+import {
+  adminTierHoldsFeature,
+  type AdminFeatureOnUserPageId,
+} from "@/utils/auth/adminFeaturesOnUserPages";
 
 // ── Slice selectors ──────────────────────────────────────────────────────
 
@@ -114,6 +118,21 @@ export const selectIsAdminDebugger = (state: RootState): boolean =>
 /** ADMIN DEBUGGING, super admin — true on every page. Debug tooling only. */
 export const selectIsSuperAdminDebugger = (state: RootState): boolean =>
   state.userAuth.adminLevel === "super_admin";
+
+/*
+ * ADMIN FEATURES ON USER PAGES (Arman, 2026-10-06): a control built ON PURPOSE
+ * for admins inside a normal page (Linked Agent Sync writing into a system
+ * agent). Ambient reach stays off on user pages; a REGISTERED action keeps
+ * working there. Only ids in ADMIN_FEATURES_ON_USER_PAGES exist
+ * (utils/auth/adminFeaturesOnUserPages.ts); the request the control fires opens
+ * the admin lane for itself with `withAdminFeature`.
+ */
+
+/** True when this person may use a registered admin feature on any page. */
+export const selectAdminFeature = (
+  state: RootState,
+  feature: AdminFeatureOnUserPageId,
+): boolean => adminTierHoldsFeature(state.userAuth.adminLevel, feature);
 
 /** True while the current page is in the admin section. */
 export const selectAdminLaneOpen = (state: RootState): boolean =>

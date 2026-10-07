@@ -35,6 +35,12 @@
  *   5. `requireSuperAdmin` and `requireAdmin` (utils/auth/adminUtils.ts) still
  *      call `requireAdminLane()` before anything else — the one door every
  *      service-role admin action goes through.
+ *   6. ADMIN FEATURES ON USER PAGES (Arman, 2026-10-06): a request may carry the
+ *      lane from a user page only as a REGISTERED admin feature — wrapped in
+ *      `withAdminFeature("<id>", …)` (utils/auth/adminFeaturesOnUserPages.ts), or,
+ *      in a package that cannot import the host registry, a `setHeader` of the
+ *      lane header in a file that names the registered id as
+ *      `Admin feature "<id>"`. A wrapped admin-check RPC is not rule 1.
  *   3. Every `app/(core)/<feature>/admin` directory (the per-feature admin
  *      maps) is named in `ADMIN_LANE_PATH_PREFIXES`, so a new admin map can
  *      never silently run without the lane. `/organizations/<id>/admin` is an
@@ -47,6 +53,17 @@
 import { readFileSync, readdirSync, statSync } from "node:fs";
 import { join, relative, sep } from "node:path";
 import { ADMIN_LANE_PATH_PREFIXES } from "../utils/supabase/adminLane";
+import { ADMIN_FEATURES_ON_USER_PAGES } from "../utils/auth/adminFeaturesOnUserPages";
+
+const REGISTERED_FEATURES = new Set(Object.keys(ADMIN_FEATURES_ON_USER_PAGES));
+/** Files that ARE the lane machinery and may stamp the header themselves. */
+const LANE_HEADER_ALLOWED = new Set([
+  "utils/supabase/adminLane.ts",
+  "utils/auth/adminFeaturesOnUserPages.ts",
+  "lib/api/admin-lane.ts",
+]);
+const HAND_STAMP = /setHeader\(\s*(ADMIN_LANE_HEADER|["'`]x-matrx-admin-lane["'`])/;
+const NAMED_FEATURE = /Admin feature "([a-z0-9.-]+)"/g;
 
 const ROOT = join(__dirname, "..");
 const SELF_TEST = process.argv.includes("--self-test");
@@ -118,6 +135,7 @@ export interface Finding {
   file: string;
   rule:
     | "admin-rpc-on-user-side"
+    | "lane-header-unregistered"
     | "identity-as-power"
     | "admin-map-without-lane"
     | "server-identity-as-power"
@@ -143,8 +161,21 @@ function isTestFile(file: string): boolean {
 export function scanSource(file: string, source: string): Finding[] {
   if (isTestFile(file) || isAdminSectionFile(file)) return [];
   const findings: Finding[] = [];
-  source.split("\n").forEach((line, i) => {
-    if (ADMIN_RPC.test(line)) {
+  const lines = source.split("\n");
+  const named = [...source.matchAll(NAMED_FEATURE)].map((m) => m[1]);
+  const namesRegistered = named.length > 0 && named.every((id) => REGISTERED_FEATURES.has(id));
+  lines.forEach((line, i) => {
+    const code0 = line.trim();
+    const isComment0 = code0.startsWith("//") || code0.startsWith("*") || code0.startsWith("/*");
+    if (!isComment0 && HAND_STAMP.test(line) && !LANE_HEADER_ALLOWED.has(file) && !namesRegistered) {
+      findings.push({
+        file,
+        rule: "lane-header-unregistered",
+        detail: `line ${i + 1}: ${code0} — a user-side request stamps the admin lane without naming a registered admin feature. Wrap it in withAdminFeature("<id>", …) (utils/auth/adminFeaturesOnUserPages.ts); a package that cannot import it names the id as Admin feature "<id>". New ids need Arman's ruling.`,
+      });
+    }
+    const wrapped = lines.slice(Math.max(0, i - 3), i + 1).some((l) => l.includes("withAdminFeature("));
+    if (ADMIN_RPC.test(line) && !wrapped) {
       findings.push({
         file,
         rule: "admin-rpc-on-user-side",
@@ -264,6 +295,8 @@ function selfTest(): void {
     ["features/notes/NotesPage.tsx", `const { data } = await supabase.rpc("is_platform_admin");`],
     ["features/notes/NotesPage.tsx", `const x = useAppSelector(selectIsSuperAdminPerson);`],
     ["app/api/cms/sites/route.ts", `  const ok = await checkIsSuperAdmin(supabase, user.id);`],
+    ["features/notes/NotesPage.tsx", `  return request.setHeader("x-matrx-admin-lane", "1");`],
+    ["features/notes/NotesPage.tsx", `// Admin feature "notes.not-registered"\n  return request.setHeader(ADMIN_LANE_HEADER, "1");`],
   ];
   const red = [
     ...planted.flatMap(([f, s]) => scanSource(f, s)),
@@ -273,8 +306,8 @@ function selfTest(): void {
     ),
   ];
   const rules = new Set(red.map((f) => f.rule));
-  const allRed = rules.size === 5;
-  console.log(`self-test RED: ${red.length} planted finding(s) across ${rules.size}/5 rules`);
+  const allRed = rules.size === 6;
+  console.log(`self-test RED: ${red.length} planted finding(s) across ${rules.size}/6 rules`);
   if (!allRed) {
     console.error("self-test FAILED: a planted offender was not detected");
     process.exit(1);
@@ -286,6 +319,14 @@ function selfTest(): void {
     ...scanSource("app/(auth-pages)/sign-out/page.tsx", `await checkIsSuperAdmin(supabase, user.id);`),
     ...scanSource("app/api/admin/users/route.ts", `await checkIsSuperAdmin(supabase, user.id);`),
     ...scanSource("app/api/cms/sites/route.ts", `// the old checkIsSuperAdmin(supabase, id) gate`),
+    ...scanSource(
+      "features/ai-models/translation/data.ts",
+      `const r = await withAdminFeature(\n  "ai.translation-approvals",\n  supabase.rpc("is_platform_admin"),\n);`,
+    ),
+    ...scanSource(
+      "packages/chat/src/agents/redux/agent-shortcuts/thunks.ts",
+      `/** Admin feature "agent.global-shortcut" */\n  return request.setHeader("x-matrx-admin-lane", "1");`,
+    ),
     ...scanAdminMaps(["/organizations/[orgId]/admin", "/agents/admin"], ADMIN_LANE_PATH_PREFIXES),
   ];
   if (allowed.length > 0) {

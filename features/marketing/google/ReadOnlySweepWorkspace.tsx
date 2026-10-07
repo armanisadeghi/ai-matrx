@@ -41,7 +41,7 @@ import { toast } from "@/lib/toast";
 import { isOrganizationSelectionCancelled } from "@/lib/organization/organization-gate";
 import { useAppSelector } from "@/lib/redux/hooks";
 import {
-  selectIsSuperAdmin,
+  selectAdminFeature,
   selectUserEmail,
   selectUserId,
 } from "@/lib/redux/selectors/userSelectors";
@@ -95,7 +95,9 @@ export function ReadOnlySweepWorkspace({
 }: {
   reviewMode?: boolean;
 }) {
-  const isSuperAdmin = useAppSelector(selectIsSuperAdmin);
+  const isSuperAdmin = useAppSelector((s) =>
+    selectAdminFeature(s, "google.internal-review"),
+  );
   const userEmail = useAppSelector(selectUserEmail);
   if (!canUseGoogleOAuthInternalTest(isSuperAdmin, userEmail)) {
     return (

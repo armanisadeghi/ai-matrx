@@ -1,6 +1,6 @@
-import { copyText } from "@ai-matrx/kit/clipboard";
-
 "use client";
+
+import { copyText } from "@ai-matrx/kit/clipboard";
 
 /**
  * Export utilities for rendered mermaid diagrams.

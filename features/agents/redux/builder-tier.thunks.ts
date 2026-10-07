@@ -10,6 +10,7 @@
  * type as before), so every selector reads what it loads unchanged.
  */
 
+import { withAdminFeature } from "@/utils/auth/adminFeaturesOnUserPages";
 import {
   createAsyncThunk,
 } from "@reduxjs/toolkit";
@@ -684,15 +685,17 @@ export const syncLinkedAgents = createAsyncThunk<
     expectedFromUpdatedAt,
     expectedToUpdatedAt,
   }) => {
-    const { data, error } = await supabase.rpc(
-      "agx_sync_linked_agents_reviewed",
-      {
+    // Writing into a SYSTEM agent from the user page is the registered admin
+    // feature "agent.system-sync": this one request carries the admin lane.
+    const { data, error } = await withAdminFeature(
+      "agent.system-sync",
+      supabase.rpc("agx_sync_linked_agents_reviewed", {
         p_from_id: fromId,
         p_to_id: toId,
         p_include_identity: includeIdentity,
         p_expected_from_updated_at: expectedFromUpdatedAt,
         p_expected_to_updated_at: expectedToUpdatedAt,
-      },
+      }),
     );
     if (error) throw pgErrorToError(error);
 
