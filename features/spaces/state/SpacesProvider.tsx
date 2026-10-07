@@ -65,6 +65,9 @@ interface SpacesContextValue {
   takeFocusTitle: (id: SpaceId) => boolean;
   /** A page created in this tab, handed to its screen once so it opens without a round trip. */
   takeFresh: (id: SpaceId) => SpaceDoc | null;
+  /** Bumped when a page's content was rewritten outside its screen (the sample filled while it was open):
+   *  the screen opens again on the new content. */
+  pageEpoch: (id: SpaceId) => number;
   sample: { adding: boolean; progress: string | null; add: (opts?: { asTemplate?: boolean }) => Promise<void> };
   /** I2 / I3 — Spaces marked as templates that the person can open (null = not read yet). */
   templates: {
@@ -261,6 +264,13 @@ export function SpacesProvider({ children }: { children: ReactNode }) {
   const patchSummary: SpacesContextValue["patchSummary"] = (id, patch) => {
     setAll((prev) => prev.map((s) => (s.id === id ? { ...s, ...patch } : s)));
   };
+  const [epochs, setEpochs] = useState<Record<SpaceId, number>>({});
+  const pageEpoch = (id: SpaceId) => epochs[id] ?? 0;
+  /** The page's screen re-opens on `doc` (already stored) — a screen opened before it was written shows it. */
+  const reopenWith = (doc: SpaceDoc) => {
+    fresh.current.set(doc.id, doc);
+    setEpochs((prev) => ({ ...prev, [doc.id]: (prev[doc.id] ?? 0) + 1 }));
+  };
   const takeFresh = (id: SpaceId) => {
     const doc = fresh.current.get(id) ?? null;
     fresh.current.delete(id);
@@ -307,7 +317,11 @@ export function SpacesProvider({ children }: { children: ReactNode }) {
           await pointCopyAtItsTables(store, copyId, await installAgencySample(copyOrg, dispatch, setSampleProgress));
         }
         showCopy(copyId, root.title, plan.of);
-      } else open(plan.id);
+      } else {
+        // The page may have been opened while it was being made: it opens again on the finished content.
+        reopenWith(root);
+        open(plan.id);
+      }
     } catch (err) {
       if (!isOrganizationSelectionCancelled(err)) {
         toast.error(err instanceof Error ? err.message : "We couldn't add the sample.", {
@@ -382,6 +396,7 @@ export function SpacesProvider({ children }: { children: ReactNode }) {
     patchSummary,
     takeFocusTitle,
     takeFresh,
+    pageEpoch,
     sample: { adding: sampleProgress !== null, progress: sampleProgress, add: addSample },
     templates: { ids: templateIds, error: templatesError, refresh: refreshTemplates, setTemplate: markTemplate, use: applyTemplate },
     summaries: visible,

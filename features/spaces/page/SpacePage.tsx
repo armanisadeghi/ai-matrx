@@ -110,7 +110,14 @@ function pageCounts(doc: SpaceDoc): { words: number; characters: number } {
   return { words, characters: text.replace(/\s/g, "").length };
 }
 
+/** One screen per page and content epoch: a page rewritten outside its screen (the sample filled while it
+ *  was open) opens again on what is stored. */
 export function SpacePage({ spaceId }: { spaceId: string }) {
+  const { pageEpoch } = useSpaces();
+  return <SpacePageScreen key={`${spaceId}:${pageEpoch(spaceId)}`} spaceId={spaceId} />;
+}
+
+function SpacePageScreen({ spaceId }: { spaceId: string }) {
   const spaces = useSpaces();
   const { store, pathTo, favorites, toggleFavorite, markVisited, openQuickFind, sidebarCollapsed, setSidebarCollapsed, setMobileSidebarOpen, patchSummary } = spaces;
   const isMobile = useIsMobile();
