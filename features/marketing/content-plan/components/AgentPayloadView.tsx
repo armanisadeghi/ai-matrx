@@ -37,7 +37,7 @@ import { CopyButtons } from "@/components/agent-copy/CopyButtons";
 import { webLocation } from "@/features/marketing/lib/copy-payloads";
 import { cn } from "@/lib/utils";
 import { extractErrorMessage } from "@/utils/errors";
-import { formatFileSize } from "@ai-matrx/kit/format";
+import { formatCount, formatFileSize } from "@ai-matrx/kit/format";
 
 import {
   DEFAULT_NODE_SHAPE,
@@ -61,7 +61,7 @@ function bytes(text: string): string {
 
 /** Rough, honestly-labelled: ~4 chars per token. Never presented as exact. */
 function roughTokens(text: string): string {
-  return `~${Math.round(text.length / 4).toLocaleString()} tokens`;
+  return `~${formatCount(Math.round(text.length / 4))} tokens`;
 }
 
 // ── the coverage banner ────────────────────────────────────────────────────

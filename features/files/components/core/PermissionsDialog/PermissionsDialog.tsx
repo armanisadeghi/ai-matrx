@@ -37,6 +37,7 @@ import { UserSearchField } from "@/features/user-search/UserSearchField";
 import type { UserSearchCandidate } from "@/features/user-search/types";
 import { useUserConnections } from "@/features/messaging/hooks/useUserConnections";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { isUuidShape } from "@ai-matrx/kit/uuid";
 
 export interface PermissionsDialogProps {
   open: boolean;
@@ -200,9 +201,7 @@ export function PermissionsDialogBody({
                   setPersonQuery(value);
                   // A pasted id still works; anything else waits for a pick.
                   setGranteeId(
-                    /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
-                      value.trim(),
-                    )
+                    isUuidShape(value.trim())
                       ? value.trim()
                       : "",
                   );

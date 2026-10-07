@@ -11,6 +11,7 @@ import { useState, type ReactNode } from "react";
 import { AGENT_ICON } from "@/components/icons/domain-icons";
 
 import type { SpaceDoc } from "../contract";
+import { formatCount } from "@ai-matrx/kit/format";
 
 type Settings = SpaceDoc["settings"];
 
@@ -127,8 +128,8 @@ export function PageMenu({
           end={<Switch checked={Boolean(isTemplate)} disabled={isTemplate === null} tabIndex={-1} aria-hidden />}
         />
         <Row icon={<FileUp size={16} />} label="Export" onClick={act(onExport)} />
-        <p className="px-2 pt-2 type-secondary text-muted-foreground" title={`${counts.characters.toLocaleString()} characters`}>
-          Word count: {counts.words.toLocaleString()} {counts.words === 1 ? "word" : "words"}
+        <p className="px-2 pt-2 type-secondary text-muted-foreground" title={`${formatCount(counts.characters)} characters`}>
+          Word count: {formatCount(counts.words)} {counts.words === 1 ? "word" : "words"}
         </p>
         <p className="px-2 pb-1.5 pt-0.5 type-secondary text-muted-foreground">{updatedLabel}</p>
       </PopoverContent>

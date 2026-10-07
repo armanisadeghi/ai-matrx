@@ -78,6 +78,7 @@ import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { EntitySourceFailures } from "./EntitySourceFailures";
 import { EntityFilterChips } from "./EntityFilterChips";
 import { UntrustedCount, type CountRead } from "@/components/official/stale-data/UntrustedCount";
+import { formatCount } from "@ai-matrx/kit/format";
 
 const EMPTY_ITEM_MENU_CONFIG: ItemMenuConfig = { sections: [] };
 
@@ -1688,7 +1689,7 @@ function LoadMoreFooter({
     <div className="flex items-center justify-center gap-3 pt-4 type-secondary text-muted-foreground">
       <span className="tabular-nums">
         {openEnded ? (
-          `${((page - 1) * pageSize + 1).toLocaleString()}-${shownThrough.toLocaleString()}`
+          `${formatCount((page - 1) * pageSize + 1)}-${formatCount(shownThrough)}`
         ) : (
           <>
             {shownThrough} of <UntrustedCount value={total} read={read} label="Total" />

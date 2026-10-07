@@ -15,6 +15,7 @@
 // the conversation opens in the Source Inspector window at its message range.
 
 import type { RecordCitationKind, SourceCitation } from "./types";
+import { isUuidShape } from "@ai-matrx/kit/uuid";
 
 const UUID = "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}";
 const PART_RE = new RegExp(`^(${UUID}):(.+)$`, "i");
@@ -154,7 +155,7 @@ export function recordCitationHref(
       }
       const cells = cellsOfExcerpt(excerpt);
       // A row line carries its own row id: open that row's panel.
-      if (cells.id && new RegExp(`^${UUID}$`, "i").test(cells.id)) {
+      if (cells.id && isUuidShape(cells.id)) {
         return `${base}?record=${encodeURIComponent(cells.id)}`;
       }
       return Object.keys(cells).length

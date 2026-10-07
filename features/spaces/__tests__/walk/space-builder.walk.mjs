@@ -4,6 +4,7 @@
 //   node features/spaces/__tests__/walk/space-builder.walk.mjs ["what to build"]
 import { writeFileSync } from "node:fs";
 import { open, newPage, act, trashPage } from "./lib.mjs";
+import { formatDurationMs } from "@ai-matrx/kit/format";
 
 const OUT = process.env.WALK_OUT ?? "/tmp";
 const ASK = process.argv[2] ?? "A simple reading list tracker: book title, author, status (to read, reading, done) and a rating.";
@@ -60,7 +61,7 @@ const outcome = await Promise.race([
   page.getByText("The Space could not be built").first().waitFor({ timeout: MAX }).then(() => "failed"),
   page.getByText(/organization limit|over your|refused/i).first().waitFor({ timeout: MAX }).then(() => "refused"),
   page.waitForURL((u) => !u.href.includes(id), { timeout: MAX }).then(() => "opened another page"),
-]).catch(() => `no outcome in ${MAX / 60000} min`);
+]).catch(() => `no outcome in ${formatDurationMs(MAX, { style: "long", parts: 2 })}`);
 // "Ready" toasts first; the window then opens the new Space (/spaces/<root_space_id>) — wait for it.
 if (outcome === "ready") {
   await page.waitForURL((u) => !u.href.includes(id), { timeout: 60_000 }).catch(() => {});

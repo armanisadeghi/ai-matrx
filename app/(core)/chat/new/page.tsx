@@ -8,6 +8,7 @@ import { ChatNewHeader } from "@ai-matrx/chat/agents/components/chat/ChatNewHead
 import { readComposerModeCookie } from "@ai-matrx/chat/next/server/composer-mode.server";
 import { DEFAULT_NEW_CHAT_MANDATE_KEY } from "@ai-matrx/chat/agents/components/chat/chat-quick-actions.config";
 import { resolveMandateSeed } from "@/features/mandates/seed.server";
+import { isUuidShape } from "@ai-matrx/kit/uuid";
 
 /**
  * SSR mandate resolution: which agent owns `/chat/new` for THIS user (system
@@ -41,16 +42,13 @@ async function resolveAgentName(agentId: string): Promise<string | null> {
   return data.name ?? null;
 }
 
-const UUID_RE =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-
 /** `?agent=<id>` — an explicit agent for this new chat (feedback c0875460). */
 function requestedAgentId(
   searchParams: Record<string, string | string[] | undefined>,
 ): string | null {
   const raw = searchParams.agent;
   const value = Array.isArray(raw) ? raw[0] : raw;
-  return value && UUID_RE.test(value) ? value : null;
+  return value && isUuidShape(value) ? value : null;
 }
 
 export default async function NewChatPage({

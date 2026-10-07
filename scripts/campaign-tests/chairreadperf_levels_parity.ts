@@ -17,6 +17,7 @@ import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import pg from "pg";
 import { currentCloneRef, dsnFor } from "../lib/pooled-db.mjs";
+import { formatDurationMs } from "@ai-matrx/kit/format";
 
 const ROOT = resolve(__dirname, "..", "..");
 const DOWN = "migrations/inverse/chairreadperf_b_the_class_walk_folds_in_the_persons_own_membership_down.sql";
@@ -89,7 +90,7 @@ async function main() {
     }
   }
   await client.end();
-  console.log(`${red === 0 ? "GREEN" : "RED  "} SAME ${seats.length - red}/${seats.length} seats answer the same {l, s} for every id (${ids} seat-ids checked, ${((Date.now() - t0) / 1000).toFixed(0)} s)`);
+  console.log(`${red === 0 ? "GREEN" : "RED  "} SAME ${seats.length - red}/${seats.length} seats answer the same {l, s} for every id (${ids} seat-ids checked, ${formatDurationMs(Date.now() - t0, { style: "compact" })})`);
   process.exit(red ? 1 : 0);
 }
 main().catch((e) => { console.error(e instanceof Error ? e.message : e); process.exit(2); });

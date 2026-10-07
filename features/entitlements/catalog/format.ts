@@ -4,7 +4,7 @@
 // row — price from exact cents, the annual saving from the two prices, points
 // and limits from `limits`. Nothing here is a number about a plan.
 
-import { formatFileSize } from "@ai-matrx/kit/format";
+import { formatCount, formatFileSize } from "@ai-matrx/kit/format";
 import { CAPABILITY_REGISTRY, isCapability } from "../registry";
 import type { BillingCycle, CatalogPlan, PlanAudience, PlanLimitPeriod } from "./types";
 
@@ -114,7 +114,7 @@ export function planFeatureRows(plan: CatalogPlan): PlanFeatureRow[] {
     let value: string;
     if (l.limit == null) value = "Unlimited";
     else if (l.capability.endsWith("_bytes")) value = formatFileSize(l.limit);
-    else value = `${l.limit.toLocaleString("en-US")}${PERIOD_SUFFIX[l.period]}`;
+    else value = `${formatCount(l.limit, { locale: "en-US" })}${PERIOD_SUFFIX[l.period]}`;
     rows.push({ capability: l.capability, label, value, included: l.limit !== 0 });
   }
   return rows;

@@ -20,6 +20,7 @@ import {
 import { toast } from "@/lib/toast";
 import { Group, ROWS, STATUS, Section, type Row } from "./kit";
 import { Badge, Button } from "@ai-matrx/design-system/controls";
+import { formatCount } from "@ai-matrx/kit/format";
 
 /* Quiet row actions: muted until the row is hovered or focused; always
    visible where there is no hover (touch). They go LEFT of the status chips,
@@ -105,7 +106,7 @@ function DenseList() {
         open={confirming !== null}
         onOpenChange={(open) => !open && setConfirming(null)}
         title={confirming ? `Delete “${confirming.name}”?` : "Delete?"}
-        description={confirming ? `Removes ${confirming.runs.toLocaleString()} responses for everyone. This can't be undone.` : undefined}
+        description={confirming ? `Removes ${formatCount(confirming.runs)} responses for everyone. This can't be undone.` : undefined}
         confirmLabel="Delete form"
         variant="destructive"
         contentClassName="sm:max-w-md"
@@ -161,7 +162,7 @@ function SmallTable() {
             <tr key={r.id} className="hover:bg-accent/40">
               <td className="h-9 truncate px-3 font-medium">{r.name}</td>
               <td className="hidden h-9 truncate px-3 text-muted-foreground sm:table-cell">{r.owner}</td>
-              <td className="h-9 px-3 text-right tabular-nums">{r.runs.toLocaleString()}</td>
+              <td className="h-9 px-3 text-right tabular-nums">{formatCount(r.runs)}</td>
               <td className="h-9 px-3">
                 <Badge tone={STATUS[r.status].tone}>{STATUS[r.status].label}</Badge>
               </td>

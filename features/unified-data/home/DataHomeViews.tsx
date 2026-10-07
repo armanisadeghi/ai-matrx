@@ -18,7 +18,7 @@ import type { ComponentProps } from "react";
 /** The row copy the provider takes (its type is not a public export of the package). */
 type RowCopy = ComponentProps<typeof MatrxTableRowAlchemyProvider>["copy"];
 import { cn } from "@/lib/utils";
-import { formatRelativeTime } from "@ai-matrx/kit/format";
+import { formatCount, formatRelativeTime } from "@ai-matrx/kit/format";
 import type { EntityAltViewProps } from "@/lib/entity-list/config";
 import { dataHomeKindWord, type DataHomeRow } from "./dataHomeRows";
 import { FoundationBadge, KindIcon, useRecordCount } from "./dataHomeColumns";
@@ -47,7 +47,7 @@ export type DataHomeViewProps = EntityAltViewProps<DataHomeRow> & {
 function CardRecords({ row, store }: { row: DataHomeRow; store: RecordCountStore | undefined }) {
   const known = useRecordCount(row, store);
   return (
-    <span data-data-home-card-records="">{known === undefined || known === null ? "—" : `${known.toLocaleString()} records`}</span>
+    <span data-data-home-card-records="">{known === undefined || known === null ? "—" : `${formatCount(known)} records`}</span>
   );
 }
 

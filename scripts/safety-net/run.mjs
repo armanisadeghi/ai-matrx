@@ -29,6 +29,7 @@ import { dirname, join, resolve, relative } from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { CHECKS, ITEMS } from "./checks.mjs";
+import { formatDurationMs } from "@ai-matrx/kit/format";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const REPO = resolve(HERE, "../..");
@@ -390,7 +391,7 @@ try {
       }
       const status = r.skip ? "SKIP" : r.code === 0 ? "PASS" : "FAIL";
       rows.push({ check: c, status, ...r });
-      console.log(`[safety-net] ${status} ${c.id} (${Math.round((r.ms ?? 0) / 1000)} s)`);
+      console.log(`[safety-net] ${status} ${c.id} (${formatDurationMs(r.ms, { style: "compact" })})`);
     }
   }
   const walks = selected.filter((c) => c.kind === "walk");

@@ -22,6 +22,7 @@ import {
   transcriptSegmentCount,
   type SourceListRow,
 } from "@/features/sources/sourceRows";
+import { isUuidShape } from "@ai-matrx/kit/uuid";
 
 const BATCH = 25;
 
@@ -87,15 +88,13 @@ export function useTranscriptEnds(
   return ends;
 }
 
-const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-
 /**
  * The stored recording length (ms) of each transcript, where one is stored. A failed read
  * leaves the segment ends in place — the cell is never emptied by this read.
  */
 export async function readStoredLengthsMs(transcriptIds: string[]): Promise<Map<string, number>> {
   const out = new Map<string, number>();
-  const ids = [...new Set(transcriptIds.filter((id) => UUID.test(id)))];
+  const ids = [...new Set(transcriptIds.filter((id) => isUuidShape(id)))];
   for (let i = 0; i < ids.length; i += 100) {
     const { data, error } = await supabase
       .schema("transcripts")

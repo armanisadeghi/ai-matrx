@@ -75,6 +75,24 @@ export interface SourceRef {
   /** For entity-sourced conversions (note→deck etc.): the source entity. */
   entityType?: string;
   entityId?: string;
+  /**
+   * The study kit this material belongs to (a `scope` id, `kits/kitScope.ts`).
+   * Set, every generated aid joins the kit and links a lineage edge to EACH of
+   * `kitSources` — never to one merged copy.
+   */
+  kitId?: string;
+  /** Every Source the kit's text was read from, in pick order. */
+  kitSources?: KitSourceRef[];
+}
+
+/** One Source of a multi-source kit, as lineage and citations need it. */
+export interface KitSourceRef {
+  /** Association token of the Source ("file", "processed_document", "note"…). */
+  type: string;
+  id: string;
+  title: string;
+  fileId?: string;
+  processedDocumentId?: string;
 }
 
 /**

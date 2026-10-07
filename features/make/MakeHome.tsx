@@ -68,6 +68,7 @@ import { answerForRecent, isTestOrganization, recentlyChanged, withoutTestOrgani
 import { MakeMount, NewTableBody, SAVED_WHERE_CHOSEN, SavesTo } from "./MakeMount";
 import { TemplateGallerySection } from "./gallery/TemplateGallery";
 import { DescribeBox } from "./describe/DescribeBox";
+import { formatRelativeTime } from "@ai-matrx/kit/format";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Two reads across every organization: Recent (the data home's one call) and step 1's tables.
@@ -327,15 +328,7 @@ export function recentFacts(row: Pick<DataHomeRow, "kind" | "parentName" | "orga
 }
 
 function whenWords(at: string | null): string {
-  if (!at) return "—";
-  const ms = Date.now() - Date.parse(at);
-  const min = Math.round(ms / 60_000);
-  if (min < 1) return "just now";
-  if (min < 60) return `${min}m ago`;
-  const h = Math.round(min / 60);
-  if (h < 24) return `${h}h ago`;
-  const d = Math.round(h / 24);
-  return d < 30 ? `${d}d ago` : new Date(at).toLocaleDateString();
+  return formatRelativeTime(at, { style: "short" });
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

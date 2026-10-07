@@ -34,12 +34,12 @@ import type { MatrixCell, MatrixVariant } from "../types";
 
 import { Spinner } from "@/components/ui/loaders/Spinner";
 import { Badge, Button } from "@ai-matrx/design-system/controls";
-const nf = new Intl.NumberFormat(undefined, { maximumFractionDigits: 0 });
-const nf1 = new Intl.NumberFormat(undefined, { maximumFractionDigits: 1 });
+import { formatCount, formatDurationMs, formatPercent, formatPercentFromFraction } from "@ai-matrx/kit/format";
 
 function tokens(n: number | null | undefined): string {
   if (n == null) return "—";
-  return n >= 10_000 ? `${nf1.format(n / 1000)}k` : nf.format(n);
+  // Rounded first: the matrix shows per-run AVERAGES, and a token count is whole.
+  return formatCount(Math.round(n), n >= 10_000 ? { style: "compact" } : undefined);
 }
 
 /** Total input, then its uncached and cached parts, then output. */
@@ -50,7 +50,7 @@ function TokenLine({ m, className }: { m: Metrics; className?: string }) {
       <span className="text-muted-foreground/70">
         {" "}({tokens(m.input)} new · {tokens(m.cached)} cached)
       </span>
-      {" "}· out {tokens(m.output)} · {nf1.format(m.toolCalls)} tools
+      {" "}· out {tokens(m.output)} · {formatCount(Math.round(m.toolCalls * 10) / 10)} tools
     </span>
   );
 }
@@ -58,7 +58,7 @@ function TokenLine({ m, className }: { m: Metrics; className?: string }) {
 function pct(a: number, b: number): string {
   if (!b) return "—";
   const d = ((a - b) / b) * 100;
-  return `${d > 0 ? "+" : ""}${nf1.format(d)}%`;
+  return `${d > 0 ? "+" : ""}${formatPercent(d, { digits: 1 })}`;
 }
 
 export function MatrixResults({
@@ -365,7 +365,7 @@ function CellDetail({
             <Stat label="Tool calls" value={String(r.tool_calls ?? 0)} />
             <Stat label="Real tools" value={String(realToolCalls(r))} />
             <Stat label="LLM calls" value={String(r.llm_calls ?? "—")} />
-            <Stat label="Time" value={r.duration_ms != null ? `${nf1.format(r.duration_ms / 1000)}s` : "—"} />
+            <Stat label="Time" value={formatDurationMs(r.duration_ms, { style: "compact" })} />
           </div>
           {r.model && <div className="text-muted-foreground truncate">{r.model}</div>}
           {r.tools_used && r.tools_used.length > 0 && (
@@ -470,7 +470,7 @@ function ToolsAnalysis({
         <header className="flex items-center gap-2 h-9 px-3 border-b border-border type-secondary">
           <span className="font-semibold">Tools vs no tools</span>
           <span className="text-muted-foreground tabular-nums">
-            {toolRows.size} of {toolRows.size + noToolRows.size} rows used tools ({nf.format(share * 100)}%)
+            {toolRows.size} of {toolRows.size + noToolRows.size} rows used tools ({formatPercentFromFraction(share)})
           </span>
         </header>
         <table className="w-full type-secondary">
@@ -578,8 +578,8 @@ function BreakEvenText({ be, names }: { be: BreakEven; names: { a: string; b: st
   const below = names[be.cheaperBelow];
   const above = be.cheaperBelow === "a" ? names.b : names.a;
   return (
-    <span title={`Below ${nf.format(be.p * 100)}% tool rows ${below} is cheaper; above it ${above} is`}>
-      <span className="font-semibold tabular-nums">{nf.format(be.p * 100)}%</span>
+    <span title={`Below ${formatPercentFromFraction(be.p)} tool rows ${below} is cheaper; above it ${above} is`}>
+      <span className="font-semibold tabular-nums">{formatPercentFromFraction(be.p)}</span>
       <span className="text-muted-foreground"> · {below} below</span>
     </span>
   );

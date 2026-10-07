@@ -24,6 +24,7 @@ import {
   type ExplorerFacets,
   type FacetOption,
 } from "./service";
+import { formatCount, formatUsd } from "@ai-matrx/kit/format";
 
 const detailHref = (id: string) => `/administration/chat/cx-dashboard/conversations/${id}`;
 
@@ -43,10 +44,9 @@ function options(list: FacetOption[]) {
   }));
 }
 
-const money = (n: number) =>
-  n === 0 ? "—" : n < 0.01 ? "<$0.01" : `$${n.toFixed(n < 1 ? 3 : 2)}`;
-const compact = (n: number) =>
-  n === 0 ? "—" : new Intl.NumberFormat(undefined, { notation: "compact" }).format(n);
+// Admin surface: dollars, at the price voice so a sub-cent conversation reads its real cost.
+const money = (n: number) => (n === 0 ? "—" : formatUsd(n, { digits: "trim" }));
+const compact = (n: number) => (n === 0 ? "—" : formatCount(n, { style: "compact" }));
 
 function columnsFor(facets: ExplorerFacets): MatrxColumnDef<ExplorerConversation>[] {
   return [
@@ -309,7 +309,7 @@ export function ConversationExplorer() {
                 `Agent: ${r.agent_name ?? "—"}`,
                 `Models: ${r.model_names.join(", ") || "—"}`,
                 `Messages: ${r.message_count} · Requests: ${r.request_count}`,
-                `Tokens: ${r.total_tokens} · Cost: $${r.total_cost}`,
+                `Tokens: ${formatCount(r.total_tokens)} · Cost: ${formatUsd(r.total_cost, { digits: "trim" })}`,
                 `Created: ${r.created_at}`,
               ].join("\n"),
             rowAttributes: (r) => ({ id: r.id }),

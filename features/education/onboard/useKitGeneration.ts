@@ -44,6 +44,7 @@ import type { ResolvedSourceSet, SourceSet } from "@ai-matrx/agents/sources";
 import { sourcesClient } from "@/features/resource-manager/source-input/sourceSetApi";
 import { useTabBoundRun } from "@/lib/wizard-draft/useTabBoundRun";
 import { readKit, renameKit } from "@/features/education/kits/kitService";
+import { addKitSource, createKitScope, KIT_TOKEN } from "@/features/education/kits/kitScope";
 import { useIngest } from "./useIngest";
 import type {
   IngestProgress,
@@ -215,9 +216,9 @@ export function useKitGeneration(): UseKitGeneration {
     patchTarget(kind, { stillGenerating: false, finishedAt: Date.now() });
   };
 
-  /** Apply a name to a kit that exists (its anchor holds artifacts). */
-  const applyRename = async (fileId: string, title: string) => {
-    const kit = await readKit("file", fileId);
+  /** Apply a name to the kit this run made. */
+  const applyRename = async (kitId: string, title: string) => {
+    const kit = await readKit(KIT_TOKEN, kitId);
     if (kit && kit.title !== title) await renameKit(kit, title);
   };
 
@@ -266,6 +267,8 @@ export function useKitGeneration(): UseKitGeneration {
           sourcesClient.resolve(request.sourceSet, { organizationId: orgId }),
         setIngestProgress,
         journal.source?.ref,
+        // The kit holds each Source itself — no merged `.md` copy.
+        { copyAnchor: false },
       );
       setSource(normalized);
       setIngestFinishedAt(Date.now());
@@ -296,6 +299,21 @@ export function useKitGeneration(): UseKitGeneration {
     };
     journal.title = titleNow;
     write();
+
+    // THE KIT, made once: its own record holding every picked Source
+    // (`kits/kitScope.ts`). A continued run keeps the kit it already made.
+    if (!normalized.ref.kitId) {
+      setIngestProgress({ phase: "ready", message: "Making your kit" });
+      const scope = await createKitScope(orgId, journal.renamedTo ?? titleNow.title);
+      for (const kitSource of normalized.ref.kitSources ?? []) {
+        await addKitSource(scope, kitSource);
+      }
+      normalized = { ...normalized, ref: { ...normalized.ref, kitId: scope.id } };
+      setSource(normalized);
+      const { text: _kept, ...kept } = normalized;
+      journal.source = kept;
+      write();
+    }
     setKitTitle(journal.renamedTo ? { ...titleNow, title: journal.renamedTo } : titleNow);
     // A name that arrives after the deadline still names the kit (applied at
     // the end with `renameKit`) — unless the person already typed one.
@@ -305,7 +323,7 @@ export function useKitGeneration(): UseKitGeneration {
       journal.renamedTo = named.title;
       write();
       setKitTitle(named);
-      const kitId = normalized.ref.fileId;
+      const kitId = normalized.ref.kitId;
       if (finished && kitId) {
         applyRename(kitId, named.title).catch((e: unknown) =>
           console.error("[useKitGeneration] the kit's late name was not applied:", e),
@@ -316,11 +334,11 @@ export function useKitGeneration(): UseKitGeneration {
     // Outputs this kit already saved: the journal's, plus any the database
     // holds for this anchor since the run began (saved in the instant before
     // the page closed, before the journal heard of it).
-    const anchorId = normalized.ref.fileId;
+    const anchorId = normalized.ref.kitId;
     if (isContinuation && anchorId) {
       try {
         const since = request.startedAt - 1_000;
-        const made = await listGeneratedFrom("file", anchorId, { failureMode: "throw" });
+        const made = (await readKit(KIT_TOKEN, anchorId))?.artifacts ?? [];
         for (const row of made) {
           const kind = row.targetKind;
           if (!kind || !kinds.includes(kind) || journal.done?.[kind]) continue;
@@ -485,7 +503,7 @@ export function useKitGeneration(): UseKitGeneration {
     const clean = title.trim();
     if (!clean || !kitTitle) return;
     setKitTitle({ ...kitTitle, title: clean });
-    const anchorId = source?.ref.fileId;
+    const anchorId = source?.ref.kitId;
     if (phase === "done") {
       if (anchorId) await applyRename(anchorId, clean);
       return;

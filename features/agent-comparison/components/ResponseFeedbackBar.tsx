@@ -77,6 +77,7 @@ import { CopyButtons } from "@/components/agent-copy/CopyButtons";
 import { csvExportItem } from "@/components/agent-copy/export";
 import { currentCostUnit } from "@/components/cost/costUnit";
 import { gridMarkdown, gridObjects, type Grid } from "../shared/tableGrid";
+import { formatCount } from "@ai-matrx/kit/format";
 
 interface Props {
   conversationId: string;
@@ -822,11 +823,8 @@ function ResponseUsageStrip({ requestId }: { requestId: string }) {
   );
 }
 
-/** "73K in", "1.4K out": short enough to sit side by side in a narrow tile. */
-const compactNumber = new Intl.NumberFormat(undefined, {
-  notation: "compact",
-  maximumFractionDigits: 1,
-});
+/** "73k in", "1.4k out": short enough to sit side by side in a narrow tile. */
+const compactNumber = (n: number) => formatCount(n, { style: "compact" });
 
 type TokenStats = {
   tokensInput: number | null;
@@ -836,9 +834,9 @@ type TokenStats = {
 
 function tokenBreakdown(stats: TokenStats): string[] | undefined {
   const parts: string[] = [];
-  if (stats.tokensInput) parts.push(`${compactNumber.format(stats.tokensInput)} in`);
-  if (stats.tokensCached) parts.push(`${compactNumber.format(stats.tokensCached)} cached`);
-  if (stats.tokensOutput) parts.push(`${compactNumber.format(stats.tokensOutput)} out`);
+  if (stats.tokensInput) parts.push(`${compactNumber(stats.tokensInput)} in`);
+  if (stats.tokensCached) parts.push(`${compactNumber(stats.tokensCached)} cached`);
+  if (stats.tokensOutput) parts.push(`${compactNumber(stats.tokensOutput)} out`);
   return parts.length > 0 ? parts : undefined;
 }
 

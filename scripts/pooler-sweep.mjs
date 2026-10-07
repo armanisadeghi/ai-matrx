@@ -18,6 +18,7 @@
  *   pnpm pooler:sweep --target clone --plant         # plant one leak on the clone first (the proof)
  */
 import { transactionPoolDsnForSweeper, dsnFor, pgClient } from "./lib/pooled-db.mjs";
+import { formatDurationMs } from "@ai-matrx/kit/format";
 
 const argv = process.argv.slice(2);
 const opt = (name, dflt) => { const i = argv.indexOf(`--${name}`); return i >= 0 ? argv[i + 1] : dflt; };
@@ -108,7 +109,7 @@ const { rows: [{ n: poolSize }] } = await s.query(`select count(*)::int n from p
 await s.end();
 
 const leakedBackends = [...seen].filter(([, v]) => v.leaked.length || !v.own_role);
-console.log(`pooler:sweep ${TARGET} — ${visits} visits, ${seen.size} distinct transaction-pool backends (≈${poolSize} pooled backends for this login), ${((Date.now() - t0) / 1000).toFixed(1)}s, ${errors} errors`);
+console.log(`pooler:sweep ${TARGET} — ${visits} visits, ${seen.size} distinct transaction-pool backends (≈${poolSize} pooled backends for this login), ${formatDurationMs(Date.now() - t0, { style: "compact" })}, ${errors} errors`);
 for (const [pid, v] of leakedBackends) {
   console.log(`  LEAK backend ${pid}: ${v.leaked.map((g) => `${g.name}=${g.setting}`).join(", ")}${v.own_role ? "" : " role≠session_user"} — ${v.reset ? "RESET" : "not reset (--report)"}`);
 }

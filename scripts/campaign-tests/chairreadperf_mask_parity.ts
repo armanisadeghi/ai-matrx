@@ -23,6 +23,7 @@ import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import pg from "pg";
 import { currentCloneRef, dsnFor } from "../lib/pooled-db.mjs";
+import { formatDurationMs } from "@ai-matrx/kit/format";
 
 const ROOT = resolve(__dirname, "..", "..");
 const DOWN = "migrations/inverse/chairreadperf_d_the_mask_keeps_its_plan_down.sql";
@@ -101,7 +102,7 @@ async function main() {
   }
   await client.end();
   const ok = differ === 0 && outputs > 0;
-  console.log(`${ok ? "GREEN" : "RED  "} SAME ${outputs - differ}/${outputs} masked outputs over ${records} records (${masks} masks, ${tables.length} Tables, ${((Date.now() - t0) / 1000).toFixed(0)} s)`);
+  console.log(`${ok ? "GREEN" : "RED  "} SAME ${outputs - differ}/${outputs} masked outputs over ${records} records (${masks} masks, ${tables.length} Tables, ${formatDurationMs(Date.now() - t0, { style: "compact" })})`);
   process.exit(ok ? 0 : 1);
 }
 main().catch((e) => { console.error(e instanceof Error ? e.message : e); process.exit(2); });

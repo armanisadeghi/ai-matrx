@@ -20,6 +20,7 @@ import {
 import type { UseFlashcardStudyResult } from "../../data/useFlashcardStudy";
 import { asCardKind, studyFaces } from "../../utils/cardVariants";
 import { deckSurfaceCards, deckSurfaceDetails } from "../set-detail/deckSurfaceValues";
+import { formatDurationSeconds } from "@ai-matrx/kit/format";
 
 export type FlashcardStudyMode = "flip cards" | "learn" | "write the answer";
 
@@ -33,14 +34,7 @@ export interface FlashcardStudySurfaceOptions {
 
 /** "2 minutes 30 seconds" — the words the situation sentence reads. */
 export function durationInWords(totalSeconds: number): string {
-  const s = Math.max(0, Math.floor(totalSeconds));
-  const hours = Math.floor(s / 3600);
-  const minutes = Math.floor((s % 3600) / 60);
-  const seconds = s % 60;
-  const part = (n: number, unit: string) => `${n} ${unit}${n === 1 ? "" : "s"}`;
-  if (hours > 0) return [part(hours, "hour"), minutes ? part(minutes, "minute") : ""].filter(Boolean).join(" ");
-  if (minutes > 0) return [part(minutes, "minute"), seconds ? part(seconds, "second") : ""].filter(Boolean).join(" ");
-  return part(seconds, "second");
+  return formatDurationSeconds(Math.max(0, totalSeconds), { style: "long", parts: 2 });
 }
 
 export function scoreInWords(graded: number, correct: number): string {

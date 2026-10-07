@@ -13,6 +13,7 @@ import type { CopyExportConfig } from "@ai-matrx/design-system/data-table/copy-t
 import { projectDefaultTableCopyRow } from "@ai-matrx/design-system/data-table/copy-helpers";
 import { toast } from "@/lib/toast";
 import type { WholeResult } from "./wholeResult";
+import { formatCount } from "@ai-matrx/kit/format";
 
 export function standardWholeResultExport<TRow>(options: {
   columns: MatrxColumnDef<TRow>[];
@@ -41,7 +42,7 @@ export function standardWholeResultExport<TRow>(options: {
       const result = await options.read();
       if (result.ceiling !== null) {
         toast.info(
-          `Exported the first ${result.ceiling.toLocaleString()} of ${result.total.toLocaleString()} ${options.noun}`,
+          `Exported the first ${formatCount(result.ceiling)} of ${formatCount(result.total)} ${options.noun}`,
         );
       }
       const columns = shown();

@@ -12,6 +12,7 @@
 // Pure: the component polls the doors and calls `madeSince`; the guard tests it with no network.
 
 import type { DataHomeItemRow, DataHomeTableRow } from "@/features/unified-data/hub/doors";
+import { formatDurationSeconds } from "@ai-matrx/kit/format";
 
 export type MadeKind = "table" | "form" | "booking" | "portal" | "dashboard" | "digest" | "checklist";
 
@@ -118,7 +119,7 @@ export function madeSince(
   return made.sort((a, b) => order[a.kind] - order[b.kind]);
 }
 
-/** The result's heading: "Made in 41 s". */
+/** The result's heading: "Made in 41s" — whole seconds, never under one, so a ticking count never flickers decimals. */
 export function secondsWords(ms: number): string {
-  return `${Math.max(1, Math.round(ms / 1000))} s`;
+  return formatDurationSeconds(Math.max(1, Math.round(ms / 1000)), { style: "compact" });
 }

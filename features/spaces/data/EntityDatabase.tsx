@@ -30,6 +30,8 @@ import { toast } from "@/lib/toast";
 
 import { FieldList, MenuRow, NewButton, SidePeek, ViewerSaveBar, ViewerSortButton, ViewTab, filtersDiffer, shownFilters, shownSorts, type FilterChoice, type SortChoice } from "./menu-parts";
 import { BUILT_IN_SOURCES, newViewId, type DatabaseBlockProps, type SpaceDbView, type SpaceViewLayout } from "./sources";
+import { formatCount } from "@ai-matrx/kit/format";
+import { isUuidShape } from "@ai-matrx/kit/uuid";
 
 /** The layouts a built-in source draws today. */
 const ENTITY_LAYOUTS: Array<{ id: SpaceViewLayout; label: string; icon: typeof Table2 }> = [
@@ -191,7 +193,6 @@ function titleColumn(columns: EntityColumn[]): EntityColumn | undefined {
   return TITLE_KEYS.map((k) => columns.find((c) => c.api_name === k)).find(Boolean) ?? columns.find((c) => c.type === "text") ?? columns[0];
 }
 
-const isBareId = (v: unknown) => typeof v === "string" && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(v);
 
 function isDateType(type: string): boolean {
   return /date|time/i.test(type);
@@ -212,7 +213,7 @@ function valueText(c: EntityColumn, v: unknown): string {
 
 function Cell({ c, v }: { c: EntityColumn; v: unknown }) {
   // A bare id is not something a person reads; the module names it through a lookup column (NEEDS.md).
-  if (isBareId(v)) return null;
+  if (isUuidShape(v)) return null;
   const text = valueText(c, v);
   if (!text) return null;
   if (c.type === "choice") return <span className="spaces-entity-pill">{text}</span>;
@@ -533,7 +534,7 @@ function EntityBody({ token, entity, view, onOpen, search, onNew }: { token: str
         </button>
       ) : null}
       <div className="spaces-entity-count type-secondary text-muted-foreground">
-        <span className="spaces-entity-total">{entity.loading && !entity.rows.length ? "" : `${entity.total.toLocaleString()} ${entity.total === 1 ? "row" : "rows"}`}</span>
+        <span className="spaces-entity-total">{entity.loading && !entity.rows.length ? "" : `${formatCount(entity.total)} ${entity.total === 1 ? "row" : "rows"}`}</span>
         {entity.hasMore ? (
           <Button variant="quiet" disabled={entity.loadingMore} onClick={() => void entity.loadMore()}>
             {entity.loadingMore ? "Loading…" : "Load more"}
@@ -727,7 +728,7 @@ function EntityPeek({ entity, rowId, as, editable, onClose }: { entity: Entity; 
       <div className="spaces-entity-props">
         {entity.columns
           // A bare id is not a property a person reads (the module's lookup column carries its name).
-          .filter((c) => c !== title && !isBareId(row[c.api_name]))
+          .filter((c) => c !== title && !isUuidShape(row[c.api_name]))
           .map((c) => (
             <PropRow key={c.api_name} c={c} value={row[c.api_name]} editable={editable && c.writable === true && !c.lookup} onWrite={(v) => entity.write(rowId, c.api_name, v)} />
           ))}

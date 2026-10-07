@@ -35,6 +35,7 @@ import {
   parseReviewWalkUrlId,
 } from "@/features/review-walk/address";
 import { openReviewWalk } from "@/features/review-walk/openReviewWalk";
+import { isUuidShape } from "@ai-matrx/kit/uuid";
 
 /**
  * URL sync uses the instance slot for both singleton window identities and
@@ -56,16 +57,13 @@ export function getRestorableResourceId(
   return id;
 }
 
-const UUID_SHAPE =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-
 /** A resource id that a uuid door will accept, or null — never a window token. */
 export function getRestorableUuid(
   id: string | null | undefined,
   ...singletonIds: string[]
 ): string | null {
   const resource = getRestorableResourceId(id, ...singletonIds);
-  return resource && UUID_SHAPE.test(resource) ? resource : null;
+  return resource && isUuidShape(resource) ? resource : null;
 }
 
 /**

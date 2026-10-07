@@ -781,11 +781,6 @@ function maybeLogRequest(
 // SECTION 12 — ERROR NORMALIZATION
 // ============================================================================
 
-/** THE one classifier — the shared core's `normalizeMatrxError`. */
-export function normalizeError(err: unknown): ApiCallError {
-  return normalizeMatrxError(err);
-}
-
 // ============================================================================
 // SECTION 13 — PROTOCOL DOWNGRADE (the app's telemetry record)
 // ============================================================================
@@ -1104,7 +1099,7 @@ export function callApi<
           },
         };
       }
-      const error = normalizeError(err);
+      const error = normalizeMatrxError(err);
       // Network-layer / thrown failures (timeout, DNS, abort) capture here —
       // UNLESS the stream layer already recorded this exact throw. A dropped
       // NDJSON socket surfaces in `parseNdjsonStream`, which captures it as

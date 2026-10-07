@@ -111,9 +111,9 @@ export function isOrganizationRequiredEnvelope(
 /**
  * The ONE reader for "what organizations does this refusal offer?" — works
  * whether `err` is aidream's `BackendApiError` (`.details.organizations`), the
- * Next envelope body (`.details.organizations`), or a `normalizeError`-shaped
+ * Next envelope body (`.details.organizations`), or a `normalizeMatrxError`-shaped
  * `ApiCallError` (`.serverDetail.organizations`, since `serverDetail` carries
- * the raw wire body — see `lib/api/call-api.ts`'s `normalizeError`). Returns
+ * the raw wire body — see `@ai-matrx/agents/matrx`'s `normalizeMatrxError`). Returns
  * `null` when absent OR unreadable, exactly matching the wire's own
  * null-means-"could not ask" convention — callers fall back to their own
  * membership fetch on `null`, never on `[]` (which is a real, honest "you

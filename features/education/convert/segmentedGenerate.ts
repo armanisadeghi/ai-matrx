@@ -50,6 +50,7 @@ import type {
   TargetKind,
 } from "./types";
 import type { SourceFeature } from "@ai-matrx/chat/agents/types/instance.types";
+import { formatDurationMs } from "@ai-matrx/kit/format";
 
 export interface SegmentedGenerateArgs<T> {
   ctx: ConvertContext;
@@ -244,7 +245,7 @@ export async function segmentedGenerate<T>({
         controller.abort();
         reject(
           new Error(
-            `No answer within ${Math.round(deadlineMs / 1000)}s for section ${segment.index} of ${segment.total}`,
+            `No answer within ${formatDurationMs(deadlineMs, { style: "long", parts: 2 })} for section ${segment.index} of ${segment.total}`,
           ),
         );
       }, deadlineMs);

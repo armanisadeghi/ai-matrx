@@ -113,6 +113,10 @@
         {
           "file": "app/(admin)/administration/compute/sandbox/page.lifecycle.test.tsx",
           "why": "NOT a re-grown twin: `const readAllRows = jest.fn()` is the MOCK the very next line installs for the package module (`jest.mock(\"@ai-matrx/data/db\", () => ({ readAllRows }))`). A test that replaces the package function must name it; there is no capability here to collapse."
+        },
+        {
+          "file": "features/marketing/seo/keyword-workbench/__tests__/keyword-tags.test.ts",
+          "why": "NOT a re-grown twin: `const readAllRows = jest.fn()` is the MOCK the test installs for @ai-matrx/data/db's readAllRows via jest.mock, so the test can assert what the keyword-tag reader asked for. A test double of the package export holds none of its logic. (2026-10-07 formatter-drain lane)"
         }
       ]
     },
@@ -247,10 +251,6 @@
           "why": "IS the duration capability and has not been collapsed yet. This session's collapse was bounded to the money, count and relative-time bodies the tenth adversarial review named plus the byte-size and name-lane regrowth it surfaced; the duration backlog is listed here so it is READ OUT every run and RATCHETED shrink-only. A debt, not an exemption."
         },
         {
-          "file": "../aidream/apps/shared/chat/src/agents/components/chat/sandbox-insight/SandboxActivityFeed.tsx",
-          "why": "IS the duration capability and has not been collapsed yet. This session's collapse was bounded to the money, count and relative-time bodies the tenth adversarial review named plus the byte-size and name-lane regrowth it surfaced; the duration backlog is listed here so it is READ OUT every run and RATCHETED shrink-only. A debt, not an exemption."
-        },
-        {
           "file": "features/audio/limits.ts",
           "why": "IS the duration capability and has not been collapsed yet. This session's collapse was bounded to the money, count and relative-time bodies the tenth adversarial review named plus the byte-size and name-lane regrowth it surfaced; the duration backlog is listed here so it is READ OUT every run and RATCHETED shrink-only. A debt, not an exemption."
         },
@@ -268,10 +268,6 @@
         },
         {
           "file": "features/files/devices/admin/SyncFleetClient.tsx",
-          "why": "IS the duration capability and has not been collapsed yet. This session's collapse was bounded to the money, count and relative-time bodies the tenth adversarial review named plus the byte-size and name-lane regrowth it surfaced; the duration backlog is listed here so it is READ OUT every run and RATCHETED shrink-only. A debt, not an exemption."
-        },
-        {
-          "file": "features/files/devices/components/DeviceCard.tsx",
           "why": "IS the duration capability and has not been collapsed yet. This session's collapse was bounded to the money, count and relative-time bodies the tenth adversarial review named plus the byte-size and name-lane regrowth it surfaced; the duration backlog is listed here so it is READ OUT every run and RATCHETED shrink-only. A debt, not an exemption."
         },
         {
@@ -351,12 +347,16 @@
           "why": "IS the duration capability and has not been collapsed yet. The 2026-09-30 duration drain skipped this file because another lane held UNCOMMITTED edits to it in the shared checkout at the time (a pathspec commit would have swept that half-done work into the drain's commit). Collapse: `lagText` becomes formatDurationSeconds(seconds, { style: \"long\", round: \"nearest\" }) behind the existing `<= 600` guard (5400 s reads \"2 hours\" as before; 3 days reads \"3 days\" instead of \"72 hours\"). A debt, not an exemption."
         },
         {
-          "file": "../aidream/apps/shared/chat/src/agents/components/context-preview/ContextCompareView.tsx",
-          "why": "IS the duration capability and has not been collapsed yet. The 2026-09-30 duration drain skipped this file because another lane held UNCOMMITTED edits to it in the shared checkout at the time (a pathspec commit would have swept that half-done work into the drain's commit). Collapse: the answer header's ` ${(duration_ms / 1000).toFixed(1)} s` becomes formatDurationMs(duration_ms, { style: \"compact\" }) (\"4.5s\", \"850ms\"). A debt, not an exemption."
-        },
-        {
           "file": "utils/supabase/walkCap.ts",
           "why": "IS the duration capability and has not been collapsed yet. The 2026-09-30 duration drain skipped this file because another lane held UNCOMMITTED edits to it in the shared checkout at the time (a pathspec commit would have swept that half-done work into the drain's commit). Collapse: `Retrying in ${KNOB_TTL_MS / 1000}s` and `ago()` become formatDurationMs(ms, { style: \"compact\" }) (+ \" ago\"). A debt, not an exemption."
+        },
+        {
+          "file": "features/notifications/presentation.ts",
+          "why": "IS the relative-age capability (shortTime: \"now\", \"14m\", \"3h\", \"2d\", then \"Sep 3\" past a week \u2014 the notification bell and inbox rows). Held, not collapsed: the feed convention (Slack, Linear, GitHub inbox) switches to a calendar date after a week because \"3w\" in a notification list makes the reader do arithmetic to find the day, and kit's bare short voice would print \"2w\" / \"1mo\" there. KIT NEEDS OPTION: formatRelativeTime has no threshold past which a short stamp switches to a short absolute date (\"Sep 3\"), and no sub-minute \"now\" in the short voice \u2014 it prints \"34s\" and then \"2w\" / \"1mo\". With an `absoluteAfter` (ms) option this is formatRelativeTime(iso, { suffix: false, absoluteAfter: 7 days }). The notifications lane also had uncommitted edits in this folder on 2026-10-07. (2026-10-07 formatter-drain lane)"
+        },
+        {
+          "file": "features/spaces/page/time.ts",
+          "why": "IS the relative-age capability (editedAgo \"Edited 37m ago\" and commentAgo \"5m\" \u2014 Spaces pages and comments), held because Spaces deliberately reads like Notion: past 24 hours it prints the calendar day (\"Edited Oct 4\"), and sub-minute is \"Just now\". Kit's short voice would print \"Edited 3d ago\" / \"Edited 30s ago\". KIT NEEDS OPTION: formatRelativeTime has no threshold past which a short stamp switches to a short absolute date (\"Sep 3\"), and no sub-minute \"now\" in the short voice \u2014 it prints \"34s\" and then \"2w\" / \"1mo\". Collapse with formatRelativeTime(iso, { absoluteAfter: 1 day, absolute: \"monthDay\" }) once kit has it. (2026-10-07 formatter-drain lane)"
         }
       ]
     },
@@ -399,6 +399,14 @@
         {
           "file": "features/action-requests/components/spendAmount.ts",
           "reason": "Not a money DISPLAY: initialAmountText seeds the editable approval amount box with a bare '12.34' that parseApprovalUsd reads straight back. formatUsd would add '$' and grouping to an input value."
+        },
+        {
+          "file": "features/marketing/seo/ai-visibility/__tests__/brand-lookup-prices-then-buys.test.tsx",
+          "why": "PROVABLY NOT A DISPLAY FORMATTER: the `$${usd}` here is a test FIXTURE reproducing, byte for byte, the over_max_cost error message aidream's tool dispatcher sends (\"estimated at $X (N points), above your max_cost_usd of $Y\"). The test proves the UI turns that server sentence into points; formatting the fixture through formatUsd would make it lie about what the server sends. Nothing in this file renders money. (2026-10-07 formatter-drain lane)"
+        },
+        {
+          "file": "features/marketing/seo/ai-visibility/__tests__/try-one-prompt-prices-then-asks.test.tsx",
+          "why": "PROVABLY NOT A DISPLAY FORMATTER: the `$${usd}` here is a test FIXTURE reproducing, byte for byte, the over_max_cost error message aidream's tool dispatcher sends (\"estimated at $X (N points), above your max_cost_usd of $Y\"). The test proves the UI turns that server sentence into points; formatting the fixture through formatUsd would make it lie about what the server sends. Nothing in this file renders money. (2026-10-07 formatter-drain lane)"
         }
       ],
       "shapeCensus": [
@@ -436,10 +444,6 @@
         },
         {
           "file": "features/education/creators/components/EnrollButton.tsx",
-          "why": "IS the money capability and has not been collapsed yet. This session collapsed the bodies the tenth adversarial review named \u2014 the Spend Dashboard/Explorer's `usd`/`usdPrecise`, UsageTableClient's `fmtCost`, hindsight's `fmtCost`, the cx dashboard's `formatCost`, the mandate board's cost cell \u2014 plus the compact-count and percentage voices kit 0.14.0 grew for them. The rest of the lane's census is listed here so it is READ OUT every run and RATCHETED shrink-only. A debt, not an exemption."
-        },
-        {
-          "file": "features/entitlements/components/PlanUsagePanel.tsx",
           "why": "IS the money capability and has not been collapsed yet. This session collapsed the bodies the tenth adversarial review named \u2014 the Spend Dashboard/Explorer's `usd`/`usdPrecise`, UsageTableClient's `fmtCost`, hindsight's `fmtCost`, the cx dashboard's `formatCost`, the mandate board's cost cell \u2014 plus the compact-count and percentage voices kit 0.14.0 grew for them. The rest of the lane's census is listed here so it is READ OUT every run and RATCHETED shrink-only. A debt, not an exemption."
         },
         {
@@ -487,10 +491,6 @@
           "why": "IS the money capability and has not been collapsed yet. This session collapsed the bodies the tenth adversarial review named \u2014 the Spend Dashboard/Explorer's `usd`/`usdPrecise`, UsageTableClient's `fmtCost`, hindsight's `fmtCost`, the cx dashboard's `formatCost`, the mandate board's cost cell \u2014 plus the compact-count and percentage voices kit 0.14.0 grew for them. The rest of the lane's census is listed here so it is READ OUT every run and RATCHETED shrink-only. A debt, not an exemption."
         },
         {
-          "file": "features/pricing/data.ts",
-          "why": "IS the money capability and has not been collapsed yet. This session collapsed the bodies the tenth adversarial review named \u2014 the Spend Dashboard/Explorer's `usd`/`usdPrecise`, UsageTableClient's `fmtCost`, hindsight's `fmtCost`, the cx dashboard's `formatCost`, the mandate board's cost cell \u2014 plus the compact-count and percentage voices kit 0.14.0 grew for them. The rest of the lane's census is listed here so it is READ OUT every run and RATCHETED shrink-only. A debt, not an exemption."
-        },
-        {
           "file": "features/pricing/education/EducationPricing.tsx",
           "why": "IS the money capability and has not been collapsed yet. This session collapsed the bodies the tenth adversarial review named \u2014 the Spend Dashboard/Explorer's `usd`/`usdPrecise`, UsageTableClient's `fmtCost`, hindsight's `fmtCost`, the cx dashboard's `formatCost`, the mandate board's cost cell \u2014 plus the compact-count and percentage voices kit 0.14.0 grew for them. The rest of the lane's census is listed here so it is READ OUT every run and RATCHETED shrink-only. A debt, not an exemption."
         },
@@ -521,6 +521,34 @@
         {
           "file": "scripts/gate-corpus/restore-graph.ts",
           "why": "IS the money capability and has not been collapsed yet. This session collapsed the bodies the tenth adversarial review named \u2014 the Spend Dashboard/Explorer's `usd`/`usdPrecise`, UsageTableClient's `fmtCost`, hindsight's `fmtCost`, the cx dashboard's `formatCost`, the mandate board's cost cell \u2014 plus the compact-count and percentage voices kit 0.14.0 grew for them. The rest of the lane's census is listed here so it is READ OUT every run and RATCHETED shrink-only. A debt, not an exemption."
+        },
+        {
+          "file": "features/admin/limits/types.ts",
+          "why": "IS the money capability (planPriceLabel \"$19/mo\", \"$39/seat/mo\" on the admin limits matrix). Held: KIT NEEDS OPTION: formatUsd has no whole-dollar price voice \u2014 no cents when the amount is whole, two decimals when it is not (\"$19/mo\", \"$19.50/mo\"). `digits: 2` and `\"trim\"` both print \"$19.00\", which no price list shows; `digits: 0` rounds \"$19.50\" to \"$20\". Collapse to formatUsd(cents / 100, { digits: \"whole\" }) once it ships. (2026-10-07 formatter-drain lane)"
+        },
+        {
+          "file": "features/entitlements/catalog/format.ts",
+          "why": "IS the money capability (formatCents \u2014 every plan price on the pricing and plan-catalog pages). Held: KIT NEEDS OPTION: formatUsd has no whole-dollar price voice \u2014 no cents when the amount is whole, two decimals when it is not (\"$19/mo\", \"$19.50/mo\"). `digits: 2` and `\"trim\"` both print \"$19.00\", which no price list shows; `digits: 0` rounds \"$19.50\" to \"$20\". Collapse to formatUsd(cents / 100, { digits: \"whole\" }) once it ships. (2026-10-07 formatter-drain lane)"
+        },
+        {
+          "file": "features/make/gallery/TemplateShowcase.tsx",
+          "why": "IS the money capability (moneyText \u2014 currency cells in the template gallery's sample rows). Held: KIT NEEDS OPTION: formatUsd has no whole-dollar price voice \u2014 no cents when the amount is whole, two decimals when it is not (\"$19/mo\", \"$19.50/mo\"). `digits: 2` and `\"trim\"` both print \"$19.00\", which no price list shows; `digits: 0` rounds \"$19.50\" to \"$20\". (2026-10-07 formatter-drain lane)"
+        },
+        {
+          "file": "app/(public)/templates/[slug]/social-image/route.tsx",
+          "why": "IS the money capability (a currency field's value drawn into a template's share image). Held: it prints \"$1,234\" for whole amounts, and formatUsd would print \"$1,234.00\" across a 1200x630 card. KIT NEEDS OPTION: formatUsd has no whole-dollar price voice \u2014 no cents when the amount is whole, two decimals when it is not (\"$19/mo\", \"$19.50/mo\"). `digits: 2` and `\"trim\"` both print \"$19.00\", which no price list shows; `digits: 0` rounds \"$19.50\" to \"$20\". (The local body also lets a fractional value through ungated \u2014 \"$1,234.5\" \u2014 which the whole-dollar voice would fix.) (2026-10-07 formatter-drain lane)"
+        },
+        {
+          "file": "features/entitlements/billing-summary.ts",
+          "why": "IS the money capability (priceLabel on the billing summary). Held: KIT NEEDS A CAPABILITY: formatUsd prints a literal \"$\" and this amount is in the Stripe price's own currency (`currency.toUpperCase()`), so swapping would print a EUR or GBP price with a dollar sign \u2014 the exact lie the formatUsd name refuses. Needs a currency-aware money formatter in kit (amount + ISO code, whole-or-two-decimals). (2026-10-07 formatter-drain lane)"
+        },
+        {
+          "file": "features/entitlements/components/ScheduledPlanChange.tsx",
+          "why": "IS the money capability (the scheduled plan change confirm sentence). Held: KIT NEEDS A CAPABILITY: formatUsd prints a literal \"$\" and this amount is in the Stripe price's own currency (`currency.toUpperCase()`), so swapping would print a EUR or GBP price with a dollar sign \u2014 the exact lie the formatUsd name refuses. Needs a currency-aware money formatter in kit (amount + ISO code, whole-or-two-decimals). (2026-10-07 formatter-drain lane)"
+        },
+        {
+          "file": "scripts/applets-templates/shared-source.mjs",
+          "why": "IS the money capability, but as SOURCE TEXT: SHARED_HELPERS is written verbatim into every template Applet's own shared.tsx (Applets own their files), so the formatter runs inside the Applet, not in this repo. Collapsing needs proof that the Applet runtime resolves @ai-matrx/kit/format and a regeneration of the shipped templates; until then the helper stays in the template. Its voice (whole dollars, no cents) is also the whole-dollar price voice formatUsd lacks. (2026-10-07 formatter-drain lane)"
         }
       ]
     },
@@ -744,31 +772,7 @@
           "why": "IS the count capability and has not been collapsed yet. Eight abbreviators (including the two \"B = billion\" bodies) were collapsed onto kit 0.14.0's compact voice in this session, along with the Spend/Usage/console counts; the rest is listed here so it is READ OUT every run and RATCHETED shrink-only. A debt, not an exemption."
         },
         {
-          "file": "features/agent-apps/components/AutoCreateAgentAppForm.tsx",
-          "why": "IS the count capability and has not been collapsed yet. Eight abbreviators (including the two \"B = billion\" bodies) were collapsed onto kit 0.14.0's compact voice in this session, along with the Spend/Usage/console counts; the rest is listed here so it is READ OUT every run and RATCHETED shrink-only. A debt, not an exemption."
-        },
-        {
           "file": "features/agent-comparison/modes/system-prompt/components/SystemPromptColumnHeader.tsx",
-          "why": "IS the count capability and has not been collapsed yet. Eight abbreviators (including the two \"B = billion\" bodies) were collapsed onto kit 0.14.0's compact voice in this session, along with the Spend/Usage/console counts; the rest is listed here so it is READ OUT every run and RATCHETED shrink-only. A debt, not an exemption."
-        },
-        {
-          "file": "../aidream/apps/shared/chat/src/agents/components/context-policies-display/contextPolicyPreview.ts",
-          "why": "IS the count capability and has not been collapsed yet. Eight abbreviators (including the two \"B = billion\" bodies) were collapsed onto kit 0.14.0's compact voice in this session, along with the Spend/Usage/console counts; the rest is listed here so it is READ OUT every run and RATCHETED shrink-only. A debt, not an exemption."
-        },
-        {
-          "file": "../aidream/apps/shared/chat/src/agents/components/context-preview/AttachedContextSection.tsx",
-          "why": "IS the count capability and has not been collapsed yet. Eight abbreviators (including the two \"B = billion\" bodies) were collapsed onto kit 0.14.0's compact voice in this session, along with the Spend/Usage/console counts; the rest is listed here so it is READ OUT every run and RATCHETED shrink-only. A debt, not an exemption."
-        },
-        {
-          "file": "../aidream/apps/shared/chat/src/agents/components/inputs/smart-input/ComposerDraftNotice.tsx",
-          "why": "IS the count capability and has not been collapsed yet. Eight abbreviators (including the two \"B = billion\" bodies) were collapsed onto kit 0.14.0's compact voice in this session, along with the Spend/Usage/console counts; the rest is listed here so it is READ OUT every run and RATCHETED shrink-only. A debt, not an exemption."
-        },
-        {
-          "file": "../aidream/apps/shared/chat/src/agents/components/observational-memory/components/MemoryStateInspector.tsx",
-          "why": "IS the count capability and has not been collapsed yet. Eight abbreviators (including the two \"B = billion\" bodies) were collapsed onto kit 0.14.0's compact voice in this session, along with the Spend/Usage/console counts; the rest is listed here so it is READ OUT every run and RATCHETED shrink-only. A debt, not an exemption."
-        },
-        {
-          "file": "../aidream/apps/shared/chat/src/agents/components/run-controls/panels/ModelContextPanel.tsx",
           "why": "IS the count capability and has not been collapsed yet. Eight abbreviators (including the two \"B = billion\" bodies) were collapsed onto kit 0.14.0's compact voice in this session, along with the Spend/Usage/console counts; the rest is listed here so it is READ OUT every run and RATCHETED shrink-only. A debt, not an exemption."
         },
         {
@@ -777,10 +781,6 @@
         },
         {
           "file": "features/ai-models/components/ModelPricingEditor.tsx",
-          "why": "IS the count capability and has not been collapsed yet. Eight abbreviators (including the two \"B = billion\" bodies) were collapsed onto kit 0.14.0's compact voice in this session, along with the Spend/Usage/console counts; the rest is listed here so it is READ OUT every run and RATCHETED shrink-only. A debt, not an exemption."
-        },
-        {
-          "file": "features/ai-models/components/lab/ModelListDropdown.tsx",
           "why": "IS the count capability and has not been collapsed yet. Eight abbreviators (including the two \"B = billion\" bodies) were collapsed onto kit 0.14.0's compact voice in this session, along with the Spend/Usage/console counts; the rest is listed here so it is READ OUT every run and RATCHETED shrink-only. A debt, not an exemption."
         },
         {
@@ -1160,10 +1160,6 @@
           "why": "IS the count capability and has not been collapsed yet. Eight abbreviators (including the two \"B = billion\" bodies) were collapsed onto kit 0.14.0's compact voice in this session, along with the Spend/Usage/console counts; the rest is listed here so it is READ OUT every run and RATCHETED shrink-only. A debt, not an exemption."
         },
         {
-          "file": "features/marketing/content-plan/components/AgentPayloadSheet.tsx",
-          "why": "IS the count capability and has not been collapsed yet. Eight abbreviators (including the two \"B = billion\" bodies) were collapsed onto kit 0.14.0's compact voice in this session, along with the Spend/Usage/console counts; the rest is listed here so it is READ OUT every run and RATCHETED shrink-only. A debt, not an exemption."
-        },
-        {
           "file": "features/marketing/content-plan/lib/measure-door.ts",
           "why": "IS the count capability and has not been collapsed yet. Eight abbreviators (including the two \"B = billion\" bodies) were collapsed onto kit 0.14.0's compact voice in this session, along with the Spend/Usage/console counts; the rest is listed here so it is READ OUT every run and RATCHETED shrink-only. A debt, not an exemption."
         },
@@ -1245,10 +1241,6 @@
         },
         {
           "file": "features/masterwork/components/detail/RulebookSourcesPanel.tsx",
-          "why": "IS the count capability and has not been collapsed yet. Eight abbreviators (including the two \"B = billion\" bodies) were collapsed onto kit 0.14.0's compact voice in this session, along with the Spend/Usage/console counts; the rest is listed here so it is READ OUT every run and RATCHETED shrink-only. A debt, not an exemption."
-        },
-        {
-          "file": "features/masterwork/components/masterworks/AuditionDialog.tsx",
           "why": "IS the count capability and has not been collapsed yet. Eight abbreviators (including the two \"B = billion\" bodies) were collapsed onto kit 0.14.0's compact voice in this session, along with the Spend/Usage/console counts; the rest is listed here so it is READ OUT every run and RATCHETED shrink-only. A debt, not an exemption."
         },
         {
@@ -1524,14 +1516,6 @@
           "why": "IS the count capability and has not been collapsed yet. Eight abbreviators (including the two \"B = billion\" bodies) were collapsed onto kit 0.14.0's compact voice in this session, along with the Spend/Usage/console counts; the rest is listed here so it is READ OUT every run and RATCHETED shrink-only. A debt, not an exemption."
         },
         {
-          "file": "../aidream/apps/shared/chat/src/tool-call-visualization/registry/registry.tsx",
-          "why": "IS the count capability and has not been collapsed yet. Eight abbreviators (including the two \"B = billion\" bodies) were collapsed onto kit 0.14.0's compact voice in this session, along with the Spend/Usage/console counts; the rest is listed here so it is READ OUT every run and RATCHETED shrink-only. A debt, not an exemption."
-        },
-        {
-          "file": "../aidream/apps/shared/chat/src/tool-call-visualization/renderers/ctx/CtxItemCard.tsx",
-          "why": "IS the count capability and has not been collapsed yet. Eight abbreviators (including the two \"B = billion\" bodies) were collapsed onto kit 0.14.0's compact voice in this session, along with the Spend/Usage/console counts; the rest is listed here so it is READ OUT every run and RATCHETED shrink-only. A debt, not an exemption."
-        },
-        {
           "file": "features/chat-tool-renderers/renderers/dataset/DatasetInline.tsx",
           "why": "IS the count capability and has not been collapsed yet. Eight abbreviators (including the two \"B = billion\" bodies) were collapsed onto kit 0.14.0's compact voice in this session, along with the Spend/Usage/console counts; the rest is listed here so it is READ OUT every run and RATCHETED shrink-only. A debt, not an exemption."
         },
@@ -1557,22 +1541,6 @@
         },
         {
           "file": "features/chat-tool-renderers/renderers/note/NoteToolOverlay.tsx",
-          "why": "IS the count capability and has not been collapsed yet. Eight abbreviators (including the two \"B = billion\" bodies) were collapsed onto kit 0.14.0's compact voice in this session, along with the Spend/Usage/console counts; the rest is listed here so it is READ OUT every run and RATCHETED shrink-only. A debt, not an exemption."
-        },
-        {
-          "file": "../aidream/apps/shared/chat/src/tool-call-visualization/renderers/research/ResearchOverlay.tsx",
-          "why": "IS the count capability and has not been collapsed yet. Eight abbreviators (including the two \"B = billion\" bodies) were collapsed onto kit 0.14.0's compact voice in this session, along with the Spend/Usage/console counts; the rest is listed here so it is READ OUT every run and RATCHETED shrink-only. A debt, not an exemption."
-        },
-        {
-          "file": "../aidream/apps/shared/chat/src/tool-call-visualization/renderers/scrape/ScrapeInline.tsx",
-          "why": "IS the count capability and has not been collapsed yet. Eight abbreviators (including the two \"B = billion\" bodies) were collapsed onto kit 0.14.0's compact voice in this session, along with the Spend/Usage/console counts; the rest is listed here so it is READ OUT every run and RATCHETED shrink-only. A debt, not an exemption."
-        },
-        {
-          "file": "../aidream/apps/shared/chat/src/tool-call-visualization/renderers/scrape/ScrapeOverlay.tsx",
-          "why": "IS the count capability and has not been collapsed yet. Eight abbreviators (including the two \"B = billion\" bodies) were collapsed onto kit 0.14.0's compact voice in this session, along with the Spend/Usage/console counts; the rest is listed here so it is READ OUT every run and RATCHETED shrink-only. A debt, not an exemption."
-        },
-        {
-          "file": "../aidream/apps/shared/chat/src/tool-call-visualization/result-fields/KeyValueGrid.tsx",
           "why": "IS the count capability and has not been collapsed yet. Eight abbreviators (including the two \"B = billion\" bodies) were collapsed onto kit 0.14.0's compact voice in this session, along with the Spend/Usage/console counts; the rest is listed here so it is READ OUT every run and RATCHETED shrink-only. A debt, not an exemption."
         },
         {
@@ -1683,14 +1651,6 @@
           "why": "IS the relative-time capability and has not been collapsed yet. The five bodies the tenth review named \u2014 the spend ledger's `staleness`, the dead-ends and lint-debt consoles' split `ageInDays` + \"scanned today\", the provider sync dashboard's `hoursSince` + \"verified today\", and the masterwork panel's `whenDate` \u2014 were collapsed in this session. The rest is listed here so it is READ OUT every run and RATCHETED shrink-only. A debt, not an exemption."
         },
         {
-          "file": "../aidream/apps/shared/chat/src/agents/components/working-document/DocumentLinkPicker.tsx",
-          "why": "IS the relative-time capability and has not been collapsed yet. The five bodies the tenth review named \u2014 the spend ledger's `staleness`, the dead-ends and lint-debt consoles' split `ageInDays` + \"scanned today\", the provider sync dashboard's `hoursSince` + \"verified today\", and the masterwork panel's `whenDate` \u2014 were collapsed in this session. The rest is listed here so it is READ OUT every run and RATCHETED shrink-only. A debt, not an exemption."
-        },
-        {
-          "file": "../aidream/apps/shared/chat/src/agents/redux/conversation-history/selectors.ts",
-          "why": "IS the relative-time capability and has not been collapsed yet. The five bodies the tenth review named \u2014 the spend ledger's `staleness`, the dead-ends and lint-debt consoles' split `ageInDays` + \"scanned today\", the provider sync dashboard's `hoursSince` + \"verified today\", and the masterwork panel's `whenDate` \u2014 were collapsed in this session. The rest is listed here so it is READ OUT every run and RATCHETED shrink-only. A debt, not an exemption."
-        },
-        {
           "file": "features/education/classes/components/assignmentDisplay.tsx",
           "why": "IS the relative-time capability and has not been collapsed yet. The five bodies the tenth review named \u2014 the spend ledger's `staleness`, the dead-ends and lint-debt consoles' split `ageInDays` + \"scanned today\", the provider sync dashboard's `hoursSince` + \"verified today\", and the masterwork panel's `whenDate` \u2014 were collapsed in this session. The rest is listed here so it is READ OUT every run and RATCHETED shrink-only. A debt, not an exemption."
         },
@@ -1716,10 +1676,6 @@
         },
         {
           "file": "features/research/components/sources/SourceList.tsx",
-          "why": "IS the relative-time capability and has not been collapsed yet. The five bodies the tenth review named \u2014 the spend ledger's `staleness`, the dead-ends and lint-debt consoles' split `ageInDays` + \"scanned today\", the provider sync dashboard's `hoursSince` + \"verified today\", and the masterwork panel's `whenDate` \u2014 were collapsed in this session. The rest is listed here so it is READ OUT every run and RATCHETED shrink-only. A debt, not an exemption."
-        },
-        {
-          "file": "../aidream/apps/shared/chat/src/surfaces/utils/surface-check-ledger.ts",
           "why": "IS the relative-time capability and has not been collapsed yet. The five bodies the tenth review named \u2014 the spend ledger's `staleness`, the dead-ends and lint-debt consoles' split `ageInDays` + \"scanned today\", the provider sync dashboard's `hoursSince` + \"verified today\", and the masterwork panel's `whenDate` \u2014 were collapsed in this session. The rest is listed here so it is READ OUT every run and RATCHETED shrink-only. A debt, not an exemption."
         },
         {
@@ -1805,6 +1761,10 @@
         {
           "file": "scripts/checks/run.mjs",
           "why": "IS the byte-size capability (`totalmem()` turned into a GB figure in the runner's worker warning) and has not been collapsed: this is the checks runner itself, which the 2026-09-30 formatter-drain lane was told not to edit (guard infrastructure). Collapse it with formatFileSize(totalmem()) in a lane that owns scripts/checks."
+        },
+        {
+          "file": "features/matrx-local-download/desktop-release.ts",
+          "why": "IS the byte-size capability (the /desktop download button's \"420 MB\"), held because the local body is better for this one screen: it divides by 1,000,000 (decimal MB), which is what macOS Finder and the browser's download shelf show for the same .dmg, while formatFileSize is binary (1024) and would print \"401 MB\" for a 420,107,474-byte file, a size the person then never sees anywhere else. KIT NEEDS OPTION: a decimal-unit base on formatFileSize (e.g. `base: 1000`) for sizes a person compares against the OS. Collapse to formatFileSize(bytes, { base: 1000 }) the day it ships. (2026-10-07 formatter-drain lane)"
         }
       ],
       "inputAllow": [],
@@ -2017,7 +1977,12 @@
       "name": "Drawer",
       "package": "@ai-matrx/design-system",
       "why": "The vaul drawer family (design-system 0.7.0), which owns this app's iOS mobile rules: dvh not vh, pb-safe/pt-safe, a 44px grab-handle target, and DrawerBody as the flex-1 min-h-0 scroll shard. Re-deriving those per surface is exactly how they drifted.",
-      "allow": []
+      "allow": [
+        {
+          "file": "features/shell/components/mobile-sheet/MobileNavigationDrawer.behavior.test.tsx",
+          "why": "NOT A BODY: `const Drawer = require(\"./MobileNavigationDrawer\").default` binds the component UNDER TEST (the shell's mobile navigation drawer) to a short local name after the test's jest.mock setup. It defines nothing; the design-system Drawer is not reimplemented here. (2026-10-07 formatter-drain lane)"
+        }
+      ]
     },
     {
       "name": "DrawerContent",
@@ -2226,6 +2191,10 @@
         {
           "file": "features/admin/relationships/access-planner/AccessPlannerImpl.tsx",
           "reason": "A labelled SWITCH row (label + the package Switch), not the Radix pressed-state Toggle \u2014 a different capability."
+        },
+        {
+          "file": "features/spaces/collab/PublishPanel.tsx",
+          "why": "PROVABLY A DIFFERENT CAPABILITY: a labelled SWITCH ROW (label text + the design-system Switch, one testId) for the publish settings, not the Radix pressed-state Toggle button. It already renders the package Switch; it holds no toggle logic of its own. (2026-10-07 formatter-drain lane)"
         }
       ]
     },
@@ -2478,6 +2447,10 @@
         {
           "file": "lib/diagnostics/errorCaptureStore.renderSafety.test.tsx",
           "reason": "Not UI: a TEST FIXTURE probe that renders useCapturedErrorStats().total into a data-testid span so the test can assert the store does not crash a render. It defines no chip and ships nowhere."
+        },
+        {
+          "file": "features/window-panels/windows/agents/AgentDebugWindow.tsx",
+          "why": "AN OPTION-BINDING ADAPTER, NOT A BODY: it renders the design-system Badge itself (imported as StatusBadge) and only maps this window's variant words (success/warn/error/info) onto the package's tone prop (success/warning/destructive/info). Change the package Badge and this changes with it. (Was censused at the old aidream path, which has since moved here and been rewritten onto the package Badge.) (2026-10-07 formatter-drain lane)"
         }
       ],
       "census": [
@@ -2492,10 +2465,6 @@
         {
           "file": "features/flashcards/fast-fire/voice-test/SingleCardVoiceTest.tsx",
           "reason": "IS the Badge primitive (a primary-tinted rounded-full pill with children). Not collapsible in this session: live surface, so the swap needs a visual check and a build."
-        },
-        {
-          "file": "../aidream/apps/shared/chat/src/window-panels/windows/agents/AgentDebugWindow.tsx",
-          "reason": "IS the Badge primitive with a success/warn/error/info tone set @ai-matrx/design-system's Badge does not ship. Not collapsible in this session: it needs those package variants first, then a visual pass."
         }
       ]
     },
@@ -2576,6 +2545,10 @@
         {
           "file": "features/whatsapp-clone/modals/settings/panels/AccountPanel.tsx",
           "reason": "IS the Card capability, styled to the WhatsApp-clone skin (rounded bg-muted grouped container) rather than the design-system card surface. Not collapsible in this session: it needs a size/variant decision for that skin plus a visual pass over the clone's settings panels."
+        },
+        {
+          "file": "features/workflow-runtime/simple-builder/BuilderEditor.tsx",
+          "reason": "IS the Card capability \u2014 Card plus CardHeader collapsed into one titled panel (bordered rounded surface, uppercase title strip with an aside slot, body), the same shape as the AnalysisTab census entry. Not collapsed in this session: the swap changes rendered markup and spacing on the live simple workflow builder and needs a visual pass. (2026-10-07 formatter-drain lane)"
         }
       ]
     },
@@ -2786,6 +2759,10 @@
         {
           "file": "features/tool-call-visualization/admin/ToolUiIncidentViewer.tsx",
           "reason": "A DIFFERENT capability: `<span className={className}>{children}</span>`, a pure passthrough marker used internally by IncidentCard. No styling, no htmlFor, no control association \u2014 not the form Label primitive."
+        },
+        {
+          "file": "features/matrx-envelope/__tests__/a-record-name-is-read-once-and-refreshed.test.tsx",
+          "why": "PROVABLY A DIFFERENT CAPABILITY: a test-harness component that renders useResolvedReferenceLabel's `display` into a <span data-testid> so the test can count record-name reads. It is not a form label, has no htmlFor, and renders no design-system markup. (2026-10-07 formatter-drain lane)"
         }
       ]
     },
@@ -2817,7 +2794,12 @@
       "name": "Progress",
       "package": "@ai-matrx/design-system",
       "why": "Design-system primitive. Until 2026-09-07 this repo's DB-authored component scope (src/lib/content-ir/db-component/component-scope.tsx) defined a dependency-free `div` stand-in under this name and handed it to agent-authored components \u2014 an Accordion with no trigger, a Collapsible that could not collapse, a Table that widened its panel. Census row 19c. The package ships all of them (design-system 0.5.2/0.7.1, and 0.8.0 for the Accordion family, built for this row).",
-      "allow": []
+      "allow": [
+        {
+          "file": "features/make/gallery/TemplateGallery.tsx",
+          "why": "PROVABLY A DIFFERENT CAPABILITY: this `Progress` is the template-install LOG \u2014 a spinner line (\"Installing 3 of 7 steps\") over a ticking list of every table, form and agent the install has made so far, shared by the gallery and the describe box. It renders no bar and has no value/max; the design-system Progress is a determinate bar. Nothing here could be replaced by it. (2026-10-07 formatter-drain lane)"
+        }
+      ]
     },
     {
       "name": "ScrollArea",
@@ -2921,6 +2903,10 @@
         {
           "file": "components/ui/table.tsx",
           "reason": "HOST BINDING ONLY, and the file says so: it imports the package component under a Package* alias and renders it with this app's density bound. It consumes @ai-matrx/design-system and reimplements nothing; the alias line is the import that proves it."
+        },
+        {
+          "file": "providers/__tests__/chat-package/cancelled-organization-question.test.tsx",
+          "why": "PROVABLY A DIFFERENT CAPABILITY: a test-harness component that resolves one context-rule row and dispatches saveContextRule so the test can drive the organization-gate question. It renders no <table> and has nothing to do with the design-system Table. (2026-10-07 formatter-drain lane)"
         }
       ]
     },

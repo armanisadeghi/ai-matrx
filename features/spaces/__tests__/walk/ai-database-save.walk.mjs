@@ -4,6 +4,7 @@
 // FIRST_SAVE_MS (default 4000) of the change.
 //   MEMBER=1 SPACES_WALK_ORG="Ashford Labs" node features/spaces/__tests__/walk/ai-database-save.walk.mjs
 import { open, newPage, slash, act, shot, trashPage } from "./lib.mjs";
+import { formatDurationMs } from "@ai-matrx/kit/format";
 
 const FIRST_SAVE_MS = Number(process.env.FIRST_SAVE_MS ?? 4000);
 const { browser, context, page } = await open({ member: !!process.env.MEMBER, width: 1440, height: 1000 });
@@ -45,7 +46,7 @@ await act(page, async () => {
 // "<name> is ready" — the moment the designer reports done (the walk that lost a page quit right after it).
 const made = await page.getByText(/ is ready$/).first().waitFor({ timeout: 240_000 }).then(() => true, () => false);
 const blockAt = Date.now();
-console.log("database block:", made, "after", Math.round((blockAt - opened) / 1000), "s");
+console.log("database block:", made, "after", formatDurationMs(blockAt - opened, { style: "compact" }));
 // A person who closes the tab (or whose walk ends) a moment after "ready" must not lose the block: the
 // save has to have LANDED within QUIT_MS of the block appearing (a closed browser fires no pagehide).
 await page.waitForTimeout(Number(process.env.QUIT_MS ?? 1200));

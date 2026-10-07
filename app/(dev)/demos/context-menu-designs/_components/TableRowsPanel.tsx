@@ -13,6 +13,7 @@ import { ItemContextMenu } from "@/components/official/item/ItemMenu";
 import type { ItemMenuConfig } from "@/components/official/item/types";
 import { toItemMenuConfig } from "@/features/unified-data/actions/tableActionAdapters";
 import { toast } from "@/lib/toast";
+import { formatCount } from "@ai-matrx/kit/format";
 
 export const CLINIC_TABLES: { id: string; name: string; records: number; updated: string }[] = [
   { id: "031d3690-4a02-4cee-a575-454ffd96c992", name: "Patient Visit Tracker", records: 1284, updated: "2h ago" },
@@ -88,7 +89,7 @@ export function TableRowsPanel({ side, viewer }: { side: "today" | "proposed"; v
             <div className="min-w-0 flex-1">
               <div className="truncate text-sm font-medium">{t.name}</div>
               <div className="truncate text-xs text-muted-foreground">
-                {t.records.toLocaleString()} records · {t.updated}
+                {formatCount(t.records)} records · {t.updated}
               </div>
             </div>
           </div>

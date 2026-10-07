@@ -39,6 +39,17 @@ import { DEFAULT_ENTITY_LIST_QUERY } from "@/lib/entity-list/types";
 import type { TargetKind } from "@/features/education/convert/types";
 import type { AssociationTargetType } from "@/features/scopes/types";
 import type { Json } from "@/types/database.types";
+import {
+  KIT_TOKEN,
+  addKitSource,
+  archiveKitScope,
+  createKitScope,
+  edgeKitId,
+  kitSourcesFromEdges,
+  readKitScope,
+  renameKitScope,
+  type KitSource,
+} from "./kitScope";
 
 /** Artifact entity tokens a kit can contain (the converter's four writers). */
 const KIT_ARTIFACT_TYPES = [
@@ -56,6 +67,7 @@ export const MANUAL_KIT_SOURCE_TYPES = [
   "fc_set",
   "assessment",
   "conversation",
+  "scope",
 ] as const;
 
 export type ManualKitSourceType = (typeof MANUAL_KIT_SOURCE_TYPES)[number];
@@ -79,6 +91,13 @@ export interface StudyKit {
   artifacts: GeneratedArtifact[];
   /** When the kit was first generated. */
   createdAt: string;
+  /**
+   * The material the kit holds. A `scope` kit lists every Source filed under
+   * it; an older single-anchor kit holds exactly its anchor.
+   */
+  sources: KitSource[];
+  /** A `scope` kit's organization (where its new Sources and aids are filed). */
+  organizationId?: string;
 }
 
 /** Keyed by the artifact's real entity identity, never by its display order. */
@@ -162,7 +181,9 @@ export async function readKitArtifactStats(
 function kitMembers(rows: GeneratedArtifact[]): GeneratedArtifact[] {
   const seen = new Set<string>();
   return rows
-    .filter((r) => r.targetKind !== null && !r.kitHidden)
+    // An edge stamped `kitId` belongs to that multi-source kit (`kitScope.ts`),
+    // never to the anchor it also points at.
+    .filter((r) => r.targetKind !== null && !r.kitHidden && !edgeKitId(r.edgeMetadata))
     .filter((r) => {
       const key = `${r.artifactType}:${r.artifactId}`;
       if (seen.has(key)) return false;
@@ -282,20 +303,64 @@ export async function readKit(
   sourceType: string,
   sourceId: string,
 ): Promise<StudyKit | null> {
+  if (sourceType === KIT_TOKEN) return readScopeKit(sourceId);
   // A kit page is an authoritative read. The shared lineage strip is
   // deliberately best-effort, but turning its transport/auth failure into []
   // here makes a populated kit lie that nothing has been made yet.
   const rows = await listGeneratedFrom(sourceType, sourceId, {
     failureMode: "throw",
   });
-  const artifacts = await refreshMediaMembers(kitMembers([...rows, ...await manualMembers(sourceType, sourceId)]));
-  if (artifacts.length === 0) return null;
+  const manual = await manualMembers(sourceType, sourceId);
+  const artifacts = await refreshMediaMembers(kitMembers([...rows, ...manual]));
+  if (artifacts.length === 0) {
+    // A promoted kit (`promoteAnchorKit`): every edge now names its kit — the
+    // anchor's old link opens that kit instead of an empty page.
+    const movedTo = [...rows, ...manual].map((r) => edgeKitId(r.edgeMetadata)).find(Boolean);
+    return movedTo ? readScopeKit(movedTo) : null;
+  }
+  const title = kitName(artifacts);
   return {
     sourceType,
     sourceId,
-    title: kitName(artifacts),
+    title,
     artifacts,
     createdAt: artifacts[artifacts.length - 1].createdAt,
+    sources: [anchorSource(sourceType, sourceId, title, artifacts[artifacts.length - 1].createdAt)],
+  };
+}
+
+/** An older kit's one anchor, shown as its first (and only) Source. */
+function anchorSource(sourceType: string, sourceId: string, title: string, createdAt: string): KitSource {
+  return {
+    edgeId: `anchor:${sourceType}:${sourceId}`,
+    type: sourceType,
+    id: sourceId,
+    title,
+    href: sourceType === "file" ? `/files/f/${sourceId}` : null,
+    createdAt,
+  };
+}
+
+/**
+ * A multi-source kit (`kitScope.ts`): the scope row names it, its incoming
+ * `kitSource` edges are its Sources and its flagged `member` edges its aids.
+ * A kit with Sources and no aids yet is still a kit.
+ */
+async function readScopeKit(kitId: string): Promise<StudyKit | null> {
+  const scope = await readKitScope(kitId);
+  if (!scope) return null;
+  const result = await associationsService.listForEntity(KIT_TOKEN, kitId);
+  if (!result.ok) throw new Error("Could not read this study kit.");
+  const sources = kitSourcesFromEdges(result.data.edges);
+  const artifacts = await refreshMediaMembers(kitMembers(await memberRows(result.data.edges)));
+  return {
+    sourceType: KIT_TOKEN,
+    sourceId: kitId,
+    title: scope.name,
+    artifacts,
+    createdAt: sources[0]?.createdAt ?? artifacts[artifacts.length - 1]?.createdAt ?? new Date(0).toISOString(),
+    sources,
+    organizationId: scope.organizationId,
   };
 }
 
@@ -312,7 +377,13 @@ function metaBoolean(meta: Json | undefined, key: string): boolean {
 async function manualMembers(sourceType: string, sourceId: string): Promise<GeneratedArtifact[]> {
   const result = await associationsService.listForEntity(sourceType, sourceId);
   if (!result.ok) throw new Error("Could not read manual kit members.");
-  const edges = result.data.edges.filter((edge) => edge.direction === "incoming" && edge.role === "member" && metaBoolean(edge.metadata, "educationKit"));
+  return memberRows(result.data.edges);
+}
+
+type EntityEdge = Extract<Awaited<ReturnType<typeof associationsService.listForEntity>>, { ok: true }>["data"]["edges"][number];
+
+async function memberRows(allEdges: readonly EntityEdge[]): Promise<GeneratedArtifact[]> {
+  const edges = allEdges.filter((edge) => edge.direction === "incoming" && edge.role === "member" && metaBoolean(edge.metadata, "educationKit"));
   const titles = new Map<string, string>();
   const wanted = new Set(edges.map((edge) => `${edge.otherType}:${edge.otherId}`));
   for (let page = 1; wanted.size; page += 1) {
@@ -320,7 +391,7 @@ async function manualMembers(sourceType: string, sourceId: string): Promise<Gene
     for (const row of library.rows) if (wanted.delete(`${row.kind}:${row.id}`)) titles.set(`${row.kind}:${row.id}`, row.title);
     if (library.rows.length < KIT_SCAN_PAGE || page * KIT_SCAN_PAGE >= library.total) break;
   }
-  return edges.map((edge) => ({ edgeId: edge.id, targetKind: metaString(edge.metadata, "targetKind") as TargetKind | null, artifactType: edge.otherType, artifactId: edge.otherId, title: titles.get(`${edge.otherType}:${edge.otherId}`) ?? "Unavailable study aid", href: metaString(edge.metadata, "href") ?? "/education", detail: metaString(edge.metadata, "detail"), sourceTitle: metaString(edge.metadata, "kitTitle"), createdAt: edge.createdAt, membershipRole: "member" as const, edgeMetadata: edge.metadata }));
+  return edges.map((edge) => ({ edgeId: edge.id, targetKind: metaString(edge.metadata, "targetKind") as TargetKind | null, artifactType: edge.otherType, artifactId: edge.otherId, title: titles.get(`${edge.otherType}:${edge.otherId}`) ?? edge.label ?? "Unavailable study aid", href: metaString(edge.metadata, "href") ?? "/education", detail: metaString(edge.metadata, "detail"), sourceTitle: metaString(edge.metadata, "kitTitle"), createdAt: edge.createdAt, membershipRole: "member" as const, edgeMetadata: edge.metadata }));
 }
 
 /**
@@ -398,6 +469,9 @@ export async function listKits(): Promise<StudyKit[]> {
         if (edge.role !== "source" && !(edge.role === "member" && metaBoolean(edge.metadata, "educationKit"))) continue;
         const targetKind = metaString(edge.metadata, "targetKind");
         if (!targetKind) continue; // not a converter artifact edge
+        // Lineage of a multi-source kit: the aid is listed under its kit (its
+        // `member` edge), never again under each Source it was read from.
+        if (edgeKitId(edge.metadata)) continue;
         const key = `${edge.targetType}:${edge.targetId}`;
         const existing = kits.get(key);
         const member: GeneratedArtifact = {
@@ -423,6 +497,7 @@ export async function listKits(): Promise<StudyKit[]> {
             title: "",
             artifacts: [member],
             createdAt: member.createdAt,
+            sources: [],
           });
         }
       }
@@ -432,11 +507,15 @@ export async function listKits(): Promise<StudyKit[]> {
   return [...kits.values()]
     .map((kit) => {
       const artifacts = kitMembers(kit.artifacts);
+      const title = kitName(artifacts);
+      const createdAt = artifacts[artifacts.length - 1]?.createdAt ?? kit.createdAt;
       return {
         ...kit,
         artifacts,
-        title: kitName(artifacts),
-        createdAt: artifacts[artifacts.length - 1]?.createdAt ?? kit.createdAt,
+        title,
+        createdAt,
+        // A scope kit's Sources are read on its own page; an anchor kit holds its anchor.
+        sources: kit.sourceType === KIT_TOKEN ? [] : [anchorSource(kit.sourceType, kit.sourceId, title, createdAt)],
       };
     })
     .filter((kit) => kit.artifacts.length > 0)
@@ -494,6 +573,7 @@ async function currentKitOrThrow(kit: StudyKit, expectedFingerprint: string): Pr
 export async function renameKit(kit: StudyKit, title: string, expectedFingerprint = kitMembershipFingerprint(kit)): Promise<void> {
   const sourceTitle = writableTitle(title);
   const current = await currentKitOrThrow(kit, expectedFingerprint);
+  if (kit.sourceType === KIT_TOKEN) await renameKitScope(kit.sourceId, sourceTitle);
   let completed = 0;
   for (const artifact of current.artifacts) {
     const result = await associationsService.add({
@@ -572,6 +652,46 @@ export async function deleteKit(kit: StudyKit, expectedFingerprint = kitMembersh
       throw new Error(`Removed ${completed} of ${current.artifacts.length} study aids from this kit. The remaining aids still belong to it; reload the kit and try again.`);
     }
   }
+  if (kit.sourceType === KIT_TOKEN) await archiveKitScope(kit.sourceId);
+}
+
+/**
+ * Give an older single-anchor kit its own identity so it can hold more
+ * Sources. Nothing is deleted: a kit scope is made under the kit's name, the
+ * anchor is filed as its first Source, every aid gets a `member` edge into the
+ * new kit, and each old anchor edge is stamped `kitId` so the anchor's reads
+ * hand it over (its old link opens the new kit). Returns the new kit's id.
+ */
+export async function promoteAnchorKit(kit: StudyKit, orgId: string): Promise<string> {
+  if (kit.sourceType === KIT_TOKEN) return kit.sourceId;
+  const scope = await createKitScope(orgId, kit.title);
+  await addKitSource(scope, { type: kit.sourceType, id: kit.sourceId, title: kit.title });
+  for (const artifact of kit.artifacts) {
+    const old = artifact.edgeMetadata && typeof artifact.edgeMetadata === "object" && !Array.isArray(artifact.edgeMetadata)
+      ? (artifact.edgeMetadata as Record<string, unknown>)
+      : {};
+    const joined = await associationsService.add({
+      sourceType: artifact.artifactType,
+      sourceId: artifact.artifactId,
+      targetType: KIT_TOKEN,
+      targetId: scope.id,
+      orgId,
+      role: "member",
+      label: artifact.title,
+      metadata: { educationKit: true, targetKind: artifact.targetKind, href: artifact.href, detail: artifact.detail, kitTitle: kit.title },
+    });
+    if (!joined.ok) throw new Error("Could not move every study aid into the kit. Try again.");
+    const handed = await associationsService.add({
+      sourceType: artifact.artifactType,
+      sourceId: artifact.artifactId,
+      targetType: kit.sourceType as AssociationTargetType,
+      targetId: kit.sourceId,
+      role: artifact.membershipRole ?? "source",
+      metadata: { ...old, kitId: scope.id },
+    });
+    if (!handed.ok) throw new Error("Could not move every study aid into the kit. Try again.");
+  }
+  return scope.id;
 }
 
 /** Attach existing library aids to a source-backed kit without a new record type. */

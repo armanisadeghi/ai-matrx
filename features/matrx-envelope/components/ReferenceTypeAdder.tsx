@@ -55,6 +55,7 @@ import {
   isEntityTypeToken,
   type EntityTypeToken,
 } from "@ai-matrx/associations";
+import { formatRelativeTime } from "@ai-matrx/kit/format";
 
 export interface ReferenceTypeAdderProps {
   type: string;
@@ -635,13 +636,7 @@ export function candidateSecondaryLine(
   const at = new Date(updatedAt);
   const ms = at.getTime();
   if (Number.isNaN(ms)) return null;
-  const minutes = Math.max(0, Math.round((now - ms) / 60_000));
-  if (minutes < 1) return "Edited just now";
-  if (minutes < 60) return `Edited ${minutes} min ago`;
-  const hours = Math.round(minutes / 60);
-  if (hours < 24) return `Edited ${hours} h ago`;
-  const days = Math.round(hours / 24);
-  if (days < 30) return days === 1 ? "Edited yesterday" : `Edited ${days} days ago`;
+  if (now - ms < 30 * 86_400_000) return `Edited ${formatRelativeTime(ms, { style: "intl", now })}`;
   const sameYear = at.getFullYear() === new Date(now).getFullYear();
   return `Edited ${at.toLocaleDateString(undefined, {
     month: "short",

@@ -16,6 +16,7 @@
 
 import type { ResolvedSource, ResolvedSourceSet } from "@ai-matrx/agents/sources";
 import type { SourceCardModel } from "@ai-matrx/agents/sources/runtime";
+import type { KitSourceRef } from "@/features/education/convert/types";
 
 export interface KitMaterial {
   text: string;
@@ -89,4 +90,27 @@ export function pickedFileAnchor(cards: readonly SourceCardModel[]): string | nu
   const type = only.draft.ref.resource_type;
   if (type === "file" || type === "cld_file") return only.draft.ref.resource_id;
   return only.draft.fileId ?? null;
+}
+
+/**
+ * Each Source the kit's text was read from, as the kit holds it: the
+ * Source's own record (never a merged copy), plus the file / processed
+ * document behind it so every citation opens the right one.
+ */
+export function kitSourceRefs(resolved: ResolvedSourceSet): KitSourceRef[] {
+  return resolved.sources
+    .filter((s) => s.text.trim().length > 0)
+    .map((s) => {
+      const type = s.ref.resource_type === "cld_file" ? "file" : s.ref.resource_type;
+      const fileId = s.file_id ?? (type === "file" ? s.ref.resource_id : undefined);
+      const processedDocumentId =
+        s.processed_document_id ?? (type === "processed_document" ? s.ref.resource_id : undefined);
+      return {
+        type,
+        id: s.ref.resource_id,
+        title: s.label.trim() || "Source",
+        ...(fileId ? { fileId } : {}),
+        ...(processedDocumentId ? { processedDocumentId } : {}),
+      };
+    });
 }

@@ -44,6 +44,7 @@ import { canManageInvitations } from "@/features/organizations/types";
 import type { OrganizationWithRole } from "@/features/organizations/types";
 import type { UserBasicInfo } from "../types";
 import type { DbRpcRow } from "@/types/supabase-rpc";
+import { formatDurationMs } from "@ai-matrx/kit/format";
 
 export interface ConnectionUser extends UserBasicInfo {
   source: "conversation" | "organization" | "invitation";
@@ -364,7 +365,7 @@ async function fetchOrgConnections(
       resolve(DEADLINE_MISSED);
     }, deadlineMs);
   });
-  const missedDeadline = () => new Error(`did not answer within ${Math.round(deadlineMs / 1000)} s`);
+  const missedDeadline = () => new Error(`did not answer within ${formatDurationMs(deadlineMs, { style: "long", parts: 2 })}`);
   const rosters: Array<OrganizationMemberRow[] | null> = new Array(organizations.length).fill(null);
   // Indexed so failures are reported in membership order, whichever answered first.
   const rosterFailures: unknown[] = new Array(organizations.length).fill(undefined);

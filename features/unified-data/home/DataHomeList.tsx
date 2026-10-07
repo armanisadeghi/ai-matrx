@@ -56,6 +56,7 @@ const ROW_NAME = (row: DataHomeRow) => row.name;
 import { DATA_HOME_DEFAULT_VIEW_KNOB, resolveDataHomeView } from "./dataHomeKnobs";
 import { tokensToFilters, updatedBucket } from "./dataHomeQuery";
 import { DataHomeRecent, recentRows } from "./DataHomeRecent";
+import { formatCount } from "@ai-matrx/kit/format";
 
 const withoutHidden = (rows: DataHomeRow[], hidden: ReadonlySet<string>) =>
   hidden.size === 0 ? rows : rows.filter((row) => !hidden.has(row.id));
@@ -321,7 +322,7 @@ export function DataHomeList({ dataSource, sharedOnlyHere = false }: DataHomeLis
             {!list.query.search ? <DataHomeRecent rows={recent} onOpened={(row) => marks.opened(row.id)} /> : null}
             {corpus.meta.refusals.length > 0 || corpus.meta.capped || corpus.meta.searchTrouble ? (
             <div role="status" className="flex flex-col gap-1 text-xs text-muted-foreground" data-data-home-notice="">
-              {corpus.meta.capped ? <span>Showing the newest {DATA_HOME_ROW_CAP.toLocaleString()}.</span> : null}
+              {corpus.meta.capped ? <span>Showing the newest {formatCount(DATA_HOME_ROW_CAP)}.</span> : null}
               {corpus.meta.searchTrouble ? (
                 <span className="flex items-center gap-1 text-amber-700 dark:text-amber-400">
                   Search inside fields did not answer. {corpus.meta.searchTrouble}

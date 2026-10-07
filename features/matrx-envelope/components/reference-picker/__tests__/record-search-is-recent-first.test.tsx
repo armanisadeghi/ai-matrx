@@ -107,7 +107,7 @@ describe("the reference picker's record search", () => {
   });
 
   it("the secondary line fits its 60-character slot", () => {
-    expect(candidateSecondaryLine("2026-10-02T11:58:00Z", NOW)).toBe("Edited 2 min ago");
+    expect(candidateSecondaryLine("2026-10-02T11:58:00Z", NOW)).toBe("Edited 2 minutes ago");
     expect(candidateSecondaryLine("2026-10-01T09:00:00Z", NOW)).toBe("Edited yesterday");
     expect(candidateSecondaryLine(null, NOW)).toBeNull();
     for (const iso of ["2020-01-01T00:00:00Z", "2026-09-20T09:00:00Z"]) {
