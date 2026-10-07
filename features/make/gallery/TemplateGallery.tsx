@@ -126,6 +126,7 @@ export function TemplateGallerySection() {
   const filterKey = JSON.stringify({ ...filters, organizationId });
   const shown = useCatalogue(filterKey, galleryFilter(filters, { scope: "platform", installedIn: organizationId }));
   const facets = all.phase === "read" ? platformCards(all.data.cards) : [];
+  useFinishInterruptedRemovals(shown.phase === "read" ? shown.data.cards : [], organizationId, shown.reload);
 
   return (
     <section className="flex flex-col gap-3" aria-labelledby="make-templates" data-make-gallery="">
@@ -154,6 +155,27 @@ export function TemplateGallerySection() {
       )}
     </section>
   );
+}
+
+/** A removal the person left half-done (tab closed) finishes by itself when any card of the gallery shows it. */
+function useFinishInterruptedRemovals(cards: GalleryCard[], organizationId: string | null, reload: () => void) {
+  const dispatch = useAppDispatch();
+  const [started] = useState(() => new Set<string>());
+  useEffect(() => {
+    if (!organizationId) return;
+    for (const card of cards) {
+      const inst = card.installed;
+      if (!inst || inst.state !== "uninstalling" || started.has(inst.install_id)) continue;
+      started.add(inst.install_id);
+      void runTemplateDoor(supabaseDataSource(createClient()), "template_uninstall", organizationId, inst.install_id, { maxCalls: 400 }).then(
+        async (done) => {
+          if (done.ok && done.answer?.done) await archiveLeftAgents(done.answer, dispatch);
+          reload();
+        },
+      );
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- `started` guards each install to one resume
+  }, [cards, organizationId]);
 }
 
 /**
@@ -258,6 +280,20 @@ function refusalLine(run: { answer: TemplateDoorAnswer | null; error?: { message
   return r?.message ?? run.error?.message ?? "It stopped before it finished.";
 }
 
+/** The door leaves a copied agent for the host: archive each; the lines say which could not be. */
+async function archiveLeftAgents(answer: TemplateDoorAnswer, dispatch: ReturnType<typeof useAppDispatch>): Promise<string[]> {
+  const archive = templateAgentArchiver(dispatch);
+  const lines: string[] = [];
+  for (const agentId of agentsLeftBy(answer)) {
+    try {
+      await archive(agentId);
+    } catch (err) {
+      lines.push(`The assistant was not archived — ${err instanceof Error ? err.message : String(err)}`);
+    }
+  }
+  return lines;
+}
+
 /**
  * One template's install, its live progress and its landing. `bare` leaves the summary out (the
  * public page /templates/<slug> draws its own); `autoInstall` presses Install once the card is read
@@ -268,9 +304,12 @@ export function TemplatePreview({
   bare = false,
   autoInstall = false,
   onInstalled,
+  productName,
 }: {
   templateId: string;
   bare?: boolean;
+  /** What the person installed, when it is not the data template itself (an Applet template's own name). */
+  productName?: string;
   autoInstall?: boolean;
   /** A host step after the install lands (an Applet template copies its Applet here); fires once per install. */
   onInstalled?: (answer: TemplateDoorAnswer, organizationId: string) => void;
@@ -359,16 +398,7 @@ export function TemplatePreview({
     if (door === "template_install") {
       await addAgent(done.answer, organizationId);
     } else {
-      // The door leaves a copied agent for the host: archive it here.
-      const archive = templateAgentArchiver(dispatch);
-      const lines: string[] = [];
-      for (const agentId of agentsLeftBy(done.answer)) {
-        try {
-          await archive(agentId);
-        } catch (err) {
-          lines.push(`The assistant was not archived — ${err instanceof Error ? err.message : String(err)}`);
-        }
-      }
+      const lines = await archiveLeftAgents(done.answer, dispatch);
       setAgentNote(lines.length ? lines.join(" ") : null);
     }
     read.reload();
@@ -390,6 +420,23 @@ export function TemplatePreview({
     await addAgent(done.answer, organizationId);
     read.reload();
   };
+
+  // AN INTERRUPTED RUN FINISHES ITSELF (2026-10-07): Remove and Install run from the browser in chunks, so a closed
+  // tab leaves the install "uninstalling" / "installing" for good. Seeing one, resume it once, without a press.
+  const [resumed, setResumed] = useState<string | null>(null);
+  useEffect(() => {
+    if (read.phase !== "read" || run.phase !== "idle" || !organizationId) return;
+    const found = read.data.cards.find((c) => c.id === templateId)?.installed;
+    if (!found || resumed === found.install_id) return;
+    if (found.state === "uninstalling") {
+      setResumed(found.install_id);
+      void go("template_uninstall", found.install_id);
+    } else if (found.state === "installing") {
+      setResumed(found.install_id);
+      install();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- resumes once per install, when the card lands
+  }, [read.phase, run.phase, organizationId, resumed]);
 
   // The organization asked for on the first press has been chosen: install now (ask, then replay).
   useEffect(() => {
@@ -537,8 +584,8 @@ export function TemplatePreview({
       <ConfirmDialog
         open={confirmRemove}
         onOpenChange={(open) => !open && setConfirmRemove(false)}
-        title={`Remove ${card.name}?`}
-        description="Everything it made is archived — tables and their rows, views, forms, dashboards, digests, agents and workflows. You can restore them from Trash."
+        title={`Remove ${productName ?? card.name}?`}
+        description="Its tables, rows, views, forms, dashboards, agents, workflows and app are archived. Restore them from Trash."
         confirmLabel="Remove"
         variant="destructive"
         onConfirm={() => {

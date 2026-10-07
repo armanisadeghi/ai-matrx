@@ -7,6 +7,7 @@ import Link from "next/link";
 
 import { createRouteMetadata } from "@/utils/route-metadata";
 import { signUpHref } from "@/utils/auth/auth-destination";
+import { AppletSignUpLink } from "@/features/marketing/applets/AppletSignUpLink";
 import { AppletCardGrid } from "@/features/marketing/applets/AppletIntroPage";
 import { readPublicApplets } from "@/features/marketing/applets/publicApplets.server";
 import { APPLET_TEMPLATES_PATH } from "@/features/marketing/applets/types";
@@ -34,12 +35,7 @@ export default async function AppletTemplatesPage() {
             <h1 className="text-3xl font-semibold tracking-tight">App templates</h1>
             <span className="type-body text-muted-foreground tabular-nums">{cards.length} templates</span>
           </div>
-          <Link
-            href={signUpHref(APPLET_TEMPLATES_PATH)}
-            className="inline-flex h-9 items-center rounded-md bg-primary px-4 type-title text-primary-foreground hover:bg-primary/90"
-          >
-            Sign up free
-          </Link>
+          <AppletSignUpLink href={signUpHref(APPLET_TEMPLATES_PATH)} />
         </header>
         <AppletCardGrid cards={cards} />
       </div>
