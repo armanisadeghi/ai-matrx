@@ -45,6 +45,14 @@ Block document: a tree of `SpaceBlock` (`id`, `type`, `text: RichSpan[]`, `color
 
 ## Change log
 
+- 2026-10-07 — publish round 2 (lane spaces-publish-2): a published page shows its database rows and charts signed out —
+  `content.space_public_view` returns `databases` (helper `content._space_public_databases`, never granted: only the page's own
+  blocks, each block's views — filters, sort, hidden properties, 500 rows a view — read as the publisher), drawn by
+  `data/published-rows.tsx` as a read-only in-memory store (no New, no automations). Unpublishing a Private page keeps it
+  Private (T-13 dual-write trigger restores `personal` when `shown_to = only_me`). `get_share_capabilities` reads a CHECK's
+  rule, not the word "public" in it (documents are publishable). Page links the tree does not hold are read by id under row
+  security; "Page in Trash" only when it is. `/site` answers 200 (the editor draws in the browser). Proof
+  `publish/published-rows-live-proof.ts` 14/14 live. Open: uploaded covers/icons are not yet served signed out.
 - 2026-10-07 — phase 6, Publish (J1, I4, O10; lane spaces-publish): Share menu gains Notion's Publish tab (`collab/PublishPanel.tsx`):
   Publish, the public link (copy / open), Include sub-pages (on), Allow search engines (off, the T-12 switch
   `platform.set_search_engine_indexed`), Allow duplicate as template (on), Site customization (the link), Unpublish.
