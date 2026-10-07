@@ -39,6 +39,7 @@ import {
 } from "@/features/files/handler/utils/python-base";
 import { formatFileSize } from "@/features/files/utils/format";
 import { downloadUrl } from "@ai-matrx/kit/download";
+import { Tile } from "@ai-matrx/design-system/controls";
 import type { ResolvedShareToken } from "@/utils/permissions/shareLinks";
 import {
   readSharedConversation,
@@ -109,33 +110,17 @@ function FileCard({
   ]
     .filter(Boolean)
     .join(" · ");
-  const body = (
-    <>
-      <FileText className="h-5 w-5 shrink-0 text-muted-foreground" aria-hidden />
-      <span className="flex min-w-0 flex-col">
-        <span className="truncate text-sm font-medium text-foreground">{name}</span>
-        <span className="truncate text-xs text-muted-foreground">
-          {note ?? (meta || "Attachment")}
-        </span>
-      </span>
-      {href ? (
-        <Download className="ml-auto h-4 w-4 shrink-0 text-muted-foreground" aria-hidden />
-      ) : null}
-    </>
-  );
-  const cls =
-    "flex w-full max-w-sm items-center gap-3 rounded-lg border border-border bg-card px-3 py-2.5";
-  return href ? (
-    <button
-      type="button"
-      onClick={() => downloadUrl(href, name, { newTab: true })}
-      className={`${cls} text-left hover:bg-accent`}
-      aria-label={`Download ${name}`}
-    >
-      {body}
-    </button>
-  ) : (
-    <div className={cls}>{body}</div>
+  return (
+    <Tile
+      className="w-full max-w-sm"
+      icon={<FileText />}
+      title={name}
+      line={note ?? (meta || "Attachment")}
+      end={href ? <Download className="h-4 w-4" aria-hidden /> : undefined}
+      disabled={!href}
+      aria-label={href ? `Download ${name}` : undefined}
+      onClick={href ? () => downloadUrl(href, name, { newTab: true }) : undefined}
+    />
   );
 }
 
