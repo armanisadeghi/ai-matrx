@@ -12,6 +12,7 @@ import { Button } from "@ai-matrx/design-system/controls";
 import { Copy, FileText } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useSyncExternalStore } from "react";
 
 import { MadeWithAiMatrx } from "@/components/matrx/MadeWithAiMatrx";
 
@@ -127,14 +128,28 @@ function DuplicateButton({ view }: { view: PublicSpaceView }) {
   // and the copy is filed in the organization the person works in.
   const target = `/spaces/duplicate?from=${encodeURIComponent(view.slug ?? view.id)}`;
   return (
-    <Button variant="outline" icon={<Copy size={15} />} onClick={() => window.location.assign(target)} data-testid="public-duplicate">
+    <Button
+      variant="outline"
+      icon={<Copy size={15} />}
+      onClick={() => window.location.assign(target)}
+      data-testid="public-duplicate"
+    >
       Duplicate
     </Button>
   );
 }
 
+const NO_SUBSCRIBE = () => () => undefined;
+
 export function PublicSpace({ view }: { view: PublicSpaceView }) {
   const router = useRouter();
+  // BlockNote 0.55 reads `window` while it creates the editor, so the server renders the page's frame
+  // (title, cover, icon) and the browser draws the blocks — a server render of the editor answered 500.
+  const inBrowser = useSyncExternalStore(
+    NO_SUBSCRIBE,
+    () => true,
+    () => false,
+  );
   const value = useStaticValue(view, (id) => {
     const target = [...view.path, ...view.children, ...view.links].find(
       (p) => p.id === id,
@@ -238,25 +253,29 @@ export function PublicSpace({ view }: { view: PublicSpaceView }) {
                         {view.title || "Untitled"}
                       </h1>
                     </div>
-                    <PublishedRowsProvider databases={view.databases}>
-                    <SpaceEditor
-                      spaceId={view.id}
-                      initialBlocks={blocks}
-                      editable={false}
-                      onChange={() => {}}
-                      slash={{
-                        createSubpage: READ_ONLY("Adding a page"),
-                        pickPage: async () => null,
-                        pickSource: async () => null,
-                        newDatabase: async () => null,
-                      }}
-                      menu={{
-                        moveBlocksTo: READ_ONLY("Moving blocks"),
-                        turnIntoPageIn: READ_ONLY("Turning blocks into a page"),
-                        askAi: () => {},
-                      }}
-                    />
-                    </PublishedRowsProvider>
+                    {inBrowser ? (
+                      <PublishedRowsProvider databases={view.databases}>
+                        <SpaceEditor
+                          spaceId={view.id}
+                          initialBlocks={blocks}
+                          editable={false}
+                          onChange={() => {}}
+                          slash={{
+                            createSubpage: READ_ONLY("Adding a page"),
+                            pickPage: async () => null,
+                            pickSource: async () => null,
+                            newDatabase: async () => null,
+                          }}
+                          menu={{
+                            moveBlocksTo: READ_ONLY("Moving blocks"),
+                            turnIntoPageIn: READ_ONLY(
+                              "Turning blocks into a page",
+                            ),
+                            askAi: () => {},
+                          }}
+                        />
+                      </PublishedRowsProvider>
+                    ) : null}
                     <div className="spaces-page-end" aria-hidden />
                   </div>
                   <MadeWithAiMatrx />
