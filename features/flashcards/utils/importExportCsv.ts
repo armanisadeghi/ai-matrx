@@ -12,6 +12,7 @@
 // separated by a delimiter (tab by default, comma as an alternative), with an
 // optional secondary delimiter between CARDS (default: newline).
 
+import { toDelimitedText } from "@ai-matrx/alchemy/operate/read";
 import type { FcSetRow, NewCardInput, CardWithDetails } from "../data/types";
 import { downloadFile } from "@ai-matrx/kit/download";
 
@@ -181,21 +182,9 @@ export function parsedRowsToCardInputs(
   return rows.map((r) => ({ front: r.front, back: r.back }));
 }
 
-/** CSV-escape one field (RFC 4180: wrap in quotes if it holds a comma, quote, or newline). */
-function csvField(value: string): string {
-  if (/[",\n\r]/.test(value)) {
-    return `"${value.replace(/"/g, '""')}"`;
-  }
-  return value;
-}
-
 /** Build a downloadable CSV string (`front,back` header + one row per card). */
 export function buildSetCsv(cards: Pick<CardWithDetails, "front" | "back">[]): string {
-  const lines = ["front,back"];
-  for (const c of cards) {
-    lines.push(`${csvField(c.front)},${csvField(c.back)}`);
-  }
-  return lines.join("\r\n");
+  return toDelimitedText(["front", "back"], cards.map((c) => [c.front, c.back]));
 }
 
 /** Trigger a browser download of the set's cards as CSV. Client-only. */

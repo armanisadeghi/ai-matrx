@@ -14,6 +14,7 @@
  */
 
 import { useCallback } from "react";
+import { toDelimitedText } from "@ai-matrx/alchemy/operate/read";
 import { Download, ExternalLink } from "lucide-react";
 import type { AppDispatch } from "@/lib/redux/store";
 import type {
@@ -230,22 +231,19 @@ function bulkActions(
       icon: Download,
       variant: "outline",
       run: (selection) => {
-        const header = "id,kind,title,from,when,url";
-        const lines = selection.rows.map((row) =>
-          [
+        const text = toDelimitedText(
+          ["id", "kind", "title", "from", "when", "url"],
+          selection.rows.map((row) => [
             row.id,
             row.kind,
             row.title,
             row.author ?? "",
             row.modified_at ?? row.created_at ?? "",
             row.url ?? "",
-          ]
-            .map((cell) => `"${String(cell).replaceAll('"', '""')}"`)
-            .join(","),
+          ]),
+          { spreadsheetSafe: true },
         );
-        const blob = new Blob([[header, ...lines].join("\n")], {
-          type: "text/csv;charset=utf-8",
-        });
+        const blob = new Blob([text], { type: "text/csv;charset=utf-8" });
         downloadFile("connected-sources.csv", blob, blob.type);
         return { message: `Exported ${selection.rows.length} row(s).` };
       },

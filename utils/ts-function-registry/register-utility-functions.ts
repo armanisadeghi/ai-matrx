@@ -2,6 +2,8 @@
 
 import { registerFunction, FunctionDependencies } from './function-registry';
 import { extractErrorMessage } from '@/utils/errors';
+import { toDelimitedText } from '@ai-matrx/alchemy/operate/read';
+import type { Json } from '@ai-matrx/alchemy/operate';
 
 /**
  * Register utility functions that don't need external dependencies
@@ -179,18 +181,11 @@ export function registerUtilityFunctions() {
           // Extract headers
           const headers = Object.keys(jsonData[0] || {});
 
-          // Build CSV
-          const csv = [
-            headers.join(','),
-            ...jsonData.map(row =>
-              headers.map(field => {
-                const val = row[field];
-                if (val === null || val === undefined) return '';
-                if (typeof val === 'string') return `"${val.replace(/"/g, '""')}"`;
-                return val;
-              }).join(',')
-            )
-          ].join('\n');
+          // Build CSV (Alchemy's one writer: quotes, commas and line breaks are escaped)
+          const csv = toDelimitedText(
+            headers,
+            jsonData.map(row => headers.map(field => (row[field] ?? null) as Json)),
+          );
 
           return csv;
         } catch (err) {

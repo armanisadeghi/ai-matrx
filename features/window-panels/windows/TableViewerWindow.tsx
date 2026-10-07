@@ -27,6 +27,7 @@
 // window is open, and the menu is handed the same values, so the window answers
 // for itself in BOTH the header Agents chrome and the right-click menu.
 
+import { toDelimitedText } from "@ai-matrx/alchemy/operate/read";
 import React, { Suspense, lazy, useState } from "react";
 import { Braces, Rows3, Sheet } from "lucide-react";
 import { WindowPanel } from "@/features/window-panels/WindowPanel";
@@ -134,14 +135,10 @@ function TableViewerWindowInner({
 
   const tableCsv = (): string => {
     if (!parsed) return "";
-    const cell = (v: string) => {
-      const escaped = v.replace(/"/g, '""');
-      return /[",\n]/.test(v) ? `"${escaped}"` : escaped;
-    };
-    return [
-      parsed.headers.map((h) => cell(cleanTableHeaderKey(h))).join(","),
-      ...parsed.rows.map((r) => r.map(cell).join(",")),
-    ].join("\n");
+    return toDelimitedText(
+      parsed.headers.map((h) => cleanTableHeaderKey(h)),
+      parsed.rows,
+    );
   };
 
   // Surface-specific items only. Copy / Copy-as / Export / Download as Markdown
