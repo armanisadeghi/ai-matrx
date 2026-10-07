@@ -18,6 +18,7 @@ import {
   isOrganizationSelectionCancelled,
   OrganizationSelectionCancelled,
   registerOrganizationPicker,
+  registerOrganizationPickerHost,
   settleOrganizationSelection,
 } from "../organization-gate";
 
@@ -40,6 +41,7 @@ beforeEach(() => {
 
 afterEach(() => {
   registerOrganizationPicker(null);
+  registerOrganizationPickerHost(null);
 });
 
 /** Stand in for the dialog: opening it answers on the next microtask. */
@@ -168,3 +170,28 @@ describe("isOrganizationSelectionCancelled", () => {
     expect(isOrganizationSelectionCancelled(null)).toBe(false);
   });
 });
+
+describe("a press before the deferred picker has mounted (lane P, 2026-10-07)", () => {
+  test("asks the shell to mount the picker now, waits for it, and continues with the answer", async () => {
+    // /applets/build: Build was pressed before the page went idle; the picker lives in the deferred
+    // tree, so the gate refused with "Select an organization before sending this request.".
+    const mountNow = jest.fn(() => {
+      setTimeout(() => mountPicker(TEAM_ORG), 50);
+    });
+    registerOrganizationPickerHost(mountNow);
+    selectedOrganizationId = null;
+    const asked = ensureOrganizationContext();
+    // The picker's answer becomes the selection, as the dialog does on a pick.
+    setTimeout(() => {
+      selectedOrganizationId = TEAM_ORG;
+    }, 40);
+    await expect(asked).resolves.toBe(TEAM_ORG);
+    expect(mountNow).toHaveBeenCalledTimes(1);
+  });
+
+  test("with no shell to mount a picker it still refuses at once, never guessing", async () => {
+    registerOrganizationPickerHost(null);
+    await expect(ensureOrganizationContext()).rejects.toMatchObject({ code: "organization_context_required" });
+  });
+});
+
