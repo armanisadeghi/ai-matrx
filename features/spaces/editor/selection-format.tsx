@@ -45,7 +45,7 @@ export interface SpaceSelectionDeps {
 }
 
 export function spaceSelectionActions({ editor, editable, hasComment, askAi, comment }: SpaceSelectionDeps): Action[] {
-  const base = (id: string, label: string, icon: Parameters<typeof registerAlchemyIcon>[0], order: number, placement: Placement, category: string) => ({
+  const base = (id: string, label: string, icon: Parameters<typeof registerAlchemyIcon>[0], order: number, placement: Placement, category: Action["category"]) => ({
     id,
     label,
     icon: registerAlchemyIcon(icon),
@@ -76,7 +76,7 @@ export function spaceSelectionActions({ editor, editable, hasComment, askAi, com
       run: (t) => selectionToolbarHostOf(t)?.ui.openPanel(COLOR_PANEL),
     },
     ...BLOCKS.map(([id, label, Icon, type, props], i): Action => ({
-      ...base(id, label, Icon, 30 + i, "overflow", "block"),
+      ...base(id, label, Icon, 30 + i, "overflow", "edit"),
       eligible: edit(id),
       run: () => {
         editor.focus();
@@ -115,7 +115,12 @@ function LinkPanel({ editor, ui }: { editor: SpacesEditor; ui: SelectionToolbarU
         value={url}
         onChange={(e) => setUrl(e.target.value)}
         onKeyDown={(e) => {
-          if (e.key === "Enter") apply();
+          // The press must end HERE: apply() hands focus to the editor, and the same Enter would then replace the selection.
+          if (e.key === "Enter") {
+            e.preventDefault();
+            e.stopPropagation();
+            apply();
+          }
           if (e.key === "Escape") ui.closePanel();
         }}
         className="h-7 w-56 rounded-md border border-border bg-background px-2 text-base outline-none"

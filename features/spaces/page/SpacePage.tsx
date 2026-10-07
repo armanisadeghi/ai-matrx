@@ -11,7 +11,6 @@ import { useIsMobile } from "@ai-matrx/kit/media-query";
 import { Backlinks } from "./Backlinks";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { toast } from "@/lib/toast";
-import { supabase } from "@/utils/supabase/client";
 import { selectActiveOrganizationId } from "@/features/scopes/redux/selectors/active-context";
 import { isOrganizationSelectionCancelled } from "@/lib/organization/selection-cancelled";
 import { useAppSelector } from "@/lib/redux/hooks";
@@ -65,6 +64,7 @@ import { contentKey } from "./content-key";
 import { usePageReminders } from "../editor/reminders";
 import { markNewSource, useSyncedEdges } from "../state/synced-sources";
 import { setSuggestAuthor, setSuggestName, setSuggestPage } from "../editor/suggest";
+import { useContentEditOnly } from "./content-edit";
 import { copyToClipboard } from "@/lib/clipboard/copy";
 
 type Editable = Pick<SpaceDoc, "title" | "icon" | "cover" | "settings" | "blocks">;
@@ -1066,23 +1066,4 @@ function SpacePageScreen({ spaceId }: { spaceId: string }) {
       </div>
     </div>
   );
-}
-
-/** True when this person holds "Can edit content" (edit_content) on the page but not editor — asked only for a viewer. */
-function useContentEditOnly(spaceId: string, ask: boolean): boolean {
-  const [yes, setYes] = useState(false);
-  useEffect(() => {
-    if (!ask) return setYes(false);
-    let live = true;
-    const iam = supabase.schema("iam" as never) as unknown as {
-      rpc: (fn: string, args: Record<string, unknown>) => PromiseLike<{ data: unknown; error: { message: string } | null }>;
-    };
-    void iam.rpc("has_access", { p_type: "document", p_id: spaceId, p_required: "edit_content" }).then(({ data, error }) => {
-      if (live) setYes(!error && data === true);
-    });
-    return () => {
-      live = false;
-    };
-  }, [spaceId, ask]);
-  return yes;
 }
