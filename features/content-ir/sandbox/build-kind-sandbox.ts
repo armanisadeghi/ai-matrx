@@ -69,6 +69,12 @@ const ALIAS: Record<string, string> = {
     __dirname,
     "runtime/FrameCopyButtons.tsx",
   ),
+  // Word/PDF export (pdfmake + docx) — announced stand-in; the menu's other
+  // formats are the real ones.
+  "@ai-matrx/print/document": resolve(
+    __dirname,
+    "runtime/FramePrintDocument.ts",
+  ),
   "@/components/agent-copy/useAlchemyDisclosure": resolve(
     __dirname,
     "runtime/FrameAlchemyDisclosure.ts",
@@ -188,7 +194,10 @@ async function buildJs(): Promise<{ code: string; meta: Metafile }> {
     // ones throw a SecurityError, and durable state in an invisible place
     // is not something a Shape component may have. After this the audit
     // below can refuse the real names outright.
-    inject: [resolve(__dirname, "runtime/frame-storage.ts")],
+    inject: [
+      resolve(__dirname, "runtime/frame-storage.ts"),
+      resolve(__dirname, "runtime/frame-network.ts"),
+    ],
     define: {
       "process.env.NODE_ENV": '"production"',
       localStorage: "__matrxFrameStorage",
@@ -197,6 +206,14 @@ async function buildJs(): Promise<{ code: string; meta: Metafile }> {
       "window.sessionStorage": "__matrxFrameStorage",
       "globalThis.localStorage": "__matrxFrameStorage",
       "globalThis.sessionStorage": "__matrxFrameStorage",
+      // THE FRAME HAS NO NETWORK (CSP connect-src 'none'): library code that
+      // would call out gets the announcing stand-in (runtime/frame-network.ts).
+      fetch: "__matrxFrameFetch",
+      "window.fetch": "__matrxFrameFetch",
+      "globalThis.fetch": "__matrxFrameFetch",
+      XMLHttpRequest: "__matrxFrameXhr",
+      "window.XMLHttpRequest": "__matrxFrameXhr",
+      "globalThis.XMLHttpRequest": "__matrxFrameXhr",
     },
     logLevel: "info",
   });
