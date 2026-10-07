@@ -1,7 +1,5 @@
 {
-  "clipboard": {
-    "features/context-menu-v3/hooks/useContextMenuActions.ts": 8
-  },
+  "clipboard": {},
   "downloads": {},
   "formatlibs": {},
   "doorbypass": {},
