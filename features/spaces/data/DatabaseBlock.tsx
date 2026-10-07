@@ -37,10 +37,6 @@ import {
   Square,
   SlidersHorizontal,
   Table2,
-  Users,
-  Trophy,
-  Gauge,
-  ListChecks,
   X,
 } from "lucide-react";
 import { useState, type ReactNode } from "react";
@@ -52,6 +48,7 @@ import { DataMount } from "./DataMount";
 import { EntityDatabase } from "./EntityDatabase";
 import { FieldList, MenuRow, SidePeek, ViewerSaveBar, ViewerSortButton, ViewTab, filtersDiffer, shownFilters, shownSorts, type FilterChoice, type SortChoice } from "./menu-parts";
 import { ChartView, choicesOfField } from "./ChartView";
+import { SpaceIcon } from "../page/SpaceIcon";
 import { AGENCY_SAMPLE_ID, newViewId, readDatabaseProps, type ChartSettings, type DatabaseBlockProps, type SpaceDbView, type SpaceViewLayout } from "./sources";
 
 type Layout = SpaceViewLayout | "dashboard";
@@ -67,11 +64,12 @@ const LAYOUTS: Array<{ id: Layout; label: string; icon: typeof Table2 }> = [
   { id: "dashboard", label: "Dashboard", icon: LayoutDashboard },
 ];
 
-const VIEW_ICONS: Record<string, typeof Table2> = { Users, PieChart, BarChart3, Table2, Trophy, Gauge, ListChecks };
-
-function layoutIcon(view: SpaceDbView): typeof Table2 {
-  if (view.icon && VIEW_ICONS[view.icon]) return VIEW_ICONS[view.icon];
-  return LAYOUTS.find((l) => l.id === view.layout)?.icon ?? Table2;
+/** A view's icon: any Lucide name it stores ("DollarSign", "UserX") through SpaceIcon (DynamicIcon past the
+ *  curated set), else its layout's glyph. */
+function viewIcon(view: SpaceDbView, size: number): ReactNode {
+  if (view.icon) return <SpaceIcon media={{ icon: view.icon }} size={size} />;
+  const Icon = LAYOUTS.find((l) => l.id === view.layout)?.icon ?? Table2;
+  return <Icon size={size} strokeWidth={1.8} />;
 }
 
 /** The field's parity type when the store sends it (the memory store does), else its behavior word. */
@@ -208,12 +206,12 @@ function DatabaseFrame({
       <div className="spaces-db-bar">
         <div className="spaces-db-tabs" role="tablist">
           {views.map((v) => {
-            const Icon = layoutIcon(v);
+
             return (
               <ViewTab
                 key={v.id}
                 view={v}
-                icon={<Icon size={isChart ? 16 : 14} strokeWidth={1.8} />}
+                icon={viewIcon(v, isChart ? 16 : 14)}
                 active={v.id === active.id}
                 pill={isChart}
                 editable={editable}

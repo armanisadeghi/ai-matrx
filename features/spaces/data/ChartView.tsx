@@ -9,7 +9,7 @@
 
 import { ChartBlock } from "@ai-matrx/records-ui";
 import type { RecordFilter } from "@ai-matrx/records";
-import { measureKey, useFields, useRecords, useRecordsClient, type AggregateMeasure, type AggregateRow, type Field, type ReadRow } from "@ai-matrx/records/react";
+import { choiceSlug, measureKey, useFields, useRecords, useRecordsClient, type AggregateMeasure, type AggregateRow, type Field, type ReadRow } from "@ai-matrx/records/react";
 import { useEffect, useState } from "react";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
