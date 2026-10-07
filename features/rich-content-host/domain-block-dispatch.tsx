@@ -929,6 +929,20 @@ const SHAPE_BLOCK_DISPATCH = {
     if (isBlockLoading(block)) return <MatrxMiniLoader key={index} />;
     return renderJsonFallback(block, index);
   },
+  // Kind-routed (`applet_build_result` — the Applet builder's answer). PARTIAL-READY: the
+  // app's name and pages fill in as they stream; the code stays behind "Show the code".
+  applet_build_result: ({ block, index }) => {
+    if (block.serverData) {
+      return (
+        <BlockComponents.AppletBuildResultBlock
+          key={index}
+          serverData={block.serverData}
+        />
+      );
+    }
+    if (isBlockLoading(block)) return <MatrxMiniLoader key={index} />;
+    return renderJsonFallback(block, index);
+  },
 
   // Kind-routed (media_chapters → media_chapters): STREAMING bridge, same
   // contract as page_brief — each chapter row appears as its object closes.
