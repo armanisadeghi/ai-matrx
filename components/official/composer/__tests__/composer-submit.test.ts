@@ -11,7 +11,7 @@ import {
   enterSendsHere,
   intentTakesTheKey,
   type ComposerKeyEvent,
-} from "../composerSubmit";
+} from "@ai-matrx/kit/composer-keys";
 
 const key = (over: Partial<ComposerKeyEvent> = {}): ComposerKeyEvent => ({
   key: "Enter",

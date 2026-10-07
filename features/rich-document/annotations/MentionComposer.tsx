@@ -21,7 +21,7 @@ import { dateMention, parseDateQuery, personMention, recordMention } from "./men
 import { mentionCandidates } from "./service";
 import type { AnnotationSource } from "./types";
 import { ErrorNotice } from "@/components/errors/ErrorNotice";
-import { enterSendsHere } from "@/components/official/composer/composerSubmit";
+import { enterSendsHere } from "@ai-matrx/kit/composer-keys";
 
 type Option =
   | { kind: "person"; key: string; label: string; detail: string | null; insert: string }

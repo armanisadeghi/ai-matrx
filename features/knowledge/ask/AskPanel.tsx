@@ -27,7 +27,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Textarea } from "@/components/ui/textarea";
 import { LoadingSpinner } from "@/components/ui/spinner";
 import { cn } from "@/lib/utils";
-import { enterSendsHere } from "@/components/official/composer/composerSubmit";
+import { enterSendsHere } from "@ai-matrx/kit/composer-keys";
 import {
   searchKnowledge,
   type KnowledgeHit,

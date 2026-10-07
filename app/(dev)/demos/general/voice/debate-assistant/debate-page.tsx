@@ -10,7 +10,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Loader2, Send, MessageSquare, User, LayoutTemplate, Volume2 } from 'lucide-react';
 import { toast } from "@/lib/toast";
-import { enterSendsHere } from "@/components/official/composer/composerSubmit";
+import { enterSendsHere } from "@ai-matrx/kit/composer-keys";
 
 interface Message {
     role: 'user' | 'assistant';

@@ -19,7 +19,7 @@ import MarkdownRenderer from "@/components/mardown-display/MarkdownRenderer";
 import { LiveHelpAnswerBlock } from "@/features/education/tutor/components/LiveHelpAnswerBlock";
 import type { ChatMessage } from "@/types/flashcards.types";
 import { QuickActionButtons } from './prompts-buttons';
-import { enterSendsHere } from "@/components/official/composer/composerSubmit";
+import { enterSendsHere } from "@ai-matrx/kit/composer-keys";
 
 interface AiChatModalProps {
     isOpen: boolean;

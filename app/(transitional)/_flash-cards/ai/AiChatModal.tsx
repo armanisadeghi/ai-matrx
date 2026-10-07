@@ -18,7 +18,7 @@ import {
 import MarkdownRenderer from "@/components/mardown-display/MarkdownRenderer";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { WalletCards } from 'lucide-react';
-import { enterSendsHere } from "@/components/official/composer/composerSubmit";
+import { enterSendsHere } from "@ai-matrx/kit/composer-keys";
 
 interface AiChatModalProps {
     isOpen: boolean;

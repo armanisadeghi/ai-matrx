@@ -231,7 +231,7 @@ import type { ProTextareaEditorSlot } from "./pro-textarea-editor";
 import {
   composerKeyIntent,
   intentTakesTheKey,
-} from "@/components/official/composer/composerSubmit";
+} from "@ai-matrx/kit/composer-keys";
 
 const FILL_HEIGHT_REGEX =
   /(?:^|\s)(h-full|h-dvh|flex-1|grow|inset-0|min-h-0)(?:\s|$)/;
@@ -1127,7 +1127,7 @@ export const ProTextarea = React.forwardRef<
 
         if (!onSubmit) return;
 
-        // THE ONE COMPOSER RULE — `components/official/composer/composerSubmit.ts`.
+        // THE ONE COMPOSER RULE — `@ai-matrx/kit/composer-keys`.
         // ⌘/Ctrl+Enter stays a send here even when Enter already sends, which
         // is this component's own long-standing affordance for form fields.
         if (cmdEnterEnabled && withCmd) {

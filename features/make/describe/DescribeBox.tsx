@@ -31,7 +31,7 @@ import { useOrganizationRequired } from "@/features/organizations/useOrganizatio
 import { OrganizationContextNotice } from "@/features/organizations/components/OrganizationRequiredNotice";
 import * as doors from "@/features/unified-data/hub/doors";
 import { createClient } from "@/utils/supabase/client";
-import { enterSendsHere } from "@/components/official/composer/composerSubmit";
+import { enterSendsHere } from "@ai-matrx/kit/composer-keys";
 import { Landing, Progress } from "../gallery/TemplateGallery";
 import type { MadeObject } from "../gallery/catalogue";
 import { templatePreviewHref } from "../gallery/galleryHref";

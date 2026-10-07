@@ -28,7 +28,7 @@ import { formatDuration } from "../shared/relative-time";
 import {
   composerKeyIntent,
   intentTakesTheKey,
-} from "@/components/official/composer/composerSubmit";
+} from "@ai-matrx/kit/composer-keys";
 
 // emoji-picker-react ships as default-export; load client-side only
 const EmojiPicker = dynamic(() => import("emoji-picker-react"), { ssr: false });
@@ -122,7 +122,7 @@ export function MessageInputBar({
     }
   };
 
-  // THE ONE COMPOSER RULE — `components/official/composer/composerSubmit.ts`.
+  // THE ONE COMPOSER RULE — `@ai-matrx/kit/composer-keys`.
   const handleKey = (e: KeyboardEvent<HTMLTextAreaElement>) => {
     const intent = composerKeyIntent(
       {

@@ -11,7 +11,7 @@ import {
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { BasicTextarea } from "@/components/ui/textarea";
 import { ArrowUp, Paperclip, Mic, FileText } from "lucide-react";
-import { enterSendsHere } from "@/components/official/composer/composerSubmit";
+import { enterSendsHere } from "@ai-matrx/kit/composer-keys";
 
 import { Tile } from "@ai-matrx/design-system/controls";
 interface PromptInputWithActionsProps {
