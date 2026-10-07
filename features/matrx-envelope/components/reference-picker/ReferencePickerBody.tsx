@@ -45,11 +45,16 @@ import { CATALOG_ALIASES } from "@/features/matrx-envelope/catalog-nouns.generat
 import { buildDirectiveFence } from "@ai-matrx/agents/envelope";
 import type { ReferenceItem } from "@ai-matrx/agents/envelope";
 import { ReferenceTypeAdder } from "@/features/matrx-envelope/components/ReferenceTypeAdder";
-import { fetchDirectiveCatalog } from "@/features/directive-catalog/service";
-import type {
-  DirectiveCatalog,
-  NounDirectives,
-} from "@/features/directive-catalog/types";
+import {
+  actionsOf,
+  cachedNounActions,
+  findCatalogNoun,
+  loadDirectiveCatalog,
+  peekDirectiveCatalog,
+  prefetchDirectiveCatalog,
+  type NounActions,
+} from "@/features/directive-catalog/catalogCache";
+import type { NounDirectives } from "@/features/directive-catalog/types";
 import { isJsonSchema } from "@/features/directive-catalog/schemaExamples";
 import {
   formTitleColumn,
@@ -130,28 +135,12 @@ function commonTypeOptions(all: TypeOption[], tokens: string[]): TypeOption[] {
     .filter((o): o is TypeOption => Boolean(o));
 }
 
-// ── Catalog (only loaded when the user asks for other actions) ──────────────
+// ── Catalog ─────────────────────────────────────────────────────────────────
+// THE shared cache (`features/directive-catalog/catalogCache.ts`): the picker
+// starts the load when it opens, and the action list reads the last answer
+// synchronously, so "Change…" never waits on a 5–7 s request it already began.
 
-let catalogCache: { baseUrl: string; promise: Promise<DirectiveCatalog> } | null =
-  null;
-
-function loadCatalog(baseUrl: string): Promise<DirectiveCatalog> {
-  if (catalogCache && catalogCache.baseUrl === baseUrl) return catalogCache.promise;
-  const promise = fetchDirectiveCatalog(baseUrl).catch((err: unknown) => {
-    catalogCache = null;
-    throw err;
-  });
-  catalogCache = { baseUrl, promise };
-  return promise;
-}
-
-/** A real noun wins over an alias of the same name (`document` is both). */
-function findNoun(catalog: DirectiveCatalog, token: string): NounDirectives | null {
-  const exact = catalog.nouns.find((n) => n.noun === token);
-  if (exact) return exact;
-  const canonical = CATALOG_ALIASES[token] ?? token;
-  return catalog.nouns.find((n) => n.noun === canonical) ?? null;
-}
+const ALIASES = CATALOG_ALIASES as Readonly<Record<string, string>>;
 
 interface ActionOption {
   directiveClass: DirectiveClass;
@@ -172,16 +161,16 @@ const BUTTON_HINT = "Inserts a button that asks before it runs";
  * The actions the server says this type supports — every one of them real.
  * Order: link, then the writes from least to most destructive.
  */
-function actionOptionsFor(noun: NounDirectives | null): ActionOption[] {
+function actionOptionsFor(actions: NounActions | null): ActionOption[] {
   const options: ActionOption[] = [LINK_ACTION];
-  if (!noun) return options;
-  if (noun.create === "yes") {
+  if (!actions) return options;
+  if (actions.create) {
     options.push({ directiveClass: "create", label: "Create one", hint: BUTTON_HINT });
   }
-  if (noun.update === "yes") {
+  if (actions.update) {
     options.push({ directiveClass: "update", label: "Update it", hint: BUTTON_HINT });
   }
-  if (noun.delete === "yes") {
+  if (actions.delete) {
     options.push({ directiveClass: "delete", label: "Delete it", hint: BUTTON_HINT });
   }
   return options;
@@ -196,13 +185,16 @@ const ACTION_LABEL: Partial<Record<DirectiveClass, string>> = {
 };
 
 /**
- * The type's catalog row — schemas, title column — from the cached catalog.
- * `enabled: false` fetches nothing (the action list loads only when opened).
+ * The type's catalog row — schemas, title column — from the shared cache.
+ * `enabled: false` fetches nothing.
  *
- * The effect depends on exactly (enabled, baseUrl, token): its own loading
- * state is NOT a dependency, because an effect that re-runs on its own
- * setState cancels the request it just started and spins forever — the
- * defect this hook replaced (live 2026-09-30: "Loading actions…" never ended).
+ * `loading` is DERIVED, never a stored flag that an effect flips later: the
+ * answer belongs to one (baseUrl, token) request, and until that exact answer
+ * is in hand the hook says "loading". A stored flag was `false` for the render
+ * between enabling and the effect running, and that one frame printed
+ * "Linking is the only action available" for Task (G11A review, 2026-10-07).
+ * The effect's own state is not a dependency (live 2026-09-30: an effect that
+ * re-ran on its own setState cancelled its request and spun forever).
  */
 function useDirectiveNoun(
   token: string,
@@ -213,38 +205,27 @@ function useDirectiveNoun(
   error: string | null;
 } {
   const baseUrl = useAppSelector(selectResolvedBaseUrl);
-  const [state, setState] = useState<{
+  const requestKey = enabled && baseUrl ? `${baseUrl}|${token}` : null;
+  const [answer, setAnswer] = useState<{
+    key: string;
     noun: NounDirectives | null;
-    loading: boolean;
     error: string | null;
-  }>({ noun: null, loading: enabled, error: null });
+  } | null>(null);
 
   useEffect(() => {
-    if (!enabled) {
-      setState({ noun: null, loading: false, error: null });
-      return;
-    }
-    if (!baseUrl) {
-      setState({
-        noun: null,
-        loading: false,
-        error: "No server is configured, so this type's fields cannot be loaded.",
-      });
-      return;
-    }
+    if (!enabled || !baseUrl || !requestKey) return;
     let cancelled = false;
-    setState({ noun: null, loading: true, error: null });
-    loadCatalog(baseUrl)
+    loadDirectiveCatalog(baseUrl)
       .then((catalog) => {
         if (!cancelled) {
-          setState({ noun: findNoun(catalog, token), loading: false, error: null });
+          setAnswer({ key: requestKey, noun: findCatalogNoun(catalog, token, ALIASES), error: null });
         }
       })
       .catch((err: unknown) => {
         if (!cancelled) {
-          setState({
+          setAnswer({
+            key: requestKey,
             noun: null,
-            loading: false,
             error: `Couldn't load this type's fields (${err instanceof Error ? err.message : "unknown error"}).`,
           });
         }
@@ -252,9 +233,45 @@ function useDirectiveNoun(
     return () => {
       cancelled = true;
     };
-  }, [enabled, baseUrl, token]);
+  }, [enabled, baseUrl, token, requestKey]);
 
-  return state;
+  if (!enabled) return { noun: null, loading: false, error: null };
+  if (!baseUrl) {
+    return {
+      noun: null,
+      loading: false,
+      error: "No server is configured, so this type's fields cannot be loaded.",
+    };
+  }
+  // Already in this tab: no loading frame at all.
+  const loaded = peekDirectiveCatalog(baseUrl);
+  if (loaded) return { noun: findCatalogNoun(loaded, token, ALIASES), loading: false, error: null };
+  if (answer && answer.key === requestKey) {
+    return { noun: answer.noun, loading: false, error: answer.error };
+  }
+  return { noun: null, loading: true, error: null };
+}
+
+/**
+ * Which writes a type supports, for the action list: instantly from the cache
+ * (this tab's catalog, else the persisted last answer), else loading until the
+ * catalog arrives — never a guess stated as fact.
+ */
+export function useNounActions(
+  token: string,
+  enabled: boolean,
+): { actions: NounActions | null; loading: boolean; error: string | null } {
+  const baseUrl = useAppSelector(selectResolvedBaseUrl);
+  const cached = baseUrl ? cachedNounActions(baseUrl, token, ALIASES) : undefined;
+  // The network is asked only when nothing is cached yet.
+  const live = useDirectiveNoun(token, enabled && cached === undefined);
+  if (cached !== undefined) return { actions: cached, loading: false, error: null };
+  if (!enabled) return { actions: null, loading: true, error: null };
+  return {
+    actions: live.noun ? actionsOf(live.noun) : null,
+    loading: live.loading,
+    error: live.error,
+  };
 }
 
 // ── Body ────────────────────────────────────────────────────────────────────
@@ -265,6 +282,12 @@ export function ReferencePickerBody({
   onCancel,
 }: ReferencePickerBodyProps) {
   const all = useMemo(allTypeOptions, []);
+  // Start the catalog now: by the time a person has chosen a type and opens
+  // "Change…", the actions are known (G11A review: 4–8 s of skeletons).
+  const baseUrl = useAppSelector(selectResolvedBaseUrl);
+  useEffect(() => {
+    prefetchDirectiveCatalog(baseUrl);
+  }, [baseUrl]);
   const {
     tokens: commonTokens,
     loading: commonLoading,
@@ -668,16 +691,18 @@ export function ActionRow({
 }) {
   const [expanded, setExpanded] = useState(false);
   // Loads only once the list is opened — or already open on a non-link action.
+  // The picker already started the catalog load when it opened; this reads
+  // the answer, or waits for it while the list is open.
   const {
-    noun,
+    actions,
     loading,
     error: loadError,
-  } = useDirectiveNoun(token, expanded || directiveClass !== "reference");
+  } = useNounActions(token, expanded || directiveClass !== "reference");
   const options: ActionOption[] | null = loading
     ? null
     : loadError
       ? [LINK_ACTION]
-      : actionOptionsFor(noun);
+      : actionOptionsFor(actions);
   const error = loadError ? `${loadError} Only linking is available.` : null;
 
   const current: ActionOption = {
