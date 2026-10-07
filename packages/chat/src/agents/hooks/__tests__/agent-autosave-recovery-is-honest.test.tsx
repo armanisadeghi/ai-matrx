@@ -30,7 +30,7 @@ import { toast } from "../../../host/notify";
 
 const AGENT = "3bf7e37d-26b4-4581-ac29-450462c18b22";
 const KEY = `agent-autosave:${AGENT}`;
-const SAVED = { moderation: "low" };
+const SAVED = { moderation: "low" } as const;
 
 function makeStore() {
   return configureStore({
