@@ -35,6 +35,8 @@ export interface SseOptions {
   signal: AbortSignal;
   /** Fires on every parsed frame, comment heartbeats included. */
   onFrame?: () => void;
+  /** Server origin to target instead of the active server (no trailing path). */
+  baseUrl?: string;
 }
 
 /**
@@ -46,6 +48,14 @@ export async function streamSse(
   onEvent: (eventType: string, data: string, id: string | null) => void,
   options: SseOptions,
 ): Promise<void> {
+  // The host door joins base + path. An absolute URL here was joined onto the
+  // base again ("https://hosthttps://host/runs/stream"), so every connect
+  // failed and the channel retried forever. Refuse it loudly instead.
+  if (/^https?:\/\//i.test(path)) {
+    throw new Error(
+      `streamSse takes a server-relative path; pass the origin as options.baseUrl (got ${path})`,
+    );
+  }
   const headers: Record<string, string> = {
     ...(options.headers ?? {}),
     Accept: "text/event-stream",
@@ -56,7 +66,11 @@ export async function streamSse(
   const res = await requestRaw(
     path,
     { method: "GET", headers },
-    { signal: options.signal, allowHttpError: true },
+    {
+      signal: options.signal,
+      allowHttpError: true,
+      baseUrlOverride: options.baseUrl,
+    },
   );
 
   if (!res.ok || !res.body) {

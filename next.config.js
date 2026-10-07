@@ -419,6 +419,14 @@ const nextConfig = {
       // appended in v0.4.2884 out of that global graph, but retain the same
       // synchronous module for every non-demos profile. The demos route layout
       // imports the full registry before any demo client surface renders.
+      // MEASURED 2026-10-06 (local demos-slice builds, parked like Vercel): this
+      // alias does NOT fix the demos OOM — emptying all three chat registration
+      // files still OOMs. The regression is 0b240819e8 (v0.4.2884): the
+      // packages/chat/src/agents files swapping static @host imports for
+      // @ai-matrx/chat/host/ui-slots, dose-dependent across ~135 files. Client
+      // async-chunk duplication doubled (≈39k → 74k module copies) and the cost
+      // lands per "use client" demo page (30 pdf-processing pages alone:
+      // 29 GB/2 min at v0.4.2883 → 58 GB/9 min at v0.4.2884).
       // Turbopack resolves an alias VALUE as a module specifier from the project
       // root — an absolute path made every (core) route 500 with "Module not found".
       "@/providers/chatUiRegistrationProfile":

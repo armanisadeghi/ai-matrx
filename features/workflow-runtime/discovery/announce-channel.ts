@@ -138,7 +138,8 @@ export function startAnnounceChannel(config: AnnounceChannelConfig): AnnounceCha
     controller = new AbortController();
     armStall();
     try {
-      await streamSse(`${baseUrl}/runs/stream`, handleFrame, {
+      await streamSse("/runs/stream", handleFrame, {
+        baseUrl,
         headers: getHeaders(),
         signal: controller.signal,
         onFrame: () => {
