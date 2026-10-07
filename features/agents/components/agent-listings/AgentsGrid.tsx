@@ -497,7 +497,7 @@ export function AgentsGrid() {
           onDuplicate={handleDuplicate}
           onNavigate={handleNavigate}
           isDeleting={deletingIds.has(a.id)}
-          isDuplicating={duplicateFlow.isDuplicating}
+          isDuplicating={duplicateFlow.duplicatingAgentId === a.id}
           isNavigating={navigatingId === a.id}
           isAnyNavigating={navigatingId !== null}
           navigationIds={navigationIds}
@@ -516,7 +516,7 @@ export function AgentsGrid() {
           onDuplicate={handleDuplicate}
           onNavigate={handleNavigate}
           isDeleting={deletingIds.has(a.id)}
-          isDuplicating={duplicateFlow.isDuplicating}
+          isDuplicating={duplicateFlow.duplicatingAgentId === a.id}
           isNavigating={navigatingId === a.id}
           isAnyNavigating={navigatingId !== null}
           navigationIds={navigationIds}

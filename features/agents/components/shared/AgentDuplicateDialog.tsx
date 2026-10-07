@@ -2,7 +2,7 @@
 
 // AgentDuplicateDialog — THE one duplicate surface for agents. Every "Duplicate"
 // (header menu, list row, card, quick look, read-only builder, versions tab,
-// version page) opens this through `useAgentDuplicate`:
+// version page) opens this through `useAgentDuplicateFlow`:
 //   choose  → pick the version (default: current) and the copy's name
 //   loading → the copy runs
 //   success → open it here, in a new tab, or stay
@@ -28,6 +28,7 @@ import {
   AlertDescription,
 } from "@ai-matrx/design-system";
 import { Button, Field, Select } from "@ai-matrx/design-system/controls";
+import { ErrorNotice } from "@/components/errors/ErrorNotice";
 
 export type AgentDuplicateStep = "choose" | "loading" | "success" | "error";
 
@@ -130,9 +131,9 @@ export function AgentDuplicateDialog({
             }}
           >
             <div className="space-y-1.5">
-              <label className="text-xs font-medium text-muted-foreground" htmlFor="agent-duplicate-version">
+              <p className="text-xs font-medium text-muted-foreground" aria-hidden>
                 Version
-              </label>
+              </p>
               <Select
                 aria-label="Version to copy"
                 className="w-full"
@@ -158,7 +159,12 @@ export function AgentDuplicateDialog({
                 </p>
               )}
               {versionsError && (
-                <p className="text-xs text-destructive">Past versions could not load: {versionsError}</p>
+                <ErrorNotice
+                  size="inline"
+                  title="Past versions could not load"
+                  message={versionsError}
+                  operation="Load agent versions"
+                />
               )}
             </div>
             <div className="space-y-1.5">
