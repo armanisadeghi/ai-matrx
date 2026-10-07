@@ -153,7 +153,7 @@ export function slashItems(editor: SpacesEditor, ctx: SlashContext): DefaultReac
     {
       title: "Database - Inline",
       subtext: "Add a new database to this page.",
-      aliases: ["database", "inline", "new table", "table"],
+      aliases: ["database", "database inline", "inline", "new table", "table"],
       group: database,
       icon: <Database size={ICON} />,
       onItemClick: () => {
@@ -166,7 +166,7 @@ export function slashItems(editor: SpacesEditor, ctx: SlashContext): DefaultReac
     {
       title: "Database - Full page",
       subtext: "Add a new database as a sub-page.",
-      aliases: ["database", "full page", "new table"],
+      aliases: ["database", "database full page", "full page", "new table"],
       group: database,
       icon: <Database size={ICON} />,
       onItemClick: () => {
