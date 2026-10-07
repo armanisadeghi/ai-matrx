@@ -416,7 +416,7 @@ Wizard: source (CSV/TSV/pasted text, Excel `.xlsx/.xls`, or vCard `.vcf/.vcard`)
 - **Ragged rows never disappear.** Surplus cells get generated column names and a
   visible warning; missing trailing cells stay blank. Files are capped at 20 MB and
   10,000 rows with an actionable split-file error rather than freezing the tab.
-- **Excel is user-triggered code.** SheetJS loads through `await import("xlsx")`
+- **Excel is user-triggered code.** The workbook is read through Alchemy's `readWorkbook` (`@ai-matrx/alchemy/operate/read`, a lazy leaf)
   only after a workbook is chosen; never pull it into the route's initial bundle.
 - **Every resolved identity is a door.** The selected organization, existing party,
   existing employer, created parties/companies, and partially-created failed records
