@@ -71,6 +71,9 @@ if (editable) {
 // A row: the database's "+ New page" row.
 const frame = p2.locator(".spaces-db-frame").first();
 await frame.waitFor({ timeout: 60_000 }).catch(() => {});
+await p2.waitForTimeout(4000);
+// The page's own inline database is part of the page (association page_database): its share reaches the table.
+check("the page's inline database opens for the content editor", !(await frame.getByText(/isn.t shared with you/).count()));
 const before = await frame.locator("[role=row]").count();
 await frame.getByRole("button", { name: /New( page)?$/ }).first().click().catch(() => {});
 await p2.waitForTimeout(5000);
