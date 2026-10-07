@@ -189,7 +189,7 @@ export async function saveBuiltApplet(
   client: Client,
   input: { organizationId: string; appletId: string | null; current: BuilderApplet | null; answer: BuildAnswer; request: string; conversationId: string | null },
 ): Promise<SavedApplet> {
-  const { applet, note } = input.answer;
+  const { applet } = input.answer;
   const content = {
     name: applet.name,
     description: applet.description || null,
@@ -198,8 +198,26 @@ export async function saveBuiltApplet(
     pages: applet.pages,
     sources: applet.sources,
     mandates: applet.mandates,
-    metadata: { built_by: "applets.build", build_note: note, request: input.request, builder_conversation_id: input.conversationId },
   };
+  // The request, its run and the note live in the build's request history (metadata.build, written by
+  // ./build-session.ts) — never overwrite `metadata` here. A draft born empty at Build (no stored app
+  // yet, so no `current`) takes the address the builder chose on its first save.
+  if (input.appletId && !input.current) {
+    const base = slugOf(applet.slug || applet.name);
+    for (let attempt = 0; attempt < 4; attempt++) {
+      const slug = attempt === 0 ? base : `${base.slice(0, 42)}-${Math.random().toString(36).slice(2, 6)}`;
+      const { data, error } = await client
+        .schema("app")
+        .from("definition")
+        .update({ ...content, slug })
+        .eq("id", input.appletId)
+        .select("id, slug, version, status")
+        .single();
+      if (!error) return data;
+      if (error.code !== "23505") throw new Error(error.message);
+    }
+    throw new Error(`Every address near "/applets/${base}" is taken.`);
+  }
   if (input.appletId) {
     const { data, error } = await client
       .schema("app")
