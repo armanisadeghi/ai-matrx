@@ -57,7 +57,7 @@ The admin surface that shows the **Matrx Directive Catalog** — every noun (a t
 
 - **Write forms are generated from the server's item schema — never hand-authored per noun.**
   `schemaFields.ts::deriveSchemaFields` maps every property of the noun's `schemas[verb]` (`useNounSchemas`) to a typed
-  field (text, number, yes/no, pick-list, date/time, record search, JSON); required + the
+  field (text, number, yes/no, pick-list, date/time via the package `DateField`, record search, JSON); required + the
   noun's `title_column` lead, the rest sit under "More fields" ordered by kind. Id fields
   resolve to a record search via `identityPicker.ts::payloadFieldEntityInfo` (`assignee_id` →
   a people search). A **blank field is never sent** — not `""`, not `null`: an update schema
@@ -109,6 +109,7 @@ alias map. Consequences here:
 
 ## Change Log
 
+- 2026-10-07 — **G16: dates are the package `DateField`.** `SchemaFieldsForm` date / date-and-time / time fields render `DateField` from `@ai-matrx/design-system/controls` (mode `date` | `datetime` | `time`): typed entry, calendar popover (sheet on a phone), Clear, keyboard, ISO in and out, the same 28px as the form's pickers. The borrowed `TaskDueDatePicker` and the native time box are gone from the form; Update still reads "Unchanged". Guard `__tests__/an-update-form-says-unchanged.test.tsx` (G16 case: red on the borrowed picker, green on `DateField`).
 - 2026-10-07 — **G15: dates use the app's date control.** `SchemaFieldsForm` date fields are the task editor's Calendar popover (`TaskDueDatePicker` variant `field`, new `id`/`emptyLabel`/`clearLabel` props); date-and-time adds a time box beside it; time stays a time box. Untouched Update fields still read "Unchanged". No date control exists in `@ai-matrx/design-system/controls` yet. Guard `__tests__/an-update-form-says-unchanged.test.tsx` (G15 case red on the native boxes, green now).
 - 2026-10-07 — **G12 catalog speed.** The summary carries no schemas (live before: 2.41 MB, 5.4–7.6 s; now ~292 KB raw / ~32 KB gzip, served from a server-side cache with ETag/304). Each form loads ONE noun's schemas: `service.ts::fetchDirectiveNounSchemas` → `catalogCache.ts::loadNounSchemas`/`peekNounSchemas` → `hooks/useNounSchemas.ts`, read by the picker's `WriteStep`, the builder (skeleton while loading) and the grid's Inspect (offered on every non-`no` write cell; `DirectiveCatalogClient` loads the schema, then opens the canvas tab). The mirrored manifest carries `noun_schemas` ({noun: {class: schema}}); `gen-directive-nouns.mjs` and the snapshot tests read it there (generated output unchanged). Live (local aidream): "Change…" for Task showed Create/Update/Delete 28 ms after the press on a cold tab; the Create form and the admin builder rendered every field.
 
