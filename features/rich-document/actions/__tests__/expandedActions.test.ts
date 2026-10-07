@@ -46,10 +46,10 @@ describe("markdown table helpers", () => {
     expect(parseFirstMarkdownTable("just | a pipe in prose")).toBeNull();
   });
 
-  it("quotes CSV cells that need it; TSV flattens tabs", () => {
+  it("quotes CSV and TSV cells that need it (one writer, nothing flattened)", () => {
     const t = { headers: ["a", "b"], rows: [['x, "y"', "z\tw"]] };
     expect(tableToDelimited(t, ",")).toBe('a,b\n"x, ""y""",z\tw');
-    expect(tableToDelimited(t, "\t")).toBe("a\tb\nx, \"y\"\tz w");
+    expect(tableToDelimited(t, "\t")).toBe('a\tb\n"x, ""y"""\t"z\tw"');
   });
 });
 
