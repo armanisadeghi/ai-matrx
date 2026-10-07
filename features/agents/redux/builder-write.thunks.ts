@@ -7,6 +7,7 @@
  */
 
 import { createAsyncThunk } from "@reduxjs/toolkit";
+import type { Database } from "@/types/database.types";
 import { pgErrorToError } from "@ai-matrx/data";
 import { tryWriteOne, writeOneRow } from "@ai-matrx/data/db";
 import { assignField } from "@ai-matrx/agents/field-flags";
@@ -322,7 +323,13 @@ export const createAgent = createAsyncThunk<
   const { data, error } = await supabase
     .schema("agent")
     .from("definition")
-    .insert(agentDefinitionToInsert(draft))
+    // `created_via` is typed required by the generated Insert but is never sent: the
+    // database stamps it on insert (`_created_via_from`), so it is omitted from the payload.
+    .insert(
+      agentDefinitionToInsert(
+        draft,
+      ) as Database["agent"]["Tables"]["definition"]["Insert"],
+    )
     .select()
     .single();
 
