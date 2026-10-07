@@ -13,7 +13,9 @@ import { useClipboard } from "@ai-matrx/kit/clipboard";
 import { PUBLISHED_TO_WEB_LABEL } from "@/lib/row-access";
 import { useCallback, useEffect, useState } from "react";
 import { Copy, Loader2, Save, Trash2 } from "lucide-react";
-import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
+import { useAppDispatch, useAppSelector, useAppStore } from "@/lib/redux/hooks";
+import { usePathname } from "next/navigation";
+import { buildAppletsWorkspaceScope } from "./AppletSurfaceRuntime";
 import { Button } from "@/components/ui/button";
 import { Input } from "@ai-matrx/design-system/controls";
 import { Label } from "@/components/ui/label";
@@ -58,6 +60,7 @@ import {
   validateAppTags,
 } from "./applet-entity-writes";
 import { ProTextarea } from "@/components/official/ProTextarea";
+import { ProInput } from "@/components/official/ProInput";
 
 interface AppletSettingsContentProps {
   appId: string;
@@ -98,6 +101,8 @@ export function AppletSettingsContent({
       kind === "error" ? toast.error(message) : toast.success(message),
   });
   const dispatch = useAppDispatch();
+  const store = useAppStore();
+  const pathname = usePathname();
   const app = useAppSelector((state) => selectAppById(state, appId));
 
   // This is an OBJECT page: the app already knows its organization, so a red
@@ -428,7 +433,8 @@ export function AppletSettingsContent({
               dirty={name !== app.name}
               onSave={() => saveField("name", name)}
             >
-              <Input
+              <ProInput
+                aria-label="Name"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
               />
@@ -446,6 +452,7 @@ export function AppletSettingsContent({
                 saveField("slug", next);
               }}
             >
+              {/* ui-exception: a slug is a raw URL value, not prose — no voice or AI rewrite */}
               <Input value={slug} onChange={(e) => setSlug(e.target.value)} />
             </FieldRow>
             <FieldRow
@@ -454,7 +461,8 @@ export function AppletSettingsContent({
               dirty={(tagline ?? "") !== (app.tagline ?? "")}
               onSave={() => saveField("tagline", tagline.trim() || null)}
             >
-              <Input
+              <ProInput
+                aria-label="Tagline"
                 value={tagline}
                 onChange={(e) => setTagline(e.target.value)}
               />
@@ -468,9 +476,14 @@ export function AppletSettingsContent({
               }
             >
               <ProTextarea
+                aria-label="Description"
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
                 className="text-[16px] min-h-24"
+                surfaceName={APPLETS_SURFACE_NAME}
+                getApplicationScope={() =>
+                  buildAppletsWorkspaceScope(store.getState(), pathname)
+                }
               />
             </FieldRow>
             <Row label="Category">
@@ -610,6 +623,7 @@ export function AppletSettingsContent({
                   saveField("rate_limit_per_ip", n);
                 }}
               >
+                {/* ui-exception: a numeric limit, not prose */}
                 <Input
                   value={rateIp}
                   onChange={(e) => setRateIp(e.target.value)}
@@ -634,6 +648,7 @@ export function AppletSettingsContent({
                   saveField("rate_limit_window_hours", n);
                 }}
               >
+                {/* ui-exception: a numeric limit, not prose */}
                 <Input
                   value={rateWindow}
                   onChange={(e) => setRateWindow(e.target.value)}
@@ -656,6 +671,7 @@ export function AppletSettingsContent({
                   saveField("rate_limit_authenticated", n);
                 }}
               >
+                {/* ui-exception: a numeric limit, not prose */}
                 <Input
                   value={rateAuth}
                   onChange={(e) => setRateAuth(e.target.value)}

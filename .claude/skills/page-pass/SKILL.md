@@ -460,7 +460,8 @@ surface). Say which parts you judged as authored content.
   for AI live inside it).
 - Every box a person writes in is `ProTextarea` / `ProInput` with the
   microphone and the page's agents (`surfaceName` + `getApplicationScope`
-  passed). A bare textarea needs a comment saying why.
+  passed). A bare box is only for a raw value (code, JSON, slug), marked
+  `// ui-exception: <reason>`; `pnpm check:writing-boxes` enforces it.
 - A field that expects a syntax (formula, pattern, cron, JSON, filter) offers
   "Help with this…".
 - A friction point gets an assist chip before anyone invents a manual button.

@@ -19,7 +19,7 @@ import {
   DrawerFooter,
 } from "@/components/ui/drawer";
 import { Button } from "@/components/ui/button";
-import { Input } from "@ai-matrx/design-system/controls";
+import { ProInput } from "@/components/official/ProInput";
 import { Label } from "@/components/ui/label";
 import {
   Select,
@@ -93,7 +93,7 @@ export function UpdateAppletModal({
     <div className="flex flex-col gap-4">
       <div className="flex flex-col gap-1.5">
         <Label htmlFor="update-name">Name</Label>
-        <Input
+        <ProInput
           id="update-name"
           value={name}
           onChange={(e) => setName(e.target.value)}
@@ -101,7 +101,7 @@ export function UpdateAppletModal({
       </div>
       <div className="flex flex-col gap-1.5">
         <Label htmlFor="update-tagline">Tagline</Label>
-        <Input
+        <ProInput
           id="update-tagline"
           value={tagline}
           onChange={(e) => setTagline(e.target.value)}
