@@ -187,7 +187,11 @@ describe("census items that are wiring", () => {
     // the list: mounted there it made /data scroll twice — the page and the table, 2026-10-05).
     expect(page).toContain('overlayId: "workInboxWindow"');
     expect(page).not.toContain("<ActionInbox");
-    for (const port of ["realtime:", "members,", "share: recordStoreShare", "chat:"]) expect(page).toContain(port);
+    for (const port of ["members,", "share: recordStoreShare", "chat:"]) expect(page).toContain(port);
+    // Realtime rides the app's one records config (2026-10-05): the page takes it, the host builds the port.
+    expect(page).toContain("useAppRecordsConfig(organizationId)");
+    const host = readFileSync(join(__dirname, "../../../data-tables/records-ui-host/recordsUiHost.tsx"), "utf8");
+    expect(host).toContain("realtime: realtimePortFor(organizationId)");
   });
 
   it("14 · the archive is the list's Archived filter, and each archived table restores", () => {
