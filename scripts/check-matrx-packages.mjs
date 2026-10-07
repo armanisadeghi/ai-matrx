@@ -432,6 +432,7 @@ export function scanNodeModules(projectRoot, graph = emptyGraph()) {
         if (entry.startsWith('.')) continue; // .ignored, .pnpm, .bin, .cache
         if (entry.startsWith('@')) {
             for (const scoped of safeReaddir(join(nodeModules, entry))) {
+                if (scoped.startsWith('.')) continue; // parked `.ignored_<name>` copies
                 roots.add(join(nodeModules, entry, scoped, 'node_modules'));
             }
             continue;

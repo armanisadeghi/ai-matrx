@@ -565,22 +565,68 @@ function aliasSpecifiers(statement) {
   const out = [];
   for (const raw of braces[1].split(",")) {
     const m = /^\s*(?:type\s+)?([A-Za-z_$][\w$]*)\s+as\s+([A-Za-z_$][\w$]*)\s*$/.exec(raw);
-    if (m && m[1] !== m[2]) out.push({ name: m[1], alias: m[2] });
+    if (m && m[1] !== m[2]) out.push({ name: m[1], alias: m[2], module: from[1].slice(1, -1) });
   }
   return out;
 }
 
-/** Names imported in this file FROM an `@ai-matrx/*` package, under their own spelling. */
+/**
+ * Names bound in this file FROM an `@ai-matrx/*` package: local name → the
+ * export's own name. An ALIASED import is bound under its local name too, so a
+ * wrapper or assignment over `nme` (imported `normalizeMatrxError as nme`) is
+ * still judged as the export it is (2026-10-07, when the bare owner-import
+ * alias stopped being a finding on its own).
+ */
 function packageImports(source) {
-  const names = new Set();
-  for (const st of source.matchAll(/^[ \t]*(?:import|export)\s*(?:type\s*)?\{([^}]*)\}\s*from\s*(["'`][^"'`]+["'`])/gms)) {
+  const names = new Map();
+  for (const st of source.matchAll(/^[ \t]*import\s*(?:type\s*)?\{([^}]*)\}\s*from\s*(["'`][^"'`]+["'`])/gms)) {
+    if (!ALIAS_PACKAGE_RE.test(st[2])) continue;
+    for (const raw of st[1].split(",")) {
+      const m = /^\s*(?:type\s+)?([A-Za-z_$][\w$]*)\s*(?:as\s+([A-Za-z_$][\w$]*))?\s*$/.exec(raw);
+      if (m) names.set(m[2] ?? m[1], m[1]);
+    }
+  }
+  for (const st of source.matchAll(/^[ \t]*export\s*(?:type\s*)?\{([^}]*)\}\s*from\s*(["'`][^"'`]+["'`])/gms)) {
     if (!ALIAS_PACKAGE_RE.test(st[2])) continue;
     for (const raw of st[1].split(",")) {
       const m = /^\s*(?:type\s+)?([A-Za-z_$][\w$]*)\s*$/.exec(raw);
-      if (m) names.add(m[1]);
+      if (m) names.set(m[1], m[1]);
     }
   }
   return names;
+}
+
+/**
+ * Is a local binding re-exposed by this module — `export { Y }`, `export { Y as Z }`,
+ * `export default Y`, or `export const Z = Y`? An owner import aliased and then
+ * exported is a SECOND public name for the export, which is this lane's class.
+ */
+function isReexported(source, local) {
+  const id = local.replace(/\$/g, "\\$");
+  if (new RegExp(`^[ \\t]*export\\s+default\\s+${id}\\s*;?\\s*$`, "m").test(source)) return true;
+  if (new RegExp(`^[ \\t]*export\\s+(?:const|let|var)\\s+[A-Za-z_$][\\w$]*\\s*(?::[^=\\n]+)?=\\s*${id}\\s*;?\\s*$`, "m").test(source)) return true;
+  for (const st of source.matchAll(/^[ \t]*export\s*(?:type\s*)?\{([^}]*)\}(?!\s*from)/gms)) {
+    for (const raw of st[1].split(",")) {
+      const m = /^\s*(?:type\s+)?([A-Za-z_$][\w$]*)/.exec(raw);
+      if (m && m[1] === local) return true;
+    }
+  }
+  return false;
+}
+
+/**
+ * Exports whose CALL SITES a spelling-keyed input lane judges: an alias of one
+ * of these hides every call from that lane, which is the class this lane was
+ * built for (see THE ALIAS LANE above), so even a straight owner import under a
+ * second name stays a finding. `format-input-shape.mjs` judges what enters
+ * `formatFileSize(`; `duration-shape.mjs`'s INPUT LEG judges seconds scaled up
+ * at a `formatDurationMs(` call. Add a name here when a lane keys on its spelling.
+ */
+const INPUT_JUDGED_EXPORTS = new Set(["formatFileSize", "formatDurationMs"]);
+
+/** `@ai-matrx/design-system/controls` → `@ai-matrx/design-system`. */
+function packageRoot(specifier) {
+  return specifier.split("/").slice(0, 2).join("/");
 }
 
 /**
@@ -596,10 +642,15 @@ export function aliasesIn(rawSource) {
   // ── import/export specifier aliases ──
   for (const st of source.matchAll(/^[ \t]*(?:import|export)\s*(?:type\s*)?\{[^}]*\}\s*from\s*["'`][^"'`]+["'`]/gms)) {
     const base = source.slice(0, st.index).split("\n").length - 1;
-    for (const { name, alias } of aliasSpecifiers(st[0])) {
+    const isImport = /^\s*import/.test(st[0]);
+    for (const { name, alias, module } of aliasSpecifiers(st[0])) {
       const at = st[0].indexOf(`${name} as ${alias}`);
       const line = base + (at < 0 ? 0 : st[0].slice(0, at).split("\n").length);
-      out.push({ name, alias, line, text: `${name} as ${alias}`, form: "specifier" });
+      // `importOnly`: a bare `import { X as Y }` whose Y never leaves this
+      // module. Whether that is a finding depends on the row (who OWNS X), so
+      // `twinsIn` decides; every other specifier alias is a finding here.
+      const importOnly = isImport && !isReexported(source, alias);
+      out.push({ name, alias, line, text: `${name} as ${alias}`, form: "specifier", module, importOnly });
     }
 
   }
@@ -607,8 +658,8 @@ export function aliasesIn(rawSource) {
   // ── `const Y = X;` over a package import ──
   for (let i = 0; i < lines.length; i++) {
     const m = /^(?:export\s+)?(?:const|let|var)\s+([A-Za-z_$][\w$]*)\s*(?::[^=\n]+)?=\s*([A-Za-z_$][\w$]*)\s*;?\s*$/.exec(lines[i]);
-    if (m && m[1] !== m[2] && imported.has(m[2])) {
-      out.push({ name: m[2], alias: m[1], line: i + 1, text: lines[i].trim(), form: "assignment" });
+    if (m && m[1] !== m[2] && imported.has(m[2]) && imported.get(m[2]) !== m[1]) {
+      out.push({ name: imported.get(m[2]), alias: m[1], line: i + 1, text: lines[i].trim(), form: "assignment" });
     }
   }
 
@@ -667,7 +718,7 @@ function objectPropertyAliases(lines, imported) {
     const am = arrow.exec(line);
     if (!am) continue;
     const [, key, params, callee, args] = am;
-    if (key === callee || !imported.has(callee)) continue;
+    if (!imported.has(callee) || key === imported.get(callee)) continue;
     const names = params
       .split(",")
       .map((prm) => /^\s*(?:\.\.\.)?([A-Za-z_$][\w$]*)/.exec(prm)?.[1])
@@ -676,7 +727,7 @@ function objectPropertyAliases(lines, imported) {
     if (passed.length === 0 || passed.length !== names.length) continue;
     if (passed.some((a, k) => a !== names[k])) continue;
     out.push({
-      name: callee,
+      name: imported.get(callee),
       alias: key,
       line: i + 1,
       text: line.trim(),
@@ -725,7 +776,7 @@ function passThroughWrappers(source, imported) {
       const m = re.exec(window);
       if (!m) continue;
       const [, alias, params, callee, args] = m;
-      if (alias === callee || !imported.has(callee)) continue;
+      if (!imported.has(callee) || alias === imported.get(callee)) continue;
       const names = params
         .split(",")
         .map((prm) => /^\s*(?:\.\.\.)?([A-Za-z_$][\w$]*)/.exec(prm)?.[1])
@@ -735,7 +786,7 @@ function passThroughWrappers(source, imported) {
       // in order. One bound option and this is an adapter, not an alias.
       if (passed.length === 0 || passed.length !== names.length) continue;
       if (passed.some((a, k) => a !== names[k])) continue;
-      out.push({ name: callee, alias, line: i + 1, text: lines[i].trim(), form: "wrapper" });
+      out.push({ name: imported.get(callee), alias, line: i + 1, text: lines[i].trim(), form: "wrapper" });
       break;
     }
   }
@@ -760,6 +811,18 @@ function twinsIn(file, source) {
     push(m[1], i + 1, lines[i].trim());
   }
   for (const a of aliasesIn(source)) {
+    // PASSING, NOT REBINDING (2026-10-07): `import { Button as SurfaceButton }
+    // from "@ai-matrx/design-system"` (any subpath of the OWNING package) binds
+    // the package's own export to a module-local name that never leaves the
+    // file. Nothing is re-grown, and no lane keys on that export's spelling —
+    // unless it is INPUT_JUDGED, where the alias hides call sites and stays red.
+    const row = BY_NAME.get(a.name);
+    if (
+      a.importOnly &&
+      row &&
+      packageRoot(a.module) === packageRoot(row.package) &&
+      !INPUT_JUDGED_EXPORTS.has(a.name)
+    ) continue;
     push(a.name, a.line, `${a.text}   ← an ALIAS of ${a.name} (${a.form})`, a.alias);
   }
   return out;
@@ -1117,9 +1180,58 @@ if (SELF_TEST) {
       process.exit(1);
     }
 
+    // ── IMPORTING FROM THE OWNER UNDER A LOCAL NAME IS PASSING, NOT REBINDING
+    // (2026-10-07). matrx-frontend carried 81 findings like these while the
+    // UI-unification campaign deliberately kept two package Buttons side by
+    // side: the value at every call site IS the package's export, nothing is
+    // re-exposed, and no spelling-keyed input lane judges these exports. Each
+    // must be silent through `twinsIn` (where the row's owner is known).
+    {
+      const ownerImports = [
+        'import { Button as SurfaceButton } from "@ai-matrx/design-system";',
+        'import { Button as ControlButton } from "@ai-matrx/design-system/controls";',
+        'import { Textarea as PackageTextarea } from "@ai-matrx/design-system";',
+        'import { Badge as StatusBadge, Card } from "@ai-matrx/design-system";',
+        'import type { Badge as BadgeT } from "@ai-matrx/design-system";',
+      ];
+      for (const src of ownerImports) {
+        const hits = twinsIn("planted-owner-import.tsx", src);
+        if (hits.length !== 0) {
+          console.error(
+            "SELF-TEST FAILED: a specifier alias imported straight from the " +
+              `OWNING package was reported (${hits[0].text}) — the value at ` +
+              "every call site is the package's own export; nothing is re-grown.",
+          );
+          process.exit(1);
+        }
+      }
+      // …and the TRUE cases stay findings.
+      const stillRed = [
+        // re-exposed from a local module under the new name
+        [['import { Button as SurfaceButton } from "@ai-matrx/design-system";', "export { SurfaceButton };"].join("\n"), "SurfaceButton", "an owner import re-exported under the alias"],
+        [['import { Button as SurfaceButton } from "@ai-matrx/design-system";', "export default SurfaceButton;"].join("\n"), "SurfaceButton", "an owner import default-exported under the alias"],
+        ['export { Button as SurfaceButton } from "@ai-matrx/design-system";', "SurfaceButton", "a re-export under a second name"],
+        // an export a spelling-keyed input lane judges: the alias hides call sites
+        ['import { formatFileSize as fmtBytes } from "@ai-matrx/kit/format";', "fmtBytes", "an input-judged export imported under a second name"],
+        // an alias imported from a package that does NOT own the export
+        ['import { Button as SurfaceButton } from "@ai-matrx/chat";', "SurfaceButton", "an alias imported from a non-owning package"],
+        // a wrapper over an ALIASED import is still a wrapper
+        [['import { normalizeMatrxError as nme } from "@ai-matrx/kit/errors";', "export function normalizeError(err: unknown) {", "  return nme(err);", "}"].join("\n"), "normalizeError", "a pass-through wrapper over an aliased import"],
+      ];
+      for (const [src, alias, why] of stillRed) {
+        const hits = twinsIn("planted-owner-import.tsx", src).filter((f) => f.alias === alias);
+        if (hits.length !== 1) {
+          console.error(`SELF-TEST FAILED: the ALIAS lane no longer reports ${why} (\`${alias}\`).`);
+          process.exit(1);
+        }
+      }
+    }
+
     // An alias obeys `allow` and `census` exactly as a re-grown body does.
     const row = BY_NAME.get("formatRelativeTime");
-    const aliased = 'import { formatRelativeTime as ago } from "@ai-matrx/kit/format";';
+    // A RE-EXPORT under a second name (a bare owner import is passing, not a
+    // finding, since 2026-10-07 — see the owner-import block above).
+    const aliased = 'export { formatRelativeTime as ago } from "@ai-matrx/kit/format";';
     const bare = twinsIn("planted-alias.ts", aliased);
     if (bare.length !== 1 || bare[0].alias !== "ago") {
       console.error(
