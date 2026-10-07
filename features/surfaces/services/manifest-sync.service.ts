@@ -1030,6 +1030,8 @@ export interface ApplyManifestSyncResult {
   clientToolUpserted: { surfaceName: string; toolName: string }[];
   /** Client tools deleted (only when `deleteStale: true`). */
   clientToolDeleted: { surfaceName: string; toolName: string }[];
+  /** Item types and code Actions archived (only when `deleteStale: true`). */
+  otherRowsDeleted: { table: string; surfaceName: string; itemType: string; name: string }[];
   /** Agent roles deleted (only when `deleteStale: true`). */
   roleDeleted: { surfaceName: string; roleName: string }[];
   /** `ui_surface_agent_pref` picks that followed archived stale roles to Trash. */
@@ -1045,7 +1047,7 @@ export interface ApplyManifestSyncResult {
    * stale happened to be recent.
    */
   skippedRecentRows: {
-    table: MirrorTable;
+    table: MirrorTable | OtherMirrorTable;
     surfaceName: string;
     name: string;
     updatedAt: string;
@@ -1228,6 +1230,10 @@ export const MIRROR_TABLES = [
   "ui_surface_write_target",
   "ui_surface_client_tool",
 ] as const;
+
+/** Mirror tables with no drift report or per-row lever: swept only by the global archive. */
+export const OTHER_MIRROR_TABLES = ["ui_surface_item_type", "ui_surface_action"] as const;
+type OtherMirrorTable = (typeof OTHER_MIRROR_TABLES)[number];
 
 /** The four `ui.*` tables that mirror a manifest, keyed `(surface_name, name)`. */
 export type MirrorTable = (typeof MIRROR_TABLES)[number];
@@ -1456,7 +1462,7 @@ async function countPicksThatFollowedRole(
 async function deleteByPlanKey(
   sb: Sb,
   plan: SurfaceSyncPlan,
-  table: MirrorTable,
+  table: MirrorTable | OtherMirrorTable,
   row: Record<string, unknown>,
 ): Promise<boolean> {
   const key = plan.keys[`ui.${table}`];
@@ -1490,7 +1496,7 @@ async function deleteByPlanKey(
 function partitionStaleByRecency<
   T extends { surface_name: string; name: string; updated_at: string },
 >(
-  table: MirrorTable,
+  table: MirrorTable | OtherMirrorTable,
   candidates: T[],
   includeRecent: boolean,
 ): {
@@ -1627,6 +1633,38 @@ export async function applyManifestSync(
   // (No write outside the plan: a surface row no manifest declares is an
   //  orphan — archived or given a manifest, never edited by this sync. ALC-14.)
 
+  // A code-declared surface no manifest declares any more (renamed or removed)
+  // is an orphan: its item rows are exactly as stale as a removed row of a live
+  // manifest, and nothing else will ever archive them. The surface row itself
+  // is never edited here (ALC-14); only its code-owned item rows are swept.
+  let sweepPlan: SurfaceSyncPlan = plan;
+  if (deleteStale) {
+    const codeSurfaces = await readAllRows(
+      ({ from, to }) =>
+        // VIEW LAW: completeness audit of the system catalog — every row is the job.
+        sb
+          .schema("ui")
+          .from("ui_surface")
+          .select("name", { count: "exact" })
+          .eq("declared_by", "code")
+          .is("deleted_at", null)
+          .order("name", { ascending: true })
+          .range(from, to),
+      { label: "ui.ui_surface (code-declared)" },
+    );
+    const manifested = new Set(ALL_MANIFESTS.map((m) => m.surfaceName));
+    const orphans = codeSurfaces
+      .map((r) => String(r.name))
+      .filter((name) => !manifested.has(name));
+    sweepPlan = {
+      ...plan,
+      surfaces: [
+        ...plan.surfaces,
+        ...orphans.map((name) => ({ name }) as unknown as SurfaceSyncPlan["surfaces"][number]),
+      ],
+    };
+  }
+
   // 4. Archive stale rows (db_only) for surfaces we manage in manifests
   //    (delete means archive: deleted_at, restorable; a later sync revives).
   const deleted: ApplyManifestSyncResult["deleted"] = [];
@@ -1651,7 +1689,7 @@ export async function applyManifestSync(
     // Stale = the package plan's own judgement, by the table's FULL key
     // (surface_name, item_type, name): a screen value and an item value that
     // share a name are different rows (ALC-14).
-    const staleRows = findStaleRows(plan, "ui.ui_surface_value", allDb);
+    const staleRows = findStaleRows(sweepPlan, "ui.ui_surface_value", allDb);
     const { toDelete, skipped } = partitionStaleByRecency(
       "ui_surface_value",
       staleRows,
@@ -1685,7 +1723,7 @@ export async function applyManifestSync(
       { label: "ui.ui_surface_agent_role" },
     );
 
-    const staleRoles = findStaleRows(plan, "ui.ui_surface_agent_role", allDbRoles);
+    const staleRoles = findStaleRows(sweepPlan, "ui.ui_surface_agent_role", allDbRoles);
     const { toDelete: rolesToDelete, skipped: skippedRoles } =
       partitionStaleByRecency(
         "ui_surface_agent_role",
@@ -1721,7 +1759,7 @@ export async function applyManifestSync(
       { label: "ui.ui_surface_write_target" },
     );
 
-    const staleTargets = findStaleRows(plan, "ui.ui_surface_write_target", allDbTargets);
+    const staleTargets = findStaleRows(sweepPlan, "ui.ui_surface_write_target", allDbTargets);
     const { toDelete: targetsToDelete, skipped: skippedTargets } =
       partitionStaleByRecency(
         "ui_surface_write_target",
@@ -1758,7 +1796,7 @@ export async function applyManifestSync(
       { label: "ui.ui_surface_client_tool" },
     );
 
-    const staleTools = findStaleRows(plan, "ui.ui_surface_client_tool", allDbTools);
+    const staleTools = findStaleRows(sweepPlan, "ui.ui_surface_client_tool", allDbTools);
     const { toDelete: toolsToDelete, skipped: skippedTools } =
       partitionStaleByRecency(
         "ui_surface_client_tool",
@@ -1776,10 +1814,50 @@ export async function applyManifestSync(
     }
   }
 
+  // 4e. Archive stale item types and code Actions — same rule, same key
+  //     discipline; only tables the plan keys are read.
+  const otherRowsDeleted: ApplyManifestSyncResult["otherRowsDeleted"] = [];
+  if (deleteStale) {
+    for (const table of OTHER_MIRROR_TABLES) {
+      if (!plan.keys[`ui.${table}`]) continue;
+      const rows = (await readAllRows(
+        ({ from, to }) =>
+          // VIEW LAW: completeness audit of the system catalog — every row is the job.
+          sb
+            .schema("ui")
+            .from(table)
+            .select("*", { count: "exact" })
+            .is("deleted_at", null)
+            .order("surface_name", { ascending: true })
+            .order("name", { ascending: true })
+            .range(from, to),
+        { label: `ui.${table}` },
+      )) as unknown as { surface_name: string; name: string; item_type?: string; updated_at: string; declared_by: string }[];
+      const stale = findStaleRows(sweepPlan, `ui.${table}`, rows);
+      const { toDelete, skipped } = partitionStaleByRecency(
+        table,
+        stale,
+        includeRecent,
+      );
+      skippedRecentRows.push(...skipped);
+      for (const row of toDelete) {
+        if (await deleteByPlanKey(sb, plan, table, row)) {
+          otherRowsDeleted.push({
+            table,
+            surfaceName: row.surface_name,
+            itemType: row.item_type ?? "",
+            name: row.name,
+          });
+        }
+      }
+    }
+  }
+
   const driftAfter = await computeDriftReport(sb);
 
   return {
     upserted,
+    otherRowsDeleted,
     deleted,
     roleUpserted,
     roleDeleted,

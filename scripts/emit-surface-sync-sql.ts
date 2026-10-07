@@ -19,8 +19,10 @@
  *      as the platform skill `surface-guide-<slug>` (`skill.definition`; see
  *      `renderSurfaceGuideSkillSql`). The intro pointer to it is part of the
  *      plan (`withAgentHints`).
- * It does not mirror the admin endpoint's DELETE/drift half — stale rows are
- * reported by the drift API, never silently purged here.
+ * Then (`scripts/lib/surface-sync-archive.ts`) it ARCHIVES — `deleted_at`, never
+ * DELETE — every code-declared row of the selected surfaces that no manifest
+ * declares any more, in every keyed mirror table, and revives re-declared ones.
+ * `declared_by = 'database'` rows are never addressed.
  */
 
 import { execFileSync } from "node:child_process";
@@ -36,6 +38,7 @@ import {
   planManifestSync,
   toPackageResolved,
 } from "@ai-matrx/chat/surfaces/declare/surface-declare";
+import { renderStaleArchiveSql } from "./lib/surface-sync-archive";
 import { sqlSyncedFrom } from "@/features/surfaces/services/sync-provenance";
 import {
   surfaceGuideSkillId,
@@ -127,6 +130,8 @@ function currentGitSha(): string | null {
 export interface EmitSurfaceSyncSqlOptions {
   surfaceNames?: readonly string[];
   organizationId: string;
+  /** Plan tables (`ui.<name>`) a caller archives itself; every other keyed table is archived here. */
+  skipArchiveTables?: readonly string[];
 }
 
 function selectedManifests(surfaceNames: readonly string[]) {
@@ -151,6 +156,7 @@ function selectedManifests(surfaceNames: readonly string[]) {
 export function emitSurfaceSyncSql({
   surfaceNames = [],
   organizationId,
+  skipArchiveTables,
 }: EmitSurfaceSyncSqlOptions): string {
   if (!isUuidShape(organizationId)) {
     throw new Error("--organization-id must be a UUID");
@@ -166,7 +172,10 @@ export function emitSurfaceSyncSql({
   const guides = manifests
     .map((manifest) => renderSurfaceGuideSkillSql(manifest, organizationId))
     .filter(Boolean);
-  return [renderSurfaceSyncSql(plan), ...guides].join("\n\n");
+  return [renderSurfaceSyncSql(plan), renderStaleArchiveSql(plan, {
+      skipTables: skipArchiveTables,
+      registrySurfaceNames: surfaceNames.length === 0 ? getAllManifests().map((m) => m.surfaceName) : undefined,
+    }), ...guides].filter(Boolean).join("\n\n");
 }
 
 function main() {

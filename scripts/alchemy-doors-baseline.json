@@ -30,8 +30,5 @@
     "lib/code-runtime/app-scope.ts": 1
   },
   "doorbypass": {},
-  "registries": {
-    "lib/client-directives/directiveRegistry.ts": 1,
-    "packages/chat/src/surfaces/config/namespace-registry.ts": 1
-  }
+  "registries": {}
 }
