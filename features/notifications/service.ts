@@ -28,6 +28,7 @@
  * checked at the boundary.
  */
 
+import { TRIAGE_DOORS_LIVE } from "./triage-live";
 import type { PostgrestError } from "@supabase/supabase-js";
 import { createClient } from "@/utils/supabase/client";
 import { operationFailed } from "@/utils/errors";
@@ -61,6 +62,7 @@ async function rpc(
   // A door already proven absent this session is not asked again: one probe,
   // not a 404 on every page and every poll.
   if (options.fallsBack && triageDoorKnownAbsent()) {
+    if (!TRIAGE_DOORS_LIVE) announceStandIn();
     return { data: null, error: { code: "PGRST202", message: `communication.${name} is absent`, details: "", hint: "", name: "PostgrestError" } as PostgrestError };
   }
   const call = communication().rpc(name as never, args as never);
@@ -76,6 +78,7 @@ const ABSENT_KEY = "notifications.triageDoorAbsentAt";
 const ABSENT_TTL_MS = 10 * 60 * 1000;
 let absentAt = 0;
 function triageDoorKnownAbsent(): boolean {
+  if (!TRIAGE_DOORS_LIVE) return true; // the doors are a held draft: never ask live for them
   if (absentAt && Date.now() - absentAt < ABSENT_TTL_MS) return true;
   try {
     const stored = Number(globalThis.sessionStorage?.getItem(ABSENT_KEY) ?? 0);

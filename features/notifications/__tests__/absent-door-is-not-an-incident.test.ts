@@ -22,6 +22,8 @@ function answerFor(name: string) {
   };
 }
 
+// These tests exercise the probe itself, so they run as if the doors were meant to be live.
+jest.mock("../triage-live", () => ({ TRIAGE_DOORS_LIVE: true }));
 jest.mock("@/utils/supabase/client", () => {
   const raw = {
     schema: () => ({

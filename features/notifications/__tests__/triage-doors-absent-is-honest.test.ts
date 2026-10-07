@@ -7,6 +7,8 @@
 const calls: Array<{ name: string; args: unknown }> = [];
 let missing = true;
 let otherError = false;
+// These tests exercise the probe itself, so they run as if the doors were meant to be live.
+jest.mock("../triage-live", () => ({ TRIAGE_DOORS_LIVE: true }));
 jest.mock("@/utils/supabase/client", () => ({
   createClient: () => ({
     schema: () => ({
