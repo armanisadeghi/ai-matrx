@@ -237,3 +237,59 @@ describe("beginFreshChat guest boundary", () => {
     expect(push).toHaveBeenCalledWith("/chat/new");
   });
 });
+
+describe("beginFreshChat never waits forever on the default-agent lookup", () => {
+  beforeEach(() => {
+    resolveMandateMock.mockReset();
+    jest.useFakeTimers();
+  });
+  afterEach(() => {
+    jest.useRealTimers();
+  });
+
+  // THE CLASS: "New chat does nothing while a run is streaming". The default
+  // agent lookup is cached for 5 minutes; a long run outlives the cache, so the
+  // click re-fetched it and the navigation hung behind a stalled request with
+  // no feedback. The lookup only decides `/chat/new` vs `/chat/a/<agent>` —
+  // it must never gate the navigation.
+  it("navigates to the route's own agent when the lookup stalls", async () => {
+    const dispatch = jest.fn();
+    const push = jest.fn();
+    resolveMandateMock.mockReturnValue(new Promise(() => {}) as never);
+
+    const done = beginFreshChat({
+      dispatch,
+      router: { push } as never,
+      pathname: "/chat/a/route-agent",
+      getState: () =>
+        ({
+          userAuth: { id: "authenticated-user", isAnonymous: false },
+        }) as ChatRootState,
+    });
+    await jest.advanceTimersByTimeAsync(5000);
+    await done;
+
+    expect(push).toHaveBeenCalledWith("/chat/a/route-agent");
+  });
+
+  it("falls back to /chat/new, which resolves the default itself, when nothing is known", async () => {
+    const dispatch = jest.fn();
+    const push = jest.fn();
+    resolveMandateMock.mockReturnValue(new Promise(() => {}) as never);
+
+    const done = beginFreshChat({
+      dispatch,
+      router: { push } as never,
+      pathname: "/chat/6ffbb619-514f-460a-863e-fb16d89943bd",
+      getState: () =>
+        ({
+          userAuth: { id: "authenticated-user", isAnonymous: false },
+          conversations: { byConversationId: {} },
+        }) as ChatRootState,
+    });
+    await jest.advanceTimersByTimeAsync(5000);
+    await done;
+
+    expect(push).toHaveBeenCalledWith("/chat/new");
+  });
+});

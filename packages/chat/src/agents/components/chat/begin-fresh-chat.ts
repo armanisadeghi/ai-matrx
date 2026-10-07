@@ -186,6 +186,35 @@ export function interceptChatAgentLink(
   });
 }
 
+/** How long "New chat" waits for the default-agent lookup before navigating anyway. */
+export const DEFAULT_AGENT_LOOKUP_WAIT_MS = 1500;
+
+/**
+ * The default-agent lookup only decides `/chat/new` (default agent) vs
+ * `/chat/a/<agent>`; it must never gate the click. Its cache lives five
+ * minutes, so a run that streams longer re-fetches it on "New chat" — and a
+ * stalled request left the click doing nothing, with no feedback. After the
+ * wait the answer is `null` and the route's own agent (or `/chat/new`, which
+ * resolves and surfaces the default itself) is used. A rejection — including a
+ * declined organization question — still propagates to the caller.
+ */
+async function resolveDefaultAgentBounded(): Promise<string | null> {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const lookup = resolveMandateAsking(DEFAULT_NEW_CHAT_MANDATE_KEY).then(
+    (resolved) => resolved.agentId,
+  );
+  // A late rejection after the wait elapsed has no caller left to hear it.
+  lookup.catch(() => undefined);
+  const wait = new Promise<null>((resolve) => {
+    timer = setTimeout(() => resolve(null), DEFAULT_AGENT_LOOKUP_WAIT_MS);
+  });
+  try {
+    return await Promise.race([lookup, wait]);
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 /** Start a brand-new chat: drop stale surface focus, bump the fresh-session
  *  nonce (so `/chat/new` remints even when the path is unchanged), navigate.
  *
@@ -211,8 +240,7 @@ export async function beginFreshChat({
   const auth = state.userAuth;
   if (auth && auth.id !== null && !auth.isAnonymous) {
     try {
-      defaultAgentId = (await resolveMandateAsking(DEFAULT_NEW_CHAT_MANDATE_KEY))
-        .agentId;
+      defaultAgentId = await resolveDefaultAgentBounded();
     } catch (error) {
       // Declined the organization question: no fresh chat starts.
       if (isOrganizationSelectionCancelled(error)) return;

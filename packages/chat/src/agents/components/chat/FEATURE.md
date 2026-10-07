@@ -145,7 +145,8 @@ A failed turn is **kept in history** (never deleted) and recovered with a non-de
 5. **Edit a previous message + resubmit** is a separate path (`UserActionBar` "Edit & resubmit" → fork or `overwriteAndResend`); it edits the pending user row and then re-runs it with `retry: true`, never appending a duplicate user message.
 
 High-severity non-fatal stream warnings are also user-visible, alongside any
-warning code explicitly promoted regardless of severity (today: the
+warning code explicitly promoted regardless of severity (and the answer-kept
+warnings below) (today: the
 Configuration Equivalence law's `setting_not_supported` — an unexpected
 setting drop during model/provider translation; see
 `common-docs/systems/platform/configuration-equivalence/FEATURE.md`).
@@ -155,6 +156,17 @@ technical details disclosure. A recoverable mirror failure — or a silently
 dropped setting — therefore never exists only in Redux/devtools while the
 assistant appears to stop or the request appears to have run exactly as
 configured.
+
+**Turn outcome (`messages/turn-outcome.ts`).** A turn ends `complete`,
+`incomplete` or `failed`, decided one way live and after reload. `failed` (no
+usable answer, a safety/other stop, or a record the server saved failed) shows
+`AssistantError` with Retry. `incomplete` (the answer stands, but a recitation
+stop or length limit cut it short) keeps the content and shows `IncompleteNote`
+("Ending may be cut off" / "Cut off at its length limit", Details for the
+reason) with no Retry. Live, the `provider_recitation_stop` / `truncated_response`
+/ `answer_kept` warnings are what flip it; on reload the saved
+`metadata.finish_reason` does. A stream that ends `failed` with no error event
+is marked an error, so it never flips to complete. See `../run/FEATURE.md`.
 
 > **Backend dependency (as of 2026-05-24):** production aidream does NOT yet accept `retry:true` (it 422s `user_input` required) and persists failed turns without `metadata.error` / with `is_visible_to_model=true`. The FE is built to the guide and degrades gracefully; end-to-end retry needs the aidream deploy. See the `project_retry_backend_gap` memory.
 
@@ -318,6 +330,7 @@ The old root-level "Agent/Chat/Conversation — Single Source of Truth" doc is a
 
 ## Change log
 
+- `2026-10-06` — claude: **"New chat" never waits on the default-agent lookup.** `beginFreshChat` awaited `resolveMandateAsking(chat.default_new_chat)` before navigating. That answer is cached five minutes, so after a long streaming run the click re-fetched it, and a slow or stalled request left the click doing nothing with no feedback. The lookup only chooses `/chat/new` vs `/chat/a/<agent>`; it is now bounded (`DEFAULT_AGENT_LOOKUP_WAIT_MS`, 1.5 s) and falls back to the route's own agent, or `/chat/new`, which resolves the default itself. The running request is untouched: the room remints a new conversation and the old one finishes in the background. Not reproduced live with a stalled request (cache stayed warm in every try); the stall is proven by the guard. Guard: `begin-fresh-chat.test.ts` ("never waits forever", red before, green after).
 - `2026-10-03` — claude: **Page tools reach only a run bound to that page; the person's tool decisions travel as the USER layer.** Root cause of a hung structured run: `buildToolInjection` read `apply_surface_write` and the surface client tools off the GLOBAL mounted provider stack, never the conversation, so a background JSON run, a `surfaceName: null` launch or a window bound to another screen got the page's tools, called the write tool instead of answering, and the server parked the turn for a browser result nobody sent. Now `utils/page-tool-binding.ts` decides per conversation (headless / JSON-answer: none, and no route-guessed surface; own-page: companions only; else the launch stamp + its ancestors; no stamp: none). Picks ride as `user.add` (never anonymous `tools[]`), removals of the agent's own tools as `user.remove`, and ONE per-chat "Auto tools" switch (`builderAdvancedSettings.autoTools`, saved in `run_configuration.auto_tools`, shows the agent's default) as `user.auto_tools` — one builder (`utils/request-user-overrides.ts`) for start, continue, resume and the manual run. RunSettingsEditor's per-chat "Disable Tool Injection" is gone (the creator global brake stays). With the switch off, an attachment that needs a tool raises `ComposerToolsNotice` with Turn on. The sandbox stopgap tool list is removed. Server tool notices (`tools_removed_*`, `tools_missing`, `mcp_server_unavailable`) render inline. Guards: `utils/__tests__/page-tools-only-reach-a-bound-run.test.tsx` (5 cases red on the old body), `smart-input/__tests__/auto-tools-off-speaks-up.test.ts`. Design for the rest: common-docs `systems/agents/agent-tools/CLIENT-RESPONSIBILITY.md`.
 
 
