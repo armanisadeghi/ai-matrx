@@ -62,6 +62,7 @@ export function PageMenu({
   updatedLabel,
   counts,
   suggestPageId,
+  contentOnly,
 }: {
   settings: Settings;
   onSettings: (patch: Partial<Settings>) => void;
@@ -83,6 +84,8 @@ export function PageMenu({
   counts: { words: number; characters: number };
   /** N3 — the page whose "Suggest edits" switch this menu shows (absent: the person cannot edit). */
   suggestPageId?: string;
+  /** "Can edit content": page settings, duplicate, move and trash are not theirs (the database refuses them). */
+  contentOnly?: boolean;
 }) {
   const [open, setOpen] = useState(false);
   const suggesting = useSuggesting(suggestPageId ?? null);
@@ -115,7 +118,7 @@ export function PageMenu({
           onClick={() => onSettings({ fullWidth: !settings.fullWidth })}
           end={<Switch checked={settings.fullWidth} tabIndex={-1} aria-hidden />}
         />
-        <Row icon={<Lock size={16} />} label="Lock page" onClick={() => onSettings({ locked: !settings.locked })} end={<Switch checked={settings.locked} tabIndex={-1} aria-hidden />} />
+        {contentOnly ? null : <Row icon={<Lock size={16} />} label="Lock page" onClick={() => onSettings({ locked: !settings.locked })} end={<Switch checked={settings.locked} tabIndex={-1} aria-hidden />} />}
         {suggestPageId ? (
           <Row icon={<PenLine size={16} />} label="Suggest edits" onClick={() => setSuggesting(suggestPageId, !suggesting)} end={<Switch checked={suggesting} tabIndex={-1} aria-hidden />} />
         ) : null}
@@ -123,8 +126,8 @@ export function PageMenu({
         {onAskAiChange ? <Row icon={<AGENT_ICON size={16} />} label="Ask AI to change this page" onClick={act(onAskAiChange)} /> : null}
         <Row icon={<Link size={16} />} label="Copy link" onClick={act(onCopyLink)} />
         <Row icon={<Copy size={16} />} label="Duplicate" onClick={act(onDuplicate)} />
-        <Row icon={<CornerUpRight size={16} />} label="Move to" onClick={act(onMove)} />
-        <Row icon={<Trash2 size={16} />} label="Move to Trash" onClick={act(onDelete)} danger />
+        {contentOnly ? null : <Row icon={<CornerUpRight size={16} />} label="Move to" onClick={act(onMove)} />}
+        {contentOnly ? null : <Row icon={<Trash2 size={16} />} label="Move to Trash" onClick={act(onDelete)} danger />}
         <div className="my-1 border-t border-border" />
         <Row icon={<Undo2 size={16} />} label="Undo" onClick={act(onUndo)} />
         <Row icon={<History size={16} />} label="Page history" onClick={act(onHistory)} />
