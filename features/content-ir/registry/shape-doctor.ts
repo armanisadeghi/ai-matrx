@@ -69,7 +69,12 @@
  * or activate the kind, and the `n/a` evaporates and the yellows come back.
  */
 
-import { validateStructuralLeg } from "@ai-matrx/content-ir";
+import {
+  kindSchemaFromJsonSchema,
+  normalizeJsonRegion,
+  validateStructuralLeg,
+  type KindSchema,
+} from "@ai-matrx/content-ir";
 
 // ─── Asset columns (v1) ─────────────────────────────────────────────────────
 
@@ -382,6 +387,7 @@ export type FindingCode =
   | "unknown-loading-component" // declared loading_component slug is not in the loading library
   | "manual-data-only-flag" // metadata.data_only key on a row — eradicated 2026-08-27, must never return
   | "one-record-card" // guard 5 (KINDS-GLUE wave 3): a second record drawer, a lost table: route, or a table: registry row
+  | "derived-schema-rejects-example" // the registry's DERIVED field model refuses an example the JSON Schema accepts
   // yellow
   | "no-loading-component" // renderable kind: no declared loader AND its shape derives none (generic fallback)
   | "no-example"
@@ -682,6 +688,34 @@ function byKindThenMessage(a: ShapeFinding, b: ShapeFinding): number {
 
 // ─── The doctor ─────────────────────────────────────────────────────────────
 
+/**
+ * THE SECOND HALF OF THE GATE (2026-10-07). The structural leg asks "does the
+ * JSON Schema accept this value?"; the browser never asks that. It DERIVES a
+ * field model from the same schema (`kindSchemaFromJsonSchema`, what the kind
+ * registry's cold fetch runs) and the parser decides the route from it. When
+ * the two disagree, the example passes the gate and every real instance still
+ * resolves `raw` and draws through the generic fallback — the Applet builder's
+ * answer did exactly this (pydantic's `AppletRecord` $def read as a kind ref).
+ * Returns the parser's refusal, or null when the derived model resolves it.
+ */
+export function derivedSchemaRefusal(
+  kind: string,
+  emittedJsonSchema: unknown,
+  sample: unknown,
+): string | null {
+  if (sample === null || typeof sample !== "object" || Array.isArray(sample)) return null;
+  const derived = kindSchemaFromJsonSchema(kind, emittedJsonSchema);
+  if (!derived.schema || derived.schema.root) return null;
+  const schemas: Record<string, KindSchema> = { ...derived.children, [kind]: derived.schema };
+  const envelope = normalizeJsonRegion(
+    JSON.stringify({ ...(sample as Record<string, unknown>), __kind: kind }),
+    { schemas: schemas as Record<string, never> },
+  );
+  if (envelope.root.kindState === "resolved") return null;
+  const notice = envelope.root.residue?.notices?.[0]?.message;
+  return notice ?? `resolved "${envelope.root.kindState}"`;
+}
+
 export function runShapeDoctor(input: ShapeDoctorInput): ShapeDoctorReport {
   const kinds = [...input.kinds].sort((a, b) => a.kind.localeCompare(b.kind));
   const knownKinds = new Set(kinds.map((k) => k.kind));
@@ -830,6 +864,17 @@ export function runShapeDoctor(input: ShapeDoctorInput): ShapeDoctorReport {
               ? undefined
               : `validated against ${gateSample.source}`,
         };
+        const refusal = kind.isActive
+          ? derivedSchemaRefusal(kind.kind, kind.emittedJsonSchema, gateSample.data)
+          : null;
+        if (refusal) {
+          reds.push({
+            severity: "red",
+            code: "derived-schema-rejects-example",
+            kind: kind.kind,
+            message: `ACTIVE kind "${kind.kind}": its JSON Schema accepts the ${gateSample.source}, but the field model the kind registry DERIVES from that schema refuses it (${refusal}) — every live instance renders through the generic fallback once the database schema loads`,
+          });
+        }
       } else {
         gate = {
           status: "warn",
