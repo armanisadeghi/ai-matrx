@@ -686,7 +686,13 @@ export function isFailedRecord(record: MessageRecord | undefined): boolean {
   ) {
     return true;
   }
-  return abnormalFinishReason(record) !== null;
+  // A provider stop that leaves the delivered answer standing (recitation or a
+  // length cut-off WITH content) is an incomplete answer, not a failed turn —
+  // the same verdict the live stream reaches (see turn-outcome.ts).
+  return (
+    abnormalFinishReason(record) !== null &&
+    incompleteAnswerReason(record) === null
+  );
 }
 
 /**
@@ -723,6 +729,37 @@ export function abnormalFinishReason(
   if (typeof reason !== "string" || reason.length === 0) return null;
   const normalized = reason.toLowerCase().replace(/^finishreason\./, "");
   return NORMAL_FINISH_REASONS.has(normalized) ? null : normalized;
+}
+
+/**
+ * Stops after which the text already delivered STANDS as the answer: a
+ * recitation stop (the text matched published words — what the person asked
+ * for when they paste their own source) and a length cut-off. Mirrors the
+ * server's `delivered_text_stands` (config/finish_reason.py::provider_stop)
+ * and its `truncated_response` warning.
+ */
+const ANSWER_STANDS_REASONS = new Set([
+  "recitation",
+  "max_tokens",
+  "length",
+  "max_output_tokens",
+]);
+
+/**
+ * The stop reason of a reloaded turn that is INCOMPLETE rather than failed:
+ * an answer-stands stop on a turn that actually holds answer text and is not
+ * saved failed. Null otherwise (normal finish, no content, safety stops…).
+ */
+export function incompleteAnswerReason(
+  record: MessageRecord | undefined,
+): string | null {
+  const reason = abnormalFinishReason(record);
+  if (!reason || !ANSWER_STANDS_REASONS.has(reason)) return null;
+  if (!record || record.status === "failed" || record.error) return null;
+  const md = record.metadata as Record<string, unknown> | null | undefined;
+  if (md && !Array.isArray(md) && (md as Record<string, unknown>).failed === true)
+    return null;
+  return extractFlatText(record).trim().length > 0 ? reason : null;
 }
 
 /** The sentence a reloaded early-stopped turn shows. */

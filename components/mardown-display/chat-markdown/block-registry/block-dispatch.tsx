@@ -294,6 +294,10 @@ export function isBlockLoading(block: {
   // A stopped region renders what it has.
   const envelope = readEnvelope(block.metadata);
   if (envelope?.root.kind && envelope.root.status === "streaming") return true;
+  // The parser's terminal verdict outranks the splitter's `isComplete: false`
+  // (stamped at split time, never cleared when the stream stops): a stopped
+  // region is settled whatever its text looks like.
+  if (envelope?.root.status === "error") return false;
   if (
     block.metadata?.isComplete === false &&
     isGenuinelyIncomplete(block.content)

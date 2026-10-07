@@ -73,7 +73,7 @@ function CopyRow({ value }: { value: CopyValue }) {
   const [copied, setCopied] = useState(false);
   const copy = async () => {
     try {
-      await copyText(value.value);
+      if (!(await copyText(value.value))) return;
       setCopied(true);
       setTimeout(() => setCopied(false), 1500);
     } catch {

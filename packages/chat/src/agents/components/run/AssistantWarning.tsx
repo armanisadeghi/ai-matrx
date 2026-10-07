@@ -4,6 +4,9 @@ import { useState } from "react";
 import { AlertTriangle } from "lucide-react";
 import type { WarningPayload } from "@ai-matrx/agents/generated/stream-events";
 import { Button } from "@ai-matrx/design-system/controls";
+import { IncompleteNote } from "./IncompleteNote";
+import { isAnswerKeptWarning } from "../../redux/execution-system/active-requests/answer-kept-warning";
+import { incompleteLabel } from "../../redux/execution-system/messages/turn-outcome";
 
 interface AssistantWarningProps {
   warning: WarningPayload;
@@ -12,6 +15,14 @@ interface AssistantWarningProps {
 /** Visible treatment for high-severity, recoverable stream warnings. */
 export function AssistantWarning({ warning }: AssistantWarningProps) {
   const [showDetails, setShowDetails] = useState(false);
+  if (isAnswerKeptWarning(warning)) {
+    return (
+      <IncompleteNote
+        label={incompleteLabel(warning.code)}
+        detail={warning.user_message?.trim() || undefined}
+      />
+    );
+  }
   const message =
     warning.user_message?.trim() ||
     "The response completed with a warning.";

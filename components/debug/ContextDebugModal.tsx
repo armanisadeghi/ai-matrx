@@ -69,7 +69,8 @@ export function ContextDebugModal({
   const hasCustomVariables = Object.keys(customVariables).length > 0;
 
   const copyToClipboard = useCallback((text: string, key: string) => {
-    copyText(text).then(() => {
+    copyText(text).then((copied) => {
+      if (!copied) return;
       setCopiedKey(key);
       setTimeout(() => setCopiedKey(null), 1500);
     });

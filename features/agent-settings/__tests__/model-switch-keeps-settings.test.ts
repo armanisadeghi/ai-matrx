@@ -112,6 +112,59 @@ describe("engine 2 (agentSettings slice) — default keeps every set value", () 
   });
 });
 
+describe("engine 2 — a model switch never carries the old model's class", () => {
+  // A class (ai.offering) belongs to exactly one model; ai.resolve_model_config
+  // refuses a foreign pair with P0002 (captured 2026-10-07 in the builder).
+  const OLD_CLASS = "29874e67-5683-40c2-9adb-fb797ea9a176";
+  const NEW_CLASS = "cb1f1119-911a-49f7-8bf1-fbc28e21f8ae";
+
+  function seed(store: ReturnType<typeof makeStore>) {
+    store.dispatch(
+      initializeAgent({
+        agentId: "flashcards",
+        source: "agent",
+        context: "builder",
+        settings: { model: CLAUDE, offering_id: OLD_CLASS, temperature: 0.4 } as never,
+      } as never),
+    );
+  }
+
+  it("no class picked → the old model's class is dropped on confirm", async () => {
+    const store = makeStore();
+    seed(store);
+    await store.dispatch(requestModelSwitch({ agentId: "flashcards", newModelId: LLAMA }));
+    // Nothing is written while the switch waits for confirmation.
+    expect(
+      (store.getState().agentSettings.entries.flashcards.defaults as Record<string, unknown>)
+        .offering_id,
+    ).toBe(OLD_CLASS);
+    store.dispatch(confirmModelSwitch("flashcards"));
+    const defaults = store.getState().agentSettings.entries.flashcards.defaults as Record<
+      string,
+      unknown
+    >;
+    expect(defaults.model).toBe(LLAMA);
+    expect("offering_id" in defaults).toBe(false);
+  });
+
+  it("the class picked with the model lands together with the model", async () => {
+    const store = makeStore();
+    seed(store);
+    await store.dispatch(
+      requestModelSwitch({ agentId: "flashcards", newModelId: LLAMA, offeringId: NEW_CLASS }),
+    );
+    expect(
+      (store.getState().agentSettings.entries.flashcards.defaults as Record<string, unknown>)
+        .offering_id,
+    ).toBe(OLD_CLASS);
+    store.dispatch(confirmModelSwitch("flashcards"));
+    expect(store.getState().agentSettings.entries.flashcards.defaults).toMatchObject({
+      model: LLAMA,
+      offering_id: NEW_CLASS,
+    });
+  });
+});
+
 describe("engine 1 (reconciliation/analyze) — suggested action is keep", () => {
   const models = Object.values(MODELS).map((m) => normalizeModel(m));
 

@@ -66,7 +66,14 @@ import {
   extractRecordError,
   selectIsLatestAssistantMessage,
   persistedBodyBlocks,
+  incompleteAnswerReason,
 } from "../../../redux/execution-system/messages/messages.selectors";
+import {
+  incompleteDetail,
+  incompleteLabel,
+  isAnswerKeptWarning,
+} from "../../../redux/execution-system/messages/turn-outcome";
+import { IncompleteNote } from "../../run/IncompleteNote";
 import {
   isAttachmentMessagePart,
   isInlineAssistantMedia,
@@ -742,6 +749,20 @@ export function AgentAssistantMessage({
           {!isStreamActive && (
             <StoppedNote metadata={record?.metadata} requestStatus={requestStatus} />
           )}
+          {/* A reloaded turn whose answer stands but whose provider stop cut
+              the end short: the same IncompleteNote the live stream warning
+              renders. Skipped while that live warning is on screen. */}
+          {!isStreamActive &&
+            !visibleWarnings?.some(isAnswerKeptWarning) &&
+            (() => {
+              const reason = incompleteAnswerReason(record);
+              return reason ? (
+                <IncompleteNote
+                  label={incompleteLabel(reason)}
+                  detail={incompleteDetail(reason)}
+                />
+              ) : null;
+            })()}
           {/* While content is streaming, the breathing orb trails just below
               it, moving down as the message grows, then unmounts at completion.
               It takes NO height of its own: it floats inside the action row's
