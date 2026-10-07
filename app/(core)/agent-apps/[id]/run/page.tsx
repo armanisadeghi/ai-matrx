@@ -1,18 +1,15 @@
 import { getAgentApp } from "@/lib/agent-apps/data";
 import { AgentAppHeader } from "@/features/agent-apps/components/route-header/AgentAppHeader";
-import { AgentAppRunWithHistory } from "@/features/agent-apps/components/run/AgentAppRunWithHistory";
+import { AppletHostMount } from "@/features/applets-host/AppletHostMount";
 
 interface RunPageProps {
   params: Promise<{ id: string }>;
 }
 
 /**
- * /agent-apps/[id]/run — runs the user's actual app inside the management
- * shell. Same renderer as `/p/[slug]`, framed by the sub-route header so
- * the user can flip back to Code or Settings without leaving the admin UI.
- *
- * Run history opens from the route header in the canonical Agent Run History
- * window, so it remains available without adding an orphaned body control.
+ * /agent-apps/[id]/run — runs the user's actual Applet inside the management
+ * shell, through the same Applet host as `/apps/<slug>` and `/p/<slug>`,
+ * framed by the sub-route header so the user can flip back to Code or Settings.
  */
 export default async function AgentAppRunPage({ params }: RunPageProps) {
   const { id } = await params;
@@ -28,7 +25,9 @@ export default async function AgentAppRunPage({ params }: RunPageProps) {
         initialPublishedToWeb={app.published_to_web}
         active="run"
       />
-      <AgentAppRunWithHistory app={app} slug={app.slug} />
+      <div className="h-full min-h-0 overflow-auto">
+        <AppletHostMount appletId={app.id} slug={app.slug} />
+      </div>
     </>
   );
 }
