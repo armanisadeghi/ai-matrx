@@ -1208,9 +1208,21 @@ export const primaryNavItems: ShellNavItem[] = [
     section: "primary",
     profileMenu: false,
     dashboard: false,
-    description: "Notes, documents, workbooks, maps and signatures",
+    description: "Pages, notes, documents, workbooks, maps and signatures",
     color: "amber",
     children: [
+      {
+        // Spaces (Notion-style pages) heads Content in the domain tree (content: spaces +, Arman 2026-10-05).
+        label: "Spaces",
+        href: "/spaces",
+        iconName: "NotebookTabs",
+        description: "Pages, databases and templates in one workspace",
+        guestHidden: true,
+        color: "amber",
+        profileMenu: false,
+        dashboard: true,
+        group: "Write",
+      },
       {
         label: "Notes",
         href: "/notes",
