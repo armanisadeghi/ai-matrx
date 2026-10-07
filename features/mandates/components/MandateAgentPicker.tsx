@@ -48,8 +48,6 @@ import {
 } from "@ai-matrx/chat/agents/redux/agent-definition/thunks";
 import {
   selectAgentExecutionPayload,
-  selectOwnedAgents,
-  selectSharedWithMeAgents,
 } from "@ai-matrx/chat/agents/redux/agent-definition/selectors";
 import { AgentListInlinePicker } from "@ai-matrx/agents/catalog/react";
 import type { VariableDefinition } from "@ai-matrx/chat/agents/types/agent-definition.types";
