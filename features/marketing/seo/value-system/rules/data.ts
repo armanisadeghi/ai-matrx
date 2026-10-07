@@ -23,6 +23,7 @@
  * `keyword_class_rule_assert_facet` trigger validates against that same registry.
  */
 
+import { withAdminFeature } from "@/utils/auth/adminFeaturesOnUserPages";
 import { supabase } from "@/utils/supabase/client";
 import { getClaimsUser } from "@/utils/supabase/claimsUser";
 import { requireAuthenticatedSupabaseSession } from "@/utils/supabase/webDb";
@@ -508,10 +509,13 @@ export async function runPlaceDetectionPass(
   batchKeywords: number,
   minImpressions: number,
 ): Promise<PlaceDetectionPass> {
-  const response = await (await seoDb()).rpc("fn_backfill_keyword_places", {
-    p_limit: batchKeywords,
-    p_min_impressions: minImpressions,
-  });
+  const response = await withAdminFeature(
+    "seo.place-detection",
+    (await seoDb()).rpc("fn_backfill_keyword_places", {
+      p_limit: batchKeywords,
+      p_min_impressions: minImpressions,
+    }),
+  );
   const rows = assertGoverned(
     response.data,
     response.error,
