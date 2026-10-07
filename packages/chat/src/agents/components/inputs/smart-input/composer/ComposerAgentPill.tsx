@@ -97,12 +97,15 @@ export function ComposerAgentPill({ conversationId, mode, size, agentControl, me
       iconEnd={<ChevronDown />}
       aria-label={`Agent: ${label}${showOverride ? " (model changed)" : ""}`}
       title={showOverride ? `${label} — ${overrideTitle}` : label}
-      className="min-w-0"
+      data-model-override={showOverride ? "" : undefined}
+      // Placement: the pill gives way to its row (a Button never shrinks by
+      // itself, and its max-width ignores its 3px tap margins).
+      className="min-w-0 shrink"
     >
-      {label}
-      {showOverride ? (
-        <span data-testid="composer-model-override-chip"> · changed</span>
-      ) : null}
+      {/* ONE string: only a plain-text label rides the Button's ellipsizing
+          box, so a long agent name shortens instead of pushing the pill past
+          the row (the builder Test panel cut it off by 3-41px). */}
+      {showOverride ? `${label} · changed` : label}
     </Button>
   );
 
