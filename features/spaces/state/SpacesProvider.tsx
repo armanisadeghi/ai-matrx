@@ -136,6 +136,7 @@ export function useSpaces(): SpacesContextValue {
 
 export function SpacesProvider({ children }: { children: ReactNode }) {
   const router = useRouter();
+  // org-filter: write-target a new top-level page is filed in the organization the person works in
   const organizationId = useAppSelector(selectActiveOrganizationId);
   const orgRef = useRef(organizationId);
   orgRef.current = organizationId;
