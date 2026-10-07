@@ -6,10 +6,8 @@ import { Copy, Table2 } from "lucide-react";
 import { shapeOfValue } from "@ai-matrx/records-ui/table-shape";
 import { useOpenSaveToTable } from "@/features/overlays/openers/saveToTable";
 import { KIND_KEY } from "@ai-matrx/content-ir";
-import { outputSchemaKeys } from "@ai-matrx/chat/mandates/output-contract";
 import { useClipboard } from "@ai-matrx/kit/clipboard";
 import { toast } from "@/lib/toast";
-import { isJsonObject } from "@/types/json";
 import { valueCarriesKind } from "@/features/content-ir/surfaces/json-kind-signal";
 import { AnswerValueView } from "@/components/official/structured-value/AnswerValueView";
 import { Button } from "@ai-matrx/design-system/controls";
@@ -19,6 +17,7 @@ import {
   isRenderableStructuredAgentAnswer,
   isSmallObjectArray,
   isStringArray,
+  parseStructuredAgentAnswer,
   readableLabel,
   selectNextStep,
   selectProse,
@@ -26,7 +25,7 @@ import {
   type StructuredValue,
 } from "./structured-answer-text";
 
-export { isRenderableStructuredAgentAnswer };
+export { isRenderableStructuredAgentAnswer, parseStructuredAgentAnswer };
 
 
 export interface StructuredAgentAnswerProps {
@@ -35,28 +34,6 @@ export interface StructuredAgentAnswerProps {
   renderMarkdown: (content: string) => React.ReactElement;
 }
 
-/**
- * The JSON-code floor may only claim a settled object when a conversation's
- * bound agent explicitly declares every key. Registered `__kind` payloads
- * remain owned by the kind route above this fallback.
- */
-export function parseStructuredAgentAnswer(
-  content: string,
-  outputSchema: unknown,
-): StructuredValue | null {
-  const declaredKeys = outputSchemaKeys(outputSchema);
-  if (declaredKeys.size === 0) return null;
-
-  try {
-    const parsed: unknown = JSON.parse(content);
-    if (!isJsonObject(parsed) || KIND_KEY in parsed) return null;
-    return Object.keys(parsed).every((key) => declaredKeys.has(key))
-      ? parsed
-      : null;
-  } catch {
-    return null;
-  }
-}
 
 /**
  * Status tone from the VALUE, read against a vocabulary — not against one

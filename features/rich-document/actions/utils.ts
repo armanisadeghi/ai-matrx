@@ -8,6 +8,8 @@ import { openOverlay } from "@/lib/redux/slices/overlaySlice";
 import { unwrapKindEnvelopes } from "@/lib/markdown/plain-text";
 import { hasKindKey } from "@/features/content-ir/surfaces/json-kind-signal";
 import { kindTextToMarkdown } from "@/features/content-ir/surfaces/kind-text-to-markdown";
+import { selectAgentIdFromInstance } from "@ai-matrx/chat/agents/redux/execution-system/conversations/conversations.selectors";
+import { selectAgentOutputSchema } from "@ai-matrx/chat/agents/redux/agent-definition/selectors";
 import { structuredAnswerTextOf } from "@/components/mardown-display/blocks/json/structured-answer-text";
 import { extractErrorMessage } from "@/utils/errors";
 import { selectConversationTitle } from "@ai-matrx/chat/agents/redux/execution-system/conversations/conversations.selectors";
@@ -247,8 +249,18 @@ export function chatWriteBackBlocked(ctx: RichDocumentActionContext): boolean {
  * `ctx.content`: the envelopes are part of the stored bytes.
  * Guarded by `actions/__tests__/destinationContent.test.ts`.
  */
+/** The output schema of the agent bound to a chat answer's conversation — what its renderer reads. */
+function boundOutputSchema(ctx: RichDocumentActionContext): unknown {
+  if (ctx.source?.type !== "chat-message") return null;
+  const state = ctx.getState?.();
+  if (!state) return null;
+  // Read through the store's own selector, tolerant of a host store without the slice.
+  const agentId = state.conversations?.byConversationId ? selectAgentIdFromInstance(ctx.source.conversationId)(state) : undefined;
+  return agentId ? selectAgentOutputSchema(state, agentId) : null;
+}
+
 export function contentForDestination(ctx: RichDocumentActionContext): string {
   // A structured JSON answer arrives as what its block draws (prose, chips,
   // tables), never its `{"summary": …}` payload.
-  return structuredAnswerTextOf(kindTextToMarkdown(unwrapKindEnvelopes(ctx.content)));
+  return structuredAnswerTextOf(kindTextToMarkdown(unwrapKindEnvelopes(ctx.content)), boundOutputSchema(ctx));
 }

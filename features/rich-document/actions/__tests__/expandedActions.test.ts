@@ -50,6 +50,8 @@ describe("markdown table helpers", () => {
     const t = { headers: ["a", "b"], rows: [['x, "y"', "z\tw"]] };
     expect(tableToDelimited(t, ",")).toBe('a,b\n"x, ""y""",z\tw');
     expect(tableToDelimited(t, "\t")).toBe('a\tb\n"x, ""y"""\t"z\tw"');
+    // Standard TSV quotes only a cell holding a tab, a line break or a quote — a comma alone pastes bare.
+    expect(tableToDelimited({ headers: ["city"], rows: [["Austin, TX"]] }, "\t")).toBe("city\nAustin, TX");
   });
 });
 

@@ -13,6 +13,7 @@ import { isJsonObject } from "@/types/json";
 import { valueCarriesKind } from "@/features/content-ir/surfaces/json-kind-signal";
 import { kindTextLabel } from "@/features/content-ir/surfaces/kind-text-label";
 import { kindOneLine } from "@/features/content-ir/surfaces/kind-one-line";
+import { outputSchemaKeys } from "@ai-matrx/chat/mandates/output-contract";
 
 export type StructuredValue = Record<string, unknown>;
 
@@ -130,18 +131,43 @@ export function structuredAnswerMarkdown(value: StructuredValue): string {
 }
 
 /**
- * A whole answer that is one structured JSON object (no `__kind` — kinds have
- * their own converter) as its readable markdown; anything else unchanged.
+ * THE decision between the structured block and the JSON code block — the
+ * renderer (`app-bindings` → `StructuredAgentAnswerBlock`) and copy both call
+ * it, so the screen and the clipboard cannot disagree. The JSON-code floor may
+ * only claim a settled object when the bound agent's output schema declares
+ * every key; registered `__kind` payloads stay with the kind route.
  */
-export function structuredAnswerTextOf(content: string): string {
+export function parseStructuredAgentAnswer(content: string, outputSchema: unknown): StructuredValue | null {
+  const declaredKeys = outputSchemaKeys(outputSchema);
+  if (declaredKeys.size === 0) return null;
+  try {
+    const parsed: unknown = JSON.parse(content);
+    if (!isJsonObject(parsed) || KIND_KEY in parsed) return null;
+    return Object.keys(parsed).every((key) => declaredKeys.has(key)) ? parsed : null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * A whole answer as it is drawn, for a destination (Copy, Save, Send):
+ *   • the structured block (schema-bound, renderable) → its readable markdown;
+ *   • a bare JSON value the screen draws as a code block → that JSON, fenced
+ *     (plain-text copy strips the fence and gives the raw JSON);
+ *   • anything else (including `__kind`, which has its own converter) → unchanged.
+ */
+export function structuredAnswerTextOf(content: string, outputSchema: unknown = null): string {
   const trimmed = content.trim();
-  if (!trimmed.startsWith("{") || !trimmed.endsWith("}")) return content;
+  const bare = (trimmed.startsWith("{") && trimmed.endsWith("}")) || (trimmed.startsWith("[") && trimmed.endsWith("]"));
+  if (!bare) return content;
   let parsed: unknown;
   try {
     parsed = JSON.parse(trimmed);
   } catch {
     return content;
   }
-  if (!isJsonObject(parsed) || KIND_KEY in parsed || !isRenderableStructuredAgentAnswer(parsed)) return content;
-  return structuredAnswerMarkdown(parsed) || content;
+  if (isJsonObject(parsed) && KIND_KEY in parsed) return content;
+  const structured = parseStructuredAgentAnswer(trimmed, outputSchema);
+  if (structured && isRenderableStructuredAgentAnswer(structured)) return structuredAnswerMarkdown(structured) || content;
+  return "```json\n" + trimmed + "\n```";
 }

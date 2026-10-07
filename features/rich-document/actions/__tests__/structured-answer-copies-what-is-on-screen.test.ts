@@ -10,11 +10,17 @@ jest.mock("@ai-matrx/rich-content/copy/copy-commands", () => ({
   copyContent: jest.fn(async () => true),
 }));
 
+let boundSchema: unknown = null;
+jest.mock("@ai-matrx/chat/agents/redux/agent-definition/selectors", () => ({
+  ...jest.requireActual("@ai-matrx/chat/agents/redux/agent-definition/selectors"),
+  selectAgentOutputSchema: () => boundSchema,
+}));
+
 import "../handlers";
 import { copyRichContent } from "@ai-matrx/rich-content/copy/copy-commands";
 import { getAction, getAllActions } from "@ai-matrx/rich-content/rich-document/actions/provider";
 import { chatContext } from "../../test-utils/chatContext";
-import { structuredAnswerMarkdown } from "@/components/mardown-display/blocks/json/structured-answer-text";
+import { parseStructuredAgentAnswer, structuredAnswerMarkdown } from "@/components/mardown-display/blocks/json/structured-answer-text";
 
 // The persisted answer of that conversation, verbatim shape.
 const ANSWER = {
@@ -26,17 +32,32 @@ const ANSWER = {
 };
 const PAYLOAD = JSON.stringify(ANSWER);
 
+// The bound agent declares the answer's keys — the renderer draws the structured block.
+const SCHEMA = { type: "object", properties: { summary: {}, space_ids: {}, table_ids: {}, root_space_id: {} } };
+const withAgent = () => {
+  const base = chatContext("assistant");
+  const state = (base.getState as () => Record<string, unknown>)();
+  return {
+    ...base,
+    content: PAYLOAD,
+    getState: () => ({ ...state, conversations: { byConversationId: { [(base.source as { conversationId: string }).conversationId]: { agentId: "agent-1" } } } }),
+  };
+};
+
 const copied = () => (copyRichContent as jest.Mock).mock.calls.map(([text]) => String(text));
 
 describe("a structured answer copies its rendered text in every flavour", () => {
-  beforeEach(() => (copyRichContent as jest.Mock).mockClear());
+  beforeEach(() => {
+    (copyRichContent as jest.Mock).mockClear();
+    boundSchema = SCHEMA;
+  });
 
   const COPY_ROWS = ["copy", "copy-markdown", "copy-plain-text"];
 
   it.each(COPY_ROWS)("%s copies the prose and the chips, never the JSON", async (id) => {
     const action = getAction(id);
     expect(action).toBeDefined();
-    await action!.run({ ...chatContext("assistant"), content: PAYLOAD } as never);
+    await action!.run(withAgent() as never);
     const [text] = copied();
     expect(text).toContain("I built a new Houseplant Care Log page");
     expect(text).toContain("**Space IDs**");
@@ -63,6 +84,23 @@ describe("a structured answer copies its rendered text in every flavour", () => 
       .map((a) => a.id)
       .sort();
     expect(rows.filter((id) => !COPY_ROWS.includes(id) && !OTHER_SOURCE[id])).toEqual([]);
+  });
+
+  it.each(COPY_ROWS)("with no schema bound the screen shows a JSON code block, and %s copies that JSON fenced", async (id) => {
+    boundSchema = null;
+    await getAction(id)!.run(withAgent() as never);
+    const [text] = copied();
+    expect(text).toBe("```json\n" + PAYLOAD + "\n```");
+  });
+
+  it("plain text of the fenced JSON is the raw JSON (the real plain-text writer)", () => {
+    const { richCopyPlainText } = jest.requireActual("@ai-matrx/rich-content/copy/copy-commands");
+    expect(richCopyPlainText("```json\n" + PAYLOAD + "\n```", "text").trim()).toBe(PAYLOAD);
+  });
+
+  it("the same decision the renderer makes: schema-bound → block, unbound → code", () => {
+    expect(parseStructuredAgentAnswer(PAYLOAD, SCHEMA)).toEqual(ANSWER);
+    expect(parseStructuredAgentAnswer(PAYLOAD, null)).toBeNull();
   });
 
   it("the projection draws what the block draws: prose, then each list under its label", () => {
