@@ -29,7 +29,7 @@
  * `AbortError`. That's not a failure mode and never surfaces as a toast.
  */
 
-import { downloadFile } from "@/components/agent-copy/export";
+import { downloadFile } from "@ai-matrx/kit/download";
 export interface SaveImageFileArgs {
   /** The image URL to fetch. Signed S3 / CDN / blob: all work. */
   url: string;

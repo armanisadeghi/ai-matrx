@@ -11,7 +11,7 @@ import { Download, ExternalLink, FileArchive, FileText, Image as ImageIcon } fro
 import { Button } from "@/components/ui/button";
 import { formatFileSize } from "@ai-matrx/kit/format";
 import type { BinaryResult } from "../hooks/usePdfDemoApi";
-import { downloadUrl } from "@/components/agent-copy/export";
+import { downloadUrl } from "@ai-matrx/kit/download";
 
 interface Props {
   result: BinaryResult | null;

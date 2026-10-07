@@ -14,6 +14,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { IncompleteReadError, readAllRows } from "@ai-matrx/data/db";
 import { supabase } from "@/utils/supabase/client";
+import { withAdminFeature } from "@/utils/auth/adminFeaturesOnUserPages";
 import type { ControlRule } from "../types";
 import type { OfferingCellRow } from "../controls/resolveControls";
 import type {
@@ -109,14 +110,15 @@ function toNumberOrNull(v: unknown): number | null {
 async function readCells(): Promise<TranslationCellRow[]> {
   const rows = await readAllRowsParallel<TranslationCellRow>(
     ({ from, to }, withCount) =>
-      ai()
-        .from("translation_cell")
-        .select(CELL_COLUMNS, withCount ? { count: "exact" } : undefined)
-        .is("deleted_at", null)
-        .order("id", { ascending: true })
-        .range(from, to) as unknown as PromiseLike<
-        PageResult<TranslationCellRow>
-      >,
+      withAdminFeature(
+        "ai.translation-approvals",
+        ai()
+          .from("translation_cell")
+          .select(CELL_COLUMNS, withCount ? { count: "exact" } : undefined)
+          .is("deleted_at", null)
+          .order("id", { ascending: true })
+          .range(from, to),
+      ) as unknown as PromiseLike<PageResult<TranslationCellRow>>,
     "ai.translation_cell",
   );
   return rows.map((r) => ({
@@ -389,14 +391,17 @@ export type SaveCellArgs = {
 export async function saveTranslationCell(
   args: SaveCellArgs,
 ): Promise<{ cellId: string; state: string }> {
-  const { data, error } = await ai().rpc("save_translation_cell", {
-    p_layer: args.layer,
-    p_layer_owner_id: args.ownerId,
-    p_setting_key: args.settingKey,
-    p_rule: args.rule,
-    p_rationale: args.rationale ?? null,
-    p_approve: true,
-  });
+  const { data, error } = await withAdminFeature(
+    "ai.translation-approvals",
+    ai().rpc("save_translation_cell", {
+      p_layer: args.layer,
+      p_layer_owner_id: args.ownerId,
+      p_setting_key: args.settingKey,
+      p_rule: args.rule,
+      p_rationale: args.rationale ?? null,
+      p_approve: true,
+    }),
+  );
   if (error) throw error;
   const reply = (data ?? {}) as { cell_id?: string; state?: string };
   return {
@@ -407,15 +412,21 @@ export async function saveTranslationCell(
 
 /** Archive door (never a delete): the next layer down takes over. */
 export async function archiveTranslationCell(cellId: string): Promise<void> {
-  const { error } = await ai().rpc("archive_translation_cell", {
-    p_cell_id: cellId,
-  });
+  const { error } = await withAdminFeature(
+    "ai.translation-approvals",
+    ai().rpc("archive_translation_cell", {
+      p_cell_id: cellId,
+    }),
+  );
   if (error) throw error;
 }
 
 /** True only for a signed-in platform admin — the doors' own gate, asked of the database. */
 export async function isPlatformAdmin(): Promise<boolean> {
-  const { data, error } = await supabase.rpc("is_platform_admin");
+  const { data, error } = await withAdminFeature(
+    "ai.translation-approvals",
+    supabase.rpc("is_platform_admin"),
+  );
   if (error) return false;
   return data === true;
 }

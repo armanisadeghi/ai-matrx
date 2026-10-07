@@ -15,7 +15,7 @@ import { useAppDispatch, useAppSelector } from '@/lib/redux/hooks';
 import { setNoteEditorMode } from '../redux/slice';
 import { selectNotesMap } from '../redux/selectors';
 import { canonicalNoteEditorMode } from '../redux/notes.types';
-import { downloadFile } from "@/components/agent-copy/export";
+import { downloadFile } from "@ai-matrx/kit/download";
 
 type EditorMode = 'plain' | 'wysiwyg' | 'markdown' | 'matrx-split' | 'preview';
 

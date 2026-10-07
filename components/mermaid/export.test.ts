@@ -94,6 +94,8 @@ describe("downloadMermaidPng", () => {
     expect(createObjectURL).toHaveBeenCalledTimes(1);
     expect(createObjectURL).toHaveBeenCalledWith(png);
     expect(HTMLAnchorElement.prototype.click).toHaveBeenCalledTimes(1);
+    // The door revokes after a beat (Safari cancels a save revoked in the click's tick).
+    await new Promise((resolve) => setTimeout(resolve, 1_100));
     expect(revokeObjectURL).toHaveBeenCalledWith("blob:export-result");
   });
 });

@@ -20,10 +20,10 @@ jest.mock("@/utils/supabase/sessionVerdict", () => ({
   getSessionVerdict: async () => ({ isAuthenticated: authed }),
 }));
 const downloads: { name: string; body: string }[] = [];
-jest.mock("@/components/agent-copy/export", () => {
-  const actual = jest.requireActual("@/components/agent-copy/export");
-  return { ...actual, downloadFile: (name: string, body: string) => downloads.push({ name, body }) };
-});
+jest.mock("@ai-matrx/kit/download", () => ({
+  downloadFile: (name: string, body: string) => downloads.push({ name, body }),
+  downloadUrl: jest.fn(),
+}));
 
 import TranscriptsRoute from "@/app/(core)/transcripts/page";
 import OldTranscriptsRoute from "@/app/(core)/compare/old/transcripts/page";

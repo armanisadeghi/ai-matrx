@@ -23,12 +23,16 @@ import { toast, recordToast } from "@/lib/toast";
 import { toastDoor } from "@/components/official/entity-ref/toastDoor";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
+import {
+  useAppDispatch,
+  useAppSelector,
+  useAppStore,
+} from "@/lib/redux/hooks";
 import { duplicateAgent } from "@/features/agents/redux/builder-write.thunks";
 import type { AgentLineageRef } from "@ai-matrx/chat/agents/redux/agent-definition/selectors";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { useOpenAgentConvertSystemWindow } from "@/features/overlays/openers/agentConvertSystemWindow";
-import { selectIsSuperAdmin } from "@/lib/redux/slices/userSlice";
+import { selectAdminFeature } from "@/lib/redux/selectors/userSelectors";
 import { SYSTEM_ORGANIZATION_ID } from "@/constants/platform-orgs";
 import { agentHref } from "./mandate-health";
 import { useGuardedRebind } from "./useGuardedRebind";
@@ -37,6 +41,14 @@ import type { MandateCodeTruth, MandateDefinitionRow } from "./service";
 import { TextWithDoors } from "@/components/official/entity-ref/TextWithDoors";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { storedMandateKey } from "@ai-matrx/agents/mandates";
+import { fetchAgentExecutionMinimal } from "@ai-matrx/chat/agents/redux/agent-definition/thunks";
+import { selectAgentExecutionPayload } from "@ai-matrx/chat/agents/redux/agent-definition/selectors";
+import {
+  fetchProvision,
+  parseConsumptionMap,
+  type ConsumptionMap,
+} from "@/features/mandates/provisions";
+import { rebindConsumptionMap } from "@/features/bindings/effective-consumption";
 
 /** A lineage relative, always rendered with a door. */
 export function LineageChip({
@@ -187,7 +199,36 @@ export function CreateSystemTwinButton({
   label?: string;
 }) {
   const dispatch = useAppDispatch();
+  const store = useAppStore();
   const [busy, setBusy] = useState(false);
+  /**
+   * 🚨 THE MAP TRAVELS WITH THE TWIN (2026-10-06). A holder-only rebind left
+   * the twin on whatever the source had — and when that was no map, on the
+   * implicit by-name pass the Binding tab could not show. The rebind now
+   * writes the stored map, or the by-name entries made explicit.
+   */
+  async function twinMap(twinId: string): Promise<ConsumptionMap> {
+    const storedMap = parseConsumptionMap(mandate.default_consumption_map);
+    if (Object.keys(storedMap).length > 0) return storedMap;
+    const provision = mandate.provision_key
+      ? await fetchProvision(mandate.provision_key)
+      : null;
+    await dispatch(fetchAgentExecutionMinimal(twinId)).unwrap();
+    const payload = selectAgentExecutionPayload(store.getState(), twinId);
+    const contextKeys = new Set(
+      (payload.contextPolicies ?? []).map((slot) => slot.key),
+    );
+    return rebindConsumptionMap({
+      storedMap,
+      targetNames: [
+        ...(payload.variableDefinitions ?? []).map((v) => v.name),
+        ...contextKeys,
+      ],
+      contextKeys,
+      offered: provision?.values ?? [],
+      mappingOnly: new Set(provision?.mappingOnly ?? []),
+    });
+  }
   const { requestRebind, dialog, checking, saving } = useGuardedRebind({
     mandate,
     currentAgentId: agentId,
@@ -214,10 +255,15 @@ export function CreateSystemTwinButton({
             twinId = await dispatch(
               duplicateAgent({ agentId, asSystem: true }),
             ).unwrap();
+            const consumptionMap = await twinMap(twinId);
             await requestRebind({
               agentId: twinId,
               agentName: agentName ?? "the new system twin",
               useLatest: true,
+              consumptionMap:
+                Object.keys(consumptionMap).length > 0
+                  ? consumptionMap
+                  : undefined,
               successMessage: `Created a system twin and rebound ${mandate.mandate_key} to it (latest).`,
             });
           } catch (error: unknown) {
@@ -280,7 +326,9 @@ export function PromoteToSystemMandateButton({
   onPromoted?: () => void;
 }) {
   const router = useRouter();
-  const isSuperAdmin = useAppSelector(selectIsSuperAdmin);
+  const isSuperAdmin = useAppSelector((s) =>
+    selectAdminFeature(s, "mandate.system-seat"),
+  );
   const [busy, setBusy] = useState(false);
   const [refusal, setRefusal] = useState<{
     message: string;

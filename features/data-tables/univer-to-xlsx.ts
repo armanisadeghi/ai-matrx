@@ -15,7 +15,7 @@
 import * as XLSX from "xlsx";
 import { CellValueType } from "@univerjs/core";
 import type { ICellData, IWorkbookData, IWorksheetData } from "@univerjs/core";
-import { downloadFile } from "@/components/agent-copy/export";
+import { downloadFile } from "@ai-matrx/kit/download";
 
 export type ExportXlsxOptions = {
   /** File name without extension. Defaults to "workbook". */

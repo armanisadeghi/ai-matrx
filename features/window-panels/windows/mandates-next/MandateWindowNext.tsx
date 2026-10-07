@@ -28,6 +28,8 @@ import { Button } from "@/components/ui/button";
 import { WindowPanel } from "@/features/window-panels/WindowPanel";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectIsSuperAdmin } from "@/lib/redux/slices/userSlice";
+import { selectAdminFeature } from "@/lib/redux/selectors/userSelectors";
+import { isSystemHomedMandate } from "@/features/mandates/admin/useMandateSystemSeat";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { useUserOrganizations } from "@/features/organizations/hooks";
 import {
@@ -100,6 +102,9 @@ function MandateWindowNextInner({
   initialTab,
 }: MandateWindowNextProps) {
   const isSuperAdmin = useAppSelector(selectIsSuperAdmin);
+  const holdsSystemSeat = useAppSelector((s) =>
+    selectAdminFeature(s, "mandate.system-seat"),
+  );
   const userId = useAppSelector(selectUserId);
   const { organizations } = useUserOrganizations();
   const [rows, setRows] = useState<MandateDefinitionRow[] | null>(null);
@@ -322,11 +327,15 @@ function MandateWindowNextInner({
             name={selectedName}
             status={statusOf(selected)}
             canManage={seatCanManageMandate(selected, {
-              level: isSuperAdmin ? "system" : "person",
+              level:
+                holdsSystemSeat && isSystemHomedMandate(selected)
+                  ? "system"
+                  : "person",
               userId,
               orgId: null,
               canManageOrg: false,
             })}
+            systemSeat={holdsSystemSeat && isSystemHomedMandate(selected)}
             onSetHolder={() => setTab("holder")}
             size="sm"
           />
@@ -377,7 +386,10 @@ function MandateWindowNextInner({
       <div className="flex h-full min-w-0 flex-1 flex-col bg-background">
         <div className="shrink-0 border-b border-border px-2 py-1">
           <RecordTabStrip
-            tabs={withTabCount(visibleRecordTabs(isSuperAdmin), "candidates", candidateCount)}
+            tabs={withTabCount(visibleRecordTabs(
+                isSuperAdmin ||
+                  (holdsSystemSeat && isSystemHomedMandate(selected)),
+              ), "candidates", candidateCount)}
             value={tab}
             onChange={setTab}
           />

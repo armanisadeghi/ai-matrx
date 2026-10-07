@@ -17,7 +17,7 @@ import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { Button, ControlRow, SearchField, SegmentedControl, Select } from "@ai-matrx/design-system/controls";
 import { useAppSelector } from "@/lib/redux/hooks";
-import { selectIsSuperAdmin } from "@/lib/redux/slices/userSlice";
+import { selectAdminFeature } from "@/lib/redux/selectors/userSelectors";
 import { EntityDoorControls } from "@/components/official/entity-ref/EntityDoorControls";
 
 import { useSkills } from "../hooks/useSkills";
@@ -54,7 +54,9 @@ export function SkillsBrowser({
   onIngest,
   skillHref,
 }: SkillsBrowserProps) {
-  const isAdmin = useAppSelector(selectIsSuperAdmin);
+  const isAdmin = useAppSelector((s) =>
+    selectAdminFeature(s, "skills.system-catalogue"),
+  );
   const { skills, loading, error } = useSkills();
   const { categories } = useSkillCategories();
 

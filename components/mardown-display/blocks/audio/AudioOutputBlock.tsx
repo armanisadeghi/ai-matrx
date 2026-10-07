@@ -21,7 +21,7 @@ import {
 } from "lucide-react";
 import { Slider } from "@/components/ui/slider";
 import { formatDurationSeconds } from "@ai-matrx/kit/format";
-import { downloadFile } from "@/components/agent-copy/export";
+import { downloadFile } from "@ai-matrx/kit/download";
 
 export interface AudioOutputBlockProps {
   /** URL to the audio file */

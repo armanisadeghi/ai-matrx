@@ -20,7 +20,7 @@
 import { useEffect, useState } from "react";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { selectAgentById } from "@ai-matrx/chat/agents/redux/agent-definition/selectors";
-import { selectIsSuperAdmin } from "@/lib/redux/selectors/userSelectors";
+import { selectAdminFeature } from "@/lib/redux/selectors/userSelectors";
 import {
   fetchLinkedCounterpart,
   syncLinkedAgents,
@@ -314,7 +314,13 @@ export function AgentSyncBody({
   onRebindToSystem,
 }: AgentSyncBodyProps) {
   const agent = useAppSelector((state) => selectAgentById(state, agentId));
-  const isSuperAdmin = useAppSelector(selectIsSuperAdmin);
+  // Registered admin features on a user page (utils/auth/adminFeaturesOnUserPages.ts).
+  const canMaintainSystemAgents = useAppSelector((state) =>
+    selectAdminFeature(state, "agent.system-sync"),
+  );
+  const canMakeSystemAgent = useAppSelector((state) =>
+    selectAdminFeature(state, "agent.make-system"),
+  );
   const dispatch = useAppDispatch();
 
   const [counterpartState, setCounterpartState] = useState<{
@@ -592,11 +598,13 @@ export function AgentSyncBody({
         : null;
   const lastSyncedAt = derivedRef?.sourceSnapshotAt ?? null;
 
-  // Mirrors the DB gate in agx_sync_linked_agents_reviewed: a system agent takes
-  // writes from super admins only; any other agent from its owner or a super admin.
+  // Mirrors the DB gate in agx_sync_linked_agents_reviewed. A system agent takes
+  // writes from a super admin on ANY page — the registered admin feature
+  // "agent.system-sync". Any other agent takes writes from its owner only: on a
+  // user page an admin is an ordinary person and cannot overwrite someone
+  // else's agent (common-docs/systems/platform/access/STATE.md, admin lane).
   const canWriteInto = (ref: LinkedAgentRef | null): boolean =>
-    !!ref &&
-    (ref.agentType === "builtin" ? isSuperAdmin : ref.isOwnedByMe || isSuperAdmin);
+    !!ref && (ref.agentType === "builtin" ? canMaintainSystemAgents : ref.isOwnedByMe);
   const canPull = canWriteInto(copySide);
   const canPush = canWriteInto(baseSide);
   const hasSystemRelative = relatives.some(
@@ -606,7 +614,7 @@ export function AgentSyncBody({
     (r) => r.ref.agentType === "user" && r.ref.isOwnedByMe,
   );
   const canOfferConvert =
-    selfType === "user" && isSuperAdmin && !hasSystemRelative;
+    selfType === "user" && canMakeSystemAgent && !hasSystemRelative;
   const canOfferPersonalCopy = selfType === "builtin" && !hasMyUserRelative;
 
   const refreshLinkedDefinitions = async () => {

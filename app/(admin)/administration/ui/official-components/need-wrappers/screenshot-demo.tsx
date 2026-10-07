@@ -9,7 +9,7 @@ import { useScreenshot } from '@/hooks/useScreenshot';
 import { Loader2, Download } from 'lucide-react';
 import type { ProcessedScreenshotData } from '@/types/screenshot';
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
-import { downloadUrl } from "@/components/agent-copy/export";
+import { downloadUrl } from "@ai-matrx/kit/download";
 
 export default function ScreenshotDemo() {
     const [preview, setPreview] = useState<ProcessedScreenshotData | null>(null);

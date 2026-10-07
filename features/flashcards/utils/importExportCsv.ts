@@ -13,7 +13,7 @@
 // optional secondary delimiter between CARDS (default: newline).
 
 import type { FcSetRow, NewCardInput, CardWithDetails } from "../data/types";
-import { downloadFile } from "@/components/agent-copy/export";
+import { downloadFile } from "@ai-matrx/kit/download";
 
 export type FieldDelimiter = "tab" | "comma" | "semicolon";
 export type RowDelimiter = "newline";

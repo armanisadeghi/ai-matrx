@@ -10,6 +10,7 @@
 import { readAllRows } from "@ai-matrx/data/db";
 import { createClient } from "@/utils/supabase/client";
 import { invalidateEffectiveKnob } from "@/lib/scoped-config/effectiveKnobs";
+import { withAdminFeature } from "@/utils/auth/adminFeaturesOnUserPages";
 import { isJsonObject } from "@/types/json";
 import type { Database } from "@/types/database.types";
 import {
@@ -105,11 +106,14 @@ export async function setFeatureKnob(
   const supabase = createClient();
   // A null value is a RESET to the agent-set default, not a delete — that is
   // what makes an admin's experiment reversible without a migration.
-  const { data, error } = await supabase.schema("platform").rpc("feature_knob_set", {
-    p_feature: feature,
-    p_key: key,
-    p_value: value ?? null,
-  });
+  const { data, error } = await withAdminFeature(
+    "knob.system-default",
+    supabase.schema("platform").rpc("feature_knob_set", {
+      p_feature: feature,
+      p_key: key,
+      p_value: value ?? null,
+    }),
+  );
   if (error) throw error;
   const result = parseFeatureKnobSetResult(data, feature, key);
   if (result.ok) invalidateEffectiveKnob(`${feature}.${key}`);

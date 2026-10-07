@@ -26,7 +26,7 @@ import { liveSelectionShapeText } from "@/components/selection-toolbar/selection
 import { openOverlay } from "@/lib/redux/slices/overlaySlice";
 import { parseFirstMarkdownTable, tableToDelimited } from "../markdownTable";
 import type { RichDocumentActionContext } from "../../types";
-import { downloadFile } from "@/components/agent-copy/export";
+import { downloadFile } from "@ai-matrx/kit/download";
 
 async function copyText(text: string, done: string): Promise<void> {
   await copyToClipboard(text, {

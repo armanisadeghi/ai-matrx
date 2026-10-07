@@ -5,7 +5,7 @@ import { toast } from "@/lib/toast";
 import React, { useState, useCallback, useMemo } from 'react';
 import { X, Copy, Check, Download, ExternalLink } from 'lucide-react';
 import { markdownToHtml } from '@ai-matrx/print/markdown';
-import { downloadFile } from "@/components/agent-copy/export";
+import { downloadFile } from "@ai-matrx/kit/download";
 
 interface QuickHtmlShareModalProps {
     isOpen: boolean;

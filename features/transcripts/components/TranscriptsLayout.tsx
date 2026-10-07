@@ -15,7 +15,7 @@ import { Loader2, Menu } from "lucide-react";
 import { MatrxDynamicPanelHost } from "@/components/matrx/resizable/MatrxDynamicPanelHost";
 import { Button } from "@ai-matrx/design-system";
 import { cn } from "@/lib/utils";
-import { downloadFile } from "@/components/agent-copy/export";
+import { downloadFile } from "@ai-matrx/kit/download";
 
 interface TranscriptsLayoutProps {
   className?: string;

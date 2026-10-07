@@ -15,7 +15,7 @@ import {
   parseHttpError,
   sendMatrxRequest,
 } from "@ai-matrx/agents/matrx";
-import { downloadFile } from "@/components/agent-copy/export";
+import { downloadFile } from "@ai-matrx/kit/download";
 
 export const MAX_VAULT_ATTACHMENT_BYTES = 25 * 1024 * 1024;
 

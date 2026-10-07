@@ -32,7 +32,7 @@ import { useShare } from "@/features/sharing/hooks/useShare";
 import type { PcDisplayMode } from "@/features/podcasts/types";
 import { episodeHref } from "../constants";
 import { SegmentedControl } from "@ai-matrx/design-system/controls";
-import { downloadUrl } from "@/components/agent-copy/export";
+import { downloadUrl } from "@ai-matrx/kit/download";
 
 interface ResultActionsProps {
   episodeId: string;

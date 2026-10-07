@@ -46,7 +46,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Skeleton } from "@ai-matrx/design-system";
 import { useAppSelector } from "@/lib/redux/hooks";
-import { selectIsSuperAdmin } from "@/lib/redux/slices/userSlice";
+import { selectAdminFeature } from "@/lib/redux/selectors/userSelectors";
 import {
   selectAuthReady,
   selectUserId,
@@ -93,7 +93,9 @@ export default function SandboxDetailPage() {
   const params = useParams();
   const router = useRouter();
   const id = params.id as string;
-  const isAdmin = useAppSelector(selectIsSuperAdmin);
+  const isAdmin = useAppSelector((s) =>
+    selectAdminFeature(s, "sandbox.admin-panels"),
+  );
   const authReady = useAppSelector(selectAuthReady);
   const userId = useAppSelector(selectUserId);
   const organizationId = useAppSelector(selectOrganizationId);

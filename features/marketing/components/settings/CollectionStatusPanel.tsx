@@ -37,7 +37,7 @@ import type { MatrxColumnDef } from "@ai-matrx/design-system/data-table/types";
 import { toast } from "@/lib/toast";
 import { cn } from "@/lib/utils";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import { selectIsSuperAdmin } from "@/lib/redux/selectors/userSelectors";
+import { selectAdminFeature } from "@/lib/redux/selectors/userSelectors";
 import { describeBackendFailure } from "@/lib/api/errors";
 import {
   BackendFailureDetails,
@@ -67,7 +67,9 @@ export function CollectionStatusPanel({
 }) {
   const dispatch = useAppDispatch();
   const queryClient = useQueryClient();
-  const isSuperAdmin = useAppSelector(selectIsSuperAdmin);
+  const isSuperAdmin = useAppSelector((s) =>
+    selectAdminFeature(s, "google.internal-review"),
+  );
   const [running, setRunning] = useState<string | null>(null);
 
   const status = useCollectionStatus(site, brandId);

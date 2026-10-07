@@ -31,9 +31,14 @@ Contract: `common-docs/projects/applets/CONTRACTS.md` (§2 hooks, §8 record). H
    const posts = useRows("posts", { sort: [{ column: "publish_date", direction: "asc" }], pageSize: 500 });
    const answer = await posts.update(row._id, { status: "Scheduled", approved: true }); // shows at once
    if (!answer.ok) show(answer.error.message);   // refused → rolled back; the store's own sentence
-   const job = useJob("polish"); job.run({ draft: row.caption }); // job.text streams, job.result is the kind
-   <Kind kind={job.result.__kind} value={job.result} />
+   const job = useJob("polish");
+   <Button onClick={() => job.run({ draft: row.caption })}>Polish caption</Button>
+   <JobOutput job={job} label="Polishing caption" />   // the run streams here, final kind included
    ```
+   **A job's run renders ONLY through `<JobOutput job>`** — never `job.text` in a paragraph, never a
+   "Polishing…" label or spinner, never `<Kind>` on `job.result`: the host streams it through the
+   platform's one live-run pipeline (text, partial kinds, tool steps, loading, errors). No room inline
+   → `<JobOutput job={job} mode="window" />` (floating run window) or `job.open()` on a button.
    Rows are keyed by column key; a link column answers ids or `{ token, id, label }` refs — read both.
    Pages: `<Pages layout="tabs" />` in the entry file, `usePage().params`, `<Link to="/clients/123">`.
 3. **Insert the record** in the person's organization (explicit `organization_id`, a slug that is free

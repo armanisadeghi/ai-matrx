@@ -50,6 +50,29 @@ function blocksIn(box: DOMRect): string[] {
   return out;
 }
 
+/**
+ * A plain click in the margin beside a line puts the caret on that line (Notion): its end when the click
+ * is right of the text, its start when left. The innermost block whose row holds `y` and that takes text.
+ * Without this the click focused nothing and the next keys — a "/" command — went nowhere.
+ */
+export function lineBeside(x: number, y: number): { id: string; side: "start" | "end" } | null {
+  let best: { id: string; side: "start" | "end"; depth: number; dist: number } | null = null;
+  for (const outer of document.querySelectorAll<HTMLElement>(".spaces-editor .bn-block-outer[data-id]")) {
+    const own = outer.querySelector<HTMLElement>(":scope > .bn-block > .bn-block-content");
+    if (!own || !own.querySelector(".bn-inline-content")) continue;
+    const r = own.getBoundingClientRect();
+    if (y < r.top || y > r.bottom) continue;
+    let depth = 0;
+    for (let at = outer.parentElement?.closest(".bn-block-outer"); at; at = at.parentElement?.closest(".bn-block-outer")) depth++;
+    const dist = x < r.left ? r.left - x : x > r.right ? x - r.right : 0;
+    // The line nearest the click horizontally (columns sit side by side), then the innermost.
+    if (!best || dist < best.dist || (dist === best.dist && depth > best.depth)) {
+      best = { id: outer.dataset.id!, side: x < r.left ? "start" : "end", depth, dist };
+    }
+  }
+  return best ? { id: best.id, side: best.side } : null;
+}
+
 export function useRubberBand(editor: SpacesEditor, editable: boolean) {
   useEffect(() => {
     if (!editable) return;
@@ -89,7 +112,7 @@ export function useRubberBand(editor: SpacesEditor, editable: boolean) {
       paint(selected);
     };
 
-    const onUp = () => {
+    const onUp = (e: MouseEvent) => {
       if (band) {
         band.remove();
         band = null;
@@ -101,6 +124,17 @@ export function useRubberBand(editor: SpacesEditor, editable: boolean) {
             editor.setSelection(selected[0], selected[selected.length - 1]);
           } catch {
             // A block with no text at an end (a database, a divider): the blue selection still acts on Delete.
+          }
+        }
+      }
+      } else if (start && e.button === 0) {
+        const line = lineBeside(start.x, start.y);
+        if (line) {
+          try {
+            editor.setTextCursorPosition(line.id, line.side);
+            editor.focus();
+          } catch {
+            // The line went away between press and release: the click stays a plain click.
           }
         }
       }

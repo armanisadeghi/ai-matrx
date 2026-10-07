@@ -42,7 +42,7 @@ import { openContextMenuForElement } from "@/features/context-menu-v3/utils/open
 import { validateFilesystemEntryName } from "./fileTreePaths";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { copyToClipboard } from "@/lib/clipboard/copy";
-import { downloadFile } from "@/components/agent-copy/export";
+import { downloadFile } from "@ai-matrx/kit/download";
 
 interface FileTreeNodeProps {
   node: FilesystemNode;

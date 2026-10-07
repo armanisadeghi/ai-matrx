@@ -44,7 +44,7 @@ import {
 } from "./utils/render-image-variant";
 import { saveImageFile } from "./utils/save-image-file";
 import type { UnifiedImageBlock } from "./types";
-import { downloadFile } from "@/components/agent-copy/export";
+import { downloadFile } from "@ai-matrx/kit/download";
 
 export interface ImageActionsApi {
   // ── Local actions (no network) ─────────────────────────────────────

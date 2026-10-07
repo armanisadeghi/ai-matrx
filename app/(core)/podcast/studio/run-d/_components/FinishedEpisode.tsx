@@ -30,7 +30,7 @@ import { cn } from "@/lib/utils";
 import { isReadyMediaSlot, type PodcastRunState } from "@/features/podcasts/generator/types";
 import { episodeHref } from "@/features/podcasts/generator/constants";
 import { formatDurationSeconds } from "@ai-matrx/kit/format";
-import { downloadUrl } from "@/components/agent-copy/export";
+import { downloadUrl } from "@ai-matrx/kit/download";
 
 export function FinishedEpisode({ state }: { state: PodcastRunState }) {
   const cover = state.images.find((i) => i.status === "done" && i.url)?.url;

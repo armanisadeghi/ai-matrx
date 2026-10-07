@@ -20,7 +20,7 @@ import { MeetReview } from "@/features/google-workspace/meet/MeetReview";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAppSelector } from "@/lib/redux/hooks";
 import {
-  selectIsSuperAdmin,
+  selectAdminFeature,
   selectUserEmail,
 } from "@/lib/redux/selectors/userSelectors";
 import { canUseGoogleOAuthInternalTest } from "@/features/marketing/google/internal-test-reviewer";
@@ -39,7 +39,9 @@ export function GoogleAgendaWindow({
   id = "google-agenda-window",
   initialView = "calendar",
 }: GoogleAgendaWindowProps) {
-  const isSuperAdmin = useAppSelector(selectIsSuperAdmin);
+  const isSuperAdmin = useAppSelector((s) =>
+    selectAdminFeature(s, "google.internal-review"),
+  );
   const email = useAppSelector(selectUserEmail);
   const canReviewSelectedCalendar = canUseGoogleOAuthInternalTest(
     isSuperAdmin,

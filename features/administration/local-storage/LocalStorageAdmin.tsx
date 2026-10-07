@@ -48,7 +48,7 @@ import {
 } from "lucide-react";
 import { EnhancedJsonViewer } from "@/components/ui/JsonComponents";
 import { EnhancedEditableJsonViewer } from "@/components/ui/JsonComponents/JsonEditor";
-import { downloadFile } from "@/components/agent-copy/export";
+import { downloadFile } from "@ai-matrx/kit/download";
 
 // -------------------------------------------------------------------------
 // Inlined from the deleted `hooks/common/useLocalStorageManager.ts`.

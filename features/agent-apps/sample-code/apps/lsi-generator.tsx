@@ -26,7 +26,7 @@ import {
 } from "lucide-react";
 import type { AgentAppComponentProps } from "../../types";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
-import { downloadFile } from "@/components/agent-copy/export";
+import { downloadFile } from "@ai-matrx/kit/download";
 
 export default function LSIMarkdownGenerator({
   onExecute,

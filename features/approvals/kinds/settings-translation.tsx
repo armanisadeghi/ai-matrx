@@ -23,11 +23,11 @@
 
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import AppLink from "@/components/navigation/AppLink";
-import { useAppDispatch } from "@/lib/redux/hooks";
+import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
+import { selectAdminFeature } from "@/lib/redux/selectors/userSelectors";
 import { reloadAiCatalog } from "@/features/ai-models/catalogReload";
 import {
   archiveTranslationCell,
-  isPlatformAdmin,
   readTranslationBundle,
   saveTranslationCell,
 } from "@/features/ai-models/translation/data";
@@ -94,15 +94,13 @@ function toItem(bundle: TranslationBundle, cell: TranslationCellRow): Translatio
 }
 
 function useSource(): ApprovalSource {
-  const admin = useQuery({
-    queryKey: ["ai-models", "translation-grid", "is-platform-admin"],
-    queryFn: isPlatformAdmin,
-    staleTime: 5 * 60_000,
-  });
+  const isAdmin = useAppSelector((s) =>
+    selectAdminFeature(s, "ai.translation-approvals"),
+  );
   const read = useQuery({
     queryKey: GRID_QUERY_KEY,
     queryFn: readTranslationBundle,
-    enabled: admin.data === true,
+    enabled: isAdmin,
     staleTime: 30_000,
   });
   const bundle = read.data?.status === "ready" ? read.data.bundle : null;
@@ -110,7 +108,7 @@ function useSource(): ApprovalSource {
   return {
     items,
     total: items.length,
-    loading: admin.isLoading || (admin.data === true && read.isLoading),
+    loading: isAdmin && read.isLoading,
     error: read.error,
     refetch: () => void read.refetch(),
     moreHref: GRID_HREF,

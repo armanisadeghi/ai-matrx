@@ -18,7 +18,7 @@ import { useAppDispatch } from "@/lib/redux/hooks";
 import { signingAct, SigningRefusal, type SigningDoor } from "./signingService";
 
 import { Spinner } from "@/components/ui/loaders/Spinner";
-import { downloadFile } from "@/components/agent-copy/export";
+import { downloadFile } from "@ai-matrx/kit/download";
 interface CopyFile {
   name: string;
   base64: string;

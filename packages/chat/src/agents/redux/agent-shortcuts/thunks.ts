@@ -623,6 +623,18 @@ export const saveShortcutField = createAsyncThunk<
 );
 
 /**
+ * Admin feature "agent.global-shortcut" (registry: utils/auth/adminFeaturesOnUserPages.ts).
+ * Opens the admin lane for the ONE request that creates or promotes a global
+ * shortcut. The package cannot import the host registry, so the marker is set
+ * here; the database still checks the caller is an admin.
+ */
+function withGlobalShortcutAdminLane<
+  B extends { setHeader(name: string, value: string): B },
+>(request: B): B {
+  return request.setHeader("x-matrx-admin-lane", "1");
+}
+
+/**
  * Creates a new shortcut with full control over all fields.
  * userId is pulled from Redux if not provided in the shortcut data.
  * Returns the new shortcut id.
@@ -646,10 +658,18 @@ export const createShortcut = createAsyncThunk<
     updatedAt: "",
   };
 
-  const { data, error } = await shortcutTable(supabase)
+  const isGlobalWrite =
+    shortcutData.userId === null &&
+    shortcutData.organizationId == null &&
+    shortcutData.projectId == null &&
+    shortcutData.taskId == null;
+  const insertRequest = shortcutTable(supabase)
     .insert(agentShortcutToInsert(draft))
     .select()
     .single();
+  const { data, error } = await (isGlobalWrite
+    ? withGlobalShortcutAdminLane(insertRequest)
+    : insertRequest);
 
   if (error) throw pgErrorToError(error);
 
@@ -771,12 +791,12 @@ export const promoteShortcutToGlobal = createAsyncThunk<
 >(
   "agentShortcut/promoteToGlobal",
   async ({ shortcutId, targetCategoryId, label }, { dispatch }) => {
-    const { data, error } = await supabase.rpc(SHORTCUT_RPCS.promoteToGlobal,
-      {
+    const { data, error } = await withGlobalShortcutAdminLane(
+      supabase.rpc(SHORTCUT_RPCS.promoteToGlobal, {
         p_shortcut_id: shortcutId,
         p_target_category_id: targetCategoryId,
         p_label: label && label.trim().length > 0 ? label.trim() : undefined,
-      },
+      }),
     );
 
     if (error) throw pgErrorToError(error);

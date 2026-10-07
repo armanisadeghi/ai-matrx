@@ -39,7 +39,7 @@ import { qualifyingDefaultSurfaces } from "@ai-matrx/chat/surfaces/services/surf
 import type { SurfaceValue } from "@ai-matrx/chat/surfaces/types";
 import { cn } from "@/lib/utils";
 import { useAppSelector } from "@/lib/redux/hooks";
-import { selectIsAdmin } from "@/lib/redux/selectors/userSelectors";
+import { selectAdminFeature } from "@/lib/redux/selectors/userSelectors";
 import { useLiveSurfaceScope } from "@ai-matrx/chat/surfaces/runtime/useLiveSurfaceScope";
 import type { LiveSurfaceScopeStatus } from "@ai-matrx/chat/surfaces/runtime/useLiveSurfaceScope";
 import {
@@ -935,7 +935,9 @@ export default function SurfaceContextInspectorWindow({
   isEditable,
   preferRuntime = false,
 }: SurfaceContextInspectorWindowProps) {
-  const isAdmin = useAppSelector(selectIsAdmin);
+  const isAdmin = useAppSelector((s) =>
+    selectAdminFeature(s, "surface.platform-agent-role"),
+  );
   const live = useLiveSurfaceScope({
     enabled: isOpen,
     surfaceName,

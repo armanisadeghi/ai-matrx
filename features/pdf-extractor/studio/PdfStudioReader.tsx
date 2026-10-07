@@ -79,7 +79,7 @@ import { selectViewedJobForFile } from "@/features/page-extraction/redux/selecto
 import { isAllJobsView } from "@/features/page-extraction/redux/pageExtractionSlice";
 import { useExtractionResults } from "@/features/page-extraction/hooks/useExtractionResults";
 import { useExtractionResultsForFile } from "@/features/page-extraction/hooks/useExtractionResultsForFile";
-import { downloadFile } from "@/components/agent-copy/export";
+import { downloadFile } from "@ai-matrx/kit/download";
 
 // Shared renderer used by PdfCldFileViewer below.
 // react-pdf + pdfjs-dist is ~400KB; defer until the viewer mounts.

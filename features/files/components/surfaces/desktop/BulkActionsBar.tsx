@@ -65,7 +65,7 @@ import { openFolderPicker } from "@/features/files/components/pickers/CloudFiles
 import { ingestFile } from "@/features/rag/api/ingest";
 import { clearFileDocumentCache } from "@/features/files/api/document-lookup";
 import type { Visibility } from "@/features/files/types";
-import { downloadUrl } from "@/components/agent-copy/export";
+import { downloadUrl } from "@ai-matrx/kit/download";
 
 const MAX_PARALLEL = 4;
 /**

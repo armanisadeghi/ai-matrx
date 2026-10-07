@@ -30,6 +30,10 @@
 // not forward custom headers to Postgres. Admin surfaces that need other
 // people's rows over those channels read them through an admin API instead.
 
+// ONE exception (Arman, 2026-10-06): a REGISTERED admin feature built into a
+// user page opens the lane for its own request only — utils/auth/adminFeaturesOnUserPages.ts.
+// Cross-repo system-of-record: /Users/armanisadeghi/code/common-docs/policies/our-own-admin-database-access.md — read it before touching this feature in ANY repo.
+
 export const ADMIN_LANE_HEADER = "x-matrx-admin-lane";
 
 /**

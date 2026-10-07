@@ -44,7 +44,7 @@ import { NoteWorkingCopyAlert } from "../NoteWorkingCopyAlert";
 import { authoredBy } from "@/components/rich-content/prose/remote-image-policy";
 import { cn } from "@/lib/utils";
 import { insertAtRichCaret } from "@/components/rich-editor/caretInsert";
-import { downloadFile } from "@/components/agent-copy/export";
+import { downloadFile } from "@ai-matrx/kit/download";
 
 /**
  * The phone's modes: Plain (its default) and Write (the one editor). "preview"

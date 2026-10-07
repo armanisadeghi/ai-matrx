@@ -6,7 +6,7 @@
 
 import type { MathProblemProps } from "../types";
 import { copyText } from "@ai-matrx/kit/clipboard";
-import { downloadFile } from "@/components/agent-copy/export";
+import { downloadFile } from "@ai-matrx/kit/download";
 
 /**
  * Download math problem as JSON file

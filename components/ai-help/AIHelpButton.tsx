@@ -10,7 +10,7 @@ import {AIHelpDialog} from './AIHelpDialog';
 
 import {AIHelpResponse} from '@/types/audioHelp';
 import { ImageQuality } from '@/types/screenshot';
-import { downloadFile, downloadUrl } from "@/components/agent-copy/export";
+import { downloadFile, downloadUrl } from "@ai-matrx/kit/download";
 
 interface AIHelpButtonProps {
     helpDocs?: Record<string, string>;

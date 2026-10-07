@@ -23,6 +23,7 @@
 // reads, verbatim.
 
 import { createClient } from "@/utils/supabase/client";
+import { withAdminFeature } from "@/utils/auth/adminFeaturesOnUserPages";
 import { MandateDoorError } from "@/features/mandates/door-error";
 import { invalidateMandateCache } from "@ai-matrx/chat/mandates/service";
 import { mandateDefinitions } from "@/lib/supabase/mandateStorage";
@@ -64,12 +65,13 @@ export async function promoteMandateToSystem(
   mandateId: string,
 ): Promise<PromotedMandate> {
   const supabase = createClient();
-  const { data: newId, error } = await supabase
-    .schema("mandate")
-    .rpc("duplicate_mandate", {
+  const { data: newId, error } = await withAdminFeature(
+    "mandate.system-seat",
+    supabase.schema("mandate").rpc("duplicate_mandate", {
       p_mandate_id: mandateId,
       p_as_system: true,
-    });
+    }),
+  );
 
   if (error) {
     throw new MandatePromotionError({

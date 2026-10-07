@@ -47,7 +47,7 @@ import {
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 import { Cost } from "@/components/cost/Cost";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
-import { downloadFile } from "@/components/agent-copy/export";
+import { downloadFile } from "@ai-matrx/kit/download";
 
 export default function DocumentViewer() {
   const { topicId, topic, progress, refresh } = useTopicContext();

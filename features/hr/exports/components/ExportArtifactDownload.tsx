@@ -40,7 +40,7 @@ import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { downloadBlob } from "@/lib/python-client";
 import { toast } from "@/lib/toast";
 import type { ExportEnvelope } from "../types";
-import { downloadFile } from "@/components/agent-copy/export";
+import { downloadFile } from "@ai-matrx/kit/download";
 
 export function ExportArtifactDownload({
   envelope,

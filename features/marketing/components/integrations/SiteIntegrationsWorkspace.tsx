@@ -142,7 +142,7 @@ import {
 } from "@/features/marketing/lib/provider-names";
 import { selectResolvedBaseUrl } from "@/lib/redux/slices/apiConfigSlice";
 import {
-  selectIsSuperAdmin,
+  selectAdminFeature,
   selectUserId,
 } from "@/lib/redux/selectors/userSelectors";
 import { isJsonObject } from "@/types/json";
@@ -291,7 +291,9 @@ function SiteIntegrationsEditor({
   const queryClient = useQueryClient();
   const dispatch = useAppDispatch();
   const apiBaseUrl = useAppSelector(selectResolvedBaseUrl);
-  const isSuperAdmin = useAppSelector(selectIsSuperAdmin);
+  const isSuperAdmin = useAppSelector((s) =>
+    selectAdminFeature(s, "google.internal-review"),
+  );
   const googleInventory = useGoogleConnectionInventory();
   const userId = useAppSelector(selectUserId);
   const [propertiesRefreshing, setPropertiesRefreshing] = useState(false);

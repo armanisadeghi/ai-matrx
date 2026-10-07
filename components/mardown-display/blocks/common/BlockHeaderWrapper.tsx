@@ -20,7 +20,7 @@ import AdvancedMenu, { MenuItem } from "@/components/official/AdvancedMenu";
 import { useIsMobile } from "@ai-matrx/kit/media-query";
 import type { CanvasContentType } from "@/features/canvas/canvasContent";
 import { Button } from "@ai-matrx/design-system/controls";
-import { downloadFile } from "@/components/agent-copy/export";
+import { downloadFile } from "@ai-matrx/kit/download";
 
 export interface BlockHeaderWrapperProps {
   // Header left side

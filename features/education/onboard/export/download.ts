@@ -25,4 +25,4 @@ export function safeFileBase(name: string, fallback = "export"): string {
   );
 }
 
-import { downloadFile } from "@/components/agent-copy/export";
+import { downloadFile } from "@ai-matrx/kit/download";

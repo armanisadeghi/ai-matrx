@@ -9,7 +9,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Eye, Pencil, Plus, PlayCircle, Power, Trash2 } from "lucide-react";
 import { useAppSelector } from "@/lib/redux/hooks";
-import { selectIsAdmin } from "@/lib/redux/selectors/userSelectors";
+import { selectAdminFeature } from "@/lib/redux/selectors/userSelectors";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@ai-matrx/design-system";
@@ -184,7 +184,9 @@ function ScheduleDetailBody({ taskId, seat = "owner" }: Props) {
   } = useTaskRuns(taskId, 20, requiredRunIds);
   const [running, setRunning] = useState(false);
   const [flipping, setFlipping] = useState(false);
-  const isAdmin = useAppSelector(selectIsAdmin);
+  const isAdmin = useAppSelector((s) =>
+    selectAdminFeature(s, "scheduler.system-jobs"),
+  );
   // The shell header believes the schedule: its writes go in the schedule's own organization,
   // so a red "Choose org" over it would be a lie (GATES-TAIL, VERIFIER-21 #7).
   const { organizations: myOrganizations } = useUserOrganizations();

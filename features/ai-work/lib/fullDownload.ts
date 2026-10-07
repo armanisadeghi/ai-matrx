@@ -23,7 +23,7 @@ import type { AppDispatch } from "@/lib/redux/store";
 import type { components } from "@ai-matrx/agents/generated/api-types";
 import { downloadFile } from "@/features/files/api/files";
 import { callMatrxLocal } from "./matrxLocalRuntime";
-import { downloadFile as saveFile } from "@/components/agent-copy/export";
+import { downloadFile as saveFile } from "@ai-matrx/kit/download";
 
 export type RawTranscriptSource = components["schemas"]["RawTranscriptSource"];
 

@@ -34,7 +34,16 @@
  * peer update that landed while the socket was down is gone, and Yjs cannot
  * know it is missing them — the doc simply stays quietly divergent. The correct
  * re-read for a CRDT is to ask the peers for state again, which is exactly what
- * a new joiner already does, so `onBackfill` re-sends `y-request-state`.
+ * a new joiner already does, so `onBackfill` re-sends `y-request-state` — and
+ * EVERY state answer addressed to us is merged, not only the first (Yjs applies
+ * are idempotent; "first answer wins" made the catch-up a no-op). The gap runs
+ * both ways, so the catch-up also re-sends this member's whole state: its own
+ * offline edits reach the peers.
+ *
+ * TEARDOWN. `disconnect()` sends the pending awareness (the "leave") before it
+ * closes, so a caller tears down synchronously — a deferred disconnect left an
+ * unmounted screen's provider applying the room's frames to its doc. A destroyed
+ * doc disconnects its provider, and nothing is ever applied to one.
  *
  * Echo suppression is the package default now (it was `broadcast: {self:false}`,
  * the same intent). The vestigial `presence: {key}` in the old channel config is
@@ -174,6 +183,8 @@ export class SupabaseYjsProvider {
   private awarenessFlushQueue = new Set<number>();
 
   // Stable bound listeners so we can detach on disconnect.
+  private readonly onDocDestroy = (): void => this.disconnect();
+
   private readonly onDocUpdate = (update: Uint8Array, origin: unknown): void => {
     if (this._disposed || !this.channel) return;
     if (origin === REMOTE_DOC_ORIGIN) return; // don't echo
@@ -279,14 +290,18 @@ export class SupabaseYjsProvider {
       // cannot know it is missing them — the doc just stays quietly divergent.
       // Asking the peers for state again is the correct re-read, and it is the
       // same thing a new joiner does.
+      // The gap runs both ways: also push our whole state so the peers merge the
+      // edits we made while disconnected (idempotent when there were none).
       onBackfill: () => {
-        if (this._disposed || !this.channel) return;
+        if (this.inert() || !this.channel) return;
         const resync: RequestStateFrame = { clientId: this.clientId };
         this.channel.send("y-request-state", resync);
+        this.broadcastChunked("y-update", Y.encodeStateAsUpdateV2(this.doc));
       },
     });
 
     this.doc.on("updateV2", this.onDocUpdate);
+    this.doc.on("destroy", this.onDocDestroy);
     this.awareness.on("update", this.onAwarenessUpdate);
 
     const subscribed = await subscribedPromise;
@@ -318,21 +333,29 @@ export class SupabaseYjsProvider {
 
   disconnect(): void {
     if (this._disposed) return;
+
+    // Deliver what the throttle still holds — typically the caller's "leave"
+    // (`removeAwarenessStates` just before this). Dropping it forced callers to
+    // defer disconnect(), and a deferred provider kept applying the room's frames
+    // to a doc whose editor was already gone.
+    if (this.awarenessFlushTimer) {
+      clearTimeout(this.awarenessFlushTimer);
+      this.awarenessFlushTimer = null;
+    }
+    if (!this.doc.isDestroyed) this.flushAwareness();
+    this.awarenessFlushQueue.clear();
+
     this._disposed = true;
     this.connected = false;
 
     this.doc.off("updateV2", this.onDocUpdate);
+    this.doc.off("destroy", this.onDocDestroy);
     this.awareness.off("update", this.onAwarenessUpdate);
 
     if (this.aloneTimer) {
       clearTimeout(this.aloneTimer);
       this.aloneTimer = null;
     }
-    if (this.awarenessFlushTimer) {
-      clearTimeout(this.awarenessFlushTimer);
-      this.awarenessFlushTimer = null;
-    }
-    this.awarenessFlushQueue.clear();
 
     for (const batch of this.pendingDocBatches.values()) clearTimeout(batch.timer);
     for (const batch of this.pendingStateBatches.values()) clearTimeout(batch.timer);
@@ -385,8 +408,13 @@ export class SupabaseYjsProvider {
     }
   }
 
+  /** Torn down, or the doc under us is gone: nothing may be applied or answered. */
+  private inert(): boolean {
+    return this._disposed || this.doc.isDestroyed;
+  }
+
   private handleDocFrame(frame: ChunkFrame): void {
-    if (this._disposed) return;
+    if (this.inert()) return;
     const assembled = this.assemble(this.pendingDocBatches, frame);
     if (!assembled) return;
     const update = fromBase64(assembled);
@@ -396,27 +424,30 @@ export class SupabaseYjsProvider {
   }
 
   private handleAwarenessFrame(frame: AwarenessFrame): void {
-    if (this._disposed) return;
+    if (this.inert()) return;
     const update = fromBase64(frame.u);
     applyAwarenessUpdate(this.awareness, update, REMOTE_AWARENESS_ORIGIN);
   }
 
   private handleStateRequest(req: RequestStateFrame): void {
-    if (this._disposed || !this.channel) return;
+    if (this.inert() || !this.channel) return;
     if (req.clientId === this.clientId) return; // ignore our own (shouldn't fire with self:false)
     const sv = Y.encodeStateAsUpdateV2(this.doc);
     this.broadcastChunked("y-state", sv, { forClientId: req.clientId });
   }
 
   private handleStateResponse(frame: StateFrame): void {
-    if (this._disposed) return;
+    if (this.inert()) return;
     if (frame.forClientId !== this.clientId) return;
-    if (this.hasInitialState) return; // first answer wins; ignore later ones
+    // EVERY answer is merged — the first resolves ready(), later ones (other
+    // peers, the reconnect catch-up's re-request) carry what we missed. Yjs
+    // applies are idempotent, so a redundant answer changes nothing.
     const assembled = this.assemble(this.pendingStateBatches, frame);
     if (!assembled) return;
     const update = fromBase64(assembled);
     // V2 decoder — state snapshots are encoded with encodeStateAsUpdateV2.
     Y.applyUpdateV2(this.doc, update, REMOTE_DOC_ORIGIN);
+    if (this.hasInitialState) return;
     this.hasInitialState = true;
     if (this.aloneTimer) {
       clearTimeout(this.aloneTimer);
@@ -458,7 +489,7 @@ export class SupabaseYjsProvider {
   }
 
   private flushAwareness(): void {
-    if (this._disposed || !this.channel || this.awarenessFlushQueue.size === 0) return;
+    if (this.inert() || !this.channel || this.awarenessFlushQueue.size === 0) return;
     const clients = Array.from(this.awarenessFlushQueue);
     this.awarenessFlushQueue.clear();
     const update = encodeAwarenessUpdate(this.awareness, clients);

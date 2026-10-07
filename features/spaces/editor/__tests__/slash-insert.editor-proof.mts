@@ -1,5 +1,6 @@
 // features/spaces/editor/__tests__/slash-insert.editor-proof.mts — a "/" item lands where the "/" was typed.
 //   bash features/spaces/editor/__tests__/run-editor-proof.sh slash-insert
+// Round 21: "/2 columns" inside a column nests a row there (Notion), and the stored page stays valid.
 // The picker items (Link to page, Linked view, Page) insert after an await; by then the cursor has
 // moved (the room re-rendered, the picker took focus). The block is named at the click and inserted by id.
 
@@ -59,24 +60,30 @@ async function main() {
     results.columnsKeepTodo = o[1] === "checkListItem:Draft announcement" && o[3] === "columnList" && o.length === 4;
     results.columnsOrder = o;
   }
-  // 4. Round 18: "/2 columns" typed inside a column never nests — the new list lands below the outer one.
+  // 4. Round 21: "/2 columns" typed in an empty line inside a column makes a column row right there
+  //    (Notion nests columns in a column); the stored page is valid (fromEngine + validateSnapshot).
   {
     const two = (p: string) => ({ type: "columnList", children: [{ type: "column", props: { width: 0.5 }, children: [{ id: `${p}1`, type: "paragraph", content: p === "x" ? "Left column text" : "" }, ...(p === "x" ? [{ id: "x9", type: "paragraph", content: "" }] : [])] }, { type: "column", props: { width: 0.5 }, children: [{ type: "paragraph", content: "Right" }] }] });
     const e = make();
     e.insertBlocks([{ id: "L", ...two("x") } as never], "a", "after");
     e.setTextCursorPosition("x9", "start");
     insertAtSlash(e, slashTarget(e), two("y") as never);
-    type B = { id: string; type: string; children?: B[] };
-    const inColumn = (bs: B[], under: boolean): boolean => bs.some((b) => (under && b.type === "columnList") || inColumn(b.children ?? [], under || b.type === "column"));
-    const nested = inColumn(e.document as unknown as B[], false);
-    const lists = e.document.filter((b) => b.type === "columnList").map((b) => b.id);
-    const leftKids = (e.getBlock("L")?.children?.[0]?.children ?? []).map((b) => b.id);
-    results.columnsNeverNest = !nested && lists.length === 2 && lists[0] === "L" && e.document[e.document.findIndex((b) => b.id === "L") + 1]?.type === "columnList";
-    results.slashLineGone = JSON.stringify(leftKids) === JSON.stringify(["x1"]);
+    const leftKids = (e.getBlock("L")?.children?.[0]?.children ?? []).map((b) => b.type);
+    results.columnsNestInPlace = JSON.stringify(leftKids) === JSON.stringify(["paragraph", "columnList"]) && e.document.filter((b) => b.type === "columnList").length === 1;
+    const { fromEngine } = await import("../convert");
+    const { validateSnapshot } = await import("@/lib/spaces-blocks/schema");
+    const { DEFAULT_PAGE_SETTINGS } = await import("@/lib/spaces-blocks/types");
+    const stored = fromEngine(e.document as never);
+    const problems = validateSnapshot({ v: 1, icon: null, cover: null, settings: DEFAULT_PAGE_SETTINGS, blocks: stored });
+    results.nestedStoresValid = problems.length === 0;
+    results.nestedProblems = problems;
+    // Repeating it nests again in the new row's first column — never a list stacked below the outer one.
+    insertAtSlash(e, slashTarget(e), two("z") as never);
+    results.repeatNoStack = e.document.filter((b) => b.type === "columnList").length === 1;
     results.nestOrder = order(e);
   }
   console.log(JSON.stringify(results, null, 1));
-  const ok = results.asyncLandsAtSlash && results.asyncCaretBelow && results.afterTextKept && results.columnsKeepTodo && results.columnsNeverNest && results.slashLineGone;
+  const ok = results.asyncLandsAtSlash && results.asyncCaretBelow && results.afterTextKept && results.columnsKeepTodo && results.columnsNestInPlace && results.nestedStoresValid && results.repeatNoStack;
   process.exit(ok ? 0 : 1);
 }
 

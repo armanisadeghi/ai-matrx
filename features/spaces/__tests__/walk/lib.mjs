@@ -1,0 +1,122 @@
+// Spaces walk helpers — drive the real /spaces UI on the local dev server with Playwright.
+// No secrets: sign-in goes through `pnpm dev-login` (single-use nonce file), never a password.
+//
+//   import { open, newPage, assertOwnPage, resumeIfPaused, shot } from "./lib.mjs";
+//   const { browser, page } = await open({ next: "/spaces" });
+//
+// assertOwnPage() refuses every click / type while the page is one of the two read-only
+// Traveling SMM OS samples (admin's and test@test.com's). Call act() for every input.
+import { execFileSync } from "node:child_process";
+import { chromium } from "playwright";
+
+export const REPO = new URL("../../../../", import.meta.url).pathname;
+export const SAMPLE_PAGES = [
+  "ba289103-9ef2-433a-ae94-0cd9a963ae29", // admin's sample — read only
+  "383c8ed6-f9aa-4a2a-9ee5-d25514e6003e", // test@test.com's copy — read only
+];
+
+/** Mint a dev-login URL (single use) for `next`; `member` signs in as test@test.com. */
+export function loginUrl(next = "/spaces", member = false) {
+  const out = execFileSync("bash", ["scripts/dev-login.sh", ...(member ? ["--member"] : []), next], {
+    cwd: REPO,
+    encoding: "utf8",
+  });
+  const m = out.match(/OPEN\s*:\s*(\S+)/);
+  if (!m) throw new Error(`dev-login printed no URL:\n${out}`);
+  return m[1];
+}
+
+export async function login(page, next = "/spaces", member = false) {
+  await page.goto(loginUrl(next, member), { waitUntil: "domcontentloaded", timeout: 120_000 });
+  await page.waitForURL((u) => !u.pathname.startsWith("/api/dev-login"), { timeout: 120_000, waitUntil: "commit" });
+}
+
+/** A refused session (bounced to /login or 401) signs in again and returns to `next`. */
+export async function ensureSignedIn(page, next, member = false) {
+  const p = new URL(page.url()).pathname;
+  if (p.startsWith("/login") || p.startsWith("/sign-in")) await login(page, next, member);
+}
+
+/** Click Resume when the tab shows a paused state. */
+export async function resumeIfPaused(page) {
+  const btn = page.getByRole("button", { name: /^Resume$/ });
+  if (await btn.isVisible().catch(() => false)) await btn.click();
+}
+
+export function assertOwnPage(page) {
+  const url = page.url();
+  for (const id of SAMPLE_PAGES) {
+    if (url.includes(id)) throw new Error(`refused: ${id} is a read-only sample page`);
+  }
+}
+
+/** Every input goes through act(): guard, then run. */
+export async function act(page, fn) {
+  assertOwnPage(page);
+  return fn();
+}
+
+export async function open({ next = "/spaces", member = false, width = 2000, height = 1408, headless = true } = {}) {
+  const browser = await chromium.launch({ headless });
+  const context = await browser.newContext({ viewport: { width, height } });
+  const page = await context.newPage();
+  page.on("pageerror", (e) => console.log("[pageerror]", e.message.slice(0, 300)));
+  await login(page, next, member);
+  await resumeIfPaused(page);
+  return { browser, context, page };
+}
+
+/** Open a fresh blank page through the sidebar's "New page" and return its id. */
+export async function newPage(page) {
+  await page.goto(`${originOf(page)}/spaces`, { waitUntil: "domcontentloaded" });
+  await ensureSignedIn(page, "/spaces");
+  // /spaces lands on the last page opened (often a sample) once the tree has loaded: wait for that first.
+  await page.locator(".bn-editor").first().waitFor({ timeout: 120_000 }).catch(() => {});
+  await page.waitForTimeout(1500);
+  const before = page.url().match(/[0-9a-f-]{36}/)?.[0] ?? null;
+  const isNew = (u) => {
+    const id = u.href.match(/\/spaces\/([0-9a-f-]{36})/)?.[1];
+    return !!id && id !== before && !SAMPLE_PAGES.includes(id);
+  };
+  for (let attempt = 0; attempt < 3; attempt++) {
+    await page.getByRole("button", { name: /^New page$/ }).first().click();
+    await chooseOrgIfAsked(page);
+    const ok = await page.waitForURL(isNew, { timeout: 30_000, waitUntil: "commit" }).then(() => true, () => false);
+    if (ok) break;
+    if (attempt === 2) throw new Error("New page never opened a new page");
+  }
+  const id = page.url().match(/\/spaces\/([0-9a-f-]{36})/)[1];
+  // A late /spaces landing redirect can still move the tab; settle on the new page by address.
+  await page.waitForTimeout(2000);
+  if (!page.url().includes(id)) await page.goto(`${originOf(page)}/spaces/${id}`, { waitUntil: "domcontentloaded" });
+  await page.locator(".bn-editor").first().waitFor({ timeout: 60_000 });
+  assertOwnPage(page);
+  return id;
+}
+
+/** The organization picker the store raises when no organization is set: pick `name`, Continue. */
+export async function chooseOrgIfAsked(page, name = process.env.SPACES_WALK_ORG ?? "Harbor & Pine Social") {
+  const dialog = page.getByRole("dialog").filter({ hasText: "Continue" });
+  if (!(await dialog.isVisible({ timeout: 4000 }).catch(() => false))) return;
+  await dialog.getByText(name, { exact: true }).first().click();
+  await dialog.getByRole("button", { name: /^Continue$/ }).click();
+}
+
+export function originOf(page) {
+  return new URL(page.url()).origin;
+}
+
+export async function shot(page, path) {
+  await page.screenshot({ path, fullPage: false });
+  return path;
+}
+
+/** Type a slash command at the caret and pick the first matching item by its title. */
+export async function slash(page, query, itemName = query) {
+  assertOwnPage(page);
+  await page.keyboard.type("/");
+  await page.keyboard.type(query, { delay: 30 });
+  const item = page.locator(".bn-suggestion-menu-item, [role=option]").filter({ hasText: new RegExp(`^\\s*${itemName}`, "i") }).first();
+  await item.waitFor({ timeout: 10_000 });
+  await item.click();
+}

@@ -13,7 +13,7 @@ import type {
   AgentShortcutRecord,
 } from "@ai-matrx/chat/agents/redux/agent-shortcuts/types";
 import { useAppSelector } from "@/lib/redux/hooks";
-import { selectIsSuperAdmin } from "@/lib/redux/slices/userSlice";
+import { selectAdminFeature } from "@/lib/redux/selectors/userSelectors";
 import { pushAppHref } from "@/lib/deployment/navigate";
 
 const SCOPE = "user" as const;
@@ -22,7 +22,7 @@ const NEW_SHORTCUT_HREF = "/agents/shortcuts/new";
 export default function UserShortcutsPage() {
   const router = useRouter();
   const [, startTransition] = useTransition();
-  const isAdmin = useAppSelector(selectIsSuperAdmin);
+  const isAdmin = useAppSelector((s) => selectAdminFeature(s, "agent.global-shortcut"));
 
   const { categories } = useAgentShortcuts({ scope: SCOPE });
 

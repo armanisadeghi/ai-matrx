@@ -11,7 +11,7 @@ import * as XLSX from "xlsx";
 import { kindValueToMarkdown } from "@/features/canvas/export/exportArtifactMarkdown";
 import { kindTextToMarkdown } from "@/features/content-ir/surfaces/kind-text-to-markdown";
 import { valueCarriesKind } from "@/features/content-ir/surfaces/json-kind-signal";
-import { downloadFile } from "@/components/agent-copy/export";
+import { downloadFile } from "@ai-matrx/kit/download";
 
 export interface ExportColumn {
   key: string;

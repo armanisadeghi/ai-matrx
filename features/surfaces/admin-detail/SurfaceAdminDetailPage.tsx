@@ -54,7 +54,7 @@ import { toast } from "@/lib/toast";
 import { createClient } from "@/utils/supabase/client";
 import { cn } from "@/lib/utils";
 import { useAppSelector } from "@/lib/redux/hooks";
-import { selectIsSuperAdmin } from "@/lib/redux/slices/userSlice";
+import { selectAdminFeature } from "@/lib/redux/selectors/userSelectors";
 
 import {
   deleteSurface,
@@ -159,7 +159,9 @@ export function SurfaceAdminDetailPage({
 }: Props) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
-  const isSuperAdmin = useAppSelector(selectIsSuperAdmin);
+  const isSuperAdmin = useAppSelector((s) =>
+    selectAdminFeature(s, "surface.platform-agent-role"),
+  );
 
   const [surface, setSurface] = useState<UiSurfaceRow>(initialSurface);
   const [busy, setBusy] = useState(false);
@@ -1955,7 +1957,7 @@ function RolesSection({
   const clearPlatformOverride = async (roleName: string, prefId: string) => {
     setBusyRole(roleName);
     try {
-      await deleteRolePref(prefId);
+      await deleteRolePref(prefId, { platformTier: true });
       toast.success(`Platform override cleared for ${roleName}`);
       onChanged();
     } catch (e) {

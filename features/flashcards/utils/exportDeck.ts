@@ -20,7 +20,7 @@ import {
   EXPORT_MIME,
   type DeckExportFormat,
 } from "@/features/education/onboard/export/deckFormats";
-import { downloadFile } from "@/components/agent-copy/export";
+import { downloadFile } from "@ai-matrx/kit/download";
 
 export type { DeckExportFormat };
 

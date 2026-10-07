@@ -15,7 +15,8 @@ export { Alert, AlertTitle, AlertDescription } from "./alert";
 export { AspectRatio } from "./aspect-ratio";
 export { Avatar, AvatarImage, AvatarFallback } from "./avatar";
 export { Badge, badgeVariants } from "./badge";
-export { Button, buttonVariants } from "./button";
+export { Button } from "./button";
+export { buttonVariants } from "@ai-matrx/design-system";
 export {
   Card,
   CardHeader,

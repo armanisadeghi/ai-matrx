@@ -22,7 +22,7 @@ import {
 } from "@/features/marketing/google/hooks";
 import type { GoogleAdsCustomer } from "@/features/marketing/google/types";
 import { useAppSelector } from "@/lib/redux/hooks";
-import { selectIsSuperAdmin } from "@/lib/redux/selectors/userSelectors";
+import { selectAdminFeature } from "@/lib/redux/selectors/userSelectors";
 import { GOOGLE_ADS_REPORTING_SCOPES, GOOGLE_SCOPE } from "@/lib/googleScopes";
 import { toast } from "@/lib/toast";
 import { useGoogleAPI } from "@/providers/google-provider/GoogleApiProvider";
@@ -83,7 +83,9 @@ function campaignStatusLabel(status: string | null | undefined): string {
 }
 
 export function GoogleAdsWorkspace() {
-  const isSuperAdmin = useAppSelector(selectIsSuperAdmin);
+  const isSuperAdmin = useAppSelector((s) =>
+    selectAdminFeature(s, "google.internal-review"),
+  );
   const google = useGoogleAPI();
   // 🚨 ONE Google authorization window per PERSON — never a per-component
   // lock, never the raw provider primitive (V-23 NEW-3, lane F-103).

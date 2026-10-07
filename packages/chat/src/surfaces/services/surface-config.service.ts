@@ -684,6 +684,18 @@ function matchScope<T extends { eq: (c: string, v: string) => T; is: (c: string,
   return q.is("user_id", null).is("scope_id", null).eq("organization_id", tierOrganization);
 }
 
+/**
+ * Admin feature "surface.platform-agent-role" (registry: utils/auth/adminFeaturesOnUserPages.ts).
+ * Opens the admin lane for the one request that sets or clears a PLATFORM-tier
+ * agent-role override. The package cannot import the host registry, so the
+ * marker is set here; the database still checks the caller is an admin.
+ */
+function withPlatformRoleAdminLane<
+  B extends { setHeader(name: string, value: string): B },
+>(request: B, on: boolean): B {
+  return on ? request.setHeader("x-matrx-admin-lane", "1") : request;
+}
+
 /** Set the agent filling (surface, role, position) at a scope tier. */
 export async function setRoleSelection(args: {
   surfaceName: string;
@@ -710,48 +722,64 @@ export async function setRoleSelection(args: {
     .eq("kind", "selection")
     .eq("position", position);
   q = matchScope(q, scope, await tierOrganizationFor(scope));
+  const platformLane = scope.global === true;
   // The slot's partial unique index does not include deleted_at, so a choice
   // moved to Trash still holds (surface, role, position) at this tier: the
   // lookup finds it either way and the update revives it.
-  const { data: existing, error: findErr } = await q.maybeSingle();
+  const { data: existing, error: findErr } = await withPlatformRoleAdminLane(
+    q,
+    platformLane,
+  ).maybeSingle();
   if (findErr) throw findErr;
 
   if (existing) {
     await writeOne(
-      client
-        .schema("ui").from("ui_surface_agent_pref")
-        .update({
-          agent_id: agentId,
-          deleted_at: null,
-          ...(settings ? { settings } : {}),
-        })
-        .eq("id", existing.id)
-        .select("id"),
+      withPlatformRoleAdminLane(
+        client
+          .schema("ui").from("ui_surface_agent_pref")
+          .update({
+            agent_id: agentId,
+            deleted_at: null,
+            ...(settings ? { settings } : {}),
+          })
+          .eq("id", existing.id)
+          .select("id"),
+        platformLane,
+      ),
       { action: "save", noun: "agent choice" },
     );
     return;
   }
-  const { error } = await client.schema("ui").from("ui_surface_agent_pref").insert({
-    surface_name: surfaceName,
-    role_name: roleName,
-    agent_id: agentId,
-    kind: "selection",
-    position,
-    settings: settings ?? {},
-    ...(await scopeInsertColumns(scope)),
-  });
+  const { error } = await withPlatformRoleAdminLane(
+    client.schema("ui").from("ui_surface_agent_pref").insert({
+      surface_name: surfaceName,
+      role_name: roleName,
+      agent_id: agentId,
+      kind: "selection",
+      position,
+      settings: settings ?? {},
+      ...(await scopeInsertColumns(scope)),
+    }),
+    platformLane,
+  );
   if (error) throw error;
 }
 
 /** Move one agent choice / roster item to Trash (restorable; re-selecting revives it). */
-export async function deleteRolePref(prefId: string): Promise<void> {
+export async function deleteRolePref(
+  prefId: string,
+  opts: { platformTier?: boolean } = {},
+): Promise<void> {
   await writeOne(
-    sb()
-      .schema("ui").from("ui_surface_agent_pref")
-      .update({ deleted_at: new Date().toISOString() })
-      .eq("id", prefId)
-      .is("deleted_at", null)
-      .select("id"),
+    withPlatformRoleAdminLane(
+      sb()
+        .schema("ui").from("ui_surface_agent_pref")
+        .update({ deleted_at: new Date().toISOString() })
+        .eq("id", prefId)
+        .is("deleted_at", null)
+        .select("id"),
+      opts.platformTier === true,
+    ),
     { action: "remove", noun: "agent choice" },
   );
 }
