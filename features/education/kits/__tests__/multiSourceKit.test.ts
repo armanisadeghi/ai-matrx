@@ -28,7 +28,7 @@ jest.mock("@/features/scopes/service/storeScopeReads", () => ({
   readTypeScopesPage: (...args: unknown[]) => mockReadTypeScopesPage(...args),
 }));
 jest.mock("@/features/organizations/organizationsIAmIn", () => ({
-  organizationsIAmIn: async () => new Set(["org-1"]),
+  organizationsIAmIn: async () => new Set(["org-1", "org-2"]),
 }));
 jest.mock("@/features/scopes/service/scopeStore", () => ({ scopeStore: {} }));
 jest.mock("@/features/sources/api/sourcesApi", () => ({ keepSource: jest.fn() }));
@@ -114,7 +114,9 @@ describe("multi-source study kits", () => {
 
   it("lists a kit that has Sources and no aids yet", async () => {
     mockListForSources.mockResolvedValue({ ok: true, data: { edges: [] } });
-    mockReadScopeTypes.mockResolvedValue({ ok: true, data: { types: [{ id: "t-1", slug: "study-kit" }, { id: "t-2", slug: "class" }], counts: null } });
+    mockReadScopeTypes.mockResolvedValueOnce({ ok: true, data: { types: [{ id: "t-1", slug: "study-kit" }, { id: "t-2", slug: "class" }], counts: null } });
+    // An organization the person is listed in but may not read is skipped, not fatal.
+    mockReadScopeTypes.mockResolvedValueOnce({ ok: false, error: { code: "forbidden_org", message: "not a member" } });
     mockReadTypeScopesPage.mockResolvedValue({ ok: true, data: { scopes: [{ id: KIT, name: "Cell biology", organization_id: "org-1" }], total: 1, nextOffset: null } });
     mockListForEntity.mockResolvedValue({
       ok: true,

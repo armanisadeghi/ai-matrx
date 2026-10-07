@@ -122,9 +122,14 @@ export async function createKitScope(orgId: string, name: string): Promise<KitSc
 export async function listKitScopes(): Promise<KitScopeRow[]> {
   const orgs = await organizationsIAmIn();
   if (!orgs || orgs.size === 0) return [];
-  const types = await readScopeTypes([...orgs], false);
-  if (!types.ok) throw new Error("Could not read your study kits. Try again.");
-  const kitTypes = types.data.types.filter((t) => t.slug === KIT_SCOPE_TYPE_SLUG);
+  // One organization at a time: a refusal ("you are not a member there") is that
+  // organization's kits not being hers to read, not a failure of the rest.
+  const perOrg = await Promise.all([...orgs].map((orgId) => readScopeTypes([orgId], false)));
+  const kitTypes = perOrg.flatMap((types) => {
+    if (types.ok) return types.data.types.filter((t) => t.slug === KIT_SCOPE_TYPE_SLUG);
+    if (types.error.code === "forbidden_org") return [];
+    throw new Error("Could not read your study kits. Try again.");
+  });
   const rows: KitScopeRow[] = [];
   for (const type of kitTypes) {
     for (let offset: number | null = 0; offset !== null; ) {
