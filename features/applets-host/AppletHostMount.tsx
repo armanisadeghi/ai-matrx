@@ -14,6 +14,7 @@
 import { useEffect, useRef, useState, type ComponentType } from "react";
 import { usePathname, useSearchParams } from "next/navigation";
 import { createPlatformHost, type PlatformHost } from "@ai-matrx/applets/platform";
+import { holdWrites, type HeldWrite } from "@ai-matrx/applets/preview";
 import { mountAppletAsync } from "@ai-matrx/applets/frame";
 import { createIntelligencePort } from "@ai-matrx/agents/intelligence";
 import { liveValues } from "@ai-matrx/alchemy/surface";
@@ -43,8 +44,7 @@ const HOST_SCOPE = {
 
 type NavLocation = { path: string[]; params: Record<string, string> };
 
-function locationOf(slug: string, pathname: string, search: string): NavLocation {
-  const root = `/apps/${slug}`;
+function locationOf(root: string, pathname: string, search: string): NavLocation {
   const rest = pathname.startsWith(root) ? pathname.slice(root.length) : "";
   const params: Record<string, string> = {};
   new URLSearchParams(search).forEach((v, k) => {
@@ -88,12 +88,39 @@ function pushAppletUrl(url: string) {
 
 type Mounted = { Component: ComponentType } | { error: string };
 
-export function AppletHostMount({ appletId, slug }: { appletId: string; slug: string }) {
+/**
+ * PREVIEW MODE (BUILD-LOOP §4): the builder mounts the Applet with live reads and HELD writes
+ * (`holdWrites` — nothing reaches the store until the person accepts), page changes stay inside the
+ * preview (no URL change), and every compile or runtime error is handed to the builder for "Fix it".
+ */
+export interface AppletPreviewOptions {
+  onHeld?: (writes: HeldWrite[]) => void;
+  onError?: (error: { where: string; message: string }) => void;
+}
+
+export function AppletHostMount({
+  appletId,
+  slug,
+  basePath = `/apps/${slug}`,
+  preview,
+}: {
+  appletId: string;
+  slug: string;
+  /** Where the Applet's pages live in the URL (default `/apps/<slug>`). */
+  basePath?: string;
+  preview?: AppletPreviewOptions;
+}) {
   const pathname = usePathname();
   const search = useSearchParams().toString();
   const store = useAppStore();
   const [mounted, setMounted] = useState<Mounted | null>(null);
   const navListeners = useRef(new Set<(location: NavLocation) => void>());
+  // The builder's callbacks change every render; the host reads the newest through this ref.
+  const previewRef = useRef(preview);
+  useEffect(() => {
+    previewRef.current = preview;
+  });
+  const isPreview = preview != null;
 
   // One host per Applet, kept for the page's life: switching organization must not remount the Applet
   // (a running job would die with it). Jobs read the organization at the moment they start (below).
@@ -101,6 +128,7 @@ export function AppletHostMount({ appletId, slug }: { appletId: string; slug: st
     let cancelled = false;
     const listeners = navListeners.current;
     const transportOptions = { source: "applets" };
+    let previewLocation: NavLocation = { path: [], params: {} };
     const host: PlatformHost = createPlatformHost({
       appletId,
       supabase,
@@ -118,10 +146,16 @@ export function AppletHostMount({ appletId, slug }: { appletId: string; slug: st
       nav: {
         async go(to) {
           const tail = to === "/" || to === "" ? "" : to.startsWith("/") ? to : `/${to}`;
-          pushAppletUrl(`/apps/${slug}${tail}`);
+          if (isPreview) {
+            previewLocation = locationOf(basePath, `${basePath}${tail.split("?")[0] ?? ""}`, tail.split("?")[1] ?? "");
+            for (const listener of listeners) listener(previewLocation);
+            return;
+          }
+          pushAppletUrl(`${basePath}${tail}`);
         },
         async current() {
-          return locationOf(slug, window.location.pathname, window.location.search);
+          if (isPreview) return previewLocation;
+          return locationOf(basePath, window.location.pathname, window.location.search);
         },
         subscribe(listener) {
           listeners.add(listener);
@@ -131,14 +165,19 @@ export function AppletHostMount({ appletId, slug }: { appletId: string; slug: st
       // The page's live values (ALC-18): the Applet's surface answers an unset value from them.
       surfaces: { live: liveValues },
       reportError(err) {
-        captureError({ source: "applet", code: err.code, message: err.message, callSite: err.where, raw: { appletId, slug, diagnostic: err.diagnostic } });
+        previewRef.current?.onError?.({ where: err.where, message: err.message });
+        captureError({ source: "applet", code: err.code, message: err.message, callSite: err.where, raw: { appletId, basePath, diagnostic: err.diagnostic } });
       },
     });
     provideStoredComponentScopeModules();
+    // Preview: the same host with its data port wrapped — reads stay live, writes are held in memory.
+    const held = isPreview ? holdWrites(host.data) : null;
+    const stopHeld = held ? held.onHeld((writes) => previewRef.current?.onHeld?.(writes)) : null;
+    const channel: PlatformHost = held ? { ...host, data: held } : host;
     void host
       .record()
       .then((record) =>
-        mountAppletAsync(record, host, HOST_SCOPE, {
+        mountAppletAsync(record, channel, HOST_SCOPE, {
           // The app's kind registry, or — for a kind the Applet's organization owns — the Applet's own read.
           renderKind: (kind: string, value: unknown) => <AppletKind host={host} kind={kind} value={value} />,
           renderRun,
@@ -158,6 +197,7 @@ export function AppletHostMount({ appletId, slug }: { appletId: string; slug: st
       .then(
         (result) => {
           if (cancelled) return;
+          if (!result.ok) previewRef.current?.onError?.({ where: "compile", message: result.error.message });
           setMounted(result.ok ? { Component: result.Component } : { error: result.error.message });
         },
         (err: unknown) => {
@@ -168,15 +208,17 @@ export function AppletHostMount({ appletId, slug }: { appletId: string; slug: st
       );
     return () => {
       cancelled = true;
+      stopHeld?.();
       host.dispose();
     };
-  }, [appletId, slug, store]);
+  }, [appletId, basePath, store, isPreview]);
 
   // Route changes the browser makes (back, forward, a link) reach the Applet's pages.
   useEffect(() => {
-    const location = locationOf(slug, pathname, search);
+    if (isPreview) return;
+    const location = locationOf(basePath, pathname, search);
     for (const listener of navListeners.current) listener(location);
-  }, [slug, pathname, search]);
+  }, [basePath, pathname, search, isPreview]);
 
   if (!mounted) {
     return (
