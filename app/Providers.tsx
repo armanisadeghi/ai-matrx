@@ -22,8 +22,8 @@
 // chunk first loads.
 
 import React from "react";
-// The formatted-text engine's host (@ai-matrx/rich-content): configured once, before any render.
-import "@/providers/richContentHost";
+// The formatted-text engine's host (@ai-matrx/rich-content): a client wrapper configures it before any child renders.
+import { RichContentHostProvider } from "@/providers/RichContentHostProvider";
 // disaster
 import StoreProvider from "@/providers/StoreProvider";
 import { CanvasHostProvider } from "@/features/canvas/host/CanvasHostProvider";
@@ -185,6 +185,7 @@ interface ProvidersProps {
 
 export function Providers({ children, initialReduxState }: ProvidersProps) {
   return (
+    <RichContentHostProvider>
     <ReactQueryProvider>
       <StoreProvider initialState={initialReduxState}>
         <CanvasHostProvider>
@@ -329,5 +330,6 @@ export function Providers({ children, initialReduxState }: ProvidersProps) {
         </CanvasHostProvider>
       </StoreProvider>
     </ReactQueryProvider>
+    </RichContentHostProvider>
   );
 }
