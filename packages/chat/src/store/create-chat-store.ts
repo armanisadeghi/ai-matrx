@@ -12,13 +12,27 @@ import {
   cloudFilesMutationToastMiddleware,
   cloudFilesRealtimeMiddleware,
   cloudFilesReducer,
+  configureFilesHost,
+  type FilesHost,
 } from "@ai-matrx/media/files/engine";
 import { chatReducers } from "./slices";
 import { chatMiddlewares } from "./middlewares";
 import { chatSagas } from "./sagas";
 import type { ChatState } from "./state";
 
-export function createChatStore(preloadedState?: Partial<ChatState>) {
+export interface CreateChatStoreOptions {
+  /**
+   * The files engine's host (database, server client, optional scope/org/share/notify) for a
+   * host that has not called `configureFilesHost` itself. The engine is then wired to THIS
+   * store, so file thunks read and write the slice chat renders from.
+   */
+  files?: Omit<FilesHost, "store">;
+}
+
+export function createChatStore(
+  preloadedState?: Partial<ChatState>,
+  options: CreateChatStoreOptions = {},
+) {
   const sagaMiddleware = createSagaMiddleware();
   const store = configureStore({
     // Files are part of chat (P16f): the files engine's slice and its two middlewares come
@@ -40,6 +54,7 @@ export function createChatStore(preloadedState?: Partial<ChatState>) {
       ),
     devTools: process.env.NODE_ENV !== "production",
   });
+  if (options.files) configureFilesHost({ ...options.files, store: () => store });
   sagaMiddleware.run(function* chatRootSaga() {
     for (const saga of chatSagas()) yield fork(saga);
   });
