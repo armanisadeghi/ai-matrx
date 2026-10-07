@@ -15,6 +15,7 @@ import { usePathname, useSearchParams } from "next/navigation";
 import { createPlatformHost, type PlatformHost } from "@ai-matrx/applets/platform";
 import { mountAppletAsync } from "@ai-matrx/applets/frame";
 import { createIntelligencePort } from "@ai-matrx/agents/intelligence";
+import { liveValues } from "@ai-matrx/alchemy/surface";
 import { EmptyState, RegionSkeleton } from "@ai-matrx/design-system/controls";
 import { AppWindow } from "lucide-react";
 
@@ -91,6 +92,7 @@ export function AppletHostMount({ appletId, slug }: { appletId: string; slug: st
       supabase,
       agents: createIntelligencePort({ transport: createMatrxTransport(store.getState, transportOptions) }),
       activeOrganizationId: selectActiveOrganizationId(store.getState()),
+      surfaces: { live: liveValues },
       nav: {
         async go(to) {
           const tail = to === "/" || to === "" ? "" : to.startsWith("/") ? to : `/${to}`;

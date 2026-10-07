@@ -1,5 +1,6 @@
-import { copyToClipboard as copyWithToast } from "@/lib/clipboard/copy";
 'use client';
+
+import { copyToClipboard as copyWithToast } from "@/lib/clipboard/copy";
 
 /**
  * Safely parses JSON data

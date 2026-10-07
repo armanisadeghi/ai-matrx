@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useMemo, useState } from "react";
+import { copyToClipboard } from "@/lib/clipboard/copy";
 import { ComponentEntry } from "../parts/component-list";
 import { ComponentDisplayWrapper } from "../component-usage";
 import { ProTextarea } from "@/components/official/ProTextarea";
