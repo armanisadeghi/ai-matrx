@@ -129,3 +129,56 @@ describe("every long-form editing host is wired to the formatting command layer"
     fs.rmSync(tmp, { recursive: true, force: true });
   });
 });
+
+// ═══════════════════════════════════════════════════════════════════════════
+// VISIBLE, not just wired (2026-10-07 live review: Source mode and notes Split
+// / Plain answered ⌘B but showed no format button). Each plain-text host
+// renders THE compact buttons (`@ai-matrx/rich-editor/format/FormatButtons`)
+// inside its EXISTING toolbar row, gated on its plain modes; and a rendered
+// host's buttons really reach its wired textarea.
+// ═══════════════════════════════════════════════════════════════════════════
+
+/** Host file → the plain modes its toolbar row must show the buttons in. */
+const VISIBLE_BUTTONS: Record<string, RegExp> = {
+  // notes page header row (beside the mode pill): Plain and Split
+  "features/notes/components/NotesView.tsx": /editorMode === "plain" \|\| editorMode === "split"\) && \(\s*<FormatButtons\b/,
+  // a note in a window: the mode-switch row
+  "features/notes/components/NoteWorkspace.tsx": /editorMode === "plain" \|\| editorMode === "split"\) && \(\s*<FormatButtons\b/,
+  // the editor's own toolbar row, Source view (edit in place, documents, prompts)
+  "node_modules/@ai-matrx/rich-editor/dist/editor/RichEditorImpl.js": /view === "source" && !readOnly[\s\S]{0,200}FormatButtons/,
+};
+
+describe("plain-text hosts SHOW the format buttons", () => {
+  test.each(Object.entries(VISIBLE_BUTTONS))("%s renders FormatButtons in its toolbar row", (rel, rendered) => {
+    expect(rendered.test(fs.readFileSync(path.join(ROOT, rel), "utf8"))).toBe(true);
+  });
+
+  test("render: a wired textarea's container shows the six buttons and Bold formats its selection", () => {
+    /* eslint-disable @typescript-eslint/no-require-imports -- jsdom render inside a node-path census */
+    const React = require("react") as typeof import("react");
+    const { render, fireEvent } = require("@testing-library/react") as typeof import("@testing-library/react");
+    const { FormatButtons } = require("@ai-matrx/rich-editor/format/FormatButtons") as typeof import("@ai-matrx/rich-editor/format/FormatButtons");
+    const { formatTargetWithin } = require("@ai-matrx/rich-editor/format/format-target") as typeof import("@ai-matrx/rich-editor/format/format-target");
+    const { useTextareaFormatting } = require("@ai-matrx/rich-editor/format/useTextareaFormatting") as typeof import("@ai-matrx/rich-editor/format/useTextareaFormatting");
+    /* eslint-enable @typescript-eslint/no-require-imports */
+    function Host() {
+      const box = React.useRef<HTMLDivElement>(null);
+      const [field, setField] = React.useState<HTMLTextAreaElement | null>(null);
+      useTextareaFormatting(field);
+      return React.createElement(
+        "div",
+        { ref: box },
+        React.createElement(FormatButtons, { resolve: () => formatTargetWithin(box.current) }),
+        React.createElement("textarea", { ref: setField, defaultValue: "make this bold" }),
+      );
+    }
+    const { container } = render(React.createElement(Host));
+    const buttons = Array.from(container.querySelectorAll("[data-format-buttons] button"));
+    expect(buttons.map((b) => b.getAttribute("aria-label"))).toEqual(["Bold (⌘B)", "Italic (⌘I)", "Inline code (⌘E)", "Link (⌘K)", "Heading", "Bulleted list (⌘⇧8)"]);
+    const textarea = container.querySelector("textarea")!;
+    textarea.focus();
+    textarea.setSelectionRange(10, 14);
+    fireEvent.click(container.querySelector('[data-format-command="bold"]')!);
+    expect(textarea.value).toBe("make this **bold**");
+  });
+});
