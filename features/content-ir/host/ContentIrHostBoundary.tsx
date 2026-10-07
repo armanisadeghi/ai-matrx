@@ -29,7 +29,7 @@ import { ShimmerText } from "@/components/loaders/ShimmerText";
 import { SafeBlockRenderer } from "@ai-matrx/rich-content/display/chat-markdown/internal-handlers/SafeBlockRenderer";
 import type { RenderBlock } from "@ai-matrx/rich-content/display/chat-markdown/block-registry/BlockRenderer";
 import { StructuredValueView } from "@/components/official/structured-value/StructuredValueView";
-import { matrxDirectiveHost } from "@/features/matrx-envelope/directiveHost";
+import { providedDirectiveHost } from "./directiveHostSlot";
 import { kindRegistry } from "../registry/kind-registry";
 import { componentRegistry } from "../registry/component-registry";
 import { MATRX_CONTENT_IR_PLATFORM } from "@ai-matrx/rich-content/kinds/host/route-env";
@@ -53,15 +53,15 @@ export const matrxContentIrHost: ContentIrHost = {
   // subtree under this provider gets Apply / open-item / copy / the noun
   // catalog without mounting `DirectiveHostProvider` itself.
   //
-  // 🚨 A GETTER, never a value read at module evaluation (G11C, 2026-10-07):
-  // `directiveHost` reaches this module back through its own import graph
-  // (… → components/official → content-ir), so on a fresh load of a note this
-  // object was built while `matrxDirectiveHost` was still in its TDZ —
-  // "Cannot access 'matrxDirectiveHost' before initialization" and the whole
-  // page fell to "This page stopped working". Read at use, it is always there.
-  // Guard: `__tests__/the-host-reads-its-directives-at-use.test.ts`.
+  // 🚨 READ FROM THE SLOT, NEVER IMPORTED (G11C → G13, 2026-10-07). This
+  // module used to import `matrxDirectiveHost`, whose door graph reaches this
+  // module again (… → components/official → KindInstanceRender → here): on a
+  // fresh note load the object was built while that const was in its TDZ and
+  // the page fell to "This page stopped working". The directive host now fills
+  // a leaf slot at its own evaluation, so this host never statically imports
+  // the door/presentation graph. Guard: `pnpm check:host-cycles`.
   get directives() {
-    return matrxDirectiveHost;
+    return providedDirectiveHost();
   },
 
   // The production render path: SafeBlockRenderer owns the `ssr:false` dynamic

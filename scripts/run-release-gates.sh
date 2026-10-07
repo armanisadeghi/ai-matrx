@@ -256,6 +256,10 @@ if $STRICT; then
         # Vercel's 45-minute limit (v0.4.2931-2934, 2026-10-07).
         "Worker reaches the module that starts it (Turbopack hang)|pnpm check:worker-cycles"
         "Worker-cycle guard self-test|pnpm check:worker-cycles:self-test"
+        # A static import cycle through the content-ir host crashed every fresh note load with a
+        # TDZ ReferenceError ("Cannot access 'matrxDirectiveHost' before initialization", G13, 2026-10-07).
+        "Static import cycle through the content-ir host|pnpm check:host-cycles"
+        "Host-cycle guard self-test|pnpm check:host-cycles:self-test"
         # A server-only module calling a "use client" export throws when the page renders, failing
         # the build after compile (rich-content 0.2.20 cn(), v0.4.2937-2940, 2026-10-07).
         "Server-only module calls a \"use client\" export|pnpm check:server-calls-client"
@@ -1133,6 +1137,10 @@ else
         # Vercel's 45-minute limit (v0.4.2931-2934, 2026-10-07).
         "Worker reaches the module that starts it (Turbopack hang)|pnpm check:worker-cycles"
         "Worker-cycle guard self-test|pnpm check:worker-cycles:self-test"
+        # A static import cycle through the content-ir host crashed every fresh note load with a
+        # TDZ ReferenceError ("Cannot access 'matrxDirectiveHost' before initialization", G13, 2026-10-07).
+        "Static import cycle through the content-ir host|pnpm check:host-cycles"
+        "Host-cycle guard self-test|pnpm check:host-cycles:self-test"
         # A server-only module calling a "use client" export throws when the page renders, failing
         # the build after compile (rich-content 0.2.20 cn(), v0.4.2937-2940, 2026-10-07).
         "Server-only module calls a \"use client\" export|pnpm check:server-calls-client"

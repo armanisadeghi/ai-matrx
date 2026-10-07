@@ -765,6 +765,8 @@
     "check:alchemy-doors:self-test": "tsx scripts/check-alchemy-doors.ts --self-test",
     "check:worker-cycles": "tsx scripts/check-worker-cycles.ts",
     "check:worker-cycles:self-test": "tsx scripts/check-worker-cycles.ts --self-test",
+    "check:host-cycles": "tsx scripts/check-host-cycles.ts",
+    "check:host-cycles:self-test": "tsx scripts/check-host-cycles.ts --self-test",
     "check:server-calls-client": "tsx scripts/check-server-calls-client.ts",
     "check:server-calls-client:self-test": "tsx scripts/check-server-calls-client.ts --self-test",
     "check:copy-result-gated": "tsx scripts/check-copy-result-gated.ts",
