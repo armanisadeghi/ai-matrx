@@ -17,7 +17,7 @@ import { toast } from "@/lib/toast";
 
 import { imageMime, previewKind } from "./paths";
 import { copyToClipboard } from "@/lib/clipboard/copy";
-import { downloadFile } from "@/components/agent-copy/export";
+import { downloadFile } from "@ai-matrx/kit/download";
 
 const TEXT_LIMIT = 262_144;
 const BINARY_LIMIT = 4 * 1024 * 1024;

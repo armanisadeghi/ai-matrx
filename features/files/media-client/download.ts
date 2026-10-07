@@ -13,7 +13,7 @@ import { fileHandler } from "@/features/files/handler/handler";
 import type { FileSource } from "@/features/files/handler/types";
 import { recognizeOurFileUrl } from "@/lib/media/our-file-sources";
 import type { MediaRefLike } from "@ai-matrx/media";
-import { downloadFile } from "@/components/agent-copy/export";
+import { downloadFile } from "@ai-matrx/kit/download";
 
 /**
  * Recover owned identity before downloading bytes.

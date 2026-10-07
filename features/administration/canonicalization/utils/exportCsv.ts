@@ -1,7 +1,7 @@
 // features/administration/canonicalization/utils/exportCsv.ts
 
 import Papa from "papaparse";
-import { downloadFile } from "@/components/agent-copy/export";
+import { downloadFile } from "@ai-matrx/kit/download";
 
 /** Exports the currently visible (filtered + sorted) rows as a downloadable CSV. */
 export function exportRowsAsCsv<T>(

@@ -17,7 +17,7 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import type { SandboxAccessResponse } from "@/types/sandbox";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { extractErrorMessage } from "@/utils/errors";
-import { downloadFile } from "@/components/agent-copy/export";
+import { downloadFile } from "@ai-matrx/kit/download";
 
 interface SshAccessPanelProps {
   /** Supabase row UUID — used for API calls only. */

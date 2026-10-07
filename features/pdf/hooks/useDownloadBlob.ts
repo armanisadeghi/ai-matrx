@@ -10,7 +10,7 @@
  * download can't leak a multi-MB blob for the life of the session.
  */
 
-import { downloadFile } from "@/components/agent-copy/export";
+import { downloadFile } from "@ai-matrx/kit/download";
 
 export interface DownloadableBlob {
   blob: Blob;

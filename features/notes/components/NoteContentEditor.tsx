@@ -74,7 +74,7 @@ import { computeMatches } from "../utils/findMatches";
 import { usePreviewFindHighlight } from "../hooks/usePreviewFindHighlight";
 import { getDiffRange, type DiffRange } from "../utils/diffRange";
 import { noteFolderReference, type FolderReference } from "../types";
-import { downloadFile } from "@/components/agent-copy/export";
+import { downloadFile } from "@ai-matrx/kit/download";
 
 // Floating outline panel — imports WindowPanel, so it MUST stay behind this
 // lazy boundary (window-panels bundle invariant). Mounted only while open.

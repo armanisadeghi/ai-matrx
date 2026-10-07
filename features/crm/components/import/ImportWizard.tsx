@@ -63,7 +63,7 @@ import { IMPORT_FIELD_LABELS } from "../../import/types";
 import { persistConnectorCursor } from "../../import/connectors/service";
 import { ConnectorSources } from "./ConnectorSources";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
-import { downloadFile } from "@/components/agent-copy/export";
+import { downloadFile } from "@ai-matrx/kit/download";
 
 type Step = "source" | "map" | "preview" | "done";
 

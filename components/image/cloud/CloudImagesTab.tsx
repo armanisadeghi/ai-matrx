@@ -136,7 +136,7 @@ import type { ListViewPrefs } from "@/lib/redux/preferences/userPreferencesSlice
 import { toast } from "@/lib/toast";
 import { replaceAddressWithoutNavigating } from "@/lib/url-state/addressWithoutNavigating";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
-import { downloadUrl } from "@/components/agent-copy/export";
+import { downloadUrl } from "@ai-matrx/kit/download";
 
 const RECENTS_WINDOW_MS = 30 * 24 * 60 * 60 * 1000; // 30 days
 

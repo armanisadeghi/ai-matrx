@@ -7,7 +7,7 @@
 
 import Papa from "papaparse";
 import type { DictEntry, DictEntryDraft } from "@/features/dictionary/types";
-import { downloadFile } from "@/components/agent-copy/export";
+import { downloadFile } from "@ai-matrx/kit/download";
 
 /** Canonical column order for CSV import/export + the template. */
 export const DICT_CSV_COLUMNS = [

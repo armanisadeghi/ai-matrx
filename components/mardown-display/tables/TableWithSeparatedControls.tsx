@@ -30,7 +30,7 @@ import {
 import { useToastManager } from "@/hooks/useToastManager";
 import { THEMES, type DisplayTheme } from "@ai-matrx/rich-content/display/themes";
 import { useOpenSaveToTable } from "@/features/overlays/openers/saveToTable";
-import { downloadFile } from "@/components/agent-copy/export";
+import { downloadFile } from "@ai-matrx/kit/download";
 
 // Custom debounce hook
 function useDebounce<T>(value: T, delay: number): T {

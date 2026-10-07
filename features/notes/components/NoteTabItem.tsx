@@ -80,7 +80,7 @@ import { noteTabRecordMenuKey } from "./noteRecordMenu";
 import { MoveNoteDialog } from "./MoveNoteDialog";
 import { noteFolderReference, type FolderReference } from "../types";
 import { noteIdentityContentSource } from "../richDocumentSource";
-import { downloadFile } from "@/components/agent-copy/export";
+import { downloadFile } from "@ai-matrx/kit/download";
 import { copyRichContent } from "@/components/matrx/buttons/markdown-copy-utils";
 import { copyToClipboard } from "@/lib/clipboard/copy";
 

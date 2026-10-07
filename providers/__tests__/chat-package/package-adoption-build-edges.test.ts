@@ -59,7 +59,7 @@ test("the dynamic UI scope obtains the class recipe from the design-system root,
   expect(scope).not.toContain('export { Button, buttonVariants } from "./button"');
 });
 
-test("legacy download consumers resolve through Kit after Chat stops exporting the helpers", () => {
-  expect(read("components/agent-copy/export.ts"))
-    .toContain('export { downloadFile, downloadUrl } from "@ai-matrx/kit/download"');
+test("there is one download door: Kit's, with no re-export beside it", () => {
+  expect(read("components/agent-copy/export.ts")).not.toContain("downloadFile");
+  expect(read("packages/chat/src/agent-copy/export.ts")).not.toContain("export function downloadFile");
 });

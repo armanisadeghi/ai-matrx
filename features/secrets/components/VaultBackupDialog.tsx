@@ -53,7 +53,7 @@ import {
 import { ErrorNotice } from "@/components/errors/ErrorNotice";
 import { asClause } from "@ai-matrx/kit/text";
 import { SegmentedControl } from "@ai-matrx/design-system/controls";
-import { downloadFile } from "@/components/agent-copy/export";
+import { downloadFile } from "@ai-matrx/kit/download";
 
 const BACKUP_FILENAME = "matrx-vault-backup.matrxvault";
 

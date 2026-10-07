@@ -67,7 +67,7 @@ import {
   getCloudFileKindLabel,
   toggleCloudBrowserSelection,
 } from "./cloudFilesBrowserUtils";
-import { downloadUrl } from "@/components/agent-copy/export";
+import { downloadUrl } from "@ai-matrx/kit/download";
 
 const MAX_PARALLEL = 4;
 

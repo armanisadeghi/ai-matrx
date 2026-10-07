@@ -79,7 +79,7 @@ import {
   cleanTableHeaderKey,
   type ParsedTable,
 } from "@ai-matrx/rich-content/display/blocks/table/parseMarkdownTable";
-import { downloadFile } from "@/components/agent-copy/export";
+import { downloadFile } from "@ai-matrx/kit/download";
 
 // ============================================================================
 // TYPES

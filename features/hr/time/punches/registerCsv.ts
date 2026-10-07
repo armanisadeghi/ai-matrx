@@ -26,7 +26,7 @@ import {
   PUNCH_KIND_LABELS,
   PUNCH_SOURCE_LABELS,
 } from "../shared/vocabulary";
-import { downloadFile } from "@/components/agent-copy/export";
+import { downloadFile } from "@ai-matrx/kit/download";
 
 const HEADERS = [
   "Employee",

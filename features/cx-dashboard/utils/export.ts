@@ -1,7 +1,7 @@
 // CX Dashboard Export Utilities
 
 import type { CopyExportConfig } from "@ai-matrx/design-system/data-table/copy-types";
-import { downloadFile } from "@/components/agent-copy/export";
+import { downloadFile } from "@ai-matrx/kit/download";
 
 type CxExportData = Record<string, unknown>[];
 

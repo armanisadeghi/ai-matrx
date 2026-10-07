@@ -14,7 +14,7 @@ import type {
   QuizResultsExport,
   QuizAnswer
 } from './quiz-types';
-import { downloadFile } from "@/components/agent-copy/export";
+import { downloadFile } from "@ai-matrx/kit/download";
 
 const EXPORT_VERSION = '1.0.0';
 

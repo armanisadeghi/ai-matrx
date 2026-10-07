@@ -4,7 +4,7 @@ import { copyText } from "@ai-matrx/kit/clipboard";
 import { cn } from "@/lib/utils";
 import { serializeFrameAgentPayload } from "./FrameAgentPayload";
 import type { MatrxCopyMenuProps } from "@ai-matrx/alchemy/react/workspace";
-import { downloadFile } from "@/components/agent-copy/export";
+import { downloadFile } from "@ai-matrx/kit/download";
 
 export type CopyButtonsProps = MatrxCopyMenuProps;
 

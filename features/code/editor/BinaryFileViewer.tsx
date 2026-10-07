@@ -46,7 +46,7 @@ import type { FilesystemAdapter } from "../adapters/FilesystemAdapter";
 // absorbed the former BinaryFilePdfPreview adapter.
 import { PreviewerSwitch } from "@/features/files/components/core/FilePreview/PreviewerSwitch";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
-import { downloadFile } from "@/components/agent-copy/export";
+import { downloadFile } from "@ai-matrx/kit/download";
 
 // Loading state shown while a heavy previewer chunk (e.g. react-pdf) loads.
 function PreviewerSkeleton() {

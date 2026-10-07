@@ -38,7 +38,7 @@ import { selectConversationTitle } from "@ai-matrx/chat/agents/redux/execution-s
 import { selectMessagePosition } from "@ai-matrx/chat/agents/redux/execution-system/messages/messages.selectors";
 import { buildTaskSeedFromMessage } from "@ai-matrx/chat/agents/components/messages-display/message-options/buildTaskSeedFromMessage";
 import type { ContentSource } from "../../types";
-import { downloadFile } from "@/components/agent-copy/export";
+import { downloadFile } from "@ai-matrx/kit/download";
 
 /**
  * Map a ContentSource to the `entity_type` used by save-to-task. Centralized

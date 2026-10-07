@@ -5,7 +5,7 @@
 // a JSZip bundle, mirroring features/image-studio/utils/download-bundle.ts.
 
 import JSZip from "jszip";
-import { downloadFile } from "@/components/agent-copy/export";
+import { downloadFile } from "@ai-matrx/kit/download";
 
 export interface ExportableNote {
   id: string;

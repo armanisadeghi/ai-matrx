@@ -88,7 +88,8 @@ jest.mock("@/features/sources/api/sourcesApi", () => ({ editSource: jest.fn(), k
 jest.mock("@/features/sources/api/processNow", () => ({ processSourceNow: jest.fn() }));
 jest.mock("@/lib/organizations/ensureOrgId", () => ({ ensureOrgId: jest.fn() }));
 jest.mock("@/lib/organization/organization-gate", () => ({ isOrganizationSelectionCancelled: () => false }));
-jest.mock("@/components/agent-copy/export", () => ({ downloadFile: jest.fn(), exportFilename: () => "x.md" }));
+jest.mock("@/components/agent-copy/export", () => ({ exportFilename: () => "x.md" }));
+jest.mock("@ai-matrx/kit/download", () => ({ downloadFile: jest.fn(), downloadUrl: jest.fn() }));
 
 import { SourceStudio } from "@/features/source-studio/components/SourceStudio";
 

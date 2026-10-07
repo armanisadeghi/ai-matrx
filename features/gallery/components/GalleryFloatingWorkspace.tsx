@@ -42,7 +42,7 @@ import { openImageViewer } from "@/features/overlays/openers/imageViewer";
 import { toast } from "@/lib/toast";
 import { InlineMediaRef } from "@ai-matrx/media/react";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
-import { downloadFile } from "@/components/agent-copy/export";
+import { downloadFile } from "@ai-matrx/kit/download";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 

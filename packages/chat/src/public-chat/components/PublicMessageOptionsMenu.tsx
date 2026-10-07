@@ -35,7 +35,7 @@ import { openOverlay, CHAT_WINDOWS } from "../../host/windows";
 import { kindTextToMarkdown } from "@ai-matrx/chat/utils/content-ir/surfaces/kind-text-to-markdown";
 import { removeCodeSpans, replaceFences } from "@ai-matrx/content-ir/source";
 import { selectOrganizationId, ensureOrganizationContext, isOrganizationSelectionCancelled } from "../../host/org";
-import { downloadFile } from "../../agent-copy/export";
+import { downloadFile } from "@ai-matrx/kit/download";
 
 // Key used to store pending actions across the auth redirect
 /** The rows the host menu draws — its own MenuItem is richer; these are the fields this file sets. */

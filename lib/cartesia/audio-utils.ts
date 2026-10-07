@@ -69,4 +69,4 @@ export function downloadWavForBuffer<T extends Float32Array | Int16Array>(
 	downloadFile(`cartesia_audio.wav`, blob, blob.type);
 }
 
-import { downloadFile } from "@/components/agent-copy/export";
+import { downloadFile } from "@ai-matrx/kit/download";

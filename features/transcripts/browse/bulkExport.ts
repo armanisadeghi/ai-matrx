@@ -13,11 +13,8 @@
 // which is also what this hub's toolbar ExportMenu uses — one CSV writer, not a
 // second one that quotes commas differently.
 
-import {
-  downloadFile,
-  exportFilename,
-  rowsToCsv,
-} from "@/components/agent-copy/export";
+import { exportFilename, rowsToCsv } from "@/components/agent-copy/export";
+import { downloadFile } from "@ai-matrx/kit/download";
 import type {
   EntityBulkActionResult,
   EntityBulkSelection,

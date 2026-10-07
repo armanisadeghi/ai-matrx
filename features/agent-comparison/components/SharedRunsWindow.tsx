@@ -32,7 +32,8 @@ import { currentCostUnit } from "@/components/cost/costUnit";
 import { selectActiveBattleColumns } from "../shared/activeBattleColumns";
 import { buildPrintDocument, printHtmlContent } from "@ai-matrx/print/core";
 import { toast } from "@/lib/toast";
-import { downloadFile, exportFilename } from "@/components/agent-copy/export";
+import { exportFilename } from "@/components/agent-copy/export";
+import { downloadFile } from "@ai-matrx/kit/download";
 import { RunsComparisonTable } from "./RunsComparisonTable";
 import { runsReportHtml, runsReportMarkdown } from "./runsComparisonReport";
 

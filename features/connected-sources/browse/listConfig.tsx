@@ -36,7 +36,7 @@ import {
   type ConnectedBrowseTarget,
 } from "./service";
 import { formatFileSize } from "@ai-matrx/kit/format";
-import { downloadFile } from "@/components/agent-copy/export";
+import { downloadFile } from "@ai-matrx/kit/download";
 
 const KIND_WORDS: Record<string, string> = {
   file: "File",

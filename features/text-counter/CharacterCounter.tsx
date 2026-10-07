@@ -26,7 +26,7 @@ import {
   TITLE_LIMITS,
 } from "@/features/marketing/seo/serp/metrics";
 import { ProTextarea } from "@/components/official/ProTextarea";
-import { downloadFile } from "@/components/agent-copy/export";
+import { downloadFile } from "@ai-matrx/kit/download";
 
 const LIMIT_PRESETS = [
   { label: "Custom", value: "custom", limit: null },

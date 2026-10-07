@@ -28,7 +28,7 @@ import { useMediaResolution } from "@ai-matrx/media/core";
 import type { FileSource } from "@ai-matrx/chat/ui/file-source";
 import type { ResultFileRef } from "./shape";
 import { Button } from "@ai-matrx/design-system/controls";
-import { downloadUrl } from "../../agent-copy/export";
+import { downloadUrl } from "@ai-matrx/kit/download";
 
 export interface ResultFileProps {
     file: ResultFileRef;

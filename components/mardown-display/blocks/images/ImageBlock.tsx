@@ -27,7 +27,7 @@ import { TapTargetButton } from "@ai-matrx/design-system/tap-target";
 import { copyToClipboard } from "@/lib/clipboard/copy";
 import { useClipboard } from "@ai-matrx/kit/clipboard";
 import { toast } from "@/lib/toast";
-import { downloadFile } from "@/components/agent-copy/export";
+import { downloadFile } from "@ai-matrx/kit/download";
 
 const MAX_IMAGE_HEIGHT = 700;
 

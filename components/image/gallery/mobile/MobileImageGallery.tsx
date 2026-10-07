@@ -9,7 +9,7 @@ import { SearchBar } from "@/components/image/shared/SearchBar";
 import { useToast } from "@/components/ui/use-toast";
 import { Loader2 } from "lucide-react";
 import { mimeToExtension } from "@/utils/file-operations/utils";
-import { downloadFile } from "@/components/agent-copy/export";
+import { downloadFile } from "@ai-matrx/kit/download";
 
 export interface SimplePhoto {
   id: string;
