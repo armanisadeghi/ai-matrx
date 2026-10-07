@@ -19,9 +19,14 @@ import { ProjectOrganizations } from "@ai-matrx/coding-sessions/projects/react";
 import type { components } from "@ai-matrx/agents/generated/api-types";
 
 import { apiGet, apiPut } from "@/lib/api/typed-client";
+import { putJson } from "@/lib/python-client";
 
-type WireReport = components["schemas"]["CodingSessionConnectionOrganization"];
-type WireMove = components["schemas"]["CodingProjectMoveReport"];
+type WireReport = components["schemas"]["CodingSessionConnectionOrganization"] & {
+  // Added server-side 2026-10-07 (aidream 5f3e07441d); the published contract catches up with
+  // the next @ai-matrx/agents release.
+  known_projects?: ProjectOrganizationsReport["known_projects"];
+};
+type WireMove = Omit<ProjectMoveReport, "report"> & { report: WireReport };
 
 function toReport(wire: WireReport): ProjectOrganizationsReport {
   return {
@@ -55,10 +60,25 @@ export function CodingProjectOrganizations() {
   const port = useMemo<ProjectOrganizationsPort>(
     () => ({
       read: async () => toReport((await apiGet(PATH)).data),
+      // A choice is made IN the organization being chosen, so the write carries it even when
+      // no organization is selected in the app (the client refuses an org-less write).
       chooseForAllProjects: async (organizationId) =>
-        toReport((await apiPut(PATH, { organization_id: organizationId })).data),
+        toReport(
+          (await apiPut(PATH, { organization_id: organizationId }, organizationId ? { organizationId } : {}))
+            .data,
+        ),
+      // PUT …/project is not in the published contract yet (next @ai-matrx/agents release);
+      // switch to apiPut then. Shape: aidream CodingProjectMoveReport.
       chooseForProject: async (project, organizationId) =>
-        toMove((await apiPut(`${PATH}/project`, { project, organization_id: organizationId })).data),
+        toMove(
+          (
+            await putJson<WireMove>(
+              `${PATH}/project`,
+              { project, organization_id: organizationId },
+              organizationId ? { organizationId } : {},
+            )
+          ).data,
+        ),
     }),
     [],
   );
