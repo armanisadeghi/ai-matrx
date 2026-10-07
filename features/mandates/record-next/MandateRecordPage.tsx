@@ -271,7 +271,9 @@ function RecordHeader({
             mandateId={data.mandate.id}
             name={name}
             status={mandateStatusOfRow(data.mandate, data.bindings)}
-            canManage={canRemove}
+            // The system seat may change a SYSTEM mandate's status from here
+            // (admin feature "mandate.system-seat").
+            canManage={canRemove || systemSeat}
             systemSeat={systemSeat}
             onSetHolder={readOnly ? undefined : () => onTabChange("holder")}
             onChanged={(next) =>
