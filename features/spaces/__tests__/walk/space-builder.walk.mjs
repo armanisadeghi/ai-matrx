@@ -2,6 +2,7 @@
 // Records every agent request the page sends (URL, mandate, user input, variables, organization), and
 // whether the floating live-run window opened. Prints JSON; screenshots to WALK_OUT.
 //   node features/spaces/__tests__/walk/space-builder.walk.mjs ["what to build"]
+import { writeFileSync } from "node:fs";
 import { open, newPage, act, trashPage } from "./lib.mjs";
 
 const OUT = process.env.WALK_OUT ?? "/tmp";
@@ -11,7 +12,8 @@ const sent = [];
 page.on("request", (r) => {
   if (r.method() !== "POST") return;
   const u = r.url();
-  if (!/agent|mandate|execute|ai\/|conversation/i.test(u) || /_next|supabase|realtime/.test(u)) return;
+  // Every POST that is not a plain database read or the dev server's own traffic (the run's door may be named anything).
+  if (/_next|realtime|dm_conversations|\/rest\/v1\/rpc\/(get_|list_|cmt_)|__nextjs|webpack|hmr/.test(u)) return;
   let body = null;
   try {
     body = JSON.parse(r.postData() ?? "null");
@@ -20,7 +22,10 @@ page.on("request", (r) => {
 });
 const responses = [];
 page.on("response", async (r) => {
-  if (sent.some((s) => s.url === r.url().replace(/\?.*/, ""))) responses.push({ url: r.url().replace(/\?.*/, ""), status: r.status() });
+  if (!sent.some((s) => s.url === r.url().replace(/\?.*/, ""))) return;
+  // The first bytes of the answer (a refusal names itself there); a stream is read only to its head.
+  const head = r.status() >= 400 ? await r.text().then((t) => t.slice(0, 600)).catch(() => null) : null;
+  responses.push({ url: r.url().replace(/\?.*/, ""), status: r.status(), head });
 });
 
 const id = await newPage(page);
@@ -48,14 +53,21 @@ const windowByText = await page.getByText("Building your Space").first().isVisib
 await page.screenshot({ path: `${OUT}/builder-running.png` });
 console.log(JSON.stringify({ id, doors, windowOpen: windowOpen || windowByText, sent: sent.map((s) => ({ url: s.url, mandate: s.body?.mandate_key ?? s.body?.mandateKey ?? null, user_input: s.body?.user_input ?? s.body?.userInput ?? null, variables: s.body?.variables ?? null, org: s.body?.organization_id ?? s.body?.organizationId ?? null, keys: s.body ? Object.keys(s.body) : null })), responses }, null, 1));
 // Wait for the outcome (a build takes 1–8 minutes), then leave the blank test page in Trash.
+// Any terminal state counts: ready, failed, a refusal (organization limit) or the run window gone.
+const MAX = Number(process.env.WALK_WAIT_MS ?? 540_000);
 const outcome = await Promise.race([
-  page.getByText("Your Space is ready").first().waitFor({ timeout: 540_000 }).then(() => "ready"),
-  page.getByText("The Space could not be built").first().waitFor({ timeout: 540_000 }).then(() => "failed"),
-]).catch(() => "no outcome in 9 min");
+  page.getByText("Your Space is ready").first().waitFor({ timeout: MAX }).then(() => "ready"),
+  page.getByText("The Space could not be built").first().waitFor({ timeout: MAX }).then(() => "failed"),
+  page.getByText(/organization limit|over your|refused/i).first().waitFor({ timeout: MAX }).then(() => "refused"),
+  page.waitForURL((u) => !u.href.includes(id), { timeout: MAX }).then(() => "opened another page"),
+]).catch(() => `no outcome in ${MAX / 60000} min`);
 const toastText = await page.locator("[data-sonner-toast]").allInnerTexts().catch(() => []);
+const runWindowText = await page.getByText("Building your Space").first().locator("xpath=ancestor::*[4]").innerText().catch(() => null);
+const result = { id, doors, outcome, url: page.url(), toastText, runWindowText: runWindowText?.slice(0, 800) ?? null, sent: sent.map((s) => ({ url: s.url, body: JSON.stringify(s.body)?.slice(0, 1500) })), responses };
+writeFileSync(`${OUT}/builder-result.json`, JSON.stringify(result, null, 1));
 console.log(JSON.stringify({ outcome, url: page.url(), toastText }));
 await page.screenshot({ path: `${OUT}/builder-outcome.png` });
 await page.goto(page.url().replace(/spaces\/[0-9a-f-]{36}/, `spaces/${id}`), { waitUntil: "domcontentloaded" });
 await page.locator(".bn-editor").first().waitFor({ timeout: 60_000 });
-console.log("trashed blank", await trashPage(page));
+console.log("trashed blank", await trashPage(page).catch((e) => `not trashed: ${e.message.slice(0, 80)}`));
 await browser.close();
