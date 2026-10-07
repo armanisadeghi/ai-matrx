@@ -104,7 +104,7 @@ function FleetSection({
   onView: (
     id: string,
     query: MatrxDataTableQueryState,
-    rows: SyncAdminRow[],
+    rows?: SyncAdminRow[],
   ) => void;
 }) {
   const [query, setQuery] = useState<MatrxDataTableQueryState>({
@@ -208,7 +208,10 @@ function FleetSection({
         query={{
           mode: "controlled-local",
           state: query,
-          onStateChange: setQuery,
+          onStateChange: (next) => {
+            setQuery(next);
+            onView(id, next);
+          },
         }}
         onViewChange={(processed) => onView(id, query, processed)}
         columns={columns}
@@ -275,9 +278,10 @@ export function SyncFleetClient({ rows }: { rows: SyncAdminRow[] }) {
   function onView(
     id: string,
     query: MatrxDataTableQueryState,
-    processed: SyncAdminRow[],
+    processed?: SyncAdminRow[],
   ) {
-    tableViews.current[id] = { query, rows: processed };
+    const previous = tableViews.current[id];
+    tableViews.current[id] = { query, rows: processed ?? previous?.rows ?? [] };
   }
   return (
     <SurfaceRuntimeProvider

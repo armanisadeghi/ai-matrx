@@ -428,7 +428,7 @@ export default function ProofRunsClient() {
         requested_run_id: detailRequest.current ?? undefined,
         run_detail_error: detailError ?? undefined,
         recent_runs_table_query: tableQuery,
-        visible_runs: visibleRuns.current,
+        visible_runs: dataLoaded ? visibleRuns.current : undefined,
         monthly_spend: dataLoaded
           ? {
               month_to_date_usd: spend.mtd,

@@ -253,9 +253,9 @@ const values: SurfaceValue[] = [
     name: "visible_runs",
     label: "Visible runs",
     description:
-      "Processed rows reported by the canonical history table for its current query.",
+      "Processed rows reported by the canonical history table after the combined read succeeds, for its current query. Absent before a successful read.",
     valueType: "array",
-    alwaysAvailable: true,
+    alwaysAvailable: false,
     typicalCharCount: 5000,
     autoContext: false,
     group: "view",
@@ -556,7 +556,7 @@ export function createAdminProofRunsScope(values: {
   read_state: object;
   run_detail_loading: boolean;
   recent_runs_table_query: object;
-  visible_runs: unknown[];
+  visible_runs?: unknown[];
   load_error?: string;
   running_check?: string;
   requested_run_id?: string;
