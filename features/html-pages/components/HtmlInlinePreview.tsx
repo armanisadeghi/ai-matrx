@@ -21,6 +21,7 @@ import {
   extractTitleFromHTML,
 } from "@/features/html-pages/utils/html-preview-utils";
 import CodeBlock from "@ai-matrx/rich-content/code-block/CodeBlock";
+import { HtmlAppFrame } from "@/features/html-pages/components/HtmlAppFrame";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 /**
@@ -236,17 +237,12 @@ const HtmlInlinePreview: React.FC<HtmlInlinePreviewProps> = ({
   if (fill) {
     if (isComplete && analysis.previewable && user?.id && phase === "preview") {
       return (
-        <iframe
+        <HtmlAppFrame
           src={url ?? undefined}
           title={title}
-          // The title is the frame's accessible name, not a hover tooltip:
-          // opt out of the design system's title→tooltip lift so it stays.
-          data-native-title=""
-          data-html-app-frame=""
-          className={cn("block h-full w-full border-0 bg-white", className)}
+          className={className}
           sandbox={pageSandbox(url, APP_SANDBOX)}
           allow={PAGE_ALLOW}
-          allowFullScreen
         />
       );
     }
