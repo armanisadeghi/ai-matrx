@@ -8,7 +8,6 @@ import {
 } from "@/features/canvas/canvas-block-meta";
 import { resolveSharedCanvas } from "@/features/canvas/shared/resolveSharedCanvas";
 import { markdownToPlainText } from "@/lib/markdown/plain-text";
-import { RichContentServer } from "@ai-matrx/rich-content/levels/server/RichContentServer";
 import { SharedCanvasViewClient } from "./SharedCanvasViewClient";
 import { NOT_INDEXED_ROBOTS } from "@/lib/seo/search-engine-indexed";
 import { searchEngineRobots } from "@/lib/seo/search-engine-indexed.server";
@@ -116,8 +115,8 @@ export async function generateMetadata({
 export default async function SharedCanvasPage({ params }: PageProps) {
   const { token } = await params;
   // The canvas itself is interactive and client-rendered; its title and
-  // description are rendered HERE, on the server, through the one
-  // rich-content core, so they are in the HTML a crawler (or a reader
+  // description are rendered HERE, on the server, as a plain-text summary,
+  // so they are in the HTML a crawler (or a reader
   // without JavaScript) receives. The client view replaces this summary once
   // it mounts. resolveSharedCanvas is the same read generateMetadata makes.
   const canvas = await loadSharedCanvas(token);
@@ -126,7 +125,7 @@ export default async function SharedCanvasPage({ params }: PageProps) {
       <h1 className="text-2xl font-semibold text-foreground">{canvas.title}</h1>
       {canvas.description ? (
         <p className="mt-3 text-base leading-relaxed text-muted-foreground">
-          <RichContentServer level="inline" source={canvas.description} />
+          {markdownToPlainText(canvas.description)}
         </p>
       ) : null}
     </header>
