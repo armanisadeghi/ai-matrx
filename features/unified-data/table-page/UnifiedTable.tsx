@@ -289,10 +289,14 @@ export function UnifiedTableBody({
   viewAddress,
   onViewAddressChange,
   content,
+  skeleton,
 }: {
   mount: UnifiedTableMount;
   before?: ReactNode;
   content?: ReactNode;
+  /** What stands in while the table is found — default the table page's own skeleton. A host whose
+   * `content` is not a table (the record page) passes the skeleton of what it draws. */
+  skeleton?: ReactNode;
   header?: (chrome: { actions: ReactNode }) => ReactNode;
   onLeave?: () => void;
   onViewChanged?: (view: PageView | string) => void;
@@ -312,6 +316,7 @@ export function UnifiedTableBody({
     ...(onViewAddressChange ? { onViewAddressChange } : {}),
     ...(viewAddress !== undefined ? { viewAddress } : {}),
   };
+  const loadingFrame = skeleton ?? <TablePageSkeleton layout={skeletonLayoutFor(address.view)} />;
   const pageHeader: { header?: (chrome: { actions: ReactNode }) => ReactNode } = header ? { header } : {};
   const mountedTable = !mount.mountsTheTable ? null : content !== undefined ? (
     <>
@@ -347,7 +352,7 @@ export function UnifiedTableBody({
   // The table page's own skeleton at its final geometry — never a line of text that a grey box
   // and then the page replace (lane STABLE-TABLES, Arman 2026-10-06).
   if (object.state === "resolving" || (object.state === "not-given" && pendingInvitation === undefined)) {
-    return <TablePageSkeleton layout={skeletonLayoutFor(address.view)} />;
+    return <>{loadingFrame}</>;
   }
   if (object.state === "not-given" && pendingInvitation) {
     return <PendingTableInvitation invitation={pendingInvitation} />;
@@ -380,7 +385,7 @@ export function UnifiedTableBody({
     );
   }
   if (!mount.recordsConfig) {
-    return <TablePageSkeleton layout={skeletonLayoutFor(address.view)} />;
+    return <>{loadingFrame}</>;
   }
   return (
     // The table page's right-click is the proposed menu (`DataMenuProvider`); its ⋯ is the action list.
