@@ -15,6 +15,7 @@ import { usePathname, useSearchParams } from "next/navigation";
 import { createPlatformHost, type PlatformHost } from "@ai-matrx/applets/platform";
 import { mountAppletAsync } from "@ai-matrx/applets/frame";
 import { createIntelligencePort } from "@ai-matrx/agents/intelligence";
+import { liveValues } from "@ai-matrx/alchemy/surface";
 import { EmptyState, RegionSkeleton } from "@ai-matrx/design-system/controls";
 import { AppWindow } from "lucide-react";
 
@@ -104,6 +105,8 @@ export function AppletHostMount({ appletId, slug }: { appletId: string; slug: st
           return () => listeners.delete(listener);
         },
       },
+      // The page's live values (ALC-18): the Applet's surface answers an unset value from them.
+      surfaces: { live: liveValues },
       reportError(err) {
         captureError({ source: "applet", code: err.code, message: err.message, callSite: err.where, raw: { appletId, slug, diagnostic: err.diagnostic } });
       },
