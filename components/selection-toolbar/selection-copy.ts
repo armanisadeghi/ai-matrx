@@ -19,6 +19,7 @@ import {
   writeClipboardFlavors,
   type CopyFlavor,
 } from "@/components/agent-copy/copy-commands";
+import { copyRich } from "@ai-matrx/kit/clipboard";
 import { liveSelectionShapeText } from "./selection-shape";
 import { stripOwnUtmSource } from "@/utils/url-utm";
 
@@ -98,18 +99,18 @@ export function installRichCopyKeys(): () => void {
     event.clipboardData.setData("text/plain", quick);
     event.preventDefault();
     void rangeMarkdown(html).then(async (markdown) => {
-      if (!markdown || markdown === quick || typeof ClipboardItem === "undefined" || !navigator.clipboard?.write) return;
+      if (!markdown || markdown === quick) return;
       const plain = richCopyPlainText(markdown, "default", defaultCopyFlavor());
-      try {
-        await navigator.clipboard.write([
-          new ClipboardItem({
-            "text/html": new Blob([html], { type: "text/html" }),
-            "text/plain": new Blob([plain], { type: "text/plain" }),
-          }),
-        ]);
-      } catch (error) {
+      const upgraded = await copyRich(
+        { text: plain, html },
+        {
+          // The copy event has already populated the clipboard with shape text.
+          plainFallback: false,
+        },
+      );
+      if (!upgraded) {
         // The event's own flavors are already on the clipboard; only the upgrade was refused.
-        console.warn("[copy] the markdown flavor could not be added to this copy; the shape text stands:", error);
+        console.warn("[copy] the markdown flavor could not be added to this copy; the shape text stands.");
       }
     });
   };
