@@ -478,9 +478,9 @@ export function ComposerSubmenu({
       </PopoverAnchor>
       <PopoverContent
         /* sizing: fixed — a cascade panel sized by its own host (pickers need a definite height for their scroll chains) */
-        // Phone: no room beside the menu — the panel opens under/over the row
-        // at the screen's full width, never positioned off-screen.
-        side={narrow ? "bottom" : "right"}
+        // Phone: no room beside the menu — the panel opens over the row (the
+        // menu sits low, so above has the room) at full width, never off-screen.
+        side={narrow ? "top" : "right"}
         align="start"
         sideOffset={6}
         collisionPadding={8}
