@@ -7,7 +7,7 @@
 // Verify:      pnpm check:kind-types   (CI-blocking freshness gate)
 // Twin guard:  pnpm check:kind-type-twins
 //
-// 587 active kinds. THESE ARE THE ONLY KIND PAYLOAD TYPES IN THE REPO.
+// 591 active kinds. THESE ARE THE ONLY KIND PAYLOAD TYPES IN THE REPO.
 // A hand-written interface mirroring a registered kind is a defect — derive
 // (Pick/Omit) from the type here instead, and never re-declare it.
 //
@@ -21,7 +21,7 @@
 // ─────────────────────────────────────────────────────────────────────────
 
 /** Structural fingerprint of the registry rows this artifact was generated from. */
-export const KIND_REGISTRY_FINGERPRINT = "affcfa6d5e16";
+export const KIND_REGISTRY_FINGERPRINT = "03798fe1a0b6";
 
 // ─────────────────────────────────────────────────────────────────────────
 // Shared nested structures. Deduped by structure across the registry — an
@@ -7591,6 +7591,126 @@ export interface SourcedSpec {
    */
   __kind?: string;
   source: string;
+}
+
+/**
+ * One cell of a sample or imported row.
+ *  *
+ *  * Shared by 2 kinds (space_database_design, space_notion_import).
+ */
+export interface SpacesCell {
+  /**
+   * The value as text: numbers plain, dates YYYY-MM-DD, checkbox true/false, multi_select comma-separated.
+   */
+  value: string;
+  /**
+   * The registered kind this payload is an instance of, when it is one.
+   */
+  __kind?: string;
+  /**
+   * A property key.
+   */
+  property: string;
+}
+
+/**
+ * A chart view's aggregation.
+ *  *
+ *  * From kind `space_database_design`.
+ */
+export interface SpacesChart {
+  op: "count" | "sum" | "avg";
+  type: "donut" | "bar" | "hbar" | "line";
+  field: string | null;
+  /**
+   * The registered kind this payload is an instance of, when it is one.
+   */
+  __kind?: string;
+  group_by: string | null;
+}
+
+/**
+ * One table of records found on the Notion page, as a Spaces database.
+ *  *
+ *  * From kind `space_notion_import`.
+ */
+export interface SpacesImportedDatabase {
+  name: string;
+  rows: SpacesRow[];
+  /**
+   * The registered kind this payload is an instance of, when it is one.
+   */
+  __kind?: string;
+  properties: SpacesProperty[];
+  title_property: string;
+}
+
+/**
+ * One choice of a select, multi_select or status property.
+ *  *
+ *  * Shared by 2 kinds (space_database_design, space_notion_import).
+ */
+export interface SpacesOption {
+  name: string;
+  color: "slate" | "green" | "amber" | "red" | "blue" | "violet" | "teal" | "orange" | "yellow" | "pink" | "brown" | "gray";
+  /**
+   * The registered kind this payload is an instance of, when it is one.
+   */
+  __kind?: string;
+}
+
+/**
+ * One database property (column).
+ *  *
+ *  * Shared by 2 kinds (space_database_design, space_notion_import).
+ */
+export interface SpacesProperty {
+  /**
+   * Stable key the rows' cells refer to.
+   */
+  key: string;
+  /**
+   * The property's plain name.
+   */
+  name: string;
+  type: "text" | "number" | "currency" | "percent" | "select" | "multi_select" | "status" | "date" | "checkbox" | "url" | "email" | "phone";
+  /**
+   * The registered kind this payload is an instance of, when it is one.
+   */
+  __kind?: string;
+  /**
+   * Choices for select, multi_select and status; empty otherwise.
+   */
+  options: SpacesOption[];
+}
+
+/**
+ * One row of a database.
+ *  *
+ *  * Shared by 2 kinds (space_database_design, space_notion_import).
+ */
+export interface SpacesRow {
+  cells: SpacesCell[];
+  /**
+   * The registered kind this payload is an instance of, when it is one.
+   */
+  __kind?: string;
+}
+
+/**
+ * One view of the database.
+ *  *
+ *  * From kind `space_database_design`.
+ */
+export interface SpacesView {
+  name: string;
+  chart: SpacesChart | null;
+  /**
+   * The registered kind this payload is an instance of, when it is one.
+   */
+  __kind?: string;
+  layout: "table" | "board" | "chart" | "calendar";
+  group_by: string | null;
 }
 
 /**
@@ -20861,6 +20981,87 @@ export interface SourceRequestVerdict {
 }
 
 /**
+ * Kind `space_build_result` (registry v2).
+ */
+export interface SpaceBuildResult {
+  /**
+   * The registered kind this payload is an instance of.
+   */
+  __kind?: "space_build_result";
+  /**
+   * Two plain sentences for the person: what was built or changed, and any default chosen.
+   */
+  summary: string;
+  /**
+   * Every Space id created or changed.
+   */
+  space_ids: string[];
+  /**
+   * Every table id created or changed.
+   */
+  table_ids: string[];
+  /**
+   * The root Space built, or the Space changed.
+   */
+  root_space_id: string;
+}
+
+/**
+ * Kind `space_database_design` (registry v2).
+ */
+export interface SpaceDatabaseDesign {
+  /**
+   * The database's short name.
+   */
+  name: string;
+  /**
+   * 3 to 5 realistic sample rows.
+   */
+  rows: SpacesRow[];
+  views: SpacesView[];
+  /**
+   * The registered kind this payload is an instance of.
+   */
+  __kind?: "space_database_design";
+  /**
+   * One sentence on what was designed.
+   */
+  summary: string;
+  properties: SpacesProperty[];
+  /**
+   * The key of the title property.
+   */
+  title_property: string;
+}
+
+/**
+ * Kind `space_notion_import` (registry v2).
+ */
+export interface SpaceNotionImport {
+  /**
+   * A Lucide icon name in PascalCase.
+   */
+  icon: string;
+  /**
+   * What could not be carried over, one line each.
+   */
+  notes: string[];
+  /**
+   * The page title (the source's first H1).
+   */
+  title: string;
+  /**
+   * The registered kind this payload is an instance of.
+   */
+  __kind?: "space_notion_import";
+  /**
+   * The page body in Notion-flavored markdown, with [[database:N]] where database N sits.
+   */
+  markdown: string;
+  databases: SpacesImportedDatabase[];
+}
+
+/**
  * An ordered script of spoken turns — the text-to-speech authoring part.
  *  *
  *  * Kind `speech_script` (registry v4).
@@ -21468,6 +21669,19 @@ export interface TextResult {
    * The registered kind this payload is an instance of.
    */
   __kind?: "text_result";
+}
+
+/**
+ * Kind `tidied_meeting_notes` (registry v3).
+ */
+export interface TidiedMeetingNotes {
+  __kind: "tidied_meeting_notes";
+  summary: string;
+  action_items: ({
+    task?: string;
+    owner?: string;
+    __kind: "action_item";
+  })[];
 }
 
 /**
@@ -26435,6 +26649,9 @@ export type GeneratedKindSlug =
   | "source_manifest"
   | "source_ref"
   | "source_request_verdict"
+  | "space_build_result"
+  | "space_database_design"
+  | "space_notion_import"
   | "speech_script"
   | "split_result"
   | "spoken_practice_session"
@@ -26460,6 +26677,7 @@ export type GeneratedKindSlug =
   | "text_chunk_set"
   | "text_quality_check_result"
   | "text_result"
+  | "tidied_meeting_notes"
   | "timeline"
   | "tool_bundle_listing"
   | "tool_call_record"
@@ -27025,6 +27243,9 @@ export interface KindPayloadBySlug {
   "source_manifest": SourceManifest;
   "source_ref": SourceRef;
   "source_request_verdict": SourceRequestVerdict;
+  "space_build_result": SpaceBuildResult;
+  "space_database_design": SpaceDatabaseDesign;
+  "space_notion_import": SpaceNotionImport;
   "speech_script": SpeechScript;
   "split_result": SplitResult;
   "spoken_practice_session": SpokenPracticeSession;
@@ -27050,6 +27271,7 @@ export interface KindPayloadBySlug {
   "text_chunk_set": TextChunkSet;
   "text_quality_check_result": TextQualityCheckResult;
   "text_result": TextResult;
+  "tidied_meeting_notes": TidiedMeetingNotes;
   "timeline": Timeline;
   "tool_bundle_listing": ToolBundleListing;
   "tool_call_record": ToolCallRecord;
@@ -27619,6 +27841,9 @@ export const GENERATED_KIND_SLUGS: readonly GeneratedKindSlug[] = [
   "source_manifest",
   "source_ref",
   "source_request_verdict",
+  "space_build_result",
+  "space_database_design",
+  "space_notion_import",
   "speech_script",
   "split_result",
   "spoken_practice_session",
@@ -27644,6 +27869,7 @@ export const GENERATED_KIND_SLUGS: readonly GeneratedKindSlug[] = [
   "text_chunk_set",
   "text_quality_check_result",
   "text_result",
+  "tidied_meeting_notes",
   "timeline",
   "tool_bundle_listing",
   "tool_call_record",

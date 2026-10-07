@@ -105,6 +105,7 @@ import { PLAN_SHAPE_RECOMMENDATION_KIND_DEFINITIONS } from "../kinds/plan-shape-
 import { CMS_PAGE_BUILD_KIND_DEFINITIONS } from "../kinds/cms-page-build";
 import { CMS_HTML_PAGE_RESULT_KIND_DEFINITIONS } from "../kinds/cms-html-page-result";
 import { APPLET_BUILD_RESULT_KIND_DEFINITIONS } from "../kinds/applet-build-result";
+import { SPACES_RESULT_KIND_DEFINITIONS } from "../kinds/spaces-results";
 import { INGESTED_SOURCES_KIND_DEFINITIONS } from "../kinds/ingested-sources";
 import { STUDY_NOTES_KIND_DEFINITIONS } from "../kinds/study-notes";
 import { LESSON_SCRIPTS_KIND_DEFINITIONS } from "../kinds/lesson-scripts";
@@ -209,6 +210,8 @@ export const SYSTEM_KIND_DEFINITIONS: KindDefinition[] = [
   ...CMS_HTML_PAGE_RESULT_KIND_DEFINITIONS,
   // The Applet builder's answer (applets.build / applets.fix): partial-ready.
   ...APPLET_BUILD_RESULT_KIND_DEFINITIONS,
+  // The Spaces agents' answers (spaces.build / design_database / move_in): complete-only.
+  ...SPACES_RESULT_KIND_DEFINITIONS,
   ...INGESTED_SOURCES_KIND_DEFINITIONS,
   ...STUDY_NOTES_KIND_DEFINITIONS,
   // study_pack_v2 (2026-08-22): the spoken-lesson artifact + the composed

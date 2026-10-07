@@ -943,6 +943,44 @@ const SHAPE_BLOCK_DISPATCH = {
     if (isBlockLoading(block)) return <MatrxMiniLoader key={index} />;
     return renderJsonFallback(block, index);
   },
+  // Kind-routed — the Spaces agents' answers (`spaces.build`, `spaces.design_database`,
+  // `spaces.move_in`). Complete-only: Spaces acts on the finished answer.
+  space_build_result: ({ block, index }) => {
+    if (block.serverData) {
+      return (
+        <BlockComponents.SpaceBuildResultBlock
+          key={index}
+          serverData={block.serverData}
+        />
+      );
+    }
+    if (isBlockLoading(block)) return <MatrxMiniLoader key={index} />;
+    return renderJsonFallback(block, index);
+  },
+  space_database_design: ({ block, index }) => {
+    if (block.serverData) {
+      return (
+        <BlockComponents.SpaceDatabaseDesignBlock
+          key={index}
+          serverData={block.serverData}
+        />
+      );
+    }
+    if (isBlockLoading(block)) return <MatrxMiniLoader key={index} />;
+    return renderJsonFallback(block, index);
+  },
+  space_notion_import: ({ block, index }) => {
+    if (block.serverData) {
+      return (
+        <BlockComponents.SpaceNotionImportBlock
+          key={index}
+          serverData={block.serverData}
+        />
+      );
+    }
+    if (isBlockLoading(block)) return <MatrxMiniLoader key={index} />;
+    return renderJsonFallback(block, index);
+  },
 
   // Kind-routed (media_chapters → media_chapters): STREAMING bridge, same
   // contract as page_brief — each chapter row appears as its object closes.

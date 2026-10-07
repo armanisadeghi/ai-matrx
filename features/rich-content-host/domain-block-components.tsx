@@ -23,6 +23,11 @@ import SeoKeywordResearchResultBlock from "@/components/mardown-display/blocks/k
 import PageBriefBlock from "@/components/mardown-display/blocks/page-brief/PageBriefBlock";
 import CmsHtmlPageResultBlock from "@/components/mardown-display/blocks/cms-html-page-result/CmsHtmlPageResultBlock";
 import AppletBuildResultBlock from "@/components/mardown-display/blocks/applet-build-result/AppletBuildResultBlock";
+import {
+  SpaceBuildResultBlock,
+  SpaceDatabaseDesignBlock,
+  SpaceNotionImportBlock,
+} from "@/components/mardown-display/blocks/spaces-results/SpacesResultBlocks";
 import EpisodeTitleOptionsBlock from "@/components/mardown-display/blocks/episode-title-options/EpisodeTitleOptionsBlock";
 import MasterworkCheckupFindingBlock from "@/components/mardown-display/blocks/masterwork-checkup/MasterworkCheckupFindingBlock";
 import MasterworkResultBlock from "@/components/mardown-display/blocks/masterwork/MasterworkResultBlock";
@@ -389,6 +394,27 @@ const DOMAIN_BLOCK_COMPONENTS = {
   ) => (
     <LazyBlockWrapper>
       <AppletBuildResultBlock {...props} />
+    </LazyBlockWrapper>
+  ),
+  SpaceBuildResultBlock: (
+    props: React.ComponentProps<typeof SpaceBuildResultBlock>,
+  ) => (
+    <LazyBlockWrapper>
+      <SpaceBuildResultBlock {...props} />
+    </LazyBlockWrapper>
+  ),
+  SpaceDatabaseDesignBlock: (
+    props: React.ComponentProps<typeof SpaceDatabaseDesignBlock>,
+  ) => (
+    <LazyBlockWrapper>
+      <SpaceDatabaseDesignBlock {...props} />
+    </LazyBlockWrapper>
+  ),
+  SpaceNotionImportBlock: (
+    props: React.ComponentProps<typeof SpaceNotionImportBlock>,
+  ) => (
+    <LazyBlockWrapper>
+      <SpaceNotionImportBlock {...props} />
     </LazyBlockWrapper>
   ),
   PlanPageResearchBlock: (
