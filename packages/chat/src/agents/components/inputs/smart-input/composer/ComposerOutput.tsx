@@ -303,8 +303,8 @@ function ShapePicker({
   }
 
   return (
-    <div className="flex min-h-0 flex-col">
-      <div className="flex items-center justify-between gap-2 px-2.5 pb-1 pt-2">
+    <div className="flex min-h-0 flex-1 flex-col">
+      <div className="flex shrink-0 items-center justify-between gap-2 px-2.5 pb-1 pt-2">
         <span className="truncate text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
           Shapes
         </span>
@@ -406,7 +406,7 @@ function ShapePicker({
 export function ComposerOutputPanel({ conversationId }: { conversationId: string }) {
   const output = useComposerOutput(conversationId);
   return (
-    <div className="@container flex min-h-0 flex-col">
+    <div className="@container flex min-h-0 flex-1 flex-col">
       <ComposerMenuLabel>Output types</ComposerMenuLabel>
       <TypeGrid types={output.types} onToggle={output.toggleType} />
       <ComposerMenuHelp>Narrows the agent list. Not sent to the model.</ComposerMenuHelp>
