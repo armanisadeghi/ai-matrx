@@ -11,9 +11,7 @@ import {
 import { cn } from "@ai-matrx/design-system";
 import { toast } from "@ai-matrx/chat/host/notify";
 import { supabase } from "@ai-matrx/chat/host/db";
-import { usePathname } from "next/navigation";
 import { useAgentDuplicateFlow } from "@/features/agents/hooks/useAgentDuplicateFlow";
-import { ADMIN_SYSTEM_AGENTS_BASE_PATH } from "@ai-matrx/chat/agents/components/shared/agent-route-context";
 import {
   Copy,
   GitCompareArrows,
@@ -61,21 +59,11 @@ export function VersionHistoryTimeline({
     fetchGap,
   } = useSmartVersionFetch(agentId, versions);
 
-  // Any row copies into a NEW agent. The current version copies the agent as
-  // it is now (same as the menu's Duplicate); a past one copies its snapshot.
-  // On the admin system-agents routes a builtin copies into another builtin.
-  const pathname = usePathname();
-  const duplicateFlow = useAgentDuplicateFlow(agentId, {
-    basePath: pathname?.startsWith(ADMIN_SYSTEM_AGENTS_BASE_PATH)
-      ? ADMIN_SYSTEM_AGENTS_BASE_PATH
-      : "/agents",
-  });
-  const onDuplicate = (version: { version_id: string; version_number: number }) =>
-    void duplicateFlow.startDuplicate(
-      version.version_number === currentVersion
-        ? undefined
-        : { versionId: version.version_id },
-    );
+  // Any row copies into a NEW agent through the one Duplicate dialog, with
+  // that version preselected (the current one copies the agent as it is now).
+  const duplicateFlow = useAgentDuplicateFlow();
+  const onDuplicate = (version: { version_id: string }) =>
+    void duplicateFlow.openDuplicate({ agentId, versionId: version.version_id });
 
   const hasEnrichedData = enrichedVersions.some((v) => v.diffSummary);
 

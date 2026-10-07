@@ -12,13 +12,13 @@
 // code path.
 
 import { useClipboard } from "@ai-matrx/kit/clipboard";
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useMemo, useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
-import { dismissRecordToasts, recordToast, toast } from "@/lib/toast";
-import { toastDoor } from "@/components/official/entity-ref/toastDoor";
+import { dismissRecordToasts, toast } from "@/lib/toast";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { selectIsSuperAdmin } from "@/lib/redux/selectors/userSelectors";
-import { deleteAgent, duplicateAgent, saveAgentField, setAgentFavorite } from "@/features/agents/redux/builder-write.thunks";
+import { deleteAgent, saveAgentField, setAgentFavorite } from "@/features/agents/redux/builder-write.thunks";
+import { useAgentDuplicateFlow } from "@/features/agents/hooks/useAgentDuplicateFlow";
 import { openOverlay } from "@/lib/redux/slices/overlaySlice";
 import { buildRecordReferenceFence } from "@/features/matrx-envelope/recordReference";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
@@ -29,7 +29,6 @@ import { buildAgentMenu } from "./agentActionRegistry";
 import { agentHref, isSystemAgentRow } from "./agentPaths";
 import type { AgentBrowseRow } from "./types";
 import { getUserMessage } from "@/lib/api/errors";
-import { isOrganizationSelectionCancelled } from "@/lib/organization/organization-gate";
 
 export interface AgentRowActionsHost {
   /** Build the full menu for one row. Lazy — pass straight to ItemMenu/ItemRow. */
@@ -66,6 +65,8 @@ export interface AgentRowActionsHost {
   renameAgent: AgentBrowseRow | null;
   closeRename: () => void;
   commitRename: (next: string) => Promise<void>;
+  /** The one Duplicate dialog — the page renders it once. */
+  duplicateDialog: ReactNode;
 }
 
 export interface UseAgentRowActionsArgs {
@@ -98,7 +99,6 @@ export function useAgentRowActions({
   const [renameAgent, setRenameAgent] = useState<AgentBrowseRow | null>(null);
   const [actionAgent, setActionAgent] = useState<AgentBrowseRow | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
-  const [isDuplicating, setIsDuplicating] = useState(false);
 
   /**
    * Single-field write through the canonical thunk, with our own revert — the
@@ -192,48 +192,17 @@ export function useAgentRowActions({
     [router],
   );
 
-  const duplicate = useCallback(
-    async (agent: AgentBrowseRow) => {
-      setIsDuplicating(true);
-      try {
-        // `duplicateAgent` RETURNS the new agent's id and every caller in the
-        // repo threw it away — so the user made a copy and had no way to reach
-        // it but to go hunting in the list. The door is the whole point of the
-        // toast.
-        // Duplicating a builtin produces a builtin — a system agent copied
-        // into someone's personal corpus is a silent demotion, and the admin
-        // who clicked Duplicate on the System tab meant "another one of these".
-        // The RPC re-checks is_super_admin() and rejects if the caller cannot.
-        const newAgentId = await dispatch(
-          duplicateAgent(
-            // Only the seat that manages the built-in (is_owner on a System
-            // row = a platform admin) makes another built-in; everyone else
-            // duplicating a published built-in gets their own copy.
-            isSystemAgentRow(agent) && agent.is_owner
-              ? { agentId: agent.id, asSystem: true }
-              : agent.id,
-          ),
-        ).unwrap();
-        recordToast.success(
-          // The toast is about the COPY (its door opens it); the source's
-          // name is quoted, never used as identity.
-          { type: "agent", id: newAgentId },
-          `Duplicated "${agent.name}"`,
-          { action: toastDoor("agent", newAgentId) },
-        );
-        refresh();
-      } catch (err) {
-        if (!isOrganizationSelectionCancelled(err)) {
-          toast.error("Could not duplicate agent", {
-            description: getUserMessage(err),
-          });
-        }
-      } finally {
-        setIsDuplicating(false);
-      }
-    },
-    [dispatch, refresh],
-  );
+  // THE one Duplicate dialog (version + name), the same one every agent
+  // surface opens. Only the seat that manages a built-in (is_owner on a System
+  // row = a platform admin) makes another built-in; everyone else duplicating a
+  // published built-in gets their own copy. The RPC re-checks is_super_admin().
+  const duplicateFlow = useAgentDuplicateFlow({ onDuplicated: () => refresh() });
+  const duplicate = (agent: AgentBrowseRow) =>
+    duplicateFlow.openDuplicate({
+      agentId: agent.id,
+      asSystem: isSystemAgentRow(agent) && Boolean(agent.is_owner),
+    });
+  const isDuplicating = duplicateFlow.isDuplicating;
 
   const remove = useCallback(
     async (agent: AgentBrowseRow) => {
@@ -401,6 +370,7 @@ export function useAgentRowActions({
       renameAgent,
       closeRename: () => setRenameAgent(null),
       commitRename,
+      duplicateDialog: duplicateFlow.dialog,
     }),
     [
       menuFor,
@@ -415,6 +385,7 @@ export function useAgentRowActions({
       addToSetAgent,
       renameAgent,
       commitRename,
+      duplicateFlow.dialog,
     ],
   );
 }

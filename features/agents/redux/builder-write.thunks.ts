@@ -12,6 +12,7 @@ import { pgErrorToError } from "@ai-matrx/data";
 import { tryWriteOne, writeOneRow } from "@ai-matrx/data/db";
 import { assignField } from "@ai-matrx/agents/field-flags";
 import { supabase } from "@ai-matrx/chat/host/db";
+import { supabase as appDb } from "@/utils/supabase/client";
 import { selectUserId } from "@ai-matrx/chat/host/identity";
 import { selectOrganizationId, ensureOrgId } from "@ai-matrx/chat/host/org";
 import { writeFavorite } from "@ai-matrx/chat/context/sources/scopes";
@@ -20,6 +21,8 @@ interface DuplicateAgentCommon {
   asSystem?: boolean;
   organizationId?: string;
   followsSource?: boolean;
+  /** The copy's name; empty = "Name (Copy)" / "Name (vN copy)". A taken name gets " (2)". */
+  name?: string;
 }
 /**
  * What to copy into a new agent: the agent as it is now (`agentId`), or one
@@ -376,29 +379,23 @@ export const deleteAgent = createAsyncThunk<void, string, ThunkApi>(
 
 
 /**
- * Duplicates an agent via the `agx_duplicate_agent` RPC and loads the copy into state.
- * Returns the new agent's id.
+ * THE one agent copy (UI: `useAgentDuplicateFlow`). Calls agent.duplicate_agent
+ * (the agent as it is now) or agent.duplicate_version (one saved version);
+ * both share the database's single copy core, so a copy carries the same
+ * fields either way. Loads the copy into state and returns its id.
  *
- * Accepts either a bare agent id (legacy callers) or an options object so that
- * admin surfaces can opt into preserving system status:
- *
- *   dispatch(duplicateAgent(agentId))                          // user copy
- *   dispatch(duplicateAgent({ agentId, asSystem: true }))      // system copy
- *   dispatch(duplicateAgent({ agentId, versionId }))           // copy of a past version
- *
- * `asSystem: true` is admin-only — the RPC verifies `is_super_admin()` and
- * rejects otherwise. When set, the new row is inserted as a builtin system
- * agent (`agent_type = 'builtin'`, no owner). Default is the historical
- * "personal copy" behavior so existing callers keep working unchanged.
+ *   dispatch(duplicateAgent(agentId))                          // personal copy
+ *   dispatch(duplicateAgent({ agentId, asSystem: true }))      // system copy (super admin)
+ *   dispatch(duplicateAgent({ agentId, versionId, name }))     // a past version, named
  */
 export const duplicateAgent = createAsyncThunk<
   string,
   string | DuplicateAgentOptions,
   ThunkApi
 >("agentDefinition/duplicate", async (input, { dispatch, getState }) => {
-  const { agentId, asSystem, organizationId: explicitOrganizationId, followsSource, versionId } =
+  const { agentId, asSystem, organizationId: explicitOrganizationId, followsSource, versionId, name } =
     typeof input === "string"
-      ? { agentId: input, asSystem: false, organizationId: undefined, followsSource: false, versionId: undefined }
+      ? { agentId: input, asSystem: false, organizationId: undefined, followsSource: false, versionId: undefined, name: undefined }
       : input;
 
   // A personal copy lives in the organization the caller named, else the one the
@@ -413,17 +410,19 @@ export const duplicateAgent = createAsyncThunk<
   // records which version it came from and never follows the source); no
   // version = the agent as it is now.
   const { data, error } = versionId
-    ? await supabase.rpc("agx_duplicate_version", {
+    ? await appDb.schema("agent").rpc("duplicate_version", {
         p_version_id: versionId,
         p_as_system: Boolean(asSystem),
         p_organization_id: organizationId,
+        p_name: name,
       })
-    : await supabase.rpc("agx_duplicate_agent", {
+    : await appDb.schema("agent").rpc("duplicate_agent", {
         // The options type guarantees an agent id whenever no version is named.
         p_agent_id: agentId as string,
         p_as_system: Boolean(asSystem),
         p_organization_id: organizationId,
         p_follows_source: Boolean(followsSource),
+        p_name: name,
       });
 
   if (error) throw pgErrorToError(error);

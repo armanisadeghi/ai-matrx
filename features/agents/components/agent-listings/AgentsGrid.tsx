@@ -33,7 +33,6 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { toast } from "@/lib/toast";
-import { toastDoor } from "@/components/official/entity-ref/toastDoor";
 import { useIsMobile } from "@ai-matrx/kit/media-query";
 // The gallery is a LIST CONSUMER of the ONE agent catalog (ruling D1): its
 // card UI stays here, its rows and every filter/sort/count come from the
@@ -56,7 +55,8 @@ import {
 } from "@ai-matrx/agents/catalog";
 import { ReadFailure } from "@/components/read-state/ReadFailure";
 import { resolveAgentVersionId } from "@/features/agents/redux/builder-versions.thunks";
-import { deleteAgent, duplicateAgent } from "@/features/agents/redux/builder-write.thunks";
+import { deleteAgent } from "@/features/agents/redux/builder-write.thunks";
+import { useAgentDuplicateFlow } from "@/features/agents/hooks/useAgentDuplicateFlow";
 import type {
   AgentConsumerState,
   AgentSortOption,
@@ -72,8 +72,6 @@ import {
 } from "@/features/surfaces/manifests/agents-hub.manifest";
 import { getPeekedAgentId } from "./agent-peek-tracker";
 import { SORT_OPTIONS } from "@ai-matrx/agents/catalog/react";
-import { getUserMessage } from "@/lib/api/errors";
-import { isOrganizationSelectionCancelled } from "@/lib/organization/organization-gate";
 import { isUuidShape } from "@ai-matrx/kit/uuid";
 import { useAgentCatalogError, useAgentCatalogStatus } from "@ai-matrx/chat/agents/identity/agent-catalog-lists";
 import { ensureAgentCatalog } from "@ai-matrx/chat/agents/identity/agent-identity";
@@ -118,7 +116,7 @@ export function AgentsGrid() {
   const [, startTransition] = useTransition();
   const [navigatingId, setNavigatingId] = useState<string | null>(null);
   const [deletingIds, setDeletingIds] = useState<Set<string>>(new Set());
-  const [duplicatingIds, setDuplicatingIds] = useState<Set<string>>(new Set());
+  const duplicateFlow = useAgentDuplicateFlow();
   const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
 
   const catalog = useAgentCatalog();
@@ -301,29 +299,8 @@ export function AgentsGrid() {
     }
   };
 
-  const handleDuplicate = async (id: string) => {
-    setDuplicatingIds((prev) => new Set(prev).add(id));
-    try {
-      // The thunk returns the copy's id; discarding it left the user with a
-      // new agent and no way to open it.
-      const newAgentId = await dispatch(duplicateAgent(id)).unwrap();
-      toast.success("Agent duplicated", {
-        action: toastDoor("agent", newAgentId),
-      });
-    } catch (err) {
-      if (!isOrganizationSelectionCancelled(err)) {
-        toast.error("Could not duplicate agent", {
-          description: getUserMessage(err),
-        });
-      }
-    } finally {
-      setDuplicatingIds((prev) => {
-        const n = new Set(prev);
-        n.delete(id);
-        return n;
-      });
-    }
-  };
+  // THE one Duplicate dialog (version + name) every agent surface opens.
+  const handleDuplicate = (id: string) => void duplicateFlow.openDuplicate({ agentId: id });
 
   const handleNavigate = (id: string, path: string) => {
     if (navigatingId) return;
@@ -520,7 +497,7 @@ export function AgentsGrid() {
           onDuplicate={handleDuplicate}
           onNavigate={handleNavigate}
           isDeleting={deletingIds.has(a.id)}
-          isDuplicating={duplicatingIds.has(a.id)}
+          isDuplicating={duplicateFlow.isDuplicating}
           isNavigating={navigatingId === a.id}
           isAnyNavigating={navigatingId !== null}
           navigationIds={navigationIds}
@@ -539,7 +516,7 @@ export function AgentsGrid() {
           onDuplicate={handleDuplicate}
           onNavigate={handleNavigate}
           isDeleting={deletingIds.has(a.id)}
-          isDuplicating={duplicatingIds.has(a.id)}
+          isDuplicating={duplicateFlow.isDuplicating}
           isNavigating={navigatingId === a.id}
           isAnyNavigating={navigatingId !== null}
           navigationIds={navigationIds}
@@ -652,6 +629,7 @@ export function AgentsGrid() {
       getScope={getHubScope}
       getWriteHandlers={buildHubWriteHandlers}
     >
+      {duplicateFlow.dialog}
       {/* Desktop controls — single row: Filter | Search | tabs | result count | New */}
       {!isMobile && (
         <div className="mb-3 pt-8">
