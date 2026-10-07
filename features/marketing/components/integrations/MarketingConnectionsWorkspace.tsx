@@ -66,7 +66,7 @@ import {
 } from "@/providers/google-provider/GoogleApiProvider";
 import { useAppSelector } from "@/lib/redux/hooks";
 import {
-  selectIsSuperAdmin,
+  selectAdminFeature,
   selectUserEmail,
 } from "@/lib/redux/selectors/userSelectors";
 import { GOOGLE_YOUTUBE_SCOPES } from "@/lib/googleScopes";
@@ -102,7 +102,9 @@ function MarketingConnectionsContent({ reviewMode }: { reviewMode: boolean }) {
   // 🚨 ONE Google authorization window per PERSON — never a per-component
   // lock, never the raw provider primitive (V-23 NEW-3, lane F-103).
   const googleAuth = useGoogleAuthorizationWindow();
-  const isSuperAdmin = useAppSelector(selectIsSuperAdmin);
+  const isSuperAdmin = useAppSelector((s) =>
+    selectAdminFeature(s, "google.internal-review"),
+  );
   const userEmail = useAppSelector(selectUserEmail);
   const canUseReadOnlyReview = canUseGoogleOAuthInternalTest(
     isSuperAdmin,
