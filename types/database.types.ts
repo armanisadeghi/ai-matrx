@@ -82667,6 +82667,7 @@ export type Database = {
           container_side: string
           conveys_max: Database["public"]["Enums"]["permission_level"]
           created_at: string
+          id: string
           is_active: boolean
           label: string | null
           notes: string | null
@@ -82680,6 +82681,7 @@ export type Database = {
           container_side?: string
           conveys_max?: Database["public"]["Enums"]["permission_level"]
           created_at?: string
+          id?: string
           is_active?: boolean
           label?: string | null
           notes?: string | null
@@ -82693,6 +82695,7 @@ export type Database = {
           container_side?: string
           conveys_max?: Database["public"]["Enums"]["permission_level"]
           created_at?: string
+          id?: string
           is_active?: boolean
           label?: string | null
           notes?: string | null
