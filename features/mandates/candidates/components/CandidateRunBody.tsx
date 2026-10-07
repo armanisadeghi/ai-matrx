@@ -38,6 +38,7 @@ import {
   VERDICT_WORD,
   attemptWord,
   inputPartWord,
+  pairWalkLabel,
   sharedInputsLine,
 } from "../words";
 import { Chip, JsonBlock, MetricsLine, NewTabLink, StateLine, detailPageHref } from "./parts";
@@ -423,7 +424,7 @@ function AnswersBlock({
           error={payload ? payload.live_error : undefined}
           errorCode={run.live_error_code ?? null}
           conversationId={run.live_conversation_id ?? null}
-          pairLabel={`Pair ${run.number}`}
+          pairLabel={pairWalkLabel(run)}
           agentId={candidate?.baseline_holder_type === "agent" ? (candidate.baseline_holder_id ?? null) : null}
           withheld={!payload}
         />
@@ -438,7 +439,7 @@ function AnswersBlock({
           error={payload ? payload.candidate_error : undefined}
           errorCode={run.candidate_error_code ?? null}
           conversationId={run.candidate_conversation_id ?? null}
-          pairLabel={`Pair ${run.number}`}
+          pairLabel={pairWalkLabel(run)}
           agentId={candidate?.holder_type === "agent" ? candidate.holder_id : null}
           withheld={!payload}
           pending={run.status === "queued" || run.status === "running"}

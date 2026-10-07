@@ -14,7 +14,7 @@
 /** Title budget — a window title is a label in a slot, never a sentence. */
 export const WALK_TITLE_BUDGET = 40;
 const ROLE_BUDGET = 12;
-const DETAIL_BUDGET = 12;
+const DETAIL_BUDGET = 16;
 export const WALK_CASCADE_SLOTS = 8;
 
 const UNIT_TITLE: Record<string, string> = {
