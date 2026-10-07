@@ -19,8 +19,12 @@ import { Lightbulb } from "lucide-react";
 import { WindowPanel } from "@/features/window-panels/WindowPanel";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { selectAgentSkillConfig, selectAgentName } from "@ai-matrx/chat/agents/redux/agent-definition/selectors";
-import { setAgentSkillConfig } from "@ai-matrx/chat/agents/redux/agent-definition/slice";
-import { fetchFullAgent } from "@ai-matrx/chat/agents/redux/agent-definition/thunks";
+import {
+  setAgentSkillConfig,
+} from "@/features/agents/redux/agent-builder.slice";
+import {
+  fetchFullAgent,
+} from "@/features/agents/redux/fetch-full-agent.thunk";
 import { SkillConfigPicker } from "@/features/skills/components/SkillConfigPicker";
 import type { SkillConfig } from "@/features/skills/types";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";

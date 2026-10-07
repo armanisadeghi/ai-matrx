@@ -21,10 +21,8 @@ import {
   selectAgentSettings,
 } from "@ai-matrx/chat/agents/redux/agent-definition/selectors";
 import {
-  setAgentControlBinding,
-  setAgentMessages,
-  setAgentVariableDefinitions,
-} from "@ai-matrx/chat/agents/redux/agent-definition/slice";
+  setAgentControlBinding, setAgentMessages, setAgentVariableDefinitions,
+} from "@/features/agents/redux/agent-builder.slice";
 import { unbindControlVariable } from "@ai-matrx/chat/agents/utils/control-variables";
 import { isControlVariable } from "@ai-matrx/agents";
 import type { VariableDefinition } from "@ai-matrx/chat/agents/types/agent-definition.types";

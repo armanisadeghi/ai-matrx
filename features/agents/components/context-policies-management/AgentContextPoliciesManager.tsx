@@ -39,7 +39,9 @@ import {
 } from "@/components/ui/select";
 import { useAppSelector, useAppDispatch } from "@/lib/redux/hooks";
 import { selectAgentContextPolicies } from "@ai-matrx/chat/agents/redux/agent-definition/selectors";
-import { setAgentContextPolicies } from "@ai-matrx/chat/agents/redux/agent-definition/slice";
+import {
+  setAgentContextPolicies,
+} from "@/features/agents/redux/agent-builder.slice";
 import type {
   ContextObjectType,
   ContextPolicy,

@@ -39,6 +39,7 @@ import overlayDataReducer from "./slices/overlayDataSlice";
 import voicePadReducer from "./slices/voicePadSlice";
 // The chat package owns its slices and mounts them under the same keys (P2).
 import { chatReducers } from "@ai-matrx/chat/store/slices";
+import { agentDefinitionWithBuilderReducer } from "@/features/agents/redux/agent-builder.slice";
 import { withAppChatHost } from "./chat-host-from-app";
 import windowManagerReducer from "./slices/windowManagerSlice";
 import { canvasReducer as canvasHostReducer } from "@ai-matrx/canvas";
@@ -240,6 +241,8 @@ export const slimReducerMap = {
   // NEW AGENTS SYSTEM =======================================================
   // Every slice @ai-matrx/chat owns, under today's top-level keys (P2).
   ...chatReducers,
+  // The builder's edit reducers (agentBuilder/*) composed onto chat's agent record (B2).
+  agentDefinition: agentDefinitionWithBuilderReducer,
   agentAssignments: agentAssignmentsReducer,
   agentUsages: agentUsagesReducer,
   // Orchestras — Orchestra list + per-Orchestra member/config cache.

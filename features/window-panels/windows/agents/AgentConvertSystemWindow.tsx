@@ -23,7 +23,9 @@ import {
 } from "@/features/mandates/overrides";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { selectAgentName } from "@ai-matrx/chat/agents/redux/agent-definition/selectors";
-import { fetchFullAgent } from "@ai-matrx/chat/agents/redux/agent-definition/thunks";
+import {
+  fetchFullAgent,
+} from "@/features/agents/redux/fetch-full-agent.thunk";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 import { buildAgentMenuSection, agentEntityRef } from "@ai-matrx/chat/agents/menu/agent-actions";
 import type { AnyMandateKey } from "@ai-matrx/agents/mandates";

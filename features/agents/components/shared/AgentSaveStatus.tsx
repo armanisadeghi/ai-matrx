@@ -4,7 +4,9 @@ import { Badge, Button } from "@ai-matrx/design-system/controls";
 import { useState } from "react";
 import { Save, Loader2, AlertTriangle, Eye, Undo2 } from "lucide-react";
 import { useAppDispatch } from "@ai-matrx/chat/store/hooks";
-import { resetAllAgentFields } from "@ai-matrx/chat/agents/redux/agent-definition/slice";
+import {
+  resetAllAgentFields,
+} from "@/features/agents/redux/agent-builder.slice";
 import { useChatCanvasTab } from "@ai-matrx/chat/host/canvas";
 import { AGENT_UNSAVED_CHANGES_KIND } from "@ai-matrx/chat/host/canvas-tabs";
 import { cn } from "@ai-matrx/design-system";

@@ -35,7 +35,9 @@ import { WindowPanel } from "@/features/window-panels/WindowPanel";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { openOverlay } from "@/lib/redux/slices/overlaySlice";
 import { selectAgentVariableDefinitions } from "@ai-matrx/chat/agents/redux/agent-definition/selectors";
-import { setAgentVariableDefinitions } from "@ai-matrx/chat/agents/redux/agent-definition/slice";
+import {
+  setAgentVariableDefinitions,
+} from "@/features/agents/redux/agent-builder.slice";
 import { displayLabel } from "@ai-matrx/kit/text-case";
 import { variableRunLabel } from "@ai-matrx/agents";
 import { AgentVariableEditor } from "./AgentVariableEditor";

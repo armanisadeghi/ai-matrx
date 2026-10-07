@@ -5,7 +5,9 @@ import { ChevronRight } from "lucide-react";
 import { Skeleton } from "@ai-matrx/design-system";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { ReadFailure } from "@/components/read-state/ReadFailure";
-import { fetchFullAgent } from "@ai-matrx/chat/agents/redux/agent-definition/thunks";
+import {
+  fetchFullAgent,
+} from "@/features/agents/redux/fetch-full-agent.thunk";
 import {
   selectAgentError,
   selectAgentConversationMessageIndices,

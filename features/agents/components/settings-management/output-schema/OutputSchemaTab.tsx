@@ -29,7 +29,9 @@ import {
 import { Button } from "@ai-matrx/design-system";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { selectAgentOutputSchema } from "@ai-matrx/chat/agents/redux/agent-definition/selectors";
-import { setAgentOutputSchema } from "@ai-matrx/chat/agents/redux/agent-definition/slice";
+import {
+  setAgentOutputSchema,
+} from "@/features/agents/redux/agent-builder.slice";
 import type { OutputSchema } from "@ai-matrx/chat/agents/types/json-schema";
 import { InfoHint } from "@/components/official/InfoHint";
 import { SettingsJsonEditor } from "../json/SettingsJsonEditor";

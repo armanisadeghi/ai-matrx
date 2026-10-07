@@ -15,7 +15,9 @@ import type {
   OrchestraMemberMeta,
 } from "@/features/agents/orchestras/types";
 import { DEFAULT_ORCHESTRA_RESULT_MODE } from "@/features/agents/orchestras/constants";
-import { fetchFullAgent } from "@ai-matrx/chat/agents/redux/agent-definition/thunks";
+import {
+  fetchFullAgent,
+} from "@/features/agents/redux/fetch-full-agent.thunk";
 import { purposeService, type GroundingTag } from "@/features/purpose/service";
 import { orchestrasActions } from "./slice";
 

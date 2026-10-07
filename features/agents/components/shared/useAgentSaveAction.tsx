@@ -15,7 +15,9 @@ import {
 import { createAgent, saveAgent } from "@/features/agents/redux/builder-write.thunks";
 import { toast } from "@ai-matrx/chat/host/notify";
 import { agentNameTaken } from "@ai-matrx/chat/agents/redux/agent-definition/agentNameTaken";
-import { setAgentField } from "@ai-matrx/chat/agents/redux/agent-definition/slice";
+import {
+  setAgentField,
+} from "@/features/agents/redux/agent-builder.slice";
 import {
   AlertDialog,
   AlertDialogAction,

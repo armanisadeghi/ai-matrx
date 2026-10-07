@@ -27,7 +27,9 @@ import {
 import { Checkbox } from "@/components/ui/checkbox";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { selectAgentMatrxDirectives } from "@ai-matrx/chat/agents/redux/agent-definition/selectors";
-import { setAgentMatrxDirectives } from "@ai-matrx/chat/agents/redux/agent-definition/slice";
+import {
+  setAgentMatrxDirectives,
+} from "@/features/agents/redux/agent-builder.slice";
 import type { MatrxDirectivesConfig } from "@ai-matrx/chat/agents/types/matrx-directives.types";
 import { useDirectiveCatalog } from "@/features/directive-catalog/hooks/useDirectiveCatalog";
 import {

@@ -34,7 +34,9 @@ import {
   selectAgentDirtyFields,
 } from "@ai-matrx/chat/agents/redux/agent-definition/selectors";
 import { selectAllTools } from "@ai-matrx/chat/agents/redux/tools/tools.selectors";
-import { resetAgentField } from "@ai-matrx/chat/agents/redux/agent-definition/slice";
+import {
+  resetAgentField,
+} from "@/features/agents/redux/agent-builder.slice";
 import { fetchAvailableTools } from "@ai-matrx/chat/agents/redux/tools/tools.thunks";
 import { hasField } from "@ai-matrx/agents/field-flags";
 import { copyToClipboard } from "@/lib/clipboard/copy";

@@ -4,9 +4,8 @@ import { useEffect, useCallback } from "react";
 import { keyEventInside } from "@ai-matrx/kit/keyboard-scope";
 import { useAppDispatch, useAppSelector } from "@ai-matrx/chat/store/hooks";
 import {
-  undoAgentEdit,
-  redoAgentEdit,
-} from "@ai-matrx/chat/agents/redux/agent-definition/slice";
+  undoAgentEdit, redoAgentEdit,
+} from "@/features/agents/redux/agent-builder.slice";
 import {
   selectAgentCanUndo,
   selectAgentCanRedo,

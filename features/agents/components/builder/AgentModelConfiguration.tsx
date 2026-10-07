@@ -18,9 +18,8 @@ import {
   selectAgentSettings,
 } from "@ai-matrx/chat/agents/redux/agent-definition/selectors";
 import {
-  setAgentField,
-  setAgentSettings,
-} from "@ai-matrx/chat/agents/redux/agent-definition/slice";
+  setAgentField, setAgentSettings,
+} from "@/features/agents/redux/agent-builder.slice";
 import type {
   FeLlmParams,
   LLMParams,

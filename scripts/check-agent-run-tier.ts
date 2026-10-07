@@ -36,15 +36,12 @@ const DEFINITION_FETCH = /\b(?:fetchAgentExecutionFull|fetchFullAgent)\s*\(/g;
 const LEGACY_RPC = /\.rpc\(\s*["'`]agx_get_execution_(?:minimal|full)["'`]/g;
 
 /**
- * Builder tier (§3). Since P25 the builder surfaces (debug window, agent view
- * page, compare/version diff, builder scope hook, definition-sync saga,
- * `fetchAgentExecutionFull`) live in the app, not the package. Only the file
- * that DEFINES `fetchFullAgent` stays exempt.
+ * Builder tier (§3). Since B2 (2026-10-07) no package file is exempt: the
+ * builder surfaces and `fetchFullAgent` itself live in the app
+ * (`features/agents/redux/fetch-full-agent.thunk.ts`), so any definition
+ * fetch inside chat counts against the run.
  */
-const BUILDER_TIER = new Set<string>([
-  `${PKG}agents/redux/agent-definition/thunks.ts`,
-]);
-
+const BUILDER_TIER = new Set<string>([]);
 /**
  * SHRINK-ONLY BASELINE (2026-10-05, P24). Run-side definition fetches still
  * standing, with why. Never raise a number; lower it when a site moves.

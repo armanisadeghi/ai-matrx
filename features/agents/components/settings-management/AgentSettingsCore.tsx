@@ -55,11 +55,8 @@ import {
   selectAgentVariableDefinitions,
 } from "@ai-matrx/chat/agents/redux/agent-definition/selectors";
 import {
-  setAgentControlBinding,
-  setAgentSettings,
-  setAgentField,
-  setAgentTools,
-} from "@ai-matrx/chat/agents/redux/agent-definition/slice";
+  setAgentControlBinding, setAgentSettings, setAgentField, setAgentTools,
+} from "@/features/agents/redux/agent-builder.slice";
 import {
   fetchModelById,
   fetchModelOptions,

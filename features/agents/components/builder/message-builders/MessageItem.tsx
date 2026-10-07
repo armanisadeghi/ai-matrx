@@ -32,9 +32,8 @@ import { isDecisionQuestionsPart } from "@/features/agents/decision-questions/ty
 import { modelTakesDecisions } from "@/features/agents/decision-questions/budget";
 import { modelProducesSpeech } from "@ai-matrx/chat/agents/speech-script/types";
 import {
-  setAgentMessages,
-  setAgentVariableDefinitions,
-} from "@ai-matrx/chat/agents/redux/agent-definition/slice";
+  setAgentMessages, setAgentVariableDefinitions,
+} from "@/features/agents/redux/agent-builder.slice";
 import {
   isReferenceRole,
   variableNameOfMediaUrl,

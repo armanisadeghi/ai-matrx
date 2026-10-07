@@ -15,6 +15,7 @@
  * fetch thunks, the org knob, the model picker, the catalog hook) are stubbed.
  */
 
+import { agentDefinitionWithBuilderReducer } from "@/features/agents/redux/agent-builder.slice";
 import React, { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { Provider } from "react-redux";
@@ -139,7 +140,7 @@ function makeStore(agent: {
   const registryInit = modelRegistryReducer(undefined, { type: "@@INIT" });
   const store = configureStore({
     reducer: {
-      agentDefinition: agentDefinitionReducer,
+      agentDefinition: agentDefinitionWithBuilderReducer,
       modelRegistry: modelRegistryReducer,
     },
     preloadedState: {

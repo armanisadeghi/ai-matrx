@@ -24,9 +24,8 @@ import {
   selectAgentMessages,
 } from "@ai-matrx/chat/agents/redux/agent-definition/selectors";
 import {
-  setAgentMessages,
-  setAgentVariableDefinitions,
-} from "@ai-matrx/chat/agents/redux/agent-definition/slice";
+  setAgentMessages, setAgentVariableDefinitions,
+} from "@/features/agents/redux/agent-builder.slice";
 import type { VariableDefinition } from "@ai-matrx/chat/agents/types/agent-definition.types";
 import {
   sanitizeVariableName,
