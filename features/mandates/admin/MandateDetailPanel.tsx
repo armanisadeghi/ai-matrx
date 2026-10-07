@@ -42,7 +42,7 @@ import { cn } from "@/lib/utils";
 import type {
   AgentLineage,
   AgentLineageRef,
-} from "@ai-matrx/chat/agents/redux/agent-definition/selectors";
+} from "@ai-matrx/chat/agents/identity/agent-catalog-lists";
 import type { AgentDefinition } from "@ai-matrx/chat/agents/types/agent-definition.types";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { getAgentModeHref } from "@ai-matrx/chat/agents/components/shared/AgentModeController";
