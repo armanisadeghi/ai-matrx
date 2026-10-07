@@ -172,6 +172,14 @@ function useWaitingRunsState(): SourceState {
   return { count: error ? null : rows.length, hidden: null, loading, error: error !== null };
 }
 
+// What each mounted place last read, so the bell's Clear all can clear the places too (one click to
+// zero). Only places on screen register; one folded under More is cleared on its own.
+const shownCounts = new Map<string, number>();
+/** The count each mounted place last read (readable ones only). */
+export function placeCountsNow(): Record<string, number> {
+  return Object.fromEntries(shownCounts);
+}
+
 /**
  * What a source shows beside its label: "N snoozed", its count ABOVE what the person last cleared,
  * and its one-click actions (Clear · Hide from bell). Arman, 2026-10-07: nothing hard to resolve
@@ -195,6 +203,14 @@ export function SourceIndicatorView({
     // Items handled elsewhere lower the mark, so the next new one shows.
     if (lowered) memory.save({ sourcesCleared: lowered });
   }, [lowered, memory]);
+  const readable = sourceKey in counts && state.count !== null ? state.count : null;
+  useEffect(() => {
+    if (readable === null) return;
+    shownCounts.set(sourceKey, readable);
+    return () => {
+      shownCounts.delete(sourceKey);
+    };
+  }, [sourceKey, readable]);
 
   const shown = memory.ready ? above(state.count, memory.sourcesCleared[sourceKey]) : (state.count ?? 0);
   const loud = bucket === "needs_you" || bucket === "direct";

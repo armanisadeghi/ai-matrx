@@ -85,6 +85,7 @@
     "check:fixture-account-doors": "node scripts/check-no-placeholder-data.mjs --account-doors",
     "check:fixture-account-doors:self-test": "node scripts/check-no-placeholder-data.mjs --self-test",
     "test:persona": "node --test scripts/lib/persona.test.mjs",
+    "perf:data": "node scripts/perf-data/run.mjs",
     "test:unit": "jest --no-coverage",
     "test:window-panels": "jest features/window-panels/__tests__ --no-coverage",
     "test:content-ir": "jest features/content-ir --no-coverage",

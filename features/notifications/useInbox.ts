@@ -381,7 +381,7 @@ export interface InboxActions {
    * Done for EVERY Inbox notice of these kinds (null = all of them), every page, one call.
    * Undoable: the toast's Undo puts exactly those notices back. Resolves to how many cleared.
    */
-  clear: (eventKeys: readonly string[] | null, what?: string) => Promise<number>;
+  clear: (eventKeys: readonly string[] | null, what?: string, onUndo?: () => void) => Promise<number>;
 }
 
 /** `triage`: whether the triage doors are on this database (unread, Done, snooze). */
@@ -511,7 +511,7 @@ export function useInboxActions(triage = true): InboxActions {
     }
   };
 
-  const clear: InboxActions["clear"] = async (eventKeys, what = "Cleared") => {
+  const clear: InboxActions["clear"] = async (eventKeys, what = "Cleared", onUndo) => {
     const keys = eventKeys ? new Set(eventKeys) : null;
     // Optimistic: every loaded row of those kinds leaves the Inbox now.
     queryClient.setQueriesData<InfiniteData<InboxPage, InboxCursor | null>>(
@@ -531,9 +531,15 @@ export function useInboxActions(triage = true): InboxActions {
     );
     try {
       const ids = await clearInbox("done", eventKeys);
-      if (ids.length > 0) {
-        toast(`${what} · ${ids.length}`, {
-          action: { label: "Undo", onClick: () => void undoClear(ids) },
+      if (ids.length > 0 || onUndo) {
+        toast(ids.length > 0 ? `${what} · ${ids.length}` : what, {
+          action: {
+            label: "Undo",
+            onClick: () => {
+              onUndo?.();
+              if (ids.length > 0) void undoClear(ids);
+            },
+          },
         });
       }
       return ids.length;

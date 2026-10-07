@@ -144,8 +144,12 @@ const ResearchBlock: React.FC<ResearchBlockProps> = ({
     if (!blockContentRef.current || isPrinting) return;
     setIsPrinting(true);
     try {
-      const { captureBlockElement } = await import('@ai-matrx/print/pdf');
-      await captureBlockElement(blockContentRef.current, research.title.replace(/\s+/g, '-').toLowerCase() || 'research', 'portrait');
+      const [{ captureDocumentPdf }, { downloadFile }] = await Promise.all([
+        import('@ai-matrx/alchemy/operate/capture'),
+        import('@ai-matrx/kit/download'),
+      ]);
+      const filename = research.title.replace(/\s+/g, '-').toLowerCase() || 'research';
+      downloadFile(`${filename}.pdf`, await captureDocumentPdf(blockContentRef.current, { orientation: 'portrait' }), 'application/pdf');
     } catch (err) {
       console.error('[ResearchBlock] Print failed:', err);
     } finally {

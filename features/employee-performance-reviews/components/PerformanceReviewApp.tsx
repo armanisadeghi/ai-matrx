@@ -26,7 +26,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { toast } from "@/lib/toast";
-import { captureElementsToPDF } from "@ai-matrx/print/pdf";
+import { captureDocumentPdf } from "@ai-matrx/alchemy/operate/capture";
+import { downloadFile } from "@ai-matrx/kit/download";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
 import { jsonExportItem } from "@/components/agent-copy/export";
 import { SurfaceRuntimeProvider } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
@@ -300,8 +301,7 @@ export default function PerformanceReviewApp({
       const pages = Array.from(
         reportHost.querySelectorAll<HTMLElement>("[data-review-report-page]"),
       );
-      await captureElementsToPDF(pages, {
-        filename: reviewReportFilename(r),
+      const pdf = await captureDocumentPdf(pages, {
         paperSize: "letter",
         orientation: "portrait",
         scale: 2,
@@ -310,6 +310,7 @@ export default function PerformanceReviewApp({
         imageFormat: "jpeg",
         imageQuality: 0.94,
       });
+      downloadFile(`${reviewReportFilename(r)}.pdf`, pdf, "application/pdf");
       toast.success("PDF downloaded");
     } catch (error) {
       console.error("Performance review PDF export failed", error);

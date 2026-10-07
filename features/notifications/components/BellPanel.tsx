@@ -52,6 +52,9 @@ import { useNoticeHandlers } from "../useNoticeHandlers";
 import { openInNewTab } from "../openNotice";
 import { NoticeRow } from "./NoticeRow";
 import { PlacesStrip } from "./PlacesStrip";
+import { placeCountsNow } from "../sources/registry";
+import { useInboxMemory } from "../useInboxMemory";
+import { markAt } from "../badge";
 
 export const NOTIFICATIONS_ROUTE = "/notifications";
 const NEEDS_YOU_SHOWN = 3;
@@ -85,7 +88,7 @@ export function BellPanel({ variant = "compact", onNavigate, className }: BellPa
   const actions = useInboxActions(feed.triage);
   // Every kind in the Inbox with its count: each clears in one click (Arman, 2026-10-07).
   const kinds = useInboxKinds(feed.triage);
-  const inboxCount = counts.summary?.inbox ?? feed.rows.length;
+  const memory = useInboxMemory();
   const [tab, setTab] = useState<BellTab>("for_you");
   const [expanded, setExpanded] = useState<string | null>(null);
   const handlers = useNoticeHandlers(actions, {
@@ -247,11 +250,16 @@ export function BellPanel({ variant = "compact", onNavigate, className }: BellPa
           {tabButton("updates", "Updates", counts.updatesDot)}
         </div>
         <span className="flex-1" />
-        {feed.triage && inboxCount > 0 ? (
+        {feed.triage ? (
           <button
             type="button"
             data-inbox-clear-all
-            onClick={() => void actions.clear(null, "Cleared")}
+            onClick={() => {
+              // One click to zero: every notice Done AND every place's number cleared.
+              const before = memory.sourcesCleared;
+              if (memory.ready) memory.save({ sourcesCleared: markAt(before, placeCountsNow()) });
+              void actions.clear(null, "Cleared", () => memory.save({ sourcesCleared: before }));
+            }}
             title="Mark every notice done · undo from the toast"
             className="flex h-7 items-center gap-1 rounded-md px-2 text-xs font-medium text-muted-foreground hover:bg-[var(--matrx-glass-bg-hover)] hover:text-foreground"
           >

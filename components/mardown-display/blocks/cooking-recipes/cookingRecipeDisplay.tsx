@@ -179,13 +179,12 @@ const RecipeViewer: React.FC<RecipeViewerProps> = ({
     if (!blockContentRef.current || isPrinting) return;
     setIsPrinting(true);
     try {
-      const { captureBlockElement } =
-        await import("@ai-matrx/print/pdf");
-      await captureBlockElement(
-        blockContentRef.current,
-        recipe.title.replace(/\s+/g, "-").toLowerCase() || "recipe",
-        "portrait",
-      );
+      const [{ captureDocumentPdf }, { downloadFile }] = await Promise.all([
+        import("@ai-matrx/alchemy/operate/capture"),
+        import("@ai-matrx/kit/download"),
+      ]);
+      const filename = recipe.title.replace(/\s+/g, "-").toLowerCase() || "recipe";
+      downloadFile(`${filename}.pdf`, await captureDocumentPdf(blockContentRef.current, { orientation: "portrait" }), "application/pdf");
     } catch (err) {
       console.error("[RecipeViewer] Print failed:", err);
     } finally {

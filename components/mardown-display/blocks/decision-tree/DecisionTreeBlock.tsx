@@ -120,13 +120,12 @@ const DecisionTreeBlock: React.FC<DecisionTreeBlockProps> = ({
     if (!blockContentRef.current || isPrinting) return;
     setIsPrinting(true);
     try {
-      const { captureBlockElement } =
-        await import("@ai-matrx/print/pdf");
-      await captureBlockElement(
-        blockContentRef.current,
-        decisionTree.title.replace(/\s+/g, "-").toLowerCase() ||
-          "decision-tree",
-      );
+      const [{ captureDocumentPdf }, { downloadFile }] = await Promise.all([
+        import("@ai-matrx/alchemy/operate/capture"),
+        import("@ai-matrx/kit/download"),
+      ]);
+      const filename = decisionTree.title.replace(/\s+/g, "-").toLowerCase() || "decision-tree";
+      downloadFile(`${filename}.pdf`, await captureDocumentPdf(blockContentRef.current, { orientation: "landscape" }), "application/pdf");
     } catch (err) {
       console.error("[DecisionTreeBlock] Print failed:", err);
     } finally {
