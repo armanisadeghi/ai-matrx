@@ -4,9 +4,9 @@
  * N9 — Notion's database Automations: a trigger (a page is added, or a property is edited to a value) and
  * its actions (set a property, add a page, send a notification), listed per database.
  *
- * The store door is being built elsewhere (`custom.automation_declare` / `custom.automations`, NEEDS row
- * N9). This screen speaks that door's expected shape; until the door answers, it says "not connected yet"
- * and writes nothing. No automation store lives in Spaces.
+ * The store's automation door (`custom.automation_declare` / `custom.automations` / `custom.automation_archive`)
+ * runs them; properties are named by Field id. A database without the door says "not connected yet" and
+ * writes nothing. No automation store lives in Spaces.
  */
 import { useCallback, useEffect, useState } from "react";
 import { Plus, Trash2, X } from "lucide-react";
@@ -15,17 +15,23 @@ import type { Field } from "@ai-matrx/records/react";
 
 import { createClient } from "@/utils/supabase/client";
 
-export type AutomationTrigger = { on: "created" } | { on: "updated"; field: string; to: string | null };
+/** The store's automation spec (`custom._automation_check`): properties by Field id. */
+export type AutomationTrigger = { on: "row_added" } | { on: "property_edited"; field: string; to?: unknown };
 export type AutomationAction =
-  | { set: { field: string; value: string } }
-  | { add: { table_id: string; values: Record<string, string> } }
-  | { notify: { who: "me" | "page_creator"; text: string } };
-export interface Automation {
-  id: string;
+  | { do: "set"; values: Record<string, unknown> }
+  | { do: "add_row"; table_id: string; values: Record<string, unknown> }
+  | { do: "notify"; to: { author: true } | { person: string } | { field: string }; text: string };
+export interface AutomationSpec {
   name: string;
   trigger: AutomationTrigger;
   actions: AutomationAction[];
-  is_active: boolean;
+}
+export interface Automation {
+  id: string;
+  name?: string;
+  spec: AutomationSpec;
+  enabled: boolean;
+  archived_at?: string | null;
 }
 
 /** A door the database does not have yet (PostgREST: function not found). */
@@ -40,40 +46,57 @@ const door = (): Door => (createClient() as unknown as { schema: (s: string) => 
 export function useAutomations(tableId: string, organizationId: string | null) {
   const [state, setState] = useState<{ kind: "loading" } | { kind: "off" } | { kind: "failed"; message: string } | { kind: "ok"; list: Automation[] }>({ kind: "loading" });
   const read = useCallback(async () => {
-    const { data, error } = await door().rpc("automations", { p_organization_id: organizationId, p_table_id: tableId });
+    if (!organizationId) return;
+    const { data, error } = await door().rpc("automations", { p_table_id: tableId, p_organization_id: organizationId, p_include_archived: false });
     if (notConnected(error)) setState({ kind: "off" });
     else if (error) setState({ kind: "failed", message: error.message ?? "The automations could not be read." });
-    else setState({ kind: "ok", list: (Array.isArray(data) ? data : []) as Automation[] });
+    else {
+      const raw = Array.isArray(data) ? data : ((data as { automations?: unknown } | null)?.automations ?? []);
+      setState({ kind: "ok", list: (Array.isArray(raw) ? raw : []) as Automation[] });
+    }
   }, [tableId, organizationId]);
   useEffect(() => {
     void read();
   }, [read]);
+  /** Store one automation; null when it was kept, else the store's own sentence. */
   const declare = useCallback(
-    async (automation: Omit<Automation, "id" | "is_active"> & { id?: string; is_active?: boolean; archived?: boolean }) => {
-      const { error } = await door().rpc("automation_declare", { p_organization_id: organizationId, p_table_id: tableId, p_automation: automation });
+    async (spec: AutomationSpec) => {
+      const { data, error } = await door().rpc("automation_declare", { p_organization_id: organizationId, p_table_id: tableId, p_spec: spec });
       if (notConnected(error)) {
         setState({ kind: "off" });
         return "Automations are not connected yet.";
       }
       if (error) return error.message ?? "The automation was not saved.";
+      const answer = data as { ok?: boolean; _errors?: Record<string, string> } | null;
+      if (answer && answer.ok === false) return Object.values(answer._errors ?? {})[0] ?? "The automation was not saved.";
       await read();
       return null;
     },
     [tableId, organizationId, read],
   );
-  return { state, declare };
+  const archive = useCallback(
+    async (automationId: string) => {
+      const { error } = await door().rpc("automation_archive", { p_organization_id: organizationId, p_automation_id: automationId });
+      if (!error) await read();
+      return error?.message ?? null;
+    },
+    [organizationId, read],
+  );
+  return { state, declare, archive };
 }
 
+const fieldName = (fields: Field[], id: string) => fields.find((f) => f.id === id)?.label ?? "a property";
+
 export function describeTrigger(t: AutomationTrigger, fields: Field[]): string {
-  if (t.on === "created") return "When a page is added";
-  const name = fields.find((f) => f.key === t.field)?.label ?? t.field;
-  return t.to ? `When ${name} is set to ${t.to}` : `When ${name} is edited`;
+  if (t.on === "row_added") return "When a page is added";
+  const name = fieldName(fields, t.field);
+  return t.to !== undefined && t.to !== null && t.to !== "" ? `When ${name} is set to ${String(t.to)}` : `When ${name} is edited`;
 }
 
 export function describeAction(a: AutomationAction, fields: Field[]): string {
-  if ("set" in a) return `Set ${fields.find((f) => f.key === a.set.field)?.label ?? a.set.field} to ${a.set.value}`;
-  if ("add" in a) return `Add a page${a.add.values.name ? ` "${a.add.values.name}"` : ""}`;
-  return `Notify ${a.notify.who === "me" ? "me" : "the page's creator"}`;
+  if (a.do === "set") return Object.entries(a.values).map(([id, v]) => `Set ${fieldName(fields, id)} to ${String(v)}`).join(", ");
+  if (a.do === "add_row") return "Add a page";
+  return "Send a notification";
 }
 
 function Pill({ on, children, onClick }: { on: boolean; children: React.ReactNode; onClick: () => void }) {
@@ -84,14 +107,24 @@ function Pill({ on, children, onClick }: { on: boolean; children: React.ReactNod
   );
 }
 
+/** One action as the panel edits it; turned into the store's spec on Create. */
+type Draft = { kind: "set"; field: string; value: string } | { kind: "add"; title: string } | { kind: "notify"; text: string };
+
+function toAction(d: Draft, tableId: string, titleField: string): AutomationAction {
+  if (d.kind === "set") return { do: "set", values: { [d.field]: d.value } };
+  if (d.kind === "add") return { do: "add_row", table_id: tableId, values: { [titleField]: d.title } };
+  return { do: "notify", to: { author: true }, text: d.text };
+}
+
 /** The Automations popover body: the list, then a new automation (trigger + actions). */
 export function AutomationsPanel({ tableId, organizationId, fields }: { tableId: string; organizationId: string | null; fields: Field[] }) {
-  const { state, declare } = useAutomations(tableId, organizationId);
+  const { state, declare, archive } = useAutomations(tableId, organizationId);
   const [editing, setEditing] = useState(false);
-  const [trigger, setTrigger] = useState<AutomationTrigger>({ on: "created" });
-  const [actions, setActions] = useState<AutomationAction[]>([]);
+  const [trigger, setTrigger] = useState<AutomationTrigger>({ on: "row_added" });
+  const [drafts, setDrafts] = useState<Draft[]>([]);
   const [said, setSaid] = useState<string | null>(null);
-  const firstField = fields[0]?.key ?? "name";
+  const firstField = fields[0]?.id ?? "";
+  const put = (i: number, d: Draft) => setDrafts(drafts.map((x, j) => (j === i ? d : x)));
 
   if (state.kind === "loading") return <div className="spaces-db-automations" aria-busy="true" />;
   if (state.kind === "off")
@@ -108,77 +141,85 @@ export function AutomationsPanel({ tableId, organizationId, fields }: { tableId:
     );
 
   const save = async () => {
-    const message = await declare({ name: describeTrigger(trigger, fields), trigger, actions });
+    const spec: AutomationSpec = { name: describeTrigger(trigger, fields), trigger, actions: drafts.map((d) => toAction(d, tableId, firstField)) };
+    const message = await declare(spec);
     setSaid(message);
     if (!message) {
       setEditing(false);
-      setActions([]);
-      setTrigger({ on: "created" });
+      setDrafts([]);
+      setTrigger({ on: "row_added" });
     }
   };
 
   return (
     <div className="spaces-db-automations flex flex-col gap-2" data-testid="spaces-automations" data-state="on">
       {state.list.map((a) => (
-        <div key={a.id} className="flex items-start gap-2">
+        <div key={a.id} className="flex items-start gap-2" data-testid="spaces-automation-row">
           <div className="min-w-0 flex-1">
-            <div className="type-body truncate">{describeTrigger(a.trigger, fields)}</div>
-            <div className="type-secondary truncate text-muted-foreground">{a.actions.map((x) => describeAction(x, fields)).join(" · ")}</div>
+            <div className="type-body truncate">{a.spec?.name ?? a.name ?? describeTrigger(a.spec.trigger, fields)}</div>
+            <div className="type-secondary truncate text-muted-foreground">{(a.spec?.actions ?? []).map((x) => describeAction(x, fields)).join(" · ")}</div>
           </div>
-          <Button variant="quiet" icon={<Trash2 size={14} />} aria-label="Delete automation" onClick={() => void declare({ ...a, archived: true })} />
+          <Button variant="quiet" icon={<Trash2 size={14} />} aria-label="Delete automation" onClick={() => void archive(a.id).then(setSaid)} />
         </div>
       ))}
       {editing ? (
         <div className="flex flex-col gap-2">
           <span className="type-secondary text-muted-foreground">Trigger</span>
           <div className="flex flex-wrap gap-1">
-            <Pill on={trigger.on === "created"} onClick={() => setTrigger({ on: "created" })}>Page added</Pill>
-            <Pill on={trigger.on === "updated"} onClick={() => setTrigger({ on: "updated", field: firstField, to: null })}>Property edited</Pill>
+            <Pill on={trigger.on === "row_added"} onClick={() => setTrigger({ on: "row_added" })}>Page added</Pill>
+            <Pill on={trigger.on === "property_edited"} onClick={() => setTrigger({ on: "property_edited", field: firstField })}>Property edited</Pill>
           </div>
-          {trigger.on === "updated" ? (
+          {trigger.on === "property_edited" ? (
             <div className="flex flex-wrap items-center gap-1">
               {fields.map((f) => (
-                <Pill key={f.key} on={trigger.field === f.key} onClick={() => setTrigger({ ...trigger, field: f.key })}>
+                <Pill key={f.id} on={trigger.field === f.id} onClick={() => setTrigger({ ...trigger, field: f.id })}>
                   {f.label || f.key}
                 </Pill>
               ))}
-              <Input aria-label="Edited to" placeholder="to any value" value={trigger.to ?? ""} onChange={(e) => setTrigger({ ...trigger, to: e.target.value || null })} />
+              <Input
+                aria-label="Edited to"
+                placeholder="to any value"
+                value={typeof trigger.to === "string" ? trigger.to : ""}
+                onChange={(e) => setTrigger(e.target.value ? { on: "property_edited", field: trigger.field, to: e.target.value } : { on: "property_edited", field: trigger.field })}
+              />
             </div>
           ) : null}
           <span className="type-secondary text-muted-foreground">Actions</span>
-          {actions.map((a, i) => (
-            <div key={i} className="flex items-center gap-1">
-              {"set" in a ? (
+          {drafts.map((d, i) => (
+            <div key={i} className="flex flex-wrap items-center gap-1">
+              {d.kind === "set" ? (
                 <>
-                  <span className="type-secondary">Set</span>
                   {fields.map((f) => (
-                    <Pill key={f.key} on={a.set.field === f.key} onClick={() => setActions(actions.map((x, j) => (j === i ? { set: { ...a.set, field: f.key } } : x)))}>
+                    <Pill key={f.id} on={d.field === f.id} onClick={() => put(i, { ...d, field: f.id })}>
                       {f.label || f.key}
                     </Pill>
                   ))}
-                  <Input aria-label="Set to" value={a.set.value} onChange={(e) => setActions(actions.map((x, j) => (j === i ? { set: { ...a.set, value: e.target.value } } : x)))} />
+                  <Input aria-label="Set to" placeholder="Set to" value={d.value} onChange={(e) => put(i, { ...d, value: e.target.value })} />
                 </>
-              ) : "add" in a ? (
-                <Input aria-label="New page name" placeholder="Add a page named" value={a.add.values.name ?? ""} onChange={(e) => setActions(actions.map((x, j) => (j === i ? { add: { table_id: tableId, values: { name: e.target.value } } } : x)))} />
+              ) : d.kind === "add" ? (
+                <Input aria-label="New page name" placeholder="Add a page named" value={d.title} onChange={(e) => put(i, { kind: "add", title: e.target.value })} />
               ) : (
-                <Input aria-label="Notification text" placeholder="Notify me" value={a.notify.text} onChange={(e) => setActions(actions.map((x, j) => (j === i ? { notify: { who: "me", text: e.target.value } } : x)))} />
+                <Input aria-label="Notification text" placeholder="Notify me" value={d.text} onChange={(e) => put(i, { kind: "notify", text: e.target.value })} />
               )}
-              <Button variant="quiet" icon={<X size={14} />} aria-label="Remove action" onClick={() => setActions(actions.filter((_, j) => j !== i))} />
+              <Button variant="quiet" icon={<X size={14} />} aria-label="Remove action" onClick={() => setDrafts(drafts.filter((_, j) => j !== i))} />
             </div>
           ))}
           <div className="flex flex-wrap gap-1">
-            <Button variant="quiet" icon={<Plus size={14} />} onClick={() => setActions([...actions, { set: { field: firstField, value: "" } }])}>Set property</Button>
-            <Button variant="quiet" icon={<Plus size={14} />} onClick={() => setActions([...actions, { add: { table_id: tableId, values: { name: "" } } }])}>Add page</Button>
-            <Button variant="quiet" icon={<Plus size={14} />} onClick={() => setActions([...actions, { notify: { who: "me", text: "" } }])}>Send notification</Button>
+            <Button variant="quiet" icon={<Plus size={14} />} onClick={() => setDrafts([...drafts, { kind: "set", field: firstField, value: "" }])}>Set property</Button>
+            <Button variant="quiet" icon={<Plus size={14} />} onClick={() => setDrafts([...drafts, { kind: "add", title: "" }])}>Add page</Button>
+            <Button variant="quiet" icon={<Plus size={14} />} onClick={() => setDrafts([...drafts, { kind: "notify", text: "" }])}>Send notification</Button>
           </div>
           {said ? <p className="type-secondary text-destructive">{said}</p> : null}
           <div className="flex justify-end gap-1">
             <Button variant="quiet" onClick={() => setEditing(false)}>Cancel</Button>
-            <Button variant="primary" disabled={actions.length === 0} onClick={() => void save()}>Create</Button>
+            <Button variant="primary" disabled={drafts.length === 0} onClick={() => void save()}>Create</Button>
           </div>
         </div>
       ) : (
-        <Button variant="quiet" icon={<Plus size={14} />} onClick={() => setEditing(true)}>New automation</Button>
+        <>
+          {said ? <p className="type-secondary text-destructive">{said}</p> : null}
+          <Button variant="quiet" icon={<Plus size={14} />} onClick={() => setEditing(true)}>New automation</Button>
+        </>
       )}
     </div>
   );

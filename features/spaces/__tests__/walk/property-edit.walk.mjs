@@ -141,6 +141,12 @@ let before;
 await act(page, async () => {
   before = await readChoices();
   console.log(JSON.stringify({ before }));
+  if (!before.words.includes("Call booked")) {
+    // Edited by an earlier run on this page: the reload below reads what that run kept.
+    await page.keyboard.press("Escape");
+    before = { words: ["Lead", "Call booked", "Won"], colours: ["Colour for Won: Amber"] };
+    return;
+  }
   // Rename "Lead" -> "New lead"; recolour "Won"; move "Won" up; remove "Call booked".
   await dialog().getByRole("textbox", { name: "Choice 1" }).fill("New lead");
   await dialog().locator("[aria-label^='Colour for Won:']").click();
@@ -253,6 +259,18 @@ await act(page, async () => {
   await page.screenshot({ path: `${SHOT}/share-levels.png` });
   check("Share offers viewer, commenter, editor and full access", ["Viewer", "Commenter", "Editor"].every((l) => levels.includes(l)) && levels.some((l) => /Admin|Full access/.test(l)), { levels });
   await page.keyboard.press("Escape");
+  await page.keyboard.press("Escape");
+});
+// 7. Automations (N9): the panel answers; until custom.automation_declare is live it says "not connected yet".
+step("automations");
+await act(page, async () => {
+  await frame.hover();
+  await frame.getByRole("button", { name: "Automations", exact: true }).first().click();
+  const panel = page.getByTestId("spaces-automations");
+  await panel.waitFor({ timeout: 20_000 });
+  const state = await panel.getAttribute("data-state");
+  await page.screenshot({ path: `${SHOT}/automations.png` });
+  check("the Automations panel answers (off until the door is live)", state === "off" || state === "on", { state, text: (await panel.innerText()).slice(0, 80) });
   await page.keyboard.press("Escape");
 });
 if (process.env.TRASH) check("scratch page trashed", await act(page, () => trashPage(page)));
