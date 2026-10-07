@@ -31,6 +31,8 @@ import type * as Y from "yjs";
 
 import { AGENT_ICON } from "@/components/icons/domain-icons";
 import { mentionCandidates } from "@/features/rich-document/annotations/service";
+import { applyMarkdownKey } from "./markdown-keys";
+import { openMissedSlash } from "./slash-guard";
 import { MessageSquare } from "lucide-react";
 
 import { spaceCommentSource } from "../collab/comments";
@@ -289,6 +291,16 @@ export function SpaceEditor({ spaceId, initialBlocks, editable, onChange, slash,
         // Space and Escape there must never write into a toggle, open Ask AI or move the page's caret.
         if (insideDatabaseBlock(e.nativeEvent)) return;
         turnIntoKey(editor, e);
+        // Notion's Markdown shortcuts BlockNote lacks: ``` (code block), " + space (quote).
+        if ((e.key === "`" || e.key === " ") && !e.metaKey && !e.ctrlKey && !e.altKey && editable && !document.querySelector(".bn-suggestion-menu") && applyMarkdownKey(editor, e.key)) {
+          e.preventDefault();
+          e.stopPropagation();
+          return;
+        }
+        // "/" always opens the "/" menu: when BlockNote did not open it on this keypress, open it now.
+        if (e.key === "/" && !e.metaKey && !e.ctrlKey && !e.altKey && editable) {
+          window.requestAnimationFrame(() => openMissedSlash(editor));
+        }
         // Enter at the end of an open toggle's title writes inside it (Notion); closed: a sibling.
         if (e.key === "Enter" && !e.shiftKey && !e.metaKey && !e.ctrlKey && !e.altKey && editable && !document.querySelector(".bn-suggestion-menu") && enterIntoOpenToggle(editor)) {
           e.preventDefault();

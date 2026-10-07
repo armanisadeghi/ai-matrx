@@ -27,7 +27,7 @@ import {
   Trash2,
   Type,
 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import { AGENT_ICON } from "@/components/icons/domain-icons";
 
@@ -78,6 +78,33 @@ export function makeBlockMenu(actions: BlockMenuActions) {
     const portal = usePortalElement();
     const block = useExtensionState(SideMenuExtension, { editor, selector: (s) => s?.block });
     const [query, setQuery] = useState("");
+    // D5: when the menu closes and nothing else took focus (Radix leaves it on the page), the caret goes
+    // back to the end of the block, so typing — "/" above all — carries on in the page.
+    const blockId = block?.id;
+    useEffect(() => {
+      if (!blockId) return;
+      return () => {
+        window.setTimeout(() => {
+          const active = document.activeElement;
+          const lost = !active || active === document.body || !!active.closest(".bn-side-menu") || !active.closest(".bn-editor, input, textarea, [contenteditable=true], [role=dialog], [role=menu]");
+          const target = editor.getBlock(blockId);
+          // A block with no text (divider, database, chart) takes no caret: nothing is focused for it.
+          if (!lost || document.querySelector(".bn-menu-dropdown, [role='dialog']") || !target || !Array.isArray(target.content)) return;
+          editor.focus();
+          editor.setTextCursorPosition(blockId, "end");
+        }, 0);
+      };
+    }, [blockId, editor]);
+    // A colour picked in the Color sub-menu closes the whole menu (Notion).
+    useEffect(() => {
+      if (!blockId) return;
+      const onClick = (e: MouseEvent) => {
+        const item = e.target instanceof Element ? e.target.closest(".bn-menu-dropdown [role=menuitem], .bn-menu-dropdown [role=menuitemcheckbox], .bn-menu-dropdown .bn-menu-item") : null;
+        if (item?.querySelector(".bn-color-icon")) closeMenus();
+      };
+      document.addEventListener("click", onClick);
+      return () => document.removeEventListener("click", onClick);
+    }, [blockId]);
     if (!block) return null;
     const targets = () => selectedOrCurrent(editor, block.id);
     const hasText = Array.isArray(block.content);

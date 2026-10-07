@@ -862,8 +862,8 @@ function SpacePageScreen({ spaceId }: { spaceId: string }) {
             slash={{
               createSubpage: async () => {
                 const sub = await spaces.createSpace(doc.id, { open: false });
-                // Notion opens the new sub-page at once; the parent's pending save flushes on leave.
-                window.setTimeout(() => spaces.open(sub.id), 60);
+                // The sub-page goes in where "/" was typed and the person stays here (its block opens it).
+                toast("Page added", { action: { label: "Open", onClick: () => spaces.open(sub.id) } });
                 return sub.id;
               },
               pickPage: (options) =>
