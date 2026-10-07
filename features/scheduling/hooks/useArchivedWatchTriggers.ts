@@ -13,6 +13,15 @@ import type { AgendaTask } from "../types";
 import { liveTableKeys, watchedTable, watchesAnArchivedTable } from "../lib/triggerWatch";
 
 export function useArchivedWatchTriggers(tasks: ReadonlyArray<AgendaTask>): ReadonlySet<string> {
+  return useArchivedWatchTriggersState(tasks).watching;
+}
+
+/** Same read, plus whether it has ANSWERED (success or refusal) for the organizations now on the list —
+ *  a list that draws before the answer grows a warning line on its rows afterwards (layout shift). */
+export function useArchivedWatchTriggersState(tasks: ReadonlyArray<AgendaTask>): {
+  watching: ReadonlySet<string>;
+  settled: boolean;
+} {
   const orgs = useMemo(() => {
     const set = new Set<string>();
     for (const t of tasks) {
@@ -21,6 +30,7 @@ export function useArchivedWatchTriggers(tasks: ReadonlyArray<AgendaTask>): Read
     return [...set].sort();
   }, [tasks]);
   const [live, setLive] = useState<Map<string, Set<string>>>(new Map());
+  const [answeredKey, setAnsweredKey] = useState<string | null>(null);
   const key = orgs.join(",");
 
   useEffect(() => {
@@ -41,14 +51,17 @@ export function useArchivedWatchTriggers(tasks: ReadonlyArray<AgendaTask>): Read
         const tables = ((res.data as { tables?: unknown } | null)?.tables ?? []) as Array<{ id?: unknown; store?: unknown }>;
         next.set(org, liveTableKeys(tables));
       }
-      if (!cancelled) setLive(next);
+      if (!cancelled) {
+        setLive(next);
+        setAnsweredKey(key);
+      }
     })();
     return () => {
       cancelled = true;
     };
   }, [key]);
 
-  return useMemo(() => {
+  const watching = useMemo(() => {
     const out = new Set<string>();
     for (const t of tasks) {
       const keys = t.organizationId ? live.get(t.organizationId) : undefined;
@@ -57,4 +70,5 @@ export function useArchivedWatchTriggers(tasks: ReadonlyArray<AgendaTask>): Read
     }
     return out;
   }, [tasks, live]);
+  return { watching, settled: !key || answeredKey === key };
 }

@@ -24,6 +24,7 @@ import type { DuplicateScheduleGroup } from "../service/schedulerApi.types";
 export function useDuplicateSchedules(refreshToken?: unknown) {
   const [groups, setGroups] = useState<DuplicateScheduleGroup[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [loaded, setLoaded] = useState(false);
   const [refreshVersion, setRefreshVersion] = useState(0);
 
   useEffect(() => {
@@ -35,6 +36,7 @@ export function useDuplicateSchedules(refreshToken?: unknown) {
         if (cancelled) return;
         setGroups(res.groups ?? []);
         setError(null);
+        setLoaded(true);
       } catch (cause) {
         if (cancelled) return;
         const message =
@@ -50,6 +52,7 @@ export function useDuplicateSchedules(refreshToken?: unknown) {
         });
         setGroups([]);
         setError("Couldn't check for duplicate schedules.");
+        setLoaded(true);
       }
     };
 
@@ -67,6 +70,8 @@ export function useDuplicateSchedules(refreshToken?: unknown) {
   return {
     groups: liveGroups,
     error,
+    /** The first read has answered (either way). */
+    loaded,
     refetch: () => setRefreshVersion((version) => version + 1),
   };
 }

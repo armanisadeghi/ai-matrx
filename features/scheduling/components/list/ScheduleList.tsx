@@ -3,6 +3,7 @@
 "use client";
 
 import { CalendarClock, Plus } from "lucide-react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { AlertCircle, RefreshCw } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -18,7 +19,7 @@ import { buildScheduleRosterValues } from "../../lib/schedules-scope";
 import { scheduleKpis } from "../../lib/copy";
 import { scheduleSummary } from "../../lib/copy";
 import { ScheduleRow } from "./ScheduleRow";
-import { useArchivedWatchTriggers } from "../../hooks/useArchivedWatchTriggers";
+import { useArchivedWatchTriggersState } from "../../hooks/useArchivedWatchTriggers";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 /**
@@ -72,13 +73,23 @@ function ScheduleListBody() {
   const {
     groups: duplicateGroups,
     error: duplicateError,
+    loaded: duplicatesLoaded,
     refetch: refetchDuplicates,
   } = useDuplicateSchedules(tasks.length);
   // An automation watching an archived table can never run: said on the list and on its row
   // (lane PROOF-DEFECTS, D6).
-  const watchingArchived = useArchivedWatchTriggers(tasks);
+  const { watching: watchingArchived, settled: watchSettled } = useArchivedWatchTriggersState(tasks);
+  // The two side checks add a banner above the rows and a warning line inside them. Drawing the rows
+  // first and growing them afterwards shoved the whole list (CLS 0.22 at 375px), so the skeleton
+  // stays until both have answered — capped, so a check that never answers cannot hold the list.
+  const [checksGaveUp, setChecksGaveUp] = useState(false);
+  useEffect(() => {
+    const timer = setTimeout(() => setChecksGaveUp(true), 4000);
+    return () => clearTimeout(timer);
+  }, []);
+  const checking = tasks.length > 0 && !checksGaveUp && !(duplicatesLoaded && watchSettled);
 
-  if (status === "loading" || status === "idle") {
+  if (status === "loading" || status === "idle" || (status === "success" && checking)) {
     return (
       <div
         className="flex flex-col gap-2"
