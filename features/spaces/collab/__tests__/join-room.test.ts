@@ -15,7 +15,7 @@ import * as Y from "yjs";
 import { Awareness } from "y-protocols/awareness";
 import { createInertEnvironment, createRealtimeManager, type RealtimeManager } from "@ai-matrx/realtime";
 
-import { SupabaseYjsProvider } from "@/features/data-tables/collab/SupabaseYjsProvider";
+import { SupabaseYjsProvider } from "@/lib/collab/SupabaseYjsProvider";
 
 import { joinRoom } from "../join-room";
 
@@ -238,5 +238,53 @@ describe("joining a Space room", () => {
     expect(fragment.length).toBe(1);
     // Only the provider's own alone timer (1.5 s), no extra wait.
     expect(Date.now() - started).toBeLessThan(2500);
+  }, 30_000);
+
+  it("a block inserted right after the joiner seeded is in the room for the next member (and stays one copy)", async () => {
+    const net = new FakeNetwork(() => 1, 300);
+    const b = new Y.Doc();
+    const fb = b.getXmlFragment("document-store");
+    await joinRoom({
+      fragment: fb,
+      connect: async () => {
+        const p = makeProvider(net, b);
+        await p.connect();
+        await p.ready();
+      },
+      reask: async () => undefined,
+      othersHere: () => false,
+      disposed: () => false,
+      seed: () => seed(b, 42, ["Plan"]),
+    });
+    // Programmatic insert right after load (the "Database with AI" block).
+    const db = new Y.XmlElement("blockContainer");
+    db.setAttribute("id", "db-1");
+    (fb.get(0) as Y.XmlElement).insert(1, [db]);
+
+    const a = new Y.Doc();
+    const fa = a.getXmlFragment("document-store");
+    let seeded = 0;
+    const result = await joinRoom({
+      fragment: fa,
+      connect: async () => {
+        const p = makeProvider(net, a);
+        await p.connect();
+        await p.ready();
+      },
+      reask: async () => undefined,
+      othersHere: () => true,
+      disposed: () => false,
+      seed: () => {
+        seeded++;
+        seed(a, 42, ["Plan"]);
+      },
+      roomWaitMs: 6000,
+    });
+    await new Promise((r) => setTimeout(r, 800));
+    expect(result).toBe("room");
+    expect(seeded).toBe(0);
+    expect(fa.length).toBe(1);
+    expect(fa.toString()).toContain('id="db-1"');
+    expect(fa.toString()).toBe(fb.toString());
   }, 30_000);
 });

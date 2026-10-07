@@ -169,12 +169,21 @@ export interface SpaceEditorProps {
   collab?: { fragment: Y.XmlFragment; provider: { awareness: Awareness }; user: { name: string; color: string } };
 }
 
+/**
+ * A column's flex-grow: its width fraction scaled up. Equal ratios in a row; scaled so a wrapped row of
+ * a nested column list (spaces.css, D3) still fills its line — flex hands out only the grow sum's share
+ * of free space when the sum is under 1.
+ */
+export function growOf(width: number): number {
+  return Math.round(width * 1000 * 1000) / 1000;
+}
+
 /** Column widths as CSS keyed by block id (the flex items are BlockNote's own outer elements). */
 function columnCss(blocks: EngineBlock[]): string {
   const rules: string[] = [];
   const walk = (list: EngineBlock[]) => {
     for (const b of list) {
-      if (b.type === "column") rules.push(`.spaces-editor .bn-block-outer[data-id="${CSS.escape(b.id)}"]{flex-grow:${Number(b.props?.width ?? 0.5)} !important}`);
+      if (b.type === "column") rules.push(`.spaces-editor .bn-block-outer[data-id="${CSS.escape(b.id)}"]{flex-grow:${growOf(Number(b.props?.width ?? 0.5))} !important}`);
       if (b.children?.length) walk(b.children);
     }
   };

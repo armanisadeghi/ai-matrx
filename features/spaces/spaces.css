@@ -1123,6 +1123,24 @@
 .spaces-editor .bn-block:has(> .react-renderer.node-column) .bn-block:has(> .react-renderer.node-columnList) > .bn-block-group:has(> .bn-block-outer:nth-child(5)) {
   --spaces-col-half: 8px;
 }
+/* D3 (round 28): a tile in a nested row never gets narrower than a readable chart. A row that cannot hold
+   its tiles side by side wraps them onto the next line (four tiles in the right half of a 50/50 split:
+   two by two) instead of squeezing each to 33–46px with its toolbar stacked and its label overflowing.
+   Every tile carries the same half-gutter on both sides and the row pulls back by one half on each
+   edge, so wrapped lines stay aligned; column widths still share each line (SpaceEditor growOf). */
+.spaces-editor .bn-block:has(> .react-renderer.node-column) .bn-block:has(> .react-renderer.node-columnList) > .bn-block-group {
+  --spaces-tile-min: 110px;
+  flex-wrap: wrap;
+  row-gap: 8px;
+  margin-left: calc(-1 * var(--spaces-col-half));
+  margin-right: calc(-1 * var(--spaces-col-half));
+}
+.spaces-editor .bn-block:has(> .react-renderer.node-column) .bn-block:has(> .react-renderer.node-columnList) > .bn-block-group > .bn-block-outer,
+.spaces-editor .bn-block:has(> .react-renderer.node-column) .bn-block:has(> .react-renderer.node-columnList) > .bn-block-group > .bn-block-outer:first-child,
+.spaces-editor .bn-block:has(> .react-renderer.node-column) .bn-block:has(> .react-renderer.node-columnList) > .bn-block-group > .bn-block-outer:last-child {
+  padding: 0 var(--spaces-col-half);
+  min-width: calc(var(--spaces-tile-min) + 2 * var(--spaces-col-half));
+}
 .spaces-editor .bn-block:has(> .react-renderer.node-column) > .react-renderer > .bn-block-content {
   position: absolute;
   z-index: 3;

@@ -181,7 +181,7 @@ function setDragWidths(rules: Record<string, number> | null) {
   }
   el.textContent = rules
     ? Object.entries(rules)
-        .map(([id, w]) => `.spaces-editor .bn-block-outer[data-id="${CSS.escape(id)}"]{flex-grow:${w} !important}`)
+        .map(([id, w]) => `.spaces-editor .bn-block-outer[data-id="${CSS.escape(id)}"]{flex-grow:${w * 1000} !important}`)
         .join("\n")
     : "";
 }
