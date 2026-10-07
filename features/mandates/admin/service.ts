@@ -11,6 +11,7 @@
  * iam.has_access (verified live 2026-08-07) — no bespoke RPC layer.
  */
 
+import { withAdminFeature } from "@/utils/auth/adminFeaturesOnUserPages";
 import { createClient } from "@/utils/supabase/client";
 import { writeOne } from "@/utils/supabase/writeOne";
 import { requireAuthenticatedSupabaseSession } from "@/utils/supabase/webDb";
@@ -476,11 +477,14 @@ export type MandateDefinitionPatch = Partial<Pick<
 export async function updateMandateDefinition(
   mandateId: string,
   patch: MandateDefinitionPatch,
+  /** `systemSeat`: the admin feature "mandate.system-seat" on a SYSTEM mandate. */
+  opts: { systemSeat?: boolean } = {},
 ): Promise<MandateDefinitionRow> {
   const supabase = createClient();
-  const { data, error } = await mandateDefinitions(supabase)
-    .update(patch)
-    .eq("id", mandateId)
+  const update = mandateDefinitions(supabase).update(patch).eq("id", mandateId);
+  const { data, error } = await (
+    opts.systemSeat ? withAdminFeature("mandate.system-seat", update) : update
+  )
     .select("*")
     .single();
   if (error) throw error;
@@ -847,12 +851,19 @@ function structuredCloneJson(value: unknown): JsonObject {
  * Migration: `migrations/platform_soft_delete_cascade.sql`.
  * Liveness: `pnpm check:soft-delete-cascade` (strict lane runs in CI).
  */
-export async function softDeleteMandate(mandateId: string): Promise<void> {
+export async function softDeleteMandate(
+  mandateId: string,
+  /** `systemSeat`: the admin feature "mandate.system-seat" on a SYSTEM mandate. */
+  opts: { systemSeat?: boolean } = {},
+): Promise<void> {
   const supabase = createClient();
-  const { data, error } = await mandateDefinitions(supabase)
+  const archive = mandateDefinitions(supabase)
     .update({ deleted_at: new Date().toISOString() })
     .eq("id", mandateId)
-    .is("deleted_at", null)
+    .is("deleted_at", null);
+  const { data, error } = await (
+    opts.systemSeat ? withAdminFeature("mandate.system-seat", archive) : archive
+  )
     .select("mandate_key")
     .maybeSingle();
   if (error) throw error;

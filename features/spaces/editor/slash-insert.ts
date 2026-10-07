@@ -36,14 +36,8 @@ export function insertAtSlash(editor: SpacesEditor, targetId: string | null, blo
   const target = ((targetId ? editor.getBlock(targetId) : undefined) ?? safeCursorBlock(editor)) as AnyBlock | undefined;
   if (!target) return null;
   let placedId: string;
-  const outer = (block as { type?: string }).type === "columnList" ? enclosingColumnList(editor, target.id) : null;
-  if (outer) {
-    // Notion never puts columns inside a column: the new list goes below the one the "/" was typed in,
-    // and the emptied "/" line goes unless it is all its column holds.
-    placedId = editor.insertBlocks([block], outer, "after")[0].id;
-    const column = editor.getParentBlock(target.id) as AnyBlock | undefined;
-    if (isEmptySlashBlock(target) && !(target.children?.length) && (column?.children?.length ?? 0) > 1) editor.removeBlocks([target.id]);
-  } else if (isEmptySlashBlock(target) && !(target.children?.length)) {
+  // "/2 columns" inside a column makes a column row right there (Notion: columns nest inside a column).
+  if (isEmptySlashBlock(target) && !(target.children?.length)) {
     const { insertedBlocks } = editor.replaceBlocks([target.id], [block]);
     placedId = insertedBlocks[0]?.id ?? target.id;
   } else {
@@ -51,17 +45,6 @@ export function insertAtSlash(editor: SpacesEditor, targetId: string | null, blo
   }
   placeCaretAfter(editor, placedId);
   return placedId;
-}
-
-/** The column list a block sits in (at any depth), or null at the top level. */
-export function enclosingColumnList(editor: SpacesEditor, id: string): string | null {
-  let at: AnyBlock | undefined = editor.getParentBlock(id) as AnyBlock | undefined;
-  let outer: string | null = null;
-  for (let guard = 0; at && guard < 64; guard++) {
-    if ((at as { type?: string }).type === "columnList") outer = at.id;
-    at = editor.getParentBlock(at.id) as AnyBlock | undefined;
-  }
-  return outer;
 }
 
 function safeCursorBlock(editor: SpacesEditor) {

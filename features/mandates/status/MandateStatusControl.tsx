@@ -59,6 +59,7 @@ export function MandateStatusControl({
   canManage,
   onSetHolder,
   onChanged,
+  systemSeat = false,
   size = "lg",
   className,
 }: MandateStatusControlProps) {
@@ -81,7 +82,11 @@ export function MandateStatusControl({
     }
     setBusy(true);
     try {
-      await updateMandateDefinition(mandateId, { is_enabled: enabled });
+      await updateMandateDefinition(
+        mandateId,
+        { is_enabled: enabled },
+        { systemSeat },
+      );
       toast.success(`${name} ${enabled ? "enabled" : "disabled"}.`);
       onChanged?.(enabled ? "active" : "disabled");
     } catch (error) {
@@ -106,7 +111,7 @@ export function MandateStatusControl({
     if (!ok) return;
     setBusy(true);
     try {
-      await softDeleteMandate(mandateId);
+      await softDeleteMandate(mandateId, { systemSeat });
       toast.success(`${name} archived. Restore it from Trash.`);
       onChanged?.("archived");
     } catch (error) {

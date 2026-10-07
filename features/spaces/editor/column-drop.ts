@@ -2,7 +2,8 @@
 // columns (Notion C16). The drop cursor turns into a vertical guide on that edge (BlockNote's
 // `computeDropPosition` hook), and the drop is taken before ProseMirror's own move:
 //   · a top-level block → it and the dragged block become a two-column list;
-//   · a block inside a column → a new column joins that list beside the column;
+//   · a column's only block → a new column joins that list beside the column;
+//   · a block sharing its column with others → the two become a column row inside that column;
 //   · anywhere else, or away from an edge → BlockNote's ordinary move (a horizontal line).
 
 import type { ComputeDropPositionContext } from "@blocknote/core/extensions";
@@ -53,10 +54,14 @@ export function planColumnDrop(
 ): { kind: "wrap"; targetId: string; list: SpacesPartialBlock } | { kind: "addColumn"; listId: string; columns: SpacesPartialBlock[] } | null {
   if (!dragged.length || dragged.some((d) => d.id === target.id)) return null;
   if (target.type === "column" || target.type === "columnList") return null;
-  // Columns never go inside a column: a dragged column list keeps its ordinary above / below drop.
+  // A dragged column or column list keeps its ordinary above / below drop.
   if (dragged.some((d) => d.type === "column" || d.type === "columnList")) return null;
   const strip = (b: Blockish): SpacesPartialBlock => ({ ...(b as object) }) as unknown as SpacesPartialBlock;
-  if (!parent) {
+  const draggedIds = new Set(dragged.map((d) => d.id));
+  // Beside a block that shares its column with others, the two become a column row inside that column
+  // (Notion nests columns); beside a column's only block, the drop adds a column to the list instead.
+  const sharesColumn = parent?.type === "column" && (parent.children ?? []).some((b) => b.id !== target.id && !draggedIds.has(b.id));
+  if (!parent || sharesColumn) {
     const pair = side === "left" ? [dragged, [target]] : [[target], dragged];
     return {
       kind: "wrap",
@@ -69,7 +74,6 @@ export function planColumnDrop(
     const at = cols.findIndex((c) => c.id === parent.id);
     if (at < 0) return null;
     const widths = widthsWithNewColumn(cols.map((c) => Number(c.props?.width ?? 1 / cols.length)), at, side);
-    const draggedIds = new Set(dragged.map((d) => d.id));
     const kept = cols.map((c) => ({ ...c, children: (c.children ?? []).filter((b) => !draggedIds.has(b.id)) }));
     const fresh = { type: "column", children: dragged.map(strip) } as Blockish;
     const insertAt = side === "left" ? at : at + 1;
