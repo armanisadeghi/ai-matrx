@@ -7,7 +7,11 @@
 //
 //   1. every commit whose subject starts with `spaces:` or `spaces(` touches ONLY the fence;
 //   2. no file outside the fence imports from it (nothing we already have may come to depend on it
-//      before the one switch-over).
+//      before the one switch-over);
+//   3. no scratch file is tracked inside the fence: a `*.tmp.*` file (a walk's throwaway probe) is never
+//      committed (round 27: 35 `*.tmp.mjs` probes had piled up in features/spaces/__tests__/walk/).
+//
+// A `spaces:` commit may also touch this guard itself (the builder lane is asked to tighten it).
 //
 // The fence: features/spaces/** and app/(core)/spaces/**. The owner session's own connection work
 // (storage, data sources, AI wiring) is committed under other prefixes and is not judged here.
@@ -34,12 +38,20 @@ export function insideFence(path) {
   return FENCE.some((re) => re.test(path));
 }
 
+const SELF = "scripts/check-spaces-fence.mjs";
+const SCRATCH = /(?:^|\/)[^/]*\.tmp\.[^/]+$/;
+
+/** Tracked paths → violations for scratch (`*.tmp.*`) files inside the fence. */
+export function judgeTracked(paths) {
+  return paths.filter((p) => insideFence(p) && SCRATCH.test(p)).map((p) => `${p} is a scratch file (*.tmp.*) tracked inside the fence — git rm it`);
+}
+
 /** Commits: [{ sha, subject, files[] }] → violations for `spaces:` commits that leave the fence. */
 export function judgeCommits(commits) {
   const out = [];
   for (const c of commits) {
     if (!SUBJECT.test(c.subject)) continue;
-    for (const f of c.files) if (!insideFence(f)) out.push(`${c.sha.slice(0, 10)} "${c.subject}" touches ${f}`);
+    for (const f of c.files) if (!insideFence(f) && f !== SELF) out.push(`${c.sha.slice(0, 10)} "${c.subject}" touches ${f}`);
   }
   return out;
 }
@@ -100,20 +112,24 @@ function selfTest() {
   expect("the named entry point may be imported", judgeImports([{ path: "features/data-tables/records-ui-host/recordsUiHost.tsx", source: 'import { RecordBodySpace } from "@/features/spaces/embed/RecordBodySpace";' }]), 0);
   expect("a sibling of the entry point may not", judgeImports([{ path: "features/data-tables/x.tsx", source: 'import { useRowBodySpace } from "@/features/spaces/embed/useRowBody";' }]), 1);
   expect("look-alike name is not the fence", judgeImports([{ path: "features/notes/c.tsx", source: 'import { Y } from "@/features/spaces-old/z";' }]), 0);
+  expect("a spaces: commit may tighten the guard itself", judgeCommits([{ sha: "d".repeat(40), subject: "spaces: guard", files: ["scripts/check-spaces-fence.mjs", "features/spaces/a.ts"] }]), 0);
+  expect("tracked scratch probe inside the fence", judgeTracked(["features/spaces/__tests__/walk/probe.tmp.mjs", "app/(core)/spaces/x.tmp.ts"]), 2);
+  expect("real walk and scratch-looking names outside the fence pass", judgeTracked(["features/spaces/__tests__/walk/lib.mjs", "features/spaces/tmp/notes.ts", "scripts/.cls-probe.tmp.mjs"]), 0);
   if (failures.length) {
     console.error(`check:spaces-fence self-test FAILED\n  ${failures.join("\n  ")}`);
     process.exit(1);
   }
-  console.log("check:spaces-fence self-test passed (9 cases: planted violations fail, clean cases pass)");
+  console.log("check:spaces-fence self-test passed (12 cases: planted violations fail, clean cases pass)");
 }
 
 if (process.argv.includes("--self-test")) {
   selfTest();
 } else {
-  const violations = [...judgeCommits(liveCommits()), ...judgeImports(liveFiles())];
+  const tracked = git(["ls-files", "features/spaces", "app/(core)/spaces"]).trim().split("\n").filter(Boolean);
+  const violations = [...judgeCommits(liveCommits()), ...judgeImports(liveFiles()), ...judgeTracked(tracked)];
   if (violations.length) {
     console.error(`check:spaces-fence FAILED — the Spaces builder left its fence:\n  ${violations.join("\n  ")}`);
     process.exit(1);
   }
-  console.log("check:spaces-fence passed — Spaces commits stay inside the fence and nothing outside imports it");
+  console.log("check:spaces-fence passed — Spaces commits stay inside the fence, nothing outside imports it, no scratch file is tracked in it");
 }

@@ -4,7 +4,12 @@
 // is not on the web answers null from the database exactly like a page that never existed.
 
 import type { SpaceBlock, SpaceDoc, SpaceMedia } from "../contract";
-import { readPublishedDatabases, type PublishedDatabase } from "../data/published-databases";
+import {
+  readPublishedDatabases,
+  readPublishedEntities,
+  type PublishedDatabase,
+  type PublishedEntity,
+} from "../data/published-databases";
 import { COVER_PHOTOS, GALLERY_PREFIX } from "../page/gallery";
 
 export interface PublicPageRef {
@@ -33,6 +38,10 @@ export interface PublicSpaceView extends PublicPageRef {
   indexed: boolean;
   /** Block id → the rows that database block publishes with the page (its own views, read by the door). */
   databases: Record<string, PublishedDatabase>;
+  /** Block id → the rows of that built-in module block (tasks, projects, deals, employees), as the publisher may open them. */
+  entities: Record<string, PublishedEntity>;
+  /** File id → CDN address, for each uploaded image the page names that is a public file. */
+  media: Record<string, string>;
 }
 
 function str(v: unknown): string | null {
@@ -59,6 +68,17 @@ function refs(raw: unknown): PublicPageRef[] {
     : [];
 }
 
+/** The door's `media` JSON → file id → address (anything that is not an https address is left out). */
+export function readPublishedMedia(raw: unknown): Record<string, string> {
+  const out: Record<string, string> = {};
+  if (raw && typeof raw === "object" && !Array.isArray(raw)) {
+    for (const [id, url] of Object.entries(raw as Record<string, unknown>)) {
+      if (typeof url === "string" && url.startsWith("https://")) out[id] = url;
+    }
+  }
+  return out;
+}
+
 /** The door's JSON → a typed view; null when the page is not on the web. */
 export function readPublicView(raw: unknown): PublicSpaceView | null {
   const base = ref(raw);
@@ -80,6 +100,8 @@ export function readPublicView(raw: unknown): PublicSpaceView | null {
     includeSubPages: r.include_sub_pages !== false,
     indexed: r.indexed === true,
     databases: readPublishedDatabases(r.databases),
+    entities: readPublishedEntities(r.entities),
+    media: readPublishedMedia(r.media),
   };
 }
 

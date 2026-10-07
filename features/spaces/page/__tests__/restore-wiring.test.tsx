@@ -29,8 +29,9 @@ type Props = Omit<RestoreKeptArgs, "apply" | "offer" | "storage">;
 function harness(storage: KeepStorage) {
   const applied: UnsavedCopy[] = [];
   const offered: { copy: UnsavedCopy; discard: () => void }[] = [];
+  const hook: { awaiting: () => boolean } = { awaiting: () => false };
   function Probe(props: Props) {
-    useRestoreKept({ ...props, storage: () => storage, apply: (c) => applied.push(c), offer: (copy, a) => offered.push({ copy, discard: a.discard }) });
+    hook.awaiting = useRestoreKept({ ...props, storage: () => storage, apply: (c) => applied.push(c), offer: (copy, a) => offered.push({ copy, discard: a.discard }) }).awaiting;
     return null;
   }
   const el = document.createElement("div");
@@ -46,11 +47,42 @@ function harness(storage: KeepStorage) {
     act(async () => {
       await new Promise((r) => setTimeout(r, 5));
     });
-  return { applied, offered, render, tick, unmount: () => act(() => root.unmount()) };
+  return { applied, offered, hook, render, tick, unmount: () => act(() => root.unmount()) };
 }
 
 const stored = { key: contentKey(body(" first")), version: 2, archived: false };
 const editor = { id: "editor" };
+
+describe("a kept copy is never written over before its decision", () => {
+  it("awaiting while undecided (the page holds its keeps and saves), released once applied", async () => {
+    const storage = memoryStorage();
+    keepUnsaved(storage, "p", body(" first offline"), 2);
+    const h = harness(storage);
+    await h.render({ spaceId: "p", editor: null, canEdit: false, stored: () => stored });
+    expect(h.hook.awaiting()).toBe(true);
+    await h.render({ spaceId: "p", editor, canEdit: false, stored: () => stored });
+    await h.tick();
+    expect(h.hook.awaiting()).toBe(true);
+    await h.render({ spaceId: "p", editor, canEdit: true, stored: () => stored });
+    await h.tick();
+    expect(h.hook.awaiting()).toBe(false);
+    expect(h.applied).toHaveLength(1);
+    h.unmount();
+  });
+
+  it("no copy when the page opened: never awaiting, even after this page keeps its own", async () => {
+    const storage = memoryStorage();
+    const h = harness(storage);
+    await h.render({ spaceId: "p", editor: null, canEdit: true, stored: () => stored });
+    expect(h.hook.awaiting()).toBe(false);
+    keepUnsaved(storage, "p", body(" first typed"), 2);
+    expect(h.hook.awaiting()).toBe(false);
+    await h.render({ spaceId: "p", editor, canEdit: true, stored: () => stored });
+    await h.tick();
+    expect(h.applied).toHaveLength(0);
+    h.unmount();
+  });
+});
 
 describe("a kept copy is applied once the page is ready, whatever order readiness arrives in", () => {
   it("edit access answers after the editor is ready (the live order of D1): the copy is applied", async () => {

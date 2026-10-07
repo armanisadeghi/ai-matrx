@@ -79,7 +79,7 @@ function TemplateActionContent({
                         </span>
                     )}
                     {template.content ? (
-                        <TextCopySplit text={template.content} label="Copy template" size="xs" className="ml-auto" />
+                        <TextCopySplit text={template.content} label="Copy template" size="xs" />
                     ) : null}
                 </div>
                 <p className="text-sm font-semibold mb-3">{template.label}</p>

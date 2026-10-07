@@ -54,7 +54,8 @@ import { useSpaceCollab } from "../collab/useSpaceCollab";
 import type { SpaceMeta } from "../collab/space-collab";
 import { editedAgo } from "./time";
 import { mayWrite, roomCanEdit, trashedByList } from "./trash-state";
-import { attemptSave, deviceStorage, forgetUnsaved, keepsChange, keepUnsaved, noteWritten, readUnsaved, restoreDecision, wroteVersion } from "./unsaved";
+import { attemptSave, deviceStorage, keepsChange, keepUnsaved, noteWritten } from "./unsaved";
+import { useRestoreKept } from "./useRestoreKept";
 import { sendOnLeave, trackAccessToken } from "./leave-save";
 import { contentKey } from "./content-key";
 import { copyToClipboard } from "@/lib/clipboard/copy";
@@ -148,6 +149,8 @@ function SpacePageScreen({ spaceId }: { spaceId: string }) {
   /** Why the last save failed — handed to the error menu beside "Not saved". */
   const [saveError, setSaveError] = useState<unknown>(null);
   const [focusTitle, setFocusTitle] = useState(false);
+  /** The editor once built with the room's body in it (null until then; reset with the page). */
+  const [readyEditor, setReadyEditor] = useState<SpacesEditor | null>(null);
   const [historyOpen, setHistoryOpen] = useState(false);
   const [exportOpen, setExportOpen] = useState(false);
   const [aiTarget, setAiTarget] = useState<AskAiTarget | null>(null);
@@ -268,6 +271,7 @@ function SpacePageScreen({ spaceId }: { spaceId: string }) {
     setSaveState("saved");
     setDraft(undefined);
     setAddingPageComment(false);
+    setReadyEditor(null);
   }
 
   useEffect(() => {
@@ -326,32 +330,37 @@ function SpacePageScreen({ spaceId }: { spaceId: string }) {
     return fromEngine(editor.document as unknown as EngineBlock[]);
   };
   /**
-   * A copy of this page kept on the device by a save that did not land (page/unsaved.ts): put it back
-   * when it differs from what is stored — at once when nothing was saved since, else on the person's
-   * word (someone saved a newer version meanwhile). It saves like any edit.
+   * A copy of this page kept on the device by a save that did not land (page/unsaved.ts): put back once
+   * the page is ready for it — editor built, stored version known, edit access answered — in whatever
+   * order those arrive (page/useRestoreKept.ts). Newer than what is stored: back without a word; someone
+   * saved a newer version meanwhile: offered (Restore / Discard). It saves like any edit.
    */
-  const restoredFor = useRef<string | null>(null);
-  const restoreKept = (editor: SpacesEditor) => {
-    if (restoredFor.current === spaceId) return;
-    restoredFor.current = spaceId;
-    const storage = deviceStorage();
-    const copy = readUnsaved(storage, spaceId);
-    const d = docRef.current;
-    if (!copy || !d || savedKey.current === null) return;
-    const decision = restoreDecision({ copy, stored: { key: savedKey.current, version: d.version }, wrote: wroteVersion(storage, spaceId) });
-    if (decision === "forget") {
-      forgetUnsaved(storage, spaceId);
-      return;
-    }
-    if (!canEditRef.current || d.isArchived) return;
-    const apply = () => {
+  const restore = useRestoreKept({
+    spaceId,
+    editor: readyEditor,
+    canEdit: roomCanEdit(canEdit, trashedNow),
+    stored: () => (docRef.current && savedKey.current !== null ? { key: savedKey.current, version: docRef.current.version, archived: docRef.current.isArchived } : null),
+    apply: (copy) => {
+      const editor = editorRef.current;
+      if (!editor) return;
       editor.replaceBlocks(editor.document, toEngine(copy.doc.blocks) as never);
       keptLocally.current = true;
       update({ title: copy.doc.title, icon: copy.doc.icon, cover: copy.doc.cover, settings: copy.doc.settings, blocks: fromEngine(editor.document as unknown as EngineBlock[]) });
-    };
-    // Newer than what is stored: back on the page without a word (the person never lost it).
-    if (decision === "apply") apply();
-    else toast.warning("Unsaved changes from this device", { duration: Infinity, action: { label: "Restore", onClick: () => { apply(); toast.info("Unsaved changes restored"); } } });
+    },
+    offer: (_copy, { restore, discard }) =>
+      toast.warning("Unsaved changes from this device", {
+        duration: Infinity,
+        action: { label: "Restore", onClick: () => { restore(); toast.info("Unsaved changes restored"); } },
+        cancel: { label: "Discard", onClick: discard },
+      }),
+    // Edits made while the kept copy waited (held, never saved over it) save now.
+    onDecided: () => {
+      if (pending.current) schedule();
+    },
+  });
+  /** Keep the page on this device — never over a kept copy still waiting for its decision. */
+  const keep = (d: SpaceDoc, base: number) => {
+    if (!restore.awaiting()) keepUnsaved(deviceStorage(), spaceId, d, base);
   };
   const [sourcePicker, pickSource] = useSourcePicker(spaceId);
   /**
@@ -367,6 +376,9 @@ function SpacePageScreen({ spaceId }: { spaceId: string }) {
     // torn down, so the host status of the last render decides.
     const host = leaving ? hostAtLastRender.current : collab.hostRef.current;
     if (!docRef.current || !mayWrite({ trashed: trashedRef.current, host, pending: pending.current, inFlight: inFlight.current })) return;
+    // A copy kept on this device still waits for its decision: a save now would store the page without
+    // it and clear it. Held; the decision schedules it (useRestoreKept onDecided).
+    if (restore.awaiting()) return;
     const sent = docRef.current;
     const key = contentKey(sent);
     pending.current = false;
@@ -421,7 +433,7 @@ function SpacePageScreen({ spaceId }: { spaceId: string }) {
       setSaveState("saved");
       // Edits made while this save was in flight are not in it: the save cleared the device copy, so
       // keep them again now (a reload before their own save must still find them).
-      if (pending.current && docRef.current && contentKey(docRef.current) !== savedKey.current) keepUnsaved(storage, spaceId, docRef.current, baseVersion.current);
+      if (pending.current && docRef.current && contentKey(docRef.current) !== savedKey.current) keep(docRef.current, baseVersion.current);
       else localEdits.current = false;
     } finally {
       inFlight.current = false;
@@ -440,7 +452,7 @@ function SpacePageScreen({ spaceId }: { spaceId: string }) {
     // Every change this member makes (and, as host, everyone's) is kept on this device the moment it is
     // made — before the room is joined or the host elected too: a tab that closes or crashes before the
     // save lands loses nothing.
-    if (keepsChange({ local, host: collab.hostRef.current, keptLocally: keptLocally.current })) keepUnsaved(deviceStorage(), spaceId, docRef.current, baseVersion.current);
+    if (keepsChange({ local, host: collab.hostRef.current, keptLocally: keptLocally.current })) keep(docRef.current, baseVersion.current);
     const now = Date.now();
     dirtySince.current ??= now;
     // The cadence is a knob; until it is read nothing is timed (its arrival schedules what is pending).
@@ -522,7 +534,7 @@ function SpacePageScreen({ spaceId }: { spaceId: string }) {
     let sentKey: string | null = null;
     const onLeave = () => {
       if (!leaving() || !docRef.current) return;
-      keepUnsaved(deviceStorage(), spaceId, docRef.current, baseVersion.current);
+      keep(docRef.current, baseVersion.current);
       const key = contentKey(docRef.current);
       if (key === sentKey) return;
       if (sendOnLeave(docRef.current, baseVersion.current)) sentKey = key;
@@ -530,7 +542,7 @@ function SpacePageScreen({ spaceId }: { spaceId: string }) {
     // Hidden (tab switched, phone locked — a phone may end the page without another word): save now.
     const onHidden = () => {
       if (document.visibilityState !== "hidden" || !leaving() || !docRef.current) return;
-      keepUnsaved(deviceStorage(), spaceId, docRef.current, baseVersion.current);
+      keep(docRef.current, baseVersion.current);
       void flush();
     };
     window.addEventListener("pagehide", onLeave);
@@ -544,7 +556,7 @@ function SpacePageScreen({ spaceId }: { spaceId: string }) {
       document.removeEventListener("visibilitychange", onHidden);
       // Leaving this Space: write what is pending now (and keep it here until that lands).
       if (timer.current) window.clearTimeout(timer.current);
-      if (leaving() && docRef.current) keepUnsaved(deviceStorage(), spaceId, docRef.current, baseVersion.current);
+      if (leaving() && docRef.current) keep(docRef.current, baseVersion.current);
       void flush(true);
     };
     // Flush on leaving this Space only.
@@ -870,13 +882,20 @@ function SpacePageScreen({ spaceId }: { spaceId: string }) {
             onReady={(editor) => {
               editorRef.current = editor;
               // After the room's body is in the editor: a copy kept on this device goes back on top.
-              window.setTimeout(() => restoreKept(editor), 0);
+              setReadyEditor(editor);
             }}
             slash={{
               createSubpage: async () => {
+                // Notion: the new sub-page opens at once with the caret in its title, so it is named
+                // there; back / the breadcrumb return here. This page's pending edits are sent first (a
+                // title typed a moment ago would otherwise read "Untitled" in the new page's breadcrumb,
+                // the tree re-read on create carrying the stored title), then its block lands where "/"
+                // was typed (the caller inserts it when this answers) and that save is sent before
+                // leaving. Each wait is capped; the leave path covers a save slower than that.
+                const settle = () => Promise.race([flush(), new Promise((r) => window.setTimeout(r, 400))]);
+                await settle();
                 const sub = await spaces.createSpace(doc.id, { open: false });
-                // The sub-page goes in where "/" was typed and the person stays here (its block opens it).
-                toast("Page added", { action: { label: "Open", onClick: () => spaces.open(sub.id) } });
+                window.setTimeout(() => void settle().finally(() => spaces.openToName(sub.id)), 0);
                 return sub.id;
               },
               pickPage: (options) =>

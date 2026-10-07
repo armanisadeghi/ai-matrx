@@ -88,7 +88,10 @@ export function PodcastIndexClient({ published }: { published: PcShow[] }) {
           {/* The signed-in user's library — includes drafts, with manage links. */}
           {/* A failed read is shown, never a hidden section — without it the
               page read as "you have no podcasts" (RC-B12 round 5). */}
-          {userId && (loading || myShows.length > 0 || error) && (
+          {/* Drawn only once there is something to say. It used to open with a skeleton row that
+              pushed "On the platform" down, then vanished for a person with no shows and pulled
+              the whole catalog back up (CLS 0.42 at 375px). Nothing here until the answer is known. */}
+          {userId && (myShows.length > 0 || error) && (
             <section>
               <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
                 Your podcasts
@@ -106,15 +109,6 @@ export function PodcastIndexClient({ published }: { published: PcShow[] }) {
                     </Button>
                   }
                 />
-              ) : loading && myShows.length === 0 ? (
-                <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5 xl:grid-cols-6">
-                  {Array.from({ length: 3 }, (_, i) => (
-                    <div
-                      key={i}
-                      className="aspect-[4/5] animate-pulse rounded-2xl border border-border bg-muted/50"
-                    />
-                  ))}
-                </div>
               ) : (
                 <PodcastGrid shows={myShows} manage />
               )}

@@ -166,7 +166,7 @@ export function TaskQuickCreateCore({
   // Ensure the org/project/task hierarchy is hydrated — this window opens
   // from anywhere (chat, notes, files), so it can NOT assume a prior page
   // already fetched. Idempotent: no-op when the data is present.
-  useEnsureHierarchyLoaded();
+  const hierarchy = useEnsureHierarchyLoaded();
 
   // Context defaults
   const orgId = useAppSelector(selectOrganizationId);
@@ -598,7 +598,16 @@ export function TaskQuickCreateCore({
             />
           </div>
 
-          <div className="lg:flex-[2] flex flex-col min-h-0 min-w-0 gap-1">
+          {/* Stacked (phone), the column joined the page when the scope tree arrived: it opened as a
+              72px "No scopes defined yet" box and grew to 500px, squeezing the description up (CLS 0.145).
+              It is not drawn until the tree has answered; at lg+ it sits beside the description and
+              never shifts anything, so it stays. */}
+          <div
+            className={cn(
+              "lg:flex-[2] flex flex-col min-h-0 min-w-0 gap-1",
+              !(hierarchy.isSuccess || hierarchy.isError) && "max-lg:hidden",
+            )}
+          >
             <Label className="text-xs shrink-0 flex items-center gap-1.5">
               <Tag className="w-3 h-3" />
               Scopes

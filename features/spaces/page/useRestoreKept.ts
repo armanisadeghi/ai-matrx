@@ -28,24 +28,45 @@ export interface RestoreKeptArgs {
   /** Someone stored a newer version: offer the copy with Restore and Discard. */
   offer: (copy: UnsavedCopy, actions: { restore: () => void; discard: () => void }) => void;
   storage?: () => KeepStorage | null;
+  /** The copy has been decided (applied, offered, forgotten): what waited behind it may save now. */
+  onDecided?: () => void;
 }
 
-export function useRestoreKept({ spaceId, editor, canEdit, stored, apply, offer, storage = deviceStorage }: RestoreKeptArgs): void {
-  /** The page whose kept copy has been decided (applied, offered, forgotten, or found absent). */
-  const decidedFor = useRef<string | null>(null);
-  const latest = useRef({ stored, apply, offer, storage });
-  latest.current = { stored, apply, offer, storage };
+export interface RestoreKept {
+  /**
+   * A copy kept before this page opened still waits for its decision. Until it is decided the page
+   * neither overwrites it (keepUnsaved) nor saves (a save that lands clears it): either would replace
+   * the person's unsaved words with what is already stored (round 27: the host's first schedule wrote
+   * the stored title over the kept one, and the check then found "nothing to restore").
+   */
+  awaiting: () => boolean;
+}
+
+export function useRestoreKept({ spaceId, editor, canEdit, stored, apply, offer, storage = deviceStorage, onDecided }: RestoreKeptArgs): RestoreKept {
+  const latest = useRef({ stored, apply, offer, storage, onDecided });
+  latest.current = { stored, apply, offer, storage, onDecided };
+  /** Per page: did a kept copy exist when it opened, and is it still undecided. Read on first ask,
+   *  before this page writes anything of its own to the device. */
+  const kept = useRef<{ id: string; open: boolean } | null>(null);
+  const awaiting = () => {
+    if (kept.current?.id !== spaceId) kept.current = { id: spaceId, open: readUnsaved(latest.current.storage(), spaceId) !== null };
+    return kept.current.open;
+  };
+  const decided = () => {
+    kept.current = { id: spaceId, open: false };
+    latest.current.onDecided?.();
+  };
 
   useEffect(() => {
-    if (!editor || decidedFor.current === spaceId) return;
+    if (!editor || !awaiting()) return;
     // A tick later: the room's body lands in the editor in the same turn the editor reports ready.
     const t = window.setTimeout(() => {
-      if (decidedFor.current === spaceId) return;
+      if (!awaiting()) return;
       const { stored: readStored, apply: put, offer: ask, storage: getStorage } = latest.current;
       const box = getStorage();
       const copy = readUnsaved(box, spaceId);
       if (!copy) {
-        decidedFor.current = spaceId;
+        decided();
         return;
       }
       const s = readStored();
@@ -53,16 +74,21 @@ export function useRestoreKept({ spaceId, editor, canEdit, stored, apply, offer,
       const decision = restoreDecision({ copy, stored: { key: s.key, version: s.version }, wrote: wroteVersion(box, spaceId) });
       if (decision === "forget") {
         forgetUnsaved(box, spaceId);
-        decidedFor.current = spaceId;
+        decided();
         return;
       }
       // Edit access not answered yet (or a viewer, or in Trash): the copy stays on the device and is
       // decided when access arrives or the page is restored.
       if (!canEdit || s.archived) return;
-      decidedFor.current = spaceId;
+      // Decided before applying: the apply is an edit, and an edit keeps and saves as usual.
+      kept.current = { id: spaceId, open: false };
       if (decision === "apply") put(copy);
       else ask(copy, { restore: () => put(copy), discard: () => forgetUnsaved(box, spaceId) });
+      latest.current.onDecided?.();
     }, 0);
     return () => window.clearTimeout(t);
+    // awaiting / decided read refs only; the check re-runs when a piece of readiness arrives.
   }, [spaceId, editor, canEdit]);
+
+  return { awaiting };
 }

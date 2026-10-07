@@ -1,0 +1,2 @@
+# Walk probes and other throwaway scripts never get committed (check:spaces-fence refuses them).
+*.tmp.*
