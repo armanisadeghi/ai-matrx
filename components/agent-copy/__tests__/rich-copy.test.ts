@@ -78,28 +78,20 @@ describe("flavors", () => {
     (getSessionKnob as jest.Mock).mockReturnValue(undefined);
   });
 
-  async function itemText(type: string): Promise<string> {
-    const item = write.mock.calls[0][0][0] as { items: Record<string, Blob | Promise<Blob>> };
-    const blob = await item.items[type];
-    return new Promise<string>((resolve) => {
-      const reader = new FileReader();
-      reader.onload = () => resolve(String(reader.result));
-      reader.readAsText(blob!);
-    });
-  }
-
-  test("one-click Copy: text/plain = markdown, text/html = formatted (knob default)", async () => {
+  // One truth (rich-content 0.2.27+, Arman 2026-10-04): the one-click Copy writes ONE clean plain flavor — the
+  // person's `copy.default_flavor` (markdown, or readable text) — never a half-formatted html item. Formatted
+  // HTML is the Alchemy palette's own "Formatted" tile. The two tests below used to expect html + plain.
+  test("one-click Copy: the knob's default flavor (markdown) as plain text, reasoning left out", async () => {
     await copyRichContent("<thinking>hidden</thinking>\n**Hi**", "default");
-    expect(writeText).not.toHaveBeenCalled();
-    expect(await itemText("text/plain")).toBe("**Hi**");
-    expect(await itemText("text/html")).toBe("<p>**Hi**</p>");
+    expect(write).not.toHaveBeenCalled();
+    expect(writeText.mock.calls.map((c) => c[0])).toEqual(["**Hi**"]);
   });
 
   test("the knob turns a one-click Copy's plain flavor into readable text", async () => {
     (getSessionKnob as jest.Mock).mockReturnValue("text");
     await copyRichContent("**Hi** [a](https://b.c)", "default");
-    expect(await itemText("text/plain")).toBe("Hi a (https://b.c)");
-    expect(await itemText("text/html")).toContain("<p>");
+    expect(write).not.toHaveBeenCalled();
+    expect(writeText.mock.calls.map((c) => c[0])).toEqual(["Hi a (https://b.c)"]);
   });
 
   test("Copy markdown and Copy text write plain text only", async () => {
