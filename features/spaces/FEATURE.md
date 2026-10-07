@@ -45,6 +45,19 @@ Block document: a tree of `SpaceBlock` (`id`, `type`, `text: RichSpan[]`, `color
 
 ## Change log
 
+- 2026-10-07 — publish round 3 (lane spaces-publish-3): a published page now carries what round 2 left out. (1) Uploaded covers and
+  icons: publish makes the page's cover/icon files (and included sub-pages') public through the server's change-visibility call
+  (`publish/published-media.ts`, PATCH /files/{id}); the file records `metadata.spaces_published_by = {page: visibility before}` so
+  unpublish puts back only what publishing made public (a file made public on purpose, or shared with another published page, stays);
+  `space_public_view` answers `media` (file id -> CDN address, public files only) and `page/media.ts` draws it signed out. (2) Formula,
+  lookup and roll-up columns are computed by the store's own reader (`custom.record_values_of`) inside the helper, which reads as the
+  publisher (request claims set to the publisher while it works). (3) Built-in modules (task, project, crm_deal, hr_employee) answer
+  through `content._space_public_entities` (publisher's rights via `iam.has_access_for`, page's organization, fixed short column list,
+  the view's filter before the 500-row cut) into the memory entity store. (4) A relation column shows the related record's title as
+  plain text when the publisher can open it. Proofs: `publish/published-extras-live-proof.ts` 22/22 live, `publish-media.walk.mjs`
+  (signed-out screenshot, unpublish puts the file back), `__tests__/published-media.test.ts`. Open: a cover picked AFTER publishing
+  becomes public when the Publish panel next opens (not on the pick); a 3 s signed-out statement limit bounds how big a formula table
+  a page can publish (44 rows with 3 formulas answers in ~1.6 s).
 - 2026-10-07 — publish round 2 (lane spaces-publish-2): a published page shows its database rows and charts signed out —
   `content.space_public_view` returns `databases` (helper `content._space_public_databases`, never granted: only the page's own
   blocks, each block's views — filters, sort, hidden properties, 500 rows a view — read as the publisher), drawn by

@@ -13,6 +13,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@ai-matrx/design-system
 import { Button, Input, Switch } from "@ai-matrx/design-system/controls";
 import { MatrxDataTable, type MatrxColumnDef } from "@ai-matrx/design-system/data-table";
 import { EntityChartBlock, RecordsMount, TablePage, type ChartKind, type EntityColumn, type EntityRow } from "@ai-matrx/records-ui";
+import type { RecordsConfig } from "@ai-matrx/records";
 import { useRecordsClient } from "@ai-matrx/records/react";
 import { ArrowDownUp, ArrowUpRight, Database, Kanban, PieChart, List, ListFilter, Maximize2, PanelRight, Plus, Search, SlidersHorizontal, Square, Table2, X } from "lucide-react";
 import { useEffect, useRef, useState, type ReactNode } from "react";
@@ -222,6 +223,8 @@ export interface EntityDatabaseProps {
   raw: Record<string, unknown>;
   onChange: (next: Record<string, unknown>) => void;
   editable: boolean;
+  /** A page on the web reads the rows it published (a read-only store) instead of the live module doors. */
+  published?: RecordsConfig;
 }
 
 export function EntityDatabase(p: EntityDatabaseProps) {
@@ -232,7 +235,7 @@ export function EntityDatabase(p: EntityDatabaseProps) {
   const config = useAppRecordsConfig(organizationId ?? null);
   return (
     // org-filter: write-target a built-in source's writes go through the active organization
-    <RecordsMount letTheStoreDecideRights config={config}>
+    <RecordsMount letTheStoreDecideRights config={p.published ?? config}>
       <EntityFrame {...p} />
     </RecordsMount>
   );
