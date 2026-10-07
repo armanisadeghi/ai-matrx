@@ -6,7 +6,7 @@
 //   node features/spaces/__tests__/walk/convergence.walk.mjs [seconds=30]
 //
 // Prints one JSON verdict line; exits 1 on divergence. The page is moved to Trash through the UI after.
-import { open, newPage, act, originOf, login, resumeIfPaused, chromium } from "./lib.mjs";
+import { open, newPage, originOf, login, resumeIfPaused, act, trashPage } from "./lib.mjs";
 
 const SECONDS = Number(process.argv[2] ?? 30);
 const OUT = process.env.WALK_OUT ?? "/tmp";
@@ -167,12 +167,6 @@ const verdict = {
 console.log(JSON.stringify(verdict));
 
 // Trash the test page through the UI (page ••• → Move to Trash).
-await act(C.page, async () => {
-  await C.page.getByRole("button", { name: /more|page actions|•••/i }).last().click().catch(() => {});
-  const trash = C.page.getByText(/Move to Trash|Delete/i).first();
-  if (await trash.isVisible({ timeout: 3000 }).catch(() => false)) await trash.click();
-});
-await C.page.waitForTimeout(1500);
-console.log("trash", C.page.url());
+console.log("trashed", await trashPage(C.page));
 await A.browser.close();
 process.exit(verdict.synced && verdict.editorsEqual && verdict.storedEqualsLive ? 0 : 1);

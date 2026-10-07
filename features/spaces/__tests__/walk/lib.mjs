@@ -153,3 +153,14 @@ export async function setBlockColor(page, block, section, color) {
 
 /** The last block of a type (data-content-type), e.g. "heading", "callout". */
 export const lastBlock = (page, type) => page.locator(`.bn-block-content[data-content-type="${type}"]`).last();
+
+/** Move the open page to Trash through its ••• menu (Page options → Move to Trash). True when it went. */
+export async function trashPage(page) {
+  assertOwnPage(page);
+  await page.keyboard.press("Escape").catch(() => {});
+  await page.getByRole("button", { name: "Page options" }).first().click();
+  const item = page.getByText("Move to Trash", { exact: true }).first();
+  await item.waitFor({ timeout: 10_000 });
+  await item.click();
+  return page.getByText("This page is in Trash.").first().waitFor({ timeout: 15_000 }).then(() => true, () => false);
+}

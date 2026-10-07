@@ -45,6 +45,13 @@ Block document: a tree of `SpaceBlock` (`id`, `type`, `text: RichSpan[]`, `color
 
 ## Change log
 
+- 2026-10-06 — round 22: co-editing convergence proved — `collab/__tests__/convergence.test.ts` (two members over the
+  real provider + realtime manager, jittered out-of-order delivery, 300 keys each, 5 seeds: identical, no pending) and
+  `__tests__/walk/convergence.walk.mjs` (two browsers, 30 s / 60 s, same line + own blocks: editors, Yjs state vectors
+  and the stored page identical). A frame LOST while connected never heals (provider has no anti-entropy) — `it.failing`
+  in that test. A database in a narrow column stays inside it: the block host is a size container, the toolbar wraps
+  and padding shrinks under 440px, the table scrolls sideways (`__tests__/walk/narrow-database.walk.mjs`). Walk helper `trashPage`.
+
 - 2026-10-06 — AP-3 U7: from `@ai-matrx/records-ui` 0.102.0 the built-in boards (`TablePage source={{kind:"entity"}}`)
   read and write through `@ai-matrx/entity-data`'s one engine (keyset pages, a card move drawn at once and rolled back
   with the store's sentence, live updates); `EntityDatabase.tsx` keeps the drill shapes `EntityColumn` / `EntityRow`.

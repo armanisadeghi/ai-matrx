@@ -1283,6 +1283,21 @@
 .spaces-db-new-more { display: inline-flex; align-items: center; padding: 0 6px; border-left: 1px solid rgb(255 255 255 / 0.25); }
 .spaces-db-new-main:hover, .spaces-db-new-more:hover { background: #0077d4; }
 .spaces-db-body { min-width: 0; overflow-x: auto; }
+/* A database in a narrow column (Notion): the frame never grows past its column — the toolbar wraps
+   onto its own lines and keeps every control inside the frame (it spilled out to the right of a 128px
+   column), the frame's padding shrinks, and the table scrolls sideways inside the body. The block's
+   host is the size container (its width is the column's, never its content's). */
+.spaces-db-host { container-type: inline-size; }
+.spaces-db-tools { min-width: 0; flex-wrap: wrap; }
+@container (max-width: 440px) {
+  .spaces-db-frame, .spaces-db-frame[data-layout="chart"] { padding: 10px 8px 8px; }
+  .spaces-db-bar { flex-wrap: wrap; row-gap: 4px; }
+  .spaces-db-tabs { flex: 1 1 100%; }
+  .spaces-db-tools { flex: 1 1 100%; justify-content: flex-start; }
+  .spaces-db-search { flex: 1 1 100%; min-width: 0; }
+  .spaces-db-search input { width: 100%; min-width: 0; }
+  .spaces-db-title { font-size: 16px; }
+}
 /* N1 — BlockNote's `.bn-shadcn svg:not([class*="size-"]) { width: revert }` (unlayered, from the editor
    around every block) beat the design system's layered sizing of its own glyphs: the table magnifier's
    glyph grew to the whole field (247px) and pushed the typed text out of sight. A design-system glyph
