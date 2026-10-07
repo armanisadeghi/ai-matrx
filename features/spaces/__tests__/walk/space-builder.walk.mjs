@@ -35,7 +35,7 @@ await act(page, async () => {
   doors.sidebarMenu = await page.getByRole("button", { name: "Build with AI" }).last().isVisible({ timeout: 5000 }).catch(() => false);
   await page.getByRole("button", { name: "Build with AI" }).last().click();
 });
-const dialog = page.getByRole("dialog").filter({ hasText: "Build with AI" });
+const dialog = page.getByRole("dialog", { name: "Build with AI" });
 await dialog.waitFor({ timeout: 10_000 });
 await act(page, async () => {
   await dialog.getByRole("textbox").fill(ASK);

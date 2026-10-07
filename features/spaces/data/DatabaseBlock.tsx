@@ -34,6 +34,7 @@ import {
   Zap,
   PieChart,
   Plus,
+  Search,
   Square,
   SlidersHorizontal,
   Table2,
@@ -147,6 +148,7 @@ function DatabaseFrame({
   // The viewer's search (the table's magnifier), per view, beside the sort and filter: never saved,
   // asked of the store's search by the grid (records-ui searchOverride).
   const [searchChoices, setSearchChoices] = useState<Record<string, string>>({});
+  const [searchOpen, setSearchOpen] = useState<Record<string, boolean>>({});
   const search = {
     value: searchChoices[active.id] ?? "",
     onChange: (term: string) => setSearchChoices((prev) => (prev[active.id] === term ? prev : { ...prev, [active.id]: term })),
@@ -284,6 +286,42 @@ function DatabaseFrame({
               icon={<ArrowDownUp size={15} strokeWidth={1.8} />}
             />
             <AutomationsButton tableId={tableId} sample={sample} />
+            {/* Notion's magnifier sits in this icon row and opens in place (records-ui's own box is hidden by spaces.css). */}
+            {searchOpen[active.id] || search.value ? (
+              <div className="spaces-db-search">
+                <Search size={14} strokeWidth={1.8} aria-hidden />
+                <Input
+                  autoFocus
+                  type="search"
+                  aria-label="Search this database"
+                  placeholder="Type to search…"
+                  value={search.value}
+                  onChange={(e) => search.onChange(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Escape") {
+                      search.onChange("");
+                      setSearchOpen((all) => ({ ...all, [active.id]: false }));
+                    }
+                  }}
+                  onBlur={() => {
+                    if (!search.value) setSearchOpen((all) => ({ ...all, [active.id]: false }));
+                  }}
+                />
+                {search.value ? (
+                  <Button
+                    variant="quiet"
+                    icon={<X size={13} />}
+                    aria-label="Clear search"
+                    onClick={() => {
+                      search.onChange("");
+                      setSearchOpen((all) => ({ ...all, [active.id]: false }));
+                    }}
+                  />
+                ) : null}
+              </div>
+            ) : (
+              <Button variant="quiet" icon={<Search size={15} strokeWidth={1.8} />} aria-label="Search" title="Search" onClick={() => setSearchOpen((all) => ({ ...all, [active.id]: true }))} />
+            )}
             <Button variant="quiet" icon={<Maximize2 size={15} strokeWidth={1.8} />} aria-label="Open as full page" title="Open as full page" onClick={() => setExpanded(true)} />
             <ViewSettings tableId={tableId} sample={sample} view={active} fields={fields} props={props} onView={saveView} onBlock={save} editable={editable} />
             <NewButton onNew={addRow} />

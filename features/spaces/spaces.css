@@ -1,7 +1,8 @@
 /* features/spaces/spaces.css — Notion's page geometry on our tokens (layout of the Spaces canvas).
  *
  * Sizes copy Notion (708px text column, 96px gutters, 240px sidebar, 45px top bar). Type is measured on
- * Arman's reference screenshots (round 11): title 36px and 15px/1.5 blocks — the references' title is 89% and
+ * Type follows NOTION-MEASUREMENTS (title 40/48, body 16/24); round 11 had read title 36px and 15px/1.5 blocks off
+ * Arman's reference screenshots — the references' title is 89% and
  * their text 94.6% of Notion's nominal 40px / 16px at this geometry. Colors: the ten content colors are a palette the writer picks (Notion's values,
  * stepped for dark); every chrome color comes from our semantic tokens. */
 
@@ -736,7 +737,8 @@
 .spaces-title {
   margin: 0 0 4px;
   padding: 3px 2px;
-  font-size: 36px;
+  /* Measured: 40px / 700 / 48px (NOTION-MEASUREMENTS §1, O4). */
+  font-size: 40px;
   font-weight: 700;
   line-height: 1.2;
   white-space: pre-wrap;
@@ -767,7 +769,8 @@
 }
 .spaces-editor .bn-default-styles {
   font-family: inherit;
-  font-size: 15px;
+  /* Notion's nominal body: 16px / 24px (NOTION-MEASUREMENTS §2; the round-11 15px read a scaled screenshot). */
+  font-size: 16px;
 }
 .spaces-editor .bn-block-outer {
   line-height: 1.5;
@@ -831,8 +834,8 @@
    "The Quote Pages" → "The reporting system" → "Claude Skills" 40px apart, four lines to "Auto
    posting"); toggle headings 59px apart. */
 .spaces-editor .bn-block-content[data-content-type="paragraph"] {
-  padding-top: 8.25px;
-  padding-bottom: 8.25px;
+  padding-top: 7.5px;
+  padding-bottom: 7.5px;
 }
 .spaces-editor .bn-block-outer:has(> .bn-block > [data-content-type="heading"][data-is-toggleable="true"]) + .bn-block-outer:has(> .bn-block > [data-content-type="heading"][data-is-toggleable="true"]) {
   margin-top: 23px;
@@ -1576,12 +1579,24 @@ tr:hover .spaces-entity-openpill, .spaces-entity-open:focus-visible .spaces-enti
 }
 
 /* The open view's tab: Notion's grey pill at toolbar size (screenshot 1 "All"). */
+/* Measured (NOTION-MEASUREMENTS §6, O6): a 32px pill, radius 20px, padding 6px 12px, weight 500,
+   rgba(33,27,23,0.05) behind the open view. */
 .spaces-view-pill {
-  height: 28px;
+  height: 32px;
   gap: 6px;
+  padding: 6px 12px;
+  border-radius: 20px;
+  max-width: 220px;
   font-size: 14px;
   font-weight: 500;
+  background: rgba(33, 27, 23, 0.05);
 }
+.dark .spaces-view-pill { background: rgba(255, 255, 255, 0.08); }
+/* A view with a saved filter or sort shows its icon in Notion blue (screenshot 1 toolbar). */
+.spaces-db-tools [data-on="true"], .spaces-db-chart-tools [data-on="true"] { color: #2383e2; }
+/* The table's magnifier is the toolbar's (DatabaseBlock); records-ui's embedded grid still draws its own
+   search row above the table (NEEDS row), so that row is not shown inside a Space. */
+.spaces-db-body div:has(> div > .matrx-tap-search) { display: none; }
 
 /* The database title typed in place (Notion): the title's own type, no field chrome. */
 .spaces-db-title .spaces-db-title-input {
@@ -1592,3 +1607,10 @@ tr:hover .spaces-entity-openpill, .spaces-entity-open:focus-visible .spaces-enti
   min-width: 0;
   flex: 1;
 }
+
+/* Measured (NOTION-MEASUREMENTS §6, O5–O7): a header row 36px, each row 37px (36 + a 1px hairline
+   rgba(42,28,0,0.07)), cells padded 0 8px; a select tag 20px tall, radius 4px, padding 0 6px. */
+.spaces-db-body thead tr > th { height: 36px; padding-top: 0; padding-bottom: 0; }
+.spaces-db-body tbody tr > td { height: 37px; padding-top: 0; padding-bottom: 0; vertical-align: middle; }
+.spaces-db-body tbody tr { border-bottom-color: rgba(42, 28, 0, 0.07); }
+.dark .spaces-db-body tbody tr { border-bottom-color: rgba(255, 255, 255, 0.08); }
