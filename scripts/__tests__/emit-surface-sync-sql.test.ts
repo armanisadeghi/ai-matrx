@@ -17,7 +17,7 @@ describe("surface manifest SQL emitter", () => {
     expect(sql).not.toContain("INSERT INTO ui.ui_client");
   });
 
-  it("sets system ownership and public visibility on insert only — a conflict never rewrites them (ALC-14 ruling N5)", () => {
+  it("sets system ownership and web publication on insert only — a conflict never rewrites them (ALC-14 ruling N5)", () => {
     const sql = emitSurfaceSyncSql({
       surfaceNames: [SURFACE],
       organizationId: SYSTEM_ORG,
@@ -37,13 +37,13 @@ describe("surface manifest SQL emitter", () => {
       const conflictAt = sql.indexOf("ON CONFLICT", start);
       expect(conflictAt).toBeGreaterThan(start);
       const insert = sql.slice(start, conflictAt);
-      expect(insert).toContain("organization_id, visibility");
-      expect(insert).toContain(`'${SYSTEM_ORG}', 'public'`);
+      expect(insert).toContain("organization_id, published_to_web");
+      expect(insert).toContain(`'${SYSTEM_ORG}', true`);
       const end = sql.indexOf(";\n", conflictAt);
       const onConflict = sql.slice(conflictAt, end < 0 ? undefined : end);
       expect(onConflict).toContain("DO UPDATE SET");
       expect(onConflict).not.toMatch(/organization_id\s*=/);
-      expect(onConflict).not.toMatch(/visibility\s*=/);
+      expect(onConflict).not.toMatch(/published_to_web\s*=/);
     }
     // The flashcard-set surface declares values, so at least one mirror must be
     // inspected — a loop that finds nothing proves nothing.
@@ -80,7 +80,7 @@ describe("surface agent hints in the emitted SQL", () => {
   function valueRow(text: string, name: string): string {
     const line = text
       .split("\n")
-      .find((l) => l.startsWith(`('${SYSTEM_ORG}', 'public', '${CLASSES}', '', '${name}',`));
+      .find((l) => l.startsWith(`('${SYSTEM_ORG}', true, 'code', '${CLASSES}', '', '${name}',`));
     if (!line) throw new Error(`no value row for ${name}`);
     return line;
   }
@@ -95,8 +95,8 @@ describe("surface agent hints in the emitted SQL", () => {
       "max_inline_chars = EXCLUDED.max_inline_chars",
     );
     // The column is the row's last value (after synced_from).
-    expect(valueRow(text, "owned_classes")).toMatch(/, 12000\),?$/);
-    expect(valueRow(text, "joined_classes")).toMatch(/, 4000\),?$/);
+    expect(valueRow(text, "class_list")).toMatch(/, 4000\),?$/);
+    expect(valueRow(text, "new_class_draft")).toMatch(/, 2000\),?$/);
     // A value with no inlineUpTo stores NULL = the platform default.
     expect(valueRow(text, "organization_state")).toMatch(/, NULL\),?$/);
   });
