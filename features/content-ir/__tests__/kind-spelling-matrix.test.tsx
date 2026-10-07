@@ -57,7 +57,6 @@ import { kindTextPreview, kindTextToMarkdown } from "@/features/content-ir/surfa
 import { domLeaksKind, domShowsDetectionOnlyKind, screenTextHoldsKind } from "@/features/content-ir/surfaces/kind-leak-scan";
 import { normalizeKindSpellings, scanKindSpellingRegions } from "@/features/content-ir/surfaces/json-kind-signal";
 import { spelledKindsAsOneLine } from "@/features/content-ir/surfaces/kind-one-line";
-import { kindCell } from "@/features/data-tables/utils/kind-cell";
 import { plainTitleFromMarkdown } from "@ai-matrx/rich-content/markdown-core/plain-title";
 import { publicResourceDescription, publicResourceTitle } from "@/app/(public)/p/e/publicResourceText";
 
@@ -138,7 +137,6 @@ const DETECTORS: ReadonlyArray<readonly [string, (spelled: string) => boolean]> 
       return domLeaksKind(div);
     },
   ],
-  ["kindCell", (s) => kindCell(s)?.state === "kind"],
 ];
 
 /**

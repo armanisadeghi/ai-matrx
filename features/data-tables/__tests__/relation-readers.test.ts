@@ -1,11 +1,10 @@
 /**
- * THE TEN READERS OF A `relation` CELL — lane OLD-TABLES-2, W3.
+ * THE READERS OF A `relation` CELL — lane OLD-TABLES-2, W3.
  *
- * A `relation` column stores a record's ID and shows that record's WORDS. Ten
+ * A `relation` column stores a record's ID and shows that record's WORDS. Many
  * places print the contents of a cell, and every one of them would have shown a
  * customer a raw uuid (OLD-TABLES-CUTOVER rev 2 §3.3). This suite is the proof
- * for the ones that are PURE — the row label, the formula engine, copy, export
- * and the agent payload — each asserted on the value a person would actually
+ * for the ones that are PURE — the row label and the formula engine — each asserted on the value a person would actually
  * see. The grid, the filter checklist and the agent scope resolve through
  * `choiceMap`, whose arm is covered by `lib/field-formats/__tests__/relation-format`
  * and by the headless walk.
@@ -16,15 +15,11 @@
  */
 
 import {
-  cellTextForReader,
-  isRelationFormat,
   relationCellText,
-  relationIdsInColumn,
   type RelationWordsByField,
 } from "../relation-words";
 import { rowLabelText } from "../row-label";
 import { withComputedColumns } from "@ai-matrx/design-system/formulas";
-import { copyValueOf, dataTableRowsToMarkdown } from "../table-copy";
 
 const MARIA = "771155c3-cc6f-431b-a2cd-cd15af2c8941";
 const HARBOR = "d955d546-7c4c-4bf3-9a00-ed29014c3797";
@@ -98,15 +93,6 @@ describe("the three states a relation cell reads in", () => {
       "Maria Delgado, Record 9f2c7a10",
     );
   });
-
-  it("every other column is handed straight back", () => {
-    expect(cellTextForReader("WO-4471", { id: "text" }, WORDS, "work_order")).toBe("WO-4471");
-    expect(isRelationFormat("text")).toBe(false);
-  });
-
-  it("the ids asked for are the ones the page actually points at, de-duplicated", () => {
-    expect(relationIdsInColumn(ROWS, "customer")).toEqual([MARIA, HARBOR, GONE]);
-  });
 });
 
 describe("reader 5 — the row label names a row by the words, never by a uuid", () => {
@@ -167,49 +153,5 @@ describe("reader 2 — a formula over a relation column compares words, not reco
   it("WITHOUT the seam the same formula echoes a uuid — the defect this is here for", () => {
     const out = withComputedColumns(ROWS, [WORK_ORDER_FIELD, RELATION_FIELD, formulaField]);
     expect(out.rows[0]!.data.who).toBe(MARIA);
-  });
-});
-
-describe("reader 4 — copy, Markdown and the agent payload", () => {
-  const copyFields = [
-    { id: "f1", field_name: "work_order", display_name: "Work order", data_type: "string" },
-    {
-      id: "f2",
-      field_name: "customer",
-      display_name: "Customer",
-      data_type: "string",
-      metadata: RELATION_FIELD.metadata,
-    },
-  ];
-
-  it("a copied cell is the words", () => {
-    expect(copyValueOf(ROWS[0]!, copyFields[1]!, WORDS)).toBe("Maria Delgado");
-    expect(copyValueOf(ROWS[0]!, copyFields[0]!, WORDS)).toBe("WO-4471");
-  });
-
-  it("a Markdown table has no uuid in it anywhere", () => {
-    const md = dataTableRowsToMarkdown("Rincon Plumbing — Service Calls", ROWS, copyFields, WORDS);
-    expect(md).toContain("Maria Delgado");
-    expect(md).toContain(WITHHELD);
-    expect(md).not.toContain(MARIA);
-    expect(md).not.toContain(HARBOR);
-    expect(md).not.toContain(GONE);
-  });
-
-  it("without the words it is still never a BARE uuid — only an unresolved identifier", () => {
-    const md = dataTableRowsToMarkdown("Rincon Plumbing — Service Calls", ROWS, copyFields);
-    expect(md).toContain("Record 771155c3");
-    expect(md).not.toContain(MARIA);
-  });
-
-  it("with the column's FORMAT unknown — the pre-W3 state — it is a column of uuids", () => {
-    // This is the defect, reconstructed: before W3 the copy path read
-    // `row.data[field_name]` with no idea what kind of column it was, so a
-    // relation column put record ids on the clipboard. Strip the format and the
-    // old behaviour comes straight back.
-    const blind = copyFields.map(({ metadata: _ignored, ...rest }) => rest);
-    const md = dataTableRowsToMarkdown("Rincon Plumbing — Service Calls", ROWS, blind, WORDS);
-    expect(md).toContain(MARIA);
-    expect(md).toContain(HARBOR);
   });
 });

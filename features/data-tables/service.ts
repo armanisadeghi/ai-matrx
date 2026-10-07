@@ -13,7 +13,6 @@ import { supabase } from "@/utils/supabase/client";
 
 import type { FieldFormatConfig } from "@ai-matrx/design-system/field-formats";
 
-import { rewriteFormulaReferences } from "@ai-matrx/design-system/formulas";
 import type { ChoiceRehome, ChoicesRehomed, ChoiceUsage } from "@ai-matrx/records";
 import * as recordStore from "./data-source/record-store";
 import { placeTableInRecordStore, type RecordStoreHome } from "./data-source/table-home";
@@ -200,21 +199,6 @@ export async function upsertCell(
   return recordStore.upsertCell(home.home, args);
 }
 
-// ─── a choice cell's typed word (lane CHOICE-COLUMN-EDIT) ─────────────────────
-
-export type ChoiceNudge = "ask" | "always_add" | "never_add";
-
-/**
- * What a choice cell does with a typed word that is none of its choices — the Feature Knob
- * `custom/choice_nudge` (ask | always_add | never_add), resolved for the signed-in person in
- * the table's organization.
- */
-export async function readChoiceNudge(tableId: string): Promise<ChoiceNudge> {
-  const home = await homeOf(tableId);
-  if (!home.ok) return "ask";
-  return recordStore.choiceNudgeOf(home.home);
-}
-
 /** Save a choice cell with words that become one of its column's choices: one transaction adds the choice and saves the cell. */
 export async function upsertCellAddingChoice(
   args: UpsertCellArgs & { add: string[]; format: FieldFormatConfig },
@@ -393,46 +377,6 @@ export type RenameColumnField = {
   display_name: string;
   metadata?: unknown;
 };
-
-/**
- * After a column's header changed from `from` to `to`, rewrite `{from}` →
- * `{to}` in every OTHER formula column and save it. The ONE place this
- * happens — the header's inline rename and Table Settings both call it, so a
- * rename can never turn a working formula into #ERROR on one path only.
- * `fields[].metadata.format` must be the format as it NOW stands (Table
- * Settings passes its unsaved format edits merged in).
- */
-export async function rewriteFormulasForRename(args: {
-  tableId: string;
-  fields: readonly RenameColumnField[];
-  renamedFieldId: string;
-  from: string;
-  to: string;
-}): Promise<{ formulasUpdated: string[]; formulasFailed: string[] }> {
-  const formulasUpdated: string[] = [];
-  const formulasFailed: string[] = [];
-  for (const other of args.fields) {
-    if (other.id === args.renamedFieldId) continue;
-    const format = (other.metadata as { format?: FieldFormatConfig } | null | undefined)?.format;
-    if (!format || format.id !== "formula") continue;
-    const expression = format.options?.formula?.expression ?? "";
-    const rewritten = rewriteFormulaReferences(expression, args.from, args.to);
-    if (rewritten === expression) continue;
-    const result = await setFieldFormat({
-      tableId: args.tableId,
-      fieldId: other.id,
-      format: {
-        ...format,
-        options: {
-          ...(format.options ?? {}),
-          formula: { ...(format.options?.formula ?? { expression }), expression: rewritten },
-        },
-      },
-    });
-    (result.success ? formulasUpdated : formulasFailed).push(other.display_name);
-  }
-  return { formulasUpdated, formulasFailed };
-}
 
 /**
  * Rename ONE column's header (its `display_name`; the machine `field_name`
@@ -748,31 +692,6 @@ async function withOrganizationNames(rows: UserTableListItem[]): Promise<UserTab
 }
 
 /**
- * The tables a header's switcher lists while `tableId` is open: the Tables of every organization
- * the person belongs to.
- */
-export async function listTablesBeside(args: {
-  tableId: string;
-}): Promise<ServiceResult<UserTableListItem[]>> {
-  const home = await homeOf(args.tableId);
-  if (!home.ok) return home.failure;
-  return recordStore.listTables(home.home);
-}
-
-/**
- * Every row, for the grid's client-side sort of a small table — the same read as a page.
- */
-export async function getRowsForClientSort(args: {
-  tableId: string;
-  limit: number;
-}): Promise<ServiceResult<TablePage["rows"]>> {
-  const home = await homeOf(args.tableId);
-  if (!home.ok) return home.failure;
-  const page = await recordStore.getTablePage(home.home, { tableId: args.tableId, limit: args.limit, offset: 0 });
-  return page.success ? { success: true, data: page.data.rows } : page;
-}
-
-/**
  * Run an update row action over a selection. The store runs the whole selection in one
  * transaction and works every formula step out itself (G2).
  */
@@ -798,20 +717,8 @@ export async function readRowsById(args: {
 
 // ─── history ────────────────────────────────────────────────────────────────
 //
-// A row's history is the store's own (`custom.record_history`), rebuilt into the
-// grid's version shape, and restored by the store's own verbs — never by writing a
-// snapshot over it.
-
-export async function readRowHistory(args: {
-  tableId: string;
-  rowId: string;
-  limit: number;
-}): Promise<ServiceResult<import("./types").RowVersion[]>> {
-  const home = await homeOf(args.tableId);
-  if (!home.ok) return home.failure;
-  const read = await recordStore.rowHistory(home.home, args);
-  return read.success ? { success: true, data: read.data as unknown as import("./types").RowVersion[] } : read;
-}
+// A row's history is the store's own (`custom.record_history`), restored by the store's own
+// verbs — never by writing a snapshot over it.
 
 export async function restoreRowVersion(args: { tableId: string; rowId: string; version: number; seenVersion: number | null }) {
   const home = await homeOf(args.tableId);
