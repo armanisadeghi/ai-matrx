@@ -5025,23 +5025,23 @@
       "name": "DISCOVER_WINDOW_SIZE"
     },
     {
-      "file": "matrx-frontend/features/data-tables/collab/SupabaseYjsProvider.ts",
+      "file": "matrx-frontend/lib/collab/SupabaseYjsProvider.ts",
       "name": "AWARENESS_THROTTLE_MS"
     },
     {
-      "file": "matrx-frontend/features/data-tables/collab/SupabaseYjsProvider.ts",
+      "file": "matrx-frontend/lib/collab/SupabaseYjsProvider.ts",
       "name": "CHUNK_BATCH_TTL_MS"
     },
     {
-      "file": "matrx-frontend/features/data-tables/collab/SupabaseYjsProvider.ts",
+      "file": "matrx-frontend/lib/collab/SupabaseYjsProvider.ts",
       "name": "DEFAULT_CHUNK_SIZE"
     },
     {
-      "file": "matrx-frontend/features/data-tables/collab/SupabaseYjsProvider.ts",
+      "file": "matrx-frontend/lib/collab/SupabaseYjsProvider.ts",
       "name": "READY_TIMEOUT_MS"
     },
     {
-      "file": "matrx-frontend/features/data-tables/collab/SupabaseYjsProvider.ts",
+      "file": "matrx-frontend/lib/collab/SupabaseYjsProvider.ts",
       "name": "SUBSCRIBE_TIMEOUT_MS"
     },
     {
@@ -5049,11 +5049,11 @@
       "name": "MAX_LISTABLE_LENGTH"
     },
     {
-      "file": "matrx-frontend/features/data-tables/components/RemoteCursorsLayer.tsx",
+      "file": "matrx-frontend/lib/collab/RemoteCursorsLayer.tsx",
       "name": "STALE_AFTER_MS"
     },
     {
-      "file": "matrx-frontend/features/data-tables/components/WorkbookCursorOverlay.tsx",
+      "file": "matrx-frontend/features/workbooks/components/WorkbookCursorOverlay.tsx",
       "name": "STALE_AFTER_MS"
     },
     {

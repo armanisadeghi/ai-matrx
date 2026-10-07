@@ -72,7 +72,7 @@ export const TEXT_ENTRY_SURFACES: Record<string, SurfaceKeeping> = {
   "features/masterwork/components/detail/RulebookSourcesPanel.tsx": {
     kind: "door",
     module: "features/masterwork/components/detail/RulebookSourcesPanel.tsx",
-    opens: "features/data-tables/components/DocumentEditor.tsx",
+    opens: "features/documents/components/DocumentEditor.tsx",
     // The editor autosaves on a 2.5s debounce, flushes that debounce the
     // moment the page is hidden or unmounted, warns before an unload that
     // would outrun it, and says so out loud when it cannot save at all.

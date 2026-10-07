@@ -22,7 +22,7 @@ import {
 const createDocument = jest.fn();
 const ensureOrganizationContext = jest.fn();
 
-jest.mock("@/features/data-tables/document-service", () => ({
+jest.mock("@/features/documents/document-service", () => ({
   createDocument: (...args: unknown[]) => createDocument(...args),
 }));
 jest.mock("@/lib/organization/organization-gate", () => ({

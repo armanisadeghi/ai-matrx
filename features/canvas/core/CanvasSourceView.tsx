@@ -31,9 +31,9 @@ import {
   resolveCanvasSourceFromData,
   type CanvasSourceText,
 } from "./canvasSource";
-import { getLatestDocumentSnapshot } from "@/features/data-tables/document-service";
+import { getLatestDocumentSnapshot } from "@/features/documents/document-service";
 import { isServiceFailure } from "@/features/data-tables/types";
-import { univerDocToMarkdown } from "@/features/data-tables/univer-doc-to-markdown";
+import { univerDocToMarkdown } from "@/features/documents/univer-doc-to-markdown";
 
 function SourceText({ source }: { source: CanvasSourceText }) {
   return (

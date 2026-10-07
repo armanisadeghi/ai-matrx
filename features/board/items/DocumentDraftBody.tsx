@@ -19,7 +19,7 @@ import {
   ensureOrganizationContext,
   isOrganizationSelectionCancelled,
 } from "@/lib/organization/organization-gate";
-import { createDocument } from "@/features/data-tables/document-service";
+import { createDocument } from "@/features/documents/document-service";
 import { isServiceFailure } from "@/features/data-tables/types";
 import type { ItemBodyProps } from "./types";
 import { NEW_DOCUMENT_NAME, documentSource } from "./document-items.logic";

@@ -23,7 +23,7 @@ import { LocaleType } from "@univerjs/presets";
 import {
   createWorkbook,
   saveSnapshot,
-} from "@/features/data-tables/workbook-service";
+} from "@/features/workbooks/workbook-service";
 import { isServiceFailure } from "@/features/data-tables/types";
 import { cellToHumanString, cellToString, type ExportColumn, type ExportRow } from "./export";
 

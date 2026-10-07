@@ -13,7 +13,7 @@ import { isTerminal } from "@ai-matrx/chat/tool-call-visualization/renderers/_sh
 import { parseDocument } from "./parseDocument";
 import { EntityCard, type EntityAction } from "@ai-matrx/chat/tool-call-visualization/renderers/_shared-entity/EntityCard";
 import { EmptyResultCard } from "@ai-matrx/chat/tool-call-visualization/renderers/_shared-entity/EmptyResultCard";
-import { useOpenDocumentCanvas } from "@/features/data-tables/hooks/useOpenDocumentCanvas";
+import { useOpenDocumentCanvas } from "@/features/documents/hooks/useOpenDocumentCanvas";
 
 /**
  * Inline renderer for the `document` tool — a polished entity card with a short

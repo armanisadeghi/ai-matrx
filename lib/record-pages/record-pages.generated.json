@@ -6488,7 +6488,7 @@
   "features/crm/components/outreach-lists/OutreachListsPage.tsx": "pending",
   "features/crm/outcomes/OutcomesPanel.tsx": "pending",
   "features/cx-dashboard/explorer/ConversationExplorer.tsx": "pending",
-  "features/data-tables/components/DocumentsHubTable.tsx": "set",
+  "features/documents/components/DocumentsHubTable.tsx": "set",
   "features/directive-catalog/components/DirectiveCatalogGrid.tsx": "pending",
   "features/education/home/blocks/RecentBlock.tsx": "pending",
   "features/feature-docs/components/FeatureDocsTable.tsx": "pending",

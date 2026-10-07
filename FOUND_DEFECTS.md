@@ -2602,7 +2602,7 @@ Split out of D232 §D. `is_public` is live on `workbench.udt_datasets`, `udt_dat
 **The additive half is already in place and needs nothing:** `workbench._bridge_legacy_owner()`
 (BEFORE INSERT OR UPDATE on the four parent tables) keeps `is_public` and `visibility` in agreement
 in both directions, the FE services already write ONLY `visibility`
-(`features/data-tables/document-service.ts`, `workbook-service.ts`), and measured live 2026-08-21
+(`features/documents/document-service.ts`, `workbook-service.ts`), and measured live 2026-08-21
 the two columns **disagree on zero rows** across all four parents (140/35/29/19 rows; 8 and 1 public
 respectively, `visibility='public'` on exactly those).
 
@@ -3859,7 +3859,7 @@ Org-teammate agents invisible in `agx_get_list` — belongs with retiring `/agen
 
 ### D96 — aidream writes Univer document snapshots with no page geometry (2026-07-23)
 
-`origin='agent'` rows carry `documentStyle: {}`; FE recovers loudly. Fix in aidream: stamp A4 geometry (mirror `features/data-tables/document-page-style.ts`) + backfill. **Chip fired 2026-08-12.**
+`origin='agent'` rows carry `documentStyle: {}`; FE recovers loudly. Fix in aidream: stamp A4 geometry (mirror `features/documents/document-page-style.ts`) + backfill. **Chip fired 2026-08-12.**
 
 ### D92 — 38 dead RLS policies: policy exists, `authenticated` lacks the privilege (2026-07-23)
 

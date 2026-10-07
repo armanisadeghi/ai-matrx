@@ -27,16 +27,16 @@ import { LocaleType } from "@univerjs/presets";
 import {
   createWorkbook,
   saveSnapshot,
-} from "@/features/data-tables/workbook-service";
+} from "@/features/workbooks/workbook-service";
 import {
   createDocument,
   saveDocumentSnapshot,
-} from "@/features/data-tables/document-service";
+} from "@/features/documents/document-service";
 import { isServiceFailure } from "@/features/data-tables/types";
 import {
   deriveDocumentName,
   markdownToUniverDoc,
-} from "@/features/data-tables/markdown-to-univer-doc";
+} from "@/features/documents/markdown-to-univer-doc";
 import { unwrapCodeSpans } from "@/lib/markdown/code-ranges";
 
 export interface PushResult {

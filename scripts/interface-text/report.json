@@ -25393,7 +25393,7 @@
       "detail": "2 sentences in one secondary slot (max 1)"
     },
     {
-      "file": "features/data-tables/collab/SupabaseYjsProvider.ts",
+      "file": "lib/collab/SupabaseYjsProvider.ts",
       "line": 98,
       "rule": "over-budget",
       "severity": 2,
@@ -25753,7 +25753,7 @@
       "detail": "secondary slot: 76 chars, budget 60"
     },
     {
-      "file": "features/data-tables/document-model/documentModels.ts",
+      "file": "features/documents/document-model/documentModels.ts",
       "line": 34,
       "rule": "implementation-leak",
       "severity": 1,
@@ -25763,7 +25763,7 @@
       "detail": "dotted snake_case identifier, snake_case identifier"
     },
     {
-      "file": "features/data-tables/hooks/useWorkbookRealtime.ts",
+      "file": "features/workbooks/hooks/useWorkbookRealtime.ts",
       "line": 42,
       "rule": "implementation-leak",
       "severity": 1,

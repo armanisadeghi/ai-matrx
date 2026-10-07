@@ -26,11 +26,11 @@ Otherwise, we share the space. Therefore, you do not subtract anything!"
 - Routes: `app/(core)/workbooks/`, `app/(core)/documents/`
 - DB: `udt_*` tables live in the **`workbench` schema**
 - Collab gate (run before any provider/session change):
-  `npx tsx features/data-tables/collab/verify-collab.ts` — must hit 10/10
+  `npx tsx lib/collab/verify-collab.ts` — must hit 10/10
 
 ## Remaining work
 
-1. **Rename `features/data-tables/collab/WorkbookCollabSession.ts` → `UniverCollabSession`.** The
+1. **Rename `features/workbooks/collab/WorkbookCollabSession.ts` → `UniverCollabSession`.** The
    class is resource-agnostic; the name lies at every call site: `WorkbookEditor.tsx`,
    `DocumentEditor.tsx`, `WorkbookCursorOverlay.tsx`, `verify-collab.ts`. Pure rename +
    `workbookId` → `resourceId` field rename; `SupabaseYjsProvider` already namespaces via

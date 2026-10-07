@@ -114,8 +114,8 @@ Curated guides that already exist. Prefer **skills** for step-by-step; use **FEA
 | Domain | What exists today | Key paths |
 |--------|-------------------|-----------|
 | **UDT Tables** | Save engine + bespoke dialogs; no shared Core/Hook | [`save-to-table.ts`](../features/data-tables/save-to-table.ts), [`SaveTableModal.tsx`](../components/mardown-display/tables/SaveTableModal.tsx), [`AppendToTableDialog.tsx`](../components/mardown-display/blocks/json/AppendToTableDialog.tsx) |
-| **Workbooks** | One-shot push button + destination chooser | [`SendToWorkbookButton.tsx`](../components/mardown-display/tables/SendToWorkbookButton.tsx), [`workbook-service.ts`](../features/data-tables/workbook-service.ts) |
-| **Documents** | Full editor routes; no capture-save overlay | [`DocumentEditor.tsx`](../features/data-tables/components/DocumentEditor.tsx), [`document-service.ts`](../features/data-tables/document-service.ts) |
+| **Workbooks** | One-shot push button + destination chooser | [`SendToWorkbookButton.tsx`](../components/mardown-display/tables/SendToWorkbookButton.tsx), [`workbook-service.ts`](../features/workbooks/workbook-service.ts) |
+| **Documents** | Full editor routes; no capture-save overlay | [`DocumentEditor.tsx`](../features/documents/components/DocumentEditor.tsx), [`document-service.ts`](../features/documents/document-service.ts) |
 | **Structured Lists** | Manager windows + server actions; no content capture flow. Canonical tables are `udt_structured_lists` / `udt_structured_list_items`. | [`PicklistManagerV2Window.tsx`](../features/window-panels/windows/PicklistManagerV2Window.tsx), [`list-actions.ts`](../features/data-tables/pick-lists/actions/list-actions.ts) |
 | **Projects** | Peek + task project picker only; no quick-save family | [`ProjectPeek.tsx`](../features/organizations/peek/kinds/ProjectPeek.tsx) |
 | **Agent shortcuts** | Hook + window; create-in-place, not content capture | [`useShortcutQuickCreate.ts`](../features/agent-shortcuts/hooks/useShortcutQuickCreate.ts), [`AgentShortcutQuickCreateWindow.tsx`](../features/window-panels/windows/agents/AgentShortcutQuickCreateWindow.tsx) |

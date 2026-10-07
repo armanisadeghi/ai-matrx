@@ -35,7 +35,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import { deleteDocument } from "@/features/data-tables/document-service";
+import { deleteDocument } from "@/features/documents/document-service";
 import { deleteFile } from "@/features/files/redux/thunks";
 import { deleteNote } from "@/features/notes/redux/thunks";
 import { useEntityTitles } from "@/features/scopes/hooks/useEntityTitles";

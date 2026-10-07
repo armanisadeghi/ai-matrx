@@ -60,7 +60,7 @@ const SandboxCanvasBody = dynamic(
 // supplies the frame and the document's title; this body renders bare.
 const DocumentCanvasBody = dynamic(
   () =>
-    import("@/features/data-tables/components/DocumentCanvasBody").then((m) => ({
+    import("@/features/documents/components/DocumentCanvasBody").then((m) => ({
       default: m.DocumentCanvasBody,
     })),
   { ssr: false },

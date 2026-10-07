@@ -4,8 +4,8 @@
 // document), find the quoted passage, name its section. See documentPassage.ts.
 
 import { useEffect, useState } from "react";
-import { getDocument, getLatestDocumentSnapshot } from "@/features/data-tables/document-service";
-import { univerDocToMarkdown } from "@/features/data-tables/univer-doc-to-markdown";
+import { getDocument, getLatestDocumentSnapshot } from "@/features/documents/document-service";
+import { univerDocToMarkdown } from "@/features/documents/univer-doc-to-markdown";
 import { loadDocument } from "@/features/rich-document/annotations/documentSource";
 import { findDocumentPassage, type DocumentPassage } from "./documentPassage";
 

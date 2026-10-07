@@ -1891,8 +1891,8 @@ Each surface lists the legacy sites it reaches, EXCLUDING the shared files above
 
 ### route /documents
 
-- [ ] `features/data-tables/components/DocumentListCard.tsx:49` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<div>{doc.description}`
-- [ ] `features/data-tables/components/DocumentsHubTable.tsx:56` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{doc.description || "—"}`
+- [ ] `features/documents/components/DocumentListCard.tsx:49` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<div>{doc.description}`
+- [ ] `features/documents/components/DocumentsHubTable.tsx:56` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{doc.description || "—"}`
 
 ### route /education/audio-study/review
 

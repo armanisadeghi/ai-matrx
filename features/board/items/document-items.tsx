@@ -3,7 +3,7 @@
 /**
  * Document on a board — the `/documents` rich-text document (Univer), not a
  * spreadsheet. The tile body IS `DocumentRecord`
- * (`features/data-tables/components/DocumentRecord.tsx`), the same component
+ * (`features/documents/components/DocumentRecord.tsx`), the same component
  * `/documents/[id]` renders: rename, Copy reference, Share, the Rulebook
  * notice, the editor with its save status, snapshot and History — and the
  * `matrx-user/documents` agent surface for this one document (name,
@@ -18,8 +18,8 @@
 
 import { useEffect } from "react";
 import { FileText } from "lucide-react";
-import { DocumentRecord } from "@/features/data-tables/components/DocumentRecord";
-import { DOCUMENTS_SURFACE_NAME } from "@/features/data-tables/agent-context/buildDocumentsContextData";
+import { DocumentRecord } from "@/features/documents/components/DocumentRecord";
+import { DOCUMENTS_SURFACE_NAME } from "@/features/documents/agent-context/buildDocumentsContextData";
 import { DocumentsResourcePicker } from "@/features/resource-manager/resource-picker/DocumentsResourcePicker";
 import { tryGetEntityInfo } from "@/features/scopes/registry/entityRegistry";
 import type { BoardItemType, ItemBodyProps, PickerProps } from "./types";

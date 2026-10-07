@@ -77,8 +77,8 @@ import {
   canvasHoldsOtherContent,
   decideToolResultCanvasAction,
 } from "@/features/canvas/tool-results/decideToolResultCanvasAction";
-import { buildDocumentCanvasContent } from "@/features/data-tables/hooks/useOpenDocumentCanvas";
-import { univerDocToMarkdown } from "@/features/data-tables/univer-doc-to-markdown";
+import { buildDocumentCanvasContent } from "@/features/documents/hooks/useOpenDocumentCanvas";
+import { univerDocToMarkdown } from "@/features/documents/univer-doc-to-markdown";
 import type { ToolLifecycleEntry } from "@ai-matrx/chat/agents/types/request.types";
 import { DocumentInline } from "@/features/chat-tool-renderers/renderers/document/DocumentInline";
 
@@ -102,7 +102,7 @@ if (typeof Element.prototype.scrollIntoView !== "function") {
 // fetching its snapshot). They are the boundary: everything above them —
 // the kind, the lazily loaded artifact view, CanvasBody's switch — is real,
 // and the stubs print the pointer CanvasBody handed them.
-jest.mock("@/features/data-tables/components/DocumentCanvasBody", () => ({
+jest.mock("@/features/documents/components/DocumentCanvasBody", () => ({
   DocumentCanvasBody: ({ documentId }: { documentId: string }) => (
     <div data-testid="document-canvas-body">{documentId}</div>
   ),

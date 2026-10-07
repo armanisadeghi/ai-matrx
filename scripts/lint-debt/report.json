@@ -10349,7 +10349,7 @@
       "message": "Compilation Skipped: Existing memoization could not be preserved React Compiler has skipped optimizing this component because the existing manual memoization could not be preserved. This dependency may be mutated later, which could cause t…"
     },
     {
-      "file": "features/data-tables/components/DocumentEditor.tsx",
+      "file": "features/documents/components/DocumentEditor.tsx",
       "line": 149,
       "column": 12,
       "rule": "react-hooks/immutability",
@@ -10358,7 +10358,7 @@
       "message": "Error: Cannot access variable before it is declared `reloadFromLatest` is accessed before it is declared, which prevents the earlier access from updating when this value changes over time. /Users/armanisadeghi/code/matrx-frontend/features/…"
     },
     {
-      "file": "features/data-tables/components/DocumentEditor.tsx",
+      "file": "features/documents/components/DocumentEditor.tsx",
       "line": 255,
       "column": 18,
       "rule": "react-hooks/immutability",
@@ -10367,7 +10367,7 @@
       "message": "Error: Cannot access variable before it is declared `performSave` is accessed before it is declared, which prevents the earlier access from updating when this value changes over time. /Users/armanisadeghi/code/matrx-frontend/features/data-…"
     },
     {
-      "file": "features/data-tables/components/DocumentEditor.tsx",
+      "file": "features/documents/components/DocumentEditor.tsx",
       "line": 260,
       "column": 16,
       "rule": "react-hooks/immutability",
@@ -10376,7 +10376,7 @@
       "message": "Error: Cannot access variable before it is declared `startCollabSession` is accessed before it is declared, which prevents the earlier access from updating when this value changes over time. /Users/armanisadeghi/code/matrx-frontend/feature…"
     },
     {
-      "file": "features/data-tables/components/DocumentEditor.tsx",
+      "file": "features/documents/components/DocumentEditor.tsx",
       "line": 381,
       "column": 5,
       "rule": "react-hooks/preserve-manual-memoization",
@@ -10385,7 +10385,7 @@
       "message": "Compilation Skipped: Existing memoization could not be preserved React Compiler has skipped optimizing this component because the existing manual memoization could not be preserved. This value was memoized in source but not in compilation …"
     },
     {
-      "file": "features/data-tables/components/DocumentHistoryViewer.tsx",
+      "file": "features/documents/components/DocumentHistoryViewer.tsx",
       "line": 62,
       "column": 10,
       "rule": "react-hooks/set-state-in-effect",
@@ -10412,7 +10412,7 @@
       "message": "Error: Calling setState synchronously within an effect can trigger cascading renders Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platf…"
     },
     {
-      "file": "features/data-tables/components/RemoteCursorsLayer.tsx",
+      "file": "lib/collab/RemoteCursorsLayer.tsx",
       "line": 47,
       "column": 17,
       "rule": "react-hooks/purity",
@@ -10421,7 +10421,7 @@
       "message": "Error: Cannot call impure function during render `Date.now` is an impure function. Calling an impure function can produce unstable results that update unpredictably when the component happens to re-render. (https://react.dev/reference/rule…"
     },
     {
-      "file": "features/data-tables/components/WorkbookCursorOverlay.tsx",
+      "file": "features/workbooks/components/WorkbookCursorOverlay.tsx",
       "line": 132,
       "column": 17,
       "rule": "react-hooks/purity",
@@ -10430,7 +10430,7 @@
       "message": "Error: Cannot call impure function during render `Date.now` is an impure function. Calling an impure function can produce unstable results that update unpredictably when the component happens to re-render. (https://react.dev/reference/rule…"
     },
     {
-      "file": "features/data-tables/components/WorkbookCursorOverlay.tsx",
+      "file": "features/workbooks/components/WorkbookCursorOverlay.tsx",
       "line": 224,
       "column": 7,
       "rule": "react-hooks/set-state-in-effect",
@@ -10439,7 +10439,7 @@
       "message": "Error: Calling setState synchronously within an effect can trigger cascading renders Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platf…"
     },
     {
-      "file": "features/data-tables/components/WorkbookEditor.tsx",
+      "file": "features/workbooks/components/WorkbookEditor.tsx",
       "line": 183,
       "column": 12,
       "rule": "react-hooks/immutability",
@@ -10448,7 +10448,7 @@
       "message": "Error: Cannot access variable before it is declared `reloadFromLatest` is accessed before it is declared, which prevents the earlier access from updating when this value changes over time. /Users/armanisadeghi/code/matrx-frontend/features/…"
     },
     {
-      "file": "features/data-tables/components/WorkbookEditor.tsx",
+      "file": "features/workbooks/components/WorkbookEditor.tsx",
       "line": 276,
       "column": 18,
       "rule": "react-hooks/immutability",
@@ -10457,7 +10457,7 @@
       "message": "Error: Cannot access variable before it is declared `performSave` is accessed before it is declared, which prevents the earlier access from updating when this value changes over time. /Users/armanisadeghi/code/matrx-frontend/features/data-…"
     },
     {
-      "file": "features/data-tables/components/WorkbookEditor.tsx",
+      "file": "features/workbooks/components/WorkbookEditor.tsx",
       "line": 289,
       "column": 16,
       "rule": "react-hooks/immutability",
@@ -10466,7 +10466,7 @@
       "message": "Error: Cannot access variable before it is declared `startCollabSession` is accessed before it is declared, which prevents the earlier access from updating when this value changes over time. /Users/armanisadeghi/code/matrx-frontend/feature…"
     },
     {
-      "file": "features/data-tables/components/WorkbookEditor.tsx",
+      "file": "features/workbooks/components/WorkbookEditor.tsx",
       "line": 455,
       "column": 5,
       "rule": "react-hooks/preserve-manual-memoization",
@@ -10475,7 +10475,7 @@
       "message": "Compilation Skipped: Existing memoization could not be preserved React Compiler has skipped optimizing this component because the existing manual memoization could not be preserved. This value was memoized in source but not in compilation …"
     },
     {
-      "file": "features/data-tables/components/WorkbookEditor.tsx",
+      "file": "features/workbooks/components/WorkbookEditor.tsx",
       "line": 765,
       "column": 24,
       "rule": "react-hooks/refs",
@@ -10484,7 +10484,7 @@
       "message": "Error: Cannot access refs during render React refs are values that are not needed for rendering. Refs should only be accessed outside of render, such as in event handlers or effects. Accessing a ref value (the `current` property) during re…"
     },
     {
-      "file": "features/data-tables/components/WorkbookHistoryViewer.tsx",
+      "file": "features/workbooks/components/WorkbookHistoryViewer.tsx",
       "line": 67,
       "column": 10,
       "rule": "react-hooks/set-state-in-effect",

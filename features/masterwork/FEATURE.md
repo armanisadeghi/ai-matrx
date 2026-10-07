@@ -638,7 +638,7 @@ canonical words (Rulebook · a Masterwork · Build · Audition · Scout · Appro
   nothing at all: the Audition dialog, Compare Two, Run the Bench (three long
   fields retyped immediately before a run that spends real money across six
   arms) and the Build window. The document editor itself
-  (`features/data-tables/components/DocumentEditor.tsx`) now flushes its 2.5s
+  (`features/documents/components/DocumentEditor.tsx`) now flushes its 2.5s
   autosave debounce on `pagehide`/`visibilitychange` and on unmount, warns
   before an unload that would outrun the flush, and — where it used to return
   silently twice when the Univer facade was gone, swallowing every save while

@@ -1,8 +1,8 @@
-import { univerDocToMarkdown } from "@/features/data-tables/univer-doc-to-markdown";
+import { univerDocToMarkdown } from "@/features/documents/univer-doc-to-markdown";
 import { findDocumentPassage } from "../documentPassage";
 import { readCloudDocumentBody } from "../useDocumentPassage";
 
-jest.mock("@/features/data-tables/document-service", () => ({
+jest.mock("@/features/documents/document-service", () => ({
   getDocument: jest.fn(async (id: string) =>
     id === "gone"
       ? { success: false, error: "trash" }

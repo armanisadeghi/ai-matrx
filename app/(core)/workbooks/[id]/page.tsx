@@ -15,18 +15,18 @@ import { ChevronLeftTapButton } from "@ai-matrx/tap-target/buttons";
 
 import { SurfaceRuntimeProvider } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import { createWorkbooksScope } from "@/features/surfaces/manifests/workbooks.manifest";
-import { readWorkbookScopeSource } from "@/features/data-tables/workbook-scope-source";
+import { readWorkbookScopeSource } from "@/features/workbooks/workbook-scope-source";
 import {
   getWorkbook,
   renameWorkbook,
   updateWorkbookDescription,
-} from "@/features/data-tables/workbook-service";
+} from "@/features/workbooks/workbook-service";
 import { isServiceFailure, type Workbook } from "@/features/data-tables/types";
 import { canActOn } from "@/features/access-gate/service/canActOn";
 
 // Univer hard-depends on `window` / `document`. Mount client-only.
 const WorkbookEditor = dynamic(
-  () => import("@/features/data-tables/components/WorkbookEditor"),
+  () => import("@/features/workbooks/components/WorkbookEditor"),
   { ssr: false, loading: () => <EditorBootSpinner /> },
 );
 

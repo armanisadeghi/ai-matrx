@@ -67,7 +67,7 @@ import { UnresolvedEntityRef } from "@/features/access-gate/components/Unresolve
 import { useAccessStates } from "@/features/access-gate/hooks/useAccessStates";
 import { requestUpload } from "@/features/files/upload/uploadGuardOpeners";
 import { openFilePicker } from "@/features/files/components/pickers/cloudFilesPickerOpeners";
-import { createDocument } from "@/features/data-tables/document-service";
+import { createDocument } from "@/features/documents/document-service";
 import type { Visibility } from "@/features/files/types";
 import { getAssociationsStore } from "./associationsStore";
 import { RichContent } from "@ai-matrx/rich-content/levels/RichContent";

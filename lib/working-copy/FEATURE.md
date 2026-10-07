@@ -47,7 +47,7 @@ feature slice, and never runs its own save timer.
 |---|---|---|---|
 | `note` | `features/notes/utils/noteLiveContent.ts` (+ `hooks/useNoteWorkingCopy.ts`, `redux/noteSaveRequests.ts`) | the database save: `updateNoteContent` (undo step) → auto-label → `writeNoteRecord` (version CAS) | — |
 | `file` | `features/files/redux/working-copy.ts` (+ `hooks/useFileWorkingCopy.ts`) | `saveFileNewVersion` — a new version, so `autosave: false` (Save, or the last view leaving) | — (Monaco keeps its own model) |
-| `udt_document` | `features/data-tables/document-model/documentModels.ts` | a new `udt_document_snapshots` row | `DocumentModel` (Univer body, mutation relay between views, snapshot channel, collab room, and the last view's Univer instance KEPT — parked off the page and re-attached to the next view's container, so undo / redo survive hide/show and remount; disposed on `close`) |
+| `udt_document` | `features/documents/document-model/documentModels.ts` | a new `udt_document_snapshots` row | `DocumentModel` (Univer body, mutation relay between views, snapshot channel, collab room, and the last view's Univer instance KEPT — parked off the page and re-attached to the next view's container, so undo / redo survive hide/show and remount; disposed on `close`) |
 
 A new record editor (a task description, a workbook) adds a kind here — never a second copy of this.
 
@@ -57,12 +57,12 @@ A new record editor (a task description, a workbook) adds a kind here — never 
 write stays pending, Redux-backed kind: shared copy, last-view commit + release, moved source never
 clobbers typing, reset drops pending, `autosave: false`). Consumer seams:
 `features/notes/__tests__/one-note-many-views.test.tsx`,
-`features/data-tables/__tests__/one-document-many-views.test.tsx`,
+`features/documents/__tests__/one-document-many-views.test.tsx`,
 `features/files/components/core/FileEditor/__tests__/CloudFileInlineEditor.working-copy.test.tsx`.
 `__tests__/working-copy-guarantees.test.ts` (retry after the last view, offline/online, permanent
 failure, load / `source` / draft / engine conflicts, merge, echo), plus
 `features/notes/__tests__/working-copy-no-lost-update.test.ts` and
-`features/data-tables/__tests__/document-conflict.test.ts`.
+`features/documents/__tests__/document-conflict.test.ts`.
 
 ## Change Log
 

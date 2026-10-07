@@ -31,7 +31,7 @@ import {
   discardFailedWorkbook,
   listAccessibleWorkbooks,
   saveSnapshot,
-} from "@/features/data-tables/workbook-service";
+} from "@/features/workbooks/workbook-service";
 import { isServiceFailure, type Workbook } from "@/features/data-tables/types";
 import { fileHandler } from "@/features/files/handler/handler";
 // xlsx-to-univer (xlsx + @univerjs/*) and smart-importer (xlsx) are heavy —
@@ -187,7 +187,7 @@ export default function WorkbooksLandingPage() {
         // Parse first — if the file is malformed, we surface the error
         // BEFORE creating an empty workbook the user would have to delete.
         const { xlsxToUniverWorkbook } =
-          await import("@/features/data-tables/xlsx-to-univer");
+          await import("@/features/workbooks/xlsx-to-univer");
         const snapshot = await xlsxToUniverWorkbook(file);
 
         // Stash the lossless original in cld_files so users can download or

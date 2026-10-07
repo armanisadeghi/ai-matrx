@@ -27,7 +27,7 @@ import type { CanvasContent } from "@/features/canvas/canvasContent";
 import {
   buildDocumentCanvasContent,
   documentCanvasSourceId,
-} from "@/features/data-tables/hooks/useOpenDocumentCanvas";
+} from "@/features/documents/hooks/useOpenDocumentCanvas";
 import {
   buildTopicalMapCanvasContent,
   topicalMapCanvasSourceId,

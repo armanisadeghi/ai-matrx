@@ -39,7 +39,7 @@ description: "Doctrine for all Supabase realtime: postgres_changes, broadcast, p
 
 > 🚨 **THE PHANTOM CONFLICT (2026-09-13): a `version` the ledger never saw is NEVER an echo.** `version` moves on EVERY row update (a desktop sync stamping `file_path`, an ingest job writing metadata). `@ai-matrx/realtime` 0.8.0 classifies by revision first and delivers anything newer than it holds — same actor, same content, pending write or not. Register your own writes WITH their number (`begin({ revision: expectedVersion + 1 })`, `settle(ticket, { revision: response.version })`, `observe({ revision })`), hand the reducer the WHOLE row, and pair every compare-and-swap with `guardedUpdate({ rebase })` from `@ai-matrx/data` 0.14.0 so a bump the client still missed is retried, never shown. Reference: `features/notes` (three layers, each with a failing-then-passing guard).
 
-Realtime + Redux + autosave is the most freeze-prone combination in this app. Every historical browser lockup traced to one of the mechanisms below. Reference implementations: **`features/notes/redux/realtimeMiddleware.ts`** (postgres_changes, the canonical one), `features/files/redux/realtime-middleware.ts` (request-ledger id-dedup variant), `features/data-tables/collab/SupabaseYjsProvider.ts` (broadcast CRDT).
+Realtime + Redux + autosave is the most freeze-prone combination in this app. Every historical browser lockup traced to one of the mechanisms below. Reference implementations: **`features/notes/redux/realtimeMiddleware.ts`** (postgres_changes, the canonical one), `features/files/redux/realtime-middleware.ts` (request-ledger id-dedup variant), `lib/collab/SupabaseYjsProvider.ts` (broadcast CRDT).
 
 ## Rule 1 — Suppress your own echoes, timestamp-monotonic FIRST
 

@@ -24,7 +24,7 @@ const NOT_A_DROPDOWN: Record<string, string> = {
   "features/window-panels/WindowTray.tsx": "restore window",
   "features/projects/components/ProjectsHub.tsx": "sortable column header",
   "features/tasks/components/TasksTableView.tsx": "sortable column header",
-  "features/data-tables/components/DocumentsHubTable.tsx": "sortable column header",
+  "features/documents/components/DocumentsHubTable.tsx": "sortable column header",
   "features/ai-models/components/ProviderSyncDashboard.tsx": "sortable column header",
 };
 

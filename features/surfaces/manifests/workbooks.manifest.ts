@@ -16,7 +16,7 @@
  *     load status + smart-import detection
  *   - `app/(core)/workbooks/[id]/page.tsx`       — open-workbook identity and
  *     permissions; content/editor-state values are read at trigger time from
- *     the live editor via `features/data-tables/workbook-scope-source.ts`,
+ *     the live editor via `features/workbooks/workbook-scope-source.ts`,
  *     which `WorkbookEditor` registers while mounted.
  */
 

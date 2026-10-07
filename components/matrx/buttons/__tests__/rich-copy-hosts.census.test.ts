@@ -320,7 +320,7 @@ const SPLIT_HOSTS = [
   "features/tasks/components/editor/TaskEditorCopyButtons.tsx",
   "features/transcripts/components/TranscriptViewer.tsx",
   "features/message-templates/components/TemplateActionDrawer.tsx",
-  "features/data-tables/components/DocumentRecord.tsx",
+  "features/documents/components/DocumentRecord.tsx",
 ];
 export function missingSplit(root: string, hosts: readonly string[]): string[] {
   return hosts

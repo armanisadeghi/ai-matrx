@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Loader2, Notebook } from "lucide-react";
-import { listAccessibleWorkbooks } from "@/features/data-tables/workbook-service";
+import { listAccessibleWorkbooks } from "@/features/workbooks/workbook-service";
 import { isServiceFailure, type Workbook } from "@/features/data-tables/types";
 import { filterAndSortBySearch } from "@ai-matrx/kit/search-scoring";
 import { usePickerInputFocus } from "./usePickerInputFocus";

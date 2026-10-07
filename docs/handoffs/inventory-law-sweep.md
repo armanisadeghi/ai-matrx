@@ -657,7 +657,7 @@ primitive-duplication defect, not merely an adoption gap):
 4. `features/agent-shortcuts/components/ShortcutDirectory.tsx:387` — renders
    **name OR a raw UUID**, both inert.
 5. `features/transcripts/browse/columns.tsx:58` — now unblocked by Wave 1.
-6. `features/data-tables/components/DocumentsHubTable.tsx:523` — the href
+6. `features/documents/components/DocumentsHubTable.tsx:523` — the href
    exists two lines above and is never rendered as a link.
 7. `features/tasks/components/TasksTableView.tsx:696` (task) and `:563` +
    `AllTasksView.tsx:162` (project — unblocked by Wave 1).

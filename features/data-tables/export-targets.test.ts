@@ -4,11 +4,11 @@ jest.mock("@univerjs/core", () => ({
 jest.mock("@univerjs/presets", () => ({
   LocaleType: { EN_US: "en-US" },
 }));
-jest.mock("@/features/data-tables/document-service", () => ({
+jest.mock("@/features/documents/document-service", () => ({
   createDocument: jest.fn(),
   saveDocumentSnapshot: jest.fn(),
 }));
-jest.mock("@/features/data-tables/workbook-service", () => ({
+jest.mock("@/features/workbooks/workbook-service", () => ({
   createWorkbook: jest.fn(),
   saveSnapshot: jest.fn(),
 }));
@@ -16,13 +16,13 @@ jest.mock("@/features/data-tables/types", () => ({
   isServiceFailure: (value: unknown) =>
     Boolean(value && typeof value === "object" && "error" in value),
 }));
-jest.mock("@/features/data-tables/markdown-to-univer-doc", () => ({
+jest.mock("@/features/documents/markdown-to-univer-doc", () => ({
   deriveDocumentName: () => "Derived title",
   markdownToUniverDoc: () => ({ id: "snapshot" }),
 }));
 
-import { createDocument, saveDocumentSnapshot } from "@/features/data-tables/document-service";
-import { createWorkbook, saveSnapshot } from "@/features/data-tables/workbook-service";
+import { createDocument, saveDocumentSnapshot } from "@/features/documents/document-service";
+import { createWorkbook, saveSnapshot } from "@/features/workbooks/workbook-service";
 import { pushMarkdownToDocument, pushTableToWorkbook } from "./export-targets";
 
 describe("export targets partial creation", () => {

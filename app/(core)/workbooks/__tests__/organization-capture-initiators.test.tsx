@@ -57,13 +57,13 @@ jest.mock("@/lib/organization/organization-gate", () => ({
 jest.mock("@/components/ui/use-toast", () => ({
   toast: (...args: unknown[]) => toast(...args),
 }));
-jest.mock("@/features/data-tables/document-service", () => ({
+jest.mock("@/features/documents/document-service", () => ({
   createDocument: (...args: unknown[]) => createDocument(...args),
   deleteDocument: jest.fn(),
   listAccessibleDocuments: (...args: unknown[]) =>
     listAccessibleDocuments(...args),
 }));
-jest.mock("@/features/data-tables/workbook-service", () => ({
+jest.mock("@/features/workbooks/workbook-service", () => ({
   createWorkbook: (...args: unknown[]) => createWorkbook(...args),
   deleteWorkbook: jest.fn(),
   discardFailedWorkbook: jest.fn(),
@@ -71,7 +71,7 @@ jest.mock("@/features/data-tables/workbook-service", () => ({
     listAccessibleWorkbooks(...args),
   saveSnapshot: (...args: unknown[]) => saveSnapshot(...args),
 }));
-jest.mock("@/features/data-tables/xlsx-to-univer", () => ({
+jest.mock("@/features/workbooks/xlsx-to-univer", () => ({
   xlsxToUniverWorkbook: (...args: unknown[]) => xlsxToUniverWorkbook(...args),
 }));
 jest.mock("@/features/files/handler/handler", () => ({
@@ -108,13 +108,13 @@ jest.mock("@ai-matrx/tap-target", () => ({
     onClick: () => void;
   }) => <button aria-label={ariaLabel} onClick={onClick} />,
 }));
-jest.mock("@/features/data-tables/components/DocumentListCard", () => ({
+jest.mock("@/features/documents/components/DocumentListCard", () => ({
   DocumentListCard: () => null,
 }));
-jest.mock("@/features/data-tables/components/DocumentsHubTable", () => ({
+jest.mock("@/features/documents/components/DocumentsHubTable", () => ({
   DocumentsHubTable: () => null,
 }));
-jest.mock("@/features/data-tables/components/DocumentsHubToolbar", () => ({
+jest.mock("@/features/documents/components/DocumentsHubToolbar", () => ({
   DocumentsHubToolbar: () => null,
 }));
 jest.mock("@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext", () => ({

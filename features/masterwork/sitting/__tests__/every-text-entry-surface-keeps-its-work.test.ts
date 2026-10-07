@@ -165,7 +165,7 @@ describe("every text-entry surface under masterwork keeps its work", () => {
   /**
    * Proving it red (2026-09-17): drop the `beforeunload` listener from
    * `DocumentEditor.tsx` and this fails with
-   * `RulebookSourcesPanel.tsx opens "features/data-tables/components/DocumentEditor.tsx",
+   * `RulebookSourcesPanel.tsx opens "features/documents/components/DocumentEditor.tsx",
    * which is missing its keeping: beforeunload`.
    */
   it("declares nothing it cannot back up", () => {

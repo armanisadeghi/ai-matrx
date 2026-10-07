@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Loader2, FileText } from "lucide-react";
-import { listAccessibleDocuments } from "@/features/data-tables/document-service";
+import { listAccessibleDocuments } from "@/features/documents/document-service";
 import {
   isServiceFailure,
   type DocumentRow,

@@ -1,7 +1,7 @@
 "use client";
 
 // features/spaces/collab/space-collab.ts — live co-editing of one Space (H3): a Yjs document shared over
-// Supabase broadcast through the workbook's provider (`features/data-tables/collab/SupabaseYjsProvider`,
+// Supabase broadcast through the workbook's provider (`lib/collab/SupabaseYjsProvider`,
 // imported as-is, channel `yjs:spaces:<spaceId>`).
 //
 //   fragment "document-store" — the BlockNote body (BlockNote's own Yjs binding: characters, cursors).
@@ -29,7 +29,7 @@ import { blocksToYXmlFragment, yXmlFragmentToBlocks } from "@blocknote/core/yjs"
 import * as Y from "yjs";
 import { Awareness, removeAwarenessStates } from "y-protocols/awareness";
 
-import { SupabaseYjsProvider } from "@/features/data-tables/collab/SupabaseYjsProvider";
+import { SupabaseYjsProvider } from "@/lib/collab/SupabaseYjsProvider";
 
 import type { SpaceDoc } from "../contract";
 import { joinRoom } from "./join-room";

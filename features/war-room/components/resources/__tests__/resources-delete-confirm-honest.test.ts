@@ -3,7 +3,7 @@
  * This cannot be undone" for all three deletable resource tokens (file,
  * udt_document, note) — but `deleteEntity()` dispatches `deleteFile`
  * (features/files/redux/thunks.ts, soft by default via `softDeleteFileDirect`),
- * `deleteDocument` (features/data-tables/document-service.ts, sets
+ * `deleteDocument` (features/documents/document-service.ts, sets
  * `workbench.udt_documents.deleted_at`), and `deleteNote`
  * (features/notes/redux/thunks.ts, sets `workbench.notes.deleted_at`) —
  * all three are soft deletes with a real restore path (the files trash's

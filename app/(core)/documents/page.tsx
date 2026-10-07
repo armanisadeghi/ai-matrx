@@ -15,14 +15,14 @@ import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { toast } from "@/components/ui/use-toast";
 import RouteHeader from "@/features/shell/components/header/RouteHeader";
 import { TapTargetButtonSolid } from "@ai-matrx/tap-target";
-import { DocumentListCard } from "@/features/data-tables/components/DocumentListCard";
-import { DocumentsHubTable } from "@/features/data-tables/components/DocumentsHubTable";
-import { DocumentsHubToolbar } from "@/features/data-tables/components/DocumentsHubToolbar";
+import { DocumentListCard } from "@/features/documents/components/DocumentListCard";
+import { DocumentsHubTable } from "@/features/documents/components/DocumentsHubTable";
+import { DocumentsHubToolbar } from "@/features/documents/components/DocumentsHubToolbar";
 import {
   createDocument,
   deleteDocument,
   listAccessibleDocuments,
-} from "@/features/data-tables/document-service";
+} from "@/features/documents/document-service";
 import {
   isServiceFailure,
   type DocumentRow,
@@ -31,11 +31,11 @@ import {
   documentMatchesQuery,
   sortDocuments,
   type DocumentSortKey,
-} from "@/features/data-tables/utils/documentsHubDisplay";
+} from "@/features/documents/utils/documentsHubDisplay";
 import {
   buildDocumentsLibraryContextData,
   DOCUMENTS_SURFACE_NAME,
-} from "@/features/data-tables/agent-context/buildDocumentsContextData";
+} from "@/features/documents/agent-context/buildDocumentsContextData";
 import { SurfaceRuntimeProvider } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import { buildApplicationScopeFromMenuContext } from "@/features/context-menu-v3/utils/build-application-scope";
 import { captureDomSelection } from "@/features/context-menu-v3/utils/selection-tracking";

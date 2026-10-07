@@ -117,7 +117,7 @@ export function useNavActions(): ShellNavActionHandlers {
           return;
         }
         const { createDocument } =
-          await import("@/features/data-tables/document-service");
+          await import("@/features/documents/document-service");
         const res = await createDocument({
           name: "Untitled document",
           organizationId: capturedOrganizationId,
@@ -144,7 +144,7 @@ export function useNavActions(): ShellNavActionHandlers {
           return;
         }
         const { createWorkbook } =
-          await import("@/features/data-tables/workbook-service");
+          await import("@/features/workbooks/workbook-service");
         const res = await createWorkbook({
           name: "Untitled workbook",
           organizationId: capturedOrganizationId,

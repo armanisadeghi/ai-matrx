@@ -3,7 +3,7 @@
 import { use } from "react";
 import { ChevronLeftTapButton } from "@ai-matrx/tap-target/buttons";
 import RouteHeader from "@/features/shell/components/header/RouteHeader";
-import { DocumentRecord } from "@/features/data-tables/components/DocumentRecord";
+import { DocumentRecord } from "@/features/documents/components/DocumentRecord";
 
 /**
  * `/documents/[id]` — the route chrome only (RouteHeader, back button, header

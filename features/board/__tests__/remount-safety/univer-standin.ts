@@ -2,7 +2,7 @@
  * Univer (the /documents editor engine) stands in at its ONE construction door,
  * `createUniver` from `@univerjs/presets`: it paints on canvas and cannot boot
  * in jsdom. Everything above it — `DocumentEditor`, the document model
- * (`features/data-tables/document-model`), the save path, the realtime door —
+ * (`features/documents/document-model`), the save path, the realtime door —
  * runs for real.
  *
  * The stand-in does what the real engine does at that boundary and nothing

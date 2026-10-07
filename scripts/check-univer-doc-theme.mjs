@@ -131,7 +131,7 @@ export function findUniverDocThemeGaps(source) {
 export async function findColorEngineViolations(colorsByMode) {
   const { ColorKit, invertColorByMatrix } = await import("@univerjs/core");
   const { univerDocSurfaceViolations } = await import(
-    "../features/data-tables/univer-doc-surface-theme.ts"
+    "../features/documents/univer-doc-surface-theme.ts"
   );
   const violations = [];
 
@@ -309,7 +309,7 @@ async function selfTest() {
   //    tokens passed through as space-separated hsl — must be caught, and the
   //    colours this repo produces today must be clean.
   const { univerDocSurfaceColors } = await import(
-    "../features/data-tables/univer-doc-surface-theme.ts"
+    "../features/documents/univer-doc-surface-theme.ts"
   );
   const plantedColors = await findColorEngineViolations({
     dark: {
@@ -336,7 +336,7 @@ async function selfTest() {
   //    source rule and by the real-Univer token check; the resolver the editor
   //    installs today must be clean.
   const { resolveUniverCanvasColor } = await import(
-    "../features/data-tables/univer-theme-token-color.ts"
+    "../lib/univer/univer-theme-token-color.ts"
   );
   const dumbTokens = await findTokenResolutionViolations((color) => color);
   const liveTokens = await findTokenResolutionViolations(resolveUniverCanvasColor);
@@ -347,7 +347,7 @@ async function selfTest() {
   // 6. THE RENAMED LOOKUP. Univer 0.x's `getRenderById` must be caught; the
   //    hook as it stands must be clean.
   const bundle = engineRenderEsBundle();
-  const hookFile = "features/data-tables/hooks/useUniverDocSurfaceTheme.ts";
+  const hookFile = "features/documents/hooks/useUniverDocSurfaceTheme.ts";
   const oldLookup = findMissingRenderManagerMembers(
     "paint(manager?.getRenderById?.(unitId) ?? null);",
     bundle,
@@ -419,7 +419,7 @@ for (const rel of files) {
 }
 
 const { univerDocSurfaceColors } = await import(
-  "../features/data-tables/univer-doc-surface-theme.ts"
+  "../features/documents/univer-doc-surface-theme.ts"
 );
 const colorViolations = await findColorEngineViolations({
   light: univerDocSurfaceColors("light", () => ""),
@@ -427,13 +427,13 @@ const colorViolations = await findColorEngineViolations({
 });
 for (const violation of colorViolations) {
   total++;
-  console.log(`features/data-tables/univer-doc-surface-theme.ts  ${violation}`);
+  console.log(`features/documents/univer-doc-surface-theme.ts  ${violation}`);
 }
 
 const { resolveUniverCanvasColor } = await import(
-  "../features/data-tables/univer-theme-token-color.ts"
+  "../lib/univer/univer-theme-token-color.ts"
 );
-const canvasColorsFile = "features/data-tables/univer-doc-canvas-colors.ts";
+const canvasColorsFile = "features/documents/univer-doc-canvas-colors.ts";
 for (const violation of [
   ...findDumbColorService(readFileSync(resolve(ROOT, canvasColorsFile), "utf8")),
   ...(await findTokenResolutionViolations(resolveUniverCanvasColor)),
@@ -441,7 +441,7 @@ for (const violation of [
   total++;
   console.log(`${canvasColorsFile}  ${violation}`);
 }
-const surfaceHookFile = "features/data-tables/hooks/useUniverDocSurfaceTheme.ts";
+const surfaceHookFile = "features/documents/hooks/useUniverDocSurfaceTheme.ts";
 for (const violation of findMissingRenderManagerMembers(
   readFileSync(resolve(ROOT, surfaceHookFile), "utf8"),
   engineRenderEsBundle(),

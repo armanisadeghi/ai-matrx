@@ -20,10 +20,10 @@
  *
  * Emitters:
  *   - `app/(core)/documents/page.tsx`      → library values
- *   - `features/data-tables/components/DocumentRecord.tsx` → document values
+ *   - `features/documents/components/DocumentRecord.tsx` → document values
  *     (rendered by `app/(core)/documents/[id]/page.tsx` and the Board tile)
  * both via `buildDocumentsContextData` in
- * `features/data-tables/agent-context/buildDocumentsContextData.ts`.
+ * `features/documents/agent-context/buildDocumentsContextData.ts`.
  *
  * FILE DOCTRINE (features/files/handler/FEATURE.md): `document_original_file_id`
  * is a DURABLE `files.files` id — the only way this surface ever refers to an
@@ -31,8 +31,8 @@
  *
  * THE BODY (2026-09-30): `document_body_text` (read) and `document_body`
  * (write). Univer owns the document model; `DocumentEditor` lends a port
- * (`onBodyPort`, `features/data-tables/document-body-text.ts`) to the shared
- * record component (`features/data-tables/components/DocumentRecord.tsx`),
+ * (`onBodyPort`, `features/documents/document-body-text.ts`) to the shared
+ * record component (`features/documents/components/DocumentRecord.tsx`),
  * which reads the plain text at Run time and applies a write as ONE changed
  * span through Univer's command service — so undo, autosave, History and live
  * collaboration peers all receive an agent's edit exactly as a keystroke, and
@@ -55,8 +55,8 @@ import type {
 import {
   DOCUMENT_DESCRIPTION_MAX_LENGTH,
   DOCUMENT_NAME_MAX_LENGTH,
-} from "@/features/data-tables/agent-context/documentWriteValidation";
-import { DOCUMENT_BODY_MAX_LENGTH } from "@/features/data-tables/document-body-text";
+} from "@/features/documents/agent-context/documentWriteValidation";
+import { DOCUMENT_BODY_MAX_LENGTH } from "@/features/documents/document-body-text";
 import { mergeBaselineValues, pickBaseline } from "@ai-matrx/chat/surfaces/manifests/_baseline.manifest";
 import { MATRX_WEB_APP_EXECUTOR } from "@ai-matrx/chat/surfaces/executor";
 
@@ -426,7 +426,7 @@ const surfaceSpecific: SurfaceValue[] = [
  *
  * BOUNDS LIVE IN ONE PLACE. `DOCUMENT_NAME_MAX_LENGTH` /
  * `DOCUMENT_DESCRIPTION_MAX_LENGTH` come from the pure
- * `features/data-tables/agent-context/documentWriteValidation.ts`, which the
+ * `features/documents/agent-context/documentWriteValidation.ts`, which the
  * page handlers also call — the numbers below are interpolated from those same
  * constants, so the contract the model reads cannot drift from the rule the
  * handler enforces. The name bound is 255 because that is the REAL
