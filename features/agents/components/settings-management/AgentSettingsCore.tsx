@@ -1376,6 +1376,17 @@ export function AgentSettingsCore({
   // MATRX-EXCEPTION: dynamic per-key settings setter; each render branch supplies the right shape.
   const handleSettingChange = (key: keyof FeLlmParams, value: unknown) => {
     if (key === "response_format" && typeof value === "string") {
+      // An agent with an output schema has ONE output contract: the schema.
+      // A response_format saved in settings beside it only drifts from it and
+      // (server-side) is ignored, so never write one — clear any leftover.
+      if (outputSchema != null) {
+        const { response_format: _legacy, ...rest } =
+          currentSettings as Record<string, unknown>;
+        dispatch(
+          setAgentSettings({ id: agentId, settings: rest as LLMParams }),
+        );
+        return;
+      }
       // Store EXACTLY what the user picked — including "text". Never drop a
       // selection on the user's behalf. The canonical { type: <value> } shape
       // matches how json_schema / json_object are stored.
