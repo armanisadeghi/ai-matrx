@@ -1079,19 +1079,6 @@ export const SHAREABLE_RESOURCE_REGISTRY = {
     urlPathTemplate: "/marketing/brands/{id}",
     rlsUsesHasPermission: true,
   },
-  working_document: {
-    resourceType: "working_document",
-    tableName: "working_documents",
-    schemaName: "workbench",
-    idColumn: "id",
-    ownerColumn: "created_by",
-    isPublicColumn: null,
-    displayLabel: "Working Document",
-    // No standalone route: the in-app destination opens a NEW chat with the
-    // document linked (ChatRoomClient consumes ?attachDoc= on fresh routes).
-    urlPathTemplate: "/chat/new?attachDoc={id}",
-    rlsUsesHasPermission: true,
-  },
   // ── Mirrored 2026-09-09 ──────────────────────────────────────────────────
   // 32 ACTIVE rows that live in platform.shareable_resource_registry and had
   // never reached this file. The parity guard only ever compared this mirror to

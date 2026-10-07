@@ -3286,7 +3286,7 @@
     "display_label": "Working Document",
     "url_path_template": "/chat/new?attachDoc={id}",
     "rls_uses_has_permission": true,
-    "is_active": true
+    "is_active": false
   },
   {
     "resource_type": "youtube_search",
