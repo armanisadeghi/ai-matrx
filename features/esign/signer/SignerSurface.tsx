@@ -30,6 +30,7 @@ import type { FieldValue } from "../contract/fieldModel";
 import { DoorRefusal, SessionEnded, type MarkTarget, type SignerDoorApi, type SignerLoadV2 } from "../contract/signerDoor";
 import type { CreatedMark } from "../signature-creator/SignatureCreatorDialog";
 import { Autosaver, type SaveState } from "./autosave";
+import { serverTakes } from "./door";
 import {
   describeValue,
   formatDate,
@@ -438,6 +439,9 @@ export function SignerSurface({
         setMarks((m) => ({ ...m, [answer.target]: dataUrl(answer.image_base64) ?? mark.preview_url }));
       }
       if (pending?.fieldId) change(pending.fieldId, "applied");
+      if (created.some((m) => m.save_to_profile) && !serverTakes("save_to_profile")) {
+        setNotice("Saving it to your profile is not available yet.");
+      }
     } catch (err) {
       fail(err);
     } finally {

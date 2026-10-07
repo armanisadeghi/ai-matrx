@@ -36,6 +36,21 @@ function knownAction(name: string): Action | null {
   return KNOWN_ACTIONS.find((a) => a === name) ?? null;
 }
 
+/**
+ * The act arguments aidream's `EsignActArgs` accepts today (routers/esign_signing.py, a model with
+ * extra="forbid"). An argument outside it is never sent; a step that needs one says it is not
+ * available yet. Grows with the server lane's waves.
+ */
+const SERVER_ARGS: ReadonlySet<string> = new Set([
+  "document_id", "disclosure_id", "kind", "target", "source", "values", "message_to_sender",
+  "full_name", "email", "message", "typed_name", "typed_style", "strokes", "image_data_url",
+  "observed", "action_id", "reason", "time_zone",
+]);
+
+export function serverTakes(arg: string): boolean {
+  return SERVER_ARGS.has(arg);
+}
+
 export type SignerTarget = { kind: "envelope"; envelopeId: string } | { kind: "outsider"; session: string };
 
 const SESSION_CODES: Record<string, "taken_over" | "expired"> = {
@@ -104,9 +119,14 @@ export function createSignerDoor(dispatch: AppDispatch, target: SignerTarget): S
     throw new Error("transport"); // never answered: errorText says "could not reach"
   }
 
-  async function act(name: string, args: ActArgs & Record<string, unknown> = {}): Promise<Answer> {
+  async function act(name: string, wanted: ActArgs & Record<string, unknown> = {}): Promise<Answer> {
     const action = knownAction(name);
     if (!action) throw new DoorRefusal("unknown_action", reasonText("unknown_action"));
+    // The server refuses an argument it does not know (extra="forbid"): send only what it takes.
+    const args: ActArgs = {};
+    for (const [key, value] of Object.entries(wanted)) {
+      if (value !== undefined && serverTakes(key)) Reflect.set(args, key, value);
+    }
     const result =
       target.kind === "envelope"
         ? await dispatch(
@@ -156,8 +176,8 @@ export function createSignerDoor(dispatch: AppDispatch, target: SignerTarget): S
     },
 
     async documentBytes(documentId) {
-      // `purpose: render` — the server records no download for a page that is only drawn (§6.2).
-      const a = await act("document", { document_id: documentId, purpose: "render" });
+      // A page that is only drawn records no download (the server reads it with purpose render, §6.2).
+      const a = await act("document", { document_id: documentId });
       if (!a.content_base64) throw new DoorRefusal("document_unavailable", "This document could not be opened. Try again in a moment.");
       return {
         bytes: decodeBase64(a.content_base64),
@@ -172,6 +192,9 @@ export function createSignerDoor(dispatch: AppDispatch, target: SignerTarget): S
       // the third (wave B) — until then the step says it is not available yet.
       const kind = input.kind === "typed" || input.kind === "drawn" ? input.kind : null;
       if (!kind) throw new DoorRefusal("unknown_action", reasonText("unknown_action"));
+      // A phone or saved mark names its source by id; until the server takes that id, say so.
+      if (input.source === "phone" && !serverTakes("handoff_id")) throw new DoorRefusal("unknown_action", reasonText("unknown_action"));
+      if (input.source === "saved" && !serverTakes("saved_signature_id")) throw new DoorRefusal("unknown_action", reasonText("unknown_action"));
       const a = await act("adopt", { ...input, kind });
       const image = str(a.image_base64) ?? str(input.image_data_url)?.replace(/^data:[^,]+,/, "") ?? "";
       const t: MarkTarget = a.target === "initials" ? "initials" : a.target === "signature" ? "signature" : input.target;
