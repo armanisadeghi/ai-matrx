@@ -61,6 +61,11 @@ const outcome = await Promise.race([
   page.getByText(/organization limit|over your|refused/i).first().waitFor({ timeout: MAX }).then(() => "refused"),
   page.waitForURL((u) => !u.href.includes(id), { timeout: MAX }).then(() => "opened another page"),
 ]).catch(() => `no outcome in ${MAX / 60000} min`);
+// "Ready" toasts first; the window then opens the new Space (/spaces/<root_space_id>) — wait for it.
+if (outcome === "ready") {
+  await page.waitForURL((u) => !u.href.includes(id), { timeout: 60_000 }).catch(() => {});
+  await page.waitForTimeout(6000);
+}
 const toastText = await page.locator("[data-sonner-toast]").allInnerTexts().catch(() => []);
 const runWindowText = await page.getByText("Building your Space").first().locator("xpath=ancestor::*[4]").innerText().catch(() => null);
 const result = { id, doors, outcome, url: page.url(), toastText, runWindowText: runWindowText?.slice(0, 800) ?? null, sent: sent.map((s) => ({ url: s.url, body: JSON.stringify(s.body)?.slice(0, 1500) })), responses };

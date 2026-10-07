@@ -158,7 +158,8 @@ export const lastBlock = (page, type) => page.locator(`.bn-block-content[data-co
 export async function trashPage(page) {
   assertOwnPage(page);
   await page.keyboard.press("Escape").catch(() => {});
-  await page.getByRole("button", { name: "Page options" }).first().click();
+  // Exact: the sidebar's "New page options" also matches a substring "Page options".
+  await page.getByRole("button", { name: "Page options", exact: true }).first().click();
   const item = page.getByText("Move to Trash", { exact: true }).first();
   await item.waitFor({ timeout: 10_000 });
   await item.click();
