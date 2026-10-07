@@ -54,7 +54,7 @@ import {
   type StudioSourceKind,
 } from "./lab/content-sources";
 import { paneLeads, syncPaneScroll } from "./lab/sync-scroll";
-import type { EditorViewHandle } from "@/components/rich-editor/visual/VisualEditor";
+import type { EditorViewHandle } from "@ai-matrx/rich-editor/visual/VisualEditor";
 import { syncStudioSourceUrl } from "./lab/studio-url";
 import { loadStudioSource } from "./lab/content-sources";
 import { isRecordUnavailableError } from "@/lib/records/recordUnavailable";

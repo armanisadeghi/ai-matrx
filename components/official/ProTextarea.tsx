@@ -217,7 +217,7 @@ import type { AnyMandateKey } from "@ai-matrx/agents/mandates";
 // in-place panel has no route. Re-gating is a deliberate Arman tradeoff
 // (page weight vs build cost) — never a drive-by "optimization".
 import { ProTextareaAgentPanel } from "./ProTextareaAgentPanel";
-import { useTextareaFormatting } from "@/components/rich-editor/format/useTextareaFormatting";
+import { useTextareaFormatting } from "@ai-matrx/rich-editor/format/useTextareaFormatting";
 import { sourceFeatureFromSurfaceName } from "@ai-matrx/chat/agents/utils/source-feature-from-surface";
 import type { SourceFeature } from "@ai-matrx/agents/generated/source-attribution";
 import {

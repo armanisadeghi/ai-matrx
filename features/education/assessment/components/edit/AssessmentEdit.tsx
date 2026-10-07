@@ -494,6 +494,7 @@ export function AssessmentEdit({ assessmentId }: { assessmentId: string }) {
                         },
                       }),
                     );
+                    live.settle(unusableSentence ?? "Couldn't deepen this question");
                     if (!deeper) {
                       toast.error(
                         unusableSentence

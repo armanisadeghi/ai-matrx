@@ -43,7 +43,7 @@ export function AccountLifecycleSection() {
   const close = async () => {
     const accepted = await confirm({
       title: "Close account?",
-      description: "You are signed out everywhere and cannot sign in. API keys are revoked, schedules pause, personal subscriptions are canceled. Your records stay. A recovery email arrives first; no refund is promised.",
+      description: "You cannot sign in again; an open session can work for up to an hour. API keys are revoked, schedules pause, personal subscriptions are canceled. Your records stay. A recovery email arrives first; no refund is promised.",
       confirmLabel: "Close account",
       variant: "destructive",
     });

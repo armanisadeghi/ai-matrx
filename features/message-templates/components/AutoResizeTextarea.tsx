@@ -9,7 +9,7 @@
 // text — variables stay exactly as typed.
 
 import * as React from "react";
-import { useTextareaFormatting } from "@/components/rich-editor/format/useTextareaFormatting";
+import { useTextareaFormatting } from "@ai-matrx/rich-editor/format/useTextareaFormatting";
 
 export const AutoResizeTextarea = React.forwardRef<
   HTMLTextAreaElement,

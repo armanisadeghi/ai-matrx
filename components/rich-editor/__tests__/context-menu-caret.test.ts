@@ -8,10 +8,10 @@
  */
 import { Editor, getSchema, type JSONContent } from "@tiptap/core";
 import { NodeSelection, TextSelection } from "@tiptap/pm/state";
-import { createRichEditorExtensions } from "../core/extensions";
-import { buildVisualDocument } from "../core/visual-document";
-import { createVisualExtensions, type RichShellActions } from "../visual/visual-extensions";
-import { selectionForContextMenu } from "../visual/context-menu-caret";
+import { createRichEditorExtensions } from "@ai-matrx/rich-editor/core/extensions";
+import { buildVisualDocument } from "@ai-matrx/rich-editor/core/visual-document";
+import { createVisualExtensions, type RichShellActions } from "@ai-matrx/rich-editor/visual/visual-extensions";
+import { selectionForContextMenu } from "@ai-matrx/rich-editor/visual/context-menu-caret";
 
 const schema = getSchema(createRichEditorExtensions());
 const SOURCE = "First paragraph.\n\nSecond paragraph here.\n\n```matrx\n{\"a\":1}\n```\n\nLast one.\n";

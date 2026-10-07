@@ -5,7 +5,7 @@
 
 import React from "react";
 import type { MarkdownTabProps } from "../types";
-import RichEditor from "@/components/rich-editor/RichEditor";
+import RichEditor from "@ai-matrx/rich-editor/editor/RichEditor";
 
 export function MarkdownSplitViewTab({ state, actions, controllerRef }: MarkdownTabProps) {
     return (

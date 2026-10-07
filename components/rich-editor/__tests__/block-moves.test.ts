@@ -15,9 +15,9 @@
  */
 import { Editor, getSchema, type JSONContent } from "@tiptap/core";
 import { NodeSelection } from "@tiptap/pm/state";
-import { createRichEditorExtensions } from "../core/extensions";
-import { buildVisualDocument, captureBaseline, serializeVisualDocument } from "../core/visual-document";
-import { moveBlock } from "../core/commands";
+import { createRichEditorExtensions } from "@ai-matrx/rich-editor/core/extensions";
+import { buildVisualDocument, captureBaseline, serializeVisualDocument } from "@ai-matrx/rich-editor/core/visual-document";
+import { moveBlock } from "@ai-matrx/rich-editor/core/commands";
 
 const extensions = createRichEditorExtensions();
 const schema = getSchema(extensions);

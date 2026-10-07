@@ -20,6 +20,8 @@ export interface AdminUserRow {
   phone_confirmed: boolean;
   is_anonymous: boolean;
   banned: boolean;
+  /** Personal data erased (iam.account_closure.erased_at); cannot be reopened. */
+  erased: boolean;
   /** admin_level enum value (developer|senior_admin|super_admin) or null. */
   admin_level: string | null;
   /** Explicit non-role grant stored in protected Supabase app_metadata. */

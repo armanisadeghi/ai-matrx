@@ -4,7 +4,7 @@
  * edit); when the edit's write fails under a slow/restarting server, the copy
  * just made is archived and the person is told.
  */
-jest.mock("@/components/rich-editor/RichEditor", () => ({ __esModule: true, default: () => null }));
+jest.mock("@ai-matrx/rich-editor/editor/RichEditor", () => ({ __esModule: true, default: () => null }));
 jest.mock("@/features/notes/service/notesApi", () => ({ NotesAPI: {} }));
 jest.mock("@/lib/organizations/ensureOrgId", () => ({ ensureOrgId: jest.fn() }));
 jest.mock("@/lib/toast", () => ({ toast: { success: jest.fn(), error: jest.fn() } }));

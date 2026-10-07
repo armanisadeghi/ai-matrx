@@ -33,7 +33,7 @@ import { isOrganizationSelectionCancelled } from "@/lib/organization/selection-c
 import { toastWriteFailure } from "@/lib/errors/toastWriteFailure";
 import { fenceOpenerOf } from "@ai-matrx/content-ir/source";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
-import RichEditor from "@/components/rich-editor/RichEditor";
+import RichEditor from "@ai-matrx/rich-editor/editor/RichEditor";
 
 /** A heading, else the first line of prose — never a directive, fence or front-matter line. */
 function titleFrom(bufferTitle: string | null, buffer: string): string {

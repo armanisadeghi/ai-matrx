@@ -1,8 +1,8 @@
 // Zero-authorship verifier harness for RC-B4 round 4 — hostile tables through the two table edit paths.
 import { Editor, getSchema } from "@tiptap/core";
 import { marked } from "marked";
-import { createRichEditorExtensions } from "@/components/rich-editor/core/extensions";
-import { buildVisualDocument, captureBaseline, serializeVisualDocument } from "@/components/rich-editor/core/visual-document";
+import { createRichEditorExtensions } from "@ai-matrx/rich-editor/core/extensions";
+import { buildVisualDocument, captureBaseline, serializeVisualDocument } from "@ai-matrx/rich-editor/core/visual-document";
 import { rewriteTableSource } from "@ai-matrx/rich-content/utils/table-source";
 import { parseMarkdownTable } from "@ai-matrx/rich-content/display/blocks/table/parseMarkdownTable";
 

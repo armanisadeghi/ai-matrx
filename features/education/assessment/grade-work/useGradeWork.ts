@@ -99,7 +99,11 @@ export function useGradeWork(
           surfaceKey: "grade-work",
           surfaceName: "matrx-user/education-grade-work",
         }),
-      );
+      ).catch((launchError: unknown) => {
+        live.settle(launchError instanceof Error ? launchError.message : "The grading run could not start.");
+        throw launchError;
+      });
+      live.settle("The grading run could not start.");
 
       // Record to the shared study spine. Each standalone problem is its own
       // item (a fresh id) — an attempt + a session, no assessment row needed.

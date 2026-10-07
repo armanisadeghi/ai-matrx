@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import type { MarkdownTabProps } from "../types";
-import { useTextareaFormatting } from "@/components/rich-editor/format/useTextareaFormatting";
+import { useTextareaFormatting } from "@ai-matrx/rich-editor/format/useTextareaFormatting";
 
 export function MarkdownPlainTextTab({ state, actions }: MarkdownTabProps) {
     // Plain is raw text, but the ONE formatting layer (chords + the selection

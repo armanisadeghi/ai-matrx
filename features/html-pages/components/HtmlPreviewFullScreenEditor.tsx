@@ -7,7 +7,7 @@ import FullScreenOverlay, {
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectUser } from "@/lib/redux/selectors/userSelectors";
 import type { HtmlPreviewState, HtmlPreviewActions } from "./types";
-import RichEditor, { type RichEditorController } from "@/components/rich-editor/RichEditor";
+import RichEditor, { type RichEditorController } from "@ai-matrx/rich-editor/editor/RichEditor";
 import { MarkdownPlainTextTab } from "./tabs/MarkdownPlainTextTab";
 import { MarkdownPreviewTab } from "./tabs/MarkdownPreviewTab";
 import { HtmlCodeFilesTab } from "./tabs/HtmlCodeFilesTab";

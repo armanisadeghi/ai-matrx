@@ -6,7 +6,7 @@
  * was saved. The editor must keep the later typing — and the next save must
  * carry it.
  */
-import { reconcileHostValue } from "../core/host-value";
+import { reconcileHostValue } from "@ai-matrx/rich-editor/core/host-value";
 
 const ORIGINAL = "Tonight's handover: drain the print queue.";
 const TYPED = "Tonight's handover: drain the print queue. Swap the label printer.";

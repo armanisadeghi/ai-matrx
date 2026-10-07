@@ -201,8 +201,9 @@ export async function GET() {
   let profiles: ProfileRow[];
   let facts: AccountFactsRow[];
   let parties: { id: string; claimed_by: string | null }[];
+  let erasedRows: { user_id: string }[];
   try {
-    [profiles, facts, parties] = await Promise.all([
+    [profiles, facts, parties, erasedRows] = await Promise.all([
       readAllRows<ProfileRow>(
         ({ from, to }) =>
           admin
@@ -221,6 +222,12 @@ export async function GET() {
           .not("claimed_by", "is", null).is("deleted_at", null).is("canonical_id", null)
           .order("id").range(from, to),
         { label: "crm.party (signed-up user identity)" },
+      ),
+      readAllRows<{ user_id: string }>(
+        ({ from, to }) => admin.schema("iam").from("account_closure")
+          .select("user_id", { count: "exact" })
+          .not("erased_at", "is", null).order("user_id").range(from, to),
+        { label: "iam.account_closure (erased accounts)" },
       ),
     ]);
   } catch (error) {
@@ -244,6 +251,7 @@ export async function GET() {
   } catch (error) {
     plansError = extractErrorMessage(error, "Failed to read account plans");
   }
+  const erasedIds = new Set(erasedRows.map((r) => r.user_id));
   const profileById = new Map(profiles.map((p) => [p.id, p]));
   const factsById = new Map(facts.map((f) => [f.user_id, f]));
   const partiesByUser = new Map<string, string[]>();
@@ -345,6 +353,7 @@ export async function GET() {
         (u as { banned_until?: string | null }).banned_until &&
           new Date((u as { banned_until: string }).banned_until) > new Date(),
       ),
+      erased: erasedIds.has(u.id),
       admin_level: adminLevel,
       mcp_full_access: hasMcpFullAccessPermission(appMeta),
       onboarding_completed: meta[ONBOARDING_METADATA_KEY] === true,

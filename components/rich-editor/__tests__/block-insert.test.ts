@@ -6,13 +6,13 @@
  */
 import { Editor, getSchema, type JSONContent } from "@tiptap/core";
 import { AllSelection, NodeSelection, TextSelection } from "@tiptap/pm/state";
-import { createRichEditorExtensions } from "../core/extensions";
+import { createRichEditorExtensions } from "@ai-matrx/rich-editor/core/extensions";
 import {
   buildVisualDocument,
   captureBaseline,
   serializeVisualDocument,
-} from "../core/visual-document";
-import { insertMarkdownBlock } from "../core/block-insert";
+} from "@ai-matrx/rich-editor/core/visual-document";
+import { insertMarkdownBlock } from "@ai-matrx/rich-editor/core/block-insert";
 import { blockBoundary } from "@/utils/text-insertion";
 
 const extensions = createRichEditorExtensions();

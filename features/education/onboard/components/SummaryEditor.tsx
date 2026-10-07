@@ -6,7 +6,7 @@ import { Minus, Plus } from "lucide-react";
 import { Input } from "@ai-matrx/design-system/controls";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import RichEditor, { type RichEditorController } from "@/components/rich-editor/RichEditor";
+import RichEditor, { type RichEditorController } from "@ai-matrx/rich-editor/editor/RichEditor";
 import { toast } from "@/lib/toast";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { studyMediaService } from "@/features/education/media/service";

@@ -310,11 +310,19 @@ export function AccountsTableClient() {
   // iam.close_account / iam.reopen_account check the platform-admin seat themselves.
   const setAccountClosed = useCallback(async (row: AdminUserRow, close: boolean) => {
     const who = row.email ?? row.display_name ?? row.id;
+    if (close && row.id === researchOwnerId) {
+      toast.error("You cannot close your own account from the roster. Use your account settings.");
+      return;
+    }
+    if (!close && row.erased) {
+      toast.error("This account was erased and cannot be reopened.");
+      return;
+    }
     const ok = await confirm(
       close
         ? {
             title: "Close account?",
-            description: `${who} is signed out everywhere and cannot sign in. API keys are revoked; schedules and connections pause. Records stay, still theirs. Billing is not changed. Reopen any time.`,
+            description: `${who} cannot sign in again; an open session can work for up to an hour. API keys are revoked; schedules and connections pause. Records stay, still theirs. Billing is not changed. Reopen any time.`,
             confirmLabel: "Close account",
             variant: "destructive",
           }
@@ -337,7 +345,7 @@ export function AccountsTableClient() {
     }
     setRows((prev) => prev.map((r) => (r.id === row.id ? { ...r, banned: close } : r)));
     toast.success(close ? `Closed ${who}` : `Reopened ${who}`);
-  }, []);
+  }, [researchOwnerId]);
 
   const toggleMcpFullAccess = useCallback(async (row: AdminUserRow) => {
     const next = !row.mcp_full_access;
@@ -1127,13 +1135,24 @@ export function AccountsTableClient() {
                     : "Mark as onboarded"}
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={() => void setAccountClosed(row, !row.banned)}>
-                  {row.banned ? (
+                <DropdownMenuItem
+                  disabled={row.erased || row.id === researchOwnerId}
+                  onClick={() => void setAccountClosed(row, !row.banned)}
+                >
+                  {row.erased ? (
+                    <UserX className="mr-2 h-4 w-4" />
+                  ) : row.banned ? (
                     <UserCheck className="mr-2 h-4 w-4" />
                   ) : (
                     <UserX className="mr-2 h-4 w-4" />
                   )}
-                  {row.banned ? "Reopen account" : "Close account…"}
+                  {row.erased
+                    ? "Erased — cannot reopen"
+                    : row.id === researchOwnerId
+                      ? "Your own account"
+                      : row.banned
+                        ? "Reopen account"
+                        : "Close account…"}
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>

@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/utils/supabase/server";
 import { createAdminClient } from "@/utils/supabase/adminClient";
 import { requestOrigin } from "@/utils/auth/request-origin";
-import { AccountClosureError, closeAccount, readClosureJournal } from "@/features/account-lifecycle/accountClosure";
+import { AccountClosureError, closeAccount, readClosureJournal, readOpenClosure } from "@/features/account-lifecycle/accountClosure";
 
 function failure(error: unknown) {
   const known = error instanceof AccountClosureError;
@@ -18,7 +18,10 @@ export async function GET() {
     if (error || !data.user) return NextResponse.json({ error: "Sign in to view account closure." }, { status: 401 });
     const adminRead = await createAdminClient().auth.admin.getUserById(data.user.id);
     if (adminRead.error || !adminRead.data.user) throw adminRead.error ?? new Error("User not found");
-    return NextResponse.json({ closure: readClosureJournal(adminRead.data.user.app_metadata) });
+    // Closed or open is the DB record's call; the journal only adds in-progress/failed.
+    const open = await readOpenClosure(data.user.id);
+    const journal = readClosureJournal(adminRead.data.user.app_metadata);
+    return NextResponse.json({ closure: open ? { state: "closed" } : journal && journal.state !== "closed" ? { state: journal.state } : null });
   } catch (error) {
     return failure(error);
   }
@@ -30,8 +33,6 @@ export async function POST(request: NextRequest) {
     const client = await createClient();
     const { data, error } = await client.auth.getUser();
     if (error || !data.user?.email) return NextResponse.json({ error: "Sign in again before closing your account." }, { status: 401 });
-    const { data: sessionData } = await client.auth.getSession();
-    if (!sessionData.session?.access_token) return NextResponse.json({ error: "Sign in again before closing your account." }, { status: 401 });
     const adminRead = await createAdminClient().auth.admin.getUserById(data.user.id);
     if (adminRead.error || !adminRead.data.user?.email) throw adminRead.error ?? new AccountClosureError("A verified account email is required.", 409);
     const result = await closeAccount({
@@ -39,7 +40,6 @@ export async function POST(request: NextRequest) {
       email: adminRead.data.user.email,
       metadata: adminRead.data.user.app_metadata,
       origin: requestOrigin(request.headers) ?? request.nextUrl.origin,
-      accessToken: sessionData.session.access_token,
     });
     return NextResponse.json({ state: result.journal.state, requestId: result.journal.requestId, alreadyClosed: result.alreadyClosed });
   } catch (error) {

@@ -50,6 +50,14 @@ import { OpenDestinationDialog } from "@/features/page-extraction/data-review/Op
 import { HTMLPageService } from "@/features/html-pages/services/htmlPageService";
 import { ensureOrganizationContext, holdDeliberateIntent, isOrganizationSelectionCancelled } from "@/lib/organization/organization-gate";
 import { getSessionKnob } from "@/lib/scoped-config/sessionKnob";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { TextInputDialog } from "@/components/dialogs/text-input/TextInputDialog";
+import { EditableContextMenu } from "@/features/context-menu-v3/EditableContextMenu";
+import { buildApplicationScopeFromMenuContext } from "@/features/context-menu-v3/utils/build-application-scope";
+import { useMicField } from "@/features/audio/hooks/useMicField";
+import { useFileUpload } from "@/features/files/handler/hooks/useFileUpload";
+import { fileUrls } from "@/features/files/handler/utils/python-base";
+import { kindCanonicalExample, searchKindDefinitions } from "./kind-picker-data";
 import { showManualCopy } from "@/components/dialogs/clipboard-fallback/manualCopyOpener";
 import { useAlchemyDisclosure } from "@/components/agent-copy/useAlchemyDisclosure";
 import { contentSourceKey, sameContentSource, useRegistryMenuSource } from "@/features/context-menu-v3/menu-presence";
@@ -88,9 +96,9 @@ configureRichContent({
   readSessionKnob: (knob) => getSessionKnob(knob as never),
   loadHtmlToMarkdown: () =>
     Promise.all([
-      import("@/components/rich-editor/core/html-to-markdown"),
+      import("@ai-matrx/rich-editor/core/html-to-markdown"),
       import("@tiptap/core"),
-      import("@/components/rich-editor/core/extensions"),
+      import("@ai-matrx/rich-editor/core/extensions"),
     ]).then(([{ htmlToMarkdown }, { getSchema }, { createRichEditorExtensions }]) => {
       const schema = getSchema(createRichEditorExtensions());
       return (html: string) => htmlToMarkdown(html, schema);
@@ -147,6 +155,16 @@ configureRichContent({
     RecordAnnotations,
     annotationRecordOf,
     recordKeyOf,
+    // the editor (@ai-matrx/rich-editor)
+    ConfirmDialog,
+    TextInputDialog,
+    EditableContextMenu,
+    buildApplicationScopeFromMenuContext,
+    useMicField,
+    useFileUpload,
+    fileUrls,
+    searchKindDefinitions,
+    kindCanonicalExample,
     // kind views
     StructuredValueView,
     KindDataGate,

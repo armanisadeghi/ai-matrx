@@ -6,9 +6,9 @@
  * a source-view bold that re-writes the line or leaves stray markers; a
  * heading/list prefix that stacks instead of replacing.
  */
-import { RICH_EDITOR_SHORTCUTS, TYPED_TRIGGERS } from "../core/shortcuts";
-import { SHORTCUT_HANDLERS } from "../visual/shortcut-handlers";
-import { applySourceEdit, continueMarkupOnEnter, makeLink, setLinePrefix, toggleWrap } from "../core/source-format";
+import { RICH_EDITOR_SHORTCUTS, TYPED_TRIGGERS } from "@ai-matrx/rich-editor/core/shortcuts";
+import { SHORTCUT_HANDLERS } from "@ai-matrx/rich-editor/visual/shortcut-handlers";
+import { applySourceEdit, continueMarkupOnEnter, makeLink, setLinePrefix, toggleWrap } from "@ai-matrx/rich-editor/core/source-format";
 
 describe("the shortcut table", () => {
   it.each(RICH_EDITOR_SHORTCUTS.filter((spec) => spec.keys.some((key) => !TYPED_TRIGGERS.has(key))))(

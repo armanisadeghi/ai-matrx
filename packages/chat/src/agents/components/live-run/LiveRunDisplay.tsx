@@ -57,6 +57,12 @@ export interface LiveRunDisplayProps {
    * the status line alive from the very first click (no dead moment).
    */
   pending?: boolean;
+  /**
+   * The run failed before any stream existed (the launch was refused — e.g. a
+   * Mandate with no Holder). Shown in the error slot instead of "Starting…",
+   * so a refused launch never reads as a run still on its way.
+   */
+  failure?: string | null;
   /** Renders a dismiss (X) affordance; caller tears the run down. */
   onDismiss?: () => void;
   className?: string;
@@ -80,13 +86,19 @@ export function LiveRunDisplay({
   requestId: requestIdProp,
   label,
   pending = false,
+  failure = null,
   onDismiss,
   className,
   bodyClassName,
   variant = "card",
 }: LiveRunDisplayProps) {
-  const { requestId, isActive, statusText, errorMessage, chunkCount } =
-    useLiveRunStatus(conversationId, requestIdProp, pending);
+  const status = useLiveRunStatus(
+    conversationId,
+    requestIdProp,
+    pending && !failure,
+  );
+  const { requestId, isActive, statusText, chunkCount } = status;
+  const errorMessage = status.errorMessage ?? (failure || null);
   const conversationMessages = useAppSelector(
     conversationId
       ? selectConversationMessages(conversationId)
@@ -115,7 +127,7 @@ export function LiveRunDisplay({
   }, [chunkCount, isActive]);
 
   const hasRun = Boolean(conversationId || requestId);
-  if (!hasRun && !pending) return null;
+  if (!hasRun && !pending && !failure) return null;
 
   // BARE: the host frame is the chrome. Content only — no border, no
   // background, no status bar, no padding. Anything added here reappears as a
@@ -175,7 +187,7 @@ export function LiveRunDisplay({
       )}
     >
       <div className="flex items-center gap-2 border-b border-border px-2.5 py-1.5 text-xs text-muted-foreground">
-        {isActive || (pending && !requestId) ? (
+        {isActive || (pending && !requestId && !errorMessage) ? (
           <Loader2 className="h-3.5 w-3.5 shrink-0 animate-spin text-primary" />
         ) : errorMessage ? (
           <TriangleAlert className="h-3.5 w-3.5 shrink-0 text-destructive" />

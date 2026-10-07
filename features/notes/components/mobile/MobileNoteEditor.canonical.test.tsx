@@ -75,7 +75,7 @@ jest.mock("next/dynamic", () => {
 // its controller's `flush()` can hold words its onChange has not delivered yet.
 let richLiveMarkdown = "";
 let richOnChange: ((value: string) => void) | null = null;
-jest.mock("@/components/rich-editor/RichEditor", () => {
+jest.mock("@ai-matrx/rich-editor/editor/RichEditor", () => {
   const ReactModule = jest.requireActual<typeof import("react")>("react");
   function RichEditor(props: {
     value: string;

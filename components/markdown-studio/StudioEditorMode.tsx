@@ -12,7 +12,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { Archive, CopyPlus, ExternalLink, Loader2 } from "lucide-react";
-import RichEditor from "@/components/rich-editor/RichEditor";
+import RichEditor from "@ai-matrx/rich-editor/editor/RichEditor";
 import type { AnnotationRecord } from "@/features/rich-document/annotations/record-of-source";
 import { NotesAPI } from "@/features/notes/service/notesApi";
 import { ensureOrgId } from "@/lib/organizations/ensureOrgId";

@@ -39,7 +39,7 @@ export async function ensureSignedIn(page, next, member = false) {
 
 /** Click Resume when the tab shows a paused state. */
 export async function resumeIfPaused(page) {
-  const btn = page.getByRole("button", { name: /^Resume$/ });
+  const btn = page.getByRole("button", { name: /^Resume( this preview)?$/ });
   if (await btn.isVisible().catch(() => false)) await btn.click();
 }
 

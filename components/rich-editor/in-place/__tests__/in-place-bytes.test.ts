@@ -12,7 +12,7 @@
 
 jest.mock("@/utils/supabase/client", () => ({ supabase: {} }));
 
-import { createInPlaceSession, type InPlaceSaveMode, type InPlaceSessionOptions, type InPlaceSession } from "../in-place-session";
+import { createInPlaceSession, type InPlaceSaveMode, type InPlaceSessionOptions, type InPlaceSession } from "@ai-matrx/rich-editor/in-place/in-place-session";
 import { spliceSaveBody, type VersionedBodyStore } from "@/features/rich-document/annotations/sourceSave";
 import { mergeEditedText } from "@/packages/chat/src/agents/redux/execution-system/message-crud/content-blocks.util";
 

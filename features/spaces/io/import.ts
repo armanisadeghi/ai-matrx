@@ -45,8 +45,8 @@ async function fromHtml(html: string, fallbackTitle: string): Promise<ImportedPa
   const named = doc.querySelector("title")?.textContent?.trim() || "";
   const [{ getSchema }, { createRichEditorExtensions }, { htmlToMarkdown }] = await Promise.all([
     import("@tiptap/core"),
-    import("@/components/rich-editor/core/extensions"),
-    import("@/components/rich-editor/core/html-to-markdown"),
+    import("@ai-matrx/rich-editor/core/extensions"),
+    import("@ai-matrx/rich-editor/core/html-to-markdown"),
   ]);
   const md = htmlToMarkdown(doc.body.innerHTML, getSchema(createRichEditorExtensions()));
   const page = fromMarkdown(md, named || fallbackTitle);
