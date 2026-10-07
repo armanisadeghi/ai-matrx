@@ -1,5 +1,9 @@
 "use client";
-import { registerBlockComponents, registerLoadingComponents } from "@ai-matrx/rich-content/display/chat-markdown/block-registry/BlockComponentRegistry";
+import {
+  BlockComponents as EngineBlockComponents,
+  registerBlockComponents,
+  registerLoadingComponents,
+} from "@ai-matrx/rich-content/display/chat-markdown/block-registry/BlockComponentRegistry";
 
 import React, { Suspense, lazy } from "react";
 import TranscriptBlock from "@/components/mardown-display/blocks/transcripts/TranscriptBlock";
@@ -1293,3 +1297,6 @@ const DOMAIN_LOADING_COMPONENTS = {
  */
 registerBlockComponents(DOMAIN_BLOCK_COMPONENTS);
 registerLoadingComponents(DOMAIN_LOADING_COMPONENTS);
+
+/** The engine's registry, typed with this app's own components (for this app's dispatch entries). */
+export const BlockComponents = EngineBlockComponents as typeof EngineBlockComponents & typeof DOMAIN_BLOCK_COMPONENTS;
