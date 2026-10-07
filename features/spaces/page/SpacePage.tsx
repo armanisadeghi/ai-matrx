@@ -63,6 +63,7 @@ import { sendOnLeave, trackAccessToken } from "./leave-save";
 import { contentKey } from "./content-key";
 import { usePageReminders } from "../editor/reminders";
 import { markNewSource, useSyncedEdges } from "../state/synced-sources";
+import { setSuggestAuthor, setSuggestName, setSuggestPage } from "../editor/suggest";
 import { copyToClipboard } from "@/lib/clipboard/copy";
 
 type Editable = Pick<SpaceDoc, "title" | "icon" | "cover" | "settings" | "blocks">;
@@ -632,6 +633,13 @@ function SpacePageScreen({ spaceId }: { spaceId: string }) {
   // N2 — Remind on a date mention: this person's reminders follow the page's date mentions.
   usePageReminders(spaceId, doc?.title ?? "", doc?.blocks, userId ?? null, !!doc && !trashedNow);
   useSyncedEdges(spaceId, doc?.blocks, !!doc && !trashedNow && canEdit);
+  // N3: suggestions carry this person as their author; suggest mode is per page.
+  useEffect(() => {
+    setSuggestAuthor(userId ?? null);
+    if (userId && fullName) setSuggestName(userId, fullName);
+    setSuggestPage(spaceId);
+    return () => setSuggestPage(null);
+  }, [userId, fullName, spaceId]);
 
   if (doc === undefined) return <div className="spaces-page" aria-busy="true" />;
   if (doc === null) {
@@ -840,6 +848,7 @@ function SpacePageScreen({ spaceId }: { spaceId: string }) {
           <Star size={17} className={isFavorite ? "fill-[var(--spaces-star)] text-[var(--spaces-star)]" : undefined} />
         </button>
         <PageMenu
+          suggestPageId={canEdit ? doc.id : undefined}
           settings={doc.settings}
           onSettings={setSettings}
           onCopyLink={copyLink}
