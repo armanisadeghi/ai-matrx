@@ -45,6 +45,16 @@ Block document: a tree of `SpaceBlock` (`id`, `type`, `text: RichSpan[]`, `color
 
 ## Change log
 
+- 2026-10-07 — builder round 27: D1 a kept device copy is decided once the page is ready in any order (`page/useRestoreKept.ts`;
+  edit access used to answer after the one check, which marked the page done); until decided the page neither overwrites nor
+  saves over it; a copy equal to what is stored is never kept, and one equal to what is shown is cleared without a redraw;
+  someone's newer version offers Restore / Discard. Test `page/__tests__/restore-wiring.test.tsx` renders the hook with late
+  readiness. "/page" opens the sub-page with the caret in its title (`openToName`), the parent's edits sent first. D4 "/" results
+  ranked as Notion (`editor/slash-rank.ts`). D5 an emptied column leaves the layout (`editor/column-heal.ts`, local edits only).
+  D2 column and callout layout keys on the node view's own wrapper (`.react-renderer.node-columnList|node-column|node-callout`),
+  never on what React draws into it later; link rows hold one line before their titles; the sidebar foot holds its three
+  rows; a database block holds its kept height until its content grows back (`editor/database-host.tsx`). No `*.tmp.*` file
+  is tracked in the fence (`check:spaces-fence`, `features/spaces/.gitignore`).
 - 2026-10-07 — publish round 3 (lane spaces-publish-3): a published page now carries what round 2 left out. (1) Uploaded covers and
   icons: publish makes the page's cover/icon files (and included sub-pages') public through the server's change-visibility call
   (`publish/published-media.ts`, PATCH /files/{id}); the file records `metadata.spaces_published_by = {page: visibility before}` so
