@@ -32,7 +32,7 @@ const DatabaseBlockView = dynamic(() => import("../data/DatabaseBlock").then((m)
 });
 
 /** A database block's table owns its own presses and keys (`database-host.tsx`); the editor leaves them be. */
-const databaseOwnsItsEvents = createExtension({
+export const databaseOwnsItsEvents = createExtension({
   key: "spacesDatabaseOwnsItsEvents",
   prosemirrorPlugins: [new Plugin({ props: { handleDOMEvents: DATABASE_EVENT_CLAIMS } })],
 });
@@ -72,7 +72,7 @@ const databasePaintedGeometry = createExtension({
 
 type Data = { props?: Record<string, unknown> };
 
-function readData(raw: unknown): Record<string, unknown> {
+export function readData(raw: unknown): Record<string, unknown> {
   try {
     return ((JSON.parse(String(raw || "{}")) as Data).props ?? {}) as Record<string, unknown>;
   } catch {
@@ -315,7 +315,7 @@ class BlockBoundary extends Component<{ children: ReactNode }, { error: string |
 
 const dataProp = { data: { default: "{}" } } as const;
 
-function storedSpec(
+export function storedSpec(
   type: string,
   render: (p: Record<string, unknown>, ctx: { blockId: string; editor: never; update: (next: Record<string, unknown>) => void }) => React.ReactNode,
   extensions?: (ExtensionFactoryInstance | Extension)[],

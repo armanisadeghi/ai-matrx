@@ -44,6 +44,7 @@ import { makeBlockMenu, type BlockMenuActions } from "./BlockMenu";
 import { currentBlockId, duplicateBlocks, selectedOrCurrent } from "./block-actions";
 import { fromEngine, toEngine, type EngineBlock } from "./convert";
 import { PasteUrlMenu, pastedUrl, type PastedUrl } from "./PasteUrlMenu";
+import { SYNCED_CLIP } from "./synced-block";
 import { useRubberBand } from "./rubber-band";
 import { CalloutIconHost } from "./callout-block";
 import { dateChoices } from "./date-mention";
@@ -189,6 +190,16 @@ export function SpaceEditor({ spaceId, initialBlocks, editable, onChange, slash,
       // B12: a lone URL goes in as a link and the Link / Mention / Bookmark / Embed choice opens beside
       // it; anything else (Markdown, HTML, blocks) takes BlockNote's own conversion.
       pasteHandler: ({ event, editor: ed, defaultPasteHandler }) => {
+        // C18: "Copy and sync" put a synced block on the clipboard — paste a linked copy of it.
+        const clip = event.clipboardData?.getData("text/plain")?.trim().match(SYNCED_CLIP);
+        if (clip) {
+          const at = ed.getTextCursorPosition().block;
+          const block = { type: "synced", props: { data: JSON.stringify({ props: { sourceId: clip[1] } }) } } as never;
+          const empty = Array.isArray(at.content) && at.content.length === 0;
+          if (empty) ed.replaceBlocks([at], [block]);
+          else ed.insertBlocks([block], at, "after");
+          return true;
+        }
         const url = pastedUrl(event);
         const where = ed.getTextCursorPosition().block;
         if (!url || where.type === "codeBlock") return defaultPasteHandler();

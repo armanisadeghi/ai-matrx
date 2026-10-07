@@ -31,6 +31,8 @@ import {
   PieChart,
   Sigma,
   PanelTop,
+  RefreshCw,
+  MousePointerClick,
 } from "lucide-react";
 
 import type { PickedSource } from "../data/SourcePicker";
@@ -55,6 +57,8 @@ export interface SlashContext {
   newDatabase: (fullPage: boolean) => Promise<{ table: PickedSource; pageId?: string } | null>;
   /** "Database with AI" (mandate spaces.design_database): a NEW table designed from the person's words, with its views. */
   designDatabase?: () => Promise<{ table: PickedSource; views: SpaceDbView[] } | null>;
+  /** C18 "Synced block": a new synced source Space under this page (its id), or null. */
+  createSyncedSource?: () => Promise<string | null>;
 }
 
 function stored(type: string, props: Record<string, unknown>): SpacesPartialBlock {
@@ -214,6 +218,24 @@ export function slashItems(editor: SpacesEditor, ctx: SlashContext): DefaultReac
     { title: "Toggle heading 1", subtext: "Hide content inside a large heading.", aliases: ["toggleh1", "th1"], group: advanced, icon: <ChevronRight size={ICON} />, onItemClick: set({ type: "heading", props: { level: 1, isToggleable: true } }) },
     { title: "Toggle heading 2", subtext: "Hide content inside a medium heading.", aliases: ["toggleh2", "th2"], group: advanced, icon: <ChevronRight size={ICON} />, onItemClick: set({ type: "heading", props: { level: 2, isToggleable: true } }) },
     { title: "Toggle heading 3", subtext: "Hide content inside a small heading.", aliases: ["toggleh3", "th3"], group: advanced, icon: <ChevronRight size={ICON} />, onItemClick: set({ type: "heading", props: { level: 3, isToggleable: true } }) },
+    ...(ctx.createSyncedSource
+      ? [
+          {
+            title: "Synced block",
+            subtext: "Sync content across pages.",
+            aliases: ["synced", "sync", "synced block"],
+            group: advanced,
+            icon: <RefreshCw size={ICON} />,
+            onItemClick: () => {
+              const at = slashTarget(editor);
+              void ctx.createSyncedSource!().then((sourceId) => {
+                if (sourceId) insertAtSlash(editor, at, stored("synced", { sourceId }));
+              });
+            },
+          },
+        ]
+      : []),
+    { title: "Button", subtext: "Run actions with one click.", aliases: ["button", "action"], group: advanced, icon: <MousePointerClick size={ICON} />, onItemClick: set(stored("button", { label: "New button", actions: [] })) },
     { title: "Tabs", subtext: "Show content in named tabs.", aliases: ["tabs", "tab"], group: advanced, icon: <PanelTop size={ICON} />, onItemClick: set(tabsBlock()) },
     { title: "2 columns", subtext: "Create 2 columns of blocks.", aliases: ["columns", "col2"], group: advanced, icon: <Columns2 size={ICON} />, onItemClick: set(columns(2)) },
     { title: "3 columns", subtext: "Create 3 columns of blocks.", aliases: ["columns", "col3"], group: advanced, icon: <Columns3 size={ICON} />, onItemClick: set(columns(3)) },
