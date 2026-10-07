@@ -19,9 +19,7 @@ import {
   BarChart3,
   Calendar,
   ChartNoAxesColumn,
-  ChevronDown,
   Database,
-  FileText,
   GalleryHorizontalEnd,
   GanttChart,
   Kanban,
@@ -52,7 +50,7 @@ import { EntityDatabase } from "./EntityDatabase";
 import { useDatabaseDesigner } from "../ai/DatabaseDesigner";
 import { AutofillRows } from "./ai-autofill";
 import { designMarkdown } from "./designed-database";
-import { FieldList, MenuRow, SidePeek, ViewerSaveBar, ViewerSortButton, ViewTab, filtersDiffer, shownFilters, shownSorts, type FilterChoice, type SortChoice } from "./menu-parts";
+import { FieldList, MenuRow, SidePeek, ViewerSaveBar, ViewerSortButton, ViewTab, filtersDiffer, shownFilters, shownSorts, type FilterChoice, type SortChoice, NewButton } from "./menu-parts";
 import { ChartView, choicesOfField } from "./ChartView";
 import { NewPropertyPanel } from "./NewProperty";
 import { SpaceIcon } from "../page/SpaceIcon";
@@ -588,24 +586,6 @@ function FilterButton({
   );
 }
 
-function NewButton({ onNew }: { onNew: () => void }) {
-  return (
-    <div className="spaces-db-new">
-      <Button variant="quiet" onClick={onNew}>
-        New
-      </Button>
-      <Popover>
-        <PopoverTrigger asChild>
-          <Button variant="quiet" icon={<ChevronDown size={14} />} aria-label="Templates" />
-        </PopoverTrigger>
-        <PopoverContent surface="solid" align="end" width="sm" padding="xs">
-          <div className="px-2 py-1 type-secondary text-muted-foreground">Templates</div>
-          <MenuRow icon={<FileText size={15} />} label="Empty page" onClick={onNew} />
-        </PopoverContent>
-      </Popover>
-    </div>
-  );
-}
 
 const CHART_TYPES: Array<{ id: ChartSettings["type"]; label: string; icon: typeof PieChart }> = [
   { id: "bar", label: "Vertical bar", icon: ChartNoAxesColumn },

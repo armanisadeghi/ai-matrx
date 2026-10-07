@@ -16,7 +16,7 @@ import { EntityChartBlock, RecordsMount, TablePage, type ChartKind, type EntityC
 import type { RecordsConfig } from "@ai-matrx/records";
 import { useRecordsClient } from "@ai-matrx/records/react";
 import { ArrowDownUp, ArrowUpRight, Database, Kanban, PieChart, List, ListFilter, Maximize2, PanelRight, Plus, Search, SlidersHorizontal, Square, Table2, X } from "lucide-react";
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
 
 import { ErrorNotice } from "@/components/errors/ErrorNotice";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
@@ -28,7 +28,7 @@ import { whenOrgBootstrapResolved } from "@/lib/organizations/orgBootstrapGate";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { toast } from "@/lib/toast";
 
-import { FieldList, MenuRow, SidePeek, ViewerSaveBar, ViewerSortButton, ViewTab, filtersDiffer, shownFilters, shownSorts, type FilterChoice, type SortChoice } from "./menu-parts";
+import { FieldList, MenuRow, NewButton, SidePeek, ViewerSaveBar, ViewerSortButton, ViewTab, filtersDiffer, shownFilters, shownSorts, type FilterChoice, type SortChoice } from "./menu-parts";
 import { BUILT_IN_SOURCES, newViewId, type DatabaseBlockProps, type SpaceDbView, type SpaceViewLayout } from "./sources";
 
 /** The layouts a built-in source draws today. */
@@ -53,6 +53,8 @@ interface EntityState {
   total: number;
   loading: boolean;
   error: string | null;
+  /** The question (filter | sort | search) the rows held answer; differs from the one asked while a read runs. */
+  answered: string;
 }
 
 function sentence(e: unknown, fallback: string): string {
@@ -67,7 +69,7 @@ function sentence(e: unknown, fallback: string): string {
 function useEntityRows(token: string, view: SpaceDbView, search: string) {
   const client = useRecordsClient();
   const [tick, setTick] = useState(0);
-  const [state, setState] = useState<EntityState>({ label: null, columns: [], rows: [], total: 0, loading: true, error: null });
+  const [state, setState] = useState<EntityState>({ label: null, columns: [], rows: [], total: 0, loading: true, error: null, answered: "" });
   const where = JSON.stringify(view.filters ?? {});
   const sortKey = JSON.stringify(view.sorts?.[0] ?? null);
   // A read that never answers (a stalled session in a long-lived tab) must not leave blank skeleton
@@ -77,9 +79,9 @@ function useEntityRows(token: string, view: SpaceDbView, search: string) {
   const held = useRef(PAGE);
   const [loadingMore, setLoadingMore] = useState(false);
   const asked = useRef("");
+  const question = `${token}|${where}|${sortKey}|${search}`;
   useEffect(() => {
     // A new question (filter, sort, source) starts again at one page; a re-read keeps what is held.
-    const question = `${token}|${where}|${sortKey}|${search}`;
     if (asked.current !== question) held.current = PAGE;
     asked.current = question;
     let cancelled = false;
@@ -117,6 +119,7 @@ function useEntityRows(token: string, view: SpaceDbView, search: string) {
           total: Number(page.data.total ?? 0),
           loading: false,
           error: null,
+          answered: question,
         });
       },
       (thrown: unknown) => {
@@ -128,7 +131,7 @@ function useEntityRows(token: string, view: SpaceDbView, search: string) {
       cancelled = true;
       clearTimeout(stall);
     };
-  }, [client, token, where, sortKey, search, tick, stalls]);
+  }, [client, token, where, sortKey, search, tick, stalls, question]);
 
   const reload = () => {
     setStalls(0);
@@ -176,7 +179,9 @@ function useEntityRows(token: string, view: SpaceDbView, search: string) {
     setTick((t) => t + 1);
     return null;
   };
-  return { ...state, write, reload, loadMore, hasMore, loadingMore };
+  // The rows held stay on screen (dimmed) while a new question is read, never a blank or a skeleton.
+  const pending = !state.error && state.answered !== "" && state.answered !== question;
+  return { ...state, pending, write, reload, loadMore, hasMore, loadingMore };
 }
 
 type Entity = ReturnType<typeof useEntityRows>;
@@ -299,7 +304,7 @@ function EntityFrame({ token, props, raw, onChange, editable }: EntityDatabasePr
   };
   const sourceName = props.title || entity.label || known || token;
 
-  const body = <EntityBody token={token} entity={entity} view={shown} onOpen={setOpen} search={asked} />;
+  const body = <EntityBody token={token} entity={entity} view={shown} onOpen={setOpen} search={asked} onNew={editable ? () => void addRow() : undefined} />;
 
   return (
     <div className="spaces-db-frame" data-layout={active.layout} data-source="entity">
@@ -391,11 +396,7 @@ function EntityFrame({ token, props, raw, onChange, editable }: EntityDatabasePr
           />
           <Button variant="quiet" icon={<Maximize2 size={15} strokeWidth={1.8} />} aria-label="Open as full page" title="Open as full page" onClick={() => setExpanded(true)} />
           <EntitySettings view={active} columns={entity.columns} props={props} onView={saveView} onBlock={save} editable={editable} />
-          {editable ? (
-            <Button variant="primary" onClick={() => void addRow()}>
-              New
-            </Button>
-          ) : null}
+          {editable ? <NewButton onNew={() => void addRow()} /> : null}
         </div>
       </div>
       {body}
@@ -412,7 +413,15 @@ function EntityFrame({ token, props, raw, onChange, editable }: EntityDatabasePr
   );
 }
 
-function EntityBody({ token, entity, view, onOpen, search }: { token: string; entity: Entity; view: SpaceDbView; onOpen: (id: string) => void; search: string }) {
+function EntityBody({ token, entity, view, onOpen, search, onNew }: { token: string; entity: Entity; view: SpaceDbView; onOpen: (id: string) => void; search: string; onNew?: () => void }) {
+  // While a search is on, the block keeps the height it had before it (Notion's table shrinks; ours holds
+  // the space so the page below never jumps, CLS) and gives it back when the search is cleared.
+  const bodyRef = useRef<HTMLDivElement>(null);
+  const [heldHeight, setHeldHeight] = useState<number | null>(null);
+  useLayoutEffect(() => {
+    if (!search) setHeldHeight(null);
+    else if (heldHeight === null && bodyRef.current) setHeldHeight(bodyRef.current.offsetHeight);
+  }, [search, heldHeight]);
   const hidden = new Set(view.hiddenFields ?? []);
   const shown = entity.columns.filter((c) => !hidden.has(c.api_name));
   const title = titleColumn(entity.columns);
@@ -479,9 +488,11 @@ function EntityBody({ token, entity, view, onOpen, search }: { token: string; en
     );
   }
   return (
-    <div className="spaces-db-body">
+    <div ref={bodyRef} className="spaces-db-body spaces-entity-body" data-pending={entity.pending || undefined} data-held={heldHeight !== null || undefined} style={heldHeight !== null ? { minHeight: heldHeight } : undefined}>
       {(
         <MatrxDataTable<EntityRow>
+          // A new answer is new rows (never the old rows sliding into new places — a layout shift).
+          key={entity.answered}
           data={entity.rows}
           columns={columns}
           getRowId={(row) => String(row.id)}
@@ -514,13 +525,21 @@ function EntityBody({ token, entity, view, onOpen, search }: { token: string; en
           emptyState={{ title: "No rows" } as never}
         />
       )}
+      <div className="spaces-entity-foot">
+      {onNew ? (
+        <button type="button" className="spaces-db-newrow" onClick={onNew}>
+          <Plus size={16} strokeWidth={1.8} aria-hidden />
+          New page
+        </button>
+      ) : null}
       <div className="spaces-entity-count type-secondary text-muted-foreground">
-        {entity.loading && !entity.rows.length ? "" : `${entity.total.toLocaleString()} ${entity.total === 1 ? "row" : "rows"}`}
+        <span className="spaces-entity-total">{entity.loading && !entity.rows.length ? "" : `${entity.total.toLocaleString()} ${entity.total === 1 ? "row" : "rows"}`}</span>
         {entity.hasMore ? (
           <Button variant="quiet" disabled={entity.loadingMore} onClick={() => void entity.loadMore()}>
             {entity.loadingMore ? "Loading…" : "Load more"}
           </Button>
         ) : null}
+      </div>
       </div>
     </div>
   );

@@ -5,7 +5,7 @@
 
 import { Popover, PopoverContent, PopoverTrigger } from "@ai-matrx/design-system";
 import { Button, Input } from "@ai-matrx/design-system/controls";
-import { Copy, Trash2, X } from "lucide-react";
+import { ChevronDown, Copy, FileText, Trash2, X } from "lucide-react";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 
 import type { SpaceDbView } from "./sources";
@@ -242,5 +242,25 @@ export function SidePeek({ onClose, children }: { onClose: () => void; children:
       </div>
       <div className="spaces-peek-body">{children}</div>
     </aside>
+  );
+}
+
+/** Notion's blue "New" in a database toolbar: a new row in place, and the template chevron. */
+export function NewButton({ onNew }: { onNew: () => void }) {
+  return (
+    <div className="spaces-db-new">
+      <Button variant="quiet" onClick={onNew}>
+        New
+      </Button>
+      <Popover>
+        <PopoverTrigger asChild>
+          <Button variant="quiet" icon={<ChevronDown size={14} />} aria-label="Templates" />
+        </PopoverTrigger>
+        <PopoverContent surface="solid" align="end" width="sm" padding="xs">
+          <div className="px-2 py-1 type-secondary text-muted-foreground">Templates</div>
+          <MenuRow icon={<FileText size={15} />} label="Empty page" onClick={onNew} />
+        </PopoverContent>
+      </Popover>
+    </div>
   );
 }
