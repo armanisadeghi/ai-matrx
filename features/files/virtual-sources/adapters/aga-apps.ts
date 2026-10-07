@@ -15,6 +15,7 @@
 
 "use client";
 
+import { findPatchResidue } from "@/features/code-editor/utils/patchResidue";
 import { Workflow } from "lucide-react";
 import { registerVirtualSource } from "@/features/files/virtual-sources/registry";
 import { makeCodeInlinePreview } from "./CodeInlinePreview";
@@ -152,6 +153,14 @@ const agaAppsAdapter: VirtualSourceAdapter = {
   },
 
   async write(supabase, _userId, args: WriteArgs) {
+    // Patch markers are never code: refuse the save before a mis-parsed SEARCH/REPLACE block leaves
+    // an Applet that cannot compile (feedback 02a11ba3; the database refuses it too).
+    const residue = findPatchResidue(args.content);
+    if (residue) {
+      throw new Error(
+        `This code still contains a patch marker ("${residue.text}", line ${residue.line}), so it was not saved. Remove it and save again.`,
+      );
+    }
     type Row = Pick<AgaAppRow, "id" | "version" | "files" | "entry" | "updated_at">;
     const columns = "id,version,files,entry,updated_at";
     const fetchCurrent = () =>
