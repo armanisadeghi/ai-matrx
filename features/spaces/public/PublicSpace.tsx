@@ -5,8 +5,8 @@
 // Notion's public page: the same blocks through the same editor, read-only — no block handles, no "/" menu,
 // no New row, no comments. Top bar: the breadcrumb of parents that are on the web too, and Duplicate when
 // the owner allows it (it runs inside the app, /spaces/duplicate: signed out signs in first). Page links open only pages that are on the web;
-// any other reads "Not published". Rows of a database block come from the reader's own access (the table's
-// own "Published to the web"), never from this page's.
+// any other reads "Not published". Rows of a database block are the ones this page published with it
+// (`content.space_public_view` → `databases`: that block's own views, as the publisher sees them), read-only.
 
 import { Button } from "@ai-matrx/design-system/controls";
 import { Copy, FileText } from "lucide-react";
@@ -22,6 +22,7 @@ import type {
   SpaceMedia,
   SpaceSummary,
 } from "../contract";
+import { PublishedRowsProvider } from "../data/published-rows";
 import { SpaceEditor } from "../editor/SpaceEditor";
 import { Cover } from "../page/Cover";
 import { SpaceIcon } from "../page/SpaceIcon";
@@ -237,6 +238,7 @@ export function PublicSpace({ view }: { view: PublicSpaceView }) {
                         {view.title || "Untitled"}
                       </h1>
                     </div>
+                    <PublishedRowsProvider databases={view.databases}>
                     <SpaceEditor
                       spaceId={view.id}
                       initialBlocks={blocks}
@@ -254,6 +256,7 @@ export function PublicSpace({ view }: { view: PublicSpaceView }) {
                         askAi: () => {},
                       }}
                     />
+                    </PublishedRowsProvider>
                     <div className="spaces-page-end" aria-hidden />
                   </div>
                   <MadeWithAiMatrx />

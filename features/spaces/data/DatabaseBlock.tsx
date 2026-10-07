@@ -47,6 +47,7 @@ import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { toast } from "@/lib/toast";
 
 import { DataMount } from "./DataMount";
+import { usePublishedRows } from "./published-rows";
 import { EntityDatabase } from "./EntityDatabase";
 import { useDatabaseDesigner } from "../ai/DatabaseDesigner";
 import { AutofillRows } from "./ai-autofill";
@@ -135,6 +136,8 @@ function DatabaseFrame({
 }) {
   const client = useRecordsClient();
   const table = useTable(tableId);
+  // On a page published to the web the rows are the page's own read-only copy: no automations, charts count rows.
+  const published = usePublishedRows() !== null;
   const fields = useFields(tableId).data ?? [];
   const sourceName = table.data?.name ?? props.title ?? "Untitled";
   const views: SpaceDbView[] = props.views?.length ? props.views : [{ id: "view-all", name: "All", layout: "grid" }];
@@ -181,6 +184,7 @@ function DatabaseFrame({
       onOpenRecord={setOpen}
       editable={editable}
       sample={sample}
+      overRows={sample || published}
       sortOverride={sortOverride}
       search={search}
     />
@@ -290,7 +294,7 @@ function DatabaseFrame({
               onSave={(sorts) => saveView({ sorts })}
               icon={<ArrowDownUp size={15} strokeWidth={1.8} />}
             />
-            <AutomationsButton tableId={tableId} sample={sample} />
+            {published ? null : <AutomationsButton tableId={tableId} sample={sample} />}
             {/* Notion's magnifier sits in this icon row and opens in place (records-ui's own box is hidden by spaces.css). */}
             {searchOpen[active.id] || search.value ? (
               <div className="spaces-db-search">
@@ -329,7 +333,7 @@ function DatabaseFrame({
             )}
             <Button variant="quiet" icon={<Maximize2 size={15} strokeWidth={1.8} />} aria-label="Open as full page" title="Open as full page" onClick={() => setExpanded(true)} />
             <ViewSettings tableId={tableId} sample={sample} view={active} fields={fields} props={props} onView={saveView} onBlock={save} editable={editable} />
-            <NewButton onNew={addRow} />
+            {published ? null : <NewButton onNew={addRow} />}
           </div>
         ) : null}
       </div>
@@ -347,7 +351,7 @@ function DatabaseFrame({
       <Dialog open={expanded} onOpenChange={setExpanded}>
         <DialogContent size="2xl" height="tall" className="spaces-db-expanded overflow-auto">
           <DialogTitle>{props.title || sourceName}</DialogTitle>
-          <DatabaseBody tableId={tableId} view={shown} fields={fields} onOpenRecord={setOpen} editable={editable} sample={sample} sortOverride={sortOverride} search={search} />
+          <DatabaseBody tableId={tableId} view={shown} fields={fields} onOpenRecord={setOpen} editable={editable} sample={sample} overRows={sample || published} sortOverride={sortOverride} search={search} />
         </DialogContent>
       </Dialog>
     </div>
@@ -394,6 +398,7 @@ function DatabaseBody({
   onOpenRecord,
   editable,
   sample,
+  overRows,
   sortOverride,
   search,
 }: {
@@ -403,6 +408,8 @@ function DatabaseBody({
   onOpenRecord: (id: string) => void;
   editable: boolean;
   sample: boolean;
+  /** The store has no aggregate door (the sample, a published page): charts count read rows. */
+  overRows: boolean;
   sortOverride: { field: string; direction: "asc" | "desc" } | null;
   search: { value: string; onChange: (term: string) => void };
 }) {
@@ -410,7 +417,7 @@ function DatabaseBody({
     const settings = { ...DEFAULT_CHART, ...view.chart };
     // The chart counts what its view shows: the view's saved filters plus the viewer's unsaved ones (`shown`).
     // and its sort when that sort is on the grouped field (data/ChartView.tsx orderPoints).
-    return <ChartView tableId={tableId} settings={settings} title={view.name} overRows={sample} filter={view.filters ?? {}} sorts={view.sorts ?? []} />;
+    return <ChartView tableId={tableId} settings={settings} title={view.name} overRows={overRows} filter={view.filters ?? {}} sorts={view.sorts ?? []} />;
   }
   if ((view.layout as Layout) === "dashboard") return <DashboardCanvas tableId={tableId} />;
   const needsGroup = view.layout === "kanban" && !view.groupField;

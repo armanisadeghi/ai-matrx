@@ -4,6 +4,7 @@
 // is not on the web answers null from the database exactly like a page that never existed.
 
 import type { SpaceBlock, SpaceDoc, SpaceMedia } from "../contract";
+import { readPublishedDatabases, type PublishedDatabase } from "../data/published-databases";
 import { COVER_PHOTOS, GALLERY_PREFIX } from "../page/gallery";
 
 export interface PublicPageRef {
@@ -30,6 +31,8 @@ export interface PublicSpaceView extends PublicPageRef {
   allowDuplicate: boolean;
   includeSubPages: boolean;
   indexed: boolean;
+  /** Block id → the rows that database block publishes with the page (its own views, read by the door). */
+  databases: Record<string, PublishedDatabase>;
 }
 
 function str(v: unknown): string | null {
@@ -76,6 +79,7 @@ export function readPublicView(raw: unknown): PublicSpaceView | null {
     allowDuplicate: r.allow_duplicate === true,
     includeSubPages: r.include_sub_pages !== false,
     indexed: r.indexed === true,
+    databases: readPublishedDatabases(r.databases),
   };
 }
 

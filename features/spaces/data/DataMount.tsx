@@ -13,6 +13,7 @@ import type { ReactNode } from "react";
 import { recordsUiHostFor, useAppRecordsConfig, useRecordsDataSource, useRecordsUiPorts } from "@/features/data-tables/records-ui-host/recordsUiHost";
 import { useObjectOrganization } from "@/features/unified-data/objectOrganization";
 
+import { usePublishedRows } from "./published-rows";
 import { agencySample } from "./sources";
 
 /**
@@ -67,7 +68,18 @@ export function DataMount({
   children: ReactNode;
   held: (line: string, retry?: () => void) => ReactNode;
 }) {
+  const published = usePublishedRows();
   if (sample) return <SampleMount>{children}</SampleMount>;
+  // A page on the web: the rows the page itself published (content.space_public_view), never a live read.
+  if (published) {
+    const config = published.get(tableId);
+    if (!config) return <>{held("This database isn’t published with this page.")}</>;
+    return (
+      <RecordsMount config={config} letTheStoreDecideRights>
+        {children}
+      </RecordsMount>
+    );
+  }
   return (
     <LiveMount tableId={tableId} held={held}>
       {children}
