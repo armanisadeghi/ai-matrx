@@ -19,7 +19,12 @@ import type { ReactNode } from "react";
 import { useDraggable, useDroppable } from "@dnd-kit/core";
 import { ChevronRight } from "lucide-react";
 
-import { Checkbox, HoverCard, HoverCardContent, HoverCardTrigger } from "@ai-matrx/design-system";
+import {
+  Checkbox,
+  HoverCard,
+  HoverCardContent,
+  HoverCardTrigger,
+} from "@ai-matrx/design-system";
 import { cn } from "@/lib/utils";
 
 import { TopicTreeRenameInput } from "./TopicTreeRenameInput";
@@ -107,7 +112,9 @@ export function TopicTreeRow({
       onDoubleClick={onRowDoubleClick}
       style={{ height, paddingLeft: indent + 4 }}
       className={cn(
-        "group relative flex w-full cursor-default select-none items-center gap-1.5 pr-2 type-secondary",
+        // Body size (13px), the row text Finder and VS Code use — a tree is
+        // primary content, never secondary text.
+        "group relative flex w-full cursor-default select-none items-center gap-1.5 pr-2 type-body",
         // Selection: a primary wash plus a left rail, the same treatment the
         // plan tree and the file tree use — unmistakable in both themes without
         // inventing a colour.
@@ -147,7 +154,10 @@ export function TopicTreeRow({
           className="flex h-4 w-4 shrink-0 items-center justify-center rounded text-muted-foreground hover:text-foreground"
         >
           <ChevronRight
-            className={cn("h-3.5 w-3.5 transition-transform", row.expanded && "rotate-90")}
+            className={cn(
+              "h-3.5 w-3.5 transition-transform",
+              row.expanded && "rotate-90",
+            )}
           />
         </button>
       ) : (
@@ -180,6 +190,14 @@ export function TopicTreeRow({
         // chevron and the checkbox must stay clickable at any drag distance.
         className="flex min-w-0 flex-1 items-center gap-1.5"
       >
+        {row.icon ? (
+          <span
+            aria-hidden="true"
+            className="flex h-4 w-4 shrink-0 items-center justify-center"
+          >
+            {row.icon}
+          </span>
+        ) : null}
         {renaming ? (
           <TopicTreeRenameInput
             value={row.label}
@@ -203,9 +221,17 @@ export function TopicTreeRow({
         )}
 
         {row.trailing ? (
-          <span className="flex shrink-0 items-center gap-1">{row.trailing}</span>
+          <span className="flex shrink-0 items-center gap-1">
+            {row.trailing}
+          </span>
         ) : null}
       </span>
+
+      {row.meta ? (
+        <span className="flex shrink-0 items-center text-muted-foreground">
+          {row.meta}
+        </span>
+      ) : null}
 
       {/* Actions are visible wherever there is no hover to reveal them (touch):
           the house pattern hides them until hover only on a device that CAN hover. */}

@@ -26,6 +26,17 @@ export interface TopicTreeRow {
    * a renderer must say "not loaded", never print 0.
    */
   counts?: { pages?: number; planned?: number; keywords?: number };
+  /**
+   * Type icon between the disclosure slot and the label (folder vs file, as in
+   * Finder / VS Code). Hosts with mixed row kinds pass one on EVERY row so
+   * labels at the same depth stay on one vertical line.
+   */
+  icon?: ReactNode;
+  /**
+   * Always-visible right-hand column (Finder's "Kind", a size, a date). Give it
+   * a fixed width so the column lines up row to row.
+   */
+  meta?: ReactNode;
   /** Slot rendered after the label (marks, dots, chips). */
   trailing?: ReactNode;
   /** Slot rendered at the far right (row actions). */
