@@ -20,7 +20,10 @@ export function AgentBuilderDesktop({ agentId }: AgentBuilderDesktopProps) {
         </AgentBuilderReadOnlyFrame>
       </div>
       <div className="flex-1 min-w-0 h-full overflow-hidden flex justify-center">
-        <div className="w-full max-w-3xl h-full pt-12">
+        {/* No top padding: the conversation column's scroll area already
+            clears the shell header itself. Bottom padding matches the left
+            panel's footer gap (the column only pads when width-constrained). */}
+        <div className="w-full max-w-3xl h-full pb-2">
           <Suspense fallback={<RightPanelSkeleton />}>
             <AgentBuilderRightPanel agentId={agentId} />
           </Suspense>

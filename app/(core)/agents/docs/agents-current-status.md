@@ -73,7 +73,7 @@ All nested pages under `[id]` (view, build, run, versions) share this header and
 2. **`AgentBuilderDesktop`** (`AgentBuilderDesktop.tsx`, server)
    - Two columns, full height; left column top padding `var(--shell-header-h)`.
    - **Left:** `AgentBuilderLeftPanel`.
-   - **Right:** `Suspense` + `AgentBuilderRightPanel` with `RightPanelSkeleton` fallback; inner `max-w-3xl` column with `pt-12`.
+   - **Right:** `Suspense` + `AgentBuilderRightPanel` with `RightPanelSkeleton` fallback; inner `max-w-3xl` column with `pb-2` and no top padding (the conversation column clears the shell header itself).
 
 ---
 
