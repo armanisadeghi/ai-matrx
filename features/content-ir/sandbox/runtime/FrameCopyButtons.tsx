@@ -1,5 +1,6 @@
 /** Frame-safe CopyButtons seam: local copy and download only, no host runtime. */
 import { useState, type MouseEvent } from "react";
+import { copyText } from "@ai-matrx/kit/clipboard";
 import { cn } from "@/lib/utils";
 import { serializeFrameAgentPayload } from "./FrameAgentPayload";
 import type { MatrxCopyMenuProps } from "@ai-matrx/alchemy/react/workspace";
@@ -46,7 +47,7 @@ export function CopyButtons({
   const [status, setStatus] = useState<"idle" | "copied" | "error">("idle");
   const action = async (getText: () => Promise<string>) => {
     try {
-      await navigator.clipboard.writeText(await getText());
+      if (!(await copyText(await getText()))) throw new Error("Could not copy");
       setStatus("copied");
       setOpen(false);
     } catch {

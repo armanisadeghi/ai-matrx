@@ -27,7 +27,7 @@
  */
 
 import { Cpu, Copy, RefreshCw, ExternalLink } from "lucide-react";
-import { toast } from "../../host/notify";
+import { copyToHostClipboard } from "../../host/clipboard";
 import type {
   ContextMenuEntityRef,
   ContextMenuExtraSection,
@@ -79,8 +79,7 @@ export function buildAgentMenuSection({
         label: "Copy agent ID",
         icon: Copy,
         onSelect: () => {
-          void navigator.clipboard.writeText(agentId);
-          toast.success("Agent ID copied");
+          void copyToHostClipboard(agentId, "Agent ID copied");
         },
       },
       {
@@ -90,8 +89,7 @@ export function buildAgentMenuSection({
         icon: Copy,
         disabled: !agentName,
         onSelect: () => {
-          void navigator.clipboard.writeText(agentName ?? "");
-          toast.success("Agent name copied");
+          void copyToHostClipboard(agentName ?? "", "Agent name copied");
         },
       },
       { kind: "separator", id: "agent-sep-1" },

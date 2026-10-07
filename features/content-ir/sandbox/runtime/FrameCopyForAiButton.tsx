@@ -9,6 +9,7 @@
  * that disclosure outside the sandbox.
  */
 import { createElement, useState } from "react";
+import { copyText } from "@ai-matrx/kit/clipboard";
 import { cn } from "@/lib/utils";
 import {
   serializeFrameAgentPayload,
@@ -49,10 +50,10 @@ export function CopyForAiButton({
                 FrameAgentPayload | string | Promise<FrameAgentPayload | string>
             )()
           : agent;
-      await navigator.clipboard.writeText(
+      const copied = await copyText(
         typeof value === "string" ? value : serializeFrameAgentPayload(value),
       );
-      setStatus("copied");
+      setStatus(copied ? "copied" : "error");
     } catch {
       setStatus("error");
     }

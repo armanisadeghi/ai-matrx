@@ -50,6 +50,7 @@ import { updateMessageRecord } from "../messages/messages.slice";
 import { saveAnswerEdit } from "./save-answer-edit.thunk";
 import { refetchSingleMessage } from "./refetch-single-message.thunk";
 import { toast } from "../../../../host/notify";
+import { copyToHostClipboard } from "../../../../host/clipboard";
 import { buildContentBlocksForSave } from "../../../../cx-chat/utils/buildContentBlocksForSave";
 import { stripCitationMarkers } from "../messages/message-citations";
 import { extractFlatText } from "../messages/messages.selectors";
@@ -260,7 +261,7 @@ async function persistInlineEdit(
     action: {
       label: "Copy my edit",
       onClick: () => {
-        void navigator.clipboard?.writeText(draft);
+        void copyToHostClipboard(draft);
       },
     },
   });
