@@ -10,8 +10,7 @@
 // anyone who can edit the page (the owner or an editor). Suggest mode is this person's own view switch on
 // this page (kept on this device), never a permission.
 
-import { createExtension } from "@blocknote/core";
-import { createReactStyleSpec } from "@blocknote/react";
+import { createExtension, createStyleSpec } from "@blocknote/core";
 import { Plugin, PluginKey, TextSelection, type EditorState, type Transaction } from "@tiptap/pm/state";
 import { ReplaceStep } from "@tiptap/pm/transform";
 import type { Mark, MarkType, Node as PmNode, Slice } from "@tiptap/pm/model";
@@ -75,13 +74,22 @@ export const readSuggestion = (raw: unknown): SpaceSuggestion | null => {
 };
 
 // ── the style (a ProseMirror mark named "suggestion", attr stringValue = the JSON) ────────────────────
-export const SuggestionStyle = createReactStyleSpec(
+// A plain DOM mark (not a React mark view): a React-drawn mark re-mounts as text is typed into it, which loses the caret.
+export const SuggestionStyle = createStyleSpec(
   { type: "suggestion", propSchema: "string" },
   {
-    render: ({ value, contentRef }) => {
+    render: (value) => {
       const s = readSuggestion(value);
-      return <span ref={contentRef} className="spaces-suggestion" data-suggestion-kind={s?.kind} data-suggestion-id={s?.id} data-suggestion={value ?? ""} />;
+      const dom = document.createElement("span");
+      dom.className = "spaces-suggestion";
+      if (s) {
+        dom.dataset.suggestionKind = s.kind;
+        dom.dataset.suggestionId = s.id;
+      }
+      dom.dataset.suggestion = value ?? "";
+      return { dom, contentDOM: dom };
     },
+    parse: (el) => el.getAttribute("data-suggestion") || undefined,
   },
 );
 
@@ -200,12 +208,9 @@ export const suggestMode = createExtension(() => ({
         if (!ranges.length) return null;
         const out = newState.tr;
         for (const [lo, hi] of ranges) {
-          let textOnly = true;
-          newState.doc.nodesBetween(lo, hi, (n) => {
-            if (n.isBlock && !n.isTextblock) textOnly = false;
-            return true;
-          });
-          if (!textOnly) continue;
+          const $lo = newState.doc.resolve(lo);
+          // Text inside one block only; new blocks (Enter) pass unmarked.
+          if (!$lo.parent.isTextblock || !$lo.sameParent(newState.doc.resolve(hi))) continue;
           const keep = myInsertBefore(newState, lo, type, me);
           out.removeMark(lo, hi, type);
           out.addMark(lo, hi, keep ?? markFor(type, "insert", me));
