@@ -28,7 +28,7 @@ async function main(): Promise<number> {
   let pairs: [string, string][];
   try {
     const res = await client.query<{ feature: string; key: string }>(
-      `select feature, key from platform.feature_knob order by feature, key`,
+      `select feature, key from platform.feature_knob where archived_at is null order by feature, key`,
     );
     pairs = res.rows.map((r) => [r.feature, r.key]);
   } finally {

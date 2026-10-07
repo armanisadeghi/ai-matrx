@@ -54,6 +54,7 @@ const ENUM_SQL = `
   select feature, key, allowed_values, default_value
     from platform.feature_knob
    where value_type = 'enum'
+     and archived_at is null
      and allowed_values is not null
    order by feature, key`;
 
