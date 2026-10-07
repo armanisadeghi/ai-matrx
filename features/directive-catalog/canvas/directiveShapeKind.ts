@@ -43,8 +43,12 @@ function asJson(value: unknown): CanvasJson {
   return null;
 }
 
+/** `schema` is the noun's item schema for the verb, loaded by the caller from
+ * `GET /directives/catalog/{noun}` (the summary carries none); a Custom Action
+ * carries its own. */
 export function directiveShapeOpenInput(
   selection: DirectiveShapeSelection,
+  schema?: unknown,
 ): CanvasOpenInput {
   const data: DirectiveShapeData =
     selection.kind === "custom_action"
@@ -56,7 +60,7 @@ export function directiveShapeOpenInput(
       : {
           title: `${selection.verb}:${selection.noun.noun}`,
           subtitle: `${selection.noun.label || selection.noun.noun} · ${selection.noun.table}`,
-          schema: asJson(selection.noun.schemas?.[selection.verb]),
+          schema: asJson(schema ?? null),
         };
   const key =
     selection.kind === "custom_action"

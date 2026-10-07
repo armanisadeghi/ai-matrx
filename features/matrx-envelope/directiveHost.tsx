@@ -68,6 +68,7 @@ import {
 } from "@/features/directive-catalog/service";
 import type { DirectiveShellState } from "@/features/directive-catalog/types";
 import { captureError } from "@/lib/diagnostics/errorCaptureStore";
+import { provideDirectiveHost } from "@/features/content-ir/host/directiveHostSlot";
 import { invalidateReferenceLabel } from "@/features/matrx-envelope/referenceResolvers";
 import { BackendApiError } from "@/lib/api/errors";
 import { getStoreSingleton } from "@/lib/redux/store-singleton";
@@ -488,3 +489,8 @@ export const matrxDirectiveHost: DirectiveHost = {
       hint: "The emitter minted a slug outside the directive_v<version>_<class>_<noun> grammar.",
     }),
 };
+
+// The content-ir host reads this through a leaf slot, never by importing this
+// module — that import closed a 13-module static cycle (G13). Guard:
+// `pnpm check:host-cycles`.
+provideDirectiveHost(matrxDirectiveHost);

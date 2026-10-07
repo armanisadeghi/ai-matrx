@@ -19,6 +19,12 @@ export interface PastedUrl {
 
 const URL_ONLY = /^https?:\/\/\S+$/i;
 
+/** Where the choice menu opens: just under the pasted link (the caret's box). Not a selection popup. */
+export function pastedAnchor(): { left: number; top: number } {
+  const rect = window.getSelection()?.getRangeAt(0)?.getBoundingClientRect();
+  return { left: rect?.left ?? 0, top: (rect?.bottom ?? 0) + 6 };
+}
+
 /** A clipboard holding one URL and nothing else (an HTML copy of a lone link counts). */
 export function pastedUrl(event: ClipboardEvent): string | null {
   const text = event.clipboardData?.getData("text/plain").trim() ?? "";

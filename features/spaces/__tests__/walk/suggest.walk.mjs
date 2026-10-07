@@ -31,8 +31,19 @@ await act(page, async () => {
   await firstLine().click();
   await page.keyboard.press("End");
   await page.keyboard.type(" added", { delay: 40 });
-  await page.keyboard.press("Home");
-  for (let i = 0; i < 8; i++) await page.keyboard.press("Shift+ArrowRight");
+  // Select the word "Original" (the first 8 characters of the line) and delete it.
+  await page.evaluate(() => {
+    const line = document.querySelector(".bn-editor .bn-inline-content");
+    const walker = document.createTreeWalker(line, NodeFilter.SHOW_TEXT);
+    const text = walker.nextNode();
+    const r = document.createRange();
+    r.setStart(text, 0);
+    r.setEnd(text, 8);
+    const sel = window.getSelection();
+    sel.removeAllRanges();
+    sel.addRange(r);
+  });
+  await page.waitForTimeout(300);
   await page.keyboard.press("Backspace");
   await page.waitForTimeout(3500);
 });
@@ -42,7 +53,7 @@ check("typing in suggest mode is an insert suggestion", (await ins.allInnerTexts
 check("deleting in suggest mode is a delete suggestion (text kept)", (await del.allInnerTexts()).join("") === "Original", { del: await del.allInnerTexts(), line: await firstLine().innerText() });
 await page.screenshot({ path: `${SHOT}/suggest-made.png` });
 await page.locator('.spaces-edited[data-state="saved"]').waitFor({ timeout: 30_000 }).catch(() => {});
-await page.reload({ waitUntil: "domcontentloaded" });
+await page.reload({ waitUntil: "domcontentloaded", timeout: 120_000 });
 await body().waitFor({ timeout: 90_000 });
 await page.waitForTimeout(4000);
 check("suggestions are kept after a reload", (await ins.count()) > 0 && (await del.count()) > 0);

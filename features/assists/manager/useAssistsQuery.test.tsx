@@ -1,5 +1,5 @@
 /** @jest-environment jsdom */
-import { act } from "react";
+import { act, useEffect } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import type { MatrxDataTableQueryState } from "@ai-matrx/design-system/data-table/types";
 import { useAssistsQuery, type AssistsManagerApi } from "./useAssistsQuery";
@@ -24,7 +24,11 @@ function deferred<T>() {
 let current: AssistsManagerApi;
 const options = { statuses: ["pending" as const], includeSnoozed: false, starredOnly: false, unseenOnly: false, urgency: null };
 const initialQuery: MatrxDataTableQueryState = { search: "", columnFilters: {}, sort: { id: "created_at", direction: "desc" }, page: 1, pageSize: 25 };
-function Probe({ query }: { query: MatrxDataTableQueryState }) { current = useAssistsQuery(query, options); return null; }
+function Probe({ query }: { query: MatrxDataTableQueryState }) {
+  const result = useAssistsQuery(query, options);
+  useEffect(() => { current = result; }, [result]);
+  return null;
+}
 
 describe("current-query assists availability", () => {
   let root: Root;

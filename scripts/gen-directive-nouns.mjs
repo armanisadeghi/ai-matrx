@@ -49,9 +49,15 @@ const aliases = catalog.aliases ?? {};
  * catalog's word. Guard: reference-picker/__tests__/a-type-names-its-group-once.
  */
 function familyOf(n) {
-  // A legacy wire noun is the record type it aliases (`document` → `udt_document`).
+  // A legacy wire noun is the record type it aliases — but a REAL record type
+  // never reads as an alias of its own name: the catalog lists `document`
+  // (content.document) AND aliases `document` → `udt_document` (G11A, 2026-10-07).
   const alias = aliases[n.noun];
-  const token = alias && isEntityTypeToken(alias) ? alias : n.noun;
+  const token = isEntityTypeToken(n.noun)
+    ? n.noun
+    : alias && isEntityTypeToken(alias)
+      ? alias
+      : n.noun;
   if (isEntityTypeToken(token)) return referenceTypeGroup(token);
   return (n.family ?? "").trim();
 }
@@ -147,7 +153,9 @@ const enumFields = {};
 for (const n of catalog.nouns) {
   const fields = new Set();
   for (const cls of ["create", "update"]) {
-    const props = n.schemas?.[cls]?.properties ?? {};
+    // Per-noun schemas live under the manifest's `noun_schemas` map (the
+    // served summary carries none since lane G12, 2026-10-07).
+    const props = catalog.noun_schemas?.[n.noun]?.[cls]?.properties ?? {};
     for (const [key, node] of Object.entries(props)) {
       if (enumOf(node)) fields.add(key);
     }

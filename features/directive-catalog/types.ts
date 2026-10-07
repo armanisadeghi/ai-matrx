@@ -13,6 +13,8 @@ import type { components } from "@ai-matrx/agents/generated/api-types";
 /** OpenAPI schemas — source of truth */
 export type NounDirectives = components["schemas"]["NounDirectives"];
 export type DirectiveCatalog = components["schemas"]["DirectiveCatalog"];
+/** ONE noun's write schemas (`GET /directives/catalog/{noun}`); the summary carries none. */
+export type DirectiveNounSchemas = components["schemas"]["DirectiveNounSchemas"];
 export type DirectiveReceipt = components["schemas"]["DirectiveReceipt"];
 export type DirectiveApplyResult =
   components["schemas"]["DirectiveApplyResult"];
@@ -93,6 +95,20 @@ export function isDirectiveCatalog(value: unknown): value is DirectiveCatalog {
   return (
     typeof v.directive_version === "number" &&
     Array.isArray(v.nouns)
+  );
+}
+
+/** Runtime guard for one noun's schemas. */
+export function isDirectiveNounSchemas(
+  value: unknown,
+): value is DirectiveNounSchemas {
+  if (typeof value !== "object" || value === null) return false;
+  const v = value as Record<string, unknown>;
+  return (
+    typeof v.noun === "string" &&
+    typeof v.schemas === "object" &&
+    v.schemas !== null &&
+    !Array.isArray(v.schemas)
   );
 }
 

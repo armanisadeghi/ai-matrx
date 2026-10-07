@@ -16,8 +16,10 @@ import {
   isDirectiveApplyStateResult,
   isDirectiveCatalog,
   isDirectiveConfirmResult,
+  isDirectiveNounSchemas,
   type DirectiveApplyResult,
   type DirectiveCatalog,
+  type DirectiveNounSchemas,
   type DirectiveExecuteRequest,
   type DirectiveConfirmRequest,
   type DirectiveConfirmResult,
@@ -119,6 +121,41 @@ export async function fetchDirectiveCatalog(
   if (!isDirectiveCatalog(payload)) {
     throw new Error(
       `Directive catalog response was malformed (missing directive_version / nouns) from ${url}`,
+    );
+  }
+  return payload;
+}
+
+/**
+ * Fetch ONE noun's write item schemas (`GET {baseUrl}/directives/catalog/{noun}`)
+ * — the summary catalog carries none. Public, unauthenticated, ETag-cached by
+ * the browser. Throws on a missing base, a non-2xx (404 = the catalog lists no
+ * such noun), or a malformed payload.
+ */
+export async function fetchDirectiveNounSchemas(
+  baseUrl: string | undefined,
+  noun: string,
+  signal?: AbortSignal,
+): Promise<DirectiveNounSchemas> {
+  if (!baseUrl) {
+    throw new Error(
+      "No backend base URL configured. Set the active server (apiConfigSlice) / NEXT_PUBLIC_BACKEND_URL_* env var.",
+    );
+  }
+  const url = buildMatrxRequestUrl(
+    trimRoot(baseUrl),
+    ENDPOINTS_DIRECTIVES.nounSchemas(noun),
+  );
+  const response = await sendMatrxRequest(url, { method: "GET" }, { signal });
+  if (!response.ok) {
+    throw new Error(
+      `Directive schemas request failed: HTTP ${response.status} ${response.statusText} (${url})`,
+    );
+  }
+  const payload: unknown = await response.json();
+  if (!isDirectiveNounSchemas(payload)) {
+    throw new Error(
+      `Directive schemas response was malformed (missing noun / schemas) from ${url}`,
     );
   }
   return payload;

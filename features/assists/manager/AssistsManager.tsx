@@ -184,6 +184,10 @@ export function AssistsManager() {
     return createAssistsScope({
       assist_status_tab: tab,
       assist_view_flags: flags,
+      assist_include_snoozed: includeSnoozed,
+      assist_starred_only: starredOnly,
+      assist_unseen_only: unseenOnly,
+      assist_show_silenced: showSilenced,
       assist_urgency_filter: urgency ?? undefined,
       assist_table_query: table.queryState,
       assist_load_state: error ? "failed" : loaded ? "ready" : "loading",

@@ -43,6 +43,7 @@ import {
 } from "@/features/ai-work/conversations/bindingPlurality";
 import { SyncStatePanel } from "@/features/ai-work/conversations/components/SyncStatePanel";
 import { MATRX_LOCAL_DOWNLOAD_PATH } from "@/features/matrx-local-download/release";
+import { CodingProjectOrganizations } from "@/features/ai-work/components/CodingProjectOrganizations";
 
 /**
  * Matrx Local ships the explicit Claude local-history importer (v1.4.22+,
@@ -226,6 +227,8 @@ export function AiWorkConnections() {
           onRefresh={refresh}
           refreshing={loading}
         />
+
+        <CodingProjectOrganizations />
 
         <section>
           <div className="mb-2 flex items-center justify-between gap-3">

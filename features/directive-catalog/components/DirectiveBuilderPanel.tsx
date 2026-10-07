@@ -31,6 +31,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@ai-matrx/design-system/controls";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Skeleton } from "@ai-matrx/design-system";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { OptionCombobox } from "@/components/official/option-combobox/OptionCombobox";
 import {
@@ -57,6 +58,7 @@ import MatrxEnvelopeBlock from "@/features/matrx-envelope/MatrxEnvelopeBlock";
 import { getReferenceResolver } from "@/features/matrx-envelope/referenceResolvers";
 import { StateBadge } from "@/features/directive-catalog/components/StateCell";
 import { executeDirective } from "@/features/directive-catalog/service";
+import { useNounSchemas } from "@/features/directive-catalog/hooks/useNounSchemas";
 import { valueVocabularyFor } from "@/features/directive-catalog/valueVocabulary";
 import {
   buildDirectiveEnvelope,
@@ -273,6 +275,11 @@ export function DirectiveBuilderPanel({
   const openReferencePicker = useOpenDirectiveReferencePickerWindow();
 
   const noun: NounDirectives | undefined = nounByToken.get(nounName);
+  // The catalog summary carries no schemas: a write verb loads its ONE noun's
+  // (`GET /directives/catalog/{noun}`, lane G12).
+  const nounSchemas = useNounSchemas(
+    noun && !isReferenceVerb(verb) ? noun.noun : null,
+  );
 
   const state: DirectiveState | null = noun ? cellState(noun, verb) : null;
   const isReference = isReferenceVerb(verb);
@@ -289,12 +296,12 @@ export function DirectiveBuilderPanel({
     [fieldSpecs, fields, nounName],
   );
   const writePayloadPlaceholder = useMemo(() => {
-    const schema = noun?.schemas?.[verb];
+    const schema = nounSchemas.schemas?.[verb];
     if (!isJsonSchema(schema)) {
       return '{\n  "field": "value"\n}';
     }
     return JSON.stringify(buildSchemaExample(schema, "minimum"), null, 2);
-  }, [noun, verb, nounName]);
+  }, [nounSchemas.schemas, verb]);
 
   // The write payload, parsed. A reference has no payload (its ids drive it).
   // `error` is null when valid; `value` is always an object (empty on error).
@@ -323,7 +330,7 @@ export function DirectiveBuilderPanel({
 
   // The form generated from the server's item schema for this verb + noun.
   const writeFields = useMemo(() => {
-    const schema = noun?.schemas?.[verb];
+    const schema = nounSchemas.schemas?.[verb];
     if (isReference || !noun || !isJsonSchema(schema)) return [];
     return deriveSchemaFields(schema, {
       titleColumn: formTitleColumn(noun),
@@ -331,7 +338,7 @@ export function DirectiveBuilderPanel({
         payloadFieldEntityInfo(key, noun.noun)?.token ?? null,
       resolveValueVocabulary: (key) => valueVocabularyFor(noun.noun, key),
     });
-  }, [isReference, noun, verb]);
+  }, [isReference, noun, verb, nounSchemas.schemas]);
   // No published schema → the JSON view is the only editor, and only offered
   // where Execute can run it; elsewhere one line says why there is no form.
   const noSchema = !isReference && writeFields.length === 0;
@@ -788,7 +795,17 @@ export function DirectiveBuilderPanel({
           {/* Payload — the row's fields (shape mirrors the table). A planned
               type with no published field list has nothing to fill in: one
               state line, no empty heading, no raw JSON box. */}
-          {noSchema && state !== "yes" ? (
+          {nounSchemas.loading ? (
+            <div className="flex flex-col gap-2" aria-busy="true">
+              {Array.from({ length: 3 }, (_, i) => (
+                <Skeleton key={i} className="h-9 w-full rounded-md" />
+              ))}
+            </div>
+          ) : nounSchemas.error ? (
+            <p className="text-xs text-amber-700 dark:text-amber-300">
+              {nounSchemas.error} <ErrorAlchemyMenu error={nounSchemas.error} />
+            </p>
+          ) : noSchema && state !== "yes" ? (
             <p className="text-xs text-muted-foreground">
               Planned — no field list published yet.
             </p>

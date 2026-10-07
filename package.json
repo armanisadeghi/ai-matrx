@@ -1,6 +1,6 @@
 {
   "name": "app-matrx",
-  "version": "0.4.2974",
+  "version": "0.4.2977",
   "private": true,
   "scripts": {
     "dev": "bash scripts/agent-dev-server.sh start",
@@ -765,6 +765,8 @@
     "check:alchemy-doors:self-test": "tsx scripts/check-alchemy-doors.ts --self-test",
     "check:worker-cycles": "tsx scripts/check-worker-cycles.ts",
     "check:worker-cycles:self-test": "tsx scripts/check-worker-cycles.ts --self-test",
+    "check:host-cycles": "tsx scripts/check-host-cycles.ts",
+    "check:host-cycles:self-test": "tsx scripts/check-host-cycles.ts --self-test",
     "check:server-calls-client": "tsx scripts/check-server-calls-client.ts",
     "check:server-calls-client:self-test": "tsx scripts/check-server-calls-client.ts --self-test",
     "check:copy-result-gated": "tsx scripts/check-copy-result-gated.ts",
@@ -898,6 +900,7 @@
     "@ai-matrx/capture": "latest",
     "@ai-matrx/chat": "latest",
     "@ai-matrx/code-runtime": "latest",
+    "@ai-matrx/coding-sessions": "latest",
     "@ai-matrx/content-ir": "latest",
     "@ai-matrx/content-ir-react": "latest",
     "@ai-matrx/data": "latest",

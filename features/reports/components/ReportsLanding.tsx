@@ -14,7 +14,6 @@ import {
 } from "@/features/shell/shellIconMap";
 import { REPORTS } from "@/features/reports/registry";
 import { createReportsScope } from "@/features/surfaces/manifests/reports.manifest";
-import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 import { SurfaceRuntimeProvider } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import {
   ADMIN_REPORTING_SURFACE_NAME,
@@ -80,9 +79,7 @@ export function ReportsLanding({ mode = "user" }: { mode?: "user" | "admin" }) {
     });
     return (
       <SurfaceRuntimeProvider surfaceName="matrx-user/reports" getScope={getScope}>
-        <NonEditableContextMenu sourceFeature="agents-other" surfaceName="matrx-user/reports" menuVersion={1} getApplicationScope={getScope} contentSource={{ type: "raw" }}>
           <div data-surface-value="reports_catalog">{content}</div>
-        </NonEditableContextMenu>
       </SurfaceRuntimeProvider>
     );
   }

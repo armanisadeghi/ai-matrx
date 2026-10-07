@@ -1,10 +1,12 @@
 /**
- * THE client cache of the directive catalog (`GET /directives/catalog`).
+ * THE client cache of the directive catalog (`GET /directives/catalog`) and
+ * of each noun's write schemas (`GET /directives/catalog/{noun}`).
  *
- * The catalog is ~2.4 MB and the server answers in 5–7 s (measured
- * 2026-10-07), so a surface that fetches it on demand makes a person wait.
- * G11A review (2026-10-07): "Change…" in the reference picker showed skeletons
- * for 4–8 s on every open. Two layers fix that:
+ * The catalog used to be ~2.4 MB / 5–7 s with every schema inline (G11A
+ * review, 2026-10-07: 4–8 s of skeletons on "Change…"). Since lane G12 the
+ * summary carries no schemas (~32 KB on the wire, cached server-side, ETag),
+ * and a form loads ONE noun's schemas when it opens (`loadNounSchemas`). The
+ * layers here still remove the remaining wait:
  *
  *   1. ONE in-flight/resolved promise per base URL for the tab's lifetime
  *      (`loadDirectiveCatalog`, `prefetchDirectiveCatalog`), so a surface can
@@ -14,14 +16,21 @@
  *      visit (`cachedNounActions`). Every full load rewrites it, so it is the
  *      server's own last answer, refreshed each time a picker opens.
  *
+ *   3. ONE in-flight/resolved promise per (base URL, noun) for that noun's
+ *      schemas (`loadNounSchemas`, `peekNounSchemas`).
+ *
  * The catalog is public and non-sensitive (no auth), so caching it in the
  * browser leaks nothing. Schemas (the write forms) are never persisted — only
  * the three yes/no flags per type.
  */
 
-import { fetchDirectiveCatalog } from "@/features/directive-catalog/service";
+import {
+  fetchDirectiveCatalog,
+  fetchDirectiveNounSchemas,
+} from "@/features/directive-catalog/service";
 import type {
   DirectiveCatalog,
+  DirectiveNounSchemas,
   NounDirectives,
 } from "@/features/directive-catalog/types";
 
@@ -150,4 +159,47 @@ export function cachedNounActions(
   if (exact) return exact;
   const canonical = aliases[token] ?? slim.aliases[token] ?? token;
   return slim.nouns[canonical] ?? null;
+}
+
+// ── One noun's write schemas ────────────────────────────────────────────────
+
+interface SchemasEntry {
+  promise: Promise<DirectiveNounSchemas>;
+  resolved: DirectiveNounSchemas | null;
+}
+
+const schemaEntries = new Map<string, SchemasEntry>();
+
+/** One request per (base URL, noun) for the tab's life; a failure retries next call. */
+export function loadNounSchemas(
+  baseUrl: string,
+  noun: string,
+): Promise<DirectiveNounSchemas> {
+  const key = `${baseUrl}|${noun}`;
+  const existing = schemaEntries.get(key);
+  if (existing) return existing.promise;
+  const entry: SchemasEntry = {
+    promise: null as unknown as Promise<DirectiveNounSchemas>,
+    resolved: null,
+  };
+  entry.promise = fetchDirectiveNounSchemas(baseUrl, noun).then(
+    (found) => {
+      entry.resolved = found;
+      return found;
+    },
+    (err: unknown) => {
+      schemaEntries.delete(key);
+      throw err;
+    },
+  );
+  schemaEntries.set(key, entry);
+  return entry.promise;
+}
+
+/** A noun's schemas if they already arrived in this tab — synchronously. */
+export function peekNounSchemas(
+  baseUrl: string,
+  noun: string,
+): DirectiveNounSchemas | null {
+  return schemaEntries.get(`${baseUrl}|${noun}`)?.resolved ?? null;
 }

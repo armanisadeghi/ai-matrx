@@ -349,14 +349,6 @@
         {
           "file": "utils/supabase/walkCap.ts",
           "why": "IS the duration capability and has not been collapsed yet. The 2026-09-30 duration drain skipped this file because another lane held UNCOMMITTED edits to it in the shared checkout at the time (a pathspec commit would have swept that half-done work into the drain's commit). Collapse: `Retrying in ${KNOB_TTL_MS / 1000}s` and `ago()` become formatDurationMs(ms, { style: \"compact\" }) (+ \" ago\"). A debt, not an exemption."
-        },
-        {
-          "file": "features/notifications/presentation.ts",
-          "why": "IS the relative-age capability (shortTime: \"now\", \"14m\", \"3h\", \"2d\", then \"Sep 3\" past a week \u2014 the notification bell and inbox rows). Held, not collapsed: the feed convention (Slack, Linear, GitHub inbox) switches to a calendar date after a week because \"3w\" in a notification list makes the reader do arithmetic to find the day, and kit's bare short voice would print \"2w\" / \"1mo\" there. KIT NEEDS OPTION: formatRelativeTime has no threshold past which a short stamp switches to a short absolute date (\"Sep 3\"), and no sub-minute \"now\" in the short voice \u2014 it prints \"34s\" and then \"2w\" / \"1mo\". With an `absoluteAfter` (ms) option this is formatRelativeTime(iso, { suffix: false, absoluteAfter: 7 days }). The notifications lane also had uncommitted edits in this folder on 2026-10-07. (2026-10-07 formatter-drain lane)"
-        },
-        {
-          "file": "features/spaces/page/time.ts",
-          "why": "IS the relative-age capability (editedAgo \"Edited 37m ago\" and commentAgo \"5m\" \u2014 Spaces pages and comments), held because Spaces deliberately reads like Notion: past 24 hours it prints the calendar day (\"Edited Oct 4\"), and sub-minute is \"Just now\". Kit's short voice would print \"Edited 3d ago\" / \"Edited 30s ago\". KIT NEEDS OPTION: formatRelativeTime has no threshold past which a short stamp switches to a short absolute date (\"Sep 3\"), and no sub-minute \"now\" in the short voice \u2014 it prints \"34s\" and then \"2w\" / \"1mo\". Collapse with formatRelativeTime(iso, { absoluteAfter: 1 day, absolute: \"monthDay\" }) once kit has it. (2026-10-07 formatter-drain lane)"
         }
       ]
     },
@@ -511,40 +503,12 @@
           "why": "IS the money capability and has not been collapsed yet. This session collapsed the bodies the tenth adversarial review named \u2014 the Spend Dashboard/Explorer's `usd`/`usdPrecise`, UsageTableClient's `fmtCost`, hindsight's `fmtCost`, the cx dashboard's `formatCost`, the mandate board's cost cell \u2014 plus the compact-count and percentage voices kit 0.14.0 grew for them. The rest of the lane's census is listed here so it is READ OUT every run and RATCHETED shrink-only. A debt, not an exemption."
         },
         {
-          "file": "lib/stripe/connect.ts",
-          "why": "IS the money capability, and cannot be collapsed by this session: it formats an ARBITRARY Stripe currency (`currency.toUpperCase()`), and @ai-matrx/kit/format has only formatUsd \u2014 named Usd not Currency under THE UNIT LAW precisely because it prepends a literal `$` and does no currency handling. A EUR payout wearing a `$` is the lie that naming rule exists to stop. Collapsing this needs a currency-aware kit voice, which is a money-display decision for the whole fleet."
-        },
-        {
           "file": "scripts/gate-corpus/refresh-merge-proof.ts",
           "why": "IS the money capability and has not been collapsed yet. This session collapsed the bodies the tenth adversarial review named \u2014 the Spend Dashboard/Explorer's `usd`/`usdPrecise`, UsageTableClient's `fmtCost`, hindsight's `fmtCost`, the cx dashboard's `formatCost`, the mandate board's cost cell \u2014 plus the compact-count and percentage voices kit 0.14.0 grew for them. The rest of the lane's census is listed here so it is READ OUT every run and RATCHETED shrink-only. A debt, not an exemption."
         },
         {
           "file": "scripts/gate-corpus/restore-graph.ts",
           "why": "IS the money capability and has not been collapsed yet. This session collapsed the bodies the tenth adversarial review named \u2014 the Spend Dashboard/Explorer's `usd`/`usdPrecise`, UsageTableClient's `fmtCost`, hindsight's `fmtCost`, the cx dashboard's `formatCost`, the mandate board's cost cell \u2014 plus the compact-count and percentage voices kit 0.14.0 grew for them. The rest of the lane's census is listed here so it is READ OUT every run and RATCHETED shrink-only. A debt, not an exemption."
-        },
-        {
-          "file": "features/admin/limits/types.ts",
-          "why": "IS the money capability (planPriceLabel \"$19/mo\", \"$39/seat/mo\" on the admin limits matrix). Held: KIT NEEDS OPTION: formatUsd has no whole-dollar price voice \u2014 no cents when the amount is whole, two decimals when it is not (\"$19/mo\", \"$19.50/mo\"). `digits: 2` and `\"trim\"` both print \"$19.00\", which no price list shows; `digits: 0` rounds \"$19.50\" to \"$20\". Collapse to formatUsd(cents / 100, { digits: \"whole\" }) once it ships. (2026-10-07 formatter-drain lane)"
-        },
-        {
-          "file": "features/entitlements/catalog/format.ts",
-          "why": "IS the money capability (formatCents \u2014 every plan price on the pricing and plan-catalog pages). Held: KIT NEEDS OPTION: formatUsd has no whole-dollar price voice \u2014 no cents when the amount is whole, two decimals when it is not (\"$19/mo\", \"$19.50/mo\"). `digits: 2` and `\"trim\"` both print \"$19.00\", which no price list shows; `digits: 0` rounds \"$19.50\" to \"$20\". Collapse to formatUsd(cents / 100, { digits: \"whole\" }) once it ships. (2026-10-07 formatter-drain lane)"
-        },
-        {
-          "file": "features/make/gallery/TemplateShowcase.tsx",
-          "why": "IS the money capability (moneyText \u2014 currency cells in the template gallery's sample rows). Held: KIT NEEDS OPTION: formatUsd has no whole-dollar price voice \u2014 no cents when the amount is whole, two decimals when it is not (\"$19/mo\", \"$19.50/mo\"). `digits: 2` and `\"trim\"` both print \"$19.00\", which no price list shows; `digits: 0` rounds \"$19.50\" to \"$20\". (2026-10-07 formatter-drain lane)"
-        },
-        {
-          "file": "app/(public)/templates/[slug]/social-image/route.tsx",
-          "why": "IS the money capability (a currency field's value drawn into a template's share image). Held: it prints \"$1,234\" for whole amounts, and formatUsd would print \"$1,234.00\" across a 1200x630 card. KIT NEEDS OPTION: formatUsd has no whole-dollar price voice \u2014 no cents when the amount is whole, two decimals when it is not (\"$19/mo\", \"$19.50/mo\"). `digits: 2` and `\"trim\"` both print \"$19.00\", which no price list shows; `digits: 0` rounds \"$19.50\" to \"$20\". (The local body also lets a fractional value through ungated \u2014 \"$1,234.5\" \u2014 which the whole-dollar voice would fix.) (2026-10-07 formatter-drain lane)"
-        },
-        {
-          "file": "features/entitlements/billing-summary.ts",
-          "why": "IS the money capability (priceLabel on the billing summary). Held: KIT NEEDS A CAPABILITY: formatUsd prints a literal \"$\" and this amount is in the Stripe price's own currency (`currency.toUpperCase()`), so swapping would print a EUR or GBP price with a dollar sign \u2014 the exact lie the formatUsd name refuses. Needs a currency-aware money formatter in kit (amount + ISO code, whole-or-two-decimals). (2026-10-07 formatter-drain lane)"
-        },
-        {
-          "file": "features/entitlements/components/ScheduledPlanChange.tsx",
-          "why": "IS the money capability (the scheduled plan change confirm sentence). Held: KIT NEEDS A CAPABILITY: formatUsd prints a literal \"$\" and this amount is in the Stripe price's own currency (`currency.toUpperCase()`), so swapping would print a EUR or GBP price with a dollar sign \u2014 the exact lie the formatUsd name refuses. Needs a currency-aware money formatter in kit (amount + ISO code, whole-or-two-decimals). (2026-10-07 formatter-drain lane)"
         },
         {
           "file": "scripts/applets-templates/shared-source.mjs",
@@ -1761,10 +1725,6 @@
         {
           "file": "scripts/checks/run.mjs",
           "why": "IS the byte-size capability (`totalmem()` turned into a GB figure in the runner's worker warning) and has not been collapsed: this is the checks runner itself, which the 2026-09-30 formatter-drain lane was told not to edit (guard infrastructure). Collapse it with formatFileSize(totalmem()) in a lane that owns scripts/checks."
-        },
-        {
-          "file": "features/matrx-local-download/desktop-release.ts",
-          "why": "IS the byte-size capability (the /desktop download button's \"420 MB\"), held because the local body is better for this one screen: it divides by 1,000,000 (decimal MB), which is what macOS Finder and the browser's download shelf show for the same .dmg, while formatFileSize is binary (1024) and would print \"401 MB\" for a 420,107,474-byte file, a size the person then never sees anywhere else. KIT NEEDS OPTION: a decimal-unit base on formatFileSize (e.g. `base: 1000`) for sizes a person compares against the OS. Collapse to formatFileSize(bytes, { base: 1000 }) the day it ships. (2026-10-07 formatter-drain lane)"
         }
       ],
       "inputAllow": [],

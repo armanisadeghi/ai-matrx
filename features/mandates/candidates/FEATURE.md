@@ -30,7 +30,7 @@ a window in place, a docked panel, or a page in a new tab. Plan and frozen contr
   (window by default; the person's presentation setting decides). `seed.siblings` = the ordered
   run ids of the list it was opened from, so `[` / `]` step through the runs.
 - `useOpenCandidateSummary(candidateId?)` → `(id?, seed?) => void` — opens the summary.
-- `useTranscriptUnit(conversationId)` (`transcripts.ts`) — the walkable unit for one side's chat.
+- `useTranscriptUnit({ requestId, conversationId })` (`transcripts.ts`) — the walkable unit for one side's run: the newest `chat.request` of the pair's own `chat.user_request` id; only when that id names no request (older pairs), the conversation's newest, with `runsInChat` set when the chat holds more than one run.
 
 **Services** — `api.ts`: the aidream live-candidate doors through the contract-bound typed client
 (`GET /mandate-candidate-runs/{id}`, `GET /mandate-candidates/{id}`, `POST …/agreement`,
@@ -98,7 +98,11 @@ via `refineDetail` (`detail.tsx`). Bodies: `components/CandidateRunBody.tsx`,
   Hold recommendation is said plainly ("The review said reject.") with "Promote anyway".
 - **"What the … saw" is never dead (V2 N4).** A click before the transcript lookup answers
   resolves THIS pair's conversation on the spot (`transcripts.findTranscriptUnit`) and opens or
-  focuses its walk; the button carries `data-conversation-id`.
+  focuses its walk; the button carries `data-conversation-id` and `data-request-id`.
+- **"What the … saw" opens THIS pair's run, not the chat's newest.** Two runs can share a chat; the
+  lookup keys on the pair's request id. The conversation fallback says "Newest of N runs in this
+  chat" rather than silently picking one (`__tests__/saw-opens-this-pairs-own-request.test.tsx`,
+  `__tests__/saw-says-when-the-chat-holds-several-runs.test.tsx`).
 - **The set dialog's "Applies to" (V2 D18, FX-D1)** shows no rung (and Start waits) until the live
   holder's rung is read, and lists each rung once (`rungChoicesOf`). When the read cannot answer
   (no organization selected, read failed, a verdict naming no rung) it stays EMPTY and Start is

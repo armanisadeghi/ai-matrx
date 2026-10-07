@@ -41,10 +41,6 @@ export const CATALOG_NOUNS: Record<string, CatalogNounEntry> = {
   "table": "chat.agent_memory",
   "title_column": "key"
  },
- "working_document": {
-  "table": "workbench.working_documents",
-  "title_column": "title"
- },
  "document": {
   "table": "content.document",
   "title_column": "title"
@@ -200,10 +196,6 @@ export const CATALOG_NOUNS: Record<string, CatalogNounEntry> = {
  "fc_set": {
   "table": "education.fc_set",
   "title_column": "name"
- },
- "flexible_data": {
-  "table": "platform.flexible_data",
-  "title_column": "label"
  },
  "game_result": {
   "table": "education.game_result",
@@ -677,10 +669,6 @@ export const CATALOG_NOUN_DISPLAY: Record<string, CatalogNounDisplay> = {
   "label": "User Todo",
   "family": "Workspace"
  },
- "working_document": {
-  "label": "Working Document",
-  "family": "Conversations"
- },
  "anon_form": {
   "label": "Public form",
   "family": "Communication"
@@ -752,6 +740,10 @@ export const CATALOG_NOUN_DISPLAY: Record<string, CatalogNounDisplay> = {
  "message_template_detail": {
   "label": "Message Template Detail",
   "family": "Agents"
+ },
+ "space_payload": {
+  "label": "Space Payload",
+  "family": "Workspace"
  },
  "univer_payload": {
   "label": "Univer Payload",
@@ -1073,6 +1065,10 @@ export const CATALOG_NOUN_DISPLAY: Record<string, CatalogNounDisplay> = {
   "label": "Account Addon",
   "family": "Billing"
  },
+ "account_closure": {
+  "label": "Account closure",
+  "family": "Access & Identity"
+ },
  "acquisition_block": {
   "label": "Acquisition Block",
   "family": "Platform"
@@ -1180,6 +1176,10 @@ export const CATALOG_NOUN_DISPLAY: Record<string, CatalogNounDisplay> = {
  "analysis_result": {
   "label": "Analysis Result",
   "family": "Files"
+ },
+ "anon_form_visit": {
+  "label": "Form visit",
+  "family": "Communication"
  },
  "anon_function_birth_grandfather": {
   "label": "Anon Function Birth Grandfather",
@@ -1333,8 +1333,20 @@ export const CATALOG_NOUN_DISPLAY: Record<string, CatalogNounDisplay> = {
   "label": "Billing connect account",
   "family": "Billing"
  },
+ "billing_coupon": {
+  "label": "Coupon",
+  "family": "Billing"
+ },
+ "billing_coupon_redemption": {
+  "label": "Coupon redemption",
+  "family": "Billing"
+ },
  "billing_customer": {
   "label": "Billing customer",
+  "family": "Billing"
+ },
+ "billing_free_period_grant": {
+  "label": "Free period grant",
   "family": "Billing"
  },
  "billing_plan": {
@@ -1380,6 +1392,10 @@ export const CATALOG_NOUN_DISPLAY: Record<string, CatalogNounDisplay> = {
  "billing_user_plan": {
   "label": "User plan",
   "family": "Billing"
+ },
+ "block_state": {
+  "label": "Block State",
+  "family": "Platform"
  },
  "board": {
   "label": "Board",
@@ -1953,13 +1969,13 @@ export const CATALOG_NOUN_DISPLAY: Record<string, CatalogNounDisplay> = {
   "label": "Sending Policy",
   "family": "CRM"
  },
+ "custom_agent_table_trust": {
+  "label": "Agent table trust",
+  "family": "Communication"
+ },
  "custom_agg_digest_checked": {
   "label": "Aggregate digest checked",
   "family": "Communication"
- },
- "custom_entity_definition": {
-  "label": "Custom Object",
-  "family": "Other"
  },
  "custom_field_definition": {
   "label": "Custom Field",
@@ -1976,10 +1992,6 @@ export const CATALOG_NOUN_DISPLAY: Record<string, CatalogNounDisplay> = {
  "custom_io_outbox_consumption": {
   "label": "Outbox consumption",
   "family": "Communication"
- },
- "custom_record": {
-  "label": "Custom Record",
-  "family": "Other"
  },
  "custom_share_tails_mine_repair": {
   "label": "Share tails repair",
@@ -2121,6 +2133,14 @@ export const CATALOG_NOUN_DISPLAY: Record<string, CatalogNounDisplay> = {
   "label": "Entity grant",
   "family": "Platform"
  },
+ "entity_protected_value": {
+  "label": "Protected field value",
+  "family": "Communication"
+ },
+ "entity_protected_value_version": {
+  "label": "Protected field value version",
+  "family": "Communication"
+ },
  "entity_relationship": {
   "label": "Entity relationship",
   "family": "Platform"
@@ -2252,10 +2272,6 @@ export const CATALOG_NOUN_DISPLAY: Record<string, CatalogNounDisplay> = {
  "files_user_account": {
   "label": "File account",
   "family": "Files"
- },
- "flexible_data": {
-  "label": "Flexible Data",
-  "family": "Other"
  },
  "function_contract": {
   "label": "Function Contract",
@@ -3341,6 +3357,10 @@ export const CATALOG_NOUN_DISPLAY: Record<string, CatalogNounDisplay> = {
   "label": "Opinions",
   "family": "Legal"
  },
+ "ops_auth_lock_watchdog_log": {
+  "label": "Auth lock watchdog log",
+  "family": "OPS"
+ },
  "ops_check_item": {
   "label": "Check Item",
   "family": "OPS"
@@ -3454,7 +3474,7 @@ export const CATALOG_NOUN_DISPLAY: Record<string, CatalogNounDisplay> = {
   "family": "Partman"
  },
  "party": {
-  "label": "Entity",
+  "label": "Contact",
   "family": "CRM"
  },
  "party_contact_point": {
@@ -3499,6 +3519,10 @@ export const CATALOG_NOUN_DISPLAY: Record<string, CatalogNounDisplay> = {
  },
  "permission_grant": {
   "label": "Permission grant",
+  "family": "Access & Identity"
+ },
+ "personal_data_column": {
+  "label": "Personal data column",
   "family": "Access & Identity"
  },
  "plan_entity": {
@@ -3649,6 +3673,10 @@ export const CATALOG_NOUN_DISPLAY: Record<string, CatalogNounDisplay> = {
   "label": "Podcast Race Episode",
   "family": "Podcasts"
  },
+ "position": {
+  "label": "Position",
+  "family": "Agents"
+ },
  "processed_document": {
   "label": "Source",
   "family": "Document Processing"
@@ -3723,6 +3751,22 @@ export const CATALOG_NOUN_DISPLAY: Record<string, CatalogNounDisplay> = {
  },
  "provision_vocabulary": {
   "label": "Provision Vocabulary",
+  "family": "Platform"
+ },
+ "public_compat_wrapper": {
+  "label": "Public compat wrapper",
+  "family": "Platform"
+ },
+ "public_placement_baseline": {
+  "label": "Public placement baseline",
+  "family": "Platform"
+ },
+ "public_placement_domain": {
+  "label": "Public placement domain",
+  "family": "Platform"
+ },
+ "public_restore_permit": {
+  "label": "Public restore permit",
   "family": "Platform"
  },
  "purpose": {
@@ -4241,6 +4285,10 @@ export const CATALOG_NOUN_DISPLAY: Record<string, CatalogNounDisplay> = {
   "label": "T-13 row column events",
   "family": "OPS"
  },
+ "tag": {
+  "label": "Tag",
+  "family": "Platform"
+ },
  "task_user_state": {
   "label": "Task user state",
   "family": "Workspace"
@@ -4297,14 +4345,6 @@ export const CATALOG_NOUN_DISPLAY: Record<string, CatalogNounDisplay> = {
   "label": "Trigger Event",
   "family": "Workflows"
  },
- "udt_dataset_template": {
-  "label": "Dataset template",
-  "family": "Other"
- },
- "udt_dataset_template_fields": {
-  "label": "Udt Dataset Template Fields",
-  "family": "Other"
- },
  "udt_document": {
   "label": "Cloud document",
   "family": "Workspace"
@@ -4319,6 +4359,10 @@ export const CATALOG_NOUN_DISPLAY: Record<string, CatalogNounDisplay> = {
  },
  "ui_client": {
   "label": "UI client",
+  "family": "UI"
+ },
+ "ui_surface_action": {
+  "label": "Surface Action",
   "family": "UI"
  },
  "ui_surface_agent_pref": {
@@ -4789,16 +4833,16 @@ export const CATALOG_NOUN_DISPLAY: Record<string, CatalogNounDisplay> = {
   "label": "YouTube Video",
   "family": "Research"
  },
- "structured_list": {
-  "label": "Structured List",
+ "pick_list": {
+  "label": "Pick List",
   "family": "Derived shapes"
  },
- "structured_list_group": {
-  "label": "Structured List Group",
+ "pick_list_group": {
+  "label": "Pick List Group",
   "family": "Derived shapes"
  },
- "structured_list_item": {
-  "label": "Structured List Item",
+ "pick_list_item": {
+  "label": "Pick List Item",
   "family": "Derived shapes"
  },
  "table_column": {
@@ -4871,12 +4915,15 @@ export const CATALOG_ALIASES: Record<string, string> = {
  "dataset_cell": "table_cell",
  "document": "udt_document",
  "media": "file",
- "picklist": "structured_list",
- "picklist_group": "structured_list_group",
- "picklist_item": "structured_list_item",
+ "picklist": "pick_list",
+ "picklist_group": "pick_list_group",
+ "picklist_item": "pick_list_item",
  "podcast_episode": "pc_episode",
  "podcast_show": "pc_show",
  "sandbox": "sandbox_instance",
+ "structured_list": "pick_list",
+ "structured_list_group": "pick_list_group",
+ "structured_list_item": "pick_list_item",
  "table": "dataset",
  "transcript_session": "studio_session",
  "war_room_thread": "thread"

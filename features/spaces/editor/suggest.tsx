@@ -10,8 +10,7 @@
 // anyone who can edit the page (the owner or an editor). Suggest mode is this person's own view switch on
 // this page (kept on this device), never a permission.
 
-import { createExtension } from "@blocknote/core";
-import { createReactStyleSpec } from "@blocknote/react";
+import { createExtension, createStyleSpec } from "@blocknote/core";
 import { Plugin, PluginKey, TextSelection, type EditorState, type Transaction } from "@tiptap/pm/state";
 import { ReplaceStep } from "@tiptap/pm/transform";
 import type { Mark, MarkType, Node as PmNode, Slice } from "@tiptap/pm/model";
@@ -75,13 +74,22 @@ export const readSuggestion = (raw: unknown): SpaceSuggestion | null => {
 };
 
 // ── the style (a ProseMirror mark named "suggestion", attr stringValue = the JSON) ────────────────────
-export const SuggestionStyle = createReactStyleSpec(
+// A plain DOM mark (not a React mark view): a React-drawn mark re-mounts as text is typed into it, which loses the caret.
+export const SuggestionStyle = createStyleSpec(
   { type: "suggestion", propSchema: "string" },
   {
-    render: ({ value, contentRef }) => {
+    render: (value) => {
       const s = readSuggestion(value);
-      return <span ref={contentRef} className="spaces-suggestion" data-suggestion-kind={s?.kind} data-suggestion-id={s?.id} data-suggestion={value ?? ""} />;
+      const dom = document.createElement("span");
+      dom.className = "spaces-suggestion";
+      if (s) {
+        dom.dataset.suggestionKind = s.kind;
+        dom.dataset.suggestionId = s.id;
+      }
+      dom.dataset.suggestion = value ?? "";
+      return { dom, contentDOM: dom };
     },
+    parse: (el) => el.getAttribute("data-suggestion") || undefined,
   },
 );
 
@@ -94,49 +102,35 @@ function suggestionOf(marks: readonly Mark[], type: MarkType): SpaceSuggestion |
   return m ? readSuggestion(m.attrs.stringValue) : null;
 }
 
-/** One user change (a single text replace inside one block) rewritten as suggestions; anything else passes. */
-function rewrite(state: EditorState, tr: Transaction, type: MarkType): Transaction | null {
-  const by = me;
-  if (!by || tr.steps.length !== 1 || !(tr.steps[0] instanceof ReplaceStep)) return null;
-  const step = tr.steps[0] as unknown as { from: number; to: number; slice: Slice };
-  const { from, to, slice } = step;
-  const a = state.doc.resolve(from);
-  const b = state.doc.resolve(to);
-  if (!a.sameParent(b) || !a.parent.isTextblock || slice.openStart || slice.openEnd) return null;
-  let inlineOnly = true;
-  slice.content.forEach((n) => {
-    if (!n.isInline) inlineOnly = false;
-  });
-  if (!inlineOnly) return null;
-  const out = state.tr;
-  const stamp = new Date().toISOString();
-  const id = crypto.randomUUID();
-  const mark = (kind: "insert" | "delete"): Mark => type.create({ stringValue: JSON.stringify({ id, kind, by, at: stamp } satisfies SpaceSuggestion) });
-  // Deleted text: my own pending insert really goes; anything else stays, marked for deletion.
+const markFor = (type: MarkType, kind: "insert" | "delete", by: string, id = crypto.randomUUID()): Mark =>
+  type.create({ stringValue: JSON.stringify({ id, kind, by, at: new Date().toISOString() } satisfies SpaceSuggestion) });
+
+/** My own insert suggestion right before `pos` (typing on continues the same suggestion). */
+function myInsertBefore(state: EditorState, pos: number, type: MarkType, by: string): Mark | null {
+  const $p = state.doc.resolve(pos);
+  const before = $p.nodeBefore;
+  const m = before?.isText ? before.marks.find((x) => x.type === type) : undefined;
+  const s = m ? readSuggestion(m.attrs.stringValue) : null;
+  return m && s?.kind === "insert" && s.by === by ? m : null;
+}
+
+/** Mark [from, to) for deletion (my own pending inserts inside it really go); returns the transaction. */
+function markDeleted(state: EditorState, from: number, to: number, type: MarkType, by: string): Transaction {
+  const tr = state.tr;
   const own: Array<[number, number]> = [];
-  if (to > from) {
-    state.doc.nodesBetween(from, to, (node, at) => {
-      if (!node.isText) return true;
-      const s = suggestionOf(node.marks, type);
-      const lo = Math.max(at, from);
-      const hi = Math.min(at + node.nodeSize, to);
-      if (s?.kind === "insert" && s.by === by) own.push([lo, hi]);
-      else if (s?.kind !== "delete") out.addMark(lo, hi, mark("delete"));
-      return false;
-    });
-    for (const [lo, hi] of [...own].reverse()) out.delete(lo, hi);
-  }
-  const backwards = state.selection.empty && state.selection.from === to && to > from && !slice.content.size;
-  let caret = backwards ? out.mapping.map(from, -1) : out.mapping.map(to, 1);
-  if (slice.content.size) {
-    const at = out.mapping.map(to, 1);
-    out.insert(at, slice.content);
-    out.addMark(at, at + slice.content.size, mark("insert"));
-    caret = at + slice.content.size;
-  }
-  out.setSelection(TextSelection.create(out.doc, Math.min(caret, out.doc.content.size)));
-  out.setMeta(SKIP, true);
-  return out;
+  const del = markFor(type, "delete", by);
+  state.doc.nodesBetween(from, to, (node, at) => {
+    if (!node.isText) return true;
+    const s = suggestionOf(node.marks, type);
+    const lo = Math.max(at, from);
+    const hi = Math.min(at + node.nodeSize, to);
+    if (s?.kind === "insert" && s.by === by) own.push([lo, hi]);
+    else if (s?.kind !== "delete") tr.addMark(lo, hi, del);
+    return false;
+  });
+  for (const [lo, hi] of own.reverse()) tr.delete(lo, hi);
+  tr.setMeta(SKIP, true);
+  return tr;
 }
 
 export const suggestMode = createExtension(() => ({
@@ -144,21 +138,87 @@ export const suggestMode = createExtension(() => ({
   prosemirrorPlugins: [
     new Plugin({
       key,
-      view(view: EditorView) {
-        (key as unknown as { view?: EditorView }).view = view;
-        return {};
+      props: {
+        // Backspace / Delete in suggest mode strike the text instead of removing it.
+        handleKeyDown(view, event) {
+          if (!isSuggesting() || !me || (event.key !== "Backspace" && event.key !== "Delete")) return false;
+          if (event.metaKey || event.ctrlKey || event.altKey) return false;
+          const type = view.state.schema.marks.suggestion;
+          const { from, to, empty, $from } = view.state.selection;
+          if (!type || !$from.parent.isTextblock) return false;
+          let a = from;
+          let b = to;
+          if (empty) {
+            if (event.key === "Backspace") {
+              if ($from.parentOffset === 0) return false;
+              a = from - 1;
+            } else {
+              if ($from.parentOffset === $from.parent.content.size) return false;
+              b = to + 1;
+            }
+          } else if (!view.state.doc.resolve(b).sameParent($from)) return false;
+          const tr = markDeleted(view.state, a, b, type, me);
+          const caret = event.key === "Backspace" ? tr.mapping.map(a, -1) : tr.mapping.map(b, 1);
+          tr.setSelection(TextSelection.create(tr.doc, caret));
+          view.dispatch(tr);
+          return true;
+        },
+        // Typing over a selection: the selection is struck and the new text is an insert suggestion.
+        handleTextInput(view, from, to, text) {
+          if (!isSuggesting() || !me || from === to) return false;
+          const type = view.state.schema.marks.suggestion;
+          if (!type || !view.state.doc.resolve(from).sameParent(view.state.doc.resolve(to))) return false;
+          const tr = markDeleted(view.state, from, to, type, me);
+          const at = tr.mapping.map(to, 1);
+          tr.insert(at, view.state.schema.text(text, [markFor(type, "insert", me)]));
+          tr.setSelection(TextSelection.create(tr.doc, at + text.length));
+          view.dispatch(tr);
+          return true;
+        },
       },
-      filterTransaction(tr, state) {
-        if (!tr.docChanged || tr.getMeta(SKIP) || !isSuggesting() || !me) return true;
-        // Changes from the live room and from undo pass; only this person's own edits are rewritten.
-        if (tr.getMeta("y-sync$") || tr.getMeta("addToHistory") === false) return true;
-        const type = state.schema.marks.suggestion;
-        const view = (key as unknown as { view?: EditorView }).view;
-        if (!type || !view) return true;
-        const next = rewrite(state, tr, type);
-        if (!next) return true;
-        queueMicrotask(() => view.dispatch(next));
-        return false;
+      // Anything this person inserts in suggest mode carries an insert suggestion.
+      appendTransaction(trs, oldState, newState) {
+        if (!isSuggesting() || !me) return null;
+        const type = newState.schema.marks.suggestion;
+        if (!type) return null;
+        const mine = trs.filter((t) => t.docChanged && !t.getMeta(SKIP) && !t.getMeta("y-sync$") && t.getMeta("addToHistory") !== false);
+        if (!mine.length) return null;
+        const ranges: Array<[number, number]> = [];
+        for (const t of mine) {
+          // Map every inserted range to the final document.
+          const idx = trs.indexOf(t);
+          t.steps.forEach((step, i) => {
+            if (!(step instanceof ReplaceStep)) return;
+            const { from, slice } = step as unknown as { from: number; slice: Slice };
+            if (!slice.content.size) return;
+            let lo = from;
+            let hi = from + slice.content.size;
+            for (let j = i + 1; j < t.steps.length; j++) {
+              const m = t.mapping.maps[j];
+              lo = m.map(lo, 1);
+              hi = m.map(hi, -1);
+            }
+            for (let k = idx + 1; k < trs.length; k++) {
+              lo = trs[k].mapping.map(lo, 1);
+              hi = trs[k].mapping.map(hi, -1);
+            }
+            if (hi > lo) ranges.push([lo, hi]);
+          });
+        }
+        if (!ranges.length) return null;
+        const out = newState.tr;
+        for (const [lo, hi] of ranges) {
+          const $lo = newState.doc.resolve(lo);
+          // Text inside one block only; new blocks (Enter) pass unmarked.
+          if (!$lo.parent.isTextblock || !$lo.sameParent(newState.doc.resolve(hi))) continue;
+          const keep = myInsertBefore(newState, lo, type, me);
+          out.removeMark(lo, hi, type);
+          out.addMark(lo, hi, keep ?? markFor(type, "insert", me));
+        }
+        if (!out.docChanged) return null;
+        out.setMeta(SKIP, true);
+        void oldState;
+        return out;
       },
     }),
   ],

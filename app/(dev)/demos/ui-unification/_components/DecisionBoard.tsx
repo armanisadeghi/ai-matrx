@@ -11,13 +11,12 @@
  */
 
 import { useClipboard } from "@ai-matrx/kit/clipboard";
-import { useEffect, useRef, useState } from "react";
-import { RecordsProvider, useAppTable } from "@ai-matrx/records/react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { supabase } from "@/utils/supabase/client";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { useOrganizationRequired } from "@/features/organizations/useOrganizationRequired";
 import { OrganizationContextNotice } from "@/features/organizations/components/OrganizationRequiredNotice";
-import { uiDecisionPicks } from "../decision-picks.app-table";
 import { Input } from "@ai-matrx/design-system";
 import { TapTargetButtonGroup } from "@ai-matrx/tap-target";
 import {
@@ -29,7 +28,6 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { toast } from "@/lib/toast";
 import { cn } from "@/lib/utils";
 import { AGREED, DECISIONS, type Decision, type DecisionStatus } from "./decisions";
-import { useAppRecordsConfig } from "@/features/data-tables/records-ui-host/recordsUiHost";
 import { downloadFile } from "@ai-matrx/kit/download";
 
 const STORAGE_KEY = "ui-unification-decisions-round2";
@@ -233,7 +231,6 @@ export function DecisionBoard() {
   const userId = useAppSelector(selectUserId);
   // org-filter: server-call the picks table lives in the one organization the person works in
   const active = useOrganizationRequired();
-  const recordsConfig = useAppRecordsConfig(active.organizationId ?? null);
   if (!userId || active.organizationState !== "ready" || !active.organizationId) {
     return (
       <OrganizationContextNotice
@@ -242,24 +239,56 @@ export function DecisionBoard() {
       />
     );
   }
-  return (
-    <RecordsProvider
-      config={recordsConfig}
-    >
-      <ConnectedBoard />
-    </RecordsProvider>
-  );
+  return <ConnectedBoard organizationId={active.organizationId} userId={userId} />;
 }
 
-function ConnectedBoard() {
-  const { rows, upsert, loading, error, status } = useAppTable(uiDecisionPicks);
+/** One saved pick, as `ui.decision_pick` holds it (graduated from the app table `ui_decision_picks`). */
+interface PickRow {
+  id: string;
+  decision_id: string;
+  winner: string | null;
+  note: string | null;
+}
+
+function ConnectedBoard({ organizationId, userId }: { organizationId: string; userId: string }) {
+  const [rows, setRows] = useState<PickRow[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [writeError, setWriteError] = useState<string | null>(null);
   const imported = useRef(false);
+  const table = () => supabase.schema("ui").from("decision_pick");
+
+  const load = useCallback(async () => {
+    const { data, error } = await table()
+      .select("id, decision_id, winner, note")
+      .eq("organization_id", organizationId)
+      .is("deleted_at", null);
+    if (error) setLoadError(error.message);
+    else {
+      setLoadError(null);
+      setRows((data ?? []) as PickRow[]);
+    }
+    setLoading(false);
+  }, [organizationId]);
+
+  useEffect(() => {
+    void load();
+  }, [load]);
 
   const picks: Picks = {};
   for (const r of rows) {
     picks[r.decision_id] = { winner: r.winner ?? undefined, note: r.note ?? undefined };
   }
+
+  const upsert = async (value: { decision_id: string; winner: string | null; note: string | null }) => {
+    const existing = rows.find((r) => r.decision_id === value.decision_id);
+    const { error } = existing
+      ? await table().update({ winner: value.winner, note: value.note, updated_by: userId }).eq("id", existing.id)
+      : await table().insert({ ...value, organization_id: organizationId, created_by: userId, updated_by: userId });
+    if (error) return { ok: false as const, error };
+    await load();
+    return { ok: true as const };
+  };
 
   const save = async (id: string, next: DecisionState) => {
     const written = await upsert({
@@ -272,7 +301,7 @@ function ConnectedBoard() {
 
   // One-time import of picks an earlier version kept in localStorage; cleared only once saved.
   useEffect(() => {
-    if (imported.current || loading || error || status !== "ok") return;
+    if (imported.current || loading || loadError) return;
     imported.current = true;
     const legacy = Object.entries(readLegacyPicks());
     if (legacy.length === 0) return;
@@ -291,13 +320,13 @@ function ConnectedBoard() {
       }
       clearLegacyPicks();
     })();
-  }, [loading, error, status, rows, upsert]);
+  }, [loading, loadError, rows]);
 
   return (
     <DecisionBoardView
       picks={picks}
       loading={loading && rows.length === 0}
-      error={error?.message ?? writeError}
+      error={loadError ?? writeError}
       onChange={(id, patch) => void save(id, patch(picks[id] ?? {}))}
     />
   );

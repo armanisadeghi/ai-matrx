@@ -21,6 +21,7 @@ import { selectIsAdmin } from "@/lib/redux/selectors/userSelectors";
 import { selectActiveServer } from "@/lib/redux/slices/apiConfigSlice";
 import { describeServerTarget } from "@/lib/api/server-identity";
 import { useDirectiveCatalog } from "@/features/directive-catalog/hooks/useDirectiveCatalog";
+import { loadNounSchemas } from "@/features/directive-catalog/catalogCache";
 import { DirectiveCatalogGrid } from "@/features/directive-catalog/components/DirectiveCatalogGrid";
 import {
   DirectiveBuilderPanel,
@@ -63,7 +64,23 @@ export function DirectiveCatalogClient() {
   });
   const canvas = useOptionalCanvas();
   const inspect = (selection: DirectiveShapeSelection) => {
-    openCanvasItem(canvas, directiveShapeOpenInput(selection));
+    if (selection.kind === "custom_action") {
+      openCanvasItem(canvas, directiveShapeOpenInput(selection));
+      return;
+    }
+    if (!baseUrl) return;
+    // ONE noun's schemas, on demand — the summary carries none (G12).
+    loadNounSchemas(baseUrl, selection.noun.noun).then(
+      (found) =>
+        openCanvasItem(
+          canvas,
+          directiveShapeOpenInput(selection, found.schemas?.[selection.verb]),
+        ),
+      (err: unknown) =>
+        toast.error(
+          `Couldn't load the ${selection.verb}:${selection.noun.noun} shape (${err instanceof Error ? err.message : "unknown error"}).`,
+        ),
+    );
   };
   const [busyToggle, setBusyToggle] = useState<string | null>(null);
   const builderRef = useRef<HTMLDivElement>(null);

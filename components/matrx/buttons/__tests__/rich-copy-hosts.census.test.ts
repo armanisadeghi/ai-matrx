@@ -469,7 +469,12 @@ const SURFACE_REQUIRES: Record<string, Array<[RegExp, string]>> = {
   ],
   "features/spaces/editor/SpaceEditor.tsx": [
     [/useSelectionZone\(/, "a Space is a selection zone of the one toolbar"],
+  ],
+  "features/spaces/editor/selection-format.tsx": [
     [/selection:comment/, "Comment is a registered toolbar action, not a second bubble"],
+    [/selection:format-link/, "Link is a registered format action"],
+    [/selection:format-color/, "Text colour is a registered format action"],
+    [/selection:format-h1/, "the block type is a registered format action"],
   ],
   "features/documents/components/DocumentRecord.tsx": [
     [/univerDocToMarkdown\(/, "a Univer document copies with its markup (headings, bold, lists, tables)"],
@@ -509,8 +514,8 @@ describe("J. the surfaces the first sweeps missed", () => {
     const rel = "features/spaces/editor/SpaceEditor.tsx";
     fs.mkdirSync(path.dirname(path.join(tmp, rel)), { recursive: true });
     fs.writeFileSync(path.join(tmp, rel), "<FormattingToolbarController />");
-    expect(surfaceGaps(tmp, { [rel]: SURFACE_REQUIRES[rel] }, SURFACE_FORBIDS)).toHaveLength(3);
-    fs.writeFileSync(path.join(tmp, rel), 'useSelectionZone(el, { host: { a: "selection:comment" } });');
+    expect(surfaceGaps(tmp, { [rel]: SURFACE_REQUIRES[rel] }, SURFACE_FORBIDS)).toHaveLength(2);
+    fs.writeFileSync(path.join(tmp, rel), 'useSelectionZone(el, { host: {} });');
     expect(surfaceGaps(tmp, { [rel]: SURFACE_REQUIRES[rel] }, SURFACE_FORBIDS)).toEqual([]);
     fs.rmSync(tmp, { recursive: true, force: true });
   });

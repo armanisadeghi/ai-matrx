@@ -26,10 +26,8 @@ import { AGENT_ICON } from "@/components/icons/domain-icons";
 import { mentionCandidates } from "@/features/rich-document/annotations/service";
 import { applyMarkdownKey } from "./markdown-keys";
 import { openMissedSlash } from "./slash-guard";
-import { Bold, CalendarDays, Code, Italic, MessageSquare, Strikethrough } from "lucide-react";
-import type { Action } from "@ai-matrx/alchemy/actions";
-import { registerAlchemyIcon } from "@ai-matrx/rich-content/utils/alchemy-icon-keys";
-import { PASSAGE_ACTIONS_HOST_KEY, shownInSelectionMode } from "@ai-matrx/rich-content/selection-toolbar/selection-actions";
+import { CalendarDays } from "lucide-react";
+import { PASSAGE_ACTIONS_HOST_KEY } from "@ai-matrx/rich-content/selection-toolbar/selection-actions";
 import { useSelectionZone } from "@ai-matrx/rich-content/selection-toolbar/selection-zones";
 
 import { spaceCommentSource } from "../collab/comments";
@@ -43,7 +41,8 @@ import { INSTANT_CLOSE, SLASH_MENU } from "./floating";
 import { makeBlockMenu, type BlockMenuActions } from "./BlockMenu";
 import { currentBlockId, duplicateBlocks, selectedOrCurrent } from "./block-actions";
 import { fromEngine, toEngine, type EngineBlock } from "./convert";
-import { PasteUrlMenu, pastedUrl, type PastedUrl } from "./PasteUrlMenu";
+import { PasteUrlMenu, pastedAnchor, pastedUrl, type PastedUrl } from "./PasteUrlMenu";
+import { spacePanel, spaceSelectionActions } from "./selection-format";
 import { SYNCED_CLIP } from "./synced-block";
 import { SuggestionCard, suggestMode } from "./suggest";
 import { useRubberBand } from "./rubber-band";
@@ -208,8 +207,7 @@ export function SpaceEditor({ spaceId, initialBlocks, editable, onChange, slash,
         const block = ed.getTextCursorPosition().block;
         const content = (Array.isArray(block.content) ? block.content : []) as Array<{ type: string; text?: string }>;
         const alone = content.length === 1 && content[0].type === "link";
-        const rect = window.getSelection()?.getRangeAt(0)?.getBoundingClientRect();
-        setPasted({ url, blockId: block.id, alone, at: { left: rect?.left ?? 0, top: (rect?.bottom ?? 0) + 6 } });
+        setPasted({ url, blockId: block.id, alone, at: pastedAnchor() });
         return true;
       },
       tables: { headers: true, splitCells: false, cellBackgroundColor: true, cellTextColor: true },
@@ -267,54 +265,12 @@ export function SpaceEditor({ spaceId, initialBlocks, editable, onChange, slash,
   // then these registered actions — the inline styles, Ask AI and Comment. BlockNote's own formatting bubble is
   // gone (two bubbles over one selection); the toolbar's mode table decides what shows while editing.
   const [zoneElement, setZoneElement] = useState<HTMLElement | null>(null);
-  const passageActions: Action[] = [
-    ...(editable
-      ? ([
-          ["selection:format-bold", "Bold", Bold, "bold"],
-          ["selection:format-italic", "Italic", Italic, "italic"],
-          ["selection:format-strike", "Strikethrough", Strikethrough, "strike"],
-          ["selection:format-code", "Code", Code, "code"],
-        ] as const).map(
-          ([id, label, Icon, style], i): Action => ({
-            id,
-            label,
-            icon: registerAlchemyIcon(Icon),
-            category: "edit",
-            order: 10 + i,
-            placement: "primary",
-            preserveSelection: true,
-            eligible: (t) => (shownInSelectionMode(id, t) ? { status: "available" } : { status: "absent" }),
-            run: () => {
-              editor.focus();
-              editor.toggleStyles({ [style]: true } as never);
-            },
-          }),
-        )
-      : []),
-    {
-      id: "selection:ai",
-      label: "Ask AI",
-      icon: registerAlchemyIcon(AGENT_ICON),
-      category: "ai",
-      order: 20,
-      placement: "primary",
-      preserveSelection: true,
-      eligible: (t) => (editable && shownInSelectionMode("selection:ai", t) ? { status: "available" } : { status: "absent" }),
-      run: () => menu.askAi(),
-    },
-    {
-      id: "selection:comment",
-      label: "Comment",
-      icon: registerAlchemyIcon(MessageSquare),
-      category: "feedback",
-      order: 21,
-      placement: "primary",
-      preserveSelection: true,
-      eligible: (t) => (onComment && shownInSelectionMode("selection:comment", t) ? { status: "available" } : { status: "absent" }),
-      run: () => commentOnSelection(),
-    },
-  ];
-  useSelectionZone(zoneElement, { editable, host: { [PASSAGE_ACTIONS_HOST_KEY]: passageActions } });
+  const passageActions = spaceSelectionActions({ editor, editable, hasComment: Boolean(onComment), askAi: menu.askAi, comment: () => commentOnSelection() });
+  useSelectionZone(zoneElement, {
+    editable,
+    host: { [PASSAGE_ACTIONS_HOST_KEY]: passageActions },
+    renderPanel: (panel, ui) => spacePanel(editor, panel, ui),
+  });
 
   // Deep link to a block (#block-<id>): scroll to it and flash it (E2). Polls until the block renders.
   useEffect(() => {

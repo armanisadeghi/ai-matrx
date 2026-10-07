@@ -8,6 +8,8 @@ import type { ArtifactRendererProps } from "../types";
 import HtmlInlinePreview from "@/features/html-pages/components/HtmlInlinePreview";
 import KindValueFrontDoor from "@/components/official/structured-value/KindValueFrontDoor";
 import { KIND_KEY } from "@ai-matrx/content-ir";
+import { FileCode } from "lucide-react";
+import { EmptyState } from "@ai-matrx/design-system/controls";
 
 /**
  * An artifact whose subtype nobody registered (an agent's own `checklist`) falls
@@ -60,6 +62,16 @@ export default function HtmlArtifact({
     typeof data === "string"
       ? data
       : ((data as { html?: string })?.html ?? raw ?? "");
+
+  // A page with no markup is never a blank pane: say so (a still-streaming one is
+  // not empty yet — it is arriving).
+  if (!html.trim() && !isStreamActive) {
+    return (
+      <div className={fill ? "flex h-full items-center justify-center" : "p-3"} data-empty-html="">
+        <EmptyState icon={<FileCode className="size-5" />} title="This page is empty" line="It has no content to show yet." />
+      </div>
+    );
+  }
 
   const kindValue = kindValueOfHtmlBody(html);
   // A `{"__kind": …` body that has not finished arriving is never shown as text.

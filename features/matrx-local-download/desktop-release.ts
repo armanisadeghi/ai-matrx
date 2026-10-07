@@ -1,3 +1,5 @@
+import { formatFileSize } from "@ai-matrx/kit/format";
+
 /**
  * The current Matrx Desktop release for macOS, read from the update feed the app itself uses.
  * The feed's `path` field names the signed, notarized zip in the same folder, so the download
@@ -67,5 +69,5 @@ export async function getMatrxDesktopMacRelease(): Promise<MatrxDesktopMacReleas
 
 export function formatDownloadSize(bytes: number | null): string | null {
   if (bytes === null) return null;
-  return `${Math.round(bytes / 1_000_000)} MB`;
+  return formatFileSize(bytes, { base: 1000 });
 }

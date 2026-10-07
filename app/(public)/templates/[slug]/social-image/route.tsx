@@ -3,6 +3,7 @@
 // OpenGraph and Twitter image point here (generateMetadata in ../page.tsx).
 
 import { ImageResponse } from "next/og";
+import { formatUsd } from "@ai-matrx/kit/format";
 
 import { readTemplatePage } from "@/features/make/gallery/publicCatalogue.server";
 import type { ShowField, ShowTable } from "@/features/make/gallery/TemplateShowcase";
@@ -15,7 +16,7 @@ const SIMPLE = new Set(["text", "select", "currency", "number", "integer", "deci
 
 function cell(field: ShowField, value: unknown): string {
   if (value === null || value === undefined || value === "") return "—";
-  if (field.parityType === "currency" && typeof value === "number") return `$${value.toLocaleString("en-US")}`;
+  if (field.parityType === "currency" && typeof value === "number") return formatUsd(value, { digits: "whole" });
   if (field.parityType === "percent" && typeof value === "number") return `${value}%`;
   if (field.parityType === "checkbox") return value ? "Yes" : "No";
   if (typeof value === "string" && /^\d{4}-\d{2}-\d{2}/.test(value)) {

@@ -120,13 +120,61 @@
       "purposes": [],
       "schema": {
         "$defs": {
+          "AgentVariableControlInput": {
+            "additionalProperties": false,
+            "description": "Bind a variable to a model control (controls as first-class variables).",
+            "properties": {
+              "key": {
+                "description": "The model control this variable sets for the run (e.g. 'temperature', 'aspect_ratio', 'voice'). Pick one the chosen model exposes AND your organization lets callers bind \u2014 agent_catalog list_models reports both (`controls[].variable_bindable`).",
+                "minLength": 1,
+                "title": "Key",
+                "type": "string"
+              }
+            },
+            "required": [
+              "key"
+            ],
+            "title": "AgentVariableControlInput",
+            "type": "object"
+          },
           "AgentVariableInput": {
             "properties": {
+              "control": {
+                "anyOf": [
+                  {
+                    "$ref": "#/$defs/AgentVariableControlInput"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "description": "Bind this variable to a model control: {\"key\": \"aspect_ratio\"}."
+              },
+              "default_value": {
+                "default": "",
+                "description": "The variable's default. For a control-bound variable this IS the agent's own value for that control (the setting is not written separately).",
+                "title": "Default Value",
+                "type": "string"
+              },
               "description": {
                 "default": "",
                 "description": "What this variable contains.",
                 "title": "Description",
                 "type": "string"
+              },
+              "label": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "description": "The person-facing name screens show for this variable (\"Normal Text\"). Omit and screens humanize `name`.",
+                "title": "Label"
               },
               "name": {
                 "description": "Variable name the agent template references.",
@@ -157,15 +205,57 @@
                   "title": "Goals",
                   "type": "string"
                 },
+                "grading_rubric": {
+                  "default": "",
+                  "description": "How a run of this agent is judged: the automatic checks and the owner's pass bar from the mandate brief. The builder writes the prompt against it.",
+                  "title": "Grading Rubric",
+                  "type": "string"
+                },
                 "model_guidance": {
                   "default": "",
                   "description": "Model preference/guidance, e.g. cost vs speed vs intelligence.",
                   "title": "Model Guidance",
                   "type": "string"
                 },
+                "model_id": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "default": null,
+                  "description": "Optional EXPLICIT model pin (an id from agent_catalog list_models). A pin always wins over model_profile; it is validated by the live runnable-model gate and refused by name if unknown \u2014 never replaced.",
+                  "title": "Model Id"
+                },
+                "model_profile": {
+                  "anyOf": [
+                    {
+                      "enum": [
+                        "balanced",
+                        "strongest"
+                      ],
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "default": null,
+                  "description": "Optional database-owned model class. 'balanced' selects a primary, non-premium mid-cost text model; 'strongest' selects a primary premium text model.",
+                  "title": "Model Profile"
+                },
                 "name": {
                   "description": "The agent's display name \u2014 a Title Case Pretty Name ('Keyword Analysis Master'), never snake_case (Arman, 2026-08-22).",
                   "title": "Name",
+                  "type": "string"
+                },
+                "output_format": {
+                  "default": "",
+                  "description": "The person's own words for the answer's format, e.g. 'a Markdown table with columns Owner | Task | Due'. Wins over response_format's prose meaning; the Agent Factory locks and proves it.",
+                  "title": "Output Format",
                   "type": "string"
                 },
                 "output_schema": {
@@ -194,7 +284,7 @@
                     }
                   ],
                   "default": null,
-                  "description": "Optional org placement for an owned agent. Ignored unless owner_user_id is set; when omitted it resolves to the owner's personal org via resolve_effective_organization_id. Never NULL on the written row.",
+                  "description": "Org placement for an owned agent. Ignored unless owner_user_id is set; REQUIRED when it is \u2014 the organization the caller was admitted for (context_organization_id(ctx)) or the one on the record being processed. Never NULL on the written row, never defaulted.",
                   "title": "Owner Organization Id"
                 },
                 "owner_user_id": {
@@ -248,6 +338,14 @@
                   "description": "One-sentence description of the agent.",
                   "title": "Summary",
                   "type": "string"
+                },
+                "term_list_ids": {
+                  "description": "Term lists (glossary / pronunciation / house terms) to ATTACH to the agent, by term-list id. REPLACES the attached set (omitted = unchanged; [] = detach all). Each list must be one you can view; an unknown id is refused by name.",
+                  "items": {
+                    "type": "string"
+                  },
+                  "title": "Term List Ids",
+                  "type": "array"
                 },
                 "tools": {
                   "description": "Executable tools to assign, by canonical tool NAME (from agent_catalog list_tools; DB UUIDs also accepted). Validated against the live registry \u2014 unknown or inactive tools are rejected loudly. Written to the authoritative agent.definition.tools column the executor reads.",
@@ -365,10 +463,63 @@
             "properties": {
               "content": {
                 "items": {
-                  "$ref": "#/$defs/AgentDefinitionTextBlock"
+                  "anyOf": [
+                    {
+                      "$ref": "#/$defs/AgentDefinitionTextBlock"
+                    },
+                    {
+                      "$ref": "#/$defs/DecisionQuestionsPart"
+                    },
+                    {
+                      "$ref": "#/$defs/DecisionAnswersPart"
+                    },
+                    {
+                      "$ref": "#/$defs/SpeechScriptPart"
+                    },
+                    {
+                      "discriminator": {
+                        "mapping": {
+                          "audio": "#/$defs/AudioMediaPart",
+                          "document": "#/$defs/DocumentMediaPart",
+                          "image": "#/$defs/ImageMediaPart",
+                          "video": "#/$defs/VideoMediaPart",
+                          "youtube": "#/$defs/YouTubeMediaPart"
+                        },
+                        "propertyName": "kind"
+                      },
+                      "oneOf": [
+                        {
+                          "$ref": "#/$defs/ImageMediaPart"
+                        },
+                        {
+                          "$ref": "#/$defs/AudioMediaPart"
+                        },
+                        {
+                          "$ref": "#/$defs/VideoMediaPart"
+                        },
+                        {
+                          "$ref": "#/$defs/DocumentMediaPart"
+                        },
+                        {
+                          "$ref": "#/$defs/YouTubeMediaPart"
+                        }
+                      ]
+                    }
+                  ]
                 },
                 "title": "Content",
                 "type": "array"
+              },
+              "flags": {
+                "anyOf": [
+                  {
+                    "$ref": "#/$defs/AgentDefinitionMessageFlags"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null
               },
               "role": {
                 "enum": [
@@ -385,6 +536,50 @@
               "content"
             ],
             "title": "AgentDefinitionMessage",
+            "type": "object"
+          },
+          "AgentDefinitionMessageFlags": {
+            "additionalProperties": false,
+            "description": "Instructions to the translator about a message \u2014 never content\n(typed-messages FEATURE.md, Flag row). ``prefill``: the last assistant turn\nthe reply continues from. ``cache_boundary``: cache everything up to here.\n``example``: a few-shot user/assistant turn.",
+            "properties": {
+              "cache_boundary": {
+                "anyOf": [
+                  {
+                    "type": "boolean"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Cache Boundary"
+              },
+              "example": {
+                "anyOf": [
+                  {
+                    "type": "boolean"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Example"
+              },
+              "prefill": {
+                "anyOf": [
+                  {
+                    "type": "boolean"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Prefill"
+              }
+            },
+            "title": "AgentDefinitionMessageFlags",
             "type": "object"
           },
           "AgentDefinitionSettings": {
@@ -428,6 +623,18 @@
                 "default": null,
                 "title": "Max Output Tokens"
               },
+              "offering_id": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Offering Id"
+              },
               "reasoning_effort": {
                 "anyOf": [
                   {
@@ -452,11 +659,11 @@
                 "anyOf": [
                   {
                     "enum": [
+                      "auto",
                       "concise",
                       "detailed",
-                      "never",
-                      "auto",
-                      "always"
+                      "always",
+                      "never"
                     ],
                     "type": "string"
                   },
@@ -525,6 +732,17 @@
             "additionalProperties": false,
             "description": "One ``{{name}}`` placeholder the agent's messages reference.",
             "properties": {
+              "control": {
+                "anyOf": [
+                  {
+                    "$ref": "#/$defs/AgentDefinitionVariableControl"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null
+              },
               "customComponent": {
                 "anyOf": [
                   {
@@ -668,6 +886,1288 @@
               "type"
             ],
             "title": "AgentDefinitionVariableComponent",
+            "type": "object"
+          },
+          "AgentDefinitionVariableControl": {
+            "additionalProperties": false,
+            "description": "Binds the variable to a model control (controls as first-class variables):\nthe variable's value IS the control's value for the run, and its\n``defaultValue`` is the agent's own literal. Whether a caller may change it\nis the organization's ``agents.controls / variable_bindable_keys`` knob \u2014\n``agent_catalog list_models`` reports it per model.",
+            "properties": {
+              "key": {
+                "minLength": 1,
+                "title": "Key",
+                "type": "string"
+              }
+            },
+            "required": [
+              "key"
+            ],
+            "title": "AgentDefinitionVariableControl",
+            "type": "object"
+          },
+          "AudioMediaPart": {
+            "additionalProperties": false,
+            "allOf": [
+              {
+                "anyOf": [
+                  {
+                    "properties": {
+                      "url": {
+                        "minLength": 1,
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "url"
+                    ]
+                  },
+                  {
+                    "properties": {
+                      "file_id": {
+                        "minLength": 1,
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "file_id"
+                    ]
+                  }
+                ]
+              }
+            ],
+            "properties": {
+              "cdn_url": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Cdn Url"
+              },
+              "duration_ms": {
+                "anyOf": [
+                  {
+                    "type": "integer"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Duration Ms"
+              },
+              "file_id": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "File Id"
+              },
+              "kind": {
+                "const": "audio",
+                "default": "audio",
+                "title": "Kind",
+                "type": "string"
+              },
+              "metadata": {
+                "additionalProperties": true,
+                "title": "Metadata",
+                "type": "object"
+              },
+              "mime_type": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Mime Type"
+              },
+              "origin": {
+                "anyOf": [
+                  {
+                    "enum": [
+                      "matrx",
+                      "external"
+                    ],
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Origin"
+              },
+              "role": {
+                "anyOf": [
+                  {
+                    "const": "lip_sync",
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Role"
+              },
+              "size_bytes": {
+                "anyOf": [
+                  {
+                    "type": "integer"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Size Bytes"
+              },
+              "transcription_result": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Transcription Result"
+              },
+              "type": {
+                "const": "media",
+                "default": "media",
+                "title": "Type",
+                "type": "string"
+              },
+              "url": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Url"
+              },
+              "visibility": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Visibility"
+              }
+            },
+            "required": [
+              "type",
+              "kind"
+            ],
+            "title": "AudioMediaPart",
+            "type": "object"
+          },
+          "DecisionAnswer": {
+            "additionalProperties": false,
+            "description": "One answer, with the holder's own uncertainty attached.",
+            "properties": {
+              "__kind": {
+                "const": "decision_answer",
+                "default": "decision_answer",
+                "description": "The registered kind this payload is an instance of.",
+                "title": "Kind",
+                "type": "string"
+              },
+              "answer": {
+                "anyOf": [
+                  {
+                    "type": "boolean"
+                  },
+                  {
+                    "type": "number"
+                  },
+                  {
+                    "type": "string"
+                  }
+                ],
+                "title": "Answer"
+              },
+              "confidence": {
+                "maximum": 1.0,
+                "minimum": 0.0,
+                "title": "Confidence",
+                "type": "number"
+              },
+              "legend": {
+                "anyOf": [
+                  {
+                    "additionalProperties": {
+                      "type": "string"
+                    },
+                    "type": "object"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Legend"
+              },
+              "probabilities": {
+                "anyOf": [
+                  {
+                    "additionalProperties": {
+                      "type": "number"
+                    },
+                    "type": "object"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Probabilities"
+              },
+              "probability": {
+                "anyOf": [
+                  {
+                    "maximum": 1.0,
+                    "minimum": 0.0,
+                    "type": "number"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Probability"
+              },
+              "type": {
+                "enum": [
+                  "noul",
+                  "choice",
+                  "score"
+                ],
+                "title": "Type",
+                "type": "string"
+              }
+            },
+            "required": [
+              "type",
+              "answer",
+              "confidence"
+            ],
+            "title": "DecisionAnswer",
+            "type": "object"
+          },
+          "DecisionAnswersPart": {
+            "additionalProperties": false,
+            "properties": {
+              "__kind": {
+                "const": "decision_answers",
+                "default": "decision_answers",
+                "title": "Kind",
+                "type": "string"
+              },
+              "answers": {
+                "additionalProperties": {
+                  "$ref": "#/$defs/DecisionAnswer"
+                },
+                "title": "Answers",
+                "type": "object"
+              },
+              "cost_usd": {
+                "minimum": 0.0,
+                "title": "Cost Usd",
+                "type": "number"
+              },
+              "metadata": {
+                "additionalProperties": true,
+                "title": "Metadata",
+                "type": "object"
+              },
+              "method": {
+                "enum": [
+                  "native",
+                  "verbalized",
+                  "verbalized_calibrated"
+                ],
+                "title": "Method",
+                "type": "string"
+              },
+              "model": {
+                "minLength": 1,
+                "title": "Model",
+                "type": "string"
+              },
+              "type": {
+                "const": "decision_answers",
+                "default": "decision_answers",
+                "title": "Type",
+                "type": "string"
+              },
+              "unanswerable": {
+                "additionalProperties": {
+                  "type": "string"
+                },
+                "title": "Unanswerable",
+                "type": "object"
+              },
+              "usage": {
+                "$ref": "#/$defs/DecisionUsage"
+              }
+            },
+            "required": [
+              "model",
+              "method",
+              "usage",
+              "cost_usd",
+              "type"
+            ],
+            "title": "DecisionAnswersPart",
+            "type": "object"
+          },
+          "DecisionQuestion": {
+            "additionalProperties": false,
+            "description": "One question. Not a kind: it has no meaning outside its batch.",
+            "properties": {
+              "__kind": {
+                "default": "",
+                "description": "The registered kind this payload is an instance of, when it is one.",
+                "title": "Kind",
+                "type": "string"
+              },
+              "criteria": {
+                "anyOf": [
+                  {
+                    "additionalProperties": {
+                      "type": "string"
+                    },
+                    "type": "object"
+                  },
+                  {
+                    "items": {
+                      "type": "string"
+                    },
+                    "type": "array"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Criteria"
+              },
+              "instructions": {
+                "minLength": 1,
+                "title": "Instructions",
+                "type": "string"
+              },
+              "name": {
+                "maxLength": 128,
+                "minLength": 1,
+                "title": "Name",
+                "type": "string"
+              },
+              "suggested_threshold": {
+                "anyOf": [
+                  {
+                    "maximum": 1.0,
+                    "minimum": 0.0,
+                    "type": "number"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Suggested Threshold"
+              },
+              "type": {
+                "enum": [
+                  "noul",
+                  "choice",
+                  "score"
+                ],
+                "title": "Type",
+                "type": "string"
+              }
+            },
+            "required": [
+              "name",
+              "type",
+              "instructions"
+            ],
+            "title": "DecisionQuestion",
+            "type": "object"
+          },
+          "DecisionQuestionsPart": {
+            "additionalProperties": false,
+            "properties": {
+              "__kind": {
+                "const": "decision_questions",
+                "default": "decision_questions",
+                "title": "Kind",
+                "type": "string"
+              },
+              "metadata": {
+                "additionalProperties": true,
+                "title": "Metadata",
+                "type": "object"
+              },
+              "questions": {
+                "items": {
+                  "$ref": "#/$defs/DecisionQuestion"
+                },
+                "minItems": 1,
+                "title": "Questions",
+                "type": "array"
+              },
+              "type": {
+                "const": "decision_questions",
+                "default": "decision_questions",
+                "title": "Type",
+                "type": "string"
+              }
+            },
+            "required": [
+              "questions",
+              "type"
+            ],
+            "title": "DecisionQuestionsPart",
+            "type": "object"
+          },
+          "DecisionUsage": {
+            "additionalProperties": false,
+            "description": "What the decision call consumed. Zero is a real value, never a stand-in.",
+            "properties": {
+              "__kind": {
+                "default": "",
+                "description": "The registered kind this payload is an instance of, when it is one.",
+                "title": "Kind",
+                "type": "string"
+              },
+              "input_tokens": {
+                "minimum": 0,
+                "title": "Input Tokens",
+                "type": "integer"
+              },
+              "output_tokens": {
+                "minimum": 0,
+                "title": "Output Tokens",
+                "type": "integer"
+              }
+            },
+            "required": [
+              "input_tokens",
+              "output_tokens"
+            ],
+            "title": "DecisionUsage",
+            "type": "object"
+          },
+          "DocumentMediaPart": {
+            "additionalProperties": false,
+            "allOf": [
+              {
+                "anyOf": [
+                  {
+                    "properties": {
+                      "url": {
+                        "minLength": 1,
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "url"
+                    ]
+                  },
+                  {
+                    "properties": {
+                      "file_id": {
+                        "minLength": 1,
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "file_id"
+                    ]
+                  }
+                ]
+              }
+            ],
+            "properties": {
+              "cdn_url": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Cdn Url"
+              },
+              "file_id": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "File Id"
+              },
+              "height": {
+                "anyOf": [
+                  {
+                    "type": "integer"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Height"
+              },
+              "kind": {
+                "const": "document",
+                "default": "document",
+                "title": "Kind",
+                "type": "string"
+              },
+              "metadata": {
+                "additionalProperties": true,
+                "title": "Metadata",
+                "type": "object"
+              },
+              "mime_type": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Mime Type"
+              },
+              "origin": {
+                "anyOf": [
+                  {
+                    "enum": [
+                      "matrx",
+                      "external"
+                    ],
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Origin"
+              },
+              "page_count": {
+                "anyOf": [
+                  {
+                    "type": "integer"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Page Count"
+              },
+              "size_bytes": {
+                "anyOf": [
+                  {
+                    "type": "integer"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Size Bytes"
+              },
+              "type": {
+                "const": "media",
+                "default": "media",
+                "title": "Type",
+                "type": "string"
+              },
+              "url": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Url"
+              },
+              "visibility": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Visibility"
+              },
+              "width": {
+                "anyOf": [
+                  {
+                    "type": "integer"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Width"
+              }
+            },
+            "required": [
+              "type",
+              "kind"
+            ],
+            "title": "DocumentMediaPart",
+            "type": "object"
+          },
+          "ImageMediaPart": {
+            "additionalProperties": false,
+            "allOf": [
+              {
+                "anyOf": [
+                  {
+                    "properties": {
+                      "url": {
+                        "minLength": 1,
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "url"
+                    ]
+                  },
+                  {
+                    "properties": {
+                      "file_id": {
+                        "minLength": 1,
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "file_id"
+                    ]
+                  }
+                ]
+              }
+            ],
+            "properties": {
+              "cdn_url": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Cdn Url"
+              },
+              "file_id": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "File Id"
+              },
+              "height": {
+                "anyOf": [
+                  {
+                    "type": "integer"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Height"
+              },
+              "kind": {
+                "const": "image",
+                "default": "image",
+                "title": "Kind",
+                "type": "string"
+              },
+              "metadata": {
+                "additionalProperties": true,
+                "title": "Metadata",
+                "type": "object"
+              },
+              "mime_type": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Mime Type"
+              },
+              "name": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Name"
+              },
+              "origin": {
+                "anyOf": [
+                  {
+                    "enum": [
+                      "matrx",
+                      "external"
+                    ],
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Origin"
+              },
+              "role": {
+                "anyOf": [
+                  {
+                    "enum": [
+                      "subject",
+                      "character",
+                      "style",
+                      "mask",
+                      "edit_target",
+                      "composition_control",
+                      "first_frame",
+                      "last_frame",
+                      "asset"
+                    ],
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Role"
+              },
+              "size_bytes": {
+                "anyOf": [
+                  {
+                    "type": "integer"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Size Bytes"
+              },
+              "type": {
+                "const": "media",
+                "default": "media",
+                "title": "Type",
+                "type": "string"
+              },
+              "url": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Url"
+              },
+              "visibility": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Visibility"
+              },
+              "width": {
+                "anyOf": [
+                  {
+                    "type": "integer"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Width"
+              }
+            },
+            "required": [
+              "type",
+              "kind"
+            ],
+            "title": "ImageMediaPart",
+            "type": "object"
+          },
+          "SpeechScriptPart": {
+            "additionalProperties": false,
+            "properties": {
+              "__kind": {
+                "const": "speech_script",
+                "default": "speech_script",
+                "title": "Kind",
+                "type": "string"
+              },
+              "metadata": {
+                "additionalProperties": true,
+                "title": "Metadata",
+                "type": "object"
+              },
+              "turns": {
+                "items": {
+                  "$ref": "#/$defs/SpeechTurn"
+                },
+                "minItems": 1,
+                "title": "Turns",
+                "type": "array"
+              },
+              "type": {
+                "const": "speech_script",
+                "default": "speech_script",
+                "title": "Type",
+                "type": "string"
+              }
+            },
+            "required": [
+              "turns",
+              "type"
+            ],
+            "title": "SpeechScriptPart",
+            "type": "object"
+          },
+          "SpeechTurn": {
+            "additionalProperties": false,
+            "description": "One spoken turn. Not a kind: it has no meaning outside its script.",
+            "properties": {
+              "__kind": {
+                "default": "",
+                "description": "The registered kind this payload is an instance of, when it is one.",
+                "title": "Kind",
+                "type": "string"
+              },
+              "direction": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "description": "Free-text performance direction for this turn only (e.g. 'warm, a little amused').",
+                "title": "Direction"
+              },
+              "pause_after_ms": {
+                "anyOf": [
+                  {
+                    "maximum": 10000,
+                    "minimum": 0,
+                    "type": "integer"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "description": "Silence after this turn, in milliseconds.",
+                "title": "Pause After Ms"
+              },
+              "speaker": {
+                "description": "The speaker's name. Turns with the same name are the same speaker. For multi-speaker vendors (Gemini) this is the transcript label.",
+                "maxLength": 40,
+                "minLength": 1,
+                "title": "Speaker",
+                "type": "string"
+              },
+              "text": {
+                "description": "What is said. Any {{variable}} is filled at run time.",
+                "minLength": 1,
+                "title": "Text",
+                "type": "string"
+              },
+              "voice": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "description": "The voice this speaker uses: a literal provider voice id from the model's catalog, or a {{variable}}. Empty = bound to the agent's Voice setting (tts_voice).",
+                "title": "Voice"
+              }
+            },
+            "required": [
+              "speaker",
+              "text"
+            ],
+            "title": "SpeechTurn",
+            "type": "object"
+          },
+          "VideoMediaPart": {
+            "additionalProperties": false,
+            "allOf": [
+              {
+                "anyOf": [
+                  {
+                    "properties": {
+                      "url": {
+                        "minLength": 1,
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "url"
+                    ]
+                  },
+                  {
+                    "properties": {
+                      "file_id": {
+                        "minLength": 1,
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "file_id"
+                    ]
+                  }
+                ]
+              }
+            ],
+            "properties": {
+              "cdn_url": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Cdn Url"
+              },
+              "duration_ms": {
+                "anyOf": [
+                  {
+                    "type": "integer"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Duration Ms"
+              },
+              "file_id": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "File Id"
+              },
+              "height": {
+                "anyOf": [
+                  {
+                    "type": "integer"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Height"
+              },
+              "kind": {
+                "const": "video",
+                "default": "video",
+                "title": "Kind",
+                "type": "string"
+              },
+              "metadata": {
+                "additionalProperties": true,
+                "title": "Metadata",
+                "type": "object"
+              },
+              "mime_type": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Mime Type"
+              },
+              "name": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Name"
+              },
+              "origin": {
+                "anyOf": [
+                  {
+                    "enum": [
+                      "matrx",
+                      "external"
+                    ],
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Origin"
+              },
+              "role": {
+                "anyOf": [
+                  {
+                    "enum": [
+                      "extend",
+                      "restyle"
+                    ],
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Role"
+              },
+              "size_bytes": {
+                "anyOf": [
+                  {
+                    "type": "integer"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Size Bytes"
+              },
+              "type": {
+                "const": "media",
+                "default": "media",
+                "title": "Type",
+                "type": "string"
+              },
+              "url": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Url"
+              },
+              "visibility": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Visibility"
+              },
+              "width": {
+                "anyOf": [
+                  {
+                    "type": "integer"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Width"
+              }
+            },
+            "required": [
+              "type",
+              "kind"
+            ],
+            "title": "VideoMediaPart",
+            "type": "object"
+          },
+          "YouTubeMediaPart": {
+            "additionalProperties": false,
+            "properties": {
+              "external_url": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "External Url"
+              },
+              "file_id": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "File Id"
+              },
+              "kind": {
+                "const": "youtube",
+                "default": "youtube",
+                "title": "Kind",
+                "type": "string"
+              },
+              "metadata": {
+                "additionalProperties": true,
+                "title": "Metadata",
+                "type": "object"
+              },
+              "mime_type": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Mime Type"
+              },
+              "origin": {
+                "const": "external",
+                "default": "external",
+                "title": "Origin",
+                "type": "string"
+              },
+              "size_bytes": {
+                "anyOf": [
+                  {
+                    "type": "integer"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Size Bytes"
+              },
+              "type": {
+                "const": "media",
+                "default": "media",
+                "title": "Type",
+                "type": "string"
+              },
+              "url": {
+                "minLength": 1,
+                "title": "Url",
+                "type": "string"
+              }
+            },
+            "required": [
+              "url",
+              "type",
+              "kind"
+            ],
+            "title": "YouTubeMediaPart",
             "type": "object"
           }
         },
@@ -1757,6 +3257,10 @@
                 "agent_type": {
                   "anyOf": [
                     {
+                      "enum": [
+                        "user",
+                        "builtin"
+                      ],
                       "type": "string"
                     },
                     {
@@ -1822,6 +3326,50 @@
                   ],
                   "default": []
                 },
+                "created_via": {
+                  "enum": [
+                    "factory_pipeline",
+                    "agent_author_mcp",
+                    "agent_studio",
+                    "migration_seed",
+                    "other_system",
+                    "unknown"
+                  ],
+                  "title": "Created Via",
+                  "type": "string"
+                },
+                "custom_fields": {
+                  "anyOf": [
+                    {
+                      "anyOf": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "boolean"
+                        },
+                        {
+                          "type": "number"
+                        },
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "array"
+                        },
+                        {
+                          "type": "object"
+                        }
+                      ],
+                      "description": "Any JSON value \u2014 this column is json/jsonb.",
+                      "title": "JSON"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "default": {}
+                },
                 "custom_tools": {
                   "anyOf": [
                     {
@@ -1877,6 +3425,18 @@
                   ],
                   "default": null,
                   "title": "Description"
+                },
+                "follows_source": {
+                  "anyOf": [
+                    {
+                      "type": "boolean"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "default": false,
+                  "title": "Follows Source"
                 },
                 "input_contract": {
                   "anyOf": [
@@ -2189,6 +3749,11 @@
                 "rag_awareness_mode": {
                   "anyOf": [
                     {
+                      "enum": [
+                        "none",
+                        "hint",
+                        "inline_small"
+                      ],
                       "type": "string"
                     },
                     {
@@ -2273,6 +3838,18 @@
                   ],
                   "default": null,
                   "title": "Source Agent Id"
+                },
+                "source_version": {
+                  "anyOf": [
+                    {
+                      "type": "integer"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "default": null,
+                  "title": "Source Version"
                 },
                 "tags": {
                   "anyOf": [
@@ -2380,30 +3957,6 @@
                   ],
                   "default": {}
                 },
-                "updated_by_system": {
-                  "anyOf": [
-                    {
-                      "type": "string"
-                    },
-                    {
-                      "type": "null"
-                    }
-                  ],
-                  "default": null,
-                  "title": "Updated By System"
-                },
-                "updated_by_tier": {
-                  "anyOf": [
-                    {
-                      "type": "string"
-                    },
-                    {
-                      "type": "null"
-                    }
-                  ],
-                  "default": null,
-                  "title": "Updated By Tier"
-                },
                 "variable_definitions": {
                   "anyOf": [
                     {
@@ -2438,7 +3991,8 @@
                 }
               },
               "required": [
-                "name"
+                "name",
+                "created_via"
               ],
               "title": "CreateAgentItem",
               "type": "object"
@@ -2543,6 +4097,38 @@
                   ],
                   "default": "USD",
                   "title": "Currency"
+                },
+                "custom_fields": {
+                  "anyOf": [
+                    {
+                      "anyOf": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "boolean"
+                        },
+                        {
+                          "type": "number"
+                        },
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "array"
+                        },
+                        {
+                          "type": "object"
+                        }
+                      ],
+                      "description": "Any JSON value \u2014 this column is json/jsonb.",
+                      "title": "JSON"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "default": {}
                 },
                 "description": {
                   "anyOf": [
@@ -2724,32 +4310,101 @@
     {
       "capability": "side_effect",
       "class": "create",
-      "doc": "Create one Data Table row (workbench.udt_datasets). Payload = the table's writable columns, typed from the live model; DB-required columns without defaults must be present. Batch via items.",
-      "item_model": "CreateDatasetItem",
-      "noun": "dataset",
+      "doc": "Create one Private contact research row (crm.party_research). Payload = the table's writable columns, typed from the live model; DB-required columns without defaults must be present. Batch via items.",
+      "item_model": "CreateCrmPartyResearchItem",
+      "noun": "crm_party_research",
       "purposes": [],
       "schema": {
         "additionalProperties": false,
         "properties": {
           "__kind": {
-            "const": "directive_v1_create_dataset",
+            "const": "directive_v1_create_crm_party_research",
             "type": "string"
           },
           "items": {
             "items": {
               "additionalProperties": false,
               "properties": {
-                "description": {
+                "category": {
                   "anyOf": [
                     {
+                      "enum": [
+                        "unknown",
+                        "real_user",
+                        "friend",
+                        "family",
+                        "employee",
+                        "former_employee",
+                        "owner",
+                        "test",
+                        "bot"
+                      ],
                       "type": "string"
                     },
                     {
                       "type": "null"
                     }
                   ],
-                  "default": null,
-                  "title": "Description"
+                  "default": "unknown",
+                  "title": "Category"
+                },
+                "contact_state": {
+                  "anyOf": [
+                    {
+                      "enum": [
+                        "not_contacted",
+                        "draft",
+                        "contacted",
+                        "replied",
+                        "trial_active",
+                        "declined",
+                        "hold",
+                        "opted_out"
+                      ],
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "default": "not_contacted",
+                  "title": "Contact State"
+                },
+                "custom_fields": {
+                  "anyOf": [
+                    {
+                      "anyOf": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "boolean"
+                        },
+                        {
+                          "type": "number"
+                        },
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "array"
+                        },
+                        {
+                          "type": "object"
+                        }
+                      ],
+                      "description": "Any JSON value \u2014 this column is json/jsonb.",
+                      "title": "JSON"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "default": {}
+                },
+                "label": {
+                  "title": "Label",
+                  "type": "string"
                 },
                 "metadata": {
                   "anyOf": [
@@ -2783,63 +4438,58 @@
                   ],
                   "default": {}
                 },
-                "project_id": {
-                  "anyOf": [
-                    {
-                      "type": "string"
-                    },
-                    {
-                      "type": "null"
-                    }
-                  ],
-                  "default": null,
-                  "title": "Project Id"
-                },
-                "table_name": {
-                  "title": "Table Name",
+                "notes": {
+                  "title": "Notes",
                   "type": "string"
                 },
-                "task_id": {
+                "outreach": {
                   "anyOf": [
                     {
-                      "type": "string"
+                      "anyOf": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "boolean"
+                        },
+                        {
+                          "type": "number"
+                        },
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "array"
+                        },
+                        {
+                          "type": "object"
+                        }
+                      ],
+                      "description": "Any JSON value \u2014 this column is json/jsonb.",
+                      "title": "JSON"
                     },
                     {
                       "type": "null"
                     }
                   ],
-                  "default": null,
-                  "title": "Task Id"
+                  "default": {}
                 },
-                "template_id": {
-                  "anyOf": [
-                    {
-                      "type": "string"
-                    },
-                    {
-                      "type": "null"
-                    }
-                  ],
-                  "default": null,
-                  "title": "Template Id"
+                "party_id": {
+                  "title": "Party Id",
+                  "type": "string"
                 },
-                "template_version": {
-                  "anyOf": [
-                    {
-                      "type": "integer"
-                    },
-                    {
-                      "type": "null"
-                    }
-                  ],
-                  "default": null,
-                  "title": "Template Version"
+                "subject_id": {
+                  "title": "Subject Id",
+                  "type": "string"
                 }
               },
               "required": [
-                "table_name"
+                "subject_id",
+                "label",
+                "notes",
+                "party_id"
               ],
-              "title": "CreateDatasetItem",
+              "title": "CreateCrmPartyResearchItem",
               "type": "object"
             },
             "type": "array"
@@ -2851,7 +4501,7 @@
         ],
         "type": "object"
       },
-      "slug": "directive_v1_create_dataset"
+      "slug": "directive_v1_create_crm_party_research"
     },
     {
       "capability": "side_effect",
@@ -2887,9 +4537,46 @@
                   "default": "basic",
                   "title": "Card Kind"
                 },
+                "custom_fields": {
+                  "anyOf": [
+                    {
+                      "anyOf": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "boolean"
+                        },
+                        {
+                          "type": "number"
+                        },
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "array"
+                        },
+                        {
+                          "type": "object"
+                        }
+                      ],
+                      "description": "Any JSON value \u2014 this column is json/jsonb.",
+                      "title": "JSON"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "default": {}
+                },
                 "difficulty": {
                   "anyOf": [
                     {
+                      "enum": [
+                        "easy",
+                        "medium",
+                        "hard"
+                      ],
                       "type": "string"
                     },
                     {
@@ -3052,6 +4739,38 @@
                   "default": null,
                   "title": "Audio Overview File Id"
                 },
+                "custom_fields": {
+                  "anyOf": [
+                    {
+                      "anyOf": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "boolean"
+                        },
+                        {
+                          "type": "number"
+                        },
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "array"
+                        },
+                        {
+                          "type": "object"
+                        }
+                      ],
+                      "description": "Any JSON value \u2014 this column is json/jsonb.",
+                      "title": "JSON"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "default": {}
+                },
                 "description": {
                   "anyOf": [
                     {
@@ -3067,6 +4786,11 @@
                 "difficulty": {
                   "anyOf": [
                     {
+                      "enum": [
+                        "easy",
+                        "medium",
+                        "hard"
+                      ],
                       "type": "string"
                     },
                     {
@@ -3184,17 +4908,37 @@
                   "default": null,
                   "title": "Content"
                 },
-                "file_path": {
+                "custom_fields": {
                   "anyOf": [
                     {
-                      "type": "string"
+                      "anyOf": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "boolean"
+                        },
+                        {
+                          "type": "number"
+                        },
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "array"
+                        },
+                        {
+                          "type": "object"
+                        }
+                      ],
+                      "description": "Any JSON value \u2014 this column is json/jsonb.",
+                      "title": "JSON"
                     },
                     {
                       "type": "null"
                     }
                   ],
-                  "default": null,
-                  "title": "File Path"
+                  "default": {}
                 },
                 "folder_id": {
                   "anyOf": [
@@ -3431,6 +5175,38 @@
                   "default": null,
                   "title": "Bio"
                 },
+                "custom_fields": {
+                  "anyOf": [
+                    {
+                      "anyOf": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "boolean"
+                        },
+                        {
+                          "type": "number"
+                        },
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "array"
+                        },
+                        {
+                          "type": "object"
+                        }
+                      ],
+                      "description": "Any JSON value \u2014 this column is json/jsonb.",
+                      "title": "JSON"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "default": null
+                },
                 "date_of_birth": {
                   "anyOf": [
                     {
@@ -3459,6 +5235,38 @@
                   ],
                   "default": null,
                   "title": "Employee Band"
+                },
+                "field_provenance": {
+                  "anyOf": [
+                    {
+                      "anyOf": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "boolean"
+                        },
+                        {
+                          "type": "number"
+                        },
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "array"
+                        },
+                        {
+                          "type": "object"
+                        }
+                      ],
+                      "description": "Any JSON value \u2014 this column is json/jsonb.",
+                      "title": "JSON"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "default": {}
                 },
                 "first_name": {
                   "anyOf": [
@@ -3625,6 +5433,10 @@
                   "title": "Name Suffix"
                 },
                 "party_kind": {
+                  "enum": [
+                    "person",
+                    "organization"
+                  ],
                   "title": "Party Kind",
                   "type": "string"
                 },
@@ -3679,6 +5491,10 @@
                 "record_class": {
                   "anyOf": [
                     {
+                      "enum": [
+                        "contact",
+                        "discovered"
+                      ],
                       "type": "string"
                     },
                     {
@@ -3797,6 +5613,38 @@
             "items": {
               "additionalProperties": false,
               "properties": {
+                "custom_fields": {
+                  "anyOf": [
+                    {
+                      "anyOf": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "boolean"
+                        },
+                        {
+                          "type": "number"
+                        },
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "array"
+                        },
+                        {
+                          "type": "object"
+                        }
+                      ],
+                      "description": "Any JSON value \u2014 this column is json/jsonb.",
+                      "title": "JSON"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "default": {}
+                },
                 "description": {
                   "anyOf": [
                     {
@@ -3922,6 +5770,13 @@
                 "status": {
                   "anyOf": [
                     {
+                      "enum": [
+                        "planning",
+                        "active",
+                        "paused",
+                        "completed",
+                        "archived"
+                      ],
                       "type": "string"
                     },
                     {
@@ -4004,6 +5859,38 @@
                   ],
                   "default": null,
                   "title": "Completed At"
+                },
+                "custom_fields": {
+                  "anyOf": [
+                    {
+                      "anyOf": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "boolean"
+                        },
+                        {
+                          "type": "number"
+                        },
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "array"
+                        },
+                        {
+                          "type": "object"
+                        }
+                      ],
+                      "description": "Any JSON value \u2014 this column is json/jsonb.",
+                      "title": "JSON"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "default": {}
                 },
                 "is_completed": {
                   "anyOf": [
@@ -4150,6 +6037,18 @@
                   "default": null,
                   "title": "Agent Type"
                 },
+                "capture_version": {
+                  "anyOf": [
+                    {
+                      "type": "integer"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "default": null,
+                  "title": "Capture Version"
+                },
                 "content": {
                   "anyOf": [
                     {
@@ -4193,6 +6092,38 @@
                     }
                   ],
                   "default": null
+                },
+                "custom_fields": {
+                  "anyOf": [
+                    {
+                      "anyOf": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "boolean"
+                        },
+                        {
+                          "type": "number"
+                        },
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "array"
+                        },
+                        {
+                          "type": "object"
+                        }
+                      ],
+                      "description": "Any JSON value \u2014 this column is json/jsonb.",
+                      "title": "JSON"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "default": {}
                 },
                 "error": {
                   "anyOf": [
@@ -4297,6 +6228,10 @@
                 "status": {
                   "anyOf": [
                     {
+                      "enum": [
+                        "success",
+                        "failed"
+                      ],
                       "type": "string"
                     },
                     {
@@ -4442,6 +6377,11 @@
                 "authority_tier": {
                   "anyOf": [
                     {
+                      "enum": [
+                        "low",
+                        "medium",
+                        "high"
+                      ],
                       "type": "string"
                     },
                     {
@@ -4450,6 +6390,38 @@
                   ],
                   "default": null,
                   "title": "Authority Tier"
+                },
+                "custom_fields": {
+                  "anyOf": [
+                    {
+                      "anyOf": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "boolean"
+                        },
+                        {
+                          "type": "number"
+                        },
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "array"
+                        },
+                        {
+                          "type": "object"
+                        }
+                      ],
+                      "description": "Any JSON value \u2014 this column is json/jsonb.",
+                      "title": "JSON"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "default": {}
                 },
                 "description": {
                   "anyOf": [
@@ -4641,6 +6613,12 @@
                 "origin": {
                   "anyOf": [
                     {
+                      "enum": [
+                        "search",
+                        "manual_add",
+                        "link_extraction",
+                        "file_upload"
+                      ],
                       "type": "string"
                     },
                     {
@@ -4774,6 +6752,18 @@
                   "default": null,
                   "title": "Pre Read Score"
                 },
+                "processed_document_id": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "default": null,
+                  "title": "Processed Document Id"
+                },
                 "rank": {
                   "anyOf": [
                     {
@@ -4818,6 +6808,18 @@
                   ],
                   "default": {}
                 },
+                "read_priority_reason": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "default": null,
+                  "title": "Read Priority Reason"
+                },
                 "recommended_use": {
                   "anyOf": [
                     {
@@ -4842,9 +6844,34 @@
                   "default": null,
                   "title": "Redundancy Group"
                 },
+                "scrape_parsed_page_id": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "default": null,
+                  "title": "Scrape Parsed Page Id"
+                },
                 "scrape_status": {
                   "anyOf": [
                     {
+                      "enum": [
+                        "pending",
+                        "success",
+                        "thin",
+                        "failed",
+                        "manual",
+                        "skipped",
+                        "complete",
+                        "dead_link",
+                        "gated",
+                        "ignored",
+                        "content_mismatch"
+                      ],
                       "type": "string"
                     },
                     {
@@ -4905,6 +6932,13 @@
                 "source_type": {
                   "anyOf": [
                     {
+                      "enum": [
+                        "web",
+                        "youtube",
+                        "pdf",
+                        "file",
+                        "manual"
+                      ],
                       "type": "string"
                     },
                     {
@@ -4942,6 +6976,38 @@
                   "title": "Topic Id",
                   "type": "string"
                 },
+                "triage_verdict": {
+                  "anyOf": [
+                    {
+                      "anyOf": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "boolean"
+                        },
+                        {
+                          "type": "number"
+                        },
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "array"
+                        },
+                        {
+                          "type": "object"
+                        }
+                      ],
+                      "description": "Any JSON value \u2014 this column is json/jsonb.",
+                      "title": "JSON"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "default": null
+                },
                 "url": {
                   "title": "Url",
                   "type": "string"
@@ -4949,6 +7015,15 @@
                 "user_verdict": {
                   "anyOf": [
                     {
+                      "enum": [
+                        "accept_as_is",
+                        "dead_link",
+                        "retry",
+                        "mark_complete",
+                        "gated",
+                        "ignored",
+                        "content_mismatch"
+                      ],
                       "type": "string"
                     },
                     {
@@ -5067,6 +7142,11 @@
                 "autonomy_level": {
                   "anyOf": [
                     {
+                      "enum": [
+                        "auto",
+                        "semi",
+                        "manual"
+                      ],
                       "type": "string"
                     },
                     {
@@ -5087,6 +7167,38 @@
                   ],
                   "default": 0,
                   "title": "Consecutive Refresh Failures"
+                },
+                "custom_fields": {
+                  "anyOf": [
+                    {
+                      "anyOf": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "boolean"
+                        },
+                        {
+                          "type": "number"
+                        },
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "array"
+                        },
+                        {
+                          "type": "object"
+                        }
+                      ],
+                      "description": "Any JSON value \u2014 this column is json/jsonb.",
+                      "title": "JSON"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "default": {}
                 },
                 "default_search_params": {
                   "anyOf": [
@@ -5123,6 +7235,10 @@
                 "default_search_provider": {
                   "anyOf": [
                     {
+                      "enum": [
+                        "brave",
+                        "google"
+                      ],
                       "type": "string"
                     },
                     {
@@ -5208,6 +7324,11 @@
                 "last_refresh_outcome": {
                   "anyOf": [
                     {
+                      "enum": [
+                        "started",
+                        "skipped",
+                        "failed"
+                      ],
                       "type": "string"
                     },
                     {
@@ -5442,6 +7563,14 @@
                 "status": {
                   "anyOf": [
                     {
+                      "enum": [
+                        "draft",
+                        "searching",
+                        "scraping",
+                        "curating",
+                        "analyzing",
+                        "complete"
+                      ],
                       "type": "string"
                     },
                     {
@@ -5537,95 +7666,6 @@
     {
       "capability": "side_effect",
       "class": "create",
-      "doc": "Create one Pick List row (workbench.udt_structured_lists). Payload = the table's writable columns, typed from the live model; DB-required columns without defaults must be present. Batch via items.",
-      "item_model": "CreateStructuredListItem",
-      "noun": "structured_list",
-      "purposes": [],
-      "schema": {
-        "additionalProperties": false,
-        "properties": {
-          "__kind": {
-            "const": "directive_v1_create_structured_list",
-            "type": "string"
-          },
-          "items": {
-            "items": {
-              "additionalProperties": false,
-              "properties": {
-                "description": {
-                  "anyOf": [
-                    {
-                      "type": "string"
-                    },
-                    {
-                      "type": "null"
-                    }
-                  ],
-                  "default": null,
-                  "title": "Description"
-                },
-                "list_name": {
-                  "anyOf": [
-                    {
-                      "type": "string"
-                    },
-                    {
-                      "type": "null"
-                    }
-                  ],
-                  "default": null,
-                  "title": "List Name"
-                },
-                "metadata": {
-                  "anyOf": [
-                    {
-                      "anyOf": [
-                        {
-                          "type": "null"
-                        },
-                        {
-                          "type": "boolean"
-                        },
-                        {
-                          "type": "number"
-                        },
-                        {
-                          "type": "string"
-                        },
-                        {
-                          "type": "array"
-                        },
-                        {
-                          "type": "object"
-                        }
-                      ],
-                      "description": "Any JSON value \u2014 this column is json/jsonb.",
-                      "title": "JSON"
-                    },
-                    {
-                      "type": "null"
-                    }
-                  ],
-                  "default": {}
-                }
-              },
-              "title": "CreateStructuredListItem",
-              "type": "object"
-            },
-            "type": "array"
-          }
-        },
-        "required": [
-          "__kind",
-          "items"
-        ],
-        "type": "object"
-      },
-      "slug": "directive_v1_create_structured_list"
-    },
-    {
-      "capability": "side_effect",
-      "class": "create",
       "doc": "Create one Task row (projects.tasks). Payload = the table's writable columns, typed from the live model; DB-required columns without defaults must be present. Batch via items.",
       "item_model": "CreateTaskItem",
       "noun": "task",
@@ -5666,17 +7706,37 @@
                   "default": null,
                   "title": "Completed At"
                 },
-                "dedupe_key": {
+                "custom_fields": {
                   "anyOf": [
                     {
-                      "type": "string"
+                      "anyOf": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "boolean"
+                        },
+                        {
+                          "type": "number"
+                        },
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "array"
+                        },
+                        {
+                          "type": "object"
+                        }
+                      ],
+                      "description": "Any JSON value \u2014 this column is json/jsonb.",
+                      "title": "JSON"
                     },
                     {
                       "type": "null"
                     }
                   ],
-                  "default": null,
-                  "title": "Dedupe Key"
+                  "default": {}
                 },
                 "description": {
                   "anyOf": [
@@ -5747,18 +7807,6 @@
                     }
                   ],
                   "default": {}
-                },
-                "origin": {
-                  "anyOf": [
-                    {
-                      "type": "string"
-                    },
-                    {
-                      "type": "null"
-                    }
-                  ],
-                  "default": "user",
-                  "title": "Origin"
                 },
                 "parent_task_id": {
                   "anyOf": [
@@ -5877,54 +7925,6 @@
                   ],
                   "default": {}
                 },
-                "source_id": {
-                  "anyOf": [
-                    {
-                      "type": "string"
-                    },
-                    {
-                      "type": "null"
-                    }
-                  ],
-                  "default": null,
-                  "title": "Source Id"
-                },
-                "source_label": {
-                  "anyOf": [
-                    {
-                      "type": "string"
-                    },
-                    {
-                      "type": "null"
-                    }
-                  ],
-                  "default": null,
-                  "title": "Source Label"
-                },
-                "source_type": {
-                  "anyOf": [
-                    {
-                      "type": "string"
-                    },
-                    {
-                      "type": "null"
-                    }
-                  ],
-                  "default": null,
-                  "title": "Source Type"
-                },
-                "source_url": {
-                  "anyOf": [
-                    {
-                      "type": "string"
-                    },
-                    {
-                      "type": "null"
-                    }
-                  ],
-                  "default": null,
-                  "title": "Source Url"
-                },
                 "start_date": {
                   "anyOf": [
                     {
@@ -5941,6 +7941,15 @@
                 "status": {
                   "anyOf": [
                     {
+                      "enum": [
+                        "inbox",
+                        "planned",
+                        "active",
+                        "incomplete",
+                        "completed",
+                        "cancelled",
+                        "dismissed"
+                      ],
                       "type": "string"
                     },
                     {
@@ -6013,6 +8022,38 @@
                   ],
                   "default": null,
                   "title": "Audio File Path"
+                },
+                "custom_fields": {
+                  "anyOf": [
+                    {
+                      "anyOf": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "boolean"
+                        },
+                        {
+                          "type": "number"
+                        },
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "array"
+                        },
+                        {
+                          "type": "object"
+                        }
+                      ],
+                      "description": "Any JSON value \u2014 this column is json/jsonb.",
+                      "title": "JSON"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "default": {}
                 },
                 "description": {
                   "anyOf": [
@@ -6095,6 +8136,18 @@
                   ],
                   "default": {}
                 },
+                "processed_document_id": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "default": null,
+                  "title": "Processed Document Id"
+                },
                 "project_id": {
                   "anyOf": [
                     {
@@ -6142,6 +8195,13 @@
                 "source_type": {
                   "anyOf": [
                     {
+                      "enum": [
+                        "audio",
+                        "video",
+                        "meeting",
+                        "interview",
+                        "other"
+                      ],
                       "type": "string"
                     },
                     {
@@ -6235,6 +8295,38 @@
             "items": {
               "additionalProperties": false,
               "properties": {
+                "custom_fields": {
+                  "anyOf": [
+                    {
+                      "anyOf": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "boolean"
+                        },
+                        {
+                          "type": "number"
+                        },
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "array"
+                        },
+                        {
+                          "type": "object"
+                        }
+                      ],
+                      "description": "Any JSON value \u2014 this column is json/jsonb.",
+                      "title": "JSON"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "default": {}
+                },
                 "description": {
                   "anyOf": [
                     {
@@ -6343,6 +8435,38 @@
             "items": {
               "additionalProperties": false,
               "properties": {
+                "custom_fields": {
+                  "anyOf": [
+                    {
+                      "anyOf": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "boolean"
+                        },
+                        {
+                          "type": "number"
+                        },
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "array"
+                        },
+                        {
+                          "type": "object"
+                        }
+                      ],
+                      "description": "Any JSON value \u2014 this column is json/jsonb.",
+                      "title": "JSON"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "default": {}
+                },
                 "description": {
                   "anyOf": [
                     {
@@ -6385,7 +8509,7 @@
                       "type": "null"
                     }
                   ],
-                  "default": null
+                  "default": {}
                 },
                 "project_id": {
                   "anyOf": [
@@ -6516,15 +8640,15 @@
     {
       "capability": "side_effect",
       "class": "delete",
-      "doc": "Soft-delete one Data Table row (workbench.udt_datasets) by id (never a hard delete).",
-      "item_model": "DeleteDatasetItem",
-      "noun": "dataset",
+      "doc": "Soft-delete one Private contact research row (crm.party_research) by id (never a hard delete).",
+      "item_model": "DeleteCrmPartyResearchItem",
+      "noun": "crm_party_research",
       "purposes": [],
       "schema": {
         "additionalProperties": false,
         "properties": {
           "__kind": {
-            "const": "directive_v1_delete_dataset",
+            "const": "directive_v1_delete_crm_party_research",
             "type": "string"
           },
           "items": {
@@ -6539,7 +8663,7 @@
               "required": [
                 "id"
               ],
-              "title": "DeleteDatasetItem",
+              "title": "DeleteCrmPartyResearchItem",
               "type": "object"
             },
             "type": "array"
@@ -6551,7 +8675,7 @@
         ],
         "type": "object"
       },
-      "slug": "directive_v1_delete_dataset"
+      "slug": "directive_v1_delete_crm_party_research"
     },
     {
       "capability": "side_effect",
@@ -6912,46 +9036,6 @@
         "type": "object"
       },
       "slug": "directive_v1_delete_research_topic"
-    },
-    {
-      "capability": "side_effect",
-      "class": "delete",
-      "doc": "Soft-delete one Pick List row (workbench.udt_structured_lists) by id (never a hard delete).",
-      "item_model": "DeleteStructuredListItem",
-      "noun": "structured_list",
-      "purposes": [],
-      "schema": {
-        "additionalProperties": false,
-        "properties": {
-          "__kind": {
-            "const": "directive_v1_delete_structured_list",
-            "type": "string"
-          },
-          "items": {
-            "items": {
-              "additionalProperties": false,
-              "properties": {
-                "id": {
-                  "title": "Id",
-                  "type": "string"
-                }
-              },
-              "required": [
-                "id"
-              ],
-              "title": "DeleteStructuredListItem",
-              "type": "object"
-            },
-            "type": "array"
-          }
-        },
-        "required": [
-          "__kind",
-          "items"
-        ],
-        "type": "object"
-      },
-      "slug": "directive_v1_delete_structured_list"
     },
     {
       "capability": "side_effect",
@@ -9470,7 +11554,7 @@
     {
       "capability": "pure",
       "class": "reference",
-      "doc": "Pointer to one Context Item (definition) (context.context_items) row by id (RLS-scoped, read-only).",
+      "doc": "Pointer to one Context Item (definition) (custom.record) row by id (RLS-scoped, read-only).",
       "item_model": "RecordRef",
       "noun": "context_item",
       "purposes": [
@@ -10127,6 +12211,93 @@
     {
       "capability": "pure",
       "class": "reference",
+      "doc": "Pointer to one Private contact research (crm.party_research) row by id (RLS-scoped, read-only).",
+      "item_model": "RecordRef",
+      "noun": "crm_party_research",
+      "purposes": [
+        "substitute",
+        "expand",
+        "inline",
+        "context"
+      ],
+      "schema": {
+        "additionalProperties": false,
+        "properties": {
+          "__kind": {
+            "const": "directive_v1_reference_crm_party_research",
+            "type": "string"
+          },
+          "items": {
+            "items": {
+              "additionalProperties": true,
+              "description": "Pointer to one row of a registered user-owned resource, by primary id.",
+              "properties": {
+                "description": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "default": null,
+                  "title": "Description"
+                },
+                "id": {
+                  "title": "Id",
+                  "type": "string"
+                },
+                "label": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "default": null,
+                  "title": "Label"
+                },
+                "purpose": {
+                  "default": "substitute",
+                  "title": "Purpose",
+                  "type": "string"
+                },
+                "slot": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "default": null,
+                  "title": "Slot"
+                }
+              },
+              "required": [
+                "id"
+              ],
+              "title": "RecordRef",
+              "type": "object"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "__kind",
+          "items"
+        ],
+        "type": "object"
+      },
+      "slug": "directive_v1_reference_crm_party_research"
+    },
+    {
+      "capability": "pure",
+      "class": "reference",
       "doc": "Pointer to one Agent Memory (chat.agent_memory) row by id (RLS-scoped, read-only).",
       "item_model": "RecordRef",
       "noun": "cx_agent_memory",
@@ -10301,180 +12472,6 @@
     {
       "capability": "pure",
       "class": "reference",
-      "doc": "Legacy alias of `dataset` (canonical entity_types.token).",
-      "item_model": "RecordRef",
-      "noun": "data_table",
-      "purposes": [
-        "substitute",
-        "expand",
-        "inline",
-        "context"
-      ],
-      "schema": {
-        "additionalProperties": false,
-        "properties": {
-          "__kind": {
-            "const": "directive_v1_reference_data_table",
-            "type": "string"
-          },
-          "items": {
-            "items": {
-              "additionalProperties": true,
-              "description": "Pointer to one row of a registered user-owned resource, by primary id.",
-              "properties": {
-                "description": {
-                  "anyOf": [
-                    {
-                      "type": "string"
-                    },
-                    {
-                      "type": "null"
-                    }
-                  ],
-                  "default": null,
-                  "title": "Description"
-                },
-                "id": {
-                  "title": "Id",
-                  "type": "string"
-                },
-                "label": {
-                  "anyOf": [
-                    {
-                      "type": "string"
-                    },
-                    {
-                      "type": "null"
-                    }
-                  ],
-                  "default": null,
-                  "title": "Label"
-                },
-                "purpose": {
-                  "default": "substitute",
-                  "title": "Purpose",
-                  "type": "string"
-                },
-                "slot": {
-                  "anyOf": [
-                    {
-                      "type": "string"
-                    },
-                    {
-                      "type": "null"
-                    }
-                  ],
-                  "default": null,
-                  "title": "Slot"
-                }
-              },
-              "required": [
-                "id"
-              ],
-              "title": "RecordRef",
-              "type": "object"
-            },
-            "type": "array"
-          }
-        },
-        "required": [
-          "__kind",
-          "items"
-        ],
-        "type": "object"
-      },
-      "slug": "directive_v1_reference_data_table"
-    },
-    {
-      "capability": "pure",
-      "class": "reference",
-      "doc": "Pointer to one Data Table (workbench.udt_datasets) row by id (RLS-scoped, read-only).",
-      "item_model": "RecordRef",
-      "noun": "dataset",
-      "purposes": [
-        "substitute",
-        "expand",
-        "inline",
-        "context"
-      ],
-      "schema": {
-        "additionalProperties": false,
-        "properties": {
-          "__kind": {
-            "const": "directive_v1_reference_dataset",
-            "type": "string"
-          },
-          "items": {
-            "items": {
-              "additionalProperties": true,
-              "description": "Pointer to one row of a registered user-owned resource, by primary id.",
-              "properties": {
-                "description": {
-                  "anyOf": [
-                    {
-                      "type": "string"
-                    },
-                    {
-                      "type": "null"
-                    }
-                  ],
-                  "default": null,
-                  "title": "Description"
-                },
-                "id": {
-                  "title": "Id",
-                  "type": "string"
-                },
-                "label": {
-                  "anyOf": [
-                    {
-                      "type": "string"
-                    },
-                    {
-                      "type": "null"
-                    }
-                  ],
-                  "default": null,
-                  "title": "Label"
-                },
-                "purpose": {
-                  "default": "substitute",
-                  "title": "Purpose",
-                  "type": "string"
-                },
-                "slot": {
-                  "anyOf": [
-                    {
-                      "type": "string"
-                    },
-                    {
-                      "type": "null"
-                    }
-                  ],
-                  "default": null,
-                  "title": "Slot"
-                }
-              },
-              "required": [
-                "id"
-              ],
-              "title": "RecordRef",
-              "type": "object"
-            },
-            "type": "array"
-          }
-        },
-        "required": [
-          "__kind",
-          "items"
-        ],
-        "type": "object"
-      },
-      "slug": "directive_v1_reference_dataset"
-    },
-    {
-      "capability": "pure",
-      "class": "reference",
       "doc": "Legacy alias of `table_cell` (accepts dataset_id/field_name id names).",
       "item_model": "TableCellRef",
       "noun": "dataset_cell",
@@ -10596,7 +12593,7 @@
     {
       "capability": "pure",
       "class": "reference",
-      "doc": "Legacy alias of `udt_document` (canonical entity_types.token).",
+      "doc": "Pointer to one Markdown document (content.document) row by id (RLS-scoped, read-only).",
       "item_model": "RecordRef",
       "noun": "document",
       "purposes": [
@@ -11310,93 +13307,6 @@
         "type": "object"
       },
       "slug": "directive_v1_reference_file_page"
-    },
-    {
-      "capability": "pure",
-      "class": "reference",
-      "doc": "Pointer to one Flexible Data (platform.flexible_data) row by id (RLS-scoped, read-only).",
-      "item_model": "RecordRef",
-      "noun": "flexible_data",
-      "purposes": [
-        "substitute",
-        "expand",
-        "inline",
-        "context"
-      ],
-      "schema": {
-        "additionalProperties": false,
-        "properties": {
-          "__kind": {
-            "const": "directive_v1_reference_flexible_data",
-            "type": "string"
-          },
-          "items": {
-            "items": {
-              "additionalProperties": true,
-              "description": "Pointer to one row of a registered user-owned resource, by primary id.",
-              "properties": {
-                "description": {
-                  "anyOf": [
-                    {
-                      "type": "string"
-                    },
-                    {
-                      "type": "null"
-                    }
-                  ],
-                  "default": null,
-                  "title": "Description"
-                },
-                "id": {
-                  "title": "Id",
-                  "type": "string"
-                },
-                "label": {
-                  "anyOf": [
-                    {
-                      "type": "string"
-                    },
-                    {
-                      "type": "null"
-                    }
-                  ],
-                  "default": null,
-                  "title": "Label"
-                },
-                "purpose": {
-                  "default": "substitute",
-                  "title": "Purpose",
-                  "type": "string"
-                },
-                "slot": {
-                  "anyOf": [
-                    {
-                      "type": "string"
-                    },
-                    {
-                      "type": "null"
-                    }
-                  ],
-                  "default": null,
-                  "title": "Slot"
-                }
-              },
-              "required": [
-                "id"
-              ],
-              "title": "RecordRef",
-              "type": "object"
-            },
-            "type": "array"
-          }
-        },
-        "required": [
-          "__kind",
-          "items"
-        ],
-        "type": "object"
-      },
-      "slug": "directive_v1_reference_flexible_data"
     },
     {
       "capability": "pure",
@@ -14098,6 +16008,93 @@
     {
       "capability": "pure",
       "class": "reference",
+      "doc": "Pointer to one Mandate (mandate.definition) row by id (RLS-scoped, read-only).",
+      "item_model": "RecordRef",
+      "noun": "mandate",
+      "purposes": [
+        "substitute",
+        "expand",
+        "inline",
+        "context"
+      ],
+      "schema": {
+        "additionalProperties": false,
+        "properties": {
+          "__kind": {
+            "const": "directive_v1_reference_mandate",
+            "type": "string"
+          },
+          "items": {
+            "items": {
+              "additionalProperties": true,
+              "description": "Pointer to one row of a registered user-owned resource, by primary id.",
+              "properties": {
+                "description": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "default": null,
+                  "title": "Description"
+                },
+                "id": {
+                  "title": "Id",
+                  "type": "string"
+                },
+                "label": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "default": null,
+                  "title": "Label"
+                },
+                "purpose": {
+                  "default": "substitute",
+                  "title": "Purpose",
+                  "type": "string"
+                },
+                "slot": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "default": null,
+                  "title": "Slot"
+                }
+              },
+              "required": [
+                "id"
+              ],
+              "title": "RecordRef",
+              "type": "object"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "__kind",
+          "items"
+        ],
+        "type": "object"
+      },
+      "slug": "directive_v1_reference_mandate"
+    },
+    {
+      "capability": "pure",
+      "class": "reference",
       "doc": "Pointer to one Initiative (marketing.initiative) row by id (RLS-scoped, read-only).",
       "item_model": "RecordRef",
       "noun": "marketing_initiative",
@@ -14268,6 +16265,93 @@
         "type": "object"
       },
       "slug": "directive_v1_reference_media"
+    },
+    {
+      "capability": "pure",
+      "class": "reference",
+      "doc": "Pointer to one Meeting (communication.meet_meetings) row by id (RLS-scoped, read-only).",
+      "item_model": "RecordRef",
+      "noun": "meet_meeting",
+      "purposes": [
+        "substitute",
+        "expand",
+        "inline",
+        "context"
+      ],
+      "schema": {
+        "additionalProperties": false,
+        "properties": {
+          "__kind": {
+            "const": "directive_v1_reference_meet_meeting",
+            "type": "string"
+          },
+          "items": {
+            "items": {
+              "additionalProperties": true,
+              "description": "Pointer to one row of a registered user-owned resource, by primary id.",
+              "properties": {
+                "description": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "default": null,
+                  "title": "Description"
+                },
+                "id": {
+                  "title": "Id",
+                  "type": "string"
+                },
+                "label": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "default": null,
+                  "title": "Label"
+                },
+                "purpose": {
+                  "default": "substitute",
+                  "title": "Purpose",
+                  "type": "string"
+                },
+                "slot": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "default": null,
+                  "title": "Slot"
+                }
+              },
+              "required": [
+                "id"
+              ],
+              "title": "RecordRef",
+              "type": "object"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "__kind",
+          "items"
+        ],
+        "type": "object"
+      },
+      "slug": "directive_v1_reference_meet_meeting"
     },
     {
       "capability": "pure",
@@ -15229,7 +17313,278 @@
     {
       "capability": "pure",
       "class": "reference",
-      "doc": "Legacy alias of `structured_list`.",
+      "doc": "Pointer to a whole pick list; expands to its items.",
+      "item_model": "PicklistRef",
+      "noun": "pick_list",
+      "purposes": [
+        "substitute",
+        "expand",
+        "inline",
+        "context"
+      ],
+      "schema": {
+        "additionalProperties": false,
+        "properties": {
+          "__kind": {
+            "const": "directive_v1_reference_pick_list",
+            "type": "string"
+          },
+          "items": {
+            "items": {
+              "additionalProperties": true,
+              "description": "Whole picklist.",
+              "properties": {
+                "description": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "default": null,
+                  "title": "Description"
+                },
+                "label": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "default": null,
+                  "title": "Label"
+                },
+                "list_id": {
+                  "title": "List Id",
+                  "type": "string"
+                },
+                "purpose": {
+                  "default": "substitute",
+                  "title": "Purpose",
+                  "type": "string"
+                },
+                "slot": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "default": null,
+                  "title": "Slot"
+                }
+              },
+              "required": [
+                "list_id"
+              ],
+              "title": "PicklistRef",
+              "type": "object"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "__kind",
+          "items"
+        ],
+        "type": "object"
+      },
+      "slug": "directive_v1_reference_pick_list"
+    },
+    {
+      "capability": "pure",
+      "class": "reference",
+      "doc": "Pointer to one named group within a pick list.",
+      "item_model": "PicklistGroupRef",
+      "noun": "pick_list_group",
+      "purposes": [
+        "substitute",
+        "expand",
+        "inline",
+        "context"
+      ],
+      "schema": {
+        "additionalProperties": false,
+        "properties": {
+          "__kind": {
+            "const": "directive_v1_reference_pick_list_group",
+            "type": "string"
+          },
+          "items": {
+            "items": {
+              "additionalProperties": true,
+              "description": "One named group within a picklist.",
+              "properties": {
+                "description": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "default": null,
+                  "title": "Description"
+                },
+                "group_name": {
+                  "title": "Group Name",
+                  "type": "string"
+                },
+                "label": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "default": null,
+                  "title": "Label"
+                },
+                "list_id": {
+                  "title": "List Id",
+                  "type": "string"
+                },
+                "purpose": {
+                  "default": "substitute",
+                  "title": "Purpose",
+                  "type": "string"
+                },
+                "slot": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "default": null,
+                  "title": "Slot"
+                }
+              },
+              "required": [
+                "list_id",
+                "group_name"
+              ],
+              "title": "PicklistGroupRef",
+              "type": "object"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "__kind",
+          "items"
+        ],
+        "type": "object"
+      },
+      "slug": "directive_v1_reference_pick_list_group"
+    },
+    {
+      "capability": "pure",
+      "class": "reference",
+      "doc": "Pointer to one pick-list item; substitutes its description.",
+      "item_model": "PicklistItemRef",
+      "noun": "pick_list_item",
+      "purposes": [
+        "substitute",
+        "expand",
+        "inline",
+        "context"
+      ],
+      "schema": {
+        "additionalProperties": false,
+        "properties": {
+          "__kind": {
+            "const": "directive_v1_reference_pick_list_item",
+            "type": "string"
+          },
+          "items": {
+            "items": {
+              "additionalProperties": true,
+              "description": "One picklist item.",
+              "properties": {
+                "description": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "default": null,
+                  "title": "Description"
+                },
+                "item_id": {
+                  "title": "Item Id",
+                  "type": "string"
+                },
+                "label": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "default": null,
+                  "title": "Label"
+                },
+                "list_id": {
+                  "title": "List Id",
+                  "type": "string"
+                },
+                "purpose": {
+                  "default": "substitute",
+                  "title": "Purpose",
+                  "type": "string"
+                },
+                "slot": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "default": null,
+                  "title": "Slot"
+                }
+              },
+              "required": [
+                "list_id",
+                "item_id"
+              ],
+              "title": "PicklistItemRef",
+              "type": "object"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "__kind",
+          "items"
+        ],
+        "type": "object"
+      },
+      "slug": "directive_v1_reference_pick_list_item"
+    },
+    {
+      "capability": "pure",
+      "class": "reference",
+      "doc": "Legacy alias of `pick_list`.",
       "item_model": "PicklistRef",
       "noun": "picklist",
       "purposes": [
@@ -15316,7 +17671,7 @@
     {
       "capability": "pure",
       "class": "reference",
-      "doc": "Legacy alias of `structured_list_group`.",
+      "doc": "Legacy alias of `pick_list_group`.",
       "item_model": "PicklistGroupRef",
       "noun": "picklist_group",
       "purposes": [
@@ -15408,7 +17763,7 @@
     {
       "capability": "pure",
       "class": "reference",
-      "doc": "Legacy alias of `structured_list_item`.",
+      "doc": "Legacy alias of `pick_list_item`.",
       "item_model": "PicklistItemRef",
       "noun": "picklist_item",
       "purposes": [
@@ -15674,7 +18029,7 @@
     {
       "capability": "pure",
       "class": "reference",
-      "doc": "Pointer to one Processed document (docproc.processed_documents) row by id (RLS-scoped, read-only).",
+      "doc": "Pointer to one Source (docproc.processed_documents) row by id (RLS-scoped, read-only).",
       "item_model": "RecordRef",
       "noun": "processed_document",
       "purposes": [
@@ -17066,7 +19421,7 @@
     {
       "capability": "pure",
       "class": "reference",
-      "doc": "Pointer to one Scope (context.scopes) row by id (RLS-scoped, read-only).",
+      "doc": "Pointer to one Scope (custom.record) row by id (RLS-scoped, read-only).",
       "item_model": "RecordRef",
       "noun": "scope",
       "purposes": [
@@ -17153,7 +19508,7 @@
     {
       "capability": "pure",
       "class": "reference",
-      "doc": "Pointer to one Scope Type (context.scope_types) row by id (RLS-scoped, read-only).",
+      "doc": "Pointer to one Scope Type (custom.record) row by id (RLS-scoped, read-only).",
       "item_model": "RecordRef",
       "noun": "scope_type",
       "purposes": [
@@ -17687,7 +20042,7 @@
     {
       "capability": "pure",
       "class": "reference",
-      "doc": "Pointer to a whole udt_structured_lists list; expands to its items.",
+      "doc": "Legacy alias of `pick_list`.",
       "item_model": "PicklistRef",
       "noun": "structured_list",
       "purposes": [
@@ -17774,7 +20129,7 @@
     {
       "capability": "pure",
       "class": "reference",
-      "doc": "Pointer to one named group within a udt_structured_lists list.",
+      "doc": "Legacy alias of `pick_list_group`.",
       "item_model": "PicklistGroupRef",
       "noun": "structured_list_group",
       "purposes": [
@@ -17866,7 +20221,7 @@
     {
       "capability": "pure",
       "class": "reference",
-      "doc": "Pointer to one udt_structured_list_items row; substitutes its description.",
+      "doc": "Legacy alias of `pick_list_item`.",
       "item_model": "PicklistItemRef",
       "noun": "structured_list_item",
       "purposes": [
@@ -18654,7 +21009,7 @@
     {
       "capability": "pure",
       "class": "reference",
-      "doc": "Pointer to a whole udt_datasets table; expands to its rows.",
+      "doc": "Pointer to a whole table; expands to its rows.",
       "item_model": "TableRef",
       "noun": "table",
       "purposes": [
@@ -18753,7 +21108,7 @@
     {
       "capability": "pure",
       "class": "reference",
-      "doc": "Pointer to one udt_dataset_rows cell; substitutes its value.",
+      "doc": "Pointer to one table cell; substitutes its value.",
       "item_model": "TableCellRef",
       "noun": "table_cell",
       "purposes": [
@@ -18874,7 +21229,7 @@
     {
       "capability": "pure",
       "class": "reference",
-      "doc": "Pointer to one column of a udt_datasets table; expands to its values.",
+      "doc": "Pointer to one column of a table; expands to its values.",
       "item_model": "TableColumnRef",
       "noun": "table_column",
       "purposes": [
@@ -18990,7 +21345,7 @@
     {
       "capability": "pure",
       "class": "reference",
-      "doc": "Pointer to one udt_dataset_rows row; expands to its field values.",
+      "doc": "Pointer to one table row; expands to its field values.",
       "item_model": "TableRowRef",
       "noun": "table_row",
       "purposes": [
@@ -19094,7 +21449,7 @@
     {
       "capability": "pure",
       "class": "reference",
-      "doc": "Pointer to a udt_datasets table's column schema (names/types) \u2014 no rows.",
+      "doc": "Pointer to a table's column schema (names/types) \u2014 no rows.",
       "item_model": "TableSchemaRef",
       "noun": "table_schema",
       "purposes": [
@@ -20416,93 +22771,6 @@
     {
       "capability": "pure",
       "class": "reference",
-      "doc": "Pointer to one Extension Web Capture (extend.wbx_capture) row by id (RLS-scoped, read-only).",
-      "item_model": "RecordRef",
-      "noun": "wbx_capture",
-      "purposes": [
-        "substitute",
-        "expand",
-        "inline",
-        "context"
-      ],
-      "schema": {
-        "additionalProperties": false,
-        "properties": {
-          "__kind": {
-            "const": "directive_v1_reference_wbx_capture",
-            "type": "string"
-          },
-          "items": {
-            "items": {
-              "additionalProperties": true,
-              "description": "Pointer to one row of a registered user-owned resource, by primary id.",
-              "properties": {
-                "description": {
-                  "anyOf": [
-                    {
-                      "type": "string"
-                    },
-                    {
-                      "type": "null"
-                    }
-                  ],
-                  "default": null,
-                  "title": "Description"
-                },
-                "id": {
-                  "title": "Id",
-                  "type": "string"
-                },
-                "label": {
-                  "anyOf": [
-                    {
-                      "type": "string"
-                    },
-                    {
-                      "type": "null"
-                    }
-                  ],
-                  "default": null,
-                  "title": "Label"
-                },
-                "purpose": {
-                  "default": "substitute",
-                  "title": "Purpose",
-                  "type": "string"
-                },
-                "slot": {
-                  "anyOf": [
-                    {
-                      "type": "string"
-                    },
-                    {
-                      "type": "null"
-                    }
-                  ],
-                  "default": null,
-                  "title": "Slot"
-                }
-              },
-              "required": [
-                "id"
-              ],
-              "title": "RecordRef",
-              "type": "object"
-            },
-            "type": "array"
-          }
-        },
-        "required": [
-          "__kind",
-          "items"
-        ],
-        "type": "object"
-      },
-      "slug": "directive_v1_reference_wbx_capture"
-    },
-    {
-      "capability": "pure",
-      "class": "reference",
       "doc": "Pointer to one Extension Scrape Pattern (extend.wbx_pattern) row by id (RLS-scoped, read-only).",
       "item_model": "RecordRef",
       "noun": "wbx_pattern",
@@ -21576,7 +23844,7 @@
     {
       "capability": "pure",
       "class": "reference",
-      "doc": "Pointer to one Working Documents (workbench.working_documents) row by id (RLS-scoped, read-only).",
+      "doc": "Pointer to one Working Document (workbench.working_documents) row by id (RLS-scoped, read-only).",
       "item_model": "RecordRef",
       "noun": "working_document",
       "purposes": [
@@ -21790,6 +24058,10 @@
                 "agent_type": {
                   "anyOf": [
                     {
+                      "enum": [
+                        "user",
+                        "builtin"
+                      ],
                       "type": "string"
                     },
                     {
@@ -21824,6 +24096,58 @@
                   "title": "Category"
                 },
                 "context_policies": {
+                  "anyOf": [
+                    {
+                      "anyOf": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "boolean"
+                        },
+                        {
+                          "type": "number"
+                        },
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "array"
+                        },
+                        {
+                          "type": "object"
+                        }
+                      ],
+                      "description": "Any JSON value \u2014 this column is json/jsonb.",
+                      "title": "JSON"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "default": null
+                },
+                "created_via": {
+                  "anyOf": [
+                    {
+                      "enum": [
+                        "factory_pipeline",
+                        "agent_author_mcp",
+                        "agent_studio",
+                        "migration_seed",
+                        "other_system",
+                        "unknown"
+                      ],
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "default": null,
+                  "title": "Created Via"
+                },
+                "custom_fields": {
                   "anyOf": [
                     {
                       "anyOf": [
@@ -21910,6 +24234,18 @@
                   ],
                   "default": null,
                   "title": "Description"
+                },
+                "follows_source": {
+                  "anyOf": [
+                    {
+                      "type": "boolean"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "default": null,
+                  "title": "Follows Source"
                 },
                 "id": {
                   "title": "Id",
@@ -22234,6 +24570,11 @@
                 "rag_awareness_mode": {
                   "anyOf": [
                     {
+                      "enum": [
+                        "none",
+                        "hint",
+                        "inline_small"
+                      ],
                       "type": "string"
                     },
                     {
@@ -22318,6 +24659,18 @@
                   ],
                   "default": null,
                   "title": "Source Agent Id"
+                },
+                "source_version": {
+                  "anyOf": [
+                    {
+                      "type": "integer"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "default": null,
+                  "title": "Source Version"
                 },
                 "tags": {
                   "anyOf": [
@@ -22424,30 +24777,6 @@
                     }
                   ],
                   "default": null
-                },
-                "updated_by_system": {
-                  "anyOf": [
-                    {
-                      "type": "string"
-                    },
-                    {
-                      "type": "null"
-                    }
-                  ],
-                  "default": null,
-                  "title": "Updated By System"
-                },
-                "updated_by_tier": {
-                  "anyOf": [
-                    {
-                      "type": "string"
-                    },
-                    {
-                      "type": "null"
-                    }
-                  ],
-                  "default": null,
-                  "title": "Updated By Tier"
                 },
                 "variable_definitions": {
                   "anyOf": [
@@ -22588,6 +24917,38 @@
                   ],
                   "default": null,
                   "title": "Currency"
+                },
+                "custom_fields": {
+                  "anyOf": [
+                    {
+                      "anyOf": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "boolean"
+                        },
+                        {
+                          "type": "number"
+                        },
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "array"
+                        },
+                        {
+                          "type": "object"
+                        }
+                      ],
+                      "description": "Any JSON value \u2014 this column is json/jsonb.",
+                      "title": "JSON"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "default": null
                 },
                 "description": {
                   "anyOf": [
@@ -22795,22 +25156,103 @@
     {
       "capability": "side_effect",
       "class": "update",
-      "doc": "Update one Data Table row (workbench.udt_datasets) by id; any writable columns.",
-      "item_model": "UpdateDatasetItem",
-      "noun": "dataset",
+      "doc": "Update one Private contact research row (crm.party_research) by id; any writable columns.",
+      "item_model": "UpdateCrmPartyResearchItem",
+      "noun": "crm_party_research",
       "purposes": [],
       "schema": {
         "additionalProperties": false,
         "properties": {
           "__kind": {
-            "const": "directive_v1_update_dataset",
+            "const": "directive_v1_update_crm_party_research",
             "type": "string"
           },
           "items": {
             "items": {
               "additionalProperties": false,
               "properties": {
-                "description": {
+                "category": {
+                  "anyOf": [
+                    {
+                      "enum": [
+                        "unknown",
+                        "real_user",
+                        "friend",
+                        "family",
+                        "employee",
+                        "former_employee",
+                        "owner",
+                        "test",
+                        "bot"
+                      ],
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "default": null,
+                  "title": "Category"
+                },
+                "contact_state": {
+                  "anyOf": [
+                    {
+                      "enum": [
+                        "not_contacted",
+                        "draft",
+                        "contacted",
+                        "replied",
+                        "trial_active",
+                        "declined",
+                        "hold",
+                        "opted_out"
+                      ],
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "default": null,
+                  "title": "Contact State"
+                },
+                "custom_fields": {
+                  "anyOf": [
+                    {
+                      "anyOf": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "boolean"
+                        },
+                        {
+                          "type": "number"
+                        },
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "array"
+                        },
+                        {
+                          "type": "object"
+                        }
+                      ],
+                      "description": "Any JSON value \u2014 this column is json/jsonb.",
+                      "title": "JSON"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "default": null
+                },
+                "id": {
+                  "title": "Id",
+                  "type": "string"
+                },
+                "label": {
                   "anyOf": [
                     {
                       "type": "string"
@@ -22820,11 +25262,7 @@
                     }
                   ],
                   "default": null,
-                  "title": "Description"
-                },
-                "id": {
-                  "title": "Id",
-                  "type": "string"
+                  "title": "Label"
                 },
                 "metadata": {
                   "anyOf": [
@@ -22858,7 +25296,7 @@
                   ],
                   "default": null
                 },
-                "project_id": {
+                "notes": {
                   "anyOf": [
                     {
                       "type": "string"
@@ -22868,9 +25306,41 @@
                     }
                   ],
                   "default": null,
-                  "title": "Project Id"
+                  "title": "Notes"
                 },
-                "table_name": {
+                "outreach": {
+                  "anyOf": [
+                    {
+                      "anyOf": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "boolean"
+                        },
+                        {
+                          "type": "number"
+                        },
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "array"
+                        },
+                        {
+                          "type": "object"
+                        }
+                      ],
+                      "description": "Any JSON value \u2014 this column is json/jsonb.",
+                      "title": "JSON"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "default": null
+                },
+                "party_id": {
                   "anyOf": [
                     {
                       "type": "string"
@@ -22880,9 +25350,9 @@
                     }
                   ],
                   "default": null,
-                  "title": "Table Name"
+                  "title": "Party Id"
                 },
-                "task_id": {
+                "subject_id": {
                   "anyOf": [
                     {
                       "type": "string"
@@ -22892,37 +25362,13 @@
                     }
                   ],
                   "default": null,
-                  "title": "Task Id"
-                },
-                "template_id": {
-                  "anyOf": [
-                    {
-                      "type": "string"
-                    },
-                    {
-                      "type": "null"
-                    }
-                  ],
-                  "default": null,
-                  "title": "Template Id"
-                },
-                "template_version": {
-                  "anyOf": [
-                    {
-                      "type": "integer"
-                    },
-                    {
-                      "type": "null"
-                    }
-                  ],
-                  "default": null,
-                  "title": "Template Version"
+                  "title": "Subject Id"
                 }
               },
               "required": [
                 "id"
               ],
-              "title": "UpdateDatasetItem",
+              "title": "UpdateCrmPartyResearchItem",
               "type": "object"
             },
             "type": "array"
@@ -22934,7 +25380,7 @@
         ],
         "type": "object"
       },
-      "slug": "directive_v1_update_dataset"
+      "slug": "directive_v1_update_crm_party_research"
     },
     {
       "capability": "side_effect",
@@ -22978,9 +25424,46 @@
                   "default": null,
                   "title": "Card Kind"
                 },
+                "custom_fields": {
+                  "anyOf": [
+                    {
+                      "anyOf": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "boolean"
+                        },
+                        {
+                          "type": "number"
+                        },
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "array"
+                        },
+                        {
+                          "type": "object"
+                        }
+                      ],
+                      "description": "Any JSON value \u2014 this column is json/jsonb.",
+                      "title": "JSON"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "default": null
+                },
                 "difficulty": {
                   "anyOf": [
                     {
+                      "enum": [
+                        "easy",
+                        "medium",
+                        "hard"
+                      ],
                       "type": "string"
                     },
                     {
@@ -23154,6 +25637,38 @@
                   "default": null,
                   "title": "Audio Overview File Id"
                 },
+                "custom_fields": {
+                  "anyOf": [
+                    {
+                      "anyOf": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "boolean"
+                        },
+                        {
+                          "type": "number"
+                        },
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "array"
+                        },
+                        {
+                          "type": "object"
+                        }
+                      ],
+                      "description": "Any JSON value \u2014 this column is json/jsonb.",
+                      "title": "JSON"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "default": null
+                },
                 "description": {
                   "anyOf": [
                     {
@@ -23169,6 +25684,11 @@
                 "difficulty": {
                   "anyOf": [
                     {
+                      "enum": [
+                        "easy",
+                        "medium",
+                        "hard"
+                      ],
                       "type": "string"
                     },
                     {
@@ -23298,17 +25818,37 @@
                   "default": null,
                   "title": "Content"
                 },
-                "file_path": {
+                "custom_fields": {
                   "anyOf": [
                     {
-                      "type": "string"
+                      "anyOf": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "boolean"
+                        },
+                        {
+                          "type": "number"
+                        },
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "array"
+                        },
+                        {
+                          "type": "object"
+                        }
+                      ],
+                      "description": "Any JSON value \u2014 this column is json/jsonb.",
+                      "title": "JSON"
                     },
                     {
                       "type": "null"
                     }
                   ],
-                  "default": null,
-                  "title": "File Path"
+                  "default": null
                 },
                 "folder_id": {
                   "anyOf": [
@@ -23552,6 +26092,38 @@
                   "default": null,
                   "title": "Bio"
                 },
+                "custom_fields": {
+                  "anyOf": [
+                    {
+                      "anyOf": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "boolean"
+                        },
+                        {
+                          "type": "number"
+                        },
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "array"
+                        },
+                        {
+                          "type": "object"
+                        }
+                      ],
+                      "description": "Any JSON value \u2014 this column is json/jsonb.",
+                      "title": "JSON"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "default": null
+                },
                 "date_of_birth": {
                   "anyOf": [
                     {
@@ -23588,6 +26160,38 @@
                   ],
                   "default": null,
                   "title": "Employee Band"
+                },
+                "field_provenance": {
+                  "anyOf": [
+                    {
+                      "anyOf": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "boolean"
+                        },
+                        {
+                          "type": "number"
+                        },
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "array"
+                        },
+                        {
+                          "type": "object"
+                        }
+                      ],
+                      "description": "Any JSON value \u2014 this column is json/jsonb.",
+                      "title": "JSON"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "default": null
                 },
                 "first_name": {
                   "anyOf": [
@@ -23760,6 +26364,10 @@
                 "party_kind": {
                   "anyOf": [
                     {
+                      "enum": [
+                        "person",
+                        "organization"
+                      ],
                       "type": "string"
                     },
                     {
@@ -23820,6 +26428,10 @@
                 "record_class": {
                   "anyOf": [
                     {
+                      "enum": [
+                        "contact",
+                        "discovered"
+                      ],
                       "type": "string"
                     },
                     {
@@ -23937,6 +26549,38 @@
             "items": {
               "additionalProperties": false,
               "properties": {
+                "custom_fields": {
+                  "anyOf": [
+                    {
+                      "anyOf": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "boolean"
+                        },
+                        {
+                          "type": "number"
+                        },
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "array"
+                        },
+                        {
+                          "type": "object"
+                        }
+                      ],
+                      "description": "Any JSON value \u2014 this column is json/jsonb.",
+                      "title": "JSON"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "default": null
+                },
                 "description": {
                   "anyOf": [
                     {
@@ -24074,6 +26718,13 @@
                 "status": {
                   "anyOf": [
                     {
+                      "enum": [
+                        "planning",
+                        "active",
+                        "paused",
+                        "completed",
+                        "archived"
+                      ],
                       "type": "string"
                     },
                     {
@@ -24156,6 +26807,38 @@
                   ],
                   "default": null,
                   "title": "Completed At"
+                },
+                "custom_fields": {
+                  "anyOf": [
+                    {
+                      "anyOf": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "boolean"
+                        },
+                        {
+                          "type": "number"
+                        },
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "array"
+                        },
+                        {
+                          "type": "object"
+                        }
+                      ],
+                      "description": "Any JSON value \u2014 this column is json/jsonb.",
+                      "title": "JSON"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "default": null
                 },
                 "id": {
                   "title": "Id",
@@ -24309,6 +26992,18 @@
                   "default": null,
                   "title": "Agent Type"
                 },
+                "capture_version": {
+                  "anyOf": [
+                    {
+                      "type": "integer"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "default": null,
+                  "title": "Capture Version"
+                },
                 "content": {
                   "anyOf": [
                     {
@@ -24322,6 +27017,38 @@
                   "title": "Content"
                 },
                 "content_structured": {
+                  "anyOf": [
+                    {
+                      "anyOf": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "boolean"
+                        },
+                        {
+                          "type": "number"
+                        },
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "array"
+                        },
+                        {
+                          "type": "object"
+                        }
+                      ],
+                      "description": "Any JSON value \u2014 this column is json/jsonb.",
+                      "title": "JSON"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "default": null
+                },
+                "custom_fields": {
                   "anyOf": [
                     {
                       "anyOf": [
@@ -24460,6 +27187,10 @@
                 "status": {
                   "anyOf": [
                     {
+                      "enum": [
+                        "success",
+                        "failed"
+                      ],
                       "type": "string"
                     },
                     {
@@ -24613,6 +27344,11 @@
                 "authority_tier": {
                   "anyOf": [
                     {
+                      "enum": [
+                        "low",
+                        "medium",
+                        "high"
+                      ],
                       "type": "string"
                     },
                     {
@@ -24621,6 +27357,38 @@
                   ],
                   "default": null,
                   "title": "Authority Tier"
+                },
+                "custom_fields": {
+                  "anyOf": [
+                    {
+                      "anyOf": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "boolean"
+                        },
+                        {
+                          "type": "number"
+                        },
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "array"
+                        },
+                        {
+                          "type": "object"
+                        }
+                      ],
+                      "description": "Any JSON value \u2014 this column is json/jsonb.",
+                      "title": "JSON"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "default": null
                 },
                 "description": {
                   "anyOf": [
@@ -24816,6 +27584,12 @@
                 "origin": {
                   "anyOf": [
                     {
+                      "enum": [
+                        "search",
+                        "manual_add",
+                        "link_extraction",
+                        "file_upload"
+                      ],
                       "type": "string"
                     },
                     {
@@ -24949,6 +27723,18 @@
                   "default": null,
                   "title": "Pre Read Score"
                 },
+                "processed_document_id": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "default": null,
+                  "title": "Processed Document Id"
+                },
                 "rank": {
                   "anyOf": [
                     {
@@ -24993,6 +27779,18 @@
                   ],
                   "default": null
                 },
+                "read_priority_reason": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "default": null,
+                  "title": "Read Priority Reason"
+                },
                 "recommended_use": {
                   "anyOf": [
                     {
@@ -25017,9 +27815,34 @@
                   "default": null,
                   "title": "Redundancy Group"
                 },
+                "scrape_parsed_page_id": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "default": null,
+                  "title": "Scrape Parsed Page Id"
+                },
                 "scrape_status": {
                   "anyOf": [
                     {
+                      "enum": [
+                        "pending",
+                        "success",
+                        "thin",
+                        "failed",
+                        "manual",
+                        "skipped",
+                        "complete",
+                        "dead_link",
+                        "gated",
+                        "ignored",
+                        "content_mismatch"
+                      ],
                       "type": "string"
                     },
                     {
@@ -25080,6 +27903,13 @@
                 "source_type": {
                   "anyOf": [
                     {
+                      "enum": [
+                        "web",
+                        "youtube",
+                        "pdf",
+                        "file",
+                        "manual"
+                      ],
                       "type": "string"
                     },
                     {
@@ -25125,6 +27955,38 @@
                   "default": null,
                   "title": "Topic Id"
                 },
+                "triage_verdict": {
+                  "anyOf": [
+                    {
+                      "anyOf": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "boolean"
+                        },
+                        {
+                          "type": "number"
+                        },
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "array"
+                        },
+                        {
+                          "type": "object"
+                        }
+                      ],
+                      "description": "Any JSON value \u2014 this column is json/jsonb.",
+                      "title": "JSON"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "default": null
+                },
                 "url": {
                   "anyOf": [
                     {
@@ -25140,6 +28002,15 @@
                 "user_verdict": {
                   "anyOf": [
                     {
+                      "enum": [
+                        "accept_as_is",
+                        "dead_link",
+                        "retry",
+                        "mark_complete",
+                        "gated",
+                        "ignored",
+                        "content_mismatch"
+                      ],
                       "type": "string"
                     },
                     {
@@ -25257,6 +28128,11 @@
                 "autonomy_level": {
                   "anyOf": [
                     {
+                      "enum": [
+                        "auto",
+                        "semi",
+                        "manual"
+                      ],
                       "type": "string"
                     },
                     {
@@ -25277,6 +28153,38 @@
                   ],
                   "default": null,
                   "title": "Consecutive Refresh Failures"
+                },
+                "custom_fields": {
+                  "anyOf": [
+                    {
+                      "anyOf": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "boolean"
+                        },
+                        {
+                          "type": "number"
+                        },
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "array"
+                        },
+                        {
+                          "type": "object"
+                        }
+                      ],
+                      "description": "Any JSON value \u2014 this column is json/jsonb.",
+                      "title": "JSON"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "default": null
                 },
                 "default_search_params": {
                   "anyOf": [
@@ -25313,6 +28221,10 @@
                 "default_search_provider": {
                   "anyOf": [
                     {
+                      "enum": [
+                        "brave",
+                        "google"
+                      ],
                       "type": "string"
                     },
                     {
@@ -25402,6 +28314,11 @@
                 "last_refresh_outcome": {
                   "anyOf": [
                     {
+                      "enum": [
+                        "started",
+                        "skipped",
+                        "failed"
+                      ],
                       "type": "string"
                     },
                     {
@@ -25636,6 +28553,14 @@
                 "status": {
                   "anyOf": [
                     {
+                      "enum": [
+                        "draft",
+                        "searching",
+                        "scraping",
+                        "curating",
+                        "analyzing",
+                        "complete"
+                      ],
                       "type": "string"
                     },
                     {
@@ -25734,102 +28659,6 @@
     {
       "capability": "side_effect",
       "class": "update",
-      "doc": "Update one Pick List row (workbench.udt_structured_lists) by id; any writable columns.",
-      "item_model": "UpdateStructuredListItem",
-      "noun": "structured_list",
-      "purposes": [],
-      "schema": {
-        "additionalProperties": false,
-        "properties": {
-          "__kind": {
-            "const": "directive_v1_update_structured_list",
-            "type": "string"
-          },
-          "items": {
-            "items": {
-              "additionalProperties": false,
-              "properties": {
-                "description": {
-                  "anyOf": [
-                    {
-                      "type": "string"
-                    },
-                    {
-                      "type": "null"
-                    }
-                  ],
-                  "default": null,
-                  "title": "Description"
-                },
-                "id": {
-                  "title": "Id",
-                  "type": "string"
-                },
-                "list_name": {
-                  "anyOf": [
-                    {
-                      "type": "string"
-                    },
-                    {
-                      "type": "null"
-                    }
-                  ],
-                  "default": null,
-                  "title": "List Name"
-                },
-                "metadata": {
-                  "anyOf": [
-                    {
-                      "anyOf": [
-                        {
-                          "type": "null"
-                        },
-                        {
-                          "type": "boolean"
-                        },
-                        {
-                          "type": "number"
-                        },
-                        {
-                          "type": "string"
-                        },
-                        {
-                          "type": "array"
-                        },
-                        {
-                          "type": "object"
-                        }
-                      ],
-                      "description": "Any JSON value \u2014 this column is json/jsonb.",
-                      "title": "JSON"
-                    },
-                    {
-                      "type": "null"
-                    }
-                  ],
-                  "default": null
-                }
-              },
-              "required": [
-                "id"
-              ],
-              "title": "UpdateStructuredListItem",
-              "type": "object"
-            },
-            "type": "array"
-          }
-        },
-        "required": [
-          "__kind",
-          "items"
-        ],
-        "type": "object"
-      },
-      "slug": "directive_v1_update_structured_list"
-    },
-    {
-      "capability": "side_effect",
-      "class": "update",
       "doc": "Update one Task row (projects.tasks) by id; any writable columns.",
       "item_model": "UpdateTaskItem",
       "noun": "task",
@@ -25870,17 +28699,37 @@
                   "default": null,
                   "title": "Completed At"
                 },
-                "dedupe_key": {
+                "custom_fields": {
                   "anyOf": [
                     {
-                      "type": "string"
+                      "anyOf": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "boolean"
+                        },
+                        {
+                          "type": "number"
+                        },
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "array"
+                        },
+                        {
+                          "type": "object"
+                        }
+                      ],
+                      "description": "Any JSON value \u2014 this column is json/jsonb.",
+                      "title": "JSON"
                     },
                     {
                       "type": "null"
                     }
                   ],
-                  "default": null,
-                  "title": "Dedupe Key"
+                  "default": null
                 },
                 "description": {
                   "anyOf": [
@@ -25955,18 +28804,6 @@
                     }
                   ],
                   "default": null
-                },
-                "origin": {
-                  "anyOf": [
-                    {
-                      "type": "string"
-                    },
-                    {
-                      "type": "null"
-                    }
-                  ],
-                  "default": null,
-                  "title": "Origin"
                 },
                 "parent_task_id": {
                   "anyOf": [
@@ -26085,54 +28922,6 @@
                   ],
                   "default": null
                 },
-                "source_id": {
-                  "anyOf": [
-                    {
-                      "type": "string"
-                    },
-                    {
-                      "type": "null"
-                    }
-                  ],
-                  "default": null,
-                  "title": "Source Id"
-                },
-                "source_label": {
-                  "anyOf": [
-                    {
-                      "type": "string"
-                    },
-                    {
-                      "type": "null"
-                    }
-                  ],
-                  "default": null,
-                  "title": "Source Label"
-                },
-                "source_type": {
-                  "anyOf": [
-                    {
-                      "type": "string"
-                    },
-                    {
-                      "type": "null"
-                    }
-                  ],
-                  "default": null,
-                  "title": "Source Type"
-                },
-                "source_url": {
-                  "anyOf": [
-                    {
-                      "type": "string"
-                    },
-                    {
-                      "type": "null"
-                    }
-                  ],
-                  "default": null,
-                  "title": "Source Url"
-                },
                 "start_date": {
                   "anyOf": [
                     {
@@ -26149,6 +28938,15 @@
                 "status": {
                   "anyOf": [
                     {
+                      "enum": [
+                        "inbox",
+                        "planned",
+                        "active",
+                        "incomplete",
+                        "completed",
+                        "cancelled",
+                        "dismissed"
+                      ],
                       "type": "string"
                     },
                     {
@@ -26229,6 +29027,38 @@
                   ],
                   "default": null,
                   "title": "Audio File Path"
+                },
+                "custom_fields": {
+                  "anyOf": [
+                    {
+                      "anyOf": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "boolean"
+                        },
+                        {
+                          "type": "number"
+                        },
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "array"
+                        },
+                        {
+                          "type": "object"
+                        }
+                      ],
+                      "description": "Any JSON value \u2014 this column is json/jsonb.",
+                      "title": "JSON"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "default": null
                 },
                 "description": {
                   "anyOf": [
@@ -26315,6 +29145,18 @@
                   ],
                   "default": null
                 },
+                "processed_document_id": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "default": null,
+                  "title": "Processed Document Id"
+                },
                 "project_id": {
                   "anyOf": [
                     {
@@ -26362,6 +29204,13 @@
                 "source_type": {
                   "anyOf": [
                     {
+                      "enum": [
+                        "audio",
+                        "video",
+                        "meeting",
+                        "interview",
+                        "other"
+                      ],
                       "type": "string"
                     },
                     {
@@ -26458,6 +29307,38 @@
             "items": {
               "additionalProperties": false,
               "properties": {
+                "custom_fields": {
+                  "anyOf": [
+                    {
+                      "anyOf": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "boolean"
+                        },
+                        {
+                          "type": "number"
+                        },
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "array"
+                        },
+                        {
+                          "type": "object"
+                        }
+                      ],
+                      "description": "Any JSON value \u2014 this column is json/jsonb.",
+                      "title": "JSON"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "default": null
+                },
                 "description": {
                   "anyOf": [
                     {
@@ -26578,6 +29459,38 @@
             "items": {
               "additionalProperties": false,
               "properties": {
+                "custom_fields": {
+                  "anyOf": [
+                    {
+                      "anyOf": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "boolean"
+                        },
+                        {
+                          "type": "number"
+                        },
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "array"
+                        },
+                        {
+                          "type": "object"
+                        }
+                      ],
+                      "description": "Any JSON value \u2014 this column is json/jsonb.",
+                      "title": "JSON"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "default": null
+                },
                 "description": {
                   "anyOf": [
                     {
