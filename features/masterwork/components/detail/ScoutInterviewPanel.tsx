@@ -23,7 +23,6 @@ import { ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { CanvasPagePanel } from "@/features/canvas/host/pagePanel";
 import { AgentConversationColumn } from "@ai-matrx/chat/agents/components/shared/AgentConversationColumn";
-import { VoiceRelayBar } from "@ai-matrx/chat/voice-agent/relay/VoiceRelayBar";
 import { InterviewOpening } from "../../record/InterviewOpening";
 import {
   INTERVIEW_HISTORY_MS,
@@ -546,20 +545,11 @@ function InterviewColumn({
             meta: "none",
             placeholder:
               "Answer in your own words — typing or rambling both work…",
+            // Voice is the composer's own Live audio, already on when the
+            // Expert chose to talk — never a second voice button beside it.
+            sourceFeature: SOURCE_FEATURE,
+            liveAudioStartsOn: voiceOn,
           },
-          // Voice is a composer action, not a second section above a column that
-          // already owns the full available height. Keeping it in the pinned
-          // toolbar leaves the textarea reachable at every panel size.
-          extraRightControls: voiceOn ? (
-            <VoiceRelayBar
-              primaryAgentId={agentId}
-              conversationId={conversationId}
-              surfaceKey={surfaceKey}
-              sourceFeature={SOURCE_FEATURE}
-              questionPacing="one_at_a_time"
-              variant="toolbar"
-            />
-          ) : undefined,
         }}
         afterMessages={
           <div className="flex flex-wrap gap-1.5 px-1 pt-2">

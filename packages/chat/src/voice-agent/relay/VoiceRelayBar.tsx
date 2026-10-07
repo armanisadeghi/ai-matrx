@@ -13,7 +13,7 @@
 // Masterwork Scout interview panel. SoR:
 // common-docs/systems/chat/voice/STATE.md
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Mic, Square, AudioLines } from "lucide-react";
 import { Button } from "@ai-matrx/design-system/controls";
 import { useMandate } from "../../mandates/useMandate";
@@ -60,7 +60,8 @@ function ActiveVoiceRelay({
   sourceFeature,
   questionPacing,
   onEnd,
-}: VoiceRelayBarProps & { communicatorAgentId: string; onEnd?: () => void }) {
+  autoStart,
+}: VoiceRelayBarProps & { communicatorAgentId: string; onEnd?: () => void; autoStart?: boolean }) {
   const relay = useVoiceRelaySession({
     communicatorAgentId,
     primaryAgentId,
@@ -70,26 +71,27 @@ function ActiveVoiceRelay({
     questionPacing,
   });
   const live = relay.status !== "idle" && relay.status !== "error";
+  // The composer's Live audio press IS the request to talk: start once, no
+  // second "Talk" press.
+  const started = useRef(false);
+  useEffect(() => {
+    if (!autoStart || started.current) return;
+    started.current = true;
+    relay.toggle();
+  }, [autoStart, relay]);
 
   return (
     <>
       <Button
         variant={live ? "danger" : "primary"}
+        icon={live ? <Square /> : <Mic />}
         onClick={() => {
           relay.toggle();
           // Ending voice puts the composer's control back to its one icon.
           if (live) onEnd?.();
         }}
       >
-        {live ? (
-          <>
-            <Square className="mr-1.5 h-3.5 w-3.5" /> End voice
-          </>
-        ) : (
-          <>
-            <Mic className="mr-1.5 h-3.5 w-3.5" /> Talk
-          </>
-        )}
+        {live ? "End voice" : "Talk"}
       </Button>
       {live ? (
         // The canonical mute control — state-correct icon + aria-label.
@@ -99,13 +101,17 @@ function ActiveVoiceRelay({
           size={30}
         />
       ) : null}
-      <span className="text-xs text-muted-foreground">
-        {relay.error
-          ? relay.error.message
-          : relay.brainBusy
-            ? "thinking…"
-            : relay.status}
-      </span>
+      {/* A state word only when it says something: "idle" beside "Talk"
+          says nothing. */}
+      {relay.error || relay.brainBusy || relay.status !== "idle" ? (
+        <span className="text-xs text-muted-foreground">
+          {relay.error
+            ? relay.error.message
+            : relay.brainBusy
+              ? "thinking…"
+              : relay.status}
+        </span>
+      ) : null}
     </>
   );
 }
@@ -167,5 +173,11 @@ function EnabledVoiceRelay(props: VoiceRelayBarProps & { onEnd?: () => void }) {
       </span>
     );
   }
-  return <ActiveVoiceRelay {...props} communicatorAgentId={communicator.mandate.agentId} />;
+  return (
+    <ActiveVoiceRelay
+      {...props}
+      communicatorAgentId={communicator.mandate.agentId}
+      autoStart={props.variant === "composer"}
+    />
+  );
 }

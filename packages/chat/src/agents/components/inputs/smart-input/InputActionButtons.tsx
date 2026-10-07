@@ -139,6 +139,7 @@ interface InputActionButtonsProps {
     part?: "send" | "controls" | "launcher";
     /** Attribution for a Live audio session started here. Absent = "chat". */
     sourceFeature?: SourceFeature;
+    liveAudioStartsOn?: boolean;
   };
 }
 
@@ -157,7 +158,7 @@ export function InputActionButtons({
 }: InputActionButtonsProps) {
   const dispatch = useAppDispatch();
   const [voiceBusy, setVoiceBusy] = useState(false);
-  const [liveAudioOn, setLiveAudioOn] = useState(false);
+  const [liveAudioOn, setLiveAudioOn] = useState(composer.liveAudioStartsOn ?? false);
   const agentId = useAppSelector(selectAgentIdFromInstance(conversationId)) ?? null;
 
   // Selectors. Executing state is surface-aware: under the autoclear split the

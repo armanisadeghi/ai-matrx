@@ -107,4 +107,6 @@ export interface ComposerPresentation {
   textMenu?: ComposerTextMenu;
   /** Who started a Live audio session here (attribution). Absent = "chat". */
   sourceFeature?: SourceFeature;
+  /** Live audio starts switched on (the person already chose to talk, e.g. a voice interview). */
+  liveAudioStartsOn?: boolean;
 }

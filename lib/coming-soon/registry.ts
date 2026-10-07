@@ -65,19 +65,6 @@ export const COMING_SOON: Record<string, ComingSoonEntry> = {
       "App code has no DDL path by policy (CLAUDE.md § Migrations) — function bodies change through a migration, not a browser textarea.",
     surfaces: ["Database admin → function details → Definition tab"],
   },
-  "chat.live-audio": {
-    id: "chat.live-audio",
-    label: "Live audio",
-    owner: "agents",
-    promise:
-      "Talk to the agent out loud and hear it answer, in a continuous live session — not a recording you send and wait on.",
-    stage: "planned",
-    // Found 2026-08-24 during the dead-control sweep: the button was rendered
-    // beside Send with `onClick={() => {}}`, so the one control on the input
-    // bar that promises the most did the least. Dictation (hold to record) is
-    // a DIFFERENT, working control — this is the continuous session.
-    surfaces: ["Chat input action bar"],
-  },
   "mandates.holder-auto-heal": {
     id: "mandates.holder-auto-heal",
     label: "Fix with AI",

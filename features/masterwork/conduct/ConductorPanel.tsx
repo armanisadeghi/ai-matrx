@@ -63,7 +63,6 @@ import {
 import { selectUserInputText } from "@ai-matrx/chat/agents/redux/execution-system/instance-user-input/instance-user-input.selectors";
 import { useAppDispatch, useAppSelector, useAppStore } from "@/lib/redux/hooks";
 import { RecordingOriginProvider } from "@/features/audio/RecordingOriginProvider";
-import { VoiceRelayBar } from "@ai-matrx/chat/voice-agent/relay/VoiceRelayBar";
 import { MASTERWORK_RULEBOOK_SURFACE_NAME } from "@/features/surfaces/manifests/masterwork-rulebook.manifest";
 import {
   missingRequiredVariables,
@@ -403,17 +402,10 @@ function ConductorColumn({
             meta: "none",
             placeholder:
               "Argue with it, answer its questions, or tell it to build…",
+            // Voice is the composer's own Live audio — never a second voice
+            // button beside it (Arman, 2026-10-07).
+            sourceFeature: SOURCE_FEATURE,
           },
-          extraRightControls: (
-            <VoiceRelayBar
-              primaryAgentId={agentId}
-              conversationId={conversationId}
-              surfaceKey={surfaceKey}
-              sourceFeature={SOURCE_FEATURE}
-              questionPacing="one_at_a_time"
-              variant="toolbar"
-            />
-          ),
         }}
         afterMessages={
           <div className="mx-auto flex max-w-xl flex-wrap justify-center gap-1.5 px-4 pt-2">

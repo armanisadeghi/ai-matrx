@@ -247,7 +247,7 @@ export function SmartAgentInputStacked({
     surfaceKey,
     disableSend: sendBlocked,
   };
-  const composerParts = { size: composer.size, mode: composer.mode, folded, sourceFeature: composer.sourceFeature };
+  const composerParts = { size: composer.size, mode: composer.mode, folded, sourceFeature: composer.sourceFeature, liveAudioStartsOn: composer.liveAudioStartsOn };
   // ── Launcher: the quiet box at the foot of a page — text · mic · send ──
   // The SAME engine: one drop target around the variables and the text, the
   // context rail (it owns the page-follow rule and the realtime list), the
