@@ -96,7 +96,7 @@ export function AppletBuilder({ appletId: initialId }: { appletId: string | null
       const answer = await writer.run<BuildAnswer>({
         mandateKey: fix ? FIX : BUILD,
         surfaceKey: "applets:build",
-        sourceFeature: "applet",
+        sourceFeature: "agent-app",
         expect: "json",
         initiation: "user",
         organizationId: current?.organizationId ?? organizationId,
@@ -192,7 +192,7 @@ export function AppletBuilder({ appletId: initialId }: { appletId: string | null
         {saved ? (
           <div className="flex flex-col gap-2 rounded-lg border border-border bg-card p-3 text-sm">
             <div className="flex flex-wrap items-center gap-2">
-              <span className="font-medium">/apps/{saved.slug}</span>
+              <span className="font-medium">/applets/{saved.slug}</span>
               <Badge tone={saved.status === "published" ? "success" : "neutral"}>v{saved.version}</Badge>
               {saved.status === "published" ? <Badge tone="success">Live</Badge> : null}
             </div>
