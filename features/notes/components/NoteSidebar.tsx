@@ -980,7 +980,7 @@ export function NoteSidebar({ instanceId, onNoteOpened }: NoteSidebarProps) {
           • Actions (order, Select, Expand) — plain icon buttons.
           Every control carries a proper tooltip. */}
       {/* At a narrow sidebar the row scrolls sideways instead of overflowing. */}
-      <div className="shrink-0 flex items-center gap-1 overflow-x-auto px-2 py-1 border-b border-border/20 [scrollbar-width:none]">
+      <div className="shrink-0 flex min-h-[47px] items-center gap-1 overflow-x-auto px-2 py-1 border-b border-border/20 [scrollbar-width:none]">
         {/* Group-by selector */}
         <div className="relative">
           <SimpleTooltip text="Group notes by">

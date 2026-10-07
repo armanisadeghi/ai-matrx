@@ -445,6 +445,15 @@
   transition: grid-template-columns var(--matrx-motion-duration-panel) var(--matrx-motion-ease-panel);
 }
 
+/* The shell chat opens at this width on a wide screen with no remembered choice (see ShellChatDock's
+   wideDefault, SHELL_CHAT_WIDE_QUERY). It opens after hydration, so the first paint reserves its room here;
+   the dock's own published --shell-chat-w (inline) takes over without a change in value. */
+@media (min-width: 1440px) {
+  .shell-root[data-shell-chat-wide-default] {
+    --shell-chat-w: var(--shell-chat-w-wide, 0px);
+  }
+}
+
 /* Build A/B (FORCE_EXCLUDE_SIDEMENU): no sidebar column — header + main full width. */
 .shell-root[data-no-sidebar] {
   grid-template-columns: 1fr;

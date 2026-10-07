@@ -232,7 +232,11 @@ export function NoteTabBar({ instanceId, syncUrl = true }: NoteTabBarProps) {
   // A registered but empty instance still needs its real New note control.
   // Returning null here made the initializer unreachable as soon as a user
   // closed their last tab.
-  if (!openTabs) return null;
+  // Until the instance registers the row still holds its final height, so the page below never
+  // drops by a tab bar when it arrives (CLS).
+  if (!openTabs) {
+    return <div aria-hidden className="notes-tab-bar-scroll h-8 min-h-[2rem] shrink-0 border-b border-border" />;
+  }
 
   // Per-tab wrapper (drag handlers + drop-target styling). Shared between the
   // pinned active tab and the scrolling tabs so behaviour stays identical.

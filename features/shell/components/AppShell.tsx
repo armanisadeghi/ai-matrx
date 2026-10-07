@@ -87,6 +87,9 @@ export default async function AppShell({
     ? chatInitial.open && chatInitial.placement === "side"
     : chatHome.defaultOpen === true;
   const chatReserved = chatAvailable && chatDockedOpen && chatWidth !== undefined;
+  // No remembered choice on a page family that opens its chat on a wide screen: the dock opens after
+  // hydration, so a wide viewport reserves the width in CSS from the first paint (no shift, no animation).
+  const chatWideDefault = chatAvailable && !chatInitial && chatHome.defaultOpen === null && chatWidth !== undefined;
   const domainPanel = isDomainPanelPath(pathname);
   const toggleChecked = shellToggleChecked(
     domainPanel,
@@ -102,7 +105,14 @@ export default async function AppShell({
           {...shellChromeAttributes(pathname, isAuthenticated)}
           {...(domainPanel ? { "data-domain-panel": "" } : {})}
           {...(chatAvailable ? { "data-shell-chat-available": "" } : {})}
-          style={chatReserved ? ({ "--shell-chat-w": `${chatWidth}px` } as React.CSSProperties) : undefined}
+          {...(chatWideDefault ? { "data-shell-chat-wide-default": "" } : {})}
+          style={
+            chatReserved
+              ? ({ "--shell-chat-w": `${chatWidth}px` } as React.CSSProperties)
+              : chatWideDefault
+                ? ({ "--shell-chat-w-wide": `${chatWidth}px` } as React.CSSProperties)
+                : undefined
+          }
           {...(FORCE_EXCLUDE_SIDEMENU ? { "data-no-sidebar": "" } : {})}
         >
           <input
