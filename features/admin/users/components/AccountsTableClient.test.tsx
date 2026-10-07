@@ -169,6 +169,7 @@ describe("AccountsTableClient", () => {
       phone_confirmed: false,
       is_anonymous: false,
       banned: false,
+      erased: false,
       admin_level: null,
       mcp_full_access: true,
       onboarding_completed: true,

@@ -6,7 +6,12 @@
 
 import type { CaretContext } from "../core/caret-context";
 
-const pending = new Map<string, CaretContext>();
+// ONE map per page however many copies of this module load (chat writes, @ai-matrx/rich-editor's
+// in-place editor reads — until chat depends on rich-editor directly).
+const PENDING_KEY = Symbol.for("ai-matrx.rich-editor.in-place-caret-handoff");
+const pending: Map<string, CaretContext> = ((globalThis as unknown as Record<symbol, Map<string, CaretContext> | undefined>)[
+  PENDING_KEY
+] ??= new Map<string, CaretContext>());
 
 export function handInPlaceCaret(key: string, caret: CaretContext | null): void {
   if (caret) pending.set(key, caret);

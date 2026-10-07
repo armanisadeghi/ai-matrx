@@ -179,13 +179,27 @@ function recoveryEmail(link: string) {
   };
 }
 
+/** The one source of truth for "is this account closed": the open iam.account_closure record. */
+export async function readOpenClosure(userId: string): Promise<{ state: "closed"; closedAt: string } | null> {
+  const { data, error } = await createAdminClient().schema("iam").from("account_closure")
+    .select("closed_at").eq("user_id", userId).is("reopened_at", null).is("deleted_at", null)
+    .order("closed_at", { ascending: false }).limit(1).maybeSingle();
+  if (error) throw error;
+  return data ? { state: "closed", closedAt: data.closed_at } : null;
+}
+
 /** Starts a reversible archive-only closure. It never deletes users or retained data. */
-export async function closeAccount(input: { userId: string; email: string; metadata: unknown; origin: string; accessToken: string }) {
-  const existing = readClosureJournal(input.metadata);
-  if (existing?.state === "closed") return { journal: existing, alreadyClosed: true };
+export async function closeAccount(input: { userId: string; email: string; metadata: unknown; origin: string }) {
+  const journalRead = readClosureJournal(input.metadata);
+  // The DB record decides closed vs open; the journal is only a retry ledger.
+  // A journal still saying "closed" after a reopen is stale and starts fresh.
+  if (await readOpenClosure(input.userId)) {
+    if (journalRead?.state === "closed") return { journal: journalRead, alreadyClosed: true };
+    return { journal: journalRead ?? { requestId: "", state: "closed", requestedAt: "", email: input.email, checkpoints: {}, receipts: {}, errors: [] }, alreadyClosed: true };
+  }
+  const existing = journalRead && journalRead.state !== "closed" ? journalRead : null;
   const blockers = await soleOwnedOrganizations(input.userId);
   if (blockers.length) throw new AccountClosureError("Transfer ownership of each organization before closing your account.", 409, blockers);
-  if (!input.accessToken) throw new AccountClosureError("Sign in again before closing your account.", 401);
   // A restored closure is a new closure request. Old receipts and recovery material
   // are deliberately not reused: the user may have changed billing in between.
   const token = recoveryToken();

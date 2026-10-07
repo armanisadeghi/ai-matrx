@@ -8,6 +8,7 @@ let members = 0;
 let coowners = 0;
 let leaseConflict = false;
 let failClosedWrite = false;
+let openClosure: Record<string, unknown> | null = null;
 function currentJournal() {
   if (!journal) throw new Error("Expected a persisted closure journal");
   return journal;
@@ -16,7 +17,7 @@ const rpc = jest.fn((name: string, args: Record<string, unknown>) => {
   if (name === "account_closure_claim") {
     if (leaseConflict) return Promise.resolve({ data: null, error: null });
     const initial = args.p_initial_journal as Record<string, unknown>;
-    if (!journal || (journal.state === "restored" && initial.state === "closing")) journal = initial;
+    if (!journal || ((journal.state === "restored" || journal.state === "closed") && initial.state === "closing")) journal = initial;
   }
   if (name === "account_closure_write" && failClosedWrite && (args.p_journal as Record<string, unknown>).state === "closed") return Promise.resolve({ data: false, error: null });
   if (name === "account_closure_write") journal = args.p_journal as Record<string, unknown>;
@@ -33,11 +34,12 @@ jest.mock("@/utils/supabase/adminClient", () => ({ createAdminClient: () => ({
   rpc,
   schema: () => ({ rpc: iamRpc, from: (table: string) => {
     const filters: string[] = [];
-    const value = () => table === "customer" ? { data: customers, error: null }
+    const value = () => table === "account_closure" ? { data: openClosure, error: null }
+      : table === "customer" ? { data: customers, error: null }
       : table === "subscription" ? { data: { stripe_subscription_id: "sub" }, error: null }
       : filters.includes("user_id") ? { data: owned, error: null }
       : filters.includes("role") ? { data: null, count: coowners, error: null } : { data: null, count: members, error: null };
-    const q: Record<string, unknown> = { select: () => q, eq: (k: string) => { filters.push(k); return q; }, neq: () => q, is: () => q,
+    const q: Record<string, unknown> = { select: () => q, eq: (k: string) => { filters.push(k); return q; }, neq: () => q, is: () => q, order: () => q, limit: () => q,
       range: () => Promise.resolve(value()), maybeSingle: () => Promise.resolve(value()), then: (f: (v: unknown) => unknown) => Promise.resolve(value()).then(f) };
     return q;
   } }),
@@ -47,10 +49,10 @@ jest.mock("@/utils/supabase/adminClient", () => ({ createAdminClient: () => ({
 import { closeAccount, recoveryToken, restoreAccount } from "./accountClosure";
 
 const userId = "11111111-1111-4111-8111-111111111111";
-const input = { userId, email: "person@example.com", metadata: {}, origin: "http://localhost", accessToken: "verified-jwt" };
+const input = { userId, email: "person@example.com", metadata: {}, origin: "http://localhost" };
 const personal = (id: string, state = "active") => ({ id, status: state, metadata: { beneficiary_user_id: userId }, items: { data: [{ price: { metadata: { purpose: "platform_subscription" } } }] } });
 
-beforeEach(() => { jest.clearAllMocks(); journal = null; customers = []; owned = []; members = 0; coowners = 0; leaseConflict = false; failClosedWrite = false;
+beforeEach(() => { jest.clearAllMocks(); journal = null; customers = []; owned = []; members = 0; coowners = 0; leaseConflict = false; failClosedWrite = false; openClosure = null;
   sendEmail.mockResolvedValue({ success: true }); signOut.mockResolvedValue({ error: null }); updateUserById.mockResolvedValue({ error: null }); generateLink.mockResolvedValue({ data: { properties: { action_link: "http://signin" } }, error: null }); iamRpc.mockResolvedValue({ data: { ok: true }, error: null }); });
 
 describe("account lifecycle orchestration", () => {
@@ -112,5 +114,15 @@ describe("account lifecycle orchestration", () => {
     expect(currentJournal().requestId).not.toBe("old"); expect(currentJournal().checkpoints).not.toHaveProperty("restored");
     journal = null; leaseConflict = true; sendEmail.mockClear();
     await expect(closeAccount(input)).rejects.toMatchObject({ status: 409 }); expect(sendEmail).not.toHaveBeenCalled();
+  });
+
+  it("reads closed from the DB record: open record is already closed, a stale closed journal after reopen starts fresh", async () => {
+    const stale = { requestId: "old", state: "closed", requestedAt: "then", email: input.email, checkpoints: { recovery_email_sent: "then" }, receipts: {}, errors: [], recoveryTokenHash: "x" };
+    openClosure = { closed_at: "now" };
+    await expect(closeAccount({ ...input, metadata: { account_closure: stale } })).resolves.toMatchObject({ alreadyClosed: true });
+    expect(sendEmail).not.toHaveBeenCalled();
+    openClosure = null; sendEmail.mockResolvedValue({ success: false });
+    await expect(closeAccount({ ...input, metadata: { account_closure: stale } })).rejects.toMatchObject({ status: 502 });
+    expect(sendEmail).toHaveBeenCalledTimes(1); expect(currentJournal().requestId).not.toBe("old");
   });
 });
