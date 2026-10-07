@@ -20599,6 +20599,14 @@ export type Database = {
         Args: { p_from: string; p_to: string; p_user_ids: string[] }
         Returns: Json
       }
+      cancel_my_notice: {
+        Args: { p_prefix?: boolean; p_source_key: string }
+        Returns: number
+      }
+      cancel_scheduled_notice: {
+        Args: { p_prefix?: boolean; p_source_key: string; p_user_id: string }
+        Returns: number
+      }
       channel_readiness_say: { Args: { p_channel: string }; Returns: Json }
       claim_notifications_for_render: {
         Args: {
@@ -22320,6 +22328,10 @@ export type Database = {
           timezone_source: string
         }[]
       }
+      reconcile_my_notices: {
+        Args: { p_notices: Json; p_organization_id?: string; p_scope: string }
+        Returns: Json
+      }
       reconcile_sms_outbound_attempt: {
         Args: {
           p_error_code?: string
@@ -22451,6 +22463,30 @@ export type Database = {
           party_id: string
           recording_owner_id: string
         }[]
+      }
+      schedule_my_notice: {
+        Args: {
+          p_deep_link: string
+          p_deliver_at: string
+          p_organization_id?: string
+          p_source_key: string
+          p_subject: Json
+        }
+        Returns: Json
+      }
+      schedule_notice: {
+        Args: {
+          p_deep_link: string
+          p_deliver_at: string
+          p_event_key?: string
+          p_organization_id?: string
+          p_source_key: string
+          p_subject: Json
+          p_target_id?: string
+          p_target_kind?: string
+          p_user_id: string
+        }
+        Returns: Json
       }
       schedule_task_sms_snooze: {
         Args: {
@@ -22965,6 +23001,21 @@ export type Database = {
         Args: { p_snapshot: Json; p_title: string }
         Returns: string
       }
+      _space_public_databases: {
+        Args: {
+          p_doc: Database["content"]["Tables"]["document"]["Row"]
+          p_snap: Json
+        }
+        Returns: Json
+      }
+      _space_public_entities: {
+        Args: {
+          p_doc: Database["content"]["Tables"]["document"]["Row"]
+          p_snap: Json
+        }
+        Returns: Json
+      }
+      _space_public_media: { Args: { p_blob: Json }; Returns: Json }
       _space_tree_ids: { Args: { p_space_id: string }; Returns: string[] }
       _write_came_through: { Args: { p_doors: string[] }; Returns: boolean }
       annotation_create: {
@@ -25179,7 +25230,7 @@ export type Database = {
         Args: { p_refs: string[] }
         Returns: string[]
       }
-      validate_dataset_template_source: {
+      validate_table_template_source: {
         Args: { p_org_id: string; p_source: Json }
         Returns: string
       }
@@ -32188,10 +32239,6 @@ export type Database = {
         }
         Returns: undefined
       }
-      _ctx_dataset_field_holds: {
-        Args: { p_org: string; p_spec: Json }
-        Returns: undefined
-      }
       _ctx_field_doc: {
         Args: {
           p_depends: Json
@@ -32290,6 +32337,10 @@ export type Database = {
       _ctx_table_live: {
         Args: { p_org: string; p_type: string }
         Returns: boolean
+      }
+      _ctx_table_template_field_holds: {
+        Args: { p_org: string; p_spec: Json }
+        Returns: undefined
       }
       _ctx_tree_part: {
         Args: {
@@ -38695,6 +38746,16 @@ export type Database = {
         Args: { p_home_id: string; p_organization_id: string; p_spec: Json }
         Returns: Json
       }
+      table_template_declare: {
+        Args: {
+          p_description: string
+          p_fields: Json
+          p_name: string
+          p_org_id: string
+        }
+        Returns: string
+      }
+      table_templates: { Args: { p_org_id: string }; Returns: Json }
       table_transfer_owner: {
         Args: { p_reason: string; p_table_id: string; p_to_person: string }
         Returns: Json
@@ -40812,7 +40873,85 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      _ctx_dataset_field_holds: {
+        Args: { p_org: string; p_spec: Json }
+        Returns: undefined
+      }
+      _cutover_seam_apply: {
+        Args: {
+          p_actor: string
+          p_org: string
+          p_press: string
+          p_seam: string
+          p_to: string
+        }
+        Returns: Json
+      }
+      _udt_display_spec: { Args: { p_raw: Json }; Returns: Json }
+      _udt_row_granted: { Args: { p_row_id: string }; Returns: boolean }
+      _udt_row_words: {
+        Args: {
+          p_display?: Json
+          p_hop?: number
+          p_organization_id: string
+          p_row_id: string
+        }
+        Returns: string
+      }
+      list_udt_dataset_templates: { Args: { p_org_id: string }; Returns: Json }
+      udt_cast_jsonb_value: {
+        Args: {
+          p_new_type: Database["public"]["Enums"]["field_data_type"]
+          p_value: Json
+        }
+        Returns: Json
+      }
+      udt_dataset_archive: {
+        Args: {
+          p_moved_to_table_id: string
+          p_reason?: string
+          p_table_id: string
+        }
+        Returns: Json
+      }
+      udt_dataset_row_versions_trim: { Args: never; Returns: Json }
+      udt_dataset_row_versions_trim_scoped: {
+        Args: { p_dry_run?: boolean; p_table_id?: string }
+        Returns: Json
+      }
+      udt_dataset_unarchive: { Args: { p_table_id: string }; Returns: Json }
+      udt_refuse_row_in_trash: { Args: never; Returns: undefined }
+      udt_row_words_many: {
+        Args: {
+          p_display: Json
+          p_organization_id: string
+          p_row_ids: string[]
+        }
+        Returns: {
+          row_id: string
+          words: string
+        }[]
+      }
+      udt_structured_list_archive: {
+        Args: {
+          p_list_id: string
+          p_moved_to_table_id: string
+          p_reason?: string
+        }
+        Returns: Json
+      }
+      udt_structured_list_unarchive: {
+        Args: { p_list_id: string }
+        Returns: Json
+      }
+      udt_validate_cell_rules: {
+        Args: { p_data_type: string; p_rules: Json; p_value: Json }
+        Returns: string
+      }
+      validate_dataset_template_source: {
+        Args: { p_org_id: string; p_source: Json }
+        Returns: string
+      }
     }
     Enums: {
       [_ in never]: never
@@ -102987,7 +103126,6 @@ export type Database = {
         Args: { p_limit?: number; p_offset?: number; p_user_id: string }
         Returns: Json
       }
-      list_udt_dataset_templates: { Args: { p_org_id: string }; Returns: Json }
       list_user_organizations: {
         Args: { p_archived?: string; p_user_id: string }
         Returns: {
@@ -105274,22 +105412,6 @@ export type Database = {
       trx_words_matches: {
         Args: { p_bucket: string; p_words: number }
         Returns: boolean
-      }
-      udt_cast_jsonb_value: {
-        Args: {
-          p_new_type: Database["public"]["Enums"]["field_data_type"]
-          p_value: Json
-        }
-        Returns: Json
-      }
-      udt_dataset_row_versions_trim: { Args: never; Returns: Json }
-      udt_dataset_row_versions_trim_scoped: {
-        Args: { p_dry_run?: boolean; p_table_id?: string }
-        Returns: Json
-      }
-      udt_validate_cell_rules: {
-        Args: { p_data_type: string; p_rules: Json; p_value: Json }
-        Returns: string
       }
       ues_get_bulk: {
         Args: { p_entity_ids: string[]; p_entity_type: string }
@@ -135051,17 +135173,6 @@ export type Database = {
       }
     }
     Functions: {
-      _udt_display_spec: { Args: { p_raw: Json }; Returns: Json }
-      _udt_row_granted: { Args: { p_row_id: string }; Returns: boolean }
-      _udt_row_words: {
-        Args: {
-          p_display?: Json
-          p_hop?: number
-          p_organization_id: string
-          p_row_id: string
-        }
-        Returns: string
-      }
       dataset_readable_by: {
         Args: { p_dataset_id: string; p_user: string }
         Returns: boolean
@@ -135084,39 +135195,6 @@ export type Database = {
           p_table_id: string
         }
         Returns: boolean
-      }
-      udt_dataset_archive: {
-        Args: {
-          p_moved_to_table_id: string
-          p_reason?: string
-          p_table_id: string
-        }
-        Returns: Json
-      }
-      udt_dataset_unarchive: { Args: { p_table_id: string }; Returns: Json }
-      udt_refuse_row_in_trash: { Args: never; Returns: undefined }
-      udt_row_words_many: {
-        Args: {
-          p_display: Json
-          p_organization_id: string
-          p_row_ids: string[]
-        }
-        Returns: {
-          row_id: string
-          words: string
-        }[]
-      }
-      udt_structured_list_archive: {
-        Args: {
-          p_list_id: string
-          p_moved_to_table_id: string
-          p_reason?: string
-        }
-        Returns: Json
-      }
-      udt_structured_list_unarchive: {
-        Args: { p_list_id: string }
-        Returns: Json
       }
     }
     Enums: {
