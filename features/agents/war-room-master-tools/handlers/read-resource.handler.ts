@@ -9,7 +9,7 @@
  *      hatch and the "what does thread X hold?" answer for oversight tiers.
  *   2. A bespoke client adapter for tokens server tools don't cover:
  *      `conversation` (recent messages + attached working documents) and
- *      `working_document` (title + body).
+ *      `document` (a working document: title + body; `working_document` accepted).
  *   3. The canonical adapter registry (`entityContentAdapters`) — bespoke
  *      `read` when registered, else the safe RLS-scoped generic row read.
  *
@@ -125,13 +125,15 @@ export const readResourceHandler: WarRoomMasterToolHandler<
           },
           hint:
             docs.length > 0
-              ? "Read a working document with war_room_read_resource(entity_type='working_document', entity_id=<its id>)."
+              ? "Read a working document with war_room_read_resource(entity_type='document', entity_id=<its id>)."
               : undefined,
         };
       }
 
-      // ── Working document: title + body ──────────────────────────────────
-      if (entity_type === "working_document") {
+      // ── Working document (a content-store document): title + body ───────
+      // "working_document" is the pre-2026-10-07 spelling, accepted until every
+      // agent instruction names "document" (cleanup C5c).
+      if (entity_type === "document" || entity_type === "working_document") {
         const doc = await getCxWorkingDocumentById(entity_id);
         if (!doc) {
           return {

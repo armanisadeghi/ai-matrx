@@ -395,7 +395,7 @@ export interface AgentContextPreferences {
 
 /**
  * The user's global scratchpad pointer. Scratchpads are a user-owned POOL of
- * `workbench.working_documents` rows (kind "scratch"); exactly one is ACTIVE
+ * `content.document` rows (type "scratch"); exactly one is ACTIVE
  * at all times and is auto-attached (read-only) to every conversation's agent
  * context — unless empty. Null = none yet; the first open/type creates one.
  */

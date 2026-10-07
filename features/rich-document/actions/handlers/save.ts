@@ -75,7 +75,7 @@ function sourceToEntityType(source: ContentSource): {
       // task off the conversation so it still has a home.
       return source.documentId
         ? {
-            entity_type: "working_document",
+            entity_type: "document",
             entity_id: source.documentId,
             parent: {
               entity_type: "conversation",

@@ -49,7 +49,7 @@ export interface WarRoomReadThreadResult {
   message_count?: number;
   messages?: ThreadMessageSummary[];
   /** The conversation's working documents (when requested). Read one with
-   *  war_room_read_resource(entity_type='working_document', entity_id=id). */
+   *  war_room_read_resource(entity_type='document', entity_id=id). */
   working_documents?: { id: string; kind: string; enabled: boolean }[];
   message?: string;
 }

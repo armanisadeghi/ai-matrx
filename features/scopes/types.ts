@@ -89,7 +89,6 @@ export type EntityType =
   | "war_room"
   | "studio_session"
   | "transcript"
-  | "working_document" //      a chat working document (workbench.working_documents)
   // ── app entity types (also registered in platform.entity_types) ──
   | "app" //                   an `app.definition` row (packaged agent experience)
   | "agent_surface_binding" // an agent⇄surface binding row
