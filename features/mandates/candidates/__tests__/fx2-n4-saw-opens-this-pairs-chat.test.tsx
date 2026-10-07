@@ -73,7 +73,7 @@ function pairRow(id: string, liveConv: string, candConv: string) {
 }
 
 it("a click while the lookup runs opens the walk of THIS pair's live conversation", async () => {
-  findTranscriptUnit.mockImplementation(async (conversationId: string) => ({
+  findTranscriptUnit.mockImplementation(async ({ conversationId }: { conversationId: string }) => ({
     state: "ready",
     unit: { unitKind: "agent_request", unitId: `request-of-${conversationId}` },
   }));
@@ -95,7 +95,7 @@ it("a click while the lookup runs opens the walk of THIS pair's live conversatio
     await Promise.resolve();
   });
 
-  expect(findTranscriptUnit).toHaveBeenCalledWith("conv-kelp-live");
+  expect(findTranscriptUnit).toHaveBeenCalledWith({ requestId: "r", conversationId: "conv-kelp-live" });
   expect(openWalk).toHaveBeenCalledTimes(1);
   expect(openWalk.mock.calls[0][0]).toMatchObject({
     unitKind: "agent_request",

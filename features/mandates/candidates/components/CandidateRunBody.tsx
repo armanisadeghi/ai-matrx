@@ -424,6 +424,7 @@ function AnswersBlock({
           error={payload ? payload.live_error : undefined}
           errorCode={run.live_error_code ?? null}
           conversationId={run.live_conversation_id ?? null}
+          requestId={run.live_request_id ?? null}
           pairLabel={pairWalkLabel(run)}
           agentId={candidate?.baseline_holder_type === "agent" ? (candidate.baseline_holder_id ?? null) : null}
           withheld={!payload}
@@ -439,6 +440,7 @@ function AnswersBlock({
           error={payload ? payload.candidate_error : undefined}
           errorCode={run.candidate_error_code ?? null}
           conversationId={run.candidate_conversation_id ?? null}
+          requestId={run.candidate_request_id ?? null}
           pairLabel={pairWalkLabel(run)}
           agentId={candidate?.holder_type === "agent" ? candidate.holder_id : null}
           withheld={!payload}
@@ -461,6 +463,8 @@ function AnswerColumn(props: {
   error: unknown;
   errorCode: string | null;
   conversationId: string | null;
+  /** The run's own `chat.user_request` id — picks THIS run's request in a shared chat. */
+  requestId: string | null;
   /** Tells this pair's walk windows from another pair's ("Pair 3"). */
   pairLabel: string;
   agentId: string | null;
@@ -500,6 +504,7 @@ function AnswerColumn(props: {
       <SawButton
         side={props.side}
         conversationId={props.conversationId}
+        requestId={props.requestId}
         agentId={props.agentId}
         agentName={props.holder}
         pairLabel={props.pairLabel}
@@ -546,17 +551,19 @@ function VersionLine({ versionId, holderType }: { versionId: string; holderType:
 function SawButton({
   side,
   conversationId,
+  requestId,
   agentId,
   agentName,
   pairLabel,
 }: {
   side: "live" | "candidate";
   conversationId: string | null;
+  requestId: string | null;
   agentId: string | null;
   agentName: string | null;
   pairLabel: string;
 }) {
-  const unit = useTranscriptUnit(conversationId);
+  const unit = useTranscriptUnit({ requestId, conversationId });
   const openWalk = useOpenReviewWalkWindow();
   const [resolving, setResolving] = useState(false);
   const [clickFailure, setClickFailure] = useState<string | null>(null);
@@ -577,7 +584,7 @@ function SawButton({
     }
     setResolving(true);
     try {
-      const fresh = await findTranscriptUnit(conversationId);
+      const fresh = await findTranscriptUnit({ requestId, conversationId });
       if (fresh.state === "ready") openWalk({ ...fresh.unit, agentId, agentName, roleLabel, detailLabel: pairLabel });
       else if (fresh.state === "error") setClickFailure(fresh.message);
       else setClickFailure("No transcript you can open.");
@@ -603,12 +610,13 @@ function SawButton({
   if (unit.state === "none" || failure) {
     return <StateLine>No transcript you can open.</StateLine>;
   }
-  return (
+  const button = (
     <Button
       size="sm"
       variant="outline"
       className="h-7 w-full gap-1 text-xs"
       data-candidate-saw={side}
+      data-request-id={requestId ?? undefined}
       data-conversation-id={conversationId}
       aria-busy={resolving || undefined}
       onClick={() => void open()}
@@ -620,6 +628,15 @@ function SawButton({
       )}
       {label}
     </Button>
+  );
+  if (unit.state !== "ready" || !unit.runsInChat) return button;
+  // An older pair whose request id names no request: the chat holds several
+  // runs and this one cannot be told apart — say which one opens.
+  return (
+    <div className="space-y-1">
+      {button}
+      <StateLine tone="warn">Newest of {unit.runsInChat} runs in this chat</StateLine>
+    </div>
   );
 }
 
