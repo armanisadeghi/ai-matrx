@@ -256,7 +256,7 @@ export function EndScreen({
             <FileSignature className="h-4 w-4" />
             Keep your signed documents
           </div>
-          <p className="type-body text-muted-foreground">Free AI Matrx account. Send your own for signature too.</p>
+          <p className="type-body text-muted-foreground">A free AI Matrx account — and send your own for signature.</p>
           <Button variant="primary" asChild>
             <Link href={withSignerHint(signUpHref("/esign"), signupHint)}>Create free account</Link>
           </Button>
