@@ -112,7 +112,7 @@ export default function OrgTablesPage() {
           <OrgResourceList
             key={reread}
             orgId={resolvedOrgId}
-            resourceType="dataset"
+            resourceType="record"
             hydrateShared={sharedTables}
             selectColumns={SELECT_COLS}
             ownedQuery={ownedQuery}
