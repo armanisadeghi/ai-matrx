@@ -31,7 +31,8 @@ jest.mock("@/components/ui/drawer", () => ({ Drawer: ({ children }: { children: 
 jest.mock("@/components/ui/button", () => ({ Button: ({ children, ...props }: React.ButtonHTMLAttributes<HTMLButtonElement>) => <button {...props}>{children}</button> }));
 jest.mock("@/components/ui/label", () => ({ Label: ({ children }: { children: React.ReactNode }) => <label>{children}</label> }));
 jest.mock("@/components/ui/scroll-area", () => ({ ScrollArea: ({ children }: { children: React.ReactNode }) => <div>{children}</div> }));
-jest.mock("@ai-matrx/design-system", () => ({ Input: (props: React.InputHTMLAttributes<HTMLInputElement>) => <input {...props} /> }));
+// Keep the real design system (Alchemy's copy menu calls its `cn`, popovers, …); only the Input is a plain field here.
+jest.mock("@ai-matrx/design-system", () => ({ ...jest.requireActual("@ai-matrx/design-system"), Input: (props: React.InputHTMLAttributes<HTMLInputElement>) => <input {...props} /> }));
 
 import { configureStore } from "@reduxjs/toolkit";
 import { enableMapSet } from "immer";

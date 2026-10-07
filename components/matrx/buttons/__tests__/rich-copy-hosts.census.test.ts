@@ -1,6 +1,7 @@
 // GUARD (1): every rich-content surface copies through THE one copy module
-// (`copyRichContent` in components/agent-copy/copy-commands.ts, which writes through kit's `copyRich` —
-// Copy = formatted + markdown, Copy markdown, Copy text). A raw
+// (`copyRichContent` in components/agent-copy/copy-commands.ts, which writes through kit's `copyText`/`copyRich`:
+// ONE clean plain flavor per click — Copy = the person's default flavor (markdown, or readable text),
+// Copy markdown, Copy plain text; Formatted HTML is the Alchemy palette's own tile). A raw
 // `navigator.clipboard.write*` in a rich-content host is a second copy that
 // gives the person one flavor and no choice (Arman, 2026-10-04).
 //
