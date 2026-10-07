@@ -210,7 +210,7 @@ Read [docs/official/browser-testing.md](./docs/official/browser-testing.md) firs
 ## Cross-repo pointers (SoR docs — read before touching the area in ANY repo)
 
 - **Token broker** (short-lived provider credentials; client at `lib/api/broker/`): **invoke the `token-broker-client` skill**; SoR `../common-docs/systems/architecture/token-broker/FEATURE.md`.
-- **Applications hub** (`/administration/applications` — config, catalogs, fleet; "app" is reserved for user-created agent apps): `../common-docs/systems/platform/app-config/FEATURE.md` + `../common-docs/systems/apps/remote-catalogs/FEATURE.md`.
+- **Applications hub** (`/administration/applications` — config, catalogs, fleet of our own client apps; what a customer builds is an **Applet**, never an "app"): `../common-docs/systems/platform/app-config/FEATURE.md` + `../common-docs/systems/apps/remote-catalogs/FEATURE.md`.
 - **Provenance stamping** (`system|agent|user` actor tiers — this repo sets nothing; NULL tier reads as a person (`user`), never backfill): `../common-docs/systems/architecture/provenance/FEATURE.md`.
 - **Purpose registry** (every agent/workflow/tool declares WHY via `purposeService.upsertForUnit` → the ONE RPC): `../common-docs/systems/platform/purpose-registry/FEATURE.md`.
 - **Matrx Envelope** (aidream canonical, mirrored here byte-identically): `../common-docs/systems/architecture/content-ir/FEATURE.md` · **conversation-start contract** (`callApi` is the client half): `../common-docs/systems/agents/conversation-start-contract/FEATURE.md` · **tool registry**: `../common-docs/systems/agents/agent-tools/STATE.md`.
