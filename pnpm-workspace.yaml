@@ -3,6 +3,10 @@ packages:
 
 # Scaleflex ships Babel 7 helper imports without declaring their runtime.
 packageExtensions:
+  # @codemirror/language 6.13.0 imports @codemirror/streamparser without declaring it (every /spaces page 500'd).
+  "@codemirror/language@6.13.0":
+    dependencies:
+      "@codemirror/streamparser": "^6.0.0"
   "@scaleflex/ui@2.7.0":
     dependencies:
       "@babel/runtime": "^7.29.7"
