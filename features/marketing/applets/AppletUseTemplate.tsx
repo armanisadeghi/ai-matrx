@@ -22,9 +22,7 @@ import { useSignedIn } from "@/lib/scoped-config/useSignedIn";
 import { createClient } from "@/utils/supabase/client";
 
 import { copyAppletFromTemplate, type CopiedApplet } from "./copyAppletFromTemplate";
-import { appletHref } from "./types";
-
-export const USE_ON_RETURN = "use";
+import { appletHref, USE_ON_RETURN } from "./types";
 
 type Copy = { phase: "idle" } | { phase: "copying" } | { phase: "done"; applet: CopiedApplet } | { phase: "failed"; why: string };
 

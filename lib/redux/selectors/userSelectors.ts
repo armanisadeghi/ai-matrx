@@ -10,8 +10,6 @@
 // shape via `createSelector` for whole-slice consumers — memoized, so
 // referential identity is stable across unchanged inputs.
 
-"use client";
-
 import type { RootState } from "@/lib/redux/store";
 import { createSelector } from "reselect";
 import type { UserAuthState } from "@/lib/redux/slices/userAuthSlice";

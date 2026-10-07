@@ -1,9 +1,7 @@
 import { getAgent } from "@/lib/agents/data";
 import { readLayoutCookie } from "@/features/resizable-panels/readLayoutCookie";
-import {
-  SurfacesAdminShell,
-  SURFACES_ADMIN_COOKIE,
-} from "@/features/surfaces/admin/SurfacesAdminShell";
+import { SurfacesAdminShell } from "@/features/surfaces/admin/SurfacesAdminShell";
+import { SURFACES_ADMIN_COOKIE } from "@/features/surfaces/admin/surfacesAdminCookie";
 import { AccessGate } from "@/features/access-gate/components/AccessGate";
 
 const ADMIN_BASE_PATH = "/administration/agents/system-agents/agents";

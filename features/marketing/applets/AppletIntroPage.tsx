@@ -10,21 +10,25 @@ import Link from "next/link";
 import { Suspense } from "react";
 import { Badge } from "@ai-matrx/design-system/controls";
 
+import { PublicFooter } from "@/components/matrx/PublicFooter";
+import { PublicHeader } from "@/components/matrx/PublicHeader";
 import { JsonLd } from "@/components/seo/JsonLd";
 import { siteConfig } from "@/config/extras/site";
 import { loginHref, signUpHref } from "@/utils/auth/auth-destination";
 
-import { AppletUseTemplate, USE_ON_RETURN } from "./AppletUseTemplate";
-import { appletHref, APPLET_TEMPLATES_PATH, type AppletCard, type AppletIntro } from "./types";
+import { AppletUseTemplate } from "./AppletUseTemplate";
+import { appletHref, APPLET_TEMPLATES_PATH, USE_ON_RETURN, type AppletCard, type AppletIntro } from "./types";
 
 const MAKE_YOUR_OWN_HREF = "/make";
 
 export function AppletIntroPage({ applet, related }: { applet: AppletIntro; related: AppletCard[] }) {
   const path = appletHref(applet.slug);
   const shots = applet.screenshots.length ? applet.screenshots : applet.preview_image_url ? [{ url: applet.preview_image_url, alt: applet.name }] : [];
-  const pages = applet.pages.filter((p) => !p.path.includes(":"));
+  // Every page counts, the same as the gallery card's "N pages"; none is a link (a guest sees only this introduction).
+  const pages = applet.pages;
   return (
     <div className="bg-textured" data-applet-intro={applet.slug}>
+      <PublicHeader />
       <JsonLd
         data={{
           "@context": "https://schema.org",
@@ -99,11 +103,9 @@ export function AppletIntroPage({ applet, related }: { applet: AppletIntro; rela
         {pages.length ? (
           <section className="flex flex-col gap-2">
             <h2 className="text-lg font-semibold">Inside the Applet</h2>
-            <ul className="flex flex-wrap gap-2">
+            <ul className="flex max-w-3xl flex-col gap-1 text-base text-muted-foreground">
               {pages.map((p) => (
-                <li key={p.path} className="rounded-md border border-border bg-card px-3 py-1.5 text-sm">
-                  {p.title}
-                </li>
+                <li key={p.path}>{p.title}</li>
               ))}
             </ul>
           </section>
@@ -116,11 +118,14 @@ export function AppletIntroPage({ applet, related }: { applet: AppletIntro; rela
           </section>
         ) : null}
       </div>
+      <PublicFooter />
     </div>
   );
 }
 
 export function AppletCardGrid({ cards }: { cards: readonly AppletCard[] }) {
+  // A gallery of nothing but templates says so once (its title), not on every card.
+  const badgeTemplates = !cards.every((c) => c.is_template);
   return (
     <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3" data-applet-cards="">
       {cards.map((c) => (
@@ -137,10 +142,10 @@ export function AppletCardGrid({ cards }: { cards: readonly AppletCard[] }) {
           ) : null}
           <span className="flex items-center gap-2 text-base font-semibold">
             {c.name}
-            {c.is_template ? <Badge tone="primary">Template</Badge> : null}
+            {badgeTemplates && c.is_template ? <Badge tone="primary">Template</Badge> : null}
           </span>
-          {c.tagline ? <span className="text-sm text-muted-foreground">{c.tagline}</span> : null}
-          <span className="text-xs text-muted-foreground tabular-nums">{c.page_count} pages</span>
+          <span className="line-clamp-2 min-h-10 text-sm text-muted-foreground">{c.tagline}</span>
+          <span className="mt-auto pt-1 text-sm text-muted-foreground tabular-nums">{c.page_count === 1 ? "1 page" : `${c.page_count} pages`}</span>
         </Link>
       ))}
     </div>

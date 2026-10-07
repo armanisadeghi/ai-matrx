@@ -1,5 +1,3 @@
-"use client";
-
 /**
  * UntrustedCount — a number that refuses to be reported when the read that
  * produced it failed.

@@ -14,8 +14,8 @@ import { AgentColumn } from "./columns/AgentColumn";
 import { BindingColumn } from "./columns/BindingColumn";
 import { SurfaceDetailsColumn } from "./columns/SurfaceDetailsColumn";
 import { AgentAccessColumn } from "./columns/AgentAccessColumn";
+import { SURFACES_ADMIN_COOKIE } from "./surfacesAdminCookie";
 
-export const SURFACES_ADMIN_COOKIE = "panels:agent-surfaces";
 
 const GROUP_KEY = "surfaces-admin";
 
