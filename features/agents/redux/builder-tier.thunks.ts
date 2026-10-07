@@ -600,7 +600,8 @@ async function fetchAccessLevels(
 
 /**
  * Owner words for each agent, through reads the viewer already has: person
- * display names from `users.profiles`, organization names from
+ * display names from `users.profiles`, then the access-gate door
+ * (`access_denied_context`) for an owner whose profile is not readable; organization names from
  * `iam.organizations` (both row-security limited — an unreadable name stays
  * null and the panel says "Someone else").
  */
@@ -620,7 +621,33 @@ async function fetchOwnerNames(
     ),
   ];
   const [people, orgs] = await Promise.all([
-    fetchUserDisplayNames(personIds),
+    (async () => {
+      // Profiles first; a person whose profile row the viewer cannot read
+      // (a friend who shared an agent) is named by the access-gate door,
+      // which names a record's owner to anyone who can see the record.
+      const names = await fetchUserDisplayNames(personIds);
+      const missing = others.filter((r) => !names.has(r.created_by as string));
+      const seen = new Set<string>();
+      await Promise.all(
+        missing
+          .filter((r) => {
+            const owner = r.created_by as string;
+            if (seen.has(owner)) return false;
+            seen.add(owner);
+            return true;
+          })
+          .map(async (r) => {
+            const { data } = await supabase.rpc("access_denied_context", {
+              p_type: "agent",
+              p_id: r.id,
+            });
+            const owner = (data as { owner?: { user_id?: string; display_name?: string | null } } | null)?.owner;
+            const label = owner?.display_name?.trim();
+            if (owner?.user_id && label) names.set(owner.user_id, label);
+          }),
+      );
+      return names;
+    })(),
     (async () => {
       const names = new Map<string, string>();
       if (orgIds.length === 0) return names;
