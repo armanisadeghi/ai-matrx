@@ -13,13 +13,7 @@
     "Register: /projects/npm-package-extraction/DUPLICATION-CENSUS.md (common-docs).",
     "A SHAPE rule (`shapeWhy` + `shapeAllow` + `shapeCensus` on a row) catches the same capability under an UNREGISTERED name, or with no name at all. `shapeAllow` = provably NOT this capability, silent. `shapeCensus` = pre-existing bodies that ARE it and are not collapsed yet: loud every run, shrink-only, and a stale entry fails the guard."
   ],
-  "vendored": [
-    {
-      "path": "vendor/xlsx/",
-      "record": "vendor/xlsx/INTEGRITY.md",
-      "why": "The official SheetJS xlsx 0.20.3 distribution, vendored by 87f7dc3eea because that release is not on npm (see the record for source, integrity hash and removal rule). Its minified bundles are third-party internals we never edit and cannot collapse onto @ai-matrx/kit; our own xlsx wrappers live outside this directory and are scanned."
-    }
-  ],
+  "vendored": [],
   "$catalogFloor": 189,
   "twins": [
     {
@@ -245,30 +239,6 @@
         {
           "file": "scripts/lib/check-target.ts",
           "why": "NOT A DISPLAY: the remaining hit is `ceilingFor()`, which returns the VALUE of a Postgres `set local statement_timeout` (\"30s\", \"540s\", \"1500ms\") interpolated into SQL; kit's compact voice (\"9m 00s\") is not a Postgres duration literal. Every person-facing string in this file (the [TARGET] banner ceiling, `cloneAge`) calls formatDurationMs as of 2026-09-30."
-        },
-        {
-          "file": "vendor/xlsx/xlsx.js",
-          "why": "NOT OURS TO FORMAT: a byte-for-byte vendored build of the third-party SheetJS library (xlsx 0.20.3, commit 87f7dc3eea \"vendor current SheetJS distribution\"). The matched lines are SheetJS's own spreadsheet number-format engine (SSF) and file codecs, which render Excel cell formats such as [h]:mm:ss exactly as Excel does; kit's voices are not Excel number formats. Editing it would also be lost on the next vendor refresh."
-        },
-        {
-          "file": "vendor/xlsx/xlsx.mjs",
-          "why": "NOT OURS TO FORMAT: a byte-for-byte vendored build of the third-party SheetJS library (xlsx 0.20.3, commit 87f7dc3eea \"vendor current SheetJS distribution\"). The matched lines are SheetJS's own spreadsheet number-format engine (SSF) and file codecs, which render Excel cell formats such as [h]:mm:ss exactly as Excel does; kit's voices are not Excel number formats. Editing it would also be lost on the next vendor refresh."
-        },
-        {
-          "file": "vendor/xlsx/dist/xlsx.core.min.js",
-          "why": "NOT OURS TO FORMAT: a byte-for-byte vendored build of the third-party SheetJS library (xlsx 0.20.3, commit 87f7dc3eea \"vendor current SheetJS distribution\"). The matched lines are SheetJS's own spreadsheet number-format engine (SSF) and file codecs, which render Excel cell formats such as [h]:mm:ss exactly as Excel does; kit's voices are not Excel number formats. Editing it would also be lost on the next vendor refresh."
-        },
-        {
-          "file": "vendor/xlsx/dist/xlsx.full.min.js",
-          "why": "NOT OURS TO FORMAT: a byte-for-byte vendored build of the third-party SheetJS library (xlsx 0.20.3, commit 87f7dc3eea \"vendor current SheetJS distribution\"). The matched lines are SheetJS's own spreadsheet number-format engine (SSF) and file codecs, which render Excel cell formats such as [h]:mm:ss exactly as Excel does; kit's voices are not Excel number formats. Editing it would also be lost on the next vendor refresh."
-        },
-        {
-          "file": "vendor/xlsx/dist/xlsx.mini.min.js",
-          "why": "NOT OURS TO FORMAT: a byte-for-byte vendored build of the third-party SheetJS library (xlsx 0.20.3, commit 87f7dc3eea \"vendor current SheetJS distribution\"). The matched lines are SheetJS's own spreadsheet number-format engine (SSF) and file codecs, which render Excel cell formats such as [h]:mm:ss exactly as Excel does; kit's voices are not Excel number formats. Editing it would also be lost on the next vendor refresh."
-        },
-        {
-          "file": "vendor/xlsx/dist/xlsx.extendscript.js",
-          "why": "NOT OURS TO FORMAT: a byte-for-byte vendored build of the third-party SheetJS library (xlsx 0.20.3, commit 87f7dc3eea \"vendor current SheetJS distribution\"). The matched lines are SheetJS's own spreadsheet number-format engine (SSF) and file codecs, which render Excel cell formats such as [h]:mm:ss exactly as Excel does; kit's voices are not Excel number formats. Editing it would also be lost on the next vendor refresh."
         }
       ],
       "shapeCensus": [

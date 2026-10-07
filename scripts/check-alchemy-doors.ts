@@ -61,7 +61,7 @@ const ADVICE: Record<Rule, string> = {
   formatlibs: "export with buildFile (@ai-matrx/alchemy/operate), read with readFile/readWorkbook/parseDelimited (@ai-matrx/alchemy/operate/read), capture with @ai-matrx/alchemy/operate/capture, zip with /operate/zip, decks with /operate/pptx — never a direct library import",
   doorbypass: "write through the surface write door (declared write target + handler), never applySurfaceWrite directly",
   registries: "register the action with Alchemy's registry; no private action/handler map",
-  handcsv: "write CSV/TSV with toDelimitedText (@ai-matrx/alchemy/operate/read) or buildFile (@ai-matrx/alchemy/operate) — never a hand-rolled quote/join writer",
+  handcsv: "write CSV/TSV with toDelimitedText or buildFile (@ai-matrx/alchemy/operate), read it with parseDelimited (@ai-matrx/alchemy/operate/read) — never a hand-rolled quote/join writer or a char-loop quote reader",
   windowopen: "hand a file to downloadFile / downloadUrl (@ai-matrx/kit/download); never window.open of a blob or object URL",
   anchorclick: "save through downloadUrl (@ai-matrx/kit/download); a script-clicked anchor with no download attribute navigates instead of saving",
 };
@@ -137,6 +137,10 @@ const LIB_IMPORT = new RegExp(
 );
 
 const CSV_QUOTE_DOUBLING = /\.replace(?:All)?\(\s*(?:\/"\/g|["']"["'])\s*,\s*(?:["']""["']|`""`)\s*\)/;
+/** A hand-rolled CSV READER: a char loop that toggles an in-quotes flag and compares chars to `"` and `,`. */
+const CSV_QUOTE_FLAG_TOGGLE = /\b(?:in|inside|is)_?(?:Double)?Quot(?:e|es|ed)\w*\s*=\s*(?:!\s*\w+|true|false)\b/i;
+const CSV_QUOTE_CHAR = /(?:===?|!==?)\s*(?:'"'|"\\""|`"`)|(?:'"'|"\\""|`"`)\s*(?:===?|!==?)/;
+const CSV_COMMA_CHAR = /(?:===?|!==?)\s*(?:","|',')|(?:","|',')\s*(?:===?|!==?)|case\s+(?:","|',')/;
 const CSV_JOIN = /\.join\(\s*["'`](?:,|\\t)["'`]\s*\)/;
 const CSV_NAME = /text\/csv|text\/tab-separated|["'`.][\w-]*\.(?:csv|tsv)\b|\b(?:csv|tsv)\b/i;
 /** A module Map whose declared value can RUN (a handler, action, command, provider, adapter, resolver, door, callback). */
@@ -170,6 +174,8 @@ export function scanSource(file: string, src: string): Hit[] {
   const isRegistry = /registry/i.test(base);
   const near = (i: number, back: number, fwd: number, test: (l: string) => boolean) =>
     lines.slice(Math.max(0, i - back), i + fwd + 1).some(test);
+  const readsCsvByHand = lines.some((l) => CSV_QUOTE_CHAR.test(l)) && lines.some((l) => CSV_COMMA_CHAR.test(l)) &&
+    lines.some((l) => /csv|tsv|delimited/i.test(l));
   const hasRegisterFn = lines.some((l) => /^export\s+(?:async\s+)?(?:function\s+register\w*\s*[(<]|const\s+register\w*\s*[:=])/.test(l));
   lines.forEach((l, i) => {
     if (/navigator\.clipboard\b|execCommand\(\s*["'](copy|cut)["']|new\s+ClipboardItem\b/.test(l)) add("clipboard", i);
@@ -184,6 +190,7 @@ export function scanSource(file: string, src: string): Hit[] {
       add("registries", i);
     else if (hasRegisterFn && /^(export\s+)?(const|let)\s+\w+\s*(:[^=]*)?=\s*new\s+Map\b/.test(l) && RUNNABLE_VALUE.test(l) && !LISTENER_SET.test(l)) add("registries", i);
     if (CSV_QUOTE_DOUBLING.test(l) || (CSV_JOIN.test(l) && near(i, 8, 0, (x) => /\.map\(|\.forEach\(/.test(x)) && near(i, 15, 15, (x) => CSV_NAME.test(x)))) add("handcsv", i);
+    if (readsCsvByHand && CSV_QUOTE_FLAG_TOGGLE.test(l)) add("handcsv", i);
     if (/\bwindow\.open\s*\(/.test(l) && near(i, 6, 0, (x) => OBJECT_URL.test(x))) add("windowopen", i);
     if (/\.click\s*\(\s*\)/.test(l) && near(i, 6, 0, (x) => /\.href\s*=(?!=)/.test(x)) && !near(i, 8, 3, (x) => DOWNLOAD_MARK.some((r) => r.test(x))))
       add("anchorclick", i);
@@ -254,6 +261,9 @@ function selfTest(): number {
     { rule: "handcsv", file: "features/x/Foo.ts", src: "const mime = 'text/csv';\nconst body = rows.map((r) => r.join(','));\n", red: true, what: "join(',') beside a csv mime" },
     { rule: "handcsv", file: "features/x/Foo.ts", src: "const label = parts.join(',');\n", red: false, what: "join(',') with no csv nearby" },
     { rule: "handcsv", file: "features/x/Foo.ts", src: "const ACCEPT = '.pdf,.csv';\nconst only = ACCEPT.split(',').filter(ok).join(',');\n", red: false, what: "join(',') of an extension list beside the word csv" },
+    { rule: "handcsv", file: "features/x/Foo.ts", src: "function parseCsv(text: string) {\nlet inQuotes = false;\nfor (const ch of text) {\n  if (ch === '\"') inQuotes = !inQuotes;\n  else if (ch === ',' && !inQuotes) endField();\n}\n}\n", red: true, what: "char loop toggling an inQuotes flag over quote and comma" },
+    { rule: "handcsv", file: "features/x/Foo.ts", src: "function splitMailboxField(raw: string) {\nlet inQuotes = false;\nfor (const ch of raw) {\n  if (ch === '\"') inQuotes = !inQuotes;\n  else if (ch === ',' && !inQuotes) cut();\n}\n}\n", red: false, what: "quote-aware comma split with no csv/tsv/delimited context (an address-list splitter)" },
+    { rule: "handcsv", file: "features/x/Foo.ts", src: "let inQuotes = false;\nfor (const ch of text) {\n  if (ch === '\"') inQuotes = !inQuotes;\n}\n", red: false, what: "quote toggle with no comma split (not a CSV reader)" },
     { rule: "registries", file: "features/x/Foo.ts", src: "const subs = new Map<string, Set<() => void>>();\nexport function registerSub(k: string) { subs.set(k, new Set()); }\n", red: false, what: "listener-set Map beside register*" },
     { rule: "windowopen", file: "features/x/Foo.ts", src: "window.open('https://example.com', '_blank');\n", red: false, what: "window.open of a plain URL" },
     { rule: "anchorclick", file: "features/x/Foo.ts", src: "const a = document.createElement('a');\na.href = url;\na.download = 'f.csv';\na.click();\n", red: false, what: "anchor click WITH a download attribute (the downloads rule owns it)" },
