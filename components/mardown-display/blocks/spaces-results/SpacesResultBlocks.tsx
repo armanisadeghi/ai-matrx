@@ -127,7 +127,12 @@ export function SpaceDatabaseDesignBlock({ serverData }: { serverData?: unknown 
 export function SpaceNotionImportBlock({ serverData }: { serverData?: unknown }) {
   const data = asData<SpaceNotionImportData>(serverData);
   if (!data) return null;
-  const preview = data.markdown.split("\n").filter((l) => l.trim()).slice(0, 6);
+  // A plain-words preview: heading, to-do and list marks dropped.
+  const preview = data.markdown
+    .split("\n")
+    .map((l) => l.replace(/^\s*(#{1,6}\s+|[-*]\s+\[[ xX]\]\s+|[-*+]\s+|\d+\.\s+|>\s*)/, "").trim())
+    .filter(Boolean)
+    .slice(0, 6);
   return (
     <section className={FRAME} data-kind="space_notion_import">
       <div className="flex items-start gap-2">
