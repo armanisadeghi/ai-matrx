@@ -32,13 +32,9 @@ import { NonEditableContextMenu } from "../NonEditableContextMenu";
 
 describe("the first right-click", () => {
   it("finds the menu engine already loaded: it is warmed when the page goes idle", async () => {
-    const idle: Array<() => void> = [];
-    const w = window as Window & {
-      requestIdleCallback?: (cb: () => void) => number;
-      cancelIdleCallback?: (id: number) => void;
-    };
-    w.requestIdleCallback = (cb) => idle.push(cb);
-    w.cancelIdleCallback = () => undefined;
+    const idle: IdleRequestCallback[] = [];
+    window.requestIdleCallback = (cb: IdleRequestCallback) => idle.push(cb);
+    window.cancelIdleCallback = () => undefined;
 
     const host = document.createElement("div");
     document.body.appendChild(host);
@@ -55,7 +51,7 @@ describe("the first right-click", () => {
     expect(idle.length).toBeGreaterThan(0);
     // …and once the browser is idle, the engine is in hand before any open.
     await act(async () => {
-      for (const cb of idle) cb();
+      for (const cb of idle) cb({ didTimeout: false, timeRemaining: () => 50 });
       await new Promise((r) => setTimeout(r, 0));
     });
     expect(engineLoaded).toBe(1);
