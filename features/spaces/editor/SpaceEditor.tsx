@@ -456,21 +456,25 @@ export function SpaceEditor({ spaceId, initialBlocks, editable, onChange, slash,
 function healColumns(editor: SpacesEditor): boolean {
   const ops = planColumnHeal(editor.document as unknown as HealBlock[]);
   if (!ops.length) return false;
-  let caret: string | null = null;
+  // The caret goes where a deleted block's caret goes: the end of the line above the row (Notion), else the
+  // start of what the row melted into.
+  let caret: { id: string; at: "start" | "end" } | null = null;
   editor.transact(() => {
     for (const op of ops) {
       if (!editor.getBlock(op.id)) continue;
       if (op.kind === "remove") editor.removeBlocks([op.id]);
       else if (op.kind === "width") editor.updateBlock(op.id, { props: { width: op.width } } as never);
       else {
+        const above = editor.getPrevBlock(op.id);
         const placed = editor.replaceBlocks([op.id], (op.blocks.length ? op.blocks : [{ type: "paragraph" }]) as never);
-        caret = placed.insertedBlocks[0]?.id ?? caret;
+        const first = placed.insertedBlocks[0]?.id;
+        caret = above && Array.isArray(above.content) ? { id: above.id, at: "end" } : first ? { id: first, at: "start" } : caret;
       }
     }
   });
   if (caret) {
     try {
-      editor.setTextCursorPosition(caret, "start");
+      editor.setTextCursorPosition((caret as { id: string }).id, (caret as { at: "start" | "end" }).at);
     } catch {
       // A block without text (a nested row, a database): the caret stays where the engine put it.
     }
