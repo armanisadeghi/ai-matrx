@@ -19,6 +19,8 @@ jest.mock("@ai-matrx/associations/react", () => ({
 }));
 jest.mock("@/components/agent-copy/CopyButtons", () => ({ CopyButtons: () => null }));
 jest.mock("@ai-matrx/design-system", () => ({
+  // The engine's modules use the real class helper at load.
+  cn: (...c: unknown[]) => c.filter((x) => typeof x === "string" && x).join(" "),
   Sheet: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
   SheetContent: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
   SheetHeader: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,

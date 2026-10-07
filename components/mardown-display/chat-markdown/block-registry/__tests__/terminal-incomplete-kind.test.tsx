@@ -65,6 +65,7 @@ jest.mock("@/features/content-ir/records/KindRecordChrome", () => ({
 }));
 
 jest.mock("@ai-matrx/rich-content/display/chat-markdown/block-registry/block-dispatch", () => ({
+  registerBlockDispatch: () => undefined,
   isBlockLoading: () => false,
   reportUnregisteredBlockType: () => {},
   resolveBlockDispatch: () =>
