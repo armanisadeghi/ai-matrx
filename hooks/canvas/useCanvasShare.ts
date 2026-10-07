@@ -120,12 +120,7 @@ export function useCanvasShare() {
   });
 
   const copyToClipboard = async (url: string) => {
-    try {
-      return await copyText(url);
-    } catch (err) {
-      console.error("Failed to copy:", err);
-      return false;
-    }
+    return copyText(url);
   };
 
   return {

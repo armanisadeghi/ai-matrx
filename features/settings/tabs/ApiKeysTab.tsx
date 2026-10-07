@@ -134,16 +134,15 @@ export default function ApiKeysTab() {
 
   const handleCopy = async () => {
     if (!created) return;
-    try {
-      if (!(await copyText(created.api_key))) return;
-      setCopied(true);
-      toast.success("Key copied");
-      setTimeout(() => setCopied(false), 2000);
-    } catch {
+    if (!(await copyText(created.api_key))) {
       toast.error("Your browser did not allow copying", {
         description: "Select the key and copy it by hand before you close this.",
       });
+      return;
     }
+    setCopied(true);
+    toast.success("Key copied");
+    setTimeout(() => setCopied(false), 2000);
   };
 
   const handleRevoke = async () => {

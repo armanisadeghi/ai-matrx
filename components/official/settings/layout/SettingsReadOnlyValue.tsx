@@ -41,13 +41,9 @@ export function SettingsReadOnlyValue({
   const [copied, setCopied] = useState(false);
 
   const handleCopy = async () => {
-    try {
-      if (!(await copyText(value))) return;
-      setCopied(true);
-      setTimeout(() => setCopied(false), 1200);
-    } catch {
-      // Silently ignore copy failures (browser may block in insecure contexts).
-    }
+    if (!(await copyText(value))) return;
+    setCopied(true);
+    setTimeout(() => setCopied(false), 1200);
   };
 
   return (

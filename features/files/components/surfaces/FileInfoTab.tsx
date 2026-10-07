@@ -459,13 +459,9 @@ function CopyableRow({
   const [copied, setCopied] = useState(false);
   const onCopy = useCallback(async () => {
     if (disabled || !copyValue) return;
-    try {
-      if (!(await copyText(copyValue))) return;
-      setCopied(true);
-      window.setTimeout(() => setCopied(false), 1400);
-    } catch {
-      /* clipboard unavailable in non-secure context — silent */
-    }
+    if (!(await copyText(copyValue))) return;
+    setCopied(true);
+    window.setTimeout(() => setCopied(false), 1400);
   }, [copyValue, disabled]);
 
   return (

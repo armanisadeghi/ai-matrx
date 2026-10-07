@@ -150,13 +150,9 @@ export const MapBlock: React.FC<MapBlockProps> = ({
     placesList === "side" || (placesList === "toggle" && listOpen);
 
   const handleCopy = async () => {
-    try {
-      if (!(await copyText(content.trim()))) return;
-      setCopied(true);
-      setTimeout(() => setCopied(false), 1500);
-    } catch {
-      toast.error("Couldn't copy");
-    }
+    if (!(await copyText(content.trim()))) return;
+    setCopied(true);
+    setTimeout(() => setCopied(false), 1500);
   };
 
   return (

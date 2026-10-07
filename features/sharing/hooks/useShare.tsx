@@ -60,14 +60,10 @@ export function useShare(): UseShareResult {
         setFallbackUrl(text);
         return "manual" as const;
       };
-      try {
-        if (!(await copyTextKit(text))) return showManualFallback();
-        setCopied(true);
-        window.setTimeout(() => setCopied(false), 2_000);
-        return "copied";
-      } catch {
-        return showManualFallback();
-      }
+      if (!(await copyTextKit(text))) return showManualFallback();
+      setCopied(true);
+      window.setTimeout(() => setCopied(false), 2_000);
+      return "copied";
     },
     [],
   );

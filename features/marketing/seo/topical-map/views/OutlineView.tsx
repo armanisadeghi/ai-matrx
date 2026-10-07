@@ -289,9 +289,7 @@ function OutlineBody({ mapId, siteId, readOnly, knobs }: OutlineBodyProps) {
       };
 
   async function copySlug(slug: string): Promise<void> {
-    try {
-      await copyText(slug);
-    } catch {
+    if (!(await copyText(slug))) {
       setClipboardFallback(slug);
     }
   }

@@ -420,14 +420,10 @@ export function AgentViewContent({ agentId, recordSections }: { agentId: string;
   const dataIssues = agent?.dataIssues ?? [];
 
   const handleCopy = async (key: string, text: string, message: string) => {
-    try {
-      if (!(await copyText(text))) return;
-      setCopied(key);
-      toast.success(message);
-      setTimeout(() => setCopied(null), 1500);
-    } catch {
-      toast.error("Copy failed");
-    }
+    if (!(await copyText(text))) return;
+    setCopied(key);
+    toast.success(message);
+    setTimeout(() => setCopied(null), 1500);
   };
 
   if (!mounted || !agent) {

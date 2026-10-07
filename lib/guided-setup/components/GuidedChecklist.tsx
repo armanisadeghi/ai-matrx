@@ -72,13 +72,12 @@ function CopyRow({ value }: { value: CopyValue }) {
   });
   const [copied, setCopied] = useState(false);
   const copy = async () => {
-    try {
-      if (!(await copyText(value.value))) return;
-      setCopied(true);
-      setTimeout(() => setCopied(false), 1500);
-    } catch {
+    if (!(await copyText(value.value))) {
       toast.error("Your browser wouldn't let us copy that. Select it and copy manually.");
+      return;
     }
+    setCopied(true);
+    setTimeout(() => setCopied(false), 1500);
   };
   return (
     <div className="rounded-md border bg-muted/40 p-2">

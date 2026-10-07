@@ -122,13 +122,9 @@ export const SimpleTerminal: React.FC<SimpleTerminalProps> = ({
         return line.text;
       })
       .join("\n");
-    try {
-      if (!(await copyText(text))) return;
-      setCopied(true);
-      setTimeout(() => setCopied(false), 1500);
-    } catch {
-      /* clipboard blocked — silent */
-    }
+    if (!(await copyText(text))) return;
+    setCopied(true);
+    setTimeout(() => setCopied(false), 1500);
   }, [history]);
 
   const handleExec = useCallback(async () => {

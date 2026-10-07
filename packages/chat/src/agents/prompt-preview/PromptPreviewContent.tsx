@@ -67,12 +67,8 @@ export function PromptPreviewContent({
   }, [conversationId, store, nonce]);
 
   const copy = async (label: string, text: string) => {
-    try {
-      if (!(await copyText(text))) return;
-      toast.success(`${label} copied`);
-    } catch {
-      toast.error("Couldn't copy");
-    }
+    if (!(await copyText(text))) return;
+    toast.success(`${label} copied`);
   };
 
   return (

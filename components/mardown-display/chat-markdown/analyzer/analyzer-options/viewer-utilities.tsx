@@ -397,15 +397,11 @@ export const JsonFallback: React.FC<JsonFallbackProps> = ({
   });
   
   const handleCopy = async () => {
-    try {
-      const jsonString = JSON.stringify(data, null, 2);
-      if (!(await copyText(jsonString))) return;
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-      onCopy?.();
-    } catch (err) {
-      console.error('Failed to copy JSON:', err);
-    }
+    const jsonString = JSON.stringify(data, null, 2);
+    if (!(await copyText(jsonString))) return;
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+    onCopy?.();
   };
 
   return (

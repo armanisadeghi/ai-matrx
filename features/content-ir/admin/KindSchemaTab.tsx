@@ -127,14 +127,8 @@ export default function KindSchemaTab({
 
   async function copySchema() {
     if (!schemaText) return;
-    try {
-      if (!(await copyText(schemaText))) return;
-      toast.success(`Copied ${kind} emitted_json_schema`);
-    } catch (error) {
-      toast.error(
-        `Clipboard copy failed: ${error instanceof Error ? error.message : String(error)}`,
-      );
-    }
+    if (!(await copyText(schemaText))) return;
+    toast.success(`Copied ${kind} emitted_json_schema`);
   }
 
   return (

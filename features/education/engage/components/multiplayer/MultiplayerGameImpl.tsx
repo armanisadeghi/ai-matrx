@@ -209,11 +209,7 @@ export function MultiplayerGameImpl({
   };
 
   const copyCode = async (): Promise<void> => {
-    try {
-      await copyText(code, "Join code copied");
-    } catch {
-      toast.error("Copy failed");
-    }
+    await copyText(code, "Join code copied");
   };
 
   const exit = () => router.push("/education/game");

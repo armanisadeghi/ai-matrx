@@ -75,13 +75,9 @@ export function MarkdownPreview({
 
   const onCopy = useCallback(async () => {
     if (content == null) return;
-    try {
-      if (!(await copyText(content))) return;
-      setCopied(true);
-      setTimeout(() => setCopied(false), 1500);
-    } catch {
-      /* ignore — non-secure contexts can't write to the clipboard */
-    }
+    if (!(await copyText(content))) return;
+    setCopied(true);
+    setTimeout(() => setCopied(false), 1500);
   }, [content]);
 
   useEffect(() => {

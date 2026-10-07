@@ -31,17 +31,16 @@ export function BookmarkCopyButton({
   const handleCopy = async (e: React.MouseEvent) => {
     e.stopPropagation();
     e.preventDefault();
-    try {
-      if (!(await copyText(buildBookmarkReferenceFence(bookmark)))) return;
-      setCopied(true);
-      toast.success("Bookmark copied to clipboard", {
-        description: label,
-        duration: 2500,
-      });
-      setTimeout(() => setCopied(false), 1500);
-    } catch {
+    if (!(await copyText(buildBookmarkReferenceFence(bookmark)))) {
       toast.error("Failed to copy bookmark");
+      return;
     }
+    setCopied(true);
+    toast.success("Bookmark copied to clipboard", {
+      description: label,
+      duration: 2500,
+    });
+    setTimeout(() => setCopied(false), 1500);
   };
 
   const iconSize = size === "sm" ? "h-3.5 w-3.5" : "h-4 w-4";

@@ -40,18 +40,14 @@ export default function KindEmitTemplate({
       mode === "fence"
         ? emitPayloadFence(kind, value)
         : emitPayloadJson(kind, value);
-    try {
-      if (!(await copyText(text))) return;
-      setCopied(mode);
-      toast.success(
-        mode === "fence"
-          ? "Render block copied — paste it into a chat to see it live"
-          : "Render payload copied (with __kind)",
-      );
-      window.setTimeout(() => setCopied(null), 1800);
-    } catch {
-      toast.error("Could not copy to clipboard");
-    }
+    if (!(await copyText(text))) return;
+    setCopied(mode);
+    toast.success(
+      mode === "fence"
+        ? "Render block copied — paste it into a chat to see it live"
+        : "Render payload copied (with __kind)",
+    );
+    window.setTimeout(() => setCopied(null), 1800);
   }
 
   return (

@@ -438,13 +438,9 @@ export function useAICodeEditor({
   }, []);
 
   const handleCopyResponse = useCallback(async () => {
-    try {
-      if (!(await copyText(rawAIResponse))) return;
-      setIsCopied(true);
-      setTimeout(() => setIsCopied(false), 2000);
-    } catch (err) {
-      console.error("Failed to copy:", err);
-    }
+    if (!(await copyText(rawAIResponse))) return;
+    setIsCopied(true);
+    setTimeout(() => setIsCopied(false), 2000);
   }, [rawAIResponse]);
 
   const handleApplyChanges = useCallback(async () => {

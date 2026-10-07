@@ -255,11 +255,7 @@ export function AgentAppSettingsContent({
 
   const handleCopyUrl = async () => {
     if (!app) return;
-    try {
-      await copyText(`${siteConfig.url}/p/${app.slug}`, "Public URL copied");
-    } catch {
-      toast.error("Copy failed");
-    }
+    await copyText(`${siteConfig.url}/p/${app.slug}`, "Public URL copied");
   };
 
   const handlePublicationChange = async (published: boolean) => {

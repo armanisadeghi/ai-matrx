@@ -34,14 +34,10 @@ function CopyValue({
   const [copied, setCopied] = React.useState(false);
 
   const copy = async () => {
-    try {
-      if (!(await copyText(value))) return;
-      setCopied(true);
-      toast.success("Copied");
-      window.setTimeout(() => setCopied(false), 1500);
-    } catch {
-      toast.error("Couldn't copy to clipboard");
-    }
+    if (!(await copyText(value))) return;
+    setCopied(true);
+    toast.success("Copied");
+    window.setTimeout(() => setCopied(false), 1500);
   };
 
   return (

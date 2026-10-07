@@ -258,6 +258,150 @@ export function censusSource(file: string, source: string): BoundCall[] {
   return calls;
 }
 
+/**
+ * The kit copy NEVER throws: it resolves `false`. Two shapes hide that:
+ *
+ * - `dead-catch` — a try/catch whose only possible thrower is the awaited
+ *   copy, with a catch that does more than log. That catch (a specific toast,
+ *   a manual-copy fallback) never runs; its handling belongs in the `false`
+ *   branch.
+ * - `work-skipped` — `if (!(await copy(x))) return;` followed, later in the
+ *   same function, by work that must run whether or not the copy landed:
+ *   closing, navigating, opening an overlay, or calling an `on*` callback.
+ *   Only the copied indicator may depend on the result. (Callbacks named for
+ *   the copy itself — `onCopy`, `onCopied`, `onPathCopy` — are success
+ *   signals and stay gated.)
+ */
+export type DoorMisuse = {
+  file: string;
+  line: number;
+  rule: "dead-catch" | "work-skipped";
+  detail: string;
+};
+
+const LOG_ONLY = /^(?:console\.\w+|vcprint)\s*\(/;
+const REQUIRED_WORK =
+  /\b(?:onClose|router\.(?:push|replace|back)|openOverlay|navigate)\s*\(|\bon(?!\w*Cop(?:y|ied))[A-Z]\w*\??\.?\s*\(/;
+
+function awaitedCopy(call: ts.CallExpression): ts.AwaitExpression | undefined {
+  let current: ts.Node = call;
+  while (ts.isParenthesizedExpression(current.parent)) current = current.parent;
+  return ts.isAwaitExpression(current.parent) ? current.parent : undefined;
+}
+
+function isFailedCopyReturn(
+  statement: ts.Node,
+  awaited: ts.AwaitExpression,
+): statement is ts.IfStatement {
+  if (!ts.isIfStatement(statement)) return false;
+  let condition = statement.expression;
+  while (ts.isParenthesizedExpression(condition)) condition = condition.expression;
+  if (
+    !ts.isPrefixUnaryExpression(condition) ||
+    condition.operator !== ts.SyntaxKind.ExclamationToken
+  )
+    return false;
+  let operand: ts.Expression = condition.operand;
+  while (ts.isParenthesizedExpression(operand)) operand = operand.expression;
+  if (operand !== awaited) return false;
+  // Only a BARE early return skips work silently; a false branch that
+  // handles the failure itself (a manual-copy dialog) chose its outcome.
+  const then = statement.thenStatement;
+  return ts.isReturnStatement(then) ||
+    (ts.isBlock(then) &&
+      then.statements.length === 1 &&
+      ts.isReturnStatement(then.statements[0]));
+}
+
+export function doorMisuseSource(file: string, source: string): DoorMisuse[] {
+  const sourceFile = ts.createSourceFile(
+    file,
+    source,
+    ts.ScriptTarget.Latest,
+    true,
+    file.endsWith(".tsx") ? ts.ScriptKind.TSX : ts.ScriptKind.TS,
+  );
+  const { hookNames, standalone } = importBindings(sourceFile);
+  if (!hookNames.size && !standalone.size) return [];
+  const locals = boundLocals(sourceFile, hookNames, standalone);
+  const found: DoorMisuse[] = [];
+  const lineOf = (node: ts.Node) =>
+    sourceFile.getLineAndCharacterOfPosition(node.getStart(sourceFile)).line + 1;
+  function visit(node: ts.Node) {
+    if (
+      ts.isCallExpression(node) &&
+      ts.isIdentifier(node.expression) &&
+      locals.has(node.expression.text)
+    ) {
+      const awaited = awaitedCopy(node);
+      if (awaited) {
+        let current: ts.Node = awaited;
+        while (current.parent && !ts.isFunctionLike(current.parent)) {
+          const parent: ts.Node = current.parent;
+          if (
+            ts.isTryStatement(parent) &&
+            parent.catchClause &&
+            current === parent.tryBlock
+          ) {
+            let otherAwait = false;
+            const scan = (inner: ts.Node) => {
+              if (ts.isAwaitExpression(inner) && inner !== awaited) otherAwait = true;
+              ts.forEachChild(inner, scan);
+            };
+            scan(parent.tryBlock);
+            const handling = parent.catchClause.block.statements.filter(
+              (statement) => !LOG_ONLY.test(statement.getText(sourceFile)),
+            );
+            if (!otherAwait && handling.length)
+              found.push({
+                file,
+                line: lineOf(parent.catchClause),
+                rule: "dead-catch",
+                detail: handling[0].getText(sourceFile).replace(/\s+/g, " ").slice(0, 160),
+              });
+            break;
+          }
+          current = parent;
+        }
+        let statement: ts.Node = awaited;
+        while (statement && !ts.isStatement(statement)) statement = statement.parent;
+        if (statement && isFailedCopyReturn(statement, awaited)) {
+          let cursor: ts.Node = statement;
+          let skipped: string | undefined;
+          while (cursor.parent && !ts.isFunctionLike(cursor.parent) && !skipped) {
+            const parent: ts.Node = cursor.parent;
+            if (ts.isBlock(parent)) {
+              const after = parent.statements.slice(
+                parent.statements.indexOf(cursor as ts.Statement) + 1,
+              );
+              skipped = after
+                .map((later) => later.getText(sourceFile))
+                .find((text) => REQUIRED_WORK.test(text));
+            }
+            cursor = parent;
+          }
+          if (skipped)
+            found.push({
+              file,
+              line: lineOf(statement),
+              rule: "work-skipped",
+              detail: skipped.replace(/\s+/g, " ").slice(0, 160),
+            });
+        }
+      }
+    }
+    ts.forEachChild(node, visit);
+  }
+  visit(sourceFile);
+  return found;
+}
+
+export function doorMisuse(files = trackedFiles()): DoorMisuse[] {
+  return files.flatMap((file) =>
+    doorMisuseSource(file, fs.readFileSync(path.join(ROOT, file), "utf8")),
+  );
+}
+
 export function census(files = trackedFiles()): BoundCall[] {
   return files.flatMap((file) =>
     censusSource(file, fs.readFileSync(path.join(ROOT, file), "utf8")),
@@ -362,6 +506,51 @@ export function selfTest() {
     `import { copyText } from "@ai-matrx/kit/clipboard";
      const item = { onSelect: async () => { await copyText("value"); } };`,
   );
+  const kit = `import { useClipboard } from "@ai-matrx/kit/clipboard";`;
+  const deadCatch = doorMisuseSource(
+    "dead-catch.tsx",
+    `${kit} function V() { const { copyText } = useClipboard();
+       async function run() { try { if (!(await copyText("v"))) return; setCopied(true); }
+         catch { setFallback("v"); } } }`,
+  );
+  const logOnlyCatch = doorMisuseSource(
+    "log-only-catch.tsx",
+    `${kit} function V() { const { copyText } = useClipboard();
+       async function run() { try { if (!(await copyText("v"))) return; setCopied(true); }
+         catch (e) { console.error(e); } } }`,
+  );
+  const catchGuardsOtherWork = doorMisuseSource(
+    "catch-guards-other-work.tsx",
+    `${kit} function V() { const { copyText } = useClipboard();
+       async function run() { try { const t = await load(); if (!(await copyText(t))) return; }
+         catch { toast.error("Export failed"); } } }`,
+  );
+  const falseBranchHandles = doorMisuseSource(
+    "false-branch.tsx",
+    `${kit} function V() { const { copyText } = useClipboard();
+       async function run() { if (!(await copyText("v"))) { setFallback("v"); return; } setCopied(true); } }`,
+  );
+  const workSkipped = doorMisuseSource(
+    "work-skipped.tsx",
+    `${kit} function V({ onClose }) { const { copyText } = useClipboard();
+       async function run() { if (x) { try { if (!(await copyText("v"))) return; } catch {} }
+         onClose(); router.push("/chat"); } }`,
+  );
+  const workRunsRegardless = doorMisuseSource(
+    "work-runs.tsx",
+    `${kit} function V({ onShare }) { const { copyText } = useClipboard();
+       async function run() { if (await copyText("v")) setCopied(true); onShare(); } }`,
+  );
+  const handledFailureSkips = doorMisuseSource(
+    "handled-failure.tsx",
+    `${kit} function V({ onTextReplace }) { const { copyText } = useClipboard();
+       async function run() { if (!(await copyText("v"))) { showManualCopy({ text: "v" }); return; } onTextReplace(""); } }`,
+  );
+  const successCallbackGated = doorMisuseSource(
+    "success-callback.tsx",
+    `${kit} function V({ onCopy }) { const { copyText } = useClipboard();
+       async function run() { if (!(await copyText("v"))) return; setCopied(true); onCopy(); } }`,
+  );
   const repositoryFiles = trackedFiles();
   const results = [
     violations(unsafeAwait).length === 1,
@@ -374,6 +563,14 @@ export function selfTest() {
     violations(resetInsideSuccess).length === 0,
     violations(menuForwardsBooleanToSuccessToast).length === 1,
     violations(menuUsesHookNotification).length === 0,
+    deadCatch.length === 1 && deadCatch[0].rule === "dead-catch",
+    logOnlyCatch.length === 0,
+    catchGuardsOtherWork.length === 0,
+    falseBranchHandles.length === 0,
+    workSkipped.length === 1 && workSkipped[0].rule === "work-skipped",
+    workRunsRegardless.length === 0,
+    successCallbackGated.length === 0,
+    handledFailureSkips.length === 0,
     repositoryFiles.some(
       (file) => file.startsWith("app/") && /\.tsx?$/.test(file),
     ),

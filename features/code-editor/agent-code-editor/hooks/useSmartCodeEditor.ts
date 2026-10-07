@@ -233,13 +233,9 @@ export function useSmartCodeEditor({
   }, [modifiedCode, onCodeChange]);
 
   const handleCopyResponse = useCallback(async () => {
-    try {
-      if (!(await copyText(rawAIResponse))) return;
-      setIsCopied(true);
-      setTimeout(() => setIsCopied(false), 2000);
-    } catch {
-      // Clipboard unavailable — no-op.
-    }
+    if (!(await copyText(rawAIResponse))) return;
+    setIsCopied(true);
+    setTimeout(() => setIsCopied(false), 2000);
   }, [rawAIResponse]);
 
   const handleRejectEdits = useCallback(() => {

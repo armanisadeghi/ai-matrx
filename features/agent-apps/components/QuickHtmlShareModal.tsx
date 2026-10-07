@@ -91,13 +91,9 @@ export default function QuickHtmlShareModal({ isOpen, onClose, markdown, title =
     const standaloneHtml = useMemo(() => buildStandaloneHtml(bodyHtml, title), [bodyHtml, title]);
 
     const handleCopy = useCallback(async () => {
-        try {
-            if (!(await copyText(standaloneHtml))) return;
-            setCopied(true);
-            setTimeout(() => setCopied(false), 2000);
-        } catch {
-            // fallback
-        }
+          if (!(await copyText(standaloneHtml))) return;
+          setCopied(true);
+          setTimeout(() => setCopied(false), 2000);
     }, [standaloneHtml]);
 
     const handleDownload = useCallback(() => {

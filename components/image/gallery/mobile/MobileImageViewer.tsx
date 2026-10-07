@@ -82,14 +82,12 @@ export function MobileImageViewer({
 
   // Handle share with clipboard
   const handleShare = async () => {
-    try {
-      if (!(await copyText(photos[imageIndex]?.url))) return;
+    // Sharing never depends on the clipboard; only the "copied" flash does.
+    if (await copyText(photos[imageIndex]?.url)) {
       setIsSharing(true);
       setTimeout(() => setIsSharing(false), 2000);
-      onShare(photos[imageIndex]);
-    } catch (err) {
-      console.error("Failed to copy: ", err);
     }
+    onShare(photos[imageIndex]);
   };
 
   // Touch handlers for swiping

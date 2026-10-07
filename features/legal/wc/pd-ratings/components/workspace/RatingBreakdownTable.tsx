@@ -236,15 +236,11 @@ export function RatingBreakdownTable({
   const finalRating = combined?.final_rating;
 
   const handleCopyAll = async () => {
-    try {
-      if (!(await copyText(buildExportText(result, rows)))) return;
-      toast.success("Breakdown copied", {
-        description:
-          "Paste anywhere — formulas and per-injury detail included.",
-      });
-    } catch {
-      toast.error("Couldn't copy to clipboard");
-    }
+    if (!(await copyText(buildExportText(result, rows)))) return;
+    toast.success("Breakdown copied", {
+      description:
+        "Paste anywhere — formulas and per-injury detail included.",
+    });
   };
 
   return (

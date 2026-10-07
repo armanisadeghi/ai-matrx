@@ -176,18 +176,16 @@ export function LintDebtConsole({
   const findings = filterFindings(report.findings, bucket);
 
   const copy = async (key: string, text: string, label: string) => {
-    try {
-      if (!(await copyText(text))) return;
-      setCopiedKey(key);
-      window.setTimeout(
-        () => setCopiedKey((k) => (k === key ? null : k)),
-        1500,
-      );
-      toast.success(`${label} copied`);
-    } catch {
-      // Never swallow: the operator needs to know the click did nothing.
+    if (!(await copyText(text))) {
       toast.error("Clipboard unavailable — select the text manually.");
+      return;
     }
+    setCopiedKey(key);
+    window.setTimeout(
+      () => setCopiedKey((k) => (k === key ? null : k)),
+      1500,
+    );
+    toast.success(`${label} copied`);
   };
 
   const columns: MatrxColumnDef<LintDebtFinding>[] = [

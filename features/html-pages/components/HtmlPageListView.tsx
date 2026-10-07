@@ -272,14 +272,10 @@ export default function HtmlPageListView({
   };
 
   const copyUrl = async (page: HtmlPageSummary) => {
-    try {
-      if (!(await copyText(page.url))) return;
-      setCopiedId(page.id);
-      toast.success("URL copied");
-      setTimeout(() => setCopiedId(null), 1500);
-    } catch {
-      toast.error("Failed to copy URL");
-    }
+    if (!(await copyText(page.url))) return;
+    setCopiedId(page.id);
+    toast.success("URL copied");
+    setTimeout(() => setCopiedId(null), 1500);
   };
 
   if (isLoading && pages.length === 0) {

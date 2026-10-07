@@ -882,13 +882,9 @@ function ExternalUrlBanner({
   });
   const [copied, setCopied] = useState(false);
   const handleCopy = async () => {
-    try {
-      if (!(await copyText(url))) return;
-      setCopied(true);
-      setTimeout(() => setCopied(false), 1500);
-    } catch {
-      /* no-op */
-    }
+    if (!(await copyText(url))) return;
+    setCopied(true);
+    setTimeout(() => setCopied(false), 1500);
   };
   return (
     <div className="rounded-xl border border-success/40 bg-success/5 p-3 flex items-start gap-3">
@@ -1232,13 +1228,9 @@ function VariantCard({
   const [copied, setCopied] = useState(false);
   const handleCopy = async () => {
     if (!publicUrl) return;
-    try {
-      if (!(await copyText(publicUrl))) return;
-      setCopied(true);
-      setTimeout(() => setCopied(false), 1500);
-    } catch {
-      /* no-op */
-    }
+    if (!(await copyText(publicUrl))) return;
+    setCopied(true);
+    setTimeout(() => setCopied(false), 1500);
   };
 
   const aspect = width > 0 && height > 0 ? `${width} / ${height}` : "1 / 1";

@@ -19,6 +19,7 @@
 "use client";
 
 import { useClipboard } from "@ai-matrx/kit/clipboard";
+import { showManualCopy } from "@/components/dialogs/clipboard-fallback/manualCopyOpener";
 import { toast } from "@/lib/toast";
 import { useCallback, useMemo } from "react";
 import {
@@ -168,9 +169,11 @@ export function useFolderActions(folderId: string): FolderActionHandlers {
     const origin =
       typeof window !== "undefined" ? window.location.origin : "";
     const url = `${origin}/s/${token}`;
-    if (!(await copyText(url))) return null;
-    return url;
-  }, [dispatch, folderId, isVirtual, store]);
+    if (await copyText(url)) return url;
+    // The link exists; a clipboard refusal must not lose it.
+    showManualCopy({ text: url, title: "Copy the share link" });
+    return null;
+  }, [copyText, dispatch, folderId, isVirtual, store]);
 
   return useMemo(
     () => ({

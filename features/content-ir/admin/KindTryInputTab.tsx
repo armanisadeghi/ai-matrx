@@ -32,14 +32,8 @@ export default function KindTryInputTab({ kind }: KindTryInputTabProps) {
 
   async function copySubmitted(): Promise<void> {
     if (submitted === null) return;
-    try {
-      if (!(await copyText(submitted))) return;
-      toast.success(`Copied ${kind} instance`);
-    } catch (error) {
-      toast.error(
-        `Clipboard copy failed: ${error instanceof Error ? error.message : String(error)}`,
-      );
-    }
+    if (!(await copyText(submitted))) return;
+    toast.success(`Copied ${kind} instance`);
   }
 
   return (

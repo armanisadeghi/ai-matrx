@@ -102,11 +102,7 @@ export function useVideoActions({
       toast.error("This private playback URL cannot be shared");
       return;
     }
-    try {
-      await copyText(linkToCopy, "Link copied");
-    } catch {
-      toast.error("Could not copy link");
-    }
+    await copyText(linkToCopy, "Link copied");
   }, [block, currentSrc]);
 
   // A CDN render URL can play without CORS permission to fetch its bytes.

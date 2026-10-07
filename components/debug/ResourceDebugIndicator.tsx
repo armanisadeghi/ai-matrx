@@ -142,27 +142,15 @@ export const ResourceDebugIndicator: React.FC<ResourceDebugIndicatorProps> = ({
   };
 
   const copyToClipboard = async (data: unknown, index: number) => {
-    try {
-      if (!(await copyText(JSON.stringify(data, null, 2)))) return;
-      setCopiedIndex(index);
-      setTimeout(() => setCopiedIndex(null), 2000);
-    } catch (error) {
-      toast.error("Couldn't copy to the clipboard", {
-        description: error instanceof Error ? error.message : String(error),
-      });
-    }
+    if (!(await copyText(JSON.stringify(data, null, 2)))) return;
+    setCopiedIndex(index);
+    setTimeout(() => setCopiedIndex(null), 2000);
   };
 
   const copyAll = async () => {
-    try {
-      if (!(await copyText(JSON.stringify(resources, null, 2)))) return;
-      setCopiedIndex(-1);
-      setTimeout(() => setCopiedIndex(null), 2000);
-    } catch (error) {
-      toast.error("Couldn't copy to the clipboard", {
-        description: error instanceof Error ? error.message : String(error),
-      });
-    }
+    if (!(await copyText(JSON.stringify(resources, null, 2)))) return;
+    setCopiedIndex(-1);
+    setTimeout(() => setCopiedIndex(null), 2000);
   };
 
   const generateMessagePreview = () => {

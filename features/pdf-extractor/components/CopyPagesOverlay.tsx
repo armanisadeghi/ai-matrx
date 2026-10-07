@@ -549,13 +549,12 @@ export function CopyPagesOverlay({
 
   const handleCopySection = useCallback(
     async (idx: number) => {
-      try {
-        if (!(await copyText(sections[idx].text))) return;
-        setCopiedIdx(idx);
-        setTimeout(() => setCopiedIdx(null), 1800);
-      } catch {
+      if (!(await copyText(sections[idx].text))) {
         setErrorMsg("Could not write to clipboard.");
+        return;
       }
+      setCopiedIdx(idx);
+      setTimeout(() => setCopiedIdx(null), 1800);
     },
     [sections],
   );
@@ -570,13 +569,12 @@ export function CopyPagesOverlay({
       flatPages,
       source,
     );
-    try {
-      if (!(await copyText(combined))) return;
-      setCopiedAll(true);
-      setTimeout(() => setCopiedAll(false), 1800);
-    } catch {
+    if (!(await copyText(combined))) {
       setErrorMsg("Could not write to clipboard.");
+      return;
     }
+    setCopiedAll(true);
+    setTimeout(() => setCopiedAll(false), 1800);
   }, [sections, doc.id, doc.name, pages, flatPages, source]);
 
   // ── Reset on close ────────────────────────────────────────────────────────

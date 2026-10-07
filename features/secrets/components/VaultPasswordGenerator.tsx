@@ -166,23 +166,23 @@ export function VaultPasswordGenerator({
     )
       return;
     const snapshot = contextRef.current;
-    try {
-      if (!(await copyText(candidate.value))) return;
-      clear();
-      if (snapshot !== contextRef.current) {
-        toast.warning(
-          "A prior copy may remain in your clipboard after the credential changed.",
-        );
-        return;
-      }
-      toast.success(
-        "Copied. This copy remains in your clipboard until you replace it.",
-      );
-    } catch {
+    if (!(await copyText(candidate.value))) {
+      // Keep the candidate: clearing it here would lose the only copy.
       toast.error(
         "Could not copy the generated value. Reveal it and copy it yourself.",
       );
+      return;
     }
+    clear();
+    if (snapshot !== contextRef.current) {
+      toast.warning(
+        "A prior copy may remain in your clipboard after the credential changed.",
+      );
+      return;
+    }
+    toast.success(
+      "Copied. This copy remains in your clipboard until you replace it.",
+    );
   };
   const use = () => {
     if (!candidate || contextRef.current !== context || !eligible) return;

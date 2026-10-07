@@ -39,16 +39,12 @@ export function TranscriptPanel({ script, rtl }: TranscriptPanelProps) {
     .split(/\s+/).length;
 
   const copy = async () => {
-    try {
-      if (!(await copyText(
-        hasDialogue ? parsed.plain : script,
-      ))) return;
-      setCopied(true);
-      toast.success("Transcript copied");
-      setTimeout(() => setCopied(false), 1500);
-    } catch {
-      toast.error("Couldn't copy");
-    }
+    if (!(await copyText(
+      hasDialogue ? parsed.plain : script,
+    ))) return;
+    setCopied(true);
+    toast.success("Transcript copied");
+    setTimeout(() => setCopied(false), 1500);
   };
 
   return (

@@ -26,22 +26,21 @@ export function FilePageReferenceMenuSub({
       kind === "error" ? toast.error(message) : toast.success(message),
   });
   const copyPage = async (pageNumber: number) => {
-    try {
-      if (!(await copyText(
-        buildFilePageReferenceFence({
-          fileId,
-          pageNumber,
-          label: fileName,
-        }),
-      ))) return;
-      toast.success("Page reference copied", {
-        description: fileName
-          ? `${fileName} · p.${pageNumber}`
-          : `Page ${pageNumber}`,
-      });
-    } catch {
+    if (!(await copyText(
+      buildFilePageReferenceFence({
+        fileId,
+        pageNumber,
+        label: fileName,
+      }),
+    ))) {
       toast.error("Failed to copy page reference");
+      return;
     }
+    toast.success("Page reference copied", {
+      description: fileName
+        ? `${fileName} · p.${pageNumber}`
+        : `Page ${pageNumber}`,
+    });
   };
 
   return (

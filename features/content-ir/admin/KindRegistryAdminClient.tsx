@@ -303,16 +303,10 @@ export default function KindRegistryAdminClient() {
 
   async function copyExport() {
     if (!exportPayload || !selected) return;
-    try {
-      if (!(await copyText(
-        JSON.stringify(exportPayload, null, 2),
-      ))) return;
-      toast.success(`Copied ${selected.kind} JSON Schema`);
-    } catch (error) {
-      toast.error(
-        `Clipboard copy failed: ${error instanceof Error ? error.message : String(error)}`,
-      );
-    }
+    if (!(await copyText(
+      JSON.stringify(exportPayload, null, 2),
+    ))) return;
+    toast.success(`Copied ${selected.kind} JSON Schema`);
   }
 
   return (

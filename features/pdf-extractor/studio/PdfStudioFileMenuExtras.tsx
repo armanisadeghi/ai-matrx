@@ -38,16 +38,15 @@ export function PdfStudioFileMenuExtras({
       <DropdownMenuItem
         onClick={() => {
           void (async () => {
-            try {
-              if (!(await copyText(
-                resolveAbsoluteHref(studioHref),
-              ))) return;
-              toast.success("Link copied");
-            } catch {
+            if (!(await copyText(
+              resolveAbsoluteHref(studioHref),
+            ))) {
               toast.error(
                 "Couldn't copy — your browser blocked clipboard access",
               );
+              return;
             }
+            toast.success("Link copied");
           })();
         }}
       >

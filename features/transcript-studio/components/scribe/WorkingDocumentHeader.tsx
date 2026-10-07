@@ -117,13 +117,9 @@ export function WorkingDocumentHeader({
   const handleCopy = async () => {
     const text = draft || docContent;
     if (!text.trim()) return;
-    try {
-      if (!(await copyTextKit(text))) return;
-      setHasCopied(true);
-      setTimeout(() => setHasCopied(false), 450);
-    } catch {
-      toast.error("Could not copy to clipboard");
-    }
+    if (!(await copyTextKit(text))) return;
+    setHasCopied(true);
+    setTimeout(() => setHasCopied(false), 450);
   };
 
   const iconBtn = compact ? "h-6 w-6" : "h-8 w-8";

@@ -266,14 +266,10 @@ const LinesViewer = ({ data }: { data: LineItem[] }) => {
   const selectedLine = data[selectedLineIndex];
   
   const copyToClipboard = async () => {
-    try {
-      const textContent = selectedLine.content.replace(/<[^>]*>/g, '');
-      if (!(await copyText(textContent))) return;
-      setCopiedData(true);
-      setTimeout(() => setCopiedData(false), 2000);
-    } catch (err) {
-      console.error('Failed to copy:', err);
-    }
+    const textContent = selectedLine.content.replace(/<[^>]*>/g, '');
+    if (!(await copyText(textContent))) return;
+    setCopiedData(true);
+    setTimeout(() => setCopiedData(false), 2000);
   };
   
   if (!data || data.length === 0) {

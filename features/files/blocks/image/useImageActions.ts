@@ -185,11 +185,7 @@ export function useImageActions({
       toast.error("This private playback URL cannot be shared");
       return;
     }
-    try {
-      await copyText(linkToCopy, "Link copied");
-    } catch {
-      toast.error("Could not copy link");
-    }
+    await copyText(linkToCopy, "Link copied");
   }, [block, currentSrc]);
 
   const copyImage = useCallback(async () => {

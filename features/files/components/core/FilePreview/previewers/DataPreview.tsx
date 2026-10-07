@@ -287,13 +287,9 @@ export function DataPreview({ fileId, fileName, className }: DataPreviewProps) {
   const onCopyJson = useCallback(async () => {
     const payload = jsonRaw ?? (data ? JSON.stringify(data, null, 2) : null);
     if (!payload) return;
-    try {
-      if (!(await copyText(payload))) return;
-      setCopied(true);
-      window.setTimeout(() => setCopied(false), 1600);
-    } catch {
-      /* clipboard unavailable in non-secure context */
-    }
+    if (!(await copyText(payload))) return;
+    setCopied(true);
+    window.setTimeout(() => setCopied(false), 1600);
   }, [jsonRaw, data]);
 
   // ── Render ───────────────────────────────────────────────────────────────

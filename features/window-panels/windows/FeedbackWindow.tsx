@@ -1034,15 +1034,14 @@ function useFeedbackForm({
   const handleCopyForAgent = useCallback(async () => {
     if (!submittedItem) return;
     const prompt = buildAgentPrompt(submittedItem);
-    try {
-      if (!(await copyText(prompt))) return;
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2500);
-    } catch {
+    if (!(await copyText(prompt))) {
       toast.error(
         "Couldn't copy — your browser blocked the clipboard. Try again, or open the report from View all and copy it there.",
       );
+      return;
     }
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2500);
   }, [submittedItem]);
 
   const handleReset = useCallback(() => {

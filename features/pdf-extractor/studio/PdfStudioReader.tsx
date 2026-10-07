@@ -2049,13 +2049,9 @@ function CopyIconButton({
   const handleClick = useCallback(
     async (e: React.MouseEvent) => {
       e.stopPropagation();
-      try {
-        if (!(await copyText(getText()))) return;
-        setCopied(true);
-        setTimeout(() => setCopied(false), 1500);
-      } catch {
-        // ignore — most clipboard failures are silent permission denials
-      }
+      if (!(await copyText(getText()))) return;
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
     },
     [getText],
   );

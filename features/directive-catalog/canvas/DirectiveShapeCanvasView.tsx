@@ -34,16 +34,12 @@ export default function DirectiveShapeCanvasView({ data }: CanvasKindProps) {
   const example = validSchema ? buildSchemaExample(schema, exampleKind) : {};
 
   async function copy(value: unknown, target: "example" | "schema") {
-    try {
-      if (!(await copyText(JSON.stringify(value, null, 2)))) return;
-      setCopied(target);
-      toast.success(
-        target === "schema" ? "JSON Schema copied" : "Example copied",
-      );
-      window.setTimeout(() => setCopied(null), 1500);
-    } catch {
-      toast.error("Could not copy to clipboard");
-    }
+    if (!(await copyText(JSON.stringify(value, null, 2)))) return;
+    setCopied(target);
+    toast.success(
+      target === "schema" ? "JSON Schema copied" : "Example copied",
+    );
+    window.setTimeout(() => setCopied(null), 1500);
   }
 
   return (

@@ -66,13 +66,9 @@ export function CopyableUuid({
   const handleCopy = async (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    try {
-      if (!(await copyText(value))) return;
-      setCopied(true);
-      setTimeout(() => setCopied(false), 1500);
-    } catch {
-      // Silently ignore — clipboard can fail in restricted contexts.
-    }
+    if (!(await copyText(value))) return;
+    setCopied(true);
+    setTimeout(() => setCopied(false), 1500);
   };
 
   return (

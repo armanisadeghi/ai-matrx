@@ -322,9 +322,7 @@ export function DecisionBoardView({
   const decidedCount = DECISIONS.filter((d) => picks[d.id]?.winner).length;
 
   const copy = async () => {
-    try {
-      await copyText(toMarkdown(picks), "Decisions copied");
-    } catch {
+    if (!(await copyText(toMarkdown(picks), "Decisions copied"))) {
       toast.error("Clipboard blocked — use Download");
     }
   };

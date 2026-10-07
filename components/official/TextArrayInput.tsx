@@ -43,13 +43,9 @@ const TextArrayInput = ({
 
   const handleCopy = async () => {
     const textToCopy = value.join(", ");
-    try {
-      if (!(await copyText(textToCopy))) return;
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    } catch (err) {
-      console.error("Failed to copy:", err);
-    }
+    if (!(await copyText(textToCopy))) return;
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
   };
 
   const handleChange = (newItems: string[]) => {

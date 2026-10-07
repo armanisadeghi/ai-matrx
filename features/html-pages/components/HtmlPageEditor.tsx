@@ -454,11 +454,7 @@ export default function HtmlPageEditor({
   const markDirty = () => setDirty(true);
 
   const handleCopyUrl = async () => {
-    try {
-      await copyText(page.url, "URL copied");
-    } catch {
-      toast.error("Failed to copy URL");
-    }
+    await copyText(page.url, "URL copied");
   };
 
   const handleSave = async () => {

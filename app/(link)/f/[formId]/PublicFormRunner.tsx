@@ -332,13 +332,12 @@ export function PublicFormRunner({ form, prefill }: { form: PublicForm; prefill?
   }
 
   async function copyResumeLink(url: string) {
-    try {
-      if (!(await copyText(url))) return;
-      setCopied("copied");
-      window.setTimeout(() => setCopied("idle"), 1600);
-    } catch {
+    if (!(await copyText(url))) {
       setCopied("manual");
+      return;
     }
+    setCopied("copied");
+    window.setTimeout(() => setCopied("idle"), 1600);
   }
 
   const initialAnswers = resumed.kind === "found" ? { ...(prefill ?? {}), ...resumed.answers } : (prefill ?? {});

@@ -93,9 +93,7 @@ export function RowAccessControl({
 
   const copyLink = async () => {
     if (!publicUrl) return;
-    try {
-      await copyText(publicUrl, "Link copied");
-    } catch {
+    if (!(await copyText(publicUrl, "Link copied"))) {
       toast.error("Couldn't copy the link", { description: publicUrl });
     }
   };

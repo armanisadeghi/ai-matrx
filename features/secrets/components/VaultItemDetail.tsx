@@ -1682,9 +1682,7 @@ function StoredRecoveryCodes({
     .filter(Boolean);
 
   const copyCode = async (code: string) => {
-    try {
-      await copyText(code, "Recovery code copied.");
-    } catch {
+    if (!(await copyText(code, "Recovery code copied."))) {
       toast.error("Your browser blocked clipboard access.");
     }
   };

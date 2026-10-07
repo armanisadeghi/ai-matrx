@@ -94,14 +94,13 @@ export function CharacterCounter({
   const percent = limit ? Math.min((trackedCharacters / limit) * 100, 100) : 0;
 
   const copyText = async () => {
-    try {
-      if (!(await copyTextKit(text))) return;
-      setCopied(true);
-      toast.success("Text copied to clipboard");
-      window.setTimeout(() => setCopied(false), 1400);
-    } catch {
+    if (!(await copyTextKit(text))) {
       toast.error("Could not access the clipboard");
+      return;
     }
+    setCopied(true);
+    toast.success("Text copied to clipboard");
+    window.setTimeout(() => setCopied(false), 1400);
   };
 
   const pasteText = async () => {

@@ -129,23 +129,21 @@ export function MobileUnsplashGallery({ initialSearchTerm }: MobileUnsplashGalle
 
     const handleShare = async (photo: UnsplashPhoto) => {
         if (!isDisplayPhoto(photo)) return;
-        try {
-            const imageUrl = photo.urls.full || photo.urls.regular;
-            if (!(await copyText(imageUrl))) return;
-            setIsSharing(true);
-            toast({
-                title: 'Image link copied',
-                description: 'The direct image URL has been copied to your clipboard.',
-            });
-            setTimeout(() => setIsSharing(false), 2000);
-        } catch (err) {
-            console.error('Failed to copy: ', err);
+          const imageUrl = photo.urls.full || photo.urls.regular;
+          if (!(await copyText(imageUrl))) {
             toast({
                 title: 'Copy failed',
                 description: 'There was an issue copying the link.',
                 variant: 'destructive',
             });
-        }
+            return;
+          }
+          setIsSharing(true);
+          toast({
+              title: 'Image link copied',
+              description: 'The direct image URL has been copied to your clipboard.',
+          });
+          setTimeout(() => setIsSharing(false), 2000);
     };
 
     const handleImageInfo = (photo: UnsplashPhoto) => {

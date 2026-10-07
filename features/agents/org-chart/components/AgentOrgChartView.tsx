@@ -659,9 +659,7 @@ export function AgentOrgChartView({
   const copyLink = async (b: string) => {
     const url = new URL(window.location.href);
     url.searchParams.set("focus", b);
-    try {
-      await copyText(url.toString(), "Link to this box copied.");
-    } catch {
+    if (!(await copyText(url.toString(), "Link to this box copied."))) {
       toast.error("Couldn't copy — your browser blocked the clipboard.");
     }
   };

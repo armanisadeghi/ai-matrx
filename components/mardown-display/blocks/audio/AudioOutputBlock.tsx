@@ -257,13 +257,9 @@ function useFileActions(url: string, mimeType?: string) {
   }, [url, mimeType, isDownloading]);
 
   const copyLink = useCallback(async () => {
-    try {
-      if (!(await copyText(url))) return;
-      setIsCopied(true);
-      setTimeout(() => setIsCopied(false), 2000);
-    } catch {
-      /* silent */
-    }
+    if (!(await copyText(url))) return;
+    setIsCopied(true);
+    setTimeout(() => setIsCopied(false), 2000);
   }, [url]);
 
   return { isDownloading, download, isCopied, copyLink };

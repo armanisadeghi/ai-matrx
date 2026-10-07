@@ -34,13 +34,9 @@ export function JsonViewer({
   })();
 
   const handleCopy = async () => {
-    try {
-      if (!(await copyText(text))) return;
-      setCopied(true);
-      setTimeout(() => setCopied(false), 1500);
-    } catch {
-      /* clipboard may be unavailable; ignore */
-    }
+    if (!(await copyText(text))) return;
+    setCopied(true);
+    setTimeout(() => setCopied(false), 1500);
   };
 
   return (

@@ -343,13 +343,9 @@ const SmallCodeEditor = ({
   const handleCopyCode = useCallback(async () => {
     if (editorRef.current) {
       const code = editorRef.current.getValue();
-      try {
-        if (!(await copyText(code))) return;
-        setCopied(true);
-        setTimeout(() => setCopied(false), 2000);
-      } catch (err) {
-        console.error("Failed to copy code:", err);
-      }
+      if (!(await copyText(code))) return;
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
     }
   }, []);
 

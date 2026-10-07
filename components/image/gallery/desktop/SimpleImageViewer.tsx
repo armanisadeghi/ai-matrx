@@ -139,13 +139,9 @@ export function SimpleImageViewer({
   };
 
   const handleShare = async (photo: SimplePhoto) => {
-    try {
-      if (!(await copyText(photo.url))) return;
-      setIsSharing(true);
-      setTimeout(() => setIsSharing(false), 2000);
-    } catch (err) {
-      console.error("Failed to copy: ", err);
-    }
+    if (!(await copyText(photo.url))) return;
+    setIsSharing(true);
+    setTimeout(() => setIsSharing(false), 2000);
   };
 
   const toggleFullScreen = () => {

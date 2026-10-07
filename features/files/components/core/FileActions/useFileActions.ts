@@ -9,6 +9,7 @@
 "use client";
 
 import { useClipboard } from "@ai-matrx/kit/clipboard";
+import { showManualCopy } from "@/components/dialogs/clipboard-fallback/manualCopyOpener";
 import { toast } from "@/lib/toast";
 import { useCallback, useMemo } from "react";
 import { useAppDispatch, useAppSelector, useAppStore } from "@/lib/redux/hooks";
@@ -69,10 +70,16 @@ export interface FileActionHandlers {
    * handler fetches the REST record once to hydrate the CDN URL before
    * falling back to share-token creation.
    *
-   * Pass `{ expiresIn }` for compatibility with callers that need to fetch
-   * bytes immediately; the live file contract now returns a durable URL.
+   * Resolves `null` when the link was not copied. When the URL exists but the
+   * browser refuses the clipboard, the manual-copy dialog shows it instead.
    */
-  copyShareUrl: (opts?: { expiresIn?: number }) => Promise<string | null>;
+  copyShareUrl: () => Promise<string | null>;
+  /**
+   * The same URL WITHOUT touching the clipboard. Pass `{ fetchable: true }`
+   * for a URL the caller fetches bytes from right away (Duplicate). A
+   * clipboard refusal must never stop work that only needs the URL.
+   */
+  resolveShareUrl: (opts?: { fetchable?: boolean }) => Promise<string | null>;
 }
 
 export function useFileActions(fileId: string): FileActionHandlers {
@@ -176,16 +183,14 @@ export function useFileActions(fileId: string): FileActionHandlers {
     downloadFile(filename ?? file?.fileName ?? "download", blob, blob.type);
   }, [file?.fileName, fileId, isVirtual]);
 
-  const copyShareUrl = useCallback(
-    async (opts?: { expiresIn?: number }) => {
+  const resolveShareUrl = useCallback(
+    async (opts?: { fetchable?: boolean }): Promise<string | null> => {
       if (isVirtual) return null;
 
-      // Compatibility path used by the duplicate flow that needs to fetch
-      // bytes immediately. The resolved URL is durable and has no side effects
-      // on the file's share state.
-      if (opts?.expiresIn !== undefined) {
+      // The duplicate flow fetches bytes immediately. The resolved URL is
+      // durable and has no side effects on the file's share state.
+      if (opts?.fetchable) {
         const result = await dispatch(getFileUrl({ fileId })).unwrap();
-        if (!(await copyText(result.url))) return null;
         return result.url;
       }
 
@@ -204,10 +209,7 @@ export function useFileActions(fileId: string): FileActionHandlers {
             // REST fetch failed — fall through to share-token path.
           }
         }
-        if (cdnUrl) {
-          if (!(await copyText(cdnUrl))) return null;
-          return cdnUrl;
-        }
+        if (cdnUrl) return cdnUrl;
         // publicUrl unavailable even after REST fetch (CDN not configured
         // on the backend) — fall through to the share-token path below.
       }
@@ -261,12 +263,18 @@ export function useFileActions(fileId: string): FileActionHandlers {
 
       if (!token) return null;
 
-      const url = pythonShareUrl(token);
-      if (!(await copyText(url))) return null;
-      return url;
+      return pythonShareUrl(token);
     },
-    [dispatch, fileId, isVirtual, store],
+    [dispatch, fileId, isVirtual, store, file?.visibility, file?.publicUrl],
   );
+
+  const copyShareUrl = useCallback(async () => {
+    const url = await resolveShareUrl();
+    if (!url) return null;
+    if (await copyText(url)) return url;
+    showManualCopy({ text: url, title: "Copy the share link" });
+    return null;
+  }, [copyText, resolveShareUrl]);
 
   return useMemo(
     () => ({
@@ -278,6 +286,7 @@ export function useFileActions(fileId: string): FileActionHandlers {
       restoreVersion,
       download,
       copyShareUrl,
+      resolveShareUrl,
     }),
     [
       rename,
@@ -288,6 +297,7 @@ export function useFileActions(fileId: string): FileActionHandlers {
       restoreVersion,
       download,
       copyShareUrl,
+      resolveShareUrl,
     ],
   );
 }

@@ -88,18 +88,12 @@ function TranscriptIntegrityCopyButtonInner({
       pathname,
       effectiveVisibleGroupLimit,
     });
-    try {
-      if (!(await copyText(formatTranscriptIntegrityReport(report)))) return;
-      toast.success(
-        report.anomalies.length === 0
-          ? "Transcript report copied — no anomalies detected"
-          : `Transcript report copied — ${report.anomalies.length} anomal${report.anomalies.length === 1 ? "y" : "ies"} flagged`,
-      );
-    } catch (err) {
-      toast.error(
-        `Could not copy the transcript report: ${err instanceof Error ? err.message : String(err)}`,
-      );
-    }
+    if (!(await copyText(formatTranscriptIntegrityReport(report)))) return;
+    toast.success(
+      report.anomalies.length === 0
+        ? "Transcript report copied — no anomalies detected"
+        : `Transcript report copied — ${report.anomalies.length} anomal${report.anomalies.length === 1 ? "y" : "ies"} flagged`,
+    );
   };
 
   return (

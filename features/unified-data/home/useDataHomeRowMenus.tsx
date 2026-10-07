@@ -277,9 +277,7 @@ export function useDataHomeRowMenus({
           window.open(url, "_blank", "noopener,noreferrer");
         },
         copyText: async (url) => {
-          try {
-            await copyTextKit(url, "Link copied");
-          } catch {
+          if (!(await copyTextKit(url, "Link copied"))) {
             toast.error("Couldn’t copy the link");
           }
         },

@@ -195,9 +195,7 @@ export function PartyRecordPage({ partyId, initialHeading }: Props) {
       return;
     }
     const url = `${window.location.origin}${href}`;
-    try {
-      await copyText(url, "Link copied");
-    } catch {
+    if (!(await copyText(url, "Link copied"))) {
       // A blocked clipboard never ends in a dead toast: the link is put in
       // front of the person, selected, so they can still copy it.
       showManualCopy({

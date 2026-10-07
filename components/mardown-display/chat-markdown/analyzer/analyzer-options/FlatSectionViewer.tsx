@@ -86,13 +86,9 @@ const FlatSectionViewer = ({ data, bookmark }: FlatSectionViewerProps) => {
   const handleBookmarkCopy = async () => {
     if (!selectedSection?.bookmarkPath) return;
     
-    try {
-      if (!(await copyText(selectedSection.bookmarkPath))) return;
-      setBookmarkCopied(true);
-      setTimeout(() => setBookmarkCopied(false), 2000);
-    } catch (err) {
-      console.error("Failed to copy bookmark path:", err);
-    }
+    if (!(await copyText(selectedSection.bookmarkPath))) return;
+    setBookmarkCopied(true);
+    setTimeout(() => setBookmarkCopied(false), 2000);
   };
 
   if (!processedSections || processedSections.length === 0) {

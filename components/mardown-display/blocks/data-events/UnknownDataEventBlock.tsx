@@ -52,13 +52,9 @@ const UnknownDataEventBlock: React.FC<UnknownDataEventBlockProps> = ({
   );
 
   const handleCopy = async () => {
-    try {
-      if (!(await copyText(pretty))) return;
-      setIsCopied(true);
-      setTimeout(() => setIsCopied(false), 2000);
-    } catch {
-      /* silent */
-    }
+    if (!(await copyText(pretty))) return;
+    setIsCopied(true);
+    setTimeout(() => setIsCopied(false), 2000);
   };
 
   const handleCopyForAi = async () => {
@@ -77,13 +73,9 @@ const UnknownDataEventBlock: React.FC<UnknownDataEventBlockProps> = ({
       `  <instructions>This is an AI Matrx artifact/canvas system failure. Diagnose why this block was not recognized and routed to its renderer (likely a save/find shape mismatch). Fix the recognition so it renders correctly and never falls to Unknown Data Event.</instructions>`,
       `</artifact_failure>`,
     ].join("\n");
-    try {
-      if (!(await copyText(payload))) return;
-      setAiCopied(true);
-      setTimeout(() => setAiCopied(false), 2000);
-    } catch {
-      /* silent */
-    }
+    if (!(await copyText(payload))) return;
+    setAiCopied(true);
+    setTimeout(() => setAiCopied(false), 2000);
   };
 
   if (kindPayload) {

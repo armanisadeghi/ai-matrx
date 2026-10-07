@@ -268,25 +268,17 @@ function JsonInspectorBody({
 
   const handleCopy = async () => {
     const text = value === "json" ? rawJsonText : prettyJson;
-    try {
-      if (!(await copyText(text))) return;
-      setCopied(true);
-      setTimeout(() => setCopied(false), 1500);
-    } catch (err) {
-      console.error("Failed to copy JSON:", err);
-    }
+    if (!(await copyText(text))) return;
+    setCopied(true);
+    setTimeout(() => setCopied(false), 1500);
   };
 
   const handleAgentCopy = async () => {
     if (!agentCopy) return;
     const input = typeof agentCopy === "function" ? agentCopy() : agentCopy;
-    try {
-      if (!(await copyText(buildAgentPayload(input)))) return;
-      setAgentCopied(true);
-      setTimeout(() => setAgentCopied(false), 1500);
-    } catch (err) {
-      console.error("Failed to copy for AI:", err);
-    }
+    if (!(await copyText(buildAgentPayload(input)))) return;
+    setAgentCopied(true);
+    setTimeout(() => setAgentCopied(false), 1500);
   };
 
   if (showEditOnly) {

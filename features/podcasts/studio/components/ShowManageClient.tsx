@@ -90,14 +90,10 @@ function CopyButton({ value, label }: { value: string; label: string }) {
   });
   const [copied, setCopied] = useState(false);
   const onCopy = async () => {
-    try {
-      if (!(await copyText(value))) return;
-      setCopied(true);
-      toast.success(`${label} copied`);
-      setTimeout(() => setCopied(false), 2000);
-    } catch {
-      toast.error("Couldn't copy to clipboard");
-    }
+    if (!(await copyText(value))) return;
+    setCopied(true);
+    toast.success(`${label} copied`);
+    setTimeout(() => setCopied(false), 2000);
   };
   return (
     <Button icon={copied ? <Check className="text-emerald-500" /> : <Copy />} type="button" variant="outline" onClick={onCopy}>

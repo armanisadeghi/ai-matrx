@@ -55,11 +55,7 @@ export function HtmlPagesContextMenu({
     },
     onCopySelectedUrl: async () => {
       if (!page) return;
-      try {
-        await copyText(page.url, "URL copied");
-      } catch {
-        toast.error("Failed to copy URL");
-      }
+      await copyText(page.url, "URL copied");
     },
     onOpenSelectedLive: () => {
       if (page?.url) window.open(page.url, "_blank", "noopener,noreferrer");

@@ -171,14 +171,10 @@ function InjuryTableRow({
 
   const handleCopy = async () => {
     const tsv = rowToTsv(row, index);
-    try {
-      if (!(await copyText(tsv))) return;
-      toast.success(`Row ${index + 1} copied`, {
-        description: "Tab-separated — paste into Excel or Sheets.",
-      });
-    } catch {
-      toast.error("Couldn't copy to clipboard");
-    }
+    if (!(await copyText(tsv))) return;
+    toast.success(`Row ${index + 1} copied`, {
+      description: "Tab-separated — paste into Excel or Sheets.",
+    });
   };
 
   return (

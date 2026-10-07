@@ -1363,13 +1363,12 @@ function JsonLdCard({ location }: { location: BusinessLocation }) {
   );
 
   const handleCopy = async () => {
-    try {
-      if (!(await copyText(script))) return;
-      setCopied(true);
-      setTimeout(() => setCopied(false), 1500);
-    } catch {
+    if (!(await copyText(script))) {
       toast.error("Could not copy — select the code and copy manually.");
+      return;
     }
+    setCopied(true);
+    setTimeout(() => setCopied(false), 1500);
   };
 
   return (

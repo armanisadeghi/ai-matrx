@@ -262,21 +262,15 @@ const TroubleshootingBlock: React.FC<TroubleshootingBlockProps> = ({
   };
 
   const copyCommand = async (command: string, commandId: string) => {
-    try {
-      if (!(await copyText(command))) return;
-      setCopiedCommands(new Set([...copiedCommands, commandId]));
-      setTimeout(() => {
-        setCopiedCommands((prev) => {
-          const newSet = new Set(prev);
-          newSet.delete(commandId);
-          return newSet;
-        });
-      }, 2000);
-    } catch (err) {
-      toast.error("Couldn't copy the command", {
-        description: err instanceof Error ? err.message : String(err),
+    if (!(await copyText(command))) return;
+    setCopiedCommands(new Set([...copiedCommands, commandId]));
+    setTimeout(() => {
+      setCopiedCommands((prev) => {
+        const newSet = new Set(prev);
+        newSet.delete(commandId);
+        return newSet;
       });
-    }
+    }, 2000);
   };
 
   const getSeverityColor = (severity: string | undefined) => {

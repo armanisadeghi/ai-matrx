@@ -49,13 +49,9 @@ function CopyButton({ content, label = "Copy" }: { content: string; label?: stri
     const [copied, setCopied] = useState(false);
     const handleCopy = async () => {
         if (!content) return;
-        try {
-            if (!(await copyText(content))) return;
-            setCopied(true);
-            setTimeout(() => setCopied(false), 2000);
-        } catch {
-            // ignore
-        }
+          if (!(await copyText(content))) return;
+          setCopied(true);
+          setTimeout(() => setCopied(false), 2000);
     };
     return (
         <Button icon={copied ? <Check className="text-success" /> : <Copy />} variant="quiet" onClick={handleCopy} disabled={!content}>

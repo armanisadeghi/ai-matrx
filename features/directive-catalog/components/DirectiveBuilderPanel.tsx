@@ -561,16 +561,12 @@ export function DirectiveBuilderPanel({
 
   const handleCopy = async () => {
     if (!displayedEnvelope) return;
-    try {
-      if (!(await copyText(
-        JSON.stringify(displayedEnvelope, null, 2),
-      ))) return;
-      setCopied(true);
-      toast.success("Envelope copied");
-      setTimeout(() => setCopied(false), 1500);
-    } catch {
-      toast.error("Could not copy to clipboard");
-    }
+    if (!(await copyText(
+      JSON.stringify(displayedEnvelope, null, 2),
+    ))) return;
+    setCopied(true);
+    toast.success("Envelope copied");
+    setTimeout(() => setCopied(false), 1500);
   };
 
   // The envelope is the OUTPUT: a reference shows it under the record it

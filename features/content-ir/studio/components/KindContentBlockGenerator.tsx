@@ -117,14 +117,10 @@ export default function KindContentBlockGenerator({
   }
 
   async function copyTemplate(): Promise<void> {
-    try {
-      if (!(await copyText(block.template))) return;
-      setCopied(true);
-      window.setTimeout(() => setCopied(false), 1600);
-      toast.success("Content block copied");
-    } catch {
-      toast.error("Could not copy to clipboard");
-    }
+    if (!(await copyText(block.template))) return;
+    setCopied(true);
+    window.setTimeout(() => setCopied(false), 1600);
+    toast.success("Content block copied");
   }
 
   return (

@@ -63,15 +63,9 @@ export function EmbedSnippet({
   );
 
   const copy = async (text: string, key: string) => {
-    try {
-      if (!(await copyText(text))) return;
-      setCopiedKey(key);
-      setTimeout(() => setCopiedKey(null), 2000);
-    } catch (err) {
-      toast.error("Couldn't copy the snippet", {
-        description: err instanceof Error ? err.message : String(err),
-      });
-    }
+    if (!(await copyText(text))) return;
+    setCopiedKey(key);
+    setTimeout(() => setCopiedKey(null), 2000);
   };
 
   return (

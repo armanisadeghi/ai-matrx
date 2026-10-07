@@ -330,13 +330,9 @@ export function OfficePreview({
 
   const onCopy = useCallback(async () => {
     if (!extraction?.markdown) return;
-    try {
-      if (!(await copyText(extraction.markdown))) return;
-      setCopied(true);
-      setTimeout(() => setCopied(false), 1500);
-    } catch {
-      /* non-secure contexts can't write to the clipboard */
-    }
+    if (!(await copyText(extraction.markdown))) return;
+    setCopied(true);
+    setTimeout(() => setCopied(false), 1500);
   }, [extraction]);
 
   if (orgRequired) {

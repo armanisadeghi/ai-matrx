@@ -109,11 +109,7 @@ export function ResultActions({
 
   const copyLink = async () => {
     if (!absoluteUrl) return;
-    try {
-      await copyText(absoluteUrl, "Link copied");
-    } catch {
-      toast.error("Couldn't copy");
-    }
+    await copyText(absoluteUrl, "Link copied");
   };
 
   return (

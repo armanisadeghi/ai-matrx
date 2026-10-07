@@ -71,13 +71,9 @@ export function WebpageFooter({ item }: ContextItemBodyProps) {
   if (!url) return null;
 
   const copy = async () => {
-    try {
-      if (!(await copyText(url))) return;
-      setCopied(true);
-      setTimeout(() => setCopied(false), 1500);
-    } catch {
-      toast.error("Failed to copy");
-    }
+    if (!(await copyText(url))) return;
+    setCopied(true);
+    setTimeout(() => setCopied(false), 1500);
   };
 
   return (

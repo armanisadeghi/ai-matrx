@@ -23,13 +23,9 @@ export function ScraperHookErrorDetails({
   const text = formatScraperDiagnosticsJson(diagnostics);
 
   const handleCopy = useCallback(async () => {
-    try {
-      if (!(await copyText(text))) return;
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    } catch {
-      /* ignore */
-    }
+    if (!(await copyText(text))) return;
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
   }, [text]);
 
   if (diagnostics == null) return null;

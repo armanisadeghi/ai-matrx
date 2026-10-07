@@ -77,14 +77,10 @@ export function TaskPreviewContent({ taskId, onOpen }: TaskPreviewContentProps) 
   const [copied, setCopied] = useState(false);
 
   const handleCopyId = async () => {
-    try {
-      if (!(await copyText(taskId))) return;
-      setCopied(true);
-      toast.success("Task ID copied");
-      setTimeout(() => setCopied(false), 1500);
-    } catch {
-      toast.error("Failed to copy");
-    }
+    if (!(await copyText(taskId))) return;
+    setCopied(true);
+    toast.success("Task ID copied");
+    setTimeout(() => setCopied(false), 1500);
   };
 
   if (!task) {

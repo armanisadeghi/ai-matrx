@@ -162,20 +162,19 @@ export function ScribeScreen({ sessionId, onBack }: ScribeScreenProps) {
       description: "Paste into chat as a live reference chip",
       icon: <Bookmark className="h-4 w-4" />,
       onSelect: async () => {
-        try {
-          if (!(await copyText(
-            buildRecordReferenceFence({
-              type: "transcript_session",
-              id: sessionId,
-              label: session?.title,
-            }),
-          ))) return;
-          toast.success("Reference copied to clipboard", {
-            description: session?.title ?? "Session",
-          });
-        } catch {
+        if (!(await copyText(
+          buildRecordReferenceFence({
+            type: "transcript_session",
+            id: sessionId,
+            label: session?.title,
+          }),
+        ))) {
           toast.error("Failed to copy reference");
+          return;
         }
+        toast.success("Reference copied to clipboard", {
+          description: session?.title ?? "Session",
+        });
       },
     },
     ...(session?.transcriptId
@@ -187,18 +186,17 @@ export function ScribeScreen({ sessionId, onBack }: ScribeScreenProps) {
               "Session + materialized transcript — paste into chat as a chip",
             icon: <Bookmark className="h-4 w-4" />,
             onSelect: async () => {
-              try {
-                if (!(await copyText(
-                  buildSessionTranscriptReferenceFence({
-                    sessionId,
-                    transcriptId: session.transcriptId!,
-                    label: session.title ?? undefined,
-                  }),
-                ))) return;
-                toast.success("Transcript reference copied");
-              } catch {
+              if (!(await copyText(
+                buildSessionTranscriptReferenceFence({
+                  sessionId,
+                  transcriptId: session.transcriptId!,
+                  label: session.title ?? undefined,
+                }),
+              ))) {
                 toast.error("Failed to copy reference");
+                return;
               }
+              toast.success("Transcript reference copied");
             },
           },
         ] satisfies ActionSheetItem[])

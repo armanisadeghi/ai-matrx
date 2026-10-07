@@ -98,13 +98,12 @@ export function RowControls({
 
   const copyAddress = useCallback(async () => {
     if (!publicUrl) return;
-    try {
-      if (!(await copyText(publicUrl))) return;
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    } catch {
+    if (!(await copyText(publicUrl))) {
       toast({ title: "Couldn't copy the web address", variant: "destructive" });
+      return;
     }
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
   }, [publicUrl, toast]);
 
   if (capsError) {

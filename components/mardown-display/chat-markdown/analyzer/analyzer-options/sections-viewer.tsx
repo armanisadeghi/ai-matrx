@@ -53,15 +53,11 @@ const JsonFallback = ({ data, onCopy }: { data: unknown; onCopy: () => void }) =
   });
   
   const handleCopy = async () => {
-    try {
-      const jsonString = JSON.stringify(data, null, 2);
-      if (!(await copyText(jsonString))) return;
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-      onCopy();
-    } catch (err) {
-      console.error('Failed to copy JSON:', err);
-    }
+    const jsonString = JSON.stringify(data, null, 2);
+    if (!(await copyText(jsonString))) return;
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+    onCopy();
   };
 
   return (
@@ -286,26 +282,22 @@ const SectionsViewer = ({ data }: { data: unknown }) => {
   const selectedSection = safeData[selectedSectionIndex] || safeData[0];
   
   const copyToClipboard = async () => {
-    try {
-      if (!selectedSection || !isValidContentSection(selectedSection) || !selectedSection.children) {
-        return;
-      }
+    if (!selectedSection || !isValidContentSection(selectedSection) || !selectedSection.children) {
+      return;
+    }
 
-      const validChildren = selectedSection.children.filter(item => 
-        isValidContentItem(item) && item.content && typeof item.content === 'string' && item.content.trim()
-      );
-      
-      const textContent = validChildren
-        .map(item => item.content.replace(/<[^>]*>/g, ''))
-        .join('\n');
-      
-      if (textContent.trim()) {
-        if (!(await copyText(textContent))) return;
-        setCopiedData(true);
-        setTimeout(() => setCopiedData(false), 2000);
-      }
-    } catch (err) {
-      console.error('Failed to copy:', err);
+    const validChildren = selectedSection.children.filter(item => 
+      isValidContentItem(item) && item.content && typeof item.content === 'string' && item.content.trim()
+    );
+    
+    const textContent = validChildren
+      .map(item => item.content.replace(/<[^>]*>/g, ''))
+      .join('\n');
+    
+    if (textContent.trim()) {
+      if (!(await copyText(textContent))) return;
+      setCopiedData(true);
+      setTimeout(() => setCopiedData(false), 2000);
     }
   };
   

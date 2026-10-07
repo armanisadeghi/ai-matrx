@@ -769,15 +769,9 @@ function ServerToolsTab({
         (t) => activeSet.has(t.id),
       );
       const text = formatEnabledTools(tools, format);
-      try {
-        if (!(await copyText(text))) return;
-        setCopiedFormat(format);
-        setTimeout(() => setCopiedFormat(null), 1500);
-      } catch (err) {
-        toast.error("Couldn't copy the enabled tools", {
-          description: err instanceof Error ? err.message : String(err),
-        });
-      }
+      if (!(await copyText(text))) return;
+      setCopiedFormat(format);
+      setTimeout(() => setCopiedFormat(null), 1500);
     },
     [metadata, activeSet],
   );

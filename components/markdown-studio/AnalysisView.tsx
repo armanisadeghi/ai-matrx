@@ -199,20 +199,16 @@ export function AnalysisView({
   /** The FULL report: XML with every drifting block's contents, the raw input and the server address. */
   const handleCopyFullReport = async () => {
     if (!result) return;
-    try {
-      if (!(await copyText(
-        buildDriftReportXml(result, {
-          route: typeof window !== "undefined" ? window.location.pathname : "/markdown-studio",
-          tool: "Block Parser Comparison (V2 local · Redux accumulator · Python server)",
-          source: runLabel,
-          reduxMode,
-          serverUrl: apiConfig.baseUrl,
-        }),
-      ))) return;
-      toast.success("Full report copied (XML with block contents and the raw input)");
-    } catch {
-      toast.error("Clipboard copy failed");
-    }
+    if (!(await copyText(
+      buildDriftReportXml(result, {
+        route: typeof window !== "undefined" ? window.location.pathname : "/markdown-studio",
+        tool: "Block Parser Comparison (V2 local · Redux accumulator · Python server)",
+        source: runLabel,
+        reduxMode,
+        serverUrl: apiConfig.baseUrl,
+      }),
+    ))) return;
+    toast.success("Full report copied (XML with block contents and the raw input)");
   };
 
   const handleCopyReport = async () => {
@@ -249,11 +245,7 @@ export function AnalysisView({
       );
       lines.push(`  ${row.summary}`);
     }
-    try {
-      await copyText(lines.join("\n"), "Report copied to clipboard");
-    } catch {
-      toast.error("Clipboard copy failed");
-    }
+    await copyText(lines.join("\n"), "Report copied to clipboard");
   };
 
   return (

@@ -431,11 +431,7 @@ export default function FeedbackDetailDialog({
       userMessages,
       categoryName: categories.find((c) => c.id === item.category_id)?.name,
     });
-    try {
-      await copyText(text, "Full feedback data copied to clipboard");
-    } catch {
-      toast.error("Failed to copy to clipboard");
-    }
+    await copyText(text, "Full feedback data copied to clipboard");
   }, [item, comments, userMessages, categories]);
 
   const loadComments = useCallback(async () => {

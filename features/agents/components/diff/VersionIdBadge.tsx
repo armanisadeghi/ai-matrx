@@ -30,13 +30,9 @@ export function VersionIdBadge({
 
   const handleCopy = async (e: React.MouseEvent) => {
     e.stopPropagation();
-    try {
-      if (!(await copyText(versionId))) return;
-      setCopied(true);
-      setTimeout(() => setCopied(false), 1500);
-    } catch {
-      // ignored — clipboard may be blocked in insecure contexts
-    }
+    if (!(await copyText(versionId))) return;
+    setCopied(true);
+    setTimeout(() => setCopied(false), 1500);
   };
 
   const short = versionId.slice(0, 8);

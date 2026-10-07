@@ -875,12 +875,8 @@ export function KnowledgeHubPage({
   const absolute = (href: string) => (href.startsWith("http") ? href : `${window.location.origin}${href}`);
 
   const copyText = async (text: string, done: string) => {
-    try {
-      if (!(await copyTextKit(text))) return;
-      toast.success(done);
-    } catch (err) {
-      toast.error(`Nothing was copied: ${err instanceof Error ? err.message : "the clipboard refused."}`);
-    }
+    if (!(await copyTextKit(text))) return;
+    toast.success(done);
   };
 
   const transcriptAgentInput = (rows: TranscriptListRow[]) => ({

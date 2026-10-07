@@ -936,18 +936,17 @@ const RawStorageView = ({ storage }: { storage: UseLocalStorageManager }) => {
   }, []);
 
   const handleCopyToClipboard = async () => {
-    try {
-      if (!(await copyText(JSON.stringify(rawData, null, 2)))) return;
-      setFeedback({
-        success: true,
-        message: "Copied to clipboard",
-      });
-    } catch (error) {
+    if (!(await copyText(JSON.stringify(rawData, null, 2)))) {
       setFeedback({
         success: false,
         message: "Failed to copy to clipboard",
       });
+      return;
     }
+    setFeedback({
+      success: true,
+      message: "Copied to clipboard",
+    });
   };
 
   const handleDownload = () => {

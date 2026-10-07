@@ -98,9 +98,7 @@ export function PreUploadCheck({ className }: PreUploadCheckProps) {
 
   async function copyForStudio(): Promise<void> {
     const text = studioClipboardText(scoredDraft);
-    try {
-      await copyText(text, "Copied — paste it into YouTube Studio.");
-    } catch {
+    if (!(await copyText(text, "Copied — paste it into YouTube Studio."))) {
       setClipboardFallback(text);
     }
   }

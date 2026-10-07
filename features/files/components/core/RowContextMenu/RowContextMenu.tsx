@@ -166,7 +166,7 @@ export function FileRowContextMenu({
     try {
       // Mirror the keyboard-shortcut duplicate flow — fetch + re-upload to
       // preserve mime type and parent.
-      const url = await actions.copyShareUrl({ expiresIn: 600 });
+      const url = await actions.resolveShareUrl({ fetchable: true });
       if (!url) return;
       const blob = await fetch(url).then((r) => {
         if (!r.ok) throw new Error(`HTTP ${r.status}`);

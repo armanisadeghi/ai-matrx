@@ -170,21 +170,20 @@ export function ShortcutDirectory({
     startTransition(() => router.push(resolveShortcutDirectUrl(id, mode)));
   };
   const copyId = async (id: string) => {
-    try {
-      if (!(await copyText(id))) return;
-      setCopiedId(id);
-      toast({ title: "Copied", description: "Shortcut ID copied" });
-      setTimeout(
-        () => setCopiedId((current) => (current === id ? null : current)),
-        1800,
-      );
-    } catch {
+    if (!(await copyText(id))) {
       toast({
         title: "Copy failed",
         description: "Unable to copy ID",
         variant: "destructive" as const,
       });
+      return;
     }
+    setCopiedId(id);
+    toast({ title: "Copied", description: "Shortcut ID copied" });
+    setTimeout(
+      () => setCopiedId((current) => (current === id ? null : current)),
+      1800,
+    );
   };
 
   const columns: MatrxColumnDef<ShortcutDirectoryRow>[] = [

@@ -155,17 +155,13 @@ export function DocumentPane() {
 
   const copyDocument = async () => {
     if (!document) return;
-    try {
-      // The user's copy is clean markdown — no machine section markers.
-      MARKER_RE.lastIndex = 0;
-      if (!(await copyText(
-        document.replace(MARKER_RE, "").replace(/\n{3,}/g, "\n\n").trim(),
-      ))) return;
-      setCopied(true);
-      setTimeout(() => setCopied(false), 900);
-    } catch {
-      toast.error("Could not copy to clipboard");
-    }
+    // The user's copy is clean markdown — no machine section markers.
+    MARKER_RE.lastIndex = 0;
+    if (!(await copyText(
+      document.replace(MARKER_RE, "").replace(/\n{3,}/g, "\n\n").trim(),
+    ))) return;
+    setCopied(true);
+    setTimeout(() => setCopied(false), 900);
   };
 
   return (

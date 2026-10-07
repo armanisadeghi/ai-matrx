@@ -102,13 +102,9 @@ export function TurnCard({ turn }: { turn: InterviewTurnRow }) {
   const content = displayContent(turn);
 
   const copyTurn = async () => {
-    try {
-      if (!(await copyText(content))) return;
-      setCopied(true);
-      setTimeout(() => setCopied(false), 900);
-    } catch {
-      toast.error("Could not copy to clipboard");
-    }
+    if (!(await copyText(content))) return;
+    setCopied(true);
+    setTimeout(() => setCopied(false), 900);
   };
 
   return (

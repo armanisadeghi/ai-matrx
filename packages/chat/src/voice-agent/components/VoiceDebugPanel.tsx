@@ -119,14 +119,10 @@ export function VoiceDebugPanel({
           })}  [${e.level}] ${e.label}${e.detail ? ` — ${e.detail}` : ""}`,
       ),
     ];
-    try {
-      if (!(await copyText(lines.join("\n")))) return;
-      setCopied(true);
-      setTimeout(() => setCopied(false), 1500);
-      toast.success("Voice debug copied");
-    } catch {
-      toast.error("Copy failed");
-    }
+    if (!(await copyText(lines.join("\n")))) return;
+    setCopied(true);
+    setTimeout(() => setCopied(false), 1500);
+    toast.success("Voice debug copied");
   };
 
   return (

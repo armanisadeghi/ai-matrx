@@ -132,9 +132,9 @@ function RecoveryItem({ item, onDismiss, onClose }: RecoveryItemProps) {
 
   const handleOpenInChat = async () => {
     if (localText.trim()) {
-      try {
-        if (!(await copyText(localText.trim(), "Transcription copied — paste it into your conversation"))) return;
-      } catch {
+      // Opening chat never depends on the clipboard: a refused copy still
+      // navigates, and the person is told to paste it by hand.
+      if (!(await copyText(localText.trim(), "Transcription copied — paste it into your conversation"))) {
         toast.info("Navigate to chat and paste your transcription");
       }
     }
@@ -174,9 +174,7 @@ function RecoveryItem({ item, onDismiss, onClose }: RecoveryItemProps) {
       `The recording was saved to IndexedDB (status: ${record.status}) but the session ended before any audio chunks could be captured. The recovery modal correctly detected the orphaned entry but had nothing to play back or transcribe.`,
     ].join("\n");
 
-    try {
-      if (!(await copyText(report, "Bug report copied — paste it into the description below"))) return;
-    } catch {
+    if (!(await copyText(report, "Bug report copied — paste it into the description below"))) {
       toast.info("Opening feedback form — please describe what happened");
     }
     dispatch(openOverlay({ overlayId: "feedbackDialog" }));

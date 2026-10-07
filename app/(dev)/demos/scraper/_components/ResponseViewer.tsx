@@ -199,13 +199,9 @@ function JsonExplorer({ data }: { data: unknown }) {
   const [copied, setCopied] = useState(false);
 
   const handleCopy = useCallback(async () => {
-    try {
-      if (!(await copyText(JSON.stringify(data, null, 2)))) return;
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    } catch (err) {
-      console.error("Failed to copy:", err);
-    }
+    if (!(await copyText(JSON.stringify(data, null, 2)))) return;
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
   }, [data]);
 
   return (
@@ -244,13 +240,9 @@ function RawJsonView({ data }: { data: unknown }) {
   const jsonString = JSON.stringify(data, null, 2);
 
   const handleCopy = useCallback(async () => {
-    try {
-      if (!(await copyText(jsonString))) return;
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    } catch (err) {
-      console.error("Failed to copy:", err);
-    }
+    if (!(await copyText(jsonString))) return;
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
   }, [jsonString]);
 
   return (
@@ -325,13 +317,9 @@ export function ResponseViewer({
 
   const copyDiagnostics = useCallback(async () => {
     if (!diagnosticsText) return;
-    try {
-      if (!(await copyText(diagnosticsText))) return;
-      setDiagnosticsCopied(true);
-      setTimeout(() => setDiagnosticsCopied(false), 2000);
-    } catch {
-      /* ignore */
-    }
+    if (!(await copyText(diagnosticsText))) return;
+    setDiagnosticsCopied(true);
+    setTimeout(() => setDiagnosticsCopied(false), 2000);
   }, [diagnosticsText]);
 
   const handleRenderError = useCallback((err: Error, info: ErrorInfo) => {

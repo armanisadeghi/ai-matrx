@@ -218,9 +218,7 @@ function TopicDetailBodyInner({
   }
 
   async function copySlug(): Promise<void> {
-    try {
-      await copyText(slug);
-    } catch {
+    if (!(await copyText(slug))) {
       setClipboardFallback(slug);
     }
   }

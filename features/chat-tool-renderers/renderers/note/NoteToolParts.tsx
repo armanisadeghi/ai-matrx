@@ -281,14 +281,10 @@ export function IdCopyChip({ id }: { id: string }) {
   const [copied, setCopied] = useState(false);
 
   const copy = async () => {
-    try {
-      if (!(await copyText(id))) return;
-      setCopied(true);
-      toast.success("Note ID copied");
-      setTimeout(() => setCopied(false), 1500);
-    } catch {
-      toast.error("Couldn't copy to clipboard");
-    }
+    if (!(await copyText(id))) return;
+    setCopied(true);
+    toast.success("Note ID copied");
+    setTimeout(() => setCopied(false), 1500);
   };
 
   return (

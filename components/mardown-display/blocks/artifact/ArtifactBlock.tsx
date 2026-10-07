@@ -140,14 +140,10 @@ const ArtifactBlock: React.FC<ArtifactBlockProps> = ({
    * raw payload string.
    */
   const handleCopyMarkdown = async () => {
-    try {
-      if (!(await copyText(
-        artifactContentToMarkdown(content, artifactType),
-      ))) return;
-      toast.success("Copied as Markdown");
-    } catch {
-      toast.error("Couldn't copy to clipboard");
-    }
+    if (!(await copyText(
+      artifactContentToMarkdown(content, artifactType),
+    ))) return;
+    toast.success("Copied as Markdown");
   };
 
   /**

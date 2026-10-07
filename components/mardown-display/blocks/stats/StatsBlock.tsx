@@ -97,13 +97,9 @@ export const StatsBlock: React.FC<StatsBlockProps> = ({ content = "", isStreamAc
   const cols = spec ? Math.min(spec.stats.length, maxCols) : Math.min(3, maxCols);
 
   const handleCopy = async () => {
-    try {
-      if (!(await copyText(content.trim()))) return;
-      setCopied(true);
-      setTimeout(() => setCopied(false), 1500);
-    } catch {
-      toast.error("Couldn't copy");
-    }
+    if (!(await copyText(content.trim()))) return;
+    setCopied(true);
+    setTimeout(() => setCopied(false), 1500);
   };
 
   return (
