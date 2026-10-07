@@ -82,6 +82,7 @@ export function AppletListCard({
   const codeHref = `/applets/manage/${app.id}/code`;
   const versionsHref = `/applets/manage/${app.id}/versions`;
   const settingsHref = `/applets/manage/${app.id}/settings`;
+  // The Applet itself: the owner sees it running (a draft too); a visitor gets what its sharing allows.
   const viewHref = `/applets/${app.slug}`;
 
   return (
@@ -190,8 +191,8 @@ export function AppletListCard({
           <ExternalLinkTapButton
             href={viewHref}
             target="_blank"
-            ariaLabel={`Open public page for ${app.name}`}
-            tooltip="Open public URL"
+            ariaLabel={`Open ${app.name}`}
+            tooltip="Open the Applet"
             variant="transparent"
             disabled={isDisabled}
           />
@@ -240,8 +241,8 @@ export function AppletListCard({
           />
           <IconButton
             icon={LinkIcon}
-            aria-label={`Copy public URL for ${app.name}`}
-            tooltip="Copy public URL"
+            aria-label={`Copy the link to ${app.name}`}
+            tooltip="Copy link"
             variant="ghost"
             tooltipSide="top"
             tooltipAlign="center"

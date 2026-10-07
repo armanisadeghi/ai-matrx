@@ -214,7 +214,7 @@ export function AppletsGrid({
   const handleCopyUrl = useCallback(async (app: AppletCardModel) => {
     const origin = typeof window !== "undefined" ? window.location.origin : "";
     const url = `${origin}/applets/${app.slug}`;
-    await copyText(url, "Public URL copied to clipboard.", "Could not copy to clipboard. URL: " + url.slice(0, 80) + "…");
+    await copyText(url, "Link copied.", "Could not copy to clipboard. URL: " + url.slice(0, 80) + "…");
   }, []);
 
   const handleDuplicate = useCallback(
@@ -565,8 +565,7 @@ export function AppletsGrid({
                     Applets couldn’t load
                   </h3>
                   <p className="text-xs text-muted-foreground">
-                    The app catalog is temporarily unavailable. Check your
-                    connection and try again.
+                    Check your connection and try again.
                   </p>
                 </div>
                 <RefreshCwTapButton

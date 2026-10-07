@@ -260,7 +260,7 @@ export function AppletSettingsContent({
 
   const handleCopyUrl = async () => {
     if (!app) return;
-    await copyText(`${siteConfig.url}/applets/${app.slug}`, "Public URL copied");
+    await copyText(`${siteConfig.url}/applets/${app.slug}`, "Link copied");
   };
 
   const handlePublicationChange = async (published: boolean) => {
@@ -552,7 +552,7 @@ export function AppletSettingsContent({
                 disabled={savingField === "publication"}
               />
             </Row>
-            <Row label="Public URL">
+            <Row label="Web address">
               <div className="flex items-center gap-2 px-3 py-2 rounded-md bg-muted/40 border border-border/60">
                 {app.status === "published" && app.published_to_web ? (
                   <>
@@ -568,7 +568,7 @@ export function AppletSettingsContent({
                       type="button"
                       onClick={handleCopyUrl}
                       className="p-1 hover:bg-muted rounded text-muted-foreground hover:text-foreground"
-                      aria-label="Copy public URL"
+                      aria-label="Copy the web address"
                     >
                       <Copy className="w-3.5 h-3.5" />
                     </button>

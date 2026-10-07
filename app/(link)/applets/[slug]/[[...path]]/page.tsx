@@ -16,7 +16,7 @@ import type { Metadata } from "next";
 import { notFound, permanentRedirect, redirect } from "next/navigation";
 
 import { MadeWithAiMatrx } from "@/components/matrx/MadeWithAiMatrx";
-import { readPublicApplet, resolveAppletView } from "@/features/applets-host/resolve-applet-route";
+import { readPublicApplet, resolveAppletRoute, resolveAppletView } from "@/features/applets-host/resolve-applet-route";
 import { getAppletIconsMetadata } from "@/features/applets/utils/favicon-metadata";
 import { AppletIntroPage } from "@/features/marketing/applets/AppletIntroPage";
 import { readAppletIntro, readPublicApplets } from "@/features/marketing/applets/publicApplets.server";
@@ -37,7 +37,11 @@ export async function generateMetadata({ params }: Pick<Props, "params">): Promi
   if (!applet) {
     // A public Applet with no introductory page still names itself to a link preview.
     const shared = path.length ? null : await readPublicApplet(key);
-    if (!shared) return { title: "Applet", robots: { index: false, follow: true } };
+    if (!shared) {
+      // Anything else (a draft its owner is previewing, a private Applet) names itself only to whoever can read it.
+      const own = path.length ? null : await resolveAppletRoute(key);
+      return { title: own ? `${own.name} | Applet` : "Applet", robots: { index: false, follow: true } };
+    }
     const description = shared.tagline || shared.description || undefined;
     return {
       ...createRouteMetadata(appletHref(shared.slug), { title: shared.name, titlePrefix: "Applet", description, canonicalPath: appletHref(shared.slug) }),

@@ -18,12 +18,13 @@ import type { Database } from "@/types/database.types";
 import { getScriptSupabaseClient } from "@/utils/supabase/getScriptClient";
 import { createClient } from "@/utils/supabase/server";
 
-export async function resolveAppletRoute(slug: string): Promise<{ id: string; slug: string } | null> {
+/** The Applet `slug` names for THIS viewer (their own server client: row security decides). */
+export const resolveAppletRoute = cache(async (slug: string): Promise<{ id: string; slug: string; name: string } | null> => {
   const supabase = await createClient();
-  const { data, error } = await supabase.schema("app").from("definition").select("id, slug").eq("slug", slug).is("deleted_at", null).maybeSingle();
+  const { data, error } = await supabase.schema("app").from("definition").select("id, slug, name").eq("slug", slug).is("deleted_at", null).maybeSingle();
   if (error) throw new Error(`Could not read the Applet "${slug}": ${error.message}`);
   return data ?? null;
-}
+});
 
 export type PublicApplet = {
   id: string;
