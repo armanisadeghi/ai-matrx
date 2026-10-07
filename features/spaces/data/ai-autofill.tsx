@@ -67,6 +67,7 @@ export function AutofillRows({
 }) {
   useDeclaredSurfaceMandates(AUTOFILL_KEY ? [{ mandateKey: AUTOFILL_KEY, does: "fills AI autofill properties row by row" }] : []);
   const live = useLiveAgentRun();
+  // org-filter: server-call each autofill run executes in the organization the person works in
   const activeOrg = useAppSelector(selectActiveOrganizationId);
   const [adding, setAdding] = useState(false);
   const [busy, setBusy] = useState<string | null>(null);

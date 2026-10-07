@@ -39,6 +39,7 @@ export function AppletUseTemplate({
 }) {
   const signedIn = useSignedIn();
   const params = useSearchParams();
+  // org-filter: write-target the copy lands in the organization the person chooses
   const active = useOrganizationRequired();
   const organizationId = active.organizationState === "ready" ? active.organizationId : null;
   const [copy, setCopy] = useState<Copy>({ phase: "idle" });
@@ -55,6 +56,7 @@ export function AppletUseTemplate({
       .select("id, slug, name")
       .eq("metadata->from_template->>applet_id", appletId)
       .is("deleted_at", null);
+    // org-filter: write-target checks whether the destination organization already holds a copy
     if (organizationId) q = q.eq("organization_id", organizationId);
     void q
       .order("created_at", { ascending: false })
@@ -72,6 +74,7 @@ export function AppletUseTemplate({
   useEffect(() => {
     if (!signedIn || !organizationId) return;
     let alive = true;
+    // org-filter: write-target checks whether the destination organization already has the template
     void createClient()
       .schema("custom")
       .rpc("templates", { p_filter: galleryFilter({}, { installedIn: organizationId, id: templateId }) })

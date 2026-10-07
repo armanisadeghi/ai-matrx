@@ -280,6 +280,7 @@ function EntityFrame({ token, props, raw, onChange, editable }: EntityDatabasePr
   const client = useRecordsClient();
   // "New" (F7): one row added in place through the module's write door, then opened in the peek.
   // A new row is filed in the organization the person is working in (the write target, never a filter).
+  // org-filter: write-target a new row is filed in the organization the person works in
   const activeOrganizationId = useAppSelector(selectActiveOrganizationId);
   const addRow = async () => {
     let organization_id: string;

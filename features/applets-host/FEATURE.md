@@ -30,8 +30,14 @@ Package mechanics: `aidream/apps/shared/applets/FEATURE.md`.
   and deleted. `build`/`manage`/`new` can never be a slug (`features/applets/reserved-slugs.ts`). Resolves the slug (`resolve-applet-route.ts`, the viewer's server client — row
   security decides); a miss falls to `not-found.tsx`, which answers through `SlugAccessGate` (token `app`).
 
-- `app/(core)/applets/build/page.tsx` — **build by talking** (`?applet=<id>` changes an existing one):
-  `builder/AppletBuilder.tsx`.
+- `app/(core)/applets/build/page.tsx` — **build by talking**; pressing Build moves the address to
+  `app/(core)/applets/build/[id]/page.tsx` — ONE build at its own URL (`?applet=<id>` forwards there):
+  `builder/AppletBuilder.tsx`. **A build is a record that survives a refresh** (`builder/build-session.ts` +
+  `builder/useAppletBuildSession.ts`): the draft Applet row is born the moment Build is pressed, every request
+  (text, run conversation id, outcome) is appended to `metadata.build.requests` through `mergeJsonColumn`, a
+  reopen rejoins a still-open run through `loadConversation` + `reconnectServerOperation` and saves its answer
+  from the conversation's committed text, and THE CLAIM (`claimBuildEntry`) saves each answer exactly once
+  across tabs. The Applets list shows a running build as "building" and opens it at its build URL.
 
 **Components**
 - `AppletHostMount.tsx` — builds ONE `createPlatformHost` per Applet and renders
@@ -91,6 +97,7 @@ record's own `scope` (`{ entries, shadowDangerousGlobals }`); app-owned modules 
 
 ## Change Log
 
+- 2026-10-07 — A build is a record with its own URL (lane G): `/applets/build/<id>` (the draft Applet, born at Build), request history in `metadata.build.requests` (`BuildHistory`), refresh/later visit rejoins the live run or saves the finished answer once (claim), the held-for-organization Build resumes with the pick (`ensureOrganizationForWrite`), the preview says "Saved vN", the list card shows "building". `saveBuiltApplet` no longer overwrites `metadata`; an empty draft claims the builder's slug on its first save.
 - 2026-10-07 — The builder's answer is the kind `applet_build_result` (aidream `aidream/kinds/applets.py`; `applets.build` / `applets.fix` declare it): the "Building your app" window renders it through `AppletBuildResultBlock` (name + pages as they stream, the finished app in words, code behind "Show the code"). `coerceBuildAnswer` ignores `__kind`; Open stays on the builder card (the slug exists only after save). Conversation Applet rows use `<ConversationComposer>` (applets 0.7.6).
 - 2026-10-07 — `files`, `embedded` and `renderDataPage`; the Applet's jobs are disclosed in the Agents menu; adopts applets 0.7.1, records 0.76.8, agents 0.48.0 (AP-0 lane A).
 - 2026-10-07 — Conversation turns (`useConversation`, applets 0.7.x) are teed into the live-run pipeline like job starts.

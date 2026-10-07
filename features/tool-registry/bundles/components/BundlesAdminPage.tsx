@@ -366,6 +366,7 @@ function NewBundleDialog({
     try {
       const result = await createBundleWithLister({
         name,
+        // org-filter: write-target the new bundle is created in the organization the person works in
         organizationId: await ensureOrgId(null),
         description,
         isSystem,

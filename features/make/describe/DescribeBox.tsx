@@ -104,6 +104,7 @@ export function DescribeBox() {
       const source = supabaseDataSource(client);
       const [facts, listed] = await Promise.all([readOrganizationFacts(client, organizationId), doors.dataHomeTables(source, organizationId)]);
       const own = listed.ok
+        // org-filter: server-call the app is built in this organization, so only its own tables are reused
         ? listed.data.filter((t) => t.organization_id === organizationId && t.kind === "table" && !t.kept_by_the_app).map((t) => ({ id: t.table_id, name: t.table_name }))
         : [];
       const tables = await readExistingTables(client, organizationId, own);

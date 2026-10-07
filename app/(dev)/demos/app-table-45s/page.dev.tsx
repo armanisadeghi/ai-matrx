@@ -42,6 +42,7 @@ type NewRow = InsertOf<typeof supplyReorderPoints>; // item + reorder_at require
 // ── 2. the page ────────────────────────────────────────────────────────────────────────────
 export default function AppTable45sPage() {
   const userId = useAppSelector(selectUserId);
+  // org-filter: server-call the demo table lives in the one organization the person works in
   const active = useOrganizationRequired();
   const recordsConfig = useAppRecordsConfig(active.organizationId ?? null);
   if (!userId || active.organizationState !== "ready" || !active.organizationId) {
