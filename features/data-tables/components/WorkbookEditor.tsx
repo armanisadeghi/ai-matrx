@@ -502,13 +502,13 @@ export default function WorkbookEditor({
     void performSave("manual");
   }, [performSave]);
 
-  const handleExportXlsx = useCallback(() => {
+  const handleExportXlsx = useCallback(async () => {
     if (!apiRef.current) return;
     const workbook = apiRef.current.getActiveWorkbook();
     if (!workbook) return;
     try {
       const snapshot = workbook.save();
-      downloadUniverAsXlsx(snapshot, {
+      await downloadUniverAsXlsx(snapshot, {
         filename: workbookName ?? workbookId,
       });
     } catch (err) {

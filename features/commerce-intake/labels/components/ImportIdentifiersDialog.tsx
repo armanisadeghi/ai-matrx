@@ -6,7 +6,7 @@
  * `asset_tag` rows, matched to assets by an identifier the system already
  * knows (a serial, a QR, an earlier tag).
  *
- * Input is CSV (papaparse) or pasted lines: column 1 = the MATCH value,
+ * Input is CSV or pasted lines: column 1 = the MATCH value,
  * column 2 = the NEW id (omit column 2 to reuse column 1 — "their ref IS the
  * serial" is the common degenerate case). Optionally mints a paired our_qr
  * pool batch — one printed QR per matched item, claimed onto it — and lands
@@ -93,8 +93,8 @@ export function ImportIdentifiersDialog({
     setBusy(true);
     setReport(null);
     try {
-      const Papa = (await import("papaparse")).default;
-      const parsed = Papa.parse<string[]>(raw.trim(), {
+      const { parseDelimited } = await import("@ai-matrx/alchemy/operate/read");
+      const parsed = parseDelimited(raw.trim(), {
         skipEmptyLines: true,
       });
       const pairs: { match: string; next: string }[] = [];

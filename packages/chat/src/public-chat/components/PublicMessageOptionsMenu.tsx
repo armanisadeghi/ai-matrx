@@ -23,7 +23,7 @@ import {
   Share2,
 } from "lucide-react";
 import { getMarkdownStylesheet } from "@ai-matrx/print/markdown";
-import { AdvancedMenu, copyToClipboard } from "@ai-matrx/chat/host/ui-slots";
+import { AdvancedMenu, copyContent } from "@ai-matrx/chat/host/ui-slots";
 import { EmailInputDialog } from "@ai-matrx/chat/host/ui-slots";
 import { AuthGateDialog } from "@ai-matrx/chat/host/ui-slots";
 import { notesCreate } from "@ai-matrx/chat/host/ui-slots";
@@ -208,7 +208,7 @@ const PublicMessageOptionsMenu: React.FC<PublicMessageOptionsMenuProps> = ({
   // ── Copy handlers ──────────────────────────────────────────────────────────
 
   const handleCopyPlain = async () => {
-    await copyToClipboard(content, {
+    await copyContent(content, {
       onSuccess: () => {},
       onError: (error: unknown) => {
         throw new Error(getErrorMessage(error, "Failed to copy text"));
@@ -217,7 +217,7 @@ const PublicMessageOptionsMenu: React.FC<PublicMessageOptionsMenuProps> = ({
   };
 
   const handleCopyGoogleDocs = async () => {
-    await copyToClipboard(content, {
+    await copyContent(content, {
       isMarkdown: true,
       formatForGoogleDocs: true,
       onSuccess: () => {},
@@ -230,7 +230,7 @@ const PublicMessageOptionsMenu: React.FC<PublicMessageOptionsMenuProps> = ({
   };
 
   const handleCopyWithThinking = async () => {
-    await copyToClipboard(content, {
+    await copyContent(content, {
       isMarkdown: true,
       includeThinking: true,
       onSuccess: () => {},
@@ -253,7 +253,7 @@ const PublicMessageOptionsMenu: React.FC<PublicMessageOptionsMenuProps> = ({
       toast.info("HTML preview not available here");
       return;
     }
-    await copyToClipboard(content, {
+    await copyContent(content, {
       isMarkdown: true,
       formatForWordPress: true,
       showHtmlPreview: true,
@@ -298,7 +298,7 @@ const PublicMessageOptionsMenu: React.FC<PublicMessageOptionsMenuProps> = ({
   };
 
   const handleCopyCompleteHTML = async () => {
-    await copyToClipboard(content, {
+    await copyContent(content, {
       isMarkdown: true,
       formatForWordPress: true,
       showHtmlPreview: true,
@@ -317,7 +317,7 @@ const PublicMessageOptionsMenu: React.FC<PublicMessageOptionsMenuProps> = ({
     ${filteredHtml}
 </body>
 </html>`;
-          await copyToClipboard(completeHTML, {
+          await copyContent(completeHTML, {
             onSuccess: () => {},
             onError: (error: unknown) => {
               throw new Error(getErrorMessage(error, "Failed to copy HTML"));
@@ -339,8 +339,7 @@ const PublicMessageOptionsMenu: React.FC<PublicMessageOptionsMenuProps> = ({
       .toISOString()
       .replace(/[:.]/g, "-")
       .slice(0, 19);
-    const blob = new Blob([content], { type: "text/markdown;charset=utf-8" });
-    downloadFile(`ai-response-${timestamp}.md`, blob, blob.type);
+    downloadFile(`ai-response-${timestamp}.md`, content, "text/markdown;charset=utf-8");
     onClose();
   };
 

@@ -22,6 +22,7 @@ import { fieldLabelOf } from "../utils/field-menu-header";
 import { actionsAlreadyHere } from "../utils/already-here";
 import { editorTextAgentCallbacks } from "../utils/editor-text-agent";
 import { useEffect, useMemo } from "react";
+import { copyText as kitCopyText, readText as kitReadText } from "@ai-matrx/kit/clipboard";
 import { showManualCopy } from "@/components/dialogs/clipboard-fallback/manualCopyOpener";
 import {
   AppWindow,
@@ -591,12 +592,9 @@ export function useContextMenuActions(
   // ── Clipboard ─────────────────────────────────────────────────────────────
   const handleCopy = async () => {
     if (!actionText.text) return;
-    try {
-      await navigator.clipboard.writeText(actionText.text);
-    } catch (err) {
-      // Blocked clipboard (embedded browser, permission policy). Never a
-      // silent swallow — hand the text over for a manual Cmd/Ctrl+C.
-      console.error("[ContextMenuV3] copy failed", err);
+    // Blocked clipboard (embedded browser, permission policy): never a
+    // silent swallow — hand the text over for a manual Cmd/Ctrl+C.
+    if (!(await kitCopyText(actionText.text))) {
       showManualCopy({ text: actionText.text });
     }
   };
@@ -645,20 +643,18 @@ export function useContextMenuActions(
       return;
     const { start, end } = selectionRange;
     const cutText = element.value.substring(start, end);
-    try {
-      await navigator.clipboard.writeText(cutText);
-      if (onTextReplace) {
-        onTextReplace(
-          element.value.substring(0, start) + element.value.substring(end),
-        );
-      } else {
-        spliceInputValue(element, start, end, "");
-      }
-    } catch (err) {
-      // The text was NOT cut (the splice above never ran) — offer it for a
+    if (!(await kitCopyText(cutText))) {
+      // The text was NOT cut (the splice below never runs) — offer it for a
       // manual copy instead of losing the gesture.
-      console.error("[ContextMenuV3] cut failed", err);
       showManualCopy({ text: cutText, title: "Copy manually (cut was blocked)" });
+      return;
+    }
+    if (onTextReplace) {
+      onTextReplace(
+        element.value.substring(0, start) + element.value.substring(end),
+      );
+    } else {
+      spliceInputValue(element, start, end, "");
     }
   };
 
@@ -671,20 +667,18 @@ export function useContextMenuActions(
       !(element instanceof HTMLInputElement)
     )
       return;
-    try {
-      const text = await navigator.clipboard.readText();
-      const { start, end } = selectionRange;
-      if (onTextReplace) {
-        onTextReplace(
-          element.value.substring(0, start) +
-            text +
-            element.value.substring(end),
-        );
-      } else {
-        spliceInputValue(element, start, end, text);
-      }
-    } catch (err) {
-      console.error("[ContextMenuV3] paste failed", err);
+    const text = await kitReadText();
+    if (text === null) {
+      toast({ title: "Couldn't read the clipboard", variant: "destructive" });
+      return;
+    }
+    const { start, end } = selectionRange;
+    if (onTextReplace) {
+      onTextReplace(
+        element.value.substring(0, start) + text + element.value.substring(end),
+      );
+    } else {
+      spliceInputValue(element, start, end, text);
     }
   };
 
@@ -729,11 +723,9 @@ export function useContextMenuActions(
       }
     },
     onCopy: async (next) => {
-      try {
-        await navigator.clipboard.writeText(next);
+      if (await kitCopyText(next)) {
         toast({ title: "Copied", description: "JSON copied to clipboard." });
-      } catch (err) {
-        console.error("[ContextMenuV3] json copy failed", err);
+      } else {
         showManualCopy({ text: next });
       }
     },
@@ -819,10 +811,8 @@ export function useContextMenuActions(
 
   const handleCompareClipboard = async () => {
     const { content, label } = compareContent();
-    let clip = "";
-    try {
-      clip = await navigator.clipboard.readText();
-    } catch {
+    const clip = await kitReadText();
+    if (clip === null) {
       toast({ title: "Couldn't read the clipboard", variant: "destructive" });
       return;
     }
@@ -963,17 +953,16 @@ export function useContextMenuActions(
     }
     // Read-only surface (or the insert target vanished): never a silent no-op —
     // copy the block so the gesture still yields the text.
-    void navigator.clipboard.writeText(template).then(
-      () =>
+    void kitCopyText(template).then((copied) => {
+      if (copied) {
         toast({
           title: "Copied to clipboard",
           description: `"${entry.label}" can't be inserted here — this surface isn't editable.`,
-        }),
-      (err) => {
-        console.error("[ContextMenuV3] content block copy failed", err);
+        });
+      } else {
         showManualCopy({ text: template });
-      },
-    );
+      }
+    });
   };
 
   const handleEntrySelect = (entry: AgentMenuEntry) => {
@@ -1013,19 +1002,18 @@ export function useContextMenuActions(
   // clipboard — never a silent no-op.
   const canInsertReference = isEditable && hasEditorInsertTarget(insertTargets);
   const copyReference = (pick: ReferencePick) => {
-    void navigator.clipboard.writeText(pick.fence).then(
-      () =>
+    void kitCopyText(pick.fence).then((copied) => {
+      if (copied) {
         toast({
           title: "Reference copied",
           description: pick.title
             ? `Paste it anywhere to link "${pick.title}".`
             : "Paste it anywhere to render the link.",
-        }),
-      (err) => {
-        console.error("[ContextMenuV3] reference copy failed", err);
+        });
+      } else {
         showManualCopy({ text: pick.fence, title: "Copy the reference" });
-      },
-    );
+      }
+    });
   };
   const insertReference = (pick: ReferencePick) => {
     // Own paragraph everywhere: a fence must start and end on its own line.
@@ -1092,10 +1080,10 @@ export function useContextMenuActions(
     : "This page";
   const related = getRelatedSurfaces(resolvedSurfaceName);
   const copyText = (text: string) => {
-    void navigator.clipboard?.writeText(text).then(
-      () => toast({ title: "Copied", description: text }),
-      () => showManualCopy({ text }),
-    );
+    void kitCopyText(text).then((copied) => {
+      if (copied) toast({ title: "Copied", description: text });
+      else showManualCopy({ text });
+    });
   };
   const surfaceAgentItems: ContextMenuExtraItem[] = [];
   boundAgentSections

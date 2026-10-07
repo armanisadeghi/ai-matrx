@@ -1,30 +1,7 @@
 {
-  "clipboard": {
-    "features/context-menu-v3/hooks/useContextMenuActions.ts": 8
-  },
+  "clipboard": {},
   "downloads": {},
-  "formatlibs": {
-    "app/(dev)/demos/tests/qr-labels/qr-label-generator/page.dev.tsx": 1,
-    "app/(public)/free/zip-code-heatmap/components/FileUpload.tsx": 2,
-    "components/mardown-display/blocks/diagram/InteractiveDiagramBlock.tsx": 2,
-    "components/mardown-display/blocks/json/json-tabular-utils.ts": 1,
-    "components/mardown-display/blocks/presentations/presentation-export.ts": 2,
-    "components/official/org-chart/exportChart.ts": 1,
-    "features/administration/canonicalization/utils/exportCsv.ts": 1,
-    "features/commerce-intake/labels/components/ImportIdentifiersDialog.tsx": 1,
-    "features/crm/import/engine.ts": 2,
-    "features/data-tables/smart-importer.ts": 1,
-    "features/data-tables/univer-to-xlsx.ts": 1,
-    "features/data-tables/xlsx-to-univer.ts": 1,
-    "features/dictionary/utils/io.ts": 1,
-    "features/files/components/core/FilePreview/previewers/DataPreview.tsx": 2,
-    "features/hr/people/org-chart/orgChartExport.ts": 2,
-    "features/masterwork/sorting/cases.ts": 1,
-    "features/page-extraction/data-review/export.ts": 1,
-    "features/secrets/csv-import.ts": 1,
-    "features/spaces/io/import.ts": 1,
-    "lib/code-runtime/app-scope.ts": 1
-  },
+  "formatlibs": {},
   "doorbypass": {},
   "registries": {}
 }

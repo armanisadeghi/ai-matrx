@@ -260,7 +260,7 @@ registerChatUi({
   EditInPlace,
   confirm,
   copyRichContent,
-  copyToClipboard: copyContent,
+  copyContent,
   useTablesEverywhere,
   useTextareaFormatting,
   useClipboardPaste,

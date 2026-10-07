@@ -22,7 +22,7 @@
  * ambiguous files for user choice.
  */
 
-import * as XLSX from "xlsx";
+import { readWorkbook } from "@ai-matrx/alchemy/operate/read";
 import { cleanGrid } from "./grid-import";
 
 export type ImportRouting = "typed" | "workbook";
@@ -67,11 +67,10 @@ const SAMPLE_ROWS_FOR_UNIFORMITY = 100;
  * a typed table. Empty sheets answer an empty grid; the overlay says so.
  */
 export async function readImportGrid(file: File): Promise<string[][]> {
-  const wb = XLSX.read(await file.arrayBuffer(), { type: "array", cellDates: true });
-  const first = wb.SheetNames[0];
-  const ws = first ? wb.Sheets[first] : undefined;
+  const wb = await readWorkbook(file, { dates: true });
+  const ws = wb.sheets[0];
   if (!ws) return [];
-  const raw = XLSX.utils.sheet_to_json<unknown[]>(ws, { header: 1, raw: false, defval: "" });
+  const raw = ws.grid({ raw: false, defval: "" });
   return cleanGrid(raw);
 }
 
@@ -82,22 +81,15 @@ export async function readImportGrid(file: File): Promise<string[][]> {
 export async function detectImportRoute(
   file: File,
 ): Promise<ImportRouteDetection> {
-  const buffer = await file.arrayBuffer();
-  const wb = XLSX.read(buffer, {
-    type: "array",
-    cellDates: true,
-    cellFormula: true,
-    cellStyles: true,
-  });
+  const wb = await readWorkbook(file, { dates: true, formulas: true, styles: true });
 
   let workbookScore = 0;
   let typedScore = 0;
   const workbookReasons: string[] = [];
   const typedReasons: string[] = [];
 
-  const sheetNames = wb.SheetNames;
-  const firstSheetName = sheetNames[0];
-  const firstSheet = firstSheetName ? wb.Sheets[firstSheetName] : undefined;
+  const sheetNames = wb.sheetNames;
+  const firstSheet = wb.sheets[0];
 
   // Multi-sheet ----------------------------------------------------------
   if (sheetNames.length > 1) {
@@ -123,18 +115,12 @@ export async function detectImportRoute(
   let totalNonEmptyCells = 0;
   let totalMerges = 0;
 
-  for (const name of sheetNames) {
-    const ws = wb.Sheets[name];
-    if (!ws) continue;
-    const mergesArr = ws["!merges"] as XLSX.Range[] | undefined;
-    if (mergesArr && mergesArr.length > 0) totalMerges += mergesArr.length;
-    for (const key in ws) {
-      if (key.startsWith("!")) continue;
+  for (const ws of wb.sheets) {
+    totalMerges += ws.merges.length;
+    for (const [, cell] of ws.cells()) {
       totalNonEmptyCells++;
-      const cell = ws[key] as XLSX.CellObject | undefined;
-      if (!cell) continue;
-      if (typeof cell.f === "string" && cell.f.length > 0) formulaCellCount++;
-      if (cell.s) styledCellCount++;
+      if (cell.f) formulaCellCount++;
+      if (cell.styled) styledCellCount++;
     }
   }
 
@@ -167,10 +153,8 @@ export async function detectImportRoute(
   // First-sheet structural analysis ------------------------------------
   // We only typed-evaluate the FIRST sheet because typed datasets are
   // single-table — extra sheets are workbook-territory regardless.
-  const jsonData = XLSX.utils.sheet_to_json(firstSheet, {
-    defval: null,
-  }) as Array<Record<string, unknown>>;
-  const refRange = XLSX.utils.decode_range(firstSheet["!ref"] ?? "A1:A1");
+  const jsonData = firstSheet.records({ defval: null });
+  const refRange = firstSheet.range ?? { s: { r: 0, c: 0 }, e: { r: 0, c: 0 } };
   const sheetCols = refRange.e.c - refRange.s.c + 1;
   const sheetRows = refRange.e.r - refRange.s.r + 1;
 

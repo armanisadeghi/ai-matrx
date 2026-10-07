@@ -89,13 +89,12 @@ export function parsePastedCases(raw: string, note = ""): SortCase[] {
 export async function readSheet(file: File): Promise<SheetData> {
   let rows: string[][];
   try {
-    const XLSX = await import("xlsx");
-    const buffer = await file.arrayBuffer();
-    const book = XLSX.read(buffer, { type: "array" });
-    const first = book.SheetNames[0];
+    // The workbook engine reads CSV/TSV/text too, typed the way a spreadsheet types it.
+    const { readWorkbook } = await import("@ai-matrx/alchemy/operate/read");
+    const book = await readWorkbook(file);
+    const first = book.sheets[0];
     if (!first) throw new Error("no sheets");
-    const grid = XLSX.utils.sheet_to_json<unknown[]>(book.Sheets[first], {
-      header: 1,
+    const grid = first.grid({
       blankrows: false,
       defval: "",
       raw: false,

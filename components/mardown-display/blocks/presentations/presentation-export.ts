@@ -3,6 +3,7 @@ import { resolveDeckTheme } from "./presets";
 import { palette } from "./SlideView";
 import type { JsonObject } from "@/types/json";
 import { markdownToPlainText } from "@/lib/markdown/plain-text";
+import { downloadFile } from "@ai-matrx/kit/download";
 
 // Google Slides `presentations.batchUpdate` request objects — heterogeneous
 // (createSlide/createShape/insertText/updateTextStyle/...), no local type
@@ -27,7 +28,7 @@ export interface ExportResult {
 }
 
 /**
- * Export presentation to PDF using html2canvas + jspdf
+ * Export presentation to PDF through Alchemy's capture engine
  * Status: ✅ READY
  */
 export const exportToPDF = async (
@@ -38,44 +39,18 @@ export const exportToPDF = async (
     try {
         const { filename = presentationTitle, quality = 2 } = options;
 
-        // Dynamic imports — both are large deps, only load when needed
-        const [{ default: html2canvas }, { default: jsPDF }] = await Promise.all([
-            import('html2canvas'),
-            import('jspdf'),
-        ]);
+        // The capture engine loads its renderers on first use.
+        const { elementsToPdf } = await import('@ai-matrx/alchemy/operate/capture');
 
-        // Create PDF in landscape mode (standard presentation size)
-        const pdf = new jsPDF({
+        // Landscape A4 (standard presentation size); each slide fills its page.
+        const pdf = await elementsToPdf(slideElements, {
             orientation: 'landscape',
             unit: 'mm',
-            format: [297, 210] // A4 landscape
+            format: [297, 210],
+            capture: { scale: quality, useCORS: true, logging: false, backgroundColor: '#ffffff' },
+            page: { imageType: 'PNG', placement: 'fill' },
         });
-
-        for (let i = 0; i < slideElements.length; i++) {
-            const slideElement = slideElements[i];
-            
-            // Capture slide as canvas
-            const canvas = await html2canvas(slideElement, {
-                scale: quality,
-                useCORS: true,
-                logging: false,
-                backgroundColor: '#ffffff'
-            });
-
-            // Convert to image and add to PDF
-            const imgData = canvas.toDataURL('image/png');
-            const imgWidth = 297; // A4 landscape width
-            const imgHeight = 210; // A4 landscape height
-
-            if (i > 0) {
-                pdf.addPage();
-            }
-
-            pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight);
-        }
-
-        // Save the PDF
-        pdf.save(`${filename}.pdf`);
+        downloadFile(`${filename}.pdf`, pdf, 'application/pdf');
 
         return {
             success: true,
