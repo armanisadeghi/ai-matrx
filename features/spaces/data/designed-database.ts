@@ -173,6 +173,17 @@ async function clientFor(spaceId: string | null, activeOrg: string | null, userI
 }
 
 /**
+ * The new table's slug. The store takes only a slug that starts with a letter (2026-10-07: a moved-in
+ * "2026 Reading List" was refused — "a table needs a slug made of lower-case letters, digits and
+ * underscores" — and the page arrived without its database), so a name that starts otherwise is led by
+ * `t_`.
+ */
+export function tableSlug(name: string, now: number = Date.now()): string {
+  const token = tokenFor(name);
+  return `${/^[a-z]/.test(token) ? token : `t_${token}`}_${now.toString(36)}`;
+}
+
+/**
  * Ids that keep the rows in the order they were handed in (review 8041caec, 2026-10-07: a moved-in
  * Notion table came back Bulb, Green, Hilltop instead of the source's Green, Bulb, Hilltop). One
  * `recordWriteMany` stamps every row with the same `created_at`, so the store's default read order
@@ -188,7 +199,7 @@ export async function createDesignedDatabase(design: DatabaseDesign, spaceId: st
   const client = await clientFor(spaceId, activeOrg, userId);
   const made = await declareTable(client, {
     name: design.name,
-    slug: `${tokenFor(design.name)}_${Date.now().toString(36)}`,
+    slug: tableSlug(design.name),
     titleField: design.title_property,
     fields: design.properties.map((p, i) => fieldSpec(p, (i + 1) * 10)),
   });
