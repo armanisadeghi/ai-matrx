@@ -29,7 +29,7 @@ import { kindRegistry } from "@/features/content-ir/registry/kind-registry";
 import { kindSchemaFromJsonSchema } from "@ai-matrx/content-ir";
 import { SYSTEM_KIND_DEFINITIONS } from "@/features/content-ir/registry/system-kinds";
 import { REFUSAL_KIND } from "@/features/content-ir/kinds/refusal";
-import { resolveBlockDispatch } from "@/components/mardown-display/chat-markdown/block-registry/block-dispatch";
+import { resolveBlockDispatch } from "@ai-matrx/rich-content/display/chat-markdown/block-registry/block-dispatch";
 import { RENDER_PATHS, type RenderPathId } from "../paths";
 import { canvasTypeForKind, MATERIALIZED_PREVIEW_ID, routeBlock, runRenderPath } from "../run-path";
 

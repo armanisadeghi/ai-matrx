@@ -10,7 +10,7 @@ import type {
   ResearchRecommendation,
 } from "./parseResearchMarkdown";
 import React, { useState, useMemo, useRef, useCallback } from 'react';
-import { RichContent } from "@/components/rich-content/RichContent";
+import { RichContent } from "@ai-matrx/rich-content/levels/RichContent";
 import {
   BookOpen,
   ExternalLink,
@@ -41,7 +41,7 @@ import { useOpenArtifactInCanvas } from '@/features/canvas/hooks/useOpenArtifact
 import { isMaterializedArtifactId } from '@/features/canvas/artifact-types/artifactId';
 import { getArtifactDef } from '@/features/canvas/artifact-types/artifact-type-registry';
 import { cn } from '@/lib/utils';
-import { useCanvasFit } from '../canvas-fit';
+import { useCanvasFit } from '@ai-matrx/rich-content/display/blocks/canvas-fit';
 
 interface UnrecognizedSection {
   id: string;

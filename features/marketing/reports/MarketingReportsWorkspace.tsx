@@ -1,6 +1,6 @@
 "use client";
 
-import { printLivePage } from "@/components/mermaid/lazy-draw";
+import { printLivePage } from "@ai-matrx/rich-content/mermaid/lazy-draw";
 import { useRef } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";

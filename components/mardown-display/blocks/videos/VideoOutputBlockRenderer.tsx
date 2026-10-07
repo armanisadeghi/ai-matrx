@@ -21,7 +21,7 @@ import { UnifiedVideoBlockRenderer } from "@/features/files/blocks/video/Unified
 import { videoBlockFromMediaRef } from "@/features/files/blocks/adapters/from-media-ref";
 import { isVideoBlock } from "@/features/files/blocks/guards";
 import { fileIdToMediaRef, urlToMediaRef } from "@/features/files/redux/converters";
-import { buildMediaSource, pickStr } from "../buildMediaSource";
+import { buildMediaSource, pickStr } from "@ai-matrx/rich-content/display/blocks/buildMediaSource";
 
 export interface VideoOutputBlockRendererProps {
   /** The block's `serverData` — legacy `video_output` or `media_block(video)`. */

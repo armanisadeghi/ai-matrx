@@ -32,7 +32,7 @@ import { SimpleTooltip } from "@/components/matrx/Tooltip";
 import { cn } from "@/lib/utils";
 
 import type { MermaidEditorAction } from "../workbench/useMermaidEditor";
-import type { MermaidOp } from "../model/ops";
+import type { MermaidOp } from "@ai-matrx/rich-content/mermaid/model/ops";
 import type {
   ErDoc,
   FlowDirection,
@@ -46,7 +46,7 @@ import type {
   SequenceDoc,
   StateDoc,
   TimelineDoc,
-} from "../model/types";
+} from "@ai-matrx/rich-content/mermaid/model/types";
 
 interface OutlineModePaneProps {
   doc: MermaidDoc | null;

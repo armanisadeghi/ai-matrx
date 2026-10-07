@@ -16,7 +16,7 @@
 // `StepBreakdown` beneath this block.
 
 import { cn } from "@/lib/utils";
-import { RichContent } from "@/components/rich-content/RichContent";
+import { RichContent } from "@ai-matrx/rich-content/levels/RichContent";
 import KindInstanceRender from "@/features/content-ir/studio/components/KindInstanceRender";
 import type { AnswerGrade } from "@/features/content-ir/kinds/generated/kinds.generated";
 import type { GradedAnswer } from "../data/grading";

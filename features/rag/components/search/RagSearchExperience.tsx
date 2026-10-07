@@ -22,7 +22,7 @@
 
 import { useClipboard } from "@ai-matrx/kit/clipboard";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { RichContent } from "@/components/rich-content/RichContent";
+import { RichContent } from "@ai-matrx/rich-content/levels/RichContent";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { motion } from "motion/react";
 import { Checkbox } from "@/components/ui/checkbox";

@@ -654,8 +654,6 @@
     "check:matrx-dist-integrity:self-test": "node scripts/check-matrx-dist-integrity.mjs --self-test",
     "check:matrx-imports": "node scripts/check-matrx-imports.mjs",
     "check:matrx-imports:self-test": "node scripts/check-matrx-imports.mjs --self-test",
-    "check:clipboard-success-gating": "tsx scripts/check-clipboard-success-gating.ts",
-    "check:clipboard-success-gating:self-test": "tsx scripts/check-clipboard-success-gating.ts --self-test",
     "check:matrx-lockfile": "node scripts/check-matrx-lockfile.mjs",
     "check:matrx-lockfile:self-test": "node scripts/check-matrx-lockfile.mjs --self-test",
     "check:package-twins": "node scripts/check-package-twins.mjs",

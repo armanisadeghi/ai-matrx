@@ -17,7 +17,7 @@
 
 import Link from "next/link";
 import { ArrowLeft, ArrowRight, Headphones } from "lucide-react";
-import { BasicMarkdownContent } from "@/components/mardown-display/chat-markdown/BasicMarkdownContent";
+import { BasicMarkdownContent } from "@ai-matrx/rich-content/display/chat-markdown/BasicMarkdownContent";
 import { InlineMediaRef } from "@ai-matrx/media/react";
 import { podcastMediaRef } from "@/features/podcasts/generator/media";
 import { PodcastAudioPlayer } from "@/features/podcasts/components/player/PodcastAudioPlayer";

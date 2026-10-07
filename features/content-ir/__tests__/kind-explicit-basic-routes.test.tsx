@@ -85,7 +85,7 @@ import { kindRegistry } from "../registry/kind-registry";
 import { envelopeFromCompleteValue } from "@ai-matrx/content-ir";
 import { IR_ENVELOPE_KEY } from "@ai-matrx/content-ir";
 import type { KindComponentProjection } from "../registry/schema-source-kind-components";
-import GenericStructuredBlock from "@/components/mardown-display/blocks/generic/GenericStructuredBlock";
+import GenericStructuredBlock from "@ai-matrx/rich-content/display/blocks/generic/GenericStructuredBlock";
 import { makeStore } from "@/lib/redux/store";
 
 const TEST_MEDIA_CLIENT: MediaClient = {

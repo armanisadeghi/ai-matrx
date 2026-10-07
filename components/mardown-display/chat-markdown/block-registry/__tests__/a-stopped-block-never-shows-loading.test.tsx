@@ -13,7 +13,7 @@ jest.mock("next/dynamic", () => ({
   __esModule: true,
   default: () => function MockDynamicComponent() { return null; },
 }));
-jest.mock("../BlockComponentRegistry", () => {
+jest.mock("@ai-matrx/rich-content/display/chat-markdown/block-registry/BlockComponentRegistry", () => {
   const react = jest.requireActual("react") as typeof React;
   const stub = (name: string) => {
     function Stub() { return react.createElement("div", { "data-stub": name }); }
@@ -35,13 +35,13 @@ function stubModule(named?: string[]) {
     return mod;
   };
 }
-jest.mock("@/components/mardown-display/chat-markdown/InlineCodeSnippet", stubModule(["InlineCodeSnippet"]));
+jest.mock("@ai-matrx/rich-content/display/chat-markdown/InlineCodeSnippet", stubModule(["InlineCodeSnippet"]));
 jest.mock("@/components/mardown-display/blocks/audio/AudioOutputBlockRenderer", stubModule());
 jest.mock("@/components/mardown-display/blocks/videos/VideoOutputBlockRenderer", stubModule());
 jest.mock("@/features/canvas/materialization/CodeBlockWithContextAttach", stubModule(["CodeBlockWithContextAttach"]));
-jest.mock("@/components/mardown-display/blocks/generic/GenericStructuredBlock", stubModule());
+jest.mock("@ai-matrx/rich-content/display/blocks/generic/GenericStructuredBlock", stubModule());
 
-import { isBlockLoading, resolveBlockDispatch } from "../block-dispatch";
+import { isBlockLoading, resolveBlockDispatch } from "@ai-matrx/rich-content/display/chat-markdown/block-registry/block-dispatch";
 
 function block(status: "streaming" | "complete" | "error") {
   return {

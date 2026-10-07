@@ -19,7 +19,7 @@
 
 import { act, type ReactNode } from "react";
 import { createRoot, type Root } from "react-dom/client";
-import { StreamingTableRenderer } from "@/components/mardown-display/blocks/table/StreamingTableRenderer";
+import { StreamingTableRenderer } from "@ai-matrx/rich-content/display/blocks/table/StreamingTableRenderer";
 import { SpecimenProvider } from "@/components/mardown-display/specimen/SpecimenContext";
 
 (

@@ -31,7 +31,7 @@ import {
 } from "@ai-matrx/rich-content/kinds/react/kind-route";
 import { componentRegistry } from "../registry/component-registry";
 import { kindRegistry } from "../registry/kind-registry";
-import { resolveBlockDispatch } from "@/components/mardown-display/chat-markdown/block-registry/block-dispatch";
+import { resolveBlockDispatch } from "@ai-matrx/rich-content/display/chat-markdown/block-registry/block-dispatch";
 import {
   envelopeFromCompleteValue,
   IR_ENVELOPE_KEY,

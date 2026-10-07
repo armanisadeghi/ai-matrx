@@ -29,7 +29,7 @@ import { VersionDiff } from "./VersionDiff";
 import { DocumentSkeleton } from "../shared/Skeletons";
 import type { ResearchDocument } from "../../types";
 import { tokenUsageFromJson } from "../../types";
-import { RichContent } from "@/components/rich-content/RichContent";
+import { RichContent } from "@ai-matrx/rich-content/levels/RichContent";
 import { RichDocumentActions } from "@/features/rich-document/RichDocumentActions";
 import { StoppedEarlyNote } from "../shared/StoppedEarlyNote";
 import { deriveReadiness } from "../../readiness";

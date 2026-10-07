@@ -8,7 +8,7 @@
  */
 
 import { useState } from "react";
-import { RichContent } from "@/components/rich-content/RichContent";
+import { RichContent } from "@ai-matrx/rich-content/levels/RichContent";
 import { ExternalLink, History, RotateCw } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@ai-matrx/design-system";
 import { Cost } from "@/components/cost/Cost";

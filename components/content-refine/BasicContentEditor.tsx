@@ -20,7 +20,7 @@ import {
   NoteEditorCore,
   type EditorMode,
 } from "@/features/notes/components/NoteEditorCore";
-import type { ImagePolicyDeclaration } from "@/components/rich-content/prose/remote-image-policy";
+import type { ImagePolicyDeclaration } from "@ai-matrx/rich-content/levels/prose/remote-image-policy";
 
 const VIEW_MODES: Array<{
   value: EditorMode;

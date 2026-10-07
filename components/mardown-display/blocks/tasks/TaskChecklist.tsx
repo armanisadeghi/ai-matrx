@@ -44,7 +44,7 @@ import {
 import { parseMarkdownChecklist } from "./tasklist-parser";
 import ImportTasksModal from "@/features/tasks/components/ImportTasksModal";
 import { cn } from "@/lib/utils";
-import { useCanvasFit } from "../canvas-fit";
+import { useCanvasFit } from "@ai-matrx/rich-content/display/blocks/canvas-fit";
 
 // Define TypeScript types for our components and data structures
 export type CheckboxStateType = Record<string, boolean>;

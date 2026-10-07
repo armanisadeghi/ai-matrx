@@ -7,7 +7,7 @@ import Link from "next/link";
 import {
   RichContentStaticInline,
   RichContentStaticStandard,
-} from "@/components/rich-content/RichContentStaticProse";
+} from "@ai-matrx/rich-content/levels/RichContentStaticProse";
 import { ArrowUpRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { resolveShareSourceSurface } from "@/features/sharing/lenses/source-surface";

@@ -23,7 +23,7 @@ import {
 } from "@ai-matrx/content-ir";
 import { cn } from "@/utils/cn";
 import { parseReferenceCellValue } from "@/features/scopes/utils/referenceCell";
-import { BasicMarkdownContent } from "@/components/mardown-display/chat-markdown/BasicMarkdownContent";
+import { BasicMarkdownContent } from "@ai-matrx/rich-content/display/chat-markdown/BasicMarkdownContent";
 import { AnswerValueView } from "@/components/official/structured-value/AnswerValueView";
 import { hasKindKeyAnySpelling } from "@/features/content-ir/surfaces/json-kind-signal";
 import type { ContextValueType } from "@/features/scopes/types";

@@ -12,7 +12,7 @@ import dynamic from "next/dynamic";
 
 const MapBlock = dynamic(() => import("@/components/mardown-display/blocks/map/MapBlock").then((m) => m.MapBlock), { ssr: false });
 const StatsBlock = dynamic(() => import("@/components/mardown-display/blocks/stats/StatsBlock").then((m) => m.StatsBlock), { ssr: false });
-const DiffBlock = dynamic(() => import("@/components/mardown-display/blocks/diff/DiffBlock").then((m) => m.DiffBlock), { ssr: false });
+const DiffBlock = dynamic(() => import("@ai-matrx/rich-content/display/blocks/diff/DiffBlock").then((m) => m.DiffBlock), { ssr: false });
 
 const MAP = JSON.stringify({
   title: "Trip itinerary",

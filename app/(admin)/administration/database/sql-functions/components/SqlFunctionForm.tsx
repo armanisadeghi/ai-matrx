@@ -13,7 +13,7 @@ import {
 } from "@/components/ui/select";
 import { AlertCircle, Save, X } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import SmallCodeEditor from "@/features/code-editor/components/code-block/SmallCodeEditor";
+import SmallCodeEditor from "@ai-matrx/rich-content/code-block/SmallCodeEditor";
 import { DEFAULT_DATABASE_SCHEMA } from "../../config";
 
 interface SqlFunctionFormProps {

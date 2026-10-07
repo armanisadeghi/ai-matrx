@@ -14,7 +14,7 @@ jest.mock("next/dynamic", () => ({
 import { ResultValue } from "@ai-matrx/chat/tool-call-visualization/result-fields/ResultValue";
 import { looksLikeMarkdown } from "@ai-matrx/chat/tool-call-visualization/result-fields/shape";
 import { registerChatUi } from "@ai-matrx/chat/host/ui-slots";
-import { BasicMarkdownContent } from "@/components/mardown-display/chat-markdown/BasicMarkdownContent";
+import { BasicMarkdownContent } from "@ai-matrx/rich-content/display/chat-markdown/BasicMarkdownContent";
 
 // The package draws markdown through the host slot; this suite proves it with the app's renderer.
 registerChatUi({ BasicMarkdownContent });

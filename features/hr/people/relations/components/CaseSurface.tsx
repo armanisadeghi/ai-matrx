@@ -23,7 +23,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { RichContent } from "@/components/rich-content/RichContent";
+import { RichContent } from "@ai-matrx/rich-content/levels/RichContent";
 import { useRouter } from "next/navigation";
 import { AlertTriangle, Ban, Lock, Scale } from "lucide-react";
 

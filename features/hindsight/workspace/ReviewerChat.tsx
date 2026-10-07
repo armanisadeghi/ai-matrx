@@ -21,7 +21,7 @@
  * Bodies render through `MarkdownStream` in persisted mode, never hand-drawn.
  */
 import { useEffect, useRef, useState } from "react";
-import { RichContent } from "@/components/rich-content/RichContent";
+import { RichContent } from "@ai-matrx/rich-content/levels/RichContent";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { Eye, MessageSquare, RefreshCw, Send, X } from "lucide-react";
 import { toast } from "@/lib/toast";

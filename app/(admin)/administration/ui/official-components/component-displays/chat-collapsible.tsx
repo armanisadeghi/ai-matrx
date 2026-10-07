@@ -3,7 +3,7 @@
 import React from 'react';
 import { ComponentEntry } from '../parts/component-list';
 import { ComponentDisplayWrapper } from '../component-usage';
-import ChatCollapsibleWrapper from '@/components/mardown-display/blocks/ChatCollapsibleWrapper';
+import ChatCollapsibleWrapper from '@ai-matrx/rich-content/display/blocks/ChatCollapsibleWrapper';
 import { MessageSquare } from 'lucide-react';
 
 interface ComponentDisplayProps {
@@ -14,7 +14,7 @@ export default function ChatCollapsibleDisplay({ component }: ComponentDisplayPr
   if (!component) return null;
   
   // Example code with all available props and their default values
-  const code = `import ChatCollapsibleWrapper from '@/components/mardown-display/blocks/ChatCollapsibleWrapper';
+  const code = `import ChatCollapsibleWrapper from '@ai-matrx/rich-content/display/blocks/ChatCollapsibleWrapper';
 import { MessageSquare } from 'lucide-react';
 
 <ChatCollapsibleWrapper

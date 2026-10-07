@@ -37,7 +37,7 @@ jest.mock("@/components/ui/dropdown-menu", () => ({
   ),
 }));
 
-import { SendToWorkbookButton } from "../SendToWorkbookButton";
+import { SendToWorkbookButton } from "@ai-matrx/rich-content/display/tables/SendToWorkbookButton";
 import { CatalogRowActions } from "@/features/page-extraction/data-review/CatalogRowActions";
 import { SendToMenu } from "@/features/page-extraction/data-review/SendToMenu";
 

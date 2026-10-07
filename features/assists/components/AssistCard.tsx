@@ -40,7 +40,7 @@ import { AnswerTextPreview } from "@/components/official/structured-value/Answer
 // Markdown loads only when a card actually opens — chips stay feather-light.
 const BasicMarkdownContent = lazy(
   () =>
-    import("@/components/mardown-display/chat-markdown/BasicMarkdownContent"),
+    import("@ai-matrx/rich-content/display/chat-markdown/BasicMarkdownContent"),
 );
 
 function compactMetaLine(assist: Assist): string | null {

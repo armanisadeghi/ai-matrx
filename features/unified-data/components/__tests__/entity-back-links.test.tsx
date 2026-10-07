@@ -27,8 +27,8 @@ const asked = jest.fn();
 jest.mock("@ai-matrx/records-ui", () => ({
   RecordsMount: ({ children }: { children: React.ReactNode }) => <>{children}</>,
 }));
-jest.mock("@ai-matrx/records/react", () => ({
-  useEntityBackLinks: (...a: unknown[]) => {
+jest.mock("@/features/unified-data/components/useKeptEntityBackLinks", () => ({
+  useKeptEntityBackLinks: (...a: unknown[]) => {
     asked(...a);
     return hook();
   },

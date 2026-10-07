@@ -8,7 +8,7 @@
 // store's own words and the draft is kept.
 
 import { useState, useTransition } from "react";
-import { RichContent } from "@/components/rich-content/RichContent";
+import { RichContent } from "@ai-matrx/rich-content/levels/RichContent";
 import { Loader2, Send } from "lucide-react";
 
 import { Button } from "@/components/ui/button";

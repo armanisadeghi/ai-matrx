@@ -110,7 +110,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { ArtifactRender } from "../artifact-renderers";
 import { applyIrKindRoute } from "@ai-matrx/rich-content/kinds/react/kind-route";
 import { StreamBlockAccumulator } from "@ai-matrx/chat/agents/redux/execution-system/utils/stream-block-accumulator";
-import { renderBlockToContentBlock } from "@/components/mardown-display/chat-markdown/render-block-to-content-block";
+import { renderBlockToContentBlock } from "@ai-matrx/rich-content/display/chat-markdown/render-block-to-content-block";
 import type { RenderBlockPayload } from "@ai-matrx/agents/generated/stream-events";
 import { IR_ENVELOPE_KEY } from "@ai-matrx/content-ir";
 import { kindRegistry } from "@/features/content-ir/registry/kind-registry";

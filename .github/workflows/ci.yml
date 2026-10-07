@@ -212,6 +212,10 @@ jobs:
           cache: pnpm
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
+      - name: Copied UI follows a clipboard write that actually landed
+        run: pnpm check:copy-result-gated
+      - name: The clipboard result guard can still fail
+        run: pnpm check:copy-result-gated:self-test
       - name: Measured production build-cache contract
         run: node --test scripts/build-lab/config-contract.test.mjs
       - name: The Ignored Build Step sees releases that arrive behind a merge commit

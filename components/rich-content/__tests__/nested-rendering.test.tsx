@@ -56,14 +56,14 @@ jest.mock("next/dynamic", () => ({
     }
     if (source.includes("block-registry/BlockRenderer")) {
       const { BlockRenderer } = jest.requireActual(
-        "@/components/mardown-display/chat-markdown/block-registry/BlockRenderer",
+        "@ai-matrx/rich-content/display/chat-markdown/block-registry/BlockRenderer",
       ) as { BlockRenderer: React.ComponentType<Record<string, unknown>> };
       return function DynamicBlockRenderer(props: Record<string, unknown>) {
         return React.createElement(BlockRenderer, props);
       };
     }
     if (source.includes("RichContentStandardImpl")) {
-      return jest.requireActual("@/components/rich-content/RichContentStandardImpl")
+      return jest.requireActual("@ai-matrx/rich-content/levels/RichContentStandardImpl")
         .default;
     }
     return () => null;
@@ -74,16 +74,16 @@ jest.mock("next/cache", () => ({ revalidatePath: jest.fn(), revalidateTag: jest.
 // The engine's block registry, trimmed to the REAL components this test is
 // about; every other block component is a named stub.
 jest.mock(
-  "@/components/mardown-display/chat-markdown/block-registry/BlockComponentRegistry",
+  "@ai-matrx/rich-content/display/chat-markdown/block-registry/BlockComponentRegistry",
   () => {
     const real = {
       BasicMarkdownContent: jest.requireActual(
-        "@/components/mardown-display/chat-markdown/BasicMarkdownContent",
+        "@ai-matrx/rich-content/display/chat-markdown/BasicMarkdownContent",
       ).default,
       MarkdownPreviewBlock: jest.requireActual(
-        "@/components/mardown-display/blocks/markdown-preview/MarkdownPreviewBlock",
+        "@ai-matrx/rich-content/display/blocks/markdown-preview/MarkdownPreviewBlock",
       ).default,
-      XmlBlock: jest.requireActual("@/components/mardown-display/blocks/xml/XmlBlock")
+      XmlBlock: jest.requireActual("@ai-matrx/rich-content/display/blocks/xml/XmlBlock")
         .default,
     };
     const stub = (name: string) => {
@@ -103,7 +103,7 @@ jest.mock(
 );
 // The highlighter/editor is a heavy lazy engine; the fence's code and language
 // are what this test reads.
-jest.mock("@/features/code-editor/components/code-block/CodeBlock", () => ({
+jest.mock("@ai-matrx/rich-content/code-block/CodeBlock", () => ({
   __esModule: true,
   default: ({ code, language }: { code: string; language: string }) => (
     <pre data-code-block={language}>{code}</pre>
@@ -125,7 +125,7 @@ jest.mock("@/components/mardown-display/chat-markdown/internal-handlers/ToolHand
   DbToolBatch: () => null,
 }));
 jest.mock(
-  "@/components/mardown-display/chat-markdown/internal-handlers/InlineStatusIndicator",
+  "@ai-matrx/rich-content/display/chat-markdown/internal-handlers/InlineStatusIndicator",
   () => ({ InlineStatusIndicator: () => null }),
 );
 jest.mock(
@@ -138,10 +138,10 @@ jest.mock(
 );
 
 import { EnhancedChatMarkdownInternal } from "@/components/mardown-display/chat-markdown/EnhancedChatMarkdown";
-import XmlBlock from "@/components/mardown-display/blocks/xml/XmlBlock";
-import { RichContent } from "@/components/rich-content/RichContent";
-import { NestedRichContent } from "@/components/rich-content/standard/NestedRichContent";
-import { RichContentDepthProvider } from "@/components/rich-content/depth";
+import XmlBlock from "@ai-matrx/rich-content/display/blocks/xml/XmlBlock";
+import { RichContent } from "@ai-matrx/rich-content/levels/RichContent";
+import { NestedRichContent } from "@ai-matrx/rich-content/levels/standard/NestedRichContent";
+import { RichContentDepthProvider } from "@ai-matrx/rich-content/levels/depth";
 
 const F = "```";
 

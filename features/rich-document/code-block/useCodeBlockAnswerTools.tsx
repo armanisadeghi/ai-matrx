@@ -18,8 +18,8 @@ import { Loader2, TerminalSquare, X } from "lucide-react";
 import type { MenuItem } from "@/components/official/AdvancedMenu";
 import { useAppDispatch, useAppSelector, useAppStore } from "@/lib/redux/hooks";
 import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
-import { TableChartPanel } from "@/components/mardown-display/blocks/chart/TableChart";
-import { parseDelimitedTable } from "@/components/mardown-display/blocks/chart/table-chart";
+import { TableChartPanel } from "@ai-matrx/rich-content/display/blocks/chart/TableChart";
+import { parseDelimitedTable } from "@ai-matrx/rich-content/display/blocks/chart/table-chart";
 import type { CodeRunState } from "./code-block-context";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 

@@ -37,7 +37,7 @@ import { flashcardSetHref } from "../routes";
 import { Button } from "@ai-matrx/design-system";
 import MatrxMiniLoader from "@/components/loaders/MatrxMiniLoader";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
-import { useCanvasFit } from "@/components/mardown-display/blocks/canvas-fit";
+import { useCanvasFit } from "@ai-matrx/rich-content/display/blocks/canvas-fit";
 
 /** The canonical link system this view studies. Legacy sets carry a different one. */
 const FC_SET_SYSTEM = "fc_set";

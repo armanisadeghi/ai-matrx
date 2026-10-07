@@ -1,7 +1,7 @@
 "use client";
 
 import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
-import { RichContent } from "@/components/rich-content/RichContent";
+import { RichContent } from "@ai-matrx/rich-content/levels/RichContent";
 import React from "react";
 import { Copy, Table2 } from "lucide-react";
 import { shapeOfValue } from "@ai-matrx/records-ui/table-shape";

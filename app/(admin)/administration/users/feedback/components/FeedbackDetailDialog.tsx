@@ -9,7 +9,7 @@ import React, {
   useRef,
 } from "react";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
-import { RichContent } from "@/components/rich-content/RichContent";
+import { RichContent } from "@ai-matrx/rich-content/levels/RichContent";
 import {
   updateFeedback,
   setAdminDecision,

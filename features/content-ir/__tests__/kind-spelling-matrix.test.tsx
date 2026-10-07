@@ -36,8 +36,8 @@ import { domElementVerdict, domFrameVerdict } from "@/features/content-ir/render
 import React from "react";
 import type { RenderBlockPayload } from "@ai-matrx/agents/generated/stream-events";
 import { StreamBlockAccumulator } from "@ai-matrx/chat/agents/redux/execution-system/utils/stream-block-accumulator";
-import { BlockRenderer } from "@/components/mardown-display/chat-markdown/block-registry/BlockRenderer";
-import { RichContent } from "@/components/rich-content/RichContent";
+import { BlockRenderer } from "@ai-matrx/rich-content/display/chat-markdown/block-registry/BlockRenderer";
+import { RichContent } from "@ai-matrx/rich-content/levels/RichContent";
 import { splitContentIntoBlocksV2 } from "@ai-matrx/rich-content/display/markdown-classification/processors/utils/content-splitter-v2";
 import {
   ALL_KIND_SPELLINGS,

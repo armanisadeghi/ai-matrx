@@ -22,11 +22,11 @@ import {
 } from "lucide-react";
 import ImportTasksModal from "@/features/tasks/components/ImportTasksModal";
 import { convertTimelineToTasks } from "@/features/tasks/utils/importConverters";
-import BlockHeaderWrapper from "@/components/mardown-display/blocks/common/BlockHeaderWrapper";
+import BlockHeaderWrapper from "@ai-matrx/rich-content/display/blocks/common/BlockHeaderWrapper";
 import IconButton from "@/components/official/IconButton";
 import type { MenuItem } from "@/components/official/AdvancedMenu";
 import { useCanvasPresentation } from "@ai-matrx/canvas/react";
-import { timelineAxis } from "@/components/mardown-display/blocks/canvas-adaptive";
+import { timelineAxis } from "@ai-matrx/rich-content/display/blocks/canvas-adaptive";
 import { Button, DisclosureHeader } from "@ai-matrx/design-system/controls";
 
 interface TimelinePeriod {
@@ -398,7 +398,7 @@ const TimelineBlock: React.FC<TimelineBlockProps> = ({
                             {event.title}
                           </h3>
                           {event.category && (
-                            <span className="inline-block mt-1 max-w-full truncate px-1.5 py-0.5 text-[10px] font-medium bg-muted text-muted-foreground rounded-full">
+                            <span title={event.category} className="inline-block mt-1 max-w-[min(100%,300px)] truncate px-1.5 py-0.5 text-[10px] font-medium bg-muted text-muted-foreground rounded-full">
                               {event.category}
                             </span>
                           )}

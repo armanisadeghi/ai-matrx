@@ -29,7 +29,7 @@ import {
 import type { Json } from "@/types/database.types";
 import type { RenderBlockPayload } from "@ai-matrx/agents/generated/stream-events";
 import { StreamBlockAccumulator } from "@ai-matrx/chat/agents/redux/execution-system/utils/stream-block-accumulator";
-import { SafeBlockRenderer } from "@/components/mardown-display/chat-markdown/internal-handlers/SafeBlockRenderer";
+import { SafeBlockRenderer } from "@ai-matrx/rich-content/display/chat-markdown/internal-handlers/SafeBlockRenderer";
 import { kindRegistry } from "@/features/content-ir/registry/kind-registry";
 import { componentRegistry } from "@/features/content-ir/registry/component-registry";
 import { isPartialReadyKind } from "@ai-matrx/rich-content/kinds/react/partial-kind-route";

@@ -11,7 +11,7 @@ import { envelopeFromCompleteValue, KIND_KEY } from "@ai-matrx/content-ir";
 import {
   BLOCK_DISPATCH_CLASSIFICATION,
   resolveBlockDispatch,
-} from "@/components/mardown-display/chat-markdown/block-registry/block-dispatch";
+} from "@ai-matrx/rich-content/display/chat-markdown/block-registry/block-dispatch";
 import { NewsDigestView } from "@/features/marketing/news-monitor/kinds/NewsDigestView";
 import { NewsTriageView } from "@/features/marketing/news-monitor/kinds/NewsTriageView";
 import { readSetAside } from "@/features/marketing/news-monitor/run-document";

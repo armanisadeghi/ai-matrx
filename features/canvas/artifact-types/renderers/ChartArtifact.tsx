@@ -3,7 +3,7 @@
 import React, { Suspense } from "react";
 import MatrxMiniLoader from "@/components/loaders/MatrxMiniLoader";
 import { type ArtifactRendererProps } from "../types";
-import ChartBlock from "@/components/mardown-display/blocks/chart/ChartBlock";
+import ChartBlock from "@ai-matrx/rich-content/display/blocks/chart/ChartBlock";
 
 /**
  * Unified renderer for `chart` artifacts — a data visualization (JSON spec →

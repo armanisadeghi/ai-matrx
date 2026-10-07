@@ -23,7 +23,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import CodeEditorLoading from "./CodeEditorLoading";
+import CodeEditorLoading from "@ai-matrx/rich-content/code-block/CodeEditorLoading";
 import type { editor } from "monaco-editor";
 import { configureMonaco } from "../../config/monaco-config";
 import { CodeEditorContextMenu } from "../CodeEditorContextMenu";

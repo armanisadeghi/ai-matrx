@@ -8,7 +8,7 @@ import { useResearchApi } from '../../hooks/useResearchApi';
 import { useResearchTags, useResearchSynthesis } from '../../hooks/useResearchState';
 import { useResearchStream } from '../../hooks/useResearchStream';
 import { useStreamDebug } from '../../context/ResearchContext';
-import { RichContent } from "@/components/rich-content/RichContent";
+import { RichContent } from "@ai-matrx/rich-content/levels/RichContent";
 import { AnswerValueView } from '@/components/official/structured-value/AnswerValueView';
 import { confirm } from '@/components/dialogs/confirm/ConfirmDialogHost';
 import { RichDocumentActions } from '@/features/rich-document/RichDocumentActions';

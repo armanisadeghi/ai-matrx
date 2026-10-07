@@ -3,7 +3,7 @@
 import { Suspense } from "react";
 import MatrxMiniLoader from "@/components/loaders/MatrxMiniLoader";
 import type { ArtifactRendererProps } from "../types";
-import SvgBlock from "@/components/mardown-display/blocks/svg/SvgBlock";
+import SvgBlock from "@ai-matrx/rich-content/display/blocks/svg/SvgBlock";
 /**
  * Unified renderer for `svg` artifacts — a self-contained vector graphic is
  * durable, referenceable content (like a diagram), so it materializes. SvgBlock

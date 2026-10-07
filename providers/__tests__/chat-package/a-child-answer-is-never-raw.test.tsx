@@ -72,7 +72,7 @@ jest.mock("@/components/MarkdownStream", () => ({
     </div>
   ),
 }));
-jest.mock("@/components/mardown-display/chat-markdown/BasicMarkdownContent", () => ({
+jest.mock("@ai-matrx/rich-content/display/chat-markdown/BasicMarkdownContent", () => ({
   BasicMarkdownContent: ({ content }: { content: string }) => (
     <pre data-route="plain-markdown">{content}</pre>
   ),

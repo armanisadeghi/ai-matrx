@@ -11,7 +11,7 @@
  * around it (read counts, funnel, gated-out counts) come from the same value.
  */
 
-import { RichContent } from "@/components/rich-content/RichContent";
+import { RichContent } from "@ai-matrx/rich-content/levels/RichContent";
 
 import {
   cleanReportMarkdown,

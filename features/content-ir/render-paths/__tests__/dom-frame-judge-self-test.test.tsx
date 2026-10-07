@@ -9,7 +9,7 @@
 import { domElementVerdict, frameHoldsKind, transitionKindFrames } from "./dom-frame-judge";
 import React from "react";
 import type { RenderBlockPayload } from "@ai-matrx/agents/generated/stream-events";
-import CodeBlock from "@/features/code-editor/components/code-block/CodeBlock";
+import CodeBlock from "@ai-matrx/rich-content/code-block/CodeBlock";
 
 const KIND = '{"__kind":"flashcard_set","title":"Cells","cards":[{"__kind":"flashcard","front":"Q","back":"A"}]}';
 

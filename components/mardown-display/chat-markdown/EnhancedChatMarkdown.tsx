@@ -15,12 +15,12 @@ import type { AnswerEditRemarkMeta } from "@ai-matrx/chat/agents/redux/execution
 import React, { useState, useEffect, useLayoutEffect, useMemo, useCallback, useRef } from "react";
 import { cn } from "@/styles/themes/utils";
 import { splitContentIntoBlocksV2 } from "@ai-matrx/rich-content/display/markdown-classification/processors/utils/content-splitter-v2";
-import { renderSettledFromRecord, settledOneShotBlocks } from "./settle-stream-blocks";
+import { renderSettledFromRecord, settledOneShotBlocks } from "@ai-matrx/rich-content/display/chat-markdown/settle-stream-blocks";
 import { expandTextBlocksInList } from "@ai-matrx/rich-content/display/markdown-classification/processors/utils/expand-text-blocks";
-import { RenderBlock } from "./block-registry/BlockRenderer";
-import { reuseUnchangedBlocks } from "./stable-blocks";
-import { useProgressiveMount } from "./progressive-mount";
-import { renderBlockToContentBlock } from "./render-block-to-content-block";
+import { RenderBlock } from "@ai-matrx/rich-content/display/chat-markdown/block-registry/BlockRenderer";
+import { reuseUnchangedBlocks } from "@ai-matrx/rich-content/display/chat-markdown/stable-blocks";
+import { useProgressiveMount } from "@ai-matrx/rich-content/display/chat-markdown/progressive-mount";
+import { renderBlockToContentBlock } from "@ai-matrx/rich-content/display/chat-markdown/render-block-to-content-block";
 import { DocumentFootnotes, DocumentNumberingProvider } from "@ai-matrx/rich-content/markdown-core/syntax/elements/DocumentNumbering";
 import { OptionalMarkdownSourceEditProvider } from "@ai-matrx/rich-content/markdown-core/syntax/elements/MarkdownSourceEdit";
 
@@ -44,7 +44,7 @@ import {
 import { GenerationJobCard } from "@ai-matrx/chat/agents/components/run/GenerationJobCard";
 import { selectRequestGenerationJob } from "@ai-matrx/chat/agents/redux/execution-system/active-requests/active-requests.selectors";
 import FullScreenMarkdownEditor from "./FullScreenMarkdownEditor";
-import { InlineStatusIndicator } from "./internal-handlers/InlineStatusIndicator";
+import { InlineStatusIndicator } from "@ai-matrx/rich-content/display/chat-markdown/internal-handlers/InlineStatusIndicator";
 import { InlineThinkingSlot } from "./internal-handlers/InlineThinkingSlot";
 import {
   selectAccumulatedTextWithCitationMarkers,
@@ -88,11 +88,11 @@ import type { RenderBlockPayload } from "@ai-matrx/agents/generated/stream-event
 import { useAppSelector } from "@/lib/redux/hooks";
 import { ToolCard, ToolBatch } from "./internal-handlers/ToolHandlers";
 import { InlineAssistantError } from "./internal-handlers/InlineAssistantError";
-import { PlainTextFallback } from "./internal-handlers/PlainTextFallback";
-import { SafeBlockRenderer } from "./internal-handlers/SafeBlockRenderer";
+import { PlainTextFallback } from "@ai-matrx/rich-content/display/chat-markdown/internal-handlers/PlainTextFallback";
+import { SafeBlockRenderer } from "@ai-matrx/rich-content/display/chat-markdown/internal-handlers/SafeBlockRenderer";
 import { MarkdownStreamingProvider } from "@ai-matrx/rich-content/markdown-core/streaming-context";
 import { useBoundAgentOutputSchema } from "@/components/mardown-display/blocks/json/useBoundAgentOutputSchema";
-import { MarkdownErrorBoundary } from "./internal-handlers/MarkdownErrorBoundary";
+import { MarkdownErrorBoundary } from "@ai-matrx/rich-content/display/chat-markdown/internal-handlers/MarkdownErrorBoundary";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 /** Server-processed block from the content_block protocol. */

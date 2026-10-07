@@ -33,7 +33,7 @@ jest.mock("@ai-matrx/chat/agents/redux/execution-system/messages/messages.select
 }));
 jest.mock("next/dynamic", () => ({ __esModule: true, default: () => () => null }));
 jest.mock("next/cache", () => ({ revalidatePath: jest.fn(), revalidateTag: jest.fn() }));
-jest.mock("@/components/mardown-display/chat-markdown/internal-handlers/SafeBlockRenderer", () => ({
+jest.mock("@ai-matrx/rich-content/display/chat-markdown/internal-handlers/SafeBlockRenderer", () => ({
   SafeBlockRenderer: (props: Recorded) => {
     current.push(props);
     return null;

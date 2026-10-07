@@ -9,8 +9,8 @@
 import "@/features/content-ir/render-paths/__tests__/dom-frame-judge";
 import React, { act } from "react";
 import { createRoot } from "react-dom/client";
-import { RichContent } from "@/components/rich-content/RichContent";
-import { RichContentPreview } from "@/components/rich-content/RichContentPreview";
+import { RichContent } from "@ai-matrx/rich-content/levels/RichContent";
+import { RichContentPreview } from "@ai-matrx/rich-content/levels/RichContentPreview";
 import { ExtractionCellDisplay } from "@/features/page-extraction/data-review/ExtractionCellDisplay";
 import { textLeaksKind, visibleKindText } from "@/features/content-ir/surfaces/kind-leak-scan";
 

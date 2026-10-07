@@ -20,7 +20,7 @@ import AudioOutputBlock from "./AudioOutputBlock";
 import SpeechScriptPanel, { readPerformedScript } from "./SpeechScriptPanel";
 import { useMediaResolution } from "@ai-matrx/media/core";
 import { fileSourceToMediaRef } from "@/features/files/media-client/refs";
-import { buildMediaSource, pickStr } from "../buildMediaSource";
+import { buildMediaSource, pickStr } from "@ai-matrx/rich-content/display/blocks/buildMediaSource";
 import { classifyMediaUrl } from "@/lib/media/durability";
 
 export interface AudioOutputBlockRendererProps {

@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useRef, useState } from "react";
-import { fitScale } from "../canvas-adaptive";
+import { fitScale } from "@ai-matrx/rich-content/display/blocks/canvas-adaptive";
 
 /** The fixed stage a slide is laid out on before it is scaled to its box. */
 export const SLIDE_STAGE = { width: 960, height: 540 } as const;

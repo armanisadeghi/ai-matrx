@@ -37,6 +37,7 @@ import {
 } from "@/features/access-gate/components/RequestAccess";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
+import { outputConstraintsOf } from "@/features/mandates/workspace/definition-output";
 
 export interface HolderDraftPanelProps {
   data: MandateWorkspaceData;
@@ -141,6 +142,7 @@ export function HolderDraftPanel({
                 label="Answer it must produce"
                 value={
                   [
+                    outputConstraintsOf(data.mandate),
                     data.mandate.output_kind
                       ? (humanizeIdentifier(data.mandate.output_kind) || data.mandate.output_kind)
                       : null,

@@ -30,7 +30,7 @@ jest.mock("@/lib/diagnostics/captureReactError", () => ({
   captureReactRenderError: () => undefined,
 }));
 
-import { PlainTextFallback } from "../PlainTextFallback";
+import { PlainTextFallback } from "@ai-matrx/rich-content/display/chat-markdown/internal-handlers/PlainTextFallback";
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 

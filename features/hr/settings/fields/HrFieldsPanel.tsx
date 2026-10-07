@@ -257,7 +257,7 @@ function HrTokenFields({ token, label }: { token: string; label: string }) {
       <header className="flex flex-wrap items-center justify-between gap-2 border-b border-border p-3">
         <span className="text-sm font-medium text-foreground">{label}</span>
         {!adding ? (
-          <Button type="button" size="sm" variant="outline" onClick={() => setAdding(true)}>
+          <Button type="button" variant="outline" onClick={() => setAdding(true)}>
             Add a custom field
           </Button>
         ) : null}
@@ -293,7 +293,7 @@ function HrTokenFields({ token, label }: { token: string; label: string }) {
                   {field.sensitivity ? ` · ${sensitivityWords(field.sensitivity)}` : ""}
                 </span>
               </span>
-              <Button type="button" size="sm" variant="ghost" onClick={() => setConfirming(field.id)}>
+              <Button type="button" variant="quiet" onClick={() => setConfirming(field.id)}>
                 Archive
               </Button>
               <ConfirmDelete

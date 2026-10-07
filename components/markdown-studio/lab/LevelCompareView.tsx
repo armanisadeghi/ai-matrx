@@ -8,8 +8,8 @@
 "use client";
 
 import React from "react";
-import { RichContent } from "@/components/rich-content/RichContent";
-import type { RichContentLevel } from "@/components/rich-content/rich-content-types";
+import { RichContent } from "@ai-matrx/rich-content/levels/RichContent";
+import type { RichContentLevel } from "@ai-matrx/rich-content/levels/rich-content-types";
 
 const LEVELS: { level: RichContentLevel; label: string; hint: string }[] = [
   { level: "inline", label: "Inline", hint: "Titles, labels, table cells — no blocks" },

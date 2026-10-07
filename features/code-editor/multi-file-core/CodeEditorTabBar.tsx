@@ -11,7 +11,7 @@
 import React, { useRef, useEffect } from "react";
 import { X } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { getLanguageIconNode } from "@/features/code-editor/components/code-block/LanguageDisplay";
+import { getLanguageIconNode } from "@ai-matrx/rich-content/code-block/LanguageDisplay";
 import type { CodeFile } from "@/features/code-editor/multi-file-core/types";
 
 // ─── Props ────────────────────────────────────────────────────────────────────

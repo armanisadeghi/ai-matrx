@@ -10,7 +10,7 @@
 //
 // Anon + cookie-free reads only, so the exam pages stay statically generable
 // (ISR). Renders nothing when an exam has no curated content yet.
-import { RichContentServer } from "@/components/rich-content/server/RichContentServer";
+import { RichContentServer } from "@ai-matrx/rich-content/levels/server/RichContentServer";
 import Link from "next/link";
 import { ArrowRight, BookOpen } from "lucide-react";
 import { fetchExamCertifiedDecks } from "../library/queries";

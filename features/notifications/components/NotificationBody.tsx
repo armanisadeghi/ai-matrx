@@ -7,7 +7,7 @@
 // emphasis — never as raw markup (verify RC-B11 round 2). It is someone else's text, so remote images
 // wait for a click.
 
-import { RichContent } from "@/components/rich-content/RichContent";
+import { RichContent } from "@ai-matrx/rich-content/levels/RichContent";
 
 export function NotificationBody({ body, className }: { body: string; className?: string }) {
   return (

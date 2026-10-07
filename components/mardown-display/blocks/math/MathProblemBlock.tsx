@@ -6,7 +6,7 @@ import MathProblem from "@/features/math/components/MathProblem";
 import { MathProblemProps } from "@/features/math/types";
 import { normalizeMathProblemLatex } from "@/features/math/utils/latex-normalizer";
 import { downloadMathProblem, uploadMathProblem } from "@/features/math/utils/math-problem-persistence";
-import ContentBlockWrapper from "../common/ContentBlockWrapper";
+import ContentBlockWrapper from "@ai-matrx/rich-content/display/blocks/common/ContentBlockWrapper";
 import { mathPrinter } from "./math-printer";
 import { announceComingSoon } from "@/lib/coming-soon/announce";
 import { PrintOptionsDialog, usePrintOptions } from "@ai-matrx/print/react";

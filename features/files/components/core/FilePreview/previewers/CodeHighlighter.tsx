@@ -6,7 +6,7 @@
 
 import type { MediaCodeHighlighterProps } from "@ai-matrx/media/viewers";
 import { useThemeMode } from "@/styles/themes/useThemeMode";
-import { ShikiCodeView } from "@/features/code-editor/components/code-block/highlight/ShikiCodeView";
+import { ShikiCodeView } from "@ai-matrx/rich-content/code-block/highlight/ShikiCodeView";
 
 export function CodeHighlighter({ code, language }: MediaCodeHighlighterProps) {
   const mode = useThemeMode() === "dark" ? "dark" : "light";

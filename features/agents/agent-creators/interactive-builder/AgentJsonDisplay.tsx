@@ -34,7 +34,7 @@ import {
   Gem,
   Variable,
 } from "lucide-react";
-import { RichContent } from "@/components/rich-content/RichContent";
+import { RichContent } from "@ai-matrx/rich-content/levels/RichContent";
 import { cn } from "@/styles/themes/utils";
 import {
   extractAgentJsonBlock,

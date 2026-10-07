@@ -10,7 +10,7 @@ import MatrxMiniLoader from "@/components/loaders/MatrxMiniLoader";
 import ArtifactBlock from "./ArtifactBlock";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
-const MermaidBlock = lazy(() => import("../mermaid/MermaidBlock"));
+const MermaidBlock = lazy(() => import("@ai-matrx/rich-content/display/blocks/mermaid/MermaidBlock"));
 
 interface ArtifactRefServerData {
   artifact_id?: string;

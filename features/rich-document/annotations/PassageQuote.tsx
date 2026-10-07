@@ -9,7 +9,7 @@
 // after dropping the half-pair a slice cut off, so bold reads as bold and no
 // stray asterisks show.
 
-import { RichContent } from "@/components/rich-content/RichContent";
+import { RichContent } from "@ai-matrx/rich-content/levels/RichContent";
 
 const PAIRED = ["**", "__", "~~", "`"] as const;
 

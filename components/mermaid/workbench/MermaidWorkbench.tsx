@@ -56,21 +56,21 @@ import {
 } from "@/features/canvas/services/canvasArtifactService";
 import { cn } from "@/lib/utils";
 
-import { getCatalogEntry } from "../catalog";
+import { getCatalogEntry } from "@ai-matrx/rich-content/mermaid/catalog";
 import {
   DETECTABLE_DIAGRAM_TYPES,
   detectDiagramType,
   extractMermaidTitle,
   setMermaidTitle,
-} from "../diagram-type";
+} from "@ai-matrx/rich-content/mermaid/diagram-type";
 import {
   copyMermaidSource,
   downloadMermaidPng,
   downloadMermaidSource,
   downloadMermaidSvg,
   saveMermaidToWorkspace,
-} from "../export";
-import { renderMermaid } from "../runtime";
+} from "@ai-matrx/rich-content/mermaid/export";
+import { renderMermaid } from "@ai-matrx/rich-content/mermaid/runtime";
 import {
   resolveMermaidTheme,
   type MermaidArtifactMetadata,
@@ -78,20 +78,20 @@ import {
   type MermaidLook,
   type MermaidOptionPreferences,
   type MermaidThemePreference,
-} from "../types";
+} from "@ai-matrx/rich-content/mermaid/types";
 import { createMermaidEditorScope } from "@/features/surfaces/manifests/mermaid-editor.manifest";
 import { SurfaceRuntimeProvider } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import { MERMAID_SURFACE_NAME } from "../hooks/useMermaidAgentEdit";
-import { getFeaturedCatalogEntries } from "../catalog";
+import { getFeaturedCatalogEntries } from "@ai-matrx/rich-content/mermaid/catalog";
 import { CodeModePane } from "../code/CodeModePane";
 import { OutlineModePane } from "../outline/OutlineModePane";
 import { VisualModePane } from "../visual/VisualModePane";
-import { ViewModePane } from "../view/ViewModePane";
+import { ViewModePane } from "@ai-matrx/rich-content/mermaid/view/ViewModePane";
 import { useCanvasPresentation } from "@ai-matrx/canvas/react";
 import {
   canvasFlow,
   mermaidSourceForFlow,
-} from "@/components/mardown-display/blocks/canvas-adaptive";
+} from "@ai-matrx/rich-content/display/blocks/canvas-adaptive";
 import { AgentEditRail } from "./AgentEditRail";
 import { registerMermaidEditor } from "./editor-bridge";
 import { useMermaidArtifactSave } from "./useMermaidArtifactSave";

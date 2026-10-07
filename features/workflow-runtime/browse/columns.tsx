@@ -19,7 +19,7 @@ import { Archive, Star } from "lucide-react";
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
-import { RichContentPreview } from "@/components/rich-content/RichContentPreview";
+import { RichContentPreview } from "@ai-matrx/rich-content/levels/RichContentPreview";
 import {
   DATE_FILTER_OPTIONS,
   Muted,

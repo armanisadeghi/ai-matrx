@@ -1,12 +1,12 @@
 "use client";
 
 import React from "react";
-import { PlainTextFallback } from "@/components/mardown-display/chat-markdown/internal-handlers/PlainTextFallback";
-import { MarkdownErrorBoundary } from "@/components/mardown-display/chat-markdown/internal-handlers/MarkdownErrorBoundary";
+import { PlainTextFallback } from "@ai-matrx/rich-content/display/chat-markdown/internal-handlers/PlainTextFallback";
+import { MarkdownErrorBoundary } from "@ai-matrx/rich-content/display/chat-markdown/internal-handlers/MarkdownErrorBoundary";
 import { StreamAwareChatMarkdown } from "@/components/mardown-display/chat-markdown/StreamAwareChatMarkdown";
-import { BlockRenderingProvider } from "@/components/mardown-display/chat-markdown/BlockRenderingContext";
+import { BlockRenderingProvider } from "@ai-matrx/rich-content/display/chat-markdown/BlockRenderingContext";
 import type { MarkdownStreamProps } from "./MarkdownStream";
-import { withImagePolicy } from "@/components/rich-content/prose/remote-image-policy";
+import { withImagePolicy } from "@ai-matrx/rich-content/levels/prose/remote-image-policy";
 
 const MarkdownStreamImpl: React.FC<MarkdownStreamProps> = ({
   content = "",

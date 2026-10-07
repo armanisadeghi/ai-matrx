@@ -14,7 +14,7 @@
  */
 
 import { useCallback, useEffect, useState } from "react";
-import { RichContent } from "@/components/rich-content/RichContent";
+import { RichContent } from "@ai-matrx/rich-content/levels/RichContent";
 import { formatDistanceToNow } from "date-fns";
 import { Loader2, MessageSquarePlus, Trash2 } from "lucide-react";
 

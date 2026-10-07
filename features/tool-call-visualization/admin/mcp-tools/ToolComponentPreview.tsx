@@ -37,7 +37,7 @@ import { useToast } from "@/components/ui/use-toast";
 import { supabase } from "@/utils/supabase/client";
 import { operationFailed, extractErrorMessage } from "@/utils/errors";
 import { formatDistanceToNow } from "date-fns";
-import { RichContent } from "@/components/rich-content/RichContent";
+import { RichContent } from "@ai-matrx/rich-content/levels/RichContent";
 import { useToolComponentAgent } from "@/features/tool-call-visualization/admin/hooks/useToolComponentAgent";
 import type {
   ToolLifecycleEntry,

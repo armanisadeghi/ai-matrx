@@ -37,7 +37,7 @@ import {
   type FactCheckVerdict,
 } from "./fact-check-parsing-util";
 import { PageTemplate, Card } from "@/components/official/PageTemplate";
-import { RichContent } from "@/components/rich-content/RichContent";
+import { RichContent } from "@ai-matrx/rich-content/levels/RichContent";
 import { Badge, type BadgeProps } from "@/components/ui/badge";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectFirstExtractedObject } from "@ai-matrx/chat/agents/redux/execution-system/active-requests/active-requests.selectors";

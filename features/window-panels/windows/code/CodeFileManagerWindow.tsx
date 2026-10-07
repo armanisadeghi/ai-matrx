@@ -36,7 +36,7 @@ import {
 } from "lucide-react";
 import { WindowPanel } from "@/features/window-panels/WindowPanel";
 import { cn } from "@/lib/utils";
-import { getLanguageIconNode } from "@/features/code-editor/components/code-block/LanguageDisplay";
+import { getLanguageIconNode } from "@ai-matrx/rich-content/code-block/LanguageDisplay";
 import {
   useCodeFileManager,
   ROOT_FOLDER_ID,

@@ -693,7 +693,7 @@ export interface AgentConnectionsPreferences {
  *  option unions live with the mermaid core so the renderer and this slice
  *  can never drift. */
 export type MermaidPreferences =
-  import("@/components/mermaid/types").MermaidOptionPreferences;
+  import("@ai-matrx/rich-content/mermaid/types").MermaidOptionPreferences;
 
 /**
  * Per-surface override of the conversation source filter (which `source_app`

@@ -17,7 +17,7 @@ import { cn } from "@/lib/utils";
 import { AccessGate } from "@/features/access-gate/components/AccessGate";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@ai-matrx/design-system";
-import { RichContent } from "@/components/rich-content/RichContent";
+import { RichContent } from "@ai-matrx/rich-content/levels/RichContent";
 import { fmtCount } from "../../format";
 import {
   useResearchKeywords,

@@ -101,7 +101,7 @@ import { resolveKindRecordDisposition } from "../records/kind-record-registry";
 import { kindHasRecordChrome } from "../records/KindRecordChrome";
 import { resolveArtifactDefByKind } from "@/features/canvas/artifact-types/artifact-type-registry";
 import { hasArtifactRenderer } from "@/features/canvas/artifact-types/artifact-renderer-keys";
-import { resolveBlockDispatch } from "@/components/mardown-display/chat-markdown/block-registry/block-dispatch";
+import { resolveBlockDispatch } from "@ai-matrx/rich-content/display/chat-markdown/block-registry/block-dispatch";
 import PlatformRecordBlock from "@/components/mardown-display/blocks/result-kinds/PlatformRecordBlock";
 
 const flush = async () => {

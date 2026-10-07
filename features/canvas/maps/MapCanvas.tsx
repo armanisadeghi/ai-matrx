@@ -13,7 +13,7 @@ import { Loader2 } from "lucide-react";
  */
 const MapCanvas = dynamic(
   () =>
-    import("@/components/mardown-display/blocks/diagram/InteractiveDiagramBlock"),
+    import("@ai-matrx/rich-content/display/blocks/diagram/InteractiveDiagramBlock"),
   {
     ssr: false,
     loading: () => (

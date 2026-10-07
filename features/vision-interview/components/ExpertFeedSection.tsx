@@ -25,7 +25,7 @@
 // A finished turn always lands here regardless of which tab is active.
 
 import { cn } from "@/lib/utils";
-import { RichContent } from "@/components/rich-content/RichContent";
+import { RichContent } from "@ai-matrx/rich-content/levels/RichContent";
 import {
   AccordionContent,
   AccordionItem,

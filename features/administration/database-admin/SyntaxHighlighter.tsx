@@ -2,7 +2,7 @@
 
 import React from "react";
 import { useThemeMode } from "@/styles/themes/useThemeMode";
-import { ShikiCodeView } from "@/features/code-editor/components/code-block/highlight/ShikiCodeView";
+import { ShikiCodeView } from "@ai-matrx/rich-content/code-block/highlight/ShikiCodeView";
 
 /** Read-only SQL (or other) source for the database admin screens. */
 const SyntaxHighlighter = ({

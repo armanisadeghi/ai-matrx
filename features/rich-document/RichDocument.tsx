@@ -61,7 +61,7 @@ import { RecordAnnotations } from "./annotations/RecordAnnotations";
 import { annotationRecordOf, recordKeyOf, type AnnotationRecord } from "./annotations/record-of-source";
 import type { AnnotationSource } from "./annotations/types";
 import type { ServerProcessedBlock } from "@/components/mardown-display/chat-markdown/EnhancedChatMarkdown";
-import type { TypedStreamEvent } from "@/components/mardown-display/chat-markdown/types";
+import type { TypedStreamEvent } from "@ai-matrx/rich-content/display/chat-markdown/types";
 
 // Lazy import the engine — same shell pattern as MarkdownStream itself so
 // the heavy block registry / code highlighter / jspdf / html2canvas chunks

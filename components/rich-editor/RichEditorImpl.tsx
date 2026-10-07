@@ -76,7 +76,7 @@ import { OutlinePanel } from "./panels/OutlinePanel";
 import { ShortcutsDialog } from "./panels/ShortcutsDialog";
 import { KindPicker } from "./panels/KindPicker";
 import { islandMeta, inlineIslandLabel } from "./islands/island-meta";
-import { withImagePolicy, type ImagePolicyDeclaration } from "@/components/rich-content/prose/remote-image-policy";
+import { withImagePolicy, type ImagePolicyDeclaration } from "@ai-matrx/rich-content/levels/prose/remote-image-policy";
 import { RecordAnnotations } from "@/features/rich-document/annotations/RecordAnnotations";
 import { annotationRecordOf, type AnnotationRecord } from "@/features/rich-document/annotations/record-of-source";
 import type { AnnotationSource } from "@/features/rich-document/annotations/types";

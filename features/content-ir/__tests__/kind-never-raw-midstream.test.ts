@@ -23,10 +23,10 @@
 import { domFrameVerdict, everyKindFrame, transitionKindFrames } from "../render-paths/__tests__/dom-frame-judge";
 import type { RenderBlockPayload } from "@ai-matrx/agents/generated/stream-events";
 import { StreamBlockAccumulator } from "@ai-matrx/chat/agents/redux/execution-system/utils/stream-block-accumulator";
-import { renderBlockToContentBlock } from "@/components/mardown-display/chat-markdown/render-block-to-content-block";
+import { renderBlockToContentBlock } from "@ai-matrx/rich-content/display/chat-markdown/render-block-to-content-block";
 import { drawsKindAsRawJson, drawsRawJsonCard } from "../render-paths/draws-raw-kind-json";
 import { applyIrKindRoute } from "@ai-matrx/rich-content/kinds/react/kind-route";
-import { decideBlockRender } from "@/components/mardown-display/chat-markdown/block-registry/BlockRenderer";
+import { decideBlockRender } from "@ai-matrx/rich-content/display/chat-markdown/block-registry/BlockRenderer";
 import { hasKindKey } from "../surfaces/json-kind-signal";
 import { componentRegistry } from "../registry/component-registry";
 import {

@@ -66,7 +66,7 @@ import {
   resolveBlockDispatch,
   type BlockDispatchContext,
   type RenderBlock,
-} from "@/components/mardown-display/chat-markdown/block-registry/block-dispatch";
+} from "@ai-matrx/rich-content/display/chat-markdown/block-registry/block-dispatch";
 
 interface JobRow {
   kind: string;

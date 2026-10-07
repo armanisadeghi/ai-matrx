@@ -3,11 +3,9 @@ import { resultAsObject, getArg } from "@ai-matrx/chat/tool-call-visualization/r
 import { isUuidShape } from "@ai-matrx/kit/uuid";
 
 /**
- * Parse the `dataset` and `usertable_create` tool results.
+ * Parse the `dataset` tool results.
  * - `dataset` → { dataset_id, metadata: {dataset_name, description, row_count}, fields: [...] }
- * - `usertable_create` → { table_id, table_name, description, row_count }
- *   (NOTE: this tool is currently backend-broken and may put an error string in
- *   `table_id`; the UUID guard below drops it so we render a summary, not a dead link.)
+ *   (The UUID guard below drops a non-id so we render a summary, not a dead link.)
  */
 export interface ParsedDatasetField {
   name: string;

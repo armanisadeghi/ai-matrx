@@ -339,24 +339,6 @@ const FEATURE_TOOL_RENDERERS: ToolRegistry = {
     },
   },
 
-  // Same entity as `dataset` (a user table). Backend currently broken — the
-  // renderer degrades to a summary when table_id isn't a real id.
-  usertable_create: {
-    toolName: "usertable_create",
-    displayName: "Table",
-    chrome: "card",
-    phaseLabels: {
-      running: "Creating table",
-      complete: "Created table",
-      errorPrefix: "Table creation failed",
-    },
-    resultsLabel: "Table",
-    InlineComponent: DatasetInline,
-    OverlayComponent: DatasetOverlay,
-    keepExpandedOnStream: true,
-  },
-
-
   knowledge_search: {
     toolName: "knowledge_search",
     displayName: "Knowledge Search",

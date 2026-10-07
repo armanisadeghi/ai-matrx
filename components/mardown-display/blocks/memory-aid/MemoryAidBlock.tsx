@@ -37,7 +37,7 @@ import {
 import { cn } from "@/lib/utils";
 // Inside the chat engine's graph: the inline level directly, never the
 // router (its standard/full edges would stack under MarkdownStream).
-import { RichContentInline } from "@/components/rich-content/RichContentInline";
+import { RichContentInline } from "@ai-matrx/rich-content/levels/RichContentInline";
 
 /** One label map for every technique either memory shape can carry. */
 export const TECHNIQUE_LABEL: Record<HintTechnique, string> = {

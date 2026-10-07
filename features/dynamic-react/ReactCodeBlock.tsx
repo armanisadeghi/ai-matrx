@@ -9,7 +9,7 @@ import React, {
 } from "react";
 import { Code2, Eye, Loader2, AlertTriangle, Boxes } from "lucide-react";
 import { cn } from "@/styles/themes/utils";
-import CodeBlock from "@/features/code-editor/components/code-block/CodeBlock";
+import CodeBlock from "@ai-matrx/rich-content/code-block/CodeBlock";
 import { compileCodeBlock } from "./compileCodeBlock";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 

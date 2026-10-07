@@ -81,7 +81,7 @@ jest.mock("@/components/official/VoiceTextarea", () => ({
     />
   ),
 }));
-jest.mock("@/components/rich-content/RichContent", () => ({ RichContent: () => null }));
+jest.mock("@ai-matrx/rich-content/levels/RichContent", () => ({ RichContent: () => null }));
 jest.mock("../AgentJsonDisplay", () => ({ AgentStreamingResponse: () => null }));
 jest.mock("@/components/errors/ErrorAlchemyMenu", () => ({ ErrorAlchemyMenu: () => null }));
 jest.mock("@/lib/diagnostics/errorCaptureStore", () => ({ captureError: jest.fn() }));

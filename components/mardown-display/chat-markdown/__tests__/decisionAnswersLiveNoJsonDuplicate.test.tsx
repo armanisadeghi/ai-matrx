@@ -67,7 +67,7 @@ jest.mock("next/dynamic", () => ({
     if (String(loader).includes("block-registry/BlockRenderer")) {
       const {
         BlockRenderer,
-      } = require("../block-registry/BlockRenderer") as {
+      } = require("@ai-matrx/rich-content/display/chat-markdown/block-registry/BlockRenderer") as {
         BlockRenderer: React.ComponentType<Record<string, unknown>>;
       };
       const Dynamic = (props: unknown) =>
@@ -84,7 +84,7 @@ jest.mock("next/cache", () => ({
 // The REAL DecisionAnswersBlock — that is the whole point. Everything else in
 // the registry is stubbed so this test is about the filter + one renderer.
 jest.mock(
-  "@/components/mardown-display/chat-markdown/block-registry/BlockComponentRegistry",
+  "@ai-matrx/rich-content/display/chat-markdown/block-registry/BlockComponentRegistry",
   () => {
     const DecisionAnswersBlock =
       require("@/components/mardown-display/blocks/decision-answers/DecisionAnswersBlock").default;
@@ -127,7 +127,7 @@ jest.mock("../internal-handlers/ToolHandlers", () => ({
   InlineToolBatch: () => null,
   DbToolBatch: () => null,
 }));
-jest.mock("../internal-handlers/InlineStatusIndicator", () => ({
+jest.mock("@ai-matrx/rich-content/display/chat-markdown/internal-handlers/InlineStatusIndicator", () => ({
   InlineStatusIndicator: () => null,
 }));
 jest.mock("../internal-handlers/InlineThinkingSlot", () => ({

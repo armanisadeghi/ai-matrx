@@ -1,4 +1,4 @@
-import { buildMediaSource } from "./buildMediaSource";
+import { buildMediaSource } from "@ai-matrx/rich-content/display/blocks/buildMediaSource";
 
 describe("buildMediaSource", () => {
   it("recovers a Matrx file id from a signed video URL before rendering", () => {

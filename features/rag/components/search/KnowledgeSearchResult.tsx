@@ -15,7 +15,7 @@ import { cn } from "@/lib/utils";
 import { citationHrefFor, type RagSearchHit } from "@/features/rag/api/search";
 import { kindGlyph } from "@/features/rag/components/hit-card/kindGlyph";
 import { markdownWithQueryMarks } from "@/features/rag/components/hit-card/query-highlighting";
-import { BasicMarkdownContent } from "@/components/mardown-display/chat-markdown/BasicMarkdownContent";
+import { BasicMarkdownContent } from "@ai-matrx/rich-content/display/chat-markdown/BasicMarkdownContent";
 import {
   searchHitHref,
   type SearchHitSourceView,

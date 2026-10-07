@@ -17,10 +17,10 @@ import { useIsMobile } from "@ai-matrx/kit/media-query";
 import { useThemeMode } from "@/styles/themes/useThemeMode";
 import { cn } from "@/lib/utils";
 
-import { MermaidRenderer } from "../MermaidRenderer";
-import type { LadderResult } from "../sanitize";
+import { MermaidRenderer } from "@ai-matrx/rich-content/mermaid/MermaidRenderer";
+import type { LadderResult } from "@ai-matrx/rich-content/mermaid/sanitize";
 import type { MermaidEditorAction } from "../workbench/useMermaidEditor";
-import type { MermaidRenderOptions } from "../types";
+import type { MermaidRenderOptions } from "@ai-matrx/rich-content/mermaid/types";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 const COMMIT_DEBOUNCE_MS = 400;

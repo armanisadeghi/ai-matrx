@@ -25,7 +25,7 @@
 // sections (never tabs), 44px touch targets, no vh units.
 
 import { formatDurationSeconds } from "@ai-matrx/kit/format";
-import { RichContent } from "@/components/rich-content/RichContent";
+import { RichContent } from "@ai-matrx/rich-content/levels/RichContent";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import {

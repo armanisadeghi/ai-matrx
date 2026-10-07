@@ -10,7 +10,7 @@
  *
  * Shared by the admin `DiscussPanel` and the product `ReviewerChat`.
  */
-import { RichContent } from "@/components/rich-content/RichContent";
+import { RichContent } from "@ai-matrx/rich-content/levels/RichContent";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 

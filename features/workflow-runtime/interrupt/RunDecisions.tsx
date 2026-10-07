@@ -19,7 +19,7 @@
  */
 
 import { AlertTriangle, BotMessageSquare, Check, UserCheck, X } from "lucide-react";
-import { RichContent } from "@/components/rich-content/RichContent";
+import { RichContent } from "@ai-matrx/rich-content/levels/RichContent";
 
 import { useAppSelector } from "@/lib/redux/hooks";
 import { cn } from "@/lib/utils";

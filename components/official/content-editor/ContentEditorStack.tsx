@@ -5,7 +5,7 @@ import React from 'react';
 import { ContentEditor } from './ContentEditor';
 import type { EditorMode, HeaderAction } from './types';
 import { cn } from '@/lib/utils';
-import type { ImagePolicyDeclaration } from "@/components/rich-content/prose/remote-image-policy";
+import type { ImagePolicyDeclaration } from "@ai-matrx/rich-content/levels/prose/remote-image-policy";
 
 export interface ContentEditorStackProps {
   // Content array

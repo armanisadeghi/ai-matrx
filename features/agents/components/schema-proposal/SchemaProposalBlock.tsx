@@ -25,7 +25,7 @@ import type { OutputSchema } from "@ai-matrx/chat/agents/types/json-schema";
 import { ApplySchemaDialog } from "./ApplySchemaDialog";
 
 const JsonBlock = lazy(() =>
-  import("@/components/mardown-display/blocks/json/JsonBlock").then((m) => ({
+  import("@ai-matrx/rich-content/display/blocks/json/JsonBlock").then((m) => ({
     default: m.JsonBlock,
   })),
 );

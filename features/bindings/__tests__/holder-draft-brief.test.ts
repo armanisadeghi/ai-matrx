@@ -52,6 +52,7 @@ function workspaceData(
       goal: "Decide three narrow things about one feedback item.",
       description: null,
       output_kind: "json",
+      metadata: { output_constraints: "Three short labelled findings." },
       accepts_user_input: false,
       organization_id: "org-1",
       ...overrides,
@@ -146,6 +147,25 @@ describe("the brief handed to the drafting job", () => {
     expect(
       (brief.offered_values as { name: string }[]).map((v) => v.name),
     ).toEqual(["description", "route"]);
+  });
+
+  it("passes the mandate's free-text output description through, and omits it when absent", () => {
+    const withText = buildHolderDraftBrief({
+      data: workspaceData({
+        metadata: { output_constraints: "  A one-page letter, formal tone.  " },
+      } as Partial<MandateWorkspaceData["mandate"]>),
+      offeredValues: [],
+      holder: NO_HOLDER,
+      owner: { kind: "user" },
+    });
+    expect(withText.output_constraints).toBe("A one-page letter, formal tone.");
+    const without = buildHolderDraftBrief({
+      data: workspaceData({ metadata: null } as Partial<MandateWorkspaceData["mandate"]>),
+      offeredValues: [],
+      holder: NO_HOLDER,
+      owner: { kind: "user" },
+    });
+    expect("output_constraints" in without).toBe(false);
   });
 
   it("OMITS an optional value it does not have, never an empty stand-in", () => {

@@ -839,20 +839,18 @@ export function CrmListPage({
             {
               id: "copy-link",
               label: "Copy link",
-              onSelect: () =>
-                copyText(
+              onSelect: async () => {
+                await copyText(
                   `${window.location.origin}${resolveEntityDoors("party", row.id).href ?? ""}`,
-                ),
-              toast: {
-                loading: "Copying…",
-                success: "Link copied",
+                );
               },
             },
             {
               id: "copy-id",
               label: "Copy ID",
-              onSelect: () => copyText(row.id),
-              toast: { loading: "Copying…", success: "ID copied" },
+              onSelect: async () => {
+                await copyText(row.id);
+              },
             },
           ],
         },

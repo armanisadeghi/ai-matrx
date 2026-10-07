@@ -23,12 +23,12 @@ import {
   hasArtifactRenderer,
 } from "@/features/canvas/artifact-types/artifact-renderers";
 import MatrxMiniLoader from "@/components/loaders/MatrxMiniLoader";
-import BasicMarkdownContent from "../../chat-markdown/BasicMarkdownContent";
-import { safeJsonParse } from "../../chat-markdown/block-registry/json-parse-utils";
+import BasicMarkdownContent from "@ai-matrx/rich-content/display/chat-markdown/BasicMarkdownContent";
+import { safeJsonParse } from "@ai-matrx/rich-content/display/chat-markdown/block-registry/json-parse-utils";
 import { Button } from "@ai-matrx/design-system/controls";
 // Lazy load block renderers — only the ones that accept raw content strings
 const CodeBlock = lazy(
-  () => import("@/features/code-editor/components/code-block/CodeBlock"),
+  () => import("@ai-matrx/rich-content/code-block/CodeBlock"),
 );
 
 interface ArtifactBlockProps {

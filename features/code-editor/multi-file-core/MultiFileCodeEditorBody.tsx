@@ -14,9 +14,9 @@
  */
 
 import React from "react";
-import SmallCodeEditor from "@/features/code-editor/components/code-block/SmallCodeEditor";
-import CodeBlockHeader from "@/features/code-editor/components/code-block/CodeBlockHeader";
-import { getLanguageIconNode } from "@/features/code-editor/components/code-block/LanguageDisplay";
+import SmallCodeEditor from "@ai-matrx/rich-content/code-block/SmallCodeEditor";
+import CodeBlockHeader from "@ai-matrx/rich-content/code-block/CodeBlockHeader";
+import { getLanguageIconNode } from "@ai-matrx/rich-content/code-block/LanguageDisplay";
 import { PanelLeftClose } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useThemeMode } from "@/styles/themes/useThemeMode";

@@ -1,62 +1,52 @@
 "use client";
+import { registerBlockComponents, registerLoadingComponents } from "@ai-matrx/rich-content/display/chat-markdown/block-registry/BlockComponentRegistry";
 
 import React, { Suspense, lazy } from "react";
-// FRAGMENTATION LAW (tiered): the light block components are ONE piece of the
-// markdown engine, compiled & fetched once behind the MarkdownStream edge —
-// static imports, not 80 chunk groups. The genuinely heavy engines keep their
-// lazy boundaries so a chat message never downloads an editor/diagram engine
-// it isn't using: CodeBlock/ReactCodeBlock/HtmlInlinePreview/StreamingDiff/
-// SearchReplace (syntax-highlighter), MatrxFileBlock (Univer/previewers),
-// InteractiveDiagramBlock (reactflow), MermaidBlock (mermaid).
-import ThinkingVisualization from "../../blocks/thinking-reasoning/ThinkingVisualization";
-import ReasoningVisualization from "../../blocks/thinking-reasoning/ReasoningVisualization";
-import ConsolidatedReasoningVisualization from "../../blocks/thinking-reasoning/ConsolidatedReasoningVisualization";
-import ImageBlock from "../../blocks/images/ImageBlock";
-import TranscriptBlock from "../../blocks/transcripts/TranscriptBlock";
-import TasksBlock from "../../blocks/tasks/TasksBlock";
-import StructuredPlanBlock from "../../blocks/plan/StructuredPlanBlock";
-import FlashcardsBlock from "../../blocks/flashcards/FlashcardsBlock";
-import VideoPromptOptionsBlock from "../../blocks/video-prompt-options/VideoPromptOptionsBlock";
-import MapTopicProposalBlock from "../../blocks/map-topic-proposal/MapTopicProposalBlock";
-import PrPlayMenuBlock from "../../blocks/pr-play-menu/PrPlayMenuBlock";
-import NewsMonitorKindBlock from "../../blocks/news-monitor/NewsMonitorKindBlock";
-import DecisionAnswersBlock from "../../blocks/decision-answers/DecisionAnswersBlock";
-import ListChangeProposalBlock from "../../blocks/list-change-proposal/ListChangeProposalBlock";
-import KeywordResearchBlock from "../../blocks/keyword-research/KeywordResearchBlock";
-import KeywordClassificationBatchBlock from "../../blocks/keyword-research/KeywordClassificationBatchBlock";
-import KeywordSerpIntentAnalysisBlock from "../../blocks/keyword-research/KeywordSerpIntentAnalysisBlock";
-import SeoKeywordResearchResultBlock from "../../blocks/keyword-research/SeoKeywordResearchResultBlock";
-import PageBriefBlock from "../../blocks/page-brief/PageBriefBlock";
-import CmsHtmlPageResultBlock from "../../blocks/cms-html-page-result/CmsHtmlPageResultBlock";
-import EpisodeTitleOptionsBlock from "../../blocks/episode-title-options/EpisodeTitleOptionsBlock";
-import MasterworkCheckupFindingBlock from "../../blocks/masterwork-checkup/MasterworkCheckupFindingBlock";
-import MasterworkResultBlock from "../../blocks/masterwork/MasterworkResultBlock";
-import SerialObservationTimelineBlock from "../../blocks/masterwork-timeline/SerialObservationTimelineBlock";
-import CaseDisclosureBlock from "../../blocks/masterwork-unfolding/CaseDisclosureBlock";
-import RefusalBlock from "../../blocks/refusal/RefusalBlock";
-import UnfoldingRulingBlock from "../../blocks/masterwork-unfolding/UnfoldingRulingBlock";
-import AgentResultBlock from "../../blocks/agent-result/AgentResultBlock";
+import TranscriptBlock from "@/components/mardown-display/blocks/transcripts/TranscriptBlock";
+import TasksBlock from "@/components/mardown-display/blocks/tasks/TasksBlock";
+import StructuredPlanBlock from "@/components/mardown-display/blocks/plan/StructuredPlanBlock";
+import FlashcardsBlock from "@/components/mardown-display/blocks/flashcards/FlashcardsBlock";
+import VideoPromptOptionsBlock from "@/components/mardown-display/blocks/video-prompt-options/VideoPromptOptionsBlock";
+import MapTopicProposalBlock from "@/components/mardown-display/blocks/map-topic-proposal/MapTopicProposalBlock";
+import PrPlayMenuBlock from "@/components/mardown-display/blocks/pr-play-menu/PrPlayMenuBlock";
+import NewsMonitorKindBlock from "@/components/mardown-display/blocks/news-monitor/NewsMonitorKindBlock";
+import DecisionAnswersBlock from "@/components/mardown-display/blocks/decision-answers/DecisionAnswersBlock";
+import ListChangeProposalBlock from "@/components/mardown-display/blocks/list-change-proposal/ListChangeProposalBlock";
+import KeywordResearchBlock from "@/components/mardown-display/blocks/keyword-research/KeywordResearchBlock";
+import KeywordClassificationBatchBlock from "@/components/mardown-display/blocks/keyword-research/KeywordClassificationBatchBlock";
+import KeywordSerpIntentAnalysisBlock from "@/components/mardown-display/blocks/keyword-research/KeywordSerpIntentAnalysisBlock";
+import SeoKeywordResearchResultBlock from "@/components/mardown-display/blocks/keyword-research/SeoKeywordResearchResultBlock";
+import PageBriefBlock from "@/components/mardown-display/blocks/page-brief/PageBriefBlock";
+import CmsHtmlPageResultBlock from "@/components/mardown-display/blocks/cms-html-page-result/CmsHtmlPageResultBlock";
+import EpisodeTitleOptionsBlock from "@/components/mardown-display/blocks/episode-title-options/EpisodeTitleOptionsBlock";
+import MasterworkCheckupFindingBlock from "@/components/mardown-display/blocks/masterwork-checkup/MasterworkCheckupFindingBlock";
+import MasterworkResultBlock from "@/components/mardown-display/blocks/masterwork/MasterworkResultBlock";
+import SerialObservationTimelineBlock from "@/components/mardown-display/blocks/masterwork-timeline/SerialObservationTimelineBlock";
+import CaseDisclosureBlock from "@/components/mardown-display/blocks/masterwork-unfolding/CaseDisclosureBlock";
+import RefusalBlock from "@/components/mardown-display/blocks/refusal/RefusalBlock";
+import UnfoldingRulingBlock from "@/components/mardown-display/blocks/masterwork-unfolding/UnfoldingRulingBlock";
+import AgentResultBlock from "@/components/mardown-display/blocks/agent-result/AgentResultBlock";
 // Runtime wrapper kinds — transparent routers that DELEGATE the nested payload
 // back to the registry (RUNTIME_WRAPPER_WIRE.md §5).
-import NodeOutcomeBlock from "../../blocks/runtime-wrappers/NodeOutcomeBlock";
-import RunResultBlock from "../../blocks/runtime-wrappers/RunResultBlock";
-import MediaChaptersBlock from "../../blocks/media-chapters/MediaChaptersBlock";
-import GeneratedImageSetBlock from "../../blocks/media-io/GeneratedImageSetBlock";
-import GeneratedVideoSetBlock from "../../blocks/media-io/GeneratedVideoSetBlock";
-import GeneratedAudioBlock from "../../blocks/media-io/GeneratedAudioBlock";
-import PodcastEpisodeBlock from "../../blocks/media-io/PodcastEpisodeBlock";
-import MediaAssetBlock from "../../blocks/media-io/MediaAssetBlock";
-import MemoryAidBlock from "../../blocks/memory-aid/MemoryAidBlock";
-import MemoryHintBlock from "../../blocks/memory-aid/MemoryHintBlock";
-import SeoPackageBlock from "../../blocks/seo-package/SeoPackageBlock";
+import NodeOutcomeBlock from "@/components/mardown-display/blocks/runtime-wrappers/NodeOutcomeBlock";
+import RunResultBlock from "@/components/mardown-display/blocks/runtime-wrappers/RunResultBlock";
+import MediaChaptersBlock from "@/components/mardown-display/blocks/media-chapters/MediaChaptersBlock";
+import GeneratedImageSetBlock from "@/components/mardown-display/blocks/media-io/GeneratedImageSetBlock";
+import GeneratedVideoSetBlock from "@/components/mardown-display/blocks/media-io/GeneratedVideoSetBlock";
+import GeneratedAudioBlock from "@/components/mardown-display/blocks/media-io/GeneratedAudioBlock";
+import PodcastEpisodeBlock from "@/components/mardown-display/blocks/media-io/PodcastEpisodeBlock";
+import MediaAssetBlock from "@/components/mardown-display/blocks/media-io/MediaAssetBlock";
+import MemoryAidBlock from "@/components/mardown-display/blocks/memory-aid/MemoryAidBlock";
+import MemoryHintBlock from "@/components/mardown-display/blocks/memory-aid/MemoryHintBlock";
+import SeoPackageBlock from "@/components/mardown-display/blocks/seo-package/SeoPackageBlock";
 // Search kind family (Search Kinds Pilot) — one canonical component per kind.
-import WebSearchResultsBlockImpl from "../../blocks/search-kinds/WebSearchResultsBlock";
-import ScrapedPageBlockImpl from "../../blocks/scraper-kinds/ScrapedPageBlock";
-import PageCleaningReportBlockImpl from "../../blocks/scraper-kinds/PageCleaningReportBlock";
+import WebSearchResultsBlockImpl from "@/components/mardown-display/blocks/search-kinds/WebSearchResultsBlock";
+import ScrapedPageBlockImpl from "@/components/mardown-display/blocks/scraper-kinds/ScrapedPageBlock";
+import PageCleaningReportBlockImpl from "@/components/mardown-display/blocks/scraper-kinds/PageCleaningReportBlock";
 import {
   ScraperBatchResultBlock as ScraperBatchResultBlockImpl,
   ScraperCrawlResultBlock as ScraperCrawlResultBlockImpl,
-} from "../../blocks/scraper-kinds/collection-blocks";
+} from "@/components/mardown-display/blocks/scraper-kinds/collection-blocks";
 import {
   CodeBlockKindBlock as CodeBlockKindBlockImpl,
   ContentFingerprintBlock as ContentFingerprintBlockImpl,
@@ -72,7 +62,7 @@ import {
   PageSectionBlock as PageSectionBlockImpl,
   PageVideoBlock as PageVideoBlockImpl,
   RedirectHopBlock as RedirectHopBlockImpl,
-} from "../../blocks/scraper-kinds/primitive-blocks";
+} from "@/components/mardown-display/blocks/scraper-kinds/primitive-blocks";
 
 import {
   WebResultBlock as WebResultBlockImpl,
@@ -80,31 +70,31 @@ import {
   VideoResultBlock as VideoResultBlockImpl,
   FaqItemBlock as FaqItemBlockImpl,
   DiscussionResultBlock as DiscussionResultBlockImpl,
-} from "../../blocks/search-kinds/item-blocks";
+} from "@/components/mardown-display/blocks/search-kinds/item-blocks";
 import {
   LocalPlaceBlock as LocalPlaceBlockImpl,
   EntityCardBlock as EntityCardBlockImpl,
   AiAnswerKindBlock as AiAnswerKindBlockImpl,
-} from "../../blocks/search-kinds/place-entity-blocks";
+} from "@/components/mardown-display/blocks/search-kinds/place-entity-blocks";
 // Rank / SERP-landscape kind family (Rank Kinds Run) — one canonical
 // component per kind; every nested search result delegates back to the
 // search family's components above.
-import SeoRankSerpLandscapeBlockImpl from "../../blocks/rank-kinds/SeoRankSerpLandscapeBlock";
-import SerpPlacementBlockImpl from "../../blocks/rank-kinds/SerpPlacementBlock";
+import SeoRankSerpLandscapeBlockImpl from "@/components/mardown-display/blocks/rank-kinds/SeoRankSerpLandscapeBlock";
+import SerpPlacementBlockImpl from "@/components/mardown-display/blocks/rank-kinds/SerpPlacementBlock";
 // The fetch-more HOST, not the bare block: production truncated tables must
 // carry a working "get the rest" control wherever the producing read can be
 // re-run (A-9 / LAW 3). The host defers to any page-level provider and
 // renders the same canonical DataTableBlock.
-import DataTableBlockImpl from "../../blocks/table-kinds/DataTableBlockWithMore";
+import DataTableBlockImpl from "@/components/mardown-display/blocks/table-kinds/DataTableBlockWithMore";
 import {
   ProviderRunReceiptBlock as ProviderRunReceiptBlockImpl,
   SeoRankReadingBlock as SeoRankReadingBlockImpl,
-} from "../../blocks/rank-kinds/reading-blocks";
+} from "@/components/mardown-display/blocks/rank-kinds/reading-blocks";
 import {
   SeoRankPortfolioBlock as SeoRankPortfolioBlockImpl,
   SeoRankTargetBlock as SeoRankTargetBlockImpl,
   SeoRankTargetRemovalBlock as SeoRankTargetRemovalBlockImpl,
-} from "../../blocks/rank-kinds/target-blocks";
+} from "@/components/mardown-display/blocks/rank-kinds/target-blocks";
 import {
   AssetGradingBlock as AssetGradingBlockImpl,
   EnrichmentVerificationBlock as EnrichmentVerificationBlockImpl,
@@ -117,11 +107,11 @@ import {
   PublishPreflightBlock as PublishPreflightBlockImpl,
   ReviewVerdictBlock as ReviewVerdictBlockImpl,
   ValueAssessmentBlock as ValueAssessmentBlockImpl,
-} from "../../blocks/commerce-kinds/commerce-kind-blocks";
+} from "@/components/mardown-display/blocks/commerce-kinds/commerce-kind-blocks";
 import {
   MediaCandidateVerdictBlock as MediaCandidateVerdictBlockImpl,
   MediaListRankingBlock as MediaListRankingBlockImpl,
-} from "../../blocks/media-list/media-list-blocks";
+} from "@/components/mardown-display/blocks/media-list/media-list-blocks";
 // Lulu print lane kind family — one canonical renderer per shape.
 import {
   LuluCoverDimensionsBlock as LuluCoverDimensionsBlockImpl,
@@ -129,103 +119,87 @@ import {
   LuluPrintJobBlock as LuluPrintJobBlockImpl,
   LuluPrintProductMatchesBlock as LuluPrintProductMatchesBlockImpl,
   LuluShippingOptionsBlock as LuluShippingOptionsBlockImpl,
-} from "../../blocks/print-kinds/print-kind-blocks";
+} from "@/components/mardown-display/blocks/print-kinds/print-kind-blocks";
 // RAG retrieval + citation kind family (RAG Kinds Run). `source_ref` is a
 // SYSTEM-WIDE primitive — the platform's cited-source shape — and is nested by
 // every other family that says "here is where this came from". The chunk
 // component adapts to `RagHitView` and renders the ONE canonical
 // `RagHitCard`; it draws no card of its own.
-import SourceRefBlockImpl from "../../blocks/rag-kinds/SourceRefBlock";
-import { RetrievedChunkBlock as RetrievedChunkBlockImpl } from "../../blocks/rag-kinds/RetrievedChunkBlock";
+import SourceRefBlockImpl from "@/components/mardown-display/blocks/rag-kinds/SourceRefBlock";
+import { RetrievedChunkBlock as RetrievedChunkBlockImpl } from "@/components/mardown-display/blocks/rag-kinds/RetrievedChunkBlock";
 import {
   RagSearchResultBlock as RagSearchResultBlockImpl,
   RagCrossDocSearchResultBlock as RagCrossDocSearchResultBlockImpl,
   RagSynthesizeResultBlock as RagSynthesizeResultBlockImpl,
-} from "../../blocks/rag-kinds/collection-blocks";
+} from "@/components/mardown-display/blocks/rag-kinds/collection-blocks";
 import {
   RatingBlock as RatingBlockImpl,
   OpeningHoursBlock as OpeningHoursBlockImpl,
   PostalAddressBlock as PostalAddressBlockImpl,
   GeoCoordinatesBlock as GeoCoordinatesBlockImpl,
-} from "../../blocks/search-kinds/primitive-blocks";
-import PlanPageResearchBlock from "../../blocks/page-pipeline/PlanPageResearchBlock";
-import PlanPageOutlineBlock from "../../blocks/page-pipeline/PlanPageOutlineBlock";
-import PlanPageDraftBlock from "../../blocks/page-pipeline/PlanPageDraftBlock";
-import PlanPageReviewBlock from "../../blocks/page-pipeline/PlanPageReviewBlock";
-import CmsPageBuildBlock from "../../blocks/page-pipeline/CmsPageBuildBlock";
-import IngestedSourcesBlock from "../../blocks/ingested-sources/IngestedSourcesBlock";
-import StudyNotesBlock from "../../blocks/study-notes/StudyNotesBlock";
-import LessonScriptsBlock from "../../blocks/lesson-scripts/LessonScriptsBlock";
-import StudyPackBlock from "../../blocks/study-pack/StudyPackBlock";
-import MultipleChoiceQuiz from "../../blocks/quiz/MultipleChoiceQuiz";
-import Slideshow from "../../blocks/presentations/Slideshow";
-import RecipeViewer from "../../blocks/cooking-recipes/cookingRecipeDisplay";
-import TimelineBlock from "../../blocks/timeline/TimelineBlock";
-import ResearchBlock from "../../blocks/research/ResearchBlock";
-import ResourceCollectionBlock from "../../blocks/resources/ResourceCollectionBlock";
-import ProgressTrackerBlock from "../../blocks/progress/ProgressTrackerBlock";
-import ComparisonTableBlock from "../../blocks/comparison/ComparisonTableBlock";
-import TroubleshootingBlock from "../../blocks/troubleshooting/TroubleshootingBlock";
-import DecisionTreeBlock from "../../blocks/decision-tree/DecisionTreeBlock";
-import SvgBlock from "../../blocks/svg/SvgBlock";
-import ChartBlock from "../../blocks/chart/ChartBlock";
+} from "@/components/mardown-display/blocks/search-kinds/primitive-blocks";
+import PlanPageResearchBlock from "@/components/mardown-display/blocks/page-pipeline/PlanPageResearchBlock";
+import PlanPageOutlineBlock from "@/components/mardown-display/blocks/page-pipeline/PlanPageOutlineBlock";
+import PlanPageDraftBlock from "@/components/mardown-display/blocks/page-pipeline/PlanPageDraftBlock";
+import PlanPageReviewBlock from "@/components/mardown-display/blocks/page-pipeline/PlanPageReviewBlock";
+import CmsPageBuildBlock from "@/components/mardown-display/blocks/page-pipeline/CmsPageBuildBlock";
+import IngestedSourcesBlock from "@/components/mardown-display/blocks/ingested-sources/IngestedSourcesBlock";
+import StudyNotesBlock from "@/components/mardown-display/blocks/study-notes/StudyNotesBlock";
+import LessonScriptsBlock from "@/components/mardown-display/blocks/lesson-scripts/LessonScriptsBlock";
+import StudyPackBlock from "@/components/mardown-display/blocks/study-pack/StudyPackBlock";
+import MultipleChoiceQuiz from "@/components/mardown-display/blocks/quiz/MultipleChoiceQuiz";
+import Slideshow from "@/components/mardown-display/blocks/presentations/Slideshow";
+import RecipeViewer from "@/components/mardown-display/blocks/cooking-recipes/cookingRecipeDisplay";
+import TimelineBlock from "@/components/mardown-display/blocks/timeline/TimelineBlock";
+import ResearchBlock from "@/components/mardown-display/blocks/research/ResearchBlock";
+import ResourceCollectionBlock from "@/components/mardown-display/blocks/resources/ResourceCollectionBlock";
+import ProgressTrackerBlock from "@/components/mardown-display/blocks/progress/ProgressTrackerBlock";
+import ComparisonTableBlock from "@/components/mardown-display/blocks/comparison/ComparisonTableBlock";
+import TroubleshootingBlock from "@/components/mardown-display/blocks/troubleshooting/TroubleshootingBlock";
+import DecisionTreeBlock from "@/components/mardown-display/blocks/decision-tree/DecisionTreeBlock";
 import ItemPresentationBlock from "@/features/item-presentation/ItemPresentationBlock";
 import MatrxEnvelopeBlock from "@/features/matrx-envelope/MatrxEnvelopeBlock";
 import SchemaProposalBlock from "@/features/agents/components/schema-proposal/SchemaProposalBlock";
-import MathProblemBlock from "../../blocks/math/MathProblemBlock";
-import QuestionnaireRenderer from "../../blocks/questionnaire/QuestionnaireRenderer";
-import MarkdownTable from "../../tables/MarkdownTable";
-import { StreamingTableRenderer as StreamingTableRenderer } from "../../blocks/table/StreamingTableRenderer";
-import InlineDecisionBlock from "../../blocks/inline-decision/InlineDecisionBlock";
-import ArtifactBlock from "../../blocks/artifact/ArtifactBlock";
-import ArtifactRefBlock from "../../blocks/artifact/ArtifactRefBlock";
-import EditorErrorBlock from "../../blocks/editor-resources/EditorErrorBlock";
-import EditorCodeSnippetBlock from "../../blocks/editor-resources/EditorCodeSnippetBlock";
-import AudioCitationBlock from "../../blocks/audio/AudioCitationBlock";
-import YamlBlock from "../../blocks/yaml/YamlBlock";
-import XmlBlock from "../../blocks/xml/XmlBlock";
-import CsvBlock from "@ai-matrx/rich-content/display/blocks/csv/CsvBlock";
-import { JsonBlock as JsonBlock } from "../../blocks/json/JsonBlock";
-import TomlBlock from "../../blocks/toml/TomlBlock";
-import TreeBlock from "../../blocks/tree/TreeBlock";
-import MarkdownPreviewBlock from "../../blocks/markdown-preview/MarkdownPreviewBlock";
-import AudioOutputBlock from "../../blocks/audio/AudioOutputBlock";
+import MathProblemBlock from "@/components/mardown-display/blocks/math/MathProblemBlock";
+import QuestionnaireRenderer from "@/components/mardown-display/blocks/questionnaire/QuestionnaireRenderer";
+import { StreamingTableRenderer as StreamingTableRenderer } from "@ai-matrx/rich-content/display/blocks/table/StreamingTableRenderer";
+import InlineDecisionBlock from "@/components/mardown-display/blocks/inline-decision/InlineDecisionBlock";
+import ArtifactBlock from "@/components/mardown-display/blocks/artifact/ArtifactBlock";
+import ArtifactRefBlock from "@/components/mardown-display/blocks/artifact/ArtifactRefBlock";
+import EditorErrorBlock from "@/components/mardown-display/blocks/editor-resources/EditorErrorBlock";
+import EditorCodeSnippetBlock from "@/components/mardown-display/blocks/editor-resources/EditorCodeSnippetBlock";
+import AudioCitationBlock from "@/components/mardown-display/blocks/audio/AudioCitationBlock";
+import { JsonBlock as JsonBlock } from "@ai-matrx/rich-content/display/blocks/json/JsonBlock";
+import AudioOutputBlock from "@/components/mardown-display/blocks/audio/AudioOutputBlock";
 import { UnifiedImageBlockRenderer as UnifiedImageBlockRenderer } from "@/features/files/blocks/image/UnifiedImageBlockRenderer";
 import { YouTubeEmbed as YouTubeEmbedBlock } from "@/features/files/blocks/youtube/YouTubeEmbed";
-import SearchResultsBlock from "../../blocks/data-events/SearchResultsBlock";
-import SearchErrorBlock from "../../blocks/data-events/SearchErrorBlock";
-import FunctionResultBlock from "../../blocks/data-events/FunctionResultBlock";
-import WorkflowStepBlock from "../../blocks/data-events/WorkflowStepBlock";
-import CategorizationResultBlock from "../../blocks/data-events/CategorizationResultBlock";
-import FetchResultsBlock from "../../blocks/data-events/FetchResultsBlock";
-import { PodcastCompleteBlock as PodcastCompleteBlockLazy } from "../../blocks/data-events/PodcastBlock";
-import { PodcastStageBlock as PodcastStageBlockLazy } from "../../blocks/data-events/PodcastBlock";
-import ScrapeBatchCompleteBlock from "../../blocks/data-events/ScrapeBatchCompleteBlock";
-import StructuredInputWarningBlock from "../../blocks/data-events/StructuredInputWarningBlock";
-import DisplayQuestionnaireBlock from "../../blocks/data-events/DisplayQuestionnaireBlock";
-import UnknownDataEventBlock from "../../blocks/data-events/UnknownDataEventBlock";
-import ValueStoreStoredBlock from "../../blocks/data-events/ValueStoreStoredBlock";
-import DirectiveReceiptBlock from "../../blocks/data-events/DirectiveReceiptBlock";
-import ContextGroomedBlock from "../../blocks/data-events/ContextGroomedBlock";
-import QuizLoadingVisualization from "../../blocks/quiz/QuizLoadingVisualization";
-import PresentationLoadingVisualization from "../../blocks/presentations/PresentationLoadingVisualization";
-import RecipeLoadingVisualization from "../../blocks/cooking-recipes/RecipeLoadingVisualization";
-import TimelineLoadingVisualization from "../../blocks/timeline/TimelineLoadingVisualization";
-import ResearchLoadingVisualization from "../../blocks/research/ResearchLoadingVisualization";
-import ResourcesLoadingVisualization from "../../blocks/resources/ResourcesLoadingVisualization";
-import ProgressLoadingVisualization from "../../blocks/progress/ProgressLoadingVisualization";
-import ComparisonLoadingVisualization from "../../blocks/comparison/ComparisonLoadingVisualization";
-import TroubleshootingLoadingVisualization from "../../blocks/troubleshooting/TroubleshootingLoadingVisualization";
-import DecisionTreeLoadingVisualization from "../../blocks/decision-tree/DecisionTreeLoadingVisualization";
-import DiagramLoadingVisualization from "../../blocks/diagram/DiagramLoadingVisualization";
-import MathProblemLoadingVisualization from "../../blocks/math/MathProblemLoadingVisualization";
+import SearchResultsBlock from "@/components/mardown-display/blocks/data-events/SearchResultsBlock";
+import SearchErrorBlock from "@/components/mardown-display/blocks/data-events/SearchErrorBlock";
+import FunctionResultBlock from "@/components/mardown-display/blocks/data-events/FunctionResultBlock";
+import WorkflowStepBlock from "@/components/mardown-display/blocks/data-events/WorkflowStepBlock";
+import CategorizationResultBlock from "@/components/mardown-display/blocks/data-events/CategorizationResultBlock";
+import FetchResultsBlock from "@/components/mardown-display/blocks/data-events/FetchResultsBlock";
+import { PodcastCompleteBlock as PodcastCompleteBlockLazy } from "@/components/mardown-display/blocks/data-events/PodcastBlock";
+import { PodcastStageBlock as PodcastStageBlockLazy } from "@/components/mardown-display/blocks/data-events/PodcastBlock";
+import ScrapeBatchCompleteBlock from "@/components/mardown-display/blocks/data-events/ScrapeBatchCompleteBlock";
+import StructuredInputWarningBlock from "@/components/mardown-display/blocks/data-events/StructuredInputWarningBlock";
+import DisplayQuestionnaireBlock from "@/components/mardown-display/blocks/data-events/DisplayQuestionnaireBlock";
+import UnknownDataEventBlock from "@/components/mardown-display/blocks/data-events/UnknownDataEventBlock";
+import ValueStoreStoredBlock from "@/components/mardown-display/blocks/data-events/ValueStoreStoredBlock";
+import DirectiveReceiptBlock from "@/components/mardown-display/blocks/data-events/DirectiveReceiptBlock";
+import ContextGroomedBlock from "@/components/mardown-display/blocks/data-events/ContextGroomedBlock";
+import QuizLoadingVisualization from "@/components/mardown-display/blocks/quiz/QuizLoadingVisualization";
+import PresentationLoadingVisualization from "@/components/mardown-display/blocks/presentations/PresentationLoadingVisualization";
+import RecipeLoadingVisualization from "@/components/mardown-display/blocks/cooking-recipes/RecipeLoadingVisualization";
+import TimelineLoadingVisualization from "@/components/mardown-display/blocks/timeline/TimelineLoadingVisualization";
+import ResearchLoadingVisualization from "@/components/mardown-display/blocks/research/ResearchLoadingVisualization";
+import ResourcesLoadingVisualization from "@/components/mardown-display/blocks/resources/ResourcesLoadingVisualization";
+import ProgressLoadingVisualization from "@/components/mardown-display/blocks/progress/ProgressLoadingVisualization";
+import ComparisonLoadingVisualization from "@/components/mardown-display/blocks/comparison/ComparisonLoadingVisualization";
+import TroubleshootingLoadingVisualization from "@/components/mardown-display/blocks/troubleshooting/TroubleshootingLoadingVisualization";
+import DecisionTreeLoadingVisualization from "@/components/mardown-display/blocks/decision-tree/DecisionTreeLoadingVisualization";
+import MathProblemLoadingVisualization from "@/components/mardown-display/blocks/math/MathProblemLoadingVisualization";
 import MatrxMiniLoader from "@/components/loaders/MatrxMiniLoader";
-import BasicMarkdownContent from "../BasicMarkdownContent";
-
-// Lazy-load CodeBlock to avoid circular dependency with Redux store
-const CodeBlock = lazy(
-  () => import("@/features/code-editor/components/code-block/CodeBlock"),
-);
 
 // Inline auto-preview for complete HTML documents (converts to a live webpage).
 const HtmlInlinePreview = lazy(
@@ -238,23 +212,19 @@ const ReactCodeBlock = lazy(
 );
 
 // Static imports for frequently used, lightweight components
-import { QuestionnaireProvider } from "../../blocks/questionnaire/QuestionnaireContext";
+import { QuestionnaireProvider } from "@/components/mardown-display/blocks/questionnaire/QuestionnaireContext";
 
 // Lazy load heavier/less common block components
 const MatrxFileBlock = lazy(
-  () => import("../../blocks/matrx-file/MatrxFileBlock"),
+  () => import("@/components/mardown-display/blocks/matrx-file/MatrxFileBlock"),
 );
-const InteractiveDiagramBlock = lazy(
-  () => import("../../blocks/diagram/InteractiveDiagramBlock"),
-);
-const MermaidBlock = lazy(() => import("../../blocks/mermaid/MermaidBlock"));
 const StreamingDiffBlock = lazy(() =>
-  import("../diff-blocks/StreamingDiffBlock").then((m) => ({
+  import("@ai-matrx/rich-content/display/chat-markdown/diff-blocks/StreamingDiffBlock").then((m) => ({
     default: m.StreamingDiffBlock,
   })),
 );
 const SearchReplaceBlock = lazy(() =>
-  import("../../blocks/search-replace/SearchReplaceBlock").then((m) => ({
+  import("@ai-matrx/rich-content/display/blocks/search-replace/SearchReplaceBlock").then((m) => ({
     default: m.SearchReplaceBlock,
   })),
 );
@@ -280,16 +250,7 @@ const LazyBlockWrapper: React.FC<LazyBlockWrapperProps> = ({
 /**
  * Export wrapped components for use in MarkdownStream
  */
-export const BlockComponents = {
-  // Lightweight components
-  BasicMarkdownContent,
-
-  // CodeBlock is lazy-loaded to avoid circular dependency with Redux
-  CodeBlock: (props: React.ComponentProps<typeof CodeBlock>) => (
-    <LazyBlockWrapper>
-      <CodeBlock {...props} />
-    </LazyBlockWrapper>
-  ),
+const DOMAIN_BLOCK_COMPONENTS = {
 
   HtmlInlinePreview: (
     props: React.ComponentProps<typeof HtmlInlinePreview>,
@@ -302,34 +263,6 @@ export const BlockComponents = {
   ReactCodeBlock: (props: React.ComponentProps<typeof ReactCodeBlock>) => (
     <LazyBlockWrapper>
       <ReactCodeBlock {...props} />
-    </LazyBlockWrapper>
-  ),
-
-  // Wrapped lazy components
-  ThinkingVisualization: (
-    props: React.ComponentProps<typeof ThinkingVisualization>,
-  ) => (
-    <LazyBlockWrapper>
-      <ThinkingVisualization {...props} />
-    </LazyBlockWrapper>
-  ),
-  ReasoningVisualization: (
-    props: React.ComponentProps<typeof ReasoningVisualization>,
-  ) => (
-    <LazyBlockWrapper>
-      <ReasoningVisualization {...props} />
-    </LazyBlockWrapper>
-  ),
-  ConsolidatedReasoningVisualization: (
-    props: React.ComponentProps<typeof ConsolidatedReasoningVisualization>,
-  ) => (
-    <LazyBlockWrapper>
-      <ConsolidatedReasoningVisualization {...props} />
-    </LazyBlockWrapper>
-  ),
-  ImageBlock: (props: React.ComponentProps<typeof ImageBlock>) => (
-    <LazyBlockWrapper>
-      <ImageBlock {...props} />
     </LazyBlockWrapper>
   ),
   MatrxFileBlock: (props: React.ComponentProps<typeof MatrxFileBlock>) => (
@@ -1105,28 +1038,6 @@ export const BlockComponents = {
       <DecisionTreeBlock {...props} />
     </LazyBlockWrapper>
   ),
-  InteractiveDiagramBlock: (
-    props: React.ComponentProps<typeof InteractiveDiagramBlock>,
-  ) => (
-    <LazyBlockWrapper>
-      <InteractiveDiagramBlock {...props} />
-    </LazyBlockWrapper>
-  ),
-  MermaidBlock: (props: React.ComponentProps<typeof MermaidBlock>) => (
-    <LazyBlockWrapper>
-      <MermaidBlock {...props} />
-    </LazyBlockWrapper>
-  ),
-  SvgBlock: (props: React.ComponentProps<typeof SvgBlock>) => (
-    <LazyBlockWrapper>
-      <SvgBlock {...props} />
-    </LazyBlockWrapper>
-  ),
-  ChartBlock: (props: React.ComponentProps<typeof ChartBlock>) => (
-    <LazyBlockWrapper>
-      <ChartBlock {...props} />
-    </LazyBlockWrapper>
-  ),
   ItemPresentationBlock: (
     props: React.ComponentProps<typeof ItemPresentationBlock>,
   ) => (
@@ -1160,32 +1071,6 @@ export const BlockComponents = {
       <QuestionnaireProvider>
         <QuestionnaireRenderer {...props} />
       </QuestionnaireProvider>
-    </LazyBlockWrapper>
-  ),
-  MarkdownTable: (props: React.ComponentProps<typeof MarkdownTable>) => (
-    <LazyBlockWrapper>
-      <MarkdownTable {...props} />
-    </LazyBlockWrapper>
-  ),
-  StreamingTableRenderer: (
-    props: React.ComponentProps<typeof StreamingTableRenderer>,
-  ) => (
-    <LazyBlockWrapper>
-      <StreamingTableRenderer {...props} />
-    </LazyBlockWrapper>
-  ),
-  StreamingDiffBlock: (
-    props: React.ComponentProps<typeof StreamingDiffBlock>,
-  ) => (
-    <LazyBlockWrapper>
-      <StreamingDiffBlock {...props} />
-    </LazyBlockWrapper>
-  ),
-  SearchReplaceBlock: (
-    props: React.ComponentProps<typeof SearchReplaceBlock>,
-  ) => (
-    <LazyBlockWrapper>
-      <SearchReplaceBlock {...props} />
     </LazyBlockWrapper>
   ),
   InlineDecisionBlock: (
@@ -1222,43 +1107,6 @@ export const BlockComponents = {
   ) => (
     <LazyBlockWrapper>
       <AudioCitationBlock {...props} />
-    </LazyBlockWrapper>
-  ),
-  YamlBlock: (props: React.ComponentProps<typeof YamlBlock>) => (
-    <LazyBlockWrapper>
-      <YamlBlock {...props} />
-    </LazyBlockWrapper>
-  ),
-  XmlBlock: (props: React.ComponentProps<typeof XmlBlock>) => (
-    <LazyBlockWrapper>
-      <XmlBlock {...props} />
-    </LazyBlockWrapper>
-  ),
-  CsvBlock: (props: React.ComponentProps<typeof CsvBlock>) => (
-    <LazyBlockWrapper>
-      <CsvBlock {...props} />
-    </LazyBlockWrapper>
-  ),
-  JsonBlock: (props: React.ComponentProps<typeof JsonBlock>) => (
-    <LazyBlockWrapper>
-      <JsonBlock {...props} />
-    </LazyBlockWrapper>
-  ),
-  TomlBlock: (props: React.ComponentProps<typeof TomlBlock>) => (
-    <LazyBlockWrapper>
-      <TomlBlock {...props} />
-    </LazyBlockWrapper>
-  ),
-  TreeBlock: (props: React.ComponentProps<typeof TreeBlock>) => (
-    <LazyBlockWrapper>
-      <TreeBlock {...props} />
-    </LazyBlockWrapper>
-  ),
-  MarkdownPreviewBlock: (
-    props: React.ComponentProps<typeof MarkdownPreviewBlock>,
-  ) => (
-    <LazyBlockWrapper>
-      <MarkdownPreviewBlock {...props} />
     </LazyBlockWrapper>
   ),
   AudioOutputBlock: (props: React.ComponentProps<typeof AudioOutputBlock>) => (
@@ -1381,7 +1229,7 @@ export const BlockComponents = {
 /**
  * Export wrapped loading visualization components
  */
-export const LoadingComponents = {
+const DOMAIN_LOADING_COMPONENTS = {
   QuizLoading: () => (
     <LazyBlockWrapper>
       <QuizLoadingVisualization />
@@ -1432,14 +1280,16 @@ export const LoadingComponents = {
       <DecisionTreeLoadingVisualization />
     </LazyBlockWrapper>
   ),
-  DiagramLoading: () => (
-    <LazyBlockWrapper>
-      <DiagramLoadingVisualization />
-    </LazyBlockWrapper>
-  ),
   MathProblemLoading: () => (
     <LazyBlockWrapper>
       <MathProblemLoadingVisualization />
     </LazyBlockWrapper>
   ),
 };
+
+/**
+ * matrx-frontend's block components (domain kinds, app previews, file and media blocks) — the
+ * engine's generic set ships in @ai-matrx/rich-content; these register into its registry at load.
+ */
+registerBlockComponents(DOMAIN_BLOCK_COMPONENTS);
+registerLoadingComponents(DOMAIN_LOADING_COMPONENTS);

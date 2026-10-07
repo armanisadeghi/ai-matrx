@@ -1,7 +1,7 @@
 "use client";
 
 import { ReadFailure } from "@/components/read-state/ReadFailure";
-import { RichContent } from "@/components/rich-content/RichContent";
+import { RichContent } from "@ai-matrx/rich-content/levels/RichContent";
 import React, { useEffect, useState, useTransition, useCallback } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";

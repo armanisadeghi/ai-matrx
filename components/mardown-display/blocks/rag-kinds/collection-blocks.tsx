@@ -32,7 +32,7 @@
 import React from "react";
 import { BookOpenText, Layers, MessageSquareQuote, Search, TriangleAlert } from "lucide-react";
 import { cn } from "@/lib/utils";
-import BasicMarkdownContent from "@/components/mardown-display/chat-markdown/BasicMarkdownContent";
+import BasicMarkdownContent from "@ai-matrx/rich-content/display/chat-markdown/BasicMarkdownContent";
 import {
   isRecord,
   num,

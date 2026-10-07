@@ -29,9 +29,9 @@ jest.mock("@/features/canvas/artifact-types/artifact-renderers", () => ({
   ArtifactRender: () => <div data-testid="card" />,
 }));
 jest.mock("@/components/loaders/MatrxMiniLoader", () => () => null);
-jest.mock("@/features/code-editor/components/code-block/CodeBlock", () => () => null);
-jest.mock("@/components/mardown-display/chat-markdown/BasicMarkdownContent", () => () => null);
-jest.mock("@/components/mardown-display/chat-markdown/block-registry/json-parse-utils", () => ({
+jest.mock("@ai-matrx/rich-content/code-block/CodeBlock", () => () => null);
+jest.mock("@ai-matrx/rich-content/display/chat-markdown/BasicMarkdownContent", () => () => null);
+jest.mock("@ai-matrx/rich-content/display/chat-markdown/block-registry/json-parse-utils", () => ({
   safeJsonParse: (s: string) => {
     try {
       return JSON.parse(s);

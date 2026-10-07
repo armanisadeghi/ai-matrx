@@ -6,7 +6,7 @@ import TaskChecklist from "@/components/mardown-display/blocks/tasks/TaskCheckli
 import { parseMarkdownChecklist } from "@/components/mardown-display/blocks/tasks/tasklist-parser";
 import { useToast } from "@/components/ui/use-toast";
 import { Button } from "@ai-matrx/design-system";
-import ChatCollapsibleWrapper from "@/components/mardown-display/blocks/ChatCollapsibleWrapper";
+import ChatCollapsibleWrapper from "@ai-matrx/rich-content/display/blocks/ChatCollapsibleWrapper";
 import TaskPreviewWindow from "@/features/tasks/components/TaskPreviewWindow";
 import TaskChipRow from "@/features/tasks/widgets/TaskChipRow";
 

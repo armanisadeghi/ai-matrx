@@ -28,7 +28,7 @@ import { deriveReadiness } from "../../readiness";
 import type { FilterOption } from "@/components/hierarchy-filter/HierarchyFilterPill";
 import type { ResearchSynthesis, ResearchDataEvent } from "../../types";
 import { idMatchesQuery } from "@ai-matrx/kit/search-scoring";
-import { RichContent } from "@/components/rich-content/RichContent";
+import { RichContent } from "@ai-matrx/rich-content/levels/RichContent";
 import { AnswerValueView } from "@/components/official/structured-value/AnswerValueView";
 import { RichDocumentActions } from "@/features/rich-document/RichDocumentActions";
 import { buildApplicationScopeFromMenuContext } from "@/features/context-menu-v3/utils/build-application-scope";

@@ -11,7 +11,7 @@
 import "../render-paths/__tests__/dom-frame-judge";
 import React, { act } from "react";
 import { createRoot } from "react-dom/client";
-import { RichContent } from "@/components/rich-content/RichContent";
+import { RichContent } from "@ai-matrx/rich-content/levels/RichContent";
 import { hasKindKey } from "../surfaces/json-kind-signal";
 import { textLeaksKind, visibleKindText } from "../surfaces/kind-leak-scan";
 

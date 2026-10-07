@@ -7,7 +7,7 @@ import {
   ResizablePanel,
   ResizableHandle,
 } from "@/components/ui/resizable";
-import { RichContent } from "@/components/rich-content/RichContent";
+import { RichContent } from "@ai-matrx/rich-content/levels/RichContent";
 import type { MarkdownStreamProps } from "@/components/MarkdownStream";
 import { cn } from "@/lib/utils";
 import { useIsMobile } from "@ai-matrx/kit/media-query";
@@ -23,7 +23,7 @@ import type {
   RichDocumentActionsPosition,
   RichDocumentActionsBehavior,
 } from "@/features/rich-document/types";
-import type { ImagePolicyDeclaration } from "@/components/rich-content/prose/remote-image-policy";
+import type { ImagePolicyDeclaration } from "@ai-matrx/rich-content/levels/prose/remote-image-policy";
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { useTextareaFormatting } from "@/components/rich-editor/format/useTextareaFormatting";
 import type { ApplicationScope } from "@ai-matrx/chat/agents/types/scope.types";

@@ -17,7 +17,7 @@ import { Button } from "@/components/ui/button";
 import { SimpleTooltip } from "@/components/matrx/Tooltip";
 import { cn } from "@/lib/utils";
 
-import { StandaloneMermaidView } from "../MermaidView";
+import { StandaloneMermaidView } from "@ai-matrx/rich-content/mermaid/MermaidView";
 import type { ApplicationScope } from "@ai-matrx/chat/agents/types/scope.types";
 import { useMermaidAgentEdit } from "../hooks/useMermaidAgentEdit";
 import { ProTextarea } from "@/components/official/ProTextarea";

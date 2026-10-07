@@ -42,7 +42,7 @@ import SmartQuizLoader from "./SmartQuizLoader";
 const BlockRenderer = dynamic(
   () =>
     import(
-      "@/components/mardown-display/chat-markdown/block-registry/BlockRenderer"
+      "@ai-matrx/rich-content/display/chat-markdown/block-registry/BlockRenderer"
     ).then((m) => m.BlockRenderer),
   { ssr: false, loading: () => null },
 );

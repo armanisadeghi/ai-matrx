@@ -39,7 +39,7 @@ import { RUN_OUTPUT_KINDS, RUN_WAIT_KNOB_FEATURE, runWaitKnobKey } from "@/lib/a
 import {
   REMOTE_IMAGE_DEFAULTS,
   REMOTE_IMAGE_KNOB_FEATURE,
-} from "@/components/rich-content/prose/remote-image-policy";
+} from "@ai-matrx/rich-content/levels/prose/remote-image-policy";
 
 const ROOT = join(__dirname, "..", "..", "..");
 const AIDREAM = process.env.AIDREAM_DIR ?? join(ROOT, "..", "aidream");

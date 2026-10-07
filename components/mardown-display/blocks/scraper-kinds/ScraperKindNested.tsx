@@ -17,8 +17,8 @@
  */
 
 import React from "react";
-import { SafeBlockRenderer } from "@/components/mardown-display/chat-markdown/internal-handlers/SafeBlockRenderer";
-import type { RenderBlock } from "@/components/mardown-display/chat-markdown/block-registry/BlockRenderer";
+import { SafeBlockRenderer } from "@ai-matrx/rich-content/display/chat-markdown/internal-handlers/SafeBlockRenderer";
+import type { RenderBlock } from "@ai-matrx/rich-content/display/chat-markdown/block-registry/BlockRenderer";
 import {
   IR_ENVELOPE_KEY,
   readObjectKind,

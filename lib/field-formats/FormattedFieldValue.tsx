@@ -15,7 +15,7 @@
 import type { ReactNode } from "react";
 import { ExternalLink, Mail, MapPin, Phone, Star } from "lucide-react";
 
-import { RichContent } from "@/components/rich-content/RichContent";
+import { RichContent } from "@ai-matrx/rich-content/levels/RichContent";
 import { cn } from "@/utils/cn";
 
 import {

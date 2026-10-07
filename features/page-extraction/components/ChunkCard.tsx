@@ -29,7 +29,7 @@ import {
   Compass,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { RichContent } from "@/components/rich-content/RichContent";
+import { RichContent } from "@ai-matrx/rich-content/levels/RichContent";
 import { formatPageRange } from "@/features/page-extraction/utils/chunk-preview";
 import { stripThinkingStreaming } from "@ai-matrx/kit/text";
 import { SOURCE_VARIATION_BY_KIND } from "@/features/page-extraction/constants";

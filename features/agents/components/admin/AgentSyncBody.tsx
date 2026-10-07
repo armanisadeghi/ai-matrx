@@ -3,22 +3,26 @@
 /**
  * AgentSyncBody
  *
- * Linked Agent Sync: every agent linked to the viewed one by lineage — its
- * parent (`source_agent_id`) and every child copy — user or system alike. Pick
- * any relative to compare. Internally the pair is oriented base → copy (the
- * system agent is "base" when exactly one side is system, otherwise the parent);
- * that is plumbing for the diff only. ON SCREEN the agents are "this agent",
- * "the system agent" and "the linked agent", and the buttons say "Copy to …" /
- * "Copy from …" from where the person stands — never "baseline"/"original"
- * (Arman, 2026-10-06: system agents are usually made FROM a person's agent).
+ * Linked Agent Sync: every agent linked to the viewed one by lineage — what it
+ * was made from (`source_agent_id`) and every copy made from it — user or system
+ * alike. Every word and every option comes from FACTS, never a fixed story
+ * (Arman, 2026-10-06; champion: GitHub fork/sync):
  *
- *   - Pull  (base → copy)  — copy's owner, or super admin for a system copy
- *   - Push  (copy → base)  — base's owner, or super admin for a system base
- *   - Create my personal copy  — from a system agent with none of mine yet
- *   - Make system agent        — super admin, user agent with no system relative
+ *   - Lineage, relative to this page: "Made from" / "Copy of this".
+ *   - Owner, per agent: "Yours" · a person's name · an organization's name ·
+ *     "System" · "Someone else" when the name is not readable.
+ *   - "Copy from <other>" — shown when you can edit THIS agent.
+ *   - "Copy to <other>"   — shown when you can edit the other agent.
+ *     "Can edit" is the builder's own save rule (owner or editor); a system
+ *     agent only through the registered admin feature "agent.system-sync".
+ *   - "Make my own copy"  — you can read this agent but not edit it, and have
+ *     no copy of it yet (duplicating is not editing).
+ *   - "Make system agent" — registered admin feature, no system relative.
+ *   - A source you can no longer open is named so, never "not linked".
  *
- * The DB (`agx_sync_linked_agents_reviewed`) is the real authority on linkage +
- * write gating; this component only enables/labels the actions.
+ * The DB (`agx_sync_linked_agents_reviewed`) is the authority on linkage + the
+ * write rule (the same owner-or-editor check); this component only offers what
+ * the facts allow. Internally the pair is base (parent) → copy (child).
  */
 
 import { useEffect, useState } from "react";
@@ -34,6 +38,7 @@ import type {
   AgentDefinition,
   LinkedAgentRef,
   LinkedCounterpartResult,
+  LostLinkedSource,
 } from "@ai-matrx/chat/agents/types/agent-definition.types";
 import { ConvertAgentToSystemBody } from "@/features/agents/components/admin/ConvertAgentToSystemBody";
 import { Button } from "@/components/ui/button";
@@ -184,9 +189,8 @@ interface LinkedRelative {
 
 /**
  * Every agent linked to the viewed one: its parent (`source`) and every child
- * (`derived`), user or system alike. A link is a link — the DB
- * (`agx_sync_linked_agents_reviewed`) syncs any parent/child pair and gates the
- * write itself, so no relative is hidden here because of its type.
+ * (`derived`), user or system alike. A link is a link — the DB gates the write
+ * itself, so no relative is hidden here because of its type.
  */
 function listRelatives(counterpart: LinkedCounterpartResult): LinkedRelative[] {
   const relatives: LinkedRelative[] = [];
@@ -200,8 +204,8 @@ function listRelatives(counterpart: LinkedCounterpartResult): LinkedRelative[] {
 }
 
 /**
- * Default relative to open: a system twin first (the historic purpose of this
- * panel), then my own copy, then the parent, then the newest child.
+ * Default relative to open: a system relative first (the historic purpose of
+ * this panel), then my own copy, then the parent, then the newest child.
  */
 function defaultRelativeId(
   self: LinkedAgentRef,
@@ -220,52 +224,81 @@ function defaultRelativeId(
   );
 }
 
-/**
- * Orient the (self, relative) pair as base → copy for the diff. When exactly one
- * side is a system agent it is the base; otherwise the lineage parent is. These
- * names never reach the screen (see the header).
- */
+/** Orient the pair as base (lineage parent) → copy (lineage child). */
 function resolvePair(
   self: LinkedAgentRef,
   relative: LinkedRelative,
 ): { baseSide: LinkedAgentRef; copySide: LinkedAgentRef } {
-  const other = relative.ref;
-  const selfSystem = self.agentType === "builtin";
-  const otherSystem = other.agentType === "builtin";
-  if (selfSystem !== otherSystem) {
-    return selfSystem
-      ? { baseSide: self, copySide: other }
-      : { baseSide: other, copySide: self };
-  }
   return relative.role === "parent"
-    ? { baseSide: other, copySide: self }
-    : { baseSide: self, copySide: other };
+    ? { baseSide: relative.ref, copySide: self }
+    : { baseSide: self, copySide: relative.ref };
 }
 
-function relativeLabel(relative: LinkedRelative): string {
-  const kind = relative.ref.agentType === "builtin" ? "System" : "User";
-  return relative.role === "parent" ? `${kind} · parent` : `${kind} · child`;
+/** Lineage word, relative to the page being viewed. */
+function lineageWord(role: LinkedRelative["role"]): string {
+  return role === "parent" ? "Made from" : "Copy of this";
+}
+
+/** Owner word, from the viewer's seat. */
+function ownerWord(ref: LinkedAgentRef): string {
+  if (ref.ownerKind === "me") return "Yours";
+  if (ref.ownerKind === "system") return "System";
+  return ref.ownerName ?? "Someone else";
+}
+
+/** Owner as it reads inside a sentence. */
+function ownerPhrase(ref: LinkedAgentRef): string {
+  if (ref.ownerKind === "me") return "you";
+  if (ref.ownerKind === "system") return "the system";
+  return ref.ownerName ?? "someone else";
+}
+
+const LOST_SOURCE_REASON: Record<LostLinkedSource["reason"], string> = {
+  unreadable: "Its owner unshared it or made it private",
+  archived: "It was archived",
+  deleted: "It was deleted",
+};
+
+function LostSourceNote({ lostSource }: { lostSource: LostLinkedSource }) {
+  return (
+    <span
+      className="type-secondary text-muted-foreground"
+      title={LOST_SOURCE_REASON[lostSource.reason]}
+    >
+      Made from an agent you can no longer open
+    </span>
+  );
 }
 
 function LinkedRelativesList({
   relatives,
   selectedId,
   onSelect,
+  canWrite,
+  lostSource,
 }: {
   relatives: LinkedRelative[];
   selectedId: string | null;
   onSelect?: (id: string) => void;
+  canWrite: (ref: LinkedAgentRef) => boolean;
+  lostSource: LostLinkedSource | null;
 }) {
-  if (relatives.length === 0) return null;
+  if (relatives.length === 0 && !lostSource) return null;
   return (
     <section aria-labelledby="linked-agents-title">
       <h3
         id="linked-agents-title"
         className="mb-2 type-secondary font-semibold"
       >
-        Linked agents
+        Lineage
       </h3>
       <ul className="space-y-1.5">
+        {lostSource && (
+          <li className="flex items-center gap-2 rounded-md border border-dashed border-border px-2.5 py-1.5">
+            <Unlink className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+            <LostSourceNote lostSource={lostSource} />
+          </li>
+        )}
         {relatives.map((relative) => {
           const selected = relative.ref.id === selectedId;
           return (
@@ -278,7 +311,7 @@ function LinkedRelativesList({
             >
               <div className="flex min-w-0 items-center gap-2">
                 <Badge variant="outline" className="shrink-0 text-[10px]">
-                  {relativeLabel(relative)}
+                  {`${lineageWord(relative.role)} · ${ownerWord(relative.ref)} · ${canWrite(relative.ref) ? "can edit" : "read only"}`}
                 </Badge>
                 <EntityRef
                   token="agent"
@@ -439,33 +472,28 @@ export function AgentSyncBody({
   const baseIsSystem = baseSide?.agentType === "builtin";
   const copyIsSystem = copySide?.agentType === "builtin";
   const systemTwin = baseIsSystem ? baseSide : copyIsSystem ? copySide : null;
-  // Words name each agent for what it IS to the person looking — this agent,
-  // the system agent, or the linked agent — never "baseline"/"original"/"copy":
-  // system agents are usually made FROM a person's agent, so neither side is
-  // "first" (Arman, 2026-10-06).
+  // Every word comes from facts: lineage relative to this page, and each
+  // agent's owner from the viewer's seat (Arman, 2026-10-06).
   const selfId = counterpart?.self.id ?? null;
-  const sideNoun = (side: LinkedAgentRef | null): string =>
-    side?.id === selfId
-      ? "this agent"
-      : side?.agentType === "builtin"
-        ? "the system agent"
-        : "the linked agent";
   const sideLabel = (side: LinkedAgentRef | null): string =>
-    side?.id === selfId
-      ? "This agent"
-      : side?.agentType === "builtin"
-        ? "System agent"
-        : "Linked agent";
-  const otherShort = (side: LinkedAgentRef | null): string =>
-    side?.agentType === "builtin" ? "system agent" : "linked agent";
-  const baseNoun = sideNoun(baseSide);
-  const copyNoun = sideNoun(copySide);
-  // Pull writes base → copy; push writes copy → base. Each button says the
-  // direction from where the person stands.
+    !side
+      ? ""
+      : side.id === selfId
+        ? `This agent · ${ownerWord(side)}`
+        : `${lineageWord(selectedRelative?.role ?? "parent")} · ${ownerWord(side)}`;
+  const describe = (side: LinkedAgentRef | null): string =>
+    !side
+      ? ""
+      : side.id === selfId
+        ? "this agent"
+        : `"${side.name}" (${ownerWord(side)})`;
+  const baseNoun = describe(baseSide);
+  // Pull writes base → copy; push writes copy → base. Each button names its
+  // direction and the other agent from where the person stands.
   const pullLabel =
-    copySide?.id === selfId ? `Copy from ${otherShort(baseSide)}` : `Copy to ${otherShort(copySide)}`;
+    copySide?.id === selfId ? `Copy from ${baseSide?.name ?? ""}` : `Copy to ${copySide?.name ?? ""}`;
   const pushLabel =
-    baseSide?.id === selfId ? `Copy from ${otherShort(copySide)}` : `Copy to ${otherShort(baseSide)}`;
+    baseSide?.id === selfId ? `Copy from ${copySide?.name ?? ""}` : `Copy to ${baseSide?.name ?? ""}`;
   const hasPair = !!copySide && !!baseSide;
   const comparisonKey =
     copySide && baseSide ? `${baseSide.id}:${copySide.id}` : null;
@@ -628,24 +656,27 @@ export function AgentSyncBody({
         : null;
   const lastSyncedAt = derivedRef?.sourceSnapshotAt ?? null;
 
-  // Mirrors the DB gate in agx_sync_linked_agents_reviewed. A system agent takes
-  // writes from a super admin on ANY page — the registered admin feature
-  // "agent.system-sync". Any other agent takes writes from its owner only: on a
-  // user page an admin is an ordinary person and cannot overwrite someone
-  // else's agent (common-docs/systems/platform/access/STATE.md, admin lane).
+  // Mirrors the DB rule in agx_sync_linked_agents_reviewed — the builder's own
+  // save rule: a user agent takes writes from its owner or an editor
+  // (`canEdit`, from agx_get_access_level); a system agent only through the
+  // registered admin feature "agent.system-sync".
   const canWriteInto = (ref: LinkedAgentRef | null): boolean =>
-    !!ref && (ref.agentType === "builtin" ? canMaintainSystemAgents : ref.isOwnedByMe);
+    !!ref && (ref.agentType === "builtin" ? canMaintainSystemAgents : ref.canEdit);
   const canPull = canWriteInto(copySide);
   const canPush = canWriteInto(baseSide);
   const hasSystemRelative = relatives.some(
     (r) => r.ref.agentType === "builtin",
   );
-  const hasMyUserRelative = relatives.some(
-    (r) => r.ref.agentType === "user" && r.ref.isOwnedByMe,
+  const hasMyCopy = relatives.some(
+    (r) => r.role === "child" && r.ref.isOwnedByMe,
   );
+  const lostSource = counterpart?.lostSource ?? null;
   const canOfferConvert =
     selfType === "user" && canMakeSystemAgent && !hasSystemRelative;
-  const canOfferPersonalCopy = selfType === "builtin" && !hasMyUserRelative;
+  // Duplicating is not editing: anyone who can read an agent they cannot edit
+  // may make their own copy — system, a friend's, an organization's.
+  const canOfferPersonalCopy =
+    !!counterpart && !selfDeletedAt && !canWriteInto(counterpart.self) && !hasMyCopy;
 
   const refreshLinkedDefinitions = async () => {
     if (!copySide || !baseSide) return;
@@ -671,11 +702,12 @@ export function AgentSyncBody({
           includeIdentity: pullIdentity,
           expectedFromUpdatedAt: baseAgent.updatedAt,
           expectedToUpdatedAt: copyAgent.updatedAt,
+          targetIsSystem: copySide.agentType === "builtin",
         }),
       ).unwrap();
       setFieldHistoryState(null);
       setFieldHistoryError(null);
-      toast.success(`Pulled latest into "${copySide.name}".`);
+      toast.success(`Copied "${baseSide.name}" into "${copySide.name}".`);
       const [relationshipRefreshed, definitionsRefreshed] = await Promise.all([
         load(),
         refreshLinkedDefinitions()
@@ -690,7 +722,7 @@ export function AgentSyncBody({
     } catch (err) {
       setComparisonState(null);
       setComparisonRetry((value) => value + 1);
-      toast.error(err instanceof Error ? err.message : "Pull failed.");
+      toast.error(err instanceof Error ? err.message : "Copy failed.");
     } finally {
       setBusy(null);
     }
@@ -707,11 +739,12 @@ export function AgentSyncBody({
           includeIdentity: true,
           expectedFromUpdatedAt: copyAgent.updatedAt,
           expectedToUpdatedAt: baseAgent.updatedAt,
+          targetIsSystem: baseSide.agentType === "builtin",
         }),
       ).unwrap();
       setFieldHistoryState(null);
       setFieldHistoryError(null);
-      toast.success(`Pushed "${copySide.name}" into "${baseSide.name}".`);
+      toast.success(`Copied "${copySide.name}" into "${baseSide.name}".`);
       const [relationshipRefreshed, definitionsRefreshed] = await Promise.all([
         load(),
         refreshLinkedDefinitions()
@@ -726,7 +759,7 @@ export function AgentSyncBody({
     } catch (err) {
       setComparisonState(null);
       setComparisonRetry((value) => value + 1);
-      toast.error(err instanceof Error ? err.message : "Push failed.");
+      toast.error(err instanceof Error ? err.message : "Copy failed.");
     } finally {
       setBusy(null);
     }
@@ -738,8 +771,8 @@ export function AgentSyncBody({
       const result = await dispatch(createPersonalCopy(agentId)).unwrap();
       toast.success(
         result.alreadyExisted
-          ? "Opened your existing personal copy."
-          : "Created your personal copy.",
+          ? "Opened your existing copy."
+          : "Made your own copy.",
       );
       const refreshed = await load();
       if (!refreshed) {
@@ -749,7 +782,7 @@ export function AgentSyncBody({
       }
     } catch (err) {
       toast.error(
-        err instanceof Error ? err.message : "Could not create personal copy.",
+        err instanceof Error ? err.message : "Could not make your copy.",
       );
     } finally {
       setBusy(null);
@@ -762,7 +795,7 @@ export function AgentSyncBody({
     return (
       <div className="flex h-full items-center justify-center gap-3 p-4 type-body text-muted-foreground">
         <Loader2 className="w-4 h-4 animate-spin text-primary" />
-        Resolving linked agent…
+        Finding related agents…
       </div>
     );
   }
@@ -805,7 +838,7 @@ export function AgentSyncBody({
     );
   }
 
-  // ─── No pair: deleted, a system agent with no copies, or unlinked ────────
+  // ─── No pair: deleted, a lost source only, or no lineage at all ─────────
 
   if (!hasPair) {
     return (
@@ -813,8 +846,6 @@ export function AgentSyncBody({
         <div className="flex items-start gap-3 rounded-md border border-border bg-muted/30 px-3 py-2.5">
           {selfDeletedAt ? (
             <AlertCircle className="w-4 h-4 text-destructive mt-0.5 shrink-0" />
-          ) : selfType === "builtin" ? (
-            <Copy className="w-4 h-4 text-primary mt-0.5 shrink-0" />
           ) : (
             <Unlink className="w-4 h-4 text-muted-foreground mt-0.5 shrink-0" />
           )}
@@ -824,31 +855,31 @@ export function AgentSyncBody({
                 This agent was deleted {formatTimestamp(selfDeletedAt)}; nothing
                 to sync
               </>
-            ) : selfType === "builtin" ? (
-              <>
-                Editable copy of{" "}
-                <span className="font-medium text-foreground">
-                  {agent?.name ?? "this system agent"}
-                </span>
-                ; it stays linked for future updates
-              </>
+            ) : lostSource ? (
+              <LostSourceNote lostSource={lostSource} />
             ) : (
-              "No linked parent or copies"
+              "Not made from another agent, and no copies yet"
             )}
           </div>
         </div>
-        <LinkedRelativesList relatives={relatives} selectedId={null} />
+        <LinkedRelativesList
+          relatives={relatives}
+          selectedId={null}
+          canWrite={canWriteInto}
+          lostSource={null}
+        />
         <div className="flex justify-end gap-2">
           <Button variant="quiet" onClick={onClose}>
             Close
           </Button>
-          {canOfferPersonalCopy && !selfDeletedAt && (
+          {canOfferPersonalCopy && (
             <Button icon={busy === "copy" ? (
                 <Loader2 className="animate-spin" />
               ) : (
                 <Copy />
-              )} variant="primary" onClick={runCreateCopy} disabled={busy === "copy"}>
-              Create my personal copy
+              )} variant="primary" onClick={runCreateCopy} disabled={busy === "copy"}
+              title={`Make your own editable copy of "${counterpart?.self.name ?? ""}"`}>
+              Make my own copy
             </Button>
           )}
         </div>
@@ -1118,7 +1149,7 @@ export function AgentSyncBody({
                     <div className="h-px flex-1 bg-border sm:h-full sm:min-h-6 sm:w-px" />
                     <div
                       className="rounded-full border border-border bg-background p-1.5"
-                      title="Linked copy"
+                      title={selectedRelative ? lineageWord(selectedRelative.role) : undefined}
                     >
                       <GitFork className="h-3.5 w-3.5" />
                     </div>
@@ -1193,6 +1224,8 @@ export function AgentSyncBody({
 
               <LinkedRelativesList
                 relatives={relatives}
+                canWrite={canWriteInto}
+                lostSource={lostSource}
                 selectedId={selectedRelative?.ref.id ?? null}
                 onSelect={
                   relatives.length > 1
@@ -1219,8 +1252,9 @@ export function AgentSyncBody({
             <Label
               htmlFor="pull-identity"
               className="cursor-pointer text-xs font-normal text-muted-foreground"
+              title={`When copying into "${copySide.name}"`}
             >
-              Pull profile details too (name, description, category, and tags)
+              Also copy name, description, category, and tags
             </Label>
           </div>
         )}
@@ -1244,68 +1278,58 @@ export function AgentSyncBody({
                 icon={busy === "copy" ? <Loader2 className="animate-spin" /> : <Copy />}
                 onClick={runCreateCopy}
                 disabled={busy !== null}
+                title={`Make your own editable copy of "${counterpart.self.name}"`}
               >
-                Create my personal copy
+                Make my own copy
               </Button>
             )}
           </div>
-          <div className="flex items-center gap-2">
-            <Button
-              icon={busy === "pull" ? (
-                <Loader2 className="animate-spin" />
-              ) : (
-                <ArrowDownToLine />
-              )}
-              variant="outline"
-              onClick={() => setConfirmDirection("pull")}
-              disabled={
-                !canPull ||
-                busy !== null ||
-                !comparisonAvailable ||
-                !pullHasChanges
-              }
-              title={
-                canPull
-                  ? !comparisonAvailable
+          <div className="flex min-w-0 items-center gap-2">
+            {/* A move you cannot take is absent — never a dead button. */}
+            {canPull && (
+              <Button
+                icon={busy === "pull" ? (
+                  <Loader2 className="animate-spin" />
+                ) : (
+                  <ArrowDownToLine />
+                )}
+                variant="outline"
+                className="max-w-64 truncate"
+                onClick={() => setConfirmDirection("pull")}
+                disabled={busy !== null || !comparisonAvailable || !pullHasChanges}
+                title={
+                  !comparisonAvailable
                     ? "Wait for the comparison to finish"
                     : !pullHasChanges
-                      ? `This would not change ${copyNoun}`
-                      : `Copy ${baseNoun} into ${copyNoun}`
-                  : copyIsSystem
-                    ? "Only super admins can change a system agent"
-                    : "You can only change an agent you own"
-              }
-            >
-              {pullLabel}
-            </Button>
-            <Button
-              icon={busy === "push" ? (
-                <Loader2 className="animate-spin" />
-              ) : (
-                <ArrowUpFromLine />
-              )}
-              variant="primary"
-              onClick={() => setConfirmDirection("push")}
-              disabled={
-                !canPush ||
-                busy !== null ||
-                !comparisonAvailable ||
-                !pushHasChanges
-              }
-              title={
-                canPush
-                  ? !comparisonAvailable
+                      ? `This would not change ${describe(copySide)}`
+                      : `Copy ${describe(baseSide)} into ${describe(copySide)}`
+                }
+              >
+                {pullLabel}
+              </Button>
+            )}
+            {canPush && (
+              <Button
+                icon={busy === "push" ? (
+                  <Loader2 className="animate-spin" />
+                ) : (
+                  <ArrowUpFromLine />
+                )}
+                variant="primary"
+                className="max-w-64 truncate"
+                onClick={() => setConfirmDirection("push")}
+                disabled={busy !== null || !comparisonAvailable || !pushHasChanges}
+                title={
+                  !comparisonAvailable
                     ? "Wait for the comparison to finish"
                     : !pushHasChanges
-                      ? `This would not change ${baseNoun}`
-                      : `Copy ${copyNoun} into ${baseNoun}`
-                  : baseIsSystem
-                    ? "Only super admins can change a system agent"
-                    : "You can only change an agent you own"
-              }
-            >
-              {pushLabel}
-            </Button>
+                      ? `This would not change ${describe(baseSide)}`
+                      : `Copy ${describe(copySide)} into ${describe(baseSide)}`
+                }
+              >
+                {pushLabel}
+              </Button>
+            )}
           </div>
         </div>
       </div>
@@ -1320,18 +1344,16 @@ export function AgentSyncBody({
           const pushing = confirmDirection === "push";
           const target = pushing ? baseSide : copySide;
           const source = pushing ? copySide : baseSide;
-          const targetIsSystem = target.agentType === "builtin";
+          const withProfile = pushing || pullIdentity;
+          // Everyone using it gets the change when it is a system agent or
+          // anyone else's (a person's, an organization's) — not when it is only yours.
+          const othersUseIt = target.ownerKind !== "me";
           return (
             <AlertDialogContent>
               <AlertDialogHeader>
                 <AlertDialogTitle>{`Replace "${target.name}"?`}</AlertDialogTitle>
                 <AlertDialogDescription>
-                  {targetIsSystem
-                    ? `Its configuration and profile become "${source.name}"'s. Everyone and every mandate using this system agent gets the change.`
-                    : `Its configuration and profile become "${source.name}"'s.`}
-                  {comparison && !comparison.comparedConfigurationMatches
-                    ? ` ${comparison.changedFields.length} ${comparison.changedFields.length === 1 ? "section differs" : "sections differ"}.`
-                    : ""}
+                  {`It belongs to ${ownerPhrase(target)} and takes the ${withProfile ? "configuration and profile" : "configuration"} of "${source.name}"${othersUseIt ? "; everyone using it gets the change" : ""}.`}
                   {" The previous version stays in its history."}
                 </AlertDialogDescription>
               </AlertDialogHeader>

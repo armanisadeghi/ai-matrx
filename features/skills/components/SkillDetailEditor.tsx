@@ -37,7 +37,7 @@ import {
 } from "../redux/skillsConverters";
 import { createSkill, deleteSkill, patchSkill } from "../redux/skillsThunks";
 import type { SkillDraft, SkillType } from "../types";
-import { RichContent } from "@/components/rich-content/RichContent";
+import { RichContent } from "@ai-matrx/rich-content/levels/RichContent";
 import { SkillProjectAssociations } from "./SkillProjectAssociations";
 import { SkillResourcesPanel } from "./SkillResourcesPanel";
 import { ProTextarea } from "@/components/official/ProTextarea";

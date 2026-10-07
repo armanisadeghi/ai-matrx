@@ -11,7 +11,7 @@
 
 import { useClipboard } from "@ai-matrx/kit/clipboard";
 import { useState } from "react";
-import { RichContentPreview } from "@/components/rich-content/RichContentPreview";
+import { RichContentPreview } from "@ai-matrx/rich-content/levels/RichContentPreview";
 import Link from "next/link";
 import {
   HoverCard,

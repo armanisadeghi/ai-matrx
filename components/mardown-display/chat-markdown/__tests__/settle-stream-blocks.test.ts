@@ -12,7 +12,7 @@
 import type { RenderBlockPayload } from "@ai-matrx/agents/generated/stream-events";
 import { StreamBlockAccumulator } from "@ai-matrx/chat/agents/redux/execution-system/utils/stream-block-accumulator";
 import { splitContentIntoBlocksV2 } from "@ai-matrx/rich-content/display/markdown-classification/processors/utils/content-splitter-v2";
-import { renderSettledFromRecord, settledOneShotBlocks } from "../settle-stream-blocks";
+import { renderSettledFromRecord, settledOneShotBlocks } from "@ai-matrx/rich-content/display/chat-markdown/settle-stream-blocks";
 
 const CLOSER_ONLY_REASONING = [
   "The backup job ran at 02:00 and the disk was 97% full, so the snapshot",

@@ -115,7 +115,7 @@ import {
   rowsToCsv,
   rowsToNdjson,
   rowsToXlsx,
-} from "@/components/mardown-display/blocks/json/json-tabular-utils";
+} from "@ai-matrx/rich-content/display/blocks/json/json-tabular-utils";
 import { rowsToMarkdownTable } from "@ai-matrx/design-system/data-table/copy-helpers";
 import type { MatrxColumnDef } from "@ai-matrx/design-system/data-table/types";
 import { buildAgentPayload } from "@/components/agent-copy/buildAgentPayload";

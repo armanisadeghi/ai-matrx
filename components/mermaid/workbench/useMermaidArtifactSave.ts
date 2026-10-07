@@ -23,7 +23,7 @@ import {
 import { canvasArtifactService } from "@/features/canvas/services/canvasArtifactService";
 import { canvasItemsService } from "@/features/canvas/services/canvasItemsService";
 
-import type { MermaidArtifactMetadata } from "../types";
+import type { MermaidArtifactMetadata } from "@ai-matrx/rich-content/mermaid/types";
 
 export type SaveState = "clean" | "dirty" | "saving" | "saved" | "error";
 

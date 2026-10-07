@@ -1,7 +1,7 @@
 import type { ErrorInfo, ReactNode } from "react";
 import { captureReactRenderError } from "@/lib/diagnostics/captureReactError";
 import { notifyChunkLoadError } from "@/components/errors/chunk-load-recovery";
-import { MarkdownErrorBoundary } from "./MarkdownErrorBoundary";
+import { MarkdownErrorBoundary } from "@ai-matrx/rich-content/display/chat-markdown/internal-handlers/MarkdownErrorBoundary";
 
 jest.mock("@/lib/diagnostics/captureReactError", () => ({
   captureReactRenderError: jest.fn(),

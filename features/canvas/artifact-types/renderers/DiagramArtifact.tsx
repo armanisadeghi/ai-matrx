@@ -6,9 +6,9 @@ import {
   materializeDiagramDefaults,
   parseDiagramJSON,
   type DiagramData,
-} from "@/components/mardown-display/blocks/diagram/parseDiagramJSON";
+} from "@ai-matrx/rich-content/display/blocks/diagram/parseDiagramJSON";
 import { resolveJsonPayload, artifactDedupKey } from "../artifact-renderers";
-import InteractiveDiagramBlock from "@/components/mardown-display/blocks/diagram/InteractiveDiagramBlock";
+import InteractiveDiagramBlock from "@ai-matrx/rich-content/display/blocks/diagram/InteractiveDiagramBlock";
 import type { ArtifactRendererProps } from "../types";
 /**
  * Unified renderer for `diagram` artifacts — the ONE renderer used by chat,

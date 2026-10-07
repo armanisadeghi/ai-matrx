@@ -13,8 +13,8 @@ import * as React from "react";
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 
-jest.mock("../SendToWorkbookButton", () => ({ useSendToWorkbook: () => ({ pushing: false, send: jest.fn(), dialog: null }) }));
-jest.mock("../SendToGoogleSheetButton", () => ({ useSendToGoogleSheet: () => ({ pushing: false, send: jest.fn() }) }));
+jest.mock("@ai-matrx/rich-content/display/tables/SendToWorkbookButton", () => ({ useSendToWorkbook: () => ({ pushing: false, send: jest.fn(), dialog: null }) }));
+jest.mock("@ai-matrx/rich-content/display/tables/SendToGoogleSheetButton", () => ({ useSendToGoogleSheet: () => ({ pushing: false, send: jest.fn() }) }));
 const opened: Array<Record<string, unknown>> = [];
 jest.mock("@/features/overlays/openers/saveToTable", () => ({
   useOpenSaveToTable: () => (options: Record<string, unknown>) => {
@@ -23,7 +23,7 @@ jest.mock("@/features/overlays/openers/saveToTable", () => ({
   },
 }));
 
-import { TableSaveToMenu } from "../TableSaveToMenu";
+import { TableSaveToMenu } from "@ai-matrx/rich-content/display/tables/TableSaveToMenu";
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 

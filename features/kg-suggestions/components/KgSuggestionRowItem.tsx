@@ -23,7 +23,7 @@
 "use client";
 
 import { useState } from "react";
-import { RichContentPreview } from "@/components/rich-content/RichContentPreview";
+import { RichContentPreview } from "@ai-matrx/rich-content/levels/RichContentPreview";
 import Link from "next/link";
 import { toast } from "@/lib/toast";
 import {

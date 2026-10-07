@@ -37,7 +37,7 @@ import type { InstanceContextEntry } from "@ai-matrx/chat/agents/types/instance.
 import type { ValueMappingMap } from "@ai-matrx/chat/surfaces/types";
 import { extractErrorMessage } from "@/utils/errors";
 
-import { extractMermaidFromOutput } from "../extract-fence";
+import { extractMermaidFromOutput } from "@ai-matrx/rich-content/mermaid/extract-fence";
 
 export const MERMAID_SURFACE_NAME = "matrx-user/mermaid-editor";
 

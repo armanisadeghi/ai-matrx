@@ -50,7 +50,7 @@ jest.mock("@ai-matrx/rich-content/kinds/react/KindEscapedNotice", () => ({
     }),
 }));
 
-import { JsonBlock } from "./JsonBlock";
+import { JsonBlock } from "@ai-matrx/rich-content/display/blocks/json/JsonBlock";
 
 const KIND = JSON.stringify(
   { __kind: "flashcard_set", title: "Cells", cards: [{ front: "A", back: "B" }] },

@@ -18,7 +18,7 @@ import { Skeleton } from "@ai-matrx/design-system";
 import { cn } from "@/lib/utils";
 import { soleFence } from "@/lib/markdown/code-ranges";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
-import { useCanvasFit } from "../canvas-fit";
+import { useCanvasFit } from "@ai-matrx/rich-content/display/blocks/canvas-fit";
 import { Button } from "@ai-matrx/design-system/controls";
 
 interface StatItem {

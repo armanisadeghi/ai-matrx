@@ -1,6 +1,6 @@
 "use client";
 
-import { RichContent } from "@/components/rich-content/RichContent";
+import { RichContent } from "@ai-matrx/rich-content/levels/RichContent";
 import { useState, useCallback } from "react";
 import {
   ChevronDown,

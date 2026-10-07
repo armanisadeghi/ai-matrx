@@ -23,7 +23,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import EditAnnouncementDialog from './EditAnnouncementDialog';
-import { RichContent } from '@/components/rich-content/RichContent';
+import { RichContent } from '@ai-matrx/rich-content/levels/RichContent';
 import { CopyButtons } from '@/components/agent-copy/CopyButtons';
 import { csvExportItem, jsonExportItem } from '@/components/agent-copy/export';
 import { announcementSummary } from '../format';

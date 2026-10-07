@@ -10,12 +10,12 @@
 import { useReducer } from "react";
 import { toast } from "@/lib/toast";
 
-import { detectDiagramType, type MermaidDiagramType } from "../diagram-type";
-import "../adapters/register";
-import { getAdapterForType, type MermaidAdapter } from "../model/adapter";
-import { MermaidOpError, type MermaidOp } from "../model/ops";
-import { parseWithFidelityGate } from "../model/round-trip";
-import type { MermaidDoc, ParseOutcome } from "../model/types";
+import { detectDiagramType, type MermaidDiagramType } from "@ai-matrx/rich-content/mermaid/diagram-type";
+import "@ai-matrx/rich-content/mermaid/adapters/register";
+import { getAdapterForType, type MermaidAdapter } from "@ai-matrx/rich-content/mermaid/model/adapter";
+import { MermaidOpError, type MermaidOp } from "@ai-matrx/rich-content/mermaid/model/ops";
+import { parseWithFidelityGate } from "@ai-matrx/rich-content/mermaid/model/round-trip";
+import type { MermaidDoc, ParseOutcome } from "@ai-matrx/rich-content/mermaid/model/types";
 
 export type WorkbenchMode = "view" | "visual" | "outline" | "code";
 

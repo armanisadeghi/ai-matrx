@@ -1,6 +1,6 @@
 "use client";
 
-import { RichContent } from "@/components/rich-content/RichContent";
+import { RichContent } from "@ai-matrx/rich-content/levels/RichContent";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { initialOutlineExpansion, studyGuideOutlineDisplayTitle, studyGuideOutlineItems, studyGuideOutlineTree, toggleOutlineSection, type StudyGuideOutlineNode } from "../outline";

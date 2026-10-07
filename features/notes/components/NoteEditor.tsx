@@ -57,7 +57,7 @@ import { CreateFolderDialog } from "./CreateFolderDialog";
 // the read-only preview uses NonEditableContextMenu.
 import { EditableContextMenu } from "@/features/context-menu-v3/EditableContextMenu";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
-import { authoredBy } from "@/components/rich-content/prose/remote-image-policy";
+import { authoredBy } from "@ai-matrx/rich-content/levels/prose/remote-image-policy";
 import { insertAtRichCaret } from "@/components/rich-editor/caretInsert";
 
 declare global {

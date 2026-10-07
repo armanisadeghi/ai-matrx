@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { RichContent } from "@/components/rich-content/RichContent";
+import { RichContent } from "@ai-matrx/rich-content/levels/RichContent";
 import { isOpenStatus } from "@/features/tasks/constants/status";
 import { Loader2, FolderKanban, ChevronDown } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";

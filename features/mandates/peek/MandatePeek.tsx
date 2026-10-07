@@ -15,7 +15,7 @@
 // gets the same peek.
 
 import { useEffect, useMemo, useState } from "react";
-import { RichContent } from "@/components/rich-content/RichContent";
+import { RichContent } from "@ai-matrx/rich-content/levels/RichContent";
 import Link from "next/link";
 import { ArrowRight, Braces, Lightbulb, Workflow } from "lucide-react";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";

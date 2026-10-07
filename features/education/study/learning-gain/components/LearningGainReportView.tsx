@@ -9,7 +9,7 @@
 //
 // React Compiler is on: no manual memo.
 
-import { printLivePage } from "@/components/mermaid/lazy-draw";
+import { printLivePage } from "@ai-matrx/rich-content/mermaid/lazy-draw";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import {

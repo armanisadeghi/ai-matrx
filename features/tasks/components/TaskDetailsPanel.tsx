@@ -2,7 +2,7 @@
 
 import { useClipboard } from "@ai-matrx/kit/clipboard";
 import React, { useState, useEffect } from "react";
-import { RichContent } from "@/components/rich-content/RichContent";
+import { RichContent } from "@ai-matrx/rich-content/levels/RichContent";
 import { EditInPlace } from "@/components/rich-editor/in-place/EditInPlace";
 import { toastWriteFailure } from "@/lib/errors/toastWriteFailure";
 import Link from "next/link";

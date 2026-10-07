@@ -14,7 +14,7 @@ import { domElementVerdict, domFrameVerdict } from "@/features/content-ir/render
 import React from "react";
 import type { RenderBlockPayload } from "@ai-matrx/agents/generated/stream-events";
 import { StreamBlockAccumulator } from "@ai-matrx/chat/agents/redux/execution-system/utils/stream-block-accumulator";
-import { BlockRenderer } from "@/components/mardown-display/chat-markdown/block-registry/BlockRenderer";
+import { BlockRenderer } from "@ai-matrx/rich-content/display/chat-markdown/block-registry/BlockRenderer";
 import { splitContentIntoBlocksV2 } from "@ai-matrx/rich-content/display/markdown-classification/processors/utils/content-splitter-v2";
 import { catalogProseText, inlineKindText, spelledKindsAsOneLine, nonJsonKindsAsCode } from "@/features/content-ir/surfaces/kind-one-line";
 import { snippetKindText } from "@/features/content-ir/surfaces/kind-snippet-text";

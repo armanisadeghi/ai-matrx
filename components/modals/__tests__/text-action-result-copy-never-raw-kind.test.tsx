@@ -10,7 +10,7 @@ import { createRoot, type Root } from "react-dom/client";
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
-jest.mock("@/components/rich-content/RichContent", () => ({ RichContent: () => null }));
+jest.mock("@ai-matrx/rich-content/levels/RichContent", () => ({ RichContent: () => null }));
 
 import { TextActionResultModal } from "../TextActionResultModal";
 

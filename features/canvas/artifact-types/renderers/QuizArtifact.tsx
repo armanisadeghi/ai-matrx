@@ -2,7 +2,7 @@
 
 import { Suspense, useMemo } from "react";
 import MatrxMiniLoader from "@/components/loaders/MatrxMiniLoader";
-import { safeJsonParse } from "@/components/mardown-display/chat-markdown/block-registry/json-parse-utils";
+import { safeJsonParse } from "@ai-matrx/rich-content/display/chat-markdown/block-registry/json-parse-utils";
 import { resolveJsonPayload, artifactDedupKey } from "../artifact-renderers";
 import MultipleChoiceQuiz from "@/components/mardown-display/blocks/quiz/MultipleChoiceQuiz";
 import { normalizeRawQuizJSON } from "@/components/mardown-display/blocks/quiz/quiz-parser";

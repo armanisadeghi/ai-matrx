@@ -74,7 +74,7 @@ jest.mock("@/features/rag/components/library/KnowledgeAssetPanel", () => ({ Know
 jest.mock("@/features/pdf-extractor/studio/PdfStudioReader", () => ({
   PaneHeader: ({ title }: { title: string }) => <div>{title}</div>,
 }));
-jest.mock("@/components/rich-content/RichContent", () => ({ RichContent: () => null }));
+jest.mock("@ai-matrx/rich-content/levels/RichContent", () => ({ RichContent: () => null }));
 jest.mock("@/features/sources/SaveSourcePanel", () => ({ SaveSourcePanel: () => null }));
 jest.mock("@/components/errors/ErrorAlchemyMenu", () => ({ ErrorAlchemyMenu: () => null }));
 jest.mock("@/features/access-gate/components/AccessGate", () => ({ AccessGate: () => null }));

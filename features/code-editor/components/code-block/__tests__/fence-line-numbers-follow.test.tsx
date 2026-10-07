@@ -22,9 +22,9 @@ jest.mock("@/features/canvas/hooks/useCanvas", () => ({ useCanvas: () => ({ open
 jest.mock("@/features/overlays/openers/smartCodeEditorWindow", () => ({
   useOpenSmartCodeEditorWindow: () => jest.fn(),
 }));
-jest.mock("../SmallCodeEditor", () => ({ __esModule: true, default: () => null }));
-jest.mock("../CodeBlockHeader", () => ({ __esModule: true, default: () => null }));
-jest.mock("../StickyButtons", () => ({ __esModule: true, default: () => null }));
+jest.mock("@ai-matrx/rich-content/code-block/SmallCodeEditor", () => ({ __esModule: true, default: () => null }));
+jest.mock("@ai-matrx/rich-content/code-block/CodeBlockHeader", () => ({ __esModule: true, default: () => null }));
+jest.mock("@ai-matrx/rich-content/code-block/StickyButtons", () => ({ __esModule: true, default: () => null }));
 jest.mock("@/features/html-pages/services/htmlPageService", () => ({ HTMLPageService: {} }));
 // jsdom has no IntersectionObserver; CodeBlock's sticky buttons observe its
 // edges. An inert, fully typed stand-in (never reports an intersection).
@@ -42,7 +42,7 @@ class InertIntersectionObserver implements IntersectionObserver {
 }
 globalThis.IntersectionObserver = InertIntersectionObserver;
 
-import CodeBlock from "../CodeBlock";
+import CodeBlock from "@ai-matrx/rich-content/code-block/CodeBlock";
 
 const CODE = "const ROUTE_14_CAPACITY = 38;\nconst ROUTE_15_CAPACITY = 42;";
 

@@ -19,7 +19,7 @@ jest.mock("@/components/MarkdownStream", () => ({
 }));
 jest.mock("next/dynamic", () => () => () => null);
 
-import { RichContent } from "../RichContent";
+import { RichContent } from "@ai-matrx/rich-content/levels/RichContent";
 
 test("onContentChange, messageId, analysisData, conversationId and the display flags reach the pipeline; an edit reaches the host", () => {
   const save = jest.fn();

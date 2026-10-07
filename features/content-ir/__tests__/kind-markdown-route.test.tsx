@@ -53,7 +53,7 @@ import { validateStructuralLeg } from "@ai-matrx/content-ir";
 import { envelopeFromCompleteValue } from "@ai-matrx/content-ir";
 import { IR_ENVELOPE_KEY } from "@ai-matrx/content-ir";
 import type { KindComponentProjection } from "../registry/schema-source-kind-components";
-import MarkdownKindBlock from "@/components/mardown-display/blocks/markdown/MarkdownKindBlock";
+import MarkdownKindBlock from "@ai-matrx/rich-content/display/blocks/markdown/MarkdownKindBlock";
 
 const MARKDOWN_COMPONENT_KEY = "markdown_stream";
 

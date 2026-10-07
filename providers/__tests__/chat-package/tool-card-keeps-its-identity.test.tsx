@@ -116,7 +116,7 @@ jest.mock(
   }),
 );
 jest.mock(
-  "@/components/mardown-display/chat-markdown/internal-handlers/SafeBlockRenderer",
+  "@ai-matrx/rich-content/display/chat-markdown/internal-handlers/SafeBlockRenderer",
   () => ({ SafeBlockRenderer: () => null }),
 );
 jest.mock(

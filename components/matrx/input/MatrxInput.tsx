@@ -1,9 +1,9 @@
 import React from 'react';
-import { Input } from "@ai-matrx/design-system/controls";
+import { Input, type InputProps } from "@ai-matrx/design-system/controls";
 import { Label } from '@/components/ui/label';
 
 
-interface MatrxInputProps extends React.InputHTMLAttributes<HTMLInputElement> {
+export interface MatrxInputProps extends InputProps {
     label?: string;
 }
 

@@ -18,6 +18,7 @@ import { splitMandateKey } from "@ai-matrx/agents/mandates";
 import type { AgentOwner } from "@/features/agents/agent-creators/services/agentBuilderService";
 import type { HolderDraft, WorkspaceRung } from "./ScopeHolderBar";
 import { DEFAULT_HOLDER_RUNG } from "./default-holder-rung";
+import { outputConstraintsOf } from "@/features/mandates/workspace/definition-output";
 
 /** The provision's owner_scope vocabulary — the server's words, not ours. */
 export type HolderDraftOwnerScope = "system" | "organization" | "user";
@@ -93,6 +94,8 @@ export function buildHolderDraftBrief(
   const description = mandate.description?.trim();
   if (description) brief.description = description;
   if (mandate.output_kind) brief.output_kind = mandate.output_kind;
+  const outputConstraints = outputConstraintsOf(mandate);
+  if (outputConstraints) brief.output_constraints = outputConstraints;
   if (data.contract.requiredOutputKeys.length > 0) {
     brief.required_output_keys = data.contract.requiredOutputKeys;
   }

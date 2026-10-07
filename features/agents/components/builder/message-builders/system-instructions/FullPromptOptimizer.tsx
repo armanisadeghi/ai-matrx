@@ -34,8 +34,8 @@ import {
   Info,
 } from "lucide-react";
 import { toast } from "@/lib/toast";
-import { RichContent } from "@/components/rich-content/RichContent";
-import CodeBlock from "@/features/code-editor/components/code-block/CodeBlock";
+import { RichContent } from "@ai-matrx/rich-content/levels/RichContent";
+import CodeBlock from "@ai-matrx/rich-content/code-block/CodeBlock";
 import { extractJsonFromText } from "@ai-matrx/chat/agents/utils/json-extraction";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { ProTextarea } from "@/components/official/ProTextarea";

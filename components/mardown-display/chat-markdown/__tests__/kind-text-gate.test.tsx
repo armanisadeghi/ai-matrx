@@ -27,7 +27,7 @@ jest.mock("@ai-matrx/rich-content/markdown-core/MarkdownCore", () => {
   return { __esModule: true, default: actual.default };
 });
 jest.mock("@/components/agent-copy/CopyButtons", () => ({ CopyButtons: () => null }));
-jest.mock("@/features/code-editor/components/code-block/CodeBlock", () => ({
+jest.mock("@ai-matrx/rich-content/code-block/CodeBlock", () => ({
   __esModule: true,
   default: ({ code }: { code: string }) => <pre>{code}</pre>,
 }));
@@ -50,8 +50,8 @@ jest.mock("@/components/MarkdownStream", () => ({
   default: function MockMarkdownStream({ content }: { content: string }) {
     mockStreamCalls.push(content);
     const { default: Basic } = jest.requireActual(
-      "@/components/mardown-display/chat-markdown/BasicMarkdownContent",
-    ) as typeof import("@/components/mardown-display/chat-markdown/BasicMarkdownContent");
+      "@ai-matrx/rich-content/display/chat-markdown/BasicMarkdownContent",
+    ) as typeof import("@ai-matrx/rich-content/display/chat-markdown/BasicMarkdownContent");
     // The real engine routes a kind fence to its kind component; the stand-in
     // marks that route and hands any prose back to the leaf (the loop case).
     const fence = /```json\n[\s\S]*?\n```/.exec(content);
@@ -66,8 +66,8 @@ jest.mock("@/components/MarkdownStream", () => ({
   },
 }));
 
-import BasicMarkdownContent from "@/components/mardown-display/chat-markdown/BasicMarkdownContent";
-import { ConfigurableMarkdownContent } from "@/components/mardown-display/chat-markdown/ConfigurableMarkdownContent";
+import BasicMarkdownContent from "@ai-matrx/rich-content/display/chat-markdown/BasicMarkdownContent";
+import { ConfigurableMarkdownContent } from "@ai-matrx/rich-content/display/chat-markdown/ConfigurableMarkdownContent";
 import MarkdownRenderer from "@/components/mardown-display/MarkdownRenderer";
 import MarkdownWithPlugins from "@/components/message-display/MarkdownWithPlugins";
 import { resetKindAtRawRendererReports } from "@/features/content-ir/surfaces/report-kind-at-raw-renderer";

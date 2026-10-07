@@ -137,7 +137,7 @@ export default function ShapeRenderStatusStrip({
     // Lazy — never a top-level import. block-dispatch.tsx pulls the whole
     // lazy React component tree behind it.
     void import(
-      "@/components/mardown-display/chat-markdown/block-registry/block-dispatch"
+      "@ai-matrx/rich-content/display/chat-markdown/block-registry/block-dispatch"
     )
       .then(({ resolveBlockDispatch }) => {
         if (!cancelled) {

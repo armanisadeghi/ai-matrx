@@ -69,7 +69,7 @@ import { LevelCompareView } from "./lab/LevelCompareView";
 import { PrintPreviewView } from "./lab/PrintPreviewView";
 import { DocumentPropertiesPanel } from "@ai-matrx/rich-content/markdown-core/syntax/elements/DocumentPropertiesPanel";
 import { MarkdownSourceEditProvider } from "@ai-matrx/rich-content/markdown-core/syntax/elements/MarkdownSourceEdit";
-import { useProgressiveMount } from "@/components/mardown-display/chat-markdown/progressive-mount";
+import { useProgressiveMount } from "@ai-matrx/rich-content/display/chat-markdown/progressive-mount";
 
 /** Task checkboxes toggle in the preview only when the buffer can be saved to. */
 function MaybeSourceEdit({

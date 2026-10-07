@@ -21,11 +21,11 @@ import {
   Layers,
 } from "lucide-react";
 import { cn } from "@/styles/themes/utils";
-import { ConfigurableMarkdownContent } from "@/components/mardown-display/chat-markdown/ConfigurableMarkdownContent";
+import { ConfigurableMarkdownContent } from "@ai-matrx/rich-content/display/chat-markdown/ConfigurableMarkdownContent";
 import type {
   MarkdownComponentOverrides,
   MarkdownStyleConfig,
-} from "@/components/mardown-display/chat-markdown/ConfigurableMarkdownContent";
+} from "@ai-matrx/rich-content/display/chat-markdown/ConfigurableMarkdownContent";
 import { FlashcardConfidenceRow } from "@/features/flashcards/components/study/FlashcardConfidenceRow";
 import { MatchingCardPlayer } from "@/features/flashcards/components/study/MatchingCardPlayer";
 import { CARD_KIND } from "@/features/flashcards/utils/cardVariants";

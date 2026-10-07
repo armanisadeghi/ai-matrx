@@ -21,7 +21,7 @@ import { AlertCircle, Check, Copy, Loader2 } from "lucide-react";
 // rules as every other surface); fenced code gets the shared Shiki view.
 import MarkdownCore from "@ai-matrx/rich-content/markdown-core/MarkdownCore";
 import type { MarkdownComponents } from "@ai-matrx/rich-content/markdown-core/markdown-core-types";
-import { ShikiCodeView } from "@/features/code-editor/components/code-block/highlight/ShikiCodeView";
+import { ShikiCodeView } from "@ai-matrx/rich-content/code-block/highlight/ShikiCodeView";
 import { useThemeMode } from "@/styles/themes/useThemeMode";
 import { cn } from "@/lib/utils";
 import { guardMarkdownDelimiters } from "@ai-matrx/kit/delimiter-guard";

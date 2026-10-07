@@ -22,9 +22,9 @@ jest.mock("@/features/canvas/hooks/useCanvas", () => ({ useCanvas: () => ({ open
 jest.mock("@/features/overlays/openers/smartCodeEditorWindow", () => ({
   useOpenSmartCodeEditorWindow: () => jest.fn(),
 }));
-jest.mock("../SmallCodeEditor", () => ({ __esModule: true, default: () => null }));
-jest.mock("../CodeBlockHeader", () => ({ __esModule: true, default: () => null }));
-jest.mock("../StickyButtons", () => ({ __esModule: true, default: () => null }));
+jest.mock("@ai-matrx/rich-content/code-block/SmallCodeEditor", () => ({ __esModule: true, default: () => null }));
+jest.mock("@ai-matrx/rich-content/code-block/CodeBlockHeader", () => ({ __esModule: true, default: () => null }));
+jest.mock("@ai-matrx/rich-content/code-block/StickyButtons", () => ({ __esModule: true, default: () => null }));
 jest.mock("@/features/html-pages/services/htmlPageService", () => ({ HTMLPageService: {} }));
 // jsdom has no IntersectionObserver; CodeBlock's sticky buttons observe its
 // edges. An inert, fully typed stand-in (never reports an intersection).
@@ -48,7 +48,7 @@ const mockLoop = { value: null as string | null };
 jest.mock("@/features/content-ir/studio/components/KindInstanceRender", () => ({
   __esModule: true,
   default: ({ kind }: { kind: string }) => {
-    const { default: Block } = jest.requireActual("../CodeBlock") as typeof import("../CodeBlock");
+    const { default: Block } = jest.requireActual("@ai-matrx/rich-content/code-block/CodeBlock") as typeof import("@ai-matrx/rich-content/code-block/CodeBlock");
     return (
       <div data-kind-route={kind}>
         {mockLoop.value ? <Block code={mockLoop.value} language="json" /> : null}
@@ -63,7 +63,7 @@ jest.mock("@ai-matrx/chat/host/diagnostics", () => ({
   captureError: (input: unknown) => mockCaptureError(input),
 }));
 
-import CodeBlock from "../CodeBlock";
+import CodeBlock from "@ai-matrx/rich-content/code-block/CodeBlock";
 import { resetKindAtRawRendererReports } from "@/features/content-ir/surfaces/report-kind-at-raw-renderer";
 
 const KIND = JSON.stringify({ __kind: "timeline", title: "History", events: [] }, null, 2);

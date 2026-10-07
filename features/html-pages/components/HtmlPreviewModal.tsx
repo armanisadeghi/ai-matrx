@@ -35,7 +35,7 @@ import {
   getMarkdownStylesheet,
   removeThinkingContent,
 } from "@ai-matrx/print/markdown";
-import SmallCodeEditor from "@/features/code-editor/components/code-block/SmallCodeEditor";
+import SmallCodeEditor from "@ai-matrx/rich-content/code-block/SmallCodeEditor";
 import { ImageAssetUploader } from "@/components/official/ImageAssetUploader";
 import { CloudFolders } from "@/features/files/utils/folder-conventions";
 import { Checkbox } from "@/components/ui/checkbox";

@@ -34,7 +34,7 @@ import { useThemeMode } from "@/styles/themes/useThemeMode";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { CodeEditorTabBar } from "@/features/code-editor/multi-file-core/CodeEditorTabBar";
-import { getLanguageIconNode } from "@/features/code-editor/components/code-block/LanguageDisplay";
+import { getLanguageIconNode } from "@ai-matrx/rich-content/code-block/LanguageDisplay";
 import { ReviewStage } from "./ReviewStage";
 import { ErrorPanel } from "./ErrorPanel";
 import type { CodeEditorState } from "../../types";
@@ -44,7 +44,7 @@ import type { CodeFile } from "@/features/code-editor/multi-file-core/types";
 // Monaco is heavy — but SmallCodeEditor is now its own dynamic shell
 // (front door), so a plain static import IS the split. A second dynamic()
 // here would stack boundaries (code-splitting skill, rule 2).
-import SmallCodeEditor from "@/features/code-editor/components/code-block/SmallCodeEditor";
+import SmallCodeEditor from "@ai-matrx/rich-content/code-block/SmallCodeEditor";
 import type { editor as MonacoEditorNs } from "monaco-editor";
 
 /** The live Monaco instance, as handed back by `SmallCodeEditor`'s mount hook. */

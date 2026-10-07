@@ -31,7 +31,7 @@ jest.mock("../decisions", () => ({
   recordProposalDecision: jest.fn(),
 }));
 jest.mock("@/components/errors/ErrorAlchemyMenu", () => ({ ErrorAlchemyMenu: () => null }));
-jest.mock("@/components/rich-content/RichContent", () => ({
+jest.mock("@ai-matrx/rich-content/levels/RichContent", () => ({
   RichContent: ({ source }: { source: string }) => <span data-testid="inline-text">{source}</span>,
 }));
 jest.mock("@/components/official/structured-value/KindValueFrontDoor", () => ({

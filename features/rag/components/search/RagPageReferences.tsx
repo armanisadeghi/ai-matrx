@@ -14,7 +14,7 @@ import {
   ScanText,
   Table2,
 } from "lucide-react";
-import { BasicMarkdownContent } from "@/components/mardown-display/chat-markdown/BasicMarkdownContent";
+import { BasicMarkdownContent } from "@ai-matrx/rich-content/display/chat-markdown/BasicMarkdownContent";
 import {
   RagAiCopyButton,
   RagContentActions,

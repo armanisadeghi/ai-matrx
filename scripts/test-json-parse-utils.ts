@@ -9,7 +9,7 @@
 import {
   preprocessJsonContent,
   safeJsonParse,
-} from "../components/mardown-display/chat-markdown/block-registry/json-parse-utils";
+} from "@ai-matrx/rich-content/display/chat-markdown/block-registry/json-parse-utils";
 
 const cases: { name: string; input: string }[] = [
   { name: "empty string", input: "" },

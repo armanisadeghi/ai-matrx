@@ -125,7 +125,7 @@ if (!(globalThis as { crypto?: Crypto }).crypto?.subtle) {
   });
 }
 
-import { StreamingTableRenderer } from "@/components/mardown-display/blocks/table/StreamingTableRenderer";
+import { StreamingTableRenderer } from "@ai-matrx/rich-content/display/blocks/table/StreamingTableRenderer";
 import { MarkdownStreamingProvider } from "@ai-matrx/rich-content/markdown-core/streaming-context";
 import ComparisonTableBlock from "@/components/mardown-display/blocks/comparison/ComparisonTableBlock";
 import { createSampleComparisonTable } from "@/components/mardown-display/blocks/comparison/parseComparisonJSON";
@@ -138,7 +138,7 @@ import StructuredPlanViewer from "@/components/mardown-display/blocks/plan/Struc
 import TaskChecklist from "@/components/mardown-display/blocks/tasks/TaskChecklist";
 import MultipleChoiceQuiz from "@/components/mardown-display/blocks/quiz/MultipleChoiceQuiz";
 import { CanvasFlashcardsView } from "@/features/flashcards/components/CanvasFlashcardsView";
-import { canvasFitFor } from "@/components/mardown-display/blocks/canvas-fit";
+import { canvasFitFor } from "@ai-matrx/rich-content/display/blocks/canvas-fit";
 import { TooltipProvider } from "@/components/ui/tooltip";
 
 function pane(width: number, height: number, isFullscreen = false): CanvasPresentation {

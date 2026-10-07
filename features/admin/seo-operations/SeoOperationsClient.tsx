@@ -21,7 +21,7 @@ import {
   adminMandateRecordHref,
 } from "@/features/mandates/admin-routes";
 import { adminScheduleHref } from "@/features/scheduling/constants/routes";
-import { RichContent } from "@/components/rich-content/RichContent";
+import { RichContent } from "@ai-matrx/rich-content/levels/RichContent";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import AppLink from "@/components/navigation/AppLink";
 import { ArrowUpRight } from "lucide-react";

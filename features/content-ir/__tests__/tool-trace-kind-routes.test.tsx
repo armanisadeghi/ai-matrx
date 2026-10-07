@@ -78,7 +78,7 @@ import { componentRegistry } from "../registry/component-registry";
 import { kindRegistry } from "../registry/kind-registry";
 import { envelopeFromCompleteValue, IR_ENVELOPE_KEY } from "@ai-matrx/content-ir";
 import type { KindComponentProjection } from "../registry/schema-source-kind-components";
-import GenericStructuredBlock from "@/components/mardown-display/blocks/generic/GenericStructuredBlock";
+import GenericStructuredBlock from "@ai-matrx/rich-content/display/blocks/generic/GenericStructuredBlock";
 import EXAMPLES from "./fixtures/tool-trace-kind-examples.json";
 
 const CANONICAL = EXAMPLES as Record<string, Record<string, unknown>>;

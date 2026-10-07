@@ -41,7 +41,7 @@ import {
 } from "@/features/war-room/redux/thunks";
 import { useThreadNoteSelectAdapter } from "@/features/war-room/hooks/useThreadEntitySelect";
 import { cn } from "@/lib/utils";
-import { authoredBy } from "@/components/rich-content/prose/remote-image-policy";
+import { authoredBy } from "@ai-matrx/rich-content/levels/prose/remote-image-policy";
 
 const MODES: { id: EditorMode; label: string; Icon: typeof Type }[] = [
   { id: "plain", label: "Plain", Icon: Type },

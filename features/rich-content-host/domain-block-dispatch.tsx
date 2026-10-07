@@ -1,4 +1,7 @@
 "use client";
+import { type RenderBlock, type BlockDispatchContext, type BlockRenderFn, DEFAULT_UNLABELED_FENCE_LANGUAGE, audioMimeFromUrl, isBlockLoading, type FeSynthesizedBlockType, type DetectorProtocolBlockType, type ProtocolBlockType, type ScalarGenericBlockType, type ShapeBlockType, type OpaqueBlockType, type KnownBlockType, reportUnregisteredBlockType } from "@ai-matrx/rich-content/display/chat-markdown/block-registry/block-dispatch";
+import "./domain-block-components";
+import { BLOCK_DISPATCH as ENGINE_BLOCK_DISPATCH, registerBlockDispatch } from "@ai-matrx/rich-content/display/chat-markdown/block-registry/block-dispatch";
 /**
  * block-dispatch — the declarative render-block dispatch registry.
  *
@@ -43,18 +46,12 @@
  */
 
 import type { AnswerEditRemarkMeta } from "@ai-matrx/chat/agents/redux/execution-system/instance-resources/remarks";
-import { NestedRichContent } from "@/components/rich-content/standard/NestedRichContent";
 import React, { Fragment } from "react";
 import { ReferenceRoleCaption } from "@ai-matrx/chat/agents/image-roles/ReferenceRoleCaption";
 import { DecisionQuestionsTranscriptView } from "@/features/agents/decision-questions/DecisionQuestionsTranscriptView";
 import { RemarksTranscriptView } from "@ai-matrx/chat/agents/components/messages-display/user/RemarksTranscriptView";
 import { SpeechScriptTranscriptView } from "@ai-matrx/chat/agents/speech-script/SpeechScriptTranscriptView";
-import { BlockComponents } from "./BlockComponentRegistry";
-import { InlineStatusIndicator } from "../internal-handlers/InlineStatusIndicator";
-import { EXPERT_WORKING_LABEL } from "@ai-matrx/chat/agents/components/shared/transcript-audience";
-import { looksLikeDiff } from "../diff-blocks/diff-style-registry";
-import { InlineCodeSnippet } from "../InlineCodeSnippet";
-import { isQuotedSourceXmlBlock } from "@/features/content-ir/surfaces/json-kind-signal";
+import { BlockComponents } from "@ai-matrx/rich-content/display/chat-markdown/block-registry/BlockComponentRegistry";
 import type {
   TypedRenderBlock,
   ServerOnlyBlockType,
@@ -73,7 +70,6 @@ import {
   DB_KIND_COMPONENT_KEY,
   GENERIC_STRUCTURED_COMPONENT_KEY,
 } from "@ai-matrx/rich-content/kinds/react/kind-route";
-import GenericStructuredBlock from "@/components/mardown-display/blocks/generic/GenericStructuredBlock";
 import WebAnalysisItemBlock from "@/components/mardown-display/blocks/web-analysis/WebAnalysisItemBlock";
 import FlowStepResultBlock from "@/components/mardown-display/blocks/result-kinds/FlowStepResultBlock";
 import CollectionResultBlock from "@/components/mardown-display/blocks/result-kinds/CollectionResultBlock";
@@ -102,7 +98,6 @@ import {
   SeoRulingConfirmationSetBlock,
   SeoRulingMatcherSetBlock,
 } from "@/components/mardown-display/blocks/seo-ruling-kinds/SeoRulingSetBlocks";
-import MarkdownKindBlock from "@/components/mardown-display/blocks/markdown/MarkdownKindBlock";
 import {
   AgentFactoryBuildBlock,
   AgentFactoryContractBlock,
@@ -113,143 +108,13 @@ import {
 // Lazy shell (next/dynamic ssr:false inside) — Babel/compiler weight ships in
 // its own chunk, fetched only when a block actually routed to a db component.
 import DbKindComponent from "@/features/content-ir/react/db-component/DbKindComponent";
-import { CodeBlockWithContextAttach } from "@/features/canvas/materialization/CodeBlockWithContextAttach";
 import { isMaterializedArtifactId } from "@/features/canvas/artifact-types/artifactId";
 import { captureError } from "@/lib/diagnostics/errorCaptureStore";
 import MatrxMiniLoader from "@/components/loaders/MatrxMiniLoader";
-import { FENCE_META_KEY } from "@ai-matrx/content-ir/source";
 import {
-  detectImageMarkdown,
   detectVideoMarkdown,
 } from "@ai-matrx/rich-content/display/markdown-classification/processors/utils/content-splitter-v2";
 import { readEnvelope } from "@ai-matrx/rich-content/kinds/redux/render-block-envelope";
-import {
-  isRenderableStructuredAgentAnswer,
-  parseStructuredAgentAnswer,
-  StructuredAgentAnswerBlock,
-} from "@/components/mardown-display/blocks/json/StructuredAgentAnswerBlock";
-
-// ── The flat render-block shape ──────────────────────────────────────────────
-
-/**
- * Flat render block interface used by BlockRenderer + this dispatch table.
- *
- * This is intentionally NOT a discriminated union. Using a discriminated union
- * (like TypedRenderBlock) causes TypeScript to narrow `block` to `never` for
- * any registration whose type string isn't in the union — making shared entry
- * functions unusable.
- *
- * All fields are the union of what any block registration can access. Specific
- * typed data for server-processed blocks arrives via `serverData` (the Python
- * `data` field).
- *
- * The `type` string covers ALL blocks: Python-typed (TypedRenderBlock["type"]),
- * client-splitter types (ClientOnlyBlockType), FE-synthesized data-event
- * wrappers (ServerOnlyBlockType), and the open `string` fallback for anything
- * Python adds before TypeScript types catch up.
- */
-export interface RenderBlock {
-  type:
-    | TypedRenderBlock["type"]
-    | ClientOnlyBlockType
-    | ServerOnlyBlockType
-    | string;
-  content: string;
-  /** Python's `data` field — typed by the server, accessed via serverData in the renderer. */
-  serverData?: Record<string, unknown>;
-  /** For code blocks: the language identifier (e.g. "typescript", "json"). */
-  language?: string;
-  /** For image/video blocks parsed from markdown: the media URL. */
-  src?: string;
-  /** For image/video blocks parsed from markdown: the alt text. */
-  alt?: string;
-  /** Block-specific metadata from the splitter or server. */
-  metadata?: Record<string, unknown>;
-  /** True when this block was emitted mid-stream (status: "streaming") — content is incomplete. */
-  isStreamingBlock?: boolean;
-}
-
-// ── Dispatch context ─────────────────────────────────────────────────────────
-
-/**
- * Everything a registration may read. Assembled once per block by
- * BlockRenderer (which owns the hooks — registrations are pure render
- * functions and MUST NOT call hooks).
- */
-export interface BlockDispatchContext {
-  block: RenderBlock;
-  index: number;
-  isStreamActive?: boolean;
-  conversationId?: string;
-  /** TRANSCRIPT KEY — always present; UI keys, anchors, canvas dedupe, local state. Never a DB key. */
-  messageId?: string;
-  /** DATABASE identity — undefined until the answer has a durable row. The only id for DB reads/writes. */
-  durableMessageId?: string;
-  taskId?: string;
-  requestId?: string;
-  isLastReasoningBlock?: boolean;
-  /** Per-conversation display flags (instanceUIState) — resolved by the component. */
-  hideReasoning: boolean;
-  hideToolResults: boolean;
-  /**
-   * May this reader see the machinery (`useMachineFramesVisible`)? A model's
-   * thinking narrates its own tool calls ("retry add_rules using the correct
-   * section keys", walk 24), so it is a machine frame like a tool card.
-   * Undefined = a builder surface, unchanged.
-   */
-  machineFramesVisible?: boolean;
-  /** Generic handler: replaces `original` substring with `replacement` in the full content string. */
-  replaceBlockContent: (original: string, replacement: string, remark?: AnswerEditRemarkMeta) => void;
-  /** The shared BasicMarkdownContent renderer, pre-wired with edit/diagnostic props. */
-  renderBasicMarkdown: (content: string) => React.ReactElement;
-  /** Bound agent's declared output schema; absent/loading deliberately fails closed. */
-  outputSchema?: unknown | null;
-}
-
-export type BlockRenderFn = (
-  ctx: BlockDispatchContext,
-) => React.ReactElement | null;
-
-// ── Shared helpers (moved verbatim from BlockRenderer) ──────────────────────
-
-/** Language for ``` fences with no info string (plain text / notes / prose). */
-export const DEFAULT_UNLABELED_FENCE_LANGUAGE = "markdown";
-const JSON_CODE_LANGUAGES = new Set(["json"]);
-
-/**
- * Best-effort MIME type for an audio URL parsed from a markdown link, derived
- * from its file extension (query string ignored). Lets the audio player emit a
- * correct `<source type>`; returns undefined for unknown extensions, which the
- * player handles gracefully.
- */
-export function audioMimeFromUrl(url: string): string | undefined {
-  const ext = url
-    .split(/[?#]/)[0]
-    .match(/\.([a-z0-9]+)$/i)?.[1]
-    ?.toLowerCase();
-  switch (ext) {
-    case "mp3":
-      return "audio/mpeg";
-    case "wav":
-      return "audio/wav";
-    case "m4a":
-      return "audio/mp4";
-    case "aac":
-      return "audio/aac";
-    case "ogg":
-    case "oga":
-      return "audio/ogg";
-    case "opus":
-      return "audio/opus";
-    case "flac":
-      return "audio/flac";
-    case "weba":
-    case "webm":
-      return "audio/webm";
-    default:
-      return undefined;
-  }
-}
 
 /**
  * Helper to determine if JSON content is genuinely incomplete (still streaming)
@@ -263,599 +128,6 @@ function isGenuinelyIncomplete(content: string): boolean {
   // If braces are unbalanced, it's genuinely incomplete
   return openBraces > closeBraces;
 }
-
-/**
- * Returns true when a block should show its loading skeleton instead of
- * attempting to parse incomplete content.
- *
- * A block is considered "still loading" when either:
- *  - It was emitted mid-stream (status === "streaming") — content is definitely
- *    incomplete because the accumulator hasn't seen the closing fence/tag yet.
- *  - The splitter/server explicitly marked it isComplete: false AND the
- *    brace count shows the JSON is still open.
- */
-export function isBlockLoading(block: {
-  isStreamingBlock?: boolean;
-  metadata?: Record<string, unknown>;
-  content: string;
-}): boolean {
-  if (block.isStreamingBlock) return true;
-  // A kind envelope is the parser's authoritative completion signal. During
-  // streaming it can be structurally balanced between fields, so brace
-  // counting alone briefly declared the block complete. A bridge that had
-  // not reached its first renderable unit then fell through to JsonBlock and
-  // exposed a registered Shape as raw JSON until the next token arrived.
-  // Keep that balanced partial frame in the kind loading/component path.
-  // Only "streaming" is still arriving. "error" is TERMINAL: the producer
-  // stopped (max_tokens, provider safety stop, dropped stream) and the parser
-  // stamped the cut-off region `error`. Calling that "loading" parked every
-  // complete-only kind block (news_opportunity_report, ...) on "Initializing
-  // Matrx..." forever under the "response is incomplete" note (2026-10-06).
-  // A stopped region renders what it has.
-  const envelope = readEnvelope(block.metadata);
-  if (envelope?.root.kind && envelope.root.status === "streaming") return true;
-  // The parser's terminal verdict outranks the splitter's `isComplete: false`
-  // (stamped at split time, never cleared when the stream stops): a stopped
-  // region is settled whatever its text looks like.
-  if (envelope?.root.status === "error") return false;
-  if (
-    block.metadata?.isComplete === false &&
-    isGenuinelyIncomplete(block.content)
-  )
-    return true;
-  return false;
-}
-
-// ── The classified vocabulary ────────────────────────────────────────────────
-//
-// One union per crosswalk classification. Server-side members DERIVE from the
-// generated classification-grouped unions in stream-events.ts (the crosswalk
-// build cross-checks those groupings against the rule tables); frontend-side
-// members mirror the crosswalk rows for `frontend:typed_render_block` /
-// `frontend:client_only_render_block` / detector tokens. The dispatch test
-// (__tests__/block-dispatch.test.ts) verifies these groupings against the
-// crosswalk JSON so a reclassification cannot silently drift.
-
-/**
- * FE-synthesized block types with NO generated-union membership:
- *  - `media_block` — synthesized by process-stream.ts from the `media_block`
- *    data event (document/youtube kinds). The crosswalk declares it through
- *    `frontend:synthesized_render_block` and classifies it scalar_generic,
- *    matching its audio_output/image_output/video_output siblings.
- *  - `generic_structured` — produced ONLY by `applyIrKindRoute`'s R6 generic
- *    fallback (a KNOWN shape nothing render-trusted claims); never emitted
- *    upstream, so it has no vocabulary row. Shape-classified by construction.
- *  - `flow_step_result` / `collection_result` / `file_operation_result` /
- *    `value_result` — the four RUNTIME RESULT family renderers (GAP 6,
- *    2026-08-23). 61 workflow/tool kinds that reached the reader only through
- *    the `generic_structured` floor now resolve to one of these by a
- *    `kind_component` row per kind, on exactly the `web_analysis_item` model:
- *    one shared reader question per family, the platform's value renderer
- *    underneath. Reached ONLY via applyIrKindRoute's resolver-only path.
- *  - `google_workspace_result` / `google_marketing_result` — the two GOOGLE
- *    tool-result renderers. One union kind per tool (fifteen Workspace actions,
- *    six marketing reads), so one component each, reached through that kind's
- *    `kind_component` row on the resolver-only path. Never emitted upstream.
- *  - `platform_record` — the ONE renderer for the `platform_record` kind, the
- *    shape `data.read_record` ("Read a Record", matrx-graph) answers with: one
- *    platform row of ANY registered entity type, read as the run's operator.
- *    One Record shape for every type by ruling, so one component: the row's
- *    identity and its door lead, `hidden_fields` are named, and the columns go
- *    to the platform's value viewer. Reached ONLY via applyIrKindRoute's
- *    resolver-only path, from that kind's `kind_component` row; never emitted
- *    upstream, so it has no vocabulary row. Shape-classified by construction.
- *  - `seo_ruling_*` — the fourteen keyword RULING SESSION kinds (seven
- *    collections + their seven item kinds): what the SEO keyword Ruling Session
- *    agents are told, built by `features/marketing/seo/value-system/workbench/
- *    session/trial.ts`. One compact component per kind (blocks/seo-ruling-kinds/),
- *    each collection delegating its rows to the item kind's component. Reached
- *    ONLY via applyIrKindRoute's resolver-only path, from each kind's
- *    `kind_component` row; never emitted upstream. Shape-classified by construction.
- *  - `web_analysis_item` — the ONE renderer for the `web_analysis_item`
- *    kind family (the 83 registered `web_*_v1` site-audit checks, which share
- *    one verified shape). Produced ONLY by `applyIrKindRoute`'s resolver-only
- *    path, from a `content_ir.kind_component` row per kind; never emitted
- *    upstream, so it has no vocabulary row. Shape-classified by construction.
- *  - `markdown_stream` — the registered renderer for the `markdown` kind
- *    (`{ text }`), which hands the text to MarkdownStream: the two-path render
- *    law ("declared kind component, or streaming markdown") collapsed into one
- *    by making the second path a kind. Produced ONLY by `applyIrKindRoute`'s
- *    resolver-only path, from that kind's `content_ir.kind_component` row;
- *    never emitted upstream, so it has no vocabulary row. Shape-classified by
- *    construction.
- *  - `db_kind_component` — produced ONLY by `applyIrKindRoute`'s db-override
- *    flip (an ACTIVE `content_ir.kind_component` row with `source='db'` won
- *    the resolution); never emitted upstream. Shape-classified by
- *    construction.
- *  - `video_prompt_options` — produced ONLY by `applyIrKindRoute`'s
- *    compiled-bridge flip for the registered `video_prompt_options` kind
- *    (`__kind` JSON arrival only — no tag/fence surface); never emitted
- *    upstream. Shape-classified by construction.
- *  - `keyword_research` / `keyword_classification_batch` — produced ONLY by
- *    `applyIrKindRoute`'s compiled-bridge flips for the registered
- *    `keyword_relationship_research` / `keyword_classification_batch_v1`
- *    kinds (`__kind` JSON arrival only — no tag/fence surface); never
- *    emitted upstream. Shape-classified by construction. STREAMING bridges:
- *    serverData exists (and grows) mid-stream, so the components render
- *    item-by-item live.
- *  - `page_brief` — produced ONLY by `applyIrKindRoute`'s compiled-bridge flip
- *    for the registered `page_brief` kind (`__kind` JSON arrival only — no
- *    tag/fence surface); never emitted upstream. Shape-classified by
- *    construction. STREAMING bridge, same contract as the keyword pair.
- *  - `media_chapters` — produced ONLY by `applyIrKindRoute`'s compiled-bridge
- *    flip for the registered `media_chapters` kind (`__kind` JSON arrival
- *    only — no tag/fence surface); never emitted upstream. STREAMING bridge:
- *    `chapters` is an array of a child kind, so rows appear one at a time.
- *  - `generated_image_set` / `generated_video_set` / `generated_audio` /
- *    `podcast_episode` — the media workflow-I/O deliverables, produced ONLY by
- *    `applyIrKindRoute`'s compiled-bridge flips for those registered kinds
- *    (`__kind` JSON arrival only — no tag/fence surface); never emitted
- *    upstream. STREAMING bridges: the set kinds carry a child-kind array, so
- *    each image/clip appears as its object closes. Media renders through
- *    `<InlineMediaRef>` inside the components (never a raw src) — see the
- *    media-durability law.
- *  - `memory_aid` / `memory_hint` — produced ONLY by `applyIrKindRoute`'s
- *    compiled-bridge flips for those registered kinds (`__kind` JSON arrival
- *    only — no tag/fence surface); never emitted upstream. STREAMING bridges:
- *    `mnemonics` / `analogies` / `loci` are arrays of child kinds, so aids
- *    appear one at a time; the hint shows a writing row until `aid` parses.
- *  - `masterwork_checkup_finding` — produced ONLY by `applyIrKindRoute`'s
- *    compiled-bridge flip for the registered `masterwork_checkup_finding`
- *    kind (`__kind` JSON arrival only — no tag/fence surface); never emitted
- *    upstream. Shape-classified by construction. COMPLETE bridge: aidream
- *    gates a whole finding before it reaches the wire, so findings stream,
- *    fields within one do not. Carries the Approve/Improve/Reject/Edit verbs
- *    through the `checkup_decision` surface write target when the page it
- *    landed on offers it.
- *  - `refusal` — the honest "not yet": the desk declined to produce until its
- *    frame holds, and named every missing fact with how to get it. Produced
- *    ONLY by `applyIrKindRoute`'s compiled-bridge flip; a COMPLETE bridge (a
- *    half-written refusal is not a position). It is a RESULT — never routed to
- *    an error surface, a toast, or nothing.
-  *  - `case_disclosure` / `unfolding_ruling` — the UNFOLDING-CASE kinds,
- *    produced ONLY by `applyIrKindRoute`'s compiled-bridge flips (`__kind`
- *    JSON arrival only — no tag/fence surface); never emitted upstream.
- *    COMPLETE bridges: the case oracle emits a whole disclosure (its ledger is
- *    cumulative, so the latest one IS the whole path) and the desk emits a
- *    whole ruling — there is no half-written one on the wire.
- *  - `agent_result` — produced ONLY by `applyIrKindRoute`'s compiled-bridge
- *    flip for the registered `agent_result` kind (`__kind` JSON arrival only —
- *    no tag/fence surface); never emitted upstream. COMPLETE bridge: an
- *    agent-run envelope is the settled record of a finished run, so there is
- *    no half-written one. The bridge hands the component what the agent
- *    PRODUCED plus the run's numbers — never `messages`, which is why the
- *    envelope's verbatim prompt cannot reach a reader through this path.
- *  - `node_outcome` / `run_result` — the RUNTIME WRAPPER kinds, produced ONLY
- *    by `applyIrKindRoute`'s compiled-bridge flips (`__kind` JSON arrival only
- *    — no tag/fence surface); never emitted upstream. COMPLETE bridges: a
- *    wrapper describes SETTLED work (a node that finished, a run that
- *    terminated), so there is no half-written one. Their components render
- *    PROVENANCE ONLY and hand the nested `output` back to this same registry —
- *    see common-docs RUNTIME_WRAPPER_WIRE.md §5.
- *  - `episode_title_options` — produced ONLY by `applyIrKindRoute`'s
- *    compiled-bridge flip for the registered `episode_title_options` kind
- *    (`__kind` JSON arrival only — no tag/fence surface); never emitted
- *    upstream. Shape-classified by construction. STREAMING bridge; the cards
- *    apply the picked title through the `episode_title` surface write target
- *    when the page they landed on offers it.
- *  - `seo_package` — produced ONLY by `applyIrKindRoute`'s compiled-bridge flip
- *    for the registered `seo_package` kind (`__kind` JSON arrival only — no
- *    tag/fence surface); never emitted upstream. STREAMING bridge: the title
- *    lands with its character budget already measured, and `faq` is an array
- *    of a child kind, so questions appear one at a time.
- *  - `plan_page_research` / `plan_page_outline` / `plan_page_draft` /
- *    `plan_page_review` / `cms_page_build` — the Website Factory's per-page
- *    pipeline steps, produced ONLY by `applyIrKindRoute`'s compiled-bridge
- *    flips for those registered kinds (`__kind` JSON arrival only — no
- *    tag/fence surface); never emitted upstream. STREAMING bridges: each
- *    carries at least one child-kind array (sections / issues / sources /
- *    planned links), so rows appear one at a time.
- *  - `ingested_sources` / `study_notes` — the Study Pack run surface's two
- *    opening readouts, produced ONLY by `applyIrKindRoute`'s compiled-bridge
- *    flips for those registered kinds (`__kind` JSON arrival only — no
- *    tag/fence surface); never emitted upstream. STREAMING bridges: chunks and
- *    sections are child-kind arrays, so sources and sections appear one at a
- *    time.
- *  - `lesson_scripts` / `study_pack` — study_pack_v2: the spoken lessons and
- *    the composed pack, produced ONLY by `applyIrKindRoute`'s compiled-bridge
- *    flips for `lesson_script_set` / `study_pack_set` (`__kind` JSON arrival
- *    only — no tag/fence surface); never emitted upstream. STREAMING bridges:
- *    lesson sections appear one at a time, and the pack renders whichever
- *    member artifacts have arrived (StudyPackBlock DELEGATES each member back
- *    to its own kind's component — never a second flashcards/quiz/notes view).
- *  - `web_search_results` + its item kinds (`web_result`, `news_result`,
- *    `video_result`, `faq_item`, `discussion_result`, `local_place`,
- *    `entity_card`, `ai_answer`) + the primitives (`rating`, `opening_hours`,
- *    `postal_address`, `geo_coordinates`) — the merged provider-agnostic
- *    search kind family (Search Kinds Pilot), produced ONLY by
- *    `applyIrKindRoute`'s compiled-bridge flips (`__kind` JSON arrival only —
- *    no tag/fence surface); never emitted upstream. STREAMING bridges: the
- *    collection carries child-kind arrays, so results appear as their
- *    objects close; the collection component delegates every nested instance
- *    to its kind's canonical component (db overrides included).
- *  - `seo_rank_serp_landscape` + `serp_placement` + `seo_rank_reading` +
- *    `seo_rank_target` + `seo_rank_portfolio` + `seo_rank_target_removal` +
- *    the primitive `provider_run_receipt` — the rank / SERP-landscape family
- *    (Rank Kinds Run), produced ONLY by `applyIrKindRoute`'s compiled-bridge
- *    flips (`__kind` JSON arrival only — no tag/fence surface). A CONVERGENCE
- *    family: `serp_placement.result` is a union over the SHIPPED search item
- *    kinds above, and its component delegates straight through the search
- *    family's seam rather than re-drawing any of them.
- *  - `source_ref` + `retrieved_chunk` + `rag_search_result` +
- *    `rag_cross_doc_search_result` + `rag_synthesize_result` — the RAG
- *    retrieval + citation family (RAG Kinds Run), produced ONLY by
- *    `applyIrKindRoute`'s compiled-bridge flips (`__kind` JSON arrival only —
- *    no tag/fence surface). `source_ref` is a SYSTEM-WIDE primitive, not a RAG
- *    kind: it is the platform's cited-source shape and renders in two postures
- *    from ONE component (a standalone card, and the shared `CitationChip`
- *    inline). `retrieved_chunk` adapts to `RagHitView` and renders the
- *    canonical `RagHitCard` rather than drawing a fourth hit card.
- *  - `data_table` — the tabular PRIMITIVE (Table Kinds Run), produced ONLY by
- *    `applyIrKindRoute`'s compiled-bridge flips (`__kind` JSON arrival only —
- *    no tag/fence surface). A SQL result, a user data-table lookup, a parsed
- *    CSV and a table lifted out of a PDF are ONE rows-and-columns shape that
- *    was wearing five names; everything returning rows nests this rather than
- *    minting its own. Its component makes the two facts those five producers
- *    hid impossible to miss: an UNDECLARED column type (never a synonym for
- *    "string") and a SILENT truncation.
- */
-export type FeSynthesizedBlockType =
-  | "directive_receipt"
-  // The typed ASKS on a user turn (normalize-content-blocks.ts): the decision
-  // questions that were put and the speech script that was performed.
-  | "decision_questions"
-  | "speech_script"
-  | "input_remarks"
-  | "media_block"
-  | "video_prompt_options"
-  | "map_topic_proposal"
-  | "pr_play_menu"
-  | "news_monitor_kind"
-  | "decision_answers"
-  | "list_change_proposal"
-  | "keyword_research"
-  | "keyword_classification_batch"
-  | "keyword_serp_intent_analysis"
-  | "seo_keyword_research_result"
-  | "page_brief"
-  | "media_chapters"
-  | "generated_image_set"
-  | "generated_video_set"
-  | "generated_audio"
-  | "podcast_episode"
-  | "media_asset"
-  | "memory_aid"
-  | "memory_hint"
-  | "episode_title_options"
-  | "masterwork_checkup_finding"
-  | "masterwork_result"
-  | "serial_observation_timeline"
-  | "case_disclosure"
-  | "unfolding_ruling"
-  | "refusal"
-  | "agent_result"
-  | "node_outcome"
-  | "run_result"
-  | "seo_package"
-  | "plan_page_research"
-  | "plan_page_outline"
-  | "plan_page_draft"
-  | "plan_page_review"
-  | "cms_page_build"
-  | "cms_html_page_result"
-  | "ingested_sources"
-  | "study_notes"
-  | "lesson_scripts"
-  | "study_pack"
-  | "scraped_page"
-  | "scraper_batch_result"
-  | "scraper_crawl_result"
-  | "page_link"
-  | "link_buckets"
-  | "page_image"
-  | "page_video"
-  | "page_audio"
-  | "page_heading"
-  | "page_section"
-  | "page_list"
-  | "page_block"
-  | "code_block"
-  | "redirect_hop"
-  | "content_fingerprint"
-  | "page_metadata"
-  | "page_removal"
-  | "page_cleaning_report"
-  | "web_search_results"
-  | "web_result"
-  | "news_result"
-  | "video_result"
-  | "faq_item"
-  | "discussion_result"
-  | "local_place"
-  | "entity_card"
-  | "ai_answer"
-  | "rating"
-  | "opening_hours"
-  | "postal_address"
-  | "geo_coordinates"
-  | "seo_rank_serp_landscape"
-  | "serp_placement"
-  | "seo_rank_reading"
-  | "seo_rank_target"
-  | "seo_rank_portfolio"
-  | "seo_rank_target_removal"
-  | "provider_run_receipt"
-  | "intake_photo_grouping"
-  | "item_vision_extraction"
-  | "lot_detection"
-  | "product_research"
-  | "value_assessment"
-  | "asset_grading"
-  | "media_list_ranking_result"
-  | "media_candidate_verdict"
-  | "enrichment_verification"
-  | "pricing_proposal"
-  | "listing_draft"
-  | "review_verdict"
-  | "publish_preflight"
-  | "lulu_print_cost_calculation"
-  | "lulu_shipping_options"
-  | "lulu_cover_dimensions"
-  | "lulu_print_job"
-  | "lulu_print_product_matches"
-  | "data_table"
-  | "source_ref"
-  | "retrieved_chunk"
-  | "rag_search_result"
-  | "rag_cross_doc_search_result"
-  | "rag_synthesize_result"
-  | "web_analysis_item"
-  | "flow_step_result"
-  | "collection_result"
-  | "file_operation_result"
-  | "value_result"
-  | "google_workspace_result"
-  | "google_marketing_result"
-  | "platform_record"
-  | "relation"
-  | "pick_list"
-  | "seo_ruling_keyword"
-  | "seo_ruling_example"
-  | "seo_ruling_dimension"
-  | "seo_ruling_matcher_hit"
-  | "seo_ruling_correction"
-  | "seo_ruling_confirmation"
-  | "seo_ruling_matcher"
-  | "seo_ruling_keyword_set"
-  | "seo_ruling_example_set"
-  | "seo_ruling_dimension_catalog"
-  | "seo_ruling_matcher_hit_set"
-  | "seo_ruling_correction_set"
-  | "seo_ruling_confirmation_set"
-  | "seo_ruling_matcher_set"
-  | "agent_factory_contract"
-  | "agent_factory_tool_choice"
-  | "agent_factory_instructions"
-  | "agent_factory_proof_review"
-  | "agent_factory_build"
-  | "markdown_stream"
-  | typeof GENERIC_STRUCTURED_COMPONENT_KEY
-  | typeof DB_KIND_COMPONENT_KEY;
-
-/**
- * Detector-owned protocol tokens (crosswalk rows sourced ONLY from the
- * splitter/accumulator ATTR_XML_TAGS tables — no TS render-block union
- * membership): the editor pill round-trip plumbing + audio citations.
- */
-export type DetectorProtocolBlockType =
-  "editor_error" | "editor_code_snippet" | "audiocite";
-
-/** Crosswalk classification: protocol — control plumbing, never Shapes. */
-export type ProtocolBlockType =
-  | ServerProtocolRenderBlock["type"]
-  | "directive_receipt"
-  | "thinking"
-  | "reasoning"
-  | "consolidated_reasoning"
-  | "decision"
-  | "artifact"
-  | "info"
-  | "task"
-  | "database"
-  | "private"
-  | "plan"
-  | "event"
-  | "tool"
-  | "matrx"
-  | "matrx_file"
-  | "schema_proposal"
-  | DetectorProtocolBlockType;
-
-/** Crosswalk classification: scalar_generic — text/code/table/media primitives. */
-export type ScalarGenericBlockType =
-  | ServerScalarGenericRenderBlock["type"]
-  | "text"
-  | "code"
-  | "table"
-  | "image"
-  | "video"
-  | "tree"
-  | "accent-divider"
-  | "heavy-divider"
-  | "audio"
-  | "youtube"
-  | "svg"
-  | "media_block";
-
-/** Crosswalk classification: shape — structured content (kinds + candidates). */
-export type ShapeBlockType =
-  | ServerShapeRenderBlock["type"]
-  | "decision_questions"
-  | "speech_script"
-  | "input_remarks"
-  | "flashcards"
-  | "quiz"
-  | "presentation"
-  | "cooking_recipe"
-  | "timeline"
-  | "progress_tracker"
-  | "comparison_table"
-  | "troubleshooting"
-  | "resources"
-  | "decision_tree"
-  | "research"
-  | "diagram"
-  | "mermaid"
-  | "math_problem"
-  | "questionnaire"
-  | "tasks"
-  | "transcript"
-  | "structured_info"
-  | "item_presentation"
-  | "video_prompt_options"
-  | "map_topic_proposal"
-  | "pr_play_menu"
-  | "news_monitor_kind"
-  | "decision_answers"
-  | "list_change_proposal"
-  | "keyword_research"
-  | "keyword_classification_batch"
-  | "keyword_serp_intent_analysis"
-  | "seo_keyword_research_result"
-  | "page_brief"
-  | "media_chapters"
-  | "generated_image_set"
-  | "generated_video_set"
-  | "generated_audio"
-  | "podcast_episode"
-  | "media_asset"
-  | "memory_aid"
-  | "memory_hint"
-  | "episode_title_options"
-  | "masterwork_checkup_finding"
-  | "masterwork_result"
-  | "serial_observation_timeline"
-  | "case_disclosure"
-  | "unfolding_ruling"
-  | "refusal"
-  | "agent_result"
-  | "node_outcome"
-  | "run_result"
-  | "seo_package"
-  | "plan_page_research"
-  | "plan_page_outline"
-  | "plan_page_draft"
-  | "plan_page_review"
-  | "cms_page_build"
-  | "cms_html_page_result"
-  | "ingested_sources"
-  | "study_notes"
-  | "lesson_scripts"
-  | "study_pack"
-  | "scraped_page"
-  | "scraper_batch_result"
-  | "scraper_crawl_result"
-  | "page_link"
-  | "link_buckets"
-  | "page_image"
-  | "page_video"
-  | "page_audio"
-  | "page_heading"
-  | "page_section"
-  | "page_list"
-  | "page_block"
-  | "code_block"
-  | "redirect_hop"
-  | "content_fingerprint"
-  | "page_metadata"
-  | "page_removal"
-  | "page_cleaning_report"
-  | "web_search_results"
-  | "web_result"
-  | "news_result"
-  | "video_result"
-  | "faq_item"
-  | "discussion_result"
-  | "local_place"
-  | "entity_card"
-  | "ai_answer"
-  | "rating"
-  | "opening_hours"
-  | "postal_address"
-  | "geo_coordinates"
-  | "seo_rank_serp_landscape"
-  | "serp_placement"
-  | "seo_rank_reading"
-  | "seo_rank_target"
-  | "seo_rank_portfolio"
-  | "seo_rank_target_removal"
-  | "provider_run_receipt"
-  | "intake_photo_grouping"
-  | "item_vision_extraction"
-  | "lot_detection"
-  | "product_research"
-  | "value_assessment"
-  | "asset_grading"
-  | "media_list_ranking_result"
-  | "media_candidate_verdict"
-  | "enrichment_verification"
-  | "pricing_proposal"
-  | "listing_draft"
-  | "review_verdict"
-  | "publish_preflight"
-  | "lulu_print_cost_calculation"
-  | "lulu_shipping_options"
-  | "lulu_cover_dimensions"
-  | "lulu_print_job"
-  | "lulu_print_product_matches"
-  | "data_table"
-  | "source_ref"
-  | "retrieved_chunk"
-  | "rag_search_result"
-  | "rag_cross_doc_search_result"
-  | "rag_synthesize_result"
-  | "chart"
-  | "map"
-  | "stats"
-  | "diff"
-  | "web_analysis_item"
-  | "flow_step_result"
-  | "collection_result"
-  | "file_operation_result"
-  | "value_result"
-  | "google_workspace_result"
-  | "google_marketing_result"
-  | "platform_record"
-  | "relation"
-  | "pick_list"
-  | "seo_ruling_keyword"
-  | "seo_ruling_example"
-  | "seo_ruling_dimension"
-  | "seo_ruling_matcher_hit"
-  | "seo_ruling_correction"
-  | "seo_ruling_confirmation"
-  | "seo_ruling_matcher"
-  | "seo_ruling_keyword_set"
-  | "seo_ruling_example_set"
-  | "seo_ruling_dimension_catalog"
-  | "seo_ruling_matcher_hit_set"
-  | "seo_ruling_correction_set"
-  | "seo_ruling_confirmation_set"
-  | "seo_ruling_matcher_set"
-  | "agent_factory_contract"
-  | "agent_factory_tool_choice"
-  | "agent_factory_instructions"
-  | "agent_factory_proof_review"
-  | "agent_factory_build"
-  | "markdown_stream"
-  | typeof GENERIC_STRUCTURED_COMPONENT_KEY
-  | typeof DB_KIND_COMPONENT_KEY;
-
-/** Crosswalk classification: intentionally_opaque — deliberately untyped. */
-export type OpaqueBlockType = ServerOpaqueRenderBlock["type"];
-
-export type KnownBlockType =
-  ProtocolBlockType | ScalarGenericBlockType | ShapeBlockType | OpaqueBlockType;
 
 // ── Compile-time exhaustiveness (the satisfies/never gate) ──────────────────
 
@@ -890,84 +162,6 @@ type _NoInventedClassifications = AssertNever<
 const reportedUnregisteredTypes = new Set<string>();
 
 /**
- * SCREAM: a block type reached the renderer with no dispatch registration.
- * This is a real defect (a new server/splitter type outran the generated
- * unions, or a registration was deleted) — the block still renders as basic
- * markdown so no content is hidden, but the miss is captured loudly
- * (console.error once per type per session + structured captureError, which
- * dedupes repeats). Mirrors the reportMediaDurabilityViolation posture:
- * recover, but never silently.
- */
-export function reportUnregisteredBlockType(
-  type: string,
-  meta: {
-    conversationId?: string;
-    messageId?: string;
-    requestId?: string;
-  },
-): void {
-  const message = `[block-dispatch] UNREGISTERED render-block type "${type}" — no dispatch registration exists. Rendering as basic markdown. Classify it in block-dispatch.tsx (per the content-vocab crosswalk) and register a renderer.`;
-  if (!reportedUnregisteredTypes.has(type)) {
-    reportedUnregisteredTypes.add(type);
-    console.error(message, meta);
-  }
-  captureError({
-    source: "content-ir",
-    message,
-    requestId: meta.requestId,
-    conversationId: meta.conversationId,
-    raw: { blockType: type, ...meta },
-  });
-}
-
-const reportedArtifactStageMisses = new Set<string>();
-
-/**
- * Registration for shape/scalar types whose ONLY sanctioned renderer is the
- * unified artifact stage (resolveArtifactDef + hasArtifactRenderer in
- * BlockRenderer, upstream of this table). Reaching this entry means the
- * artifact renderer registry lost the type — scream, then fall back to the
- * exact pre-registry behavior (basic markdown of the raw content) so nothing
- * is hidden.
- */
-const expectUnifiedArtifactStage: BlockRenderFn = (ctx) => {
-  const { block } = ctx;
-  const message = `[block-dispatch] block type "${block.type}" should have rendered via the unified artifact stage (features/canvas/artifact-types/artifact-renderers.tsx) but fell through to the dispatch table — its unified renderer registration is missing. Rendering as basic markdown.`;
-  if (!reportedArtifactStageMisses.has(block.type)) {
-    reportedArtifactStageMisses.add(block.type);
-    console.error(message);
-  }
-  captureError({
-    source: "content-ir",
-    message,
-    conversationId: ctx.conversationId,
-    requestId: ctx.requestId,
-    raw: { blockType: block.type },
-  });
-  return block.content ? ctx.renderBasicMarkdown(block.content) : null;
-};
-
-/** Top-level prose — the shared BasicMarkdownContent leaf. */
-const renderControlTagMarkdown: BlockRenderFn = (ctx) =>
-  ctx.block.content ? ctx.renderBasicMarkdown(ctx.block.content) : null;
-
-/**
- * Generic XML control sections (<info>, <task>, <plan>, …). Their body is
- * content INSIDE content, so it renders through the depth-bounded nested
- * renderer at the `standard` level: a ```python fence, a table, a
- * ```markdown document or another section inside an <info> renders as
- * itself, one level deeper, and falls back to text at the depth cap.
- */
-const renderNestedSection: BlockRenderFn = ({ block, index, isStreamActive }) =>
-  block.content ? (
-    <NestedRichContent
-      key={index}
-      source={block.content}
-      isStreaming={isStreamActive}
-    />
-  ) : null;
-
-/**
  * A media block whose URL could not be read renders its own text (the line
  * the author wrote) and says so in the console — never an empty gap.
  */
@@ -980,14 +174,6 @@ function missingMediaFallback(
     ctx.block.content.slice(0, 200),
   );
   return ctx.block.content ? ctx.renderBasicMarkdown(ctx.block.content) : null;
-}
-
-/** The raw fence meta string a code block carries, if any (fence-meta.ts). */
-function readFenceMeta(
-  source: Record<string, unknown> | undefined,
-): string | undefined {
-  const value = source?.[FENCE_META_KEY];
-  return typeof value === "string" && value ? value : undefined;
 }
 
 /** Canonical readable fallback for structured handlers missing serverData. */
@@ -1019,199 +205,10 @@ const searchKindEntry =
     return renderJsonFallback(block, index);
   };
 
-// ── Code-language sub-dispatch (its own table) ───────────────────────────────
-
-/**
- * ``` fence language → renderer. Checked AFTER the diff special-case and
- * BEFORE the size-classified generic code path (see the `code` registration).
- * Keys are lowercase language identifiers.
- */
-/** Sub-table languages whose viewer has no place for fence meta. */
-const META_PREFERS_CODE_BLOCK = new Set([
-  "yaml",
-  "yml",
-  "toml",
-  "csv",
-  "tsv",
-  "xml",
-]);
-
-const CODE_LANGUAGE_DISPATCH: Record<string, BlockRenderFn> = {
-  yaml: renderYamlCode,
-  yml: renderYamlCode,
-  // HTML used to be lumped in with XmlBlock, which broke the standard code
-  // block (and with it the "convert to actual webpage" feature) — see the
-  // `html` entry below.
-  xml: renderXmlCode,
-  svg: renderXmlCode,
-  html: renderHtmlCode,
-  jsx: renderReactCode,
-  tsx: renderReactCode,
-  react: renderReactCode,
-  csv: renderCsvCode,
-  tsv: renderCsvCode,
-  toml: renderTomlCode,
-  json: renderJsonCode,
-  jsonc: renderJsonCode,
-  json5: renderJsonCode,
-  markdown: renderMarkdownPreviewCode,
-  md: renderMarkdownPreviewCode,
-  mdx: renderMarkdownPreviewCode,
-};
-
-function renderYamlCode({ block, index }: BlockDispatchContext) {
-  return (
-    <BlockComponents.YamlBlock
-      key={index}
-      content={block.content}
-      className="my-3"
-    />
-  );
-}
-
-function renderXmlCode({ block, index }: BlockDispatchContext) {
-  return (
-    <BlockComponents.XmlBlock
-      key={index}
-      content={block.content}
-      language={block.language?.toLowerCase()}
-      quotedSource={isQuotedSourceXmlBlock(block)}
-      className="my-3"
-    />
-  );
-}
-
-// HTML routes through HtmlInlinePreview: while streaming or for fragments it
-// renders a plain code block; once a COMPLETE HTML document has finished
-// streaming it auto-converts into a live, inline webpage preview (loader →
-// success/iframe, or silent code-on-error).
-function renderHtmlCode(ctx: BlockDispatchContext) {
-  const { block, index, isStreamActive, messageId, conversationId } = ctx;
-  return (
-    <BlockComponents.HtmlInlinePreview
-      key={index}
-      code={block.content}
-      language={block.language}
-      isComplete={!isStreamActive && !isBlockLoading(block)}
-      messageId={messageId}
-      conversationId={conversationId}
-      onCodeChange={
-        isStreamActive
-          ? undefined
-          : (newCode: string) => ctx.replaceBlockContent(block.content, newCode)
-      }
-    />
-  );
-}
-
-// React/JSX/TSX → compile to a live component once finalized (auto-preview
-// like html). Streaming/incomplete shows the code; compile/runtime errors
-// fall back to the code block silently. Execution is allowlist-scoped and
-// in-app — see features/dynamic-react/compileCodeBlock.
-function renderReactCode(ctx: BlockDispatchContext) {
-  const { block, index, isStreamActive } = ctx;
-  return (
-    <BlockComponents.ReactCodeBlock
-      key={index}
-      code={block.content}
-      language={block.language}
-      isComplete={!isStreamActive && !isBlockLoading(block)}
-      onCodeChange={
-        isStreamActive
-          ? undefined
-          : (newCode: string) => ctx.replaceBlockContent(block.content, newCode)
-      }
-    />
-  );
-}
-
-function renderCsvCode(ctx: BlockDispatchContext) {
-  const { block, index, isStreamActive } = ctx;
-  return (
-    <BlockComponents.CsvBlock
-      key={index}
-      content={block.content}
-      delimiter={block.language?.toLowerCase() === "tsv" ? "\t" : ","}
-      className="my-3"
-      onInnerContentChange={
-        isStreamActive
-          ? undefined
-          : (inner: string) => ctx.replaceBlockContent(block.content, inner)
-      }
-    />
-  );
-}
-
-function renderTomlCode({ block, index }: BlockDispatchContext) {
-  return (
-    <BlockComponents.TomlBlock
-      key={index}
-      content={block.content}
-      className="my-3"
-    />
-  );
-}
-
-function renderJsonCode(ctx: BlockDispatchContext) {
-  const { block, index, isStreamActive, conversationId, messageId } = ctx;
-  return (
-    <BlockComponents.JsonBlock
-      key={index}
-      content={block.content}
-      meta={readFenceMeta(block.metadata) ?? readFenceMeta(block.serverData)}
-      className="my-3"
-      isStreamActive={isStreamActive}
-      conversationId={conversationId}
-      messageId={messageId}
-      irEnvelope={readEnvelope(block.metadata)}
-      onCodeChange={
-        isStreamActive
-          ? undefined
-          : (newCode: string) => ctx.replaceBlockContent(block.content, newCode)
-      }
-    />
-  );
-}
-
-function renderMarkdownPreviewCode(ctx: BlockDispatchContext) {
-  const { block, index, isStreamActive } = ctx;
-  return (
-    <BlockComponents.MarkdownPreviewBlock
-      key={index}
-      content={block.content}
-      className="my-3"
-      isStreamActive={isStreamActive}
-      onCodeChange={
-        isStreamActive
-          ? undefined
-          : (newCode: string) => ctx.replaceBlockContent(block.content, newCode)
-      }
-    />
-  );
-}
-
 // ── PROTOCOL registrations ───────────────────────────────────────────────────
 // Control tags, lifecycle/ack events, editor plumbing. Never Shapes (R2).
 
 const PROTOCOL_BLOCK_DISPATCH = {
-  thinking: renderReasoningEntry,
-  reasoning: renderReasoningEntry,
-
-  consolidated_reasoning: (ctx) => {
-    const { block, index } = ctx;
-    if (ctx.hideReasoning || ctx.machineFramesVisible === false) return null;
-    return (
-      <BlockComponents.ConsolidatedReasoningVisualization
-        key={index}
-        reasoningTexts={
-          (block.metadata?.reasoningTexts as string[] | undefined) ?? [
-            block.content,
-          ]
-        }
-        showReasoning={true}
-      />
-    );
-  },
 
   decision: (ctx) => {
     const { block, index, isStreamActive } = ctx;
@@ -1316,23 +313,6 @@ const PROTOCOL_BLOCK_DISPATCH = {
         taskId={taskId}
       />
     );
-  },
-
-  info: renderNestedSection,
-  task: renderNestedSection,
-  database: renderNestedSection,
-  private: renderNestedSection,
-  plan: renderNestedSection,
-  event: renderNestedSection,
-
-  tool: (ctx) => {
-    // `tool` here is the generic XML-tagged `<tool>...</tool>` markdown
-    // block, not a `tool_call` content block (those render via
-    // ToolHandlers.InlineToolCard / DbToolCard). Still, respect the
-    // same show/hide flag so the surface is silent about tools end
-    // to end.
-    if (ctx.hideToolResults) return null;
-    return renderNestedSection(ctx);
   },
 
   matrx: ({ block, index, isStreamActive, conversationId }) => (
@@ -1555,189 +535,12 @@ const PROTOCOL_BLOCK_DISPATCH = {
       />
     );
   },
-
-  search_replace: ({ block, index, isStreamActive }) => (
-    <BlockComponents.SearchReplaceBlock
-      key={index}
-      serverData={block.serverData}
-      content={block.serverData ? undefined : block.content}
-      language={(block.metadata?.language as string) || "typescript"}
-      isStreamActive={isStreamActive}
-      className="my-3"
-    />
-  ),
-} satisfies Record<ProtocolBlockType, BlockRenderFn>;
-
-function renderReasoningEntry(ctx: BlockDispatchContext) {
-  const { block, index, isStreamActive, isLastReasoningBlock } = ctx;
-  if (ctx.hideReasoning) return null;
-  const isStreaming =
-    isStreamActive === true &&
-    (isLastReasoningBlock === true || block.isStreamingBlock === true);
-  if (ctx.machineFramesVisible === false) {
-    // An Expert gets the FACT that the model is working, never its scratch
-    // work: one quiet line while it thinks, nothing once it has spoken.
-    return isStreaming ? (
-      <InlineStatusIndicator key={index} label={EXPERT_WORKING_LABEL} />
-    ) : null;
-  }
-  return (
-    <BlockComponents.ReasoningVisualization
-      key={index}
-      reasoningText={block.content}
-      showReasoning={true}
-      isStreaming={isStreaming}
-    />
-  );
-}
+} satisfies Partial<Record<ProtocolBlockType, BlockRenderFn>>;
 
 // ── SCALAR_GENERIC registrations ─────────────────────────────────────────────
 // Text / code / tables / media primitives.
 
 const SCALAR_GENERIC_BLOCK_DISPATCH = {
-  text: renderControlTagMarkdown,
-
-  code: (ctx) => {
-    const { block, index, isStreamActive, conversationId, messageId } = ctx;
-    const lang = block.language?.toLowerCase();
-
-    // Complete, schema-bound assistant answers are prose, not generic code.
-    // This sits below kind routing and refuses any unknown/incomplete shape.
-    if (
-      lang &&
-      JSON_CODE_LANGUAGES.has(lang) &&
-      !isStreamActive &&
-      !isBlockLoading(block)
-    ) {
-      const structured = parseStructuredAgentAnswer(
-        block.content,
-        ctx.outputSchema,
-      );
-      if (structured && isRenderableStructuredAgentAnswer(structured)) {
-        return (
-          <StructuredAgentAnswerBlock
-            key={index}
-            value={structured}
-            rawContent={block.content}
-            renderMarkdown={ctx.renderBasicMarkdown}
-          />
-        );
-      }
-    }
-
-    // Special handling for diff blocks
-    if (block.language === "diff" && looksLikeDiff(block.content)) {
-      return (
-        <BlockComponents.StreamingDiffBlock
-          key={index}
-          content={block.content}
-          language={block.language || "typescript"}
-          isStreamActive={isStreamActive}
-          className="my-3"
-        />
-      );
-    }
-
-    // Custom renderers for specific languages — the code-language sub-table.
-    // A structured-data viewer (YAML/TOML/CSV/XML tree) cannot draw a fence
-    // title or highlighted lines, so a fence that carries meta takes the code
-    // block below instead (verify-RC-B7: a titled YAML fence lost its title).
-    const hasFenceMeta = !!(
-      readFenceMeta(block.metadata) ?? readFenceMeta(block.serverData)
-    );
-    const languageRenderer =
-      lang && !(hasFenceMeta && META_PREFERS_CODE_BLOCK.has(lang))
-        ? CODE_LANGUAGE_DISPATCH[lang]
-        : undefined;
-    if (languageRenderer) {
-      return languageRenderer(ctx);
-    }
-
-    // DATA CONTRACT: do NOT mutate the code string. The trim below is
-    // used ONLY for size classification (is this small enough to render
-    // inline?). The content passed to the renderer is `block.content`
-    // verbatim — leading/trailing whitespace, blank lines, everything
-    // preserved.
-    const sizingProbe = block.content.trim();
-    const lineCount = sizingProbe.split("\n").length;
-    // The fence meta (title, highlighted lines) rides on the static splitter's
-    // metadata or the stream accumulator's block data. A fence that carries it
-    // always gets the full code block — the compact snippet cannot draw a
-    // title or a highlighted line (RC-B8 verification: short titled fences
-    // lost both).
-    const fenceMeta =
-      readFenceMeta(block.metadata) ?? readFenceMeta(block.serverData);
-    const isSmallBlock =
-      !fenceMeta && lineCount <= 2 && sizingProbe.length < 120;
-
-    if (!sizingProbe) return null;
-
-    if (isSmallBlock) {
-      return (
-        <InlineCodeSnippet
-          key={index}
-          code={block.content}
-          language={block.language}
-          className="my-3"
-        />
-      );
-    }
-
-    // Regular code block — attach-to-context when we have a real message id.
-    return (
-      <CodeBlockWithContextAttach
-        key={index}
-        code={block.content}
-        language={block.language || DEFAULT_UNLABELED_FENCE_LANGUAGE}
-        meta={fenceMeta}
-        fontSize={16}
-        className="my-3"
-        onCodeChange={
-          isStreamActive
-            ? undefined
-            : (newCode: string) =>
-                ctx.replaceBlockContent(block.content, newCode)
-        }
-        isStreamActive={isStreamActive}
-        conversationId={conversationId}
-        messageId={messageId}
-      />
-    );
-  },
-
-  // NOTE: standalone `table` blocks are normally consumed by the unified
-  // artifact stage (TableArtifact); this registration is the preserved legacy
-  // path should that stage ever decline.
-  table: (ctx) => {
-    const { block, index, isStreamActive } = ctx;
-    return (
-      <BlockComponents.StreamingTableRenderer
-        key={index}
-        content={block.content}
-        metadata={block.metadata}
-        isStreamActive={isStreamActive}
-        onContentChange={
-          isStreamActive
-            ? undefined
-            : (updatedTable: string) =>
-                ctx.replaceBlockContent(block.content, updatedTable)
-        }
-      />
-    );
-  },
-
-  image: (ctx) => {
-    const { block, index } = ctx;
-    // Both splitters set `src` on a complete image line. A block without one
-    // (an older payload) re-reads its own markdown; if even that yields no
-    // URL, the line shows as its text — never an empty gap, never a fetch of
-    // an undefined src.
-    const media = block.src
-      ? { src: block.src, alt: block.alt }
-      : detectImageMarkdown(block.content);
-    if (!media.src) return missingMediaFallback(ctx, "image");
-    return <BlockComponents.ImageBlock key={index} src={media.src} alt={media.alt} />;
-  },
 
   video: (ctx) => {
     const { block, index } = ctx;
@@ -1748,28 +551,6 @@ const SCALAR_GENERIC_BLOCK_DISPATCH = {
     if (!src) return missingMediaFallback(ctx, "video");
     return <VideoOutputBlockRenderer key={index} data={{ url: src }} />;
   },
-
-  // NOTE: like `table` — normally consumed by the unified artifact stage
-  // (TreeArtifact); preserved legacy path below.
-  tree: ({ block, index }) => (
-    <BlockComponents.TreeBlock
-      key={index}
-      content={block.content}
-      className="my-3"
-    />
-  ),
-
-  "accent-divider": ({ index }) => (
-    <div key={index} className="my-4 flex items-center gap-3">
-      <div className="h-0.5 flex-1 bg-primary/60 rounded-full" />
-    </div>
-  ),
-
-  "heavy-divider": ({ index }) => (
-    <div key={index} className="my-6 flex items-center gap-2">
-      <div className="h-1 flex-1 rounded-full bg-gradient-to-r from-primary/20 via-primary to-primary/20" />
-    </div>
-  ),
 
   audio: (ctx) => {
     const { block, index } = ctx;
@@ -1861,9 +642,6 @@ const SCALAR_GENERIC_BLOCK_DISPATCH = {
     );
   },
 
-  // ```svg fences are consumed by the unified artifact stage (SvgArtifact).
-  svg: expectUnifiedArtifactStage,
-
   media_block: ({ block, index }) => {
     // Document and YouTube kinds land here via the `media_block`
     // stream-event branch in process-stream.ts.
@@ -1902,7 +680,7 @@ const SCALAR_GENERIC_BLOCK_DISPATCH = {
     // future <DocumentBlockInline> reading preview.
     return null;
   },
-} satisfies Record<ScalarGenericBlockType, BlockRenderFn>;
+} satisfies Partial<Record<ScalarGenericBlockType, BlockRenderFn>>;
 
 // ── SHAPE registrations ──────────────────────────────────────────────────────
 // Structured content. Registered kinds route through the kind registry seam
@@ -1911,29 +689,6 @@ const SCALAR_GENERIC_BLOCK_DISPATCH = {
 // legacy path behind the unified stage.
 
 const SHAPE_BLOCK_DISPATCH = {
-  // Consumed by the unified artifact stage (Stage 3) — each of these types has
-  // a registered unified renderer (artifact-renderers.tsx). Reaching the
-  // dispatch table means that registration was lost: scream + markdown.
-  flashcards: expectUnifiedArtifactStage,
-  quiz: expectUnifiedArtifactStage,
-  presentation: expectUnifiedArtifactStage,
-  cooking_recipe: expectUnifiedArtifactStage,
-  timeline: expectUnifiedArtifactStage,
-  progress_tracker: expectUnifiedArtifactStage,
-  comparison_table: expectUnifiedArtifactStage,
-  troubleshooting: expectUnifiedArtifactStage,
-  resources: expectUnifiedArtifactStage,
-  decision_tree: expectUnifiedArtifactStage,
-  research: expectUnifiedArtifactStage,
-  diagram: expectUnifiedArtifactStage,
-  mermaid: expectUnifiedArtifactStage,
-  math_problem: expectUnifiedArtifactStage,
-  questionnaire: expectUnifiedArtifactStage,
-  tasks: expectUnifiedArtifactStage,
-  chart: expectUnifiedArtifactStage,
-  map: expectUnifiedArtifactStage,
-  stats: expectUnifiedArtifactStage,
-  diff: expectUnifiedArtifactStage,
 
   // Kind-routed (video_prompt_options): the complete-only bridge supplies
   // serverData; while streaming the bridge yields nothing yet, so show the
@@ -2866,19 +1621,6 @@ const SHAPE_BLOCK_DISPATCH = {
     );
   },
 
-  // The R6 generic fallback (features/content-ir/react/kind-route.ts): the
-  // envelope resolved a kind the platform KNOWS, but nothing render-trusted
-  // claims it. Rather than dropping to a raw code block, show every field
-  // readably plus an honest "unverified shape" affordance. Reached ONLY via
-  // applyIrKindRoute — nothing emits this block type upstream.
-  [GENERIC_STRUCTURED_COMPONENT_KEY]: ({ block, index }) => (
-    <GenericStructuredBlock
-      key={index}
-      content={block.content}
-      metadata={block.metadata}
-    />
-  ),
-
   // The `web_analysis_item` family route (features/content-ir/react/kind-route.ts
   // resolver-only path): all 83 `web_*_v1` site-audit check kinds carry one
   // verified shape, so one component serves every one of them — pointed at by
@@ -2993,20 +1735,6 @@ const SHAPE_BLOCK_DISPATCH = {
   ),
   agent_factory_build: ({ block, index }) => (
     <AgentFactoryBuildBlock key={index} content={block.content} metadata={block.metadata} />
-  ),
-
-  // The `markdown` kind route (features/content-ir/react/kind-route.ts
-  // resolver-only path): `{ text }` goes to MarkdownStream — the SAME engine
-  // that renders every streamed assistant message — so prose renders as prose
-  // and any kind payload fenced inside it routes to its own component. Reached
-  // ONLY via applyIrKindRoute.
-  markdown_stream: ({ block, index, isStreamActive }) => (
-    <MarkdownKindBlock
-      key={index}
-      content={block.content}
-      metadata={block.metadata}
-      isStreamActive={isStreamActive}
-    />
   ),
 
   // The fourteen keyword RULING SESSION routes (kind-route.ts resolver-only
@@ -3133,7 +1861,7 @@ const SHAPE_BLOCK_DISPATCH = {
       }
     />
   ),
-} satisfies Record<ShapeBlockType, BlockRenderFn>;
+} satisfies Partial<Record<ShapeBlockType, BlockRenderFn>>;
 
 // ── INTENTIONALLY_OPAQUE registrations ───────────────────────────────────────
 
@@ -3151,33 +1879,27 @@ const OPAQUE_BLOCK_DISPATCH = {
       />
     );
   },
-} satisfies Record<OpaqueBlockType, BlockRenderFn>;
+} satisfies Partial<Record<OpaqueBlockType, BlockRenderFn>>;
 
 // ── The merged registry ──────────────────────────────────────────────────────
 
-export const BLOCK_DISPATCH = {
+/**
+ * matrx-frontend's half of THE block dispatch: every block type this app owns (domain kinds,
+ * protocol cards, transcript views). The engine's generic half ships in @ai-matrx/rich-content;
+ * this module registers the rest at load and keeps the compile-time check that the two halves
+ * together cover every generated block type.
+ */
+export const DOMAIN_BLOCK_DISPATCH = {
   ...PROTOCOL_BLOCK_DISPATCH,
   ...SCALAR_GENERIC_BLOCK_DISPATCH,
   ...SHAPE_BLOCK_DISPATCH,
   ...OPAQUE_BLOCK_DISPATCH,
-} satisfies Record<KnownBlockType, BlockRenderFn>;
+} satisfies Partial<Record<KnownBlockType, BlockRenderFn>>;
 
-/** Per-classification membership — exported for the dispatch tests. */
-export const BLOCK_DISPATCH_CLASSIFICATION = {
-  protocol: Object.keys(PROTOCOL_BLOCK_DISPATCH),
-  scalar_generic: Object.keys(SCALAR_GENERIC_BLOCK_DISPATCH),
-  shape: Object.keys(SHAPE_BLOCK_DISPATCH),
-  intentionally_opaque: Object.keys(OPAQUE_BLOCK_DISPATCH),
-} as const;
+// Every known block type is dispatched by the engine or by this app — a new generated type
+// with neither is a compile error here.
+type _EveryKnownTypeIsDispatched = AssertNever<
+  Exclude<KnownBlockType, keyof typeof DOMAIN_BLOCK_DISPATCH | keyof typeof ENGINE_BLOCK_DISPATCH>
+>;
 
-const DISPATCH_MAP = new Map<string, BlockRenderFn>(
-  Object.entries(BLOCK_DISPATCH),
-);
-
-/**
- * Resolve a block type's registration, or null when unregistered (the caller
- * MUST then call `reportUnregisteredBlockType` — never a silent default).
- */
-export function resolveBlockDispatch(type: string): BlockRenderFn | null {
-  return DISPATCH_MAP.get(type) ?? null;
-}
+registerBlockDispatch(DOMAIN_BLOCK_DISPATCH);

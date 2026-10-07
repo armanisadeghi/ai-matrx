@@ -1,6 +1,6 @@
 import "server-only";
 
-import { RichContentServer } from "@/components/rich-content/server/RichContentServer";
+import { RichContentServer } from "@ai-matrx/rich-content/levels/server/RichContentServer";
 import type { EduSection } from "../../types";
 import { SectionRendererBase } from "./SectionRendererBase";
 

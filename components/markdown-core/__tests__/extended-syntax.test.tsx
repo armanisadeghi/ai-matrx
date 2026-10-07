@@ -36,7 +36,7 @@ jest.mock("@ai-matrx/rich-content/markdown-core/MarkdownCore", () => {
   };
 });
 jest.mock("@/components/agent-copy/CopyButtons", () => ({ CopyButtons: () => null }));
-jest.mock("@/features/code-editor/components/code-block/CodeBlock", () => ({
+jest.mock("@ai-matrx/rich-content/code-block/CodeBlock", () => ({
   __esModule: true,
   default: ({ code, meta }: { code: string; meta?: string }) => <pre data-meta={meta}>{code}</pre>,
 }));
@@ -71,8 +71,8 @@ jest.mock("@/features/rich-content-host/wikilink-resolver", () => ({
     ),
   createWikiPage: jest.fn(() => Promise.resolve({ ok: true, href: "/notes/new-id" })),
 }));
-jest.mock("@/components/rich-content/standard/NestedRichContent", () => {
-  const { StandardBlocks } = jest.requireActual("@/components/rich-content/standard/StandardBlocks");
+jest.mock("@ai-matrx/rich-content/levels/standard/NestedRichContent", () => {
+  const { StandardBlocks } = jest.requireActual("@ai-matrx/rich-content/levels/standard/StandardBlocks");
   return { __esModule: true, NestedRichContent: ({ source }: { source: string }) => <StandardBlocks source={source} />, default: () => null };
 });
 
@@ -89,15 +89,15 @@ jest.mock("@/features/organizations/peek/ResourcePeekHost", () => ({
   ResourcePeekHost: ({ kind, id }: { kind: string; id: string }) => <div data-peek-kind={kind} data-peek-id={id} />,
 }));
 
-import BasicMarkdownContent from "@/components/mardown-display/chat-markdown/BasicMarkdownContent";
-import { RichContentInline } from "@/components/rich-content/RichContentInline";
-import { StandardBlocks } from "@/components/rich-content/standard/StandardBlocks";
+import BasicMarkdownContent from "@ai-matrx/rich-content/display/chat-markdown/BasicMarkdownContent";
+import { RichContentInline } from "@ai-matrx/rich-content/levels/RichContentInline";
+import { StandardBlocks } from "@ai-matrx/rich-content/levels/standard/StandardBlocks";
 import MarkdownCoreImpl from "@ai-matrx/rich-content/markdown-core/MarkdownCoreImpl";
 import { healStreamingMarkdown } from "@ai-matrx/rich-content/markdown-core/stream-heal";
 import { extractFrontmatter } from "@ai-matrx/rich-content/markdown-core/syntax/frontmatter";
 import { MarkdownSourceEditProvider } from "@ai-matrx/rich-content/markdown-core/syntax/elements/MarkdownSourceEdit";
 import { splitContentIntoBlocksV2 } from "@ai-matrx/rich-content/display/markdown-classification/processors/utils/content-splitter-v2";
-import { ImagePolicyProvider } from "@/components/rich-content/prose/remote-image-policy";
+import { ImagePolicyProvider } from "@ai-matrx/rich-content/levels/prose/remote-image-policy";
 
 let container: HTMLDivElement;
 let root: Root;

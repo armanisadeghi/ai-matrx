@@ -19,7 +19,7 @@ import type {
   LiveRunProgressItem,
   LiveRunProgressState,
 } from "@ai-matrx/chat/agents/components/live-run/LiveRunProgress";
-import { RichContent } from "@/components/rich-content/RichContent";
+import { RichContent } from "@ai-matrx/rich-content/levels/RichContent";
 import { AGENT_ICON } from "@/components/icons/domain-icons";
 import { WindowPanel } from "@/features/window-panels/WindowPanel";
 import { BuildProgress } from "@/features/agents/factory/components/BuildProgress";

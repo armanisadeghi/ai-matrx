@@ -103,9 +103,9 @@ jest.mock("next/navigation", () => ({
 }));
 
 // eslint-disable-next-line import/first -- the mocks above must register before the renderer loads
-import { BlockRenderer, decideBlockRender } from "@/components/mardown-display/chat-markdown/block-registry/BlockRenderer";
+import { BlockRenderer, decideBlockRender } from "@ai-matrx/rich-content/display/chat-markdown/block-registry/BlockRenderer";
 // eslint-disable-next-line import/first
-import { renderBlockToContentBlock } from "@/components/mardown-display/chat-markdown/render-block-to-content-block";
+import { renderBlockToContentBlock } from "@ai-matrx/rich-content/display/chat-markdown/render-block-to-content-block";
 // eslint-disable-next-line import/first
 import { readEnvelope } from "@ai-matrx/rich-content/kinds/redux/render-block-envelope";
 // eslint-disable-next-line import/first

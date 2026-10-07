@@ -52,7 +52,7 @@ import { KindSlot } from "@ai-matrx/rich-content/kinds/react/slot/KindSlot";
 import {
   TileActionsProvider,
   useTileActionsTarget,
-} from "@/components/mardown-display/blocks/generic/tile-actions-slot";
+} from "@ai-matrx/rich-content/display/blocks/generic/tile-actions-slot";
 import { SegmentedControl } from "@ai-matrx/design-system/controls";
 
 /** nodeId → human label from the definition (label ?? id). */

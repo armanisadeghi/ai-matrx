@@ -16,7 +16,7 @@ import type {
   SurfaceValue,
   SurfaceWriteTarget,
 } from "@ai-matrx/chat/surfaces/types";
-import { DETECTABLE_DIAGRAM_TYPES } from "@/components/mermaid/diagram-type";
+import { DETECTABLE_DIAGRAM_TYPES } from "@ai-matrx/rich-content/mermaid/diagram-type";
 import { mergeBaselineValues, pickBaseline } from "@ai-matrx/chat/surfaces/manifests/_baseline.manifest";
 import { dbAuthoredMandateKey } from "@ai-matrx/agents/mandates";
 import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";

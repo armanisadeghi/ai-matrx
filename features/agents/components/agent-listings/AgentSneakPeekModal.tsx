@@ -2,7 +2,7 @@
 
 import { useClipboard } from "@ai-matrx/kit/clipboard";
 import { EntityCustomFields } from "@/features/unified-data/components/EntityCustomFields";
-import { RichContent } from "@/components/rich-content/RichContent";
+import { RichContent } from "@ai-matrx/rich-content/levels/RichContent";
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";

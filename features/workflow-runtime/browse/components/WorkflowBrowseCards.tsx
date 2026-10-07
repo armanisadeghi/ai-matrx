@@ -27,7 +27,7 @@ import {
   shouldOpenInNewTab,
   openInNewTab,
 } from "@/utils/navigation/should-open-in-new-tab";
-import { RichContentPreview } from "@/components/rich-content/RichContentPreview";
+import { RichContentPreview } from "@ai-matrx/rich-content/levels/RichContentPreview";
 import { formatRelativeTime } from "@ai-matrx/kit/format";
 import { RunStatusChip } from "../../run-status";
 import {

@@ -1,7 +1,7 @@
 "use client";
 import React, { useEffect, useRef, useState } from "react";
 import { BookOpen, X, Zap } from "lucide-react";
-import ChatCollapsibleWrapper from "@/components/mardown-display/blocks/ChatCollapsibleWrapper";
+import ChatCollapsibleWrapper from "@ai-matrx/rich-content/display/blocks/ChatCollapsibleWrapper";
 import FlashcardMobileView from "./FlashcardMobileView";
 import {
   toFlashcardMobileCards,

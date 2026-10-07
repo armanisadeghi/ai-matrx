@@ -11,7 +11,7 @@
  */
 import { useClipboard } from "@ai-matrx/kit/clipboard";
 import { useEffect, useRef, useState } from "react";
-import { RichContent } from "@/components/rich-content/RichContent";
+import { RichContent } from "@ai-matrx/rich-content/levels/RichContent";
 import {
   ArrowLeftRight,
   Building2,

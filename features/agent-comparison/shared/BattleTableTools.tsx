@@ -10,7 +10,7 @@
 
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
 import { csvExportItem } from "@/components/agent-copy/export";
-import { TableSaveToMenu } from "@/components/mardown-display/tables/TableSaveToMenu";
+import { TableSaveToMenu } from "@ai-matrx/rich-content/display/tables/TableSaveToMenu";
 import { gridMarkdown, gridObjects, type Grid } from "./tableGrid";
 
 export function BattleTableTools({

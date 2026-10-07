@@ -27,7 +27,7 @@ import {
   MessageSquare,
   Paperclip,
 } from "lucide-react";
-import { RichContentStaticStandard } from "@/components/rich-content/RichContentStaticProse";
+import { RichContentStaticStandard } from "@ai-matrx/rich-content/levels/RichContentStaticProse";
 import { Button } from "@/components/ui/button";
 import { DuplicateToEditButton } from "@/features/sharing/components/DuplicateToEditButton";
 import { DecisionQuestionsTranscriptView } from "@/features/agents/decision-questions/DecisionQuestionsTranscriptView";

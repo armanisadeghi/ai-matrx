@@ -22,7 +22,7 @@
  * renders any JSON value as a human document with the raw data one click away.
  */
 
-import { RichContent } from "@/components/rich-content/RichContent";
+import { RichContent } from "@ai-matrx/rich-content/levels/RichContent";
 import { AnswerValueView } from "@/components/official/structured-value/AnswerValueView";
 import { hasKindKey, normalizeKindSpellings } from "@/features/content-ir/surfaces/json-kind-signal";
 

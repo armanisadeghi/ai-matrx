@@ -59,7 +59,7 @@ jest.mock("@/features/overlays/openers/tableViewerWindow", () => ({
 };
 
 
-import { StreamingTableRenderer } from "@/components/mardown-display/blocks/table/StreamingTableRenderer";
+import { StreamingTableRenderer } from "@ai-matrx/rich-content/display/blocks/table/StreamingTableRenderer";
 import { MarkdownStreamingProvider } from "@ai-matrx/rich-content/markdown-core/streaming-context";
 
 // A log-routing sheet: which alert pattern each channel watches.

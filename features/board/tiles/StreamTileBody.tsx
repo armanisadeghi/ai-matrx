@@ -26,7 +26,7 @@ import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 const BlockRenderer = dynamic(
   () =>
-    import("@/components/mardown-display/chat-markdown/block-registry/BlockRenderer").then(
+    import("@ai-matrx/rich-content/display/chat-markdown/block-registry/BlockRenderer").then(
       (m) => m.BlockRenderer,
     ),
   { ssr: false, loading: () => null },

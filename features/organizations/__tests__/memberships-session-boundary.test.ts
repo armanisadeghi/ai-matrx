@@ -3,8 +3,17 @@ const mockGetSession = jest.fn();
 
 jest.mock("@/utils/supabase/client", () => ({
   supabase: {
-    rpc: mockRpc,
-    auth: { getSession: mockGetSession },
+    // PostgREST builder shape: `.order().range()` chain, awaited at the end (the read is paged).
+    rpc: (...args: unknown[]) => {
+      const answer = mockRpc(...args);
+      const chain: any = {
+        order: () => chain,
+        range: () => chain,
+        then: (res: any, rej: any) => Promise.resolve(answer).then(res, rej),
+      };
+      return chain;
+    },
+    auth: { getSession: mockGetSession, onAuthStateChange: jest.fn() },
   },
 }));
 

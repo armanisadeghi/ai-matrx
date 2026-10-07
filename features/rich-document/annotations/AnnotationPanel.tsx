@@ -41,7 +41,7 @@ import { AGENT_ICON } from "@/components/icons/domain-icons";
 import { ContinueInNewChatItem } from "./ContinueInNewChatItem";
 import { toast } from "@/lib/toast";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
-import { RichContent } from "@/components/rich-content/RichContent";
+import { RichContent } from "@ai-matrx/rich-content/levels/RichContent";
 import { CollapsibleText } from "@/components/official/CollapsibleText";
 import { announceMentions, useSidecar } from "./AnnotationSidecar";
 import { SWATCH } from "./annotation-actions";

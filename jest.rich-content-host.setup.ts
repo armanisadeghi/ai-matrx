@@ -22,10 +22,18 @@ function late<T extends object>(load: () => T): T {
 }
 
 configureRichContent({
+  // The app bindings load on first use (they import the app's windows, canvas, kind views and
+  // domain blocks — too much to load into every suite); loading them re-registers `app` itself.
+  app: new Proxy({}, {
+    get(_t, key) {
+      require("@/features/rich-content-host/app-bindings");
+      return (require("@ai-matrx/rich-content/host").hostCapability("app") as Record<PropertyKey, unknown> | undefined)?.[key];
+    },
+  }) as never,
   toast: late(() => require("@/lib/toast").toast),
   captureError: (report) => require("@/lib/diagnostics/errorCaptureStore").captureError(report),
   ErrorActions: (props) => require("@/components/errors/ErrorAlchemyMenu").ErrorAlchemyMenu(props),
-  NestedContent: (props) => require("react").createElement(require("@/components/rich-content/standard/NestedRichContent").NestedRichContent, props),
+  NestedContent: (props) => require("react").createElement(require("@ai-matrx/rich-content/levels/standard/NestedRichContent").NestedRichContent, props),
   wikilinks: {
     resolve: (t) => require("@/features/rich-content-host/wikilink-resolver").resolveWikiTarget(t),
     create: (title) => require("@/features/rich-content-host/wikilink-resolver").createWikiPage(title),

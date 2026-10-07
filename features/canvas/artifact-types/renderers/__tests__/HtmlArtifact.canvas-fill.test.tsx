@@ -54,7 +54,7 @@ jest.mock("@/features/html-pages/services/htmlPageService", () => ({
     createPage: jest.fn(async () => ({ url: "https://mymatrx.com/p/page-1" })),
   },
 }));
-jest.mock("@/features/code-editor/components/code-block/CodeBlock", () => ({
+jest.mock("@ai-matrx/rich-content/code-block/CodeBlock", () => ({
   __esModule: true,
   default: () => <pre data-testid="code-block" />,
 }));

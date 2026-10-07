@@ -17,7 +17,11 @@ export type BoundCall = {
   method: string;
   localName: string;
   kind:
-    "await-discarded" | "promise-discarded" | "then-result-ignored" | "other";
+    | "await-discarded"
+    | "promise-discarded"
+    | "then-result-ignored"
+    | "menu-result-forwarded"
+    | "other";
   statement: string;
   nextStatement?: string;
 };
@@ -167,7 +171,37 @@ function classification(call: ts.CallExpression): BoundCall["kind"] {
   }
   if (ts.isVoidExpression(discarded.parent)) discarded = discarded.parent;
   if (ts.isExpressionStatement(discarded.parent)) return "promise-discarded";
+  if (isMenuResultForwardedToSuccessToast(call))
+    return "menu-result-forwarded";
   return "other";
+}
+
+function isMenuResultForwardedToSuccessToast(call: ts.CallExpression): boolean {
+  let expression: ts.Expression = call;
+  while (ts.isParenthesizedExpression(expression.parent))
+    expression = expression.parent;
+  const callback = expression.parent;
+  if (
+    !ts.isArrowFunction(callback) ||
+    callback.body !== expression ||
+    !ts.isPropertyAssignment(callback.parent) ||
+    callback.parent.name.getText() !== "onSelect" ||
+    !ts.isObjectLiteralExpression(callback.parent.parent)
+  )
+    return false;
+  const toast = callback.parent.parent.properties.find(
+    (property): property is ts.PropertyAssignment =>
+      ts.isPropertyAssignment(property) && property.name.getText() === "toast",
+  );
+  return Boolean(
+    toast &&
+      ts.isObjectLiteralExpression(toast.initializer) &&
+      toast.initializer.properties.some(
+        (property) =>
+          ts.isPropertyAssignment(property) &&
+          property.name.getText() === "success",
+      ),
+  );
 }
 
 function callbackConsumesResult(
@@ -240,17 +274,30 @@ function signalsCopySuccess(text: string | undefined): boolean {
   );
 }
 
+function resetsCopiedState(text: string | undefined): boolean {
+  if (!text || !/\b(?:setTimeout|window\.setTimeout)\s*\(/.test(text))
+    return false;
+  return /\bset[A-Z]\w*\s*\(\s*(?:false|null|undefined)\s*\)/.test(text);
+}
+
 export function violations(calls: BoundCall[]): BoundCall[] {
   return calls.filter((call) => {
     if (call.kind === "await-discarded" || call.kind === "promise-discarded")
       return signalsCopySuccess(call.nextStatement);
     if (call.kind === "then-result-ignored")
       return signalsCopySuccess(call.statement);
+    if (call.kind === "menu-result-forwarded") return true;
+    if (
+      call.kind === "other" &&
+      /\.then\s*\(/.test(call.statement) &&
+      signalsCopySuccess(call.statement)
+    )
+      return resetsCopiedState(call.nextStatement);
     return false;
   });
 }
 
-function selfTest() {
+export function selfTest() {
   const unsafeAwait = censusSource(
     "unsafe-await.ts",
     `import { copyText as copy } from "@ai-matrx/kit/clipboard";
@@ -283,6 +330,38 @@ function selfTest() {
     `import { copyText } from "@ai-matrx/kit/clipboard";
      function run() { copyText("value"); toast.success("Copied"); }`,
   );
+  const resetOutsideSuccess = censusSource(
+    "reset-outside-success.ts",
+    `import { copyText } from "@ai-matrx/kit/clipboard";
+     function run() {
+       copyText("value").then((copied) => { if (!copied) return; setCopied(true); });
+       setTimeout(() => setCopied(false), 1500);
+     }`,
+  );
+  const resetInsideSuccess = censusSource(
+    "reset-inside-success.ts",
+    `import { copyText } from "@ai-matrx/kit/clipboard";
+     function run() {
+       copyText("value").then((copied) => {
+         if (!copied) return;
+         setCopied(true);
+         setTimeout(() => setCopied(false), 1500);
+       });
+     }`,
+  );
+  const menuForwardsBooleanToSuccessToast = censusSource(
+    "menu-forwards-result.ts",
+    `import { copyText } from "@ai-matrx/kit/clipboard";
+     const item = {
+       onSelect: () => copyText("value"),
+       toast: { loading: "Copying", success: "Copied" },
+     };`,
+  );
+  const menuUsesHookNotification = censusSource(
+    "menu-uses-hook-notification.ts",
+    `import { copyText } from "@ai-matrx/kit/clipboard";
+     const item = { onSelect: async () => { await copyText("value"); } };`,
+  );
   const repositoryFiles = trackedFiles();
   const results = [
     violations(unsafeAwait).length === 1,
@@ -291,6 +370,10 @@ function selfTest() {
     violations(guardedThen).length === 0,
     violations(namedButIgnoredThen).length === 1,
     violations(unsafeDiscardedPromise).length === 1,
+    violations(resetOutsideSuccess).length === 1,
+    violations(resetInsideSuccess).length === 0,
+    violations(menuForwardsBooleanToSuccessToast).length === 1,
+    violations(menuUsesHookNotification).length === 0,
     repositoryFiles.some(
       (file) => file.startsWith("app/") && /\.tsx?$/.test(file),
     ),
@@ -301,38 +384,4 @@ function selfTest() {
     );
   }
   console.log("clipboard success-gating self-test passed");
-}
-
-if (import.meta.url === `file://${process.argv[1]}`) {
-  if (process.argv.includes("--self-test")) {
-    selfTest();
-    process.exit(0);
-  }
-  const calls = census();
-  const failures = violations(calls);
-  const discarded = calls.filter((call) => call.kind !== "other");
-  console.log(
-    JSON.stringify(
-      {
-        files: new Set(calls.map((call) => call.file)).size,
-        calls: calls.length,
-        byKind: Object.fromEntries(
-          [
-            "await-discarded",
-            "promise-discarded",
-            "then-result-ignored",
-            "other",
-          ].map((kind) => [
-            kind,
-            calls.filter((call) => call.kind === kind).length,
-          ]),
-        ),
-        violations: failures,
-        discardedWithoutSeparateSuccess: discarded.length - failures.length,
-      },
-      null,
-      2,
-    ),
-  );
-  if (failures.length) process.exitCode = 1;
 }

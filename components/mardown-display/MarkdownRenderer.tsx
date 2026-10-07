@@ -2,11 +2,11 @@
 import React from "react";
 import MarkdownCore from "@ai-matrx/rich-content/markdown-core/MarkdownCore";
 import { cn } from "@/styles/themes/utils";
-import CodeBlock from "@/features/code-editor/components/code-block/CodeBlock";
+import CodeBlock from "@ai-matrx/rich-content/code-block/CodeBlock";
 import { parseMarkdownTable } from "@ai-matrx/rich-content/display/markdown-classification/processors/bock-processors/parse-markdown-table";
-import MarkdownTable from "./tables/TableWithSeparatedControls";
+import MarkdownTable from "@ai-matrx/rich-content/display/tables/TableWithSeparatedControls";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
-import { KindTextGate } from "@/components/mardown-display/chat-markdown/KindTextGate";
+import { KindTextGate } from "@ai-matrx/rich-content/display/chat-markdown/KindTextGate";
 
 import type { ComponentPropsWithoutRef } from "react";
 import type { Components, ExtraProps } from "react-markdown";

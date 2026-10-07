@@ -73,7 +73,7 @@ jest.mock("next/dynamic", () => ({
   default: (loader: () => Promise<unknown>) => {
     if (String(loader).includes("block-registry/BlockRenderer")) {
       const { BlockRenderer } = jest.requireActual(
-        "@/components/mardown-display/chat-markdown/block-registry/BlockRenderer",
+        "@ai-matrx/rich-content/display/chat-markdown/block-registry/BlockRenderer",
       ) as { BlockRenderer: React.ComponentType<Record<string, unknown>> };
       const Dynamic = (props: Record<string, unknown>) =>
         React.createElement(BlockRenderer, props);

@@ -15,7 +15,7 @@ import {
   duplicateAgent,
   setAgentFavorite,
 } from "@/features/agents/redux/builder-write.thunks";
-import { RichContent } from "@/components/rich-content/RichContent";
+import { RichContent } from "@ai-matrx/rich-content/levels/RichContent";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
 import { InfoHint } from "@/components/official/InfoHint";
 import { AnswerValueView } from "@/components/official/structured-value/AnswerValueView";

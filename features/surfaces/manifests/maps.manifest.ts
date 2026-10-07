@@ -14,7 +14,7 @@ import type {
   SurfaceValueGroup,
   SurfaceWriteTarget,
 } from "@ai-matrx/chat/surfaces/types";
-import type { DiagramData } from "@/components/mardown-display/blocks/diagram/parseDiagramJSON";
+import type { DiagramData } from "@ai-matrx/rich-content/display/blocks/diagram/parseDiagramJSON";
 import { mergeBaselineValues, pickBaseline } from "@ai-matrx/chat/surfaces/manifests/_baseline.manifest";
 import { MATRX_WEB_APP_EXECUTOR } from "@ai-matrx/chat/surfaces/executor";
 

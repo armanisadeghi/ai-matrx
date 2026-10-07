@@ -34,7 +34,7 @@ import { isMaterializedArtifactId } from "@/features/canvas/artifact-types/artif
 import { getArtifactDef } from "@/features/canvas/artifact-types/artifact-type-registry";
 import IconButton from "@/components/official/IconButton";
 import { useCanvasPresentation } from "@ai-matrx/canvas/react";
-import { decisionBranchesSideBySide } from "@/components/mardown-display/blocks/canvas-adaptive";
+import { decisionBranchesSideBySide } from "@ai-matrx/rich-content/display/blocks/canvas-adaptive";
 
 export type DecisionNode = Omit<
   DecisionNodeKind,

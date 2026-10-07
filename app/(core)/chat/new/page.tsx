@@ -41,11 +41,32 @@ async function resolveAgentName(agentId: string): Promise<string | null> {
   return data.name ?? null;
 }
 
-export default async function NewChatPage() {
-  const [agentId, initialMode] = await Promise.all([
-    resolveDefaultChatAgentId(),
+const UUID_RE =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/** `?agent=<id>` — an explicit agent for this new chat (feedback c0875460). */
+function requestedAgentId(
+  searchParams: Record<string, string | string[] | undefined>,
+): string | null {
+  const raw = searchParams.agent;
+  const value = Array.isArray(raw) ? raw[0] : raw;
+  return value && UUID_RE.test(value) ? value : null;
+}
+
+export default async function NewChatPage({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
+  const pinnedAgentId = requestedAgentId(await searchParams);
+  const [defaultAgentId, initialMode] = await Promise.all([
+    pinnedAgentId ? Promise.resolve(null) : resolveDefaultChatAgentId(),
     readComposerModeCookie(),
   ]);
+  // An explicit agent wins over the default-chat mandate; it is addressed
+  // directly (like /chat/a/[agentId]) so an unreadable id shows the access
+  // gate rather than silently answering with someone else.
+  const agentId = pinnedAgentId ?? defaultAgentId;
   const defaultAgentName = agentId ? await resolveAgentName(agentId) : null;
   return (
     <>
@@ -55,7 +76,11 @@ export default async function NewChatPage() {
         composerMode={{ initialMode }}
       />
       <Suspense fallback={<ChatNewLandingSkeleton />}>
-        <ChatNewClient agentId={agentId} composer={{ initialMode }} />
+        <ChatNewClient
+          agentId={agentId}
+          pinned={Boolean(pinnedAgentId)}
+          composer={{ initialMode }}
+        />
       </Suspense>
       {/* No conversion nudge here: the send gate is gone (guests send for
           real), so gate-attempt-driven nudges can never fire on this page. */}

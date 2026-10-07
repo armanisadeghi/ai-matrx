@@ -10,7 +10,7 @@ import type { MarkdownWithPluginsProps } from "@/components/message-display/Mark
 import type { Components } from "react-markdown";
 
 const CodeBlock = dynamic(
-  () => import("../../features/code-editor/components/code-block/CodeBlock"),
+  () => import("@ai-matrx/rich-content/code-block/CodeBlock"),
   {
     ssr: false,
   },

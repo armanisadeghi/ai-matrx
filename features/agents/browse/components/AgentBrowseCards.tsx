@@ -33,7 +33,7 @@ import {
   shouldOpenInNewTab,
   openInNewTab,
 } from "@/utils/navigation/should-open-in-new-tab";
-import { RichContentPreview } from "@/components/rich-content/RichContentPreview";
+import { RichContentPreview } from "@ai-matrx/rich-content/levels/RichContentPreview";
 import { agentHref as agentRouteHref } from "../agentPaths";
 import type { AgentBrowseRow } from "../types";
 

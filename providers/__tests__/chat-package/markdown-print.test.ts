@@ -67,7 +67,7 @@ describe("printMarkdownContent — blocked Chat popup", () => {
 describe("printMarkdownContent — diagrams print as pictures (verifier round 2)", () => {
     it("draws each mermaid fence and writes it into the print window as an image", async () => {
         jest.resetModules();
-        jest.doMock("@/components/mermaid/print-render", () => ({
+        jest.doMock("@ai-matrx/rich-content/mermaid/print-render", () => ({
             drawMermaidForPrint: async () => ({
                 pictures: new Map([["flowchart LR\n  A --> B", '<svg xmlns="http://www.w3.org/2000/svg"></svg>']]),
                 failed: 0,

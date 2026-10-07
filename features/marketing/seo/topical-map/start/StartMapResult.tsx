@@ -33,7 +33,7 @@
  */
 
 import Link from "next/link";
-import { RichContent } from "@/components/rich-content/RichContent";
+import { RichContent } from "@ai-matrx/rich-content/levels/RichContent";
 import { ExternalLink, FlaskConical, Info } from "lucide-react";
 
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";

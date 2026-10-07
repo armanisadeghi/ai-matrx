@@ -13,7 +13,7 @@
  */
 
 import { PanelRight } from "lucide-react";
-import { RichContentPreview } from "@/components/rich-content/RichContentPreview";
+import { RichContentPreview } from "@ai-matrx/rich-content/levels/RichContentPreview";
 
 import { Button } from "@/components/ui/button";
 import { useAppSelector } from "@/lib/redux/hooks";

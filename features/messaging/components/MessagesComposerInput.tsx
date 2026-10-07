@@ -9,7 +9,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@ai-matrx/design-system";
-import { MarkdownErrorBoundary } from "@/components/mardown-display/chat-markdown/internal-handlers/MarkdownErrorBoundary";
+import { MarkdownErrorBoundary } from "@ai-matrx/rich-content/display/chat-markdown/internal-handlers/MarkdownErrorBoundary";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { ProTextarea } from "@/components/official/ProTextarea";
 import type { SurfaceScopePayload } from "@ai-matrx/chat/surfaces/types";

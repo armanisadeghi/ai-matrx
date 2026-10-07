@@ -7,9 +7,9 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@ai-matrx/design-system";
 import { Separator } from "@/components/ui/separator";
 import { TooltipProvider, Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
-import BasicMarkdownContent from "@/components/mardown-display/chat-markdown/BasicMarkdownContent";
+import BasicMarkdownContent from "@ai-matrx/rich-content/display/chat-markdown/BasicMarkdownContent";
 import { cn } from "@/lib/utils";
-import { useCanvasFit } from "../canvas-fit";
+import { useCanvasFit } from "@ai-matrx/rich-content/display/blocks/canvas-fit";
 import {
   ChevronRight,
   ChevronDown,

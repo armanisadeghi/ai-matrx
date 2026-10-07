@@ -52,7 +52,7 @@ jest.mock("@/features/canvas/artifact-types/artifact-renderers", () => ({
   hasArtifactRenderer: () => false,
 }));
 
-jest.mock("../BlockComponentRegistry", () => ({
+jest.mock("@ai-matrx/rich-content/display/chat-markdown/block-registry/BlockComponentRegistry", () => ({
   BlockComponents: {},
   LoadingComponents: {},
 }));
@@ -63,7 +63,7 @@ jest.mock("@/features/content-ir/records/KindRecordChrome", () => ({
 }));
 
 // The dispatched block reports exactly the two ids it was handed.
-jest.mock("../block-dispatch", () => ({
+jest.mock("@ai-matrx/rich-content/display/chat-markdown/block-registry/block-dispatch", () => ({
   isBlockLoading: () => false,
   reportUnregisteredBlockType: () => {},
   resolveBlockDispatch:
@@ -86,7 +86,7 @@ jest.mock("@/lib/diagnostics/errorCaptureStore", () => ({
   captureError: () => {},
 }));
 
-import { BlockRenderer } from "../BlockRenderer";
+import { BlockRenderer } from "@ai-matrx/rich-content/display/chat-markdown/block-registry/BlockRenderer";
 import { mintClientTempId } from "@ai-matrx/kit/ids";
 
 const noOp = () => {};

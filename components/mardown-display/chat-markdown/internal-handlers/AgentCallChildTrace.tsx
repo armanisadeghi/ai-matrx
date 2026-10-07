@@ -28,7 +28,7 @@ import type { ToolLifecycleEntry } from "@ai-matrx/chat/agents/types/request.typ
 import type { MessageRecord } from "@ai-matrx/chat/agents/redux/execution-system/messages/messages.slice";
 import { useConversationTitle } from "@ai-matrx/chat/agents/hooks/useConversationTitle";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
-import ReasoningVisualization from "@/components/mardown-display/blocks/thinking-reasoning/ReasoningVisualization";
+import ReasoningVisualization from "@ai-matrx/rich-content/display/blocks/thinking-reasoning/ReasoningVisualization";
 import { isCollaborationAgentCall } from "@ai-matrx/chat/tool-call-visualization/renderers/agent-call/collab";
 import { InlineThinkingSlot } from "./InlineThinkingSlot";
 import type { ToolCardProps } from "./ToolHandlers";

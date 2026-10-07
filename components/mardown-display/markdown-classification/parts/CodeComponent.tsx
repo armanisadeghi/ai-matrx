@@ -2,7 +2,7 @@
 
 import type { ComponentPropsWithoutRef } from "react";
 import type { ExtraProps } from "react-markdown";
-import { ShikiCodeView } from "@/features/code-editor/components/code-block/highlight/ShikiCodeView";
+import { ShikiCodeView } from "@ai-matrx/rich-content/code-block/highlight/ShikiCodeView";
 
 // react-markdown v10 passes JSX.IntrinsicElements['code'] & ExtraProps to the
 // `code` component override — there is no `inline` prop (removed upstream);

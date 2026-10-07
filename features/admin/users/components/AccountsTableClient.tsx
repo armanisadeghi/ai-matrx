@@ -60,6 +60,7 @@ import { filterAndSortRows } from "@ai-matrx/design-system/data-table/filter-eng
 import type { MatrxColumnDef } from "@ai-matrx/design-system/data-table/types";
 import { useTableUrlState } from "@ai-matrx/design-system/data-table/url-state";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
+import { Popover, PopoverContent, PopoverTrigger } from "@ai-matrx/design-system";
 import { SurfaceRuntimeProvider } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import { ADMIN_USERS_SURFACE_NAME } from "@/features/surfaces/manifests/admin-users.manifest";
 import { buildAdminUsersScope } from "../lib/admin-users-scope";
@@ -155,6 +156,9 @@ function levelBadge(level: string | null) {
     </Badge>
   );
 }
+
+/** Organizations shown inline in the Accounts cell; the rest sit behind "+N more". */
+const ORG_CELL_VISIBLE = 3;
 
 export function AccountsTableClient() {
   const { copyText } = useClipboard({
@@ -616,22 +620,55 @@ export function AccountsTableClient() {
           ) : (
             <div className="flex max-w-[280px] items-center gap-1.5">
               <div className="flex min-w-0 flex-wrap items-center gap-x-1.5">
-                {row.organizations.map((organization, index) => (
-                  <span
-                    key={organization.id}
-                    className="inline-flex min-w-0 items-center text-xs"
-                  >
-                    <EntityRef
-                      token="organization"
-                      id={organization.id}
-                      name={organization.name}
-                      showIcon={false}
-                    />
-                    {index < row.organizations.length - 1 ? (
-                      <span className="text-muted-foreground">,</span>
-                    ) : null}
-                  </span>
-                ))}
+                {row.organizations
+                  .slice(0, ORG_CELL_VISIBLE)
+                  .map((organization, index, shown) => (
+                    <span
+                      key={organization.id}
+                      className="inline-flex min-w-0 items-center text-xs"
+                    >
+                      <EntityRef
+                        token="organization"
+                        id={organization.id}
+                        name={organization.name}
+                        showIcon={false}
+                      />
+                      {index < shown.length - 1 ? (
+                        <span className="text-muted-foreground">,</span>
+                      ) : null}
+                    </span>
+                  ))}
+                {row.organizations.length > ORG_CELL_VISIBLE ? (
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <button
+                        type="button"
+                        className="text-xs font-medium text-primary hover:underline"
+                        onClick={(event) => event.stopPropagation()}
+                      >
+                        +{row.organizations.length - ORG_CELL_VISIBLE} more
+                      </button>
+                    </PopoverTrigger>
+                    <PopoverContent
+                      align="start"
+                      className="max-h-72 w-72 overflow-y-auto p-2"
+                      onClick={(event) => event.stopPropagation()}
+                    >
+                      <ul className="flex flex-col gap-1">
+                        {row.organizations.map((organization) => (
+                          <li key={organization.id} className="text-xs">
+                            <EntityRef
+                              token="organization"
+                              id={organization.id}
+                              name={organization.name}
+                              showIcon={false}
+                            />
+                          </li>
+                        ))}
+                      </ul>
+                    </PopoverContent>
+                  </Popover>
+                ) : null}
               </div>
               <button
                 type="button"

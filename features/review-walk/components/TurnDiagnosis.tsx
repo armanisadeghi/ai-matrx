@@ -35,7 +35,7 @@ import {
   Zap,
   Wrench,
 } from "lucide-react";
-import { RichContent } from "@/components/rich-content/RichContent";
+import { RichContent } from "@ai-matrx/rich-content/levels/RichContent";
 import { AnswerValueView } from "@/components/official/structured-value/AnswerValueView";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";

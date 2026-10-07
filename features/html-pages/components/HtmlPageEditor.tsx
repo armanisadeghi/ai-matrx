@@ -43,7 +43,7 @@ import { SurfaceRuntimeProvider } from "@ai-matrx/chat/surfaces/runtime/SurfaceR
 import { EditableContextMenu } from "@/features/context-menu-v3/EditableContextMenu";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 import { buildApplicationScopeFromMenuContext } from "@/features/context-menu-v3/utils/build-application-scope";
-import SmallCodeEditor from "@/features/code-editor/components/code-block/SmallCodeEditor";
+import SmallCodeEditor from "@ai-matrx/rich-content/code-block/SmallCodeEditor";
 import { useThemeMode } from "@/styles/themes/useThemeMode";
 import { useMeasure } from "@ai-matrx/kit/hooks";
 import {

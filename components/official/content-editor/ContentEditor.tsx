@@ -24,7 +24,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
-import { RichContent } from "@/components/rich-content/RichContent";
+import { RichContent } from "@ai-matrx/rich-content/levels/RichContent";
 import { useTextareaFormatting } from "@/components/rich-editor/format/useTextareaFormatting";
 import type { ContentEditorProps, EditorMode, EditorModeConfig } from "./types";
 import RichEditor, { type RichEditorController } from "@/components/rich-editor/RichEditor";

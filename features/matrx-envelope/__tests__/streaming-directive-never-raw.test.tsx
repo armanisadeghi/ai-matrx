@@ -28,7 +28,7 @@ import { setStoreSingleton } from "@/lib/redux/store-singleton";
 import {
   resolveBlockDispatch,
   type BlockDispatchContext,
-} from "@/components/mardown-display/chat-markdown/block-registry/block-dispatch";
+} from "@ai-matrx/rich-content/display/chat-markdown/block-registry/block-dispatch";
 import AGENT_DEFINITION_ITEM from "@/app/(dev)/demos/kind-directives/agent-definition-item.json";
 
 (

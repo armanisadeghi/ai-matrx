@@ -8,7 +8,7 @@ import {
 } from "@/features/canvas/canvas-block-meta";
 import { resolveSharedCanvas } from "@/features/canvas/shared/resolveSharedCanvas";
 import { markdownToPlainText } from "@/lib/markdown/plain-text";
-import { RichContentServer } from "@/components/rich-content/server/RichContentServer";
+import { RichContentServer } from "@ai-matrx/rich-content/levels/server/RichContentServer";
 import { SharedCanvasViewClient } from "./SharedCanvasViewClient";
 import { NOT_INDEXED_ROBOTS } from "@/lib/seo/search-engine-indexed";
 import { searchEngineRobots } from "@/lib/seo/search-engine-indexed.server";

@@ -1,7 +1,7 @@
 "use client";
 
 import { useIsMobile } from "@ai-matrx/kit/media-query";
-import { RichContent } from "@/components/rich-content/RichContent";
+import { RichContent } from "@ai-matrx/rich-content/levels/RichContent";
 import { MessageTemplateDB } from "@/features/message-templates/types/message-templates-db";
 import {
     Dialog,

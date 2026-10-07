@@ -12,7 +12,7 @@
 // markdown renderer. Style truth stays in CardFaceContent's shared helpers.
 
 import type React from "react";
-import { ConfigurableMarkdownContent } from "@/components/mardown-display/chat-markdown/ConfigurableMarkdownContent";
+import { ConfigurableMarkdownContent } from "@ai-matrx/rich-content/display/chat-markdown/ConfigurableMarkdownContent";
 import { getFaceTextSizeClass, makeCardFaceStyle } from "./CardFaceContent";
 
 const centeredParagraph = ({

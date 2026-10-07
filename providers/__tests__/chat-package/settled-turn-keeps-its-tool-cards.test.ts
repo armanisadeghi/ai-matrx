@@ -51,7 +51,7 @@ import {
   membersForRender,
   rendersFromPersistedRows,
 } from "@ai-matrx/chat/agents/components/messages-display/assistant/collapse-by-request-id";
-import { renderSettledFromRecord } from "@/components/mardown-display/chat-markdown/settle-stream-blocks";
+import { renderSettledFromRecord } from "@ai-matrx/rich-content/display/chat-markdown/settle-stream-blocks";
 import { persistedToolEntry } from "@ai-matrx/chat/tool-call-visualization/utils/cxToolCallToLifecycleEntry";
 import { readSurfaceWrite } from "@ai-matrx/chat/tool-call-visualization/surface-write/readSurfaceWrite";
 import type { ToolLifecycleEntry } from "@ai-matrx/chat/agents/types/request.types";

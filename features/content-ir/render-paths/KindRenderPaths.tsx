@@ -24,7 +24,7 @@
 
 import { useMemo, useState } from "react";
 import { CircleCheck, CircleX, Info, TriangleAlert } from "lucide-react";
-import { SafeBlockRenderer } from "@/components/mardown-display/chat-markdown/internal-handlers/SafeBlockRenderer";
+import { SafeBlockRenderer } from "@ai-matrx/rich-content/display/chat-markdown/internal-handlers/SafeBlockRenderer";
 import KindInstanceRender from "@/features/content-ir/studio/components/KindInstanceRender";
 import KindInputForm from "@/features/content-ir/input/KindInputForm";
 import { resolveLoadingSlugForKind } from "@ai-matrx/rich-content/kinds/react/loading/resolve-loading-slug";

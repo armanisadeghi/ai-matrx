@@ -27,6 +27,7 @@ import {
   setAgentLoading,
   setAgentError,
   markAgentSaved,
+  markAgentFieldSaved,
   rollbackAgentOptimisticUpdate,
   removeAgent,
 } from "@ai-matrx/chat/agents/redux/agent-definition/slice";
@@ -143,7 +144,7 @@ export const saveAgentField = createAsyncThunk<
       );
     }
 
-    dispatch(markAgentSaved({ id: agentId }));
+    dispatch(markAgentFieldSaved({ id: agentId, field }));
   },
 );
 

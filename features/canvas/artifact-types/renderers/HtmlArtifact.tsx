@@ -2,7 +2,7 @@
 
 import { Suspense } from "react";
 import { useCanvasPresentation } from "@ai-matrx/canvas/react";
-import SandboxedHtml from "@/components/mardown-display/blocks/common/SandboxedHtml";
+import SandboxedHtml from "@ai-matrx/rich-content/display/blocks/common/SandboxedHtml";
 import MatrxMiniLoader from "@/components/loaders/MatrxMiniLoader";
 import type { ArtifactRendererProps } from "../types";
 import HtmlInlinePreview from "@/features/html-pages/components/HtmlInlinePreview";

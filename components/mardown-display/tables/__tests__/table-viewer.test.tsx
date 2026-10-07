@@ -21,11 +21,11 @@ jest.mock("@/lib/redux/hooks", () => ({
 jest.mock("@ai-matrx/chat/store/hooks", () => jest.requireMock("@/lib/redux/hooks"));
 jest.mock("next/navigation", () => ({ useRouter: () => ({ push: jest.fn(), refresh: jest.fn() }) }));
 jest.mock("@ai-matrx/kit/media-query", () => ({ ...jest.requireActual("@ai-matrx/kit/media-query"), useIsMobile: () => mockMobile }));
-jest.mock("@/components/rich-content/RichContent", () => ({
+jest.mock("@ai-matrx/rich-content/levels/RichContent", () => ({
   RichContent: ({ source }: { source: string }) => <span>{source}</span>,
 }));
 jest.mock("../../specimen/SpecimenContext", () => ({ useSpecimenMode: () => false }));
-jest.mock("../../blocks/chart/TableChart", () => ({
+jest.mock("@ai-matrx/rich-content/display/blocks/chart/TableChart", () => ({
   ChartThisButton: () => <button aria-label="Chart this">Chart this</button>,
   TableChartPanel: () => null,
 }));
@@ -33,8 +33,8 @@ jest.mock("@/hooks/useToastManager", () => ({
   useToastManager: () => ({ success: jest.fn(), error: jest.fn(), info: jest.fn() }),
 }));
 
-import MarkdownTable from "../MarkdownTable";
-import { phoneStackCellProps, plainHeaderLabel } from "../table-viewer";
+import MarkdownTable from "@ai-matrx/rich-content/display/tables/MarkdownTable";
+import { phoneStackCellProps, plainHeaderLabel } from "@ai-matrx/rich-content/display/tables/table-viewer";
 
 const GRINDERS = {
   headers: ["Grinder", "**Burr** size", "Price"],

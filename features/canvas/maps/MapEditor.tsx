@@ -21,7 +21,7 @@ import {
   materializeDiagramDefaults,
   validateDiagram,
   type DiagramData,
-} from "@/components/mardown-display/blocks/diagram/parseDiagramJSON";
+} from "@ai-matrx/rich-content/display/blocks/diagram/parseDiagramJSON";
 import { Input } from "@ai-matrx/design-system/controls";
 import { Button } from "@/components/ui/button";
 import { AccessGate } from "@/features/access-gate/components/AccessGate";

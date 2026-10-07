@@ -45,6 +45,9 @@ import type { Json } from "@/types/database.types";
 // is never served stale.
 const READ_CACHE_TTL_MS = 4_000;
 
+/** Rows per `mbr_for_user` page — under PostgREST's 1000-row cap. */
+const FOR_USER_PAGE = 500;
+
 interface ReadCacheEntry<T> {
   value: T;
   expiresAt: number;
@@ -333,13 +336,22 @@ export const membershipsService = {
       ScopesRpcResult<{ memberships: UserMembership[] }>
     > => {
       try {
-        const { data, error } = await runWithSessionRetry(() =>
-          supabase.rpc("mbr_for_user", {
-            p_container_type: containerType,
-          }),
-        );
-        if (error) return err(...mapPgErrorPair(error));
-        const rows = (Array.isArray(data) ? data : []) as MbrForUserRow[];
+        // PAGED: PostgREST caps one answer at its max-rows (1000). A person in 1,043 organizations
+        // lost the last 43 — Holloway Creative never reached the picker and her own org page said
+        // "You don't have access" (feedback 6f443931). Read in stable id order until a short page.
+        const rows: MbrForUserRow[] = [];
+        for (let from = 0; ; from += FOR_USER_PAGE) {
+          const { data, error } = await runWithSessionRetry(() =>
+            supabase
+              .rpc("mbr_for_user", { p_container_type: containerType })
+              .order("id", { ascending: true })
+              .range(from, from + FOR_USER_PAGE - 1),
+          );
+          if (error) return err(...mapPgErrorPair(error));
+          const page = (Array.isArray(data) ? data : []) as MbrForUserRow[];
+          rows.push(...page);
+          if (page.length < FOR_USER_PAGE) break;
+        }
         const result = ok({ memberships: rows.map(toUserMembership) });
         // Only cache successes — a failed read must not poison retries.
         installSignOutHook();
@@ -416,14 +428,19 @@ export const membershipsService = {
       ScopesRpcResult<{ counts: MemberCount[] }>
     > => {
       try {
-        const { data, error } = await runWithSessionRetry(() =>
-          supabase.rpc("mbr_count", {
-            p_container_type: containerType,
-            p_container_ids: ids,
-          }),
-        );
-        if (error) return err(...mapPgErrorPair(error));
-        const rows = (Array.isArray(data) ? data : []) as MbrCountRow[];
+        // One row per id comes back, so >1000 ids would hit PostgREST's row cap: ask in slices.
+        const rows: MbrCountRow[] = [];
+        for (let i = 0; i < ids.length; i += FOR_USER_PAGE) {
+          const slice = ids.slice(i, i + FOR_USER_PAGE);
+          const { data, error } = await runWithSessionRetry(() =>
+            supabase.rpc("mbr_count", {
+              p_container_type: containerType,
+              p_container_ids: slice,
+            }),
+          );
+          if (error) return err(...mapPgErrorPair(error));
+          rows.push(...((Array.isArray(data) ? data : []) as MbrCountRow[]));
+        }
         const result = ok({
           counts: rows.map((r) => ({
             containerId: r.container_id,

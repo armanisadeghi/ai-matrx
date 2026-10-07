@@ -39,14 +39,30 @@ import type { ComposerMode } from "../inputs/smart-input/composer/composer-types
  */
 export function ChatNewClient({
   agentId,
+  pinned = false,
   composer,
 }: {
   agentId: string | null;
+  /**
+   * `/chat/new?agent=<id>`: the person named the agent, so it answers directly
+   * and the default-chat mandate neither seeds nor overrides it.
+   */
+  pinned?: boolean;
   /** The three-mode composer (server-read "last mode used" cookie). */
   composer: { initialMode: ComposerMode | null };
 }) {
-  return agentId ? (
-    <ChatNewBody agentId={agentId} composer={composer} />
+  // The SSR seed is the SYSTEM rung's Holder (first paint only). The server
+  // answers with THIS person's Holder, so once the one client resolver has
+  // spoken the pill must name that agent — otherwise the label read "General
+  // Chat" on one load and "Custom" on the next, depending on which answer had
+  // arrived (feedback 6717c61d). No answer yet / failed → keep the seed.
+  const { mandate } = useMandate(DEFAULT_NEW_CHAT_MANDATE_KEY, { optional: true });
+  if (pinned && agentId) {
+    return <ChatNewBody agentId={agentId} composer={composer} pinned />;
+  }
+  const effectiveAgentId = mandate?.agentId ?? agentId;
+  return effectiveAgentId ? (
+    <ChatNewBody agentId={effectiveAgentId} composer={composer} />
   ) : (
     <ChatNewClientResolved composer={composer} />
   );
@@ -122,9 +138,11 @@ export function ChatMandateUnavailable({ error }: { error?: string | null }) {
 function ChatNewBody({
   agentId,
   composer,
+  pinned = false,
 }: {
   agentId: string;
   composer: { initialMode: ComposerMode | null };
+  pinned?: boolean;
 }) {
   // No eager agent-list fetch here. Quick-action labels come from the
   // `agents.chat_composer.quick_actions` knob (no agent registry lookup) and the default
@@ -147,7 +165,7 @@ function ChatNewBody({
       // for this principal. A user or org rebinding this mandate changes who
       // answers immediately — no client deploy, and no second resolver that
       // could disagree with the server about whose binding wins.
-      mandateKey={DEFAULT_NEW_CHAT_MANDATE_KEY}
+      mandateKey={pinned ? undefined : DEFAULT_NEW_CHAT_MANDATE_KEY}
       composer={composer}
       // ChatRoomClient builds the presentation from the `composer` passed just
       // above, so it is always present here.

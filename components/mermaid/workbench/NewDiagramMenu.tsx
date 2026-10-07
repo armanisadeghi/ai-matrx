@@ -26,8 +26,8 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { useCanvas } from "@/features/canvas/hooks/useCanvas";
 
-import { getFeaturedCatalogEntries } from "../catalog";
-import { detectDiagramType } from "../diagram-type";
+import { getFeaturedCatalogEntries } from "@ai-matrx/rich-content/mermaid/catalog";
+import { detectDiagramType } from "@ai-matrx/rich-content/mermaid/diagram-type";
 
 const MAX_IMPORT_BYTES = 256 * 1024;
 

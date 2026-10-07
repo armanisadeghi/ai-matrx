@@ -20,20 +20,20 @@ import { SimpleTooltip } from "@/components/matrx/Tooltip";
 import { useIsMobile } from "@ai-matrx/kit/media-query";
 import { cn } from "@/lib/utils";
 
-import { MermaidRenderer } from "../MermaidRenderer";
-import { FLOW_PALETTE } from "../adapters/flowchart";
+import { MermaidRenderer } from "@ai-matrx/rich-content/mermaid/MermaidRenderer";
+import { FLOW_PALETTE } from "@ai-matrx/rich-content/mermaid/adapters/flowchart";
 import type {
   MermaidEditorAction,
   EditorSelection,
 } from "../workbench/useMermaidEditor";
-import type { MermaidOp } from "../model/ops";
+import type { MermaidOp } from "@ai-matrx/rich-content/mermaid/model/ops";
 import type {
   FlowEdgeStyle,
   FlowShape,
   FlowchartDoc,
   MermaidDoc,
-} from "../model/types";
-import type { MermaidRenderOptions } from "../types";
+} from "@ai-matrx/rich-content/mermaid/model/types";
+import type { MermaidRenderOptions } from "@ai-matrx/rich-content/mermaid/types";
 import {
   applySelection,
   findHit,

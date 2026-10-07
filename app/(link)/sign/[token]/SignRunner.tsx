@@ -24,7 +24,7 @@
 //   · declining is a real, visible, equal choice — not a hidden link — because a
 //     signer who cannot say no has not been asked anything.
 
-import { RichContentStaticStandard } from "@/components/rich-content/RichContentStaticProse";
+import { RichContentStaticStandard } from "@ai-matrx/rich-content/levels/RichContentStaticProse";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Check, PenLine, Type as TypeIcon, X } from "lucide-react";
 

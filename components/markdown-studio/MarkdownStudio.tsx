@@ -33,7 +33,7 @@ import { useSearchParams } from "next/navigation";
 import { Bookmark, Info, Loader2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
-import { RichContent } from "@/components/rich-content/RichContent";
+import { RichContent } from "@ai-matrx/rich-content/levels/RichContent";
 import { recordToast, toast } from "@/lib/toast";
 import { copyRichContent } from "@/components/agent-copy/copy-commands";
 import { detectRenderBlocks } from "@/components/admin/markdown-tester/utils/detect-render-blocks";

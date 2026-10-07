@@ -107,6 +107,45 @@ function extractInlineHandler(
   return found;
 }
 
+function extractMenuHandler(
+  file: string,
+  itemId: string,
+): ExtractedHandler & { itemSource: string } {
+  const sourceFile = parse(file);
+  let found: (ExtractedHandler & { itemSource: string }) | undefined;
+  function visit(node: ts.Node) {
+    if (!found && ts.isObjectLiteralExpression(node)) {
+      const id = node.properties.find(
+        (property): property is ts.PropertyAssignment =>
+          ts.isPropertyAssignment(property) &&
+          property.name.getText(sourceFile) === "id" &&
+          ts.isStringLiteral(property.initializer) &&
+          property.initializer.text === itemId,
+      );
+      const onSelect = node.properties.find(
+        (property): property is ts.PropertyAssignment =>
+          ts.isPropertyAssignment(property) &&
+          property.name.getText(sourceFile) === "onSelect" &&
+          ts.isArrowFunction(property.initializer) &&
+          ts.isBlock(property.initializer.body),
+      );
+      if (id && onSelect && ts.isArrowFunction(onSelect.initializer)) {
+        found = {
+          body: onSelect.initializer.body.getText(sourceFile),
+          parameters: onSelect.initializer.parameters.map((parameter) =>
+            parameter.name.getText(sourceFile),
+          ),
+          itemSource: node.getText(sourceFile),
+        };
+      }
+    }
+    ts.forEachChild(node, visit);
+  }
+  visit(sourceFile);
+  if (!found) throw new Error(`Could not extract menu item ${itemId} from ${file}`);
+  return found;
+}
+
 function compile(
   handler: ExtractedHandler,
   dependencies: Record<string, unknown>,
@@ -302,4 +341,152 @@ describe("useShare copy fallback", () => {
     expect(deps.setCopied).toHaveBeenCalledWith(true);
     expect(deps.setFallbackUrl).not.toHaveBeenCalled();
   });
+});
+
+function moveResetTimerOutsideSuccessCallback(body: string): string {
+  const timer = body.match(
+    /\n(\s*)(setTimeout\(\(\) => setCopiedKey\(null\), 1500\);)\n\s*}\);/,
+  );
+  if (!timer) throw new Error("Expected the shipped reset timer inside .then");
+  return body.replace(timer[0], `\n});\n${timer[1]}${timer[2]}`);
+}
+
+function deferredBoolean() {
+  let resolve!: (value: boolean) => void;
+  const promise = new Promise<boolean>((done) => {
+    resolve = done;
+  });
+  return { promise, resolve };
+}
+
+async function flushCopyContinuation() {
+  await Promise.resolve();
+  await Promise.resolve();
+}
+
+describe("deferred clipboard writes keep their reset timer in the success continuation", () => {
+  const handler = extractVariableHandler(
+    "components/debug/ContextDebugModal.tsx",
+    "copyToClipboard",
+  );
+
+  beforeEach(() => jest.useFakeTimers());
+  afterEach(() => jest.useRealTimers());
+
+  test("a slow successful copy shows success only after resolution, then resets after the full delay", async () => {
+    const copy = deferredBoolean();
+    const setCopiedKey = jest.fn();
+    const run = compile(handler, {
+      copyText: jest.fn(() => copy.promise),
+      setCopiedKey,
+      setTimeout,
+    });
+
+    await run("context text", "context");
+    jest.advanceTimersByTime(2000);
+    expect(setCopiedKey).not.toHaveBeenCalled();
+
+    copy.resolve(true);
+    await flushCopyContinuation();
+    expect(setCopiedKey).toHaveBeenLastCalledWith("context");
+
+    jest.advanceTimersByTime(1499);
+    expect(setCopiedKey).toHaveBeenLastCalledWith("context");
+    jest.advanceTimersByTime(1);
+    expect(setCopiedKey).toHaveBeenLastCalledWith(null);
+  });
+
+  test("a failed copy emits neither success nor a reset side effect", async () => {
+    const copy = deferredBoolean();
+    const setCopiedKey = jest.fn();
+    const run = compile(handler, {
+      copyText: jest.fn(() => copy.promise),
+      setCopiedKey,
+      setTimeout,
+    });
+
+    await run("context text", "context");
+    jest.advanceTimersByTime(2000);
+    copy.resolve(false);
+    await flushCopyContinuation();
+    jest.advanceTimersByTime(2000);
+    expect(setCopiedKey).not.toHaveBeenCalled();
+  });
+
+  test("mutation proof: moving the reset outside the callback breaks the delayed-copy lifecycle", async () => {
+    const copy = deferredBoolean();
+    const setCopiedKey = jest.fn();
+    const mutant = {
+      ...handler,
+      body: moveResetTimerOutsideSuccessCallback(handler.body),
+    };
+    const run = compile(mutant, {
+      copyText: jest.fn(() => copy.promise),
+      setCopiedKey,
+      setTimeout,
+    });
+
+    await run("context text", "context");
+    jest.advanceTimersByTime(2000);
+    expect(setCopiedKey).toHaveBeenLastCalledWith(null);
+
+    copy.resolve(true);
+    await flushCopyContinuation();
+    expect(setCopiedKey).toHaveBeenLastCalledWith("context");
+    jest.advanceTimersByTime(2000);
+    expect(setCopiedKey).toHaveBeenLastCalledWith("context");
+  });
+});
+
+describe.each([
+  {
+    name: "CRM party link menu",
+    handler: extractMenuHandler(
+      "features/crm/components/CrmListPage.tsx",
+      "copy-link",
+    ),
+    dependencies: (result: boolean, copyText: jest.Mock) => ({
+      copyText: copyText.mockResolvedValue(result),
+      window: { location: { origin: "https://www.aimatrx.com" } },
+      resolveEntityDoors: () => ({ href: "/crm/people/person-7" }),
+      row: { id: "person-7" },
+    }),
+  },
+  {
+    name: "CRM party ID menu",
+    handler: extractMenuHandler(
+      "features/crm/components/CrmListPage.tsx",
+      "copy-id",
+    ),
+    dependencies: (result: boolean, copyText: jest.Mock) => ({
+      copyText: copyText.mockResolvedValue(result),
+      row: { id: "person-7" },
+    }),
+  },
+  {
+    name: "outreach list link menu",
+    handler: extractMenuHandler(
+      "features/crm/components/outreach-lists/OutreachListsPage.tsx",
+      "copy-link",
+    ),
+    dependencies: (result: boolean, copyText: jest.Mock) => ({
+      copyText: copyText.mockResolvedValue(result),
+      window: { location: { origin: "https://www.aimatrx.com" } },
+      row: { id: "list-7" },
+    }),
+  },
+])("$name", ({ handler, dependencies }) => {
+  test.each([false, true])(
+    "returns void when the hook reports %s and leaves outcome messaging to the hook",
+    async (copyResult) => {
+      const copyText = jest.fn();
+      const outcome = await compile(
+        handler,
+        dependencies(copyResult, copyText),
+      )();
+      expect(outcome).toBeUndefined();
+      expect(copyText).toHaveBeenCalledTimes(1);
+      expect(handler.itemSource).not.toMatch(/\btoast\s*:/);
+    },
+  );
 });

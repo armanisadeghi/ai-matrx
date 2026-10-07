@@ -10,8 +10,8 @@ import { StreamBlockAccumulator } from "@ai-matrx/chat/agents/redux/execution-sy
 import { splitContentIntoBlocksV2 } from "@ai-matrx/rich-content/display/markdown-classification/processors/utils/content-splitter-v2";
 import { configureServerForTest } from "@ai-matrx/chat/testing/server-test-host";
 import { appChatServerApi } from "@/lib/api/chat-server-api";
-import { renderBlockToContentBlock } from "@/components/mardown-display/chat-markdown/render-block-to-content-block";
-import { decideBlockRender } from "@/components/mardown-display/chat-markdown/block-registry/BlockRenderer";
+import { renderBlockToContentBlock } from "@ai-matrx/rich-content/display/chat-markdown/render-block-to-content-block";
+import { decideBlockRender } from "@ai-matrx/rich-content/display/chat-markdown/block-registry/BlockRenderer";
 import { GENERIC_STRUCTURED_COMPONENT_KEY } from "@ai-matrx/rich-content/kinds/react/kind-route";
 import { drawsKindAsRawJson } from "../render-paths/draws-raw-kind-json";
 import { hasKindKey, jsonKindSignal } from "../surfaces/json-kind-signal";

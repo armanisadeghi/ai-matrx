@@ -5,7 +5,7 @@ import Link from "next/link";
 import { ArrowRight, BookOpen } from "lucide-react";
 import { MarketingPageShell } from "@/features/shell/components/MarketingPageShell";
 import { AuthedWorkspaceCTA } from "@/features/auth/components/module-landing/AuthedWorkspaceCTA";
-import { RichContentServer } from "@/components/rich-content/server/RichContentServer";
+import { RichContentServer } from "@ai-matrx/rich-content/levels/server/RichContentServer";
 import { SectionRenderer } from "./sections/SectionRenderer";
 import { getAxisEntry } from "../data/registry";
 import { EDU_TOOL_BY_SLUG } from "../data/tools";

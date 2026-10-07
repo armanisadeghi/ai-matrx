@@ -30,7 +30,7 @@ import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useIsMobile } from "@ai-matrx/kit/media-query";
 import { getActiveAnnouncements } from "@/actions/feedback.actions";
-import { RichContent } from "@/components/rich-content/RichContent";
+import { RichContent } from "@ai-matrx/rich-content/levels/RichContent";
 import type {
   AnnouncementType,
   SystemAnnouncement,

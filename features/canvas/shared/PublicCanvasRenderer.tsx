@@ -6,7 +6,7 @@ import {
   ArtifactRender,
   hasArtifactRenderer,
 } from "@/features/canvas/artifact-types/artifact-renderers";
-import SandboxedHtml from "@/components/mardown-display/blocks/common/SandboxedHtml";
+import SandboxedHtml from "@ai-matrx/rich-content/display/blocks/common/SandboxedHtml";
 import { KindValueFrontDoor } from "@/components/official/structured-value/KindValueFrontDoor";
 import { valueCarriesKind } from "@/features/content-ir/surfaces/json-kind-signal";
 

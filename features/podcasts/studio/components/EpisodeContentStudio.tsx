@@ -23,7 +23,7 @@ import {
 import { useOpenDiffViewerWindow } from "@/features/overlays/openers/diffViewerWindow";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { RichContent } from "@/components/rich-content/RichContent";
+import { RichContent } from "@ai-matrx/rich-content/levels/RichContent";
 import { podcastService } from "@/features/podcasts/service";
 import { useEpisodeArticles } from "@/features/podcasts/generator/useEpisodeArticles";
 import type {

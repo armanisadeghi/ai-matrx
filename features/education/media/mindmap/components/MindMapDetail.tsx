@@ -29,7 +29,7 @@ import { studyMediaService } from "../../service";
 import type { StudyMediaRow } from "../../types";
 import { MindMapNodeSearch, MindMapView } from "./MindMapView";
 import { distinctSourceTitle } from "@/features/education/components/EducationCollectionSearch";
-import type { DiagramNode } from "@/components/mardown-display/blocks/diagram/parseDiagramJSON";
+import type { DiagramNode } from "@ai-matrx/rich-content/display/blocks/diagram/parseDiagramJSON";
 import { collectionWriteHandlers } from "@ai-matrx/chat/surfaces/runtime/collection-write-targets";
 import { refuseSurfaceWrite } from "@ai-matrx/chat/surfaces/runtime/surface-writeback";
 import { parseCreateMindMaps, parseMindMapIds, parseUpdateMindMaps, trustAfterMindMapEdit } from "../mindMapWrites";

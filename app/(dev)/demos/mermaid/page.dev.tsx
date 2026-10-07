@@ -16,21 +16,21 @@ import { Play, RotateCcw, Square } from "lucide-react";
 // reach runtime.ts, so they stay static.
 const MermaidRenderer = dynamic(
   () =>
-    import("@/components/mermaid/MermaidRenderer").then((m) => ({
+    import("@ai-matrx/rich-content/mermaid/MermaidRenderer").then((m) => ({
       default: m.MermaidRenderer,
     })),
   { ssr: false },
 );
 const MermaidBlock = dynamic(
-  () => import("@/components/mardown-display/blocks/mermaid/MermaidBlock"),
+  () => import("@ai-matrx/rich-content/display/blocks/mermaid/MermaidBlock"),
   { ssr: false },
 );
 import {
   getFeaturedCatalogEntries,
   MERMAID_CATALOG,
-} from "@/components/mermaid/catalog";
-import { detectDiagramType } from "@/components/mermaid/diagram-type";
-import type { MermaidRenderOptions } from "@/components/mermaid/types";
+} from "@ai-matrx/rich-content/mermaid/catalog";
+import { detectDiagramType } from "@ai-matrx/rich-content/mermaid/diagram-type";
+import type { MermaidRenderOptions } from "@ai-matrx/rich-content/mermaid/types";
 import { Button } from "@/components/ui/button";
 
 const DEFAULT_OPTIONS: MermaidRenderOptions = {

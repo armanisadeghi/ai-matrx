@@ -38,7 +38,7 @@ jest.mock("next/dynamic", () => ({
     }
     if (source.includes("RichContentStandardImpl")) {
       return jest.requireActual(
-        "@/components/rich-content/RichContentStandardImpl",
+        "@ai-matrx/rich-content/levels/RichContentStandardImpl",
       ).default;
     }
     return function Unloaded() {
@@ -47,7 +47,7 @@ jest.mock("next/dynamic", () => ({
   },
 }));
 jest.mock("@/components/agent-copy/CopyButtons", () => ({ CopyButtons: () => null }));
-jest.mock("@/features/code-editor/components/code-block/CodeBlock", () => ({
+jest.mock("@ai-matrx/rich-content/code-block/CodeBlock", () => ({
   __esModule: true,
   default: ({ code, language }: { code: string; language: string }) => (
     <pre data-code-block={language}>{code}</pre>
@@ -57,10 +57,10 @@ jest.mock("@/features/code-editor/components/code-block/CodeBlock", () => ({
 import { splitContentIntoBlocksV2 } from "@ai-matrx/rich-content/display/markdown-classification/processors/utils/content-splitter-v2";
 import { StreamBlockAccumulator } from "@ai-matrx/chat/agents/redux/execution-system/utils/stream-block-accumulator";
 import type { RenderBlockPayload } from "@ai-matrx/agents/generated/stream-events";
-import { RichContent } from "@/components/rich-content/RichContent";
-import { NestedRichContent } from "@/components/rich-content/standard/NestedRichContent";
-import { RichContentDepthProvider } from "@/components/rich-content/depth";
-import { healStreamingTail } from "@/components/rich-content/standard/stream-holdback";
+import { RichContent } from "@ai-matrx/rich-content/levels/RichContent";
+import { NestedRichContent } from "@ai-matrx/rich-content/levels/standard/NestedRichContent";
+import { RichContentDepthProvider } from "@ai-matrx/rich-content/levels/depth";
+import { healStreamingTail } from "@ai-matrx/rich-content/levels/standard/stream-holdback";
 
 let container: HTMLDivElement;
 let root: Root;

@@ -25,7 +25,7 @@ import { Archive, Star } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Chip, type ChipHue } from "@ai-matrx/design-system/controls";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
-import { RichContentPreview } from "@/components/rich-content/RichContentPreview";
+import { RichContentPreview } from "@ai-matrx/rich-content/levels/RichContentPreview";
 import {
   DATE_FILTER_OPTIONS,
   Muted,

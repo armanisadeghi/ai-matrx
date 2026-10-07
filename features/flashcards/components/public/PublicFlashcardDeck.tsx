@@ -37,7 +37,7 @@ import {
 import {
   RichContentStaticInline,
   RichContentStaticStandard,
-} from "@/components/rich-content/RichContentStaticProse";
+} from "@ai-matrx/rich-content/levels/RichContentStaticProse";
 import FlashcardItem from "@/components/mardown-display/blocks/flashcards/FlashcardItem";
 import { getCardImages } from "../study/cardImages";
 import { studyFaces } from "../../utils/cardVariants";

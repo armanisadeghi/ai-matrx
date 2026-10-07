@@ -11,7 +11,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import {
   BLOCK_DISPATCH_CLASSIFICATION,
   resolveBlockDispatch,
-} from "@/components/mardown-display/chat-markdown/block-registry/block-dispatch";
+} from "@ai-matrx/rich-content/display/chat-markdown/block-registry/block-dispatch";
 import {
   MediaCandidateVerdictBlock,
   MediaListRankingBlock,

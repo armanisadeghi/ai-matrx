@@ -12,8 +12,8 @@ import {
 } from "@/components/ui/select";
 import { Loader2 } from "lucide-react";
 import { get_prompt_sample, TEST_ADMIN_TOKEN } from "./sample-prompt";
-import CodeBlock from "@/features/code-editor/components/code-block/CodeBlock";
-import { RichContent } from "@/components/rich-content/RichContent";
+import CodeBlock from "@ai-matrx/rich-content/code-block/CodeBlock";
+import { RichContent } from "@ai-matrx/rich-content/levels/RichContent";
 import { BACKEND_URLS, ENDPOINTS } from "@/lib/api/endpoints";
 import { peekSelectedOrganizationId } from "@/lib/api/organization-admission";
 import { requestRaw } from "@/lib/python-client";

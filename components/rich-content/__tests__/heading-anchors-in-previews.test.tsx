@@ -32,7 +32,7 @@ jest.mock("next/dynamic", () => ({
     if (source.includes("MarkdownCoreImpl"))
       return jest.requireActual("@ai-matrx/rich-content/markdown-core/MarkdownCoreImpl").default;
     if (source.includes("RichContentStandardImpl"))
-      return jest.requireActual("@/components/rich-content/RichContentStandardImpl").default;
+      return jest.requireActual("@ai-matrx/rich-content/levels/RichContentStandardImpl").default;
     return function Unloaded() {
       return null;
     };
@@ -40,7 +40,7 @@ jest.mock("next/dynamic", () => ({
 }));
 jest.mock("@/components/agent-copy/CopyButtons", () => ({ CopyButtons: () => null }));
 
-import { RichContent } from "@/components/rich-content/RichContent";
+import { RichContent } from "@ai-matrx/rich-content/levels/RichContent";
 
 const ANALYSIS = "## Market sizing\n\nThe **regional** recycling market grew 6% in 2025.";
 

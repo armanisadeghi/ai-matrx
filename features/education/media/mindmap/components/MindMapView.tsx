@@ -24,16 +24,16 @@ import { CanvasPagePanel } from "@/features/canvas/host/pagePanel";
 import { AskTutorButton } from "@/features/education/tutor/components/AskTutorButton";
 import { VerifyAgainstSourceButton } from "@/features/education/trust/components/VerifyAgainstSourceButton";
 import type { TrustEnvelope } from "@/features/education/trust/types";
-import { parseDiagramJSON } from "@/components/mardown-display/blocks/diagram/parseDiagramJSON";
+import { parseDiagramJSON } from "@ai-matrx/rich-content/display/blocks/diagram/parseDiagramJSON";
 import type {
   DiagramData,
   DiagramNode,
-} from "@/components/mardown-display/blocks/diagram/parseDiagramJSON";
+} from "@ai-matrx/rich-content/display/blocks/diagram/parseDiagramJSON";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 const InteractiveDiagramBlock = dynamic(
   () =>
-    import("@/components/mardown-display/blocks/diagram/InteractiveDiagramBlock"),
+    import("@ai-matrx/rich-content/display/blocks/diagram/InteractiveDiagramBlock"),
   {
     ssr: false,
     loading: () => (

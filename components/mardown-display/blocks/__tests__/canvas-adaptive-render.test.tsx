@@ -16,7 +16,7 @@ jest.mock("@ai-matrx/canvas/react", () => ({
 // Heavy renderers (recharts, leaflet, the diff engine) sit behind next/dynamic;
 // these tests are about the shell's layout decision, not the drawing.
 jest.mock("next/dynamic", () => () => () => <div data-probe="dynamic" />);
-jest.mock("@/features/code-editor/components/code-block/CodeBlock", () => ({
+jest.mock("@ai-matrx/rich-content/code-block/CodeBlock", () => ({
   __esModule: true,
   default: () => <pre />,
 }));
@@ -24,10 +24,10 @@ jest.mock("@/components/errors/ErrorAlchemyMenu", () => ({
   ErrorAlchemyMenu: () => null,
 }));
 
-import TreeBlock from "../tree/TreeBlock";
-import { DiffBlock } from "../diff/DiffBlock";
+import TreeBlock from "@ai-matrx/rich-content/display/blocks/tree/TreeBlock";
+import { DiffBlock } from "@ai-matrx/rich-content/display/blocks/diff/DiffBlock";
 import { MapBlock } from "../map/MapBlock";
-import { ChartBlock } from "../chart/ChartBlock";
+import { ChartBlock } from "@ai-matrx/rich-content/display/blocks/chart/ChartBlock";
 
 const PORTRAIT = canvasPresentation({ width: 360, height: 760, isFullscreen: false, paneCount: 1 });
 const WIDE = canvasPresentation({ width: 1400, height: 820, isFullscreen: false, paneCount: 1 });

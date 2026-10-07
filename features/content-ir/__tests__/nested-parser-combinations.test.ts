@@ -2,9 +2,9 @@ import { splitContentIntoBlocksV2 } from "@ai-matrx/rich-content/display/markdow
 import { StreamBlockAccumulator } from "@ai-matrx/chat/agents/redux/execution-system/utils/stream-block-accumulator";
 import type { RenderBlockPayload } from "@ai-matrx/agents/generated/stream-events";
 import { chunkText } from "./seeded-random";
-import { renderBlockToContentBlock } from "@/components/mardown-display/chat-markdown/render-block-to-content-block";
+import { renderBlockToContentBlock } from "@ai-matrx/rich-content/display/chat-markdown/render-block-to-content-block";
 import { expandTextBlocksInList } from "@ai-matrx/rich-content/display/markdown-classification/processors/utils/expand-text-blocks";
-import type { RenderBlock } from "@/components/mardown-display/chat-markdown/block-registry/BlockRenderer";
+import type { RenderBlock } from "@ai-matrx/rich-content/display/chat-markdown/block-registry/BlockRenderer";
 
 const SEED = 90211;
 const FENCE = "`".repeat(3);

@@ -24,7 +24,7 @@ import { Label } from "@/components/ui/label";
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Slider } from "@/components/ui/slider";
-import { RichContent } from "@/components/rich-content/RichContent";
+import { RichContent } from "@ai-matrx/rich-content/levels/RichContent";
 import MarkdownStream from "@/components/MarkdownStream";
 import type {
   TypedStreamEvent,
@@ -158,10 +158,10 @@ export default function ServerEventInspector({ content: controlled }: ServerEven
 
   const copyText = useCallback((text: string) => {
     void copyTextKit(text).then((copied) => {
-  if (!copied) return;
-  setCopied(true);
-});
-    setTimeout(() => setCopied(false), 1500);
+      if (!copied) return;
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    });
   }, []);
 
   const handleRun = useCallback(async () => {

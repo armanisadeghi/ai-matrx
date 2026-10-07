@@ -13,7 +13,7 @@
 import { cleanValue } from "@/lib/content-cleanup/clean-cells";
 import { DEFAULT_ENABLED_VALUE_OPERATIONS } from "@/lib/content-cleanup/value-operations";
 import { IconInputCompact } from "@/components/official/icons/IconInputWithValidation.dynamic";
-import { RichContent } from "@/components/rich-content/RichContent";
+import { RichContent } from "@ai-matrx/rich-content/levels/RichContent";
 import type { ReactNode } from "react";
 
 export function recordsCleanText(text: string): string {

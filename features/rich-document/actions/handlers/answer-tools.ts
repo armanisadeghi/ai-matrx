@@ -39,7 +39,7 @@ import {
 import { selectRegenerateAnchor } from "@ai-matrx/chat/agents/redux/execution-system/message-crud/regenerate-anchor";
 import { readCodeBlockFacts, type CodeBlockFacts } from "../../code-block/code-block-context";
 import { runCommandFor, runnableSandboxId } from "../../code-block/code-run";
-import { chartableTypes, parseDelimitedTable } from "@/components/mardown-display/blocks/chart/table-chart";
+import { chartableTypes, parseDelimitedTable } from "@ai-matrx/rich-content/display/blocks/chart/table-chart";
 
 // ─── Pin ────────────────────────────────────────────────────────────────────
 

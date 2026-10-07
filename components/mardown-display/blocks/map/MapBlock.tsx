@@ -22,7 +22,7 @@ import type { MapMarker } from "./MapCanvas";
 import { soleFence } from "@/lib/markdown/code-ranges";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { useCanvasPresentation } from "@ai-matrx/canvas/react";
-import { mapPlacesList } from "@/components/mardown-display/blocks/canvas-adaptive";
+import { mapPlacesList } from "@ai-matrx/rich-content/display/blocks/canvas-adaptive";
 import { Button, Tile } from "@ai-matrx/design-system/controls";
 
 interface MapSpec {

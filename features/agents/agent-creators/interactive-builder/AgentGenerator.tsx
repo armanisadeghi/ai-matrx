@@ -75,7 +75,7 @@ import {
   Bug,
 } from "lucide-react";
 import { toast } from "@/lib/toast";
-import { RichContent } from "@/components/rich-content/RichContent";
+import { RichContent } from "@ai-matrx/rich-content/levels/RichContent";
 import { AgentStreamingResponse } from "./AgentJsonDisplay";
 import { VoiceTextarea } from "@/components/official/VoiceTextarea";
 import { ExamplesField, emptyExamples } from "@/features/agents/factory/components/ExamplesField";

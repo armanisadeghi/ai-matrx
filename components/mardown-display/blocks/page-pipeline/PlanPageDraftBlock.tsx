@@ -31,7 +31,7 @@
  */
 
 import type { ReactNode } from "react";
-import { RichContent } from "@/components/rich-content/RichContent";
+import { RichContent } from "@ai-matrx/rich-content/levels/RichContent";
 import { FileText, Loader2, Search, Target } from "lucide-react";
 
 import type {

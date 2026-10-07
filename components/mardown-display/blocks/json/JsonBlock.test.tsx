@@ -47,7 +47,7 @@ jest.mock(
   }),
 );
 
-import { JsonBlock } from "./JsonBlock";
+import { JsonBlock } from "@ai-matrx/rich-content/display/blocks/json/JsonBlock";
 
 function renderJsonBlock(content: string): HTMLElement {
   document.body.innerHTML = renderToStaticMarkup(

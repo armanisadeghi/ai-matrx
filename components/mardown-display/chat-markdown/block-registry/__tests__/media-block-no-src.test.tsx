@@ -24,7 +24,7 @@ jest.mock("next/dynamic", () => ({
 
 // The component registry pulls the full markdown pipeline (remark/rehype ESM)
 // — irrelevant to routing assertions. Stub every member with a component.
-jest.mock("../BlockComponentRegistry", () => {
+jest.mock("@ai-matrx/rich-content/display/chat-markdown/block-registry/BlockComponentRegistry", () => {
   const react = jest.requireActual("react") as typeof React;
   const stub = (name: string) => {
     function StubBlockComponent() {
@@ -57,7 +57,7 @@ function stubComponentModule(named?: string[]) {
   };
 }
 jest.mock(
-  "@/components/mardown-display/chat-markdown/InlineCodeSnippet",
+  "@ai-matrx/rich-content/display/chat-markdown/InlineCodeSnippet",
   stubComponentModule(["InlineCodeSnippet"]),
 );
 jest.mock(
@@ -73,12 +73,12 @@ jest.mock(
   stubComponentModule(["CodeBlockWithContextAttach"]),
 );
 jest.mock(
-  "@/components/mardown-display/blocks/generic/GenericStructuredBlock",
+  "@ai-matrx/rich-content/display/blocks/generic/GenericStructuredBlock",
   stubComponentModule(),
 );
 
 
-import { resolveBlockDispatch, type BlockDispatchContext } from "../block-dispatch";
+import { resolveBlockDispatch, type BlockDispatchContext } from "@ai-matrx/rich-content/display/chat-markdown/block-registry/block-dispatch";
 
 const PHOTO_LINE =
   "![Curbside e-waste pile on Bay Street](https://images.greenroutehauling.com/pickup/curbside-pile.jpg)";

@@ -4,7 +4,7 @@ import { Suspense } from "react";
 import MatrxMiniLoader from "@/components/loaders/MatrxMiniLoader";
 import type { ArtifactRendererProps } from "../types";
 import ReactCodeBlock from "@/features/dynamic-react/ReactCodeBlock";
-import CodeBlock from "@/features/code-editor/components/code-block/CodeBlock";
+import CodeBlock from "@ai-matrx/rich-content/code-block/CodeBlock";
 
 /**
  * Unified renderer for `react` artifacts — a live React component from a

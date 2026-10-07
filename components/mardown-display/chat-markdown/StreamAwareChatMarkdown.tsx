@@ -4,7 +4,7 @@ import {
   EnhancedChatMarkdownInternal,
   ChatMarkdownDisplayProps,
 } from "./EnhancedChatMarkdown";
-import { TypedStreamEvent } from "./types";
+import { TypedStreamEvent } from "@ai-matrx/rich-content/display/chat-markdown/types";
 
 import { buildCanonicalBlocks } from "@/lib/chat-protocol/from-stream";
 import type {
@@ -12,7 +12,7 @@ import type {
   CanonicalBlock,
   TextBlock,
 } from "@/lib/chat-protocol/types";
-import { MarkdownErrorBoundary } from "./internal-handlers/MarkdownErrorBoundary";
+import { MarkdownErrorBoundary } from "@ai-matrx/rich-content/display/chat-markdown/internal-handlers/MarkdownErrorBoundary";
 import { LiveToolCallCard } from "@ai-matrx/chat/tool-call-visualization/components/LiveToolCallCard";
 import { useRetainRequestForViewer } from "@ai-matrx/chat/agents/redux/execution-system/active-requests/useRetainRequestForViewer";
 

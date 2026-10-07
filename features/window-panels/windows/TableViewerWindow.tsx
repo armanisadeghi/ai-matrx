@@ -51,7 +51,7 @@ import {
 // context-menu-exempt: entity — renders an ad hoc markdown table string; no id is threaded through any caller, so there is no record to attach
 
 const StreamingTableRenderer = lazy(() =>
-  import("@/components/mardown-display/blocks/table/StreamingTableRenderer").then(
+  import("@ai-matrx/rich-content/display/blocks/table/StreamingTableRenderer").then(
     (m) => ({ default: m.StreamingTableRenderer }),
   ),
 );

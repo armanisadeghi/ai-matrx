@@ -35,7 +35,7 @@ jest.mock("next/dynamic", () => ({
 
 // The component registry pulls the full markdown pipeline (remark/rehype ESM)
 // — irrelevant to routing assertions. Stub every member with a component.
-jest.mock("../BlockComponentRegistry", () => {
+jest.mock("@ai-matrx/rich-content/display/chat-markdown/block-registry/BlockComponentRegistry", () => {
   const react = jest.requireActual("react") as typeof React;
   const stub = (name: string) => {
     function StubBlockComponent() {
@@ -68,7 +68,7 @@ function stubComponentModule(named?: string[]) {
   };
 }
 jest.mock(
-  "@/components/mardown-display/chat-markdown/InlineCodeSnippet",
+  "@ai-matrx/rich-content/display/chat-markdown/InlineCodeSnippet",
   stubComponentModule(["InlineCodeSnippet"]),
 );
 jest.mock(
@@ -84,7 +84,7 @@ jest.mock(
   stubComponentModule(["CodeBlockWithContextAttach"]),
 );
 jest.mock(
-  "@/components/mardown-display/blocks/generic/GenericStructuredBlock",
+  "@ai-matrx/rich-content/display/blocks/generic/GenericStructuredBlock",
   stubComponentModule(),
 );
 
@@ -93,7 +93,7 @@ import {
   reportUnregisteredBlockType,
   BLOCK_DISPATCH_CLASSIFICATION,
   isBlockLoading,
-} from "../block-dispatch";
+} from "@ai-matrx/rich-content/display/chat-markdown/block-registry/block-dispatch";
 
 interface CrosswalkRow {
   name: string;

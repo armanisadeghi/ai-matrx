@@ -46,7 +46,7 @@ import { useToast } from "@/components/ui/use-toast";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { supabase } from "@/utils/supabase/client";
 import { formatDistanceToNow } from "date-fns";
-import { RichContent } from "@/components/rich-content/RichContent";
+import { RichContent } from "@ai-matrx/rich-content/levels/RichContent";
 import { useToolComponentAgent } from "./hooks/useToolComponentAgent";
 
 import type {

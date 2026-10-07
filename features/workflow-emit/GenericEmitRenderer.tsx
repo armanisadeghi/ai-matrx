@@ -20,7 +20,7 @@
 import React, { useMemo } from "react";
 import { CheckCircle2 } from "lucide-react";
 
-import { RichContent } from "@/components/rich-content/RichContent";
+import { RichContent } from "@ai-matrx/rich-content/levels/RichContent";
 import { ToolResultValue } from "@ai-matrx/chat/tool-call-visualization/result-fields/ToolResultValue";
 import { AssistChip } from "@/features/assists/components/AssistChip";
 import { makeEphemeralAssist, type Assist } from "@/features/assists/types";

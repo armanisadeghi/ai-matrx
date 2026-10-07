@@ -16,7 +16,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ProInput } from "@/components/official/ProInput";
-import { JsonBlock } from "@/components/mardown-display/blocks/json/JsonBlock";
+import { JsonBlock } from "@ai-matrx/rich-content/display/blocks/json/JsonBlock";
 import { useMandate } from "@ai-matrx/chat/mandates/useMandate";
 import { KIND_CREATOR_MANDATE_KEY } from "@/features/content-ir/studio/constants";
 import {

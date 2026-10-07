@@ -40,7 +40,7 @@ import {
   Search,
 } from "lucide-react";
 
-import SandboxedHtml from "@/components/mardown-display/blocks/common/SandboxedHtml";
+import SandboxedHtml from "@ai-matrx/rich-content/display/blocks/common/SandboxedHtml";
 import type {
   CmsPageBuildData,
   CmsPageWriteTarget,

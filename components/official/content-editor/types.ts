@@ -3,7 +3,7 @@
 import type { SourceFeature } from "@ai-matrx/chat/agents/types/instance.types";
 import type { ContentSource } from "@/features/rich-document/types";
 import type { ContextMenuEntityRef } from "@/features/context-menu-v3/types";
-import type { ImagePolicyDeclaration } from "@/components/rich-content/prose/remote-image-policy";
+import type { ImagePolicyDeclaration } from "@ai-matrx/rich-content/levels/prose/remote-image-policy";
 
 export type EditorMode =
   "plain" | "wysiwyg" | "markdown" | "matrx-split" | "preview";

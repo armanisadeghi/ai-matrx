@@ -25,7 +25,7 @@
 import React from "react";
 
 import { captureError } from "@/lib/diagnostics/errorCaptureStore";
-import GenericStructuredBlock from "@/components/mardown-display/blocks/generic/GenericStructuredBlock";
+import GenericStructuredBlock from "@ai-matrx/rich-content/display/blocks/generic/GenericStructuredBlock";
 import { readEnvelope } from "@ai-matrx/rich-content/kinds/redux/render-block-envelope";
 import { reconstructRegionValue } from "@ai-matrx/content-ir";
 import {

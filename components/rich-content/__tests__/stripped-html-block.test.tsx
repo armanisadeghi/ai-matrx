@@ -13,8 +13,8 @@ import { renderToStaticMarkup } from "react-dom/server";
 jest.mock("server-only", () => ({}));
 jest.mock("@ai-matrx/rich-content/markdown-core/MarkdownCore", () => ({ __esModule: true, default: () => null }));
 jest.mock("@/components/agent-copy/CopyButtons", () => ({ CopyButtons: () => null }));
-import { RichContentStaticStandard } from "@/components/rich-content/RichContentStaticProse";
-import { preprocessProse } from "@/components/rich-content/prose/prose-prepare";
+import { RichContentStaticStandard } from "@ai-matrx/rich-content/levels/RichContentStaticProse";
+import { preprocessProse } from "@ai-matrx/rich-content/levels/prose/prose-prepare";
 
 const AUDIT = [
   "Add a canonical link on every duplicate URL like this:",

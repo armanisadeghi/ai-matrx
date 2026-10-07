@@ -9,7 +9,7 @@
 // tasks/files via the canonical AssociationCardGrid.
 
 import { useMemo, useState } from "react";
-import { RichContent } from "@/components/rich-content/RichContent";
+import { RichContent } from "@ai-matrx/rich-content/levels/RichContent";
 import { useRouter } from "next/navigation";
 import { toast } from "@/lib/toast";
 import { Building2, Handshake, History, Send, User } from "lucide-react";

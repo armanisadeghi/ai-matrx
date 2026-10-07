@@ -74,12 +74,12 @@ jest.mock(
 // Text blocks render through the REAL prose leaf; any other block type is
 // marked so the test can refuse it (these answers must split to text only).
 jest.mock(
-  "@/components/mardown-display/chat-markdown/internal-handlers/SafeBlockRenderer",
+  "@ai-matrx/rich-content/display/chat-markdown/internal-handlers/SafeBlockRenderer",
   () => {
     const react = jest.requireActual("react") as typeof React;
     const { BasicMarkdownContent } = jest.requireActual(
-      "@/components/mardown-display/chat-markdown/BasicMarkdownContent",
-    ) as typeof import("@/components/mardown-display/chat-markdown/BasicMarkdownContent");
+      "@ai-matrx/rich-content/display/chat-markdown/BasicMarkdownContent",
+    ) as typeof import("@ai-matrx/rich-content/display/chat-markdown/BasicMarkdownContent");
     return {
       SafeBlockRenderer: ({
         block,
@@ -117,7 +117,7 @@ jest.mock(
   }),
 );
 jest.mock(
-  "@/components/mardown-display/chat-markdown/internal-handlers/InlineStatusIndicator",
+  "@ai-matrx/rich-content/display/chat-markdown/internal-handlers/InlineStatusIndicator",
   () => ({ InlineStatusIndicator: () => null }),
 );
 jest.mock(
@@ -143,7 +143,7 @@ jest.mock(
 );
 
 import { EnhancedChatMarkdownInternal } from "@/components/mardown-display/chat-markdown/EnhancedChatMarkdown";
-import { ImagePolicyProvider } from "@/components/rich-content/prose/remote-image-policy";
+import { ImagePolicyProvider } from "@ai-matrx/rich-content/levels/prose/remote-image-policy";
 
 interface StreamCase {
   name: string;

@@ -23,7 +23,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
-import { RichContent } from "@/components/rich-content/RichContent";
+import { RichContent } from "@ai-matrx/rich-content/levels/RichContent";
 import { cn } from "@/lib/utils";
 import { useOpenHindsightFindingWindow } from "@/features/overlays/openers/hindsightFindingWindow";
 

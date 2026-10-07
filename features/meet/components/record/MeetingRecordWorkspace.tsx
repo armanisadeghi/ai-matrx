@@ -22,7 +22,7 @@
 // opens the recap for review.
 
 import { EntityCustomFields } from "@/features/unified-data/components/EntityCustomFields";
-import { RichContent } from "@/components/rich-content/RichContent";
+import { RichContent } from "@ai-matrx/rich-content/levels/RichContent";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { useState } from "react";
 import { useSearchParams } from "next/navigation";

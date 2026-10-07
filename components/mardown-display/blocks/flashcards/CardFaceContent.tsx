@@ -17,11 +17,11 @@
 // The flip card itself (FlashcardItem) keeps its own auto-scaling style built
 // from the shared helpers below — one source of face-style truth.
 
-import type { MarkdownStyleConfig } from "@/components/mardown-display/chat-markdown/ConfigurableMarkdownContent";
+import type { MarkdownStyleConfig } from "@ai-matrx/rich-content/display/chat-markdown/ConfigurableMarkdownContent";
 import { cn } from "@/lib/utils";
 // Inside the chat engine's graph: the inline level directly, never the
 // router (its standard/full edges would stack under MarkdownStream).
-import { RichContentInline } from "@/components/rich-content/RichContentInline";
+import { RichContentInline } from "@ai-matrx/rich-content/levels/RichContentInline";
 
 export type CardFaceVariant = "prompt" | "inline";
 

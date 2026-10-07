@@ -36,7 +36,7 @@ jest.mock("@ai-matrx/rich-content/markdown-core/MarkdownCore", () => {
   };
 });
 jest.mock("@/components/agent-copy/CopyButtons", () => ({ CopyButtons: () => null }));
-jest.mock("@/features/code-editor/components/code-block/CodeBlock", () => ({
+jest.mock("@ai-matrx/rich-content/code-block/CodeBlock", () => ({
   __esModule: true,
   default: ({ code, meta }: { code: string; meta?: string }) => <pre data-meta={meta}>{code}</pre>,
 }));
@@ -71,8 +71,8 @@ jest.mock("@/features/rich-content-host/wikilink-resolver", () => ({
     ),
   createWikiPage: jest.fn(() => Promise.resolve({ ok: true, href: "/notes/new-id" })),
 }));
-jest.mock("@/components/rich-content/standard/NestedRichContent", () => {
-  const { StandardBlocks } = jest.requireActual("@/components/rich-content/standard/StandardBlocks");
+jest.mock("@ai-matrx/rich-content/levels/standard/NestedRichContent", () => {
+  const { StandardBlocks } = jest.requireActual("@ai-matrx/rich-content/levels/standard/StandardBlocks");
   return { __esModule: true, NestedRichContent: ({ source }: { source: string }) => <StandardBlocks source={source} />, default: () => null };
 });
 
@@ -89,7 +89,7 @@ jest.mock("@/features/organizations/peek/ResourcePeekHost", () => ({
   ResourcePeekHost: ({ kind, id }: { kind: string; id: string }) => <div data-peek-kind={kind} data-peek-id={id} />,
 }));
 
-import BasicMarkdownContent from "@/components/mardown-display/chat-markdown/BasicMarkdownContent";
+import BasicMarkdownContent from "@ai-matrx/rich-content/display/chat-markdown/BasicMarkdownContent";
 import { projectSource, rangeToSource, CONTENT_CHROME_ATTR } from "@/features/rich-document/annotations/projection";
 
 /**

@@ -29,7 +29,7 @@
 // that set: the person holding this link was sent it by the business whose
 // calendar it is, so the door names the switch instead of disappearing.
 
-import { RichContentServer } from "@/components/rich-content/server/RichContentServer";
+import { RichContentServer } from "@ai-matrx/rich-content/levels/server/RichContentServer";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 

@@ -83,7 +83,7 @@ import { MeetingGuests } from "@/features/meet/components/manage/MeetingGuests";
 import { linkSentence, scheduleLabel } from "@/features/meet/lib/meeting-status-copy";
 import { MeetingRecordWorkspace } from "@/features/meet/components/record/MeetingRecordWorkspace";
 import { RsvpControl } from "@/features/meet/components/manage/RsvpControl";
-import { BasicMarkdownContent } from "@/components/mardown-display/chat-markdown/BasicMarkdownContent";
+import { BasicMarkdownContent } from "@ai-matrx/rich-content/display/chat-markdown/BasicMarkdownContent";
 import { SaveTemplateDialog } from "@/features/meet/components/manage/SaveTemplateDialog";
 import {
   AfterMeetingWorkflows,

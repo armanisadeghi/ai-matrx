@@ -26,7 +26,7 @@ import { Input } from "@ai-matrx/design-system/controls";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { MatrxDynamicPanelHost } from "@/components/matrx/resizable/MatrxDynamicPanelHost";
 import { cn } from "@/lib/utils";
-import { RichContent } from "@/components/rich-content/RichContent";
+import { RichContent } from "@ai-matrx/rich-content/levels/RichContent";
 import {
   STUDIO_SOURCES,
   STUDIO_SOURCE_KINDS,

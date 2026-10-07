@@ -733,6 +733,33 @@ export interface LinkedAgentRef {
    * silently reported as "not linked".
    */
   deletedAt: string | null;
+  /** Archived agents are not offered as a sync partner. */
+  isArchived: boolean;
+  /**
+   * Who owns it, from the viewer's seat: "me", a person, an organization (an
+   * org-visible agent of someone else in an org the viewer can read) or the
+   * system. Drives every owner word in Linked Agent Sync.
+   */
+  ownerKind: "me" | "person" | "organization" | "system";
+  /** Person display name or organization name; null when not readable ("Someone else"). */
+  ownerName: string | null;
+  /** The viewer's level from `agx_get_access_level` (owner/admin/editor/viewer/public/none). */
+  accessLevel: string;
+  /**
+   * The builder's own save rule for a user agent: owner or editor. Always false
+   * for a system agent — that write is the registered admin feature, decided by
+   * the panel from `agent.system-sync`.
+   */
+  canEdit: boolean;
+}
+
+/**
+ * The agent this one was made from, when it still exists by id but the viewer
+ * can no longer open it (unshared, made private, archived, or deleted).
+ */
+export interface LostLinkedSource {
+  id: string;
+  reason: "unreadable" | "archived" | "deleted";
 }
 
 /**
@@ -744,9 +771,11 @@ export interface LinkedCounterpartResult {
   self: LinkedAgentRef;
   source: LinkedAgentRef | null;
   derived: LinkedAgentRef[];
+  /** Set when `self.sourceAgentId` names an agent the viewer can no longer open. */
+  lostSource: LostLinkedSource | null;
 }
 
-/** Result of `createPersonalCopy` — idempotent personal copy of a system agent. */
+/** Result of `createPersonalCopy` — idempotent personal copy of any agent the viewer can read. */
 export interface PersonalCopyResult {
   agentId: string;
   /** True when a personal copy already existed and was returned instead of created. */

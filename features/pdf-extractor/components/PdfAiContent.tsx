@@ -1,6 +1,6 @@
 "use client";
 
-import { RichContent } from "@/components/rich-content/RichContent";
+import { RichContent } from "@ai-matrx/rich-content/levels/RichContent";
 
 /**
  * PdfAiContent — the ONE canonical renderer for AI-GENERATED PDF content.

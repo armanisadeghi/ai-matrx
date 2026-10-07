@@ -13,7 +13,7 @@ import { Switch } from '@/components/ui/switch';
 import { toast } from "@/lib/toast";
 import { Eye, EyeOff, AlertCircle, AlertTriangle, Info, Megaphone, X } from 'lucide-react';
 import { Card } from '@/components/ui/card';
-import { RichContent } from '@/components/rich-content/RichContent';
+import { RichContent } from '@ai-matrx/rich-content/levels/RichContent';
 import { useRegisterAnnouncementEditor } from '@/features/admin/users/components/FeedbackConsoleEditorStore';
 import { ProTextarea } from "@/components/official/ProTextarea";
 

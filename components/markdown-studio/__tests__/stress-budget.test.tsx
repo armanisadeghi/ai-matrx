@@ -53,7 +53,7 @@ jest.mock("@/lib/redux/hooks", () => ({
 jest.mock("@ai-matrx/chat/store/hooks", () => jest.requireMock("@/lib/redux/hooks"));
 jest.mock("next/dynamic", () => ({ __esModule: true, default: () => () => null }));
 jest.mock("next/cache", () => ({ revalidatePath: jest.fn(), revalidateTag: jest.fn() }));
-jest.mock("@/components/mardown-display/chat-markdown/internal-handlers/SafeBlockRenderer", () => ({
+jest.mock("@ai-matrx/rich-content/display/chat-markdown/internal-handlers/SafeBlockRenderer", () => ({
   SafeBlockRenderer: (props: Recorded) => {
     current.push(props);
     return null;
@@ -68,7 +68,7 @@ import {
   DocumentNumberingProvider,
   useDocumentNumbering,
 } from "@ai-matrx/rich-content/markdown-core/syntax/elements/DocumentNumbering";
-import { PROGRESSIVE_AUTO_LIMIT, PROGRESSIVE_FIRST_SLICE } from "@/components/mardown-display/chat-markdown/progressive-mount";
+import { PROGRESSIVE_AUTO_LIMIT, PROGRESSIVE_FIRST_SLICE } from "@ai-matrx/rich-content/display/chat-markdown/progressive-mount";
 
 (globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 

@@ -33,7 +33,7 @@ import {
   type FormSubmitOutcome,
   type RecordsUiHost,
 } from "@ai-matrx/records-ui";
-import { RichContentStaticInline } from "@/components/rich-content/RichContentStaticProse";
+import { RichContentStaticInline } from "@ai-matrx/rich-content/levels/RichContentStaticProse";
 import type { Field, RuleExpression } from "@ai-matrx/records";
 
 import type { PublicForm } from "@/features/forms/service";

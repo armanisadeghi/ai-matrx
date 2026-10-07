@@ -32,10 +32,10 @@ jest.mock("@/lib/scoped-config/sessionKnob", () => ({ sessionKnobPrincipals: () 
 const setUserKnobMapEntry = jest.fn(async () => ({ ok: true, map: {}, changed: true }));
 jest.mock("@/lib/scoped-config/service", () => ({ setUserKnobMapEntry: (...a: unknown[]) => setUserKnobMapEntry(...(a as [])) }));
 
-import { RichContentServer } from "@/components/rich-content/server/RichContentServer";
-import { RichContentStaticStandard, RichContentStaticInline } from "@/components/rich-content/RichContentStaticProse";
-import { RichContentInline } from "@/components/rich-content/RichContentInline";
-import RichContentStandardImpl from "@/components/rich-content/RichContentStandardImpl";
+import { RichContentServer } from "@ai-matrx/rich-content/levels/server/RichContentServer";
+import { RichContentStaticStandard, RichContentStaticInline } from "@ai-matrx/rich-content/levels/RichContentStaticProse";
+import { RichContentInline } from "@ai-matrx/rich-content/levels/RichContentInline";
+import RichContentStandardImpl from "@ai-matrx/rich-content/levels/RichContentStandardImpl";
 
 const TRACKER = "https://pixel.tracker.example/open.gif?u=42";
 const SUPPLIER = "https://supplier.example.com/valve.jpg";

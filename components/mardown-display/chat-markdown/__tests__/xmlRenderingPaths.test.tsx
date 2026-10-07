@@ -51,10 +51,10 @@ jest.mock("@ai-matrx/rich-content/markdown-core/MarkdownCore", () => {
   return { __esModule: true, default: actual.default };
 });
 
-jest.mock("../internal-handlers/SafeBlockRenderer", () => {
+jest.mock("@ai-matrx/rich-content/display/chat-markdown/internal-handlers/SafeBlockRenderer", () => {
   const react = jest.requireActual("react") as typeof React;
   const XmlBlock = jest.requireActual(
-    "@/components/mardown-display/blocks/xml/XmlBlock",
+    "@ai-matrx/rich-content/display/blocks/xml/XmlBlock",
   ).default as React.ComponentType<{ content: string; language?: string }>;
   return {
     // EnhancedChatMarkdown's ingress/sequencing seam is the subject here.
@@ -100,7 +100,7 @@ jest.mock("../internal-handlers/ToolHandlers", () => ({
   DbToolBatch: () => null,
 }));
 
-jest.mock("../internal-handlers/InlineStatusIndicator", () => ({
+jest.mock("@ai-matrx/rich-content/display/chat-markdown/internal-handlers/InlineStatusIndicator", () => ({
   InlineStatusIndicator: () => null,
 }));
 
@@ -132,7 +132,7 @@ jest.mock(
 
 import { EnhancedChatMarkdownInternal } from "../EnhancedChatMarkdown";
 import { StreamAwareChatMarkdown } from "../StreamAwareChatMarkdown";
-import type { TypedStreamEvent } from "../types";
+import type { TypedStreamEvent } from "@ai-matrx/rich-content/display/chat-markdown/types";
 import { StreamBlockAccumulator } from "@ai-matrx/chat/agents/redux/execution-system/utils/stream-block-accumulator";
 import type { RenderBlockPayload } from "@ai-matrx/agents/generated/stream-events";
 

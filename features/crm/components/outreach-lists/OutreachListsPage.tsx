@@ -218,11 +218,11 @@ export function OutreachListsPage() {
             {
               id: "copy-link",
               label: "Copy link",
-              onSelect: () =>
-                copyText(
+              onSelect: async () => {
+                await copyText(
                   `${window.location.origin}/crm/outreach-lists/${row.id}`,
-                ),
-              toast: { loading: "Copying…", success: "Link copied" },
+                );
+              },
             },
           ],
         },

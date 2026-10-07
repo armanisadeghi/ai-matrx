@@ -33,7 +33,7 @@ import { useState } from "react";
 import { ChevronDown, Layers, Lightbulb, Loader2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { ConfigurableMarkdownContent } from "@/components/mardown-display/chat-markdown/ConfigurableMarkdownContent";
+import { ConfigurableMarkdownContent } from "@ai-matrx/rich-content/display/chat-markdown/ConfigurableMarkdownContent";
 import { LiveRunDisplay } from "@ai-matrx/chat/agents/components/live-run/LiveRunDisplay";
 import { useLiveRunHandle } from "@ai-matrx/chat/agents/hooks/useLiveRunHandle";
 import { useEntitlementGuard } from "@/features/entitlements/components/useEntitlementGuard";

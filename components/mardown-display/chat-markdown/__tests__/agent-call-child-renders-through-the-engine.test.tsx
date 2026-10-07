@@ -78,7 +78,7 @@ jest.mock("next/dynamic", () => ({
     if (String(loader).includes("block-registry/BlockRenderer")) {
       const {
         BlockRenderer,
-      } = require("../block-registry/BlockRenderer") as {
+      } = require("@ai-matrx/rich-content/display/chat-markdown/block-registry/BlockRenderer") as {
         BlockRenderer: React.ComponentType<Record<string, unknown>>;
       };
       const Dynamic = (props: unknown) =>
@@ -95,7 +95,7 @@ jest.mock("next/cache", () => ({
 // Prose is real; every other registry component is a named stub. Kinds reach
 // their component through the content-ir route, not this registry.
 jest.mock(
-  "@/components/mardown-display/chat-markdown/block-registry/BlockComponentRegistry",
+  "@ai-matrx/rich-content/display/chat-markdown/block-registry/BlockComponentRegistry",
   () => {
     const stub = (name: string) => {
       const Component = (props: { children?: React.ReactNode }) =>
@@ -106,7 +106,7 @@ jest.mock(
     const proxy = new Proxy(
       {
         // Real prose, so a parent text block that leaks in is visible.
-        BasicMarkdownContent: require("@/components/mardown-display/chat-markdown/BasicMarkdownContent").default,
+        BasicMarkdownContent: require("@ai-matrx/rich-content/display/chat-markdown/BasicMarkdownContent").default,
       },
       {
         get: (target, prop) =>
@@ -124,7 +124,7 @@ jest.mock("@/features/canvas/materialization/CodeBlockWithContextAttach", () => 
     <pre data-code-block="">{code}</pre>
   ),
 }));
-jest.mock("@/features/code-editor/components/code-block/CodeBlock", () => ({
+jest.mock("@ai-matrx/rich-content/code-block/CodeBlock", () => ({
   __esModule: true,
   default: ({ code }: { code: string }) => <pre data-code-block="">{code}</pre>,
 }));
@@ -138,7 +138,7 @@ jest.mock("../internal-handlers/ToolHandlers", () => ({
   InlineToolBatch: () => null,
   DbToolBatch: () => null,
 }));
-jest.mock("../internal-handlers/InlineStatusIndicator", () => ({
+jest.mock("@ai-matrx/rich-content/display/chat-markdown/internal-handlers/InlineStatusIndicator", () => ({
   InlineStatusIndicator: () => null,
 }));
 jest.mock("../internal-handlers/InlineThinkingSlot", () => ({

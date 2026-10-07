@@ -42,7 +42,7 @@ import { ChevronLeftTapButton } from "@ai-matrx/tap-target/buttons";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { useOrganizationLabel } from "@/features/organizations/hooks/useOrganizationLabel";
 import { HTMLPageService } from "@/features/html-pages/services/htmlPageService";
-import SandboxedHtml from "@/components/mardown-display/blocks/common/SandboxedHtml";
+import SandboxedHtml from "@ai-matrx/rich-content/display/blocks/common/SandboxedHtml";
 import { SurfaceRuntimeProvider } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 import { ARTIFACTS_SURFACE_NAME } from "@/features/surfaces/manifests/artifacts.manifest";

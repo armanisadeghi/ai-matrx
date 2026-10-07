@@ -4,7 +4,7 @@
 import Link from "next/link";
 import { ArrowRight, type LucideIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { RichContentServer } from "@/components/rich-content/server/RichContentServer";
+import { RichContentServer } from "@ai-matrx/rich-content/levels/server/RichContentServer";
 import type { EduLink } from "../../types";
 
 interface EduHeroProps {

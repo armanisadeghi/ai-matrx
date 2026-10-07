@@ -23,8 +23,8 @@ jest.mock("@ai-matrx/rich-content/markdown-core/MarkdownCore", () => ({
 }));
 jest.mock("@/components/agent-copy/CopyButtons", () => ({ CopyButtons: () => null }));
 
-import { RichContentServer } from "@/components/rich-content/server/RichContentServer";
-import { RichContentStaticStandard } from "@/components/rich-content/RichContentStaticProse";
+import { RichContentServer } from "@ai-matrx/rich-content/levels/server/RichContentServer";
+import { RichContentStaticStandard } from "@ai-matrx/rich-content/levels/RichContentStaticProse";
 
 const F = "```";
 const NOTE = [

@@ -20,7 +20,7 @@ import {
   analyzeHtmlForPreview,
   extractTitleFromHTML,
 } from "@/features/html-pages/utils/html-preview-utils";
-import CodeBlock from "@/features/code-editor/components/code-block/CodeBlock";
+import CodeBlock from "@ai-matrx/rich-content/code-block/CodeBlock";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 /**

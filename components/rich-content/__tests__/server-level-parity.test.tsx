@@ -38,23 +38,23 @@ jest.mock("@ai-matrx/rich-content/markdown-core/MarkdownCore", () => ({
     .default,
 }));
 jest.mock("@/components/agent-copy/CopyButtons", () => ({ CopyButtons: () => null }));
-jest.mock("@/features/code-editor/components/code-block/CodeBlock", () => ({
+jest.mock("@ai-matrx/rich-content/code-block/CodeBlock", () => ({
   __esModule: true,
   default: ({ code }: { code: string }) => <pre>{code}</pre>,
 }));
 
-import { RichContentServer } from "@/components/rich-content/server/RichContentServer";
-import { RichContentInline } from "@/components/rich-content/RichContentInline";
-import { StandardBlocks } from "@/components/rich-content/standard/StandardBlocks";
-import { RichContentDepthProvider } from "@/components/rich-content/depth";
+import { RichContentServer } from "@ai-matrx/rich-content/levels/server/RichContentServer";
+import { RichContentInline } from "@ai-matrx/rich-content/levels/RichContentInline";
+import { StandardBlocks } from "@ai-matrx/rich-content/levels/standard/StandardBlocks";
+import { RichContentDepthProvider } from "@ai-matrx/rich-content/levels/depth";
 import {
   RichContentStaticInline,
   RichContentStaticProse,
   RichContentStaticStandard,
-} from "@/components/rich-content/RichContentStaticProse";
-import RichContentStandardImpl from "@/components/rich-content/RichContentStandardImpl";
-import { ProseServer } from "@/components/rich-content/server/RichContentServer";
-import BasicMarkdownContent from "@/components/mardown-display/chat-markdown/BasicMarkdownContent";
+} from "@ai-matrx/rich-content/levels/RichContentStaticProse";
+import RichContentStandardImpl from "@ai-matrx/rich-content/levels/RichContentStandardImpl";
+import { ProseServer } from "@ai-matrx/rich-content/levels/server/RichContentServer";
+import BasicMarkdownContent from "@ai-matrx/rich-content/display/chat-markdown/BasicMarkdownContent";
 
 const STUDY_GUIDE = [
   "## Molar mass, step by step",

@@ -28,7 +28,7 @@ import LinesViewer, {
   type LineItem,
 } from "./analyzer/analyzer-options/lines-viewer";
 import SectionViewerV2 from "./analyzer/analyzer-options/section-viewer-V2";
-import { RichContent } from "@/components/rich-content/RichContent";
+import { RichContent } from "@ai-matrx/rich-content/levels/RichContent";
 import RichEditor, { type RichEditorController } from "@/components/rich-editor/RichEditor";
 import { MatrxSplit } from "@/components/matrx/MatrxSplit";
 import { useTextareaFormatting } from "@/components/rich-editor/format/useTextareaFormatting";
@@ -56,7 +56,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
 import { PlainTextMetricsBar } from "@/components/text/PlainTextMetricsBar";
-import type { ImagePolicyDeclaration } from "@/components/rich-content/prose/remote-image-policy";
+import type { ImagePolicyDeclaration } from "@ai-matrx/rich-content/levels/prose/remote-image-policy";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 const MarkdownAnalyzer = lazy(() => import("./analyzer/MarkdownAnalyzer"));

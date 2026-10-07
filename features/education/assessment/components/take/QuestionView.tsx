@@ -24,7 +24,7 @@ import { canPhotographAnswer } from "./useTakeAssessment";
 import type { GradedAnswer } from "../../data/grading";
 import type { AssessmentItemRow, AttemptResult, QuestionType } from "../../data/types";
 import { ProTextarea } from "@/components/official/ProTextarea";
-import { RichContent } from "@/components/rich-content/RichContent";
+import { RichContent } from "@ai-matrx/rich-content/levels/RichContent";
 
 function optionsOf(item: AssessmentItemRow): string[] {
   const raw = item.options;

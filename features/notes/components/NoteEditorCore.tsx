@@ -55,7 +55,7 @@ import RichEditor, {
   type RichEditorView,
 } from "@/components/rich-editor/RichEditor";
 import { noteIdentityContentSource } from "../richDocumentSource";
-import type { ImagePolicyDeclaration } from "@/components/rich-content/prose/remote-image-policy";
+import type { ImagePolicyDeclaration } from "@ai-matrx/rich-content/levels/prose/remote-image-policy";
 import { NOTE_EXCLUDED_ACTIONS } from "../constants/noteExcludedActions";
 
 function assignRef<T>(ref: React.Ref<T> | undefined, node: T | null) {

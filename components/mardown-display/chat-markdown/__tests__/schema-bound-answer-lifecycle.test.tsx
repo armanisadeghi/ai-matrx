@@ -27,7 +27,7 @@ jest.mock("next/dynamic", () => ({
     // SafeBlockRenderer is the only dynamic boundary under test. Other
     // dynamic leaves are unrelated to the JSON dispatch lifecycle.
     if (String(loader).includes("block-registry/BlockRenderer")) {
-      const BlockRenderer = require("../block-registry/BlockRenderer").BlockRenderer;
+      const BlockRenderer = require("@ai-matrx/rich-content/display/chat-markdown/block-registry/BlockRenderer").BlockRenderer;
       function DynamicBlockRenderer(props: unknown) {
         return React.createElement(
           BlockRenderer as React.ComponentType<Record<string, unknown>>,
@@ -41,7 +41,7 @@ jest.mock("next/dynamic", () => ({
 }));
 jest.mock("next/cache", () => ({ revalidatePath: jest.fn(), revalidateTag: jest.fn() }));
 jest.mock(
-  "@/components/mardown-display/chat-markdown/block-registry/BlockComponentRegistry",
+  "@ai-matrx/rich-content/display/chat-markdown/block-registry/BlockComponentRegistry",
   () => {
   const JsonBlock = ({ content }: { content?: string }) =>
     React.createElement("pre", { "data-content-renderer": "JsonBlock" }, content);
@@ -74,7 +74,7 @@ jest.mock("../internal-handlers/ToolHandlers", () => ({
   InlineToolBatch: () => null,
   DbToolBatch: () => null,
 }));
-jest.mock("../internal-handlers/InlineStatusIndicator", () => ({
+jest.mock("@ai-matrx/rich-content/display/chat-markdown/internal-handlers/InlineStatusIndicator", () => ({
   InlineStatusIndicator: () => null,
 }));
 jest.mock("../internal-handlers/InlineThinkingSlot", () => ({

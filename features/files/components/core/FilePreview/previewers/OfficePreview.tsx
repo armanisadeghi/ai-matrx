@@ -44,7 +44,7 @@ import {
   Loader2,
   Presentation,
 } from "lucide-react";
-import { RichContent } from "@/components/rich-content/RichContent";
+import { RichContent } from "@ai-matrx/rich-content/levels/RichContent";
 import { cn } from "@/lib/utils";
 import { stripDuplicatePortionHeading } from "@/lib/markdown/portion-heading";
 import type {

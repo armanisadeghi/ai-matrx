@@ -32,14 +32,14 @@ jest.mock("@ai-matrx/rich-content/markdown-core/MarkdownCore", () => ({
     .default,
 }));
 jest.mock("@/components/agent-copy/CopyButtons", () => ({ CopyButtons: () => null }));
-jest.mock("@/features/code-editor/components/code-block/CodeBlock", () => ({
+jest.mock("@ai-matrx/rich-content/code-block/CodeBlock", () => ({
   __esModule: true,
   default: ({ code }: { code: string }) => <pre>{code}</pre>,
 }));
 
-import { RichContentInline } from "@/components/rich-content/RichContentInline";
-import { StandardBlocks } from "@/components/rich-content/standard/StandardBlocks";
-import BasicMarkdownContent from "@/components/mardown-display/chat-markdown/BasicMarkdownContent";
+import { RichContentInline } from "@ai-matrx/rich-content/levels/RichContentInline";
+import { StandardBlocks } from "@ai-matrx/rich-content/levels/standard/StandardBlocks";
+import BasicMarkdownContent from "@ai-matrx/rich-content/display/chat-markdown/BasicMarkdownContent";
 
 const SOURCES = [
   {

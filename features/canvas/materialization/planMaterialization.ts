@@ -32,11 +32,11 @@ import type {
 } from "@ai-matrx/chat/public-chat/types/cx-tables";
 import { splitContentIntoBlocksV2 } from "@ai-matrx/rich-content/display/markdown-classification/processors/utils/content-splitter-v2";
 import { reconstructBlockMarkdown } from "@ai-matrx/chat/agents/redux/execution-system/utils/assemble-cx-content-blocks";
-import { getCatalogEntry } from "@/components/mermaid/catalog";
+import { getCatalogEntry } from "@ai-matrx/rich-content/mermaid/catalog";
 import {
   detectDiagramType,
   extractMermaidTitle,
-} from "@/components/mermaid/diagram-type";
+} from "@ai-matrx/rich-content/mermaid/diagram-type";
 import {
   resolveCanvasType,
   resolveArtifactDefByKind,
@@ -51,7 +51,7 @@ import {
   detectKindInJsonText,
   type KindValueDetection,
 } from "@/features/canvas/artifact-types/storedKindValue";
-import { parseDiagramJSON } from "@/components/mardown-display/blocks/diagram/parseDiagramJSON";
+import { parseDiagramJSON } from "@ai-matrx/rich-content/display/blocks/diagram/parseDiagramJSON";
 
 export interface PlannedArtifact {
   /** Stable 1-based order within the message (= canvas_items.artifact_index). */

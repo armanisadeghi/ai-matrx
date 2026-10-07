@@ -1,10 +1,10 @@
 import { splitContentIntoBlocksV2 } from "@ai-matrx/rich-content/display/markdown-classification/processors/utils/content-splitter-v2";
 import { expandTextBlocksInList } from "@ai-matrx/rich-content/display/markdown-classification/processors/utils/expand-text-blocks";
-import { renderBlockToContentBlock } from "@/components/mardown-display/chat-markdown/render-block-to-content-block";
+import { renderBlockToContentBlock } from "@ai-matrx/rich-content/display/chat-markdown/render-block-to-content-block";
 import { StreamBlockAccumulator } from "@ai-matrx/chat/agents/redux/execution-system/utils/stream-block-accumulator";
 import { buildCanonicalBlocks } from "@/lib/chat-protocol/from-stream";
 import type { RenderBlockPayload } from "@ai-matrx/agents/generated/stream-events";
-import type { TypedStreamEvent } from "@/components/mardown-display/chat-markdown/types";
+import type { TypedStreamEvent } from "@ai-matrx/rich-content/display/chat-markdown/types";
 
 describe("unrecognized XML fallback", () => {
   it("routes complete bare XML through the existing XML code renderer contract", () => {

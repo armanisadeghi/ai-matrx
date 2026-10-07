@@ -5,7 +5,7 @@
  * (<RichContent level="inline">), clamped; no regex decides what is markdown.
  */
 
-import { RichContent } from "@/components/rich-content/RichContent";
+import { RichContent } from "@ai-matrx/rich-content/levels/RichContent";
 import { Maximize2 } from "lucide-react";
 import { parseStructuredCellValue, structuredCellSummary } from "./structuredCellValue";
 import { kindOneLine } from "@/features/content-ir/surfaces/kind-one-line";

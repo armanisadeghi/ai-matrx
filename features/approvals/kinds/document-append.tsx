@@ -15,7 +15,7 @@
  */
 
 import type { ApprovalKind, ApprovalScope } from "../types";
-import { RichContent } from "@/components/rich-content/RichContent";
+import { RichContent } from "@ai-matrx/rich-content/levels/RichContent";
 import { formatCount } from "@ai-matrx/kit/format";
 import {
   GOOGLE_OPERATOR_SCOPE,

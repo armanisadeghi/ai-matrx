@@ -28,7 +28,7 @@ import {
   MessageViewModeMenu,
   type MessageViewMode,
 } from "@/features/agents/components/builder/message-builders/MessageViewModeMenu";
-import { RichContent } from "@/components/rich-content/RichContent";
+import { RichContent } from "@ai-matrx/rich-content/levels/RichContent";
 import { MatrxSplit } from "@/components/matrx/MatrxSplit";
 import { useTextareaFormatting } from "@/components/rich-editor/format/useTextareaFormatting";
 import {

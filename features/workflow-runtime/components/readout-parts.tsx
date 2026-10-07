@@ -27,7 +27,7 @@ import {
 } from "lucide-react";
 
 import { useAppSelector } from "@/lib/redux/hooks";
-import { RichContent } from "@/components/rich-content/RichContent";
+import { RichContent } from "@ai-matrx/rich-content/levels/RichContent";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
 import { LiveRunDisplay } from "@ai-matrx/chat/agents/components/live-run/LiveRunDisplay";
 import { LiveAudioPlayer, useLiveAudioPlayer } from "@ai-matrx/media/live-audio-react";
@@ -48,7 +48,7 @@ import {
   InterruptQuestion,
   type InterruptPlacement,
 } from "../interrupt/InterruptQuestion";
-import { StructuredValueTabs } from "@/components/mardown-display/blocks/generic/StructuredValueTabs";
+import { StructuredValueTabs } from "@ai-matrx/rich-content/display/blocks/generic/StructuredValueTabs";
 import { KindSlot } from "@ai-matrx/rich-content/kinds/react/slot/KindSlot";
 import {
   selectRequest,

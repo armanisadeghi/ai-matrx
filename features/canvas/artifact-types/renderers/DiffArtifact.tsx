@@ -1,6 +1,6 @@
 "use client";
 
-import { DiffBlock } from "@/components/mardown-display/blocks/diff/DiffBlock";
+import { DiffBlock } from "@ai-matrx/rich-content/display/blocks/diff/DiffBlock";
 import type { ArtifactRendererProps } from "../types";
 
 /**

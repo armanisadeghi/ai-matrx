@@ -11,7 +11,7 @@ import React from "react";
 import Link from "next/link";
 // Public text renders through the one rich-content core, statically, so it
 // is in the server-rendered HTML (MarkdownCore itself is ssr:false).
-import { RichContentStaticStandard } from "@/components/rich-content/RichContentStaticProse";
+import { RichContentStaticStandard } from "@ai-matrx/rich-content/levels/RichContentStaticProse";
 import {
   ExternalLink,
   FolderClosed,

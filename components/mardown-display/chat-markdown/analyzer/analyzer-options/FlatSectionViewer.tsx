@@ -9,7 +9,7 @@ import {
   normalizeDynamicKey,
   preprocessContentForLineBreaks
 } from "./viewer-utilities";
-import { BasicMarkdownContent } from "../../BasicMarkdownContent";
+import { BasicMarkdownContent } from "@ai-matrx/rich-content/display/chat-markdown/BasicMarkdownContent";
 
 interface FlatSectionViewerProps {
   data: Record<string, string>;

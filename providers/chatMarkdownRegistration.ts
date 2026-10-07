@@ -8,7 +8,7 @@
 import { registerChatUi } from "@ai-matrx/chat/host/ui-slots";
 import "@ai-matrx/chat/host/markdown-slots";
 import MarkdownStream from "@/components/MarkdownStream";
-import { BasicMarkdownContent } from "@/components/mardown-display/chat-markdown/BasicMarkdownContent";
+import { BasicMarkdownContent } from "@ai-matrx/rich-content/display/chat-markdown/BasicMarkdownContent";
 import AudioOutputBlockSkeleton from "@/components/mardown-display/blocks/audio/AudioOutputBlockSkeleton";
 import { useOpenCitationSource } from "@/components/mardown-display/chat-markdown/citations/useOpenCitationSource";
 
@@ -18,8 +18,8 @@ registerChatUi({
   AudioOutputBlockSkeleton,
   useOpenCitationSource,
   // The diagram engine stays a lazy chunk: loaded only when a print or capture asks for it.
-  renderAllDiagrams: async (...args: Parameters<typeof import("@/components/mermaid/lazy-draw").renderAllDiagrams>) =>
-    (await import("@/components/mermaid/lazy-draw")).renderAllDiagrams(...args),
-  drawMermaidForPrint: async (...args: Parameters<typeof import("@/components/mermaid/print-render").drawMermaidForPrint>) =>
-    (await import("@/components/mermaid/print-render")).drawMermaidForPrint(...args),
+  renderAllDiagrams: async (...args: Parameters<typeof import("@ai-matrx/rich-content/mermaid/lazy-draw").renderAllDiagrams>) =>
+    (await import("@ai-matrx/rich-content/mermaid/lazy-draw")).renderAllDiagrams(...args),
+  drawMermaidForPrint: async (...args: Parameters<typeof import("@ai-matrx/rich-content/mermaid/print-render").drawMermaidForPrint>) =>
+    (await import("@ai-matrx/rich-content/mermaid/print-render")).drawMermaidForPrint(...args),
 });

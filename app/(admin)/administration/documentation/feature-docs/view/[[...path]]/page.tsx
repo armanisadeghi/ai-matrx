@@ -2,7 +2,7 @@ import AppLink from "@/components/navigation/AppLink";
 import { notFound } from "next/navigation";
 import { ArrowLeft, FileText, GitCommit } from "lucide-react";
 import { createClient } from "@/utils/supabase/server";
-import { BasicMarkdownContent } from "@/components/mardown-display/chat-markdown/BasicMarkdownContent";
+import { BasicMarkdownContent } from "@ai-matrx/rich-content/display/chat-markdown/BasicMarkdownContent";
 import { formatAbsoluteDate } from "@/utils/datetime";
 import type { FeatureDocDetail } from "@/features/feature-docs/service";
 import { FeatureDocViewerRuntime } from "@/features/feature-docs/components/FeatureDocViewerRuntime";

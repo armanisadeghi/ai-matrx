@@ -10,7 +10,7 @@ import {
   materializeDiagramDefaults,
   parseDiagramJSON,
   type DiagramData,
-} from "@/components/mardown-display/blocks/diagram/parseDiagramJSON";
+} from "@ai-matrx/rich-content/display/blocks/diagram/parseDiagramJSON";
 import type { CanvasContentType } from "@/features/canvas/canvasContent";
 import type { ListScopeKind } from "@/lib/list-scope/types";
 

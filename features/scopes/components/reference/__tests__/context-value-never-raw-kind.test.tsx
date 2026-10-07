@@ -10,7 +10,7 @@ import { createRoot, type Root } from "react-dom/client";
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
 jest.mock("@/features/matrx-envelope/MatrxEnvelopeBlock", () => ({ __esModule: true, default: () => null }));
-jest.mock("@/components/mardown-display/chat-markdown/BasicMarkdownContent", () => ({
+jest.mock("@ai-matrx/rich-content/display/chat-markdown/BasicMarkdownContent", () => ({
   BasicMarkdownContent: ({ content }: { content: string }) => <div data-testid="basic-md">{content}</div>,
 }));
 jest.mock("@/components/official/structured-value/AnswerValueView", () => ({

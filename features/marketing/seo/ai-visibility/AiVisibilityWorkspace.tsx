@@ -15,7 +15,7 @@ import {
   ShieldAlert,
 } from "lucide-react";
 
-import { BasicMarkdownContent } from "@/components/mardown-display/chat-markdown/BasicMarkdownContent";
+import { BasicMarkdownContent } from "@ai-matrx/rich-content/display/chat-markdown/BasicMarkdownContent";
 import { useOptionalCanvas } from "@ai-matrx/canvas/react";
 import { openCanvasItem } from "@/features/canvas/host/openCanvasItem";
 import { aiAnswerOpenInput } from "./canvas/aiAnswerKind";

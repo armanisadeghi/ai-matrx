@@ -786,6 +786,28 @@ export const agentDefinitionSlice = createSlice({
       markRecordClean(record);
     },
 
+    /**
+     * A SINGLE field was written to the database (inline edits such as the
+     * Agent Info Editor's name). Only that field becomes the clean baseline —
+     * every other staged edit (e.g. an Output Schema kind binding applied in
+     * Model Settings) must stay dirty so the main Save still persists it.
+     * `markAgentSaved` here used to wipe every dirty flag, silently dropping
+     * unrelated staged edits (feedback 222a2925).
+     */
+    markAgentFieldSaved(
+      state,
+      action: PayloadAction<{ id: string; field: keyof AgentDefinition }>,
+    ) {
+      const { id, field } = action.payload;
+      const record = state.agents[id];
+      if (!record) return;
+      removeField(record._dirtyFields, field);
+      delete record._fieldHistory[field];
+      record._undoPast = record._undoPast.filter((e) => e.field !== field);
+      record._undoFuture = record._undoFuture.filter((e) => e.field !== field);
+      record._dirty = fieldFlagsSize(record._dirtyFields) > 0;
+    },
+
     /** Save failed — restore from the snapshot taken before the optimistic write. */
     rollbackAgentOptimisticUpdate(
       state,
@@ -978,6 +1000,7 @@ export const {
   resetAgentField,
   resetAllAgentFields,
   markAgentSaved,
+  markAgentFieldSaved,
   rollbackAgentOptimisticUpdate,
   undoAgentEdit,
   redoAgentEdit,

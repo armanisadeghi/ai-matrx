@@ -38,13 +38,13 @@ jest.mock("@/features/files/hooks/useFileBlob", () => ({
   },
 }));
 jest.mock("@/components/agent-copy/CopyButtons", () => ({ CopyButtons: () => null }));
-jest.mock("@/features/code-editor/components/code-block/CodeBlock", () => ({
+jest.mock("@ai-matrx/rich-content/code-block/CodeBlock", () => ({
   __esModule: true,
   default: ({ code }: { code: string }) => <pre>{code}</pre>,
 }));
 
-import BasicMarkdownContent from "@/components/mardown-display/chat-markdown/BasicMarkdownContent";
-import { ConfigurableMarkdownContent } from "@/components/mardown-display/chat-markdown/ConfigurableMarkdownContent";
+import BasicMarkdownContent from "@ai-matrx/rich-content/display/chat-markdown/BasicMarkdownContent";
+import { ConfigurableMarkdownContent } from "@ai-matrx/rich-content/display/chat-markdown/ConfigurableMarkdownContent";
 import MarkdownRenderer from "@/components/mardown-display/MarkdownRenderer";
 import { MarkdownPreview } from "@/features/files/components/core/FilePreview/previewers/MarkdownPreview";
 import {

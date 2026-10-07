@@ -1,6 +1,6 @@
 import type { AnswerEditRemarkMeta } from "@ai-matrx/chat/agents/redux/execution-system/instance-resources/remarks";
 import dynamic from "next/dynamic";
-import { TypedStreamEvent } from "@/components/mardown-display/chat-markdown/types";
+import { TypedStreamEvent } from "@ai-matrx/rich-content/display/chat-markdown/types";
 import type { ServerProcessedBlock } from "@/components/mardown-display/chat-markdown/EnhancedChatMarkdown";
 
 /**

@@ -19,7 +19,7 @@ jest.mock("@/features/canvas/artifact-types/artifact-renderers", () => ({
   ArtifactRender: () => <div data-artifact="1" />,
   hasArtifactRenderer: () => false,
 }));
-jest.mock("@/components/mardown-display/blocks/common/SandboxedHtml", () => ({
+jest.mock("@ai-matrx/rich-content/display/blocks/common/SandboxedHtml", () => ({
   __esModule: true,
   default: () => <div data-sandboxed-html="1" />,
 }));

@@ -19,7 +19,7 @@ import { isValidElement, type ReactElement } from "react";
 
 jest.mock("@/features/files/components/pickers/cloudFilesPickerOpeners", () => ({ openFilePicker: jest.fn() }));
 jest.mock("@/features/files/api/files", () => ({ downloadFile: jest.fn() }));
-jest.mock("@/components/rich-content/RichContent", () => ({ RichContent: function RichContent() { return null; } }));
+jest.mock("@ai-matrx/rich-content/levels/RichContent", () => ({ RichContent: function RichContent() { return null; } }));
 jest.mock("@/components/official/icons/IconInputWithValidation.dynamic", () => ({ IconInputCompact: () => null }));
 jest.mock("@/lib/content-cleanup/clean-cells", () => ({ cleanValue: (t: string) => ({ after: t }) }));
 jest.mock("@/lib/content-cleanup/value-operations", () => ({ DEFAULT_ENABLED_VALUE_OPERATIONS: [] }));
@@ -58,7 +58,7 @@ jest.mock("next/navigation", () => ({ useRouter: () => ({ push: jest.fn() }) }))
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const { openFilePicker } = require("@/features/files/components/pickers/cloudFilesPickerOpeners") as { openFilePicker: jest.Mock };
 // eslint-disable-next-line @typescript-eslint/no-require-imports
-const { RichContent } = require("@/components/rich-content/RichContent") as { RichContent: unknown };
+const { RichContent } = require("@ai-matrx/rich-content/levels/RichContent") as { RichContent: unknown };
 import { recordsUiHostFor, type RecordsUiPorts } from "../recordsUiHost";
 
 const PORTS: RecordsUiPorts = {

@@ -1,6 +1,6 @@
 'use client';
 
-import SmallCodeEditor from '@/features/code-editor/components/code-block/SmallCodeEditor';
+import SmallCodeEditor from '@ai-matrx/rich-content/code-block/SmallCodeEditor';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useState } from 'react';
 import type { Dispatch, SetStateAction } from "react";

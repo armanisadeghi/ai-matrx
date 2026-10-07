@@ -95,7 +95,7 @@ import {
   formatEntityMatchConfidence,
   formatSnippetRelevance,
 } from "./sourceScoreDisplay";
-import { RichContent } from "@/components/rich-content/RichContent";
+import { RichContent } from "@ai-matrx/rich-content/levels/RichContent";
 import { ProcessForRagButton } from "@/features/rag/components/ProcessForRagButton";
 import type {
   ResearchContent,

@@ -7,8 +7,9 @@
 //
 //   <EntityBackLinks entityToken="hr_employee" recordId={employee.id} organizationId={row.organization_id} />
 //
-// The read is the PACKAGE's (`useEntityBackLinks` in @ai-matrx/records/react): the door, the cache and the
-// paging live there so every client of the records package carries the same capability.
+// The read goes through the package's door (`client.entityBackLinks` in @ai-matrx/records) but is KEPT per record
+// per tab in Redux (`useKeptEntityBackLinks`): the package hook's cache is keyed on the provider's client, so a
+// board tile that woke or remounted asked again (the remount law).
 //
 // `EntityCustomFields` renders it, so every page, peek and Detail host that carries the custom-fields
 // line carries this one too; a record view that carries its custom fields another way (the party's
@@ -22,11 +23,11 @@
 
 import { Link2 } from "lucide-react";
 import { RecordsMount } from "@ai-matrx/records-ui";
-import { useEntityBackLinks } from "@ai-matrx/records/react";
 import type { EntityBackLinkItem } from "@ai-matrx/records";
 import { Button, EmptyState } from "@ai-matrx/design-system/controls";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { useAppRecordsConfig } from "@/features/data-tables/records-ui-host/recordsUiHost";
+import { useKeptEntityBackLinks } from "@/features/unified-data/components/useKeptEntityBackLinks";
 import { recordPageHref } from "@/features/unified-data/table-page/recordPageHref";
 
 export interface EntityBackLinksProps {
@@ -59,7 +60,7 @@ export function EntityBackLinks(props: EntityBackLinksProps) {
 }
 
 function BackLinksSection({ entityToken, recordId, organizationId, className }: EntityBackLinksProps & { organizationId: string }) {
-  const links = useEntityBackLinks(entityToken, recordId, { organizationId });
+  const links = useKeptEntityBackLinks(entityToken, recordId, { organizationId });
 
   if (links.error && links.items.length === 0) {
     return (

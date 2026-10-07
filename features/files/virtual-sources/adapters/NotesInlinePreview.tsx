@@ -32,7 +32,7 @@ import type { EditorMode } from "@/features/notes/components/NoteEditorCore";
 import type { InlinePreviewProps } from "@/features/files/virtual-sources/types";
 import { TooltipIcon } from "@/features/files/components/core/Tooltip/TooltipIcon";
 import { AccessGate } from "@/features/access-gate/components/AccessGate";
-import { authoredBy } from "@/components/rich-content/prose/remote-image-policy";
+import { authoredBy } from "@ai-matrx/rich-content/levels/prose/remote-image-policy";
 import { useAppSelector } from "@/lib/redux/hooks";
 
 // Lazy-load the editor — it pulls in MarkdownStream + TuiEditor which are

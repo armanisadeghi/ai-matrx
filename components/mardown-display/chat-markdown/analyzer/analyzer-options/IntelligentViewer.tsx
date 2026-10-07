@@ -17,7 +17,7 @@ import {
     detectSectionType,
     preprocessContentForLineBreaks,
 } from "./viewer-utilities";
-import { BasicMarkdownContent } from "../../BasicMarkdownContent";
+import { BasicMarkdownContent } from "@ai-matrx/rich-content/display/chat-markdown/BasicMarkdownContent";
 import { getViewerRecommendation, analyzeDataStructure, type ViewerRecommendation } from "./viewer-recommendation-utility";
 import RawJsonExplorer from "@/components/official/json-explorer/RawJsonExplorer";
 

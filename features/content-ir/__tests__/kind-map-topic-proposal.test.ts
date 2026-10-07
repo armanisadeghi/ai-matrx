@@ -27,7 +27,7 @@ import {
 import {
   BLOCK_DISPATCH_CLASSIFICATION,
   resolveBlockDispatch,
-} from "@/components/mardown-display/chat-markdown/block-registry/block-dispatch";
+} from "@ai-matrx/rich-content/display/chat-markdown/block-registry/block-dispatch";
 import { DOCUMENTED_PROPOSAL } from "@/features/marketing/seo/topical-map/proposals/__fixtures__/mapTopicProposalDocumented";
 
 import {

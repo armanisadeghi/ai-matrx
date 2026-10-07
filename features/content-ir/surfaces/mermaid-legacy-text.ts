@@ -23,7 +23,7 @@
  * this function.
  */
 
-import { extractMermaidTitle } from "@/components/mermaid/diagram-type";
+import { extractMermaidTitle } from "@ai-matrx/rich-content/mermaid/diagram-type";
 import { KIND_KEY } from "@ai-matrx/content-ir";
 import { fenceParts } from "@ai-matrx/content-ir/source";
 

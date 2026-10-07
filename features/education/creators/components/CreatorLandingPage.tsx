@@ -3,7 +3,7 @@
 // & Course JSON-LD. Interactivity lives in leaf client islands (EnrollButton).
 // House style: MarketingPageShell, semantic colors, Lucide icons, no emoji.
 import Link from "next/link";
-import { RichContentServer } from "@/components/rich-content/server/RichContentServer";
+import { RichContentServer } from "@ai-matrx/rich-content/levels/server/RichContentServer";
 import {
   ArrowUpRight,
   BookOpen,

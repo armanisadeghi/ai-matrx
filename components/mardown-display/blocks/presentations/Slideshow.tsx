@@ -27,7 +27,7 @@ import { SlideView, type SlideData, type SlideTheme, type SlideVariant } from ".
 import { deckFontFamily, PRESET_LIST, presetTheme, resolveDeckTheme } from "./presets";
 import { ScaledSlide } from "./ScaledSlide";
 import { useCanvasPresentation } from "@ai-matrx/canvas/react";
-import { slideThumbnailPlacement } from "../canvas-adaptive";
+import { slideThumbnailPlacement } from "@ai-matrx/rich-content/display/blocks/canvas-adaptive";
 import { Button } from "@ai-matrx/design-system/controls";
 
 // Lazy load PresentationExportMenu to avoid loading GoogleAPIProvider on initial render

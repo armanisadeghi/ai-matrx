@@ -14,8 +14,8 @@ import { renderToStaticMarkup } from "react-dom/server";
 jest.mock("server-only", () => ({}));
 jest.mock("@/components/agent-copy/CopyButtons", () => ({ CopyButtons: () => null }));
 
-import { RichContentServer } from "@/components/rich-content/server/RichContentServer";
-import { RichContentStaticStandard } from "@/components/rich-content/RichContentStaticProse";
+import { RichContentServer } from "@ai-matrx/rich-content/levels/server/RichContentServer";
+import { RichContentStaticStandard } from "@ai-matrx/rich-content/levels/RichContentStaticProse";
 
 const NOTE = [
   "Inspection at the Harbor Commercial dock, bay 3.",

@@ -14,7 +14,7 @@ import { parseMarkdownTable } from "@ai-matrx/rich-content/display/blocks/table/
 import { deriveDatasetNameForChatTable, isPlaceholderTableTitle } from "@/features/data-tables/derive-dataset-name";
 import { readTableDetails } from "@/features/data-tables/service";
 import { useOpenUserTableWindow } from "@/features/overlays/openers/userTableWindow";
-import { StreamingTableRenderer as StreamingTableRenderer } from "@/components/mardown-display/blocks/table/StreamingTableRenderer";
+import { StreamingTableRenderer as StreamingTableRenderer } from "@ai-matrx/rich-content/display/blocks/table/StreamingTableRenderer";
 import LocatedTableViewer from "@/features/data-tables/components/LocatedTableViewer";
 import type { ArtifactRendererProps } from "../types";
 // The word a canvas link stores for "this artifact became a table" (canvas_items.external_system).

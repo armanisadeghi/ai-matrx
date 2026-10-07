@@ -34,7 +34,7 @@ function DatasetFieldPeek({ f }: { f: ParsedDatasetField }) {
 }
 
 /**
- * Inline renderer for `dataset` / `usertable_create` — a polished entity card
+ * Inline renderer for the `dataset` tool — a polished entity card
  * (name · row count · field schema chips). The real rows live in the overlay
  * (`UserTableViewer`) / the `/data/[id]` route via the "Open in" menu.
  */

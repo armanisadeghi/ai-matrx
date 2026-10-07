@@ -4,7 +4,7 @@ import { Suspense } from "react";
 import MatrxMiniLoader from "@/components/loaders/MatrxMiniLoader";
 import { artifactDedupKey } from "../artifact-renderers";
 import MermaidWorkbench from "@/components/mermaid/workbench/MermaidWorkbench";
-import MermaidBlock from "@/components/mardown-display/blocks/mermaid/MermaidBlock";
+import MermaidBlock from "@ai-matrx/rich-content/display/blocks/mermaid/MermaidBlock";
 import type { ArtifactRendererProps } from "../types";
 import type { MermaidBlockData } from "@ai-matrx/agents/generated/stream-events";
 // Canvas mode: the full editable workbench — default export, props: source, metadata?

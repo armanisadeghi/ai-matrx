@@ -20,7 +20,7 @@
  * Spec: docs/protocol/KIND_DIRECTIVES.md.
  */
 
-import { RichContent } from "@/components/rich-content/RichContent";
+import { RichContent } from "@ai-matrx/rich-content/levels/RichContent";
 import AGENT_DEFINITION_ITEM from "./agent-definition-item.json";
 
 interface Row {

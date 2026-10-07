@@ -32,7 +32,7 @@ import { useMutation, useQuery } from "@tanstack/react-query";
 import { MessageSquare, RefreshCw, Send } from "lucide-react";
 import { toast } from "@/lib/toast";
 
-import { RichContent } from "@/components/rich-content/RichContent";
+import { RichContent } from "@ai-matrx/rich-content/levels/RichContent";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Skeleton } from "@ai-matrx/design-system";

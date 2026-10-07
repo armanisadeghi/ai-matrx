@@ -19,7 +19,7 @@ import { buildSearchOr } from "@/utils/supabase-search";
 import {
   materializeDiagramDefaults,
   type DiagramData,
-} from "@/components/mardown-display/blocks/diagram/parseDiagramJSON";
+} from "@ai-matrx/rich-content/display/blocks/diagram/parseDiagramJSON";
 import type {
   EntityFacets,
   EntityListPage,

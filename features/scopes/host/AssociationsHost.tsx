@@ -70,7 +70,7 @@ import { openFilePicker } from "@/features/files/components/pickers/cloudFilesPi
 import { createDocument } from "@/features/data-tables/document-service";
 import type { Visibility } from "@/features/files/types";
 import { getAssociationsStore } from "./associationsStore";
-import { RichContent } from "@/components/rich-content/RichContent";
+import { RichContent } from "@ai-matrx/rich-content/levels/RichContent";
 import { cn } from "@/lib/utils";
 
 const VISIBILITIES: readonly Visibility[] = [

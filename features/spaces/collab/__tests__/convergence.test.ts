@@ -33,7 +33,10 @@ class FakeNetwork {
   unregister(c: FakeChannel) {
     this.channels.delete(c);
   }
+  /** Every frame any member put on the wire. */
+  sent = 0;
   deliver(from: FakeChannel, event: string, payload: unknown) {
+    this.sent += 1;
     for (const c of this.channels) {
       if (c === from || c.topic !== from.topic) continue;
       if (event === "y-update" && this.dropRate > 0 && this.rand() < this.dropRate) {
@@ -117,13 +120,16 @@ afterEach(() => {
   for (const m of managers.splice(0)) m.dispose();
 });
 
+/** The anti-entropy tick the tests run with (production reads the `collab.anti_entropy_interval_ms` knob). */
+const TICK_MS = 2000;
+
 function member(network: FakeNetwork) {
   const client = new FakeClient(network);
   const manager = createRealtimeManager({ client: client as never, environment: createInertEnvironment(), diagnostics: () => undefined } as never);
   managers.push(manager);
   const doc = new Y.Doc();
   const awareness = new Awareness(doc);
-  const provider = new SupabaseYjsProvider({ workbookId: "space-1", channelPrefix: "spaces", clientId: crypto.randomUUID(), doc, awareness, manager });
+  const provider = new SupabaseYjsProvider({ workbookId: "space-1", channelPrefix: "spaces", clientId: crypto.randomUUID(), doc, awareness, manager, antiEntropyIntervalMs: TICK_MS });
   return { doc, provider, manager };
 }
 
@@ -194,12 +200,9 @@ describe("Spaces co-editing convergence", () => {
     b.provider.disconnect();
   });
 
-  // KNOWN PROVIDER DEFECT (features/data-tables/collab/SupabaseYjsProvider.ts, outside the Spaces fence):
-  // the provider re-exchanges state only on a reconnect (`onBackfill`); a frame lost while the socket
-  // stays up is never recovered, and the receiver parks every later update from that member as pending.
-  // `it.failing` keeps the suite green while the defect stands and turns red the day the provider heals
-  // (a periodic or pending-triggered state-vector exchange) — then drop `.failing`.
-  it.failing("one y-update frame lost while both stay connected: the room still ends identical", async () => {
+  // Was `it.failing` until the provider gained anti-entropy (state-vector probes while connected): a
+  // frame lost while the socket stays up used to park every later update from that member as pending.
+  it("one y-update frame lost while both stay connected: the room still ends identical", async () => {
     // Broadcast is at-most-once: Supabase drops a frame under load (rate limit, a socket hiccup that
     // never becomes a disconnect). Yjs cannot apply anything that builds on a missing update, so the
     // receiver parks every later update from that member as pending — the documents differ for good
@@ -218,4 +221,39 @@ describe("Spaces co-editing convergence", () => {
     a.provider.disconnect();
     b.provider.disconnect();
   }, 20_000);
+
+  it("10% of y-update frames lost over 500 keystrokes each: the room converges within one anti-entropy tick", async () => {
+    const rand = mulberry32(7);
+    const net = new FakeNetwork(rand, 25, 0.1);
+    const { a, b } = await room(net);
+    await typeTogether(a.doc, b.doc, rand, 500);
+    await settle(net);
+    // One full (jittered, up to 1.25x) tick plus the answer's flight time.
+    await new Promise((r) => setTimeout(r, TICK_MS * 1.25 + 200));
+    await settle(net);
+    expect(net.dropped).toBeGreaterThan(50);
+    expect(pending(a.doc)).toBe(false);
+    expect(pending(b.doc)).toBe(false);
+    expect(a.doc.getXmlFragment("document-store").toJSON()).toBe(b.doc.getXmlFragment("document-store").toJSON());
+    expect(Y.encodeStateVector(a.doc)).toEqual(Y.encodeStateVector(b.doc));
+    a.provider.disconnect();
+    b.provider.disconnect();
+  }, 30_000);
+
+  it("an idle, converged room sends no anti-entropy frames", async () => {
+    const rand = mulberry32(11);
+    const net = new FakeNetwork(rand);
+    const { a, b } = await room(net);
+    await typeTogether(a.doc, b.doc, rand, 50);
+    await settle(net);
+    // Let the post-burst probe and the first tick after the last change run out.
+    await new Promise((r) => setTimeout(r, TICK_MS * 2.5));
+    await settle(net);
+    const before = net.sent;
+    await new Promise((r) => setTimeout(r, TICK_MS * 3));
+    await settle(net);
+    expect(net.sent).toBe(before);
+    a.provider.disconnect();
+    b.provider.disconnect();
+  }, 30_000);
 });

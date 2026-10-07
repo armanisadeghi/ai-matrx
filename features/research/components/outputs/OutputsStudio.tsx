@@ -37,7 +37,7 @@ import { LiveProgressRail } from "@/features/podcasts/generator/components/LiveP
 import { ProductionTeaser } from "@/features/podcasts/generator/components/ProductionTeaser";
 import { MediaOptionsGrid } from "@/features/podcasts/generator/components/MediaOptionsGrid";
 import { MandateAgentPicker } from "@/features/mandates/components/MandateAgentPicker";
-import { RichContent } from "@/components/rich-content/RichContent";
+import { RichContent } from "@ai-matrx/rich-content/levels/RichContent";
 import { SessionMediaElement } from "@/features/audio/session/SessionMediaElement";
 import { RichDocumentActions } from "@/features/rich-document/RichDocumentActions";
 import KindInstanceRender from "@/features/content-ir/studio/components/KindInstanceRender";

@@ -16,7 +16,7 @@ import {
 import {
   BLOCK_DISPATCH_CLASSIFICATION,
   resolveBlockDispatch,
-} from "@/components/mardown-display/chat-markdown/block-registry/block-dispatch";
+} from "@ai-matrx/rich-content/display/chat-markdown/block-registry/block-dispatch";
 import { playRequestText, surfaceHref } from "@/features/marketing/pr/director/PrPlayMenuView";
 
 import {

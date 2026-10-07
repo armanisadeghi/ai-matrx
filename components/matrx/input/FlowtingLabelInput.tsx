@@ -1,11 +1,11 @@
 'use client'
 
 import React, { useState, useMemo } from 'react';
-import { Input } from "@ai-matrx/design-system/controls";
+import { Input, type InputProps } from "@ai-matrx/design-system/controls";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
 
-interface FloatingLabelInputProps extends React.InputHTMLAttributes<HTMLInputElement> {
+export interface FloatingLabelInputProps extends Omit<InputProps, "value" | "onChange"> {
     label: string;
     value?: string;
     onChange?: React.ChangeEventHandler<HTMLInputElement>;
@@ -23,6 +23,8 @@ export const FloatingLabelInput: React.FC<FloatingLabelInputProps> = ({
     variant = "default",
     floatingLabel = true,
     className,
+    onFocus,
+    onBlur,
     ...props
 }) => {
     const [isFocused, setIsFocused] = useState(false);
@@ -71,6 +73,8 @@ export const FloatingLabelInput: React.FC<FloatingLabelInputProps> = ({
                 value={value}
                 onChange={handleChange}
                 disabled={disabled}
+                onFocus={onFocus}
+                onBlur={onBlur}
                 className={className}
                 {...props}
             />
@@ -84,8 +88,14 @@ export const FloatingLabelInput: React.FC<FloatingLabelInputProps> = ({
                 value={value}
                 onChange={handleChange}
                 disabled={disabled}
-                onFocus={() => setIsFocused(true)}
-                onBlur={() => setIsFocused(false)}
+                onFocus={(event) => {
+                    setIsFocused(true);
+                    onFocus?.(event);
+                }}
+                onBlur={(event) => {
+                    setIsFocused(false);
+                    onBlur?.(event);
+                }}
                 className={cn(
                     "text-md",
                     "pt-6 pb-2",

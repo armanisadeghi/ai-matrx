@@ -26,8 +26,8 @@ import {
   File,
   GitCompare,
 } from "lucide-react";
-import CodeBlock from "@/features/code-editor/components/code-block/CodeBlock";
-import { RichContent } from "@/components/rich-content/RichContent";
+import CodeBlock from "@ai-matrx/rich-content/code-block/CodeBlock";
+import { RichContent } from "@ai-matrx/rich-content/levels/RichContent";
 import { DiffView } from "./DiffView";
 import { SmartAgentInput } from "@ai-matrx/chat/agents/components/inputs/smart-input/SmartAgentInput";
 import { useComposerMode } from "@ai-matrx/chat/agents/components/inputs/smart-input/composer/useComposerMode";

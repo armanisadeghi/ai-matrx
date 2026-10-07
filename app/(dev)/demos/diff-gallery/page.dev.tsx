@@ -23,7 +23,7 @@ import { CodeDiff } from "@/components/diff/code/CodeDiff";
 import { InlineTextDiff } from "@ai-matrx/diff/react";
 import { AnimatedDiffReveal } from "@ai-matrx/diff/react";
 import { RawJsonView } from "@ai-matrx/diff/react";
-import { DiffBlock } from "@/components/mardown-display/blocks/diff/DiffBlock";
+import { DiffBlock } from "@ai-matrx/rich-content/display/blocks/diff/DiffBlock";
 // Structured entity shell (object-shaped)
 import { NoteDiffViewer } from "@/features/notes/components/diff/NoteDiffViewer";
 // Legacy utils — rendered faithfully below

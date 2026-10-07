@@ -15,7 +15,7 @@ import {
   Network,
   RefreshCw,
 } from "lucide-react";
-import { RichContent } from "@/components/rich-content/RichContent";
+import { RichContent } from "@ai-matrx/rich-content/levels/RichContent";
 import AssociateTaskButton from "@/features/tasks/widgets/AssociateTaskButton";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";

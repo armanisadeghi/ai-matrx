@@ -33,7 +33,7 @@ import { mintDurableSrc, type MediaClient } from "@ai-matrx/media";
 // to its text so this suite can assert the thing it is actually responsible
 // for: that the component hands the summary to the renderer at all.
 jest.mock(
-  "@/components/mardown-display/chat-markdown/BasicMarkdownContent",
+  "@ai-matrx/rich-content/display/chat-markdown/BasicMarkdownContent",
   () => ({
     __esModule: true,
     BasicMarkdownContent: ({ content }: { content: string }) => {

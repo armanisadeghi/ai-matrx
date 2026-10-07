@@ -47,7 +47,7 @@ import { isRecord } from "./legacy-bridge-utils";
 import type { MaterializedKind } from "./kind-payload";
 import type { MediaAsset } from "./generated/kinds.generated";
 // THE identity adapters. Never duplicated, never re-sniffed here.
-import { buildMediaSource } from "@/components/mardown-display/blocks/buildMediaSource";
+import { buildMediaSource } from "@ai-matrx/rich-content/display/blocks/buildMediaSource";
 import { fileSourceToMediaRef } from "@/features/files/media-client/refs";
 import { parseYouTubeUrl } from "@ai-matrx/rich-content/utils/youtube";
 

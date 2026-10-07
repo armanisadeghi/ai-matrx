@@ -7,7 +7,7 @@
 // draws the print package's divider; comments and anchors, which render as
 // nothing, show their source quietly so the person knows they are there.
 
-import { RichContent } from "@/components/rich-content/RichContent";
+import { RichContent } from "@ai-matrx/rich-content/levels/RichContent";
 import { PAGE_BREAK_CLASS, PAGE_BREAK_LABEL, isPageBreakLine } from "@ai-matrx/print/directives";
 import { cn } from "@/lib/utils";
 import { islandMeta } from "./island-meta";

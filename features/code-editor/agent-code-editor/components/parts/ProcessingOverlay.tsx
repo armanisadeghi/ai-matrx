@@ -10,7 +10,7 @@
 
 import React from "react";
 import { Loader2 } from "lucide-react";
-import { RichContent } from "@/components/rich-content/RichContent";
+import { RichContent } from "@ai-matrx/rich-content/levels/RichContent";
 
 interface ProcessingOverlayProps {
   /** Live streaming text from the agent — optional; shown when present. */

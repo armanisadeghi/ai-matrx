@@ -110,9 +110,22 @@ export async function resolveCmsCaller(
   mainSupabase: SupabaseClient,
   userId: string,
 ): Promise<CmsCaller> {
-  const { data, error } = await mainSupabase.rpc("mbr_for_user", {
-    p_container_type: "organization",
-  });
+  // Paged: one PostgREST answer is capped at 1000 rows (a 1,043-org member lost 43).
+  const data: unknown[] = [];
+  let error: { message: string } | null = null;
+  for (let from = 0; ; from += 500) {
+    const res = await mainSupabase
+      .rpc("mbr_for_user", { p_container_type: "organization" })
+      .order("id", { ascending: true })
+      .range(from, from + 499);
+    if (res.error) {
+      error = res.error;
+      break;
+    }
+    const page = (res.data ?? []) as unknown[];
+    data.push(...page);
+    if (page.length < 500) break;
+  }
 
   if (error) {
     console.error(

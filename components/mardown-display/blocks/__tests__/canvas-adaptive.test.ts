@@ -18,7 +18,7 @@ import {
   slideThumbnailPlacement,
   timelineAxis,
   treeWrapsLines,
-} from "../canvas-adaptive";
+} from "@ai-matrx/rich-content/display/blocks/canvas-adaptive";
 
 const pane = (width: number, height: number) =>
   canvasPresentation({ width, height, isFullscreen: false, paneCount: 1 });

@@ -21,7 +21,7 @@ import { ItemMenu } from "@/components/official/item/ItemMenu";
 import type { ItemMenuConfig } from "@/components/official/item/types";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
-import { RichContentPreview } from "@/components/rich-content/RichContentPreview";
+import { RichContentPreview } from "@ai-matrx/rich-content/levels/RichContentPreview";
 import type { Masterwork, RulebookListRow } from "../../types";
 import { rulebookLookalikeNotes } from "../lookalikeRulebooks";
 import { ArchivedDisclosure } from "@ai-matrx/design-system";

@@ -36,7 +36,7 @@ import { isMaterializedArtifactId } from "@/features/canvas/artifact-types/artif
 import { getArtifactDef } from "@/features/canvas/artifact-types/artifact-type-registry";
 import IconButton from "@/components/official/IconButton";
 import { Tile } from "@ai-matrx/design-system/controls";
-import ChatCollapsibleWrapper from "@/components/mardown-display/blocks/ChatCollapsibleWrapper";
+import ChatCollapsibleWrapper from "@ai-matrx/rich-content/display/blocks/ChatCollapsibleWrapper";
 import type { OriginalQuestion, QuizState } from "./quiz-types";
 import {
   appendNewQuestions,
@@ -54,7 +54,7 @@ import { useBlockState } from "@/features/block-state/useBlockState";
 import { parseQuizJSON, type RawQuizJSON } from "./quiz-parser";
 import { InlineLatexRenderer } from "@/features/math/components/InlineLatexRenderer";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
-import { useCanvasFit } from "../canvas-fit";
+import { useCanvasFit } from "@ai-matrx/rich-content/display/blocks/canvas-fit";
 import { Button } from "@ai-matrx/design-system/controls";
 
 // Legacy type for backwards compatibility

@@ -15,7 +15,7 @@
  * root key, and runs the component's OWN parser (`parseDiagramJSON`).
  */
 
-import { parseDiagramJSON } from "@/components/mardown-display/blocks/diagram/parseDiagramJSON";
+import { parseDiagramJSON } from "@ai-matrx/rich-content/display/blocks/diagram/parseDiagramJSON";
 import { makeCompleteEnvelopeBridge, unwrapLegacyRoot } from "./legacy-bridge-utils";
 import {
   additionalDetailsSection,

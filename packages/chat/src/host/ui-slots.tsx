@@ -914,7 +914,7 @@ export const loadCodeEditHistoryThunk = slotFn("loadCodeEditHistoryThunk");
 export const applySkillStreamEvent = slotFn("applySkillStreamEvent");
 export const isSkillStreamEvent = slotFn("isSkillStreamEvent", () => false);
 export const materializeMessageArtifacts = slotFn("materializeMessageArtifacts");
-export const reconcileMessagesArtifacts = slotFn("reconcileMessagesArtifacts", () => undefined);
+export const reconcileMessagesArtifacts = slotFn("reconcileMessagesArtifacts", async () => undefined);
 export const noteBrowserActivity = slotFn("noteBrowserActivity");
 export const selectCloudBrowserRunLive = slotFn("selectCloudBrowserRunLive");
 export const adoptCloudBrowserRunFromStream = slotFn("adoptCloudBrowserRunFromStream");

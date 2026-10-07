@@ -1,6 +1,6 @@
 import { parseDelimited } from "@ai-matrx/alchemy/operate/read";
 
-import { rowsToCsv } from "@/components/mardown-display/blocks/json/json-tabular-utils";
+import { rowsToCsv } from "@ai-matrx/rich-content/display/blocks/json/json-tabular-utils";
 import { tableToCsv } from "@/components/mardown-display/tables/table-csv";
 import { toCSV } from "@/features/page-extraction/data-review/export";
 

@@ -59,7 +59,7 @@ import type {
 } from "@ai-matrx/chat/agents/types/agent-message-types";
 import { useAgentUndoRedo } from "@ai-matrx/chat/agents/hooks/useAgentUndoRedo";
 import { useAgentBuilderSurfaceScope } from "@/features/agents/hooks/useAgentBuilderSurfaceScope";
-import { RichContent } from "@/components/rich-content/RichContent";
+import { RichContent } from "@ai-matrx/rich-content/levels/RichContent";
 import { MatrxSplit } from "@/components/matrx/MatrxSplit";
 import { useTextareaFormatting } from "@/components/rich-editor/format/useTextareaFormatting";
 import { MessageFlagToggles } from "@ai-matrx/chat/agents/message-flags/MessageFlagToggles";

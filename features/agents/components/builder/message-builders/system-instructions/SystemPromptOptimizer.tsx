@@ -50,7 +50,7 @@ import { usePathname } from "next/navigation";
 // TODO(prompt-to-agent-sweep): createUserPrompt writes to public.prompts which is deprecated.
 // Replace with agent.definition upsert once the prompt-to-agent migration completes.
 import { FullPromptOptimizer } from "./FullPromptOptimizer";
-import { RichContent } from "@/components/rich-content/RichContent";
+import { RichContent } from "@ai-matrx/rich-content/levels/RichContent";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 interface SystemPromptOptimizerProps {

@@ -14,13 +14,13 @@ jest.mock("@/components/official/structured-value/StructuredValueView", () => ({
     <div data-route="floor" data-kind={kind} data-note={note} />
   ),
 }));
-jest.mock("@/features/code-editor/components/code-block/CodeBlock", () => ({
+jest.mock("@ai-matrx/rich-content/code-block/CodeBlock", () => ({
   __esModule: true,
   default: ({ code }: { code: string }) => <pre data-route="code">{code}</pre>,
 }));
 
-import { BlockFallback } from "./BlockFallback";
-import type { RenderBlock } from "../block-registry/BlockRenderer";
+import { BlockFallback } from "@ai-matrx/rich-content/display/chat-markdown/internal-handlers/BlockFallback";
+import type { RenderBlock } from "@ai-matrx/rich-content/display/chat-markdown/block-registry/BlockRenderer";
 
 const KIND = JSON.stringify({ __kind: "quiz", title: "Cells", questions: [] });
 

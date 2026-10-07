@@ -13,8 +13,8 @@ import React from "react";
 import { Loader2, Pin } from "lucide-react";
 import CodeBlock, {
   type CodeBlockProps,
-} from "@/features/code-editor/components/code-block/CodeBlock";
-import type { CodeBlockMenuItem } from "@/features/code-editor/components/code-block/CodeBlockHeader";
+} from "@ai-matrx/rich-content/code-block/CodeBlock";
+import type { CodeBlockMenuItem } from "@ai-matrx/rich-content/code-block/CodeBlockHeader";
 import { useAttachBlockAsEditableContext } from "@/features/canvas/materialization/useAttachBlockAsEditableContext";
 import { useCodeBlockAnswerTools } from "@/features/rich-document/code-block/useCodeBlockAnswerTools";
 

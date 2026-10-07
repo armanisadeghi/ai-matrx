@@ -48,7 +48,7 @@ jest.mock("@/features/canvas/artifact-types/artifact-renderers", () => ({
   hasArtifactRenderer: () => false,
 }));
 
-jest.mock("../BlockComponentRegistry", () => ({
+jest.mock("@ai-matrx/rich-content/display/chat-markdown/block-registry/BlockComponentRegistry", () => ({
   BlockComponents: {
     BasicMarkdownContent: ({ content }: { content: string }) =>
       React.createElement("div", { "data-basic-markdown": true }, content),
@@ -62,7 +62,7 @@ jest.mock("@/features/content-ir/records/KindRecordChrome", () => ({
     React.createElement("div", { "data-record-chrome": true }),
 }));
 
-jest.mock("../block-dispatch", () => ({
+jest.mock("@ai-matrx/rich-content/display/chat-markdown/block-registry/block-dispatch", () => ({
   isBlockLoading: () => false,
   reportUnregisteredBlockType: () => {},
   resolveBlockDispatch: () =>
@@ -88,7 +88,7 @@ jest.mock("@/lib/diagnostics/errorCaptureStore", () => ({
   captureError: () => {},
 }));
 
-import { BlockRenderer } from "../BlockRenderer";
+import { BlockRenderer } from "@ai-matrx/rich-content/display/chat-markdown/block-registry/BlockRenderer";
 import { componentRegistry } from "@/features/content-ir/registry/component-registry";
 import type { KindComponentProjection } from "@/features/content-ir/registry/schema-source-kind-components";
 import { memoizedRegionEnvelope } from "@ai-matrx/rich-content/kinds/registry/region-envelope-memo";

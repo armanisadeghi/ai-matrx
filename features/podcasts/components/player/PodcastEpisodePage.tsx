@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { RichContent } from "@/components/rich-content/RichContent";
+import { RichContent } from "@ai-matrx/rich-content/levels/RichContent";
 import Link from 'next/link';
 import { Music, Share2, Link as LinkIcon, ListChecks, BookOpen, ChevronRight } from 'lucide-react';
 import type { PcArticleDisplayRow, PcEpisodeWithShow } from '../../types';

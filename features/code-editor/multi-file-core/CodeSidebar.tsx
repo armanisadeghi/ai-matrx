@@ -1,5 +1,5 @@
 import { cn } from "@/lib/utils";
-import { getLanguageIconNode } from "../components/code-block/LanguageDisplay";
+import { getLanguageIconNode } from "@ai-matrx/rich-content/code-block/LanguageDisplay";
 import { Folder } from "lucide-react";
 import { CodeFile } from "./types";
 

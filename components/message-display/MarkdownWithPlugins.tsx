@@ -8,7 +8,7 @@ import {
   reportDelimiterViolations,
 } from '@ai-matrx/kit/delimiter-guard';
 import { captureError } from '@/lib/diagnostics/errorCaptureStore';
-import { KindTextGate } from '@/components/mardown-display/chat-markdown/KindTextGate';
+import { KindTextGate } from '@ai-matrx/rich-content/display/chat-markdown/KindTextGate';
 
 export interface MarkdownWithPluginsProps {
   content: string;

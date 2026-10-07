@@ -26,8 +26,8 @@ import {
 } from "@ai-matrx/content-ir-react";
 import { captureError } from "@/lib/diagnostics/errorCaptureStore";
 import { ShimmerText } from "@/components/loaders/ShimmerText";
-import { SafeBlockRenderer } from "@/components/mardown-display/chat-markdown/internal-handlers/SafeBlockRenderer";
-import type { RenderBlock } from "@/components/mardown-display/chat-markdown/block-registry/BlockRenderer";
+import { SafeBlockRenderer } from "@ai-matrx/rich-content/display/chat-markdown/internal-handlers/SafeBlockRenderer";
+import type { RenderBlock } from "@ai-matrx/rich-content/display/chat-markdown/block-registry/BlockRenderer";
 import { StructuredValueView } from "@/components/official/structured-value/StructuredValueView";
 import { matrxDirectiveHost } from "@/features/matrx-envelope/directiveHost";
 import { kindRegistry } from "../registry/kind-registry";

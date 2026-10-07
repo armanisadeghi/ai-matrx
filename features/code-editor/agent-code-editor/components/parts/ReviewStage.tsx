@@ -20,12 +20,12 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Rainbow, GitCompare, File, FileCode, FileText } from "lucide-react";
-import { RichContent } from "@/components/rich-content/RichContent";
+import { RichContent } from "@ai-matrx/rich-content/levels/RichContent";
 import { DiffView } from "./DiffView";
 import type { ParseResult } from "../../utils/parseCodeEdits";
 
 const CodeBlock = dynamic(
-  () => import("@/features/code-editor/components/code-block/CodeBlock"),
+  () => import("@ai-matrx/rich-content/code-block/CodeBlock"),
   { ssr: false },
 );
 

@@ -2,9 +2,9 @@ import {
   materializeDiagramDefaults,
   parseDiagramJSON,
   validateDiagram,
-} from "@/components/mardown-display/blocks/diagram/parseDiagramJSON";
+} from "@ai-matrx/rich-content/display/blocks/diagram/parseDiagramJSON";
 import { diagramFromCanvasContent, draftMapFromLines } from "../types";
-import { getGridLayout } from "@/components/mardown-display/blocks/diagram/layout-utils";
+import { getGridLayout } from "@ai-matrx/rich-content/display/blocks/diagram/layout-utils";
 
 describe("visual map document", () => {
   it("preserves XYFlow sections and rich arrow options", () => {

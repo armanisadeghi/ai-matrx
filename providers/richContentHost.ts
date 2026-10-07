@@ -5,6 +5,8 @@
  * apply only in a host that leaves one out.
  */
 import { lazy } from "react";
+// The app bindings (windows, canvas, menus, kind views, chat state), mermaid, and this app's domain blocks.
+import "@/features/rich-content-host/app-bindings";
 import { configureRichContent } from "@ai-matrx/rich-content/host";
 import { toast } from "@/lib/toast";
 import { captureError } from "@/lib/diagnostics/errorCaptureStore";
@@ -21,7 +23,7 @@ import { reportKindComponentIncident } from "@/features/content-ir/react/db-comp
 import { correctDraftCritique, type DraftCritique } from "@/features/crm/draft-critique/draftCritique";
 
 const NestedContent = lazy(() =>
-  import("@/components/rich-content/standard/NestedRichContent").then((m) => ({ default: m.NestedRichContent })),
+  import("@ai-matrx/rich-content/levels/standard/NestedRichContent").then((m) => ({ default: m.NestedRichContent })),
 );
 
 configureRichContent({
