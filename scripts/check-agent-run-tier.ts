@@ -131,9 +131,16 @@ function report(res: Result): boolean {
 }
 
 function selfTest(): void {
-  const dir = mkdtempSync(path.join(tmpdir(), "agent-run-tier-"));
+  // PKG lives in the sibling ../aidream checkout, so the fixture is a private
+  // parent holding BOTH checkouts as git repos — never a bare tmp folder whose
+  // neighbour (a stray tmp/aidream) the scan would resolve and choke on.
+  const parent = mkdtempSync(path.join(tmpdir(), "agent-run-tier-"));
+  const dir = path.join(parent, "matrx-frontend");
   try {
-    execSync("git init -q", { cwd: dir });
+    for (const repo of [dir, path.join(parent, "aidream")]) {
+      mkdirSync(repo, { recursive: true });
+      execSync("git init -q", { cwd: repo });
+    }
     const file = `${PKG}agents/run/Planted.tsx`;
     mkdirSync(path.join(dir, path.dirname(file)), { recursive: true });
     const write = (body: string) => writeFileSync(path.join(dir, file), body);
@@ -155,7 +162,7 @@ function selfTest(): void {
     if (shrunk.under.length !== 1) throw new Error("self-test: a stale baseline was NOT reported");
     console.log("check:agent-run-tier --self-test OK — the guard fails on a planted fetch, a legacy RPC and a stale baseline, and passes clean.");
   } finally {
-    rmSync(dir, { recursive: true, force: true });
+    rmSync(parent, { recursive: true, force: true });
   }
 }
 
