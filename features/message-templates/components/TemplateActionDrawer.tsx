@@ -1,7 +1,7 @@
 "use client";
 
 import { useIsMobile } from "@ai-matrx/kit/media-query";
-import { RichContent } from "@ai-matrx/rich-content/levels/RichContent";
+import { TemplateRichText } from "@/features/message-templates/components/TemplateRichText";
 import { MessageTemplateDB } from "@/features/message-templates/types/message-templates-db";
 import {
     Dialog,
@@ -86,7 +86,7 @@ function TemplateActionContent({
                 {template.content && (
                     <div className="rounded-lg bg-muted/50 border border-border/50 p-3 max-h-48 overflow-y-auto overscroll-contain">
                         <div className="text-xs text-muted-foreground break-words">
-                            <RichContent source={template.content} level="standard" />
+                            <TemplateRichText text={template.content} />
                         </div>
                     </div>
                 )}

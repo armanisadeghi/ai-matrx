@@ -28,6 +28,7 @@ import {
   MERGE_FIELD_CHIP_CLASS,
   type MergeFieldInputHandle,
 } from "@/components/merge-field-input/MergeFieldInput";
+import { TemplateRichText } from "@/features/message-templates/components/TemplateRichText";
 import { MergeFieldTextarea } from "@/components/merge-field-input/MergeFieldTextarea";
 import { AgentAppTagsInput } from "@/features/agent-apps/components/inputs/AgentAppTagsInput";
 import { Switch } from "@/components/ui/switch";
@@ -213,9 +214,9 @@ function MessageBody({
           <FilledText text={subject} show={show} />
         </div>
       )}
-      <div className="whitespace-pre-wrap break-words px-3 py-3 text-sm leading-relaxed text-foreground">
+      <div className="break-words px-3 py-3 text-sm leading-relaxed text-foreground">
         {body.trim() ? (
-          <FilledText text={body} show={show} />
+          <TemplateRichText text={body} show={show} />
         ) : (
           <span className="text-muted-foreground">The message is empty.</span>
         )}
