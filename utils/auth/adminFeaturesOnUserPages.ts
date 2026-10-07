@@ -107,7 +107,7 @@ export const ADMIN_FEATURES_ON_USER_PAGES = {
     level: "super_admin",
     allows: "Set or clear the platform-wide agent-role override for a surface.",
     where: "Surface inspector window",
-    doors: ["ui.ui_surface_agent_pref (insert/delete, platform rows)"],
+    doors: ["ui.ui_surface_agent_pref (insert; clearing is a soft-delete update), platform rows"],
     ruling: "Arman, 2026-10-06: features \"explicitly actions in the normal ui that were for admins\" keep working; admin status must not widen what an admin SEES on a user page.",
   },
   "library.publish": {
@@ -128,7 +128,7 @@ export const ADMIN_FEATURES_ON_USER_PAGES = {
     level: "super_admin",
     allows: "Pause, disable or mark failed a system job.",
     where: "/schedules/[id]",
-    doors: ["scheduler.admin_disable_task"],
+    doors: ["scheduler.admin_disable_task", "aidream PATCH /scheduling/admin/system-tasks (pause/enable; identity)"],
     ruling: "Arman, 2026-10-06: features \"explicitly actions in the normal ui that were for admins\" keep working; admin status must not widen what an admin SEES on a user page.",
   },
   "seo.place-detection": {
