@@ -47,6 +47,7 @@ import { fromEngine, toEngine, type EngineBlock } from "./convert";
 import { PasteUrlMenu, pastedUrl, type PastedUrl } from "./PasteUrlMenu";
 import { useRubberBand } from "./rubber-band";
 import { spacesSchema, type SpacesEditor } from "./schema";
+import { insideDatabaseBlock } from "./database-host";
 import { linkPageAt, slashItems, type SlashContext } from "./slash-items";
 import { columnDropper } from "./column-drop";
 
@@ -284,6 +285,9 @@ export function SpaceEditor({ spaceId, initialBlocks, editable, onChange, slash,
     <div
       className="contents"
       onKeyDownCapture={(e) => {
+        // A KEY PRESSED IN A DATABASE BLOCK IS THE TABLE'S (stored-blocks `insideDatabaseBlock`): Enter,
+        // Space and Escape there must never write into a toggle, open Ask AI or move the page's caret.
+        if (insideDatabaseBlock(e.nativeEvent)) return;
         turnIntoKey(editor, e);
         // Enter at the end of an open toggle's title writes inside it (Notion); closed: a sibling.
         if (e.key === "Enter" && !e.shiftKey && !e.metaKey && !e.ctrlKey && !e.altKey && editable && !document.querySelector(".bn-suggestion-menu") && enterIntoOpenToggle(editor)) {

@@ -6,7 +6,9 @@
 // `unknownBlock` (a stored type this editor has never heard of, kept whole and said out loud).
 
 import { createReactBlockSpec } from "@blocknote/react";
-import { defaultProps } from "@blocknote/core";
+import { createExtension, defaultProps } from "@blocknote/core";
+import { Plugin } from "@tiptap/pm/state";
+import { DATABASE_EVENT_CLAIMS, DatabaseHost } from "./database-host";
 import katex from "katex";
 import { FileText, Globe, Paperclip, TriangleAlert } from "lucide-react";
 import { useLinkPreview } from "@/lib/link-preview";
@@ -26,30 +28,11 @@ const DatabaseBlockView = dynamic(() => import("../data/DatabaseBlock").then((m)
   loading: () => <div className="spaces-db-loading" />,
 });
 
-/**
- * A database block is its own app inside the page: ProseMirror listens NATIVELY on the editor element,
- * so a React stopPropagation reaches it too late — a click on a row became a block selection (and the
- * selection made the table ignore the row click). The host stops mouse and key events natively,
- * before the editor sees them.
- */
-function DatabaseHost({ children }: { children: ReactNode }) {
-  const ref = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    const el = ref.current;
-    if (!el) return;
-    const stop = (e: Event) => e.stopPropagation();
-    const kinds = ["mousedown", "keydown", "paste", "copy", "cut"] as const;
-    for (const k of kinds) el.addEventListener(k, stop);
-    return () => {
-      for (const k of kinds) el.removeEventListener(k, stop);
-    };
-  }, []);
-  return (
-    <div ref={ref} className="spaces-db-host" contentEditable={false}>
-      {children}
-    </div>
-  );
-}
+/** A database block's table owns its own presses and keys (`database-host.tsx`); the editor leaves them be. */
+const databaseOwnsItsEvents = createExtension({
+  key: "spacesDatabaseOwnsItsEvents",
+  prosemirrorPlugins: [new Plugin({ props: { handleDOMEvents: DATABASE_EVENT_CLAIMS } })],
+});
 
 type Data = { props?: Record<string, unknown> };
 
@@ -299,7 +282,11 @@ class BlockBoundary extends Component<{ children: ReactNode }, { error: string |
 
 const dataProp = { data: { default: "{}" } } as const;
 
-function storedSpec(type: string, render: (p: Record<string, unknown>, ctx: { blockId: string; editor: never; update: (next: Record<string, unknown>) => void }) => React.ReactNode) {
+function storedSpec(
+  type: string,
+  render: (p: Record<string, unknown>, ctx: { blockId: string; editor: never; update: (next: Record<string, unknown>) => void }) => React.ReactNode,
+  extensions?: Parameters<typeof createReactBlockSpec>[2],
+) {
   return createReactBlockSpec(
     { type, propSchema: dataProp, content: "none" },
     {
@@ -317,6 +304,7 @@ function storedSpec(type: string, render: (p: Record<string, unknown>, ctx: { bl
         return <>{render(p, { blockId: block.id, editor: editor as never, update })}</>;
       },
     },
+    extensions,
   );
 }
 
@@ -337,7 +325,7 @@ export const storedBlockSpecs = {
         <DatabaseBlockView blockId={ctx.blockId} props={p} onChange={ctx.update} editable={(ctx.editor as unknown as { isEditable: boolean }).isEditable} />
       </BlockBoundary>
     </DatabaseHost>
-  )),
+  ), [databaseOwnsItsEvents]),
   unknownBlock: createReactBlockSpec(
     { type: "unknownBlock", propSchema: dataProp, content: "none" },
     {
