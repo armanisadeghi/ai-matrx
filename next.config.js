@@ -413,6 +413,10 @@ const nextConfig = {
     // the (core) layout, it breaks EVERY authenticated route, not just
     // chat. jspdf is only ever used client-side (DOM-capture PDF export), so
     // pin it to its browser ES build everywhere.
+    // STILL NEEDED (2026-10-07): no app code imports jspdf/html2canvas, but @ai-matrx/alchemy
+    // (/operate/capture) and @ai-matrx/print lazy-`import("jspdf")`, and both ship them as their own
+    // dependencies — Turbopack still resolves that edge in the SSR graph, so the alias and the root
+    // jspdf/html2canvas deps (the alias target resolves from the app root) stay.
     resolveAlias: {
       jspdf: "jspdf/dist/jspdf.es.min.js",
       // The demos AppShell is shared by every demo route. Keep the registrations

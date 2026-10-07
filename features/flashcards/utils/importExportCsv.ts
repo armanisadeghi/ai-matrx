@@ -12,7 +12,7 @@
 // separated by a delimiter (tab by default, comma as an alternative), with an
 // optional secondary delimiter between CARDS (default: newline).
 
-import { toDelimitedText } from "@ai-matrx/alchemy/operate/read";
+import { parseDelimited, toDelimitedText } from "@ai-matrx/alchemy/operate/read";
 import type { FcSetRow, NewCardInput, CardWithDetails } from "../data/types";
 import { downloadFile } from "@ai-matrx/kit/download";
 
@@ -103,56 +103,16 @@ function splitOnce(line: string, delim: string): [string, string] | null {
  * mixed delimiters but is deliberately NOT quote-aware.)
  */
 export function parseCsvRecords(text: string): ParseImportResult {
+  // The Alchemy delimited parser reads the quoting; it reports no positions, so each record's
+  // starting line is rebuilt by counting the lines a record consumes (1 + newlines inside its
+  // quoted fields). Blank lines are kept by the parser (skipEmptyLines false) so the count holds.
+  const parsed = parseDelimited(text, { delimiter: ",", skipEmptyLines: false });
   const records: { fields: string[]; line: number }[] = [];
-  let field = "";
-  let fields: string[] = [];
-  let inQuotes = false;
   let line = 1;
-  let recordStartLine = 1;
-
-  const endField = () => {
-    fields.push(field);
-    field = "";
-  };
-  const endRecord = () => {
-    endField();
-    if (fields.some((f) => f.trim() !== "")) {
-      records.push({ fields, line: recordStartLine });
-    }
-    fields = [];
-    recordStartLine = line;
-  };
-
-  for (let i = 0; i < text.length; i++) {
-    const ch = text[i];
-    if (inQuotes) {
-      if (ch === '"') {
-        if (text[i + 1] === '"') {
-          field += '"';
-          i++;
-        } else {
-          inQuotes = false;
-        }
-      } else {
-        if (ch === "\n") line++;
-        field += ch;
-      }
-    } else if (ch === '"' && field === "") {
-      inQuotes = true;
-    } else if (ch === ",") {
-      endField();
-    } else if (ch === "\r") {
-      if (text[i + 1] === "\n") i++;
-      line++;
-      endRecord();
-    } else if (ch === "\n") {
-      line++;
-      endRecord();
-    } else {
-      field += ch;
-    }
+  for (const fields of parsed.data) {
+    if (fields.some((f) => f.trim() !== "")) records.push({ fields, line });
+    line += 1 + fields.reduce((n, f) => n + (f.match(/\n/g)?.length ?? 0), 0);
   }
-  if (field !== "" || fields.length > 0) endRecord();
 
   const rows: ParsedImportRow[] = [];
   const skipped: SkippedLine[] = [];

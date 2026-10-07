@@ -114,4 +114,11 @@ describe("CSV round-trip (RFC-4180)", () => {
     expect(rows[0].back).toBe('he said "hi"\nsecond line');
     expect(rows[1].front).toBe("plain");
   });
+
+  it("reports the source line of a record that follows a quoted newline", () => {
+    const csv = 'front,back\n"a","line one\nline two"\n\nlonely,\nz,y';
+    const { rows, skipped } = parseCsvRecords(csv);
+    expect(rows.map((r) => [r.front, r.line])).toEqual([["a", 2], ["z", 6]]);
+    expect(skipped.map((s) => s.line)).toEqual([5]);
+  });
 });
