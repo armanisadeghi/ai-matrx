@@ -608,6 +608,15 @@ export class StreamBlockAccumulator {
    * to be a different typed block (see the bare-JSON duplication note there).
    */
   private currentBlockEmitted = false;
+  /**
+   * THE DATA KEEPS ITS KINDS. A JSON wrapper that holds kinds is drawn as its
+   * kinds plus a residual (A7) — the residual is the wrapper's data WITH ITS
+   * KINDS REMOVED, so it is a display projection, never the answer. Every
+   * such split remembers the bytes it was cut from, keyed by its first block
+   * index, so data capture (`deriveAnswerDataText`) reads what the model wrote.
+   * Live only; a rewind forgets every split at or past its boundary.
+   */
+  private wrapperSplits = new Map<number, { indices: number[]; source: string }>();
   private subState: BlockSubState = { kind: "none" };
   /**
    * URL + label for the current `audio` block. The accumulator's single-line
@@ -923,7 +932,20 @@ export class StreamBlockAccumulator {
    * the local streaming state so the replacement provider attempt cannot
    * concatenate onto or resurrect the failed attempt.
    */
+  /** The source bytes behind every live A7 wrapper split (see `wrapperSplits`). */
+  getWrapperSplitSources(): Array<{ blockIds: string[]; source: string }> {
+    return [...this.wrapperSplits.values()].map((split) => ({
+      blockIds: split.indices.map((i) => `client_block_${i}`),
+      source: split.source,
+    }));
+  }
+
   rewindToBlockCount(blockCount: number): void {
+    for (const [start, split] of this.wrapperSplits) {
+      if (start >= blockCount || split.indices.some((i) => i >= blockCount)) {
+        this.wrapperSplits.delete(start);
+      }
+    }
     this.irDisposeAll();
     this.currentBlockIndex = Math.max(0, blockCount);
     this.currentBlockType = "text";
@@ -2698,6 +2720,9 @@ export class StreamBlockAccumulator {
       genericXml || recoveredXmlContainer ? { genericXmlContainer: true } : undefined;
     let emitted = 0;
     let followsKind = false;
+    const splitStart = this.currentBlockIndex;
+    const splitIndices: number[] = [];
+    const isWrapperSplit = pieces.some((piece) => piece.type === "residual");
     for (const piece of pieces) {
       // Array punctuation between kinds is never a block (A6).
       if (piece.type === "chrome") continue;
@@ -2724,8 +2749,12 @@ export class StreamBlockAccumulator {
         metadata: asJson ? withIrEnvelope(content, undefined) : containerMetadata,
       };
       dispatch(this.upsertAction({ requestId: this.requestId, block }));
+      splitIndices.push(this.currentBlockIndex);
       emitted++;
       this.emitCount++;
+    }
+    if (isWrapperSplit && emitted > 0) {
+      this.wrapperSplits.set(splitStart, { indices: splitIndices, source: recoverySource });
     }
 
     this.currentBlockEmitted = emitted > 0;

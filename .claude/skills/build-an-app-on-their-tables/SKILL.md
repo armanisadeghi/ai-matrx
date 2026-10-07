@@ -43,6 +43,9 @@ Contract: `common-docs/projects/applets/CONTRACTS.md` (§2 hooks, §8 record). H
    const posts = useRows("posts", { sort: [{ column: "publish_date", direction: "asc" }], pageSize: 500 });
    const answer = await posts.update(row._id, { status: "Scheduled", approved: true }); // shows at once
    if (!answer.ok) show(answer.error.message);   // refused → rolled back; the store's own sentence
+   // posts.error = the list could not be read (a whole-list state); posts.writeError = the last refused save —
+   // show writeError INLINE beside the control that saved, never instead of the list. Only offer a custom-field
+   // control on a row whose `_custom` has the key: other organizations' rows cannot hold it.
    const job = useJob("polish");
    <Button onClick={() => job.run({ draft: row.caption })}>Polish caption</Button>
    <JobOutput job={job} label="Polishing caption" />   // the run streams here, final kind included

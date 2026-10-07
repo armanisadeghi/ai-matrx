@@ -143,7 +143,7 @@ import { docKindForContextKey } from "../../../utils/workingDocumentContext";
 import { isCanvasItemContextKey } from "../../../utils/canvasItemContext";
 import { StreamingJsonTracker } from "@ai-matrx/kit/json-extract";
 import { StreamBlockAccumulator } from "../utils/stream-block-accumulator";
-import { deriveAnswerText } from "../active-requests/active-requests.selectors";
+import { deriveAnswerDataText } from "../active-requests/active-requests.selectors";
 import { captureError } from "../../../../host/diagnostics";
 import type { Json } from "../../../../host/db-types";
 import { readReceiptThread, withReceiptHandle } from "../instance-resources/remark-handles";
@@ -674,7 +674,11 @@ export async function processStream({
   const runJsonExtraction = (isFinal: boolean) => {
     if (!jsonTracker) return;
     const req = getState().activeRequests.byRequestId[requestId];
-    const answerText = req ? deriveAnswerText(req) : "";
+    // Data capture reads the bytes behind a split JSON wrapper, never its
+    // kinds-removed display residual (deriveAnswerDataText).
+    const answerText = req
+      ? deriveAnswerDataText(req, blockAccumulator.getWrapperSplitSources())
+      : "";
 
     // Loud recovery: answer text is reasoning-excluded by construction. If a
     // <thinking>/<reasoning> marker survived into it, the accumulator failed to
