@@ -333,6 +333,7 @@ const FEATURE_TOOL_RENDERERS: ToolRegistry = {
           ? (r.metadata as Record<string, unknown>)
           : null;
       const name =
+        (meta && typeof meta.table_name === "string" && meta.table_name) ||
         (meta && typeof meta.dataset_name === "string" && meta.dataset_name) ||
         (typeof r?.table_name === "string" && r.table_name);
       return name ? name : null;
@@ -543,10 +544,6 @@ const FEATURE_TOOL_RENDERERS: ToolRegistry = {
     },
   },
 };
-
-// The table tool was named `dataset` until 2026-10-07. The DB row and older saved conversations
-// still carry that name during the rename window; both draw the same card.
-FEATURE_TOOL_RENDERERS.dataset = { ...FEATURE_TOOL_RENDERERS.table, toolName: "dataset" };
 
 for (const [toolName, renderer] of Object.entries(FEATURE_TOOL_RENDERERS)) {
   registerToolRenderer(toolName, renderer);

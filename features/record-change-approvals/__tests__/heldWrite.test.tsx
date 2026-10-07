@@ -125,8 +125,8 @@ const HELD_OUTPUT = {
 function entry(over: Partial<ToolLifecycleEntry> = {}): ToolLifecycleEntry {
   return {
     callId: "call-dataset-held",
-    toolName: "dataset",
-    displayName: "dataset",
+    toolName: "table",
+    displayName: "table",
     status: "completed",
     arguments: { action: "add_rows", dataset_id: TABLE },
     startedAt: "2026-09-26T14:14:03.000Z",

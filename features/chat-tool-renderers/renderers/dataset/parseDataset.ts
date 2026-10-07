@@ -33,9 +33,12 @@ export function parseDataset(entry: ToolLifecycleEntry): ParsedDataset {
   ) as Record<string, unknown>;
 
   const rawId =
+    asStr(r.table_id) ??
+    asStr(meta.table_id) ??
+    asStr(getArg<string>(entry, "table_id")) ??
+    // Results and calls saved before 2026-10-07 say dataset_id.
     asStr(r.dataset_id) ??
     asStr(meta.dataset_id) ??
-    asStr(r.table_id) ??
     asStr(getArg<string>(entry, "dataset_id"));
   const id = rawId && isUuidShape(rawId) ? rawId : null;
 
@@ -55,7 +58,7 @@ export function parseDataset(entry: ToolLifecycleEntry): ParsedDataset {
   return {
     id,
     name:
-      asStr(meta.dataset_name) ?? asStr(r.dataset_name) ?? asStr(r.table_name),
+      asStr(meta.table_name) ?? asStr(r.table_name) ?? asStr(meta.dataset_name) ?? asStr(r.dataset_name),
     description: asStr(meta.description) ?? asStr(r.description),
     rowCount: asNum(meta.row_count) ?? asNum(r.row_count),
     fields,
