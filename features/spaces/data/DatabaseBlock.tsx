@@ -11,7 +11,7 @@
 
 import { Popover, PopoverContent, PopoverTrigger } from "@ai-matrx/design-system";
 import { Button, Input, Switch } from "@ai-matrx/design-system/controls";
-import { DashboardCanvas, FieldEditor, NotifyRuleEditor, Peek, RecordForm, ViewSwitcher, type SavedViewSpec } from "@ai-matrx/records-ui";
+import { DashboardCanvas, FieldEditor, NotifyRuleEditor, Peek, RecordForm, RecordsMount, ViewSwitcher, type SavedViewSpec } from "@ai-matrx/records-ui";
 import { useFields, useRecordsClient, useTable, type Field } from "@ai-matrx/records/react";
 import {
   ArrowDownUp,
@@ -47,7 +47,7 @@ import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { toast } from "@/lib/toast";
 
 import { DataMount } from "./DataMount";
-import { usePublishedRows } from "./published-rows";
+import { usePublishedEntities, usePublishedRows } from "./published-rows";
 import { EntityDatabase } from "./EntityDatabase";
 import { useDatabaseDesigner } from "../ai/DatabaseDesigner";
 import { AutofillRows } from "./ai-autofill";
@@ -94,10 +94,22 @@ export interface DatabaseBlockViewProps {
   editable: boolean;
 }
 
-export function DatabaseBlock({ props: raw, onChange, editable }: DatabaseBlockViewProps) {
+export function DatabaseBlock({ blockId, props: raw, onChange, editable }: DatabaseBlockViewProps) {
   const props = readDatabaseProps(raw);
+  const publishedEntities = usePublishedEntities();
   if (!props) return <div className="spaces-db-frame spaces-db-note">This database has no source.</div>;
-  if (props.source.kind === "entity") return <EntityDatabase token={props.source.token} props={props} raw={raw} onChange={onChange} editable={editable} />;
+  if (props.source.kind === "entity") {
+    const database = <EntityDatabase token={props.source.token} props={props} raw={raw} onChange={onChange} editable={editable} />;
+    if (!publishedEntities) return database;
+    // A page on the web: the rows the page itself published for this block, never a live read.
+    const config = publishedEntities.get(blockId);
+    if (!config) return <div className="spaces-db-frame spaces-db-note">This database isn’t published with this page.</div>;
+    return (
+      <RecordsMount config={config} letTheStoreDecideRights>
+        {database}
+      </RecordsMount>
+    );
+  }
   const tableId = props.source.tableId;
   return (
     <DataMount

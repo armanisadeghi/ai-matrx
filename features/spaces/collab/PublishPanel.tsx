@@ -15,6 +15,7 @@ import { toast } from "@/lib/toast";
 
 import {
   changePublish,
+  syncPublishedPictures,
   publicPageUrl,
   readPublishState,
   setSearchEngines,
@@ -71,6 +72,8 @@ export function PublishPanel({ spaceId }: { spaceId: string }) {
     readPublishState(spaceId).then(
       (s) => {
         if (!live) return;
+        // A cover chosen after publishing is brought public when the panel opens (best effort, silent).
+        if (s.published && tick === 0) void syncPublishedPictures(spaceId);
         setState(s);
         setSlug(s.slug ?? "");
         setError(null);
@@ -102,7 +105,10 @@ export function PublishPanel({ spaceId }: { spaceId: string }) {
     }
   };
   const change = (c: PublishChange, done?: string) =>
-    run(() => changePublish(spaceId, c), done);
+    run(async () => {
+      const pictures = await changePublish(spaceId, c);
+      if (pictures.failed > 0) toast.warning("Some pictures on this page could not be made public.");
+    }, done);
 
   if (error) {
     return (

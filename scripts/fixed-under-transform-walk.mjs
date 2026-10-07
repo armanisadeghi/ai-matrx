@@ -8,6 +8,7 @@
 // Knobs (all optional): WALK_BUDGET (no budget = report only), WALK_WIDTHS="375,1440" (default 375),
 // WALK_RUNS=3 (fresh page per run, the WORST run is judged), WALK_CPU=4 (CPU slowdown factor, default 1),
 // WALK_SOURCES=1 (print each shifting node: selector, value, before/after rect).
+// Same thing with the standard 17-route list, both widths, 3 runs, CPU x4:  pnpm check:cls
 // Measure only while `uptime` 1-minute load is under 60 - a busy machine inflates CLS.
 import { chromium } from "playwright";
 import { readFileSync } from "node:fs";

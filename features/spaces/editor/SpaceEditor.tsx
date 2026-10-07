@@ -6,7 +6,7 @@
 // toolbar, and Notion's extra shortcuts. Content goes out through `onChange` already converted to
 // SpaceBlock — the engine never reaches the store.
 
-import { createExtension, filterSuggestionItems } from "@blocknote/core";
+import { createExtension } from "@blocknote/core";
 import { CollaborationExtension } from "@blocknote/core/yjs";
 import { en } from "@blocknote/core/locales";
 import {
@@ -51,6 +51,8 @@ import { useRubberBand } from "./rubber-band";
 import { spacesSchema, type SpacesEditor } from "./schema";
 import { insideDatabaseBlock } from "./database-host";
 import { linkPageAt, slashItems, type SlashContext } from "./slash-items";
+import { rankSlashItems } from "./slash-rank";
+import { planColumnHeal, type HealBlock } from "./column-heal";
 import { columnDropper } from "./column-drop";
 
 const PLACEHOLDERS = {
@@ -360,7 +362,10 @@ export function SpaceEditor({ spaceId, initialBlocks, editable, onChange, slash,
       sideMenu={false}
       slashMenu={false}
       formattingToolbar={false}
-      onChange={() => {
+      onChange={(_editor, context) => {
+        // D5 — an emptied column leaves the layout at once (column-heal.ts); this person's edits only.
+        const local = context?.getChanges().some((c) => c.source.type === "local") ?? false;
+        if (local && editable && healColumns(editor)) return; // the heal's own change reports the page
         const doc = editor.document as unknown as EngineBlock[];
         setWidths(columnCss(doc));
         onChange(fromEngine(doc));
@@ -400,7 +405,7 @@ export function SpaceEditor({ spaceId, initialBlocks, editable, onChange, slash,
           }))];
         }}
       />
-      <SuggestionMenuController triggerCharacter="/" floatingUIOptions={SLASH_MENU} getItems={async (query) => filterSuggestionItems(slashItems(editor, slash), query)} />
+      <SuggestionMenuController triggerCharacter="/" floatingUIOptions={SLASH_MENU} getItems={async (query) => rankSlashItems(slashItems(editor, slash), query)} />
       {editable ? (
       <SideMenuController
         floatingUIOptions={INSTANT_CLOSE}
@@ -445,4 +450,30 @@ export function SpaceEditor({ spaceId, initialBlocks, editable, onChange, slash,
     {pasted ? <PasteUrlMenu editor={editor} pasted={pasted} onClose={() => setPasted(null)} /> : null}
     </div>
   );
+}
+
+/** Apply column-heal.ts's plan to the live editor; true when it changed anything. */
+function healColumns(editor: SpacesEditor): boolean {
+  const ops = planColumnHeal(editor.document as unknown as HealBlock[]);
+  if (!ops.length) return false;
+  let caret: string | null = null;
+  editor.transact(() => {
+    for (const op of ops) {
+      if (!editor.getBlock(op.id)) continue;
+      if (op.kind === "remove") editor.removeBlocks([op.id]);
+      else if (op.kind === "width") editor.updateBlock(op.id, { props: { width: op.width } } as never);
+      else {
+        const placed = editor.replaceBlocks([op.id], (op.blocks.length ? op.blocks : [{ type: "paragraph" }]) as never);
+        caret = placed.insertedBlocks[0]?.id ?? caret;
+      }
+    }
+  });
+  if (caret) {
+    try {
+      editor.setTextCursorPosition(caret, "start");
+    } catch {
+      // A block without text (a nested row, a database): the caret stays where the engine put it.
+    }
+  }
+  return true;
 }

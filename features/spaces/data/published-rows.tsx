@@ -9,10 +9,10 @@
 // no table grant, no second read. A table not in the answer is not on the web, and says so.
 
 import type { RecordsConfig } from "@ai-matrx/records";
-import { memoryDataSource, stableId, type MemoryField, type MemoryOption, type MemoryTable, type MemoryWorld } from "@ai-matrx/records/memory";
+import { entityStore, memoryDataSource, stableId, type MemoryField, type MemoryOption, type MemoryTable, type MemoryWorld } from "@ai-matrx/records/memory";
 import { createContext, useContext, type ReactNode } from "react";
 
-import type { PublishedDatabase } from "./published-databases";
+import type { PublishedDatabase, PublishedEntity } from "./published-databases";
 
 function emptyWorld(organizationId: string): MemoryWorld {
   return {
@@ -77,6 +77,25 @@ export function publishedWorlds(databases: Record<string, PublishedDatabase>): M
       world.recordTable.set(r.id, t);
     }
   }
+  // Relation words: a related record the publisher may open reads as its title (plain text, never a link). The
+  // record joins the world as a row of a hidden table that is not listed anywhere, so the store's own
+  // relation-words door answers with its name; a record not in the answer stays unresolved, as it must.
+  for (const db of Object.values(databases)) {
+    const world = worlds.get(db.organizationId);
+    if (!world || db.unreadable) continue;
+    const entries = Object.entries(db.related ?? {}).filter(([id]) => !world.recordTable.has(id));
+    if (entries.length === 0) continue;
+    const key = stableId(`spaces-published-related:${world.organization_id}`);
+    let titles = world.tableById.get(key);
+    if (!titles) {
+      titles = { id: key, token: "related", document: { title_field: "title", fields: ["title"] }, fields: [], options: new Map(), rows: new Map(), order: [] } satisfies MemoryTable;
+      world.tableById.set(key, titles);
+    }
+    for (const [id, words] of entries) {
+      titles.rows.set(id, { title: words });
+      world.recordTable.set(id, titles);
+    }
+  }
   const configs = new Map<string, RecordsConfig>();
   for (const world of worlds.values()) {
     const config: RecordsConfig = {
@@ -91,13 +110,42 @@ export function publishedWorlds(databases: Record<string, PublishedDatabase>): M
   return configs;
 }
 
+/** Block id → the read-only store of that built-in module block's published rows (the memory entity doors). */
+export function publishedEntityConfigs(entities: Record<string, PublishedEntity>): Map<string, RecordsConfig> {
+  const out = new Map<string, RecordsConfig>();
+  for (const [blockId, e] of Object.entries(entities)) {
+    if (e.unreadable) continue;
+    out.set(blockId, entityStore([{ token: e.token, label: e.label, columns: e.columns, rows: e.rows }]).config);
+  }
+  return out;
+}
+
 /** table id → the read-only store that carries its published rows; null = not on a public page. */
 const PublishedRowsContext = createContext<Map<string, RecordsConfig> | null>(null);
+const PublishedEntitiesContext = createContext<Map<string, RecordsConfig> | null>(null);
 
-export function PublishedRowsProvider({ databases, children }: { databases: Record<string, PublishedDatabase>; children: ReactNode }) {
-  // React Compiler memoises this on `databases` (the door's answer, read once per page).
+export function PublishedRowsProvider({
+  databases,
+  entities,
+  children,
+}: {
+  databases: Record<string, PublishedDatabase>;
+  entities: Record<string, PublishedEntity>;
+  children: ReactNode;
+}) {
+  // React Compiler memoises this on `databases` / `entities` (the door's answer, read once per page).
   const configs = publishedWorlds(databases);
-  return <PublishedRowsContext.Provider value={configs}>{children}</PublishedRowsContext.Provider>;
+  const entityConfigs = publishedEntityConfigs(entities);
+  return (
+    <PublishedRowsContext.Provider value={configs}>
+      <PublishedEntitiesContext.Provider value={entityConfigs}>{children}</PublishedEntitiesContext.Provider>
+    </PublishedRowsContext.Provider>
+  );
+}
+
+/** Inside a public page: a built-in module block's published store by block id. Outside one: null (the live read). */
+export function usePublishedEntities(): Map<string, RecordsConfig> | null {
+  return useContext(PublishedEntitiesContext);
 }
 
 /** Inside a public page: the published stores by table id. Outside one: null (the live store reads). */

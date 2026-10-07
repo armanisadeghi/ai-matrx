@@ -26,6 +26,7 @@ import type {
 import { PublishedRowsProvider } from "../data/published-rows";
 import { SpaceEditor } from "../editor/SpaceEditor";
 import { Cover } from "../page/Cover";
+import { PublishedMediaProvider } from "../page/media";
 import { SpaceIcon } from "../page/SpaceIcon";
 import {
   StaticSpacesProvider,
@@ -180,6 +181,7 @@ export function PublicSpace({ view }: { view: PublicSpaceView }) {
   ];
   return (
     <StaticSpacesProvider value={value}>
+      <PublishedMediaProvider media={view.media}>
       <div
         className="spaces-root relative z-0 h-dvh overflow-hidden"
         data-public-page=""
@@ -254,7 +256,7 @@ export function PublicSpace({ view }: { view: PublicSpaceView }) {
                       </h1>
                     </div>
                     {inBrowser ? (
-                      <PublishedRowsProvider databases={view.databases}>
+                      <PublishedRowsProvider databases={view.databases} entities={view.entities}>
                         <SpaceEditor
                           spaceId={view.id}
                           initialBlocks={blocks}
@@ -285,6 +287,7 @@ export function PublicSpace({ view }: { view: PublicSpaceView }) {
           </main>
         </div>
       </div>
+      </PublishedMediaProvider>
     </StaticSpacesProvider>
   );
 }
