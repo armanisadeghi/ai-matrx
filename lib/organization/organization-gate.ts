@@ -104,6 +104,48 @@ let openPicker: (() => void) | null = null;
  */
 export function registerOrganizationPicker(open: (() => void) | null): void {
   openPicker = open;
+  if (open) {
+    const waiting = pickerWaiters;
+    pickerWaiters = [];
+    for (const wake of waiting) wake();
+  }
+}
+
+/**
+ * THE PICKER IS ON ITS WAY, NOT ABSENT. The picker lives in the deferred singleton tree, which
+ * mounts only once the page has gone idle — seconds after a heavy page hydrates. A press in that
+ * window (Build on /applets/build, 2026-10-07, lane P) used to be refused outright with "Select an
+ * organization before sending this request." while the picker was about to exist. The shell that
+ * owns the deferred tree registers how to mount it NOW; the gate asks for that and waits for the
+ * picker, bounded, instead of refusing.
+ */
+let mountPickerNow: (() => void) | null = null;
+let pickerWaiters: Array<() => void> = [];
+
+/** How long a press waits for the picker the shell is mounting before it refuses. */
+const PICKER_MOUNT_WAIT_MS = 15_000;
+
+/** Called by the shell that renders the deferred tree (`app/DeferredSingletonWrapper.tsx`). */
+export function registerOrganizationPickerHost(mountNow: (() => void) | null): void {
+  mountPickerNow = mountNow;
+}
+
+/** True once the picker can open — immediately, or after the shell mounted it within the bound. */
+async function pickerReady(): Promise<boolean> {
+  if (isOrganizationPickerAvailable()) return true;
+  if (typeof window === "undefined" || !mountPickerNow) return false;
+  return new Promise<boolean>((resolve) => {
+    const wake = () => {
+      clearTimeout(timer);
+      resolve(true);
+    };
+    const timer = setTimeout(() => {
+      pickerWaiters = pickerWaiters.filter((w) => w !== wake);
+      resolve(isOrganizationPickerAvailable());
+    }, PICKER_MOUNT_WAIT_MS);
+    pickerWaiters.push(wake);
+    mountPickerNow?.();
+  });
 }
 
 export function isOrganizationPickerAvailable(): boolean {
@@ -296,7 +338,8 @@ export async function ensureOrganizationContext(
       !isMissingOrganization(error) ||
       !interactive ||
       typeof window === "undefined" ||
-      !isOrganizationPickerAvailable()
+      // Synchronous when the picker is already there (a withdraw in the same tick must find the request).
+      !(isOrganizationPickerAvailable() || (await pickerReady()))
     ) {
       throw error;
     }
@@ -333,7 +376,7 @@ export async function chooseOrganizationFromButton(): Promise<void> {
 
 /** Ask for an explicit destination; never reuse the active organization. */
 export async function requestOrganizationContextChoice(): Promise<string> {
-  if (typeof window === "undefined" || !isOrganizationPickerAvailable()) {
+  if (typeof window === "undefined" || !(isOrganizationPickerAvailable() || (await pickerReady()))) {
     return requireOrganizationContext(undefined);
   }
   const chosen = await requestOrganizationSelection();
