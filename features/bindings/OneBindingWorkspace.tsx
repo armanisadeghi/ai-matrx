@@ -150,7 +150,6 @@ import {
 } from "./default-holder-rung";
 import {
   applySuggestions,
-  seedAutoBinds,
   sourcesFor,
 } from "./consumption-writer";
 import { describedOfferFrom } from "./described-offer";
@@ -159,6 +158,7 @@ import {
   type OfferColumnStatus,
 } from "./offer-column-state";
 import { coverageLine, isFed, JOB_OVERRIDE_WORDS } from "./words";
+import { effectiveConsumption } from "./effective-consumption";
 import { writeReportStillDescribesDraft } from "./write-report-life";
 import { BatchMode } from "./batch/BatchMode";
 import { unfedRequiredTargets } from "./batch/batch-model";
@@ -668,10 +668,6 @@ function BindingDraft({
     () => parseBindingWave1(settingsRow).autoRun,
   );
   const [mapTab, setMapTab] = useState<"ai" | "manual">("manual");
-  const [autoBound, setAutoBound] = useState<ReadonlySet<string>>(
-    () => new Set<string>(),
-  );
-  const [seededFor, setSeededFor] = useState<string | null>(null);
   /**
    * The Holder the draft map's KEYS belong to. A map is keyed by the Holder's
    * own input names, so switching the Holder (agent → workflow, or one agent
@@ -763,39 +759,25 @@ function BindingDraft({
     }
   }
 
-  // P4 — a row must never open blank when the answer is obvious. Seed exact
-  // name matches into the DRAFT once per (binding × holder inputs), and tell
-  // each seeded row it was seeded.
-  //
-  // This is an ADJUSTMENT DURING RENDER, not an effect: the seed depends only
-  // on props/state already in hand, and doing it in an effect would render the
-  // blank rows once and then re-render them filled — the cascading-render
-  // defect this repo has fixed twice already.
-  const seedKey = `${holder.kind}:${holder.agentId ?? holder.workflowId ?? ""}|${holderInputs.targets.map((t) => t.name).join(",")}`;
-  if (
-    // 🚨 NEVER AT THE BOTTOM RUNG. The definition default has no
-    // `consumption_map` column, so a seeded map here would be invisible work
-    // that the door cannot receive — and it would make the draft dirty against
-    // a baseline nothing can ever save.
-    !onDefaultHolderRung &&
-    holderInputs.status === "ready" &&
-    holderInputs.targets.length > 0 &&
-    offeredValues.length > 0 &&
-    seededFor !== seedKey
-  ) {
-    const seeded = seedAutoBinds({
-      map: draftMap,
-      targetNames: holderInputs.targets.map((t) => t.name),
-      offeredByName: new Map(offeredValues.map((v) => [v.name, v])),
-      deliverFor: (name): ConsumptionEntry["deliver"] =>
-        holderInputs.contextKeys.has(name) ? "context" : "variable",
-    });
-    setSeededFor(seedKey);
-    if (seeded.autoBound.size > 0) {
-      setDraftMap(seeded.map);
-      setAutoBound(seeded.autoBound);
-    }
-  }
+  // P4 — a row never opens blank when the answer is obvious, and it never
+  // claims less than the server does. With an empty map the run door feeds
+  // every by-name offered value to the input of the same name, on EVERY rung
+  // (the mandate's own default included — it carries
+  // `default_consumption_map`). `effective` is that truth: the stored map, or
+  // the by-name pass. The rows, the counts and the summary read it; a save
+  // writes it, so saving always leaves an explicit map behind.
+  const effective = effectiveConsumption({
+    map: withoutUnpicked(draftMap),
+    targetNames:
+      holderInputs.status === "ready"
+        ? holderInputs.targets.map((t) => t.name)
+        : [],
+    contextKeys: holderInputs.contextKeys,
+    offered: offeredValues,
+    mappingOnly: new Set(offer?.mappingOnly ?? []),
+    holderKind: holder.kind,
+  });
+  const mapView = effective.byName.size > 0 ? effective.map : draftMap;
 
   // ── The agent pre-flight (the server stays the authority) ─────────────────
   //
@@ -1057,7 +1039,7 @@ function BindingDraft({
   // rather than "skip everything": the shape rules (a question with no words,
   // a structured literal joined with something else) are true either way.
   const mapProblems = holderChosen
-    ? consumptionMapProblems(offer, withoutUnpicked(draftMap), {
+    ? consumptionMapProblems(offer, effective.map, {
         // R5-1: the refusal names the input the way its own row does.
         targets: holderInputs.targets,
         // The remedy has to be performable, and "give the holder a context
@@ -1074,7 +1056,7 @@ function BindingDraft({
     holderChosen && holderInputs.status === "ready"
       ? unfedRequiredTargets({
           targets: holderInputs.targets,
-          map: withoutUnpicked(draftMap),
+          map: effective.map,
           // The job's caller passes these itself — they arrive whether or not
           // the map feeds them, so they are not missing.
           suppliedByCaller: [
@@ -1267,7 +1249,7 @@ function BindingDraft({
               useLatest: holder.useLatest,
             },
       hasOffer: Boolean(offer),
-      consumptionMap: withoutUnpicked(draftMap),
+      consumptionMap: effective.map,
       autoRun,
       settingsOpened: overridesReady,
       capturedOverrides: isJsonObject(captured)
@@ -1340,7 +1322,7 @@ function BindingDraft({
       hasOffer: Boolean(offer),
       // An unfinished pick never reaches the wire — Save is refused while one
       // stands, so this is a belt on top of the braces, not a silent drop.
-      consumptionMap: withoutUnpicked(draftMap),
+      consumptionMap: effective.map,
       // P14 — the promise travels only when it is still true. The bar keeps
       // the fact live, the server re-checks it, and `null` means this binding
       // has no opinion (which is not the same as "no").
@@ -1747,7 +1729,7 @@ function BindingDraft({
   // ── Derived facts the two inventories need ────────────────────────────────
   const consumedBy = useMemo(() => {
     const out = new Map<string, string[]>();
-    for (const [targetName, sources] of Object.entries(draftMap)) {
+    for (const [targetName, sources] of Object.entries(mapView)) {
       for (const entry of sources) {
         // Only an OFFERED source consumes something from the rail. A literal
         // and a question are the binding's own content — counting them here
@@ -1765,17 +1747,17 @@ function BindingDraft({
       }
     }
     return out;
-  }, [draftMap, holderInputs.targets]);
+  }, [mapView, holderInputs.targets]);
 
   // F2 — the rail is handed THE SOURCES, never a count. A count cannot know a
   // kind, and the rail's sentence is about kinds.
   const fedBy = useMemo(() => {
     const out = new Map<string, readonly ConsumptionEntry[]>();
     for (const target of holderInputs.targets) {
-      out.set(target.name, sourcesFor(draftMap, target.name));
+      out.set(target.name, sourcesFor(mapView, target.name));
     }
     return out;
-  }, [draftMap, holderInputs.targets]);
+  }, [mapView, holderInputs.targets]);
 
   const disabled = busy || rebindChecking;
   const [createAgentEverOpened, setCreateAgentEverOpened] = useState(false);
@@ -1920,6 +1902,7 @@ function BindingDraft({
       inputsReady: holderInputs.status === "ready",
       totalInputs: holderInputs.targets.length,
       fedInputs,
+      byNameInputs: effective.byName.size,
       askingInputs,
       unfedRequired: unfedRequired.length,
       // A COUNT IS A SETTLED FACT (FIX-Q8). `offerPending` is false in the
@@ -1935,6 +1918,7 @@ function BindingDraft({
     offerColumn.status,
     offeredValues.length,
     unfedRequired.length,
+    effective.byName.size,
   ]);
 
   const canProposeMap =
@@ -2199,8 +2183,24 @@ function BindingDraft({
                       {/* P11 — the two tabs sit in the middle panel's own header, the
                   way the surface bind panel puts them over its mapping section.
                   AI map PROPOSES into this same editor; it never applies. */}
+                      {effective.byName.size > 0 ? (
+                        <Button
+                          variant="outline"
+                          className="ml-auto"
+                          disabled={disabled}
+                          title="Fed by name today. Write these into the map, then Save."
+                          onClick={() => setDraftMap(effective.implicit)}
+                        >
+                          Make explicit
+                        </Button>
+                      ) : null}
                       {canProposeMap ? (
-                        <div className="ml-auto flex items-center rounded-md border border-border p-0.5">
+                        <div
+                          className={cn(
+                            "flex items-center rounded-md border border-border p-0.5",
+                            effective.byName.size > 0 ? null : "ml-auto",
+                          )}
+                        >
                           {(
                             [
                               ["ai", "AI map"],
@@ -2300,9 +2300,9 @@ function BindingDraft({
                           contextKeys={holderInputs.contextKeys}
                           offered={offeredValues}
                           pinnedContext={data.pinnedContext}
-                          value={draftMap}
+                          value={mapView}
                           onChange={setDraftMap}
-                          autoBound={autoBound}
+                          byName={effective.byName}
                           disabled={disabled}
                         />
                       )}
@@ -2379,7 +2379,7 @@ function BindingDraft({
                     result:
                       holderInputs.status !== "ready"
                         ? "Unknown"
-                        : `${holderInputs.targets.filter((target) => isFed(sourcesFor(draftMap, target.name))).length} / ${holderInputs.targets.length}`,
+                        : `${holderInputs.targets.filter((target) => isFed(sourcesFor(mapView, target.name))).length} / ${holderInputs.targets.length}`,
                     reference: "Draft mapping",
                   }}
                 />

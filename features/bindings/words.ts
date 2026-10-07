@@ -138,11 +138,14 @@ export function coverageLine({
   askingInputs,
   unfedRequired,
   offeredCount,
+  byNameInputs = 0,
 }: {
   hasHolder: boolean;
   inputsReady: boolean;
   totalInputs: number;
   fedInputs: number;
+  /** Of `fedInputs`, how many arrive only by name (empty map, default pin). */
+  byNameInputs?: number;
   askingInputs: number;
   unfedRequired: number;
   offeredCount: number | null;
@@ -166,6 +169,15 @@ export function coverageLine({
           fedInputs === 1 ? "is" : "are"
         } fed.`;
 
+  // Fed by name is FED — the server delivers it on every run. It is named so
+  // the reader knows the map does not say so yet ("Make explicit" does).
+  const byName =
+    byNameInputs > 0
+      ? byNameInputs === fedInputs
+        ? " All by name."
+        : ` ${byNameInputs} by name.`
+      : "";
+
   const asks =
     askingInputs > 0
       ? askingInputs === 1
@@ -180,12 +192,16 @@ export function coverageLine({
         : ` ${unfedRequired} required inputs are still unmapped, and a run would refuse.`
       : "";
 
+  // 🚨 Never "fall back to the Mandate Holder's own defaults": that sentence
+  // printed on ~400 mandates whose inputs all arrive by name (2026-10-06).
+  // What is unfed is simply not fed; whether the Holder has a default is the
+  // row's own fact, stated on the row.
   const slack =
     unfedRequired === 0 && fedInputs < totalInputs
-      ? ` The other ${totalInputs - fedInputs} fall back to the Mandate Holder's own defaults.`
+      ? ` The other ${totalInputs - fedInputs} ${totalInputs - fedInputs === 1 ? "is" : "are"} not fed.`
       : "";
 
-  return `${head}${asks}${blocked}${slack}`;
+  return `${head}${byName}${asks}${blocked}${slack}`;
 }
 
 /** Does anything actually feed this input right now? (The rail's highlight.) */
