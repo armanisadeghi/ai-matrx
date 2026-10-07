@@ -83,6 +83,9 @@ import { RankGrid } from "../RankGridWorkspace";
 import live from "./fixtures-live-orthodontist-5x5.json";
 import type { BusinessLocation } from "@/features/marketing/types";
 
+// Platform cost reaches the screen in the viewer's unit (points); pin the rate.
+jest.mock("@/components/cost/pointsRate.client", () => ({ usePointsRate: () => 10000 }));
+
 type Call = { tool_name: string; arguments: Record<string, unknown> };
 const calls = (): Call[] => requestRaw.mock.calls.map((c) => JSON.parse((c[1] as { body: string }).body));
 const reply = (body: unknown) => ({ ok: true, status: 200, json: async () => body });
@@ -257,15 +260,15 @@ it("finds the business from a stored search first, and buys one only on a click"
     },
   ]);
   expect(text()).toContain("No stored search to reuse");
-  expect(text()).toContain("$0.04 per search, then free for 7 days.");
+  expect(text()).toContain("400 points per search, then free for 7 days.");
 
-  await click("Search · $0.04");
+  await click("Search · 400 points");
   expect(calls()[1].arguments).toEqual({
     action: "find_business",
     name: "Bayside Orthodontics",
     near: { latitude: 33.6189, longitude: -117.9298 },
   });
-  expect(text()).toContain("Bought Oct 6, 2026 · $0.04");
+  expect(text()).toContain("Bought Oct 6, 2026 · 400 points");
 
   await click("Use this");
   expect(text()).toContain("cid 111");
@@ -304,9 +307,9 @@ it("previews free, runs only on a click with the confirmed center, then shows th
   expect(text()).toContain("Matched Bayside Orthodontics · 0 km from center");
   expect(markers().filter((m) => m.dataset.bubble === "·")).toHaveLength(9);
   const before = calls().length;
-  expect(button("Run grid · $0.018")).toBeDefined();
+  expect(button("Run grid · 180 points")).toBeDefined();
 
-  await click("Run grid · $0.018");
+  await click("Run grid · 180 points");
   const run = calls().slice(before);
   expect(run).toHaveLength(1);
   expect(run[0].arguments).toMatchObject({ preview: false, center_confirmed: "33.619,-117.93", grid_size: 3 });

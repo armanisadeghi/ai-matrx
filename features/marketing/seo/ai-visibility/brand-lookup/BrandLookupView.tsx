@@ -35,7 +35,7 @@ import {
 } from "@ai-matrx/design-system/controls";
 import { MatrxDataTable } from "@ai-matrx/design-system/data-table";
 import type { MatrxColumnDef } from "@ai-matrx/design-system/data-table/types";
-import { formatAbsoluteDate, formatCount, formatUsd } from "@ai-matrx/kit/format";
+import { formatAbsoluteDate, formatCount } from "@ai-matrx/kit/format";
 
 import { ErrorNotice } from "@/components/errors/ErrorNotice";
 import { KpiGrid, KpiTile } from "@/components/official/kpi/KpiTile";
@@ -44,6 +44,7 @@ import { marketingRoutes } from "@/features/marketing/lib/routes";
 import type { MarketingSite } from "@/features/marketing/types";
 import type { SectionState } from "../../domain-research/section-state";
 import { fetchSiteCompetitors } from "../../site-context/service";
+import { useCostDisplay } from "@/components/cost/useCostDisplay";
 import { useToolSection } from "../../tool-door/useToolSection";
 import {
   mentionsArgs,
@@ -69,8 +70,11 @@ export const INDEX_NOT_PROVEN =
 
 const MARKETS: Record<number, string> = { 2840: "United States" };
 
-export function priceText(estimateUsd: number | null): string {
-  return estimateUsd != null ? formatUsd(estimateUsd, { digits: "trim" }) : "cost unknown";
+export function priceText(
+  format: (usd: number | null | undefined) => string,
+  estimateUsd: number | null,
+): string {
+  return estimateUsd != null ? format(estimateUsd) : "cost unknown";
 }
 
 function marketText(market: MentionsMarket | undefined): string {
@@ -118,6 +122,7 @@ function LookupGate<T>({
   onRetry: () => void;
   children: ReactNode;
 }) {
+  const { format } = useCostDisplay();
   switch (state.kind) {
     case "idle":
       return null;
@@ -134,10 +139,10 @@ function LookupGate<T>({
         <EmptyState
           icon={<Search />}
           title={`No stored ${what} to reuse`}
-          line={state.note ?? `${priceText(estimateUsd)} now, then reused free`}
+          line={state.note ?? `${priceText(format, estimateUsd)} now, then reused free`}
           action={
             <Button variant="primary" onClick={onBuy}>
-              Run · {priceText(estimateUsd)}
+              Run · {priceText(format, estimateUsd)}
             </Button>
           }
         />
@@ -164,11 +169,12 @@ function SourceBadges<T>({
   state: SectionState<T>;
   market: MentionsMarket | undefined;
 }) {
+  const { format } = useCostDisplay();
   if (state.kind !== "ready") return null;
   const source = state.reused
     ? `Reused from ${shortDate(state.observedAt)}`
     : `Bought ${shortDate(state.observedAt)}${
-        state.chargedUsd != null ? ` · ${formatUsd(state.chargedUsd, { digits: "trim" })}` : ""
+        state.chargedUsd != null ? ` · ${format(state.chargedUsd)}` : ""
       }`;
   return (
     <div className="flex flex-wrap items-center gap-2 px-3 py-2">
