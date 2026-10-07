@@ -30,6 +30,8 @@ export interface OpenReviewWalkWindowOptions {
   agentName?: string | null;
   /** Short role label for the window title ("Live" / "Candidate"). */
   roleLabel?: string | null;
+  /** What tells this walk from a sibling with the same role ("Pair 3"). */
+  detailLabel?: string | null;
 }
 
 export interface ReviewWalkWindowHandle {

@@ -81,14 +81,14 @@ payload with an honest banner.
 | `features/overlays/openers/reviewWalkWindow.tsx` | multi-instance opener hook; dispatches `openReviewWalk` |
 | `address.ts` | the two identities in one place: instance id `review-walk\|{unit_kind}\|{unit_id}` and address `?panels=review_walk:<unitKind>.<unitId>` (+ parser, `isWalkUnitKind`, exhaustive over the server's `UnitKind`) |
 | `openReviewWalk.ts` | the ONE open primitive (thunk) — opener and URL hydrator both use it, so the same unit already floating is focused (un-minimised + raised), never duplicated or overwritten |
-| `walkTitle.ts` | the window title (`<role> · <agent>`, else agent, else unit kind; 40-char budget; `roleLabel` is persisted with the window, a link without it falls back to the agent name) and `nextStackIndex` (lowest free cascade slot, so a new walk never lands on an open one) |
+| `walkTitle.ts` | the window title (`<role> · <detail> · <agent>` — e.g. `Live · Pair 3 · …` — else agent, else unit kind; 40-char budget; the labels ride the address and the saved window, a link without them falls back to the agent name) and `nextStackIndex` (lowest free cascade slot, so a new walk never lands on an open one) |
 
 Overlay registration: `reviewWalkWindow` in
 `features/overlays/catalogue.ts` (`multi`, window — its key is the overlay id), a gated multi-instance
 block in `features/overlays/OverlayController.tsx` (accepts every `WalkUnitKind`, `wf_node_outcome`
 included), a registry row `review-walk-window` in `features/window-panels/registry/windowRegistryMetadata.ts`
 (multi; `mobilePresentation: "fullscreen"`; `urlSync.key: "review_walk"`; preserved on
-`unitKind`+`unitId` (required) plus `agentId`/`agentName`), and the `review_walk` hydrator in
+`unitKind`+`unitId` (required) plus `agentId`/`agentName`/`roleLabel`/`detailLabel`), and the `review_walk` hydrator in
 `features/window-panels/url-sync/initUrlHydration.ts`.
 
 ## Address (deep link + restore)
@@ -97,8 +97,13 @@ included), a registry row `review-walk-window` in `features/window-panels/regist
 wf_node_outcome`. Any surface that wants a "what the agent saw / what it answered" door emits this
 token (or calls `useOpenReviewWalkWindow`). A reload restores the open walk from the local window
 workspace; the walk's hops, flags and draft report are NOT preserved — a restore re-opens the unit's
-root layer fresh. The agent fields are not in the address, so a link-opened walk's receipt uses the
-admin hindsight door. Guard: `__tests__/reviewWalkAddress.test.ts`.
+root layer fresh. The window's labels ride the token's args —
+`review_walk:<unitKind>.<unitId>:a-<agentId>_n-<agentName>_r-<role>_d-<detail>`, values
+percent-encoded with `_` escaped (`address.ts` `reviewWalkUrlArgs` / `reviewWalkLabelsFromUrlArgs`)
+— because the URL hydrator opens the walk BEFORE the local window workspace is read, and an open
+window is never overwritten by that later read: a label only in the saved window was lost on
+reload (FX-D2). A bare token still opens (agent-name, then unit-kind title). Guards:
+`__tests__/reviewWalkAddress.test.ts`, `__tests__/walkTitleSurvivesReload.test.ts`.
 
 ## Entry points
 

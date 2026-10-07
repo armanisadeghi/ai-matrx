@@ -99,8 +99,14 @@ via `refineDetail` (`detail.tsx`). Bodies: `components/CandidateRunBody.tsx`,
 - **"What the … saw" is never dead (V2 N4).** A click before the transcript lookup answers
   resolves THIS pair's conversation on the spot (`transcripts.findTranscriptUnit`) and opens or
   focuses its walk; the button carries `data-conversation-id`.
-- **The set dialog's "Applies to" (V2 D18)** shows no rung (and Start waits) until the live
-  holder's rung is read, and lists each rung once (`rungChoicesOf`).
+- **The set dialog's "Applies to" (V2 D18, FX-D1)** shows no rung (and Start waits) until the live
+  holder's rung is read, and lists each rung once (`rungChoicesOf`). When the read cannot answer
+  (no organization selected, read failed, a verdict naming no rung) it stays EMPTY and Start is
+  unavailable until the person picks a level — never the seat's rung as a guess
+  (`appliesToDefault`; guard `__tests__/fx-d1-applies-to-never-guesses-the-level.test.tsx`).
+- **Walk windows from a pair are titled `<role> · Pair N · <agent>`** (FX-D2) so two Live walks
+  from different pairs differ; the labels ride the `?panels=` token so a reload keeps them
+  (`features/review-walk/FEATURE.md` § Address).
 - **The list cell compares the list's answer by VALUE** — hosts hand a fresh row object every
   render, and an identity check reset the cell to the stale list answer (seen on the clone).
 - **One cell, every list (V1 D4):** admin list, org/person member list and `/mandates` browse all
@@ -135,3 +141,5 @@ via `refineDetail` (`detail.tsx`). Bodies: `components/CandidateRunBody.tsx`,
 - `2026-10-01` — FX2-F (V2 N1, N3, N4, D18): refresh until terminal-for-now + catch-up on
   visible, confirm every decision with shared words, never-dead transcript buttons, dialog rung
   right from the first frame.
+- `2026-10-07` — FX-D1/D2: Applies-to never guesses a level; pair walk titles name the pair and
+  survive a reload.

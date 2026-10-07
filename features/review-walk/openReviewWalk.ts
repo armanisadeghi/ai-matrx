@@ -21,6 +21,8 @@ export interface OpenReviewWalkArgs extends WalkUnitRef {
   agentName?: string | null;
   /** Short role label for the window title ("Live" / "Candidate"). */
   roleLabel?: string | null;
+  /** What tells this walk from a sibling with the same role ("Pair 3"). */
+  detailLabel?: string | null;
 }
 
 /** Returns the instance id that is now open (new or focused). */
@@ -48,6 +50,7 @@ export function openReviewWalk(
           agentId: args.agentId ?? null,
           agentName: args.agentName ?? null,
           roleLabel: args.roleLabel ?? null,
+          detailLabel: args.detailLabel ?? null,
         },
       }),
     );

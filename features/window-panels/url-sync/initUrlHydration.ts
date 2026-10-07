@@ -33,6 +33,7 @@ import { dispatchThunk } from "@/lib/redux/hooks";
 import {
   REVIEW_WALK_URL_KEY,
   parseReviewWalkUrlId,
+  reviewWalkLabelsFromUrlArgs,
 } from "@/features/review-walk/address";
 import { openReviewWalk } from "@/features/review-walk/openReviewWalk";
 import { isUuidShape } from "@ai-matrx/kit/uuid";
@@ -736,9 +737,10 @@ export function initUrlHydration() {
   // the walk on one unit (assistant_message | agent_request | wf_node_outcome).
   // Same deterministic instance id as the opener (features/review-walk/
   // address.ts), so a link, a restore and a click on the same unit are ONE
-  // window. The agent fields are not in the address (the receipt's door falls
-  // back to the admin hindsight href).
-  registerPanelHydrator(REVIEW_WALK_URL_KEY, (dispatch, id) => {
+  // window. The window's labels (role, detail, agent) ride the token's args, so
+  // a reload keeps its title (FX-D2); a link without them falls back to the
+  // agent name, then the unit kind.
+  registerPanelHydrator(REVIEW_WALK_URL_KEY, (dispatch, id, args) => {
     const ref = parseReviewWalkUrlId(id);
     if (!ref) {
       console.warn(
@@ -750,7 +752,10 @@ export function initUrlHydration() {
     // Through the one primitive: an already-open walk on this unit is
     // focused, never overwritten (a restore carries the agent fields; a link
     // does not).
-    dispatchThunk(dispatch, openReviewWalk(ref));
+    dispatchThunk(
+      dispatch,
+      openReviewWalk({ ...ref, ...reviewWalkLabelsFromUrlArgs(args) }),
+    );
   });
 
   // ── Dev-only integrity check ─────────────────────────────────────────────

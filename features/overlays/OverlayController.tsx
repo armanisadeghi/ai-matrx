@@ -6668,6 +6668,9 @@ export default function OverlayController() {
             roleLabel={
               typeof data.roleLabel === "string" ? data.roleLabel : null
             }
+            detailLabel={
+              typeof data.detailLabel === "string" ? data.detailLabel : null
+            }
           />
         );
       })}
