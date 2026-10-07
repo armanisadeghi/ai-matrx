@@ -53,6 +53,8 @@ import {
   drillWindowLabel,
   addressHasDrill,
   parseDimensionRef,
+  drillFocus,
+  drillRequestKey,
   useDrillUrlState,
   type MatrxDrillDimension,
   type MatrxDrillMeasure,
@@ -299,8 +301,31 @@ export function DrillExplorer({
   // (R2, while its grouping is on screen) and its stacked Measures (L3, while it shows them all).
   const openBuiltIn = openView?.ref.startsWith("builtin:") ? builtIn.find((v) => `builtin:${v.key}` === openView.ref) : undefined;
   const viewStack = openBuiltIn?.chart?.stack?.every((k) => question.show.includes(k)) ? openBuiltIn.chart.stack : undefined;
-  const viewAttributes = openBuiltIn?.attributes && openBuiltIn.question.by?.[0] === question.by[0] ? openBuiltIn.attributes : undefined;
+  // THE LEVEL (lane DRILL-LEVELS): grouping by a Dimension shows its declared attributes as columns
+  // (an open view's own win), and the drilled value's header says its attributes — both read through
+  // the same door, grouped by the Dimension and the attribute.
+  const levelOf = (ref: string | undefined) => (ref ? dimensions.find((d) => d.key === parseDimensionRef(ref).key)?.level : undefined);
+  const outerLevelAttributes = levelOf(question.by[0])?.attributes;
+  const viewAttributes =
+    (openBuiltIn?.attributes && openBuiltIn.question.by?.[0] === question.by[0] ? openBuiltIn.attributes : undefined) ??
+    (outerLevelAttributes ? [...outerLevelAttributes] : undefined);
   const glance = useDrillAttributes({ client, source, lane, question, dimensions, answers, attributes: viewAttributes, carried: asking, resolvers, book: nameBook, windowAlign });
+  const focus = drillFocus(question);
+  const focusLevelAttributes = focus && focus.value !== null ? levelOf(focus.dim)?.attributes : undefined;
+  const focusGlance = useDrillAttributes({
+    client,
+    source,
+    lane,
+    question: focus ? { ...question, by: [focus.dim], across: null, where: question.where.slice(0, -1) } : EMPTY_QUESTION,
+    dimensions,
+    answers: focus && focus.value !== null ? { [drillRequestKey([focus.dim])]: [{ groups: { [focus.dim]: focus.value }, measures: {}, row_count: 0 }] } : {},
+    attributes: focusLevelAttributes ? [...focusLevelAttributes] : undefined,
+    carried: asking,
+    resolvers,
+    book: nameBook,
+    windowAlign,
+  });
+  const focusAttributes = focus && focusGlance ? focusGlance.map((a) => ({ key: a.key, label: a.label, value: a.read({ [focus.dim]: focus.value }) })) : undefined;
 
   // THE CHART above the answer: split = the first non-time grouping, bars at the auto grain.
   // the Measure stacked: the headline's (the screen's own number), else the first one shown
@@ -479,7 +504,7 @@ export function DrillExplorer({
       {/* ONE toolbar row: the trail, then the window, the Measures, the grouping and the findings. */}
       {/* F9: the controls never shrink — on a phone they wrap to their own line, the trail above them */}
       <div data-drill-explorer-toolbar className="flex flex-wrap items-center gap-x-2 gap-y-1 border-b border-border px-4 py-1.5">
-        <MatrxDrillTrail dimensions={dimensions} question={question} onQuestionChange={setQuestion} rootLabel={rootLabel} emptyLabel={emptyLabel} className="min-w-0 max-sm:basis-full" />
+        <MatrxDrillTrail dimensions={dimensions} question={question} onQuestionChange={setQuestion} rootLabel={rootLabel} emptyLabel={emptyLabel} measures={measures} answers={answers} focusAttributes={focusAttributes} rowNoun={rowNoun} className="min-w-0 max-sm:basis-full" />
         <div data-drill-explorer-controls className="ml-auto flex flex-wrap items-center justify-end gap-0 [&>*]:shrink-0">
           <MatrxDrillWindowMenu question={question} onQuestionChange={setQuestion} dimensionLabel="When" />
           <MatrxDrillMeasurePicker measures={measures} question={question} onQuestionChange={setQuestion} />

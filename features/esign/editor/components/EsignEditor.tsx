@@ -48,10 +48,12 @@ export interface EsignEditorProps {
   mode: "envelope" | "template";
   /** null on /esign/new until the first change creates the draft. */
   envelopeId: string | null;
-  initial: { draft: EnvelopeDraftV1; revision: number };
+  initial: { draft: EnvelopeDraftV1; revision: number; /** the server's copy when `draft` is a restored local mirror */ confirmed?: EnvelopeDraftV1 };
   /** For `mode="template"`: the saved template, if any. */
   template?: { id: string | null; name: string; version: number } | null;
   organizationId: string | null;
+  /** Asked when a write needs an organization and none is chosen (the organization gate). */
+  resolveOrganizationId?: () => Promise<string>;
   people: Person[];
   me: Person | null;
   uploader: EditorUploader;
@@ -72,13 +74,14 @@ const STATUS_TEXT: Record<SaveStatus, string> = {
   readonly: "Read only",
 };
 
+/** A template keeps roles, fields and settings; names, emails and access codes never travel. */
 export function toTemplate(d: EnvelopeDraftV1): EnvelopeTemplateV1 {
   return {
     ...d,
     recipients: d.recipients.map((r, i) => {
-      const { has_access_code: _drop, ...rest } = r;
-      void _drop;
-      return { ...rest, template_role: r.template_role || r.full_name || `Signer ${i + 1}`, full_name: r.user_id ? "" : r.full_name === (r.template_role ?? "") ? r.full_name : "", email: "", user_id: null };
+      const { has_access_code: dropped, ...rest } = r;
+      void dropped;
+      return { ...rest, template_role: r.template_role || r.full_name || `Signer ${i + 1}`, full_name: "", email: "", user_id: null };
     }),
   };
 }
@@ -89,7 +92,7 @@ export function EsignEditor(props: EsignEditorProps) {
   const isMobile = useIsMobile();
   const { draft, edit, replace, undo, redo, canUndo, canRedo } = useDraftHistory(props.initial.draft);
 
-  const [boot, setBoot] = useState({ id: props.envelopeId, revision: props.initial.revision, confirmed: props.initial.draft });
+  const [boot, setBoot] = useState({ id: props.envelopeId, revision: props.initial.revision, confirmed: props.initial.confirmed ?? props.initial.draft });
   const [selection, setSelection] = useState<ReadonlySet<string>>(new Set());
   const [armed, setArmed] = useState<FieldKindV2 | null>(null);
   const [activeRecipient, setActiveRecipient] = useState<string | null>(null);
@@ -135,10 +138,12 @@ export function EsignEditor(props: EsignEditorProps) {
   // Create the draft on the server the first time there is something to keep.
   const ensureDraft = useCallback(async () => {
     if (templateMode || boot.id) return;
-    if (!props.organizationId) return;
     if (!creating.current) {
-      creating.current = api
-        .createDraft({ organizationId: props.organizationId, title: draft.title || "Untitled" })
+      creating.current = (async () => {
+        const organizationId = props.organizationId ?? (await props.resolveOrganizationId?.());
+        if (!organizationId) throw new DraftRefusal("no_organization", "Choose an organization first.");
+        return api.createDraft({ organizationId, title: draft.title || "Untitled" });
+      })()
         .then((made) => {
           setBoot({ id: made.envelopeId, revision: made.revision, confirmed: made.composition });
           props.onCreated?.(made.envelopeId);
@@ -361,15 +366,13 @@ export function EsignEditor(props: EsignEditorProps) {
   }
 
   async function saveTemplate(name: string, description: string) {
-    if (!props.organizationId) {
-      setTemplateError("Choose an organization first.");
-      return;
-    }
     setTemplateSaving(true);
     setTemplateError(null);
     try {
+      const organizationId = props.organizationId ?? (await props.resolveOrganizationId?.());
+      if (!organizationId) throw new DraftRefusal("no_organization", "Choose an organization first.");
       const out = await api.saveTemplate({
-        organizationId: props.organizationId,
+        organizationId,
         templateId: templateState?.id ?? null,
         name,
         description,
@@ -417,7 +420,7 @@ export function EsignEditor(props: EsignEditorProps) {
       />
       <div className="min-h-0 flex-1 overflow-y-auto p-3">
         {tab === "documents" && <DocumentsPanel draft={draft} edit={edit} uploading={uploader.busy} onFiles={(f) => void onFiles(f)} onPickFromFiles={() => uploader.pick((d) => addDocs([d]))} />}
-        {tab === "people" && <RecipientsPanel draft={draft} edit={edit} people={props.people} me={props.me} setAccessCode={setAccessCode} />}
+        {tab === "people" && <RecipientsPanel draft={draft} edit={edit} people={props.people} me={props.me} setAccessCode={setAccessCode} templateMode={templateMode} />}
         {tab === "message" && <MessagePanel draft={draft} edit={edit} templateMode={templateMode} />}
         {tab === "fields" && (
           <FieldsPanel

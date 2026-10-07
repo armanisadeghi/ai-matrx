@@ -40,6 +40,7 @@ jest.mock("@/features/education/media/service", () => ({
 }));
 
 import { recordSourceLineage } from "@/features/education/convert/recordSourceLineage";
+import { groundKitTrust } from "@/features/education/convert/groundKitCitations";
 import { kitSourceRefs } from "@/features/education/onboard/kitSources";
 import { buildSourceTrust } from "@/features/education/convert/sourceTrust";
 import { listKits, readKit } from "../kitService";
@@ -140,19 +141,40 @@ describe("multi-source study kits", () => {
     expect(kit?.sourceId).toBe(KIT);
   });
 
+  it("points each citation at the Source its chunk came from", () => {
+    const refs = [
+      { type: "processed_document", id: "pd-wiki", title: "Wikipedia: Cell", processedDocumentId: "pd-wiki", chunkIds: ["c-wiki-1"] },
+      { type: "file", id: "f-pdf", title: "Chapter 3.pdf", fileId: "f-pdf", processedDocumentId: "pd-pdf", chunkIds: ["c-pdf-1"] },
+    ];
+    const trust = {
+      confidence: "grounded" as const,
+      citations: [
+        { sourceId: "c-pdf-1", sourceKind: "document" as const, title: "Source 1" },
+        { sourceId: "c-wiki-1", sourceKind: "document" as const, title: "agent title" },
+        { sourceId: "c-unknown", sourceKind: "document" as const, title: "kept" },
+      ],
+    };
+    const out = groundKitTrust(trust, refs);
+    expect(out.citations.map((c) => [c.title, c.fileId, c.documentId])).toEqual([
+      ["Chapter 3.pdf", "f-pdf", "pd-pdf"],
+      ["Wikipedia: Cell", undefined, "pd-wiki"],
+      ["kept", undefined, undefined],
+    ]);
+  });
+
   it("keeps each picked Source separate, and cites each one", () => {
     const resolved = {
       sources: [
-        { ref: { resource_type: "processed_document", resource_id: "pd-wiki" }, label: "Wikipedia: Cell", text: "a", segments: [] },
-        { ref: { resource_type: "cld_file", resource_id: "f-pdf" }, label: "Chapter 3.pdf", text: "b", segments: [], processed_document_id: "pd-pdf" },
+        { ref: { resource_type: "processed_document", resource_id: "pd-wiki" }, label: "Wikipedia: Cell", text: "### Chunk c-wiki-1 (page 1)\na", segments: [{ id: "c-wiki-0" }] },
+        { ref: { resource_type: "cld_file", resource_id: "f-pdf" }, label: "Chapter 3.pdf", text: "b", segments: [{ id: "c-pdf-1" }], processed_document_id: "pd-pdf" },
         { ref: { resource_type: "note", resource_id: "n-empty" }, label: "Empty", text: "  ", segments: [] },
       ],
       dropped: [],
     } as unknown as ResolvedSourceSet;
     const refs = kitSourceRefs(resolved);
     expect(refs).toEqual([
-      { type: "processed_document", id: "pd-wiki", title: "Wikipedia: Cell", processedDocumentId: "pd-wiki" },
-      { type: "file", id: "f-pdf", title: "Chapter 3.pdf", fileId: "f-pdf", processedDocumentId: "pd-pdf" },
+      { type: "processed_document", id: "pd-wiki", title: "Wikipedia: Cell", processedDocumentId: "pd-wiki", chunkIds: ["c-wiki-0", "c-wiki-1"] },
+      { type: "file", id: "f-pdf", title: "Chapter 3.pdf", fileId: "f-pdf", processedDocumentId: "pd-pdf", chunkIds: ["c-pdf-1"] },
     ]);
     const trust = buildSourceTrust({ text: "x", ref: { kind: "paste", kitSources: refs } }, "Kit");
     expect(trust.citations.map((c) => c.title)).toEqual(["Wikipedia: Cell", "Chapter 3.pdf"]);
