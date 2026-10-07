@@ -84,17 +84,18 @@ const fieldRows = await pgc.query(
   [ORG, tableId],
 );
 const fid = Object.fromEntries(fieldRows.rows.map((r) => [r.k, r.id])) as Record<string, string>;
+// A choice answer is the option's KEY (what the public runner sends), so Rules and points name keys.
 const eq = (key: string, value: string) => ({ op: "eq", args: [{ field: fid[key] }, { const: value }] });
 
 const questions = [
   { field: "company_name", ask: "What's your company called?", required: true },
   { field: "contact_email", ask: "Where can we reach you?", required: true },
-  { field: "service", ask: "What do you need help with?", required: true, jumps: [{ when: eq("service", "Paid ads"), to: { question: "ad_goal" } }] },
+  { field: "service", ask: "What do you need help with?", required: true, jumps: [{ when: eq("service", "paid_ads"), to: { question: "ad_goal" } }] },
   { field: "platforms", ask: "Which platforms are you on today?", required: true },
   {
     field: "monthly_budget", ask: "What's your monthly budget?", required: true,
-    points: { "Under $1k": 1, "$1k–$5k": 5, "Over $5k": 10 },
-    jumps: [{ when: eq("monthly_budget", "Under $1k"), to: { ending: "starter" } }, { to: { question: "notes" } }],
+    points: { under_1k: 1, "1k_5k": 5, over_5k: 10 },
+    jumps: [{ when: eq("monthly_budget", "under_1k"), to: { ending: "starter" } }, { to: { question: "notes" } }],
   },
   { field: "ad_goal", ask: "What should your ads achieve?", required: true },
   { field: "notes", ask: "Anything else we should know?" },
@@ -126,8 +127,8 @@ if (process.argv.includes("--setup-only")) {
     (await pgc.query("select custom.form_public_route($1::uuid, $2::jsonb) r", [formId, JSON.stringify(values)])).rows[0].r as {
       asks: Array<{ field_key: string; asked: boolean }>; ending: string | null; score: number | null;
     };
-  const a = await routeOf({ company_name: "Juniper & Rye", contact_email: "x@y.z", service: "Social media management", platforms: "IG", monthly_budget: "Under $1k" });
-  const b = await routeOf({ company_name: "Northwind", contact_email: "x@y.z", service: "Paid ads", ad_goal: "40 cleanings", notes: "two sites" });
+  const a = await routeOf({ company_name: "Juniper & Rye", contact_email: "x@y.z", service: "social_media_management", platforms: "IG", monthly_budget: "under_1k" });
+  const b = await routeOf({ company_name: "Northwind", contact_email: "x@y.z", service: "paid_ads", ad_goal: "40 cleanings", notes: "two sites" });
   const on = (r: typeof a) => r.asks.filter((x) => x.asked).map((x) => x.field_key).join(",");
   check("branch A routes to the starter ending, skipping ad goal and notes", a.ending === "starter" && on(a) === "company_name,contact_email,service,platforms,monthly_budget", { asked: on(a), ending: a.ending, score: a.score });
   check("branch B jumps past platforms and budget to the ad goal, then the default ending", b.ending === "discovery-call" && on(b) === "company_name,contact_email,service,ad_goal,notes", { asked: on(b), ending: b.ending });
