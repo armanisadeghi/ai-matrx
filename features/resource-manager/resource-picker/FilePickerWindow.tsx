@@ -167,6 +167,10 @@ export function FilePickerWindow({
         </span>
       }
       onClose={onClose}
+      // A CHOOSER IS PUT AWAY WITH ESCAPE (walk 4, 2026-10-07): a grid's file cell opened this window
+      // with Enter, and Escape left it open with the cell stuck on "Choosing…". The panel's own rule
+      // applies — only when this is the topmost window and no menu or popover inside it took the key.
+      closeOnEscape
       // The window portals to <body>. Radix surfaces (Popover/Select/Dialog)
       // set `pointer-events: none` on <body> while open and can leave it set
       // for a tick after closing — an inherited value makes this window
