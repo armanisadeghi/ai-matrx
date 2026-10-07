@@ -20,8 +20,10 @@ jest.mock("../../../host/notify", () => ({
 import agentDefinitionReducer, {
   mergePartialAgent,
   setAgentFetchStatus,
+  setAgentField,
 } from "../../redux/agent-definition/slice";
 import { useAgentAutoSave } from "../useAgentAutoSave";
+import { toast } from "../../../host/notify";
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT =
   true;
@@ -109,4 +111,28 @@ test("a backup equal to the saved agent changes nothing and is cleared", () => {
   mount(store);
   expect(record(store)._dirty).toBe(false);
   expect(localStorage.getItem(KEY)).toBeNull();
+});
+
+test("the restore notice's Discard returns to the saved agent and drops the backup", () => {
+  const store = makeStore();
+  serverFetch(store);
+  mount(store);
+  const info = toast.info as jest.Mock;
+  const options = info.mock.calls[info.mock.calls.length - 1][1];
+  expect(options.action.label).toBe("Discard");
+  act(() => options.action.onClick());
+  expect(record(store).settings).toEqual(SAVED);
+  expect(record(store)._dirty).toBe(false);
+  expect(localStorage.getItem(KEY)).toBeNull();
+});
+
+test("an editor writing back the value a clean field already holds is not an unsaved change", () => {
+  localStorage.clear();
+  const store = makeStore();
+  serverFetch(store);
+  mount(store);
+  act(() => {
+    store.dispatch(setAgentField({ id: AGENT, field: "settings", value: { ...SAVED } }));
+  });
+  expect(record(store)._dirty).toBe(false);
 });

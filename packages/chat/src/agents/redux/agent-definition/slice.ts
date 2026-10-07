@@ -294,6 +294,10 @@ function applyFieldEdit<K extends keyof AgentDefinition>(
   const previousValue = record[field] as AgentDefinition[K];
   const wasDirty = hasField(record._dirtyFields, field);
 
+  // Writing a clean field's own value back is not an edit: editors that echo
+  // the current value (e.g. right after Discard) must not invent unsaved changes.
+  if (!wasDirty && isEqual(value, previousValue)) return;
+
   if (!wasDirty) {
     (record._fieldHistory as FieldSnapshot)[field] = previousValue;
   }

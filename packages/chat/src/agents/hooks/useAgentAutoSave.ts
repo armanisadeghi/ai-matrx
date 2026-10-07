@@ -13,7 +13,8 @@
  *   database never held beside "No unsaved changes", disabled Save, and then
  *   deleted the backup; a backup applied before the fetch was overwritten.
  * While dirty: writes a snapshot every DEBOUNCE_MS milliseconds.
- * On clean (after save or discard): removes the localStorage entry.
+ * On clean (after save or discard — the restore toast offers Discard): removes
+ *   the localStorage entry.
  */
 
 import { useEffect, useRef } from "react";
@@ -25,7 +26,10 @@ import {
   selectAgentIsReadOnly,
   selectAgentAccessResolved,
 } from "../redux/agent-definition/selectors";
-import { setAgentField } from "../redux/agent-definition/slice";
+import {
+  resetAllAgentFields,
+  setAgentField,
+} from "../redux/agent-definition/slice";
 import { readField } from "@ai-matrx/agents/field-flags";
 import type { AgentDefinition } from "../types/agent-definition.types";
 import { toast } from "../../host/notify";
@@ -94,7 +98,16 @@ export function useAgentAutoSave(agentId: string) {
     if (restored.length > 0) {
       restoredRef.current = true;
       toast.info(
-        `Restored unsaved changes to ${record.name || "this agent"} from this browser (${restored.join(", ")}). Save to keep them, or undo to discard.`,
+        `Restored unsaved changes to ${record.name || "this agent"} from this browser (${restored.join(", ")}). Save to keep them, or discard them.`,
+        {
+          id: `agent-autosave-restored:${agentId}`,
+          duration: 20_000,
+          action: {
+            label: "Discard",
+            // Back to the saved agent; the clean-state effect drops the backup.
+            onClick: () => dispatch(resetAllAgentFields({ id: agentId })),
+          },
+        },
       );
     }
   }, [agentId, record, fetchStatus, dispatch]);

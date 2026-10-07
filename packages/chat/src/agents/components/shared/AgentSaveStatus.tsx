@@ -2,7 +2,9 @@
 
 import { Badge, Button } from "@ai-matrx/design-system/controls";
 import { useState } from "react";
-import { Save, Loader2, AlertTriangle, Eye } from "lucide-react";
+import { Save, Loader2, AlertTriangle, Eye, Undo2 } from "lucide-react";
+import { useAppDispatch } from "../../../store/hooks";
+import { resetAllAgentFields } from "../../redux/agent-definition/slice";
 import { useChatCanvasTab } from "../../../host/canvas";
 import { AGENT_UNSAVED_CHANGES_KIND } from "../../../host/canvas-tabs";
 import { cn } from "@ai-matrx/design-system";
@@ -49,7 +51,9 @@ export function AgentSaveStatus({
     available,
   } = useAgentSaveAction(agentId, { editModeOverride });
 
+  const dispatch = useAppDispatch();
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [confirmDiscardOpen, setConfirmDiscardOpen] = useState(false);
   // The unsaved-changes diff is the agent's canvas tab; the eye toggles it.
   const diffTab = useChatCanvasTab({ kind: AGENT_UNSAVED_CHANGES_KIND, key: agentId });
 
@@ -83,6 +87,9 @@ export function AgentSaveStatus({
           <>
             <Badge tone="warning">{isNewRoute ? "Not saved" : "Unsaved"}</Badge>
             <ErrorAlchemyMenu />
+            {!isNewRoute && (
+              <Button variant="quiet" icon={<Undo2 />} onClick={() => setConfirmDiscardOpen(true)} disabled={isLoading} title="Discard unsaved changes" aria-label="Discard unsaved changes" />
+            )}
             {!isNewRoute && (
               <Button variant="quiet" pressed={diffTab.isVisible} icon={<Eye />} onClick={() => diffTab.toggle({ title: "Unsaved changes", data: { agentId } })} title="View unsaved changes" aria-label="View unsaved changes" />
             )}
@@ -131,6 +138,25 @@ export function AgentSaveStatus({
             <AlertDialogCancel>Ignore for Now</AlertDialogCancel>
             <AlertDialogAction onClick={handleSelectModel}>
               Select a Model
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={confirmDiscardOpen} onOpenChange={setConfirmDiscardOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Discard unsaved changes?</AlertDialogTitle>
+            <AlertDialogDescription>
+              The agent goes back to its last saved version.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Keep editing</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => dispatch(resetAllAgentFields({ id: agentId }))}
+            >
+              Discard
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
