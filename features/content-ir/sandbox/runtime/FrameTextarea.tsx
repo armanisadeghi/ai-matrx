@@ -27,7 +27,7 @@ export { PackageTextarea as TextareaLegacy };
 /** The host copy variants degrade to ordinary textareas inside the frame. */
 export const CopyTextarea = PackageTextarea;
 
-interface FancyTextareaProps extends PackageTextareaProps {
+interface FancyTextareaProps extends Omit<PackageTextareaProps, "prefix"> {
   prefix?: React.ReactNode;
   wrapperClassName?: string;
 }

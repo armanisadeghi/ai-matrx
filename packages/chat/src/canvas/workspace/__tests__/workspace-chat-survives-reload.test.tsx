@@ -209,6 +209,38 @@ describe("the column reopens its conversation when the address names none (2026-
   });
 });
 
+describe("an unsent chat keeps its id across a reload (2026-10-06)", () => {
+  // Live: a comment staged "with next message" into a board's unsent chat was
+  // gone after a reload. The chip was saved under the conversation id, and the
+  // reload minted a different one. The launch is now handed a reserved id.
+  const launchedId = () => (launchMandate.mock.calls.at(-1)?.[1] as { conversationId?: string } | undefined)?.conversationId;
+
+  it("launches the same id after a reload while nothing was sent", async () => {
+    const first = mount();
+    await settle();
+    const id = launchedId();
+    expect(id).toMatch(/^[0-9a-f-]{36}$/i);
+    first.unmount();
+    launchMandate.mockClear();
+    mount();
+    await settle();
+    expect(launchedId()).toBe(id);
+  });
+
+  it("New chat reserves a new id, and a sent chat releases the reservation", async () => {
+    const hook = mount();
+    await settle();
+    const id = launchedId();
+    act(() => hook.current.startNew());
+    await settle();
+    expect(launchedId()).not.toBe(id);
+    cacheOnly = false;
+    hook.rerender();
+    await settle();
+    expect(window.localStorage.getItem("matrx:workspace-chat-reserved:canvas-workspace:board-x")).toBeNull();
+  });
+});
+
 describe("the shell chat moves between homes without remounting (2026-10-05)", () => {
   // The Board's chat IS the shell chat now: it stays mounted while the person
   // goes from a board to /notes and back, and each home shows its own conversation.

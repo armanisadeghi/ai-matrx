@@ -143,6 +143,40 @@ export function rememberWorkspaceConversation(surfaceKey: string, conversationId
   }
 }
 
+/**
+ * THE RESERVED ID OF AN UNSENT CHAT (2026-10-06). A new chat that has not been
+ * sent is unknown to the server, so a reload cannot reopen it and used to mint a
+ * different id — which orphaned every chip staged into it (a comment riding
+ * "with next message" came back gone). The id is reserved on this device per
+ * home and handed to the launch, so the unsent chat comes back under the SAME id
+ * and its saved chips are found. Released when the server has the conversation
+ * (the memory above takes over) and by New chat (a new chat is a new id).
+ */
+export function reservedChatKey(surfaceKey: string): string {
+  return `matrx:workspace-chat-reserved:${surfaceKey}`;
+}
+
+export function reserveWorkspaceConversationId(surfaceKey: string, fresh: boolean): string | undefined {
+  try {
+    const key = reservedChatKey(surfaceKey);
+    const kept = fresh ? null : window.localStorage.getItem(key);
+    if (kept && CONVERSATION_ID.test(kept)) return kept;
+    const id = window.crypto.randomUUID();
+    window.localStorage.setItem(key, id);
+    return id;
+  } catch {
+    return undefined; // storage unavailable: the launcher mints one, as before
+  }
+}
+
+export function releaseWorkspaceConversationId(surfaceKey: string): void {
+  try {
+    window.localStorage.removeItem(reservedChatKey(surfaceKey));
+  } catch {
+    // nothing kept
+  }
+}
+
 /** `search` with `?<param>=` set to `conversationId`, or removed when null. */
 export function addressWithConversation(
   param: string,
@@ -254,6 +288,7 @@ export function useCanvasWorkspaceConversation(
     if (addressParam === null || !addressRead || !conversationId) return;
     const shown = request.kind === "open" || serverHasIt ? conversationId : null;
     rememberWorkspaceConversation(surfaceKey, shown);
+    if (shown) releaseWorkspaceConversationId(surfaceKey);
     const search = addressWithConversation(addressParam, window.location.search, shown);
     if (search === window.location.search) return;
     replaceAddressWithoutNavigating(`${window.location.pathname}${search}${window.location.hash}`);
@@ -270,11 +305,17 @@ export function useCanvasWorkspaceConversation(
 
     if (request.kind === "new" || request.kind === "agent") {
       const runtime = ownSurface ? { runtime: { surfaceName: null } } : {};
+      // A home with an address keeps its unsent chat under one id across reloads;
+      // New chat / a chosen agent (nonce > 0) reserves a fresh one.
+      const reserved =
+        addressParam !== null ? reserveWorkspaceConversationId(surfaceKey, request.nonce > 0) : undefined;
+      const reservation = reserved ? { conversationId: reserved } : {};
       const launch =
         request.kind === "agent"
-          ? launchAgent(request.agentId, { surfaceKey, sourceFeature: "chat", ...runtime })
+          ? launchAgent(request.agentId, { surfaceKey, sourceFeature: "chat", ...reservation, ...runtime })
           : launchMandate(request.mandateKey ?? DEFAULT_NEW_CHAT_MANDATE_KEY, {
               surfaceKey,
+              ...reservation,
               // A REGISTERED feature, never a new string: this surface IS the chat.
               sourceFeature: "chat",
               ...runtime,
