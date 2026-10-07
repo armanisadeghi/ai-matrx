@@ -19,7 +19,6 @@ import {
   selectProjectName,
   selectTaskName,
   removeActiveScope,
-  setOrganization,
   setProject,
   setTask,
 } from "@/lib/redux/slices/appContextSlice";
@@ -79,10 +78,9 @@ export function ActiveScopeChips({
         <Chip
           icon={<Building className="h-3 w-3" />}
           label={orgName ?? orgId}
-          onClear={() => {
-            if (onClickChip) onClickChip("org", orgId);
-            else dispatch(setOrganization({ id: null }));
-          }}
+          // The active organization is never none (2026-10-07): the chip clears
+          // nothing unless the host handles the click.
+          onClear={onClickChip ? () => onClickChip("org", orgId) : undefined}
           colorClass="bg-violet-500/10 text-violet-700 dark:text-violet-300"
         />
       )}
@@ -139,7 +137,7 @@ function Chip({
 }: {
   icon: React.ReactNode;
   label: string;
-  onClear: () => void;
+  onClear?: () => void;
   colorClass: string;
 }) {
   return (
@@ -151,13 +149,15 @@ function Chip({
     >
       {icon}
       <span className="truncate max-w-[120px]">{label}</span>
-      <button
-        onClick={onClear}
-        aria-label={`Clear ${label}`}
-        className="hover:opacity-70 transition-opacity"
-      >
-        <X className="h-2.5 w-2.5" />
-      </button>
+      {onClear ? (
+        <button
+          onClick={onClear}
+          aria-label={`Clear ${label}`}
+          className="hover:opacity-70 transition-opacity"
+        >
+          <X className="h-2.5 w-2.5" />
+        </button>
+      ) : null}
     </span>
   );
 }

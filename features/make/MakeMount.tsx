@@ -77,17 +77,25 @@ export function SavesTo() {
  * are saved to; with none chosen, the organization question in its place. `what` opens the name box
  * at once; absent, the person picks: blank, a template from the gallery, or a file.
  */
-export function NewTableBody({ what }: { what?: "create" | undefined }) {
+export function NewTableBody({
+  what,
+  organization,
+}: {
+  what?: "create" | undefined;
+  /** A record's own organization: the table is made there, the active organization untouched. */
+  organization?: { id: string; name: string } | null;
+}) {
   const router = useRouter();
   // org-filter: write-target a new table is made in the organization new things are saved to
   const active = useOrganizationRequired();
-  if (active.organizationState !== "ready" || !active.organizationId) {
+  const targetId = organization?.id ?? active.organizationId;
+  if (!organization && (active.organizationState !== "ready" || !active.organizationId)) {
     const state = active.organizationState === "ready" ? "required" : active.organizationState;
     return <OrganizationContextNotice state={state} what="New tables" description={SAVED_WHERE_CHOSEN} compact />;
   }
   const asked = what ? { create: 1 } : undefined;
   return (
-    <MakeMount organizationId={active.organizationId}>
+    <MakeMount organizationId={targetId as string}>
       <TablesHome
         makingOnly
         templatesHref={TEMPLATE_GALLERY_HREF}
@@ -101,7 +109,16 @@ export function NewTableBody({ what }: { what?: "create" | undefined }) {
 }
 
 /** The data homes' New table, opened where it was pressed. */
-export function NewTableDialog({ what, onClose }: { what: "create" | null; onClose: () => void }) {
+export function NewTableDialog({
+  what,
+  onClose,
+  organization,
+}: {
+  what: "create" | null;
+  onClose: () => void;
+  /** Make the table in this organization (a record's own) instead of the active one. */
+  organization?: { id: string; name: string } | null;
+}) {
   return (
     <Dialog open={what !== null} onOpenChange={(next) => (next ? undefined : onClose())}>
       <DialogContent className="flex max-h-[90dvh] w-[min(44rem,calc(100vw-2rem))] max-w-none flex-col gap-3 p-4">
@@ -119,11 +136,18 @@ export function NewTableDialog({ what, onClose }: { what: "create" | null; onClo
                 </Link>
               </Button>
             ) : null}
-            <SavesTo />
+            {organization ? (
+              <span className="flex items-center gap-1.5 px-2 text-sm text-muted-foreground" data-make-saves-to="record">
+                <Building2 className="h-3.5 w-3.5 shrink-0" aria-hidden />
+                <span className="truncate">New things save to {organization.name}</span>
+              </span>
+            ) : (
+              <SavesTo />
+            )}
           </div>
         </div>
         <div className="min-h-0 flex-1 overflow-y-auto" data-new-table-dialog={what ?? ""}>
-          {what ? <NewTableBody what={what} /> : null}
+          {what ? <NewTableBody what={what} organization={organization ?? null} /> : null}
         </div>
       </DialogContent>
     </Dialog>
