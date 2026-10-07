@@ -34,10 +34,7 @@ export function AgentBuilderReadOnlyFrame({
   const isReadOnly = useAppSelector((state) =>
     selectAgentIsReadOnly(state, agentId),
   );
-  const { startDuplicate, dialog, isDuplicating } = useAgentDuplicateFlow(
-    agentId,
-    { basePath },
-  );
+  const { openDuplicate, dialog, isDuplicating } = useAgentDuplicateFlow({ basePath });
 
   const showReadOnlyChrome = accessResolved && isReadOnly;
 
@@ -66,7 +63,7 @@ export function AgentBuilderReadOnlyFrame({
               variant="secondary"
               className="h-6 shrink-0 px-2 text-xs"
               disabled={isDuplicating}
-              onClick={() => void startDuplicate()}
+              onClick={() => void openDuplicate({ agentId })}
             >
               Create my copy
             </Button>

@@ -250,10 +250,7 @@ export function AgentOptionsMenu({
   // Duplicate asks which version to copy (default: current), then runs the
   // shared flow. The dialog lives at this level so it survives the dropdown /
   // drawer that opened it closing.
-  const duplicateFlow = useAgentDuplicateFlow(agentId, {
-    basePath,
-    fallbackSuffix: "",
-  });
+  const duplicateFlow = useAgentDuplicateFlow({ basePath, fallbackSuffix: "" });
 
   // Builtin/system agents need different menu options than user agents.
   // - "Convert to Template" is meaningless — builtins ARE the templates users
@@ -267,7 +264,7 @@ export function AgentOptionsMenu({
   const agent = useAppSelector((state) => selectAgentById(state, agentId));
   const isBuiltin = agent?.agentType === "builtin";
 
-  const runDuplicate = duplicateFlow.openChooser;
+  const runDuplicate = () => void duplicateFlow.openDuplicate({ agentId });
 
   const managementItems = AGENT_MANAGEMENT_ITEMS.filter(
     (item) =>

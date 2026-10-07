@@ -2234,6 +2234,25 @@ export type Database = {
         Returns: string
       }
       canonical_message_flags: { Args: { p_messages: Json }; Returns: Json }
+      duplicate_agent: {
+        Args: {
+          p_agent_id: string
+          p_as_system?: boolean
+          p_follows_source?: boolean
+          p_name?: string
+          p_organization_id?: string
+        }
+        Returns: string
+      }
+      duplicate_version: {
+        Args: {
+          p_as_system?: boolean
+          p_name?: string
+          p_organization_id?: string
+          p_version_id: string
+        }
+        Returns: string
+      }
       message_flag_problems: {
         Args: never
         Returns: {
@@ -19095,6 +19114,7 @@ export type Database = {
           deep_link: string | null
           deleted_at: string | null
           delivered_at: string | null
+          done_at: string | null
           error_code: string | null
           error_message: string | null
           event_key: string
@@ -19115,7 +19135,9 @@ export type Database = {
           recipient_label: string | null
           recipient_party_id: string | null
           recipient_user_id: string | null
+          seen_at: string | null
           sent_at: string | null
+          snoozed_until: string | null
           status: string
           subject: string | null
           target_id: string | null
@@ -19139,6 +19161,7 @@ export type Database = {
           deep_link?: string | null
           deleted_at?: string | null
           delivered_at?: string | null
+          done_at?: string | null
           error_code?: string | null
           error_message?: string | null
           event_key: string
@@ -19159,7 +19182,9 @@ export type Database = {
           recipient_label?: string | null
           recipient_party_id?: string | null
           recipient_user_id?: string | null
+          seen_at?: string | null
           sent_at?: string | null
+          snoozed_until?: string | null
           status?: string
           subject?: string | null
           target_id?: string | null
@@ -19183,6 +19208,7 @@ export type Database = {
           deep_link?: string | null
           deleted_at?: string | null
           delivered_at?: string | null
+          done_at?: string | null
           error_code?: string | null
           error_message?: string | null
           event_key?: string
@@ -19203,7 +19229,9 @@ export type Database = {
           recipient_label?: string | null
           recipient_party_id?: string | null
           recipient_user_id?: string | null
+          seen_at?: string | null
           sent_at?: string | null
+          snoozed_until?: string | null
           status?: string
           subject?: string | null
           target_id?: string | null
@@ -20627,6 +20655,7 @@ export type Database = {
           deep_link: string | null
           deleted_at: string | null
           delivered_at: string | null
+          done_at: string | null
           error_code: string | null
           error_message: string | null
           event_key: string
@@ -20647,7 +20676,9 @@ export type Database = {
           recipient_label: string | null
           recipient_party_id: string | null
           recipient_user_id: string | null
+          seen_at: string | null
           sent_at: string | null
+          snoozed_until: string | null
           status: string
           subject: string | null
           target_id: string | null
@@ -20684,6 +20715,7 @@ export type Database = {
           deep_link: string | null
           deleted_at: string | null
           delivered_at: string | null
+          done_at: string | null
           error_code: string | null
           error_message: string | null
           event_key: string
@@ -20704,7 +20736,9 @@ export type Database = {
           recipient_label: string | null
           recipient_party_id: string | null
           recipient_user_id: string | null
+          seen_at: string | null
           sent_at: string | null
+          snoozed_until: string | null
           status: string
           subject: string | null
           target_id: string | null
@@ -20937,6 +20971,10 @@ export type Database = {
           event_id: number
           interaction_id: string
         }[]
+      }
+      clear_inbox: {
+        Args: { p_action?: string; p_event_keys?: string[]; p_until?: string }
+        Returns: string[]
       }
       configure_my_sms_task_notifications: {
         Args: { p_enabled: boolean; p_program_key?: string }
@@ -21183,6 +21221,40 @@ export type Database = {
         Args: { p_inbound_message_id: string }
         Returns: boolean
       }
+      inbox_notifications: {
+        Args: {
+          p_before?: string
+          p_before_id?: string
+          p_limit?: number
+          p_org_id?: string
+          p_state?: string
+          p_unread_only?: boolean
+        }
+        Returns: {
+          acted_at: string
+          actor_avatar: string
+          actor_id: string
+          actor_name: string
+          body: string
+          created_at: string
+          deep_link: string
+          done_at: string
+          event_bucket: string
+          event_key: string
+          event_label: string
+          id: string
+          organization_id: string
+          organization_name: string
+          outcome: string
+          read_at: string
+          seen_at: string
+          snoozed_until: string
+          sort_at: string
+          subject: string
+          target_id: string
+          target_kind: string
+        }[]
+      }
       issue_voice_agent_session_reference: {
         Args: {
           p_agent_version_id: string
@@ -21236,6 +21308,7 @@ export type Database = {
         }
         Returns: number
       }
+      mark_inbox_seen: { Args: never; Returns: number }
       mark_my_notifications_read: { Args: never; Returns: number }
       mark_notification_read: {
         Args: { p_channel: string; p_notification_id: string }
@@ -22199,6 +22272,37 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      my_inbox_kinds: {
+        Args: never
+        Returns: {
+          event_bucket: string
+          event_key: string
+          event_label: string
+          latest_at: string
+          notices: number
+          unseen: number
+        }[]
+      }
+      my_inbox_organizations: {
+        Args: never
+        Returns: {
+          notices: number
+          organization_id: string
+          organization_name: string
+        }[]
+      }
+      my_inbox_summary: {
+        Args: never
+        Returns: {
+          done: number
+          inbox: number
+          snoozed: number
+          unread: number
+          unseen_direct: number
+          unseen_needs_you: number
+          unseen_updates: number
+        }[]
+      }
       my_notification_unread_count: { Args: never; Returns: number }
       my_notifications: {
         Args: { p_before?: string; p_limit?: number; p_unread_only?: boolean }
@@ -22527,6 +22631,10 @@ export type Database = {
           user_assistant_enabled: boolean
           verified_user_phone: string
         }[]
+      }
+      set_notifications_state: {
+        Args: { p_action: string; p_ids: string[]; p_until?: string }
+        Returns: number
       }
       sms_notification_gate: {
         Args: { p_notification_id: string; p_now?: string }
@@ -28604,6 +28712,51 @@ export type Database = {
         }
         Relationships: []
       }
+      anon_form_visit: {
+        Row: {
+          completed_at: string | null
+          deleted_at: string | null
+          form_id: string
+          id: string
+          last_field_key: string | null
+          organization_id: string
+          reached: Json
+          started_at: string | null
+          submission_id: string | null
+          updated_at: string
+          viewed_at: string
+          visit_hash: string
+        }
+        Insert: {
+          completed_at?: string | null
+          deleted_at?: string | null
+          form_id: string
+          id?: string
+          last_field_key?: string | null
+          organization_id: string
+          reached?: Json
+          started_at?: string | null
+          submission_id?: string | null
+          updated_at?: string
+          viewed_at?: string
+          visit_hash: string
+        }
+        Update: {
+          completed_at?: string | null
+          deleted_at?: string | null
+          form_id?: string
+          id?: string
+          last_field_key?: string | null
+          organization_id?: string
+          reached?: Json
+          started_at?: string | null
+          submission_id?: string | null
+          updated_at?: string
+          viewed_at?: string
+          visit_hash?: string
+        }
+        Relationships: []
+      }
       anon_hit: {
         Row: {
           bucket: string
@@ -32112,6 +32265,50 @@ export type Database = {
         }
         Returns: undefined
       }
+      _automation_bind: {
+        Args: { p_expr: Json; p_values: Json }
+        Returns: Json
+      }
+      _automation_check: {
+        Args: { p_organization_id: string; p_spec: Json; p_table_id: string }
+        Returns: Json
+      }
+      _automation_fields: {
+        Args: { p_organization_id: string; p_table_id: string }
+        Returns: Json
+      }
+      _automation_flip: {
+        Args: {
+          p_automation_id: string
+          p_door: string
+          p_organization_id: string
+          p_patch: Json
+          p_strip?: string
+        }
+        Returns: Json
+      }
+      _automation_home: {
+        Args: { p_automation_id: string; p_organization_id: string }
+        Returns: {
+          doc: Json
+          item: Json
+          table_id: string
+        }[]
+      }
+      _automation_value: {
+        Args: { p_me: string; p_value: Json; p_values: Json }
+        Returns: Json
+      }
+      _automation_values_errors: {
+        Args: {
+          p_organization_id: string
+          p_path: string
+          p_source: string
+          p_target: string
+          p_values: Json
+        }
+        Returns: Json
+      }
       _back_link_relation: {
         Args: { p_key: string; p_organization_id: string; p_table_id: string }
         Returns: Json
@@ -32520,6 +32717,11 @@ export type Database = {
         Returns: Json
       }
       _first_words: { Args: { p_data: Json }; Returns: string }
+      _form_always_asked: { Args: { p_questions: Json }; Returns: string[] }
+      _form_flow_judge: {
+        Args: { p_organization_id: string; p_presentation: Json }
+        Returns: Json
+      }
       _form_look: {
         Args: { p_organization_id: string; p_presentation: Json }
         Returns: Json
@@ -32536,6 +32738,15 @@ export type Database = {
           field_key: string
           said: string
         }[]
+      }
+      _form_route: {
+        Args: {
+          p_endings: Json
+          p_organization_id: string
+          p_questions: Json
+          p_values: Json
+        }
+        Returns: Json
       }
       _formula_literal_normalised: { Args: { p_expr: Json }; Returns: Json }
       _fx_autonumber: {
@@ -33674,6 +33885,48 @@ export type Database = {
       assert_store_door: {
         Args: { p_door: string; p_organization_id: string }
         Returns: undefined
+      }
+      automation_archive: {
+        Args: { p_automation_id: string; p_organization_id: string }
+        Returns: Json
+      }
+      automation_declare: {
+        Args: {
+          p_automation_id?: string
+          p_organization_id: string
+          p_spec: Json
+          p_table_id: string
+        }
+        Returns: Json
+      }
+      automation_restore: {
+        Args: { p_automation_id: string; p_organization_id: string }
+        Returns: Json
+      }
+      automation_runs: {
+        Args: {
+          p_automation_id: string
+          p_cursor?: string
+          p_limit?: number
+          p_organization_id?: string
+        }
+        Returns: Json
+      }
+      automation_set_enabled: {
+        Args: {
+          p_automation_id: string
+          p_enabled: boolean
+          p_organization_id: string
+        }
+        Returns: Json
+      }
+      automations: {
+        Args: {
+          p_include_archived?: boolean
+          p_organization_id?: string
+          p_table_id: string
+        }
+        Returns: Json
       }
       autonumber_backfill: {
         Args: { p_field_id: string; p_organization_id: string }
@@ -35436,6 +35689,16 @@ export type Database = {
           said: string
         }[]
       }
+      form_preview_route: {
+        Args: {
+          p_endings: Json
+          p_organization_id: string
+          p_questions: Json
+          p_table_id: string
+          p_values: Json
+        }
+        Returns: Json
+      }
       form_public: {
         Args: { p_form_id: string }
         Returns: {
@@ -35464,6 +35727,10 @@ export type Database = {
           said: string
         }[]
       }
+      form_public_route: {
+        Args: { p_form_id: string; p_values: Json }
+        Returns: Json
+      }
       form_redirect_domains: {
         Args: { p_organization_id: string }
         Returns: string[]
@@ -35473,6 +35740,10 @@ export type Database = {
         Returns: string
       }
       form_restore: {
+        Args: { p_form_id: string; p_organization_id: string }
+        Returns: Json
+      }
+      form_results: {
         Args: { p_form_id: string; p_organization_id: string }
         Returns: Json
       }
@@ -35495,6 +35766,16 @@ export type Database = {
           state: string
           submission_id: string
         }[]
+      }
+      form_theme_options: { Args: never; Returns: Json }
+      form_visit: {
+        Args: {
+          p_event: string
+          p_field?: string
+          p_form_id: string
+          p_visit: string
+        }
+        Returns: string
       }
       forms: {
         Args: { p_organization_id: string; p_table_id?: string }
@@ -37902,6 +38183,13 @@ export type Database = {
         Args: { p_id: string; p_organization_id: string; p_type: string }
         Returns: boolean
       }
+      row_template_bodies: {
+        Args: { p_organization_id: string; p_table_id: string }
+        Returns: {
+          body: Json
+          template_id: string
+        }[]
+      }
       row_template_declare: {
         Args: { p_organization_id: string; p_spec: Json; p_table_id: string }
         Returns: string
@@ -40236,6 +40524,33 @@ export type Database = {
           updated_by?: string | null
           version?: number
           visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Relationships: []
+      }
+      rag_library_docs_bodies: {
+        Row: {
+          archived_at: string | null
+          body: string | null
+          body_hash: string | null
+          id: string
+          processed_document_id: string | null
+          title: string | null
+        }
+        Insert: {
+          archived_at?: string | null
+          body?: string | null
+          body_hash?: string | null
+          id: string
+          processed_document_id?: string | null
+          title?: string | null
+        }
+        Update: {
+          archived_at?: string | null
+          body?: string | null
+          body_hash?: string | null
+          id?: string
+          processed_document_id?: string | null
+          title?: string | null
         }
         Relationships: []
       }

@@ -107,6 +107,7 @@ function useAgentListRowActions(
           navigationIds={list.rows.map((r) => r.id)}
         />
       )}
+      {host.duplicateDialog}
       {host.shareAgent && (
         <ShareModal
           isOpen
