@@ -202,3 +202,10 @@ organizations" (`mineScope`), because the door counts the person's rows in every
 - `2026-10-01` — Lane DRILL-D1: one name book for every surface (Findings rows on
   ai_usage_executions read "Reading the name…" forever — their ids never reached the names door);
   the records' noun never describes a raw fact token (`workflow_run_facts` 403).
+- `2026-10-07` — Lane DRILL-PRIMITIVE-2: a level breakout naming a sibling definition's Dimension
+  (`ai_usage_executions:conversation` on ai_usage's person) is offered through the design-system
+  `cross` door built from the mount's siblings — the chip opens the sibling grouped by it, carrying the
+  trail's filters it has, the window, and that level's `show`; an address grouping by a Dimension with
+  no `show` shows its level's (`useDrillUrlState({ dimensions })`); a failed attribute read carries
+  `error` (said in the package's ErrorBox) and every failed ask is said in words (`drillFailureWords`),
+  never the database's text. Test: `__tests__/drill-primitive-2.test.tsx`.
