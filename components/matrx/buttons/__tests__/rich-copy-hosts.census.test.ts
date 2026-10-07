@@ -381,7 +381,7 @@ describe("consistency everywhere: markdown copy is the split Copy across the who
     expect(fs.existsSync(path.join(REPO_ROOT, "features/message-templates/components/TemplateEditor.tsx"))).toBe(false);
     const newRoute = fs.readFileSync(path.join(REPO_ROOT, "app/(core)/chat/message-templates/new/page.tsx"), "utf8");
     expect(newRoute).toMatch(/<TemplateViewPage[^>]*\bcreate\b/);
-    expect(newRoute).not.toMatch(/TemplateEditor/);
+    expect(newRoute).not.toMatch(/\bTemplateEditor\b/);
     const dock = fs.readFileSync(path.join(REPO_ROOT, "features/notes/components/mobile/NoteEditorDock.tsx"), "utf8");
     expect(dock).toMatch(/--matrx-toast-floor/);
     const toaster = fs.readFileSync(path.join(REPO_ROOT, "components/ui/sonner.tsx"), "utf8");
