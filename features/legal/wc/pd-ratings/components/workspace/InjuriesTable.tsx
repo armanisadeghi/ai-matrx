@@ -1,6 +1,7 @@
 "use client";
 
 import { useClipboard } from "@ai-matrx/kit/clipboard";
+import { toDelimited } from "@ai-matrx/kit/delimited";
 import * as React from "react";
 import { Pencil, Trash2, Copy, AlertTriangle } from "lucide-react";
 import { toast } from "@/lib/toast";
@@ -66,7 +67,7 @@ function pctOrDash(value: number | null): string {
   return `${value}%`;
 }
 
-function rowToTsv(row: InjuryRowData, index: number): string {
+function rowToCells(row: InjuryRowData, index: number): string[] {
   const { injury, definition } = row;
   return [
     String(index + 1),
@@ -79,13 +80,13 @@ function rowToTsv(row: InjuryRowData, index: number): string {
     pctOrDash(injury.digit),
     String(injury.pain ?? 0),
     `${injury.industrial ?? 100}%`,
-  ].join("\t");
+  ];
 }
 
+/** The injuries as spreadsheet TSV, through THE one writer (kit toDelimited). */
 export function rowsToTsv(rows: InjuryRowData[]): string {
   if (rows.length === 0) return "";
-  const lines = rows.map((row, idx) => rowToTsv(row, idx));
-  return [TSV_HEADER.join("\t"), ...lines].join("\n");
+  return toDelimited([TSV_HEADER, ...rows.map((row, idx) => rowToCells(row, idx))], { format: "tsv" });
 }
 
 export function InjuriesTable({
@@ -170,7 +171,7 @@ function InjuryTableRow({
   const incomplete = !definition;
 
   const handleCopy = async () => {
-    const tsv = rowToTsv(row, index);
+    const tsv = toDelimited([rowToCells(row, index)], { format: "tsv" });
     if (!(await copyText(tsv, `Row ${index + 1} copied — paste into Excel or Sheets`))) return;
   };
 

@@ -41,6 +41,7 @@ import { useOpenFilePreviewWindow } from "@/features/overlays/openers/filePrevie
 import { listResultsForFilePage } from "@/features/page-extraction/api/runs";
 import type { PageExtractionResult } from "@/features/page-extraction/types";
 import { cn } from "@/lib/utils";
+import { toDelimited } from "@ai-matrx/kit/delimited";
 import type {
   RagReferenceAvailability,
   RagReferenceKind,
@@ -119,11 +120,12 @@ function tableGroupToTsv(group: DerivativePageGroup): string {
     return { header, cells, fallback: chunk.content_text };
   });
   const header = rows.find((row) => row.header.length)?.header ?? [];
-  const lines = header.length ? [header.join("\t")] : [];
-  for (const row of rows) {
-    lines.push((row.cells.length ? row.cells : [row.fallback]).join("\t"));
-  }
-  return lines.join("\n");
+  // THE one TSV writer: a cell holding a tab, a line break or a quote stays one cell; document
+  // text starting with = + - @ is formula-guarded (parseDelimited reverses it on our own paste).
+  return toDelimited(
+    [...(header.length ? [header] : []), ...rows.map((row) => (row.cells.length ? row.cells : [row.fallback]))],
+    { format: "tsv" },
+  );
 }
 
 function extractionRowsData(rows: PageExtractionResult[], total: number) {
