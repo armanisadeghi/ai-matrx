@@ -17,6 +17,7 @@ import { useAppSelector } from "@/lib/redux/hooks";
 import { selectAppById } from "@/features/agents/redux/applets/selectors";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
 import { siteConfig } from "@/config/extras/site";
+import { useChangeByTalkingDisclosure } from "@/features/applets/route/useChangeByTalkingDisclosure";
 import { useOpenMandateWindow } from "@/features/overlays/openers/mandateWindow";
 import { storedMandateKey } from "@ai-matrx/agents/mandates";
 import { appletJobs, appletPages, appletSources } from "@/features/applets/types";
@@ -34,6 +35,7 @@ interface AppletOverviewContentProps {
 export function AppletOverviewContent({ appId }: AppletOverviewContentProps) {
   const app = useAppSelector((state) => selectAppById(state, appId));
   const openMandate = useOpenMandateWindow();
+  useChangeByTalkingDisclosure();
 
   if (!app) {
     return (
