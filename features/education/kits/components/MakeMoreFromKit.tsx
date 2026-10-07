@@ -30,6 +30,10 @@ import type {
 } from "@/features/education/convert/types";
 import type { ConvertOrigin } from "@/features/education/convert/ConvertContentDialog";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { createSourceRef, createSourceSet } from "@ai-matrx/agents/sources";
+import { sourcesClient } from "@/features/resource-manager/source-input/sourceSetApi";
+import { useIngest } from "@/features/education/onboard/useIngest";
+import { KIT_TOKEN, type KitSource } from "../kitScope";
 import { AGENT_ICON } from "@/components/icons/domain-icons";
 
 /** The recovered material, held so a second target costs no second re-read. */
@@ -53,7 +57,13 @@ export function MakeMoreFromKit({
   onConverted,
   buttonVariant = "default",
   buttonClassName = "min-h-11 gap-1.5 sm:min-h-0",
+  sources,
+  organizationId,
 }: {
+  /** A multi-source kit's Sources — "Make more" reads ALL of them. */
+  sources?: readonly KitSource[];
+  /** The kit's organization (the Source read runs there). */
+  organizationId?: string;
   sourceType: string;
   sourceId: string;
   kitTitle: string;
@@ -64,6 +74,7 @@ export function MakeMoreFromKit({
   buttonClassName?: string;
 }) {
   const pdf = usePdfClient();
+  const { normalizeSources } = useIngest();
   const [recovered, setRecovered] = useState<Recovered | null>(null);
   const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -78,6 +89,26 @@ export function MakeMoreFromKit({
     }
     setBusy(true);
     try {
+      if (sourceType === KIT_TOKEN) {
+        // EVERY Source of the kit, read through THE one server step — the same
+        // grounded text (and citation chunks) the kit was first built from.
+        if (!sources?.length) throw new Error("Add a source to this kit first.");
+        if (!organizationId) throw new Error("This kit is still loading. Try again.");
+        const set = createSourceSet(sources.map((s) => createSourceRef(s.type, s.id)));
+        const read = await normalizeSources(
+          () => sourcesClient.resolve(set, { organizationId }),
+          undefined,
+          undefined,
+          { copyAnchor: false },
+        );
+        setRecovered({
+          text: read.text,
+          ref: { ...read.ref, kitId: sourceId },
+          origin: { kind: read.ref.kind, entityType: KIT_TOKEN, entityId: sourceId, title: kitTitle || read.title },
+        });
+        setOpen(true);
+        return;
+      }
       const source = await reopenAnchor(sourceType, sourceId, { pdf });
       const next: Recovered = {
         text: source.text,
@@ -105,7 +136,7 @@ export function MakeMoreFromKit({
     } finally {
       setBusy(false);
     }
-  }, [kitTitle, pdf, recovered, sourceId, sourceType]);
+  }, [kitTitle, normalizeSources, organizationId, pdf, recovered, sourceId, sourceType, sources]);
 
   // A deep link is a request to be here with the work already started.
   useEffect(() => {

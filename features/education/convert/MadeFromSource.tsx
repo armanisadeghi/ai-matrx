@@ -25,7 +25,7 @@ import { useStoreRead } from "@/lib/redux/store-reads/useStoreRead";
 import Link from "next/link";
 import { FileText, CornerUpLeft, Package } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { kitHref } from "@/features/education/kits/kitService";
+import { kitHref, readKit } from "@/features/education/kits/kitService";
 import { tryGetEntityInfo } from "@/features/scopes/registry/entityRegistry";
 import {
   listGeneratedFrom,
@@ -70,6 +70,15 @@ export function MadeFromSource({
       // The kit is found from a real lineage edge (siblings share its anchor).
       const found = edges[0] ?? allOrigins[0];
       if (!found) return { origins: allOrigins, siblings: [], kit: undefined };
+      // A multi-source kit: the kit is the door, its aids are the siblings.
+      if (found.kitId) {
+        const kit = await readKit("scope", found.kitId);
+        return {
+          origins: allOrigins,
+          kit: { edgeId: `kit:${found.kitId}`, entityType: "scope", entityId: found.kitId, href: undefined, title: kit?.title ?? null },
+          siblings: (kit?.artifacts ?? []).filter((a) => a.artifactId !== entityId),
+        };
+      }
       const all = await listGeneratedFrom(found.entityType, found.entityId);
       // The rest of the KIT — the artifacts, not their parts. Every generated
       // flashcard also writes its own card-level lineage edge to the anchor

@@ -3,7 +3,7 @@ import { kitMembershipFingerprint, requireFreshKitMembership } from "../kitServi
 import type { StudyKit } from "../kitService";
 
 const kit: StudyKit = {
-  sourceType: "file", sourceId: "source-1", title: "Lecture", createdAt: "2026-09-27T00:00:00Z",
+  sourceType: "file", sources: [], sourceId: "source-1", title: "Lecture", createdAt: "2026-09-27T00:00:00Z",
   artifacts: [{ edgeId: "edge-1", artifactType: "study_media", artifactId: "aid-1", targetKind: "summary", title: "Summary", href: "/education/summaries/aid-1", detail: null, sourceTitle: "Lecture", createdAt: "2026-09-27T00:00:00Z" }],
 };
 

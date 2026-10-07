@@ -27,14 +27,20 @@ export function AgentPeekDuplicateButton({
   onStart,
 }: {
   agentId: string;
-  /** Close the peek once the Duplicate dialog closes (the dialog opens above it). */
+  /** Close the peek once a copy is made and its dialog closes (the dialog opens above it). */
   onStart?: () => void;
 }) {
   const dispatch = useAppDispatch();
   const userId = useAppSelector(selectUserId);
   const record = useAppSelector((state) => selectAgentById(state, agentId));
   const isReady = useAppSelector((state) => selectAgentReadyForBuilder(state, agentId));
-  const duplicateFlow = useAgentDuplicateFlow({ fallbackSuffix: "/build", onDialogClosed: onStart });
+  const duplicateFlow = useAgentDuplicateFlow({
+    fallbackSuffix: "/build",
+    // Cancel leaves the quick look open; after a copy it closes.
+    onDialogClosed: (madeCopy) => {
+      if (madeCopy) onStart?.();
+    },
+  });
   const busy = duplicateFlow.isDuplicating;
   useEffect(() => {
     // Ownership is never guessed: the builder reads the full record itself

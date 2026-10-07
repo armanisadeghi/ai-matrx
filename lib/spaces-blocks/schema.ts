@@ -8,6 +8,7 @@ import {
   DATABASE_CHART_TYPES,
   DATABASE_OPEN_AS,
   DATABASE_VIEW_LAYOUTS,
+  BUTTON_ACTION_KINDS,
   RENDERED_BLOCK_TYPES,
   SCHEMA_ONLY_BLOCK_TYPES,
   SPACE_COLORS,
@@ -233,6 +234,32 @@ const SPECS: BlockSpec[] = [
   },
   { type: "tab", parity: "N1", label: "Tab (one named tab inside Tabs)", rendered: true, text: "inline", children: "blocks", props: ok },
   {
+    type: "synced",
+    parity: "C18",
+    label: "Synced block (its content is one source Space shared by every copy)",
+    rendered: true,
+    text: "none",
+    children: "none",
+    props: (p) => (nonEmpty(p?.sourceId) ? null : "needs props.sourceId (the synced source)"),
+  },
+  {
+    type: "button",
+    parity: "C19",
+    label: "Button",
+    rendered: true,
+    text: "none",
+    children: "none",
+    props: (p) => {
+      if (!str(p?.label)) return "props.label must be text";
+      if (p?.icon !== undefined && !str(p.icon)) return "props.icon must be a Lucide icon name";
+      if (!Array.isArray(p?.actions)) return "props.actions must be a list";
+      for (const [i, a] of (p.actions as unknown[]).entries()) {
+        if (!isObj(a) || !(BUTTON_ACTION_KINDS as readonly string[]).includes(String(a.kind))) return `actions[${i}].kind must be one of ${BUTTON_ACTION_KINDS.join(", ")}`;
+      }
+      return null;
+    },
+  },
+  {
     type: "slot",
     parity: "-",
     label: "Builder placeholder (phase-2 block marker)",
@@ -273,7 +300,7 @@ function viewProblem(v: unknown): string | null {
   return null;
 }
 
-const SPAN_KEYS = new Set(["text", "bold", "italic", "underline", "strike", "code", "color", "background", "link", "mention", "equation"]);
+const SPAN_KEYS = new Set(["text", "bold", "italic", "underline", "strike", "code", "color", "background", "link", "mention", "equation", "suggestion"]);
 const COLOR_SET = new Set<string>(SPACE_COLORS);
 
 export function spanProblem(s: unknown): string | null {
@@ -286,6 +313,12 @@ export function spanProblem(s: unknown): string | null {
   for (const k of ["color", "background"]) if (s[k] !== undefined && !COLOR_SET.has(String(s[k]))) return `span.${k} is not a Space color`;
   if (s.link !== undefined && !nonEmpty(s.link)) return "span.link must be a URL";
   if (s.equation !== undefined && !str(s.equation)) return "span.equation must be text";
+  if (s.suggestion !== undefined) {
+    const g = s.suggestion;
+    if (!isObj(g) || !nonEmpty(g.id) || (g.kind !== "insert" && g.kind !== "delete") || !nonEmpty(g.by) || !nonEmpty(g.at)) {
+      return "span.suggestion must be { id, kind: insert|delete, by, at }";
+    }
+  }
   if (s.mention !== undefined) {
     const m = s.mention;
     if (!isObj(m)) return "span.mention must be an object";

@@ -30,7 +30,6 @@
 import { useRef, useState } from "react";
 import { useAppDispatch, useAppStore } from "@/lib/redux/hooks";
 import { getGenerator } from "@/features/education/convert/registry";
-import { listGeneratedFrom } from "@/features/education/convert/lineage";
 import { resolveKitTitle, type KitTitle } from "./kitTitle";
 import type {
   ConvertOptions,
