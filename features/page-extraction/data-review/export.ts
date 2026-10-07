@@ -8,6 +8,7 @@
  */
 
 import { buildFile } from "@ai-matrx/alchemy/operate";
+import { tableToCsv } from "@/components/mardown-display/tables/table-csv";
 import { kindValueToMarkdown } from "@/features/canvas/export/exportArtifactMarkdown";
 import { kindTextToMarkdown } from "@/features/content-ir/surfaces/kind-text-to-markdown";
 import { valueCarriesKind } from "@/features/content-ir/surfaces/json-kind-signal";
@@ -64,11 +65,9 @@ export function toMatrix(
 }
 
 export function toCSV(columns: ExportColumn[], rows: ExportRow[]): string {
-  const escape = (s: string) =>
-    /[",\n\r]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
-  return toMatrix(columns, rows)
-    .map((row) => row.map(escape).join(","))
-    .join("\r\n");
+  const [header, ...body] = toMatrix(columns, rows);
+  // Scraped text is untrusted: tableToCsv quotes and defuses a leading = + - @ (Alchemy spreadsheetSafe).
+  return tableToCsv(header, body);
 }
 
 /** Tab-separated — what spreadsheets accept on paste. */

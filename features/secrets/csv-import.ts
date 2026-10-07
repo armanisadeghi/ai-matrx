@@ -1,6 +1,7 @@
 /** Local-only CSV normalization for Vault's first password-manager import. */
 import { parseDelimited } from "@ai-matrx/alchemy/operate/read";
 
+import type { CsvWorkerRequest, CsvWorkerResponse } from "./csv-import.worker";
 import { isLoopbackApiUrl } from "@/lib/api/service-routing";
 import type { VaultExpectedActor } from "./vault-service";
 import type { VaultItemCreateRequest, VaultPrincipal } from "./types";
@@ -38,7 +39,12 @@ export type CsvImportPreparation =
   | { status: "ready"; command: CsvImportCommand }
   | {
       status: "skipped";
-      reason: "invalid" | "unsupported" | "deleted" | "archived" | "possible_duplicate";
+      reason:
+        | "invalid"
+        | "unsupported"
+        | "deleted"
+        | "archived"
+        | "possible_duplicate";
     }
   | { status: "invalid"; diagnostic: string };
 export type CsvImportOutcome = {
@@ -152,8 +158,31 @@ export function parseCsvFile(
     } catch {
       throw new Error("The CSV must be valid UTF-8.");
     }
-    // One parser for paste and file (Alchemy's delimited parser); the size limit was checked above.
-    return parseCsvText(text, limits);
+    // One parser for paste and file (Alchemy's delimited parser). A file can be as large as the
+    // organization's limit, so it parses in a worker; with no Worker (tests, SSR) it parses here.
+    if (typeof Worker === "undefined") return parseCsvText(text, limits);
+    return import("./csv-import-worker-client").then(
+      ({ createCsvImportWorker }) =>
+        new Promise<CsvImportPreview>((resolve, reject) => {
+          const worker = createCsvImportWorker();
+          const unreadable = () =>
+            reject(
+              new Error(
+                "The CSV could not be read. Fix the file and try again.",
+              ),
+            );
+          worker.onmessage = (event: MessageEvent<CsvWorkerResponse>) => {
+            worker.terminate();
+            if (event.data.ok) resolve(event.data.preview);
+            else reject(new Error(event.data.message));
+          };
+          worker.onerror = () => {
+            worker.terminate();
+            unreadable();
+          };
+          worker.postMessage({ text, limits } satisfies CsvWorkerRequest);
+        }),
+    );
   });
 }
 

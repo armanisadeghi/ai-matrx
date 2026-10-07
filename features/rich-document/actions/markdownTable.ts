@@ -1,3 +1,4 @@
+import { tableToCsv } from "@/components/mardown-display/tables/table-csv";
 import { unwrapCodeSpans } from "@/lib/markdown/code-ranges";
 import {
   findTableEnd,
@@ -57,11 +58,9 @@ export function tableToDelimited(
   table: ParsedTable,
   delimiter: "," | "\t",
 ): string {
-  const escape = (value: string) => {
-    if (delimiter === "\t") return value.replace(/[\t\r\n]+/g, " ");
-    return /[",\r\n]/.test(value) ? `"${value.replace(/"/g, '""')}"` : value;
-  };
-  return [table.headers, ...table.rows]
-    .map((row) => row.map(escape).join(delimiter))
-    .join("\n");
+  // CSV goes through Alchemy's one writer (quoting + spreadsheet-safe); TSV is paste text, so
+  // tabs and line breaks inside a cell collapse to one space.
+  if (delimiter === ",") return tableToCsv(table.headers, table.rows);
+  const flat = (value: string) => value.replace(/[\t\r\n]+/g, " ");
+  return [table.headers, ...table.rows].map((row) => row.map(flat).join("\t")).join("\n");
 }
