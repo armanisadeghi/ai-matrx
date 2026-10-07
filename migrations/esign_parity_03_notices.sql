@@ -536,7 +536,7 @@ begin
   get diagnostics v_rows = row_count;
   return v_rows = 1;
 end
-$function$
+$function$;
 
 -- Every new SECURITY DEFINER function declares who may call it (§5.8; provision_shape_guard).
 insert into platform.client_callable_door (schema_name, function_name, identity_args, identity_argtypes, reason, declared_by, non_client_lane, signed_in_callers, anonymous_callers)
