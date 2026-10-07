@@ -20,6 +20,7 @@
  */
 import { readdirSync, readFileSync } from "node:fs";
 import path from "node:path";
+import { TABLE_ROW_ITEM_TYPE } from "@ai-matrx/alchemy/declare";
 
 // The app's manifests, and the chat package's own (moved there in P19) —
 // the app registry must register every one of both.
@@ -87,6 +88,16 @@ describe("W-51: every manifest reaches the chat package", () => {
       expect(seam.getSurfaceAncestry(name)).toEqual(app.getSurfaceAncestry(name));
       expect(seam.getSurfaceChildren(name)).toEqual(app.getSurfaceChildren(name));
       expect(seam.getRawManifest(name)).toBe(app.getRawManifest(name));
+    }
+  });
+
+  it("every surface declares the canonical table row item type", () => {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const app = require("@/features/surfaces/manifests/registry") as typeof import("@/features/surfaces/manifests/registry");
+    for (const manifest of app.ALL_MANIFESTS) {
+      expect(manifest.itemTypes?.find((itemType) => itemType.name === TABLE_ROW_ITEM_TYPE.name)).toEqual(
+        TABLE_ROW_ITEM_TYPE,
+      );
     }
   });
 

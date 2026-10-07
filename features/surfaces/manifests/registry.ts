@@ -21,7 +21,7 @@ import {
   registerLoadedValueDeclarations,
   type LoadedValueDeclarationLookup,
 } from "@ai-matrx/chat/surfaces/runtime/loaded-value-check";
-import { createDeclarationRegistry } from "@ai-matrx/alchemy/declare";
+import { createDeclarationRegistry, TABLE_ROW_ITEM_TYPE } from "@ai-matrx/alchemy/declare";
 import type {
   ResolvedSurfaceManifest,
   SurfaceManifest,
@@ -623,6 +623,7 @@ export function assertDeclaresExecutor(
  */
 const REGISTRY = createDeclarationRegistry<SurfaceManifest>({
   baselineValues: Object.values(BASELINE_VALUES),
+  baselineItemTypes: [TABLE_ROW_ITEM_TYPE],
   maxInheritanceDepth: MAX_INHERITANCE_DEPTH,
 });
 REGISTRY.registerExtension(agentRolesExtension);
