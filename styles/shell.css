@@ -1776,7 +1776,7 @@ body[style*="pointer-events: none"] {
   content: "";
   display: block;
   height: max(var(--shell-fixed-alert-clearance), var(--matrx-floating-clearance));
-  pointer-events: none;
+  pointer-events: none;  visibility: hidden; /* not a layout-shift source — see the runway rule below */
 }
 
 /* …BUT NEVER ON A ROUTE BODY THAT IS ITSELF THE VIEWPORT.
@@ -1968,6 +1968,10 @@ body[style*="pointer-events: none"] {
     var(--shell-fixed-alert-clearance, 0px)
   );
   pointer-events: none;
+  /* An empty spacer paints nothing, but the browser still reports it as a LAYOUT SHIFT whenever the
+     list above it grows (a phone list's runway moved off-screen = CLS 0.1 by itself). Hidden boxes are
+     not shift sources; the box keeps its size, so the scroll range is unchanged. */
+  visibility: hidden;
 }
 
 /* NO STACKING: a scroller that takes the runway gives up its own bottom
@@ -2063,7 +2067,7 @@ body[style*="pointer-events: none"] {
   flex: none;
   grid-column: 1 / -1;
   block-size: max(var(--matrx-floating-clearance), var(--shell-fixed-alert-clearance, 0px));
-  pointer-events: none;
+  pointer-events: none;  visibility: hidden; /* not a layout-shift source — see the runway rule above */
 }
 
 /* Natural-height reading/list surfaces keep a generous final runway so fixed
