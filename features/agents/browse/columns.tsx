@@ -32,6 +32,7 @@ import {
   timeCell,
   type EntityColumnSpec,
 } from "@/lib/entity-list/columns";
+import { usageColumns } from "@/lib/entity-list/usageColumns";
 import { FillsMandatesCell } from "@/features/mandates/filled-by/FillsMandatesCell";
 import type { AgentBrowseRow } from "./types";
 
@@ -277,6 +278,19 @@ export const BROWSE_COLUMNS: EntityColumnSpec<AgentBrowseRow>[] = [
       cell: (row) => <FillsMandatesCell mandates={row.fills_mandates} />,
     },
   },
+  // Runs, Last used, Success rate, Failures, Cost — THE shared usage columns
+  // (lib/entity-list/usageColumns), the same five the workflows list shows, so
+  // a forgotten or never-used agent is one sort or one "Never used" away.
+  ...usageColumns<AgentBrowseRow>({
+    read: (row) => ({
+      runs: Number(row.run_count ?? 0),
+      successes: Number(row.success_count ?? 0),
+      failures: Number(row.failure_count ?? 0),
+      lastUsedAt: row.last_used_at ?? null,
+      costUsd: row.total_cost == null ? null : Number(row.total_cost),
+    }),
+    lastUsedId: "last_used",
+  }),
   {
     id: "updated",
     label: "Updated",

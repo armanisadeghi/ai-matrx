@@ -16,7 +16,6 @@
 // one click away in the column picker, and the choice is persisted per user.
 
 import { Archive, Star } from "lucide-react";
-import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { RichContentPreview } from "@ai-matrx/rich-content/levels/RichContentPreview";
@@ -26,7 +25,7 @@ import {
   timeCell,
   type EntityColumnSpec,
 } from "@/lib/entity-list/columns";
-import { formatRelativeTime } from "@ai-matrx/kit/format";
+import { usageColumns } from "@/lib/entity-list/usageColumns";
 import { RunStatusChip, runStatusLabel } from "../run-status";
 import { FillsMandatesCell } from "@/features/mandates/filled-by/FillsMandatesCell";
 import type { WorkflowBrowseRow } from "./types";
@@ -41,6 +40,23 @@ const COUNT_FILTER_OPTIONS = [
   { value: "6-20", label: "6–20" },
   { value: "gt20", label: "More than 20" },
 ];
+
+/**
+ * `workflow.definition.workflow_type`, in the reader's words. Mirrors
+ * `agent.definition.agent_type`: a person made it, the platform ships it, or a
+ * platform feature generated it for one parent record (Rulebook Understudy /
+ * Build, seeded per-organization copies).
+ */
+const WORKFLOW_TYPE_LABELS: Record<string, string> = {
+  user: "Person",
+  builtin: "Built-in",
+  generated: "Feature-made",
+};
+export const workflowTypeLabel = (value: string | null | undefined) =>
+  value ? (WORKFLOW_TYPE_LABELS[value] ?? value) : "—";
+const WORKFLOW_TYPE_FILTER_OPTIONS = Object.entries(WORKFLOW_TYPE_LABELS).map(
+  ([value, label]) => ({ value, label }),
+);
 
 /** Facet values are raw run statuses; the panel must show them as words. */
 const formatStatusFacet = (value: string) =>
@@ -143,39 +159,6 @@ export const WORKFLOW_BROWSE_COLUMNS: EntityColumnSpec<WorkflowBrowseRow>[] = [
     },
   },
   {
-    id: "runs",
-    label: "Runs",
-    facet: "runs",
-    column: {
-      id: "runs",
-      accessorKey: "run_count",
-      header: "Runs",
-      filter: "select",
-      filterOptions: COUNT_FILTER_OPTIONS,
-      width: 80,
-      align: "right",
-      // THE DOOR LAW, finally payable. This count sat inert because there was
-      // no per-workflow run-history surface to open, and pointing "4 runs" at
-      // the single most recent run would have been a door landing somewhere the
-      // number did not promise. `/workflows/[id]/runs` (census #39) is that
-      // surface, so the number now opens exactly what it counts.
-      cell: (row) => {
-        const n = Number(row.run_count ?? 0);
-        if (n <= 0) return <Muted>—</Muted>;
-        return (
-          <Link
-            href={`/workflows/${row.id}/runs`}
-            onClick={(e) => e.stopPropagation()}
-            className="tabular-nums text-muted-foreground hover:text-foreground hover:underline"
-            title={`See all ${n} ${n === 1 ? "run" : "runs"} of this workflow`}
-          >
-            {n}
-          </Link>
-        );
-      },
-    },
-  },
-  {
     id: "fills_mandates",
     label: "Fills mandates",
     column: {
@@ -212,45 +195,51 @@ export const WORKFLOW_BROWSE_COLUMNS: EntityColumnSpec<WorkflowBrowseRow>[] = [
         ),
     },
   },
+  // Runs, Last used, Success rate, Failures, Cost — THE shared usage columns
+  // (lib/entity-list/usageColumns), the same five the agents list shows.
+  // THE DOOR LAW: the run count opens `/workflows/[id]/runs` (exactly what it
+  // counts) and the last-used time opens that run's own page.
+  ...usageColumns<WorkflowBrowseRow>({
+    read: (row) => ({
+      runs: Number(row.run_count ?? 0),
+      successes: Number(row.success_count ?? 0),
+      failures: Number(row.failure_count ?? 0),
+      lastUsedAt: row.last_run_at ?? null,
+      costUsd: row.total_cost == null ? null : Number(row.total_cost),
+    }),
+    lastUsedId: "last_run",
+    runsDoor: (row) => {
+      const n = Number(row.run_count ?? 0);
+      return {
+        href: `/workflows/${row.id}/runs`,
+        title: `See all ${n} ${n === 1 ? "run" : "runs"} of this workflow`,
+      };
+    },
+    lastUsedDoor: (row) =>
+      row.last_run_id && row.last_run_at
+        ? {
+            href: `/workflows/runs/${row.last_run_id}`,
+            title: `Open the run from ${new Date(row.last_run_at).toLocaleString()}`,
+          }
+        : null,
+  }),
   {
-    id: "last_run",
-    label: "Last run",
+    id: "workflow_type",
+    label: "Type",
+    facet: "workflow_type",
+    formatFacetValue: workflowTypeLabel,
     column: {
-      id: "last_run",
-      accessorKey: "last_run_at",
-      header: "Last run",
+      id: "workflow_type",
+      accessorKey: "workflow_type",
+      header: "Type",
       filter: "select",
-      filterOptions: DATE_FILTER_OPTIONS,
-      width: 130,
-      align: "right",
-      // THE DOOR LAW: the run is a record with an identity and a permalink, so
-      // the cell that names it opens it. `wfx_list_scoped` already returns the
-      // id — rendering the timestamp as inert text would be throwing away a
-      // relationship we resolved.
-      cell: (row) => {
-        if (!row.last_run_at) return <Muted>—</Muted>;
-        const when = formatRelativeTime(row.last_run_at);
-        if (!row.last_run_id) {
-          return (
-            <span
-              className="tabular-nums text-muted-foreground"
-              title={new Date(row.last_run_at).toLocaleString()}
-            >
-              {when}
-            </span>
-          );
-        }
-        return (
-          <Link
-            href={`/workflows/runs/${row.last_run_id}`}
-            onClick={(e) => e.stopPropagation()}
-            className="tabular-nums text-muted-foreground hover:text-foreground hover:underline"
-            title={`Open the run from ${new Date(row.last_run_at).toLocaleString()}`}
-          >
-            {when}
-          </Link>
-        );
-      },
+      filterOptions: WORKFLOW_TYPE_FILTER_OPTIONS,
+      width: 110,
+      cell: (row) => (
+        <span className="truncate text-muted-foreground">
+          {workflowTypeLabel(row.workflow_type)}
+        </span>
+      ),
     },
   },
   {
