@@ -76,7 +76,8 @@ const DELEGATED: Readonly<Record<string, string>> = {
   dataset: "readTableDetails — the data-tables service names the table",
   seo_map_topic: "useMapTopicRow + TopicDetailBody — the topical map's own panel",
   sandbox_instance: "a sandbox has no name; its id is what the sandbox UI shows",
-  structured_list: "get_user_list_with_items RPC — reads list_name",
+  pick_list: "get_user_list_with_items RPC — reads list_name",
+  structured_list: "the retired spelling of pick_list — same peek",
 };
 
 async function settle(): Promise<void> {

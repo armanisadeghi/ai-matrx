@@ -14,7 +14,6 @@
  * free.
  */
 
-import { ENTITY_TYPE_METADATA } from "@ai-matrx/associations";
 import { getItemConfig, itemTypeForRecordTable } from "../registry";
 
 describe("V-22's attack: a calendar payload stamped with a foreign table", () => {
@@ -75,13 +74,22 @@ describe("it never guesses", () => {
     },
   );
 
-  it("prefers the canonical registration when two types share a table", () => {
-    // `structured_list` and its legacy read-only alias `picklist` share one
-    // entity token, so one record table; the canonical word must win.
-    const meta = ENTITY_TYPE_METADATA.structured_list;
-    expect(itemTypeForRecordTable(`${meta.schema}.${meta.table}`)).toBe(
-      "structured_list",
-    );
+  it("a Pick list is one registration, and its retired spellings open the same record", () => {
+    // Pick lists live in the record store (no table of their own), so there is no
+    // `record_table` to prefer between spellings. `pick_list` is the canonical type; the
+    // retired `structured_list` and `picklist` stay readable and resolve to the same door,
+    // the same label and the same entity token.
+    const canonical = getItemConfig("pick_list");
+    expect(canonical.recognized).toBe(true);
+    expect(canonical.config.label).toBe("Pick list");
+    expect(canonical.config.open).toEqual({ kind: "pick_list" });
+    for (const retired of ["structured_list", "picklist"] as const) {
+      const found = getItemConfig(retired);
+      expect(found.recognized).toBe(true);
+      expect(found.config.label).toBe("Pick list");
+      expect(found.config.open).toEqual(canonical.config.open);
+      expect(found.config.entityToken).toBe("pick_list");
+    }
   });
 });
 

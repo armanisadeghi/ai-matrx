@@ -57,6 +57,7 @@ export const PEEK_REGISTRY: Record<
   transcript: TranscriptPeek,
   agent_shortcut: ShortcutPeek,
   pick_list: ListPeek,
+  structured_list: ListPeek, // retired spelling: org resource rows and saved peeks still carry it
   workbook: WorkbookPeek,
   quiz_session: QuizPeek,
   sandbox_instance: SandboxPeek,

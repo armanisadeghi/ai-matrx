@@ -424,7 +424,7 @@ export const ORG_RESOURCE_CATALOGUE: OrgResourceEntry[] = [
     scopeable: true,
   },
   {
-    key: "pick_list",
+    key: "structured_list",
     token: null,
     label: PICK_LIST_INFO.label,
     labelPlural: PICK_LIST_INFO.labelPlural,

@@ -40,6 +40,7 @@ export const PEEK_KINDS = [
   "transcript",
   "agent_shortcut",
   "pick_list",
+  "structured_list",
   "workbook",
   "quiz_session",
   "sandbox_instance",
