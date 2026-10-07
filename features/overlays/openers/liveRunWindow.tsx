@@ -43,6 +43,8 @@ export interface OpenLiveRunWindowOptions {
   label?: string | null;
   /** Launched, but no stream has connected yet. */
   pending?: boolean;
+  /** The launch failed before a stream existed: its reason, shown in the window. */
+  failure?: string | null;
   /** Stable id to reuse one window per subject. Omit for a fresh window. */
   instanceId?: string;
   /**
@@ -88,6 +90,7 @@ export function openLiveRunWindowAction(
       runSetKey: opts.runSetKey ?? null,
       label: opts.label ?? null,
       pending: opts.pending ?? false,
+      failure: opts.failure ?? null,
       // Undefined (not null) so the component's chat-matched defaults
       // apply — an explicit null would be passed through as a size.
       width: opts.width,

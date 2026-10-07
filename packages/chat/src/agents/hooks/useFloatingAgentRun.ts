@@ -42,6 +42,19 @@ import {
   type LiveAgentRunOptions,
 } from "./useLiveAgentRun";
 import { useLiveRunHandle } from "./useLiveRunHandle";
+import { HeadlessAgentRunError } from "./useHeadlessAgentJson";
+import { isOrganizationSelectionCancelled } from "../../host/org";
+
+/**
+ * The words a failed launch shows in its window: the server's own reason when
+ * the run carried one (a Mandate with no Holder names the rungs it checked),
+ * else the error's message.
+ */
+export function floatingFailureReason(error: unknown): string {
+  if (error instanceof HeadlessAgentRunError && error.detail) return error.detail;
+  if (error instanceof Error && error.message) return error.message;
+  return "The run could not start.";
+}
 
 /**
  * A run this hook only WATCHES — launched and owned elsewhere, its state read
@@ -94,6 +107,19 @@ export interface FloatingRun {
   bindRequest: (requestId: string) => void;
   /** Close this run's window (and release its instance when owned). */
   close: () => void;
+  /**
+   * The launch failed: the window stops saying "Starting…" and shows `reason`.
+   * Call it from the launch's failure path — a window left pending after a
+   * refused launch reads as a run that is still coming (the Spaces "Build
+   * with AI" incident, 2026-10-07).
+   */
+  fail: (reason: string) => void;
+  /**
+   * Call once the launch has returned, however it ended: a window still
+   * waiting for its first stream handle shows `reason` instead of "Starting…"
+   * forever. A bound window is left alone — its own stream tells the story.
+   */
+  settle: (reason: string) => void;
 }
 
 export interface UseFloatingRunWindow {
@@ -187,13 +213,22 @@ export function useFloatingRunWindow(
       height,
     });
     handleRef.current = handle;
+    let bound = false;
     return {
       bind: (conversationId) => {
+        bound = true;
         if (owns) run.claim(conversationId);
         handle.update({ conversationId, pending: false });
       },
-      bindRequest: (requestId) => handle.update({ requestId, pending: false }),
+      bindRequest: (requestId) => {
+        bound = true;
+        handle.update({ requestId, pending: false });
+      },
       close,
+      fail: (reason) => handle.update({ pending: false, failure: reason }),
+      settle: (reason) => {
+        if (!bound) handle.update({ pending: false, failure: reason });
+      },
     };
   };
 
@@ -230,13 +265,20 @@ export function useFloatingAgentRun(
   ): Promise<T> {
     const { label, ...runOptions } = opts;
     const bound = floating.start(label ?? options.label ?? "AI is working");
-    return live.run<T>({
-      ...(runOptions as LiveAgentRunOptions<T>),
-      onConversationCreated: (conversationId) => {
-        bound.bind(conversationId);
-        opts.onConversationCreated?.(conversationId);
-      },
-    });
+    try {
+      return await live.run<T>({
+        ...(runOptions as LiveAgentRunOptions<T>),
+        onConversationCreated: (conversationId) => {
+          bound.bind(conversationId);
+          opts.onConversationCreated?.(conversationId);
+        },
+      });
+    } catch (error) {
+      // Closing the organization picker means "nothing happened": no window.
+      if (isOrganizationSelectionCancelled(error)) bound.close();
+      else bound.fail(floatingFailureReason(error));
+      throw error;
+    }
   }
 
   return {

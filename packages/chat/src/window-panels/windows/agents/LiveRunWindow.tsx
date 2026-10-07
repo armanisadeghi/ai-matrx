@@ -83,6 +83,8 @@ export interface LiveRunWindowProps {
   label?: string | null;
   /** The run has been launched but no stream has connected yet. */
   pending?: boolean;
+  /** The launch failed before a stream existed: its reason, shown in the body. */
+  failure?: string | null;
   /**
    * Per-kind size override. Only pass these once you have WATCHED that kind
    * render and seen the default box be wrong — a kind whose output is three
@@ -106,6 +108,7 @@ export default function LiveRunWindow({
   runSetKey = null,
   label = null,
   pending = false,
+  failure = null,
   width = LIVE_RUN_WIDTH,
   height = LIVE_RUN_HEIGHT,
   progress = null,
@@ -123,7 +126,7 @@ export default function LiveRunWindow({
   const { statusText } = useLiveRunStatus(
     conversationId,
     statusRequestId,
-    pending && !statusRequestId,
+    pending && !statusRequestId && !failure,
   );
 
   // The phase rides in the frame's OWN title bar. It is not a second row, not
@@ -133,8 +136,9 @@ export default function LiveRunWindow({
   // has none, and its stages should then use the whole body.)
   const hasOutput = Boolean(requestId || conversationId || runSetKey);
 
-  const title = statusText
-    ? `${label ?? "AI is working"} — ${statusText}`
+  const phase = failure && !statusRequestId ? "Failed" : statusText;
+  const title = phase
+    ? `${label ?? "AI is working"} — ${phase}`
     : (label ?? "AI is working");
 
   return (
@@ -198,6 +202,7 @@ export default function LiveRunWindow({
               conversationId={conversationId}
               requestId={requestId}
               pending={pending && !progress}
+              failure={failure}
               variant="bare"
               className="h-full"
               bodyClassName="max-h-none h-full overflow-y-auto"

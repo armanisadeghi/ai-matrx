@@ -219,7 +219,10 @@ export function useKindActionRunner(
               onResult?.(settled);
             },
           });
-          return settled ?? toResult(run);
+          const outcome = settled ?? toResult(run);
+          // A launch refused before any stream leaves the window saying why.
+          live.settle(run.errorDetail ?? run.error ?? "The run could not start.");
+          return outcome;
         };
         const context: KindActionContext = {
           launchAgent,

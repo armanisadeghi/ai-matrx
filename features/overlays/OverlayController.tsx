@@ -6127,6 +6127,11 @@ export default function OverlayController() {
             }
             label={typeof data?.label === "string" ? data.label : null}
             pending={data?.pending === true}
+            failure={
+              typeof data?.failure === "string" && data.failure
+                ? data.failure
+                : null
+            }
             progress={parseLiveRunProgressState(data?.progress)}
             initialMinimized={data?.initialMinimized === true}
             workingMessage={

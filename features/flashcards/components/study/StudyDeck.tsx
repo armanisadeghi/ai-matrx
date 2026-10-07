@@ -529,6 +529,7 @@ export function StudyDeck(props: StudyDeckProps) {
           onUnusable: setHelpUnusable,
         }),
       );
+      live.settle("Your tutor could not answer.");
       setHelp(result);
       // Mirror it into the local journal so navigating away and back shows the
       // answer immediately, without a refetch.
@@ -591,7 +592,10 @@ export function StudyDeck(props: StudyDeckProps) {
       }),
     )
       .then((result) => setReview(result))
-      .finally(() => setReviewLoading(false));
+      .finally(() => {
+        live.settle("Your session review could not start.");
+        setReviewLoading(false);
+      });
   }, [completed, sessionId]);
 
   useEffect(() => {

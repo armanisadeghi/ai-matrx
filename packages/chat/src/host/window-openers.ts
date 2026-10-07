@@ -218,6 +218,8 @@ export interface OpenLiveRunWindowOptions {
   runSetKey?: string | null;
   label?: string | null;
   pending?: boolean;
+  /** The launch failed before a stream existed: its reason, shown in the window. */
+  failure?: string | null;
   /** Stable id to reuse one window per subject. Omit for a fresh window. */
   instanceId?: string;
   width?: number | string;
