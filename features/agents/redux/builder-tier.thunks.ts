@@ -35,6 +35,7 @@ import type {
   PromoteVersionResult,
   LinkedAgentRef,
   LinkedCounterpartResult,
+  LostLinkedSource,
   PersonalCopyResult,
 } from "@ai-matrx/chat/agents/types/agent-definition.types";
 import {
@@ -91,6 +92,7 @@ import {
   uniqueToolIds,
 } from "@ai-matrx/chat/agents/redux/agent-definition/thunks";
 import { duplicateAgent, saveAgentField } from "./builder-write.thunks";
+import { fetchUserDisplayNames } from "@/features/mandates/notes";
 
 type ThunkApi = { dispatch: ChatDispatch; state: ChatRootState };
 
@@ -550,7 +552,7 @@ export const updateAgentFromSource = createAsyncThunk<
 // ---------------------------------------------------------------------------
 
 const LINKED_REF_COLS =
-  "id, agent_type, name, source_agent_id, source_snapshot_at, updated_at, created_by, deleted_at";
+  "id, agent_type, name, source_agent_id, source_snapshot_at, updated_at, created_by, deleted_at, is_archived, organization_id, visibility";
 
 interface LinkedRefRow {
   id: string;
@@ -561,12 +563,103 @@ interface LinkedRefRow {
   updated_at: string;
   created_by: string | null;
   deleted_at: string | null;
+  is_archived: boolean | null;
+  organization_id: string | null;
+  visibility: string | null;
+}
+
+/** Levels at which the builder's own save is allowed (agent.definition std_update). */
+const EDIT_LEVELS = new Set(["owner", "admin", "editor"]);
+
+/**
+ * The viewer's level on each agent, from the existing door `agx_get_access_level`
+ * (owner/admin/editor/viewer/public/none). Owned rows and system rows need no call.
+ */
+async function fetchAccessLevels(
+  rows: LinkedRefRow[],
+  uid: string | null,
+): Promise<Map<string, string>> {
+  const levels = new Map<string, string>();
+  const ask: string[] = [];
+  for (const row of rows) {
+    if (row.agent_type === "builtin") levels.set(row.id, "viewer");
+    else if (uid && row.created_by === uid) levels.set(row.id, "owner");
+    else ask.push(row.id);
+  }
+  await Promise.all(
+    ask.map(async (id) => {
+      const { data, error } = await supabase.rpc("agx_get_access_level", {
+        p_agent_id: id,
+      });
+      if (error) throw pgErrorToError(error);
+      levels.set(id, data?.[0]?.access_level ?? "none");
+    }),
+  );
+  return levels;
+}
+
+/**
+ * Owner words for each agent, through reads the viewer already has: person
+ * display names from `users.profiles`, organization names from
+ * `iam.organizations` (both row-security limited — an unreadable name stays
+ * null and the panel says "Someone else").
+ */
+async function fetchOwnerNames(
+  rows: LinkedRefRow[],
+  uid: string | null,
+): Promise<{ people: Map<string, string>; orgs: Map<string, string> }> {
+  const others = rows.filter(
+    (r) => r.agent_type !== "builtin" && r.created_by && r.created_by !== uid,
+  );
+  const personIds = [...new Set(others.map((r) => r.created_by as string))];
+  const orgIds = [
+    ...new Set(
+      others
+        .filter((r) => r.organization_id && r.visibility !== "personal")
+        .map((r) => r.organization_id as string),
+    ),
+  ];
+  const [people, orgs] = await Promise.all([
+    fetchUserDisplayNames(personIds),
+    (async () => {
+      const names = new Map<string, string>();
+      if (orgIds.length === 0) return names;
+      const { data } = await supabase
+        .schema("iam")
+        .from("organizations")
+        .select("id, name")
+        .in("id", orgIds);
+      for (const row of data ?? []) {
+        if (row.name?.trim()) names.set(row.id, row.name.trim());
+      }
+      return names;
+    })(),
+  ]);
+  return { people, orgs };
 }
 
 function toLinkedRef(
   row: LinkedRefRow,
   currentUserId: string | null,
+  levels: Map<string, string>,
+  names: { people: Map<string, string>; orgs: Map<string, string> },
 ): LinkedAgentRef {
+  const isMine = !!currentUserId && row.created_by === currentUserId;
+  const orgName =
+    row.organization_id && row.visibility !== "personal"
+      ? (names.orgs.get(row.organization_id) ?? null)
+      : null;
+  // An org-visible agent of someone else, in an organization the viewer can
+  // read, belongs to that organization as far as the viewer is concerned.
+  const ownerKind: LinkedAgentRef["ownerKind"] =
+    row.agent_type === "builtin"
+      ? "system"
+      : isMine
+        ? "me"
+        : orgName
+          ? "organization"
+          : "person";
+  const accessLevel = levels.get(row.id) ?? (isMine ? "owner" : "none");
   return {
     id: row.id,
     agentType: row.agent_type,
@@ -574,28 +667,35 @@ function toLinkedRef(
     sourceAgentId: row.source_agent_id,
     sourceSnapshotAt: row.source_snapshot_at,
     updatedAt: row.updated_at,
-    isOwnedByMe: !!currentUserId && row.created_by === currentUserId,
+    isOwnedByMe: isMine,
     deletedAt: row.deleted_at,
+    isArchived: row.is_archived === true,
+    ownerKind,
+    ownerName:
+      ownerKind === "organization"
+        ? orgName
+        : ownerKind === "person" && row.created_by
+          ? (names.people.get(row.created_by) ?? null)
+          : null,
+    accessLevel,
+    canEdit: row.agent_type !== "builtin" && EDIT_LEVELS.has(accessLevel),
   };
 }
 
 /**
- * Resolves the linkage around an agent: what it was copied from (`source`) and
- * what was copied from it (`derived`). RLS limits `derived` to rows the caller
- * can see — so from a system agent this surfaces the caller's own personal
- * copies (plus the original maintainer agent if visible), never other users'
- * private copies. Returns data only; nothing is written to the slice.
+ * Resolves the linkage around an agent — what it was made from (`source`) and
+ * what was copied from it (`derived`) — with the facts Linked Agent Sync names
+ * things by: each agent's owner (me / a person / an organization / system) and
+ * whether the viewer may edit it (the builder's own rule: owner or editor).
+ * RLS limits `derived` to rows the caller can read. Returns data only.
  *
- * Soft-deleted `source`/`derived` rows are excluded here, exactly as
- * `fetchAgentSyncComparison` excludes them (`deleted_at` is NOT RLS-filtered on
- * this table). The two reads MUST agree: if the pair card resolved a twin the
- * comparison cannot read, the panel would show a live-looking agent, report
- * `unknown`, and leave Pull/Push enabled against a deleted target.
+ * Soft-deleted and archived relatives are never offered as sync partners. A
+ * `source` that exists by id but cannot be opened (unshared, made private,
+ * archived, deleted) comes back as `lostSource`, so the panel says "Made from
+ * an agent you can no longer open" instead of "not linked".
  *
- * `self` is the one deliberate exception — read UNFILTERED and carrying its
- * `deletedAt`. Filtering it would collapse "this agent is deleted" into "this
- * agent isn't linked to a system agent", which is a different and false
- * statement. The panel reads the stamp and says which one is true.
+ * `self` is read UNFILTERED and carries its `deletedAt`, so "this agent is
+ * deleted" is never collapsed into "this agent isn't linked".
  */
 export const fetchLinkedCounterpart = createAsyncThunk<
   LinkedCounterpartResult | null,
@@ -613,17 +713,34 @@ export const fetchLinkedCounterpart = createAsyncThunk<
   if (selfErr) throw pgErrorToError(selfErr);
   if (!selfRow) return null;
 
-  let source: LinkedAgentRef | null = null;
+  let srcRow: LinkedRefRow | null = null;
+  let lostSource: LostLinkedSource | null = null;
   if (selfRow.source_agent_id) {
-    const { data: srcRow, error: srcErr } = await supabase
+    const { data, error: srcErr } = await supabase
       .schema("agent")
       .from("definition")
       .select(LINKED_REF_COLS)
       .eq("id", selfRow.source_agent_id)
-      .is("deleted_at", null)
       .maybeSingle<LinkedRefRow>();
     if (srcErr) throw pgErrorToError(srcErr);
-    if (srcRow) source = toLinkedRef(srcRow, uid);
+    if (data && data.deleted_at) {
+      lostSource = { id: data.id, reason: "deleted" };
+    } else if (data && data.is_archived) {
+      lostSource = { id: data.id, reason: "archived" };
+    } else if (data) {
+      srcRow = data;
+    } else {
+      // Not readable: the door answers whether the row still exists at all.
+      const { data: lvl, error: lvlErr } = await supabase.rpc(
+        "agx_get_access_level",
+        { p_agent_id: selfRow.source_agent_id },
+      );
+      if (lvlErr) throw pgErrorToError(lvlErr);
+      lostSource = {
+        id: selfRow.source_agent_id,
+        reason: lvl && lvl.length > 0 ? "unreadable" : "deleted",
+      };
+    }
   }
 
   // archived-items-law-exempt: linked-reference GRAPH edges, not a browsable
@@ -641,10 +758,18 @@ export const fetchLinkedCounterpart = createAsyncThunk<
     .returns<LinkedRefRow[]>();
   if (derErr) throw pgErrorToError(derErr);
 
+  const allRows = [selfRow, ...(srcRow ? [srcRow] : []), ...(derivedRows ?? [])];
+  const [levels, names] = await Promise.all([
+    fetchAccessLevels(allRows, uid),
+    fetchOwnerNames(allRows, uid),
+  ]);
+  const ref = (row: LinkedRefRow) => toLinkedRef(row, uid, levels, names);
+
   return {
-    self: toLinkedRef(selfRow, uid),
-    source,
-    derived: (derivedRows ?? []).map((r) => toLinkedRef(r, uid)),
+    self: ref(selfRow),
+    source: srcRow ? ref(srcRow) : null,
+    derived: (derivedRows ?? []).map(ref),
+    lostSource,
   };
 });
 
@@ -759,9 +884,10 @@ export const fetchAgentSyncComparison = createAsyncThunk<
 );
 
 /**
- * Creates a personal (user-owned) copy of a system agent, linked back to it via
+ * Creates the caller's own copy of any agent they can read (system, a friend's,
+ * an organization's — "duplicating is not editing"), linked back to it via
  * `source_agent_id`. Idempotent: if the current user already has a non-archived
- * personal copy of this system agent, that copy is returned instead of creating
+ * copy of this agent, that copy is returned instead of creating
  * another — so the action doubles as "open my copy". The created/found copy is
  * loaded into state.
  */
