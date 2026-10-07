@@ -55,7 +55,7 @@
  * `--self-test` proves both directions on planted fixtures. `--list` prints every offender.
  */
 
-import { mkdtempSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, mkdtempSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import ts from "typescript";
@@ -64,8 +64,30 @@ import { REPO_ROOT, repoFiles } from "./lib/repo-files";
 
 const BASELINE = "scripts/no-active-org-in-reads-baseline.json";
 
-/** Every directory of application code. (2026-09-30: providers/ utils/ packages/ joined — a hook or provider there reads the active organization exactly like a feature does.) */
-export const SCAN_DIRS = ["app", "features", "../aidream/apps/shared/chat/src", "components", "lib", "hooks", "providers", "utils", "packages"] as const;
+/**
+ * Every directory of application code. (2026-09-30: providers/ utils/ packages/ joined — a hook or provider there reads the active organization exactly like a feature does.)
+ * (2026-10-07, lane I: the Applet data path joined — @ai-matrx/applets, entity-data and records are where
+ * an Applet's reads are built, so an active-organization read there narrows every Applet at once. The
+ * `../aidream/…` directories are a SIBLING checkout: listed through that checkout's own git, and when it
+ * is absent (CI without the aidream checkout) the run says UNMEASURED for them by name — never green.)
+ */
+export const SCAN_DIRS = [
+  "app",
+  "features",
+  "../aidream/apps/shared/chat/src",
+  "../aidream/apps/shared/applets/src",
+  "../aidream/apps/shared/entity-data/src",
+  "../aidream/apps/shared/records/src",
+  "components",
+  "lib",
+  "hooks",
+  "providers",
+  "utils",
+  "packages",
+] as const;
+
+/** The scanned directories that live in a sibling checkout (`../<repo>/…`). */
+export const SIBLING_DIRS = SCAN_DIRS.filter((d) => d.startsWith("../"));
 
 /** Calls that RETURN the active organization (or the whole gate that carries it). */
 const SOURCE_CALLS = new Set([
@@ -96,6 +118,16 @@ function isActiveEnsureOrgId(call: ts.CallExpression): boolean {
 const SOURCE_IDENTS = new Set(["selectOrganizationId", "selectActiveOrganizationId", "selectEffectiveOrganizationId"]);
 /** `activeOrgCookie.read(userId)` and friends: the shared cookie IS the remembered active organization. */
 const COOKIE_OBJECT = /^(activeOrg\w*Cookie|\w*ActiveOrgCookie)$/;
+/**
+ * THE PACKAGE SHAPE (2026-10-07). A shared package has no Redux and no cookie: the host hands it the
+ * active organization as an option or a getter named for it — `opts.activeOrganizationId`,
+ * `viewer.activeOrganizationId`, `options.activeOrganizationId()`, a destructured `activeOrganizationId`
+ * prop, or entity-data's `activeOrganization()` helper. Each IS the active organization.
+ */
+const ACTIVE_ORG_NAME = "activeOrganizationId";
+const ACTIVE_ORG_CALLS = new Set(["activeOrganization"]);
+/** Where the package shape is read: the shared packages' source (a sibling checkout), and the self-test's planted copy of it. */
+const PACKAGE_SOURCE = /^(\.\.\/aidream\/apps\/shared|packages-shared)\//;
 /** Redux `appContext.organization_id` read by hand. */
 const APP_CONTEXT = "appContext";
 const ORG_PROP = /^(organization_id|organizationId)$/;
@@ -118,6 +150,8 @@ const READ_CALLEES = new Set(["useQuery", "useInfiniteQuery", "useSuspenseQuery"
 /** Method calls (`x.select(…)`) that read — bare `select(…)` is somebody's local function, never a query. */
 const READ_METHODS = new Set(["select", "rpc", "eq", "in", "match", "or", "neq", "filter"]);
 const READ_CALLEE_SHAPE = /^(list|fetch|load|search|count)[A-Z_]\w*$|^query(?!Selector)[A-Z_]\w*$|^use\w*(List|Query|Tables|Records|Search)$/;
+/** The store doors' read verbs as package clients name them (`client.list`, `port.columns`, `client.tableRead`, `client.readRecords`). Method calls only, in package source only. */
+const READ_METHOD_SHAPE = /^(list|search|count|columns|get)$|^\w+Read$|^read[A-Z]\w*$/;
 /** Filter methods that also appear on writes (`.update(x).eq("organization_id", org)`): read only when no write verb is in the chain. */
 const FILTER_CALLEES = new Set(["eq", "in", "match", "or", "filter", "neq", "select"]);
 const WRITE_VERBS = new Set(["insert", "update", "upsert", "delete"]);
@@ -179,10 +213,12 @@ function isDeclarationName(node: ts.Identifier): boolean {
 }
 
 /** Does this node itself READ the active organization? `derived` = names of wrapper hooks/selectors found in other files. */
-function isSource(node: ts.Node, derived: ReadonlySet<string>): boolean {
+function isSource(node: ts.Node, derived: ReadonlySet<string>, pkg = false): boolean {
   if (ts.isCallExpression(node)) {
     const n = calleeName(node);
     if (SOURCE_CALLS.has(n) || derived.has(n) || isActiveEnsureOrgId(node)) return true;
+    // `activeOrganization()` / `options.activeOrganizationId()` — the getter forms of the package shape.
+    if (pkg && (ACTIVE_ORG_CALLS.has(n) || n === ACTIVE_ORG_NAME)) return true;
     const e = node.expression;
     if (ts.isPropertyAccessExpression(e) && /^(read|get)$/.test(e.name.text) && ts.isIdentifier(e.expression) && COOKIE_OBJECT.test(e.expression.text)) {
       return true;
@@ -191,6 +227,14 @@ function isSource(node: ts.Node, derived: ReadonlySet<string>): boolean {
   }
   if (ts.isIdentifier(node)) {
     if (isDeclarationName(node)) return false;
+    // A destructured `activeOrganizationId` prop/option read as a value (never the key of an object literal or a property name).
+    if (pkg && node.text === ACTIVE_ORG_NAME) {
+      const p = node.parent;
+      if (ts.isPropertyAccessExpression(p) && p.name === node) return false; // matched at the PropertyAccessExpression
+      if (ts.isPropertySignature(p) || ts.isPropertyDeclaration(p) || ts.isMethodSignature(p)) return false;
+      if (ts.isCallExpression(p) && p.expression === node) return false; // matched at the CallExpression
+      return true;
+    }
     if (SOURCE_IDENTS.has(node.text) || derived.has(node.text)) {
       // a call `derived()` is matched at the CallExpression; a bare reference is a selector passed along
       return !(ts.isCallExpression(node.parent) && node.parent.expression === node) || SOURCE_IDENTS.has(node.text);
@@ -205,6 +249,8 @@ function isSource(node: ts.Node, derived: ReadonlySet<string>): boolean {
       return true;
     }
     if (ORG_PROP.test(node.name.text) && ts.isIdentifier(node.expression) && node.expression.text === APP_CONTEXT) return true;
+    // `opts.activeOrganizationId` / `viewer.activeOrganizationId` (a call of it is matched at the CallExpression).
+    if (pkg && node.name.text === ACTIVE_ORG_NAME) return !(ts.isCallExpression(node.parent) && node.parent.expression === node);
   }
   return false;
 }
@@ -275,12 +321,13 @@ function isExemptWrite(call: ts.CallExpression, name: string): boolean {
   return false;
 }
 
-function isReadCall(call: ts.CallExpression): boolean {
+function isReadCall(call: ts.CallExpression, pkg = false): boolean {
   const name = calleeName(call);
   if (ts.isPropertyAccessExpression(call.expression) && READ_METHODS.has(name)) {
     // Array.prototype.filter is client-side narrowing: a read only when its callback names an organization.
     return name !== "filter" || call.arguments.some((a) => /org(anization)?_?id/i.test(a.getText()));
   }
+  if (pkg && READ_METHOD_SHAPE.test(name) && ts.isPropertyAccessExpression(call.expression)) return true;
   return READ_CALLEES.has(name) || READ_CALLEE_SHAPE.test(name);
 }
 
@@ -320,6 +367,7 @@ function carriersIn(sf: ts.SourceFile, derived: ReadonlySet<string>): string[] {
   return out.filter((n) => !SOURCE_CALLS.has(n) && !SOURCE_IDENTS.has(n));
 }
 
+const PACKAGE_HINT = /activeOrganizationId|activeOrganization\(/;
 const TOKEN_HINT = /ensureOrgId|awaitEffectiveOrganizationId|useOrganizationRequired|useActiveOrganizationId|useServerOrganizationId|ActiveOrgId|SelectedOrgId|readActiveOrg|selectOrganizationId|selectActiveOrganizationId|selectEffectiveOrganizationId|appContext|ActiveOrgCookie|activeOrg\w*Cookie/;
 
 export function findDerivedSources(root: string, files: readonly string[]): Set<string> {
@@ -345,8 +393,9 @@ export function findDerivedSources(root: string, files: readonly string[]): Set<
 }
 
 export function scanSource(file: string, text: string, derived: ReadonlySet<string> = new Set()): Finding[] {
+  const pkg = PACKAGE_SOURCE.test(file);
   const hint = derived.size > 0 ? new RegExp(`${TOKEN_HINT.source}|\\b(?:${[...derived].join("|")})\\b`) : TOKEN_HINT;
-  if (!hint.test(text)) return [];
+  if (!hint.test(text) && !(pkg && PACKAGE_HINT.test(text))) return [];
   const sf = parse(file, text);
   const raw = text.split("\n");
   const findings: Finding[] = [];
@@ -424,7 +473,7 @@ export function scanSource(file: string, text: string, derived: ReadonlySet<stri
       let hit = false;
       const walk = (x: ts.Node) => {
         if (hit) return;
-        if (isSource(x, derived) || (ts.isIdentifier(x) && isTaintedIdent(x))) {
+        if (isSource(x, derived, pkg) || (ts.isIdentifier(x) && isTaintedIdent(x))) {
           hit = true;
           return;
         }
@@ -435,7 +484,7 @@ export function scanSource(file: string, text: string, derived: ReadonlySet<stri
     };
     /** Does the VALUE of `e` itself hold the active organization (not merely something computed with it)? Only these propagate taint. */
     const carriesTaint = (e: ts.Node): boolean => {
-      if (isSource(e, derived)) return true;
+      if (isSource(e, derived, pkg)) return true;
       if (ts.isIdentifier(e)) return isTaintedIdent(e);
       if (ts.isParenthesizedExpression(e) || ts.isAwaitExpression(e) || ts.isNonNullExpression(e) || ts.isAsExpression(e) || ts.isTypeAssertionExpression(e) || ts.isSatisfiesExpression(e)) {
         return carriesTaint(e.expression);
@@ -517,7 +566,9 @@ export function scanSource(file: string, text: string, derived: ReadonlySet<stri
       if (skipInner(scope, n)) return;
       if (ts.isCallExpression(n)) {
         const name = calleeName(n);
-        if (isReadCall(n) && !isExemptWrite(n, name) && n.arguments.some((a) => mentionsTaint(a))) flag(n, `${name}()`);
+        // In package source the organization a read is SEATED in rides the receiver too: `clientIn(client, org).listKeyset(…)`.
+        const seated = pkg && ts.isPropertyAccessExpression(n.expression) && mentionsTaint(n.expression.expression);
+        if (isReadCall(n, pkg) && !isExemptWrite(n, name) && (seated || n.arguments.some((a) => mentionsTaint(a)))) flag(n, `${name}()`);
       }
       if (ts.isPropertyAssignment(n) && ts.isIdentifier(n.name) && n.name.text === "queryKey" && mentionsTaint(n.initializer)) flag(n, "queryKey");
       if (ts.isJsxOpeningElement(n) || ts.isJsxSelfClosingElement(n)) {
@@ -555,11 +606,29 @@ export function scan(root: string, files: readonly string[]): Map<string, Findin
   return out;
 }
 
+const NOT_SHIPPED = /(__tests__|__fixtures__|\.test\.|\.spec\.|\/__mocks__\/|\.d\.ts$)/;
+
+/** Sibling directories this run could not read (no sibling checkout): said out loud, and their baseline rows are not judged stale. */
+export const unmeasured: string[] = [];
+
 export function scannedFiles(root: string): string[] {
-  return repoFiles(root, {
-    under: [...SCAN_DIRS],
+  const own = repoFiles(root, {
+    under: SCAN_DIRS.filter((d) => !d.startsWith("../")),
     match: /\.(ts|tsx)$/,
-  }).filter((f) => !/(__tests__|\.test\.|\.spec\.|\/__mocks__\/|\.d\.ts$)/.test(f));
+  });
+  // A sibling checkout's files come from ITS git (this repo's ls-files never names `../`), kept `../repo/…` relative to this root.
+  const sibling: string[] = [];
+  unmeasured.length = 0;
+  for (const dir of SIBLING_DIRS) {
+    const [, repo = "", ...rest] = dir.split("/");
+    const repoRoot = join(root, "..", repo);
+    if (!existsSync(join(repoRoot, rest.join("/")))) {
+      unmeasured.push(dir);
+      continue;
+    }
+    for (const rel of repoFiles(repoRoot, { under: [rest.join("/")], match: /\.(ts|tsx)$/ })) sibling.push(`../${repo}/${rel}`);
+  }
+  return [...own, ...sibling].filter((f) => !NOT_SHIPPED.test(f));
 }
 
 function readBaseline(root: string): Record<string, BaselineEntry> {
@@ -575,7 +644,8 @@ export function judge(found: Map<string, Finding[]>, baseline: Record<string, Ba
   const all = [...found.values()].flat();
   const keys = new Set(all.map((x) => x.key));
   const fresh = all.filter((x) => !(x.key in baseline));
-  const stale = Object.keys(baseline).filter((k) => !keys.has(k));
+  const stale = Object.keys(baseline).filter((k) => !keys.has(k) && !unmeasured.some((d) => k.startsWith(`${d}/`)));
+  for (const d of unmeasured) log(`[WARN] UNMEASURED: ${d}/ — the sibling checkout is not here, so its reads were NOT scanned (its baseline rows are not judged).`);
   for (const x of fresh) log(`[FAIL] ${x.file}:${x.line}  ${x.text}\n       ${x.why}\n       (baseline key: ${x.key})`);
   for (const k of stale) {
     log(`[FAIL] ${k} is in ${BASELINE} but no longer trips the guard — remove its row (the baseline only shrinks).`);
@@ -766,8 +836,60 @@ function selfTest(): number {
       expect: true,
     },
   ];
+  // ── THE PACKAGE SHAPE (2026-10-07, lane I): the Applet data path is built in @ai-matrx/applets, entity-data
+  // and records, where the active organization arrives as an option, never a selector.
+  blind.push(
+    {
+      name: "RED: package — an entity list asked with the host's active organization getter",
+      files: [plant("packages-shared/entity-data/src/port.ts", `export function port(options: { activeOrganizationId?: () => string | null }) {\n  return { list: (token: string) => client.list({ token, organizationId: options.activeOrganizationId?.() }) };\n}\n`)],
+      target: "packages-shared/entity-data/src/port.ts",
+      expect: true,
+    },
+    {
+      name: "RED: package — a table read seated in opts.activeOrganizationId instead of the table's own organization",
+      files: [plant("packages-shared/applets/src/host.ts", `export function load(opts: { activeOrganizationId: string | null }, tableId: string) {\n  const seat = opts.activeOrganizationId;\n  return client.tableRead({ table_id: tableId, organization_id: seat });\n}\n`)],
+      target: "packages-shared/applets/src/host.ts",
+      expect: true,
+    },
+    {
+      name: "RED: package — entity-data's activeOrganization() helper narrows a list",
+      files: [plant("packages-shared/entity-data/src/list.ts", `export async function l() {\n  const org = activeOrganization();\n  return client.list({ token: "party", scope: { organization_id: org } });\n}\n`)],
+      target: "packages-shared/entity-data/src/list.ts",
+      expect: true,
+    },
+    {
+      name: "RED: package — a read seated in a client bound to the active organization (receiver, not argument)",
+      files: [plant("packages-shared/records/src/table-port.ts", `export async function l(client: C, tableId: string) {\n  return clientIn(client, client.config.activeOrganizationId).listKeyset({ table_id: tableId });\n}\n`)],
+      target: "packages-shared/records/src/table-port.ts",
+      expect: true,
+    },
+    {
+      name: "GREEN: package — the active organization only names where a NEW row is created",
+      files: [plant("packages-shared/entity-data/src/create.ts", `export async function c(token: string) {\n  const organizationId = activeOrganization();\n  return client.insert({ token, organizationId, rows: [] });\n}\n`)],
+      target: "packages-shared/entity-data/src/create.ts",
+      expect: false,
+    },
+    {
+      name: "GREEN: package — the host's option handed to a client constructor (writes) is not a read",
+      files: [plant("packages-shared/applets/src/client.ts", `export function make(opts: { activeOrganizationId: string | null }) {\n  return createRecordsClient({ organizationId: opts.activeOrganizationId });\n}\n`)],
+      target: "packages-shared/applets/src/client.ts",
+      expect: false,
+    },
+  );
   let failures = 0;
-  for (const dirName of ["providers", "utils", "packages", "app", "features", "../aidream/apps/shared/chat/src", "components", "lib", "hooks"]) {
+  // The sibling checkout's directories are really listed (until 2026-10-07 `../aidream/apps/shared/chat/src` was
+  // named here and never scanned: this repo's git never answers a `../` path).
+  const listed = scannedFiles(REPO_ROOT);
+  for (const dirName of SIBLING_DIRS) {
+    if (unmeasured.includes(dirName)) {
+      console.log(`[WARN] UNMEASURED: ${dirName}/ — no sibling checkout here, so the listing arm could not run`);
+      continue;
+    }
+    const ok = listed.some((f) => f.startsWith(`${dirName}/`));
+    if (!ok) failures += 1;
+    console.log(`${ok ? "[ OK ]" : "[FAIL]"} ${dirName}/ is listed from the sibling checkout`);
+  }
+  for (const dirName of ["providers", "utils", "packages", "app", "features", "../aidream/apps/shared/chat/src", "../aidream/apps/shared/applets/src", "../aidream/apps/shared/entity-data/src", "../aidream/apps/shared/records/src", "components", "lib", "hooks"]) {
     const ok = (SCAN_DIRS as readonly string[]).includes(dirName);
     if (!ok) failures += 1;
     console.log(`${ok ? "[ OK ]" : "[FAIL]"} ${dirName}/ is in the scanned directories`);

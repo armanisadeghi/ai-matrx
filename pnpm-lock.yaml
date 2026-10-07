@@ -73,7 +73,7 @@ importers:
         version: 0.73.2(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(recharts@3.10.1(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react-is@19.3.0)(react@19.3.0)(redux@5.0.1))
       '@ai-matrx/desktop-protocol':
         specifier: latest
-        version: 0.17.12(react@19.3.0)
+        version: 0.17.13(react@19.3.0)
       '@ai-matrx/detail':
         specifier: latest
         version: 0.1.70(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(recharts@3.10.1(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react-is@19.3.0)(react@19.3.0)(redux@5.0.1))
@@ -1150,8 +1150,8 @@ packages:
       recharts:
         optional: true
 
-  '@ai-matrx/desktop-protocol@0.17.12':
-    resolution: {integrity: sha512-X0xyXphQgqlz8fOqUJ3qAewrshBC5uDhFYux7yKqVK4/CePMWkwLj98ikV4m75oAEpW9PDljAAmYXtNkalvmbw==}
+  '@ai-matrx/desktop-protocol@0.17.13':
+    resolution: {integrity: sha512-8psn1NinFQiAvF07x3Cd6pG0mZtipZNNKFSKYMmSclsQY5wONazMUt3RwZ86qjfVpnadrN7nm6IL3h+wRRLaYQ==}
     engines: {node: '>=20'}
     peerDependencies:
       react: '>=18.0.0'
@@ -12469,7 +12469,7 @@ snapshots:
       - '@types/react'
       - '@types/react-dom'
 
-  '@ai-matrx/desktop-protocol@0.17.12(react@19.3.0)':
+  '@ai-matrx/desktop-protocol@0.17.13(react@19.3.0)':
     dependencies:
       '@ai-matrx/realtime': 0.9.1(react@19.3.0)
       zod: 4.6.5

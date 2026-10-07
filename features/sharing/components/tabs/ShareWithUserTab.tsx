@@ -29,7 +29,9 @@ import type {
 } from "@/utils/permissions/types";
 import {
   PERMISSION_LEVEL_HINTS,
+  PERMISSION_LEVEL_LABELS,
   PERMISSION_LEVEL_SHORT_LABELS,
+  PERMISSION_LEVELS,
 } from "@/utils/permissions/levels";
 import { PermissionLevelDescription } from "../PermissionBadge";
 import { createClient } from "@/utils/supabase/client";
@@ -85,6 +87,11 @@ interface ShareWithUserTabProps {
   ) => Promise<ShareActionResult>;
   /** People who already hold a grant; "Add everyone" shows them and skips them. */
   alreadySharedUserIds?: string[];
+  /**
+   * "notion": the level picker reads the ladder's sentence labels, highest first — Full access · Can edit ·
+   * Can edit content · Can comment · Can view (Spaces copies Notion's Share menu). Default: the role words.
+   */
+  levelWording?: "roles" | "notion";
 }
 
 type StatusType = "idle" | "loading" | "success" | "error";
@@ -113,6 +120,7 @@ const SOURCE_LABELS: Record<ConnectionUser["source"], string> = {
  * for quick selection, with a manual email input fallback.
  */
 export function ShareWithUserTab({
+  levelWording = "roles",
   onShare,
   onSuccess,
   resourceType,
@@ -599,6 +607,14 @@ export function ShareWithUserTab({
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
+              {levelWording === "notion"
+                ? [...PERMISSION_LEVELS].reverse().map((level) => (
+                    <SelectItem key={level} value={level} title={PERMISSION_LEVEL_HINTS[level]}>
+                      {PERMISSION_LEVEL_LABELS[level]}
+                    </SelectItem>
+                  ))
+                : (
+                  <>
               <SelectItem value="viewer">Viewer</SelectItem>
               {/* VIS-17b: `commenter` is the FOURTH rung of the one ladder — it has been in
                   `public.permission_level` since G0 and every policy and RPC accepts it, and
@@ -615,6 +631,8 @@ export function ShareWithUserTab({
                   above is "Permission Level", which names no item, so the bare "Admin" is
                   qualified here. */}
               <SelectItem value="admin">Admin (this item)</SelectItem>
+                  </>
+                )}
             </SelectContent>
           </Select>
           <PermissionLevelDescription level={permissionLevel} />
