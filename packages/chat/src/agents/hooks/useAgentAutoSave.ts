@@ -124,9 +124,18 @@ export function useAgentAutoSave(agentId: string) {
       try {
         const snapshot: Record<string, unknown> = { _dirty: true };
         if (record._dirtyFields) {
-          for (const field of Object.keys(
-            record._dirtyFields,
-          ) as (keyof AgentDefinition)[]) {
+          const fields = new Set(
+            Object.keys(record._dirtyFields) as (keyof AgentDefinition)[],
+          );
+          // The class pin (settings.offering_id) belongs to exactly one model:
+          // back up the model and the settings together, so a restore never
+          // pairs the saved model with another model's class (refused by the
+          // database with P0002) or the reverse.
+          if (fields.has("modelId") || fields.has("settings")) {
+            fields.add("modelId");
+            fields.add("settings");
+          }
+          for (const field of fields) {
             snapshot[field] = readField(record, field);
           }
         }
