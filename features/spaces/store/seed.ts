@@ -404,7 +404,7 @@ export function seedSpaces(tables: AgencyTables): SpaceDoc[] {
   const root = make({ key: ROOT, title: "The Traveling SMM™ OS", icon: "TreePalm" }, null, "i", [b.columns({ width: SAMPLE_COLUMNS[0], blocks: left }, { width: SAMPLE_COLUMNS[1], blocks: right })], {
     icon: SAMPLE_ICON,
     cover: SAMPLE_COVER,
-    settings: { font: "default", smallText: false, fullWidth: true, locked: false },
+    settings: { font: "default", smallText: true, fullWidth: true, locked: false },
   });
 
   return [root, ...docs];

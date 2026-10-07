@@ -21,6 +21,33 @@
   --spaces-sidebar-bg: hsl(var(--muted) / 0.55);
   --spaces-page-bg: hsl(var(--card));
   --spaces-star: #f5b400;
+  --spaces-row-dot: rgb(206 205 202);
+  /* Accent (Notion blue), its washes, and the colors that sit on it. */
+  --spaces-accent: #2383e2;
+  --spaces-accent-hover: #0077d4;
+  --spaces-accent-fill: rgba(35, 131, 226, 0.1);
+  --spaces-accent-edge: rgba(35, 131, 226, 0.35);
+  --spaces-on-accent: #fff;
+  --spaces-on-accent-rule: rgb(255 255 255 / 0.25);
+  --spaces-on-media-edge: rgb(255 255 255 / 0.6);
+  --spaces-media-bg: #000;
+  --spaces-code-ink: #eb5757;
+  --spaces-code-block-bg: rgb(22 22 22);
+  --spaces-pill-bg: rgba(33, 27, 23, 0.05);
+  --spaces-hairline: rgba(42, 28, 0, 0.07);
+  --spaces-shadow-sm: rgb(0 0 0 / 0.04);
+  --spaces-shadow-md: rgba(15, 15, 15, 0.12);
+  --spaces-shadow-lg: rgb(0 0 0 / 0.14);
+  /* Chart and choice-dot colors, sampled from Notion's chart view. */
+  --spaces-chart-gray: #b4b2ad;
+  --spaces-chart-brown: #b89a83;
+  --spaces-chart-orange: #d69258;
+  --spaces-chart-yellow: #e9c26c;
+  --spaces-chart-green: #73b98f;
+  --spaces-chart-blue: #5c9be3;
+  --spaces-chart-purple: #b98fd5;
+  --spaces-chart-pink: #e295bf;
+  --spaces-chart-red: #e08679;
 
   --spaces-gray: #787774;
   --spaces-brown: #9f6b53;
@@ -44,6 +71,27 @@
 
 .dark .spaces-root,
 :root.dark:has(.spaces-root) {
+  --spaces-row-dot: rgb(196 196 196 / 0.85);
+  --spaces-accent: #3b95ec;
+  --spaces-accent-hover: #2a82d8;
+  --spaces-accent-fill: rgba(59, 149, 236, 0.16);
+  --spaces-accent-edge: rgba(59, 149, 236, 0.5);
+  --spaces-code-ink: #ff7369;
+  --spaces-code-block-bg: rgb(30 30 30);
+  --spaces-pill-bg: rgba(255, 255, 255, 0.08);
+  --spaces-hairline: rgba(255, 255, 255, 0.08);
+  --spaces-shadow-sm: rgb(0 0 0 / 0.3);
+  --spaces-shadow-md: rgba(0, 0, 0, 0.5);
+  --spaces-shadow-lg: rgb(0 0 0 / 0.5);
+  --spaces-chart-gray: #9b9b9b;
+  --spaces-chart-brown: #a68469;
+  --spaces-chart-orange: #cb8049;
+  --spaces-chart-yellow: #d9b259;
+  --spaces-chart-green: #5fa87c;
+  --spaces-chart-blue: #4f8ad6;
+  --spaces-chart-purple: #a67bc6;
+  --spaces-chart-pink: #d583ae;
+  --spaces-chart-red: #d2766a;
   --spaces-gray: #9b9b9b;
   --spaces-brown: #ba856f;
   --spaces-orange: #c77d48;
@@ -103,7 +151,7 @@
   border: 1px solid var(--spaces-rule);
   border-radius: 0 8px 8px 0;
   background: hsl(var(--popover));
-  box-shadow: 0 8px 28px hsl(0 0% 0% / 0.16);
+  box-shadow: 0 8px 28px var(--spaces-shadow-lg);
 }
 .spaces-sidebar-inner {
   display: flex;
@@ -486,13 +534,13 @@
   gap: 12px;
   min-height: 44px;
   background: var(--spaces-red);
-  color: #fff;
+  color: var(--spaces-on-accent);
   font-size: 14px;
 }
 .spaces-trash-banner-button {
   height: 28px;
   padding: 0 10px;
-  border: 1px solid #fff9;
+  border: 1px solid var(--spaces-on-media-edge);
   border-radius: 6px;
 }
 .spaces-cover {
@@ -544,7 +592,7 @@
   padding: 4px 12px;
   border-radius: 6px;
   background: hsl(0 0% 0% / 0.45);
-  color: #fff;
+  color: var(--spaces-on-accent);
   font-size: 13px;
 }
 
@@ -610,14 +658,14 @@
 .spaces-page-icon:hover {
   background: var(--spaces-hover);
 }
-/* An image icon (an upload, a link, a bundled portrait) is Notion's 136px picture, 77px over the cover. */
+/* An image icon (an upload, a link, a bundled portrait) is the reference's 124px picture, 72px over the cover. */
 .spaces-page-icon[data-image="true"] {
-  width: 136px;
-  height: 136px;
+  width: 124px;
+  height: 124px;
   padding: 0;
 }
 .spaces-header[data-has-cover="true"] .spaces-page-icon[data-image="true"] {
-  margin-top: -77px;
+  margin-top: -72px;
   margin-left: 8px;
   border-radius: 4px;
 }
@@ -700,7 +748,7 @@
 }
 .spaces-tocrail-item[data-level="2"] { padding-left: 18px; }
 .spaces-tocrail-item[data-level="3"] { padding-left: 28px; }
-.spaces-tocrail-item[data-active="true"] { color: #2383e2; }
+.spaces-tocrail-item[data-active="true"] { color: var(--spaces-accent); }
 .spaces-tocrail-item:hover { background: var(--spaces-hover); color: var(--spaces-ink); }
 @media (max-width: 1023px) {
   .spaces-tocrail { display: none; }
@@ -853,7 +901,7 @@
   height: 24px;
   margin-left: 2px;
   margin-right: 8px;
-  accent-color: #2383e2;
+  accent-color: var(--spaces-accent);
 }
 .spaces-editor .bn-inline-content a {
   color: inherit;
@@ -865,7 +913,7 @@
   padding: 0.2em 0.4em;
   border-radius: 4px;
   background: hsl(var(--foreground) / 0.07);
-  color: #eb5757;
+  color: var(--spaces-code-ink);
   font-size: 85%;
 }
 .spaces-flash {
@@ -1056,6 +1104,13 @@
 }
 .spaces-editor .bn-block:has(> .react-renderer > .bn-block-content[data-content-type="column"]) > .bn-block-group {
   margin-left: 0;
+}
+/* A column row inside a column (the KPI tiles): Notion's reference draws tiles 172px wide with 63px between
+   them at 1699px, so the gutter is 62px; five or more across take 16px so each tile stays a tile. */
+.spaces-editor .bn-block:has(> .react-renderer > .bn-block-content[data-content-type="column"]) .bn-block:has(> .react-renderer > .bn-block-content[data-content-type="columnList"]) > .bn-block-group {
+  --spaces-col-half: 31px;
+}
+.spaces-editor .bn-block:has(> .react-renderer > .bn-block-content[data-content-type="column"]) .bn-block:has(> .react-renderer > .bn-block-content[data-content-type="columnList"]) > .bn-block-group:has(> .bn-block-outer:nth-child(5)) {
   --spaces-col-half: 8px;
 }
 .spaces-editor .bn-block:has(> .react-renderer > .bn-block-content[data-content-type="column"]) > .react-renderer > .bn-block-content {
@@ -1229,7 +1284,7 @@
 /* ── Stored blocks (phase 2 schema round-trip): media, bookmark, embed, equation, toc, breadcrumb ── */
 .spaces-media { margin: 4px 0; max-width: 100%; }
 .spaces-image { display: block; max-width: 100%; border-radius: 4px; }
-.spaces-video { display: block; width: 100%; border-radius: 4px; background: #000; }
+.spaces-video { display: block; width: 100%; border-radius: 4px; background: var(--spaces-media-bg); }
 .spaces-audio { display: block; width: 100%; }
 .spaces-iframe { display: block; width: 100%; border: 0; border-radius: 4px; background: var(--spaces-hover-strong); }
 .spaces-iframe-video { aspect-ratio: 16 / 9; }
@@ -1256,7 +1311,7 @@
 .spaces-breadcrumb-sep { padding: 0 2px; opacity: 0.6; }
 .spaces-unknown { display: flex; align-items: center; gap: 8px; padding: 8px 10px; border-radius: 4px; background: var(--spaces-hover-strong); color: var(--spaces-ink-soft); font-size: 14px; }
 .spaces-unsupported { color: var(--spaces-ink-soft); font-style: italic; }
-.spaces-inline-code { font-family: var(--font-mono, ui-monospace); font-size: 85%; padding: 0.2em 0.4em; border-radius: 4px; background: var(--spaces-hover-strong); color: #eb5757; }
+.spaces-inline-code { font-family: var(--font-mono, ui-monospace); font-size: 85%; padding: 0.2em 0.4em; border-radius: 4px; background: var(--spaces-hover-strong); color: var(--spaces-code-ink); }
 .spaces-mention { display: inline-flex; align-items: baseline; gap: 2px; border-radius: 3px; padding: 0 2px; }
 .spaces-mention-page { font-weight: 500; text-decoration: underline; text-decoration-color: color-mix(in oklab, currentColor 30%, transparent); }
 .spaces-mention-page:hover { background: var(--spaces-hover); }
@@ -1273,33 +1328,20 @@
 .spaces-db-linked { color: var(--spaces-ink-soft); }
 .spaces-db-bar { display: flex; align-items: center; gap: 8px; min-height: 32px; min-width: 0; }
 .spaces-db-tabs { display: flex; align-items: center; gap: 2px; min-width: 0; flex: 1 1 auto; overflow: hidden; }
-/* A chart tile's view name is Notion's grey pill: icon + the name as typed, cut at the pill's edge
-   (no ellipsis), the view-settings icon right after it. */
+/* A chart tile's view name is Notion's grey pill (screenshot 1): the view's icon + the name as typed at
+   14px / 600, cut with an ellipsis at the pill's edge, the view-settings icon right after it at rest. */
 .spaces-db-frame[data-layout="chart"] .spaces-db-tabs { gap: 6px; }
-.spaces-chart-title { display: inline-flex; align-items: center; gap: 6px; height: 32px; min-width: 0; flex: 0 1 auto; max-width: 100%; padding: 0 8px; border-radius: 6px; background: var(--spaces-hover-strong); color: var(--spaces-ink); font-size: 15px; font-weight: 600; white-space: nowrap; overflow: hidden; }
+.spaces-chart-title { display: inline-flex; align-items: center; gap: 6px; height: 32px; min-width: 0; flex: 0 1 auto; max-width: 100%; padding: 0 10px 0 8px; border-radius: 16px; background: var(--spaces-hover-strong); color: var(--spaces-ink); font-size: 14px; font-weight: 600; white-space: nowrap; overflow: hidden; }
 .spaces-chart-title > svg { flex: none; }
-.spaces-chart-title > span { overflow: hidden; text-overflow: clip; }
-/* A narrow tile (five or more across, or a tile in a nested column) never cuts its name to two letters:
-   the pill takes the tile's width, the name wraps onto up to three lines at 13px and the glyph rides
-   on the first line. The tile is a size container (`.spaces-db-host`). */
-@container (max-width: 200px) {
-  /* The name keeps its own row; the tile's icons (settings, filter, sort) take the next one on hover. */
-  .spaces-db-frame[data-layout="chart"] .spaces-db-tabs { flex-wrap: wrap; row-gap: 2px; }
-  .spaces-db-frame[data-layout="chart"] .spaces-db-tabs > .spaces-chart-title { flex: 1 1 100%; }
-  .spaces-db-frame[data-layout="chart"] .spaces-chart-title { height: auto; min-height: 28px; flex: 1 1 auto; align-items: flex-start; gap: 4px; padding: 5px 6px; font-size: 13px; line-height: 1.3; white-space: normal; text-align: left; justify-content: flex-start; }
-  .spaces-db-frame[data-layout="chart"] .spaces-chart-title > svg { width: 14px; height: 14px; margin-top: 2px; }
-  .spaces-db-frame[data-layout="chart"] .spaces-chart-title > span { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; overflow-wrap: normal; word-break: normal; }
-}
+.spaces-chart-title > span { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.spaces-db-frame[data-layout="chart"] .spaces-db-tabs > .spaces-db-icon { flex: none; }
 @container (max-width: 130px) {
   .spaces-db-frame[data-layout="chart"] { padding: 8px 5px; }
   .spaces-db-frame[data-layout="chart"] .spaces-chart-title { padding: 4px 5px; font-size: 12px; }
   .spaces-db-frame[data-layout="chart"] .spaces-chart-title > svg { display: none; }
 }
-/* The title pill takes the tile's whole width (Notion cuts it only at the tile's edge); the view-settings
-   icon shows while the pointer is over the tile, its menu is open, or focus is inside (touch: always),
-   and the pill gives it room then. The full name is the pill's hover title. */
-.spaces-db-frame[data-layout="chart"]:not(:hover):not(:focus-within) .spaces-db-tabs > .spaces-db-icon:not([data-state="open"]) { display: none; }
-@media (hover: none) { .spaces-db-frame[data-layout="chart"] .spaces-db-tabs > .spaces-db-icon { display: inline-flex; } }
+/* The tile's Filter / Sort show while the pointer is over the tile, a menu is open, or focus is inside
+   (touch: always); the view-settings icon is always there. */
 .spaces-db-chart-tools { display: inline-flex; align-items: center; flex: none; }
 .spaces-db-chart-tools button { width: 26px; height: 26px; min-width: 0; padding: 0; }
 .spaces-db-frame[data-layout="chart"]:not(:hover):not(:focus-within) .spaces-db-chart-tools:not(:has([data-state="open"])) { display: none; }
@@ -1315,11 +1357,11 @@
 .spaces-db-icon { display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px; border-radius: 6px; color: var(--spaces-ink-soft); flex: none; }
 .spaces-db-icon-sm { width: 22px; height: 22px; }
 .spaces-db-icon:hover { background: var(--spaces-hover); color: var(--spaces-ink); }
-.spaces-db-icon[data-on="true"] { color: #2383e2; }
-.spaces-db-new { display: inline-flex; align-items: stretch; height: 28px; margin-left: 4px; border-radius: 6px; overflow: hidden; background: #2383e2; color: #fff; font-size: 14px; font-weight: 500; }
+.spaces-db-icon[data-on="true"] { color: var(--spaces-accent); }
+.spaces-db-new { display: inline-flex; align-items: stretch; height: 28px; margin-left: 4px; border-radius: 6px; overflow: hidden; background: var(--spaces-accent); color: var(--spaces-on-accent); font-size: 14px; font-weight: 500; }
 .spaces-db-new-main { padding: 0 10px; }
-.spaces-db-new-more { display: inline-flex; align-items: center; padding: 0 6px; border-left: 1px solid rgb(255 255 255 / 0.25); }
-.spaces-db-new-main:hover, .spaces-db-new-more:hover { background: #0077d4; }
+.spaces-db-new-more { display: inline-flex; align-items: center; padding: 0 6px; border-left: 1px solid var(--spaces-on-accent-rule); }
+.spaces-db-new-main:hover, .spaces-db-new-more:hover { background: var(--spaces-accent-hover); }
 .spaces-db-body { min-width: 0; overflow-x: auto; }
 /* A database in a narrow column (Notion): the frame never grows past its column — the toolbar wraps
    onto its own lines and keeps every control inside the frame (it spilled out to the right of a 128px
@@ -1350,21 +1392,21 @@
 .spaces-db-newrow:hover { background: var(--spaces-hover); }
 .spaces-db-menurow { display: flex; align-items: center; gap: 8px; width: 100%; min-height: 30px; padding: 4px 8px; border-radius: 6px; font-size: 14px; }
 .spaces-db-menurow:hover { background: var(--spaces-hover); }
-.spaces-db-menurow[data-active="true"] { color: #2383e2; }
+.spaces-db-menurow[data-active="true"] { color: var(--spaces-accent); }
 .spaces-db-menuicon { display: inline-flex; color: var(--spaces-ink-soft); }
 .spaces-db-charttype { display: flex; align-items: center; justify-content: center; height: 36px; border: 1px solid var(--spaces-rule); border-radius: 6px; color: var(--spaces-ink-soft); }
-.spaces-db-charttype[data-active="true"] { border-color: #2383e2; color: #2383e2; }
-.spaces-db-choice-dot { display: inline-block; width: 8px; height: 8px; border-radius: 999px; background: #b4b2ad; }
-.spaces-db-choice-dot[data-color="green"], .spaces-db-choice-dot[data-color="teal"] { background: #73b98f; }
-.spaces-db-choice-dot[data-color="orange"] { background: #d69258; }
-.spaces-db-choice-dot[data-color="yellow"], .spaces-db-choice-dot[data-color="amber"] { background: #e9c26c; }
-.spaces-db-choice-dot[data-color="blue"] { background: #5c9be3; }
-.spaces-db-choice-dot[data-color="purple"], .spaces-db-choice-dot[data-color="violet"] { background: #b98fd5; }
-.spaces-db-choice-dot[data-color="pink"] { background: #e295bf; }
-.spaces-db-choice-dot[data-color="red"] { background: #e08679; }
-.spaces-db-choice-dot[data-color="brown"] { background: #b89a83; }
+.spaces-db-charttype[data-active="true"] { border-color: var(--spaces-accent); color: var(--spaces-accent); }
+.spaces-db-choice-dot { display: inline-block; width: 8px; height: 8px; border-radius: 999px; background: var(--spaces-chart-gray); }
+.spaces-db-choice-dot[data-color="green"], .spaces-db-choice-dot[data-color="teal"] { background: var(--spaces-chart-green); }
+.spaces-db-choice-dot[data-color="orange"] { background: var(--spaces-chart-orange); }
+.spaces-db-choice-dot[data-color="yellow"], .spaces-db-choice-dot[data-color="amber"] { background: var(--spaces-chart-yellow); }
+.spaces-db-choice-dot[data-color="blue"] { background: var(--spaces-chart-blue); }
+.spaces-db-choice-dot[data-color="purple"], .spaces-db-choice-dot[data-color="violet"] { background: var(--spaces-chart-purple); }
+.spaces-db-choice-dot[data-color="pink"] { background: var(--spaces-chart-pink); }
+.spaces-db-choice-dot[data-color="red"] { background: var(--spaces-chart-red); }
+.spaces-db-choice-dot[data-color="brown"] { background: var(--spaces-chart-brown); }
 .spaces-db-pill { height: 26px; padding: 0 8px; border-radius: 6px; border: 1px solid var(--spaces-rule); font-size: 13px; }
-.spaces-db-pill[data-active="true"] { border-color: #2383e2; color: #2383e2; }
+.spaces-db-pill[data-active="true"] { border-color: var(--spaces-accent); color: var(--spaces-accent); }
 .spaces-chart { position: relative; display: flex; flex: 1 1 auto; flex-direction: column; align-items: stretch; gap: 10px; min-height: 0; }
 .spaces-chart-overflow { align-self: flex-start; max-width: 100%; padding: 4px 12px; border-radius: 999px; background: var(--spaces-hover-strong); color: var(--spaces-ink-soft); font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .spaces-chart-donut { display: flex; flex: 1 1 auto; flex-direction: column; align-items: center; justify-content: center; gap: 10px; min-height: 260px; padding-bottom: 24px; }
@@ -1375,7 +1417,7 @@
 .spaces-chart-legend span { width: 8px; height: 8px; border-radius: 999px; }
 .spaces-chart-legend em { font-style: normal; color: var(--spaces-ink); }
 .spaces-chart-loading { min-height: 260px; }
-.spaces-peek-side { position: fixed; top: var(--header-height, 0px); right: 0; bottom: 0; z-index: 50; width: min(560px, 100vw); display: flex; flex-direction: column; background: var(--spaces-page-bg); border-left: 1px solid var(--spaces-rule); box-shadow: -8px 0 24px rgb(0 0 0 / 0.08); }
+.spaces-peek-side { position: fixed; top: var(--header-height, 0px); right: 0; bottom: 0; z-index: 50; width: min(560px, 100vw); display: flex; flex-direction: column; background: var(--spaces-page-bg); border-left: 1px solid var(--spaces-rule); box-shadow: -8px 0 24px var(--spaces-shadow-md); }
 .spaces-peek-bar { display: flex; align-items: center; height: 44px; padding: 0 8px; flex: none; }
 .spaces-peek-body { flex: 1 1 auto; min-height: 0; overflow-y: auto; padding: 0 16px 24px; }
 @media (max-width: 767px) {
@@ -1389,7 +1431,7 @@
 .spaces-entity-board { display: flex; gap: 12px; overflow-x: auto; padding: 4px 0 8px; }
 .spaces-entity-lane { flex: 0 0 260px; display: flex; flex-direction: column; gap: 6px; }
 .spaces-entity-lanehead { display: flex; align-items: center; gap: 8px; height: 28px; }
-.spaces-entity-card { display: flex; flex-direction: column; gap: 2px; text-align: left; padding: 8px 10px; border-radius: 6px; background: hsl(var(--card)); border: 1px solid var(--spaces-rule); box-shadow: 0 1px 2px rgb(0 0 0 / 0.04); min-width: 0; }
+.spaces-entity-card { display: flex; flex-direction: column; gap: 2px; text-align: left; padding: 8px 10px; border-radius: 6px; background: hsl(var(--card)); border: 1px solid var(--spaces-rule); box-shadow: 0 1px 2px var(--spaces-shadow-sm); min-width: 0; }
 .spaces-entity-card:hover { background: var(--spaces-hover); }
 .spaces-entity-cardtitle { font-weight: 500; font-size: 14px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .spaces-entity-peek { padding: 8px 24px 32px; }
@@ -1425,7 +1467,7 @@ tr:hover .spaces-entity-openpill, .spaces-entity-open:focus-visible .spaces-enti
 /* C10 code block: Copy / Wrap / Caption on hover; wrap; caption line under the code. */
 .spaces-editor .bn-block-content[data-content-type="codeBlock"] { position: relative; flex-wrap: wrap; background-color: transparent; color: inherit; }
 /* The dark box is the code itself, so the caption sits under it on the page (Notion). */
-.spaces-editor .bn-block-content[data-content-type="codeBlock"] > pre { background-color: rgb(22 22 22); color: white; border-radius: 8px; }
+.spaces-editor .bn-block-content[data-content-type="codeBlock"] > pre { background-color: var(--spaces-code-block-bg); color: var(--spaces-on-accent); border-radius: 8px; }
 .spaces-editor [data-content-type="codeBlock"][data-wrap="true"] pre,
 .spaces-editor [data-content-type="codeBlock"][data-wrap="true"] code { white-space: pre-wrap; word-break: break-word; }
 .spaces-code-actions { position: absolute; top: 6px; right: 8px; display: flex; gap: 2px; opacity: 0; transition: opacity 120ms ease; z-index: 1; }
@@ -1439,11 +1481,11 @@ tr:hover .spaces-entity-openpill, .spaces-entity-open:focus-visible .spaces-enti
 .spaces-code-caption input::placeholder { color: var(--muted-foreground); opacity: 0.6; }
 
 /* B11 rubber-band select: the box drawn from the margin. */
-.spaces-rubber-band { position: fixed; z-index: 60; pointer-events: none; background: rgba(35, 131, 226, 0.1); border: 1px solid rgba(35, 131, 226, 0.35); border-radius: 2px; }
+.spaces-rubber-band { position: fixed; z-index: 60; pointer-events: none; background: var(--spaces-accent-fill); border: 1px solid var(--spaces-accent-edge); border-radius: 2px; }
 
 /* B12 paste-URL menu */
 .spaces-paste-menu:not([data-placed]) { visibility: hidden; }
-.spaces-paste-menu { position: fixed; left: 0; top: 0; z-index: 70; min-width: 180px; padding: 4px; border-radius: 8px; background: var(--popover); color: var(--popover-foreground); border: 1px solid var(--border); box-shadow: 0 6px 24px rgba(15, 15, 15, 0.12); display: flex; flex-direction: column; }
+.spaces-paste-menu { position: fixed; left: 0; top: 0; z-index: 70; min-width: 180px; padding: 4px; border-radius: 8px; background: var(--popover); color: var(--popover-foreground); border: 1px solid var(--border); box-shadow: 0 6px 24px var(--spaces-shadow-md); display: flex; flex-direction: column; }
 .spaces-paste-item { display: flex; align-items: center; gap: 8px; height: 28px; padding: 0 8px; border-radius: 6px; font-size: 14px; text-align: left; }
 .spaces-paste-item:hover, .spaces-paste-item:focus-visible { background: var(--accent); outline: none; }
 .spaces-paste-item svg { color: var(--muted-foreground); }
@@ -1462,7 +1504,7 @@ tr:hover .spaces-entity-openpill, .spaces-entity-open:focus-visible .spaces-enti
   display: none; position: absolute; left: 0; top: 100%; z-index: 40; margin-top: 4px; min-width: 220px; max-width: 360px;
   flex-direction: column; gap: 2px; padding: 8px 10px; border-radius: 8px; font-size: 13px; line-height: 1.35;
   background: hsl(var(--popover)); color: hsl(var(--popover-foreground)); border: 1px solid var(--spaces-rule);
-  box-shadow: 0 4px 16px rgb(0 0 0 / 0.14);
+  box-shadow: 0 4px 16px var(--spaces-shadow-lg);
 }
 .spaces-mention-linkwrap:hover .spaces-mention-card { display: flex; }
 .spaces-mention-card-title { font-weight: 600; }
@@ -1532,7 +1574,7 @@ tr:hover .spaces-entity-openpill, .spaces-entity-open:focus-visible .spaces-enti
 .spaces-comments-head { display: flex; align-items: center; height: 28px; }
 .spaces-comments-title { font-size: 14px; font-weight: 600; color: var(--spaces-ink); }
 .spaces-comments-list { display: flex; flex: 1 1 auto; flex-direction: column; gap: 10px; min-height: 0; overflow-y: auto; padding-bottom: 16px; }
-.spaces-thread { display: flex; flex-direction: column; gap: 8px; padding: 10px 12px; border: 1px solid var(--spaces-rule); border-radius: 10px; background: var(--spaces-page-bg); box-shadow: 0 1px 2px rgb(0 0 0 / 0.04); }
+.spaces-thread { display: flex; flex-direction: column; gap: 8px; padding: 10px 12px; border: 1px solid var(--spaces-rule); border-radius: 10px; background: var(--spaces-page-bg); box-shadow: 0 1px 2px var(--spaces-shadow-sm); }
 .spaces-thread[data-resolved="true"] { opacity: 0.75; }
 .spaces-thread-quote { display: block; padding-left: 8px; border-left: 2px solid var(--spaces-comment-mark); color: var(--spaces-ink-soft); font-size: 13px; line-height: 1.4; text-align: left; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
 .spaces-comment { display: flex; flex-direction: column; gap: 2px; }
@@ -1568,10 +1610,10 @@ tr:hover .spaces-entity-openpill, .spaces-entity-open:focus-visible .spaces-enti
   display: none;
 }
 
-/* Toggle triangles at Notion's size and weight: a ~6 × 8 px triangle in Notion's grey (not the text ink). */
+/* Toggle triangles at Notion's size and weight: a ~6 × 8 px triangle in the text ink (Notion fills it rgb(44,44,43)). */
 .spaces-editor .bn-toggle-button {
   padding: 5px;
-  color: var(--spaces-ink-soft);
+  color: var(--spaces-ink);
 }
 .spaces-editor .bn-toggle-button > svg {
   width: 13px;
@@ -1589,11 +1631,11 @@ tr:hover .spaces-entity-openpill, .spaces-entity-open:focus-visible .spaces-enti
   max-width: 220px;
   font-size: 14px;
   font-weight: 500;
-  background: rgba(33, 27, 23, 0.05);
+  background: var(--spaces-pill-bg);
 }
-.dark .spaces-view-pill { background: rgba(255, 255, 255, 0.08); }
 /* A view with a saved filter or sort shows its icon in Notion blue (screenshot 1 toolbar). */
-.spaces-db-tools [data-on="true"], .spaces-db-chart-tools [data-on="true"] { color: #2383e2; }
+.spaces-db-tools button[data-on="true"], .spaces-db-chart-tools button[data-on="true"],
+.spaces-db-tools button[data-on="true"] svg, .spaces-db-chart-tools button[data-on="true"] svg { color: var(--spaces-accent); }
 /* The table's magnifier is the toolbar's (DatabaseBlock); records-ui's embedded grid still draws its own
    search row above the table (NEEDS row), so that row is not shown inside a Space. */
 .spaces-db-body div:has(> div > .matrx-tap-search) { display: none; }
@@ -1612,5 +1654,20 @@ tr:hover .spaces-entity-openpill, .spaces-entity-open:focus-visible .spaces-enti
    rgba(42,28,0,0.07)), cells padded 0 8px; a select tag 20px tall, radius 4px, padding 0 6px. */
 .spaces-db-body thead tr > th { height: 36px; padding-top: 0; padding-bottom: 0; }
 .spaces-db-body tbody tr > td { height: 37px; padding-top: 0; padding-bottom: 0; vertical-align: middle; }
-.spaces-db-body tbody tr { border-bottom-color: rgba(42, 28, 0, 0.07); }
-.dark .spaces-db-body tbody tr { border-bottom-color: rgba(255, 255, 255, 0.08); }
+.spaces-db-body tbody tr { border-bottom-color: var(--spaces-hairline); }
+
+/* O14: a table row's title cell starts with the record's icon — the grey page circle (screenshot 1) while the
+   record has none of its own. A built-in table draws the same circle inside its title button. */
+.spaces-db-body tbody tr > td:first-child [data-matrx-cell-content]:not(:has(.spaces-entity-open))::before,
+.spaces-entity-open > .spaces-row-dot {
+  content: "";
+  display: inline-block;
+  flex: none;
+  width: 16px;
+  height: 16px;
+  margin-right: 8px;
+  border-radius: 50%;
+  background: var(--spaces-row-dot);
+  vertical-align: -3px;
+}
+.spaces-entity-open > .spaces-row-dot { margin-right: 2px; }

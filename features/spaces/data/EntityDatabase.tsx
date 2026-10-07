@@ -425,6 +425,7 @@ function EntityBody({ token, entity, view, onOpen, search }: { token: string; en
         cell: (row: EntityRow) =>
           c === title ? (
             <button type="button" className="spaces-entity-open" onClick={() => onOpen(String(row.id))}>
+              <span className="spaces-row-dot" aria-hidden />
               <span className="truncate">{valueText(c, row[c.api_name]) || "Untitled"}</span>
               <span className="spaces-entity-openpill" aria-hidden>
                 <PanelRight size={12} strokeWidth={2} />
@@ -491,6 +492,22 @@ function EntityBody({ token, entity, view, onOpen, search }: { token: string; en
           fitToWidth={false}
           copy={false}
           cellLines="one"
+          // The same table behaviour as a custom table's grid (records-ui Grid): no detail panel and no row
+          // window of the table's own, a spreadsheet cell cursor — one click selects a cell, Enter opens the
+          // record, a typed letter goes to the record window (where a built-in row is written), never to the page.
+          detail={{ enabled: false }}
+          window={{ enabled: false }}
+          spreadsheet={{
+            enabled: true,
+            writableColumnIds: entity.columns.filter((c) => c.writable).map((c) => c.api_name),
+            onPatch: (patches) => {
+              for (const patch of patches) void entity.write(String(patch.rowId), String(patch.columnId), patch.value);
+            },
+            onEditRequest: (address) => {
+              onOpen(address.rowId);
+              return true;
+            },
+          }}
           onRowOpen={(row) => onOpen(String(row.id))}
           emptyState={{ title: "No rows" } as never}
         />

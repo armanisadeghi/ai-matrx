@@ -184,12 +184,12 @@ function pretty(n: number | null): string {
 }
 
 /** The donut (Notion's ring): a thin ring from 12 o'clock clockwise, a hairline gap between slices,
- *  the total in the middle in a large semibold numeral. Sizes are Notion's, measured: 112px ring,
- *  a 3.5px stroke, ~50px numeral (smaller as the number grows). Past a couple dozen groups the ring
+ *  the total in the middle in a semibold numeral. Sizes are the reference's (screenshot 1): an 80px ring,
+ *  a 4px stroke, an ~20px numeral (smaller as the number grows). Past a couple dozen groups the ring
  *  is Notion's dashed one: each slice a short radial tick with an equal gap after it. */
-const RING = 116;
+export const RING = 80;
 function Donut({ data, settings }: { data: ChartData; settings: ChartSettings }) {
-  const r = 54;
+  const r = 37;
   const c = 2 * Math.PI * r;
   const mid = RING / 2;
   const sum = data.points.reduce((s, p) => s + Math.max(0, p.value), 0) || 1;
@@ -201,7 +201,7 @@ function Donut({ data, settings }: { data: ChartData; settings: ChartSettings })
   }, []);
   const center = settings.op === "count" || settings.op === "sum" ? data.total ?? sum : data.total;
   const shown = pretty(center);
-  const fontSize = shown.length <= 2 ? 52 : shown.length === 3 ? 47 : shown.length === 4 ? 38 : 30;
+  const fontSize = shown.length <= 2 ? 20 : shown.length === 3 ? 18 : shown.length === 4 ? 16 : 13;
   return (
     <div className="spaces-chart-donut">
       <svg viewBox={`0 0 ${RING} ${RING}`} width={RING} height={RING} role="img" aria-label={shown}>
@@ -217,7 +217,7 @@ function Donut({ data, settings }: { data: ChartData; settings: ChartSettings })
               r={r}
               fill="none"
               stroke={p.color}
-              strokeWidth={many ? 7 : 3.5}
+              strokeWidth={many ? 5 : 4}
               strokeDasharray={`${dash} ${c - dash}`}
               strokeDashoffset={-offset}
               transform={`rotate(-90 ${mid} ${mid})`}
@@ -249,6 +249,17 @@ function Donut({ data, settings }: { data: ChartData; settings: ChartSettings })
   );
 }
 
+/** The aggregate rows in the order the points were sorted (the view's sort, the chart's own sort), for ChartBlock. */
+function inOrder(data: ChartData): AggregateRow[] {
+  const at = new Map(data.points.map((p, i) => [p.key, i]));
+  const key = (row: AggregateRow, i: number) => {
+    const g = Object.values(row.groups)[0];
+    return g === null || g === undefined ? `none-${i}` : String(g);
+  };
+  const order = (row: AggregateRow, i: number) => at.get(key(row, i)) ?? i;
+  return data.rows.map((row, i) => ({ row, i })).sort((a, b) => order(a.row, a.i) - order(b.row, b.i)).map((x) => x.row);
+}
+
 const RECORDS_KIND = { bar: "column", hbar: "bar", line: "line", donut: "donut" } as const;
 
 export function ChartView({ tableId, settings, title, overRows, filter, sorts }: { tableId: string; settings: ChartSettings; title: string; overRows?: boolean; filter?: ChartFilter; sorts?: ChartSorts }) {
@@ -275,7 +286,7 @@ export function ChartView({ tableId, settings, title, overRows, filter, sorts }:
             table_id: tableId,
             group_by: settings.groupBy ? [settings.groupBy] : [],
             measures: [data.measure],
-            rows: data.rows,
+            rows: inOrder(data),
           }}
         />
       )}
