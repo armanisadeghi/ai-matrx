@@ -97,6 +97,9 @@ function seedRecordDoors(): void {
   // features/unified-data/hub/doors.ts `entityRecordReadable` — the custom-fields
   // section's own first read (a SECURITY INVOKER read); no custom values yet.
   seedRpc("entity_record_read", {});
+  // The "Linked records" section (AP-4, `EntityBackLinks`): no custom row links here. A read the
+  // fixture did not answer is a failed read, which is never kept — the wake would ask again.
+  seedRpc("entity_back_links", { target: null, items: [], next_cursor: null });
   // migrations/campaign/entityfields_the_add_control_is_absent_or_honest.sql —
   // the person owns the organization, so they may add a column.
   seedRpc("entity_field_rights", (args: unknown) => ({

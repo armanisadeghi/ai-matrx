@@ -201,6 +201,30 @@ export function seedChat(): void {
   seedRpc("assoc_for_targets", []);
   seed("mandate.definition", [defaultChatMandate]);
   seedRpc("agx_get_list_full", []);
+  // The composer's unsent-chips restore (`remarkDurability.restore`): no chip is staged in this chat.
+  // Unanswered it is a failed read, which is never kept as restored.
+  seedRpc("block_state_list_staged", []);
+  // The attach menu's counts (`useRunControlCounts`, P24b) read the agent's RUN TIER on a chat's first
+  // mount. Unanswered, the read fails and is never kept, so every wake would ask again.
+  seedRpc("agx_get_run_tier", [
+    {
+      id: CHAT_AGENT_ID,
+      is_version: false,
+      version_id: null,
+      name: "Rent notice helper",
+      description: null,
+      variable_definitions: [],
+      context_policies: [],
+      auto_context_disabled: false,
+      model_id: "claude-sonnet-4-6",
+      ui_gates: {},
+      tool_ids: [],
+      access_level: "owner",
+      custom_tool_count: 0,
+      skill_count: 0,
+      connection_count: 0,
+    },
+  ]);
   // packages/chat/src/agents/types/agent-definition.types.ts `AgentExecutionFull` —
   // the person's chat agent, readable by them (it answered the transcript).
   seedRpc("agx_get_execution_full", [

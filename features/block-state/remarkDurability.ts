@@ -38,6 +38,17 @@ import { unitRefOf } from "./redux/blockStateThunks";
 import { subscribeBlockStateFeed } from "./blockStateRealtime";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 
+/** The conversations whose staged chips were listed, per store (the read the remount law keeps once). */
+const restoreLedgers = new WeakMap<object, { restored: Set<string>; restoring: Set<string> }>();
+function restoreLedgerOf(store: object): { restored: Set<string>; restoring: Set<string> } {
+  let ledger = restoreLedgers.get(store);
+  if (!ledger) {
+    ledger = { restored: new Set(), restoring: new Set() };
+    restoreLedgers.set(store, ledger);
+  }
+  return ledger;
+}
+
 interface Slot {
   timer: ReturnType<typeof setTimeout> | null;
   chain: Promise<unknown>;
@@ -160,6 +171,10 @@ export function createRemarkDurability(store: AppStore): RemarkDurability {
   // One feed per real conversation (a conversation with no answers yet has nothing to watch —
   // its topic would be refused, which is a CHANNEL_ERROR for nothing).
   const watching = new Map<string, () => void>();
+  /** Conversations whose staged chips were listed (once per tab) and the ones being listed now. */
+  // Per STORE, not per port: the port is re-created whenever the registering provider remounts, the
+  // store (and so the listed chips) is not.
+  const { restored, restoring } = restoreLedgerOf(store);
   const watch = (conversationId: string): void => {
     if (watching.has(conversationId)) return;
     const answers = (store.getState() as unknown as ChatRootState).messages?.byConversationId?.[conversationId]?.orderedIds.length ?? 0;
@@ -233,6 +248,16 @@ export function createRemarkDurability(store: AppStore): RemarkDurability {
     },
 
     restore(conversationId) {
+      // READ ONCE PER CONVERSATION PER TAB (the remount law). The composer asks on every mount, and a
+      // board tile that wakes or remounts mounts it again; once the list has landed the chips are in
+      // the store and the live feed (`watch`, held for the tab) keeps them current, so asking again
+      // would only repeat the read. A failed read is never marked restored: the next mount asks again.
+      if (restored.has(conversationId)) {
+        watch(conversationId); // no read: a conversation that has answers by now can join its feed
+        return;
+      }
+      if (restoring.has(conversationId)) return;
+      restoring.add(conversationId);
       void (async () => {
         let rows: BlockStateRow[];
         try {
@@ -240,7 +265,10 @@ export function createRemarkDurability(store: AppStore): RemarkDurability {
         } catch (error) {
           console.error("[block-state] restoring unsent chips failed:", error);
           return;
+        } finally {
+          restoring.delete(conversationId);
         }
+        restored.add(conversationId);
         if (rows.length > 0) await applyRows(conversationId, rows);
         watch(conversationId);
       })();
