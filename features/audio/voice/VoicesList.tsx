@@ -104,11 +104,7 @@ const VoicesList: React.FC = () => {
 
   const handleCopyId = useCallback(async (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
-    if (!(await copyText(id))) return;
-    toast({
-      title: "Voice ID Copied",
-      description: "The voice ID has been copied to your clipboard.",
-    });
+    if (!(await copyText(id, "Voice ID copied"))) return;
   }, []);
 
   const handleCardClick = useCallback((voice: AiVoice) => {

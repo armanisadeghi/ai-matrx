@@ -475,9 +475,8 @@ function SaveResultPanel({
       toast.error("No share URL available");
       return;
     }
-    if (!(await copyText(shareUrl, undefined, "Could not access the clipboard"))) return;
+    if (!(await copyText(shareUrl, "URL copied", "Could not access the clipboard"))) return;
     setCopied(true);
-    toast.success("URL copied");
     setTimeout(() => setCopied(false), 1500);
   }, [shareUrl]);
 

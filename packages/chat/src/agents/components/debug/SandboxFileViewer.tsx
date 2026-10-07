@@ -18,7 +18,6 @@ import { toast as copyToast } from "@/lib/toast";
 import { Button } from "@ai-matrx/design-system/controls";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { FileText, Loader2, RefreshCw, Copy, Check } from "lucide-react";
-import { toast } from "../../../host/notify";
 import { createSandboxFilesystemAdapter } from "@ai-matrx/chat/host/ui-slots";
 
 /** The host sandbox filesystem adapter, as this viewer uses it. */
@@ -85,9 +84,8 @@ export function SandboxFileViewer({
 
   const handleCopy = async () => {
     if (content == null) return;
-    if (!(await copyText(content))) return;
+    if (!(await copyText(content, "File contents copied"))) return;
     setCopied(true);
-    toast.success("File contents copied");
     setTimeout(() => setCopied(false), 1500);
   };
 

@@ -304,9 +304,8 @@ export default function KindRegistryAdminClient() {
   async function copyExport() {
     if (!exportPayload || !selected) return;
     if (!(await copyText(
-      JSON.stringify(exportPayload, null, 2),
+      JSON.stringify(exportPayload, null, 2), `Copied ${selected.kind} JSON Schema`,
     ))) return;
-    toast.success(`Copied ${selected.kind} JSON Schema`);
   }
 
   return (

@@ -34,9 +34,8 @@ function CopyValue({
   const [copied, setCopied] = React.useState(false);
 
   const copy = async () => {
-    if (!(await copyText(value))) return;
+    if (!(await copyText(value, "Copied"))) return;
     setCopied(true);
-    toast.success("Copied");
     window.setTimeout(() => setCopied(false), 1500);
   };
 

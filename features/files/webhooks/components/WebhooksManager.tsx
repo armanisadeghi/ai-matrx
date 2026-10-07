@@ -90,9 +90,8 @@ function SecretReveal({ secret }: { secret: string }) {
       <Button
         variant="outline"
         onClick={async () => {
-          if (!(await copyText(secret))) return;
+          if (!(await copyText(secret, "Secret copied"))) return;
           setCopied(true);
-          toast.success("Secret copied");
           setTimeout(() => setCopied(false), 1500);
         }}
       >

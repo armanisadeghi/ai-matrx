@@ -108,9 +108,8 @@ export function useExportItemRowActions(
                     `Length: ${row.char_count.toLocaleString()} characters`,
                   ]
                     .filter(Boolean)
-                    .join("\n"),
+                    .join("\n"), "Details copied",
                 ))) return;
-                toast.success("Details copied");
               },
             },
           ],

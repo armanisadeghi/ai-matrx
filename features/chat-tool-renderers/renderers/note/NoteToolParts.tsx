@@ -11,7 +11,6 @@ import { useClipboard } from "@ai-matrx/kit/clipboard";
 import { toast as copyToast } from "@/lib/toast";
 import React, { useEffect, useRef, useState } from "react";
 import { Check, Copy, Eye, FileText, Loader2, NotebookPen } from "lucide-react";
-import { toast } from "@ai-matrx/chat/host/notify";
 
 import { RichContent } from "@ai-matrx/chat/host/ui-slots";
 import { ProTextarea } from "@/components/official/ProTextarea";
@@ -281,9 +280,8 @@ export function IdCopyChip({ id }: { id: string }) {
   const [copied, setCopied] = useState(false);
 
   const copy = async () => {
-    if (!(await copyText(id))) return;
+    if (!(await copyText(id, "Note ID copied"))) return;
     setCopied(true);
-    toast.success("Note ID copied");
     setTimeout(() => setCopied(false), 1500);
   };
 

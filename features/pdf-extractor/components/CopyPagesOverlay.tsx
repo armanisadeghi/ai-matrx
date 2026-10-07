@@ -549,10 +549,8 @@ export function CopyPagesOverlay({
 
   const handleCopySection = useCallback(
     async (idx: number) => {
-      if (!(await copyText(sections[idx].text))) {
-        setErrorMsg("Could not write to clipboard.");
+      if (!(await copyText(sections[idx].text, undefined, "Could not write to clipboard.")))
         return;
-      }
       setCopiedIdx(idx);
       setTimeout(() => setCopiedIdx(null), 1800);
     },
@@ -569,10 +567,7 @@ export function CopyPagesOverlay({
       flatPages,
       source,
     );
-    if (!(await copyText(combined))) {
-      setErrorMsg("Could not write to clipboard.");
-      return;
-    }
+    if (!(await copyText(combined, undefined, "Could not write to clipboard."))) return;
     setCopiedAll(true);
     setTimeout(() => setCopiedAll(false), 1800);
   }, [sections, doc.id, doc.name, pages, flatPages, source]);

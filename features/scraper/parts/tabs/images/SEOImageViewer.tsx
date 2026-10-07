@@ -95,23 +95,10 @@ export function SEOImageViewer({
 
   // Copy text to clipboard
   const copyToClipboard = (text: string, type: string) => {
-    copyText(text)
-      .then((copied) => {
-      if (!copied) return;
+    void copyText(text, `${type} copied`).then((copied) => {
+        if (!copied) return;
         setIsCopied(type);
         setTimeout(() => setIsCopied(null), 2000);
-        toast({
-          title: "Copied to clipboard",
-          description: `${type} has been copied to your clipboard.`
-        });
-      })
-      .catch(err => {
-        console.error('Failed to copy: ', err);
-        toast({
-          title: "Copy failed",
-          description: "There was an issue copying to your clipboard.",
-          variant: "destructive"
-        });
       });
   };
 

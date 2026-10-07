@@ -46,9 +46,8 @@ export function NotePreviewContent({ noteId, onOpen }: NotePreviewContentProps) 
   const handleCopy = async () => {
     const text = note?.content ?? "";
     if (!text) return;
-    if (!(await copyText(text))) return;
+    if (!(await copyText(text, "Note text copied"))) return;
     setCopied(true);
-    toast.success("Note text copied");
     setTimeout(() => setCopied(false), 1500);
   };
 

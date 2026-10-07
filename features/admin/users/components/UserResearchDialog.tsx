@@ -71,7 +71,7 @@ export function UserResearchDialog({ row, ownerId, existing, sharedOrganizations
             if (!chosenPlan) { toast.error("Choose an available plan first."); return; }
             setDraft(feedbackInvitation(row.display_name ?? row.full_name ?? "", chosenPlan.name, feature));
           }}>Draft invitation</Button>
-          {draft && <><ProTextarea aria-label="Invitation draft" value={draft} onChange={e => setDraft(e.target.value)} className="min-h-48" /><Button variant="outline" onClick={async () => { if (!(await copyText(draft))) return; toast.success("Invitation copied"); }}>Copy draft</Button></>}
+          {draft && <><ProTextarea aria-label="Invitation draft" value={draft} onChange={e => setDraft(e.target.value)} className="min-h-48" /><Button variant="outline" onClick={async () => { if (!(await copyText(draft, "Invitation copied"))) return; }}>Copy draft</Button></>}
         </div>
       </div>
       <DialogFooter><Button variant="outline" onClick={onClose}>Cancel</Button><Button variant="primary" onClick={() => void save()} disabled={saving}>{saving ? "Saving…" : "Save notes"}</Button></DialogFooter>

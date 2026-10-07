@@ -50,9 +50,8 @@ export function PodcastShowPage({ show, episodes }: PodcastShowPageProps) {
       : `/podcast/${show.slug}/feed.xml`;
 
   async function copyRss() {
-    if (!(await copyText(feedUrl, undefined, "Couldn't copy the RSS URL"))) return;
+    if (!(await copyText(feedUrl, "RSS feed URL copied", "Couldn't copy the RSS URL"))) return;
     setRssCopied(true);
-    toast.success("RSS feed URL copied");
     window.setTimeout(() => setRssCopied(false), 2000);
   }
 

@@ -143,9 +143,8 @@ export function useBlockRowActions(
                     `Seen ${row.occurrence_count}× — first ${row.first_seen_at}, last ${row.last_seen_at}`,
                   ]
                     .filter(Boolean)
-                    .join("\n"),
+                    .join("\n"), "Block copied",
                 ))) return;
-                toast.success("Block copied");
               },
             },
           ],

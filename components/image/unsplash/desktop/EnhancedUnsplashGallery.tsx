@@ -89,12 +89,8 @@ export function EnhancedUnsplashGallery({ initialSearchTerm }: EnhancedUnsplashG
 
     const handleShare = async (photo: Photo) => {
           const imageUrl = photo.urls.full || photo.urls.regular;
-          if (!(await copyText(imageUrl, undefined, "There was an issue copying the link."))) return;
+          if (!(await copyText(imageUrl, "Image link copied", "There was an issue copying the link."))) return;
           setIsSharing(true);
-          toast({
-              title: 'Image link copied',
-              description: 'The direct image URL has been copied to your clipboard.',
-          });
           setTimeout(() => setIsSharing(false), 2000);
     };
 

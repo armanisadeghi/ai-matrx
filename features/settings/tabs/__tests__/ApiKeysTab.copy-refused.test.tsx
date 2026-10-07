@@ -3,14 +3,15 @@
  *
  * A new API key is shown once. When the browser refuses the clipboard (the kit copy resolves
  * `false`, it never throws) the person must be told to copy it by hand before closing — AP-2
- * regression: that message sat in a `catch` that could never run.
+ * regression: that message sat in a `catch` that could never run. The words ride the kit copy
+ * (its one notice), so the tab adds no toast of its own either way.
  */
 import React, { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
-const copyText = jest.fn<Promise<boolean>, [string]>();
+const copyText = jest.fn<Promise<boolean>, [string, string?, string?]>();
 const toastError = jest.fn();
 const toastSuccess = jest.fn();
 jest.mock("@ai-matrx/kit/clipboard", () => ({ useClipboard: () => ({ copyText }) }));
@@ -109,19 +110,22 @@ async function createKeyThenCopy() {
 it("tells the person to copy the one-time key by hand when the clipboard refuses", async () => {
   copyText.mockResolvedValue(false);
   await createKeyThenCopy();
-  expect(copyText).toHaveBeenCalledWith("mx_live_only_shown_once");
-  expect(toastError).toHaveBeenCalledWith(
-    "Your browser did not allow copying",
-    expect.objectContaining({ description: expect.stringContaining("copy it by hand") }),
+  expect(copyText).toHaveBeenCalledWith(
+    "mx_live_only_shown_once",
+    "Key copied",
+    expect.stringContaining("copy it by hand"),
   );
-  expect(toastSuccess).not.toHaveBeenCalledWith("Key copied");
+  expect(toastError).not.toHaveBeenCalled();
+  expect(toastSuccess).not.toHaveBeenCalled();
   expect(button("Copy key")).toBeDefined();
 });
 
 it("confirms only a copy that landed", async () => {
   copyText.mockResolvedValue(true);
   await createKeyThenCopy();
-  expect(toastSuccess).toHaveBeenCalledWith("Key copied");
+  expect(copyText).toHaveBeenCalledWith("mx_live_only_shown_once", "Key copied", expect.any(String));
+  // ONE notice: the kit says "Key copied"; the tab adds nothing.
+  expect(toastSuccess).not.toHaveBeenCalled();
   expect(toastError).not.toHaveBeenCalled();
   expect(button("Copied")).toBeDefined();
 });

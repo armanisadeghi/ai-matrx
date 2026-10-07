@@ -109,16 +109,12 @@ export function PdfRegionContextMenu({
         toast({ title: "No text found in this region" });
         return;
       }
-      await copyText(text);
+      await copyText(text, `Extracted ${data.char_count} characters — copied`);
       // Persist onto the annotation when it has nothing yet, so the text
       // shows up in the inspector and future menus without re-extracting.
       if (!region.extracted_text) {
         await updateAnnotation(region.id, { extracted_text: text });
       }
-      toast({
-        title: `Extracted ${data.char_count} characters`,
-        description: "Copied to clipboard.",
-      });
     } catch (err) {
       toast({
         title: "Extract failed",

@@ -170,7 +170,7 @@ export function VaultPasswordGenerator({
     if (
       !(await copyText(
         candidate.value,
-        undefined,
+        "Copied. This copy remains in your clipboard until you replace it.",
         "Could not copy the generated value. Reveal it and copy it yourself.",
       ))
     )
@@ -182,9 +182,6 @@ export function VaultPasswordGenerator({
       );
       return;
     }
-    toast.success(
-      "Copied. This copy remains in your clipboard until you replace it.",
-    );
   };
   const use = () => {
     if (!candidate || contextRef.current !== context || !eligible) return;

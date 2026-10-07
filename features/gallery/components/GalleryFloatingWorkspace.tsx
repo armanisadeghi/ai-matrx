@@ -253,8 +253,7 @@ export function GalleryFloatingWorkspace() {
       toast.error("No images loaded yet");
       return;
     }
-    if (!(await copyText(links.join("\n")))) return;
-    toast.success(`Copied ${links.length} image links`);
+    if (!(await copyText(links.join("\n"), `Copied ${links.length} image links`))) return;
   }, [photos]);
 
   const handleToggleFavorite = useCallback(

@@ -15,7 +15,6 @@ import { Stethoscope } from "lucide-react";
 import { useAppSelector, useAppStore } from "../../../store/hooks";
 import { selectMessageCount } from "../../redux/execution-system/messages/messages.selectors";
 import { selectStreamPhase } from "../../redux/execution-system/selectors/aggregate.selectors";
-import { toast } from "../../../host/notify";
 import { useDebugContext } from "../../../host/prefs-react";
 import { cn } from "@ai-matrx/design-system";
 import {
@@ -88,12 +87,9 @@ function TranscriptIntegrityCopyButtonInner({
       pathname,
       effectiveVisibleGroupLimit,
     });
-    if (!(await copyText(formatTranscriptIntegrityReport(report)))) return;
-    toast.success(
-      report.anomalies.length === 0
+    if (!(await copyText(formatTranscriptIntegrityReport(report), report.anomalies.length === 0
         ? "Transcript report copied — no anomalies detected"
-        : `Transcript report copied — ${report.anomalies.length} anomal${report.anomalies.length === 1 ? "y" : "ies"} flagged`,
-    );
+        : `Transcript report copied — ${report.anomalies.length} anomal${report.anomalies.length === 1 ? "y" : "ies"} flagged`))) return;
   };
 
   return (

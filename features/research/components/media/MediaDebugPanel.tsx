@@ -52,9 +52,8 @@ export default function MediaDebugPanel({
   const debugHref = `/research/topics/${topicId}/media/debug`;
 
   const handleCopyAll = useCallback(async () => {
-    if (!(await copyText(json))) return;
+    if (!(await copyText(json, "Copied media debug summary"))) return;
     setCopied(true);
-    toast.success("Copied media debug summary");
     window.setTimeout(() => setCopied(false), 2000);
   }, [json]);
 

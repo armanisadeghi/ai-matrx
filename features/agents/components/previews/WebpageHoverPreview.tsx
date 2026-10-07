@@ -48,9 +48,8 @@ export function WebpagePreviewContent({
   const domain = parseDomain(url);
 
   const handleCopyUrl = async () => {
-    if (!(await copyText(url))) return;
+    if (!(await copyText(url, "URL copied"))) return;
     setCopied(true);
-    toast.success("URL copied");
     setTimeout(() => setCopied(false), 1500);
   };
 
