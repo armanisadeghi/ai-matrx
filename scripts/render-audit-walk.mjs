@@ -29,15 +29,13 @@ const actions = new Set(ACTIONS.split(","));
 mkdirSync(OUT, { recursive: true });
 const COUNTER = readFileSync(resolve(ROOT, "scripts/lib/render-counter.js"), "utf8");
 const REGIONS = [
-  // RA_REGIONS=A,B adds regions nearest-first (lane RENDER-2: TableToolbar, TableHeader, SheetBodyRow …)
+  // RA_REGIONS=A,B adds regions nearest-first (a records-ui component name, nearest-first)
   ...(process.env.RA_REGIONS ? process.env.RA_REGIONS.split(",") : []),
   "Toaster",
   "ShellOrgSwitcher",
   "Header",
   "Sidebar",
   "RouteHeader",
-  "EditableTableCell",
-  "MatrxDataTableCore",
   "Grid",
   "TablePage",
   "RecordsMount",

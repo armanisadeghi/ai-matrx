@@ -1,9 +1,7 @@
 import {
   defaultRowLabelField,
   effectiveRowLabel,
-  isRowLabelField,
   readRowLabel,
-  rowLabelOrFallback,
   rowLabelText,
 } from "../row-label";
 
@@ -28,8 +26,6 @@ describe("row label", () => {
   it("defaults to the first ordinary column — never an autonumber or a blob", () => {
     expect(defaultRowLabelField(fields)?.field_name).toBe("first");
     expect(effectiveRowLabel(null, fields)).toEqual({ kind: "field", field: "first" });
-    expect(isRowLabelField("first", null, fields)).toBe(true);
-    expect(isRowLabelField("last", null, fields)).toBe(false);
   });
 
   it("falls back when the chosen label column was deleted", () => {
@@ -48,9 +44,5 @@ describe("row label", () => {
     expect(rowLabelText({ data: { first: "Emily" } }, fields, cfg).text).toBe("Emily");
     expect(rowLabelText(row, fields, { kind: "formula", expression: "{Nope} & 1" }).problem).toMatch(/Nope/);
     expect(rowLabelText(row, fields, { kind: "formula", expression: "1 +" }).text).toBe("");
-  });
-
-  it("offers a short honest stand-in when the label is empty", () => {
-    expect(rowLabelOrFallback({ id: row.id, data: {} }, fields, { kind: "field", field: "last" })).toBe("Row 4f2a9c11");
   });
 });

@@ -7,7 +7,7 @@
  * table" modal, a canvas table, a tool result's dataset overlay, the tables picker's preview —
  * mounts exactly what /data/<table> mounts: `useUnifiedTable` + `UnifiedTableBody` (the same pair
  * a Board tile renders). The table reads as its OWN organization; a table the person was not
- * given gets the canonical no-access page; the Sheet layout, the merged grid's agent surface, the
+ * given gets the canonical no-access page; the grid layout, the merged grid's agent surface, the
  * table's one action list (with this app's entries) all come with it. Only the route's chrome
  * (header, address, capture) stays on the route.
  *

@@ -1,7 +1,7 @@
 // features/data-tables/data-source/table-home.ts — WHO IS READING THIS RECORD-STORE TABLE.
 //
-// THE ONE DATA-SOURCE SEAM (lane GRID-PORT, 2026-09-23). The grid — `UserTableViewer`, its
-// modals, its hooks — reaches its data through the exports of `features/data-tables/service.ts`
+// THE ONE DATA-SOURCE SEAM (lane GRID-PORT, 2026-09-23). The table page — records-ui, its
+// dialogs, its hooks — reaches its data through the exports of `features/data-tables/service.ts`
 // and nothing else. Every table lives in the record store (`custom.*`, through
 // `@ai-matrx/records`, in `record-store.ts`); the store's doors are keyed (organization, id) and
 // carry the actor, so every export needs the table's organization and the signed-in person. This
@@ -23,7 +23,6 @@ export type RecordStoreHome = {
 };
 
 const homes = new Map<string, RecordStoreHome>();
-const listeners = new Set<() => void>();
 
 /** The signed-in person's id, or null. */
 export async function signedInUserId(): Promise<string | null> {
@@ -43,25 +42,9 @@ export function placeTableInRecordStore(
   home: { organizationId: string; userId: string | null },
 ): void {
   homes.set(tableId, { store: "record", organizationId: home.organizationId, userId: home.userId });
-  for (const listener of listeners) listener();
-}
-
-/** Forget a placement (a test, or a host that unmounts and must not leak one). */
-export function forgetTablePlacement(tableId: string): void {
-  if (homes.delete(tableId)) for (const listener of listeners) listener();
 }
 
 /** Every placement, for a test harness to clear between cases. */
 export function forgetAllTablePlacements(): void {
-  if (homes.size === 0) return;
   homes.clear();
-  for (const listener of listeners) listener();
-}
-
-/** Subscribe to placement changes (useSyncExternalStore-shaped). */
-export function subscribeToTablePlacements(listener: () => void): () => void {
-  listeners.add(listener);
-  return () => {
-    listeners.delete(listener);
-  };
 }

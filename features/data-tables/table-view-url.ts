@@ -56,8 +56,8 @@ export type TableViewState = {
   order: string[];
   /**
    * How the grid uses horizontal space in THIS view. `default` = the person
-   * has not chosen: the ORGANIZATION's default applies (knob
-   * `extensibility.user_tables.default_layout`, itself auto | fit | scroll).
+   * has not chosen: the ORGANIZATION's default applies (a knob,
+   * itself auto | fit | scroll).
    * Anything else is the person's own override — including an explicit `auto`,
    * which is how someone picks Automatic inside an organization whose default
    * is something else.
@@ -80,8 +80,6 @@ export type TableRowDensity = "compact" | "normal" | "tall";
 /** A view's choice: a concrete value, or `default` = "whatever my organization set". */
 export type TableLayoutChoice = TableLayoutMode | "default";
 export type TableRowDensityChoice = TableRowDensity | "default";
-export const TABLE_LAYOUT_MODES: readonly TableLayoutMode[] = ["auto", "fit", "scroll"];
-export const TABLE_ROW_DENSITIES: readonly TableRowDensity[] = ["compact", "normal", "tall"];
 /** Dragged widths are clamped here: narrower hides the header menu, wider is a mistake. */
 export const MIN_COLUMN_WIDTH_PX = 60;
 export const MAX_COLUMN_WIDTH_PX = 1200;
@@ -326,15 +324,6 @@ export function sameTableView(a: TableViewState, b: TableViewState): boolean {
 
 // ─── layout: mode, widths, density, freeze ──────────────────────────────────
 
-/** A concrete layout mode (used for the ORGANIZATION default, which is never `default`). */
-export function parseLayoutMode(raw: string | null): TableLayoutMode {
-  return raw === "fit" || raw === "scroll" ? raw : "auto";
-}
-
-export function parseRowDensity(raw: string | null): TableRowDensity {
-  return raw === "compact" || raw === "tall" ? raw : "normal";
-}
-
 /** A VIEW's layout: absent or unknown = `default` (the organization decides). */
 export function parseLayoutChoice(raw: string | null | undefined): TableLayoutChoice {
   return raw === "auto" || raw === "fit" || raw === "scroll" ? raw : "default";
@@ -387,33 +376,4 @@ export function isColumnWidthMap(value: unknown): value is Record<string, number
       (v) => typeof v === "number" && Number.isFinite(v),
     )
   );
-}
-
-/**
- * Resolve the effective layout for a view: the user's override when set, else
- * the platform default — share the width up to `fitMaxColumns` visible
- * columns, natural widths and a sideways scroll past that.
- */
-export function resolveTableLayout(
-  mode: TableLayoutMode,
-  visibleColumnCount: number,
-  fitMaxColumns: number,
-): "fit" | "scroll" {
-  if (mode !== "auto") return mode;
-  return visibleColumnCount <= fitMaxColumns ? "fit" : "scroll";
-}
-
-/** The person's choice if they made one, else the organization's default. */
-export function effectiveLayoutMode(
-  choice: TableLayoutChoice,
-  organizationDefault: TableLayoutMode,
-): TableLayoutMode {
-  return choice === "default" ? organizationDefault : choice;
-}
-
-export function effectiveRowDensity(
-  choice: TableRowDensityChoice,
-  organizationDefault: TableRowDensity,
-): TableRowDensity {
-  return choice === "default" ? organizationDefault : choice;
 }

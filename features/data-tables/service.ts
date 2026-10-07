@@ -293,7 +293,7 @@ export type DeleteFieldResponse = {
  * values stay on every row.
  *
  * THE ONE delete-column path. Every surface that lets a user manage columns
- * (TableConfigModal, the column header menu) calls this rather than touching
+ * (the table settings rail, the column header menu) calls this rather than touching
  * the field row directly. A removed column comes back with its values (`restoreField`).
  *
  * Refuses to remove the last remaining column.
@@ -501,7 +501,7 @@ export type UpdatedTableMetadata = {
  * Requires editor access; a refusal surfaces here as a failure envelope.
  *
  * This is the ONE path for table metadata:
- * `TableConfigModal` and the surface `table_description` write target all go
+ * The table settings rail and the surface `table_description` write target all go
  * through it, so a UI edit and an agent edit can never disagree.
  */
 export async function updateTableMetadata(
@@ -517,9 +517,8 @@ export async function updateTableMetadata(
 // THE COLUMN KNOWS ITSELF — read `features/data-tables/FEATURE.md` § Column
 // shape before adding another "count the distinct values" path.
 //
-// These replace counting in the browser. The viewer used to pull up to 5,000
-// rows down to filter client-side, and past that cap it answered confidently
-// over a partial set. Distinct values, counts and fill rates are computed in
+// These replace counting in the browser. The grid does not pull rows down
+// to filter client-side (a cap would answer confidently over a partial set). Distinct values, counts and fill rates are computed in
 // the database over EVERY row, or the call fails — there is no partial answer.
 
 export type GetColumnFacetsArgs = {
@@ -735,7 +734,7 @@ export async function revertRowField(args: { tableId: string; rowId: string; fie
 /** The version this browser drew a row at — what an undo step is sent against (`null` = unread). */
 export { seenRowVersion } from "./data-source/record-store";
 
-/** The storage types a column can be changed into (the Sheet's Stores list). */
+/** The storage types a column can be changed into (the grid's Stores list). */
 export { RECORD_STORE_COLUMN_TYPES } from "./data-source/record-store";
 
 /** Bring a removed (retired) column back with its values (DATA-V2-BASICS-2 F18). */

@@ -35,7 +35,7 @@
  *    full-page SQL console and the wrong ALTITUDE inside a message: it requires
  *    an AUTHORED column spec (a `data_table` declares its columns at runtime,
  *    and a headerless CSV has none) and mounts windows + URL state.
- *  - `UserTableViewer` — needs a persisted `tableId`; a table lifted out of a
+ *  - the store table page (`/data/<id>`, records-ui) — needs a persisted `tableId`; a table lifted out of a
  *    PDF has no record behind it.
  *  - `StreamingTableRenderer` — markdown-string input only; this kind carries
  *    typed cells, and stringifying them to markdown to render them would throw

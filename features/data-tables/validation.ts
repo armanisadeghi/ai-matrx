@@ -174,29 +174,6 @@ export function hasValidationRules(rules: ValidationRules | null | undefined): b
 }
 
 /**
- * The object to STORE. Strips `required` (law 1) and every empty key, so a
- * column whose rules were all cleared stores `{}` rather than a husk of nulls
- * — and `{}` is the only way to clear them.
- */
-export function serializeValidationRules(
-  rules: ValidationRules | null | undefined,
-): Record<string, unknown> {
-  const out: Record<string, unknown> = {};
-  if (!rules) return out;
-  for (const key of STORED_KEYS) {
-    const value = rules[key];
-    if (value === undefined) continue;
-    if (key === "allowedValues" && (!Array.isArray(value) || value.length === 0)) continue;
-    if (key === "unique" && value !== true) continue;
-    if ((key === "pattern" || key === "patternHint") && String(value).trim() === "") continue;
-    out[key] = value;
-  }
-  // A hint with no pattern says nothing; drop it rather than store a dangling half-rule.
-  if (out.patternHint !== undefined && out.pattern === undefined) delete out.patternHint;
-  return out;
-}
-
-/**
  * A PATTERN IS SAID IN WORDS, NEVER AS THE EXPRESSION (BREAKER-3 B3-04). The store keeps a shape rule
  * on a phone, email or link column; the row form printed it as "Matches ^(?=(?:[^0-9]*[0-9]){7,22}…".
  * A person reads the column's own words for a pattern — the author's example (`patternHint`), else

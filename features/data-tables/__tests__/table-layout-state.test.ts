@@ -2,15 +2,10 @@ import {
   MAX_COLUMN_WIDTH_PX,
   MIN_COLUMN_WIDTH_PX,
   clampColumnWidth,
-  effectiveLayoutMode,
-  effectiveRowDensity,
   parseColumnWidths,
   parseLayoutChoice,
   parseRowDensityChoice,
-  parseLayoutMode,
-  parseRowDensity,
   parseTableViewParams,
-  resolveTableLayout,
   serializeColumnWidths,
   tableViewParamPatch,
 } from "../table-view-url";
@@ -55,10 +50,6 @@ describe("layout mode + density + freeze in the URL", () => {
     expect(explicit.layout).toBe("auto");
     expect(tableViewParamPatch(explicit, DEFAULTS).lay).toBe("auto");
     expect(tableViewParamPatch(explicit, DEFAULTS).den).toBe("normal");
-    expect(effectiveLayoutMode("default", "scroll")).toBe("scroll");
-    expect(effectiveLayoutMode("auto", "scroll")).toBe("auto");
-    expect(effectiveRowDensity("default", "compact")).toBe("compact");
-    expect(effectiveRowDensity("normal", "compact")).toBe("normal");
     expect(plainPatch.lay).toBeNull();
     expect(plainPatch.w).toBeNull();
     expect(plainPatch.den).toBeNull();
@@ -66,8 +57,6 @@ describe("layout mode + density + freeze in the URL", () => {
   });
 
   it("refuses nonsense rather than guessing", () => {
-    expect(parseLayoutMode("sideways")).toBe("auto");
-    expect(parseRowDensity("huge")).toBe("normal");
     expect(parseLayoutChoice("sideways")).toBe("default");
     expect(parseRowDensityChoice("huge")).toBe("default");
     expect(parseColumnWidths("a:4,b:99999,c:abc,noColon,:12,d:150")).toEqual({ d: 150 });
@@ -78,13 +67,6 @@ describe("layout mode + density + freeze in the URL", () => {
   it("serializes widths in a stable order so equal maps compare equal", () => {
     expect(serializeColumnWidths({ z: 100, a: 200 })).toBe("a:200,z:100");
     expect(serializeColumnWidths({})).toBeNull();
-  });
-
-  it("auto fits up to the cap and scrolls past it; an override always wins", () => {
-    expect(resolveTableLayout("auto", 8, 8)).toBe("fit");
-    expect(resolveTableLayout("auto", 9, 8)).toBe("scroll");
-    expect(resolveTableLayout("fit", 30, 8)).toBe("fit");
-    expect(resolveTableLayout("scroll", 2, 8)).toBe("scroll");
   });
 });
 

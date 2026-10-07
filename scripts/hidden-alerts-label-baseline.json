@@ -7,7 +7,6 @@
     "components/mardown-display/blocks/common/ContentBlockWrapper.tsx :: title={saveError}",
     "components/mardown-display/blocks/quiz/MultipleChoiceQuiz.tsx :: title={saveError}",
     "components/mardown-display/blocks/scraper-kinds/ScrapedPageBlock.tsx :: title={failureReason ?? undefined}",
-    "components/user-generated-table-data/UserTableViewer.tsx :: title={formulaError}",
     "../aidream/apps/shared/chat/src/agents/components/inputs/resources/AttachedDocumentChips.tsx :: title={links.error}",
     "../aidream/apps/shared/chat/src/agents/components/observational-memory/components/MemoryOverviewCard.tsx :: title={lastError?.error ?? \"A memory operation failed. The conversation continues normally.\"}",
     "../aidream/apps/shared/chat/src/agents/components/run-controls/ContextPoliciesTab.tsx :: title={jsonError}",

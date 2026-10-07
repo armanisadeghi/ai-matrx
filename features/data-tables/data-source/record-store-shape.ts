@@ -652,73 +652,9 @@ export function storeValue(
   return value;
 }
 
-// ─── sort and search, exactly as the older page door did them ───────────────
-//
-// The grid's page door sorted IN SQL: a number/integer
-// column numerically (text that is not a number sorts as null), a date/datetime
-// column as an instant, anything else as LOWER(text); NULLS LAST both ways; `id`
-// as the tie-breaker that makes the order total. It searched with
-// `data::text ILIKE '%term%'`. The record store has no sort-by-column or
-// search door, so the record-store page reads the table's rows through the read
-// door and applies THESE — the same rules, so the same click orders the same way.
-
-type Sortable = { id: string; data: Record<string, unknown> };
-
-/** `data->>'key'` — the text a jsonb value reads as. */
-function asText(value: unknown): string | null {
-  if (value === null || value === undefined) return null;
-  if (typeof value === "string") return value;
-  if (typeof value === "number" || typeof value === "boolean") return String(value);
-  return jsonbText(value);
-}
+// ─── text forms the store reads ─────────────────────────────────────────────
 
 const NUMERIC = /^-?[0-9]+\.?[0-9]*$/;
-
-/**
- * The database's text order. `LOWER(text)` sorted under the cluster's
- * `en_US.UTF-8` collation, which orders words, not code points — `$6,000`
- * after `**Stipulations**` — and `Intl.Collator("en")` is the same order
- * (measured against the older door on a real table, lane GRID-PORT).
- */
-const TEXT_ORDER = new Intl.Collator("en");
-
-function sortKey(value: unknown, dataType: string | undefined): number | string | null {
-  const text = asText(value);
-  if (text === null) return null;
-  if (dataType === "integer" || dataType === "number") {
-    return NUMERIC.test(text) ? Number(text) : null;
-  }
-  if (dataType === "date" || dataType === "datetime") {
-    if (text === "") return null;
-    const at = Date.parse(text);
-    return Number.isNaN(at) ? null : at;
-  }
-  return text.toLowerCase();
-}
-
-export function sortRowsLikeTheOlderStore<T extends Sortable>(
-  rows: readonly T[],
-  fieldName: string,
-  direction: "asc" | "desc",
-  dataType: string | undefined,
-): T[] {
-  const keyed = rows.map((row) => ({ row, key: sortKey(row.data[fieldName], dataType) }));
-  keyed.sort((a, b) => {
-    if (a.key === null && b.key !== null) return 1;
-    if (b.key === null && a.key !== null) return -1;
-    if (a.key !== null && b.key !== null && a.key !== b.key) {
-      const cmp =
-        typeof a.key === "string" && typeof b.key === "string"
-          ? TEXT_ORDER.compare(a.key, b.key)
-          : a.key < b.key
-            ? -1
-            : 1;
-      if (cmp !== 0) return direction === "desc" ? -cmp : cmp;
-    }
-    return a.row.id < b.row.id ? -1 : a.row.id > b.row.id ? 1 : 0;
-  });
-  return keyed.map((k) => k.row);
-}
 
 /**
  * Postgres's `jsonb::text`: keys ordered by length then bytes, `", "` between
@@ -745,12 +681,6 @@ export function jsonbText(value: unknown): string {
       .join(", ")}}`;
   }
   return "null";
-}
-
-export function searchRowsLikeTheOlderStore<T extends Sortable>(rows: readonly T[], term: string): T[] {
-  const needle = term.toLowerCase();
-  if (needle === "") return [...rows];
-  return rows.filter((row) => jsonbText(row.data).toLowerCase().includes(needle));
 }
 
 /**

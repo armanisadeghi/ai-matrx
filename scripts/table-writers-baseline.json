@@ -3,7 +3,6 @@
   "sites": {
     "../aidream/apps/shared/chat/src/agents/resources/utils.ts": 3,
     "features/content-ir/kinds/comparison-set.ts": 3,
-    "features/data-tables/table-copy.ts": 2,
     "features/page-extraction/data-review/export.ts": 2,
     "features/research/resources/render.ts": 3,
     "scripts/generate-type-drift-hitlists.ts": 3,

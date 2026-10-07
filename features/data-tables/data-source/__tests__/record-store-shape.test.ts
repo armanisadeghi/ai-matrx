@@ -20,8 +20,6 @@ import {
   gridRowOrdering,
   withHandOrder,
   gridValidationRules,
-  searchRowsLikeTheOlderStore,
-  sortRowsLikeTheOlderStore,
   storeDefaultSort,
   storeValue,
 } from "../record-store-shape";
@@ -171,39 +169,11 @@ describe("a record document reads back as the row the older grid held", () => {
   });
 });
 
-describe("sort and search are the older page door's own rules", () => {
-  const rows = [
-    { id: "c", data: { n: "10", d: "2026-01-02", t: "$6,000 voucher" } },
-    { id: "a", data: { n: "9", d: "2025-12-31", t: "**Stipulations**" } },
-    { id: "b", data: { n: null, d: "", t: "apple" } },
-    { id: "d", data: { n: "x", d: null, t: "Banana" } },
-  ];
-  const ids = (r: { id: string }[]) => r.map((x) => x.id).join("");
-
-  it("orders numbers as numbers, text that is not a number as blank, blanks last both ways, id breaking ties", () => {
-    expect(ids(sortRowsLikeTheOlderStore(rows, "n", "asc", "number"))).toBe("acbd");
-    expect(ids(sortRowsLikeTheOlderStore(rows, "n", "desc", "number"))).toBe("cabd");
-  });
-
-  it("orders dates as instants", () => {
-    expect(ids(sortRowsLikeTheOlderStore(rows, "d", "asc", "date"))).toBe("acbd");
-  });
-
-  it("orders text the way the database collation does — words, not code points", () => {
-    // en_US: punctuation does not lead, case does not split.
-    expect(ids(sortRowsLikeTheOlderStore(rows, "t", "asc", "string"))).toBe("acbd");
-  });
-
+describe("jsonb text", () => {
   it("writes jsonb::text — keys by length then bytes, ', ' and ': '", () => {
     expect(jsonbText({ work_order: "WO-1", stage: "On site", a: [1, true, null] })).toBe(
       '{"a": [1, true, null], "stage": "On site", "work_order": "WO-1"}',
     );
-  });
-
-  it("searches the row's jsonb text case-insensitively, as ILIKE did", () => {
-    expect(ids(searchRowsLikeTheOlderStore(rows, "BANANA"))).toBe("d");
-    expect(ids(searchRowsLikeTheOlderStore(rows, '"t": "apple"'))).toBe("b");
-    expect(ids(searchRowsLikeTheOlderStore(rows, ""))).toBe("cabd");
   });
 });
 

@@ -6,7 +6,7 @@
 // build. This repo's rule is "no manual useMemo / useCallback / React.memo", so a skipped
 // component has NO memoisation at all: every render above it rebuilds every callback and object
 // it hands down and redraws every child. Measured 2026-09-26 (RENDER-AUDIT): 1,573 of 13,538
-// functions skipped — the Sheet (`UserTableViewer`) among them, which is how one cell edit on
+// functions skipped — the old table grid among them, which is how one cell edit on
 // /data redrew 2,726 components.
 //
 // Offline and read-only: runs the compiler the app builds with (babel-plugin-react-compiler, the

@@ -88,16 +88,6 @@ export function effectiveRowLabel(
   return fallback ? { kind: "field", field: fallback.field_name } : null;
 }
 
-/** True when this column IS the (effective) row label — drives the header marker. */
-export function isRowLabelField(
-  fieldName: string,
-  metadata: unknown,
-  fields: readonly RowLabelField[],
-): boolean {
-  const cfg = effectiveRowLabel(metadata, fields);
-  return cfg?.kind === "field" && cfg.field === fieldName;
-}
-
 export type RowLabelResult = {
   text: string;
   /** Why `text` is empty or a stand-in, when it is. */
@@ -163,15 +153,4 @@ export function rowLabelText(
   if (!result.ok) return { text: "", problem: result.error };
   if (result.value === null || result.value === undefined) return { text: "" };
   return { text: String(result.value).trim() };
-}
-
-/** A label, or a short honest stand-in — for lists that must show SOMETHING per row. */
-export function rowLabelOrFallback(
-  row: { id: string; data: Record<string, unknown> },
-  fields: readonly RowLabelField[],
-  config: RowLabelConfig | null,
-  relationWords?: RelationWordsByField,
-): string {
-  const { text } = rowLabelText(row, fields, config, relationWords);
-  return text || `Row ${row.id.slice(0, 8)}`;
 }

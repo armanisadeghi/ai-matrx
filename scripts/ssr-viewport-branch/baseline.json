@@ -19,8 +19,6 @@
     "structural-viewport-branch|components/mermaid/code/CodeModePane.tsx": 1,
     "structural-viewport-branch|components/mermaid/visual/VisualModePane.tsx": 1,
     "structural-viewport-branch|components/rich-editor/RichEditorImpl.tsx": 5,
-    "structural-viewport-branch|components/user-generated-table-data/TableToolbar.tsx": 2,
-    "structural-viewport-branch|components/user-generated-table-data/UserTableViewer.tsx": 2,
     "structural-viewport-branch|features/admin/check-findings/CheckFindingsConsole.tsx": 1,
     "structural-viewport-branch|features/agent-apps/components/CreateAgentAppModal.tsx": 1,
     "structural-viewport-branch|features/agent-apps/components/layouts/AgentAppActionModal.tsx": 1,

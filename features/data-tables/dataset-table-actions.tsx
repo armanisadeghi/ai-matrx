@@ -4,7 +4,7 @@
  * A TABLE SHOWN AWAY FROM ITS PAGE GETS THE TABLE'S ONE ACTION LIST (lane TABLE-ACTIONS item 11).
  *
  * Mounts that draw a record-store table outside `/data/<id>` — `UserTableWindow`,
- * `QuickDataWindow`'s preview, `UserTableViewer` on `/data/<id>` — answer a right-click with
+ * `QuickDataWindow`'s preview, the store grid on `/data/<id>` — answer a right-click with
  * `tableActions()` from `@ai-matrx/records-ui`, through the one v3 renderer (`toExtraSections`).
  * There is no second list here: the guard `no-table-action-list-outside-the-registry` forbids it.
  *

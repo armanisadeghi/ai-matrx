@@ -66,10 +66,6 @@ export function activeFilterEntries(
   return Object.entries(filters).filter(([, f]) => isActiveFilter(f));
 }
 
-export function hasAnyActiveFilter(filters: ColumnFilterMap): boolean {
-  return activeFilterEntries(filters).length > 0;
-}
-
 /** The cell as comparable text. Objects/arrays stringify so JSON is searchable. */
 function cellText(raw: unknown): string {
   if (raw === null || raw === undefined) return "";

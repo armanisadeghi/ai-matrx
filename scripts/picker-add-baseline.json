@@ -1,8 +1,6 @@
 {
   "_": "THE BASELINE ONLY SHRINKS. Files that screamed under check:picker-add on 2026-09-18. Never add a line to make a run pass; fix the picker and delete its line. Law: common-docs/policies/no-dead-ends.md",
   "files": [
-    "features/data-tables/components/ColorRulesDialog.tsx",
-    "components/user-generated-table-data/TableReferenceOverlay.tsx",
     "features/marketing/seo/topical-map/panel/sections/TopicChanges.tsx",
     "app/(dev)/demos/scopes/context-lab/page.dev.tsx",
     "features/admin/system-context/FeedConfigEditor.tsx",

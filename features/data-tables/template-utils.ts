@@ -11,12 +11,6 @@ export interface SchemaTemplate {
   created_at: string;
 }
 
-export interface TemplateOption {
-  value: string;
-  label: string;
-  description?: string;
-}
-
 export interface CreateTemplateParams {
   templateName: string;
   description: string;
@@ -258,51 +252,3 @@ export async function updateSchemaTemplate(
     return { success: false, error: errorMessage };
   }
 }
-
-/**
- * Convert schema templates to dropdown options
- */
-export function getTemplateOptions(templates: SchemaTemplate[]): TemplateOption[] {
-  return templates.map(template => ({
-    value: template.id,
-    label: template.template_name,
-    description: template.description
-  }));
-}
-
-/**
- * Generate a sanitized table name suitable for the database
- * @param displayName User-provided display name
- * @returns A sanitized name safe for database use
- */
-export function generateSanitizedTableName(displayName: string): string {
-  // Convert to lowercase, replace spaces and special chars with underscores
-  const sanitized = displayName
-    .toLowerCase()
-    .trim()
-    .replace(/[^\w\s]/g, '')
-    .replace(/\s+/g, '_');
-  
-  // Add timestamp to ensure uniqueness
-  const timestamp = new Date().toISOString().replace(/[-:.TZ]/g, '').substring(0, 14);
-  
-  return `${sanitized}_${timestamp}`;
-}
-
-/**
- * Gets a human readable display name from a sanitized table name
- * @param sanitizedName The sanitized database table name
- * @returns A human readable display name
- */
-export function getDisplayNameFromSanitized(sanitizedName: string): string {
-  // Remove timestamp suffix and convert underscores to spaces
-  const displayName = sanitizedName
-    .replace(/_[0-9]+$/, '') // Remove timestamp suffix
-    .replace(/_/g, ' ');     // Replace underscores with spaces
-  
-  // Capitalize first letter of each word
-  return displayName
-    .split(' ')
-    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-    .join(' ');
-} 
