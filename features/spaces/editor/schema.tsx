@@ -10,7 +10,7 @@ import { BlockNoteSchema, createCodeBlockSpec, defaultBlockSpecs, defaultInlineC
 import { createReactBlockSpec } from "@blocknote/react";
 import { ArrowUpRight, FileText } from "lucide-react";
 import Link from "next/link";
-import { useRef } from "react";
+import { useEffect, useRef } from "react";
 
 import { useSpaces } from "../state/SpacesProvider";
 import { SpaceIcon } from "../page/SpaceIcon";
@@ -81,9 +81,20 @@ const CalloutBlock = createReactBlockSpec(
 );
 
 function PageRow({ spaceId, linked }: { spaceId: string; linked: boolean }) {
-  const { byId, open, pageHref, missingPageLabel } = useSpaces();
-  const page = byId.get(spaceId);
-  const title = page ? page.title || "Untitled" : (missingPageLabel ?? "Page in Trash");
+  const { byId, archived, linkTarget, requestLink, ready, open, pageHref, missingPageLabel } = useSpaces();
+  // The tree first; a page it does not hold (shared from another organization) is read by id — never
+  // "in Trash" unless it is.
+  const page = byId.get(spaceId) ?? linkTarget?.(spaceId) ?? undefined;
+  const trashed = archived.some((a) => a.id === spaceId);
+  useEffect(() => {
+    if (!page && !trashed) requestLink?.(spaceId);
+  }, [page, trashed, requestLink, spaceId, ready]);
+  const reading = !page && !trashed && (!ready || (!!requestLink && linkTarget?.(spaceId) === undefined));
+  const title = page
+    ? page.title || "Untitled"
+    : reading
+      ? ""
+      : (missingPageLabel ?? (trashed ? "Page in Trash" : "No access to this page"));
   return (
     <Link
       href={pageHref ? pageHref(spaceId) : `/spaces/${spaceId}`}

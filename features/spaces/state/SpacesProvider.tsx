@@ -105,8 +105,16 @@ interface SpacesContextValue {
   setMobileSidebarOpen: (open: boolean) => void;
   /** A page link's address (the public web page addresses pages by their link); default `/spaces/<id>`. */
   pageHref?: (id: SpaceId) => string;
-  /** What a link to a page this screen cannot show says; default "Page in Trash". */
+  /** What a link to a page this screen cannot show says; default: "Page in Trash" only when it is. */
   missingPageLabel?: string;
+  /**
+   * A linked page the tree does not hold (a page shared from another organization, a link to a page
+   * outside it): read once by id under row security — access, never organization. undefined = not asked
+   * yet or reading; null = this person cannot open it (or it is gone).
+   */
+  linkTarget?: (id: SpaceId) => SpaceSummary | null | undefined;
+  /** Ask for a link target the tree does not hold (once per page id). */
+  requestLink?: (id: SpaceId) => void;
 }
 
 /** A picker that can also make the page: `first` lists "New page" above the matches (Notion's `[+`). */
@@ -409,7 +417,33 @@ export function SpacesProvider({ children }: { children: ReactNode }) {
     await store.move(id, target.parentId, position);
   };
 
+  // Link targets the tree does not hold, read one by one by id (row security decides; never the organization).
+  const [linked, setLinked] = useState<Map<SpaceId, SpaceSummary | null>>(new Map());
+  const asked = useRef(new Set<SpaceId>());
+  const linkTarget = (id: SpaceId): SpaceSummary | null | undefined => visibleById.get(id) ?? linked.get(id);
+  const requestLink = (id: SpaceId) => {
+    if (!ready || visibleById.has(id) || asked.current.has(id)) return;
+    asked.current.add(id);
+    void store.get(id).then(
+      (doc) =>
+        setLinked((prev) =>
+          new Map(prev).set(
+            id,
+            doc && !doc.isArchived
+              ? { id: doc.id, parentId: doc.parentId, position: doc.position, title: doc.title, icon: doc.icon, isArchived: false, updatedAt: doc.updatedAt }
+              : null,
+          ),
+        ),
+      (err: unknown) => {
+        console.error("[spaces] a linked page could not be read", err);
+        setLinked((prev) => new Map(prev).set(id, null));
+      },
+    );
+  };
+
   const value: SpacesContextValue = {
+    linkTarget,
+    requestLink,
     store,
     ready,
     loadError,
