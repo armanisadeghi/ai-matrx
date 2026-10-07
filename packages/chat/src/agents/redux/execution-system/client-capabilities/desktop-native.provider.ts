@@ -22,6 +22,7 @@
 
 import { getLiveDesktopInstance } from "./desktop-presence";
 import { registerClientCapability } from "./registry";
+import { isChatHostConfigured, onChatHostConfigured } from "../../../../host/configure";
 
 /**
  * app_instances.platform holds `platform.system().lower()` ("windows"/
@@ -40,8 +41,19 @@ const PRESENCE_BUDGET_MS = 150;
 // Warm the presence answer as soon as the chat code loads, so a page's first
 // send reads a cached answer instead of waiting on the app_instances read
 // (2026-10-02 latency regression: ~290ms on every first send after a load).
+// The read needs the host's db, so the warm waits for the host: this module
+// can load before <ChatProvider> renders, and an early warm announced
+// "No chat host is configured" on every /p page (2026-10-07).
 if (typeof window !== "undefined") {
-  setTimeout(() => void getLiveDesktopInstance(), 0);
+  const warm = () => setTimeout(() => void getLiveDesktopInstance(), 0);
+  if (isChatHostConfigured()) {
+    warm();
+  } else {
+    const stop = onChatHostConfigured(() => {
+      stop();
+      warm();
+    });
+  }
 }
 
 registerClientCapability({
