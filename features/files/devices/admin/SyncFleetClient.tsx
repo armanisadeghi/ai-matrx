@@ -13,13 +13,19 @@
 
 "use client";
 
+import { useRef, useState } from "react";
+import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
+import type { MatrxDataTableQueryState } from "@ai-matrx/design-system/data-table/types";
 import { AlertTriangle, CircleSlash, HardDrive, Wifi } from "lucide-react";
 import { Badge } from "@ai-matrx/design-system";
 import { MatrxDataTable } from "@ai-matrx/design-system/data-table";
 import type { MatrxColumnDef } from "@ai-matrx/design-system/data-table/types";
 import { MatrxUuidCell } from "@ai-matrx/design-system/data-table/uuid-cell";
 import { SurfaceRuntimeProvider } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
-import { ADMIN_SYNC_FLEET_SURFACE_NAME, createAdminSyncFleetScope } from "@/features/surfaces/manifests/admin-sync-fleet.manifest";
+import {
+  ADMIN_SYNC_FLEET_SURFACE_NAME,
+  createAdminSyncFleetScope,
+} from "@/features/surfaces/manifests/admin-sync-fleet.manifest";
 
 import { cn } from "@/lib/utils";
 import { formatFileSize } from "@/features/files/utils/format";
@@ -88,13 +94,27 @@ function FleetSection({
   rows,
   empty,
   now,
+  onView,
 }: {
   id: string;
   title: string;
   rows: SyncAdminRow[];
   empty: string;
   now: number;
+  onView: (
+    id: string,
+    query: MatrxDataTableQueryState,
+    rows: SyncAdminRow[],
+  ) => void;
 }) {
+  const [query, setQuery] = useState<MatrxDataTableQueryState>({
+    page: 1,
+    pageSize: 0,
+    search: "",
+    anyOf: "",
+    columnFilters: {},
+    sort: null,
+  });
   const columns: MatrxColumnDef<SyncAdminRow>[] = [
     {
       id: "account",
@@ -185,9 +205,16 @@ function FleetSection({
       <MatrxDataTable
         tableId={`admin/sync-fleet/${id}`}
         data={rows}
+        query={{
+          mode: "controlled-local",
+          state: query,
+          onStateChange: setQuery,
+        }}
+        onViewChange={(processed) => onView(id, query, processed)}
         columns={columns}
         getRowId={(row) => row.id}
         pageSize={0}
+        read={{ status: "ready", what: "sync mappings" }}
         emptyState={{ title: empty }}
         toolbar={{
           search: true,
@@ -200,6 +227,10 @@ function FleetSection({
 
 export function SyncFleetClient({ rows }: { rows: SyncAdminRow[] }) {
   const now = useNow();
+  const contentRef = useRef<HTMLDivElement>(null);
+  const tableViews = useRef<
+    Record<string, { query: MatrxDataTableQueryState; rows: SyncAdminRow[] }>
+  >({});
   const overQuota = rows.filter((r) =>
     (OVER_QUOTA_STATES as readonly string[]).includes(r.state),
   );
@@ -217,91 +248,137 @@ export function SyncFleetClient({ rows }: { rows: SyncAdminRow[] }) {
 
   const accountsOverQuota = new Set(overQuota.map((r) => r.user_id)).size;
 
+  function getScope() {
+    const health = {
+      accounts_over_quota: accountsOverQuota,
+      over_quota_count: overQuota.length,
+      stalled_count: stalled.length,
+      degraded_count: degraded.length,
+      behind_count: behind.length,
+      observed_at: now,
+    };
+    return createAdminSyncFleetScope({
+      sync_mappings: rows,
+      sync_mapping_count: rows.length,
+      fleet_health: health,
+      ...health,
+      over_quota_mappings: overQuota,
+      stalled_mappings: stalled,
+      degraded_mappings: degraded,
+      behind_mappings: behind,
+      fleet_table_views: tableViews.current,
+      load_state: "ready",
+      content: contentRef.current?.innerText,
+      context: { load_state: "ready", loaded_mapping_limit: 1000 },
+    });
+  }
+  function onView(
+    id: string,
+    query: MatrxDataTableQueryState,
+    processed: SyncAdminRow[],
+  ) {
+    tableViews.current[id] = { query, rows: processed };
+  }
   return (
-    <SurfaceRuntimeProvider surfaceName={ADMIN_SYNC_FLEET_SURFACE_NAME} getScope={() => createAdminSyncFleetScope({ sync_mappings: rows, sync_mapping_count: rows.length })}>
-    <div className="space-y-3">
-      <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-        <Stat
-          label="accounts over quota"
-          value={accountsOverQuota}
-          tone={accountsOverQuota > 0 ? "danger" : "neutral"}
-          icon={HardDrive}
-        />
-        <Stat
-          label="mappings stopped"
-          value={stalled.length}
-          tone={stalled.length > 0 ? "danger" : "neutral"}
-          icon={CircleSlash}
-        />
-        <Stat
-          label="mappings degraded"
-          value={degraded.length}
-          tone={degraded.length > 0 ? "warning" : "neutral"}
-          icon={AlertTriangle}
-        />
-        <Stat
-          label="devices behind"
-          value={behind.length}
-          tone={behind.length > 0 ? "warning" : "neutral"}
-          icon={Wifi}
-        />
-      </div>
+    <SurfaceRuntimeProvider
+      surfaceName={ADMIN_SYNC_FLEET_SURFACE_NAME}
+      getScope={getScope}
+    >
+      <NonEditableContextMenu
+        menuVersion={2}
+        sourceFeature="files"
+        surfaceName={ADMIN_SYNC_FLEET_SURFACE_NAME}
+        getApplicationScope={getScope}
+      >
+        <div ref={contentRef} className="space-y-3">
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+            <Stat
+              label="accounts over quota"
+              value={accountsOverQuota}
+              tone={accountsOverQuota > 0 ? "danger" : "neutral"}
+              icon={HardDrive}
+            />
+            <Stat
+              label="mappings stopped"
+              value={stalled.length}
+              tone={stalled.length > 0 ? "danger" : "neutral"}
+              icon={CircleSlash}
+            />
+            <Stat
+              label="mappings degraded"
+              value={degraded.length}
+              tone={degraded.length > 0 ? "warning" : "neutral"}
+              icon={AlertTriangle}
+            />
+            <Stat
+              label="devices behind"
+              value={behind.length}
+              tone={behind.length > 0 ? "warning" : "neutral"}
+              icon={Wifi}
+            />
+          </div>
 
-      {rows.length === 0 ? (
-        <div className="rounded-md border border-border bg-card px-3 py-6 text-center text-xs text-muted-foreground">
-          No sync mapping is registered in any organization you administer yet.
-          Rows appear here the moment a device registers one — this page reads
-          the path-free admin view, so it will never show anybody&rsquo;s local
-          folder.
+          {rows.length === 0 ? (
+            <div className="rounded-md border border-border bg-card px-3 py-6 text-center text-xs text-muted-foreground">
+              No sync mapping is registered in any organization you administer
+              yet. Rows appear here the moment a device registers one — this
+              page reads the path-free admin view, so it will never show
+              anybody&rsquo;s local folder.
+            </div>
+          ) : null}
+
+          <FleetSection
+            id="over-quota"
+            title="Over quota"
+            rows={overQuota}
+            empty="No account is over its storage limit."
+            now={now}
+            onView={onView}
+          />
+          <FleetSection
+            id="stopped"
+            title="Sync stopped — needs the person at that machine"
+            rows={stalled}
+            empty="Nothing is stopped."
+            now={now}
+            onView={onView}
+          />
+          <FleetSection
+            id="degraded"
+            title="Degraded but moving"
+            rows={degraded}
+            empty="Nothing is degraded."
+            now={now}
+            onView={onView}
+          />
+          <FleetSection
+            id="behind"
+            title="Devices behind — active mappings whose device stopped checking in"
+            rows={behind}
+            empty="Every active mapping has a device that checked in recently."
+            now={now}
+            onView={onView}
+          />
+
+          {/* A gap, named rather than hidden (law 4). */}
+          <section className="rounded-md border border-amber-500/40 bg-amber-500/5 px-3 py-2 text-xs">
+            <p className="font-semibold text-amber-700 dark:text-amber-300">
+              Per-account storage ledger health is not readable here yet
+            </p>
+            <p className="mt-1 text-muted-foreground">
+              &ldquo;Failed or absent ledger rows&rdquo; cannot be shown from
+              the browser: <code>files.user_storage_usage</code> is owner-only (
+              <code>personal</code> RLS) and <code>get_usage_status</code>{" "}
+              refuses any caller but the account itself, so no admin read path
+              exists. The over-quota column above is the part that IS visible —
+              it comes from the sync engine&rsquo;s own <code>over_quota</code>{" "}
+              state. Rebuilding and re-graining the ledger to the organization
+              belongs to FS-L6; an admin-side ledger view needs a gated RPC from
+              that lane.
+            </p>
+          </section>
         </div>
-      ) : null}
-
-      <FleetSection
-        id="over-quota"
-        title="Over quota"
-        rows={overQuota}
-        empty="No account is over its storage limit."
-        now={now}
-      />
-      <FleetSection
-        id="stopped"
-        title="Sync stopped — needs the person at that machine"
-        rows={stalled}
-        empty="Nothing is stopped."
-        now={now}
-      />
-      <FleetSection
-        id="degraded"
-        title="Degraded but moving"
-        rows={degraded}
-        empty="Nothing is degraded."
-        now={now}
-      />
-      <FleetSection
-        id="behind"
-        title="Devices behind — active mappings whose device stopped checking in"
-        rows={behind}
-        empty="Every active mapping has a device that checked in recently."
-        now={now}
-      />
-
-      {/* A gap, named rather than hidden (law 4). */}
-      <section className="rounded-md border border-amber-500/40 bg-amber-500/5 px-3 py-2 text-xs">
-        <p className="font-semibold text-amber-700 dark:text-amber-300">
-          Per-account storage ledger health is not readable here yet
-        </p>
-        <p className="mt-1 text-muted-foreground">
-          &ldquo;Failed or absent ledger rows&rdquo; cannot be shown from the
-          browser: <code>files.user_storage_usage</code> is owner-only (
-          <code>personal</code> RLS) and <code>get_usage_status</code> refuses
-          any caller but the account itself, so no admin read path exists. The
-          over-quota column above is the part that IS visible — it comes from
-          the sync engine&rsquo;s own <code>over_quota</code> state. Rebuilding
-          and re-graining the ledger to the organization belongs to FS-L6; an
-          admin-side ledger view needs a gated RPC from that lane.
-        </p>
-      </section>
-    </div>
+      </NonEditableContextMenu>
     </SurfaceRuntimeProvider>
   );
 }

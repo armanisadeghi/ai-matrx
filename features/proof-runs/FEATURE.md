@@ -1,93 +1,34 @@
 # Proof Runs (admin surface)
 
-**Route:** `/administration/compute/proof-runs` (super-admin) · **Server:** aidream
-`aidream/services/proof_runs/FEATURE.md` — the system of record for everything this page shows.
+**Route:** `/administration/compute/proof-runs` (super-admin). Server contract:
+`aidream/aidream/services/proof_runs/FEATURE.md`.
 
-**Status:** LIVE, but the server it drives is **BLOCKED** (verified 2026-09-08 — the Anthropic
-account has zero credit, so every live run and every judge rule fails). The page itself was
-verified in the browser against the production server on 2026-08-26: the check tile, a streamed
-replay run, the attestation readout and the run history all render from real data, and the first
-click surfaced a real server-side defect (see § What the first click found). **Not yet verified
-from this page: running a SCENARIO, and running anything in live mode** — every API-triggered run
-in history is the four from that first session. Work order:
-[`/systems/platform/proof-runs/HANDOFF.md`](../../../common-docs/systems/platform/proof-runs/HANDOFF.md).
+## Runtime rules
 
-## What it is
+- Render check status and attestation through their registered kinds; this page owns controls,
+  history, scenario editing and receipts, not parallel kind renderers.
+- A replay still executes the step under test. Keep skipped boundary proofs distinct from a pass;
+  `auto`, `live` and `replay` select the server's cost/cadence behavior, never a browser substitute.
+- Scenario types and API projections consume the generated contracts in `types.ts`. The JSON editor
+  preserves invalid text alongside its parse error; its last valid parsed variables are separate.
+- `admin-proof-runs.manifest.ts` is the page's value contract. Loaded registries and budget values
+  are absent before the combined read succeeds; retained values during refresh are the last
+  successful read. `data_loaded`, `loading`, read error and organization requirement distinguish
+  these states. Read the latest scope synchronously; do not fetch on a menu gesture.
+- History queries and processed rows come from the canonical table. A detail response can replace
+  the selected receipt only when its ID still matches the latest request. Closing selection cancels
+  that identity; pending/error state belongs to the requested ID, not the old open receipt.
+- The canonical viewer menu and ProTextarea editors use the `admin` product attribution for this platform administration page.
+  The editor registers its controlled draft, constituents, raw variables text, error, saving flag
+  and marker names with the page scope; closing it removes that scope.
+- The mandate named by a scenario receives engineered scenario inputs. Surface registration grants
+  no ambient inheritance and creates no helper binding or new AI worker.
+- Readiness remains partial until browser menu/controlled-edit proof, header source attribution,
+  helper isolation and independent certification are verified. Historical billing/provider failures
+  are not current verification evidence.
 
-The platform's expensive checks — the ones that call real providers so their result means
-something — with the receipts that prove each run actually happened. This page is the surface for
-someone who does not want to live in a terminal: see every check and its KPIs, run one, watch each
-proof land, and read the history.
+## Receipt doors
 
-## What this page owns — and what it deliberately does not
-
-| Owns                                                                                             | Does not own                                                               |
-| ------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------- |
-| The check list, the run controls (auto / live / replay), the live console, the run-history table | How a `proof_check_status` tile or a `proof_attestation` readout **looks** |
-
-`proof_check_status` and `proof_attestation` are **registered kinds with active kind components**,
-so they render through `KindInstanceRender` here exactly as they would in a chat, a live-run
-window, or any future surface (THE CANONICAL COMPONENT LAW — `features/content-ir/FEATURE.md`).
-Their components are DB-authored (`content_ir.kind_component`, `source='db'`):
-
-- `proof_attestation_readout` — verdict header with the strength chip (live receipts vs replay),
-  the proven/failed/not-checked distribution bar, expandable proof rows carrying the observed
-  numbers each claim was computed from, and the receipts anchor.
-- `proof_check_status_tile` — live verdict kept separate from any verdict, cadence + next due,
-  30-day runs / pass rate / spend, and whether a recording exists to replay.
-
-`proof_result` and `proof_recording` stay **inactive by design** — nested-only children rendered
-by their parent, the same precedent as `faq_item` and `media_chapter`.
-
-## Files
-
-| File                             | Role                                                                                                    |
-| -------------------------------- | ------------------------------------------------------------------------------------------------------- |
-| `api.ts`                         | The `/proof-runs` client. `getJson` for reads; `postNdjson` for the run stream.                         |
-| `types.ts`                       | Request/response shapes. Kind payloads are **imported from the generated artifact**, never re-declared. |
-| `components/ProofRunsClient.tsx` | The page: checks, controls, history, run orchestration.                                                 |
-| `components/ProofRunConsole.tsx` | The live console; hands the finished attestation to the kind component.                                 |
-
-## Reading the page
-
-- **Run mode** is the money decision. `auto` (default) lets the server's gate decide — live when
-  the cadence is due and there is budget, otherwise a replay. `live` forces real providers
-  (bypasses the cadence, never the monthly ceiling). `replay` never reaches the external boundary.
-- **A replay is cheap, not free** (~$0.016): the step actually under test still runs for real, or
-  a replay would be a playback that can never fail. The header's month-to-date meter counts both.
-- **A skipped proof is never a pass.** In replay the five boundary proofs read "Not checked", and
-  the attestation says `replay_only` rather than `live_receipts`.
-- **The gate declining to run is not a failure** — it renders as an amber notice with the reason.
-- **The receipts anchor is a door, not a string.** The run's conversation holds the actual model
-  calls the proofs were computed from, so it renders as an `<EntityRef token="conversation">` in
-  both the live console and the run detail (`pnpm check:dead-ends`). The kind component shows the
-  id as text because `EntityRef` is not on the DB-component import allowlist
-  (the `@ai-matrx/code-runtime` scope, `lib/code-runtime/stored-scope.ts`) — a real platform gap, logged in
-  `FOUND_DEFECTS.md`, not something to work around per-component.
-
-## What the first click found
-
-The very first run from this page failed with `NodeRegistryError: node type 'control.branch' is
-already registered`. The check re-registered its node packs on every run, which is harmless in a
-CLI or pytest process (each is fresh) and fatal in the **long-lived server** this page talks to.
-No terminal path could have caught it. Fixed server-side (idempotent registration + a test that
-calls it three times) — and the proof system behaved correctly throughout: the run was recorded
-FAIL, `check_completed` named the exact error, and the boundary proofs stayed SKIPPED rather than
-quietly reading as passes.
-
-## Change Log
-
-- 2026-10-06 — Import-allowlist pointer moved to the `@ai-matrx/code-runtime` scope (`lib/code-runtime/stored-scope.ts`); old `allowed-imports.ts` deleted.
-- **2026-09-08 — Claude: status audit, no code change.** The server is blocked on Anthropic
-  billing, so nothing on this page can complete a live run today; a replay still renders honestly
-  (code proofs pass, the judge rule shows SKIPPED with the reason). Confirmed the page still
-  type-checks after the `@ai-matrx/design-system` Input swap and the namespaced mandate-catalog
-  contract fix. Remaining work moved to the cross-repo handoff.
-
-- **2026-08-26 — Codex: generated scenario contracts adopted.** The scenario expectation,
-  scenario-list response, mandate option, and mandate-catalog response now alias the live generated
-  OpenAPI schemas directly instead of retaining the bootstrap mirrors that predated those schemas.
-- **2026-08-26 — Claude: built.** Page, feature client, live console, and the two DB kind
-  components (`proof_attestation_readout`, `proof_check_status_tile`) that activated both kinds.
-  Registered in the admin nav under Compute → Verification. Verified in-browser against the
-  production server; `pnpm type-check` green.
+The receipt's conversation uses `EntityRef token="conversation"`. Stored kind components cannot
+import arbitrary app components: their allowlist is owned by `@ai-matrx/code-runtime` and
+`lib/code-runtime/stored-scope.ts`. Do not hand-render a second attestation to bypass that boundary.

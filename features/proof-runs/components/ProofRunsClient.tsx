@@ -14,7 +14,7 @@
  * same here, in a chat, and in a live-run window.
  */
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { isOrganizationRequiredError } from "@/lib/organizations/organizationRequiredError";
 import { OrganizationRequiredNotice } from "@/features/organizations/components/OrganizationRequiredNotice";
 import {
@@ -80,7 +80,14 @@ import { formatDurationMs, formatDurationSeconds } from "@ai-matrx/kit/format";
 import { MatrxDataTable } from "@ai-matrx/design-system/data-table";
 import type { MatrxColumnDef } from "@ai-matrx/design-system/data-table/types";
 import { SurfaceRuntimeProvider } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
-import { ADMIN_PROOF_RUNS_SURFACE_NAME, createAdminProofRunsScope } from "@/features/surfaces/manifests/admin-proof-runs.manifest";
+import {
+  ADMIN_PROOF_RUNS_SURFACE_NAME,
+  createAdminProofRunsScope,
+} from "@/features/surfaces/manifests/admin-proof-runs.manifest";
+import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
+import type { ContextMenuExtraSection } from "@/features/context-menu-v3/types";
+import type { MatrxDataTableQueryState } from "@ai-matrx/design-system/data-table/types";
+import type { SurfaceScopePayload } from "@ai-matrx/chat/surfaces/types";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 const MODES: { value: ProofRunMode; label: string; hint: string }[] = [
@@ -133,22 +140,92 @@ const proofRunColumns: MatrxColumnDef<ProofRunSummary>[] = [
     className: "truncate",
     cell: (row) => <span className="truncate">{row.check_slug}</span>,
   },
-  { id: "mode", header: "Mode", accessorKey: "mode", cell: (row) => <span className="whitespace-nowrap uppercase text-muted-foreground">{row.mode}</span> },
-  { id: "verdict", header: "Verdict", accessorFn: (row) => row.verdict ?? row.status, cell: (row) => <span className={cn("rounded-full border px-1.5 py-px text-[10px] font-medium", verdictClass(row.verdict ?? null))}>{row.verdict ?? row.status}</span> },
-  { id: "cost", header: "Cost", accessorKey: "cost_usd", align: "right", cell: (row) => <span className="font-mono whitespace-nowrap"><Cost usd={row.cost_usd} /></span> },
-  { id: "duration", header: "Took", accessorKey: "duration_ms", align: "right", cell: (row) => <span className="whitespace-nowrap text-muted-foreground">{formatDurationMs(row.duration_ms ?? 0, { style: "compact" })}</span> },
-  { id: "trigger", header: "Trigger", accessorKey: "trigger_source", cell: (row) => <span className="whitespace-nowrap text-muted-foreground">{row.trigger_source}</span> },
+  {
+    id: "mode",
+    header: "Mode",
+    accessorKey: "mode",
+    cell: (row) => (
+      <span className="whitespace-nowrap uppercase text-muted-foreground">
+        {row.mode}
+      </span>
+    ),
+  },
+  {
+    id: "verdict",
+    header: "Verdict",
+    accessorFn: (row) => row.verdict ?? row.status,
+    cell: (row) => (
+      <span
+        className={cn(
+          "rounded-full border px-1.5 py-px text-[10px] font-medium",
+          verdictClass(row.verdict ?? null),
+        )}
+      >
+        {row.verdict ?? row.status}
+      </span>
+    ),
+  },
+  {
+    id: "cost",
+    header: "Cost",
+    accessorKey: "cost_usd",
+    align: "right",
+    cell: (row) => (
+      <span className="font-mono whitespace-nowrap">
+        <Cost usd={row.cost_usd} />
+      </span>
+    ),
+  },
+  {
+    id: "duration",
+    header: "Took",
+    accessorKey: "duration_ms",
+    align: "right",
+    cell: (row) => (
+      <span className="whitespace-nowrap text-muted-foreground">
+        {formatDurationMs(row.duration_ms ?? 0, { style: "compact" })}
+      </span>
+    ),
+  },
+  {
+    id: "trigger",
+    header: "Trigger",
+    accessorKey: "trigger_source",
+    cell: (row) => (
+      <span className="whitespace-nowrap text-muted-foreground">
+        {row.trigger_source}
+      </span>
+    ),
+  },
   {
     id: "summary",
     header: "Summary",
     accessorKey: "summary",
     width: 320,
     className: "truncate",
-    cell: (row) => <span className="truncate text-muted-foreground">{row.summary}</span>,
+    cell: (row) => (
+      <span className="truncate text-muted-foreground">{row.summary}</span>
+    ),
   },
 ];
 
 export default function ProofRunsClient() {
+  const contentRef = useRef<HTMLDivElement>(null);
+  const editorReader = useRef<(() => SurfaceScopePayload) | null>(null);
+  const [dataLoaded, setDataLoaded] = useState(false);
+  const [tableQuery, setTableQuery] = useState<MatrxDataTableQueryState>({
+    page: 1,
+    pageSize: 25,
+    search: "",
+    anyOf: "",
+    columnFilters: {},
+    sort: null,
+  });
+  const visibleRuns = useRef<ProofRunSummary[]>([]);
+  const detailRequest = useRef<string | null>(null);
+  const refreshRequest = useRef(0);
+  const [detailLoading, setDetailLoading] = useState(false);
+  const [detailError, setDetailError] = useState<string | null>(null);
   const [checks, setChecks] = useState<ProofCheckStatus[]>([]);
   const [spend, setSpend] = useState({ mtd: 0, ceiling: 0 });
   const [runs, setRuns] = useState<ProofRunSummary[]>([]);
@@ -169,6 +246,8 @@ export default function ProofRunsClient() {
   const [selected, setSelected] = useState<string>("");
 
   const refresh = useCallback(async () => {
+    const request = ++refreshRequest.current;
+    setLoading(true);
     setLoadError(null);
     setOrgRequired(false);
     try {
@@ -179,6 +258,7 @@ export default function ProofRunsClient() {
           fetchScenarios(),
           fetchMandateCatalog(),
         ]);
+      if (request !== refreshRequest.current) return;
       setChecks(checksResponse.checks ?? []);
       setScenarios(scenarioResponse.scenarios ?? []);
       setMandates(catalog.mandates ?? []);
@@ -196,7 +276,9 @@ export default function ProofRunsClient() {
         ceiling: checksResponse.monthly_ceiling_usd ?? 0,
       });
       setRuns(runsResponse.runs ?? []);
+      setDataLoaded(true);
     } catch (err) {
+      if (request !== refreshRequest.current) return;
       if (isOrganizationRequiredError(err)) {
         setOrgRequired(true);
         setLoadError(null);
@@ -205,16 +287,19 @@ export default function ProofRunsClient() {
         setLoadError(extractErrorMessage(err));
       }
     } finally {
-      setLoading(false);
+      if (request === refreshRequest.current) setLoading(false);
     }
   }, []);
 
   useEffect(() => {
-    void refresh();
+    void Promise.resolve().then(refresh);
   }, [refresh]);
 
   const run = useCallback(
     async (slug: string) => {
+      detailRequest.current = null;
+      setDetailLoading(false);
+      setDetailError(null);
       setRunningSlug(slug);
       setOpenRun(null);
       setConsole({ ...EMPTY_CONSOLE, isRunning: true });
@@ -275,12 +360,22 @@ export default function ProofRunsClient() {
   );
 
   const openRunDetail = useCallback(async (runId: string) => {
+    detailRequest.current = runId;
+    setDetailLoading(true);
+    setDetailError(null);
+    setOpenRun(null);
     try {
-      setOpenRun(await fetchProofRun(runId));
+      const receipt = await fetchProofRun(runId);
+      if (detailRequest.current === runId) setOpenRun(receipt);
     } catch (err) {
-      toast.error("Could not load that run", {
-        description: extractErrorMessage(err),
-      });
+      if (detailRequest.current === runId) {
+        setDetailError(extractErrorMessage(err));
+        toast.error("Could not load that run", {
+          description: extractErrorMessage(err),
+        });
+      }
+    } finally {
+      if (detailRequest.current === runId) setDetailLoading(false);
     }
   }, []);
 
@@ -304,396 +399,585 @@ export default function ProofRunsClient() {
       ? Math.min(100, Math.round((spend.mtd / spend.ceiling) * 100))
       : 0;
 
+  function getScope() {
+    const readState = {
+      loading,
+      data_loaded: dataLoaded,
+      organization_required: orgRequired,
+      load_error: loadError ?? undefined,
+    };
+    const controls = {
+      selected_check: selected,
+      run_mode: mode,
+      running_check: runningSlug ?? undefined,
+    };
+    return {
+      ...createAdminProofRunsScope({
+        ...readState,
+        ...controls,
+        read_state: readState,
+        run_controls: controls,
+        proof_checks: dataLoaded ? checks : undefined,
+        recent_runs: dataLoaded ? runs : undefined,
+        scenarios: dataLoaded ? scenarios : undefined,
+        mandate_catalog: dataLoaded ? mandates : undefined,
+        expectation_rules: dataLoaded ? ruleHelp : undefined,
+        open_run: openRun ?? undefined,
+        run_console: console_,
+        run_detail_loading: detailLoading,
+        requested_run_id: detailRequest.current ?? undefined,
+        run_detail_error: detailError ?? undefined,
+        recent_runs_table_query: tableQuery,
+        visible_runs: visibleRuns.current,
+        monthly_spend: dataLoaded
+          ? {
+              month_to_date_usd: spend.mtd,
+              monthly_ceiling_usd: spend.ceiling,
+              budget_percentage: budgetPct,
+            }
+          : undefined,
+        month_to_date_usd: dataLoaded ? spend.mtd : undefined,
+        monthly_ceiling_usd: dataLoaded ? spend.ceiling : undefined,
+        budget_percentage: dataLoaded ? budgetPct : undefined,
+        content: contentRef.current?.innerText,
+        context: { recent_run_limit: 25, ...readState },
+      }),
+      ...(editing ? editorReader.current?.() : {}),
+    };
+  }
+  const extraSections: ContextMenuExtraSection[] = [
+    {
+      id: "proof-runs",
+      label: "Proof runs",
+      items: [
+        {
+          kind: "item",
+          id: "refresh",
+          label: "Refresh",
+          onSelect: () => void refresh(),
+          disabled: loading,
+          ...(loading
+            ? { description: "A registry read is already running" }
+            : {}),
+        },
+        {
+          kind: "item",
+          id: "run-selected",
+          label: "Run selected check",
+          onSelect: () => void run(selected),
+          disabled: !selected || runningSlug !== null,
+          ...(!selected || runningSlug !== null
+            ? {
+                description: !selected
+                  ? "Choose a check first"
+                  : "A check is already running",
+              }
+            : {}),
+        },
+        {
+          kind: "item",
+          id: "new-scenario",
+          label: "New scenario",
+          onSelect: () => setEditing(emptyScenario()),
+          disabled: editing !== null,
+          ...(editing
+            ? { description: "Finish or cancel the open scenario first" }
+            : {}),
+        },
+      ],
+    },
+  ];
+  function resolveExtraSections(
+    target: HTMLElement | null,
+  ): ContextMenuExtraSection[] {
+    const scenarioSlug = target
+      ?.closest("[data-proof-scenario]")
+      ?.getAttribute("data-proof-scenario");
+    const scenario = scenarios.find((item) => item.slug === scenarioSlug);
+    if (scenario)
+      return [
+        {
+          id: "scenario-actions",
+          label: scenario.label,
+          primary: true,
+          items: [
+            {
+              kind: "item",
+              id: "run-scenario",
+              label: "Run scenario",
+              onSelect: () => void run(scenario.check_slug),
+              disabled: runningSlug !== null,
+              ...(runningSlug
+                ? { description: "A check is already running" }
+                : {}),
+            },
+            {
+              kind: "item",
+              id: "edit-scenario",
+              label: "Edit scenario",
+              onSelect: () => setEditing(scenario),
+            },
+            {
+              kind: "item",
+              id: "delete-scenario",
+              label: "Delete scenario",
+              onSelect: () => void removeScenario(scenario.slug),
+              destructive: true,
+            },
+          ],
+        },
+        ...extraSections,
+      ];
+    const runId = target?.closest("[data-row-id]")?.getAttribute("data-row-id");
+    const receipt = runs.find((item) => item.id === runId);
+    if (receipt)
+      return [
+        {
+          id: "receipt-actions",
+          label: "Run receipt",
+          primary: true,
+          items: [
+            {
+              kind: "item",
+              id: "open-receipt",
+              label: "Open receipt",
+              onSelect: () => void openRunDetail(receipt.id),
+            },
+          ],
+        },
+        ...extraSections,
+      ];
+    return extraSections;
+  }
   return (
-    <SurfaceRuntimeProvider surfaceName={ADMIN_PROOF_RUNS_SURFACE_NAME} getScope={() => createAdminProofRunsScope({ proof_checks: checks, recent_runs: runs, open_run: openRun ?? undefined })}>
-    <div className="space-y-4 p-4">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div className="min-w-0">
-          <h1 className="flex items-center gap-2 text-xl font-semibold text-foreground">
-            <ShieldCheck className="h-5 w-5" />
-            Proof Runs
-          </h1>
-        </div>
-        <div className="flex items-center gap-2">
-          <div className="rounded-md border border-border px-3 py-2 text-right">
-            <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-              <Coins className="h-3.5 w-3.5" />
-              This month
+    <SurfaceRuntimeProvider
+      surfaceName={ADMIN_PROOF_RUNS_SURFACE_NAME}
+      getScope={getScope}
+    >
+      <NonEditableContextMenu
+        sourceFeature="admin"
+        surfaceName={ADMIN_PROOF_RUNS_SURFACE_NAME}
+        getApplicationScope={getScope}
+        extraSections={extraSections}
+        resolveExtraSectionsOnOpen={resolveExtraSections}
+        menuVersion={2}
+      >
+        <div ref={contentRef} className="space-y-4 p-4">
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div className="min-w-0">
+              <h1 className="flex items-center gap-2 text-xl font-semibold text-foreground">
+                <ShieldCheck className="h-5 w-5" />
+                Proof Runs
+              </h1>
             </div>
-            <div className="text-sm font-medium text-foreground">
-              <Cost usd={spend.mtd} />{" "}
-              <span className="text-xs font-normal text-muted-foreground">
-                of <Cost usd={spend.ceiling} />
-              </span>
-            </div>
-            <div className="mt-1 h-1 w-32 overflow-hidden rounded-full bg-muted">
-              <div
-                className={cn(
-                  "h-full",
-                  budgetPct > 90 ? "bg-red-500" : "bg-emerald-500",
-                )}
-                style={{ width: `${budgetPct}%` }}
-              />
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* THE TRIGGER. One bar, always visible, that answers "how do I run
-          something?" without reading anything else on the page. */}
-      <Card className="border-primary/30 bg-primary/5">
-        <CardContent className="space-y-2 p-3">
-          <div className="flex flex-wrap items-end gap-2">
-            <div className="min-w-[260px] flex-1 space-y-1">
-              <span className="text-xs font-medium text-muted-foreground">
-                Check to run
-              </span>
-              <Select value={selected} onValueChange={setSelected}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Pick a check" />
-                </SelectTrigger>
-                <SelectContent className="max-h-72">
-                  {checks.map((check) => (
-                    <SelectItem key={check.slug} value={check.slug ?? ""}>
-                      {check.label || check.slug}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-1">
-              <span className="text-xs font-medium text-muted-foreground">
-                Mode
-              </span>
-              <div className="flex items-center gap-1">
-                {MODES.map((option) => (
-                  <Button
-                    key={option.value}
-                    variant={mode === option.value ? "primary" : "outline"}
-                    onClick={() => setMode(option.value)}
-                    title={option.hint}
-                  >
-                    {option.label}
-                  </Button>
-                ))}
-              </div>
-            </div>
-            <Button
-              variant="primary"
-              onClick={() => void run(selected)}
-              disabled={runningSlug !== null || !selected}
-            >
-              {runningSlug ? (
-                <>
-                  <Zap className="mr-2 h-4 w-4 animate-pulse" />
-                  Running…
-                </>
-              ) : (
-                <>
-                  <PlayCircle className="mr-2 h-4 w-4" />
-                  Run this check
-                </>
-              )}
-            </Button>
-          </div>
-          <p className="text-xs text-muted-foreground">
-            {MODES.find((m) => m.value === mode)?.hint}
-          </p>
-        </CardContent>
-      </Card>
-
-      {orgRequired ? (
-        <OrganizationRequiredNotice
-          what="Proof runs"
-          description="Every call to the proof-run server runs inside an organization, and none is set for this session. Pick one and this loads — the list itself shows every run, not just that organization's."
-          onRetry={() => {
-            void refresh();
-          }}
-        />
-      ) : null}
-
-      {loadError ? (
-        <div className="space-y-1 rounded-md border border-red-500/30 bg-red-500/10 p-3 text-sm text-red-800 dark:text-red-200">
-          <p className="font-medium">The proof-run API did not answer.</p>
-          <p className="text-xs">{loadError}</p>
-          <p className="text-xs opacity-80">
-            If this says 404, the server has the page but not yet the endpoints
-            — they ship with the next aidream deploy. Nothing here is broken;
-            there is just nothing to talk to yet.
-          </p>
-          <Button variant="outline" onClick={() => void refresh()}>
-            Retry
-          </Button>
-          <ErrorAlchemyMenu error={loadError} />
-        </div>
-      ) : null}
-
-      <div className="grid gap-4 xl:grid-cols-[minmax(0,1.7fr)_minmax(0,1fr)]">
-        <div className="space-y-3">
-          {loading ? (
-            <Card>
-              <CardContent className="p-6 text-sm text-muted-foreground">
-                Reading the check registry…
-              </CardContent>
-            </Card>
-          ) : null}
-
-          {checks.map((check) => (
-            <Card key={check.slug}>
-              <CardContent className="space-y-3 p-3">
-                <KindInstanceRender
-                  kind={PROOF_CHECK_STATUS_KIND}
-                  value={check}
-                  variant="bare"
-                  showRoutingNote={false}
-                />
-                <div className="flex flex-wrap items-center gap-2 border-t border-border pt-2">
-                  <Button
-                    variant="primary"
-                    onClick={() => void run(check.slug ?? "")}
-                    disabled={runningSlug !== null || !check.slug}
-                  >
-                    {runningSlug === check.slug ? (
-                      <>
-                        <Zap className="mr-1.5 h-3.5 w-3.5 animate-pulse" />
-                        Running…
-                      </>
-                    ) : (
-                      <>
-                        <PlayCircle className="mr-1.5 h-3.5 w-3.5" />
-                        Run {mode === "auto" ? "" : mode}
-                      </>
-                    )}
-                  </Button>
-                  <span className="text-xs text-muted-foreground">
-                    {mode === "live"
-                      ? "Spends real provider money now."
-                      : mode === "replay"
-                        ? "Replays the recorded payloads."
-                        : "The gate decides whether this one spends money."}
+            <div className="flex items-center gap-2">
+              <div className="rounded-md border border-border px-3 py-2 text-right">
+                <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                  <Coins className="h-3.5 w-3.5" />
+                  This month
+                </div>
+                <div className="text-sm font-medium text-foreground">
+                  <Cost usd={spend.mtd} />{" "}
+                  <span className="text-xs font-normal text-muted-foreground">
+                    of <Cost usd={spend.ceiling} />
                   </span>
                 </div>
-              </CardContent>
-            </Card>
-          ))}
-
-          {!loading && checks.length === 0 && !loadError ? (
-            <Card>
-              <CardContent className="p-6 text-sm text-muted-foreground">
-                No checks are registered yet. A check is declared in code under
-                <code className="mx-1">
-                  aidream/services/proof_runs/checks/
-                </code>
-                and seeds its own registry row on first use.
-              </CardContent>
-            </Card>
-          ) : null}
-        </div>
-
-        <Card className="xl:sticky xl:top-4 xl:self-start">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-base">Live run</CardTitle>
-            <CardDescription>
-              Each proof as the server decides it, then the attestation.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <ProofRunConsole state={console_} />
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* SCENARIOS — verification authored here, no deploy. Each one becomes a
-          check with the same receipts as a code check. */}
-      <Card>
-        <CardHeader className="flex flex-row items-start justify-between gap-2 space-y-0 pb-2">
-          <div>
-            <CardTitle className="flex items-center gap-2 text-base">
-              <FlaskConical className="h-4 w-4" />
-              Scenarios
-            </CardTitle>
-            <CardDescription>
-              Traps you author: a fictional world with planted markers, where
-              the right answer is knowable in advance and unreachable by
-              guessing.
-            </CardDescription>
+                <div className="mt-1 h-1 w-32 overflow-hidden rounded-full bg-muted">
+                  <div
+                    className={cn(
+                      "h-full",
+                      budgetPct > 90 ? "bg-red-500" : "bg-emerald-500",
+                    )}
+                    style={{ width: `${budgetPct}%` }}
+                  />
+                </div>
+              </div>
+            </div>
           </div>
-          {!editing ? (
-            <Button
-              icon={<Plus />}
-              variant="outline"
-              onClick={() => setEditing(emptyScenario())}
-            >
-              New scenario
-            </Button>
-          ) : null}
-        </CardHeader>
-        <CardContent>
-          {editing ? (
-            <ScenarioEditor
-              scenario={editing}
-              mandates={mandates}
-              rules={ruleHelp}
-              onSaved={(saved) => {
-                setEditing(null);
-                setSelected(saved.check_slug);
+
+          {/* THE TRIGGER. One bar, always visible, that answers "how do I run
+          something?" without reading anything else on the page. */}
+          <Card className="border-primary/30 bg-primary/5">
+            <CardContent className="space-y-2 p-3">
+              <div className="flex flex-wrap items-end gap-2">
+                <div className="min-w-[260px] flex-1 space-y-1">
+                  <span className="text-xs font-medium text-muted-foreground">
+                    Check to run
+                  </span>
+                  <Select value={selected} onValueChange={setSelected}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Pick a check" />
+                    </SelectTrigger>
+                    <SelectContent className="max-h-72">
+                      {checks.map((check) => (
+                        <SelectItem key={check.slug} value={check.slug ?? ""}>
+                          {check.label || check.slug}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-1">
+                  <span className="text-xs font-medium text-muted-foreground">
+                    Mode
+                  </span>
+                  <div className="flex items-center gap-1">
+                    {MODES.map((option) => (
+                      <Button
+                        key={option.value}
+                        variant={mode === option.value ? "primary" : "outline"}
+                        onClick={() => setMode(option.value)}
+                        title={option.hint}
+                      >
+                        {option.label}
+                      </Button>
+                    ))}
+                  </div>
+                </div>
+                <Button
+                  variant="primary"
+                  onClick={() => void run(selected)}
+                  disabled={runningSlug !== null || !selected}
+                >
+                  {runningSlug ? (
+                    <>
+                      <Zap className="mr-2 h-4 w-4 animate-pulse" />
+                      Running…
+                    </>
+                  ) : (
+                    <>
+                      <PlayCircle className="mr-2 h-4 w-4" />
+                      Run this check
+                    </>
+                  )}
+                </Button>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                {MODES.find((m) => m.value === mode)?.hint}
+              </p>
+            </CardContent>
+          </Card>
+
+          {orgRequired ? (
+            <OrganizationRequiredNotice
+              what="Proof runs"
+              description="Every call to the proof-run server runs inside an organization, and none is set for this session. Pick one and this loads — the list itself shows every run, not just that organization's."
+              onRetry={() => {
                 void refresh();
               }}
-              onCancel={() => setEditing(null)}
             />
-          ) : !loadError && scenarios.length === 0 ? (
-            <p className="py-4 text-sm text-muted-foreground">
-              No saved scenarios yet. A scenario names a mandate, hands it facts
-              you wrote, and lists what a correct answer must look like — then
-              runs with the same receipts as any other check.
-            </p>
-          ) : (
-            <ul className="space-y-2">
-              {scenarios.map((scenario) => (
-                <li
-                  key={scenario.slug}
-                  className="flex flex-wrap items-start justify-between gap-2 rounded-md border border-border p-2"
-                >
-                  <div className="min-w-0 flex-1">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <span className="text-sm font-medium text-foreground">
-                        {scenario.label}
+          ) : null}
+
+          {loadError ? (
+            <div className="space-y-1 rounded-md border border-red-500/30 bg-red-500/10 p-3 text-sm text-red-800 dark:text-red-200">
+              <p className="font-medium">The proof-run API did not answer.</p>
+              <p className="text-xs">{loadError}</p>
+              <p className="text-xs opacity-80">
+                If this says 404, the server has the page but not yet the
+                endpoints — they ship with the next aidream deploy. Nothing here
+                is broken; there is just nothing to talk to yet.
+              </p>
+              <Button variant="outline" onClick={() => void refresh()}>
+                Retry
+              </Button>
+              <ErrorAlchemyMenu error={loadError} />
+            </div>
+          ) : null}
+
+          <div className="grid gap-4 xl:grid-cols-[minmax(0,1.7fr)_minmax(0,1fr)]">
+            <div className="space-y-3">
+              {loading ? (
+                <Card>
+                  <CardContent className="p-6 text-sm text-muted-foreground">
+                    Reading the check registry…
+                  </CardContent>
+                </Card>
+              ) : null}
+
+              {checks.map((check) => (
+                <Card key={check.slug}>
+                  <CardContent className="space-y-3 p-3">
+                    <KindInstanceRender
+                      kind={PROOF_CHECK_STATUS_KIND}
+                      value={check}
+                      variant="bare"
+                      showRoutingNote={false}
+                    />
+                    <div className="flex flex-wrap items-center gap-2 border-t border-border pt-2">
+                      <Button
+                        variant="primary"
+                        onClick={() => void run(check.slug ?? "")}
+                        disabled={runningSlug !== null || !check.slug}
+                      >
+                        {runningSlug === check.slug ? (
+                          <>
+                            <Zap className="mr-1.5 h-3.5 w-3.5 animate-pulse" />
+                            Running…
+                          </>
+                        ) : (
+                          <>
+                            <PlayCircle className="mr-1.5 h-3.5 w-3.5" />
+                            Run {mode === "auto" ? "" : mode}
+                          </>
+                        )}
+                      </Button>
+                      <span className="text-xs text-muted-foreground">
+                        {mode === "live"
+                          ? "Spends real provider money now."
+                          : mode === "replay"
+                            ? "Replays the recorded payloads."
+                            : "The gate decides whether this one spends money."}
                       </span>
-                      <code className="rounded bg-muted px-1 py-px font-mono text-[10px] text-muted-foreground">
-                        {scenario.mandate_key}
-                      </code>
-                      {!scenario.is_active ? (
-                        <span className="rounded-full border border-border bg-muted px-1.5 py-px text-[10px] text-muted-foreground">
-                          inactive
-                        </span>
-                      ) : null}
                     </div>
-                    <p className="mt-0.5 text-xs text-muted-foreground">
-                      {scenario.description}
-                    </p>
-                    <p className="mt-1 text-[11px] text-muted-foreground">
-                      {scenario.expectations.length} rule(s) ·{" "}
-                      {scenario.allowed_routes.length} route(s) in the universe
-                      · live every{" "}
-                      {/* Collapsed onto the kit formatter (2026-09-12).
+                  </CardContent>
+                </Card>
+              ))}
+
+              {!loading && checks.length === 0 && !loadError ? (
+                <Card>
+                  <CardContent className="p-6 text-sm text-muted-foreground">
+                    No checks are registered yet. A check is declared in code
+                    under
+                    <code className="mx-1">
+                      aidream/services/proof_runs/checks/
+                    </code>
+                    and seeds its own registry row on first use.
+                  </CardContent>
+                </Card>
+              ) : null}
+            </div>
+
+            <Card className="xl:sticky xl:top-4 xl:self-start">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-base">Live run</CardTitle>
+                <CardDescription>
+                  Each proof as the server decides it, then the attestation.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <ProofRunConsole state={console_} />
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* SCENARIOS — verification authored here, no deploy. Each one becomes a
+          check with the same receipts as a code check. */}
+          <Card>
+            <CardHeader className="flex flex-row items-start justify-between gap-2 space-y-0 pb-2">
+              <div>
+                <CardTitle className="flex items-center gap-2 text-base">
+                  <FlaskConical className="h-4 w-4" />
+                  Scenarios
+                </CardTitle>
+                <CardDescription>
+                  Traps you author: a fictional world with planted markers,
+                  where the right answer is knowable in advance and unreachable
+                  by guessing.
+                </CardDescription>
+              </div>
+              {!editing ? (
+                <Button
+                  icon={<Plus />}
+                  variant="outline"
+                  onClick={() => setEditing(emptyScenario())}
+                >
+                  New scenario
+                </Button>
+              ) : null}
+            </CardHeader>
+            <CardContent>
+              {editing ? (
+                <ScenarioEditor
+                  key={editing.slug}
+                  scenario={editing}
+                  mandates={mandates}
+                  rules={ruleHelp}
+                  getApplicationScope={getScope}
+                  registerScopeReader={(reader) => {
+                    editorReader.current = reader;
+                  }}
+                  onSaved={(saved) => {
+                    setEditing(null);
+                    setSelected(saved.check_slug);
+                    void refresh();
+                  }}
+                  onCancel={() => setEditing(null)}
+                />
+              ) : !loadError && scenarios.length === 0 ? (
+                <p className="py-4 text-sm text-muted-foreground">
+                  No saved scenarios yet. A scenario names a mandate, hands it
+                  facts you wrote, and lists what a correct answer must look
+                  like — then runs with the same receipts as any other check.
+                </p>
+              ) : (
+                <ul className="space-y-2">
+                  {scenarios.map((scenario) => (
+                    <li
+                      key={scenario.slug}
+                      data-proof-scenario={scenario.slug}
+                      className="flex flex-wrap items-start justify-between gap-2 rounded-md border border-border p-2"
+                    >
+                      <div className="min-w-0 flex-1">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <span className="text-sm font-medium text-foreground">
+                            {scenario.label}
+                          </span>
+                          <code className="rounded bg-muted px-1 py-px font-mono text-[10px] text-muted-foreground">
+                            {scenario.mandate_key}
+                          </code>
+                          {!scenario.is_active ? (
+                            <span className="rounded-full border border-border bg-muted px-1.5 py-px text-[10px] text-muted-foreground">
+                              inactive
+                            </span>
+                          ) : null}
+                        </div>
+                        <p className="mt-0.5 text-xs text-muted-foreground">
+                          {scenario.description}
+                        </p>
+                        <p className="mt-1 text-[11px] text-muted-foreground">
+                          {scenario.expectations.length} rule(s) ·{" "}
+                          {scenario.allowed_routes.length} route(s) in the
+                          universe · live every{" "}
+                          {/* Collapsed onto the kit formatter (2026-09-12).
                           Coarse voice: a live-check cadence is read at a
                           glance, and coarse keeps a 90-minute cadence from
                           rounding away to a flat "2h". */}
-                      {formatDurationSeconds(scenario.live_every_seconds, {
-                        style: "coarse",
-                      })}{" "}
-                      · <Cost usd={scenario.max_cost_usd} />/run
-                    </p>
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <Button
-                      icon={<PlayCircle />}
-                      variant="primary"
-                      onClick={() => void run(scenario.check_slug)}
-                      disabled={runningSlug !== null}
-                    >
-                      Run
-                    </Button>
-                    <Button
-                      icon={<Pencil />}
-                      variant="outline"
-                      onClick={() => setEditing(scenario)}
-                    >
-                      Edit
-                    </Button>
-                    <Button
-                      icon={<Trash2 />}
-                      variant="quiet"
-                      onClick={() => void removeScenario(scenario.slug)}
-                      aria-label={`Delete ${scenario.slug}`}
-                    />
-                  </div>
-                </li>
-              ))}
-            </ul>
-          )}
-        </CardContent>
-      </Card>
+                          {formatDurationSeconds(scenario.live_every_seconds, {
+                            style: "coarse",
+                          })}{" "}
+                          · <Cost usd={scenario.max_cost_usd} />
+                          /run
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <Button
+                          icon={<PlayCircle />}
+                          variant="primary"
+                          onClick={() => void run(scenario.check_slug)}
+                          disabled={runningSlug !== null}
+                        >
+                          Run
+                        </Button>
+                        <Button
+                          icon={<Pencil />}
+                          variant="outline"
+                          onClick={() => setEditing(scenario)}
+                        >
+                          Edit
+                        </Button>
+                        <Button
+                          icon={<Trash2 />}
+                          variant="quiet"
+                          onClick={() => void removeScenario(scenario.slug)}
+                          aria-label={`Delete ${scenario.slug}`}
+                        />
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </CardContent>
+          </Card>
 
-      <Card>
-        <CardContent className="space-y-2 pt-4">
-          <p className="text-xs text-muted-foreground">
-            Live and replay runs, newest first. Open one to see every proof it rests on.
-          </p>
-          {loadError && runs.length === 0 ? null : (
-          <MatrxDataTable
-            tableId="admin/proof-runs"
-            isLoading={loading && runs.length === 0}
-            isFetching={loading && runs.length > 0}
-            detail={{ enabled: false }}
-            data={runs}
-            columns={proofRunColumns}
-            getRowId={(row) => row.id}
-            pageSize={25}
-            selectedId={openRun?.id}
-            onSelectedIdChange={(id) => {
-              if (!id) setOpenRun(null);
-            }}
-            onRowOpen={(row) => void openRunDetail(row.id)}
-            // The API's failure is said once, by the strip at the top (it covers the
-            // checks too); the table carries the read's wait and is not drawn when nothing loaded.
-            read={{ status: loading && runs.length === 0 ? "loading" : "ready", what: "proof runs" }}
-            emptyState={{ title: "No runs yet." }}
-            toolbar={{
-              title: "Recent runs",
-              searchPlaceholder: "Search recent runs…",
-              refresh: { onRefresh: refresh },
-            }}
-          />
-          )}
+          <Card>
+            <CardContent className="space-y-2 pt-4">
+              <p className="text-xs text-muted-foreground">
+                Live and replay runs, newest first. Open one to see every proof
+                it rests on.
+              </p>
+              {loadError && runs.length === 0 ? null : (
+                <MatrxDataTable
+                  tableId="admin/proof-runs"
+                  isLoading={loading && runs.length === 0}
+                  isFetching={loading && runs.length > 0}
+                  detail={{ enabled: false }}
+                  data={runs}
+                  query={{
+                    mode: "controlled-local",
+                    state: tableQuery,
+                    onStateChange: setTableQuery,
+                  }}
+                  onViewChange={(rows) => {
+                    visibleRuns.current = rows;
+                  }}
+                  columns={proofRunColumns}
+                  getRowId={(row) => row.id}
+                  pageSize={25}
+                  selectedId={openRun?.id}
+                  onSelectedIdChange={(id) => {
+                    if (!id) {
+                      detailRequest.current = null;
+                      setOpenRun(null);
+                      setDetailError(null);
+                      setDetailLoading(false);
+                    }
+                  }}
+                  onRowOpen={(row) => void openRunDetail(row.id)}
+                  // The API's failure is said once, by the strip at the top (it covers the
+                  // checks too); the table carries the read's wait and is not drawn when nothing loaded.
+                  read={{
+                    status: loading && runs.length === 0 ? "loading" : "ready",
+                    what: "proof runs",
+                  }}
+                  emptyState={{ title: "No runs yet." }}
+                  toolbar={{
+                    title: "Recent runs",
+                    searchPlaceholder: "Search recent runs…",
+                    refresh: { onRefresh: refresh },
+                  }}
+                />
+              )}
 
-          {openRun ? (
-            <div className="space-y-2 rounded-md border border-border p-3">
-              <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-[11px] text-muted-foreground">
-                <span className="font-mono">{openRun.id}</span>
-                <span>trigger {openRun.trigger_source}</span>
-                {openRun.git_sha ? <span>git {openRun.git_sha}</span> : null}
-                {openRun.environment ? (
-                  <span>{openRun.environment}</span>
-                ) : null}
-                {openRun.replayed_from_run_id ? (
-                  <span>
-                    replayed from{" "}
-                    <span className="font-mono">
-                      {openRun.replayed_from_run_id}
-                    </span>
-                  </span>
-                ) : null}
-                {openRun.conversation_id ? (
-                  <span className="flex items-center gap-1">
-                    receipts anchor
-                    {/* The door onto the evidence itself: this conversation
+              {openRun ? (
+                <div className="space-y-2 rounded-md border border-border p-3">
+                  <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-[11px] text-muted-foreground">
+                    <span className="font-mono">{openRun.id}</span>
+                    <span>trigger {openRun.trigger_source}</span>
+                    {openRun.git_sha ? (
+                      <span>git {openRun.git_sha}</span>
+                    ) : null}
+                    {openRun.environment ? (
+                      <span>{openRun.environment}</span>
+                    ) : null}
+                    {openRun.replayed_from_run_id ? (
+                      <span>
+                        replayed from{" "}
+                        <span className="font-mono">
+                          {openRun.replayed_from_run_id}
+                        </span>
+                      </span>
+                    ) : null}
+                    {openRun.conversation_id ? (
+                      <span className="flex items-center gap-1">
+                        receipts anchor
+                        {/* The door onto the evidence itself: this conversation
                         holds the model calls the proofs were computed from. */}
-                    <EntityRef
-                      token="conversation"
-                      id={openRun.conversation_id}
-                      name={`${openRun.check_slug} run`}
-                    />
-                  </span>
-                ) : null}
-              </div>
-              {openRun.failure_reason ? (
-                <div className="rounded-md border border-red-500/30 bg-red-500/10 p-2 text-xs text-red-800 dark:text-red-200">
-                  {openRun.failure_reason}
-                  <ErrorAlchemyMenu error={openRun.failure_reason} />
+                        <EntityRef
+                          token="conversation"
+                          id={openRun.conversation_id}
+                          name={`${openRun.check_slug} run`}
+                        />
+                      </span>
+                    ) : null}
+                  </div>
+                  {openRun.failure_reason ? (
+                    <div className="rounded-md border border-red-500/30 bg-red-500/10 p-2 text-xs text-red-800 dark:text-red-200">
+                      {openRun.failure_reason}
+                      <ErrorAlchemyMenu error={openRun.failure_reason} />
+                    </div>
+                  ) : null}
+                  <KindInstanceRender
+                    kind={PROOF_ATTESTATION_KIND}
+                    value={attestationFromRun(openRun)}
+                    variant="bare"
+                    showRoutingNote={false}
+                  />
                 </div>
               ) : null}
-              <KindInstanceRender
-                kind={PROOF_ATTESTATION_KIND}
-                value={attestationFromRun(openRun)}
-                variant="bare"
-                showRoutingNote={false}
-              />
-            </div>
-          ) : null}
-        </CardContent>
-      </Card>
-    </div>
+            </CardContent>
+          </Card>
+        </div>
+      </NonEditableContextMenu>
     </SurfaceRuntimeProvider>
   );
 }
