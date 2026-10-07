@@ -38,6 +38,9 @@ on a certified table the same problem is a platform-wide defect fixed at its sou
 | `common-docs` | This shared runbook, host ownership helper, and skill distribution |
 
 Workspace: `/Users/armanisadeghi/code`; it is not `/code` on this machine.
+
+Rows with `source_app = 'matrx-desktop'` (kind `desktop:…`) are Matrx 2's own errors and belong
+to the `desktop-error-review` skill in `matrx-desktop`; this patrol leaves them alone.
 Read the owning repo's `CLAUDE.md` before touching its files. Read
 `aidream/aidream/services/admin_persistence/FEATURE.md` for actual tool contracts
 and the relevant feature docs for each selected repair. Use the installed

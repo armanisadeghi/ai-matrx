@@ -46,6 +46,7 @@ import {
   createKitScope,
   edgeKitId,
   kitSourcesFromEdges,
+  listKitScopes,
   readKitScope,
   renameKitScope,
   type KitSource,
@@ -504,8 +505,49 @@ export async function listKits(): Promise<StudyKit[]> {
     }),
   );
 
+  // A kit with Sources and no aids yet is still a kit: list every kit scope
+  // the person has, and name aid-bearing ones by their scope's own name.
+  const scopeKits = await withTransientRetry("education.listKits: kit scopes", () => listKitScopes());
+  const scopeIds = new Set<string>();
+  for (const scope of scopeKits) {
+    scopeIds.add(scope.id);
+    const key = `${KIT_TOKEN}:${scope.id}`;
+    const existing = kits.get(key);
+    if (existing) {
+      existing.title = scope.name;
+      existing.organizationId = scope.organizationId;
+    } else {
+      kits.set(key, {
+        sourceType: KIT_TOKEN,
+        sourceId: scope.id,
+        title: scope.name,
+        artifacts: [],
+        createdAt: new Date(0).toISOString(),
+        sources: [],
+        organizationId: scope.organizationId,
+      });
+    }
+  }
+  // Aids can point at a kit the person can no longer read: not a kit of hers.
+  for (const [key, kit] of kits) if (kit.sourceType === KIT_TOKEN && !scopeIds.has(kit.sourceId)) kits.delete(key);
+  // An empty kit's date is its first Source's.
+  await Promise.all(
+    [...kits.values()]
+      .filter((kit) => kit.sourceType === KIT_TOKEN && kit.artifacts.length === 0)
+      .map(async (kit) => {
+        const res = await associationsService.listForEntity(KIT_TOKEN, kit.sourceId);
+        if (!res.ok) throw new Error("Could not read your study kits. Try again.");
+        const sources = kitSourcesFromEdges(res.data.edges);
+        kit.createdAt = sources[0]?.createdAt ?? kit.createdAt;
+      }),
+  );
+
   return [...kits.values()]
     .map((kit) => {
+      if (kit.sourceType === KIT_TOKEN) {
+        const artifacts = kitMembers(kit.artifacts);
+        return { ...kit, artifacts, createdAt: artifacts[artifacts.length - 1]?.createdAt ?? kit.createdAt, sources: [] };
+      }
       const artifacts = kitMembers(kit.artifacts);
       const title = kitName(artifacts);
       const createdAt = artifacts[artifacts.length - 1]?.createdAt ?? kit.createdAt;
@@ -518,10 +560,8 @@ export async function listKits(): Promise<StudyKit[]> {
         sources: kit.sourceType === KIT_TOKEN ? [] : [anchorSource(kit.sourceType, kit.sourceId, title, createdAt)],
       };
     })
-    .filter((kit) => kit.artifacts.length > 0)
-    .sort((a, b) =>
-      b.artifacts[0].createdAt.localeCompare(a.artifacts[0].createdAt),
-    );
+    .filter((kit) => kit.sourceType === KIT_TOKEN || kit.artifacts.length > 0)
+    .sort((a, b) => (b.artifacts[0]?.createdAt ?? b.createdAt).localeCompare(a.artifacts[0]?.createdAt ?? a.createdAt));
 }
 
 /** The kit hub route for an anchor. */

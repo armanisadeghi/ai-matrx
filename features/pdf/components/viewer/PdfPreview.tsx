@@ -70,6 +70,12 @@ export interface PdfPreviewProps {
     pageHeightPt: number;
     rotation: number;
   }) => React.ReactNode;
+  /** Pass-through to `PdfDocumentRenderer.layout` ("continuous": every page, the caller scrolls). */
+  layout?: "paged" | "continuous";
+  continuousZoom?: number;
+  maxPageWidth?: number;
+  onDocumentLoad?: (numPages: number) => void;
+  onPageRendered?: (pageNumber: number) => void;
 }
 
 export default function PdfPreview({
@@ -81,6 +87,11 @@ export default function PdfPreview({
   pageLabel,
   floatingPageControls,
   renderOverlay,
+  layout = "paged",
+  continuousZoom,
+  maxPageWidth,
+  onDocumentLoad,
+  onPageRendered,
 }: PdfPreviewProps) {
   const {
     remoteUrl,
@@ -112,8 +123,9 @@ export default function PdfPreview({
     );
   }
 
+  const continuous = layout === "continuous";
   return (
-    <div className={cn("relative h-full w-full", className)}>
+    <div className={cn(continuous ? "relative w-full" : "relative h-full w-full", className)}>
       <PdfDocumentRenderer
         remoteUrl={useHookSource ? remoteUrl : providedRemoteUrl}
         remoteHeaders={useHookSource ? headers : undefined}
@@ -129,7 +141,12 @@ export default function PdfPreview({
         pageLabel={pageLabel}
         floatingPageControls={floatingPageControls}
         renderOverlay={renderOverlay}
-        className="h-full w-full"
+        layout={layout}
+        continuousZoom={continuousZoom}
+        maxPageWidth={maxPageWidth}
+        onDocumentLoad={onDocumentLoad}
+        onPageRendered={onPageRendered}
+        className={continuous ? "w-full" : "h-full w-full"}
       />
     </div>
   );

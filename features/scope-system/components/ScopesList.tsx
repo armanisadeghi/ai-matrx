@@ -50,6 +50,7 @@ import { ScopeGlyph } from "@/features/scopes/components/ScopeGlyph";
 import { ScopeNotFound } from "./ScopeNotFound";
 import { ReorderDialog } from "@/features/scopes/components/management/ReorderDialog";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
+import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import {
   listScopeTypeItems,
   updateContextItem,
@@ -107,7 +108,7 @@ interface ScopesListProps {
   typeId: string;
   orgName: string;
   orgSlug: string;
-  /** Owner/admin: may edit the scope type (org-wide structure) + its context-item fields. */
+  /** Owner/admin: may edit the scope type (structure) and its fields; the type's creator may too. */
   canManage: boolean;
 }
 
@@ -129,6 +130,11 @@ export function ScopesList({
     selectScopeTypesLoadedForOrg(s, orgId),
   );
   const resolvedTypeId = scopeType?.id;
+  // Structure is the org admins' and the type's creator's (custom.context_type_write).
+  const userId = useAppSelector(selectUserId);
+  const canShape =
+    canManage ||
+    (!!userId && !!scopeType?.created_by && scopeType.created_by === userId);
   const scopes = useAppSelector((s) =>
     selectScopesByType(s, resolvedTypeId ?? ""),
   );
@@ -327,7 +333,7 @@ export function ScopesList({
               )}
             </div>
           </div>
-          {canManage && (
+          {canShape && (
             <div className="flex items-center gap-2 shrink-0">
               <Button
                 icon={<Settings2 />}
@@ -381,7 +387,8 @@ export function ScopesList({
             )}
           </h2>
           <div className="flex items-center gap-2">
-            {canManage && scopeCount > 1 && (
+            {/* Scopes are data: every member orders, adds and archives them. */}
+            {scopeCount > 1 && (
               <Button
                 icon={<ArrowUpDown />}
                 variant="outline"
@@ -483,7 +490,7 @@ export function ScopesList({
                       accept={suggestions.accept}
                       reject={suggestions.reject}
                       defer={suggestions.defer}
-                      canManage={canManage}
+                      canManage
                       deleting={deletingScopeId === scope.id}
                       onDelete={() => handleDeleteScope(scope.id, scope.name)}
                       href={scopeHref(orgSlugOrId, scopeType, scope)}
@@ -531,7 +538,7 @@ export function ScopesList({
                 Open page
               </Link>
             </Button>
-            {canManage && resolvedTypeId && (
+            {canShape && resolvedTypeId && (
               <Button
                 icon={<PanelsTopLeft />}
                 variant="outline"
@@ -542,7 +549,7 @@ export function ScopesList({
                 Manage in panel
               </Button>
             )}
-            {canManage && items.length > 1 && (
+            {canShape && items.length > 1 && (
               <Button
                 icon={<ArrowUpDown />}
                 variant="outline"
@@ -551,7 +558,7 @@ export function ScopesList({
                 Edit order
               </Button>
             )}
-            {canManage && !addingItem && (
+            {canShape && !addingItem && (
               <Button
                 icon={<Plus />}
                 ref={addItemTriggerRef}
@@ -598,7 +605,7 @@ export function ScopesList({
                   isLast={index === items.length - 1}
                   moving={movingId === item.id}
                   disabled={movingId !== null}
-                  canManage={canManage}
+                  canManage={canShape}
                   onEdit={() =>
                     openContextItemsWindow({
                       scopeTypeId: item.scope_type_id,
@@ -615,7 +622,7 @@ export function ScopesList({
               {items.length === 0 && !addingItem && (
                 <div className="px-4 py-8 text-center text-sm text-muted-foreground">
                   No context items yet
-                  {canManage
+                  {canShape
                     ? ` — add one to define what data to track for each ${scopeType.label_singular.toLowerCase()}.`
                     : "."}
                 </div>

@@ -105,19 +105,30 @@ export interface EnvelopeState {
   documents: Record<string, unknown>[];
   signers: Record<string, unknown>[];
   events: Record<string, unknown>[];
+  /** Added by the e-sign parity doors (CONTRACT §5.4); absent from an older answer. */
+  draft: Record<string, unknown> | null;
+  scheduledNotices: Record<string, unknown>[];
+  progress: Record<string, { required_total: number; required_done: number }>;
+  finalize: { copies_owed?: boolean; certificate_owed?: boolean; emails_owed?: boolean } | null;
 }
 
 /** One envelope with its documents, signers and evidence trail — or null when the caller may not see it. */
 export async function fetchEnvelope(envelopeId: string): Promise<EnvelopeState | null> {
   const { data, error } = await supabase.rpc("esign_envelope_state", { p_envelope_id: envelopeId });
   if (error) throw operationFailed("load this envelope", error);
-  const answer = data as ({ granted?: boolean } & Partial<EnvelopeState>) | null;
+  const answer = data as
+    | ({ granted?: boolean; scheduled_notices?: Record<string, unknown>[] } & Partial<Omit<EnvelopeState, "scheduledNotices">>)
+    | null;
   if (!answer?.granted) return null;
   return {
     envelope: answer.envelope ?? {},
     documents: answer.documents ?? [],
     signers: answer.signers ?? [],
     events: answer.events ?? [],
+    draft: answer.draft ?? null,
+    scheduledNotices: answer.scheduled_notices ?? [],
+    progress: answer.progress ?? {},
+    finalize: answer.finalize ?? null,
   };
 }
 
@@ -209,4 +220,51 @@ export async function voidEnvelope(dispatch: AppDispatch, envelopeId: string, re
       }),
     ),
   );
+}
+
+// ─── e-sign parity routes (CONTRACT §7) — typed once api-types publish them ───────────
+
+export interface DownloadedFile {
+  name: string;
+  mime_type: string;
+  content_base64: string;
+}
+
+async function post<T>(dispatch: AppDispatch, path: string, envelopeId: string, body: unknown): Promise<T> {
+  const result = await dispatch(
+    callApi({
+      path,
+      method: "POST",
+      pathParams: { envelope_id: envelopeId },
+      body,
+      expectedErrorStatuses: [403, 404, 409, 422],
+    } as unknown as Parameters<typeof callApi>[0]),
+  );
+  return read<T>(result);
+}
+
+/** The documents, the certificate, or both — each file or one combined PDF. */
+export async function downloadEnvelope(
+  dispatch: AppDispatch,
+  envelopeId: string,
+  input: { parts: ("documents" | "certificate")[]; combine: boolean; documentIds?: string[] },
+): Promise<DownloadedFile[]> {
+  const out = await post<{ files: DownloadedFile[] }>(dispatch, "/esign/envelopes/{envelope_id}/download", envelopeId, {
+    parts: input.parts,
+    combine: input.combine,
+    document_ids: input.documentIds,
+  });
+  return out.files ?? [];
+}
+
+export interface FinalizeAnswer {
+  copies?: { document_id: string; file_id: string }[];
+  certificate_id?: string | null;
+  certificate_file_id?: string | null;
+  emails_sent?: number;
+}
+
+/** Finish whatever completion still owes (signed copies, certificate, emails). Idempotent. */
+export async function finalizeEnvelope(dispatch: AppDispatch, envelopeId: string): Promise<FinalizeAnswer> {
+  return post<FinalizeAnswer>(dispatch, "/esign/envelopes/{envelope_id}/finalize", envelopeId, {});
 }

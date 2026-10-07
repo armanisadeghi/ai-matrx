@@ -10,18 +10,25 @@ const mockAdd = jest.fn();
 const mockListForEntity = jest.fn();
 const mockReadScopesById = jest.fn();
 const mockFetchEducationLibraryPage = jest.fn();
+const mockListForSources = jest.fn();
+const mockReadScopeTypes = jest.fn();
+const mockReadTypeScopesPage = jest.fn();
 
 jest.mock("@/features/scopes/service/associationsService", () => ({
   associationsService: {
     add: (...args: unknown[]) => mockAdd(...args),
     listForEntity: (...args: unknown[]) => mockListForEntity(...args),
-    listForSources: jest.fn(),
+    listForSources: (...args: unknown[]) => mockListForSources(...args),
     remove: jest.fn(),
   },
 }));
 jest.mock("@/features/scopes/service/storeScopeReads", () => ({
   readScopesById: (...args: unknown[]) => mockReadScopesById(...args),
-  readScopeTypes: jest.fn(),
+  readScopeTypes: (...args: unknown[]) => mockReadScopeTypes(...args),
+  readTypeScopesPage: (...args: unknown[]) => mockReadTypeScopesPage(...args),
+}));
+jest.mock("@/features/organizations/organizationsIAmIn", () => ({
+  organizationsIAmIn: async () => new Set(["org-1", "org-2"]),
 }));
 jest.mock("@/features/scopes/service/scopeStore", () => ({ scopeStore: {} }));
 jest.mock("@/features/sources/api/sourcesApi", () => ({ keepSource: jest.fn() }));
@@ -33,9 +40,10 @@ jest.mock("@/features/education/media/service", () => ({
 }));
 
 import { recordSourceLineage } from "@/features/education/convert/recordSourceLineage";
+import { groundKitTrust } from "@/features/education/convert/groundKitCitations";
 import { kitSourceRefs } from "@/features/education/onboard/kitSources";
 import { buildSourceTrust } from "@/features/education/convert/sourceTrust";
-import { readKit } from "../kitService";
+import { listKits, readKit } from "../kitService";
 import type { ResolvedSourceSet } from "@ai-matrx/agents/sources";
 
 const KIT = "11111111-1111-4111-8111-111111111111";
@@ -105,6 +113,22 @@ describe("multi-source study kits", () => {
     expect(kit?.artifacts.map((a) => a.artifactId)).toEqual(["deck-1"]);
   });
 
+  it("lists a kit that has Sources and no aids yet", async () => {
+    mockListForSources.mockResolvedValue({ ok: true, data: { edges: [] } });
+    mockReadScopeTypes.mockResolvedValueOnce({ ok: true, data: { types: [{ id: "t-1", slug: "study-kit" }, { id: "t-2", slug: "class" }], counts: null } });
+    // An organization the person is listed in but may not read is skipped, not fatal.
+    mockReadScopeTypes.mockResolvedValueOnce({ ok: false, error: { code: "forbidden_org", message: "not a member" } });
+    mockReadTypeScopesPage.mockResolvedValue({ ok: true, data: { scopes: [{ id: KIT, name: "Cell biology", organization_id: "org-1" }], total: 1, nextOffset: null } });
+    mockListForEntity.mockResolvedValue({
+      ok: true,
+      data: { edges: [edge({ otherType: "file", otherId: "f-pdf", metadata: { kitSource: true, title: "Chapter 3.pdf" }, createdAt: "2026-10-07T00:00:02Z" })] },
+    });
+    const kits = await listKits();
+    expect(mockReadTypeScopesPage).toHaveBeenCalledTimes(1);
+    expect(kits.map((k) => [k.sourceType, k.sourceId, k.title, k.artifacts.length])).toEqual([["scope", KIT, "Cell biology", 0]]);
+    expect(kits[0].createdAt).toBe("2026-10-07T00:00:02Z");
+  });
+
   it("an anchor whose edges were handed to a kit opens that kit", async () => {
     mockReadScopesById.mockResolvedValue({ ok: true, data: [{ id: KIT, name: "Cell biology", organization_id: "org-1" }] });
     mockListForEntity.mockImplementation(async (type: string) =>
@@ -117,19 +141,40 @@ describe("multi-source study kits", () => {
     expect(kit?.sourceId).toBe(KIT);
   });
 
+  it("points each citation at the Source its chunk came from", () => {
+    const refs = [
+      { type: "processed_document", id: "pd-wiki", title: "Wikipedia: Cell", processedDocumentId: "pd-wiki", chunkIds: ["c-wiki-1"] },
+      { type: "file", id: "f-pdf", title: "Chapter 3.pdf", fileId: "f-pdf", processedDocumentId: "pd-pdf", chunkIds: ["c-pdf-1"] },
+    ];
+    const trust = {
+      confidence: "grounded" as const,
+      citations: [
+        { sourceId: "c-pdf-1", sourceKind: "document" as const, title: "Source 1" },
+        { sourceId: "c-wiki-1", sourceKind: "document" as const, title: "agent title" },
+        { sourceId: "c-unknown", sourceKind: "document" as const, title: "kept" },
+      ],
+    };
+    const out = groundKitTrust(trust, refs);
+    expect(out.citations.map((c) => [c.title, c.fileId, c.documentId])).toEqual([
+      ["Chapter 3.pdf", "f-pdf", "pd-pdf"],
+      ["Wikipedia: Cell", undefined, "pd-wiki"],
+      ["kept", undefined, undefined],
+    ]);
+  });
+
   it("keeps each picked Source separate, and cites each one", () => {
     const resolved = {
       sources: [
-        { ref: { resource_type: "processed_document", resource_id: "pd-wiki" }, label: "Wikipedia: Cell", text: "a", segments: [] },
-        { ref: { resource_type: "cld_file", resource_id: "f-pdf" }, label: "Chapter 3.pdf", text: "b", segments: [], processed_document_id: "pd-pdf" },
+        { ref: { resource_type: "processed_document", resource_id: "pd-wiki" }, label: "Wikipedia: Cell", text: "### Chunk c-wiki-1 (page 1)\na", segments: [{ id: "c-wiki-0" }] },
+        { ref: { resource_type: "cld_file", resource_id: "f-pdf" }, label: "Chapter 3.pdf", text: "b", segments: [{ id: "c-pdf-1" }], processed_document_id: "pd-pdf" },
         { ref: { resource_type: "note", resource_id: "n-empty" }, label: "Empty", text: "  ", segments: [] },
       ],
       dropped: [],
     } as unknown as ResolvedSourceSet;
     const refs = kitSourceRefs(resolved);
     expect(refs).toEqual([
-      { type: "processed_document", id: "pd-wiki", title: "Wikipedia: Cell", processedDocumentId: "pd-wiki" },
-      { type: "file", id: "f-pdf", title: "Chapter 3.pdf", fileId: "f-pdf", processedDocumentId: "pd-pdf" },
+      { type: "processed_document", id: "pd-wiki", title: "Wikipedia: Cell", processedDocumentId: "pd-wiki", chunkIds: ["c-wiki-0", "c-wiki-1"] },
+      { type: "file", id: "f-pdf", title: "Chapter 3.pdf", fileId: "f-pdf", processedDocumentId: "pd-pdf", chunkIds: ["c-pdf-1"] },
     ]);
     const trust = buildSourceTrust({ text: "x", ref: { kind: "paste", kitSources: refs } }, "Kit");
     expect(trust.citations.map((c) => c.title)).toEqual(["Wikipedia: Cell", "Chapter 3.pdf"]);

@@ -34,7 +34,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { useAppDispatch } from "@/lib/redux/hooks";
 
 import { AdoptSignature, type SignatureMark } from "./AdoptSignature";
-import { initialsOf, PAPER, readFieldMap, signingDate, type PlacedField } from "./fieldMap";
+import { initialsOf, needsNewSigningPage, PAPER, readFieldMap, signingDate, type PlacedField } from "./fieldMap";
 import { SignedDone } from "./SignedDone";
 import { SigningFields, type FieldValues } from "./SigningFields";
 
@@ -117,6 +117,8 @@ type Step = "review" | "consent" | "sign" | "done";
 type Phase =
   | { kind: "loading" }
   | { kind: "refused"; message: string }
+  /** A document carries fields this page cannot draw (a v2 map): never sign with fields missing. */
+  | { kind: "outdated" }
   | { kind: "ready"; load: SigningAnswer };
 
 function text(record: Record<string, unknown> | null | undefined, key: string): string | null {
@@ -214,6 +216,10 @@ export function SigningSurface({
             return;
           }
           setPhase({ kind: "refused", message: reasonText(load.reason) });
+          return;
+        }
+        if ((load.documents ?? []).some((d) => needsNewSigningPage(d))) {
+          setPhase({ kind: "outdated" });
           return;
         }
         const me = load.me ?? {};
@@ -552,6 +558,20 @@ export function SigningSurface({
       <Shell>
         <div className="flex flex-1 items-center justify-center gap-2 type-body text-muted-foreground">
           <Spinner size="xs" className="text-current" /> Opening your document
+        </div>
+      </Shell>
+    );
+  }
+
+  if (phase.kind === "outdated") {
+    return (
+      <Shell>
+        <div className="mx-auto flex max-w-md flex-1 flex-col items-center justify-center gap-3 px-6 text-center">
+          <XCircle className="h-8 w-8 text-muted-foreground" />
+          <p className="text-base text-foreground">This document needs the new signing page.</p>
+          <Button variant="primary" onClick={() => window.location.reload()}>
+            Reload
+          </Button>
         </div>
       </Shell>
     );

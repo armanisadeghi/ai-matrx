@@ -93,6 +93,11 @@ export interface KitSourceRef {
   title: string;
   fileId?: string;
   processedDocumentId?: string;
+  /**
+   * Every `### Chunk <id>` the Source's text carries: an agent citation names a
+   * chunk, and this says which Source that chunk belongs to.
+   */
+  chunkIds?: string[];
 }
 
 /**

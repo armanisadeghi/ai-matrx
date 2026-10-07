@@ -40,6 +40,8 @@ import { RecordReferencePicker } from "@/features/matrx-envelope/components/Refe
 import { PERSON_TOKEN } from "@/features/directive-catalog/identityPicker";
 import TaskAssigneePicker from "@/features/tasks/components/TaskAssigneePicker";
 import { TaskRecurrencePicker } from "@/features/tasks/components/TaskRecurrencePicker";
+import { TaskDueDatePicker } from "@/features/tasks/components/TaskDueDatePicker";
+import { toDateOnly } from "@ai-matrx/kit/dates";
 import {
   emptyFieldLabel,
   splitWarnings,
@@ -437,9 +439,11 @@ function RecordControl({
 }
 
 /**
- * A date, time or date-and-time input. Untouched with an empty word to say
- * ("Unchanged" on an Update), it shows that word, never the browser's
- * "mm/dd/yyyy" mask; focusing it hands over the native picker.
+ * A date, time or date-and-time field (G15 review, 2026-10-07: dates were plain
+ * browser boxes). The day is THE app's date control — the Calendar popover the
+ * task editor uses (`TaskDueDatePicker`, value `yyyy-mm-dd`); a date-and-time
+ * adds a time box beside it (`yyyy-mm-ddTHH:mm`). Untouched with an empty word
+ * ("Unchanged" on an Update) every part says that word, never a browser mask.
  */
 function DateTimeControl({
   id,
@@ -454,18 +458,65 @@ function DateTimeControl({
   emptyLabel: string;
   onChange: (next: string) => void;
 }) {
+  if (kind === "time") {
+    return <TimeBox id={id} value={value} emptyLabel={emptyLabel} onChange={onChange} />;
+  }
+  const [day = "", time = ""] = value.split("T");
+  const pickDay = (next: string | null) => {
+    if (!next) return onChange("");
+    onChange(kind === "date" ? next : `${next}T${time || "00:00"}`);
+  };
+  const picker = (
+    <TaskDueDatePicker
+      variant="field"
+      id={id}
+      value={day || null}
+      emptyLabel={emptyLabel || "Pick a date"}
+      clearLabel="Clear date"
+      onChange={pickDay}
+    />
+  );
+  if (kind === "date") return picker;
+  return (
+    <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2">
+      {picker}
+      <TimeBox
+        id={`${id}-time`}
+        value={time}
+        emptyLabel={day ? "" : emptyLabel}
+        ariaLabel="Time"
+        onChange={(next) => onChange(`${day || toDateOnly(new Date())}T${next || "00:00"}`)}
+      />
+    </div>
+  );
+}
+
+/** A time box that shows the empty word, not the browser's "--:--" mask, until focused. */
+function TimeBox({
+  id,
+  value,
+  emptyLabel,
+  ariaLabel,
+  onChange,
+}: {
+  id: string;
+  value: string;
+  emptyLabel: string;
+  ariaLabel?: string;
+  onChange: (next: string) => void;
+}) {
   const [focused, setFocused] = useState(false);
   const showWord = !value && !focused && emptyLabel !== "";
   return (
     <div className="relative">
       <Input
         id={id}
-        type={kind === "date" ? "date" : kind === "time" ? "time" : "datetime-local"}
+        type="time"
         value={value}
         onChange={(e) => onChange(e.target.value)}
         onFocus={() => setFocused(true)}
         onBlur={() => setFocused(false)}
-        aria-label={showWord ? emptyLabel : undefined}
+        aria-label={showWord ? emptyLabel : ariaLabel}
         className={cn(
           "h-9 text-base lg:text-sm",
           // The mask stays laid out (the picker opens where it always does) but unseen.

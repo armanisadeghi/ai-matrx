@@ -102,7 +102,6 @@ import { skillsReducer } from "@/features/skills/redux/skillsSlice";
 import { dictionaryReducer } from "@/features/dictionary/redux/dictionarySlice";
 import { agentConnectionsUiReducer } from "@/features/agent-connections/redux/ui/slice";
 import { appletReducer } from "@/features/agents/redux/applets/slice";
-import appletConsumersReducer from "@/features/applets/redux/applet-consumers/slice";
 
 import artifactsReducer from "./slices/artifactsSlice";
 import htmlPagesReducer from "./slices/htmlPagesSlice";
@@ -258,7 +257,6 @@ export const slimReducerMap = {
   dictionary: dictionaryReducer,
   agentConnectionsUi: agentConnectionsUiReducer,
   applet: appletReducer,
-  appletConsumers: appletConsumersReducer,
 
   appContext: appContextReducer,
 

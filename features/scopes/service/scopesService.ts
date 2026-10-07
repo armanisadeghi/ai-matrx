@@ -131,6 +131,41 @@ export interface TableTemplate {
  * 7a35711947): it answers a scope provisioned BEFORE the move with its already-moved Table, makes
  * one otherwise, and picks the organization's Home itself. The id comes back placed.
  */
+/** How long one boot's organizations-and-projects read is shared after it lands (lane PAGE-BUNDLE-2). */
+const SHARED_BOOT_READ_MS = 5_000;
+let sharedBoot: { userId: string; at: number; read: Promise<unknown> } | null = null;
+
+/** Share one read of the caller's organizations and projects between the boot's tree reads. */
+function sharedScopeBootRead<T>(read: () => Promise<T>): Promise<T> {
+  const userId = requireUserId();
+  const held = sharedBoot;
+  if (held && held.userId === userId && (held.at === 0 || Date.now() - held.at < SHARED_BOOT_READ_MS)) {
+    return held.read as Promise<T>;
+  }
+  const entry: { userId: string; at: number; read: Promise<unknown> } = { userId, at: 0, read: Promise.resolve() };
+  const promise = read().then(
+    (value) => {
+      // A failed read is never shared past its own flight.
+      if (value && typeof value === "object" && (value as { read?: unknown }).read === false) {
+        if (sharedBoot === entry) sharedBoot = null;
+      } else entry.at = Date.now();
+      return value;
+    },
+    (thrown: unknown) => {
+      if (sharedBoot === entry) sharedBoot = null;
+      throw thrown;
+    },
+  );
+  entry.read = promise;
+  sharedBoot = entry;
+  return promise;
+}
+
+/** A refresh, or a write that changed her organizations or projects: the next tree read asks again. */
+export function forgetSharedScopeBootRead(): void {
+  sharedBoot = null;
+}
+
 async function provisionScopeTableInTheStore(
   organizationId: string,
   userId: string,
@@ -229,58 +264,67 @@ export const scopesService = {
       // The current user's org memberships via the canonical membership RPC
       // (iam.memberships); org identity is resolved from the public
       // organizations table below (no cross-schema embed).
-      const orgMembersRes = await membershipsService.forUser("organization");
-      if (isScopesRpcErr(orgMembersRes)) return orgMembersRes;
-      const roleByOrgId = new Map<string, string>();
-      for (const m of orgMembersRes.data.memberships) {
-        roleByOrgId.set(m.containerId, m.role);
-      }
-      const orgIds = [...roleByOrgId.keys()];
+      // ONE READ OF HER ORGANIZATIONS AND PROJECTS PER BOOT (lane PAGE-BUNDLE-2): the skeleton and the
+      // whole tree both start here, a moment apart, and each read the same organizations and projects
+      // (2 × chunks × 2 tables per page load). They now share one read while it is in flight and for
+      // SHARED_BOOT_READ_MS after; a `refresh` asks again (`forgetSharedScopeBootRead`).
+      const boot = await sharedScopeBootRead(async () => {
+        const orgMembersRes = await membershipsService.forUser("organization");
+        if (isScopesRpcErr(orgMembersRes)) return { read: false as const, failed: orgMembersRes };
+        const roleByOrgId = new Map<string, string>();
+        for (const m of orgMembersRes.data.memberships) {
+          roleByOrgId.set(m.containerId, m.role);
+        }
+        const orgIds = [...roleByOrgId.keys()];
 
-      // READ IN CHUNKS (lane FINISH-THE-SWITCH, 2026-10-05): a person in ~1000 organizations put every
-      // id in ONE GET url (~38 KB) and the gateway answered 400 — /scopes said "Couldn't load your
-      // scopes". Each read below sends at most IN_CHUNK ids (`inChunks.ts`).
-      type OrgRow = {
-        id: string;
-        name: string;
-        abbreviation: string;
-        logo_url: string | null;
-        slug: string;
-        settings: unknown;
-        created_by: string | null;
-        archived_at: string | null;
-      };
-      // `settings` carries the `test_fixture` classification and `created_by` says whose
-      // organization it is — the org picker hides fixtures behind the archived-items disclosure and
-      // draws the person's own first (VERIFIER-8 MEDIUM-3). `archived_at` is read so an ARCHIVED
-      // organization never appears in a "which one am I working in" list; the organizations page's
-      // own archive disclosure is where those live.
-      const orgsP = readInChunks(orgIds, (chunk) =>
-        supabase
-          .schema("iam")
-          .from("organizations")
-          .select("id, name, abbreviation, logo_url, slug, settings, created_by, archived_at")
-          .in("id", chunk) as unknown as PromiseLike<{ data: OrgRow[] | null; error: PostgrestErrorLike | null }>,
-      );
+        // READ IN CHUNKS (lane FINISH-THE-SWITCH, 2026-10-05): a person in ~1000 organizations put every
+        // id in ONE GET url (~38 KB) and the gateway answered 400 — /scopes said "Couldn't load your
+        // scopes". Each read below sends at most IN_CHUNK ids (`inChunks.ts`).
+        type OrgRow = {
+          id: string;
+          name: string;
+          abbreviation: string;
+          logo_url: string | null;
+          slug: string;
+          settings: unknown;
+          created_by: string | null;
+          archived_at: string | null;
+        };
+        // `settings` carries the `test_fixture` classification and `created_by` says whose
+        // organization it is — the org picker hides fixtures behind the archived-items disclosure and
+        // draws the person's own first (VERIFIER-8 MEDIUM-3). `archived_at` is read so an ARCHIVED
+        // organization never appears in a "which one am I working in" list; the organizations page's
+        // own archive disclosure is where those live.
+        const orgsP = readInChunks(orgIds, (chunk) =>
+          supabase
+            .schema("iam")
+            .from("organizations")
+            .select("id, name, abbreviation, logo_url, slug, settings, created_by, archived_at")
+            .in("id", chunk) as unknown as PromiseLike<{ data: OrgRow[] | null; error: PostgrestErrorLike | null }>,
+        );
 
-      // VIEW LAW: org-scoped — restricted to orgIds (see orgsP above).
-      const projectsP = readInChunks(orgIds, (chunk) =>
-        projectsDb(supabase)
-          .from("projects")
-          .select("id, organization_id, name, slug")
-          .in("organization_id", chunk)
-          .is("deleted_at", null) as unknown as PromiseLike<{
-          data: Array<{ id: string; organization_id: string; name: string; slug: string }> | null;
-          error: PostgrestErrorLike | null;
-        }>,
-      ).then((res) => ({
-        ...res,
-        data: res.data ? [...res.data].sort((a, b) => a.name.localeCompare(b.name)) : res.data,
-      }));
+        // VIEW LAW: org-scoped — restricted to orgIds (see orgsP above).
+        const projectsP = readInChunks(orgIds, (chunk) =>
+          projectsDb(supabase)
+            .from("projects")
+            .select("id, organization_id, name, slug")
+            .in("organization_id", chunk)
+            .is("deleted_at", null) as unknown as PromiseLike<{
+            data: Array<{ id: string; organization_id: string; name: string; slug: string }> | null;
+            error: PostgrestErrorLike | null;
+          }>,
+        ).then((res) => ({
+          ...res,
+          data: res.data ? [...res.data].sort((a, b) => a.name.localeCompare(b.name)) : res.data,
+        }));
 
-      const [orgsRes, projectsRes] = await Promise.all([orgsP, projectsP]);
-      if (orgsRes.error) return err(...mapPgErrorPair(orgsRes.error));
-      if (projectsRes.error) return err(...mapPgErrorPair(projectsRes.error));
+        const [orgsRes, projectsRes] = await Promise.all([orgsP, projectsP]);
+        if (orgsRes.error) return { read: false as const, failed: err(...mapPgErrorPair(orgsRes.error)) };
+        if (projectsRes.error) return { read: false as const, failed: err(...mapPgErrorPair(projectsRes.error)) };
+        return { read: true as const, roleByOrgId, orgsRes, projectsRes };
+      });
+      if (!boot.read) return boot.failed;
+      const { roleByOrgId, orgsRes, projectsRes } = boot;
 
       // THE SCOPE TYPES AND SCOPES, FROM THE STORE (lane SCOPES-READS-WEB): one call of
       // `custom.context_tree` for the LIVE organizations of the caller's memberships — the door

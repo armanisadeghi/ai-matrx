@@ -23,6 +23,7 @@ import { execSync } from "node:child_process";
 import { existsSync, readFileSync } from "node:fs";
 import { exitAfterDrain } from "./lib/exit-after-drain";
 import { featureRegExp } from "./lib/source-roots.cjs";
+import { SHAPE_SOURCE_FILES } from "../features/content-ir/registry/shape-doctor-extract";
 
 interface Args {
   mode: "staged" | "branch";
@@ -185,7 +186,7 @@ function setLiteralExtractor(name: string): (content: string) => string | null {
 
 // Extraction regexes mirror scripts/shape/check-shapes.ts (the detector census).
 const FROZEN_DETECTOR_FILES: Record<string, FrozenLiteral[]> = {
-  "components/mardown-display/markdown-classification/processors/utils/content-splitter-v2.ts":
+  [SHAPE_SOURCE_FILES.splitter.path]:
     [
       {
         name: "JSON_BLOCK_PATTERNS",
@@ -200,7 +201,7 @@ const FROZEN_DETECTOR_FILES: Record<string, FrozenLiteral[]> = {
           /const ATTRIBUTE_XML_BLOCKS = \[([\s\S]*?)\]/.exec(c)?.[1] ?? null,
       },
     ],
-  "../aidream/apps/shared/chat/src/agents/redux/execution-system/utils/stream-block-accumulator.ts": [
+  [SHAPE_SOURCE_FILES.accumulator.path]: [
     {
       name: "SIMPLE_XML_TAGS",
       extract: setLiteralExtractor("SIMPLE_XML_TAGS"),

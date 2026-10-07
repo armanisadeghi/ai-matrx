@@ -113,6 +113,23 @@ describe("an Update form nobody has touched", () => {
     }
   });
 
+  it("every date kind uses the app's date control, never a browser date box (G15)", async () => {
+    for (const mode of ["update", "create"] as const) {
+      const { rows, done } = await renderRows(mode);
+      for (const label of ["Due Date", "Starts"]) {
+        const row = rows.find((r) => r.label === label)!.row;
+        expect({ label, mode, native: row.querySelectorAll('input[type="date"], input[type="datetime-local"]').length }).toEqual({ label, mode, native: 0 });
+        const trigger = row.querySelector<HTMLButtonElement>('button[aria-haspopup="dialog"]');
+        expect({ label, mode, trigger: trigger?.textContent ?? null }).toEqual({
+          label,
+          mode,
+          trigger: mode === "update" ? "Unchanged" : "Pick a date",
+        });
+      }
+      done();
+    }
+  });
+
   it("a Create form keeps its own empty words", async () => {
     const { rows, done } = await renderRows("create");
     const reads = (label: string) => rows.find((r) => r.label === label)!.reads;

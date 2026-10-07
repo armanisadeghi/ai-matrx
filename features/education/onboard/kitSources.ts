@@ -99,6 +99,14 @@ export function pickedFileAnchor(cards: readonly SourceCardModel[]): string | nu
  * Source's own record (never a merged copy), plus the file / processed
  * document behind it so every citation opens the right one.
  */
+const CHUNK_ID_RE = /^### Chunk (\S+)(?: \(page \d+\))?[ \t]*$/gm;
+
+function chunkIdsOf(source: ResolvedSource): string[] {
+  const ids = new Set<string>(source.segments.map((seg) => seg.id));
+  for (const m of source.text.matchAll(CHUNK_ID_RE)) ids.add(m[1]);
+  return [...ids];
+}
+
 export function kitSourceRefs(resolved: ResolvedSourceSet): KitSourceRef[] {
   return resolved.sources
     .filter((s) => s.text.trim().length > 0)
@@ -113,6 +121,7 @@ export function kitSourceRefs(resolved: ResolvedSourceSet): KitSourceRef[] {
         title: s.label.trim() || "Source",
         ...(fileId ? { fileId } : {}),
         ...(processedDocumentId ? { processedDocumentId } : {}),
+        chunkIds: chunkIdsOf(s),
       };
     });
 }

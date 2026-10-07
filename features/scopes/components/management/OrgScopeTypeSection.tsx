@@ -37,6 +37,8 @@ import {
 } from "@ai-matrx/design-system/data-table";
 import type { MatrxColumnDef } from "@ai-matrx/design-system/data-table/types";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
+import { selectUserId } from "@/lib/redux/selectors/userSelectors";
+import { canShapeScopeType } from "@/features/scopes/utils/canShapeScopeType";
 import { makeSelectScopesForType } from "@/features/scopes/redux/selectors/tree";
 import { makeSelectItemsForType } from "@/features/scopes/redux/selectors/context-items";
 import { makeSelectScopeValuesEntry } from "@/features/scopes/redux/selectors/context-values";
@@ -54,6 +56,8 @@ interface OrgScopeTypeSectionProps {
   scopeType: ScopeTypeNode;
   orgId: string;
   orgSlugOrId: string;
+  /** The viewer's organization role; with the type's creator it decides who edits the type's structure. */
+  role?: string | null;
 }
 
 /** Fields shown as columns; the rest are counted in a "+N more" column. */
@@ -63,8 +67,12 @@ export function OrgScopeTypeSection({
   scopeType,
   orgId,
   orgSlugOrId,
+  role,
 }: OrgScopeTypeSectionProps) {
   const router = useRouter();
+  const userId = useAppSelector(selectUserId);
+  // Structure (fields, labels, archive) is the org admins' and the type's creator's; every member adds scopes.
+  const canEditStructure = canShapeScopeType(role, userId, scopeType);
   const dispatch = useAppDispatch();
   const selectScopesForType = useMemo(() => makeSelectScopesForType(), []);
   const scopes = useAppSelector((s) => selectScopesForType(s, scopeType.id));
@@ -148,7 +156,9 @@ export function OrgScopeTypeSection({
         railClassName={color.swatch}
         records={{ count: scopes.length, singular, plural }}
         fields={items.length}
-        edit={{ onEdit: () => setEditing(true), label: `Edit ${scopeType.label_plural}` }}
+        {...(canEditStructure
+          ? { edit: { onEdit: () => setEditing(true), label: `Edit ${scopeType.label_plural}` } }
+          : {})}
         open={{ href: typeHref }}
         {...(scopes.length > 0 ? { add: { label: `Add ${singular}`, onAdd: () => setAdding(true) } } : {})}
         {...(adding ? { adding: inlineAdd } : {})}

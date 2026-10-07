@@ -93,6 +93,7 @@ afterEach(() => {
   container.remove();
 });
 
+beforeEach(() => { lastSelected = ""; });
 const total = () => [...triggerRenders.values()].reduce((n, v) => n + v, 0);
 
 it("re-rendering the list with fresh inline menu getters redraws no row", () => {
@@ -101,5 +102,19 @@ it("re-rendering the list with fresh inline menu getters redraws no row", () => 
   const before = total();
   for (let i = 0; i < 3; i += 1) act(() => rerenderHost());
   expect(total() - before).toBe(0);
-  expect(lastSelected).toBe("");
+
+});
+
+it("a row that was not redrawn opens its menu with the host's LATEST getter", () => {
+  act(() => root.render(<Host />));
+  for (let i = 0; i < 3; i += 1) act(() => rerenderHost());
+  const trigger = container.querySelector<HTMLButtonElement>('button[aria-label="Actions for row-3"]')!;
+  act(() => {
+    trigger.dispatchEvent(new MouseEvent("pointerdown", { bubbles: true, button: 0, ctrlKey: false }));
+    trigger.click();
+  });
+  const open = [...document.querySelectorAll<HTMLElement>('[role="menuitem"]')].find((el) => el.textContent?.includes("Open"));
+  expect(open).toBeDefined();
+  act(() => open!.click());
+  expect(lastSelected).toBe("row-3@3");
 });

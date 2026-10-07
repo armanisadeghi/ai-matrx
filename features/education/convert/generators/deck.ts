@@ -30,6 +30,7 @@ import {
   segmentedGenerate,
 } from "../segmentedGenerate";
 import { mergeTrustEnvelopes } from "../trustMerge";
+import { groundKitTrust } from "../groundKitCitations";
 import type {
   ConvertContext,
   ConvertGenerator,
@@ -72,7 +73,11 @@ async function run(
       difficulty: options?.difficulty ?? "Mixed",
       focus: options?.focus ?? "",
     }),
-    extract: (value) => coerceCards(value, { anchorFileId, docId }),
+    extract: (value) =>
+      coerceCards(value, { anchorFileId, docId }).map((card) => ({
+        ...card,
+        trust: groundKitTrust(card.trust, source.ref?.kitSources),
+      })),
     // Two sections that both define the same term produce the same card; ship
     // it once.
     identity: (card) => looseKey(card.front),
