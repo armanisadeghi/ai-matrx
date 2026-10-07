@@ -4,7 +4,7 @@
 
 - Routes: `/board` is the boards LIST (recents first by last opened; open, rename, duplicate, delete; deleted boards restorable, Archived filter; "New board"), `/board/<id>` opens one, `/board?add=<key>` opens the board the person opened last (a new one when they have none) and starts that item, `/board/all` redirects to `/board`. There is no special home board. Saved boards live in `projects.boards`.
 - Board is its own Workspace menu item: Boards (the list) and one "Add to your board" row per item type (`/board?add=<item key>` starts that type on the last-opened board). `__tests__/board-menu-items.test.ts` fails when a type has no row or a row names a missing type. The nav has no feature-board sub-entries yet (Open item 1).
-- Item types: note, file, chat, table, record, picklist (`list`), document, task, war room, meeting, workflow run, research, project, flashcard deck (`fc_set`), study kit (`study-kit`, the education "study set"), scope, web page, image, write-up, label, meeting_part, Page (any app page as a tile).
+- Item types: note, file, chat, agent form (`agent-form`), table, record, picklist (`list`), document, task, war room, meeting, workflow run, research, project, flashcard deck (`fc_set`), study kit (`study-kit`, the education "study set"), scope, web page, image, write-up, label, meeting_part, Page (any app page as a tile).
 - Every item type passes the remount quiet law (record, table, task, project, meeting, chat fixed 2026-10-04). The one source of which types sleep and which laws each passes is the ledger `__tests__/remount-safety/cases.ts` (enforced by `remount-ledger.test.ts`); never list sleepers in prose here.
 - Agent bridge in two requests (`board_items` value, then `board_open_item` / `board_item_act`), 15 `board_*` tools, surface `matrx-user/board` (values `board_title`, `board_items`, `selected_tile`). Gather a topic: `board_find_records` → `board_add_items` → `board_group` (see Agents manage the board). Board comments: the Board's own thread plus one comment door per tile. Tile errors are isolated by an error boundary per tile.
 - Note tiles never wait on the notes list for their body (the editor reads it itself; a stalled read says so with Retry). Picklist default tile is 1240 wide so the table's Name column is readable.
@@ -39,6 +39,8 @@ Closed 2026-10-04 (details in CHANGELOG.md): Board as its own menu item with eve
 9. **Annotations on any tile** (one overlay generalising the PDF and image annotation layers).
 10. **Multiplayer** (Broadcast cursors, opt-in camera follow, presence).
 11. **Merged grid knob:** read `data_tables.merged_grid`'s live default (`platform.feature_knob`) and write one line here.
+12. **Agent form — which inputs layout is best** (Arman, 2026-10-06: "My guess is that we should use the form option or the one that has them all in one but I'm not sure. There could be an argument for the carrousel one or any of the others as well."). The tile defaults to Form and has a layout switch over all six (Inline, Wizard, Form, Stacked, Guided, Cards) so they can be compared on real agents. Seen 2026-10-06 on Flashcard Topic Deck Composer: Form shows required fields first with the rest folded; Cards shows every field but its Count stepper showed 1, not the agent's default 20; Wizard is one field per step (1/5, Next). Decide the default and whether the switch stays.
+13. **Agent form leftovers.** An agent can place a past run (`record.place`) but not start a new one for a named agent (`board_add_items` needs an agent id field). "Run again" before sending, then a reload, starts an empty form: the carried-over values live only in the browser until the run is sent.
 
 ### Agents manage the board — `board_add_items`, `board_find_records` (2026-10-04)
 
@@ -323,6 +325,13 @@ and is kept. Tile bodies are STATIC imports inside the page's one `ssr:false` ed
   tile's conversation, so the chat beside the board reads what the tile's agent said (through the surface
   chain) and can send into it. A saved tile reopens through the canonical resume sequence, so a turn that
   was mid-run at reload reattaches. Add menu: "Chat" and "Chat with an agent" (the one agent picker).
+- **An agent form tile runs an agent with no chat display** (`items/AgentFormItemBody.tsx`, Arman
+  2026-10-06): the agent's inputs in the composer's FORM style (`showFreeformInput` off — variables and one
+  Run; an agent with no inputs keeps its text box), then the reply through `AgentAssistantMessage`, so a
+  `__kind` reply renders as its shape. Same conversation hook, `matrx-user/chat` surface, status and Keep
+  as the chat tile. Each run is its own conversation; the tile saves the latest (`id`), the agent
+  (`meta.agentId`) and the chosen inputs layout (`meta.inputStyle`, default `form`). "Run again" starts a
+  fresh run and carries the values over. Add menu: "Agent form" (the one agent picker).
 - **`startNew` takes one entry or several** (`StartNewEntry`: `create` for an instant start, or `Picker` for
   a start that needs one choice first); `startNewEntries(type)` lists them for the Add menu and Start panel.
 - **A note tile is the notes core**: `items/NoteItemBody.tsx` → `NoteWorkspace` (features/notes) in

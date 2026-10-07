@@ -1,5 +1,9 @@
 # CHANGELOG — Board (`features/board`)
 
+## 2026-10-06 — Agent form tile
+
+- New item `agent-form`: pick an agent, fill its inputs (form style, one Run), the reply renders as its shape (no chat). Inputs-layout switch per tile; Run again carries values; reopens the saved run after reload. Menu row, agent add list, remount case (passing). Live walk on test@test.com: Flashcard Topic Deck Composer streamed a `flashcard_set` into the tile and came back after reload.
+
 ## 2026-10-06 — Three defects from the live walk (test@test.com)
 
 - New board with no organization selected: after the pick the held create proceeds ONCE and the board opens; a cancelled pick creates nothing (`beginBoardCreate` throws before any insert). Cause (traced live: the POST fires right after Continue, the route change lands ~10 s later while the route compiles / the tab is throttled): `useCreateBoard` released its busy lock a fixed 2 s after `router.push`, so a slow route change left the list showing, "New board" clickable again, and a second empty "Untitled board". The hook now stays busy (button shows the spinner) until the pathname is `/board/<id>`, and after 30 s gives up with an "Open" action instead of a second create. I could not reproduce a navigation that never happens: on the shared preview (pane hidden, so timers throttled) one Continue made one board and opened it. Guard: `__tests__/create-board.test.tsx` (slow route: 10 s later still busy, second click makes nothing; free once the page is at the board).

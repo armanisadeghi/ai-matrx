@@ -212,9 +212,11 @@ export function AgentFormItemBody({ tileId, source, title, onSource }: ItemBodyP
           disabled={hasRun}
         />
         {hasRun && !executing ? (
-          <Button variant="quiet" icon={<RotateCcw />} onClick={runAgain} className="ml-auto">
-            Run again
-          </Button>
+          <div className="ml-auto">
+            <Button variant="quiet" icon={<RotateCcw />} onClick={runAgain}>
+              Run again
+            </Button>
+          </div>
         ) : null}
       </div>
       {hasRun ? (
