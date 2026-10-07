@@ -80,6 +80,20 @@ async function main() {
       continue;
     }
     const record = loaded.record;
+    // Static scope check: every non-relative import must be in the row's scope entries (or the host's), else the
+    // frame draws a stand-in badge for it. Independent of what the first paint happens to render.
+    const inScope = new Set<string>([...HOST_SCOPE.entries, ...(((record as { scope?: { entries?: string[] } }).scope?.entries) ?? [])]);
+    const outOfScope = new Set<string>();
+    for (const src of Object.values(files)) {
+      for (const m of src.matchAll(/(?:^|\n)\s*(?:import|export)\s[^'"]*?from\s+['"]([^'"]+)['"]|(?:^|\n)\s*import\s+['"]([^'"]+)['"]/g)) {
+        const spec = m[1] ?? m[2];
+        if (spec && !spec.startsWith(".") && !inScope.has(spec)) outOfScope.add(spec);
+      }
+    }
+    if (outOfScope.size) {
+      verdict("unresolved", `not in scope: ${[...outOfScope].join(", ")}`);
+      continue;
+    }
     const host = createMemoryHost({ record, viewer: { guest: true, userId: null, organizationIds: [] } });
     const mounted = mountApplet(record, host as never, HOST_SCOPE);
     if (!mounted.ok) {
