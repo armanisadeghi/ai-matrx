@@ -26,7 +26,7 @@ same rule as `features/mandates/admin/FEATURE.md`).
    `_stamp_contract`; version-to-version changes are stamped on
    `agent.definition_version.contract_change` (+ `contract_break_declared` for
    manual declarations via `public.agx_declare_contract_break` — surfaced in
-   `packages/chat/src/agents/components/diff/VersionHistoryTimeline.tsx`).
+   `../aidream/apps/shared/chat/src/agents/components/diff/VersionHistoryTimeline.tsx`).
 3. **Approval is the gate, and the cap is a knob.** `status` lifecycle:
    `candidate` (borrowed, captured, bench-saved) → `approved` (via ONE RPC
    `public.agx_exemplar_approve`, which enforces the knob

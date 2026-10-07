@@ -108,7 +108,7 @@ import { emitItem, endItems } from "./checks/items.mjs";
 import { isAliasSpecifier } from "./lib/source-roots.cjs";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
-const SCAN_DIRS = ["scripts", "lib", "features", "packages/chat/src", "app", "utils"];
+const SCAN_DIRS = ["scripts", "lib", "features", "../aidream/apps/shared/chat/src", "app", "utils"];
 const SKIP_DIR =
   /(^|\/)(node_modules|\.next[^/]*|dist|build|coverage|__tests__|\.git)(\/|$)/;
 const C = {

@@ -30,7 +30,7 @@
 import { execFileSync } from "node:child_process";
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { SOURCE_ROOTS } from "./lib/source-roots.cjs";
+import { SOURCE_ROOTS, gitFiles } from "./lib/source-roots.cjs";
 
 const ROOT = new URL("..", import.meta.url).pathname;
 const BASELINE = join(ROOT, "scripts/cursor-law-baseline.json");
@@ -54,11 +54,7 @@ export function findingsForSource(src) {
 }
 
 function trackedFiles() {
-  const out = execFileSync("git", ["ls-files", "--", ...SOURCE_ROOTS.map((r) => `${r}/**/*.ts`), ...SOURCE_ROOTS.map((r) => `${r}/**/*.tsx`)], {
-    cwd: ROOT,
-    encoding: "utf8",
-    maxBuffer: 64 * 1024 * 1024,
-  });
+  const out = gitFiles(ROOT, ["ls-files", "--", ...SOURCE_ROOTS.map((r) => `${r}/**/*.ts`), ...SOURCE_ROOTS.map((r) => `${r}/**/*.tsx`)]);
   return [...new Set(out.split("\n").filter(Boolean))].filter((f) => !/\.test\.tsx?$/.test(f));
 }
 

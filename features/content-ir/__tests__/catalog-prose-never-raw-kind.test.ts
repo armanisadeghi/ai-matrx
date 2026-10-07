@@ -49,11 +49,11 @@ describe("catalog prose reads a kind example as its label (R1)", () => {
 describe("every skill-description render site goes through catalogProseText", () => {
   const root = path.resolve(__dirname, "../../..");
   const SITES: Array<[string, RegExp]> = [
-    ["packages/chat/src/agents/components/inputs/smart-input/RunSkillPicker.tsx", /(?:secondary|title)[:=]\s*\{?\s*skill\??\.description/],
+    ["../aidream/apps/shared/chat/src/agents/components/inputs/smart-input/RunSkillPicker.tsx", /(?:secondary|title)[:=]\s*\{?\s*skill\??\.description/],
     ["features/skills/components/SkillConfigPicker.tsx", /\{skill\??\.description|title=\{skill\??\.description/],
     ["features/skills/components/SkillsBrowser.tsx", /(?<!\$)\{s\.description\}/],
     ["features/skills/components/SkillDetailView.tsx", /\{skill\.description/],
-    ["packages/chat/src/tool-call-visualization/renderers/skill/SkillInline.tsx", /result\.description\.trim\(\)\s*:/],
+    ["../aidream/apps/shared/chat/src/tool-call-visualization/renderers/skill/SkillInline.tsx", /result\.description\.trim\(\)\s*:/],
   ];
   it.each(SITES)("%s draws no raw description", (file, raw) => {
     const source = readFileSync(path.join(root, file), "utf8");

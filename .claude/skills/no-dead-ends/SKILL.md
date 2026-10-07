@@ -80,7 +80,7 @@ check** — it statically imports 19 peek components. Import `hasPeek` from
 
 1. **Render every relationship you can resolve, with its own door.** For agents
    the lineage is free: `selectAgentLineageIndex` /
-   `selectAgentLineage` (`packages/chat/src/agents/redux/agent-definition/selectors.ts`)
+   `selectAgentLineage` (`../aidream/apps/shared/chat/src/agents/redux/agent-definition/selectors.ts`)
    derive parent / children / **systemTwin** from the slice — zero extra
    queries. The twin can be a PARENT (personal copy of a system agent) or a
    CHILD (system agent promoted from a personal one); handle both.
@@ -127,7 +127,7 @@ check** — it statically imports 19 peek components. Import `hasPeek` from
   new tab"` nodes exist per row.
 - Data logic (lineage, twin resolution, health): a unit test, because the
   interesting rows are usually invisible to the test account under RLS —
-  `packages/chat/src/agents/redux/agent-definition/__tests__/lineage-selectors.test.ts`
+  `../aidream/apps/shared/chat/src/agents/redux/agent-definition/__tests__/lineage-selectors.test.ts`
   is the pattern. Never claim a path works because it "should".
 - Say plainly in your summary what you verified in a browser vs. by test.
 

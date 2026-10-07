@@ -25,7 +25,7 @@ const REQUIRED: Record<string, RegExp> = {
   // The editor's own views ship in @ai-matrx/rich-editor (read from the installed package).
   "node_modules/@ai-matrx/rich-editor/dist/source/SourceEditor.js": /markdownFormatHost\(/,
   "node_modules/@ai-matrx/rich-editor/dist/visual/VisualEditor.js": /RICH_EDITOR_HOST_KEY/,
-  "packages/chat/src/agents/components/inputs/smart-input/AgentTextarea.tsx": /useTextareaFormatting\(/,
+  "../aidream/apps/shared/chat/src/agents/components/inputs/smart-input/AgentTextarea.tsx": /useTextareaFormatting\(/,
   // The editors that used to change capability by tab / were bare textareas.
   "components/mardown-display/chat-markdown/FullScreenMarkdownEditor.tsx": /useTextareaFormatting\(/,
   "components/official/content-editor/ContentEditor.tsx": /useTextareaFormatting\(/,
@@ -46,7 +46,7 @@ const LONG_FORM_DIRS = [
   "features/message-templates",
   "features/skills",
   "features/html-pages/components",
-  "packages/chat/src/agents/components/inputs",
+  "../aidream/apps/shared/chat/src/agents/components/inputs",
 ];
 
 /** Raw textareas that are not long-form markdown — or are owned by a named follow-up. */
@@ -58,7 +58,7 @@ const EXEMPT: Record<string, string> = {
   "features/html-pages/components/tabs/HtmlCodeTab.tsx": "HTML source",
   "features/html-pages/components/tabs/WordPressCSSTab.tsx": "CSS source",
   "features/html-pages/components/tabs/SavePageTab.tsx": "page metadata fields",
-  "packages/chat/src/agents/components/inputs/smart-input/UninitializedShell.tsx": "the composer's loading shell (disabled)",
+  "../aidream/apps/shared/chat/src/agents/components/inputs/smart-input/UninitializedShell.tsx": "the composer's loading shell (disabled)",
 };
 
 const WIRED = /useTextareaFormatting\(|markdownFormatHost\(|RICH_EDITOR_HOST_KEY/;

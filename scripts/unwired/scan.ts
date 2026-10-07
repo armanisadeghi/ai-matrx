@@ -9,7 +9,7 @@ import type {
 } from "./types";
 import { aliasTarget, featureRootOf } from "../lib/source-roots.cjs";
 
-const FRONTEND_ROOTS = ["app", "components", "features", "packages/chat/src", "hooks", "lib", "providers", "utils"];
+const FRONTEND_ROOTS = ["app", "components", "features", "../aidream/apps/shared/chat/src", "hooks", "lib", "providers", "utils"];
 // Directory names skipped wholesale. Only unambiguous ones belong here: this
 // repo keeps 159 real demo route files under `app/(dev)/demos/tests/` and live
 // product routes at `app/(core)/shapes/[kind]/test/` and

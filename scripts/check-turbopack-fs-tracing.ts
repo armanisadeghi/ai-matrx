@@ -13,7 +13,7 @@ import { join, relative } from "node:path";
 import { exitAfterDrain } from "./lib/exit-after-drain";
 
 const ROOT = process.cwd();
-const PRODUCT_ROOTS = ["app", "components", "features", "packages/chat/src", "lib"] as const;
+const PRODUCT_ROOTS = ["app", "components", "features", "../aidream/apps/shared/chat/src", "lib"] as const;
 const SOURCE_FILE = /\.[cm]?[jt]sx?$/;
 const TEST_FILE =
   /(?:^|\/)(?:__tests__|__mocks__)(?:\/|$)|\.(?:spec|test)\.[cm]?[jt]sx?$/;
@@ -60,7 +60,7 @@ const fsViolations = PRODUCT_ROOTS.flatMap((root) =>
   }),
 );
 
-const typescriptViolations = ["app", "components", "features", "packages/chat/src"].flatMap((root) =>
+const typescriptViolations = ["app", "components", "features", "../aidream/apps/shared/chat/src"].flatMap((root) =>
   sourceFiles(join(ROOT, root)).flatMap((path) => {
     const source = readFileSync(path, "utf8");
     if (!TYPESCRIPT_VALUE_IMPORT.test(source)) return [];

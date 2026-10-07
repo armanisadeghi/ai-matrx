@@ -30,7 +30,7 @@ import { createRequire } from "node:module";
 import { getAllManifests } from "@/features/surfaces/manifests/registry";
 
 // The app's manifests, and the chat package's own (moved there in P19).
-const MANIFEST_DIRS = ["features/surfaces/manifests", "packages/chat/src/surfaces/manifests"];
+const MANIFEST_DIRS = ["features/surfaces/manifests", "../aidream/apps/shared/chat/src/surfaces/manifests"];
 // Same resolution path as the registry's own static imports (a dynamic import()
 // by file URL takes the ESM path, which one package's exports map refuses).
 const requireModule = createRequire(__filename);

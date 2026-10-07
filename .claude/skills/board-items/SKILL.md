@@ -87,7 +87,7 @@ not created yet. A body changes what the tile refers to only through `onSource`.
 
 ## How the Board keeps surfaces honest
 
-- `packages/chat/src/surfaces/runtime/SurfaceRuntimeContext.tsx` `SurfaceActivity`: everything under
+- `../aidream/apps/shared/chat/src/surfaces/runtime/SurfaceRuntimeContext.tsx` `SurfaceActivity`: everything under
   `active={false}` registers nothing. The board wraps every tile; only the LIVE tile (selected, being
   worked in, or focused) registers its surface globally. So your component may register its surface
   unconditionally — never add your own "am I on a board?" switch.

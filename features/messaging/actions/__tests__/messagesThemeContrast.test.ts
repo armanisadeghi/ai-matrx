@@ -16,7 +16,7 @@ const messagesCss = readFileSync(
 const entityCardSource = readFileSync(
   path.join(
     process.cwd(),
-    "packages/chat/src/tool-call-visualization/renderers/_shared-entity/EntityCard.tsx",
+    "../aidream/apps/shared/chat/src/tool-call-visualization/renderers/_shared-entity/EntityCard.tsx",
   ),
   "utf8",
 );

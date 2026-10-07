@@ -86,7 +86,7 @@ plan CRUD through it.
   streams into `<LiveRunDisplay>`. The other four moved server-side (the two
   bullets below).
   🚨 **Agents are addressed by MANDATE KEY, never a UUID.** `content_plan.*` mandates
-  resolve through `resolveMandate` (`packages/chat/src/mandates/service.ts`) —
+  resolve through `resolveMandate` (`../aidream/apps/shared/chat/src/mandates/service.ts`) —
   `agent.mandate` for the platform default, `agent.mandate_binding` for
   the user's own override. An unseeded, disabled, or version-pinned mandate
   THROWS with the reason; it never falls back to a hardcoded agent. Adding a
@@ -153,7 +153,7 @@ cms-starter-kit`. Guarded CMS writes (agent_write_policy + activity log live
 - Surfaces: **FIVE**, because `?view=` is a different page with different
   agents (manifests in `features/surfaces/manifests/content-plan*.manifest.ts`;
   route mapping via `resolveMarketingSurface` in
-  `packages/chat/src/surfaces/utils/route-to-surface.ts` — list vs `[siteId]` split):
+  `../aidream/apps/shared/chat/src/surfaces/utils/route-to-surface.ts` — list vs `[siteId]` split):
   - `matrx-user/content-plan-list` — the front door (emitter + `open_site`
     ui write target in `PlanSitesList`).
   - `matrx-user/content-plan` — the plan-editor BASE (tree/table/map are

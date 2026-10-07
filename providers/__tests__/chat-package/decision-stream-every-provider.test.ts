@@ -86,7 +86,7 @@ const FIXTURES: Array<{ family: string; file: string; model: string }> = [
 ];
 
 function loadLines(file: string): string[] {
-  return readFileSync(join(__dirname, "../../../packages/chat/src/agents/redux/execution-system/thunks/__tests__/fixtures", file), "utf8")
+  return readFileSync(join(__dirname, "../../../../aidream/apps/shared/chat/src/agents/redux/execution-system/thunks/__tests__/fixtures", file), "utf8")
     .split("\n")
     .filter((line) => line.trim().length > 0);
 }

@@ -75,7 +75,7 @@ that makes it a tutor: **grounding injection**.
   in-memory state). Consumed by flashcards study surfaces (`StudyDeck`, Fast Fire) — NOT the
   conversation; these are one-shot JSON lanes.
 
-**Reused primitive introduced here:** `packages/chat/src/agents/hooks/useConversationRoutePromotion.ts`
+**Reused primitive introduced here:** `../aidream/apps/shared/chat/src/agents/hooks/useConversationRoutePromotion.ts`
 — the generic conversation-route URL promotion (registerSurface + pendingNav + persisted-gated
 promote with the stale-focus guard), extracted from `ChatRoomClient`. `/chat` can adopt it.
 

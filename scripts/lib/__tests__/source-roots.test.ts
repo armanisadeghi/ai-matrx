@@ -1,6 +1,6 @@
 /**
  * The shared alias + source-root answer every hand-written resolver and scan routes through.
- * The chat package move (features/ -> packages/chat/src) introduces `@host/` and
+ * The chat package move (features/ -> ../aidream/apps/shared/chat/src) introduces `@host/` and
  * `@ai-matrx/chat/`; a guard that cannot read them goes blind to the moved code while staying
  * green. These cases pin the three spellings and the root expansion to the tsconfig/jest truth.
  */

@@ -8,7 +8,7 @@ describe("ConversationContextRail modal layer handoff", () => {
     const source = readFileSync(
       join(
         process.cwd(),
-        "packages/chat/src/agents/components/inputs/smart-input/ConversationContextRail.tsx",
+        "../aidream/apps/shared/chat/src/agents/components/inputs/smart-input/ConversationContextRail.tsx",
       ),
       "utf8",
     );

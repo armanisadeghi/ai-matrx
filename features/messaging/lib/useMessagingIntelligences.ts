@@ -75,7 +75,7 @@ function toWireOverrides(
     console.warn(
       `[messaging] mandate ${mandateKey} binding carries non-scalar ` +
         `config_overrides keys that were not sent: ${dropped.join(", ")}. ` +
-        "Extend packages/chat/src/mandates/llm-params.ts, or apply them server-side.",
+        "Extend ../aidream/apps/shared/chat/src/mandates/llm-params.ts, or apply them server-side.",
     );
   }
   return Object.keys(out).length > 0 ? out : null;

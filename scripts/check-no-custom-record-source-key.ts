@@ -19,6 +19,7 @@
  *   pnpm check:no-custom-record-source-key:self-test   proves the pattern goes red and green
  */
 import { execFileSync } from "node:child_process";
+import { gitFiles } from "./lib/source-roots.cjs";
 import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 
@@ -53,7 +54,7 @@ const ALLOWED = new Set([
 const SCANNED = /\.(ts|tsx|js|mjs|cjs|sql|py)$/;
 
 function tracked(cwd: string, paths: string[]): string[] {
-  return execFileSync("git", ["ls-files", "--", ...paths], { cwd, encoding: "utf8", maxBuffer: 64 * 1024 * 1024 })
+  return gitFiles(cwd, ["ls-files", "--", ...paths])
     .split("\n")
     .filter((f) => f && SCANNED.test(f));
 }
@@ -87,7 +88,7 @@ function selfTest(): void {
 function main(): void {
   if (process.argv.includes("--self-test")) return selfTest();
   const files: Array<{ name: string; text: string }> = [];
-  for (const f of tracked(ROOT, ["app", "features", "packages/chat/src", "components", "lib", "utils", "hooks", "providers", "packages", "scripts", "migrations/campaign", "migrations/inverse"])) {
+  for (const f of tracked(ROOT, ["app", "features", "../aidream/apps/shared/chat/src", "components", "lib", "utils", "hooks", "providers", "packages", "scripts", "migrations/campaign", "migrations/inverse"])) {
     files.push({ name: f, text: readFileSync(resolve(ROOT, f), "utf8") });
   }
   if (existsSync(RECORDS)) {

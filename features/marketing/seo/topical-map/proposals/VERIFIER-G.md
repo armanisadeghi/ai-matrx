@@ -35,7 +35,7 @@ summary. Do not read the builder's report; read the sources below and the code.
   over `TopicTree`; accept/reject only with a map id; doors to canvas / window / page / agent.
 - `features/content-ir/kinds/map-topic-proposal.ts` + `SYSTEM_KIND_DEFINITIONS` +
   `SHAPE_BLOCK_DISPATCH.map_topic_proposal` + `BlockComponentRegistry.MapTopicProposalBlock`.
-- `packages/chat/src/tool-call-visualization/renderers/topical-map/*` + registry entry `topical_map`
+- `../aidream/apps/shared/chat/src/tool-call-visualization/renderers/topical-map/*` + registry entry `topical_map`
   (chrome card; tree/get/outline through TopicTree; every other action's payload shown).
 - Canvas pointer `topical_map` (`canvasSlice`, NON_PERSISTABLE, `CanvasBody` case,
   `canvas/TopicalMapCanvasBody.tsx`, `canvas/topicalMapCanvasContent.ts`, tool-result canvas reader).
@@ -65,7 +65,7 @@ against the live `content_ir.kind_definition` rows. Say so in your report if you
 2. Run the gates on a machine with memory: `pnpm type-check` (expect no errors in the files
    above), `pnpm check:parse`, `pnpm check:kind-marker-law`, `pnpm test:render-matrix`,
    `pnpm check:dead-ends`, `pnpm check:agent-disclosure`, `pnpm check:mandate-keys`, and
-   `npx jest features/marketing/seo/topical-map/proposals features/marketing/seo/topical-map/views/HistoryView.test.ts features/marketing/seo/topical-map/canvas packages/chat/src/tool-call-visualization/renderers/topical-map features/content-ir/__tests__/kind-map-topic-proposal.test.ts`.
+   `npx jest features/marketing/seo/topical-map/proposals features/marketing/seo/topical-map/views/HistoryView.test.ts features/marketing/seo/topical-map/canvas ../aidream/apps/shared/chat/src/tool-call-visualization/renderers/topical-map features/content-ir/__tests__/kind-map-topic-proposal.test.ts`.
    Paste each result verbatim.
 3. Browser: execute `proposals/VERIFY-G.md` end to end on a machine that hosts the app. Every
    step is a pass/fail with a screenshot; one screenshot must show a deliberately failed RPC's own

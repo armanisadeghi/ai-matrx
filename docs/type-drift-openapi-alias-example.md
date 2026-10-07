@@ -10,7 +10,7 @@ Reference case for fixing duplicate hand-written API types. Pattern applies ever
 
 Duplicate (hand-written — wrong)
 
-**File:** `packages/chat/src/agents/types/agent-api-types.ts`
+**File:** `../aidream/apps/shared/chat/src/agents/types/agent-api-types.ts`
 
 | Export | Line |
 |---|---|
@@ -25,7 +25,7 @@ OpenAPI source of truth (never re-declare):
 | `CustomToolInputSchema` | `@ai-matrx/agents/generated/api-types` | ~18160 |
 | `InlineToolSpec` | `@ai-matrx/agents/generated/api-types` | ~21692 |
 
-Correct pattern (see `packages/chat/src/agents/types/tool-injection.types.ts:38`):
+Correct pattern (see `../aidream/apps/shared/chat/src/agents/types/tool-injection.types.ts:38`):
 
 ```typescript
 export type ToolSpecInline = components["schemas"]["InlineToolSpec"];
@@ -37,10 +37,10 @@ export type ToolSpecInline = components["schemas"]["InlineToolSpec"];
 
 | File | What |
 |---|---|
-| `packages/chat/src/agents/types/agent-definition.types.ts` | 255 — `customTools: CustomToolDefinition[]` |
+| `../aidream/apps/shared/chat/src/agents/types/agent-definition.types.ts` | 255 — `customTools: CustomToolDefinition[]` |
 | `features/agents/components/tools-management/AgentToolsManager.tsx` | imports + uses both types |
-| `packages/chat/src/agents/redux/agent-definition/converters.ts` | 135, 183 — `as unknown as` casts |
-| `packages/chat/src/agents/redux/execution-system/thunks/execute-manual-instance.thunk.ts` | 350 — `as NonNullable<ToolSpecInline[...]>` cast |
+| `../aidream/apps/shared/chat/src/agents/redux/agent-definition/converters.ts` | 135, 183 — `as unknown as` casts |
+| `../aidream/apps/shared/chat/src/agents/redux/execution-system/thunks/execute-manual-instance.thunk.ts` | 350 — `as NonNullable<ToolSpecInline[...]>` cast |
 
 ---
 
@@ -58,7 +58,7 @@ Types of property 'properties' are incompatible.
 
 **False fix — cast to silence TypeScript (does not validate; bad data still hits Python):**
 
-`packages/chat/src/agents/redux/execution-system/thunks/execute-manual-instance.thunk.ts`
+`../aidream/apps/shared/chat/src/agents/redux/execution-system/thunks/execute-manual-instance.thunk.ts`
 
 ```typescript
       seedFromAgent.push({

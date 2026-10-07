@@ -15,7 +15,7 @@
       "example": { "file": "features/sharing/components/RoleBadge.tsx", "justification": "Cosmetic label mapping only, never gates a read/write; the real check happens via iam.has_access upstream.", "addedBy": "arman", "date": "2026-07-22" }
     },
     "bareRlsList": {
-      "_comment": "List-shaped Supabase reads in features/**/{service,services,redux}/** (and the same under packages/chat/src) that are intentionally unscoped (e.g. genuinely public reference data, or scope handled by a wrapping RPC not visible in this chain).",
+      "_comment": "List-shaped Supabase reads in features/**/{service,services,redux}/** (and the same under ../aidream/apps/shared/chat/src) that are intentionally unscoped (e.g. genuinely public reference data, or scope handled by a wrapping RPC not visible in this chain).",
       "example": { "file": "features/ai-models/service.ts", "line": 10, "justification": "Public model catalog, world-readable by design, RLS enforces read-only; no owner/org scope applies.", "addedBy": "arman", "date": "2026-07-22" }
     }
   },
@@ -27,7 +27,7 @@
   "activeOrgAccess": [],
   "handRolledLadder": [
     { "file": "features/admin/relationships/components/RelationshipRulesClient.tsx", "justification": "cosmetic UI union, no access decision", "addedBy": "claude", "date": "2026-07-22" },
-    { "file": "packages/chat/src/cx-chat/types/cx-tables.ts", "justification": "cosmetic UI union, no access decision", "addedBy": "claude", "date": "2026-07-22" },
+    { "file": "../aidream/apps/shared/chat/src/cx-chat/types/cx-tables.ts", "justification": "cosmetic UI union, no access decision", "addedBy": "claude", "date": "2026-07-22" },
     { "file": "features/marketing/components/access/SiteAccessWorkspace.tsx", "justification": "cosmetic UI union, no access decision", "addedBy": "claude", "date": "2026-07-22" },
     { "file": "features/marketing/data/access-service.ts", "justification": "cosmetic UI union, no access decision", "addedBy": "claude", "date": "2026-07-22" },
     { "file": "features/messaging/types.ts", "justification": "cosmetic UI union, no access decision", "addedBy": "claude", "date": "2026-07-22" },
@@ -35,7 +35,7 @@
     { "file": "features/notes/components/mobile/MobileNotesList.tsx", "justification": "cosmetic UI union, no access decision", "addedBy": "claude", "date": "2026-07-22" },
     { "file": "features/notes/redux/notes.types.ts", "justification": "cosmetic UI union, no access decision", "addedBy": "claude", "date": "2026-07-22" },
     { "file": "features/organizations/components/OrgModuleSettings.tsx", "justification": "cosmetic UI union, no access decision", "addedBy": "claude", "date": "2026-07-22" },
-    { "file": "packages/chat/src/public-chat/types/cx-tables.ts", "justification": "cosmetic UI union, no access decision", "addedBy": "claude", "date": "2026-07-22" },
+    { "file": "../aidream/apps/shared/chat/src/public-chat/types/cx-tables.ts", "justification": "cosmetic UI union, no access decision", "addedBy": "claude", "date": "2026-07-22" },
     { "file": "features/sharing/components/PermissionsList.tsx", "justification": "cosmetic UI union, no access decision", "addedBy": "claude", "date": "2026-07-22" },
     { "file": "features/sharing/components/tabs/ShareWithOrgTab.tsx", "justification": "cosmetic UI union, no access decision", "addedBy": "claude", "date": "2026-07-22" },
     { "file": "features/sharing/components/tabs/ShareWithUserTab.tsx", "justification": "cosmetic UI union, no access decision", "addedBy": "claude", "date": "2026-07-22" },

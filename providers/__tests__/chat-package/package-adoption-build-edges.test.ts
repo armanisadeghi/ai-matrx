@@ -44,9 +44,9 @@ test("Notes uses the one rich-copy door (agent-copy/copy-commands)", () => {
 });
 
 test("the context preview copies through the CopyButtons host slot; no InlineCopyButton slot exists", () => {
-  expect(read("packages/chat/src/agents/components/context-preview/AttachedContextSection.tsx"))
+  expect(read("../aidream/apps/shared/chat/src/agents/components/context-preview/AttachedContextSection.tsx"))
     .toContain('import { CopyButtons } from "@ai-matrx/chat/host/ui-slots"');
-  const slots = read("packages/chat/src/host/ui-slots.tsx");
+  const slots = read("../aidream/apps/shared/chat/src/host/ui-slots.tsx");
   expect(slots).toContain('export const CopyButtons = slotComponent("CopyButtons"');
   expect(slots).not.toContain("InlineCopyButton");
   expect(read("providers/chatUiRegistrationBase.ts")).toContain("CopyButtons,");
@@ -60,5 +60,5 @@ test("the dynamic UI scope obtains the class recipe from the design-system root,
 
 test("there is one download door: Kit's, with no re-export beside it", () => {
   expect(read("components/agent-copy/export.ts")).not.toContain("downloadFile");
-  expect(read("packages/chat/src/agent-copy/export.ts")).not.toContain("export function downloadFile");
+  expect(read("../aidream/apps/shared/chat/src/agent-copy/export.ts")).not.toContain("export function downloadFile");
 });

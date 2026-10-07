@@ -13,7 +13,7 @@
 
 ## Purpose
 
-Agent Connections is the registry surface for what agents can reach — and the home of the one content-block store. The broader external-integrations story (MCP protocol, OAuth, credential storage) belongs to `features/api-integrations/` and `packages/chat/src/agents/services/mcp-oauth/`.
+Agent Connections is the registry surface for what agents can reach — and the home of the one content-block store. The broader external-integrations story (MCP protocol, OAuth, credential storage) belongs to `features/api-integrations/` and `../aidream/apps/shared/chat/src/agents/services/mcp-oauth/`.
 
 Cross-repo product plan: [`common-docs/systems/chat/ai-work/projects/ai-work-hub/PLAN.md`](/Users/armanisadeghi/code/common-docs/systems/chat/ai-work/projects/ai-work-hub/PLAN.md) — read it before building conversation browsing, provider launch, saved requests, skills, associations, or automation for this integration.
 
@@ -32,7 +32,7 @@ Cross-repo product plan: [`common-docs/systems/chat/ai-work/projects/ai-work-hub
 **Two hydration paths, one merge discipline:**
 
 1. **Full fetch** — `fetchRenderDefinitions` (`redux/skl/thunks.ts`): Supabase direct on `skill.render_definition`, `deleted_at IS NULL`, scope-checked via `applyScopeFilter` (VIEW LAW satisfied in-thunk; it no longer narrows by the active org — reads ignore it, the Organization scope only names where a new block is filed), → `renderDefinitionsReceived` (replaces the set).
-2. **Context-menu hydration** — `fetchUnifiedMenu` (`packages/chat/src/agents/redux/agent-shortcuts/thunks.ts`) hits `GET /api/agent-context-menu`, backed by the **`agent.context_menu_view`** DB view, and dispatches `sklActions.renderDefinitionsMerged` with partial rows. Since **2026-08-08** the view emits `block_type` / `skill_id` / `visibility`, so wire rows are near-complete. The merge is `Object.assign`-based and **partial-safe**: the thunk OMITS (never nulls) classification fields absent from a stale cached payload, and the slice's defaults (`markdown`/`public`) apply only to rows never seen by any fetch. **Never turn an omitted field into an explicit null on this path** — that would erase a fetched row's real classification.
+2. **Context-menu hydration** — `fetchUnifiedMenu` (`../aidream/apps/shared/chat/src/agents/redux/agent-shortcuts/thunks.ts`) hits `GET /api/agent-context-menu`, backed by the **`agent.context_menu_view`** DB view, and dispatches `sklActions.renderDefinitionsMerged` with partial rows. Since **2026-08-08** the view emits `block_type` / `skill_id` / `visibility`, so wire rows are near-complete. The merge is `Object.assign`-based and **partial-safe**: the thunk OMITS (never nulls) classification fields absent from a stale cached payload, and the slice's defaults (`markdown`/`public`) apply only to rows never seen by any fetch. **Never turn an omitted field into an explicit null on this path** — that would erase a fetched row's real classification.
 
 **Writes** — `createRenderDefinition` / `updateRenderDefinition` / `deleteRenderDefinition` (skl thunks), Supabase direct. `stampScopeForWrite` stamps ownership from the caller's scope and **never writes a NULL `organization_id`** (falls back to `ensureOrgId` → the selected organization, held and asked when none). Converters (`redux/skl/converters.ts`) own the row↔state mapping including the `visibility`/`isPublic` reconciliation — explicit `visibility` wins.
 
@@ -40,7 +40,7 @@ Cross-repo product plan: [`common-docs/systems/chat/ai-work/projects/ai-work-hub
 
 - `features/context-menu-v3/hooks/useUnifiedAgentContextMenu.ts` — the live context menu.
 - `features/agent-shortcuts/hooks/useAgentShortcuts.ts` + `types.ts` — shortcut surfaces (maps `"global"` scope → `"user"` before calling skl).
-- `packages/chat/src/agents/redux/agent-shortcuts/{thunks,selectors}.ts` — unified-menu hydration + read-through selectors.
+- `../aidream/apps/shared/chat/src/agents/redux/agent-shortcuts/{thunks,selectors}.ts` — unified-menu hydration + read-through selectors.
 
 **Categories** — render blocks FK to `platform.categories` rows with `dimension='shortcut'` (shared with agent shortcuts). `fetchRenderBlockCategories` reads them (plain `select("*")`; the aliased-json select triggered TS2589), `rowToShortcutCategory` maps name→label / position→sort_order; `selectRenderBlockCategoryTree` builds the parent tree.
 
@@ -73,8 +73,8 @@ Cross-repo product plan: [`common-docs/systems/chat/ai-work/projects/ai-work-hub
 | ------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `SkillsSection`                                  | `features/skills/` slice (`/api/skills`); full CRUD, categories, filesystem ingest (admin)                                                                                                      |
 | `RenderBlocksSection`                            | skl via `hooks/useRenderBlocks.ts` (definitions + category tree); badges block type + visibility (see below); detail view read-only, editor pending                                             |
-| `AgentsSection`                                  | `packages/chat/src/agents/redux/agent-definition/` (`fetchAgentsList` → `selectLiveAgents`)                                                                                                              |
-| `McpServersSection`                              | `packages/chat/src/agents/redux/mcp/mcp.slice.ts`; OAuth opens the canonical popup, no-auth alone uses metadata-only connect, manual auth routes to the credential editor, and the detail renders live discovered tools/errors                                         |
+| `AgentsSection`                                  | `../aidream/apps/shared/chat/src/agents/redux/agent-definition/` (`fetchAgentsList` → `selectLiveAgents`)                                                                                                              |
+| `McpServersSection`                              | `../aidream/apps/shared/chat/src/agents/redux/mcp/mcp.slice.ts`; OAuth opens the canonical popup, no-auth alone uses metadata-only connect, manual auth routes to the credential editor, and the detail renders live discovered tools/errors                                         |
 | `PreferencesSection`                             | `useSetting<T>("userPreferences.agentConnections.<key>")` — persistence via the user-preferences engine, no slice-binding needed                                                                |
 | `PluginsSection` (shown as **Coding Platforms**) | Owner-scoped `chat.coding_session` rows via direct Supabase; storage health, Claude-first connection status, four-provider filters, fidelity verdicts, and canonical conversation doors/actions |
 
@@ -137,7 +137,7 @@ Fidelity is a verdict, never an inference: `event_mirror` says native resume is 
 - **No NULL `organization_id` on writes** — `stampScopeForWrite` + `ensureOrgId` guarantee it; keep that guarantee on any new write path.
 - **Sidebar section ⇒ route directory** (see Entry points). Adding a section touches `types.ts`, `constants.ts`, a section component, `AgentConnectionsBody`, and a `page.tsx`.
 - **Sidebar is bi-modal; `basePath` for every new surface.** `OverviewSection` needs `AgentConnectionsNavProvider`.
-- **Connection auth stays server-side.** No credentials/tokens in client state; `packages/chat/src/agents/services/mcp-oauth/` owns the OAuth dance; external-integration credential UI belongs to `features/api-integrations/`.
+- **Connection auth stays server-side.** No credentials/tokens in client state; `../aidream/apps/shared/chat/src/agents/services/mcp-oauth/` owns the OAuth dance; external-integration credential UI belongs to `features/api-integrations/`.
 - **Connection status must prove the auth strategy.** `oauth_discovery` always runs `startMcpOAuthPopup`; only `none` may call the metadata-only connection RPC. Bearer, API-key, and env strategies route to the full integrations credential editor. Never create a green connection row without its required credential.
 - **Supabase OAuth is configured before it opens.** Every non-settings MCP surface routes Supabase to `/user-settings/integrations`, where the user supplies one project reference. The OAuth attempt persists an exact HTTPS endpoint override with `read_only=true` and only `docs,database,debugging`; the frontend refuses a different host/path and the server revalidates the target before storage and use.
 - **Skill/category/resource code does not come back here** — `features/skills/` owns all three now.

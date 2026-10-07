@@ -30,6 +30,7 @@
  * Everything deciding IF and WHEN is the real component on the real reducer.
  */
 import React, { act } from "react";
+import path from "node:path";
 import { createRoot, type Root } from "react-dom/client";
 import { Provider } from "react-redux";
 import userAuthReducer from "@/lib/redux/slices/userAuthSlice";
@@ -305,15 +306,15 @@ describe("every embedded conversation surface declares its own URL", () => {
 
   it("no mount outside the chat route falls back to /chat/<id>", () => {
     const offenders: string[] = [];
-    for (const dir of ["features", "packages/chat/src", "app", "components"]) {
+    for (const dir of ["features", "../aidream/apps/shared/chat/src", "app", "components"]) {
       for (const file of walk(join(REPO_ROOT, dir))) {
         const source = readFileSync(file, "utf8");
         const mount = source.indexOf("<ChatRoomClient");
         if (mount === -1) continue;
-        const relative = file.slice(REPO_ROOT.length + 1);
+        const relative = path.relative(REPO_ROOT, file);
         // The chat route IS the default's owner.
         if (relative.startsWith("app/(core)/chat/")) continue;
-        if (relative.startsWith("packages/chat/src/agents/components/chat/")) continue;
+        if (relative.startsWith("../aidream/apps/shared/chat/src/agents/components/chat/")) continue;
         // Read to the end of the JSX element, not the file.
         const end = source.indexOf("/>", mount);
         const element = source.slice(mount, end === -1 ? undefined : end);

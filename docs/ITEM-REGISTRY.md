@@ -22,8 +22,8 @@ Moved from the repo root 2026-07-22 (doc-consolidation campaign).
 | **Agents App Router** | `app/(a)/agents/` | Routes: list (`page.tsx`), agent hub (`[id]/`), **build** (`[id]/build/`), **run** (`[id]/run/`, `[id]/latest/`, `[id]/[version]/`). |
 | **Agent feature (code)** | `features/agents/` | Types, Redux, services, shared UI. |
 | **Agent builder UI** | `features/agents/components/builder/` | Message list, system instructions, model config (`AgentBuilder*.tsx`, `message-builders/`). |
-| **Agent run / chat UI** | `packages/chat/src/agents/components/run/` | Conversation, assistant messages, variables, status (`AgentRunPage.tsx`, `AgentAssistantMessage.tsx`, …). |
-| **Agent view / route content** | `packages/chat/src/agents/route/` | Client views wired to agent routes (e.g. `AgentViewContent.tsx`). |
+| **Agent run / chat UI** | `../aidream/apps/shared/chat/src/agents/components/run/` | Conversation, assistant messages, variables, status (`AgentRunPage.tsx`, `AgentAssistantMessage.tsx`, …). |
+| **Agent view / route content** | `../aidream/apps/shared/chat/src/agents/route/` | Client views wired to agent routes (e.g. `AgentViewContent.tsx`). |
 
 ---
 
@@ -36,7 +36,7 @@ Several implementations exist; **prefer the Redux-driven menus** for new work.
 | **Redux (CX conversation)** | `features/cx-conversation/MessageOptionsMenu.tsx` | Uses `getMessageActions` from `features/cx-conversation/actions/messageActionRegistry.ts`. |
 | **Redux (CX chat)** | `features/cx-chat/components/messages/MessageOptionsMenu.tsx` | Same pattern; `getMessageActions` in `features/cx-chat/actions/messageActionRegistry.ts`. |
 | **Legacy (still imported)** | `features/chat/components/response/assistant-message/MessageOptionsMenu.tsx` | Used by e.g. `AssistantMessage.tsx`, `AgentAssistantMessage.tsx`, `PromptAssistantMessage.tsx` — marked deprecated in file header. |
-| **Public / no Redux** | `packages/chat/src/public-chat/components/PublicMessageOptionsMenu.tsx` | Public chat & prompt-app surfaces; lazy-loaded from `MessageDisplay.tsx`. |
+| **Public / no Redux** | `../aidream/apps/shared/chat/src/public-chat/components/PublicMessageOptionsMenu.tsx` | Public chat & prompt-app surfaces; lazy-loaded from `MessageDisplay.tsx`. |
 
 ---
 

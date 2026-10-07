@@ -67,13 +67,13 @@ The pill system is the foundation. The error inspection consumes it. The unified
 Create `features/agents/redux/editor-resources/{editorResourcesSlice.ts, selectors.ts, types.ts}`. Shape `{ byConversationId: Record<string, EditorResource[]> }`. Actions: `addEditorResource`, `removeEditorResource`, `clearEditorResources`. Register in [`lib/redux/store.ts`](../../../../lib/redux/store.ts).
 
 ### 21.2 — XML utilities
-Create `packages/chat/src/agents/utils/editor-resource-xml.ts`. Direct port of [`features/prompts/utils/resource-formatting.ts`](../../../prompts/utils/resource-formatting.ts) and [`features/prompts/utils/resource-parsing.ts`](../../../prompts/utils/resource-parsing.ts), simplified to the new union. Tag schema is `<attached_editor_resources><resource type="…" id="…"><metadata>…</metadata><content>…</content></resource></attached_editor_resources>` with per-type `<metadata>` fields.
+Create `../aidream/apps/shared/chat/src/agents/utils/editor-resource-xml.ts`. Direct port of [`features/prompts/utils/resource-formatting.ts`](../../../prompts/utils/resource-formatting.ts) and [`features/prompts/utils/resource-parsing.ts`](../../../prompts/utils/resource-parsing.ts), simplified to the new union. Tag schema is `<attached_editor_resources><resource type="…" id="…"><metadata>…</metadata><content>…</content></resource></attached_editor_resources>` with per-type `<metadata>` fields.
 
 ### 21.3 — Pill component
 Create `features/agents/components/run/input/EditorResourcePills.tsx`. Pattern: [`ResourceChips.tsx`](../../../prompts/components/resource-display/ResourceChips.tsx).
 
 ### 21.4 — Submit + clear
-Locate the runner's user-message send path (a thunk inside [`packages/chat/src/agents/redux/execution-system/`](../../../agents/redux/execution-system/)). Append serialized XML, then dispatch `clearEditorResources`. Mount `<EditorResourcePills />` above the textarea.
+Locate the runner's user-message send path (a thunk inside [`../aidream/apps/shared/chat/src/agents/redux/execution-system/`](../../../agents/redux/execution-system/)). Append serialized XML, then dispatch `clearEditorResources`. Mount `<EditorResourcePills />` above the textarea.
 
 ### 21.5 — Tag classification + markdown rendering
 Update [`content-prefilter.ts`](../../../agents/redux/execution-system/utils/content-prefilter.ts) so the new tag names don't get misrouted during streaming. Add an `EditorResourcesRenderer` to the chat-markdown registry that strips XML and renders chips.

@@ -1,5 +1,5 @@
 // The host's own shapes, handed to the chat package's context-menu types
-// (packages/chat/src/context-menu/types.ts `ContextMenuHostTypes`). Imported for its side effect
+// (../aidream/apps/shared/chat/src/context-menu/types.ts `ContextMenuHostTypes`). Imported for its side effect
 // by the menu's types shim so the augmentation is always part of the program.
 import type {
   ContentSource as HostContentSource,

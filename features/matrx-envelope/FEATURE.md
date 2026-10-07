@@ -102,7 +102,7 @@ render through the SAME live chip renderer.
   dead: no `confirm` → no Apply button. Mounted by `MatrxEnvelopeBlock` via
   `DirectiveHostProvider` **and** hung on `matrxContentIrHost.directives`, so a directive
   gets its seams whether or not it renders under `ContentIrRenderProvider`.
-- `packages/chat/src/agents/redux/proposed-directives/proposedDirectivesSlice.ts` (package-owned since P17b) — the per-conversation inbox of agent-proposed actions
+- `../aidream/apps/shared/chat/src/agents/redux/proposed-directives/proposedDirectivesSlice.ts` (package-owned since P17b) — the per-conversation inbox of agent-proposed actions
   (`ask` policy); `proposeDirective` / `removeProposal` + `selectProposedDirectives`.
 - `components/ProposedDirectivesZone.tsx` — the Approve/Decline card per pending proposal;
   Approve → `confirmDirective` (`features/directive-catalog/service.ts`) → `POST /directives/confirm`.
@@ -256,7 +256,7 @@ silently drops items the server would have happily applied.
   receipts toast; `directive_apply.proposed` (the `ask` apply policy) is handled below.
 - **Proposed directives (`ask` policy):** when the backend resolves a directive's apply
   policy to `ask`, it streams `directive_apply.proposed` (carrying the round-tripped
-  envelope + `proposal_id`). `process-stream.ts` enqueues it into `packages/chat/src/agents/redux/proposed-directives/proposedDirectivesSlice.ts`;
+  envelope + `proposal_id`). `process-stream.ts` enqueues it into `../aidream/apps/shared/chat/src/agents/redux/proposed-directives/proposedDirectivesSlice.ts`;
   `components/ProposedDirectivesZone.tsx` (mounted beside the chat input in
   `AgentConversationColumn`) renders an Approve/Decline card. Approve POSTs the envelope to
   `POST /directives/confirm` via `features/directive-catalog/service.ts::confirmDirective` (runs as

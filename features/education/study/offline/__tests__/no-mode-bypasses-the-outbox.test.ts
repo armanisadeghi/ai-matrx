@@ -65,7 +65,7 @@ describe("no study mode bypasses the offline outbox (STATE §4.1 B8)", () => {
   const offenders: string[] = [];
 
   beforeAll(() => {
-    for (const dir of ["features", "packages/chat/src", "app", "components"]) {
+    for (const dir of ["features", "../aidream/apps/shared/chat/src", "app", "components"]) {
       const base = join(ROOT, dir);
       let files: string[];
       try {

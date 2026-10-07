@@ -233,10 +233,10 @@ features/code/redux/
 lib/redux/slices/userPreferencesSlice.ts
   └─ coding: CodingPreferences ← agent filter, history grouping, favorites
 
-packages/chat/src/agents/redux/conversation-history/
+../aidream/apps/shared/chat/src/agents/redux/conversation-history/
   slice.ts, thunks.ts, selectors.ts ← conversation list with date/agent grouping
 
-packages/chat/src/agents/redux/execution-system/
+../aidream/apps/shared/chat/src/agents/redux/execution-system/
   instance-context/instance-context.{slice,selectors}.ts
                               ← ★ THIS IS WHERE EDITOR CONTEXT LANDS — see §4
   thunks/execute-instance.thunk.ts
@@ -484,9 +484,9 @@ The QA contract is in [`QA_CHECKLIST.md`](./QA_CHECKLIST.md). It runs the 10‑s
 | `features/code/views/source-control/`                                               | Git activity view (status / diff / commit / push / credentials).                                     |
 | `lib/sandbox/api-surface.ts`                                                        | Per‑tier capability cache fed by `GET /api-surface`.                                                 |
 | `app/api/sandbox/[id]/access-tokens/route.ts`                                       | Ownership-checked mint for browser-direct orchestrator credentials.                                  |
-| `packages/chat/src/agents/redux/execution-system/instance-context/instance-context.slice.ts` | The slot the editor will write into.                                                                 |
-| `packages/chat/src/agents/redux/execution-system/thunks/execute-instance.thunk.ts`           | `assembleRequest` packs `instanceContext` into the wire.                                             |
-| `packages/chat/src/agents/types/request.types.ts`                                            | `AssembledAgentStartRequest.context`.                                                                |
+| `../aidream/apps/shared/chat/src/agents/redux/execution-system/instance-context/instance-context.slice.ts` | The slot the editor will write into.                                                                 |
+| `../aidream/apps/shared/chat/src/agents/redux/execution-system/thunks/execute-instance.thunk.ts`           | `assembleRequest` packs `instanceContext` into the wire.                                             |
+| `../aidream/apps/shared/chat/src/agents/types/request.types.ts`                                            | `AssembledAgentStartRequest.context`.                                                                |
 | `app/api/sandbox/persistence/route.ts`                                              | GET/DELETE proxy to every orchestrator's `/users/{user_id}/persistence` + `/users/{user_id}/volume`. |
 | `hooks/sandbox/use-user-persistence.ts`                                             | `useUserPersistence()` + `formatPersistenceSize` + `findTierInfo`.                                   |
 | `features/code/runtime/openSessionReport.ts`                                        | Auto-opens `~/.matrx/session-report.md` as a tab on connect.                                         |

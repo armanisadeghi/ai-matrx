@@ -296,7 +296,7 @@ query GETs (unblocked by `apiGet`'s `query` support), and
   `applyAiApiVersion` covers concrete paths; non-2xx and thrown failures feed `captureApiError`
   (with `expectedErrorStatuses` suppression). The cancel flow moved onto it: `cancelAgentRunRequest`
   replaces `callCancelRequest` (deleted) with the same `ApiCallResult` envelope. Conversation-scoped
-  variant lives in `packages/chat/src/agents/redux/execution-system/thunks/matrx-transport-for-conversation.ts`.
+  variant lives in `../aidream/apps/shared/chat/src/agents/redux/execution-system/thunks/matrx-transport-for-conversation.ts`.
 - 2026-08-27 — Collapsed the aidream production origin onto ONE variable name.
   `AIDREAM_PRODUCTION_URL` (`NEXT_PUBLIC_BACKEND_URL_PROD` + hardcoded production default) is
   now the single reader; the `NEXT_PUBLIC_BACKEND_URL` alias and its seventeen scattered

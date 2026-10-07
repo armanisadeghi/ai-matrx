@@ -14,12 +14,12 @@ the `@ai-matrx/print` npm package** (extracted 2026-08-29; source `aidream/apps/
 ```
 Tier 1 — Quick Print (prose only)
   printMarkdownContent() → regex → HTML window
-  File: packages/chat/src/conversation/utils/markdown-print.ts
+  File: ../aidream/apps/shared/chat/src/conversation/utils/markdown-print.ts
   Limitation: ignores all custom blocks
 
 Tier 2 — Full Message (DOM screenshot)
   useDomCapturePrint → html2canvas + jsPDF
-  File: packages/chat/src/conversation/hooks/useDomCapturePrint.ts
+  File: ../aidream/apps/shared/chat/src/conversation/hooks/useDomCapturePrint.ts
   Hook returns: { captureRef, isCapturing, progress, captureAsPDF, error }
   isCapturing must be wired to the menu item (disabled state + label change)
 

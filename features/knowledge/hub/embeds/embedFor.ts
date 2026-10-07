@@ -32,7 +32,7 @@ export const EMBED_PARITY = {
   web: "features/source-studio/components/SourceStudio.tsx (web path: WebSourceView)",
   file: "features/source-studio/components/SourceStudio.tsx (PDF/file path: OriginalPane → PDF studio viewer)",
   transcript: "features/source-studio/components/SourceStudio.tsx (timed path: OriginalPane players)",
-  conversation: "packages/chat/src/agents/components/messages-display/AgentConversationDisplay.tsx",
+  conversation: "../aidream/apps/shared/chat/src/agents/components/messages-display/AgentConversationDisplay.tsx",
   note: "features/notes/components/NoteContentEditor.tsx",
   transcript_record:
     "features/knowledge/hub/embeds/TranscriptRecordEmbed.tsx (its Source screen's timed path, else features/transcripts/components/TranscriptViewer.tsx)",

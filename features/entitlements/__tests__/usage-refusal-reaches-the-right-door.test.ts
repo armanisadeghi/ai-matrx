@@ -48,8 +48,8 @@ import {
   paidAiPostPaths,
 } from "../usage-gate/paidAiPaths";
 import { onGuestAiAllowanceUsed } from "@/lib/guest/guest-ai-allowance";
-import { runAiStream } from "@/packages/chat/src/agents/redux/execution-system/thunks/run-ai-stream";
-import { processStream } from "@/packages/chat/src/agents/redux/execution-system/thunks/process-stream";
+import { runAiStream } from "@ai-matrx/chat/agents/redux/execution-system/thunks/run-ai-stream";
+import { processStream } from "@ai-matrx/chat/agents/redux/execution-system/thunks/process-stream";
 import { configureServerForTest } from "@ai-matrx/chat/testing/server-test-host";
 import { readFileSync } from "node:fs";
 

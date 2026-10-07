@@ -2,7 +2,7 @@
 /**
  * check-binder.mjs — the BINDER-error twin of check-parse.mjs: fast, no program, no type resolution.
  *
- * THE CLASS (2026-10-05): `export const toastDoor` was declared TWICE in packages/chat/src/host/ui-slots.tsx.
+ * THE CLASS (2026-10-05): `export const toastDoor` was declared TWICE in ../aidream/apps/shared/chat/src/host/ui-slots.tsx.
  * `pnpm check:parse` passed (two `const` statements are valid SYNTAX) while the build failed with TS2451
  * "Cannot redeclare block-scoped variable". The same family: an import of a name its target module does not
  * export (the 2026-09-25 createKindValidator outage, for relative paths), and two imports of one local name.

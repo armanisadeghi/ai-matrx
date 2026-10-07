@@ -19,6 +19,7 @@ import * as React from "react";
 import { readFileSync } from "node:fs";
 import { execSync } from "node:child_process";
 import path from "node:path";
+import { gitFiles } from "@/scripts/lib/source-roots.cjs";
 import { renderHook, settle, type HookHandle } from "@/test-utils/renderHook";
 
 const USER = "55555555-5555-4555-8555-555555555555";
@@ -388,10 +389,12 @@ describe("census: every study-session starter is gated", () => {
   const root = path.resolve(__dirname, "../../../..");
 
   it("no file opens a study session without being a gated starter", () => {
-    const out = execSync(
-      "git grep -l 'studyService.createSession(' -- 'features/*.ts' 'packages/chat/src/*.ts' 'features/*.tsx' 'packages/chat/src/*.tsx' 'app/*.ts' 'app/*.tsx' 'components/*.ts' 'components/*.tsx'",
-      { cwd: root, encoding: "utf8" },
-    );
+    // The app's files and @ai-matrx/chat's source (the aidream checkout beside this repo).
+    const out = gitFiles(root, [
+      "grep", "-l", "studyService.createSession(", "--",
+      "features/*.ts", "../aidream/apps/shared/chat/src/*.ts", "features/*.tsx", "../aidream/apps/shared/chat/src/*.tsx",
+      "app/*.ts", "app/*.tsx", "components/*.ts", "components/*.tsx",
+    ]);
     const starters = out
       .split("\n")
       .filter(Boolean)

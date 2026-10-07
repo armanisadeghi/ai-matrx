@@ -226,7 +226,7 @@ const claims: Claim[] = [
       // green. Spell the boundary out.
       const callsites = grepRepo(
         String.raw`(^|[^A-Za-z0-9_.])(forbidden|unauthorized)\(\)`,
-        ["app", "features", "packages/chat/src", "utils", "lib"],
+        ["app", "features", "../aidream/apps/shared/chat/src", "utils", "lib"],
       );
       const problems: string[] = [];
       if (docClaimsOn && !enabled) {

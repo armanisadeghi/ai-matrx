@@ -141,8 +141,8 @@ function relPath(abs: string): string {
 const SELF_FILE = "scripts/check-access-guards.ts";
 // Generated files are not authored decisions; drift there is a codegen
 // problem, not an access-guard violation.
-// `packages/chat/src/host/db-types.ts` is the chat package's generated subset
-// of `types/database.types.ts` (packages/chat/scripts/generate-db-types.mjs).
+// `../aidream/apps/shared/chat/src/host/db-types.ts` is the chat package's generated subset
+// of `types/database.types.ts` (../aidream/apps/shared/chat/scripts/generate-db-types.mjs).
 const GENERATED_FILE_RE =
   /^(types\/(database\.types|python-generated\/api-types)|packages\/chat\/src\/host\/db-types)\.ts$/;
 

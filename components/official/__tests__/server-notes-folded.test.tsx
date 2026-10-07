@@ -146,7 +146,7 @@ describe("the admin mandate host is the one that folds it", () => {
   });
 });
 
-const MANDATE_TREES = ["features/mandates", "packages/chat/src/mandates", "features/bindings"] as const;
+const MANDATE_TREES = ["features/mandates", "../aidream/apps/shared/chat/src/mandates", "features/bindings"] as const;
 
 function walkFiles(dir: string): string[] {
   return readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {

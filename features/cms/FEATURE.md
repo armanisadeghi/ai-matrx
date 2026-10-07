@@ -133,7 +133,7 @@ click time, not a stale snapshot.
 
 **In-place AI buttons (Arman ruling 2026-08-13 — "everything needs to be agent driven"):** every
 CMS editing surface offers its agent IN PLACE via
-`packages/chat/src/surfaces/components/chrome/SurfaceRoleAgentButton.tsx` (launches the surface role's
+`../aidream/apps/shared/chat/src/surfaces/components/chrome/SurfaceRoleAgentButton.tsx` (launches the surface role's
 effective agent with the live runtime scope — the exact header-panel launch path, never a second
 seam; renders nothing while a role is unbound). Roles are bound to real platform agents in both
 the manifests and `ui.ui_surface_agent_role` (Site Editor / Color Concepts / Website Content

@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * THE CHAT PACKAGE BOUNDARY — every tie from `packages/chat/src` back into the app is counted,
+ * THE CHAT PACKAGE BOUNDARY — every tie from `../aidream/apps/shared/chat/src` back into the app is counted,
  * and the count may only go down.
  *
  * Why: `@ai-matrx/chat` was moved out of the app as-is (common-docs
@@ -10,7 +10,7 @@
  * faster than the slices remove them.
  *
  * What counts as a host tie (TypeScript parser, comments ignored), in every file under
- * packages/chat/src, tests included:
+ * ../aidream/apps/shared/chat/src, tests included:
  *   - any module specifier starting `@host/` — static/type/re-export imports, `import()`,
  *     `require()`, and `jest.mock/doMock/requireActual/...` first arguments;
  *   - any specifier starting `@/` (the app alias — a host tie in disguise);
@@ -42,7 +42,7 @@ import { fileURLToPath } from "node:url";
 const SCRIPT_DIR = path.dirname(fileURLToPath(import.meta.url));
 const REPO = path.resolve(SCRIPT_DIR, "..");
 const PKG_REL = "packages/chat";
-const SRC_REL = "packages/chat/src";
+const SRC_REL = "../aidream/apps/shared/chat/src";
 const EXTS = [".ts", ".tsx", ".js", ".jsx", ".mjs", ".cjs", ".mts", ".cts"];
 const JEST_FNS = /^(mock|doMock|unmock|requireActual|requireMock|createMockFromModule|setMock)$/;
 
@@ -169,7 +169,7 @@ function writeBudget(file, budget) {
   const total = Object.values(budget).reduce((a, b) => a + b, 0);
   const body = {
     $note:
-      "SHRINK-ONLY budget of host ties per specifier in packages/chat/src. Never raise a number or add a key by hand — route the need through the chat host adapter or a registration (common-docs/projects/chat-package-move/PACKAGE-INDEPENDENCE.md). Lower it with: node scripts/check-chat-package-boundary.mjs --write",
+      "SHRINK-ONLY budget of host ties per specifier in ../aidream/apps/shared/chat/src. Never raise a number or add a key by hand — route the need through the chat host adapter or a registration (common-docs/projects/chat-package-move/PACKAGE-INDEPENDENCE.md). Lower it with: node scripts/check-chat-package-boundary.mjs --write",
     total,
     budget,
   };

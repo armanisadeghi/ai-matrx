@@ -108,7 +108,7 @@ localhost button. **Fix:** auto-routing only applies on the `production` toggle.
   Server-Component import is removed with a "do not re-add" note.
 - **Audit (this pass):** `app/Providers.tsx` had exactly one such side-effect
   import (the broken one). The only other registry that touches `register-all`
-  is `packages/chat/src/agents/ui-first-tools/tools/registry.ts`, which uses the safer
+  is `../aidream/apps/shared/chat/src/agents/ui-first-tools/tools/registry.ts`, which uses the safer
   co-located pattern (it imports its own tools at the bottom of the file that's
   read on the client) — not affected.
 

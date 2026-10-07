@@ -50,7 +50,7 @@ import { fileURLToPath } from "node:url";
 const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 
 /** Client trees whose code runs in a person's browser. */
-const SCAN_ROOTS = ["actions", "app", "components", "features", "packages/chat/src", "hooks", "lib", "utils"];
+const SCAN_ROOTS = ["actions", "app", "components", "features", "../aidream/apps/shared/chat/src", "hooks", "lib", "utils"];
 
 const EXTENSIONS = new Set([".ts", ".tsx"]);
 const EXCLUDED_DIRS = new Set([

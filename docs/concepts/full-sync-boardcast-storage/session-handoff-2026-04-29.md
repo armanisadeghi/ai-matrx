@@ -71,7 +71,7 @@ cannot validate alone.
 |---|---|---|---|
 | #8 Notes | `features/notes/redux/autoSaveMiddleware.ts` (231 LoC) | High — couples with `realtimeMiddleware.ts` echo set | Migrate last. Engine API `isPendingEcho` + `flushAutoSave` is in place. |
 | #9 Prompts | `features/prompts/hooks/usePromptAutoSave.ts` (88 LoC) | Architecturally a poor fit — error boundary reads LS synchronously | Recommend simplify in place; remove from manifest #9 |
-| #10 Agents | `packages/chat/src/agents/hooks/useAgentAutoSave.ts` (85 LoC) | Same as #9 | Same recommendation |
+| #10 Agents | `../aidream/apps/shared/chat/src/agents/hooks/useAgentAutoSave.ts` (85 LoC) | Same as #9 | Same recommendation |
 | #11a Code-files | `features/code-files/redux/autoSaveMiddleware.ts` (69 LoC) | Excellent fit. Sample policy in `phase-5-status.md` | Migrate when convenient |
 | #11b Window panels | 44 consumers via `useWindowPersistence` API | Medium — internal swap behind stable hook | Migrate when convenient |
 | #12 Query history | `components/admin/query-history/query-storage.ts` (133 LoC) | Not actually auto-save — admin-only LS list | Recommend: leave as-is |

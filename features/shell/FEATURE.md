@@ -30,7 +30,7 @@ sidebar's Chats side opens conversations in it: read
 | Control | File | Inactive state |
 |---|---|---|
 | Search | `features/knowledge/command-bar/OpenCommandBarButtons.tsx` | Guest → auth gate. |
-| Intelligence | `packages/chat/src/surfaces/components/chrome/SurfaceAgentsHeaderButton.tsx` | Guest → auth gate. |
+| Intelligence | `../aidream/apps/shared/chat/src/surfaces/components/chrome/SurfaceAgentsHeaderButton.tsx` | Guest → auth gate. |
 | Canvas | `features/canvas/core/CanvasHeaderToggle.tsx` | Never disabled: empty → opens the canvas HOME (`CanvasHomeSheet`: saved items + Board). The 44px slot never unmounts. |
 | Messages | `features/messaging/components/shell/MessagesHeaderButton.tsx` | Guest → auth gate. Own unread-conversation count; toggles the Messages canvas tab. |
 | Notifications | `features/notifications/components/InboxHeaderButton.tsx` | Guest → auth gate. Never counts DMs. |
@@ -119,12 +119,12 @@ through to the global handler). Claims are counted (`searchKeyClaim.ts`), releas
 ## THE CHAT COLUMN CAN START CLOSED PER ROUTE (2026-10-05)
 
 The shell chat opens by default at >= 1440px. A route whose own layout needs the width is listed in
-`SHELL_CHAT_CLOSED_BY_DEFAULT_PAGES` (`packages/chat/src/canvas/workspace/shell-chat-route.ts`; `/spaces` is on it):
+`SHELL_CHAT_CLOSED_BY_DEFAULT_PAGES` (`../aidream/apps/shared/chat/src/canvas/workspace/shell-chat-route.ts`; `/spaces` is on it):
 the chat starts closed, the person opens it by hand (header toggle, Cmd+\), and a remembered choice still wins.
 
 ## Change log
 
-- `2026-10-05` — claude: **One chat.** The shell chat (`ShellChatDock`) now shows on the Board, signed-in Education and the canvas demos too — they no longer draw their own chat column; it stands aside only on /chat and /code. The shell header hides by `visibility` in canvas chrome so `ShellChatToggle` stays at its pixel (the canvas header pads for it, `.canvas-workspace-header`); full screen hides the chat button. AppShell reads the chat cookie for the page's HOME (`shellChatHome`: each board, Education, else the family) and stamps `data-shell-chat-available` at SSR. Mechanics: `packages/chat/src/canvas/workspace/FEATURE.md`.
+- `2026-10-05` — claude: **One chat.** The shell chat (`ShellChatDock`) now shows on the Board, signed-in Education and the canvas demos too — they no longer draw their own chat column; it stands aside only on /chat and /code. The shell header hides by `visibility` in canvas chrome so `ShellChatToggle` stays at its pixel (the canvas header pads for it, `.canvas-workspace-header`); full screen hides the chat button. AppShell reads the chat cookie for the page's HOME (`shellChatHome`: each board, Education, else the family) and stamps `data-shell-chat-available` at SSR. Mechanics: `../aidream/apps/shared/chat/src/canvas/workspace/FEATURE.md`.
 
 - `2026-10-05` — claude: **`RecordPageHeader` has a top-level form.** `backHref` is optional (and on `EntityModeHeader`): omit it on a module-home, queue or inbox page that has no parent and the line is just the name (no back chevron, `parents` empty). A trailing action is a declarative `actions` entry (`primary: true`, `href`), never a free-form slot — `CasesListClient`'s New case moved onto it. A page's `MandateDoorLink` icon variant renders nothing and only registers the door, so it sits beside the header, not inside. ~85 raw `PageHeader` page tops (commerce, CRM, marketing, notifications, boards, maps, reports, HR, dashboard, launchpad…) moved onto the template; `check:page-top` baseline 495 → 433. Still on a raw `PageHeader` and named gaps: `AdminModuleHeader` (admin route-tree crumbs + module menu + injected items), `ScopesRouteHeader` / `ScopeBreadcrumb` (org-level drawer, "see all" links, confirm-delete actions), the header-variant family (`HeaderToggle`, `HeaderTabs`, `StudyDeckHeader`), and header-with-live-control pages (`ShapesListHeader`).
 - `2026-10-05` — claude: **Page-top templates.** `RecordPageHeader` (internal record page, ONE line: back + parents + record + modes + actions; named options only), `EntityModeHeader` gains `trail`, `CrumbNode` exported, `HeaderSpecimen` + specimen context so the system page shows the real template (the old mock drew two lines under a back chevron — owner: "busy and sloppy"). Guard `check:page-top` + shrink-only baseline (593 → 583 after wave 1: 10 raw `PageHeader` pages moved onto `RecordPageHeader`).
@@ -154,7 +154,7 @@ the chat starts closed, the person opens it by hand (header toggle, Cmd+\), and 
 
 - `2026-09-27` — **No nav item sits under the account block**: the `--shell-user-block-h` reservation moved from `.shell-sidebar-footer` (hidden on the settings route, so /user-settings' last item sat under the avatar) to the `.shell-sidebar` column at desktop widths. Landed in sweep commit `591d465ff0`. Guard: `__tests__/sidebar-reserves-the-account-block.test.ts` (2 of 2 red against the old CSS).
 
-- **2026-09-27** — Chat beside a page is the canvas workspace (`packages/chat/src/canvas/workspace/`), not a shell column: the short-lived right-side chat dock and its header control were removed (Arman). Signed-in `/education` renders in canvas chrome (`SIGNED_IN_CANVAS_CHROME_ROUTES`, `data-signed-in`).
+- **2026-09-27** — Chat beside a page is the canvas workspace (`../aidream/apps/shared/chat/src/canvas/workspace/`), not a shell column: the short-lived right-side chat dock and its header control were removed (Arman). Signed-in `/education` renders in canvas chrome (`SIGNED_IN_CANVAS_CHROME_ROUTES`, `data-signed-in`).
 - `2026-09-27` — **The phone header keeps the title**: below 640px Search / Agents / Canvas / Inbox fold into `HeaderPhoneOverflow` (one button → bottom sheet with the same four). `AGENTS_AUTH_GATE`, `INBOX_AUTH_GATE`, `useOpenBarOrGate`, `useCanvasHeaderToggle`, `SurfaceAgentsPanelImpl` are exported so the sheet reuses each control's own copy and state.
 
 - `2026-09-27` — **"Choose org" is a call to action, not an alarm** (page-pass shared defects): the header nudge, the avatar ring and the account menu's Organization icon move from red to primary. Guards: `HeaderChooseOrgButton.test.tsx`, `UserMenuOrgSection.test.tsx`.

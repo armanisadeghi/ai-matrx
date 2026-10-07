@@ -108,7 +108,7 @@ returning name;
    - **A docked panel with its own surface (e.g. the side canvas) replaces yours while open**
      (handoff "A docked panel with its own surface replaces the page's surface"). Never declare a value that only exists while such a panel is open.
    - `sourceFeature` must be a real slug from `@ai-matrx/agents/generated/source-attribution`. Map
-     the surface in `packages/chat/src/agents/utils/source-feature-from-surface.ts`; if no slug fits, use
+     the surface in `../aidream/apps/shared/chat/src/agents/utils/source-feature-from-surface.ts`; if no slug fits, use
      the closest honest product and say so.
    - A page with nothing a person can create, change or author gets no write targets and says so,
      with the reason, in the manifest header. Every page that lists records gets the full set below.
@@ -142,7 +142,7 @@ returning name;
      part-way failure says exactly which items were created, so a retry never duplicates. Declare
      `updatesValue` on every target that has a read twin (the draft value, the list).
    - **A dialog with its own fields:** mark its root `data-surface-layer="<surface>"` (import
-     `SURFACE_LAYER_ATTRIBUTE` from `packages/chat/src/surfaces/runtime/window-forms.ts`) so the platform's
+     `SURFACE_LAYER_ATTRIBUTE` from `../aidream/apps/shared/chat/src/surfaces/runtime/window-forms.ts`) so the platform's
      generic form net stands down; that net fills only real inputs, never buttons or added rows.
      If the dialog component stays mounted while closed, it registers its draft handler itself
      with `useSurfaceWriteHandlers(surfaceName, …)` and opens itself; otherwise register it at the
@@ -154,7 +154,7 @@ returning name;
    - **The intro** names the surface's write targets for the jobs agents will be asked to do
      ("to add classes, use create_classes"), and says plainly not to use generic tools for this
      data when they would skip the page's rules.
-   - **Route mapping:** `packages/chat/src/surfaces/utils/route-to-surface.ts`. When child routes
+   - **Route mapping:** `../aidream/apps/shared/chat/src/surfaces/utils/route-to-surface.ts`. When child routes
      (`/x/[id]`) are a different page, map the list with an exact regex (`/^\/x\/?$/`) above the
      prefix table, and add both cases to `route-to-surface.test.ts`.
    - Never run a formatter over a whole file you did not create: a formatted file becomes a

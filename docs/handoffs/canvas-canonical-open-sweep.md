@@ -42,7 +42,7 @@ its `canvas_items` row — instead of each one pushing its own private copy into
 | `features/cloud-browser/hooks/useOpenCloudBrowserCanvas.ts` | `cloud_browser` — in `NON_PERSISTABLE_CANVAS_TYPES` |
 | `features/code-editor/components/ContextAwareCodeEditorCompact.tsx` | `code_preview` / `code_edit_error` — non-persistable |
 | `features/code-editor/components/ContextAwareCodeEditorModal.tsx` | same |
-| `packages/chat/src/tool-call-visualization/components/ArtifactResultBar.tsx` | `working_document` — non-persistable |
+| `../aidream/apps/shared/chat/src/tool-call-visualization/components/ArtifactResultBar.tsx` | `working_document` — non-persistable |
 | `components/mermaid/workbench/NewDiagramMenu.tsx` | creates a NEW blank diagram; nothing exists to point at |
 | `features/canvas/core/CanvasButton.tsx` | generic pass-through primitive; its caller decides |
 | `features/code-editor/components/AICodeEditorModalV2.tsx` | only calls `close()`, never opens |

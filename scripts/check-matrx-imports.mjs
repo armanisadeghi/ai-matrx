@@ -437,7 +437,9 @@ export function audit(root, { only = null } = {}) {
       continue;
     }
     const exported = checker.getExportsOfModule(sym);
-    const names = new Set(exported.map((s) => s.escapedName.toString()));
+    // ts.symbolName, never escapedName: TypeScript stores `__x` as `___x` (2026-10-06: the chat
+    // test helpers `__resetAgentAddressCache` / `__resetCustomFieldsDoors` read as missing).
+    const names = new Set(exported.map((s) => ts.symbolName(s)));
     if (sym.exports?.has("export=")) names.add("default").add("*export=*");
     exportsOf.set(entry, names);
     // Which of those names the declaration promises as a VALUE (only those must exist at runtime;
@@ -450,7 +452,7 @@ export function audit(root, { only = null } = {}) {
       } catch {
         /* unresolvable alias: treat as not-a-value, never guess a finding */
       }
-      if (target.flags & ts.SymbolFlags.Value) values.add(s.escapedName.toString());
+      if (target.flags & ts.SymbolFlags.Value) values.add(ts.symbolName(s));
     }
     valuesOf.set(entry, values);
   }
@@ -705,7 +707,7 @@ function writeDesignSystem(root, version, { types, runtime }) {
   );
   writeFileSync(
     join(dir, "dist", "controls.d.ts"),
-    `export type ControlSize = "sm" | "md";\nexport declare function Button(): unknown;\n` +
+    `export type ControlSize = "sm" | "md";\nexport declare function Button(): unknown;\nexport declare function __resetControls(): void;\n` +
       (types ? `export declare function Input(): unknown;\nexport declare const SelectTrigger: unknown;\n` : ""),
   );
   writeFileSync(
@@ -714,7 +716,7 @@ function writeDesignSystem(root, version, { types, runtime }) {
   );
   writeFileSync(
     join(dir, "dist", "controls.js"),
-    `export function Button() {}\n` + (runtime ? `export * from "./chunk-A1.js";\n` : `export { SelectTrigger } from "./chunk-A1.js";\n`),
+    `export function Button() {}\nexport function __resetControls() {}\n` + (runtime ? `export * from "./chunk-A1.js";\n` : `export { SelectTrigger } from "./chunk-A1.js";\n`),
   );
 }
 
@@ -754,7 +756,7 @@ function selfTest() {
     mkdirSync(join(tmp, "components", "ui"), { recursive: true });
     writeFileSync(
       join(tmp, "components", "ui", "input.tsx"),
-      `import { Input as PackageInput, SelectTrigger, type ControlSize } from "@ai-matrx/design-system/controls";\nexport { PackageInput, SelectTrigger };\n`,
+      `import { Input as PackageInput, SelectTrigger, __resetControls, type ControlSize } from "@ai-matrx/design-system/controls";\nexport { PackageInput, SelectTrigger, __resetControls };\n`,
     );
     writeDesignSystem(tmp, "0.64.0", { types: false, runtime: false });
     pkgDirCache.clear();
@@ -764,6 +766,8 @@ function selfTest() {
     if (!input || input.version !== "0.64.0" || input.why !== "export" || input.line !== 1)
       failures.push(`RED 2026-10-05: Input missing from design-system 0.64.0 not reported with file:line+version: ${JSON.stringify(input)}`);
     if (r.findings.some((f) => f.name === "ControlSize")) failures.push("RED 2026-10-05: an existing type was reported");
+    if (r.findings.some((f) => f.name === "__resetControls"))
+      failures.push("RED 2026-10-06: an existing double-underscore export was reported missing");
 
     // RUNTIME: the types promise Input, the shipped JavaScript does not carry it.
     writeDesignSystem(tmp, "0.66.0", { types: true, runtime: false });

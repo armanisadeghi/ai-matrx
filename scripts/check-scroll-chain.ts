@@ -49,7 +49,7 @@ import { exitAfterDrain } from "./lib/exit-after-drain";
 import { aliasTarget } from "./lib/source-roots.cjs";
 
 const ROOT = process.cwd();
-const SCAN_DIRS = ["app", "features", "packages/chat/src", "components", "lib"] as const;
+const SCAN_DIRS = ["app", "features", "../aidream/apps/shared/chat/src", "components", "lib"] as const;
 // These roots are source-only. Do not skip directories named `build` or
 // `dist`: both are legitimate App Router segments in this repository, and a
 // route-tree guard that silently omits them is worse than no guard.

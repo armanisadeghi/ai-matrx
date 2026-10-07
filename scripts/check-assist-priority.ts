@@ -23,6 +23,7 @@
 
 import { readFileSync } from "node:fs";
 import { execSync } from "node:child_process";
+import { gitFiles } from "./lib/source-roots.cjs";
 import { exitAfterDrain } from "./lib/exit-after-drain";
 
 const RED = "\x1b[31m";
@@ -33,10 +34,10 @@ const NC = "\x1b[0m";
 
 /** Any file that emits an assist. Producers are named by convention. */
 function candidateFiles(): string[] {
-  const out = execSync(
-    "git grep -l -E 'emitAssist|EmitAssistInput' -- 'features/**/*.ts' 'packages/chat/src/**/*.ts' 'features/**/*.tsx' 'packages/chat/src/**/*.tsx' || true",
-    { encoding: "utf8" },
-  );
+  const out = gitFiles(process.cwd(), [
+    "grep", "-l", "-E", "emitAssist|EmitAssistInput", "--",
+    "features/**/*.ts", "../aidream/apps/shared/chat/src/**/*.ts", "features/**/*.tsx", "../aidream/apps/shared/chat/src/**/*.tsx",
+  ]);
   return out.split("\n").filter(Boolean);
 }
 

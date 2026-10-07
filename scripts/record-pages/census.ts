@@ -407,7 +407,7 @@ export function trackedSources(root: string): string[] {
       else if (/\.tsx?$/.test(ent.name) && !ent.name.endsWith(".d.ts")) out.push(child);
     }
   };
-  for (const dir of ["app", "features", "components", "lib", "packages/chat/src"]) if (existsSync(join(root, dir))) walk(dir);
+  for (const dir of ["app", "features", "components", "lib", "../aidream/apps/shared/chat/src"]) if (existsSync(join(root, dir))) walk(dir);
   return out.sort();
 }
 

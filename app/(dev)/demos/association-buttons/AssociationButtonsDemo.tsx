@@ -240,7 +240,7 @@ export default function AssociationButtonsDemo() {
 
         <Variant
           name="Composer plus menu"
-          path="packages/chat/src/agents/components/inputs/smart-input/composer/ComposerPlusMenu.tsx"
+          path="../aidream/apps/shared/chat/src/agents/components/inputs/smart-input/composer/ComposerPlusMenu.tsx"
           canonical={false}
         >
           <ComposerPlusMenu

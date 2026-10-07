@@ -28,7 +28,7 @@ const LIVE: Row[] = [
     name: "Pop-up assistant input",
     what: "Own text box, send, stop, variables (opens as a pop-up)",
     created: "2026-04-08",
-    file: "packages/chat/src/agents/components/agent-widgets/chat-assistant/CompactAssistantInput.tsx",
+    file: "../aidream/apps/shared/chat/src/agents/components/agent-widgets/chat-assistant/CompactAssistantInput.tsx",
   },
   {
     name: "Make page describe box",
@@ -62,7 +62,7 @@ const LIVE: Row[] = [
     name: "Agent widgets variables",
     what: "Second renderer of agent variables",
     created: "2026-07",
-    file: "packages/chat/src/agents/components/widgets/WidgetVariableInputs.tsx",
+    file: "../aidream/apps/shared/chat/src/agents/components/widgets/WidgetVariableInputs.tsx",
   },
 ];
 
@@ -71,25 +71,25 @@ const NO_PAGE: Row[] = [
     name: "Old cx-chat input",
     what: "Send, stop, mic, variables, attachments, + menu",
     created: "2026-03-17",
-    file: "packages/chat/src/cx-chat/components/user-input/ConversationInput.tsx",
+    file: "../aidream/apps/shared/chat/src/cx-chat/components/user-input/ConversationInput.tsx",
   },
   {
     name: "Old conversation input",
     what: "Second full chat input of the same era",
     created: "2026-03-17",
-    file: "packages/chat/src/cx-conversation/ConversationInput.tsx",
+    file: "../aidream/apps/shared/chat/src/cx-conversation/ConversationInput.tsx",
   },
   {
     name: "Old + menu",
     what: "Attach / context / compute / connections menu",
     created: "2026-07-05",
-    file: "packages/chat/src/agents/components/inputs/smart-input/PlusAttachMenu.tsx",
+    file: "../aidream/apps/shared/chat/src/agents/components/inputs/smart-input/PlusAttachMenu.tsx",
   },
   {
     name: "Context documents menu",
     what: "Toolbar popover, imported but never drawn",
     created: "2026-06-22",
-    file: "packages/chat/src/agents/components/inputs/smart-input/ContextDocsMenu.tsx",
+    file: "../aidream/apps/shared/chat/src/agents/components/inputs/smart-input/ContextDocsMenu.tsx",
   },
   {
     name: "Flash-card AI chat",

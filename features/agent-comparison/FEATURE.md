@@ -86,7 +86,7 @@ and Runs floating windows.
 | Used for | Imported from |
 |---|---|
 | Per-column UI (display + variables + input + streaming) | `AgentConversationColumn` |
-| Conversation lifecycle (create instance, mint id, init slices) | `createManualInstance` from `packages/chat/src/agents/redux/execution-system/thunks/create-instance.thunk` |
+| Conversation lifecycle (create instance, mint id, init slices) | `createManualInstance` from `../aidream/apps/shared/chat/src/agents/redux/execution-system/thunks/create-instance.thunk` |
 | Triggering a run | `launchConversation` thunk |
 | Shared locked-mode request composer | `SharedBattleInput` + `copyInstanceRequestDraft` |
 | Per-column tab content (Context, Session) | `ContextSlotsTab`, `SessionStatsPanel` (imported from `run-controls/`) |
@@ -168,7 +168,7 @@ and Runs floating windows.
 
 - **Attachments are saved as the complete request** (2026-09-27): `metadata.locked.request` (locked
   modes) and each Request Mod entry's `metadata.request` hold a `RequestDraftSnapshot`
-  (`packages/chat/src/agents/redux/execution-system/thunks/request-draft-snapshot.ts`) — text, message parts,
+  (`../aidream/apps/shared/chat/src/agents/redux/execution-system/thunks/request-draft-snapshot.ts`) — text, message parts,
   variables, attachments by durable file id, context, run settings, model changes. A reopened battle
   restores it with `applyRequestDraft`. An attachment that cannot come back identically (still
   uploading, failed, temporary signed link) is listed in `omitted_attachments` and the save says so.
@@ -216,7 +216,7 @@ attributable to this page in analytics.
   (`broadcastContextEntry` / `broadcastRemoveContextEntry`). If a second
   feature needs the same pattern (e.g. shared sysprompt override across N
   runs), lift these into a generic helper under
-  `packages/chat/src/agents/redux/execution-system/`.
+  `../aidream/apps/shared/chat/src/agents/redux/execution-system/`.
 - Multi-run request fan-out uses the generic execution-system
   `copyInstanceRequestDraft`; no Battle mode maintains a parallel text-only
   request shape. `pnpm check:agent-submit-content` blocks hand-built shared
@@ -365,7 +365,7 @@ this wiring.
   persisted. Includes a "Save as new agent" promote path and full-snapshot
   save/load. Hardened the agent-definition save thunks (`saveAgent`,
   `saveAgentField`) to structurally reject synthetic `cmp-` ids — canonical
-  helper now at `packages/chat/src/agents/redux/agent-definition/synthetic-id.ts`
+  helper now at `../aidream/apps/shared/chat/src/agents/redux/agent-definition/synthetic-id.ts`
   (re-export removed from `forkAgentForVariant.ts`; System Prompt / Tools /
   Tuning updated to import from source). Mode catalog + mechanics in
   [MODES.md](./MODES.md).

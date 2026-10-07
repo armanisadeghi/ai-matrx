@@ -174,7 +174,7 @@ describe("no share surface grants to an organization", () => {
         }
       }
     };
-    for (const top of ["features", "packages/chat/src", "utils", "components", "lib", "app", "hooks"]) {
+    for (const top of ["features", "../aidream/apps/shared/chat/src", "utils", "components", "lib", "app", "hooks"]) {
       try { walk(join(ROOT, top)); } catch { /* a tree without that directory */ }
     }
     expect(hits).toEqual([]);

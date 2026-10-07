@@ -15,7 +15,7 @@ import { rootKindSlug } from "@/features/content-ir/surfaces/json-kind-signal";
 function kindCellLine(structured: object): string | null {
   if (Array.isArray(structured)) {
     if (structured.length === 0 || !structured.every((item) => rootKindSlug(item))) return null;
-    return structured.map(kindOneLine).join(" · ");
+    return structured.map((item) => kindOneLine(item)).join(" · ");
   }
   return rootKindSlug(structured) ? kindOneLine(structured) : null;
 }

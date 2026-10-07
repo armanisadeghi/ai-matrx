@@ -16,9 +16,9 @@ const TOOL_VIZ_ADMIN_MAP: FeatureAdminMap = {
   description:
     "The UI that renders what an agent's tools are doing — a collapsed transcript line that expands into a type-aware, themed view (never a raw JSON dump). One canonical shell; resolution is in-code registry → DB-loaded renderer (agent-authored code in tool_ui, compiled at runtime) → the type-aware GenericRenderer fallback (~97% of tools). Long-term most renderers load from the DB, not the codebase. Authored by the create-tool-renderer skill, the 'Tool Renderer Author' AI Matrx agent, or the admin editor.",
   docs: [
-    { label: "FEATURE.md", href: "/packages/chat/src/tool-call-visualization/FEATURE.md" },
-    { label: "Renderer status (by stage)", href: "/packages/chat/src/tool-call-visualization/RENDERER_STATUS.md" },
-    { label: "Overhaul status / roadmap", href: "/packages/chat/src/tool-call-visualization/OVERHAUL_STATUS.md" },
+    { label: "FEATURE.md", href: "/apps/shared/chat/src/tool-call-visualization/FEATURE.md" },
+    { label: "Renderer status (by stage)", href: "/apps/shared/chat/src/tool-call-visualization/RENDERER_STATUS.md" },
+    { label: "Overhaul status / roadmap", href: "/apps/shared/chat/src/tool-call-visualization/OVERHAUL_STATUS.md" },
     { label: "create-tool-renderer skill", href: "/.claude/skills/create-tool-renderer/SKILL.md" },
   ],
 
@@ -64,26 +64,26 @@ const TOOL_VIZ_ADMIN_MAP: FeatureAdminMap = {
   components: [
     {
       name: "ToolCallVisualization (canonical shell)",
-      filePath: "packages/chat/src/tool-call-visualization/components/ToolCallVisualization.tsx",
+      filePath: "../aidream/apps/shared/chat/src/tool-call-visualization/components/ToolCallVisualization.tsx",
       description: "The single shell every tool renders through — collapsed verb-phrase line, 3-layer collapse (auto / stay-open / never-open), self-describing label+subtitle, overlay + window buttons.",
       status: "Live",
     },
     {
       name: "ToolCallBatch",
-      filePath: "packages/chat/src/tool-call-visualization/components/ToolCallBatch.tsx",
+      filePath: "../aidream/apps/shared/chat/src/tool-call-visualization/components/ToolCallBatch.tsx",
       description: "Folds a run of ≥2 consecutive tool calls into one expandable line that reveals the normal cards flat below.",
       status: "Live",
     },
     {
       name: "GenericRenderer + result-fields library",
-      filePath: "packages/chat/src/tool-call-visualization/result-fields/ResultValue.tsx",
+      filePath: "../aidream/apps/shared/chat/src/tool-call-visualization/result-fields/ResultValue.tsx",
       description: "Type-aware fallback for any unregistered tool: shape detection → table / key-value / markdown / durable media / json tree / url chips / scalar / UUID / empty / error.",
       status: "Live",
       tier: "candidate",
     },
     {
       name: "DB renderer runtime (db-renderer/)",
-      filePath: "packages/chat/src/tool-call-visualization/db-renderer/DbToolRenderer.tsx",
+      filePath: "../aidream/apps/shared/chat/src/tool-call-visualization/db-renderer/DbToolRenderer.tsx",
       description: "Fetches a tool's agent-written code from tool_ui (surface matrx-default/default) and compiles it at runtime via the Agent Apps Babel sandbox; cache + meta (label/subtitle/displayMode) via useDbToolMeta.",
       status: "Live",
     },
@@ -95,7 +95,7 @@ const TOOL_VIZ_ADMIN_MAP: FeatureAdminMap = {
     },
     {
       name: "ToolCallWindowPanel",
-      filePath: "packages/chat/src/tool-call-visualization/window-panel/ToolCallWindowPanel.tsx",
+      filePath: "../aidream/apps/shared/chat/src/tool-call-visualization/window-panel/ToolCallWindowPanel.tsx",
       description: "The draggable window surface for a request's tool calls (live + snapshot).",
       status: "Live",
     },

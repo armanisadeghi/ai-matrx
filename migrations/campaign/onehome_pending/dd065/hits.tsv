@@ -10,7 +10,7 @@ extend.wbx_highlight	is_deleted	matrx-extend	src/lib/supabase/queries.ts
 canvas.canvas_items	is_public	matrx-frontend	features/canvas/services/canvasArtifactService.ts
 canvas.canvas_items	is_public	matrx-frontend	features/canvas/services/canvasItemsService.ts
 canvas.canvas_items	is_public	matrx-frontend	lib/security/public-exposure.ts
-canvas.canvas_items	is_public	matrx-frontend	packages/chat/src/host/db-types.ts
+canvas.canvas_items	is_public	matrx-frontend	../aidream/apps/shared/chat/src/host/db-types.ts
 canvas.canvas_items	is_public	matrx-frontend	scripts/check-impl-doors.ts
 canvas.canvas_items	is_public	matrx-frontend	utils/permissions/registry.ts
 iam.permissions	is_public	matrx-frontend	app/(core)/workbooks/[id]/page.tsx
@@ -31,8 +31,8 @@ iam.permissions	is_public	matrx-frontend	features/surfaces/manifests/workbooks.m
 iam.permissions	is_public	matrx-frontend	features/tasks/services/taskService.ts
 iam.permissions	is_public	matrx-frontend	features/window-panels/windows/ShareModalWindow.tsx
 iam.permissions	is_public	matrx-frontend	lib/security/public-exposure.ts
-iam.permissions	is_public	matrx-frontend	packages/chat/src/host/db-types.ts
-iam.permissions	is_public	matrx-frontend	packages/chat/src/tool-call-visualization/renderers/get-user-lists/UserListsOverlay.tsx
+iam.permissions	is_public	matrx-frontend	../aidream/apps/shared/chat/src/host/db-types.ts
+iam.permissions	is_public	matrx-frontend	../aidream/apps/shared/chat/src/tool-call-visualization/renderers/get-user-lists/UserListsOverlay.tsx
 iam.permissions	is_public	matrx-frontend	scripts/check-one-person-share-writer.ts
 iam.permissions	is_public	matrx-frontend	scripts/cutover-census/integrations.ts
 iam.permissions	is_public	matrx-frontend	scripts/db-table-refs.mjs
@@ -61,7 +61,7 @@ scraper.scrape_path_pattern	is_public	aidream	packages/matrx-scraper/matrx_scrap
 workbench.udt_documents	is_public	matrx-frontend	features/data-tables/document-service.ts
 workbench.udt_documents	is_public	matrx-frontend	features/data-tables/types.ts
 workbench.udt_documents	is_public	matrx-frontend	features/surfaces/manifests/documents.manifest.ts
-workbench.udt_documents	is_public	matrx-frontend	packages/chat/src/host/db-types.ts
+workbench.udt_documents	is_public	matrx-frontend	../aidream/apps/shared/chat/src/host/db-types.ts
 workbench.udt_documents	is_public	matrx-frontend	scripts/cutover-census/integrations.ts
 workbench.udt_documents	is_public	matrx-frontend	utils/permissions/registry.ts
 workbench.udt_documents	is_public	aidream	aidream/services/agent_data/registry.py
@@ -69,7 +69,7 @@ workbench.udt_documents	is_public	aidream	packages/matrx-ai/tests/fixtures/overs
 workbench.udt_workbooks	is_public	matrx-frontend	features/data-tables/types.ts
 workbench.udt_workbooks	is_public	matrx-frontend	features/data-tables/workbook-service.ts
 workbench.udt_workbooks	is_public	matrx-frontend	features/surfaces/manifests/workbooks.manifest.ts
-workbench.udt_workbooks	is_public	matrx-frontend	packages/chat/src/host/db-types.ts
+workbench.udt_workbooks	is_public	matrx-frontend	../aidream/apps/shared/chat/src/host/db-types.ts
 workbench.udt_workbooks	is_public	matrx-frontend	scripts/cutover-census/integrations.ts
 workbench.udt_workbooks	is_public	matrx-frontend	utils/permissions/registry.ts
 workbench.udt_workbooks	is_public	aidream	aidream/services/agent_data/registry.py
@@ -77,7 +77,7 @@ workbench.udt_workbooks	is_public	aidream	packages/matrx-ai/tests/fixtures/overs
 custom.whole_value_parked	owner_id	aidream	packages/matrx-records/matrx_records/big_values.py
 custom.whole_value_parked	owner_id	aidream	packages/matrx-records/tests/test_a_text_of_any_size_simply_saves.py
 custom.whole_value_parked	owner_id	aidream	packages/matrx-records/tests/test_a_value_too_big_for_one_cell_moves_as_a_file.py
-dictionary.dict_provider_publication	owner_id	matrx-frontend	packages/chat/src/host/db-types.ts
+dictionary.dict_provider_publication	owner_id	matrx-frontend	../aidream/apps/shared/chat/src/host/db-types.ts
 dictionary.dict_provider_publication	owner_id	aidream	aidream/api/routers/dictionary.py
 dictionary.dict_provider_publication	owner_id	aidream	aidream/services/dictionary/sync_engine.py
 dictionary.dict_provider_publication	owner_id	aidream	apps/shared/records/src/store.generated.ts
@@ -155,15 +155,15 @@ docproc.processed_documents	owner_id	matrx-local	desktop/src/types/python-genera
 education.deck_suggestion	owner_id	matrx-frontend	features/education/library/actions.ts
 education.deck_suggestion	owner_id	matrx-frontend	features/education/library/queries.ts
 education.deck_suggestion	owner_id	matrx-frontend	features/surfaces/manifests/education-library-suggestions.manifest.ts
-education.deck_suggestion	owner_id	matrx-frontend	packages/chat/src/host/db-types.ts
+education.deck_suggestion	owner_id	matrx-frontend	../aidream/apps/shared/chat/src/host/db-types.ts
 education.deck_suggestion	owner_id	aidream	apps/shared/records/src/store.generated.ts
 education.deck_suggestion	owner_id	aidream	db/helpers/auto_config_education.py
-education.study_source_chunk	owner_id	matrx-frontend	packages/chat/src/host/db-types.ts
+education.study_source_chunk	owner_id	matrx-frontend	../aidream/apps/shared/chat/src/host/db-types.ts
 education.study_source_chunk	owner_id	aidream	apps/shared/records/src/store.generated.ts
 education.study_source_chunk	owner_id	aidream	db/helpers/auto_config_education.py
 education.study_source_chunk	owner_id	aidream	db/managers/education/study_source_chunk.py
 education.study_source_chunk	owner_id	aidream	db/managers/education/study_structured_section.py
-education.study_structured_section	owner_id	matrx-frontend	packages/chat/src/host/db-types.ts
+education.study_structured_section	owner_id	matrx-frontend	../aidream/apps/shared/chat/src/host/db-types.ts
 education.study_structured_section	owner_id	aidream	apps/shared/records/src/store.generated.ts
 education.study_structured_section	owner_id	aidream	db/helpers/auto_config_education.py
 education.study_structured_section	owner_id	aidream	db/managers/education/study_source_chunk.py
@@ -208,7 +208,7 @@ files.analysis	owner_id	aidream	packages/matrx-scraper/matrx_scraper/web_crawl/p
 files.analysis	owner_id	aidream	scripts/evals/cleanup_worker_bakeoff/results/answers.jsonl
 files.analysis	owner_id	matrx-local	desktop/src/types/python-generated/api-types.ts
 files.entities	owner_id	matrx-frontend	features/content-ir/kinds/generated/kinds.generated.ts
-files.entities	owner_id	matrx-frontend	packages/chat/src/host/db-types.ts
+files.entities	owner_id	matrx-frontend	../aidream/apps/shared/chat/src/host/db-types.ts
 files.entities	owner_id	matrx-frontend	scripts/check-archived-items-law.ts
 files.entities	owner_id	matrx-frontend	utils/permissions/registry.ts
 files.entities	owner_id	aidream	aidream/api/app.py
@@ -284,7 +284,7 @@ files.overrides	owner_id	matrx-frontend	features/dictionary/types.ts
 files.overrides	owner_id	matrx-frontend	features/files/redux/thunks.ts
 files.overrides	owner_id	matrx-frontend	features/files/types.ts
 files.overrides	owner_id	matrx-frontend	features/google-workspace/import/storageSourceImport.test.ts
-files.overrides	owner_id	matrx-frontend	packages/chat/src/host/db-types.ts
+files.overrides	owner_id	matrx-frontend	../aidream/apps/shared/chat/src/host/db-types.ts
 files.overrides	owner_id	matrx-frontend	utils/permissions/registry.ts
 files.overrides	owner_id	aidream	aidream/api/app.py
 files.overrides	owner_id	aidream	aidream/api/routers/file_pages.py
@@ -333,7 +333,7 @@ files.pages	owner_id	matrx-frontend	features/files/redux/thunks.ts
 files.pages	owner_id	matrx-frontend	features/surfaces/manifests/documents.manifest.ts
 files.pages	owner_id	matrx-frontend	features/trash/__tests__/trash-list-org-mode.test.tsx
 files.pages	owner_id	matrx-frontend	features/trash/components/TrashList.tsx
-files.pages	owner_id	matrx-frontend	packages/chat/src/agents/redux/agent-definition/thunks.ts
+files.pages	owner_id	matrx-frontend	../aidream/apps/shared/chat/src/agents/redux/agent-definition/thunks.ts
 files.pages	owner_id	matrx-frontend	utils/permissions/registry.ts
 files.pages	owner_id	aidream	aidream/api/app.py
 files.pages	owner_id	aidream	aidream/api/routers/document.py
@@ -464,11 +464,11 @@ pdf.pdf_redaction_key_escrow	owner_id	aidream	apps/shared/records/src/store.gene
 pdf.pdf_redaction_key_escrow	owner_id	aidream	db/helpers/auto_config_pdf.py
 pdf.pdf_redaction_key_escrow	owner_id	aidream	db/managers/pdf/pdf_redaction_key_escrow.py
 pdf.pdf_redaction_key_escrow	owner_id	matrx-local	desktop/src/types/python-generated/api-types.ts
-platform.lifecycle_archive	owner_id	matrx-frontend	packages/chat/src/host/db-types.ts
+platform.lifecycle_archive	owner_id	matrx-frontend	../aidream/apps/shared/chat/src/host/db-types.ts
 platform.lifecycle_archive	owner_id	aidream	apps/shared/records/src/store.generated.ts
-platform.lifecycle_audit	owner_id	matrx-frontend	packages/chat/src/host/db-types.ts
+platform.lifecycle_audit	owner_id	matrx-frontend	../aidream/apps/shared/chat/src/host/db-types.ts
 platform.lifecycle_audit	owner_id	aidream	apps/shared/records/src/store.generated.ts
-platform.search_item	owner_id	matrx-frontend	packages/chat/src/host/db-types.ts
+platform.search_item	owner_id	matrx-frontend	../aidream/apps/shared/chat/src/host/db-types.ts
 platform.search_item	owner_id	aidream	aidream/services/knowledge/projection.py
 platform.search_item	owner_id	aidream	apps/shared/records/src/store.generated.ts
 platform.search_item	owner_id	aidream	db/generate_search_projection.py

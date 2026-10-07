@@ -4529,19 +4529,19 @@
       "name": "CODING_SESSION_PAGE_SIZE"
     },
     {
-      "file": "matrx-frontend/packages/chat/src/agents/api/submit-tool-results.ts",
+      "file": "aidream/apps/shared/chat/src/agents/api/submit-tool-results.ts",
       "name": "MAX_RETRIES"
     },
     {
-      "file": "matrx-frontend/packages/chat/src/agents/api/submit-tool-results.ts",
+      "file": "aidream/apps/shared/chat/src/agents/api/submit-tool-results.ts",
       "name": "RETRY_BASE_MS"
     },
     {
-      "file": "matrx-frontend/packages/chat/src/agents/components/chat/ChatRoomClient.tsx",
+      "file": "aidream/apps/shared/chat/src/agents/components/chat/ChatRoomClient.tsx",
       "name": "CHAT_INITIAL_MESSAGE_LIMIT"
     },
     {
-      "file": "matrx-frontend/packages/chat/src/agents/components/chat/PinnedAgentsSection.tsx",
+      "file": "aidream/apps/shared/chat/src/agents/components/chat/PinnedAgentsSection.tsx",
       "name": "PINNED_COLLAPSED_LIMIT"
     },
     {
@@ -4549,35 +4549,35 @@
       "name": "SEARCH_THRESHOLD"
     },
     {
-      "file": "matrx-frontend/packages/chat/src/agents/components/conversation-history/ConversationHistorySidebar.tsx",
+      "file": "aidream/apps/shared/chat/src/agents/components/conversation-history/ConversationHistorySidebar.tsx",
       "name": "PINNED_CHATS_COLLAPSED_LIMIT"
     },
     {
-      "file": "matrx-frontend/packages/chat/src/agents/components/inputs/resources/resource-family-policy.ts",
+      "file": "aidream/apps/shared/chat/src/agents/components/inputs/resources/resource-family-policy.ts",
       "name": "MAX_PROMOTION_CHARS"
     },
     {
-      "file": "matrx-frontend/packages/chat/src/agents/components/inputs/resources/resource-family-policy.ts",
+      "file": "aidream/apps/shared/chat/src/agents/components/inputs/resources/resource-family-policy.ts",
       "name": "MAX_RESOURCE_PROMOTIONS"
     },
     {
-      "file": "matrx-frontend/packages/chat/src/agents/components/inputs/smart-input/use-compute-target-actions.ts",
+      "file": "aidream/apps/shared/chat/src/agents/components/inputs/smart-input/use-compute-target-actions.ts",
       "name": "MAX_LENS_TARGETS"
     },
     {
-      "file": "matrx-frontend/packages/chat/src/agents/components/messages-display/assistant/AgentEmptyMessageDisplay.tsx",
+      "file": "aidream/apps/shared/chat/src/agents/components/messages-display/assistant/AgentEmptyMessageDisplay.tsx",
       "name": "LONG_DESCRIPTION_CHAR_THRESHOLD"
     },
     {
-      "file": "matrx-frontend/packages/chat/src/agents/components/messages-display/message-options/convertibleContent.ts",
+      "file": "aidream/apps/shared/chat/src/agents/components/messages-display/message-options/convertibleContent.ts",
       "name": "MIN_LIST_ITEMS"
     },
     {
-      "file": "matrx-frontend/packages/chat/src/agents/components/notifications/useImageArrivalPeeks.ts",
+      "file": "aidream/apps/shared/chat/src/agents/components/notifications/useImageArrivalPeeks.ts",
       "name": "MAX_VISIBLE"
     },
     {
-      "file": "matrx-frontend/packages/chat/src/agents/components/run/AgentRunnerPage.tsx",
+      "file": "aidream/apps/shared/chat/src/agents/components/run/AgentRunnerPage.tsx",
       "name": "RUN_INITIAL_MESSAGE_LIMIT"
     },
     {
@@ -4589,11 +4589,11 @@
       "name": "MAX_PLANNED_KINDS_PER_PROPOSAL"
     },
     {
-      "file": "matrx-frontend/packages/chat/src/agents/components/shared/AgentConversationColumn.tsx",
+      "file": "aidream/apps/shared/chat/src/agents/components/shared/AgentConversationColumn.tsx",
       "name": "CHAT_OLDER_PAGE_SIZE"
     },
     {
-      "file": "matrx-frontend/packages/chat/src/agents/components/shared/AgentConversationColumn.tsx",
+      "file": "aidream/apps/shared/chat/src/agents/components/shared/AgentConversationColumn.tsx",
       "name": "CHAT_SETTLE_REVEAL_DELAY_MS"
     },
     {
@@ -4601,143 +4601,143 @@
       "name": "MAX_VISIBLE"
     },
     {
-      "file": "matrx-frontend/packages/chat/src/agents/hooks/useAgentAutoSave.ts",
+      "file": "aidream/apps/shared/chat/src/agents/hooks/useAgentAutoSave.ts",
       "name": "DEBOUNCE_MS"
     },
     {
-      "file": "matrx-frontend/packages/chat/src/agents/hooks/useDesktopPresence.ts",
+      "file": "aidream/apps/shared/chat/src/agents/hooks/useDesktopPresence.ts",
       "name": "POLL_MS"
     },
     {
-      "file": "matrx-frontend/packages/chat/src/agents/hooks/useWorkingDocument.ts",
+      "file": "aidream/apps/shared/chat/src/agents/hooks/useWorkingDocument.ts",
       "name": "AUTOSAVE_MS"
     },
     {
-      "file": "matrx-frontend/packages/chat/src/agents/redux/agent-definition/cache-bust-middleware.ts",
+      "file": "aidream/apps/shared/chat/src/agents/redux/agent-definition/cache-bust-middleware.ts",
       "name": "DEBOUNCE_MS"
     },
     {
-      "file": "matrx-frontend/packages/chat/src/agents/redux/agent-definition/thunks.ts",
+      "file": "aidream/apps/shared/chat/src/agents/redux/agent-definition/thunks.ts",
       "name": "AGENT_LIST_RPC_PAGE_SIZE"
     },
     {
-      "file": "matrx-frontend/packages/chat/src/agents/redux/agent-definition/thunks.ts",
+      "file": "aidream/apps/shared/chat/src/agents/redux/agent-definition/thunks.ts",
       "name": "AGENT_SEARCH_LIMIT"
     },
     {
-      "file": "matrx-frontend/packages/chat/src/agents/redux/conversation-history/selectors.ts",
+      "file": "aidream/apps/shared/chat/src/agents/redux/conversation-history/selectors.ts",
       "name": "DAY_MS"
     },
     {
-      "file": "matrx-frontend/packages/chat/src/agents/redux/conversation-history/types.ts",
+      "file": "aidream/apps/shared/chat/src/agents/redux/conversation-history/types.ts",
       "name": "CONVERSATION_HISTORY_TTL_MS"
     },
     {
-      "file": "matrx-frontend/packages/chat/src/agents/redux/conversation-list/conversation-list.types.ts",
+      "file": "aidream/apps/shared/chat/src/agents/redux/conversation-list/conversation-list.types.ts",
       "name": "CONVERSATION_LIST_PAGE_SIZE"
     },
     {
-      "file": "matrx-frontend/packages/chat/src/agents/redux/execution-system/client-capabilities/desktop-presence.ts",
+      "file": "aidream/apps/shared/chat/src/agents/redux/execution-system/client-capabilities/desktop-presence.ts",
       "name": "CACHE_TTL_MS"
     },
     {
-      "file": "matrx-frontend/packages/chat/src/agents/redux/execution-system/durable-runs/reattach-on-transport-loss.ts",
+      "file": "aidream/apps/shared/chat/src/agents/redux/execution-system/durable-runs/reattach-on-transport-loss.ts",
       "name": "MAX_DELAY_MS"
     },
     {
-      "file": "matrx-frontend/packages/chat/src/agents/redux/execution-system/instance-user-input/instance-user-input.slice.ts",
+      "file": "aidream/apps/shared/chat/src/agents/redux/execution-system/instance-user-input/instance-user-input.slice.ts",
       "name": "COALESCE_MS"
     },
     {
-      "file": "matrx-frontend/packages/chat/src/agents/redux/execution-system/message-crud/commit-inline-edit.thunk.ts",
+      "file": "aidream/apps/shared/chat/src/agents/redux/execution-system/message-crud/commit-inline-edit.thunk.ts",
       "name": "DB_DEBOUNCE_MS"
     },
     {
-      "file": "matrx-frontend/packages/chat/src/agents/redux/execution-system/observational-memory/observational-memory.slice.ts",
+      "file": "aidream/apps/shared/chat/src/agents/redux/execution-system/observational-memory/observational-memory.slice.ts",
       "name": "MAX_EVENTS"
     },
     {
-      "file": "matrx-frontend/packages/chat/src/agents/redux/execution-system/sagas/syncDefinitionToInstances.saga.ts",
+      "file": "aidream/apps/shared/chat/src/agents/redux/execution-system/sagas/syncDefinitionToInstances.saga.ts",
       "name": "DEBOUNCE_MS"
     },
     {
-      "file": "matrx-frontend/packages/chat/src/agents/redux/execution-system/thunks/execute-instance.thunk.ts",
+      "file": "aidream/apps/shared/chat/src/agents/redux/execution-system/thunks/execute-instance.thunk.ts",
       "name": "RUN_IN_FLIGHT_RETRY_MS"
     },
     {
-      "file": "matrx-frontend/packages/chat/src/agents/redux/execution-system/thunks/execute-manual-instance.thunk.ts",
+      "file": "aidream/apps/shared/chat/src/agents/redux/execution-system/thunks/execute-manual-instance.thunk.ts",
       "name": "HEARTBEAT_TIMEOUT_MS"
     },
     {
-      "file": "matrx-frontend/packages/chat/src/agents/redux/execution-system/thunks/follow-workflow-run-stream.ts",
+      "file": "aidream/apps/shared/chat/src/agents/redux/execution-system/thunks/follow-workflow-run-stream.ts",
       "name": "RECONNECT_DELAY_MS"
     },
     {
-      "file": "matrx-frontend/packages/chat/src/agents/redux/execution-system/thunks/follow-workflow-run-stream.ts",
+      "file": "aidream/apps/shared/chat/src/agents/redux/execution-system/thunks/follow-workflow-run-stream.ts",
       "name": "RECONNECT_LIMIT"
     },
     {
-      "file": "matrx-frontend/packages/chat/src/agents/redux/execution-system/thunks/follow-workflow-run-stream.ts",
+      "file": "aidream/apps/shared/chat/src/agents/redux/execution-system/thunks/follow-workflow-run-stream.ts",
       "name": "STALL_TIMEOUT_MS"
     },
     {
-      "file": "matrx-frontend/packages/chat/src/agents/redux/execution-system/thunks/process-stream.ts",
+      "file": "aidream/apps/shared/chat/src/agents/redux/execution-system/thunks/process-stream.ts",
       "name": "POST_TERMINAL_GRACE_MS"
     },
     {
-      "file": "matrx-frontend/packages/chat/src/agents/redux/execution-system/thunks/resume-claims.ts",
+      "file": "aidream/apps/shared/chat/src/agents/redux/execution-system/thunks/resume-claims.ts",
       "name": "CLAIM_TTL_MS"
     },
     {
-      "file": "matrx-frontend/packages/chat/src/agents/redux/execution-system/thunks/resume-claims.ts",
+      "file": "aidream/apps/shared/chat/src/agents/redux/execution-system/thunks/resume-claims.ts",
       "name": "RESUME_CONFLICT_BACKOFF_MS"
     },
     {
-      "file": "matrx-frontend/packages/chat/src/agents/redux/execution-system/thunks/resume-claims.ts",
+      "file": "aidream/apps/shared/chat/src/agents/redux/execution-system/thunks/resume-claims.ts",
       "name": "RESUME_CONFLICT_MAX_RETRIES"
     },
     {
-      "file": "matrx-frontend/packages/chat/src/agents/redux/execution-system/thunks/resume-claims.ts",
+      "file": "aidream/apps/shared/chat/src/agents/redux/execution-system/thunks/resume-claims.ts",
       "name": "RESUME_STREAM_CLOSING_BACKOFF_MS"
     },
     {
-      "file": "matrx-frontend/packages/chat/src/agents/redux/execution-system/thunks/resume-claims.ts",
+      "file": "aidream/apps/shared/chat/src/agents/redux/execution-system/thunks/resume-claims.ts",
       "name": "RESUME_STREAM_CLOSING_MAX_RETRIES"
     },
     {
-      "file": "matrx-frontend/packages/chat/src/agents/redux/execution-system/thunks/run-headless-agent-json.ts",
+      "file": "aidream/apps/shared/chat/src/agents/redux/execution-system/thunks/run-headless-agent-json.ts",
       "name": "DEFAULT_POLL_MS"
     },
     {
-      "file": "matrx-frontend/packages/chat/src/agents/redux/execution-system/thunks/run-headless-agent-json.ts",
+      "file": "aidream/apps/shared/chat/src/agents/redux/execution-system/thunks/run-headless-agent-json.ts",
       "name": "DEFAULT_SETTLE_MS"
     },
     {
-      "file": "matrx-frontend/packages/chat/src/agents/redux/execution-system/thunks/run-headless-agent-json.ts",
+      "file": "aidream/apps/shared/chat/src/agents/redux/execution-system/thunks/run-headless-agent-json.ts",
       "name": "DEFAULT_TIMEOUT_MS"
     },
     {
-      "file": "matrx-frontend/packages/chat/src/agents/redux/execution-system/thunks/smart-execute.thunk.ts",
+      "file": "aidream/apps/shared/chat/src/agents/redux/execution-system/thunks/smart-execute.thunk.ts",
       "name": "RETRY_DELAY_MS"
     },
     {
-      "file": "matrx-frontend/packages/chat/src/agents/redux/execution-system/thunks/smart-execute.thunk.ts",
+      "file": "aidream/apps/shared/chat/src/agents/redux/execution-system/thunks/smart-execute.thunk.ts",
       "name": "RETRY_WINDOW_MS"
     },
     {
-      "file": "matrx-frontend/packages/chat/src/agents/redux/execution-system/thunks/watch-desktop-delegation.thunk.ts",
+      "file": "aidream/apps/shared/chat/src/agents/redux/execution-system/thunks/watch-desktop-delegation.thunk.ts",
       "name": "FAILURE_NOTICE_THRESHOLD"
     },
     {
-      "file": "matrx-frontend/packages/chat/src/agents/redux/execution-system/thunks/watch-desktop-delegation.thunk.ts",
+      "file": "aidream/apps/shared/chat/src/agents/redux/execution-system/thunks/watch-desktop-delegation.thunk.ts",
       "name": "POLL_MS"
     },
     {
-      "file": "matrx-frontend/packages/chat/src/agents/redux/execution-system/thunks/watch-desktop-delegation.thunk.ts",
+      "file": "aidream/apps/shared/chat/src/agents/redux/execution-system/thunks/watch-desktop-delegation.thunk.ts",
       "name": "RESUME_RETRY_MS"
     },
     {
-      "file": "matrx-frontend/packages/chat/src/agents/types/agent-definition.types.ts",
+      "file": "aidream/apps/shared/chat/src/agents/types/agent-definition.types.ts",
       "name": "UNDO_COALESCE_MS"
     },
     {
@@ -5013,11 +5013,11 @@
       "name": "PAGE_SIZE"
     },
     {
-      "file": "matrx-frontend/packages/chat/src/cx-chat/components/messages/UserMessage.tsx",
+      "file": "aidream/apps/shared/chat/src/cx-chat/components/messages/UserMessage.tsx",
       "name": "COLLAPSE_THRESHOLD"
     },
     {
-      "file": "matrx-frontend/packages/chat/src/cx-conversation/UserMessage.tsx",
+      "file": "aidream/apps/shared/chat/src/cx-conversation/UserMessage.tsx",
       "name": "COLLAPSE_THRESHOLD"
     },
     {
@@ -6241,19 +6241,19 @@
       "name": "MAX_INHERITANCE_DEPTH"
     },
     {
-      "file": "matrx-frontend/packages/chat/src/surfaces/redux/userStateSlice.ts",
+      "file": "aidream/apps/shared/chat/src/surfaces/redux/userStateSlice.ts",
       "name": "TTL_MS"
     },
     {
-      "file": "matrx-frontend/packages/chat/src/surfaces/runtime/useLiveSurfaceScope.ts",
+      "file": "aidream/apps/shared/chat/src/surfaces/runtime/useLiveSurfaceScope.ts",
       "name": "LIVE_SAMPLE_MS"
     },
     {
-      "file": "matrx-frontend/packages/chat/src/surfaces/user-state/useSurfaceUserState.ts",
+      "file": "aidream/apps/shared/chat/src/surfaces/user-state/useSurfaceUserState.ts",
       "name": "SAVE_DEBOUNCE_MS"
     },
     {
-      "file": "matrx-frontend/packages/chat/src/surfaces/utils/locate-on-page.ts",
+      "file": "aidream/apps/shared/chat/src/surfaces/utils/locate-on-page.ts",
       "name": "SMOOTH_SETTLE_MS"
     },
     {
@@ -6277,7 +6277,7 @@
       "name": "MIN_OVERDUE"
     },
     {
-      "file": "matrx-frontend/packages/chat/src/tool-call-visualization/effects/toolStateEffects.ts",
+      "file": "aidream/apps/shared/chat/src/tool-call-visualization/effects/toolStateEffects.ts",
       "name": "LIST_REFETCH_THROTTLE_MS"
     },
     {
@@ -6285,7 +6285,7 @@
       "name": "MAX_FIELD_CHIPS"
     },
     {
-      "file": "matrx-frontend/packages/chat/src/tool-call-visualization/renderers/dictionary/DictionaryInline.tsx",
+      "file": "aidream/apps/shared/chat/src/tool-call-visualization/renderers/dictionary/DictionaryInline.tsx",
       "name": "MAX_INLINE"
     },
     {
@@ -6297,19 +6297,19 @@
       "name": "MAX_INLINE"
     },
     {
-      "file": "matrx-frontend/packages/chat/src/tool-call-visualization/renderers/random-wheel/RandomWheelInline.tsx",
+      "file": "aidream/apps/shared/chat/src/tool-call-visualization/renderers/random-wheel/RandomWheelInline.tsx",
       "name": "MIN_VISIBLE_SPIN_MS"
     },
     {
-      "file": "matrx-frontend/packages/chat/src/tool-call-visualization/renderers/random-wheel/RandomWheelInline.tsx",
+      "file": "aidream/apps/shared/chat/src/tool-call-visualization/renderers/random-wheel/RandomWheelInline.tsx",
       "name": "WHEEL_SIZE"
     },
     {
-      "file": "matrx-frontend/packages/chat/src/tool-call-visualization/renderers/search/SearchInline.tsx",
+      "file": "aidream/apps/shared/chat/src/tool-call-visualization/renderers/search/SearchInline.tsx",
       "name": "HOLD_AFTER_REVEAL_MS"
     },
     {
-      "file": "matrx-frontend/packages/chat/src/tool-call-visualization/renderers/search/SearchInline.tsx",
+      "file": "aidream/apps/shared/chat/src/tool-call-visualization/renderers/search/SearchInline.tsx",
       "name": "SEQ_REVEAL_INTERVAL_MS"
     },
     {
@@ -6321,11 +6321,11 @@
       "name": "INLINE_LIMIT"
     },
     {
-      "file": "matrx-frontend/packages/chat/src/tool-call-visualization/result-fields/ResultTable.tsx",
+      "file": "aidream/apps/shared/chat/src/tool-call-visualization/result-fields/ResultTable.tsx",
       "name": "FILTER_THRESHOLD"
     },
     {
-      "file": "matrx-frontend/packages/chat/src/tool-call-visualization/service/fetchConversationToolCalls.ts",
+      "file": "aidream/apps/shared/chat/src/tool-call-visualization/service/fetchConversationToolCalls.ts",
       "name": "CONVERSATION_TOOL_CALL_PAGE_SIZE"
     },
     {
@@ -6485,59 +6485,59 @@
       "name": "SKEW_MS"
     },
     {
-      "file": "matrx-frontend/packages/chat/src/voice-agent/constants.ts",
+      "file": "aidream/apps/shared/chat/src/voice-agent/constants.ts",
       "name": "RELAY_TURN_SILENCE_MS"
     },
     {
-      "file": "matrx-frontend/packages/chat/src/voice-agent/constants.ts",
+      "file": "aidream/apps/shared/chat/src/voice-agent/constants.ts",
       "name": "TOKEN_TTL_SECONDS"
     },
     {
-      "file": "matrx-frontend/packages/chat/src/voice-agent/constants.ts",
+      "file": "aidream/apps/shared/chat/src/voice-agent/constants.ts",
       "name": "TRANSCRIPT_REVEAL_LAG_MS"
     },
     {
-      "file": "matrx-frontend/packages/chat/src/voice-agent/constants.ts",
+      "file": "aidream/apps/shared/chat/src/voice-agent/constants.ts",
       "name": "TURN_PREFIX_PADDING_MS"
     },
     {
-      "file": "matrx-frontend/packages/chat/src/voice-agent/constants.ts",
+      "file": "aidream/apps/shared/chat/src/voice-agent/constants.ts",
       "name": "TURN_SILENCE_MS"
     },
     {
-      "file": "matrx-frontend/packages/chat/src/voice-agent/debug/voiceDebugBus.ts",
+      "file": "aidream/apps/shared/chat/src/voice-agent/debug/voiceDebugBus.ts",
       "name": "MAX_ENTRIES"
     },
     {
-      "file": "matrx-frontend/packages/chat/src/voice-agent/relay/sideChannel.ts",
+      "file": "aidream/apps/shared/chat/src/voice-agent/relay/sideChannel.ts",
       "name": "MAX_TURN_CHARS"
     },
     {
-      "file": "matrx-frontend/packages/chat/src/voice-agent/relay/sideChannel.ts",
+      "file": "aidream/apps/shared/chat/src/voice-agent/relay/sideChannel.ts",
       "name": "MAX_TURNS"
     },
     {
-      "file": "matrx-frontend/packages/chat/src/voice-agent/relay/useVoiceRelaySession.ts",
+      "file": "aidream/apps/shared/chat/src/voice-agent/relay/useVoiceRelaySession.ts",
       "name": "NARRATION_DELAY_MS"
     },
     {
-      "file": "matrx-frontend/packages/chat/src/voice-agent/transport/googleRealtimeClient.ts",
+      "file": "aidream/apps/shared/chat/src/voice-agent/transport/googleRealtimeClient.ts",
       "name": "MAX_QUEUED_MESSAGES"
     },
     {
-      "file": "matrx-frontend/packages/chat/src/voice-agent/transport/googleRealtimeClient.ts",
+      "file": "aidream/apps/shared/chat/src/voice-agent/transport/googleRealtimeClient.ts",
       "name": "MAX_RECONNECT_ATTEMPTS"
     },
     {
-      "file": "matrx-frontend/packages/chat/src/voice-agent/transport/tokenManager.ts",
+      "file": "aidream/apps/shared/chat/src/voice-agent/transport/tokenManager.ts",
       "name": "MAX_REFRESH_ATTEMPTS"
     },
     {
-      "file": "matrx-frontend/packages/chat/src/voice-agent/transport/tokenManager.ts",
+      "file": "aidream/apps/shared/chat/src/voice-agent/transport/tokenManager.ts",
       "name": "REFRESH_BACKOFF_MAX_MS"
     },
     {
-      "file": "matrx-frontend/packages/chat/src/voice-agent/transport/xaiClient.ts",
+      "file": "aidream/apps/shared/chat/src/voice-agent/transport/xaiClient.ts",
       "name": "CONNECT_TIMEOUT_MS"
     },
     {

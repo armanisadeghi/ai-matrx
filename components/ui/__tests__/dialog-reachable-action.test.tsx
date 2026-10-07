@@ -145,7 +145,7 @@ describe("nobody re-opens the hole", () => {
         if (entry.endsWith(".tsx") && !entry.includes(".test.")) out.push(full);
       }
     };
-    for (const tree of ["app", "components", "features", "packages/chat/src"]) {
+    for (const tree of ["app", "components", "features", "../aidream/apps/shared/chat/src"]) {
       walk(join(REPO_ROOT, tree));
     }
     return out;

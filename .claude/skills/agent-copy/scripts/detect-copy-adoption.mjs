@@ -93,7 +93,7 @@ function trackedTsxFiles() {
   // child process), and every checkout that can run this has git.
   return execFileSync(
     "git",
-    ["ls-files", "--cached", "--others", "--exclude-standard", "--", "app", "components", "features", "packages/chat/src", "lib"],
+    ["ls-files", "--cached", "--others", "--exclude-standard", "--", "app", "components", "features", "../aidream/apps/shared/chat/src", "lib"],
     { cwd: ROOT, encoding: "utf8", maxBuffer: 64 * 1024 * 1024 },
   )
     .trim()

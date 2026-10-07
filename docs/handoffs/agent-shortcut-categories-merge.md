@@ -37,7 +37,7 @@ enforces. *A merge therefore needs no data reshaping at all.*
 | Read | `GET /api/agent-shortcut-categories` — a Next route doing a **direct** `platform.categories` select | `cat_list(dimension)` RPC via `useCategories` |
 | Write | the same route doing a **direct table insert**, bypassing `cat_create` and its governance | `cat_create` / `cat_update` / `cat_reparent` / `cat_delete` |
 | Wire shape | a legacy row (`label`, `sort_order`, `parent_category_id`, `is_active`, …) translated at the boundary by `app/api/agent-shortcut-categories/_lib/categoryRow.ts` | `PlatformCategory` (`name`, `position`, `parent_id`) |
-| State | its own Redux slice, `packages/chat/src/agents/redux/agent-shortcut-categories/` | `useCategories` |
+| State | its own Redux slice, `../aidream/apps/shared/chat/src/agents/redux/agent-shortcut-categories/` | `useCategories` |
 | Picker | `features/agent-shortcuts/components/CategorySelect.tsx` (393 lines) | `features/scopes/components/CategorySelect.tsx` |
 
 Two shortcut EDITORS consume that forked picker, and **both are live and routed** — `ShortcutForm`

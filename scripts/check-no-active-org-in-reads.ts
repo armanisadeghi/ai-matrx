@@ -65,7 +65,7 @@ import { REPO_ROOT, repoFiles } from "./lib/repo-files";
 const BASELINE = "scripts/no-active-org-in-reads-baseline.json";
 
 /** Every directory of application code. (2026-09-30: providers/ utils/ packages/ joined — a hook or provider there reads the active organization exactly like a feature does.) */
-export const SCAN_DIRS = ["app", "features", "packages/chat/src", "components", "lib", "hooks", "providers", "utils", "packages"] as const;
+export const SCAN_DIRS = ["app", "features", "../aidream/apps/shared/chat/src", "components", "lib", "hooks", "providers", "utils", "packages"] as const;
 
 /** Calls that RETURN the active organization (or the whole gate that carries it). */
 const SOURCE_CALLS = new Set([
@@ -767,7 +767,7 @@ function selfTest(): number {
     },
   ];
   let failures = 0;
-  for (const dirName of ["providers", "utils", "packages", "app", "features", "packages/chat/src", "components", "lib", "hooks"]) {
+  for (const dirName of ["providers", "utils", "packages", "app", "features", "../aidream/apps/shared/chat/src", "components", "lib", "hooks"]) {
     const ok = (SCAN_DIRS as readonly string[]).includes(dirName);
     if (!ok) failures += 1;
     console.log(`${ok ? "[ OK ]" : "[FAIL]"} ${dirName}/ is in the scanned directories`);

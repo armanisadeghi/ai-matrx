@@ -87,7 +87,7 @@ const DB_KIND_COMPONENT_KEY = "db_kind_component";
 
 const SOURCE_FILES = {
   accumulator:
-    "packages/chat/src/agents/redux/execution-system/utils/stream-block-accumulator.ts",
+    "../aidream/apps/shared/chat/src/agents/redux/execution-system/utils/stream-block-accumulator.ts",
   splitter:
     "components/mardown-display/markdown-classification/processors/utils/content-splitter-v2.ts",
   systemKinds: "features/content-ir/registry/system-kinds.ts",

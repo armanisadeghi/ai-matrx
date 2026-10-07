@@ -120,9 +120,9 @@ describe("the census — mandate-driven chat hosts wait through the gate", () =>
     "features/masterwork/conduct/ConductorPanel.tsx",
     "features/masterwork/drive/DriveInterviewPage.tsx",
     "features/education/tutor/components/EducationTutorClient.tsx",
-    "packages/chat/src/quick-actions/components/QuickChatSheet.tsx",
-    "packages/chat/src/agents/components/chat/ChatNewClient.tsx",
-    "packages/chat/src/agents/components/chat/ChatConversationRoom.tsx",
+    "../aidream/apps/shared/chat/src/quick-actions/components/QuickChatSheet.tsx",
+    "../aidream/apps/shared/chat/src/agents/components/chat/ChatNewClient.tsx",
+    "../aidream/apps/shared/chat/src/agents/components/chat/ChatConversationRoom.tsx",
   ];
   it.each(HOSTS)("%s renders its workspace wait through WorkspaceGate", (rel) => {
     const src = readFileSync(join(ROOT, rel), "utf8");

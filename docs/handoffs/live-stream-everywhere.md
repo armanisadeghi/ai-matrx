@@ -42,7 +42,7 @@ client-launched run. The gap is 100% client consumption posture:
 ## The primitives (built 2026-08-10 — USE THESE, never re-derive)
 
 - **`useFloatingAgentRun` / `useFloatingRunWindow`**
-  (`packages/chat/src/agents/hooks/useFloatingAgentRun.ts`) — THE FLOATING LAW as hooks
+  (`../aidream/apps/shared/chat/src/agents/hooks/useFloatingAgentRun.ts`) — THE FLOATING LAW as hooks
   and the DEFAULT migration target: the window opens before the launch, binds
   the conversation when the stream connects, is reused per surface, and closes
   with it. Launch living in a thunk/lane? `useFloatingRunWindow` +
@@ -50,12 +50,12 @@ client-launched run. The gap is 100% client consumption posture:
   kept-alive instance) + **`livePosture(cb)`**
   (`.../thunks/run-headless-agent-json.ts` — the thunk's three options, and
   nothing at all when no callback is passed).
-- **`useLiveAgentRun`** (`packages/chat/src/agents/hooks/useLiveAgentRun.ts`) — the
+- **`useLiveAgentRun`** (`../aidream/apps/shared/chat/src/agents/hooks/useLiveAgentRun.ts`) — the
   two-line migration from an await-only `useHeadlessAgentJson` site: same
   `run({...})` contract, forces the live posture, owns instance cleanup
   (re-run / dismiss / unmount). Exposes `conversationId` + `activeRequestId`.
 - **`<LiveRunDisplay />`**
-  (`packages/chat/src/agents/components/live-run/LiveRunDisplay.tsx`) — the ONE generic
+  (`../aidream/apps/shared/chat/src/agents/components/live-run/LiveRunDisplay.tsx`) — the ONE generic
   "watch this run live" container. Binds `conversationId` (client-launched) or
   a bare `requestId` (adopted pipeline streams). Status line from canonical
   phase selectors + `MarkdownStream` body (markdown AND `__kind` JSON route

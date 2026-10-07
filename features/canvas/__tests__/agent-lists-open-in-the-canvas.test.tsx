@@ -98,7 +98,7 @@ it("a press opens the conversation's lists tab with the TaskPanel; again closes 
 });
 
 it("every lists opener toggles the canvas tab — none mounts its own panel", () => {
-  const src = join(__dirname, "..", "..", "..", "packages", "chat", "src");
+  const src = join(__dirname, "..", "..", "..", "..", "aidream", "apps", "shared", "chat", "src");
   const read = (file: string) => readFileSync(join(src, file), "utf8");
   const panel = read("agents/ui-first-tools/ui/lists/TaskPanel.tsx");
   expect(panel).not.toContain("MatrxDynamicPanelHost");

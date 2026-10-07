@@ -55,11 +55,11 @@ only fired when a surface rendered a record's NAME — so a list that presents
 records purely as ids never got flagged, however door-less it was. Widening it
 to named ids added 7 genuine surfaces. Do the inventory pass ONCE per feature.
 
-1. **Agents (5)** — `packages/chat/src/agents/components/inputs/smart-input/RunSkillPicker.tsx`,
-   `packages/chat/src/agents/ui-first-tools/ui/lists/TaskPanel.tsx`,
-   `packages/chat/src/agents/components/conversation-history/ConversationHistorySidebar.tsx`,
+1. **Agents (5)** — `../aidream/apps/shared/chat/src/agents/components/inputs/smart-input/RunSkillPicker.tsx`,
+   `../aidream/apps/shared/chat/src/agents/ui-first-tools/ui/lists/TaskPanel.tsx`,
+   `../aidream/apps/shared/chat/src/agents/components/conversation-history/ConversationHistorySidebar.tsx`,
    `features/agents/components/context-slots-display/ContextSlotDetailSheet.tsx`,
-   `packages/chat/src/agents/route/AgentViewContent.tsx`, plus the
+   `../aidream/apps/shared/chat/src/agents/route/AgentViewContent.tsx`, plus the
    `assignment-demo/AgentAssignmentsDemo.tsx` demo. Two are the doctrine's own
    examples verbatim: **TaskPanel** makes a task title a `<button>` that opens
    an *inline rename*, so the user can edit the record's name and never reach

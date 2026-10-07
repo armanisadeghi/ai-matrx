@@ -67,10 +67,10 @@
 
 | File | Purpose |
 |---|---|
-| [`packages/chat/src/agents/types/widget-handle.types.ts`](../types/widget-handle.types.ts) | `WidgetHandle`, `WidgetActionName`, payload types, `deriveClientToolsFromHandle`, `isWidgetActionName`, `WIDGET_TOOL_NAME_TO_HANDLE_METHOD` |
-| [`packages/chat/src/agents/hooks/useWidgetHandle.ts`](../hooks/useWidgetHandle.ts) | React hook — registers handle once, live-method forwarding via getters, unregister on unmount |
-| [`packages/chat/src/agents/api/submit-tool-results.ts`](../api/submit-tool-results.ts) | Microtask-coalescing POST batcher for `/tool_results` |
-| [`packages/chat/src/agents/redux/execution-system/thunks/dispatch-widget-action.thunk.ts`](../redux/execution-system/thunks/dispatch-widget-action.thunk.ts) | Routes `tool_delegated` for `widget_*` to handle methods |
+| [`../aidream/apps/shared/chat/src/agents/types/widget-handle.types.ts`](../types/widget-handle.types.ts) | `WidgetHandle`, `WidgetActionName`, payload types, `deriveClientToolsFromHandle`, `isWidgetActionName`, `WIDGET_TOOL_NAME_TO_HANDLE_METHOD` |
+| [`../aidream/apps/shared/chat/src/agents/hooks/useWidgetHandle.ts`](../hooks/useWidgetHandle.ts) | React hook — registers handle once, live-method forwarding via getters, unregister on unmount |
+| [`../aidream/apps/shared/chat/src/agents/api/submit-tool-results.ts`](../api/submit-tool-results.ts) | Microtask-coalescing POST batcher for `/tool_results` |
+| [`../aidream/apps/shared/chat/src/agents/redux/execution-system/thunks/dispatch-widget-action.thunk.ts`](../redux/execution-system/thunks/dispatch-widget-action.thunk.ts) | Routes `tool_delegated` for `widget_*` to handle methods |
 | [`features/agents/components/tools-management/WIDGET_TOOLS_SEED.sql`](../components/tools-management/WIDGET_TOOLS_SEED.sql) | The 10 INSERT statements |
 | [`features/agents/docs/WIDGET_HANDLE_SYSTEM.md`](WIDGET_HANDLE_SYSTEM.md) | End-to-end usage + contract |
 | [`features/agents/docs/WIDGET_HANDLE_AND_CLIENT_TOOLS-STATE.md`](WIDGET_HANDLE_AND_CLIENT_TOOLS-STATE.md) | This doc |
@@ -80,18 +80,18 @@
 | File | Change |
 |---|---|
 | [`utils/callbackManager.ts`](../../../utils/callbackManager.ts) | Added `get<T>(id)`, `unregister(id)`, `registerWidgetHandle(handle)` |
-| [`packages/chat/src/agents/types/conversation-invocation.types.ts`](../types/conversation-invocation.types.ts) | `ConversationInvocationCallbacks`: 5 fields → 2 (`widgetHandleId`, `originalText`) |
-| [`packages/chat/src/agents/types/instance.types.ts`](../types/instance.types.ts) | `InstanceUIState.callbackGroupId` → `widgetHandleId`. `ManagedAgentOptions`: removed `onComplete`/`onTextReplace`/`onTextInsertBefore`/`onTextInsertAfter`; added `widgetHandleId`. `AGENT_EXECUTION_DEFAULTS` same. |
-| [`packages/chat/src/agents/redux/execution-system/instance-ui-state/instance-ui-state.slice.ts`](../redux/execution-system/instance-ui-state/instance-ui-state.slice.ts) | Rename everywhere. `setCallbackGroupId` → `setWidgetHandleId`. `destroyInstance` extraReducer uses `callbackManager.unregister` (not `removeGroup`). |
-| [`packages/chat/src/agents/redux/execution-system/instance-ui-state/instance-ui-state.selectors.ts`](../redux/execution-system/instance-ui-state/instance-ui-state.selectors.ts) | `selectCallbackGroupId` → `selectWidgetHandleId` + non-curried variant `selectWidgetHandleIdFor` |
-| [`packages/chat/src/agents/redux/execution-system/instance-ui-state/components/InstanceUIStateCore.tsx`](../redux/execution-system/instance-ui-state/components/InstanceUIStateCore.tsx) | Debug panel label rename |
-| [`packages/chat/src/agents/redux/execution-system/thunks/create-instance.thunk.ts`](../redux/execution-system/thunks/create-instance.thunk.ts) | Rename `callbackGroupId` → `widgetHandleId` throughout all three create thunks + the two startNewConversation thunks. Added `widgetHandleId` to `createManualInstanceNoAgent` args (gap fix). |
-| [`packages/chat/src/agents/redux/execution-system/thunks/launch-agent-execution.thunk.ts`](../redux/execution-system/thunks/launch-agent-execution.thunk.ts) | Deleted `registerCallbacks(options)` helper. Removed `onComplete?.(launchResult)` narrow-branch call (now fires from stream-end in process-stream). Threads `widgetHandleId` through all three create paths. |
-| [`packages/chat/src/agents/redux/execution-system/thunks/launch-conversation.thunk.ts`](../redux/execution-system/thunks/launch-conversation.thunk.ts) | Deleted `makeUnary` helper and the four per-action callback resolutions. Adapter forwards only `widgetHandleId` + `originalText`. |
-| [`packages/chat/src/agents/redux/execution-system/thunks/execute-instance.thunk.ts`](../redux/execution-system/thunks/execute-instance.thunk.ts) | Per-turn `client_tools` derivation: reads handle live, merges with non-widget tools from slice |
+| [`../aidream/apps/shared/chat/src/agents/types/conversation-invocation.types.ts`](../types/conversation-invocation.types.ts) | `ConversationInvocationCallbacks`: 5 fields → 2 (`widgetHandleId`, `originalText`) |
+| [`../aidream/apps/shared/chat/src/agents/types/instance.types.ts`](../types/instance.types.ts) | `InstanceUIState.callbackGroupId` → `widgetHandleId`. `ManagedAgentOptions`: removed `onComplete`/`onTextReplace`/`onTextInsertBefore`/`onTextInsertAfter`; added `widgetHandleId`. `AGENT_EXECUTION_DEFAULTS` same. |
+| [`../aidream/apps/shared/chat/src/agents/redux/execution-system/instance-ui-state/instance-ui-state.slice.ts`](../redux/execution-system/instance-ui-state/instance-ui-state.slice.ts) | Rename everywhere. `setCallbackGroupId` → `setWidgetHandleId`. `destroyInstance` extraReducer uses `callbackManager.unregister` (not `removeGroup`). |
+| [`../aidream/apps/shared/chat/src/agents/redux/execution-system/instance-ui-state/instance-ui-state.selectors.ts`](../redux/execution-system/instance-ui-state/instance-ui-state.selectors.ts) | `selectCallbackGroupId` → `selectWidgetHandleId` + non-curried variant `selectWidgetHandleIdFor` |
+| [`../aidream/apps/shared/chat/src/agents/redux/execution-system/instance-ui-state/components/InstanceUIStateCore.tsx`](../redux/execution-system/instance-ui-state/components/InstanceUIStateCore.tsx) | Debug panel label rename |
+| [`../aidream/apps/shared/chat/src/agents/redux/execution-system/thunks/create-instance.thunk.ts`](../redux/execution-system/thunks/create-instance.thunk.ts) | Rename `callbackGroupId` → `widgetHandleId` throughout all three create thunks + the two startNewConversation thunks. Added `widgetHandleId` to `createManualInstanceNoAgent` args (gap fix). |
+| [`../aidream/apps/shared/chat/src/agents/redux/execution-system/thunks/launch-agent-execution.thunk.ts`](../redux/execution-system/thunks/launch-agent-execution.thunk.ts) | Deleted `registerCallbacks(options)` helper. Removed `onComplete?.(launchResult)` narrow-branch call (now fires from stream-end in process-stream). Threads `widgetHandleId` through all three create paths. |
+| [`../aidream/apps/shared/chat/src/agents/redux/execution-system/thunks/launch-conversation.thunk.ts`](../redux/execution-system/thunks/launch-conversation.thunk.ts) | Deleted `makeUnary` helper and the four per-action callback resolutions. Adapter forwards only `widgetHandleId` + `originalText`. |
+| [`../aidream/apps/shared/chat/src/agents/redux/execution-system/thunks/execute-instance.thunk.ts`](../redux/execution-system/thunks/execute-instance.thunk.ts) | Per-turn `client_tools` derivation: reads handle live, merges with non-widget tools from slice |
 | [`features/agents/redux/execution-system/thunks/execute-chat-instance.thunk.ts`](../redux/execution-system/thunks/execute-chat-instance.thunk.ts) | Same per-turn derivation |
-| [`packages/chat/src/agents/redux/execution-system/thunks/process-stream.ts`](../redux/execution-system/thunks/process-stream.ts) | `tool_delegated` branch: widget_* names dispatch `dispatchWidgetAction` without pausing; non-widget preserved. `handle.onComplete` fires at stream end (all display modes). `handle.onError` fires on stream-level errors. |
-| [`packages/chat/src/agents/hooks/useAgentLauncher.ts`](../hooks/useAgentLauncher.ts) | Replaced the four callback passthroughs with `widgetHandleId` |
+| [`../aidream/apps/shared/chat/src/agents/redux/execution-system/thunks/process-stream.ts`](../redux/execution-system/thunks/process-stream.ts) | `tool_delegated` branch: widget_* names dispatch `dispatchWidgetAction` without pausing; non-widget preserved. `handle.onComplete` fires at stream end (all display modes). `handle.onError` fires on stream-level errors. |
+| [`../aidream/apps/shared/chat/src/agents/hooks/useAgentLauncher.ts`](../hooks/useAgentLauncher.ts) | Replaced the four callback passthroughs with `widgetHandleId` |
 | [`features/agents/components/tools-management/CLIENT_SIDE_TOOLS.md`](../components/tools-management/CLIENT_SIDE_TOOLS.md) | Appended Widget Actions section |
 | [`/Users/armanisadeghi/code/common-docs/systems/architecture/execution-runtime/INVOCATION-CONTRACT.md`]/Users/armanisadeghi/code/common-docs/systems/architecture/execution-runtime/INVOCATION-CONTRACT.md) | Rewrote callbacks section to describe `widgetHandleId` only |
 | [`features/agents/agent-system-mental-model.md`](../agent-system-mental-model.md) | §7 flipped from 🚧 to ✅, content updated |
@@ -155,7 +155,7 @@ The original [`TODO-widget-tools-plan.md`](../TODO-widget-tools-plan.md) had 9 p
 - `active-requests`: unchanged; `upsertToolLifecycle` called from both the stream and the dispatcher.
 
 ### 2.4 API layer
-- New [`packages/chat/src/agents/api/`](../api/) directory with `submit-tool-results.ts` hosting the microtask batcher.
+- New [`../aidream/apps/shared/chat/src/agents/api/`](../api/) directory with `submit-tool-results.ts` hosting the microtask batcher.
 - Uses the existing `callApi` thunk action from [`lib/api/call-api.ts`](../../../lib/api/call-api.ts) — no fetch(), no direct HTTP.
 
 ### 2.5 Docs

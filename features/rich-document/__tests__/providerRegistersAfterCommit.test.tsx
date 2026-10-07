@@ -72,7 +72,7 @@ describe("rich-document provider registration", () => {
 
   it("is registered only through the after-commit hook", () => {
     const repo = path.resolve(__dirname, "../../..");
-    const roots = ["features", "packages/chat/src", "components", "app", "lib"].map((d) => path.join(repo, d));
+    const roots = ["features", "../aidream/apps/shared/chat/src", "components", "app", "lib"].map((d) => path.join(repo, d));
     const allowed = new Set([
       path.join(repo, "features/rich-document/actions/provider.ts"),
       path.join(repo, "features/rich-document/actions/useRichDocumentProvider.ts"),

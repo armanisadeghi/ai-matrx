@@ -79,7 +79,7 @@ import { featureRegExp } from "./lib/source-roots.cjs";
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const ALLOWLIST_FILE = join(ROOT, "scripts", "hardcoded-agents-allowlist.json");
 const BASELINE_FILE = join(ROOT, "scripts", "hardcoded-agents-baseline.json");
-const SCAN_DIRS = ["app", "components", "features", "packages/chat/src", "hooks", "lib", "utils", "actions"];
+const SCAN_DIRS = ["app", "components", "features", "../aidream/apps/shared/chat/src", "hooks", "lib", "utils", "actions"];
 const SKIP_DIR =
   /(^|\/)(node_modules|\.next[^/]*|dist|build|coverage|__tests__|__mocks__|\.git|types)(\/|$)|^app\/\(dev\)\//;
 const SKIP_FILE = /(\.test\.tsx?$|\.spec\.tsx?$|\.d\.ts$)/;
@@ -299,13 +299,13 @@ export const MODEL_CHOICE_RULES: ModelRule[] = [
   {
     id: "xai-realtime-socket-literal",
     re: /["'`]wss:\/\/api\.x\.ai/,
-    fix: "the realtime socket URL is the token broker credential's `endpoint` (packages/chat/src/voice-agent/transport/tokenManager.ts), never a literal.",
+    fix: "the realtime socket URL is the token broker credential's `endpoint` (../aidream/apps/shared/chat/src/voice-agent/transport/tokenManager.ts), never a literal.",
   },
   {
     id: "xai-realtime-model-literal",
     re: /["'`]grok-voice[\w.-]*["'`]/,
-    allowFiles: ["packages/chat/src/voice-agent/realtimeModel.ts"],
-    fix: "the voice session model comes from the voice mandate's Holder agent (packages/chat/src/voice-agent/realtimeModel.ts). Rebind the mandate; add a wire-name row there only for a new catalog model.",
+    allowFiles: ["../aidream/apps/shared/chat/src/voice-agent/realtimeModel.ts"],
+    fix: "the voice session model comes from the voice mandate's Holder agent (../aidream/apps/shared/chat/src/voice-agent/realtimeModel.ts). Rebind the mandate; add a wire-name row there only for a new catalog model.",
   },
   {
     id: "observational-memory-model-override",

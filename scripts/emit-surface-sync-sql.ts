@@ -2,7 +2,7 @@
  * Emit the SQL that mirrors the manifests into the `ui` schema.
  *
  * ALC-14 — ONE SYNC PATH: the rows come from `@ai-matrx/alchemy/checks`
- * `planSurfaceSync` (via `packages/chat/src/surfaces/declare/surface-declare.ts`
+ * `planSurfaceSync` (via `../aidream/apps/shared/chat/src/surfaces/declare/surface-declare.ts`
  * `planManifestSync`) and the SQL from `renderSurfaceSyncSql`. This file builds
  * no rows of its own. Governance columns (`organization_id` and the row's web
  * state) are INSERT-ONLY: a conflict never rewrites them (chair ruling N5).

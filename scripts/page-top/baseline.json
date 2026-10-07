@@ -430,9 +430,9 @@
     "sentence-under-title|features/workflow-runtime/triggers/components/WorkflowTriggersPage.tsx",
     "sentence-under-title|lib/guided-setup/components/GuidedChecklist.tsx",
     "sentence-under-title|lib/wizard-draft/WizardAnswersLost.tsx",
-    "sentence-under-title|packages/chat/src/agents/components/messages-display/user/ResourceEditableToggleSamples.tsx",
-    "sentence-under-title|packages/chat/src/agents/components/messages-display/user/UserMessageAttachmentStyleComparison.tsx",
-    "sentence-under-title|packages/chat/src/agents/components/messages-display/user/UserMessageChipsDemo.tsx",
-    "sentence-under-title|packages/chat/src/agents/components/messages-display/user/UserMessageHybridTileSamples.tsx"
+    "sentence-under-title|../aidream/apps/shared/chat/src/agents/components/messages-display/user/ResourceEditableToggleSamples.tsx",
+    "sentence-under-title|../aidream/apps/shared/chat/src/agents/components/messages-display/user/UserMessageAttachmentStyleComparison.tsx",
+    "sentence-under-title|../aidream/apps/shared/chat/src/agents/components/messages-display/user/UserMessageChipsDemo.tsx",
+    "sentence-under-title|../aidream/apps/shared/chat/src/agents/components/messages-display/user/UserMessageHybridTileSamples.tsx"
   ]
 }

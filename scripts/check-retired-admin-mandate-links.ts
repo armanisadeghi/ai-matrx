@@ -32,7 +32,7 @@ const RETIRED = [
   },
 ];
 
-const SCANNED_DIRS = ["app", "features", "packages/chat/src", "lib", "components", "hooks", "utils", "providers", "scripts"];
+const SCANNED_DIRS = ["app", "features", "../aidream/apps/shared/chat/src", "lib", "components", "hooks", "utils", "providers", "scripts"];
 const EXTENSIONS = /\.(ts|tsx|js|jsx|mjs|cjs)$/;
 const SKIPPED = /(^|\/)(node_modules|\.next[^/]*|__tests__)(\/|$)|\.test\.[jt]sx?$|\.spec\.[jt]sx?$/;
 const SELF = "scripts/check-retired-admin-mandate-links.ts";

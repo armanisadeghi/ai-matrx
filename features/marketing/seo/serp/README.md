@@ -43,7 +43,7 @@ shape with `storedFieldToEvaluation()`. Contract doc:
 - **Public calculator page** — `app/(public)/seo/metadata/page.tsx` renders `<MetadataAnalyzer />` directly.
 - **Search Appearance window panel** — `features/window-panels/windows/seo/SerpAnalyzerWindow.tsx`; open from anywhere with `useOpenSerpAnalyzerWindow({ url, title, description })` (`features/overlays/openers/serpAnalyzerWindow.tsx`).
 - **Marketing page workspace** — `features/marketing/components/pages/PageWorkspace.tsx` (SERP section: `SerpResult` + chips + `MetaRecommendations`; intent form live-validates drafts).
-- **Agent SEO tool visualizations** — the `seo` tool renderer (`packages/chat/src/tool-call-visualization/renderers/seo/`) resolves a meta-check payload and hands it to `renderers/seo-shared/` (`SerpToolInline` / `SerpToolOverlay`), which are built on `SerpResult` + `SerpFieldChips`/`SerpFieldBars` from here. Those trust the server's precomputed `*_ok` / pixels / chars — they do NOT re-measure (identical by construction).
+- **Agent SEO tool visualizations** — the `seo` tool renderer (`../aidream/apps/shared/chat/src/tool-call-visualization/renderers/seo/`) resolves a meta-check payload and hands it to `renderers/seo-shared/` (`SerpToolInline` / `SerpToolOverlay`), which are built on `SerpResult` + `SerpFieldChips`/`SerpFieldBars` from here. Those trust the server's precomputed `*_ok` / pixels / chars — they do NOT re-measure (identical by construction).
 - **Server twin** — the `seo` agent tool + scraper crawl pipeline consume `matrx_scraper.meta_metrics`.
 
 ## Files

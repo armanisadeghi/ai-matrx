@@ -160,7 +160,7 @@ describe("every consumer of the canonical renderer inherits the honesty", () => 
     const source = readFileSync(
       join(
         __dirname,
-        "../../../packages/chat/src/agents/components/live-run/LiveRunProgress.tsx",
+        "../../../../aidream/apps/shared/chat/src/agents/components/live-run/LiveRunProgress.tsx",
         ".",
         ".",
         ".",

@@ -392,7 +392,7 @@ async function main(): Promise<void> {
     console.error(`  [${f.rule}] ${f.where}: ${f.message}`);
   }
   console.error(
-    "\nThe seam is `buildSurfaceWriteApprovalChange` (packages/chat/src/agents/redux/execution-system/thunks/). A structured value travels as data and the card renders it through the kind pipeline; it is never stringified.",
+    "\nThe seam is `buildSurfaceWriteApprovalChange` (../aidream/apps/shared/chat/src/agents/redux/execution-system/thunks/). A structured value travels as data and the card renders it through the kind pipeline; it is never stringified.",
   );
   exitAfterDrain(1);
 }

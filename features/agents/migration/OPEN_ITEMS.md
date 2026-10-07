@@ -46,7 +46,7 @@ Last updated: 2026-04-21
   - `lib/services/agent-apps-admin-service.ts`
 - Phase 1 task 1.9 — full per-role RLS tests (currently only pre-flight)
 - SSR notes menu still couples to `features/prompt-builtins` (flagged in `INVENTORY.md`)
-- `features/cx-chat/` + `packages/chat/src/public-chat/` still import from `features/prompts/**` (types + 4 components; Phase 18 cleanup)
+- `features/cx-chat/` + `../aidream/apps/shared/chat/src/public-chat/` still import from `features/prompts/**` (types + 4 components; Phase 18 cleanup)
 - `lib/redux/slices/aiChatSlice` — Phase 20 retirement
 
 ## ✅ Recently landed (for reference, don't act on these)

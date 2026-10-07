@@ -132,7 +132,7 @@ const ONE_VALUE_RPCS: Record<string, string> = {
   map_topic_facets: "returns one jsonb document for one topic",
 };
 
-const SCAN_DIRS = ["app", "components", "features", "packages/chat/src", "hooks", "lib", "providers", "utils"];
+const SCAN_DIRS = ["app", "components", "features", "../aidream/apps/shared/chat/src", "hooks", "lib", "providers", "utils"];
 const ROOT = process.env.LIST_RPC_GUARD_ROOT ?? path.resolve(__dirname, "../../..");
 
 function sourceFiles(): string[] {

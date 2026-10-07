@@ -402,7 +402,7 @@ owned by the connecting user (`definition_key='oauth_token_set'` or
   browser MCP JSON-RPC client, and the `/api/mcp/servers/[serverId]/*` Next
   routes are DELETED.
 - Discovery/invocation/refresh/disconnect run in aidream with vault-resolved
-  auth via `packages/chat/src/agents/services/mcp-connections.service.ts`; refresh is
+  auth via `../aidream/apps/shared/chat/src/agents/services/mcp-connections.service.ts`; refresh is
   server-side (atomic battery rotation of the same vault fields).
 - Manual methods (bearer / API-key header / stdio env) post through
   `connectServerWithCredentials` → aidream `/credentials` → sealed vault item.

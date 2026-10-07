@@ -33,7 +33,7 @@ function walk(dir: string, out: string[] = []): string[] {
 }
 
 it("every content.document creator has an archive path", () => {
-  const creators = ["app", "components", "features", "packages/chat/src", "lib"]
+  const creators = ["app", "components", "features", "../aidream/apps/shared/chat/src", "lib"]
     .flatMap((d) => walk(join(ROOT, d)))
     .filter((f) => {
       const src = readFileSync(f, "utf8");

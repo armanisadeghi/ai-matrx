@@ -93,7 +93,7 @@ it("History toggles the conversation's version-history tab, pressed while in fro
 });
 
 it("the document's History button opens the canvas tab — the panel mounts no history of its own", () => {
-  const dir = join(__dirname, "..", "..", "..", "packages", "chat", "src", "agents", "components", "working-document");
+  const dir = join(__dirname, "..", "..", "..", "..", "aidream", "apps", "shared", "chat", "src", "agents", "components", "working-document");
   const read = (file: string) => readFileSync(join(dir, file), "utf8");
   expect(read("WorkingDocumentViewControls.tsx")).toContain("WORKING_DOCUMENT_HISTORY_KIND");
   expect(read("WorkingDocumentPanel.tsx")).not.toContain("WorkingDocumentVersionHistory");

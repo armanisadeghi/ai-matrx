@@ -55,7 +55,7 @@ Counts are **distinct files** that reference the symbol or mount the component (
 
 Used without `QuickCaptureButton` in **6** files:  
 `features/chat/components/response/assistant-message/MessageOptionsMenu.tsx`,  
-`packages/chat/src/public-chat/components/PublicMessageOptionsMenu.tsx`,  
+`../aidream/apps/shared/chat/src/public-chat/components/PublicMessageOptionsMenu.tsx`,  
 `components/content-editor/ContentManagerMenu.tsx`,  
 `components/official-candidate/voice-pad/components/VoicePadExpanded.tsx`,  
 `features/cx-chat/actions/messageActionRegistry.ts`,  

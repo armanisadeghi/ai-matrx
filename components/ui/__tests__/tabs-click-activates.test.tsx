@@ -138,7 +138,7 @@ describe("tabs — one import path", () => {
         "TabsTrigger",
         "app",
         "components",
-        "features", "packages/chat/src",
+        "features", "../aidream/apps/shared/chat/src",
         "lib",
         "providers",
       ],

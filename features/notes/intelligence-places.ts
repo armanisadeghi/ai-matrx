@@ -26,7 +26,7 @@ export const NOTES_PLACES: FeaturePlaces = {
       trigger: "Floating page assistant",
       urlPattern: "/notes",
       mandateKeys: [MANDATE_KEYS.notes__page_guidance],
-      sources: ["packages/chat/src/agents/components/ambient-assistant/ambientAssistantMandates.ts"],
+      sources: ["../aidream/apps/shared/chat/src/agents/components/ambient-assistant/ambientAssistantMandates.ts"],
     },
   ],
 };

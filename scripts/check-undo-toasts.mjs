@@ -38,7 +38,7 @@ import ts from "typescript";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 const BASELINE = join(ROOT, "scripts", "undo-toasts-allowlist.json");
-const ROOTS = ["app", "features", "components", "lib", "hooks", "utils", "providers", "packages/chat/src"];
+const ROOTS = ["app", "features", "components", "lib", "hooks", "utils", "providers", "../aidream/apps/shared/chat/src"];
 const SKIP_DIR = new Set(["node_modules", "__tests__", "__mocks__", ".next", "dist"]);
 /** The primitive itself is the destination, not the offence. */
 const EXEMPT = new Set(["lib/reversible"]);

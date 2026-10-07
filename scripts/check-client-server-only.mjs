@@ -26,7 +26,7 @@ import { execFileSync } from "node:child_process";
 import { existsSync, mkdtempSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { aliasTarget } from "./lib/source-roots.cjs";
+import { aliasTarget, gitFiles } from "./lib/source-roots.cjs";
 
 const EXTS = [".ts", ".tsx", ".js", ".mjs", "/index.ts", "/index.tsx", "/index.js"];
 
@@ -126,11 +126,7 @@ export function scan(root, files) {
 }
 
 function listFiles(root, paths) {
-  const out = execFileSync("git", ["ls-files", "--cached", "--others", "--exclude-standard", "--", ...paths], {
-    cwd: root,
-    encoding: "utf8",
-    maxBuffer: 128 * 1024 * 1024,
-  });
+  const out = gitFiles(root, ["ls-files", "--cached", "--others", "--exclude-standard", "--", ...paths]);
   return out.split("\n").filter((f) => /\.(tsx?|jsx?|mjs)$/.test(f) && !f.includes("node_modules/"));
 }
 
@@ -167,7 +163,7 @@ if (process.argv.includes("--self-test")) {
 
 const root = process.cwd();
 const args = process.argv.slice(2).filter((a) => !a.startsWith("--"));
-const findings = scan(root, listFiles(root, args.length ? args : ["app", "components", "features", "packages/chat/src", "lib", "hooks", "providers", "utils"]));
+const findings = scan(root, listFiles(root, args.length ? args : ["app", "components", "features", "../aidream/apps/shared/chat/src", "lib", "hooks", "providers", "utils"]));
 for (const f of findings) console.log(`ERROR ${f}`);
 console.log(findings.length ? `\n${findings.length} client → server-only value import(s).` : "Client/server-only boundary OK.");
 process.exit(findings.length ? 1 : 0);

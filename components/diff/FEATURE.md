@@ -153,7 +153,7 @@ interactive per-hunk Monaco surfaces stay on Monaco.
 | A8 | `features/versioning/components/VersionDiffView.tsx` | ~~raw `<pre>`/spans~~ | **✓ done** → `InlineTextDiff` (short scalars stay compact) |
 | A9 | `features/notes/components/NoteConflictWindow.tsx` | ~~`diffAnalysis` segments~~ | **✓ done** → diff tab `DiffViewer` + new **Merge** tab (`DiffReview`) |
 | A10 | `features/notes/components/diff/adapters/NoteContentAdapter.tsx` | custom row renderer | inner renderer→`TextDiff` inside structured adapter |
-| A11 | `packages/chat/src/agents/components/diff/adapters/MessagesAdapter.tsx` | colored `<pre>`, no LCS | per-message text→`TextDiff`; keep message matching |
+| A11 | `../aidream/apps/shared/chat/src/agents/components/diff/adapters/MessagesAdapter.tsx` | colored `<pre>`, no LCS | per-message text→`TextDiff`; keep message matching |
 | A12 | `components/diff/views/RawJsonView.tsx` | ~~direct Monaco~~ | **✓ done** → consumes `CodeDiff` |
 | A13 | `components/mardown-display/chat-markdown/diff-blocks/renderers/SearchReplaceDiffRenderer.tsx` | complete diff via A4 (now canonical); `generateUnifiedDiff` still powers the collapsed count + 4-line preview | **partial** — main diff canonical; preview/count still A1 |
 | A14 | `features/canvas/custom-components/CodePreviewCanvas.tsx` | ~~A4 + getDiffStats~~ | **✓ done** — diff via canonical A4; stats via `computeTextDiff` |
@@ -166,7 +166,7 @@ interactive per-hunk Monaco surfaces stay on Monaco.
 | A21 | `features/code/views/source-control/SourceControlPanel.tsx` | git diff as raw `language:"diff"` text | parse hunks→`DiffViewer monaco` (pairs B14) |
 | A25 | `features/code/editor/TabDiffView.tsx` | Monaco + per-hunk accept/reject | **keep on Monaco** |
 | A26 | `features/code/editor/TripleDiffView.tsx` | 2 stacked Monaco | **keep on Monaco** |
-| A27 | `packages/chat/src/agents/components/diff/AgentDiffViewer.tsx` / `NoteDiffViewer.tsx` | structured shell | **keep shell**; migrate text adapters (A10–A12) |
+| A27 | `../aidream/apps/shared/chat/src/agents/components/diff/AgentDiffViewer.tsx` / `NoteDiffViewer.tsx` | structured shell | **keep shell**; migrate text adapters (A10–A12) |
 
 **Keep as-is (structured / non-content tools, not targets):** A22 `BlockParserComparison`,
 A23 `JsonComparator`, A24 `ManifestDriftDialog`; plus `ComparisonTableBlock`,
@@ -355,7 +355,7 @@ compare/merge), agent-emittable `matrx-diff` block, 3-way merge, since-last-seen
   stats UX; not the whole-block-tint bug).
 - 2026-06-19 — Light-mode color fix across all diff viewers. The structured
   entity diff (`adapters/defaults.tsx`, `views/SummaryView`, `views/DiffViewerShell`,
-  all `packages/chat/src/agents/components/diff/**` adapters + `VersionHistoryTimeline`) and
+  all `../aidream/apps/shared/chat/src/agents/components/diff/**` adapters + `VersionHistoryTimeline`) and
   `features/notes/components/diff/**` were authored dark-only (`bg-*-950`, `text-*-300/400`
   with no `dark:` sibling) — unreadable in light mode. Made every diff color token
   theme-aware (light `*-50/*-100` bg + `*-600/*-700` text, original dark value behind

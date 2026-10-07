@@ -153,7 +153,7 @@ interface Finding {
 // Scanning
 // ---------------------------------------------------------------------------
 
-const SCAN = ["app/**/*.tsx", "components/**/*.tsx", "features/**/*.tsx", "packages/chat/src/**/*.tsx", "lib/**/*.tsx"];
+const SCAN = ["app/**/*.tsx", "components/**/*.tsx", "features/**/*.tsx", "../aidream/apps/shared/chat/src/**/*.tsx", "lib/**/*.tsx"];
 
 /**
  * Never candidates. Each carries its reason — an allowlist without a reason is
@@ -522,8 +522,8 @@ function attributionFindings(files: Map<string, string>): Finding[] {
 function namingFindings(): Finding[] {
   const out: Finding[] = [];
   const SECTION_SCAN = [
-    "features/**/*.ts", "packages/chat/src/**/*.ts",
-    "features/**/*.tsx", "packages/chat/src/**/*.tsx",
+    "features/**/*.ts", "../aidream/apps/shared/chat/src/**/*.ts",
+    "features/**/*.tsx", "../aidream/apps/shared/chat/src/**/*.tsx",
     "app/**/*.ts",
     "app/**/*.tsx",
     "components/**/*.tsx",
@@ -955,8 +955,8 @@ function gradeItem(
 function deadItemFindings(): Finding[] {
   const out: Finding[] = [];
   const SCAN_ITEMS = [
-    "features/**/*.ts", "packages/chat/src/**/*.ts",
-    "features/**/*.tsx", "packages/chat/src/**/*.tsx",
+    "features/**/*.ts", "../aidream/apps/shared/chat/src/**/*.ts",
+    "features/**/*.tsx", "../aidream/apps/shared/chat/src/**/*.tsx",
     "app/**/*.ts",
     "app/**/*.tsx",
     "components/**/*.ts",

@@ -2086,7 +2086,7 @@ export function AgentSettingsCore({
 
   // Every catalogue setting renders, for every model. The model's controls
   // only decorate each row (supported vs. caution) — they never decide whether
-  // a row appears. See packages/chat/src/agents/redux/agent-settings/settings-catalogue.ts.
+  // a row appears. See ../aidream/apps/shared/chat/src/agents/redux/agent-settings/settings-catalogue.ts.
   const settingGroups = buildSettingsRows(
     // NormalizedControls has no string index signature (typed optional keys
     // alongside two required `Record<string, any>` escape-hatch fields), so

@@ -112,7 +112,7 @@ const BASELINE_PATH = join(ROOT, "scripts/org-insert-scope-baseline.json");
 const SCAN_DIRS = [
   "app",
   "components",
-  "features", "packages/chat/src",
+  "features", "../aidream/apps/shared/chat/src",
   "hooks",
   "lib",
   "utils",

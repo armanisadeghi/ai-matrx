@@ -40,7 +40,7 @@ One implementation; differences are **props only**.
 
 | Call site | `analysisData` | `messageId` | Save / copy | `tabs` (summary) | `initialTab` |
 |-----------|----------------|-------------|-------------|------------------|--------------|
-| `packages/chat/src/cx-conversation/AssistantMessage.tsx` | — | yes | defaults | `write`, `matrx_split`, `markdown`, `wysiwyg`, `preview` | **`matrx_split`** |
+| `../aidream/apps/shared/chat/src/cx-conversation/AssistantMessage.tsx` | — | yes | defaults | `write`, `matrx_split`, `markdown`, `wysiwyg`, `preview` | **`matrx_split`** |
 | `features/chat/.../assistant-message/AssistantMessage.tsx` | yes | yes | defaults | *(component defaults — includes many analysis tabs)* | default (`write`) |
 | `components/mardown-display/chat-markdown/EnhancedChatMarkdown.tsx` | yes | yes | defaults | defaults | default |
 | `components/playground/messages/MessageEditor.tsx` | yes | yes | defaults | defaults | **`preview`** |
@@ -61,7 +61,7 @@ One implementation; differences are **props only**.
 
 | Call site | `analysisData` | `messageId` | `onSave` / `showSaveButton` | Title / description notes |
 |-----------|----------------|-------------|-----------------------------|---------------------------|
-| `packages/chat/src/cx-conversation/AssistantMessage.tsx` | — | yes | default off | “HTML Preview & Publishing” |
+| `../aidream/apps/shared/chat/src/cx-conversation/AssistantMessage.tsx` | — | yes | default off | “HTML Preview & Publishing” |
 | `features/chat/.../AssistantMessage.tsx` | yes | yes | default off | same |
 | `features/prompts/...` (system + assistant) | — | — | default off | same |
 | `features/public-chat/.../HtmlPreviewModal.tsx` | — | — | default off | same |

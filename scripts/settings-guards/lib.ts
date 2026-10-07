@@ -199,7 +199,7 @@ export async function loadRegistry(guard: string): Promise<KnobRow[]> {
 export const FRONTEND_SCAN_DIRS = [
   "app",
   "components",
-  "features", "packages/chat/src",
+  "features", "../aidream/apps/shared/chat/src",
   "hooks",
   "lib",
   "utils",

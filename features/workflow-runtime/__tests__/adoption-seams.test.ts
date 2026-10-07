@@ -20,7 +20,7 @@ function read(relative: string): string {
 
 /** Every shipped .ts/.tsx under the app's own directories — no node_modules. */
 function sourceFiles(): string[] {
-  const roots = ["features", "packages/chat/src", "app", "components", "lib", "hooks", "utils"];
+  const roots = ["features", "../aidream/apps/shared/chat/src", "app", "components", "lib", "hooks", "utils"];
   const out: string[] = [];
   const walk = (dir: string) => {
     for (const entry of readdirSync(dir, { withFileTypes: true })) {

@@ -222,7 +222,7 @@ app/(a)/agents/[id]/run/page.tsx  (Server Component)
 | Latest conversation ID | `aggregate.selectors` — `selectLatestConversationId` |
 | Conversation message history | `fetchConversationHistory` from `cx-chat/redux/thunks` |
 | Overlay windows (settings, run history, import) | `overlaySlice` — `openAgentSettingsWindow`, `openAgentRunHistoryWindow`, `openAgentImportWindow`, `openAgentContentWindow` |
-| Agent launcher (instance bootstrap) | `useAgentLauncher` hook (in `packages/chat/src/agents/hooks/`) |
+| Agent launcher (instance bootstrap) | `useAgentLauncher` hook (in `../aidream/apps/shared/chat/src/agents/hooks/`) |
 | Dirty-state guard | `selectAgentIsDirty` — used in `AgentModeController` and `AgentSaveStatus` to prevent unsaved-changes data loss |
 
 ### Key architectural notes

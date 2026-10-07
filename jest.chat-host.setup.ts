@@ -1,7 +1,7 @@
 /**
  * Jest only: the app's chat-host slots for suites that run real `@ai-matrx/chat` code which
  * reaches the host's kind registry, block classifier or rich-document registry
- * (packages/chat/src/host/content-ir-slots.ts, rich-document-slots.ts).
+ * (../aidream/apps/shared/chat/src/host/content-ir-slots.ts, rich-document-slots.ts).
  *
  * Each slot is registered as a thin wrapper that loads the REAL registration
  * (providers/chatContentIrRegistration, providers/chatRichDocumentRegistration) on its first

@@ -259,7 +259,7 @@ over the durable artifact — unchanged.
 
 **Keyword selection is not passed as props any more.** The blocks read
 `keyword_selection` surface UI state and write the `keyword_selection` target
-(see `packages/chat/src/surfaces/runtime/surface-writeback.ts` +
+(see `../aidream/apps/shared/chat/src/surfaces/runtime/surface-writeback.ts` +
 `surface-ui-state.ts`), so the live view and the saved view behave identically
 and the same block renders read-only in chat.
 

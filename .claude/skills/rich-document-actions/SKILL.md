@@ -144,7 +144,7 @@ Put the bar in a page header / toolbar while the content lives elsewhere:
 - Use a **per-entity surfaceId** (`note-detail-${id}`) so fast A→B navigation never collides.
 - The surface renders nothing (`fallback`) when no provider is registered (e.g. the body is in a non-preview mode) — so an empty header row is fine.
 - The registry is a **stack**: if two RichDocuments target one surfaceId, the most-recently-mounted wins, and out-of-order unmount during navigation stays correct. Don't add your own last-wins logic.
-- Real example to copy: `packages/chat/src/agents/components/working-document/WorkingDocumentPanel.tsx` (headless provider + header surface). The live `/notes` header intentionally has no remote consumer, so `NotesView` omits `actionsSurfaceId` and keeps preview/split actions inline.
+- Real example to copy: `../aidream/apps/shared/chat/src/agents/components/working-document/WorkingDocumentPanel.tsx` (headless provider + header surface). The live `/notes` header intentionally has no remote consumer, so `NotesView` omits `actionsSurfaceId` and keeps preview/split actions inline.
 
 **Surface draws its OWN content (an editor)?** Don't mount a hidden `RichDocument` just to register the toolbar — it would double-render the heavy engine. Use the **headless `RichDocumentActionProvider`** (renders `null`):
 
@@ -155,7 +155,7 @@ Put the bar in a page header / toolbar while the content lives elsewhere:
 <RichDocumentActionSurface surfaceId={mySurfaceId} variant="bar" fallback={null} />
 ```
 
-This is how the toolbar appears in **every** editor mode (plain / split / wysiwyg / preview), not just the one mode that mounts a `RichDocument`. Real example: `packages/chat/src/agents/components/working-document/WorkingDocumentPanel.tsx` (provider + header bar) + `WorkingDocumentControls.tsx` (compact `menu` surface). It shares `useActionSurfaceProvider` with `RichDocument`, so behavior never drifts.
+This is how the toolbar appears in **every** editor mode (plain / split / wysiwyg / preview), not just the one mode that mounts a `RichDocument`. Real example: `../aidream/apps/shared/chat/src/agents/components/working-document/WorkingDocumentPanel.tsx` (provider + header bar) + `WorkingDocumentControls.tsx` (compact `menu` surface). It shares `useActionSurfaceProvider` with `RichDocument`, so behavior never drifts.
 
 `MatrxSplit` has opt-in passthrough props (`actionsSource` / `actionsVariant` / `actionsPosition` / `actionsBehavior` / `actionsSurfaceId` / `actionsExclude`) — when `actionsSource` is set it swaps its preview pane to RichDocument (lazily), including the streaming-safe right-click menu. Pattern in `components/matrx/MatrxSplit.tsx`.
 
@@ -276,4 +276,4 @@ features/rich-document/
 └── redux/actionSurfacesSlice.ts     ← surfaceId → provider stack (metadata only)
 ```
 
-Real migrated consumers to copy from: `features/notes/components/NoteEditorCore.tsx` + `NotesView.tsx` (inline preview/split actions), `features/tool-call-visualization/renderers/web-research/WebResearchOverlay.tsx` (icon-only hover), and `packages/chat/src/agents/components/working-document/WorkingDocumentPanel.tsx` (headless provider + remote header toolbar in every editor mode).
+Real migrated consumers to copy from: `features/notes/components/NoteEditorCore.tsx` + `NotesView.tsx` (inline preview/split actions), `features/tool-call-visualization/renderers/web-research/WebResearchOverlay.tsx` (icon-only hover), and `../aidream/apps/shared/chat/src/agents/components/working-document/WorkingDocumentPanel.tsx` (headless provider + remote header toolbar in every editor mode).

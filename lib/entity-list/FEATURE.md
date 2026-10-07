@@ -470,7 +470,7 @@ a `SurfaceRuntimeProvider` around a second copy of state it does not own:
 never on mount — so a page that never launches an agent pays nothing. The
 surface must exist in `features/surfaces/manifests/registry.ts` and be synced to
 `ui.ui_surface`; without a manifest row it can carry neither values nor roles.
-🚨 It must ALSO be mapped in `packages/chat/src/surfaces/utils/route-to-surface.ts`
+🚨 It must ALSO be mapped in `../aidream/apps/shared/chat/src/surfaces/utils/route-to-surface.ts`
 BEFORE any shorter prefix that would swallow its route — the panel discards a
 registered runtime whose name disagrees with the route, so a `/crm` row above
 `/crm/inbox` silently makes the whole surface unreachable from the header.

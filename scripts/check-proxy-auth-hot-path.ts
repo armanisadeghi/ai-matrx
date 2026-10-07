@@ -321,7 +321,7 @@ const RECORD_DOOR_CALLERS: Record<string, string> = {
     "The same fill for public routes, once, after the local session check.",
 };
 
-const SWEPT_ROOTS = ["app", "features", "packages/chat/src", "lib", "utils", "components", "hooks", "providers", "actions", "config"];
+const SWEPT_ROOTS = ["app", "features", "../aidream/apps/shared/chat/src", "lib", "utils", "components", "hooks", "providers", "actions", "config"];
 const SWEPT_EXT = /\.(ts|tsx)$/;
 const NOT_SWEPT = /(\.test\.|\.spec\.|\.stories\.|\.d\.ts$|(^|\/)__tests__\/|(^|\/)__mocks__\/|(^|\/)test-utils\/|(^|\/)node_modules\/)/;
 

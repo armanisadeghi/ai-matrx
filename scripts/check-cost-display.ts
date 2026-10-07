@@ -99,7 +99,7 @@ export const DOMAIN_MONEY: Record<string, string> = {
   "features/ai-models/components/ProviderPriceCell.tsx": "the provider's USD price list an admin syncs",
   "features/ai-models/utils/providerSyncPricing.ts": "the provider's USD price list an admin syncs",
   "features/admin/dated-changes/describe.ts": "the provider's per-million-token USD price schedule, shown only in the admin attention queue",
-  "packages/chat/src/action-requests/components/spendAmount.ts": "the approve-spend amount box's dollar text, reached ONLY when the viewer's unit is usd (a system admin's switch); members type points",
+  "../aidream/apps/shared/chat/src/action-requests/components/spendAmount.ts": "the approve-spend amount box's dollar text, reached ONLY when the viewer's unit is usd (a system admin's switch); members type points",
   "features/tool-call-visualization/admin/ToolTestSamplesViewer.tsx": "the provider's per-million-token USD price list, shown to an admin debugging a tool-test sample's cost estimate",
 };
 

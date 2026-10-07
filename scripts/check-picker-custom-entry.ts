@@ -59,7 +59,7 @@ const SCAN_GLOBS = [
   // by-name hand census over the rest found only half of what this detector
   // finds — a mapped choice list lives in files named Field, Crumb, Workspace,
   // Section, not only *Picker. The law is a platform law; the sweep is too.
-  "features/**/*.tsx", "packages/chat/src/**/*.tsx",
+  "features/**/*.tsx", "../aidream/apps/shared/chat/src/**/*.tsx",
   "components/**/*.tsx",
   "app/**/*.tsx",
   "lib/**/*.tsx",

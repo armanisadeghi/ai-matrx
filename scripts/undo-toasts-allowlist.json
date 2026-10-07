@@ -26,6 +26,6 @@
     "features/transcripts/browse/useTranscriptRowActions.tsx": 1,
     "features/war-room/components/board/RoomBoardView.tsx": 4,
     "features/workflow-runtime/components/board/WorkflowRunBoardView.tsx": 2,
-    "packages/chat/src/agents/components/conversation-actions/conversationActionRegistry.tsx": 1
+    "../aidream/apps/shared/chat/src/agents/components/conversation-actions/conversationActionRegistry.tsx": 1
   }
 }

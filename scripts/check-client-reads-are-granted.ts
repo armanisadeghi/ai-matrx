@@ -72,7 +72,7 @@ const ROOT = resolve(__dirname, "..");
 const SCAN_DIRS = [
   "app",
   "components",
-  "features", "packages/chat/src",
+  "features", "../aidream/apps/shared/chat/src",
   "lib",
   "hooks",
   "providers",

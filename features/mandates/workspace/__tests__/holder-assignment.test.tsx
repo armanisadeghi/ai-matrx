@@ -263,7 +263,7 @@ describe("the admin holder section is three controls and nothing else", () => {
  * guards in `admin/__tests__/admin-route-system-perspective.test.tsx`.
  */
 describe("exactly one module in the mandate screens mounts a holder picker", () => {
-  const TREES = ["features/mandates", "packages/chat/src/mandates", "features/bindings"] as const;
+  const TREES = ["features/mandates", "../aidream/apps/shared/chat/src/mandates", "features/bindings"] as const;
 
   function sourceFilesUnder(tree: string): string[] {
     const out: string[] = [];

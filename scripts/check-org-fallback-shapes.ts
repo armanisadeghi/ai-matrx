@@ -116,7 +116,7 @@ const SCAN_DIRS = [
   "actions",
   "app",
   "components",
-  "features", "packages/chat/src",
+  "features", "../aidream/apps/shared/chat/src",
   "hooks",
   "lib",
   "providers",

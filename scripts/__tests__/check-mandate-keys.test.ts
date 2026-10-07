@@ -122,7 +122,7 @@ describe("check:mandate-keys RULE 2 — RED: a carrier that declares its key `st
   // V-L6a (2026-09-17): the repo had adopted the vocabulary in 178 files and
   // STILL had no compile-time guard, because every carrier said `string`. These
   // cases are the shape of that defect.
-  const carriers = (src: string, file = "packages/chat/src/mandates/useMandate.ts") =>
+  const carriers = (src: string, file = "../aidream/apps/shared/chat/src/mandates/useMandate.ts") =>
     scanCarrierTypes(file, src)
       .filter((c) => c.enforced)
       .map((c) => `${c.owner} ${c.member}: ${c.declared}`);
@@ -171,9 +171,9 @@ describe("check:mandate-keys RULE 2 — RED: a carrier that declares its key `st
 });
 
 describe("check:mandate-keys RULE 2 — GREEN: the fix, and what is honestly a string", () => {
-  const enforced = (src: string, file = "packages/chat/src/mandates/useMandate.ts") =>
+  const enforced = (src: string, file = "../aidream/apps/shared/chat/src/mandates/useMandate.ts") =>
     scanCarrierTypes(file, src).filter((c) => c.enforced);
-  const all = (src: string, file = "packages/chat/src/mandates/useMandate.ts") =>
+  const all = (src: string, file = "../aidream/apps/shared/chat/src/mandates/useMandate.ts") =>
     scanCarrierTypes(file, src);
 
   it("does NOT flag a typed carrier — that IS the fix", () => {

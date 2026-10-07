@@ -39,7 +39,7 @@ import { join, relative } from "node:path";
 import process from "node:process";
 
 const ROOT = process.cwd();
-const SCAN_DIRS = ["app", "components", "features", "packages/chat/src", "lib", "hooks", "providers"];
+const SCAN_DIRS = ["app", "components", "features", "../aidream/apps/shared/chat/src", "lib", "hooks", "providers"];
 const ALLOWLIST_PATH = "scripts/blocking-dialogs-allowlist.json";
 
 type Allow = {

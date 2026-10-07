@@ -95,7 +95,7 @@ it("the receipt pill opens the message's receipt tab; again closes it", async ()
 });
 
 it("the receipt pill toggles the canvas tab — no popover", () => {
-  const src = join(__dirname, "..", "..", "..", "packages", "chat", "src", "agents", "components");
+  const src = join(__dirname, "..", "..", "..", "..", "aidream", "apps", "shared", "chat", "src", "agents", "components");
   const receipt = readFileSync(join(src, "context-policies-display/MessageContextReceipt.tsx"), "utf8");
   expect(receipt).not.toContain("PopoverContent");
   expect(receipt).toContain("kind: MESSAGE_CONTEXT_RECEIPT_KIND, key: messageId");

@@ -21,7 +21,7 @@ import { exitAfterDrain } from "./lib/exit-after-drain";
 
 const ROOT = process.cwd();
 const SELF_TEST = process.argv.includes("--self-test");
-const SCAN_DIRS = ["features", "packages/chat/src", "components", "app"];
+const SCAN_DIRS = ["features", "../aidream/apps/shared/chat/src", "components", "app"];
 const SPINNER = /<(Loader2|Loader2Icon)\b/g;
 const SPIN_CLASS = /animate-spin|matrx-spin|MOTION_SPIN/;
 const CONDITIONAL_SPIN = /&&\s*["'`]animate-spin["'`]/;

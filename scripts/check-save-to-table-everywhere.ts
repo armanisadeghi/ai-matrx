@@ -32,7 +32,7 @@ import { execFileSync } from "node:child_process";
 import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { featureRegExp } from "./lib/source-roots.cjs";
+import { featureRegExp, gitFiles } from "./lib/source-roots.cjs";
 
 const REPO = join(dirname(fileURLToPath(import.meta.url)), "..");
 
@@ -44,7 +44,7 @@ export const CONTENT_ROOTS = [
   "components/mardown-display",
   "features/canvas/artifact-types",
   "features/rich-document",
-  "features/tool-call-visualization", "packages/chat/src/tool-call-visualization",
+  "features/tool-call-visualization", "../aidream/apps/shared/chat/src/tool-call-visualization",
   "features/content-ir",
   "components/selection-toolbar",
   "features/transcripts",
@@ -180,11 +180,7 @@ export function judge(files: ReadonlyMap<string, string>): Finding[] {
 }
 
 function tree(): Map<string, string> {
-  const listed = execFileSync("git", ["ls-files", "--cached", "--others", "--exclude-standard", "--", "components", "features", "packages/chat/src", "app", "lib"], {
-    cwd: REPO,
-    encoding: "utf8",
-    maxBuffer: 64 * 1024 * 1024,
-  })
+  const listed = gitFiles(REPO, ["ls-files", "--cached", "--others", "--exclude-standard", "--", "components", "features", "../aidream/apps/shared/chat/src", "app", "lib"])
     .split("\n")
     .filter((f) => /\.(tsx?|mts)$/.test(f));
   const files = new Map<string, string>();
@@ -222,7 +218,7 @@ function selfTest(): void {
   if (!judge(lost).some((f) => f.rule === 3)) throw new Error("rule 3 did not fire when the registry stopped reading every shape");
   // W1.6: the widened roots — a tool-result table, a transcript, a thread that offer nothing.
   for (const [path, body] of [
-    ["packages/chat/src/tool-call-visualization/result-fields/PlantedRows.tsx", "export function T({ columns }: { columns: TableColumn[] }) { return <table/>; }"],
+    ["../aidream/apps/shared/chat/src/tool-call-visualization/result-fields/PlantedRows.tsx", "export function T({ columns }: { columns: TableColumn[] }) { return <table/>; }"],
     ["features/transcripts/components/PlantedLines.tsx", "import type { TranscriptSegment } from '../types';\nexport const L = (p: { s: TranscriptSegment[] }) => <ol/>;"],
     ["features/meet/components/record/PlantedBlocks.tsx", "export const B = ({ b }) => <ol>{groupTranscript(b.transcript).map(() => null)}</ol>;"],
     ["features/messaging/components/PlantedThread.tsx", "export const P = () => <ConversationView conversationId={id} />;"],

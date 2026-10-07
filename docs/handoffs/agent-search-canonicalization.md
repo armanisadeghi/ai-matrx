@@ -60,7 +60,7 @@ Distilled invariants (hold these when building):
 local-only over that ≤50-row loaded set (`lib/redux/selectors/agentSelectors.ts`,
 `makeSelectFilteredOwned/Shared/BuiltinAgents`, using the canonical `computeAgentSearchScore`).
 Beyond the first page, agents are invisible to search — the exact original bug, still live here.
-- Files: `packages/chat/src/cx-chat/components/SsrSidebarAgents.tsx`, `features/public-chat/components/PromptPickerMenu.tsx`, thunk `lib/redux/thunks/agentFetchThunks.ts` (`fetchAgentSlimList`), store `agentCacheSlice`.
+- Files: `../aidream/apps/shared/chat/src/cx-chat/components/SsrSidebarAgents.tsx`, `features/public-chat/components/PromptPickerMenu.tsx`, thunk `lib/redux/thunks/agentFetchThunks.ts` (`fetchAgentSlimList`), store `agentCacheSlice`.
 - `get_agents_for_chat` orders by `d.id` (keyset — a total order, so it does NOT have the drop-rows bug; the fix here is reach, not correctness).
 - Two viable paths — this is the one real judgment call, see **Decisions needed**.
 
@@ -70,7 +70,7 @@ it reads the `agentDefinition` slice, loaded in full by `initializeChatAgents` �
 `filterAndSortBySearch` (`utils/search-scoring.ts`) with inline agent field-config, NOT the
 canonical `computeAgentSearchScore`. So its weights can drift from `score.ts` independently,
 and it has no tier-2. Route it through `features/agents/search/score.ts` and add the Prompts
-toggle for parity. File: `packages/chat/src/cx-chat/components/agent/AgentPickerSheet.tsx` (search memos at ~278 and ~484).
+toggle for parity. File: `../aidream/apps/shared/chat/src/cx-chat/components/agent/AgentPickerSheet.tsx` (search memos at ~278 and ~484).
 
 **Verify tier-1/tier-2 ordering after any change.** The guarantee (tier 2 scores 50, below
 every tier-1 field) lives in BOTH `score.ts` and `agx_search`'s SQL `CASE` ladder. If you touch

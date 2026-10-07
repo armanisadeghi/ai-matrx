@@ -75,6 +75,7 @@
  */
 
 import { execFileSync } from "node:child_process";
+import { gitFiles } from "./lib/source-roots.cjs";
 import { readFileSync, mkdtempSync, writeFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, relative, resolve } from "node:path";
@@ -82,7 +83,7 @@ import ts from "typescript";
 import { exitAfterDrain } from "./lib/exit-after-drain";
 
 const REPO_ROOT = resolve(__dirname, "..");
-const SCANNED_DIRS = ["features", "packages/chat/src", "app"] as const;
+const SCANNED_DIRS = ["features", "../aidream/apps/shared/chat/src", "app"] as const;
 const BANNED = ["confirm", "alert", "prompt"] as const;
 type Banned = (typeof BANNED)[number];
 
@@ -198,20 +199,14 @@ function scanFile(absPath: string, relPath: string): Finding[] {
 }
 
 function listFiles(root: string): string[] {
-  const out = execFileSync(
-    "git",
-    [
-      "-C",
-      root,
-      "ls-files",
-      "--cached",
-      "--others",
-      "--exclude-standard",
-      ...SCANNED_DIRS.map((d) => `${d}/**/*.ts`),
-      ...SCANNED_DIRS.map((d) => `${d}/**/*.tsx`),
-    ],
-    { encoding: "utf8", maxBuffer: 64 * 1024 * 1024 },
-  );
+  const out = gitFiles(root, [
+    "ls-files",
+    "--cached",
+    "--others",
+    "--exclude-standard",
+    ...SCANNED_DIRS.map((d) => `${d}/**/*.ts`),
+    ...SCANNED_DIRS.map((d) => `${d}/**/*.tsx`),
+  ]);
   return out
     .split("\n")
     .filter(Boolean)

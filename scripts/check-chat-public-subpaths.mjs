@@ -46,8 +46,21 @@ const TEST_IMPORTER = /(^|\/)(__tests__|__mocks__|tests?|e2e|test-utils)\/|\.(te
 
 const ts = createRequire(path.join(REPO, "package.json"))("typescript");
 
+/**
+ * Where @ai-matrx/chat's source lives for `root`: an in-repo `packages/chat` (the self-test's
+ * fixture tree), else the aidream checkout beside the repo — the package's one home since P27.
+ */
+function chatPackageDir(root) {
+  const inRepo = path.join(root, "packages/chat");
+  if (fs.existsSync(path.join(inRepo, "src"))) return inRepo;
+  const beside = path.resolve(root, "../aidream/apps/shared/chat");
+  if (!fs.existsSync(path.join(beside, "src")))
+    throw new Error(`check-chat-public-subpaths: no @ai-matrx/chat source at ${beside}. Check out aidream beside this repo.`);
+  return beside;
+}
+
 async function surface(root) {
-  const mod = await import(pathToFileURL(path.join(root, "packages/chat/scripts/public-surface.mjs")).href);
+  const mod = await import(pathToFileURL(path.join(chatPackageDir(root), "scripts/public-surface.mjs")).href);
   return { domains: new Set(mod.PUBLIC_DOMAINS), named: new Set(Object.keys(mod.NAMED_ENTRIES).map((k) => k.slice(2))) };
 }
 
@@ -77,7 +90,7 @@ export function judgeSpec(spec, importerRel, root, { domains, named }) {
   if (first === "testing" && !TEST_IMPORTER.test(importerRel)) return "TEST_PATH";
   const isTestPath = TEST_SEGMENT.test(sub);
   if (isTestPath && !TEST_IMPORTER.test(importerRel)) return "TEST_PATH";
-  const base = path.join(root, "packages/chat/src", sub);
+  const base = path.join(chatPackageDir(root), "src", sub);
   // `a.slice` / `x.types` are module NAMES; `.json` / `.ts` / `.js` are extensions.
   if (/\.(json|[cm]?[jt]sx?|css|md)$/.test(sub)) return isTestPath ? "TEST_REACH" : "EXTENSION";
   if (fs.existsSync(`${base}.ts`) || fs.existsSync(`${base}.tsx`)) return isTestPath ? "TEST_REACH" : null;
@@ -142,7 +155,7 @@ async function selfTest() {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), "chat-public-subpaths-"));
   const w = (rel, body) => { fs.mkdirSync(path.dirname(path.join(root, rel)), { recursive: true }); fs.writeFileSync(path.join(root, rel), body); };
   fs.mkdirSync(path.join(root, "packages/chat/scripts"), { recursive: true });
-  fs.copyFileSync(path.join(REPO, "packages/chat/scripts/public-surface.mjs"), path.join(root, "packages/chat/scripts/public-surface.mjs"));
+  fs.copyFileSync(path.join(chatPackageDir(REPO), "scripts/public-surface.mjs"), path.join(root, "packages/chat/scripts/public-surface.mjs"));
   w("packages/chat/src/host/index.ts", "export {};");
   w("packages/chat/src/agents/redux/a.slice.ts", "export {};");
   w("packages/chat/src/agents/run/index.ts", "export {};");

@@ -9,7 +9,7 @@
 > - Invocation contract: [`/Users/armanisadeghi/code/common-docs/systems/architecture/execution-runtime/INVOCATION-CONTRACT.md`](/Users/armanisadeghi/code/common-docs/systems/architecture/execution-runtime/INVOCATION-CONTRACT.md)
 > - Active TODO for Phase 0 item below: [`TODO-widget-tools-plan.md`](TODO-widget-tools-plan.md)
 >
-> **Audits persisted at [`packages/chat/src/agents/audits/`](audits/) — these are the operational tactical checklists that complement this strategic roadmap:**
+> **Audits persisted at [`../aidream/apps/shared/chat/src/agents/audits/`](audits/) — these are the operational tactical checklists that complement this strategic roadmap:**
 >
 > | Report | What it covers |
 > |---|---|
@@ -64,7 +64,7 @@ callbacks: { widgetHandleId?; originalText? }
 
 ## 1. Agent Chat — `app/(a)/chat/` 🚧
 
-**Today.** The legacy chat lives at [`packages/chat/src/cx-conversation/`](packages/chat/src/cx-conversation/) + [`features/cx-chat/`](features/cx-chat/). A deprecated stub is at [`app/(authenticated)/deprecated/chat/`](app/(authenticated)/deprecated/chat/). The new agent-first route has not been built.
+**Today.** The legacy chat lives at [`../aidream/apps/shared/chat/src/cx-conversation/`](../aidream/apps/shared/chat/src/cx-conversation/) + [`features/cx-chat/`](features/cx-chat/). A deprecated stub is at [`app/(authenticated)/deprecated/chat/`](app/(authenticated)/deprecated/chat/). The new agent-first route has not been built.
 
 **What "Chat" actually is now.** In the post-refactor world, Chat is *Runner without the observability* — the same runtime, the same `launchConversation` thunk, the same `messages/` slice. The only differences from Runner:
 
@@ -86,7 +86,7 @@ callbacks: { widgetHandleId?; originalText? }
 - **ChatLayout** — sidebar (conversation list, agent picker) + main pane (message transcript + input).
 - **ConversationList** — backed by `agentConversations` slice's RPC cache. Click → route to `[conversationId]`.
 - **AgentPicker** — searchable list of agents the user has access to. Filters by category, recent use.
-- **MessageTranscript** — reuse the existing message rendering from `packages/chat/src/cx-conversation/MessageList.tsx` if the API matches; otherwise build new on top of `execution-system/messages/` selectors (`selectDisplayMessages`).
+- **MessageTranscript** — reuse the existing message rendering from `../aidream/apps/shared/chat/src/cx-conversation/MessageList.tsx` if the API matches; otherwise build new on top of `execution-system/messages/` selectors (`selectDisplayMessages`).
 - **ChatInput** — text box + attach + model override panel (if agent permits).
 - **ConversationOptionsMenu** — fork, edit title, soft-delete, export. Uses message-crud thunks already in place.
 
@@ -114,7 +114,7 @@ The Agent Runner's `AgentAssistantMessage` transitively imports these four from 
 | `AssistantActionBar` | `features/cx-conversation/AssistantActionBar.tsx` | Calls `messageActionsActions.registerInstance` — already wired to new slice |
 | `MessageOptionsMenu` | `features/cx-conversation/MessageOptionsMenu.tsx` | Lazy-loaded; calls new message-actions slice |
 | `ToolCallVisualization` | `features/cx-conversation/ToolCallVisualization.tsx` | Pure presentational — no Redux |
-| `useDomCapturePrint` | `packages/chat/src/conversation/hooks/useDomCapturePrint.ts` | Pure utility; html2canvas + jsPDF |
+| `useDomCapturePrint` | `../aidream/apps/shared/chat/src/conversation/hooks/useDomCapturePrint.ts` | Pure utility; html2canvas + jsPDF |
 
 #### 1.5 What the rebuild consumes from `@matrx/agents` (from [audit 02](audits/02-chat-rewrite-gap-map.md))
 
@@ -165,7 +165,7 @@ The Agent Runner's `AgentAssistantMessage` transitively imports these four from 
 
 **Today.** [`features/context-menu/UnifiedContextMenu.tsx`](features/context-menu/UnifiedContextMenu.tsx) is fully functional against the **legacy prompts/builtins** system. It loads shortcuts from DB, binds text selection → prompt variables, and executes via `usePromptRunner()`.
 
-**What's missing.** The bridge from `AgentShortcut` (new) to the context menu. The redux slice at [`packages/chat/src/agents/redux/agent-shortcuts/`](packages/chat/src/agents/redux/agent-shortcuts/) already holds the definitions, scope mappings, and result-display config; nothing consumes it yet.
+**What's missing.** The bridge from `AgentShortcut` (new) to the context menu. The redux slice at [`../aidream/apps/shared/chat/src/agents/redux/agent-shortcuts/`](../aidream/apps/shared/chat/src/agents/redux/agent-shortcuts/) already holds the definitions, scope mappings, and result-display config; nothing consumes it yet.
 
 ### Scope of the migration
 
@@ -376,8 +376,8 @@ Agent Apps lean heavily on bidirectionally-interactive artifacts (see the mental
 | Path | Retires when | Notes |
 |---|---|---|
 | `features/cx-chat/` | Chat (1) Week 5 | Full replacement per [audit 02](audits/02-chat-rewrite-gap-map.md). |
-| `packages/chat/src/cx-conversation/` (most of it) | Chat (1) Week 5 | Keep the 4 Runner-critical files (§1.4). |
-| `packages/chat/src/conversation/` | Chat (1) Week 5 | Keep utils (`useDomCapturePrint`, `markdown-print`, `resource-parsing`); delete barrels. |
+| `../aidream/apps/shared/chat/src/cx-conversation/` (most of it) | Chat (1) Week 5 | Keep the 4 Runner-critical files (§1.4). |
+| `../aidream/apps/shared/chat/src/conversation/` | Chat (1) Week 5 | Keep utils (`useDomCapturePrint`, `markdown-print`, `resource-parsing`); delete barrels. |
 | `features/chat/` (most of it) | Chat (1) Week 5 | Keep print utils + tool-updates overlay + tool-renderers; delete legacy stream. |
 | `app/(authenticated)/deprecated/chat/` | Chat (1) ships | Remove stub. |
 | Legacy no-op shims in `messageActionRegistry.ts` lines 41–64 | Chat (1) ships | Full path to new thunks. |
@@ -398,7 +398,7 @@ Each retirement gets its own PR, not bundled with the new-system build. Deletion
 
 | Severity | What | When |
 |---|---|---|
-| **HIGH** | `ConversationMessage` shape split between `packages/chat/src/agents/types/agent-message-types.ts:316` (API wire) and `packages/chat/src/cx-chat/types/conversation.ts:39` (UI state) — chat slice should wrap/extend the API shape, not redefine. | Do during Chat (1) Week 2–3 |
+| **HIGH** | `ConversationMessage` shape split between `../aidream/apps/shared/chat/src/agents/types/agent-message-types.ts:316` (API wire) and `../aidream/apps/shared/chat/src/cx-chat/types/conversation.ts:39` (UI state) — chat slice should wrap/extend the API shape, not redefine. | Do during Chat (1) Week 2–3 |
 | **HIGH** | `MessageRole` in `cx-chat/types/conversation.ts:26` is 3-valued; canonical `Role` in `agent-message-types.ts:99` has 6 values (incl. `"tool"`, `"developer"`, `"output"`). DB rows are losing information. | Do during Chat (1) Week 2–3 |
 | **MED** | `ApiMode` duplicated between `cx-chat` and `legacy-shims`. (Distinct from `ApiEndpointMode` on `ConversationInvocation.routing` — that's a different 2-valued enum.) | Promote to `@matrx/agents/types` during Chat rewrite |
 | **LOW** | `CxArtifactRow` in `features/artifacts/types.ts:67` — verify DB auto-gen produces `Database["public"]["Tables"]["cx_artifact"]["Row"]` and replace. | Any time |

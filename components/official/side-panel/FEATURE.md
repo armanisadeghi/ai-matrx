@@ -36,7 +36,7 @@ is a layout change, not a slide).
   cookie `side-panel:<panelId>:width`.
 - `side-panel-width.server.ts` — `readSidePanelWidth(panelId, sizes)` for the first paint.
 
-**Consumers:** `packages/chat/src/canvas/workspace/ShellChatDock.tsx` (the docked chat) and
+**Consumers:** `../aidream/apps/shared/chat/src/canvas/workspace/ShellChatDock.tsx` (the docked chat) and
 `ChatCanvasWorkspace.tsx` (properties);
 `features/pdf-extractor/studio/PdfStudioShell.tsx` (sidebar + inspector rails). Via `ListDetailSplit`: the
 ai-models Providers, Settings, Offerings, Endpoints and APIs screens, and the podcasts admin list.

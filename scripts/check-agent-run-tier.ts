@@ -10,7 +10,7 @@
  * and owns the `config_overrides` merge, so the run path has no use for the
  * definition.
  *
- * This counts calls to the two definition fetches in `packages/chat/src`
+ * This counts calls to the two definition fetches in `../aidream/apps/shared/chat/src`
  * (tests excluded) outside the builder-tier files. The count is SHRINK-ONLY:
  * a file above its baseline fails; a file below it must lower its baseline in
  * the same commit. Reached 0 at P24v (voice reads a server-read realtime
@@ -22,12 +22,13 @@
  *   pnpm check:agent-run-tier --root <dir> # scan another tree (red proof)
  */
 import { execSync } from "node:child_process";
+import { gitFiles } from "./lib/source-roots.cjs";
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 
 const ROOT = path.resolve(__dirname, "..");
-const PKG = "packages/chat/src/";
+const PKG = "../aidream/apps/shared/chat/src/";
 
 /** A CALL of a definition fetch — prose and imports that name it are not reads. */
 const DEFINITION_FETCH = /\b(?:fetchAgentExecutionFull|fetchFullAgent)\s*\(/g;
@@ -77,10 +78,7 @@ const APP_RUN_SIDE = [
 ];
 
 function sourceFiles(root: string): string[] {
-  const out = execSync(
-    `git ls-files --cached --others --exclude-standard '${PKG}*.ts' '${PKG}*.tsx' ${APP_RUN_SIDE.map((f) => `'${f}'`).join(" ")}`,
-    { cwd: root, encoding: "utf8", maxBuffer: 32 * 1024 * 1024 },
-  );
+  const out = gitFiles(root, ["ls-files", "--cached", "--others", "--exclude-standard", "--", `${PKG}*.ts`, `${PKG}*.tsx`, ...APP_RUN_SIDE]);
   return out.split("\n").filter(Boolean).filter((f) => !isTest(f));
 }
 

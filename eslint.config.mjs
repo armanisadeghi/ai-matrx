@@ -360,7 +360,7 @@ const matrxLintPlugin = {
         schema: [],
         messages: {
           banned:
-            "Do not import StreamingJsonTracker here. It is the streaming raw-text JSON scanner and belongs ONLY to the canonical extraction path (packages/chat/src/agents/redux/execution-system/thunks/process-stream.ts), which feeds it the ANSWER-only text via deriveAnswerText — never raw chunks. For a one-shot parse of a string you already have, use extractFirstJson/extractAllJson from @ai-matrx/kit/json-extract. Spinning up a parallel scanner reintroduces the thinking-pollution bug this ban exists to kill.",
+            "Do not import StreamingJsonTracker here. It is the streaming raw-text JSON scanner and belongs ONLY to the canonical extraction path (../aidream/apps/shared/chat/src/agents/redux/execution-system/thunks/process-stream.ts), which feeds it the ANSWER-only text via deriveAnswerText — never raw chunks. For a one-shot parse of a string you already have, use extractFirstJson/extractAllJson from @ai-matrx/kit/json-extract. Spinning up a parallel scanner reintroduces the thinking-pollution bug this ban exists to kill.",
         },
       },
       create(context) {
@@ -521,7 +521,7 @@ const matrxLintPlugin = {
         // but keep them hosts so refactors inside them don't fight
         // the guard).
         const ALLOWED = [
-          "/packages/chat/src/agents/redux/agent-definition/",
+          "/apps/shared/chat/src/agents/redux/agent-definition/",
           "/features/agents/browse/service.ts",
           // Admin model-maintenance sweeps (usage report + bulk
           // reference replacement) — list-shaped reads scoped by a
@@ -581,7 +581,7 @@ const matrxLintPlugin = {
         schema: [],
         messages: {
           banned:
-            'Hand-written mandate ladder. A `mandate.binding` read filtered by `principal_type` is a resolution rung, and rungs are walked in ONE place: ask `GET /mandates/{key}/resolution` through `resolveMandate` (packages/chat/src/mandates/service.ts), which goes over the org-bound transport and returns the same verdict the server runs on. To LIST bindings, use the scoped list door (`mnd_list_scoped`) via features/mandates/browse or the admin door in features/mandates/admin/service.ts. To WRITE one, use features/mandates/overrides.ts. See common-docs/systems/intelligence/mandates/STATE.md.',
+            'Hand-written mandate ladder. A `mandate.binding` read filtered by `principal_type` is a resolution rung, and rungs are walked in ONE place: ask `GET /mandates/{key}/resolution` through `resolveMandate` (../aidream/apps/shared/chat/src/mandates/service.ts), which goes over the org-bound transport and returns the same verdict the server runs on. To LIST bindings, use the scoped list door (`mnd_list_scoped`) via features/mandates/browse or the admin door in features/mandates/admin/service.ts. To WRITE one, use features/mandates/overrides.ts. See common-docs/systems/intelligence/mandates/STATE.md.',
         },
       },
       create(context) {
@@ -1141,13 +1141,13 @@ const parallelSliceRestriction = {
       name: "@reduxjs/toolkit",
       importNames: ["createSlice", "createReducer"],
       message:
-        "createSlice / createReducer must live in lib/redux/**, features/*/redux/** or packages/chat/src/**/redux/**. Adding a new slice elsewhere fragments global state. Extend an existing slice instead — see PRINCIPLES.md anti-pattern #3 (Parallel Redux slices). If a genuinely new slice is needed, place it in the canonical dirs.",
+        "createSlice / createReducer must live in lib/redux/**, features/*/redux/** or ../aidream/apps/shared/chat/src/**/redux/**. Adding a new slice elsewhere fragments global state. Extend an existing slice instead — see PRINCIPLES.md anti-pattern #3 (Parallel Redux slices). If a genuinely new slice is needed, place it in the canonical dirs.",
     },
     {
       name: "@reduxjs/toolkit/react",
       importNames: ["createSlice", "createReducer"],
       message:
-        "createSlice / createReducer must live in lib/redux/**, features/*/redux/** or packages/chat/src/**/redux/**. See PRINCIPLES.md anti-pattern #3.",
+        "createSlice / createReducer must live in lib/redux/**, features/*/redux/** or ../aidream/apps/shared/chat/src/**/redux/**. See PRINCIPLES.md anti-pattern #3.",
     },
   ],
 };
@@ -1722,7 +1722,7 @@ export default [
       // user -> ACTIVE org -> system is walked in ONE place; a client that
       // walks its own rungs is how a screen comes to lie. Error, not warn:
       // this rule was proven RED on the three hand-written ladders it
-      // killed (packages/chat/src/mandates/service.ts, service.server.ts) before
+      // killed (../aidream/apps/shared/chat/src/mandates/service.ts, service.server.ts) before
       // they were deleted, and the tree is at zero violations.
       "matrx/no-mandate-binding-ladder-query": "error",
       // THE DOOR LAW (Arman, 2026-08-08): never render an id you can't
@@ -1880,7 +1880,7 @@ export default [
   {
     // ─── Model Settings: one place decides the standard list ───────────
     // The STANDARD settings list is selected in exactly ONE place —
-    // buildSettingsRows() (packages/chat/src/agents/redux/agent-settings/
+    // buildSettingsRows() (../aidream/apps/shared/chat/src/agents/redux/agent-settings/
     // settings-catalogue.ts), which returns the model's supported keys.
     // Set-but-unsupported keys are surfaced separately by the validation /
     // caution layer (the IssueTable). Components must NOT re-filter the
@@ -2015,7 +2015,7 @@ export default [
     },
   },
   {
-    files: ["features/window-panels/windows/**/*", "packages/chat/src/window-panels/windows/**/*"],
+    files: ["features/window-panels/windows/**/*", "../aidream/apps/shared/chat/src/window-panels/windows/**/*"],
     rules: {
       "no-restricted-imports": "off",
     },
@@ -2167,7 +2167,7 @@ export default [
   // bypassing the funnel forfeits the resume handoff. See
   // features/agents/docs/CLIENT_TOOL_SUSPEND_RESUME.md.
   {
-    files: ["packages/chat/src/agents/api/submit-tool-results.ts"],
+    files: ["../aidream/apps/shared/chat/src/agents/api/submit-tool-results.ts"],
     rules: {
       "no-restricted-syntax": [
         "error",
@@ -2196,8 +2196,8 @@ export default [
       "lib/sync/**",
       // Any depth: a slice under features/<x>/modes/<y>/redux/ is still "in a
       // redux directory" — the intent is the directory, not the nesting.
-      "features/**/redux/**", "packages/chat/src/**/redux/**",
-      "features/**/state/**", "packages/chat/src/**/state/**",
+      "features/**/redux/**", "../aidream/apps/shared/chat/src/**/redux/**",
+      "features/**/state/**", "../aidream/apps/shared/chat/src/**/state/**",
       "styles/themes/**",
       "**/__tests__/**",
       "**/*.test.ts",

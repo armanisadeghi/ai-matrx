@@ -29,7 +29,7 @@ import { join, relative } from "node:path";
 import { aliasTarget } from "./lib/source-roots.cjs";
 
 const ROOT = process.cwd();
-const SCAN_DIRS = ["app", "features", "packages/chat/src", "lib", "utils", "components", "hooks"];
+const SCAN_DIRS = ["app", "features", "../aidream/apps/shared/chat/src", "lib", "utils", "components", "hooks"];
 
 // schema → tables that carry a *_by_tier column (information_schema.columns,
 // column_name in ('updated_by_tier','created_by_tier'), 2026-09-20).

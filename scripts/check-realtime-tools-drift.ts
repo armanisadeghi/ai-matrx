@@ -11,7 +11,7 @@
  *
  *   1. The documented contract shape (§3 `RealtimeTool`) — `{name, description,
  *      parameters, execution}` with `execution ∈ {server,client,builtin}` — is
- *      exactly what `ResolvedRealtimeTool` declares in packages/chat/src/voice-agent/types.ts.
+ *      exactly what `ResolvedRealtimeTool` declares in ../aidream/apps/shared/chat/src/voice-agent/types.ts.
  *   2. When creds + a known agent id are present, the LIVE
  *      `POST /ai/agents/{id}/realtime-tools` response matches that same shape.
  *      (Offline-safe: with no creds it checks the type-vs-contract only and
@@ -55,13 +55,13 @@ interface DriftIssue {
 // structurally by reading the declaration text and confirming each contract
 // field + each execution literal is present. This catches the realistic drift:
 // a field renamed/removed, or an execution variant added/dropped, in
-// packages/chat/src/voice-agent/types.ts without updating the contract (or vice-versa).
+// ../aidream/apps/shared/chat/src/voice-agent/types.ts without updating the contract (or vice-versa).
 function checkTypeAgainstContract(): DriftIssue[] {
   const issues: DriftIssue[] = [];
-  const typesPath = resolve(ROOT, "packages/chat/src/voice-agent/types.ts");
+  const typesPath = resolve(ROOT, "../aidream/apps/shared/chat/src/voice-agent/types.ts");
   if (!existsSync(typesPath)) {
     return [
-      { where: "types.ts", detail: "packages/chat/src/voice-agent/types.ts not found" },
+      { where: "types.ts", detail: "../aidream/apps/shared/chat/src/voice-agent/types.ts not found" },
     ];
   }
   const src = readFileSync(typesPath, "utf8");
@@ -74,7 +74,7 @@ function checkTypeAgainstContract(): DriftIssue[] {
     return [
       {
         where: "ResolvedRealtimeTool",
-        detail: "interface not found in packages/chat/src/voice-agent/types.ts",
+        detail: "interface not found in ../aidream/apps/shared/chat/src/voice-agent/types.ts",
       },
     ];
   }
@@ -277,7 +277,7 @@ async function main(): Promise<void> {
   }
   console.log("");
   console.log(
-    `${DIM}Fix: align packages/chat/src/voice-agent/types.ts ResolvedRealtimeTool with ` +
+    `${DIM}Fix: align ../aidream/apps/shared/chat/src/voice-agent/types.ts ResolvedRealtimeTool with ` +
       `common-docs/systems/chat/voice/REALTIME_TOOL_BRIDGE.md §3 ` +
       `(or update the contract if it changed).${RESET}`,
   );

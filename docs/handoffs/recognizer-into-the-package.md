@@ -44,8 +44,8 @@ Everything the accumulator needs that is not already in a package:
 
 | Module | Lines | Host coupling |
 |---|---:|---|
-| `packages/chat/src/agents/redux/execution-system/utils/stream-block-accumulator.ts` | 1,744 | the subject |
-| `packages/chat/src/agents/redux/execution-system/utils/content-prefilter.ts` | 427 | one constant: `OUR_FILE_URL_MARKERS` |
+| `../aidream/apps/shared/chat/src/agents/redux/execution-system/utils/stream-block-accumulator.ts` | 1,744 | the subject |
+| `../aidream/apps/shared/chat/src/agents/redux/execution-system/utils/content-prefilter.ts` | 427 | one constant: `OUR_FILE_URL_MARKERS` |
 | `features/content-ir/surfaces/xml-finalize.ts` | 164 | **none** — pure |
 | `features/content-ir/surfaces/embedded-kind-json.ts` | 124 | **none** — pure |
 | `features/content-ir/registry/region-envelope-memo.ts` | 165 | `captureError` |
@@ -73,7 +73,7 @@ media-source helpers, and the directives grammar. That is a different project.
 2. **Host seam, same pattern as `kind-route`.** One `StreamHostEnv` carrying
    the nine detectors, the two registries, `captureError`, and
    `OUR_FILE_URL_MARKERS`. The route already proves this pattern in this repo.
-3. **Keep the current import path.** `packages/chat/src/agents/redux/execution-system/utils/stream-block-accumulator.ts`
+3. **Keep the current import path.** `../aidream/apps/shared/chat/src/agents/redux/execution-system/utils/stream-block-accumulator.ts`
    becomes the thin Matrix binding, exactly as `features/content-ir/react/kind-route.ts`
    is today. Zero call sites change.
 4. **The gate is already built.** 31 test files / 229 tests exercise the

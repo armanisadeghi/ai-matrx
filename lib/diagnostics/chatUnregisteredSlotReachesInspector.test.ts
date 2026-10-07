@@ -14,7 +14,7 @@ describe("an unregistered chat host slot is recorded, not just logged", () => {
   it("lands once per slot in the Error Inspector as a durable, persistable row", () => {
     jest.resetModules();
     jest.spyOn(console, "warn").mockImplementation(() => {});
-    jest.doMock("../../packages/chat/src/host/configure", () => {
+    jest.doMock("../../../aidream/apps/shared/chat/src/host/configure", () => {
       const { createAppChatDiagnostics } = require("@/lib/diagnostics/chat-diagnostics-port");
       const host = { diagnostics: createAppChatDiagnostics() };
       return {
@@ -25,7 +25,7 @@ describe("an unregistered chat host slot is recorded, not just logged", () => {
     });
     const store = require("@/lib/diagnostics/errorCaptureStore") as Store;
     const { shouldPersistCapturedTier } = require("@/lib/diagnostics/persistCapturedErrors") as Persist;
-    const { reportUnregisteredHostSlot } = require("../../packages/chat/src/host/diagnostics");
+    const { reportUnregisteredHostSlot } = require("../../../aidream/apps/shared/chat/src/host/diagnostics");
     store.clearCapturedErrors();
 
     reportUnregisteredHostSlot("slot.under.test", "a stand-in runs");

@@ -41,33 +41,33 @@ import { fileURLToPath } from "node:url";
 import { featureRegExp } from "./lib/source-roots.cjs";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
-const SCAN_DIRS = ["features", "packages/chat/src", "lib", "components", "app", "hooks", "utils"];
+const SCAN_DIRS = ["features", "../aidream/apps/shared/chat/src", "lib", "components", "app", "hooks", "utils"];
 
 /** Allowed files, each with the reason. A stale entry (file gone) fails too. */
 const ALLOWED = {
-  "packages/chat/src/agents/redux/execution-system/context-rules/request-context.ts": "THE door",
-  "packages/chat/src/agents/ui-first-tools/redux/build-ambient-context.ts": "defines buildAmbientContext",
-  "packages/chat/src/agents/redux/execution-system/instance-resources/instance-resources.selectors.ts":
+  "../aidream/apps/shared/chat/src/agents/redux/execution-system/context-rules/request-context.ts": "THE door",
+  "../aidream/apps/shared/chat/src/agents/ui-first-tools/redux/build-ambient-context.ts": "defines buildAmbientContext",
+  "../aidream/apps/shared/chat/src/agents/redux/execution-system/instance-resources/instance-resources.selectors.ts":
     "defines selectResourceContextPayload",
-  "packages/chat/src/agents/redux/execution-system/thunks/execute-instance.thunk.ts":
+  "../aidream/apps/shared/chat/src/agents/redux/execution-system/thunks/execute-instance.thunk.ts":
     "assembleRequest sets request.context from the door",
-  "packages/chat/src/agents/redux/execution-system/thunks/execute-manual-instance.thunk.ts":
+  "../aidream/apps/shared/chat/src/agents/redux/execution-system/thunks/execute-manual-instance.thunk.ts":
     "assembleManualRequest sets request.context from the door",
-  "packages/chat/src/agents/redux/execution-system/thunks/resume-instance.thunk.ts":
+  "../aidream/apps/shared/chat/src/agents/redux/execution-system/thunks/resume-instance.thunk.ts":
     "resume spreads the door's context into its body",
-  "packages/chat/src/agents/redux/execution-system/utils/continuation-body.ts":
+  "../aidream/apps/shared/chat/src/agents/redux/execution-system/utils/continuation-body.ts":
     "lists the door-built request fields a continuation copies (context_withheld included)",
 };
 
 /** The request builders: each sends the door's `context` AND its `context_withheld`. */
 const REQUEST_BUILDERS = [
-  "packages/chat/src/agents/redux/execution-system/thunks/execute-instance.thunk.ts",
-  "packages/chat/src/agents/redux/execution-system/thunks/execute-manual-instance.thunk.ts",
-  "packages/chat/src/agents/redux/execution-system/thunks/resume-instance.thunk.ts",
+  "../aidream/apps/shared/chat/src/agents/redux/execution-system/thunks/execute-instance.thunk.ts",
+  "../aidream/apps/shared/chat/src/agents/redux/execution-system/thunks/execute-manual-instance.thunk.ts",
+  "../aidream/apps/shared/chat/src/agents/redux/execution-system/thunks/resume-instance.thunk.ts",
 ];
 
 /** The preview's request, and the door's preview fields (rule 9). */
-const PREVIEW = "packages/chat/src/agents/components/context-preview/useContextPreview.ts";
+const PREVIEW = "../aidream/apps/shared/chat/src/agents/components/context-preview/useContextPreview.ts";
 
 /** Rule 9: the preview body is the door's preview fields; the door's preview fields carry the page rule. */
 export function previewFindings(relPath, text, doorText) {
@@ -86,7 +86,7 @@ export function previewFindings(relPath, text, doorText) {
   }
   return out;
 }
-const DOOR_PATH = "packages/chat/src/agents/redux/execution-system/context-rules/request-context.ts";
+const DOOR_PATH = "../aidream/apps/shared/chat/src/agents/redux/execution-system/context-rules/request-context.ts";
 
 /** Rule 6 for one builder's text: the door's withheld keys must reach its body. */
 export function builderFindings(relPath, text) {
@@ -140,7 +140,7 @@ const RULES = [
 /** Findings for one file's text (path relative to repo root). */
 /** Rules that hold even in the allowed files (only the door itself defines them). */
 const EVERYWHERE = new Set(["ambient-override"]);
-const DOOR = "packages/chat/src/agents/redux/execution-system/context-rules/request-context.ts";
+const DOOR = "../aidream/apps/shared/chat/src/agents/redux/execution-system/context-rules/request-context.ts";
 
 export function findings(relPath, text) {
   if (relPath === DOOR) return [];
@@ -194,7 +194,7 @@ function run() {
   if (all.length || stale.length) {
     console.error(
       `\ncheck:context-single-door — ${all.length} finding(s). A request's context is built ONLY by ` +
-        "packages/chat/src/agents/redux/execution-system/context-rules/request-context.ts (buildRequestContext).",
+        "../aidream/apps/shared/chat/src/agents/redux/execution-system/context-rules/request-context.ts (buildRequestContext).",
     );
     process.exit(1);
   }
@@ -232,7 +232,7 @@ function selfTest() {
     console.error("✗ self-test: a clean file was flagged", findings("features/x/clean.ts", clean));
     ok = false;
   }
-  if (findings("packages/chat/src/agents/redux/execution-system/context-rules/request-context.ts", "buildContextWire(rows)").length) {
+  if (findings("../aidream/apps/shared/chat/src/agents/redux/execution-system/context-rules/request-context.ts", "buildContextWire(rows)").length) {
     console.error("✗ self-test: the door itself was flagged");
     ok = false;
   }
@@ -296,7 +296,7 @@ function selfTest() {
     ok = false;
   }
   // Rule 7 holds inside an allowed request builder too (the resume path forced it until 2026-10-01).
-  if (!findings("packages/chat/src/agents/redux/execution-system/thunks/resume-instance.thunk.ts", "  includeAmbient: true,").some((f) => f.rule === "ambient-override")) {
+  if (!findings("../aidream/apps/shared/chat/src/agents/redux/execution-system/thunks/resume-instance.thunk.ts", "  includeAmbient: true,").some((f) => f.rule === "ambient-override")) {
     console.error("✗ self-test: includeAmbient in an allowed builder was NOT caught");
     ok = false;
   }

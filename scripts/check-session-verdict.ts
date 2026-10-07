@@ -34,7 +34,7 @@ import { join, relative, basename } from "node:path";
 import { exitAfterDrain } from "./lib/exit-after-drain";
 
 const ROOT = process.cwd();
-const ROOTS = ["app", "features", "packages/chat/src", "components", "lib", "utils"];
+const ROOTS = ["app", "features", "../aidream/apps/shared/chat/src", "components", "lib", "utils"];
 
 /** The door and the helper themselves. */
 const EXEMPT = new Set([

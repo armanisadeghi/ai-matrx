@@ -15,7 +15,7 @@ Successfully consolidated all quick actions related files into a single feature 
 - `UtilitiesOverlay.tsx` → `features/quick-actions/components/UtilitiesOverlay.tsx`
 
 **From `components/quick-sheets/`:**
-- `QuickChatSheet.tsx` → `packages/chat/src/quick-actions/components/QuickChatSheet.tsx`
+- `QuickChatSheet.tsx` → `../aidream/apps/shared/chat/src/quick-actions/components/QuickChatSheet.tsx`
 - `QuickDataSheet.tsx` → `features/quick-actions/components/QuickDataSheet.tsx`
 - `index.ts` → Removed (consolidated into `features/quick-actions/index.ts`)
 

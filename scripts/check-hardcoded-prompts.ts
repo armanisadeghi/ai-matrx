@@ -76,7 +76,7 @@ import { exitAfterDrain } from "./lib/exit-after-drain";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const ALLOWLIST_FILE = join(ROOT, "scripts", "hardcoded-prompts-allowlist.json");
-const SCAN_DIRS = ["features", "packages/chat/src", "lib"];
+const SCAN_DIRS = ["features", "../aidream/apps/shared/chat/src", "lib"];
 const SKIP_DIR =
   /(^|\/)(node_modules|\.next[^/]*|dist|build|coverage|__tests__|\.git)(\/|$)/;
 /** Demo sample code is not an agent definition. */

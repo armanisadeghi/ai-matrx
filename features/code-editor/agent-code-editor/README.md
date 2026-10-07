@@ -2,7 +2,7 @@
 
 Agent-system replacement for the legacy `features/code-editor/components/AICodeEditor*` chain.
 
-Built on the agent execution system (`packages/chat/src/agents/redux/execution-system/`) — not the prompt execution system. Self-managed via Redux following the Smart pattern established by `SmartAgentInput` / `AgentRunner`.
+Built on the agent execution system (`../aidream/apps/shared/chat/src/agents/redux/execution-system/`) — not the prompt execution system. Self-managed via Redux following the Smart pattern established by `SmartAgentInput` / `AgentRunner`.
 
 ---
 
@@ -156,4 +156,4 @@ Do NOT migrate these until the agent-based flow is validated against a real agen
 
 - [`features/agents/docs/WIDGET_HANDLE_SYSTEM.md`](../../agents/docs/WIDGET_HANDLE_SYSTEM.md) — the widget handle contract this editor consumes.
 - [`features/agents/components/tools-management/CLIENT_SIDE_TOOLS.md`](../../agents/components/tools-management/CLIENT_SIDE_TOOLS.md) — `tool_delegated` protocol.
-- [`packages/chat/src/agents/components/inputs/smart-input/SmartAgentInput.tsx`](../../agents/components/inputs/smart-input/SmartAgentInput.tsx) — Smart pattern reference.
+- [`../aidream/apps/shared/chat/src/agents/components/inputs/smart-input/SmartAgentInput.tsx`](../../agents/components/inputs/smart-input/SmartAgentInput.tsx) — Smart pattern reference.

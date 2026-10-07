@@ -44,7 +44,7 @@ const WATCHED = [
   "features/content-ir/react",
   "features/content-ir/kinds",
   "features/block-state",
-  "packages/chat/src/agents/redux/execution-system/instance-resources",
+  "../aidream/apps/shared/chat/src/agents/redux/execution-system/instance-resources",
 ];
 
 /** Per-viewer conveniences — NOT a person's work. Each says why. */

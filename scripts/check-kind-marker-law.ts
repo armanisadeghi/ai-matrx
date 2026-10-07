@@ -44,6 +44,7 @@
 
 import { existsSync, readFileSync } from "node:fs";
 import { execSync } from "node:child_process";
+import { gitFiles } from "./lib/source-roots.cjs";
 import path from "node:path";
 import ts from "typescript";
 import { KIND_KEY } from "@ai-matrx/content-ir";
@@ -52,7 +53,7 @@ import { exitAfterDrain } from "./lib/exit-after-drain";
 const ROOT = path.resolve(__dirname, "..");
 
 /** Scanned roots — product code only. */
-const SCAN_DIRS = ["features", "packages/chat/src", "components", "app", "lib", "hooks", "utils", "actions"];
+const SCAN_DIRS = ["features", "../aidream/apps/shared/chat/src", "components", "app", "lib", "hooks", "utils", "actions"];
 
 /** Demo routes are sample code, not the platform (same carve-out as check:hardcoded-prompts). */
 const EXCLUDE = [/^app\/\(dev\)\//];
@@ -78,7 +79,7 @@ const BLESSED: Record<string, string> = {
   "features/content-ir/kinds/kind-markdown-utils.ts":
     "not a door — DISPLAY ONLY: stripKindForDisplay formats a nested value into an inline " +
     "code span a human reads. It never feeds storage or a re-render.",
-  "packages/chat/src/utils/content-ir/kinds/kind-markdown-utils.ts":
+  "../aidream/apps/shared/chat/src/utils/content-ir/kinds/kind-markdown-utils.ts":
     "not a door — DISPLAY ONLY: stripKindForDisplay formats a nested value into an inline " +
     "code span a human reads. It never feeds storage or a re-render.",
   "components/official/structured-value/StructuredValueView.tsx":
@@ -109,7 +110,7 @@ const BLESSED: Record<string, string> = {
     "not an instance — a SCHEMA field census: inferLoadingSlug skips the declared `__kind` " +
     "property when counting a kind SCHEMA's fields to pick a loading skeleton; the marker " +
     "is identity, never a shape signal, and only a slug leaves.",
-  "packages/chat/src/agents/redux/execution-system/utils/build-tool-injection.ts":
+  "../aidream/apps/shared/chat/src/agents/redux/execution-system/utils/build-tool-injection.ts":
     "not an instance — door 1 (THE AGENT PROMPT), schema side: the value contract is " +
     "described as PROSE in a tool description the model reads; the write seam accepts the " +
     "marker either way. No payload is reduced.",
@@ -251,12 +252,9 @@ function scan(): string[] {
   // the moment the branch was pushed, because a PR checkout has it committed.
   // A guard whose local answer differs from its CI answer teaches people to
   // ignore it. .gitignore is still honoured, so build output stays out.
-  const files = execSync(
-    `git ls-files --cached --others --exclude-standard ${SCAN_DIRS.map((d) => `'${d}'`).join(" ")} | grep -E '\\.(ts|tsx)$'`,
-    { cwd: ROOT, encoding: "utf8", maxBuffer: 64 * 1024 * 1024 },
-  )
+  const files = gitFiles(ROOT, ["ls-files", "--cached", "--others", "--exclude-standard", "--", ...SCAN_DIRS])
     .split("\n")
-    .filter(Boolean);
+    .filter((f) => /\.(ts|tsx)$/.test(f));
 
   const violations: string[] = [];
 

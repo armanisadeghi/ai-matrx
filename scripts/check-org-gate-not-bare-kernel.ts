@@ -83,7 +83,7 @@ import { join, relative, resolve } from "node:path";
 
 const REPO = resolve(__dirname, "..");
 const ALLOWLIST_PATH = join(REPO, "scripts", "org-gate-not-bare-kernel.allowlist.json");
-const SCAN_DIRS = ["app", "features", "packages/chat/src", "components", "hooks", "lib", "providers"];
+const SCAN_DIRS = ["app", "features", "../aidream/apps/shared/chat/src", "components", "hooks", "lib", "providers"];
 const SKIP_DIR = new Set(["node_modules", ".next", "dist", "build", "__tests__", "__mocks__"]);
 const KERNEL = "requireOrganizationContext";
 

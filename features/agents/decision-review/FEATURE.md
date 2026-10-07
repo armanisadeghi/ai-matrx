@@ -26,7 +26,7 @@ Decide steps (with `workflow_run_id` / `workflow_node_id` in metadata) and `/ai/
   and Workflow Studio).
 - Entry points: `ReviewAnswersLink` in `AgentHeader` / `AgentRunHeader` (only when the agent's
   messages carry a `decision_questions` part) and on the battle Decisions panel.
-- The answer card is the shared `packages/chat/src/agents/decision-answers/DecisionAnswers` primitive.
+- The answer card is the shared `../aidream/apps/shared/chat/src/agents/decision-answers/DecisionAnswers` primitive.
 - Tests: `__tests__/queue.test.ts` (row reading, queue order, keyboard map).
 
 ## Change Log

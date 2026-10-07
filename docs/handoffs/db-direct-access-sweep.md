@@ -64,7 +64,7 @@ per this campaign's own findings, an extra unaudited surface.
   visibility predicate baked into every recursion step, not a filtered `SELECT`. That counts as
   real processing. Porting a 488-line graph algorithm belongs in its own piece of work with full
   test coverage, never folded into a CRUD sweep.
-- **`packages/chat/src/agents/services/agentService.ts`** (catalog reads) — the catalog-tree assembly is
+- **`../aidream/apps/shared/chat/src/agents/services/agentService.ts`** (catalog reads) — the catalog-tree assembly is
   shared logic consumed by BOTH the REST surface and the AI Dream MCP server; centralizing it in
   `aidream/services/agent_service/` is the intended single source of truth. Duplicating it into
   SQL for one frontend surface trades one violation for a worse one.

@@ -33,7 +33,7 @@ import { join, relative } from "node:path";
 const REPO_ROOT = join(__dirname, "..", "..", "..");
 
 /** Both trees a mandate screen is made of — swept whole. */
-const SWEPT_TREES = ["features/mandates", "packages/chat/src/mandates", "features/bindings"] as const;
+const SWEPT_TREES = ["features/mandates", "../aidream/apps/shared/chat/src/mandates", "features/bindings"] as const;
 
 /**
  * An id-shaped interpolation: `${...id}`, `${...Id}`, `${...uuid}`. It matches
@@ -166,7 +166,7 @@ describe("no mandate sentence prints an internal id at a person", () => {
     const files = SWEPT_TREES.flatMap(sourceFilesUnder);
     expect(files.length).toBeGreaterThan(50);
     const service = readFileSync(
-      join(REPO_ROOT, "packages/chat/src/mandates/service.ts"),
+      join(REPO_ROOT, "../aidream/apps/shared/chat/src/mandates/service.ts"),
       "utf8",
     );
     expect(service).toContain("this screen can only run an agent");

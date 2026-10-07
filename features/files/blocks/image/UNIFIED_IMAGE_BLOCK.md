@@ -271,11 +271,11 @@ lands.
 | Renderer component | [`UnifiedImageBlockRenderer.tsx`](./UnifiedImageBlockRenderer.tsx) |
 | Image-only legacy adapters | [`adapters/`](./adapters/) |
 | Helpers (viewer-url, expiry parser) | [`helpers/`](./helpers/) |
-| Stream ingest wiring | `packages/chat/src/agents/redux/execution-system/thunks/process-stream.ts` |
-| DB-load wiring | `packages/chat/src/agents/redux/execution-system/utils/normalize-content-blocks.ts` |
-| Outbound wiring | `packages/chat/src/agents/redux/execution-system/utils/assemble-cx-content-blocks.ts` |
+| Stream ingest wiring | `../aidream/apps/shared/chat/src/agents/redux/execution-system/thunks/process-stream.ts` |
+| DB-load wiring | `../aidream/apps/shared/chat/src/agents/redux/execution-system/utils/normalize-content-blocks.ts` |
+| Outbound wiring | `../aidream/apps/shared/chat/src/agents/redux/execution-system/utils/assemble-cx-content-blocks.ts` |
 | Block-renderer dispatcher | `components/mardown-display/chat-markdown/block-registry/BlockRenderer.tsx` |
-| Popover | `packages/chat/src/agents/components/notifications/useImageArrivalPeeks.ts` |
+| Popover | `../aidream/apps/shared/chat/src/agents/components/notifications/useImageArrivalPeeks.ts` |
 | Action bar | `features/agents/components/messages-display/assistant/AssistantActionBar.tsx` |
 
 ## Change log

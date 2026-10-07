@@ -37,18 +37,18 @@ A **Shortcut** is a stored, first-class invocation of a specific agent version t
 
 **Redux** (split — note this!)
 
-- `packages/chat/src/agents/redux/agent-shortcuts/` — canonical slice, types, selectors, thunks. Do NOT create a parallel slice under `features/agent-shortcuts/redux/`.
-- `packages/chat/src/agents/redux/agent-shortcut-categories/` — categories slice
+- `../aidream/apps/shared/chat/src/agents/redux/agent-shortcuts/` — canonical slice, types, selectors, thunks. Do NOT create a parallel slice under `features/agent-shortcuts/redux/`.
+- `../aidream/apps/shared/chat/src/agents/redux/agent-shortcut-categories/` — categories slice
 
 **Invocation**
 
-- Shortcut click → `createInstanceFromShortcut` factory (`packages/chat/src/agents/redux/execution-system/thunks/create-instance.thunk.ts`) → `launchConversation` thunk.
+- Shortcut click → `createInstanceFromShortcut` factory (`../aidream/apps/shared/chat/src/agents/redux/execution-system/thunks/create-instance.thunk.ts`) → `launchConversation` thunk.
 
 ---
 
 ## Data model
 
-Canonical type from `packages/chat/src/agents/redux/agent-shortcuts/types.ts`:
+Canonical type from `../aidream/apps/shared/chat/src/agents/redux/agent-shortcuts/types.ts`:
 
 ```ts
 interface AgentShortcut {
@@ -165,7 +165,7 @@ A structured component (like Card — with title + description fields) flips one
 
 - **Pin-by-version is default.** `useLatest: true` is rare and risky — silent agent changes break embedded shortcuts. Document why when you set it.
 - **Agents have no awareness of Shortcuts.** A shortcut is a wrapper — the agent sees a normal invocation with variables already filled.
-- **Redux slice lives under `packages/chat/src/agents/redux/agent-shortcuts/`, not under `features/agent-shortcuts/`.** Extend that slice; never create a parallel one.
+- **Redux slice lives under `../aidream/apps/shared/chat/src/agents/redux/agent-shortcuts/`, not under `features/agent-shortcuts/`.** Extend that slice; never create a parallel one.
 - **Multi-scope from day one.** A shortcut belongs to exactly one scope row (user / org / project / task), but the CRUD components must work for all scopes — build once, reuse across admin/user/org routes per CLAUDE.md.
 - **Every create resolves scope and organization together.** Use `resolveShortcutWriteScope` at the shared CRUD boundary: personal rows carry `created_by` and the selected org; global rows carry the system org; org/project/task rows require an explicit scope id. Every direct insert and creation RPC still sends `organization_id` explicitly.
 - **Category names normalize once at the API-to-Redux boundary.** `categoryRowToDef` maps a missing legacy `label` to `Unnamed category`; `compareCategoryOrder` remains total for stale pre-normalized state. Category surfaces never call string methods on unchecked wire values.
@@ -186,7 +186,7 @@ A structured component (like Card — with title + description fields) flips one
   `features/mandates/__tests__/one-preflight-every-writer.test.ts`.
 - **`scopeMappings` targets variable NAMES, not indexes.** Renaming a variable on the agent is a breaking change for every pinned shortcut using that mapping.
 - **Shortcuts can trigger Workflows** instead of a single agent (`features/workflows/` — currently broken per CLAUDE.md, out of scope).
-- **Shortcuts can ship their own source code** for custom rendering — they're not limited to variable bindings. See [`packages/chat/src/tool-call-visualization/FEATURE.md`](../tool-call-visualization/FEATURE.md).
+- **Shortcuts can ship their own source code** for custom rendering — they're not limited to variable bindings. See [`../aidream/apps/shared/chat/src/tool-call-visualization/FEATURE.md`](../tool-call-visualization/FEATURE.md).
 
 ---
 
@@ -218,7 +218,7 @@ See `features/agents/migration/MASTER-PLAN.md`.
 
 - `2026-09-17` — **Duplicating a platform-global category is admin-gated, the same as creating one.** `POST /api/agent-shortcut-categories/[id]/duplicate` copied `source.organization_id` verbatim while `applyScopeToInsertPayload` 403s a non-super-admin asking for `scope: "global"` — so any reader of a system-org category could press Duplicate and mint a second platform-global row. A global source duplicated by a non-super-admin now lands in the caller's ADMITTED organization (`X-Organization-Id`, which the duplicate thunk now sends) as their own row; a super admin's copy stays global. Refusing outright was rejected: Duplicate is offered on rows the person can only read, and a 403 there is a dead button.
 
-- `2026-09-17` — **The scope kernel stopped defaulting the tenant, and the platform-global tier became admin-gated.** `app/api/_lib/apply-scope-to-insert.ts` — shared by `POST /api/agent-shortcuts` and `POST /api/agent-shortcut-categories` — treated an ABSENT scope exactly like `scope: "global"` and filed the row in the system organization, which is `global_readable`: any signed-in caller could publish a row every tenant on the platform can read, by leaving a field out. Now: `global` requires `scope: "global"` AND `checkIsSuperAdmin` (403 otherwise, no new gate primitive); an absent scope is a 400 naming the field; and the user / organization / project / task tiers take the organization ADMITTED at the boundary on `X-Organization-Id` — a body `organization_id` may only agree with it (409 on disagreement, 409 when `scope=organization`'s `scopeId` names a different one), and an absent header is a 400. Both routes stopped writing `scoped.organization_id ?? null` into `platform.categories` and `platform.associations`, which `public._stamp_org_default` turned into the writer's personal organization. **Caller work left open:** `packages/chat/src/agents/redux/agent-shortcut-categories/thunks.ts:114` POSTs `organization_id` in the body with NO `X-Organization-Id` header — until it carries the header, category creation refuses honestly with 400 `organization_context_required`. Law: `../../common-docs/policies/context-is-carried-never-rebuilt.md`.
+- `2026-09-17` — **The scope kernel stopped defaulting the tenant, and the platform-global tier became admin-gated.** `app/api/_lib/apply-scope-to-insert.ts` — shared by `POST /api/agent-shortcuts` and `POST /api/agent-shortcut-categories` — treated an ABSENT scope exactly like `scope: "global"` and filed the row in the system organization, which is `global_readable`: any signed-in caller could publish a row every tenant on the platform can read, by leaving a field out. Now: `global` requires `scope: "global"` AND `checkIsSuperAdmin` (403 otherwise, no new gate primitive); an absent scope is a 400 naming the field; and the user / organization / project / task tiers take the organization ADMITTED at the boundary on `X-Organization-Id` — a body `organization_id` may only agree with it (409 on disagreement, 409 when `scope=organization`'s `scopeId` names a different one), and an absent header is a 400. Both routes stopped writing `scoped.organization_id ?? null` into `platform.categories` and `platform.associations`, which `public._stamp_org_default` turned into the writer's personal organization. **Caller work left open:** `../aidream/apps/shared/chat/src/agents/redux/agent-shortcut-categories/thunks.ts:114` POSTs `organization_id` in the body with NO `X-Organization-Id` header — until it carries the header, category creation refuses honestly with 400 `organization_context_required`. Law: `../../common-docs/policies/context-is-carried-never-rebuilt.md`.
 
 - `2026-09-01` — **FIX-11: every writer of a mapping runs the ONE pre-flight, and the control is honest.** A UI walker found the editor storing a Prompt-User mapping with a BLANK question — `PATCH … 200`, success toast, and a run form that would ask nothing. A census found NINE client writers of a `prompt_user`-capable mapping and exactly one that checked (the mandate batch grid). Closed in three layers: the judge (`consumptionMapProblems`) no longer requires an offer, so it can run everywhere; the editors DISABLE Save/Apply with the sentence beside it (`save-refusal.ts`, `rowAttention().problems`); and the ONE write seam `packShortcutMappingColumns` throws, so the bulk apply, the pasted JSON draft and the link modal are covered without a UI of their own. Guard `features/mandates/__tests__/one-preflight-every-writer.test.ts` was reverted layer-by-layer and reproduced 7 failing before the fix, 13 passing after.
 - `2026-08-31` — Made the system organization the global shortcut discriminator and treated `created_by` as audit: system-org rows now clear both organization and person ownership on the client wire, so a global shortcut created through the UI cannot be misclassified as that admin's personal shortcut.

@@ -76,7 +76,7 @@
       "owner": "agent-apps",
       "note": "selectedOrganizationId → POST /api/agent-apps org header for create"
     },
-    "packages/chat/src/agents/components/chat/SandboxPanel.tsx::SandboxPanel::selectOrganizationId#1": {
+    "../aidream/apps/shared/chat/src/agents/components/chat/SandboxPanel.tsx::SandboxPanel::selectOrganizationId#1": {
       "class": "write-target",
       "owner": "agents",
       "note": "organizationId → createInstance organization_id for claiming a sandbox"
@@ -101,32 +101,32 @@
       "owner": "agents",
       "note": "organizationId → fetchAvailability (MCP connection health per org) and connect URLs; tool catalog not narrowed"
     },
-    "packages/chat/src/agents/hooks/useBoundVariableScope.ts::useBoundVariableScope::selectActiveOrganizationId#1": {
+    "../aidream/apps/shared/chat/src/agents/hooks/useBoundVariableScope.ts::useBoundVariableScope::selectActiveOrganizationId#1": {
       "class": "not-a-list",
       "owner": "agents",
       "note": "orgId → selectScopeTypeLabelMap to label bound variables; display labels, not a list the person browses"
     },
-    "packages/chat/src/agents/redux/agent-definition/thunks.ts::duplicateAgent::selectOrganizationId#1": {
+    "../aidream/apps/shared/chat/src/agents/redux/agent-definition/thunks.ts::duplicateAgent::selectOrganizationId#1": {
       "class": "write-target",
       "owner": "agents",
       "note": "selectOrganizationId → tool-assignment update .eq(organization_id) and agx_duplicate_agent copy home"
     },
-    "packages/chat/src/agents/redux/agent-definition/thunks.ts::duplicateAgentVersion::selectOrganizationId#1": {
+    "../aidream/apps/shared/chat/src/agents/redux/agent-definition/thunks.ts::duplicateAgentVersion::selectOrganizationId#1": {
       "class": "write-target",
       "owner": "agents",
       "note": "selectOrganizationId → tool-assignment update .eq(organization_id) and agx_duplicate_agent copy home"
     },
-    "packages/chat/src/agents/redux/conversation-list/conversation-trash.thunks.ts::fetchTrashedConversations::selectActiveOrganizationId#1": {
+    "../aidream/apps/shared/chat/src/agents/redux/conversation-list/conversation-trash.thunks.ts::fetchTrashedConversations::selectActiveOrganizationId#1": {
       "class": "not-a-list",
       "owner": "agents",
       "note": "active org → ensureEffectiveKnob trash page-size; fetchTrashed list itself is by viewer"
     },
-    "packages/chat/src/agents/redux/execution-system/instance-working-document/instance-working-document.thunks.ts::resolveOrgId::getActiveOrgId()#1": {
+    "../aidream/apps/shared/chat/src/agents/redux/execution-system/instance-working-document/instance-working-document.thunks.ts::resolveOrgId::getActiveOrgId()#1": {
       "class": "write-target",
       "owner": "agents",
       "note": "getActiveOrgId fallback stamps a new working document's org"
     },
-    "packages/chat/src/agents/redux/execution-system/instance-working-document/scratchpad.thunks.ts::orgForConversation::getActiveOrgId()#1": {
+    "../aidream/apps/shared/chat/src/agents/redux/execution-system/instance-working-document/scratchpad.thunks.ts::orgForConversation::getActiveOrgId()#1": {
       "class": "write-target",
       "owner": "agents",
       "note": "getActiveOrgId fallback is org for scratchpad attach edges (write)"

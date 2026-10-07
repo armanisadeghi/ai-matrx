@@ -87,7 +87,7 @@ const ALLOWLIST_PATH = join(
   "no-default-organization.allowlist.json",
 );
 
-const SCAN_DIRS = ["app", "features", "packages/chat/src", "components", "providers", "hooks", "lib"];
+const SCAN_DIRS = ["app", "features", "../aidream/apps/shared/chat/src", "components", "providers", "hooks", "lib"];
 const SKIP_DIR = new Set(["node_modules", ".next", "dist", "build", "__tests__"]);
 
 /**

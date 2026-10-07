@@ -22,7 +22,7 @@ There is **no** `page.tsx` or other route files under `(a)/agents/` in this repo
 
 ---
 
-## 2. Redux: `packages/chat/src/agents/redux/agent-definition/`
+## 2. Redux: `../aidream/apps/shared/chat/src/agents/redux/agent-definition/`
 
 **Files**
 
@@ -81,7 +81,7 @@ Also: `agentDefinitionSlice`, default reducer export, `export type { LoadedField
 
 ---
 
-## 3. `packages/chat/src/agents/redux/tools/`
+## 3. `../aidream/apps/shared/chat/src/agents/redux/tools/`
 
 **Does not exist** — no directory at `/Users/armanisadeghi/code/matrx-admin/packages/chat/src/agents/redux/tools/`.
 
@@ -254,5 +254,5 @@ export const selectAgentReadyForBuilder = createSelector(
 ### Plan takeaway
 
 - Agents **pages** in `app/` are only under **`/ssr/agents/...`** plus research/public variants; **`(a)/agents`** is documentation only, and **`/ai/agents`** app routes were **not** found despite `useAgentsBasePath` defaulting to it outside `/ssr/`.
-- **No** `packages/chat/src/agents/redux/tools/` slice; tool strings / custom tools live on **`AgentDefinition`** and related thunks/selectors.
+- **No** `../aidream/apps/shared/chat/src/agents/redux/tools/` slice; tool strings / custom tools live on **`AgentDefinition`** and related thunks/selectors.
 - Version snapshots: **inline** mapping in **`fetchAgentVersionSnapshot`** + **`upsertAgent`**; **`converters.ts`** is for **`agx_agent`** rows only.

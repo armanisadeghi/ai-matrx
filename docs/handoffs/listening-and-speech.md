@@ -50,7 +50,7 @@ On why it matters beyond this feature:
   `features/context-menu-v3/hooks/useContextMenuActions.ts` (agent resolution + fallback) ·
   `messageActionRegistry.ts` → `listeningItems` (action-bar ⋯ menu).
 - **Skill:** invoke `tts-audio-system` before touching any audio file (updated 2026-09-08 — it is now accurate).
-- **FEATURE.md change logs holding this feature's history:** `features/audio/`, `features/window-panels/`, `features/context-menu-v3/`, `packages/chat/src/agents/components/chat/`.
+- **FEATURE.md change logs holding this feature's history:** `features/audio/`, `features/window-panels/`, `features/context-menu-v3/`, `../aidream/apps/shared/chat/src/agents/components/chat/`.
 - **DB identifiers (verified live 2026-09-08):** mandate `ambient.spoken_summary` in
   `mandate.definition` (enabled; `default_holder_type='agent'`, holder = "Listening Summary",
   system org) · surface role `spoken_summary` on `matrx-user/assistant-message` carrying that
@@ -119,7 +119,7 @@ On why it matters beyond this feature:
 - Mandate-backed default agent so it works for every user on every surface with no personal binding — `ambient.spoken_summary`; no agent UUID in code.
 - Tiered voice/speed/language settings (system → org → user) + backfill — see `features/audio/service/listeningConfig.ts`.
 - iOS/WebKit silent-audio class fixed (gesture unlock, shared context, silent-switch session, loud block errors) — see `features/audio/unlock.ts`. **Confirmed working on device by Arman 2026-09-08.**
-- **The feature now has an owning doc (2026-09-10, low-hanging-fruit run).** `features/audio/FEATURE.md` § LISTENING & SPEECH carries the whole stack — `speak()` as the one entry point, `unlock.ts`/`primeAudioOutput()`, the system→org→user cascade and its zero-org-rows blocker, the mandate-backed default agent, reach (context menu + ⋯ menu), the panel, and how to test. Pointer lines added from `features/context-menu-v3/`, `features/window-panels/`, and `packages/chat/src/agents/components/chat/` FEATURE.md.
+- **The feature now has an owning doc (2026-09-10, low-hanging-fruit run).** `features/audio/FEATURE.md` § LISTENING & SPEECH carries the whole stack — `speak()` as the one entry point, `unlock.ts`/`primeAudioOutput()`, the system→org→user cascade and its zero-org-rows blocker, the mandate-backed default agent, reach (context menu + ⋯ menu), the panel, and how to test. Pointer lines added from `features/context-menu-v3/`, `features/window-panels/`, and `../aidream/apps/shared/chat/src/agents/components/chat/` FEATURE.md.
 - Docs/skill drift repaired 2026-09-08 — `tts-audio-system` skill rewritten to current reality; superseded window-panels entry corrected.
 
 ## Decisions needed

@@ -33,7 +33,7 @@ import { exitAfterDrain } from "./lib/exit-after-drain";
 const ROOT = process.cwd();
 const SELF_TEST = process.argv.includes("--self-test");
 
-const SCAN_DIRS = ["features", "packages/chat/src", "components", "app"];
+const SCAN_DIRS = ["features", "../aidream/apps/shared/chat/src", "components", "app"];
 const CANONICAL_PIPELINE = /^components\/mardown-display\//;
 const PLAIN_MARKDOWN = /<(BasicMarkdownContent|ConfigurableMarkdownContent)\b/;
 // `isStreamActive={false}` is a SETTLED render (the live stream lives in a

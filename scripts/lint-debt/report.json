@@ -141,7 +141,7 @@
       "real": 13
     },
     {
-      "key": "packages/chat/src/agents/hooks/useAgentLauncher.ts",
+      "key": "../aidream/apps/shared/chat/src/agents/hooks/useAgentLauncher.ts",
       "count": 13,
       "real": 13
     },
@@ -181,12 +181,12 @@
       "real": 10
     },
     {
-      "key": "packages/chat/src/agents/hooks/useWidgetHandle.ts",
+      "key": "../aidream/apps/shared/chat/src/agents/hooks/useWidgetHandle.ts",
       "count": 10,
       "real": 10
     },
     {
-      "key": "packages/chat/src/voice-agent/hooks/useXaiVoiceSession.ts",
+      "key": "../aidream/apps/shared/chat/src/voice-agent/hooks/useXaiVoiceSession.ts",
       "count": 10,
       "real": 10
     },
@@ -7739,7 +7739,7 @@
       "message": "Error: Calling setState synchronously within an effect can trigger cascading renders Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platf…"
     },
     {
-      "file": "packages/chat/src/agents/addressing/useAgentHref.ts",
+      "file": "../aidream/apps/shared/chat/src/agents/addressing/useAgentHref.ts",
       "line": 76,
       "column": 7,
       "rule": "react-hooks/set-state-in-effect",
@@ -7847,7 +7847,7 @@
       "message": "Error: Calling setState synchronously within an effect can trigger cascading renders Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platf…"
     },
     {
-      "file": "packages/chat/src/agents/components/agent-widgets/execution-gates/PreExecutionCard.tsx",
+      "file": "../aidream/apps/shared/chat/src/agents/components/agent-widgets/execution-gates/PreExecutionCard.tsx",
       "line": 31,
       "column": 5,
       "rule": "react-hooks/set-state-in-effect",
@@ -7901,7 +7901,7 @@
       "message": "Error: Calling setState synchronously within an effect can trigger cascading renders Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platf…"
     },
     {
-      "file": "packages/chat/src/agents/components/debug/SandboxFileViewer.tsx",
+      "file": "../aidream/apps/shared/chat/src/agents/components/debug/SandboxFileViewer.tsx",
       "line": 42,
       "column": 7,
       "rule": "react-hooks/refs",
@@ -7910,7 +7910,7 @@
       "message": "Error: Cannot access refs during render React refs are values that are not needed for rendering. Refs should only be accessed outside of render, such as in event handlers or effects. Accessing a ref value (the `current` property) during re…"
     },
     {
-      "file": "packages/chat/src/agents/components/debug/SandboxFileViewer.tsx",
+      "file": "../aidream/apps/shared/chat/src/agents/components/debug/SandboxFileViewer.tsx",
       "line": 42,
       "column": 7,
       "rule": "react-hooks/refs",
@@ -7919,7 +7919,7 @@
       "message": "Error: Cannot access refs during render React refs are values that are not needed for rendering. Refs should only be accessed outside of render, such as in event handlers or effects. Accessing a ref value (the `current` property) during re…"
     },
     {
-      "file": "packages/chat/src/agents/components/debug/SandboxFileViewer.tsx",
+      "file": "../aidream/apps/shared/chat/src/agents/components/debug/SandboxFileViewer.tsx",
       "line": 42,
       "column": 7,
       "rule": "react-hooks/refs",
@@ -7928,7 +7928,7 @@
       "message": "Error: Cannot access refs during render React refs are values that are not needed for rendering. Refs should only be accessed outside of render, such as in event handlers or effects. Accessing a ref value (the `current` property) during re…"
     },
     {
-      "file": "packages/chat/src/agents/components/debug/SandboxFileViewer.tsx",
+      "file": "../aidream/apps/shared/chat/src/agents/components/debug/SandboxFileViewer.tsx",
       "line": 42,
       "column": 8,
       "rule": "react-hooks/refs",
@@ -7937,7 +7937,7 @@
       "message": "Error: Cannot access refs during render React refs are values that are not needed for rendering. Refs should only be accessed outside of render, such as in event handlers or effects. Accessing a ref value (the `current` property) during re…"
     },
     {
-      "file": "packages/chat/src/agents/components/debug/SandboxFileViewer.tsx",
+      "file": "../aidream/apps/shared/chat/src/agents/components/debug/SandboxFileViewer.tsx",
       "line": 42,
       "column": 30,
       "rule": "react-hooks/refs",
@@ -7946,7 +7946,7 @@
       "message": "Error: Cannot access refs during render React refs are values that are not needed for rendering. Refs should only be accessed outside of render, such as in event handlers or effects. Accessing a ref value (the `current` property) during re…"
     },
     {
-      "file": "packages/chat/src/agents/components/debug/SandboxFileViewer.tsx",
+      "file": "../aidream/apps/shared/chat/src/agents/components/debug/SandboxFileViewer.tsx",
       "line": 69,
       "column": 27,
       "rule": "react-hooks/set-state-in-effect",
@@ -7955,7 +7955,7 @@
       "message": "Error: Calling setState synchronously within an effect can trigger cascading renders Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platf…"
     },
     {
-      "file": "packages/chat/src/agents/components/diff/AgentVersionDiffPage.tsx",
+      "file": "../aidream/apps/shared/chat/src/agents/components/diff/AgentVersionDiffPage.tsx",
       "line": 144,
       "column": 5,
       "rule": "react-hooks/set-state-in-effect",
@@ -7964,7 +7964,7 @@
       "message": "Error: Calling setState synchronously within an effect can trigger cascading renders Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platf…"
     },
     {
-      "file": "packages/chat/src/agents/components/diff/AgentVersionDiffPage.tsx",
+      "file": "../aidream/apps/shared/chat/src/agents/components/diff/AgentVersionDiffPage.tsx",
       "line": 186,
       "column": 5,
       "rule": "react-hooks/set-state-in-effect",
@@ -7973,7 +7973,7 @@
       "message": "Error: Calling setState synchronously within an effect can trigger cascading renders Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platf…"
     },
     {
-      "file": "packages/chat/src/agents/components/diff/AgentVersionDiffPage.tsx",
+      "file": "../aidream/apps/shared/chat/src/agents/components/diff/AgentVersionDiffPage.tsx",
       "line": 206,
       "column": 5,
       "rule": "react-hooks/set-state-in-effect",
@@ -7982,7 +7982,7 @@
       "message": "Error: Calling setState synchronously within an effect can trigger cascading renders Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platf…"
     },
     {
-      "file": "packages/chat/src/agents/components/inputs/variable-input-variations/AgentVariablesGuided.tsx",
+      "file": "../aidream/apps/shared/chat/src/agents/components/inputs/variable-input-variations/AgentVariablesGuided.tsx",
       "line": 645,
       "column": 7,
       "rule": "react-hooks/set-state-in-effect",
@@ -7991,7 +7991,7 @@
       "message": "Error: Calling setState synchronously within an effect can trigger cascading renders Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platf…"
     },
     {
-      "file": "packages/chat/src/agents/components/inputs/variable-input-variations/AgentVariablesWizard.tsx",
+      "file": "../aidream/apps/shared/chat/src/agents/components/inputs/variable-input-variations/AgentVariablesWizard.tsx",
       "line": 89,
       "column": 7,
       "rule": "react-hooks/set-state-in-effect",
@@ -8000,7 +8000,7 @@
       "message": "Error: Calling setState synchronously within an effect can trigger cascading renders Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platf…"
     },
     {
-      "file": "packages/chat/src/agents/components/messages-display/user/UserActionBar.tsx",
+      "file": "../aidream/apps/shared/chat/src/agents/components/messages-display/user/UserActionBar.tsx",
       "line": 341,
       "column": 28,
       "rule": "react-hooks/refs",
@@ -8009,7 +8009,7 @@
       "message": "Error: Cannot access refs during render React refs are values that are not needed for rendering. Refs should only be accessed outside of render, such as in event handlers or effects. Accessing a ref value (the `current` property) during re…"
     },
     {
-      "file": "packages/chat/src/agents/components/notifications/ImageArrivalPeek.tsx",
+      "file": "../aidream/apps/shared/chat/src/agents/components/notifications/ImageArrivalPeek.tsx",
       "line": 55,
       "column": 39,
       "rule": "react-hooks/purity",
@@ -8018,7 +8018,7 @@
       "message": "Error: Cannot call impure function during render `Date.now` is an impure function. Calling an impure function can produce unstable results that update unpredictably when the component happens to re-render. (https://react.dev/reference/rule…"
     },
     {
-      "file": "packages/chat/src/agents/components/notifications/useImageArrivalPeeks.ts",
+      "file": "../aidream/apps/shared/chat/src/agents/components/notifications/useImageArrivalPeeks.ts",
       "line": 106,
       "column": 5,
       "rule": "react-hooks/set-state-in-effect",
@@ -8027,7 +8027,7 @@
       "message": "Error: Calling setState synchronously within an effect can trigger cascading renders Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platf…"
     },
     {
-      "file": "packages/chat/src/agents/components/observational-memory/components/MemoryStateInspector.tsx",
+      "file": "../aidream/apps/shared/chat/src/agents/components/observational-memory/components/MemoryStateInspector.tsx",
       "line": 106,
       "column": 10,
       "rule": "react-hooks/set-state-in-effect",
@@ -8036,7 +8036,7 @@
       "message": "Error: Calling setState synchronously within an effect can trigger cascading renders Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platf…"
     },
     {
-      "file": "packages/chat/src/agents/components/run-controls/ContextPoliciesTab.tsx",
+      "file": "../aidream/apps/shared/chat/src/agents/components/run-controls/ContextPoliciesTab.tsx",
       "line": 169,
       "column": 7,
       "rule": "react-hooks/preserve-manual-memoization",
@@ -8045,7 +8045,7 @@
       "message": "Compilation Skipped: Existing memoization could not be preserved React Compiler has skipped optimizing this component because the existing manual memoization could not be preserved. This value was memoized in source but not in compilation …"
     },
     {
-      "file": "packages/chat/src/agents/components/run-controls/ContextPoliciesTab.tsx",
+      "file": "../aidream/apps/shared/chat/src/agents/components/run-controls/ContextPoliciesTab.tsx",
       "line": 533,
       "column": 7,
       "rule": "react-hooks/set-state-in-effect",
@@ -8144,7 +8144,7 @@
       "message": "Error: Calling setState synchronously within an effect can trigger cascading renders Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platf…"
     },
     {
-      "file": "packages/chat/src/agents/components/shared/AgentOptionsMenu.tsx",
+      "file": "../aidream/apps/shared/chat/src/agents/components/shared/AgentOptionsMenu.tsx",
       "line": 294,
       "column": 36,
       "rule": "react-hooks/preserve-manual-memoization",
@@ -8414,7 +8414,7 @@
       "message": "Error: Calling setState synchronously within an effect can trigger cascading renders Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platf…"
     },
     {
-      "file": "packages/chat/src/agents/components/widgets/AgentWidgetsPage.tsx",
+      "file": "../aidream/apps/shared/chat/src/agents/components/widgets/AgentWidgetsPage.tsx",
       "line": 268,
       "column": 109,
       "rule": "react-hooks/purity",
@@ -8423,7 +8423,7 @@
       "message": "Error: Cannot call impure function during render `Date.now` is an impure function. Calling an impure function can produce unstable results that update unpredictably when the component happens to re-render. (https://react.dev/reference/rule…"
     },
     {
-      "file": "packages/chat/src/agents/components/widgets/AgentWidgetsPage.tsx",
+      "file": "../aidream/apps/shared/chat/src/agents/components/widgets/AgentWidgetsPage.tsx",
       "line": 296,
       "column": 5,
       "rule": "react-hooks/set-state-in-effect",
@@ -8432,7 +8432,7 @@
       "message": "Error: Calling setState synchronously within an effect can trigger cascading renders Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platf…"
     },
     {
-      "file": "packages/chat/src/agents/components/working-document/WorkingDocumentEditor.tsx",
+      "file": "../aidream/apps/shared/chat/src/agents/components/working-document/WorkingDocumentEditor.tsx",
       "line": 162,
       "column": 3,
       "rule": "react-hooks/refs",
@@ -8441,7 +8441,7 @@
       "message": "Error: Cannot access refs during render React refs are values that are not needed for rendering. Refs should only be accessed outside of render, such as in event handlers or effects. Accessing a ref value (the `current` property) during re…"
     },
     {
-      "file": "packages/chat/src/agents/components/working-document/WorkingDocumentEditor.tsx",
+      "file": "../aidream/apps/shared/chat/src/agents/components/working-document/WorkingDocumentEditor.tsx",
       "line": 165,
       "column": 3,
       "rule": "react-hooks/refs",
@@ -8450,7 +8450,7 @@
       "message": "Error: Cannot access refs during render React refs are values that are not needed for rendering. Refs should only be accessed outside of render, such as in event handlers or effects. Accessing a ref value (the `current` property) during re…"
     },
     {
-      "file": "packages/chat/src/agents/components/working-document/WorkingDocumentEditor.tsx",
+      "file": "../aidream/apps/shared/chat/src/agents/components/working-document/WorkingDocumentEditor.tsx",
       "line": 167,
       "column": 3,
       "rule": "react-hooks/refs",
@@ -8459,7 +8459,7 @@
       "message": "Error: Cannot access refs during render React refs are values that are not needed for rendering. Refs should only be accessed outside of render, such as in event handlers or effects. Accessing a ref value (the `current` property) during re…"
     },
     {
-      "file": "packages/chat/src/agents/hooks/useAgentLauncher.ts",
+      "file": "../aidream/apps/shared/chat/src/agents/hooks/useAgentLauncher.ts",
       "line": 189,
       "column": 7,
       "rule": "react-hooks/refs",
@@ -8468,7 +8468,7 @@
       "message": "Error: Cannot access refs during render React refs are values that are not needed for rendering. Refs should only be accessed outside of render, such as in event handlers or effects. Accessing a ref value (the `current` property) during re…"
     },
     {
-      "file": "packages/chat/src/agents/hooks/useAgentLauncher.ts",
+      "file": "../aidream/apps/shared/chat/src/agents/hooks/useAgentLauncher.ts",
       "line": 189,
       "column": 7,
       "rule": "react-hooks/refs",
@@ -8477,7 +8477,7 @@
       "message": "Error: Cannot access refs during render React refs are values that are not needed for rendering. Refs should only be accessed outside of render, such as in event handlers or effects. Accessing a ref value (the `current` property) during re…"
     },
     {
-      "file": "packages/chat/src/agents/hooks/useAgentLauncher.ts",
+      "file": "../aidream/apps/shared/chat/src/agents/hooks/useAgentLauncher.ts",
       "line": 189,
       "column": 7,
       "rule": "react-hooks/refs",
@@ -8486,7 +8486,7 @@
       "message": "Error: Cannot access refs during render React refs are values that are not needed for rendering. Refs should only be accessed outside of render, such as in event handlers or effects. Accessing a ref value (the `current` property) during re…"
     },
     {
-      "file": "packages/chat/src/agents/hooks/useAgentLauncher.ts",
+      "file": "../aidream/apps/shared/chat/src/agents/hooks/useAgentLauncher.ts",
       "line": 189,
       "column": 7,
       "rule": "react-hooks/refs",
@@ -8495,7 +8495,7 @@
       "message": "Error: Cannot access refs during render React refs are values that are not needed for rendering. Refs should only be accessed outside of render, such as in event handlers or effects. Accessing a ref value (the `current` property) during re…"
     },
     {
-      "file": "packages/chat/src/agents/hooks/useAgentLauncher.ts",
+      "file": "../aidream/apps/shared/chat/src/agents/hooks/useAgentLauncher.ts",
       "line": 190,
       "column": 23,
       "rule": "react-hooks/refs",
@@ -8504,7 +8504,7 @@
       "message": "Error: Cannot access refs during render React refs are values that are not needed for rendering. Refs should only be accessed outside of render, such as in event handlers or effects. Accessing a ref value (the `current` property) during re…"
     },
     {
-      "file": "packages/chat/src/agents/hooks/useAgentLauncher.ts",
+      "file": "../aidream/apps/shared/chat/src/agents/hooks/useAgentLauncher.ts",
       "line": 191,
       "column": 9,
       "rule": "react-hooks/refs",
@@ -8513,7 +8513,7 @@
       "message": "Error: Cannot access refs during render React refs are values that are not needed for rendering. Refs should only be accessed outside of render, such as in event handlers or effects. Accessing a ref value (the `current` property) during re…"
     },
     {
-      "file": "packages/chat/src/agents/hooks/useAgentLauncher.ts",
+      "file": "../aidream/apps/shared/chat/src/agents/hooks/useAgentLauncher.ts",
       "line": 196,
       "column": 7,
       "rule": "react-hooks/refs",
@@ -8522,7 +8522,7 @@
       "message": "Error: Cannot access refs during render React refs are values that are not needed for rendering. Refs should only be accessed outside of render, such as in event handlers or effects. Accessing a ref value (the `current` property) during re…"
     },
     {
-      "file": "packages/chat/src/agents/hooks/useAgentLauncher.ts",
+      "file": "../aidream/apps/shared/chat/src/agents/hooks/useAgentLauncher.ts",
       "line": 197,
       "column": 7,
       "rule": "react-hooks/refs",
@@ -8531,7 +8531,7 @@
       "message": "Error: Cannot access refs during render React refs are values that are not needed for rendering. Refs should only be accessed outside of render, such as in event handlers or effects. Accessing a ref value (the `current` property) during re…"
     },
     {
-      "file": "packages/chat/src/agents/hooks/useAgentLauncher.ts",
+      "file": "../aidream/apps/shared/chat/src/agents/hooks/useAgentLauncher.ts",
       "line": 203,
       "column": 22,
       "rule": "react-hooks/refs",
@@ -8540,7 +8540,7 @@
       "message": "Error: Cannot access refs during render React refs are values that are not needed for rendering. Refs should only be accessed outside of render, such as in event handlers or effects. Accessing a ref value (the `current` property) during re…"
     },
     {
-      "file": "packages/chat/src/agents/hooks/useAgentLauncher.ts",
+      "file": "../aidream/apps/shared/chat/src/agents/hooks/useAgentLauncher.ts",
       "line": 204,
       "column": 9,
       "rule": "react-hooks/refs",
@@ -8549,7 +8549,7 @@
       "message": "Error: Cannot access refs during render React refs are values that are not needed for rendering. Refs should only be accessed outside of render, such as in event handlers or effects. Accessing a ref value (the `current` property) during re…"
     },
     {
-      "file": "packages/chat/src/agents/hooks/useAgentLauncher.ts",
+      "file": "../aidream/apps/shared/chat/src/agents/hooks/useAgentLauncher.ts",
       "line": 204,
       "column": 9,
       "rule": "react-hooks/refs",
@@ -8558,7 +8558,7 @@
       "message": "Error: Cannot access refs during render React refs are values that are not needed for rendering. Refs should only be accessed outside of render, such as in event handlers or effects. Accessing a ref value (the `current` property) during re…"
     },
     {
-      "file": "packages/chat/src/agents/hooks/useAgentLauncher.ts",
+      "file": "../aidream/apps/shared/chat/src/agents/hooks/useAgentLauncher.ts",
       "line": 204,
       "column": 9,
       "rule": "react-hooks/refs",
@@ -8567,7 +8567,7 @@
       "message": "Error: Cannot access refs during render React refs are values that are not needed for rendering. Refs should only be accessed outside of render, such as in event handlers or effects. Accessing a ref value (the `current` property) during re…"
     },
     {
-      "file": "packages/chat/src/agents/hooks/useAgentLauncher.ts",
+      "file": "../aidream/apps/shared/chat/src/agents/hooks/useAgentLauncher.ts",
       "line": 474,
       "column": 12,
       "rule": "react-hooks/refs",
@@ -8576,25 +8576,25 @@
       "message": "Error: Cannot access refs during render React refs are values that are not needed for rendering. Refs should only be accessed outside of render, such as in event handlers or effects. Accessing a ref value (the `current` property) during re…"
     },
     {
-      "file": "packages/chat/src/agents/hooks/useBoundVariableScope.ts",
+      "file": "../aidream/apps/shared/chat/src/agents/hooks/useBoundVariableScope.ts",
       "line": 85,
       "column": 5,
       "rule": "react-hooks/use-memo",
       "feature": "features/agents",
       "route": null,
-      "message": "Error: Expected the first argument to be an inline function expression Expected the first argument to be an inline function expression. /Users/armanisadeghi/code/matrx-frontend/packages/chat/src/agents/hooks/useBoundVariableScope.ts:85:5 83 | const…"
+      "message": "Error: Expected the first argument to be an inline function expression Expected the first argument to be an inline function expression. /Users/armanisadeghi/code/aidream/apps/shared/chat/src/agents/hooks/useBoundVariableScope.ts:85:5 83 | const…"
     },
     {
-      "file": "packages/chat/src/agents/hooks/useBoundVariableScope.ts",
+      "file": "../aidream/apps/shared/chat/src/agents/hooks/useBoundVariableScope.ts",
       "line": 92,
       "column": 36,
       "rule": "react-hooks/use-memo",
       "feature": "features/agents",
       "route": null,
-      "message": "Error: Expected the first argument to be an inline function expression Expected the first argument to be an inline function expression. /Users/armanisadeghi/code/matrx-frontend/packages/chat/src/agents/hooks/useBoundVariableScope.ts:92:36 90 | cons…"
+      "message": "Error: Expected the first argument to be an inline function expression Expected the first argument to be an inline function expression. /Users/armanisadeghi/code/aidream/apps/shared/chat/src/agents/hooks/useBoundVariableScope.ts:92:36 90 | cons…"
     },
     {
-      "file": "packages/chat/src/agents/hooks/useConversationPendingCalls.ts",
+      "file": "../aidream/apps/shared/chat/src/agents/hooks/useConversationPendingCalls.ts",
       "line": 73,
       "column": 7,
       "rule": "react-hooks/set-state-in-effect",
@@ -8603,7 +8603,7 @@
       "message": "Error: Calling setState synchronously within an effect can trigger cascading renders Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platf…"
     },
     {
-      "file": "packages/chat/src/agents/hooks/useConversationResume.ts",
+      "file": "../aidream/apps/shared/chat/src/agents/hooks/useConversationResume.ts",
       "line": 88,
       "column": 3,
       "rule": "react-hooks/refs",
@@ -8612,7 +8612,7 @@
       "message": "Error: Cannot access refs during render React refs are values that are not needed for rendering. Refs should only be accessed outside of render, such as in event handlers or effects. Accessing a ref value (the `current` property) during re…"
     },
     {
-      "file": "packages/chat/src/agents/hooks/useSmartVersionFetch.ts",
+      "file": "../aidream/apps/shared/chat/src/agents/hooks/useSmartVersionFetch.ts",
       "line": 173,
       "column": 5,
       "rule": "react-hooks/set-state-in-effect",
@@ -8621,7 +8621,7 @@
       "message": "Error: Calling setState synchronously within an effect can trigger cascading renders Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platf…"
     },
     {
-      "file": "packages/chat/src/agents/hooks/useWidgetHandle.ts",
+      "file": "../aidream/apps/shared/chat/src/agents/hooks/useWidgetHandle.ts",
       "line": 67,
       "column": 3,
       "rule": "react-hooks/refs",
@@ -8630,7 +8630,7 @@
       "message": "Error: Cannot access refs during render React refs are values that are not needed for rendering. Refs should only be accessed outside of render, such as in event handlers or effects. Accessing a ref value (the `current` property) during re…"
     },
     {
-      "file": "packages/chat/src/agents/hooks/useWidgetHandle.ts",
+      "file": "../aidream/apps/shared/chat/src/agents/hooks/useWidgetHandle.ts",
       "line": 73,
       "column": 24,
       "rule": "react-hooks/refs",
@@ -8639,7 +8639,7 @@
       "message": "Error: Cannot access refs during render React refs are values that are not needed for rendering. Refs should only be accessed outside of render, such as in event handlers or effects. Accessing a ref value (the `current` property) during re…"
     },
     {
-      "file": "packages/chat/src/agents/hooks/useWidgetHandle.ts",
+      "file": "../aidream/apps/shared/chat/src/agents/hooks/useWidgetHandle.ts",
       "line": 103,
       "column": 14,
       "rule": "react-hooks/refs",
@@ -8648,7 +8648,7 @@
       "message": "Error: Cannot access refs during render React refs are values that are not needed for rendering. Refs should only be accessed outside of render, such as in event handlers or effects. Accessing a ref value (the `current` property) during re…"
     },
     {
-      "file": "packages/chat/src/agents/hooks/useWidgetHandle.ts",
+      "file": "../aidream/apps/shared/chat/src/agents/hooks/useWidgetHandle.ts",
       "line": 104,
       "column": 8,
       "rule": "react-hooks/refs",
@@ -8657,7 +8657,7 @@
       "message": "Error: Cannot access refs during render React refs are values that are not needed for rendering. Refs should only be accessed outside of render, such as in event handlers or effects. Accessing a ref value (the `current` property) during re…"
     },
     {
-      "file": "packages/chat/src/agents/hooks/useWidgetHandle.ts",
+      "file": "../aidream/apps/shared/chat/src/agents/hooks/useWidgetHandle.ts",
       "line": 130,
       "column": 3,
       "rule": "react-hooks/refs",
@@ -8666,7 +8666,7 @@
       "message": "Error: Cannot access refs during render React refs are values that are not needed for rendering. Refs should only be accessed outside of render, such as in event handlers or effects. Accessing a ref value (the `current` property) during re…"
     },
     {
-      "file": "packages/chat/src/agents/hooks/useWidgetHandle.ts",
+      "file": "../aidream/apps/shared/chat/src/agents/hooks/useWidgetHandle.ts",
       "line": 134,
       "column": 7,
       "rule": "react-hooks/refs",
@@ -8675,7 +8675,7 @@
       "message": "Error: Cannot access refs during render React refs are values that are not needed for rendering. Refs should only be accessed outside of render, such as in event handlers or effects. Accessing a ref value (the `current` property) during re…"
     },
     {
-      "file": "packages/chat/src/agents/hooks/useWidgetHandle.ts",
+      "file": "../aidream/apps/shared/chat/src/agents/hooks/useWidgetHandle.ts",
       "line": 134,
       "column": 7,
       "rule": "react-hooks/refs",
@@ -8684,7 +8684,7 @@
       "message": "Error: Cannot access refs during render React refs are values that are not needed for rendering. Refs should only be accessed outside of render, such as in event handlers or effects. Accessing a ref value (the `current` property) during re…"
     },
     {
-      "file": "packages/chat/src/agents/hooks/useWidgetHandle.ts",
+      "file": "../aidream/apps/shared/chat/src/agents/hooks/useWidgetHandle.ts",
       "line": 134,
       "column": 7,
       "rule": "react-hooks/refs",
@@ -8693,7 +8693,7 @@
       "message": "Error: Cannot access refs during render React refs are values that are not needed for rendering. Refs should only be accessed outside of render, such as in event handlers or effects. Accessing a ref value (the `current` property) during re…"
     },
     {
-      "file": "packages/chat/src/agents/hooks/useWidgetHandle.ts",
+      "file": "../aidream/apps/shared/chat/src/agents/hooks/useWidgetHandle.ts",
       "line": 136,
       "column": 24,
       "rule": "react-hooks/refs",
@@ -8702,7 +8702,7 @@
       "message": "Error: Cannot access refs during render React refs are values that are not needed for rendering. Refs should only be accessed outside of render, such as in event handlers or effects. Accessing a ref value (the `current` property) during re…"
     },
     {
-      "file": "packages/chat/src/agents/hooks/useWidgetHandle.ts",
+      "file": "../aidream/apps/shared/chat/src/agents/hooks/useWidgetHandle.ts",
       "line": 149,
       "column": 10,
       "rule": "react-hooks/refs",
@@ -8711,7 +8711,7 @@
       "message": "Error: Cannot access refs during render React refs are values that are not needed for rendering. Refs should only be accessed outside of render, such as in event handlers or effects. Accessing a ref value (the `current` property) during re…"
     },
     {
-      "file": "packages/chat/src/agents/hooks/useWorkingDocument.ts",
+      "file": "../aidream/apps/shared/chat/src/agents/hooks/useWorkingDocument.ts",
       "line": 613,
       "column": 3,
       "rule": "react-hooks/refs",
@@ -8720,7 +8720,7 @@
       "message": "Error: Cannot access refs during render React refs are values that are not needed for rendering. Refs should only be accessed outside of render, such as in event handlers or effects. Accessing a ref value (the `current` property) during re…"
     },
     {
-      "file": "packages/chat/src/agents/hooks/useWorkingDocument.ts",
+      "file": "../aidream/apps/shared/chat/src/agents/hooks/useWorkingDocument.ts",
       "line": 615,
       "column": 3,
       "rule": "react-hooks/refs",
@@ -8729,7 +8729,7 @@
       "message": "Error: Cannot access refs during render React refs are values that are not needed for rendering. Refs should only be accessed outside of render, such as in event handlers or effects. Accessing a ref value (the `current` property) during re…"
     },
     {
-      "file": "packages/chat/src/agents/hooks/useWorkingDocument.ts",
+      "file": "../aidream/apps/shared/chat/src/agents/hooks/useWorkingDocument.ts",
       "line": 642,
       "column": 3,
       "rule": "react-hooks/refs",
@@ -8738,7 +8738,7 @@
       "message": "Error: Cannot access refs during render React refs are values that are not needed for rendering. Refs should only be accessed outside of render, such as in event handlers or effects. Accessing a ref value (the `current` property) during re…"
     },
     {
-      "file": "packages/chat/src/agents/hooks/useWorkingDocument.ts",
+      "file": "../aidream/apps/shared/chat/src/agents/hooks/useWorkingDocument.ts",
       "line": 654,
       "column": 3,
       "rule": "react-hooks/refs",
@@ -8765,7 +8765,7 @@
       "message": "Error: Expected the first argument to be an inline function expression Expected the first argument to be an inline function expression. /Users/armanisadeghi/code/matrx-frontend/features/agents/orchestras/components/AgentLibraryRail.tsx:57:…"
     },
     {
-      "file": "packages/chat/src/agents/route/AgentViewContent.tsx",
+      "file": "../aidream/apps/shared/chat/src/agents/route/AgentViewContent.tsx",
       "line": 227,
       "column": 5,
       "rule": "react-hooks/set-state-in-effect",
@@ -8774,7 +8774,7 @@
       "message": "Error: Calling setState synchronously within an effect can trigger cascading renders Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platf…"
     },
     {
-      "file": "packages/chat/src/agents/route/AgentViewContent.tsx",
+      "file": "../aidream/apps/shared/chat/src/agents/route/AgentViewContent.tsx",
       "line": 249,
       "column": 7,
       "rule": "react-hooks/set-state-in-effect",
@@ -8783,7 +8783,7 @@
       "message": "Error: Calling setState synchronously within an effect can trigger cascading renders Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platf…"
     },
     {
-      "file": "packages/chat/src/agents/route/AgentViewContent.tsx",
+      "file": "../aidream/apps/shared/chat/src/agents/route/AgentViewContent.tsx",
       "line": 284,
       "column": 7,
       "rule": "react-hooks/set-state-in-effect",
@@ -8792,7 +8792,7 @@
       "message": "Error: Calling setState synchronously within an effect can trigger cascading renders Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platf…"
     },
     {
-      "file": "packages/chat/src/agents/ui-first-tools/ui/AskCardCountdown.tsx",
+      "file": "../aidream/apps/shared/chat/src/agents/ui-first-tools/ui/AskCardCountdown.tsx",
       "line": 52,
       "column": 5,
       "rule": "react-hooks/set-state-in-effect",
@@ -10241,7 +10241,7 @@
       "message": "Error: Cannot access refs during render React refs are values that are not needed for rendering. Refs should only be accessed outside of render, such as in event handlers or effects. Accessing a ref value (the `current` property) during re…"
     },
     {
-      "file": "packages/chat/src/cx-chat/components/messages/UserMessage.tsx",
+      "file": "../aidream/apps/shared/chat/src/cx-chat/components/messages/UserMessage.tsx",
       "line": 181,
       "column": 7,
       "rule": "react-hooks/set-state-in-effect",
@@ -10250,7 +10250,7 @@
       "message": "Error: Calling setState synchronously within an effect can trigger cascading renders Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platf…"
     },
     {
-      "file": "packages/chat/src/cx-chat/components/SsrSidebarChats.tsx",
+      "file": "../aidream/apps/shared/chat/src/cx-chat/components/SsrSidebarChats.tsx",
       "line": 465,
       "column": 5,
       "rule": "react-hooks/set-state-in-effect",
@@ -10259,7 +10259,7 @@
       "message": "Error: Calling setState synchronously within an effect can trigger cascading renders Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platf…"
     },
     {
-      "file": "packages/chat/src/cx-chat/components/variable-inputs/CheckboxGroupInput.tsx",
+      "file": "../aidream/apps/shared/chat/src/cx-chat/components/variable-inputs/CheckboxGroupInput.tsx",
       "line": 73,
       "column": 7,
       "rule": "react-hooks/set-state-in-effect",
@@ -10268,7 +10268,7 @@
       "message": "Error: Calling setState synchronously within an effect can trigger cascading renders Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platf…"
     },
     {
-      "file": "packages/chat/src/cx-chat/components/variable-inputs/RadioGroupInput.tsx",
+      "file": "../aidream/apps/shared/chat/src/cx-chat/components/variable-inputs/RadioGroupInput.tsx",
       "line": 70,
       "column": 7,
       "rule": "react-hooks/set-state-in-effect",
@@ -10277,7 +10277,7 @@
       "message": "Error: Calling setState synchronously within an effect can trigger cascading renders Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platf…"
     },
     {
-      "file": "packages/chat/src/cx-chat/components/variable-inputs/SelectInput.tsx",
+      "file": "../aidream/apps/shared/chat/src/cx-chat/components/variable-inputs/SelectInput.tsx",
       "line": 70,
       "column": 7,
       "rule": "react-hooks/set-state-in-effect",
@@ -10286,7 +10286,7 @@
       "message": "Error: Calling setState synchronously within an effect can trigger cascading renders Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platf…"
     },
     {
-      "file": "packages/chat/src/cx-chat/hooks/useChatPersistence.ts",
+      "file": "../aidream/apps/shared/chat/src/cx-chat/hooks/useChatPersistence.ts",
       "line": 229,
       "column": 28,
       "rule": "react-hooks/refs",
@@ -10295,7 +10295,7 @@
       "message": "Error: Cannot access refs during render React refs are values that are not needed for rendering. Refs should only be accessed outside of render, such as in event handlers or effects. Accessing a ref value (the `current` property) during re…"
     },
     {
-      "file": "packages/chat/src/cx-chat/hooks/useChatPersistence.ts",
+      "file": "../aidream/apps/shared/chat/src/cx-chat/hooks/useChatPersistence.ts",
       "line": 229,
       "column": 28,
       "rule": "react-hooks/refs",
@@ -10304,29 +10304,29 @@
       "message": "Error: Cannot access refs during render React refs are values that are not needed for rendering. Refs should only be accessed outside of render, such as in event handlers or effects. Accessing a ref value (the `current` property) during re…"
     },
     {
-      "file": "packages/chat/src/cx-conversation/hooks/useConversationSession.ts",
+      "file": "../aidream/apps/shared/chat/src/cx-conversation/hooks/useConversationSession.ts",
       "line": 164,
       "column": 21,
       "rule": "react-hooks/refs",
-      "feature": "packages/chat/src/cx-conversation",
+      "feature": "../aidream/apps/shared/chat/src/cx-conversation",
       "route": null,
       "message": "Error: Cannot access refs during render React refs are values that are not needed for rendering. Refs should only be accessed outside of render, such as in event handlers or effects. Accessing a ref value (the `current` property) during re…"
     },
     {
-      "file": "packages/chat/src/cx-conversation/hooks/useConversationSession.ts",
+      "file": "../aidream/apps/shared/chat/src/cx-conversation/hooks/useConversationSession.ts",
       "line": 313,
       "column": 10,
       "rule": "react-hooks/refs",
-      "feature": "packages/chat/src/cx-conversation",
+      "feature": "../aidream/apps/shared/chat/src/cx-conversation",
       "route": null,
       "message": "Error: Cannot access refs during render React refs are values that are not needed for rendering. Refs should only be accessed outside of render, such as in event handlers or effects. Accessing a ref value (the `current` property) during re…"
     },
     {
-      "file": "packages/chat/src/cx-conversation/UserMessage.tsx",
+      "file": "../aidream/apps/shared/chat/src/cx-conversation/UserMessage.tsx",
       "line": 181,
       "column": 7,
       "rule": "react-hooks/set-state-in-effect",
-      "feature": "packages/chat/src/cx-conversation",
+      "feature": "../aidream/apps/shared/chat/src/cx-conversation",
       "route": null,
       "message": "Error: Calling setState synchronously within an effect can trigger cascading renders Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platf…"
     },
@@ -16874,7 +16874,7 @@
       "message": "Error: Calling setState synchronously within an effect can trigger cascading renders Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platf…"
     },
     {
-      "file": "packages/chat/src/tool-call-visualization/renderers/ctx/CtxItemCard.tsx",
+      "file": "../aidream/apps/shared/chat/src/tool-call-visualization/renderers/ctx/CtxItemCard.tsx",
       "line": 125,
       "column": 12,
       "rule": "react-hooks/static-components",
@@ -16883,7 +16883,7 @@
       "message": "Error: Cannot create components during render Components created during render will reset their state each time they are created. Declare components outside of render. /Users/armanisadeghi/code/matrx-frontend/features/tool-call-visualizati…"
     },
     {
-      "file": "packages/chat/src/tool-call-visualization/renderers/random-wheel/RandomWheelInline.tsx",
+      "file": "../aidream/apps/shared/chat/src/tool-call-visualization/renderers/random-wheel/RandomWheelInline.tsx",
       "line": 444,
       "column": 7,
       "rule": "react-hooks/set-state-in-effect",
@@ -16892,7 +16892,7 @@
       "message": "Error: Calling setState synchronously within an effect can trigger cascading renders Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platf…"
     },
     {
-      "file": "packages/chat/src/tool-call-visualization/renderers/search/SearchInline.tsx",
+      "file": "../aidream/apps/shared/chat/src/tool-call-visualization/renderers/search/SearchInline.tsx",
       "line": 489,
       "column": 9,
       "rule": "react-hooks/set-state-in-effect",
@@ -16901,7 +16901,7 @@
       "message": "Error: Calling setState synchronously within an effect can trigger cascading renders Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platf…"
     },
     {
-      "file": "packages/chat/src/tool-call-visualization/renderers/search/useGraduatedReveal.ts",
+      "file": "../aidream/apps/shared/chat/src/tool-call-visualization/renderers/search/useGraduatedReveal.ts",
       "line": 65,
       "column": 9,
       "rule": "react-hooks/set-state-in-effect",
@@ -17972,128 +17972,128 @@
       "message": "Error: Cannot access refs during render React refs are values that are not needed for rendering. Refs should only be accessed outside of render, such as in event handlers or effects. Accessing a ref value (the `current` property) during re…"
     },
     {
-      "file": "packages/chat/src/voice-agent/components/VoiceDebugPanel.tsx",
+      "file": "../aidream/apps/shared/chat/src/voice-agent/components/VoiceDebugPanel.tsx",
       "line": 108,
       "column": 24,
       "rule": "react-hooks/purity",
-      "feature": "packages/chat/src/voice-agent",
+      "feature": "../aidream/apps/shared/chat/src/voice-agent",
       "route": null,
       "message": "Error: Cannot call impure function during render `Date.now` is an impure function. Calling an impure function can produce unstable results that update unpredictably when the component happens to re-render. (https://react.dev/reference/rule…"
     },
     {
-      "file": "packages/chat/src/voice-agent/hooks/useRealtimeAgentConfig.ts",
+      "file": "../aidream/apps/shared/chat/src/voice-agent/hooks/useRealtimeAgentConfig.ts",
       "line": 134,
       "column": 7,
       "rule": "react-hooks/set-state-in-effect",
-      "feature": "packages/chat/src/voice-agent",
+      "feature": "../aidream/apps/shared/chat/src/voice-agent",
       "route": null,
       "message": "Error: Calling setState synchronously within an effect can trigger cascading renders Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platf…"
     },
     {
-      "file": "packages/chat/src/voice-agent/hooks/useVoiceAgentInstance.ts",
+      "file": "../aidream/apps/shared/chat/src/voice-agent/hooks/useVoiceAgentInstance.ts",
       "line": 135,
       "column": 26,
       "rule": "react-hooks/purity",
-      "feature": "packages/chat/src/voice-agent",
+      "feature": "../aidream/apps/shared/chat/src/voice-agent",
       "route": null,
       "message": "Error: Cannot call impure function during render `Math.random` is an impure function. Calling an impure function can produce unstable results that update unpredictably when the component happens to re-render. (https://react.dev/reference/r…"
     },
     {
-      "file": "packages/chat/src/voice-agent/hooks/useVoiceAgentInstance.ts",
+      "file": "../aidream/apps/shared/chat/src/voice-agent/hooks/useVoiceAgentInstance.ts",
       "line": 141,
       "column": 3,
       "rule": "react-hooks/refs",
-      "feature": "packages/chat/src/voice-agent",
+      "feature": "../aidream/apps/shared/chat/src/voice-agent",
       "route": null,
       "message": "Error: Cannot access refs during render React refs are values that are not needed for rendering. Refs should only be accessed outside of render, such as in event handlers or effects. Accessing a ref value (the `current` property) during re…"
     },
     {
-      "file": "packages/chat/src/voice-agent/hooks/useXaiVoiceSession.ts",
+      "file": "../aidream/apps/shared/chat/src/voice-agent/hooks/useXaiVoiceSession.ts",
       "line": 194,
       "column": 3,
       "rule": "react-hooks/refs",
-      "feature": "packages/chat/src/voice-agent",
+      "feature": "../aidream/apps/shared/chat/src/voice-agent",
       "route": null,
       "message": "Error: Cannot access refs during render React refs are values that are not needed for rendering. Refs should only be accessed outside of render, such as in event handlers or effects. Accessing a ref value (the `current` property) during re…"
     },
     {
-      "file": "packages/chat/src/voice-agent/hooks/useXaiVoiceSession.ts",
+      "file": "../aidream/apps/shared/chat/src/voice-agent/hooks/useXaiVoiceSession.ts",
       "line": 195,
       "column": 3,
       "rule": "react-hooks/refs",
-      "feature": "packages/chat/src/voice-agent",
+      "feature": "../aidream/apps/shared/chat/src/voice-agent",
       "route": null,
       "message": "Error: Cannot access refs during render React refs are values that are not needed for rendering. Refs should only be accessed outside of render, such as in event handlers or effects. Accessing a ref value (the `current` property) during re…"
     },
     {
-      "file": "packages/chat/src/voice-agent/hooks/useXaiVoiceSession.ts",
+      "file": "../aidream/apps/shared/chat/src/voice-agent/hooks/useXaiVoiceSession.ts",
       "line": 196,
       "column": 3,
       "rule": "react-hooks/refs",
-      "feature": "packages/chat/src/voice-agent",
+      "feature": "../aidream/apps/shared/chat/src/voice-agent",
       "route": null,
       "message": "Error: Cannot access refs during render React refs are values that are not needed for rendering. Refs should only be accessed outside of render, such as in event handlers or effects. Accessing a ref value (the `current` property) during re…"
     },
     {
-      "file": "packages/chat/src/voice-agent/hooks/useXaiVoiceSession.ts",
+      "file": "../aidream/apps/shared/chat/src/voice-agent/hooks/useXaiVoiceSession.ts",
       "line": 218,
       "column": 3,
       "rule": "react-hooks/refs",
-      "feature": "packages/chat/src/voice-agent",
+      "feature": "../aidream/apps/shared/chat/src/voice-agent",
       "route": null,
       "message": "Error: Cannot access refs during render React refs are values that are not needed for rendering. Refs should only be accessed outside of render, such as in event handlers or effects. Accessing a ref value (the `current` property) during re…"
     },
     {
-      "file": "packages/chat/src/voice-agent/hooks/useXaiVoiceSession.ts",
+      "file": "../aidream/apps/shared/chat/src/voice-agent/hooks/useXaiVoiceSession.ts",
       "line": 219,
       "column": 3,
       "rule": "react-hooks/refs",
-      "feature": "packages/chat/src/voice-agent",
+      "feature": "../aidream/apps/shared/chat/src/voice-agent",
       "route": null,
       "message": "Error: Cannot access refs during render React refs are values that are not needed for rendering. Refs should only be accessed outside of render, such as in event handlers or effects. Accessing a ref value (the `current` property) during re…"
     },
     {
-      "file": "packages/chat/src/voice-agent/hooks/useXaiVoiceSession.ts",
+      "file": "../aidream/apps/shared/chat/src/voice-agent/hooks/useXaiVoiceSession.ts",
       "line": 220,
       "column": 3,
       "rule": "react-hooks/refs",
-      "feature": "packages/chat/src/voice-agent",
+      "feature": "../aidream/apps/shared/chat/src/voice-agent",
       "route": null,
       "message": "Error: Cannot access refs during render React refs are values that are not needed for rendering. Refs should only be accessed outside of render, such as in event handlers or effects. Accessing a ref value (the `current` property) during re…"
     },
     {
-      "file": "packages/chat/src/voice-agent/hooks/useXaiVoiceSession.ts",
+      "file": "../aidream/apps/shared/chat/src/voice-agent/hooks/useXaiVoiceSession.ts",
       "line": 221,
       "column": 3,
       "rule": "react-hooks/refs",
-      "feature": "packages/chat/src/voice-agent",
+      "feature": "../aidream/apps/shared/chat/src/voice-agent",
       "route": null,
       "message": "Error: Cannot access refs during render React refs are values that are not needed for rendering. Refs should only be accessed outside of render, such as in event handlers or effects. Accessing a ref value (the `current` property) during re…"
     },
     {
-      "file": "packages/chat/src/voice-agent/hooks/useXaiVoiceSession.ts",
+      "file": "../aidream/apps/shared/chat/src/voice-agent/hooks/useXaiVoiceSession.ts",
       "line": 222,
       "column": 3,
       "rule": "react-hooks/refs",
-      "feature": "packages/chat/src/voice-agent",
+      "feature": "../aidream/apps/shared/chat/src/voice-agent",
       "route": null,
       "message": "Error: Cannot access refs during render React refs are values that are not needed for rendering. Refs should only be accessed outside of render, such as in event handlers or effects. Accessing a ref value (the `current` property) during re…"
     },
     {
-      "file": "packages/chat/src/voice-agent/hooks/useXaiVoiceSession.ts",
+      "file": "../aidream/apps/shared/chat/src/voice-agent/hooks/useXaiVoiceSession.ts",
       "line": 224,
       "column": 3,
       "rule": "react-hooks/refs",
-      "feature": "packages/chat/src/voice-agent",
+      "feature": "../aidream/apps/shared/chat/src/voice-agent",
       "route": null,
       "message": "Error: Cannot access refs during render React refs are values that are not needed for rendering. Refs should only be accessed outside of render, such as in event handlers or effects. Accessing a ref value (the `current` property) during re…"
     },
     {
-      "file": "packages/chat/src/voice-agent/hooks/useXaiVoiceSession.ts",
+      "file": "../aidream/apps/shared/chat/src/voice-agent/hooks/useXaiVoiceSession.ts",
       "line": 459,
       "column": 11,
       "rule": "react-hooks/immutability",
-      "feature": "packages/chat/src/voice-agent",
+      "feature": "../aidream/apps/shared/chat/src/voice-agent",
       "route": null,
       "message": "Error: Cannot access variable before it is declared `runFlush` is accessed before it is declared, which prevents the earlier access from updating when this value changes over time. /Users/armanisadeghi/code/matrx-frontend/features/voice-ag…"
     },
@@ -18233,7 +18233,7 @@
       "message": "Error: Cannot access refs during render React refs are values that are not needed for rendering. Refs should only be accessed outside of render, such as in event handlers or effects. Accessing a ref value (the `current` property) during re…"
     },
     {
-      "file": "packages/chat/src/window-panels/windows/agents/AgentAssistantMarkdownDebugWindow.tsx",
+      "file": "../aidream/apps/shared/chat/src/window-panels/windows/agents/AgentAssistantMarkdownDebugWindow.tsx",
       "line": 40,
       "column": 7,
       "rule": "react-hooks/set-state-in-effect",

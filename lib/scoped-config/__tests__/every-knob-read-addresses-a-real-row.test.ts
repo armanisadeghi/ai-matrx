@@ -135,7 +135,7 @@ const REF_FNS: Record<string, number> = {
   resolveSessionKnob: 0,
 };
 
-const SCAN_DIRS = ["app", "components", "features", "packages/chat/src", "hooks", "lib", "utils"];
+const SCAN_DIRS = ["app", "components", "features", "../aidream/apps/shared/chat/src", "hooks", "lib", "utils"];
 const SKIP_DIR = /(node_modules|\.next|__tests__)/;
 
 function sourceFiles(dir: string, out: string[] = []): string[] {

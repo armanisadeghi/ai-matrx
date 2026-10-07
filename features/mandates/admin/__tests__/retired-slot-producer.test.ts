@@ -30,7 +30,7 @@ describe("retired Mandate producer contract", () => {
       // are real compiled code, so this guard keeps holding across the cutover.
       "lib/supabase/mandateStorage.ts",
       "features/mandates/admin/service.ts",
-      "packages/chat/src/mandates/service.ts",
+      "../aidream/apps/shared/chat/src/mandates/service.ts",
       "features/mandates/service.server.ts",
       "features/mandates/overrides.ts",
     ]

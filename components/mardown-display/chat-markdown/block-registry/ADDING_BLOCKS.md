@@ -27,7 +27,7 @@ Ping Python team (block the merge until they've shipped):
 
 Round-trip to DB (only if the block needs to survive reload from `cx_message.content`):
 
-- **`packages/chat/src/agents/redux/execution-system/utils/assemble-cx-content-blocks.ts`**
+- **`../aidream/apps/shared/chat/src/agents/redux/execution-system/utils/assemble-cx-content-blocks.ts`**
   - If it's a media payload (url + mime_type), add the type string to `MEDIA_BLOCK_TYPES`.
   - Otherwise, if the block has a meaningful markdown form to reconstruct, extend the `reconstructBlockMarkdown` switch. Fall-through returns `content` which is fine for most server-driven blocks (they replay via `render_block`, not via markdown re-parsing).
 
@@ -136,9 +136,9 @@ Do not touch these — they're either generic passthroughs or unrelated:
 - `chat-markdown/StreamAwareChatMarkdown.tsx` — stringly-typed `render_block` handler; no per-type branching.
 - `chat-markdown/EnhancedChatMarkdown.tsx::renderBlockToContentBlock` — generic normalizer; no per-type branching. Only touch if you need special post-processing like reasoning consolidation.
 - `chat-markdown/BlockRenderingContext.tsx` — only affects blocks that use `serverData` in strict mode.
-- `packages/chat/src/agents/redux/execution-system/active-requests/active-requests.slice.ts::upsertRenderBlock` — keyed by `blockId`, generic.
-- `packages/chat/src/agents/redux/execution-system/thunks/process-stream.ts` — generic fan-out to `upsertRenderBlock`.
-- `packages/chat/src/agents/redux/execution-system/active-requests/active-requests.selectors.ts::selectUnifiedSlots` — ordering only matters for new event kinds, not new block types.
+- `../aidream/apps/shared/chat/src/agents/redux/execution-system/active-requests/active-requests.slice.ts::upsertRenderBlock` — keyed by `blockId`, generic.
+- `../aidream/apps/shared/chat/src/agents/redux/execution-system/thunks/process-stream.ts` — generic fan-out to `upsertRenderBlock`.
+- `../aidream/apps/shared/chat/src/agents/redux/execution-system/active-requests/active-requests.selectors.ts::selectUnifiedSlots` — ordering only matters for new event kinds, not new block types.
 - `lib/chat-protocol/from-stream.ts::buildCanonicalBlocks` — canonical text/tool segments; `render_block` is deliberately not folded in.
 
 ---

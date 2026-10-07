@@ -23,7 +23,7 @@ import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
 import { join, relative } from "node:path";
 
 const ROOT = join(__dirname, "..", "..", "..");
-const SCAN = ["app", "features", "packages/chat/src", "components", "lib", "hooks", "utils", "providers"];
+const SCAN = ["app", "features", "../aidream/apps/shared/chat/src", "components", "lib", "hooks", "utils", "providers"];
 const SKIP = new Set(["node_modules", ".next", "__snapshots__", "__tests__"]);
 
 const RETIRED = [

@@ -1,7 +1,7 @@
 // providers/chatMarkdownRegistration.ts
 //
 // The app's rich-document rendering engine, registered into `@ai-matrx/chat`
-// (packages/chat/src/host/markdown-slots.tsx, chat-package-move P14). The package draws
+// (../aidream/apps/shared/chat/src/host/markdown-slots.tsx, chat-package-move P14). The package draws
 // markdown through these slots and never imports the engine. Imported for its side effect
 // by ChatHostAdapter.
 

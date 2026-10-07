@@ -13,7 +13,7 @@
  * Every hand-built `/agents/${id}` is a bet that the id is a user agent, and
  * ~60 of them were making that bet with ids that came straight out of the
  * database. The address rule now lives in ONE place
- * (`packages/chat/src/agents/addressing/agentAddress.ts`); this keeps it there.
+ * (`../aidream/apps/shared/chat/src/agents/addressing/agentAddress.ts`); this keeps it there.
  *
  * WHAT IT FLAGS: an `/agents/${…}` path built from an EXPRESSION (a variable,
  * a row field) anywhere outside the addressing module. A literal path
@@ -37,9 +37,9 @@ import { exitAfterDrain } from "./lib/exit-after-drain";
 
 /** Files allowed to build an agent path from parts — the rule itself. */
 const OWNERS = [
-  "packages/chat/src/agents/addressing/agentAddress.ts",
-  "packages/chat/src/agents/addressing/agentAddressCache.ts",
-  "packages/chat/src/agents/addressing/useAgentHref.ts",
+  "../aidream/apps/shared/chat/src/agents/addressing/agentAddress.ts",
+  "../aidream/apps/shared/chat/src/agents/addressing/agentAddressCache.ts",
+  "../aidream/apps/shared/chat/src/agents/addressing/useAgentHref.ts",
   "scripts/check-agent-links.ts",
 ];
 
@@ -143,7 +143,7 @@ function main(): void {
 
   if (offences.length === 0) {
     console.log(
-      "[agent-links] OK — every agent address goes through packages/chat/src/agents/addressing.",
+      "[agent-links] OK — every agent address goes through ../aidream/apps/shared/chat/src/agents/addressing.",
     );
     exitAfterDrain(0);
   }
@@ -153,7 +153,7 @@ function main(): void {
       `address depends on its KIND: a builtin agent does NOT live at ` +
       `/agents/<id>. Use agentHrefFromRow() when you hold the row, ` +
       `useAgentHref() when you hold only an id, or agentGoHref() when you ` +
-      `need a synchronous href — all from packages/chat/src/agents/addressing. If this ` +
+      `need a synchronous href — all from ../aidream/apps/shared/chat/src/agents/addressing. If this ` +
       `id can only ever be a user agent, say why:\n` +
       `    // agent-link-ok: <reason>\n`,
   );

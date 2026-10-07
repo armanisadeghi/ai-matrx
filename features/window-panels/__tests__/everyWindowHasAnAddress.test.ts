@@ -229,7 +229,7 @@ const REPO_ROOT = join(__dirname, "..", "..", "..");
 /** Every directory a window component can live in. A window is not always under
  *  `features/window-panels/windows/` — the settings shell, the image studio and
  *  the agent variable editor each render their own `WindowPanel`. */
-const COMPONENT_ROOTS = ["features", "packages/chat/src", "components", "app"].map((dir) =>
+const COMPONENT_ROOTS = ["features", "../aidream/apps/shared/chat/src", "components", "app"].map((dir) =>
   join(REPO_ROOT, dir),
 );
 
@@ -270,7 +270,7 @@ const SOURCE_BY_OVERLAY_ID = (() => {
       const source = withoutComments(readFileSync(file, "utf8"));
       if (!source.includes("overlayId=")) continue;
       // The chat package names its windows through its registry
-      // (`CHAT_WINDOWS.<id>`, packages/chat/src/host/windows.ts) — the same id.
+      // (`CHAT_WINDOWS.<id>`, ../aidream/apps/shared/chat/src/host/windows.ts) — the same id.
       for (const match of source.matchAll(
         /overlayId=(?:"([A-Za-z0-9_]+)"|\{CHAT_WINDOWS\.([A-Za-z0-9_]+)\})/g,
       )) {

@@ -303,7 +303,7 @@ async function main() {
   // Getting this severity wrong would send agents to "fix" a deliberate
   // opt-out by re-declaring baselines. Read the canonical list, never retype it.
   const baselineMod = await import(
-    resolve(ROOT, "packages/chat/src/surfaces/manifests/_baseline.manifest")
+    resolve(ROOT, "../aidream/apps/shared/chat/src/surfaces/manifests/_baseline.manifest")
   );
   const BASELINE = new Set<string>(baselineMod.BASELINE_VALUE_NAMES ?? []);
   const ALL: ReadonlyArray<ManifestLite> = mod.ALL_MANIFESTS;

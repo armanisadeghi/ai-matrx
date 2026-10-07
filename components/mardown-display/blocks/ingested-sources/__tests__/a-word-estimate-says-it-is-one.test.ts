@@ -11,7 +11,7 @@ import { readdirSync, readFileSync, statSync } from "node:fs";
 import { join, relative } from "node:path";
 
 const REPO_ROOT = join(__dirname, "..", "..", "..", "..", "..");
-const ROOTS = ["app", "components", "features", "packages/chat/src", "lib", "hooks", "utils"];
+const ROOTS = ["app", "components", "features", "../aidream/apps/shared/chat/src", "lib", "hooks", "utils"];
 const WINDOW = 12;
 
 function* sourceFiles(dir: string): Generator<string> {

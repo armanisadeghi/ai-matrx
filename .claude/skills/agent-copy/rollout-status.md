@@ -49,7 +49,7 @@
   table, rows), scheduling, organizations, war-room. **Data pipeline**:
   research, rag, cms site list (`features/cms/copy.ts`, wired in the
   `(core)/cms` route), and the sanitized MCP integrations surface
-  (`packages/chat/src/agents/mcp-copy.ts` + `IntegrationsSettingsPage` — no endpoint
+  (`../aidream/apps/shared/chat/src/agents/mcp-copy.ts` + `IntegrationsSettingsPage` — no endpoint
   URLs or OAuth ids). **content-plan**: plan tree, pages table, entity roster,
   pillar map, reality card, brief editor, drift bar/sheet, AI runs.
   ⚠️ **Coverage is NOT provable by `grep features/<name>`** — cms and MCP
@@ -71,7 +71,7 @@
   reference page); relationships hub — all tabs; the planner is the
   what-I-see reference (`access-planner/copy.ts`).
 - **What-I-see wirings (post-MISSION, use these as the pattern):**
-  `packages/chat/src/agents/components/diff/AgentVersionDiffPage` — the RENDERED DIFF
+  `../aidream/apps/shared/chat/src/agents/components/diff/AgentVersionDiffPage` — the RENDERED DIFF
   as data. Changed fields are built through the SAME adapter registry +
   enrichment the viewer renders with (`buildAgentAdapterRegistry` is exported
   from `AgentDiffViewer` for exactly this), so each field carries the label
@@ -79,7 +79,7 @@
   in body + attributes everywhere; variants mirror the page's own view modes
   (Changes / Changes + review prompt / Summary / History / Everything) and the
   review-prompt variant answers the question the user actually has ("what
-  changed and is it safe?"). `packages/chat/src/agents/components/widgets/AgentWidgetsPage`
+  changed and is it safe?"). `../aidream/apps/shared/chat/src/agents/components/widgets/AgentWidgetsPage`
   — LIVE form state; the launch-options builder was extracted to
   `build-widget-launch.ts` so the click handler and the payload share ONE
   extractor, and a JSON-box parse failure copies as `status:"blocked"` with
@@ -87,7 +87,7 @@
   `features/agents/components/shortcuts/AgentShortcutsPanel` — rendered row
   projection (surface first), count cards mirrored into every payload, error
   banner captured verbatim with its own control; fat raw records demoted to
-  "Everything". Shared shapes in `packages/chat/src/agents/format.ts` +
+  "Everything". Shared shapes in `../aidream/apps/shared/chat/src/agents/format.ts` +
   `features/agent-shortcuts/format.ts`.
 - **`features/marketing/content-plan` — the whole module (2026-08-15).** Wired
   AFTER the MISSION section, so these are what-I-see payloads, not raw dumps:
@@ -110,7 +110,7 @@
   `features/tool-registry/mcp-admin` + `mcp-tools` (incl. aiCustom export
   dialog; sanitized formatters), `feedback` (all four tabs + detail dialog,
   shared `feedback/format.ts`), `system-agents/*` (roster, shortcuts, apps,
-  content blocks, lineage; shared `packages/chat/src/agents/format.ts` +
+  content blocks, lineage; shared `../aidream/apps/shared/chat/src/agents/format.ts` +
   `features/agent-shortcuts/format.ts`), `agent-apps/*` (grid, overview,
   versions, admin aiCustom, executions, rate-limits, analytics, categories,
   dashboard, settings form, admin edit form + its metadata dialog and
@@ -170,7 +170,7 @@ contextSlots }`; the page renders a six-chip stat strip that no payload
 
 **Open per-item gaps on the version-diff page:** its two lists render in
 files outside that page — the History tab's rows in
-`packages/chat/src/agents/components/diff/VersionHistoryTimeline.tsx`, and the
+`../aidream/apps/shared/chat/src/agents/components/diff/VersionHistoryTimeline.tsx`, and the
 per-field diff rows in the shared `components/diff/views/*` (used by other
 features). Both lists are covered today at whole-list granularity from the
 page toolbar (a "Version history" variant + all-versions CSV, and the

@@ -152,7 +152,7 @@ export const INTEGRATIONS: Integration[] = [
     proofs: [
       { kind: "contains", repo: "matrx-frontend", file: "features/quick-actions/components/QuickDataSheet.tsx", pattern: "listTablesEverywhere", says: "lists both stores" },
       { kind: "contains", repo: "matrx-frontend", file: "features/quick-actions/components/QuickDataSheet.tsx", pattern: "LocatedTableViewer", says: "opens through the locating viewer" },
-      { kind: "lacks", repo: "matrx-frontend", files: ["features/quick-actions/**", "packages/chat/src/quick-actions/**"], pattern: OLDER_DOOR_PATTERN, says: "names no older door" },
+      { kind: "lacks", repo: "matrx-frontend", files: ["features/quick-actions/**", "../aidream/apps/shared/chat/src/quick-actions/**"], pattern: OLDER_DOOR_PATTERN, says: "names no older door" },
     ],
   },
   {
@@ -165,7 +165,7 @@ export const INTEGRATIONS: Integration[] = [
       "matrx-frontend": [
         "features/window-panels/windows/UserTableWindow.tsx",
         "features/canvas/artifact-types/renderers/TableArtifact.tsx",
-        "features/tool-call-visualization/**", "packages/chat/src/tool-call-visualization/**",
+        "features/tool-call-visualization/**", "../aidream/apps/shared/chat/src/tool-call-visualization/**",
       ],
     },
     proofs: [

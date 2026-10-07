@@ -31,7 +31,7 @@ This payload difference is the Builder's reason to exist: it lets engineers test
 
 **Key thunks & selectors**
 - Builder routes through the same unified `launchConversation` thunk — the Builder invocation sets `routing.apiEndpointMode = "manual"` and carries a full agent definition snapshot in `builder.*`
-- `packages/chat/src/agents/redux/agent-definition/` — master definition slice with field-level undo and dirty tracking
+- `../aidream/apps/shared/chat/src/agents/redux/agent-definition/` — master definition slice with field-level undo and dirty tracking
 
 ---
 

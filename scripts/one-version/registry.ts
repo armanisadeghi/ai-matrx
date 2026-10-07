@@ -43,7 +43,7 @@ export interface Piece {
   detect: (src: SourceFile) => Hit[];
 }
 
-const INPUTS = "packages/chat/src/agents/components/inputs/";
+const INPUTS = "../aidream/apps/shared/chat/src/agents/components/inputs/";
 const SMART_INPUT = `${INPUTS}smart-input/`;
 const RULED = "2026-10-05";
 
@@ -90,7 +90,7 @@ export const PIECES: Piece[] = [
   {
     id: "enter-to-send",
     name: "Enter-to-send (composerKeyIntent)",
-    canonical: ["packages/chat/src/ui/composer/composerSubmit.ts", "components/official/composer/composerSubmit.ts"],
+    canonical: ["../aidream/apps/shared/chat/src/ui/composer/composerSubmit.ts", "components/official/composer/composerSubmit.ts"],
     approved: [],
     scope: notTest,
     detect: ({ code }) => {
@@ -173,7 +173,7 @@ export const PIECES: Piece[] = [
   {
     id: "context-chips",
     name: "Context values chip + scope control",
-    canonical: [`${SMART_INPUT}ConversationContextChip.tsx`, "packages/chat/src/context/sources/scopes.tsx"],
+    canonical: [`${SMART_INPUT}ConversationContextChip.tsx`, "../aidream/apps/shared/chat/src/context/sources/scopes.tsx"],
     approved: [],
     scope: notTest,
     detect: ({ code, file }) => {
@@ -194,7 +194,7 @@ export const PIECES: Piece[] = [
   {
     id: "mac-detection",
     name: "Mac/modifier detection (isMacLike)",
-    canonical: ["packages/chat/src/agents/hooks/useAgentUndoRedo.ts"],
+    canonical: ["../aidream/apps/shared/chat/src/agents/hooks/useAgentUndoRedo.ts"],
     approved: [],
     scope: notTest,
     detect: ({ code }) => {

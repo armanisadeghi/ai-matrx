@@ -1,7 +1,7 @@
 // providers/chatContextSources.ts
 //
 // The app's CONTEXT SOURCES and COMPUTE TARGETS, registered into `@ai-matrx/chat`
-// (P21 — packages/chat/src/context/sources/scopes.tsx, packages/chat/src/compute/targets.tsx).
+// (P21 — ../aidream/apps/shared/chat/src/context/sources/scopes.tsx, ../aidream/apps/shared/chat/src/compute/targets.tsx).
 // The package reads scopes (the active selection, the tree, values, agent-context tasks) and
 // the sandbox platform through these registrations instead of importing app code; until
 // `@ai-matrx/scopes` exists (P17s1–s3) this file is where the app's scopes reach chat.

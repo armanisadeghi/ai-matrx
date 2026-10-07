@@ -91,8 +91,8 @@ Delete the file and remove the import from `registry.ts`. The DB rows are NOT au
 
 ## See also
 
-- `packages/chat/src/surfaces/types.ts` — type definitions (`SurfaceManifest`, `SurfaceValue`, `SurfaceValueGroup`).
-- `packages/chat/src/surfaces/utils/surface-display.ts` — shared label seam.
+- `../aidream/apps/shared/chat/src/surfaces/types.ts` — type definitions (`SurfaceManifest`, `SurfaceValue`, `SurfaceValueGroup`).
+- `../aidream/apps/shared/chat/src/surfaces/utils/surface-display.ts` — shared label seam.
 - `features/surfaces/services/manifest-sync.service.ts` — diff + sync logic.
-- `packages/chat/src/surfaces/utils/value-mapping-resolver.ts` — runtime resolver.
+- `../aidream/apps/shared/chat/src/surfaces/utils/value-mapping-resolver.ts` — runtime resolver.
 - `features/scopes/FEATURE.md` — multi-scope binding contract.

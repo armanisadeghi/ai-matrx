@@ -86,7 +86,7 @@
       "date": "2026-08-08"
     },
     {
-      "file": "packages/chat/src/tool-call-visualization/renderers/ask-person/AskPersonInline.test.tsx",
+      "file": "../aidream/apps/shared/chat/src/tool-call-visualization/renderers/ask-person/AskPersonInline.test.tsx",
       "justification": "Test fixture: the vault_item subtitle is a server-sent string the test feeds the renderer; vault items are owner-only, so the claim is true and this is not a UI surface.",
       "addedBy": "admin@admin.com",
       "date": "2026-09-26"

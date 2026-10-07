@@ -847,7 +847,7 @@ fixed` window titled "Marking chapters" — the page did not move — chapters
   (`bbfc9567-…`); YouTube → YouTube Transcription & Research agent (`7402d782-…`);
   audio file → `useFileUpload` (durable) + `useAudioTranscription` (STT); note →
   `useNotes` content. Agent runs go through the new reusable one-shot primitive
-  `packages/chat/src/agents/run/useRunAgent.ts` (`POST /ai/agents/{id}` → NDJSON via
+  `../aidream/apps/shared/chat/src/agents/run/useRunAgent.ts` (`POST /ai/agents/{id}` → NDJSON via
   `consumeStream`). Persian (`fa-IR`) flipped to `enabled: true` (maps to the wired
   `podcast_type: "persian"` path). Request now carries `language` + `host_count`
   (default 2). Replaced the `voice_memo`/"Record yourself" source with `audio_file`

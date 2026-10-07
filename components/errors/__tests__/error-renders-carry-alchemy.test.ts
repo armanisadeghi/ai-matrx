@@ -39,7 +39,7 @@ import {
 } from "./error-display-census";
 
 const REPO_ROOT = path.resolve(__dirname, "../../..");
-const SCANNED_DIRS = ["app", "components", "features", "packages/chat/src", "lib"];
+const SCANNED_DIRS = ["app", "components", "features", "../aidream/apps/shared/chat/src", "lib"];
 const BASELINE_FILE = path.join(__dirname, "error-render-census.baseline.json");
 
 /**

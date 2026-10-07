@@ -119,7 +119,7 @@ describe("the Doc append lives once", () => {
   it("holds over the whole repository", () => {
     const root = process.cwd();
     const files: { path: string; source: string }[] = [];
-    for (const top of ["features", "packages/chat/src", "app", "components", "lib", "hooks", "utils"]) {
+    for (const top of ["features", "../aidream/apps/shared/chat/src", "app", "components", "lib", "hooks", "utils"]) {
       try {
         statSync(join(root, top));
       } catch {

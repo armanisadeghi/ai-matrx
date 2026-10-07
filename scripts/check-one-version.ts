@@ -15,6 +15,7 @@
  *   pnpm check:one-version:self-test    # plants one violation per detector: RED, then GREEN
  */
 import { execSync } from "node:child_process";
+import { CHAT_PACKAGE_SRC, gitFiles } from "./lib/source-roots.cjs";
 import { readFileSync } from "node:fs";
 import path from "node:path";
 import { emitItem, endItems } from "./checks/items.mjs";
@@ -80,11 +81,11 @@ export function judge(offenders: Offender[], baseline: BaselineEntry[]): Verdict
 }
 
 function loadFiles(): SourceFile[] {
-  const list = execSync("git ls-files --cached --others --exclude-standard '*.ts' '*.tsx'", {
-    cwd: ROOT,
-    encoding: "utf8",
-    maxBuffer: 64 * 1024 * 1024,
-  })
+  // The app's files and @ai-matrx/chat's source (the aidream checkout beside this repo, P27).
+  const list = gitFiles(ROOT, [
+    "ls-files", "--cached", "--others", "--exclude-standard", "--",
+    "*.ts", "*.tsx", `${CHAT_PACKAGE_SRC}/**/*.ts`, `${CHAT_PACKAGE_SRC}/**/*.tsx`,
+  ])
     .split("\n")
     .filter(Boolean);
   const files: SourceFile[] = [];
@@ -138,7 +139,7 @@ const RED: Record<string, SourceFile> = {
 }`,
   ),
   "composer-chips": src(
-    "packages/chat/src/agents/components/inputs/RedChip.tsx",
+    "../aidream/apps/shared/chat/src/agents/components/inputs/RedChip.tsx",
     `export const RedChip = () => <span className="inline-flex h-6 items-center rounded-full border px-2">x</span>;`,
   ),
   "context-chips": src(
@@ -146,7 +147,7 @@ const RED: Record<string, SourceFile> = {
     `export function ContextLensBar() { return null; }`,
   ),
   "mac-detection": src(
-    "packages/chat/src/zz/RedMac.ts",
+    "../aidream/apps/shared/chat/src/zz/RedMac.ts",
     `export const isMac = () => /Mac|iPhone|iPad/.test(navigator.platform);`,
   ),
 };
@@ -191,7 +192,7 @@ function selfTest(): boolean {
     if (hit.length > 0) failures.push(`GREEN ${g.file}: legitimate code flagged as ${hit.map((h) => h.piece).join(", ")}`);
   }
   // Canonical files and approved variants are excused.
-  const canonicalCopy = { ...RED["chat-input"], file: "packages/chat/src/agents/components/inputs/smart-input/Zz.tsx" };
+  const canonicalCopy = { ...RED["chat-input"], file: "../aidream/apps/shared/chat/src/agents/components/inputs/smart-input/Zz.tsx" };
   if (findOffenders([canonicalCopy]).length > 0) failures.push("canonical directory was not excused");
   const approved: Piece = {
     ...PIECES[0],

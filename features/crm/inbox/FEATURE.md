@@ -220,7 +220,7 @@ both applied live. Until each was registered its strip was keyed to a surface ro
 exist, so it could never have rendered anything and no agent role could hang off it (IC-7).
 
 🚨 **REGISTERING A SURFACE IS TWO HALVES, AND THE SECOND ONE IS EASY TO MISS.** The manifest +
-DB row make the surface EXIST; `packages/chat/src/surfaces/utils/route-to-surface.ts` is what makes the
+DB row make the surface EXIST; `../aidream/apps/shared/chat/src/surfaces/utils/route-to-surface.ts` is what makes the
 page RESOLVE to it. `SurfaceAgentsPanelImpl` discards a registered runtime whose name disagrees
 with the route, and a bare `/crm` prefix sat above both of these routes — so from the day the
 Chasebox was registered until 2026-08-16 the header panel still resolved `matrx-user/crm`,

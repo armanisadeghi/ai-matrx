@@ -257,13 +257,13 @@
     "features/workflow-comparison/components/WorkflowBattlePage.tsx::`Re-running ${arm.label}…`",
     "features/workflow-runtime/browse/useWorkflowRowActions.tsx::`Deleted \"${row.name}\"`",
     "features/workflow-runtime/triggers/components/CopyableValue.tsx::`${label} copied`",
-    "packages/chat/src/agents/components/conversation-history/ConversationHistorySidebar.tsx::`Hiding ${featureLabel(featureKey)} here`",
-    "packages/chat/src/agents/components/conversation-history/ConversationHistorySidebar.tsx::`Showing only ${featureLabel(featureKey)}`",
-    "packages/chat/src/agents/components/inputs/BoundVariableChips.tsx::`Saved to ${info.scopeTypeLabel}`",
-    "packages/chat/src/agents/components/inputs/resources/usePasteImageResource.ts::`Couldn't upload ${file.name}: ${reason}`",
-    "packages/chat/src/agents/prompt-preview/PromptPreviewContent.tsx::`${label} copied`",
-    "packages/chat/src/cx-chat/components/user-input/ConversationInput.tsx::`Couldn't upload ${file.name}: ${reason}`",
-    "packages/chat/src/cx-conversation/ConversationInput.tsx::`Couldn't upload ${file.name}: ${reason}`"
+    "../aidream/apps/shared/chat/src/agents/components/conversation-history/ConversationHistorySidebar.tsx::`Hiding ${featureLabel(featureKey)} here`",
+    "../aidream/apps/shared/chat/src/agents/components/conversation-history/ConversationHistorySidebar.tsx::`Showing only ${featureLabel(featureKey)}`",
+    "../aidream/apps/shared/chat/src/agents/components/inputs/BoundVariableChips.tsx::`Saved to ${info.scopeTypeLabel}`",
+    "../aidream/apps/shared/chat/src/agents/components/inputs/resources/usePasteImageResource.ts::`Couldn't upload ${file.name}: ${reason}`",
+    "../aidream/apps/shared/chat/src/agents/prompt-preview/PromptPreviewContent.tsx::`${label} copied`",
+    "../aidream/apps/shared/chat/src/cx-chat/components/user-input/ConversationInput.tsx::`Couldn't upload ${file.name}: ${reason}`",
+    "../aidream/apps/shared/chat/src/cx-conversation/ConversationInput.tsx::`Couldn't upload ${file.name}: ${reason}`"
   ],
   "reasons": {
     "features/window-panels/windows/FeedbackWindow.tsx::`Use ${modifierKeyLabel()}+V to paste an image`": {

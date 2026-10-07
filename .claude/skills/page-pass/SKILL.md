@@ -173,7 +173,7 @@ surface). Say which parts you judged as authored content.
   record ~10,000; a record with its comments/folders ~7,000 + the rest shared;
   a list page's condensed visible list ~4,000; a broad page (SEO, dashboards)
   only a ~2,000-3,000 overview and a guide for discovery. Pack it as ONE XML
-  bundle with `packages/chat/src/surfaces/runtime/context-bundle.ts` — never raw JSON rows.
+  bundle with `../aidream/apps/shared/chat/src/surfaces/runtime/context-bundle.ts` — never raw JSON rows.
   The bundle is what the agent reads up front; the page's individual values
   stay declared too (bindings and write twins use their names) at the default
   size. Worked bundles: `features/research/browse/surface.ts` (list),

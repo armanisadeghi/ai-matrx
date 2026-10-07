@@ -59,7 +59,7 @@ import { featureRootOf } from "./lib/source-roots.cjs";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const BASELINE_FILE = join(ROOT, "scripts", "single-record-writes-baseline.json");
-const SCAN_DIRS = ["app", "features", "packages/chat/src", "components", "lib", "hooks", "utils", "providers", "actions"];
+const SCAN_DIRS = ["app", "features", "../aidream/apps/shared/chat/src", "components", "lib", "hooks", "utils", "providers", "actions"];
 const SKIP_DIR = new Set(["node_modules", ".next", "dist", "__tests__", "__mocks__"]);
 const EXEMPT_RE = /\/\/[ \t]*write-lands-exempt:[ \t]*[^\s]/;
 

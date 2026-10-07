@@ -33,12 +33,12 @@
     },
     {
       "piece": "agent-variables",
-      "file": "packages/chat/src/agents/components/agent-widgets/chat-assistant/ChatAssistantVariableInputs.tsx",
+      "file": "../aidream/apps/shared/chat/src/agents/components/agent-widgets/chat-assistant/ChatAssistantVariableInputs.tsx",
       "reason": "known duplicate, decision pending"
     },
     {
       "piece": "agent-variables",
-      "file": "packages/chat/src/agents/components/widgets/WidgetVariableInputs.tsx",
+      "file": "../aidream/apps/shared/chat/src/agents/components/widgets/WidgetVariableInputs.tsx",
       "reason": "known duplicate, decision pending"
     },
     {
@@ -98,22 +98,22 @@
     },
     {
       "piece": "chat-input",
-      "file": "packages/chat/src/agents/components/agent-widgets/chat-assistant/CompactAssistantInput.tsx",
+      "file": "../aidream/apps/shared/chat/src/agents/components/agent-widgets/chat-assistant/CompactAssistantInput.tsx",
       "reason": "known duplicate, decision pending"
     },
     {
       "piece": "chat-input",
-      "file": "packages/chat/src/cx-chat/components/user-input/ConversationInput.tsx",
+      "file": "../aidream/apps/shared/chat/src/cx-chat/components/user-input/ConversationInput.tsx",
       "reason": "known duplicate, decision pending"
     },
     {
       "piece": "chat-input",
-      "file": "packages/chat/src/cx-conversation/ConversationInput.tsx",
+      "file": "../aidream/apps/shared/chat/src/cx-conversation/ConversationInput.tsx",
       "reason": "known duplicate, decision pending"
     },
     {
       "piece": "chat-input",
-      "file": "packages/chat/src/public-chat/components/GuidedVariableInputs.tsx",
+      "file": "../aidream/apps/shared/chat/src/public-chat/components/GuidedVariableInputs.tsx",
       "reason": "known duplicate, decision pending"
     },
     {
@@ -168,22 +168,22 @@
     },
     {
       "piece": "enter-to-send",
-      "file": "packages/chat/src/agents/components/inputs/AgentVariablesInline.tsx",
+      "file": "../aidream/apps/shared/chat/src/agents/components/inputs/AgentVariablesInline.tsx",
       "reason": "known duplicate, decision pending"
     },
     {
       "piece": "enter-to-send",
-      "file": "packages/chat/src/public-chat/components/GuidedVariableInputs.tsx",
+      "file": "../aidream/apps/shared/chat/src/public-chat/components/GuidedVariableInputs.tsx",
       "reason": "known duplicate, decision pending"
     },
     {
       "piece": "enter-to-send",
-      "file": "packages/chat/src/public-chat/components/PublicVariableInputs.tsx",
+      "file": "../aidream/apps/shared/chat/src/public-chat/components/PublicVariableInputs.tsx",
       "reason": "known duplicate, decision pending"
     },
     {
       "piece": "enter-to-send",
-      "file": "packages/chat/src/tool-call-visualization/components/ToolCallVisualization.tsx",
+      "file": "../aidream/apps/shared/chat/src/tool-call-visualization/components/ToolCallVisualization.tsx",
       "reason": "known duplicate, decision pending"
     },
     {
@@ -258,7 +258,7 @@
     },
     {
       "piece": "mac-detection",
-      "file": "packages/chat/src/agents/components/chat/ConversationPageMenu.tsx",
+      "file": "../aidream/apps/shared/chat/src/agents/components/chat/ConversationPageMenu.tsx",
       "reason": "known duplicate, decision pending"
     },
     {
