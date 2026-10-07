@@ -1,6 +1,6 @@
 {
   "note": "Checked-in snapshot of public._schema_migrations for the files under migrations/campaign and migrations/inverse. Written by `pnpm db:apply` on every successful production apply and refreshed whole by the nightly catch-up. Never hand-edited: a self-written checksum is a claim nobody can check. Guard: pnpm check:ledgered-files-unedited.",
-  "generated_at": "2026-10-07T18:21:50.162Z",
+  "generated_at": "2026-10-07T18:26:26.388Z",
   "files": {
     "migrations/campaign/a_chunk_is_the_size_the_client_door_can_actually_carry.sql": {
       "source": "matrx-frontend",
@@ -6763,6 +6763,18 @@
       "filename": "sheetleft_c_the_four_sheet_knobs_are_archived_not_deleted.sql",
       "checksum": "6221fcabd8f3ffb573c4b58560c462ba6f6280b3f5a5f3a2bfeae1d5e6a17269",
       "applied_at": "2026-10-07 18:21:49.33693+00"
+    },
+    "migrations/campaign/sheetleft_d_the_registry_stops_knowing_the_sheet.sql": {
+      "source": "matrx-frontend",
+      "filename": "sheetleft_d_the_registry_stops_knowing_the_sheet.sql",
+      "checksum": "9a1ba421e2b469b46edb9e7bce393503f52584c967041938e00066815f1c2517",
+      "applied_at": "2026-10-07 18:26:13.73026+00"
+    },
+    "migrations/campaign/sheetleft_e_the_deleted_views_do_not_say_sheet_either.sql": {
+      "source": "matrx-frontend",
+      "filename": "sheetleft_e_the_deleted_views_do_not_say_sheet_either.sql",
+      "checksum": "055ee9ffe6c94c0ed9c074727aec675cdcd4a414c576ff7cb46cc99c27531682",
+      "applied_at": "2026-10-07 18:26:25.42776+00"
     },
     "migrations/campaign/signupdoor_the_dormant_second_signup_door_is_closed_loudly.sql": {
       "source": "matrx-frontend",
