@@ -51,6 +51,13 @@ export const REACH: ReadonlyArray<{ name: string; re: RegExp; python?: boolean }
   { name: "sql", re: new RegExp(String.raw`\bplatform"?\s*\.\s*"?(?:${TABLES})\b`) },
   { name: "client", re: new RegExp(String.raw`\.from\(\s*["'\`](?:${TABLES})["'\`]\s*\)`) },
   { name: "door", re: /\bflexible_data_(?:write|archive)\b/ },
+  // THE OLD NAMES COMING BACK (cleanup 2, 2026-10-07): the table is in `deprecated`, its entity type
+  // is inactive, its doors, search projection and registry rows are gone. A quoted `flexible_data`
+  // token (reference-kind list, schemaSource union, entity token), a `flexible_data:` registry key
+  // or the retired search-sync function in code means someone re-added the name.
+  { name: "token", re: /["'`]flexible_data["'`]/ },
+  { name: "registry-key", re: /^\s*flexible_data\s*:\s*\{/m },
+  { name: "search-sync", re: /\b_search_item_sync_flexible_data\b/ },
   { name: "orm", re: new RegExp(String.raw`\bmanagers\.platform\.(?:${TABLES})\b`), python: true },
   {
     name: "orm",
@@ -71,6 +78,7 @@ export const OUT_OF_SCOPE: ReadonlyArray<RegExp> = [
   /^packages\/chat\/src\/host\/db-types\.ts$/,
   /\.generated\./,
   /^aidream:apps\/dashboard\/src\/types\/database\.types\.ts$/,
+  /^aidream:apps\/shared\/chat\/src\/host\/db-types\.ts$/,
   /^aidream:db\/(?:managers|models)\//, // matrx-orm generated layer
   /^aidream:db\/helpers\/auto_config_[a-z_]+\.py$/,
   /(?:^|\/)node_modules\//,
@@ -86,7 +94,12 @@ export const OUT_OF_SCOPE: ReadonlyArray<RegExp> = [
 ];
 
 /** The readers and writers that exist today, each with why. Shrink-only. */
-export const ALLOWED: Readonly<Record<string, string>> = {};
+export const ALLOWED: Readonly<Record<string, string>> = {
+  "features/scopes/utils/__tests__/referenceTypeGroups.test.ts":
+    "asserts the retired flexible_data token stays out of the visible reference types",
+  "scripts/lib/__tests__/trash-doors.test.ts":
+    "a fixture list of trash-door tokens, frozen history of the door census",
+};
 
 /**
  * Blank `#` / `--` comments and Python docstrings — a triple-quoted string that opens a line right
@@ -353,6 +366,9 @@ const TABLE_GREEN_PLANTS: string[] = [
 ];
 
 const RED_PLANTS: Array<[string, string]> = [
+  ["features/x/kinds.ts", 'export const KINDS = ["feature_doc", "flexible_data", "folder"] as const;'],
+  ["utils/permissions/registry.ts", "export const R = {\n  flexible_data: {\n    resourceType: \"flexible_data\",\n  },\n};"],
+  ["aidream:aidream/services/x/sync.py", "perform = '_search_item_sync_flexible_data'"],
   ["features/x/a.ts", 'const { data } = await supabase.schema("platform").from("flexible_data").select("*");'],
   ["features/x/b.ts", 'await supabase.rpc("flexible_data_write", { p_patch: {} });'],
   ["features/x/c.ts", "const sql = `select * from platform.custom_record where id = $1`;"],
@@ -363,6 +379,7 @@ const RED_PLANTS: Array<[string, string]> = [
 ];
 
 const GREEN_PLANTS: Array<[string, string]> = [
+  ["features/x/h.ts", "// the flexible_data token and the `flexible_data: {` registry key are retired\nexport const kinds = [\"folder\"];"],
   ["features/x/d.ts", "// the old platform.flexible_data store is retired\nconst x = 1;"],
   ["features/x/e.ts", "/* reads platform.custom_record — never again */\nexport {};"],
   ["aidream:aidream/services/x/doc.py", 'def f():\n    """Reads ``platform.custom_record`` no more."""\n    return 1  # platform.flexible_data was here'],

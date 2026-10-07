@@ -28,6 +28,13 @@
   "has_organization": true
  },
  {
+  "token": "account_closure",
+  "type": null,
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
   "token": "acquisition_block",
   "type": "ledger",
   "custom_fields_enabled": false,
@@ -291,7 +298,7 @@
   "type": "detail",
   "custom_fields_enabled": true,
   "is_active": true,
-  "has_organization": false
+  "has_organization": true
  },
  {
   "token": "anon_form",
@@ -644,9 +651,30 @@
   "has_organization": true
  },
  {
+  "token": "billing_coupon",
+  "type": null,
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "billing_coupon_redemption",
+  "type": null,
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
   "token": "billing_customer",
   "type": "entity",
   "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "billing_free_period_grant",
+  "type": null,
+  "custom_fields_enabled": false,
   "is_active": true,
   "has_organization": true
  },
@@ -726,6 +754,13 @@
   "custom_fields_enabled": true,
   "is_active": true,
   "has_organization": false
+ },
+ {
+  "token": "block_state",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
  },
  {
   "token": "board",
@@ -1750,6 +1785,13 @@
   "has_organization": true
  },
  {
+  "token": "custom_agent_table_trust",
+  "type": null,
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
   "token": "custom_agg_digest_checked",
   "type": null,
   "custom_fields_enabled": false,
@@ -1758,9 +1800,9 @@
  },
  {
   "token": "custom_entity_definition",
-  "type": "entity",
-  "custom_fields_enabled": true,
-  "is_active": true,
+  "type": "deprecated",
+  "custom_fields_enabled": false,
+  "is_active": false,
   "has_organization": true
  },
  {
@@ -1793,9 +1835,9 @@
  },
  {
   "token": "custom_record",
-  "type": "detail",
-  "custom_fields_enabled": true,
-  "is_active": true,
+  "type": "deprecated",
+  "custom_fields_enabled": false,
+  "is_active": false,
   "has_organization": true
  },
  {
@@ -1950,7 +1992,7 @@
   "type": "detail",
   "custom_fields_enabled": true,
   "is_active": true,
-  "has_organization": false
+  "has_organization": true
  },
  {
   "token": "dataset",
@@ -2191,6 +2233,20 @@
   "has_organization": true
  },
  {
+  "token": "entity_protected_value",
+  "type": null,
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "entity_protected_value_version",
+  "type": null,
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
   "token": "entity_relationship",
   "type": "system",
   "custom_fields_enabled": false,
@@ -2391,35 +2447,35 @@
   "type": "detail",
   "custom_fields_enabled": true,
   "is_active": true,
-  "has_organization": false
+  "has_organization": true
  },
  {
   "token": "file_entities",
   "type": "detail",
   "custom_fields_enabled": true,
   "is_active": true,
-  "has_organization": false
+  "has_organization": true
  },
  {
   "token": "file_overrides",
   "type": "detail",
   "custom_fields_enabled": true,
   "is_active": true,
-  "has_organization": false
+  "has_organization": true
  },
  {
   "token": "file_page_annotations",
   "type": "detail",
   "custom_fields_enabled": true,
   "is_active": true,
-  "has_organization": false
+  "has_organization": true
  },
  {
   "token": "file_pages",
   "type": "detail",
   "custom_fields_enabled": true,
   "is_active": true,
-  "has_organization": false
+  "has_organization": true
  },
  {
   "token": "file_rag_job",
@@ -2486,9 +2542,9 @@
  },
  {
   "token": "flexible_data",
-  "type": "entity",
-  "custom_fields_enabled": true,
-  "is_active": true,
+  "type": "deprecated",
+  "custom_fields_enabled": false,
+  "is_active": false,
   "has_organization": true
  },
  {
@@ -2587,7 +2643,7 @@
   "type": "detail",
   "custom_fields_enabled": true,
   "is_active": true,
-  "has_organization": false
+  "has_organization": true
  },
  {
   "token": "growth_loop_run",
@@ -2601,7 +2657,7 @@
   "type": "detail",
   "custom_fields_enabled": true,
   "is_active": true,
-  "has_organization": false
+  "has_organization": true
  },
  {
   "token": "guardian_link",
@@ -4466,6 +4522,13 @@
   "has_organization": false
  },
  {
+  "token": "ops_auth_lock_watchdog_log",
+  "type": null,
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": false
+ },
+ {
   "token": "ops_check_item",
   "type": null,
   "custom_fields_enabled": false,
@@ -4760,6 +4823,13 @@
   "has_organization": false
  },
  {
+  "token": "personal_data_column",
+  "type": null,
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
   "token": "plan_cms_fill_item",
   "type": "detail",
   "custom_fields_enabled": true,
@@ -5047,6 +5117,13 @@
   "has_organization": true
  },
  {
+  "token": "position",
+  "type": null,
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
   "token": "processed_document",
   "type": "entity",
   "custom_fields_enabled": true,
@@ -5206,6 +5283,34 @@
   "custom_fields_enabled": false,
   "is_active": false,
   "has_organization": true
+ },
+ {
+  "token": "public_compat_wrapper",
+  "type": null,
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": false
+ },
+ {
+  "token": "public_placement_baseline",
+  "type": null,
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": false
+ },
+ {
+  "token": "public_placement_domain",
+  "type": null,
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": false
+ },
+ {
+  "token": "public_restore_permit",
+  "type": null,
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": false
  },
  {
   "token": "purpose",
@@ -5492,7 +5597,7 @@
   "type": "entity",
   "custom_fields_enabled": true,
   "is_active": true,
-  "has_organization": true
+  "has_organization": false
  },
  {
   "token": "scope_association_suggestion",
@@ -5506,7 +5611,7 @@
   "type": "detail",
   "custom_fields_enabled": true,
   "is_active": true,
-  "has_organization": true
+  "has_organization": false
  },
  {
   "token": "scope_door_registry",
@@ -5534,7 +5639,7 @@
   "type": "entity",
   "custom_fields_enabled": true,
   "is_active": true,
-  "has_organization": true
+  "has_organization": false
  },
  {
   "token": "scrape_domain",
@@ -6258,6 +6363,13 @@
   "has_organization": true
  },
  {
+  "token": "space_payload",
+  "type": null,
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
   "token": "stage_ref_kind",
   "type": "reference",
   "custom_fields_enabled": false,
@@ -6276,7 +6388,7 @@
   "type": "detail",
   "custom_fields_enabled": true,
   "is_active": true,
-  "has_organization": false
+  "has_organization": true
  },
  {
   "token": "structured_list",
@@ -6451,7 +6563,7 @@
   "type": "entity",
   "custom_fields_enabled": true,
   "is_active": true,
-  "has_organization": false
+  "has_organization": true
  },
  {
   "token": "system_announcement",
@@ -6508,6 +6620,13 @@
   "custom_fields_enabled": false,
   "is_active": true,
   "has_organization": false
+ },
+ {
+  "token": "tag",
+  "type": null,
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": true
  },
  {
   "token": "task",
@@ -6710,7 +6829,7 @@
   "type": "detail",
   "custom_fields_enabled": true,
   "is_active": true,
-  "has_organization": false
+  "has_organization": true
  },
  {
   "token": "udt_document",
@@ -6738,11 +6857,18 @@
   "type": "detail",
   "custom_fields_enabled": true,
   "is_active": true,
-  "has_organization": false
+  "has_organization": true
  },
  {
   "token": "ui_client",
   "type": "reference",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "ui_surface_action",
+  "type": null,
   "custom_fields_enabled": false,
   "is_active": true,
   "has_organization": true
@@ -7067,14 +7193,14 @@
   "type": "detail",
   "custom_fields_enabled": true,
   "is_active": true,
-  "has_organization": false
+  "has_organization": true
  },
  {
   "token": "wc_report",
   "type": "detail",
   "custom_fields_enabled": true,
   "is_active": true,
-  "has_organization": false
+  "has_organization": true
  },
  {
   "token": "web_analysis_item",
@@ -7340,7 +7466,7 @@
   "type": "detail",
   "custom_fields_enabled": true,
   "is_active": true,
-  "has_organization": false
+  "has_organization": true
  },
  {
   "token": "webhook_dispatch_state",
@@ -7543,7 +7669,7 @@
   "type": "detail",
   "custom_fields_enabled": true,
   "is_active": true,
-  "has_organization": false
+  "has_organization": true
  },
  {
   "token": "working_document",
