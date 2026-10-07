@@ -74,6 +74,10 @@ const ALIAS: Record<string, string> = {
     __dirname,
     "runtime/FrameAlchemyDisclosure.ts",
   ),
+  "@/components/ui/textarea": resolve(
+    __dirname,
+    "runtime/FrameTextarea.tsx",
+  ),
   "@/components/errors/useErrorSurfaceSnapshot": resolve(
     __dirname,
     "runtime/FrameErrorSurfaceSnapshot.ts",
