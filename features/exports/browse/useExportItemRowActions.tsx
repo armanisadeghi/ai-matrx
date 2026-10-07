@@ -96,9 +96,9 @@ export function useExportItemRowActions(
               id: "copy-details",
               label: "Copy details",
               icon: ClipboardCopy,
-              onSelect: () => {
+              onSelect: async () => {
                 // Metadata only — the same fields the details dialog shows.
-                void copyText(
+                if (!(await copyText(
                   [
                     row.title?.trim() || "(no subject)",
                     author ? `From: ${author}` : null,
@@ -109,10 +109,8 @@ export function useExportItemRowActions(
                   ]
                     .filter(Boolean)
                     .join("\n"),
-                ).then((copied) => {
-  if (!copied) return;
-  toast.success("Details copied");
-});
+                ))) return;
+                toast.success("Details copied");
               },
             },
           ],

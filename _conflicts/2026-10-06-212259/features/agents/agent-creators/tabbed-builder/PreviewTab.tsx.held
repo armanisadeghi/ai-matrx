@@ -1,0 +1,194 @@
+matrx-auto-git-conflict-file-work-delete-this-when-resolved
+
+HELD CONFLICT, written by scripts/sync-main.py
+File:      features/agents/agent-creators/tabbed-builder/PreviewTab.tsx
+Why held:  both sides changed the same code
+GITHUB's version is live in the repo at the path above. LOCAL's version is at the bottom
+of this file, below the FACTS.
+Done with it: the final code is in the live file, this .held file is deleted, and its line
+in _conflicts/README.md is deleted. The list of open items is _conflicts/README.md.
+
+FACTS (computed by sync-main from git)
+
+THE TWO VERSIONS
+  LOCAL  = the version that was on this Mac. It is saved below, in this .held file.
+  GITHUB = the version from GitHub. It is LIVE in the repo right now, at features/agents/agent-creators/tabbed-builder/PreviewTab.tsx
+  Both grew from the same COMMON version: commit cfed5f4723, 2026-10-06 21:01.
+
+WHEN EACH SIDE CHANGED THIS FILE (newest first)
+  LOCAL:
+    2026-10-06 21:16  (uncommitted edit; the time the file was last saved on this Mac)
+    2026-10-06 21:23  94b89b0701  collected by the sync; the edit itself happened at or before this time
+  GITHUB:
+    2026-10-06 21:00  7bf65448f8  "Copied state and success toasts only after a copy that landed (kit 0.28.0 boolean); delete ToolTabBodies/viewer-utilities CopyButton; add check:copy-result-gated"
+  LOCAL's latest change is 15m AFTER GITHUB's latest change.
+
+SIZE: common version 139 lines, LOCAL 141 lines, GITHUB 139 lines
+
+WHAT EACH SIDE DID, compared with the common version
+  LOCAL added 2 lines and removed 1 lines.
+  GITHUB added 2 lines and removed 2 lines.
+
+CODE ONE SIDE HAS THAT THE OTHER DOES NOT
+  LOCAL has 0 of the 2 lines GITHUB added.
+    Lines GITHUB added that LOCAL does NOT have:
+      | const copyToClipboard = async () => {
+      | if (!(await copyText(localFinalPrompt))) return;
+    (some of those lines also appear in other changed files, which may be a coincidence: components/matrx/ConfigBuilder/index.tsx, components/ui/JsonComponents/JsonEditor.tsx)
+    Lines GITHUB deliberately REMOVED that LOCAL still has: 1
+      | const copyToClipboard = () => {
+  GITHUB has 0 of the 2 lines LOCAL added.
+    Lines LOCAL added that GITHUB does NOT have:
+      | void copyText(localFinalPrompt).then((copied) => {
+      | if (!copied) return;
+    (some of those lines also appear in other changed files, which may be a coincidence: app/(admin)/administration/database/sql-functions/components/EnumDetail.tsx, app/(admin)/administration/database/sql-functions/components/SqlFunctionDetail.tsx, app/(admin)/administration/database/sql-functions/components/SqlFunctionTester.tsx, app/(admin)/administration/ui/official-components/component-displays/pro-input.tsx)
+
+COMPARE THEM (the labels are correct; '-' lines are GITHUB, '+' lines are LOCAL):
+  diff -u --label 'GITHUB (live)' --label 'LOCAL (held)' <(git show 18b17dfd3ce9:'features/agents/agent-creators/tabbed-builder/PreviewTab.tsx') <(git show 94b89b070183:'features/agents/agent-creators/tabbed-builder/PreviewTab.tsx')
+
+RECOVER EITHER VERSION FOREVER (works even after this .held file is deleted):
+  LOCAL : git show 94b89b070183:'features/agents/agent-creators/tabbed-builder/PreviewTab.tsx'
+  GITHUB: git show 18b17dfd3ce9:'features/agents/agent-creators/tabbed-builder/PreviewTab.tsx'
+
+---------------- LOCAL VERSION BELOW ----------------
+'use client';
+
+import { useClipboard } from "@ai-matrx/kit/clipboard";
+import { toast } from "@/lib/toast";
+import React, { useState, useEffect } from 'react';
+import { Button } from "@/components/ui/button";
+import { usePromptBuilder } from './PromptBuilderContext';
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { CopyIcon, CheckIcon } from "lucide-react";
+
+export const PreviewTab: React.FC = () => {
+  const { copyText } = useClipboard({
+    notify: (message, kind) =>
+      kind === "error" ? toast.error(message) : toast.success(message),
+  });
+  const { finalPrompt, globalPrompt, enabledSections, allTabs, generateFinalPrompt } = usePromptBuilder();
+  const [copied, setCopied] = useState(false);
+  const [previewTab, setPreviewTab] = useState<'final' | 'structure'>('final');
+  const [localFinalPrompt, setLocalFinalPrompt] = useState('');
+  
+  // Regenerate the prompt when viewing this tab
+  useEffect(() => {
+    setLocalFinalPrompt(generateFinalPrompt());
+  }, [generateFinalPrompt, enabledSections]);
+  
+  // Function to copy the prompt to clipboard
+  const copyToClipboard = () => {
+    void copyText(localFinalPrompt).then((copied) => {
+  if (!copied) return;
+  setCopied(true);
+});
+    setTimeout(() => setCopied(false), 2000);
+  };
+  
+  // Function to show the raw structure with placeholders
+  const showStructureView = () => {
+    // Replace placeholders with highlighted versions
+    const highlightedPrompt = globalPrompt.replace(
+      /<<TAB_(\d+)>><<T\/AB_\1>>/gs,
+      (match, tabNumber, content) => {
+        const tab = allTabs.find(t => t.tabNumber === Number(tabNumber));
+        const tabName = tab ? tab.label : `Tab ${tabNumber}`;
+        const isEnabled = tab ? enabledSections[tab.id] : false;
+        
+        if (!isEnabled) {
+          return `<span class="bg-red-100 dark:bg-red-900/30 px-1 py-0.5 rounded text-red-800 dark:text-red-300 text-xs font-mono">DISABLED: ${tabName}</span>`;
+        }
+        
+        return `<span class="bg-blue-100 dark:bg-blue-900/30 px-1 py-0.5 rounded text-blue-800 dark:text-blue-300 text-xs font-mono">TAB_${tabNumber}: ${tabName}</span>`;
+      }
+    );
+    
+    return (
+      <div 
+        className="prose prose-sm dark:prose-invert max-w-none"
+        dangerouslySetInnerHTML={{ __html: highlightedPrompt.split('\n').join('<br>') }}
+      />
+    );
+  };
+
+  // Generate the final display prompt
+  const getDisplayPrompt = () => {
+    if (!localFinalPrompt) {
+      return '(Your prompt will appear here once you add content to the enabled sections)';
+    }
+    return localFinalPrompt;
+  };
+  
+  return (
+    <Card className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-sm mb-4">
+      <CardHeader>
+        <CardTitle className="text-gray-900 dark:text-gray-100">Final Generated Prompt</CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-6">
+        <Tabs value={previewTab} onValueChange={(v) => setPreviewTab(v as 'final' | 'structure')}>
+          <TabsList className="mb-4">
+            <TabsTrigger value="final">Final Prompt</TabsTrigger>
+            <TabsTrigger value="structure">Prompt Structure</TabsTrigger>
+          </TabsList>
+          
+          <TabsContent value="final" className="mt-0">
+            <div className="relative">
+              <div className="absolute top-2 right-2">
+                <Button 
+                  variant="quiet" 
+                  onClick={copyToClipboard}
+                >
+                  {copied ? 
+                    <CheckIcon className="h-4 w-4 text-green-500" /> : 
+                    <CopyIcon className="h-4 w-4 text-gray-500 dark:text-gray-400" />
+                  }
+                </Button>
+              </div>
+              <pre className="p-4 bg-zinc-50 dark:bg-zinc-800 text-gray-800 dark:text-gray-100 rounded-md whitespace-pre-wrap font-mono type-body overflow-auto max-h-[400px] border border-zinc-200 dark:border-zinc-700">
+                {getDisplayPrompt()}
+              </pre>
+            </div>
+          </TabsContent>
+          
+          <TabsContent value="structure" className="mt-0">
+            <div className="p-4 bg-zinc-50 dark:bg-zinc-800 text-gray-800 dark:text-gray-100 rounded-md overflow-auto max-h-[400px] border border-zinc-200 dark:border-zinc-700">
+              {showStructureView()}
+            </div>
+          </TabsContent>
+        </Tabs>
+        
+        <div className="space-y-3">
+          <h3 className="text-base font-medium text-gray-900 dark:text-gray-100">Enabled Sections</h3>
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
+            {allTabs.filter(tab => tab.id !== 'preview').map((tab) => {
+              const isEnabled = enabledSections[tab.id];
+              return (
+                <div 
+                  key={tab.id} 
+                  className={`flex items-center space-x-2 px-3 py-2 rounded-md ${
+                    isEnabled ? 
+                    'bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-300' : 
+                    'bg-gray-50 dark:bg-gray-800 text-gray-500 dark:text-gray-400'
+                  }`}
+                >
+                  <div className={`w-2 h-2 rounded-full ${isEnabled ? 'bg-green-500' : 'bg-gray-400'}`} />
+                  <span className="type-body">{tab.label}</span>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+        
+        <div className="flex space-x-2">
+          <Button
+            variant="primary" 
+            onClick={copyToClipboard}
+          >
+            {copied ? 'Copied!' : 'Copy to Clipboard'}
+          </Button>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}; 

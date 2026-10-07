@@ -70,11 +70,9 @@ function CopyInstructionButton({ instruction }: { instruction: string }) {
         <Copy />
       )}
       variant="outline"
-      onClick={() => {
-        void copyText(instruction, "Instructions copied").then((copied) => {
-  if (!copied) return;
-  setCopied(true);
-});
+      onClick={async () => {
+        if (!(await copyText(instruction, "Instructions copied"))) return;
+        setCopied(true);
         setTimeout(() => setCopied(false), 1500);
       }}
     >

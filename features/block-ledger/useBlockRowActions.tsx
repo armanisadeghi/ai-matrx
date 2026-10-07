@@ -131,8 +131,8 @@ export function useBlockRowActions(
               id: "copy-block",
               label: "Copy this block",
               icon: ClipboardCopy,
-              onSelect: () => {
-                void copyText(
+              onSelect: async () => {
+                if (!(await copyText(
                   [
                     row.input_ref,
                     `Source: ${labelFor(SOURCE_TYPE_LABELS, row.source_type)}`,
@@ -144,10 +144,8 @@ export function useBlockRowActions(
                   ]
                     .filter(Boolean)
                     .join("\n"),
-                ).then((copied) => {
-  if (!copied) return;
-  toast.success("Block copied");
-});
+                ))) return;
+                toast.success("Block copied");
               },
             },
           ],

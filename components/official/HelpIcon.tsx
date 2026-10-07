@@ -36,13 +36,11 @@ const HelpIcon: React.FC<HelpIconProps> = ({
   const hideTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const showTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   
-  const handleCopy = (e: React.MouseEvent) => {
+  const handleCopy = async (e: React.MouseEvent) => {
     e.stopPropagation();
     if (text) {
-      void copyText(text).then((copied) => {
-  if (!copied) return;
-  setCopied(true);
-});
+      if (!(await copyText(text))) return;
+      setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     }
   };

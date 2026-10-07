@@ -41,16 +41,7 @@ import {
 } from "@/features/agent-apps/lib/appHolder";
 import { AgentAppImageField } from "@/features/agent-apps/components/inputs/AgentAppImageField";
 import { EntityEngagementPicker } from "@/features/scopes/components/active-context/engagement/EntityEngagementPicker";
-import { ShellPicker } from "@/features/agent-apps/components/builder/ShellPicker";
-import { ShellConfigPanel } from "@/features/agent-apps/components/builder/ShellConfigPanel";
-import { SlotOverrideEditor } from "@/features/agent-apps/components/builder/SlotOverrideEditor";
 import { EmbedSnippet } from "@/features/agent-apps/components/builder/EmbedSnippet";
-import type {
-  AgentAppShellConfigCommon,
-  AgentAppShellKind,
-  AgentAppSlotCode,
-  AgentAppSlotOverrides,
-} from "@/features/agent-apps/types";
 import { selectAppById } from "@/features/agents/redux/agent-apps/selectors";
 import {
   saveAppField,
@@ -380,7 +371,6 @@ export function AgentAppSettingsContent({
         agent: agent?.name ?? app.agent_id,
         agent_version_id: app.agent_version_id,
         use_latest: app.use_latest,
-        shell_kind: app.shell_kind,
         favicon_url: app.favicon_url,
         preview_image_url: app.preview_image_url,
         status: app.status,
@@ -408,7 +398,6 @@ export function AgentAppSettingsContent({
             <TabsList>
               <TabsTrigger value="identity">Identity</TabsTrigger>
               <TabsTrigger value="agent">Agent</TabsTrigger>
-              <TabsTrigger value="layout">Layout</TabsTrigger>
               <TabsTrigger value="branding">Branding</TabsTrigger>
               <TabsTrigger value="sharing">Sharing</TabsTrigger>
               <TabsTrigger value="danger">Danger</TabsTrigger>
@@ -528,38 +517,6 @@ export function AgentAppSettingsContent({
                 />
               </>
             )}
-          </TabsContent>
-
-          {/* ── Layout (shell + config) ────────────────────────────────── */}
-          <TabsContent value="layout" className="space-y-5">
-            <Row label="Shell">
-              <ShellPicker
-                value={app.shell_kind as AgentAppShellKind}
-                onChange={(next) => saveField("shell_kind", next)}
-                disabled={savingField === "shell_kind"}
-              />
-            </Row>
-            <div className="border-t border-border/60 pt-4">
-              <ShellConfigPanel
-                shellKind={app.shell_kind as AgentAppShellKind}
-                value={(app.shell_config ?? {}) as AgentAppShellConfigCommon}
-                onChange={(next) => saveField("shell_config", next)}
-                disabled={savingField === "shell_config"}
-              />
-            </div>
-            <div className="border-t border-border/60 pt-4">
-              <SlotOverrideEditor
-                shellKind={app.shell_kind as AgentAppShellKind}
-                overrides={(app.slot_overrides ?? {}) as AgentAppSlotOverrides}
-                code={(app.slot_code ?? {}) as AgentAppSlotCode}
-                onChangeOverrides={(next) => saveField("slot_overrides", next)}
-                onChangeCode={(next) => saveField("slot_code", next)}
-                disabled={
-                  savingField === "slot_overrides" ||
-                  savingField === "slot_code"
-                }
-              />
-            </div>
           </TabsContent>
 
           {/* ── Branding ───────────────────────────────────────────────── */}

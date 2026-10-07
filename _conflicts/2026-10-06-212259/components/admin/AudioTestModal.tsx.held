@@ -1,0 +1,337 @@
+matrx-auto-git-conflict-file-work-delete-this-when-resolved
+
+HELD CONFLICT, written by scripts/sync-main.py
+File:      components/admin/AudioTestModal.tsx
+Why held:  both sides changed the same code
+GITHUB's version is live in the repo at the path above. LOCAL's version is at the bottom
+of this file, below the FACTS.
+Done with it: the final code is in the live file, this .held file is deleted, and its line
+in _conflicts/README.md is deleted. The list of open items is _conflicts/README.md.
+
+FACTS (computed by sync-main from git)
+
+THE TWO VERSIONS
+  LOCAL  = the version that was on this Mac. It is saved below, in this .held file.
+  GITHUB = the version from GitHub. It is LIVE in the repo right now, at components/admin/AudioTestModal.tsx
+  Both grew from the same COMMON version: commit cfed5f4723, 2026-10-06 21:01.
+
+WHEN EACH SIDE CHANGED THIS FILE (newest first)
+  LOCAL:
+    2026-10-06 21:16  (uncommitted edit; the time the file was last saved on this Mac)
+    2026-10-06 21:23  94b89b0701  collected by the sync; the edit itself happened at or before this time
+  GITHUB:
+    2026-10-06 21:00  7bf65448f8  "Copied state and success toasts only after a copy that landed (kit 0.28.0 boolean); delete ToolTabBodies/viewer-utilities CopyButton; add check:copy-result-gated"
+  LOCAL's latest change is 15m AFTER GITHUB's latest change.
+
+SIZE: common version 282 lines, LOCAL 284 lines, GITHUB 282 lines
+
+WHAT EACH SIDE DID, compared with the common version
+  LOCAL added 2 lines and removed 1 lines.
+  GITHUB added 2 lines and removed 2 lines.
+
+CODE ONE SIDE HAS THAT THE OTHER DOES NOT
+  LOCAL has 0 of the 2 lines GITHUB added.
+    Lines GITHUB added that LOCAL does NOT have:
+      | const handleCopy = async () => {
+      | if (!(await copyText(speechText))) return;
+    (some of those lines also appear in other changed files, which may be a coincidence: app/(admin)/administration/database/sql-functions/components/SqlFunctionDetail.tsx, components/ui/JsonComponents/JsonDisplay.tsx, features/cx-dashboard/components/CxJsonViewer.tsx)
+    Lines GITHUB deliberately REMOVED that LOCAL still has: 1
+      | const handleCopy = () => {
+  GITHUB has 0 of the 2 lines LOCAL added.
+    Lines LOCAL added that GITHUB does NOT have:
+      | void copyText(speechText).then((copied) => {
+      | if (!copied) return;
+    (some of those lines also appear in other changed files, which may be a coincidence: app/(admin)/administration/database/sql-functions/components/EnumDetail.tsx, app/(admin)/administration/database/sql-functions/components/SqlFunctionDetail.tsx, app/(admin)/administration/database/sql-functions/components/SqlFunctionTester.tsx, app/(admin)/administration/ui/official-components/component-displays/pro-input.tsx)
+
+COMPARE THEM (the labels are correct; '-' lines are GITHUB, '+' lines are LOCAL):
+  diff -u --label 'GITHUB (live)' --label 'LOCAL (held)' <(git show 18b17dfd3ce9:'components/admin/AudioTestModal.tsx') <(git show 94b89b070183:'components/admin/AudioTestModal.tsx')
+
+RECOVER EITHER VERSION FOREVER (works even after this .held file is deleted):
+  LOCAL : git show 94b89b070183:'components/admin/AudioTestModal.tsx'
+  GITHUB: git show 18b17dfd3ce9:'components/admin/AudioTestModal.tsx'
+
+---------------- LOCAL VERSION BELOW ----------------
+'use client';
+
+import { useClipboard } from "@ai-matrx/kit/clipboard";
+import React, { useEffect, useState } from 'react';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Separator } from '@/components/ui/separator';
+import { parseMarkdownToText } from '@/utils/markdown-processors/parse-markdown-for-speech';
+import { useCartesiaWithPreferences } from '@/hooks/tts/simple/useCartesiaWithPreferences';
+import {
+  Play,
+  Pause,
+  Square,
+  Volume2,
+  FileText,
+  Copy,
+  CheckCircle2,
+} from 'lucide-react';
+import { toast } from "@/lib/toast";
+
+interface AudioTestModalProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  markdownContent: string;
+}
+
+export function AudioTestModal({
+  open,
+  onOpenChange,
+  markdownContent,
+}: AudioTestModalProps) {
+  const [speechText, setSpeechText] = useState('');
+  const [copied, setCopied] = useState(false);
+
+  // Convert markdown to speech text when modal opens or content changes
+  useEffect(() => {
+    if (open && markdownContent) {
+      const converted = parseMarkdownToText(markdownContent);
+      setSpeechText(converted);
+    }
+  }, [open, markdownContent]);
+
+  // Early return if modal is not open - don't initialize audio hook
+  if (!open) {
+    return null;
+  }
+
+  return <AudioTestModalContent 
+    open={open}
+    onOpenChange={onOpenChange}
+    speechText={speechText}
+    setCopied={setCopied}
+    copied={copied}
+  />;
+}
+
+// Separate component that only mounts when modal is open
+function AudioTestModalContent({
+  open,
+  onOpenChange,
+  speechText,
+  copied,
+  setCopied,
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  speechText: string;
+  copied: boolean;
+  setCopied: (copied: boolean) => void;
+}) {
+  const { copyText } = useClipboard({
+    notify: (message, kind) =>
+      kind === "error" ? toast.error(message) : toast.success(message),
+  });
+  const {
+    connectionState,
+    playerState,
+    speak,
+    pause,
+    resume,
+    stop,
+  } = useCartesiaWithPreferences({
+    processMarkdown: false, // Already processed in speechText
+    onError: (error) => {
+      toast.error('Audio playback failed', { description: error });
+    },
+  });
+
+  const handlePlay = async () => {
+    if (!speechText.trim()) {
+      toast.error('No content to play');
+      return;
+    }
+
+    if (connectionState !== 'ready') {
+      toast.error('Audio system not ready. Please wait...');
+      return;
+    }
+
+    try {
+      await speak(speechText);
+    } catch (error) {
+      console.error('Error playing audio:', error);
+      toast.error('Failed to play audio');
+    }
+  };
+
+  const handlePause = async () => {
+    try {
+      await pause();
+    } catch (error) {
+      console.error('Error pausing audio:', error);
+    }
+  };
+
+  const handleResume = async () => {
+    try {
+      await resume();
+    } catch (error) {
+      console.error('Error resuming audio:', error);
+    }
+  };
+
+  const handleStop = async () => {
+    try {
+      await stop();
+    } catch (error) {
+      console.error('Error stopping audio:', error);
+    }
+  };
+
+  const handleCopy = () => {
+    void copyText(speechText).then((copied) => {
+  if (!copied) return;
+  setCopied(true);
+});
+    toast.success('Copied to clipboard');
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  const getConnectionStatusBadge = () => {
+    const statusMap = {
+      idle: { variant: 'secondary' as const, text: 'Initializing' },
+      'fetching-token': { variant: 'secondary' as const, text: 'Connecting...' },
+      connecting: { variant: 'secondary' as const, text: 'Connecting...' },
+      ready: { variant: 'default' as const, text: 'Ready' },
+      disconnected: { variant: 'destructive' as const, text: 'Disconnected' },
+    };
+    
+    const status = statusMap[connectionState] || statusMap.idle;
+    return (
+      <Badge variant={status.variant} className="text-xs">
+        {status.text}
+      </Badge>
+    );
+  };
+
+  const getPlayerStatusBadge = () => {
+    const statusMap = {
+      idle: { variant: 'outline' as const, text: 'Idle' },
+      playing: { variant: 'default' as const, text: 'Playing' },
+      paused: { variant: 'secondary' as const, text: 'Paused' },
+    };
+    
+    const status = statusMap[playerState] || statusMap.idle;
+    return (
+      <Badge variant={status.variant} className="text-xs">
+        {status.text}
+      </Badge>
+    );
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-4xl max-h-[85dvh] flex flex-col">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <Volume2 className="h-5 w-5" />
+            Audio Preview & Testing
+          </DialogTitle>
+          <DialogDescription>
+            Test how your markdown content sounds when converted to speech
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="flex items-center gap-2 flex-wrap">
+          <span className="text-sm text-muted-foreground">Connection:</span>
+          {getConnectionStatusBadge()}
+          <Separator orientation="vertical" className="h-4" />
+          <span className="text-sm text-muted-foreground">Player:</span>
+          {getPlayerStatusBadge()}
+          <Separator orientation="vertical" className="h-4" />
+          <Badge variant="secondary" className="text-xs">
+            {speechText.length} chars
+          </Badge>
+        </div>
+
+        <Separator />
+
+        {/* Audio Controls */}
+        <div className="flex items-center gap-2">
+          {playerState === 'idle' && (
+            <Button
+              icon={<Play />}
+              variant="primary"
+              onClick={handlePlay}
+              disabled={connectionState !== 'ready' || !speechText.trim()}
+            >
+              Play Audio
+            </Button>
+          )}
+
+          {playerState === 'playing' && (
+            <Button icon={<Pause />} onClick={handlePause} variant="outline">
+              Pause
+            </Button>
+          )}
+
+          {playerState === 'paused' && (
+            <Button icon={<Play />} variant="primary" onClick={handleResume}>
+              Resume
+            </Button>
+          )}
+
+          {(playerState === 'playing' || playerState === 'paused') && (
+            <Button icon={<Square />} onClick={handleStop} variant="danger">
+              Stop
+            </Button>
+          )}
+
+          <Button onClick={handleCopy} variant="outline" className="ml-auto">
+            {copied ? (
+              <>
+                <CheckCircle2 className="h-4 w-4" />
+                Copied!
+              </>
+            ) : (
+              <>
+                <Copy className="h-4 w-4" />
+                Copy Text
+              </>
+            )}
+          </Button>
+        </div>
+
+        <Separator />
+
+        {/* Converted Speech Text */}
+        <div className="flex-1 min-h-0 flex flex-col">
+          <div className="flex items-center gap-2 mb-2">
+            <FileText className="h-4 w-4 text-muted-foreground" />
+            <h4 className="text-sm font-medium">Audio-Ready Text</h4>
+            <Badge variant="outline" className="text-xs">
+              What the TTS will speak
+            </Badge>
+          </div>
+
+          <div className="flex-1 overflow-auto border rounded-lg bg-textured p-4">
+            <div /* rich-content-exempt: verbatim transcript or extracted document text, not authored markdown */ className="font-mono text-sm whitespace-pre-wrap break-words text-gray-900 dark:text-gray-100">
+              {speechText || (
+                <span className="text-muted-foreground italic">
+                  No content to convert. Enter some markdown content first.
+                </span>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {connectionState === 'disconnected' && (
+          <div className="bg-destructive/10 text-destructive-ink text-sm p-3 rounded-lg">
+            Audio system disconnected. Please close and reopen this dialog to reconnect.
+          </div>
+        )}
+      </DialogContent>
+    </Dialog>
+  );
+}

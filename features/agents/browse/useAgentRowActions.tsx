@@ -300,17 +300,15 @@ export function useAgentRowActions({
           void copyText(url, "Link copied");
         },
 
-        onCopyForAgent: () => {
-          void copyText(
+        onCopyForAgent: async () => {
+          if (!(await copyText(
             buildRecordReferenceFence({
               type: "agent",
               id: agent.id,
               label: agent.name,
             }),
-          ).then((copied) => {
-  if (!copied) return;
-  toast.success("Agent reference copied");
-});
+          ))) return;
+          toast.success("Agent reference copied");
         },
 
         onDelete: () => void remove(agent),

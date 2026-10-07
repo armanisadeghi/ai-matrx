@@ -1,0 +1,814 @@
+matrx-auto-git-conflict-file-work-delete-this-when-resolved
+
+HELD CONFLICT, written by scripts/sync-main.py
+File:      features/agent-apps/components/AgentAppPublicRendererImpl.tsx
+Why held:  deleted on one side, changed on the other
+GITHUB's version is live in the repo at the path above. LOCAL's version is at the bottom
+of this file, below the FACTS.
+Done with it: the final code is in the live file, this .held file is deleted, and its line
+in _conflicts/README.md is deleted. The list of open items is _conflicts/README.md.
+
+FACTS (computed by sync-main from git)
+
+THE TWO VERSIONS
+  LOCAL  = the version that was on this Mac. It is saved below, in this .held file.
+  GITHUB = the version from GitHub. It is LIVE in the repo right now, at features/agent-apps/components/AgentAppPublicRendererImpl.tsx
+  Both grew from the same COMMON version: commit cfed5f4723, 2026-10-06 21:01.
+
+WHEN EACH SIDE CHANGED THIS FILE (newest first)
+  LOCAL:
+    2026-10-06 21:16  (uncommitted edit; the time the file was last saved on this Mac)
+    2026-10-06 21:23  94b89b0701  collected by the sync; the edit itself happened at or before this time
+  GITHUB:
+    2026-10-06 21:04  dec49560a0  "applets B2: delete the old agent-apps runtime; every mount goes through the Applet host"
+    2026-10-06 21:00  7bf65448f8  "Copied state and success toasts only after a copy that landed (kit 0.28.0 boolean); delete ToolTabBodies/viewer-utilities CopyButton; add check:copy-result-gated"
+  LOCAL's latest change is 11m AFTER GITHUB's latest change.
+
+SIZE: common version 772 lines, LOCAL 772 lines, GITHUB 0 lines
+
+WHAT EACH SIDE DID, compared with the common version
+  LOCAL added 1 lines and removed 1 lines.
+  GITHUB deleted the whole file.
+
+CODE ONE SIDE HAS THAT THE OTHER DOES NOT
+
+COMPARE THEM (the labels are correct; '-' lines are GITHUB, '+' lines are LOCAL):
+  diff -u --label 'GITHUB (live)' --label 'LOCAL (held)' <(git show 18b17dfd3ce9:'features/agent-apps/components/AgentAppPublicRendererImpl.tsx') <(git show 94b89b070183:'features/agent-apps/components/AgentAppPublicRendererImpl.tsx')
+
+RECOVER EITHER VERSION FOREVER (works even after this .held file is deleted):
+  LOCAL : git show 94b89b070183:'features/agent-apps/components/AgentAppPublicRendererImpl.tsx'
+  GITHUB: git show 18b17dfd3ce9:'features/agent-apps/components/AgentAppPublicRendererImpl.tsx'
+
+---------------- LOCAL VERSION BELOW ----------------
+"use client";
+
+import { useClipboard } from "@ai-matrx/kit/clipboard";
+import { toast } from "@/lib/toast";
+import React, {
+  useState,
+  useEffect,
+  useMemo,
+  useCallback,
+  useRef,
+} from "react";
+import { AlertCircle, Copy, Check, MoreHorizontal } from "lucide-react";
+import { useApiAuth } from "@/hooks/useApiAuth";
+import { compileStoredComponent } from "@/lib/code-runtime/compile-stored";
+import { AgentAppErrorBoundary } from "./AgentAppErrorBoundary";
+import MarkdownStream from "@/components/MarkdownStream";
+import PublicMessageOptionsMenu from "@ai-matrx/chat/public-chat/components/PublicMessageOptionsMenu";
+import type { TypedStreamEvent } from "@ai-matrx/agents/generated/stream-events";
+import type { PublicAgentApp } from "../types";
+import { useAppDispatch, useAppSelector, useAppStore } from "@/lib/redux/hooks";
+import {
+  recordRunOutcome,
+  waitForRunOutcome,
+} from "../tracking/run-outcome";
+import { launchAgentExecution } from "@ai-matrx/chat/agents/redux/execution-system/thunks/launch-agent-execution.thunk";
+import {
+  selectResultText,
+  selectRequest,
+  selectPrimaryRequest,
+} from "@ai-matrx/chat/agents/redux/execution-system/active-requests/active-requests.selectors";
+import { useRetainRequestForViewer } from "@ai-matrx/chat/agents/redux/execution-system/active-requests/useRetainRequestForViewer";
+import { useWarmAgent } from "@ai-matrx/chat/agents/hooks/useWarmAgent";
+import { useAppHolder } from "@/features/agent-apps/lib/appHolder";
+import { AppWorkspaceGate } from "./AppWorkspaceGate";
+import { useDeclaredSurfaceMandates } from "@ai-matrx/chat/surfaces/runtime/surface-mandates";
+import { APP_RUN_ERROR_TITLE } from "./app-run-error";
+import { SHELL_REGISTRY } from "./shells";
+import { AgentAppFullyCustomShell } from "./shells/AgentAppFullyCustomShell";
+import { useAgentAppTracker } from "../tracking/useAgentAppTracker";
+import { SurfaceRuntimeProvider } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
+import { createPublicAgentAppScope } from "@/features/surfaces/manifests/public-agent-app.manifest";
+import type { AgentAppSurfaceBinding } from "@/features/agent-apps/surface/agent-app-surface";
+import {
+  AgentAppMarkdownStream,
+  AgentAppStreamProvider,
+} from "@/features/agent-apps/components/shells/AgentAppMarkdownStreamBridge";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { kindTextToMarkdown } from "@/features/content-ir/surfaces/kind-text-to-markdown";
+import {
+  useOpenAppHtmlPreview,
+  useOpenAppResponseInCanvas,
+} from "@/features/agent-apps/hooks/useOpenAppResponseInCanvas";
+
+interface AgentAppPublicRendererProps {
+  app: PublicAgentApp;
+  slug: string;
+  /**
+   * Declared surface this run belongs to.
+   *
+   * `PUBLIC_AGENT_APP_SURFACE_NAME` on the anonymous `/p/[slug]` route.
+   * `null` (the default) everywhere else — the authed workspace, the editor
+   * preview and the code preview all sit inside the `matrx-user/agent-apps`
+   * provider mounted by `app/(core)/agent-apps/[id]/layout.tsx`, and the
+   * launch adopts it. Emitting `matrx-public/p` there would out-depth that
+   * provider and put an owner's authoring run on the strangers' surface.
+   * Rationale: `features/agent-apps/surface/agent-app-surface.ts`.
+   */
+  surfaceName?: string | null;
+  TestComponent?: React.ComponentType<{
+    onExecute: (
+      variables: Record<string, unknown>,
+      userInput?: string,
+    ) => Promise<void>;
+    response: string;
+    streamEvents: TypedStreamEvent[];
+    isStreaming: boolean;
+    isExecuting: boolean;
+    error: unknown;
+    rateLimitInfo: { remaining: number; total: number } | null;
+    conversationId: string | null;
+    onResetConversation: () => void;
+  }>;
+}
+
+export function AgentAppPublicRenderer(props: AgentAppPublicRendererProps) {
+  // The app's job is a fixed mandate this page runs, so it is listed once in
+  // the top Agents menu (disclosure law) — no visible page content added.
+  const holder = useAppHolder(props.app);
+  useDeclaredSurfaceMandates(
+    holder.mandateKey
+      ? [
+          {
+            mandateKey: holder.mandateKey,
+            does: `Runs ${props.app.name?.trim() || "this app"}`,
+          },
+        ]
+      : [],
+  );
+  return (
+    <AppWorkspaceGate app={props.app}>
+      <AgentAppShellDispatch {...props} />
+    </AppWorkspaceGate>
+  );
+}
+
+function AgentAppShellDispatch({
+  app,
+  slug,
+  TestComponent,
+  surfaceName = null,
+}: AgentAppPublicRendererProps) {
+  // Phase 1c dispatch: if the app row declares a shell, look it up in the
+  // registry and render that. Phase 1f extends this to fully_custom apps,
+  // which now run on AgentAppFullyCustomShell (uses the useAgentApp hook
+  // contract, with legacy callback props preserved as compat aliases).
+  // The legacy CustomComponentRenderer remains only for the code-preview
+  // path where a TestComponent is injected directly.
+  const shellKind = (app as { shell_kind?: string }).shell_kind;
+  if (!TestComponent) {
+    if (
+      shellKind &&
+      shellKind !== "fully_custom" &&
+      SHELL_REGISTRY[shellKind as keyof typeof SHELL_REGISTRY]
+    ) {
+      const Shell = SHELL_REGISTRY[shellKind as keyof typeof SHELL_REGISTRY]!;
+      return <ShellHost app={app} surfaceName={surfaceName} Shell={Shell} />;
+    }
+    if (shellKind === "fully_custom") {
+      return (
+        <ShellHost
+          app={app}
+          surfaceName={surfaceName}
+          Shell={AgentAppFullyCustomShell}
+        />
+      );
+    }
+  }
+
+  return (
+    <CustomComponentRenderer
+      app={app}
+      slug={slug}
+      TestComponent={TestComponent}
+      surfaceName={surfaceName}
+    />
+  );
+}
+
+type ShellComponent = React.ComponentType<{
+  app: PublicAgentApp;
+  surface?: AgentAppSurfaceBinding;
+}>;
+
+/**
+ * Renders a built-in shell, on a declared surface when the host route has one.
+ *
+ * Split in two so the guest hooks only run where a guest exists: with no
+ * surface the shell renders bare and the run adopts the ambient authed
+ * provider.
+ */
+function ShellHost({
+  app,
+  surfaceName,
+  Shell,
+}: {
+  app: PublicAgentApp;
+  surfaceName: string | null;
+  Shell: ShellComponent;
+}) {
+  if (!surfaceName) return <Shell app={app} />;
+  return <ShellOnSurface app={app} surfaceName={surfaceName} Shell={Shell} />;
+}
+
+function ShellOnSurface({
+  app,
+  surfaceName,
+  Shell,
+}: {
+  app: PublicAgentApp;
+  surfaceName: string;
+  Shell: ShellComponent;
+}) {
+  const { isAuthenticated, fingerprintId } = useApiAuth();
+
+  const hostHolder = useAppHolder(app);
+
+  // Read at scope-build time, never snapshotted: the fingerprint resolves
+  // asynchronously.
+  const surface: AgentAppSurfaceBinding = {
+    surfaceName,
+    getHostValues: () => ({
+      app_id: app.id,
+      app_slug: app.slug,
+      app_name: app.name,
+      // The host scope reports the agent that will ACTUALLY run, so the
+      // Agents chrome and the shell never disagree about whose instructions
+      // a viewer is reading. Identical to `app.agent_id` until the flip.
+      agent_id: hostHolder.agentId ?? app.agent_id,
+      agent_version_id: hostHolder.agentVersionId ?? undefined,
+      shell_kind: app.shell_kind ?? "fully_custom",
+      is_authenticated: isAuthenticated,
+      guest_fingerprint_id: fingerprintId ?? undefined,
+    }),
+  };
+
+  return <Shell app={app} surface={surface} />;
+}
+
+function CustomComponentRenderer({
+  app,
+  slug,
+  TestComponent,
+  surfaceName = null,
+}: AgentAppPublicRendererProps) {
+  const { copyText } = useClipboard({
+    notify: (message, kind) =>
+      kind === "error" ? toast.error(message) : toast.success(message),
+  });
+  const dispatch = useAppDispatch();
+  const store = useAppStore();
+
+  const [isExecuting, setIsExecuting] = useState(false);
+  const [localError, setLocalError] = useState<{
+    type: string;
+    message: string;
+  } | null>(null);
+  const [conversationId, setConversationId] = useState<string | null>(null);
+
+  const { isAuthenticated, fingerprintId } = useApiAuth();
+
+  // Last submitted run input, captured for the SurfaceRuntimeProvider's
+  // getScope() — read at trigger time by chrome, not by handleExecute itself
+  // (which builds its own scope inline at launch).
+  const lastRunInputRef = useRef<{
+    userInput?: string;
+    variables?: Record<string, unknown>;
+  }>({});
+
+  // Streaming state is owned by Redux (active-requests slice). We capture
+  // `conversationId` synchronously via the launcher's `onConversationCreated`
+  // callback (fires immediately after instance creation, well before the
+  // stream starts), then derive the active requestId from
+  // `selectPrimaryRequest`. Reading by requestId from the awaited launcher
+  // result would be wrong here — the launcher awaits the entire stream
+  // before resolving, so by then there's nothing left to subscribe to.
+  const primaryRequest = useAppSelector((state) =>
+    conversationId ? selectPrimaryRequest(conversationId)(state) : undefined,
+  );
+  const requestId = primaryRequest?.requestId ?? null;
+
+  const responseText = useAppSelector((state) =>
+    requestId ? selectResultText(requestId)(state) : "",
+  );
+  const request = useAppSelector((state) =>
+    requestId ? selectRequest(requestId)(state) : undefined,
+  );
+
+  // `responseText` is rendered through `MarkdownStream content=`, which is the
+  // plain-text form and carries no retention (only `requestId=` routes through
+  // StreamAwareChatMarkdown). Retain the row for this viewer's lifetime.
+  // Doctrine: /Users/armanisadeghi/code/common-docs/systems/agents/execution-runtime/LIVE-RUN-RETENTION.md.
+  useRetainRequestForViewer(requestId, "AgentAppPublicRenderer");
+
+  const requestStatus = request?.status;
+  const isStreaming = requestStatus === "streaming";
+  const isStreamComplete = requestStatus === "complete";
+  const requestError =
+    requestStatus === "error"
+      ? {
+          type: APP_RUN_ERROR_TITLE,
+          // The server's refusal is `request.error` (ErrorPayload); requests
+          // carry no `errorMessage` (a tool-call field), so this used to show
+          // only the fallback (page-pass /p/[slug], 2026-09-27).
+          message:
+            request?.error?.user_message?.trim() ||
+            request?.error?.message?.trim() ||
+            "This run could not finish. Try again in a moment.",
+        }
+      : null;
+  const error = localError ?? requestError;
+
+  // streamEvents is preserved in the prop contract for legacy custom UIs but
+  // is intentionally empty — Redux exposes higher-level render blocks instead.
+  // The standard templates only consume `response`, not raw events.
+  const streamEvents: TypedStreamEvent[] = useMemo(() => [], []);
+
+
+  // Non-blocking execution tracking — writes a row to `aga_executions` for
+  // every visit/run/complete/error. Tracker fires fetch with keepalive:true
+  // and never awaits; nothing here can delay the agent dispatch path.
+  const { trackVisit, startRun } = useAgentAppTracker(app.id);
+  const visitFiredRef = useRef(false);
+  useEffect(() => {
+    // Dedupe across React strict-mode double-mount in dev. One row per
+    // page open is the correct shape; effects that re-run after route
+    // changes mount a fresh component (different ref instance), so the
+    // ref does not bleed visits between routes.
+    if (visitFiredRef.current) return;
+    visitFiredRef.current = true;
+    trackVisit();
+  }, [trackVisit]);
+
+  // No local cleanup needed: Redux owns the request lifecycle and the
+  // launcher attaches its own AbortController per conversation.
+
+  // Pre-warm the agent on the configured backend. Fires on idle (after
+  // hydration / first paint) so it never competes with the page's render
+  // path. If the user submits before the warm completes, the real call
+  // simply finds the cache populated; no race.
+  // THE ONE agent decision for this renderer — pinned today, mandate-resolved
+  // once APP_MANDATE_CUTOVER flips. Every site below reads `runAgentId`, so
+  // the launch, the warm and the surface scope can never disagree about which
+  // agent this run belongs to.
+  const holder = useAppHolder(app);
+  const runAgentId = holder.agentId;
+  const runAgentVersionId = holder.agentVersionId;
+  const runMandateKey = holder.mandateKey;
+  const holderError = holder.error;
+  const holderLoading = holder.loading;
+  const pinnedVersionId =
+    !holder.useLatest && runAgentVersionId ? runAgentVersionId : null;
+  useWarmAgent(pinnedVersionId ?? runAgentId ?? "", {
+    isVersion: !!pinnedVersionId,
+  });
+
+  const validateVariables = useCallback(
+    (variables: Record<string, unknown>) => {
+      const errors: string[] = [];
+      const valid: Record<string, unknown> = {};
+      const schema = app.variable_schema;
+
+      if (!Array.isArray(schema)) {
+        return { validVariables: variables, validationErrors: [] };
+      }
+
+      for (const schemaItem of schema) {
+        const {
+          name,
+          required,
+          type,
+          default: defaultValue,
+        } = schemaItem as {
+          name: string;
+          required?: boolean;
+          type?: string;
+          default?: unknown;
+        };
+
+        if (required && !(name in variables)) {
+          if (defaultValue !== undefined) {
+            valid[name] = defaultValue;
+          } else {
+            errors.push(`Missing required variable: ${name}`);
+          }
+        } else if (name in variables) {
+          const value = variables[name];
+          const normalizedType = type === "text" ? "string" : type;
+
+          if (normalizedType === "string" || !normalizedType) {
+            valid[name] = String(value);
+          } else if (normalizedType === "number") {
+            const numValue = typeof value === "number" ? value : Number(value);
+            valid[name] = Number.isNaN(numValue) ? 0 : numValue;
+          } else if (normalizedType === "boolean") {
+            valid[name] = Boolean(value);
+          } else {
+            valid[name] = value;
+          }
+        } else if (defaultValue !== undefined) {
+          valid[name] = defaultValue;
+        }
+      }
+
+      return { validVariables: valid, validationErrors: errors };
+    },
+    [app.variable_schema],
+  );
+
+  const resetConversation = useCallback(() => {
+    setConversationId(null);
+    setLocalError(null);
+  }, []);
+
+  const handleExecute = useCallback(
+    async (variables: Record<string, unknown>, userInput?: string) => {
+      setIsExecuting(true);
+      setLocalError(null);
+
+      let runTracker: ReturnType<typeof startRun> | null = null;
+
+      try {
+        const { validVariables, validationErrors } =
+          validateVariables(variables);
+
+        if (validationErrors.length > 0) {
+          setLocalError({
+            type: APP_RUN_ERROR_TITLE,
+            message: validationErrors.join("; "),
+          });
+          return;
+        }
+
+        // REFUSE before the launch when no Holder resolved. Loud, and never a
+        // fallback to the pinned id: an app whose mandate is missing, disabled
+        // or held by something that cannot run yet must say so, not quietly
+        // run yesterday's agent.
+        if (!runAgentId) {
+          const msg =
+            holderError ??
+            (holderLoading
+              ? "still resolving this app's agent — try again in a moment"
+              : "this app has no runnable agent");
+          // No tracker call: we refuse BEFORE `startRun`, so there is no run
+          // row to fail — inventing one would put a phantom execution in the
+          // app's analytics.
+          setLocalError({ type: APP_RUN_ERROR_TITLE, message: msg });
+          setIsExecuting(false);
+          return;
+        }
+
+        // Delegate to the canonical agent-execution path. `launchAgentExecution`
+        // owns: URL routing (/ai/agents/{id} vs /ai/conversations/{id}),
+        // is_new / is_version flags, auth headers (Bearer for authed, fingerprint
+        // for guests via the API client), conversation creation, request lifecycle,
+        // and NDJSON streaming into Redux. The renderer just consumes the resulting
+        // `requestId` via selectors above (`responseText`, `requestStatus`, etc).
+        //
+        // displayMode "direct" = caller (this renderer + the user's TSX) owns the
+        // UI surface; the launcher does not open any overlay/modal.
+        if (process.env.NODE_ENV !== "production") {
+          console.log("[AgentApp] launchAgentExecution", {
+            agent_id: runAgentId,
+            slug,
+            isAuthenticated,
+            fingerprintId,
+            variables: validVariables,
+          });
+        }
+
+        // Fire run_start tracking BEFORE dispatch but on the same tick.
+        // The tracker never awaits, so this is sub-microsecond — the
+        // dispatch below kicks off in the same JS turn. The taskId we get
+        // back is what we'll send on completion/error.
+        runTracker = startRun(validVariables);
+        let launchedConversationId: string | null = null;
+
+        // Live refs for the SurfaceRuntimeProvider's chrome getScope().
+        lastRunInputRef.current = { userInput, variables: validVariables };
+
+        await dispatch(
+          launchAgentExecution({
+            agentId: runAgentId,
+            // THE MANDATE DOOR — do not pass pinnedVersionId here: that
+            // skips `/ai/mandates/{key}` and drops config/provision. The
+            // server honours the pin on this door.
+            ...(runMandateKey ? { mandateKey: runMandateKey } : {}),
+            surfaceKey: `agent-app:${slug}`,
+            sourceFeature: "agent-app",
+            config: {
+              displayMode: "direct",
+              // Without this the launcher creates the conversation + sets it
+              // ready, but returns without dispatching executeInstance — see
+              // launch-agent-execution.thunk.ts step 5. Agent apps always want
+              // immediate execution on submit; there is no manual "Run" button
+              // separate from the form.
+              autoRun: true,
+            },
+            runtime: {
+              userInput,
+              variables: validVariables,
+              // Surface name so agent<->surface bindings (value_mappings,
+              // write policies) resolve at launch — this page previously
+              // never set it, so no binding on `matrx-public/p` could ever
+              // fire here regardless of what an agent author configured.
+              // With no host surface (the authed editor / code previews) we
+              // pass NEITHER name nor scope, so the launch adopts the
+              // ancestor `matrx-user/agent-apps` provider instead.
+              ...(surfaceName
+                ? {
+                    surfaceName,
+                    applicationScope: createPublicAgentAppScope({
+                      app_id: app.id,
+                      app_slug: app.slug,
+                      app_name: app.name,
+                      agent_id: runAgentId,
+                      agent_version_id: runAgentVersionId ?? undefined,
+                      shell_kind: app.shell_kind ?? "fully_custom",
+                      is_authenticated: isAuthenticated,
+                      guest_fingerprint_id: fingerprintId ?? undefined,
+                      user_input: userInput,
+                      form_variable_values: validVariables,
+                    }),
+                  }
+                : {}),
+            },
+            // Capture conversationId synchronously, before the stream starts.
+            // The launcher's awaited promise doesn't resolve until the stream
+            // has fully completed (see pollForCompletion in
+            // launch-agent-execution.thunk.ts step 5), so subscribing by the
+            // post-await result would mean the renderer never sees the
+            // streaming text — only the final blob. Setting conversationId
+            // here lets selectPrimaryRequest pick up the live request and
+            // selectResultText stream the text into the UI.
+            onConversationCreated: (id) => {
+              launchedConversationId = id;
+              setConversationId(id);
+            },
+          }),
+        ).unwrap();
+
+        // Resolving is not success: record what the request ended as.
+        const outcome = launchedConversationId
+          ? await waitForRunOutcome(store, launchedConversationId, [])
+          : ({ kind: "pending" } as const);
+        recordRunOutcome(runTracker, outcome);
+      } catch (err: unknown) {
+        const e = err as { name?: string; message?: string };
+        if (e?.name === "AbortError") {
+          // User aborted: leave the run row at success=NULL on purpose.
+          // Analytics treats abandoned in-flight rows as a distinct signal
+          // from outright errors.
+        } else {
+          const errMsg = e?.message || "Execution failed";
+          setLocalError({ type: APP_RUN_ERROR_TITLE, message: errMsg });
+          runTracker?.error({
+            errorType: "execution_error",
+            errorMessage: errMsg,
+          });
+        }
+      } finally {
+        setIsExecuting(false);
+      }
+    },
+    [
+      runAgentId,
+      runAgentVersionId,
+      runMandateKey,
+      holderError,
+      holderLoading,
+      slug,
+      isAuthenticated,
+      fingerprintId,
+      validateVariables,
+      dispatch,
+      startRun,
+      surfaceName,
+      store,
+    ],
+  );
+
+  const CustomUIComponent = useMemo(() => {
+    if (TestComponent) return TestComponent;
+    if (!app.component_code) return null;
+
+    // The ONE compile path (@ai-matrx/code-runtime): import-binding contract, author
+    // top-level shadowing, and unresolved imports shown + reported under this
+    // app's origin. This used to be a regex-strip twin that did none of that.
+    const { Component, error } = compileStoredComponent({
+      code: app.component_code,
+      allowedImports: app.allowed_imports,
+      origin: `agent-app:${app.id}`,
+      scopeOverrides: {
+        MarkdownStream: AgentAppMarkdownStream,
+        Markdown: AgentAppMarkdownStream,
+      },
+    });
+    if (error) console.error("Failed to transform custom UI:", error);
+    return Component;
+  }, [app.component_code, app.allowed_imports, app.id, TestComponent]);
+
+  // responseText is already derived from Redux above (selectResultText).
+  // The old local-streamEvents → text reduction is gone with the bespoke fetch.
+
+
+
+  // The HTML preview opens as a canvas tab beside the app (never a modal).
+  const handleShowHtmlPreview = useOpenAppHtmlPreview(app.name);
+
+  // A kind answer opens as its kind, never as raw JSON (kind-never-raw S5).
+  const openResponseInCanvas = useOpenAppResponseInCanvas();
+  const handleOpenCanvas = () => {
+    void openResponseInCanvas(responseText, app.name || "Response", conversationId);
+  };
+
+  const [isCopied, setIsCopied] = useState(false);
+  const [isOptionsOpen, setIsOptionsOpen] = useState(false);
+  const moreButtonRef = useRef<HTMLButtonElement>(null);
+
+  const handleCopy = useCallback(async () => {
+    if (!responseText) return;
+    try {
+      // A person's copy reads a kind as its markdown (kind-never-raw R1).
+      if (!(await copyText(kindTextToMarkdown(responseText)))) return;
+      setIsCopied(true);
+      setTimeout(() => setIsCopied(false), 2000);
+    } catch {
+      // silently fail
+    }
+  }, [responseText]);
+
+  const showActionBar = isStreamComplete && !!responseText;
+
+  // Read at trigger time (chrome only calls this when the user opens the
+  // Agents panel / hits Run there) — never from stale closure state.
+  const buildScope = () =>
+    createPublicAgentAppScope({
+      app_id: app.id,
+      app_slug: app.slug,
+      app_name: app.name,
+      agent_id: runAgentId ?? app.agent_id,
+      agent_version_id: runAgentVersionId ?? undefined,
+      shell_kind: app.shell_kind ?? "fully_custom",
+      is_authenticated: isAuthenticated,
+      guest_fingerprint_id: fingerprintId ?? undefined,
+      user_input: lastRunInputRef.current.userInput,
+      form_variable_values: lastRunInputRef.current.variables,
+      conversation_id: conversationId ?? undefined,
+      run_status:
+        requestStatus === "streaming" ||
+        requestStatus === "complete" ||
+        requestStatus === "error"
+          ? requestStatus
+          : requestStatus === "timeout" || requestStatus === "cancelled"
+            ? "error"
+            : requestStatus
+              ? "streaming" // pending / awaiting-tools: run is in flight
+              : undefined,
+      response_text: responseText || undefined,
+    });
+
+  return (
+    <MaybeSurfaceRuntimeProvider surfaceName={surfaceName} getScope={buildScope}>
+      <div className="h-full flex flex-col">
+        <div className="flex-1 overflow-auto">
+          {CustomUIComponent ? (
+            <AgentAppErrorBoundary appName={app.name}>
+              <AgentAppStreamProvider
+                value={{
+                  response: responseText,
+                  requestId,
+                  conversationId,
+                  isStreaming,
+                }}
+              >
+                <CustomUIComponent
+                  onExecute={handleExecute}
+                  response={responseText}
+                  streamEvents={streamEvents}
+                  isStreaming={!isStreamComplete && isExecuting}
+                  isExecuting={isExecuting}
+                  error={error}
+                  // The SERVER counts guest AI actions now
+                  // (guest_ai_allowance_used → the one reminder); the client
+                  // holds no count to report.
+                  rateLimitInfo={null}
+                  conversationId={conversationId}
+                  onResetConversation={resetConversation}
+                />
+              </AgentAppStreamProvider>
+            </AgentAppErrorBoundary>
+          ) : (
+            <div className="p-6 max-w-4xl mx-auto">
+              <div className="mb-6">
+                <h1 className="text-2xl font-bold mb-2">{app.name}</h1>
+                {app.tagline && (
+                  <p className="text-muted-foreground">{app.tagline}</p>
+                )}
+              </div>
+
+              {error && (
+                <div className="mb-6 p-4 bg-destructive/10 border border-destructive/20 rounded-md flex items-start gap-3">
+                  <AlertCircle className="h-5 w-5 text-destructive flex-shrink-0 mt-0.5" />
+                  <div className="flex-1">
+                    <p className="text-sm font-medium text-destructive mb-1">
+                      Error
+                    </p>
+                    <p className="text-sm text-destructive/80">
+                      {error.message}
+                      <ErrorAlchemyMenu error={error.message} />
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              <div className="mb-6">
+                <button
+                  onClick={() => handleExecute({})}
+                  disabled={isExecuting}
+                  className="px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {isExecuting ? "Running..." : "Run"}
+                </button>
+              </div>
+
+              {responseText && (
+                <div className="bg-textured">
+                  <MarkdownStream imagePolicy="ai"
+                    content={responseText}
+                    isStreamActive={isExecuting && !isStreamComplete}
+                    onError={(err) =>
+                      setLocalError({ type: "render_error", message: err })
+                    }
+                  />
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+
+        {showActionBar && (
+          <div className="flex-shrink-0 flex items-center gap-1 px-3 py-1.5 border-t border-border/40">
+            <button
+              onClick={handleCopy}
+              className="flex items-center gap-1.5 h-7 px-2 rounded-md text-xs text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
+            >
+              {isCopied ? (
+                <>
+                  <Check className="w-3.5 h-3.5 text-green-500" />
+                  <span>Copied</span>
+                </>
+              ) : (
+                <>
+                  <Copy className="w-3.5 h-3.5" />
+                  <span>Copy</span>
+                </>
+              )}
+            </button>
+            <button
+              ref={moreButtonRef}
+              onClick={() => setIsOptionsOpen(true)}
+              className="flex items-center justify-center h-7 w-7 rounded-md text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
+              aria-label="More options"
+            >
+              <MoreHorizontal className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        )}
+
+        <PublicMessageOptionsMenu
+          isOpen={isOptionsOpen}
+          onClose={() => setIsOptionsOpen(false)}
+          content={responseText}
+          anchorElement={moreButtonRef.current}
+          onShowHtmlPreview={handleShowHtmlPreview}
+          onOpenCanvas={handleOpenCanvas}
+        />
+      </div>
+    </MaybeSurfaceRuntimeProvider>
+  );
+}
+
+/**
+ * Registers the surface only when the host route declared one. Off the public
+ * route the ambient `matrx-user/agent-apps` provider is the correct emitter,
+ * and a nested provider here would out-depth (shadow) it.
+ */
+function MaybeSurfaceRuntimeProvider({
+  surfaceName,
+  getScope,
+  children,
+}: {
+  surfaceName: string | null;
+  getScope: () => ReturnType<typeof createPublicAgentAppScope>;
+  children: React.ReactNode;
+}) {
+  if (!surfaceName) return <>{children}</>;
+  return (
+    <SurfaceRuntimeProvider surfaceName={surfaceName} getScope={getScope}>
+      {children}
+    </SurfaceRuntimeProvider>
+  );
+}

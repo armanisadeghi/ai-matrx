@@ -171,7 +171,6 @@ import { educationLibraryCommunityManifest } from "./education-library-community
 import { educationLibrarySuggestionsManifest } from "./education-library-suggestions.manifest";
 import { settingsManifest } from "./settings.manifest";
 import { agentAppsManifest } from "./agent-apps.manifest";
-import { publicAgentAppManifest } from "./public-agent-app.manifest";
 import { barcodePreviewManifest } from "./barcode-preview.manifest";
 import { markdownPdfManifest } from "./markdown-pdf.manifest";
 import { agentConnectionsManifest } from "./agent-connections.manifest";
@@ -443,7 +442,6 @@ export const RAW_MANIFESTS: readonly SurfaceManifest[] = [
   educationLibrarySuggestionsManifest,
   settingsManifest,
   agentAppsManifest,
-  publicAgentAppManifest,
   agentConnectionsManifest,
   connectionsSkillsManifest,
   keywordResearchManifest,

@@ -137,11 +137,9 @@ const ConfigBuilder = ({ initialConfig, onConfigChange, className }: ConfigBuild
         }
     };
 
-    const copyToClipboard = () => {
-        void copyText(JSON.stringify(config, null, 2)).then((copied) => {
-  if (!copied) return;
-  setCopied(true);
-});
+    const copyToClipboard = async () => {
+        if (!(await copyText(JSON.stringify(config, null, 2)))) return;
+        setCopied(true);
         setTimeout(() => setCopied(false), 2000);
     };
 

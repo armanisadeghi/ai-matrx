@@ -17,6 +17,8 @@ import {
   createDataTablesScope,
   type DataTableColumnEntry,
 } from "@/features/surfaces/manifests/data-tables.manifest";
+import { toDelimitedText } from "@ai-matrx/alchemy/operate/read";
+import type { Json } from "@ai-matrx/alchemy/operate";
 import type { SurfaceScopePayload } from "@ai-matrx/chat/surfaces/types";
 
 import {
@@ -101,17 +103,6 @@ export interface DataTableScopeInput {
   selectedRows?: DataTableScopeRow[];
 }
 
-/** RFC4180-ish escaping: quote when the value contains a delimiter or quote. */
-function csvCell(raw: unknown): string {
-  const text =
-    raw === null || raw === undefined
-      ? ""
-      : typeof raw === "object"
-        ? JSON.stringify(raw)
-        : String(raw);
-  return /[",\r\n]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text;
-}
-
 /**
  * Header is `row_id` FIRST, then machine field names — deliberately, because
  * the `cell_value` write target needs a row UUID and this is where an agent
@@ -121,15 +112,13 @@ function rowsToCsv(
   fields: DataTableScopeField[],
   rows: DataTableScopeRow[],
 ): string {
-  const header = ["row_id", ...fields.map((f) => f.field_name)]
-    .map(csvCell)
-    .join(",");
-  const body = rows.map((row) =>
-    [row.id, ...fields.map((f) => row.data?.[f.field_name])]
-      .map(csvCell)
-      .join(","),
+  return toDelimitedText(
+    ["row_id", ...fields.map((f) => f.field_name)],
+    rows.map((row) => [
+      row.id,
+      ...fields.map((f) => (row.data?.[f.field_name] ?? null) as Json),
+    ]),
   );
-  return [header, ...body].join("\n");
 }
 
 function rowsToJson(

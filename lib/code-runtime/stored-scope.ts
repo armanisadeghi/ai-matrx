@@ -9,7 +9,7 @@
  * the eight that still wrap it fold into the design system later).
  *
  * Shared by the page and the kind sandbox frame: the frame's esbuild aliases
- * swap MarkdownStream, CopyForAiButton and `@/applets` for frame-safe twins at
+ * swap MarkdownStream and CopyForAiButton for frame-safe twins at
  * bundle time, so this file never knows which world it is in. It must stay
  * free of async `import()` (the frame bundle has no code splitting).
  */
@@ -46,7 +46,6 @@ export function provideStoredComponentScopeModules(): void {
     "@/components/kind-kit/KindActionButton": kindKit,
     "@/components/kind-kit/StreamingSkeleton": kindKit,
     "@/components/kind-kit/TagList": kindKit,
-    "@/applets": () => require("@/features/agent-apps/embed/AppletParts"),
     "@/lib/utils": () => require("@/lib/utils"),
     "@/components/ui/button": () => require("@/components/ui/button"),
     "@/components/ui/textarea": () => require("@/components/ui/textarea"),

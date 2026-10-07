@@ -302,11 +302,9 @@ function InlineCopyButton({ text }: { text: string }) {
   return (
     <button
       type="button"
-      onClick={() => {
-        void copyText(text).then((copied) => {
-  if (!copied) return;
-  setCopied(true);
-});
+      onClick={async () => {
+        if (!(await copyText(text))) return;
+        setCopied(true);
         setTimeout(() => setCopied(false), 1500);
       }}
       className="h-6 w-6 flex items-center justify-center rounded hover:bg-accent text-muted-foreground hover:text-foreground"

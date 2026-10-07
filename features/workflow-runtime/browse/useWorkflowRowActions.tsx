@@ -232,17 +232,15 @@ export function useWorkflowRowActions({
           void copyText(url, "Link copied");
         },
 
-        onCopyForAgent: () => {
-          void copyText(
+        onCopyForAgent: async () => {
+          if (!(await copyText(
             buildRecordReferenceFence({
               type: "workflow",
               id: row.id,
               label: row.name,
             }),
-          ).then((copied) => {
-  if (!copied) return;
-  toast.success("Workflow reference copied");
-});
+          ))) return;
+          toast.success("Workflow reference copied");
         },
 
         onDelete: () => void remove(row),

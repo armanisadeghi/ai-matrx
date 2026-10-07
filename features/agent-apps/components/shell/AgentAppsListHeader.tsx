@@ -18,7 +18,7 @@ export function AgentAppsListHeader() {
             list is 264 mandates across 45 domains. */}
         <MandateDoorLink feature="agent_apps" label="App builder agents" />
         <TapTargetButtonSolid
-          href="/agent-apps/new"
+          href="/agent-apps/build"
           icon={<Plus className="h-4 w-4" />}
           label="New app"
           ariaLabel="New app"

@@ -31,6 +31,7 @@ import { useToastManager } from "@/hooks/useToastManager";
 import { THEMES, type DisplayTheme } from "@ai-matrx/rich-content/display/themes";
 import { useOpenSaveToTable } from "@/features/overlays/openers/saveToTable";
 import { downloadFile } from "@ai-matrx/kit/download";
+import { tableToCsv } from "@/components/mardown-display/tables/table-csv";
 
 // Custom debounce hook
 function useDebounce<T>(value: T, delay: number): T {
@@ -145,17 +146,7 @@ const TableControls: React.FC<TableControlsProps> = ({
 
   const downloadCSV = useCallback(() => {
     try {
-      const csvContent = [
-        tableData.headers.map((h) => h.replace(/"/g, '""')).join(","),
-        ...tableData.rows.map((row) =>
-          row
-            .map((cell) => {
-              const escaped = cell.replace(/"/g, '""');
-              return cell.includes(",") ? `"${escaped}"` : escaped;
-            })
-            .join(","),
-        ),
-      ].join("\n");
+      const csvContent = tableToCsv(tableData.headers, tableData.rows);
       const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
       downloadFile("table_data.csv", blob, blob.type);
       toast.success("Table exported to CSV", {

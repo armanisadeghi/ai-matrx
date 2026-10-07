@@ -1,0 +1,2451 @@
+matrx-auto-git-conflict-file-work-delete-this-when-resolved
+
+HELD CONFLICT, written by scripts/sync-main.py
+File:      features/agents/components/settings-management/AgentSettingsCore.tsx
+Why held:  both sides changed the same code
+GITHUB's version is live in the repo at the path above. LOCAL's version is at the bottom
+of this file, below the FACTS.
+Done with it: the final code is in the live file, this .held file is deleted, and its line
+in _conflicts/README.md is deleted. The list of open items is _conflicts/README.md.
+
+FACTS (computed by sync-main from git)
+
+THE TWO VERSIONS
+  LOCAL  = the version that was on this Mac. It is saved below, in this .held file.
+  GITHUB = the version from GitHub. It is LIVE in the repo right now, at features/agents/components/settings-management/AgentSettingsCore.tsx
+  Both grew from the same COMMON version: commit cfed5f4723, 2026-10-06 21:01.
+
+WHEN EACH SIDE CHANGED THIS FILE (newest first)
+  LOCAL:
+    2026-10-06 21:16  (uncommitted edit; the time the file was last saved on this Mac)
+    2026-10-06 21:23  94b89b0701  collected by the sync; the edit itself happened at or before this time
+  GITHUB:
+    2026-10-06 21:00  ac737e084c  "Merge origin/main (copy-result gating)"
+    2026-10-06 21:00  7bf65448f8  "Copied state and success toasts only after a copy that landed (kit 0.28.0 boolean); delete ToolTabBodies/viewer-utilities CopyButton; add check:copy-result-gated"
+    2026-10-06 20:35  98ee66e432  "Merge origin/main (AP-2)"
+  LOCAL's latest change is 15m AFTER GITHUB's latest change.
+
+SIZE: common version 2398 lines, LOCAL 2399 lines, GITHUB 2399 lines
+
+WHAT EACH SIDE DID, compared with the common version
+  LOCAL added 2 lines and removed 1 lines.
+  GITHUB added 2 lines and removed 1 lines.
+
+CODE ONE SIDE HAS THAT THE OTHER DOES NOT
+  LOCAL has 0 of the 2 lines GITHUB added.
+    Lines GITHUB added that LOCAL does NOT have:
+      | copyText(raw).then((copied) => {
+      | if (!copied) return;
+    (some of those lines also appear in other changed files, which may be a coincidence: app/(admin)/administration/database/sql-functions/components/EnumDetail.tsx, app/(admin)/administration/database/sql-functions/components/SqlFunctionDetail.tsx, app/(admin)/administration/database/sql-functions/components/SqlFunctionTester.tsx, app/(admin)/administration/ui/official-components/component-displays/pro-input.tsx)
+  GITHUB has 0 of the 2 lines LOCAL added.
+    Lines LOCAL added that GITHUB does NOT have:
+      | copyText(raw).then((didCopy) => {
+      | if (!didCopy) return;
+
+COMPARE THEM (the labels are correct; '-' lines are GITHUB, '+' lines are LOCAL):
+  diff -u --label 'GITHUB (live)' --label 'LOCAL (held)' <(git show 18b17dfd3ce9:'features/agents/components/settings-management/AgentSettingsCore.tsx') <(git show 94b89b070183:'features/agents/components/settings-management/AgentSettingsCore.tsx')
+
+RECOVER EITHER VERSION FOREVER (works even after this .held file is deleted):
+  LOCAL : git show 94b89b070183:'features/agents/components/settings-management/AgentSettingsCore.tsx'
+  GITHUB: git show 18b17dfd3ce9:'features/agents/components/settings-management/AgentSettingsCore.tsx'
+
+---------------- LOCAL VERSION BELOW ----------------
+"use client";
+
+import { useClipboard } from "@ai-matrx/kit/clipboard";
+import { useState, useMemo, useEffect, useRef } from "react";
+import {
+  Save,
+  AlertTriangle,
+  Eye,
+  Trash2,
+  WrenchIcon,
+  Settings2,
+  Code2,
+  SlidersHorizontal,
+  ClipboardCopy,
+  Plus,
+  X,
+  Braces,
+  Loader2,
+  Zap,
+  Variable,
+  Unlink,
+} from "lucide-react";
+import { Label } from "@/components/ui/label";
+import { SwitchLegacy as Switch } from "@/components/ui/switch";
+import { Button } from "@ai-matrx/design-system";
+import { ErrorNotice } from "@/components/errors/ErrorNotice";
+import { Input } from "@ai-matrx/design-system";
+import { TextareaLegacy as Textarea } from "@/components/ui/textarea";
+import { Checkbox } from "@/components/ui/checkbox";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTriggerLegacy as SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import {
+  useModelControls,
+  ControlDefinition,
+  NormalizedControls,
+} from "@ai-matrx/chat/agents/hooks/useModelControls";
+import { useModelClassControls } from "@/features/ai-models/hooks/useModelClassControls";
+import { useAppSelector, useAppDispatch } from "@/lib/redux/hooks";
+import {
+  selectAgentSettings,
+  selectAgentModelId,
+  selectAgentTools,
+  selectAgentOutputSchema,
+  selectAgentVariableDefinitions,
+} from "@ai-matrx/chat/agents/redux/agent-definition/selectors";
+import {
+  setAgentControlBinding,
+  setAgentSettings,
+  setAgentField,
+  setAgentTools,
+} from "@ai-matrx/chat/agents/redux/agent-definition/slice";
+import {
+  fetchModelById,
+  fetchModelOptions,
+  selectAllModels,
+  selectModelFullyLoaded,
+  selectModelRegistryError,
+  selectModelRegistryLoading,
+} from "@ai-matrx/chat/agents/model-registry/modelRegistrySlice";
+import { ModelListDropdown, useModelCatalog } from "@ai-matrx/agents/models/react";
+import { withOfferingPin } from "@/features/ai-models/utils/offering-pin";
+import type {
+  LLMParams,
+  FeLlmParams,
+} from "@ai-matrx/chat/agents/types/agent-api-types";
+import type { ModelConstraint } from "@/features/ai-models/types";
+import { useConfigValidation } from "./validation/useConfigValidation";
+import type { ValidationIssue } from "./validation/types";
+import {
+  applyAllFixableIssues,
+  applyFixForIssue,
+  canFixIssue,
+} from "./validation/apply-fix";
+import {
+  analyzeModelChange,
+  planNeedsNoDecision,
+  type ModelChangePlan,
+} from "./reconciliation/analyze";
+import { ModelChangeReconciliation } from "./reconciliation/ModelChangeReconciliation";
+import { SettingControlInput } from "./controls/SettingControlInput";
+import { isOffValue, withSettingState } from "./setting-state";
+import { isUnsetChoice } from "@ai-matrx/chat/agents/redux/execution-system/instance-model-overrides/auto-means-unset";
+import { UiGatesEditor } from "./ui-gates/UiGatesEditor";
+import { SettingsJsonEditor } from "./json/SettingsJsonEditor";
+import { OutputSchemaTab } from "./output-schema/OutputSchemaTab";
+import { MatrxDirectivesTab } from "./matrx-directives/MatrxDirectivesTab";
+import { validateOutputSchema } from "./output-schema/validateOutputSchema";
+import {
+  buildSettingsRows,
+  type SettingsRow,
+} from "@ai-matrx/chat/agents/redux/agent-settings/settings-catalogue";
+import { useSessionKnob } from "@/lib/scoped-config/sessionKnob";
+import {
+  bindControlToVariable,
+  CONTROL_BINDABLE_KNOB,
+  findControlVariable,
+  isControlBindable,
+  readControlBindablePolicy,
+  unbindControlVariable,
+} from "@ai-matrx/chat/agents/utils/control-variables";
+import { variableValueToDisplay } from "@ai-matrx/chat/agents/utils/variable-utils";
+import {
+  buildSettingsDocument,
+  describeSetting,
+  parseSettingsDocument,
+  type SettingView,
+} from "./settings-document";
+import { toast } from "@/lib/toast";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
+import { Chip } from "@ai-matrx/design-system/controls";
+import { copyToClipboard } from "@/lib/clipboard/copy";
+
+// ── Tab type ─────────────────────────────────────────────────────────────────
+type SettingsTab =
+  | "settings"
+  | "raw"
+  | "raw-edit"
+  | "model-config"
+  | "output-schema"
+  | "matrx-directives";
+
+// NOTE: media inputs (image_input, start_image, end_image, mask, etc.) do
+// NOT belong on agent settings — they're per-run user inputs that flow
+// through user message parts. See MEDIA_GENERATION_SETTINGS.md §13 for
+// the architecture. The AgentSettingMediaPicker component is kept as a
+// building block for the user-input side (where the engineer-overridable
+// equivalents will be configured), not used here.
+
+/** A catalog default as the person reads it ("On", "auto", "1024"). */
+function formatModelDefault(value: unknown): string {
+  if (typeof value === "boolean") return value ? "On" : "Off";
+  if (value !== null && typeof value === "object") return JSON.stringify(value);
+  return String(value);
+}
+
+// ── FallbackValueInput ───────────────────────────────────────────────────────
+// Used when the selected model has no control schema for a key but the key
+// still exists in settings. Shape-aware editor (boolean / number / string /
+// JSON) so users can always edit what's there even when we can't validate it.
+interface FallbackValueInputProps {
+  settingKey: string;
+  value: unknown;
+  disabled?: boolean;
+  onChange: (value: unknown) => void;
+}
+
+function FallbackValueInput({
+  settingKey,
+  value,
+  disabled,
+  onChange,
+}: FallbackValueInputProps) {
+  const [draft, setDraft] = useState<string>(() =>
+    value === undefined || value === null
+      ? ""
+      : typeof value === "string"
+        ? value
+        : typeof value === "number" || typeof value === "boolean"
+          ? String(value)
+          : JSON.stringify(value),
+  );
+  const [jsonError, setJsonError] = useState<string | null>(null);
+
+  useEffect(() => {
+    setDraft(
+      value === undefined || value === null
+        ? ""
+        : typeof value === "string"
+          ? value
+          : typeof value === "number" || typeof value === "boolean"
+            ? String(value)
+            : JSON.stringify(value),
+    );
+    setJsonError(null);
+  }, [value]);
+
+  if (typeof value === "boolean") {
+    return (
+      <div className="flex items-center gap-2">
+        <Checkbox
+          id={`fallback-${settingKey}`}
+          checked={value}
+          onCheckedChange={(c) => onChange(c === true)}
+          disabled={disabled}
+          className="cursor-pointer"
+        />
+        <Label
+          htmlFor={`fallback-${settingKey}`}
+          className="text-xs text-muted-foreground cursor-pointer"
+        >
+          {value ? "true" : "false"}
+        </Label>
+      </div>
+    );
+  }
+
+  if (typeof value === "number") {
+    return (
+      <Input
+        type="text"
+        inputMode="decimal"
+        value={draft}
+        onChange={(e) => setDraft(e.target.value)}
+        onBlur={(e) => {
+          const n = parseFloat(e.target.value);
+          if (Number.isFinite(n)) onChange(n);
+          else setDraft(String(value));
+        }}
+        disabled={disabled}
+        className="h-7 text-xs"
+      />
+    );
+  }
+
+  if (value !== null && typeof value === "object") {
+    return (
+      <div className="flex flex-col gap-1">
+        <Textarea
+          value={draft}
+          onChange={(e) => {
+            setDraft(e.target.value);
+            try {
+              JSON.parse(e.target.value);
+              setJsonError(null);
+            } catch (err) {
+              setJsonError(err instanceof Error ? err.message : "Invalid JSON");
+            }
+          }}
+          onBlur={(e) => {
+            try {
+              const parsed = JSON.parse(e.target.value);
+              onChange(parsed);
+              setJsonError(null);
+            } catch {
+              // Keep draft; user can fix or revert.
+            }
+          }}
+          disabled={disabled}
+          className="text-xs font-mono"
+          spellCheck={false}
+          style={{ minHeight: 48 }}
+        />
+        {jsonError && (
+          <p className="type-meta text-orange-600 dark:text-orange-400">
+            {jsonError}
+            <ErrorAlchemyMenu error={jsonError} />
+          </p>
+        )}
+      </div>
+    );
+  }
+
+  // string (default)
+  return (
+    <Input
+      type="text"
+      value={draft}
+      onChange={(e) => setDraft(e.target.value)}
+      onBlur={(e) => onChange(e.target.value)}
+      disabled={disabled}
+      className="h-7 text-xs"
+      placeholder={`Value for ${settingKey}`}
+      style={{ fontSize: "16px" }}
+    />
+  );
+}
+
+// ── HighlightedJson ──────────────────────────────────────────────────────────
+// A read-only syntax-highlighted JSON viewer with a floating copy button.
+interface HighlightedJsonProps {
+  value: Record<string, unknown>;
+  highlightKeys?: Record<string, "error" | "warning" | "info">;
+}
+
+function HighlightedJson({ value, highlightKeys = {} }: HighlightedJsonProps) {
+  const { copyText } = useClipboard({
+    notify: (message, kind) =>
+      kind === "error" ? toast.error(message) : toast.success(message),
+  });
+  const [copied, setCopied] = useState(false);
+
+  const raw = useMemo(() => JSON.stringify(value, null, 2), [value]);
+  const lines = useMemo(() => raw.split("\n"), [raw]);
+
+  const handleCopy = () => {
+    copyText(raw).then((didCopy) => {
+      if (!didCopy) return;
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    });
+  };
+
+  return (
+    <div className="relative group">
+      {/* Copy button — floats top-right, visible on hover */}
+      <button
+        onClick={handleCopy}
+        className="absolute top-2 right-2 z-10 opacity-0 group-hover:opacity-100 transition-opacity
+          flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-medium
+          bg-card border border-border text-muted-foreground hover:text-foreground
+          shadow-sm"
+      >
+        {copied ? "Copied!" : "Copy"}
+      </button>
+
+      <pre
+        className="type-secondary font-mono leading-5 overflow-auto rounded p-3 select-text
+ bg-zinc-100 dark:bg-zinc-800
+ text-zinc-800 dark:text-zinc-200"
+      >
+        {lines.map((line, i) => {
+          const keyMatch = line.match(/^\s*"([^"]+)":/);
+          const key = keyMatch?.[1];
+          const highlight = key ? highlightKeys[key] : undefined;
+          const colored = colorizeJsonLine(line);
+
+          if (highlight) {
+            const cls =
+              highlight === "error"
+                ? "bg-red-100 dark:bg-red-950/50 border-l-4 border-red-500 dark:border-red-400"
+                : highlight === "warning"
+                  ? "bg-yellow-100 dark:bg-yellow-900 border-l-4 border-yellow-500 dark:border-yellow-400"
+                  : "bg-blue-100 dark:bg-blue-950/40 border-l-4 border-blue-500 dark:border-blue-400";
+            return (
+              <span key={i} className={`block -mx-3 px-3 ${cls}`}>
+                <span dangerouslySetInnerHTML={{ __html: colored }} />
+                {"\n"}
+              </span>
+            );
+          }
+
+          return (
+            <span key={i}>
+              <span dangerouslySetInnerHTML={{ __html: colored }} />
+              {"\n"}
+            </span>
+          );
+        })}
+      </pre>
+    </div>
+  );
+}
+
+/**
+ * Tokenize a single JSON.stringify(…, null, 2) line into colored HTML spans.
+ * Works for both light and dark. The key and the value are split ONCE and each
+ * is colored whole — never pattern-replaced inside a string, which rewrote an
+ * aspect ratio "16:9" as "16: 9" in the Raw Settings view.
+ */
+function colorizeJsonLine(line: string): string {
+  const esc = (s: string) =>
+    s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+
+  const colorValue = (text: string): string => {
+    const m = text.match(/^(.*?)(,?)$/);
+    const body = m ? m[1] : text;
+    const comma = m ? m[2] : "";
+    let cls: string | null = null;
+    if (/^"(?:[^"\\]|\\.)*"$/.test(body)) {
+      cls = "text-emerald-700 dark:text-emerald-400";
+    } else if (body === "true" || body === "false") {
+      cls = "text-violet-700 dark:text-violet-400";
+    } else if (body === "null") {
+      cls = "text-zinc-500";
+    } else if (/^-?\d+(?:\.\d+)?(?:[eE][+-]?\d+)?$/.test(body)) {
+      cls = "text-amber-700 dark:text-amber-400";
+    }
+    return cls
+      ? `<span class="${cls}">${esc(body)}</span>${comma}`
+      : esc(text);
+  };
+
+  const keyed = line.match(/^(\s*)("(?:[^"\\]|\\.)*")(\s*:\s*)(.*)$/);
+  if (keyed) {
+    const [, indent, key, sep, rest] = keyed;
+    return `${indent}<span class="text-sky-700 dark:text-sky-400">${esc(key)}</span>${sep}${colorValue(rest)}`;
+  }
+  const indentMatch = line.match(/^(\s*)(.*)$/);
+  return `${indentMatch?.[1] ?? ""}${colorValue(indentMatch?.[2] ?? line)}`;
+}
+
+// ── IssueTable ────────────────────────────────────────────────────────────────
+
+interface IssueTableProps {
+  issues: ValidationIssue[];
+  diagnosticPayload?: Record<string, unknown>;
+  onView: (key: string) => void;
+  onRemove: (key: string) => void;
+  onFixEnum: (key: string) => void;
+  onFixAll?: () => void;
+  onRemoveAllUnknown?: () => void;
+  onResetAll?: () => void;
+  fixableCount?: number;
+  unknownCount?: number;
+}
+
+function IssueTable({
+  issues,
+  diagnosticPayload,
+  onView,
+  onRemove,
+  onFixEnum,
+  onFixAll,
+  onRemoveAllUnknown,
+  onResetAll,
+  fixableCount = 0,
+  unknownCount = 0,
+}: IssueTableProps) {
+  const [copied, setCopied] = useState(false);
+  const [resetConfirmOpen, setResetConfirmOpen] = useState(false);
+
+  if (issues.length === 0) return null;
+
+  const handleCopyDiagnostic = () => {
+    if (!diagnosticPayload) return;
+    void copyToClipboard(JSON.stringify(diagnosticPayload, null, 2)).then((ok) => {
+      if (!ok) return;
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    });
+  };
+
+  return (
+    <TooltipProvider delayDuration={300}>
+      <div className="rounded border border-yellow-400 dark:border-yellow-600 overflow-hidden mb-3">
+        {/* Warning section header */}
+        <div className="flex items-center gap-2 px-2.5 py-1.5 bg-yellow-50 dark:bg-yellow-950/40 border-b border-yellow-300 dark:border-yellow-700">
+          <AlertTriangle className="h-3.5 w-3.5 text-yellow-600 dark:text-yellow-400 flex-shrink-0" />
+          <span className="type-secondary font-semibold text-yellow-800 dark:text-yellow-300">
+            Settings Warnings
+          </span>
+          <div className="ml-auto flex items-center gap-1.5">
+            <span className="type-meta text-yellow-600 dark:text-yellow-500">
+              {issues.length} issue{issues.length !== 1 ? "s" : ""} detected
+            </span>
+            {/* In the header bar that owns this section — never a row of its own. */}
+            <ErrorAlchemyMenu error={issues} operation="Validate this agent's settings" />
+            {diagnosticPayload && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    onClick={handleCopyDiagnostic}
+                    className="h-5 w-5 flex items-center justify-center rounded text-yellow-600 dark:text-yellow-400 hover:bg-yellow-200 dark:hover:bg-yellow-900/40 transition-colors"
+                  >
+                    <ClipboardCopy className="h-3 w-3" />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent side="top" className="type-secondary">
+                  {copied ? "Copied!" : "Copy full diagnostic payload"}
+                </TooltipContent>
+              </Tooltip>
+            )}
+          </div>
+        </div>
+
+        {/* Bulk action toolbar */}
+        {(onFixAll || onRemoveAllUnknown || onResetAll) && (
+          <div className="flex items-center gap-1.5 px-2.5 py-1.5 bg-yellow-50/40 dark:bg-yellow-950/30 border-b border-yellow-200 dark:border-yellow-800/50 flex-wrap">
+            {onFixAll && fixableCount > 0 && (
+              <Button
+                size="sm"
+                variant="outline"
+                className="h-6 text-[11px] px-2"
+                onClick={onFixAll}
+                title="Apply the suggested fix to every fixable issue"
+              >
+                Fix all fixable ({fixableCount})
+              </Button>
+            )}
+            {onRemoveAllUnknown && unknownCount > 0 && (
+              <Button
+                size="sm"
+                variant="outline"
+                className="h-6 text-[11px] px-2"
+                onClick={onRemoveAllUnknown}
+                title="Remove every unknown/unsupported key"
+              >
+                Remove all unknown ({unknownCount})
+              </Button>
+            )}
+            {onResetAll && (
+              <Button
+                size="sm"
+                variant="outline"
+                className="h-6 text-[11px] px-2 text-destructive hover:text-destructive ml-auto"
+                onClick={() => setResetConfirmOpen(true)}
+                title="Clear every setting — starts from an empty object"
+              >
+                Reset all settings
+              </Button>
+            )}
+          </div>
+        )}
+
+        {/* Column headers — 4 columns: setting | detail | type | actions */}
+        <div className="grid grid-cols-[120px_1fr_80px_48px] items-center gap-2 px-2.5 py-1 bg-yellow-50/60 dark:bg-yellow-950/20 border-b border-yellow-200 dark:border-yellow-800/50">
+          <span className="type-meta font-semibold uppercase tracking-wide text-yellow-700 dark:text-yellow-500">
+            Setting
+          </span>
+          <span className="type-meta font-semibold uppercase tracking-wide text-yellow-700 dark:text-yellow-500">
+            Issue Detail
+          </span>
+          <span className="type-meta font-semibold uppercase tracking-wide text-yellow-700 dark:text-yellow-500">
+            Type
+          </span>
+          <span className="type-meta font-semibold uppercase tracking-wide text-yellow-700 dark:text-yellow-500 text-right">
+            Options
+          </span>
+        </div>
+
+        {issues.map((issue, idx) => {
+          const isLast = idx === issues.length - 1;
+          const isUnrecognized = issue.category === "unrecognized_key";
+
+          return (
+            <div
+              key={`${issue.ruleId}-${issue.key}`}
+              className={`grid grid-cols-[120px_1fr_80px_48px] items-center gap-2 px-2.5 py-1.5 ${
+                !isLast
+                  ? "border-b border-yellow-200 dark:border-yellow-800/40"
+                  : ""
+              } ${
+                isUnrecognized
+                  ? "bg-yellow-50/30 dark:bg-yellow-950/15"
+                  : "bg-orange-50/30 dark:bg-orange-950/15"
+              }`}
+            >
+              {/* setting key */}
+              <span className="type-secondary text-foreground truncate">
+                {humanizeIdentifier(issue.key)}
+              </span>
+
+              {/* detail */}
+              <span className="type-secondary text-foreground/80 leading-snug">
+                {issue.message || "—"}
+              </span>
+
+              {/* type — plain text, no badge */}
+              <span
+                className={`text-xs font-medium ${isUnrecognized ? "text-yellow-700 dark:text-yellow-400" : "text-orange-700 dark:text-orange-400"}`}
+              >
+                {isUnrecognized ? "Unknown Key" : "Invalid Value"}
+              </span>
+
+              {/* actions: View + Remove/Fix */}
+              <div className="flex items-center gap-0 flex-shrink-0 justify-end">
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-6 w-6 text-muted-foreground hover:text-foreground"
+                      onClick={() => onView(issue.key)}
+                    >
+                      <Eye className="h-3.5 w-3.5" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent side="top" className="type-secondary">
+                    View in Raw JSON
+                  </TooltipContent>
+                </Tooltip>
+
+                {isUnrecognized ? (
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-6 w-6 text-muted-foreground hover:text-destructive"
+                        onClick={() => onRemove(issue.key)}
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent side="top" className="type-secondary">
+                      Remove this key
+                    </TooltipContent>
+                  </Tooltip>
+                ) : (
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-6 w-6 text-muted-foreground hover:text-orange-500"
+                        onClick={() => onFixEnum(issue.key)}
+                      >
+                        <WrenchIcon className="h-3.5 w-3.5" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent side="top" className="type-secondary">
+                      Reset to default value
+                    </TooltipContent>
+                  </Tooltip>
+                )}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      <AlertDialog open={resetConfirmOpen} onOpenChange={setResetConfirmOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Reset all settings?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This clears every setting on this agent to an empty object. The
+              model stays the same. You can re-enable individual settings
+              afterward, or pick defaults from the new model.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                setResetConfirmOpen(false);
+                onResetAll?.();
+              }}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Reset everything
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </TooltipProvider>
+  );
+}
+
+// ── TtsVoiceEditor ───────────────────────────────────────────────────────────
+
+interface SpeakerEntry {
+  name: string;
+  voice: string;
+}
+
+interface TtsVoiceEditorProps {
+  voiceEnum: string[];
+  ttsValue: unknown;
+  multiSpeakerAllowed: boolean;
+  maxSpeakers?: number;
+  isEnabled: boolean;
+  onSave: (ttsVoice: string | SpeakerEntry[], multiSpeaker: boolean) => void;
+}
+
+function TtsVoiceEditor({
+  voiceEnum,
+  ttsValue,
+  multiSpeakerAllowed,
+  maxSpeakers,
+  isEnabled,
+  onSave,
+}: TtsVoiceEditorProps) {
+  const isMulti = Array.isArray(ttsValue);
+  const atMax = maxSpeakers !== undefined && maxSpeakers > 0;
+
+  const speakers: SpeakerEntry[] = isMulti
+    ? ttsValue.map((s) => ({
+        name: typeof s?.name === "string" ? s.name : "",
+        voice: typeof s?.voice === "string" ? s.voice : (voiceEnum[0] ?? ""),
+      }))
+    : [];
+
+  const singleVoice =
+    typeof ttsValue === "string" ? ttsValue : (voiceEnum[0] ?? "");
+
+  const switchToMulti = () => {
+    const initial: SpeakerEntry[] = [
+      { name: "Speaker 1", voice: singleVoice || voiceEnum[0] || "" },
+      { name: "Speaker 2", voice: voiceEnum[1] ?? voiceEnum[0] ?? "" },
+    ];
+    onSave(initial, true);
+  };
+
+  const switchToSingle = () => {
+    onSave(speakers[0]?.voice || voiceEnum[0] || "", false);
+  };
+
+  const updateSpeaker = (idx: number, field: "name" | "voice", val: string) => {
+    const next = speakers.map((s, i) =>
+      i === idx ? { ...s, [field]: val } : s,
+    );
+    onSave(next, true);
+  };
+
+  const canAddMore = !atMax || speakers.length < maxSpeakers;
+
+  const addSpeaker = () => {
+    if (!canAddMore) return;
+    onSave(
+      [
+        ...speakers,
+        {
+          name: `Speaker ${speakers.length + 1}`,
+          voice: voiceEnum[0] ?? "",
+        },
+      ],
+      true,
+    );
+  };
+
+  const removeSpeaker = (idx: number) => {
+    if (speakers.length <= 2) return;
+    onSave(
+      speakers.filter((_, i) => i !== idx),
+      true,
+    );
+  };
+
+  return (
+    <div className="space-y-2.5">
+      {/* Mode switch — only shown when model supports multi-speaker */}
+      {multiSpeakerAllowed && (
+        <div className="flex items-center gap-2">
+          <span
+            className={`text-xs ${!isMulti ? "font-medium text-foreground" : "text-muted-foreground"}`}
+          >
+            Single
+          </span>
+          <Switch
+            checked={isMulti}
+            onCheckedChange={(checked) =>
+              checked ? switchToMulti() : switchToSingle()
+            }
+            disabled={!isEnabled}
+            className="data-[state=checked]:bg-primary"
+          />
+          <span
+            className={`text-xs ${isMulti ? "font-medium text-foreground" : "text-muted-foreground"}`}
+          >
+            Multi
+          </span>
+          {isMulti && atMax && (
+            <span className="type-meta text-muted-foreground ml-1">
+              (max {maxSpeakers})
+            </span>
+          )}
+        </div>
+      )}
+
+      {/* Voice selection */}
+      {!isMulti ? (
+        <div>
+          {multiSpeakerAllowed && (
+            <Label className="text-[10px] uppercase tracking-wide text-muted-foreground mb-1 block">
+              Voice
+            </Label>
+          )}
+          <Select
+            value={singleVoice}
+            onValueChange={(val) => onSave(val, false)}
+            disabled={!isEnabled}
+          >
+            <SelectTrigger className="h-7 text-xs">
+              <SelectValue placeholder="Select voice..." />
+            </SelectTrigger>
+            <SelectContent className="text-xs">
+              {voiceEnum.map((v) => (
+                <SelectItem key={v} value={v} className="text-xs py-1">
+                  {v}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      ) : (
+        <div>
+          <Label className="text-[10px] uppercase tracking-wide text-muted-foreground mb-1 block">
+            Voices
+          </Label>
+          <div className="space-y-1.5">
+            {speakers.map((speaker, idx) => (
+              <div key={idx} className="flex items-center gap-1.5">
+                <Input
+                  value={speaker.name}
+                  onChange={(e) => updateSpeaker(idx, "name", e.target.value)}
+                  disabled={!isEnabled}
+                  className="h-7 text-xs flex-1 min-w-0"
+                  placeholder="Name..."
+                />
+                <Select
+                  value={speaker.voice}
+                  onValueChange={(val) => updateSpeaker(idx, "voice", val)}
+                  disabled={!isEnabled}
+                >
+                  <SelectTrigger className="h-7 text-xs w-[140px] flex-shrink-0">
+                    <SelectValue placeholder="Voice..." />
+                  </SelectTrigger>
+                  <SelectContent className="text-xs">
+                    {voiceEnum.map((v) => (
+                      <SelectItem key={v} value={v} className="text-xs py-1">
+                        {v}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-6 w-6 flex-shrink-0 text-muted-foreground hover:text-destructive"
+                  onClick={() => removeSpeaker(idx)}
+                  disabled={!isEnabled || speakers.length <= 2}
+                >
+                  <X className="h-3.5 w-3.5" />
+                </Button>
+              </div>
+            ))}
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-6 text-xs gap-1 text-muted-foreground hover:text-foreground"
+              onClick={addSpeaker}
+              disabled={!isEnabled || !canAddMore}
+            >
+              <Plus className="h-3 w-3" />
+              Add Speaker
+            </Button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── ModelConfigViewer ─────────────────────────────────────────────────────────
+function ModelConfigViewer({
+  normalizedControls,
+}: {
+  normalizedControls: NormalizedControls;
+}) {
+  const entries = useMemo(() => {
+    const result: { key: string; control: ControlDefinition }[] = [];
+    Object.entries(normalizedControls).forEach(([key, val]) => {
+      if (key === "rawControls" || key === "unmappedControls") return;
+      if (val && typeof val === "object" && "type" in val) {
+        result.push({ key, control: val as ControlDefinition });
+      }
+    });
+    return result.sort((a, b) => a.key.localeCompare(b.key));
+  }, [normalizedControls]);
+
+  const unmapped = useMemo(
+    () => Object.entries(normalizedControls.unmappedControls),
+    [normalizedControls],
+  );
+
+  return (
+    <div className="space-y-3">
+      {/* Parameters this model exposes; they drive which settings appear in the Settings tab. */}
+      {entries.length === 0 ? (
+        <p className="type-secondary text-muted-foreground italic">
+          No controls defined for this model.
+        </p>
+      ) : (
+        <div className="rounded border border-border overflow-hidden">
+          {/* Fixed columns — Range/Options column scrolls horizontally per-row */}
+          <div className="grid grid-cols-[1fr_70px_160px_70px] gap-2 px-2.5 py-1 bg-muted/50 border-b border-border">
+            <span className="type-meta font-semibold uppercase tracking-wide text-muted-foreground">
+              Key
+            </span>
+            <span className="type-meta font-semibold uppercase tracking-wide text-muted-foreground">
+              Type
+            </span>
+            <span className="type-meta font-semibold uppercase tracking-wide text-muted-foreground">
+              Range / Options
+            </span>
+            <span className="type-meta font-semibold uppercase tracking-wide text-muted-foreground">
+              Default
+            </span>
+          </div>
+          {entries.map(({ key, control }, idx) => {
+            const rangeOrOptions =
+              control.type === "enum" && control.enum?.length
+                ? control.enum.join(", ")
+                : control.min !== undefined && control.max !== undefined
+                  ? `${control.min} – ${control.max}`
+                  : "—";
+
+            return (
+              <div
+                key={key}
+                className={`grid grid-cols-[1fr_70px_160px_70px] gap-2 px-2.5 py-1.5 text-xs items-center ${
+                  idx < entries.length - 1 ? "border-b border-border" : ""
+                } ${idx % 2 === 0 ? "bg-background" : "bg-muted/20"}`}
+              >
+                <span className="font-mono text-foreground truncate">
+                  {key}
+                </span>
+                <span className="text-muted-foreground">{control.type}</span>
+                {/* scrollable horizontally so long enum lists are never cut off */}
+                <div className="overflow-x-auto">
+                  <span className="text-muted-foreground type-meta whitespace-nowrap">
+                    {rangeOrOptions}
+                  </span>
+                </div>
+                <span className="font-mono text-muted-foreground type-meta truncate">
+                  {control.default !== undefined && control.default !== null
+                    ? String(control.default)
+                    : "—"}
+                </span>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {unmapped.length > 0 && (
+        <div>
+          <p className="type-meta font-semibold uppercase tracking-wide text-muted-foreground mb-1">
+            Unmapped controls
+          </p>
+          {/* Full JSON, no height cap — everything visible */}
+          <pre className="type-meta font-mono bg-muted/30 rounded p-2 overflow-x-auto text-muted-foreground whitespace-pre-wrap break-all">
+            {JSON.stringify(Object.fromEntries(unmapped), null, 2)}
+          </pre>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── VSCode-style Tab Bar ──────────────────────────────────────────────────────
+interface TabBarProps {
+  active: SettingsTab;
+  onChange: (tab: SettingsTab) => void;
+  issueCount: number;
+}
+
+function TabBar({ active, onChange, issueCount }: TabBarProps) {
+  const tabs: { id: SettingsTab; label: string; icon: React.ReactNode }[] = [
+    {
+      id: "settings",
+      label: "Settings",
+      icon: <SlidersHorizontal className="h-3 w-3" />,
+    },
+    {
+      id: "raw",
+      label: "Raw Settings",
+      icon: <Code2 className="h-3 w-3" />,
+    },
+    {
+      id: "raw-edit",
+      label: "Raw Editable",
+      icon: <Save className="h-3 w-3" />,
+    },
+    {
+      id: "model-config",
+      label: "Model Config",
+      icon: <Settings2 className="h-3 w-3" />,
+    },
+    {
+      id: "output-schema",
+      label: "Output Schema",
+      icon: <Braces className="h-3 w-3" />,
+    },
+    {
+      id: "matrx-directives",
+      label: "Matrx Directives",
+      icon: <Zap className="h-3 w-3" />,
+    },
+  ];
+
+  return (
+    <div className="flex border-b border-border flex-shrink-0 -mx-3 px-3">
+      {tabs.map((tab) => {
+        const isActive = active === tab.id;
+        return (
+          <button
+            key={tab.id}
+            onClick={() => onChange(tab.id)}
+            className={`relative flex items-center gap-1.5 px-3 py-2 text-xs font-medium transition-colors select-none ${
+              isActive
+                ? "text-foreground border-b-2 border-primary -mb-px"
+                : "text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            {tab.icon}
+            {tab.label}
+            {tab.id === "settings" && issueCount > 0 && (
+              <span className="ml-0.5 inline-flex items-center justify-center w-3.5 h-3.5 rounded-full bg-yellow-500 text-[9px] font-bold text-white leading-none">
+                {issueCount > 9 ? "9+" : issueCount}
+              </span>
+            )}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+// ── AgentSettingsCore ────────────────────────────────────────────────────────
+
+interface AgentSettingsCoreProps {
+  agentId: string;
+  /**
+   * Reports whether the currently-open JSON editor (Raw Editable / Output
+   * Schema) has unapplied edits — buffer changes that will be lost unless the
+   * user clicks Apply. Lets the host (modal) warn before closing.
+   */
+  onUnappliedEditsChange?: (dirty: boolean) => void;
+}
+
+type ResponseFormat = NonNullable<FeLlmParams["response_format"]>;
+
+/**
+ * Build the canonical { type } shape the API expects from a bare selection
+ * string. Each branch returns a single-literal object so it matches one member
+ * of the ResponseFormat discriminated union. Unknown values yield null (ignored).
+ */
+function toResponseFormat(value: string): ResponseFormat | null {
+  switch (value) {
+    case "text":
+      return { type: "text" };
+    case "json_object":
+      return { type: "json_object" };
+    case "json_schema":
+      return { type: "json_schema" };
+    default:
+      return null;
+  }
+}
+
+export function AgentSettingsCore({
+  agentId,
+  onUnappliedEditsChange,
+}: AgentSettingsCoreProps) {
+  const dispatch = useAppDispatch();
+
+  const settings = useAppSelector((state) =>
+    selectAgentSettings(state, agentId),
+  );
+  const modelId = useAppSelector((state) => selectAgentModelId(state, agentId));
+  const agentTools = useAppSelector((state) =>
+    selectAgentTools(state, agentId),
+  );
+  const models = useAppSelector(selectAllModels);
+  const variableDefinitions = useAppSelector((state) =>
+    selectAgentVariableDefinitions(state, agentId),
+  );
+  // Which controls this organization lets an agent expose as run inputs.
+  const bindablePolicy = readControlBindablePolicy(
+    useSessionKnob(CONTROL_BINDABLE_KNOB),
+  );
+  const outputSchema = useAppSelector((state) =>
+    selectAgentOutputSchema(state, agentId),
+  );
+  const isModelFull = useAppSelector((state) =>
+    selectModelFullyLoaded(state, modelId),
+  );
+  const registryLoading = useAppSelector(selectModelRegistryLoading);
+  const registryError = useAppSelector(selectModelRegistryError);
+
+  // Settings need the model's full controls blob. The registry may only hold
+  // lightweight options (or nothing) until explicitly fetched — same pattern as
+  // RunConfigOverrides and the canonical model picker in the builder.
+  useEffect(() => {
+    dispatch(fetchModelOptions());
+  }, [dispatch]);
+
+  useEffect(() => {
+    if (modelId && !isModelFull && !registryLoading) {
+      dispatch(fetchModelById(modelId));
+    }
+  }, [dispatch, modelId, isModelFull, registryLoading]);
+
+  // The pinned CLASS's controls (Matrx Lightning ≠ Matrx Fast), not the
+  // preferred class's.
+  const classControls = useModelClassControls(
+    modelId,
+    typeof settings?.offering_id === "string" ? settings.offering_id : null,
+  );
+  const { normalizedControls, error } = useModelControls(
+    models,
+    modelId ?? "",
+    classControls,
+  );
+
+  // Model catalog (ai.model_offering tiers) — the client source of each
+  // model's offering uuids. The model-swap reconciliation checks a pinned
+  // settings.offering_id against the NEW model's offerings and clears stale
+  // pins (an ai.offering is model × endpoint × api — it belongs to exactly
+  // one model, so a pin never survives a genuine model change).
+  const { models: catalogModels } = useModelCatalog("user");
+  const offeringIdsByModel = useMemo(() => {
+    // Not loaded (or failed) → null: the offering check is skipped rather than
+    // guess-clearing a pin without data.
+    if (catalogModels.length === 0) return null;
+    const map = new Map<string, string[]>();
+    for (const m of catalogModels) {
+      map.set(
+        m.id,
+        m.tiers.map((t) => t.offeringId),
+      );
+    }
+    return map;
+  }, [catalogModels]);
+
+  // `settings` is null until the agent record hydrates (selectAgentSettings →
+  // `record?.settings ?? null`). Hooks below read this nullable value directly
+  // (they already tolerate null); the render body reads the guaranteed-non-null
+  // `currentSettings`, declared AFTER the hydration guard near the early returns
+  // so an edit made before hydration can never round-trip `{ ...{}, key: value }`
+  // back to Redux and silently drop every other real setting on save.
+
+  const modelConstraints = useMemo(() => {
+    if (!modelId) return null;
+    const model = models.find((m) => m.id === modelId);
+    const raw = model?.constraints;
+    if (!Array.isArray(raw) || raw.length === 0) return null;
+    return raw as import("@/features/ai-models/types").ModelConstraint[];
+  }, [modelId, models]);
+
+  const [activeTab, setActiveTab] = useState<SettingsTab>("settings");
+
+  // Unapplied-edits tracking for the JSON editors (Raw Editable / Output
+  // Schema). Only one editor is mounted at a time; switching tabs discards any
+  // pending buffer, so reset on tab change and report the state to the host.
+  const [editorDirty, setEditorDirty] = useState(false);
+  useEffect(() => {
+    setEditorDirty(false);
+  }, [activeTab]);
+  useEffect(() => {
+    onUnappliedEditsChange?.(editorDirty);
+  }, [editorDirty, onUnappliedEditsChange]);
+
+  // A setting is "set" exactly when the stored settings hold a non-null value
+  // for it — derived on every render, never mirrored into local state (a
+  // mirror could show a checked box over a value nothing stored).
+  const isSettingSet = (key: string): boolean => {
+    const value = (settings as Record<string, unknown> | null)?.[key];
+    return value !== null && value !== undefined;
+  };
+
+  const [jsonText, setJsonText] = useState("");
+
+  // ── Validation engine ──────────────────────────────────────────────────────
+  // useConfigValidation accepts `FeLlmParams | null` and handles the null
+  // (pre-hydration) case, so pass the nullable selector value straight through.
+  const { validation, highlightMap: jsonHighlights } = useConfigValidation({
+    settings,
+    modelId,
+    normalizedControls,
+    constraints: modelConstraints,
+  });
+  const allIssues = validation.issues;
+  // A set value the model does not carry natively is KEPT — the server
+  // translates it (settings-translation K7). It renders under "Translated for
+  // this model", never as a warning to fix.
+  const translatedIssues = allIssues.filter(
+    (i) => i.category === "unsupported_by_model",
+  );
+  const warningIssues = allIssues.filter(
+    (i) => i.category !== "unsupported_by_model",
+  );
+
+  const diagnosticPayload = useMemo(() => {
+    if (allIssues.length === 0) return undefined;
+    const model = models.find((m) => m.id === modelId);
+    return {
+      model_id: modelId,
+      model_name: model?.name ?? null,
+      raw_settings: settings,
+      constraints: modelConstraints,
+      issues: allIssues.map((i) => ({
+        rule: i.ruleId,
+        key: i.key,
+        severity: i.severity,
+        category: i.category,
+        message: i.message,
+        current_value: i.value,
+        suggestion: i.suggestion,
+      })),
+    };
+  }, [allIssues, modelId, models, settings, modelConstraints]);
+
+  // ── Model change reconciliation ───────────────────────────────────────────
+  const [pendingModelChange, setPendingModelChange] = useState<{
+    newModelId: string;
+    newModelName: string;
+    oldModelName: string;
+    plan: ModelChangePlan;
+    /** The class picked with the model; written only on commit, so the old
+     *  model is never paired with the new model's class while this waits. */
+    offeringPin?: { offeringId: string | undefined };
+  } | null>(null);
+
+  // Handlers run only after hydration (the panel renders a loader while
+  // settings === null), so they read the store's settings directly.
+  const hydratedSettings = (settings ?? {}) as FeLlmParams;
+
+  // A class belongs to exactly one model: the new model runs on the class
+  // picked with it, or on none (its preferred class) — never the old model's.
+  const commitClassWithModel = (
+    clickPin: { offeringId: string | undefined } | undefined,
+  ) => {
+    if (!clickPin && hydratedSettings.offering_id == null) return;
+    dispatch(
+      setAgentSettings({
+        id: agentId,
+        settings: withOfferingPin(hydratedSettings, clickPin?.offeringId),
+      }),
+    );
+  };
+
+  const commitModelChange = (
+    newModelId: string,
+    clickPin: { offeringId: string | undefined } | undefined,
+  ) => {
+    const planSettings: FeLlmParams = clickPin
+      ? withOfferingPin(hydratedSettings, clickPin.offeringId)
+      : hydratedSettings;
+
+    const newModel = models.find((m) => m.id === newModelId);
+    if (!newModel) {
+      dispatch(
+        setAgentField({ id: agentId, field: "modelId", value: newModelId }),
+      );
+      commitClassWithModel(clickPin);
+      return;
+    }
+
+    // `useModelControls` is a pure function despite the "use" prefix — safe to
+    // call on-demand for any model, not just the currently selected one.
+    // eslint-disable-next-line react-hooks/rules-of-hooks
+    const { normalizedControls: newControls } = useModelControls(
+      models,
+      newModelId,
+    );
+    const newConstraints: ModelConstraint[] | null = Array.isArray(
+      newModel.constraints,
+    )
+      ? (newModel.constraints as ModelConstraint[])
+      : null;
+
+    const plan = analyzeModelChange(
+      planSettings,
+      newModelId,
+      newModel,
+      newControls,
+      newConstraints,
+      // Catalog loaded but model absent → [] (pin can't belong to it → clear).
+      // Catalog not loaded → null (check skipped, never guess-clear).
+      offeringIdsByModel
+        ? (offeringIdsByModel.get(newModelId) ?? [])
+        : null,
+    );
+
+    if (planNeedsNoDecision(plan)) {
+      // Nothing to decide: every set value is kept, and any the new model
+      // lacks is translated by the server — commit model and class together.
+      dispatch(
+        setAgentField({ id: agentId, field: "modelId", value: newModelId }),
+      );
+      commitClassWithModel(clickPin);
+      return;
+    }
+
+    const oldModel = models.find((m) => m.id === modelId);
+    setPendingModelChange({
+      newModelId,
+      newModelName: newModel.common_name ?? newModel.name ?? newModelId,
+      oldModelName: oldModel?.common_name ?? oldModel?.name ?? "current model",
+      plan,
+      ...(clickPin ? { offeringPin: clickPin } : {}),
+    });
+  };
+
+  // The picker reports the class (offering pin) and the model in the SAME
+  // click, in either order. Both are parked for that click and applied once
+  // its handlers have run: a model change carries the class into its commit
+  // (immediate or after the reconciliation dialog); a class-only change is
+  // written directly. The class is never written ahead of its model — that
+  // interim pair (old model + new model's class) is refused by
+  // ai.resolve_model_config / ai.model_message_flag_profile with P0002.
+  const clickRef = useRef<{
+    modelId?: string;
+    pin?: { offeringId: string | undefined };
+  } | null>(null);
+
+  const parkForClick = (update: {
+    modelId?: string;
+    pin?: { offeringId: string | undefined };
+  }) => {
+    if (!clickRef.current) {
+      clickRef.current = {};
+      queueMicrotask(() => {
+        const click = clickRef.current;
+        clickRef.current = null;
+        if (!click) return;
+        if (click.modelId) {
+          commitModelChange(click.modelId, click.pin);
+        } else if (click.pin) {
+          dispatch(
+            setAgentSettings({
+              id: agentId,
+              settings: withOfferingPin(hydratedSettings, click.pin.offeringId),
+            }),
+          );
+        }
+      });
+    }
+    Object.assign(clickRef.current, update);
+  };
+
+  const handleOfferingPinChange = (offeringId: string | undefined) => {
+    // settings === null → the agent record hasn't hydrated; writing over it
+    // would drop every real setting on save (same guard as the builder row).
+    if (settings === null) {
+      console.error(
+        `[AgentSettingsCore] Refused to pin offering ${String(offeringId)} — agent ${agentId} settings not hydrated yet.`,
+      );
+      return;
+    }
+    parkForClick({ pin: { offeringId } });
+  };
+
+  const handleModelChange = (newModelId: string) => {
+    if (!newModelId || newModelId === modelId) return;
+    parkForClick({ modelId: newModelId });
+  };
+
+  const handleReconciliationCommit = (nextSettings: LLMParams) => {
+    if (!pendingModelChange) return;
+    dispatch(
+      setAgentField({
+        id: agentId,
+        field: "modelId",
+        value: pendingModelChange.newModelId,
+      }),
+    );
+    // The class chosen with the model survives every resolution (incl. reset
+    // to the new model's defaults); with none chosen the old model's class is
+    // dropped — it can never be a class of the new model.
+    const { offeringPin } = pendingModelChange;
+    dispatch(
+      setAgentSettings({
+        id: agentId,
+        settings: withOfferingPin(nextSettings, offeringPin?.offeringId),
+      }),
+    );
+    setPendingModelChange(null);
+  };
+
+  const handleReconciliationCancel = () => {
+    // Nothing was written yet — the model and its class commit together.
+    setPendingModelChange(null);
+  };
+
+  // `key` is a runtime-selected keyof FeLlmParams (driven by control.type at
+  // each call site — string/boolean/number/string[] depending on which
+  // branch rendered the control), so `value`'s concrete type can't be tied
+  // to FeLlmParams[K] without narrowing per call site. unknown is the
+  // honest type for this dynamic-key setter (was `any`).
+  // MATRX-EXCEPTION: dynamic per-key settings setter; each render branch supplies the right shape.
+  const handleSettingChange = (key: keyof FeLlmParams, value: unknown) => {
+    if (key === "response_format" && typeof value === "string") {
+      // Store EXACTLY what the user picked — including "text". Never drop a
+      // selection on the user's behalf. The canonical { type: <value> } shape
+      // matches how json_schema / json_object are stored.
+      const response_format = toResponseFormat(value);
+      if (response_format) {
+        dispatch(
+          setAgentSettings({
+            id: agentId,
+            settings: { ...currentSettings, response_format },
+          }),
+        );
+      }
+      return;
+    }
+
+    // One meaning per state (F-b): a choice that IS "not set" ("auto" effort)
+    // removes the key instead of saving a word equal to unset.
+    if (isUnsetChoice(key, value)) {
+      dispatch(
+        setAgentSettings({
+          id: agentId,
+          settings: withSettingState(
+            currentSettings as Record<string, unknown>,
+            key,
+            "unset",
+            null,
+          ) as LLMParams,
+        }),
+      );
+      return;
+    }
+
+    // No key here silently rewrites a *different* setting. Cross-field
+    // couplings (e.g. include_thoughts ↔ thinking_budget) surface as caution
+    // issues with a one-click fix — they are never auto-applied.
+    dispatch(
+      setAgentSettings({
+        id: agentId,
+        // Same FeLlmParams -> LLMParams cast used at every setAgentSettings
+        // call site in this file (see cleaned/rest/next above) — the FE
+        // superset isn't structurally identical to the backend contract.
+        settings: { ...currentSettings, [key]: value } as LLMParams,
+      }),
+    );
+  };
+
+  // NormalizedControls has ~50 individually-optional named fields (plus two
+  // Record<string, unknown> escape-hatch fields that are never controls) and
+  // no index signature — `key in normalizedControls` proves a runtime key is
+  // actually one of the named control fields before indexing.
+  const getControl = (key: string): ControlDefinition | undefined => {
+    if (
+      !normalizedControls ||
+      key === "rawControls" ||
+      key === "unmappedControls" ||
+      !(key in normalizedControls)
+    ) {
+      return undefined;
+    }
+    return normalizedControls[
+      key as Exclude<keyof NormalizedControls, "rawControls" | "unmappedControls">
+    ];
+  };
+
+  // Checking a box stores the control's starting value; if nothing can be
+  // stored (no control, no usable default) the box stays unchecked rather than
+  // claiming a setting that does not exist.
+  const handleToggleSetting = (key: keyof FeLlmParams, enabled: boolean) => {
+    if (enabled) {
+      const control = getControl(key);
+      if (control) {
+        let defaultValue: unknown = control.default;
+        if (defaultValue === null || defaultValue === undefined) {
+          if (control.type === "number" || control.type === "integer") {
+            defaultValue = control.min ?? 0;
+          } else if (
+            control.type === "string" ||
+            control.type === "string_array"
+          ) {
+            defaultValue = "";
+          } else if (control.type === "boolean") {
+            defaultValue = false;
+          } else if (control.type === "enum" && control.enum?.length) {
+            defaultValue = control.enum[0];
+          } else if (
+            control.type === "array" ||
+            control.type === "object_array"
+          ) {
+            defaultValue = [];
+          }
+        }
+        if (
+          isUnsetChoice(key, defaultValue) &&
+          control.type === "enum" &&
+          control.enum?.length
+        ) {
+          // Checking the box SETS the setting; "auto" would be unset again.
+          defaultValue = control.enum.find((v) => !isUnsetChoice(key, v));
+        }
+        if (key === "response_format" && typeof defaultValue === "string") {
+          // Keep "text" too — store the canonical dict, never drop it.
+          defaultValue =
+            defaultValue === "" ? undefined : { type: defaultValue };
+        }
+        if (defaultValue !== undefined) {
+          dispatch(
+            setAgentSettings({
+              id: agentId,
+              settings: { ...currentSettings, [key]: defaultValue },
+            }),
+          );
+        }
+      }
+    } else {
+      const cleaned = { ...currentSettings };
+      delete (cleaned as Record<string, unknown>)[key];
+      // When disabling tts_voice, also remove the coupled multi_speaker flag
+      if (key === "tts_voice") {
+        delete (cleaned as Record<string, unknown>).multi_speaker;
+      }
+      dispatch(
+        setAgentSettings({ id: agentId, settings: cleaned as LLMParams }),
+      );
+    }
+  };
+
+  // THE settings document — the one projection Raw Settings renders and Raw
+  // Editable edits (see ./settings-document.ts). Bound controls appear as
+  // `{ "$var": name, "default": value }`; `model_id` is always the agent's own.
+  const buildFullSettingsJson = () =>
+    JSON.stringify(
+      buildSettingsDocument({
+        modelId,
+        tools: agentTools,
+        settings: currentSettings as Record<string, unknown>,
+        variableDefinitions,
+      }),
+      null,
+      2,
+    );
+
+  // Sync JSON text whenever tab changes to either raw tab
+  useEffect(() => {
+    if (activeTab === "raw" || activeTab === "raw-edit") {
+      setJsonText(buildFullSettingsJson());
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeTab]);
+
+  // Issue table handlers
+  const handleIssueView = (key: string) => {
+    void key;
+    setJsonText(buildFullSettingsJson());
+    setActiveTab("raw");
+  };
+
+  const handleIssueRemove = (key: string) => {
+    const { [key]: _removed, ...rest } = currentSettings as Record<
+      string,
+      unknown
+    >;
+    dispatch(setAgentSettings({ id: agentId, settings: rest as LLMParams }));
+  };
+
+  const handleIssueFix = (key: string) => {
+    // Find the first issue on this key and route through the shared fix helper.
+    const issue = allIssues.find((i) => i.key === key);
+    if (!issue) return;
+    const next = applyFixForIssue(issue, currentSettings, normalizedControls);
+    dispatch(setAgentSettings({ id: agentId, settings: next }));
+  };
+
+  // ── Bulk IssueTable handlers ─────────────────────────────────────────────
+
+  const fixableIssues = useMemo(
+    () => allIssues.filter((i) => canFixIssue(i, normalizedControls)),
+    [allIssues, normalizedControls],
+  );
+  const unknownIssues = useMemo(
+    () => allIssues.filter((i) => i.category === "unrecognized_key"),
+    [allIssues],
+  );
+
+  // ── Hydration guard ───────────────────────────────────────────────────────
+  // Placed after ALL hooks (the last is the useMemo above) so an early return
+  // never skips a hook. selectAgentSettings returns null until the agent record
+  // hydrates; rendering the editor against null would let a field edit round-
+  // trip `{ ...{}, key: value }` back to Redux/Postgres and silently drop every
+  // OTHER real setting on save. Mirrors AgentSettingsForm's `if (!agent)` block
+  // (same centered muted-text container) and this component's own Loader2 idiom.
+  if (settings === null) {
+    return (
+      <div className="flex items-center justify-center gap-2 h-full text-muted-foreground type-body">
+        <Loader2 className="h-4 w-4 animate-spin shrink-0" />
+        Loading agent settings…
+      </div>
+    );
+  }
+
+  // `settings` is now narrowed non-null. LLMParams is structurally assignable to
+  // the FeLlmParams superset (every extra key is optional) — no cast, and no
+  // `?? {}` fallback that could mask the pre-hydration null and drop settings.
+  const currentSettings: FeLlmParams = settings;
+
+
+
+  const handleFixAll = () => {
+    const next = applyAllFixableIssues(
+      fixableIssues,
+      currentSettings,
+      normalizedControls,
+    );
+    dispatch(setAgentSettings({ id: agentId, settings: next }));
+  };
+
+  const handleRemoveAllUnknown = () => {
+    const next = { ...currentSettings } as Record<string, unknown>;
+    for (const issue of unknownIssues) {
+      delete next[issue.key];
+    }
+    dispatch(setAgentSettings({ id: agentId, settings: next as LLMParams }));
+  };
+
+  const handleResetAll = () => {
+    dispatch(setAgentSettings({ id: agentId, settings: {} as LLMParams }));
+  };
+
+  // ── render helpers ────────────────────────────────────────────────────────
+
+  // Renders through the shared SettingControlInput primitive — ONE dense
+  // control renderer for every settings surface (builder, per-run overrides,
+  // model replacement review). Only what the primitive cannot know stays
+  // here: the builder's value defaulting (value ?? control.default ?? min)
+  // and the response_format unwrap — the primitive emits the canonical
+  // `{ type: <value> }` object, while handleSettingChange validates the
+  // plain STRING through toResponseFormat.
+  const renderControlInput = (
+    key: keyof FeLlmParams,
+    control: ControlDefinition,
+    value: unknown,
+    isEnabled: boolean,
+  ) => {
+    const defaulted: unknown =
+      value ??
+      control.default ??
+      (control.type === "number" || control.type === "integer"
+        ? (control.min ?? 0)
+        : "");
+    return (
+      <SettingControlInput
+        settingKey={key as string}
+        control={control}
+        value={defaulted}
+        onChange={(v) => {
+          const unwrapped =
+            key === "response_format" &&
+            typeof v === "object" &&
+            v !== null &&
+            "type" in (v as Record<string, unknown>)
+              ? (v as Record<string, unknown>).type
+              : v;
+          handleSettingChange(key, unwrapped);
+        }}
+        disabled={!isEnabled}
+        id={`setting-control-agent-${key}`}
+      />
+    );
+  };
+
+  // Controls as first-class variables: the literal moves to a variable (the run
+  // input's default) and back. One reducer, one undo step.
+  const handleBindControl = (key: string, control: ControlDefinition) => {
+    const next = bindControlToVariable({
+      key,
+      control,
+      settings: currentSettings as Record<string, unknown>,
+      variableDefinitions,
+    });
+    dispatch(
+      setAgentControlBinding({
+        id: agentId,
+        settings: next.settings as LLMParams,
+        variableDefinitions: next.variableDefinitions,
+      }),
+    );
+  };
+
+  const handleUnbindControl = (
+    key: string,
+    control: ControlDefinition | null,
+  ) => {
+    const next = unbindControlVariable({
+      key,
+      control,
+      settings: currentSettings as Record<string, unknown>,
+      variableDefinitions,
+    });
+    dispatch(
+      setAgentControlBinding({
+        id: agentId,
+        settings: next.settings as LLMParams,
+        variableDefinitions: next.variableDefinitions,
+      }),
+    );
+  };
+
+  const renderBoundControl = (
+    key: string,
+    label: string,
+    control: ControlDefinition | null,
+    variableName: string,
+    defaultValue: unknown,
+  ) => (
+    <div
+      key={key}
+      className="flex items-center gap-2 mb-2 rounded px-1 py-1 hover:bg-muted/20"
+      data-bound-control={key}
+      data-setting-row={key}
+      data-setting-state="bound"
+    >
+      <span className="h-2 w-2 rounded-full shrink-0 bg-primary" aria-hidden />
+      <div className="flex items-center gap-2 pt-0.5 flex-shrink-0">
+        <Checkbox checked disabled aria-label={`${label} is a run input`} />
+        <Label className="text-xs flex-shrink-0 w-36 text-gray-700 dark:text-gray-300">
+          {label}
+        </Label>
+      </div>
+      <div className="flex-1 min-w-0 flex items-center gap-2">
+        <span className="inline-flex items-center gap-1 rounded-md border border-primary/30 bg-primary/10 px-1.5 py-0.5 type-secondary font-mono text-primary-ink">
+          <Variable className="w-3 h-3" />
+          {`{{${variableName}}}`}
+        </span>
+        <span className="type-meta text-muted-foreground truncate">
+          {variableValueToDisplay(defaultValue) || "model default"}
+        </span>
+      </div>
+      <TooltipProvider delayDuration={200}>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-6 w-6 text-muted-foreground hover:text-foreground"
+              onClick={() => handleUnbindControl(key, control)}
+              aria-label={`Make ${label} a fixed setting`}
+            >
+              <Unlink className="h-3.5 w-3.5" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent side="top" className="type-secondary">
+            Make a fixed setting
+          </TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
+    </div>
+  );
+
+  const renderControl = (
+    key: keyof FeLlmParams,
+    label: string,
+    control: ControlDefinition | null,
+  ) => {
+    // The same derivation the JSON views use (./settings-document.ts), so a
+    // row can never show a value the Raw tabs do not.
+    const view: SettingView = describeSetting(
+      key,
+      {
+        settings: currentSettings as Record<string, unknown>,
+        variableDefinitions,
+      },
+      control,
+    );
+    if (view.state === "bound") {
+      return renderBoundControl(
+        key,
+        label,
+        control,
+        view.variableName,
+        view.value,
+      );
+    }
+    const canBind = !!control && isControlBindable(key, bindablePolicy);
+    const isEnabled = view.state === "set";
+    const valueRaw = view.state === "set" ? view.value : undefined;
+    // Three states (./setting-state.ts): not set (key absent, row reads
+    // "Not set"), off (an explicit off value saved — the input itself reads
+    // "Off"), or a value. The row carries the state for every reader.
+    const isOff = isEnabled && isOffValue(valueRaw, control);
+    const checkboxId = `setting-agent-${key}`;
+    const keyIssues = validation.issuesByKey[key] ?? [];
+    const hasIssue = keyIssues.length > 0;
+    const hasControl = !!control;
+
+    // Three-state validity (independent of enabled state, so incompatibility
+    // is never hidden):
+    //   invalid  — has validation issue(s)
+    //   unknown  — no control on the current model → not valid for this model
+    //   valid    — control exists and no issues
+    const state: "valid" | "invalid" | "unknown" = hasIssue
+      ? "invalid"
+      : hasControl
+        ? "valid"
+        : "unknown";
+
+    const firstIssue = keyIssues[0];
+    const fixable = !!firstIssue && canFixIssue(firstIssue, normalizedControls);
+
+    const dotClass =
+      state === "invalid"
+        ? "bg-orange-500"
+        : state === "unknown"
+          ? "bg-amber-400"
+          : "bg-emerald-500";
+    const dotTitle =
+      state === "invalid"
+        ? (firstIssue?.message ?? "Issue detected")
+        : state === "unknown"
+          ? "Unable to confirm — this model has no schema for this setting"
+          : "Valid";
+
+    return (
+      <div
+        key={key}
+        className="flex items-start gap-2 mb-2 rounded px-1 py-1 hover:bg-muted/20"
+        data-setting-row={key}
+        data-setting-state={isOff ? "off" : view.state}
+      >
+        {/* Validity dot */}
+        <TooltipProvider delayDuration={200}>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <span
+                className={`h-2 w-2 rounded-full shrink-0 mt-2 ${dotClass}`}
+                aria-label={dotTitle}
+              />
+            </TooltipTrigger>
+            <TooltipContent side="top" className="type-secondary max-w-[260px]">
+              {dotTitle}
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+
+        {/* Checkbox + Label */}
+        <div
+          className="flex items-center gap-2 cursor-pointer hover:opacity-80 transition-opacity pt-1 flex-shrink-0"
+          onClick={() => handleToggleSetting(key, !isEnabled)}
+        >
+          <Checkbox
+            id={checkboxId}
+            checked={isEnabled}
+            onCheckedChange={(checked) =>
+              handleToggleSetting(key, checked as boolean)
+            }
+            className="cursor-pointer"
+          />
+          <Label
+            htmlFor={checkboxId}
+            className={`text-xs flex-shrink-0 w-36 cursor-pointer ${
+              isEnabled
+                ? "text-gray-700 dark:text-gray-300"
+                : "text-gray-400 dark:text-gray-600"
+            }`}
+          >
+            {label}
+          </Label>
+        </div>
+
+        {/* Control input (or fallback). An unset control shows no input and
+            no value — only what the model does when it is left unset. */}
+        <div className="flex-1 min-w-0">
+          {!isEnabled ? (
+            <span className="block pt-1 type-secondary text-muted-foreground">
+              {view.state === "default"
+                ? `Not set \u00b7 Model default: ${formatModelDefault(view.value)}`
+                : "Not set"}
+            </span>
+          ) : control ? (
+            renderControlInput(key, control, valueRaw, isEnabled)
+          ) : (
+            <FallbackValueInput
+              settingKey={key as string}
+              value={valueRaw}
+              disabled={!isEnabled}
+              onChange={(v) => handleSettingChange(key, v)}
+            />
+          )}
+          {hasIssue && isEnabled && (
+            <p className="type-meta text-orange-600 dark:text-orange-400 mt-1 leading-tight">
+              {firstIssue.message}
+            </p>
+          )}
+        </div>
+
+        {/* Per-row actions */}
+        <div className="flex items-center gap-0 shrink-0">
+          {canBind && control && (
+            <TooltipProvider delayDuration={200}>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-6 w-6 text-muted-foreground hover:text-primary"
+                    onClick={() => handleBindControl(key, control)}
+                    aria-label={`Make ${label} a run input`}
+                    data-bind-control={key}
+                  >
+                    <Variable className="h-3.5 w-3.5" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side="top" className="type-secondary">
+                  Make a run input
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          )}
+          {fixable && isEnabled && (
+            <TooltipProvider delayDuration={200}>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-6 w-6 text-muted-foreground hover:text-orange-500"
+                    onClick={() => handleIssueFix(key as string)}
+                  >
+                    <WrenchIcon className="h-3.5 w-3.5" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side="top" className="type-secondary">
+                  Fix automatically
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          )}
+          {isEnabled && (
+            <TooltipProvider delayDuration={200}>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-6 w-6 text-muted-foreground hover:text-destructive"
+                    onClick={() => handleIssueRemove(key as string)}
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side="top" className="type-secondary">
+                  Clear to not set
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          )}
+        </div>
+      </div>
+    );
+  };
+
+  // A kept setting the current model does not carry natively. The value is
+  // saved exactly as the person set it; the server converts it for this model.
+  // The only action is clearing it back to "not set".
+  const renderTranslatedRow = (key: string, value: unknown) => (
+    <div
+      key={key}
+      className="flex items-center gap-2 mb-2 rounded px-1 py-1 hover:bg-muted/20"
+      data-setting-row={key}
+      data-setting-state="translated"
+    >
+      <span className="h-2 w-2 rounded-full shrink-0 bg-sky-500" aria-hidden />
+      {/* Aligns with the checkbox column of the rows below. */}
+      <span className="h-4 w-4 shrink-0" aria-hidden />
+      <Label className="text-xs flex-shrink-0 w-36 text-gray-700 dark:text-gray-300">
+        {humanizeIdentifier(key)}
+      </Label>
+      <span className="flex-1 min-w-0 truncate type-secondary font-mono text-foreground/80">
+        {isOffValue(value, null) ? "Off" : formatModelDefault(value)}
+      </span>
+      <TooltipProvider delayDuration={200}>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Chip tone="sky" label="Translated" />
+          </TooltipTrigger>
+          <TooltipContent side="top" className="type-secondary max-w-[260px]">
+            Kept as set and sent as this model's closest equivalent
+          </TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
+      <TooltipProvider delayDuration={200}>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-6 w-6 text-muted-foreground hover:text-destructive"
+              onClick={() => handleIssueRemove(key)}
+              aria-label={`Clear ${humanizeIdentifier(key)}`}
+            >
+              <Trash2 className="h-3.5 w-3.5" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent side="top" className="type-secondary">
+            Clear to not set
+          </TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
+    </div>
+  );
+
+  // tts_voice gets the dedicated multi-speaker editor when the model supports
+  // it; otherwise it degrades to a normal row so it is never hidden.
+  const renderVoiceRow = (row: SettingsRow) => {
+    const voiceControl = getControl("tts_voice");
+    if (
+      !voiceControl ||
+      !voiceControl.enum?.length ||
+      findControlVariable(variableDefinitions, "tts_voice")
+    ) {
+      return renderControl(
+        "tts_voice",
+        row.label,
+        getControl("tts_voice") ?? null,
+      );
+    }
+    const voiceEnum = voiceControl.enum ?? [];
+    const ttsEnabled = isSettingSet("tts_voice");
+    const multiControl = getControl("multi_speaker");
+    const multiAllowed = !!multiControl;
+    const maxSpeakers = multiControl?.max;
+    return (
+      <div
+        className="mb-2"
+        key="tts_voice"
+        data-setting-row="tts_voice"
+        data-setting-state={ttsEnabled ? "set" : "unset"}
+      >
+        <div className="flex items-center gap-3 mb-1">
+          <div
+            className="flex items-center gap-2 cursor-pointer hover:opacity-80 transition-opacity"
+            onClick={() => handleToggleSetting("tts_voice", !ttsEnabled)}
+          >
+            <Checkbox
+              id="setting-agent-tts_voice"
+              checked={ttsEnabled}
+              onCheckedChange={(checked) =>
+                handleToggleSetting("tts_voice", checked as boolean)
+              }
+              className="cursor-pointer"
+            />
+            <Label
+              htmlFor="setting-agent-tts_voice"
+              className={`text-xs flex-shrink-0 w-36 cursor-pointer ${
+                ttsEnabled
+                  ? "text-gray-700 dark:text-gray-300"
+                  : "text-gray-400 dark:text-gray-600"
+              }`}
+            >
+              Voice
+            </Label>
+          </div>
+        </div>
+        <div
+          className={`pl-[calc(1rem+8px+0.75rem)] ${!ttsEnabled ? "opacity-50 pointer-events-none" : ""}`}
+        >
+          <TtsVoiceEditor
+            voiceEnum={voiceEnum}
+            ttsValue={(currentSettings as Record<string, unknown>).tts_voice}
+            multiSpeakerAllowed={multiAllowed}
+            maxSpeakers={maxSpeakers}
+            isEnabled={ttsEnabled}
+            onSave={(ttsVoice, multi) => {
+              dispatch(
+                setAgentSettings({
+                  id: agentId,
+                  settings: {
+                    ...currentSettings,
+                    tts_voice: ttsVoice,
+                    multi_speaker: multi,
+                  } as LLMParams,
+                }),
+              );
+            }}
+          />
+        </div>
+      </div>
+    );
+  };
+
+  const renderSettingRow = (row: SettingsRow) => {
+    if (row.key === "tts_voice") return renderVoiceRow(row);
+    return renderControl(
+      row.key as keyof FeLlmParams,
+      row.label,
+      (row.control as ControlDefinition | null) ?? null,
+    );
+  };
+
+  // Every catalogue setting renders, for every model. The model's controls
+  // only decorate each row (supported vs. caution) — they never decide whether
+  // a row appears. See packages/chat/src/agents/redux/agent-settings/settings-catalogue.ts.
+  const settingGroups = buildSettingsRows(
+    // NormalizedControls has no string index signature (typed optional keys
+    // alongside two required `Record<string, any>` escape-hatch fields), so
+    // it has no structural overlap with `Record<string, unknown>`.
+    // buildSettingsRows takes a loose bag-of-controls contract on purpose and
+    // validates each candidate internally (lookupControl checks `"type" in`
+    // before trusting it) — the compiler's two-step cast is the documented,
+    // deliberate contract here.
+    // MATRX-EXCEPTION: buildSettingsRows validates each field at read time; see lookupControl.
+    normalizedControls as unknown as Record<string, unknown> | null,
+    currentSettings as Record<string, unknown>,
+  );
+
+  // Gentle (non-blocking) reminder: response_format is json_schema but no
+  // usable output schema exists yet. Surfaces a nudge on the Settings tab that
+  // links to the Output Schema tab. Not enforced — just a hint.
+  const responseFormat = (currentSettings as Record<string, unknown>)
+    .response_format;
+  const wantsJsonSchema =
+    responseFormat === "json_schema" ||
+    (typeof responseFormat === "object" &&
+      responseFormat !== null &&
+      (responseFormat as Record<string, unknown>).type === "json_schema");
+  const outputSchemaUsable =
+    outputSchema != null && validateOutputSchema(outputSchema).ok;
+  const showSchemaReminder = wantsJsonSchema && !outputSchemaUsable;
+
+  // ── Early returns ─────────────────────────────────────────────────────────
+  if (modelId && !isModelFull) {
+    if (registryError && !registryLoading) {
+      return (
+        <div className="type-secondary text-red-600 dark:text-red-400 px-1 py-2">
+          Error loading model controls: {registryError}
+          <ErrorAlchemyMenu error={registryError} />
+        </div>
+      );
+    }
+    return (
+      <div className="flex items-center gap-2 type-secondary text-muted-foreground px-1 py-2">
+        <Loader2 className="h-3.5 w-3.5 animate-spin shrink-0" />
+        Loading model settings…
+      </div>
+    );
+  }
+
+  // A controls problem (refused class pin, model missing from the catalog) is
+  // shown INSIDE the panel, never instead of it: the model picker, the class
+  // pin and Raw Edit must stay reachable so the person can fix the setting.
+  const classPinRefused = classControls?.failed === true;
+  const noControls = !normalizedControls;
+  // With a controls problem the panel still opens on Settings, where the
+  // notice and the model picker are; every other tab stays reachable.
+  const controlsReady = !noControls;
+  const settingsTabOpen = activeTab === "settings" || (noControls && !error);
+  const tabsReachable = controlsReady || Boolean(error);
+
+  // ── Main render ───────────────────────────────────────────────────────────
+  return (
+    <div className="flex flex-col h-full">
+      {/* Tab bar */}
+      {tabsReachable && (
+        <TabBar
+          active={activeTab}
+          onChange={setActiveTab}
+          issueCount={warningIssues.length}
+        />
+      )}
+
+      {/* Tab content — fills remaining height */}
+      <div
+        className={`flex-1 min-h-0 ${activeTab === "raw-edit" || activeTab === "output-schema" ? "flex flex-col" : "overflow-y-auto"} pt-3`}
+      >
+        {/* ── SETTINGS TAB ───────────────────────────────────────────────── */}
+        {settingsTabOpen && (
+          <div className="space-y-1.5">
+            {error && (
+              <ErrorNotice
+                size="compact"
+                message={
+                  classPinRefused
+                    ? "Pinned class is not offered for this model"
+                    : error
+                }
+                error={error}
+                operation="Load this model's settings"
+                actions={
+                  classPinRefused ? (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => handleOfferingPinChange(undefined)}
+                    >
+                      Use Auto
+                    </Button>
+                  ) : undefined
+                }
+              />
+            )}
+            {/* Model selector */}
+            <div className="flex items-center gap-2 pb-1 border-b border-border">
+              <Label className="text-xs text-muted-foreground flex-shrink-0 w-36">
+                Model
+              </Label>
+              <div className="flex-1 flex justify-start">
+                <ModelListDropdown
+                  value={modelId}
+                  onValueChange={handleModelChange}
+                  inputModalities={[]}
+                  pinnedOfferingId={settings?.offering_id}
+                  onOfferingPinChange={handleOfferingPinChange}
+                />
+              </div>
+            </div>
+
+            {noControls && !error && (
+              <p className="type-secondary text-muted-foreground">
+                Select a model to see available settings.
+              </p>
+            )}
+
+            {/* Issue table */}
+            {!noControls && warningIssues.length > 0 && (
+              <IssueTable
+                issues={warningIssues}
+                diagnosticPayload={diagnosticPayload}
+                onView={handleIssueView}
+                onRemove={handleIssueRemove}
+                onFixEnum={handleIssueFix}
+                onFixAll={handleFixAll}
+                onRemoveAllUnknown={handleRemoveAllUnknown}
+                onResetAll={handleResetAll}
+                fixableCount={fixableIssues.length}
+                unknownCount={unknownIssues.length}
+              />
+            )}
+
+            {!noControls && translatedIssues.length > 0 && (
+              <div data-translated-settings>
+                <div className="type-secondary font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                  Translated for this model
+                </div>
+                {translatedIssues.map((issue) =>
+                  renderTranslatedRow(issue.key, issue.value),
+                )}
+              </div>
+            )}
+
+            {/* Gentle, non-blocking reminder: json_schema selected but no
+                usable output schema yet. Whole banner links to the tab. */}
+            {!noControls && showSchemaReminder && (
+              <button
+                type="button"
+                onClick={() => setActiveTab("output-schema")}
+                className="flex w-full items-start gap-2 rounded-md border border-sky-200 dark:border-sky-900 bg-sky-50 dark:bg-sky-950/30 px-3 py-2 text-left text-xs text-sky-800 dark:text-sky-300 hover:bg-sky-100 dark:hover:bg-sky-950/50 transition-colors"
+              >
+                <Braces className="h-3.5 w-3.5 mt-0.5 shrink-0" />
+                <span className="flex-1 leading-snug">
+                  Response format is{" "}
+                  <code className="font-mono">json_schema</code>, but{" "}
+                  {outputSchema == null
+                    ? "no output schema is set"
+                    : "the output schema has issues"}
+                  . Open the{" "}
+                  <span className="font-semibold underline">Output Schema</span>{" "}
+                  tab to add one.
+                </span>
+              </button>
+            )}
+
+            {/* Every catalogue setting renders for every model. The model's
+                controls only decorate each row (supported vs. caution). A
+                setting unsupported by the model is NEVER hidden — it shows a
+                caution dot, and when it holds a value it also surfaces in the
+                IssueTable above with a one-click fix. */}
+            {settingGroups.map((group) =>
+              group.rows.length === 0 ? null : (
+                <div
+                  key={group.id}
+                  className={group.label ? "border-t pt-2 mt-2" : undefined}
+                >
+                  {group.label && (
+                    <div className="type-secondary font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                      {group.label}
+                    </div>
+                  )}
+                  {group.rows.map(renderSettingRow)}
+                </div>
+              ),
+            )}
+
+            {/* Frontend input capabilities live in agent.uiGates, never in
+                model settings. They remain editable regardless of model; the
+                server owns provider compatibility conversion. */}
+            <UiGatesEditor agentId={agentId} />
+          </div>
+        )}
+
+        {/* ── RAW SETTINGS TAB (colorful read-only viewer) ───────────────── */}
+        {activeTab === "raw" && (
+          <div className="flex flex-col gap-2">
+            <p className="type-meta text-muted-foreground">
+              {/* Run inputs show as { "$var": name, "default": value }. */}
+              Read-only view of stored settings.{" "}
+              {allIssues.length > 0 && (
+                <span className="text-yellow-600 dark:text-yellow-400">
+                  Highlighted lines have issues.
+                </span>
+              )}
+            </p>
+            <div className="rounded border border-border overflow-hidden">
+              <HighlightedJson
+                value={(() => {
+                  try {
+                    return JSON.parse(buildFullSettingsJson());
+                  } catch {
+                    return {};
+                  }
+                })()}
+                highlightKeys={jsonHighlights}
+              />
+            </div>
+          </div>
+        )}
+
+        {/* ── RAW EDITABLE TAB (forgiving JSON editor) ─────────────────────── */}
+        {activeTab === "raw-edit" && (
+          <div className="flex flex-col h-full gap-2">
+            <p className="type-meta text-muted-foreground flex-shrink-0">
+              Edit the JSON, then apply
+            </p>
+
+            <SettingsJsonEditor
+              initialValue={jsonText}
+              onApply={(parsed) => {
+                const next = parseSettingsDocument(
+                  parsed,
+                  {
+                    settings: currentSettings as Record<string, unknown>,
+                    variableDefinitions,
+                  },
+                  (k) => getControl(k) ?? null,
+                );
+                if (next.errors.length > 0) {
+                  toast.error(
+                    `Settings not applied — ${next.errors.join(" ")}`,
+                  );
+                  return;
+                }
+                if (typeof next.modelId === "string" && next.modelId) {
+                  dispatch(
+                    setAgentField({
+                      id: agentId,
+                      field: "modelId",
+                      value: next.modelId,
+                    }),
+                  );
+                }
+                if (Array.isArray(next.tools)) {
+                  dispatch(
+                    setAgentTools({
+                      id: agentId,
+                      tools: next.tools as string[],
+                    }),
+                  );
+                }
+                // Settings and bindings move together (one undo step) when a
+                // binding changed; otherwise only settings are written.
+                if (next.bindingsChanged) {
+                  dispatch(
+                    setAgentControlBinding({
+                      id: agentId,
+                      settings: next.settings as LLMParams,
+                      variableDefinitions: next.variableDefinitions,
+                    }),
+                  );
+                } else {
+                  dispatch(
+                    setAgentSettings({
+                      id: agentId,
+                      settings: next.settings as LLMParams,
+                    }),
+                  );
+                }
+                setActiveTab("settings");
+              }}
+              onReset={() => setJsonText(buildFullSettingsJson())}
+              onDirtyChange={setEditorDirty}
+              minHeight={360}
+            />
+          </div>
+        )}
+
+        {/* ── MODEL CONFIG TAB ───────────────────────────────────────────── */}
+        {activeTab === "model-config" && normalizedControls && (
+          <ModelConfigViewer normalizedControls={normalizedControls} />
+        )}
+
+        {/* ── OUTPUT SCHEMA TAB ──────────────────────────────────────────── */}
+        {activeTab === "output-schema" && (
+          <OutputSchemaTab agentId={agentId} onDirtyChange={setEditorDirty} />
+        )}
+
+        {/* ── MATRX ACTIONS TAB ──────────────────────────────────────────── */}
+        {activeTab === "matrx-directives" && <MatrxDirectivesTab agentId={agentId} />}
+      </div>
+
+      {/* Model-change reconciliation dialog */}
+      {pendingModelChange && (
+        <ModelChangeReconciliation
+          isOpen={true}
+          onClose={handleReconciliationCancel}
+          oldModelName={pendingModelChange.oldModelName}
+          newModelName={pendingModelChange.newModelName}
+          oldSettings={currentSettings}
+          plan={pendingModelChange.plan}
+          onCommit={handleReconciliationCommit}
+        />
+      )}
+    </div>
+  );
+}

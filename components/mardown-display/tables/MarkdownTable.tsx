@@ -63,6 +63,7 @@ import {
   type TableShape,
 } from "./editing/tableMutations";
 import { downloadFile } from "@ai-matrx/kit/download";
+import { tableToCsv } from "@/components/mardown-display/tables/table-csv";
 
 interface ExportDropdownMenuProps {
   tableData: {
@@ -358,17 +359,7 @@ const MarkdownTable: React.FC<MarkdownTableProps> = ({
 
   const downloadCSV = () => {
     try {
-      const csvContent = [
-        internalTableData.headers.map((h) => h.replace(/"/g, '""')).join(","),
-        ...internalTableData.rows.map((row) =>
-          row
-            .map((cell) => {
-              const escaped = cell.replace(/"/g, '""');
-              return cell.includes(",") ? `"${escaped}"` : escaped;
-            })
-            .join(","),
-        ),
-      ].join("\n");
+      const csvContent = tableToCsv(internalTableData.headers, internalTableData.rows);
       const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
       downloadFile("table_data.csv", blob, blob.type);
       toast.success("Table exported to CSV", {

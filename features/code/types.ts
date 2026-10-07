@@ -80,7 +80,7 @@ export interface FilesystemSearchHit {
  *    `features/code/preview/renderPreviewRegistry.ts`. The source tab
  *    is identified by `renderSourceTabId`; the previewer is selected
  *    by the source tab's library-source adapter prefix
- *    (e.g. `aga-app:` → `AgentAppRenderPreview`). Read-only; no buffer,
+ *    (e.g. `aga-app:` → `AppletSourcePreview`). Read-only; no buffer,
  *    no save pipeline. Closes automatically when its source tab closes.
  *
  * AI patch review is NOT a tab kind — when a normal `"editor"` tab has

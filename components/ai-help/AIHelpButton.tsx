@@ -59,14 +59,12 @@ export function AIHelpButton(
         }
     };
 
-    const handleCopy = (text: string) => {
-        void copyText(text).then((copied) => {
-  if (!copied) return;
-  toast({
+    const handleCopy = async (text: string) => {
+        if (!(await copyText(text))) return;
+        toast({
             title: "Copied!",
             description: "Content copied to clipboard",
         });
-});
     };
 
     const handleSaveImage = (quality: ImageQuality = 'full') => {

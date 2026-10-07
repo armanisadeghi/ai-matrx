@@ -211,13 +211,11 @@ export function GoogleEmbeddingLab() {
                   icon={copied ? <Check /> : <Clipboard />}
                   type="button"
                   variant="outline"
-                  onClick={() => {
-                    void copyText(
+                  onClick={async () => {
+                    if (!(await copyText(
                       JSON.stringify(result.vectors),
-                    ).then((copied) => {
-  if (!copied) return;
-  setCopied(true);
-});
+                    ))) return;
+                    setCopied(true);
                     setTimeout(() => setCopied(false), 1500);
                   }}
                 >

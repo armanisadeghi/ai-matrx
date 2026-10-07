@@ -70,13 +70,11 @@ export function useTopicRowActions(
             id: "copy-link",
             label: "Copy link",
             icon: Link2,
-            onSelect: () => {
-              void copyText(
+            onSelect: async () => {
+              if (!(await copyText(
                 `${window.location.origin}${topicHref(row.id)}`,
-              ).then((copied) => {
-  if (!copied) return;
-  toast.success("Link copied");
-});
+              ))) return;
+              toast.success("Link copied");
             },
           },
         ],

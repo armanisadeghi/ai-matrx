@@ -1,0 +1,477 @@
+matrx-auto-git-conflict-file-work-delete-this-when-resolved
+
+HELD CONFLICT, written by scripts/sync-main.py
+File:      features/agents/browse/useAgentRowActions.tsx
+Why held:  both sides changed the same code
+GITHUB's version is live in the repo at the path above. LOCAL's version is at the bottom
+of this file, below the FACTS.
+Done with it: the final code is in the live file, this .held file is deleted, and its line
+in _conflicts/README.md is deleted. The list of open items is _conflicts/README.md.
+
+FACTS (computed by sync-main from git)
+
+THE TWO VERSIONS
+  LOCAL  = the version that was on this Mac. It is saved below, in this .held file.
+  GITHUB = the version from GitHub. It is LIVE in the repo right now, at features/agents/browse/useAgentRowActions.tsx
+  Both grew from the same COMMON version: commit cfed5f4723, 2026-10-06 21:01.
+
+WHEN EACH SIDE CHANGED THIS FILE (newest first)
+  LOCAL:
+    2026-10-06 21:16  (uncommitted edit; the time the file was last saved on this Mac)
+    2026-10-06 21:23  94b89b0701  collected by the sync; the edit itself happened at or before this time
+  GITHUB:
+    2026-10-06 21:00  7bf65448f8  "Copied state and success toasts only after a copy that landed (kit 0.28.0 boolean); delete ToolTabBodies/viewer-utilities CopyButton; add check:copy-result-gated"
+  LOCAL's latest change is 15m AFTER GITHUB's latest change.
+
+SIZE: common version 421 lines, LOCAL 423 lines, GITHUB 421 lines
+
+WHAT EACH SIDE DID, compared with the common version
+  LOCAL added 2 lines and removed 0 lines.
+  GITHUB added 2 lines and removed 2 lines.
+
+CODE ONE SIDE HAS THAT THE OTHER DOES NOT
+  LOCAL has 0 of the 2 lines GITHUB added.
+    Lines GITHUB added that LOCAL does NOT have:
+      | onCopyForAgent: async () => {
+      | if (!(await copyText(
+    (some of those lines also appear in other changed files, which may be a coincidence: features/workflow-runtime/browse/useWorkflowRowActions.tsx, components/mardown-display/blocks/artifact/ArtifactBlock.tsx, components/mardown-display/blocks/table/StreamingTableRenderer.tsx, components/mardown-display/tables/MarkdownTable.tsx)
+    Lines GITHUB deliberately REMOVED that LOCAL still has: 2
+      | onCopyForAgent: () => {
+      | void copyText(
+  GITHUB has 0 of the 2 lines LOCAL added.
+    Lines LOCAL added that GITHUB does NOT have:
+      | ).then((copied) => {
+      | if (!copied) return;
+    (some of those lines also appear in other changed files, which may be a coincidence: app/(admin)/administration/ui/official-components/component-displays/pro-input.tsx, features/block-ledger/useBlockRowActions.tsx, features/crm/inbox/useInboxRowActions.tsx, features/exports/browse/useExportItemRowActions.tsx)
+
+COMPARE THEM (the labels are correct; '-' lines are GITHUB, '+' lines are LOCAL):
+  diff -u --label 'GITHUB (live)' --label 'LOCAL (held)' <(git show 18b17dfd3ce9:'features/agents/browse/useAgentRowActions.tsx') <(git show 94b89b070183:'features/agents/browse/useAgentRowActions.tsx')
+
+RECOVER EITHER VERSION FOREVER (works even after this .held file is deleted):
+  LOCAL : git show 94b89b070183:'features/agents/browse/useAgentRowActions.tsx'
+  GITHUB: git show 18b17dfd3ce9:'features/agents/browse/useAgentRowActions.tsx'
+
+---------------- LOCAL VERSION BELOW ----------------
+"use client";
+
+// features/agents/browse/useAgentRowActions.tsx
+//
+// Binds the action registry to real behaviour, and owns the modals those
+// actions open. One instance per page — the modals are singletons keyed by the
+// agent currently acted on, never one modal per row (that was 372 mounted
+// ShareModals on /agents/all).
+//
+// Row click opens AgentActionModal (classic Run/Edit/View chooser). The kebab
+// ItemMenu still carries the FULL action list — same handlers, never a second
+// code path.
+
+import { useClipboard } from "@ai-matrx/kit/clipboard";
+import { useCallback, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
+import { dismissRecordToasts, recordToast, toast } from "@/lib/toast";
+import { toastDoor } from "@/components/official/entity-ref/toastDoor";
+import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
+import { selectIsSuperAdmin } from "@/lib/redux/selectors/userSelectors";
+import { deleteAgent, duplicateAgent, saveAgentField, setAgentFavorite } from "@/features/agents/redux/builder-write.thunks";
+import { openOverlay } from "@/lib/redux/slices/overlaySlice";
+import { buildRecordReferenceFence } from "@/features/matrx-envelope/recordReference";
+import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
+import { buildAgentDeleteConfirm } from "@/features/agents/deletion/agentDeleteConfirm";
+import { announceComingSoon } from "@/lib/coming-soon/announce";
+import type { ItemMenuConfig } from "@/components/official/item/types";
+import { buildAgentMenu } from "./agentActionRegistry";
+import { agentHref, isSystemAgentRow } from "./agentPaths";
+import type { AgentBrowseRow } from "./types";
+import { getUserMessage } from "@/lib/api/errors";
+import { isOrganizationSelectionCancelled } from "@/lib/organization/organization-gate";
+
+export interface AgentRowActionsHost {
+  /** Build the full menu for one row. Lazy — pass straight to ItemMenu/ItemRow. */
+  menuFor: (agent: AgentBrowseRow) => () => ItemMenuConfig;
+  /**
+   * Direct handles for the two actions a surface also exposes OUTSIDE the menu
+   * (the card's star, the row's inline rename). They call the same code the
+   * menu entries do, so the two can never drift.
+   */
+  toggleFavorite: (agent: AgentBrowseRow) => void;
+  renameTo: (agent: AgentBrowseRow, next: string) => Promise<void>;
+  /** Classic row-click chooser (Run / Edit / View / …). */
+  openActionModal: (agent: AgentBrowseRow) => void;
+  closeActionModal: () => void;
+  actionAgent: AgentBrowseRow | null;
+  actionModal: {
+    onRun: () => void;
+    onEdit: () => void;
+    onView: () => void;
+    onDuplicate: () => void;
+    onShare: () => void;
+    onDelete: () => void;
+    onCreateApp: () => void;
+    isDeleting: boolean;
+    isDuplicating: boolean;
+  };
+  /** Modal state the page must render. */
+  peekAgentId: string | null;
+  closePeek: () => void;
+  shareAgent: AgentBrowseRow | null;
+  closeShare: () => void;
+  addToSetAgent: AgentBrowseRow | null;
+  closeAddToSet: () => void;
+  renameAgent: AgentBrowseRow | null;
+  closeRename: () => void;
+  commitRename: (next: string) => Promise<void>;
+}
+
+export interface UseAgentRowActionsArgs {
+  /** Optimistically patch a row in the caller's list. */
+  patchRow: (id: string, patch: Partial<AgentBrowseRow>) => void;
+  /** Drop a row from the caller's list after a confirmed delete. */
+  removeRow: (id: string) => void;
+  /** Re-run the query (after a duplicate creates a new row). */
+  refresh: () => void;
+}
+
+export function useAgentRowActions({
+  patchRow,
+  removeRow,
+  refresh,
+}: UseAgentRowActionsArgs): AgentRowActionsHost {
+  const { copyText } = useClipboard({
+    notify: (message, kind) =>
+      kind === "error" ? toast.error(message) : toast.success(message),
+  });
+  const router = useRouter();
+  const dispatch = useAppDispatch();
+  const isSuperAdmin = useAppSelector(selectIsSuperAdmin);
+
+  const [peekAgentId, setPeekAgentId] = useState<string | null>(null);
+  const [shareAgent, setShareAgent] = useState<AgentBrowseRow | null>(null);
+  const [addToSetAgent, setAddToSetAgent] = useState<AgentBrowseRow | null>(
+    null,
+  );
+  const [renameAgent, setRenameAgent] = useState<AgentBrowseRow | null>(null);
+  const [actionAgent, setActionAgent] = useState<AgentBrowseRow | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [isDuplicating, setIsDuplicating] = useState(false);
+
+  /**
+   * Single-field write through the canonical thunk, with our own revert — the
+   * thunk's built-in rollback only restores the Redux slice, and this surface
+   * deliberately holds its own rows rather than hydrating 358 agents into it.
+   */
+  const saveField = useCallback(
+    async (
+      agent: AgentBrowseRow,
+      field: "isArchived" | "name",
+      rowPatch: Partial<AgentBrowseRow>,
+      revert: Partial<AgentBrowseRow>,
+      failureMessage: string,
+    ) => {
+      patchRow(agent.id, rowPatch);
+      try {
+        await dispatch(
+          saveAgentField({
+            agentId: agent.id,
+            field,
+            value: Object.values(rowPatch)[0] as never,
+          }),
+        ).unwrap();
+      } catch (err) {
+        patchRow(agent.id, revert);
+        toast.error(failureMessage, {
+          description: err instanceof Error ? err.message : undefined,
+        });
+      }
+    },
+    [dispatch, patchRow],
+  );
+
+  const renameTo = useCallback(
+    async (agent: AgentBrowseRow, next: string) => {
+      const trimmed = next.trim();
+      if (!trimmed || trimmed === agent.name) return;
+      await saveField(
+        agent,
+        "name",
+        { name: trimmed },
+        { name: agent.name },
+        "Could not rename agent",
+      );
+    },
+    [saveField],
+  );
+
+  const commitRename = useCallback(
+    async (next: string) => {
+      const agent = renameAgent;
+      if (!agent) return;
+      setRenameAgent(null);
+      await renameTo(agent, next);
+    },
+    [renameAgent, renameTo],
+  );
+
+  // A star is per-person state in platform.user_entity_state — never an
+  // agent.definition write. Optimistic on this list's own row, rolled back
+  // with the refusal's words.
+  const toggleFavorite = useCallback(
+    (agent: AgentBrowseRow) => {
+      const next = !agent.is_favorite;
+      patchRow(agent.id, { is_favorite: next });
+      void dispatch(setAgentFavorite({ agentId: agent.id, isFavorite: next }))
+        .unwrap()
+        .catch((err: unknown) => {
+          patchRow(agent.id, { is_favorite: agent.is_favorite });
+          toast.error("Could not update favorite", {
+            description: err instanceof Error ? err.message : undefined,
+          });
+        });
+    },
+    [dispatch, patchRow],
+  );
+
+  // Every destination is resolved from the ROW (./agentPaths), never from the
+  // page: a builtin opens in the admin System Agents shell whichever list the
+  // user reached it from.
+  const runAgent = useCallback(
+    (agent: AgentBrowseRow) => router.push(agentHref(agent, "/run")),
+    [router],
+  );
+  const editAgent = useCallback(
+    (agent: AgentBrowseRow) => router.push(agentHref(agent, "/build")),
+    [router],
+  );
+  const viewAgent = useCallback(
+    (agent: AgentBrowseRow) => router.push(agentHref(agent)),
+    [router],
+  );
+
+  const duplicate = useCallback(
+    async (agent: AgentBrowseRow) => {
+      setIsDuplicating(true);
+      try {
+        // `duplicateAgent` RETURNS the new agent's id and every caller in the
+        // repo threw it away — so the user made a copy and had no way to reach
+        // it but to go hunting in the list. The door is the whole point of the
+        // toast.
+        // Duplicating a builtin produces a builtin — a system agent copied
+        // into someone's personal corpus is a silent demotion, and the admin
+        // who clicked Duplicate on the System tab meant "another one of these".
+        // The RPC re-checks is_super_admin() and rejects if the caller cannot.
+        const newAgentId = await dispatch(
+          duplicateAgent(
+            // Only the seat that manages the built-in (is_owner on a System
+            // row = a platform admin) makes another built-in; everyone else
+            // duplicating a published built-in gets their own copy.
+            isSystemAgentRow(agent) && agent.is_owner
+              ? { agentId: agent.id, asSystem: true }
+              : agent.id,
+          ),
+        ).unwrap();
+        recordToast.success(
+          // The toast is about the COPY (its door opens it); the source's
+          // name is quoted, never used as identity.
+          { type: "agent", id: newAgentId },
+          `Duplicated "${agent.name}"`,
+          { action: toastDoor("agent", newAgentId) },
+        );
+        refresh();
+      } catch (err) {
+        if (!isOrganizationSelectionCancelled(err)) {
+          toast.error("Could not duplicate agent", {
+            description: getUserMessage(err),
+          });
+        }
+      } finally {
+        setIsDuplicating(false);
+      }
+    },
+    [dispatch, refresh],
+  );
+
+  const remove = useCallback(
+    async (agent: AgentBrowseRow) => {
+      // Honest copy for a SOFT delete, built once for every agent surface.
+      const ok = await confirm(buildAgentDeleteConfirm(agent.name));
+      if (!ok) return;
+      setIsDeleting(true);
+      try {
+        await dispatch(deleteAgent(agent.id)).unwrap();
+        removeRow(agent.id);
+        dismissRecordToasts({ type: "agent", id: agent.id });
+        toast.success(`Deleted "${agent.name}"`);
+        setActionAgent(null);
+      } catch (err) {
+        toast.error("Could not delete agent", {
+          description: err instanceof Error ? err.message : undefined,
+        });
+      } finally {
+        setIsDeleting(false);
+      }
+    },
+    [dispatch, removeRow],
+  );
+
+  const menuFor = useCallback(
+    (agent: AgentBrowseRow) => () =>
+      buildAgentMenu({
+        agent,
+        isSuperAdmin,
+
+        onRun: () => runAgent(agent),
+        onEdit: () => editAgent(agent),
+        onView: () => viewAgent(agent),
+        onPeek: () => setPeekAgentId(agent.id),
+        onVersions: () =>
+          router.push(agentHref(agent, `/v/${agent.version}`)),
+        onEditDetails: () =>
+          dispatch(
+            openOverlay({
+              overlayId: "agentAdvancedEditorWindow",
+              data: { initialAgentId: agent.id, initialTab: "overview" },
+            }),
+          ),
+
+        onDuplicate: () => void duplicate(agent),
+
+        onShare: () => setShareAgent(agent),
+        onAddToSet: () => setAddToSetAgent(agent),
+        onRename: () => setRenameAgent(agent),
+
+        onToggleFavorite: () => toggleFavorite(agent),
+
+        onToggleArchived: () =>
+          void saveField(
+            agent,
+            "isArchived",
+            { is_archived: !agent.is_archived },
+            { is_archived: agent.is_archived },
+            "Could not update archive state",
+          ),
+
+        onCopyLink: () => {
+          const url = `${window.location.origin}${agentHref(agent, "/run")}`;
+          void copyText(url, "Link copied");
+        },
+
+        onCopyForAgent: () => {
+          void copyText(
+            buildRecordReferenceFence({
+              type: "agent",
+              id: agent.id,
+              label: agent.name,
+            }),
+          ).then((copied) => {
+  if (!copied) return;
+  toast.success("Agent reference copied");
+});
+        },
+
+        onDelete: () => void remove(agent),
+      }),
+    [
+      dispatch,
+      duplicate,
+      editAgent,
+      isSuperAdmin,
+      remove,
+      router,
+      runAgent,
+      saveField,
+      toggleFavorite,
+      viewAgent,
+    ],
+  );
+
+  const openActionModal = useCallback((agent: AgentBrowseRow) => {
+    setActionAgent(agent);
+  }, []);
+
+  const closeActionModal = useCallback(() => {
+    setActionAgent(null);
+  }, []);
+
+  const actionModal = useMemo(() => {
+    const agent = actionAgent;
+    return {
+      onRun: () => {
+        if (!agent) return;
+        runAgent(agent);
+        setActionAgent(null);
+      },
+      onEdit: () => {
+        if (!agent) return;
+        editAgent(agent);
+        setActionAgent(null);
+      },
+      onView: () => {
+        if (!agent) return;
+        viewAgent(agent);
+        setActionAgent(null);
+      },
+      onDuplicate: () => {
+        if (!agent) return;
+        void duplicate(agent);
+      },
+      onShare: () => {
+        if (!agent) return;
+        setShareAgent(agent);
+        // Keep the action modal open until share closes? Classic closes
+        // everything except share — AgentActionModal itself skips close on share.
+      },
+      onDelete: () => {
+        if (!agent) return;
+        void remove(agent);
+      },
+      onCreateApp: () => {
+        void announceComingSoon("agents.create-app");
+      },
+      isDeleting,
+      isDuplicating,
+    };
+  }, [
+    actionAgent,
+    duplicate,
+    editAgent,
+    isDeleting,
+    isDuplicating,
+    remove,
+    runAgent,
+    viewAgent,
+  ]);
+
+  return useMemo(
+    () => ({
+      menuFor,
+      toggleFavorite,
+      renameTo,
+      openActionModal,
+      closeActionModal,
+      actionAgent,
+      actionModal,
+      peekAgentId,
+      closePeek: () => setPeekAgentId(null),
+      shareAgent,
+      closeShare: () => setShareAgent(null),
+      addToSetAgent,
+      closeAddToSet: () => setAddToSetAgent(null),
+      renameAgent,
+      closeRename: () => setRenameAgent(null),
+      commitRename,
+    }),
+    [
+      menuFor,
+      toggleFavorite,
+      renameTo,
+      openActionModal,
+      closeActionModal,
+      actionAgent,
+      actionModal,
+      peekAgentId,
+      shareAgent,
+      addToSetAgent,
+      renameAgent,
+      commitRename,
+    ],
+  );
+}

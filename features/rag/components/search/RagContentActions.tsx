@@ -48,12 +48,10 @@ export function RagContentActions({
         className="h-7 w-7"
         aria-label={`Copy ${label}`}
         title={`Copy ${label} to clipboard`}
-        onClick={(event) => {
+        onClick={async (event) => {
           stop(event);
-          void copyText(humanText, `${label} copied to clipboard`).then((copied) => {
-  if (!copied) return;
-  setCopied(true);
-});
+          if (!(await copyText(humanText, `${label} copied to clipboard`))) return;
+          setCopied(true);
           window.setTimeout(() => setCopied(false), 1_500);
         }}
       >

@@ -305,8 +305,8 @@ function HighlightedJson({ value, highlightKeys = {} }: HighlightedJsonProps) {
   const lines = useMemo(() => raw.split("\n"), [raw]);
 
   const handleCopy = () => {
-    copyText(raw).then((didCopy) => {
-      if (!didCopy) return;
+    copyText(raw).then((copied) => {
+      if (!copied) return;
       setCopied(true);
       setTimeout(() => setCopied(false), 1500);
     });

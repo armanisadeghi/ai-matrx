@@ -1,0 +1,42 @@
+matrx-auto-git-conflict-file-work-delete-this-when-resolved
+
+HELD CONFLICT, written by scripts/sync-main.py
+File:      packages/chat/src/agents/components/observational-memory/components/MemoryStateInspector.tsx
+Why held:  deleted on one side, changed on the other
+GITHUB's version is live in the repo at the path above. LOCAL's version is at the bottom
+of this file, below the FACTS.
+Done with it: the final code is in the live file, this .held file is deleted, and its line
+in _conflicts/README.md is deleted. The list of open items is _conflicts/README.md.
+
+FACTS (computed by sync-main from git)
+
+THE TWO VERSIONS
+  LOCAL  = the version that was on this Mac. It is saved below, in this .held file.
+  GITHUB = the version from GitHub. It is LIVE in the repo right now, at packages/chat/src/agents/components/observational-memory/components/MemoryStateInspector.tsx
+  Both grew from the same COMMON version: commit cfed5f4723, 2026-10-06 21:01.
+
+WHEN EACH SIDE CHANGED THIS FILE (newest first)
+  LOCAL:
+    2026-10-06 21:16  (uncommitted edit; the time the file was last saved on this Mac)
+    2026-10-06 21:23  94b89b0701  collected by the sync; the edit itself happened at or before this time
+  GITHUB:
+    2026-10-06 21:00  7bf65448f8  "Copied state and success toasts only after a copy that landed (kit 0.28.0 boolean); delete ToolTabBodies/viewer-utilities CopyButton; add check:copy-result-gated"
+  LOCAL's latest change is 15m AFTER GITHUB's latest change.
+
+SIZE: common version 726 lines, LOCAL 0 lines, GITHUB 0 lines
+
+WHAT EACH SIDE DID, compared with the common version
+  LOCAL deleted the whole file.
+  GITHUB deleted the whole file.
+
+CODE ONE SIDE HAS THAT THE OTHER DOES NOT
+
+COMPARE THEM (the labels are correct; '-' lines are GITHUB, '+' lines are LOCAL):
+  diff -u --label 'GITHUB (live)' --label 'LOCAL (held)' <(git show 18b17dfd3ce9:'packages/chat/src/agents/components/observational-memory/components/MemoryStateInspector.tsx') <(git show 94b89b070183:'packages/chat/src/agents/components/observational-memory/components/MemoryStateInspector.tsx')
+
+RECOVER EITHER VERSION FOREVER (works even after this .held file is deleted):
+  LOCAL : git show 94b89b070183:'packages/chat/src/agents/components/observational-memory/components/MemoryStateInspector.tsx'
+  GITHUB: git show 18b17dfd3ce9:'packages/chat/src/agents/components/observational-memory/components/MemoryStateInspector.tsx'
+
+---------------- LOCAL VERSION BELOW ----------------
+(the local side deleted this file)

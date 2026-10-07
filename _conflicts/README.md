@@ -29,3 +29,6 @@ Its files stay as they are.
 ## Needs Arman
 
 ## Docs and comments — both versions kept
+
+## Held files
+- _conflicts/2026-10-06-215619/packages/chat/src/tool-call-visualization/components/ToolTabBodies.tsx.held — LOCAL latest unknown; GITHUB latest 2026-10-06 21:00; LOCAL lacks 2 of GITHUB's 2 new lines; GITHUB lacks 1 of LOCAL's 1 new lines; recover: git show 94b89b0701:'packages/chat/src/tool-call-visualization/components/ToolTabBodies.tsx' / 18b17dfd3c:'packages/chat/src/tool-call-visualization/components/ToolTabBodies.tsx'

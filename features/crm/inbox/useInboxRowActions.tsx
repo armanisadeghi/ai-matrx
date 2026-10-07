@@ -153,7 +153,7 @@ export function useInboxRowActions(
               label: "Copy link to the contact",
               icon: Link2,
               hidden: !row.party_id,
-              onSelect: () => {
+              onSelect: async () => {
                 const path = row.party_id
                   ? resolveEntityDoors("party", row.party_id).href
                   : null;
@@ -164,12 +164,10 @@ export function useInboxRowActions(
                   );
                   return;
                 }
-                void copyText(
+                if (!(await copyText(
                   `${window.location.origin}${path}`,
-                ).then((copied) => {
-  if (!copied) return;
-  toast.success("Link copied");
-});
+                ))) return;
+                toast.success("Link copied");
               },
             },
             {
@@ -177,17 +175,15 @@ export function useInboxRowActions(
               label: "Copy reference",
               icon: ClipboardCopy,
               hidden: !row.party_id,
-              onSelect: () => {
-                void copyText(
+              onSelect: async () => {
+                if (!(await copyText(
                   buildRecordReferenceFence({
                     type: "party",
                     id: row.party_id as string,
                     label: row.party_name ?? "Contact",
                   }),
-                ).then((copied) => {
-  if (!copied) return;
-  toast.success("Reference copied");
-});
+                ))) return;
+                toast.success("Reference copied");
               },
             },
           ],

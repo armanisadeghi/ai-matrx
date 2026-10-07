@@ -361,12 +361,10 @@ export const CopyValueButton: React.FC<{ text: string; what: string }> = ({
         <Check />
       ) : (
         <Copy />
-      )} glyphTone={copied ? "success" : undefined} aria-label={`Copy ${what}`} title={`Copy ${what}`} onClick={(event) => {
+      )} glyphTone={copied ? "success" : undefined} aria-label={`Copy ${what}`} title={`Copy ${what}`} onClick={async (event) => {
         event.stopPropagation();
-        void copyText(text, `${what} copied`).then((copied) => {
-  if (!copied) return;
-  setCopied(true);
-});
+        if (!(await copyText(text, `${what} copied`))) return;
+        setCopied(true);
         window.setTimeout(() => setCopied(false), 1200);
       }} className="shrink-0" />
   );

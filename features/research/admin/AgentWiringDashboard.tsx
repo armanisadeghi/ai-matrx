@@ -110,11 +110,9 @@ export function AgentWiringDashboard() {
         }
     };
 
-    const copyId = (id: string) => {
-        void copyText(id).then((copied) => {
-  if (!copied) return;
-  setCopiedId(id);
-});
+    const copyId = async (id: string) => {
+        if (!(await copyText(id))) return;
+        setCopiedId(id);
         setTimeout(() => setCopiedId(null), 2000);
     };
 

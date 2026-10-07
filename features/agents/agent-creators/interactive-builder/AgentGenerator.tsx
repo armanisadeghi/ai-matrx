@@ -668,25 +668,21 @@ export function AgentGenerator({ onComplete, mandate }: AgentGeneratorProps) {
     setAgentName("");
   }, [conversationId, dispatch]);
 
-  const handleCopyGenerated = useCallback(() => {
+  const handleCopyGenerated = useCallback(async () => {
     if (extractedValue) {
-      void copyText(JSON.stringify(extractedValue, null, 2)).then((copied) => {
-  if (!copied) return;
-  toast.success("Copied generated JSON to clipboard", {
+      if (!(await copyText(JSON.stringify(extractedValue, null, 2)))) return;
+      toast.success("Copied generated JSON to clipboard", {
         position: TOAST_POSITION,
       });
-});
     }
   }, [extractedValue]);
 
-  const handleCopyRaw = useCallback(() => {
+  const handleCopyRaw = useCallback(async () => {
     if (streamingText) {
-      void copyText(streamingText).then((copied) => {
-  if (!copied) return;
-  toast.success("Copied raw response to clipboard", {
+      if (!(await copyText(streamingText))) return;
+      toast.success("Copied raw response to clipboard", {
         position: TOAST_POSITION,
       });
-});
     }
   }, [streamingText]);
 

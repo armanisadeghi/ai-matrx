@@ -1,0 +1,197 @@
+matrx-auto-git-conflict-file-work-delete-this-when-resolved
+
+HELD CONFLICT, written by scripts/sync-main.py
+File:      features/masterwork/encore/browse/useEncoreRowActions.tsx
+Why held:  both sides changed the same code
+GITHUB's version is live in the repo at the path above. LOCAL's version is at the bottom
+of this file, below the FACTS.
+Done with it: the final code is in the live file, this .held file is deleted, and its line
+in _conflicts/README.md is deleted. The list of open items is _conflicts/README.md.
+
+FACTS (computed by sync-main from git)
+
+THE TWO VERSIONS
+  LOCAL  = the version that was on this Mac. It is saved below, in this .held file.
+  GITHUB = the version from GitHub. It is LIVE in the repo right now, at features/masterwork/encore/browse/useEncoreRowActions.tsx
+  Both grew from the same COMMON version: commit cfed5f4723, 2026-10-06 21:01.
+
+WHEN EACH SIDE CHANGED THIS FILE (newest first)
+  LOCAL:
+    2026-10-06 21:16  (uncommitted edit; the time the file was last saved on this Mac)
+    2026-10-06 21:23  94b89b0701  collected by the sync; the edit itself happened at or before this time
+  GITHUB:
+    2026-10-06 21:00  7bf65448f8  "Copied state and success toasts only after a copy that landed (kit 0.28.0 boolean); delete ToolTabBodies/viewer-utilities CopyButton; add check:copy-result-gated"
+  LOCAL's latest change is 15m AFTER GITHUB's latest change.
+
+SIZE: common version 141 lines, LOCAL 143 lines, GITHUB 141 lines
+
+WHAT EACH SIDE DID, compared with the common version
+  LOCAL added 2 lines and removed 0 lines.
+  GITHUB added 2 lines and removed 2 lines.
+
+CODE ONE SIDE HAS THAT THE OTHER DOES NOT
+  LOCAL has 0 of the 2 lines GITHUB added.
+    Lines GITHUB added that LOCAL does NOT have:
+      | onSelect: async () => {
+      | if (!(await copyText(
+    (some of those lines also appear in other changed files, which may be a coincidence: features/crm/inbox/useInboxRowActions.tsx, features/exports/browse/useExportItemRowActions.tsx, features/masterwork/browse/useRulebookRowActions.tsx, features/research/browse/useTopicRowActions.tsx)
+    Lines GITHUB deliberately REMOVED that LOCAL still has: 2
+      | onSelect: () => {
+      | void copyText(
+  GITHUB has 0 of the 2 lines LOCAL added.
+    Lines LOCAL added that GITHUB does NOT have:
+      | ).then((copied) => {
+      | if (!copied) return;
+    (some of those lines also appear in other changed files, which may be a coincidence: app/(admin)/administration/ui/official-components/component-displays/pro-input.tsx, features/agents/browse/useAgentRowActions.tsx, features/block-ledger/useBlockRowActions.tsx, features/crm/inbox/useInboxRowActions.tsx)
+
+COMPARE THEM (the labels are correct; '-' lines are GITHUB, '+' lines are LOCAL):
+  diff -u --label 'GITHUB (live)' --label 'LOCAL (held)' <(git show 18b17dfd3ce9:'features/masterwork/encore/browse/useEncoreRowActions.tsx') <(git show 94b89b070183:'features/masterwork/encore/browse/useEncoreRowActions.tsx')
+
+RECOVER EITHER VERSION FOREVER (works even after this .held file is deleted):
+  LOCAL : git show 94b89b070183:'features/masterwork/encore/browse/useEncoreRowActions.tsx'
+  GITHUB: git show 18b17dfd3ce9:'features/masterwork/encore/browse/useEncoreRowActions.tsx'
+
+---------------- LOCAL VERSION BELOW ----------------
+"use client";
+
+import { useClipboard } from "@ai-matrx/kit/clipboard";
+import { useCallback } from "react";
+import { useRouter } from "next/navigation";
+import { BookOpen, Link2, Play, Rocket, Undo2 } from "lucide-react";
+import { toast } from "@/lib/toast";
+import type { ItemMenuConfig, ItemMenuEntry } from "@/components/official/item/types";
+import type {
+  EntityListController,
+  EntityRowActionsResult,
+} from "@/lib/entity-list/config";
+import { setMasterworkReleased } from "../../service";
+import { invalidateEncoreRows } from "./service";
+import type { EncoreListRow } from "./types";
+import { masterworkHref } from "../../masterworkDoors";
+
+/**
+ * Encore row actions.
+ *
+ * 🚨 A DRAFT ON YOUR OWN SHELF IS ONE CLICK FROM RELEASED. The shelf now
+ * carries the Expert's drafts (see ../service.ts § RELEASE GOVERNS OTHER
+ * PEOPLE'S SHELVES), so the control that changes that state has to be HERE —
+ * sending someone three clicks away into the Studio to find a toggle they
+ * never knew existed is exactly how two built Masterworks stayed invisible.
+ * Same call, same guarded compare-and-swap as the Studio's own toggle.
+ */
+export function useEncoreRowActions(
+  list: EntityListController<EncoreListRow>,
+): EntityRowActionsResult<EncoreListRow> {
+  const { copyText } = useClipboard({
+    notify: (message, kind) =>
+      kind === "error" ? toast.error(message) : toast.success(message),
+  });
+  const router = useRouter();
+  const doorHref = (row: EncoreListRow) => masterworkHref(row.id);
+
+  const toggleReleased = useCallback(
+    async (row: EncoreListRow) => {
+      const releasing = row.released_at === null;
+      try {
+        const updated = await setMasterworkReleased({
+          masterworkId: row.id,
+          expectedVersion: row.version,
+          released: releasing,
+        });
+        invalidateEncoreRows();
+        list.patchRow(row.id, {
+          released_at: updated.released_at,
+          version: updated.version,
+          updated_at: updated.updated_at,
+        } as Partial<EncoreListRow>);
+        list.refresh();
+        toast.success(
+          releasing
+            ? "Released — anyone you share it with can run it now."
+            : "Back to draft — only you can see it now.",
+        );
+      } catch (err) {
+        toast.error(
+          err instanceof Error ? err.message : "Could not change the release.",
+        );
+      }
+    },
+    [list],
+  );
+
+  const menuFor = useCallback(
+    (row: EncoreListRow) => (): ItemMenuConfig => {
+      const openItems: ItemMenuEntry[] = [
+        {
+          id: "run",
+          label: "Run",
+          icon: Play,
+          kind: "link",
+          href: doorHref(row),
+        },
+      ];
+      if (row.rulebook) {
+        openItems.push({
+          id: "rulebook",
+          label: "Open Rulebook",
+          icon: BookOpen,
+          kind: "link",
+          href: `/masterwork/${row.rulebook.id}`,
+        });
+      }
+      const sections: ItemMenuConfig["sections"] = [
+        { id: "open", items: openItems },
+      ];
+      // Only your own shelf carries the release control — the `orgs` and
+      // `public` shelves are other people's released work, and a control that
+      // would refuse under RLS is worse than no control at all.
+      if (row.scope === "mine") {
+        sections.push({
+          id: "release",
+          items: [
+            row.released_at === null
+              ? {
+                  id: "release",
+                  label: "Release it",
+                  icon: Rocket,
+                  onSelect: () => void toggleReleased(row),
+                }
+              : {
+                  id: "unrelease",
+                  label: "Back to draft",
+                  icon: Undo2,
+                  onSelect: () => void toggleReleased(row),
+                },
+          ],
+        });
+      }
+      sections.push({
+        id: "copy",
+        items: [
+          {
+            id: "copy-link",
+            label: "Copy link",
+            icon: Link2,
+            onSelect: () => {
+              void copyText(
+                `${window.location.origin}${doorHref(row)}`,
+              ).then((copied) => {
+  if (!copied) return;
+  toast.success("Link copied");
+});
+            },
+          },
+        ],
+      });
+      return { sections };
+    },
+    [toggleReleased],
+  );
+
+  const onOpenRow = useCallback(
+    (row: EncoreListRow) => router.push(doorHref(row)),
+    [router],
+  );
+
+  return { actions: { menuFor, onOpenRow } };
+}

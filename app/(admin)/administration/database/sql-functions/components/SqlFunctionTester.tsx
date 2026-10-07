@@ -317,11 +317,9 @@ function ResultDisplay({ result }: { result: ExecuteResult }) {
 
   const { data, error, sql } = result;
 
-  const handleCopySql = () => {
-    void copyText(sql).then((copied) => {
-  if (!copied) return;
-  setSqlCopied(true);
-});
+  const handleCopySql = async () => {
+    if (!(await copyText(sql))) return;
+    setSqlCopied(true);
     setTimeout(() => setSqlCopied(false), 1500);
   };
 

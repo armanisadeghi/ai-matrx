@@ -19,6 +19,7 @@
  * self-ownership; a CSV is the definition of a list a peer can see.
  */
 
+import { toDelimitedText } from "@ai-matrx/alchemy/operate/read";
 import type { PunchRow } from "../api/types";
 import { formatStampedTimeWithZone } from "../shared/format";
 import {
@@ -49,12 +50,6 @@ const HEADERS = [
   "Punch id",
 ] as const;
 
-function cell(value: unknown): string {
-  if (value === null || value === undefined) return "";
-  const text = String(value);
-  return /[",\n]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text;
-}
-
 /**
  * @param names employmentId → display name. The register's rows carry no name of their own, and an
  *              evidence file identified only by uuid is not evidence anybody can read.
@@ -63,32 +58,32 @@ export function punchRegisterToCsv(
   rows: PunchRow[],
   names: Record<string, string | undefined>,
 ): string {
-  const lines = [HEADERS.join(",")];
-  for (const punch of rows) {
-    lines.push(
+  return toDelimitedText(
+    HEADERS,
+    rows.map((punch) =>
       [
-        cell(names[punch.employmentId] ?? punch.employmentId),
-        cell(punch.localWorkDate),
-        cell(formatStampedTimeWithZone(punch.occurredAt, punch.tz)),
-        cell(punch.tz),
-        cell(PUNCH_KIND_LABELS[punch.punchKind]),
-        cell(PUNCH_SOURCE_LABELS[punch.source]),
-        cell(ACTOR_TYPE_LABELS[punch.actorType]),
-        cell(punch.actorNote),
-        cell(punch.jurisdictionKey),
-        cell(punch.deviceReportedAt),
-        cell(punch.clockSkewAppliedSeconds),
-        cell(punch.hasGeo ? "yes" : "no"),
-        cell(punch.hasPhoto ? "yes" : "no"),
-        cell(punch.voidedAt),
-        cell(punch.voidedReason),
-        cell(punch.voidedByPunchId),
-        cell(punch.enteredReason),
-        cell(punch.id),
-      ].join(","),
-    );
-  }
-  return lines.join("\n");
+        names[punch.employmentId] ?? punch.employmentId,
+        punch.localWorkDate,
+        formatStampedTimeWithZone(punch.occurredAt, punch.tz),
+        punch.tz,
+        PUNCH_KIND_LABELS[punch.punchKind],
+        PUNCH_SOURCE_LABELS[punch.source],
+        ACTOR_TYPE_LABELS[punch.actorType],
+        punch.actorNote,
+        punch.jurisdictionKey,
+        punch.deviceReportedAt,
+        punch.clockSkewAppliedSeconds,
+        punch.hasGeo ? "yes" : "no",
+        punch.hasPhoto ? "yes" : "no",
+        punch.voidedAt,
+        punch.voidedReason,
+        punch.voidedByPunchId,
+        punch.enteredReason,
+        punch.id,
+      ],
+    ),
+    { spreadsheetSafe: true },
+  );
 }
 
 /** Hand the file to the browser. No server round trip — the rows are already on screen. */

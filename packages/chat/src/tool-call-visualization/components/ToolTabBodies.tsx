@@ -15,16 +15,12 @@
  *   EntryResultsBody — switch: error → ErrorView; custom renderer → it;
  *                      result present → OutputView; else EmptyResult.
  *   CustomOverlayBody — wraps a ToolOverlayTabSpec.Component.
- *
- *   CopyButton     — kept for backward-compat; thin clipboard helper.
  */
 
-import { useClipboard } from "@ai-matrx/kit/clipboard";
-import { toast } from "@/lib/toast";
 import { resultToHuman } from "../utils/human-copy";
-import React, { useState } from "react";
+import React from "react";
 import { useToolConversationId } from "./ToolConversationContext";
-import { Check, CircleAlert, Copy, FileCode2, Route, Settings2 } from "lucide-react";
+import { CircleAlert, FileCode2, Route, Settings2 } from "lucide-react";
 
 import { Badge } from "@ai-matrx/design-system";
 import { cn } from "@ai-matrx/design-system";
@@ -46,7 +42,6 @@ import {
   toolEntryBundleToHuman,
 } from "../utils/toolEntryBundle";
 import { ErrorAlchemyMenu } from "@ai-matrx/chat/host/ui-slots";
-import { Button } from "@ai-matrx/design-system/controls";
 
 // ─── Copy payload helpers ──────────────────────────────────────────────────
 
@@ -64,29 +59,6 @@ function buildAgentInput(
     attributes: { tool: entry.toolName, status: entry.status },
   };
 }
-
-// ─── Copy button (backward-compat shim) ─────────────────────────────────────
-
-export const CopyButton: React.FC<{ text: string; className?: string }> = ({
-  text,
-  className,
-}) => {
-  const { copyText } = useClipboard({
-    notify: (message, kind) =>
-      kind === "error" ? toast.error(message) : toast.success(message),
-  });
-  const [copied, setCopied] = useState(false);
-
-  const handleCopy = async () => {
-    if (!(await copyText(text))) return;
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  };
-
-  return (
-    <Button variant="quiet" icon={copied ? <Check /> : <Copy />} glyphTone={copied ? "success" : undefined} onClick={handleCopy} title={copied ? "Copied!" : "Copy to clipboard"} className={className}>{copied ? "Copied" : "Copy"}</Button>
-  );
-};
 
 // ─── Input view ─────────────────────────────────────────────────────────────
 // Dense definition list via KeyValueGrid — no per-param cards, no giant fonts.

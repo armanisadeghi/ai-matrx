@@ -468,36 +468,6 @@ export const InvalidDataDisplay: React.FC<InvalidDataDisplayProps> = ({
   );
 };
 
-interface CopyButtonProps {
-  onCopy: () => void;
-  copied: boolean;
-  size?: number;
-  className?: string;
-  title?: string;
-}
-
-export const CopyButton: React.FC<CopyButtonProps> = ({ 
-  onCopy, 
-  copied, 
-  size = 16, 
-  className = "",
-  title = "Copy to clipboard"
-}) => {
-  return (
-    <button
-      onClick={onCopy}
-      className={`p-2 rounded-md hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors group ${className}`}
-      title={title}
-    >
-      {copied ? (
-        <Check size={size} className="text-green-500" />
-      ) : (
-        <Copy size={size} className="text-gray-400 group-hover:text-gray-600 dark:group-hover:text-gray-300" />
-      )}
-    </button>
-  );
-};
-
 // ==========================================
 // CONTENT SUMMARY UTILITIES
 // ==========================================

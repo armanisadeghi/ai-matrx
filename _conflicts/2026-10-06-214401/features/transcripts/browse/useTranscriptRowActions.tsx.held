@@ -1,0 +1,272 @@
+matrx-auto-git-conflict-file-work-delete-this-when-resolved
+
+HELD CONFLICT, written by scripts/sync-main.py
+File:      features/transcripts/browse/useTranscriptRowActions.tsx
+Why held:  both sides changed the same code
+GITHUB's version is live in the repo at the path above. LOCAL's version is at the bottom
+of this file, below the FACTS.
+Done with it: the final code is in the live file, this .held file is deleted, and its line
+in _conflicts/README.md is deleted. The list of open items is _conflicts/README.md.
+
+FACTS (computed by sync-main from git)
+
+THE TWO VERSIONS
+  LOCAL  = the version that was on this Mac. It is saved below, in this .held file.
+  GITHUB = the version from GitHub. It is LIVE in the repo right now, at features/transcripts/browse/useTranscriptRowActions.tsx
+  Both grew from the same COMMON version: commit cfed5f4723, 2026-10-06 21:01.
+
+WHEN EACH SIDE CHANGED THIS FILE (newest first)
+  LOCAL:
+    2026-10-06 21:23  94b89b0701  collected by the sync; the edit itself happened at or before this time
+  GITHUB:
+    2026-10-06 21:00  7bf65448f8  "Copied state and success toasts only after a copy that landed (kit 0.28.0 boolean); delete ToolTabBodies/viewer-utilities CopyButton; add check:copy-result-gated"
+  Which side changed it last is UNKNOWN (the local edit was never committed and its save time was not recorded).
+
+SIZE: common version 209 lines, LOCAL 213 lines, GITHUB 209 lines
+
+WHAT EACH SIDE DID, compared with the common version
+  LOCAL added 4 lines and removed 0 lines.
+  GITHUB added 4 lines and removed 4 lines.
+
+CODE ONE SIDE HAS THAT THE OTHER DOES NOT
+  LOCAL has 0 of the 4 lines GITHUB added.
+    Lines GITHUB added that LOCAL does NOT have:
+      | onSelect: async () => {
+      | if (!(await copyText(
+      | onSelect: async () => {
+      | if (!(await copyText(
+    (some of those lines also appear in other changed files, which may be a coincidence: features/crm/inbox/useInboxRowActions.tsx, features/exports/browse/useExportItemRowActions.tsx, features/masterwork/browse/useRulebookRowActions.tsx, features/masterwork/encore/browse/useEncoreRowActions.tsx)
+    Lines GITHUB deliberately REMOVED that LOCAL still has: 4
+      | onSelect: () => {
+      | void copyText(
+      | onSelect: () => {
+      | void copyText(
+  GITHUB has 0 of the 4 lines LOCAL added.
+    Lines LOCAL added that GITHUB does NOT have:
+      | ).then((copied) => {
+      | if (!copied) return;
+      | ).then((copied) => {
+      | if (!copied) return;
+    (some of those lines also appear in other changed files, which may be a coincidence: app/(admin)/administration/ui/official-components/component-displays/pro-input.tsx, features/agents/browse/useAgentRowActions.tsx, features/block-ledger/useBlockRowActions.tsx, features/crm/inbox/useInboxRowActions.tsx)
+
+COMPARE THEM (the labels are correct; '-' lines are GITHUB, '+' lines are LOCAL):
+  diff -u --label 'GITHUB (live)' --label 'LOCAL (held)' <(git show 18b17dfd3ce9:'features/transcripts/browse/useTranscriptRowActions.tsx') <(git show 94b89b070183:'features/transcripts/browse/useTranscriptRowActions.tsx')
+
+RECOVER EITHER VERSION FOREVER (works even after this .held file is deleted):
+  LOCAL : git show 94b89b070183:'features/transcripts/browse/useTranscriptRowActions.tsx'
+  GITHUB: git show 18b17dfd3ce9:'features/transcripts/browse/useTranscriptRowActions.tsx'
+
+---------------- LOCAL VERSION BELOW ----------------
+"use client";
+
+// features/transcripts/browse/useTranscriptRowActions.tsx
+//
+// The ONE action list for a transcripts-hub row — table kebab, cards, and
+// right-click all consume the same builder, so the three can never drift.
+// Actions are per-kind: each row opens in its owning surface (Processor /
+// Studio / Cleanup / Scribe), with the same secondary destinations the old
+// hub cards carried.
+
+import { useClipboard } from "@ai-matrx/kit/clipboard";
+import { useRouter } from "next/navigation";
+import { toast } from "@/lib/toast";
+import {
+  Eye,
+  Columns2,
+  Eraser,
+  Mic,
+  Inbox,
+  Link2,
+  ClipboardCopy,
+  Archive,
+  ArchiveRestore,
+} from "lucide-react";
+import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
+import { archiveRecord, restoreFromTrash } from "@/features/trash/service";
+import { archiveConfirmSentence } from "@/features/trash/archiveCopy";
+import type { ItemMenuConfig, ItemMenuEntry } from "@/components/official/item/types";
+import { buildRecordReferenceFence } from "@/features/matrx-envelope/recordReference";
+import type {
+  EntityListController,
+  EntityRowActionsResult,
+} from "@/lib/entity-list/config";
+import { primaryRowHref, type TranscriptListRow } from "./types";
+
+function link(
+  id: string,
+  label: string,
+  icon: ItemMenuEntry["icon"],
+  href: string,
+): ItemMenuEntry {
+  return { id, label, icon, kind: "link", href };
+}
+
+export function useTranscriptRowActions(
+  list: EntityListController<TranscriptListRow>,
+): EntityRowActionsResult<TranscriptListRow> {
+  const { copyText } = useClipboard({
+    notify: (message, kind) =>
+      kind === "error" ? toast.error(message) : toast.success(message),
+  });
+  const router = useRouter();
+
+  // THE ONE ARCHIVE for a transcript (restorable: the toast's Undo and Trash).
+  const archiveTranscript = async (row: TranscriptListRow) => {
+    const name = row.title?.trim() ? `"${row.title.trim()}"` : "this transcript";
+    const ok = await confirm({
+      title: `Archive ${name}?`,
+      // The list's Filters panel carries Archived, so restore lives there (V6-B, verify-7 #2).
+      description: archiveConfirmSentence(name, { restoreFrom: "list_filters" }),
+      confirmLabel: "Archive",
+      variant: "destructive",
+    });
+    if (!ok) return;
+    try {
+      await archiveRecord("transcript", row.id, "transcript");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : `${name} was not archived.`);
+      return;
+    }
+    // Under "Active + archived" the row stays in the list, now marked archived.
+    if (list.query.archived === "all") list.refresh();
+    else list.removeRow(row.id);
+    toast.success(`Archived ${name}.`, {
+      action: {
+        label: "Undo",
+        onClick: () =>
+          void restoreFromTrash("transcript", row.id).then(
+            () => {
+              list.refresh();
+              toast.success(`Put back ${name}.`);
+            },
+            (err: unknown) =>
+              toast.error(err instanceof Error ? err.message : "It could not be put back."),
+          ),
+      },
+    });
+  };
+
+  // An archived transcript (Archived filter) comes back the way Undo brings it back.
+  const restoreTranscript = async (row: TranscriptListRow) => {
+    const name = row.title?.trim() ? `"${row.title.trim()}"` : "this transcript";
+    try {
+      await restoreFromTrash("transcript", row.id);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "It could not be put back.");
+      return;
+    }
+    list.refresh();
+    toast.success(`Put back ${name}.`);
+  };
+
+  // No manual memoization — the React Compiler owns it (CLAUDE.md).
+  const menuFor = (row: TranscriptListRow) => (): ItemMenuConfig => {
+      const href = primaryRowHref(row);
+      const open: ItemMenuEntry[] = [];
+      if (row.kind === "transcript") {
+        open.push(
+          link("open", "Open in Processor", Eye, href),
+          link(
+            "studio",
+            "Open in Studio",
+            Columns2,
+            `/transcripts/studio?import=${encodeURIComponent(row.id)}`,
+          ),
+          link(
+            "cleanup",
+            "Run Cleanup",
+            Eraser,
+            `/transcripts/cleanup?import=${encodeURIComponent(row.id)}`,
+          ),
+        );
+      } else if (row.kind === "session") {
+        open.push(
+          link("open", "Open in Studio", Columns2, href),
+          link(
+            "scribe",
+            "Open in Scribe",
+            Mic,
+            `/transcripts/scribe/${encodeURIComponent(row.id)}`,
+          ),
+        );
+      } else if (row.kind === "cleanup") {
+        open.push(link("open", "Open cleanup session", Eraser, href));
+      } else {
+        open.push(link("open", "View unsorted recordings", Inbox, href));
+      }
+
+      const referenceType =
+        row.kind === "transcript" ? "transcript" : "transcript_session";
+
+      return {
+        sections: [
+          { id: "open", items: open },
+          {
+            id: "copy",
+            items: [
+              {
+                id: "copy-link",
+                label: "Copy link",
+                icon: Link2,
+                onSelect: () => {
+                  void copyText(
+                    `${window.location.origin}${href}`,
+                  ).then((copied) => {
+  if (!copied) return;
+  toast.success("Link copied");
+});
+                },
+              },
+              {
+                id: "copy-reference",
+                label: "Copy reference",
+                icon: ClipboardCopy,
+                // Unsorted recordings have no referenceable record type.
+                hidden: row.kind === "unsorted",
+                onSelect: () => {
+                  void copyText(
+                    buildRecordReferenceFence({
+                      type: referenceType,
+                      id: row.id,
+                      label: row.title,
+                    }),
+                  ).then((copied) => {
+  if (!copied) return;
+  toast.success("Reference copied");
+});
+                },
+              },
+            ],
+          },
+          ...(row.kind === "transcript"
+            ? [
+                {
+                  id: "manage",
+                  items: [
+                    row.is_archived
+                      ? {
+                          id: "restore",
+                          label: "Restore",
+                          icon: ArchiveRestore,
+                          onSelect: () => void restoreTranscript(row),
+                        }
+                      : {
+                          id: "archive",
+                          label: "Archive",
+                          icon: Archive,
+                          tone: "destructive" as const,
+                          onSelect: () => void archiveTranscript(row),
+                        },
+                  ],
+                },
+              ]
+            : []),
+        ],
+      };
+  };
+
+  const onOpenRow = (row: TranscriptListRow) =>
+    router.push(primaryRowHref(row));
+
+  return { actions: { menuFor, onOpenRow } };
+}

@@ -124,13 +124,13 @@ const VISIBILITY_OPTIONS: {
 interface AgentAppsGridProps {
   /** Stable per-mount consumer ID; defaults to "apps-main". */
   consumerId?: string;
-  /** Optional href for "New app" CTA; defaults to /agent-apps/new. */
+  /** Optional href for "New app" CTA; defaults to /agent-apps/build. */
   newAppHref?: string;
 }
 
 export function AgentAppsGrid({
   consumerId = "apps-main",
-  newAppHref = "/agent-apps/new",
+  newAppHref = "/agent-apps/build",
 }: AgentAppsGridProps) {
   const { copyText } = useClipboard({
     notify: (message, kind) =>

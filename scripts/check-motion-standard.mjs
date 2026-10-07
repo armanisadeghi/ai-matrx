@@ -41,7 +41,6 @@ const ROOT = new URL("..", import.meta.url).pathname;
 const ALLOWED = new Map([
   ["features/tasks/components/mobile/MobileTasksView.tsx", "full-screen view push on phones (list → details): navigation, not a panel"],
   ["features/notes/components/mobile/MobileNotesView.tsx", "full-screen view push on phones (list → editor): navigation, not a panel"],
-  ["features/agent-apps/sample-code/templates/chat-with-history-template.ts", "source text of a starter app we hand to a person, not our own UI"],
 ]);
 
 const TOKEN_DURATION = /var\(--(?:matrx-motion-duration-panel|mxc-motion-duration|shell-duration-panel)\)/;

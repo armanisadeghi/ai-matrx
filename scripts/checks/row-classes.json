@@ -5,7 +5,7 @@
     "repo-only": "reads the repository and nothing else"
   },
   "counts": {
-    "repo-only": 155,
+    "repo-only": 157,
     "live-db": 65
   },
   "rows": {
@@ -565,7 +565,7 @@
       "label": "Doc claims vs live config",
       "class": "repo-only",
       "cmd": "pnpm exec tsx scripts/check-doc-claims.ts --strict",
-      "reason": "no database access in 3 file(s) reached",
+      "reason": "no database access in 2 file(s) reached",
       "evidence": []
     },
     "route-metadata-and-favicons": {
@@ -1830,14 +1830,14 @@
       "label": "Menu-section naming law (use* = hooks, build* = pure, no bare *MenuSection)",
       "class": "repo-only",
       "cmd": "pnpm check:menu-naming",
-      "reason": "no database access in 4 file(s) reached",
+      "reason": "no database access in 3 file(s) reached",
       "evidence": []
     },
     "menu-items-that-cannot-act-the-live-item-law": {
       "label": "Menu items that cannot act (THE LIVE-ITEM LAW)",
       "class": "repo-only",
       "cmd": "pnpm check:menu-live-items",
-      "reason": "no database access in 4 file(s) reached",
+      "reason": "no database access in 3 file(s) reached",
       "evidence": []
     },
     "no-ui-flag-aimed-at-a-headless-mode": {
@@ -1858,7 +1858,7 @@
       "label": "Content IR / kinds test suite",
       "class": "repo-only",
       "cmd": "pnpm test:content-ir",
-      "reason": "no database access in 218 file(s) reached",
+      "reason": "no database access in 223 file(s) reached",
       "evidence": []
     },
     "whole-jest-suite-every-suite-not-ci-s-four-scopes": {
@@ -2103,6 +2103,20 @@
       "label": "Alchemy doors guard self-test",
       "class": "repo-only",
       "cmd": "pnpm check:alchemy-doors:self-test",
+      "reason": "no database access in 2 file(s) reached",
+      "evidence": []
+    },
+    "copied-state-set-after-a-discarded-copy-result-copy-result-g": {
+      "label": "Copied state set after a discarded copy result (copy-result-gated)",
+      "class": "repo-only",
+      "cmd": "pnpm check:copy-result-gated",
+      "reason": "no database access in 2 file(s) reached",
+      "evidence": []
+    },
+    "copy-result-gated-guard-self-test": {
+      "label": "Copy-result-gated guard self-test",
+      "class": "repo-only",
+      "cmd": "pnpm check:copy-result-gated:self-test",
       "reason": "no database access in 2 file(s) reached",
       "evidence": []
     },

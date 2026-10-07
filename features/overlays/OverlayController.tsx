@@ -2737,8 +2737,6 @@ export default function OverlayController() {
       {/* agentCreateAppWindow */}
       {(() => {
         const isOpen = isOpenById.agentCreateAppWindow;
-        const data = dataById.agentCreateAppWindow as
-          Record<string, unknown> | null | undefined;
         if (!isOpen) return null;
         return (
           <AgentCreateAppWindow
@@ -2746,7 +2744,6 @@ export default function OverlayController() {
             onClose={() =>
               dispatch(closeOverlay({ overlayId: "agentCreateAppWindow" }))
             }
-            agentId={typeof data?.agentId === "string" ? data.agentId : null}
           />
         );
       })()}

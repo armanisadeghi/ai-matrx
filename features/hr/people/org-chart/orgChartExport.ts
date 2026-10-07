@@ -16,13 +16,9 @@
 // `hr.people.directory-export` in the coming-soon registry.
 
 import type { HrOrgChart } from "../../types";
+import { toDelimitedText } from "@ai-matrx/alchemy/operate/read";
+import type { Json } from "@ai-matrx/alchemy/operate";
 import { downloadFile } from "@ai-matrx/kit/download";
-
-function csvCell(value: unknown): string {
-  if (value === null || value === undefined) return "";
-  const text = String(value);
-  return /[",\n]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text;
-}
 
 export function orgChartExportName(asOf: string, extension: string): string {
   return `org-chart-as-of-${asOf}.${extension}`;
@@ -50,6 +46,21 @@ function depths(chart: HrOrgChart): Map<string, number> {
   return out;
 }
 
+const ORG_CHART_COLUMNS = [
+  "as_of",
+  "level",
+  "display_name",
+  "job_title",
+  "department",
+  "location",
+  "manager",
+  "fte",
+  "worker_class",
+  "placement",
+  "employee_id",
+  "employment_id",
+] as const;
+
 export function buildOrgChartCsv(chart: HrOrgChart): string {
   const level = depths(chart);
   const nameOf = new Map(
@@ -57,29 +68,9 @@ export function buildOrgChartCsv(chart: HrOrgChart): string {
   );
   const cycles = new Set(chart.cycles);
 
-  const lines: string[] = [];
-  // A header line before the columns, so the date survives being opened in a
-  // spreadsheet and re-saved.
-  lines.push(`# Org chart as of ${chart.as_of}`);
-  lines.push(
-    [
-      "as_of",
-      "level",
-      "display_name",
-      "job_title",
-      "department",
-      "location",
-      "manager",
-      "fte",
-      "worker_class",
-      "placement",
-      "employee_id",
-      "employment_id",
-    ].join(","),
-  );
-
+  const rows: Json[][] = [];
   for (const node of chart.nodes) {
-    lines.push(
+    rows.push(
       [
         chart.as_of,
         level.get(node.employment_id) ?? 0,
@@ -95,16 +86,14 @@ export function buildOrgChartCsv(chart: HrOrgChart): string {
         cycles.has(node.employment_id) ? "reporting loop" : "on chart",
         node.employee_id,
         node.employment_id,
-      ]
-        .map(csvCell)
-        .join(","),
+      ],
     );
   }
 
   // 🚨 THE TRAY IS IN THE FILE TOO. Somebody who exports the chart to review
   // headcount must not silently lose the people the chart could not place.
   for (const person of chart.unplaced) {
-    lines.push(
+    rows.push(
       [
         chart.as_of,
         "",
@@ -118,13 +107,13 @@ export function buildOrgChartCsv(chart: HrOrgChart): string {
         `not yet placed — ${person.reason}`,
         person.employee_id,
         person.employment_id,
-      ]
-        .map(csvCell)
-        .join(","),
+      ],
     );
   }
 
-  return lines.join("\n");
+  // A header line before the columns, so the date survives being opened in a
+  // spreadsheet and re-saved.
+  return `# Org chart as of ${chart.as_of}\n${toDelimitedText(ORG_CHART_COLUMNS, rows, { spreadsheetSafe: true })}`;
 }
 
 export function downloadOrgChartCsv(chart: HrOrgChart): void {

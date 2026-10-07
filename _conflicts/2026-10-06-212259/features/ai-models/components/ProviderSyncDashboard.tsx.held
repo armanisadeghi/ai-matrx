@@ -1,0 +1,1993 @@
+matrx-auto-git-conflict-file-work-delete-this-when-resolved
+
+HELD CONFLICT, written by scripts/sync-main.py
+File:      features/ai-models/components/ProviderSyncDashboard.tsx
+Why held:  both sides changed the same code
+GITHUB's version is live in the repo at the path above. LOCAL's version is at the bottom
+of this file, below the FACTS.
+Done with it: the final code is in the live file, this .held file is deleted, and its line
+in _conflicts/README.md is deleted. The list of open items is _conflicts/README.md.
+
+FACTS (computed by sync-main from git)
+
+THE TWO VERSIONS
+  LOCAL  = the version that was on this Mac. It is saved below, in this .held file.
+  GITHUB = the version from GitHub. It is LIVE in the repo right now, at features/ai-models/components/ProviderSyncDashboard.tsx
+  Both grew from the same COMMON version: commit cfed5f4723, 2026-10-06 21:01.
+
+WHEN EACH SIDE CHANGED THIS FILE (newest first)
+  LOCAL:
+    2026-10-06 21:16  (uncommitted edit; the time the file was last saved on this Mac)
+    2026-10-06 21:23  94b89b0701  collected by the sync; the edit itself happened at or before this time
+  GITHUB:
+    2026-10-06 21:00  7bf65448f8  "Copied state and success toasts only after a copy that landed (kit 0.28.0 boolean); delete ToolTabBodies/viewer-utilities CopyButton; add check:copy-result-gated"
+  LOCAL's latest change is 15m AFTER GITHUB's latest change.
+
+SIZE: common version 1942 lines, LOCAL 1944 lines, GITHUB 1942 lines
+
+WHAT EACH SIDE DID, compared with the common version
+  LOCAL added 2 lines and removed 1 lines.
+  GITHUB added 2 lines and removed 2 lines.
+
+CODE ONE SIDE HAS THAT THE OTHER DOES NOT
+  LOCAL has 0 of the 2 lines GITHUB added.
+    Lines GITHUB added that LOCAL does NOT have:
+      | onClick={async () => {
+      | if (!(await copyText(text))) return;
+    (some of those lines also appear in other changed files, which may be a coincidence: app/(admin)/administration/ui/official-components/component-displays/pro-input.tsx, features/files/webhooks/components/WebhooksManager.tsx, features/marketing/components/analysis/FindingRemedyCard.tsx, features/rag/components/GoogleEmbeddingLab.tsx)
+    Lines GITHUB deliberately REMOVED that LOCAL still has: 1
+      | onClick={() => {
+  GITHUB has 2 of the 2 lines LOCAL added; the rest were MOVED, all together, into features/code/terminal/PortsTab.tsx.
+
+COMPARE THEM (the labels are correct; '-' lines are GITHUB, '+' lines are LOCAL):
+  diff -u --label 'GITHUB (live)' --label 'LOCAL (held)' <(git show 18b17dfd3ce9:'features/ai-models/components/ProviderSyncDashboard.tsx') <(git show 94b89b070183:'features/ai-models/components/ProviderSyncDashboard.tsx')
+
+RECOVER EITHER VERSION FOREVER (works even after this .held file is deleted):
+  LOCAL : git show 94b89b070183:'features/ai-models/components/ProviderSyncDashboard.tsx'
+  GITHUB: git show 18b17dfd3ce9:'features/ai-models/components/ProviderSyncDashboard.tsx'
+
+---------------- LOCAL VERSION BELOW ----------------
+"use client";
+
+import { useClipboard } from "@ai-matrx/kit/clipboard";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
+import { useAppDispatch } from "@/lib/redux/hooks";
+import { extractErrorMessage } from "@/utils/errors";
+import { compareTimestamps, parseTimestamp } from "@/utils/datetime";
+import {
+  RefreshCw,
+  CheckCircle2,
+  AlertCircle,
+  AlertTriangle,
+  Ban,
+  Circle,
+  ExternalLink,
+  Plus,
+  ChevronDown,
+  ChevronRight,
+  ChevronUp,
+  ChevronsUpDown,
+  ShieldCheck,
+  SlidersHorizontal,
+  Undo2,
+  X,
+  Copy,
+  Check,
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Skeleton } from "@ai-matrx/design-system";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import ModelDetailSheet, { OpenDetailButton } from "../audit/ModelDetailSheet";
+import AddProviderModelDialog from "./AddProviderModelDialog";
+import {
+  ProviderSyncPageCopyForAiButton,
+  ProviderSyncProviderCopyForAiMenu,
+  ProviderSyncRowCopyForAiButton,
+} from "./ProviderSyncCopyForAi";
+import {
+  buildProviderSyncComparisons,
+  countProviderSyncByStatus,
+  type ProviderSyncComparison,
+  type ProviderSyncComparisonStatus,
+  type ProviderSyncRegistry,
+} from "../utils/providerSyncComparison";
+import {
+  ageInDays,
+  formatPerMTok,
+  type ProviderSyncRowPricing,
+} from "../utils/providerSyncPricing";
+import ProviderSyncPolicyDialog, {
+  type ProviderSyncPolicyTarget,
+} from "./ProviderSyncPolicyDialog";
+import { aiModelService } from "../service";
+import { refreshProviderModels } from "../providerModelsRefresh";
+import type {
+  AiModel,
+  AiProvider,
+  ProviderSyncCandidate,
+  ProviderSyncPolicy,
+} from "../types";
+import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
+import { toast } from "@/lib/toast";
+import { cn } from "@/lib/utils";
+import { MOBILE_TABLE_FROZEN } from "@/components/official/mobile-table/mobileTable";
+import { formatCount, formatRelativeTime } from "@ai-matrx/kit/format";
+import {
+  MatrxDataTable,
+  type MatrxColumnDef,
+  type MatrxDataTableCopyConfig,
+} from "@ai-matrx/design-system/data-table";
+import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+
+// ─── Types ────────────────────────────────────────────────────────────────
+
+type ProviderSummary = {
+  id: string;
+  name: string | null;
+  has_cache: boolean;
+  fetched_at: string | null;
+  model_count: number;
+  is_supported: boolean;
+  provider_key: string | null;
+};
+
+// `ai.provider.slug` values the server's provider-models refresh knows how to
+// fetch (aidream/services/ai_catalog/provider_models_refresh.py). Keep in
+// sync with that module's `_FETCHERS` registry.
+const SUPPORTED_PROVIDER_SLUGS = [
+  "openai",
+  "anthropic",
+  "groq",
+  "google",
+  "xai",
+];
+
+function summarizeProvider(provider: AiProvider): ProviderSummary {
+  const cache = provider.provider_models_cache;
+  return {
+    id: provider.id,
+    name: provider.name,
+    has_cache: cache != null,
+    fetched_at: cache?.fetched_at ?? null,
+    model_count: cache?.models.length ?? 0,
+    is_supported:
+      provider.slug != null && SUPPORTED_PROVIDER_SLUGS.includes(provider.slug),
+    provider_key: provider.slug ?? null,
+  };
+}
+
+type ComparisonStatus = ProviderSyncComparisonStatus;
+type ModelComparison = ProviderSyncComparison;
+
+type ComparisonSortKey =
+  | "display_name"
+  | "id"
+  | "context"
+  | "max_out"
+  | "released"
+  | "our_name"
+  | "price"
+  | "verified"
+  | "primary"
+  | "deprecated"
+  | "status";
+
+/**
+ * A provider snapshot older than this is not a comparison, it is a guess —
+ * the row flags it and puts the Sync control next to the complaint.
+ */
+const STALE_SNAPSHOT_HOURS = 24;
+
+type ComparisonSortDir = "asc" | "desc";
+
+type Props = {
+  localModels: AiModel[];
+  providers: AiProvider[];
+  /** The parent's providers/models read failure — shown instead of "No providers found". */
+  providersError?: unknown;
+  onModelsChanged?: () => void;
+};
+
+// ─── Helpers ──────────────────────────────────────────────────────────────
+
+const formatNum = (n?: number | null) =>
+  n == null
+    ? "—"
+    : n >= 1_000_000
+      ? formatCount(n, { style: "compact" })
+      : n.toLocaleString();
+
+const formatDate = (d?: string | null) => {
+  if (!d) return "—";
+  try {
+    return new Date(d).toLocaleDateString(undefined, {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+    });
+  } catch {
+    return d;
+  }
+};
+
+function compareNullableNumbers(a?: number | null, b?: number | null): number {
+  const aNull = a == null;
+  const bNull = b == null;
+  if (aNull && bNull) return 0;
+  if (aNull) return 1;
+  if (bNull) return -1;
+  return a - b;
+}
+
+const STATUS_SORT_ORDER: Record<ComparisonStatus, number> = {
+  matched: 0,
+  missing_local: 1,
+  before_cutoff: 2,
+  excluded: 3,
+  extra_local: 4,
+};
+
+const HOUR_MS = 60 * 60 * 1000;
+
+/**
+ * MILLISECONDS since an ISO timestamp — a number the staleness threshold
+ * COMPARES and nothing renders. Every rendered age on this screen goes through
+ * `formatRelativeTime`; the hours division that used to live here was found by
+ * the relative-time shape lane of `check:package-twins`.
+ */
+function ageMsSince(iso: string | null | undefined): number | null {
+  if (!iso) return null;
+  const t = Date.parse(iso);
+  if (Number.isNaN(t)) return null;
+  return Math.max(0, Date.now() - t);
+}
+
+function defaultSortDirForColumn(key: ComparisonSortKey): ComparisonSortDir {
+  switch (key) {
+    case "released":
+    case "context":
+    case "max_out":
+    case "primary":
+    case "deprecated":
+      return "desc";
+    default:
+      return "asc";
+  }
+}
+
+function compareComparisons(
+  a: ModelComparison,
+  b: ModelComparison,
+  key: ComparisonSortKey,
+  dir: ComparisonSortDir,
+): number {
+  const sign = dir === "asc" ? 1 : -1;
+  const peA = a.providerEntry;
+  const peB = b.providerEntry;
+  const leA = a.localEntry;
+  const leB = b.localEntry;
+
+  let cmp = 0;
+  switch (key) {
+    case "display_name":
+      cmp = a.display_name.localeCompare(b.display_name);
+      break;
+    case "id":
+      cmp = a.id.localeCompare(b.id);
+      break;
+    case "context":
+      cmp = compareNullableNumbers(
+        peA?.max_input_tokens ?? leA?.context_window,
+        peB?.max_input_tokens ?? leB?.context_window,
+      );
+      break;
+    case "max_out":
+      cmp = compareNullableNumbers(
+        peA?.max_tokens ?? leA?.max_tokens,
+        peB?.max_tokens ?? leB?.max_tokens,
+      );
+      break;
+    case "released": {
+      const dateA = peA?.created_at;
+      const dateB = peB?.created_at;
+      const hasA = parseTimestamp(dateA) != null;
+      const hasB = parseTimestamp(dateB) != null;
+      if (!hasA && !hasB) {
+        cmp = 0;
+      } else if (!hasA) {
+        return 1;
+      } else if (!hasB) {
+        return -1;
+      } else {
+        cmp = compareTimestamps(dateA, dateB);
+      }
+      break;
+    }
+    case "our_name":
+      cmp = (leA?.common_name ?? "").localeCompare(leB?.common_name ?? "");
+      break;
+    case "price":
+      cmp = compareNullableNumbers(
+        a.pricing.ours?.input ?? null,
+        b.pricing.ours?.input ?? null,
+      );
+      break;
+    case "verified":
+      cmp = compareNullableNumbers(
+        a.pricing.verified_at ? Date.parse(a.pricing.verified_at) : null,
+        b.pricing.verified_at ? Date.parse(b.pricing.verified_at) : null,
+      );
+      break;
+    case "primary":
+      cmp = Number(Boolean(leA?.is_primary)) - Number(Boolean(leB?.is_primary));
+      break;
+    case "deprecated":
+      cmp =
+        Number(Boolean(leA?.is_deprecated)) -
+        Number(Boolean(leB?.is_deprecated));
+      break;
+    case "status":
+      cmp = STATUS_SORT_ORDER[a.status] - STATUS_SORT_ORDER[b.status];
+      break;
+  }
+
+  if (cmp !== 0) return cmp * sign;
+  return a.id.localeCompare(b.id);
+}
+
+// ─── Status ───────────────────────────────────────────────────────────────
+
+const STATUS_BG: Record<ComparisonStatus, string> = {
+  matched: "bg-green-50/60 dark:bg-green-900/10",
+  missing_local: "bg-amber-50/70 dark:bg-amber-900/15",
+  before_cutoff: "bg-slate-50/70 dark:bg-slate-900/20",
+  excluded: "bg-muted/40 dark:bg-muted/20",
+  extra_local: "bg-blue-50/50 dark:bg-blue-900/10",
+};
+const STATUS_BG_SEL: Record<ComparisonStatus, string> = {
+  matched: "bg-green-100 dark:bg-green-900/30",
+  missing_local: "bg-amber-100 dark:bg-amber-900/30",
+  before_cutoff: "bg-slate-200/70 dark:bg-slate-800/50",
+  excluded: "bg-muted/60 dark:bg-muted/30",
+  extra_local: "bg-blue-100 dark:bg-blue-900/30",
+};
+const STATUS_LEFT: Record<ComparisonStatus, string> = {
+  matched: "border-l-green-400",
+  missing_local: "border-l-amber-400",
+  before_cutoff: "border-l-slate-400",
+  excluded: "border-l-muted-foreground/40",
+  extra_local: "border-l-blue-400",
+};
+
+function StatusBadge({
+  status,
+  cutoff,
+}: {
+  status: ComparisonStatus;
+  cutoff?: string | null;
+}) {
+  if (status === "matched")
+    return (
+      <Badge
+        variant="outline"
+        className="text-[10px] h-5 gap-1 bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-300 border-green-300 whitespace-nowrap"
+      >
+        <CheckCircle2 className="h-3 w-3" />
+        Matched
+      </Badge>
+    );
+  if (status === "missing_local")
+    return (
+      <Badge
+        variant="outline"
+        className="text-[10px] h-5 bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-300 border-amber-300 whitespace-nowrap"
+      >
+        Not in DB
+      </Badge>
+    );
+  if (status === "before_cutoff")
+    return (
+      <Badge
+        variant="outline"
+        className="text-[10px] h-5 bg-slate-100 dark:bg-slate-800/60 text-slate-600 dark:text-slate-300 border-slate-300 dark:border-slate-600 whitespace-nowrap"
+        title={
+          cutoff
+            ? `Released before the sync cutoff (${cutoff}) — the sync agent ignores it.`
+            : "Released before this provider's sync cutoff — the sync agent ignores it."
+        }
+      >
+        Before cutoff
+      </Badge>
+    );
+  if (status === "excluded")
+    return (
+      <Badge
+        variant="outline"
+        className="text-[10px] h-5 gap-1 bg-muted/50 text-muted-foreground border-border whitespace-nowrap"
+        title="On this provider's exclusion list — the sync agent will never add it."
+      >
+        <Ban className="h-3 w-3" />
+        Excluded
+      </Badge>
+    );
+  return (
+    <Badge
+      variant="outline"
+      className="text-[10px] h-5 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 border-blue-300 whitespace-nowrap"
+    >
+      Extra / deprecated
+    </Badge>
+  );
+}
+
+// ─── Pricing cells ────────────────────────────────────────────────────────
+
+/**
+ * What we charge, per 1M units of the offering's billing basis. Never blank:
+ * a model with no offering and a model whose offering carries no price are
+ * two different problems and the cell says which one it is.
+ */
+function PriceCell({ pricing }: { pricing: ProviderSyncRowPricing }) {
+  if (pricing.state === "no_offering") {
+    return (
+      <span
+        className="text-[10px] text-muted-foreground italic whitespace-nowrap"
+        title="This provider model has no ai.offering row, so nothing prices it."
+      >
+        no offering
+      </span>
+    );
+  }
+  if (pricing.state === "no_price") {
+    return (
+      <span
+        className="text-[10px] text-amber-600 dark:text-amber-400 whitespace-nowrap"
+        title="The preferred offering exists but carries no pricing tier."
+      >
+        no price
+      </span>
+    );
+  }
+
+  const ours = pricing.ours;
+  const mismatchFields = new Set(pricing.mismatches.map((m) => m.field));
+  const cellFor = (field: "input" | "output" | "cached") => (
+    <span
+      className={cn(
+        "tabular-nums",
+        mismatchFields.has(field) &&
+          "text-red-600 dark:text-red-400 font-semibold",
+      )}
+    >
+      {formatPerMTok(ours?.[field] ?? null)}
+    </span>
+  );
+
+  return (
+    <div className="whitespace-nowrap leading-tight">
+      <span className="text-[11px]">
+        {cellFor("input")}
+        <span className="text-muted-foreground"> / </span>
+        {cellFor("output")}
+        <span className="text-muted-foreground"> / </span>
+        {cellFor("cached")}
+      </span>
+      {pricing.usage_basis && (
+        <span className="ml-1 text-[9px] text-muted-foreground">
+          {pricing.usage_basis}
+        </span>
+      )}
+      {pricing.mismatches.length > 0 && pricing.theirs && (
+        <div
+          className="flex items-center gap-1 text-[10px] text-red-600 dark:text-red-400"
+          title={pricing.mismatches
+            .map(
+              (m) =>
+                `${m.field}: ours ${formatPerMTok(m.ours)} vs provider ${formatPerMTok(m.theirs)}`,
+            )
+            .join("\n")}
+        >
+          <AlertTriangle className="h-3 w-3 shrink-0" />
+          <span className="tabular-nums">
+            provider {formatPerMTok(pricing.theirs.input)} /{" "}
+            {formatPerMTok(pricing.theirs.output)} /{" "}
+            {formatPerMTok(pricing.theirs.cached)}
+          </span>
+        </div>
+      )}
+    </div>
+  );
+}
+
+type PriceField = "input" | "output" | "cached";
+
+/** One independently sortable price, with the provider comparison kept on it. */
+function PriceValueCell({
+  pricing,
+  field,
+}: {
+  pricing: ProviderSyncRowPricing;
+  field: PriceField;
+}) {
+  if (pricing.state === "no_offering") {
+    return (
+      <span
+        className="whitespace-nowrap text-[10px] italic text-muted-foreground"
+        title="This provider model has no ai.offering row, so nothing prices it."
+      >
+        no offering
+      </span>
+    );
+  }
+  if (pricing.state === "no_price") {
+    return (
+      <span
+        className="whitespace-nowrap text-[10px] text-amber-600 dark:text-amber-400"
+        title="The preferred offering exists but carries no pricing tier."
+      >
+        no price
+      </span>
+    );
+  }
+
+  const mismatch = pricing.mismatches.find((item) => item.field === field);
+  return (
+    <span
+      className={cn(
+        "inline-flex items-center gap-1 whitespace-nowrap tabular-nums",
+        mismatch && "font-semibold text-red-600 dark:text-red-400",
+      )}
+      title={
+        mismatch
+          ? `Ours ${formatPerMTok(mismatch.ours)}; provider ${formatPerMTok(mismatch.theirs)}`
+          : undefined
+      }
+    >
+      {mismatch && <AlertTriangle className="h-3 w-3 shrink-0" aria-hidden />}
+      {formatPerMTok(pricing.ours?.[field] ?? null)}
+    </span>
+  );
+}
+
+/** Provider prices remain sortable and available from the canonical Columns menu. */
+function ProviderPriceValueCell({
+  pricing,
+  field,
+}: {
+  pricing: ProviderSyncRowPricing;
+  field: PriceField;
+}) {
+  return (
+    <span
+      className="whitespace-nowrap tabular-nums text-muted-foreground"
+      title={`Provider ${field} price per 1M ${pricing.usage_basis ?? "units"}`}
+    >
+      {formatPerMTok(pricing.theirs?.[field] ?? null)}
+    </span>
+  );
+}
+
+/** How old our confidence in the price is — or that nobody tracks it yet. */
+function PriceVerifiedCell({ pricing }: { pricing: ProviderSyncRowPricing }) {
+  if (pricing.state === "no_offering") {
+    return <span className="text-muted-foreground text-[10px]">—</span>;
+  }
+  if (pricing.verification === "never") {
+    return (
+      <Badge
+        variant="outline"
+        className="text-[10px] h-5 bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-300 border-amber-300 whitespace-nowrap"
+      >
+        never verified
+      </Badge>
+    );
+  }
+  const days = ageInDays(pricing.verified_at) ?? 0;
+  const stale = days > 30;
+  return (
+    <Badge
+      variant="outline"
+      className={cn(
+        "text-[10px] h-5 gap-1 whitespace-nowrap",
+        stale
+          ? "bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-300 border-amber-300"
+          : "bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-300 border-green-300",
+      )}
+      title={`Price last verified ${pricing.verified_at}`}
+    >
+      <ShieldCheck className="h-3 w-3" />
+      {formatRelativeTime(pricing.verified_at, { style: "short" })}
+    </Badge>
+  );
+}
+
+// ─── Capability tree ──────────────────────────────────────────────────────
+
+function CapNode({
+  label,
+  value,
+  depth = 0,
+}: {
+  label: string;
+  value: unknown;
+  depth?: number;
+}) {
+  const [open, setOpen] = useState(depth < 2);
+  if (value === null || value === undefined) return null;
+
+  if (typeof value === "object" && !Array.isArray(value)) {
+    const entries = Object.entries(value as Record<string, unknown>);
+    const isSingleSupported =
+      entries.length === 1 && entries[0][0] === "supported";
+    if (isSingleSupported) {
+      const sup = entries[0][1] as boolean;
+      return (
+        <div className="flex items-center gap-2 py-0.5">
+          <span
+            className="text-xs text-muted-foreground w-44 shrink-0 truncate"
+            title={label}
+          >
+            {label}
+          </span>
+          <Badge
+            variant="outline"
+            className={`text-[10px] h-4 px-1 ${sup ? "bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-300 border-green-300" : "bg-muted text-muted-foreground"}`}
+          >
+            {sup ? "yes" : "no"}
+          </Badge>
+        </div>
+      );
+    }
+    return (
+      <div className="py-0.5">
+        <button
+          onClick={() => setOpen((v) => !v)}
+          className="flex items-center gap-1 text-xs text-foreground/80 hover:text-foreground font-medium"
+        >
+          {open ? (
+            <ChevronDown className="h-3 w-3" />
+          ) : (
+            <ChevronRight className="h-3 w-3" />
+          )}
+          {label}
+          <span className="text-[10px] text-muted-foreground font-normal ml-1">
+            ({entries.length})
+          </span>
+        </button>
+        {open && (
+          <div className="ml-4 pl-2 border-l border-border mt-0.5">
+            {entries.map(([k, v]) => (
+              <CapNode key={k} label={k} value={v} depth={depth + 1} />
+            ))}
+          </div>
+        )}
+      </div>
+    );
+  }
+  return (
+    <div className="flex items-center gap-2 py-0.5">
+      <span
+        className="text-xs text-muted-foreground w-44 shrink-0 truncate"
+        title={label}
+      >
+        {label}
+      </span>
+      <span className="text-xs font-mono">{String(value)}</span>
+    </div>
+  );
+}
+
+// ─── Copy button ──────────────────────────────────────────────────────────
+
+function CopyBtn({ text }: { text: string }) {
+  const { copyText } = useClipboard({
+    notify: (message, kind) =>
+      kind === "error" ? toast.error(message) : toast.success(message),
+  });
+  const [copied, setCopied] = useState(false);
+  return (
+    <button
+      onClick={() => {
+        void copyText(text).then((copied) => {
+  if (!copied) return;
+  setCopied(true);
+});
+        setTimeout(() => setCopied(false), 1500);
+      }}
+      className="h-6 w-6 flex items-center justify-center rounded hover:bg-accent text-muted-foreground hover:text-foreground"
+      title="Copy"
+    >
+      {copied ? (
+        <Check className="h-3.5 w-3.5 text-green-500" />
+      ) : (
+        <Copy className="h-3.5 w-3.5" />
+      )}
+    </button>
+  );
+}
+
+// ─── Entry detail panel ───────────────────────────────────────────────────
+
+function ProviderEntryDetail({
+  comparison,
+  cutoff,
+  onClose,
+  onOpenModel,
+  onAddMissing,
+  onToggleExclusion,
+  policyBusy,
+}: {
+  comparison: ModelComparison;
+  cutoff: string | null;
+  onClose: () => void;
+  onOpenModel: (id: string) => void;
+  onAddMissing: (c: ModelComparison) => void;
+  onToggleExclusion: (c: ModelComparison) => void;
+  policyBusy: boolean;
+}) {
+  const pe = comparison.providerEntry;
+  const le = comparison.localEntry;
+  const jsonStr = pe ? JSON.stringify(pe, null, 2) : null;
+
+  return (
+    <div className="flex flex-col h-full border-l bg-card overflow-hidden">
+      {/* Header */}
+      <div className="shrink-0 flex items-center justify-between px-3 py-2 border-b bg-muted/30">
+        <div className="min-w-0">
+          <p className="text-sm font-semibold truncate">
+            {comparison.display_name}
+          </p>
+          <p className="text-[10px] font-mono text-muted-foreground truncate">
+            {comparison.id}
+          </p>
+        </div>
+        <div className="flex items-center gap-1.5 shrink-0 ml-2">
+          <StatusBadge status={comparison.status} cutoff={cutoff} />
+          {comparison.status === "matched" && le && (
+            <OpenDetailButton onClick={() => onOpenModel(le.id)} />
+          )}
+          {comparison.status === "missing_local" && (
+            <Button
+              icon={<Plus />}
+              variant="outline"
+              onClick={() => onAddMissing(comparison)}
+            >
+              Add to DB
+            </Button>
+          )}
+          {comparison.status !== "extra_local" && (
+            <ExcludeButton
+              comparison={comparison}
+              onToggle={onToggleExclusion}
+              busy={policyBusy}
+            />
+          )}
+          <button
+            onClick={onClose}
+            className="h-6 w-6 flex items-center justify-center rounded hover:bg-accent text-muted-foreground hover:text-foreground"
+          >
+            <X className="h-3.5 w-3.5" />
+          </button>
+        </div>
+      </div>
+
+      <Tabs
+        defaultValue="structured"
+        className="flex-1 flex flex-col overflow-hidden min-h-0"
+      >
+        <div className="shrink-0 border-b px-3">
+          <TabsList variant="underline">
+            {(["structured", "json", "our_db"] as const).map((t) => (
+              <TabsTrigger
+                key={t}
+                value={t}
+              >
+                {t === "structured"
+                  ? "Provider Data"
+                  : t === "json"
+                    ? "Raw JSON"
+                    : "Our DB Record"}
+              </TabsTrigger>
+            ))}
+          </TabsList>
+        </div>
+
+        <TabsContent
+          value="structured"
+          className="flex-1 m-0 overflow-auto min-h-0"
+        >
+          {pe ? (
+            <div className="p-3 space-y-4">
+              <section>
+                <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-2">
+                  Core Fields
+                </p>
+                <div className="grid grid-cols-2 gap-x-4 gap-y-2">
+                  {(
+                    [
+                      ["Display Name", pe.display_name ?? "—"],
+                      ["Type", String(pe.type ?? "—")],
+                      ["Context Window", formatNum(pe.max_input_tokens)],
+                      ["Max Output Tokens", formatNum(pe.max_tokens)],
+                      ["Released", formatDate(pe.created_at)],
+                    ] as [string, string][]
+                  ).map(([lbl, val]) => (
+                    <div key={lbl}>
+                      <p className="text-[10px] text-muted-foreground">{lbl}</p>
+                      <p className="text-xs font-mono">{val}</p>
+                    </div>
+                  ))}
+                </div>
+              </section>
+
+              <section>
+                <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-2">
+                  Pricing (per MTok)
+                </p>
+                <div className="flex items-center gap-3 flex-wrap">
+                  <PriceCell pricing={comparison.pricing} />
+                  <PriceVerifiedCell pricing={comparison.pricing} />
+                </div>
+              </section>
+
+              {pe.capabilities && typeof pe.capabilities === "object" && (
+                <section>
+                  <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-2">
+                    Capabilities
+                  </p>
+                  <div className="border rounded-md p-3 bg-muted/20">
+                    {Object.entries(
+                      pe.capabilities as Record<string, unknown>,
+                    ).map(([k, v]) => (
+                      <CapNode key={k} label={k} value={v} depth={0} />
+                    ))}
+                  </div>
+                </section>
+              )}
+
+              {(() => {
+                const known = new Set([
+                  "id",
+                  "display_name",
+                  "created_at",
+                  "type",
+                  "max_input_tokens",
+                  "max_tokens",
+                  "capabilities",
+                ]);
+                const extra = Object.entries(pe).filter(([k]) => !known.has(k));
+                if (!extra.length) return null;
+                return (
+                  <section>
+                    <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-2">
+                      Additional Fields
+                    </p>
+                    {extra.map(([k, v]) => (
+                      <div key={k} className="flex items-start gap-3 py-0.5">
+                        <span className="text-xs text-muted-foreground w-36 shrink-0">
+                          {k}
+                        </span>
+                        <span className="text-xs font-mono break-all">
+                          {typeof v === "object"
+                            ? JSON.stringify(v, null, 2)
+                            : String(v)}
+                        </span>
+                      </div>
+                    ))}
+                  </section>
+                );
+              })()}
+            </div>
+          ) : (
+            <div className="flex items-center justify-center h-32 text-sm text-muted-foreground">
+              No provider data — this model is only in our DB
+            </div>
+          )}
+        </TabsContent>
+
+        <TabsContent value="json" className="flex-1 m-0 overflow-auto min-h-0">
+          {jsonStr ? (
+            <div className="relative h-full">
+              <div className="absolute top-2 right-3 z-10">
+                <CopyBtn text={jsonStr} />
+              </div>
+              <pre className="p-3 pt-8 text-[11px] font-mono text-foreground whitespace-pre-wrap break-all leading-relaxed">
+                {jsonStr}
+              </pre>
+            </div>
+          ) : (
+            <div className="flex items-center justify-center h-32 text-sm text-muted-foreground">
+              No raw provider data
+            </div>
+          )}
+        </TabsContent>
+
+        <TabsContent
+          value="our_db"
+          className="flex-1 m-0 overflow-auto min-h-0"
+        >
+          {le ? (
+            <div className="p-3 space-y-4">
+              <div className="grid grid-cols-2 gap-x-4 gap-y-2">
+                {(
+                  [
+                    ["name", le.name],
+                    ["common_name", le.common_name ?? "—"],
+                    ["maker", le.maker ?? "—"],
+                    [
+                      "context_window",
+                      le.context_window?.toLocaleString() ?? "—",
+                    ],
+                    ["max_tokens", le.max_tokens?.toLocaleString() ?? "—"],
+                    ["is_primary", String(le.is_primary ?? false)],
+                    ["is_deprecated", String(le.is_deprecated ?? false)],
+                    ["is_premium", String(le.is_premium ?? false)],
+                  ] as [string, string][]
+                ).map(([lbl, val]) => (
+                  <div key={lbl}>
+                    <p className="text-[10px] text-muted-foreground">{lbl}</p>
+                    <p className="text-xs font-mono">{val}</p>
+                  </div>
+                ))}
+              </div>
+              {le.capabilities && (
+                <section>
+                  <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-1">
+                    capabilities
+                  </p>
+                  <div className="relative">
+                    <div className="absolute top-2 right-2 z-10">
+                      <CopyBtn
+                        text={JSON.stringify(le.capabilities, null, 2)}
+                      />
+                    </div>
+                    <pre className="p-2 pt-7 text-[11px] font-mono bg-muted/30 rounded border whitespace-pre-wrap break-all leading-relaxed">
+                      {JSON.stringify(le.capabilities, null, 2)}
+                    </pre>
+                  </div>
+                </section>
+              )}
+              <div className="flex items-center gap-2 pt-1">
+                <OpenDetailButton onClick={() => onOpenModel(le.id)} />
+                <span className="text-[10px] text-muted-foreground">
+                  Open full editor
+                </span>
+              </div>
+            </div>
+          ) : (
+            <div className="flex items-center justify-center h-32 text-sm text-muted-foreground">
+              Not in our DB yet
+            </div>
+          )}
+        </TabsContent>
+      </Tabs>
+    </div>
+  );
+}
+
+// ─── Exclude / un-exclude ─────────────────────────────────────────────────
+
+/**
+ * One row's entry point into `ai.provider.sync_policy.excluded_model_ids`.
+ * The consequence is stated by the confirm the handler raises, not here —
+ * this is only the control.
+ */
+function ExcludeButton({
+  comparison,
+  onToggle,
+  busy,
+}: {
+  comparison: ModelComparison;
+  onToggle: (c: ModelComparison) => void;
+  busy: boolean;
+}) {
+  const isExcluded = comparison.status === "excluded";
+  return (
+    <Button
+      variant="quiet"
+      onClick={() => onToggle(comparison)}
+      disabled={busy}
+      title={
+        isExcluded
+          ? "Stop excluding this model — the sync agent may add it again"
+          : "Exclude this model — the sync agent will never add it"
+      }
+    >
+      {isExcluded ? (
+        <>
+          <Undo2 className="h-2.5 w-2.5" />
+          Un-exclude
+        </>
+      ) : (
+        <>
+          <Ban className="h-2.5 w-2.5" />
+          Exclude
+        </>
+      )}
+    </Button>
+  );
+}
+
+// ─── Provider comparison grid ─────────────────────────────────────────────
+
+function ComparisonTable({
+  comparisons,
+  providerName,
+  cutoff,
+  selectedId,
+  onSelect,
+  onOpenModel,
+  onAddMissing,
+  onToggleExclusion,
+  policyBusy,
+}: {
+  comparisons: ModelComparison[];
+  providerName: string | null;
+  cutoff: string | null;
+  selectedId: string | null;
+  onSelect: (c: ModelComparison | null) => void;
+  onOpenModel: (id: string) => void;
+  onAddMissing: (c: ModelComparison) => void;
+  onToggleExclusion: (c: ModelComparison) => void;
+  policyBusy: boolean;
+}) {
+  const copy = useMemo<MatrxDataTableCopyConfig<ModelComparison>>(
+    () => ({
+      label: "Provider model",
+      listLabel: "Provider models (this view)",
+      location: "AI Matrx Admin — AI Models Provider Sync",
+      rowKind: "provider-sync-model",
+      listKind: "provider-sync-models",
+      // The existing row control owns the lean provider/local AI envelope.
+      // Keep shared view and selected-row copy without a second row action.
+      showRow: false,
+      rowDescription: "A single provider model comparison.",
+      listDescription:
+        "Provider-model comparisons currently shown after canonical table filters.",
+      humanRow: (comparison) =>
+        [
+          `Model: ${comparison.display_name} (${comparison.id})`,
+          `Status: ${comparison.status}`,
+          comparison.providerEntry?.created_at
+            ? `Released: ${comparison.providerEntry.created_at}`
+            : null,
+          comparison.localEntry?.common_name
+            ? `DB name: ${comparison.localEntry.common_name}`
+            : null,
+        ]
+          .filter(Boolean)
+          .join("\n"),
+      agentRow: (comparison) => comparison,
+      rowAttributes: (comparison) => ({
+        model_id: comparison.id,
+        status: comparison.status,
+        provider: providerName ?? "unknown",
+      }),
+    }),
+    [providerName],
+  );
+  const columns = useMemo<MatrxColumnDef<ModelComparison>[]>(
+    () => [
+      {
+        id: "display_name",
+        header: "Display name",
+        accessorFn: (comparison) => comparison.display_name,
+        defaultSortDirection: "asc",
+        cell: (comparison) => (
+          <span
+            className="block max-w-[160px] truncate font-medium"
+            title={comparison.display_name}
+          >
+            {comparison.display_name}
+          </span>
+        ),
+      },
+      {
+        id: "id",
+        header: "Model ID",
+        accessorFn: (comparison) => comparison.id,
+        cell: (comparison) => (
+          <span
+            className="block max-w-[200px] truncate font-mono text-[10px] text-muted-foreground"
+            title={comparison.id}
+          >
+            {comparison.id}
+          </span>
+        ),
+      },
+      {
+        id: "context",
+        header: "Context",
+        accessorFn: (comparison) =>
+          comparison.providerEntry?.max_input_tokens ??
+          comparison.localEntry?.context_window ??
+          null,
+        defaultSortDirection: "desc",
+        align: "right",
+        cell: (comparison) =>
+          formatNum(
+            comparison.providerEntry?.max_input_tokens ??
+              comparison.localEntry?.context_window,
+          ),
+      },
+      {
+        id: "max_out",
+        header: "Max out",
+        accessorFn: (comparison) =>
+          comparison.providerEntry?.max_tokens ??
+          comparison.localEntry?.max_tokens ??
+          null,
+        defaultSortDirection: "desc",
+        align: "right",
+        cell: (comparison) =>
+          formatNum(
+            comparison.providerEntry?.max_tokens ??
+              comparison.localEntry?.max_tokens,
+          ),
+      },
+      {
+        id: "released",
+        header: "Released",
+        accessorFn: (comparison) => comparison.providerEntry?.created_at ?? "",
+        sortValue: (comparison) =>
+          parseTimestamp(comparison.providerEntry?.created_at) ?? -Infinity,
+        defaultSortDirection: "desc",
+        cell: (comparison) => formatDate(comparison.providerEntry?.created_at),
+      },
+      {
+        id: "our_name",
+        header: "Our name",
+        accessorFn: (comparison) => comparison.localEntry?.common_name ?? "",
+        cell: (comparison) => comparison.localEntry?.common_name ?? "—",
+      },
+      {
+        id: "input_price",
+        header: "Input / 1M",
+        accessorFn: (comparison) => comparison.pricing.ours?.input ?? null,
+        align: "right",
+        cell: (comparison) => (
+          <PriceValueCell pricing={comparison.pricing} field="input" />
+        ),
+      },
+      {
+        id: "output_price",
+        header: "Output / 1M",
+        accessorFn: (comparison) => comparison.pricing.ours?.output ?? null,
+        align: "right",
+        cell: (comparison) => (
+          <PriceValueCell pricing={comparison.pricing} field="output" />
+        ),
+      },
+      {
+        id: "cached_input_price",
+        header: "Cached / 1M",
+        accessorFn: (comparison) => comparison.pricing.ours?.cached ?? null,
+        align: "right",
+        cell: (comparison) => (
+          <PriceValueCell pricing={comparison.pricing} field="cached" />
+        ),
+      },
+      {
+        id: "usage_basis",
+        header: "Pricing basis",
+        accessorFn: (comparison) => comparison.pricing.usage_basis ?? "",
+        cell: (comparison) => comparison.pricing.usage_basis ?? "—",
+      },
+      {
+        id: "provider_input_price",
+        header: "Provider input / 1M",
+        accessorFn: (comparison) => comparison.pricing.theirs?.input ?? null,
+        align: "right",
+        hidden: true,
+        cell: (comparison) => (
+          <ProviderPriceValueCell pricing={comparison.pricing} field="input" />
+        ),
+      },
+      {
+        id: "provider_output_price",
+        header: "Provider output / 1M",
+        accessorFn: (comparison) => comparison.pricing.theirs?.output ?? null,
+        align: "right",
+        hidden: true,
+        cell: (comparison) => (
+          <ProviderPriceValueCell pricing={comparison.pricing} field="output" />
+        ),
+      },
+      {
+        id: "provider_cached_input_price",
+        header: "Provider cached / 1M",
+        accessorFn: (comparison) => comparison.pricing.theirs?.cached ?? null,
+        align: "right",
+        hidden: true,
+        cell: (comparison) => (
+          <ProviderPriceValueCell pricing={comparison.pricing} field="cached" />
+        ),
+      },
+      {
+        id: "verified",
+        header: "Price checked",
+        accessorFn: (comparison) => comparison.pricing.verified_at ?? "",
+        cell: (comparison) => (
+          <PriceVerifiedCell pricing={comparison.pricing} />
+        ),
+      },
+      {
+        id: "primary",
+        header: "Primary",
+        accessorFn: (comparison) => Boolean(comparison.localEntry?.is_primary),
+        defaultSortDirection: "desc",
+        cell: (comparison) =>
+          comparison.localEntry?.is_primary ? (
+            <CheckCircle2 className="h-3.5 w-3.5 text-green-500" />
+          ) : (
+            "—"
+          ),
+      },
+      {
+        id: "deprecated",
+        header: "Deprecated",
+        accessorFn: (comparison) =>
+          Boolean(comparison.localEntry?.is_deprecated),
+        defaultSortDirection: "desc",
+        cell: (comparison) =>
+          comparison.localEntry?.is_deprecated ? (
+            <span className="font-medium text-amber-500">yes</span>
+          ) : (
+            "—"
+          ),
+      },
+      {
+        id: "status",
+        header: "Status",
+        accessorFn: (comparison) => comparison.status,
+        sortValue: (comparison) => STATUS_SORT_ORDER[comparison.status],
+        filter: "select",
+        cell: (comparison) => (
+          <StatusBadge status={comparison.status} cutoff={cutoff} />
+        ),
+      },
+    ],
+    [cutoff],
+  );
+
+  return (
+    <div className="border-t overflow-x-auto">
+      <MatrxDataTable<ModelComparison>
+        tableId={`ai-models/provider-sync/${providerName ?? "provider"}`}
+        data={comparisons}
+        columns={[...(columns), { id: "custom-actions", header: "Actions", sortable: false, filter: false, customActions: (comparison) => (
+          <div className="flex items-center gap-1">
+            {/* Retained by Arman's 2026-09-29 copy decision: this remains the
+                primary AI action because the package adapter cannot make its
+                row-specific provider/local envelope the primary payload. */}
+            <ProviderSyncRowCopyForAiButton
+              comparison={comparison}
+              providerName={providerName}
+            />
+            {comparison.status === "matched" && comparison.localEntry && (
+              <OpenDetailButton
+                onClick={() => {
+                  if (comparison.localEntry)
+                    onOpenModel(comparison.localEntry.id);
+                }}
+              />
+            )}
+            {comparison.status === "missing_local" && (
+              <Button
+                icon={<Plus />}
+                variant="quiet"
+                onClick={() => onAddMissing(comparison)}
+              >
+                Add
+              </Button>
+            )}
+            {comparison.status !== "extra_local" && (
+              <ExcludeButton
+                comparison={comparison}
+                onToggle={onToggleExclusion}
+                busy={policyBusy}
+              />
+            )}
+          </div>
+        ) }]}
+        getRowId={(comparison) => comparison.id}
+        density="condensed"
+        defaultSort={{ id: "released", direction: "desc" }}
+        pageSize={0}
+        emptyState={{ title: "No comparison data — sync this provider first." }}
+        coverage={{
+          noun: "provider model",
+          answeredBy: "client",
+          total: comparisons.length,
+        }}
+        copy={copy}
+        detail={{ enabled: false }}
+        window={{ enabled: false }}
+        selectedId={selectedId}
+        onRowOpen={(comparison) =>
+          onSelect(comparison.id === selectedId ? null : comparison)
+        }
+        rowClassName={(comparison) =>
+          `${STATUS_LEFT[comparison.status]} ${comparison.id === selectedId ? STATUS_BG_SEL[comparison.status] : STATUS_BG[comparison.status]}`
+        }
+
+      />
+    </div>
+  );
+}
+
+// ─── Provider section ─────────────────────────────────────────────────────
+
+function ProviderSection({
+  summary,
+  provider,
+  comparisons,
+  policy,
+  onSync,
+  syncing,
+  onOpenModel,
+  onAddMissing,
+  onEditPolicy,
+  onToggleExclusion,
+  policyBusy,
+}: {
+  summary: ProviderSummary;
+  provider: AiProvider | undefined;
+  comparisons: ModelComparison[];
+  policy: ProviderSyncPolicy;
+  onSync: (s: ProviderSummary) => void;
+  syncing: boolean;
+  onOpenModel: (id: string) => void;
+  onAddMissing: (c: ModelComparison, summary: ProviderSummary) => void;
+  onEditPolicy: (s: ProviderSummary) => void;
+  onToggleExclusion: (c: ModelComparison, s: ProviderSummary) => void;
+  policyBusy: boolean;
+}) {
+  const [expanded, setExpanded] = useState(false);
+  const [selectedComparison, setSelectedComparison] =
+    useState<ModelComparison | null>(null);
+
+  const statusCounts = countProviderSyncByStatus(comparisons);
+  const matched = statusCounts.matched;
+  const missing = statusCounts.missing_local;
+  const extra = statusCounts.extra_local;
+  const excluded = statusCounts.excluded;
+  const beforeCutoff = statusCounts.before_cutoff;
+
+  const snapshotAgeMs = ageMsSince(summary.fetched_at);
+  const snapshotStale =
+    snapshotAgeMs != null && snapshotAgeMs >= STALE_SNAPSHOT_HOURS * HOUR_MS;
+
+  const handleExpand = () => {
+    if (expanded) setSelectedComparison(null);
+    setExpanded((v) => !v);
+  };
+
+  return (
+    <div className="border rounded-lg overflow-hidden">
+      {/* Section header */}
+      <div className="flex items-center gap-3 px-3 py-2 bg-card">
+        <button
+          onClick={() => summary.has_cache && handleExpand()}
+          aria-label={`${expanded ? "Collapse" : "Expand"} ${summary.name ?? summary.id} models`}
+          aria-expanded={expanded}
+          className={`shrink-0 text-muted-foreground ${summary.has_cache ? "hover:text-foreground cursor-pointer" : "cursor-default opacity-30"}`}
+          disabled={!summary.has_cache}
+        >
+          {summary.has_cache ? (
+            expanded ? (
+              <ChevronDown className="h-4 w-4" />
+            ) : (
+              <ChevronRight className="h-4 w-4" />
+            )
+          ) : (
+            <Circle className="h-4 w-4" />
+          )}
+        </button>
+
+        {/* Provider name */}
+        <div className="w-32 shrink-0">
+          <span className="font-semibold text-sm">
+            {summary.name ?? summary.id}
+          </span>
+          <div className="mt-0.5">
+            {summary.is_supported ? (
+              <Badge variant="outline" className="text-[9px] h-4 px-1">
+                API sync
+              </Badge>
+            ) : (
+              <Badge variant="secondary" className="text-[9px] h-4 px-1">
+                Manual
+              </Badge>
+            )}
+          </div>
+        </div>
+
+        {/* Counts */}
+        <div className="flex-1 flex flex-wrap items-center gap-x-3 gap-y-0.5 min-w-0">
+          {summary.has_cache ? (
+            <>
+              {snapshotStale ? (
+                <Badge
+                  variant="outline"
+                  className="text-[10px] h-5 gap-1 bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-300 border-amber-300 whitespace-nowrap"
+                  title={`This provider snapshot was taken ${summary.fetched_at ? new Date(summary.fetched_at).toLocaleString() : "—"}. Everything below compares against it, not against the provider's API right now.`}
+                >
+                  <AlertTriangle className="h-3 w-3" />
+                  Snapshot{" "}
+                  {formatRelativeTime(summary.fetched_at, { style: "short" })}
+                </Badge>
+              ) : (
+                <span
+                  className="text-[11px] text-muted-foreground whitespace-nowrap"
+                  title={
+                    summary.fetched_at
+                      ? new Date(summary.fetched_at).toLocaleString()
+                      : undefined
+                  }
+                >
+                  Synced{" "}
+                  {formatRelativeTime(summary.fetched_at, { style: "short" })}
+                </span>
+              )}
+              <span className="inline-flex items-center gap-0.5 text-[11px] font-medium text-green-700 dark:text-green-400 whitespace-nowrap">
+                <CheckCircle2 className="h-3 w-3" />
+                {matched} matched
+              </span>
+              {missing > 0 && (
+                <span className="text-[11px] font-medium text-amber-600 dark:text-amber-400 whitespace-nowrap">
+                  {missing} not in DB
+                </span>
+              )}
+              {beforeCutoff > 0 && (
+                <span
+                  className="text-[11px] font-medium text-slate-600 dark:text-slate-300 whitespace-nowrap"
+                  title={
+                    policy.min_release_date
+                      ? `Released before ${policy.min_release_date}`
+                      : undefined
+                  }
+                >
+                  {beforeCutoff} before cutoff
+                </span>
+              )}
+              {excluded > 0 && (
+                <span className="text-[11px] font-medium text-muted-foreground whitespace-nowrap">
+                  {excluded} excluded
+                </span>
+              )}
+              {extra > 0 && (
+                <span className="text-[11px] font-medium text-blue-600 dark:text-blue-400 whitespace-nowrap">
+                  {extra} extra/deprecated
+                </span>
+              )}
+              <span className="text-[10px] text-muted-foreground whitespace-nowrap">
+                {policy.min_release_date
+                  ? `cutoff ${policy.min_release_date}`
+                  : "no cutoff"}
+              </span>
+            </>
+          ) : (
+            <span className="text-[11px] text-muted-foreground">
+              No cache — sync to compare
+            </span>
+          )}
+        </div>
+
+        {/* Actions */}
+        <div className="shrink-0 flex items-center gap-2">
+          {summary.has_cache && (
+            <ProviderSyncProviderCopyForAiMenu
+              summary={summary}
+              comparisons={comparisons}
+            />
+          )}
+          {provider?.models_link && (
+            <a
+              href={provider.models_link}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-muted-foreground hover:text-foreground"
+              title="Official models page"
+            >
+              <ExternalLink className="h-3.5 w-3.5" />
+            </a>
+          )}
+          <Button
+            icon={<SlidersHorizontal />}
+            variant="quiet"
+            onClick={() => onEditPolicy(summary)}
+            title="Edit the sync policy the model sync agent obeys for this provider"
+          >
+            Policy
+          </Button>
+          {summary.is_supported && (
+            <Button
+              icon={<RefreshCw
+                className={`h-3.5 w-3.5 ${syncing ? "animate-spin" : ""}`}
+              />}
+              variant={snapshotStale ? "primary" : "outline"}
+              onClick={() => onSync(summary)}
+              disabled={syncing}
+            >
+              {syncing
+                ? "Syncing…"
+                : snapshotStale
+                  ? "Refresh now"
+                  : "Sync Now"}
+            </Button>
+          )}
+        </div>
+      </div>
+
+      {/* Comparison area: table left, detail panel right */}
+      {expanded && (
+        <div className="border-t flex divide-x" style={{ minHeight: "200px" }}>
+          <div
+            className={
+              selectedComparison
+                ? "w-1/2 overflow-auto"
+                : "w-full overflow-auto"
+            }
+          >
+            <ComparisonTable
+              comparisons={comparisons}
+              providerName={summary.name}
+              cutoff={policy.min_release_date}
+              selectedId={selectedComparison?.id ?? null}
+              onSelect={setSelectedComparison}
+              onOpenModel={onOpenModel}
+              onAddMissing={(c) => onAddMissing(c, summary)}
+              onToggleExclusion={(c) => onToggleExclusion(c, summary)}
+              policyBusy={policyBusy}
+            />
+          </div>
+          {selectedComparison && (
+            <div
+              className="w-1/2 overflow-hidden flex flex-col"
+              style={{ minHeight: "200px" }}
+            >
+              <ProviderEntryDetail
+                comparison={selectedComparison}
+                cutoff={policy.min_release_date}
+                onClose={() => setSelectedComparison(null)}
+                onOpenModel={onOpenModel}
+                onAddMissing={(c) => onAddMissing(c, summary)}
+                onToggleExclusion={(c) => onToggleExclusion(c, summary)}
+                policyBusy={policyBusy}
+              />
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── Dashboard root ────────────────────────────────────────────────────────
+
+export default function ProviderSyncDashboard({
+  localModels,
+  providers,
+  providersError,
+  onModelsChanged,
+}: Props) {
+  const dispatch = useAppDispatch();
+  const summaries = useMemo(
+    () => providers.map(summarizeProvider),
+    [providers],
+  );
+  const [syncingId, setSyncingId] = useState<string | null>(null);
+  const [syncError, setSyncError] = useState<string | null>(null);
+  const [syncSuccess, setSyncSuccess] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [sheetModelId, setSheetModelId] = useState<string | null>(null);
+  const [addTarget, setAddTarget] = useState<{
+    comparison: ModelComparison;
+    summary: ProviderSummary;
+  } | null>(null);
+  const [candidates, setCandidates] = useState<ProviderSyncCandidate[]>([]);
+  const [registry, setRegistry] = useState<
+    Omit<ProviderSyncRegistry, "localModels">
+  >({
+    offerings: [],
+    aliases: [],
+  });
+  const [policies, setPolicies] = useState<Record<string, ProviderSyncPolicy>>(
+    {},
+  );
+  const [policyTarget, setPolicyTarget] =
+    useState<ProviderSyncPolicyTarget | null>(null);
+  const [policyBusyProviderId, setPolicyBusyProviderId] = useState<
+    string | null
+  >(null);
+
+  const loadSummaries = useCallback(async () => {
+    setLoading(true);
+    try {
+      // Our own classification + registry rows come straight from the
+      // database (the sync agent reads the same view). The `providers` prop is
+      // the parent page's: the write paths call `onModelsChanged` explicitly
+      // after a change. This loader must NOT call it — on mount that asked the
+      // parent to reload, the parent unmounted us for its skeleton, and the
+      // mount effect fired again, forever (2026-09-11 review).
+      const [candidateRows, offerings, aliases] = await Promise.all([
+        aiModelService.fetchProviderSyncCandidates(),
+        aiModelService.fetchOfferings(),
+        aiModelService.fetchAliases(),
+      ]);
+      setCandidates(candidateRows);
+      setRegistry({ offerings, aliases });
+    } catch (err) {
+      console.error("[ProviderSyncDashboard] load error", err);
+      setSyncError(
+        `Could not load the provider sync data: ${extractErrorMessage(err)}`,
+      );
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadSummaries();
+  }, [loadSummaries]);
+
+  // Policies come off the provider rows the page already fetched; a save
+  // overlays the fresh value so the table reclassifies without a full reload.
+  useEffect(() => {
+    setPolicies((prev) => {
+      const next = { ...prev };
+      for (const provider of providers) {
+        if (next[provider.id] === undefined) {
+          next[provider.id] = aiModelService.parseSyncPolicy(
+            provider.sync_policy,
+          );
+        }
+      }
+      return next;
+    });
+  }, [providers]);
+
+  const policyFor = useCallback(
+    (providerId: string): ProviderSyncPolicy =>
+      policies[providerId] ?? {
+        min_release_date: null,
+        excluded_model_ids: [],
+        notes: null,
+      },
+    [policies],
+  );
+
+  /**
+   * Add or remove one model id on the provider's exclusion list.
+   * Excluding is quiet and permanent from the agent's side, so the confirm
+   * says exactly that before the write happens.
+   */
+  const handleToggleExclusion = async (
+    comparison: ModelComparison,
+    summary: ProviderSummary,
+  ) => {
+    const policy = policyFor(summary.id);
+    const isExcluded = policy.excluded_model_ids.includes(comparison.id);
+    const providerLabel = summary.name ?? summary.id;
+
+    const ok = await confirm({
+      title: isExcluded
+        ? `Stop excluding ${comparison.id}?`
+        : `Exclude ${comparison.id} from ${providerLabel} sync?`,
+      description: isExcluded
+        ? `It becomes a sync candidate again: the model sync agent may add it to the registry on its next run, and it will start showing as "Not in DB" here until it is added.`
+        : `The model sync agent will never add this model to the registry — not now, not on any future run, and without saying anything. Un-exclude it here to undo that.`,
+      confirmLabel: isExcluded ? "Un-exclude" : "Exclude",
+      variant: isExcluded ? "default" : "destructive",
+    });
+    if (!ok) return;
+
+    setPolicyBusyProviderId(summary.id);
+    try {
+      const next: ProviderSyncPolicy = {
+        ...policy,
+        excluded_model_ids: isExcluded
+          ? policy.excluded_model_ids.filter((id) => id !== comparison.id)
+          : [...policy.excluded_model_ids, comparison.id],
+      };
+      const saved = await aiModelService.updateProviderSyncPolicy(
+        summary.id,
+        next,
+      );
+      setPolicies((prev) => ({ ...prev, [summary.id]: saved }));
+      setCandidates(await aiModelService.fetchProviderSyncCandidates());
+      toast.success(
+        isExcluded
+          ? `${comparison.id} is no longer excluded`
+          : `${comparison.id} is now excluded from ${providerLabel} sync`,
+      );
+    } catch (err) {
+      toast.error("Could not update the exclusion list", {
+        description: extractErrorMessage(err),
+      });
+    } finally {
+      setPolicyBusyProviderId(null);
+    }
+  };
+
+  const handlePolicySaved = async (
+    providerId: string,
+    policy: ProviderSyncPolicy,
+  ) => {
+    setPolicies((prev) => ({ ...prev, [providerId]: policy }));
+    try {
+      setCandidates(await aiModelService.fetchProviderSyncCandidates());
+    } catch (err) {
+      toast.error(
+        "Policy saved, but the classification below could not be reloaded — press Refresh.",
+        { description: extractErrorMessage(err) },
+      );
+    }
+  };
+
+  /**
+   * Pull this provider's models API into `ai.provider.provider_models_cache`
+   * — server-side, via aidream's `POST /admin/ai-catalog/provider-models/refresh`
+   * (landed 2026-09-11; the on-demand half of its daily
+   * `provider_models_refresh` system task, same fetchers the scheduled run
+   * uses). The response names every provider it tried, so a missing API key
+   * or an outage is a reported result, never a silent no-op.
+   */
+  const handleSync = async (summary: ProviderSummary) => {
+    if (!summary.provider_key) return;
+    setSyncingId(summary.id);
+    setSyncError(null);
+    setSyncSuccess(null);
+    try {
+      const result = await dispatch(
+        refreshProviderModels([summary.provider_key]),
+      );
+      if (result === null) {
+        setSyncError(
+          `Sync failed for ${summary.name ?? summary.provider_key} — request could not complete`,
+        );
+        return;
+      }
+      const row = result.results?.find(
+        (r) => r.provider_slug === summary.provider_key,
+      );
+      if (!row) {
+        setSyncError(
+          `${summary.name ?? summary.provider_key} was not in the server's response — nothing refreshed`,
+        );
+      } else if (row.status === "refreshed") {
+        setSyncSuccess(`Synced ${row.model_count} models from ${summary.name}`);
+      } else if (row.status === "missing_key") {
+        setSyncError(
+          `${summary.name ?? summary.provider_key} has no API key configured on the server — nothing to sync`,
+        );
+      } else if (row.status === "no_provider_row") {
+        setSyncError(
+          `${summary.name ?? summary.provider_key} has no matching ai.provider row on the server`,
+        );
+      } else {
+        setSyncError(
+          row.detail ??
+            `Sync failed for ${summary.name ?? summary.provider_key}`,
+        );
+      }
+      onModelsChanged?.();
+    } catch (err) {
+      setSyncError(extractErrorMessage(err));
+    } finally {
+      setSyncingId(null);
+    }
+  };
+
+  const providerMap = new Map(providers.map((p) => [p.id, p]));
+  const comparisonsByProvider = useMemo(() => {
+    const fullRegistry: ProviderSyncRegistry = { ...registry, localModels };
+    const map = new Map<string, ModelComparison[]>();
+    for (const summary of summaries) {
+      map.set(
+        summary.id,
+        buildProviderSyncComparisons(summary, candidates, fullRegistry),
+      );
+    }
+    return map;
+  }, [summaries, candidates, registry, localModels]);
+  const pageExports = useMemo(
+    () =>
+      summaries.map((summary) => ({
+        summary,
+        comparisons: comparisonsByProvider.get(summary.id) ?? [],
+      })),
+    [summaries, comparisonsByProvider],
+  );
+  const totalProviderModels = summaries.reduce(
+    (acc, s) => acc + s.model_count,
+    0,
+  );
+  const syncedCount = summaries.filter((s) => s.has_cache).length;
+  const supportedCount = summaries.filter((s) => s.is_supported).length;
+
+  return (
+    <div className="flex flex-col h-full min-h-0 overflow-hidden">
+      {/* ── Compact toolbar ── */}
+      <div className="matrx-touch-targets shrink-0 flex flex-wrap items-center gap-x-3 gap-y-2 border-b bg-card px-3 py-2 sm:flex-nowrap sm:gap-4 sm:px-4">
+        {/* Stats */}
+        {!loading && (
+          <div className="grid w-full grid-cols-5 gap-x-2 sm:flex sm:w-auto sm:items-center sm:gap-4">
+            {[
+              { value: summaries.length, label: "Providers" },
+              { value: supportedCount, label: "API sync" },
+              { value: syncedCount, label: "Synced" },
+              { value: totalProviderModels, label: "Cached" },
+              { value: localModels.length, label: "In DB" },
+            ].map(({ value, label }) => (
+              <div
+                key={label}
+                className="flex min-w-0 flex-col items-center sm:flex-row sm:items-baseline sm:gap-1"
+              >
+                <span className="text-sm font-bold tabular-nums">{value}</span>
+                <span className="truncate text-[10px] text-muted-foreground">
+                  {label}
+                </span>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Spacer */}
+        <div className="hidden flex-1 sm:block" />
+
+        {/* Legend */}
+        <div className="flex w-full flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-muted-foreground sm:w-auto sm:flex-nowrap">
+          {[
+            { color: "bg-green-400", label: "Matched" },
+            { color: "bg-amber-400", label: "Not in DB" },
+            { color: "bg-slate-400", label: "Before cutoff" },
+            { color: "bg-muted-foreground/50", label: "Excluded" },
+            { color: "bg-blue-400", label: "Extra/deprecated" },
+          ].map(({ color, label }) => (
+            <span key={label} className="inline-flex items-center gap-1.5">
+              <span className={`h-2 w-2 rounded-sm ${color}`} />
+              {label}
+            </span>
+          ))}
+        </div>
+
+        {/* Refresh + page copy */}
+        <div className="flex w-full items-center justify-end gap-1 sm:w-auto sm:justify-start">
+          <ProviderSyncPageCopyForAiButton
+            exports={pageExports}
+            disabled={loading}
+          />
+          <Button
+            icon={<RefreshCw
+              className={`h-3.5 w-3.5 ${loading ? "animate-spin" : ""}`}
+            />}
+            variant="quiet"
+            onClick={loadSummaries}
+            disabled={loading}
+          >
+            Refresh
+          </Button>
+        </div>
+      </div>
+
+      {/* Notifications */}
+      {(syncError || syncSuccess) && (
+        <div
+          className={`shrink-0 flex items-center gap-2 px-4 py-1.5 text-sm border-b ${
+            syncError
+              ? "bg-destructive/10 text-destructive-ink"
+              : "bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-300"
+          }`}
+        >
+          {syncError ? (
+            <AlertCircle className="h-4 w-4 shrink-0" />
+          ) : (
+            <CheckCircle2 className="h-4 w-4 shrink-0" />
+          )}
+          <span className="flex-1 text-xs">
+            {syncError ?? syncSuccess} <ErrorAlchemyMenu error={syncError} />
+          </span>
+          <button
+            onClick={() => {
+              setSyncError(null);
+              setSyncSuccess(null);
+            }}
+            className="text-[10px] underline"
+          >
+            Dismiss
+          </button>
+        </div>
+      )}
+
+      {/* Provider list */}
+      <ScrollArea className="flex-1 min-h-0">
+        <div className="p-3 space-y-2">
+          {loading ? (
+            Array.from({ length: 6 }).map((_, i) => (
+              <Skeleton key={i} className="h-10 w-full rounded-lg" />
+            ))
+          ) : providersError && summaries.length === 0 ? (
+            <ReadFailure
+              error={providersError}
+              what="the model providers"
+              className="m-0"
+              onRetry={onModelsChanged}
+            />
+          ) : summaries.length === 0 ? (
+            <div className="text-center py-16 text-sm text-muted-foreground">
+              No providers found.
+            </div>
+          ) : (
+            summaries.map((summary) => (
+              <ProviderSection
+                key={summary.id}
+                summary={summary}
+                provider={providerMap.get(summary.id)}
+                comparisons={comparisonsByProvider.get(summary.id) ?? []}
+                policy={policyFor(summary.id)}
+                onSync={handleSync}
+                syncing={syncingId === summary.id}
+                onOpenModel={setSheetModelId}
+                onAddMissing={(comparison, s) =>
+                  setAddTarget({ comparison, summary: s })
+                }
+                onEditPolicy={(s) =>
+                  setPolicyTarget({
+                    providerId: s.id,
+                    providerName: s.name ?? s.id,
+                    policy: policyFor(s.id),
+                    knownModelIds: (comparisonsByProvider.get(s.id) ?? [])
+                      .filter((c) => c.status !== "extra_local")
+                      .map((c) => c.id),
+                  })
+                }
+                onToggleExclusion={handleToggleExclusion}
+                policyBusy={policyBusyProviderId === summary.id}
+              />
+            ))
+          )}
+        </div>
+      </ScrollArea>
+
+      <ModelDetailSheet
+        modelId={sheetModelId}
+        allModels={localModels}
+        onClose={() => setSheetModelId(null)}
+        onSaved={() => {
+          onModelsChanged?.();
+          setSheetModelId(null);
+        }}
+      />
+
+      <ProviderSyncPolicyDialog
+        target={policyTarget}
+        onClose={() => setPolicyTarget(null)}
+        onSaved={handlePolicySaved}
+      />
+
+      <AddProviderModelDialog
+        open={!!addTarget}
+        onOpenChange={(o) => {
+          if (!o) setAddTarget(null);
+        }}
+        providerEntry={addTarget?.comparison.providerEntry ?? null}
+        providerId={addTarget?.summary.id ?? ""}
+        providerName={addTarget?.summary.name ?? null}
+        provider={addTarget ? providerMap.get(addTarget.summary.id) : undefined}
+        localModels={localModels}
+        onCreated={(created, openEditor) => {
+          setSyncSuccess(
+            `Added "${created.common_name ?? created.name}" to database`,
+          );
+          onModelsChanged?.();
+          if (openEditor) setSheetModelId(created.id);
+        }}
+      />
+    </div>
+  );
+}

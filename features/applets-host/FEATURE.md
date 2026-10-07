@@ -32,6 +32,11 @@ Package mechanics: `aidream/apps/shared/applets/FEATURE.md`.
 **Components**
 - `AppletHostMount.tsx` — builds ONE `createPlatformHost` per Applet and renders
   `mountAppletAsync(record, host, HOST_SCOPE, { renderKind, renderRun, openRun })`.
+- `AppletHostMount` props: `basePath`, `preview` (held writes, in-memory pages), `files` (unsaved buffers laid over
+  the saved files — the code workspace's preview), `embedded` (a Space block: pages navigate in place, writes live;
+  `features/agent-apps/embed/AppletInPage.tsx` passes it). Always binds `renderDataPage` → `features/agent-apps/embed/DataPage.tsx`
+  (`<DataPage id>` inside an Applet), and declares the record's `mandates` in the top Agents menu
+  (`useDeclaredSurfaceMandates`, `does` = the job's described goal) — no chips on the page. `/apps/<slug>` and `/p/<slug>` both mount it.
 - `AppletForeignKind.tsx` — `renderKind` (`AppletKind`): a kind the app's registry routes renders through
   `KindInstanceRender`; a kind the APPLET's organization owns (read through `host.kinds` → `app.applet_kind`, so a
   viewer from another organization gets it too) compiles its stored web component with `compileStoredComponent`
@@ -82,6 +87,7 @@ record's own `allowed_imports`; app-owned modules come from `lib/code-runtime/st
 
 ## Change Log
 
+- 2026-10-07 — `files`, `embedded` and `renderDataPage`; the Applet's jobs are disclosed in the Agents menu; adopts applets 0.7.1, records 0.76.8, agents 0.48.0 (AP-0 lane A).
 - 2026-10-07 — Conversation turns (`useConversation`, applets 0.7.x) are teed into the live-run pipeline like job starts.
 - 2026-10-07 — `renderKind` is `AppletKind` (foreign kinds, PLAN AP-0 item 11); the Applet surface follows its record
   by trigger; entity sources documented (AP-0 lane A, contracts 2.5).

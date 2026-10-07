@@ -9,6 +9,8 @@ import {
   toCsvImportCommand,
   type CsvImportCommand,
 } from "../csv-import";
+import type { CsvWorkerResponse } from "../csv-import.worker";
+import "../csv-import.worker";
 
 const limits = {
   maxFileBytes: 100_000,
@@ -25,6 +27,41 @@ const actor = {
 };
 
 describe("Vault CSV import", () => {
+  test("an unbalanced quote is refused with a sentence the person can act on", () => {
+    expect(() => parseCsvText('name,password\nExample,"never closed\nNext,pw', limits)).toThrow(
+      "The CSV could not be read. Fix the file and try again.",
+    );
+  });
+
+  test("a file near maxFileBytes parses completely through the worker handler", async () => {
+    // Measured 2026-10-07: 5 MB (52k records) is ~290 ms on the main thread, so a FILE parses in a worker.
+    const max = 5_000_000;
+    const header = "name,url,username,password,notes\n";
+    const row = 'Example site,https://example.test/login,someone@example.test,"p,a""ss-word-1234",some note here\n';
+    const count = Math.floor((max - header.length) / row.length);
+    const text = header + row.repeat(count);
+    const posted: CsvWorkerResponse[] = [];
+    (self as unknown as { postMessage: (m: CsvWorkerResponse) => void }).postMessage = (m) => posted.push(m);
+    (self as unknown as { onmessage: (e: unknown) => void }).onmessage({
+      data: { text, limits: { ...limits, maxFileBytes: max, maxRecords: count } },
+    });
+    expect(posted).toHaveLength(1);
+    expect(posted[0]).toMatchObject({ ok: true });
+    const preview = (posted[0] as Extract<CsvWorkerResponse, { ok: true }>).preview;
+    expect(preview.rows).toHaveLength(count);
+    expect(preview.issues).toBe(0);
+    expect(preview.rows[0]?.cells[3]).toBe('p,a"ss-word-1234');
+  });
+
+  test("the worker answers an unbalanced quote with the same sentence", () => {
+    const posted: CsvWorkerResponse[] = [];
+    (self as unknown as { postMessage: (m: CsvWorkerResponse) => void }).postMessage = (m) => posted.push(m);
+    (self as unknown as { onmessage: (e: unknown) => void }).onmessage({
+      data: { text: 'a,b\n"open,1', limits },
+    });
+    expect(posted).toEqual([{ ok: false, message: "The CSV could not be read. Fix the file and try again." }]);
+  });
+
   test("does not count a standard final record terminator as an invalid login", () => {
     const preview = parseCsvText('\uFEFFname,url,username,password,notes\r\nExample,https://example.test,user,password,"line one\r\nline two"\r\n', { ...limits, maxRecords: 1 });
     expect(preview.rows).toHaveLength(1);

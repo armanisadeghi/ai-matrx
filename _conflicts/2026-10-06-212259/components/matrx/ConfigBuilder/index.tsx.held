@@ -1,0 +1,457 @@
+matrx-auto-git-conflict-file-work-delete-this-when-resolved
+
+HELD CONFLICT, written by scripts/sync-main.py
+File:      components/matrx/ConfigBuilder/index.tsx
+Why held:  both sides changed the same code
+GITHUB's version is live in the repo at the path above. LOCAL's version is at the bottom
+of this file, below the FACTS.
+Done with it: the final code is in the live file, this .held file is deleted, and its line
+in _conflicts/README.md is deleted. The list of open items is _conflicts/README.md.
+
+FACTS (computed by sync-main from git)
+
+THE TWO VERSIONS
+  LOCAL  = the version that was on this Mac. It is saved below, in this .held file.
+  GITHUB = the version from GitHub. It is LIVE in the repo right now, at components/matrx/ConfigBuilder/index.tsx
+  Both grew from the same COMMON version: commit cfed5f4723, 2026-10-06 21:01.
+
+WHEN EACH SIDE CHANGED THIS FILE (newest first)
+  LOCAL:
+    2026-10-06 21:16  (uncommitted edit; the time the file was last saved on this Mac)
+    2026-10-06 21:23  94b89b0701  collected by the sync; the edit itself happened at or before this time
+  GITHUB:
+    2026-10-06 21:00  7bf65448f8  "Copied state and success toasts only after a copy that landed (kit 0.28.0 boolean); delete ToolTabBodies/viewer-utilities CopyButton; add check:copy-result-gated"
+  LOCAL's latest change is 15m AFTER GITHUB's latest change.
+
+SIZE: common version 402 lines, LOCAL 404 lines, GITHUB 402 lines
+
+WHAT EACH SIDE DID, compared with the common version
+  LOCAL added 2 lines and removed 1 lines.
+  GITHUB added 2 lines and removed 2 lines.
+
+CODE ONE SIDE HAS THAT THE OTHER DOES NOT
+  LOCAL has 0 of the 2 lines GITHUB added.
+    Lines GITHUB added that LOCAL does NOT have:
+      | const copyToClipboard = async () => {
+      | if (!(await copyText(JSON.stringify(config, null, 2)))) return;
+    (some of those lines also appear in other changed files, which may be a coincidence: components/ui/JsonComponents/JsonEditor.tsx, features/agents/agent-creators/tabbed-builder/PreviewTab.tsx)
+    Lines GITHUB deliberately REMOVED that LOCAL still has: 1
+      | const copyToClipboard = () => {
+  GITHUB has 0 of the 2 lines LOCAL added.
+    Lines LOCAL added that GITHUB does NOT have:
+      | void copyText(JSON.stringify(config, null, 2)).then((copied) => {
+      | if (!copied) return;
+    (some of those lines also appear in other changed files, which may be a coincidence: app/(admin)/administration/database/sql-functions/components/EnumDetail.tsx, app/(admin)/administration/database/sql-functions/components/SqlFunctionDetail.tsx, app/(admin)/administration/database/sql-functions/components/SqlFunctionTester.tsx, app/(admin)/administration/ui/official-components/component-displays/pro-input.tsx)
+
+COMPARE THEM (the labels are correct; '-' lines are GITHUB, '+' lines are LOCAL):
+  diff -u --label 'GITHUB (live)' --label 'LOCAL (held)' <(git show 18b17dfd3ce9:'components/matrx/ConfigBuilder/index.tsx') <(git show 94b89b070183:'components/matrx/ConfigBuilder/index.tsx')
+
+RECOVER EITHER VERSION FOREVER (works even after this .held file is deleted):
+  LOCAL : git show 94b89b070183:'components/matrx/ConfigBuilder/index.tsx'
+  GITHUB: git show 18b17dfd3ce9:'components/matrx/ConfigBuilder/index.tsx'
+
+---------------- LOCAL VERSION BELOW ----------------
+"use client";
+import { useClipboard } from "@ai-matrx/kit/clipboard";
+import { toast } from "@/lib/toast";
+import React, { useState, useRef, useCallback } from "react";
+import { AlertCircle, AlignLeft } from "lucide-react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { Button } from "@/components/ui/button";
+import { Input } from "@ai-matrx/design-system/controls";
+import { Textarea } from "@/components/ui/textarea";
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/ui/select";
+import ConfigJSONViewer from "./ConfigJSONViewer";
+import { Label } from "@/components/ui/label";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { cn } from "@/lib/utils";
+import { extractErrorMessage } from "@/utils/errors";
+type ConfigValue = string | number | boolean | object | any[];
+type ConfigType = "string" | "number" | "boolean" | "object" | "list";
+type KeyDownField = "field" | "type" | "value";
+
+interface Config {
+    [key: string]: ConfigValue;
+}
+
+interface ConfigBuilderProps {
+    initialConfig?: Config;
+    onConfigChange?: (config: Config) => void;
+    className?: string;
+}
+
+const ConfigBuilder = ({ initialConfig, onConfigChange, className }: ConfigBuilderProps) => {
+  const { copyText } = useClipboard({
+    notify: (message, kind) =>
+      kind === "error" ? toast.error(message) : toast.success(message),
+  });
+    const [config, setConfig] = useState<Config>(initialConfig || {});
+    const [field, setField] = useState("");
+    const [type, setType] = useState<ConfigType>("string");
+    const [value, setValue] = useState("");
+    const [error, setError] = useState("");
+    const [isEditing, setIsEditing] = useState(false);
+    const [deleteKey, setDeleteKey] = useState("");
+    const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+    const [copied, setCopied] = useState(false);
+
+    const typeSelectRef = useRef<HTMLSelectElement>(null);
+    // Bound to whichever concrete element renderValueInput() mounts for the
+    // current field type (RadioGroup -> div, Textarea, or Input) - only
+    // `.focus()` is ever called on it, which all three share.
+    const valueInputRef = useRef<HTMLDivElement | HTMLInputElement | HTMLTextAreaElement | null>(null);
+    const setValueInputRef = useCallback(
+        (el: HTMLDivElement | HTMLInputElement | HTMLTextAreaElement | null) => {
+            valueInputRef.current = el;
+        },
+        [],
+    );
+    const addButtonRef = useRef<HTMLButtonElement>(null);
+
+    const types: ConfigType[] = ["string", "number", "boolean", "object", "list"];
+
+    const handleKeyDown = (e: React.KeyboardEvent, currentField: KeyDownField) => {
+        if (e.key === "Enter" && !e.shiftKey) {
+            if (!(e.target instanceof HTMLTextAreaElement)) {
+                e.preventDefault();
+            }
+            switch (currentField) {
+                case "field":
+                    typeSelectRef.current?.focus();
+                    break;
+                case "type":
+                    valueInputRef.current?.focus();
+                    break;
+                case "value":
+                    if (!(e.target instanceof HTMLTextAreaElement)) {
+                        addButtonRef.current?.click();
+                    }
+                    break;
+            }
+        }
+    };
+
+    const getPlaceholder = () => {
+        switch (type) {
+            case "string":
+                return "Enter string value...";
+            case "number":
+                return "Enter number value...";
+            case "object":
+                return '{ "key": "value" }';
+            case "list":
+                return '["item1", "item2"]';
+            default:
+                return "Enter value...";
+        }
+    };
+
+    const formatJSONString = (jsonString: string) => {
+        try {
+            const parsed = JSON.parse(jsonString);
+            return JSON.stringify(parsed, null, 2);
+        } catch (e) {
+            return jsonString;
+        }
+    };
+
+    const resetForm = () => {
+        setField("");
+        setValue("");
+        setType("string");
+        setIsEditing(false);
+        setError("");
+    };
+
+    const handleBlur = () => {
+        if (type === "object" || type === "list") {
+            try {
+                const parsed = JSON.parse(value);
+                setValue(JSON.stringify(parsed));
+            } catch (e) {
+                // If parsing fails, leave the value as is
+            }
+        }
+    };
+
+    const copyToClipboard = () => {
+        void copyText(JSON.stringify(config, null, 2)).then((copied) => {
+  if (!copied) return;
+  setCopied(true);
+});
+        setTimeout(() => setCopied(false), 2000);
+    };
+
+    const handleDelete = () => {
+        if (deleteKey) {
+            const newConfig = { ...config };
+            delete newConfig[deleteKey];
+
+            // Update the state
+            setConfig(newConfig);
+
+            // Notify parent of the updated configuration
+            if (onConfigChange) {
+                onConfigChange(newConfig);
+            }
+
+            setDeleteKey("");
+            setShowDeleteDialog(false);
+        }
+    };
+
+    const handleEdit = (key: string) => {
+        setField(key);
+        const fieldValue = config[key];
+        setType(typeof fieldValue === "object" ? (Array.isArray(fieldValue) ? "list" : "object") : (typeof fieldValue as ConfigType));
+        setValue(typeof fieldValue === "object" ? JSON.stringify(fieldValue, null, 2) : String(fieldValue));
+        setIsEditing(true);
+    };
+
+    const handleFormatValue = () => {
+        if (type === "object" || type === "list") {
+            setValue(formatJSONString(value));
+        }
+    };
+
+    const validateAndAddField = () => {
+        setError("");
+        if (!field.trim()) {
+            setError("Field name is required");
+            return;
+        }
+        let processedValue: ConfigValue;
+        try {
+            switch (type) {
+                case "string":
+                    processedValue = String(value);
+                    break;
+                case "number":
+                    processedValue = Number(value);
+                    if (isNaN(processedValue)) throw new Error("Invalid number");
+                    break;
+                case "boolean":
+                    processedValue = value === "true";
+                    break;
+                case "object":
+                case "list":
+                    processedValue = JSON.parse(value);
+                    if (type === "list" && !Array.isArray(processedValue)) {
+                        throw new Error("Not a valid array");
+                    }
+                    break;
+                default:
+                    processedValue = value;
+            }
+
+            // Create the new configuration with the updated field
+            const updatedConfig = {
+                ...config,
+                [field]: processedValue,
+            };
+
+            // Update the state
+            setConfig(updatedConfig);
+
+            // Notify parent of the updated configuration
+            if (onConfigChange) {
+                onConfigChange(updatedConfig);
+            }
+
+            resetForm();
+        } catch (err) {
+            setError(`Invalid ${type} value: ${extractErrorMessage(err, "Unknown error")}`);
+        }
+    };
+
+    const renderValueInput = () => {
+        switch (type) {
+            case "boolean":
+                return (
+                    <RadioGroup
+                        defaultValue={value}
+                        onValueChange={setValue}
+                        className="flex gap-3 pl-1"
+                        ref={setValueInputRef}
+                        onKeyDown={(e) => handleKeyDown(e, "value")}
+                    >
+                        <div className="flex items-center space-x-1">
+                            <RadioGroupItem value="true" id="true" className="h-3 w-3" />
+                            <Label htmlFor="true" className="text-xs font-extralight">
+                                True
+                            </Label>
+                        </div>
+                        <div className="flex items-center space-x-1">
+                            <RadioGroupItem value="false" id="false" className="h-3 w-3" />
+                            <Label htmlFor="false" className="text-xs font-extralight">
+                                False
+                            </Label>
+                        </div>
+                    </RadioGroup>
+                );
+            case "object":
+            case "list":
+                return (
+                    <div className="relative">
+                        <Textarea mono minHeight={64} maxHeight={64}
+                            ref={setValueInputRef}
+                            value={value}
+                            onChange={(e) => setValue(e.target.value)}
+                            onBlur={handleBlur}
+                            placeholder={getPlaceholder()}
+                        />
+                        <Button
+                            icon={<AlignLeft />} aria-label="Format JSON"
+                            variant="quiet"
+                            onClick={handleFormatValue}
+                            className="absolute top-0 right-0"
+                            title="Format JSON"
+                        />
+                    </div>
+                );
+            default:
+                return (
+                    <Input
+                        ref={setValueInputRef}
+                        type="text"
+                        value={value}
+                        onChange={(e) => setValue(e.target.value)}
+                        onKeyDown={(e) => handleKeyDown(e, "value")}
+                        placeholder={getPlaceholder()}
+                    />
+                );
+        }
+    };
+
+    return (
+        <div
+            className={cn(
+                "border rounded-lg bg-card text-card-foreground shadow-sm font-sans text-sm font-extralight tracking-tight antialiased h-full",
+                className
+            )}
+        >
+            <div className="flex gap-3 p-2 h-full">
+                <div className="w-1/2 space-y-2">
+                    <div className="flex gap-1">
+                        <Input
+                            type="text"
+                            value={field}
+                            onChange={(e) => setField(e.target.value)}
+                            onKeyDown={(e) => handleKeyDown(e, "field")}
+                            className="flex-1"
+                            placeholder="Field name..."
+                            disabled={isEditing}
+                        />
+                        <Select value={type} onValueChange={(value) => setType(value as ConfigType)}>
+                            <SelectTrigger className="w-20">
+                                <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {types.map((t) => (
+                                    <SelectItem key={t} value={t} className="text-xs">
+                                        {t}
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                    </div>
+                    
+                    <div>{renderValueInput()}</div>
+                    
+                    {error && (
+                        <Alert variant="destructive" className="py-1">
+                            <AlertCircle className="h-3 w-3" />
+                            <AlertDescription className="text-xs font-extralight">{error}</AlertDescription>
+                        </Alert>
+                    )}
+                    
+                    <div className="flex gap-1">
+                        <Button
+                            variant="primary"
+                            ref={addButtonRef}
+                            onClick={validateAndAddField}
+                            className="flex-1"
+                        >
+                            {isEditing ? "Update" : "Add"}
+                        </Button>
+                        
+                        <Select value={deleteKey} onValueChange={(value) => {
+                            setDeleteKey(value);
+                            if (value) setShowDeleteDialog(true);
+                        }}>
+                            <SelectTrigger className="flex-1">
+                                <SelectValue placeholder="Delete" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {Object.keys(config).map((key) => (
+                                    <SelectItem key={key} value={key} className="text-xs">
+                                        {key}
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                        
+                        <Select value="" onValueChange={(value) => {
+                            if (value) handleEdit(value);
+                        }}>
+                            <SelectTrigger className="flex-1">
+                                <SelectValue placeholder="Edit" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {Object.keys(config).map((key) => (
+                                    <SelectItem key={key} value={key} className="text-xs">
+                                        {key}
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                    </div>
+                </div>
+                
+                <div className="w-1/2">
+                    <ConfigJSONViewer data={config} copied={copied} onCopy={copyToClipboard} />
+                </div>
+            </div>
+            
+            <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle className="text-base font-normal">Confirm Deletion</AlertDialogTitle>
+                        <AlertDialogDescription className="text-sm font-extralight">
+                            Are you sure you want to delete the field "{deleteKey}"?
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel
+                            onClick={() => setDeleteKey("")}
+                            className="text-sm font-extralight"
+                        >
+                            Cancel
+                        </AlertDialogCancel>
+                        <AlertDialogAction onClick={handleDelete} className="text-sm font-extralight">
+                            Delete
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
+        </div>
+    );
+};
+
+export default ConfigBuilder;

@@ -28,7 +28,7 @@ import {
 import { formatCount, formatPercentFromFraction } from "@ai-matrx/kit/format";
 import { useAdminCost } from "@/components/cost/useAdminCost";
 import { AgentAppAdminActions } from "@/features/agent-apps/components/AgentAppAdminActions";
-import { AgentAppEditor } from "@/features/agent-apps/components/AgentAppEditor";
+import { AppletHostMount } from "@/features/applets-host/AppletHostMount";
 import { UpdateAgentAppModal } from "@/features/agent-apps/components/UpdateAgentAppModal";
 import type { AgentApp, UpdateAgentAppInput } from "@/features/agent-apps/types";
 import type {
@@ -188,36 +188,6 @@ export default function AdminEditAgentAppPage({
         title: "Error",
         description:
           err instanceof Error ? err.message : "Failed to move agent app to Trash",
-        variant: "destructive",
-      });
-      throw err;
-    }
-  };
-
-  const handleSaveComponentCode = async (
-    appId: string,
-    input: UpdateAgentAppInput,
-  ) => {
-    try {
-      const res = await fetch(`/api/agent-apps/${appId}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(input),
-      });
-      if (!res.ok) {
-        const body = await res.json().catch(() => ({}));
-        throw new Error(body.error ?? "Save failed");
-      }
-      const saved = await res.json();
-      setApp((prev) =>
-        prev ? { ...prev, ...(saved as AgentAppAdminView) } : prev,
-      );
-      toast({ title: "Saved", description: "Component code updated" });
-    } catch (err) {
-      toast({
-        title: "Error",
-        description:
-          err instanceof Error ? err.message : "Failed to save component",
         variant: "destructive",
       });
       throw err;
@@ -464,7 +434,7 @@ export default function AdminEditAgentAppPage({
               <TabsTrigger
                 value="code"
               >
-                Component Code
+                Preview
               </TabsTrigger>
             </TabsList>
           </div>
@@ -613,11 +583,8 @@ export default function AdminEditAgentAppPage({
             value="code"
             className="flex-1 overflow-hidden m-0 data-[state=active]:flex p-2"
           >
-            <div className="flex-1 overflow-hidden">
-              <AgentAppEditor
-                app={toAgentApp(app)}
-                onSave={handleSaveComponentCode}
-              />
+            <div className="flex-1 overflow-auto">
+              <AppletHostMount appletId={app.id} slug={app.slug} preview={{}} />
             </div>
           </TabsContent>
         </Tabs>

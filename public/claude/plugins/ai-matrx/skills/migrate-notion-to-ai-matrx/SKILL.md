@@ -1,16 +1,170 @@
 ---
 name: migrate-notion-to-ai-matrx
-description: Copies a person's whole Notion workspace into AI Matrx — every database becomes a table with typed columns, relations, roll-ups, files, page bodies and views — safely re-runnable and resumable. Use when the person says "copy my Notion into AI Matrx", "move my Notion over", "import my Notion", or hands you a Notion export zip.
+description: Moves a person's whole Notion workspace into AI Matrx using only the AI Matrx and Notion connectors — every page and sub-page becomes an AI Matrx page (a Space) with its blocks, icons, covers, files and comments, and every database becomes a real table with typed columns, links, roll-ups, row pages, templates and views. Safe to run again; nothing duplicates. Use when the person says "move my Notion into AI Matrx", "copy my Notion", "import my Notion", or anything like it.
 ---
 
-# Copy a Notion workspace into AI Matrx
+# Move a Notion workspace into AI Matrx
 
-The AI Matrx connector carries the full recipe. Call its `how_to` tool with `topic: "notion"`
-and follow it exactly: one plain question to the person (the plan), then move every database,
-row, link, file, page body, comment, template and view, and finish with a count per table.
+You need exactly two connectors in this AI, both added by clicking Connect and signing in:
+**AI Matrx** (tools `how_to`, `tables`, `pages`, `agents`) and **Notion** (Notion's own connector).
+No keys, files, scripts or commands — ever. Never ask the person for any.
 
-If AI Matrx or Notion is not connected in this AI, tell the person in one sentence to connect it
-in this AI's connector settings (they click Connect and sign in — no keys), then continue.
+**First call:** `how_to` with `{"topic": "notion"}`. It is the live copy of this recipe. If it and
+this file ever disagree, follow `how_to`.
 
-For a Notion export zip instead of the Notion connector, `scripts/import_notion_export.py` does
-the same job from the zip (`plan`, then `run`).
+## 0. Before you start
+
+- Call `tables` `{"action": "list_tables"}`. If the AI Matrx tool is missing, tell the person in one
+  sentence: "Please connect AI Matrx in this app's connector settings, then tell me." Same for Notion
+  (use Notion's search tool to check). Then wait.
+- Never ask which organization: AI Matrx already knows. Only if an answer says it needs one, ask
+  once, offering the organizations it listed, and pass `organization_id` on every call after.
+- The person is not technical. Plain words. Ask exactly ONE question — the plan — then work
+  without asking. One short progress line after each database or top-level page.
+
+## 1. Inventory (the ledger)
+
+With Notion's search and fetch tools, list everything and keep a ledger as you go:
+- every database (data source): its name, every property with its type, its row count, its
+  views (board/calendar/gallery/timeline + group/date field), its templates;
+- every page that is not a database row: title, parent page, icon, cover;
+- every database row's page: whether it has body content;
+- comments (on pages and rows).
+
+As you create things, add the AI Matrx ids to the ledger: Notion database id → table id,
+Notion page id → `space_id`, Notion row id → row id. Every key you send is `"notion:<id>"` for
+pages/comments and the raw Notion page id in the "Notion ID" column for rows.
+
+## 2. Show the plan, ask once
+
+One line per database and one for pages, e.g.:
+> **Posts** (54) → table: Status (board), Platform (several choices), Publish date (calendar),
+> links to Campaign and Client, each post's page attached. **Pages:** 31 pages and sub-pages, 5 comments.
+
+Ask: "Shall I move it all over?" Then do every phase below without asking again.
+
+## 3. Phases — in this order
+
+**3a. Databases → tables.** For each database, `tables`:
+```json
+{"action": "create_table", "name": "<database name>", "columns": [
+  {"name": "<title property>", "type": "text"},
+  {"name": "Notion ID", "type": "text", "unique": true},
+  {"name": "Status", "type": "status", "choices": ["Idea", "Drafting", "Published"]},
+  {"name": "Platform", "type": "choices", "choices": ["Instagram", "TikTok"]},
+  {"name": "Publish date", "type": "date"}, {"name": "Budget", "type": "currency"},
+  {"name": "Assets", "type": "file", "many": true}]}
+```
+Property map: title → text (first column) · rich_text → text / long_text · number → number,
+currency or percent by its format · select → choice · multi_select → choices · status → status
+· date → date (a range adds "<name> end", also date) · checkbox · url · email · phone_number →
+phone · files → file (`"many": true`) · people → text (names) · created/edited time → date ·
+unique_id → text. Always give `choices` for choice/choices/status.
+
+Then, once EVERY table exists, add the computed and linking columns, one per call, `tables`
+`{"action": "add_column", "table": "<table id>", "columns": [ … ]}`:
+- relation → `{"name": "Client", "type": "relation", "to": "<other table name or id>", "many": true}`
+  (a two-way Notion relation appears on both databases — make each side once, as Notion shows it);
+- rollup (count/sum/avg/min/max) → `{"name": "Total billed", "type": "rollup", "via": "Invoices", "of": "Amount", "agg": "sum"}`;
+- lookup → `{"type": "lookup", "via": "<relation column>", "of": "<far column>"}`;
+- formula that is plain arithmetic → `{"type": "formula", "formula": "{Price} * {Quantity}"}`;
+  any other formula or rollup → a column of its result type holding its current values (say so in
+  the final report).
+
+**3b. Rows.** `tables` `{"action": "upsert_rows", "table": "<id>", "key_column": "Notion ID",
+"add_choices": true, "rows": [{"Notion ID": "<page id>", "Name": "…", "Status": "Idea",
+"Platform": ["Instagram"], "Publish date": "2026-10-07", "Publish date end": "2026-10-14"}]}` —
+at most 100 rows per call. Dates `YYYY-MM-DD`. Keep each answer's row `id` in the ledger.
+
+**3c. Links and files** (second pass, same call, only the changed columns):
+- relation cell → `{"match": "Notion ID", "keys": ["<linked page id>", …]}`;
+- file cell → `[{"url": "<Notion file url>", "name": "brief.pdf"}]` — send a Notion file url right
+  after reading it (they expire within the hour); AI Matrx keeps its own copy.
+The answer's `notices` list anything left out (a link to a page you did not move) — keep them for
+the report.
+
+**3d. Row pages.** For each row whose Notion page has body content, `pages`:
+`{"action": "upsert", "key": "notion:<row page id>", "title": "<row title>", "row_id": "<AI Matrx row id>", "snapshot": {"v": 1, "blocks": [ … ]}}`.
+
+**3e. Pages and sub-pages, parents first.** `pages`:
+`{"action": "upsert", "key": "notion:<page id>", "title": "…", "parent_key": "notion:<parent page id>",
+"icon": {"icon": "BookOpen"}, "cover": {"url": "<cover url>"}, "snapshot": {"v": 1, "blocks": [ … ]}}`
+- top-level pages: leave out `parent_key`;
+- a sub-page is TWO things: `parent_key` on the child AND a `page` block (`props.spaceId` = the
+  child's `space_id`) in the parent's body where Notion showed it — make the child, then send the
+  parent again with that block;
+- a database that sits inside a page → a `database` block (`props.source {"kind": "table",
+  "tableId": "<table id>"}`, `props.inline` true for inline, false for full page);
+- icons: the closest Lucide icon name in PascalCase for a Notion emoji ("BookOpen", "ListChecks",
+  "Info"); an uploaded icon → `{"url": "<its url>"}`; covers → `{"url": "<url>"}`; a gradient or
+  none → leave it out.
+
+**3f. Comments.** On a page: `pages` `{"action": "comment", "space_id": "…", "key":
+"notion:<comment id>", "block_id": "<the block it was on, if any>", "body": "**Maya Okonkwo** ·
+2026-10-03\n\nThe comment text"}`. On a database row: `tables` `{"action": "add_comments",
+"table": "<id>", "key_column": "Notion ID", "comments": [{"key": "<row page id>", "body": "…",
+"author": "Maya Okonkwo", "at": "2026-10-03"}]}`.
+
+**3g. Views and templates.** For each board/calendar/gallery/timeline: `tables`
+`{"action": "create_view", "table": "<id>", "name": "By status", "layout": "board", "group_by": "Status"}`
+(calendar: `date_column`, `end_date_column`; gallery: `cover_column`; timeline: `date_column`,
+`end_date_column`, `group_by`). For each database template: `tables`
+`{"action": "create_row_template", "table": "<id>", "name": "New Instagram post", "values": {"Status": "Idea", "Platform": ["Instagram"]}}`.
+
+## 4. Page blocks (the `snapshot`)
+
+`{"v": 1, "blocks": [block, …]}`. A block: `{"id": "b1", "type": "…", "text": [spans],
+"props": {…}, "children": [blocks]}`. `id` is unique within the page and stable — number them in
+order (b1, b2, … ; children b5a, b5b …) so a rerun produces the same ids.
+
+A span: `{"text": "…"}` plus any of `bold`, `italic`, `underline`, `strike`, `code` (true),
+`link` (URL), `color` / `background` (default gray brown orange yellow green blue purple pink red).
+
+| Notion | type | props / children |
+|---|---|---|
+| Paragraph | `text` | children = indented blocks |
+| Heading 1/2/3 (toggle heading) | `heading` | `level` 1-3; `toggleable: true` + children = body |
+| Bulleted / numbered list | `bulleted` / `numbered` | children = nested items |
+| To-do | `todo` | `checked` true/false |
+| Toggle | `toggle` | text = summary, children = body |
+| Quote | `quote` | |
+| Callout | `callout` | `icon` (Lucide, PascalCase), block `background` a color; children = body |
+| Divider | `divider` | no text |
+| Code | `code` | text = the code, `language` |
+| Equation | `equation` | `expression` (KaTeX) |
+| Child page | `page` | `spaceId` |
+| Link to page | `linkToPage` | `spaceId` |
+| Simple table | `table` | `headerRow`, `headerColumn` (always send both), `rows` [{"cells": [[spans], …]}] |
+| Table of contents | `tableOfContents` | |
+| Columns | `columnList` | children = `column` blocks with `width` fractions summing to 1 |
+| Image / video / audio / file / PDF | `image` `video` `audio` `file` `pdf` | `url` (AI Matrx keeps the file), `caption` spans |
+| Web bookmark / embed | `bookmark` / `embed` | `url` |
+| Inline or full-page database | `database` | `source`, `inline` |
+| Anything else (synced block, button, …) | `text` | text says what it was; `unsupported: {"from": "notion", "kind": "<Notion type>", "source": "<its text or url>"}` |
+
+Never invent a type. If `pages` answers refused naming a block, fix that block as the message says
+and send the page again.
+
+## 5. Check and report
+
+- Each table: `tables` `{"action": "aggregate", "table": "<id>", "measure": "count"}` against the
+  Notion row count.
+- Pages: `pages` `{"action": "list", "key_prefix": "notion:", "limit": 200}` (follow
+  `next_offset`); `total` against the pages you read; every `space_id` should be in your ledger.
+- Tell the person a short list: one line per database ("✓ Posts — 54 of 54"), one for pages
+  ("✓ 31 pages, 5 comments"), then "Could not carry over:" with each item and why in plain words
+  (unsupported blocks, template page text, files whose links had expired, people kept as names,
+  complex formulas kept as values). Then where to look: their pages at
+  https://www.aimatrx.com/spaces and their tables at https://www.aimatrx.com/data.
+
+## Running again, stopping, fixing
+
+- Everything is matched by Notion id: running any phase again changes only what changed — rows
+  report "same", unchanged pages make no new version, comments with the same key land once.
+- Stopped partway (big workspace, lost connection)? Run the same phases again from the top.
+- A page went wrong? `pages` `{"action": "archive", "key": "notion:<page id>"}` (its sub-pages go
+  with it; `"restore"` brings it back), then upsert it again. Nothing is ever deleted.
+- Work one top-level page or database at a time in a big workspace.
+
+When it's done, offer the next step: turning their work into AI Matrx agents
+(`how_to` topic "agents").

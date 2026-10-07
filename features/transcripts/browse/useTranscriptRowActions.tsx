@@ -149,13 +149,11 @@ export function useTranscriptRowActions(
                 id: "copy-link",
                 label: "Copy link",
                 icon: Link2,
-                onSelect: () => {
-                  void copyText(
+                onSelect: async () => {
+                  if (!(await copyText(
                     `${window.location.origin}${href}`,
-                  ).then((copied) => {
-  if (!copied) return;
-  toast.success("Link copied");
-});
+                  ))) return;
+                  toast.success("Link copied");
                 },
               },
               {
@@ -164,17 +162,15 @@ export function useTranscriptRowActions(
                 icon: ClipboardCopy,
                 // Unsorted recordings have no referenceable record type.
                 hidden: row.kind === "unsorted",
-                onSelect: () => {
-                  void copyText(
+                onSelect: async () => {
+                  if (!(await copyText(
                     buildRecordReferenceFence({
                       type: referenceType,
                       id: row.id,
                       label: row.title,
                     }),
-                  ).then((copied) => {
-  if (!copied) return;
-  toast.success("Reference copied");
-});
+                  ))) return;
+                  toast.success("Reference copied");
                 },
               },
             ],

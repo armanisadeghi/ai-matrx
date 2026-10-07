@@ -11,7 +11,6 @@
  */
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import { responseCanvasTarget } from "@/features/agent-apps/utils/response-canvas-target";
 import { messageMayContainKindBlock } from "@/features/content-ir/studio/message-kind-gate";
 import { kindOf } from "@/components/rich-editor/islands/island-meta";
 import {
@@ -51,9 +50,6 @@ describe("L-2 — a JavaScript object literal is a kind everywhere text is read"
 });
 
 describe("L-3 — text callers read every realistic spelling", () => {
-  it.each(SPELLED)("%s: the response canvas does not open it as a kind (detection only, round 10)", (_name, spelled) => {
-    expect(responseCanvasTarget(`Here you go: ${spelled}`, "App").mode).toBe("html");
-  });
   it.each(SPELLED)("%s: the Save to my Shapes gate sees it", (_name, spelled) => {
     expect(messageMayContainKindBlock(`Here you go: ${spelled}`)).toBe(true);
   });

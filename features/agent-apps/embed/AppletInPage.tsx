@@ -1,32 +1,42 @@
 "use client";
 
-// features/agent-apps/embed/AppletInPage.tsx — ONE APPLET DRAWN INSIDE A PAGE BUILT FROM TABLES
-// (loaded on demand by `appletsPort.tsx`, so the app renderer never rides a table page's own chunk).
+// features/agent-apps/embed/AppletInPage.tsx — ONE APPLET DRAWN INSIDE A PAGE BUILT FROM TABLES (a Space's
+// `applet` block, records-ui `RecordsUiHost.applets`). Loaded on demand by `appletsPort.tsx`, so the Applet
+// host never rides a table page's own chunk. The Applet renders through the ONE host (`AppletHostMount`);
+// it mounts `embedded`, so its own pages navigate in place inside the block and its writes stay live.
 
 import { useEffect, useState } from "react";
-import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import { fetchAppById } from "@/features/agents/redux/agent-apps/thunks";
-import { selectAppById } from "@/features/agents/redux/agent-apps/selectors";
-import { AgentAppRenderer } from "@/features/agent-apps/components/AgentAppRenderer";
-import type { AgentApp } from "@/features/agent-apps/types";
+import { createClient } from "@/utils/supabase/client";
+import { AppletHostMount } from "@/features/applets-host/AppletHostMount";
 
-/** One applet, in place: read once by id (RLS decides), drawn by the app renderer. */
+/** One Applet, in place: read by id under the viewer's session (row security decides). */
 export default function AppletInPage({ appId }: { appId: string }) {
-  const dispatch = useAppDispatch();
-  const app = useAppSelector((state) => selectAppById(state, appId)) as AgentApp | undefined;
+  const [slug, setSlug] = useState<string | null>(null);
   const [failed, setFailed] = useState<string | null>(null);
   useEffect(() => {
-    if (app) return;
-    dispatch(fetchAppById(appId))
-      .unwrap()
-      .catch((e: unknown) => setFailed(e instanceof Error ? e.message : "This applet could not be opened."));
-  }, [app, appId, dispatch]);
+    let cancelled = false;
+    void createClient()
+      .schema("app")
+      .from("definition")
+      .select("slug")
+      .eq("id", appId)
+      .is("deleted_at", null)
+      .maybeSingle()
+      .then(({ data, error }) => {
+        if (cancelled) return;
+        if (error) setFailed(error.message);
+        else if (!data) setFailed("This app has not been shared with you.");
+        else setSlug(data.slug);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [appId]);
   if (failed) return <p className="text-xs text-muted-foreground">{failed}</p>;
-  if (!app) return <p className="text-xs text-muted-foreground">Opening the applet…</p>;
+  if (!slug) return <p className="text-xs text-muted-foreground">Opening the app…</p>;
   return (
     <div data-applet-in-page={appId} className="min-h-24">
-      <AgentAppRenderer app={app} slug={app.slug} shellOverride="widget" />
+      <AppletHostMount appletId={appId} slug={slug} embedded />
     </div>
   );
 }
-

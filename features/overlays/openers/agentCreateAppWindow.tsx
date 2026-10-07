@@ -17,9 +17,7 @@ import { closeOverlay, openOverlay } from "@/lib/redux/slices/overlaySlice";
 
 const OVERLAY_ID = "agentCreateAppWindow" as const;
 
-export interface OpenAgentCreateAppWindowOptions {
-  agentId?: string | null;
-}
+export type OpenAgentCreateAppWindowOptions = Record<string, never>;
 
 export interface AgentCreateAppWindowHandle {
   close: () => void;
@@ -28,13 +26,10 @@ export interface AgentCreateAppWindowHandle {
 export function useOpenAgentCreateAppWindow() {
   const dispatch = useAppDispatch();
   return useCallback(
-    (opts: OpenAgentCreateAppWindowOptions = {}): AgentCreateAppWindowHandle => {
+    (_opts: OpenAgentCreateAppWindowOptions = {}): AgentCreateAppWindowHandle => {
       dispatch(
         openOverlay({
           overlayId: OVERLAY_ID,
-          data: {
-            agentId: opts.agentId,
-          },
         }),
       );
       return {
@@ -55,6 +50,6 @@ export function AgentCreateAppWindowController(props: OpenAgentCreateAppWindowOp
   useEffect(() => {
     const handle = open(props);
     return () => handle.close();
-  }, [open, props.agentId]);
+  }, [open, props]);
   return null;
 }

@@ -467,7 +467,7 @@ export default function AdminSystemAppsListPage() {
                       onAdd: () =>
                         pushAppHref(
                           router,
-                          "/administration/agents/system-agents/apps/new",
+                          "/agent-apps/build",
                         ),
                     },
                     refresh: {

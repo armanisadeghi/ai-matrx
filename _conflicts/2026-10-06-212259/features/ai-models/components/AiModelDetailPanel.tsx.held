@@ -1,0 +1,1784 @@
+matrx-auto-git-conflict-file-work-delete-this-when-resolved
+
+HELD CONFLICT, written by scripts/sync-main.py
+File:      features/ai-models/components/AiModelDetailPanel.tsx
+Why held:  both sides changed the same code
+GITHUB's version is live in the repo at the path above. LOCAL's version is at the bottom
+of this file, below the FACTS.
+Done with it: the final code is in the live file, this .held file is deleted, and its line
+in _conflicts/README.md is deleted. The list of open items is _conflicts/README.md.
+
+FACTS (computed by sync-main from git)
+
+THE TWO VERSIONS
+  LOCAL  = the version that was on this Mac. It is saved below, in this .held file.
+  GITHUB = the version from GitHub. It is LIVE in the repo right now, at features/ai-models/components/AiModelDetailPanel.tsx
+  Both grew from the same COMMON version: commit cfed5f4723, 2026-10-06 21:01.
+
+WHEN EACH SIDE CHANGED THIS FILE (newest first)
+  LOCAL:
+    2026-10-06 21:16  (uncommitted edit; the time the file was last saved on this Mac)
+    2026-10-06 21:23  94b89b0701  collected by the sync; the edit itself happened at or before this time
+  GITHUB:
+    2026-10-06 21:00  7bf65448f8  "Copied state and success toasts only after a copy that landed (kit 0.28.0 boolean); delete ToolTabBodies/viewer-utilities CopyButton; add check:copy-result-gated"
+  LOCAL's latest change is 15m AFTER GITHUB's latest change.
+
+SIZE: common version 1734 lines, LOCAL 1736 lines, GITHUB 1734 lines
+
+WHAT EACH SIDE DID, compared with the common version
+  LOCAL added 2 lines and removed 1 lines.
+  GITHUB added 2 lines and removed 2 lines.
+
+CODE ONE SIDE HAS THAT THE OTHER DOES NOT
+  LOCAL has 1 of the 2 lines GITHUB added.
+    Lines GITHUB added that LOCAL does NOT have:
+      | if (!(await copyText(text))) return;
+    (some of those lines also appear in other changed files, which may be a coincidence: app/(admin)/administration/compute/sandbox/page.tsx, app/(core)/sandbox/[id]/page.tsx, app/(dev)/demos/api-tests/matrx-ai/agent-demo/AgentDemoClient.tsx, app/(dev)/demos/api-tests/matrx-ai/conversation-demo/ConversationDemoClient.tsx)
+    Lines GITHUB deliberately REMOVED that LOCAL still has: 1
+      | onClick={() => {
+  GITHUB has 2 of the 2 lines LOCAL added; the rest were MOVED, all together, into features/code/terminal/PortsTab.tsx.
+
+COMPARE THEM (the labels are correct; '-' lines are GITHUB, '+' lines are LOCAL):
+  diff -u --label 'GITHUB (live)' --label 'LOCAL (held)' <(git show 18b17dfd3ce9:'features/ai-models/components/AiModelDetailPanel.tsx') <(git show 94b89b070183:'features/ai-models/components/AiModelDetailPanel.tsx')
+
+RECOVER EITHER VERSION FOREVER (works even after this .held file is deleted):
+  LOCAL : git show 94b89b070183:'features/ai-models/components/AiModelDetailPanel.tsx'
+  GITHUB: git show 18b17dfd3ce9:'features/ai-models/components/AiModelDetailPanel.tsx'
+
+---------------- LOCAL VERSION BELOW ----------------
+"use client";
+
+import { useClipboard } from "@ai-matrx/kit/clipboard";
+import { toast } from "@/lib/toast";
+import { useCostDisplay } from "@/components/cost/useCostDisplay";
+import React, { useState, useEffect, useRef, useCallback } from "react";
+import { readOf } from "@/components/read-state/ReadGate";
+import { UntrustedCount } from "@/components/official/stale-data/UntrustedCount";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { extractErrorMessage } from "@/utils/errors";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
+  X,
+  CheckCircle2,
+  Save,
+  LogOut,
+  Copy,
+  Check,
+  ChevronDown,
+  ChevronRight,
+  RotateCcw,
+  AlertTriangle,
+  PanelRight,
+} from "lucide-react";
+import AiModelForm from "./AiModelForm";
+import { useSurfaceWriteHandlers } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
+import { ADMIN_AI_MODELS_SURFACE_NAME } from "@/features/surfaces/manifests/admin-ai-models.manifest";
+import {
+  normalizeModelCommonName,
+  normalizeModelDescription,
+} from "../model-metadata";
+import JsonFieldEditor from "./JsonFieldEditor";
+import ModelRulesEditor from "./ModelRulesEditor";
+import ModelControlsEditor from "./controls/ModelControlsEditor";
+import ModelUsageAudit from "./ModelUsageAudit";
+import { aiModelService } from "../service";
+import { findNonCanonicalCapabilityValues } from "@ai-matrx/agents/models";
+import type {
+  AiModel,
+  AiModelFormData,
+  AiOffering,
+  AiProvider,
+  ProviderModelEntry,
+} from "../types";
+import { ProTextarea } from "@/components/official/ProTextarea";
+import { Textarea } from "@/components/ui/textarea";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+
+interface AiModelDetailPanelProps {
+  model: AiModel | null;
+  isNew: boolean;
+  providers: AiProvider[];
+  allModels: AiModel[];
+  onClose: () => void;
+  onSaved: (model: AiModel) => void;
+  onDeleted: (id: string) => void;
+  /** Hosted in a canvas tab: the pane header carries the close, so the header X is absent. */
+  inCanvas?: boolean;
+}
+
+function rowToFormData(row: AiModel): AiModelFormData {
+  return {
+    name: row.name ?? "",
+    common_name: row.common_name ?? "",
+    description: row.description ?? "",
+    context_window:
+      row.context_window != null ? String(row.context_window) : "",
+    max_tokens: row.max_tokens != null ? String(row.max_tokens) : "",
+    provider_id: row.provider_id ?? "",
+    is_deprecated: row.is_deprecated ?? false,
+    is_primary: row.is_primary ?? false,
+    is_premium: row.is_premium ?? false,
+    mid_fallback_id: row.mid_fallback_id ?? "",
+    guest_fallback_id: row.guest_fallback_id ?? "",
+    cost_rating: row.cost_rating != null ? String(row.cost_rating) : "",
+    speed_rating: row.speed_rating != null ? String(row.speed_rating) : "",
+    retry_fallback_id: row.retry_fallback_id ?? "",
+    retry_max_attempts:
+      row.retry_max_attempts != null ? String(row.retry_max_attempts) : "",
+  };
+}
+
+const EMPTY_FORM: AiModelFormData = {
+  name: "",
+  common_name: "",
+  description: "",
+  context_window: "",
+  max_tokens: "",
+  provider_id: "",
+  is_deprecated: false,
+  is_primary: false,
+  is_premium: false,
+  mid_fallback_id: "",
+  guest_fallback_id: "",
+  cost_rating: "",
+  speed_rating: "",
+  retry_fallback_id: "",
+  retry_max_attempts: "",
+};
+
+// ─── Pricing (read-only, sourced from ai.offering) ────────────────────────
+
+/** Model-level pricing was removed — pricing lives on `ai.offering` (per model ×
+ *  endpoint × api) and is edited in the Offerings page. This tab shows those
+ *  tiers read-only so an admin sees a model's real prices without a second editor. */
+function OfferingPricingReadOnly({
+  offerings,
+  loading,
+  error,
+}: {
+  offerings: AiOffering[];
+  loading: boolean;
+  error: string | null;
+}) {
+  // A per-million-token price, in the viewer's cost unit.
+  const { format: fmt } = useCostDisplay();
+  return (
+    <div className="space-y-3">
+      <p className="text-xs text-muted-foreground">
+        Pricing is managed per offering (model × endpoint × api) on the{" "}
+        <span className="font-medium text-foreground">Offerings</span> page. This
+        view is read-only.
+      </p>
+      {error && (
+        <p className="text-xs text-destructive">
+          Could not load this model&apos;s offerings ({error}).
+          <ErrorAlchemyMenu error={error} />
+        </p>
+      )}
+      {!error && loading && (
+        <div className="space-y-2">
+          <div className="h-14 rounded-md border bg-muted/40 animate-pulse" />
+          <div className="h-14 rounded-md border bg-muted/40 animate-pulse" />
+        </div>
+      )}
+      {!error && !loading && offerings.length === 0 && (
+        <p className="text-xs text-muted-foreground/60">
+          No offerings for this model yet — a model is not callable until it has
+          one.
+        </p>
+      )}
+      {offerings.map((o) => {
+        const tiers = o.pricing ?? [];
+        return (
+          <div key={o.id} className="rounded-md border p-2.5 space-y-1.5">
+            <div className="flex items-center gap-2 text-xs">
+              <Badge variant="outline" className="font-mono">
+                {o.provider_model_id ?? o.id.slice(0, 8)}
+              </Badge>
+              {o.usage_basis && (
+                <span className="text-muted-foreground">{o.usage_basis}</span>
+              )}
+              {o.token_billed && (
+                <Badge variant="outline" className="text-[10px] h-4 px-1">
+                  token-billed
+                </Badge>
+              )}
+              {!o.is_available && (
+                <Badge
+                  variant="outline"
+                  className="text-[10px] h-4 px-1 text-muted-foreground"
+                >
+                  unavailable
+                </Badge>
+              )}
+            </div>
+            {tiers.length === 0 ? (
+              <span className="text-xs text-muted-foreground/50">
+                No pricing tiers
+              </span>
+            ) : (
+              <div className="space-y-0.5">
+                {tiers.map((t, i) => (
+                  <div
+                    key={i}
+                    className="text-xs font-mono flex items-center gap-2"
+                  >
+                    <span className="text-muted-foreground w-24">
+                      {t.max_tokens != null
+                        ? `≤ ${t.max_tokens.toLocaleString()}`
+                        : "flat"}
+                    </span>
+                    <span className="text-foreground">
+                      in {fmt(t.input_price)}
+                    </span>
+                    <span className="text-muted-foreground">/</span>
+                    <span className="text-foreground">
+                      out {fmt(t.output_price)}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+// ─── Provider Data tab components ─────────────────────────────────────────
+
+function CapNode({
+  label,
+  value,
+  depth = 0,
+}: {
+  label: string;
+  value: unknown;
+  depth?: number;
+}) {
+  const [open, setOpen] = React.useState(depth < 1);
+  if (value === null || value === undefined) return null;
+
+  if (typeof value === "object" && !Array.isArray(value)) {
+    const entries = Object.entries(value as Record<string, unknown>);
+    const isSingleSupported =
+      entries.length === 1 && entries[0][0] === "supported";
+    if (isSingleSupported) {
+      const supported = entries[0][1] as boolean;
+      return (
+        <div className="flex items-center gap-2 py-0.5">
+          <span
+            className="text-xs text-muted-foreground w-40 shrink-0 truncate"
+            title={label}
+          >
+            {label}
+          </span>
+          <Badge
+            variant="outline"
+            className={`text-[10px] h-4 px-1 ${supported ? "bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-300 border-green-300" : "bg-muted text-muted-foreground"}`}
+          >
+            {supported ? "supported" : "no"}
+          </Badge>
+        </div>
+      );
+    }
+    return (
+      <div className="py-0.5">
+        <button
+          type="button"
+          onClick={() => setOpen((v) => !v)}
+          className="flex items-center gap-1 text-xs hover:text-foreground text-foreground/80 font-medium"
+        >
+          {open ? (
+            <ChevronDown className="h-3 w-3" />
+          ) : (
+            <ChevronRight className="h-3 w-3" />
+          )}
+          {label}
+          <span className="text-[10px] text-muted-foreground font-normal ml-1">
+            ({entries.length} fields)
+          </span>
+        </button>
+        {open && (
+          <div className="ml-4 pl-2 border-l border-border mt-0.5">
+            {entries.map(([k, v]) => (
+              <CapNode key={k} label={k} value={v} depth={depth + 1} />
+            ))}
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex items-center gap-2 py-0.5">
+      <span
+        className="text-xs text-muted-foreground w-40 shrink-0 truncate"
+        title={label}
+      >
+        {label}
+      </span>
+      <span className="text-xs font-mono">{String(value)}</span>
+    </div>
+  );
+}
+
+function InlineCopyButton({ text }: { text: string }) {
+  const { copyText } = useClipboard({
+    notify: (message, kind) =>
+      kind === "error" ? toast.error(message) : toast.success(message),
+  });
+  const [copied, setCopied] = React.useState(false);
+  return (
+    <button
+      type="button"
+      onClick={() => {
+        void copyText(text).then((copied) => {
+  if (!copied) return;
+  setCopied(true);
+});
+        setTimeout(() => setCopied(false), 1500);
+      }}
+      className="h-6 w-6 flex items-center justify-center rounded hover:bg-accent text-muted-foreground hover:text-foreground"
+      title="Copy JSON"
+    >
+      {copied ? (
+        <Check className="h-3.5 w-3.5 text-green-500" />
+      ) : (
+        <Copy className="h-3.5 w-3.5" />
+      )}
+    </button>
+  );
+}
+
+function ProviderDataTab({
+  model,
+  providers,
+}: {
+  model: AiModel;
+  providers: AiProvider[];
+}) {
+  const [viewMode, setViewMode] = React.useState<"structured" | "json">(
+    "structured",
+  );
+
+  // Find the provider (by the provider_id FK) and the matching cache entry
+  const matchedProvider = providers.find((p) => p.id === model.provider_id);
+  const providerEntry: ProviderModelEntry | undefined =
+    matchedProvider?.provider_models_cache?.models.find(
+      (m) => m.id === model.name,
+    );
+
+  if (!matchedProvider) {
+    return (
+      <div className="flex flex-col items-center justify-center gap-2 py-12 text-center text-sm text-muted-foreground">
+        <p>No provider linked to this model.</p>
+        <p className="text-xs">Set the Provider field in the Details tab.</p>
+      </div>
+    );
+  }
+
+  if (!matchedProvider.provider_models_cache) {
+    return (
+      <div className="flex flex-col items-center justify-center gap-2 py-12 text-center">
+        <p className="text-sm text-muted-foreground">
+          No cached data for <strong>{matchedProvider.name}</strong>.
+        </p>
+        <p className="text-xs text-muted-foreground">
+          Go to Provider Sync to fetch their model list.
+        </p>
+      </div>
+    );
+  }
+
+  if (!providerEntry) {
+    return (
+      <div className="flex flex-col items-center justify-center gap-2 py-12 text-center">
+        <p className="text-sm text-muted-foreground">
+          Model{" "}
+          <code className="font-mono text-xs bg-muted px-1 py-0.5 rounded">
+            {model.name}
+          </code>{" "}
+          was not found in {matchedProvider.name}&apos;s cached model list.
+        </p>
+        <p className="text-xs text-muted-foreground">
+          The model may have been renamed, deprecated, or not yet synced.
+        </p>
+      </div>
+    );
+  }
+
+  const jsonStr = JSON.stringify(providerEntry, null, 2);
+  const formatNum = (n?: number | null) =>
+    n == null ? "—" : n.toLocaleString();
+  const formatDate = (d?: string) => {
+    if (!d) return "—";
+    try {
+      return new Date(d).toLocaleDateString(undefined, {
+        year: "numeric",
+        month: "short",
+        day: "numeric",
+      });
+    } catch {
+      return d;
+    }
+  };
+
+  return (
+    <div className="h-full flex flex-col overflow-hidden">
+      {/* Sub-header */}
+      <div className="shrink-0 flex items-center justify-between px-1 pb-2 border-b mb-3">
+        <div className="flex items-center gap-2">
+          <span className="text-xs text-muted-foreground">
+            {matchedProvider.name} · synced{" "}
+            {new Date(
+              matchedProvider.provider_models_cache.fetched_at,
+            ).toLocaleDateString()}
+          </span>
+        </div>
+        <div className="flex items-center gap-1">
+          <Button
+            type="button"
+            variant={viewMode === "structured" ? "outline" : "quiet"}
+            onClick={() => setViewMode("structured")}
+          >
+            Structured
+          </Button>
+          <Button
+            type="button"
+            variant={viewMode === "json" ? "outline" : "quiet"}
+            onClick={() => setViewMode("json")}
+          >
+            Raw JSON
+          </Button>
+          <InlineCopyButton text={jsonStr} />
+        </div>
+      </div>
+
+      {viewMode === "json" ? (
+        <div className="flex-1 overflow-auto">
+          <pre className="text-[11px] font-mono text-foreground whitespace-pre-wrap break-all leading-relaxed">
+            {jsonStr}
+          </pre>
+        </div>
+      ) : (
+        <div className="flex-1 overflow-auto space-y-4">
+          {/* Core fields */}
+          <section>
+            <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-2">
+              Core Fields
+            </p>
+            <div className="grid grid-cols-2 gap-x-4 gap-y-2">
+              <div>
+                <p className="text-[10px] text-muted-foreground">
+                  Display Name
+                </p>
+                <p className="text-xs font-medium">
+                  {providerEntry.display_name ?? "—"}
+                </p>
+              </div>
+              <div>
+                <p className="text-[10px] text-muted-foreground">Type</p>
+                <p className="text-xs font-mono">
+                  {String(providerEntry.type ?? "—")}
+                </p>
+              </div>
+              <div>
+                <p className="text-[10px] text-muted-foreground">
+                  Context Window
+                </p>
+                <p className="text-xs font-mono">
+                  {formatNum(providerEntry.max_input_tokens)}
+                </p>
+              </div>
+              <div>
+                <p className="text-[10px] text-muted-foreground">
+                  Max Output Tokens
+                </p>
+                <p className="text-xs font-mono">
+                  {formatNum(providerEntry.max_tokens)}
+                </p>
+              </div>
+              <div>
+                <p className="text-[10px] text-muted-foreground">Released</p>
+                <p className="text-xs">
+                  {formatDate(providerEntry.created_at)}
+                </p>
+              </div>
+            </div>
+          </section>
+
+          {/* Capabilities */}
+          {providerEntry.capabilities &&
+            typeof providerEntry.capabilities === "object" && (
+              <section>
+                <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-2">
+                  Capabilities (from {matchedProvider.name})
+                </p>
+                <div className="border rounded-md p-3 bg-muted/20">
+                  {Object.entries(
+                    providerEntry.capabilities as Record<string, unknown>,
+                  ).map(([k, v]) => (
+                    <CapNode key={k} label={k} value={v} depth={0} />
+                  ))}
+                </div>
+              </section>
+            )}
+
+          {/* Additional fields */}
+          {(() => {
+            const known = new Set([
+              "id",
+              "display_name",
+              "created_at",
+              "type",
+              "max_input_tokens",
+              "max_tokens",
+              "capabilities",
+            ]);
+            const extra = Object.entries(providerEntry).filter(
+              ([k]) => !known.has(k),
+            );
+            if (!extra.length) return null;
+            return (
+              <section>
+                <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-2">
+                  Additional Fields
+                </p>
+                <div className="space-y-1.5">
+                  {extra.map(([k, v]) => (
+                    <div key={k} className="flex items-start gap-3">
+                      <span className="text-xs text-muted-foreground w-32 shrink-0">
+                        {k}
+                      </span>
+                      <span className="text-xs font-mono break-all">
+                        {typeof v === "object"
+                          ? JSON.stringify(v, null, 2)
+                          : String(v)}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </section>
+            );
+          })()}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── Schema & error helpers ────────────────────────────────────────────────
+
+/**
+ * Every column that exists in the ai_model table.
+ * Derived from database.types.ts — these are the ONLY fields Supabase accepts.
+ */
+const AI_MODEL_COLUMNS = new Set([
+  "id",
+  "name",
+  "common_name",
+  // Registry prose. Was missing from this whitelist, which silently STRIPPED a
+  // pasted `description` — the column existed, was rendered to users in the
+  // model pickers, and had no editor anywhere. It now has one (AiModelForm)
+  // and is a declared surface write target; both need it to survive a save.
+  "description",
+  "context_window",
+  "max_tokens",
+  "provider_id",
+  "is_deprecated",
+  "is_primary",
+  "is_premium",
+  "capabilities",
+  // NOTE: `controls` / `constraints` / `model_class` / `api_class` are
+  // deliberately ABSENT — those legacy columns were DROPPED (ai_034).
+  // Controls/constraints resolve from ai.api.rules ⊕ ai.offering.override
+  // (see ModelRulesEditor). Raw-JSON pastes that still carry them are stripped.
+  "mid_fallback_id",
+  "guest_fallback_id",
+  "cost_rating",
+  "speed_rating",
+  "retry_fallback_id",
+  "retry_max_attempts",
+]);
+
+/** Strip any keys not in AI_MODEL_COLUMNS and return { cleaned, unknownKeys } */
+function stripUnknownColumns(obj: Record<string, unknown>): {
+  cleaned: Record<string, unknown>;
+  unknownKeys: string[];
+} {
+  const cleaned: Record<string, unknown> = {};
+  const unknownKeys: string[] = [];
+  for (const [k, v] of Object.entries(obj)) {
+    if (AI_MODEL_COLUMNS.has(k)) cleaned[k] = v;
+    else unknownKeys.push(k);
+  }
+  return { cleaned, unknownKeys };
+}
+
+// ─── Raw JSON validation result ────────────────────────────────────────────
+
+type RawJsonIssue =
+  | { kind: "parse"; message: string; line: number | null; col: number | null }
+  | { kind: "unknown_fields"; fields: string[] };
+
+/** Validate the raw JSON text and return issues (empty = valid) */
+function validateRawJson(text: string): RawJsonIssue[] {
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(text);
+  } catch (err) {
+    const msg = extractErrorMessage(err);
+    const m = msg.match(/line\s+(\d+)\s+column\s+(\d+)/i);
+    return [
+      {
+        kind: "parse",
+        message: msg,
+        line: m ? parseInt(m[1], 10) : null,
+        col: m ? parseInt(m[2], 10) : null,
+      },
+    ];
+  }
+  if (typeof parsed !== "object" || !parsed || Array.isArray(parsed)) {
+    return [
+      {
+        kind: "parse",
+        message: "Root value must be a JSON object",
+        line: null,
+        col: null,
+      },
+    ];
+  }
+  const { unknownKeys } = stripUnknownColumns(
+    parsed as Record<string, unknown>,
+  );
+  if (unknownKeys.length > 0)
+    return [{ kind: "unknown_fields", fields: unknownKeys }];
+  return [];
+}
+
+// ─── Raw JSON issue display ────────────────────────────────────────────────
+
+function RawJsonIssuePanel({
+  text,
+  issues,
+}: {
+  text: string;
+  issues: RawJsonIssue[];
+}) {
+  if (issues.length === 0) return null;
+
+  return (
+    <div className="shrink-0 flex flex-col gap-1.5">
+      {issues.map((issue, idx) => {
+        if (issue.kind === "parse") {
+          const lines = text.split("\n");
+          const errorLine = issue.line != null ? issue.line - 1 : -1;
+          const CONTEXT = 3;
+          const start = Math.max(0, errorLine - CONTEXT);
+          const end = Math.min(lines.length - 1, errorLine + CONTEXT);
+          const visible = lines.slice(start, end + 1);
+
+          return (
+            <div
+              key={idx}
+              className="rounded-md border border-red-300 dark:border-red-700 overflow-hidden text-[11px] font-mono"
+            >
+              <div className="flex items-start gap-2 px-3 py-2 bg-red-50 dark:bg-red-900/30 border-b border-red-300 dark:border-red-700">
+                <AlertTriangle className="h-3.5 w-3.5 text-red-500 shrink-0 mt-0.5" />
+                <div className="flex-1 min-w-0">
+                  <span className="font-semibold text-red-700 dark:text-red-300">
+                    JSON syntax error
+                  </span>
+                  {issue.line != null && (
+                    <span className="ml-2 text-red-500 dark:text-red-400 text-[10px]">
+                      line {issue.line}
+                      {issue.col != null ? `, col ${issue.col}` : ""}
+                    </span>
+                  )}
+                  <p className="text-red-600 dark:text-red-400 mt-0.5 break-words">
+                    {issue.message}
+                    <ErrorAlchemyMenu error={issue.message} />
+                  </p>
+                </div>
+              </div>
+              {errorLine >= 0 && (
+                <div className="overflow-x-auto bg-zinc-950">
+                  {visible.map((ln, i) => {
+                    const n = start + i;
+                    const isErr = n === errorLine;
+                    return (
+                      <div
+                        key={n}
+                        className={`flex ${isErr ? "bg-red-950/50" : ""}`}
+                      >
+                        <span
+                          className={`shrink-0 w-9 text-right pr-3 py-0.5 border-r select-none ${isErr ? "text-red-400 border-red-700 bg-red-950/70" : "text-zinc-600 border-zinc-700"}`}
+                        >
+                          {n + 1}
+                        </span>
+                        <span
+                          className={`px-3 py-0.5 whitespace-pre flex-1 ${isErr ? "text-red-300" : "text-zinc-300"}`}
+                        >
+                          {ln || " "}
+                        </span>
+                        {isErr && (
+                          <span className="px-1 text-red-500 select-none">
+                            ◄
+                          </span>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          );
+        }
+
+        if (issue.kind === "unknown_fields") {
+          // Find which lines contain these unknown keys and highlight them
+          const lines = text.split("\n");
+          const badLineNums = new Set<number>();
+          issue.fields.forEach((field) => {
+            const re = new RegExp(`"${field}"\\s*:`);
+            lines.forEach((ln, i) => {
+              if (re.test(ln)) badLineNums.add(i);
+            });
+          });
+
+          return (
+            <div
+              key={idx}
+              className="rounded-md border border-amber-300 dark:border-amber-700 overflow-hidden text-[11px] font-mono"
+            >
+              <div className="flex items-start gap-2 px-3 py-2 bg-amber-50 dark:bg-amber-900/20 border-b border-amber-300 dark:border-amber-700">
+                <AlertTriangle className="h-3.5 w-3.5 text-amber-500 shrink-0 mt-0.5" />
+                <div className="flex-1 min-w-0">
+                  <span className="font-semibold text-amber-700 dark:text-amber-300">
+                    {issue.fields.length} unknown field
+                    {issue.fields.length > 1 ? "s" : ""} — not in the database
+                    schema
+                  </span>
+                  <p className="text-amber-600 dark:text-amber-400 mt-0.5">
+                    These will be removed before saving:{" "}
+                    {issue.fields.map((f, i) => (
+                      <span key={f}>
+                        <code className="bg-amber-100 dark:bg-amber-900/40 px-1 rounded">
+                          {f}
+                        </code>
+                        {i < issue.fields.length - 1 ? ", " : ""}
+                      </span>
+                    ))}
+                  </p>
+                </div>
+              </div>
+              {badLineNums.size > 0 && (
+                <div className="overflow-auto max-h-40 bg-zinc-950">
+                  {lines.map((ln, i) => {
+                    const isBad = badLineNums.has(i);
+                    return (
+                      <div
+                        key={i}
+                        className={`flex ${isBad ? "bg-amber-950/40" : ""}`}
+                      >
+                        <span
+                          className={`shrink-0 w-9 text-right pr-3 py-0.5 border-r select-none ${isBad ? "text-amber-400 border-amber-700 bg-amber-950/60" : "text-zinc-600 border-zinc-700"}`}
+                        >
+                          {i + 1}
+                        </span>
+                        <span
+                          className={`px-3 py-0.5 whitespace-pre flex-1 ${isBad ? "text-amber-200" : "text-zinc-300"}`}
+                        >
+                          {ln || " "}
+                        </span>
+                        {isBad && (
+                          <span className="px-1 text-amber-500 select-none">
+                            ◄ unknown
+                          </span>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          );
+        }
+
+        return null;
+      })}
+    </div>
+  );
+}
+
+// ─── Raw Model JSON tab ────────────────────────────────────────────────────
+
+function RawModelJsonTab({
+  model,
+  jsonText,
+  onJsonChange,
+  onReset,
+}: {
+  model: AiModel | null;
+  jsonText: string;
+  onJsonChange: (text: string) => void;
+  onReset: () => void;
+}) {
+  const isAddMode = model === null;
+  // Live validation — runs on every keystroke (skip on empty placeholder)
+  const issues = React.useMemo(
+    () => (jsonText.trim() ? validateRawJson(jsonText) : []),
+    [jsonText],
+  );
+  const hasErrors = issues.some((i) => i.kind === "parse");
+  const hasWarnings = issues.some((i) => i.kind === "unknown_fields");
+  const isDirty = isAddMode
+    ? jsonText.trim().length > 0
+    : jsonText !== JSON.stringify(model, null, 2);
+
+  return (
+    <div className="flex-1 flex flex-col gap-2 min-h-0 overflow-hidden">
+      <div className="flex items-center justify-between shrink-0">
+        <div className="flex items-center gap-2">
+          <p className="text-[10px] text-muted-foreground">
+            {isAddMode
+              ? "Paste a complete model JSON object — fields will be validated and unknown columns stripped before creating."
+              : "Edit any field directly. Unknown columns are stripped before saving."}
+          </p>
+          {hasErrors && (
+            <span className="text-[10px] font-medium text-red-600 dark:text-red-400">
+              · syntax error
+              <ErrorAlchemyMenu />
+            </span>
+          )}
+          {!hasErrors && hasWarnings && (
+            <span className="text-[10px] font-medium text-amber-600 dark:text-amber-400">
+              · unknown fields (will be removed)
+            </span>
+          )}
+          {!hasErrors && !hasWarnings && isDirty && (
+            <span className="text-[10px] font-medium text-green-600 dark:text-green-400">
+              · valid
+            </span>
+          )}
+        </div>
+        <div className="flex items-center gap-1.5">
+          <Button
+            icon={<RotateCcw />}
+            type="button"
+            variant="quiet"
+            onClick={onReset}
+            disabled={!isDirty}
+          >
+            Reset
+          </Button>
+          <InlineCopyButton text={jsonText} />
+        </div>
+      </div>
+
+      <Textarea mono
+        value={jsonText}
+        onChange={(e) => onJsonChange(e.target.value)}
+        spellCheck={false}
+        placeholder={
+          isAddMode
+            ? '{\n  "name": "my-model-id",\n  "common_name": "My Model",\n  "context_window": 200000,\n  ...\n}'
+            : undefined
+        }
+        className={`flex-1 min-h-0 w-full resize-none overflow-auto ${
+          hasErrors
+            ? "border-red-400 dark:border-red-600 focus-visible:ring-red-400"
+            : hasWarnings
+              ? "border-amber-400 dark:border-amber-600 focus-visible:ring-amber-400"
+              : "border-input focus-visible:ring-ring"
+        }`}
+      />
+
+      <RawJsonIssuePanel text={jsonText} issues={issues} />
+    </div>
+  );
+}
+
+// ──────────────────────────────────────────────────────────────────────────
+
+export default function AiModelDetailPanel({
+  model,
+  isNew,
+  providers,
+  allModels,
+  onClose,
+  onSaved,
+  onDeleted,
+  inCanvas = false,
+}: AiModelDetailPanelProps) {
+  const [formData, setFormData] = useState<AiModelFormData>(
+    isNew ? EMPTY_FORM : model ? rowToFormData(model) : EMPTY_FORM,
+  );
+  const [baseline, setBaseline] = useState<AiModelFormData>(
+    isNew ? EMPTY_FORM : model ? rowToFormData(model) : EMPTY_FORM,
+  );
+
+  // Raw JSON tab state
+  const buildRawJson = useCallback(
+    () => JSON.stringify(model, null, 2),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [model?.id, model],
+  );
+  const [rawJsonText, setRawJsonText] = useState<string>(() =>
+    model ? JSON.stringify(model, null, 2) : "{}",
+  );
+  const [rawJsonError, setRawJsonError] = useState<string | null>(null);
+  const rawJsonDirty = model
+    ? rawJsonText !== JSON.stringify(model, null, 2)
+    : false;
+
+  const [saving, setSaving] = useState(false);
+  const [savedFlash, setSavedFlash] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState("details");
+  const [showDirtyDialog, setShowDirtyDialog] = useState(false);
+  const savedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const formIsDirty = (
+    Object.keys({ ...formData, ...baseline }) as Array<keyof AiModelFormData>
+  ).some((k) => JSON.stringify(formData[k]) !== JSON.stringify(baseline[k]));
+
+  // Per-section dirty flags reported by the tab editors (Controls drafts,
+  // Constraints local edits, JSON Fields in-editor edits). These editors save
+  // through their OWN save actions — the footer Save button does not cover
+  // them — but they must still participate in the close guard.
+  const [dirtySections, setDirtySections] = useState<Record<string, boolean>>(
+    {},
+  );
+  const reportSectionDirty = useCallback((section: string, dirty: boolean) => {
+    setDirtySections((prev) => {
+      if ((prev[section] ?? false) === dirty) return prev;
+      return { ...prev, [section]: dirty };
+    });
+  }, []);
+  // Stable per-section reporters — a fresh inline arrow per render caused a
+  // setState ping-pong loop with the child dirty-report effects.
+  const reportJsonCapsDirty = useCallback(
+    (dirty: boolean) => reportSectionDirty("json-capabilities", dirty),
+    [reportSectionDirty],
+  );
+  const reportControlsDirty = useCallback(
+    (dirty: boolean) => reportSectionDirty("controls", dirty),
+    [reportSectionDirty],
+  );
+  const reportConstraintsDirty = useCallback(
+    (section: "family" | "override", dirty: boolean) =>
+      reportSectionDirty(`constraints-${section}`, dirty),
+    [reportSectionDirty],
+  );
+  const sectionsDirty = Object.values(dirtySections).some(Boolean);
+
+  const isDirty = formIsDirty || rawJsonDirty || sectionsDirty;
+
+  useEffect(() => {
+    const base = isNew ? EMPTY_FORM : model ? rowToFormData(model) : EMPTY_FORM;
+    setFormData(base);
+    setBaseline(base);
+    setRawJsonText(model ? JSON.stringify(model, null, 2) : "{}");
+    setRawJsonError(null);
+    setSavedFlash(false);
+    setActiveTab("details");
+    setDirtySections({});
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [model?.id, isNew]);
+
+  useEffect(
+    () => () => {
+      if (savedTimerRef.current) clearTimeout(savedTimerRef.current);
+    },
+    [],
+  );
+
+  // Pricing lives on ai.offering now (per model × endpoint × api). This panel shows it
+  // READ-ONLY — editing happens in the Offerings page. Load the model's
+  // offerings so the Pricing tab can display their tiers.
+  const [offerings, setOfferings] = useState<AiOffering[]>([]);
+  const [offeringsLoading, setOfferingsLoading] = useState(false);
+  const [offeringsError, setOfferingsError] = useState<string | null>(null);
+
+  // Section editors call this after writing ai.offering so the panel's copy
+  // (feeding Pricing + Constraints + the initial Controls state) never goes
+  // stale — a stale copy made a second batch save write from pre-first-save
+  // data (adversarial review A1).
+  const refetchOfferings = useCallback(() => {
+    const modelId = model?.id;
+    if (!modelId) return;
+    aiModelService
+      .fetchOfferingsForModel(modelId)
+      .then(setOfferings)
+      .catch((err: unknown) => {
+        setOfferingsError(err instanceof Error ? err.message : String(err));
+      });
+  }, [model?.id]);
+
+  useEffect(() => {
+    const modelId = model?.id;
+    setOfferings([]);
+    setOfferingsError(null);
+    setOfferingsLoading(Boolean(modelId));
+    if (!modelId) return;
+    let cancelled = false;
+    aiModelService
+      .fetchOfferingsForModel(modelId)
+      .then((rows) => {
+        if (!cancelled) setOfferings(rows);
+      })
+      .catch((err: unknown) => {
+        if (!cancelled) {
+          setOfferingsError(err instanceof Error ? err.message : String(err));
+        }
+      })
+      .finally(() => {
+        if (!cancelled) setOfferingsLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [model?.id]);
+
+  const requestClose = useCallback(() => {
+    if (isDirty) {
+      setShowDirtyDialog(true);
+    } else {
+      onClose();
+    }
+  }, [isDirty, onClose]);
+
+  const displayName = isNew
+    ? "New Model"
+    : model?.common_name || model?.name || "Model";
+
+  const handleSave = async (): Promise<AiModel | null> => {
+    setSaveError(null);
+
+    // Validate raw JSON before attempting a save
+    if (rawJsonDirty) {
+      const issues = validateRawJson(rawJsonText);
+      const parseIssue = issues.find((i) => i.kind === "parse");
+      if (parseIssue) {
+        setActiveTab("raw-model");
+        setSaveError(
+          "Fix the JSON syntax error in the Raw JSON tab before saving.",
+        );
+        return null;
+      }
+      // Unknown fields are safe — we strip them before the API call
+    }
+
+    setSaving(true);
+    try {
+      let saved: AiModel;
+
+      const usingRawJson =
+        rawJsonDirty &&
+        rawJsonText.trim() !== "{}" &&
+        rawJsonText.trim() !== "";
+
+      if (usingRawJson && isNew) {
+        // Create from pasted JSON — strip id + unknown columns
+        const parsed = JSON.parse(rawJsonText) as Record<string, unknown>;
+        const { id: _id, ...withoutId } = parsed;
+        void _id;
+        const { cleaned } = stripUnknownColumns(withoutId);
+        saved = await aiModelService.create(
+          cleaned as Parameters<typeof aiModelService.create>[0],
+        );
+      } else if (usingRawJson && model) {
+        // Update from raw JSON tab — strip id + unknown columns before saving
+        const parsed = JSON.parse(rawJsonText) as Record<string, unknown>;
+        const { id: _id, ...withoutId } = parsed;
+        void _id;
+        const { cleaned } = stripUnknownColumns(withoutId);
+        saved = await aiModelService.update(
+          model.id,
+          cleaned as Partial<AiModel>,
+        );
+      } else {
+        const payload = {
+          name: formData.name.trim(),
+          common_name: formData.common_name.trim() || null,
+          description: formData.description.trim() || null,
+          context_window: formData.context_window
+            ? parseInt(formData.context_window)
+            : null,
+          max_tokens: formData.max_tokens
+            ? parseInt(formData.max_tokens)
+            : null,
+          provider_id: formData.provider_id || null,
+          is_deprecated: formData.is_deprecated,
+          is_primary: formData.is_primary,
+          is_premium: formData.is_premium,
+          capabilities: model?.capabilities ?? null,
+          // controls/constraints are NOT model columns anymore — they resolve
+          // from ai.api.rules ⊕ ai.offering.override (see ModelRulesEditor).
+          mid_fallback_id: formData.mid_fallback_id || null,
+          guest_fallback_id: formData.guest_fallback_id || null,
+          cost_rating: formData.cost_rating
+            ? parseInt(formData.cost_rating)
+            : null,
+          speed_rating: formData.speed_rating
+            ? parseInt(formData.speed_rating)
+            : null,
+          retry_fallback_id: formData.retry_fallback_id || null,
+          retry_max_attempts: formData.retry_max_attempts
+            ? parseInt(formData.retry_max_attempts)
+            : 0,
+        };
+
+        // Cast through unknown — mid_fallback_id / guest_fallback_id aren't
+        // in the generated Supabase types yet. Drop the cast after running
+        // `pnpm db:generate` to refresh database.types.ts from the live
+        // schema (added by aidream migration 0045).
+        if (isNew) {
+          saved = await aiModelService.create(
+            payload as unknown as Parameters<typeof aiModelService.create>[0],
+          );
+        } else if (model) {
+          saved = await aiModelService.update(
+            model.id,
+            payload as unknown as Partial<AiModel>,
+          );
+        } else {
+          return null;
+        }
+      }
+
+      const newBase = rowToFormData(saved);
+      setBaseline(newBase);
+      setFormData(newBase);
+      setRawJsonText(JSON.stringify(saved, null, 2));
+      setRawJsonError(null);
+      setSaveError(null);
+      setSavedFlash(true);
+      if (savedTimerRef.current) clearTimeout(savedTimerRef.current);
+      savedTimerRef.current = setTimeout(() => setSavedFlash(false), 2500);
+      onSaved(saved);
+      return saved;
+    } catch (err) {
+      const msg = extractErrorMessage(err);
+      setSaveError(msg);
+      console.error("Save failed:", msg, err);
+      return null;
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleSaveAndClose = async () => {
+    const saved = await handleSave();
+    if (saved) onClose();
+  };
+
+  const handleDelete = async () => {
+    if (!model) return;
+    try {
+      await aiModelService.remove(model.id);
+      onDeleted(model.id);
+    } catch (err) {
+      console.error("Delete failed", err);
+    }
+  };
+
+  // JsonFieldEditor still needs its own direct save (it uses EnhancedEditableJsonViewer internally).
+  // Only `capabilities` is still a model column — controls/constraints resolve
+  // from ai.api.rules ⊕ ai.offering.override (ModelRulesEditor).
+  const handleJsonSave =
+    (field: "capabilities") =>
+    async (data: object) => {
+      if (!model) return;
+      // This editor writes the column straight to Supabase, so it does not
+      // pass the server's write guard (matrx_ai/providers/
+      // capability_vocabulary.py). REFUSE a value outside the canonical
+      // vocabulary here rather than let it land and silently turn a
+      // capability off — that is exactly how gpt-6-astra ended up declaring
+      // schema output while resolving to free text (2026-09-12).
+      const problems = findNonCanonicalCapabilityValues(data);
+      if (problems.length > 0) {
+        throw new Error(
+          `Not saved — ${problems.join("; ")} is not in the capability vocabulary. ` +
+            "Use the canonical spelling, or add the term to BOTH " +
+            "features/ai-models/capabilities/types.ts and aidream's " +
+            "matrx_ai/providers/capability_vocabulary.py first.",
+        );
+      }
+      const updated = await aiModelService.update(model.id, { [field]: data });
+      onSaved(updated);
+    };
+
+  // ─── Surface write targets — `matrx-admin/ai-models` ────────────────────
+  //
+  // Registered from the DETAIL PANEL, not from AiModelsContainer: the
+  // container mounts the provider and owns the catalogue, but this component
+  // owns the form state, the canonical save path and the `saving` flag a write
+  // has to respect. Both live inside the same provider, so this is one surface
+  // with one set of targets — the list itself registers none, because the only
+  // state it owns is browse state, which is not writable here.
+  //
+  // Only the two AUTHORED-COPY columns are writable. Capabilities, limits,
+  // ratings, standing flags and fallback routing all change what the platform
+  // DOES with this model for every caller on it and stay human — the manifest's
+  // writeTargets doc comment argues that line field by field.
+  //
+  // Each handler validates first and THROWS on a bad shape or a bad moment; the
+  // writeback seam turns a throw into an error envelope the agent reads. On
+  // success it writes the ONE column through `aiModelService.update` (the exact
+  // call handleSave makes) and then patches the saved value into BOTH formData
+  // and baseline, so the panel shows what landed and the field does not read as
+  // an unsaved edit that a later Save would clobber with a stale value.
+  const assertWritable = (target: string): AiModel => {
+    if (isNew || !model) {
+      throw new Error(
+        `${target} needs a saved model open in the detail panel. The panel is currently creating a new model — creating a model is the admin's own flow, so open an existing model first.`,
+      );
+    }
+    if (saving) {
+      throw new Error(
+        `${target} was refused because a save is already in flight on this model. Wait for it to finish, re-read the value, and try again — writing mid-save would race the panel's own write.`,
+      );
+    }
+    if (rawJsonDirty) {
+      throw new Error(
+        `${target} was refused because the Raw JSON tab has unsaved edits. That tab saves the WHOLE model row, so it would overwrite this write the next time the admin saves. Ask the admin to save or reset the Raw JSON tab first.`,
+      );
+    }
+    return model;
+  };
+
+  const applyModelCopyWrite = async (
+    target: "description" | "common_name",
+    validated: string | null,
+  ) => {
+    const target_name =
+      target === "description" ? "model_description" : "model_common_name";
+    const open = assertWritable(target_name);
+    const saved = await aiModelService.update(open.id, {
+      [target]: validated,
+    } as Partial<AiModel>);
+    const landed = (saved[target] ?? "") as string;
+    setFormData((prev) => ({ ...prev, [target]: landed }));
+    setBaseline((prev) => ({ ...prev, [target]: landed }));
+    setRawJsonText(JSON.stringify(saved, null, 2));
+    setSaveError(null);
+    setSavedFlash(true);
+    if (savedTimerRef.current) clearTimeout(savedTimerRef.current);
+    savedTimerRef.current = setTimeout(() => setSavedFlash(false), 2500);
+    onSaved(saved);
+  };
+
+  useSurfaceWriteHandlers(ADMIN_AI_MODELS_SURFACE_NAME, {
+    model_description: async (value) => {
+      // Validate BEFORE the writability checks would matter either way, but
+      // after nothing: a bad shape and a bad moment are both refusals, and the
+      // agent should hear whichever it hit. Shape first — it is the one the
+      // agent can fix without waiting.
+      const description = normalizeModelDescription(value);
+      await applyModelCopyWrite("description", description);
+    },
+    model_common_name: async (value) => {
+      const common_name = normalizeModelCommonName(value);
+      await applyModelCopyWrite("common_name", common_name);
+    },
+  });
+
+  const usingRawJsonForNew =
+    isNew &&
+    activeTab === "raw-model" &&
+    rawJsonText.trim().length > 0 &&
+    !validateRawJson(rawJsonText).some((i) => i.kind === "parse");
+
+  // Footer Save covers ONLY the form + raw JSON — section editors (Controls /
+  // Constraints / JSON Fields) have their own save actions, so their dirtiness
+  // must not enable a footer button that would not actually save them.
+  const canSave =
+    usingRawJsonForNew ||
+    (formData.name.trim() && (isNew || formIsDirty || rawJsonDirty));
+
+  return (
+    <>
+      <div className="h-full flex flex-col overflow-hidden bg-card">
+        {/* Header */}
+        <div className="flex items-center justify-between px-3 py-2 border-b shrink-0 bg-muted/20">
+          <div className="flex items-center gap-2 min-w-0">
+            <span className="flex items-center gap-1.5 text-[10px] font-medium text-muted-foreground/60 shrink-0 select-none">
+              <PanelRight className="h-3 w-3" />
+              Detail
+            </span>
+            <div className="w-px h-3 bg-border shrink-0" />
+            <span className="text-sm font-semibold truncate">
+              {displayName}
+            </span>
+            {isNew && (
+              <Badge
+                variant="outline"
+                className="text-xs bg-blue-50 dark:bg-blue-900/20 text-blue-600 shrink-0"
+              >
+                New
+              </Badge>
+            )}
+            {!isNew && model?.is_deprecated && (
+              <Badge
+                variant="outline"
+                className="text-xs bg-red-50 dark:bg-red-900/20 text-red-600 shrink-0"
+              >
+                Deprecated
+              </Badge>
+            )}
+            {!isNew && model?.is_primary && (
+              <Badge
+                variant="outline"
+                className="text-xs bg-green-50 dark:bg-green-900/20 text-green-600 shrink-0"
+              >
+                Primary
+              </Badge>
+            )}
+            {isDirty && !saving && (
+              <span
+                className="w-2 h-2 rounded-full bg-orange-400 shrink-0"
+                title="Unsaved changes"
+              />
+            )}
+            {savedFlash && !isDirty && (
+              <span className="flex items-center gap-1 text-xs text-green-600 dark:text-green-400 shrink-0">
+                <CheckCircle2 className="h-3.5 w-3.5" />
+                Saved
+              </span>
+            )}
+          </div>
+          {inCanvas ? null : (
+            <TooltipProvider delayDuration={400}>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    icon={<X />} aria-label="Close panel"
+                    variant="quiet"
+                    className="shrink-0"
+                    onClick={requestClose}
+                  />
+                </TooltipTrigger>
+                <TooltipContent side="left" className="text-xs">
+                  Close panel
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          )}
+        </div>
+
+        {/* Tab content area */}
+        {isNew ? (
+          <Tabs
+            value={activeTab === "raw-model" ? "raw-model" : "details"}
+            onValueChange={setActiveTab}
+            className="flex-1 flex flex-col overflow-hidden min-h-0"
+          >
+            <div className="border-b px-3 shrink-0">
+              <TabsList variant="underline">
+                <TabsTrigger
+                  value="details"
+                >
+                  Form
+                </TabsTrigger>
+                <TabsTrigger
+                  value="raw-model"
+                >
+                  Paste JSON
+                </TabsTrigger>
+              </TabsList>
+            </div>
+            <TabsContent
+              value="details"
+              className="flex-1 m-0 overflow-auto p-3 space-y-3 min-h-0"
+            >
+              <AiModelForm
+                data={formData}
+                providers={providers}
+                allModels={allModels}
+                isNew
+                saving={saving}
+                isDirty={isDirty}
+                onChange={setFormData}
+                onDelete={undefined}
+              />
+            </TabsContent>
+            <TabsContent
+              value="raw-model"
+              className="flex-1 m-0 p-3 min-h-0 overflow-hidden flex flex-col"
+            >
+              <RawModelJsonTab
+                model={null}
+                jsonText={rawJsonText === "{}" ? "" : rawJsonText}
+                onJsonChange={(text) => {
+                  setRawJsonText(text);
+                  setRawJsonError(null);
+                  // Try to hydrate the form fields from the pasted JSON
+                  try {
+                    const parsed = JSON.parse(text) as Record<string, unknown>;
+                    const { cleaned } = stripUnknownColumns(parsed);
+                    const partial: Partial<AiModelFormData> = {};
+                    if (typeof cleaned.name === "string")
+                      partial.name = cleaned.name;
+                    if (typeof cleaned.common_name === "string")
+                      partial.common_name = cleaned.common_name;
+                    if (typeof cleaned.provider_id === "string")
+                      partial.provider_id = cleaned.provider_id;
+                    if (typeof cleaned.context_window === "number")
+                      partial.context_window = String(cleaned.context_window);
+                    if (typeof cleaned.max_tokens === "number")
+                      partial.max_tokens = String(cleaned.max_tokens);
+                    if (typeof cleaned.is_deprecated === "boolean")
+                      partial.is_deprecated = cleaned.is_deprecated;
+                    if (typeof cleaned.is_primary === "boolean")
+                      partial.is_primary = cleaned.is_primary;
+                    if (typeof cleaned.is_premium === "boolean")
+                      partial.is_premium = cleaned.is_premium;
+                    if (Object.keys(partial).length > 0)
+                      setFormData((prev) => ({ ...prev, ...partial }));
+                  } catch {
+                    /* not valid JSON yet — that's fine */
+                  }
+                }}
+                onReset={() => {
+                  setRawJsonText("{}");
+                  setRawJsonError(null);
+                }}
+              />
+            </TabsContent>
+          </Tabs>
+        ) : (
+          <Tabs
+            value={activeTab}
+            onValueChange={setActiveTab}
+            className="flex-1 flex flex-col overflow-hidden min-h-0"
+          >
+            <div className="border-b px-3 shrink-0 overflow-x-auto scrollbar-none">
+              <TabsList variant="underline" className="w-max">
+                <TabsTrigger
+                  value="details"
+                  className="shrink-0"
+                >
+                  Details
+                  {(formIsDirty || rawJsonDirty) && (
+                    <span className="ml-1.5 w-1.5 h-1.5 rounded-full bg-orange-400 inline-block" />
+                  )}
+                </TabsTrigger>
+                <TabsTrigger
+                  value="json"
+                  className="shrink-0"
+                >
+                  JSON Fields
+                  {dirtySections["json-capabilities"] && (
+                    <span className="ml-1.5 w-1.5 h-1.5 rounded-full bg-orange-400 inline-block" />
+                  )}
+                </TabsTrigger>
+                <TabsTrigger
+                  value="controls"
+                  className="shrink-0"
+                >
+                  Controls
+                  {dirtySections["controls"] && (
+                    <span className="ml-1.5 w-1.5 h-1.5 rounded-full bg-orange-400 inline-block" />
+                  )}
+                </TabsTrigger>
+                <TabsTrigger
+                  value="constraints"
+                  className="shrink-0"
+                >
+                  Constraints
+                  {(dirtySections["constraints-family"] ||
+                    dirtySections["constraints-override"]) && (
+                    <span className="ml-1.5 w-1.5 h-1.5 rounded-full bg-orange-400 inline-block" />
+                  )}
+                </TabsTrigger>
+                <TabsTrigger
+                  value="pricing"
+                >
+                  Pricing
+                  {offerings.length > 0 && (
+                    <Badge
+                      variant="outline"
+                      className="ml-1.5 text-xs h-4 px-1"
+                    >
+                      {/* A failed refetch keeps the last count, marked stale. */}
+                      <UntrustedCount
+                        read={readOf({
+                          loading: offeringsLoading,
+                          error: offeringsError,
+                          hasData: offerings.length > 0,
+                        })}
+                        label="Offerings"
+                        value={offerings.length}
+                      />
+                    </Badge>
+                  )}
+                </TabsTrigger>
+                <TabsTrigger
+                  value="usage"
+                >
+                  Usage
+                  {model?.is_deprecated && (
+                    <span className="ml-1 w-2 h-2 rounded-full bg-amber-500 inline-block" />
+                  )}
+                </TabsTrigger>
+                <TabsTrigger
+                  value="provider"
+                >
+                  Provider Data
+                  {providers.find((p) => p.id === model?.provider_id)
+                    ?.provider_models_cache && (
+                    <span className="ml-1.5 inline-block h-1.5 w-1.5 rounded-full bg-green-500" />
+                  )}
+                </TabsTrigger>
+                <TabsTrigger
+                  value="raw-model"
+                >
+                  Raw JSON
+                </TabsTrigger>
+              </TabsList>
+            </div>
+
+            <TabsContent
+              value="details"
+              className="flex-1 m-0 overflow-auto p-3 min-h-0"
+            >
+              <AiModelForm
+                data={formData}
+                providers={providers}
+                allModels={allModels}
+                isNew={false}
+                saving={saving}
+                isDirty={isDirty}
+                onChange={setFormData}
+                onDelete={handleDelete}
+              />
+            </TabsContent>
+
+            {/* The three section editors are forceMount + hidden-when-inactive:
+                Radix unmounts inactive TabsContent, which destroyed unsaved
+                drafts AND cleared their dirty flags on a mere tab switch
+                (adversarial review A3). */}
+            <TabsContent
+              value="json"
+              forceMount
+              className="flex-1 m-0 overflow-auto p-3 space-y-3 min-h-0 data-[state=inactive]:hidden"
+            >
+              <JsonFieldEditor
+                title="Capabilities"
+                data={model?.capabilities}
+                onSave={handleJsonSave("capabilities")}
+                description="Supported features (array or object)"
+                defaultExpanded
+                onDirtyChange={reportJsonCapsDirty}
+              />
+            </TabsContent>
+
+            <TabsContent
+              value="controls"
+              forceMount
+              className="flex-1 m-0 overflow-auto p-3 min-h-0 data-[state=inactive]:hidden"
+            >
+              {model && (
+                <ModelControlsEditor
+                  model={model}
+                  offerings={offerings}
+                  offeringsLoading={offeringsLoading}
+                  onDirtyChange={reportControlsDirty}
+                  onOfferingsChanged={refetchOfferings}
+                />
+              )}
+            </TabsContent>
+
+            <TabsContent
+              value="constraints"
+              forceMount
+              className="flex-1 m-0 overflow-auto p-3 min-h-0 data-[state=inactive]:hidden"
+            >
+              {model && (
+                <ModelRulesEditor
+                  model={model}
+                  offerings={offerings}
+                  onDirtyChange={reportConstraintsDirty}
+                  onOfferingsChanged={refetchOfferings}
+                />
+              )}
+            </TabsContent>
+
+            <TabsContent
+              value="pricing"
+              className="flex-1 m-0 overflow-auto p-3 min-h-0"
+            >
+              <OfferingPricingReadOnly
+                offerings={offerings}
+                loading={offeringsLoading}
+                error={offeringsError}
+              />
+            </TabsContent>
+
+            <TabsContent
+              value="usage"
+              className="flex-1 m-0 overflow-hidden min-h-0"
+            >
+              {model && (
+                <ModelUsageAudit
+                  model={model}
+                  allModels={allModels}
+                  onReplaceDone={() => {}}
+                />
+              )}
+            </TabsContent>
+
+            <TabsContent
+              value="provider"
+              className="flex-1 m-0 overflow-auto p-3 min-h-0"
+            >
+              {model && <ProviderDataTab model={model} providers={providers} />}
+            </TabsContent>
+
+            <TabsContent
+              value="raw-model"
+              className="flex-1 m-0 p-3 min-h-0 overflow-hidden flex flex-col"
+            >
+              {model && (
+                <RawModelJsonTab
+                  model={model}
+                  jsonText={rawJsonText}
+                  onJsonChange={(text) => {
+                    setRawJsonText(text);
+                    setRawJsonError(null);
+                  }}
+                  onReset={() => {
+                    setRawJsonText(buildRawJson());
+                    setRawJsonError(null);
+                  }}
+                />
+              )}
+            </TabsContent>
+          </Tabs>
+        )}
+
+        {/* Persistent footer */}
+        <div className="border-t bg-card shrink-0">
+          {saveError && (
+            <div className="flex items-start gap-2 px-3 py-2 bg-red-50 dark:bg-red-900/20 border-b border-red-200 dark:border-red-800 text-xs text-red-700 dark:text-red-300">
+              <AlertTriangle className="h-3.5 w-3.5 shrink-0 mt-0.5 text-red-500" />
+              <span className="flex-1 min-w-0 break-words">{saveError}</span>
+              <button
+                type="button"
+                onClick={() => setSaveError(null)}
+                className="shrink-0 text-red-400 hover:text-red-600 dark:hover:text-red-200"
+              >
+                <X className="h-3.5 w-3.5" />
+              </button>
+              <ErrorAlchemyMenu error={saveError} />
+            </div>
+          )}
+          <div className="px-3 py-2 flex items-center justify-between gap-2">
+            <Button
+              icon={<X />}
+              variant="quiet"
+              onClick={requestClose}
+            >
+              Close
+            </Button>
+            <div className="flex items-center gap-2">
+              <Button
+                icon={<Save />}
+                variant="outline"
+                onClick={() => handleSave()}
+                disabled={saving || !canSave}
+              >
+                {saving ? "Saving…" : isNew ? "Create" : "Save"}
+              </Button>
+              <Button
+                icon={<LogOut />}
+                variant="primary"
+                onClick={handleSaveAndClose}
+                disabled={saving || !canSave}
+              >
+                {saving ? "Saving…" : isNew ? "Create & Close" : "Save & Close"}
+              </Button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Dirty-check confirmation dialog */}
+      <AlertDialog open={showDirtyDialog} onOpenChange={setShowDirtyDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Unsaved Changes</AlertDialogTitle>
+            <AlertDialogDescription>
+              You have unsaved changes to <strong>{displayName}</strong>
+              {sectionsDirty && (
+                <>
+                  {" "}
+                  — including edits in{" "}
+                  {[
+                    dirtySections["controls"] ? "Controls" : null,
+                    dirtySections["constraints-family"] ||
+                    dirtySections["constraints-override"]
+                      ? "Constraints"
+                      : null,
+                    dirtySections["json-capabilities"] ? "JSON Fields" : null,
+                  ]
+                    .filter(Boolean)
+                    .join(", ")}
+                  , which save from their own tab (the footer Save does not
+                  cover them)
+                </>
+              )}
+              . What would you like to do?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="flex-col sm:flex-row gap-2">
+            <AlertDialogCancel onClick={() => setShowDirtyDialog(false)}>
+              Keep Editing
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                setShowDirtyDialog(false);
+                onClose();
+              }}
+              className="bg-destructive hover:bg-destructive/90"
+            >
+              Discard & Close
+            </AlertDialogAction>
+            {(formIsDirty || rawJsonDirty) && (
+              <AlertDialogAction
+                onClick={async () => {
+                  setShowDirtyDialog(false);
+                  await handleSaveAndClose();
+                }}
+                className="bg-primary hover:bg-primary/90"
+              >
+                {sectionsDirty ? "Save form & Close" : "Save & Close"}
+              </AlertDialogAction>
+            )}
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
+  );
+}

@@ -545,7 +545,7 @@ export const adminCategoriesData: AdminCategory[] = [
         title: "New App",
         description: "Create a new global-scope system agent app.",
         iconName: "Plus",
-        link: "/administration/agents/system-agents/apps/new",
+        link: "/agent-apps/build",
         isNew: true,
       },
       {

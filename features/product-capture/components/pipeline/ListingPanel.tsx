@@ -21,14 +21,11 @@ import {
   PanelSection,
 } from "./panel-primitives";
 import { downloadFile } from "@ai-matrx/kit/download";
+import { toDelimitedText } from "@ai-matrx/alchemy/operate/read";
 
 function downloadBlob(fileName: string, mime: string, content: string) {
   const blob = new Blob([content], { type: mime });
   downloadFile(fileName, blob, blob.type);
-}
-
-function csvEscape(value: string): string {
-  return /[",\n]/.test(value) ? `"${value.replace(/"/g, '""')}"` : value;
 }
 
 export function listingToCsv(item: PipelineItem, listing: Partial<ListingDraft>): string {
@@ -61,7 +58,7 @@ export function listingToCsv(item: PipelineItem, listing: Partial<ListingDraft>)
     listing.category ?? "",
     specifics,
   ];
-  return `${header.join(",")}\n${row.map(csvEscape).join(",")}`;
+  return toDelimitedText(header, [row], { spreadsheetSafe: true });
 }
 
 export function ListingPanel({

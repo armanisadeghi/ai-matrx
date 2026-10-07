@@ -44,11 +44,9 @@ function CopyButton({
       kind === "error" ? toast.error(message) : toast.success(message),
   });
   const [copied, setCopied] = useState(false);
-  const handleCopy = () => {
-    void copyText(text).then((copied) => {
-  if (!copied) return;
-  setCopied(true);
-});
+  const handleCopy = async () => {
+    if (!(await copyText(text))) return;
+    setCopied(true);
     setTimeout(() => setCopied(false), 1500);
   };
   return (
@@ -102,12 +100,10 @@ export default function SqlFunctionDetail({
     ? `-- Description for ${fnLabel}\n${func.description}`
     : "";
 
-  const handleCopyCode = () => {
+  const handleCopyCode = async () => {
     if (func.definition) {
-      void copyText(func.definition).then((copied) => {
-  if (!copied) return;
-  setDefCopied(true);
-});
+      if (!(await copyText(func.definition))) return;
+      setDefCopied(true);
       setTimeout(() => setDefCopied(false), 1500);
     }
   };

@@ -113,7 +113,7 @@ const QUICK_ACTIONS = [
     icon: FileText,
   },
   {
-    href: "/administration/agents/system-agents/apps/new",
+    href: "/agent-apps/build",
     label: "Create App",
     description: "Build a new global app backed by a system agent.",
     icon: AppWindow,
