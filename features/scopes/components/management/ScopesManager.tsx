@@ -30,6 +30,8 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { InlineMediaRef } from "@ai-matrx/media/react";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
+import { selectUserId } from "@/lib/redux/selectors/userSelectors";
+import { canShapeScopeType } from "@/features/scopes/utils/canShapeScopeType";
 import {
   makeSelectScopeTypesForOrg,
   selectTreeError,
@@ -144,8 +146,9 @@ export function ScopesManager({ organization, role }: ScopesManagerProps) {
 
   const slug = organization.slug ?? organization.id;
   const totalScopes = orgScopes.length;
-  // Structure is the org admins' (owner/admin); members work with the data inside it.
+  // Structure is the org admins' (owner/admin) and each type's creator's; members work the data inside it.
   const canManage = role === "owner" || role === "admin";
+  const userId = useAppSelector(selectUserId);
 
   const orderedTypes = useMemo(
     () => [...scopeTypes].sort((a, b) => a.sort_order - b.sort_order),
@@ -280,6 +283,7 @@ export function ScopesManager({ organization, role }: ScopesManagerProps) {
               scopeType={scopeType}
               orgId={organization.id}
               orgSlugOrId={slug}
+              role={role}
             />
           ))}
 
@@ -351,7 +355,7 @@ export function ScopesManager({ organization, role }: ScopesManagerProps) {
                   : ""}
               </div>
             </div>
-            {canManage && (
+            {canShapeScopeType(role, userId, row) && (
               <Button
                 icon={<Undo2 />}
                 variant="outline"
