@@ -5,7 +5,8 @@
 // An Applet is a database record (`app.definition`: files, entry, pages, sources, mandates). This
 // component builds its `AppletHost` with `@ai-matrx/applets/platform` over the viewer's OWN clients —
 // the browser supabase client (row security decides every read and write), the agents intelligence
-// port on the app's transport, the active organization (where jobs run; never a read filter), and the
+// port on the app's transport (each job's stream also adopted into the execution system, so it renders
+// through the one live-run pipeline), the active organization (reported; never a read filter), and the
 // browser history for its pages (pushState: no server round trip, no remount) — then compiles and renders
 // it full-bleed with `mountAppletAsync`. Mounted by the route's LAYOUT, so it outlives page changes.
 // No Applet code lives in this repo.
@@ -16,11 +17,17 @@ import { createPlatformHost, type PlatformHost } from "@ai-matrx/applets/platfor
 import { mountAppletAsync } from "@ai-matrx/applets/frame";
 import { createIntelligencePort } from "@ai-matrx/agents/intelligence";
 import { liveValues } from "@ai-matrx/alchemy/surface";
+import type { MatrxTransport } from "@ai-matrx/agents/matrx";
+import type { JobRunView } from "@ai-matrx/applets";
+import { adoptForeignStream } from "@ai-matrx/chat/agents/redux/execution-system/thunks/adopt-foreign-stream";
 import { EmptyState, RegionSkeleton } from "@ai-matrx/design-system/controls";
 import { AppWindow } from "lucide-react";
 
 import { supabase } from "@/utils/supabase/client";
 import { useAppStore } from "@/lib/redux/hooks";
+import type { AppStore } from "@/lib/redux/store";
+import { openLiveRunWindowAction } from "@/features/overlays/openers/liveRunWindow";
+import { AppletRunOutput } from "@/features/applets-host/AppletRunOutput";
 import { selectActiveOrganizationId } from "@/features/scopes/redux/selectors/active-context";
 import { createMatrxTransport } from "@/lib/api/matrx-transport";
 import { captureError } from "@/lib/diagnostics/errorCaptureStore";
@@ -58,6 +65,30 @@ function renderKind(kind: string, value: unknown) {
   );
 }
 
+function renderRun(run: JobRunView) {
+  return <AppletRunOutput run={run} />;
+}
+
+/**
+ * Every job an Applet starts is a mandate run whose NDJSON body the agents port reads for the frame's
+ * `useJob` state. The same body is TEED into the execution system (`adoptForeignStream`, under the server's
+ * `X-Request-ID` — the RunRef's requestId), so `<JobOutput>` renders it through the one live-run pipeline.
+ * One wire, two readers; nothing is parsed here.
+ */
+function adoptAppletRunStreams(base: MatrxTransport, store: AppStore): MatrxTransport {
+  return {
+    async fetch(path, init) {
+      const response = await base.fetch(path, init);
+      if (init.method !== "POST" || !path.startsWith("/ai/mandates/") || !response.ok || !response.body) return response;
+      const [forJob, forPipeline] = response.body.tee();
+      const consume = store.dispatch(adoptForeignStream({ preferServerIds: true }));
+      const ids = { requestId: response.headers.get("X-Request-ID"), conversationId: response.headers.get("X-Conversation-ID") };
+      void consume(new Response(forPipeline, { status: response.status, statusText: response.statusText, headers: response.headers }), ids);
+      return new Response(forJob, { status: response.status, statusText: response.statusText, headers: response.headers });
+    },
+  };
+}
+
 /** Same URL inside the Applet, without a server round trip or a remount (Next syncs usePathname). */
 function pushAppletUrl(url: string) {
   if (`${window.location.pathname}${window.location.search}` === url) return;
@@ -78,20 +109,21 @@ export function AppletHostMount({ appletId, slug }: { appletId: string; slug: st
   useEffect(() => {
     let cancelled = false;
     const listeners = navListeners.current;
-    // The organization the agents transport stamps when the store has none selected: the one this
-    // Applet's job runs in (set below). Every run also carries it as its own header.
-    let jobOrganizationId: string | null = null;
-    const transportOptions = {
-      source: "applets",
-      get organizationId() {
-        return jobOrganizationId ?? undefined;
-      },
-    };
+    const transportOptions = { source: "applets" };
     const host: PlatformHost = createPlatformHost({
       appletId,
       supabase,
-      agents: createIntelligencePort({ transport: createMatrxTransport(store.getState, transportOptions) }),
+      agents: createIntelligencePort({ transport: adoptAppletRunStreams(createMatrxTransport(store.getState, transportOptions), store) }),
       activeOrganizationId: selectActiveOrganizationId(store.getState()),
+      // A member of the Applet's organization runs jobs there (the package decides); anyone else is
+      // asked by the organization gate, and the run continues with their choice — never a guess.
+      resolveOrganization: async () => {
+        try {
+          return await ensureOrganizationContext({});
+        } catch {
+          return null;
+        }
+      },
       nav: {
         async go(to) {
           const tail = to === "/" || to === "" ? "" : to.startsWith("/") ? to : `/${to}`;
@@ -111,27 +143,26 @@ export function AppletHostMount({ appletId, slug }: { appletId: string; slug: st
         captureError({ source: "applet", code: err.code, message: err.message, callSite: err.where, raw: { appletId, slug, diagnostic: err.diagnostic } });
       },
     });
-    // Which organization a job runs in. The Applet belongs to an organization the way a table row does:
-    // a member of it runs the Applet's jobs there (entity-bound, like `ensureOrganizationContext`'s
-    // `organizationId`). Anyone else runs them in the organization they selected; with none selected the
-    // organization gate asks them, and the run continues with their choice — never a guess.
-    const startRun = host.intelligence.run;
-    host.intelligence.run = async (req) => {
-      let organizationId: string;
-      try {
-        const [record, viewer] = await Promise.all([host.record(), host.viewer()]);
-        const bound = viewer.organizationIds.includes(record.organizationId) ? record.organizationId : null;
-        organizationId = await ensureOrganizationContext(bound ? { organizationId: bound } : {});
-        jobOrganizationId = organizationId;
-      } catch {
-        return { ok: false, error: { code: "organization_required", message: "Choose an organization to run this job in.", retryable: true } };
-      }
-      return startRun({ ...req, organizationId });
-    };
     provideStoredComponentScopeModules();
     void host
       .record()
-      .then((record) => mountAppletAsync(record, host, HOST_SCOPE, { renderKind }))
+      .then((record) =>
+        mountAppletAsync(record, host, HOST_SCOPE, {
+          renderKind,
+          renderRun,
+          // Where an Applet has no room to stream inline: the floating run window, one per job.
+          openRun(run) {
+            if (!run.ref) return;
+            store.dispatch(
+              openLiveRunWindowAction({
+                instanceId: `applet:${appletId}:${run.ref.mandateKey}`,
+                requestId: run.ref.requestId,
+                label: run.label ?? null,
+              }),
+            );
+          },
+        }),
+      )
       .then(
         (result) => {
           if (cancelled) return;
