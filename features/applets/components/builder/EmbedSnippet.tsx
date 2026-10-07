@@ -6,7 +6,7 @@
  * pre-formatted iframe block users can drop into a third-party site.
  *
  * The widget shell strips management chrome and runs against the
- * standard public path, so the same row deployed at /p/<slug> serves
+ * standard public path, so the same row deployed at /applets/<slug> serves
  * both the full-page experience and the embed without any further
  * configuration.
  */
@@ -20,7 +20,7 @@ import { Button } from "@/components/ui/button";
 import { toast } from "@/lib/toast";
 
 interface EmbedSnippetProps {
-  /** App slug — what /p/[slug] resolves on. */
+  /** App slug — what /applets/[slug] resolves on. */
   slug: string;
   /** Origin to use when assembling the URL (defaults to window.origin). */
   origin?: string;
@@ -47,7 +47,7 @@ export function EmbedSnippet({
       : "https://aimatrx.com");
 
   const widgetUrl = useMemo(
-    () => `${resolvedOrigin}/p/${slug}?embed=widget`,
+    () => `${resolvedOrigin}/applets/${slug}?embed=widget`,
     [resolvedOrigin, slug],
   );
 

@@ -25,7 +25,7 @@ Successor to the legacy `features/prompt-apps/` (still live, deprecated) and `fe
 
 - `components/`, `sample-code/`, `services/`, `utils/`, `types.ts`, `index.ts`
 - `components/AppletRef.tsx` — **the ONE way an app is named in the admin shell.**
-  Composes `EntityRef` with the admin editor as the record route and `/p/<slug>`
+  Composes `EntityRef` with the admin editor as the record route and `/applets/<slug>`
   as an extra door; also exports `appletAdminEditHref` /
   `appletExecutionsHref` / `appletPublicHref`. Never print an app's name as
   a `<span>` and never hand-roll the link (THE DOOR LAW).
@@ -86,7 +86,7 @@ ladder, a guest takes the system-default columns the public RPC
 
 ## Public applets
 
-Some Apps are public (`visibility = 'public'`). The public URL is `/p/[slug]`; see `phase-08-applets-public.md`. Public apps:
+Some Applets are public (`status = 'published'` + `visibility = 'public'`, read by `get_aga_public_data`). An Applet has ONE address, `/applets/<slug>`; a signed-out visitor of a public, non-template Applet runs it there on the guest lane (`resolveAppletView` in `features/applets-host/resolve-applet-route.ts`; `?embed=widget` drops the attribution row). `/p/<slug>` is gone. Public Applets:
 
 - Run without a prior user login; guest-auth bootstrap gives anonymous visitors the same launcher path without an authenticated-only dependency
 - Use the managed conversation lifecycle. Current public-shell runs persist `chat.conversation` rows (including guest runs), which is the authoritative place to verify mapped `variables`; do not revive the obsolete "no DB persistence" claim
@@ -125,7 +125,7 @@ Some Apps are public (`visibility = 'public'`). The public URL is `/p/[slug]`; s
 Every page open and every run produces a row in `aga_executions`. Tracking is **non-blocking** — it must never delay the initial paint or the click-to-API gap. Two design rules enforce that:
 
 1. The renderer ([AppletPublicRendererImpl.tsx](components/AppletPublicRendererImpl.tsx)) calls `useAppletTracker(app.id)` and fires events via fire-and-forget `fetch(..., { keepalive: true })`. No callsite can `await` a tracker call — the helpers return `void`.
-2. All writes happen via the dedicated endpoint [`/api/applets/[id]/track`](../../app/api/applets/[id]/track/route.ts), which uses the admin client (RLS-bypass) so tracking works for draft/private apps in the in-shell `/applets/manage/[id]/run` view as well as for published public apps at `/p/<slug>`.
+2. All writes happen via the dedicated endpoint [`/api/applets/[id]/track`](../../app/api/applets/[id]/track/route.ts), which uses the admin client (RLS-bypass) so tracking works for draft/private apps in the in-shell `/applets/manage/[id]/run` view as well as for published public apps at `/applets/<slug>`.
 
 Lifecycle:
 
@@ -189,6 +189,8 @@ and admin/user route families are live. Remaining migration work is tracked in:
 ---
 
 ## Change log
+
+- `2026-10-07` — claude (lane H): one address per Applet. Signed-out visitors of a published public Applet run it at `/applets/<slug>` on the guest lane (`resolveAppletView`); `(link)/p/[slug]` deleted, every `/p/<slug>` link, the embed snippet and the sitemap repointed; `showsAppletIntro` removed.
 
 - `2026-10-07` — claude (lane A, retire "agent app"): the name is Applet. `features/agent-apps` → `features/applets`, `AgentApp*` identifiers → `Applet*`, routes `/agent-apps/**` → `/applets`, `/applets/build`, `/applets/manage/<id>/…`; `/apps/<slug>` → `/applets/<slug>` (the old `(public)/applets/[slug]` intro folded in: `showsAppletIntro`); `/templates/apps` → `/templates/applets`; `/administration/agents/agent-apps/**` → `/administration/applets/**` (`apps` tab → `all`); `/api/agent-apps` → `/api/applets`. Kept, DB/server-declared: surface names `matrx-user/agent-apps` + `matrx-admin/agent-apps`, the `agent-app` SourceFeature token, `agent_apps.*` mandate keys, `folderForAgentApp`.
 

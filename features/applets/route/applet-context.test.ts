@@ -24,7 +24,7 @@ const base: AppletBundleSource = {
 it("packs the open Applet as one escaped XML element: pages, jobs, sources, file sizes", () => {
   const xml = buildAppletBundle(base, "settings");
   expect(xml.startsWith('<applet id="0d2b45a2')).toBe(true);
-  expect(xml).toContain('public_url="/p/holloway-content"');
+  expect(xml).toContain('public_url="/applets/holloway-content"');
   expect(xml).toContain('view="settings"');
   expect(xml).toContain("&amp; approvals");
   expect(xml).toContain('<page path="/approvals" title="Approvals" file="Approvals.tsx"/>');

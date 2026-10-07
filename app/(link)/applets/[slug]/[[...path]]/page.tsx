@@ -1,39 +1,53 @@
 // app/(link)/applets/[slug]/[[...path]]/page.tsx — AN APPLET, AT aimatrx.com/applets/<slug>/<page…>.
 //
-// In `(link)`: the Applet is the whole screen, no product shell. A signed-in viewer gets the running
-// Applet — it reads and writes the viewer's own tables as the viewer, and the slug resolves against
-// `app.definition` through the viewer's own client, so row security decides whether this person can
-// open it. The Applet itself is mounted by `../layout.tsx`, so it is NOT remounted when its page
-// changes; for a signed-in viewer this page renders nothing of its own.
-//
-// A signed-out visitor at the Applet's own address gets its introductory page when the owner
-// published one to the web (server-rendered, indexable when the owner's search-engine switch allows
-// it); its "Open" sends them to sign in and back here. With nothing published, they go to sign in.
-// A template's address is always its introductory page ("Use this template" installs a copy) —
-// `showsAppletIntro`, the one rule the layout shares so it never mounts a template.
+// In `(link)`: the Applet is the whole screen, no product shell. This is the ONE address an Applet has —
+// the owner's, a teammate's, and the one a stranger is sent. What a viewer gets is `resolveAppletView`,
+// shared with `../layout.tsx` (which mounts the running Applet, so it is NOT remounted when its page
+// changes; for a running Applet this page renders nothing of its own but the guest attribution row):
+//   - a template: its introductory page ("Use this template" installs a copy);
+//   - signed in: the running Applet, read through the viewer's own client — row security decides;
+//   - signed out, a published public Applet: the running Applet on the guest lane, with the one
+//     attribution row a shared link carries (`?embed=widget` drops it for an iframe);
+//   - signed out, anything else: the introductory page when the owner published one, else sign in.
 // `build` and `manage` are owner-tool routes in `(core)/applets`, never an Applet's address
 // (`features/applets/reserved-slugs.ts`).
 
 import type { Metadata } from "next";
 import { notFound, permanentRedirect, redirect } from "next/navigation";
 
-import { resolveAppletRoute } from "@/features/applets-host/resolve-applet-route";
+import { MadeWithAiMatrx } from "@/components/matrx/MadeWithAiMatrx";
+import { readPublicApplet, resolveAppletView } from "@/features/applets-host/resolve-applet-route";
+import { getAppletIconsMetadata } from "@/features/applets/utils/favicon-metadata";
 import { AppletIntroPage } from "@/features/marketing/applets/AppletIntroPage";
-import { readAppletIntro, readPublicApplets, showsAppletIntro } from "@/features/marketing/applets/publicApplets.server";
+import { readAppletIntro, readPublicApplets } from "@/features/marketing/applets/publicApplets.server";
 import { appletHref } from "@/features/marketing/applets/types";
 import { searchEngineRobots } from "@/lib/seo/search-engine-indexed.server";
 import { loginHref } from "@/utils/auth/auth-destination";
 import { createRouteMetadata } from "@/utils/route-metadata";
 import { getSessionVerdict } from "@/utils/supabase/sessionVerdict";
 
-type Props = { params: Promise<{ slug: string; path?: string[] }> };
+type Props = { params: Promise<{ slug: string; path?: string[] }>; searchParams: Promise<{ embed?: string }> };
 
 const RELATED = 6;
 
-export async function generateMetadata({ params }: Props): Promise<Metadata> {
+export async function generateMetadata({ params }: Pick<Props, "params">): Promise<Metadata> {
   const { slug, path = [] } = await params;
-  const applet = path.length ? null : await readAppletIntro(decodeURIComponent(slug));
-  if (!applet) return { title: "Applet", robots: { index: false, follow: true } };
+  const key = decodeURIComponent(slug);
+  const applet = path.length ? null : await readAppletIntro(key);
+  if (!applet) {
+    // A public Applet with no introductory page still names itself to a link preview.
+    const shared = path.length ? null : await readPublicApplet(key);
+    if (!shared) return { title: "Applet", robots: { index: false, follow: true } };
+    const description = shared.tagline || shared.description || undefined;
+    return {
+      ...createRouteMetadata(appletHref(shared.slug), { title: shared.name, titlePrefix: "Applet", description, canonicalPath: appletHref(shared.slug) }),
+      robots: await searchEngineRobots([{ type: "app", key: shared.slug }]),
+      icons: getAppletIconsMetadata(shared.favicon_url, shared.name),
+      ...(shared.preview_image_url
+        ? { openGraph: { title: shared.name, description, images: [shared.preview_image_url] }, twitter: { card: "summary_large_image", title: shared.name, description, images: [shared.preview_image_url] } }
+        : {}),
+    };
+  }
   const href = appletHref(applet.slug);
   const meta = createRouteMetadata(href, {
     title: applet.name,
@@ -56,14 +70,17 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   };
 }
 
-export default async function AppletRoute({ params }: Props) {
+export default async function AppletRoute({ params, searchParams }: Props) {
   const { slug, path = [] } = await params;
+  const { embed } = await searchParams;
   const here = `/applets/${slug}${path.length ? `/${path.join("/")}` : ""}`;
   const { isAuthenticated } = await getSessionVerdict();
   const key = decodeURIComponent(slug);
-  const intro = await showsAppletIntro(key, isAuthenticated);
-  if (!isAuthenticated && (!intro || path.length)) redirect(loginHref(here));
-  if (intro) {
+  const view = await resolveAppletView(key, isAuthenticated);
+  if (view.kind === "sign-in") redirect(loginHref(here));
+  if (view.kind === "missing") notFound();
+  if (view.kind === "intro") {
+    const { intro } = view;
     if (intro.slug !== key || path.length) permanentRedirect(appletHref(intro.slug));
     const related = (await readPublicApplets(true)).filter((c) => c.id !== intro.id).slice(0, RELATED);
     return (
@@ -72,6 +89,8 @@ export default async function AppletRoute({ params }: Props) {
       </main>
     );
   }
-  if (!(await resolveAppletRoute(slug))) notFound();
+  // An id-shaped address answers at the Applet's slug, so it has one address.
+  if (view.slug !== key) permanentRedirect(`${appletHref(view.slug)}${path.length ? `/${path.map(encodeURIComponent).join("/")}` : ""}`);
+  if (view.guest && embed !== "widget") return <MadeWithAiMatrx publisherName={view.guest.publisher_name} />;
   return null;
 }

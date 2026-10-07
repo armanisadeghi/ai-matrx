@@ -77,10 +77,12 @@ export function AppletListCard({
   const currentUserId = useAppSelector(selectUserId);
   const isOwner = Boolean(currentUserId && app.created_by === currentUserId);
   const manageHref = `/applets/manage/${app.id}`;
+  // A build still running opens at its own address, where it rejoins the live run.
+  const openHref = app.build_open ? `/applets/build/${app.id}` : manageHref;
   const codeHref = `/applets/manage/${app.id}/code`;
   const versionsHref = `/applets/manage/${app.id}/versions`;
   const settingsHref = `/applets/manage/${app.id}/settings`;
-  const viewHref = `/p/${app.slug}`;
+  const viewHref = `/applets/${app.slug}`;
 
   return (
     <Card
@@ -94,7 +96,7 @@ export function AppletListCard({
       onClick={(e) => {
         if (isDisabled || isAnyNavigating) return;
         if (e.metaKey || e.ctrlKey) {
-          window.open(manageHref, "_blank");
+          window.open(openHref, "_blank");
           return;
         }
         onEdit(app);
@@ -125,7 +127,7 @@ export function AppletListCard({
             STATUS_PILL_STYLES[app.status],
           )}
         >
-          {app.status}
+          {app.build_open ? "building" : app.status}
         </span>
         <span
           className="inline-flex items-center justify-center w-5 h-5 rounded text-muted-foreground"

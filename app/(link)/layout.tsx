@@ -33,7 +33,7 @@
 // another lane's route with its own screens to re-check, and moving a route you
 // have not rendered is how a link quietly 404s — so this is the home for the
 // class, with one route moved into it and verified. The published Applet
-// `/p/<slug>` moved here on 2026-09-27 (page-pass) and carries the one
+// `/applets/<slug>` (the Applet's one address) carries the one
 // attribution row `components/matrx/MadeWithAiMatrx.tsx`.
 
 import React from "react";
@@ -49,7 +49,7 @@ export default function LinkLayout({ children }: { children: React.ReactNode }) 
       </div>
       {/* The `(link)` group has no shell, so — like `(public)/layout.tsx` — its
           layout mounts the ONE canvas front door (lazy: nothing loads until an
-          item exists). Agent output on `/p/<slug>` opens INTO it. */}
+          item exists). Agent output on `/applets/<slug>` opens INTO it. */}
       <ShellCanvasColumn />
     </Providers>
   );
