@@ -185,3 +185,9 @@ the chat starts closed, the person opens it by hand (header toggle, Cmd+\), and 
   `ElevatedShellUserMenu.tsx` + store, the canvas/elevated menu CSS, the
   `:root[data-canvas-open]` avatar hide, `NotificationsMenuItem.tsx`,
   `MessagesMenuItem.tsx`, `ApprovalsMenuItem.tsx`.
+
+- **2026-10-07** — The header ghost's clone no longer carries
+  `data-page-header-portal` (it wears `data-page-header-ghost-portal`; the
+  fallback-hide rule in `styles/shell.css` covers both). A page had two
+  `[data-page-header-portal]` nodes from first paint to hydration (~1-2s) — the
+  real one plus the ghost's clone. Guard: `page-header-ssr.test.tsx` counts one.
