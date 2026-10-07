@@ -43,7 +43,7 @@ import { selectFileById } from "@/features/files/redux/selectors";
 import { FilesResourcePicker } from "@/features/resource-manager/resource-picker/FilesResourcePicker";
 import { InlineUploadArea } from "@/features/resource-manager/resource-picker/InlineUploadArea";
 import { NoteItemBody } from "./NoteItemBody";
-import { AgentFormItemBody } from "./AgentFormItemBody";
+import { AGENT_FORM_PLACEHOLDER_TITLE, AgentFormItemBody } from "./AgentFormItemBody";
 import type { NodeSource } from "../board/document";
 import { useBoardCameraStore } from "../engine/react";
 import { entityComments, type BoardItemType, type ItemBodyProps, type PickerProps, type PlacedItem } from "./types";
@@ -208,7 +208,7 @@ function AgentFormPicker({ onPick, onCancel }: PickerProps) {
         <AgentListInlinePicker
           consumerId="board-agent-form"
           className="h-full"
-          onSelect={(agentId) => onPick([{ title: "Agent form", source: agentFormSource(null, agentId) }])}
+          onSelect={(agentId) => onPick([{ title: AGENT_FORM_PLACEHOLDER_TITLE, source: agentFormSource(null, agentId) }])}
         />
       </div>
       <div className="flex shrink-0 justify-end">
@@ -391,7 +391,7 @@ export const WORK_ITEMS: BoardItemType[] = [
     Keep: ChatKeep,
     startNew: { label: "Agent form", icon: AGENT_ICON, Picker: AgentFormPicker },
     // An agent places a past run by its conversation id (a new one needs the person's agent choice).
-    record: { place: (id, title) => ({ title: title?.trim() || "Agent form", source: agentFormSource(id, null) }) },
+    record: { place: (id, title) => ({ title: title?.trim() || AGENT_FORM_PLACEHOLDER_TITLE, source: agentFormSource(id, null) }) },
     href: (s) => {
       const id = entityId(s);
       return id ? `/chat/${id}` : null;

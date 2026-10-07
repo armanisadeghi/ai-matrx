@@ -51,6 +51,7 @@ import { setUserVariableValues } from "@ai-matrx/chat/agents/redux/execution-sys
 import { selectInstanceVariableDefinitions } from "@ai-matrx/chat/agents/redux/execution-system/instance-variable-values/instance-variable-values.selectors";
 import { selectConversationMessages } from "@ai-matrx/chat/agents/redux/execution-system/messages/messages.selectors";
 import { selectIsExecuting } from "@ai-matrx/chat/agents/redux/execution-system/selectors/aggregate.selectors";
+import { ErrorAlchemyMenu } from "@ai-matrx/chat/host/ui-slots";
 import { useCanvasWorkspaceConversation } from "@ai-matrx/chat/canvas/workspace/useCanvasWorkspaceConversation";
 import type { ItemBodyProps } from "./types";
 import { titleToAdopt } from "./feature-items.logic";
@@ -66,6 +67,8 @@ import {
 
 /** The inputs layout a new tile starts with (see OPEN QUESTION above). */
 export const AGENT_FORM_DEFAULT_INPUT_STYLE: VariablesPanelStyle = "form";
+/** A new tile's title until the agent's name is known. */
+export const AGENT_FORM_PLACEHOLDER_TITLE = "Agent form";
 
 const INPUT_STYLE_OPTIONS = VARIABLE_PANEL_STYLE_OPTIONS.filter((o) => o.value !== "hidden").map((o) => ({
   value: o.value,
@@ -134,7 +137,8 @@ export function AgentFormItemBody({ tileId, source, title, onSource }: ItemBodyP
   useEffect(() => {
     if (conversationId) record(conversationId);
   }, [conversationId, serverHasIt]);
-  const adopt = titleToAdopt(title, agentName);
+  // The agent's name replaces the placeholder once; a name the person gave the tile stays.
+  const adopt = title === AGENT_FORM_PLACEHOLDER_TITLE ? titleToAdopt(title, agentName) : null;
   useEffect(() => {
     if (adopt) onSource(source, adopt);
   }, [adopt, source, onSource]);
@@ -143,7 +147,7 @@ export function AgentFormItemBody({ tileId, source, title, onSource }: ItemBodyP
     selectConversationMessages(conversationId ?? `${AGENT_FORM_ENTITY}:none`),
   );
   const answer = messages.findLast((m) => m.role === "assistant");
-  const { requestId, isActive, statusText } = useLiveRunStatus(conversationId, null, false);
+  const { requestId, isActive, statusText, errorMessage } = useLiveRunStatus(conversationId, null, false);
   const executing = useAppSelector((s) => (conversationId ? selectIsExecuting(conversationId)(s) : false));
   const hasRun = Boolean(answer) || executing;
 
@@ -236,6 +240,12 @@ export function AgentFormItemBody({ tileId, source, title, onSource }: ItemBodyP
         </div>
       ) : (
         <div className="min-h-0 flex-1 overflow-y-auto p-2">
+          {/* A run that failed before any reply says so above the form (nothing fails silently). */}
+          {errorMessage ? (
+            <p className="pb-2 text-xs text-destructive">
+              {errorMessage} <ErrorAlchemyMenu error={errorMessage} />
+            </p>
+          ) : null}
           <SmartAgentInput
             conversationId={conversationId}
             surfaceKey={surfaceKey}

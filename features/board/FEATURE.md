@@ -39,8 +39,8 @@ Closed 2026-10-04 (details in CHANGELOG.md): Board as its own menu item with eve
 9. **Annotations on any tile** (one overlay generalising the PDF and image annotation layers).
 10. **Multiplayer** (Broadcast cursors, opt-in camera follow, presence).
 11. **Merged grid knob:** read `data_tables.merged_grid`'s live default (`platform.feature_knob`) and write one line here.
-12. **Agent form — which inputs layout is best** (Arman, 2026-10-06: "My guess is that we should use the form option or the one that has them all in one but I'm not sure. There could be an argument for the carrousel one or any of the others as well."). The tile defaults to Form and has a layout switch over all six (Inline, Wizard, Form, Stacked, Guided, Cards) so they can be compared on real agents. Seen 2026-10-06 on Flashcard Topic Deck Composer: Form shows required fields first with the rest folded; Cards shows every field but its Count stepper showed 1, not the agent's default 20; Wizard is one field per step (1/5, Next). Decide the default and whether the switch stays.
-13. **Agent form leftovers.** An agent can place a past run (`record.place`) but not start a new one for a named agent (`board_add_items` needs an agent id field). "Run again" before sending, then a reload, starts an empty form: the carried-over values live only in the browser until the run is sent.
+12. **Agent form — which inputs layout is best** (Arman, 2026-10-06: "My guess is that we should use the form option or the one that has them all in one but I'm not sure. There could be an argument for the carrousel one or any of the others as well."). The tile defaults to Form and has a layout switch over all six (Inline, Wizard, Form, Stacked, Guided, Cards) so they can be compared on real agents. Seen 2026-10-06 on Flashcard Topic Deck Composer: Form shows required fields first with the rest folded; Cards shows every field but its Count stepper showed 1, not the agent's default 20; Wizard is one field per step (Next). Form caps its fields to a short scroll box (`max-h-72`), so in a tall tile the later inputs sit below the fold. Decide the default and whether the switch stays.
+13. **Agent form leftovers.** An agent can place a past run (`record.place`) but not start a new one for a named agent (`board_add_items` needs an agent id field). "Run again" before sending, then a reload, shows the previous result again (the carried-over values live only in the browser until the run is sent). Comments follow the latest run's conversation, so a previous run's thread stops showing after Run again.
 
 ### Agents manage the board — `board_add_items`, `board_find_records` (2026-10-04)
 
@@ -331,7 +331,7 @@ and is kept. Tile bodies are STATIC imports inside the page's one `ssr:false` ed
   `__kind` reply renders as its shape. Same conversation hook, `matrx-user/chat` surface, status and Keep
   as the chat tile. Each run is its own conversation; the tile saves the latest (`id`), the agent
   (`meta.agentId`) and the chosen inputs layout (`meta.inputStyle`, default `form`). "Run again" starts a
-  fresh run and carries the values over. Add menu: "Agent form" (the one agent picker).
+  fresh run and carries the values over; the previous run stays saved until the new one is sent. Add menu: "Agent form" (the one agent picker).
 - **`startNew` takes one entry or several** (`StartNewEntry`: `create` for an instant start, or `Picker` for
   a start that needs one choice first); `startNewEntries(type)` lists them for the Add menu and Start panel.
 - **A note tile is the notes core**: `items/NoteItemBody.tsx` → `NoteWorkspace` (features/notes) in

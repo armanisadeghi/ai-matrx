@@ -68,9 +68,13 @@ describe("agentFormSourceToSave", () => {
     );
   });
 
-  it("moves to the new run after Run again, and forgets the old id while it is unsent", () => {
-    const next = agentFormSourceToSave({ ...base, savedId: "old-run", conversationId: ID, serverHasIt: false });
-    expect(next).toEqual(agentFormSource(null, "agent-1", "cards"));
+  it("keeps the previous run saved after Run again until the new run is sent", () => {
+    expect(agentFormSourceToSave({ ...base, savedId: "old-run", conversationId: ID, serverHasIt: false })).toBeNull();
+  });
+
+  it("moves to the new run once it is sent", () => {
+    const next = agentFormSourceToSave({ ...base, savedId: "old-run", conversationId: ID, serverHasIt: true });
+    expect(next).toEqual(agentFormSource(ID, "agent-1", "cards"));
     expect(next?.entity).toBe("agent-form");
   });
 });

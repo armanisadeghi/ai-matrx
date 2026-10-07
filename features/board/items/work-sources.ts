@@ -106,6 +106,8 @@ export function agentFormInputStyle(source: NodeSource): string | null {
  * What an agent-form tile saves for the run it shows, or null to keep what it
  * has — the chat tile's rule (`chatSourceToSave`): an unsent run is never saved
  * by id, so a reload never reopens a conversation the server does not have.
+ * One difference: after "Run again" the previous run stays saved until the new
+ * one is sent, so a reload before Run shows the last result instead of losing it.
  */
 export function agentFormSourceToSave(input: {
   conversationId: string;
@@ -115,6 +117,7 @@ export function agentFormSourceToSave(input: {
   chosenAgentId: string | null;
   inputStyle: string | null;
 }): EntitySource | null {
+  if (!input.serverHasIt && input.savedId !== null && input.conversationId !== input.savedId) return null;
   const next = chatSourceToSave(input);
   if (!next) return null;
   return agentFormSource(next.id, next.meta?.agentId ?? null, input.inputStyle);
