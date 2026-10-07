@@ -58,7 +58,7 @@ Legend: ✅ done · 🟡 partial · ❌ not started · ⚪ deferred · 🔵 adde
 | **Internal FE splits — FilePreview registry, FileTable TanStack, PageShell per-section, thunks.ts split, types.ts split** | §6.2 / PR3-22 | ❌ | `features/files/redux/thunks.ts` is still 1790-ish lines; `features/files/types.ts` still monolithic; `FilePreview.tsx` still a switch | Plan called for these in the same PR. None landed. |
 | **Tier-3 ESLint ring-fence (`types`, `utils`)** | SWEEP_INTERNAL_IMPORTS Tier 3 | ❌ | Not in `eslint.config.mjs` |  |
 | **Tier-4 ESLint ring-fence (`handler`, `components`, `redux`)** | SWEEP_INTERNAL_IMPORTS Tier 4 | ❌ | Not in `eslint.config.mjs` |  |
-| **Delete `features/files/api/server-client.ts` (320 lines)** | §6.3 | ❌ | File still exists. `Api.Server.uploadAndShare` has one live caller: `app/api/agent-apps/generate-favicon/route.ts:144`. Per SWEEP_LEFTOVER_REFERENCES LIVE #3, the user owes a decision: deprecate-or-keep. |
+| **Delete `features/files/api/server-client.ts` (320 lines)** | §6.3 | ❌ | File still exists. `Api.Server.uploadAndShare` has one live caller: `app/api/applets/generate-favicon/route.ts:144`. Per SWEEP_LEFTOVER_REFERENCES LIVE #3, the user owes a decision: deprecate-or-keep. |
 | **Delete remaining `Files.getSignedUrl` direct callers outside `features/files/`** | Part 1 of BYPASSES inventory | 🟡 | Live in: `features/resource-manager/resource-picker/FilesResourcePicker.tsx:267`, `features/tasks/services/taskService.ts:286`, `features/audio/services/audioFallbackUpload.ts:103`, `components/mardown-display/blocks/images/ImageOutputBlock.tsx:190` | Tier-4 ESLint isn't on yet, so these compile. |
 | **`useFile` / `useFileSrc` / `useFileBlob` / `useFileUpload` / `useFileMutation` — the five canonical hooks** | §6.1 | 🟡 | 4 of 5 exist + re-exported (index.ts:42-49). **`useFileMutation` does NOT exist** — `index.ts` comment line 39 still names it as a Phase 1 target. |
 | **`useFileAs` / `useFileAsset` / `useFileDocument` collapse into `useFile`** | §6.1 / §6.3 | ❌ | All three still exported separately (`index.ts:43, 54-59`). |
@@ -149,7 +149,7 @@ Verified live (not comments): `features/resource-manager/resource-picker/FilesRe
 
 ### F. `Api.Server.uploadAndShare` + `features/files/api/server-client.ts` still live
 
-Per SWEEP_LEFTOVER_REFERENCES LIVE #3 (still unresolved per `grep`). One live caller: `app/api/agent-apps/generate-favicon/route.ts:144`. Plan §6.3 said delete; the docs (`UPLOAD_TROUBLESHOOTING.md`, `features/files/FEATURE.md:336`) describe it as canonical server-side path. Decision owed.
+Per SWEEP_LEFTOVER_REFERENCES LIVE #3 (still unresolved per `grep`). One live caller: `app/api/applets/generate-favicon/route.ts:144`. Plan §6.3 said delete; the docs (`UPLOAD_TROUBLESHOOTING.md`, `features/files/FEATURE.md:336`) describe it as canonical server-side path. Decision owed.
 
 ### G. `cloudUploadMany` + `isCloudUploadSuccess` still exported
 
@@ -188,7 +188,7 @@ Ranked by user-impact / risk-reduction. Items 1–4 are the "finish the consolid
 
 3. **Migrate the remaining 4 `Api.Files.getSignedUrl` namespace callers** in `FilesResourcePicker.tsx`, `taskService.ts`, `audioFallbackUpload.ts`, `ImageOutputBlock.tsx` to `useFileSrc` / `fileHandler.use(...).as(...)`. (Drift §E.) Tier-4 flip in step 2 surfaces these as errors.
 
-4. **Decide `Api.Server.uploadAndShare` fate** (Drift §F + SWEEP_LEFTOVER LIVE #3): delete the 320-line `server-client.ts` and migrate `app/api/agent-apps/generate-favicon/route.ts:144`, OR update the cleanup spec to keep it as the canonical server-side path. User decision required.
+4. **Decide `Api.Server.uploadAndShare` fate** (Drift §F + SWEEP_LEFTOVER LIVE #3): delete the 320-line `server-client.ts` and migrate `app/api/applets/generate-favicon/route.ts:144`, OR update the cleanup spec to keep it as the canonical server-side path. User decision required.
 
 5. **Demote `cloudUploadMany` + `isCloudUploadSuccess` from the upload barrel** (Drift §G). Strip from `features/files/upload/index.ts:11,14`. Internal-only.
 

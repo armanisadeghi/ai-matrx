@@ -12,11 +12,11 @@ import { RichContent } from "@ai-matrx/rich-content/levels/RichContent";
 import { Loader2, Send } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
 import type { PortalWriteOutcome } from "@/app/(portal)/portal/c/[slug]/r/[recordId]/actions";
 import { guardedSave } from "@/lib/save/guardedSave";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
+import { ProTextarea } from "@/components/official/ProTextarea";
 export interface ThreadComment {
   id: string;
   body: string;
@@ -102,7 +102,7 @@ export function PortalCommentThread({
         <label htmlFor="portal-comment" className="sr-only">
           Write a message
         </label>
-        <Textarea minHeight={80}
+        <ProTextarea minHeight={80}
           id="portal-comment"
           value={draft}
           rows={3}

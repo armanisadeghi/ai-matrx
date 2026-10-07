@@ -31,10 +31,10 @@ export const PLACEMENT_RULES: readonly PlacementRule[] = [
   // Arman, 2026-09-26: Agents holds ONLY jobs that create or modify agents
   // and system prompts. A job belongs where its feature lives, never under
   // Agents because an agent fills it. (Display sections: index-model.ts.)
-  ...rule("agents", "agent-apps", "agent_apps.*", "app.*"),
+  ...rule("agents", "applets", "agent_apps.*", "app.*"),
   ...rule(
     "agents",
-    "agent-apps",
+    "applets",
     "shortcut.build_ui_for_prompt*",
     "shortcut.prompt_app_metadata_gen",
     "shortcut.update_prompt_app_code*",

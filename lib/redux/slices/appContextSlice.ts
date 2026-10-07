@@ -7,7 +7,7 @@
 // Why lib/redux/slices instead of a feature folder:
 //   - Read by every consumer that runs an agent, fetches scoped data, or
 //     renders a sidebar (notes, tasks, projects, research, agents, files,
-//     agent-apps, code, conversation, ...).
+//     applets, code, conversation, ...).
 //   - Owned by no single feature. The import path makes that explicit.
 //   - Action creators are now imported (and dispatched) ONLY by Surface A
 //     components under features/scopes/components/active-context/**.

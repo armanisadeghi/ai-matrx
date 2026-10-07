@@ -460,7 +460,8 @@ surface). Say which parts you judged as authored content.
   for AI live inside it).
 - Every box a person writes in is `ProTextarea` / `ProInput` with the
   microphone and the page's agents (`surfaceName` + `getApplicationScope`
-  passed). A bare textarea needs a comment saying why.
+  passed). A bare box is only for a raw value (code, JSON, slug), marked
+  `// ui-exception: <reason>`; `pnpm check:writing-boxes` enforces it.
 - A field that expects a syntax (formula, pattern, cron, JSON, filter) offers
   "Help with this…".
 - A friction point gets an assist chip before anyone invents a manual button.
@@ -495,7 +496,7 @@ When YOU change a shared piece (or a sibling route's code that renders into
 another page), look at every page that renders it, not just yours — a top bar
 added for the public route once doubled the title on the signed-in run page.
 
-When the page hosts content it does not own (a person's agent app, an
+When the page hosts content it does not own (a person's Applet, an
 embedded document), its quality limits are still yours to report: give the
 content the full width and the restored input through the host contract; what
 only the content's author can change goes in the report as `CONTENT-OWNED:`.

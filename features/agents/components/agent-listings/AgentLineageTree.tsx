@@ -8,7 +8,7 @@
  *   - Derived agents (other agents whose `sourceAgentId` points here — the
  *     typical "promoted from user → system" linkage).
  *   - Shortcuts pointing at this agent (via `selectShortcutsByAgentId`).
- *   - Agent apps backed by this agent (fetched from `agent_apps`).
+ *   - Applets backed by this agent (fetched from `agent_apps`).
  *
  * Each row is a click-through into the matching admin editor. No write
  * operations happen here — this is a read-only map.
@@ -48,9 +48,9 @@ import type { RootState } from "@/lib/redux/store";
 import type { AgentSummary as AgentDefinitionRecord } from "@ai-matrx/agents/catalog";
 import type { AgentShortcutRecord } from "@ai-matrx/chat/agents/redux/agent-shortcuts/types";
 import {
-  fetchAgentAppsAdmin,
-  type AgentAppAdminView,
-} from "@/lib/services/agent-apps-admin-service";
+  fetchAppletsAdmin,
+  type AppletAdminView,
+} from "@/lib/services/applets-admin-service";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
 import { readOf } from "@/components/read-state/ReadGate";
 import { jsonExportItem, csvExportItem } from "@/components/agent-copy/export";
@@ -69,7 +69,7 @@ export function AgentLineageTree() {
   const globalQuery = useAgentShortcuts({ scope: "global" });
   const userQuery = useAgentShortcuts({ scope: "user" });
 
-  const [apps, setApps] = useState<AgentAppAdminView[]>([]);
+  const [apps, setApps] = useState<AppletAdminView[]>([]);
   const [appsLoading, setAppsLoading] = useState(true);
   const [appsError, setAppsError] = useState<unknown>(null);
   // The list read's failure is the catalog's own error.
@@ -80,7 +80,7 @@ export function AgentLineageTree() {
     void ensureAgentCatalog();
     setAppsLoading(true);
     setAppsError(null);
-    fetchAgentAppsAdmin({ limit: 500 })
+    fetchAppletsAdmin({ limit: 500 })
       .then((rows) => setApps(rows))
       .catch((e: unknown) => {
         setApps([]);
@@ -103,7 +103,7 @@ export function AgentLineageTree() {
 
   // Same for apps.
   const appsByAgent = useMemo(() => {
-    const map = new Map<string, AgentAppAdminView[]>();
+    const map = new Map<string, AppletAdminView[]>();
     for (const app of apps) {
       if (!app.agent_id) continue;
       const list = map.get(app.agent_id) ?? [];
@@ -361,7 +361,7 @@ function LineageCard({
 }: {
   agent: AgentDefinitionRecord;
   derived: AgentDefinitionRecord[];
-  apps: AgentAppAdminView[];
+  apps: AppletAdminView[];
   appsLoading: boolean;
   appsFailed: boolean;
   shortcutsLoading: boolean;
@@ -500,11 +500,11 @@ function LineageCard({
           )}
 
           {apps.length > 0 && (
-            <Section title="Agent apps" icon={AppWindow}>
+            <Section title="Applets" icon={AppWindow}>
               {apps.map((app) => (
                 <LineageRow
                   key={app.id}
-                  href={`/administration/agents/agent-apps/edit/${app.id}`}
+                  href={`/administration/applets/edit/${app.id}`}
                   title={app.name}
                   badge={app.created_by === null ? "system" : app.status}
                 />

@@ -57,7 +57,7 @@ export function FileVersionsList({ fileId, className }: FileVersionsListProps) {
   const dispatch = useAppDispatch();
   const file = useAppSelector((s) => selectFileById(s, fileId));
   const versions = useAppSelector((s) => selectVersionsForFile(s, fileId));
-  // Virtual files (Notes / Code Snippets / Agent Apps / etc.) don't share
+  // Virtual files (Notes / Code Snippets / Applets / etc.) don't share
   // the `cld_file_versions` table — each adapter owns its own version
   // schema, exposed via `adapter.listVersions`. v1 ships without that path
   // wired through the preview pane, so we render a clear empty state
@@ -115,7 +115,7 @@ export function FileVersionsList({ fileId, className }: FileVersionsListProps) {
       >
         <p className="max-w-sm text-sm text-muted-foreground">
           Version history isn't available for this source yet. Each backing
-          system (Notes, Code Snippets, Agent Apps, …) tracks its own versions;
+          system (Notes, Code Snippets, Applets, …) tracks its own versions;
           we'll wire those into this tab soon.
         </p>
       </div>

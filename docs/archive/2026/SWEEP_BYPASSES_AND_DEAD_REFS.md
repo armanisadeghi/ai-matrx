@@ -56,7 +56,7 @@ Each site replaced a hand-rolled `<img src=...>` with `<InlineMediaRef ref={...}
 | 7 | `features/window-panels/windows/image/ImageViewerWindow.tsx` (line 365) | Thumbnail strip below the viewer. The main viewer (line 207) still uses `<img>` — see §4. |
 | 8 | `app/(authenticated)/tests/oauth/components/SlackManager.tsx` (line 337) | Slack avatar render. |
 | 9 | `features/workflows/results/registered-components/BraveSearchDisplay.tsx` (lines 579, 600, 639) | Three "no-onError" thumbnail/favicon sites. The other three sites in the file (lines 257, 375, 467) keep `<img>` because they attach an `onError` handler that hides the broken-image element — see §4. |
-| 10 | `features/prompt-apps/components/PromptAppEditor.tsx` (line 1023) | App favicon preview in the editor. Prompt-apps is legacy (being replaced by agent-apps), but the bypass is still customer-visible until that migration ships. |
+| 10 | `features/prompt-apps/components/PromptAppEditor.tsx` (line 1023) | App favicon preview in the editor. Prompt-apps is legacy (being replaced by applets), but the bypass is still customer-visible until that migration ships. |
 | 11 | `features/image-manager/components/ProfilePhotoTab.tsx` (line 73) | Current-avatar preview. Source is a `currentAvatar` URL string from Redux user metadata. |
 
 **Typecheck result after migrations:** 4 pre-existing errors (the canonical baseline at `app/(dev)/demos/context-menu/lab/page.tsx:513`, `features/files/upload/cloudUpload.ts:540`, `features/page-extraction/services/run-from-draft.ts:116`, `features/pdf-extractor/studio/PdfStudioMobile.tsx:336`). **Zero new errors introduced.**

@@ -10,7 +10,7 @@
 //   result    = {name, title_property, properties[], views[], rows[], summary} → data/designed-database.ts makes
 //               the table, its rows and the block's views (a redesign adds the missing properties and swaps views).
 
-import { Button, Textarea } from "@ai-matrx/design-system/controls";
+import { Button } from "@ai-matrx/design-system/controls";
 import { useFloatingAgentRun } from "@ai-matrx/chat/agents/hooks/useFloatingAgentRun";
 import type { RecordsClient } from "@ai-matrx/records/core";
 import { useDeclaredSurfaceMandates } from "@ai-matrx/chat/surfaces/runtime/surface-mandates";
@@ -28,6 +28,7 @@ import type { SpaceDbView } from "../data/sources";
 import type { PickedSource } from "../data/SourcePicker";
 import { DESIGN_DATABASE_KEY } from "./spaces-ai";
 
+import { ProTextarea } from "@/components/official/ProTextarea";
 export interface DesignPage {
   spaceId: string | null;
   title: string;
@@ -154,7 +155,7 @@ export function DatabaseDesignerHost({ children, userId }: { children: ReactNode
               void start();
             }}
           >
-            <Textarea
+            <ProTextarea
               autoFocus
               rows={3}
               value={typed}

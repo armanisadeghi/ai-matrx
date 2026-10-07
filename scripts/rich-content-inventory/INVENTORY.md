@@ -779,9 +779,9 @@ Each surface lists the legacy sites it reaches, EXCLUDING the shared files above
 
 - [ ] `app/(admin)/administration/AdminDashboardClient.tsx:167` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{item.description}`
 
-### route /administration/agents/agent-apps
+### route /administration/applets
 
-- [ ] `app/(admin)/administration/agents/agent-apps/page.tsx:306` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{tile.description}`
+- [ ] `app/(admin)/administration/applets/page.tsx:306` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{tile.description}`
 
 ### route /administration/agents/bundles
 
@@ -1212,17 +1212,17 @@ Each surface lists the legacy sites it reaches, EXCLUDING the shared files above
 
 - [ ] `features/admin/taxonomy/TaxonomyMap.tsx:66` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{domain.notes}`
 
-### route /agent-apps/[id]
+### route /applets/manage/[id]
 
-- [ ] `features/agent-apps/route/AgentAppOverviewContent.tsx:74` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{app.description}`
+- [ ] `features/applets/route/AppletOverviewContent.tsx:74` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{app.description}`
 
-### route /agent-apps/[id]/code
+### route /applets/manage/[id]/code
 
 - [ ] `features/code/views/extensions/ExtensionsPanel.tsx:116` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<div>{tool.description}`
 
-### route /agent-apps/[id]/settings
+### route /applets/manage/[id]/settings
 
-- [ ] `features/agent-apps/components/inputs/AgentAppCategoryPicker.tsx:204` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{opt.description}`
+- [ ] `features/applets/components/inputs/AppletCategoryPicker.tsx:204` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{opt.description}`
 
 ### route /agent-connections
 
@@ -3341,7 +3341,7 @@ Each surface lists the legacy sites it reaches, EXCLUDING the shared files above
 - [ ] `app/(public)/templates/[slug]/page.tsx:130` — **dangerouslySetInnerHTML** (review) — `dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd).replace(/</g, "\\u003c") }}`
 - [ ] `features/templates/components/InstalledTemplate.tsx:244` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{s.body}`
 
-### route /templates/apps
+### route /templates/applets
 
 - [ ] `features/marketing/applets/AppletIntroPage.tsx:95` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{applet.description}`
 - [ ] `features/templates/components/InstalledTemplate.tsx:244` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{s.body}`

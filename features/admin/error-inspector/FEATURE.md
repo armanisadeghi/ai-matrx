@@ -32,7 +32,7 @@ second symptom instead of deduping the incident.
 - **Unresolved sandbox imports** — `captureUnresolvedImports.ts`
   (`sandbox-unresolved-import`, red). Every in-page compile of stored component
   code (`compileStoredComponent`, `lib/code-runtime/compile-stored.ts`) passes a required `origin` (`tool:<name>`,
-  `agent-app:<id>[:slot:<s>]`, `emit:<ref>`,
+  `applet:<id>[:slot:<s>]`, `emit:<ref>`,
   `kind-component:<kind>:<platform>:<role>`); each name the allowlisted scope
   could not supply is one row with that origin as `relation` and the import
   path in `details`, filed once per page session and deferred out of render. The iframe kind sandbox reports the same
@@ -144,7 +144,7 @@ second symptom instead of deduping the incident.
   `lib/error-boundary/ErrorBoundaryWithCapture.tsx` primitive (capture built-in).
   Bespoke boundaries already wired: `OverlayErrorBoundary`, both
   `MessageErrorBoundary`s, `ToolRendererErrorBoundary`, `MarkdownErrorBoundary`,
-  `AgentAppErrorBoundary`, `EmitRendererErrorBoundary`, `PreviewErrorBoundary`.
+  `AppletErrorBoundary`, `EmitRendererErrorBoundary`, `PreviewErrorBoundary`.
   The few low-traffic ones left (settings/builder/demo/latex/link/json) adopt
   the primitive or the one-liner.
 - **Redux** — `lib/diagnostics/reduxErrorCaptureMiddleware.ts`, registered in
@@ -671,7 +671,7 @@ operation was aborted."`) instead of throwing, so it took the
 - 2026-06-29 — **Tiering + remaining arteries.** Tool errors default **yellow**
   (normal agent operation). Added the global Redux `*/rejected` middleware
   (`redux-rejected`, orange) — the last systemic gap. Built the shared
-  `ErrorBoundaryWithCapture` primitive and wired AgentApp/Emit/Preview boundaries.
+  `ErrorBoundaryWithCapture` primitive and wired AppletRow/Emit/Preview boundaries.
 - 2026-06-29 — **Structured-error arteries.** Added the agent-stream adapter
   (`captureStreamError`) at the `parseNdjsonStream` chokepoint — captures every
   server-emitted typed error/warning/tool-error/provider-retry/record-failure,

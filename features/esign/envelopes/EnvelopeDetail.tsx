@@ -34,7 +34,6 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@ai-matrx/design-system/controls";
 import { Button as ControlButton } from "@ai-matrx/design-system/controls";
 import PageHeader from "@/features/shell/components/header/PageHeader";
@@ -57,6 +56,7 @@ import {
 import { SIGNER_STATUS_LABEL, signHref, statusLabel } from "./types";
 
 import { Spinner } from "@/components/ui/loaders/Spinner";
+import { ProTextarea } from "@/components/official/ProTextarea";
 // react-pdf needs the browser, and only a sender who opens a document pays for the viewer.
 const PdfPreview = dynamic(() => import("@/features/pdf/components/viewer/PdfPreview"), {
   ssr: false,
@@ -386,7 +386,7 @@ export function EnvelopeDetail({ envelopeId }: { envelopeId: string }) {
             <DialogTitle>Void this envelope</DialogTitle>
             <DialogDescription>Every signing link stops working. You can send a new envelope later.</DialogDescription>
           </DialogHeader>
-          <Textarea
+          <ProTextarea
             value={voidReason}
             placeholder="Sent the wrong version"
             onChange={(ev) => setVoidReason(ev.target.value)}

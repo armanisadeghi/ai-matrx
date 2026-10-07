@@ -55,8 +55,8 @@ so whether they are artifacts is a product call, not a refactor. Leave them and 
 `features/code-editor/components/code-block/MultiFileCodeEditor.tsx` L325 ·
 `features/code-editor/multi-file-core/useCodeEdiorBasics.ts` L268 ·
 `features/html-pages/components/HtmlInlinePreview.tsx` L161 ·
-`features/agent-apps/components/AgentAppPublicRendererImpl.tsx` L558 ·
-`features/agent-apps/components/shells/AgentAppFullyCustomShell.tsx` L180
+`features/applets/components/AppletPublicRendererImpl.tsx` L558 ·
+`features/applets/components/shells/AppletFullyCustomShell.tsx` L180
 
 ## Done
 

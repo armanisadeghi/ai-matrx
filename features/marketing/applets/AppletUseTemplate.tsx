@@ -5,7 +5,7 @@
 // A guest gets a link through sign-up that comes back here with ?use=1. A signed-in person gets the
 // data template's own install door (TemplatePreview: the organization it saves to — held until one is
 // set — the live progress and the landing); when the install lands, the Applet is copied into that
-// organization with its sources rebound, and "Open your app" goes to /apps/<slug>. An organization
+// organization with its sources rebound, and "Open your app" goes to /applets/<slug>. An organization
 // that already has the data template gets "Add the app" over the install it has.
 
 import Link from "next/link";
@@ -22,7 +22,7 @@ import { useSignedIn } from "@/lib/scoped-config/useSignedIn";
 import { createClient } from "@/utils/supabase/client";
 
 import { copyAppletFromTemplate, type CopiedApplet } from "./copyAppletFromTemplate";
-import { appletOpenHref } from "./types";
+import { appletHref } from "./types";
 
 export const USE_ON_RETURN = "use";
 
@@ -129,16 +129,16 @@ export function AppletUseTemplate({
     <div className="flex flex-col gap-3" data-applet-template-install="">
       {copy.phase === "done" ? (
         <div className="flex flex-wrap items-center gap-3 rounded-lg border border-border bg-card p-3" data-applet-template-done={copy.applet.slug}>
-          <span className="text-sm font-medium">{copy.applet.existed ? "Your app is ready" : "Your app is added"}</span>
+          <span className="text-sm font-medium">{copy.applet.existed ? "Your Applet is ready" : "Your Applet is added"}</span>
           <Link
-            href={appletOpenHref(copy.applet.slug)}
+            href={appletHref(copy.applet.slug)}
             className="inline-flex h-9 items-center rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground hover:bg-primary/90"
           >
             Open your app
           </Link>
         </div>
       ) : null}
-      {copy.phase === "copying" ? <p className="text-sm text-muted-foreground">Adding the app to your organization…</p> : null}
+      {copy.phase === "copying" ? <p className="text-sm text-muted-foreground">Adding the Applet to your organization…</p> : null}
       {copy.phase === "failed" ? (
         <p className="text-sm text-destructive" role="alert" data-applet-template-failed="">
           {copy.why}
@@ -146,9 +146,9 @@ export function AppletUseTemplate({
       ) : null}
       {mine && copy.phase !== "done" ? (
         <div className="flex flex-wrap items-center gap-3 rounded-lg border border-border bg-card p-3" data-applet-template-have={mine.slug}>
-          <span className="text-sm font-medium">Your app is ready</span>
+          <span className="text-sm font-medium">Your Applet is ready</span>
           <Link
-            href={appletOpenHref(mine.slug)}
+            href={appletHref(mine.slug)}
             className="inline-flex h-9 items-center rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground hover:bg-primary/90"
           >
             Open your app

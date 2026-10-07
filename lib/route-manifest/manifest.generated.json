@@ -54,39 +54,39 @@
       "source": "app/(admin)/administration/agents/page.tsx"
     },
     {
-      "pattern": "/administration/agents/agent-apps",
+      "pattern": "/administration/applets",
       "status": "live",
-      "source": "app/(admin)/administration/agents/agent-apps/page.tsx"
+      "source": "app/(admin)/administration/applets/page.tsx"
     },
     {
-      "pattern": "/administration/agents/agent-apps/analytics",
+      "pattern": "/administration/applets/analytics",
       "status": "live",
-      "source": "app/(admin)/administration/agents/agent-apps/analytics/page.tsx"
+      "source": "app/(admin)/administration/applets/analytics/page.tsx"
     },
     {
-      "pattern": "/administration/agents/agent-apps/apps",
+      "pattern": "/administration/applets/all",
       "status": "live",
-      "source": "app/(admin)/administration/agents/agent-apps/apps/page.tsx"
+      "source": "app/(admin)/administration/applets/all/page.tsx"
     },
     {
-      "pattern": "/administration/agents/agent-apps/categories",
+      "pattern": "/administration/applets/categories",
       "status": "live",
-      "source": "app/(admin)/administration/agents/agent-apps/categories/page.tsx"
+      "source": "app/(admin)/administration/applets/categories/page.tsx"
     },
     {
-      "pattern": "/administration/agents/agent-apps/edit/[id]",
+      "pattern": "/administration/applets/edit/[id]",
       "status": "live",
-      "source": "app/(admin)/administration/agents/agent-apps/edit/[id]/page.tsx"
+      "source": "app/(admin)/administration/applets/edit/[id]/page.tsx"
     },
     {
-      "pattern": "/administration/agents/agent-apps/executions",
+      "pattern": "/administration/applets/executions",
       "status": "live",
-      "source": "app/(admin)/administration/agents/agent-apps/executions/page.tsx"
+      "source": "app/(admin)/administration/applets/executions/page.tsx"
     },
     {
-      "pattern": "/administration/agents/agent-apps/rate-limits",
+      "pattern": "/administration/applets/rate-limits",
       "status": "live",
-      "source": "app/(admin)/administration/agents/agent-apps/rate-limits/page.tsx"
+      "source": "app/(admin)/administration/applets/rate-limits/page.tsx"
     },
     {
       "pattern": "/administration/agents/bundles",
@@ -1349,44 +1349,44 @@
       "source": "app/(admin)/administration/utilities/utils/text-cleaner/page.tsx"
     },
     {
-      "pattern": "/agent-apps",
+      "pattern": "/applets",
       "status": "live",
-      "source": "app/(core)/agent-apps/page.tsx"
+      "source": "app/(core)/applets/page.tsx"
     },
     {
-      "pattern": "/agent-apps/[id]",
+      "pattern": "/applets/manage/[id]",
       "status": "live",
-      "source": "app/(core)/agent-apps/[id]/page.tsx"
+      "source": "app/(core)/applets/manage/[id]/page.tsx"
     },
     {
-      "pattern": "/agent-apps/[id]/code",
+      "pattern": "/applets/manage/[id]/code",
       "status": "live",
-      "source": "app/(core)/agent-apps/[id]/code/page.tsx"
+      "source": "app/(core)/applets/manage/[id]/code/page.tsx"
     },
     {
-      "pattern": "/agent-apps/[id]/run",
+      "pattern": "/applets/manage/[id]/run",
       "status": "live",
-      "source": "app/(core)/agent-apps/[id]/run/page.tsx"
+      "source": "app/(core)/applets/manage/[id]/run/page.tsx"
     },
     {
-      "pattern": "/agent-apps/[id]/settings",
+      "pattern": "/applets/manage/[id]/settings",
       "status": "live",
-      "source": "app/(core)/agent-apps/[id]/settings/page.tsx"
+      "source": "app/(core)/applets/manage/[id]/settings/page.tsx"
     },
     {
-      "pattern": "/agent-apps/[id]/v/[version]",
+      "pattern": "/applets/manage/[id]/v/[version]",
       "status": "live",
-      "source": "app/(core)/agent-apps/[id]/v/[version]/page.tsx"
+      "source": "app/(core)/applets/manage/[id]/v/[version]/page.tsx"
     },
     {
-      "pattern": "/agent-apps/[id]/versions",
+      "pattern": "/applets/manage/[id]/versions",
       "status": "live",
-      "source": "app/(core)/agent-apps/[id]/versions/page.tsx"
+      "source": "app/(core)/applets/manage/[id]/versions/page.tsx"
     },
     {
-      "pattern": "/agent-apps/build",
+      "pattern": "/applets/build",
       "status": "live",
-      "source": "app/(core)/agent-apps/build/page.tsx"
+      "source": "app/(core)/applets/build/page.tsx"
     },
     {
       "pattern": "/agent-connections",
@@ -1811,7 +1811,7 @@
     {
       "pattern": "/apps/[app]/[[...path]]",
       "status": "live",
-      "source": "app/(link)/apps/[app]/[[...path]]/page.tsx"
+      "source": "app/(link)/applets/[slug]/[[...path]]/page.tsx"
     },
     {
       "pattern": "/artifacts",
@@ -5252,9 +5252,9 @@
       "source": "app/(core)/organizations/[orgId]/admin/users/[userId]/resources/page.tsx"
     },
     {
-      "pattern": "/organizations/[orgId]/agent-apps",
+      "pattern": "/organizations/[orgId]/applets",
       "status": "live",
-      "source": "app/(core)/organizations/[orgId]/agent-apps/page.tsx"
+      "source": "app/(core)/organizations/[orgId]/applets/page.tsx"
     },
     {
       "pattern": "/organizations/[orgId]/context-items",
@@ -6362,9 +6362,9 @@
       "source": "app/(public)/templates/[slug]/page.tsx"
     },
     {
-      "pattern": "/templates/apps",
+      "pattern": "/templates/applets",
       "status": "live",
-      "source": "app/(public)/templates/apps/page.tsx"
+      "source": "app/(public)/templates/applets/page.tsx"
     },
     {
       "pattern": "/templates/category/[industry]",

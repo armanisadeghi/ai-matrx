@@ -241,7 +241,7 @@ provider, a route that renders without the shell) stays in that section's own
 `LayoutClient`.
 
 Seven admin sections' `LayoutClient` components render through
-`AdminSectionShell`: `agents/agent-apps/AgentAppsAdminLayoutClient.tsx`,
+`AdminSectionShell`: `agents/applets/AppletsAdminLayoutClient.tsx`,
 `agents/system-agents/SystemAgentsLayoutClient.tsx` (uses
 `activeMatch="longest"` — its `shortcuts` tab href is a path segment of its
 `shortcuts/all` tab href), `applications/ApplicationsAdminLayoutClient.tsx`,

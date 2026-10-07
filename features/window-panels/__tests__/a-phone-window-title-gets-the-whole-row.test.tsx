@@ -3,7 +3,7 @@
  * lines before it truncates. Every mobile window chrome (fullscreen header,
  * bottom-sheet drawer, utility card) holds it.
  *
- * Reported 2026-09-28: /agent-apps/<id>/run → Run History on a phone read
+ * Reported 2026-09-28: /applets/manage/<id>/run → Run History on a phone read
  * "Run History — …". The fullscreen header stuffed the title into the
  * Sidebar/Content toggle (`max-w-[120px] truncate`) beside the actions, so the
  * one thing that says which history this is was cut to its first two words.

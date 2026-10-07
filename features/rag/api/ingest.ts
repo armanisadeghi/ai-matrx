@@ -55,7 +55,7 @@ export interface IngestRequestBody {
 /**
  * Non-streaming ingest for an arbitrary source kind. The generic primitive —
  * `ingestFile` below is a thin `cld_file`-scoped convenience wrapper around
- * this. Any editor (notes, code files, agent apps) that wants "Process for
+ * this. Any editor (notes, code files, Applets) that wants "Process for
  * Knowledge" without the per-stage progress UI can call this directly.
  */
 export async function ingestSource(

@@ -1,6 +1,6 @@
 "use client";
 
-// features/applets-host/AppletHostMount.tsx — THE WEB HOST FOR ONE APPLET AT /apps/<slug>.
+// features/applets-host/AppletHostMount.tsx — THE WEB HOST FOR ONE APPLET AT /applets/<slug>.
 //
 // An Applet is a database record (`app.definition`: files, entry, pages, sources, mandates). This
 // component builds its `AppletHost` with `@ai-matrx/applets/platform` over the viewer's OWN clients —
@@ -37,7 +37,7 @@ import { captureError } from "@/lib/diagnostics/errorCaptureStore";
 import { provideStoredComponentScopeModules } from "@/lib/code-runtime/stored-scope";
 import { ensureOrganizationContext } from "@/lib/organization/organization-gate";
 import { AppletKind } from "@/features/applets-host/AppletForeignKind";
-import { DataPage } from "@/features/agent-apps/embed/DataPage";
+import { DataPage } from "@/features/applets/embed/DataPage";
 import { useDeclaredSurfaceMandates, type SurfaceMandateRef } from "@ai-matrx/chat/surfaces/runtime/surface-mandates";
 import { storedMandateKey } from "@ai-matrx/agents/mandates";
 
@@ -106,14 +106,14 @@ export interface AppletPreviewOptions {
 export function AppletHostMount({
   appletId,
   slug,
-  basePath = `/apps/${slug}`,
+  basePath = `/applets/${slug}`,
   preview,
   files,
   embedded = false,
 }: {
   appletId: string;
   slug: string;
-  /** Where the Applet's pages live in the URL (default `/apps/<slug>`). */
+  /** Where the Applet's pages live in the URL (default `/applets/<slug>`). */
   basePath?: string;
   preview?: AppletPreviewOptions;
   /** Unsaved file buffers laid over the saved record's files (a code workspace previewing its edits). */
@@ -217,7 +217,7 @@ export function AppletHostMount({
           renderKind: (kind: string, value: unknown) => <AppletKind host={host} kind={kind} value={value} />,
           renderRun,
           // Every <Link> carries its real URL (open in new tab, middle-click). /p/<slug> has no sub-paths, so the
-          // Applet's pages are addressed at the base path (`/apps/<slug>` by default) there, embedded and in preview.
+          // Applet's pages are addressed at the base path (`/applets/<slug>` by default) there, embedded and in preview.
           hrefFor: (to: string) => `${basePath}${to === "/" || to === "" ? "" : to.startsWith("/") ? to : `/${to}`}`,
           // Where an Applet has no room to stream inline: the floating run window, one per job.
           openRun(run) {
@@ -240,7 +240,7 @@ export function AppletHostMount({
         },
         (err: unknown) => {
           if (cancelled) return;
-          const message = err && typeof err === "object" && "message" in err ? String(err.message) : "This app could not be opened.";
+          const message = err && typeof err === "object" && "message" in err ? String(err.message) : "This Applet could not be opened.";
           setMounted({ error: message });
         },
       );
@@ -263,14 +263,14 @@ export function AppletHostMount({
   if (!mounted) {
     return (
       <div className="mx-auto max-w-5xl p-4">
-        <RegionSkeleton shape="cards" count={6} aria-label="Opening app" />
+        <RegionSkeleton shape="cards" count={6} aria-label="Opening Applet" />
       </div>
     );
   }
   if ("error" in mounted) {
     return (
       <div className="mx-auto max-w-5xl p-6">
-        <EmptyState icon={<AppWindow />} title="This app could not open" line={mounted.error} />
+        <EmptyState icon={<AppWindow />} title="This Applet could not open" line={mounted.error} />
       </div>
     );
   }

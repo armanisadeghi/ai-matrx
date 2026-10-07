@@ -103,7 +103,7 @@ So the *whole point* of the cloud-files layer is: write with `visibility="public
 - **Why it shouldn't exist:**
   - Sharp on Vercel duplicates work Python already does better (Pillow + mozjpeg + pillow-heif + pillow-avif, per `image_handler.py:14-38`). Especially HEIC from iPhones — Sharp on Vercel is unreliable, Python is explicit.
   - The variant definitions live here, in `ts`, instead of in the canonical Python `image_handler.py` — two registries that drift.
-  - The folder layout is decoupled from any entity. It writes to `Images/<folder>/<uuid>/` — not `Audio/Podcasts/<podcastId>/`, not `Agent Apps/<appId>/`, etc.
+  - The folder layout is decoupled from any entity. It writes to `Images/<folder>/<uuid>/` — not `Audio/Podcasts/<podcastId>/`, not `Applets/<appId>/`, etc.
   - Adds a serverless function cold start (Sharp ≈ 50 MB layer) to every image upload for no benefit.
 - **The agent-introduced regression** the user is reacting to: when this was added, the call site in `AssetUploader.tsx` was changed from `api.upload(ENDPOINTS.media.uploadPodcastImage, ...)` to `fetch('/api/images/upload', ...)`, abandoning `PODCAST_VARIANTS` (3000² cover, 1400² SD) in favor of the smaller Next-side `social` preset (1400² cover, 1200×630 OG, 400² thumb, 128² tiny). 3000² Apple Podcasts hi-res cover is just gone.
 
@@ -166,7 +166,7 @@ This is the *real* "returning data instead of CDN url" the user is seeing for po
 ### Bug 6 — Folder placement is wrong for podcasts (and several other consumers)
 
 - The Next.js route writes podcast covers to `Images/Generated/<uuid>/` (`app/api/images/upload/route.ts:266-269`) instead of `Audio/Podcasts/<podcastId>/` (`features/files/utils/folder-conventions.ts:138-140`). The folder-conventions file has a `folderForPodcast()` helper that nobody is calling because the route ignores it.
-- Same problem for org logos, agent app icons, profile photos — they all end up in `Images/Generated/<uuid>/` instead of the entity-specific folder.
+- Same problem for org logos, Applet icons, profile photos — they all end up in `Images/Generated/<uuid>/` instead of the entity-specific folder.
 
 ---
 
@@ -233,7 +233,7 @@ This is the *real* "returning data instead of CDN url" the user is seeing for po
   async def upload_asset(
       file: UploadFile = File(...),
       preset: str = Form(...),         # "podcast" | "social" | "web" | "email" | "logo" | "avatar" | "favicon"
-      folder: str = Form(...),         # e.g. "Audio/Podcasts/<id>", "Agent Apps/<id>"
+      folder: str = Form(...),         # e.g. "Audio/Podcasts/<id>", "Applets/<id>"
       visibility: str = Form(default="public"),
       user_id: str = Depends(require_user_id),
   ) -> AssetUploadResponse:
@@ -294,7 +294,7 @@ After P1 + P2 ship, regenerate `types/python-generated/api-types.ts` so `AssetUp
 Edit each file in the table at the end:
 - **Organizations:** `preset="logo"`, `folder="Shared Assets/orgs/<orgId>/logo"` (or wherever the existing convention is — `CreateOrgModal.tsx` currently passes `folder="organizations/logos"`).
 - **Profile photo:** `preset="avatar"`, `folder={CloudFolders.IMAGES_AVATARS + "/" + userId}`.
-- **Agent apps / applets:** `preset="logo"`, `folder={folderForAgentApp(appId)}`.
+- **Applets / applets:** `preset="logo"`, `folder={folderForApplet(appId)}`.
 - **Image manager generic:** unchanged (uses cloud mode).
 
 **F6. PodcastForm.tsx is going to need 2 fields, not 3.**
@@ -306,12 +306,12 @@ Edit each file in the table at the end:
 
 ## Part 5 — Net effect (after all changes ship)
 
-1. **One Python endpoint** (`POST /media/upload-asset`) handles every public-asset upload everywhere — podcasts, orgs, applets, profile photos, agent apps.
+1. **One Python endpoint** (`POST /media/upload-asset`) handles every public-asset upload everywhere — podcasts, orgs, applets, profile photos, Applets.
 2. **One TypeScript type** (`AssetUploadResponse`, auto-generated from the Python OpenAPI) is the canonical response shape. No FE-side drift.
 3. **Permanent Cloudflare CDN URLs** persisted into the DB. No more 1-week expiry on podcast covers.
 4. **OG image + 400² thumbnail + 128² tiny are baseline variants on every preset** — every public asset has working social sharing previews automatically. The "highly HIGHLY standard sizes" requirement is structural, not opt-in.
 5. **No Sharp on Vercel.** Python (Pillow + mozjpeg + pillow-heif + pillow-avif) is the only image-variant authority. HEIC uploads from iPhones work reliably.
-6. **Entity-correct folders.** Podcast covers land in `Audio/Podcasts/<podcastId>/`, org logos in their orgs folder, agent app icons in `Agent Apps/<appId>/`, etc. — surfaced cleanly in `/files`.
+6. **Entity-correct folders.** Podcast covers land in `Audio/Podcasts/<podcastId>/`, org logos in their orgs folder, Applet icons in `Applets/<appId>/`, etc. — surfaced cleanly in `/files`.
 7. **Apple Podcasts' 3000² requirement** is honored (it's already in `PODCAST_VARIANTS` — the bug is only that the FE was sending `preset=social` after the regression).
 
 ---
@@ -334,7 +334,7 @@ Edit each file in the table at the end:
 - `lib/api/endpoints.ts:298-303` — add `media.uploadAsset` here.
 - `types/python-generated/api-types.ts:14636-14650` — `PodcastMediaUploadResponse`. After P2 ships, regenerate; `AssetUploadResponse` will appear.
 - `types/python-generated/api-types.ts:17376-...` — `VisionMediaUploadResponse` (irrelevant to this work).
-- `features/files/utils/folder-conventions.ts` — `CloudFolders` + `folderForPodcast()` / `folderForAgentApp()` / `folderForTask()` etc. + `resolveDefaultVisibility()`. Already correct, just needs callers to use it.
+- `features/files/utils/folder-conventions.ts` — `CloudFolders` + `folderForPodcast()` / `folderForApplet()` / `folderForTask()` etc. + `resolveDefaultVisibility()`. Already correct, just needs callers to use it.
 - `features/files/redux/converters.ts:374-388` — `CloudFile.publicUrl` mapping.
 - `docs/CDN_INTEGRATION.md` — definitive wire-format spec for CDN vs signed URLs (lines 47-72 show the response shape).
 - `features/files/FEATURE.md` — file system docs, mentions `cdn_url` and `CloudFolders.AUDIO_PODCASTS`.

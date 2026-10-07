@@ -32,7 +32,7 @@
 // They belong in this group. They were left where they are because each is
 // another lane's route with its own screens to re-check, and moving a route you
 // have not rendered is how a link quietly 404s — so this is the home for the
-// class, with one route moved into it and verified. The published agent app
+// class, with one route moved into it and verified. The published Applet
 // `/p/<slug>` moved here on 2026-09-27 (page-pass) and carries the one
 // attribution row `components/matrx/MadeWithAiMatrx.tsx`.
 

@@ -71,10 +71,10 @@
       "owner": "drill-explorer",
       "note": "active org only used for saveDrillView; saved_view read is not org-filtered unless a homeOrganizationId is named"
     },
-    "features/agent-apps/components/CreateAgentAppFormWrapper.tsx::CreateAgentAppFormWrapper::selectOrganizationId#1": {
+    "features/applets/components/CreateAppletFormWrapper.tsx::CreateAppletFormWrapper::selectOrganizationId#1": {
       "class": "write-target",
-      "owner": "agent-apps",
-      "note": "selectedOrganizationId → POST /api/agent-apps org header for create"
+      "owner": "applets",
+      "note": "selectedOrganizationId → POST /api/applets org header for create"
     },
     "../aidream/apps/shared/chat/src/agents/components/chat/SandboxPanel.tsx::SandboxPanel::selectOrganizationId#1": {
       "class": "write-target",

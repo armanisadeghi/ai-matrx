@@ -33,7 +33,7 @@ export type MandateCodeState =
 export type MandateServes =
   | "Shortcut"
   | "Surface"
-  | "Agent app"
+  | "Applet"
   | "Feature code"
   | "Nothing found";
 
@@ -43,7 +43,7 @@ export type MandateDefaultState = "Own default" | "Fallback" | "No default";
 export interface MandateAdminRow extends MandateRow {
   /** The pretty name — the author's label, else the key's last segment. */
   name: string;
-  /** "Podcast", "SEO › Ai Visibility", "Shortcuts", "Agent apps". */
+  /** "Podcast", "SEO › Ai Visibility", "Shortcuts", "Applets". */
   featureLabel: string;
   goal: string | null;
   /** THE status (features/mandates/status/mandate-status.ts) — draft/active/disabled. */

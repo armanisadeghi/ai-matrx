@@ -9,7 +9,7 @@
 // users / relationships admin hub pattern). Super-admin gating is inherited
 // from app/(admin)/layout.tsx — not re-done here.
 //
-// Naming: "app"/"apps" is reserved for user-created agent apps. This hub is
+// Naming: "app"/"apps" is reserved for user-created Applets. This hub is
 // always "Applications".
 
 import React from "react";

@@ -60,7 +60,7 @@
     "features/action-requests/components/ActionRequestAnswerForm.tsx:522 dynamic Input type — stays on the package-root Input",
     "features/action-requests/components/ActionRequestAnswerForm.tsx:635 display-size input (`text-center font-mono text-2xl tracking-[0.3em]`) — a heading editor, not a control — stays on the package-root Input",
     "features/administration/local-storage/LocalStorageAdmin.tsx:1416 Input type=\"file\" is not a field — stays on the package-root Input",
-    "features/agent-apps/sample-code/apps/lsi-generator.tsx:344 display-size input (`text-lg h-12`) — a heading editor, not a control — stays on the package-root Input",
+    "features/applets/sample-code/apps/lsi-generator.tsx:344 display-size input (`text-lg h-12`) — a heading editor, not a control — stays on the package-root Input",
     "features/agents/components/builder/message-builders/MessageItem.tsx — select: agent builder (frozen)",
     "features/agents/components/builder/message-builders/SpeechScriptEditor.tsx — select: agent builder (frozen)",
     "features/agents/components/context-policies-management/AgentContextPoliciesManager.tsx — select: agent builder (frozen)",

@@ -913,9 +913,9 @@ export const primaryNavItems: ShellNavItem[] = [
     ],
   },
   {
-    // applets (> agent-apps): what customers build with agents, own UI and landing.
+    // applets (> applets): what customers build with agents, own UI and landing.
     label: "Applets",
-    href: "/agent-apps",
+    href: "/applets",
     iconName: "Puzzle",
     section: "primary",
     profileMenu: false,
@@ -925,7 +925,7 @@ export const primaryNavItems: ShellNavItem[] = [
     children: [
       {
         label: "All Applets",
-        href: "/agent-apps",
+        href: "/applets",
         iconName: "Puzzle",
         exact: true,
         description: "Browse and run interactive applets built from agents",
@@ -933,7 +933,7 @@ export const primaryNavItems: ShellNavItem[] = [
         profileMenu: true,
         dashboard: true,
       },
-      { label: "Applet Templates", href: "/templates/apps", iconName: "LayoutTemplate", guestHidden: true },
+      { label: "Applet Templates", href: "/templates/applets", iconName: "LayoutTemplate", guestHidden: true },
     ],
   },
   {

@@ -107,7 +107,7 @@ const surfaceSpecific: SurfaceValue[] = [
   metricCount(
     "published_apps_count",
     "Published apps count",
-    "the user's published agent apps",
+    "the user's published Applets",
     316,
   ),
   metricCount("notes_count", "Notes count", "the user's notes", 318),

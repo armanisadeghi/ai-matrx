@@ -417,7 +417,7 @@
  "features/access-gate/components/BlindAccessAsk.tsx",
  "features/access-gate/components/RequestAccessPanel.tsx",
  "features/admin/error-inspector/ErrorInspectorTrayChip.tsx",
- "features/agent-apps/embed/appletsPort.tsx",
+ "features/applets/embed/appletsPort.tsx",
  "features/agent-context/components/scope-admin/ScopeForm.tsx",
  "features/agents/components/builder/AddMessageButtons.tsx",
  "features/agents/components/builder/AgentBuilderClient.tsx",

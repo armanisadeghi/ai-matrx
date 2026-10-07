@@ -44,7 +44,7 @@ export default function PromptAppError({ error, reset }: ErrorPageProps) {
                             title: 'Something went wrong',
                             message: error.message || 'An unexpected error occurred while loading this app.',
                             error,
-                            operation: 'Load a published agent app',
+                            operation: 'Load a published Applet',
                             details: error.digest ? { digest: error.digest } : undefined,
                             source: 'route-boundary',
                         }}

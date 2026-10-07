@@ -13,7 +13,7 @@
 //   result     = {summary, root_space_id, space_ids[], table_ids[]} → open /spaces/<root_space_id> and
 //                read the tree again; a change re-opens the current page on its stored content.
 
-import { Button, Textarea } from "@ai-matrx/design-system/controls";
+import { Button } from "@ai-matrx/design-system/controls";
 import { useFloatingAgentRun } from "@ai-matrx/chat/agents/hooks/useFloatingAgentRun";
 import { createContext, useContext, useState, type ReactNode } from "react";
 
@@ -27,6 +27,7 @@ import { toast } from "@/lib/toast";
 import { useSpaces } from "../state/SpacesProvider";
 import { BUILD_KEY, useSpaceBuilderDisclosure } from "./spaces-ai";
 
+import { ProTextarea } from "@/components/official/ProTextarea";
 /** The open page, when the request is to change it. */
 export interface BuilderPage {
   spaceId: string;
@@ -130,7 +131,7 @@ export function SpaceBuilderHost({ children }: { children: ReactNode }) {
               void start();
             }}
           >
-            <Textarea
+            <ProTextarea
               autoFocus
               rows={4}
               value={typed}

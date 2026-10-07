@@ -13,7 +13,7 @@
   "novelCount": 2844,
   "findings": [
     {
-      "file": "app/(admin)/administration/agents/agent-apps/analytics/page.tsx",
+      "file": "app/(admin)/administration/applets/analytics/page.tsx",
       "line": 241,
       "rule": "over-budget",
       "severity": 2,
@@ -23,67 +23,67 @@
       "detail": "secondary slot: 77 chars, budget 60"
     },
     {
-      "file": "app/(admin)/administration/agents/agent-apps/page.tsx",
+      "file": "app/(admin)/administration/applets/page.tsx",
       "line": 44,
       "rule": "over-budget",
       "severity": 2,
       "where": "{ description: }",
       "chars": 71,
-      "text": "Every agent app across the platform: filter, feature, verify, moderate.",
+      "text": "Every Applet across the platform: filter, feature, verify, moderate.",
       "detail": "secondary slot: 71 chars, budget 60"
     },
     {
-      "file": "app/(admin)/administration/agents/agent-apps/page.tsx",
+      "file": "app/(admin)/administration/applets/page.tsx",
       "line": 52,
       "rule": "over-budget",
       "severity": 2,
       "where": "{ description: }",
       "chars": 72,
-      "text": "Manage the static list of agent-app categories shown in public browsing.",
+      "text": "Manage the static list of applet categories shown in public browsing.",
       "detail": "secondary slot: 72 chars, budget 60"
     },
     {
-      "file": "app/(admin)/administration/agents/agent-apps/page.tsx",
+      "file": "app/(admin)/administration/applets/page.tsx",
       "line": 60,
       "rule": "over-budget",
       "severity": 2,
       "where": "{ description: }",
       "chars": 76,
-      "text": "Recent runs and errors across every agent app. Resolve incidents, see usage.",
+      "text": "Recent runs and errors across every Applet. Resolve incidents, see usage.",
       "detail": "secondary slot: 76 chars, budget 60"
     },
     {
-      "file": "app/(admin)/administration/agents/agent-apps/page.tsx",
+      "file": "app/(admin)/administration/applets/page.tsx",
       "line": 60,
       "rule": "multi-sentence",
       "severity": 2,
       "where": "{ description: }",
       "chars": 76,
-      "text": "Recent runs and errors across every agent app. Resolve incidents, see usage.",
+      "text": "Recent runs and errors across every Applet. Resolve incidents, see usage.",
       "detail": "2 sentences in one secondary slot (max 1)"
     },
     {
-      "file": "app/(admin)/administration/agents/agent-apps/page.tsx",
+      "file": "app/(admin)/administration/applets/page.tsx",
       "line": 353,
       "rule": "over-budget",
       "severity": 2,
       "where": "{ description: }",
       "chars": 63,
-      "text": "Every featured, published agent app (not just the top 6 shown).",
+      "text": "Every featured, published Applet (not just the top 6 shown).",
       "detail": "secondary slot: 63 chars, budget 60"
     },
     {
-      "file": "app/(admin)/administration/agents/agent-apps/page.tsx",
+      "file": "app/(admin)/administration/applets/page.tsx",
       "line": 456,
       "rule": "over-budget",
       "severity": 2,
       "where": "{ description: }",
       "chars": 76,
-      "text": "Every agent app, sorted by most recently updated (not just the top 6 shown).",
+      "text": "Every Applet, sorted by most recently updated (not just the top 6 shown).",
       "detail": "secondary slot: 76 chars, budget 60"
     },
     {
-      "file": "app/(admin)/administration/agents/agent-apps/rate-limits/RateLimitsClient.tsx",
+      "file": "app/(admin)/administration/applets/rate-limits/RateLimitsClient.tsx",
       "line": 458,
       "rule": "over-budget",
       "severity": 2,
@@ -179,7 +179,7 @@
       "severity": 2,
       "where": "{ description: }",
       "chars": 76,
-      "text": "Global agent apps published to all users. Distinct from user-published apps.",
+      "text": "Global Applets published to all users. Distinct from user-published apps.",
       "detail": "secondary slot: 76 chars, budget 60"
     },
     {
@@ -189,7 +189,7 @@
       "severity": 2,
       "where": "{ description: }",
       "chars": 76,
-      "text": "Global agent apps published to all users. Distinct from user-published apps.",
+      "text": "Global Applets published to all users. Distinct from user-published apps.",
       "detail": "2 sentences in one secondary slot (max 1)"
     },
     {
@@ -713,7 +713,7 @@
       "detail": "2 sentences in one secondary slot (max 1)"
     },
     {
-      "file": "app/(core)/agent-apps/[id]/v/[version]/page.tsx",
+      "file": "app/(core)/applets/manage/[id]/v/[version]/page.tsx",
       "line": 163,
       "rule": "over-budget",
       "severity": 2,
@@ -723,7 +723,7 @@
       "detail": "secondary slot: 67 chars, budget 60"
     },
     {
-      "file": "app/(core)/agent-apps/[id]/v/[version]/page.tsx",
+      "file": "app/(core)/applets/manage/[id]/v/[version]/page.tsx",
       "line": 168,
       "rule": "over-budget",
       "severity": 2,
@@ -733,7 +733,7 @@
       "detail": "secondary slot: 92 chars, budget 60"
     },
     {
-      "file": "app/(core)/agent-apps/templates/[mode]/page.tsx",
+      "file": "app/(core)/applets/templates/[mode]/page.tsx",
       "line": 93,
       "rule": "over-budget",
       "severity": 2,
@@ -743,7 +743,7 @@
       "detail": "secondary slot: 79 chars, budget 60"
     },
     {
-      "file": "app/(core)/agent-apps/templates/[mode]/page.tsx",
+      "file": "app/(core)/applets/templates/[mode]/page.tsx",
       "line": 93,
       "rule": "multi-sentence",
       "severity": 2,
@@ -753,7 +753,7 @@
       "detail": "2 sentences in one secondary slot (max 1)"
     },
     {
-      "file": "app/(core)/agent-apps/templates/[mode]/page.tsx",
+      "file": "app/(core)/applets/templates/[mode]/page.tsx",
       "line": 95,
       "rule": "over-budget",
       "severity": 2,
@@ -763,7 +763,7 @@
       "detail": "secondary slot: 77 chars, budget 60"
     },
     {
-      "file": "app/(core)/agent-apps/templates/[mode]/page.tsx",
+      "file": "app/(core)/applets/templates/[mode]/page.tsx",
       "line": 95,
       "rule": "multi-sentence",
       "severity": 2,
@@ -3493,13 +3493,13 @@
       "detail": "sentence under <h2>"
     },
     {
-      "file": "app/(core)/organizations/[orgId]/agent-apps/page.tsx",
+      "file": "app/(core)/organizations/[orgId]/applets/page.tsx",
       "line": 65,
       "rule": "over-budget",
       "severity": 2,
       "where": "OrgResourceList.emptyDescription",
       "chars": 124,
-      "text": "Agent apps you publish under this organization will appear here, along with apps other members share with this organization.",
+      "text": "Applets you publish under this organization will appear here, along with apps other members share with this organization.",
       "detail": "secondary slot: 124 chars, budget 60"
     },
     {
@@ -10769,7 +10769,7 @@
       "severity": 2,
       "where": "{ description: }",
       "chars": 119,
-      "text": "Hub for every global-scope agent surface: builtin agents, shortcuts, categories, content blocks, and system agent apps.",
+      "text": "Hub for every global-scope agent surface: builtin agents, shortcuts, categories, content blocks, and system Applets.",
       "detail": "secondary slot: 119 chars, budget 60"
     },
     {
@@ -10849,7 +10849,7 @@
       "severity": 2,
       "where": "{ description: }",
       "chars": 97,
-      "text": "Global-scope agent apps available to every user. Distinct from moderation of user-published apps.",
+      "text": "Global-scope Applets available to every user. Distinct from moderation of user-published apps.",
       "detail": "secondary slot: 97 chars, budget 60"
     },
     {
@@ -10859,7 +10859,7 @@
       "severity": 2,
       "where": "{ description: }",
       "chars": 97,
-      "text": "Global-scope agent apps available to every user. Distinct from moderation of user-published apps.",
+      "text": "Global-scope Applets available to every user. Distinct from moderation of user-published apps.",
       "detail": "2 sentences in one secondary slot (max 1)"
     },
     {
@@ -10879,7 +10879,7 @@
       "severity": 2,
       "where": "{ description: }",
       "chars": 92,
-      "text": "Hub for moderating user-published agent apps: featured picks, verification, and quick stats.",
+      "text": "Hub for moderating user-published Applets: featured picks, verification, and quick stats.",
       "detail": "secondary slot: 92 chars, budget 60"
     },
     {
@@ -10889,7 +10889,7 @@
       "severity": 2,
       "where": "{ description: }",
       "chars": 76,
-      "text": "Every agent app across the platform — filter, feature, verify, and moderate.",
+      "text": "Every Applet across the platform — filter, feature, verify, and moderate.",
       "detail": "secondary slot: 76 chars, budget 60"
     },
     {
@@ -10899,7 +10899,7 @@
       "severity": 2,
       "where": "{ description: }",
       "chars": 67,
-      "text": "Manage the static category list shown in public agent-app browsing.",
+      "text": "Manage the static category list shown in public applet browsing.",
       "detail": "secondary slot: 67 chars, budget 60"
     },
     {
@@ -10909,7 +10909,7 @@
       "severity": 2,
       "where": "{ description: }",
       "chars": 83,
-      "text": "Recent runs and errors across every agent app. Resolve incidents and inspect usage.",
+      "text": "Recent runs and errors across every Applet. Resolve incidents and inspect usage.",
       "detail": "secondary slot: 83 chars, budget 60"
     },
     {
@@ -10919,7 +10919,7 @@
       "severity": 2,
       "where": "{ description: }",
       "chars": 83,
-      "text": "Recent runs and errors across every agent app. Resolve incidents and inspect usage.",
+      "text": "Recent runs and errors across every Applet. Resolve incidents and inspect usage.",
       "detail": "2 sentences in one secondary slot (max 1)"
     },
     {
@@ -13403,7 +13403,7 @@
       "detail": "secondary slot: 61 chars, budget 60"
     },
     {
-      "file": "features/agent-apps/components/agent-app-listings/AgentAppsGrid.tsx",
+      "file": "features/applets/components/applet-listings/AppletsGrid.tsx",
       "line": 530,
       "rule": "over-budget",
       "severity": 2,
@@ -13413,7 +13413,7 @@
       "detail": "secondary slot: 64 chars, budget 60"
     },
     {
-      "file": "features/agent-apps/components/agent-app-listings/AgentAppsGrid.tsx",
+      "file": "features/applets/components/applet-listings/AppletsGrid.tsx",
       "line": 591,
       "rule": "over-budget",
       "severity": 2,
@@ -13423,7 +13423,7 @@
       "detail": "secondary slot: 80 chars, budget 60"
     },
     {
-      "file": "features/agent-apps/components/agent-app-listings/AgentAppsGrid.tsx",
+      "file": "features/applets/components/applet-listings/AppletsGrid.tsx",
       "line": 591,
       "rule": "multi-sentence",
       "severity": 2,
@@ -13433,7 +13433,7 @@
       "detail": "2 sentences in one secondary slot (max 1)"
     },
     {
-      "file": "features/agent-apps/components/AgentAppErrorBoundary.tsx",
+      "file": "features/applets/components/AppletErrorBoundary.tsx",
       "line": 96,
       "rule": "over-budget",
       "severity": 2,
@@ -13443,7 +13443,7 @@
       "detail": "secondary slot: 125 chars, budget 60"
     },
     {
-      "file": "features/agent-apps/components/AgentAppErrorBoundary.tsx",
+      "file": "features/applets/components/AppletErrorBoundary.tsx",
       "line": 96,
       "rule": "multi-sentence",
       "severity": 2,
@@ -13453,7 +13453,7 @@
       "detail": "2 sentences in one secondary slot (max 1)"
     },
     {
-      "file": "features/agent-apps/components/AgentAppErrorBoundary.tsx",
+      "file": "features/applets/components/AppletErrorBoundary.tsx",
       "line": 104,
       "rule": "over-budget",
       "severity": 2,
@@ -13463,7 +13463,7 @@
       "detail": "secondary slot: 108 chars, budget 60"
     },
     {
-      "file": "features/agent-apps/components/AgentAppErrorBoundary.tsx",
+      "file": "features/applets/components/AppletErrorBoundary.tsx",
       "line": 112,
       "rule": "over-budget",
       "severity": 2,
@@ -13473,7 +13473,7 @@
       "detail": "secondary slot: 75 chars, budget 60"
     },
     {
-      "file": "features/agent-apps/components/AgentAppErrorBoundary.tsx",
+      "file": "features/applets/components/AppletErrorBoundary.tsx",
       "line": 112,
       "rule": "multi-sentence",
       "severity": 2,
@@ -13483,7 +13483,7 @@
       "detail": "2 sentences in one secondary slot (max 1)"
     },
     {
-      "file": "features/agent-apps/components/AgentAppErrorBoundary.tsx",
+      "file": "features/applets/components/AppletErrorBoundary.tsx",
       "line": 119,
       "rule": "over-budget",
       "severity": 2,
@@ -13493,7 +13493,7 @@
       "detail": "secondary slot: 80 chars, budget 60"
     },
     {
-      "file": "features/agent-apps/components/AgentAppErrorBoundary.tsx",
+      "file": "features/applets/components/AppletErrorBoundary.tsx",
       "line": 119,
       "rule": "multi-sentence",
       "severity": 2,
@@ -13503,7 +13503,7 @@
       "detail": "2 sentences in one secondary slot (max 1)"
     },
     {
-      "file": "features/agent-apps/components/AutoCreateAgentAppForm.tsx",
+      "file": "features/applets/components/AutoCreateAppletForm.tsx",
       "line": 599,
       "rule": "over-budget",
       "severity": 2,
@@ -13513,7 +13513,7 @@
       "detail": "secondary slot: 67 chars, budget 60"
     },
     {
-      "file": "features/agent-apps/components/AutoCreateAgentAppForm.tsx",
+      "file": "features/applets/components/AutoCreateAppletForm.tsx",
       "line": 599,
       "rule": "multi-sentence",
       "severity": 2,
@@ -13523,7 +13523,7 @@
       "detail": "2 sentences in one secondary slot (max 1)"
     },
     {
-      "file": "features/agent-apps/components/AutoCreateAgentAppForm.tsx",
+      "file": "features/applets/components/AutoCreateAppletForm.tsx",
       "line": 631,
       "rule": "over-budget",
       "severity": 2,
@@ -13533,7 +13533,7 @@
       "detail": "secondary slot: 77 chars, budget 60"
     },
     {
-      "file": "features/agent-apps/components/AutoCreateAgentAppForm.tsx",
+      "file": "features/applets/components/AutoCreateAppletForm.tsx",
       "line": 631,
       "rule": "multi-sentence",
       "severity": 2,
@@ -13543,7 +13543,7 @@
       "detail": "2 sentences in one secondary slot (max 1)"
     },
     {
-      "file": "features/agent-apps/components/AutoCreateAgentAppForm.tsx",
+      "file": "features/applets/components/AutoCreateAppletForm.tsx",
       "line": 654,
       "rule": "over-budget",
       "severity": 2,
@@ -13553,7 +13553,7 @@
       "detail": "secondary slot: 61 chars, budget 60"
     },
     {
-      "file": "features/agent-apps/components/AutoCreateAgentAppForm.tsx",
+      "file": "features/applets/components/AutoCreateAppletForm.tsx",
       "line": 676,
       "rule": "over-budget",
       "severity": 1,
@@ -13563,7 +13563,7 @@
       "detail": "secondary slot: 73 chars, budget 60"
     },
     {
-      "file": "features/agent-apps/components/AutoCreateAgentAppForm.tsx",
+      "file": "features/applets/components/AutoCreateAppletForm.tsx",
       "line": 676,
       "rule": "multi-sentence",
       "severity": 1,
@@ -13573,7 +13573,7 @@
       "detail": "3 sentences in one secondary slot (max 1)"
     },
     {
-      "file": "features/agent-apps/components/AutoCreateAgentAppForm.tsx",
+      "file": "features/applets/components/AutoCreateAppletForm.tsx",
       "line": 737,
       "rule": "over-budget",
       "severity": 1,
@@ -13583,7 +13583,7 @@
       "detail": "placeholder slot: 247 chars, budget 60"
     },
     {
-      "file": "features/agent-apps/components/AutoCreateAgentAppForm.tsx",
+      "file": "features/applets/components/AutoCreateAppletForm.tsx",
       "line": 741,
       "rule": "over-budget",
       "severity": 2,
@@ -13593,7 +13593,7 @@
       "detail": "secondary slot: 111 chars, budget 60"
     },
     {
-      "file": "features/agent-apps/components/AutoCreateAgentAppForm.tsx",
+      "file": "features/applets/components/AutoCreateAppletForm.tsx",
       "line": 741,
       "rule": "multi-sentence",
       "severity": 2,
@@ -13603,7 +13603,7 @@
       "detail": "2 sentences in one secondary slot (max 1)"
     },
     {
-      "file": "features/agent-apps/components/AutoCreateAgentAppForm.tsx",
+      "file": "features/applets/components/AutoCreateAppletForm.tsx",
       "line": 1015,
       "rule": "over-budget",
       "severity": 2,
@@ -13613,7 +13613,7 @@
       "detail": "secondary slot: 94 chars, budget 60"
     },
     {
-      "file": "features/agent-apps/components/AutoCreateAgentAppForm.tsx",
+      "file": "features/applets/components/AutoCreateAppletForm.tsx",
       "line": 1070,
       "rule": "over-budget",
       "severity": 1,
@@ -13623,7 +13623,7 @@
       "detail": "secondary slot: 84 chars, budget 60"
     },
     {
-      "file": "features/agent-apps/components/AutoCreateAgentAppForm.tsx",
+      "file": "features/applets/components/AutoCreateAppletForm.tsx",
       "line": 1070,
       "rule": "multi-sentence",
       "severity": 1,
@@ -13633,7 +13633,7 @@
       "detail": "3 sentences in one secondary slot (max 1)"
     },
     {
-      "file": "features/agent-apps/components/AutoCreateAgentAppForm.tsx",
+      "file": "features/applets/components/AutoCreateAppletForm.tsx",
       "line": 1099,
       "rule": "over-budget",
       "severity": 2,
@@ -13643,7 +13643,7 @@
       "detail": "secondary slot: 98 chars, budget 60"
     },
     {
-      "file": "features/agent-apps/components/AutoCreateAgentAppForm.tsx",
+      "file": "features/applets/components/AutoCreateAppletForm.tsx",
       "line": 1099,
       "rule": "multi-sentence",
       "severity": 2,
@@ -13653,7 +13653,7 @@
       "detail": "2 sentences in one secondary slot (max 1)"
     },
     {
-      "file": "features/agent-apps/components/AutoCreateAgentAppForm.tsx",
+      "file": "features/applets/components/AutoCreateAppletForm.tsx",
       "line": 1129,
       "rule": "over-budget",
       "severity": 2,
@@ -13663,7 +13663,7 @@
       "detail": "secondary slot: 82 chars, budget 60"
     },
     {
-      "file": "features/agent-apps/components/AutoCreateAgentAppForm.tsx",
+      "file": "features/applets/components/AutoCreateAppletForm.tsx",
       "line": 1129,
       "rule": "multi-sentence",
       "severity": 2,
@@ -13673,7 +13673,7 @@
       "detail": "2 sentences in one secondary slot (max 1)"
     },
     {
-      "file": "features/agent-apps/components/AutoCreateAgentAppForm.tsx",
+      "file": "features/applets/components/AutoCreateAppletForm.tsx",
       "line": 1175,
       "rule": "over-budget",
       "severity": 2,
@@ -13683,7 +13683,7 @@
       "detail": "secondary slot: 112 chars, budget 60"
     },
     {
-      "file": "features/agent-apps/components/AutoCreateAgentAppForm.tsx",
+      "file": "features/applets/components/AutoCreateAppletForm.tsx",
       "line": 1205,
       "rule": "over-budget",
       "severity": 2,
@@ -13693,7 +13693,7 @@
       "detail": "secondary slot: 131 chars, budget 60"
     },
     {
-      "file": "features/agent-apps/components/AutoCreateAgentAppForm.tsx",
+      "file": "features/applets/components/AutoCreateAppletForm.tsx",
       "line": 1205,
       "rule": "multi-sentence",
       "severity": 2,
@@ -13703,7 +13703,7 @@
       "detail": "2 sentences in one secondary slot (max 1)"
     },
     {
-      "file": "features/agent-apps/components/AutoCreateAgentAppForm.tsx",
+      "file": "features/applets/components/AutoCreateAppletForm.tsx",
       "line": 1252,
       "rule": "over-budget",
       "severity": 2,
@@ -13713,7 +13713,7 @@
       "detail": "secondary slot: 75 chars, budget 60"
     },
     {
-      "file": "features/agent-apps/components/AutoCreateAgentAppForm.tsx",
+      "file": "features/applets/components/AutoCreateAppletForm.tsx",
       "line": 1252,
       "rule": "multi-sentence",
       "severity": 2,
@@ -13723,7 +13723,7 @@
       "detail": "2 sentences in one secondary slot (max 1)"
     },
     {
-      "file": "features/agent-apps/components/AutoCreateAgentAppForm.tsx",
+      "file": "features/applets/components/AutoCreateAppletForm.tsx",
       "line": 1282,
       "rule": "over-budget",
       "severity": 2,
@@ -13733,7 +13733,7 @@
       "detail": "secondary slot: 83 chars, budget 60"
     },
     {
-      "file": "features/agent-apps/components/AutoCreateAgentAppForm.tsx",
+      "file": "features/applets/components/AutoCreateAppletForm.tsx",
       "line": 1282,
       "rule": "multi-sentence",
       "severity": 2,
@@ -13743,7 +13743,7 @@
       "detail": "2 sentences in one secondary slot (max 1)"
     },
     {
-      "file": "features/agent-apps/components/AutoCreateAgentAppForm.tsx",
+      "file": "features/applets/components/AutoCreateAppletForm.tsx",
       "line": 1328,
       "rule": "over-budget",
       "severity": 2,
@@ -13753,7 +13753,7 @@
       "detail": "secondary slot: 109 chars, budget 60"
     },
     {
-      "file": "features/agent-apps/components/AutoCreateAgentAppForm.tsx",
+      "file": "features/applets/components/AutoCreateAppletForm.tsx",
       "line": 1328,
       "rule": "multi-sentence",
       "severity": 2,
@@ -13763,7 +13763,7 @@
       "detail": "2 sentences in one secondary slot (max 1)"
     },
     {
-      "file": "features/agent-apps/components/AutoCreateAgentAppForm.tsx",
+      "file": "features/applets/components/AutoCreateAppletForm.tsx",
       "line": 1358,
       "rule": "over-budget",
       "severity": 2,
@@ -13773,7 +13773,7 @@
       "detail": "secondary slot: 93 chars, budget 60"
     },
     {
-      "file": "features/agent-apps/components/AutoCreateAgentAppForm.tsx",
+      "file": "features/applets/components/AutoCreateAppletForm.tsx",
       "line": 1358,
       "rule": "multi-sentence",
       "severity": 2,
@@ -13783,7 +13783,7 @@
       "detail": "2 sentences in one secondary slot (max 1)"
     },
     {
-      "file": "features/agent-apps/components/AutoCreateAgentAppForm.tsx",
+      "file": "features/applets/components/AutoCreateAppletForm.tsx",
       "line": 1471,
       "rule": "over-budget",
       "severity": 1,
@@ -13793,7 +13793,7 @@
       "detail": "placeholder slot: 186 chars, budget 60"
     },
     {
-      "file": "features/agent-apps/components/AutoCreateAgentAppForm.tsx",
+      "file": "features/applets/components/AutoCreateAppletForm.tsx",
       "line": 1524,
       "rule": "over-budget",
       "severity": 2,
@@ -13803,7 +13803,7 @@
       "detail": "secondary slot: 120 chars, budget 60"
     },
     {
-      "file": "features/agent-apps/components/builder/ShellPicker.tsx",
+      "file": "features/applets/components/builder/ShellPicker.tsx",
       "line": 75,
       "rule": "multi-sentence",
       "severity": 2,
@@ -13813,7 +13813,7 @@
       "detail": "2 sentences in one secondary slot (max 1)"
     },
     {
-      "file": "features/agent-apps/components/builder/SlotOverrideEditor.tsx",
+      "file": "features/applets/components/builder/SlotOverrideEditor.tsx",
       "line": 70,
       "rule": "over-budget",
       "severity": 2,
@@ -13823,7 +13823,7 @@
       "detail": "secondary slot: 88 chars, budget 60"
     },
     {
-      "file": "features/agent-apps/components/builder/SlotOverrideEditor.tsx",
+      "file": "features/applets/components/builder/SlotOverrideEditor.tsx",
       "line": 70,
       "rule": "multi-sentence",
       "severity": 2,
@@ -13833,7 +13833,7 @@
       "detail": "2 sentences in one secondary slot (max 1)"
     },
     {
-      "file": "features/agent-apps/components/builder/SlotOverrideEditor.tsx",
+      "file": "features/applets/components/builder/SlotOverrideEditor.tsx",
       "line": 165,
       "rule": "over-budget",
       "severity": 1,
@@ -13843,7 +13843,7 @@
       "detail": "consequence slot: 173 chars, budget 140"
     },
     {
-      "file": "features/agent-apps/components/CreateAgentAppFormWrapper.tsx",
+      "file": "features/applets/components/CreateAppletFormWrapper.tsx",
       "line": 421,
       "rule": "over-budget",
       "severity": 2,
@@ -13853,7 +13853,7 @@
       "detail": "secondary slot: 77 chars, budget 60"
     },
     {
-      "file": "features/agent-apps/components/CreateAgentAppFormWrapper.tsx",
+      "file": "features/applets/components/CreateAppletFormWrapper.tsx",
       "line": 421,
       "rule": "multi-sentence",
       "severity": 2,
@@ -13863,7 +13863,7 @@
       "detail": "2 sentences in one secondary slot (max 1)"
     },
     {
-      "file": "features/agent-apps/components/CreateAgentAppFormWrapper.tsx",
+      "file": "features/applets/components/CreateAppletFormWrapper.tsx",
       "line": 435,
       "rule": "over-budget",
       "severity": 2,
@@ -13873,7 +13873,7 @@
       "detail": "secondary slot: 61 chars, budget 60"
     },
     {
-      "file": "features/agent-apps/components/CreateAgentAppFormWrapper.tsx",
+      "file": "features/applets/components/CreateAppletFormWrapper.tsx",
       "line": 448,
       "rule": "over-budget",
       "severity": 1,
@@ -13883,7 +13883,7 @@
       "detail": "secondary slot: 73 chars, budget 60"
     },
     {
-      "file": "features/agent-apps/components/CreateAgentAppFormWrapper.tsx",
+      "file": "features/applets/components/CreateAppletFormWrapper.tsx",
       "line": 448,
       "rule": "multi-sentence",
       "severity": 1,
@@ -13893,7 +13893,7 @@
       "detail": "3 sentences in one secondary slot (max 1)"
     },
     {
-      "file": "features/agent-apps/components/CreateAgentAppFormWrapper.tsx",
+      "file": "features/applets/components/CreateAppletFormWrapper.tsx",
       "line": 461,
       "rule": "over-budget",
       "severity": 2,
@@ -13903,7 +13903,7 @@
       "detail": "secondary slot: 88 chars, budget 60"
     },
     {
-      "file": "features/agent-apps/components/CreateAgentAppFormWrapper.tsx",
+      "file": "features/applets/components/CreateAppletFormWrapper.tsx",
       "line": 461,
       "rule": "multi-sentence",
       "severity": 2,
@@ -13913,7 +13913,7 @@
       "detail": "2 sentences in one secondary slot (max 1)"
     },
     {
-      "file": "features/agent-apps/components/CreateAgentAppFormWrapper.tsx",
+      "file": "features/applets/components/CreateAppletFormWrapper.tsx",
       "line": 474,
       "rule": "over-budget",
       "severity": 2,
@@ -13923,7 +13923,7 @@
       "detail": "secondary slot: 71 chars, budget 60"
     },
     {
-      "file": "features/agent-apps/components/CreateAgentAppFormWrapper.tsx",
+      "file": "features/applets/components/CreateAppletFormWrapper.tsx",
       "line": 474,
       "rule": "multi-sentence",
       "severity": 2,
@@ -13933,7 +13933,7 @@
       "detail": "2 sentences in one secondary slot (max 1)"
     },
     {
-      "file": "features/agent-apps/components/CreateAgentAppFormWrapper.tsx",
+      "file": "features/applets/components/CreateAppletFormWrapper.tsx",
       "line": 488,
       "rule": "over-budget",
       "severity": 2,
@@ -13943,7 +13943,7 @@
       "detail": "secondary slot: 78 chars, budget 60"
     },
     {
-      "file": "features/agent-apps/components/CreateAgentAppFormWrapper.tsx",
+      "file": "features/applets/components/CreateAppletFormWrapper.tsx",
       "line": 488,
       "rule": "multi-sentence",
       "severity": 2,
@@ -13953,7 +13953,7 @@
       "detail": "2 sentences in one secondary slot (max 1)"
     },
     {
-      "file": "features/agent-apps/components/inputs/AppMandateBinding.tsx",
+      "file": "features/applets/components/inputs/AppMandateBinding.tsx",
       "line": 65,
       "rule": "over-budget",
       "severity": 2,
@@ -13963,7 +13963,7 @@
       "detail": "secondary slot: 123 chars, budget 60"
     },
     {
-      "file": "features/agent-apps/components/inputs/AppMandateBinding.tsx",
+      "file": "features/applets/components/inputs/AppMandateBinding.tsx",
       "line": 65,
       "rule": "multi-sentence",
       "severity": 2,
@@ -13973,7 +13973,7 @@
       "detail": "2 sentences in one secondary slot (max 1)"
     },
     {
-      "file": "features/agent-apps/components/LiveBuilder.tsx",
+      "file": "features/applets/components/LiveBuilder.tsx",
       "line": 694,
       "rule": "over-budget",
       "severity": 2,
@@ -13983,7 +13983,7 @@
       "detail": "secondary slot: 91 chars, budget 60"
     },
     {
-      "file": "features/agent-apps/components/LiveBuilder.tsx",
+      "file": "features/applets/components/LiveBuilder.tsx",
       "line": 700,
       "rule": "over-budget",
       "severity": 2,
@@ -13993,7 +13993,7 @@
       "detail": "secondary slot: 109 chars, budget 60"
     },
     {
-      "file": "features/agent-apps/components/LiveBuilder.tsx",
+      "file": "features/applets/components/LiveBuilder.tsx",
       "line": 700,
       "rule": "multi-sentence",
       "severity": 2,
@@ -14003,7 +14003,7 @@
       "detail": "2 sentences in one secondary slot (max 1)"
     },
     {
-      "file": "features/agent-apps/components/LiveBuilder.tsx",
+      "file": "features/applets/components/LiveBuilder.tsx",
       "line": 732,
       "rule": "over-budget",
       "severity": 2,
@@ -14013,7 +14013,7 @@
       "detail": "secondary slot: 75 chars, budget 60"
     },
     {
-      "file": "features/agent-apps/components/LiveBuilder.tsx",
+      "file": "features/applets/components/LiveBuilder.tsx",
       "line": 732,
       "rule": "multi-sentence",
       "severity": 2,
@@ -14023,7 +14023,7 @@
       "detail": "2 sentences in one secondary slot (max 1)"
     },
     {
-      "file": "features/agent-apps/components/LiveBuilder.tsx",
+      "file": "features/applets/components/LiveBuilder.tsx",
       "line": 738,
       "rule": "over-budget",
       "severity": 2,
@@ -14033,7 +14033,7 @@
       "detail": "secondary slot: 83 chars, budget 60"
     },
     {
-      "file": "features/agent-apps/components/LiveBuilder.tsx",
+      "file": "features/applets/components/LiveBuilder.tsx",
       "line": 738,
       "rule": "multi-sentence",
       "severity": 2,
@@ -14043,7 +14043,7 @@
       "detail": "2 sentences in one secondary slot (max 1)"
     },
     {
-      "file": "features/agent-apps/components/LiveBuilder.tsx",
+      "file": "features/applets/components/LiveBuilder.tsx",
       "line": 967,
       "rule": "implementation-leak",
       "severity": 1,
@@ -14053,7 +14053,7 @@
       "detail": "build-status note"
     },
     {
-      "file": "features/agent-apps/components/QuickHtmlShareModal.tsx",
+      "file": "features/applets/components/QuickHtmlShareModal.tsx",
       "line": 133,
       "rule": "page-description",
       "severity": 1,
@@ -14063,7 +14063,7 @@
       "detail": "sentence under <h2>"
     },
     {
-      "file": "features/agent-apps/components/shells/catalog.ts",
+      "file": "features/applets/components/shells/catalog.ts",
       "line": 25,
       "rule": "over-budget",
       "severity": 2,
@@ -14073,7 +14073,7 @@
       "detail": "secondary slot: 65 chars, budget 60"
     },
     {
-      "file": "features/agent-apps/components/shells/catalog.ts",
+      "file": "features/applets/components/shells/catalog.ts",
       "line": 31,
       "rule": "over-budget",
       "severity": 2,
@@ -14083,7 +14083,7 @@
       "detail": "secondary slot: 66 chars, budget 60"
     },
     {
-      "file": "features/agent-apps/components/shells/catalog.ts",
+      "file": "features/applets/components/shells/catalog.ts",
       "line": 31,
       "rule": "multi-sentence",
       "severity": 2,
@@ -14093,7 +14093,7 @@
       "detail": "2 sentences in one secondary slot (max 1)"
     },
     {
-      "file": "features/agent-apps/components/shells/catalog.ts",
+      "file": "features/applets/components/shells/catalog.ts",
       "line": 37,
       "rule": "over-budget",
       "severity": 2,
@@ -14103,7 +14103,7 @@
       "detail": "secondary slot: 78 chars, budget 60"
     },
     {
-      "file": "features/agent-apps/components/shells/catalog.ts",
+      "file": "features/applets/components/shells/catalog.ts",
       "line": 37,
       "rule": "multi-sentence",
       "severity": 2,
@@ -14113,17 +14113,17 @@
       "detail": "2 sentences in one secondary slot (max 1)"
     },
     {
-      "file": "features/agent-apps/format.ts",
+      "file": "features/applets/format.ts",
       "line": 342,
       "rule": "over-budget",
       "severity": 1,
       "where": "{ description: }",
       "chars": 251,
-      "text": "The agent-app Settings form as the user sees it right now: the open tab, the LIVE values in every staged input (which may differ from the saved row), an explicit unsaved-changes diff, any save-blocking validation, and the controls that save",
+      "text": "The applet Settings form as the user sees it right now: the open tab, the LIVE values in every staged input (which may differ from the saved row), an explicit unsaved-changes diff, any save-blocking validation, and the controls that save",
       "detail": "secondary slot: 251 chars, budget 60"
     },
     {
-      "file": "features/agent-apps/format.ts",
+      "file": "features/applets/format.ts",
       "line": 356,
       "rule": "over-budget",
       "severity": 2,
@@ -14133,7 +14133,7 @@
       "detail": "secondary slot: 143 chars, budget 60"
     },
     {
-      "file": "features/agent-apps/format.ts",
+      "file": "features/applets/format.ts",
       "line": 356,
       "rule": "multi-sentence",
       "severity": 2,
@@ -14143,37 +14143,37 @@
       "detail": "2 sentences in one secondary slot (max 1)"
     },
     {
-      "file": "features/agent-apps/format.ts",
+      "file": "features/applets/format.ts",
       "line": 438,
       "rule": "over-budget",
       "severity": 1,
       "where": "{ description: }",
       "chars": 307,
-      "text": "The admin agent-app edit page as the user sees it: the Analytics KPI card, the Metadata / Admin Moderation / Timestamps cards, and which tab is open. Page-level fields render the saved row directly; the metadata dialog and rate-limit editor",
+      "text": "The admin applet edit page as the user sees it: the Analytics KPI card, the Metadata / Admin Moderation / Timestamps cards, and which tab is open. Page-level fields render the saved row directly; the metadata dialog and rate-limit editor",
       "detail": "secondary slot: 307 chars, budget 60"
     },
     {
-      "file": "features/agent-apps/format.ts",
+      "file": "features/applets/format.ts",
       "line": 438,
       "rule": "multi-sentence",
       "severity": 1,
       "where": "{ description: }",
       "chars": 307,
-      "text": "The admin agent-app edit page as the user sees it: the Analytics KPI card, the Metadata / Admin Moderation / Timestamps cards, and which tab is open. Page-level fields render the saved row directly; the metadata dialog and rate-limit editor",
+      "text": "The admin applet edit page as the user sees it: the Analytics KPI card, the Metadata / Admin Moderation / Timestamps cards, and which tab is open. Page-level fields render the saved row directly; the metadata dialog and rate-limit editor",
       "detail": "2 sentences in one secondary slot (max 1)"
     },
     {
-      "file": "features/agent-apps/format.ts",
+      "file": "features/applets/format.ts",
       "line": 523,
       "rule": "over-budget",
       "severity": 1,
       "where": "{ description: }",
       "chars": 213,
-      "text": "The agent-app metadata dialog exactly as rendered: the LIVE values in the Name / Tagline / Description / Status inputs, the unsaved diff against the saved record, and the verbatim error text if a save just failed.",
+      "text": "The applet metadata dialog exactly as rendered: the LIVE values in the Name / Tagline / Description / Status inputs, the unsaved diff against the saved record, and the verbatim error text if a save just failed.",
       "detail": "secondary slot: 213 chars, budget 60"
     },
     {
-      "file": "features/agent-apps/format.ts",
+      "file": "features/applets/format.ts",
       "line": 529,
       "rule": "over-budget",
       "severity": 2,
@@ -14183,17 +14183,17 @@
       "detail": "secondary slot: 76 chars, budget 60"
     },
     {
-      "file": "features/agent-apps/format.ts",
+      "file": "features/applets/format.ts",
       "line": 590,
       "rule": "over-budget",
       "severity": 1,
       "where": "{ description: }",
       "chars": 181,
-      "text": "The agent-app rate-limit controls as rendered: the LIVE input values while the editor is open (with an unsaved diff against the saved record), or the saved values when it is closed.",
+      "text": "The applet rate-limit controls as rendered: the LIVE input values while the editor is open (with an unsaved diff against the saved record), or the saved values when it is closed.",
       "detail": "secondary slot: 181 chars, budget 60"
     },
     {
-      "file": "features/agent-apps/format.ts",
+      "file": "features/applets/format.ts",
       "line": 596,
       "rule": "over-budget",
       "severity": 2,
@@ -14203,17 +14203,17 @@
       "detail": "secondary slot: 63 chars, budget 60"
     },
     {
-      "file": "features/agent-apps/route/AgentAppOverviewContent.tsx",
+      "file": "features/applets/route/AppletOverviewContent.tsx",
       "line": 430,
       "rule": "over-budget",
       "severity": 2,
       "where": "{ description: }",
       "chars": 73,
-      "text": "The agent-app record shown on this overview page, plus its agent binding.",
+      "text": "The applet record shown on this overview page, plus its agent binding.",
       "detail": "secondary slot: 73 chars, budget 60"
     },
     {
-      "file": "features/agent-apps/sample-code/apps/fact-checker-hooked.tsx",
+      "file": "features/applets/sample-code/apps/fact-checker-hooked.tsx",
       "line": 92,
       "rule": "page-description",
       "severity": 1,
@@ -14223,7 +14223,7 @@
       "detail": "sentence under <h1>"
     },
     {
-      "file": "features/agent-apps/sample-code/apps/fact-checker.tsx",
+      "file": "features/applets/sample-code/apps/fact-checker.tsx",
       "line": 76,
       "rule": "page-description",
       "severity": 1,
@@ -14233,7 +14233,7 @@
       "detail": "sentence under <h1>"
     },
     {
-      "file": "features/agent-apps/sample-code/apps/flashcard-generator.tsx",
+      "file": "features/applets/sample-code/apps/flashcard-generator.tsx",
       "line": 108,
       "rule": "over-budget",
       "severity": 2,
@@ -14243,7 +14243,7 @@
       "detail": "placeholder slot: 83 chars, budget 60"
     },
     {
-      "file": "features/agent-apps/sample-code/apps/lasi-generator-3.tsx",
+      "file": "features/applets/sample-code/apps/lasi-generator-3.tsx",
       "line": 91,
       "rule": "page-description",
       "severity": 1,
@@ -14253,7 +14253,7 @@
       "detail": "sentence under <h1>"
     },
     {
-      "file": "features/agent-apps/sample-code/apps/lasi-generator-3.tsx",
+      "file": "features/applets/sample-code/apps/lasi-generator-3.tsx",
       "line": 91,
       "rule": "over-budget",
       "severity": 2,
@@ -14263,7 +14263,7 @@
       "detail": "secondary slot: 127 chars, budget 60"
     },
     {
-      "file": "features/agent-apps/sample-code/apps/lasi-generator-3.tsx",
+      "file": "features/applets/sample-code/apps/lasi-generator-3.tsx",
       "line": 91,
       "rule": "multi-sentence",
       "severity": 2,
@@ -14273,7 +14273,7 @@
       "detail": "2 sentences in one secondary slot (max 1)"
     },
     {
-      "file": "features/agent-apps/sample-code/apps/lasi-generator-3.tsx",
+      "file": "features/applets/sample-code/apps/lasi-generator-3.tsx",
       "line": 140,
       "rule": "over-budget",
       "severity": 2,
@@ -14283,7 +14283,7 @@
       "detail": "placeholder slot: 61 chars, budget 60"
     },
     {
-      "file": "features/agent-apps/sample-code/apps/lsi-generator.tsx",
+      "file": "features/applets/sample-code/apps/lsi-generator.tsx",
       "line": 302,
       "rule": "page-description",
       "severity": 1,
@@ -14293,7 +14293,7 @@
       "detail": "sentence under <h1>"
     },
     {
-      "file": "features/agent-apps/sample-code/apps/lsi-generator.tsx",
+      "file": "features/applets/sample-code/apps/lsi-generator.tsx",
       "line": 355,
       "rule": "over-budget",
       "severity": 2,
@@ -14303,7 +14303,7 @@
       "detail": "secondary slot: 72 chars, budget 60"
     },
     {
-      "file": "features/agent-apps/sample-code/apps/lsi-generator.tsx",
+      "file": "features/applets/sample-code/apps/lsi-generator.tsx",
       "line": 427,
       "rule": "over-budget",
       "severity": 2,
@@ -14313,7 +14313,7 @@
       "detail": "secondary slot: 87 chars, budget 60"
     },
     {
-      "file": "features/agent-apps/sample-code/apps/lsi-generator.tsx",
+      "file": "features/applets/sample-code/apps/lsi-generator.tsx",
       "line": 514,
       "rule": "page-description",
       "severity": 1,
@@ -14323,7 +14323,7 @@
       "detail": "sentence under <h2>"
     },
     {
-      "file": "features/agent-apps/sample-code/templates/index.ts",
+      "file": "features/applets/sample-code/templates/index.ts",
       "line": 57,
       "rule": "over-budget",
       "severity": 2,
@@ -14333,7 +14333,7 @@
       "detail": "secondary slot: 78 chars, budget 60"
     },
     {
-      "file": "features/agent-apps/sample-code/templates/index.ts",
+      "file": "features/applets/sample-code/templates/index.ts",
       "line": 57,
       "rule": "multi-sentence",
       "severity": 2,
@@ -14343,7 +14343,7 @@
       "detail": "2 sentences in one secondary slot (max 1)"
     },
     {
-      "file": "features/agent-apps/sample-code/templates/index.ts",
+      "file": "features/applets/sample-code/templates/index.ts",
       "line": 64,
       "rule": "over-budget",
       "severity": 2,
@@ -14353,7 +14353,7 @@
       "detail": "secondary slot: 76 chars, budget 60"
     },
     {
-      "file": "features/agent-apps/sample-code/templates/index.ts",
+      "file": "features/applets/sample-code/templates/index.ts",
       "line": 71,
       "rule": "over-budget",
       "severity": 2,
@@ -14363,7 +14363,7 @@
       "detail": "secondary slot: 70 chars, budget 60"
     },
     {
-      "file": "features/agent-apps/sample-code/templates/index.ts",
+      "file": "features/applets/sample-code/templates/index.ts",
       "line": 71,
       "rule": "multi-sentence",
       "severity": 2,
@@ -14373,7 +14373,7 @@
       "detail": "2 sentences in one secondary slot (max 1)"
     },
     {
-      "file": "features/agent-apps/sample-code/templates/index.ts",
+      "file": "features/applets/sample-code/templates/index.ts",
       "line": 78,
       "rule": "over-budget",
       "severity": 2,
@@ -14383,7 +14383,7 @@
       "detail": "secondary slot: 83 chars, budget 60"
     },
     {
-      "file": "features/agent-apps/sample-code/templates/index.ts",
+      "file": "features/applets/sample-code/templates/index.ts",
       "line": 78,
       "rule": "multi-sentence",
       "severity": 2,
@@ -14393,7 +14393,7 @@
       "detail": "2 sentences in one secondary slot (max 1)"
     },
     {
-      "file": "features/agent-apps/sample-code/templates/index.ts",
+      "file": "features/applets/sample-code/templates/index.ts",
       "line": 85,
       "rule": "over-budget",
       "severity": 2,
@@ -21629,7 +21629,7 @@
       "severity": 2,
       "where": "{ description: }",
       "chars": 45,
-      "text": "Your Agent App source. Save updates that app.",
+      "text": "Your Applet source. Save updates that app.",
       "detail": "2 sentences in one secondary slot (max 1)"
     },
     {
@@ -33439,7 +33439,7 @@
       "severity": 1,
       "where": "<p>",
       "chars": 172,
-      "text": "Version history isn't available for this source yet. Each backing system (Notes, Code Snippets, Agent Apps, …) tracks its own versions; we'll wire those into this tab soon.",
+      "text": "Version history isn't available for this source yet. Each backing system (Notes, Code Snippets, Applets, …) tracks its own versions; we'll wire those into this tab soon.",
       "detail": "secondary slot: 172 chars, budget 60"
     },
     {
@@ -33449,7 +33449,7 @@
       "severity": 1,
       "where": "<p>",
       "chars": 172,
-      "text": "Version history isn't available for this source yet. Each backing system (Notes, Code Snippets, Agent Apps, …) tracks its own versions; we'll wire those into this tab soon.",
+      "text": "Version history isn't available for this source yet. Each backing system (Notes, Code Snippets, Applets, …) tracks its own versions; we'll wire those into this tab soon.",
       "detail": "2 sentences in one secondary slot (max 1)"
     },
     {
@@ -46259,7 +46259,7 @@
       "severity": 1,
       "where": "{ blurb: }",
       "chars": 161,
-      "text": "Every agent app. APP_MANDATE_CUTOVER is ON, so mandate_id is the column that decides which agent an app actually runs — agent_id is no longer the serving source.",
+      "text": "Every Applet. APP_MANDATE_CUTOVER is ON, so mandate_id is the column that decides which agent an app actually runs — agent_id is no longer the serving source.",
       "detail": "secondary slot: 161 chars, budget 60"
     },
     {
@@ -46269,7 +46269,7 @@
       "severity": 1,
       "where": "{ blurb: }",
       "chars": 161,
-      "text": "Every agent app. APP_MANDATE_CUTOVER is ON, so mandate_id is the column that decides which agent an app actually runs — agent_id is no longer the serving source.",
+      "text": "Every Applet. APP_MANDATE_CUTOVER is ON, so mandate_id is the column that decides which agent an app actually runs — agent_id is no longer the serving source.",
       "detail": "2 sentences in one secondary slot (max 1)"
     },
     {

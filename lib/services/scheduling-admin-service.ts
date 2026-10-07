@@ -3,7 +3,7 @@
 // Admin-side reads/writes for the sch_* spine. Uses the browser supabase
 // client. Reads go through RLS's platform_admin_read (admin lane); the two
 // writes go through the scheduler.admin_* doors below, because the staff
-// WRITE arm is closed on these tables. Mirrors lib/services/agent-apps-admin-
+// WRITE arm is closed on these tables. Mirrors lib/services/applets-admin-
 // service.ts. NEVER call this from non-admin UI.
 
 import { supabase } from "@/utils/supabase/client";

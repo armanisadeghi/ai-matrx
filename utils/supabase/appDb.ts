@@ -1,7 +1,7 @@
 /**
  * utils/supabase/appDb.ts
  *
- * Agent-app tables (formerly `public.aga_*`) live in the `app` Postgres schema
+ * Applet tables (formerly `public.aga_*`) live in the `app` Postgres schema
  * after the 2026 DB restructure. supabase-js reaches them via `.schema("app")`.
  *
  *   const db = appDb(supabase);

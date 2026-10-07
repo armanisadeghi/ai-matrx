@@ -2,7 +2,7 @@ import { createClient } from "@/utils/supabase/server";
 import { notFound } from "next/navigation";
 import { AccessGate } from "@/features/access-gate/components/AccessGate";
 import { AppletHostMount } from "@/features/applets-host/AppletHostMount";
-import { getAgentAppIconsMetadata } from "@/features/agent-apps/utils/favicon-metadata";
+import { getAppletIconsMetadata } from "@/features/applets/utils/favicon-metadata";
 import type { Metadata } from "next";
 import { NOT_INDEXED_ROBOTS } from "@/lib/seo/search-engine-indexed";
 import { searchEngineRobots } from "@/lib/seo/search-engine-indexed.server";
@@ -16,7 +16,7 @@ import { isUuidShape } from "@ai-matrx/kit/uuid";
 
 export const revalidate = 3600;
 
-type AgentAppMetadata = {
+type AppletMetadata = {
   name: string;
   tagline: string | null;
   description: string | null;
@@ -24,9 +24,9 @@ type AgentAppMetadata = {
   favicon_url: string | null;
 };
 
-async function resolveAgentAppMetadata(
+async function resolveAppletMetadata(
   slug: string,
-): Promise<AgentAppMetadata | null> {
+): Promise<AppletMetadata | null> {
   const supabase = await createClient();
   // A slug may itself be UUID-shaped (apps whose slug was minted from a uuid): an id-shaped
   // address is tried as the id first, then as the slug (feedback c59b2e74).
@@ -68,36 +68,36 @@ export async function generateMetadata({
   params: Promise<{ slug: string }>;
 }): Promise<Metadata> {
   const { slug } = await params;
-  const agentAppMeta = await resolveAgentAppMetadata(slug);
-  if (!agentAppMeta) return { title: "App | AI Matrx", robots: NOT_INDEXED_ROBOTS };
+  const appletMeta = await resolveAppletMetadata(slug);
+  if (!appletMeta) return { title: "App | AI Matrx", robots: NOT_INDEXED_ROBOTS };
   return {
-    title: `${agentAppMeta.name} | AI Matrx Apps`,
+    title: `${appletMeta.name} | AI Matrx Apps`,
     // THE INDEXED SWITCH (access ladder T-12): apps default to not indexed.
     robots: await searchEngineRobots([{ type: "app", key: slug }]),
     description:
-      agentAppMeta.tagline ||
-      agentAppMeta.description ||
-      `Try ${agentAppMeta.name} — An AI-powered app`,
-    icons: getAgentAppIconsMetadata(agentAppMeta.favicon_url, agentAppMeta.name),
+      appletMeta.tagline ||
+      appletMeta.description ||
+      `Try ${appletMeta.name} — An AI-powered app`,
+    icons: getAppletIconsMetadata(appletMeta.favicon_url, appletMeta.name),
     openGraph: {
-      title: agentAppMeta.name,
+      title: appletMeta.name,
       description:
-        agentAppMeta.tagline ||
-        agentAppMeta.description ||
-        `Try ${agentAppMeta.name}`,
-      images: agentAppMeta.preview_image_url
-        ? [agentAppMeta.preview_image_url]
+        appletMeta.tagline ||
+        appletMeta.description ||
+        `Try ${appletMeta.name}`,
+      images: appletMeta.preview_image_url
+        ? [appletMeta.preview_image_url]
         : [],
     },
     twitter: {
       card: "summary_large_image",
-      title: agentAppMeta.name,
+      title: appletMeta.name,
       description:
-        agentAppMeta.tagline ||
-        agentAppMeta.description ||
-        `Try ${agentAppMeta.name}`,
-      images: agentAppMeta.preview_image_url
-        ? [agentAppMeta.preview_image_url]
+        appletMeta.tagline ||
+        appletMeta.description ||
+        `Try ${appletMeta.name}`,
+      images: appletMeta.preview_image_url
+        ? [appletMeta.preview_image_url]
         : [],
     },
   };
@@ -138,7 +138,7 @@ export default async function PublicAppPage({
     notFound();
   }
 
-  // The published Applet runs through the ONE Applet host — the same frame as /apps/<slug> — for a
+  // The published Applet runs through the ONE Applet host — the same frame as /applets/<slug> — for a
   // signed-in viewer and a guest alike (a guest's jobs ride the guest lane; it has no data reach).
   // `?embed=widget` is the same Applet without the attribution row.
   const applet = <AppletHostMount appletId={rpcRow.id} slug={rpcRow.slug} />;

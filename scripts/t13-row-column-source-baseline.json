@@ -57,7 +57,7 @@
   "features/admin/relationships/components/ShareableRegistryPanel.tsx": 3,
   "features/admin/relationships/components/ShareableResourceForm.tsx": 1,
   "features/admin/seo-operations/service.ts": 1,
-  "features/agent-apps/components/inputs/AgentAppImageField.tsx": 1,
+  "features/applets/components/inputs/AppletImageField.tsx": 1,
   "features/agent-connections/redux/skl/types.ts": 1,
   "features/agents/browse/columns.tsx": 6,
   "features/agents/browse/components/AgentBrowseCards.test.tsx": 1,

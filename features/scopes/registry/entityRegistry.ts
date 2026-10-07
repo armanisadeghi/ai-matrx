@@ -262,8 +262,8 @@ const ENTITY_OVERLAY: Partial<Record<EntityTypeToken, EntityOverlay>> = {
   },
   app: {
     Icon: AppWindow,
-    labelPlural: "Agent Apps",
-    hrefFor: (id) => `/agent-apps/${id}`,
+    labelPlural: "Applets",
+    hrefFor: (id) => `/applets/manage/${id}`,
   },
   // ─── People (HR) ──────────────────────────────────────────────────────────
   //

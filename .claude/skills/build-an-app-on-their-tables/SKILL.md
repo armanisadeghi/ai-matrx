@@ -1,18 +1,18 @@
 ---
 name: build-an-app-on-their-tables
-description: "Recipe for an agent building a small custom web app (an Applet) for one person or business on THEIR OWN store tables, live at aimatrx.com/apps/<slug>. Use when asked to build an app, portal, calendar, tracker, dashboard screen or client view on someone's tables/data in AI Matrx. NOT for platform features (use build-sub-feature) or tables the platform keeps for itself (defineAppTable)."
+description: "Recipe for an agent building a small custom web app (an Applet) for one person or business on THEIR OWN store tables, live at aimatrx.com/applets/<slug>. Use when asked to build an app, portal, calendar, tracker, dashboard screen or client view on someone's tables/data in AI Matrx. NOT for platform features (use build-sub-feature) or tables the platform keeps for itself (defineAppTable)."
 ---
 
 # Build an Applet on a person's tables
 
 The person's data already lives in the store (tables they made in /data, imported from Notion, or made
 through the Table API). The app is an **Applet**: one `app.definition` row holding its files, pages,
-data sources and jobs. **No app code goes in this repo.** `/apps/<slug>` reads the row and renders it
+data sources and jobs. **No app code goes in this repo.** `/applets/<slug>` reads the row and renders it
 through `@ai-matrx/applets` under the **viewer's own seat** — the store decides who reads and changes
 what. Never copy data, never add a table the app needs "for itself" when the person's table can hold
 it, never read with a service key.
 
-**The person builds it herself first.** `/agent-apps/build` takes one sentence ("a page where I see my
+**The person builds it herself first.** `/applets/build` takes one sentence ("a page where I see my
 clients and approve their posts"): it reads the **catalogue** as her, runs the mandate `applets.build`
 (the builder; `applets.fix` for "Fix it"), saves the record as a draft, previews it with her real rows
 and every write held back, and "Use it" publishes. "Change it" on the same page saves a new version.
@@ -65,13 +65,13 @@ Contract: `common-docs/projects/applets/CONTRACTS.md` (§2 hooks, §8 record). H
 4. **A change is an UPDATE** of `files` / `pages` / `sources` / `mandates` — the trigger snapshots the
    new version into `app.definition_version`. Never insert a second row for a change.
 5. **Save its surface** as a member: `select ui.save_applet_surface('<id>', '{"actions":[…]}')`.
-6. **Check in a browser:** `/apps/<slug>` signed in as a member (test@test.com is a member of the
+6. **Check in a browser:** `/applets/<slug>` signed in as a member (test@test.com is a member of the
    proof organization); switch pages, change one real value and re-read it from a second session, run
    the job. Restore any value you changed.
 
 ## Who can open it
 
-Signed-in people only (`app/(link)/apps/[app]/[[...path]]`): a signed-out visitor is sent to sign in
+Signed-in people only (`app/(link)/applets/[slug]/[[...path]]`): a signed-out visitor is sent to sign in
 and brought back; a slug they cannot read gets the access gate. Each viewer sees what the store lets
 them see. The Applet never decides access.
 

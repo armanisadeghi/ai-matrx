@@ -45,7 +45,7 @@ export async function copyAppletFromTemplate(
   const resolver = installResolver(answer);
   const sources = Object.entries(link.bind).map(([alias, token]) => {
     const tableId = resolver.tableId(token);
-    if (!tableId) throw new Error(`The install made no "${token}" table, so the app's "${alias}" has nothing to read.`);
+    if (!tableId) throw new Error(`The install made no "${token}" table, so the Applet's "${alias}" has nothing to read.`);
     return { alias, table_id: tableId, organization_id: organizationId };
   });
 
@@ -89,6 +89,6 @@ export async function copyAppletFromTemplate(
     })
     .select("id, slug, name")
     .single();
-  if (insertError) throw new Error(`The app could not be added: ${insertError.message}`);
+  if (insertError) throw new Error(`The Applet could not be added: ${insertError.message}`);
   return { ...made, existed: false };
 }

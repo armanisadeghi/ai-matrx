@@ -22,7 +22,7 @@
       "signature": "edgeRows"
     },
     {
-      "file": "features/agents/redux/agent-apps/thunks.ts",
+      "file": "features/agents/redux/applets/thunks.ts",
       "table": "app.definition",
       "status": "UNRESOLVED",
       "signature": "insert"

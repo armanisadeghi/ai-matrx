@@ -103,7 +103,7 @@ export const DISCOVER_FEATURED_ORDER: string[] = [
   "/war-room",
   "/agents/all",
   "/knowledge",
-  "/agent-apps",
+  "/applets",
   "/transcripts",
   "/scopes",
   "/tools/pdf-extractor",

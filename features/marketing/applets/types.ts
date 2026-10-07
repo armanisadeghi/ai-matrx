@@ -52,6 +52,6 @@ export interface AppletTemplateLink {
   bind: Record<string, string>;
 }
 
-export const APPLET_TEMPLATES_PATH = "/templates/apps";
-export const appletIntroHref = (slug: string) => `/applets/${encodeURIComponent(slug)}`;
-export const appletOpenHref = (slug: string) => `/apps/${encodeURIComponent(slug)}`;
+export const APPLET_TEMPLATES_PATH = "/templates/applets";
+/** An Applet's one address: it runs there, and a signed-out visitor or a template's visitor gets its introductory page. */
+export const appletHref = (slug: string) => `/applets/${encodeURIComponent(slug)}`;

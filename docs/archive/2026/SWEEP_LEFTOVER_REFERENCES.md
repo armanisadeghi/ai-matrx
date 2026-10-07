@@ -84,8 +84,8 @@ cloud-files upload path. There is exactly one live caller:
 
 | File | Line | Match |
 |---|---|---|
-| `app/api/agent-apps/generate-favicon/route.ts` | 140 | `const ctx = Api.Server.createServerContext({` |
-| `app/api/agent-apps/generate-favicon/route.ts` | 144 | `const { fileId, shareUrl } = await Api.Server.uploadAndShare(ctx, {` |
+| `app/api/applets/generate-favicon/route.ts` | 140 | `const ctx = Api.Server.createServerContext({` |
+| `app/api/applets/generate-favicon/route.ts` | 144 | `const { fileId, shareUrl } = await Api.Server.uploadAndShare(ctx, {` |
 | `features/files/api/server-client.ts` | 299 | `export async function uploadAndShare(` (the definition) |
 
 **Action required from user:** decide whether this is genuinely deprecated
@@ -277,7 +277,7 @@ to delete the block entirely.
 
 - `userContent` as a **column / variable name** in `cx-chat`, `public-chat`,
   `agents/redux/execution-system/messages`, `prompts/utils/prompt-json-generator`,
-  `prompts/hooks/usePromptExecution`, `agent-apps/sample-code/templates`,
+  `prompts/hooks/usePromptExecution`, `applets/sample-code/templates`,
   `prompt-apps/sample-code/templates` — these are database `user_content` JSONB
   columns / local variables, not the legacy deprecated bucket.
 - `userContent` as a **prop default** on input components

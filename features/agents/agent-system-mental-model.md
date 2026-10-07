@@ -254,20 +254,20 @@ With `showDefinitionMessages: false`, the learner sees their first message as si
 
 ---
 
-## 6. Agent Apps — *purpose-built experiences* 🛠️
+## 6. Applets — *purpose-built experiences* 🛠️
 
-**Status:** Redux slice, selectors, and a provisional `AgentApp` type exist at [`features/agents/redux/agent-apps/`](features/agents/redux/agent-apps/). The backing database table (`agx_app` / `cx_app`) is not yet created — thunks currently stub and throw. No UI rendering path yet.
+**Status:** Redux slice, selectors, and a provisional `AppletRow` type exist at [`features/agents/redux/applets/`](features/agents/redux/applets/). The backing database table (`agx_app` / `cx_app`) is not yet created — thunks currently stub and throw. No UI rendering path yet.
 
 An App is a custom UI for a specific workflow. Where a **Shortcut auto-fills** variables, an **App provides a different way to supply them** — often one that doesn't look like AI at all. No chat box. Sometimes no model output in chat form at all — the agent's result is rendered as an **artifact** directly into the UI.
 
 > **On artifacts:** AI Matrx artifacts are **bidirectionally interactive**. The model produces a structured output (task list, flashcard set, form, widget); the UI renders it as a real, usable component; the user's interactions with it (checking a task off, reordering cards, editing a field) are passed back to the model on the next turn. Model-authored artifacts can also sync with real application state — a generated task list can become actual tasks in the app. This is a significant departure from the one-way artifacts most providers offer.
 
-### The current `AgentApp` type (provisional)
+### The current `AppletRow` type (provisional)
 
-From [`features/agents/redux/agent-apps/types.ts`](features/agents/redux/agent-apps/types.ts):
+From [`features/agents/redux/applets/types.ts`](features/agents/redux/applets/types.ts):
 
 ```ts
-interface AgentApp {
+interface AppletRow {
   id: string;
   label: string;
   description: string | null;
@@ -355,7 +355,7 @@ The fork model is important: **forking doesn't create a shared-data branch.** Th
 | `agentConversations` | [`features/agents/redux/agent-conversations/`](features/agents/redux/agent-conversations/) | Agent-scoped conversation list caches (RPC) |
 | `agentShortcut` | [`../aidream/apps/shared/chat/src/agents/redux/agent-shortcuts/`](../aidream/apps/shared/chat/src/agents/redux/agent-shortcuts/) | Shortcut definitions + variable bindings |
 | `agentConsumers` | [`features/agents/redux/agent-consumers/`](features/agents/redux/agent-consumers/) | Which agents appear in which surfaces |
-| `agentApps` | [`features/agents/redux/agent-apps/`](features/agents/redux/agent-apps/) | App scaffolds (DB table not yet wired) |
+| `applets` | [`features/agents/redux/applets/`](features/agents/redux/applets/) | App scaffolds (DB table not yet wired) |
 | `tools` | [`../aidream/apps/shared/chat/src/agents/redux/tools/`](../aidream/apps/shared/chat/src/agents/redux/tools/) | Tool catalog |
 | `mcp` | [`../aidream/apps/shared/chat/src/agents/redux/mcp/`](../aidream/apps/shared/chat/src/agents/redux/mcp/) | MCP server state |
 | `executionInstances` | `execution-system/execution-instances/` | Instance lifecycle (create/destroy) |

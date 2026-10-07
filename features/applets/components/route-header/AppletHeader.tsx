@@ -1,0 +1,163 @@
+"use client";
+
+import {
+  AppWindow,
+  Bookmark,
+  Code,
+  EyeOff,
+  History,
+  Play,
+  Rocket,
+  Settings as SettingsIcon,
+} from "lucide-react";
+import {
+  EntityModeHeader,
+  type EntityHeaderAction,
+} from "@/features/shell/components/header/templates/EntityModeHeader";
+import type { RouteNavItem } from "@/features/shell/components/header/RouteModeNav";
+import { AppletReferenceCopySlot } from "./AppletReferenceCopySlot";
+import { useState } from "react";
+import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
+import { selectAppById } from "@/features/agents/redux/applets/selectors";
+import { setAppletPublication } from "@/features/agents/redux/applets/thunks";
+import { toast } from "@/lib/toast";
+import { buildRecordReferenceFence } from "@/features/matrx-envelope/recordReference";
+import { copyReferenceFence } from "@/features/matrx-envelope/referenceClipboard";
+import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
+import type { AppStatus } from "@/features/applets/types";
+
+export type AppletHeaderTab =
+  "overview" | "run" | "code" | "versions" | "settings";
+
+interface AppletHeaderProps {
+  appId: string;
+  appName: string;
+  initialStatus: AppStatus;
+  initialPublishedToWeb: boolean;
+  active: AppletHeaderTab;
+  /** Defaults to `/applets`. Admin/org variants pass their own root. */
+  basePath?: string;
+  backHref?: string;
+}
+
+/**
+ * Header shell for /applets/manage/[id] and its sub-routes.
+ *
+ * EntityModeHeader instance: back + entity name + RouteModeNav (Overview /
+ * Run / Code / Versions / Settings) + the reference-copy action. Desktop
+ * renders modes as a measurement-driven pill and the copy button as an
+ * extra; mobile collapses everything into the back + name + "…" drawer.
+ */
+export function AppletHeader({
+  appId,
+  appName,
+  initialStatus,
+  initialPublishedToWeb,
+  active,
+  basePath = "/applets",
+  backHref = "/applets",
+}: AppletHeaderProps) {
+  const dispatch = useAppDispatch();
+  const app = useAppSelector((state) => selectAppById(state, appId));
+  const [publicationBusy, setPublicationBusy] = useState(false);
+
+  const status = app?.status ?? initialStatus;
+  const publishedToWeb = app?.published_to_web ?? initialPublishedToWeb;
+  const isPublished = status === "published" && publishedToWeb;
+
+  const modes: RouteNavItem[] = [
+    { name: "Overview", href: `${basePath}/${appId}`, icon: AppWindow },
+    { name: "Run", href: `${basePath}/${appId}/run`, icon: Play },
+    { name: "Code", href: `${basePath}/${appId}/code`, icon: Code },
+    { name: "Versions", href: `${basePath}/${appId}/versions`, icon: History },
+    {
+      name: "Settings",
+      href: `${basePath}/${appId}/settings`,
+      icon: SettingsIcon,
+    },
+  ];
+  const actions: EntityHeaderAction[] = [];
+  actions.push({
+    label: "Copy reference",
+    icon: Bookmark,
+    phoneOnly: true,
+    onPress: async () => {
+      const copied = await copyReferenceFence(
+        buildRecordReferenceFence({ type: "agent_app", id: appId, label: appName }),
+      );
+      if (copied) {
+        toast.success("Reference copied to clipboard", { description: appName });
+      }
+    },
+  });
+  actions.push({
+    label: isPublished ? "Unpublish" : "Publish",
+    icon: isPublished ? EyeOff : Rocket,
+    primary: !isPublished,
+    disabled: publicationBusy,
+    onPress: async () => {
+      // A publication change reaches strangers, so the click says what it
+      // will do before it happens (the destructive-click rule).
+      const publicUrl = app?.slug ? `aimatrx.com/p/${app.slug}` : "its public link";
+      const ok = await confirm(
+        isPublished
+          ? {
+              title: `Unpublish ${appName}?`,
+              description: `${publicUrl} stops working for everyone who has it. You can publish it again later.`,
+              confirmLabel: "Unpublish",
+              variant: "destructive",
+            }
+          : {
+              title: `Publish ${appName}?`,
+              description: `Anyone with the link can open it at ${publicUrl}, without signing in.`,
+              confirmLabel: "Publish",
+            },
+      );
+      if (!ok) return;
+      setPublicationBusy(true);
+      try {
+        await dispatch(
+          setAppletPublication({ appId, published: !isPublished }),
+        ).unwrap();
+        toast.success(isPublished ? "Applet unpublished." : "Applet published.");
+      } catch (error) {
+        toast.error(
+          error instanceof Error
+            ? `Publication failed: ${error.message}`
+            : "Publication failed.",
+        );
+      } finally {
+        setPublicationBusy(false);
+      }
+    },
+  });
+
+  return (
+    <EntityModeHeader
+      backHref={backHref}
+      entityLabel={appName}
+      entityStatus={
+        // One word on a desktop; on a phone the name needs the room, so the
+        // state is a colored dot with the same words for assistive tech
+        // (the chip used to clip to "Publis" and squeeze the name to "Fa…").
+        <span
+          aria-label={isPublished ? "Published" : "Unpublished"}
+          title={isPublished ? "Published" : "Unpublished"}
+          className={
+            isPublished
+              ? "inline-flex shrink-0 items-center gap-1 rounded-full bg-success/15 px-1.5 py-0.5 text-xs font-medium text-success-ink"
+              : "inline-flex shrink-0 items-center gap-1 rounded-full bg-warning/15 px-1.5 py-0.5 text-xs font-medium text-warning-ink"
+          }
+        >
+          <span aria-hidden className="size-1.5 rounded-full bg-current sm:hidden" />
+          <span className="hidden sm:inline">
+            {isPublished ? "Published" : "Unpublished"}
+          </span>
+        </span>
+      }
+      modes={modes}
+      actions={actions}
+      right={<AppletReferenceCopySlot appId={appId} appName={appName} />}
+    />
+  );
+}

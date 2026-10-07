@@ -40,7 +40,7 @@ interface ChatPanelSlotProps {
   /** If `?agentId=` isn't already in the URL when this slot first mounts,
    *  inject this id so the chat panel boots with a sensible coding agent
    *  instead of showing the empty-state picker. Used by focused-edit
-   *  surfaces (e.g. the agent-apps editor) to prefer a specific
+   *  surfaces (e.g. the applets editor) to prefer a specific
    *  prompt-app-development assistant. The user can still pick a
    *  different agent after mount. */
   defaultAgentId?: string;
@@ -152,7 +152,7 @@ export const ChatPanelSlot: React.FC<ChatPanelSlotProps> = ({
   // Override the runner's default URL builder so fork / retry navigation
   // stays inside whichever surface mounted this slot. `basePath` defaults
   // to `/code` for the canonical workspace; embedded surfaces (e.g. the
-  // agent-apps editor) pass their own pathname so forks stay in-route.
+  // applets editor) pass their own pathname so forks stay in-route.
   const buildConversationUrl = useMemo(() => {
     if (!agentId) return undefined;
     return (conversationId: string) => {

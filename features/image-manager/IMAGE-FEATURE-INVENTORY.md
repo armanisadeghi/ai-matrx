@@ -120,7 +120,7 @@ Selection state is shared with the rest of the app via `SelectedImagesProvider` 
 - **`ShareCoverImagePicker`** → `features/canvas/social/ShareCoverImagePicker.tsx` + `preset-covers.ts` — picks a preset Unsplash cover or uploads a custom one (via the Python `POST /assets` endpoint, through `<ImageAssetUploader>`). **LINK-FROM (canvas-scoped).**
 - **`ImageAssetUploader` presets** include `"cover"` (1200×630 only) — ready for any OG flow. **ABSORB as the "Branded Upload" tab.**
 - **Image Studio presets** include "Open Graph", "Twitter Card", "Schema.org" presets in the SEO bundle. **Already in tab.**
-- **Favicon generation** → `app/api/agent-apps/generate-favicon/route.ts`, `app/api/prompt-apps/generate-favicon/route.ts` — generates colored letter-based favicons and saves them via `Api.uploadAndShare` to the agent-app / prompt-app folder. **LINK-FROM (per-app feature).**
+- **Favicon generation** → `app/api/applets/generate-favicon/route.ts`, `app/api/prompt-apps/generate-favicon/route.ts` — generates colored letter-based favicons and saves them via `Api.uploadAndShare` to the applet / prompt-app folder. **LINK-FROM (per-app feature).**
 - **Banner**: only `features/applet/home/app-display/Banner.tsx` (display component, not a generator). No banner-generation route.
 - **No `app/api/og/**` routes exist beyond the per-page `opengraph-image.tsx`.**
 
@@ -211,7 +211,7 @@ Demo files for each live under `app/(authenticated)/(admin-auth)/administration/
 - **`/api/images/studio/process`** → `app/api/images/studio/process/route.ts` — Sharp batch processor for the Image Studio convert flow. Returns base64 data URLs (no storage write). (This is the only remaining caller of the `sharp` npm package on the FE.)
 - **`/api/unsplash`** → `app/api/unsplash/route.ts` — Unsplash search/random/collections via `UNSPLASH_ACCESS_KEY`.
 - **`/api/proxy-image`** and **`/api/image-proxy`** → external image proxies (CORS / cross-origin embedding). The two routes overlap; the `image-proxy` variant is the better one (Cache-Control, CORP).
-- **`/api/agent-apps/generate-favicon`** → procedurally-generated favicon, uploaded to cld_files via `Api.Server.uploadAndShare`. (The legacy `/api/prompt-apps/generate-favicon` was deleted along with prompt-apps deprecation.)
+- **`/api/applets/generate-favicon`** → procedurally-generated favicon, uploaded to cld_files via `Api.Server.uploadAndShare`. (The legacy `/api/prompt-apps/generate-favicon` was deleted along with prompt-apps deprecation.)
 - **OG image generation** → file-based `app/(public)/canvas/shared/[token]/opengraph-image.tsx` using Next.js `ImageResponse`.
 - **Cloud-files folder conventions** (`features/files/utils/folder-conventions.ts`):
   - `Images` (top-level drawer)

@@ -1,5 +1,5 @@
 /**
- * THE CENTER NEVER SHARES PIXELS WITH THE TITLE (2026-09-27, /agent-apps/<id>
+ * THE CENTER NEVER SHARES PIXELS WITH THE TITLE (2026-09-27, /applets/manage/<id>
  * at 768px): RouteHeader's center was `absolute left-1/2`, sized by a
  * ResizeObserver measurement. When that measurement was stale — a hidden tab,
  * or the first paint — the "Switch view" trigger was drawn on top of "Fact
@@ -33,7 +33,7 @@ jest.mock("./PageHeader", () => ({
   default: ({ children }: { children: React.ReactNode }) => <div data-test-page-header>{children}</div>,
 }));
 jest.mock("next/navigation", () => ({
-  usePathname: () => "/agent-apps/app-1",
+  usePathname: () => "/applets/manage/app-1",
   useRouter: () => ({ push: jest.fn() }),
 }));
 jest.mock("@/components/navigation/AppLink", () => ({
@@ -69,7 +69,7 @@ class RO {
 }
 (globalThis as { ResizeObserver?: unknown }).ResizeObserver = RO;
 
-// The live 768px geometry of /agent-apps/<id>, measured in Chromium.
+// The live 768px geometry of /applets/manage/<id>, measured in Chromium.
 const GEOMETRY = {
   root: 390,
   left: 221,
@@ -116,11 +116,11 @@ afterAll(() => {
 });
 
 const MODES = [
-  { name: "Overview", href: "/agent-apps/app-1", icon: AppWindow },
-  { name: "Run", href: "/agent-apps/app-1/run", icon: Play },
-  { name: "Code", href: "/agent-apps/app-1/code", icon: Code },
-  { name: "Versions", href: "/agent-apps/app-1/versions", icon: History },
-  { name: "Settings", href: "/agent-apps/app-1/settings", icon: Settings },
+  { name: "Overview", href: "/applets/manage/app-1", icon: AppWindow },
+  { name: "Run", href: "/applets/manage/app-1/run", icon: Play },
+  { name: "Code", href: "/applets/manage/app-1/code", icon: Code },
+  { name: "Versions", href: "/applets/manage/app-1/versions", icon: History },
+  { name: "Settings", href: "/applets/manage/app-1/settings", icon: Settings },
 ];
 
 let root: Root;

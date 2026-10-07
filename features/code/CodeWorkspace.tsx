@@ -64,7 +64,7 @@ export interface CodeWorkspaceProps {
   /** Whether to render the bottom status bar. */
   showStatusBar?: boolean;
   /** Override the side-panel's default width (percent). Smaller values
-   *  de-emphasise the file tree on focused-edit surfaces (the agent-app
+   *  de-emphasise the file tree on focused-edit surfaces (the applet
    *  editor uses ~12% instead of the canonical 18%). */
   defaultSideSize?: number;
   /**

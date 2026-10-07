@@ -101,8 +101,8 @@ import { sklReducer } from "@/features/agent-connections/redux/skl/slice";
 import { skillsReducer } from "@/features/skills/redux/skillsSlice";
 import { dictionaryReducer } from "@/features/dictionary/redux/dictionarySlice";
 import { agentConnectionsUiReducer } from "@/features/agent-connections/redux/ui/slice";
-import { agentAppReducer } from "@/features/agents/redux/agent-apps/slice";
-import agentAppConsumersReducer from "@/features/agent-apps/redux/agent-app-consumers/slice";
+import { appletReducer } from "@/features/agents/redux/applets/slice";
+import appletConsumersReducer from "@/features/applets/redux/applet-consumers/slice";
 
 import artifactsReducer from "./slices/artifactsSlice";
 import htmlPagesReducer from "./slices/htmlPagesSlice";
@@ -257,8 +257,8 @@ export const slimReducerMap = {
   // user-state store it rides on.
   dictionary: dictionaryReducer,
   agentConnectionsUi: agentConnectionsUiReducer,
-  agentApp: agentAppReducer,
-  agentAppConsumers: agentAppConsumersReducer,
+  applet: appletReducer,
+  appletConsumers: appletConsumersReducer,
 
   appContext: appContextReducer,
 

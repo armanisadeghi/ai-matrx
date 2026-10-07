@@ -13,7 +13,7 @@
 - `app/(authenticated)/(admin-auth)/administration/prompt-apps/**`
 - `app/(authenticated)/(admin-auth)/administration/shortcut-categories/**` (migrated to agent-shortcuts admin)
 - `app/(dev)/demos/prompts/**`
-- `app/(public)/p/fast/[slug]/**`, `p/demo/[slug]/**`, `p/fast-test/[slug]/**` (keep `/p/[slug]` redirecting to agent-apps)
+- `app/(public)/p/fast/[slug]/**`, `p/demo/[slug]/**`, `p/fast-test/[slug]/**` (keep `/p/[slug]` redirecting to applets)
 - `app/(authenticated)/layout-tests/prompt-input/**`
 
 ## Also

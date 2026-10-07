@@ -11,7 +11,7 @@ The shared 44px touch floor must never make a keyword action unreachable.
 ## Applet public face and app templates (AP-0 items 9-10, 2026-10-07)
 
 `features/marketing/applets/` is the public, search-built face of Applets (records in
-`app.definition`). Routes: `/applets/<slug>` (one Applet's introductory page) and `/templates/apps`
+`app.definition`). Routes: `/applets/<slug>` (one Applet's introductory page) and `/templates/applets`
 (the app-template gallery, linked from `/templates`'s family). Both are server-rendered from two
 anon doors that answer ONLY what an owner published to the web (`published_to_web`):
 `public.applet_public_intro(p_slug)` and `public.applets_public(p_templates_only)` (registered in

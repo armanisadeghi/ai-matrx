@@ -223,7 +223,7 @@ export interface AgentValueDefaults {
  *
  * Every surface that customizes an agent produces this same shape:
  *   - shortcuts (agx_shortcut row, persisted)
- *   - agent apps (agent_apps row, persisted)
+ *   - Applets (agent_apps row, persisted)
  *   - widget tester / creator run panel (in-memory)
  *   - inline caller-supplied (launchAgent({ config: {...} }))
  *

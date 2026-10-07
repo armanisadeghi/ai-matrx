@@ -117,7 +117,7 @@ import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 /**
  * Canonical entity_type for agent↔surface binding edges rows in the scope-assignments
  * many-to-many system. Mirrors the per-component constant used by
- * `agent-apps` and `notes`.
+ * `applets` and `notes`.
  */
 const SCOPE_ENTITY_TYPE: EntityType = "agent_surface_binding";
 

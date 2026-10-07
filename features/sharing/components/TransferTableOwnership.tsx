@@ -31,13 +31,13 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import {
   fetchMemberPersonalTables,
   transferTableOwner,
 } from "@/features/sharing/service/tableTransfer";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
+import { ProTextarea } from "@/components/official/ProTextarea";
 export interface TransferPerson {
   id: string;
   name: string;
@@ -171,7 +171,7 @@ export function TransferTableOwnership({
             </div>
             <div className="flex flex-col gap-1.5">
               <Label htmlFor="transfer-reason">Why</Label>
-              <Textarea
+              <ProTextarea
                 id="transfer-reason"
                 rows={3}
                 maxLength={500}

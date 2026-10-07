@@ -97,7 +97,7 @@ Judge by who is looking at it and why.
   Core 1: the page's own conversation never sees the page — declare it on
   the provider (`ownConversationId={id}` or `isOwnConversation={(id) => …}`;
   only a launch from outside the provider's tree also passes
-  `runtime: { surfaceName: null }`; worked: the agent builder, `AgentAppSurfaceRuntime.tsx`), so it gets no page
+  `runtime: { surfaceName: null }`; worked: the agent builder, `AppletSurfaceRuntime.tsx`), so it gets no page
   context and no surface tools while every other agent on the screen gets
   both. A universal page (chat) offers "Run an agent on this page" instead of a
   bound roster; `surface:probe --agent` uses that picker there.

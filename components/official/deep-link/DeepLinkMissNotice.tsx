@@ -10,7 +10,7 @@
  * "nothing selected", and the user is told nothing — the link looks valid and
  * silently does nothing. Bugbot found this same shape on three separate
  * surfaces in one campaign wave (`?user=` on the admins roster, `?category=` on
- * agent-app categories, `?block=` on content blocks), which is what turned it
+ * applet categories, `?block=` on content blocks), which is what turned it
  * from a per-page patch into a primitive.
  *
  * Two things every one of those sites owed the user, and neither is an error

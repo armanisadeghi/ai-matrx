@@ -35,7 +35,7 @@ The write-path surface clusters into ten zones:
 6. **`features/files/components/core/{*Dialog,*ContextMenu,FileActions,FileUploadDropzone,DuplicateUploadDialog}/`** — rewire to new hooks; combined-op for atomic share+upload, rename+move, etc.
 7. **`components/ui/file-upload/`** — entire directory's write-path either deletes (`useFileUploadWithStorage`, `usePasteImageUpload`, `FileUploadWithStorage`) or rewires (`ImageUploadField`, `PasteImageHandler`, `useClipboardPaste`).
 8. **`components/official/`** — `ImageAssetUploader`, `ImageCropper*` — unify dual upload paths.
-9. **`features/agent-apps/`, `features/agents/`, `features/cx-chat/`, `packages/chat/src/cx-conversation/`, `packages/chat/src/public-chat/`, `features/prompts/`, `features/chat/`** — every smart-input / chat-input migrates from `useFileUpload` (handler) → `useFileUpload` (`features/files`); import path change only for most.
+9. **`features/applets/`, `features/agents/`, `features/cx-chat/`, `packages/chat/src/cx-conversation/`, `packages/chat/src/public-chat/`, `features/prompts/`, `features/chat/`** — every smart-input / chat-input migrates from `useFileUpload` (handler) → `useFileUpload` (`features/files`); import path change only for most.
 10. **Feature-specific write paths** — audio fallback, transcripts, tasks, RAG library / data-stores, image studio, podcasts admin, PDF extractor/demo, canvas social, code-files, whatsapp clone, feedback admin, resource-manager pickers, window panels (feedback window, code window).
 11. **Next.js API write routes** — `app/api/images/studio/process` and `app/api/pdf/compress` delete; `hooks/usePdfOptimize.ts` and the two PDF callers rewire to Python `POST /assets/pdf-compress`.
 12. **Admin / demo / test pages that initiate writes** — official-components demos, cloud-files-debug client, image-manager registry.
@@ -350,13 +350,13 @@ Note: plan §6.3 explicitly says "3 of 4 `features/image-manager/components/*Tab
 
 ---
 
-### `features/agents/`, `features/agent-apps/`, `features/cx-chat/`, `packages/chat/src/cx-conversation/` (chat-input uploaders)
+### `features/agents/`, `features/applets/`, `features/cx-chat/`, `packages/chat/src/cx-conversation/` (chat-input uploaders)
 
 | File | Lines | Current behavior | Action | What changes |
 |---|---|---|---|---|
 | packages/chat/src/agents/components/inputs/smart-input/AgentTextarea.tsx | 278 | `useFileUpload` from `features/file-handler` | MODIFY | import-path update |
 | packages/chat/src/agents/components/inputs/input-components/MediaVariableInput.tsx | 326 | `useFileUpload` from `features/file-handler` | MODIFY | import-path update |
-| features/agent-apps/components/inputs/AgentAppImageField.tsx | 161 | `useFileUpload` from `features/file-handler` | MODIFY | import-path update |
+| features/applets/components/inputs/AppletImageField.tsx | 161 | `useFileUpload` from `features/file-handler` | MODIFY | import-path update |
 | packages/chat/src/cx-chat/components/user-input/ConversationInput.tsx | 758 | `useFileUpload` from `features/file-handler` | MODIFY | import-path update |
 | packages/chat/src/cx-conversation/ConversationInput.tsx | 879 | `useFileUpload` from `features/file-handler` | MODIFY | import-path update |
 | packages/chat/src/agents/redux/execution-system/instance-resources/resource-source.ts | 114 | dispatches to `fileHandler` primitives | MODIFY | import-path update |

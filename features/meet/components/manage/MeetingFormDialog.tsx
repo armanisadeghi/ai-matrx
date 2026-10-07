@@ -41,7 +41,6 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@ai-matrx/design-system";
-import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
@@ -98,6 +97,7 @@ import {
 } from "@/features/meet/lib/zoned-time";
 import { kindTextToMarkdown } from "@/features/content-ir/surfaces/kind-text-to-markdown";
 
+import { ProTextarea } from "@/components/official/ProTextarea";
 export interface OccurrenceRef {
   /** The start the rule generates — the key of an exception. */
   readonly originalStart: string;
@@ -690,7 +690,7 @@ export function MeetingFormDialog({
                       </Button>
                     ) : null}
                   </div>
-                  <Textarea
+                  <ProTextarea
                     id="meeting-agenda"
                     value={draft.agenda}
                     onChange={(e) => set({ agenda: e.target.value })}

@@ -96,7 +96,7 @@ names the page and lists its live values. His review inbox gets one row per fini
    - `/administration/ui/surfaces` should show the census facts beside declared readiness: emitting,
      mirror in sync, claim age, last independent check.
    - A claim older than 6 hours reads as free.
-   - Clear the four stale claims from 2026-08-26 (`matrx-user/files`, `agent-apps`, `messages`,
+   - Clear the four stale claims from 2026-08-26 (`matrx-user/files`, `applets`, `messages`,
      `chat`).
    - Until this lands, the coordinator's census is the board.
 

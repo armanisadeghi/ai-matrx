@@ -6,13 +6,13 @@
 
 > **Platform versioning source of truth:** `common-docs/systems/architecture/versioning/` (`/Users/armanisadeghi/code/common-docs/systems/architecture/versioning/`). This doc is the repo-specific AGENT implementation on top of that standard; if they conflict, the common-docs set wins.
 >
-> Read [`features/agents/FEATURE.md`](../FEATURE.md) first. This is the load-bearing contract that lets Shortcuts and Agent Apps stay stable while agents evolve.
+> Read [`features/agents/FEATURE.md`](../FEATURE.md) first. This is the load-bearing contract that lets Shortcuts and Applets stay stable while agents evolve.
 
 ---
 
 ## Purpose
 
-Every time an engineer saves in the Builder, a new `agent_definition` version row is written. The "current" agent is a pointer to one of these versions. Consumer surfaces choose between tracking the current pointer or pinning to a specific version. **Shortcuts and Agent Apps pin by default** — they're embedded in running products and their variable shape cannot change out from under them.
+Every time an engineer saves in the Builder, a new `agent_definition` version row is written. The "current" agent is a pointer to one of these versions. Consumer surfaces choose between tracking the current pointer or pinning to a specific version. **Shortcuts and Applets pin by default** — they're embedded in running products and their variable shape cannot change out from under them.
 
 ---
 
@@ -21,7 +21,7 @@ Every time an engineer saves in the Builder, a new `agent_definition` version ro
 | Mode | Who uses it | How |
 |---|---|---|
 | **Track current** | Chat, Builder, Runner (default) | `engine.isVersion = false`. Invocation hits the live agent pointer. Changes with every new save. |
-| **Pin to version** | Shortcuts, Agent Apps (default), Runner (explicit) | `engine.isVersion = true` + `agentVersionId` set. Server loads that specific version row. Frozen until the pin is updated. |
+| **Pin to version** | Shortcuts, Applets (default), Runner (explicit) | `engine.isVersion = true` + `agentVersionId` set. Server loads that specific version row. Frozen until the pin is updated. |
 | **Use latest, but remember we're pinned** | Shortcut / App configured with `useLatest: true` | Pointer-tracking but owned by a pinned consumer record. Rare; used when the engineer trusts drift. |
 
 ---
@@ -107,7 +107,7 @@ If the agent's `action` enum changes or `focus` is renamed to `current_item`, ev
 - [`AGENT_BUILDER.md`](./AGENT_BUILDER.md) — where saves happen
 - [`AGENT_RUNNER.md`](./AGENT_RUNNER.md) — ad-hoc pin for testing
 - `features/agent-shortcuts/FEATURE.md` — default-pinned consumer
-- `features/agent-apps/FEATURE.md` — default-pinned consumer
+- `features/applets/FEATURE.md` — default-pinned consumer
 
 ---
 

@@ -78,8 +78,8 @@ export const ADMIN_FEATURES_ON_USER_PAGES = {
   "agent.system-app": {
     level: "super_admin",
     allows: "Create the global system app for a built-in agent.",
-    where: "Agent menus → create app (POST /api/agent-apps)",
-    doors: ["/api/agent-apps (POST)"],
+    where: "Agent menus → create app (POST /api/applets)",
+    doors: ["/api/applets (POST)"],
     ruling: "Arman, 2026-10-06: features \"explicitly actions in the normal ui that were for admins\" keep working; admin status must not widen what an admin SEES on a user page.",
   },
   "agent.hindsight-cases": {

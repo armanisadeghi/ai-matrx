@@ -159,7 +159,7 @@ export function FileContextMenu({
       setBusy(null);
     }
   }, [actions, file, onMove]);
-  // Virtual files (Notes / Agent Apps / Code Snippets / etc.) don't go
+  // Virtual files (Notes / Applets / Code Snippets / etc.) don't go
   // through the Python `/files/{id}` REST contract, so any action that
   // depends on a signed S3 URL (Download / Copy link / Duplicate) or on
   // cld_* tables (Versions / File info / Visibility) is hidden.

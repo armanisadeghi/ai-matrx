@@ -36,7 +36,7 @@
 // width = total − 2×max(left, right)) via a ResizeObserver and picks the
 // densest variant that fits, so it can never spill into the left/right regions.
 // Before "none" it tries RouteHeader's in-flow center cell — at 768px the
-// agent-app header's centered slot was 0px wide and its whole mode nav
+// applet header's centered slot was 0px wide and its whole mode nav
 // vanished (2026-09-27). RouteHeader reserves room in that cell for the icon
 // trigger by reading `data-route-nav-min`.
 //

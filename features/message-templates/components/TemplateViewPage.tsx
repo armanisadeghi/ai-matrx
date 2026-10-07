@@ -30,7 +30,7 @@ import {
 } from "@/components/merge-field-input/MergeFieldInput";
 import { TemplateRichText } from "@/features/message-templates/components/TemplateRichText";
 import { MergeFieldTextarea } from "@/components/merge-field-input/MergeFieldTextarea";
-import { AgentAppTagsInput } from "@/features/agent-apps/components/inputs/AgentAppTagsInput";
+import { AppletTagsInput } from "@/features/applets/components/inputs/AppletTagsInput";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -942,7 +942,7 @@ export function TemplateViewPage({ template, canEdit, create = false }: Template
                       contextData={{ content: tags.join(", ") }}
                     >
                       <div>
-                        <AgentAppTagsInput
+                        <AppletTagsInput
                           value={tags}
                           onChange={setTags}
                           placeholder="Add a tag and press Enter"

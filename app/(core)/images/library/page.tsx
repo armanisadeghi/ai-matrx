@@ -112,7 +112,7 @@ export default function LibraryPage() {
           <StepCard
             icon={<Library className="h-4 w-4" />}
             title="3. Reuse"
-            body="Browse them anywhere Cloud Files is available — chat pickers, agent apps, sharing links."
+            body="Browse them anywhere Cloud Files is available — chat pickers, Applets, sharing links."
           />
         </section>
 

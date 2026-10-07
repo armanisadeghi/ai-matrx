@@ -3,7 +3,7 @@
  *
  *   pnpm tsx scripts/applets/applet-render-sweep.ts [--files <dir>] [report.json]
  *
- * Reads every live `app.definition` row and mounts it exactly as `/apps/<slug>` does —
+ * Reads every live `app.definition` row and mounts it exactly as `/applets/<slug>` does —
  * `definitionToRecord` → `mountApplet(record, host, scope)` from `@ai-matrx/applets/frame`, with the app's
  * stored-component scope modules — over a memory host (no network: the first paint and the job's idle
  * state, which is what a visitor sees before pressing anything). Then the code-runtime source gate runs on

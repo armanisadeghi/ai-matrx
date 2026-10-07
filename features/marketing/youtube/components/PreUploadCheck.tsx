@@ -24,7 +24,6 @@ import { useClipboard } from "@ai-matrx/kit/clipboard";
 import { useState } from "react";
 import { ClipboardCopy, Eye } from "lucide-react";
 
-import { Textarea } from "@ai-matrx/design-system";
 import { Input } from "@ai-matrx/design-system/controls";
 
 import { Button } from "@/components/ui/button";
@@ -44,6 +43,7 @@ import {
   type PreUploadDraft,
 } from "../preupload";
 
+import { ProTextarea } from "@/components/official/ProTextarea";
 /** Tags as a person types them: comma or newline separated. */
 export function splitTags(raw: string): string[] {
   return raw
@@ -150,7 +150,7 @@ export function PreUploadCheck({ className }: PreUploadCheckProps) {
             <Label htmlFor="yt-description" className="text-xs">
               Description
             </Label>
-            <Textarea
+            <ProTextarea
               id="yt-description"
               value={draft.description}
               onChange={(event) =>

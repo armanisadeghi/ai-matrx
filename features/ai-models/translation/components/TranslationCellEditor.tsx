@@ -12,7 +12,7 @@
  */
 
 import { useState } from "react";
-import { Sheet, SheetContent, SheetFooter, SheetHeader, SheetTitle, Textarea } from "@ai-matrx/design-system";
+import { Sheet, SheetContent, SheetFooter, SheetHeader, SheetTitle } from "@ai-matrx/design-system";
 import { Button } from "@/components/ui/button";
 import { Archive, Check } from "lucide-react";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
@@ -45,6 +45,7 @@ import type {
 import { CellStateBadge, ConflictBadge } from "./CellStateBadge";
 import RuleFields from "./RuleFields";
 
+import { ProTextarea } from "@/components/official/ProTextarea";
 export type EditorTarget = {
   layer: CellLayer;
   ownerId: string;
@@ -336,7 +337,7 @@ export default function TranslationCellEditor({
             </ul>
           ) : null}
 
-          <Textarea
+          <ProTextarea
             value={note}
             onChange={(e) => setNote(e.target.value)}
             rows={2}

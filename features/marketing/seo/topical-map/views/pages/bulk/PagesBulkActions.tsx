@@ -30,7 +30,6 @@ import {
 import { Popover, PopoverContent, PopoverTrigger } from "@ai-matrx/design-system";
 
 import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
 
 import type { PagesBulkActionsProps } from "../seams";
 import { BulkOutcome } from "./BulkOutcome";
@@ -45,6 +44,7 @@ import {
 } from "./useBulkIntentFlow";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
+import { ProTextarea } from "@/components/official/ProTextarea";
 interface BulkActionSpec {
   id: BulkIntentAction;
   label: string;
@@ -219,7 +219,7 @@ function BulkActionPopover({
             >
               Note (optional)
             </label>
-            <Textarea
+            <ProTextarea
               id={`bulk-intent-note-${action.id}`}
               value={draft.note}
               maxLength={300}

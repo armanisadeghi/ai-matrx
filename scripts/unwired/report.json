@@ -1496,7 +1496,7 @@
     {
       "repository": "matrx-frontend",
       "detector": "react-component-unmounted",
-      "file": "features/agent-apps/components/QuickHtmlShareModal.tsx",
+      "file": "features/applets/components/QuickHtmlShareModal.tsx",
       "line": 80,
       "column": 1,
       "symbol": "QuickHtmlShareModal",
@@ -1505,7 +1505,7 @@
       "evidence": "no JSX tag in the runtime TypeScript graph resolves to this exported component",
       "intent": "an exported component with 106 implementation line(s)",
       "remains": "mount it from the page, panel, overlay, or parent surface it was built for, then exercise that user path",
-      "feature": "features/agent-apps"
+      "feature": "features/applets"
     },
     {
       "repository": "matrx-frontend",
@@ -2658,16 +2658,16 @@
     {
       "repository": "matrx-frontend",
       "detector": "react-component-unmounted",
-      "file": "features/agent-apps/components/layouts/AgentAppActionModal.tsx",
+      "file": "features/applets/components/layouts/AppletActionModal.tsx",
       "line": 35,
       "column": 1,
-      "symbol": "AgentAppActionModal",
+      "symbol": "AppletActionModal",
       "lines": 59,
-      "title": "AgentAppActionModal appears unfinished — it is built but has no runtime consumer",
+      "title": "AppletActionModal appears unfinished — it is built but has no runtime consumer",
       "evidence": "no JSX tag in the runtime TypeScript graph resolves to this exported component",
       "intent": "an exported component with 59 implementation line(s)",
       "remains": "mount it from the page, panel, overlay, or parent surface it was built for, then exercise that user path",
-      "feature": "features/agent-apps"
+      "feature": "features/applets"
     },
     {
       "repository": "matrx-frontend",
@@ -2840,30 +2840,30 @@
     {
       "repository": "matrx-frontend",
       "detector": "react-component-unmounted",
-      "file": "features/agent-apps/code-preview/AgentAppRenderPreview.tsx",
+      "file": "features/applets/code-preview/AppletRenderPreview.tsx",
       "line": 20,
       "column": 1,
-      "symbol": "AgentAppRenderPreview",
+      "symbol": "AppletRenderPreview",
       "lines": 53,
-      "title": "AgentAppRenderPreview appears unfinished — it is built but has no runtime consumer",
+      "title": "AppletRenderPreview appears unfinished — it is built but has no runtime consumer",
       "evidence": "no JSX tag in the runtime TypeScript graph resolves to this exported component",
       "intent": "an exported component with 53 implementation line(s)",
       "remains": "mount it from the page, panel, overlay, or parent surface it was built for, then exercise that user path",
-      "feature": "features/agent-apps"
+      "feature": "features/applets"
     },
     {
       "repository": "matrx-frontend",
       "detector": "react-component-unmounted",
-      "file": "features/agent-apps/components/CreateAgentAppModal.tsx",
+      "file": "features/applets/components/CreateAppletModal.tsx",
       "line": 29,
       "column": 1,
-      "symbol": "CreateAgentAppModal",
+      "symbol": "CreateAppletModal",
       "lines": 53,
-      "title": "CreateAgentAppModal appears unfinished — it is built but has no runtime consumer",
+      "title": "CreateAppletModal appears unfinished — it is built but has no runtime consumer",
       "evidence": "no JSX tag in the runtime TypeScript graph resolves to this exported component",
       "intent": "an exported component with 53 implementation line(s)",
       "remains": "mount it from the page, panel, overlay, or parent surface it was built for, then exercise that user path",
-      "feature": "features/agent-apps"
+      "feature": "features/applets"
     },
     {
       "repository": "matrx-frontend",
@@ -3834,16 +3834,16 @@
     {
       "repository": "matrx-frontend",
       "detector": "react-component-unmounted",
-      "file": "features/agent-apps/components/layouts/AgentAppListItem.tsx",
+      "file": "features/applets/components/layouts/AppletListItem.tsx",
       "line": 15,
       "column": 1,
-      "symbol": "AgentAppListItem",
+      "symbol": "AppletListItem",
       "lines": 38,
-      "title": "AgentAppListItem appears unfinished — it is built but has no runtime consumer",
+      "title": "AppletListItem appears unfinished — it is built but has no runtime consumer",
       "evidence": "no JSX tag in the runtime TypeScript graph resolves to this exported component",
       "intent": "an exported component with 38 implementation line(s)",
       "remains": "mount it from the page, panel, overlay, or parent surface it was built for, then exercise that user path",
-      "feature": "features/agent-apps"
+      "feature": "features/applets"
     },
     {
       "repository": "matrx-frontend",
@@ -4156,16 +4156,16 @@
     {
       "repository": "matrx-frontend",
       "detector": "react-component-unmounted",
-      "file": "features/agent-apps/components/AgentAppHeaderCompact.tsx",
+      "file": "features/applets/components/AppletHeaderCompact.tsx",
       "line": 14,
       "column": 1,
-      "symbol": "AgentAppHeaderCompact",
+      "symbol": "AppletHeaderCompact",
       "lines": 34,
-      "title": "AgentAppHeaderCompact appears unfinished — it is built but has no runtime consumer",
+      "title": "AppletHeaderCompact appears unfinished — it is built but has no runtime consumer",
       "evidence": "no JSX tag in the runtime TypeScript graph resolves to this exported component",
       "intent": "an exported component with 34 implementation line(s)",
       "remains": "mount it from the page, panel, overlay, or parent surface it was built for, then exercise that user path",
-      "feature": "features/agent-apps"
+      "feature": "features/applets"
     },
     {
       "repository": "matrx-frontend",
@@ -6368,12 +6368,12 @@
     {
       "repository": "matrx-frontend",
       "detector": "export-unimported",
-      "file": "lib/services/agent-apps-admin-service.ts",
+      "file": "lib/services/applets-admin-service.ts",
       "line": 517,
       "column": 1,
-      "symbol": "blockAgentAppRateLimit",
+      "symbol": "blockAppletRateLimit",
       "lines": 19,
-      "title": "blockAgentAppRateLimit appears unfinished — it is built but has no runtime consumer",
+      "title": "blockAppletRateLimit appears unfinished — it is built but has no runtime consumer",
       "evidence": "no runtime import resolves to this exported hook, service, or producer; tests and re-export barrels do not count",
       "intent": "an exported service with 19 implementation line(s)",
       "remains": "wire the runtime consumer it was built for, then prove a real page, action, producer, or workflow reaches it",
@@ -6998,7 +6998,7 @@
     {
       "repository": "matrx-frontend",
       "detector": "export-unimported",
-      "file": "features/agent-apps/services/slug-service.ts",
+      "file": "features/applets/services/slug-service.ts",
       "line": 60,
       "column": 1,
       "symbol": "isSlugAvailable",
@@ -7007,7 +7007,7 @@
       "evidence": "no runtime import resolves to this exported hook, service, or producer; tests and re-export barrels do not count",
       "intent": "an exported service with 16 implementation line(s)",
       "remains": "wire the runtime consumer it was built for, then prove a real page, action, producer, or workflow reaches it",
-      "feature": "features/agent-apps"
+      "feature": "features/applets"
     },
     {
       "repository": "matrx-frontend",
@@ -10064,7 +10064,7 @@
     {
       "repository": "matrx-frontend",
       "detector": "export-unimported",
-      "file": "features/agent-apps/services/slug-service.ts",
+      "file": "features/applets/services/slug-service.ts",
       "line": 47,
       "column": 1,
       "symbol": "generateAppSlug",
@@ -10073,7 +10073,7 @@
       "evidence": "no runtime import resolves to this exported hook, service, or producer; tests and re-export barrels do not count",
       "intent": "an exported service with 4 implementation line(s)",
       "remains": "wire the runtime consumer it was built for, then prove a real page, action, producer, or workflow reaches it",
-      "feature": "features/agent-apps"
+      "feature": "features/applets"
     },
     {
       "repository": "matrx-frontend",
@@ -10724,37 +10724,37 @@
     {
       "repository": "matrx-frontend",
       "detector": "react-component-unmounted",
-      "file": "features/agent-apps/sample-code/apps/lsi-generator.tsx",
+      "file": "features/applets/sample-code/apps/lsi-generator.tsx",
       "symbol": "LSIMarkdownGenerator",
-      "reason": "Reference source for user-authored agent apps. features/agent-apps/FEATURE.md names sample-code/apps/ as the idiomatic examples an app author copies; the runtime compiles the equivalent source from the DB user_content JSONB through utils/compile-slot.ts, never this module."
+      "reason": "Reference source for user-authored Applets. features/applets/FEATURE.md names sample-code/apps/ as the idiomatic examples an app author copies; the runtime compiles the equivalent source from the DB user_content JSONB through utils/compile-slot.ts, never this module."
     },
     {
       "repository": "matrx-frontend",
       "detector": "react-component-unmounted",
-      "file": "features/agent-apps/sample-code/apps/lasi-generator-3.tsx",
+      "file": "features/applets/sample-code/apps/lasi-generator-3.tsx",
       "symbol": "LSIKeywordGenerator",
-      "reason": "Reference source for user-authored agent apps (see lsi-generator.tsx entry). Consumed by app authors and the Babel sandbox path, not by a JSX mount."
+      "reason": "Reference source for user-authored Applets (see lsi-generator.tsx entry). Consumed by app authors and the Babel sandbox path, not by a JSX mount."
     },
     {
       "repository": "matrx-frontend",
       "detector": "react-component-unmounted",
-      "file": "features/agent-apps/sample-code/apps/flashcard-generator.tsx",
+      "file": "features/applets/sample-code/apps/flashcard-generator.tsx",
       "symbol": "FlashcardGenerator",
-      "reason": "Reference source for user-authored agent apps (see lsi-generator.tsx entry). Consumed by app authors and the Babel sandbox path, not by a JSX mount."
+      "reason": "Reference source for user-authored Applets (see lsi-generator.tsx entry). Consumed by app authors and the Babel sandbox path, not by a JSX mount."
     },
     {
       "repository": "matrx-frontend",
       "detector": "react-component-unmounted",
-      "file": "features/agent-apps/sample-code/apps/fact-checker.tsx",
+      "file": "features/applets/sample-code/apps/fact-checker.tsx",
       "symbol": "FactCheckerApp",
-      "reason": "Reference source for user-authored agent apps (see lsi-generator.tsx entry). Consumed by app authors and the Babel sandbox path, not by a JSX mount."
+      "reason": "Reference source for user-authored Applets (see lsi-generator.tsx entry). Consumed by app authors and the Babel sandbox path, not by a JSX mount."
     },
     {
       "repository": "matrx-frontend",
       "detector": "react-component-unmounted",
-      "file": "features/agent-apps/sample-code/apps/fact-checker-hooked.tsx",
+      "file": "features/applets/sample-code/apps/fact-checker-hooked.tsx",
       "symbol": "FactCheckerHooked",
-      "reason": "Reference source for user-authored agent apps; features/agent-apps/FEATURE.md 2026-05-09 names it the idiomatic Tier-3 reference for useAgentApp(). Consumed by app authors and the Babel sandbox path, not by a JSX mount."
+      "reason": "Reference source for user-authored Applets; features/applets/FEATURE.md 2026-05-09 names it the idiomatic Tier-3 reference for useApplet(). Consumed by app authors and the Babel sandbox path, not by a JSX mount."
     }
   ]
 }

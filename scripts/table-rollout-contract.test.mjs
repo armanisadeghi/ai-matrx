@@ -58,7 +58,7 @@ test("System apps use canonical controls and only claim a complete source below 
   assert.doesNotMatch(page, /<CopyButtons/);
   assert.match(page, /detail=\{\{ enabled: false \}\}/);
   assert.match(page, /window=\{\{ enabled: false \}\}/);
-  assert.match(page, /agentAppExecutionsHref\(app\.id\)/);
+  assert.match(page, /appletExecutionsHref\(app\.id\)/);
   assert.match(page, /setDeleteTarget\(app\)/);
   assert.match(page, /JSON \(visible loaded view\)/);
   assert.match(page, /refresh: \{\s*onRefresh: \(\) => load\(true\)/);

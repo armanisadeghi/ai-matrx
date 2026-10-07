@@ -51,7 +51,6 @@ import {
 import { BrainCircuit, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { toast } from "@/lib/toast";
 import { useMandate } from "@ai-matrx/chat/mandates/useMandate";
 import { useMandateInputSurface } from "../input-surface";
@@ -63,6 +62,7 @@ import {
 import { extractErrorMessage } from "@/utils/errors";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
+import { ProTextarea } from "@/components/official/ProTextarea";
 /** The one line shown when the only thing missing is a chosen workspace. */
 export const CHOOSE_WORKSPACE_LINE = "Choose a workspace to use this.";
 
@@ -314,7 +314,7 @@ export function AutomationButton({
                   An inline one-line question is not an authoring surface; the
                   primitive with no machinery between the keystroke and the
                   state is the right component, and it cannot lose characters. */}
-              <Textarea
+              <ProTextarea
                 id={`ask-${mandateKey}-${ask.name}`}
                 value={answers[ask.name] ?? ""}
                 onChange={(e) =>

@@ -61,7 +61,7 @@ If someone uses the app as a **guest** (not logged in) and creates files or chat
 **Where:** `/sign-up`.
 
 **Test it (use an incognito window so you're a fresh guest):**
-1. In incognito, use the app as a guest — e.g. open a public agent app at `/p/<slug>` and create some content.
+1. In incognito, use the app as a guest — e.g. open a public Applet at `/p/<slug>` and create some content.
 2. Go to `/sign-up`, create an account with email + password.
 
 **Works when:** right after sign-up you're **logged straight in** (no email-confirmation wait) and the files/chats you made as a guest are **already there**.

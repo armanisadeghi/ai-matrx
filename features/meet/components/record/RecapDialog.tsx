@@ -26,7 +26,6 @@ import {
 import { Input } from "@ai-matrx/design-system/controls";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Textarea } from "@/components/ui/textarea";
 import {
   Dialog,
   DialogContent,
@@ -38,6 +37,7 @@ import {
 import { toast } from "@/lib/toast";
 import { errorSentence } from "@/features/meet/hooks/useMeetingActions";
 
+import { ProTextarea } from "@/components/official/ProTextarea";
 function sentLine(draft: FollowUpDraft): string | null {
   if (!draft.lastSent) return null;
   const at = new Date(draft.lastSent.at);
@@ -172,7 +172,7 @@ export function RecapDialog({
                 aria-label="Subject"
                 maxLength={200}
               />
-              <Textarea minHeight={288} maxHeight={288}
+              <ProTextarea minHeight={288} maxHeight={288}
                 value={body}
                 onChange={(e) => setBody(e.target.value)}
                 aria-label="Message"

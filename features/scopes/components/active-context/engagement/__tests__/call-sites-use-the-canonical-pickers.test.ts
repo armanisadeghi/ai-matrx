@@ -19,7 +19,7 @@ const TARGET = "@/features/scopes/components/active-context/binding-target/Bindi
 const SITES: Array<[file: string, module: string, tag: string, surfaceA?: boolean]> = [
   ["features/research/components/init/ResearchInitForm.tsx", ENGAGEMENT, "<EngagementPicker", true],
   ["features/tasks/components/TaskContentNew.tsx", ENGAGEMENT, "<EngagementPicker", true],
-  ["features/agent-apps/route/AgentAppSettingsContent.tsx", ENTITY, "<EntityEngagementPicker"],
+  ["features/applets/route/AppletSettingsContent.tsx", ENTITY, "<EntityEngagementPicker"],
   ["features/tasks/components/QuickTasksWorkspace.tsx", ENGAGEMENT, "<EngagementPicker"],
   ["features/tasks/components/ImportTasksModal.tsx", ENGAGEMENT, "<EngagementPicker"],
   ["features/tasks/components/mobile/MobileProjectSelector.tsx", ENGAGEMENT, "<EngagementPicker"],
@@ -42,7 +42,7 @@ describe.each(SITES)("%s", (file, module, tag, surfaceA) => {
     expect(src).toContain(tag);
   });
   it("no longer reaches the bespoke pickers", () => {
-    expect(src).not.toMatch(/hierarchy-selection|ShortcutScopePicker"|AgentAppHierarchyCascade"/);
+    expect(src).not.toMatch(/hierarchy-selection|ShortcutScopePicker"|AppletHierarchyCascade"/);
   });
   if (surfaceA) {
     it("writes the active context through the Surface-A adapter", () => {
@@ -58,7 +58,7 @@ it("the bespoke files are gone", () => {
     "features/agent-context/components/hierarchy-selection/HierarchyTree.tsx",
     "features/agent-context/components/hierarchy-selection/useHierarchySelection.ts",
     "features/agent-context/components/hierarchy-selection/useReduxBridge.ts",
-    "features/agent-apps/components/inputs/AgentAppHierarchyCascade.tsx",
+    "features/applets/components/inputs/AppletHierarchyCascade.tsx",
     "features/agent-shortcuts/components/ShortcutScopePicker.tsx",
     "features/agent-context/redux/scope/scopeAssignmentsSlice.ts",
     "features/agent-context/redux/scope/selectors.ts",

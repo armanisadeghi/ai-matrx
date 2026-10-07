@@ -2,7 +2,7 @@
  * features/rag/components/ProcessForRagButton.tsx
  *
  * Reusable "Process for Knowledge" toolbar/menu button. Designed to drop into
- * any per-source-kind editor — Notes, code editors, agent-app editors —
+ * any per-source-kind editor — Notes, code editors, applet editors —
  * so each one gets a consistent affordance to push its current row
  * through `/knowledge/ingest` with the right `source_kind`.
  *

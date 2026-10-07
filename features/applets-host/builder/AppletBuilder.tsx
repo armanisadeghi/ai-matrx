@@ -9,7 +9,7 @@
 //   left  — the sentence box ("Build" for a new app, "Change it" for this one), the builder's one-line note,
 //           and Fix it when the preview reported an error;
 //   right — the preview: the saved version mounted through the real host with HELD writes; "Use it"
-//           publishes it at /apps/<slug>.
+//           publishes it at /applets/<slug>.
 // While the builder works its run streams in the floating LiveRunWindow (never a spinner).
 
 import { useEffect, useState } from "react";
@@ -19,10 +19,12 @@ import type { HeldWrite } from "@ai-matrx/applets/preview";
 import { storedMandateKey } from "@ai-matrx/agents/mandates";
 import { useHeadlessAgentJson } from "@ai-matrx/chat/agents/hooks/useHeadlessAgentJson";
 import { useDeclaredSurfaceMandates } from "@ai-matrx/chat/surfaces/runtime/surface-mandates";
-import { Badge, Button, EmptyState, Textarea } from "@ai-matrx/design-system/controls";
+import { Badge, Button, EmptyState } from "@ai-matrx/design-system/controls";
 import { AppWindow, ExternalLink, Wrench } from "lucide-react";
 
 import { createClient } from "@/utils/supabase/client";
+import { ProTextarea } from "@/components/official/ProTextarea";
+import { APPLETS_SURFACE_NAME, createAppletsScope } from "@/features/surfaces/manifests/applets.manifest";
 import { useOrganizationRequired } from "@/features/organizations/useOrganizationRequired";
 import { OrganizationContextNotice } from "@/features/organizations/components/OrganizationRequiredNotice";
 import { useOpenLiveRunWindow, type LiveRunWindowHandle } from "@/features/overlays/openers/liveRunWindow";
@@ -94,7 +96,7 @@ export function AppletBuilder({ appletId: initialId }: { appletId: string | null
       const answer = await writer.run<BuildAnswer>({
         mandateKey: fix ? FIX : BUILD,
         surfaceKey: "applets:build",
-        sourceFeature: "agent-app",
+        sourceFeature: "applet",
         expect: "json",
         initiation: "user",
         organizationId: current?.organizationId ?? organizationId,
@@ -150,12 +152,22 @@ export function AppletBuilder({ appletId: initialId }: { appletId: string | null
   return (
     <div className="grid h-full min-h-0 grid-cols-1 gap-3 p-3 lg:grid-cols-[minmax(320px,2fr)_5fr]">
       <div className="flex min-h-0 flex-col gap-3">
-        <Textarea
+        <ProTextarea
           aria-label="What you want"
           value={sentence}
           onChange={(e) => setSentence(e.target.value)}
           placeholder={appletId ? "Add a tab for this week's schedule" : "A page where I see my clients and approve their posts"}
           rows={4}
+          autoGrow
+          minHeight={96}
+          maxHeight={320}
+          surfaceName={APPLETS_SURFACE_NAME}
+          getApplicationScope={() =>
+            createAppletsScope({
+              ...(appletId ? { app_id: appletId } : {}),
+              ...(saved ? { app_slug: saved.slug, app_status: saved.status, app_version: saved.version } : {}),
+            })
+          }
         />
         <div className="flex flex-wrap items-center gap-2">
           <Button variant="primary" disabled={busy || !sentence.trim()} onClick={() => void run(sentence.trim(), null)}>
@@ -191,7 +203,7 @@ export function AppletBuilder({ appletId: initialId }: { appletId: string | null
                   Use it
                 </Button>
               ) : null}
-              <Link href={`/apps/${saved.slug}`} target="_blank" className="inline-flex items-center gap-1 text-primary">
+              <Link href={`/applets/${saved.slug}`} target="_blank" className="inline-flex items-center gap-1 text-primary">
                 <ExternalLink className="h-4 w-4" /> Open
               </Link>
             </div>

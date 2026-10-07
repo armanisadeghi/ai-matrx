@@ -101,7 +101,7 @@ function tagText(text, start) {
   return text.slice(start, Math.min(text.length, start + 2000));
 }
 
-const NOT_WRITING = /\breadOnly\b|\bfont-mono\b/;
+const NOT_WRITING = /\breadOnly\b|\bfont-mono\b|\smono(?=[\s=/>])/;
 const TEXT_TYPE = /\btype\s*=\s*(?:"text"|'text'|\{\s*"text"\s*\})/;
 const ANY_TYPE = /\btype\s*=/;
 

@@ -5,7 +5,7 @@ import { SystemAgentsLayoutClient } from "./SystemAgentsLayoutClient";
 export const metadata = createRouteMetadata("/administration", {
   title: "System Agents",
   description:
-    "Manage system (builtin) agents, global shortcuts, categories, content blocks, and global agent apps",
+    "Manage system (builtin) agents, global shortcuts, categories, content blocks, and global Applets",
   letter: "SA",
 });
 

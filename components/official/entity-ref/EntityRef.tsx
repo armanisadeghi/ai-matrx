@@ -404,7 +404,7 @@ export function EntityRef({
             id={id}
             onClose={() => setPeekOpen(false)}
             // Keep the peek's footer aligned with the door that opened it.
-            // `AgentAppRef`, for example, deliberately overrides the generic
+            // `AppletRef`, for example, deliberately overrides the generic
             // app route with the administration editor route.
             href={href}
           />

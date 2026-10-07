@@ -1,7 +1,7 @@
 /**
  * features/files/virtual-sources/adapters/CodeInlinePreview.tsx
  *
- * Inline preview for every code-shaped virtual source (Agent Apps, Prompt
+ * Inline preview for every code-shaped virtual source (Applets, Prompt
  * Apps, Tool UIs, Code Snippets). Wraps the new `MonacoEditor` from the
  * `features/code` workspace — the same component the `/code` route uses
  * inside its editor tabs — and wires its `onChange` callback to the

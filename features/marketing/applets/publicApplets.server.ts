@@ -25,3 +25,14 @@ export const readPublicApplets = cache(async (templatesOnly: boolean): Promise<A
   if (error) throw new Error(`The published Applets could not be read: ${error.message}`);
   return (data as AppletCard[] | null) ?? [];
 });
+
+/**
+ * Whether `/applets/<slug>` answers with the Applet's introductory page instead of running it: always for
+ * a template (its page offers "Use this template"), and for a signed-out visitor whenever the owner
+ * published one. `null` = run the Applet (or, signed out with nothing published, sign in).
+ */
+export async function showsAppletIntro(slug: string, signedIn: boolean): Promise<AppletIntro | null> {
+  const intro = await readAppletIntro(slug);
+  if (!intro) return null;
+  return !signedIn || intro.template ? intro : null;
+}

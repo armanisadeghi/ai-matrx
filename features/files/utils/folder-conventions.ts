@@ -5,7 +5,7 @@
 export {
   CloudFolderDescriptions,
   CloudFolders,
-  folderForAgentApp,
+  folderForApplet,
   folderForAgentBlock,
   folderForCaptures,
   folderForConversation,

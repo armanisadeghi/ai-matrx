@@ -12,7 +12,7 @@ const ADMIN_ROUTE_FAMILY_MOVES = [
     ["/administration/ai-models", "/administration/ai/ai-models"],
     ["/administration/ai-tasks", "/administration/ai/ai-tasks"],
     ["/administration/system-agents", "/administration/agents/system-agents"],
-    ["/administration/agent-apps", "/administration/agents/agent-apps"],
+    ["/administration/applets", "/administration/applets"],
     ["/administration/skills", "/administration/agents/skills"],
     ["/administration/mcp-tools", "/administration/agents/mcp-tools"],
     ["/administration/mcp-servers", "/administration/agents/mcp-servers"],

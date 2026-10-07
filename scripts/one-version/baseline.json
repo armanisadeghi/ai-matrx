@@ -3,7 +3,7 @@
   "entries": [
     {
       "piece": "agent-variables",
-      "file": "features/agent-apps/components/AutoCreateAgentAppForm.tsx",
+      "file": "features/applets/components/AutoCreateAppletForm.tsx",
       "reason": "known duplicate, decision pending"
     },
     {
@@ -143,12 +143,12 @@
     },
     {
       "piece": "enter-to-send",
-      "file": "features/agent-apps/sample-code/apps/fact-checker-hooked.tsx",
+      "file": "features/applets/sample-code/apps/fact-checker-hooked.tsx",
       "reason": "known duplicate, decision pending"
     },
     {
       "piece": "enter-to-send",
-      "file": "features/agent-apps/sample-code/apps/fact-checker.tsx",
+      "file": "features/applets/sample-code/apps/fact-checker.tsx",
       "reason": "known duplicate, decision pending"
     },
     {

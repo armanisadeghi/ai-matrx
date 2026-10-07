@@ -73,7 +73,7 @@ const agaAppsAdapter: VirtualSourceAdapter = {
     multiField: false,
   },
   dnd: { acceptsOwn: false },
-  pathPrefix: "/Agent Apps",
+  pathPrefix: "/Applets",
 
   makeTabId(id) {
     return `${TAB_ID_PREFIX}${id}`;
@@ -126,14 +126,14 @@ const agaAppsAdapter: VirtualSourceAdapter = {
       .eq("id", id)
       .maybeSingle();
     if (error) {
-      throw new Error("We couldn't open this agent app. Please try again.");
+      throw new Error("We couldn't open this Applet. Please try again.");
     }
     // Zero rows is denied / deleted / stale-id and this adapter cannot tell
     // which — the canonical honest throw says both and screams into the
     // Error Inspector.
     if (!data) {
       throw recordUnavailable({
-        entity: "agent app",
+        entity: "Applet",
         reason: "unknown",
         recordId: id,
         relation: "app.definition",
@@ -205,7 +205,7 @@ const agaAppsAdapter: VirtualSourceAdapter = {
     const { data, error } = await query.select("updated_at").maybeSingle();
     if (error || !data) {
       throw new Error(
-        "We couldn't rename this agent app. You may not be allowed to change it.",
+        "We couldn't rename this Applet. You may not be allowed to change it.",
       );
     }
     return { updatedAt: (data as { updated_at: string }).updated_at };
@@ -220,7 +220,7 @@ const agaAppsAdapter: VirtualSourceAdapter = {
         .eq("id", id)
         .eq("user_id", userId)
         .select("id"),
-      { action: "archive", noun: "agent app" },
+      { action: "archive", noun: "Applet" },
     );
   },
 

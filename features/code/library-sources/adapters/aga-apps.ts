@@ -197,7 +197,7 @@ export const agaAppsAdapter: LibrarySourceAdapter = {
   /**
    * Without a file: renames the Applet. With a file: renames that file (and the entry, when it is the
    * entry). Pages naming the old file keep working only if they are edited too — the page list is the
-   * Applet editor's (`/agent-apps/<id>/settings`).
+   * Applet editor's (`/applets/manage/<id>/settings`).
    */
   async rename(supabase: SupabaseClient, args: RenameSourceArgs): Promise<RenameSourceResult> {
     const trimmed = args.newName.trim();

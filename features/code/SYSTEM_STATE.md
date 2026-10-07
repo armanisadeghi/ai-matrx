@@ -3,7 +3,7 @@
 **Last updated:** 2026‑09‑13 (shared proxy response compression integrity)
 **Scope:** Everything under `features/code/`, plus its hooks, adapters, and the slices it consumes from elsewhere in the app.
 
-> **2026‑07‑09 — activity icons → app shell.** On `/code`, the 48px ActivityBar icon rail injects into the main shell sidebar via `CodeSidebarMenu` + `route-menu-registry` (same Large-Route pattern as `/chat`). The resizable/collapsible side panel (Library / Explorer / …) stays in `WorkspaceLayout`. Floating `CodeWorkspaceWindow` and `/agent-apps/[id]/code` keep `showActivityBar` (embedded rail).
+> **2026‑07‑09 — activity icons → app shell.** On `/code`, the 48px ActivityBar icon rail injects into the main shell sidebar via `CodeSidebarMenu` + `route-menu-registry` (same Large-Route pattern as `/chat`). The resizable/collapsible side panel (Library / Explorer / …) stays in `WorkspaceLayout`. Floating `CodeWorkspaceWindow` and `/applets/manage/[id]/code` keep `showActivityBar` (embedded rail).
 
 This doc is the current-state reference for the `/code` (VSCode‑style) workspace. It captures (1) what is shipped, (2) what is wired but incomplete, (3) what is intentionally deferred, and (4) the wire format / mechanics of the editor→agent context bridge and the Monaco type environment system.
 
@@ -208,7 +208,7 @@ Tab id conventions:
 | html_pages            | `html-page:<rowId>`                                          |
 | Mock/Sandbox FS       | `fs:<adapterId>:<absPath>`                                   |
 
-**Render preview** (`features/code/preview/`): library sources may register a live previewer by `tabIdPrefix`. Eye icon on the tab opens a paired `kind: "render-preview"` tab. Registered today: `aga-app:` → `features/agent-apps/code-preview/`; `html-page:` → `features/html-pages/code-preview/` (imported from `CodeWorkspace.tsx`).
+**Render preview** (`features/code/preview/`): library sources may register a live previewer by `tabIdPrefix`. Eye icon on the tab opens a paired `kind: "render-preview"` tab. Registered today: `aga-app:` → `features/applets/code-preview/`; `html-page:` → `features/html-pages/code-preview/` (imported from `CodeWorkspace.tsx`).
 
 `useSaveActiveTab` routes the save by inspecting the tab id prefix — code_files → thunks; library adapter → `adapter.save`; otherwise `filesystem.writeFile`.
 

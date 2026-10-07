@@ -96,7 +96,7 @@
  *   • AN AMBIGUOUS SCHEMA-LESS READ. `.from("definition")` with no `.schema()`
  *     keys to `?.definition`; the day a control-carrying file made such a read,
  *     `?.definition` joined the precedent set and
- *     `app/(core)/organizations/[orgId]/agent-apps/page.tsx:16` — which reads
+ *     `app/(core)/organizations/[orgId]/applets/page.tsx:16` — which reads
  *     `app.definition`, a table with NO archive column — became a false
  *     positive. Ambiguous keys now neither set nor answer to rule 3.
  *   • A SCHEMA APPLIED INSIDE A HELPER (recorded by an independent review and
@@ -696,7 +696,7 @@ export function scanFile(
       // An AMBIGUOUS key (`?.table` — a schema-less read of a table name two
       // schemas own) can never carry rule 3: the precedent it would be judged
       // against was set by a DIFFERENT schema's table. Reporting it would make
-      // `app/(core)/organizations/[orgId]/agent-apps/page.tsx:16` (which reads
+      // `app/(core)/organizations/[orgId]/applets/page.tsx:16` (which reads
       // `app.definition`, a table with no archive column at all) a false
       // positive the day any control-carrying file makes a schema-less
       // `definition` read. LIMITS, closed 2026-09-10.
@@ -976,7 +976,7 @@ export async function listThings() {
 /**
  * GREEN — a SCHEMA-LESS read of a table name more than one schema owns. The
  * precedent was set by `agent.definition`; this read may be `workflow`'s, or
- * (as at `app/(core)/organizations/[orgId]/agent-apps/page.tsx:16`) a schema
+ * (as at `app/(core)/organizations/[orgId]/applets/page.tsx:16`) a schema
  * whose `definition` has no archive column at all. Rule 3 states what it has
  * proven, and it has not proven which entity this is.
  */
