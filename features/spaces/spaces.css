@@ -1263,9 +1263,14 @@
 /* A chart tile's view name is Notion's grey pill: icon + the name as typed, cut at the pill's edge
    (no ellipsis), the view-settings icon right after it. */
 .spaces-db-frame[data-layout="chart"] .spaces-db-tabs { gap: 6px; }
-.spaces-chart-title { display: inline-flex; align-items: center; gap: 6px; height: 32px; min-width: 0; max-width: calc(100% - 28px); padding: 0 8px; border-radius: 6px; background: var(--spaces-hover-strong); color: var(--spaces-ink); font-size: 15px; font-weight: 600; white-space: nowrap; overflow: hidden; }
+.spaces-chart-title { display: inline-flex; align-items: center; gap: 6px; height: 32px; min-width: 0; flex: 0 1 auto; max-width: 100%; padding: 0 8px; border-radius: 6px; background: var(--spaces-hover-strong); color: var(--spaces-ink); font-size: 15px; font-weight: 600; white-space: nowrap; overflow: hidden; }
 .spaces-chart-title > svg { flex: none; }
 .spaces-chart-title > span { overflow: hidden; text-overflow: clip; }
+/* The title pill takes the tile's whole width (Notion cuts it only at the tile's edge); the view-settings
+   icon shows while the pointer is over the tile, its menu is open, or focus is inside (touch: always),
+   and the pill gives it room then. The full name is the pill's hover title. */
+.spaces-db-frame[data-layout="chart"]:not(:hover):not(:focus-within) .spaces-db-tabs > .spaces-db-icon:not([data-state="open"]) { display: none; }
+@media (hover: none) { .spaces-db-frame[data-layout="chart"] .spaces-db-tabs > .spaces-db-icon { display: inline-flex; } }
 .spaces-db-tools { display: flex; align-items: center; gap: 2px; flex: none; }
 /* The toolbar magnifier opens in place in the icon row (Notion), never as a row of its own. */
 .spaces-db-search { display: inline-flex; align-items: center; gap: 6px; height: 28px; color: var(--spaces-ink-soft); }

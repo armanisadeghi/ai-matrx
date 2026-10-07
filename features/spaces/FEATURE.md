@@ -53,6 +53,8 @@ Block document: a tree of `SpaceBlock` (`id`, `type`, `text: RichSpan[]`, `color
   and padding shrinks under 440px, the table scrolls sideways (`__tests__/walk/narrow-database.walk.mjs`). Walk helper `trashPage`.
 - 2026-10-06 — a chart counts what its view shows: the view's "is" filters (saved + the viewer's unsaved) go to both
   `record_aggregate` asks and to the read-rows fallback (`ChartView` `filter`); the CHURN ring reads 1, not the table's 10.
+- 2026-10-06 — a chart tile's title pill takes the tile's whole width (the view-settings icon shows on hover / open /
+  focus, always on touch) and carries the full name as its hover title.
 
 - 2026-10-06 — AP-3 U7: from `@ai-matrx/records-ui` 0.102.0 the built-in boards (`TablePage source={{kind:"entity"}}`)
   read and write through `@ai-matrx/entity-data`'s one engine (keyset pages, a card move drawn at once and rolled back
