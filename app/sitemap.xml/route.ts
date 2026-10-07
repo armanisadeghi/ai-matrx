@@ -8,6 +8,8 @@ import { getScriptSupabaseClient } from '@/utils/supabase/getScriptClient'
 import { readPublicCatalogue } from '@/features/make/gallery/publicCatalogue.server'
 import { industryHref, jobHref, PUBLIC_GALLERY_PATH, publicTemplateHref } from '@/features/make/gallery/publicGallery'
 import { facetValues } from '@/features/make/gallery/catalogue'
+import { readPublicApplets } from '@/features/marketing/applets/publicApplets.server'
+import { APPLET_TEMPLATES_PATH, appletIntroHref } from '@/features/marketing/applets/types'
 
 /**
  * THE INDEXED SWITCH (access ladder T-12): every published record in the sitemap comes from
@@ -153,6 +155,17 @@ export async function GET() {
     })),
   ]
 
+  // The Applet public face (AP-0 items 9-10): the app-template gallery, every template's page (ours,
+  // always indexed), and the intro page of every other published Applet its owner lets search engines index.
+  const [publishedApplets, indexedApps] = await Promise.all([readPublicApplets(false), listSearchEngineIndexedRecords('app')])
+  const indexedAppIds = new Set(indexedApps.map((r) => r.id))
+  const appletUrls = [
+    { loc: `${baseUrl}${APPLET_TEMPLATES_PATH}`, changefreq: 'weekly', priority: '0.8' },
+    ...publishedApplets
+      .filter((a) => a.is_template || indexedAppIds.has(a.id))
+      .map((a) => ({ loc: `${baseUrl}${appletIntroHref(a.slug)}`, changefreq: 'weekly', priority: a.is_template ? '0.7' : '0.5' })),
+  ]
+
   const urls = [
     ...staticUrls,
     { loc: `${baseUrl}/features`, changefreq: 'weekly', priority: '0.8' },
@@ -162,6 +175,7 @@ export async function GET() {
     ...educationUrls,
     ...recordUrls,
     ...templateUrls,
+    ...appletUrls,
   ]
   const now = new Date().toISOString()
 
