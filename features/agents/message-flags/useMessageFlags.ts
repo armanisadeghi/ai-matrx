@@ -11,7 +11,9 @@ import {
   selectAgentModelId,
   selectAgentOfferingPin,
 } from "@ai-matrx/chat/agents/redux/agent-definition/selectors";
-import { setAgentMessages } from "@ai-matrx/chat/agents/redux/agent-definition/slice";
+import {
+  setAgentMessages,
+} from "@/features/agents/redux/agent-builder.slice";
 import { useModelFull } from "@ai-matrx/chat/host/ui-slots";
 import { useSessionKnob } from "@ai-matrx/chat/host/prefs-react";
 import type { AgentDefinitionMessage } from "@ai-matrx/chat/agents/types/agent-message-types";

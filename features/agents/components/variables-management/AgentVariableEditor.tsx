@@ -40,7 +40,9 @@ import { VariableInputComponent } from "@ai-matrx/chat/agents/components/inputs/
 import { useAppSelector, useAppDispatch, useAppStore } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { selectAgentVariableDefinitions } from "@ai-matrx/chat/agents/redux/agent-definition/selectors";
-import { setAgentVariableDefinitions } from "@ai-matrx/chat/agents/redux/agent-definition/slice";
+import {
+  setAgentVariableDefinitions,
+} from "@/features/agents/redux/agent-builder.slice";
 import {
   buildCustomComponent,
   extractEffectiveValues,

@@ -43,7 +43,9 @@ import {
   selectAgentVariableDefinitions,
 } from "@ai-matrx/chat/agents/redux/agent-definition/selectors";
 import { selectAgentSystemMessage } from "@ai-matrx/chat/agents/redux/agent-definition/selectors";
-import { setAgentMessages } from "@ai-matrx/chat/agents/redux/agent-definition/slice";
+import {
+  setAgentMessages,
+} from "@/features/agents/redux/agent-builder.slice";
 import { useAgentUndoRedo } from "@/features/agents/hooks/useAgentUndoRedo";
 import { useAgentBuilderSurfaceScope } from "@/features/agents/hooks/useAgentBuilderSurfaceScope";
 import { withAgentSystemInstruction } from "@ai-matrx/chat/agents/utils/agent-system-instruction";

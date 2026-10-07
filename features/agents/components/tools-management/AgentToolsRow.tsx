@@ -28,7 +28,9 @@ import {
   selectAgentMessages,
 } from "@ai-matrx/chat/agents/redux/agent-definition/selectors";
 import { decisionToolsNotice } from "@/features/agents/decision-questions/compatibility";
-import { setAgentTools } from "@ai-matrx/chat/agents/redux/agent-definition/slice";
+import {
+  setAgentTools,
+} from "@/features/agents/redux/agent-builder.slice";
 import {
   selectAllTools,
   selectToolIdentityMap,

@@ -39,9 +39,8 @@ import {
   selectAgentMessages,
 } from "@ai-matrx/chat/agents/redux/agent-definition/selectors";
 import {
-  setAgentField,
-  setAgentMessages,
-} from "@ai-matrx/chat/agents/redux/agent-definition/slice";
+  setAgentField, setAgentMessages,
+} from "@/features/agents/redux/agent-builder.slice";
 import { withAgentSystemInstruction } from "@ai-matrx/chat/agents/utils/agent-system-instruction";
 import type { AgentDefinition } from "@ai-matrx/chat/agents/types/agent-definition.types";
 import type { ChatRootState } from "@ai-matrx/chat/store/root-state";

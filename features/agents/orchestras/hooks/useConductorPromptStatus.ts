@@ -13,7 +13,9 @@ import {
   selectAgentReadyForBuilder,
   selectAgentSystemMessage,
 } from "@ai-matrx/chat/agents/redux/agent-definition/selectors";
-import { fetchFullAgent } from "@ai-matrx/chat/agents/redux/agent-definition/thunks";
+import {
+  fetchFullAgent,
+} from "@/features/agents/redux/fetch-full-agent.thunk";
 import { AVAILABLE_AGENTS_RE } from "../conductor/constants";
 
 const UUID_RE =

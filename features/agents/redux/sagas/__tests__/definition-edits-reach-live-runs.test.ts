@@ -8,17 +8,18 @@
  * which the definition-sync saga never watched, and neither are undo/redo.
  */
 
+import { agentDefinitionWithBuilderReducer } from "@/features/agents/redux/agent-builder.slice";
 import { configureStore } from "@reduxjs/toolkit";
 import createSagaMiddleware from "redux-saga";
 import agentDefinitionReducer, {
   mergePartialAgent,
-  setAgentControlBinding,
-  setAgentSettings,
-  undoAgentEdit,
 } from "@ai-matrx/chat/agents/redux/agent-definition/slice";
 import { watchDefinitionChanges } from "@/features/agents/redux/sagas/syncDefinitionToInstances.saga";
 import type { VariableDefinition } from "@ai-matrx/chat/agents/types/agent-definition.types";
 
+import {
+  setAgentControlBinding, setAgentSettings, undoAgentEdit,
+} from "@/features/agents/redux/agent-builder.slice";
 const AGENT = "3bf7e37d-26b4-4581-ac29-450462c18b22";
 const CONV = "builder-test-run";
 const QUALITY: VariableDefinition = {
@@ -36,7 +37,7 @@ function setup() {
   const sagas = createSagaMiddleware();
   const store = configureStore({
     reducer: {
-      agentDefinition: agentDefinitionReducer,
+      agentDefinition: agentDefinitionWithBuilderReducer,
       conversations: (
         state = {
           allConversationIds: [CONV],

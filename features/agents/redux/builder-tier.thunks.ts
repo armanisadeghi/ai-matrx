@@ -47,7 +47,6 @@ import {
   setAgentError,
   setAgentFetchStatus,
   setAgentLoading,
-  markAgentSaved,
 } from "@ai-matrx/chat/agents/redux/agent-definition/slice";
 import {
   agentNameTakenError,
@@ -85,15 +84,18 @@ import {
   assertOwnedLiveAgentToolAssignment,
   assertRegisteredActiveToolAdditions,
   assertToolAdditionModelCapability,
-  fetchFullAgent,
   isAvailableToolModel,
   isToolAssignmentPhantom,
   sameStringArray,
   uniqueToolIds,
 } from "@ai-matrx/chat/agents/redux/agent-definition/thunks";
 import { duplicateAgent, saveAgentField } from "./builder-write.thunks";
+import { fetchFullAgent } from "./fetch-full-agent.thunk";
 import { fetchUserDisplayNames } from "@/features/mandates/notes";
 
+import {
+  markAgentSaved,
+} from "@/features/agents/redux/agent-builder.slice";
 type ThunkApi = { dispatch: ChatDispatch; state: ChatRootState };
 
 /**

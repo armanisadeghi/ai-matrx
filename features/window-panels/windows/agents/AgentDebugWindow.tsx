@@ -28,7 +28,9 @@ import { JsonInspector } from "@/components/official-candidate/json-inspector/Js
 import { MatrxUuidCell } from "@ai-matrx/design-system/data-table/uuid-cell";
 import { EntityDoorControls } from "@/components/official/entity-ref/EntityDoorControls";
 import { formatJson } from "@ai-matrx/kit/json-format";
-import { fetchFullAgent } from "@ai-matrx/chat/agents/redux/agent-definition/thunks";
+import {
+  fetchFullAgent,
+} from "@/features/agents/redux/fetch-full-agent.thunk";
 import { NonEditableContextMenu } from "@ai-matrx/chat/host/ui-slots";
 import { buildAgentMenuSection, agentEntityRef } from "@ai-matrx/chat/agents/menu/agent-actions";
 

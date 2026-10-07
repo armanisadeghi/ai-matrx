@@ -50,7 +50,9 @@ import {
 import { selectIsDebugMode } from "@/lib/redux/preferences/adminDebugSlice";
 import { AgentListDropdown } from "@ai-matrx/agents/catalog/react";
 import { selectAgentById } from "@ai-matrx/chat/agents/redux/agent-definition/selectors";
-import { fetchFullAgent } from "@ai-matrx/chat/agents/redux/agent-definition/thunks";
+import {
+  fetchFullAgent,
+} from "@/features/agents/redux/fetch-full-agent.thunk";
 import {
   clearDraft,
   clearRun,

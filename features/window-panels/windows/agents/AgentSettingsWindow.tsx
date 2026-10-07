@@ -3,7 +3,9 @@
 import React, { useState, useEffect } from "react";
 import { FileText, Link2 } from "lucide-react";
 import { useAppDispatch } from "@/lib/redux/hooks";
-import { fetchFullAgent } from "@ai-matrx/chat/agents/redux/agent-definition/thunks";
+import {
+  fetchFullAgent,
+} from "@/features/agents/redux/fetch-full-agent.thunk";
 import { WindowPanel } from "@/features/window-panels/WindowPanel";
 import { AgentSettingsForm } from "@/features/agents/components/settings/AgentSettingsForm";
 import {

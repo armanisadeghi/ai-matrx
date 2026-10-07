@@ -24,10 +24,8 @@ import {
   selectAgentName,
 } from "@ai-matrx/chat/agents/redux/agent-definition/selectors";
 import {
-  undoAgentEdit,
-  redoAgentEdit,
-  clearAgentUndoHistory,
-} from "@ai-matrx/chat/agents/redux/agent-definition/slice";
+  undoAgentEdit, redoAgentEdit, clearAgentUndoHistory,
+} from "@/features/agents/redux/agent-builder.slice";
 import type { UndoEntry } from "@ai-matrx/chat/agents/types/agent-definition.types";
 import {
   getUndoShortcutHint,

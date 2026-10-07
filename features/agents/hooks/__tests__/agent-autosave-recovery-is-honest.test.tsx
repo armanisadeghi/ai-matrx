@@ -17,14 +17,17 @@ jest.mock("@ai-matrx/chat/host/notify", () => ({
   toast: { info: jest.fn(), error: jest.fn(), success: jest.fn(), warning: jest.fn() },
 }));
 
-import agentDefinitionReducer, {
+import {
   mergePartialAgent,
   setAgentFetchStatus,
-  setAgentField,
 } from "@ai-matrx/chat/agents/redux/agent-definition/slice";
 import { useAgentAutoSave } from "../useAgentAutoSave";
 import { toast } from "@ai-matrx/chat/host/notify";
 
+import {
+  agentDefinitionWithBuilderReducer,
+  setAgentField,
+} from "@/features/agents/redux/agent-builder.slice";
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT =
   true;
 
@@ -34,7 +37,7 @@ const SAVED = { moderation: "low" } as const;
 
 function makeStore() {
   return configureStore({
-    reducer: { agentDefinition: agentDefinitionReducer },
+    reducer: { agentDefinition: agentDefinitionWithBuilderReducer },
     middleware: (gdm) =>
       gdm({ serializableCheck: false, immutableCheck: false }),
   });

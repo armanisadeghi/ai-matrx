@@ -23,7 +23,9 @@ import { launchAgentExecution } from "@ai-matrx/chat/agents/redux/execution-syst
 import { destroyInstanceIfAllowed } from "@ai-matrx/chat/agents/redux/execution-system/conversations/conversations.thunks";
 import { openLiveRunWindowAction } from "@/features/overlays/openers/liveRunWindow";
 import { selectRequest } from "@ai-matrx/chat/agents/redux/execution-system/active-requests/active-requests.selectors";
-import { fetchFullAgent } from "@ai-matrx/chat/agents/redux/agent-definition/thunks";
+import {
+  fetchFullAgent,
+} from "@/features/agents/redux/fetch-full-agent.thunk";
 import {
   saveMemberMeta,
   loadOrchestra,

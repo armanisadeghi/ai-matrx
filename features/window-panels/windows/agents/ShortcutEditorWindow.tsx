@@ -14,7 +14,9 @@ import { Button } from "@/components/ui/button";
 import { extractErrorMessage } from "@/utils/errors";
 import { WindowPanel } from "@/features/window-panels/WindowPanel";
 import { ShortcutEditorNext } from "@/features/agent-shortcuts/components/next/ShortcutEditorNext";
-import { fetchFullAgent } from "@ai-matrx/chat/agents/redux/agent-definition/thunks";
+import {
+  fetchFullAgent,
+} from "@/features/agents/redux/fetch-full-agent.thunk";
 import { selectAgentById } from "@ai-matrx/chat/agents/redux/agent-definition/selectors";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 

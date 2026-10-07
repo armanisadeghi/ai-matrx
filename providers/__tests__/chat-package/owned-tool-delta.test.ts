@@ -1,5 +1,7 @@
 import { configureStore } from "@reduxjs/toolkit";
-import { seedAgentFromTemplate, setAgentField } from "@ai-matrx/chat/agents/redux/agent-definition/slice";
+import {
+  seedAgentFromTemplate,
+} from "@ai-matrx/chat/agents/redux/agent-definition/slice";
 import { createSlimRootReducer } from "@/lib/redux/rootReducer";
 import { setUserAuth } from "@/lib/redux/slices/userAuthSlice";
 import { setOrganization } from "@/lib/redux/slices/appContextSlice";
@@ -13,6 +15,9 @@ import {
   supportsTools,
 } from "@ai-matrx/chat/agents/hooks/useModelControls";
 
+import {
+  setAgentField,
+} from "@/features/agents/redux/agent-builder.slice";
 jest.mock("@ai-matrx/chat/host/db", () => ({
   supabase: { schema: jest.fn() },
 }));

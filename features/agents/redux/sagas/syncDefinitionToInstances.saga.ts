@@ -40,15 +40,6 @@
 import { debounce, put, select, takeEvery } from "redux-saga/effects";
 import type { ChatRootState } from "@ai-matrx/chat/store/root-state";
 import {
-  setAgentVariableDefinitions,
-  setAgentSettings,
-  setAgentField,
-  setAgentUiGates,
-  setAgentControlBinding,
-  undoAgentEdit,
-  redoAgentEdit,
-  resetAgentField,
-  resetAllAgentFields,
   mergePartialAgent,
   upsertAgent,
 } from "@ai-matrx/chat/agents/redux/agent-definition/slice";
@@ -57,6 +48,9 @@ import { updateBaseSettings } from "@ai-matrx/chat/agents/redux/execution-system
 import { buildInstanceBaseSettings } from "@ai-matrx/chat/agents/redux/execution-system/instance-model-overrides/base-settings";
 import { updateBaseInputCapabilities } from "@ai-matrx/chat/agents/redux/execution-system/instance-input-capabilities/instance-input-capabilities.slice";
 
+import {
+  setAgentVariableDefinitions, setAgentSettings, setAgentField, setAgentUiGates, setAgentControlBinding, undoAgentEdit, redoAgentEdit, resetAgentField, resetAllAgentFields,
+} from "@/features/agents/redux/agent-builder.slice";
 // ---------------------------------------------------------------------------
 // Constants
 // ---------------------------------------------------------------------------

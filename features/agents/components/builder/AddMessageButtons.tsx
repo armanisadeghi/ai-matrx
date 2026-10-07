@@ -5,7 +5,9 @@ import { Plus } from "lucide-react";
 import { Button } from "@ai-matrx/design-system";
 import { useAppSelector, useAppDispatch } from "@/lib/redux/hooks";
 import { selectAgentMessages } from "@ai-matrx/chat/agents/redux/agent-definition/selectors";
-import { setAgentMessages } from "@ai-matrx/chat/agents/redux/agent-definition/slice";
+import {
+  setAgentMessages,
+} from "@/features/agents/redux/agent-builder.slice";
 import type {
   AgentDefinitionMessage,
   TextBlock,

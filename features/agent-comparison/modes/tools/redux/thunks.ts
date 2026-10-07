@@ -23,13 +23,12 @@ import { createManualInstance } from "@ai-matrx/chat/agents/redux/execution-syst
 import { runBattleFanOut } from "@/features/agent-comparison/shared/battle-follow-up";
 import { loadConversation } from "@ai-matrx/chat/agents/redux/execution-system/thunks/load-conversation.thunk";
 import { followWhatIsStillInFlight } from "@ai-matrx/chat/agents/runtime-reconnect/follow-what-is-still-in-flight";
-import { fetchFullAgent } from "@ai-matrx/chat/agents/redux/agent-definition/thunks";
+import {
+  fetchFullAgent,
+} from "@/features/agents/redux/fetch-full-agent.thunk";
 import { fetchAgentVersionHistory, fetchAgentVersionSnapshot } from "@/features/agents/redux/builder-versions.thunks";
 import {
   removeAgent,
-  setAgentCustomTools,
-  setAgentMcpServers,
-  setAgentTools,
 } from "@ai-matrx/chat/agents/redux/agent-definition/slice";
 import { generateConversationId } from "@ai-matrx/chat/agents/redux/execution-system/utils/ids";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
@@ -66,6 +65,9 @@ import {
   replaceBattleInputDraft,
 } from "@/features/agent-comparison/shared/battleInputDraft";
 
+import {
+  setAgentCustomTools, setAgentMcpServers, setAgentTools,
+} from "@/features/agents/redux/agent-builder.slice";
 // =============================================================================
 // Page-wide constants
 // =============================================================================

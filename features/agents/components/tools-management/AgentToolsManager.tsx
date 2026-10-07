@@ -73,10 +73,8 @@ import {
   selectAgentAutoToolsDisabled,
 } from "@ai-matrx/chat/agents/redux/agent-definition/selectors";
 import {
-  setAgentTools,
-  setAgentCustomTools,
-  setAgentMcpServers,
-} from "@ai-matrx/chat/agents/redux/agent-definition/slice";
+  setAgentTools, setAgentCustomTools, setAgentMcpServers,
+} from "@/features/agents/redux/agent-builder.slice";
 import {
   setAgentAutoToolsDisabled,
 } from "@/features/agents/redux/builder-tier.thunks";

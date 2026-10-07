@@ -27,9 +27,8 @@ import {
   selectAgentAccessResolved,
 } from "@ai-matrx/chat/agents/redux/agent-definition/selectors";
 import {
-  resetAllAgentFields,
-  setAgentField,
-} from "@ai-matrx/chat/agents/redux/agent-definition/slice";
+  resetAllAgentFields, setAgentField,
+} from "@/features/agents/redux/agent-builder.slice";
 import { readField } from "@ai-matrx/agents/field-flags";
 import type { AgentDefinition } from "@ai-matrx/chat/agents/types/agent-definition.types";
 import { toast } from "@ai-matrx/chat/host/notify";

@@ -32,9 +32,13 @@ import {
   selectAgentIsEditable,
   selectAgentName,
 } from "@ai-matrx/chat/agents/redux/agent-definition/selectors";
-import { fetchFullAgent } from "@ai-matrx/chat/agents/redux/agent-definition/thunks";
+import {
+  fetchFullAgent,
+} from "@/features/agents/redux/fetch-full-agent.thunk";
 import { saveAgentField } from "@/features/agents/redux/builder-write.thunks";
-import { setAgentField } from "@ai-matrx/chat/agents/redux/agent-definition/slice";
+import {
+  setAgentField,
+} from "@/features/agents/redux/agent-builder.slice";
 import type { AgentDefinition } from "@ai-matrx/chat/agents/types/agent-definition.types";
 import { toast } from "@/lib/toast";
 import { AgentListInlinePicker } from "@ai-matrx/agents/catalog/react";

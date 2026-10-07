@@ -32,6 +32,7 @@ import { Tuple } from "@reduxjs/toolkit";
 import { makeStore } from "@/lib/redux/store";
 import { slimReducerMap } from "@/lib/redux/rootReducer";
 import { chatReducers } from "@ai-matrx/chat/store/slices";
+import { agentDefinitionWithBuilderReducer } from "@/features/agents/redux/agent-builder.slice";
 import { chatMiddlewares } from "@ai-matrx/chat/store/middlewares";
 import { chatSagas } from "@ai-matrx/chat/store/sagas";
 import { agentCacheBustMiddleware } from "@ai-matrx/chat/agents/redux/agent-definition/cache-bust-middleware";
@@ -121,11 +122,23 @@ describe("chat slices mount under the same keys", () => {
     for (const key of ALL_CHAT_KEYS) {
       const mounted = hostMap[key];
       expect({ key, mounted: typeof mounted }).toEqual({ key, mounted: "function" });
+      // agentDefinition is the one key the app composes on: the builder's edit reducers
+      // (agentBuilder/*) run over chat's record (AGENT-CORE-PLAN B2), so it is checked below.
+      if (key === "agentDefinition") continue;
       expect({ key, same: mounted === (chatReducers as Record<string, unknown>)[key] }).toEqual({
         key,
         same: true,
       });
     }
+  });
+
+  it("agentDefinition is chat's reducer with the builder's edits composed on, nothing else", () => {
+    const mounted = (slimReducerMap as Record<string, unknown>).agentDefinition;
+    expect(mounted).toBe(agentDefinitionWithBuilderReducer);
+    const probe = { type: "@@chat-p2/probe" };
+    expect(agentDefinitionWithBuilderReducer(undefined, probe)).toEqual(
+      (chatReducers.agentDefinition as (s: unknown, a: { type: string }) => unknown)(undefined, probe),
+    );
   });
 
   it("a built store holds every chat key, initialised by the chat reducer", () => {

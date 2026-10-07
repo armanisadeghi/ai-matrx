@@ -21,7 +21,9 @@ import { selectNormalizedControls } from "@ai-matrx/chat/agents/redux/agent-sett
 import { useAgentSettingsClassControls } from "@/features/ai-models/hooks/useModelClassControls";
 import { supportsTools } from "@ai-matrx/chat/agents/hooks/useModelControls";
 import { selectAgentTools } from "@ai-matrx/chat/agents/redux/agent-definition/selectors";
-import { setAgentTools } from "@ai-matrx/chat/agents/redux/agent-definition/slice";
+import {
+  setAgentTools,
+} from "@/features/agents/redux/agent-builder.slice";
 
 interface AvailableTool {
   name: string;

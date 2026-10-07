@@ -18,7 +18,9 @@ import { getUserMessage } from "@ai-matrx/agents/matrx";
 import { useAppDispatch, useAppSelector } from "@ai-matrx/chat/store/hooks";
 import { selectUserId } from "@ai-matrx/chat/host/identity";
 import { duplicateAgent } from "@/features/agents/redux/builder-write.thunks";
-import { fetchFullAgent } from "@ai-matrx/chat/agents/redux/agent-definition/thunks";
+import {
+  fetchFullAgent,
+} from "@/features/agents/redux/fetch-full-agent.thunk";
 import { toast } from "@ai-matrx/chat/host/notify";
 import { isOrganizationSelectionCancelled } from "@ai-matrx/chat/host/org";
 import { selectAgentById, selectAgentReadyForBuilder } from "@ai-matrx/chat/agents/redux/agent-definition/selectors";

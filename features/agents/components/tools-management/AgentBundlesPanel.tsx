@@ -19,7 +19,9 @@ import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { selectAgentTools } from "@ai-matrx/chat/agents/redux/agent-definition/selectors";
-import { setAgentTools } from "@ai-matrx/chat/agents/redux/agent-definition/slice";
+import {
+  setAgentTools,
+} from "@/features/agents/redux/agent-builder.slice";
 import { filterAndSortBySearch } from "@ai-matrx/kit/search-scoring";
 import { useAgentBundleOptions } from "./useAgentBundleOptions";
 import { useToolRuntimes } from "./useToolRuntimes";

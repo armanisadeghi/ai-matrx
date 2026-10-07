@@ -206,3 +206,6 @@ work/
 .matrx/release-repeats.json
 .matrx/release-repeats.json.tmp
 .matrx/fixer-ledger.json
+
+# applet render sweep report (scripts/applets/applet-render-sweep.ts output)
+.applet-render-sweep.json

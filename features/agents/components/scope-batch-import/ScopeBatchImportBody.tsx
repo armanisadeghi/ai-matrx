@@ -54,9 +54,8 @@ import {
   selectAgentVariableDefinitions,
 } from "@ai-matrx/chat/agents/redux/agent-definition/selectors";
 import {
-  setAgentContextPolicies,
-  setAgentVariableDefinitions,
-} from "@ai-matrx/chat/agents/redux/agent-definition/slice";
+  setAgentContextPolicies, setAgentVariableDefinitions,
+} from "@/features/agents/redux/agent-builder.slice";
 import type { ContextPolicy } from "@ai-matrx/chat/agents/types/agent-api-types";
 import type { VariableDefinition } from "@ai-matrx/chat/agents/types/agent-definition.types";
 import {

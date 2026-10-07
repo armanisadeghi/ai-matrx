@@ -34,12 +34,8 @@ import { selectAgentById } from "@ai-matrx/chat/agents/redux/agent-definition/se
 import {
   upsertAgent,
   mergePartialAgent,
-  setAgentField,
   setAgentLoading,
   setAgentError,
-  markAgentSaved,
-  markAgentFieldSaved,
-  rollbackAgentOptimisticUpdate,
   removeAgent,
 } from "@ai-matrx/chat/agents/redux/agent-definition/slice";
 import {
@@ -47,8 +43,13 @@ import {
   agentDefinitionToInsert,
   agentDefinitionToUpdate,
 } from "@ai-matrx/chat/agents/redux/agent-definition/converters";
-import { fetchFullAgent } from "@ai-matrx/chat/agents/redux/agent-definition/thunks";
+import {
+  fetchFullAgent,
+} from "@/features/agents/redux/fetch-full-agent.thunk";
 
+import {
+  setAgentField, markAgentSaved, markAgentFieldSaved, rollbackAgentOptimisticUpdate,
+} from "@/features/agents/redux/agent-builder.slice";
 export type { DuplicateAgentOptions };
 
 type ThunkApi = { dispatch: ChatDispatch; state: ChatRootState };

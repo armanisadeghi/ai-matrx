@@ -15,9 +15,8 @@ import { AgentVariablesModal } from "../../variables-management/AgentVariablesMo
 import { AgentToolsModal } from "../../tools-management/AgentToolsModal";
 import { AgentSettingsModal } from "../AgentSettingsModal";
 import {
-  setAgentField,
-  setAgentSettings,
-} from "@ai-matrx/chat/agents/redux/agent-definition/slice";
+  setAgentField, setAgentSettings,
+} from "@/features/agents/redux/agent-builder.slice";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import {
   selectAgentModelId,

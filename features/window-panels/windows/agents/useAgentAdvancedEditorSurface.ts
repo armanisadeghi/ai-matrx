@@ -56,10 +56,8 @@ import {
   selectAgentVariableDefinitions,
 } from "@ai-matrx/chat/agents/redux/agent-definition/selectors";
 import {
-  setAgentField,
-  setAgentMessages,
-  setAgentOutputSchema,
-} from "@ai-matrx/chat/agents/redux/agent-definition/slice";
+  setAgentField, setAgentMessages, setAgentOutputSchema,
+} from "@/features/agents/redux/agent-builder.slice";
 import {
   extractAgentSystemInstruction,
   withAgentSystemInstruction,
