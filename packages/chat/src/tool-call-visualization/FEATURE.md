@@ -79,7 +79,7 @@ features/tool-call-visualization/
 │   ├── _shared-entity/         ← EntityOpenActions (Open-in-window + New-tab) shared by the entity renderers
 │   ├── task/                   ← `task` (real ctx_tasks → TaskEditor + window + /tasks/[id]) · `tasks`/`user_todos` (checklist)
 │   ├── document/               ← `document` tool — RichDocument (markdown + render blocks) + /documents/[id]
-│   ├── dataset/                ← `dataset` / `usertable_create` — UserTableViewer + /data/[id]
+│   ├── dataset/                ← `dataset` — UserTableViewer + /data/[id]
 │   ├── workbook/               ← `workbook` tool — values grid + /workbooks/[id] (full Univer editor on route)
 │   ├── dictionary/             ← `dictionary` tool — terminology entries list
 │   ├── shell/                  ← `shell_execute` / `shell_python` / `code_execute_python` — ONE renderer for

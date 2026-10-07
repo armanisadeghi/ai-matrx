@@ -2,7 +2,8 @@
  * Pick lists are ONE feature — `features/data-tables/pick-lists` (domain tree: data-tables > pick-lists).
  * Breaks if the retired list system comes back under any of its old names: the `user-lists` or
  * `structured-lists` folders, the V1/V2 manager windows, the `/lists` route, the `get_user_lists`
- * renderer, or the `picklist` / `userlist_*` agent tool names (the one tool is `pick_list`).
+ * renderer, or the `picklist` / `userlist_*` agent tool names (the one tool is `pick_list`). It also
+ * covers the retired table tool names (`usertable_*`, `user_table_add_row`, `data_user_*`).
  *
  * The scan walks the source tree under PICK_LISTS_CENSUS_ROOT (default: this repo). It reads code and
  * config; it skips markdown history (changelogs say what used to exist), generated database types,
@@ -42,6 +43,9 @@ const OLD_TEXT: Array<[string, RegExp]> = [
   ["the old result-kind slugs", /picklist_(tool_result|approval_result|item_update_result)/],
   ["the old binding editor name", /StructuredListBindingEditor/],
   ["the old agent tool names", /toolName:\s*["']picklist["']|\buserlist_(create|get|update|batch)/],
+  // Tables: the `usertable_*` family and the `data_user_*` registry names were retired with the old
+  // data tables; a person's tables are read and written through `records_*` (or the `dataset` tool).
+  ["the old table tool names", /\busertable_(get|create|add|update|search|delete)\w*|\buser_table_add_row\b|\bdata_user_(lists|tables)\w*/],
 ];
 
 export function scan(root: string): string[] {

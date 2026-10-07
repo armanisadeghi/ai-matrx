@@ -8,10 +8,10 @@ import type { ToolRendererProps } from "@ai-matrx/chat/tool-call-visualization/t
 import { parseDataset } from "./parseDataset";
 
 /**
- * Overlay renderer for `dataset` / `usertable_create` — the real table rendered
+ * Overlay renderer for the `dataset` tool — the real table rendered
  * with the canonical `UserTableViewer` (rows, sorting, filtering), self-loading
- * by id. Falls back to a message when there's no usable id (e.g. the
- * backend-broken `usertable_create` that returns an error in place of table_id).
+ * by id. Falls back to a message when there's no usable id (e.g. a result
+ * that carries an error in place of the table id).
  */
 export function DatasetOverlay({ entry }: ToolRendererProps) {
   const ds = useMemo(() => parseDataset(entry), [entry]);
