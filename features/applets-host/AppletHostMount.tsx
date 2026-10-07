@@ -29,6 +29,7 @@ import { useAppStore } from "@/lib/redux/hooks";
 import type { AppStore } from "@/lib/redux/store";
 import { openLiveRunWindowAction } from "@/features/overlays/openers/liveRunWindow";
 import { AppletRunOutput } from "@/features/applets-host/AppletRunOutput";
+import { AppletWritingBox } from "@/features/applets-host/AppletWritingBox";
 import { selectActiveOrganizationId } from "@/features/scopes/redux/selectors/active-context";
 import { AUTH_READY_WAIT_MS, createMatrxTransport } from "@/lib/api/matrx-transport";
 import { waitForAuthReady } from "@/lib/api/call-api";
@@ -216,6 +217,9 @@ export function AppletHostMount({
           // The app's kind registry, or — for a kind the Applet's organization owns — the Applet's own read.
           renderKind: (kind: string, value: unknown) => <AppletKind host={host} kind={kind} value={value} />,
           renderRun,
+          // Every box a person writes in (`<WritingBox>`, `<ConversationComposer>`): the platform's ProTextarea —
+          // dictation and read-aloud — on the Applet's own surface.
+          renderWritingBox: (props) => <AppletWritingBox {...props} surfaceName={record.surfaceName} />,
           // Every <Link> carries its real URL (open in new tab, middle-click). /p/<slug> has no sub-paths, so the
           // Applet's pages are addressed at the base path (`/applets/<slug>` by default) there, embedded and in preview.
           hrefFor: (to: string) => `${basePath}${to === "/" || to === "" ? "" : to.startsWith("/") ? to : `/${to}`}`,

@@ -110,8 +110,8 @@ def field_ui(defs):
     return defs
 
 STOCK = r'''import React, { useState } from "react";
-import { Button, Field, Select, Textarea } from "@ai-matrx/design-system/controls";
-import { useJob, JobOutput } from "@ai-matrx/applets/react";
+import { Button, Field, Select } from "@ai-matrx/design-system/controls";
+import { useJob, JobOutput, WritingBox } from "@ai-matrx/applets/react";
 
 const APP_NAME = __NAME__;
 const FIELDS = __FIELDS__;
@@ -150,7 +150,7 @@ export default function App() {
             {f.options ? (
               <Select aria-label={f.label} value={String(values[f.name] ?? "")} options={f.options.map((o) => ({ value: o, label: o }))} onValueChange={(v) => set(f.name, v)} disabled={busy} />
             ) : f.multiline ? (
-              <Textarea value={String(values[f.name] ?? "")} placeholder={f.help ?? ""} rows={4} onChange={(e) => set(f.name, e.target.value)} disabled={busy} />
+              <WritingBox label={f.label} value={String(values[f.name] ?? "")} placeholder={f.help ?? ""} rows={4} onValueChange={(v) => set(f.name, v)} disabled={busy} />
             ) : (
               <Field value={String(values[f.name] ?? "")} placeholder={f.help ?? ""} onChange={(e) => set(f.name, e.target.value)} disabled={busy} />
             )}
@@ -159,7 +159,7 @@ export default function App() {
         {TAKES_MESSAGE ? (
           <label className="block space-y-1">
             <span className="text-sm font-medium">Message</span>
-            <Textarea value={message} rows={3} onChange={(e) => setMessage(e.target.value)} disabled={busy} />
+            <WritingBox label="Message" value={message} rows={3} onValueChange={setMessage} disabled={busy} />
           </label>
         ) : null}
         <Button type="submit" variant="primary" disabled={missing || busy}>
