@@ -350,6 +350,16 @@ export function ApprovalQueue({
   );
   const failed = sections.filter((section) => section.slot?.source.error);
 
+  // LAYOUT SHIFT: kinds read one by one, so the list used to grow section by section — a late kind
+  // sorting ABOVE an earlier one pushed it down (CLS 0.89 at 375px), and the "shown elsewhere" notes
+  // were drawn first and pushed away by the rows. The body below the header draws once, when every
+  // mounted kind has answered the first time; later refetches keep what is on screen.
+  const [firstSettled, setFirstSettled] = useState(false);
+  useEffect(() => {
+    if (!loading) setFirstSettled(true);
+  }, [loading]);
+  const bodyReady = firstSettled || !loading;
+
   const summarySignature = `${count}|${loading}|${failed.length}`;
   useEffect(() => {
     onSummary?.(scope.key, { count, loading, errors: failed.length });
@@ -677,7 +687,7 @@ export function ApprovalQueue({
             />
           ))}
 
-          {expanded && allItems.length > 0 ? (
+          {expanded && bodyReady && allItems.length > 0 ? (
             <div className="mt-2.5 border-t border-border pt-2">
               {/* Select-all exists only when something CAN be selected — a
                   "Select all 0" checkbox that never does anything is a dead
@@ -958,7 +968,7 @@ export function ApprovalQueue({
           {/* Kinds this mount cannot read for, named with their door — a queue
               that silently omits a whole kind is the scattered-inbox failure
               wearing a single-queue costume. */}
-          {elsewhere.map((kind) => {
+          {(bodyReady ? elsewhere : []).map((kind) => {
             const requirement = kind.scopeRequirement;
             if (!requirement) return null;
             return (
