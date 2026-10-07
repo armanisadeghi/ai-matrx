@@ -131,7 +131,9 @@ function FieldFace({
         style={{ background: color, fontSize: "clamp(8px, 55cqh, 12px)" }}
       >
         <PenLine className="hidden h-3 w-3 shrink-0 @[64px]:block" />
-        <span className="truncate">{KIND_TAG[field.kind]}</span>
+        {/* A narrow box says the short word; a wide one the whole tag. */}
+        <span className="truncate @[84px]:hidden">{field.kind === "initials" ? "Initial" : "Sign"}</span>
+        <span className="hidden truncate @[84px]:inline">{KIND_TAG[field.kind]}</span>
       </span>
     );
   }

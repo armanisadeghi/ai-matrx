@@ -20,6 +20,7 @@ import { CONVERT_MANDATES } from "../mandates";
 import { recordSourceLineage } from "../recordSourceLineage";
 import { looseKey, segmentedGenerate } from "../segmentedGenerate";
 import { mergeTrustEnvelopes } from "../trustMerge";
+import { groundKitTrust } from "../groundKitCitations";
 import type {
   ConvertContext,
   ConvertGenerator,
@@ -101,7 +102,7 @@ async function run(
           markdown,
         });
       }
-      const trust = coerceTrustEnvelope(obj);
+      const trust = groundKitTrust(coerceTrustEnvelope(obj), source.ref?.kitSources);
       const keyPoints = Array.isArray(obj.key_points)
         ? obj.key_points.filter(
             (k): k is string => typeof k === "string" && !!k.trim(),

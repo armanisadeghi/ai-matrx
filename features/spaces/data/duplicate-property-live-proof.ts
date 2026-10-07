@@ -76,7 +76,7 @@ async function main() {
         rows.map((r) => `${doc(r).price}/${doc(r)[price.data.key]} ${doc(r).coat}/${doc(r)[coat.data.key]}`).join(", "),
       );
       const opts = await admin.fieldOptions({ field_id: coat.data.field_id });
-      const words = opts.ok ? (opts.data as Array<{ label?: string; title?: string }>).map((o) => o.label ?? o.title).join(", ") : opts.error.message;
+      const words = opts.ok ? (opts.data as unknown as Array<{ data?: { title?: string } }>).map((o) => o.data?.title).join(", ") : opts.error.message;
       check("the copied choice column has the original's choices in order", words === "Short, Long, Double", words);
       const after = await admin.fields({ table_id: tableId } as never);
       const order = after.ok ? (after.data as Array<{ label: string }>).map((f) => f.label).join(" · ") : "";
