@@ -27,7 +27,7 @@ import { useOrganizationRequired } from "@/features/organizations/useOrganizatio
 import { OrganizationContextNotice } from "@/features/organizations/components/OrganizationRequiredNotice";
 import { useOpenLiveRunWindow, type LiveRunWindowHandle } from "@/features/overlays/openers/liveRunWindow";
 import { AppletHostMount } from "@/features/applets-host/AppletHostMount";
-import { coerceBuildAnswer, publishApplet, readBuilderApplet, saveBuiltApplet, type BuildAnswer, type SavedApplet } from "./build-applet";
+import { BuildRefused, checkBuildAnswer, coerceBuildAnswer, publishApplet, readBuilderApplet, saveBuiltApplet, type BuildAnswer, type BuilderApplet, type SavedApplet } from "./build-applet";
 
 // Declared in aidream (client_mandates.py, applets.build / applets.fix); allowlisted in
 // scripts/mandate-keys-allowlist.json until @ai-matrx/agents publishes MANDATE_KEYS.applets__build.
@@ -54,6 +54,8 @@ export function AppletBuilder({ appletId: initialId }: { appletId: string | null
   const [appletId, setAppletId] = useState<string | null>(initialId);
   const [held, setHeld] = useState(0);
   const [lastError, setLastError] = useState<{ where: string; message: string } | null>(null);
+  // An answer refused before saving: "Fix it" hands it back with the reason, so nothing is lost.
+  const [refused, setRefused] = useState<BuilderApplet | null>(null);
   const [askOrganization, setAskOrganization] = useState(false);
 
   // Changing an existing Applet: show its current version in the preview first.
@@ -98,7 +100,7 @@ export function AppletBuilder({ appletId: initialId }: { appletId: string | null
         organizationId: current?.organizationId ?? organizationId,
         variables: {
           request,
-          applet: current ? JSON.stringify(current.applet) : "",
+          applet: fix && refused ? JSON.stringify(refused) : current ? JSON.stringify(current.applet) : "",
           catalogue: JSON.stringify(catalogue),
           last_check: fix ? JSON.stringify({ file: fix.where, message: fix.message }) : "",
         },
@@ -106,7 +108,7 @@ export function AppletBuilder({ appletId: initialId }: { appletId: string | null
           conversationId = cid;
           live.handle = openRunWindow({ conversationId: cid, label: fix ? "Fixing your app" : appletId ? "Changing your app" : "Building your app" });
         },
-        coerce: (v) => coerceBuildAnswer(v),
+        coerce: (v) => checkBuildAnswer(v, coerceBuildAnswer(v)),
       });
       const result = await saveBuiltApplet(client, {
         organizationId: current?.organizationId ?? organizationId,
@@ -120,9 +122,14 @@ export function AppletBuilder({ appletId: initialId }: { appletId: string | null
       setSaved({ ...result, note: answer.note });
       setHeld(0);
       setLastError(null);
+      setRefused(null);
       setSentence("");
       setPhase({ kind: "idle" });
     } catch (err) {
+      if (err instanceof BuildRefused) {
+        setRefused(err.applet);
+        setLastError({ where: "record", message: err.message });
+      }
       setPhase({ kind: "failed", why: err instanceof Error ? err.message : String(err) });
     } finally {
       live.handle?.update({ pending: false });

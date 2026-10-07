@@ -92,6 +92,56 @@ export function coerceBuildAnswer(value: unknown): BuildAnswer {
   return { applet, note: str(value.note) };
 }
 
+/** The builder's answer was refused: nothing was saved, and "Fix it" sends the reason back. */
+export class BuildRefused extends Error {
+  readonly applet: BuilderApplet;
+  constructor(message: string, applet: BuilderApplet) {
+    super(message);
+    this.name = "BuildRefused";
+    this.applet = applet;
+  }
+}
+
+const READS_SOURCE = /\buse(?:Rows|Row|Columns)\(\s*["'`]([^"'`$]+)["'`]/g;
+const RUNS_JOB = /\buseJob\(\s*["'`]([^"'`$]+)["'`]/g;
+
+function namesIn(files: BuilderFile[], pattern: RegExp): Set<string> {
+  const out = new Set<string>();
+  for (const f of files) for (const m of f.source.matchAll(pattern)) if (m[1]) out.add(m[1]);
+  return out;
+}
+
+/**
+ * NOTHING THE BUILDER WROTE IS DROPPED SILENTLY. A source or job the coercion could not
+ * read, a table source without its ids, or code that reads an alias the record never
+ * declares refuses the whole answer — the app would otherwise open on
+ * `no data source called "tasks"` (2026-10-07). Run on a fresh builder answer only.
+ */
+export function checkBuildAnswer(raw: unknown, answer: BuildAnswer): BuildAnswer {
+  const { applet } = answer;
+  const rawApplet = isRecord(raw) && isRecord(raw.applet) ? raw.applet : {};
+  const problems: string[] = [];
+  const rawSources = Array.isArray(rawApplet.sources) ? rawApplet.sources.length : 0;
+  if (rawSources !== applet.sources.length) problems.push(`${rawSources - applet.sources.length} of its sources had no alias`);
+  const rawMandates = Array.isArray(rawApplet.mandates) ? rawApplet.mandates.length : 0;
+  if (rawMandates !== applet.mandates.length) problems.push(`${rawMandates - applet.mandates.length} of its jobs had no alias or key`);
+  for (const s of applet.sources) {
+    if (!s.entity && (!s.table_id || !s.organization_id)) problems.push(`source "${s.alias}" names no table_id and organization_id (or entity)`);
+  }
+  const declared = new Set(applet.sources.map((s) => s.alias));
+  for (const alias of namesIn(applet.files, READS_SOURCE)) {
+    if (!declared.has(alias)) problems.push(`the code reads "${alias}" but sources declares no "${alias}"`);
+  }
+  const jobs = new Set(applet.mandates.map((m) => m.alias));
+  for (const alias of namesIn(applet.files, RUNS_JOB)) {
+    if (!jobs.has(alias)) problems.push(`the code runs job "${alias}" but mandates declares no "${alias}"`);
+  }
+  if (problems.length > 0) {
+    throw new BuildRefused(`Not saved: ${problems.join("; ")}.`, applet);
+  }
+  return answer;
+}
+
 /** What the builder is shown for a change: the stored record, files as a list. */
 export async function readBuilderApplet(client: Client, appletId: string): Promise<{ applet: BuilderApplet; organizationId: string; slug: string; version: number }> {
   const { data, error } = await client
