@@ -47,6 +47,8 @@ const OLD_TEXT: Array<[string, RegExp]> = [
   // data tables; a person's tables are read and written through `records_*` (or the `table` tool).
   // The `dataset` tool is `table` since 2026-10-07 (lexicon: Table); no card or data-tool list names it.
   ["the old table tool name", /toolName:\s*["']dataset["']|FEATURE_TOOL_RENDERERS\.dataset\b|(ANSWER_READ_FOR|DATA_TOOLS) = \[[^\]]*["']dataset["']/],
+  // Table templates are custom.template rows (templateKind table) since 2026-10-07.
+  ["the old table-template binding", /container_type:\s*["']dataset_template["']|rpc\(\s*["']list_udt_dataset_templates["']|DatasetTableTemplate\b/],
   ["the old table tool names", /\busertable_(get|create|add|update|search|delete)\w*|\buser_table_add_row\b|\bdata_user_(lists|tables)\w*/],
 ];
 

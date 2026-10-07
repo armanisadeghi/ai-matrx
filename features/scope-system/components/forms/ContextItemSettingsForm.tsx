@@ -149,7 +149,7 @@ export function ContextItemSettingsForm({
     setAllowedScopeTypeIds(item.allowed_scope_type_ids ?? []);
     const source = parseReferenceSource(item.reference_source);
     setDatasetTemplateId(
-      source?.container_type === "dataset_template" ? source.template_id : null,
+      source?.container_type === "table_template" ? source.template_id : null,
     );
   }, [item]);
 
@@ -241,7 +241,7 @@ export function ContextItemSettingsForm({
           reference_source:
             isReference && datasetTemplateId
               ? {
-                  container_type: "dataset_template",
+                  container_type: "table_template",
                   template_id: datasetTemplateId,
                   dimension: "whole",
                   provision: "per_scope",
