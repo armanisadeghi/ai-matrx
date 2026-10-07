@@ -366,3 +366,32 @@ export async function markFormVisit(args: {
   if (error) throw new Error(error.message);
   return String(data ?? "ignored");
 }
+
+/**
+ * TYPEFORM-2: may this client address add one more visit count to this form this minute? One hit
+ * from the store's anonymous rate window (`custom.form_visit_admit`, knob forms/visit_rate_per_minute).
+ */
+export async function admitFormVisit(formId: string, bucket: string): Promise<boolean> {
+  if (!isUuidShape(formId)) return true;
+  const { data, error } = await storeDoors().rpc("form_visit_admit", { p_form_id: formId, p_bucket: bucket });
+  if (error) throw new Error(error.message);
+  return data !== false;
+}
+
+/** TYPEFORM-2: how a published form is drawn — the form's own override over the organization's knob. */
+export interface PublicFormOptions {
+  show_owner_header: boolean;
+  choice_auto_advance: boolean;
+}
+
+export async function publicFormOptions(formId: string): Promise<PublicFormOptions> {
+  const fallback: PublicFormOptions = { show_owner_header: true, choice_auto_advance: true };
+  if (!isUuidShape(formId)) return fallback;
+  const { data, error } = await storeDoors().rpc("form_public_options", { p_form_id: formId });
+  if (error) throw new Error(`custom.form_public_options refused: ${error.message}`);
+  const row = (data ?? null) as Partial<PublicFormOptions> | null;
+  return {
+    show_owner_header: row?.show_owner_header !== false,
+    choice_auto_advance: row?.choice_auto_advance !== false,
+  };
+}

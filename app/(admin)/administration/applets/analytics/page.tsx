@@ -242,11 +242,14 @@ export const ANALYTICS_DRILL: MatrxDataTableLocalDrillConfig = {
   extraMeasures: [
     { key: "sum_cost", label: "Cost (USD)", additive: true, op: "sum", of: "cost", lowerIsBetter: true, format: formatAdminUsd },
   ],
+  // `attributes: []` on purpose: every column left over is a per-app number or a name, which
+  // would only read as a "fact" about a group of one or two apps.
   levels: {
-    category: { breakouts: ["status", "verified", "featured", "last-execution:month"], show: ANALYTICS_SHOW },
-    status: { breakouts: ["category", "verified", "featured", "last-execution:month"], show: ANALYTICS_SHOW },
-    verified: { breakouts: ["status", "category", "featured", "last-execution:month"], show: ANALYTICS_SHOW },
-    featured: { breakouts: ["status", "category", "verified", "last-execution:month"], show: ANALYTICS_SHOW },
+    category: { breakouts: ["status", "verified", "featured", "last-execution:month"], show: ANALYTICS_SHOW, attributes: [] },
+    status: { breakouts: ["category", "verified", "featured", "last-execution:month"], show: ANALYTICS_SHOW, attributes: [] },
+    verified: { breakouts: ["status", "category", "featured", "last-execution:month"], show: ANALYTICS_SHOW, attributes: [] },
+    featured: { breakouts: ["status", "category", "verified", "last-execution:month"], show: ANALYTICS_SHOW, attributes: [] },
+    "last-execution": { breakouts: ["status", "category", "verified", "featured"], show: ANALYTICS_SHOW, attributes: [] },
   },
 };
 
@@ -560,7 +563,7 @@ export default function AppletsAnalyticsPage() {
                   state: tableQuery.state,
                   onStateChange: tableQuery.onStateChange,
                 }}
-                coverage={{ ...ANALYTICS_COVERAGE, total: apps.length }}
+                coverage={{ ...ANALYTICS_COVERAGE, loaded: apps.length, total: apps.length }}
                 drill={ANALYTICS_DRILL}
                 toolbar={{
                   title: "Applet performance",

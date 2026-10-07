@@ -20,6 +20,21 @@ const arg = process.argv[3];
 const browser = await chromium.launch({ headless: true });
 const context = await browser.newContext({ viewport: { width: 1440, height: 1000 } });
 const page = await context.newPage();
+// The shared preview parks a tab at /__dev-walk once its walk cap runs out: press Resume and go on.
+const rawGoto = page.goto.bind(page);
+page.goto = async (url, opts) => {
+  let res;
+  for (let n = 1; n <= 8; n += 1) {
+    res = await rawGoto(url, opts);
+    await sleep(1500);
+    const parked = page.url().includes("__dev-walk") || (await page.getByRole("button", { name: /Resume/ }).count()) > 0;
+    if (!parked) return res;
+    console.log(`[walk] parked by the walk cap (try ${n}) — resuming`);
+    await page.getByRole("button", { name: /Resume/ }).first().click().catch(() => {});
+    await sleep(4000 * n);
+  }
+  throw new Error("the walk cap kept parking this tab");
+};
 const errors = [];
 page.on("console", (m) => m.type() === "error" && errors.push(m.text().slice(0, 200)));
 const shot = (name, full = false) => page.screenshot({ path: `${SHOTS}/${name}.png`, fullPage: full });

@@ -1,6 +1,10 @@
 -- chair-step: the inverse of migrations/campaign/drillspan_a_measure_may_be_a_time_span.sql (lane DRILL-SPAN) — puts back platform.drill_definition_problems, platform._drill_compile and platform._drill_question_problems exactly as they were (no span). Apply only after the declared definitions that show a span are put back (their inverse first). No row of anybody's data is touched.
 -- lane: DRILL-SPAN
 -- lock: platform
+-- based-on: platform.drill_definition_problems(jsonb) 6e95080acd7c87ec915e29578a3141c26a6192e20ac1e714dc3a081f78780bfd
+-- based-on: platform._drill_compile(uuid, jsonb, jsonb, text) 7e2031f06e8b138413b03471bb669deaae00b586781385c4d69c00d181f77578
+-- based-on: platform._drill_question_problems(jsonb, jsonb, text) 0045284268c4e7bb22d1e1a7f0fb61c8479eea7008a058b48a622c63ea2dd10a
+-- (based-on hashes: the bodies the up file writes, measured on the clone after the up, 2026-10-07)
 
 CREATE OR REPLACE FUNCTION platform.drill_definition_problems(p_def jsonb)
  RETURNS text[]
@@ -554,8 +558,7 @@ begin
   end if;
   return p;
 end
-$function$
-
+$function$;
 
 CREATE OR REPLACE FUNCTION platform._drill_compile(p_organization_id uuid, p_def jsonb, p_question jsonb, p_kind text)
  RETURNS jsonb
@@ -2106,8 +2109,7 @@ begin
     'compare', v_cmp,
     'having_says', case when cardinality(v_hsays) > 0 then array_to_string(v_hsays, ' and ') end);
 end
-$function$
-
+$function$;
 
 CREATE OR REPLACE FUNCTION platform._drill_question_problems(p_def jsonb, p_question jsonb, p_where text)
  RETURNS text[]
@@ -2322,5 +2324,4 @@ begin
   end if;
   return p;
 end
-$function$
-
+$function$;

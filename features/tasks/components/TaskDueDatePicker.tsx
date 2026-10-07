@@ -10,9 +10,9 @@
  *
  * Value is the DB shape directly: a `yyyy-mm-dd` string, or `null`.
  *
- * Also THE date control of the generated directive form (`SchemaFieldsForm`,
- * G15 review 2026-10-07: its dates were plain browser boxes): `emptyLabel`
- * names the empty state there ("Unchanged" on an Update), `id` ties its label.
+ * Forms outside the task editor use the package's `DateField`
+ * (`@ai-matrx/design-system/controls`); `id` / `emptyLabel` remain for a
+ * labelled field-variant trigger.
  */
 
 import React from "react";

@@ -112,7 +112,10 @@ export function PublicFormRunner({
   form,
   prefill,
   linkQuery,
+  autoAdvance,
 }: {
+  /** TYPEFORM-2: a single choice moves on when picked (the knob, resolved by the page). */
+  autoAdvance?: boolean;
   form: PublicForm;
   prefill?: Record<string, unknown>;
   /** The link's query. TYPEFORM-DUP: the form's HIDDEN FIELDS (utm_source, ref, …) are read from it —
@@ -144,6 +147,9 @@ export function PublicFormRunner({
   const [secret, setSecret] = useState<string | null>(null);
   const [resumed, setResumed] = useState<Resumed>({ kind: "none" });
   const [runKey, setRunKey] = useState(0);
+  // TYPEFORM-2: NO WELCOME FLASH BEFORE A SAVED PLACE OPENS. The runner is laid out (no shift) but
+  // not shown until this browser has said whether it holds a place, and the place has been read.
+  const [placeChecked, setPlaceChecked] = useState(false);
   const [save, setSave] = useState<SaveState>({ kind: "idle" });
   const [sent, setSent] = useState(false);
   const [copied, setCopied] = useState<"idle" | "copied" | "manual">("idle");
@@ -168,7 +174,10 @@ export function PublicFormRunner({
       replaceAddressWithoutNavigating(window.location.pathname + window.location.search);
     }
     const stored = fromLink ?? readStoredPlace(form.form_id);
-    if (!stored) return;
+    if (!stored) {
+      setPlaceChecked(true);
+      return;
+    }
     void (async () => {
       try {
         const response = await fetch(`/api/forms/${form.form_id}/draft/resume`, {
@@ -201,6 +210,8 @@ export function PublicFormRunner({
         if (!cancelled && fromLink) {
           setResumed({ kind: "gone", message: "Your saved answers could not be opened just now. The form starts fresh." });
         }
+      } finally {
+        if (!cancelled) setPlaceChecked(true);
       }
     })();
     return () => {
@@ -408,6 +419,7 @@ export function PublicFormRunner({
     resumed: resumed.kind === "found",
     onStart: () => count("start"),
     onQuestionShown: (field: string) => count("reach", field),
+    ...(typeof autoAdvance === "boolean" ? { autoAdvance } : {}),
   };
   const spec: Record<string, unknown> = {
     name: form.title,
@@ -452,6 +464,7 @@ export function PublicFormRunner({
           through the one rich-content core — markdown and math, in the
           server HTML (records-ui `renderText` host port, 0.85.15). */}
       <RecordsUiProvider value={FORM_TEXT_HOST}>
+        <div className={placeChecked ? undefined : "invisible"} aria-busy={!placeChecked} data-form-place-checked={placeChecked ? "" : undefined}>
         <FormRunner
           key={runKey}
           form={spec as unknown as Parameters<typeof FormRunner>[0]["form"]}
@@ -460,6 +473,7 @@ export function PublicFormRunner({
           onSubmit={submit}
           {...ports}
         />
+        </div>
       </RecordsUiProvider>
 
       {!sent && save.kind !== "idle" ? (

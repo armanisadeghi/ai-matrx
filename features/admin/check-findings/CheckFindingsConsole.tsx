@@ -609,7 +609,7 @@ function CheckBoard({
           {r.brokenReasons.length ? <div className="min-w-0">{controls.renderCell("broken-reason")}</div> : null}
           </div>
         )}
-        coverage={{ noun: "check", answeredBy: "client", total: loading ? undefined : rows.length }}
+        coverage={{ noun: "check", answeredBy: "client", loaded: rows.length, total: loading ? undefined : rows.length }}
         toolbar={{ title: "Checks", search: true }}
 
         read={read}
@@ -964,7 +964,7 @@ function CheckDetail({
             pageSize={100}
             drill={ITEMS_DRILL}
             defaultSort={{ id: "first-seen", direction: "asc" }}
-            coverage={{ noun: "finding", answeredBy: "client", total: items.status === "ready" ? data.length : undefined }}
+            coverage={{ noun: "finding", answeredBy: "client", loaded: data.length, total: items.status === "ready" ? data.length : undefined }}
             mobileCards={(item, _index, controls) => (
               <div className="space-y-1 p-2 text-xs">
                 <div className="flex items-start gap-2">

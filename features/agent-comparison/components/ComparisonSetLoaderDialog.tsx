@@ -11,6 +11,7 @@
  */
 
 import { useEffect, useState } from "react";
+import { formatAbsoluteDate } from "@ai-matrx/kit/format";
 import { Loader2, Trash2 } from "lucide-react";
 import {
   Dialog,
@@ -229,7 +230,7 @@ export function ComparisonSetLoaderDialog({
                         </div>
                         <div className="text-[11px] text-muted-foreground mt-0.5">
                           {href
-                            ? new Date(s.updated_at).toLocaleString()
+                            ? formatAbsoluteDate(s.updated_at)
                             : `Saved in an unknown mode ("${setMode}"); it cannot be opened here.`}
                         </div>
                       </div>

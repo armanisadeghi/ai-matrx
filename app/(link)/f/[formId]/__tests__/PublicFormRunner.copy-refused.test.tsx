@@ -23,7 +23,9 @@ jest.mock("@/components/errors/ErrorAlchemyMenu", () => ({ ErrorAlchemyMenu: () 
 jest.mock("@/lib/url-state/addressWithoutNavigating", () => ({
   replaceAddressWithoutNavigating: jest.fn(),
 }));
+// The real exports (the page's mappers: hiddenFromLink, welcomeFromDocument …), only the runner doubled.
 jest.mock("@ai-matrx/records-ui", () => ({
+  ...jest.requireActual("@ai-matrx/records-ui"),
   RecordsUiProvider: ({ children }: { children: React.ReactNode }) => children,
   FormRunner: ({ onAnswersChange }: { onAnswersChange: (a: Record<string, unknown>) => void }) => (
     <button type="button" data-testid="answer" onClick={() => onAnswersChange({ name: "Dana" })}>

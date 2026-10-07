@@ -113,17 +113,27 @@ describe("an Update form nobody has touched", () => {
     }
   });
 
-  it("every date kind uses the app's date control, never a browser date box (G15)", async () => {
+  it("every date kind is the package DateField — never a browser box or the borrowed task picker (G16)", async () => {
+    const kinds: Record<string, string> = { "Due Date": "date", Starts: "datetime", "Remind On": "time" };
     for (const mode of ["update", "create"] as const) {
       const { rows, done } = await renderRows(mode);
-      for (const label of ["Due Date", "Starts"]) {
-        const row = rows.find((r) => r.label === label)!.row;
-        expect({ label, mode, native: row.querySelectorAll('input[type="date"], input[type="datetime-local"]').length }).toEqual({ label, mode, native: 0 });
-        const trigger = row.querySelector<HTMLButtonElement>('button[aria-haspopup="dialog"]');
-        expect({ label, mode, trigger: trigger?.textContent ?? null }).toEqual({
+      for (const [label, kind] of Object.entries(kinds)) {
+        const row = rows.find((r) => r.label === label)?.row;
+        const capsules = row ? [...row.querySelectorAll('[data-matrx-control="date-field"]')] : [];
+        const native = row?.querySelectorAll('input[type="date"], input[type="time"], input[type="datetime-local"]').length ?? -1;
+        // The borrowed TaskDueDatePicker trigger: a bare popover button outside any date-field capsule.
+        const borrowed = row
+          ? [...row.querySelectorAll('button[aria-haspopup="dialog"]')].filter((b) => !b.closest('[data-matrx-control="date-field"]')).length
+          : -1;
+        const placeholder = capsules[0]?.querySelector("input")?.getAttribute("placeholder") ?? null;
+        expect({ label, mode, capsules: capsules.length, kind: capsules[0]?.getAttribute("data-mode") ?? null, native, borrowed, placeholder }).toEqual({
           label,
           mode,
-          trigger: mode === "update" ? "Unchanged" : "Pick a date",
+          capsules: 1,
+          kind,
+          native: 0,
+          borrowed: 0,
+          placeholder: mode === "update" ? "Unchanged" : kind === "time" ? "Pick a time" : "Pick a date",
         });
       }
       done();

@@ -63,7 +63,7 @@ export function PublicHeader() {
           />
         </Link>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center">
           <div
             id="public-header-actions"
             className="flex min-w-0 items-center"
