@@ -1,18 +1,15 @@
-import PageHeader from "@/features/shell/components/header/PageHeader";
-import { AppletsListHeader } from "@/features/applets/components/shell/AppletsListHeader";
-import { AppletsGridSkeleton } from "@/features/applets/components/applet-listings/AppletsGridSkeleton";
+import { Skeleton } from "@ai-matrx/design-system";
 
+/** The list's shape while it loads: the lane row, then table rows. */
 export default function AppletsLoading() {
   return (
-    <>
-      <PageHeader>
-        <AppletsListHeader />
-      </PageHeader>
-      <div className="h-full overflow-hidden bg-textured">
-        <div className="container mx-auto max-w-[1800px] px-4 pb-6 pt-[calc(var(--shell-header-h)+1rem)] sm:px-6 md:px-8 lg:px-12">
-          <AppletsGridSkeleton />
-        </div>
+    <div className="h-full overflow-hidden bg-textured pt-[var(--shell-header-h)]" role="status" aria-label="Loading Applets">
+      <div className="space-y-2 px-4 py-3">
+        <Skeleton className="h-7 w-72" />
+        {Array.from({ length: 8 }).map((_, i) => (
+          <Skeleton key={i} className="h-9 w-full" />
+        ))}
       </div>
-    </>
+    </div>
   );
 }

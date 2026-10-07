@@ -10,7 +10,7 @@
  */
 
 import Link from "next/link";
-import { Code, History, MessageSquare, Play, Settings as SettingsIcon } from "lucide-react";
+import { MessageSquare, Settings as SettingsIcon } from "lucide-react";
 import { formatRelativeTime } from "@ai-matrx/kit/format";
 import { Badge, Button, EmptyState, RegionSkeleton, RowGroup, SettingRow } from "@ai-matrx/design-system/controls";
 import { useAppSelector } from "@/lib/redux/hooks";
@@ -19,7 +19,13 @@ import { CopyButtons } from "@/components/agent-copy/CopyButtons";
 import { siteConfig } from "@/config/extras/site";
 import { useOpenMandateWindow } from "@/features/overlays/openers/mandateWindow";
 import { storedMandateKey } from "@ai-matrx/agents/mandates";
-import { appletFiles, appletJobs, appletPages, appletSources } from "@/features/applets/types";
+import { appletJobs, appletPages, appletSources } from "@/features/applets/types";
+
+/** "summarize_book" → "Summarize book": the code's name for a job, as words. */
+function humanizeAlias(alias: string): string {
+  const words = alias.replace(/([a-z])([A-Z])/g, "$1 $2").replace(/[_\-.]+/g, " ").trim().toLowerCase();
+  return words ? words.charAt(0).toUpperCase() + words.slice(1) : alias;
+}
 
 interface AppletOverviewContentProps {
   appId: string;
@@ -42,7 +48,6 @@ export function AppletOverviewContent({ appId }: AppletOverviewContentProps) {
   const pages = appletPages(app);
   const jobs = appletJobs(app);
   const sources = appletSources(app);
-  const fileCount = Object.keys(appletFiles(app)).length;
   const isPublished = app.status === "published" && app.published_to_web;
   const base = `/applets/manage/${app.id}`;
 
@@ -51,9 +56,8 @@ export function AppletOverviewContent({ appId }: AppletOverviewContentProps) {
       <div className="mx-auto max-w-3xl space-y-4 px-4 pb-10 pt-4">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div className="flex flex-wrap items-center gap-1.5">
-            <Badge tone={isPublished ? "success" : "warning"}>{isPublished ? "Published" : "Draft"}</Badge>
-            <Badge>v{app.version}</Badge>
-            <Badge>{`${fileCount} file${fileCount === 1 ? "" : "s"}`}</Badge>
+            {/* Published / Draft is the header's; one fact, once. */}
+            <Badge>{`Version ${app.version}`}</Badge>
           </div>
           <CopyButtons
             size="sm"
@@ -75,42 +79,30 @@ export function AppletOverviewContent({ appId }: AppletOverviewContentProps) {
           </div>
         )}
 
+        {/* One door per action: Run / Code / Versions / Settings are the header's
+            modes, so the body offers only what the header does not — changing
+            the Applet by talking to its builder. */}
         <div className="flex flex-wrap gap-2">
-          <Button variant="primary" icon={<Play />} asChild>
-            <Link href={`${base}/run`}>Open</Link>
-          </Button>
-          <Button variant="outline" icon={<MessageSquare />} asChild>
+          <Button variant="primary" icon={<MessageSquare />} asChild>
             <Link href={`/applets/build?applet=${app.id}`}>Change it by talking</Link>
-          </Button>
-          <Button variant="outline" icon={<Code />} asChild>
-            <Link href={`${base}/code`}>Code</Link>
-          </Button>
-          <Button variant="quiet" icon={<History />} asChild>
-            <Link href={`${base}/versions`}>Versions</Link>
-          </Button>
-          <Button variant="quiet" icon={<SettingsIcon />} asChild>
-            <Link href={`${base}/settings`}>Settings</Link>
           </Button>
         </div>
 
         <RowGroup title="Pages">
           {pages.length === 0 ? (
-            <SettingRow label="Entry file only" line={app.entry ?? undefined} />
+            <SettingRow label="One page" />
           ) : (
-            pages.map((page) => (
-              <SettingRow key={page.path} label={page.title} line={page.path}>
-                <span className="font-mono text-xs text-muted-foreground">{page.file}</span>
-              </SettingRow>
-            ))
+            // A page is its title; the file behind it is the code's business.
+            pages.map((page) => <SettingRow key={page.path} label={page.title} />)
           )}
         </RowGroup>
 
         <RowGroup title="Jobs">
           {jobs.length === 0 ? (
-            <EmptyState icon={<MessageSquare />} title="No jobs" />
+            <SettingRow label="No jobs" />
           ) : (
             jobs.map((job) => (
-              <SettingRow key={job.alias} label={job.alias}>
+              <SettingRow key={job.alias} label={humanizeAlias(job.alias)}>
                 <Button
                   variant="quiet"
                   onClick={() =>
@@ -120,7 +112,7 @@ export function AppletOverviewContent({ appId }: AppletOverviewContentProps) {
                     })
                   }
                 >
-                  <span className="font-mono text-xs">{job.key}</span>
+                  Open job
                 </Button>
               </SettingRow>
             ))
