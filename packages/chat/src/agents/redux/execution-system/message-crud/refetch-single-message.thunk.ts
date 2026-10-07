@@ -31,6 +31,7 @@ import type { ChatDispatch, ChatRootState } from "../../../../store/root-state";
 import { updateMessageRecord } from "../messages/messages.slice";
 import { messageRowToRecord } from "../thunks/conversation-bundle";
 import { durableRecordId } from "@ai-matrx/kit/ids";
+import { isSignedOutVisitor } from "../../../../host/identity";
 
 interface RefetchSingleMessageArgs {
   conversationId: string;
@@ -96,6 +97,12 @@ export const refetchSingleMessage = createAsyncThunk<
         message: "This answer has no saved copy yet — nothing to reload.",
       });
     }
+    // `chat.message` answers signed-in people only (anon holds no grant): a
+    // signed-out visitor's guest run is owned server-side, so there is no row
+    // this client can read — reading it was eight 42501s per /p run.
+    if (await isSignedOutVisitor()) {
+      return { conversationId, messageId, found: false, refreshed: false };
+    }
     const read = () => {
       const byId = supabase
         .schema("chat").from("message")
@@ -117,6 +124,8 @@ export const refetchSingleMessage = createAsyncThunk<
     // may intentionally replace content with an empty value.
     let delay = 250;
     for (let attempt = 0; waitForReadable && attempt < 7; attempt++) {
+      // A refusal is an answer, not lag: retrying it only repeats the error.
+      if (result.error) break;
       const hasBody = hasDisplayableMessageContent(
         result.data?.user_content ?? result.data?.content,
       );

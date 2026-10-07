@@ -71,15 +71,32 @@ export function diagnoseKindRenderGap(
 async function compute(kind: string): Promise<KindRenderGapDiagnosis | null> {
   const supabase = createClient();
 
+  // A signed-out viewer (a published Applet at /p/<slug>) reads through the
+  // anon column door — a kind's public face (label, is_active, schema) is
+  // anon-readable by grant; its owner columns are not. Asking anon for
+  // `created_by, organization_id` was a 42501 on every fallback render. Who
+  // owns the kind only decides who may act, and a signed-out viewer never can.
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
   const { data: def, error: defError } = await supabase
     .schema("content_ir")
     .from("kind_definition")
     .select(
-      "id, label, is_active, created_by, organization_id, emitted_json_schema",
+      session
+        ? "id, label, is_active, created_by, organization_id, emitted_json_schema"
+        : "id, label, is_active, emitted_json_schema",
     )
     .eq("kind", kind)
     .is("deleted_at", null)
-    .maybeSingle();
+    .maybeSingle<{
+      id: string;
+      label: string | null;
+      is_active: boolean | null;
+      created_by?: string | null;
+      organization_id?: string | null;
+      emitted_json_schema: unknown;
+    }>();
   if (defError) throw defError;
 
   if (!def) {

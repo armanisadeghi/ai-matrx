@@ -30,7 +30,9 @@ import type { AppStore } from "@/lib/redux/store";
 import { openLiveRunWindowAction } from "@/features/overlays/openers/liveRunWindow";
 import { AppletRunOutput } from "@/features/applets-host/AppletRunOutput";
 import { selectActiveOrganizationId } from "@/features/scopes/redux/selectors/active-context";
-import { createMatrxTransport } from "@/lib/api/matrx-transport";
+import { AUTH_READY_WAIT_MS, createMatrxTransport } from "@/lib/api/matrx-transport";
+import { waitForAuthReady } from "@/lib/api/call-api";
+import { selectAccessToken } from "@/lib/redux/selectors/userSelectors";
 import { captureError } from "@/lib/diagnostics/errorCaptureStore";
 import { provideStoredComponentScopeModules } from "@/lib/code-runtime/stored-scope";
 import { ensureOrganizationContext } from "@/lib/organization/organization-gate";
@@ -192,8 +194,15 @@ export function AppletHostMount({
       .record()
       .then((record) => {
         // The Applet's fixed jobs, declared in the top Agents menu (agent-disclosure; never page chips).
+        // A signed-out visitor is not described: /mandates/<key>/describe answers signed-in people
+        // and guests who already hold an identity, never a first visit (that read was a 401 on every
+        // /p load). Their menu entry names the job by the Applet's own alias for it.
         void Promise.all(
           record.mandates.map(async (m): Promise<SurfaceMandateRef> => {
+            await waitForAuthReady(store.getState, AUTH_READY_WAIT_MS);
+            if (!selectAccessToken(store.getState())) {
+              return { mandateKey: storedMandateKey(m.key), does: m.alias, surfaceName: record.surfaceName };
+            }
             const d = await host.intelligence.describe(m.key);
             return { mandateKey: storedMandateKey(m.key), does: d.ok ? d.data.goal || d.data.label : m.alias, surfaceName: record.surfaceName };
           }),

@@ -83,10 +83,23 @@ export interface MatrxTransportOptions {
   source?: string;
 }
 
-/** The app's Redux-backed credential source — read fresh per call. */
+/**
+ * How long a package call waits for the browser's auth hydration before it
+ * reads the credential. A route whose store is not seeded from the server
+ * (the `(link)` group: `/p/<slug>`, `/f/<id>`) learns the session only when
+ * `usePublicAuthSync` lands — after `getClaims`, the user record and the
+ * admin read, measured at ~1.4s on www (2026-10-07). A call made before that
+ * went out with NO credential at all and answered 401 for a signed-in member
+ * (`/mandates/<key>/describe`, `/mandates/<key>/runs` on every Applet page).
+ * callApi's own 1s default is shorter than that hydration, so this waits longer.
+ */
+export const AUTH_READY_WAIT_MS = 8000;
+
+/** The app's Redux-backed credential source — read fresh per call, after auth hydration. */
 function credentialsFromState(getState: () => RootState): CredentialsPort {
   return {
     get: async (): Promise<MatrxCredential | null> => {
+      await waitForAuthReady(getState, AUTH_READY_WAIT_MS);
       const state = getState();
       const accessToken = selectAccessToken(state);
       if (accessToken) return { kind: "user", accessToken };
@@ -182,6 +195,9 @@ export function createMatrxTransport(
     // anywhere, a write the person just pressed HOLDS on the canonical
     // organization picker (callApi's one line) — never the raw refusal text.
     resolveTarget: async (request) => {
+      // The org header is decided by who the caller IS; read it only once the
+      // session has hydrated (same wait as the credential, below).
+      await waitForAuthReady(getState, AUTH_READY_WAIT_MS);
       const state = getState();
       const isAuthenticated = !!selectAccessToken(state);
       const hasAppContext = !!(state as Partial<RootState>)?.appContext;

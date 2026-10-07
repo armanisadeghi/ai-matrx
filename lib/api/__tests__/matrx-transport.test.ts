@@ -26,7 +26,7 @@ jest.mock("@/lib/redux/slices/userSlice", () => ({
   selectIsSuperAdmin: () => false,
   selectIsAuthenticated: (state: { accessToken?: string | null }) =>
     !!state.accessToken,
-  selectAuthReady: () => true,
+  selectAuthReady: (state: { authReady?: boolean }) => state.authReady ?? true,
 }));
 jest.mock("@/lib/redux/slices/apiConfigSlice", () => ({
   selectResolvedBaseUrl: (state: { baseUrl?: string }) =>
@@ -59,6 +59,7 @@ const mockedFetch = resilientFetch as jest.MockedFunction<
 const mockedCapture = captureApiError as jest.Mock;
 
 interface FakeStateShape {
+  authReady?: boolean;
   accessToken?: string | null;
   fingerprintId?: string | null;
   organizationId?: string | null;
@@ -122,6 +123,34 @@ describe("createMatrxTransport (global, callApi parity)", () => {
       Authorization: "Bearer jwt-token",
       "X-Organization-Id": "11111111-1111-4111-8111-111111111111",
     });
+  });
+
+  it("a call made before the session hydrates waits for it and carries the bearer (/p Applet describe was a bare 401)", async () => {
+    mockedFetch.mockResolvedValue({ response: fakeResponse({}), controller: new AbortController() });
+    const state: FakeStateShape & Record<string, unknown> = {
+      authReady: false,
+      accessToken: null,
+      organizationId: "11111111-1111-4111-8111-111111111111",
+      appContext: {},
+      apiConfig: { activeServer: "production" },
+    };
+    const transport = createMatrxTransport(() => state as unknown as RootState);
+    setTimeout(() => {
+      state.accessToken = "jwt-late";
+      state.authReady = true;
+    }, 1500);
+
+    // The package resolves its own copy of @ai-matrx/data/net, so the wire is read at fetch itself.
+    const wire = jest
+      .spyOn(globalThis, "fetch")
+      .mockResolvedValue(new Response("{}", { status: 200, headers: { "content-type": "application/json" } }));
+    try {
+      await transport.fetch("/mandates/app.x/describe", { method: "GET", headers: {} });
+      const init = wire.mock.calls[0]?.[1];
+      expect(new Headers(init?.headers).get("Authorization")).toBe("Bearer jwt-late");
+    } finally {
+      wire.mockRestore();
+    }
   });
 
   it("preserves wire-semantic streaming headers (Accept, Last-Event-ID)", async () => {
