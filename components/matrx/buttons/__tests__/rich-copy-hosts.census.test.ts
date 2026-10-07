@@ -377,8 +377,11 @@ describe("consistency everywhere: markdown copy is the split Copy across the who
     const editRoute = fs.readFileSync(path.join(REPO_ROOT, "app/(core)/chat/message-templates/edit/[id]/page.tsx"), "utf8");
     expect(editRoute).toMatch(/redirect\(/);
     expect(editRoute).not.toMatch(/TemplateEditor/);
-    const editor = fs.readFileSync(path.join(REPO_ROOT, "features/message-templates/components/TemplateEditor.tsx"), "utf8");
-    expect(editor).not.toMatch(/updateTemplate/);
+    // …and ONE editor for create too: /new opens the canonical page in create mode; the old form is gone.
+    expect(fs.existsSync(path.join(REPO_ROOT, "features/message-templates/components/TemplateEditor.tsx"))).toBe(false);
+    const newRoute = fs.readFileSync(path.join(REPO_ROOT, "app/(core)/chat/message-templates/new/page.tsx"), "utf8");
+    expect(newRoute).toMatch(/<TemplateViewPage[^>]*\bcreate\b/);
+    expect(newRoute).not.toMatch(/TemplateEditor/);
     const dock = fs.readFileSync(path.join(REPO_ROOT, "features/notes/components/mobile/NoteEditorDock.tsx"), "utf8");
     expect(dock).toMatch(/--matrx-toast-floor/);
     const toaster = fs.readFileSync(path.join(REPO_ROOT, "components/ui/sonner.tsx"), "utf8");

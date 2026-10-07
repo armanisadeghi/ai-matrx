@@ -32,7 +32,6 @@ const REQUIRED: Record<string, RegExp> = {
   "features/html-pages/components/tabs/MarkdownPlainTextTab.tsx": /useTextareaFormatting\(/,
   "features/agents/components/builder/message-builders/MessageItem.tsx": /useTextareaFormatting\(/,
   "features/agents/components/builder/message-builders/system-instructions/SystemMessage.tsx": /useTextareaFormatting\(/,
-  "features/message-templates/components/TemplateEditor.tsx": /ProTextarea/,
   "components/merge-field-input/MergeFieldInput.tsx": /useMergeFieldFormatting\(/,
 };
 

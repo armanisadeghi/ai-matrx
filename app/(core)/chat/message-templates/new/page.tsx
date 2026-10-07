@@ -1,7 +1,7 @@
 import { createClient } from "@/utils/supabase/server";
 import { getClaimsUser } from "@/utils/supabase/claimsUser";
-import { TemplateEditor } from "@/features/message-templates/components/TemplateEditor";
-import type { MessageTemplateEditorSource } from "@/features/message-templates/types/message-templates-db";
+import { TemplateViewPage } from "@/features/message-templates/components/TemplateViewPage";
+import type { MessageTemplateDB, MessageTemplateEditorSource } from "@/features/message-templates/types/message-templates-db";
 
 interface PageProps {
   searchParams: Promise<{ from?: string }>;
@@ -40,5 +40,18 @@ export default async function NewTemplatePage({ searchParams }: PageProps) {
     }
   }
 
-  return <TemplateEditor template={sourceTemplate} />;
+  // The ONE template editor, opened in create mode on a blank (or duplicated) starting point.
+  const start = {
+    id: "",
+    label: sourceTemplate?.label ?? "",
+    content: sourceTemplate?.content ?? "",
+    role: sourceTemplate?.role ?? "user",
+    tags: sourceTemplate?.tags ?? [],
+    metadata: sourceTemplate?.metadata ?? null,
+    published_to_web: false,
+    organization_id: null,
+    version: 1,
+    updated_at: null,
+  } as unknown as MessageTemplateDB;
+  return <TemplateViewPage template={start} canEdit create />;
 }

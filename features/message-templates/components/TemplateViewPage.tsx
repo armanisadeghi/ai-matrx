@@ -53,7 +53,13 @@ import { CopyButtons } from "@/components/agent-copy/CopyButtons";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { toast } from "@/lib/toast";
 import { cn } from "@/lib/utils";
+import { describeWriteFailure } from "@/lib/errors/writeFailure";
 import {
+  ensureOrganizationContext,
+  isOrganizationSelectionCancelled,
+} from "@/lib/organization/organization-gate";
+import {
+  createTemplate,
   updateTemplate,
   archiveTemplate,
   clearTemplateCache,
@@ -101,8 +107,14 @@ const DATE_FORMAT = new Intl.DateTimeFormat("en-US", {
 });
 
 interface TemplateViewPageProps {
+  /** The saved row — or, in create mode, the starting values (a blank stub or the template being duplicated; its id is never written). */
   template: MessageTemplateDB;
   canEdit: boolean;
+  /**
+   * CREATE mode: the same editor, opened on a template that does not exist yet. Save inserts it
+   * (in the person's organization) and lands on its page; Discard goes back to the list.
+   */
+  create?: boolean;
 }
 
 function draftFrom(template: MessageTemplateDB): MessageTemplateDraftScope {
@@ -265,13 +277,14 @@ function InsertFieldMenu({
   );
 }
 
-export function TemplateViewPage({ template, canEdit }: TemplateViewPageProps) {
+export function TemplateViewPage({ template, canEdit, create = false }: TemplateViewPageProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const pageHref = `${LIST_HREF}/${template.id}`;
+  const pageHref = create ? `${LIST_HREF}/new` : `${LIST_HREF}/${template.id}`;
   const editHref = `${pageHref}?mode=edit`;
   const mode: "view" | "edit" =
-    canEdit && searchParams.get("mode") === "edit" ? "edit" : "view";
+    create || (canEdit && searchParams.get("mode") === "edit") ? "edit" : "view";
+  const [created, setCreated] = useState(false);
   // View ↔ Edit is one page: a shallow URL update (Next keeps useSearchParams
   // in sync with native history), never a server round-trip.
   const selectMode = (href: string) => {
@@ -302,13 +315,14 @@ export function TemplateViewPage({ template, canEdit }: TemplateViewPageProps) {
     visibility: isPublic ? "public" : "private",
   };
   const savedDraft = draftFrom(saved);
-  const isDirty = !sameDraft(draft, savedDraft);
+  // A new template has nothing saved: it is "changed" the moment it has a name or a message.
+  const isDirty = create ? Boolean(draft.label || content.trim()) && !created : !sameDraft(draft, savedDraft);
   const canSave = draft.label.length > 0 && content.trim().length > 0;
   const managedByKey = templateManagedBy(saved);
   const managedBy = managedByKey ? humanizeManagedBy(managedByKey) : null;
   const note = metadataText(saved.metadata, "note");
   const savedSubject = templateSubject(saved);
-  const displayLabel = saved.label || "Untitled template";
+  const displayLabel = saved.label || (create ? "New template" : "Untitled template");
   // An email template (it has a subject) has no use for a chat-message role;
   // the role is shown only for a message template that has no subject.
   const isEmail = Boolean(savedSubject || subject.trim());
@@ -336,6 +350,11 @@ export function TemplateViewPage({ template, canEdit }: TemplateViewPageProps) {
 
   const handleDiscard = async () => {
     if (!(await confirmDiscard({ discarding: true }))) return;
+    if (create) {
+      setCreated(true);
+      router.push(LIST_HREF);
+      return;
+    }
     resetDraft();
     selectMode(pageHref);
   };
@@ -417,6 +436,35 @@ export function TemplateViewPage({ template, canEdit }: TemplateViewPageProps) {
 
   const handleSave = async () => {
     if (isSaving || !canSave || !isDirty) return;
+    if (create) {
+      setIsSaving(true);
+      setSaveError(null);
+      try {
+        const row = await createTemplate({
+          organization_id: await ensureOrganizationContext(),
+          label: draft.label,
+          content,
+          role: role ?? "user",
+          published_to_web: isPublic,
+          tags: draft.tags,
+          metadata: draft.subject_template ? { subject_template: draft.subject_template } : {},
+        });
+        clearTemplateCache();
+        setCreated(true);
+        toast.success("Template created");
+        router.replace(`${LIST_HREF}/${row.id}`);
+      } catch (err) {
+        // Declining the organization question is an answer, not a failure.
+        if (!isOrganizationSelectionCancelled(err)) {
+          const message = describeWriteFailure(err, { action: "create this template" });
+          setSaveError(`${message.title} ${message.description ?? ""}`.trim());
+          toast.error(message.title);
+        }
+      } finally {
+        setIsSaving(false);
+      }
+      return;
+    }
     // Only what changed is written — an untouched body keeps its exact bytes
     // and an unset role stays unset.
     const patch: Parameters<typeof updateTemplate>[0] = { id: saved.id };
@@ -564,7 +612,7 @@ export function TemplateViewPage({ template, canEdit }: TemplateViewPageProps) {
           },
         ]
       : []),
-    ...(canEdit && mode === "view"
+    ...(canEdit && mode === "view" && !create
       ? [
           {
             id: "message-template-edit",
@@ -619,7 +667,7 @@ export function TemplateViewPage({ template, canEdit }: TemplateViewPageProps) {
         backHref={LIST_HREF}
         entityLabel={displayLabel}
         modes={
-          canEdit
+          canEdit && !create
             ? [
                 { name: "View", href: pageHref, icon: Eye },
                 { name: "Edit", href: editHref, icon: Pencil },
@@ -671,7 +719,7 @@ export function TemplateViewPage({ template, canEdit }: TemplateViewPageProps) {
                   : []),
                 // Archive is a VIEW action; while editing it lives in the
                 // record's right-click menu, never as a bare icon beside Save.
-                ...(mode === "view"
+                ...(mode === "view" && !create
                   ? [{ label: "Archive", icon: Archive, onPress: handleArchive }]
                   : []),
               ]
@@ -922,7 +970,7 @@ export function TemplateViewPage({ template, canEdit }: TemplateViewPageProps) {
               </MenuPresenceProvider>
             )}
 
-            {mode === "edit" && (
+            {mode === "edit" && !create && (
               <section className="rounded-lg border border-border bg-card px-3 py-2">
                 <EntityCustomFields
                   entityToken="message_template"
