@@ -97,10 +97,16 @@ export function textExportItem(
   };
 }
 
-/** Rows → CSV (Alchemy's one writer). Columns: explicit list, or the union of keys across rows. */
+/**
+ * Rows → CSV (Alchemy's one writer). Columns: explicit list, or the union of keys across rows.
+ * `spreadsheetSafe` defaults ON (kit `spreadsheetSafeByDefault`: a .csv is opened in a
+ * spreadsheet, so formula-looking text gets a leading `'`). Pass `{ spreadsheetSafe: false }` ONLY
+ * where an AI or a parser reads the text — never for a file a person downloads.
+ */
 export function rowsToCsv(
   rows: Array<Record<string, unknown>>,
   columns?: Array<{ key: string; header: string }>,
+  options: { spreadsheetSafe?: boolean } = {},
 ): string {
   const cols =
     columns ??
@@ -111,10 +117,11 @@ export function rowsToCsv(
   return toDelimitedText(
     cols.map((c) => c.header),
     rows.map((row) => cols.map((c) => (row[c.key] ?? null) as Json)),
-    { spreadsheetSafe: false }, // an AI reads this text: the cells stay as stored
+    options.spreadsheetSafe === undefined ? {} : { spreadsheetSafe: options.spreadsheetSafe },
   );
 }
 
+/** The Export menu's .csv DOWNLOAD — a person opens it in a spreadsheet, so it is always formula-guarded. */
 export function csvExportItem(
   rows: Array<Record<string, unknown>> | (() => Array<Record<string, unknown>>),
   label = "CSV",
