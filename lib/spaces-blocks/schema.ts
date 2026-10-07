@@ -27,8 +27,8 @@ export interface BlockSpec {
   rendered: boolean;
   /** inline = `text` is the block's content; none = the block carries no `text`. */
   text: "inline" | "none";
-  /** any = nested blocks allowed; none = no children; column = only `column`; blocks = any but `column`. */
-  children: "any" | "none" | "column" | "blocks";
+  /** any = nested blocks allowed; none = no children; column = only `column`; tab = only `tab`; blocks = any but `column` / `tab`. */
+  children: "any" | "none" | "column" | "tab" | "blocks";
   props: PropsCheck;
 }
 
@@ -223,6 +223,16 @@ const SPECS: BlockSpec[] = [
     },
   },
   {
+    type: "tabs",
+    parity: "N1",
+    label: "Tabs",
+    rendered: true,
+    text: "none",
+    children: "tab",
+    props: (p) => (p?.activeTab === undefined || str(p.activeTab) ? null : "props.activeTab must be a tab id"),
+  },
+  { type: "tab", parity: "N1", label: "Tab (one named tab inside Tabs)", rendered: true, text: "inline", children: "blocks", props: ok },
+  {
     type: "slot",
     parity: "-",
     label: "Builder placeholder (phase-2 block marker)",
@@ -293,6 +303,7 @@ export function spanProblem(s: unknown): string | null {
 export function validateBlocks(blocks: unknown, path = "blocks", seen: Set<string> = new Set()): string[] {
   const out: string[] = [];
   if (!Array.isArray(blocks)) return [`${path} must be an array`];
+  if (path === "blocks" && blocks.some((b) => isObj(b) && b.type === "tab")) out.push("blocks: a tab sits only inside tabs");
   for (const [i, raw] of blocks.entries()) {
     const at = `${path}[${i}]`;
     if (!isObj(raw)) {
@@ -326,6 +337,8 @@ export function validateBlocks(blocks: unknown, path = "blocks", seen: Set<strin
       if (spec.children === "none") out.push(`${at}: a ${b.type} block holds no children`);
       if (spec.children === "column" && kids.some((k) => k?.type !== "column")) out.push(`${at}: columns hold only column blocks`);
       if (spec.children !== "column" && kids.some((k) => k?.type === "column")) out.push(`${at}: a column sits only inside columnList`);
+      if (spec.children === "tab" && kids.some((k) => k?.type !== "tab")) out.push(`${at}: tabs hold only tab blocks`);
+      if (spec.children !== "tab" && kids.some((k) => k?.type === "tab")) out.push(`${at}: a tab sits only inside tabs`);
       out.push(...validateBlocks(kids, `${at}.children`, seen));
     }
     if (b.type === "columnList" && kids.length < 2) out.push(`${at}: columns need at least two column blocks`);

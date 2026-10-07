@@ -71,6 +71,15 @@ function everyType() {
       },
     },
     { id: id(), type: "slot", props: { label: "Hero" } },
+    {
+      id: id(),
+      type: "tabs",
+      props: { activeTab: "tab-b" },
+      children: [
+        { id: "tab-a", type: "tab", text: [span("Overview")], children: [{ id: id(), type: "text", text: [span("a")] }] },
+        { id: "tab-b", type: "tab", text: [span("Notes")], children: [{ id: id(), type: "todo", text: [span("b")], props: { checked: true } }] },
+      ],
+    },
   ];
 }
 
@@ -127,6 +136,12 @@ describe("Space snapshot JSON Schema", () => {
     "icon with two keys": (s) => (s.icon = { icon: "A", url: "https://x.y" }),
     "blocks not an array": (s) => (s.blocks = {}),
     "nested bad type": (s) => (s.blocks[2].children[0].type = "para"),
+    "tabs holding a non-tab": (s) => (s.blocks[30].children[0] = { id: "z", type: "text", text: [span("x")] }),
+    "tab outside tabs": (s) => (s.blocks[0].children = [{ id: "z", type: "tab", text: [span("x")] }]),
+    "tab at the page root": (s) => s.blocks.push({ id: "z", type: "tab", text: [span("x")] }),
+    "tabs with text": (s) => (s.blocks[30].text = [span("x")]),
+    "tabs activeTab not text": (s) => (s.blocks[30].props.activeTab = 3),
+    "column inside a tab": (s) => (s.blocks[30].children[0].children = [{ id: "z", type: "column", props: { width: 1 } }]),
   };
   for (const [name, mutate] of Object.entries(bad)) {
     it(`refuses: ${name}`, () => {

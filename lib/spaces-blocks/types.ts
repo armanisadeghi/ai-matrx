@@ -100,6 +100,8 @@ export const RENDERED_BLOCK_TYPES = [
   "columnList",
   "column",
   "slot",
+  "tabs",
+  "tab",
 ] as const;
 
 export const SCHEMA_ONLY_BLOCK_TYPES = [
@@ -189,6 +191,11 @@ export interface DatabaseProps extends Record<string, unknown> {
   openAs?: (typeof DATABASE_OPEN_AS)[number];
   views?: DatabaseView[];
   activeViewId?: string;
+}
+
+/** Tabs block: children are only `tab` blocks; `activeTab` = the id of the tab shown first. */
+export interface TabsProps extends Record<string, unknown> {
+  activeTab?: string;
 }
 
 /** Marks a block an importer could not map. It is a `text` block that says what it was. */

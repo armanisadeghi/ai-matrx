@@ -111,6 +111,8 @@ const PROPS_SCHEMAS: Record<string, { required?: boolean; schema: J }> = {
       },
     },
   },
+  tabs: { schema: { properties: { activeTab: { type: "string" } } } },
+  tab: { schema: {} },
   slot: { required: true, schema: { required: ["label"], properties: { label: { type: "string" } } } },
 };
 
@@ -180,9 +182,11 @@ function blockRule(type: string): J {
           ? { type: "array", maxItems: 0 }
           : spec.children === "column"
             ? { type: "array", minItems: 2, items: { type: "object", required: ["type"], properties: { type: { const: "column" } } } }
-            : spec.children === "blocks"
-              ? { type: "array", items: { not: { type: "object", required: ["type"], properties: { type: { const: "column" } } } } }
-              : { type: "array" },
+            : spec.children === "tab"
+              ? { type: "array", items: { type: "object", required: ["type"], properties: { type: { const: "tab" } } } }
+              : spec.children === "blocks"
+                ? { type: "array", items: { not: { type: "object", required: ["type"], properties: { type: { enum: ["column", "tab"] } } } } }
+                : { type: "array", items: { not: { type: "object", required: ["type"], properties: { type: { const: "tab" } } } } },
     },
     ...(p.required || spec.children === "column" ? { required: [...(p.required ? ["props"] : []), ...(spec.children === "column" ? ["children"] : [])] } : {}),
   };
@@ -209,7 +213,8 @@ export function buildSpaceSnapshotSchema(): J {
       },
       icon: { oneOf: [{ type: "null" }, mediaDef(false)] },
       cover: { oneOf: [{ type: "null" }, mediaDef(true)] },
-      blocks: { type: "array", items: ref("block") },
+      // a tab sits only inside tabs
+      blocks: { type: "array", items: { allOf: [ref("block"), { not: { type: "object", required: ["type"], properties: { type: { const: "tab" } } } }] } },
     },
     $defs: {
       color,
