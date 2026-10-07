@@ -1106,9 +1106,9 @@
   margin-left: 0;
 }
 /* A column row inside a column (the KPI tiles): Notion's reference draws tiles 172px wide with 63px between
-   them at 1699px, so the gutter is 62px; five or more across take 16px so each tile stays a tile. */
+   them at 1699px, so the gutter is 62px there (it narrows with the window); five or more across take 16px so each tile stays a tile. */
 .spaces-editor .bn-block:has(> .react-renderer > .bn-block-content[data-content-type="column"]) .bn-block:has(> .react-renderer > .bn-block-content[data-content-type="columnList"]) > .bn-block-group {
-  --spaces-col-half: 31px;
+  --spaces-col-half: clamp(8px, calc(3.4vw - 27px), 31px);
 }
 .spaces-editor .bn-block:has(> .react-renderer > .bn-block-content[data-content-type="column"]) .bn-block:has(> .react-renderer > .bn-block-content[data-content-type="columnList"]) > .bn-block-group:has(> .bn-block-outer:nth-child(5)) {
   --spaces-col-half: 8px;

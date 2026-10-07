@@ -13,7 +13,9 @@ import { createRoot, type Root } from "react-dom/client";
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { MarkdownPlainTextTab } from "@/features/html-pages/components/tabs/MarkdownPlainTextTab";
 
-(globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
+(
+  globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }
+).IS_REACT_ACT_ENVIRONMENT = true;
 globalThis.ResizeObserver = class {
   observe() {}
   unobserve() {}
@@ -76,7 +78,9 @@ jest.mock("@/lib/redux/hooks", () => ({
   }),
 }));
 // The chat package reads these hooks through its own module (P3): one double covers both.
-jest.mock("@ai-matrx/chat/store/hooks", () => jest.requireMock("@/lib/redux/hooks"));
+jest.mock("@ai-matrx/chat/store/hooks", () =>
+  jest.requireMock("@/lib/redux/hooks"),
+);
 
 jest.mock("@/lib/toast", () => ({
   toast: {
@@ -105,7 +109,10 @@ jest.mock("@/utils/supabase/client", () => ({
   },
 }));
 
-jest.mock("@ai-matrx/kit/media-query", () => ({ ...jest.requireActual("@ai-matrx/kit/media-query"), useIsMobile: () => false }));
+jest.mock("@ai-matrx/kit/media-query", () => ({
+  ...jest.requireActual("@ai-matrx/kit/media-query"),
+  useIsMobile: () => false,
+}));
 
 // The "…" menu's agent machinery is a different subsystem entirely; stubbing it
 // keeps this suite about the recorder path and nothing else.
@@ -128,8 +135,8 @@ jest.mock("@ai-matrx/chat/surfaces/hooks/useSurfaceConfig", () => ({
   useSurfaceAgentRoles: () => ({ roles: {}, loading: false }),
 }));
 
-
-const BYTES = "Hello {{first_name}},\n\nYour {{order.id}} is ready.\n\n\n  indented  \n";
+const BYTES =
+  "Hello {{first_name}},\n\nYour {{order.id}} is ready.\n\n\n  indented  \n";
 
 let host: HTMLDivElement;
 let root: Root;
@@ -145,7 +152,14 @@ afterEach(() => {
 
 function chord(el: HTMLTextAreaElement, key: string) {
   act(() => {
-    el.dispatchEvent(new KeyboardEvent("keydown", { key, ctrlKey: true, bubbles: true, cancelable: true }));
+    el.dispatchEvent(
+      new KeyboardEvent("keydown", {
+        key,
+        ctrlKey: true,
+        bubbles: true,
+        cancelable: true,
+      }),
+    );
   });
 }
 
@@ -178,13 +192,13 @@ const Template = ({ onChange }: { onChange: (v: string) => void }) => {
   const [v, setV] = useState(BYTES);
   return (
     <TooltipProvider>
-    <ProTextarea
-      value={v}
-      onChange={(e) => {
-        onChange(e.target.value);
-        setV(e.target.value);
-      }}
-    />
+      <ProTextarea
+        value={v}
+        onChange={(e) => {
+          onChange(e.target.value);
+          setV(e.target.value);
+        }}
+      />
     </TooltipProvider>
   );
 };
