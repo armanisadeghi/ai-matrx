@@ -8,7 +8,7 @@
  */
 
 /** The common data tools every agent may carry; each must draw its answer for a person. */
-export const DATA_TOOLS = ["records", "dataset", "pick_list", "data"] as const;
+export const DATA_TOOLS = ["records", "table", "dataset", "pick_list", "data"] as const;
 
 /** Tools whose display is a stored `tool.ui` row rather than code. */
 export const DRAWN_BY_A_STORED_ROW: ReadonlySet<string> = new Set(["data"]);

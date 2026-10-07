@@ -313,16 +313,16 @@ const FEATURE_TOOL_RENDERERS: ToolRegistry = {
     },
   },
 
-  dataset: {
-    toolName: "dataset",
-    displayName: "Dataset",
+  table: {
+    toolName: "table",
+    displayName: "Table",
     chrome: "card",
     phaseLabels: {
-      running: "Working on dataset",
-      complete: "Dataset ready",
-      errorPrefix: "Dataset action failed",
+      running: "Working on table",
+      complete: "Table ready",
+      errorPrefix: "Table action failed",
     },
-    resultsLabel: "Dataset",
+    resultsLabel: "Table",
     InlineComponent: DatasetInline,
     OverlayComponent: DatasetOverlay,
     keepExpandedOnStream: true,
@@ -543,6 +543,10 @@ const FEATURE_TOOL_RENDERERS: ToolRegistry = {
     },
   },
 };
+
+// The table tool was named `dataset` until 2026-10-07. The DB row and older saved conversations
+// still carry that name during the rename window; both draw the same card.
+FEATURE_TOOL_RENDERERS.dataset = { ...FEATURE_TOOL_RENDERERS.table, toolName: "dataset" };
 
 for (const [toolName, renderer] of Object.entries(FEATURE_TOOL_RENDERERS)) {
   registerToolRenderer(toolName, renderer);
