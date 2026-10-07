@@ -14,7 +14,7 @@
 
 import { NextResponse } from "next/server";
 
-import { publicFormAsks } from "@/features/forms/service";
+import { publicFormRoute } from "@/features/forms/service";
 
 export const dynamic = "force-dynamic";
 
@@ -36,17 +36,21 @@ export async function POST(
   const values = body.values && typeof body.values === "object" && !Array.isArray(body.values) ? body.values : {};
 
   try {
-    const asks = await publicFormAsks(formId, values);
+    // TYPEFORM-DUP: the whole route — showIf AND logic jumps, the ending reached and the score —
+    // in one store answer (`custom.form_public_route`). Null is the same silence as zero asks.
+    const route = await publicFormRoute(formId, values);
     return NextResponse.json({
       ok: true,
-      asks: asks.map((a) => ({ field: a.field_key, asked: a.asked, said: a.said ?? null })),
+      asks: (route?.asks ?? []).map((a) => ({ field: a.field_key, asked: a.asked, said: a.said ?? null })),
+      ending: route?.ending ?? null,
+      score: route?.score ?? null,
     });
   } catch (thrown) {
     // A REFUSED DOOR IS SAID, NEVER GUESSED AROUND. The stranger reads a person's sentence
     // and sees every question; the door's own words go to the server log, where whoever
     // runs this app looks for them (they can name a function, which a patient never needs).
     const error = thrown as Error;
-    console.error(`[forms/asks] custom.form_public_asks refused for form ${formId}: ${error.message}`);
+    console.error(`[forms/asks] custom.form_public_route refused for form ${formId}: ${error.message}`);
     return NextResponse.json(
       {
         ok: false,
