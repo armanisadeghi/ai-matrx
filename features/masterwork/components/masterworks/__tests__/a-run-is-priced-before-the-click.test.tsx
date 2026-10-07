@@ -87,7 +87,7 @@ jest.mock("@/lib/api/call-api", () => ({
 jest.mock("@/components/official/ProTextarea", () => ({
   ProTextarea: () => <textarea aria-label="Masterwork input" />,
 }));
-jest.mock("@/features/rich-document/RichDocument", () => ({
+jest.mock("@ai-matrx/rich-content/rich-document/RichDocument", () => ({
   RichDocument: () => <div />,
 }));
 // The organization's points-per-dollar knob, answered — the knob snapshot is

@@ -39,7 +39,7 @@ import { MediaOptionsGrid } from "@/features/podcasts/generator/components/Media
 import { MandateAgentPicker } from "@/features/mandates/components/MandateAgentPicker";
 import { RichContent } from "@ai-matrx/rich-content/levels/RichContent";
 import { SessionMediaElement } from "@/features/audio/session/SessionMediaElement";
-import { RichDocumentActions } from "@/features/rich-document/RichDocumentActions";
+import { RichDocumentActions } from "@ai-matrx/rich-content/rich-document/RichDocumentActions";
 import KindInstanceRender from "@/features/content-ir/studio/components/KindInstanceRender";
 import { useMandate } from "@ai-matrx/chat/mandates/useMandate";
 import { useLiveAgentRun } from "@ai-matrx/chat/agents/hooks/useLiveAgentRun";

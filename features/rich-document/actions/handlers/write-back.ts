@@ -12,9 +12,9 @@ import { toast } from "@/lib/toast";
 import { selectWidgetHandleIdFor } from "@ai-matrx/chat/agents/redux/execution-system/instance-ui-state/instance-ui-state.selectors";
 import { getSelectionWriteBack } from "@ai-matrx/chat/agents/utils/launch-widget-handles";
 import type { SelectionWriteBack } from "@ai-matrx/chat/agents/types/widget-handle.types";
-import { registerAction } from "../provider";
+import { registerAction } from "@ai-matrx/rich-content/rich-document/actions/provider";
 import { contentForDestination } from "../utils";
-import type { RichDocumentActionContext } from "../../types";
+import type { RichDocumentActionContext } from "@ai-matrx/rich-content/rich-document/types";
 
 function writeBackFor(ctx: RichDocumentActionContext): SelectionWriteBack | null {
   if (ctx.source.type !== "chat-message") return null;

@@ -42,7 +42,7 @@ import {
   type ResolvedZone,
   type SelectionMode,
   type SelectionToolbarUi,
-} from "./selection-zones";
+} from "@ai-matrx/rich-content/selection-toolbar/selection-zones";
 import {
   HIGHLIGHT_WHILE_EDITING_DEFAULT,
   HIGHLIGHT_WHILE_EDITING_KNOB,
@@ -52,15 +52,15 @@ import {
   SELECTION_COMMON_HOST_KEY,
   type SelectionCommonHost,
   type SelectionToolbarHost,
-} from "./selection-actions";
+} from "@ai-matrx/rich-content/selection-toolbar/selection-actions";
 
-import type { Rect } from "./SelectionToolbarFrame";
+import type { Rect } from "@ai-matrx/rich-content/selection-toolbar/SelectionToolbarFrame";
 // The common pair (copy, save to notes) declares itself on load.
-import "./common-actions";
-import { textareaSelectionRect } from "./textarea-caret";
+import "@ai-matrx/rich-content/selection-toolbar/common-actions";
+import { textareaSelectionRect } from "@ai-matrx/rich-content/selection-toolbar/textarea-caret";
 // The formatting buttons for every engine (no Tiptap in this chunk).
 import "@/components/rich-editor/format/format-actions";
-import { liveSelectionShapeText } from "./selection-shape";
+import { liveSelectionShapeText } from "@ai-matrx/rich-content/selection-toolbar/selection-shape";
 
 /**
  * The live selection written back as the shapes it was drawn from (VERIFIER-30 #1): a browser
@@ -75,7 +75,7 @@ function selectionShapeText(): string | null {
 // The frame (the package's selection layout, the portal, positioning) loads
 // the first time a toolbar opens — this shell is on every route; the frame is
 // not (code-splitting skill: one boundary, gated on `open`).
-const loadFrame = () => import("./SelectionToolbarFrame");
+const loadFrame = () => import("@ai-matrx/rich-content/selection-toolbar/SelectionToolbarFrame");
 const SelectionToolbarFrame = dynamic(loadFrame, { ssr: false, loading: () => null });
 
 interface OpenState {
@@ -264,7 +264,7 @@ export function SelectionToolbarRoot(): React.ReactElement | null {
   React.useEffect(() => {
     let off: (() => void) | null = null;
     let cancelled = false;
-    import("./selection-copy")
+    import("@ai-matrx/rich-content/selection-toolbar/selection-copy")
       .then((m) => {
         if (!cancelled) off = m.installRichCopyKeys();
       })
@@ -407,7 +407,8 @@ export function SelectionToolbarRoot(): React.ReactElement | null {
             data: { text: content, value: null, hasValue: false, grid: null, title: null, shapeIndex: 0, organizationId: null, callbackGroupId: null },
           }),
         ),
-      openFeedback: (report) => openFeedback(report),
+      // The engine only files text-passage subjects, which this window accepts.
+      openFeedback: (report) => openFeedback(report as Parameters<typeof openFeedback>[0]),
       newChatAbout: (passage) => {
         openNewChatAbout({
           passage,

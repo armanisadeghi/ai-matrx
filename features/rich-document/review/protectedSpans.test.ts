@@ -7,7 +7,7 @@
  * matched the protected bytes, even for a one-word typo fix.
  */
 import { spliceDisplayEdit, displayOfStoredAnswer } from "@ai-matrx/chat/agents/redux/execution-system/message-crud/answer-text-splice";
-import { maskProtectedSpans, unmaskProtectedSpans } from "./protectedSpans";
+import { maskProtectedSpans, unmaskProtectedSpans } from "@ai-matrx/rich-content/rich-document/review/protectedSpans";
 
 const ESC = "\u001b";
 const STORED =

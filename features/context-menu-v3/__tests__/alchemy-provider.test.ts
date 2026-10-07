@@ -8,7 +8,7 @@
  *   in the one AI group → "libraries" red.
  * - a menu instance's rows leak into another open menu → "instance" red.
  */
-jest.mock("@/components/agent-copy/alchemy-icon-keys", () => ({ registerAlchemyIcon: () => "app:Icon" }));
+jest.mock("@ai-matrx/rich-content/utils/alchemy-icon-keys", () => ({ registerAlchemyIcon: () => "app:Icon" }));
 
 import { createActionRegistry, createClickTarget } from "@ai-matrx/alchemy/actions";
 import { contextMenuActionsFromModel } from "../alchemy-provider";

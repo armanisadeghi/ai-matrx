@@ -48,9 +48,9 @@ import {
   prepareContentEdit,
   savePreparedContentEdit,
 } from "../actions/handlers/preparedEdit";
-import { explainSpliceRefusal, spliceProposal } from "../review/proposedEdit";
-import { maskProtectedSpans, unmaskProtectedSpans } from "../review/protectedSpans";
-import type { ChatAnswerSaveReceipt, ContentSource, RichDocumentActionContext } from "../types";
+import { explainSpliceRefusal, spliceProposal } from "@ai-matrx/rich-content/rich-document/review/proposedEdit";
+import { maskProtectedSpans, unmaskProtectedSpans } from "@ai-matrx/rich-content/rich-document/review/protectedSpans";
+import type { ChatAnswerSaveReceipt, ContentSource, RichDocumentActionContext } from "@ai-matrx/rich-content/rich-document/types";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export interface DocumentAgentReviewProps {

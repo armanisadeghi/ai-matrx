@@ -57,12 +57,12 @@ import {
 } from "lucide-react";
 import type { IconComponentType } from "@ai-matrx/icons";
 import { PLACEMENT_TYPES } from "@/features/agent-shortcuts/constants";
-import type { RichDocumentAction } from "@/features/rich-document/types";
+import type { RichDocumentAction } from "@ai-matrx/rich-content/rich-document/types";
 import {
   AI_SUBMENU_LABEL,
   buildMenuTree,
   withAiSlot,
-} from "@/features/rich-document/variants/shared/menuStructure";
+} from "@ai-matrx/rich-content/rich-document/variants/shared/menuStructure";
 import type { AgentMenuCategoryGroup } from "../hooks/useUnifiedAgentContextMenu";
 import { jsonSectionLabel } from "../utils/json-menu-actions";
 import {

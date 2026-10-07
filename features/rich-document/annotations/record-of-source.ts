@@ -5,7 +5,7 @@
 // in flight, a raw buffer, an edited copy) has none, and the reading set's
 // record actions (highlight, comment, suggest, link) are simply absent there.
 
-import type { ContentSource } from "../types";
+import type { ContentSource } from "@ai-matrx/rich-content/rich-document/types";
 import { durableRecordId } from "@ai-matrx/kit/ids";
 
 /** The saved record a host renders, when its ContentSource does not say (the studio's loaded document). */

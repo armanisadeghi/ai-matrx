@@ -7,7 +7,7 @@
  * "uncategorized" red, listing the id.
  */
 import "@/features/rich-document/actions/handlers";
-import { getAllActions, toAlchemyAction } from "@/features/rich-document/actions/provider";
+import { getAllActions, toAlchemyAction } from "@ai-matrx/rich-content/rich-document/actions/provider";
 import { CONTEXT_MENU_ENGINE_ROWS } from "../engine-rows";
 import { matchRule } from "../grouping";
 import { PROPOSED_MENU_GROUPING } from "../proposed-grouping";

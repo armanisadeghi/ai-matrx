@@ -43,7 +43,7 @@ import {
   DrawerHeader,
   DrawerTitle,
 } from "@/components/ui/drawer";
-import { RichDocumentActions } from "@/features/rich-document/RichDocumentActions";
+import { RichDocumentActions } from "@ai-matrx/rich-content/rich-document/RichDocumentActions";
 import { FileContextMenu } from "@/features/files/components/core/FileContextMenu/FileContextMenu";
 import { PermissionsDialog } from "@/features/files/components/core/PermissionsDialog/PermissionsDialog";
 import { RenameDialog } from "@/features/files/components/core/RenameDialog/RenameDialog";

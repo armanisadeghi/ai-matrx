@@ -10,7 +10,7 @@
 // its answers offer "Apply to source" (the same review).
 
 import { BookmarkPlus, FilePen, Link2, MessageCircle, Wand2 } from "lucide-react";
-import { registerAction } from "../provider";
+import { registerAction } from "@ai-matrx/rich-content/rich-document/actions/provider";
 import { AGENT_ICON } from "@/components/icons/domain-icons";
 import { customAgentWindowAction } from "@/features/overlays/openers/customAgentWindow";
 import { applyToSourceReviewAction } from "@/features/overlays/openers/applyToSourceReview";
@@ -20,13 +20,13 @@ import {
   putShortcutDraftSeed,
   shortcutSeedForMapping,
 } from "@/features/agent-shortcuts/draft-seed";
-import type { RichDocumentActionContext } from "../../types";
+import type { RichDocumentActionContext } from "@ai-matrx/rich-content/rich-document/types";
 import { buildValueSources } from "@ai-matrx/chat/agents/components/custom-agent/custom-agent-plan";
 import {
   applyTargetForConversation,
   canApplyBack,
   registerApplyTarget,
-} from "../../review/applyTargets";
+} from "@ai-matrx/rich-content/rich-document/review/applyTargets";
 import {
   chatIds,
   contentForDestination,

@@ -11,7 +11,7 @@ import type {
   NoteEditableContentSource,
   PreparedContentEdit,
   RichDocumentActionContext,
-} from "../../types";
+} from "@ai-matrx/rich-content/rich-document/types";
 import { toast } from "@/lib/toast";
 
 export async function prepareContentEdit(

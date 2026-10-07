@@ -35,12 +35,12 @@ import { LinkRecordSheet } from "./LinkRecordSheet";
 import { PassageQuote } from "./PassageQuote";
 import { stageRecordComment, useWithNextMessage, WithNextMessageSwitch } from "./comment-remarks";
 import type { AnnotationSource } from "./types";
-import { useSelectionZone, type SelectionToolbarUi } from "@/components/selection-toolbar/selection-zones";
+import { useSelectionZone, type SelectionToolbarUi } from "@ai-matrx/rich-content/selection-toolbar/selection-zones";
 import {
   COMMENT_SENDS_WITH_NEXT_MESSAGE_DEFAULT,
   COMMENT_SENDS_WITH_NEXT_MESSAGE_KNOB,
   PASSAGE_ACTIONS_HOST_KEY,
-} from "@/components/selection-toolbar/selection-actions";
+} from "@ai-matrx/rich-content/selection-toolbar/selection-actions";
 import { Switch } from "@/components/ui/switch";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/slices/userSlice";

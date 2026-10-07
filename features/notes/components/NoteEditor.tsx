@@ -39,8 +39,8 @@ import { setNoteEditorMode } from "../redux/slice";
 import { canonicalNoteEditorMode } from "../redux/notes.types";
 import { cn } from "@/lib/utils";
 import { useToastManager } from "@/hooks/useToastManager";
-import { RichDocument } from "@/features/rich-document/RichDocument";
-import type { ContentSource } from "@/features/rich-document/types";
+import { RichDocument } from "@ai-matrx/rich-content/rich-document/RichDocument";
+import type { ContentSource } from "@ai-matrx/rich-content/rich-document/types";
 import { usePreparedNoteContentSource } from "../usePreparedNoteContentSource";
 import type { EditorMode as SurfaceEditorMode } from "./NoteEditorCore";
 import {

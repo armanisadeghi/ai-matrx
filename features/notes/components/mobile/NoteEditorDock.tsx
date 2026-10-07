@@ -38,7 +38,7 @@ import { useToastManager } from "@/hooks/useToastManager";
 import { useOpenNoteKnowledgePanel } from "@/features/notes/canvas/noteKnowledgeKind";
 import { useNoteIngestStatus } from "../../hooks/useNoteIngestStatus";
 import { ShareModal } from "@/features/sharing/components/ShareModal";
-import { copyRichContent } from "@/components/agent-copy/copy-commands";
+import { copyRichContent } from "@ai-matrx/rich-content/copy/copy-commands";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 

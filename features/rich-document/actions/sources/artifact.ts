@@ -2,7 +2,7 @@
 //
 // Source adapter for artifact content. Phase 0: only instanceKeyPrefix.
 
-import type { ContentSource, ContentSourceAdapter } from "../../types";
+import type { ContentSource, ContentSourceAdapter } from "@ai-matrx/rich-content/rich-document/types";
 
 export const artifactAdapter: ContentSourceAdapter = {
   instanceKeyPrefix: (source: ContentSource) => {

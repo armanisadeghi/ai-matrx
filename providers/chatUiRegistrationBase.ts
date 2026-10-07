@@ -45,7 +45,7 @@ import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import {
   copyRichContent,
   copyContent,
-} from "@/components/agent-copy/copy-commands";
+} from "@ai-matrx/rich-content/copy/copy-commands";
 import {
   selectAllSkills,
   selectSkillsStatus,
@@ -87,7 +87,7 @@ import { GmailReviewCard } from "@/features/google-workspace/agent/GmailReviewCa
 import { ShareButton } from "@/features/sharing/components/ShareButton";
 import { ReviewAnswersLink } from "@/features/agents/decision-review/components/ReviewAnswersLink";
 import { RecordChangeApprovalCard } from "@/features/record-change-approvals/RecordChangeApprovalCard";
-import { RichDocument } from "@/features/rich-document/RichDocument";
+import { RichDocument } from "@ai-matrx/rich-content/rich-document/RichDocument";
 import {
   traceWarRoomRenderPath,
   isWarRoomThreadAgentSurface,

@@ -5,7 +5,7 @@ import { CleanupOutput } from "./CleanupOutput";
 Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
 
 const renderDocument = jest.fn();
-jest.mock("@/features/rich-document/RichDocument", () => ({
+jest.mock("@ai-matrx/rich-content/rich-document/RichDocument", () => ({
   RichDocument: (props: unknown) => {
     renderDocument(props);
     return <div>Rendered answer</div>;

@@ -38,7 +38,7 @@ import { continueMarkupOnEnter, makeLink, setLinePrefix, toggleWrap, type Source
 import { markdownSourceLanguage } from "./markdown-language";
 import { formatMarkdown, type FormatCommandId } from "../core/markdown-format";
 import { markdownFormatHost, textFormatTarget, type FormatTarget } from "../format/format-target";
-import { useSelectionZone } from "@/components/selection-toolbar/selection-zones";
+import { useSelectionZone } from "@ai-matrx/rich-content/selection-toolbar/selection-zones";
 import { RICH_EDITOR_SHORTCUTS, TYPED_TRIGGERS } from "../core/shortcuts";
 import { variableNamesInText, variableSuggestions } from "../core/variables";
 import { islandsReleasedBetweenTexts } from "../core/history-approval";

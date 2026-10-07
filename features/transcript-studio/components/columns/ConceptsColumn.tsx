@@ -13,7 +13,7 @@ import {
 import { cn } from "@/lib/utils";
 import { formatDurationSeconds } from "@ai-matrx/kit/format";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import { RichDocumentActions } from "@/features/rich-document/RichDocumentActions";
+import { RichDocumentActions } from "@ai-matrx/rich-content/rich-document/RichDocumentActions";
 import { COLUMN_IDS } from "../../constants";
 import {
   selectLatestRunForColumn,

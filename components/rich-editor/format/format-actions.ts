@@ -25,8 +25,8 @@ import {
   Strikethrough,
   type LucideIcon,
 } from "lucide-react";
-import { registerAlchemyIcon } from "@/components/agent-copy/alchemy-icon-keys";
-import { declareSelectionProvider, hostHalf, placeSelectionActions, shownInSelectionMode } from "@/components/selection-toolbar/selection-actions";
+import { registerAlchemyIcon } from "@ai-matrx/rich-content/utils/alchemy-icon-keys";
+import { declareSelectionProvider, hostHalf, placeSelectionActions, shownInSelectionMode } from "@ai-matrx/rich-content/selection-toolbar/selection-actions";
 import type { FormatCommandId } from "../core/markdown-format";
 import { MARKDOWN_FORMAT_HOST_KEY, type FormatTarget, type MarkdownFormatHost } from "./format-target";
 

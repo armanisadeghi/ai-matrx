@@ -1,6 +1,6 @@
 import { Maximize2, Braces, Copy, Eraser, X, FileText } from "lucide-react";
 import { toast } from "@/lib/toast";
-import { copyContent } from "@/components/agent-copy/copy-commands";
+import { copyContent } from "@ai-matrx/rich-content/copy/copy-commands";
 
 // View-mode toggle has moved to MessageViewModeMenu next to the role
 // selector. This file owns the action icon row only.

@@ -12,7 +12,7 @@
  * - a submenu named with a coined container word, or one member folded alone
  *   into a submenu → "shape" red.
  */
-jest.mock("@/components/agent-copy/alchemy-icon-keys", () => ({ registerAlchemyIcon: () => "app:Icon" }));
+jest.mock("@ai-matrx/rich-content/utils/alchemy-icon-keys", () => ({ registerAlchemyIcon: () => "app:Icon" }));
 jest.mock("@/components/icons/domain-icons", () => ({ AGENT_ICON: () => null }));
 
 import { createClickTarget, type Action, type ActionCategory, type ResolvedAction } from "@ai-matrx/alchemy/actions";

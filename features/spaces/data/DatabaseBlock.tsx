@@ -237,6 +237,28 @@ function DatabaseFrame({
           {isChart ? (
             <ViewSettings tableId={tableId} sample={sample} view={active} fields={fields} props={props} onView={saveView} onBlock={save} editable={editable} compact />
           ) : null}
+          {isChart ? (
+            // Notion's chart view keeps its view's filter and sort: the tile counts and orders what they show.
+            <span className="spaces-db-chart-tools">
+              <FilterButton
+                view={active}
+                fields={fields}
+                choice={filterChoices[active.id]}
+                onChoice={(c) => setFilterChoices((all) => ({ ...all, [active.id]: c }))}
+                canSave={editable}
+                onSave={(filters) => saveView({ filters })}
+              />
+              <ViewerSortButton
+                view={active}
+                fields={fields}
+                choice={sortChoices[active.id]}
+                onChoice={(c) => setSortChoices((all) => ({ ...all, [active.id]: c }))}
+                canSave={editable}
+                onSave={(sorts) => saveView({ sorts })}
+                icon={<ArrowDownUp size={14} strokeWidth={1.8} />}
+              />
+            </span>
+          ) : null}
           {editable && !isChart ? (
             <Button variant="quiet" icon={<Plus size={14} />} aria-label="Add view" onClick={() => {
                 const v: SpaceDbView = { id: newViewId(), name: "Table", layout: "grid" };
@@ -346,7 +368,8 @@ function DatabaseBody({
   if (view.layout === "chart") {
     const settings = { ...DEFAULT_CHART, ...view.chart };
     // The chart counts what its view shows: the view's saved filters plus the viewer's unsaved ones (`shown`).
-    return <ChartView tableId={tableId} settings={settings} title={view.name} overRows={sample} filter={scalarFilters(view.filters)} />;
+    // and its sort when that sort is on the grouped field (data/ChartView.tsx orderPoints).
+    return <ChartView tableId={tableId} settings={settings} title={view.name} overRows={sample} filter={view.filters ?? {}} sorts={view.sorts ?? []} />;
   }
   if ((view.layout as Layout) === "dashboard") return <DashboardCanvas tableId={tableId} />;
   const needsGroup = view.layout === "kanban" && !view.groupField;

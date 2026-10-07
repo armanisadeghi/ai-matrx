@@ -90,11 +90,11 @@ import {
   MicrophoneIconButton,
   type MicrophoneIconButtonHandle,
 } from "@/features/audio/components/MicrophoneIconButton";
-import { RichDocumentActions } from "@/features/rich-document/RichDocumentActions";
+import { RichDocumentActions } from "@ai-matrx/rich-content/rich-document/RichDocumentActions";
 import {
   clearContentAction,
   hostCopyAction,
-} from "@/features/rich-document/actions/hostActions";
+} from "@ai-matrx/rich-content/rich-document/actions/hostActions";
 import { useOpenDiffViewerWindow } from "@/features/overlays/openers/diffViewerWindow";
 import {
   useFloatingRunWindow,

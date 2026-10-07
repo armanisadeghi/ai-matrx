@@ -41,7 +41,7 @@ import {
   cleanTableHeaderKey,
   parseMarkdownTable,
 } from "@ai-matrx/rich-content/display/blocks/table/parseMarkdownTable";
-import { copyContent } from "@/components/agent-copy/copy-commands";
+import { copyContent } from "@ai-matrx/rich-content/copy/copy-commands";
 import { toast } from "@/lib/toast";
 import { SurfaceRuntimeProvider } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import {

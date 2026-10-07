@@ -3,8 +3,8 @@
 import React, { useRef, useCallback, useState } from "react";
 import { Mic, Plus, Minus, Type, X } from "lucide-react";
 import ActionFeedbackButton from "@/components/official/ActionFeedbackButton";
-import { RichDocumentActions } from "@/features/rich-document/RichDocumentActions";
-import { clearContentAction } from "@/features/rich-document/actions/hostActions";
+import { RichDocumentActions } from "@ai-matrx/rich-content/rich-document/RichDocumentActions";
+import { clearContentAction } from "@ai-matrx/rich-content/rich-document/actions/hostActions";
 import { cn } from "@/lib/utils";
 
 interface TranscriptEntry {

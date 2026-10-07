@@ -17,7 +17,7 @@ jest.mock("@/lib/toast", () => ({
 }));
 
 import "./save";
-import { getAction } from "../provider";
+import { getAction } from "@ai-matrx/rich-content/rich-document/actions/provider";
 
 it("keeps Save to Document quiet when organization selection is cancelled", async () => {
   const error = new Error("not now");

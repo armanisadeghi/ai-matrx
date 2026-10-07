@@ -10,7 +10,7 @@ import {
   DrawerHeader,
   DrawerTitle,
 } from "@/components/ui/drawer";
-import { RichDocumentActions } from "@/features/rich-document/RichDocumentActions";
+import { RichDocumentActions } from "@ai-matrx/rich-content/rich-document/RichDocumentActions";
 import {
   selectRecordingSegments,
   selectSessionCleanedTimestamped,

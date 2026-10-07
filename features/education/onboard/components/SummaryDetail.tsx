@@ -26,7 +26,7 @@ import { AccessGate } from "@/features/access-gate/components/AccessGate";
 import { studyMediaService } from "@/features/education/media/service";
 import type { StudyMediaRow } from "@/features/education/media/types";
 import { downloadTextFile } from "../export/download";
-import { ContentFindControl } from "@/features/rich-document/search/ContentFindControl";
+import { ContentFindControl } from "@ai-matrx/rich-content/rich-document/search/ContentFindControl";
 import { SurfaceRuntimeProvider } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import { createEducationSummariesScope } from "@/features/surfaces/manifests/education-summaries.manifest";
 import { useAccess } from "@/utils/permissions/access";

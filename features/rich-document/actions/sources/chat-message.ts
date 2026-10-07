@@ -14,7 +14,7 @@
 // generic `delete-message` action delegates to ctx.callbacks?.onRequestDelete.
 // Wiring a "raw" delete here would bypass the user choice.
 
-import type { ContentSource, ContentSourceAdapter } from "../../types";
+import type { ContentSource, ContentSourceAdapter } from "@ai-matrx/rich-content/rich-document/types";
 
 export const chatMessageAdapter: ContentSourceAdapter = {
   instanceKeyPrefix: (source: ContentSource) => {

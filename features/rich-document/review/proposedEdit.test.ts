@@ -1,4 +1,4 @@
-import { reduceToBlockEdit, spliceProposal } from "./proposedEdit";
+import { reduceToBlockEdit, spliceProposal } from "@ai-matrx/rich-content/rich-document/review/proposedEdit";
 
 const DOC = [
   "# Refund policy",

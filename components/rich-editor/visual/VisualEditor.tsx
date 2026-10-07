@@ -33,7 +33,7 @@ import type { FindOptions } from "../core/find-replace";
 import { createVisualExtensions, type RichShellActions } from "./visual-extensions";
 import { findHighlightKey } from "./decorations";
 import { BlockHandle } from "./BlockHandle";
-import { useSelectionZone } from "@/components/selection-toolbar/selection-zones";
+import { useSelectionZone } from "@ai-matrx/rich-content/selection-toolbar/selection-zones";
 import { RICH_EDITOR_HOST_KEY, islandSelectionOf, tableAnchorOf, type RichEditorSelectionHost } from "./format-actions";
 import { useRichEditorContext } from "../RichEditorContext";
 

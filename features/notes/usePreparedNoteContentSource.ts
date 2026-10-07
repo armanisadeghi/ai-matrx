@@ -1,5 +1,5 @@
 import { useId, useState } from "react";
-import type { ContentSource } from "@/features/rich-document/types";
+import type { ContentSource } from "@ai-matrx/rich-content/rich-document/types";
 import type { Note } from "./types";
 import type { NoteRecord } from "./redux/notes.types";
 import { captureNoteEditSourceFromRecord, noteIdentityContentSource } from "./richDocumentSource";

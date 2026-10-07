@@ -4,7 +4,7 @@
 import React, { useState, useRef, useLayoutEffect } from "react";
 import { createPortal } from "react-dom";
 import { Copy, ChevronDown, FileCode2, FileText, Code, Brain } from "lucide-react";
-import { copyRichContent, copyContent, type CopyFlavor } from "@/components/agent-copy/copy-commands";
+import { copyRichContent, copyContent, type CopyFlavor } from "@ai-matrx/rich-content/copy/copy-commands";
 
 import { Tile } from "@ai-matrx/design-system/controls";
 interface CopyDropdownButtonProps {

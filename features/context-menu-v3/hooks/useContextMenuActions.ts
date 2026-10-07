@@ -84,10 +84,10 @@ import { useOpenListenSummaryWindow } from "@/features/overlays/openers/listenSu
 import { LISTENING_HOME_SURFACE } from "@/features/audio/service/listeningConfig";
 import { hasEditorInsertTarget, insertIntoEditor, ownParagraph } from "../utils/insert-into-editor";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
-import { resolveActions } from "@/features/rich-document/actions/provider";
-import { registryMenuActions } from "@/features/rich-document/variants/shared/menuStructure";
-import { getSourceAdapter } from "@/features/rich-document/actions/sources";
-import { shortHash } from "@/features/rich-document/actions/sources/raw";
+import { resolveActions } from "@ai-matrx/rich-content/rich-document/actions/provider";
+import { registryMenuActions } from "@ai-matrx/rich-content/rich-document/variants/shared/menuStructure";
+import { getSourceAdapter } from "@ai-matrx/rich-content/rich-document/actions/sources/index";
+import { shortHash } from "@ai-matrx/rich-content/rich-document/actions/sources/raw";
 // Side-effect import: the copy/save/export/convert handlers self-register into
 // the rich-document action registry on load, so resolveActions resolves them.
 import "@/features/rich-document/actions/handlers";
@@ -95,7 +95,7 @@ import type {
   ContentSource,
   RichDocumentAction,
   RichDocumentActionContext,
-} from "@/features/rich-document/types";
+} from "@ai-matrx/rich-content/rich-document/types";
 import {
   placementGroupKey,
   PLACEMENT_TYPES,

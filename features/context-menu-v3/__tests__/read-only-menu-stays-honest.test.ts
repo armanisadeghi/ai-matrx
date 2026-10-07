@@ -14,7 +14,7 @@
  * - a library that failed is silently absent or still claims to load →
  *   "retry" red.
  */
-jest.mock("@/components/agent-copy/alchemy-icon-keys", () => ({ registerAlchemyIcon: () => "app:Icon" }));
+jest.mock("@ai-matrx/rich-content/utils/alchemy-icon-keys", () => ({ registerAlchemyIcon: () => "app:Icon" }));
 jest.mock("@/features/context-menu-v3/hooks/useContextMenuActions", () => ({
   getPlacementIcon: () => null,
   getPlacementLabel: (p: string) => (p === "ai-action" ? "AI Actions" : p),

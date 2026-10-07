@@ -5,7 +5,7 @@ import type {
   ContentSource as HostContentSource,
   RichDocumentAction as HostRichDocumentAction,
   RichDocumentActionContext as HostRichDocumentActionContext,
-} from "@/features/rich-document/types";
+} from "@ai-matrx/rich-content/rich-document/types";
 import type { ResourceType as HostResourceType } from "@/utils/permissions/types";
 
 declare module "@ai-matrx/chat/context-menu/types" {

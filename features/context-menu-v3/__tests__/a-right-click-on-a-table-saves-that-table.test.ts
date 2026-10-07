@@ -8,7 +8,7 @@
  * answer; GREEN: it is the clicked table's header + rows, read from the rendered DOM.
  */
 import "@/features/rich-document/actions/handlers";
-import { getAction } from "@/features/rich-document/actions/provider";
+import { getAction } from "@ai-matrx/rich-content/rich-document/actions/provider";
 import { chatContext } from "@/features/rich-document/test-utils/chatContext";
 import { tableTextAtTarget } from "../utils/table-at-target";
 

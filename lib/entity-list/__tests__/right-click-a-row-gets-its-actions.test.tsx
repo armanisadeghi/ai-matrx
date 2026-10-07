@@ -17,7 +17,7 @@ import { namedHeader } from "@/features/context-menu-v3/alchemy-provider";
 import React, { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 
-jest.mock("@/components/agent-copy/alchemy-icon-keys", () => ({ registerAlchemyIcon: () => "app:Icon" }));
+jest.mock("@ai-matrx/rich-content/utils/alchemy-icon-keys", () => ({ registerAlchemyIcon: () => "app:Icon" }));
 
 let capturedTableProps: Record<string, unknown> | null = null;
 

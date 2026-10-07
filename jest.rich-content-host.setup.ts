@@ -30,6 +30,16 @@ configureRichContent({
       return (require("@ai-matrx/rich-content/host").hostCapability("app") as Record<PropertyKey, unknown> | undefined)?.[key];
     },
   }) as never,
+  // The app's domain blocks + JSON answer renderer register on the first block lookup, after the
+  // suite's own jest.mock calls, so a mocked block still reaches the registry.
+  ensureBlockRegistrations: () => {
+    require("@/features/rich-content-host/app-bindings");
+  },
+  ensureRichDocumentRegistrations: () => {
+    require("@/features/rich-content-host/rich-document-registrations");
+  },
+  showManualCopy: (opts) => require("@/components/dialogs/clipboard-fallback/manualCopyOpener").showManualCopy(opts),
+  readSessionKnob: (knob) => require("@/lib/scoped-config/sessionKnob").getSessionKnob(knob),
   toast: late(() => require("@/lib/toast").toast),
   captureError: (report) => require("@/lib/diagnostics/errorCaptureStore").captureError(report),
   ErrorActions: (props) => require("@/components/errors/ErrorAlchemyMenu").ErrorAlchemyMenu(props),

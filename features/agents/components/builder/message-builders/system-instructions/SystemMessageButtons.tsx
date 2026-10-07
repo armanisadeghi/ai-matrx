@@ -1,6 +1,6 @@
 import { Maximize2, Braces, Copy, Eraser, FileText, Webhook } from "lucide-react";
 import { toast } from "@/lib/toast";
-import { copyContent } from "@/components/agent-copy/copy-commands";
+import { copyContent } from "@ai-matrx/rich-content/copy/copy-commands";
 
 // View-mode toggle has moved out of this button row and into the
 // MessageViewModeMenu rendered next to the "System" role label. This file

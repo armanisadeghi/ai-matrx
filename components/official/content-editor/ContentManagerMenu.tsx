@@ -14,7 +14,7 @@ import {
   FileCode,
   Code2,
 } from "lucide-react";
-import { copyContent } from "@/components/agent-copy/copy-commands";
+import { copyContent } from "@ai-matrx/rich-content/copy/copy-commands";
 import { extractErrorMessage } from "@/utils/errors";
 import { getMarkdownStylesheet } from "@ai-matrx/print/markdown";
 import AdvancedMenu, { MenuItem } from "@/components/official/AdvancedMenu";

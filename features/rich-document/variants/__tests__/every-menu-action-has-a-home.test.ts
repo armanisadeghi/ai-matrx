@@ -8,9 +8,10 @@
  * broke registryMenuFitsViewport. This fails the day the next unplaced id is
  * registered, naming it, so its author chooses a section instead of the fold.
  */
-import "../../actions/handlers";
-import { getAllActions } from "../../actions/provider";
-import { MENU_STRUCTURE, registryMenuActions } from "../shared/menuStructure";
+// The app registrations (handlers, adapters, the Conversation submenu's transfer rows), as app-bindings loads them.
+import "@/features/rich-content-host/rich-document-registrations";
+import { getAllActions } from "@ai-matrx/rich-content/rich-document/actions/provider";
+import { MENU_STRUCTURE, registryMenuActions } from "@ai-matrx/rich-content/rich-document/variants/shared/menuStructure";
 
 /**
  * Deliberately top-level extras. The code-block actions only appear on a code

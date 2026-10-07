@@ -15,7 +15,7 @@ import { useState } from "react";
 import { AudioLines, Check, Copy, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "@/lib/toast";
-import { RichDocument } from "@/features/rich-document/RichDocument";
+import { RichDocument } from "@ai-matrx/rich-content/rich-document/RichDocument";
 // Canonical media renderer — re-mints from file_id (media-durability
 // doctrine); never a raw <audio src> of a signed URL.
 import { InlineMediaRef } from "@ai-matrx/media/react";

@@ -8,7 +8,7 @@
  */
 
 import type { OutputFeedbackSubject } from "@/lib/output-feedback/types";
-import type { ContentSource } from "./types";
+import type { ContentSource } from "@ai-matrx/rich-content/rich-document/types";
 import { durableRecordId } from "@ai-matrx/kit/ids";
 
 export function outputFeedbackSubjectForSource(

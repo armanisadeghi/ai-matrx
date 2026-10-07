@@ -9,7 +9,7 @@
 import "../handlers";
 import { renderToStaticMarkup } from "react-dom/server";
 import { createElement, type ComponentType } from "react";
-import { getAllActions } from "../provider";
+import { getAllActions } from "@ai-matrx/rich-content/rich-document/actions/provider";
 
 it("no action icon renders a letter", () => {
   const lettered = getAllActions()

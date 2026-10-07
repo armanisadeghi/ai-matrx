@@ -25,7 +25,7 @@ import type { RemarkRecordTarget } from "@ai-matrx/chat/agents/redux/execution-s
 import {
   COMMENT_SENDS_WITH_NEXT_MESSAGE_DEFAULT,
   COMMENT_SENDS_WITH_NEXT_MESSAGE_KNOB,
-} from "@/components/selection-toolbar/selection-actions";
+} from "@ai-matrx/rich-content/selection-toolbar/selection-actions";
 import { Switch } from "@/components/ui/switch";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/slices/userSlice";

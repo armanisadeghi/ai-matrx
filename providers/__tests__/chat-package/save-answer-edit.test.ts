@@ -29,8 +29,8 @@ import {
   spliceDisplayEdit,
 } from "@ai-matrx/chat/agents/redux/execution-system/message-crud/answer-text-splice";
 import { savePreparedContentEdit } from "@/features/rich-document/actions/handlers/preparedEdit";
-import { getSourceAdapter } from "@/features/rich-document/actions/sources";
-import type { ChatAnswerSaveReceipt, RichDocumentActionContext } from "@/features/rich-document/types";
+import { getSourceAdapter } from "@ai-matrx/rich-content/rich-document/actions/sources/index";
+import type { ChatAnswerSaveReceipt, RichDocumentActionContext } from "@ai-matrx/rich-content/rich-document/types";
 import { commitInlineContentEdit, flushPendingInlineEdit } from "@ai-matrx/chat/agents/redux/execution-system/message-crud/commit-inline-edit.thunk";
 import { removeThinkingContent } from "@ai-matrx/print/markdown";
 import { listIslands, tokenizeSource } from "@ai-matrx/content-ir/source";

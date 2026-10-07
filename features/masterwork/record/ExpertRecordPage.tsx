@@ -56,7 +56,7 @@ import {
   type ExpertContribution,
   type ExpertCorpus,
 } from "./service";
-import { RichDocumentActions } from "@/features/rich-document/RichDocumentActions";
+import { RichDocumentActions } from "@ai-matrx/rich-content/rich-document/RichDocumentActions";
 import { DriveLinkButton } from "@/features/masterwork/drive/DriveLinkButton";
 import {
   contributionAgentPayload,

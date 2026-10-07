@@ -432,6 +432,8 @@ export function ComposerOutputPill({
   menuSide: "top" | "bottom";
 }) {
   const [open, setOpen] = useState(false);
+  // The popover is height-capped to its side, so it opens on whichever side of the pill has more room.
+  const [roomierSide, setRoomierSide] = useState<"top" | "bottom" | null>(null);
   const output = useComposerOutput(conversationId);
 
   return (
@@ -449,6 +451,10 @@ export function ComposerOutputPill({
             aria-label={`Output: ${output.label}`}
             title={output.lockWarning ?? undefined}
             className="min-w-0"
+            onClick={(event) => {
+              const rect = event.currentTarget.getBoundingClientRect();
+              setRoomierSide(rect.top > window.innerHeight - rect.bottom ? "top" : "bottom");
+            }}
           >
             {output.label}
           </Button>
@@ -459,7 +465,7 @@ export function ComposerOutputPill({
       </SplitButton>
       <PopoverContent
         /* sizing: fixed — the Output panel is a fixed 340px column (type grid + searchable shape list), capped to the viewport on phones */
-        side={menuSide}
+        side={roomierSide ?? menuSide}
         align="start"
         sideOffset={8}
         className="flex max-h-[var(--radix-popover-content-available-height)] w-[340px] max-w-[calc(100vw-1rem)] flex-col overflow-hidden p-1"

@@ -69,7 +69,7 @@ import { toast } from "@ai-matrx/chat/host/notify";
 import { cn } from "@ai-matrx/design-system";
 import type { AgentDefinitionMessage } from "@ai-matrx/chat/agents/types/agent-message-types";
 import { RichDocument } from "@ai-matrx/chat/host/ui-slots";
-import type { ContentSource } from "@/features/rich-document/types";
+import type { ContentSource } from "@ai-matrx/rich-content/rich-document/types";
 import { JsonInspector } from "@/components/official-candidate/json-inspector/JsonInspector";
 import {
   AiModelRef,

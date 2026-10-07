@@ -16,7 +16,7 @@ import { oracleTableGrid } from "@/scripts/lib/gfm-table-oracle";
 import { parseMarkdownTables } from "@ai-matrx/rich-content/display/markdown-classification/processors/bock-processors/parse-markdown-table";
 import { parseMarkdownTable as tableDataParser } from "@ai-matrx/rich-content/display/markdown-classification/processors/utils/table-data-parser";
 import { parseMarkdownContent } from "@/components/mardown-display/markdown-classification/processors/custom/dynamic-markdown";
-import { parseFirstMarkdownTable } from "@/features/rich-document/actions/markdownTable";
+import { parseFirstMarkdownTable } from "@ai-matrx/rich-content/rich-document/actions/markdownTable";
 import { hasConvertibleContent } from "@ai-matrx/chat/agents/components/messages-display/message-options/convertibleContent";
 import { parseMarkdownToText } from "@/utils/markdown-processors/parse-markdown-for-speech";
 import { getProtectedRegions } from "@/lib/content-cleanup/segment";

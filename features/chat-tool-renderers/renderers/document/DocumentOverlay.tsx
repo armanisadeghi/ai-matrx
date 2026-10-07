@@ -2,7 +2,7 @@
 
 import { useMemo } from "react";
 import { FileText, ExternalLink } from "lucide-react";
-import { RichDocument } from "@/features/rich-document/RichDocument";
+import { RichDocument } from "@ai-matrx/rich-content/rich-document/RichDocument";
 import type { ToolRendererProps } from "@ai-matrx/chat/tool-call-visualization/types";
 import { parseDocument } from "./parseDocument";
 

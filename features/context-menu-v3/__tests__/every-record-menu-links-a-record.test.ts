@@ -12,7 +12,7 @@
  * - a record-menu-registry row's entity not reaching the verb → "registry" red.
  * - the verb drawn with no record to link to → "no record" red.
  */
-jest.mock("@/components/agent-copy/alchemy-icon-keys", () => ({ registerAlchemyIcon: () => "app:Icon" }));
+jest.mock("@ai-matrx/rich-content/utils/alchemy-icon-keys", () => ({ registerAlchemyIcon: () => "app:Icon" }));
 jest.mock("@/features/context-menu-v3/hooks/useContextMenuActions", () => ({
   getPlacementIcon: () => null,
   getPlacementLabel: (p: string) => p,
@@ -24,8 +24,8 @@ jest.mock("@ai-matrx/alchemy/react/host", () => ({}));
 jest.mock("@ai-matrx/alchemy/react/menu", () => ({}));
 jest.mock("@ai-matrx/alchemy/react/sheet", () => ({}));
 jest.mock("@ai-matrx/alchemy/react/palette", () => ({}));
-jest.mock("@/features/rich-document/actions/provider", () => ({}));
-jest.mock("@/features/rich-document/actions/useRichDocumentProvider", () => ({}));
+jest.mock("@ai-matrx/rich-content/rich-document/actions/provider", () => ({ registerAction: () => undefined }));
+jest.mock("@ai-matrx/rich-content/rich-document/actions/useRichDocumentProvider", () => ({}));
 jest.mock("../regroup/RegroupContext", () => ({}));
 
 import { createActionRegistry, createClickTarget } from "@ai-matrx/alchemy/actions";

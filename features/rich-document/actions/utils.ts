@@ -15,10 +15,12 @@ import { buildConversationMessageTitle } from "@ai-matrx/chat/agents/utils/conve
 import type {
   ChatMessageExtensions,
   RichDocumentActionContext,
-} from "../types";
+} from "@ai-matrx/rich-content/rich-document/types";
 
-/** Storage key for "do this action after the user signs in" payloads. */
-export const PENDING_ACTION_KEY = "matrx_pending_post_auth_action";
+// The engine owns these two; the handlers keep importing them from here.
+import { PENDING_ACTION_KEY } from "@ai-matrx/rich-content/rich-document/actions/labels";
+export { PENDING_ACTION_KEY };
+export { resolveActionLabel } from "@ai-matrx/rich-content/rich-document/actions/labels";
 
 /** Coerce any thrown value into a user-facing string. */
 export function getErrorMessage(error: unknown, fallback: string): string {
@@ -132,17 +134,6 @@ export function extractFirstCodeBlock(content: string): {
   return { code: content, found: false };
 }
 
-/**
- * Resolve an action label to a string. Supports both static labels and
- * `(ctx) => string` callbacks so labels like "Edit history (3)" can pull
- * counts from the live context.
- */
-export function resolveActionLabel(
-  label: string | ((ctx: RichDocumentActionContext) => string),
-  ctx: RichDocumentActionContext,
-): string {
-  return typeof label === "function" ? label(ctx) : label;
-}
 
 /**
  * Build the "Task Related To:" title used by save-to-task. Lifts the first

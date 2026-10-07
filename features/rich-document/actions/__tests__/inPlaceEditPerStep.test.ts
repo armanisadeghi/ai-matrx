@@ -7,10 +7,10 @@
  * tool-call-only step) instead of opening an empty editor.
  */
 import "../handlers";
-import { getAction } from "../provider";
+import { getAction } from "@ai-matrx/rich-content/rich-document/actions/provider";
 import { buildChatMessageActions } from "../../chat/chatMessageActions";
-import { getSourceAdapter } from "../sources";
-import type { RichDocumentActionContext } from "../../types";
+import { getSourceAdapter } from "@ai-matrx/rich-content/rich-document/actions/sources/index";
+import type { RichDocumentActionContext } from "@ai-matrx/rich-content/rich-document/types";
 
 function stepContext(messageId: string, text: string) {
   const config = buildChatMessageActions({

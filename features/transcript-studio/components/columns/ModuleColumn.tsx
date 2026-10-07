@@ -6,7 +6,7 @@ import { cn } from "@/lib/utils";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { RichContent } from "@ai-matrx/rich-content/levels/RichContent";
 import { AnswerValueView } from "@/components/official/structured-value/AnswerValueView";
-import { RichDocumentActions } from "@/features/rich-document/RichDocumentActions";
+import { RichDocumentActions } from "@ai-matrx/rich-content/rich-document/RichDocumentActions";
 import { COLUMN_IDS } from "../../constants";
 import {
   selectLatestRunForColumn,

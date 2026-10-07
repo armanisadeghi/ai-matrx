@@ -82,7 +82,7 @@ jest.mock("@/features/organizations/components/OrganizationRequiredNotice", () =
     OrganizationContextNotice: () => null,
 }));
 jest.mock("@/features/crm/service", () => ({ searchPartiesByName: async () => [] }));
-jest.mock("@/features/rich-document/RichDocument", () => ({ RichDocument: () => null }));
+jest.mock("@ai-matrx/rich-content/rich-document/RichDocument", () => ({ RichDocument: () => null }));
 jest.mock("@/features/sharing/components/RecordStoreShareSurface", () => ({ recordStoreShare: undefined }));
 // Opening every section sets several of the page's own reads going (the agent
 // list, the knob's write door, the documents). None of them is what this suite

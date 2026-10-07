@@ -11,7 +11,7 @@ import "../../actions/handlers";
 import * as React from "react";
 import { act } from "react";
 import { createRoot } from "react-dom/client";
-import { getAllActions } from "../../actions/provider";
+import { getAllActions } from "@ai-matrx/rich-content/rich-document/actions/provider";
 import { resolveActionLabel } from "../../actions/utils";
 import { chatContext } from "../../test-utils/chatContext";
 

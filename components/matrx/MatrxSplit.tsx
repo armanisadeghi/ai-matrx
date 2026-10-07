@@ -22,7 +22,7 @@ import type {
   RichDocumentActionsVariant,
   RichDocumentActionsPosition,
   RichDocumentActionsBehavior,
-} from "@/features/rich-document/types";
+} from "@ai-matrx/rich-content/rich-document/types";
 import type { ImagePolicyDeclaration } from "@ai-matrx/rich-content/levels/prose/remote-image-policy";
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { useTextareaFormatting } from "@/components/rich-editor/format/useTextareaFormatting";
@@ -33,7 +33,7 @@ import type { ApplicationScope } from "@ai-matrx/chat/agents/types/scope.types";
 // nothing for the rich-document registry.
 const RichDocument = dynamic(
   () =>
-    import("@/features/rich-document/RichDocument").then((m) => ({
+    import("@ai-matrx/rich-content/rich-document/RichDocument").then((m) => ({
       default: m.RichDocument,
     })),
   { ssr: false },

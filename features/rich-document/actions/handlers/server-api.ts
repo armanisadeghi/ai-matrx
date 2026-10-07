@@ -18,7 +18,7 @@ import {
 import { toast } from "@/lib/toast";
 import { openOverlay } from "@/lib/redux/slices/overlaySlice";
 import { createFullScreenEditorCallbackGroup } from "@/features/overlays/callbacks/fullScreenEditor";
-import { registerAction } from "../provider";
+import { registerAction } from "@ai-matrx/rich-content/rich-document/actions/provider";
 import { getErrorMessage } from "../utils";
 
 /**

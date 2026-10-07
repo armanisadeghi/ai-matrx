@@ -37,7 +37,7 @@ import {
 } from "@/components/official/GatedActionButton";
 import { Label } from "@/components/ui/label";
 import { ProTextarea } from "@/components/official/ProTextarea";
-import { RichDocument } from "@/features/rich-document/RichDocument";
+import { RichDocument } from "@ai-matrx/rich-content/rich-document/RichDocument";
 import { knobBool, knobInt } from "@/lib/knobs/featureKnobs";
 import { WorkingNotice } from "@/lib/progress/WorkingNotice";
 import { cn } from "@/lib/utils";

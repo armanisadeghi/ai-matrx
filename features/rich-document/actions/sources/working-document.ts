@@ -11,7 +11,7 @@
 // No `delete` — a working document is a living conversation artifact retired by
 // disabling/unbinding it (the panel's own controls), never by a content action.
 
-import type { ContentSource, ContentSourceAdapter } from "../../types";
+import type { ContentSource, ContentSourceAdapter } from "@ai-matrx/rich-content/rich-document/types";
 
 export const workingDocumentAdapter: ContentSourceAdapter = {
   instanceKeyPrefix: (source: ContentSource) => {

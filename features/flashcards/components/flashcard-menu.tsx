@@ -34,7 +34,7 @@ import {
   type AvailabilityMap,
 } from "@/features/context-menu-v3/utils/availability";
 import { toast } from "@/lib/toast";
-import { copyRichContent } from "@/components/agent-copy/copy-commands";
+import { copyRichContent } from "@ai-matrx/rich-content/copy/copy-commands";
 
 /** The one thing every flashcard surface can say about a right-clicked card. */
 export interface FlashcardMenuRow {

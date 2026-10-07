@@ -8,7 +8,7 @@
  *
  * Use case: a founder selects the first sentence of an answer, right under the header.
  */
-import { placeFrame, visibleBoxOf } from "../SelectionToolbarFrame";
+import { placeFrame, visibleBoxOf } from "@ai-matrx/rich-content/selection-toolbar/SelectionToolbarFrame";
 
 const VIEW = { w: 1200, h: 768 };
 const SIZE = { w: 300, h: 36 };

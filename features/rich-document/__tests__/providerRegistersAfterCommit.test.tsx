@@ -25,7 +25,7 @@ const registry = {
   },
 };
 jest.mock("@ai-matrx/alchemy/react/host", () => ({ useAlchemyActions: () => ({ registry }) }));
-jest.mock("../actions/provider", () => {
+jest.mock("@ai-matrx/rich-content/rich-document/actions/provider", () => {
   const seen = new WeakSet<object>();
   return {
     ensureRichDocumentProvider: (r: { register(p: unknown): unknown }) => {
@@ -36,7 +36,7 @@ jest.mock("../actions/provider", () => {
   };
 });
 
-import { useRichDocumentProvider } from "../actions/useRichDocumentProvider";
+import { useRichDocumentProvider } from "@ai-matrx/rich-content/rich-document/actions/useRichDocumentProvider";
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 

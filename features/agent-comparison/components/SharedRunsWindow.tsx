@@ -21,13 +21,13 @@ import { FileText, Globe, Printer } from "lucide-react";
 import { useAppSelector, useAppStore } from "@/lib/redux/hooks";
 import type { RootState } from "@/lib/redux/store";
 import { WindowPanel } from "@/features/window-panels/WindowPanel";
-import { RichDocumentActionProvider } from "@/features/rich-document/RichDocumentActionProvider";
-import { RichDocumentActionSurface } from "@/features/rich-document/RichDocumentActionSurface";
-import { getAction } from "@/features/rich-document/actions/provider";
+import { RichDocumentActionProvider } from "@ai-matrx/rich-content/rich-document/RichDocumentActionProvider";
+import { RichDocumentActionSurface } from "@ai-matrx/rich-content/rich-document/RichDocumentActionSurface";
+import { getAction } from "@ai-matrx/rich-content/rich-document/actions/provider";
 import type {
   RichDocumentAction,
   RichDocumentActionsProp,
-} from "@/features/rich-document/types";
+} from "@ai-matrx/rich-content/rich-document/types";
 import { currentCostUnit } from "@/components/cost/costUnit";
 import { selectActiveBattleColumns } from "../shared/activeBattleColumns";
 import { buildPrintDocument, printHtmlContent } from "@ai-matrx/print/core";

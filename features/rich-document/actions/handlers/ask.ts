@@ -13,10 +13,10 @@ import { MessageSquareQuote, MessagesSquare } from "lucide-react";
 import { toast } from "@/lib/toast";
 import { setContextEntries } from "@ai-matrx/chat/agents/redux/execution-system/instance-context/instance-context.slice";
 import { selectInstanceContextEntry } from "@ai-matrx/chat/agents/redux/execution-system/instance-context/instance-context.selectors";
-import { registerAction } from "../provider";
+import { registerAction } from "@ai-matrx/rich-content/rich-document/actions/provider";
 import { chatIds, deriveContentTitle } from "../utils";
 import { unwrapKindEnvelopes } from "@/lib/markdown/plain-text";
-import type { RichDocumentActionContext } from "../../types";
+import type { RichDocumentActionContext } from "@ai-matrx/rich-content/rich-document/types";
 
 /** The context key every quote lands under — one list per conversation. */
 export const QUOTED_PASSAGES_CONTEXT_KEY = "quoted_passages";

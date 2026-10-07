@@ -27,9 +27,9 @@ import {
 } from "lucide-react";
 import { toast } from "@/lib/toast";
 import { openOverlay } from "@/lib/redux/slices/overlaySlice";
-import { registerAction } from "../provider";
+import { registerAction } from "@ai-matrx/rich-content/rich-document/actions/provider";
 import { chatIds, getErrorMessage } from "../utils";
-import type { RichDocumentActionContext } from "../../types";
+import type { RichDocumentActionContext } from "@ai-matrx/rich-content/rich-document/types";
 import {
   isMessagePinPending,
   isMessagePinned,

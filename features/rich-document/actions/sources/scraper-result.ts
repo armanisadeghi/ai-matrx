@@ -2,7 +2,7 @@
 //
 // Source adapter for scraper-result content. Phase 0: only instanceKeyPrefix.
 
-import type { ContentSource, ContentSourceAdapter } from "../../types";
+import type { ContentSource, ContentSourceAdapter } from "@ai-matrx/rich-content/rich-document/types";
 
 export const scraperResultAdapter: ContentSourceAdapter = {
   instanceKeyPrefix: (source: ContentSource) => {

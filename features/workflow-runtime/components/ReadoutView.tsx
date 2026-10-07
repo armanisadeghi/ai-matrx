@@ -39,7 +39,7 @@ import { useEffect, useRef, useState } from "react";
 import { ChevronDown, ChevronRight } from "lucide-react";
 
 import { useAppSelector } from "@/lib/redux/hooks";
-import { RichDocument } from "@/features/rich-document/RichDocument";
+import { RichDocument } from "@ai-matrx/rich-content/rich-document/RichDocument";
 import { MatrxDataTable } from "@ai-matrx/design-system/data-table";
 import type { MatrxColumnDef } from "@ai-matrx/design-system/data-table/types";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";

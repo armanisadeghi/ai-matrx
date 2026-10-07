@@ -69,7 +69,7 @@ import { Button } from "@/components/ui/button";
 // print and save-as-PDF on it, which is exactly what this component is and what
 // every other document surface in the app already mounts. A second renderer
 // here would be the parallel layer the canvas ruling forbids.
-import { RichDocument } from "@/features/rich-document/RichDocument";
+import { RichDocument } from "@ai-matrx/rich-content/rich-document/RichDocument";
 import { recordStoreShare } from "@/features/sharing/components/RecordStoreShareSurface";
 import { OrganizationContextNotice } from "@/features/organizations/components/OrganizationRequiredNotice";
 import { useOrganizationRequired } from "@/features/organizations/useOrganizationRequired";

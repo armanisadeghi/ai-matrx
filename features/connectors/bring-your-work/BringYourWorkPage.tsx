@@ -27,7 +27,7 @@ import {
 import { Button } from "@ai-matrx/design-system/controls";
 
 import { BrandGlyph } from "@/components/icons/brand-glyphs";
-import { copyContent } from "@/components/agent-copy/copy-commands";
+import { copyContent } from "@ai-matrx/rich-content/copy/copy-commands";
 import { GoogleSheetsMark, NotionMark } from "@/features/connectors/marks";
 import { cn } from "@/lib/utils";
 

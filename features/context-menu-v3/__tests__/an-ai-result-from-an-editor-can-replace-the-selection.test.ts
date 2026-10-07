@@ -14,9 +14,9 @@
  */
 
 import "@/features/rich-document/actions/handlers";
-import { getAction, resolveActions } from "@/features/rich-document/actions/provider";
+import { getAction, resolveActions } from "@ai-matrx/rich-content/rich-document/actions/provider";
 import { chatContext } from "@/features/rich-document/test-utils/chatContext";
-import type { RichDocumentActionContext } from "@/features/rich-document/types";
+import type { RichDocumentActionContext } from "@ai-matrx/rich-content/rich-document/types";
 import {
   deriveClientToolsFromHandle,
   type WidgetHandle,

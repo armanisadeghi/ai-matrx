@@ -6,7 +6,7 @@
 
 import { Printer, ScanLine } from "lucide-react";
 import { printMarkdownContent } from "@ai-matrx/chat/conversation/utils/markdown-print";
-import { registerAction } from "../provider";
+import { registerAction } from "@ai-matrx/rich-content/rich-document/actions/provider";
 import { contentForDestination } from "../utils";
 
 registerAction({

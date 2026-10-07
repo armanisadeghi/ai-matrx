@@ -9,10 +9,10 @@
 import { holdDeliberateIntent } from "@/lib/organization/organization-gate";
 import type { MenuItem } from "@/components/official/AdvancedMenu";
 import type { AppDispatch, RootState } from "@/lib/redux/store";
-import { getAllActions } from "../actions/provider";
+import { getAllActions } from "@ai-matrx/rich-content/rich-document/actions/provider";
 import { resolveActionLabel } from "../actions/utils";
 import "../actions/handlers/answer-tools";
-import type { RichDocumentActionContext } from "../types";
+import type { RichDocumentActionContext } from "@ai-matrx/rich-content/rich-document/types";
 import { CODE_BLOCK_METADATA_KEY, type CodeBlockFacts } from "./code-block-context";
 
 export const CODE_BLOCK_ACTION_PREFIX = "code-block-";

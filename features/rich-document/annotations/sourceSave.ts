@@ -11,7 +11,7 @@
 // A store supplies only how to write a body at a version and how to read the current row.
 
 import { guardedUpdate } from "@ai-matrx/data/db";
-import { spliceProposal } from "@/features/rich-document/review/proposedEdit";
+import { spliceProposal } from "@ai-matrx/rich-content/rich-document/review/proposedEdit";
 import { supabase } from "@/utils/supabase/client";
 
 export interface VersionedBodyRow {

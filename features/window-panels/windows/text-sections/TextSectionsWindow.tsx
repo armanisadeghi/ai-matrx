@@ -34,7 +34,7 @@ import { KIND_SOURCE_PROPS } from "@/features/content-ir/surfaces/kind-leak-scan
 import { Badge } from "@/components/ui/badge";
 import { WindowPanel } from "@/features/window-panels/WindowPanel";
 import { RichContent } from "@ai-matrx/rich-content/levels/RichContent";
-import { RichDocumentActions } from "@/features/rich-document/RichDocumentActions";
+import { RichDocumentActions } from "@ai-matrx/rich-content/rich-document/RichDocumentActions";
 import { formatChars } from "@ai-matrx/kit/tokens";
 import type { OverlayId } from "@/features/overlays/catalogue";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";

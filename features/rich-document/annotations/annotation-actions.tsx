@@ -11,7 +11,7 @@
 import type { ComponentType } from "react";
 import { CircleArrowOutUpRight, Link2, MessageSquarePlus, PencilLine, Send } from "lucide-react";
 import type { Action, ActionProvider, ClickTarget } from "@ai-matrx/alchemy/actions";
-import { registerAlchemyIcon } from "@/components/agent-copy/alchemy-icon-keys";
+import { registerAlchemyIcon } from "@ai-matrx/rich-content/utils/alchemy-icon-keys";
 import {
   declareSelectionProvider,
   placeSelectionActions,
@@ -20,7 +20,7 @@ import {
   selectionToolbarHostOf,
   shownInSelectionMode,
   type SelectionCommonHost,
-} from "@/components/selection-toolbar/selection-actions";
+} from "@ai-matrx/rich-content/selection-toolbar/selection-actions";
 import { HIGHLIGHT_COLORS, type HighlightColor } from "./constants";
 import type { TextAnchor } from "./anchor";
 import type { AnnotationSource } from "./types";

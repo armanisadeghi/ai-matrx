@@ -30,7 +30,7 @@ import {
   useSaveAndOpenInCodeEditor,
   CHAT_CAPTURES_FOLDER_NAME,
 } from "@/features/code/actions/saveAndOpenInCodeEditor";
-import { copyContent } from "@/components/agent-copy/copy-commands";
+import { copyContent } from "@ai-matrx/rich-content/copy/copy-commands";
 import {
   getMarkdownStylesheet,
   removeThinkingContent,

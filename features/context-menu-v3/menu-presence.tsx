@@ -30,7 +30,7 @@
 // wins, and never has to know the primitive exists.
 
 import { createContext, useContext } from "react";
-import type { ContentSource } from "@/features/rich-document/types";
+import type { ContentSource } from "@ai-matrx/rich-content/rich-document/types";
 
 /**
  * True anywhere inside a mounted v3 menu (either wrapper). Provided by the

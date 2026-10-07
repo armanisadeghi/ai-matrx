@@ -25,7 +25,7 @@ jest.mock("@/components/matrx/MatrxSplit", () => ({
 }));
 jest.mock("@/components/official/ProTextarea", () => ({ ProTextarea: () => <textarea /> }));
 jest.mock("@/features/audio/components/MicrophoneIconButton", () => ({ MicrophoneIconButton: () => null }));
-jest.mock("@/features/rich-document/RichDocument", () => ({ RichDocument: () => null }));
+jest.mock("@ai-matrx/rich-content/rich-document/RichDocument", () => ({ RichDocument: () => null }));
 
 import { NoteEditorCore, SPLIT_MIN_WIDTH_PX } from "../components/NoteEditorCore";
 

@@ -9,7 +9,7 @@
  * not open → "never duplicate" red (captured DuplicateActionError) and
  * "resolves once" red.
  */
-jest.mock("@/components/agent-copy/alchemy-icon-keys", () => ({ registerAlchemyIcon: () => "app:Icon" }));
+jest.mock("@ai-matrx/rich-content/utils/alchemy-icon-keys", () => ({ registerAlchemyIcon: () => "app:Icon" }));
 
 import { createActionRegistry, createClickTarget } from "@ai-matrx/alchemy/actions";
 import { contextMenuActionsFromModel, contextMenuProvider } from "../alchemy-provider";

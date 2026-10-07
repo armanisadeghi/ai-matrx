@@ -1032,7 +1032,10 @@
 .spaces-editor .bn-block:has(> .react-renderer > .bn-block-content[data-content-type="columnList"]) > .bn-block-group > .bn-block-outer {
   flex: 1 1 0;
   min-width: 0;
-  padding: 0 33px;
+  /* Notion's column gutter: 46px between two columns, the resize handle in its middle. Notion has no
+     columns inside a column; ours (a KPI row inside the right column) take a 16px gutter so five tiles
+     in a nested row keep readable names. */
+  padding: 0 var(--spaces-col-half, 23px);
   margin-top: 0;
 }
 .spaces-editor .bn-block:has(> .react-renderer > .bn-block-content[data-content-type="columnList"]) > .bn-block-group > .bn-block-outer:first-child {
@@ -1050,12 +1053,13 @@
 }
 .spaces-editor .bn-block:has(> .react-renderer > .bn-block-content[data-content-type="column"]) > .bn-block-group {
   margin-left: 0;
+  --spaces-col-half: 8px;
 }
 .spaces-editor .bn-block:has(> .react-renderer > .bn-block-content[data-content-type="column"]) > .react-renderer > .bn-block-content {
   position: absolute;
   z-index: 3;
   top: 0;
-  right: -41px;
+  right: calc(-1 * var(--spaces-col-half, 23px) - 8px);
   bottom: 0;
   width: 16px;
   height: auto;
@@ -1272,11 +1276,29 @@
 .spaces-chart-title { display: inline-flex; align-items: center; gap: 6px; height: 32px; min-width: 0; flex: 0 1 auto; max-width: 100%; padding: 0 8px; border-radius: 6px; background: var(--spaces-hover-strong); color: var(--spaces-ink); font-size: 15px; font-weight: 600; white-space: nowrap; overflow: hidden; }
 .spaces-chart-title > svg { flex: none; }
 .spaces-chart-title > span { overflow: hidden; text-overflow: clip; }
+/* A narrow tile (five or more across, or a tile in a nested column) never cuts its name to two letters:
+   the pill takes the tile's width, the name wraps onto up to three lines at 13px and the glyph rides
+   on the first line. The tile is a size container (`.spaces-db-host`). */
+@container (max-width: 200px) {
+  .spaces-db-frame[data-layout="chart"] .spaces-db-tabs { flex-wrap: nowrap; }
+  .spaces-db-frame[data-layout="chart"] .spaces-chart-title { height: auto; min-height: 28px; flex: 1 1 auto; align-items: flex-start; gap: 4px; padding: 5px 6px; font-size: 13px; line-height: 1.3; white-space: normal; text-align: left; justify-content: flex-start; }
+  .spaces-db-frame[data-layout="chart"] .spaces-chart-title > svg { width: 14px; height: 14px; margin-top: 2px; }
+  .spaces-db-frame[data-layout="chart"] .spaces-chart-title > span { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; overflow-wrap: normal; word-break: normal; }
+}
+@container (max-width: 130px) {
+  .spaces-db-frame[data-layout="chart"] { padding: 8px 5px; }
+  .spaces-db-frame[data-layout="chart"] .spaces-chart-title { padding: 4px 5px; font-size: 12px; }
+  .spaces-db-frame[data-layout="chart"] .spaces-chart-title > svg { display: none; }
+}
 /* The title pill takes the tile's whole width (Notion cuts it only at the tile's edge); the view-settings
    icon shows while the pointer is over the tile, its menu is open, or focus is inside (touch: always),
    and the pill gives it room then. The full name is the pill's hover title. */
 .spaces-db-frame[data-layout="chart"]:not(:hover):not(:focus-within) .spaces-db-tabs > .spaces-db-icon:not([data-state="open"]) { display: none; }
 @media (hover: none) { .spaces-db-frame[data-layout="chart"] .spaces-db-tabs > .spaces-db-icon { display: inline-flex; } }
+.spaces-db-chart-tools { display: inline-flex; align-items: center; flex: none; }
+.spaces-db-chart-tools button { width: 26px; height: 26px; min-width: 0; padding: 0; }
+.spaces-db-frame[data-layout="chart"]:not(:hover):not(:focus-within) .spaces-db-chart-tools:not(:has([data-state="open"])) { display: none; }
+@media (hover: none) { .spaces-db-frame[data-layout="chart"] .spaces-db-chart-tools { display: inline-flex; } }
 .spaces-db-tools { display: flex; align-items: center; gap: 2px; flex: none; }
 /* The toolbar magnifier opens in place in the icon row (Notion), never as a row of its own. */
 .spaces-db-search { display: inline-flex; align-items: center; gap: 6px; height: 28px; color: var(--spaces-ink-soft); }

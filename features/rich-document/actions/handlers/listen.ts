@@ -20,9 +20,9 @@ import {
   ensureSurfaceConfig,
   selectSurfaceConfigEntry,
 } from "@ai-matrx/chat/surfaces/redux/surfaceConfigSlice";
-import { registerAction } from "../provider";
+import { registerAction } from "@ai-matrx/rich-content/rich-document/actions/provider";
 import { getErrorMessage, contentForDestination } from "../utils";
-import type { RichDocumentActionContext } from "../../types";
+import type { RichDocumentActionContext } from "@ai-matrx/rich-content/rich-document/types";
 
 /** The effective `spoken_summary` agent, or null when none is bound. */
 async function resolveSpokenSummaryAgent(

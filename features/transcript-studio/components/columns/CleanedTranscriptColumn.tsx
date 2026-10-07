@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef } from "react";
 import { RefreshCw, Stars } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import { RichDocumentActions } from "@/features/rich-document/RichDocumentActions";
+import { RichDocumentActions } from "@ai-matrx/rich-content/rich-document/RichDocumentActions";
 import { COLUMN_IDS } from "../../constants";
 import {
   selectLatestRunForColumn,

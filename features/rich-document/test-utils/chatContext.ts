@@ -3,9 +3,9 @@
 // Test-only: a chat-message action context built through the SAME builder the
 // /chat bars use (buildChatMessageActions), with every content gate open.
 
-import { getSourceAdapter } from "../actions/sources";
+import { getSourceAdapter } from "@ai-matrx/rich-content/rich-document/actions/sources/index";
 import { buildChatMessageActions } from "../chat/chatMessageActions";
-import type { RichDocumentActionContext } from "../types";
+import type { RichDocumentActionContext } from "@ai-matrx/rich-content/rich-document/types";
 
 /** A message that makes every content-gated action applicable. */
 export const RICH_MESSAGE = [

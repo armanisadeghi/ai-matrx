@@ -29,7 +29,7 @@ import {
   ITEM_DETAIL_SURFACE_NAME,
 } from "@/features/surfaces/manifests/item-detail.manifest";
 import { SurfaceRuntimeProvider } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
-import { copyContent } from "@/components/agent-copy/copy-commands";
+import { copyContent } from "@ai-matrx/rich-content/copy/copy-commands";
 import { toast } from "@/lib/toast";
 
 export function ItemDetailFrame({

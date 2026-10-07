@@ -13,7 +13,7 @@ import { useEffect, useState } from "react";
 import { FileText, Loader2, PencilLine } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/lib/toast";
-import { RichDocument } from "@/features/rich-document/RichDocument";
+import { RichDocument } from "@ai-matrx/rich-content/rich-document/RichDocument";
 import {
   AnnotatedContent,
   AnnotationSidecarProvider,

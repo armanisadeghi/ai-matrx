@@ -60,7 +60,7 @@ import {
   type ContextMenuExtraItem,
   type ContextMenuExtraSection,
 } from "@/features/context-menu-v3/types";
-import type { ContentSource } from "@/features/rich-document/types";
+import type { ContentSource } from "@ai-matrx/rich-content/rich-document/types";
 import { NOTES_EDITOR_CONTEXT_MENU_PROPS } from "@/features/notes/agent-context/buildNotesEditorContextData";
 import { useNotesSurfaceScope } from "../hooks/useNotesSurfaceScope";
 import { useNoteEditorMode } from "../hooks/usePreferredDefaultEditorMode";
@@ -81,7 +81,7 @@ import { MoveNoteDialog } from "./MoveNoteDialog";
 import { noteFolderReference, type FolderReference } from "../types";
 import { noteIdentityContentSource } from "../richDocumentSource";
 import { downloadFile } from "@ai-matrx/kit/download";
-import { copyRichContent } from "@/components/agent-copy/copy-commands";
+import { copyRichContent } from "@ai-matrx/rich-content/copy/copy-commands";
 import { copyToClipboard } from "@/lib/clipboard/copy";
 
 interface NoteTabItemProps {

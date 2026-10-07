@@ -11,7 +11,7 @@
  * The earlier pin for this row lived in a layout-parity test that the menu's
  * single-renderer rebuild deleted; nothing guarded it until this file.
  */
-jest.mock("@/components/agent-copy/alchemy-icon-keys", () => ({ registerAlchemyIcon: () => "app:Icon" }));
+jest.mock("@ai-matrx/rich-content/utils/alchemy-icon-keys", () => ({ registerAlchemyIcon: () => "app:Icon" }));
 jest.mock("@/features/context-menu-v3/hooks/useContextMenuActions", () => ({
   getPlacementIcon: () => null,
   getPlacementLabel: (p: string) => p,

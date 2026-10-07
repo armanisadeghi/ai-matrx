@@ -8,7 +8,7 @@
 import { durableRecordId } from "@ai-matrx/kit/ids";
 import { FileText, Globe } from "lucide-react";
 import { toast } from "@/lib/toast";
-import { registerAction } from "../provider";
+import { registerAction } from "@ai-matrx/rich-content/rich-document/actions/provider";
 import {
   chatIds,
   deriveContentTitle,

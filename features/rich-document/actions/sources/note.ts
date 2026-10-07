@@ -3,7 +3,7 @@
 // Source adapter for note content. Edit + delete go through NotesAPI; both
 // are async network calls that surface their errors back to the caller.
 
-import type { ContentSource, ContentSourceAdapter } from "../../types";
+import type { ContentSource, ContentSourceAdapter } from "@ai-matrx/rich-content/rich-document/types";
 import type { NoteSaveReceipt } from "@/features/notes/service/noteSaveErrors";
 
 export interface NotesContentSourceAdapter extends ContentSourceAdapter {

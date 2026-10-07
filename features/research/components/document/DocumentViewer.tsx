@@ -30,7 +30,7 @@ import { DocumentSkeleton } from "../shared/Skeletons";
 import type { ResearchDocument } from "../../types";
 import { tokenUsageFromJson } from "../../types";
 import { RichContent } from "@ai-matrx/rich-content/levels/RichContent";
-import { RichDocumentActions } from "@/features/rich-document/RichDocumentActions";
+import { RichDocumentActions } from "@ai-matrx/rich-content/rich-document/RichDocumentActions";
 import { StoppedEarlyNote } from "../shared/StoppedEarlyNote";
 import { deriveReadiness } from "../../readiness";
 import { buildApplicationScopeFromMenuContext } from "@/features/context-menu-v3/utils/build-application-scope";

@@ -9,7 +9,7 @@
 // source can be saved back (a record source with an `edit` adapter, not read
 // only), and never over a host that already supplied its own.
 
-import type { ContentSource, ContentSourceAdapter, RichDocumentActionContext } from "@/features/rich-document/types";
+import type { ContentSource, ContentSourceAdapter, RichDocumentActionContext } from "@ai-matrx/rich-content/rich-document/types";
 
 type Callbacks = RichDocumentActionContext["callbacks"];
 type Request = NonNullable<NonNullable<Callbacks>["onRequestTextAgentAction"]>;

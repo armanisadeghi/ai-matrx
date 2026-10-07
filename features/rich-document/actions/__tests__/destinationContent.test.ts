@@ -7,7 +7,7 @@
 import * as fs from "fs";
 import * as path from "path";
 import "../handlers";
-import { getAction } from "../provider";
+import { getAction } from "@ai-matrx/rich-content/rich-document/actions/provider";
 import { contentForDestination } from "../utils";
 import { chatContext } from "../../test-utils/chatContext";
 

@@ -6,10 +6,10 @@
  */
 
 import "../handlers";
-import { getAction, resolveActions } from "../provider";
-import { parseFirstMarkdownTable, tableToDelimited } from "../markdownTable";
+import { getAction, resolveActions } from "@ai-matrx/rich-content/rich-document/actions/provider";
+import { parseFirstMarkdownTable, tableToDelimited } from "@ai-matrx/rich-content/rich-document/actions/markdownTable";
 import { chatContext, RICH_MESSAGE } from "../../test-utils/chatContext";
-import type { RichDocumentActionContext } from "../../types";
+import type { RichDocumentActionContext } from "@ai-matrx/rich-content/rich-document/types";
 import { noteIdentityContentSource } from "@/features/notes/richDocumentSource";
 
 function noteContext(

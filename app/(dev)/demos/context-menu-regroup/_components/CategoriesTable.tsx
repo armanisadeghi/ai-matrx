@@ -7,7 +7,7 @@
 // ones the three contexts above resolved are listed under "This item".
 
 import "@/features/rich-document/actions/handlers";
-import { getAllActions, toAlchemyAction } from "@/features/rich-document/actions/provider";
+import { getAllActions, toAlchemyAction } from "@ai-matrx/rich-content/rich-document/actions/provider";
 import { CONTEXT_MENU_ENGINE_ID_PREFIXES, CONTEXT_MENU_ENGINE_ROWS } from "@/features/context-menu-v3/regroup/engine-rows";
 import { matchRule, type MenuGrouping } from "@/features/context-menu-v3/regroup/grouping";
 import type { RegroupAudit } from "@/features/context-menu-v3/regroup/grouping";

@@ -67,7 +67,7 @@ import {
   resolveEntityDoors,
   tokenFromColumnName,
 } from "@/components/official/entity-ref/doors";
-import { copyContent } from "@/components/agent-copy/copy-commands";
+import { copyContent } from "@ai-matrx/rich-content/copy/copy-commands";
 import { toast } from "@/lib/toast";
 import { supabase } from "@/utils/supabase/client";
 import { useOpenGoogleConnectWindow } from "@/features/overlays/openers/googleConnectWindow";

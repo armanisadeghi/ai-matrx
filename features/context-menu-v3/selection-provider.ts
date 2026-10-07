@@ -9,14 +9,14 @@
 
 import { AGENT_ICON } from "@/components/icons/domain-icons";
 import type { Action, ActionProvider, ClickTarget } from "@ai-matrx/alchemy/actions";
-import { registerAlchemyIcon } from "@/components/agent-copy/alchemy-icon-keys";
+import { registerAlchemyIcon } from "@ai-matrx/rich-content/utils/alchemy-icon-keys";
 import {
   declareSelectionProvider,
   placeSelectionActions,
   hostHalf,
   selectionToolbarHostOf,
   shownInSelectionMode,
-} from "@/components/selection-toolbar/selection-actions";
+} from "@ai-matrx/rich-content/selection-toolbar/selection-actions";
 
 export const CONTEXT_MENU_SELECTION_HOST_KEY = "contextMenuSelection";
 

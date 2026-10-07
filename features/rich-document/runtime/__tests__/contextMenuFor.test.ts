@@ -4,7 +4,7 @@
  * opened nothing), so the bar offered actions the content itself would not.
  * Break it names: content with a visible action surface gets no menu → red.
  */
-import { contextMenuFor } from "../contextMenuFor";
+import { contextMenuFor } from "@ai-matrx/rich-content/rich-document/runtime/contextMenuFor";
 
 it.each([
   ["a bar", undefined, "bar", true],

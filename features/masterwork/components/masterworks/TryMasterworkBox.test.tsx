@@ -90,7 +90,7 @@ jest.mock("@/components/official/ProTextarea", () => ({
   ProTextarea: () => <textarea aria-label="Masterwork input" />,
 }));
 
-jest.mock("@/features/rich-document/RichDocument", () => ({
+jest.mock("@ai-matrx/rich-content/rich-document/RichDocument", () => ({
   RichDocument: () => <div>Rendered verdict</div>,
 }));
 

@@ -12,7 +12,7 @@
 // version (resolve.ts mapAnchorThroughChanges).
 
 import type { SpliceResult } from "@ai-matrx/content-ir/source";
-import { spliceProposal } from "@/features/rich-document/review/proposedEdit";
+import { spliceProposal } from "@ai-matrx/rich-content/rich-document/review/proposedEdit";
 import { resolveAnchor } from "./resolve";
 import type { TextAnchor } from "./anchor";
 

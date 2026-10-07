@@ -25,7 +25,7 @@ import { WindowPanel } from "@/features/window-panels/WindowPanel";
 import { NoteInfoPanel } from "@/features/notes/components/NoteInfoPanel";
 import { noteFolderReference } from "@/features/notes/types";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
-import type { ContentSource } from "@/features/rich-document/types";
+import type { ContentSource } from "@ai-matrx/rich-content/rich-document/types";
 import { noteIdentityContentSource } from "@/features/notes/richDocumentSource";
 import {
   buildNoteContextSections,

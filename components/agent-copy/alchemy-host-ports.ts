@@ -51,7 +51,7 @@ import {
   setKnobOverride,
 } from "@/lib/scoped-config/service";
 import { toast } from "@/lib/toast";
-import { resolveAlchemyIcon } from "./alchemy-icon-keys";
+import { resolveAlchemyIcon } from "@ai-matrx/rich-content/utils/alchemy-icon-keys";
 import type { KindValidator } from "@ai-matrx/content-ir/registry";
 import { kindValidator } from "@/features/content-ir/registry/kind-schema-source";
 import { captureError } from "@/lib/diagnostics/errorCaptureStore";

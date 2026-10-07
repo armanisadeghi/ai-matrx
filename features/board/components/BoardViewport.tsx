@@ -28,7 +28,7 @@
 import { useTileNavigationGuard } from "../engine/tile-navigation";
 import { type ReactNode, useEffect, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
-import { type EditableCaret, subscribeEditableCaret } from "@/components/selection-toolbar/selection-zones";
+import { type EditableCaret, subscribeEditableCaret } from "@ai-matrx/rich-content/selection-toolbar/selection-zones";
 import { replaceAddressWithoutNavigating } from "@/lib/url-state/addressWithoutNavigating";
 import {
   type Camera,

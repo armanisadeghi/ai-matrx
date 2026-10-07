@@ -23,7 +23,7 @@ import {
 import { Skeleton } from "@ai-matrx/design-system";
 import { cn } from "@/lib/utils";
 import { toast } from "@/lib/toast";
-import { RichDocument } from "@/features/rich-document/RichDocument";
+import { RichDocument } from "@ai-matrx/rich-content/rich-document/RichDocument";
 import { useAppSelector } from "@/lib/redux/hooks";
 import {
   selectRevisions,

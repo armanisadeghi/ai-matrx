@@ -23,7 +23,7 @@ import {
 } from "@/lib/organization/organization-gate";
 import { CodeFilesAPI } from "@/features/code-files/service/codeFilesApi";
 import { setPendingSource } from "@/features/tasks/redux/taskUiSlice";
-import { registerAction } from "../provider";
+import { registerAction } from "@ai-matrx/rich-content/rich-document/actions/provider";
 import {
   extractFirstCodeBlock,
   getErrorMessage,
@@ -37,7 +37,7 @@ import { CHAT_SAVES_FOLDER } from "@/features/notes/constants/defaultFolders";
 import { selectConversationTitle } from "@ai-matrx/chat/agents/redux/execution-system/conversations/conversations.selectors";
 import { selectMessagePosition } from "@ai-matrx/chat/agents/redux/execution-system/messages/messages.selectors";
 import { buildTaskSeedFromMessage } from "@ai-matrx/chat/agents/components/messages-display/message-options/buildTaskSeedFromMessage";
-import type { ContentSource } from "../../types";
+import type { ContentSource } from "@ai-matrx/rich-content/rich-document/types";
 import { downloadFile } from "@ai-matrx/kit/download";
 
 /**

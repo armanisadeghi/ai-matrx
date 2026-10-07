@@ -64,10 +64,11 @@ import { createRoot } from "react-dom/client";
 import { enableMapSet } from "immer";
 import { createSlimRootReducer, type RootState } from "@/lib/redux/rootReducer";
 import { STUDIO_SOURCES } from "@/components/markdown-studio/lab/content-sources";
-import { RichDocument } from "../RichDocument";
-import { RichDocumentActionProvider } from "../RichDocumentActionProvider";
+import { RichDocument } from "@ai-matrx/rich-content/rich-document/RichDocument";
+import { RichDocumentActionProvider } from "@ai-matrx/rich-content/rich-document/RichDocumentActionProvider";
 import { buildChatMessageActions } from "../chat/chatMessageActions";
-import { getAction } from "../actions/provider";
+import { getAction } from "@ai-matrx/rich-content/rich-document/actions/provider";
+import { getActionSurfacesState } from "@ai-matrx/rich-content/rich-document/runtime/actionSurfacesStore";
 import { hydrateMessages } from "@ai-matrx/chat/agents/redux/execution-system/messages/messages.slice";
 
 (globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
@@ -127,8 +128,9 @@ function makeStore() {
   return store;
 }
 
-function specIds(state: RootState, surfaceId: string): Set<string> {
-  const stack = state.richDocumentActionSurfaces.bySurfaceId[surfaceId];
+function specIds(_state: RootState, surfaceId: string): Set<string> {
+  // Surface stacks live in the engine's own store (no longer a Redux slice).
+  const stack = getActionSurfacesState().bySurfaceId[surfaceId];
   return new Set(
     (stack?.[stack.length - 1]?.computedActionSpecs ?? []).map((s) => s.id),
   );

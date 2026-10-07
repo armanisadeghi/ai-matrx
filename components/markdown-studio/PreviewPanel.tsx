@@ -41,13 +41,13 @@ import {
 import { cn } from "@/lib/utils";
 import { Popover, PopoverContent, PopoverTrigger } from "@ai-matrx/design-system";
 import { runV2Parser } from "@/components/admin/markdown-tester/utils/run-v2-parser";
-import { RichDocument } from "@/features/rich-document/RichDocument";
+import { RichDocument } from "@ai-matrx/rich-content/rich-document/RichDocument";
 import { EditInPlace } from "@/components/rich-editor/in-place/EditInPlace";
-import { RichDocumentActionSurface } from "@/features/rich-document/RichDocumentActionSurface";
+import { RichDocumentActionSurface } from "@ai-matrx/rich-content/rich-document/RichDocumentActionSurface";
 import type {
   ContentSource,
   RichDocumentActionsProp,
-} from "@/features/rich-document/types";
+} from "@ai-matrx/rich-content/rich-document/types";
 import type { AnnotationRecord } from "@/features/rich-document/annotations/record-of-source";
 import { getBlockTypeStyle } from "./block-type-colors";
 import { StreamSimControls } from "./lab/StreamSimControls";

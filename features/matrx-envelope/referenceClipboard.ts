@@ -1,4 +1,4 @@
-import { copyContent } from "@/components/agent-copy/copy-commands";
+import { copyContent } from "@ai-matrx/rich-content/copy/copy-commands";
 
 /**
  * The single clipboard path for Matrx reference fences.

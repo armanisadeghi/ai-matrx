@@ -7,9 +7,9 @@
 import { noteIdentityContentSource } from "@/features/notes/richDocumentSource";
 import React, { act } from "react";
 import { createRoot } from "react-dom/client";
-import { OpenOneMenuButton } from "../OpenOneMenuButton";
+import { OpenOneMenuButton } from "@ai-matrx/rich-content/rich-document/variants/shared/OpenOneMenuButton";
 import { contentSourceKey } from "@/features/context-menu-v3/menu-presence";
-import type { ContentSource } from "../../../types";
+import type { ContentSource } from "@ai-matrx/rich-content/rich-document/types";
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 

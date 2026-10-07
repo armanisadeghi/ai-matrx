@@ -74,7 +74,7 @@ Element.prototype.scrollIntoView ??= function scrollIntoView() {};
 
 import { RecordAnnotations } from "../RecordAnnotations";
 import { AnnotationSidecarProvider, AnnotatedContent } from "../AnnotationSidecar";
-import { zonesContaining } from "@/components/selection-toolbar/selection-zones";
+import { zonesContaining } from "@ai-matrx/rich-content/selection-toolbar/selection-zones";
 import { ANNOTATION_HOST_KEY, annotationSelectionProvider, type AnnotationSelectionHost } from "../annotation-actions";
 import { dockStateFor, resetDocksForTest, toggleDockFor } from "../record-annotations-store";
 import { CanvasColumn, CanvasProvider, registerCanvasKind, useCanvas } from "@ai-matrx/canvas/react";
@@ -294,8 +294,8 @@ it("6 — which saved record a ContentSource is", () => {
 
 it("7 — the ⋯ row finds the dock of a record the host names explicitly (the studio's raw source)", async () => {
   // The registry is mocked to capture the one registration (the real provider pulls the whole app).
-  const registered: import("../../types").RichDocumentAction[] = [];
-  jest.doMock("../../actions/provider", () => ({ registerAction: (a: import("../../types").RichDocumentAction) => registered.push(a) }));
+  const registered: import("@ai-matrx/rich-content/rich-document/types").RichDocumentAction[] = [];
+  jest.doMock("@ai-matrx/rich-content/rich-document/actions/provider", () => ({ registerAction: (a: import("@ai-matrx/rich-content/rich-document/types").RichDocumentAction) => registered.push(a) }));
   let store!: typeof import("../record-annotations-store");
   jest.isolateModules(() => {
     // eslint-disable-next-line @typescript-eslint/no-require-imports

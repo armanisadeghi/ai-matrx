@@ -36,10 +36,10 @@ import type { AppDispatch } from "@/lib/redux/store";
 import type { Note } from "@/features/notes/types";
 import { persistNoteUpdate } from "@/features/notes/service/notesService";
 import { NoteContextPartialSaveError, NotePostAcknowledgementError } from "@/features/notes/service/noteSaveErrors";
-import type { RichDocumentActionContext } from "../../types";
+import type { RichDocumentActionContext } from "@ai-matrx/rich-content/rich-document/types";
 import { captureNoteEditSource, noteIdentityContentSource } from "@/features/notes/richDocumentSource";
 import { noteAdapter } from "../sources/note";
-import { getAction } from "../provider";
+import { getAction } from "@ai-matrx/rich-content/rich-document/actions/provider";
 import { FullScreenMarkdownEditorBridge } from "@/components/mardown-display/chat-markdown/FullScreenMarkdownEditorBridge";
 import { HtmlPreviewBridge } from "@ai-matrx/chat/cx-conversation/components/HtmlPreviewBridge";
 

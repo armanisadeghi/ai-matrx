@@ -18,14 +18,14 @@ import {
   Type,
 } from "lucide-react";
 import { toast } from "@/lib/toast";
-import { copyRichContent, copyContent } from "@/components/agent-copy/copy-commands";
-import { registerAction } from "../provider";
+import { copyRichContent, copyContent } from "@ai-matrx/rich-content/copy/copy-commands";
+import { registerAction } from "@ai-matrx/rich-content/rich-document/actions/provider";
 import { contentFileName, deriveContentTitle, getErrorMessage, contentForDestination } from "../utils";
 import { hasTableShape } from "@ai-matrx/records-ui/table-shape";
-import { liveSelectionShapeText } from "@/components/selection-toolbar/selection-shape";
+import { liveSelectionShapeText } from "@ai-matrx/rich-content/selection-toolbar/selection-shape";
 import { openOverlay } from "@/lib/redux/slices/overlaySlice";
-import { parseFirstMarkdownTable, tableToDelimited } from "../markdownTable";
-import type { RichDocumentActionContext } from "../../types";
+import { parseFirstMarkdownTable, tableToDelimited } from "@ai-matrx/rich-content/rich-document/actions/markdownTable";
+import type { RichDocumentActionContext } from "@ai-matrx/rich-content/rich-document/types";
 import { downloadFile } from "@ai-matrx/kit/download";
 
 async function copyText(text: string, done: string): Promise<void> {

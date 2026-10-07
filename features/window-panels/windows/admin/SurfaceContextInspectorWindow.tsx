@@ -52,7 +52,7 @@ import {
   CONTEXT_MENU_ENTITY_KEY,
   type ContextMenuExtraSection,
 } from "@/features/context-menu-v3/types";
-import { copyContent } from "@/components/agent-copy/copy-commands";
+import { copyContent } from "@ai-matrx/rich-content/copy/copy-commands";
 import { toast } from "@/lib/toast";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { humanizeIdentifier } from "@ai-matrx/kit/text-case";

@@ -23,7 +23,7 @@ import { selectIsAdminDebugger } from "@/lib/redux/slices/userSlice";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 import type { ContextMenuExtraSection } from "@/features/context-menu-v3/types";
 import { useCapturedExchange } from "@/lib/diagnostics/stream-capture/useCapturedExchanges";
-import { copyContent } from "@/components/agent-copy/copy-commands";
+import { copyContent } from "@ai-matrx/rich-content/copy/copy-commands";
 import { toast } from "@/lib/toast";
 // context-menu-exempt: entity — a state dump of the fetch-tap buffer, not an app record; the selected exchange is copyable/exportable content, never an attachable entity
 

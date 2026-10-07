@@ -16,7 +16,7 @@ import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableCo
 import { CONTEXT_MENU_HEADING_KEY } from "@/features/context-menu-v3/types";
 import { cn } from "@/lib/utils";
 import { OrganizationTag } from "@/features/commerce-review/components/OrganizationTag";
-import type { ContentSource } from "@/features/rich-document/types";
+import type { ContentSource } from "@ai-matrx/rich-content/rich-document/types";
 import { saveNoteField, ensureNoteBodiesLoaded } from "../redux/thunks";
 import {
   buildNoteMenu,

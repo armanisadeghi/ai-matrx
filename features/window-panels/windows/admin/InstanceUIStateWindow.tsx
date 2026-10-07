@@ -32,7 +32,7 @@ import { JsonInspector } from "@/components/official-candidate/json-inspector/Js
 import { formatJson } from "@ai-matrx/kit/json-format";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 import type { ContextMenuExtraSection } from "@/features/context-menu-v3/types";
-import { copyContent } from "@/components/agent-copy/copy-commands";
+import { copyContent } from "@ai-matrx/rich-content/copy/copy-commands";
 import { toast } from "@/lib/toast";
 // context-menu-exempt: entity — a Redux state dump of the instanceUIState slice, not a persisted record; the underlying conversation/agent already has its own doors elsewhere
 

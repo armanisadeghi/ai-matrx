@@ -35,7 +35,7 @@ import { collectionWriteHandlers } from "@ai-matrx/chat/surfaces/runtime/collect
 import { refuseSurfaceWrite } from "@ai-matrx/chat/surfaces/runtime/surface-writeback";
 import { parseCreateMemoryAids, parseMemoryAid, parseMemoryIds, parseUpdateMemoryAids } from "../memoryWrites";
 import { parseMemoryItemChange, removeMemoryItem } from "../memoryItemWrites";
-import { ContentFindControl } from "@/features/rich-document/search/ContentFindControl";
+import { ContentFindControl } from "@ai-matrx/rich-content/rich-document/search/ContentFindControl";
 
 const SURFACE_NAME = "matrx-user/education-memory";
 

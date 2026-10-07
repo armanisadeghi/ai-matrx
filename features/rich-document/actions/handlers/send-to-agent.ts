@@ -9,7 +9,7 @@
 
 import { Forward } from "lucide-react";
 import { sendToAgentWindowAction } from "@/features/overlays/openers/sendToAgentWindow";
-import { registerAction } from "../provider";
+import { registerAction } from "@ai-matrx/rich-content/rich-document/actions/provider";
 import {
   contentForDestination,
   deriveContentTitle,

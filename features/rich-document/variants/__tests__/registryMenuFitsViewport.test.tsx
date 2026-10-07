@@ -18,9 +18,9 @@ import { createRoot } from "react-dom/client";
 
 import AdvancedMenu, { type MenuItem } from "@/components/official/AdvancedMenu";
 import "../../actions/handlers";
-import { resolveActions } from "../../actions/provider";
+import { resolveActions } from "@ai-matrx/rich-content/rich-document/actions/provider";
 import { chatContext } from "../../test-utils/chatContext";
-import { toAdvancedMenuItems } from "../RegistryActionMenu";
+import { toAdvancedMenuItems } from "@ai-matrx/rich-content/rich-document/variants/RegistryActionMenu";
 
 declare global {
   var IS_REACT_ACT_ENVIRONMENT: boolean;
@@ -52,7 +52,8 @@ const MAX_VISIBLE_ROWS = 17;
 /** The chat ⋯ menu rows for a role, exactly as RegistryActionMenu builds them. */
 function menuItems(role: "assistant" | "user"): MenuItem[] {
   const ctx = chatContext(role);
-  return toAdvancedMenuItems(resolveActions(ctx), ctx, () => ctx);
+  // The engine types icons structurally; the app menu takes the same components as Lucide icons.
+  return toAdvancedMenuItems(resolveActions(ctx), ctx, () => ctx) as unknown as MenuItem[];
 }
 
 async function renderMenu(

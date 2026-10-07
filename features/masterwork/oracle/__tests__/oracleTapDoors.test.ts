@@ -9,8 +9,8 @@
  */
 
 import "@/features/rich-document/actions/handlers";
-import { resolveActions } from "@/features/rich-document/actions/provider";
-import { toAdvancedMenuItems } from "@/features/rich-document/variants/RegistryActionMenu";
+import { resolveActions } from "@ai-matrx/rich-content/rich-document/actions/provider";
+import { toAdvancedMenuItems } from "@ai-matrx/rich-content/rich-document/variants/RegistryActionMenu";
 import { chatContext } from "@/features/rich-document/test-utils/chatContext";
 
 function menuKeys(role: "assistant" | "user"): string[] {

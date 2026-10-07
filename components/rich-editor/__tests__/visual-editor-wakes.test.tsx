@@ -27,7 +27,7 @@ jest.mock("@/features/audio/hooks/useMicField", () => ({
   useMicField: () => ({ start: jest.fn(), stop: jest.fn(), state: "idle", isRecording: false, supported: false }),
 }));
 jest.mock("@/features/files/handler/hooks/useFileUpload", () => ({ useFileUpload: () => ({ upload: jest.fn() }) }));
-jest.mock("@/features/rich-document/RichDocument", () => ({ RichDocument: () => null }));
+jest.mock("@ai-matrx/rich-content/rich-document/RichDocument", () => ({ RichDocument: () => null }));
 (globalThis as typeof globalThis & { ResizeObserver?: unknown }).ResizeObserver = class {
   observe() {}
   disconnect() {}

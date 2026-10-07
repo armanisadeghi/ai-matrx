@@ -9,20 +9,20 @@ import { noteIdentityContentSource } from "@/features/notes/richDocumentSource";
 import React, { act } from "react";
 import { createRoot } from "react-dom/client";
 
-jest.mock("@/features/rich-document/RegistryContextMenu", () => ({
+jest.mock("@ai-matrx/rich-content/rich-document/RegistryContextMenu", () => ({
   RegistryContextMenu: (p: { source: { type: string }; children: React.ReactNode }) =>
     require("react").createElement("div", { "data-testid": "one-engine", "data-source": p.source.type }, p.children),
 }));
 jest.mock("@ai-matrx/alchemy/react/host", () => ({ useAlchemyActions: () => ({ registry: {} }) }));
 jest.mock("@ai-matrx/alchemy/react/bar", () => ({ ActionBar: () => null }));
 jest.mock("@ai-matrx/alchemy/react/overflow", () => ({ OverflowMenu: () => require("react").createElement("div", { "data-testid": "package-overflow" }) }));
-jest.mock("../../actions/provider", () => ({ ensureRichDocumentProvider: () => undefined }));
-jest.mock("../shared/AlchemyDocumentMenu", () => ({ AlchemyDocumentMenu: () => null }));
+jest.mock("@ai-matrx/rich-content/rich-document/actions/provider", () => ({ ensureRichDocumentProvider: () => undefined, registerAction: () => undefined }));
+jest.mock("@ai-matrx/rich-content/rich-document/variants/shared/AlchemyDocumentMenu", () => ({ AlchemyDocumentMenu: () => null }));
 jest.mock("@ai-matrx/kit/media-query", () => ({ ...jest.requireActual("@ai-matrx/kit/media-query"), useIsMobile: () => true }));
 
-import { ActionBar } from "../ActionBar";
-import { MenuVariant } from "../MenuVariant";
-import type { RichDocumentActionContext } from "../../types";
+import { ActionBar } from "@ai-matrx/rich-content/rich-document/variants/ActionBar";
+import { MenuVariant } from "@ai-matrx/rich-content/rich-document/variants/MenuVariant";
+import type { RichDocumentActionContext } from "@ai-matrx/rich-content/rich-document/types";
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 

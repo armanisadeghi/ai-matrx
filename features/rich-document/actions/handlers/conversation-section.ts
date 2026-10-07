@@ -22,9 +22,9 @@
 // conversationId; absent everywhere else, never dead.
 
 import { Copy, Link as LinkIcon, Pencil, Pin, Search, Share2 } from "lucide-react";
-import { registerAction } from "../provider";
+import { registerAction } from "@ai-matrx/rich-content/rich-document/actions/provider";
 import { chatIds } from "../utils";
-import type { RichDocumentActionContext } from "../../types";
+import type { RichDocumentActionContext } from "@ai-matrx/rich-content/rich-document/types";
 import {
   canonicalConversationHref,
   conversationTitleFromState,

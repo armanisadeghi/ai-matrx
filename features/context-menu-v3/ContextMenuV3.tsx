@@ -21,7 +21,7 @@ import React, { useCallback, useEffect, useRef, useState, useSyncExternalStore }
 import dynamic from "next/dynamic";
 import { Slot } from "@radix-ui/react-slot";
 import { useIsMobile } from "@ai-matrx/kit/media-query";
-import { useSelectionZone } from "@/components/selection-toolbar/selection-zones";
+import { useSelectionZone } from "@ai-matrx/rich-content/selection-toolbar/selection-zones";
 import {
   CONTEXT_MENU_SELECTION_HOST_KEY,
   type ContextMenuSelectionHost,
@@ -170,7 +170,7 @@ const DocumentAgentReviewLazy = dynamic(
 );
 type TextAgentReviewRequest = {
   actionId: "cleanup" | "help" | "customAgent";
-  ctx: import("@/features/rich-document/types").RichDocumentActionContext;
+  ctx: import("@ai-matrx/rich-content/rich-document/types").RichDocumentActionContext;
 };
 
 // ── The palette opens from ANYWHERE on a surface with a menu (ALC-15) ───────

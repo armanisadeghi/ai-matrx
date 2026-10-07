@@ -10,7 +10,7 @@
  *
  * Break it names: any fold of the grid's model under a heading outside the classic names → red.
  */
-jest.mock("@/components/agent-copy/alchemy-icon-keys", () => ({ registerAlchemyIcon: () => "app:Icon" }));
+jest.mock("@ai-matrx/rich-content/utils/alchemy-icon-keys", () => ({ registerAlchemyIcon: () => "app:Icon" }));
 
 import { createActionRegistry, createClickTarget } from "@ai-matrx/alchemy/actions";
 import type { MatrxTableMenuSection } from "@ai-matrx/design-system/data-table/menu-targets";

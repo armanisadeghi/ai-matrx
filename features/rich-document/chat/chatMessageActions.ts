@@ -11,7 +11,7 @@ import type {
   ContentSource,
   RichDocumentActionContextCallbacks,
   RichDocumentActionsProp,
-} from "../types";
+} from "@ai-matrx/rich-content/rich-document/types";
 
 export interface ChatMessageActionFacts {
   conversationId: string;

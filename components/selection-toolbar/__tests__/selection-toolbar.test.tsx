@@ -80,19 +80,19 @@ jest.mock("@/lib/scoped-config/effectiveKnobs.client", () => ({ useEffectiveKnob
 // The frame is split out with next/dynamic in the app; here it loads synchronously.
 jest.mock("next/dynamic", () => () => {
   // eslint-disable-next-line @typescript-eslint/no-require-imports
-  return require("../SelectionToolbarFrame").default;
+  return require("@ai-matrx/rich-content/selection-toolbar/SelectionToolbarFrame").default;
 });
 
 import { createActionRegistry } from "@ai-matrx/alchemy/actions";
 import { AlchemyActionsProvider } from "@ai-matrx/alchemy/react/host";
 import type { AlchemyHostPorts } from "@ai-matrx/alchemy/ports";
-import { resolveAlchemyIcon } from "@/components/agent-copy/alchemy-icon-keys";
+import { resolveAlchemyIcon } from "@ai-matrx/rich-content/utils/alchemy-icon-keys";
 import { AnnotatedContent, AnnotationSidecarProvider, useSidecar } from "@/features/rich-document/annotations/AnnotationSidecar";
 import { toast } from "@/lib/toast";
 import { SelectionToolbarRoot } from "../SelectionToolbarRoot";
-import { useSelectionZone } from "../selection-zones";
-import { declareSelectionProvider, hostHalf } from "../selection-actions";
-import { registerAlchemyIcon } from "@/components/agent-copy/alchemy-icon-keys";
+import { useSelectionZone } from "@ai-matrx/rich-content/selection-toolbar/selection-zones";
+import { declareSelectionProvider, hostHalf } from "@ai-matrx/rich-content/selection-toolbar/selection-actions";
+import { registerAlchemyIcon } from "@ai-matrx/rich-content/utils/alchemy-icon-keys";
 import { Bold } from "lucide-react";
 
 const BODY = "## Maps\n\nShades represent statistical data.";

@@ -7,7 +7,7 @@
  *
  * Break it names: the header built from the raw text again → red.
  */
-jest.mock("@/components/agent-copy/alchemy-icon-keys", () => ({ registerAlchemyIcon: () => "app:Icon" }));
+jest.mock("@ai-matrx/rich-content/utils/alchemy-icon-keys", () => ({ registerAlchemyIcon: () => "app:Icon" }));
 
 import { readFileSync } from "node:fs";
 import { join } from "node:path";

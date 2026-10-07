@@ -19,11 +19,11 @@
  */
 
 import "../handlers";
-import { getAction, resolveActions } from "../provider";
+import { getAction, resolveActions } from "@ai-matrx/rich-content/rich-document/actions/provider";
 import { chatContext, RICH_MESSAGE } from "../../test-utils/chatContext";
 import { kindTextToMarkdown } from "@/features/content-ir/surfaces/kind-text-to-markdown";
-import { toAdvancedMenuItems } from "../../variants/RegistryActionMenu";
-import type { MenuItem } from "@/components/official/AdvancedMenu";
+import { toAdvancedMenuItems } from "@ai-matrx/rich-content/rich-document/variants/RegistryActionMenu";
+import type { MenuItem } from "@ai-matrx/rich-content/host/app-bindings";
 
 /** Former chat menu key → the registry id that now owns the behavior. */
 const FORMER_CHAT_ACTIONS: Record<

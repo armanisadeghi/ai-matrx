@@ -16,7 +16,7 @@ import type {
   ContentSource,
   RichDocumentActionContext,
   RichDocumentActionContextCallbacks,
-} from "../types";
+} from "@ai-matrx/rich-content/rich-document/types";
 
 // ONE dynamic edge for all three dialogs (the Fragmentation Law — a set that
 // belongs to one surface compiles as one piece behind one front door), mounted

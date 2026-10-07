@@ -1,4 +1,4 @@
-import { collectRenderedFindRanges, findRenderedTextMatches } from "../renderedFind";
+import { collectRenderedFindRanges, findRenderedTextMatches } from "@ai-matrx/rich-content/rich-document/search/renderedFind";
 
 describe("rendered document search", () => {
   it("keeps text search inside the rendered guide and honors find options", () => {

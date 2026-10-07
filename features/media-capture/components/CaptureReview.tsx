@@ -31,7 +31,7 @@ import { InlineMediaRef } from "@ai-matrx/media/react";
 import { useOutputSinkRef } from "@/features/audio/useOutputSinkRef";
 import { useMediaElementPlaybackSession } from "@/features/audio/session/useMediaElementPlaybackSession";
 import { transcribeCloudFile } from "@/features/audio/services/speechApi";
-import { RichDocumentActions } from "@/features/rich-document/RichDocumentActions";
+import { RichDocumentActions } from "@ai-matrx/rich-content/rich-document/RichDocumentActions";
 import { toast } from "@/lib/toast";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 

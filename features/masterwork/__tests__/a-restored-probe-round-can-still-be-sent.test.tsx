@@ -98,7 +98,7 @@ jest.mock("@/components/official/ProTextarea", () => ({
   ),
 }));
 
-jest.mock("@/features/rich-document/RichDocument", () => ({
+jest.mock("@ai-matrx/rich-content/rich-document/RichDocument", () => ({
   RichDocument: (props: { content: string }) => <div>{props.content}</div>,
 }));
 

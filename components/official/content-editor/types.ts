@@ -1,7 +1,7 @@
 // components/content-editor/types.ts
 
 import type { SourceFeature } from "@ai-matrx/chat/agents/types/instance.types";
-import type { ContentSource } from "@/features/rich-document/types";
+import type { ContentSource } from "@ai-matrx/rich-content/rich-document/types";
 import type { ContextMenuEntityRef } from "@/features/context-menu-v3/types";
 import type { ImagePolicyDeclaration } from "@ai-matrx/rich-content/levels/prose/remote-image-policy";
 

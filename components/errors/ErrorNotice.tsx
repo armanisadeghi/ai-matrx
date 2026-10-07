@@ -29,8 +29,8 @@ import {
 } from "@/components/errors/error-alchemy";
 import { cn } from "@/lib/utils";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
-import { OpenOneMenuButton } from "@/features/rich-document/variants/shared/OpenOneMenuButton";
-import type { ContentSource } from "@/features/rich-document/types";
+import { OpenOneMenuButton } from "@ai-matrx/rich-content/rich-document/variants/shared/OpenOneMenuButton";
+import type { ContentSource } from "@ai-matrx/rich-content/rich-document/types";
 
 export type ErrorNoticeProps = {
   /** Short heading ("Not saved"). */

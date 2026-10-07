@@ -31,7 +31,7 @@ import {
   ensureOrganizationContext,
   isOrganizationSelectionCancelled,
 } from "@/lib/organization/organization-gate";
-import { registerAction } from "../provider";
+import { registerAction } from "@ai-matrx/rich-content/rich-document/actions/provider";
 import {
   chatIds,
   contentFileName,
@@ -40,7 +40,7 @@ import {
   requireAuth,
   contentForDestination,
 } from "../utils";
-import type { RichDocumentActionContext } from "../../types";
+import type { RichDocumentActionContext } from "@ai-matrx/rich-content/rich-document/types";
 
 /**
  * THE ORACLE TAP's question half: for an ASSISTANT message, the user turn it

@@ -16,9 +16,9 @@ import {
   resolveActions,
   richDocumentActionProvider,
   richDocumentClickTarget,
-} from "../provider";
+} from "@ai-matrx/rich-content/rich-document/actions/provider";
 import { chatContext } from "../../test-utils/chatContext";
-import type { RichDocumentAction, RichDocumentActionContext } from "../../types";
+import type { RichDocumentAction, RichDocumentActionContext } from "@ai-matrx/rich-content/rich-document/types";
 import { Copy } from "lucide-react";
 
 const ids = (ctx: RichDocumentActionContext) => resolveActions(ctx).map((a) => a.id);

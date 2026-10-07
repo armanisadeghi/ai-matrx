@@ -8,7 +8,7 @@
  */
 
 import { createClickTarget, type Action } from "@ai-matrx/alchemy/actions";
-import { SELECTION_PRIORITY, selectionPlacement, type SelectionToolbarHost } from "../selection-actions";
+import { SELECTION_PRIORITY, selectionPlacement, type SelectionToolbarHost } from "@ai-matrx/rich-content/selection-toolbar/selection-actions";
 
 const ui = { openPanel() {}, closePanel() {}, close() {} };
 const passage = (id: string) => ({ id } as unknown as Action);

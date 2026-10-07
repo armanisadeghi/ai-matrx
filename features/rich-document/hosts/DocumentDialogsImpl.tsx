@@ -18,7 +18,7 @@ import { fcService } from "@/features/flashcards/data/fcService";
 import { requireUserId } from "@/utils/auth/getUserId";
 import { DocumentAgentReview } from "./DocumentAgentReview";
 import { ChatMessageDialogs } from "./ChatMessageDialogs";
-import type { RichDocumentActionContext } from "../types";
+import type { RichDocumentActionContext } from "@ai-matrx/rich-content/rich-document/types";
 
 /** The deck every "Save as flashcard" lands in — one per person. */
 const SAVED_CARDS_DECK = "Saved cards";

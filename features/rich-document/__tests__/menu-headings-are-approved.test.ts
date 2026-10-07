@@ -13,12 +13,12 @@
  * Break it names: a coined section label back in menuStructure.ts, or a
  * surface section declared as a group heading → buildMenuModel throws here.
  */
-jest.mock("@/components/agent-copy/alchemy-icon-keys", () => ({ registerAlchemyIcon: () => "app:Icon" }));
+jest.mock("@ai-matrx/rich-content/utils/alchemy-icon-keys", () => ({ registerAlchemyIcon: () => "app:Icon" }));
 
 import "../actions/handlers";
 import { createActionRegistry, createClickTarget, type ActionProvider } from "@ai-matrx/alchemy/actions";
 import { buildMenuModel, unapprovedHeadings } from "@ai-matrx/alchemy/menu";
-import { richDocumentActionProvider, richDocumentClickTarget, richDocumentTargetHost } from "../actions/provider";
+import { richDocumentActionProvider, richDocumentClickTarget, richDocumentTargetHost } from "@ai-matrx/rich-content/rich-document/actions/provider";
 import { chatContext } from "../test-utils/chatContext";
 import { contextMenuActionsFromModel } from "@/features/context-menu-v3/alchemy-provider";
 import type { MenuModel, MenuNode, MenuSection } from "@/features/context-menu-v3/model/menu-model";

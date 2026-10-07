@@ -9,7 +9,7 @@
  * - a thing that brings its own Export still offering the page-text PDF/Word/HTML rows → red;
  *   dropping those rows for a thing WITHOUT its own Export (nothing else would save it) → red.
  */
-jest.mock("@/components/agent-copy/alchemy-icon-keys", () => ({ registerAlchemyIcon: () => "app:Icon" }));
+jest.mock("@ai-matrx/rich-content/utils/alchemy-icon-keys", () => ({ registerAlchemyIcon: () => "app:Icon" }));
 jest.mock("@/components/icons/domain-icons", () => ({ INTELLIGENCE_ICON: () => null, AGENT_ICON: () => null }));
 
 import { createClickTarget, type Action, type ActionCategory, type ResolvedAction } from "@ai-matrx/alchemy/actions";

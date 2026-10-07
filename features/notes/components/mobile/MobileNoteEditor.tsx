@@ -14,7 +14,7 @@ import { useToastManager } from "@/hooks/useToastManager";
 import { toastErrorAlreadyCaptured } from "@/lib/toast";
 import { EditableContextMenu } from "@/features/context-menu-v3/EditableContextMenu";
 import { CONTEXT_MENU_HEADING_KEY } from "@/features/context-menu-v3/types";
-import { RichDocument } from "@/features/rich-document/RichDocument";
+import { RichDocument } from "@ai-matrx/rich-content/rich-document/RichDocument";
 import { EditInPlace } from "@/components/rich-editor/in-place/EditInPlace";
 import { NOTE_EXCLUDED_ACTIONS } from "../../constants/noteExcludedActions";
 import { noteIdentityContentSource } from "../../richDocumentSource";

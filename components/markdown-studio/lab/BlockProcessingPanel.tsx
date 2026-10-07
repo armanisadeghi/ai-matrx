@@ -15,7 +15,7 @@ import { requestRaw } from "@/lib/python-client";
 import { getUserMessage } from "@ai-matrx/agents/matrx";
 import { ENDPOINTS } from "@/lib/api/endpoints";
 import { parseNdjsonStream } from "@/lib/api/stream-parser";
-import { copyContent } from "@/components/agent-copy/copy-commands";
+import { copyContent } from "@ai-matrx/rich-content/copy/copy-commands";
 import type {
   RenderBlockEvent,
   TypedStreamEvent,

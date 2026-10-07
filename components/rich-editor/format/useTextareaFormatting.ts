@@ -9,7 +9,7 @@
 // `components/rich-editor/__tests__/format-hosts.census.test.ts`.
 
 import { useEffect } from "react";
-import { useSelectionZone } from "@/components/selection-toolbar/selection-zones";
+import { useSelectionZone } from "@ai-matrx/rich-content/selection-toolbar/selection-zones";
 import { formatCommandForKey, keyNameOf } from "../core/markdown-format";
 import { markdownFormatHost, textareaFormatTarget } from "./format-target";
 

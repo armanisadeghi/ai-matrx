@@ -36,7 +36,7 @@ import {
 } from "@/components/rich-editor/core/visual-document";
 
 jest.mock("@/components/rich-editor/RichEditor", () => ({ __esModule: true, default: () => null }));
-jest.mock("@/features/rich-document/RichDocument", () => ({ RichDocument: () => null }));
+jest.mock("@ai-matrx/rich-content/rich-document/RichDocument", () => ({ RichDocument: () => null }));
 jest.mock("@/components/matrx/MatrxSplit", () => ({ MatrxSplit: () => null }));
 jest.mock("@/features/audio/components/MicrophoneIconButton", () => ({ MicrophoneIconButton: () => null }));
 jest.mock("@/components/official/ProTextarea", () => ({ ProTextarea: () => null }));

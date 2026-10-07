@@ -13,7 +13,7 @@ import { RefreshCw } from "lucide-react";
 import { Checkbox, Popover, PopoverContent, PopoverTrigger, Select, SelectContent, SelectItem, SelectValue, Skeleton } from "@ai-matrx/design-system";
 import { Button, Input, SelectTrigger, SegmentedControl } from "@ai-matrx/design-system/controls";
 import { RoomViewReceipt } from "@ai-matrx/chat/agents/components/context-policies-display/MessageContextReceipt";
-import { RichDocument } from "@/features/rich-document/RichDocument";
+import { RichDocument } from "@ai-matrx/rich-content/rich-document/RichDocument";
 import { stripControlLines } from "@/lib/control-tokens/stripControlLines";
 import { cn } from "@/lib/utils";
 import { useAppSelector } from "@/lib/redux/hooks";

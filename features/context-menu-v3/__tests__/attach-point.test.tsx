@@ -14,7 +14,7 @@
 import React, { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { NonEditableContextMenu } from "../NonEditableContextMenu";
-import { zonesContaining } from "@/components/selection-toolbar/selection-zones";
+import { zonesContaining } from "@ai-matrx/rich-content/selection-toolbar/selection-zones";
 
 jest.mock("next/dynamic", () => () => (props: { mode: string }) => {
   // eslint-disable-next-line @typescript-eslint/no-require-imports

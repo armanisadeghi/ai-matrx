@@ -10,7 +10,7 @@
 import * as React from "react";
 import { toast } from "@/lib/toast";
 import { DocumentAgentReview } from "./DocumentAgentReview";
-import { getApplyTarget } from "../review/applyTargets";
+import { getApplyTarget } from "@ai-matrx/rich-content/rich-document/review/applyTargets";
 
 export interface ApplyToSourceReviewProps {
   isOpen: boolean;

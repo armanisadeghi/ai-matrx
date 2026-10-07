@@ -23,7 +23,7 @@
 
 import { fieldPreview } from "./utils/field-menu-header";
 import type { Action, ActionCategory, ActionProvider, ClickTarget, Eligibility } from "@ai-matrx/alchemy/actions";
-import { registerAlchemyIcon } from "@/components/agent-copy/alchemy-icon-keys";
+import { registerAlchemyIcon } from "@ai-matrx/rich-content/utils/alchemy-icon-keys";
 import { stripTurnTrust } from "@/features/education/tutor/turnTrust";
 import { markdownToPlainText } from "@/lib/markdown/plain-text";
 import type { MenuModel, MenuNode, MenuSection } from "./model/menu-model";

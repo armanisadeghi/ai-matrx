@@ -38,11 +38,11 @@ import {
   useScrollEdgeIntent,
 } from "@/components/matrx/useTrimEdgeScrollIntent";
 import { MicrophoneIconButton } from "@/features/audio/components/MicrophoneIconButton";
-import { RichDocument } from "@/features/rich-document/RichDocument";
+import { RichDocument } from "@ai-matrx/rich-content/rich-document/RichDocument";
 import type {
   ContentSource,
   RichDocumentActionsVariant,
-} from "@/features/rich-document/types";
+} from "@ai-matrx/rich-content/rich-document/types";
 import type { ApplicationScope } from "@ai-matrx/chat/agents/types/scope.types";
 import {
   toastNoteWriteBlocked,

@@ -38,7 +38,7 @@ jest.mock("../latestTurn", () => ({
 jest.mock("@/lib/redux/hooks", () => ({ useAppSelector: () => [], useAppDispatch: () => jest.fn() }));
 jest.mock("../../redux/vision-interview.slice", () => ({ selectTurnsOrdered: () => [] }));
 jest.mock("@ai-matrx/chat/agents/components/context-policies-display/MessageContextReceipt", () => ({ RoomViewReceipt: () => null }));
-jest.mock("@/features/rich-document/RichDocument", () => ({ RichDocument: () => null }));
+jest.mock("@ai-matrx/rich-content/rich-document/RichDocument", () => ({ RichDocument: () => null }));
 (globalThis as typeof globalThis & { ResizeObserver?: unknown }).ResizeObserver = class {
   observe() {}
   disconnect() {}

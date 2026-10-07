@@ -8,19 +8,19 @@
 import { lazy } from "react";
 import { registerChatUi } from "@ai-matrx/chat/host/ui-slots";
 import "@ai-matrx/chat/host/rich-document-slots";
-import { RichDocumentActions } from "@/features/rich-document/RichDocumentActions";
-import { RegistryContextMenu } from "@/features/rich-document/RegistryContextMenu";
-import { RichDocumentActionProvider } from "@/features/rich-document/RichDocumentActionProvider";
-import { RichDocumentActionSurface } from "@/features/rich-document/RichDocumentActionSurface";
+import { RichDocumentActions } from "@ai-matrx/rich-content/rich-document/RichDocumentActions";
+import { RegistryContextMenu } from "@ai-matrx/rich-content/rich-document/RegistryContextMenu";
+import { RichDocumentActionProvider } from "@ai-matrx/rich-content/rich-document/RichDocumentActionProvider";
+import { RichDocumentActionSurface } from "@ai-matrx/rich-content/rich-document/RichDocumentActionSurface";
 import { buildChatMessageActions } from "@/features/rich-document/chat/chatMessageActions";
 import { convertOriginForSource, useDocumentDialogsHost } from "@/features/rich-document/hosts/DocumentDialogsHost";
 import { RecordAnnotations } from "@/features/rich-document/annotations/RecordAnnotations";
 import { annotationRecordOf } from "@/features/rich-document/annotations/record-of-source";
-import { bindConversationToApplyTarget } from "@/features/rich-document/review/applyTargets";
+import { bindConversationToApplyTarget } from "@ai-matrx/rich-content/rich-document/review/applyTargets";
 
 // The ⋯ menu stays a lazy chunk: loaded only when a person opens it.
 const RegistryActionMenu = lazy(() =>
-  import("@/features/rich-document/variants/RegistryActionMenu").then((m) => ({ default: m.RegistryActionMenu })),
+  import("@ai-matrx/rich-content/rich-document/variants/RegistryActionMenu").then((m) => ({ default: m.RegistryActionMenu })),
 );
 
 export const chatRichDocumentSlots = {

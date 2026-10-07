@@ -49,7 +49,7 @@ import {
 } from "@/components/ui/select";
 import { useToast } from "@/components/ui/use-toast";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
-import { copyContent } from "@/components/agent-copy/copy-commands";
+import { copyContent } from "@ai-matrx/rich-content/copy/copy-commands";
 
 import {
   absoluteInviteUrl,

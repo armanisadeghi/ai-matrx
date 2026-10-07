@@ -8,9 +8,10 @@ import dynamic from "next/dynamic";
 import { createElement } from "react";
 import { configureRichContent } from "@ai-matrx/rich-content/host";
 import { registerJsonAnswerRenderer } from "@ai-matrx/rich-content/display/block-interaction";
-import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
+import { useAppDispatch, useAppSelector, useAppStore } from "@/lib/redux/hooks";
 import { openOverlay } from "@/lib/redux/slices/overlaySlice";
-import { selectIsAdminDebugger, selectIsAuthenticated, selectUser } from "@/lib/redux/selectors/userSelectors";
+import { selectIsAdminDebugger, selectIsAuthenticated, selectIsSuperAdmin, selectUser } from "@/lib/redux/selectors/userSelectors";
+import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import { selectMermaidPreferences } from "@/lib/redux/preferences/userPreferenceSelectors";
 import { setModulePreferences } from "@/lib/redux/preferences/userPreferencesSlice";
 import { useThemeMode } from "@/styles/themes/useThemeMode";
@@ -47,7 +48,15 @@ import IconInputWithValidation from "@/components/official/icons/IconInputWithVa
 import LocatedTableViewer from "@/features/data-tables/components/LocatedTableViewer";
 import { OpenDestinationDialog } from "@/features/page-extraction/data-review/OpenDestinationDialog";
 import { HTMLPageService } from "@/features/html-pages/services/htmlPageService";
-import { ensureOrganizationContext, isOrganizationSelectionCancelled } from "@/lib/organization/organization-gate";
+import { ensureOrganizationContext, holdDeliberateIntent, isOrganizationSelectionCancelled } from "@/lib/organization/organization-gate";
+import { getSessionKnob } from "@/lib/scoped-config/sessionKnob";
+import { showManualCopy } from "@/components/dialogs/clipboard-fallback/manualCopyOpener";
+import { useAlchemyDisclosure } from "@/components/agent-copy/useAlchemyDisclosure";
+import { contentSourceKey, sameContentSource, useRegistryMenuSource } from "@/features/context-menu-v3/menu-presence";
+import { openContextMenuForElement } from "@/features/context-menu-v3/utils/open-context-menu";
+import { convertOriginForSource, useDocumentDialogsHost } from "@/features/rich-document/hosts/DocumentDialogsHost";
+import { RecordAnnotations } from "@/features/rich-document/annotations/RecordAnnotations";
+import { annotationRecordOf, recordKeyOf } from "@/features/rich-document/annotations/record-of-source";
 import { announceProposedGoogleWrite, isProposedGoogleWrite } from "@/features/google-workspace/export/proposedWrite";
 import { createMermaidEditorScope, mermaidEditorManifest } from "@/features/surfaces/manifests/mermaid-editor.manifest";
 import { useDiagramAgents } from "@/components/mermaid/hooks/useDiagramAgents";
@@ -64,6 +73,8 @@ import {
 // This app's domain blocks register into the engine's registries on import.
 import "./domain-block-components";
 import "./domain-block-dispatch";
+// This app's rich-document handlers, source adapters and menu rows.
+import "./rich-document-registrations";
 
 const SmallCodeEditor = dynamic(() => import("@/features/code-editor/components/code-block/SmallCodeEditorImpl"), {
   ssr: false,
@@ -73,6 +84,17 @@ const SmallCodeEditor = dynamic(() => import("@/features/code-editor/components/
 const never = () => false;
 
 configureRichContent({
+  showManualCopy,
+  readSessionKnob: (knob) => getSessionKnob(knob as never),
+  loadHtmlToMarkdown: () =>
+    Promise.all([
+      import("@/components/rich-editor/core/html-to-markdown"),
+      import("@tiptap/core"),
+      import("@/components/rich-editor/core/extensions"),
+    ]).then(([{ htmlToMarkdown }, { getSchema }, { createRichEditorExtensions }]) => {
+      const schema = getSchema(createRichEditorExtensions());
+      return (html: string) => htmlToMarkdown(html, schema);
+    }),
   loadMermaid: () => import("mermaid").then((m) => m.default),
   loadMermaidElk: () => import("@mermaid-js/layout-elk").then((m) => m.default),
   app: {
@@ -109,6 +131,22 @@ configureRichContent({
     useImageKnob: useEffectiveKnob,
     imageKnobPrincipals: sessionKnobPrincipals,
     setImageKnobMapEntry: setUserKnobMapEntry,
+    // rich document
+    useHostDispatch: useAppDispatch,
+    useHostGetState: () => useAppStore().getState,
+    useIsSuperAdmin: () => useAppSelector(selectIsSuperAdmin),
+    useActiveOrganizationId: () => useAppSelector(selectOrganizationId),
+    holdDeliberateIntent,
+    useAlchemyDisclosure,
+    useRegistryMenuSource,
+    sameContentSource,
+    contentSourceKey,
+    openContextMenuForElement,
+    convertOriginForSource,
+    useDocumentDialogsHost,
+    RecordAnnotations,
+    annotationRecordOf,
+    recordKeyOf,
     // kind views
     StructuredValueView,
     KindDataGate,

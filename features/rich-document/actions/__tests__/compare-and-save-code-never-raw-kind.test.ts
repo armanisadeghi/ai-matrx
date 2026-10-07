@@ -11,7 +11,7 @@
  * to Code opens with the readable markdown instead.
  */
 import "../handlers";
-import { getAction } from "../provider";
+import { getAction } from "@ai-matrx/rich-content/rich-document/actions/provider";
 import { extractFirstCodeBlock } from "../utils";
 import { chatContext } from "../../test-utils/chatContext";
 

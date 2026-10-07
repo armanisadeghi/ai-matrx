@@ -52,8 +52,8 @@ const ROOT = join(__dirname, "..", "..", "..");
 
 const CANONICAL = new Set([
   "components/selection-toolbar/SelectionToolbarRoot.tsx",
-  "components/selection-toolbar/SelectionToolbarFrame.tsx",
 ]);
+// The frame it draws lives in @ai-matrx/rich-content/selection-toolbar (outside this census's files).
 
 /** Each entry says why it is not a text-selection toolbar. Shrink-only. */
 const ALLOW: Record<string, string> = {
@@ -429,7 +429,7 @@ export function plantSecondToolbars(): { scratch: string; files: string[] } {
     'document.addEventListener("selectionchange", () => { const s = window.getSelection(); s?.removeAllRanges(); });\n',
   );
   plant("features/docs/ReaderHost.tsx", [
-    'import { useSelectionZone } from "@/components/selection-toolbar/selection-zones";',
+    'import { useSelectionZone } from "@ai-matrx/rich-content/selection-toolbar/selection-zones";',
     'export const ReaderHost = () => <div className="absolute" onMouseUp={() => void useSelectionZone} />;',
   ]);
   return { scratch, files };

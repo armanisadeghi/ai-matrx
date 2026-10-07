@@ -33,14 +33,14 @@ jest.mock("@/features/context-menu-v3/hooks/useContextMenuActions", () => ({
 import * as fs from "fs";
 import * as path from "path";
 import "../actions/handlers";
-import { resolveActions } from "../actions/provider";
+import { resolveActions } from "@ai-matrx/rich-content/rich-document/actions/provider";
 import {
   AI_SUBMENU_LABEL,
   buildMenuTree,
   flattenMenuTreeIds,
   registryMenuActions,
   withAiSlot,
-} from "../variants/shared/menuStructure";
+} from "@ai-matrx/rich-content/rich-document/variants/shared/menuStructure";
 import { chatContext } from "../test-utils/chatContext";
 import {
   buildMenuModel,
@@ -186,12 +186,13 @@ describe("one registry tree behind every menu", () => {
 
   it("every menu host builds from the one selector and the one tree", () => {
     const hosts = [
-      "../variants/RegistryActionMenu.tsx",
-      "../variants/RegistryActionList.tsx",
-      "../../context-menu-v3/model/menu-model.ts",
+      // The engine's two menu hosts (built modules of @ai-matrx/rich-content) and the app's model.
+      require.resolve("@ai-matrx/rich-content/rich-document/variants/RegistryActionMenu"),
+      require.resolve("@ai-matrx/rich-content/rich-document/variants/RegistryActionList"),
+      path.join(__dirname, "../../context-menu-v3/model/menu-model.ts"),
     ];
-    for (const rel of hosts) {
-      const src = fs.readFileSync(path.join(__dirname, rel), "utf8");
+    for (const file of hosts) {
+      const src = fs.readFileSync(file, "utf8");
       expect(src).toMatch(/buildMenuTree\(/);
     }
     // The phone sheet, the right-click and the palette are the Alchemy

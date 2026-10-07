@@ -10,7 +10,7 @@
 import { SourceSpliceError } from "@ai-matrx/content-ir/source";
 import { agentRunResult } from "@/components/official/proTextareaAgentActions";
 import { textInputVariable } from "@ai-matrx/chat/agents/utils/text-input-variable";
-import { explainSpliceRefusal } from "../../review/proposedEdit";
+import { explainSpliceRefusal } from "@ai-matrx/rich-content/rich-document/review/proposedEdit";
 
 const DOC = "Steady power is critical for the new terminals.";
 

@@ -30,7 +30,7 @@
 import { Archive, Copy, Ellipsis, FolderTree, Share2, Wrench } from "lucide-react";
 import { INTELLIGENCE_ICON } from "@/components/icons/domain-icons";
 import type { Action, ActionCategory, ActionSection, ClickTarget, ResolvedAction } from "@ai-matrx/alchemy/actions";
-import { registerAlchemyIcon } from "@/components/agent-copy/alchemy-icon-keys";
+import { registerAlchemyIcon } from "@ai-matrx/rich-content/utils/alchemy-icon-keys";
 import { actionLabel, matchRule } from "../regroup/grouping";
 import { PROPOSED_MENU_GROUPING } from "../regroup/proposed-grouping";
 

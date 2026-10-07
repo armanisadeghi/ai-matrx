@@ -1,8 +1,8 @@
 "use client";
 
 import React from "react";
-import { RichDocument } from "@/features/rich-document/RichDocument";
-import type { ContentSource } from "@/features/rich-document/types";
+import { RichDocument } from "@ai-matrx/rich-content/rich-document/RichDocument";
+import type { ContentSource } from "@ai-matrx/rich-content/rich-document/types";
 import type { MarkdownTabProps } from "../types";
 
 export function MarkdownPreviewTab({

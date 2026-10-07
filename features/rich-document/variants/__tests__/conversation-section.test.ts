@@ -10,17 +10,18 @@
  *     instead of the ONE verb in conversation-verbs.ts.
  */
 
-import "../../actions/handlers";
+// The app registrations (handlers, adapters, the Conversation submenu's transfer rows), as app-bindings loads them.
+import "@/features/rich-content-host/rich-document-registrations";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import { getAction, resolveActions, toAlchemyAction } from "../../actions/provider";
+import { getAction, resolveActions, toAlchemyAction } from "@ai-matrx/rich-content/rich-document/actions/provider";
 import { chatContext } from "../../test-utils/chatContext";
 import {
   CONVERSATION_SUBMENU_LABEL,
   MENU_STRUCTURE,
   buildMenuTree,
   registryMenuActions,
-} from "../shared/menuStructure";
+} from "@ai-matrx/rich-content/rich-document/variants/shared/menuStructure";
 import { CONVERSATION_TRANSFER_ROWS } from "@ai-matrx/chat/agents/conversation-export/conversation-transfer-rows";
 
 const CONVERSATION_IDS = [

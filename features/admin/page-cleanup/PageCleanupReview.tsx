@@ -30,7 +30,7 @@ import { listAppRows, upsertAppRow } from "@ai-matrx/records/app-table";
 import { personActor, recordsDataSource } from "@ai-matrx/records-ui";
 
 import { InfoHint } from "@/components/official/InfoHint";
-import { copyContent } from "@/components/agent-copy/copy-commands";
+import { copyContent } from "@ai-matrx/rich-content/copy/copy-commands";
 import {
   ensureOrganizationForWrite,
   isOrganizationSelectionCancelled,

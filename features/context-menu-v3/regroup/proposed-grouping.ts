@@ -26,7 +26,7 @@ import {
   ThumbsUp,
   Volume2,
 } from "lucide-react";
-import { registerAlchemyIcon } from "@/components/agent-copy/alchemy-icon-keys";
+import { registerAlchemyIcon } from "@ai-matrx/rich-content/utils/alchemy-icon-keys";
 import { AGENT_ICON } from "@/components/icons/domain-icons";
 import type { MenuGrouping } from "./grouping";
 

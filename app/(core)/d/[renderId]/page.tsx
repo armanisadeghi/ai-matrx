@@ -35,7 +35,7 @@
 import { use, useEffect, useState } from "react";
 
 import { AccessGate } from "@/features/access-gate/components/AccessGate";
-import { RichDocument } from "@/features/rich-document/RichDocument";
+import { RichDocument } from "@ai-matrx/rich-content/rich-document/RichDocument";
 import { RecordPageHeader } from "@/features/shell/components/header/templates/RecordPageHeader";
 import { createClient } from "@/utils/supabase/client";
 import { recordsDataSource } from "@ai-matrx/records-ui";

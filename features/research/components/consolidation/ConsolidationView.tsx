@@ -11,7 +11,7 @@ import { useStreamDebug } from '../../context/ResearchContext';
 import { RichContent } from "@ai-matrx/rich-content/levels/RichContent";
 import { AnswerValueView } from '@/components/official/structured-value/AnswerValueView';
 import { confirm } from '@/components/dialogs/confirm/ConfirmDialogHost';
-import { RichDocumentActions } from '@/features/rich-document/RichDocumentActions';
+import { RichDocumentActions } from '@ai-matrx/rich-content/rich-document/RichDocumentActions';
 import { StoppedEarlyNote } from '../shared/StoppedEarlyNote';
 import { ResearchUsedBy } from '../shared/ResearchUsedBy';
 import type { ResearchSynthesis, ResearchDataEvent } from '../../types';

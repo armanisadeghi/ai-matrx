@@ -3,7 +3,7 @@ import type {
   NoteDisplayedPhysicalSnapshot,
   NoteEditableContentSource,
   NoteIdentityContentSource,
-} from "@/features/rich-document/types";
+} from "@ai-matrx/rich-content/rich-document/types";
 import type { Note } from "./types";
 import type { NoteSaveReceipt } from "./service/noteSaveErrors";
 import type { NoteRecord } from "./redux/notes.types";

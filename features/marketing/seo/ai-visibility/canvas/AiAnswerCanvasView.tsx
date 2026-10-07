@@ -7,7 +7,7 @@
  */
 
 import type { CanvasKindProps } from "@ai-matrx/canvas/react";
-import { RichDocument } from "@/features/rich-document/RichDocument";
+import { RichDocument } from "@ai-matrx/rich-content/rich-document/RichDocument";
 import { readAiAnswerData } from "./aiAnswerKind";
 
 export default function AiAnswerCanvasView({ data }: CanvasKindProps) {

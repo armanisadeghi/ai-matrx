@@ -29,7 +29,7 @@ it("keeps mounted editors separate and advances for note, actor, base, and selec
 });
 
 it("uses identity preparation for a clean newer observation while retaining dirty drafts on their base", async()=>{
- let source: import("@/features/rich-document/types").ContentSource|undefined; const root=createRoot(document.createElement("div"));
+ let source: import("@ai-matrx/rich-content/rich-document/types").ContentSource|undefined; const root=createRoot(document.createElement("div"));
  function Probe({dirty}:{dirty:boolean}) { const record=createBlankNoteRecord(note({version:4})); record.version=5; source=usePreparedNoteContentSource({record,displayedNote:note({version:5,content:dirty?"draft":"remote"}),actorId:actor,hasLocalEdits:dirty}); return null; }
  await act(async()=>root.render(<Probe dirty={false}/>)); expect(source).toMatchObject({type:"note",mode:"identity"});
  await act(async()=>root.render(<Probe dirty/>)); expect(source).toMatchObject({type:"note",mode:"editable",editBase:{version:4},displayedPhysicalSnapshot:{content:"draft",version:4}}); await act(async()=>root.unmount());

@@ -8,11 +8,15 @@
 // and the tile says so, as Notion does ("Only showing 200 options").
 
 import { ChartBlock } from "@ai-matrx/records-ui";
-import { choiceSlug, measureKey, useFields, useRecords, useRecordsClient, type AggregateMeasure, type AggregateRow, type Field, type ReadRow } from "@ai-matrx/records/react";
+import type { RecordFilter } from "@ai-matrx/records";
+import { measureKey, useFields, useRecords, useRecordsClient, type AggregateMeasure, type AggregateRow, type Field, type ReadRow } from "@ai-matrx/records/react";
 import { useEffect, useState } from "react";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 import type { ChartSettings } from "./sources";
+import { hasListFilter, orderPoints, passes, type ChartFilter, type ChartSorts } from "./chart-rules";
+
+export type { ChartFilter, ChartSorts };
 
 export const GROUP_LIMIT = 200;
 
@@ -100,31 +104,19 @@ function aggregateRows(rows: readonly ReadRow[], group: string | null, measure: 
   return { rows: out, total: reduce(rows) };
 }
 
-/** A view's "is" filters: equality per field (the same rows the view's table shows). */
-export type ChartFilter = Record<string, string | number | boolean | null>;
-
-/** Does a read row pass the view's "is" filters? (A choice is stored as its value or its slug.) */
-function passes(row: ReadRow, filter: ChartFilter): boolean {
-  const doc = row.document as Record<string, unknown>;
-  return Object.entries(filter).every(([k, want]) => {
-    const got = doc[k] ?? null;
-    if (want === null) return got === null || got === "";
-    if (got === null) return false;
-    return String(got) === String(want) || choiceSlug(String(got)) === choiceSlug(String(want));
-  });
-}
-
 /**
  * One aggregate for the groups, one for the total (a donut's middle never counts only the first 200).
  * Both run over the view's filters (Notion: a chart counts what its view shows, never the whole table).
  */
-export function useChartData(tableId: string, settings: ChartSettings, overRows = false, filter: ChartFilter = {}): { data: ChartData | null; error: string | null; fields: Field[] } {
+export function useChartData(tableId: string, settings: ChartSettings, overRows = false, filter: ChartFilter = {}, sorts: ChartSorts = []): { data: ChartData | null; error: string | null; fields: Field[] } {
   const client = useRecordsClient();
   const fields = useFields(tableId).data ?? [];
   const [state, setState] = useState<{ data: ChartData | null; error: string | null }>({ data: null, error: null });
   // A store with no aggregate door (the in-memory sample) is answered over read rows from the start,
   // so it is never asked — an unanswerable ask is logged by the store as a refusal.
-  const [byRows, setByRows] = useState(overRows);
+  const listFilter = hasListFilter(filter);
+  const [byRowsAsked, setByRows] = useState(overRows);
+  const byRows = byRowsAsked || listFilter;
   const read = useRecords(byRows ? tableId : null, { pageSize: 1000 });
   const measure = measureOf(settings);
   const mKey = measureKey(measure);
@@ -135,12 +127,12 @@ export function useChartData(tableId: string, settings: ChartSettings, overRows 
   const ask = JSON.stringify([tableId, group, measure, settings.sort ?? "manual", hasFilter ? filter : null]);
 
   useEffect(() => {
-    if (overRows) return;
+    if (overRows || listFilter) return;
     let gone = false;
     void (async () => {
       const [grouped, whole] = await Promise.all([
-        client.recordAggregate({ table_id: tableId, groupBy: group ? [group] : [], measures: [measure], limit: GROUP_LIMIT, ...(hasFilter ? { filter } : {}) }),
-        client.recordAggregate({ table_id: tableId, measures: [measure], ...(hasFilter ? { filter } : {}) }),
+        client.recordAggregate({ table_id: tableId, groupBy: group ? [group] : [], measures: [measure], limit: GROUP_LIMIT, ...(hasFilter ? { filter: filter as RecordFilter } : {}) }),
+        client.recordAggregate({ table_id: tableId, measures: [measure], ...(hasFilter ? { filter: filter as RecordFilter } : {}) }),
       ]);
       if (gone) return;
       if (!grouped.ok) {
@@ -157,9 +149,9 @@ export function useChartData(tableId: string, settings: ChartSettings, overRows 
     };
     // `ask` carries every input of the question.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [client, ask, overRows]);
+  }, [client, ask, overRows, listFilter]);
 
-  let answered = state.data;
+  let answered = listFilter ? null : state.data;
   const readRows = (read.data?.rows ?? []).filter((r) => !hasFilter || passes(r, filter));
   if (!answered && byRows && readRows.length) {
     const local = aggregateRows(readRows, group, measure, mKey);
@@ -178,9 +170,7 @@ export function useChartData(tableId: string, settings: ChartSettings, overRows 
     const color = groupCount > 24 ? MANY_HEX : (choice?.color && CHOICE_HEX[choice.color]) || PALETTE[i % PALETTE.length];
     return { key: raw ?? `none-${i}`, label, value, color };
   });
-  if (settings.sort === "asc") points.sort((a, b) => a.value - b.value);
-  if (settings.sort === "desc") points.sort((a, b) => b.value - a.value);
-  return { data: { ...answered, points }, error: null, fields };
+  return { data: { ...answered, points: orderPoints(points, settings.sort, sorts, group) }, error: null, fields };
 }
 
 function buckets(rows: readonly ReadRow[], group: string | null): number {
@@ -261,8 +251,8 @@ function Donut({ data, settings }: { data: ChartData; settings: ChartSettings })
 
 const RECORDS_KIND = { bar: "column", hbar: "bar", line: "line", donut: "donut" } as const;
 
-export function ChartView({ tableId, settings, title, overRows, filter }: { tableId: string; settings: ChartSettings; title: string; overRows?: boolean; filter?: ChartFilter }) {
-  const { data, error } = useChartData(tableId, settings, overRows, filter);
+export function ChartView({ tableId, settings, title, overRows, filter, sorts }: { tableId: string; settings: ChartSettings; title: string; overRows?: boolean; filter?: ChartFilter; sorts?: ChartSorts }) {
+  const { data, error } = useChartData(tableId, settings, overRows, filter, sorts);
   if (error)
     return (
       <div role="alert" className="spaces-db-note">

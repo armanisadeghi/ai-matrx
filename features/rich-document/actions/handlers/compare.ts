@@ -25,9 +25,9 @@ import {
   setCompareBase,
   openCompareWithBase,
 } from "@/lib/redux/slices/diffCompareSlice";
-import { registerAction } from "../provider";
+import { registerAction } from "@ai-matrx/rich-content/rich-document/actions/provider";
 import { contentForDestination } from "../utils";
-import type { ContentSource } from "../../types";
+import type { ContentSource } from "@ai-matrx/rich-content/rich-document/types";
 
 function sourceLabel(source: ContentSource): string {
   switch (source.type) {

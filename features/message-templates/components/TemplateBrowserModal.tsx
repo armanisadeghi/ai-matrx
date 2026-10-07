@@ -43,8 +43,8 @@ import {
 } from "@/features/message-templates/services/message-templates-service";
 import { useIsMobile } from "@ai-matrx/kit/media-query";
 import { idMatchesQuery } from "@ai-matrx/kit/search-scoring";
-import { RichDocument } from "@/features/rich-document/RichDocument";
-import type { ContentSource } from "@/features/rich-document/types";
+import { RichDocument } from "@ai-matrx/rich-content/rich-document/RichDocument";
+import type { ContentSource } from "@ai-matrx/rich-content/rich-document/types";
 
 interface TemplateBrowserModalProps {
   isOpen: boolean;

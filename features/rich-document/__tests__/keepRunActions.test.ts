@@ -1,6 +1,6 @@
 import "../actions/handlers/ai";
-import { getAction } from "../actions/provider";
-import type { RichDocumentActionContext } from "../types";
+import { getAction } from "@ai-matrx/rich-content/rich-document/actions/provider";
+import type { RichDocumentActionContext } from "@ai-matrx/rich-content/rich-document/types";
 
 function ctxFor(launchMapping: unknown, dispatched: unknown[] = []) {
   return {

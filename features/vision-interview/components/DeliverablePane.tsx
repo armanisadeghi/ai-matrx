@@ -15,7 +15,7 @@ import { Check, Copy, Download, type LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "@/lib/toast";
 import { downloadBlob } from "@/utils/file-operations/utils";
-import { RichDocument } from "@/features/rich-document/RichDocument";
+import { RichDocument } from "@ai-matrx/rich-content/rich-document/RichDocument";
 
 interface DeliverablePaneProps {
   label: string;

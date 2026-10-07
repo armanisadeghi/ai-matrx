@@ -123,14 +123,14 @@ import React, {
   lazy,
   Suspense,
 } from "react";
-import type { ContentSource } from "@/features/rich-document/types";
+import type { ContentSource } from "@ai-matrx/rich-content/rich-document/types";
 import { actionsAlreadyHere } from "@/features/context-menu-v3/utils/already-here";
 
 // The ONE action registry rendered as a list inside this field's "…" popover.
 // A React.lazy edge inside the popover (never a new next/dynamic front door —
 // the Fragmentation Law): nothing loads until a person opens the menu.
 const RegistryActionList = lazy(() =>
-  import("@/features/rich-document/variants/RegistryActionList").then((m) => ({
+  import("@ai-matrx/rich-content/rich-document/variants/RegistryActionList").then((m) => ({
     default: m.RegistryActionList,
   })),
 );

@@ -24,8 +24,8 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import type { Action, ActionProvider, ClickTarget } from "@ai-matrx/alchemy/actions";
-import { registerAlchemyIcon } from "@/components/agent-copy/alchemy-icon-keys";
-import { declareSelectionProvider, hostHalf, placeSelectionActions, shownInSelectionMode } from "@/components/selection-toolbar/selection-actions";
+import { registerAlchemyIcon } from "@ai-matrx/rich-content/utils/alchemy-icon-keys";
+import { declareSelectionProvider, hostHalf, placeSelectionActions, shownInSelectionMode } from "@ai-matrx/rich-content/selection-toolbar/selection-actions";
 import { insertCodeBlock, insertVariable, setColumnAlign, toggleTaskList } from "../core/commands";
 import type { FormatTarget } from "../format/format-target";
 import { registerVisualFormatResolver } from "../format/format-actions";

@@ -28,7 +28,7 @@ jest.mock("@/lib/toast", () => ({
 }));
 
 import "../handlers";
-import { resumePendingAuthAction } from "../resumePendingAuthAction";
+import { resumePendingAuthAction } from "@ai-matrx/rich-content/rich-document/actions/resumePendingAuthAction";
 import { chatContext } from "../../test-utils/chatContext";
 
 beforeEach(() => {

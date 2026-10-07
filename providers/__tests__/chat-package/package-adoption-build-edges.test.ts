@@ -39,7 +39,7 @@ test.each(["components/mermaid/export.ts", "features/scraper/utils/scraper-utils
 
 test("Notes uses the one rich-copy door (agent-copy/copy-commands)", () => {
   const note = read("features/notes/components/NoteTabItem.tsx");
-  expect(note).toContain('from "@/components/agent-copy/copy-commands"');
+  expect(note).toContain('from "@ai-matrx/rich-content/copy/copy-commands"');
   expect(read("components/agent-copy/copy-commands.ts")).toContain("export async function copyRichContent(");
 });
 

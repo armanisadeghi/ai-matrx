@@ -63,7 +63,7 @@ import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableCo
 import { EditableContextMenu } from "@/features/context-menu-v3/EditableContextMenu";
 import { MenuPresenceProvider } from "@/features/context-menu-v3/menu-presence";
 import { CONTEXT_MENU_HEADING_KEY } from "@/features/context-menu-v3/types";
-import type { RichDocumentAction } from "@/features/rich-document/types";
+import type { RichDocumentAction } from "@ai-matrx/rich-content/rich-document/types";
 import { useUnsavedChangesGuard } from "@/lib/navigation/useUnsavedChangesGuard";
 import {
   MESSAGE_TEMPLATE_SURFACE_NAME,

@@ -27,11 +27,11 @@ import {
 } from "@/lib/redux/slices/voicePadSlice";
 import { WindowPanel } from "@/features/window-panels/WindowPanel";
 import { MicrophoneIconButton } from "@/features/audio/components/MicrophoneIconButton";
-import { RichDocumentActions } from "@/features/rich-document/RichDocumentActions";
+import { RichDocumentActions } from "@ai-matrx/rich-content/rich-document/RichDocumentActions";
 import {
   clearContentAction,
   hostCopyAction,
-} from "@/features/rich-document/actions/hostActions";
+} from "@ai-matrx/rich-content/rich-document/actions/hostActions";
 import { TranscriptionCleanupContextPanel } from "./TranscriptionCleanupContextPanel";
 import {
   AI_POST_PROCESS_AGENTS,

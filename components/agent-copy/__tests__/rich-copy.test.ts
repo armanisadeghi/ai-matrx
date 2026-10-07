@@ -11,7 +11,7 @@ jest.mock("@ai-matrx/print/markdown", () => ({
   markdownToHtml: (s: string) => `<p>${s}</p>`,
 }));
 
-import { copyRichContent, markdownToReadableText, richCopyPlainText } from "../copy-commands";
+import { copyRichContent, markdownToReadableText, richCopyPlainText } from "@ai-matrx/rich-content/copy/copy-commands";
 import { getSessionKnob } from "@/lib/scoped-config/sessionKnob";
 
 const ANSWER = [

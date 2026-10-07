@@ -6,7 +6,7 @@
 
 import { BarChart3, Activity } from "lucide-react";
 import { openOverlay } from "@/lib/redux/slices/overlaySlice";
-import { registerAction } from "../provider";
+import { registerAction } from "@ai-matrx/rich-content/rich-document/actions/provider";
 
 registerAction({
   id: "analyze-response",

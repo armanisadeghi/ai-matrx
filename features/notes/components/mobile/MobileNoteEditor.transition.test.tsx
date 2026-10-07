@@ -11,7 +11,7 @@ import storeReadsReducer from "@/lib/redux/slices/storeReadsSlice";
 import { enableMapSet } from "immer";
 import { createRoot } from "react-dom/client";
 import notesReducer, { upsertNoteFromServer } from "../../redux/slice";
-import type { ContentSource } from "@/features/rich-document/types";
+import type { ContentSource } from "@ai-matrx/rich-content/rich-document/types";
 import type { Note } from "../../types";
 import MobileNoteEditor from "./MobileNoteEditor";
 
@@ -30,7 +30,7 @@ jest.mock("../../hooks/useNoteDelete", () => ({ useNoteDelete: () => ({ isDeleti
 jest.mock("@/hooks/useToastManager", () => ({ useToastManager: () => ({ success: jest.fn(), error: jest.fn() }) }));
 jest.mock("@/lib/toast", () => ({ toast: { success: jest.fn(), error: jest.fn() }, toastErrorAlreadyCaptured: jest.fn() }));
 jest.mock("next/dynamic", () => () => () => null);
-jest.mock("@/features/rich-document/RichDocument", () => ({ RichDocument: () => null }));
+jest.mock("@ai-matrx/rich-content/rich-document/RichDocument", () => ({ RichDocument: () => null }));
 jest.mock("@/features/context-menu-v3/NonEditableContextMenu", () => ({ NonEditableContextMenu: () => null }));
 jest.mock("../NoteDraftRecoveryBanner", () => ({ NoteDraftRecoveryBanner: () => null }));
 jest.mock("@/features/context-menu-v3/EditableContextMenu", () => ({ EditableContextMenu: ({ children, contentSource }: {children: React.ReactNode; contentSource?: ContentSource}) => { captured = contentSource; return <>{children}</>; } }));

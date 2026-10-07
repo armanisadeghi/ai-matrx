@@ -141,7 +141,7 @@ jest.mock("@/components/MarkdownStream", () => ({
 jest.mock("@/components/agent-copy/CopyButtons", () => ({
   CopyButtons: () => null,
 }));
-jest.mock("@/features/rich-document/RichDocumentActions", () => ({
+jest.mock("@ai-matrx/rich-content/rich-document/RichDocumentActions", () => ({
   RichDocumentActions: () => null,
 }));
 jest.mock("@/features/masterwork/drive/DriveLinkButton", () => ({
