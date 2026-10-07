@@ -40239,6 +40239,42 @@ export type Database = {
         }
         Relationships: []
       }
+      research_rs_content_bodies: {
+        Row: {
+          archived_at: string
+          content: string
+          content_hash: string | null
+          content_type: string | null
+          id: string
+          is_current: boolean | null
+          processed_document_id: string
+          source_id: string | null
+          topic_id: string | null
+        }
+        Insert: {
+          archived_at?: string
+          content: string
+          content_hash?: string | null
+          content_type?: string | null
+          id: string
+          is_current?: boolean | null
+          processed_document_id: string
+          source_id?: string | null
+          topic_id?: string | null
+        }
+        Update: {
+          archived_at?: string
+          content?: string
+          content_hash?: string | null
+          content_type?: string | null
+          id?: string
+          is_current?: boolean | null
+          processed_document_id?: string
+          source_id?: string | null
+          topic_id?: string | null
+        }
+        Relationships: []
+      }
       scope_dataset_instances: {
         Row: {
           context_item_id: string
