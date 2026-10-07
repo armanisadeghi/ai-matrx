@@ -1,3 +1,6 @@
+-- chair-step: the only DELETE removes platform.client_callable_door rows whose function signature no longer exists (a door follows its function); no data row is deleted.
+-- based-on: public.esign_envelope_state(uuid) 8cb9a4514232194bb6556704bda41c5eea7e9c24e5c191ac974bf7fab3ce82c0
+-- based-on: public.esign_envelope_list(text, uuid, text, integer) adbf97229d2a50f35cf00524e6ce9b5d258bbf166e9bf1da74c8f68adf283199
 -- E-signature parity, wave A, step 5 — the sender's doors (CONTRACT.md v2 §6.1, §12; decision A; A-F6,
 -- A-F7, A-R9; coordinator amendment 2026-10-07: esign_draft_get answers {envelope:{id,status,
 -- organization_id,title}, draft:{composition,revision,saved_at}}; template recipients may carry an
@@ -297,7 +300,6 @@ returns jsonb language plpgsql security definer set search_path = esign, public 
 declare v_uid uuid := auth.uid(); t esign.template%rowtype; v_problem text; v_id uuid; v_comp jsonb;
 begin
   if v_uid is null then return jsonb_build_object('granted', false, 'reason', 'not_authenticated'); end if;
-  v_comp := p_composition #- '{recipients,0,has_access_code}';
   v_problem := esign._draft_problem(p_composition, true);
   if v_problem is not null then return jsonb_build_object('granted', false, 'reason', 'template_invalid', 'path', v_problem); end if;
   if p_template_id is not null then
@@ -422,3 +424,270 @@ begin
   update esign.saved_signature set deleted_at = now(), is_default = false where id = s.id;
   return jsonb_build_object('granted', true);
 end $$;
+
+CREATE OR REPLACE FUNCTION public.esign_envelope_state(p_envelope_id uuid)
+ RETURNS jsonb
+ LANGUAGE plpgsql
+ STABLE SECURITY DEFINER
+ SET search_path TO 'esign', 'public'
+AS $function$
+declare e esign.envelope%rowtype;
+begin
+  select * into e from esign.envelope where id = p_envelope_id;
+  if not found then
+    perform platform.refuse_not_found(format('esign_envelope_state: envelope %s does not exist', p_envelope_id));
+  end if;
+  if not esign._may_manage(e.id, 'viewer') then
+    return jsonb_build_object('granted', false, 'reason', 'no_access');
+  end if;
+  return jsonb_build_object(
+    'granted', true,
+    'envelope', to_jsonb(e) - 'config_snapshot',
+    'config_snapshot', e.config_snapshot,
+    'documents', coalesce((select jsonb_agg(to_jsonb(d) order by d.position)
+                             from esign.envelope_document d where d.envelope_id = e.id), '[]'::jsonb),
+    'signers',   coalesce((select jsonb_agg(to_jsonb(s) - 'signature_payload_hash' order by s.position)
+                             from esign.envelope_signer s where s.envelope_id = e.id), '[]'::jsonb),
+    'events',    coalesce((select jsonb_agg(to_jsonb(v) order by v.occurred_at)
+                             from esign.envelope_event v where v.envelope_id = e.id), '[]'::jsonb),
+    -- e-sign parity §5.4 (+ coordinator amendment 2026-10-07): the draft, the schedule, progress, owed steps.
+    'draft', (select jsonb_build_object('composition', d.composition, 'revision', d.revision, 'saved_at', d.saved_at)
+                from esign.envelope_draft d where d.envelope_id = e.id),
+    'scheduled_notices', coalesce((select jsonb_agg(jsonb_build_object('signer_id', n.payload ->> 'signer_id',
+                                     'event_key', n.event_key, 'deliver_at', n.next_attempt_at, 'status', n.status,
+                                     'sent_at', n.sent_at) order by n.next_attempt_at)
+                                     from communication.notification n
+                                    where n.target_kind = 'esign_envelope' and n.target_id = e.id and n.channel = 'email'
+                                      and coalesce((n.metadata ->> 'esign_scheduled')::boolean, false)), '[]'::jsonb),
+    'progress', coalesce((select jsonb_object_agg(s.id, jsonb_build_object(
+                    'required_total', (select count(*) from jsonb_array_elements(esign._my_fields(s.id)) x
+                                        where x ->> 'kind' <> 'date_signed' and nullif(x ->> 'group_id', '') is null),
+                    'required_done', case when s.status in ('signed','acknowledged') then
+                        (select count(*) from jsonb_array_elements(esign._my_fields(s.id)) x
+                          where x ->> 'kind' <> 'date_signed' and nullif(x ->> 'group_id', '') is null)
+                      else greatest((select count(*) from jsonb_array_elements(esign._my_fields(s.id)) x
+                                      where x ->> 'kind' <> 'date_signed' and nullif(x ->> 'group_id', '') is null)
+                           - jsonb_array_length(esign._missing_required(s.id, esign._resolve_values(s.id, esign._plain_values(s.field_values), null))), 0) end))
+                  from esign.envelope_signer s where s.envelope_id = e.id and s.role <> 'cc_recipient'), '{}'::jsonb),
+    'finalize', jsonb_build_object(
+      'copies_owed', e.status = 'completed' and exists (select 1 from esign.envelope_document d
+                                                          where d.envelope_id = e.id and d.metadata ->> 'signed_copy_file_id' is null),
+      'certificate_owed', e.status = 'completed' and e.certificate_id is null,
+      'emails_owed', false));
+end $function$;
+
+CREATE OR REPLACE FUNCTION public.esign_envelope_list(p_lane text DEFAULT 'all'::text, p_org_id uuid DEFAULT NULL::uuid, p_search text DEFAULT NULL::text, p_limit integer DEFAULT 200)
+ RETURNS jsonb
+ LANGUAGE plpgsql
+ STABLE SECURITY DEFINER
+ SET search_path TO 'esign', 'public'
+AS $function$
+declare v_uid uuid := auth.uid();
+begin
+  if v_uid is null then
+    return jsonb_build_object('granted', false, 'reason', 'not_authenticated');
+  end if;
+  return jsonb_build_object('granted', true, 'envelopes', coalesce((
+    select jsonb_agg(row_to_json(x) order by x.updated_at desc)
+      from (
+        select e.id, e.title, e.status, e.organization_id,
+               (select o.name from iam.organizations o where o.id = e.organization_id) as organization_name,
+               e.created_at, e.sent_at, e.completed_at, e.expires_at, e.voided_at, e.declined_at,
+               greatest(e.updated_at, e.created_at) as updated_at,
+               (e.created_by = v_uid or iam.has_access('esign_envelope', e.id, 'viewer'::permission_level)) as i_manage,
+               mine.id as my_signer_id,
+               mine.status as my_signer_status,
+               coalesce((esign._can_act(mine.id) ->> 'can_act')::boolean, false) as my_turn,
+               (select count(*) from esign.envelope_signer s
+                 where s.envelope_id = e.id and s.role <> 'cc_recipient') as signer_count,
+               (select count(*) from esign.envelope_signer s
+                 where s.envelope_id = e.id and s.status = 'signed') as signed_count,
+               (select string_agg(s.full_name, ', ' order by s.position) from esign.envelope_signer s
+                 where s.envelope_id = e.id) as signer_names,
+               e.email_subject,
+               coalesce((select jsonb_agg(jsonb_build_object('name', s.full_name, 'status', s.status, 'role', s.role) order by s.position)
+                           from esign.envelope_signer s where s.envelope_id = e.id), '[]'::jsonb) as signers
+          from esign.envelope e
+          left join lateral (
+            select s.id, s.status from esign.envelope_signer s
+             where s.envelope_id = e.id and s.signer_user_id = v_uid
+             order by s.position limit 1) mine on true
+         where e.deleted_at is null
+           -- e-sign parity §5.4: drafts are listed to whoever may manage them (never to a signer).
+           and (e.status <> 'draft' or e.created_by = v_uid
+                or iam.has_access('esign_envelope', e.id, 'viewer'::permission_level))
+           and (p_org_id is null or e.organization_id = p_org_id)
+           and (p_search is null or e.title ilike '%' || p_search || '%')
+           and case coalesce(p_lane, 'all')
+                 when 'sent' then e.created_by = v_uid
+                                  or iam.has_access('esign_envelope', e.id, 'viewer'::permission_level)
+                 when 'to_sign' then mine.id is not null
+                 else e.created_by = v_uid or mine.id is not null
+                      or iam.has_access('esign_envelope', e.id, 'viewer'::permission_level)
+               end
+         order by greatest(e.updated_at, e.created_at) desc
+         limit least(greatest(coalesce(p_limit, 200), 1), 500)
+      ) x), '[]'::jsonb));
+end $function$;
+
+-- ── the browser reaches these doors: `esign` joins PostgREST's exposed schemas ─────────────
+do $x$
+declare v_cur text;
+begin
+  select substring(c from 'pgrst.db_schemas=(.*)$') into v_cur
+    from pg_roles r, unnest(r.rolconfig) c where r.rolname = 'authenticator' and c like 'pgrst.db_schemas=%';
+  if v_cur is not null and not (string_to_array(replace(v_cur, ' ', ''), ',') @> array['esign']) then
+    execute format('alter role authenticator set pgrst.db_schemas = %L', v_cur || ',esign');
+  end if;
+end $x$;
+notify pgrst, 'reload config';
+notify pgrst, 'reload schema';
+
+-- ═══ DOORS (generated) ═══
+
+-- Every new SECURITY DEFINER function declares who may call it (§5.8; provision_shape_guard).
+delete from platform.client_callable_door d
+ where (d.schema_name, d.function_name) in (
+  ('esign','_draft_problem'),
+  ('esign','_default_composition'),
+  ('esign','materialize_draft'),
+  ('esign','saved_signature_create'))
+   and not exists (select 1 from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+                    where n.nspname = d.schema_name and p.proname = d.function_name
+                      and pg_get_function_identity_arguments(p.oid) = d.identity_args);
+insert into platform.client_callable_door (schema_name, function_name, identity_args, identity_argtypes, reason, declared_by, non_client_lane, signed_in_callers, anonymous_callers)
+select n.nspname, p.proname, pg_get_function_identity_arguments(p.oid), platform.door_argtypes(p.proargtypes),
+       'Internal e-sign step; every id argument is a row the calling door already authorised.', 'esign_parity_05_sender_doors',
+       'server_only: called only by the aidream draft send and adopt routes on the service connection after authorising the caller; no client calls it directly', false, false
+  from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+ where (n.nspname, p.proname) in (
+  ('esign','_draft_problem'),
+  ('esign','_default_composition'),
+  ('esign','materialize_draft'),
+  ('esign','saved_signature_create'))
+   and p.prosecdef
+on conflict do nothing;
+
+delete from platform.client_callable_door d
+ where (d.schema_name, d.function_name) in (
+  ('esign','esign_draft_create'),
+  ('esign','esign_draft_get'),
+  ('esign','esign_draft_save'),
+  ('esign','esign_draft_set_access_code'),
+  ('esign','esign_draft_delete'),
+  ('esign','esign_template_save'),
+  ('esign','esign_template_list'),
+  ('esign','esign_template_get'),
+  ('esign','esign_template_delete'),
+  ('esign','esign_saved_signatures'),
+  ('esign','esign_saved_signature_set_default'),
+  ('esign','esign_saved_signature_delete'),
+  ('public','esign_envelope_state'),
+  ('public','esign_envelope_list'))
+   and not exists (select 1 from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+                    where n.nspname = d.schema_name and p.proname = d.function_name
+                      and pg_get_function_identity_arguments(p.oid) = d.identity_args);
+insert into platform.client_callable_door (schema_name, function_name, identity_args, identity_argtypes, reason, declared_by, non_client_lane, signed_in_callers, anonymous_callers, anonymous_purpose, argument_rules)
+select n.nspname, p.proname, pg_get_function_identity_arguments(p.oid), platform.door_argtypes(p.proargtypes),
+       'Signed-in door; every id argument is checked against the callers own access inside the function (CONTRACT.md v2 §6).', 'esign_parity_05_sender_doors', null, true, false,
+       null,
+       jsonb_build_object('version', 1, 'arguments', coalesce((
+         select jsonb_object_agg(a.nm, jsonb_build_object(
+                  'type', format_type(a.ty, null), 'position', a.pos,
+                  'optional', a.pos > p.pronargs - p.pronargdefaults,
+                  'foreign', case when format_type(a.ty, null) in ('uuid', 'uuid[]')
+                                  then jsonb_build_object('bounded', true, 'note', case a.nm
+                                    when 'p_signer_id' then 'esign._ctx_internal refuses any signer row whose user is not auth.uid() before any read or write.'
+                                    when 'p_image_file_id' then 'Stored as a pointer on the caller''s own signer row only; nothing is read from it or returned.'
+                                    when 'p_document_id' then 'Matched to a document on the caller''s own envelope before any read.'
+                                    when 'p_organization_id' then 'esign.may_send_in refuses an organization the caller is not a member of.'
+                                    else 'Checked against the caller''s own access inside the function before any read or write.' end)
+                                  else jsonb_build_object('not_an_id', true) end))
+           from unnest(p.proargnames[1:p.pronargs], p.proargtypes::oid[]) with ordinality a(nm, ty, pos)), '{}'::jsonb))
+  from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+ where (n.nspname, p.proname) in (
+  ('esign','esign_draft_create'),
+  ('esign','esign_draft_get'),
+  ('esign','esign_draft_save'),
+  ('esign','esign_draft_set_access_code'),
+  ('esign','esign_draft_delete'),
+  ('esign','esign_template_save'),
+  ('esign','esign_template_list'),
+  ('esign','esign_template_get'),
+  ('esign','esign_template_delete'),
+  ('esign','esign_saved_signatures'),
+  ('esign','esign_saved_signature_set_default'),
+  ('esign','esign_saved_signature_delete'),
+  ('public','esign_envelope_state'),
+  ('public','esign_envelope_list'))
+on conflict do nothing;
+do $g$ declare r record; begin
+  for r in select p.oid::regprocedure::text sig from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+            where n.nspname = 'esign' and p.proname = 'esign_draft_create' loop
+    execute format('grant execute on function %s to authenticated, service_role', r.sig);
+  end loop; end $g$;
+do $g$ declare r record; begin
+  for r in select p.oid::regprocedure::text sig from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+            where n.nspname = 'esign' and p.proname = 'esign_draft_get' loop
+    execute format('grant execute on function %s to authenticated, service_role', r.sig);
+  end loop; end $g$;
+do $g$ declare r record; begin
+  for r in select p.oid::regprocedure::text sig from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+            where n.nspname = 'esign' and p.proname = 'esign_draft_save' loop
+    execute format('grant execute on function %s to authenticated, service_role', r.sig);
+  end loop; end $g$;
+do $g$ declare r record; begin
+  for r in select p.oid::regprocedure::text sig from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+            where n.nspname = 'esign' and p.proname = 'esign_draft_set_access_code' loop
+    execute format('grant execute on function %s to authenticated, service_role', r.sig);
+  end loop; end $g$;
+do $g$ declare r record; begin
+  for r in select p.oid::regprocedure::text sig from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+            where n.nspname = 'esign' and p.proname = 'esign_draft_delete' loop
+    execute format('grant execute on function %s to authenticated, service_role', r.sig);
+  end loop; end $g$;
+do $g$ declare r record; begin
+  for r in select p.oid::regprocedure::text sig from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+            where n.nspname = 'esign' and p.proname = 'esign_template_save' loop
+    execute format('grant execute on function %s to authenticated, service_role', r.sig);
+  end loop; end $g$;
+do $g$ declare r record; begin
+  for r in select p.oid::regprocedure::text sig from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+            where n.nspname = 'esign' and p.proname = 'esign_template_list' loop
+    execute format('grant execute on function %s to authenticated, service_role', r.sig);
+  end loop; end $g$;
+do $g$ declare r record; begin
+  for r in select p.oid::regprocedure::text sig from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+            where n.nspname = 'esign' and p.proname = 'esign_template_get' loop
+    execute format('grant execute on function %s to authenticated, service_role', r.sig);
+  end loop; end $g$;
+do $g$ declare r record; begin
+  for r in select p.oid::regprocedure::text sig from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+            where n.nspname = 'esign' and p.proname = 'esign_template_delete' loop
+    execute format('grant execute on function %s to authenticated, service_role', r.sig);
+  end loop; end $g$;
+do $g$ declare r record; begin
+  for r in select p.oid::regprocedure::text sig from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+            where n.nspname = 'esign' and p.proname = 'esign_saved_signatures' loop
+    execute format('grant execute on function %s to authenticated, service_role', r.sig);
+  end loop; end $g$;
+do $g$ declare r record; begin
+  for r in select p.oid::regprocedure::text sig from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+            where n.nspname = 'esign' and p.proname = 'esign_saved_signature_set_default' loop
+    execute format('grant execute on function %s to authenticated, service_role', r.sig);
+  end loop; end $g$;
+do $g$ declare r record; begin
+  for r in select p.oid::regprocedure::text sig from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+            where n.nspname = 'esign' and p.proname = 'esign_saved_signature_delete' loop
+    execute format('grant execute on function %s to authenticated, service_role', r.sig);
+  end loop; end $g$;
+do $g$ declare r record; begin
+  for r in select p.oid::regprocedure::text sig from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+            where n.nspname = 'public' and p.proname = 'esign_envelope_state' loop
+    execute format('grant execute on function %s to authenticated, service_role', r.sig);
+  end loop; end $g$;
+do $g$ declare r record; begin
+  for r in select p.oid::regprocedure::text sig from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+            where n.nspname = 'public' and p.proname = 'esign_envelope_list' loop
+    execute format('grant execute on function %s to authenticated, service_role', r.sig);
+  end loop; end $g$;
