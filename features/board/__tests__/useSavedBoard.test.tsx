@@ -46,7 +46,7 @@ jest.mock("@/utils/supabase/client", () => ({ supabase: { schema: () => ({ from:
 
 import { parseBoardDocument } from "../board/document";
 import { BoardError, type LoadedBoard } from "../persistence/boardsService";
-import { AUTOSAVE_DELAY_MS, useSavedBoard, type SavedBoardState } from "../persistence/useSavedBoard";
+import { AUTOSAVE_DELAY_MS, OPEN_TIMEOUT_MS, useSavedBoard, type SavedBoardState } from "../persistence/useSavedBoard";
 
 const emptyDoc = parseBoardDocument({ camera: { x: 0, y: 0, z: 1 }, nodes: [], edges: [] }).doc;
 const docWith = (title: string) =>
@@ -278,4 +278,21 @@ it("a refused organization choice is a failed state whose retry asks again", asy
   await settle();
   expect(getBoard).toHaveBeenCalledTimes(2);
   expect(result.current.state).toBe("ready");
+});
+
+it("a load that never answers becomes a failed state with Try again, never a silent wait", async () => {
+  getBoard.mockReset().mockReturnValueOnce(new Promise(() => {}));
+  const { result } = mount();
+  await settle();
+  expect(result.current.state).toBe("loading");
+  await act(async () => {
+    jest.advanceTimersByTime(OPEN_TIMEOUT_MS + 10);
+  });
+  expect(result.current.state).toBe("failed");
+  getBoard.mockResolvedValue(loaded);
+  await act(async () => {
+    (result.current as Extract<SavedBoardState, { state: "failed" }>).retry();
+  });
+  await settle();
+  expect(ready(result.current).board.id).toBe("board-1");
 });

@@ -246,7 +246,11 @@ export default function WorkbookPage({
       <RouteHeader
         left={
           <>
-            <ChevronLeftTapButton href="/workbooks" ariaLabel="Back" />
+            {/* The glass Back button is its own group: the name field beside it is a solid control, and a
+                row mixing glass and solid trips the tap-target guard. */}
+            <span className="flex shrink-0">
+              <ChevronLeftTapButton href="/workbooks" ariaLabel="Back" />
+            </span>
             <Input
               value={renameDraft}
               onChange={(e) => setRenameDraft(e.target.value)}

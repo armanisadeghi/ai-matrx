@@ -3,6 +3,7 @@
 // features/spaces/editor/inline.tsx — inline nodes the engine lacks: mentions (@page, @person, @date)
 // and inline equations. Each node holds its whole stored span (convert.ts), so marks and links survive.
 
+import { dateWords } from "./date-mention";
 import { createReactInlineContentSpec } from "@blocknote/react";
 import { ArrowUpRight, FileText, Globe } from "lucide-react";
 import { useState } from "react";
@@ -20,12 +21,6 @@ function readSpan(raw: unknown): RichSpan {
   } catch {
     return { text: "" };
   }
-}
-
-function formatDate(iso: string): string {
-  const d = new Date(iso.length === 10 ? `${iso}T00:00:00` : iso);
-  if (Number.isNaN(d.getTime())) return iso;
-  return d.toLocaleDateString(undefined, { month: "long", day: "numeric", year: "numeric" });
 }
 
 function PageMention({ spaceId, fallback }: { spaceId: string; fallback: string }) {
@@ -104,7 +99,7 @@ export const mentionInline = createReactInlineContentSpec(
       if (m?.kind === "space") return <PageMention spaceId={m.spaceId} fallback={s.text} />;
       if (m?.kind === "link") return <LinkMention url={m.url} title={m.title ?? s.text} icon={m.icon} />;
       if (m?.kind === "person") return <span className="spaces-mention spaces-mention-person" data-user-id={m.userId}>@{s.text.replace(/^@/, "")}</span>;
-      if (m?.kind === "date") return <span className="spaces-mention spaces-mention-muted">@{formatDate(m.iso)}</span>;
+      if (m?.kind === "date") return <span className="spaces-mention spaces-mention-muted" data-date={m.iso}>@{dateWords(m.iso)}</span>;
       return <span className="spaces-mention spaces-mention-muted">@{s.text.replace(/^@/, "")}</span>;
     },
   },

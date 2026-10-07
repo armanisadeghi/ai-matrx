@@ -21,7 +21,7 @@ import type { ToolRenderer } from "@ai-matrx/chat/tool-call-visualization/types"
 import { answerRenderer } from "./RecordsAnswerView";
 
 /** The tools whose answers `answerRenderer` reads (`readRecordsAnswer`). */
-export const ANSWER_READ_FOR = ["records", "table", "dataset"] as const;
+export const ANSWER_READ_FOR = ["records", "table"] as const;
 
 /**
  * The `records` split experiment (aidream `matrx_records/agent/split.py`, records-split-2026-10):

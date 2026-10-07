@@ -33,7 +33,7 @@ import { AGENT_ICON } from "@/components/icons/domain-icons";
 import { mentionCandidates } from "@/features/rich-document/annotations/service";
 import { applyMarkdownKey } from "./markdown-keys";
 import { openMissedSlash } from "./slash-guard";
-import { MessageSquare } from "lucide-react";
+import { CalendarDays, MessageSquare } from "lucide-react";
 
 import { spaceCommentSource } from "../collab/comments";
 import { PersonAvatar } from "../collab/CommentsPanel";
@@ -48,6 +48,8 @@ import { currentBlockId, duplicateBlocks, selectedOrCurrent } from "./block-acti
 import { fromEngine, toEngine, type EngineBlock } from "./convert";
 import { PasteUrlMenu, pastedUrl, type PastedUrl } from "./PasteUrlMenu";
 import { useRubberBand } from "./rubber-band";
+import { CalloutIconHost } from "./callout-block";
+import { dateChoices } from "./date-mention";
 import { spacesSchema, type SpacesEditor } from "./schema";
 import { insideDatabaseBlock } from "./database-host";
 import { linkPageAt, slashItems, type SlashContext } from "./slash-items";
@@ -364,6 +366,7 @@ export function SpaceEditor({ spaceId, initialBlocks, editable, onChange, slash,
       }}
     >
     <style>{widths}</style>
+    <CalloutIconHost editor={editor as never} />
     <BlockNoteView
       editor={editor}
       editable={editable}
@@ -402,7 +405,18 @@ export function SpaceEditor({ spaceId, initialBlocks, editable, onChange, slash,
           const hits = [...byId.values()]
             .filter((p) => p.id !== spaceId && (p.title || "Untitled").toLowerCase().includes(q))
             .slice(0, 8);
-          return [...personItems, ...hits.map((p) => ({
+          // N2 — "@today", "@tomorrow", "@yesterday", "@oct 12": a date mention (Notion's Date group).
+          const dateItems = dateChoices(query, new Date()).map((c) => ({
+            title: c.title,
+            group: "Date",
+            icon: <CalendarDays size={16} />,
+            onItemClick: () =>
+              editor.insertInlineContent([
+                { type: "inlineMention", props: { span: JSON.stringify({ text: c.title, mention: { kind: "date", iso: c.iso } }) } },
+                " ",
+              ] as never),
+          }));
+          const pageItems = hits.map((p) => ({
             title: p.title || "Untitled",
             group: "Link to page",
             icon: <SpaceIcon media={p.icon} size={16} />,
@@ -411,7 +425,9 @@ export function SpaceEditor({ spaceId, initialBlocks, editable, onChange, slash,
                 { type: "inlineMention", props: { span: JSON.stringify({ text: p.title || "Untitled", mention: { kind: "space", spaceId: p.id } }) } },
                 " ",
               ] as never),
-          }))];
+          }));
+          // Typed words that make a date put Date first; an empty "@" lists it last (Notion).
+          return q ? [...dateItems, ...personItems, ...pageItems] : [...personItems, ...pageItems, ...dateItems];
         }}
       />
       <SuggestionMenuController triggerCharacter="/" floatingUIOptions={SLASH_MENU} getItems={async (query) => rankSlashItems(slashItems(editor, slash), query)} />

@@ -237,7 +237,7 @@ export function ContextItemAddForm({
           reference_source:
             isReference && datasetTemplateId
               ? {
-                  container_type: "dataset_template",
+                  container_type: "table_template",
                   template_id: datasetTemplateId,
                   dimension: "whole",
                   provision: "per_scope",

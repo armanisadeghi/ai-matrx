@@ -980,32 +980,32 @@
 
 /* ---------- callout: icon + text, children inside the same box ---------- */
 
-/* Layout keys on the node view's own wrapper (drawn with the editor), never on what React renders into
-   it a moment later: a selector on the rendered content drew the box late and shifted the page (D2). */
-.spaces-editor .bn-block:has(> .react-renderer.node-callout) {
+/* The callout is drawn with the editor, text included (editor/callout-block.tsx, round 29): its box and
+   its children's indent key on the block content itself. */
+.spaces-editor .bn-block:has(> .bn-block-content[data-content-type="callout"]) {
   padding: 16px 16px 16px 12px;
   border-radius: 4px;
   margin: 4px 0;
 }
-.spaces-editor .bn-block:has(> .react-renderer > .bn-block-content[data-content-type="callout"]:not([data-background-color])) {
+.spaces-editor .bn-block:has(> .bn-block-content[data-content-type="callout"]:not([data-background-color])) {
   border: 1px solid var(--spaces-rule);
 }
-.spaces-editor .bn-block:has(> .react-renderer > .bn-block-content[data-content-type="callout"]) > .react-renderer > .bn-block-content {
+.spaces-editor .bn-block:has(> .bn-block-content[data-content-type="callout"]) > .bn-block-content {
   padding: 0;
 }
-.spaces-editor .bn-block:has(> .react-renderer.node-callout) > .bn-block-group {
+.spaces-editor .bn-block:has(> .bn-block-content[data-content-type="callout"]) > .bn-block-group {
   margin-left: 32px;
 }
-.spaces-editor .bn-block:has(> .react-renderer.node-callout) > .bn-block-group > .bn-block-outer::before {
+.spaces-editor .bn-block:has(> .bn-block-content[data-content-type="callout"]) > .bn-block-group > .bn-block-outer::before {
   display: none;
 }
 /* Children sit beside the icon from the first paint (most callouts carry one); a callout without one
    lets them back to the edge once drawn. */
-.spaces-editor .bn-block:has(> .react-renderer > .bn-block-content[data-content-type="callout"] .spaces-callout[data-has-icon="false"]) > .bn-block-group {
+.spaces-editor .bn-block:has(> .bn-block-content[data-content-type="callout"] .spaces-callout[data-has-icon="false"]) > .bn-block-group {
   margin-left: 0;
 }
 /* An empty callout line with blocks inside draws only the box (the screenshot's link boxes). */
-.spaces-editor .bn-block:has(> .bn-block-group):has(> .react-renderer > .bn-block-content[data-content-type="callout"] .spaces-callout[data-has-icon="false"][data-empty="true"]) > .react-renderer > .bn-block-content {
+.spaces-editor .bn-block:has(> .bn-block-group):has(> .bn-block-content[data-content-type="callout"] .spaces-callout[data-has-icon="false"][data-empty="true"]) > .bn-block-content {
   display: none;
 }
 .spaces-callout {
@@ -1032,6 +1032,13 @@
 
 /* ---------- page and link-to-page rows ---------- */
 
+/* A page row's React view draws a moment after the editor: its wrapper holds the row's one line (33px)
+   until it does, so the blocks under it never move (round 29: the sample's link boxes grew 36 → 135px). */
+.spaces-editor .react-renderer.node-page:empty,
+.spaces-editor .react-renderer.node-linkToPage:empty {
+  display: block;
+  min-height: 33px;
+}
 .spaces-editor a.spaces-page-link,
 .spaces-page-link {
   text-decoration: none;
@@ -1347,6 +1354,9 @@
 .spaces-mention-icon { position: relative; display: inline-flex; align-self: center; }
 .spaces-mention-muted { color: var(--spaces-ink-soft); }
 .spaces-db-host { width: 100%; min-width: 0; }
+/* Before React draws a database block, its wrapper holds the size the page's last save measured
+   (stored-blocks.tsx painted decoration); once drawn, DatabaseHost holds it until the table is still. */
+.spaces-editor .react-renderer.node-database:empty { display: block; min-height: var(--spaces-painted-h, 0px); }
 .spaces-db-loading { min-height: 120px; }
 /* A chart view's loading state is its frame's own geometry (373px + the frame's 4px margins): the tile
    is its final size before the data lands (round 26, CLS). */
@@ -1713,3 +1723,22 @@ tr:hover .spaces-entity-openpill, .spaces-entity-open:focus-visible .spaces-enti
   background: var(--spaces-row-dot);
 }
 .spaces-entity-open::before { margin-right: 2px; }
+
+/* ---------- find in page (N4, page/FindInPage.tsx) ---------- */
+.spaces-find {
+  position: fixed;
+  top: calc(var(--header-height, 44px) + 52px);
+  right: 24px;
+  z-index: 40;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  width: 340px;
+  padding: 6px;
+  border-radius: 8px;
+  box-shadow: rgba(15, 15, 15, 0.05) 0 0 0 1px, rgba(15, 15, 15, 0.1) 0 3px 6px, rgba(15, 15, 15, 0.2) 0 9px 24px;
+}
+.spaces-find > :first-child { flex: 1 1 auto; min-width: 0; }
+.spaces-find-count { min-width: 40px; text-align: right; font-size: 12px; color: var(--spaces-ink-soft); font-variant-numeric: tabular-nums; }
+::highlight(spaces-find) { background-color: rgba(255, 212, 0, 0.35); }
+::highlight(spaces-find-current) { background-color: rgba(255, 170, 0, 0.75); }

@@ -51,8 +51,8 @@ this** — the block is offered, the owner decides.
 ## The first customer's data
 
 A platform table template **"Known defects"** (title, detail, area, severity, status,
-first_seen) in `workbench.udt_dataset_templates`, owned by the system organization. A context
-item whose `reference_source` is `{container_type:"dataset_template", template_id, dimension:
+first_seen), the platform template "Known defects" (`custom.template`, templateKind table; moved from the older workbench store 2026-10-07). A context
+item whose `reference_source` is `{container_type:"table_template", template_id, dimension:
 "whole", provision:"per_scope"}` gives every scope of its type its own copy, provisioned by
 `context.provision_scope_dataset`, delivered to the agent as a
 `directive_v1_reference_table` fence that the server expands to one line per row.

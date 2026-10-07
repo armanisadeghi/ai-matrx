@@ -1,6 +1,6 @@
 // First paint and layout shift (round 29, item 1): load a Spaces page N times and record, per load, when the
 // page's text first PAINTS (first `.bn-inline-content` with text that is visible — never `visibility:hidden`)
-// and the load's CLS. Every odd load is a FIRST VISIT on this device: the kept block heights
+// and the load's CLS. Loads 1-2, 5-6… are FIRST VISITS on this device: the kept block heights
 // (`spaces:blockh:*`) are cleared before it, so only what the page itself stores can hold its geometry.
 // Read-only (never types).
 //   node features/spaces/__tests__/walk/first-paint.walk.mjs <pageId> <loads> [width...]
@@ -21,7 +21,7 @@ await context.addInitScript(() => {
     for (const e of list.getEntries()) {
       if (e.hadRecentInput) continue;
       window.__cls.total += e.value;
-      window.__cls.entries.push({ t: Math.round(e.startTime), v: +e.value.toFixed(4), src: (e.sources ?? []).slice(0, 2).map((s) => ({ ct: s.node?.closest?.("[data-content-type]")?.getAttribute("data-content-type") ?? String(s.node?.className ?? "").slice(0, 40), from: [s.previousRect.y, s.previousRect.height].map(Math.round), to: [s.currentRect.y, s.currentRect.height].map(Math.round) })) });
+      window.__cls.entries.push({ t: Math.round(e.startTime), v: +e.value.toFixed(4), src: (e.sources ?? []).slice(0, 2).map((s) => ({ ct: (s.node?.closest?.("[data-content-type]") ?? s.node?.querySelector?.("[data-content-type]"))?.getAttribute("data-content-type") ?? String(s.node?.className ?? "").slice(0, 40), txt: (s.node?.textContent ?? "").slice(0, 30), from: [s.previousRect.y, s.previousRect.height].map(Math.round), to: [s.currentRect.y, s.currentRect.height].map(Math.round) })) });
     }
   }).observe({ type: "layout-shift", buffered: true });
   const look = () => {
@@ -42,7 +42,7 @@ let failed = 0;
 const rows = [];
 for (let i = 0; i < loads; i++) {
   const w = widths[i % widths.length];
-  const first = i % 2 === 0;
+  const first = Math.floor(i / 2) % 2 === 0; // each width gets first visits and return visits
   await page.setViewportSize({ width: w, height: 1000 });
   await page.evaluate((f) => sessionStorage.setItem("__firstVisit", f ? "1" : "0"), first).catch(() => {});
   await page.goto(`${originOf(page)}/spaces/${id}`, { waitUntil: "domcontentloaded" });

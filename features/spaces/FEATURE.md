@@ -45,6 +45,18 @@ Block document: a tree of `SpaceBlock` (`id`, `type`, `text: RichSpan[]`, `color
 
 ## Change log
 
+- 2026-10-07 — builder round 29: (1) no hidden page body — the 3 s React-block hold and the 4 s first-visit table hold are gone.
+  Reserved geometry instead: every save writes each database block's painted size per window width (`props.paintedSize`,
+  `editor/database-host.tsx` `withPaintedSizes`; never content — `contentKey` skips it; a size the store does not hold rides as
+  one save, `paintedDrift`); the first frame holds it (node decoration `--spaces-painted-h` on the empty React wrapper,
+  `stored-blocks.tsx`), DatabaseHost holds it until still. The callout is a vanilla spec drawn with its text
+  (`editor/callout-block.tsx`, picker via `CalloutIconHost`); page rows hold 33px before React draws. Walk
+  `first-paint.walk.mjs`: 12 loads, max CLS 0.003. (2) "/" Database with AI / Database saves the moment the table exists
+  (`saveSoon`, no debounce) — a tab closed inside the 2 s debounce left a page with a table and no stored version (walk
+  `ai-database-save.walk.mjs`); room trace also logs host / cadence / schedule / save. (3a) N4 find in page
+  (`page/FindInPage.tsx`, CSS highlights, opens closed toggles; walk `find-in-page.walk.mjs`). (3d) N2 date mentions in the
+  "@" menu (`editor/date-mention.ts`; walk `date-mention.walk.mjs`). NEEDS rows: Tabs block types (N1), the embedded grid's
+  calculation footer (N6; `summaries` already kept on the view), a one-shot notice door for reminders (N2 Remind).
 - 2026-10-07 — builder round 28: the late load shift was never the room — a room trace (`collab/space-collab.ts`,
   `window.__spacesCollabTrace`; walk `__tests__/walk/room-trace.walk.mjs`) showed one seed and no block added or removed after
   joining. Causes: BlockNote draws React blocks (database, callout) through portals a frame after the text, and a table grows

@@ -48,6 +48,9 @@ import { readViewerCamera, writeViewerCamera } from "./viewerCamera";
 
 export const AUTOSAVE_DELAY_MS = 800;
 
+/** How long "Opening your board…" may wait before it says so and offers a retry. */
+export const OPEN_TIMEOUT_MS = 20_000;
+
 export type SavedBoardTarget =
   | { boardId: string }
   /** The person's board for one meeting, created with `seed` the first time. */
@@ -169,7 +172,22 @@ export function useSavedBoard(target: SavedBoardTarget): SavedBoardState {
 
   // ── load ──
   useEffect(() => {
-    if (!userId) return; // auth not hydrated yet: stay "loading"
+    // Never wait silently: a fetch or sign-in that never answers becomes a failed state with Try
+    // again. A late answer still wins (the load below overwrites this).
+    const slow = setTimeout(() => {
+      setPhase((cur) =>
+        cur?.key === key
+          ? cur
+          : {
+              key,
+              status: "failed",
+              reason: userId
+                ? "Opening this board is taking much longer than it should."
+                : "Still waiting for you to be signed in.",
+            },
+      );
+    }, OPEN_TIMEOUT_MS);
+    if (!userId) return () => clearTimeout(slow); // auth not hydrated yet: stay "loading" (bounded)
     let alive = true;
     const loadTargetValue = targetRef.current;
     const pending = "boardId" in loadTargetValue ? getPendingCreate(loadTargetValue.boardId) : undefined;
@@ -206,6 +224,7 @@ export function useSavedBoard(target: SavedBoardTarget): SavedBoardState {
       landing.current = done;
       return () => {
         alive = false;
+        clearTimeout(slow);
       };
     }
     loadTarget(loadTargetValue, selectedOrgId).then( // org-filter: default-for-new the active organization only files a NEW meeting board; it never picks which board opens
@@ -227,6 +246,7 @@ export function useSavedBoard(target: SavedBoardTarget): SavedBoardState {
     );
     return () => {
       alive = false;
+      clearTimeout(slow);
     };
   }, [key, userId]); // selectedOrgId: read at load only, as the write target for a new meeting board
 

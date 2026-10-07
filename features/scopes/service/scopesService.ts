@@ -99,7 +99,7 @@ export interface EntityScopeTag {
   scope_type: string;
 }
 
-export interface DatasetTemplateField {
+export interface TableTemplateField {
   id: string;
   field_name: string;
   display_name: string;
@@ -108,13 +108,13 @@ export interface DatasetTemplateField {
   is_required: boolean;
 }
 
-export interface DatasetTableTemplate {
+export interface TableTemplate {
   id: string;
   organization_id: string;
   name: string;
   description: string;
   version: number;
-  fields: DatasetTemplateField[];
+  fields: TableTemplateField[];
 }
 
 // ─── helpers ────────────────────────────────────────────────────────
@@ -161,14 +161,15 @@ export const scopesService = {
   /** Organization-scoped immutable schemas available for per-scope table values. */
   async listTableTemplates(
     organizationId: string,
-  ): Promise<ScopesRpcResult<DatasetTableTemplate[]>> {
+  ): Promise<ScopesRpcResult<TableTemplate[]>> {
     try {
       requireUserId();
-      const { data, error } = await supabase.rpc("list_udt_dataset_templates", {
+      // Table templates are templates (custom.template, templateKind table) since 2026-10-07.
+      const { data, error } = await supabase.schema("custom").rpc("table_templates" as never, {
         p_org_id: organizationId,
-      });
+      } as never);
       if (error) return err(...mapPgErrorPair(error));
-      return ok((Array.isArray(data) ? data : []) as DatasetTableTemplate[]);
+      return ok((Array.isArray(data) ? data : []) as TableTemplate[]);
     } catch (e) {
       return { ok: false, error: mapPgError(e) };
     }

@@ -30,7 +30,11 @@ export default function DocumentPage({
         <RouteHeader
           left={
             <>
+              {/* The glass Back button is its own group: the name field beside it is a solid control, and a
+                row mixing glass and solid trips the tap-target guard. */}
+            <span className="flex shrink-0">
               <ChevronLeftTapButton href="/documents" ariaLabel="Back" />
+            </span>
               {title}
             </>
           }

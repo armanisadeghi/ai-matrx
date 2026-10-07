@@ -15,7 +15,7 @@ export type ReferenceContainerType =
   | "pick_list"
   // "structured_list" is the retired spelling of "pick_list": still read from stored sources.
   | "structured_list"
-  | "dataset_template";
+  | "table_template";
 
 /**
  * What part of the container is the value.
@@ -49,7 +49,7 @@ export interface BoundContainerReferenceSource {
 
 /** One immutable-shape dataset is provisioned automatically for every scope. */
 export interface DatasetTemplateReferenceSource {
-  container_type: "dataset_template";
+  container_type: "table_template";
   template_id: string;
   dimension: "whole";
   provision: "per_scope";
@@ -63,10 +63,10 @@ export type ReferenceSource =
 export function parseReferenceSource(raw: unknown): ReferenceSource | null {
   if (!raw || typeof raw !== "object") return null;
   const o = raw as Record<string, unknown>;
-  if (o.container_type === "dataset_template") {
+  if (o.container_type === "table_template") {
     if (typeof o.template_id !== "string") return null;
     return {
-      container_type: "dataset_template",
+      container_type: "table_template",
       template_id: o.template_id,
       dimension: "whole",
       provision: "per_scope",

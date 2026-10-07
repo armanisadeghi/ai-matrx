@@ -14,7 +14,7 @@ import {
 } from "@/components/ui/select";
 import {
   scopesService,
-  type DatasetTableTemplate,
+  type TableTemplate,
 } from "@/features/scopes/service/scopesService";
 import {
   CONTEXT_REFERENCE_TYPE_OPTIONS,
@@ -126,7 +126,7 @@ export function ReferenceConfigFields({
   const scopesId = `${uid}-scopes`;
   const templateId = `${uid}-table-template`;
   const previewId = `${uid}-preview`;
-  const [templates, setTemplates] = useState<DatasetTableTemplate[]>([]);
+  const [templates, setTemplates] = useState<TableTemplate[]>([]);
   const [typeSearch, setTypeSearch] = useState("");
   const [typeSelectKey, setTypeSelectKey] = useState(0);
 

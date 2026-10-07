@@ -193,6 +193,7 @@ function DatabaseFrame({
       overRows={sample || published}
       sortOverride={sortOverride}
       search={search}
+      onSummaries={editable && !sample && !published ? (summaries) => saveView({ summaries } as Partial<SpaceDbView>) : undefined}
     />
   );
 
@@ -357,7 +358,7 @@ function DatabaseFrame({
       <Dialog open={expanded} onOpenChange={setExpanded}>
         <DialogContent size="2xl" height="tall" className="spaces-db-expanded overflow-auto">
           <DialogTitle>{props.title || sourceName}</DialogTitle>
-          <DatabaseBody tableId={tableId} view={shown} fields={fields} onOpenRecord={setOpen} editable={editable} sample={sample} overRows={sample || published} sortOverride={sortOverride} search={search} />
+          <DatabaseBody tableId={tableId} view={shown} fields={fields} onOpenRecord={setOpen} editable={editable} sample={sample} overRows={sample || published} sortOverride={sortOverride} search={search} onSummaries={editable && !sample && !published ? (summaries) => saveView({ summaries } as Partial<SpaceDbView>) : undefined} />
         </DialogContent>
       </Dialog>
     </div>
@@ -378,7 +379,14 @@ function longDates(fields: Field[]): Record<string, { id: "date"; options: { dat
   return out;
 }
 
-function viewSpec(tableId: string, view: SpaceDbView, fields: Field[] = []): SavedViewSpec {
+/**
+ * N6 — the calculation row: the footer measure each column shows (Count all, Sum, Average…), picked on
+ * the table's own footer and saved with the block's view (`summaries`, a key the stored view carries
+ * through; records-ui's summary bar draws and computes it).
+ */
+type ViewWithSummaries = SpaceDbView & { summaries?: Record<string, string> };
+
+function viewSpec(tableId: string, view: ViewWithSummaries, fields: Field[] = []): SavedViewSpec {
   const layout = view.layout === "chart" ? "grid" : view.layout;
   const formats = longDates(fields);
   const hasFormats = Object.keys(formats).length > 0;
@@ -393,7 +401,7 @@ function viewSpec(tableId: string, view: SpaceDbView, fields: Field[] = []): Sav
     filters: scalarFilters(view.filters),
     // Notion's inline table: columns at their natural width, one line each, the table scrolling sideways
     // inside the block when it is wider than the column it sits in (screenshot 1) — never squeezed to "…".
-    presentation: { fit: "scroll", wrap: false, ...(view.hiddenFields?.length ? { hiddenFields: view.hiddenFields } : {}), ...(hasFormats ? { formats } : {}) },
+    presentation: { fit: "scroll", wrap: false, ...(view.hiddenFields?.length ? { hiddenFields: view.hiddenFields } : {}), ...(hasFormats ? { formats } : {}), ...(view.summaries && Object.keys(view.summaries).length ? { summaries: view.summaries } : {}) },
   };
 }
 
@@ -407,9 +415,10 @@ function DatabaseBody({
   overRows,
   sortOverride,
   search,
+  onSummaries,
 }: {
   tableId: string;
-  view: SpaceDbView;
+  view: ViewWithSummaries;
   fields: Field[];
   onOpenRecord: (id: string) => void;
   editable: boolean;
@@ -418,6 +427,8 @@ function DatabaseBody({
   overRows: boolean;
   sortOverride: { field: string; direction: "asc" | "desc" } | null;
   search: { value: string; onChange: (term: string) => void };
+  /** The person picked a column's footer measure (absent: nothing is kept — a reader, the sample). */
+  onSummaries?: (summaries: Record<string, string>) => void;
 }) {
   if (view.layout === "chart") {
     const settings = { ...DEFAULT_CHART, ...view.chart };
@@ -445,6 +456,14 @@ function DatabaseBody({
         onSearchChange={search.onChange}
         onOpenRecord={onOpenRecord}
         filter={view.filters && Object.keys(view.filters).length ? scalarFilters(view.filters) : undefined}
+        onViewChange={
+          onSummaries
+            ? (patch) => {
+                const next = patch.presentation?.summaries;
+                if (next && JSON.stringify(next) !== JSON.stringify(view.summaries ?? {})) onSummaries(next);
+              }
+            : undefined
+        }
       />
     </div>
   );
