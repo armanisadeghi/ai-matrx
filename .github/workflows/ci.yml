@@ -441,6 +441,12 @@ jobs:
         # passed and every readiness check stayed green. It asserts the single
         # invariant the system exists to provide: a valid payload of a
         # registered kind that HAS a component reaches that component, on every
+      - name: retired product names (platform lexicon) can still be caught (self-test)
+        # check:lexicon parses the lexicon's "Retired aliases" column at run
+        # time. The self-test is offline; the REAL scan needs the common-docs
+        # checkout this job does not have, so it runs release-side
+        # (scripts/run-release-gates.sh) and locally, UNMEASURED without it.
+        run: pnpm check:lexicon:self-test
         # path, for every shape of data.
         #
         # Named separately from the content-ir suite so a failure shows ITS
