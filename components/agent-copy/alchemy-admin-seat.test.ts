@@ -21,6 +21,10 @@ jest.mock("@ai-matrx/chat/agents/redux/chat/chat-route.slice", () => ({ bumpFres
 jest.mock("@ai-matrx/chat/agents/components/chat/begin-fresh-chat", () => ({ chatRouteSurfaceKey: (id: string) => `surface:${id}` }));
 jest.mock("@ai-matrx/chat/agents/components/chat/chat-quick-actions.config", () => ({ DEFAULT_NEW_CHAT_MANDATE_KEY: "default-mandate" }));
 jest.mock("@ai-matrx/chat/mandates/service", () => ({ resolveMandate: jest.fn(async () => ({ agentId: "agent-42" })) }));
+jest.mock("@ai-matrx/chat/mandates/resolve-asking", () => ({
+  // The destination asks through `resolveMandateAsking`; in a unit test that is the mocked `resolveMandate`, with no organization question.
+  resolveMandateAsking: (key: string) => (jest.requireMock("@ai-matrx/chat/mandates/service") as { resolveMandate: (k: string, o?: unknown) => Promise<unknown> }).resolveMandate(key, {}),
+}));
 jest.mock("@/features/data-tables/export-targets", () => ({ pushMarkdownToDocument: jest.fn(), pushTableToWorkbook: jest.fn() }));
 
 import { SYSTEM_ORGANIZATION_ID } from "@/constants/platform-orgs";

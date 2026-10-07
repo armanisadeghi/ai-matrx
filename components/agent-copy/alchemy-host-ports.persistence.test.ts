@@ -157,7 +157,7 @@ describe("web app persistence + transfer knobs (PP-13a)", () => {
     mockAwaitOrganization.mockResolvedValueOnce({ status: "unavailable", reason: "unused", cause: "no-selection" });
     const before = mockRegister.rpc.length;
     await expect(portsFor(ADMIN, null).persistence.writeSetting("alchemy.transfer.default_recipe", { [CX]: errorsOnly })).rejects.toThrow(
-      /saved per organization, and none is selected\. Pick the one you are working in/,
+      /saved per organization, and none is selected\. Choose the one you are working in/,
     );
     expect(mockRegister.rpc.length).toBe(before);
   });
