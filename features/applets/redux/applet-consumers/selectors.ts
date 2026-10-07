@@ -25,6 +25,7 @@ import type {
 } from "@/features/agents/redux/applets/types";
 import { selectAllApps } from "@/features/agents/redux/applets/selectors";
 import { appletJobs } from "@/features/applets/types";
+import { isOpenEntry, readBuildRequests } from "@/features/applets-host/builder/build-session";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import {
   DEFAULT_APPLET_CONSUMER_STATE,
@@ -88,6 +89,9 @@ export interface AppletCardModel {
   // Display
   preview_image_url: string | null;
   favicon_url: string | null;
+
+  /** A build request is still running — the card opens the build at /applets/build/<id>. */
+  build_open: boolean;
 }
 
 // ── Pure scoring / search helpers ─────────────────────────────────────────────
@@ -283,6 +287,7 @@ export const selectAllAppCardModels = createSelector(
         published_at: r.published_at,
         preview_image_url: r.preview_image_url,
         favicon_url: r.favicon_url,
+        build_open: isOpenEntry(readBuildRequests(r.metadata).at(-1)),
       });
     }
     return models;

@@ -205,7 +205,8 @@ export function AppletsGrid({
     (app: AppletCardModel) => {
       if (navigatingId) return;
       setNavigatingId(app.id);
-      startTransition(() => router.push(`/applets/manage/${app.id}`));
+      // A build still running opens the build itself, live, at its own address.
+      startTransition(() => router.push(app.build_open ? `/applets/build/${app.id}` : `/applets/manage/${app.id}`));
     },
     [navigatingId, router],
   );
