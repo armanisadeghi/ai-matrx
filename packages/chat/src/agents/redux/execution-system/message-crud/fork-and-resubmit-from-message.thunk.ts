@@ -30,6 +30,7 @@ import { createAsyncThunk } from "@reduxjs/toolkit";
 import type { ChatDispatch, ChatRootState } from "../../../../store/root-state";
 import { forkConversation } from "./fork-conversation.thunk";
 import { mergeEditedText } from "./content-blocks.util";
+import { toastDoor } from "../../../../host/ui-slots";
 
 interface ForkAndResubmitArgs {
   conversationId: string;
@@ -125,7 +126,6 @@ export const forkAndResubmitFromMessage = createAsyncThunk<
       // This told the user to go find the branch by hand while holding its
       // id — the Door Law violation stated out loud. It opens now.
       const { toast } = await import("../../../../host/notify");
-      const { toastDoor } = await import("../../../../host/ui-slots");
       toast.success("Branch created", {
         action: toastDoor("conversation", newConversationId),
       });

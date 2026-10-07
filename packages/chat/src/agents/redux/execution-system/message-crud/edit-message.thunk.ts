@@ -29,6 +29,7 @@ import type { ChatDispatch, ChatRootState } from "../../../../store/root-state";
 import type { Database, Json } from "../../../../host/db-types";
 import { updateMessageRecord } from "../messages/messages.slice";
 import { extractFlatText } from "../messages/messages.selectors";
+import { saveOutputFeedback } from "../../../../host/ui-slots";
 import {
   clearRequestEditedText,
   setRequestEditedText,
@@ -299,11 +300,9 @@ export const editMessage = createAsyncThunk<
     if (prevRecord.role === "assistant") {
       void (async () => {
         try {
-          const [{ saveOutputFeedback }, { extractFlatText }] =
-            await Promise.all([
-              import("../../../../host/ui-slots"),
-              import("../messages/messages.selectors"),
-            ]);
+          // Static, like every other ui-slots importer: a dynamic import of
+          // this "use client" registry from the execution system (reached by
+          // almost every page) doubled the demos build's async-chunk copies.
           const originalText = extractFlatText(prevRecord);
           const correctedText = extractFlatText({
             ...prevRecord,
