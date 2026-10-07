@@ -6,6 +6,7 @@
  *   node scripts/bell-zero-walk.mjs open      # sign in, read the badge, open the bell → 0
  *   (a new notice is delivered to admin@admin.com between the phases)
  *   node scripts/bell-zero-walk.mjs clear     # badge 1 → Clear all + clear every place → 0, reload → 0
+ *   node scripts/bell-zero-walk.mjs clearall  # badge 1 → ONE click (Clear all) → notices and places 0
  *
  * Writes: only admin@admin.com's own seen/done marks and bell preferences (all reversible: Done view,
  * Hidden places, Undo).
@@ -61,6 +62,12 @@ try {
     check("signed in as admin@admin.com", who === env.AI_ADMIN_USERNAME, who ?? "none");
   }
   await page.goto(`${ORIGIN}/notes`, { waitUntil: "domcontentloaded", timeout: 180000 });
+  // The shared preview parks an idle session host; resume it the way a person would.
+  const resume = page.getByText("Resume this preview");
+  if (await resume.isVisible({ timeout: 5000 }).catch(() => false)) {
+    await resume.click();
+    await page.waitForURL((u) => !u.pathname.startsWith("/__dev-walk"), { timeout: 120000 }).catch(() => undefined);
+  }
   await bell.waitFor({ timeout: 180000 });
 
   if (phase === "open") {
@@ -86,6 +93,8 @@ try {
     await bell.click();
     await sleep(4000);
     const panel = page.locator("[data-inbox-panel]").first();
+    const placesBefore = await panel.locator("[data-source-count]").count();
+    console.log(`INFO places showing a number when the bell opened: ${placesBefore}`);
     let clicks = 0;
     const clearAll = panel.locator("[data-inbox-clear-all]");
     if (await clearAll.count()) {
@@ -93,8 +102,14 @@ try {
       clicks += 1;
       await sleep(4000);
     }
+    if (phase === "clearall") {
+      for (const key of ["approvals", "work", "workflows", "assists"]) {
+        const left = await panel.locator(`[data-source-count="${key}"]`).count();
+        check(`one Clear all also clears place "${key}"`, left === 0);
+      }
+    }
     // Every place with a number: ⋯ → Clear (two clicks each).
-    for (const key of ["approvals", "work", "workflows", "assists"]) {
+    for (const key of phase === "clearall" ? [] : ["approvals", "work", "workflows", "assists"]) {
       const count = panel.locator(`[data-source-count="${key}"]`);
       if (!(await count.count())) continue;
       const before = await count.textContent();
