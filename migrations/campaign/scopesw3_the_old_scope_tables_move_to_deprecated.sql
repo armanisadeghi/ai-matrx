@@ -1,4 +1,4 @@
--- draft: held 2026-10-07 03:25 PT by the chair — soak passed and the 4 label-only bodies are allowlisted, but view custom.context_scope_types still reads context.scope_types for slug (76 of 154 store slugs differ from the old ones); resolve that, then remove this line.
+-- draft: held 2026-10-07 by SCOPES-W3 — slug reader resolved (scopesw3a) and the two label-only views are allowlisted below, but the deprecated-boundary guard (platform._deprecated_outbound_fk_guard) refuses the move while the six tables hold 19 FKs, 12 of them into live iam.users, iam.organizations and workbench.udt_dataset_templates; drop those 14 first (inverse must re-add them), then remove this line.
 -- chair-step: wave 3 of SCOPES-ON-THE-STORE. It MOVES the six old scope tables — context.scopes, scope_types, context_items, context_item_values, context_value_refs, scope_dataset_instances — into the `deprecated` schema with ALTER TABLE … SET SCHEMA (no row is touched; indexes, constraints, triggers, owned sequences and the 13 outside foreign keys move with them by OID). The reference tables stay in `context`. THIS FILE REFUSES ITSELF while any function body outside `deprecated` still names one of the six by its old name (a plpgsql body resolves the name at run time and would fail after the move): on 2026-10-05 that census lists 86 bodies (the lane-9 doors' image write and follow, the old RPCs, the instruments and the class-C readers), so wave 2's remaining moves and the image-write removal must land first. Reversible: the inverse moves the six back.
 -- lane: FINISH-THE-SWITCH (FTS-1, wave 3 prep of SCOPES-ON-THE-STORE)
 -- lock: custom
@@ -42,7 +42,10 @@ begin
   if n > 0 then
     raise exception 'scopesw3: % function bodies still name an old scope table by its old name; move them first: %', n, left(v, 3000);
   end if;
-  if exists (select 1 from pg_views where definition ~ 'context\.(scopes|scope_types|context_items|context_item_values|context_value_refs|scope_dataset_instances)\M') then
+  -- Added 2026-10-07 (SCOPES-W3, checked live): these two views name context.context_items only as the string label
+  -- metadata.moved_from.table (a Field's history stamp), never as a relation; custom.context_scope_types was moved to the store slug (scopesw3a).
+  if exists (select 1 from pg_views where definition ~ 'context\.(scopes|scope_types|context_items|context_item_values|context_value_refs|scope_dataset_instances)\M'
+                and schemaname || '.' || viewname not in ('custom.context_scope_items', 'custom.context_scope_values')) then
     raise exception 'scopesw3: a view still reads an old scope table';
   end if;
 end $pre$;

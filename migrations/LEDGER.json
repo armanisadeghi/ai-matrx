@@ -1,6 +1,6 @@
 {
   "note": "Checked-in snapshot of public._schema_migrations for the files under migrations/campaign and migrations/inverse. Written by `pnpm db:apply` on every successful production apply and refreshed whole by the nightly catch-up. Never hand-edited: a self-written checksum is a claim nobody can check. Guard: pnpm check:ledgered-files-unedited.",
-  "generated_at": "2026-10-07T09:16:21.587Z",
+  "generated_at": "2026-10-07T10:20:20.613Z",
   "files": {
     "migrations/campaign/a_chunk_is_the_size_the_client_door_can_actually_carry.sql": {
       "source": "matrx-frontend",
@@ -5893,6 +5893,12 @@
       "filename": "scopesw2w_the_value_door_decides_on_the_store.sql",
       "checksum": "85f014db1a1ae07e581de8e51f6b6bf534588bd78fa2bcf4ba8806591540524f",
       "applied_at": "2026-10-05 03:50:09.430583+00"
+    },
+    "migrations/campaign/scopesw3a_the_scope_types_view_reads_the_store_slug.sql": {
+      "source": "matrx-frontend",
+      "filename": "scopesw3a_the_scope_types_view_reads_the_store_slug.sql",
+      "checksum": "7cc87f587cfabc7adfcab9c968cb19e02728cae9c97add2885272a8b2d23bc46",
+      "applied_at": "2026-10-07 10:20:19.580794+00"
     },
     "migrations/campaign/scopeswt_a_template_applies_and_a_value_brings_its_field.sql": {
       "source": "matrx-frontend",
