@@ -81,7 +81,7 @@ import { MoveNoteDialog } from "./MoveNoteDialog";
 import { noteFolderReference, type FolderReference } from "../types";
 import { noteIdentityContentSource } from "../richDocumentSource";
 import { downloadFile } from "@ai-matrx/kit/download";
-import { copyRichContent } from "@/components/matrx/buttons/markdown-copy-utils";
+import { copyRichContent } from "@/components/agent-copy/copy-commands";
 import { copyToClipboard } from "@/lib/clipboard/copy";
 
 interface NoteTabItemProps {

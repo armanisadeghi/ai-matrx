@@ -37,20 +37,19 @@ test.each(["components/mermaid/export.ts", "features/scraper/utils/scraper-utils
   },
 );
 
-test("Notes uses the existing rich-copy door, not the deleted copy-commands module", () => {
+test("Notes uses the one rich-copy door (agent-copy/copy-commands)", () => {
   const note = read("features/notes/components/NoteTabItem.tsx");
-  expect(note).toContain('from "@/components/matrx/buttons/markdown-copy-utils"');
-  expect(note).not.toContain("@/components/agent-copy/copy-commands");
-  expect(read("components/matrx/buttons/markdown-copy-utils.ts")).toContain("export async function copyRichContent(");
+  expect(note).toContain('from "@/components/agent-copy/copy-commands"');
+  expect(read("components/agent-copy/copy-commands.ts")).toContain("export async function copyRichContent(");
 });
 
-test("the context preview's inline-copy host slot has a public wrapper and registration", () => {
+test("the context preview copies through the CopyButtons host slot; no InlineCopyButton slot exists", () => {
   expect(read("packages/chat/src/agents/components/context-preview/AttachedContextSection.tsx"))
-    .toContain('import { InlineCopyButton } from "@ai-matrx/chat/host/ui-slots"');
+    .toContain('import { CopyButtons } from "@ai-matrx/chat/host/ui-slots"');
   const slots = read("packages/chat/src/host/ui-slots.tsx");
-  expect(slots).toContain("InlineCopyButton: AnyComponent;");
-  expect(slots).toContain('export const InlineCopyButton = slotComponent("InlineCopyButton"');
-  expect(read("providers/chatUiRegistration.ts")).toContain("InlineCopyButton: Host_InlineCopyButton");
+  expect(slots).toContain('export const CopyButtons = slotComponent("CopyButtons"');
+  expect(slots).not.toContain("InlineCopyButton");
+  expect(read("providers/chatUiRegistrationBase.ts")).toContain("CopyButtons,");
 });
 
 test("the dynamic UI scope obtains the class recipe from the design-system root, not the control-only door", () => {
