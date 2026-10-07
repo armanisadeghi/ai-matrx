@@ -46,6 +46,8 @@ import {
   safeRatio,
 } from "@ai-matrx/kit/format";
 import { adminCostColumns } from "@/components/cost/adminCostColumns";
+import { formatAdminUsd } from "@/components/cost/formatAdminCost";
+import type { MatrxDataTableLocalDrillConfig } from "@ai-matrx/design-system/data-table/types";
 import { useAdminCost } from "@/components/cost/useAdminCost";
 import { SurfaceRuntimeProvider } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import {
@@ -222,6 +224,31 @@ export const ANALYTICS_COLUMNS: MatrxColumnDef<AppletAdminView>[] = [
       ),
   },
 ];
+
+/**
+ * What a LEVEL of each Dimension looks like, so drilling into "Marketing" lands on the
+ * Marketing apps' numbers and offers the next questions about them, not every column.
+ *
+ * Only sums are shown: users and average time are per-app facts that do not add up across a
+ * group (the same person using two apps would count twice), and an unweighted success average
+ * would disagree with the weighted Success card above. Those stay on the per-app rows.
+ */
+const ANALYTICS_SHOW = ["count", "sum_executions", "sum_cost", "sum_cost_points", "sum_tokens"];
+export const ANALYTICS_DRILL: MatrxDataTableLocalDrillConfig = {
+  local: true,
+  countLabel: "Apps",
+  dimensions: ["category", "status", "verified", "featured", "last-execution"],
+  measures: ANALYTICS_SHOW,
+  extraMeasures: [
+    { key: "sum_cost", label: "Cost (USD)", additive: true, op: "sum", of: "cost", lowerIsBetter: true, format: formatAdminUsd },
+  ],
+  levels: {
+    category: { breakouts: ["status", "verified", "featured", "last-execution:month"], show: ANALYTICS_SHOW },
+    status: { breakouts: ["category", "verified", "featured", "last-execution:month"], show: ANALYTICS_SHOW },
+    verified: { breakouts: ["status", "category", "featured", "last-execution:month"], show: ANALYTICS_SHOW },
+    featured: { breakouts: ["status", "category", "verified", "last-execution:month"], show: ANALYTICS_SHOW },
+  },
+};
 
 const analyticsCopy: MatrxDataTableCopyConfig<AppletAdminView> = {
   label: "Applet performance",
@@ -534,6 +561,7 @@ export default function AppletsAnalyticsPage() {
                   onStateChange: tableQuery.onStateChange,
                 }}
                 coverage={{ ...ANALYTICS_COVERAGE, total: apps.length }}
+                drill={ANALYTICS_DRILL}
                 toolbar={{
                   title: "Applet performance",
                   search: true,

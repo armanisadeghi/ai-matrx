@@ -655,6 +655,36 @@ export function UserAcquisitionTableClient() {
           getRowId={(row) => row.row_id}
           isLoading={loading}
           pageSize={50}
+          drill={{
+            local: true,
+            countLabel: "People",
+            dimensions: [
+              "campaign",
+              "referrer",
+              "traffic_kind",
+              "identity_state",
+              "created_at",
+            ],
+            measures: ["count", "sum_total_cost", "sum_total_requests"],
+            levels: {
+              campaign: {
+                breakouts: ["referrer", "traffic_kind", "identity_state", "created_at:week"],
+                show: ["count", "sum_total_cost", "sum_total_requests"],
+              },
+              referrer: {
+                breakouts: ["campaign", "traffic_kind", "identity_state", "created_at:week"],
+                show: ["count", "sum_total_cost", "sum_total_requests"],
+              },
+              traffic_kind: {
+                breakouts: ["identity_state", "campaign", "referrer", "created_at:week"],
+                show: ["count", "sum_total_cost", "sum_total_requests"],
+              },
+              identity_state: {
+                breakouts: ["traffic_kind", "campaign", "referrer", "created_at:week"],
+                show: ["count", "sum_total_cost", "sum_total_requests"],
+              },
+            },
+          }}
           read={readOf({ loading, error }, { what: "acquired identities", onRetry: () => void load(timeframe) })}
           emptyState={{
             title: "No acquired identities",

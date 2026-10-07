@@ -38,6 +38,8 @@ type ConversationSeed =
   | {
       kind: "ok";
       agentId: string | null;
+      /** The row's own organization — an agent-less room resolves its mandate there. */
+      organizationId: string | null;
       agentName: string | null;
       /**
        * The box this conversation is bound to, read in the SAME round-trip that
@@ -59,7 +61,7 @@ async function resolveConversationSeed(
     .schema("chat")
     .from("conversation")
     .select(
-      "initial_agent_id, sandbox_instance_id, app_instance_id, metadata",
+      "initial_agent_id, organization_id, sandbox_instance_id, app_instance_id, metadata",
     )
     .eq("id", conversationId)
     .is("deleted_at", null)
@@ -77,13 +79,14 @@ async function resolveConversationSeed(
 
   const sandboxBinding = conversationSandboxBindingFromRow(data);
   const agentId = (data.initial_agent_id as string | null) ?? null;
+  const organizationId = (data.organization_id as string | null) ?? null;
   if (!agentId)
-    return { kind: "ok", agentId: null, agentName: null, sandboxBinding };
+    return { kind: "ok", agentId: null, agentName: null, organizationId, sandboxBinding };
   // `chat.conversation` has no FK on `initial_agent_id`, so the agent name
   // cannot be a PostgREST embed — resolve it with a separate lookup against
   // the canonical `agent.definition` table.
   const agentName = await resolveAgentName(supabase, agentId);
-  return { kind: "ok", agentId, agentName, sandboxBinding };
+  return { kind: "ok", agentId, agentName, organizationId, sandboxBinding };
 }
 
 async function resolveAgentName(
@@ -168,6 +171,7 @@ export default async function ChatConversationPage({
         agentId={display?.agentId ?? null}
         ownedByMandate={ownedByMandate}
         sandboxBinding={seed.sandboxBinding}
+        organizationId={seed.organizationId}
         composer={{ initialMode }}
       />
     </>

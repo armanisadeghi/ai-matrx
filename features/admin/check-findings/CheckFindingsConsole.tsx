@@ -57,7 +57,7 @@ import {
 } from "@/components/ui/drawer";
 import { Input } from "@ai-matrx/design-system/controls";
 import { MatrxDataTable } from "@ai-matrx/design-system/data-table";
-import type { MatrxColumnDef } from "@ai-matrx/design-system/data-table/types";
+import type { MatrxColumnDef, MatrxDataTableLocalDrillConfig } from "@ai-matrx/design-system/data-table/types";
 import { MatrxUuidCell } from "@ai-matrx/design-system/data-table/uuid-cell";
 import { formatCount, formatDurationMs, formatRelativeTime } from "@ai-matrx/kit/format";
 import { useIsMobile } from "@ai-matrx/kit/media-query";
@@ -382,6 +382,38 @@ function VerdictBadge({ row }: { row: CheckSummaryRow }) {
   return <Badge variant="outline">{run.status}</Badge>;
 }
 
+/**
+ * LEVELS of the board: drilling into a repo, a level or a verdict lands on the checks that
+ * share it, with the open and accepted counts that matter there — and offers the next
+ * questions about THAT group (never every column). The board holds every check, so the
+ * drill is answered here.
+ */
+const BOARD_SHOW = ["count", "sum_open", "sum_accepted"];
+export const BOARD_DRILL: MatrxDataTableLocalDrillConfig = {
+  local: true,
+  countLabel: "Checks",
+  dimensions: ["repo", "level", "verdict", "scan-complete", "last-run"],
+  measures: BOARD_SHOW,
+  levels: {
+    repo: { breakouts: ["level", "verdict", "scan-complete", "last-run:week"], show: BOARD_SHOW },
+    level: { breakouts: ["repo", "verdict", "scan-complete", "last-run:week"], show: BOARD_SHOW },
+    verdict: { breakouts: ["repo", "level", "scan-complete", "last-run:week"], show: BOARD_SHOW },
+  },
+};
+
+/** LEVELS of one check's findings: by rule, work unit, who claimed it, then by week first seen. */
+export const ITEMS_DRILL: MatrxDataTableLocalDrillConfig = {
+  local: true,
+  countLabel: "Findings",
+  dimensions: ["rule", "unit", "state", "claimed-by", "basis", "first-seen"],
+  measures: ["count"],
+  levels: {
+    rule: { breakouts: ["unit", "state", "claimed-by", "basis", "first-seen:week"], show: ["count"] },
+    unit: { breakouts: ["rule", "state", "claimed-by", "basis", "first-seen:week"], show: ["count"] },
+    state: { breakouts: ["rule", "unit", "claimed-by", "basis", "first-seen:week"], show: ["count"] },
+  },
+};
+
 function verdictSortKey(row: CheckSummaryRow): string {
   if (!row.run) return "never ran";
   if (row.brokenReasons.length > 0 || row.run.status === "errored") return "broken";
@@ -553,6 +585,7 @@ function CheckBoard({
         stickyHeader
         density="condensed"
         pageSize={100}
+        drill={BOARD_DRILL}
         defaultSort={{ id: "open", direction: "desc" }}
         onRowOpen={onOpen}
         mobileCards={(r, _index, controls) => (
@@ -929,6 +962,7 @@ function CheckDetail({
             stickyHeader
             density="condensed"
             pageSize={100}
+            drill={ITEMS_DRILL}
             defaultSort={{ id: "first-seen", direction: "asc" }}
             coverage={{ noun: "finding", answeredBy: "client", total: items.status === "ready" ? data.length : undefined }}
             mobileCards={(item, _index, controls) => (

@@ -13,7 +13,7 @@
 // refetches. Period.
 
 import type { ThunkAction, UnknownAction } from "@reduxjs/toolkit";
-import { scopesService } from "@/features/scopes/service/scopesService";
+import { forgetSharedScopeBootRead, scopesService } from "@/features/scopes/service/scopesService";
 import { scopesActions } from "@/features/scopes/redux/scopesSlice";
 import { isScopesRpcErr } from "@/features/scopes/types";
 import { getUserId } from "@/utils/auth/getUserId";
@@ -113,6 +113,8 @@ export function ensureScopeTree(
     if (!refresh && state.treeStatus === "ready") return;
     if (state.treeStatus === "loading" && inFlight) return inFlight;
 
+    // A refresh asks for her organizations and projects again (lane PAGE-BUNDLE-2).
+    if (refresh) forgetSharedScopeBootRead();
     dispatch(scopesActions.treeFetchPending());
 
     const promise = (async () => {
