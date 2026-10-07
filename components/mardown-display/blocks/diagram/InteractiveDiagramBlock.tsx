@@ -136,69 +136,12 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Tailwind CSS 4 uses modern CSS color functions (oklch, lab, color(display-p3))
-// that html2canvas cannot parse. It calls console.error for each one, which gets
-// intercepted by AdminDebugContextCollector as false-positive errors.
-//
-// Fix: patch window.getComputedStyle during capture so html2canvas always
-// receives safe hex values. Returns a restore function to call when done.
-// ─────────────────────────────────────────────────────────────────────────────
-const UNSAFE_COLOR_RE = /\b(oklch|oklab|lab|lch|color)\s*\(/i;
-
 function backgroundVariantFromDiagram(diagram: DiagramData): BackgroundVariant {
   if (diagram.renderHints?.background === "lines")
     return BackgroundVariant.Lines;
   if (diagram.renderHints?.background === "cross")
     return BackgroundVariant.Cross;
   return BackgroundVariant.Dots;
-}
-
-function safenColor(value: string, prop: string, isDark: boolean): string {
-  if (!UNSAFE_COLOR_RE.test(value)) return value;
-  const lp = prop.toLowerCase();
-  if (lp.includes("background")) return isDark ? "#1f2937" : "#ffffff";
-  if (lp === "color") return isDark ? "#f3f4f6" : "#111827";
-  if (lp.includes("border") || lp.includes("outline"))
-    return isDark ? "#4b5563" : "#d1d5db";
-  if (lp === "fill" || lp === "stroke") return isDark ? "#9ca3af" : "#374151";
-  return isDark ? "#6b7280" : "#6b7280";
-}
-
-function patchComputedStyleForCapture(isDark: boolean): () => void {
-  const original = window.getComputedStyle.bind(window);
-  window.getComputedStyle = function (elt: Element, pseudo?: string | null) {
-    const computed = original(elt, pseudo);
-    return new Proxy(computed, {
-      get(target, prop: string | symbol) {
-        const value = (target as unknown as Record<string | symbol, unknown>)[
-          prop
-        ];
-        if (
-          typeof prop === "string" &&
-          typeof value === "string" &&
-          value &&
-          UNSAFE_COLOR_RE.test(value)
-        ) {
-          return safenColor(value, prop, isDark);
-        }
-        if (prop === "getPropertyValue") {
-          return (p: string) => {
-            const raw = target.getPropertyValue(p);
-            return raw && UNSAFE_COLOR_RE.test(raw)
-              ? safenColor(raw, p, isDark)
-              : raw;
-          };
-        }
-        if (typeof value === "function")
-          return (value as CallableFunction).bind(target);
-        return value;
-      },
-    });
-  };
-  return () => {
-    window.getComputedStyle = original;
-  };
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -1567,25 +1510,23 @@ const DiagramFlow: React.FC<{
     exportContainer.appendChild(cloned);
     document.body.appendChild(exportContainer);
 
-    import("html2canvas")
-      .then((mod) => {
-        // Patch getComputedStyle so html2canvas never sees oklch/lab values
-        const restore = patchComputedStyleForCapture(isDark);
-        return mod
-          .default(exportContainer, {
-            backgroundColor: bgColor,
-            scale: 2,
-            useCORS: true,
-            allowTaint: true,
-            width: imageWidth,
-            height: imageHeight,
-            ignoreElements: (el) =>
-              el.classList.contains("react-flow__controls") ||
-              el.classList.contains("react-flow__minimap") ||
-              el.classList.contains("react-flow__panel"),
-          })
-          .finally(restore);
-      })
+    import("@ai-matrx/alchemy/operate/capture")
+      .then(({ captureElement }) =>
+        // safeColors: Tailwind 4's oklch/lab values are swapped for hex during the capture only
+        captureElement(exportContainer, {
+          backgroundColor: bgColor,
+          scale: 2,
+          useCORS: true,
+          allowTaint: true,
+          width: imageWidth,
+          height: imageHeight,
+          safeColors: { dark: isDark },
+          ignoreElements: (el) =>
+            el.classList.contains("react-flow__controls") ||
+            el.classList.contains("react-flow__minimap") ||
+            el.classList.contains("react-flow__panel"),
+        }),
+      )
       .then((canvas) => {
         downloadUrl(canvas.toDataURL("image/png"), `${diagram.title.replace(/[^a-z0-9]/gi, "_").toLowerCase()}_diagram${isDark ? "_dark" : "_light"}.png`);
       })
@@ -2955,17 +2896,15 @@ const InteractiveDiagramBlock: React.FC<InteractiveDiagramBlockProps> = ({
       document.documentElement.classList.contains("dark") ||
       window.matchMedia("(prefers-color-scheme: dark)").matches;
 
-    import("html2canvas")
-      .then((mod) => {
-        const restore = patchComputedStyleForCapture(isDark);
-        return mod
-          .default(viewport, {
-            backgroundColor: isDark ? "#111827" : "#ffffff",
-            scale: 2,
-            useCORS: true,
-          })
-          .finally(restore);
-      })
+    import("@ai-matrx/alchemy/operate/capture")
+      .then(({ captureElement }) =>
+        captureElement(viewport, {
+          backgroundColor: isDark ? "#111827" : "#ffffff",
+          scale: 2,
+          useCORS: true,
+          safeColors: { dark: isDark },
+        }),
+      )
       .then((canvas) => {
         downloadUrl(canvas.toDataURL("image/png"), `${diagram.title.replace(/[^a-z0-9]/gi, "_").toLowerCase()}_diagram.png`);
       })

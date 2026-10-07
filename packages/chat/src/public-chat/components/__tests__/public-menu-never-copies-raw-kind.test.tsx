@@ -10,7 +10,7 @@ import { createRoot } from "react-dom/client";
 
 (globalThis as unknown as { IS_REACT_ACT_ENVIRONMENT: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
-const copyToClipboard = jest.fn(async (..._a: unknown[]) => {});
+const copyContent = jest.fn(async (..._a: unknown[]) => {});
 jest.mock("@ai-matrx/print/markdown", () => ({ getMarkdownStylesheet: () => "" }));
 const notesCreate = jest.fn(async (..._a: unknown[]) => {});
 registerChatUi({
@@ -26,7 +26,7 @@ registerChatUi({
   EmailInputDialog: () => null,
   AuthGateDialog: () => null,
   notesCreate: (...a: unknown[]) => notesCreate(...a),
-  copyToClipboard: (...a: unknown[]) => copyToClipboard(...a),
+  copyContent: (...a: unknown[]) => copyContent(...a),
 });
 jest.mock("../../../host/notify", () => ({
   toast: { error: jest.fn(), success: jest.fn(), info: jest.fn() },
@@ -77,7 +77,7 @@ const click = async (c: HTMLElement, label: string) => {
 
 describe("PublicMessageOptionsMenu never hands a person raw kind JSON", () => {
   beforeEach(() => {
-    copyToClipboard.mockClear();
+    copyContent.mockClear();
     notesCreate.mockClear();
   });
 
@@ -86,7 +86,7 @@ describe("PublicMessageOptionsMenu never hands a person raw kind JSON", () => {
     async (label) => {
       const r = await mount(jest.fn());
       await click(r, label);
-      const sent = copyToClipboard.mock.calls[0][0] as string;
+      const sent = copyContent.mock.calls[0][0] as string;
       expect(sent).not.toContain("__kind");
       expect(sent).toContain("Passport");
     },

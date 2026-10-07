@@ -7,7 +7,7 @@
  * grid's export menu, future bulk-export, and the push-to-workbook/udt targets.
  */
 
-import * as XLSX from "xlsx";
+import { buildFile } from "@ai-matrx/alchemy/operate";
 import { kindValueToMarkdown } from "@/features/canvas/export/exportArtifactMarkdown";
 import { kindTextToMarkdown } from "@/features/content-ir/surfaces/kind-text-to-markdown";
 import { valueCarriesKind } from "@/features/content-ir/surfaces/json-kind-signal";
@@ -109,19 +109,21 @@ export function toMarkdownTable(
   return [head, sep, ...body].join("\n");
 }
 
-/** XLSX bytes built from the matrix via SheetJS (the lib the workbook importer uses). */
-export function toXLSXBlob(
+/** XLSX bytes built from the matrix through Alchemy's workbook format (the engine the importer reads with). */
+export async function toXLSXBlob(
   columns: ExportColumn[],
   rows: ExportRow[],
   sheetName = "Extraction",
-): Blob {
-  const ws = XLSX.utils.aoa_to_sheet(toMatrix(columns, rows));
-  const wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, ws, sheetName.slice(0, 31) || "Sheet1");
-  const out = XLSX.write(wb, { type: "array", bookType: "xlsx" });
-  return new Blob([out as BlobPart], {
-    type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-  });
+): Promise<Blob> {
+  const built = await buildFile(
+    {
+      kind: "registered",
+      format: "workbook",
+      value: { sheets: [{ name: sheetName.slice(0, 31) || "Sheet1", rows: toMatrix(columns, rows) }] },
+    },
+    "xlsx-workbook",
+  );
+  return built.blob();
 }
 
 /** A safe-ish file slug from a dataset name. */

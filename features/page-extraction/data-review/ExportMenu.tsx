@@ -107,7 +107,9 @@ export function ExportMenu({
         </DropdownMenuItem>
         <DropdownMenuItem
           onClick={() =>
-            downloadBlob(toXLSXBlob(columns, rows, name), `${slug}.xlsx`)
+            void toXLSXBlob(columns, rows, name).then((blob) =>
+              downloadBlob(blob, `${slug}.xlsx`),
+            )
           }
         >
           <FileSpreadsheet className="mr-2 h-4 w-4" /> Excel (.xlsx)

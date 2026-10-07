@@ -154,8 +154,8 @@ export function downloadOrgChartCsv(chart: HrOrgChart): void {
 
 /** Shared by both raster paths: the chart as a canvas, at a readable scale. */
 async function rasterise(node: HTMLElement): Promise<HTMLCanvasElement> {
-  const { default: html2canvas } = await import("html2canvas");
-  return html2canvas(node, {
+  const { captureElement } = await import("@ai-matrx/alchemy/operate/capture");
+  return captureElement(node, {
     // 2× so text stays legible when the image is scaled in a deck or a print.
     scale: 2,
     backgroundColor: getComputedStyle(document.body).backgroundColor || "#ffffff",
@@ -190,11 +190,8 @@ export async function downloadOrgChartPng(
   ctx.font = "24px system-ui, -apple-system, Segoe UI, sans-serif";
   ctx.fillText(`Org chart as of ${asOf}`, 16, canvas.height + 36);
 
-  const blob = await new Promise<Blob | null>((resolve) =>
-    out.toBlob(resolve, "image/png"),
-  );
-  if (!blob) throw new Error("The image could not be encoded.");
-  saveBlob(blob, orgChartExportName(asOf, "png"));
+  const { canvasToBlob } = await import("@ai-matrx/alchemy/operate/capture");
+  saveBlob(await canvasToBlob(out, "image/png"), orgChartExportName(asOf, "png"));
 }
 
 export async function downloadOrgChartPdf(
@@ -202,34 +199,30 @@ export async function downloadOrgChartPdf(
   asOf: string,
 ): Promise<void> {
   const canvas = await rasterise(node);
-  const { jsPDF } = await import("jspdf");
-
+  const { pagesToPdf } = await import("@ai-matrx/alchemy/operate/capture");
   // Landscape: an org chart is wider than it is tall almost by definition.
-  const doc = new jsPDF({ orientation: "landscape", unit: "pt", format: "a4" });
-  const pageW = doc.internal.pageSize.getWidth();
-  const pageH = doc.internal.pageSize.getHeight();
-
-  const header = `Org chart as of ${asOf}`;
-  doc.setFontSize(12);
-  doc.text(header, 24, 28);
-
-  // Fit the whole chart on one page rather than cropping it — a truncated org
-  // chart silently drops people, which is worse than a small one.
-  const top = 44;
-  const availW = pageW - 48;
-  const availH = pageH - top - 24;
-  const scale = Math.min(availW / canvas.width, availH / canvas.height);
-  const w = canvas.width * scale;
-  const h = canvas.height * scale;
-
+  // The whole chart fits on one page rather than being cropped — a truncated
+  // org chart silently drops people, which is worse than a small one.
   /*
-    🚨 COMPRESSED, AND JPEG RATHER THAN PNG. jsPDF embeds a PNG data URL
+    🚨 COMPRESSED, AND JPEG RATHER THAN PNG. A PNG data URL embeds
     uncompressed: a four-node chart came out at 13 MB, which is not a file
     anyone will email. A chart is flat colour and text, so JPEG at high quality
     is visually indistinguishable here and an order of magnitude smaller, and
-    "FAST" turns on jsPDF's own deflate on top. The PNG export stays lossless —
-    that is the one for archiving; the PDF is the one for sending.
+    "FAST" turns on the PDF writer's own deflate on top. The PNG export stays
+    lossless — that is the one for archiving; the PDF is the one for sending.
   */
-  doc.addImage(canvas.toDataURL("image/jpeg", 0.92), "JPEG", 24, top, w, h, undefined, "FAST");
-  saveBlob(doc.output("blob"), orgChartExportName(asOf, "pdf"));
+  const pdf = await pagesToPdf(
+    [
+      {
+        image: canvas,
+        imageType: "JPEG",
+        quality: 0.92,
+        compression: "FAST",
+        placement: { top: 44, right: 24, bottom: 24, left: 24 },
+        header: { text: `Org chart as of ${asOf}`, x: 24, y: 28, fontSize: 12 },
+      },
+    ],
+    { orientation: "landscape", unit: "pt", format: "a4" },
+  );
+  saveBlob(pdf, orgChartExportName(asOf, "pdf"));
 }

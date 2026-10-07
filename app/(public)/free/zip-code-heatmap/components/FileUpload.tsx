@@ -2,7 +2,7 @@
 
 import { useRef, useState } from 'react';
 import { Upload, FileText, X, CheckCircle2, AlertCircle, FileSpreadsheet } from 'lucide-react';
-import Papa from 'papaparse';
+import { readFile } from '@ai-matrx/alchemy/operate/read';
 import { cleanGrid, firstRowLooksLikeHeader, tableFromGrid, type Grid } from '@/features/data-tables/grid-import';
 import type { ZipCodeData } from '../types';
 import ColumnMapper from './ColumnMapper';
@@ -64,48 +64,18 @@ export default function FileUpload({ onDataUpload, onLoadingChange }: FileUpload
     setSuccess('');
     onLoadingChange(true);
 
-    if (isCSV) {
-      // Handle CSV files
-      Papa.parse<string[]>(file, {
-        header: false,
-        skipEmptyLines: true,
-        complete: (results) => {
-          try {
-            acceptGrid(cleanGrid(results.data));
-          } catch (err) {
-            setError('Failed to parse CSV file');
-            console.error(err);
-            onLoadingChange(false);
-          }
-        },
-        error: (err) => {
-          setError(`Error reading CSV file: ${err.message}`);
-          onLoadingChange(false);
-        },
-      });
-    } else {
-      // Handle Excel files
-      const reader = new FileReader();
-      reader.onload = async (e) => {
-        try {
-          const XLSX = await import('xlsx');
-          const data = e.target?.result;
-          const workbook = XLSX.read(data, { type: 'binary' });
-          const sheetName = workbook.SheetNames[0];
-          const worksheet = workbook.Sheets[sheetName];
-          acceptGrid(cleanGrid(XLSX.utils.sheet_to_json(worksheet, { header: 1, defval: '' }) as unknown[][]));
-        } catch (err) {
-          setError('Failed to parse Excel file');
-          console.error(err);
-          onLoadingChange(false);
-        }
-      };
-      reader.onerror = () => {
-        setError('Error reading Excel file');
+    // One read door: CSV through Alchemy's delimited parser, Excel through its workbook engine.
+    readFile(file, isCSV ? { format: 'csv', skipEmptyLines: true } : { grid: { defval: '' } })
+      .then((table) => {
+        const first = table.sheets[0];
+        if (!first) throw new Error('The file has no sheets');
+        acceptGrid(cleanGrid(first.grid));
+      })
+      .catch((err) => {
+        setError(isCSV ? 'Failed to parse CSV file' : 'Failed to parse Excel file');
+        console.error(err);
         onLoadingChange(false);
-      };
-      reader.readAsBinaryString(file);
-    }
+      });
   };
 
   const handleColumnMapping = (mapping: { zipColumn: string; countColumn: string }) => {
