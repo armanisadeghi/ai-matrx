@@ -1,4 +1,6 @@
 # chat package move (CPM-006): old -> new, generated from manifest.tsv at GO; folders end in /
+# Entries whose app path holds app-owned code again (builder files back in features/agents after
+# B1 2ce90e727a) are removed: a path is listed only while nothing at it is tracked in this repo.
 features/agents/__tests__/ -> ../aidream/apps/shared/chat/src/agents/__tests__/
 features/agents/addressing/ -> ../aidream/apps/shared/chat/src/agents/addressing/
 features/agents/agent-context/ -> ../aidream/apps/shared/chat/src/agents/agent-context/
@@ -15,7 +17,6 @@ features/agents/components/conversation-actions/ -> ../aidream/apps/shared/chat/
 features/agents/components/conversation-history/ -> ../aidream/apps/shared/chat/src/agents/components/conversation-history/
 features/agents/components/custom-agent/ -> ../aidream/apps/shared/chat/src/agents/components/custom-agent/
 features/agents/components/debug/ -> ../aidream/apps/shared/chat/src/agents/components/debug/
-features/agents/components/diff/ -> ../aidream/apps/shared/chat/src/agents/components/diff/
 features/agents/components/inputs/ -> ../aidream/apps/shared/chat/src/agents/components/inputs/
 features/agents/components/live-run/ -> ../aidream/apps/shared/chat/src/agents/components/live-run/
 features/agents/components/memory/ -> ../aidream/apps/shared/chat/src/agents/components/memory/
@@ -25,23 +26,15 @@ features/agents/components/model-tiers/ -> ../aidream/apps/shared/chat/src/agent
 features/agents/components/notifications/ -> ../aidream/apps/shared/chat/src/agents/components/notifications/
 features/agents/components/observational-memory/ -> ../aidream/apps/shared/chat/src/agents/components/observational-memory/
 features/agents/components/run/ -> ../aidream/apps/shared/chat/src/agents/components/run/
-features/agents/components/run-controls/ -> ../aidream/apps/shared/chat/src/agents/components/run-controls/
 features/agents/components/send-to-agent/ -> ../aidream/apps/shared/chat/src/agents/components/send-to-agent/
-features/agents/components/shared/ -> ../aidream/apps/shared/chat/src/agents/components/shared/
-features/agents/components/shell/ -> ../aidream/apps/shared/chat/src/agents/components/shell/
 features/agents/components/smart/ -> ../aidream/apps/shared/chat/src/agents/components/smart/
-features/agents/components/undo-history/ -> ../aidream/apps/shared/chat/src/agents/components/undo-history/
 features/agents/components/unused/ -> ../aidream/apps/shared/chat/src/agents/components/unused/
-features/agents/components/widgets/ -> ../aidream/apps/shared/chat/src/agents/components/widgets/
 features/agents/components/working-document/ -> ../aidream/apps/shared/chat/src/agents/components/working-document/
 features/agents/constants/ -> ../aidream/apps/shared/chat/src/agents/constants/
 features/agents/conversation-export/ -> ../aidream/apps/shared/chat/src/agents/conversation-export/
 features/agents/decision-answers/ -> ../aidream/apps/shared/chat/src/agents/decision-answers/
-features/agents/hooks/ -> ../aidream/apps/shared/chat/src/agents/hooks/
 features/agents/image-roles/ -> ../aidream/apps/shared/chat/src/agents/image-roles/
-features/agents/lifecycle/ -> ../aidream/apps/shared/chat/src/agents/lifecycle/
 features/agents/menu/ -> ../aidream/apps/shared/chat/src/agents/menu/
-features/agents/message-flags/ -> ../aidream/apps/shared/chat/src/agents/message-flags/
 features/agents/message-pins/ -> ../aidream/apps/shared/chat/src/agents/message-pins/
 features/agents/prompt-preview/ -> ../aidream/apps/shared/chat/src/agents/prompt-preview/
 features/agents/redux/agent-definition/ -> ../aidream/apps/shared/chat/src/agents/redux/agent-definition/
@@ -57,12 +50,10 @@ features/agents/redux/shared/ -> ../aidream/apps/shared/chat/src/agents/redux/sh
 features/agents/redux/surfaces/ -> ../aidream/apps/shared/chat/src/agents/redux/surfaces/
 features/agents/redux/tools/ -> ../aidream/apps/shared/chat/src/agents/redux/tools/
 features/agents/resources/ -> ../aidream/apps/shared/chat/src/agents/resources/
-features/agents/route/ -> ../aidream/apps/shared/chat/src/agents/route/
 features/agents/run/ -> ../aidream/apps/shared/chat/src/agents/run/
 features/agents/runtime/ -> ../aidream/apps/shared/chat/src/agents/runtime/
 features/agents/runtime-reconnect/ -> ../aidream/apps/shared/chat/src/agents/runtime-reconnect/
 features/agents/scribe-tools/ -> ../aidream/apps/shared/chat/src/agents/scribe-tools/
-features/agents/services/ -> ../aidream/apps/shared/chat/src/agents/services/
 features/agents/speech-script/ -> ../aidream/apps/shared/chat/src/agents/speech-script/
 features/agents/types/ -> ../aidream/apps/shared/chat/src/agents/types/
 features/agents/ui-first-tools/ -> ../aidream/apps/shared/chat/src/agents/ui-first-tools/
@@ -107,7 +98,6 @@ features/agents/components/AutoSubmitForm.tsx -> ../aidream/apps/shared/chat/src
 features/agents/format.ts -> ../aidream/apps/shared/chat/src/agents/format.ts
 features/agents/mcp-copy.ts -> ../aidream/apps/shared/chat/src/agents/mcp-copy.ts
 features/agents/redux/agent-assistant-markdown-draft.slice.ts -> ../aidream/apps/shared/chat/src/agents/redux/agent-assistant-markdown-draft.slice.ts
-features/agents/surface-catalog-profile.ts -> ../aidream/apps/shared/chat/src/agents/surface-catalog-profile.ts
 features/cx-chat/MIGRATION-TRACKER.md -> ../aidream/apps/shared/chat/src/cx-chat/MIGRATION-TRACKER.md
 features/cx-chat/_legacy-stubs.ts -> ../aidream/apps/shared/chat/src/cx-chat/_legacy-stubs.ts
 features/mandates/FastPathMandateGuard.tsx -> ../aidream/apps/shared/chat/src/mandates/FastPathMandateGuard.tsx
@@ -143,7 +133,6 @@ features/tool-call-visualization/RENDERER_STATUS.md -> ../aidream/apps/shared/ch
 features/tool-call-visualization/intelligence-places.ts -> ../aidream/apps/shared/chat/src/tool-call-visualization/intelligence-places.ts
 features/tool-call-visualization/types.ts -> ../aidream/apps/shared/chat/src/tool-call-visualization/types.ts
 features/window-panels/windows/agents/AgentAssistantMarkdownDebugWindow.tsx -> ../aidream/apps/shared/chat/src/window-panels/windows/agents/AgentAssistantMarkdownDebugWindow.tsx
-features/window-panels/windows/agents/AgentDebugWindow.tsx -> ../aidream/apps/shared/chat/src/window-panels/windows/agents/AgentDebugWindow.tsx
 features/window-panels/windows/agents/AgentMemoryWindow.tsx -> ../aidream/apps/shared/chat/src/window-panels/windows/agents/AgentMemoryWindow.tsx
 features/window-panels/windows/agents/AgentRunHistoryWindow.tsx -> ../aidream/apps/shared/chat/src/window-panels/windows/agents/AgentRunHistoryWindow.tsx
 features/window-panels/windows/agents/AgentRunWindow.tsx -> ../aidream/apps/shared/chat/src/window-panels/windows/agents/AgentRunWindow.tsx
