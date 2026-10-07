@@ -27,7 +27,8 @@ export type SearchEngineIndexedType =
   | "learn_doc"
   | "note"
   | "message_template"
-  | "record";
+  | "record"
+  | "document";
 
 export const SEARCH_ENGINE_INDEXED_TYPES: ReadonlySet<string> = new Set<SearchEngineIndexedType>([
   "pc_episode",
@@ -41,6 +42,7 @@ export const SEARCH_ENGINE_INDEXED_TYPES: ReadonlySet<string> = new Set<SearchEn
   "note",
   "message_template",
   "record",
+  "document",
 ]);
 
 /** Next.js `metadata.robots` for a page search engines must not list. */
@@ -105,6 +107,10 @@ export function recordCandidatesForPath(
   }
   if (seg[0] === "p" && seg.length === 2) {
     return [{ type: "app", key: seg[1] }];
+  }
+  if (seg[0] === "site" && seg.length === 2) {
+    // A Spaces page published to the web (Notion Publish), by its link or id.
+    return [{ type: "document", key: seg[1] }];
   }
   if (seg[0] === "canvas" && seg[1] === "shared" && seg.length === 3) {
     return [{ type: "shared_canvas_item", key: seg[2] }];

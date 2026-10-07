@@ -22591,6 +22591,7 @@ export type Database = {
           published_to_web_at: string | null
           published_to_web_by: string | null
           sealed_at: string | null
+          search_engine_indexed: boolean | null
           shown_to: Database["platform"]["Enums"]["shown_to"] | null
           slug: string | null
           source_hash: string | null
@@ -22601,6 +22602,8 @@ export type Database = {
           updated_by: string | null
           version: number
           visibility: Database["platform"]["Enums"]["visibility"]
+          web_allow_duplicate: boolean
+          web_include_sub_pages: boolean
           word_count: number
         }
         Insert: {
@@ -22633,6 +22636,7 @@ export type Database = {
           published_to_web_at?: string | null
           published_to_web_by?: string | null
           sealed_at?: string | null
+          search_engine_indexed?: boolean | null
           shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           slug?: string | null
           source_hash?: string | null
@@ -22643,6 +22647,8 @@ export type Database = {
           updated_by?: string | null
           version?: number
           visibility: Database["platform"]["Enums"]["visibility"]
+          web_allow_duplicate?: boolean
+          web_include_sub_pages?: boolean
           word_count?: number
         }
         Update: {
@@ -22675,6 +22681,7 @@ export type Database = {
           published_to_web_at?: string | null
           published_to_web_by?: string | null
           sealed_at?: string | null
+          search_engine_indexed?: boolean | null
           shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           slug?: string | null
           source_hash?: string | null
@@ -22685,6 +22692,8 @@ export type Database = {
           updated_by?: string | null
           version?: number
           visibility?: Database["platform"]["Enums"]["visibility"]
+          web_allow_duplicate?: boolean
+          web_include_sub_pages?: boolean
           word_count?: number
         }
         Relationships: [
@@ -22948,10 +22957,15 @@ export type Database = {
         }
         Returns: undefined
       }
+      _space_on_web: {
+        Args: { d: Database["content"]["Tables"]["document"]["Row"] }
+        Returns: boolean
+      }
       _space_projection: {
         Args: { p_snapshot: Json; p_title: string }
         Returns: string
       }
+      _space_tree_ids: { Args: { p_space_id: string }; Returns: string[] }
       _write_came_through: { Args: { p_doors: string[] }; Returns: boolean }
       annotation_create: {
         Args: {
@@ -23122,6 +23136,10 @@ export type Database = {
         }
         Returns: string
       }
+      space_duplicate_published: {
+        Args: { p_key: string; p_organization_id: string }
+        Returns: string
+      }
       space_list: {
         Args: { p_include_archived?: boolean }
         Returns: {
@@ -23136,6 +23154,17 @@ export type Database = {
           updated_at: string
           version: number
         }[]
+      }
+      space_public_view: { Args: { p_key: string }; Returns: Json }
+      space_publish: {
+        Args: {
+          p_allow_duplicate?: boolean
+          p_include_sub_pages?: boolean
+          p_published?: boolean
+          p_slug?: string
+          p_space_id: string
+        }
+        Returns: Json
       }
       space_save: {
         Args: {
@@ -23176,6 +23205,7 @@ export type Database = {
           published_to_web_at: string | null
           published_to_web_by: string | null
           sealed_at: string | null
+          search_engine_indexed: boolean | null
           shown_to: Database["platform"]["Enums"]["shown_to"] | null
           slug: string | null
           source_hash: string | null
@@ -23186,6 +23216,8 @@ export type Database = {
           updated_by: string | null
           version: number
           visibility: Database["platform"]["Enums"]["visibility"]
+          web_allow_duplicate: boolean
+          web_include_sub_pages: boolean
           word_count: number
         }
         SetofOptions: {
@@ -23262,6 +23294,7 @@ export type Database = {
           published_to_web_at: string | null
           published_to_web_by: string | null
           sealed_at: string | null
+          search_engine_indexed: boolean | null
           shown_to: Database["platform"]["Enums"]["shown_to"] | null
           slug: string | null
           source_hash: string | null
@@ -23272,6 +23305,8 @@ export type Database = {
           updated_by: string | null
           version: number
           visibility: Database["platform"]["Enums"]["visibility"]
+          web_allow_duplicate: boolean
+          web_include_sub_pages: boolean
           word_count: number
         }
         SetofOptions: {
@@ -23353,6 +23388,7 @@ export type Database = {
           published_to_web_at: string | null
           published_to_web_by: string | null
           sealed_at: string | null
+          search_engine_indexed: boolean | null
           shown_to: Database["platform"]["Enums"]["shown_to"] | null
           slug: string | null
           source_hash: string | null
@@ -23363,6 +23399,8 @@ export type Database = {
           updated_by: string | null
           version: number
           visibility: Database["platform"]["Enums"]["visibility"]
+          web_allow_duplicate: boolean
+          web_include_sub_pages: boolean
           word_count: number
         }
         SetofOptions: {
@@ -23408,6 +23446,7 @@ export type Database = {
           published_to_web_at: string | null
           published_to_web_by: string | null
           sealed_at: string | null
+          search_engine_indexed: boolean | null
           shown_to: Database["platform"]["Enums"]["shown_to"] | null
           slug: string | null
           source_hash: string | null
@@ -23418,6 +23457,8 @@ export type Database = {
           updated_by: string | null
           version: number
           visibility: Database["platform"]["Enums"]["visibility"]
+          web_allow_duplicate: boolean
+          web_include_sub_pages: boolean
           word_count: number
         }
         SetofOptions: {
@@ -23459,6 +23500,7 @@ export type Database = {
           published_to_web_at: string | null
           published_to_web_by: string | null
           sealed_at: string | null
+          search_engine_indexed: boolean | null
           shown_to: Database["platform"]["Enums"]["shown_to"] | null
           slug: string | null
           source_hash: string | null
@@ -23469,6 +23511,8 @@ export type Database = {
           updated_by: string | null
           version: number
           visibility: Database["platform"]["Enums"]["visibility"]
+          web_allow_duplicate: boolean
+          web_include_sub_pages: boolean
           word_count: number
         }
         SetofOptions: {
