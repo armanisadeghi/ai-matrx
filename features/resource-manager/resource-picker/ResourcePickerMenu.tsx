@@ -42,6 +42,7 @@ import {
 } from "./resource-picker-menu-items";
 import { useRunControlCounts } from "./useRunControlCounts";
 import type { Resource } from "@ai-matrx/chat/agents/resources/types";
+import { noteResourceData, taskResourceData } from "./resource-adapters";
 import { useKnowledgeAttachSearch } from "./useKnowledgeAttachSearch";
 import { useAttachedFileIds } from "@ai-matrx/chat/agents/components/inputs/resources/useAttachedFileIds";
 
@@ -325,7 +326,7 @@ export function ResourcePickerMenu({
         <NotesResourcePicker
           onBack={goBack}
           onSelect={(note) => {
-            void selectOne({ type: "note", data: note });
+            void selectOne({ type: "note", data: noteResourceData(note) });
           }}
         />
       );
@@ -336,7 +337,11 @@ export function ResourcePickerMenu({
         <TasksResourcePicker
           onBack={goBack}
           onSelect={(selection) => {
-            void selectOne(selection);
+            void selectOne(
+              selection.type === "task"
+                ? { type: "task", data: taskResourceData(selection.data) }
+                : selection,
+            );
           }}
         />
       );

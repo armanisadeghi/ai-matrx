@@ -18,6 +18,7 @@ import { Plus } from "lucide-react";
 import { MatrxDataTable } from "@ai-matrx/design-system/data-table";
 import type { MatrxColumnDef } from "@ai-matrx/design-system/data-table/types";
 import { Button } from "@ai-matrx/design-system/controls";
+import { storedMandateKey } from "@ai-matrx/agents/mandates";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { readOf } from "@/components/read-state/ReadGate";
 import { outcomeChip, verdictChip } from "@/components/mardown-display/blocks/agent-factory-kinds/AgentFactoryKindBlocks";
@@ -77,7 +78,7 @@ export function FactoryBuildsPage() {
       cell: (r) =>
         r.mandateKey ? (
           <span className="truncate font-mono type-secondary font-medium" title={r.name ?? undefined}>
-            {mandateDisplayName(r.mandateKey)}
+            {mandateDisplayName(storedMandateKey(r.mandateKey))}
           </span>
         ) : (
           <span className="type-secondary text-muted-foreground">New agent</span>

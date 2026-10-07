@@ -1,5 +1,5 @@
 /**
- * Remount safety — work items: note, chat, file.
+ * Remount safety — work items: note, chat, agent form, file.
  *
  * SUT: each type's `Body` (and surface `Host`) from `items/catalog.ts`,
  * mounted as the board mounts a tile (`remount-safety/harness.tsx`), over the
@@ -118,6 +118,28 @@ remountType(
     expectRemountSafe(
       r,
       { draft: DRAFT, reply: true, saved: { kind: "entity", entity: "chat", id: CONVERSATION_ID } },
+      [/^chat\.conversation$/, /^chat\.message$/, /^get_cx_conversation_bundle$/],
+    ),
+);
+
+// Break: the agent-form tile relaunches or re-resumes its run on wake, loses the
+// shaped reply, or moves off the saved run. Its record is the run's conversation.
+remountType(
+  "agent-form",
+  () =>
+    runCycle(type("agent-form"), { kind: "entity", entity: "agent-form", id: CONVERSATION_ID }, {
+      title: "Rent increase notice for Unit 4B",
+      prepare: seedChat,
+      loadMs: 1000,
+      kept: (tile) => ({
+        reply: (tile.container.textContent ?? "").includes(CHAT_REPLY),
+        saved: tile.source(),
+      }),
+    }),
+  (r) =>
+    expectRemountSafe(
+      r,
+      { reply: true, saved: { kind: "entity", entity: "agent-form", id: CONVERSATION_ID } },
       [/^chat\.conversation$/, /^chat\.message$/, /^get_cx_conversation_bundle$/],
     ),
 );

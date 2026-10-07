@@ -74,7 +74,10 @@ import { useIdeContextSync } from "../hooks/useIdeContextSync";
 import { useSmartCodeEditor } from "../hooks/useSmartCodeEditor";
 import { CodeEditorHistoryPanel } from "./parts/CodeEditorHistoryPanel";
 import { AgentRunnerColumn } from "./parts/AgentRunnerColumn";
-import { CodeOrDiffColumn } from "./parts/CodeOrDiffColumn";
+import {
+  CodeOrDiffColumn,
+  type SmartCodeEditorMonaco,
+} from "./parts/CodeOrDiffColumn";
 import { FilesPanel } from "./parts/FilesPanel";
 import { TerminalPlaceholder } from "./parts/TerminalPlaceholder";
 import { SMART_CODE_EDITOR_SURFACE_KEY } from "../constants";
@@ -507,9 +510,9 @@ export function SmartCodeEditor({
   // every staged handler before the first confirm dialog is answered, so a
   // handler that read a render-closure snapshot could replace a range the user
   // has since moved off.
-  const monacoRef = useRef<MonacoEditorNs.IStandaloneCodeEditor | null>(null);
+  const monacoRef = useRef<SmartCodeEditorMonaco | null>(null);
   const handleEditorMount = useCallback(
-    (ed: MonacoEditorNs.IStandaloneCodeEditor | null) => {
+    (ed: SmartCodeEditorMonaco | null) => {
       monacoRef.current = ed;
     },
     [],

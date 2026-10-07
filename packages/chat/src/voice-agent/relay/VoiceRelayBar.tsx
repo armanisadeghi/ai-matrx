@@ -42,8 +42,14 @@ export interface VoiceRelayBarProps {
   /**
    * `bar` draws the standalone section chrome. `toolbar` embeds the same
    * controls in an existing toolbar without adding another layout row.
+   * `composer` is the Smart Agent Input's "Live audio": idle it is ONE icon
+   * button beside the mic (no word, no extra width); pressed, the same live
+   * controls as `toolbar` (Arman, 2026-10-07: one voice control per surface).
    */
-  variant?: "bar" | "toolbar";
+  variant?: "bar" | "toolbar" | "composer";
+  /** Controlled on/off (the composer's + menu turns it on when the row is folded). */
+  enabled?: boolean;
+  onEnabledChange?: (enabled: boolean) => void;
 }
 
 function ActiveVoiceRelay({
@@ -53,7 +59,8 @@ function ActiveVoiceRelay({
   surfaceKey,
   sourceFeature,
   questionPacing,
-}: VoiceRelayBarProps & { communicatorAgentId: string }) {
+  onEnd,
+}: VoiceRelayBarProps & { communicatorAgentId: string; onEnd?: () => void }) {
   const relay = useVoiceRelaySession({
     communicatorAgentId,
     primaryAgentId,
@@ -68,7 +75,11 @@ function ActiveVoiceRelay({
     <>
       <Button
         variant={live ? "danger" : "primary"}
-        onClick={relay.toggle}
+        onClick={() => {
+          relay.toggle();
+          // Ending voice puts the composer's control back to its one icon.
+          if (live) onEnd?.();
+        }}
       >
         {live ? (
           <>
@@ -100,13 +111,31 @@ function ActiveVoiceRelay({
 }
 
 export function VoiceRelayBar(props: VoiceRelayBarProps) {
-  const [enabled, setEnabled] = useState(false);
-  const communicator = useMandate(VOICE_COMMUNICATOR_MANDATE_KEY);
+  const [ownEnabled, setOwnEnabled] = useState(false);
+  const enabled = props.enabled ?? ownEnabled;
+  const setEnabled = (next: boolean) => {
+    if (props.enabled === undefined) setOwnEnabled(next);
+    props.onEnabledChange?.(next);
+  };
+
+  // Idle costs nothing: the Communicator is resolved only once voice is on,
+  // so a page full of composers never fetches it.
+  if (!enabled && props.variant === "composer") {
+    return (
+      <Button
+        variant="quiet"
+        icon={<AudioLines />}
+        aria-label="Live audio"
+        title="Live audio — talk and hear the answer"
+        onClick={() => setEnabled(true)}
+      />
+    );
+  }
 
   return (
     <div
       className={
-        props.variant === "toolbar"
+        props.variant === "toolbar" || props.variant === "composer"
           ? "flex items-center gap-1"
           : "flex items-center gap-2 border-b border-border px-3 py-1.5"
       }
@@ -114,22 +143,29 @@ export function VoiceRelayBar(props: VoiceRelayBarProps) {
       {!enabled ? (
         <Button icon={<AudioLines />} variant="quiet" onClick={() => setEnabled(true)}> Voice
         </Button>
-      ) : communicator.loading ? (
-        <span className="text-xs text-muted-foreground">
-          Connecting the voice layer…
-        </span>
-      ) : communicator.error || !communicator.mandate ? (
-        // An unresolvable mandate REFUSES loudly — no fallback persona, ever.
-        <span className="text-xs text-destructive">
-          Voice is unavailable: {communicator.error ?? "no Communicator bound"}
-          <ErrorAlchemyMenu error={communicator.error} />
-        </span>
       ) : (
-        <ActiveVoiceRelay
+        <EnabledVoiceRelay
           {...props}
-          communicatorAgentId={communicator.mandate.agentId}
+          onEnd={props.variant === "composer" ? () => setEnabled(false) : undefined}
         />
       )}
     </div>
   );
+}
+
+function EnabledVoiceRelay(props: VoiceRelayBarProps & { onEnd?: () => void }) {
+  const communicator = useMandate(VOICE_COMMUNICATOR_MANDATE_KEY);
+  if (communicator.loading) {
+    return <span className="text-xs text-muted-foreground">Connecting the voice layer…</span>;
+  }
+  if (communicator.error || !communicator.mandate) {
+    // An unresolvable mandate REFUSES loudly — no fallback persona, ever.
+    return (
+      <span className="text-xs text-destructive">
+        Voice is unavailable: {communicator.error ?? "no Communicator bound"}
+        <ErrorAlchemyMenu error={communicator.error} />
+      </span>
+    );
+  }
+  return <ActiveVoiceRelay {...props} communicatorAgentId={communicator.mandate.agentId} />;
 }

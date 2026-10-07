@@ -40,9 +40,9 @@ beforeEach(() => {
   root = createRoot(host);
   act(() => {
     root.render(
-      <NonEditableContextMenu sourceFeature="transcript">
+      <NonEditableContextMenu sourceFeature="transcription">
         <section data-testid="transcript">
-          <NonEditableContextMenu sourceFeature="message">
+          <NonEditableContextMenu sourceFeature="messages">
             <article data-testid="message">
               <p data-testid="para">Pack day</p>
             </article>
@@ -69,13 +69,13 @@ const rightClick = (el: Element) => {
 
 it("a right-click on the message opens the message's menu only", () => {
   rightClick(host.querySelector('[data-testid="para"]')!);
-  expect(openMenus()).toEqual(["message"]);
+  expect(openMenus()).toEqual(["messages"]);
 });
 
 it("never opens the outer menu: a right-click on the open menu keeps the one menu, with no native menu over it", () => {
   rightClick(host.querySelector('[data-testid="para"]')!);
-  const event = rightClick(document.querySelector('[data-testid="row-message"]')!);
-  expect(openMenus()).toEqual(["message"]);
+  const event = rightClick(document.querySelector('[data-testid="row-messages"]')!);
+  expect(openMenus()).toEqual(["messages"]);
   expect(event.defaultPrevented).toBe(true);
 });
 
@@ -85,7 +85,7 @@ it("a portal that is not a menu (a dialog opened from inside the region) gets no
   }
   act(() => {
     root.render(
-      <NonEditableContextMenu sourceFeature="transcript">
+      <NonEditableContextMenu sourceFeature="transcription">
         <section>
           <Dialog />
         </section>

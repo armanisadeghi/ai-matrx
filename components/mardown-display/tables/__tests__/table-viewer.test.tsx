@@ -24,7 +24,7 @@ jest.mock("@ai-matrx/kit/media-query", () => ({ ...jest.requireActual("@ai-matrx
 jest.mock("@ai-matrx/rich-content/levels/RichContent", () => ({
   RichContent: ({ source }: { source: string }) => <span>{source}</span>,
 }));
-jest.mock("../../specimen/SpecimenContext", () => ({ useSpecimenMode: () => false }));
+jest.mock("@ai-matrx/rich-content/display/specimen/SpecimenContext", () => ({ useSpecimenMode: () => false }));
 jest.mock("@ai-matrx/rich-content/display/blocks/chart/TableChart", () => ({
   ChartThisButton: () => <button aria-label="Chart this">Chart this</button>,
   TableChartPanel: () => null,

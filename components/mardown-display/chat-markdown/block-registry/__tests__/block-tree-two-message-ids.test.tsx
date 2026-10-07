@@ -55,6 +55,8 @@ jest.mock("@/features/canvas/artifact-types/artifact-renderers", () => ({
 jest.mock("@ai-matrx/rich-content/display/chat-markdown/block-registry/BlockComponentRegistry", () => ({
   BlockComponents: {},
   LoadingComponents: {},
+  registerBlockComponents: () => undefined,
+  registerLoadingComponents: () => undefined,
 }));
 
 jest.mock("@/features/content-ir/records/KindRecordChrome", () => ({

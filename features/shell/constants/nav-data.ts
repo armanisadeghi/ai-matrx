@@ -828,6 +828,7 @@ export const primaryNavItems: ShellNavItem[] = [
             guestHidden: true,
           },
           { label: "Chat", href: "/board?add=chat", iconName: "MessagesSquare", group: "Add to your board", actionItem: true, guestHidden: true },
+          { label: "Agent form", href: "/board?add=agent-form", iconName: "Webhook", group: "Add to your board", actionItem: true, guestHidden: true },
           { label: "Note", href: "/board?add=note", iconName: "StickyNote", group: "Add to your board", actionItem: true, guestHidden: true },
           { label: "File", href: "/board?add=file", iconName: "File", group: "Add to your board", actionItem: true, guestHidden: true },
           { label: "Document", href: "/board?add=udt_document", iconName: "FileText", group: "Add to your board", actionItem: true, guestHidden: true },

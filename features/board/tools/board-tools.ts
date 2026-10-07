@@ -26,6 +26,7 @@ export type BoardTileKindInput = (typeof BOARD_TILE_KINDS)[number];
  */
 export const BOARD_ADDABLE_ITEM_KEYS = [
   "chat",
+  "agent-form",
   "note",
   "file",
   "udt_document",

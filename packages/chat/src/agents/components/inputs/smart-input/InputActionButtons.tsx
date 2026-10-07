@@ -16,7 +16,6 @@ import React, { useCallback, useState } from "react";
 import {
   CornerDownLeft,
   Braces,
-  AudioLines,
   Loader2,
   Square,
 } from "lucide-react";
@@ -25,7 +24,9 @@ import { Tooltip,
   TooltipTrigger,
 } from "@ai-matrx/design-system";
 import { useAppSelector, useAppDispatch } from "../../../../store/hooks";
-import { announceComingSoon } from "@ai-matrx/chat/host/ui-slots";
+import { selectAgentIdFromInstance } from "../../../redux/execution-system/conversations/conversations.selectors";
+import { VoiceRelayBar } from "../../../../voice-agent/relay/VoiceRelayBar";
+import type { SourceFeature } from "@ai-matrx/agents/generated/source-attribution";
 import { AgentMicrophoneButton } from "./AgentMicrophoneButton";
 import { RunControlsMenu } from "./RunControlsMenu";
 import { ContextDocsMenu } from "./ContextDocsMenu";
@@ -136,6 +137,8 @@ interface InputActionButtonsProps {
      * Absent = Full's button row inside the card.
      */
     part?: "send" | "controls" | "launcher";
+    /** Attribution for a Live audio session started here. Absent = "chat". */
+    sourceFeature?: SourceFeature;
   };
 }
 
@@ -154,6 +157,8 @@ export function InputActionButtons({
 }: InputActionButtonsProps) {
   const dispatch = useAppDispatch();
   const [voiceBusy, setVoiceBusy] = useState(false);
+  const [liveAudioOn, setLiveAudioOn] = useState(false);
+  const agentId = useAppSelector(selectAgentIdFromInstance(conversationId)) ?? null;
 
   // Selectors. Executing state is surface-aware: under the autoclear split the
   // run lives on the surface's display conversation while this toolbar is bound
@@ -198,16 +203,22 @@ export function InputActionButtons({
     dispatch(cancelExecution(executingConversationId ?? conversationId));
   }, [executingConversationId, conversationId, dispatch]);
 
-  const liveAudioButton = showSendButton ? (
-    <InputButton
-      icon={AudioLines}
-      tooltip="Live audio"
-      // A button that promises a live voice session and does literally
-      // nothing is worse than no button. Until the session exists it
-      // keeps the tracked promise instead (lib/coming-soon/registry.ts).
-      onClick={() => void announceComingSoon("chat.live-audio")}
-    />
-  ) : null;
+  // Live audio IS the platform's voice layer (talk, hear the answer) on THIS
+  // conversation — the same control Masterwork used to add beside it, so a
+  // surface never shows two voice buttons (Arman, 2026-10-07). Idle it is one
+  // icon; once on, it shows its live controls even when the row is folded.
+  const liveAudioButton =
+    showSendButton && agentId ? (
+      <VoiceRelayBar
+        variant="composer"
+        enabled={liveAudioOn}
+        onEnabledChange={setLiveAudioOn}
+        primaryAgentId={agentId}
+        conversationId={conversationId}
+        surfaceKey={surfaceKey ?? `composer:${conversationId}`}
+        sourceFeature={composer.sourceFeature ?? "chat"}
+      />
+    ) : null;
 
   // A form of variables stays reachable in every arrangement (never stranded).
   const variablesToggle =
@@ -233,7 +244,8 @@ export function InputActionButtons({
         surfaceKey,
         folded: composer.folded,
         // Compact's live audio leaves the row when narrow and rides +.
-        foldLiveAudio: composer.folded && composer.part === "controls",
+        foldLiveAudio: composer.folded && composer.part === "controls" && Boolean(liveAudioButton),
+        onLiveAudio: () => setLiveAudioOn(true),
       }}
     />
   );
@@ -296,7 +308,7 @@ export function InputActionButtons({
           <DesktopPresenceIndicator conversationId={conversationId} />
           {variablesToggle}
           {micGroup}
-          {composer.folded ? null : liveAudioButton}
+          {composer.folded && !liveAudioOn ? null : liveAudioButton}
           {composer.leading}
         </div>
         <div className="flex min-w-0 items-center gap-1.5">

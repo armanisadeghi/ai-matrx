@@ -117,6 +117,7 @@
     "components/mardown-display/markdown-classification/processors/utils/gfm-table-vectors",
     "components/mardown-display/markdown-classification/processors/utils/table-data-parser",
     "components/mardown-display/markdown-classification/processors/utils/thinking-parser",
+    "components/mardown-display/specimen/SpecimenContext",
     "components/mardown-display/tables/MarkdownTable",
     "components/mardown-display/tables/MarkdownTableScrollArea",
     "components/mardown-display/tables/SendToGoogleSheetButton",

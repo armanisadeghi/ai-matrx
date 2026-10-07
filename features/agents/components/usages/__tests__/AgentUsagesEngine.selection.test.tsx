@@ -174,7 +174,7 @@ describe("AgentUsagesEngine selection", () => {
 
   it("keeps selection controlled for immutable rows and only exposes moves for eligible targets", () => {
     renderToStaticMarkup(<AgentUsagesEngine agentId="agent-1" mode="user" />);
-    if (!tableProps?.selection || tableProps.selection === false)
+    if (!tableProps?.selection)
       throw new Error("Expected controlled selection");
     expect(tableProps.selection.isRowSelectable).toBeUndefined();
     expect(tableProps.selection.selectedIds).toEqual([]);
@@ -182,10 +182,14 @@ describe("AgentUsagesEngine selection", () => {
     const rows = tableProps.data;
     const immutableOnly = tableProps.selection.actions?.(
       rows.filter((row) => row.id.includes("immutable")),
+      rows.filter((row) => row.id.includes("immutable")).map((row) => row.id),
     );
     expect(renderToStaticMarkup(<>{immutableOnly}</>)).not.toContain("Move ");
 
-    const mixed = tableProps.selection.actions?.(rows);
+    const mixed = tableProps.selection.actions?.(
+      rows,
+      rows.map((row) => row.id),
+    );
     expect(renderToStaticMarkup(<>{mixed}</>)).toContain("Move 1 mandate pin");
     expect(renderToStaticMarkup(<>{mixed}</>)).toContain("Move 1 usage");
     expect(renderToStaticMarkup(<>{mixed}</>)).not.toContain(

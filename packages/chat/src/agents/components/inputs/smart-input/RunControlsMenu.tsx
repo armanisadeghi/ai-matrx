@@ -95,6 +95,8 @@ export interface RunControlsMenuProps {
     folded?: boolean;
     /** Compact and narrow: live audio lives in the + menu too. */
     foldLiveAudio?: boolean;
+    /** The + menu's Live audio row turns the composer's voice on. */
+    onLiveAudio?: () => void;
   };
 }
 
@@ -206,6 +208,7 @@ export function RunControlsMenu({
           size={composer.size}
           folded={composer.folded}
           foldLiveAudio={composer.foldLiveAudio}
+          onLiveAudio={composer.onLiveAudio}
           side={side}
           surfaceKey={composer.surfaceKey}
           onRequestInputExpand={onRequestInputExpand}
@@ -237,6 +240,7 @@ export function RunControlsMenu({
         size={composer.size}
         folded={composer.folded}
           foldLiveAudio={composer.foldLiveAudio}
+          onLiveAudio={composer.onLiveAudio}
         side={side}
         surfaceKey={composer.surfaceKey}
         onRequestInputExpand={onRequestInputExpand}

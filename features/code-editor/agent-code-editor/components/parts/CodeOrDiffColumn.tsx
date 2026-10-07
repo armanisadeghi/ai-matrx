@@ -47,8 +47,36 @@ import type { CodeFile } from "@/features/code-editor/multi-file-core/types";
 import SmallCodeEditor from "@ai-matrx/rich-content/code-block/SmallCodeEditor";
 import type { editor as MonacoEditorNs } from "monaco-editor";
 
-/** The live Monaco instance, as handed back by `SmallCodeEditor`'s mount hook. */
-type MonacoEditorInstance = MonacoEditorNs.IStandaloneCodeEditor;
+/** The exact Monaco capabilities Smart Code Editor consumes from its host. */
+export type SmartCodeEditorMonaco = Pick<
+  MonacoEditorNs.IStandaloneCodeEditor,
+  "getModel" | "getSelection" | "getPosition"
+>;
+
+function isSmartCodeEditorMonaco(editor: unknown): editor is SmartCodeEditorMonaco {
+  return (
+    typeof editor === "object" &&
+    editor !== null &&
+    "getModel" in editor &&
+    typeof editor.getModel === "function" &&
+    "getSelection" in editor &&
+    typeof editor.getSelection === "function" &&
+    "getPosition" in editor &&
+    typeof editor.getPosition === "function"
+  );
+}
+
+export function forwardSmartCodeEditorMount(
+  editor: unknown,
+  onEditorMount?: (editor: SmartCodeEditorMonaco | null) => void,
+): void {
+  if (editor !== null && !isSmartCodeEditorMonaco(editor)) {
+    throw new TypeError(
+      "SmallCodeEditor mounted a host editor without the Monaco buffer, selection, and cursor methods required by Smart Code Editor.",
+    );
+  }
+  onEditorMount?.(editor);
+}
 
 // ─── Props ────────────────────────────────────────────────────────────────────
 
@@ -64,7 +92,7 @@ interface CodeOrDiffColumnProps {
   // Editor content
   onContentChange: (value: string | undefined) => void;
   /** Receives the live Monaco instance on mount (and `null` on unmount). */
-  onEditorMount?: (editor: MonacoEditorInstance | null) => void;
+  onEditorMount?: (editor: SmartCodeEditorMonaco | null) => void;
   editorWrapperRef: React.Ref<HTMLDivElement>;
   editorHeight: string | undefined;
   editorPath: string | undefined;
@@ -232,7 +260,7 @@ export function CodeOrDiffColumn({
               language={monacoLanguage}
               initialCode={currentFile.content}
               onChange={onContentChange}
-              onEditorMount={onEditorMount}
+              onEditorMount={(editor) => forwardSmartCodeEditorMount(editor, onEditorMount)}
               mode={mode}
               height={editorHeight}
               readOnly={

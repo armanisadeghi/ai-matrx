@@ -110,7 +110,6 @@ import {
   ComposerMenuSwitchRow,
   ComposerSubmenu,
 } from "./ComposerMenu";
-import { announceComingSoon } from "@ai-matrx/chat/host/ui-slots";
 import { ComposerMenuSheet } from "./ComposerMenuSheet";
 import { composerShows } from "./composer-mode-visibility";
 import type { ComposerMode, ComposerSize } from "./composer-types";
@@ -143,6 +142,8 @@ interface ComposerPlusMenuProps {
   folded?: boolean;
   /** Compact and narrow: live audio lives here too. */
   foldLiveAudio?: boolean;
+  /** Turns the composer's Live audio on (the row is folded, so it lives here). */
+  onLiveAudio?: () => void;
   side: "top" | "bottom";
   /** The host's surface key — auto-clear keeps its display slot in step. */
   surfaceKey?: string;
@@ -161,6 +162,7 @@ export function ComposerPlusMenu({
   mode,
   folded = false,
   foldLiveAudio = false,
+  onLiveAudio,
   side,
   onRequestInputExpand,
   presentation = "popover",
@@ -458,7 +460,7 @@ export function ComposerPlusMenu({
                 label="Live audio"
                 onClick={() => {
                   close();
-                  void announceComingSoon("chat.live-audio");
+                  onLiveAudio?.();
                 }}
               />
             ) : null}

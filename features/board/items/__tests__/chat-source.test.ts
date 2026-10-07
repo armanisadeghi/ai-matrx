@@ -2,7 +2,7 @@
 // reload the tile reopened it and showed "Couldn't load this conversation" forever. The old
 // behaviour (save every new id at once) fails the first two cases.
 
-import { chatSource, chatSourceToSave } from "../work-sources";
+import { agentFormSource, agentFormSourceToSave, chatSource, chatSourceToSave } from "../work-sources";
 
 const ID = "7b1c4a52-1f0e-4c43-9a61-0d2f9c3e8a10";
 
@@ -50,5 +50,27 @@ describe("chatSourceToSave", () => {
       chosenAgentId: "agent-1",
     });
     expect(next).toEqual(chatSource(null, "agent-1"));
+  });
+});
+
+// The agent-form tile follows the same rule, and keeps its agent and inputs layout through a save.
+
+describe("agentFormSourceToSave", () => {
+  const base = { savedId: null, agentId: "agent-1", chosenAgentId: "agent-1", inputStyle: "cards" };
+
+  it("never saves the id of a run the server does not have", () => {
+    expect(agentFormSourceToSave({ ...base, conversationId: ID, serverHasIt: false })).toBeNull();
+  });
+
+  it("saves the run once sent, as an agent form with its agent and layout", () => {
+    expect(agentFormSourceToSave({ ...base, conversationId: ID, serverHasIt: true })).toEqual(
+      agentFormSource(ID, "agent-1", "cards"),
+    );
+  });
+
+  it("moves to the new run after Run again, and forgets the old id while it is unsent", () => {
+    const next = agentFormSourceToSave({ ...base, savedId: "old-run", conversationId: ID, serverHasIt: false });
+    expect(next).toEqual(agentFormSource(null, "agent-1", "cards"));
+    expect(next?.entity).toBe("agent-form");
   });
 });

@@ -115,7 +115,7 @@ jest.mock(
             : undefined,
       },
     );
-    return { __esModule: true, BlockComponents: proxy, LoadingComponents: proxy };
+    return { __esModule: true, BlockComponents: proxy, LoadingComponents: proxy, registerBlockComponents: () => undefined, registerLoadingComponents: () => undefined };
   },
 );
 // A raw JSON card must be VISIBLE to this test, so the code card draws its code.

@@ -47,7 +47,7 @@ import {
   SpecimenBanner,
   resolveSpecimenMode,
   type SpecimenMode,
-} from "@/components/mardown-display/specimen/SpecimenContext";
+} from "@ai-matrx/rich-content/display/specimen/SpecimenContext";
 import type {
   ContentSource,
   RichDocumentAction,
@@ -109,7 +109,7 @@ export interface RichDocumentProps {
    * the actions inside the content itself (table export / workbook / Google
    * Sheet / edit / open-in-window), and prints the specimen banner in their
    * place. Pass `true` for the default wording, or override the two lines.
-   * See components/mardown-display/specimen/SpecimenContext.tsx.
+   * See @ai-matrx/rich-content/display/specimen/SpecimenContext.tsx.
    */
   specimen?: boolean | Partial<SpecimenMode>;
   /**

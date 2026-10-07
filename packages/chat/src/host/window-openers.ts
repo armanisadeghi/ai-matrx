@@ -40,7 +40,7 @@ export interface OpenAgentIdWindowOptions {
   agentId?: string | null;
 }
 export type OpenAgentAdminFindUsagesWindowOptions = OpenAgentIdWindowOptions;
-export type OpenAgentCreateAppWindowOptions = OpenAgentIdWindowOptions;
+export type OpenAgentCreateAppWindowOptions = Record<string, never>;
 export type OpenAgentDataStorageWindowOptions = OpenAgentIdWindowOptions;
 export type OpenAgentFindUsagesWindowOptions = OpenAgentIdWindowOptions;
 export type OpenAgentInterfaceVariationsWindowOptions = OpenAgentIdWindowOptions;
@@ -245,7 +245,7 @@ export interface EditorPrimaryAction {
   variant?: "default" | "secondary" | "outline" | "destructive" | "ghost" | "link";
 }
 
-export interface OpenFullScreenMarkdownEditorOptions {
+interface OpenFullScreenMarkdownEditorOptionsBase {
   instanceId?: string;
   content?: string;
   mode?: unknown;
@@ -259,10 +259,27 @@ export interface OpenFullScreenMarkdownEditorOptions {
   showSaveButton?: boolean;
   showCopyButton?: boolean;
   primaryActions?: EditorPrimaryAction[];
-  onSave?: (content: string) => void | Promise<void>;
-  onAction?: (action: string, content: string) => void | Promise<void>;
-  onEvent?: (event: { type: "save"; content: string; action?: string }) => void | Promise<void>;
 }
+
+type OpenFullScreenMarkdownEditorHandlers =
+  | {
+      onSave: (content: string) => Promise<void>;
+      onAction?: never;
+      onEvent?: (event: { type: "save"; content: string; action?: string }) => void | Promise<void>;
+    }
+  | {
+      onSave?: never;
+      onAction: (action: string, content: string) => Promise<void>;
+      onEvent?: (event: { type: "save"; content: string; action?: string }) => void | Promise<void>;
+    }
+  | {
+      onSave?: undefined;
+      onAction?: undefined;
+      onEvent?: undefined;
+    };
+
+export type OpenFullScreenMarkdownEditorOptions =
+  OpenFullScreenMarkdownEditorOptionsBase & OpenFullScreenMarkdownEditorHandlers;
 
 export interface ChatFullScreenEditorHandle {
   instanceId: string;

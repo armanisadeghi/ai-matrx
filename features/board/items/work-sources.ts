@@ -65,6 +65,61 @@ export function chatAgentId(source: NodeSource): string | null {
   return agentId && agentId.trim() ? agentId : null;
 }
 
+// ── agent form ───────────────────────────────────────────────────────────────
+//
+// An agent run with no chat: the agent's inputs as a form, one Run, the reply
+// rendered as its shape. Each run is its own conversation (variables apply to a
+// conversation's first turn), so `id` is the LATEST run's conversation and "Run
+// again" moves the tile to a new one. `meta.agentId` is the agent; `meta.inputStyle`
+// is the tile's chosen inputs layout (a VariablesPanelStyle; default "form").
+
+export const AGENT_FORM_ENTITY = "agent-form";
+
+export function agentFormSource(
+  conversationId: string | null,
+  agentId: string | null,
+  inputStyle?: string | null,
+): EntitySource {
+  const meta: Record<string, string> = {};
+  if (agentId) meta.agentId = agentId;
+  if (inputStyle) meta.inputStyle = inputStyle;
+  return {
+    kind: "entity",
+    entity: AGENT_FORM_ENTITY,
+    id: conversationId,
+    ...(Object.keys(meta).length > 0 ? { meta } : {}),
+  };
+}
+
+export function agentFormAgentId(source: NodeSource): string | null {
+  if (!isEntity(source, AGENT_FORM_ENTITY)) return null;
+  const agentId = source.meta?.agentId;
+  return agentId && agentId.trim() ? agentId : null;
+}
+
+export function agentFormInputStyle(source: NodeSource): string | null {
+  if (!isEntity(source, AGENT_FORM_ENTITY)) return null;
+  return source.meta?.inputStyle?.trim() || null;
+}
+
+/**
+ * What an agent-form tile saves for the run it shows, or null to keep what it
+ * has — the chat tile's rule (`chatSourceToSave`): an unsent run is never saved
+ * by id, so a reload never reopens a conversation the server does not have.
+ */
+export function agentFormSourceToSave(input: {
+  conversationId: string;
+  serverHasIt: boolean;
+  savedId: string | null;
+  agentId: string | null;
+  chosenAgentId: string | null;
+  inputStyle: string | null;
+}): EntitySource | null {
+  const next = chatSourceToSave(input);
+  if (!next) return null;
+  return agentFormSource(next.id, next.meta?.agentId ?? null, input.inputStyle);
+}
+
 // ── note ─────────────────────────────────────────────────────────────────────
 //
 // A note tile moves through the notes feature's own lifecycle:
@@ -96,9 +151,12 @@ export function isNoteDraft(source: NodeSource): boolean {
 }
 
 /** A draft note started for this tile. */
-export function noteDraftSource(previous: NodeSource, noteId: string): EntitySource {
+export function noteDraftSource(previous: NodeSource, noteId: string, label?: string): EntitySource {
   const meta = isEntity(previous, "note") && previous.meta ? { ...previous.meta } : {};
   delete meta.seed;
+  // The name the person or agent gave the tile before the note had words: the draft starts with
+  // it (and starts again with it after a reload), so the tile never snaps back to "New Note".
+  if (label) meta.label = label;
   return { kind: "entity", entity: "note", id: noteId, meta: { ...meta, draft: DRAFT } };
 }
 
@@ -107,6 +165,7 @@ export function noteSource(previous: NodeSource, noteId: string): EntitySource {
   const meta = isEntity(previous, "note") && previous.meta ? { ...previous.meta } : {};
   delete meta.seed;
   delete meta.draft;
+  delete meta.label;
   return {
     kind: "entity",
     entity: "note",

@@ -326,20 +326,6 @@ const ENTITY_OVERLAY: Partial<Record<EntityTypeToken, EntityOverlay>> = {
     labelPlural: "Message Templates",
     hrefFor: (id) => `/chat/message-templates/${id}`,
   },
-  // Pick Lists / user lists (`/pick-lists`) — canonical token is pick_list
-  // (legacy names structured_list / picklist / udt_picklists / user_lists are dead).
-  pick_list: {
-    Icon: ListOrdered,
-    labelPlural: "Lists",
-    hrefFor: (id) => `/pick-lists/${id}`,
-  },
-  // The retired spelling, still carried by sources and references stored before the rename.
-  structured_list: {
-    Icon: ListOrdered,
-    labelPlural: "Lists",
-    hrefFor: (id) => `/pick-lists/${id}`,
-  },
-
   // ─── Sources ──────────────────────────────────────────────────────────────
   file: {
     Icon: FileText,

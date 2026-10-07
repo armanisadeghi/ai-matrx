@@ -57,7 +57,7 @@ jest.mock(
     { get: (target, prop) =>
       typeof prop === "string" ? (target as Record<string, unknown>)[prop] ?? stub(prop) : undefined },
   );
-  return { __esModule: true, BlockComponents: proxy, LoadingComponents: proxy };
+  return { __esModule: true, BlockComponents: proxy, LoadingComponents: proxy, registerBlockComponents: () => undefined, registerLoadingComponents: () => undefined };
 },
 );
 jest.mock("@/features/canvas/materialization/CodeBlockWithContextAttach", () => ({

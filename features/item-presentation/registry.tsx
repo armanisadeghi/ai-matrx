@@ -154,7 +154,8 @@ export type ItemOpenKind =
   | { kind: "note" }
   | { kind: "file" }
   | { kind: "pick_list" }
-  // Legacy read-only alias for pre-rename payloads (routes to the same opener).
+  // Legacy read-only aliases for pre-rename payloads (route to the same opener).
+  | { kind: "structured_list" }
   | { kind: "picklist" }
   // Wired as openers ship for these types (an agent is building them). Each
   // becomes one branch in `useOpenItemPresentation` + one `open` entry here.

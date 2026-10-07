@@ -57,6 +57,7 @@ describe("renderRulebookDocument", () => {
           requiredContextPolicyKeys: [],
           requiredOutputKeys: [],
           spillVariables: [],
+          autoContextDisabled: false,
         },
         { rulebook_document: doc },
       ),

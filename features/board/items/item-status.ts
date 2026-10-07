@@ -15,6 +15,7 @@ import type { NodeSource } from "../board/document";
 import type { ItemBasicValues, ItemStatus } from "./types";
 import { selectNoteById } from "@/features/notes/redux/selectors";
 import { selectTaskById } from "@/features/agent-context/redux/tasksSlice";
+import { selectTaskIsDirty } from "@/features/tasks/redux/taskUiSlice";
 import { CLOSED_TASK_STATUSES, TASK_STATUS_META, normalizeTaskStatus } from "@/features/tasks/constants/status";
 import { selectFileById } from "@/features/files/redux/selectors";
 import { selectMeetingEntry } from "@/features/meet/redux/meetingsSlice";
@@ -62,7 +63,11 @@ export function useTaskStatus(source: NodeSource, basics?: ItemBasicValues | nul
   const id = idOf(source);
   const live = useAppSelector((s: RootState) => (id ? selectTaskById(s, id)?.status : undefined));
   const liveDue = useAppSelector((s: RootState) => (id ? selectTaskById(s, id)?.due_date : undefined));
+  // Edits staged in the task (the person's own, or an agent's approved change) wait for Save, exactly
+  // as on the task's page: say so here, never the stale saved status.
+  const unsaved = useAppSelector((s: RootState) => (id ? selectTaskIsDirty(id)(s) : false));
   if (!id) return { tone: "attention", label: "Unsaved" };
+  if (unsaved) return { tone: "attention", label: "Unsaved" };
   // Not in the store (an overview the tile has not mounted for): the saved basics.
   const raw = live ?? basicText(basics, "active_task_status");
   const due = live !== undefined ? liveDue : basicText(basics, "active_task_due_date");

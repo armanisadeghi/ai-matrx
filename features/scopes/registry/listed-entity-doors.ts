@@ -180,7 +180,6 @@ const CENSUS = {
   plan_entity: "UNMEASURED",
   // platform.*
   assist: "UNMEASURED",
-  custom_entity_definition: "UNMEASURED",
   custom_field_definition: "UNMEASURED",
   custom_field_target: "UNMEASURED",
   platform_outcome_event: "UNMEASURED",

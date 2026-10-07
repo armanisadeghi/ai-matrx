@@ -1,3 +1,4 @@
+import type { SourceFeature } from "@ai-matrx/agents/generated/source-attribution";
 import type { AnyMandateKey } from "@ai-matrx/agents/mandates";
 import type { EditableContextMenuProps } from "../../../../../host/ui-slots";
 import type { ApplicationScope } from "../../../../types/scope.types";
@@ -104,4 +105,6 @@ export interface ComposerPresentation {
   maxInputHeightPx?: number;
   /** The right-click agent menu on the textarea. Absent = no menu. */
   textMenu?: ComposerTextMenu;
+  /** Who started a Live audio session here (attribution). Absent = "chat". */
+  sourceFeature?: SourceFeature;
 }

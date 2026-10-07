@@ -77,12 +77,6 @@ export function ListCard({
       contextData={{
         content: [list.list_name, list.description].filter(Boolean).join("\n"),
       }}
-      entity={{
-        type: "pick_list",
-        id: list.id,
-        title: list.list_name,
-        resourceType: "structured_list",
-      }}
     >
       <div
         ref={cardRef}

@@ -8,12 +8,13 @@ import { createRoot, type Root } from "react-dom/client";
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
-jest.mock("@/components/official/structured-value/StructuredValueView", () => ({
-  __esModule: true,
-  default: ({ kind, note }: { kind?: string; note?: string }) => (
+jest.mock("@/components/official/structured-value/StructuredValueView", () => {
+  const Floor = ({ kind, note }: { kind?: string; note?: string }) => (
     <div data-route="floor" data-kind={kind} data-note={note} />
-  ),
-}));
+  );
+  // The engine reaches it through the app binding, which takes the named export.
+  return { __esModule: true, default: Floor, StructuredValueView: Floor };
+});
 jest.mock("@ai-matrx/rich-content/code-block/CodeBlock", () => ({
   __esModule: true,
   default: ({ code }: { code: string }) => <pre data-route="code">{code}</pre>,

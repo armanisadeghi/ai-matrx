@@ -47,7 +47,7 @@ import { ensureScopeTree } from "@/features/scopes/redux/thunks/ensureScopeTree"
 import { ensureConversationScopesOrAsk } from "@/features/scopes/redux/thunks/conversationScopeGate";
 import { useScopeTree } from "@/features/scopes/hooks/useScopeTree";
 import { useContextValues } from "@/features/scopes/hooks/useContextValues";
-import { drillPathForScope, useDrillPathEngine, useUniverse } from "@/features/scopes/components/active-context/quick-pick/engine";
+import { useDrillPathEngine, useUniverse } from "@/features/scopes/components/active-context/quick-pick/engine";
 import { scopesService } from "@/features/scopes/service/scopesService";
 import { associationsService } from "@/features/scopes/service/associationsService";
 import { favoritesService } from "@/features/scopes/service/favoritesService";
@@ -143,7 +143,16 @@ registerChatScopes({
   referenceConfigFromItem,
   buildScopeValuePayload,
   slugifyKey,
-  drillPathForScope,
+  drillPathForScope: (organizations, scopeId) => {
+    for (const organization of organizations) {
+      for (const scopeType of organization.scope_types) {
+        if (scopeType.scopes.some((scope) => scope.id === scopeId)) {
+          return { orgId: organization.id, typeId: scopeType.id, scopeId, itemId: null };
+        }
+      }
+    }
+    return null;
+  },
   ActiveContextLensChip,
   ActiveContextTree,
   MillerColumnsCore,

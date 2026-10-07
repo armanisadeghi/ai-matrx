@@ -30,6 +30,8 @@ export type RemountStatus =
 export const REMOUNT_LEDGER: Record<string, RemountStatus> = {
   "chat": { status: "passing" },
   "chat:quiet": { status: "passing" },
+  "agent-form": { status: "passing" },
+  "agent-form:quiet": { status: "passing" },
   "note": { status: "passing" },
   "note:quiet": { status: "passing" },
   "note:split-view caret": { status: "passing" },

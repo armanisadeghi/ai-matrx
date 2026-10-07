@@ -33,6 +33,7 @@ import {
   FileText,
   FolderInput,
   FolderOpen,
+  GitMerge,
   History,
   Inbox,
   LayoutDashboard,
@@ -89,6 +90,7 @@ export const OBJECT_ACTION_ICONS: Record<ObjectActionIcon, LucideIcon> = {
   archive: Archive,
   "link-2": Link2,
   "layout-grid": LayoutGrid,
+  "git-merge": GitMerge,
 };
 
 function toCommand(action: ObjectAction): ItemMenuCommand {

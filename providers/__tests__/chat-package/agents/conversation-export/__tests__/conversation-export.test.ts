@@ -164,16 +164,17 @@ describe("the conversation is ONE source; each format reads the right representa
       signal,
     );
     const format = conversationJsonFormat(async () => conv);
+    const engine = await format.load();
     // Untick the assistant's route table: the JSON holds the other three, in order, with roles.
     const draft = applySectionSelection(createDraft(snapshot), snapshot, ["message-1", "message-3", "message-4"]);
-    const json = JSON.parse((await format.build(draft as never, signal)).plainText);
+    const json = JSON.parse((await engine.build(draft as never, {}, signal)).plainText);
     expect(json.title).toBe("Pool route plan");
     expect(json.messages.map((m: { role: string }) => m.role)).toEqual(["user", "user", "assistant"]);
     expect(json.messages[1].text).toContain("Move Oakwood HOA before lunch");
     expect(JSON.stringify(json)).not.toContain("Chen residence");
     // Edited by hand, it no longer maps onto messages — its JSON says so by its key.
     const edited = editDraft(draft, { kind: "markdown", text: "Only Oakwood matters." });
-    const editedJson = JSON.parse((await format.build(edited as never, signal)).plainText);
+    const editedJson = JSON.parse((await engine.build(edited as never, {}, signal)).plainText);
     expect(editedJson.messages).toBeUndefined();
     expect(editedJson.edited_text).toBe("Only Oakwood matters.");
   });

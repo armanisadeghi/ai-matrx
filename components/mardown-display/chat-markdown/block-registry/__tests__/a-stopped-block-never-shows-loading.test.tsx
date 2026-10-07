@@ -20,7 +20,7 @@ jest.mock("@ai-matrx/rich-content/display/chat-markdown/block-registry/BlockComp
     return Stub;
   };
   const proxy = new Proxy({}, { get: (_t, p) => (typeof p === "string" ? stub(p) : undefined) });
-  return { __esModule: true, BlockComponents: proxy, LoadingComponents: proxy };
+  return { __esModule: true, BlockComponents: proxy, LoadingComponents: proxy, registerBlockComponents: () => undefined, registerLoadingComponents: () => undefined };
 });
 jest.mock("@/components/loaders/MatrxMiniLoader", () => ({
   __esModule: true,

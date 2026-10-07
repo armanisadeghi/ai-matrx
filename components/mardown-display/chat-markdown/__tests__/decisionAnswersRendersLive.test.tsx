@@ -101,7 +101,7 @@ jest.mock(
             : undefined,
       },
     );
-    return { __esModule: true, BlockComponents: proxy, LoadingComponents: proxy };
+    return { __esModule: true, BlockComponents: proxy, LoadingComponents: proxy, registerBlockComponents: () => undefined, registerLoadingComponents: () => undefined };
   },
 );
 jest.mock("@/features/canvas/materialization/CodeBlockWithContextAttach", () => ({

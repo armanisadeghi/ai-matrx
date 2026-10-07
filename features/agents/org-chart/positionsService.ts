@@ -163,10 +163,11 @@ export async function readSeatJobs(mandateIds: readonly string[]): Promise<Map<s
   const boundAgent = new Map<string, string>();
   for (const b of bindings) if (b.holder_id && !boundAgent.has(b.mandate_id)) boundAgent.set(b.mandate_id, b.holder_id);
   for (const d of defs) {
+    const mandateKey = storedMandateKey(d.mandate_key);
     out.set(d.id, {
       mandateId: d.id,
-      mandateKey: storedMandateKey(d.mandate_key),
-      label: mandateDisplayName(d.mandate_key, d.label),
+      mandateKey,
+      label: mandateDisplayName(mandateKey, d.label),
       holderAgentId:
         (d.default_holder_type === "agent" ? d.default_holder_id : null) ?? boundAgent.get(d.id) ?? null,
       retired: Boolean(d.deleted_at) || !d.is_enabled,

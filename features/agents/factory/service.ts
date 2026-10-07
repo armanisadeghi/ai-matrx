@@ -13,6 +13,7 @@ import { mandateDisplayName } from "@/features/mandates/mandate-words";
 import { createClient } from "@/utils/supabase/client";
 import { operationFailed } from "@/utils/errors";
 import { postJson } from "@/lib/python-client";
+import { storedMandateKey } from "@ai-matrx/agents/mandates";
 import type { FactoryBuildDetail, FactoryBuildRow, FactoryBuildState } from "./types";
 
 export const AGENT_FACTORY_BUILD_TYPE = "agent_factory_build";
@@ -167,7 +168,7 @@ export async function listFactoryMandates(): Promise<FactoryMandateOption[]> {
   if (error) throw operationFailed("load the mandates", error);
   return (data ?? []).map((m) => ({
     key: m.mandate_key,
-    label: mandateDisplayName(m.mandate_key, m.label),
+    label: mandateDisplayName(storedMandateKey(m.mandate_key), m.label),
     outputKind: m.output_kind ?? null,
     hasHolder: Boolean(m.default_holder_id),
   }));

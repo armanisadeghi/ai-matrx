@@ -107,13 +107,24 @@ export function outputLabelOf(outputSchema: unknown): string {
 
 /**
  * Parse the Orchestra Role Describer's output into `{id,roleTitle,gap}` rows.
- * Robust to a stray code fence or surrounding prose: takes the first `[` … last
- * `]` span and JSON-parses it. Returns [] on anything unparseable (caller treats
- * as "no updates") — we never write a malformed role.
+ * Reads `{"members": [...]}` (the agent's enforced object root), else a bare
+ * array; robust to a stray code fence or surrounding prose. Returns [] on
+ * anything unparseable (caller treats as "no updates") — we never write a
+ * malformed role.
  */
 export function parseRoleDescriberOutput(raw: string): DescribedMemberRole[] {
   const t = (raw ?? "").trim();
   if (!t) return [];
+  // The describer answers `{"members": [...]}` (an object root, which every
+  // provider can enforce). Read that first; a bare array still parses below.
+  try {
+    const obj = JSON.parse(t.slice(t.indexOf("{"), t.lastIndexOf("}") + 1));
+    if (obj && typeof obj === "object" && Array.isArray(obj.members)) {
+      return toDescribedRoles(obj.members);
+    }
+  } catch {
+    // not an object answer — fall through to the array form
+  }
   const first = t.indexOf("[");
   const last = t.lastIndexOf("]");
   if (first === -1 || last === -1 || last < first) return [];
@@ -124,8 +135,12 @@ export function parseRoleDescriberOutput(raw: string): DescribedMemberRole[] {
     return [];
   }
   if (!Array.isArray(parsed)) return [];
+  return toDescribedRoles(parsed);
+}
+
+function toDescribedRoles(rows: unknown[]): DescribedMemberRole[] {
   const out: DescribedMemberRole[] = [];
-  for (const row of parsed) {
+  for (const row of rows) {
     if (!row || typeof row !== "object") continue;
     const r = row as Record<string, unknown>;
     const id = typeof r.id === "string" ? r.id.trim() : "";

@@ -54,6 +54,8 @@ jest.mock("@ai-matrx/rich-content/display/chat-markdown/block-registry/BlockComp
       React.createElement("div", { "data-basic-markdown": true }, content),
   },
   LoadingComponents: {},
+  registerBlockComponents: () => undefined,
+  registerLoadingComponents: () => undefined,
 }));
 
 jest.mock("@/features/content-ir/records/KindRecordChrome", () => ({

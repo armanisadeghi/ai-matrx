@@ -30,9 +30,9 @@ describe("phone-stack card list", () => {
 
   it("has no per-renderer class copy of it", () => {
     for (const f of [
-      "components/mardown-display/tables/table-viewer.ts",
-      "components/mardown-display/tables/MarkdownTable.tsx",
-      "components/mardown-display/blocks/table/StreamingTableRenderer.tsx",
+      "node_modules/@ai-matrx/rich-content/dist/display/tables/table-viewer.js",
+      "node_modules/@ai-matrx/rich-content/dist/display/tables/MarkdownTable.js",
+      "node_modules/@ai-matrx/rich-content/dist/display/blocks/table/StreamingTableRenderer.js",
     ]) {
       const src = read(f);
       expect(src).not.toContain("CANVAS_STACK_CARDS");

@@ -121,14 +121,13 @@ export interface ChatComputeTargetsSource {
     instances: SandboxInstance[];
     loading: boolean;
     error: string | null;
-    fetchInstances: (opts?: { limit?: number; [option: string]: unknown }) => Promise<unknown>;
+    fetchInstances: (opts?: { limit?: number }) => Promise<unknown>;
     createInstance: (request: {
       organization_id: string;
       template?: string;
-      tier?: string;
+      tier: "ec2" | "hosted";
       ttl_seconds?: number;
       labels?: Record<string, string>;
-      [field: string]: unknown;
     }) => Promise<{ instance: SandboxInstance | null; error: string | null }>;
     renameInstance: (id: string, name: string) => Promise<SandboxInstance | null>;
     [extra: string]: unknown;

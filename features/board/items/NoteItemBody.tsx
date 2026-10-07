@@ -34,6 +34,7 @@ import { NotesAPI } from "@/features/notes/service/notesApi";
 import type { ItemBodyProps } from "./types";
 import { useBoardOrganizationId } from "./board-organization";
 import {
+  isEntity,
   noteDraftSource,
   noteLabelFromText,
   noteSource,
@@ -42,6 +43,8 @@ import {
 
 /** The folder /notes files a new note in. */
 const NEW_NOTE_FOLDER = "Draft";
+/** The title a blank note tile carries until it is named (the catalog's `startNew`). */
+const DEFAULT_TILE_TITLE = "Note";
 
 type Failure = { reason: string; cancelled: boolean };
 
@@ -71,7 +74,7 @@ export function NoteItemBody({ tileId, source, title, onSource }: ItemBodyProps)
   };
 
   /** Start a client-only draft — the /notes "New note" path. */
-  const startDraft = async (id: string, restoring = false) => {
+  const startDraft = async (id: string, restoring = false, label?: string) => {
     // Bringing a draft back after a reload is not creating a note: it files
     // under the board's own organization and never asks which one. A NEW
     // draft still goes through the resolver (the gate asks when none is set).
@@ -85,6 +88,7 @@ export function NoteItemBody({ tileId, source, title, onSource }: ItemBodyProps)
         organizationId,
         instanceId,
         destination: { kind: "create", name: NEW_NOTE_FOLDER, organizationId },
+        ...(label ? { label } : {}),
       }),
     ).unwrap();
   };
@@ -108,8 +112,10 @@ export function NoteItemBody({ tileId, source, title, onSource }: ItemBodyProps)
       }
       case "start-draft": {
         const id = crypto.randomUUID();
-        await startDraft(id);
-        onSource(noteDraftSource(source, id));
+        // A tile named before its note exists (an agent's `title`) names the draft too.
+        const named = title.trim() && title.trim() !== DEFAULT_TILE_TITLE ? title.trim() : undefined;
+        await startDraft(id, false, named);
+        onSource(noteDraftSource(source, id, named));
         break;
       }
       case "draft": {
@@ -118,7 +124,7 @@ export function NoteItemBody({ tileId, source, title, onSource }: ItemBodyProps)
         // A reload: saved meanwhile → open it; never saved → start it again.
         const saved = await NotesAPI.getById(plan.noteId, { failureMode: "throw" });
         if (saved) onSource(noteSource(source, plan.noteId));
-        else await startDraft(plan.noteId, true);
+        else await startDraft(plan.noteId, true, isEntity(source, "note") ? source.meta?.label : undefined);
         break;
       }
       case "open":

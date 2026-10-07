@@ -5,7 +5,7 @@ import { Input, type InputProps } from "@ai-matrx/design-system/controls";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
 
-export interface FloatingLabelInputProps extends Omit<InputProps, "value" | "onChange"> {
+export interface FloatingLabelInputProps extends Omit<InputProps, "value" | "onChange" | "variant"> {
     label: string;
     value?: string;
     onChange?: React.ChangeEventHandler<HTMLInputElement>;

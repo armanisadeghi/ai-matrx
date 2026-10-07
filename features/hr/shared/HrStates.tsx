@@ -559,7 +559,6 @@ export function HrEmployerChoices({
   const picker = (
     <OrganizationPicker
       hideHeading
-      hideStatus
       foldedLabel="Organizations without HR"
       organizations={rows.map(({ employer, detail, folded }) => ({
         id: employer.organization_id,

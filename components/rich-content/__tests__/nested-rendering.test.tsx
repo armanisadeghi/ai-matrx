@@ -98,7 +98,7 @@ jest.mock(
           ? ((target as Record<string, unknown>)[prop] ?? stub(prop))
           : undefined,
     });
-    return { __esModule: true, BlockComponents: proxy, LoadingComponents: proxy };
+    return { __esModule: true, BlockComponents: proxy, LoadingComponents: proxy, registerBlockComponents: () => undefined, registerLoadingComponents: () => undefined };
   },
 );
 // The highlighter/editor is a heavy lazy engine; the fence's code and language

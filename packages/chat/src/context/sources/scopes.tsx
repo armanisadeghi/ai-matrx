@@ -18,6 +18,7 @@
  */
 
 import type { ComponentType } from "react";
+import type { AssociationSourceEdge, AssociationTargetEdge } from "@ai-matrx/associations";
 import type { ChatDatabase, Json } from "../../host/db-types";
 import { createRegisteredSource, type AnyComponent, type AnyFn } from "../../host/registered-source";
 
@@ -67,7 +68,7 @@ export interface ScopeTreeOrganization {
   name: string;
   slug?: string | null;
   scope_types: ScopeTypeNode[];
-  projects?: Array<{ id: string; name: string; [field: string]: unknown }>;
+  projects?: Array<{ id: string; name: string }>;
 }
 
 export interface ContextItemValue {
@@ -194,8 +195,8 @@ export interface AssociationEdgeRow {
   [field: string]: any;
 }
 export interface ChatAssociationsService {
-  listForTargets(targetType: string, targetIds: string[], ...rest: any[]): Promise<ScopesRpcResult<{ edges: AssociationEdgeRow[] }>>;
-  listForSources(sourceType: string, sourceIds: string[], ...rest: any[]): Promise<ScopesRpcResult<{ edges: AssociationEdgeRow[] }>>;
+  listForTargets(targetType: string, targetIds: string[], ...rest: any[]): Promise<ScopesRpcResult<{ edges: AssociationTargetEdge[] }>>;
+  listForSources(sourceType: string, sourceIds: string[], ...rest: any[]): Promise<ScopesRpcResult<{ edges: AssociationSourceEdge[] }>>;
   add(input: any): Promise<ScopesRpcResult<any>>;
   remove(input: any): Promise<ScopesRpcResult<any>>;
   [method: string]: any;

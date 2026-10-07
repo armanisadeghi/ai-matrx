@@ -43,10 +43,13 @@ import { selectFileById } from "@/features/files/redux/selectors";
 import { FilesResourcePicker } from "@/features/resource-manager/resource-picker/FilesResourcePicker";
 import { InlineUploadArea } from "@/features/resource-manager/resource-picker/InlineUploadArea";
 import { NoteItemBody } from "./NoteItemBody";
+import { AgentFormItemBody } from "./AgentFormItemBody";
 import type { NodeSource } from "../board/document";
 import { useBoardCameraStore } from "../engine/react";
 import { entityComments, type BoardItemType, type ItemBodyProps, type PickerProps, type PlacedItem } from "./types";
 import {
+  AGENT_FORM_ENTITY,
+  agentFormSource,
   chatAgentId,
   chatSource,
   chatSourceToSave,
@@ -184,6 +187,28 @@ function AgentChatPicker({ onPick, onCancel }: PickerProps) {
           defaultMandateKey={DEFAULT_NEW_CHAT_MANDATE_KEY}
           className="h-full"
           onSelect={(agentId) => onPick([{ title: "Chat", source: chatSource(null, agentId) }])}
+        />
+      </div>
+      <div className="flex shrink-0 justify-end">
+        <Button type="button" variant="quiet" onClick={onCancel}>
+          Cancel
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+// ── Agent form ───────────────────────────────────────────────────────────────
+
+/** Start new: the agent whose form the tile runs — the ONE agent picker. */
+function AgentFormPicker({ onPick, onCancel }: PickerProps) {
+  return (
+    <div className="flex h-[520px] min-h-0 flex-col gap-2">
+      <div className="min-h-0 flex-1 overflow-hidden rounded-lg border border-border">
+        <AgentListInlinePicker
+          consumerId="board-agent-form"
+          className="h-full"
+          onSelect={(agentId) => onPick([{ title: "Agent form", source: agentFormSource(null, agentId) }])}
         />
       </div>
       <div className="flex shrink-0 justify-end">
@@ -347,6 +372,31 @@ export const WORK_ITEMS: BoardItemType[] = [
     kindLabel: "chat",
     // Checked 2026-10-02: transcript, scroll and draft kept; no relaunch; the caret stays put; the draft sends.
     sleeps: true,
+  },
+  {
+    // An agent run with no chat display: inputs form → Run → the reply as its shape.
+    // The record is the latest run's conversation, so its surface, comments, status
+    // and live-run hold are the chat's own.
+    key: AGENT_FORM_ENTITY,
+    surface: { name: "matrx-user/chat" },
+    comments: entityComments("conversation"),
+    label: "Agent form",
+    icon: AGENT_ICON,
+    group: "work",
+    accent: "violet",
+    status: { useStatus: useChatStatus },
+    defaultSize: { w: 560, h: 680 },
+    matches: (s) => isEntity(s, AGENT_FORM_ENTITY),
+    Body: AgentFormItemBody,
+    Keep: ChatKeep,
+    startNew: { label: "Agent form", icon: AGENT_ICON, Picker: AgentFormPicker },
+    // An agent places a past run by its conversation id (a new one needs the person's agent choice).
+    record: { place: (id, title) => ({ title: title?.trim() || "Agent form", source: agentFormSource(id, null) }) },
+    href: (s) => {
+      const id = entityId(s);
+      return id ? `/chat/${id}` : null;
+    },
+    kindLabel: "agent form",
   },
   {
     key: "note",

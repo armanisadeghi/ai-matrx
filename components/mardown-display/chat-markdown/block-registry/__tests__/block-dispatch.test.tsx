@@ -51,7 +51,7 @@ jest.mock("@ai-matrx/rich-content/display/chat-markdown/block-registry/BlockComp
         typeof prop === "string" ? stub(prop) : undefined,
     },
   );
-  return { __esModule: true, BlockComponents: proxy, LoadingComponents: proxy };
+  return { __esModule: true, BlockComponents: proxy, LoadingComponents: proxy, registerBlockComponents: () => undefined, registerLoadingComponents: () => undefined };
 });
 
 // Heavy leaf components block-dispatch imports directly (syntax highlighters,

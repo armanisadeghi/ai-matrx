@@ -5,10 +5,10 @@ import {
 } from "./per-row-entity";
 
 const paneEntity: ContextMenuEntityRef = {
-  type: "structured_list",
-  id: "list-1",
-  title: "The pane's list",
-  resourceType: "structured_list",
+  type: "note",
+  id: "note-1",
+  title: "The pane's note",
+  resourceType: "note",
 };
 
 const rowEntity: ContextMenuEntityRef = {

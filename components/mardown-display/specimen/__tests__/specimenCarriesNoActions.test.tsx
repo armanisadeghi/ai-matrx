@@ -20,7 +20,7 @@
 import { act, type ReactNode } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { StreamingTableRenderer } from "@ai-matrx/rich-content/display/blocks/table/StreamingTableRenderer";
-import { SpecimenProvider } from "@/components/mardown-display/specimen/SpecimenContext";
+import { SpecimenProvider } from "@ai-matrx/rich-content/display/specimen/SpecimenContext";
 
 (
   globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT?: boolean }

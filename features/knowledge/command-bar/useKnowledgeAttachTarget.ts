@@ -22,6 +22,7 @@ import { useAttachResource } from "@ai-matrx/chat/agents/components/inputs/resou
 import { appendConversationReference } from "@/features/resource-manager/resource-picker/conversation-reference-context";
 import type { Resource } from "@ai-matrx/chat/agents/resources/types";
 import type { KnowledgeHit } from "@/features/knowledge/api/knowledgeSearch";
+import { noteResourceData } from "@/features/resource-manager/resource-picker/resource-adapters";
 import { registerActiveAttachTarget, type KnowledgeAttachTarget } from "./attachTarget";
 
 export function isAttachableHit(hit: KnowledgeHit): boolean {
@@ -35,7 +36,7 @@ export function isAttachableHit(hit: KnowledgeHit): boolean {
 export async function hitToResource(hit: KnowledgeHit): Promise<Resource | null> {
   if (hit.entity === "note") {
     const note = await fetchNoteById(hit.id, { failureMode: "throw" });
-    return note ? { type: "note", data: note } : null;
+    return note ? { type: "note", data: noteResourceData(note) } : null;
   }
   if (hit.entity === "file") {
     return { type: "file", data: { id: hit.id, fileId: hit.id, filename: hit.title } };

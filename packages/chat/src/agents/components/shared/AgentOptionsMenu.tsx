@@ -361,7 +361,7 @@ export function AgentOptionsMenu({
       setOpen(false);
     } else if (label === "Create App") {
       console.log("[AGENT OPTIONS MENU] Creating app, Agent ID:", agentId);
-      openCreateApp({ agentId: agentId ?? null });
+      openCreateApp();
       setOpen(false);
     } else if (label === "Add Data Storage Support") {
       console.log(
@@ -773,7 +773,7 @@ function MobileMenuContent({
       openFindUsages({ agentId: agentId ?? null });
       onClose();
     } else if (label === "Create App") {
-      openCreateApp({ agentId: agentId ?? null });
+      openCreateApp();
       onClose();
     } else if (label === "Add Data Storage Support") {
       openDataStorage({ agentId: agentId ?? null });

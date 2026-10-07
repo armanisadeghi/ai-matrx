@@ -35,6 +35,7 @@ import {
   X,
 } from "lucide-react";
 import { EmptyState, RegionSkeleton } from "@ai-matrx/design-system/controls";
+import { storedMandateKey } from "@ai-matrx/agents/mandates";
 import { cn } from "@/lib/utils";
 import KindInstanceRender from "@/features/content-ir/studio/components/KindInstanceRender";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
@@ -400,7 +401,7 @@ function StepRow({
                         href={`/administration/intelligence/mandates/${encodeURIComponent(rec.mandate_key)}`}
                         className="font-mono text-primary hover:underline"
                       >
-                        {mandateDisplayName(rec.mandate_key)}
+                        {mandateDisplayName(storedMandateKey(rec.mandate_key))}
                       </Link>
                     ) : (
                       "—"

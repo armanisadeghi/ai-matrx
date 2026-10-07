@@ -124,7 +124,7 @@ describe("AnnouncementTable read lifecycle", () => {
 
     await act(async () => root.render(<AnnouncementTable />));
     const copy = tableProps?.copy;
-    if (!copy || copy === true) throw new Error("The table copy configuration is missing");
+    if (!copy) throw new Error("The table copy configuration is missing");
 
     expect(copy.humanRow(announcement)).toContain("Planned maintenance");
     expect(copy.listHuman?.([announcement], [announcement])).toContain("Planned maintenance");

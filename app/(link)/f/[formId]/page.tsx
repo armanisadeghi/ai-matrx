@@ -34,9 +34,24 @@ import { notFound } from "next/navigation";
 
 import { PublicLinkNotice } from "@/components/public-link/PublicLinkNotice";
 import { FormLookFrame } from "@ai-matrx/records-ui";
-import { prefillFromLink, publicForm } from "@/features/forms/service";
+import { isPortalAccent, type PortalStyle as RecordsPortalStyle } from "@ai-matrx/records";
+import { prefillFromLink, publicForm, type PublicForm } from "@/features/forms/service";
 
 import { PublicFormRunner } from "./PublicFormRunner";
+
+function recordsFormLook(
+  style: NonNullable<PublicForm["presentation"]["look"]> | null,
+): Partial<RecordsPortalStyle> | null {
+  if (!style) return null;
+  return {
+    ...style,
+    accent: isPortalAccent(style.accent) ? style.accent : null,
+    from_organization: style.from_organization.filter(
+      (field): field is "display_name" | "logo" =>
+        field === "display_name" || field === "logo",
+    ),
+  };
+}
 
 // A public form is answered now, by whoever has the link; nothing about it is
 // cacheable across people and the state it shows (open / closed / full) moves.
@@ -95,7 +110,7 @@ export default async function PublicFormPage({
     // questions: one column, the title and every answer box on one left edge, full width of the
     // column at any screen size (the live walk measured a 166 px box at 390 px).
     <main className="matrx-touch-targets mx-auto flex min-h-dvh w-full max-w-xl flex-col gap-4 px-4 pb-safe pt-6 sm:px-5 sm:pt-10">
-      <FormLookFrame look={form.presentation?.look ?? null} title={form.title}>
+      <FormLookFrame look={recordsFormLook(form.presentation?.look ?? null)} title={form.title}>
         {/* PREFILL BY LINK (lane S7-PRIME): `?<question key>=<answer>` starts the form with
             that answer in its question. Resolved HERE, against the form's own questions and
             Field kinds, so the first paint is already filled in. */}

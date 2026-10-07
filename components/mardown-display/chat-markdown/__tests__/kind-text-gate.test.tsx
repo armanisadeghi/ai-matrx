@@ -71,6 +71,8 @@ import { ConfigurableMarkdownContent } from "@ai-matrx/rich-content/display/chat
 import MarkdownRenderer from "@/components/mardown-display/MarkdownRenderer";
 import MarkdownWithPlugins from "@/components/message-display/MarkdownWithPlugins";
 import { resetKindAtRawRendererReports } from "@/features/content-ir/surfaces/report-kind-at-raw-renderer";
+// The engine reports through its own copy (one dedupe set each until chat depends on rich-content).
+import { resetKindAtRawRendererReports as resetEngineKindAtRawRendererReports } from "@ai-matrx/rich-content/utils/report-kind-at-raw-renderer";
 
 const KIND_OBJECT = '{"__kind":"flashcard_set","title":"Cells","cards":[]}';
 const FENCED_KIND = `Here you go:\n\n\`\`\`json\n${KIND_OBJECT}\n\`\`\`\n`;
@@ -91,6 +93,7 @@ describe("markdown leaves hand kind text to the canonical pipeline", () => {
     mockCaptureError.mockClear();
     mockStreamCalls.length = 0;
     resetKindAtRawRendererReports();
+    resetEngineKindAtRawRendererReports();
     container = document.createElement("div");
     document.body.appendChild(container);
     root = createRoot(container);

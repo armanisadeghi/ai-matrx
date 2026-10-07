@@ -39,6 +39,8 @@ export interface MenuItem {
   successMessage?: string;
   errorMessage?: string;
   loadingMessage?: string;
+  /** Host surfaces may attach renderer-specific metadata to a menu row. */
+  [extra: string]: unknown;
 }
 
 export interface MenuCategory {
