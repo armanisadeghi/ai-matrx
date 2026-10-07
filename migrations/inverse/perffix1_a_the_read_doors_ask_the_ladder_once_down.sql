@@ -1,8 +1,8 @@
 -- chair-step: undo perffix1_a_the_read_doors_ask_the_ladder_once.sql - restores the bodies of custom.levels_of, custom.visible_set and custom.confidential_anchor exactly as they were before PERF-FIX-1 (same answers, asked again every time)
 -- lane: PERF-FIX-1
--- based-on: custom.levels_of(uuid, uuid[]) 2ea73552ba4a9be5624d968c60c6678d1f8b0784a37e0c1d9541a1627e0ccdef[0m
--- based-on: custom.visible_set(uuid, uuid, uuid, permission_level) 856c7e09c68978bb7d0cb88e146568c5b79d31a7ed64dd754f2ae6ef0a4da5ff[0m
--- based-on: custom.confidential_anchor(uuid) 7a43dea8b03b72bc0a7f20ea05c30a734c6e6b20957677b05b6c0c0d61a1ad12[0m
+-- based-on: custom.levels_of(uuid, uuid[]) 2ea73552ba4a9be5624d968c60c6678d1f8b0784a37e0c1d9541a1627e0ccdef
+-- based-on: custom.visible_set(uuid, uuid, uuid, permission_level) 856c7e09c68978bb7d0cb88e146568c5b79d31a7ed64dd754f2ae6ef0a4da5ff
+-- based-on: custom.confidential_anchor(uuid) 7a43dea8b03b72bc0a7f20ea05c30a734c6e6b20957677b05b6c0c0d61a1ad12
 
 CREATE OR REPLACE FUNCTION custom.levels_of(p_user_id uuid, p_ids uuid[])
  RETURNS jsonb
