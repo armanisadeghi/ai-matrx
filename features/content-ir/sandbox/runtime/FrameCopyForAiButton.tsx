@@ -35,7 +35,7 @@ export function CopyForAiButton({
   size = "sm",
   disabled = false,
   className,
-  showLabel: _showLabel = true,
+  showLabel = true,
   icon,
   compact = false,
 }: CopyForAiButtonProps) {
