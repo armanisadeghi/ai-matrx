@@ -18,15 +18,5 @@
     "file": "features/masterwork/drive/useDriveSettings.ts",
     "key": "masterwork.drive.interviewer_mandate_key",
     "reason": "NOT A MANDATE KEY — it is the platform.feature_knob key whose VALUE is a mandate key (no mandate.definition row exists, verified live 2026-09-17). The guard is positional and the constant's name contains 'mandate', so the knob id lands in a mandate-key position; the knob's value is typed at its boundary by readMandateKey() -> storedMandateKey(). Named here rather than hidden, so the false-positive class is on the record instead of being coded around."
-  },
-  {
-    "file": "features/applets-host/builder/AppletBuilder.tsx",
-    "key": "applets.build",
-    "reason": "Declared in aidream client_mandates.py (f5eef7ac31, 2026-10-07) and in the regenerated keys module; @ai-matrx/agents with MANDATE_KEYS.applets__build/__fix is not on npm yet. Replace with MANDATE_KEYS and delete this entry the day it is."
-  },
-  {
-    "file": "features/applets-host/builder/AppletBuilder.tsx",
-    "key": "applets.fix",
-    "reason": "Declared in aidream client_mandates.py (f5eef7ac31, 2026-10-07) and in the regenerated keys module; @ai-matrx/agents with MANDATE_KEYS.applets__build/__fix is not on npm yet. Replace with MANDATE_KEYS and delete this entry the day it is."
   }
 ]
