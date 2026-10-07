@@ -19,7 +19,7 @@ import { useAccess } from "@/utils/permissions/access";
 
 import { useSourcePicker, type PickedSource } from "../data/SourcePicker";
 import { FindInPage } from "./FindInPage";
-import { DATABASE_PAINTED_EVENT, paintedDrift, paintedHeights, withPaintedSizes } from "../editor/database-host";
+import { withPaintedSizes } from "../editor/database-host";
 import { useDatabaseDesigner } from "../ai/DatabaseDesigner";
 import { useMoveIn } from "../ai/MoveIn";
 import { createPageDatabase } from "../data/new-database";
@@ -60,6 +60,7 @@ import { attemptSave, deviceStorage, forgetUnsaved, keepsChange, keepUnsaved, no
 import { useRestoreKept } from "./useRestoreKept";
 import { sendOnLeave, trackAccessToken } from "./leave-save";
 import { contentKey } from "./content-key";
+import { usePageReminders } from "../editor/reminders";
 import { copyToClipboard } from "@/lib/clipboard/copy";
 
 type Editable = Pick<SpaceDoc, "title" | "icon" | "cover" | "settings" | "blocks">;
@@ -200,10 +201,7 @@ function SpacePageScreen({ spaceId }: { spaceId: string }) {
   /** Title / icon / cover / settings changed before the room was joined: the room takes them on join. */
   const preRoomMeta = useRef<Partial<SpaceMeta> | null>(null);
 
-  /** Each database block's height as the newest stored version carries it (`paintedSize`). */
-  const savedHeights = useRef<ReturnType<typeof paintedHeights>>(new Map());
   const adopt = (d: SpaceDoc) => {
-    savedHeights.current = paintedHeights(d.blocks);
     docRef.current = d;
     baseVersion.current = d.version;
     savedKey.current = contentKey(d);
@@ -403,10 +401,10 @@ function SpacePageScreen({ spaceId }: { spaceId: string }) {
     pending.current = false;
     // The cadence's max wait runs from the first change AFTER what this save carries.
     dirtySince.current = null;
-    // Same content: skipped — unless a database block now paints at a size the store does not hold (the
-    // next visit would hold the wrong size); that rides as a save of its own (round 29).
-    const heights = paintedHeights(sent.blocks);
-    if (key === savedKey.current && !paintedDrift(heights, savedHeights.current)) {
+    // Same content: skipped. A database block's painted size is never content (content-key.ts) and never
+    // makes a version on its own — opening a page writes nothing; this device keeps the size it painted
+    // (database-host.tsx, localStorage) and the next real save carries it to the store.
+    if (key === savedKey.current) {
       dirtySince.current = null;
       setSaveState("saved");
       return;
@@ -451,7 +449,6 @@ function SpacePageScreen({ spaceId }: { spaceId: string }) {
       baseVersion.current = saved.version;
       savedKey.current = wrote === sent ? key : contentKey(wrote);
       savedIds.current = blockIds(wrote.blocks);
-      savedHeights.current = wrote === sent ? heights : paintedHeights(wrote.blocks);
       if (docRef.current) docRef.current = { ...docRef.current, version: saved.version, updatedAt: saved.updatedAt };
       setDoc((d) => (d ? { ...d, version: saved.version, updatedAt: saved.updatedAt } : d));
       setNow(Date.now());
@@ -556,7 +553,6 @@ function SpacePageScreen({ spaceId }: { spaceId: string }) {
       // Written outside the room (Move to from another page): the host merges it in; the editor's change
       // then schedules the save that carries it. A version the room wrote merges as a no-op.
       mergeStored(incoming);
-      savedHeights.current = paintedHeights(incoming.blocks);
       baseVersion.current = incoming.version;
       savedKey.current = contentKey(incoming);
       savedIds.current = blockIds(incoming.blocks);
@@ -582,19 +578,6 @@ function SpacePageScreen({ spaceId }: { spaceId: string }) {
     };
     // learn / update only touch refs, setters and the session.
   }, [store, spaceId, origin]);
-
-  // A database block finished drawing: when its size is not the one stored, the host stores it (once; a
-  // page whose sizes match writes nothing on open).
-  useEffect(() => {
-    const onPainted = () => {
-      const d = docRef.current;
-      if (!d || !collab.hostRef.current || trashedRef.current) return;
-      if (paintedDrift(paintedHeights(withPaintedSizes(d.blocks)), savedHeights.current)) schedule();
-    };
-    window.addEventListener(DATABASE_PAINTED_EVENT, onPainted);
-    return () => window.removeEventListener(DATABASE_PAINTED_EVENT, onPainted);
-    // schedule / refs only.
-  }, [spaceId]);
 
   // The cadence knobs arrived, or this member just became host: time whatever is pending.
   useEffect(() => {
@@ -644,6 +627,8 @@ function SpacePageScreen({ spaceId }: { spaceId: string }) {
   const builder = useSpaceBuilder();
   const designer = useDatabaseDesigner();
   const moveIn = useMoveIn();
+  // N2 — Remind on a date mention: this person's reminders follow the page's date mentions.
+  usePageReminders(spaceId, doc?.title ?? "", doc?.blocks, userId ?? null, !!doc && !trashedNow);
 
   if (doc === undefined) return <div className="spaces-page" aria-busy="true" />;
   if (doc === null) {

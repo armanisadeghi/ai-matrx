@@ -48,8 +48,6 @@ const heightKey = (blockId: string, width: number) => `spaces:blockh:${blockId}:
 const SETTLE_QUIET_MS = 450;
 const SAMPLE_MS = 150;
 const SETTLE_MAX_MS = 4000;
-/** A database block finished drawing (its content still): the page may store its new size. */
-export const DATABASE_PAINTED_EVENT = "spaces:database-painted";
 
 /**
  * A block's size as a save measured it (CSS px): its own width `w`, height `h`, and the window's width `vw`
@@ -108,8 +106,6 @@ function useHeldHeight(blockId: string | undefined, ref: React.RefObject<HTMLDiv
       const h = measure();
       if (h !== null) keep(h);
       setHold(undefined);
-      // The page compares this with the size its last save stored (SpacePage: a drift saves it once).
-      if (h !== null) window.dispatchEvent(new CustomEvent(DATABASE_PAINTED_EVENT));
     };
     // Stillness is sampled, not observed: the element the content lives in is replaced as it loads
     // (loading → frame), and a held block's own box never changes size.
@@ -215,31 +211,4 @@ export function withPaintedSizes<B extends { type: string; id: string; props?: R
       return props === b.props && kids === b.children ? b : { ...b, props, children: kids };
     });
   return walk(blocks);
-}
-
-/** Each database block's stored sizes, by block id (a page's `paintedSize`s). */
-export function paintedHeights(blocks: ReadonlyArray<{ type: string; id: string; props?: Record<string, unknown>; children?: unknown[] }>): Map<string, PaintedSize[]> {
-  const out = new Map<string, PaintedSize[]>();
-  const walk = (list: ReadonlyArray<{ type: string; id: string; props?: Record<string, unknown>; children?: unknown[] }>) => {
-    for (const b of list) {
-      const sizes = b.type === "database" ? readPaintedSizes(b.props?.paintedSize) : [];
-      if (sizes.length) out.set(b.id, sizes);
-      if (b.children?.length) walk(b.children as typeof list);
-    }
-  };
-  walk(blocks);
-  return out;
-}
-
-/** A painted height this far from the stored one is worth a save (a re-measure by a pixel is not). */
-const PAINTED_DRIFT_PX = 8;
-/** Whether the sizes measured now (the first of each block's list) are missing from, or differ from, what is stored at that width. */
-export function paintedDrift(now: Map<string, PaintedSize[]>, stored: Map<string, PaintedSize[]>): boolean {
-  for (const [id, list] of now) {
-    const cur = list[0];
-    if (!cur) continue;
-    const was = pickPainted(stored.get(id) ?? [], { width: cur.w });
-    if (!was || Math.abs(was.h - cur.h) > PAINTED_DRIFT_PX) return true;
-  }
-  return false;
 }
