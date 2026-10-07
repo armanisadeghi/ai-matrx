@@ -126,7 +126,6 @@ export function useRubberBand(editor: SpacesEditor, editable: boolean) {
             // A block with no text at an end (a database, a divider): the blue selection still acts on Delete.
           }
         }
-      }
       } else if (start && e.button === 0) {
         const line = lineBeside(start.x, start.y);
         if (line) {

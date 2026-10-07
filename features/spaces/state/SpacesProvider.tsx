@@ -92,13 +92,20 @@ interface SpacesContextValue {
   duplicateSpace: (id: SpaceId) => Promise<SpaceDoc>;
   moveSpace: (id: SpaceId, targetId: SpaceId | null, placement: DropPlacement) => Promise<void>;
   open: (id: SpaceId, blockId?: string) => void;
-  quickFind: { open: boolean; mode: "jump" | "pick"; onPick?: (id: SpaceId) => void };
-  openQuickFind: (mode?: "jump" | "pick", onPick?: (id: SpaceId) => void) => void;
+  quickFind: { open: boolean; mode: "jump" | "pick"; onPick?: (id: SpaceId) => void; create?: QuickFindCreate };
+  /** `create`: the picker also offers "New page “typed name”" (Link to page, `[[`, `[+`). */
+  openQuickFind: (mode?: "jump" | "pick", onPick?: (id: SpaceId) => void, create?: QuickFindCreate) => void;
   closeQuickFind: () => void;
   sidebarCollapsed: boolean;
   setSidebarCollapsed: (collapsed: boolean) => void;
   mobileSidebarOpen: boolean;
   setMobileSidebarOpen: (open: boolean) => void;
+}
+
+/** A picker that can also make the page: `first` lists "New page" above the matches (Notion's `[+`). */
+export interface QuickFindCreate {
+  onCreate: (title: string) => void;
+  first?: boolean;
 }
 
 const SpacesContext = createContext<SpacesContextValue | null>(null);
@@ -415,7 +422,7 @@ export function SpacesProvider({ children }: { children: ReactNode }) {
     moveSpace,
     open,
     quickFind,
-    openQuickFind: (mode = "jump", onPick) => setQuickFind({ open: true, mode, onPick }),
+    openQuickFind: (mode = "jump", onPick, create) => setQuickFind({ open: true, mode, onPick, create }),
     closeQuickFind: () => setQuickFind({ open: false, mode: "jump" }),
     sidebarCollapsed,
     setSidebarCollapsed,

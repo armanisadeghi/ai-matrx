@@ -5,7 +5,7 @@
 
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@ai-matrx/design-system/controls";
-import { CornerDownLeft, Search } from "lucide-react";
+import { CornerDownLeft, Plus, Search } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
 import { useClaimSearchKeys } from "@/features/shell/hooks/useClaimSearchKeys";
@@ -19,6 +19,9 @@ interface Hit {
   id: string;
   snippet?: string;
 }
+
+/** The "New page" row's place in the list (it has no page id). */
+const NEW_PAGE = "new-page";
 
 function snippetFor(text: string, q: string): string | undefined {
   const i = text.toLowerCase().indexOf(q);
@@ -68,10 +71,18 @@ export function QuickFind() {
       .filter((h) => h.snippet);
     hits = [...titleHits, ...bodyHits].slice(0, 50);
   }
+  // Link to page / `[[` / `[+`: typing a name also offers a new sub-page with that name (Notion).
+  const create = quickFind.mode === "pick" ? quickFind.create : undefined;
+  const newTitle = query.trim();
+  if (create && newTitle) hits = create.first ? [{ id: NEW_PAGE }, ...hits] : [...hits, { id: NEW_PAGE }];
 
   const choose = (id: string) => {
     const pick = quickFind.onPick;
     closeQuickFind();
+    if (id === NEW_PAGE) {
+      create?.onCreate(newTitle);
+      return;
+    }
     if (quickFind.mode === "pick" && pick) pick(id);
     else open(id);
   };
@@ -120,6 +131,25 @@ export function QuickFind() {
         <div ref={listRef} className="max-h-[min(60vh,480px)] overflow-y-auto p-1">
           <p className="px-3 pb-1 pt-2 type-secondary font-medium text-muted-foreground">{q ? "Best matches" : "Recent"}</p>
           {hits.map((hit, i) => {
+            if (hit.id === NEW_PAGE) {
+              return (
+                <button
+                  key={NEW_PAGE}
+                  type="button"
+                  data-index={i}
+                  data-active={i === active ? "true" : undefined}
+                  className="spaces-qf-row"
+                  onMouseMove={() => setActive(i)}
+                  onClick={() => choose(NEW_PAGE)}
+                >
+                  <span className="spaces-qf-icon">
+                    <Plus size={18} />
+                  </span>
+                  <span className="min-w-0 flex-1 truncate text-left type-body">New page “{newTitle}”</span>
+                  {i === active ? <CornerDownLeft size={14} className="shrink-0 text-muted-foreground" /> : null}
+                </button>
+              );
+            }
             const s = byId.get(hit.id);
             if (!s) return null;
             const parents = pathTo(s.id).slice(0, -1);

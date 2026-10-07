@@ -123,7 +123,8 @@ export function useSpaceCollab(args: {
     elect.current();
   }, [presenceKey, session]);
 
-  // Offline (Notion's indicator) and the resync when the connection comes back.
+  // Offline (Notion's indicator); when the connection comes back the provider catches up by itself and
+  // the election runs again.
   const [online, setOnline] = useState(() => (typeof navigator === "undefined" ? true : navigator.onLine));
   useEffect(() => {
     const up = () => setOnline(true);
@@ -145,7 +146,7 @@ export function useSpaceCollab(args: {
     }
     if (wasDown.current) {
       wasDown.current = false;
-      void session.resync().then(() => elect.current());
+      elect.current();
     }
   }, [session, connected, online]);
 

@@ -43,7 +43,8 @@ type SpacesPartialBlock = Parameters<SpacesEditor["insertBlocks"]>[0][number];
 
 export interface SlashContext {
   createSubpage: () => Promise<string | null>;
-  pickPage: () => Promise<string | null>;
+  /** A page to link to — or one made on the spot ("New page “X”", `created`: a sub-page of this page). */
+  pickPage: (options?: { createFirst?: boolean }) => Promise<{ spaceId: string; created: boolean } | null>;
   /** "Linked view of database" / "Chart": the records the block shows (data/SourcePicker). */
   pickSource: () => Promise<PickedSource | null>;
 }
@@ -73,6 +74,17 @@ function columns(count: number): SpacesPartialBlock {
       children: [{ type: "paragraph" as const }],
     })),
   };
+}
+
+/**
+ * Link to page / `[[` / `[+`: pick a page and link it where the caret was; a page made from the picker
+ * ("New page “X”") is this page's sub-page and lands as its page block, ready to open (Notion).
+ */
+export function linkPageAt(editor: SpacesEditor, ctx: SlashContext, at: string | null, createFirst = false): void {
+  void ctx.pickPage({ createFirst }).then((picked) => {
+    if (!picked) return;
+    insertAtSlash(editor, at, picked.created ? { type: "page", props: { spaceId: picked.spaceId } } : { type: "linkToPage", props: { spaceId: picked.spaceId } });
+  });
 }
 
 export function slashItems(editor: SpacesEditor, ctx: SlashContext): DefaultReactSuggestionItem[] {
@@ -128,12 +140,7 @@ export function slashItems(editor: SpacesEditor, ctx: SlashContext): DefaultReac
       aliases: ["link", "linkpage", "mention page"],
       group: basic,
       icon: <Link2 size={ICON} />,
-      onItemClick: () => {
-        const at = slashTarget(editor);
-        void ctx.pickPage().then((spaceId) => {
-          if (spaceId) insertAtSlash(editor, at, { type: "linkToPage", props: { spaceId } });
-        });
-      },
+      onItemClick: () => linkPageAt(editor, ctx, slashTarget(editor)),
     },
     { title: "Table", subtext: "Add a simple table to this page.", aliases: ["table", "simple table"], group: basic, icon: <Table2 size={ICON} />, onItemClick: set({ type: "table", content: { type: "tableContent", rows: [{ cells: ["", "", ""] }, { cells: ["", "", ""] }, { cells: ["", "", ""] }] } } as unknown as SpacesPartialBlock) },
     { title: "Table view", subtext: "Show records from a table as a table.", aliases: ["database", "inline", "table view"], group: database, icon: <Table2 size={ICON} />, onItemClick: withSource((s) => databaseBlock(s, { id: newViewId(), name: "Table", layout: "grid" }, false)) },

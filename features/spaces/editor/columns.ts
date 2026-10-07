@@ -7,7 +7,8 @@
 //  - a column list straight inside a column list joins its columns to the outer list;
 //  - a column outside a column list, or a list left with fewer than two columns, melts into its blocks.
 // A column list inside a COLUMN is valid (BLOCK-SCHEMA; the sample's ring row above its client table) and
-// is kept; the editor itself never makes one (slash-insert.ts, column-drop.ts — Notion's behaviour).
+// is kept; the editor makes one for "/2 columns" in a column and for a drop beside a block that shares its
+// column (slash-insert.ts, column-drop.ts — Notion nests columns).
 // Widths are fractions summing to 1. New ids derive from the old ones, so two co-editors normalising
 // the same page get identical trees.
 

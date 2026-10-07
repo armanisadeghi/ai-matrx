@@ -821,7 +821,18 @@ function SpacePageScreen({ spaceId }: { spaceId: string }) {
                 window.setTimeout(() => spaces.open(sub.id), 60);
                 return sub.id;
               },
-              pickPage: () => new Promise((resolve) => openQuickFind("pick", (id) => resolve(id))),
+              pickPage: (options) =>
+                new Promise((resolve) =>
+                  openQuickFind("pick", (id) => resolve({ spaceId: id, created: false }), {
+                    first: options?.createFirst,
+                    onCreate: (title) => {
+                      void spaces.createSpace(doc.id, { open: false, title }).then(
+                        (sub) => resolve({ spaceId: sub.id, created: true }),
+                        () => resolve(null),
+                      );
+                    },
+                  }),
+                ),
               pickSource,
             }}
             menu={{ moveBlocksTo, turnIntoPageIn, askAi: openAskAi }}

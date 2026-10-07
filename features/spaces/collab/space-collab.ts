@@ -20,9 +20,9 @@
 // room's tab leader. Recomputed on every awareness / presence change, so a host that leaves (or is killed:
 // its presence entry drops) hands over at once.
 //
-// RESYNC. Realtime has no replay. After a reconnect the provider is rebuilt (a fresh state request pulls
-// the peers' edits) and this member's whole state is re-sent (the peers merge what they missed). Yjs
-// merges are idempotent, so a resync that was not needed costs one frame and changes nothing.
+// RESYNC. Realtime has no replay. The provider catches up by itself after a reconnect: it merges every
+// state answer and pushes this member's own state (SupabaseYjsProvider, 2106b220f5), so nothing here
+// rebuilds it.
 
 import { BlockNoteEditor } from "@blocknote/core";
 import { blocksToYXmlFragment, yXmlFragmentToBlocks } from "@blocknote/core/yjs";
@@ -43,7 +43,6 @@ export type SpaceMeta = Pick<SpaceDoc, (typeof META_KEYS)[number]>;
 /** Origin of this member's own meta writes (the observer skips them: the page already shows them). */
 const LOCAL_META = "spaces-local-meta";
 const SEED = "spaces-seed";
-const RESEND = "spaces-resend";
 /** While someone else is on the page, ask the room this many more times before building from the snapshot. */
 const EXTRA_STATE_ASKS = 3;
 
@@ -193,22 +192,6 @@ export class SpaceCollabSession {
     await this.provider.ready();
   }
 
-  /**
-   * After a reconnect: pull the peers' state and re-send ours (see RESYNC above).
-   * WORKAROUND for a provider defect (owner's, features/data-tables/collab/SupabaseYjsProvider.ts):
-   * `handleStateResponse` drops every `y-state` after the first ("first answer wins"), so its own
-   * `onBackfill` re-request is answered and ignored, and nobody asks for this member's offline edits.
-   * Rebuilding the provider makes a fresh request; the `updateV2` emit pushes our state. Remove once the
-   * provider applies late state answers (Yjs applies are idempotent) and re-sends its own state on backfill.
-   */
-  async resync(): Promise<void> {
-    if (this.disposed || !this.provider) return;
-    await this.rebuildProvider();
-    if (this.disposed) return;
-    // The provider broadcasts what `updateV2` carries; this member's whole state goes out once.
-    (this.doc as unknown as { emit(name: string, args: unknown[]): void }).emit("updateV2", [Y.encodeStateAsUpdateV2(this.doc), RESEND, this.doc, null]);
-  }
-
   setMeta(patch: Partial<SpaceMeta>): void {
     this.doc.transact(() => {
       for (const [k, v] of Object.entries(patch)) {
@@ -256,13 +239,10 @@ export class SpaceCollabSession {
     this.disposed = true;
     // Tell the peers this member left now (they would otherwise wait out awareness' 30 s timeout).
     removeAwarenessStates(this.awareness, [this.doc.clientID], "leave");
-    const provider = this.provider;
+    // The provider sends the leave notice before it disconnects (synchronous teardown, 2106b220f5).
+    this.provider?.disconnect();
     this.provider = null;
-    // The provider flushes awareness on a 50 ms throttle: give the leave notice that long to go out.
-    window.setTimeout(() => {
-      provider?.disconnect();
-      this.awareness.destroy();
-      this.doc.destroy();
-    }, 120);
+    this.awareness.destroy();
+    this.doc.destroy();
   }
 }

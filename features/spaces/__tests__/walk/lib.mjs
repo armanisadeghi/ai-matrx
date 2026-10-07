@@ -120,3 +120,4 @@ export async function slash(page, query, itemName = query) {
   await item.waitFor({ timeout: 10_000 });
   await item.click();
 }
+export { chromium };

@@ -47,7 +47,7 @@ import { fromEngine, toEngine, type EngineBlock } from "./convert";
 import { PasteUrlMenu, pastedUrl, type PastedUrl } from "./PasteUrlMenu";
 import { useRubberBand } from "./rubber-band";
 import { spacesSchema, type SpacesEditor } from "./schema";
-import { slashItems, type SlashContext } from "./slash-items";
+import { linkPageAt, slashItems, type SlashContext } from "./slash-items";
 import { columnDropper } from "./column-drop";
 
 const PLACEHOLDERS = {
@@ -209,7 +209,8 @@ export function SpaceEditor({ spaceId, initialBlocks, editable, onChange, slash,
       schema: spacesSchema,
       initialContent: room ? ([{ type: "paragraph", id: "initialBlockId" }] as never) : initialBlocks.length ? (toEngine(initialBlocks) as never) : undefined,
       disableExtensions: room ? ["history"] : undefined,
-      dictionary: { ...en, placeholders: PLACEHOLDERS },
+      // Notion names the no-colour choice "Default" (a callout on Default draws a bordered box).
+      dictionary: { ...en, placeholders: PLACEHOLDERS, color_picker: { ...en.color_picker, colors: { ...en.color_picker.colors, default: "Default" } } },
       extensions: room ? [notionKeys(), room] : [notionKeys()],
       tabBehavior: "prefer-indent",
       dropCursor: { color: "rgba(35, 131, 226, 0.43)", width: 4, hooks: columnDrop.hooks },
@@ -288,6 +289,17 @@ export function SpaceEditor({ spaceId, initialBlocks, editable, onChange, slash,
         if (e.key === "Enter" && !e.shiftKey && !e.metaKey && !e.ctrlKey && !e.altKey && editable && !document.querySelector(".bn-suggestion-menu") && enterIntoOpenToggle(editor)) {
           e.preventDefault();
           e.stopPropagation();
+        }
+        // `[[` links a page, `[+` makes a sub-page (Notion B14 / N15): the "[" typed before goes, the picker opens.
+        if ((e.key === "[" || e.key === "+") && !e.metaKey && !e.ctrlKey && !e.altKey && editable && !document.querySelector(".bn-suggestion-menu")) {
+          const view = editor.prosemirrorView;
+          const { from, to } = editor.prosemirrorState.selection;
+          if (view && from === to && from > 0 && editor.prosemirrorState.doc.textBetween(from - 1, from) === "[") {
+            e.preventDefault();
+            e.stopPropagation();
+            view.dispatch(view.state.tr.delete(from - 1, from));
+            linkPageAt(editor, slash, currentBlockId(editor), e.key === "+");
+          }
         }
         // M1 — Space on an empty line opens Ask AI (Notion); anywhere else it is a space.
         if (e.key === " " && !e.metaKey && !e.ctrlKey && !e.altKey && !e.shiftKey && editable && !document.querySelector(".bn-suggestion-menu")) {
