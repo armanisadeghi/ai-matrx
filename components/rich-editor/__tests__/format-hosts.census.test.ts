@@ -33,6 +33,7 @@ const REQUIRED: Record<string, RegExp> = {
   "features/agents/components/builder/message-builders/MessageItem.tsx": /useTextareaFormatting\(/,
   "features/agents/components/builder/message-builders/system-instructions/SystemMessage.tsx": /useTextareaFormatting\(/,
   "features/message-templates/components/TemplateEditor.tsx": /ProTextarea/,
+  "components/merge-field-input/MergeFieldInput.tsx": /useMergeFieldFormatting\(/,
 };
 
 /** Directories where text is long-form markdown a person writes. */

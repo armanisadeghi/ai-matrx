@@ -57,6 +57,7 @@ export const MergeFieldTextarea = forwardRef<MergeFieldInputHandle, MergeFieldTe
       write: (next: string) => inner.current?.write(next) ?? false,
       insertField: (path: string) => inner.current?.insertField(path),
       hasSelection: () => inner.current?.hasSelection() ?? false,
+      select: (start: number, end: number) => inner.current?.select(start, end),
     }));
 
     return (

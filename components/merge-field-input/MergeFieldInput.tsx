@@ -26,9 +26,11 @@
 
 import {
   forwardRef,
+  useCallback,
   useEffect,
   useImperativeHandle,
   useRef,
+  useState,
   type CSSProperties,
   type KeyboardEvent,
 } from "react";
@@ -46,6 +48,7 @@ import {
   serializeFrom,
   storedOffsetOf,
 } from "./merge-field-dom";
+import { useMergeFieldFormatting } from "./useMergeFieldFormatting";
 
 export interface MergeFieldInputHandle extends ProTextareaEditorHandle {
   /**
@@ -56,6 +59,8 @@ export interface MergeFieldInputHandle extends ProTextareaEditorHandle {
   insertField: (path: string) => void;
   /** True while the page selection is inside this field. */
   hasSelection: () => boolean;
+  /** Select stored-text offsets [start, end] and focus the field (a formatting edit keeps its selection). */
+  select: (start: number, end: number) => void;
 }
 
 export interface MergeFieldInputProps {
@@ -236,8 +241,31 @@ export const MergeFieldInput = forwardRef<MergeFieldInputHandle, MergeFieldInput
       sel.addRange(range);
     };
 
-    useImperativeHandle(ref, () => ({
+    const handleRef = useRef<MergeFieldInputHandle | null>(null);
+    const [rootEl, setRootEl] = useState<HTMLDivElement | null>(null);
+    // Stable: a fresh callback each render would detach and re-attach the ref (and re-set state) forever.
+    const setRoot = useCallback((node: HTMLDivElement | null) => {
+      rootRef.current = node;
+      setRootEl(node);
+    }, []);
+    useMergeFieldFormatting(rootEl, () => handleRef.current, !disabled);
+
+    useImperativeHandle(ref, () => (handleRef.current = {
       focus: () => rootRef.current?.focus(),
+      select: (start: number, end: number) => {
+        const root = rootRef.current;
+        if (!root) return;
+        root.focus();
+        const a = pointAtStoredOffset(root, start);
+        const b = pointAtStoredOffset(root, end);
+        const sel = window.getSelection();
+        const range = document.createRange();
+        range.setStart(a.node, a.offset);
+        range.setEnd(b.node, b.offset);
+        sel?.removeAllRanges();
+        sel?.addRange(range);
+        caretRef.current = end;
+      },
       getValue: () => shownRef.current ?? value,
       getSelection: () => {
         const root = rootRef.current;
@@ -292,7 +320,7 @@ export const MergeFieldInput = forwardRef<MergeFieldInputHandle, MergeFieldInput
 
     return (
       <div
-        ref={rootRef}
+        ref={setRoot}
         id={id}
         role="textbox"
         aria-multiline={multiline}
