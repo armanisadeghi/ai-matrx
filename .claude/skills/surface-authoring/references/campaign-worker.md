@@ -1,7 +1,8 @@
 # Surface campaign — worker brief (batch mode)
 
 Paste this whole file as a worker's task and fill in the assignment block. It is self-contained on
-purpose: the rest of the `surface-authoring` skill is reference, never required reading for this job.
+purpose: retain the entrypoint's integration receipt and read its runtime/menu/write-target branches
+when the assignment reaches them.
 **A page pass (agent surface + UI/UX in one pass) starts from the `page-pass` skill, which
 uses §2-§4 here as its surface procedure.** Coordinator side: [campaign-coordinator.md](./campaign-coordinator.md). Open platform gaps:
 `docs/handoffs/surface-campaign.md`.
@@ -19,12 +20,23 @@ A **surface** is a page or window that publishes named live values ("what the us
 so an AI agent launched there can see them. Your job, for each surface: while a user is on it, the
 Surface Context window (header button "Agents for this page" → "Surface Context") names the surface
 and shows every piece of data the page loads as a supplied value. Nothing is invented, nothing is
-undeclared, and it is proven on the live site with real data.
+undeclared, and it is proven in the real UI with real data.
 
-## The loop — build in batches, verify on production, never wait
+## Contents
 
-You do NOT run a dev server. You build and push; the release train ships `main` to aimatrx.com
-about every 30 minutes; you verify there with `pnpm surface:probe` (~40 s per surface, ~1 GB).
+- Setup and verification lane
+- Claim
+- Build one surface
+- Check, sync, commit
+- Verify live behavior
+- Independent review
+- Finish
+
+## The loop — build in batches, verify changed code
+
+Build and push each batch immediately. Local workers prove changed code in the managed localhost
+preview; production probes add deployed evidence when the release contains the commit. A cloud
+worker without a preview reports that exact unproven boundary to its named coordinator.
 
 ```
 Batch 1: build 5 → check → sync → commit+push each
@@ -33,28 +45,30 @@ Batch 2: build 5 → check → sync → commit+push each      (batch 1 is shippi
 Batch 3: build 5 ...                                      (batch 2 is shipping)
          verify batch 2 → fix ...
 ...
-Last:    verify the remaining batch(es), then the independent review, then the report
+Last:    verify the remaining batch(es), then the independent review and integration receipts
 ```
 
-If a batch is not deployed yet when you want to verify it, keep building. Only wait (in a
-`until …; do sleep 60; done` loop, never a chain of sleeps) when nothing else is left.
+If a batch is not deployed yet, continue useful work; deployed proof does not replace required
+localhost engineering proof. Never manually release, ship, deploy, or build production here.
 
 ## 0. Setup (once)
 
-- `add_repo armanisadeghi/ai-matrx`, ONE `git clone --depth 1` to the path it gives (10-minute
-  timeout; `git index-pack` looks stalled while it unpacks, and it isn't), then
-  `pnpm install --frozen-lockfile` (expect ~116 entries in `node_modules/.bin`).
-- Credentials are already in the environment (`AI_ADMIN_USERNAME`, `AI_ADMIN_PASSWORD`, the
-  Supabase and backend URLs). Never write a `.env.local`. Never print a credential or a sign-in URL.
+- Reuse the assigned checkout and read its `CLAUDE.md`; only a cloud task without a checkout
+  needs the environment's repository setup and `pnpm install --frozen-lockfile`.
+- Use existing authentication and environment credentials. Never print a credential or sign-in URL.
+- Local lane: use the shared managed preview and its session localhost URL; follow the repo's
+  browser-authentication flow. Never start a second raw dev server.
 - Supabase MCP: `project_id` `brsgrqvjdzwihsvnfqkf`.
-- Work on `main` only: no branches, no worktrees. Commit path-scoped
-  (`git commit -m "…" -- <paths>`), then `git pull --rebase origin main` and
-  `git push origin HEAD:main`. About 30 people push to this repo.
-- **After every `git pull`, if `pnpm-lock.yaml` changed, run `pnpm install --frozen-lockfile`
-  again.** A stale install makes even `pnpm check:surface-drift` fail with
-  `ERR_PACKAGE_PATH_NOT_EXPORTED` (seen 2026-09-26).
+- Commit assigned paths and push to `origin/main` immediately. Fetch before integrating; never
+  run dirty-tree `git pull --rebase` or a blanket stash/reset/restore/clean. Follow workspace
+  synchronization rules for a rejected push.
+- If an integrated change updates `pnpm-lock.yaml`, run `pnpm install --frozen-lockfile` again.
 
 ## 1. Claim (per surface, before building it)
+
+A direct human assignment names surfaces without a fleet claim. For autonomous fleet work,
+the assigned Work Loop claim is authority. Never combine it with a legacy SQL claim.
+Only a campaign cloud worker without Work Loop uses this expiring legacy fallback:
 
 ```sql
 update ui.ui_surface
@@ -75,7 +89,6 @@ returning name;
 0. **Read what agents already said about it:** `pnpm surface:feedback --surface <name>`, then run
    the printed SQL through the Supabase MCP. Fix what they report, or say why not in your report.
 1. **Completeness pass from the components, not from the manifest.**
-   - Many manifests were declared from a code read and never audited, so expect wrong descriptions.
    - Read every component each route renders, and list what it loads: fields, their natural
      composite objects, list rows, filters and search, loading/error/empty/access states, and
      content a child component renders.
@@ -94,30 +107,32 @@ returning name;
    - `contentSource`: a page showing a real record passes that record's own source (and `entity`
      when it can be attached or shared); `{type:"raw"}` only when the page has no primary text.
    - Worked example: `features/artifacts/components/CmsArtifactList.tsx` / `CmsArtifactDetail.tsx`.
-4. **Rules that bite** (each one cost a real surface a bug):
-   - `getScope` never fetches. It is polled every 400 ms; read state the page already rendered.
+4. **Runtime rules:**
+   - `getScope` never fetches. Inspectors may poll it; read state the page already rendered.
    - **Not loaded yet** = OMIT the key. **Loaded, and empty** = `[]` / `0` / `""`. Only a
      SUCCESSFUL load may report counts or rows; a failed load reports its load-status value only.
-   - **State in a child:** the child publishes into a ref the owner holds (one ref per publishing
-     child). Never mount a second provider: the deeper one replaces the owner's whole scope.
+   - **State in a child:** use `useSurfaceScopeContribution` for additive values and
+     `useSurfaceWriteHandlers` for additive handlers on the same identity, or publish into an
+     owner-held ref. A genuinely separate layer gets its own provider and identity.
    - A menu's `resolveContextOnOpen` returns only DECLARED names (e.g. a right-clicked row's values
      in the surface's own terms), never new keys.
-   - **A `MatrxDataTable` does not tell the page which rows it shows** after its own column filters
-     and sort (open gap, handoff "MatrxDataTable must tell its host which rows are on screen"). Describe list values as "after the page's own filters"
-     and name the gap in the readiness note.
-   - **A docked panel with its own surface (e.g. the side canvas) replaces yours while open**
-     (handoff "A docked panel with its own surface replaces the page's surface"). Never declare a value that only exists while such a panel is open.
+   - **List scope describes the rows its owner actually knows.** When a table owns filters/sort
+     that the page scope cannot observe, describe values as "after the page's own filters" and
+     name that boundary in readiness. Check the installed table's controlled query and row
+     callbacks before claiming its displayed rows; never mutate scope refs during render.
+   - **A docked panel with its own surface becomes primary while open.** The mounted page
+     remains a `surface_chain` level. Declare panel-only values on the panel and follow
+     `overlay-surfaces.md` and the intentional helper/native/resident handoff contract.
    - `sourceFeature` must be a real slug from `@ai-matrx/agents/generated/source-attribution`. Map
      the surface in `../aidream/apps/shared/chat/src/agents/utils/source-feature-from-surface.ts`; if no slug fits, use
-     the closest honest product and say so.
+     the canonical registry/generated contract rather than an unrelated slug; verify the header
+     resolver and menu both name the actual product.
    - A page with nothing a person can create, change or author gets no write targets and says so,
      with the reason, in the manifest header. Every page that lists records gets the full set below.
    - A page with a **"New ___" dialog** is the exception that always gets two targets, both `ask`:
      a `draft` target that opens the dialog and fills EVERY field (buttons, toggles and added rows
      too, not just text boxes), and an `entity` target that takes an ARRAY and creates each item
-     through the page's own create function, validating the whole list first. Without them,
-     agents improvise with generic tools and create half-built records (2026-09-26, My Classes:
-     classes with no settings or owner). Worked example: `education-classes.manifest.ts`, its
+     through the page's own create function, validating the whole list first. Worked example: `education-classes.manifest.ts`, its
      validation `features/education/classes/classAgentWrites.ts`, its handlers in
      `ClassesHome.tsx` (list) and `ClassFormDialog.tsx` (dialog).
    - **Record lists get full CRUD over lists, one set per record type** (`create_/update_/
@@ -164,42 +179,39 @@ returning name;
 
 ## 3. Check, sync, commit (per batch)
 
-- **Type check only what you touched** (the full `pnpm type-check` needs ~13 GB and is killed in a
-  cloud container):
-  Run `pnpm type-check` once for the whole batch (TypeScript 7, whole repo, ~30 s; the
-  machine-wide queue folds parallel workers' calls into one run). Never a focused tsconfig and
-  never a direct compiler call — both bypass the queue and cannot be shared.
-
-  Errors in files you did not touch are pre-existing: list them and don't fix them. CI runs the full
-  type check on every push.
+- Run the queued full `pnpm type-check` for the batch. Never introduce a focused tsconfig or
+  exclude shipped code. Follow `CLAUDE.md` if the launcher fails; report unrelated errors while
+  proving changed types and affected callers clean.
 - `pnpm check:surface-drift` and `pnpm check:surface-routes` (seconds each). If drift is red because
   of someone else's clash, fix that one line too.
-- **Sync each surface's DB mirror.** Cloud sessions lack the direct-Postgres variables (handoff "Cloud
-  sessions cannot sync"), so:
-  1. Run `pnpm exec tsx scripts/emit-surface-sync-sql.ts --organization-id 39c38960-d30c-4840-b0c1-c9960de95582 --surface <name> > sync.sql`.
-  2. READ it: it has caught real bugs.
-  3. Run the statements that changed through the Supabase MCP inside `begin; … commit;`.
-  4. Confirm the value count with
-     `select count(*) from ui.ui_surface_value where surface_name = '<name>'`.
+- **Sync each focused mirror** with
+  `pnpm exec tsx scripts/sync-surface-manifests-direct.ts --surface <name>`, followed by the
+  matching `--check --surface <name>`. Review removed values and mappings first: stale child
+  rows are archived and declared archived rows are revived.
+- If direct Postgres credentials are unavailable, generate the focused plan with the SQL
+  emitter's current arguments, inspect it, and execute it through connected Supabase MCP in a
+  transaction. Verify all metadata, values/roles/write-targets/client-tools, ownership/public
+  visibility, and archival in both directions. A value count alone is not a full check receipt.
+  If the full check cannot run, record `NOT RUN`, the exact boundary, and its named owner/next
+  action; do not claim a completed integration.
+- **Commit each surface separately**, keeping the owning feature's current rules in `FEATURE.md`
+  in the same change; no changelog. Push immediately and record each surface's commit SHA.
 
-  If `SUPABASE_MATRIX_*` exist in your environment, use
-  `pnpm exec tsx scripts/sync-surface-manifests-direct.ts --surface <name>` and `--check` instead.
-- **Commit each surface separately**, with a one-line Change Log entry in its feature's `FEATURE.md`,
-  then push. Record each surface's commit SHA; you need it to verify.
-
-## 4. Verify on production (per batch, once deployed)
+## 4. Verify live behavior (per batch)
 
 Run every probe with your own short temp dir, e.g. `TMPDIR=/tmp/sw-<short-name> pnpm surface:probe …`:
 parallel workers otherwise share one browser profile and collide (keep the path short; a long one
 breaks Chromium's socket).
 
 ```bash
-pnpm surface:probe --surface <client/name> --commit <sha> \
+pnpm surface:probe --surface <client/name> --base http://<session>.localhost:3001 \
   --route <route> [--route <second route or /record/<real id>>] \
   [--fill '<css selector>=><text>'] --out probe-<name>.json
 ```
 
-- **Exit 3:** not deployed yet. Build the next batch and try again later.
+- For production evidence, select the correct host with `--base` and add `--commit <sha>` to
+  prove the deployment contains the change. **Exit 3:** not deployed; continue other authorized
+  work and report the release boundary.
 - **Exit 0:** the surface is named, no keys are undeclared, and the menu opened.
   - Read `supplied` / `suppliedEmpty` / `absent` for each route against what the page actually
     shows. A value visible on screen but absent is a finding. So is a value whose content is wrong.
@@ -226,10 +238,10 @@ card (for real: use obviously named test data). Pass means ALL of:
 - one refusal case: send a value the handler must refuse (a duplicate, a bad date) and confirm the
   reply carries the handler's reason and nothing was written.
 
-Fix findings, commit, and re-probe after the next deploy. Report the test rows you created so the
+Fix findings, commit/push, and re-probe changed code. Report the test rows you created so the
 person can delete them.
 
-## 5. Independent review (once, near the end, on the deployed site)
+## 5. Independent review (once, near the end, against changed code)
 
 Dispatch ONE reviewer subagent (lane: standard) for the whole assignment, time-boxed to 45 minutes.
 
@@ -240,19 +252,20 @@ Dispatch ONE reviewer subagent (lane: standard) for the whole assignment, time-b
 - **Do NOT give it:** your counts, file list, or suspicions.
 
 Fix what it finds that is yours. Write a handoff prompt for what is not. Then resume the SAME
-reviewer to re-check only the fixes. On the pilot, the reviewer found two real bugs, a design flaw,
-a platform gap and a data bug that the builder had missed.
+reviewer to re-check only the fixes.
 
 ## 6. Finish
 
-- **Release every claim:**
+- **Settle assigned Work Loop work through its worker-candidate/verifier process.** Only a
+  worker using the bounded legacy SQL fallback releases that claim with:
   `update ui.ui_surface set check_claimed_by = null, check_claimed_at = null where check_claimed_by = 'surface-worker/<short-name>';`
-- **File ONE review-queue row** for the assignment:
+- **For a legacy campaign assignment, file ONE review-queue row** for the assignment:
   - title: "Agent-readable: <n> surfaces (<names>)"; url: the first surface's route; lane tag
     `surface-emitters`; `repo_slug` `matrx-frontend`; domain `platform`; feature `surfaces`.
   - Check none exists first.
   - The reviewer sets it to `ready_for_human` only if it passes.
-- **Report**, in at most 15 lines plus a file `REPORT-<short-name>.md` in your scratchpad. Cover:
+- **Report** each surface with the entrypoint's integration receipt; a scratch report may hold
+  detailed evidence. Never write `last_checked_*` or a final certification pass yourself. Cover:
   - each surface: commit SHA, values before → after, probe counters per route, readiness and note;
   - skipped or already-done surfaces;
   - the reviewer's findings and what you fixed;

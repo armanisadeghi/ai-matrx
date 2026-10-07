@@ -69,7 +69,7 @@ Invoke `context-menu-v3` and follow its full contract:
 
 - Sync only the focused manifest with `pnpm exec tsx scripts/sync-surface-manifests-direct.ts --surface <client>/<local>`.
 - Verify it with the matching `--check --surface <client>/<local>` command; it reads the live `ui_surface` plus every declared value, role, write target, and client tool.
-- Update the feature's `FEATURE.md` and Change Log.
+- Update the feature's current rules in `FEATURE.md`; history belongs in Git.
 
 ## Live completion gate
 

@@ -39,7 +39,7 @@ Fill this receipt, rather than replacing it with a narrative. For a read-only as
 | Excuse (verbatim) | Reality (one line) |
 |---|---|
 | “not ready for certification or release” | Certification and release admission differ; partial source may release, never as functioning or certified. |
-| “owns the remaining emitter repair” | The trial assigned this to an unnamed coordinator; the assigned implementer retains ordinary completion. |
+| “owns the remaining emitter repair” | The assigned implementer retains ordinary completion. |
 | “exclude this surface from the train unless the verifier passes” | A verifier is required for certification, not for a clearly labeled partial source change to enter the pre-launch release. |
 
 ## Red flags
@@ -72,7 +72,7 @@ Fill this receipt, rather than replacing it with a narrative. For a read-only as
 - **Adding/removing/changing values on an existing manifest, or deleting a manifest** → read [`references/update-or-remove.md`](./references/update-or-remove.md).
 - **Adding live scope or a canonical v3 menu to UI that already exists — including a page or window being registered as a surface for the first time — or completing/repairing any existing surface** → read [`references/runtime-rollout.md`](./references/runtime-rollout.md) (its menu contract and live completion gate: canonical submenu label, no `INERT MENU` / `VALUE MAPPING GAP`, real `extraSections` handlers, focused `--surface` sync).
 - **Looking up where a type, helper, service, route, or check lives** → read [`references/file-map.md`](./references/file-map.md).
-- **Working the surface campaign (making many surfaces agent-readable in batches), or coordinating it** → a worker reads [`references/campaign-worker.md`](./references/campaign-worker.md) and nothing else; a coordinator reads [`references/campaign-coordinator.md`](./references/campaign-coordinator.md). Tools: `pnpm surface:census` (the one list) and `pnpm surface:probe` (verify a surface on the live site, no dev server). Open gaps: `docs/handoffs/surface-campaign.md`.
+- **Working the surface campaign (making many surfaces agent-readable in batches), or coordinating it** → a worker reads [`references/campaign-worker.md`](./references/campaign-worker.md); a coordinator reads [`references/campaign-coordinator.md`](./references/campaign-coordinator.md). These briefs retain this skill's completion receipt and route to the relevant runtime/menu/write-target contracts. Tools: `pnpm surface:census` (implementation leads, not certification) and `pnpm surface:probe` (live-site or managed-localhost proof). Open gaps: `docs/handoffs/surface-campaign.md`.
 
 This list names every reference file; a run that reaches none of these branches needs only this file.
 
@@ -81,7 +81,7 @@ Adding a surface is **code-first, DB-mirror**. Code is the single source of trut
 ## What a surface is — and the recursion that trips people up
 
 A **surface** can give a specifically approved outside helper highly specific
-context. Agent-native hosts do not remove that capability: they require an
+context. Agent-native hosts do not remove that capability: they require a
 documented integration contract so the subject agent and residents keep their
 own engineered context.
 
@@ -101,7 +101,7 @@ own engineered context.
 
 **`SurfaceManifest.label` is REQUIRED.** It is the ONE canonical human display name for the surface — unique per client (case-insensitive; `pnpm check:surface-drift` fails on a missing or clashing label). Every value's `label` and every group's `label` is equally canonical.
 
-- **No chrome may hand-type, override, or re-derive a surface/value/group label.** The `surfaceLabel` runtime override prop was DELETED; ESLint bans it (`surfaceLabelOverrideBan` in `eslint.config.mjs`).
+- **No chrome may hand-type, override, or re-derive a surface/value/group label.** ESLint bans `surfaceLabel` runtime overrides (`surfaceLabelOverrideBan` in `eslint.config.mjs`).
 - Chrome derives the surface name via **`getSurfaceDisplayLabel(surfaceName)`** from `../aidream/apps/shared/chat/src/surfaces/utils/surface-display.ts` (static + synchronous; safe in server and client components). `labelFromName` slug fallback is for manifest-less DB surfaces ONLY.
 - **On-page section titles and field labels for declared values render via `surfaceValueLabels(manifest)` / `surfaceGroupLabels(manifest)`** (same file) — byte-identical to the manifest. A page that hand-writes "Page intent" next to values grouped under `page_intent` is a defect; render `G.page_intent`.
 - `label` is mirrored to `ui_surface.label` by manifest sync (ALWAYS written); DB drift shows in the drift report as `surfaceLabelDrifts`.
@@ -157,7 +157,7 @@ These are short — read them when the task is non-trivial:
 - `../aidream/apps/shared/chat/src/surfaces/types.ts` — `SurfaceValue`, `SurfaceValueGroup`, `SurfaceManifest`, `ValueMapping`, `SurfaceScopePayload`
 - `features/surfaces/manifests/_baseline.manifest.ts` — `BASELINE_VALUES`, `pickBaseline`, `mergeBaselineValues`
 - `features/surfaces/manifests/registry.ts` — register your manifest in **`RAW_MANIFESTS`**; `ALL_MANIFESTS` is derived from it (inheritance resolved, baselines injected, provenance + groupKey stamped) and is what everything consumes
-- `features/surfaces/manifests/marketing-page.manifest.ts` — **THE reference implementation**: 40+ values, 7 curated groups, full contract, `inheritsFrom` chain (marketing-site → marketing-brand), scope builder in a separate runtime module (`features/marketing/lib/marketing-page-scope.ts`), emitter in `PageWorkspace.tsx`
+- `features/surfaces/manifests/marketing-page.manifest.ts` — **THE reference implementation**: full contract, `inheritsFrom` chain (marketing-site → marketing-brand), scope builder in a separate runtime module (`features/marketing/lib/marketing-page-scope.ts`), emitter in `PageWorkspace.tsx`
 - `features/surfaces/manifests/notes-editor.manifest.ts` — the simple case (baseline + specific + in-file scope helper)
 
 **`intro` — the surface's self-introduction.** A single XML-ish block (`<surface_intro>…`) telling the agent what this surface IS, what the user does here, and how to read its values. Written from a close understanding of the surface's PURPOSE — this is the first surface-context item the agent sees. Mirrored to `ui_surface.intro`. Every Tier-1 surface should have one. It describes the SURFACE and the user — never the model: no "You are the agent for…" / "Your job is…" framing (the bound agent's identity and rules live in the DB agent; `pnpm check:hardcoded-prompts` flags intros that assign the model a role — say "You are on…" / "The work here is…").
@@ -325,7 +325,7 @@ Registering a surface is a LAYERED recipe — layers may land incrementally, but
 
 ## Layer 2 — Agent roles + config namespaces
 
-- **Agent role** = a named position the surface PLUGS an agent into (`agentRoles`; cleanup's `clean` + `custom_slot`, scribe's `assistant`). `defaultAgentId` = platform default; users/orgs override in `ui_surface_agent_pref`, resolved `manifest → global → org-by-membership → user` by `services/surface-config.service.ts`. **A system agent's role sets `mandateKey` (e.g. `"masterwork.scout"`) INSTEAD of `defaultAgentId`** — the Holder resolves live from `agent.mandate` (sourceTier `"mandate"`); never freeze an agent UUID in a manifest for a job that has a Mandate (drift check refuses both set at once; reference: `masterwork-rulebook.manifest.ts`). Roles with a resolved agent surface automatically in the shell header Agents menu (`SurfaceAgentsHeaderButton` → `SurfaceBoundAgentsList` "Surface roles") and launch with the page's live scope — never build a bespoke per-page agent menu. **Disclosure never adds chips, badges, labels, rosters, or any other visible page content.** Pages read via `hooks/useSurfaceConfig.ts` / `useSurfaceAgentRoles`. **Never store a per-surface agent choice in `userPreferences` / `useSetting`** — that's the exact legacy this system deleted (`scribeAssistantAgentId`).
+- **Agent role** = a named position the surface PLUGS an agent into (`agentRoles`; cleanup's `clean` + `custom_slot`, scribe's `assistant`). `defaultAgentId` = platform default; users/orgs override in `ui_surface_agent_pref`, resolved `manifest → global → org-by-membership → user` by `services/surface-config.service.ts`. **A system agent's role sets `mandateKey` (e.g. `"masterwork.scout"`) INSTEAD of `defaultAgentId`** — the Holder resolves live from `agent.mandate` (sourceTier `"mandate"`); never freeze an agent UUID in a manifest for a job that has a Mandate (drift check refuses both set at once; reference: `masterwork-rulebook.manifest.ts`). Roles with a resolved agent surface automatically in the shell header Agents menu (`SurfaceAgentsHeaderButton` → `SurfaceBoundAgentsList` "Surface roles") and launch with the page's live scope — never build a bespoke per-page agent menu. **Disclosure never adds chips, badges, labels, rosters, or any other visible page content.** Pages read via `hooks/useSurfaceConfig.ts` / `useSurfaceAgentRoles`. **Never store a per-surface agent choice in `userPreferences` / `useSetting`**.
 
   🚨 **THE DISCLOSURE LAW is top-menu-only metadata, never page UI.** Register only a fixed AI job a surface already runs through `agentRoles` or UI-free `useDeclaredSurfaceMandates`, and open its mandate IN PLACE via `useOpenMandateWindow()` rather than linking to a mandate route. Never add an agent chip, badge, label, roster, callout, or section to the surface. Disclosure does not authorize context inheritance. **Invoke the `agent-disclosure` skill** for the full boundary and verification. Guard: `pnpm check:agent-disclosure`.
 - **Config namespace** = a typed JSONB bucket in `ui_surface_config` (`dictionary`, `session_defaults`). Adding one = a PURE handler (validate/merge/empty) in `config/namespace-registry.ts` + a manifest `configNamespaces` line. Zero SQL.
@@ -338,8 +338,8 @@ Registering a surface is a LAYERED recipe — layers may land incrementally, but
 ## Layer 4 — DB sync (a manifest not synced is not registered)
 
 - A `ui_client` row must exist first. The focused sync creates or updates the selected `ui_surface` row; it never creates clients.
-- Run `pnpm exec tsx scripts/sync-surface-manifests-direct.ts --surface <client>/<local>` after the manifest is registered. It changes only that surface and its declared children, in one transaction; it deletes and sweeps nothing.
-- Prove the live mirror with `pnpm exec tsx scripts/sync-surface-manifests-direct.ts --check --surface <client>/<local>`. It compares the surface metadata and every declared value, role, write target, and client tool, including system ownership and public visibility.
+- Run `pnpm exec tsx scripts/sync-surface-manifests-direct.ts --surface <client>/<local>` after the manifest is registered. It changes only that surface and its declared children, in one transaction; it soft-archives (`deleted_at`) stale child rows of that surface and revives declared archived rows. It never hard-deletes rows, creates clients, or sweeps other surfaces.
+- Prove the live mirror with `pnpm exec tsx scripts/sync-surface-manifests-direct.ts --check --surface <client>/<local>`. It compares the surface metadata and every declared value, role, write target, and client tool, including system ownership, public visibility, and removed-but-live or declared-but-archived children.
 - Release independently runs `--check --registration-only` from an isolated archive of the committed candidate before tag/push. A failure is a runtime dependency failure, not advisory quality debt.
 
 ## Layer 5 — Runtime emitter (`buildScope`)
@@ -357,20 +357,23 @@ handoff, record: agent/job, surface, purpose, context mode (`none`,
 `named_inputs`, or `approved_surface_context`), allowed names or approved
 snapshot, approval provenance, and evidence. A documented integration contract
 or an explicit user choice persists until scope changes; it is not a per-run
-prompt. A binding is transport metadata, never approval for a data handoff. Do
-not claim runtime enforcement from this record alone: the
-current header sends full scope and the mapper can deliver unmapped fields, so
-prove the effective request and persisted variables. Native subject agents use
+prompt. A binding is transport metadata, never approval for a data handoff.
+Prove the effective request and persisted variables. The current
+`mapScopeToInstanceWithSurface` treats any shortcut/context/value mapping or
+explicit engineered-input marker as an engineered launch: only mapped values,
+the agent's named slots, and manifest `alwaysOn` values are admitted. A launch
+with no mapping retains page context; provider placement or a binding alone
+does not prove its handoff contract. Native subject agents use
 only engineered inputs and require isolation proof. Permanent residents,
 including window panels, have no automatic inheritance and use their deliberate
 `none`, `named_inputs`, or `approved_surface_context` contract.
 
 Verify like the owner does:
 
-1. For an outside helper, bind a test agent with **deliberately non-matching names** (cleanup's template: agent `Cleanup Surface Demo Reporter` 42971fe0, `working_text` ← `raw_transcript_text`) so name-heuristics can't mask a broken mapping.
+1. For an outside helper, bind a test agent with **deliberately non-matching names** so name-heuristics can't mask a broken mapping.
 2. Launch from the surface; confirm the mapped variables arrived: `cx_conversation.variables` is the DB forensics.
 3. **The Matrx-vs-matrix test** (Arman's standard): put "Matrx is the product name (not matrix)" in a bound context value, feed input containing "matrix", check the output spells **Matrx**. If it doesn't, the context never reached the agent — a silently-skipped binding, the exact bug class this system exists to kill.
-4. Recovery layers must be **LOUD** (console.warn/error + toast) — a silent skip is how the org-tier bug survived.
+4. Recovery layers must be **LOUD** (console.warn/error + toast).
 
 ## Registration ship checklist
 
