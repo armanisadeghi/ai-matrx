@@ -32,14 +32,15 @@ export async function measurePages({ base, fixtures: fixtures0, log = console.lo
   let spacePath = fixtures.spacePath;
   if (!spacePath) {
     await page.goto(`${base}/spaces`, { waitUntil: "domcontentloaded", timeout: 120000 });
-    await page.waitForTimeout(4000);
+    await page.waitForSelector('a[href^="/spaces/"]', { timeout: 30000 }).catch(() => {});
+    await page.waitForTimeout(3000);
     const hrefs = await page.evaluate(() => [...new Set([...document.querySelectorAll("a[href]")].map((a) => a.getAttribute("href")).filter((h) => /^\/spaces\/[0-9a-f-]{36}/.test(h)))].slice(0, 14));
     for (const h of hrefs) {
       let reads = 0;
-      const f = (req) => { if (req.url().includes("read_records")) reads++; };
+      const f = (req) => { if (/read_records|record_aggregate/.test(req.url())) reads++; };
       page.on("request", f);
       await page.goto(`${base}${h}`, { waitUntil: "domcontentloaded", timeout: 120000 }).catch(() => {});
-      await page.waitForTimeout(5000);
+      await page.waitForTimeout(7000);
       page.off("request", f);
       if (reads > 0) { spacePath = h; break; }
     }

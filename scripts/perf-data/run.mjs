@@ -35,14 +35,17 @@ try {
     const views = await rpc("views", { p_organization_id: D.organization_id, p_table_id: D.table_id });
     // A board view: scan the first tables of the home list for one whose saved view lays out as a board.
     let boardViewId, boardTableId, boardNeedle;
-    for (const t of (home.tables ?? []).slice(0, 80)) {
-      const vs = await rpc("views", { p_organization_id: t.organization_id, p_table_id: t.table_id });
-      const b = Array.isArray(vs) ? vs.find((v) => ["board", "pipeline"].includes(v.definition?.layout)) : null;
-      if (b) {
-        const pg = await rpc("read_records_page", { p_organization_id: t.organization_id, p_table_id: t.table_id, p_limit: 1 });
-        const title = pg.rows?.[0]?.document?.title ?? pg.rows?.[0]?.document?.name;
-        if (title) { boardViewId = b.view_id; boardTableId = t.table_id; boardNeedle = title; break; }
-      }
+    const tables = home.tables ?? [];
+    for (let i = 0; i < tables.length && !boardViewId; i += 10) {
+      await Promise.all(tables.slice(i, i + 10).map(async (t) => {
+        if (boardViewId) return;
+        const vs = await rpc("views", { p_organization_id: t.organization_id, p_table_id: t.table_id }).catch(() => null);
+        const b = Array.isArray(vs) ? vs.find((v) => ["kanban", "board", "pipeline"].includes(v.definition?.layout)) : null;
+        if (!b || boardViewId) return;
+        const pg = await rpc("read_records_page", { p_organization_id: t.organization_id, p_table_id: t.table_id, p_limit: 1 }).catch(() => null);
+        const title = pg?.rows?.[0]?.document?.title ?? pg?.rows?.[0]?.document?.name;
+        if (title && !boardViewId) { boardViewId = b.view_id; boardTableId = t.table_id; boardNeedle = title; }
+      }));
     }
     const fx = { homeNeedle: null, boardViewId, boardTableId, boardNeedle, table: D.table_name, tableId: D.table_id, recordId: first.rows[0].id, recordTitle: first.rows[0].document.title, spacePath: arg("space", null) || null };
     console.log(`\nPage load against ${base} (${/localhost|127\.0\.0\.1/.test(base) ? "dev server: numbers include on-demand compiles" : "production build"})`);
