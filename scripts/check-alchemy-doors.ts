@@ -22,9 +22,15 @@
  *              code outside surfaces/runtime, components/agent-copy/alchemy-door.ts and the agent write thunk
  *              -> dispatch through the surface write door (a declared write target + handler).
  *  registries  a module-level `new Map` of actions/handlers in a file named *registry*, OR (any
- *              file name) a module-level `new Map`/`new Set` beside an exported `register*` function
- *              -> register with Alchemy's registry instead of a private one.
- *  handcsv     a hand-rolled CSV/TSV writer: quote-doubling (`.replace(/"/g, '""')`) or a
+ *              file name) a module-level `new Map`/`new Set` beside an exported `register*` function, OR a
+ *              module-level object/Record store (`const X: Record<…> = {}`, `= {} as Record<…>`,
+ *              `Object.create(null)`) that the file fills by key (`X[k] =` / `Object.assign(X`) beside an
+ *              exported `register*`, OR any module Map in a *registry* file beside an exported `register*`
+ *              -> register with Alchemy's registry instead of a private one, or ALLOW with the true reason.
+ *  handcsv     a SPLIT-based CSV/TSV reader: a line split (`.split("\n")`, `.split(/\r?\n/)`) followed within
+ *              6 lines by a field split on `,` / a tab / a delimiter variable, within 20 lines of csv/tsv/delimited
+ *              (breaks on every quoted cell and never reverses the formula guard) -> parseDelimited; or
+ *              a hand-rolled CSV/TSV writer: quote-doubling (`.replace(/"/g, '""')`) or a
  *              `.join(",")` / `.join("\t")` over rows within 15 lines of a csv/tsv mime or filename
  *              (the join counts only when it follows a row `.map(` / `.forEach(` — a join of a plain list, e.g. a file-extension
  *              accept string beside the word "csv", is not a writer)
@@ -126,6 +132,44 @@ const ALLOW: Record<Rule, string[]> = {
     "../aidream/apps/shared/chat/src/agents/ui-first-tools/redux/ask-resolver-registry.ts",
     // Mounted custom-fields section doors (the surface write door's targets for `custom_fields`); not menu actions.
     "../aidream/apps/shared/chat/src/surfaces/runtime/custom-field-targets.ts",
+    // AP-2 A5 triage (2026-10-07) of the widened rule (object/Record stores; any Map in a *registry* file):
+    // none holds a runnable menu/toolbar/copy/export action, so none folds into Alchemy's registry.
+    // conversationId -> threadId lookup for the war-room write tools (data).
+    "features/agents/war-room-tools/thread-target-registry.ts",
+    // Live audio-session CONTROLS by id (the audio lock family's bookkeeping); a handle table, not an action.
+    "features/audio/session/audioSessionRegistry.ts",
+    // Tool-result READERS: "did this tool result create a record the canvas can show" (a classifier lookup).
+    "features/canvas/tool-results/toolResultCanvasRegistry.ts",
+    // Monaco language-environment descriptors and their activation state (editor configuration).
+    "features/code/editor/monaco-environments/registry.ts",
+    // Render-preview COMPONENTS by library tab prefix (a renderer lookup).
+    "features/code/preview/renderPreviewRegistry.ts",
+    // Handles to mounted <CodeWorkspace> instances (+ their change listeners); a handle table.
+    "features/code/runtime/workspaceRegistry.ts",
+    // Kind -> record disposition (how a kind's payload maps onto a record); declarations, not actions.
+    "features/content-ir/records/kind-record-registry.ts",
+    // Transcript-studio MODULE definitions (feature modules registered at boot); a module catalog.
+    "features/transcript-studio/modules/registry.ts",
+    // URL -> panel HYDRATORS run once when a URL carrying panel state loads; restoration, never a menu row.
+    "features/window-panels/url-sync/UrlPanelRegistry.ts",
+    // Guided-setup CHECKLIST definitions (steps + done-tests); declarations read by the checklist UI.
+    "lib/guided-setup/registry.ts",
+    // AbortControllers of in-flight agent requests by request id; a cancellation handle.
+    "../aidream/apps/shared/chat/src/agents/redux/execution-system/thunks/abort-registry.ts",
+    // The host's server-side dependency injection (createClient, getAgent); a port.
+    "../aidream/apps/shared/chat/src/host/server-deps.ts",
+    // The host's UI slot components injected into the package; a port.
+    "../aidream/apps/shared/chat/src/host/ui-slots.tsx",
+    // Tool-call RENDERER components by tool name; a component lookup.
+    "../aidream/apps/shared/chat/src/tool-call-visualization/registry/registry.tsx",
+    // Client tools the MODEL calls on a realtime voice surface; an agent tool table, never a menu row.
+    "../aidream/apps/shared/chat/src/voice-agent/runtime/client-tool-registry.ts",
+    // Applet RESULT components by function name (how a function's output renders); a component lookup.
+    "utils/ts-function-registry/component-registry.ts",
+    // The applet builder's FUNCTION CATALOG (metadata + execute, run only by an applet's configured step via
+    // AppletRunner / SmartFunctionExecutor); not a copy/export/menu action, and Alchemy's registry has no
+    // applet-function kind to hold it.
+    "utils/ts-function-registry/function-registry.ts",
   ],
   handcsv: [],
   // QuickHtmlShareModal opens the author's HTML in a new tab as a PREVIEW of the page (a blob URL they look
@@ -154,6 +198,12 @@ const CSV_NAME = /text\/csv|text\/tab-separated|["'`.][\w-]*\.(?:csv|tsv)\b|\b(?
 const RUNNABLE_VALUE = /action|handler|command|menu|provider|adapter|resolver|generator|door|callback|=>|Fn\b/i;
 /** A Map/Set of bare `() => void` listeners (pub/sub, abort waiters) holds subscriptions, not runnable actions. */
 const LISTENER_SET = /Set<\s*\(\s*\)\s*=>\s*void\s*>/;
+/** A split-based CSV/TSV READER: a line split... */
+const LINE_SPLIT = /\.split\(\s*(?:["'`](?:\\r)?\\n["'`]|\/[^/\n]*\\n[^/\n]*\/)/;
+/** ...then a field split on a comma, a tab, or a delimiter variable. */
+const FIELD_SPLIT = /\.split\(\s*(?:["'`](?:,|\\t)["'`]|\/,\/|\/\\t\/|delim\w*\s*\)|separator\s*\)|sep\s*\))/i;
+/** A module-level object store: `const X: Record<…> = {}`, `const X: { [k: string]: … } = {}`, `= {} as Record<…>`, `Object.create(null)`. */
+const MODULE_OBJECT = /^(export\s+)?(const|let)\s+(\w+)\s*(?::\s*([^=]+?))?\s*=\s*(?:\{\s*\}|Object\.create\(\s*null\s*\))\s*(?:as\s+([^;]+))?;?\s*$/;
 /**
  * The raw clipboard, however it is reached: `navigator.clipboard` / `navigator?.clipboard` /
  * `navigator["clipboard"]`, a clipboard method on ANY receiver (a cast `(navigator as …).clipboard
@@ -239,6 +289,8 @@ export function scanSource(file: string, src: string): Hit[] {
   const readsCsvByHand = lines.some((l) => CSV_QUOTE_CHAR.test(l)) && lines.some((l) => CSV_COMMA_CHAR.test(l)) &&
     lines.some((l) => /csv|tsv|delimited/i.test(l));
   const hasRegisterFn = lines.some((l) => /^export\s+(?:async\s+)?(?:function\s+register\w*\s*[(<]|const\s+register\w*\s*[:=])/.test(l));
+  const mutatedByKey = (name: string) =>
+    lines.some((x) => new RegExp(`\\b${name}\\s*\\[[^\\]]+\\]\\s*=(?!=)|Object\\.assign\\(\\s*${name}\\b`).test(x));
   lines.forEach((l, i) => {
     if (RAW_CLIPBOARD.test(l)) add("clipboard", i);
     if (markLines.has(i) || (hasDownload && /URL\.createObjectURL\s*\(/.test(l))) add("downloads", i);
@@ -250,7 +302,12 @@ export function scanSource(file: string, src: string): Hit[] {
       /action|handler/i.test(l)
     )
       add("registries", i);
-    else if (hasRegisterFn && /^(export\s+)?(const|let)\s+\w+\s*(:[^=]*)?=\s*new\s+Map\b/.test(l) && RUNNABLE_VALUE.test(l) && !LISTENER_SET.test(l)) add("registries", i);
+    else if (hasRegisterFn && /^(export\s+)?(const|let)\s+\w+\s*(:[^=]*)?=\s*new\s+Map\b/.test(l) && (isRegistry || RUNNABLE_VALUE.test(l)) && !LISTENER_SET.test(l)) add("registries", i);
+    else {
+      const obj = MODULE_OBJECT.exec(l);
+      if (obj && hasRegisterFn && (obj[4] || obj[5]) && mutatedByKey(obj[3])) add("registries", i);
+    }
+    if (FIELD_SPLIT.test(l) && near(i, 6, 0, (x) => LINE_SPLIT.test(x)) && near(i, 20, 20, (x) => /csv|tsv|delimited/i.test(x))) add("handcsv", i);
     if (CSV_QUOTE_DOUBLING.test(l) || (CSV_JOIN.test(l) && near(i, 8, 0, (x) => /\.map\(|\.forEach\(/.test(x)) && near(i, 15, 15, (x) => CSV_NAME.test(x)))) add("handcsv", i);
     if (readsCsvByHand && CSV_QUOTE_FLAG_TOGGLE.test(l)) add("handcsv", i);
     if (/\bwindow\.open\s*\(/.test(l) && near(i, 6, 3, (x) => OBJECT_URL.test(x))) add("windowopen", i);
@@ -341,6 +398,17 @@ function selfTest(): number {
     { rule: "clipboard", file: "components/agent-copy/CopyButtons.tsx", src: "navigator.clipboard.writeText(a);\n", red: true, what: "an agent-copy file is NOT exempt" },
     { rule: "clipboard", file: "components/x/Foo.tsx", src: "const text = e.clipboardData.getData('text/plain');\n", red: false, what: "a paste event's clipboardData" },
     { rule: "clipboard", file: "components/x/Foo.tsx", src: "const ok = await copyText(url, 'Link copied');\n", red: false, what: "the kit copy" },
+    { rule: "registries", file: "features/x/Foo.ts", src: "const store: Record<string, Fn> = {};\nexport function registerThing(k: string, f: Fn) { store[k] = f; }\n", red: true, what: "object Record store filled by register*" },
+    { rule: "registries", file: "features/x/Foo.ts", src: "const store = {} as Record<string, Fn>;\nexport const registerThing = (k: string, f: Fn) => { store[k] = f; };\n", red: true, what: "`{} as Record` store filled by register*" },
+    { rule: "registries", file: "features/x/Foo.ts", src: "const deps: Partial<Deps> = {};\nexport function registerDeps(d: Partial<Deps>) { Object.assign(deps, d); }\n", red: true, what: "Object.assign-filled typed store beside register*" },
+    { rule: "registries", file: "features/x/thing-registry.ts", src: "const registry = new Map<string, Definition>();\nexport function registerThing(k: string, d: Definition) { registry.set(k, d); }\n", red: true, what: "any Map in a *registry* file beside register*" },
+    { rule: "registries", file: "features/x/Foo.ts", src: "const LABELS: Record<string, string> = {};\nLABELS.a = 'x';\n", red: false, what: "object constant with no register*" },
+    { rule: "registries", file: "features/x/Foo.ts", src: "const opts = {};\nexport function registerThing() { use(opts); }\n", red: false, what: "untyped `{}` never filled by key" },
+    { rule: "handcsv", file: "features/x/Foo.ts", src: "function readCsv(input: string) {\n  const lines = input.split('\\n');\n  const headers = lines[0].split(',');\n}\n", red: true, what: "split('\\n') then split(',') csv reader" },
+    { rule: "handcsv", file: "features/x/Foo.ts", src: "const kind = 'tsv';\nconst rows = text.split(/\\r?\\n/)\n  .filter(Boolean)\n  .map((line) => line.split('\\t'));\n", red: true, what: "split(/\\r?\\n/) then split('\\t') tsv reader" },
+    { rule: "handcsv", file: "features/x/Foo.ts", src: "const mime = 'text/csv';\nconst rows = text.split(\"\\n\").map((l) => l.split(delimiter));\n", red: true, what: "split(delimiter) reader" },
+    { rule: "handcsv", file: "features/x/Foo.ts", src: "const tags = text.split('\\n').map((l) => l.split(','));\n", red: false, what: "line+comma split with no csv context" },
+    { rule: "handcsv", file: "features/x/Foo.ts", src: "const exts = '.csv,.tsv'.split(',');\n", red: false, what: "comma split with no line split near" },
     { rule: "doorbypass", file: "components/agent-copy/AlchemyHost.tsx", src: "await applySurfaceWrite(t, v);\n", red: true, what: "agent-copy beyond the one door file is NOT exempt" },
     { rule: "doorbypass", file: "components/agent-copy/alchemy-door.ts", src: "await applySurfaceWrite(t, v);\n", red: false, what: "the one write door file" },
   ];

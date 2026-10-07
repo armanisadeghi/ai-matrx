@@ -8,6 +8,8 @@
 
 import { supabase } from "@/utils/supabase/client";
 
+import { syncPublishedMedia, type MediaSyncResult } from "./published-media";
+
 export interface PublishState {
   published: boolean;
   slug: string | null;
@@ -52,7 +54,12 @@ export async function readPublishState(spaceId: string): Promise<PublishState> {
   };
 }
 
-export async function changePublish(spaceId: string, change: PublishChange): Promise<void> {
+/**
+ * Publish, unpublish or change a published page's settings. The cover and icon files go public with the page
+ * and back when it comes down (`published-media.ts`); a picture that could not be changed is counted in the
+ * answer, never thrown — publishing itself stands.
+ */
+export async function changePublish(spaceId: string, change: PublishChange): Promise<MediaSyncResult> {
   const { error } = await supabase.schema("content").rpc("space_publish", {
     p_space_id: spaceId,
     p_published: change.published,
@@ -61,6 +68,17 @@ export async function changePublish(spaceId: string, change: PublishChange): Pro
     p_slug: change.slug,
   });
   if (error) throw new Error(message(error, "We couldn't change how this page is published."));
+  return syncPublishedPictures(spaceId);
+}
+
+/** Bring the cover and icon files in step with the page's publish state as it is now. */
+export async function syncPublishedPictures(spaceId: string): Promise<MediaSyncResult> {
+  try {
+    const state = await readPublishState(spaceId);
+    return await syncPublishedMedia(spaceId, { published: state.published, includeSubPages: state.includeSubPages });
+  } catch {
+    return { changed: 0, failed: 1 };
+  }
 }
 
 export async function setSearchEngines(spaceId: string, on: boolean): Promise<void> {

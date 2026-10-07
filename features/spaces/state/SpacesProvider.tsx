@@ -64,6 +64,8 @@ interface SpacesContextValue {
   patchSummary: (id: SpaceId, patch: Partial<Pick<SpaceSummary, "title" | "icon">>) => void;
   /** A page just created by the person: its title takes focus once it opens. */
   takeFocusTitle: (id: SpaceId) => boolean;
+  /** Open a page just made elsewhere ("/page") with the caret in its title, so it is named at once. */
+  openToName: (id: SpaceId) => void;
   /** A page created in this tab, handed to its screen once so it opens without a round trip. */
   takeFresh: (id: SpaceId) => SpaceDoc | null;
   /** Bumped when a page's content was rewritten outside its screen (the sample filled while it was open):
@@ -451,6 +453,10 @@ export function SpacesProvider({ children }: { children: ReactNode }) {
     retryLoad: () => reload.current(),
     patchSummary,
     takeFocusTitle,
+    openToName: (id) => {
+      focusTitle.current = id;
+      open(id);
+    },
     takeFresh,
     pageEpoch,
     reopenPage: (id) => setEpochs((prev) => ({ ...prev, [id]: (prev[id] ?? 0) + 1 })),

@@ -1,6 +1,6 @@
 {
   "name": "app-matrx",
-  "version": "0.4.2950",
+  "version": "0.4.2951",
   "private": true,
   "scripts": {
     "dev": "bash scripts/agent-dev-server.sh start",
@@ -263,6 +263,7 @@
     "check:phone-layout:strict": "tsx scripts/check-phone-layout.ts --strict",
     "check:phone-layout:self-test": "tsx scripts/check-phone-layout.ts --self-test",
     "check:fill-secret": "node scripts/fill-secret/check-fill-secret.mjs",
+    "check:cls": "WALK_ORIGIN=${WALK_ORIGIN:-http://localhost:3001} WALK_BUDGET=0.1 WALK_RUNS=3 WALK_CPU=4 WALK_WIDTHS=375,1440 node scripts/fixed-under-transform-walk.mjs \"/tasks,/approvals,/podcast,/schedules,/projects,/meetings,/transcripts,/sms,/news,/search,/documents,/drive,/education/notes,/marketing,/transcripts/studio,/tasks/new,/agents/templates\"",
     "check:fill-secret:strict": "node scripts/fill-secret/check-fill-secret.mjs --strict",
     "check:fill-secret:self-test": "node scripts/fill-secret/check-fill-secret.mjs --self-test && node --test scripts/lib/fill-secret.test.mjs",
     "check:one-control": "node scripts/one-control/check-one-control.mjs",
