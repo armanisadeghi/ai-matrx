@@ -3,9 +3,8 @@
 // features/agent-apps/code-preview/AppletSourcePreview.tsx — THE CODE WORKSPACE'S PREVIEW OF AN APPLET.
 //
 // Mounts the Applet through the ONE host in preview mode (reads live, writes held, page changes stay in
-// the preview — BUILD-LOOP §4). The host reads the SAVED record, so the preview shows the last save;
-// Reload re-reads it after a save. (Previewing an unsaved buffer needs a files override on the host —
-// requested from the host's owner.)
+// the preview — BUILD-LOOP §4). The host reads the saved record and the open file's unsaved buffer is
+// laid over it (`files`), so the preview follows the keystrokes; Reload re-reads the record.
 
 import { useEffect, useState } from "react";
 import { AppWindow, RotateCw } from "lucide-react";
@@ -14,7 +13,7 @@ import { createClient } from "@/utils/supabase/client";
 import { AppletHostMount } from "@/features/applets-host/AppletHostMount";
 import type { RenderPreviewerProps } from "@/features/code/preview/renderPreviewRegistry";
 
-export function AppletSourcePreview({ rowId }: RenderPreviewerProps) {
+export function AppletSourcePreview({ rowId, fieldId, code }: RenderPreviewerProps) {
   const [slug, setSlug] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [held, setHeld] = useState(0);
@@ -45,7 +44,7 @@ export function AppletSourcePreview({ rowId }: RenderPreviewerProps) {
   return (
     <div className="flex h-full w-full flex-col bg-card">
       <div className="flex items-center justify-between gap-2 border-b border-border px-2 py-1 text-xs text-muted-foreground">
-        <span>{held > 0 ? `Saved version · ${held} held writes` : "Saved version"}</span>
+        <span>{held > 0 ? `Live buffer · ${held} held writes` : "Live buffer"}</span>
         <Button variant="quiet" icon={<RotateCw />} onClick={() => setGeneration((g) => g + 1)}>
           Reload
         </Button>
@@ -55,6 +54,7 @@ export function AppletSourcePreview({ rowId }: RenderPreviewerProps) {
           key={generation}
           appletId={rowId}
           slug={slug}
+          files={fieldId ? { [fieldId]: code } : undefined}
           preview={{ onHeld: (writes) => setHeld(writes.length) }}
         />
       </div>

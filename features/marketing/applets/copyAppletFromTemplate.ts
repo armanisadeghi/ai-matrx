@@ -33,7 +33,7 @@ export async function copyAppletFromTemplate(
 
   const { data: tpl, error: readError } = await db
     .from("definition")
-    .select("id, slug, name, tagline, description, category, tags, files, entry, pages, mandates, screenshots, template")
+    .select("id, slug, name, tagline, description, category, tags, files, entry, scope, pages, mandates, screenshots, template")
     .eq("id", templateAppletId)
     .is("deleted_at", null)
     .maybeSingle();
@@ -79,7 +79,7 @@ export async function copyAppletFromTemplate(
       tags: tpl.tags,
       files: tpl.files,
       entry: tpl.entry,
-      component_code: "",
+      scope: tpl.scope,
       pages: tpl.pages,
       mandates: tpl.mandates,
       sources,

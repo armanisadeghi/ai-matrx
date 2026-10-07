@@ -207,6 +207,9 @@ export function AppletHostMount({
           // The app's kind registry, or — for a kind the Applet's organization owns — the Applet's own read.
           renderKind: (kind: string, value: unknown) => <AppletKind host={host} kind={kind} value={value} />,
           renderRun,
+          // Every <Link> carries its real URL (open in new tab, middle-click). /p/<slug> has no sub-paths, so the
+          // Applet's pages are addressed at the base path (`/apps/<slug>` by default) there, embedded and in preview.
+          hrefFor: (to: string) => `${basePath}${to === "/" || to === "" ? "" : to.startsWith("/") ? to : `/${to}`}`,
           // Where an Applet has no room to stream inline: the floating run window, one per job.
           openRun(run) {
             if (!run.ref) return;

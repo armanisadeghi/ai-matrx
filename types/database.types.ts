@@ -4179,11 +4179,9 @@ export type Database = {
     Tables: {
       definition: {
         Row: {
-          allowed_imports: Json | null
           app_kind: string
           avg_execution_time_ms: number | null
           category: string | null
-          component_code: string
           component_language: string
           created_at: string
           created_by: string | null
@@ -4219,6 +4217,7 @@ export type Database = {
           shared_context_policies: Json | null
           shown_to: Database["platform"]["Enums"]["shown_to"] | null
           slug: string
+          scope: Json
           sources: Json
           status: string
           styling_config: Json | null
@@ -4236,11 +4235,9 @@ export type Database = {
           visibility: Database["platform"]["Enums"]["visibility"]
         }
         Insert: {
-          allowed_imports?: Json | null
           app_kind?: string
           avg_execution_time_ms?: number | null
           category?: string | null
-          component_code: string
           component_language?: string
           created_at?: string
           created_by?: string | null
@@ -4276,6 +4273,7 @@ export type Database = {
           shared_context_policies?: Json | null
           shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           slug: string
+          scope?: Json
           sources?: Json
           status?: string
           styling_config?: Json | null
@@ -4293,11 +4291,9 @@ export type Database = {
           visibility?: Database["platform"]["Enums"]["visibility"]
         }
         Update: {
-          allowed_imports?: Json | null
           app_kind?: string
           avg_execution_time_ms?: number | null
           category?: string | null
-          component_code?: string
           component_language?: string
           created_at?: string
           created_by?: string | null
@@ -4333,6 +4329,7 @@ export type Database = {
           shared_context_policies?: Json | null
           shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           slug?: string
+          scope?: Json
           sources?: Json
           status?: string
           styling_config?: Json | null
@@ -4361,12 +4358,10 @@ export type Database = {
       }
       definition_version: {
         Row: {
-          allowed_imports: Json | null
           app_id: string
           category: string | null
           change_note: string | null
           changed_at: string
-          component_code: string | null
           component_language: string | null
           created_at: string
           created_by: string | null
@@ -4384,6 +4379,7 @@ export type Database = {
           pages: Json | null
           parent_applet_id: string | null
           pinned_version: number | null
+          scope: Json | null
           sources: Json | null
           status: string | null
           styling_config: Json | null
@@ -4395,12 +4391,10 @@ export type Database = {
           version_number: number
         }
         Insert: {
-          allowed_imports?: Json | null
           app_id: string
           category?: string | null
           change_note?: string | null
           changed_at?: string
-          component_code?: string | null
           component_language?: string | null
           created_at?: string
           created_by?: string | null
@@ -4418,6 +4412,7 @@ export type Database = {
           pages?: Json | null
           parent_applet_id?: string | null
           pinned_version?: number | null
+          scope?: Json | null
           sources?: Json | null
           status?: string | null
           styling_config?: Json | null
@@ -4429,12 +4424,10 @@ export type Database = {
           version_number: number
         }
         Update: {
-          allowed_imports?: Json | null
           app_id?: string
           category?: string | null
           change_note?: string | null
           changed_at?: string
-          component_code?: string | null
           component_language?: string | null
           created_at?: string
           created_by?: string | null
@@ -4452,6 +4445,7 @@ export type Database = {
           pages?: Json | null
           parent_applet_id?: string | null
           pinned_version?: number | null
+          scope?: Json | null
           sources?: Json | null
           status?: string | null
           styling_config?: Json | null
