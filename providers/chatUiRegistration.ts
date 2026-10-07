@@ -11,7 +11,6 @@ const asSlot = <T,>(impl: T) => impl as unknown as never;
 
 import { canvasArtifactService } from "@/features/canvas/services/canvasArtifactService";
 import { SandboxFilesystemAdapter } from "@/features/code/adapters/SandboxFilesystemAdapter";
-import { LIVE_CONVERSATION_VOICES } from "@/lib/voices/voiceSets";
 import { HTMLPageService } from "@/features/html-pages/services/htmlPageService";
 import { sklActions } from "@/features/agent-connections/redux/skl/slice";
 import HtmlPreviewFullScreenEditor from "@/features/html-pages/components/HtmlPreviewFullScreenEditor";
@@ -54,7 +53,6 @@ import { adoptCloudBrowserRunFromStream } from "@/features/cloud-browser/redux/a
 import { dispatchWarRoomTool } from "@/features/agents/war-room-tools/dispatcher/dispatch-war-room-tool.thunk";
 import { dispatchWarRoomMasterTool } from "@/features/agents/war-room-master-tools/dispatcher/dispatch-war-room-master-tool.thunk";
 import { resolveGmailSendConnection } from "@/features/google-workspace/connection";
-import { voiceDisplayName } from "@/lib/voices/voiceSets";
 import { convertMarkdownToHtml } from "@/features/html-pages/utils/html-preview-utils";
 import { selectAllContentBlocksArray, selectContentBlocksByScope, selectContentBlocksByScopeRef, selectActiveContentBlocks } from "@/features/agent-connections/redux/skl/content-block-compat";
 import { createElement } from "react";
@@ -119,12 +117,10 @@ registerChatUi({
   dispatchWarRoomTool,
   dispatchWarRoomMasterTool,
   resolveGmailSendConnection,
-  voiceDisplayName,
   canvasGetVersionHistory: (id: string) => canvasArtifactService.getVersionHistory(id),
   canvasGetById: (id: string) => canvasArtifactService.getById(id),
   createSandboxFilesystemAdapter: (instanceId: string) => new SandboxFilesystemAdapter(instanceId),
   notesGetById: (id: string) => NotesAPI.getById(id),
-  isLiveConversationVoice: (id: string) => LIVE_CONVERSATION_VOICES.some((voice) => voice.id === id),
   createHtmlPage: (...args: Parameters<typeof HTMLPageService.createPage>) => HTMLPageService.createPage(...args),
   convertMarkdownToHtml,
   sklActions: sklActions,

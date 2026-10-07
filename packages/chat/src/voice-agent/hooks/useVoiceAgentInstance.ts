@@ -56,7 +56,7 @@ import {
   useRealtimeSessionConfig,
 } from "../realtimeSession";
 import { useSessionKnob } from "../../host/prefs-react";
-import { isLiveConversationVoice } from "@ai-matrx/chat/host/ui-slots";
+import { isLiveConversationVoice } from "@ai-matrx/media/voices";
 
 interface UseVoiceAgentInstanceOpts {
   preset: VoiceAgentPreset;

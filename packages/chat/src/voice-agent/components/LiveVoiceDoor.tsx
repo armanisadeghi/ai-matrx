@@ -10,7 +10,7 @@
 
 import { SettingDoor } from "../../host/prefs-react";
 import { useAppSelector } from "../../store/hooks";
-import { voiceDisplayName } from "@ai-matrx/chat/host/ui-slots";
+import { voiceDisplayName } from "@ai-matrx/media/voices";
 
 export function LiveVoiceDoor({
   voiceId,

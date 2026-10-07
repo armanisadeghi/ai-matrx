@@ -268,12 +268,10 @@ export interface ChatUiSlots {
   dispatchWarRoomTool: AnyFn;
   dispatchWarRoomMasterTool: AnyFn;
   resolveGmailSendConnection: AnyFn;
-  voiceDisplayName: AnyFn;
   canvasGetVersionHistory: (canvasId: string) => Promise<CanvasItemRow[]>;
   canvasGetById: (canvasId: string) => Promise<CanvasItemRow | null>;
   createSandboxFilesystemAdapter: AnyFn;
   notesGetById: AnyFn;
-  isLiveConversationVoice: AnyFn;
   createHtmlPage: AnyFn;
   convertMarkdownToHtml: AnyFn;
   sklActions: Record<string, AnyFn>;
@@ -926,12 +924,10 @@ export const adoptCloudBrowserRunFromStream = slotFn("adoptCloudBrowserRunFromSt
 export const dispatchWarRoomTool = slotFn("dispatchWarRoomTool");
 export const dispatchWarRoomMasterTool = slotFn("dispatchWarRoomMasterTool");
 export const resolveGmailSendConnection = slotFn("resolveGmailSendConnection");
-export const voiceDisplayName = slotFn("voiceDisplayName", (_set: string, id: string) => id);
 export const canvasGetVersionHistory = slotFn("canvasGetVersionHistory");
 export const canvasGetById = slotFn("canvasGetById");
 export const createSandboxFilesystemAdapter = slotFn("createSandboxFilesystemAdapter");
 export const notesGetById = slotFn("notesGetById");
-export const isLiveConversationVoice = slotFn("isLiveConversationVoice", () => false);
 export const createHtmlPage = slotFn("createHtmlPage");
 export const convertMarkdownToHtml = slotFn("convertMarkdownToHtml");
 /** The host's skill-library action creators (`sklActions.x(...)`); resolved at call time, a bare host throws naming the slot. */
