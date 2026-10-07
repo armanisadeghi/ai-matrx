@@ -345,7 +345,8 @@ function DatabaseBody({
 }) {
   if (view.layout === "chart") {
     const settings = { ...DEFAULT_CHART, ...view.chart };
-    return <ChartView tableId={tableId} settings={settings} title={view.name} overRows={sample} />;
+    // The chart counts what its view shows: the view's saved filters plus the viewer's unsaved ones (`shown`).
+    return <ChartView tableId={tableId} settings={settings} title={view.name} overRows={sample} filter={scalarFilters(view.filters)} />;
   }
   if ((view.layout as Layout) === "dashboard") return <DashboardCanvas tableId={tableId} />;
   const needsGroup = view.layout === "kanban" && !view.groupField;
