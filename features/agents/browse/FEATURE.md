@@ -292,6 +292,7 @@ hostile at 2,000.
 
 ## Change log
 
+- **2026-10-07 (usage columns)** — The list shows Runs, Last used, Success rate, Failures (hidden by default) and Cost from THE shared usage columns (`lib/entity-list/usageColumns.tsx`), the same five the workflows list shows. `agx_list_scoped` returns `run_count`, `success_count`, `failure_count`, `last_used_at`, `total_cost` from `platform.entity_usage` and sorts on `runs` / `last_used` / `success_rate` / `failures` / `cost`; Runs filters by bucket (`0` = never used, a Runs facet from `agx_list_facets`) and Last used by the since buckets. Success rate and Cost sort only (`filter: false`, no server filter yet). `prefsVersion` 5. Migration: `migrations/wfx_agx_list_system_lane_and_usage.sql`.
 - **2026-08-31 (authenticated read boundary)** — Prevented the admin System Agents mount from sending `agx_list_scoped`, scope-count, facet, and drift-alert reads as `guest` during browser-session hydration. Browse services now prove an authenticated Supabase session before constructing RPC work, while the header alert hook waits for ready identity and token state; the forcing guard covers all four producers.
 - **2026-08-26 (one list, two routes)** — The admin System Agents route now
   renders THIS list (`variant="system-admin"`); `SystemAgentsGrid` and the

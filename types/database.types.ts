@@ -98222,20 +98222,25 @@ export type Database = {
           created_by: string
           custom_fields: Json
           description: string
+          failure_count: number
           id: string
           is_active: boolean
           is_archived: boolean
           is_favorite: boolean
           is_owner: boolean
+          last_used_at: string
           model_id: string
           name: string
           offering_id: string
           organization_id: string
           organization_name: string
           owner_email: string
+          run_count: number
           source_agent_id: string
+          success_count: number
           tags: string[]
           task_id: string
+          total_cost: number
           total_count: number
           updated_at: string
           version: number
@@ -105656,6 +105661,7 @@ export type Database = {
           created_by: string
           custom_fields: Json
           description: string
+          failure_count: number
           id: string
           is_active: boolean
           is_archived: boolean
@@ -105670,11 +105676,14 @@ export type Database = {
           owner_email: string
           run_count: number
           step_count: number
+          success_count: number
           tags: string[]
+          total_cost: number
           total_count: number
           updated_at: string
           version: number
           visibility: string
+          workflow_type: string
         }[]
       }
       wsp_resolve_system_task: {
