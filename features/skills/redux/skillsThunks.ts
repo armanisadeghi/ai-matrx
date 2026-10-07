@@ -35,7 +35,8 @@ import {
   fetchCodeFileById,
 } from "@/features/code-files/service/codeFilesService";
 import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
-import { selectUserId, selectIsSuperAdmin } from "@/lib/redux/slices/userSlice";
+import { selectUserId } from "@/lib/redux/slices/userSlice";
+import { selectAdminFeature } from "@/lib/redux/selectors/userSelectors";
 import type { components } from "@ai-matrx/agents/generated/api-types";
 import type { Database } from "@/types/database.types";
 
@@ -149,7 +150,7 @@ export const createSkill = createAsyncThunk<
   { state: RootState }
 >("skills/createSkill", async ({ draft }, { dispatch, getState }) => {
   const state = getState();
-  const isAdmin = selectIsSuperAdmin(state);
+  const isAdmin = selectAdminFeature(state, "skills.system-catalogue");
   const userId = selectUserId(state);
   const wantsSystem = Boolean(draft.isSystem) && isAdmin;
 
@@ -449,7 +450,7 @@ export const createCategoryThunk = createAsyncThunk<
   { state: RootState }
 >("skills/createCategory", async ({ draft }, { dispatch, getState }) => {
   const state = getState();
-  const isAdmin = selectIsSuperAdmin(state);
+  const isAdmin = selectAdminFeature(state, "skills.system-catalogue");
   const userId = selectUserId(state);
   const wantsSystem = Boolean(draft.isSystem) && isAdmin;
 
@@ -545,7 +546,7 @@ export const updateCategoryThunk = createAsyncThunk<
 >("skills/updateCategory", async ({ id, patch }, { dispatch, getState }) => {
   const state = getState();
   const userId = selectUserId(state);
-  const isAdmin = selectIsSuperAdmin(state);
+  const isAdmin = selectAdminFeature(state, "skills.system-catalogue");
   const cached = state.skills.categories.byId[id];
   const isSystemRow = !cached?.userId; // user_id IS NULL → system
 
@@ -655,7 +656,7 @@ export const deleteCategoryThunk = createAsyncThunk<
   { state: RootState }
 >("skills/deleteCategory", async ({ id }, { dispatch, getState }) => {
   const state = getState();
-  const isAdmin = selectIsSuperAdmin(state);
+  const isAdmin = selectAdminFeature(state, "skills.system-catalogue");
   const cached = state.skills.categories.byId[id];
   const isSystemRow = !cached?.userId;
 

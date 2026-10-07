@@ -26,7 +26,7 @@ import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { useAppSelector } from "@/lib/redux/hooks";
-import { selectIsSuperAdmin } from "@/lib/redux/slices/userSlice";
+import { selectAdminFeature } from "@/lib/redux/selectors/userSelectors";
 
 import { useSkillsIngest } from "../hooks/useSkillsIngest";
 import { useSkillCategories } from "../hooks/useSkillCategories";
@@ -58,7 +58,9 @@ export function SkillIngestPanel({
   onViewSkill,
   skillHref,
 }: SkillIngestPanelProps) {
-  const isAdmin = useAppSelector(selectIsSuperAdmin);
+  const isAdmin = useAppSelector((s) =>
+    selectAdminFeature(s, "skills.system-catalogue"),
+  );
   const { report, status, error, preview, apply, reset, appliedAt } =
     useSkillsIngest();
   const { categories } = useSkillCategories();

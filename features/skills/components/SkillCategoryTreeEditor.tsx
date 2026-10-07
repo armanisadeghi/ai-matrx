@@ -68,7 +68,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import { selectIsSuperAdmin } from "@/lib/redux/slices/userSlice";
+import { selectAdminFeature } from "@/lib/redux/selectors/userSelectors";
 
 import { useSkillCategories } from "../hooks/useSkillCategories";
 import {
@@ -111,7 +111,9 @@ const COLOR_SWATCHES = [
 export function SkillCategoryTreeEditor({
   onBack,
 }: SkillCategoryTreeEditorProps) {
-  const isAdmin = useAppSelector(selectIsSuperAdmin);
+  const isAdmin = useAppSelector((s) =>
+    selectAdminFeature(s, "skills.system-catalogue"),
+  );
   const dispatch = useAppDispatch();
   const { categories, loading, error, reload } = useSkillCategories();
 
@@ -764,7 +766,9 @@ function CreateCategoryRow({
   onCreated: () => void;
 }) {
   const dispatch = useAppDispatch();
-  const isAdmin = useAppSelector(selectIsSuperAdmin);
+  const isAdmin = useAppSelector((s) =>
+    selectAdminFeature(s, "skills.system-catalogue"),
+  );
   const [label, setLabel] = useState("");
   const [key, setKey] = useState("");
   const [isSystem, setIsSystem] = useState(false);
