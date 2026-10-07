@@ -69,6 +69,8 @@ interface SpacesContextValue {
   /** Bumped when a page's content was rewritten outside its screen (the sample filled while it was open):
    *  the screen opens again on the new content. */
   pageEpoch: (id: SpaceId) => number;
+  /** The page's screen opens again on its stored content (an outside writer, e.g. the Space Builder, changed it). */
+  reopenPage: (id: SpaceId) => void;
   sample: { adding: boolean; progress: string | null; add: (opts?: { asTemplate?: boolean }) => Promise<void> };
   /** I2 / I3 — Spaces marked as templates that the person can open (null = not read yet). */
   templates: {
@@ -413,6 +415,7 @@ export function SpacesProvider({ children }: { children: ReactNode }) {
     takeFocusTitle,
     takeFresh,
     pageEpoch,
+    reopenPage: (id) => setEpochs((prev) => ({ ...prev, [id]: (prev[id] ?? 0) + 1 })),
     sample: { adding: sampleProgress !== null, progress: sampleProgress, add: addSample },
     templates: { ids: templateIds, error: templatesError, refresh: refreshTemplates, setTemplate: markTemplate, use: applyTemplate },
     summaries: visible,

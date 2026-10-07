@@ -26,6 +26,8 @@ function declaredKey(name: string): MandateKey | null {
 
 export const WRITING_ASSIST_KEY = declaredKey("spaces__writing_assist");
 export const ASK_PAGE_KEY = declaredKey("spaces__ask_page");
+/** "Build with AI" / "Ask AI to change this page" — the Space Builder (ai/SpaceBuilder.tsx). */
+export const BUILD_KEY = declaredKey("spaces__build");
 
 const SURFACE_KEY = "spaces-page";
 const SOURCE_FEATURE = "documents" as const;
@@ -61,6 +63,11 @@ export function useSpacesAiDisclosure(): void {
   if (WRITING_ASSIST_KEY) refs.push({ mandateKey: WRITING_ASSIST_KEY, does: "writes and edits text on this page" });
   if (ASK_PAGE_KEY) refs.push({ mandateKey: ASK_PAGE_KEY, does: "answers questions about this page" });
   useDeclaredSurfaceMandates(refs);
+}
+
+/** The Space Builder, disclosed wherever its doors are (the whole Spaces frame); draws nothing. */
+export function useSpaceBuilderDisclosure(): void {
+  useDeclaredSurfaceMandates(BUILD_KEY ? [{ mandateKey: BUILD_KEY, does: "builds a Space or changes this page on request" }] : []);
 }
 
 /** M1 / M2 — one writing run at a time; the live text is read from `conversationId`. */

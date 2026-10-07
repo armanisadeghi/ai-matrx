@@ -7,6 +7,7 @@ import { useClipboard } from "@ai-matrx/kit/clipboard";
 import { Popover, PopoverAnchor, PopoverContent, PopoverTrigger } from "@ai-matrx/design-system";
 import { Button, Input, SearchField } from "@ai-matrx/design-system/controls";
 import {
+  ChevronDown,
   ChevronRight,
   ChevronsLeft,
   Copy,
@@ -35,6 +36,8 @@ import { SpaceIcon } from "../page/SpaceIcon";
 import { useSpaces, type DropPlacement } from "../state/SpacesProvider";
 import { ImportButton } from "./ImportMenu";
 import { TemplateGallery } from "./TemplateGallery";
+import { AGENT_ICON } from "@/components/icons/domain-icons";
+import { useSpaceBuilder } from "../ai/SpaceBuilder";
 import { signInHref } from "../workspace/LoadAccessState";
 
 const EXPANDED_KEY = "spaces:expanded";
@@ -47,6 +50,27 @@ function scrollIntoViewOnce(el: HTMLDivElement | null) {
   const r = el.getBoundingClientRect();
   const b = box.getBoundingClientRect();
   if (r.top < b.top || r.bottom > b.bottom) box.scrollTop += r.top - b.top - b.height / 2 + r.height / 2;
+}
+
+/** The New page button's menu: a blank page, or a whole Space built by the Space Builder. */
+function NewPageMenu({ onNewPage }: { onNewPage: () => void }) {
+  const builder = useSpaceBuilder();
+  const [open, setOpen] = useState(false);
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <Button variant="quiet" icon={<ChevronDown size={14} />} aria-label="New page options" />
+      </PopoverTrigger>
+      <PopoverContent surface="solid" align="end" width="sm" padding="xs">
+        <button type="button" className="spaces-menu-row" onClick={() => { setOpen(false); onNewPage(); }}>
+          <SquarePen size={15} /> New page
+        </button>
+        <button type="button" className="spaces-menu-row" onClick={() => { setOpen(false); builder.ask(null); }}>
+          <AGENT_ICON size={15} /> Build with AI
+        </button>
+      </PopoverContent>
+    </Popover>
+  );
 }
 
 function RowMenu({ space, onRename }: { space: SpaceSummary; onRename: () => void }) {
@@ -410,6 +434,7 @@ export function SpacesSidebarContent({ onCollapse }: { onCollapse?: () => void }
           <Button variant="quiet" icon={<ChevronsLeft size={17} />} aria-label="Close sidebar" title="Close sidebar (Cmd+\)" onClick={onCollapse} />
         ) : null}
         <Button variant="quiet" icon={<SquarePen size={16} />} aria-label="New page" onClick={() => void spaces.createSpace(null)} />
+        <NewPageMenu onNewPage={() => void spaces.createSpace(null)} />
       </div>
       <Button variant="quiet" icon={<Search size={17} />} onClick={() => spaces.openQuickFind("jump")}>
         Search

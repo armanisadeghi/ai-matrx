@@ -10,6 +10,7 @@ import { useEffect, useRef, useState, type ReactNode } from "react";
 
 import { Drawer, DrawerContent, DrawerTitle } from "@/components/ui/drawer";
 
+import { SpaceBuilderHost } from "../ai/SpaceBuilder";
 import { QuickFind } from "../nav/QuickFind";
 import { SpacesSidebarContent } from "../sidebar/SpacesSidebar";
 import { SpacesProvider, useSpaces } from "../state/SpacesProvider";
@@ -100,7 +101,9 @@ function Frame({ children }: { children: ReactNode }) {
 export function SpacesWorkspace({ children }: { children: ReactNode }) {
   return (
     <SpacesProvider>
-      <Frame>{children}</Frame>
+      <SpaceBuilderHost>
+        <Frame>{children}</Frame>
+      </SpaceBuilderHost>
     </SpacesProvider>
   );
 }

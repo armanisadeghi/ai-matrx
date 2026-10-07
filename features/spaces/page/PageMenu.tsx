@@ -8,6 +8,8 @@ import { Button, Switch } from "@ai-matrx/design-system/controls";
 import { Copy, CornerUpRight, FileUp, History, LayoutTemplate, Link, Lock, MoreHorizontal, MoveHorizontal, Trash2, Type, Undo2 } from "lucide-react";
 import { useState, type ReactNode } from "react";
 
+import { AGENT_ICON } from "@/components/icons/domain-icons";
+
 import type { SpaceDoc } from "../contract";
 
 type Settings = SpaceDoc["settings"];
@@ -52,6 +54,7 @@ export function PageMenu({
   onUndo,
   onHistory,
   onExport,
+  onAskAiChange,
   isTemplate,
   onTemplate,
   updatedLabel,
@@ -67,6 +70,8 @@ export function PageMenu({
   onHistory: () => void;
   /** K1 — opens the Export dialog. */
   onExport: () => void;
+  /** "Ask AI to change this page" — the Space Builder (absent: not wired, or the page cannot be edited). */
+  onAskAiChange?: () => void;
   /** I3 — the page carries the template label (null = not known yet). */
   isTemplate: boolean | null;
   onTemplate: (on: boolean) => void;
@@ -106,6 +111,7 @@ export function PageMenu({
         />
         <Row icon={<Lock size={16} />} label="Lock page" onClick={() => onSettings({ locked: !settings.locked })} end={<Switch checked={settings.locked} tabIndex={-1} aria-hidden />} />
         <div className="my-1 border-t border-border" />
+        {onAskAiChange ? <Row icon={<AGENT_ICON size={16} />} label="Ask AI to change this page" onClick={act(onAskAiChange)} /> : null}
         <Row icon={<Link size={16} />} label="Copy link" onClick={act(onCopyLink)} />
         <Row icon={<Copy size={16} />} label="Duplicate" onClick={act(onDuplicate)} />
         <Row icon={<CornerUpRight size={16} />} label="Move to" onClick={act(onMove)} />
