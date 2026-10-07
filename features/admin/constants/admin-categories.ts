@@ -156,6 +156,14 @@ export const adminCategoriesData: AdminCategory[] = [
     iconColor: "text-indigo-600",
     features: [
       {
+        title: "System Workflows",
+        description:
+          "The platform's own workflows, built-in and feature-made, with runs, success rate and cost.",
+        iconName: "Workflow",
+        link: "/administration/automation/workflows",
+        isNew: true,
+      },
+      {
         title: "Workflow Runs Explorer",
         description:
           "Every workflow run on the platform as numbers: how many, which failed, how long they took and what they spent, by workflow, how they started, person, organization and period.",

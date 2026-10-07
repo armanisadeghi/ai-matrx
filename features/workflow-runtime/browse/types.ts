@@ -19,15 +19,19 @@ export type WorkflowBrowseRow = WithFilledMandates<
 >;
 
 /**
- * Which of the fixed five scopes this surface supports. Workflows have no
- * industry corpus, so it declares four — the tab bar renders exactly these, in
- * this order.
+ * Which scopes this surface supports, in tab order — the same five as the
+ * agents list (features/agents/browse/types.ts). System is the platform's own
+ * workflows: every signed-in person reads the published built-ins, a platform
+ * admin also reads the unpublished and feature-made ones. `wfx_list_scoped`
+ * decides which, never this list; feature-made (`generated`) workflows never
+ * reach a person's own lanes.
  */
 export const WORKFLOW_LIST_SCOPES: ListScopeKind[] = [
   "mine",
   "orgs",
   "shared",
   "public",
+  "system",
 ];
 
 /** Fields the table can write back inline. */

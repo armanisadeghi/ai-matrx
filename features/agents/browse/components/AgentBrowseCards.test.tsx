@@ -65,6 +65,11 @@ const sharedAgent: AgentBrowseRow = {
   // No class pin: the database answers null (the generator types it string).
   custom_fields: {},
   offering_id: null as unknown as string,
+  run_count: 0,
+  success_count: 0,
+  failure_count: 0,
+  last_used_at: null as unknown as string,
+  total_cost: 0,
   organization_id: "organization-id",
   organization_name: "Test Organization",
   owner_email: "owner@example.com",
