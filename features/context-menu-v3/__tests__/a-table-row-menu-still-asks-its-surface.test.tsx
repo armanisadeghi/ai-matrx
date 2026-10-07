@@ -19,7 +19,7 @@ import { NonEditableContextMenu } from "../NonEditableContextMenu";
 import {
   createDefaultTableRowMenuDescriptor,
   registerTableRowContextResolver,
-} from "../table-row-context-registry";
+} from "../table-row-item";
 import { joinRowAndSurfaceContext } from "../utils/per-row-entity";
 import { CONTEXT_MENU_ENTITY_KEY, type ContextMenuEntityRef, type ContextMenuExtraSection } from "../types";
 

@@ -21,7 +21,7 @@ import { Badge } from "@/components/ui/badge";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { ItemMenu } from "@/components/official/item/ItemMenu";
 import { itemMenuConfigToExtraSections } from "@/components/official/item/itemMenuToV3";
-import { buildDefaultTableRowMenuDescriptor, createTableRowMenuDescriptor } from "@/features/context-menu-v3/table-row-context-registry";
+import { buildDefaultTableRowMenuDescriptor, createTableRowMenuDescriptor } from "@/features/context-menu-v3/table-row-item";
 import { buildCmsPageMenu } from "@/features/cms/actions/buildCmsPageMenu";
 import {
   CmsPageAiActionDialog,

@@ -22,74 +22,27 @@ import type {
   AlchemyGroomerSection,
 } from "@ai-matrx/alchemy/react/workspace";
 import { formatCount } from "@ai-matrx/kit/format";
+import {
+  mergeLiveCapture,
+  type LiveCapture,
+  type LiveCaptureKind,
+  type LiveCaptureValue,
+  type LiveContribution,
+  type LiveNamed,
+  type LiveRequest,
+  type LiveSection,
+} from "@ai-matrx/alchemy/surface";
 
-export type PageCaptureKind = "table-page" | "record" | "dialog" | "admin-page";
-
+// THE SHAPES ARE ALCHEMY'S (ALC-18, LIST.md D3): a page capture IS its surface's live values,
+// published to `@ai-matrx/alchemy/surface` `liveValues`. These names stay as the app's words for them.
+export type PageCaptureKind = LiveCaptureKind;
 /** A chosen thing, by name and id. Either may be null (not chosen / not loaded). */
-export interface PageCaptureNamed {
-  id: string | null;
-  name: string | null;
-}
-
-export type PageCaptureValue = PageCaptureNamed | string | number | boolean | null;
-
-export interface PageCaptureSection {
-  /** Stable id — the Groomer's section id. Unique within one capture. */
-  id: string;
-  /** What the person calls this part of the page. */
-  title: string;
-  description?: string;
-  /** `data` survives "Only the data"; `request` does not. */
-  role: "data" | "request";
-  value: unknown;
-  /** The one-line brief (counts, a sentence). Defaults to the value's shape. */
-  brief?: unknown;
-  /**
-   * A section too big to hold on the page (a table's records): `value` is the
-   * honest stub saying it is not included, and `load` reads it at copy time for
-   * the "with …" variants. Never a second read while the page is only open.
-   */
-  load?: () => Promise<unknown>;
-}
-
-export interface PageCaptureRequest {
-  method: string;
-  path: string;
-  status: string;
-  httpStatus?: number;
-  durationMs?: number;
-  requestId?: string;
-  /** Which client door (supabase-rest, supabase-rpc, aidream, next-api …). */
-  client?: string;
-  /** The JSON request body under 8 KB, credentials redacted. */
-  requestBody?: unknown;
-  requestBodyNote?: string;
-  /** A failed request's own sentence from the server (the refusal, verbatim). */
-  errorSentence?: string;
-  timestamp: number;
-}
-
-export interface PageCapture {
-  kind: PageCaptureKind;
-  title: string;
-  route: string;
-  url?: string;
-  /** What this page is OF (table, record, dialog subject …), names and ids. */
-  identity: Record<string, PageCaptureValue>;
-  /** The exact choices the person made on the page, in order. */
-  selection: Record<string, PageCaptureValue>;
-  sections: PageCaptureSection[];
-  /** The error sentences on screen, verbatim. */
-  errors: string[];
-  requests: PageCaptureRequest[];
-}
-
-export interface PageCaptureContribution {
-  owner: string;
-  sections: PageCaptureSection[];
-  /** Names a descendant knows and the page does not (a table's name read inside its mount). */
-  identity?: Record<string, PageCaptureValue>;
-}
+export type PageCaptureNamed = LiveNamed;
+export type PageCaptureValue = LiveCaptureValue;
+export type PageCaptureSection = LiveSection;
+export type PageCaptureRequest = LiveRequest;
+export type PageCapture = LiveCapture;
+export type PageCaptureContribution = LiveContribution;
 
 const COMPACT_CHARS = 6000;
 
@@ -250,39 +203,15 @@ function compactValue(value: unknown): unknown {
 }
 
 /** Merge descendant sections into a capture. Two owners claiming one id is a loud error. */
-export function mergePageCapture(
-  base: PageCapture,
-  contributions: readonly PageCaptureContribution[],
-): PageCapture {
-  const owners = new Map<string, string>(base.sections.map((s) => [s.id, "page"]));
-  const sections = [...base.sections];
-  const identity = { ...base.identity };
-  for (const c of contributions) {
-    for (const [k, v] of Object.entries(c.identity ?? {})) {
-      // A descendant fills in what the page left unnamed; it never overrides a name the page gave.
-      const prior = identity[k];
-      if (prior === undefined || prior === null || (isNamed(prior) && !prior.name)) identity[k] = v;
-    }
-    for (const s of c.sections) {
-      const prior = owners.get(s.id);
-      if (prior) {
-        throw new Error(
-          `[page-capture] section "${s.id}" is claimed by both "${prior}" and "${c.owner}"`,
-        );
-      }
-      owners.set(s.id, c.owner);
-      sections.push(s);
-    }
-  }
-  return { ...base, identity, sections };
-}
+/** The page's capture plus its descendants' contributions — alchemy's one merge. */
+export const mergePageCapture = mergeLiveCapture;
 
 function plainNamedRecord(rec: Record<string, PageCaptureValue>): Record<string, PageCaptureValue> {
   return toPlainJson(rec) as Record<string, PageCaptureValue>;
 }
 
 /**
- * THE CAPTURE MADE PLAIN AT REGISTRATION (`getActivePageCapture` calls this): identity, selection,
+ * THE CAPTURE MADE PLAIN AT READ (`getActivePageCapture` calls this): identity, selection,
  * every section's value and brief, and every request body are plain JSON. A section's `load` stays a
  * function — it is how the "with …" copies read — and is never handed to a transfer (see
  * `pageCaptureJson`).
@@ -350,6 +279,7 @@ function envelopeContext(c: PageCapture): Record<string, string> {
   return {
     page: c.title,
     "surface-kind": c.kind,
+    ...(c.surfaceName ? { surface: c.surfaceName } : {}),
     route: c.route,
     ...keyed(describeRecord(c.identity)),
     ...keyed(describeRecord(c.selection)),

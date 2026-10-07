@@ -10,19 +10,22 @@
  *    by the page title, while debug mode is on;
  * 3. LargeIndicator "Copy Full Context" — appends the capture, debug mode or not.
  *
- * Why a module store (the SurfaceRuntimeContext pattern): the control may sit in
- * a page header while the state it needs lives several components down (the
- * inspector's compare view). Descendants add sections with
- * `usePageCaptureContribution`; the capture is built at click time from the
- * LIVE getters, never a stale snapshot. The most recent registration wins.
+ * THE CAPTURE IS THE PAGE'S LIVE VALUES (ALC-18, LIST.md D3). There is no private
+ * store here: `usePageCapture` publishes to `@ai-matrx/alchemy/surface`'s ONE
+ * `liveValues` store, stamped with the surface the page is (the mounted
+ * `SurfaceRuntime`'s name), and `usePageCaptureContribution` contributes to it.
+ * Every reader — this menu, the debug context, LargeIndicator, an agent through
+ * `SurfacePort.getValue` — reads that store, at read time, from the LIVE getters.
+ * The most recent publication wins.
  */
 
 import { useEffect, useRef, useSyncExternalStore } from "react";
 import { usePathname } from "next/navigation";
+import { liveValues, type LiveOutline } from "@ai-matrx/alchemy/surface";
+import { getSurfaceRuntime } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import { ledgerForCapture } from "@/lib/diagnostics/stream-capture/request-ledger";
 import { useDebugContext } from "@/hooks/useDebugContext";
 import {
-  mergePageCapture,
   normalizePageCapture,
   pageCaptureDebugEntries,
   type PageCapture,
@@ -31,113 +34,37 @@ import {
   type PageCaptureSection,
 } from "./pageCapture";
 
-type Getter = () => PageCapture;
 type SectionsGetter = () => PageCaptureSection[] | Omit<PageCaptureContribution, "owner">;
 
-let nextId = 0;
-let version = 0;
-let captures: Array<{ id: number; get: Getter }> = [];
-let contributions: Array<{ id: number; owner: string; get: SectionsGetter }> = [];
-const listeners = new Set<() => void>();
-
-function emit() {
-  version += 1;
-  for (const l of listeners) l();
-}
-
-function subscribe(listener: () => void): () => void {
-  listeners.add(listener);
-  return () => {
-    listeners.delete(listener);
-  };
-}
-
-const getVersion = () => version;
+const subscribe = (listener: () => void) => liveValues.subscribe(listener);
+const getVersion = () => liveValues.version();
 const getServerVersion = () => 0;
 
-/** Register a page's live capture getter. Returns its unregister. */
-export function registerPageCapture(get: Getter): () => void {
-  const id = ++nextId;
-  captures = [...captures, { id, get }];
-  emit();
-  return () => {
-    captures = captures.filter((c) => c.id !== id);
-    emit();
-  };
-}
-
-/** Register sections owned by a descendant of the page. Returns its unregister. */
-export function registerPageCaptureContribution(owner: string, get: SectionsGetter): () => void {
-  const id = ++nextId;
-  contributions = [...contributions, { id, owner, get }];
-  emit();
-  return () => {
-    contributions = contributions.filter((c) => c.id !== id);
-    emit();
-  };
-}
-
-/** Tell subscribers a registered getter's answer changed (a new signature). */
-export function touchPageCapture(): void {
-  emit();
-}
-
-/** Whether any page has registered a capture right now. */
-export function hasPageCapture(): boolean {
-  return captures.length > 0;
-}
-
 /**
- * The live capture: the most recent page registration plus every contribution.
+ * The live capture: the page's LIVE VALUES as published to alchemy's one store
+ * (`@ai-matrx/alchemy/surface` `liveValues`, ALC-18), made plain JSON.
  *
- * `_version` is the registry version a component read with `usePageCaptureVersion()`. Pass it
+ * `_version` is the store version a component read with `usePageCaptureVersion()`. Pass it
  * from render: the React Compiler memoizes a call with no reactive input, so a render-time
  * `getActivePageCapture()` with no argument is computed once and never again.
  */
 export function getActivePageCapture(_version?: number): PageCapture | null {
-  const top = captures[captures.length - 1];
-  if (!top) return null;
-  const merged: PageCaptureContribution[] = contributions.map((c) => {
-    const got = c.get();
-    return Array.isArray(got) ? { owner: c.owner, sections: got } : { owner: c.owner, ...got };
-  });
-  // Plain JSON at registration (V24-TAILS): every consumer — the menu, the Groomer, the debug
+  const live = liveValues.read();
+  // Plain JSON at read (V24-TAILS): every consumer — the menu, the Groomer, the debug
   // context — reads the same plain capture, whatever shapes a surface handed over.
-  return normalizePageCapture(mergePageCapture(top.get(), merged));
+  return live ? normalizePageCapture(live) : null;
 }
-
-/** What the menu shows before anyone uses it: the kind, the title and the sections read at copy time. */
-export type PageCaptureOutline = Pick<PageCapture, "kind" | "title"> & {
-  loadable: Array<Pick<PageCaptureSection, "id" | "title">>;
-};
 
 /**
- * The capture's outline WITHOUT building it: no section value is walked into plain JSON. Render
- * reads this; `getActivePageCapture()` (the whole, normalized capture) is read on use. Building the
- * whole capture in render froze a 1,636-organization page on every registry change (sec_8f1a9be1…).
- * `_version` as in `getActivePageCapture`.
+ * The capture's outline WITHOUT building it (no section value is walked into plain JSON). Render
+ * reads this; `getActivePageCapture()` is read on use — building the whole capture in render froze
+ * a 1,636-organization page on every change (sec_8f1a9be1…). `_version` as in `getActivePageCapture`.
  */
-export function getActivePageCaptureOutline(_version?: number): PageCaptureOutline | null {
-  const top = captures[captures.length - 1];
-  if (!top) return null;
-  const base = top.get();
-  const sections = [
-    ...base.sections,
-    ...contributions.flatMap((c) => {
-      const got = c.get();
-      return Array.isArray(got) ? got : got.sections;
-    }),
-  ];
-  return {
-    kind: base.kind,
-    title: base.title,
-    loadable: sections
-      .filter((s) => typeof s.load === "function")
-      .map((s) => ({ id: s.id, title: s.title })),
-  };
+export function getActivePageCaptureOutline(_version?: number): LiveOutline | null {
+  return liveValues.outline();
 }
 
-/** Re-render when the registry changes (the control appears/disappears, data lands). */
+/** Re-render when the live values change (the control appears/disappears, data lands). */
 export function usePageCaptureVersion(): number {
   return useSyncExternalStore(subscribe, getVersion, getServerVersion);
 }
@@ -178,7 +105,7 @@ export function usePageCapture(
   // Registered once for the mount; the getter reads the LATEST build and path.
   useEffect(() => {
     if (!enabled) return;
-    return registerPageCapture((): PageCapture => {
+    return liveValues.publish((): PageCapture => {
         const input = buildRef.current();
         const log: PageCaptureRequest[] = ledgerForCapture(REQUEST_LOG_LIMIT).map((c) => ({
           method: c.method,
@@ -195,6 +122,8 @@ export function usePageCapture(
         }));
         return {
           ...input,
+          // The page's live values belong to the surface it IS: the declared surface mounted now.
+          surfaceName: input.surfaceName ?? getSurfaceRuntime()?.surfaceName ?? null,
           route: input.route ?? pathRef.current ?? "",
           url: input.url ?? (typeof window !== "undefined" ? window.location.href : undefined),
           requests: [...(input.requests ?? []), ...log],
@@ -236,13 +165,13 @@ export function usePageCaptureContribution(
   useEffect(() => {
     ref.current = getSections;
   });
-  useEffect(() => registerPageCaptureContribution(owner, () => ref.current()), [owner]);
+  useEffect(() => liveValues.contribute(owner, () => ref.current()), [owner]);
   const first = useRef(true);
   useEffect(() => {
     if (first.current) {
       first.current = false;
       return;
     }
-    touchPageCapture();
+    liveValues.touch();
   }, [signature]);
 }

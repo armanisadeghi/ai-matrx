@@ -23,6 +23,8 @@ function seed(method: string, url: string, httpStatus: number, body: string | nu
 
 import { usePageCapture, usePageCaptureContribution, getActivePageCapture } from "./usePageCapture";
 import { adminPageCapture } from "./pageCapture";
+import { liveValues } from "@ai-matrx/alchemy/surface";
+import { registerSurfaceRuntime } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
@@ -85,5 +87,20 @@ describe("usePageCapture", () => {
 
     act(() => root.unmount());
     expect(getActivePageCapture()).toBeNull();
+  });
+
+  it("the capture IS the page's live values: published to alchemy's one store, stamped with the mounted surface (ALC-18 D3)", () => {
+    const off = registerSurfaceRuntime({ surfaceName: "matrx-admin/context-inspector", getScope: () => ({}) as never });
+    const el = document.createElement("div");
+    const root = createRoot(el);
+    act(() => root.render(<Page />));
+    expect(liveValues.has()).toBe(true);
+    const live = liveValues.readFor("matrx-admin/context-inspector");
+    expect(live?.title).toBe("Context inspector");
+    expect(live?.sections.map((s) => s.id)).toEqual(["compare"]);
+    expect(liveValues.outline()).toMatchObject({ surfaceName: "matrx-admin/context-inspector", title: "Context inspector" });
+    act(() => root.unmount());
+    off();
+    expect(liveValues.has()).toBe(false);
   });
 });

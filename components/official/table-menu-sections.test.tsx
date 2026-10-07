@@ -5,7 +5,7 @@ import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableCo
 import {
   createTableRowMenuDescriptor,
   registerTableRowContextResolver,
-} from "@/features/context-menu-v3/table-row-context-registry";
+} from "@/features/context-menu-v3/table-row-item";
 import type { ContextMenuExtraSection } from "@/features/context-menu-v3/types";
 import { TABLE_MENU_ICONS, toContextMenuExtraSections } from "./table-menu-sections";
 

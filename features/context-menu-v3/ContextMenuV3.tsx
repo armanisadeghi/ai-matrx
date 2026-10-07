@@ -58,7 +58,7 @@ import { MenuPresenceProvider, RegistryMenuSourceProvider, contentSourceKey } fr
 
 import { useOptionalWidgetHandle } from "@ai-matrx/chat/agents/hooks/useWidgetHandle";
 import { buildEditableWidgetHandle } from "./utils/widget-handle";
-import { resolveTableRowMenuDescriptor } from "./table-row-context-registry";
+import { resolveTableRowMenuDescriptor } from "./table-row-item";
 import { recordMenusRevision, resolveRecordMenu, subscribeRecordMenus } from "./record-menu-registry";
 import { joinExtraSections } from "./utils/join-extra-sections";
 import { CONTEXT_REGION_TRIGGER_ATTRS } from "./region-trigger-attrs";

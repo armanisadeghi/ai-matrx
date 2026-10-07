@@ -40,7 +40,7 @@ import { NONE_VALUE, type EntityFacets, type EntityFilters } from "../types";
 import {
   buildDefaultTableRowMenuDescriptor,
   createTableRowMenuDescriptor,
-} from "@/features/context-menu-v3/table-row-context-registry";
+} from "@/features/context-menu-v3/table-row-item";
 import {
   CONTEXT_MENU_ENTITY_KEY,
   CONTEXT_MENU_HEADING_KEY,

@@ -21,7 +21,7 @@ import {
   registerLoadedValueDeclarations,
   type LoadedValueDeclarationLookup,
 } from "@ai-matrx/chat/surfaces/runtime/loaded-value-check";
-import { createDeclarationRegistry } from "@ai-matrx/alchemy/declare";
+import { createDeclarationRegistry, TABLE_ROW_ITEM_TYPE } from "@ai-matrx/alchemy/declare";
 import type {
   ResolvedSurfaceManifest,
   SurfaceManifest,
@@ -623,6 +623,9 @@ export function assertDeclaresExecutor(
  */
 const REGISTRY = createDeclarationRegistry<SurfaceManifest>({
   baselineValues: Object.values(BASELINE_VALUES),
+  // ALC-18 (D4): a canonical table can sit on any screen, so its row is a baseline ITEM type of
+  // every surface (`table_row`); `features/context-menu-v3/table-row-item.ts` resolves it.
+  baselineItemTypes: [TABLE_ROW_ITEM_TYPE],
   maxInheritanceDepth: MAX_INHERITANCE_DEPTH,
 });
 REGISTRY.registerExtension(agentRolesExtension);

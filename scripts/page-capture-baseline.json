@@ -609,7 +609,6 @@
   "app/(core)/legal/page.tsx",
   "app/(core)/libraries/[id]/page.tsx",
   "app/(core)/libraries/page.tsx",
-  "app/(core)/pick-lists/[id]/page.tsx",
   "app/(core)/pick-lists/page.tsx",
   "app/(core)/pick-lists/page.tsx",
   "app/(core)/pick-lists/page.tsx",

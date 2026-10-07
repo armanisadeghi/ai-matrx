@@ -2,8 +2,10 @@ import {
   createDefaultTableRowMenuDescriptor,
   createTableRowMenuDescriptor,
   registerTableRowContextResolver,
+  resolveTableRowItem,
   resolveTableRowMenuDescriptor,
-} from "./table-row-context-registry";
+} from "./table-row-item";
+import { itemSources } from "@ai-matrx/alchemy/surface";
 
 describe("table row context registry", () => {
   it("resolves the clicked row from its mounted table and unregisters it", () => {
@@ -156,6 +158,43 @@ describe("table row context registry", () => {
     expect(resolved?.extraSections[0]?.items).toHaveLength(1);
     expect(resolved?.extraSections[1]?.label).toBe("Tools");
     unregister();
+    table.remove();
+  });
+
+  it("the row resolves through alchemy's one item path as the declared table_row item (ALC-18 D4)", async () => {
+    const table = document.createElement("div");
+    table.dataset.matrxTableId = "table-instance-item";
+    const row = document.createElement("div");
+    row.dataset.rowId = "row-7";
+    const cell = document.createElement("td");
+    cell.setAttribute("data-matrx-table-column-id", "name");
+    cell.textContent = "Priya Nair";
+    row.append(cell);
+    table.append(row);
+    document.body.append(table);
+    const descriptor = createTableRowMenuDescriptor({
+      context: { content: "x", context: { id: "row-7", name: "Priya Nair" } },
+      extraSections: [],
+    });
+    const unregister = registerTableRowContextResolver("table-instance-item", (t) => (t.rowId === "row-7" ? descriptor : null));
+
+    const hit = resolveTableRowItem(cell);
+    expect(hit?.item).toEqual({
+      itemType: "table_row",
+      identity: { table_id: "table-instance-item", row_id: "row-7" },
+      level: "row",
+      readOnly: true,
+    });
+    const raw = itemSources.resolve({ containerId: "table-instance-item", level: "row", itemId: "row-7" });
+    await expect(raw?.item.readValues(new AbortController().signal)).resolves.toEqual({
+      table_id: "table-instance-item",
+      row_id: "row-7",
+      shown: "Priya Nair",
+      row: { id: "row-7", name: "Priya Nair" },
+    });
+    unregister();
+    expect(itemSources.has("table-instance-item")).toBe(false);
+    expect(resolveTableRowItem(cell)).toBeNull();
     table.remove();
   });
 });

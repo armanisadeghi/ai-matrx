@@ -83,7 +83,7 @@ export function mergeResolvedContextData(
 
 /**
  * The context for ONE open on a table row: the table's own row descriptor
- * (table-row-context-registry.ts) JOINED with the surface's `resolveContextOnOpen` answer.
+ * (table-row-item.ts) JOINED with the surface's `resolveContextOnOpen` answer.
  *
  * 🚨 WHY (2026-10-03, CHAIR-REACH). The shell used to read `rowMenu?.context ?? surface(target)`:
  * once a canonical table registered its default row descriptor — which every MatrxDataTable does,

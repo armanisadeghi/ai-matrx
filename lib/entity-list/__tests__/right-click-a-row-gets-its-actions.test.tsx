@@ -41,7 +41,7 @@ import type { ContextMenuExtraSection } from "@/features/context-menu-v3/types";
 import {
   registerTableRowContextResolver,
   resolveTableRowMenuDescriptor,
-} from "@/features/context-menu-v3/table-row-context-registry";
+} from "@/features/context-menu-v3/table-row-item";
 
 interface Row {
   id: string;

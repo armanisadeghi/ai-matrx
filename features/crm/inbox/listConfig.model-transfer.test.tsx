@@ -9,7 +9,7 @@ import { resolveApplicationScope } from "@/features/context-menu-v3/value-resolu
 import {
   registerTableRowContextResolver,
   resolveTableRowMenuDescriptor,
-} from "@/features/context-menu-v3/table-row-context-registry";
+} from "@/features/context-menu-v3/table-row-item";
 import { inboxListConfig } from "./listConfig";
 import type { InboxRow } from "./types";
 

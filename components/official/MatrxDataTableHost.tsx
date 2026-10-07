@@ -25,7 +25,7 @@ import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { useEffectiveKnob } from "@/lib/scoped-config/effectiveKnobs.client";
 import { TableSavedViews } from "./TableSavedViews";
 import { TableToolbarAction } from "./TableToolbarAction";
-import { createDefaultTableRowMenuDescriptor, registerTableRowContextResolver } from "@/features/context-menu-v3/table-row-context-registry";
+import { createDefaultTableRowMenuDescriptor, registerTableRowContextResolver } from "@/features/context-menu-v3/table-row-item";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 import { useIsInsideContextMenu } from "@/features/context-menu-v3/menu-presence";
 import { TABLE_MENU_ICONS, toContextMenuExtraSections } from "./table-menu-sections";

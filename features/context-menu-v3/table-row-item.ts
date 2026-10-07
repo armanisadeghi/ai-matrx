@@ -1,6 +1,21 @@
+/**
+ * THE TABLE ROW IS A DECLARED ITEM (ALC-18, LIST.md D4).
+ *
+ * A canonical table's row is alchemy's `table_row` item type (`TABLE_ROW_ITEM_TYPE`, a baseline
+ * item type of every surface — `features/surfaces/manifests/registry.ts`). Each mounted table
+ * registers ONE item source with `@ai-matrx/alchemy/surface` `itemSources` under its table id; a
+ * right-click resolves the row through that one path into the declared item (identity
+ * `table_id` + `row_id`, the level, its values) plus the row's menu, which rides as the item's
+ * opaque host data. There is no private registry here: this file only builds the row's menu and
+ * reads the words the row shows.
+ */
 import { CONTEXT_MENU_HEADING_KEY, type ContextMenuExtraSection, type ResolvedContextMenuContext } from "./types";
+import { TABLE_ROW_ITEM } from "@ai-matrx/alchemy/declare";
+import type { ResolvedItem } from "@ai-matrx/alchemy/declare";
+import { itemSources } from "@ai-matrx/alchemy/surface";
 import type { MatrxDataTableRecordControls } from "@ai-matrx/design-system/data-table/types";
 import type {
+  MatrxTableMenuLevel,
   MatrxTableMenuPayload,
   MatrxTableMenuTarget,
 } from "@ai-matrx/design-system/data-table/menu-targets";
@@ -10,13 +25,16 @@ export interface TableRowMenuDescriptor {
   extraSections: ContextMenuExtraSection[];
 }
 
-const descriptors = new WeakMap<object, TableRowMenuDescriptor>();
-const resolvers = new Map<string, (target: MatrxTableMenuTarget) => unknown>();
+/**
+ * The row's menu as the table hands it back (the table types it `unknown` and never reads it). A
+ * class, so a resolver answering anything else is told apart without a private lookup table.
+ */
+class TableRowMenu {
+  constructor(readonly descriptor: TableRowMenuDescriptor) {}
+}
 
 export function createTableRowMenuDescriptor(descriptor: TableRowMenuDescriptor): object {
-  const token = {};
-  descriptors.set(token, descriptor);
-  return token;
+  return new TableRowMenu(descriptor);
 }
 
 /** Exactly the row commands the default menu renders. Nothing else is read. */
@@ -96,30 +114,84 @@ export function buildDefaultTableRowMenuDescriptor(
   };
 }
 
+/** The mounted row element of a table, read when the item's values are read. */
+function rowElement(tableId: string, rowId: string): HTMLElement | null {
+  if (typeof document === "undefined") return null;
+  const table = Array.from(document.querySelectorAll<HTMLElement>("[data-matrx-table-id]")).find((el) => el.dataset.matrxTableId === tableId);
+  return Array.from(table?.querySelectorAll<HTMLElement>("[data-row-id]") ?? []).find((el) => el.dataset.rowId === rowId) ?? null;
+}
+
+/** A row is writable when its table offers the row's edit command. */
+function rowIsReadOnly(descriptor: TableRowMenuDescriptor): boolean {
+  return !descriptor.extraSections.some((section) => section.items.some((item) => "id" in item && item.id === "table-edit-row"));
+}
+
 /**
- * The canonical table registers ONE resolver per mounted instance and asks it
- * which of its right-click LEVELS was aimed at (`MatrxTableMenuTarget`), not
- * merely which row — so the resolver takes the target the package defines.
+ * The canonical table registers ONE item source per mounted instance, under its table id. The table
+ * answers which of its right-click LEVELS was aimed at (`MatrxTableMenuTarget`); the source turns
+ * that answer into the declared `table_row` item, with the row's menu as its host data.
  */
 export function registerTableRowContextResolver(
   tableId: string,
   resolve: (target: MatrxTableMenuTarget) => unknown,
 ) {
-  resolvers.set(tableId, resolve);
-  return () => { if (resolvers.get(tableId) === resolve) resolvers.delete(tableId); };
+  return itemSources.register<TableRowMenuDescriptor>(tableId, (target) => {
+    const token = resolve({
+      tableId,
+      level: target.level as MatrxTableMenuLevel,
+      ...(target.itemId ? { rowId: target.itemId } : {}),
+      ...(target.partId ? { columnId: target.partId } : {}),
+    });
+    if (!(token instanceof TableRowMenu)) return null;
+    const descriptor = token.descriptor;
+    const rowId = target.itemId ?? "";
+    return {
+      item: {
+        itemType: TABLE_ROW_ITEM,
+        identity: { table_id: tableId, row_id: rowId },
+        level: target.level,
+        readOnly: rowIsReadOnly(descriptor),
+        readValues: async () => ({
+          table_id: tableId,
+          row_id: rowId,
+          shown: shownWords(rowElement(tableId, rowId)),
+          row: descriptor.context.context,
+        }),
+      },
+      host: descriptor,
+    };
+  });
 }
 
-export function resolveTableRowMenuDescriptor(target: HTMLElement | null): TableRowMenuDescriptor | null {
+/** The clicked row as its declared item (raw-free) and the menu its table built for it. */
+export interface TableRowItemHit {
+  item: ResolvedItem;
+  menu: TableRowMenuDescriptor;
+}
+
+export function resolveTableRowItem(target: HTMLElement | null): TableRowItemHit | null {
   const row = target?.closest<HTMLElement>("[data-row-id]");
   const tableId = row?.closest<HTMLElement>("[data-matrx-table-id]")?.dataset.matrxTableId;
   const rowId = row?.dataset.rowId;
   if (!tableId || !rowId) return null;
-  // This menu acts on the ROW it found in the DOM, so it asks for that level
-  // by name. Handing the resolver a bare id instead leaves `level` undefined
-  // and the table answers nothing at all.
-  const token = resolvers.get(tableId)?.({ tableId, level: "row", rowId });
-  const descriptor = token && typeof token === "object" ? descriptors.get(token) ?? null : null;
-  if (!descriptor) return null;
+  // This menu acts on the ROW it found in the DOM, so it asks for that level by name.
+  const hit = itemSources.resolve<TableRowMenuDescriptor>({ containerId: tableId, level: "row", itemId: rowId });
+  const descriptor = hit?.host ?? null;
+  if (!hit || !descriptor) return null;
+  const { readValues: _raw, ...item } = hit.item;
+  return { item, menu: headedMenu(descriptor, target, row) };
+}
+
+/** The row's menu, or null when the click was not on a canonical table's row. */
+export function resolveTableRowMenuDescriptor(target: HTMLElement | null): TableRowMenuDescriptor | null {
+  return resolveTableRowItem(target)?.menu ?? null;
+}
+
+function headedMenu(
+  descriptor: TableRowMenuDescriptor,
+  target: HTMLElement | null,
+  row: HTMLElement,
+): TableRowMenuDescriptor {
   // 🚨 THE HEADING IS WHAT THE PERSON RIGHT-CLICKED, IN THE WORDS ON SCREEN (merged-grid review
   // 2026-09-26): the heading read `Content: { "id": …, "_choices": …, "level": "admin",
   // "hidden": {} }` — the row's raw document. The clicked cell's shown text ("Content: Priya

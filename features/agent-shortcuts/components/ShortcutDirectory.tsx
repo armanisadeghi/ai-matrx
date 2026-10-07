@@ -45,7 +45,7 @@ import { csvExportItem, jsonExportItem } from "@/components/agent-copy/export";
 import {
   buildDefaultTableRowMenuDescriptor,
   createTableRowMenuDescriptor,
-} from "@/features/context-menu-v3/table-row-context-registry";
+} from "@/features/context-menu-v3/table-row-item";
 import type { ContextMenuExtraSection } from "@/features/context-menu-v3/types";
 import { readOf } from "@/components/read-state/ReadGate";
 
