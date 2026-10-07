@@ -686,7 +686,7 @@ const REGISTRY: Record<KnownItemType, ItemTypeConfig> = {
   },
   table: {
     type: "table",
-    entityToken: "dataset",
+    entityToken: "table",
     label: "Table",
     icon: Table2,
     accent: {

@@ -49,6 +49,10 @@ const OLD_TEXT: Array<[string, RegExp]> = [
   ["the old table tool name", /toolName:\s*["']dataset["']|FEATURE_TOOL_RENDERERS\.dataset\b|(ANSWER_READ_FOR|DATA_TOOLS) = \[[^\]]*["']dataset["']/],
   // Table templates are custom.template rows (templateKind table) since 2026-10-07.
   ["the old table-template binding", /container_type:\s*["']dataset_template["']|rpc\(\s*["']list_udt_dataset_templates["']|DatasetTableTemplate\b/],
+  // A Table has ONE token, `table` (@ai-matrx/associations 0.13.156); `dataset` is a retired spelling that is
+  // only READ. The peek, the item type and the Open door no longer write it; the result kinds are table_*.
+  ["the old table peek or entity token", /DatasetPeek|entityToken:\s*["']dataset["']|peekHref\(\s*["']dataset["']/],
+  ["the old table result kinds", /\bdataset_(tool|metadata|fields)_result\b/],
   ["the old table tool names", /\busertable_(get|create|add|update|search|delete)\w*|\buser_table_add_row\b|\bdata_user_(lists|tables)\w*/],
 ];
 

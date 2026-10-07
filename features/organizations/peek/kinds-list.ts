@@ -36,7 +36,8 @@ export const PEEK_KINDS = [
   "fc_set",
   "canvas_item",
   "task",
-  "dataset",
+  "table",
+  "dataset", // retired spelling of table: org resource rows and saved peeks still carry it
   "transcript",
   "agent_shortcut",
   "pick_list",

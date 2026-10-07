@@ -22,7 +22,7 @@ import ConversationPeek from "./kinds/ConversationPeek";
 import FlashcardPeek from "./kinds/FlashcardPeek";
 import CanvasPeek from "./kinds/CanvasPeek";
 import TaskPeek from "./kinds/TaskPeek";
-import DatasetPeek from "./kinds/DatasetPeek";
+import TablePeek from "./kinds/TablePeek";
 import TranscriptPeek from "./kinds/TranscriptPeek";
 import ShortcutPeek from "./kinds/ShortcutPeek";
 import ListPeek from "./kinds/ListPeek";
@@ -53,7 +53,8 @@ export const PEEK_REGISTRY: Record<
   fc_set: FlashcardPeek,
   canvas_item: CanvasPeek,
   task: TaskPeek,
-  dataset: DatasetPeek,
+  table: TablePeek,
+  dataset: TablePeek, // retired spelling of table: org resource rows and saved peeks still carry it
   transcript: TranscriptPeek,
   agent_shortcut: ShortcutPeek,
   pick_list: ListPeek,
