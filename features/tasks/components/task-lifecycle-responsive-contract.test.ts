@@ -122,9 +122,13 @@ describe("task lifecycle responsive contract", () => {
     const mobileList = source("mobile/MobileTasksList.tsx");
 
     expect(mobileList).toContain("after:-inset-[15px]");
+    // The list is the page scroll owner: it scrolls, contains overscroll, and the shell's
+    // floating-clearance runway (data-matrx-page-scroll) gives it the room above the mobile dock
+    // and toasts. A hand-written pb-20 is the thing it replaced.
     expect(mobileList).toContain(
-      'className="flex-1 overflow-y-auto overscroll-contain pb-20"',
+      'data-matrx-page-scroll="" className="flex-1 overflow-y-auto overscroll-contain"',
     );
+    expect(mobileList).not.toMatch(/overscroll-contain pb-\d+/);
     expect(mobileList).not.toContain(
       'className="flex min-h-11 min-w-11 items-center justify-center"',
     );
