@@ -176,7 +176,7 @@ const MODEL_COLUMNS: MatrxColumnDef<NormalizedUsageModel>[] = [
  * unpriced call adds 0 to cost (the banner above says so) — so a group's numbers add up
  * to the tiles instead of quietly disagreeing with them.
  */
-type LedgerRow = CostLedgerEntry & {
+export type LedgerRow = CostLedgerEntry & {
   billedCalls: number;
   failed: number;
   billedRequests: number;
@@ -186,7 +186,7 @@ type LedgerRow = CostLedgerEntry & {
   billedCost: number;
 };
 
-function toLedgerRow(entry: CostLedgerEntry): LedgerRow {
+export function toLedgerRow(entry: CostLedgerEntry): LedgerRow {
   const ok = entry.succeeded;
   return {
     ...entry,
@@ -215,7 +215,7 @@ const COST_SHOW = [
  * comes last. Provider is a fact about one model, so it describes a model rather than being
  * another column to read down.
  */
-function ledgerDrill(
+export function ledgerDrill(
   format: (usd: number) => string,
 ): MatrxDataTableLocalDrillConfig {
   return {
@@ -245,7 +245,7 @@ function ledgerDrill(
   };
 }
 
-const LEDGER_COLUMNS: MatrxColumnDef<LedgerRow>[] = [
+export const LEDGER_COLUMNS: MatrxColumnDef<LedgerRow>[] = [
   {
     id: "created-at",
     header: "When",
@@ -434,7 +434,6 @@ export default function CostDashboard() {
   const drill = useMemo(
     () => ledgerDrill((usd) => unitsLabel(usd, { short: true })),
     // The cost's words change with the unit and the rate; the table remounts on them below.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
     [unit, rate],
   );
 
