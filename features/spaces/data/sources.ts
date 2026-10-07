@@ -78,6 +78,9 @@ export interface SpaceDbView {
   where?: Record<string, unknown> | null;
   /** N8 Notion's Form view: the table's form (`custom.anon_form`, records-ui FormBuilder) this view edits. */
   formId?: string | null;
+  /** N5 the width a person dragged each column to (by property key) and the order they dragged them into. */
+  widths?: Record<string, number>;
+  columnOrder?: string[];
   chart?: ChartSettings;
 }
 

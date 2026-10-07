@@ -196,6 +196,7 @@ function DatabaseFrame({
       search={search}
       onSummaries={editable && !sample && !published ? (summaries) => saveView({ summaries } as Partial<SpaceDbView>) : undefined}
       onFormId={(formId) => saveView({ formId })}
+      onLook={saveView}
     />
   );
 
@@ -361,7 +362,7 @@ function DatabaseFrame({
       <Dialog open={expanded} onOpenChange={setExpanded}>
         <DialogContent size="2xl" height="tall" className="spaces-db-expanded overflow-auto">
           <DialogTitle>{props.title || sourceName}</DialogTitle>
-          <DatabaseBody tableId={tableId} view={shown} fields={fields} onOpenRecord={setOpen} editable={editable} sample={sample} overRows={sample || published} sortOverride={sortOverride} search={search} onSummaries={editable && !sample && !published ? (summaries) => saveView({ summaries } as Partial<SpaceDbView>) : undefined} onFormId={(formId) => saveView({ formId })} />
+          <DatabaseBody tableId={tableId} view={shown} fields={fields} onOpenRecord={setOpen} editable={editable} sample={sample} overRows={sample || published} sortOverride={sortOverride} search={search} onSummaries={editable && !sample && !published ? (summaries) => saveView({ summaries } as Partial<SpaceDbView>) : undefined} onFormId={(formId) => saveView({ formId })} onLook={saveView} />
         </DialogContent>
       </Dialog>
     </div>
@@ -405,7 +406,7 @@ function viewSpec(tableId: string, view: ViewWithSummaries, fields: Field[] = []
     ...(view.where ? { where: view.where as unknown as RuleExpression } : {}),
     // Notion's inline table: columns at their natural width, one line each, the table scrolling sideways
     // inside the block when it is wider than the column it sits in (screenshot 1) — never squeezed to "…".
-    presentation: { fit: "scroll", wrap: false, ...(view.hiddenFields?.length ? { hiddenFields: view.hiddenFields } : {}), ...(hasFormats ? { formats } : {}), ...(view.summaries && Object.keys(view.summaries).length ? { summaries: view.summaries } : {}) },
+    presentation: { fit: "scroll", wrap: false, ...(view.hiddenFields?.length ? { hiddenFields: view.hiddenFields } : {}), ...(hasFormats ? { formats } : {}), ...(view.summaries && Object.keys(view.summaries).length ? { summaries: view.summaries } : {}), ...(view.widths && Object.keys(view.widths).length ? { widths: view.widths } : {}), ...(view.columnOrder?.length ? { columnOrder: view.columnOrder } : {}) },
   };
 }
 
@@ -421,6 +422,7 @@ function DatabaseBody({
   search,
   onSummaries,
   onFormId,
+  onLook,
 }: {
   tableId: string;
   view: ViewWithSummaries;
@@ -436,6 +438,8 @@ function DatabaseBody({
   onSummaries?: (summaries: Record<string, string>) => void;
   /** A Form view keeps the form it edits (made on first open). */
   onFormId: (formId: string) => void;
+  /** The grid's column widths / order, kept on the view. */
+  onLook: (look: Partial<SpaceDbView>) => void;
 }) {
   if (view.layout === "chart") {
     const settings = { ...DEFAULT_CHART, ...view.chart };
@@ -471,6 +475,13 @@ function DatabaseBody({
             ? (patch) => {
                 const next = patch.presentation?.summaries;
                 if (next && JSON.stringify(next) !== JSON.stringify(view.summaries ?? {})) onSummaries(next);
+                // N5: a dragged column width / order is the view's (Notion keeps both per view).
+                const widths = patch.presentation?.widths;
+                const columnOrder = patch.presentation?.columnOrder;
+                const look: Partial<SpaceDbView> = {};
+                if (widths && JSON.stringify(widths) !== JSON.stringify(view.widths ?? {})) look.widths = widths;
+                if (columnOrder && JSON.stringify(columnOrder) !== JSON.stringify(view.columnOrder ?? [])) look.columnOrder = columnOrder;
+                if (Object.keys(look).length) onLook(look);
               }
             : undefined
         }
@@ -579,6 +590,7 @@ function FilterButton({
   onChoice,
   canSave,
   onSave,
+  onSaveWhere,
 }: {
   view: SpaceDbView;
   fields: Field[];

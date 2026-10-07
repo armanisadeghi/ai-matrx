@@ -79,7 +79,7 @@ export async function newPage(page) {
     return !!id && id !== before && !SAMPLE_PAGES.includes(id);
   };
   for (let attempt = 0; attempt < 3; attempt++) {
-    await page.getByRole("button", { name: /^New page$/ }).first().click();
+    await page.locator(".spaces-sidebar-head").getByRole("button", { name: /^New page$/ }).first().click();
     await chooseOrgIfAsked(page);
     const ok = await page.waitForURL(isNew, { timeout: 30_000, waitUntil: "commit" }).then(() => true, () => false);
     if (ok) break;
