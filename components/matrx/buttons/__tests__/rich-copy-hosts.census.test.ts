@@ -256,7 +256,19 @@ const RENDERS_MARKDOWN =
 const COPY_DEFINITIONS = /^components\/agent-copy\//;
 
 /** Old Alchemy trigger / raw clipboard on a markdown host that is NOT markdown copy — file → why. */
-const NOT_MARKDOWN_COPY: Record<string, string> = {};
+const RECORD_SUMMARY =
+  "record-level copy: the readable summary of a record (with its JSON / agent payload) beside the record, not the markdown body the file also renders";
+const NOT_MARKDOWN_COPY: Record<string, string> = {
+  "app/(admin)/administration/users/feedback/components/AnnouncementTable.tsx": RECORD_SUMMARY,
+  "app/(admin)/administration/users/feedback/components/FeedbackDetailDialog.tsx": RECORD_SUMMARY,
+  "features/agents/route/AgentViewContent.tsx": RECORD_SUMMARY,
+  "features/hindsight/components/FindingCard.tsx": RECORD_SUMMARY,
+  "features/masterwork/record/ExpertRecordPage.tsx": RECORD_SUMMARY,
+  "features/research/components/synthesis/SynthesisList.tsx": RECORD_SUMMARY,
+  "features/workflow-runtime/components/readout-parts.tsx": RECORD_SUMMARY,
+  "packages/chat/src/agents/components/context-preview/ContextCompareView.tsx":
+    "copies a context block exactly as shown (prompt text, not rendered markdown); uses the chat package's host slot",
+};
 
 function repoFiles(root: string): Array<{ rel: string; src: string }> {
   const out: Array<{ rel: string; src: string }> = [];
@@ -335,6 +347,17 @@ describe("consistency everywhere: markdown copy is the split Copy across the who
 
   test("E. no markdown/rich-text component writes the clipboard raw", () => {
     expect(rawCopyOnMarkdown(REPO_ROOT, RAW_ON_MARKDOWN_OK)).toEqual([]);
+  });
+
+  test("E. no stale exemptions: every allow-listed file still has the old trigger or raw write", () => {
+    for (const rel of Object.keys(NOT_MARKDOWN_COPY)) {
+      const file = path.join(REPO_ROOT, rel);
+      expect([rel, fs.existsSync(file) && /<(CopyButtons|MatrxCopyMenu|ContentTransferMenu)\b/.test(fs.readFileSync(file, "utf8"))]).toEqual([rel, true]);
+    }
+    for (const rel of Object.keys(RAW_ON_MARKDOWN_OK)) {
+      const file = path.join(REPO_ROOT, rel);
+      expect([rel, fs.existsSync(file) && RAW_WRITE.test(fs.readFileSync(file, "utf8"))]).toEqual([rel, true]);
+    }
   });
 
   test("F. the named hosts render the split Copy", () => {

@@ -1,6 +1,8 @@
 // spaces-agents lane: ONE real UI run of "Database with AI" as test@test.com (headless).
 import { open, newPage, slash, chooseOrgIfAsked, shot } from "./lib.mjs";
-const [request, shotPath, pageTitle] = process.argv.slice(2);
+const [requestsJson, shotBase] = process.argv.slice(2);
+const requests = JSON.parse(requestsJson);
+const out = [];
 const { browser, page } = await open({ member: true });
 const runs = [];
 page.on("request", (r) => {
@@ -9,6 +11,9 @@ page.on("request", (r) => {
   try { body = JSON.parse(r.postData() ?? "null"); } catch {}
   runs.push({ url: r.url(), conversation_id: body?.conversation_id, user_input: body?.user_input, variables: body?.variables });
 });
+for (const [n, request] of requests.entries()) {
+  const shotPath = `${shotBase}-${n + 1}.png`;
+  try {
 const id = await newPage(page);
 await page.goto(`${new URL(page.url()).origin}/spaces/${id}`, { waitUntil: "domcontentloaded" });
 await page.locator(".bn-editor").first().waitFor({ timeout: 120_000 });
@@ -18,7 +23,7 @@ const blocks = await page.locator(".bn-editor .bn-block-content").count();
 if (blocks > 2) { await page.screenshot({ path: shotPath }); throw new Error(`refused: page ${id} shows ${blocks} blocks, not a blank page`); }
 console.log("page:", page.url());
 // A title gives the agent its page context (page_title).
-if (pageTitle) {
+if (false) {
   const title = page.locator("[aria-label='Page title'], .spaces-title, h1[contenteditable]").first();
   if (await title.isVisible().catch(() => false)) { await title.click(); await page.keyboard.type(pageTitle); await page.keyboard.press("Enter"); }
 }
@@ -33,5 +38,8 @@ const done = await page.getByText(/is ready$/).first().waitFor({ timeout: 300_00
 await page.waitForTimeout(6000);
 await shot(page, shotPath);
 const toasts = await page.locator("[data-sonner-toast]").allTextContents();
-console.log(JSON.stringify({ done, page_id: id, url: page.url(), runs, toasts }, null, 1));
+out.push({ request, done, page_id: id, run: runs[runs.length - 1]?.conversation_id });
+console.log(JSON.stringify(out[out.length - 1]));
+  } catch (e) { console.log("FAILED", n + 1, String(e).slice(0, 200)); }
+}
 await browser.close();
