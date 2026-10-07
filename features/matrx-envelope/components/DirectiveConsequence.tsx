@@ -114,7 +114,7 @@ export function DirectiveRecordLink({ noun, id, fallback, context, trashed: abou
 
   const label = (
     <>
-      {name === null ? <NamePlaceholder /> : <span className="truncate">{name}</span>}
+      {name === null ? <NamePlaceholder /> : <span className="min-w-0 line-clamp-2 [overflow-wrap:anywhere]" data-record-name="">{name}</span>}
       {loading && name !== null ? (
         <Loader2 className="h-3 w-3 shrink-0 animate-spin text-muted-foreground" />
       ) : null}
@@ -132,7 +132,7 @@ export function DirectiveRecordLink({ noun, id, fallback, context, trashed: abou
         title="Not found — deleted, or not shared with you"
         data-record-missing=""
       >
-        <span className="truncate">{name ?? fallback}</span>
+        <span className="min-w-0 line-clamp-2 [overflow-wrap:anywhere]" data-record-name="">{name ?? fallback}</span>
         <span className="shrink-0 text-xs">· Not found</span>
       </span>
     );

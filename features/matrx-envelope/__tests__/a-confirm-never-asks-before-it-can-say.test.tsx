@@ -258,3 +258,30 @@ describe("a record link never shows a raw id", () => {
     await act(async () => root.unmount());
   });
 });
+
+describe("G11C: a create opens at once, and a record name wraps instead of cutting off", () => {
+  it("a create's question is never held behind a read — it opens complete on the click", async () => {
+    // Nothing a create names exists yet, so there is nothing to read first:
+    // the dialog must not carry `ready` (a held yes, a "Reading…" line).
+    const q = await openQuestion(request("directive_v1_create_task", [{ title: "G11C created task" }], "Task"));
+    expect(q.opts.ready).toBeUndefined();
+    expect(confirmDialog).toHaveBeenCalledTimes(1);
+    expect(q.read().title).toBe("Create Task G11C created task?");
+    await q.done();
+  });
+
+  it("a long record name wraps to two lines on a phone — never `truncate`", async () => {
+    labelStatus = "ready";
+    const host = document.createElement("div");
+    document.body.appendChild(host);
+    const root = createRoot(host);
+    await act(async () => {
+      root.render(<DirectiveRecordLink noun="task" id={TASK_ID} fallback="Task" context="row" />);
+    });
+    const name = host.querySelector("[data-record-name]");
+    expect(name?.textContent).toBe("G8A weekly review");
+    expect(name?.className).toContain("line-clamp-2");
+    expect(host.querySelector(".truncate")).toBeNull();
+    await act(async () => root.unmount());
+  });
+});

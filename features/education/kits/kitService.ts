@@ -744,3 +744,33 @@ export async function createManualKit(input: {
     completed += 1;
   }
 }
+
+/**
+ * A new kit from several picked Sources (the same model as a kit made at
+ * /education/start): its own record, each Source filed under it, then any saved
+ * aids the person chose. Returns the kit's id.
+ */
+export async function createMultiSourceKit(input: {
+  orgId: string;
+  title: string;
+  sources: readonly { type: string; id: string; title: string }[];
+  artifacts: readonly EducationLibraryRow[];
+}): Promise<string> {
+  const title = writableTitle(input.title);
+  if (!input.sources.length) throw new Error("Pick the material for this kit first.");
+  const scope = await createKitScope(input.orgId, title);
+  for (const source of input.sources) await addKitSource(scope, source);
+  if (input.artifacts.length) {
+    const made = await readKit(KIT_TOKEN, scope.id);
+    if (!made) throw new Error("The kit was made but could not be read back. Open it from Study kits.");
+    await createManualKit({
+      sourceId: scope.id,
+      sourceType: KIT_TOKEN,
+      title,
+      artifacts: input.artifacts,
+      allowExisting: true,
+      expectedFingerprint: kitMembershipFingerprint(made),
+    });
+  }
+  return scope.id;
+}

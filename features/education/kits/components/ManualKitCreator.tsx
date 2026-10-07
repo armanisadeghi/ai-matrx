@@ -1,12 +1,10 @@
 "use client";
 
-// /education/kits/new — the manual kit creator: group saved study aids under
-// one piece of material, nothing generated. The material is picked in THE one
+// /education/kits/new — the manual kit creator: a kit made from picked material,
+// plus any saved study aids, nothing generated. The material is picked in THE one
 // Source input (`features/resource-manager/source-input`, the same input as
-// /education/start and /education/flashcards/new). A kit IS its anchor file:
-// one picked file (or a Source read from one) anchors the kit on that file;
-// anything else is read through the server resolver and kept as one `.md`
-// file (`useIngest().normalizeSources`, the same step /education/start uses).
+// /education/start and /education/flashcards/new). A new kit holds EVERY picked
+// Source itself (`kitScope.ts`), exactly like a kit made at /education/start.
 // Opened on an existing kit (`?source=&from=`) it only adds saved aids.
 
 import { useEffect, useEffectEvent, useRef, useState } from "react";
@@ -17,8 +15,8 @@ import { createSourceRef } from "@ai-matrx/agents/sources";
 import type { SourceTileId } from "@ai-matrx/agents/sources/runtime";
 import { SourceInput } from "@/features/resource-manager/source-input/components/SourceInput";
 import { useSourceSet } from "@/features/resource-manager/source-input/useSourceSet";
-import { useIngest } from "@/features/education/onboard/useIngest";
-import { pickedFileAnchor } from "@/features/education/onboard/kitSources";
+import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
+import { kitSourceRefs, pickedFileAnchor } from "@/features/education/onboard/kitSources";
 import { getFileMetadata } from "@/features/files/api/files";
 import { fetchEducationLibraryPage } from "@/features/education/library/service";
 import type { EducationLibraryRow } from "@/features/education/library/types";
@@ -26,7 +24,7 @@ import { educationLibraryHref } from "@/features/education/library/types";
 import { artifactVisual } from "@/features/education/library/artifactVisuals";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { DEFAULT_ENTITY_LIST_QUERY } from "@/lib/entity-list/types";
-import { createManualKit, isManualKitSourceType, kitHref, kitMembershipFingerprint, readKit, type ManualKitSourceType } from "../kitService";
+import { createManualKit, createMultiSourceKit, isManualKitSourceType, kitHref, kitMembershipFingerprint, readKit, type ManualKitSourceType } from "../kitService";
 import { ErrorNotice } from "@/components/errors/ErrorNotice";
 import { describeFailure } from "@/lib/failure/transport";
 import { toast } from "@/lib/toast";
@@ -53,7 +51,6 @@ export function ManualKitCreator({
   const requestedSourceId = searchParams.get("source");
   const requestedSourceType = searchParams.get("from") ?? "file";
   const set = useSourceSet(MANUAL_KIT_SOURCES_KEY);
-  const { normalizeSources } = useIngest();
   const [title, setTitle] = useState("");
   const [sourceId, setSourceId] = useState<string | null>(null);
   const [sourceType, setSourceType] = useState<ManualKitSourceType>("file");
@@ -242,15 +239,14 @@ export function ManualKitCreator({
   }, [page, search]);
 
   /**
-   * The new kit's anchor file: the one picked file (no server read), else the
-   * picks read through the server resolver and kept as one file — the same
-   * step /education/start uses, so both pages anchor a kit the same way.
+   * A new kit holds every picked Source itself (the same model as /education/start):
+   * the picks are read once, then each is filed under a new kit record.
    */
-  const resolveNewKitAnchor = async (): Promise<string> => {
-    if (pickedFileId) return pickedFileId;
-    const read = await normalizeSources(() => set.resolve());
-    if (!read.ref.fileId) throw new Error("Could not keep a copy of this material to hold the kit. Try again.");
-    return read.ref.fileId;
+  const makeNewKit = async (kitTitle: string, artifacts: readonly EducationLibraryRow[]): Promise<string> => {
+    const resolved = await set.resolve();
+    const sources = kitSourceRefs(resolved);
+    if (!sources.length) throw new Error("None of the picked material had any text. Check each Source, or add another.");
+    return createMultiSourceKit({ orgId: await ensureOrgId(null), title: kitTitle, sources, artifacts });
   };
   const toggle = (row: EducationLibraryRow) => setSelected((current) =>
     current.some((item) => item.id === row.id && item.kind === row.kind) ? current.filter((item) => item.id !== row.id || item.kind !== row.kind) : [...current, row]);
@@ -262,9 +258,10 @@ export function ManualKitCreator({
   const save = async () => {
     setSaving(true); setError(null);
     try {
-      const anchorId = isExistingKit ? sourceId ?? "" : await resolveNewKitAnchor();
-      const anchorType = isExistingKit ? sourceType : "file";
-      await createManualKit({ sourceId: anchorId, sourceType: anchorType, title, artifacts: selected, allowExisting: isExistingKit, expectedFingerprint: existingFingerprint ?? undefined });
+      const anchorType = isExistingKit ? sourceType : "scope";
+      let anchorId = sourceId ?? "";
+      if (isExistingKit) await createManualKit({ sourceId: anchorId, sourceType: anchorType, title, artifacts: selected, allowExisting: true, expectedFingerprint: existingFingerprint ?? undefined });
+      else anchorId = await makeNewKit(title, selected);
       clearDraft();
       if (onMade) onMade({ sourceType: anchorType, sourceId: anchorId, title });
       else router.push(kitHref(anchorType, anchorId));
@@ -298,10 +295,11 @@ export function ManualKitCreator({
       return { title: item.title.trim(), artifacts: artifacts.filter((row): row is EducationLibraryRow => !!row), expectedFingerprint: existingFingerprint ?? undefined };
     }),
     run: async (plan) => {
-      const anchorId = isExistingKit ? sourceId ?? "" : await resolveNewKitAnchor();
-      const anchorType = isExistingKit ? sourceType : "file";
-      await createManualKit({ sourceId: anchorId, sourceType: anchorType, title: plan.title, artifacts: plan.artifacts, allowExisting: isExistingKit, expectedFingerprint: plan.expectedFingerprint });
-      return { id: anchorId, name: plan.title };
+      if (isExistingKit) {
+        await createManualKit({ sourceId: sourceId ?? "", sourceType, title: plan.title, artifacts: plan.artifacts, allowExisting: true, expectedFingerprint: plan.expectedFingerprint });
+        return { id: sourceId ?? "", name: plan.title };
+      }
+      return { id: await makeNewKit(plan.title, plan.artifacts), name: plan.title };
     },
     nameOf: (plan) => plan.title,
     } }, refuseSurfaceWrite);
