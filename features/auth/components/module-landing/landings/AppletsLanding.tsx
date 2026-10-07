@@ -17,7 +17,7 @@ const CAPABILITIES: ModuleCapability[] = [
   {
     icon: MessagesSquare,
     title: "Built by talking",
-    description: "Describe the app. It builds the pages.",
+    description: "Describe the Applet. It builds the pages.",
   },
   {
     icon: AppWindow,
@@ -45,7 +45,7 @@ const STEPS: ModuleStep[] = [
   {
     number: "01",
     title: "Say what you need",
-    description: "Describe the app in plain words.",
+    description: "Describe the Applet in plain words.",
   },
   {
     number: "02",
@@ -74,17 +74,17 @@ export default function AppletsLanding() {
       surfaceId="landing:applets"
       eyebrow="AI Matrx Applets"
       eyebrowIcon={LayoutTemplate}
-      headline="Custom apps,"
+      headline="Custom Applets,"
       headlineGradient="built by talking."
-      description="An Applet is a multi-page app on your own tables and records, with AI jobs that stream live. Describe it and it is built."
+      description="Multi-page Applets on your own tables and records, with AI jobs that stream live. Describe one and it is built."
       primaryCtaHref="/sign-up?source=applets-landing"
       primaryCtaLabel="Build your first Applet"
       workspaceHref="/applets"
       workspaceLabel="Applets"
       capabilitiesHeading="What an Applet is"
-      capabilitiesDescription="Pages, data and AI in one app."
+      capabilitiesDescription="Pages, data and AI in one Applet."
       capabilities={CAPABILITIES}
-      stepsDescription="From idea to a shared app."
+      stepsDescription="From idea to a shared Applet."
       steps={STEPS}
       subAreasHeading="Start from a template"
       subAreasDescription="Ready-made Applets with sample data."
