@@ -151,8 +151,9 @@ export default function MobileTasksList({
       >
         {/* Header */}
         <div className="flex-shrink-0 border-b border-border bg-card">
-          {/* Title Bar */}
-          <div className="flex min-w-0 items-center justify-between gap-2 px-4 pt-3 pb-2">
+          {/* Title Bar — min-h-16 = padding + the 44px touch-target actions: the copy menu joins the
+              row once tasks load, and a row that grew 12px then shoved the whole list (CLS 0.93). */}
+          <div className="flex min-h-16 min-w-0 items-center justify-between gap-2 px-4 pt-3 pb-2">
             <h1 className="min-w-0 flex-1 truncate text-2xl font-bold text-foreground">
               {currentProjectName}
             </h1>
