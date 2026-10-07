@@ -32,7 +32,6 @@
  *   @/components/MarkdownStream               → FrameMarkdown     (ruling 1)
  *   @/components/agent-copy/CopyForAiButton   → FrameCopyForAiButton
  *   @/features/google-workspace/export/sendToGoogle → FrameSendToGoogle
- *   @/features/agent-apps/embed/AppletParts   → FrameAppletParts  (@/applets)
  *   @/components/matrx/buttons/markdown-copy-html → FrameCopyHtml (plain-text copy, no KaTeX)
  *   @/lib/scoped-config/sessionKnob           → FrameSessionKnob  (knobs answer "no answer yet")
  * They are aliases rather than database migrations, so the live component
@@ -97,10 +96,6 @@ const ALIAS: Record<string, string> = {
   "@/lib/scoped-config/sessionKnob": resolve(
     __dirname,
     "runtime/FrameSessionKnob.ts",
-  ),
-  "@/features/agent-apps/embed/AppletParts": resolve(
-    __dirname,
-    "runtime/FrameAppletParts.tsx",
   ),
 };
 

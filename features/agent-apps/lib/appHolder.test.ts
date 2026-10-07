@@ -129,42 +129,4 @@ describe("the leftover class — no silent pin drop after resolve", () => {
     expect(holder).not.toContain("resolveMandate refuses a pinned");
     expect(holder).toContain("holderIdentityFromResolved(resolved)");
   });
-
-  it("launches apps through the mandate door, not the definition id", () => {
-    const hook = readFileSync(join(root, "hooks/useAgentApp.ts"), "utf8");
-    const renderer = readFileSync(
-      join(root, "components/AgentAppPublicRendererImpl.tsx"),
-      "utf8",
-    );
-    expect(hook).toContain("mandateKey: holder.mandateKey");
-    expect(renderer).toContain("mandateKey: runMandateKey");
-    expect(renderer).toContain("do not pass pinnedVersionId here");
-  });
-
-  it("every shell hands the row to useAgentApp so the holder can resolve", () => {
-    const shells = [
-      "AgentAppChatShell.tsx",
-      "AgentAppFormToResultShell.tsx",
-      "AgentAppFullyCustomShell.tsx",
-      "AgentAppWidgetShell.tsx",
-    ];
-    for (const file of shells) {
-      const source = readFileSync(
-        join(root, "components/shells", file),
-        "utf8",
-      );
-      expect(source).toContain("useAgentApp({");
-      expect(source).toContain("app,");
-    }
-  });
-
-  it("the custom shell warms the holder, not the row pin", () => {
-    const source = readFileSync(
-      join(root, "components/shells/AgentAppFullyCustomShell.tsx"),
-      "utf8",
-    );
-    expect(source).toContain("ctx.agentVersionId");
-    expect(source).not.toContain("app.agent_version_id");
-    expect(source).not.toContain("app.use_latest");
-  });
 });

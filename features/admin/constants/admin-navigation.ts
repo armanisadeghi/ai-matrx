@@ -157,7 +157,7 @@ export const adminNavigationRegistry: readonly AdminNavigationDomain[] = [
           destination("/administration/agents/system-agents/lineage"),
           destination("/administration/agents/system-agents/agents/new"),
           destination("/administration/agents/system-agents/agents/new/manual"),
-          destination("/administration/agents/system-agents/apps/new"),
+          destination("/agent-apps/build"),
           destination("/administration/agents/system-agents/shortcuts/all"),
         ],
       },

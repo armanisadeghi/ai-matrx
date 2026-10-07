@@ -25,7 +25,7 @@
 
 import { usePathname } from "next/navigation";
 import { useRef, type ReactNode } from "react";
-import { useAppDispatch, useAppStore } from "@/lib/redux/hooks";
+import { useAppDispatch, useAppSelector, useAppStore } from "@/lib/redux/hooks";
 import { selectActiveApp } from "@/features/agents/redux/agent-apps/selectors";
 import { saveAppField } from "@/features/agents/redux/agent-apps/thunks";
 import {
@@ -33,19 +33,11 @@ import {
   createAgentAppsScope,
 } from "@/features/surfaces/manifests/agent-apps.manifest";
 import { buildAgentAppEntityWriteHandlers } from "./agent-app-entity-writes";
-import {
-  buildAgentAppBundle,
-  type AgentAppRunSnapshot,
-} from "./agent-app-context";
-import {
-  selectPrimaryRequest,
-  selectResultText,
-} from "@ai-matrx/chat/agents/redux/execution-system/active-requests/active-requests.selectors";
-import { selectLatestAnswerText } from "@ai-matrx/chat/agents/redux/execution-system/messages/messages.selectors";
-import { selectResolvedVariables } from "@ai-matrx/chat/agents/redux/execution-system/instance-variable-values/instance-variable-values.selectors";
-import { selectUserInputText } from "@ai-matrx/chat/agents/redux/execution-system/instance-user-input/instance-user-input.selectors";
-import { requestFailure } from "@/features/agent-apps/tracking/run-outcome";
+import { buildAgentAppBundle } from "./agent-app-context";
 import { SurfaceRuntimeProvider } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
+import { useDeclaredSurfaceMandates } from "@ai-matrx/chat/surfaces/runtime/surface-mandates";
+import { storedMandateKey } from "@ai-matrx/agents/mandates";
+import { appletJobs } from "@/features/agent-apps/types";
 import type { SurfaceScopePayload } from "@ai-matrx/chat/surfaces/types";
 import type { RootState } from "@/lib/redux/store";
 import { publishedToWebLabel } from "@/lib/row-access";
@@ -87,52 +79,6 @@ function asObjectArray(
 }
 
 /**
- * The app's latest run on this page — the conversation the app's own run
- * focuses (`agent-app:<id>`, or `agent-app:<slug>` on the legacy renderer),
- * its input, status and answer. Pure: reads state the page rendered.
- */
-export function readAgentAppRun(
-  state: RootState,
-  app: { id: string; slug: string },
-): AgentAppRunSnapshot {
-  const bySurface = state.conversationFocus?.bySurface ?? {};
-  const focus = bySurface[`agent-app:${app.id}`] ?? bySurface[`agent-app:${app.slug}`];
-  const conversationId = focus?.input ?? focus?.display ?? undefined;
-  if (!conversationId) return { status: "idle" };
-  const request = selectPrimaryRequest(conversationId)(state);
-  const live = request ? selectResultText(request.requestId)(state) : "";
-  const result = live || selectLatestAnswerText(conversationId)(state);
-  const failure = requestFailure(request as Parameters<typeof requestFailure>[0]);
-  const status: AgentAppRunSnapshot["status"] = !request
-    ? result
-      ? "done"
-      : "idle"
-    : request.status === "complete"
-      ? "done"
-      : request.status === "error" || request.status === "timeout"
-        ? "error"
-        : request.status === "cancelled"
-          ? result
-            ? "done"
-            : "idle"
-          : "running";
-  const resolved = selectResolvedVariables(conversationId)(state) as Record<string, unknown>;
-  const input =
-    resolved && Object.keys(resolved).length > 0
-      ? resolved
-      : ((state.instanceVariableValues?.byConversationId?.[conversationId]
-          ?.userValues ?? {}) as Record<string, unknown>);
-  return {
-    conversationId,
-    status,
-    input: input && Object.keys(input).length > 0 ? input : undefined,
-    inputText: selectUserInputText(conversationId)(state) || undefined,
-    result: result || undefined,
-    error: status === "error" ? (failure ?? undefined) : undefined,
-  };
-}
-
-/**
  * The workspace scope from live state — one pure builder shared by the
  * provider and the run page's right-click menu, so both say the same thing.
  */
@@ -145,18 +91,9 @@ export function buildAgentAppsWorkspaceScope(
   if (!app) {
     return createAgentAppsScope({ active_view });
   }
-  const run = readAgentAppRun(state, app);
+  // The Applet's own runs live on its own surface (`applets/<id>`), never on this editor's scope.
   return createAgentAppsScope({
-    app_bundle: buildAgentAppBundle(app, active_view, run),
-    run_status: run.status,
-    ...(run.conversationId ? { run_conversation_id: run.conversationId } : {}),
-    ...(run.status !== "idle"
-      ? {
-          run_input: { ...(run.input ?? {}), ...(run.inputText ? { typed: run.inputText } : {}) },
-          run_result: run.result ?? "",
-        }
-      : {}),
-    ...(run.error ? { run_error: run.error } : {}),
+    app_bundle: buildAgentAppBundle(app, active_view),
     app_id: app.id,
     app_slug: app.slug,
     app_name: app.name,
@@ -231,34 +168,27 @@ export function AgentAppSurfaceRuntime({ children }: { children: ReactNode }) {
       },
     });
 
+  // Disclosure only (agent-disclosure law): the Applet's own jobs are named in the top Agents menu on
+  // every page of its editor — never as page content.
+  const activeApp = useAppSelector(selectActiveApp);
+  useDeclaredSurfaceMandates(
+    activeApp
+      ? appletJobs(activeApp).map((job) => ({
+          mandateKey: storedMandateKey(job.key),
+          does: `Runs "${job.alias}" in ${activeApp.name}.`,
+          surfaceName: AGENT_APPS_SURFACE_NAME,
+        }))
+      : [],
+  );
+
   const getScope = () =>
     buildAgentAppsWorkspaceScope(store.getState(), pathnameRef.current);
-
-  // THE APP'S OWN RUN IS THIS PAGE. On /run (and every preview of the app in
-  // this family) the app's agent runs through `useAgentApp` under surface key
-  // `agent-app:<id>` (the legacy renderer uses `agent-app:<slug>`). That
-  // conversation is the app doing its job — a fact checker checking a claim —
-  // so it must never receive this workspace as context or be offered its
-  // write tools (it could otherwise re-tag the app it is running inside).
-  // Every OTHER agent on the screen (Agents menu, windows) still gets both.
-  // Read live on every launch and turn — `isPageOwnConversation`.
-  const isOwnConversation = (conversationId: string) => {
-    const state = store.getState();
-    const app = selectActiveApp(state);
-    if (!app) return false;
-    const bySurface = state.conversationFocus?.bySurface ?? {};
-    return [`agent-app:${app.id}`, `agent-app:${app.slug}`].some((key) => {
-      const focus = bySurface[key];
-      return focus?.input === conversationId || focus?.display === conversationId;
-    });
-  };
 
   return (
     <SurfaceRuntimeProvider
       surfaceName={AGENT_APPS_SURFACE_NAME}
       getScope={getScope}
       getWriteHandlers={getSurfaceWriteHandlers}
-      isOwnConversation={isOwnConversation}
     >
       {children}
     </SurfaceRuntimeProvider>

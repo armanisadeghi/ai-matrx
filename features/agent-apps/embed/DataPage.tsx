@@ -1,13 +1,11 @@
 "use client";
 
-// features/agent-apps/embed/AppletParts.tsx — WHAT AN APPLET MAY PLACE INSIDE ITSELF.
+// features/agent-apps/embed/DataPage.tsx — A PAGE BUILT FROM TABLES, DRAWN IN PLACE.
 //
-// v7 APPS-ON-DATA item 3 (Arman's endgame, 2026-10-02: applets nest, and mix a person's own data with
-// platform features). An applet's code imports these from "@/applets" (a documented @ai-matrx/code-runtime scope entry):
-//   <DataPage id="<page id>" />   a page built from tables, read and written as the VIEWER
-//   <Applet id="<app id>" />      another applet, drawn in place by the one app renderer
-// Data reach is the viewer's own: the page reads through the store's doors under her session, so an
-// applet sees nothing she could not open herself.
+// The host half of `@ai-matrx/applets/react`'s `<DataPage id>` (an Applet places a Space inside itself; the
+// host's `renderDataPage` draws it with this) and the start page's own page. Nested Applets are the
+// package's `<Applet id>`. Data reach is the viewer's own: the page reads through the store's doors under
+// her session, so an Applet sees nothing she could not open herself.
 
 import { PageScreen } from "@ai-matrx/records-ui";
 
@@ -16,7 +14,6 @@ import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { useRecordsDataSource } from "@/features/data-tables/records-ui-host/recordsUiHost";
 import { useObjectOrganization } from "@/features/unified-data/objectOrganization";
 import { MakeMount } from "@/features/make/MakeMount";
-import AppletInPage from "./AppletInPage";
 
 export function DataPage({ id }: { id: string }) {
   const userId = useAppSelector(selectUserId);
@@ -31,8 +28,4 @@ export function DataPage({ id }: { id: string }) {
       <PageScreen pageId={id} viewerUserId={userId} />
     </MakeMount>
   );
-}
-
-export function Applet({ id }: { id: string }) {
-  return <AppletInPage appId={id} />;
 }

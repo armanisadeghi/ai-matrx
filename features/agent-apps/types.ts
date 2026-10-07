@@ -14,8 +14,6 @@ export type AppStatus = "draft" | "published" | "archived" | "suspended";
  *  to the web is a normal, expected state here. */
 export type AppShownTo = Database["platform"]["Enums"]["shown_to"];
 
-export type AppDisplayMode =
-  "form" | "form-to-chat" | "chat" | "centered-input" | "chat-with-history";
 
 // ============================================================================
 // Shell + slots model (Phase 1a — see plan)
@@ -271,9 +269,27 @@ export interface AgentAppRecord {
   created_at: string;
   updated_at: string;
   published_at: string | null;
+
+  /** The Applet record (CONTRACTS §8): code files, entry, pages, jobs (`[{ alias, key }]`), sources. */
+  files?: Json;
+  entry?: string | null;
+  pages?: Json;
+  mandates?: Json;
+  sources?: Json;
+  parent_applet_id?: string | null;
 }
 
 export type AgentApp = AgentAppRecord;
+
+/** The jobs an Applet names (`mandates` column), read defensively from the stored jsonb. */
+export function appletJobs(app: Pick<AgentAppRecord, "mandates">): { alias: string; key: string }[] {
+  if (!Array.isArray(app.mandates)) return [];
+  return app.mandates.flatMap((entry) => {
+    if (!entry || typeof entry !== "object" || Array.isArray(entry)) return [];
+    const { alias, key } = entry as Record<string, unknown>;
+    return typeof alias === "string" && typeof key === "string" && key ? [{ alias, key }] : [];
+  });
+}
 
 // PublicAgentApp now keeps `agent_id`, `agent_version_id`, and `use_latest`.
 // The renderer needs them so it can call the standard agent-execution path
@@ -336,7 +352,6 @@ export interface LayoutConfig {
   showBranding?: boolean;
   showCredit?: boolean;
   customLayout?: string;
-  displayMode?: AppDisplayMode;
 }
 
 export interface StylingConfig {
@@ -410,28 +425,7 @@ export interface RateLimitInfo {
 // API
 // ============================================================================
 
-export interface ExecuteAgentAppRequest {
-  variables: Record<string, unknown>;
-  fingerprint?: string;
-  metadata?: Record<string, unknown>;
-}
 
-export interface ExecuteAgentAppResponse {
-  success: boolean;
-  task_id?: string;
-  rate_limit?: RateLimitInfo;
-  guest_limit?: {
-    allowed: boolean;
-    remaining: number;
-    total_used: number;
-    is_blocked: boolean;
-  };
-  error?: {
-    type: ExecutionErrorType;
-    message: string;
-    details?: Record<string, unknown>;
-  };
-}
 
 export interface CreateAgentAppInput {
   agent_id: string;
@@ -482,46 +476,6 @@ export interface UpdateAgentAppInput {
 // Component Props
 // ============================================================================
 
-export interface AgentAppComponentProps {
-  onExecute: (
-    variables: Record<string, unknown>,
-    userInput?: string,
-  ) => Promise<void>;
-
-  response: string;
-  isStreaming: boolean;
-
-  isExecuting: boolean;
-  error?: {
-    type: ExecutionErrorType | string;
-    message: string;
-  };
-
-  rateLimitInfo?: RateLimitInfo | { remaining: number; total: number } | null;
-
-  appName: string;
-  appTagline?: string;
-  appCategory?: string;
-
-  conversationId?: string | null;
-  onResetConversation?: () => void;
-  streamEvents?: unknown[];
-  /**
-   * The input of the run this page reopened (a refresh, a shared
-   * `?conversationId=` link), by variable name — e.g. `{ claim }`. Seed your
-   * own input state from it (`useState(initialVariables?.claim ?? "")`) so
-   * what the person typed survives a refresh. `{}` on a fresh page. The app
-   * is remounted once a reopened run has loaded, so the seed is current.
-   */
-  initialVariables?: Record<string, unknown>;
-  /**
-   * True when this mount is a REOPENED run (a refresh or a shared
-   * `?conversationId=` link) that already has its input — show the app's
-   * submitted view ("Checked: <input>") seeded from `initialVariables`, never
-   * the empty first form above the result.
-   */
-  isReopenedRun?: boolean;
-}
 
 // ============================================================================
 // List / Filter

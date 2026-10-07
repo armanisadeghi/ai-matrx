@@ -581,7 +581,7 @@ export default function AgentAppsAdminListPage() {
                 searchPlaceholder: "Search agent apps…",
                 refresh: { onRefresh: load },
                 add: {
-                  onAdd: () => pushAppHref(router, "/agent-apps/new"),
+                  onAdd: () => pushAppHref(router, "/agent-apps/build"),
                 },
               }}
               onViewChange={setViewApps}

@@ -20,19 +20,12 @@ export const AGENT_APPS_PLACES: FeaturePlaces = {
   roots: ["features/agent-apps", "app/(core)/agent-apps"],
   places: [
     {
-      id: "auto-create",
-      label: "New agent app",
-      trigger: "Build the app for me (name, code)",
-      urlPattern: "/agent-apps/new",
-      mandateKeys: [
-        K.agent_apps__auto_create,
-        K.agent_apps__auto_create_lightning,
-        K.agent_apps__metadata,
-      ],
-      sources: [
-        "features/agent-apps/hooks/useAutoCreateApp.ts",
-        "packages/chat/src/agents/constants/system-agent-registry.ts",
-      ],
+      id: "build",
+      label: "Build an app",
+      trigger: "Describe the app; the builder drafts and fixes it",
+      urlPattern: "/agent-apps/build",
+      mandateKeys: [K.applets__build, K.applets__fix],
+      sources: ["features/applets-host/builder/AppletBuilder.tsx"],
     },
     {
       id: "code",

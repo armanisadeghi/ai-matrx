@@ -48,7 +48,7 @@ export function AgentAppsPanel({
             </h1>
           </div>
           <div className="shrink-0 flex gap-2">
-            <AppLink href={`/agent-apps/new?agent_id=${agentId}`}>
+            <AppLink href="/agent-apps/build">
               <Button icon={<Plus />} type="submit" variant="primary">
                 New app
               </Button>

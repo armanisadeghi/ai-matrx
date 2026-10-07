@@ -1,8 +1,16 @@
 "use client";
 
+// features/code/library-sources/adapters/aga-apps.ts — APPLET SOURCE IN THE CODE WORKSPACE.
+//
+// An Applet record (`app.definition`, CONTRACTS §8) holds its code as `files` (name → source) with one
+// `entry`. Each Applet is a folder in the Library; each file is a leaf. Save merges ONE file into `files`
+// through the platform's jsonb-merge primitive (CAS on `version`, re-merge on a concurrent write), so two
+// people editing different files of one Applet never lose each other's work; the record's version trigger
+// snapshots every save into `app.definition_version`.
+
 import { SquareStack } from "lucide-react";
-import { extensionForLanguage } from "@/features/code-files/actions/languageOptions";
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { mergeJsonColumn } from "@ai-matrx/data/db";
 import type { Database } from "@/types/database.types";
 import type {
   LibrarySourceAdapter,
@@ -12,254 +20,218 @@ import type {
   SaveSourceArgs,
   SaveSourceResult,
   SourceEntry,
+  SourceEntryField,
 } from "../types";
 import { RemoteConflictError } from "../types";
 
 const PREFIX = "aga-app:";
+const SOURCE_ID = "aga_apps";
 
-function parseTabId(tabId: string): { rowId: string } | null {
+/** "aga-app:<rowId>:<file name>" — a row id is a uuid, so the first colon after the prefix splits. */
+function parseTabId(tabId: string): { rowId: string; fieldId?: string } | null {
   if (!tabId.startsWith(PREFIX)) return null;
-  const rowId = tabId.slice(PREFIX.length);
-  return rowId ? { rowId } : null;
+  const rest = tabId.slice(PREFIX.length);
+  const colon = rest.indexOf(":");
+  if (colon < 0) return rest ? { rowId: rest } : null;
+  const rowId = rest.slice(0, colon);
+  const fieldId = rest.slice(colon + 1);
+  return rowId ? { rowId, ...(fieldId ? { fieldId } : {}) } : null;
 }
 
-function makeTabId(rowId: string): string {
-  return `${PREFIX}${rowId}`;
+function makeTabId(rowId: string, fieldId?: string): string {
+  return fieldId ? `${PREFIX}${rowId}:${fieldId}` : `${PREFIX}${rowId}`;
 }
-
-type AgaAppRow = Pick<
-  Database["app"]["Tables"]["definition"]["Row"],
-  | "id"
-  | "name"
-  | "slug"
-  | "component_code"
-  | "component_language"
-  | "updated_at"
-  | "status"
-  | "description"
-  | "app_kind"
-  | "version"
->;
 
 export const AGA_APP_OWNER_COLUMN =
   "created_by" satisfies keyof Database["app"]["Tables"]["definition"]["Row"];
 
-const COLUMNS =
-  "id,name,slug,component_code,component_language,updated_at,status,description,app_kind,version";
+type FilesMap = Record<string, string>;
+
+function filesOf(value: unknown): FilesMap {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return {};
+  const out: FilesMap = {};
+  for (const [name, source] of Object.entries(value as Record<string, unknown>)) {
+    if (typeof source === "string") out[name] = source;
+  }
+  return out;
+}
+
+function extensionOf(name: string): string {
+  const dot = name.lastIndexOf(".");
+  return dot > 0 ? name.slice(dot + 1).toLowerCase() : "tsx";
+}
+
+function languageOf(name: string): string {
+  const ext = extensionOf(name);
+  if (ext === "css") return "css";
+  if (ext === "json") return "json";
+  if (ext === "md") return "markdown";
+  return ext === "js" || ext === "jsx" ? "javascript" : "typescript";
+}
+
+/** Entry first, then alphabetical — the order the Library shows. */
+function orderedFileNames(files: FilesMap, entry: string | null): string[] {
+  return Object.keys(files).sort((a, b) => (a === entry ? -1 : b === entry ? 1 : a.localeCompare(b)));
+}
+
+interface FilesRow {
+  id: string;
+  version: number;
+  files: unknown;
+  entry: string | null;
+  updated_at: string;
+}
+
+const FILES_COLUMNS = "id, version, files, entry, updated_at";
+
+/** The one read of the columns this adapter writes (`version` is the CAS token). */
+function queryFilesRow(supabase: SupabaseClient, rowId: string) {
+  return supabase
+    .schema("app")
+    .from("definition")
+    .select(FILES_COLUMNS)
+    .eq("id", rowId)
+    .is("deleted_at", null)
+    .maybeSingle();
+}
+
+/** Merge one change into `files`; the version trigger snapshots the save. */
+async function writeFiles(
+  supabase: SupabaseClient,
+  rowId: string,
+  merge: (current: FilesMap) => FilesMap,
+  fieldId?: string,
+): Promise<string> {
+  const result = await mergeJsonColumn<FilesRow>({
+    fetchCurrent: () => queryFilesRow(supabase, rowId),
+    readColumn: (row) => row.files,
+    merge: (current) => merge(filesOf(current)),
+    applyUpdate: ({ value, expectedVersion, nextVersion }) =>
+      supabase
+        .schema("app")
+        .from("definition")
+        .update({ files: value as Database["app"]["Tables"]["definition"]["Update"]["files"], version: nextVersion })
+        .eq("id", rowId)
+        .eq("version", expectedVersion)
+        .select(FILES_COLUMNS)
+        .maybeSingle(),
+  });
+  if (result.status === "saved") return result.row.updated_at;
+  if (result.status === "not_found") throw new Error("This app no longer exists.");
+  if (result.status === "conflict") throw new RemoteConflictError(SOURCE_ID, rowId, fieldId);
+  throw result.error instanceof Error ? result.error : new Error(String(result.error));
+}
 
 export const agaAppsAdapter: LibrarySourceAdapter = {
-  sourceId: "aga_apps",
-  label: "Agent Apps",
-  description: "Your Agent App source. Save updates that app.",
+  sourceId: SOURCE_ID,
+  label: "Applets",
+  description: "Your Applets' files. Save writes that file and keeps a version.",
   icon: SquareStack,
   tabIdPrefix: PREFIX,
-  multiField: false,
+  multiField: true,
   realtimeTable: { schema: "app", table: "definition" },
 
   parseTabId,
   makeTabId,
 
-  async list(
-    supabase: SupabaseClient<Database>,
-    userId: string | null,
-  ): Promise<SourceEntry[]> {
+  async list(supabase: SupabaseClient<Database>, userId: string | null): Promise<SourceEntry[]> {
     if (!userId) return [];
     const { data, error } = await supabase
-      .schema("app").from("definition")
-      .select(COLUMNS)
+      .schema("app")
+      .from("definition")
+      .select("id, name, slug, description, updated_at, status, version, files, entry")
       .is("deleted_at", null)
       .eq(AGA_APP_OWNER_COLUMN, userId)
       .order("updated_at", { ascending: false })
       .limit(200);
-
     if (error) throw error;
-    const rows: AgaAppRow[] = data ?? [];
-    return rows.map((row) => ({
-      rowId: row.id,
-      name: row.name,
-      description: row.description ?? undefined,
-      updatedAt: row.updated_at,
-      badge:
-        row.status && row.status !== "published"
-          ? row.status
-          : row.version && row.version > 1
-            ? `v${row.version}`
-            : undefined,
-    }));
+    return (data ?? []).map((row) => {
+      const files = filesOf(row.files);
+      const fields: SourceEntryField[] = orderedFileNames(files, row.entry).map((name) => ({
+        fieldId: name,
+        label: name,
+        extension: extensionOf(name),
+        language: languageOf(name),
+        hasContent: files[name] !== "",
+      }));
+      return {
+        rowId: row.id,
+        name: row.name,
+        description: row.description ?? undefined,
+        updatedAt: row.updated_at,
+        fields,
+        badge: row.status && row.status !== "published" ? row.status : row.version > 1 ? `v${row.version}` : undefined,
+      };
+    });
   },
 
-  async load(
-    supabase: SupabaseClient,
-    rowId: string,
-  ): Promise<LoadedSourceEntry> {
+  async load(supabase: SupabaseClient, rowId: string, fieldId?: string): Promise<LoadedSourceEntry> {
     const { data, error } = await supabase
-      .schema("app").from("definition")
-      .select(COLUMNS)
-      .is("deleted_at", null)
+      .schema("app")
+      .from("definition")
+      .select("id, slug, files, entry, updated_at")
       .eq("id", rowId)
+      .is("deleted_at", null)
       .single();
-
     if (error) throw error;
-    const row: AgaAppRow = data;
-    // Two derivations from `component_language` that must NOT collapse:
-    //
-    //   1. `language` is the Monaco mode id ("typescript", "javascript", …).
-    //      Monaco only knows the base mode — it has no separate "tsx" mode.
-    //   2. `ext` is the file extension we put on the virtual `path`. THIS is
-    //      what makes Monaco's TS worker enable JSX parsing — a `.tsx` path
-    //      is parsed as JSX-flavored TypeScript, a `.ts` path is not.
-    //
-    // The previous code did `extensionForLanguage(mapLanguage(raw))`, which
-    // collapsed "tsx"/"react" → "typescript" → ".ts" and silently broke
-    // type-checking for every JSX-flavored agent app. Compute the extension
-    // from the RAW value so the JSX flavor survives.
-    const language = mapLanguage(row.component_language);
-    const ext = extensionForComponentLanguage(row.component_language);
+    const files = filesOf(data.files);
+    const name = fieldId ?? data.entry ?? orderedFileNames(files, null)[0] ?? "App.tsx";
     return {
-      rowId: row.id,
-      name: `${safeFilename(row.slug || row.name)}.${ext}`,
-      path: `aga-app:/${row.slug || row.id}.${ext}`,
-      language,
-      content: row.component_code,
-      updatedAt: row.updated_at,
+      rowId: data.id,
+      fieldId: name,
+      name,
+      path: `aga-app:/${data.slug || data.id}/${name}`,
+      language: languageOf(name),
+      content: files[name] ?? "",
+      updatedAt: data.updated_at,
     };
   },
 
-  async save(
-    supabase: SupabaseClient,
-    args: SaveSourceArgs,
-  ): Promise<SaveSourceResult> {
-    let query = supabase
-      .schema("app").from("definition")
-      .update({ component_code: args.content })
-      .eq("id", args.rowId);
-
-    if (args.expectedUpdatedAt) {
-      query = query.eq("updated_at", args.expectedUpdatedAt);
-    }
-
-    const { data, error } = await query.select("updated_at").maybeSingle();
-    if (error) throw error;
-    if (!data) {
-      throw new RemoteConflictError("aga_apps", args.rowId);
-    }
-    return { updatedAt: data.updated_at };
+  async save(supabase: SupabaseClient, args: SaveSourceArgs): Promise<SaveSourceResult> {
+    const fileName = args.fieldId;
+    if (!fileName) throw new Error("Saving an Applet needs the file name.");
+    const updatedAt = await writeFiles(supabase, args.rowId, (files) => ({ ...files, [fileName]: args.content }), fileName);
+    return { updatedAt };
   },
 
   /**
-   * Rename an agent app. The new name is parsed for an extension —
-   * if present, it's mapped back to `component_language` so the file
-   * type-checks correctly the next time it's loaded.
-   *
-   * Examples:
-   *   "MyApp.tsx" → name="MyApp",     component_language="tsx"
-   *   "checkout.jsx" → name="checkout", component_language="jsx"
-   *   "helpers.ts"  → name="helpers",  component_language="typescript"
-   *   "notes"       → name="notes",    component_language unchanged
+   * Without a file: renames the Applet. With a file: renames that file (and the entry, when it is the
+   * entry). Pages naming the old file keep working only if they are edited too — the page list is the
+   * Applet editor's (`/agent-apps/<id>/settings`).
    */
-  async rename(
-    supabase: SupabaseClient,
-    args: RenameSourceArgs,
-  ): Promise<RenameSourceResult> {
+  async rename(supabase: SupabaseClient, args: RenameSourceArgs): Promise<RenameSourceResult> {
     const trimmed = args.newName.trim();
-    if (!trimmed) {
-      throw new Error("Name cannot be empty.");
+    if (!trimmed) throw new Error("Name cannot be empty.");
+    if (args.fieldId) {
+      const from = args.fieldId;
+      const { data: row, error: readError } = await queryFilesRow(supabase, args.rowId);
+      if (readError) throw readError;
+      if (!row) throw new Error("This app no longer exists.");
+      const updatedAt = await writeFiles(
+        supabase,
+        args.rowId,
+        (files) => {
+          if (from === trimmed || !(from in files)) return files;
+          const { [from]: source, ...rest } = files;
+          return { ...rest, [trimmed]: source ?? "" };
+        },
+        from,
+      );
+      if (row.entry === from) {
+        const { error } = await supabase.schema("app").from("definition").update({ entry: trimmed }).eq("id", args.rowId);
+        if (error) throw error;
+      }
+      return { updatedAt, appliedName: trimmed };
     }
-
-    const dot = trimmed.lastIndexOf(".");
-    const hasExtension = dot > 0 && dot < trimmed.length - 1;
-    const baseName = hasExtension ? trimmed.slice(0, dot) : trimmed;
-    const ext = hasExtension ? trimmed.slice(dot + 1).toLowerCase() : null;
-
-    const sanitisedName = safeFilename(baseName) || baseName;
-    const update: Record<string, string> = { name: sanitisedName };
-    if (ext) {
-      update.component_language = componentLanguageForExtension(ext);
-    }
-
-    let query = supabase
-      .schema("app").from("definition")
-      .update(update)
-      .eq("id", args.rowId);
-
-    if (args.expectedUpdatedAt) {
-      query = query.eq("updated_at", args.expectedUpdatedAt);
-    }
-
-    const { data, error } = await query
-      .select("updated_at,name")
+    const { data, error } = await supabase
+      .schema("app")
+      .from("definition")
+      .update({ name: trimmed })
+      .eq("id", args.rowId)
+      .select("updated_at, name")
       .maybeSingle();
     if (error) throw error;
-    if (!data) {
-      throw new RemoteConflictError("aga_apps", args.rowId);
-    }
-    return {
-      updatedAt: data.updated_at,
-      appliedName: data.name,
-    };
+    if (!data) throw new RemoteConflictError(SOURCE_ID, args.rowId);
+    return { updatedAt: data.updated_at, appliedName: data.name };
   },
 };
-
-function mapLanguage(raw: string | null | undefined): string {
-  const v = (raw ?? "tsx").toLowerCase();
-  if (v === "react") return "typescript";
-  if (v === "tsx" || v === "jsx") return "typescript";
-  return v;
-}
-
-/**
- * Compute the file extension for an `aga_apps.component_language` value.
- *
- * Distinct from `extensionForLanguage` because the latter operates on
- * Monaco mode ids (`"typescript"`) which have already lost the JSX bit.
- * Here we keep `"tsx"` as `tsx`, `"jsx"` as `jsx`, etc., so the virtual
- * path Monaco sees ends in the correct extension and JSX parsing kicks in.
- */
-function extensionForComponentLanguage(raw: string | null | undefined): string {
-  const v = (raw ?? "tsx").toLowerCase();
-  if (v === "tsx" || v === "react") return "tsx";
-  if (v === "jsx") return "jsx";
-  if (v === "ts" || v === "typescript") return "ts";
-  if (v === "js" || v === "javascript") return "js";
-  // Fall back to the language→extension table for everything else (python,
-  // json, css, …). The Monaco-mapped form gives the right answer there.
-  return extensionForLanguage(mapLanguage(v));
-}
-
-/**
- * Inverse of `extensionForComponentLanguage` — the canonical
- * `component_language` value to write back to the DB when the user
- * renames a file with a new extension.
- *
- * Defaults to "tsx" so unknown extensions don't silently drop JSX support
- * for agent apps (the most common case).
- */
-function componentLanguageForExtension(extOrName: string): string {
-  // Accept either a raw extension ("tsx") or a full filename ("foo.tsx").
-  const dot = extOrName.lastIndexOf(".");
-  const ext = (dot >= 0 ? extOrName.slice(dot + 1) : extOrName).toLowerCase();
-  if (!ext) return "tsx";
-  if (ext === "tsx") return "tsx";
-  if (ext === "jsx") return "jsx";
-  if (ext === "ts") return "typescript";
-  if (ext === "js") return "javascript";
-  if (ext === "py") return "python";
-  if (ext === "json") return "json";
-  if (ext === "css") return "css";
-  if (ext === "html" || ext === "htm") return "html";
-  if (ext === "md" || ext === "mdx") return "markdown";
-  // Unknown extensions: keep the value the user typed so they can write
-  // anything custom. The Monaco mapping will fall back to plaintext.
-  return ext;
-}
-
-function safeFilename(input: string): string {
-  return input.replace(/[^\w\-.]/g, "_").slice(0, 80) || "agent-app";
-}
-
-/** Strip the trailing extension from a filename ("foo.tsx" → "foo"). */
-function stripExtension(name: string): string {
-  const dot = name.lastIndexOf(".");
-  if (dot <= 0) return name;
-  return name.slice(0, dot);
-}

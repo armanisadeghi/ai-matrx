@@ -7,10 +7,11 @@ import { ChatPanelSlot } from "@/features/code/chat/ChatPanelSlot";
 import { useOpenSourceEntry } from "@/features/code/hooks/useOpenSourceEntry";
 import { useOpenRenderPreview } from "@/features/code/hooks/useOpenRenderPreview";
 import { agaAppsAdapter } from "@/features/code/library-sources/adapters/aga-apps";
-// Side-effect: register `aga-app:` previewer with the render-preview registry.
-import "@/features/agent-apps/code-preview/registerAgentAppRenderPreview";
+// Side-effect: Applet file tabs preview through the Applet host.
+import "@/features/agent-apps/code-preview/registerAppletSourcePreview";
 import type { AgentApp } from "@/features/agent-apps/types";
 import { useMandate } from "@ai-matrx/chat/mandates/useMandate";
+import { useDeclaredSurfaceMandates } from "@ai-matrx/chat/surfaces/runtime/surface-mandates";
 import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
 
 interface AgentAppEditPageClientProps {
@@ -25,31 +26,29 @@ export function AgentAppEditPageClient({ app }: AgentAppEditPageClientProps) {
   // The editor's coding agent is a MANDATE — swappable per user at /mandates
   // and rebindnable in the admin console without a deploy.
   const { mandate: promptAppDev } = useMandate(PROMPT_APP_DEV_MANDATE);
+  // Disclosure only: the editor's coding agent is named in the top Agents menu.
+  useDeclaredSurfaceMandates(CODE_EDITOR_DISCLOSURE);
   const basePath = `/agent-apps/${app.id}`;
 
-  // First-mount bootstrap: open the source file + paired preview tab so a
-  // brand-new visit lands in a usable state. If the source tab is already
-  // open in the workspace (user navigated away and came back) we leave
-  // tab state untouched — the user's last selection wins.
-  //
-  // We deliberately do NOT inject `?agentId=` from `app.agent_id`. The
-  // chat panel is the user's coding agent; `app.agent_id` is the agent
-  // that runs *inside* the rendered app and shouldn't hijack the editor.
+  // First-mount bootstrap: open the Applet's entry file + paired preview tab so a
+  // brand-new visit lands in a usable state. If the tab is already open in the
+  // workspace (user navigated away and came back) we leave tab state untouched.
   useEffect(() => {
     if (bootstrappedRef.current) return;
     bootstrappedRef.current = true;
 
-    const sourceTabId = agaAppsAdapter.makeTabId(app.id);
+    const entry = app.entry || "App.tsx";
+    const sourceTabId = agaAppsAdapter.makeTabId(app.id, entry);
     if (store.getState().codeTabs?.byId?.[sourceTabId]) return;
 
-    void openSourceEntry({ sourceId: agaAppsAdapter.sourceId, rowId: app.id })
+    void openSourceEntry({ sourceId: agaAppsAdapter.sourceId, rowId: app.id, fieldId: entry })
       .then(() => {
         openRenderPreview(sourceTabId);
       })
       .catch((err) => {
         console.error("[agent-apps] failed to open code+preview tabs", err);
       });
-  }, [app.id, openSourceEntry, openRenderPreview, store]);
+  }, [app.id, app.entry, openSourceEntry, openRenderPreview, store]);
 
   return (
     <CodeWorkspaceRoute
@@ -70,3 +69,7 @@ export function AgentAppEditPageClient({ app }: AgentAppEditPageClientProps) {
  *  chat panel boots with this agent on the agent-app editor unless the
  *  user already has `?agentId=` pinned in the URL. */
 const PROMPT_APP_DEV_MANDATE = MANDATE_KEYS.agent_apps__prompt_app_dev;
+
+const CODE_EDITOR_DISCLOSURE = [
+  { mandateKey: PROMPT_APP_DEV_MANDATE, does: "Writes and fixes this app's code with you." },
+] as const;

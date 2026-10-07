@@ -932,7 +932,7 @@ export const primaryNavItems: ShellNavItem[] = [
         profileMenu: true,
         dashboard: true,
       },
-      { label: "Applet Templates", href: "/agent-apps/templates", iconName: "LayoutTemplate", guestHidden: true },
+      { label: "Applet Templates", href: "/templates/apps", iconName: "LayoutTemplate", guestHidden: true },
     ],
   },
   {
