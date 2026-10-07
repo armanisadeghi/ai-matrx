@@ -15,6 +15,7 @@
 
 import "server-only";
 
+import { isUuidShape } from "@ai-matrx/kit/uuid";
 import { createClient } from "@/utils/supabase/server";
 
 /** A door's answer as PostgREST gave it — plain JSON, so it streams to the browser as is. */
@@ -76,7 +77,7 @@ async function askSeed(tableId: string): Promise<TablePageSeed | null> {
  * is handed to the client page and resolves into the stream. Never rejects.
  */
 export function readTablePageSeed(tableId: string): Promise<TablePageSeed | null> {
-  if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(tableId)) return Promise.resolve(null);
+  if (!isUuidShape(tableId)) return Promise.resolve(null);
   let timer: ReturnType<typeof setTimeout> | undefined;
   const budget = new Promise<null>((resolve) => {
     timer = setTimeout(() => resolve(null), SEED_BUDGET_MS);
