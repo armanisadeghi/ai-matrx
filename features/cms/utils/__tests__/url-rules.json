@@ -1,7 +1,7 @@
 {
   "_comment": "C4 cross-repo drift guard. Language-neutral encoding of the my-matrx URL routing rules. aidream/services/cms/urls.py AND matrx-frontend's TS twin (features/cms/utils/pageUrls.ts) BOTH test against this exact file — it is byte-identical in both repos. The CANONICAL copy is the aidream one; matrx-frontend's features/cms/utils/__tests__/url-rules.json is a verbatim sync of it. Do not edit one side's URL logic without updating this fixture (and the other side goes red). `route` is client_pages.route (CMS migration 0028, amended by 0029): trigger-computed, unique per site, the page's full public path at any depth. When a case omits it, the builder derives it with the same rule as the DB function public._client_page_route_of.",
   "_comment_derivation": "`route_derivation_cases` pins the PURE derivation — the three-way twin of public._client_page_route_of / client_page_route / clientPageRoute. It is the parameter-level guard; `client_page_cases` below is the URL-level one. THE PARENT RULE (CMS 0029): a parent_route is BTRIMMED, then ALL trailing '/' are stripped, then '/' + slug is appended. Whitespace and trailing slashes in a parent route are normalized away by all three implementations, identically. Before 0029 the three disagreed here and NOTHING in this fixture exercised parent_route — that blindness is why the divergence shipped. Never remove a parent_route case.",
-  "base_url": "https://mymatrx.com",
+  "base_url": "https://www.mymatrx.com",
   "route_derivation_cases": [
     { "name": "derive_no_category", "input": { "slug": "about" }, "expect": "/about" },
     { "name": "derive_null_category", "input": { "slug": "about", "category": null }, "expect": "/about" },
@@ -41,8 +41,8 @@
       "input": { "site_slug": "dev-website", "slug": "pricing", "category": "general", "route": "/locations/austin/pricing", "is_home_page": false },
       "expect": {
         "path": "/c/dev-website/locations/austin/pricing",
-        "live_url": "https://mymatrx.com/c/dev-website/locations/austin/pricing",
-        "preview_url": "https://mymatrx.com/c/dev-website/locations/austin/pricing?preview=true",
+        "live_url": "https://www.mymatrx.com/c/dev-website/locations/austin/pricing",
+        "preview_url": "https://www.mymatrx.com/c/dev-website/locations/austin/pricing?preview=true",
         "root_url": null
       }
     },
@@ -51,8 +51,8 @@
       "input": { "site_slug": "dev-website", "slug": "enterprise", "category": null, "route": "/locations/austin/pricing/enterprise", "is_home_page": false },
       "expect": {
         "path": "/c/dev-website/locations/austin/pricing/enterprise",
-        "live_url": "https://mymatrx.com/c/dev-website/locations/austin/pricing/enterprise",
-        "preview_url": "https://mymatrx.com/c/dev-website/locations/austin/pricing/enterprise?preview=true",
+        "live_url": "https://www.mymatrx.com/c/dev-website/locations/austin/pricing/enterprise",
+        "preview_url": "https://www.mymatrx.com/c/dev-website/locations/austin/pricing/enterprise?preview=true",
         "root_url": null
       }
     },
@@ -61,8 +61,8 @@
       "input": { "site_slug": "dev-website", "slug": "about", "category": "general", "is_home_page": false },
       "expect": {
         "path": "/c/dev-website/about",
-        "live_url": "https://mymatrx.com/c/dev-website/about",
-        "preview_url": "https://mymatrx.com/c/dev-website/about?preview=true",
+        "live_url": "https://www.mymatrx.com/c/dev-website/about",
+        "preview_url": "https://www.mymatrx.com/c/dev-website/about?preview=true",
         "root_url": null
       }
     },
@@ -71,8 +71,8 @@
       "input": { "site_slug": "iopbm", "slug": "gut-health-basics", "category": "education", "is_home_page": false },
       "expect": {
         "path": "/c/iopbm/education/gut-health-basics",
-        "live_url": "https://mymatrx.com/c/iopbm/education/gut-health-basics",
-        "preview_url": "https://mymatrx.com/c/iopbm/education/gut-health-basics?preview=true",
+        "live_url": "https://www.mymatrx.com/c/iopbm/education/gut-health-basics",
+        "preview_url": "https://www.mymatrx.com/c/iopbm/education/gut-health-basics?preview=true",
         "root_url": null
       }
     },
@@ -81,8 +81,8 @@
       "input": { "site_slug": "iopbm", "slug": "services", "category": "services", "is_home_page": false },
       "expect": {
         "path": "/c/iopbm/services",
-        "live_url": "https://mymatrx.com/c/iopbm/services",
-        "preview_url": "https://mymatrx.com/c/iopbm/services?preview=true",
+        "live_url": "https://www.mymatrx.com/c/iopbm/services",
+        "preview_url": "https://www.mymatrx.com/c/iopbm/services?preview=true",
         "root_url": null
       }
     },
@@ -91,8 +91,8 @@
       "input": { "site_slug": "dev-website", "slug": "landing", "category": null, "is_home_page": false },
       "expect": {
         "path": "/c/dev-website/landing",
-        "live_url": "https://mymatrx.com/c/dev-website/landing",
-        "preview_url": "https://mymatrx.com/c/dev-website/landing?preview=true",
+        "live_url": "https://www.mymatrx.com/c/dev-website/landing",
+        "preview_url": "https://www.mymatrx.com/c/dev-website/landing?preview=true",
         "root_url": null
       }
     },
@@ -101,8 +101,8 @@
       "input": { "site_slug": "dev-website", "slug": "landing", "category": "", "is_home_page": false },
       "expect": {
         "path": "/c/dev-website/landing",
-        "live_url": "https://mymatrx.com/c/dev-website/landing",
-        "preview_url": "https://mymatrx.com/c/dev-website/landing?preview=true",
+        "live_url": "https://www.mymatrx.com/c/dev-website/landing",
+        "preview_url": "https://www.mymatrx.com/c/dev-website/landing?preview=true",
         "root_url": null
       }
     },
@@ -111,9 +111,9 @@
       "input": { "site_slug": "dev-website", "slug": "home", "category": "general", "is_home_page": true },
       "expect": {
         "path": "/c/dev-website/home",
-        "live_url": "https://mymatrx.com/c/dev-website/home",
-        "preview_url": "https://mymatrx.com/c/dev-website/home?preview=true",
-        "root_url": "https://mymatrx.com/c/dev-website"
+        "live_url": "https://www.mymatrx.com/c/dev-website/home",
+        "preview_url": "https://www.mymatrx.com/c/dev-website/home?preview=true",
+        "root_url": "https://www.mymatrx.com/c/dev-website"
       }
     },
     {
@@ -122,7 +122,7 @@
       "expect": {
         "path": "/plans/pricing",
         "live_url": "https://www.devwebsite-test.com/plans/pricing",
-        "preview_url": "https://mymatrx.com/c/dev-website/plans/pricing?preview=true",
+        "preview_url": "https://www.mymatrx.com/c/dev-website/plans/pricing?preview=true",
         "root_url": null
       }
     },
@@ -132,7 +132,7 @@
       "expect": {
         "path": "/locations/austin/pricing",
         "live_url": "https://www.devwebsite-test.com/locations/austin/pricing",
-        "preview_url": "https://mymatrx.com/c/dev-website/locations/austin/pricing?preview=true",
+        "preview_url": "https://www.mymatrx.com/c/dev-website/locations/austin/pricing?preview=true",
         "root_url": null
       }
     },
@@ -142,7 +142,7 @@
       "expect": {
         "path": "/landing",
         "live_url": "https://www.devwebsite-test.com/landing",
-        "preview_url": "https://mymatrx.com/c/dev-website/landing?preview=true",
+        "preview_url": "https://www.mymatrx.com/c/dev-website/landing?preview=true",
         "root_url": null
       }
     },
@@ -152,7 +152,7 @@
       "expect": {
         "path": "/home",
         "live_url": "https://www.devwebsite-test.com/home",
-        "preview_url": "https://mymatrx.com/c/dev-website/home?preview=true",
+        "preview_url": "https://www.mymatrx.com/c/dev-website/home?preview=true",
         "root_url": "https://www.devwebsite-test.com"
       }
     },
@@ -161,8 +161,8 @@
       "input": { "site_slug": "dev-website", "slug": "pricing", "category": "general", "parent_route": "/locations/austin", "is_home_page": false },
       "expect": {
         "path": "/c/dev-website/locations/austin/pricing",
-        "live_url": "https://mymatrx.com/c/dev-website/locations/austin/pricing",
-        "preview_url": "https://mymatrx.com/c/dev-website/locations/austin/pricing?preview=true",
+        "live_url": "https://www.mymatrx.com/c/dev-website/locations/austin/pricing",
+        "preview_url": "https://www.mymatrx.com/c/dev-website/locations/austin/pricing?preview=true",
         "root_url": null
       }
     },
@@ -171,8 +171,8 @@
       "input": { "site_slug": "dev-website", "slug": "pricing", "category": "plans", "parent_route": "/locations/austin/", "is_home_page": false },
       "expect": {
         "path": "/c/dev-website/locations/austin/pricing",
-        "live_url": "https://mymatrx.com/c/dev-website/locations/austin/pricing",
-        "preview_url": "https://mymatrx.com/c/dev-website/locations/austin/pricing?preview=true",
+        "live_url": "https://www.mymatrx.com/c/dev-website/locations/austin/pricing",
+        "preview_url": "https://www.mymatrx.com/c/dev-website/locations/austin/pricing?preview=true",
         "root_url": null
       }
     },
@@ -181,8 +181,8 @@
       "input": { "site_slug": "dev-website", "slug": "about", "category": "general", "parent_route": "/", "is_home_page": false },
       "expect": {
         "path": "/c/dev-website/about",
-        "live_url": "https://mymatrx.com/c/dev-website/about",
-        "preview_url": "https://mymatrx.com/c/dev-website/about?preview=true",
+        "live_url": "https://www.mymatrx.com/c/dev-website/about",
+        "preview_url": "https://www.mymatrx.com/c/dev-website/about?preview=true",
         "root_url": null
       }
     },
@@ -191,8 +191,8 @@
       "input": { "site_slug": "iopbm", "slug": "austin", "category": null, "parent_route": "  /locations  ", "is_home_page": false },
       "expect": {
         "path": "/c/iopbm/locations/austin",
-        "live_url": "https://mymatrx.com/c/iopbm/locations/austin",
-        "preview_url": "https://mymatrx.com/c/iopbm/locations/austin?preview=true",
+        "live_url": "https://www.mymatrx.com/c/iopbm/locations/austin",
+        "preview_url": "https://www.mymatrx.com/c/iopbm/locations/austin?preview=true",
         "root_url": null
       }
     },
@@ -202,7 +202,7 @@
       "expect": {
         "path": "/locations/austin/pricing/enterprise",
         "live_url": "https://www.devwebsite-test.com/locations/austin/pricing/enterprise",
-        "preview_url": "https://mymatrx.com/c/dev-website/locations/austin/pricing/enterprise?preview=true",
+        "preview_url": "https://www.mymatrx.com/c/dev-website/locations/austin/pricing/enterprise?preview=true",
         "root_url": null
       }
     },
@@ -211,8 +211,8 @@
       "input": { "site_slug": "dev-website", "slug": "pricing", "category": "plans", "parent_route": "/ignored/entirely", "route": "/locations/austin/pricing", "is_home_page": false },
       "expect": {
         "path": "/c/dev-website/locations/austin/pricing",
-        "live_url": "https://mymatrx.com/c/dev-website/locations/austin/pricing",
-        "preview_url": "https://mymatrx.com/c/dev-website/locations/austin/pricing?preview=true",
+        "live_url": "https://www.mymatrx.com/c/dev-website/locations/austin/pricing",
+        "preview_url": "https://www.mymatrx.com/c/dev-website/locations/austin/pricing?preview=true",
         "root_url": null
       }
     },
@@ -221,8 +221,8 @@
       "input": { "site_slug": "iopbm", "slug": "about", "category": null, "is_home_page": false, "domain": null },
       "expect": {
         "path": "/c/iopbm/about",
-        "live_url": "https://mymatrx.com/c/iopbm/about",
-        "preview_url": "https://mymatrx.com/c/iopbm/about?preview=true",
+        "live_url": "https://www.mymatrx.com/c/iopbm/about",
+        "preview_url": "https://www.mymatrx.com/c/iopbm/about?preview=true",
         "root_url": null
       }
     }
@@ -233,7 +233,7 @@
       "input": { "page_id": "11111111-1111-1111-1111-111111111111" },
       "expect": {
         "path": "/p/11111111-1111-1111-1111-111111111111",
-        "url": "https://mymatrx.com/p/11111111-1111-1111-1111-111111111111"
+        "url": "https://www.mymatrx.com/p/11111111-1111-1111-1111-111111111111"
       }
     }
   ]

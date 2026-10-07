@@ -30,7 +30,7 @@ import { canvasManifest } from "@/features/surfaces/manifests/canvas.manifest";
 
 const PAGE_ID = "3b0f6a52-8e1c-4f7d-9a2b-1c2d3e4f5a6b";
 const ITEM_ID = "9c8b7a65-4321-4fed-8cba-0987654321ab";
-const SITE = process.env.NEXT_PUBLIC_HTML_SITE_URL || "https://mymatrx.com";
+const SITE = process.env.NEXT_PUBLIC_HTML_SITE_URL || "https://www.mymatrx.com";
 const PAGE_URL = `${SITE}/p/${PAGE_ID}`;
 const HTML = "<!doctype html><html><head><title>Mini Reaction Lab</title></head><body><h1>Mix two liquids</h1></body></html>";
 
