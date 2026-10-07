@@ -31,7 +31,7 @@ jest.mock("@ai-matrx/design-system/data-table", () => ({
   MatrxDataTable: ({ data }: { data: unknown[] }) => <div data-testid="table">{data.length} rows</div>,
 }));
 jest.mock("@/features/marketing/competitors/data", () => ({ listCompetitorSites: async () => [] }));
-jest.mock("@ai-matrx/data/db", () => ({ readAllRows: async () => [] }));
+jest.mock("@ai-matrx/data/db", () => ({ ...jest.requireActual("@ai-matrx/data/db"), readAllRows: async () => [] }));
 
 const LIVE_PARAMETERS = {
   $variants: {
