@@ -1,0 +1,84 @@
+{
+  "recorded_at": "2026-10-07T21:21:35.450319+00:00",
+  "assigned_implementer": "Codex /root; admin pages /root/admin_surfaces",
+  "source_commits": [
+    "1568dd9902",
+    "60c2361675",
+    "b3a99ead2f",
+    "c0f88acd1d",
+    "55ce63b69e"
+  ],
+  "skill": "ai-matrx/.claude/skills/surface-authoring/SKILL.md",
+  "surfaces": [
+    {
+      "surface": "matrx-user/image-manager",
+      "focused_sync_command": "pnpm exec tsx scripts/sync-surface-manifests-direct.ts --surface matrx-user/image-manager",
+      "focused_sync_result": "FAIL: configured direct database host unavailable; canonical generated SQL applied successfully via connected Supabase MCP production project brsgrqvjdzwihsvnfqkf",
+      "full_check_command": "pnpm exec tsx scripts/sync-surface-manifests-direct.ts --check --surface matrx-user/image-manager",
+      "full_check_result": "Direct connection FAIL; connected MCP equivalent complete mirror comparison PASS, zero mismatches: parent metadata, declared values/item types, system/public flags, archive state, unexpected roles/write targets/client tools",
+      "live_value_rows": 16,
+      "readiness": "partial",
+      "helper_context_proof": "NOT RUN: header source attribution mappings and approved helper binding/launch/persisted input proof remain",
+      "remaining_owner": "Codex /root",
+      "next_action": "Restore preview shared loader; register truthful attribution in canonical published resolver; run controlled state/menu and explicit helper contract tests; independent S1-S18 certification"
+    },
+    {
+      "surface": "matrx-user/reports",
+      "focused_sync_command": "pnpm exec tsx scripts/sync-surface-manifests-direct.ts --surface matrx-user/reports",
+      "focused_sync_result": "FAIL: configured direct database host unavailable; canonical generated SQL applied successfully via connected Supabase MCP production project brsgrqvjdzwihsvnfqkf",
+      "full_check_command": "pnpm exec tsx scripts/sync-surface-manifests-direct.ts --check --surface matrx-user/reports",
+      "full_check_result": "Direct connection FAIL; connected MCP equivalent complete mirror comparison PASS, zero mismatches: parent metadata, declared values/item types, system/public flags, archive state, unexpected roles/write targets/client tools",
+      "live_value_rows": 17,
+      "readiness": "partial",
+      "helper_context_proof": "NOT RUN: header source attribution mappings and approved helper binding/launch/persisted input proof remain",
+      "remaining_owner": "Codex /root",
+      "next_action": "Restore preview shared loader; register truthful attribution in canonical published resolver; run controlled state/menu and explicit helper contract tests; independent S1-S18 certification"
+    },
+    {
+      "surface": "matrx-user/assists",
+      "focused_sync_command": "pnpm exec tsx scripts/sync-surface-manifests-direct.ts --surface matrx-user/assists",
+      "focused_sync_result": "FAIL: configured direct database host unavailable; canonical generated SQL applied successfully via connected Supabase MCP production project brsgrqvjdzwihsvnfqkf",
+      "full_check_command": "pnpm exec tsx scripts/sync-surface-manifests-direct.ts --check --surface matrx-user/assists",
+      "full_check_result": "Direct connection FAIL; connected MCP equivalent complete mirror comparison PASS, zero mismatches: parent metadata, declared values/item types, system/public flags, archive state, unexpected roles/write targets/client tools",
+      "live_value_rows": 31,
+      "readiness": "partial",
+      "helper_context_proof": "NOT RUN: header source attribution mappings and approved helper binding/launch/persisted input proof remain",
+      "remaining_owner": "Codex /root",
+      "next_action": "Restore preview shared loader; register truthful attribution in canonical published resolver; run controlled state/menu and explicit helper contract tests; independent S1-S18 certification"
+    },
+    {
+      "surface": "matrx-admin/sync-fleet",
+      "focused_sync_command": "pnpm exec tsx scripts/sync-surface-manifests-direct.ts --surface matrx-admin/sync-fleet",
+      "focused_sync_result": "FAIL: configured direct database host unavailable; canonical generated SQL applied successfully via connected Supabase MCP production project brsgrqvjdzwihsvnfqkf",
+      "full_check_command": "pnpm exec tsx scripts/sync-surface-manifests-direct.ts --check --surface matrx-admin/sync-fleet",
+      "full_check_result": "Direct connection FAIL; connected MCP equivalent complete mirror comparison PASS, zero mismatches: parent metadata, declared values/item types, system/public flags, archive state, unexpected roles/write targets/client tools",
+      "live_value_rows": 25,
+      "readiness": "partial",
+      "helper_context_proof": "NOT RUN: header source attribution mappings and approved helper binding/launch/persisted input proof remain",
+      "remaining_owner": "Codex /root",
+      "next_action": "Restore preview shared loader; register truthful attribution in canonical published resolver; run controlled state/menu and explicit helper contract tests; independent S1-S18 certification"
+    },
+    {
+      "surface": "matrx-admin/proof-runs",
+      "focused_sync_command": "pnpm exec tsx scripts/sync-surface-manifests-direct.ts --surface matrx-admin/proof-runs",
+      "focused_sync_result": "FAIL: configured direct database host unavailable; canonical generated SQL applied successfully via connected Supabase MCP production project brsgrqvjdzwihsvnfqkf",
+      "full_check_command": "pnpm exec tsx scripts/sync-surface-manifests-direct.ts --check --surface matrx-admin/proof-runs",
+      "full_check_result": "Direct connection FAIL; connected MCP equivalent complete mirror comparison PASS, zero mismatches: parent metadata, declared values/item types, system/public flags, archive state, unexpected roles/write targets/client tools",
+      "live_value_rows": 53,
+      "readiness": "partial",
+      "helper_context_proof": "NOT RUN: header source attribution mappings and approved helper binding/launch/persisted input proof remain",
+      "remaining_owner": "Codex /root",
+      "next_action": "Restore preview shared loader; register truthful attribution in canonical published resolver; run controlled state/menu and explicit helper contract tests; independent S1-S18 certification"
+    }
+  ],
+  "validation": {
+    "assists_regression_tests": "PASS: 3 tests, including stale response and failed replacement query",
+    "scoped_eslint": "PASS: no errors",
+    "manifest_drift": "PASS: installed published package imports",
+    "docs_guards": "PASS",
+    "whole_repo_type_check": "FAIL: unrelated existing errors; no selected source paths in second check",
+    "route_coverage": "FAIL: existing /p mapping points to matrx-public/p without manifest",
+    "runtime_menu": "BLOCKED: managed preview stalled twice then /dashboard500: ReferenceError Cannot access matrxDirectiveHost before initialization; in-app browser unavailable",
+    "independent_certification": "NOT RUN: source review does not replace S1-S18 runtime certification"
+  }
+}
