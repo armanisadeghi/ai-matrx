@@ -172,6 +172,17 @@ async function clientFor(spaceId: string | null, activeOrg: string | null, userI
   });
 }
 
+/**
+ * Ids that keep the rows in the order they were handed in (review 8041caec, 2026-10-07: a moved-in
+ * Notion table came back Bulb, Green, Hilltop instead of the source's Green, Bulb, Hilltop). One
+ * `recordWriteMany` stamps every row with the same `created_at`, so the store's default read order
+ * (`created_at desc, id`) falls through to the id: ascending ids, handed out in source order, ARE
+ * the source order.
+ */
+export function sourceOrderIds(count: number): string[] {
+  return Array.from({ length: count }, () => crypto.randomUUID()).sort();
+}
+
 /** Makes the designed database: the table with every property, then its sample rows in one write. */
 export async function createDesignedDatabase(design: DatabaseDesign, spaceId: string | null, activeOrg: string | null, userId: string | null): Promise<{ table: PickedSource; views: SpaceDbView[] }> {
   const client = await clientFor(spaceId, activeOrg, userId);
@@ -184,7 +195,7 @@ export async function createDesignedDatabase(design: DatabaseDesign, spaceId: st
   if (!made.ok) throw new Error(made.error.message || "The database could not be made.");
   const rows = design.rows.map((r) => rowData(design, r)).filter((r) => Object.keys(r).length);
   if (rows.length) {
-    const wrote = await client.recordWriteMany({ table_id: made.data, rows: rows as never });
+    const wrote = await client.recordWriteMany({ table_id: made.data, rows: rows as never, ids: sourceOrderIds(rows.length) });
     if (!wrote.ok) throw new Error(`The sample rows could not be added: ${wrote.error.message}`);
   }
   return { table: { tableId: made.data, name: design.name }, views: blockViews(design) };
