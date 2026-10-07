@@ -45,6 +45,14 @@ Block document: a tree of `SpaceBlock` (`id`, `type`, `text: RichSpan[]`, `color
 
 ## Change log
 
+- 2026-10-07 — builder round 31: (1) N5 property menu in records-ui 0.103.7 (ccdddefded): "Wrap column" per column (kept on the
+  view as `wrapColumns`; store key `presentation.wrapColumns` added to `custom.view_keys()`; Spaces passes it both ways, ca80b9e66f)
+  and "Duplicate property" (the new-column panel starts from the original, named "<name> (1)"; values are not copied — NEEDS). Change
+  type and option rename / recolour / reorder / delete walked (`property-edit.walk.mjs`). (2) A non-editor's Form view is the forms
+  system's public form inline (`FormToAnswer`, server action `data/form-actions.ts`, cb55940755) — blocked from showing after a reload
+  because the snapshot schema refuses layout `form` (NEEDS). (3) A built-in table block saved before its "+ New page" row reads its
+  stored size with 34px added (`paintedSizesOf`, `nr` marker on new saves, 0dc23598bf). (4) The advanced-filter popover is opaque
+  (solid surface, white, no backdrop). (5) NEEDS rows for N9 automations, N3 suggested edits, N11 "Can edit content" + share wording.
 - 2026-10-07 — builder round 30: (1) built-in tables: a magnifier search holds still (rows held dimmed while the read
   runs, the grid remounts per answer, the body keeps its height while a term is on, the count keeps its width; CLS 0.21 -> 0,
   walk `entity-search.walk.mjs`); the "70 unrelated rows" were the page's other tables counted page-wide; built-in tables get
