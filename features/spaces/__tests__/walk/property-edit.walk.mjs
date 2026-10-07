@@ -266,11 +266,11 @@ step("automations");
 await act(page, async () => {
   await frame.hover();
   await frame.getByRole("button", { name: "Automations", exact: true }).first().click();
-  const panel = page.getByTestId("spaces-automations");
+  const panel = page.locator('[data-testid="spaces-automations"][data-state]');
   await panel.waitFor({ timeout: 20_000 });
   const state = await panel.getAttribute("data-state");
   await page.screenshot({ path: `${SHOT}/automations.png` });
-  check("the Automations panel answers (off until the door is live)", state === "off" || state === "on", { state, text: (await panel.innerText()).slice(0, 80) });
+  check("the Automations panel answers", state === "on", { state, text: (await panel.innerText()).slice(0, 80) });
   await page.keyboard.press("Escape");
 });
 if (process.env.TRASH) check("scratch page trashed", await act(page, () => trashPage(page)));
