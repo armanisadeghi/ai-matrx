@@ -29,6 +29,7 @@ import { useAppStore } from "@/lib/redux/hooks";
 import { documentWorkingCopy } from "../document-model/documentModels";
 import { getClaimsUser } from "@/utils/supabase/claimsUser";
 import { ShareButton } from "@/features/sharing/components/ShareButton";
+import { RichCopySplit } from "@/components/agent-copy/RichCopySplit";
 import { ReferenceCopyButton } from "@/features/matrx-envelope/components/ReferenceCopyButton";
 import { AccessGate } from "@/features/access-gate/components/AccessGate";
 import { DocumentRulebookNotice } from "@/features/masterwork/components/DocumentRulebookNotice";
@@ -364,6 +365,14 @@ export function DocumentRecord({
     <div className="flex items-center gap-0.5">
       {/* Secondary action — hidden below sm so the rename field and
           the share control keep the whole mobile header budget. */}
+      <RichCopySplit
+        label={doc.document_name}
+        size="sm"
+        human={() => {
+          const port = bodyPortRef.current;
+          return port ? bodyTextOf(port.getDataStream()).text : "";
+        }}
+      />
       <span className="hidden sm:inline-flex">
         <ReferenceCopyButton
           referenceType="document"
