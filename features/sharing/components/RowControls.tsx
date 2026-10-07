@@ -98,10 +98,7 @@ export function RowControls({
 
   const copyAddress = useCallback(async () => {
     if (!publicUrl) return;
-    if (!(await copyText(publicUrl))) {
-      toast({ title: "Couldn't copy the web address", variant: "destructive" });
-      return;
-    }
+    if (!(await copyText(publicUrl, undefined, "Couldn't copy the web address"))) return;
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   }, [publicUrl, toast]);

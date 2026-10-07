@@ -5,7 +5,7 @@
     "repo-only": "reads the repository and nothing else"
   },
   "counts": {
-    "repo-only": 159,
+    "repo-only": 161,
     "live-db": 65
   },
   "rows": {
@@ -600,6 +600,20 @@
       "label": "Worker-cycle guard self-test",
       "class": "repo-only",
       "cmd": "pnpm check:worker-cycles:self-test",
+      "reason": "no database access in 2 file(s) reached",
+      "evidence": []
+    },
+    "server-only-module-calls-a-use-client-export": {
+      "label": "Server-only module calls a \"use client\" export",
+      "class": "repo-only",
+      "cmd": "pnpm check:server-calls-client",
+      "reason": "no database access in 2 file(s) reached",
+      "evidence": []
+    },
+    "server-calls-client-guard-self-test": {
+      "label": "Server-calls-client guard self-test",
+      "class": "repo-only",
+      "cmd": "pnpm check:server-calls-client:self-test",
       "reason": "no database access in 2 file(s) reached",
       "evidence": []
     },

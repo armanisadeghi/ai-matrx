@@ -296,11 +296,8 @@ export function useFieldSecret(
     }
     if (!isCurrent(operation) || value === null) return;
     if (!isCurrent(operation)) return;
-    if (!(await copyText(value))) {
-      if (isCurrent(operation))
-        toast.error("Your browser blocked clipboard access");
-      return;
-    }
+    // The kit copy toasts its own failure (once, even if the person has moved on).
+    if (!(await copyText(value, undefined, "Your browser blocked clipboard access"))) return;
     if (!isCurrent(operation)) return;
     copiedIdentity.current = identity;
     setCopied(true);

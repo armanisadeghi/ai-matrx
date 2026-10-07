@@ -60,10 +60,7 @@ const UUIDArrayField = () => {
 
   const copyToClipboard = async (uuid: string, e?: React.SyntheticEvent) => {
     e?.stopPropagation();
-          if (!(await copyText(uuid))) {
-            toast.error("Couldn't copy to the clipboard — select the UUID and copy it by hand.");
-            return;
-          }
+          if (!(await copyText(uuid, undefined, "Couldn't copy to the clipboard — select the UUID and copy it by hand."))) return;
           setCopiedId(uuid);
           setTimeout(() => setCopiedId(null), 2000);
     };

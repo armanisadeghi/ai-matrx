@@ -111,6 +111,7 @@ export function rowsToCsv(
   return toDelimitedText(
     cols.map((c) => c.header),
     rows.map((row) => cols.map((c) => (row[c.key] ?? null) as Json)),
+    { spreadsheetSafe: false }, // an AI reads this text: the cells stay as stored
   );
 }
 

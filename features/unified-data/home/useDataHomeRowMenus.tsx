@@ -277,9 +277,7 @@ export function useDataHomeRowMenus({
           window.open(url, "_blank", "noopener,noreferrer");
         },
         copyText: async (url) => {
-          if (!(await copyTextKit(url, "Link copied"))) {
-            toast.error("Couldn’t copy the link");
-          }
+          await copyTextKit(url, "Link copied", "Couldn’t copy the link");
         },
         rename: () => ask("rename", row),
         // v7 TABLE-EXPERIENCE item 3: the one Duplicate dialog (records-ui), in the table's organization.

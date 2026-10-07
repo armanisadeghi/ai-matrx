@@ -316,11 +316,10 @@ function RagAiCopyWindowInner({
             onClick={() => {
               void copyText(
                 combineSelectedHumanText(bundle, options),
+                undefined,
+                "Could not copy selected Knowledge content",
               ).then((copiedOk) => {
-                if (!copiedOk) {
-                  toast.error("Could not copy selected Knowledge content");
-                  return;
-                }
+                if (!copiedOk) return;
                 flash("text");
                 toast.success("Selected Knowledge content copied");
               });
@@ -339,11 +338,10 @@ function RagAiCopyWindowInner({
             onClick={() => {
               void copyText(
                 buildAgentPayload(buildRagAiPayload(bundle, options)),
+                undefined,
+                "Could not copy Knowledge result for AI",
               ).then((copiedOk) => {
-                if (!copiedOk) {
-                  toast.error("Could not copy Knowledge result for AI");
-                  return;
-                }
+                if (!copiedOk) return;
                 flash("ai");
                 toast.success("Knowledge result copied for AI");
               });

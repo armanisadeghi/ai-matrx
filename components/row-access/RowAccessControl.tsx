@@ -93,9 +93,7 @@ export function RowAccessControl({
 
   const copyLink = async () => {
     if (!publicUrl) return;
-    if (!(await copyText(publicUrl, "Link copied"))) {
-      toast.error("Couldn't copy the link", { description: publicUrl });
-    }
+    await copyText(publicUrl, "Link copied", "Couldn't copy the link — copy it from the address box");
   };
 
   const TriggerIcon = value.publishedToWeb ? Globe2 : Users;

@@ -39,13 +39,7 @@ export function PdfStudioFileMenuExtras({
         onClick={() => {
           void (async () => {
             if (!(await copyText(
-              resolveAbsoluteHref(studioHref),
-            ))) {
-              toast.error(
-                "Couldn't copy — your browser blocked clipboard access",
-              );
-              return;
-            }
+              resolveAbsoluteHref(studioHref), undefined, "Couldn't copy — your browser blocked clipboard access"))) return;
             toast.success("Link copied");
           })();
         }}

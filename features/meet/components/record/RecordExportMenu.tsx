@@ -78,12 +78,7 @@ export function RecordExportMenu({
   const hasTranscript = bundle.transcript.length > 0;
 
   const copy = async (label: string, text: string) => {
-    if (!(await copyText(text))) {
-      toast.error(
-        `${label} could not be copied — this browser blocked the clipboard. Download it instead.`,
-      );
-      return;
-    }
+    if (!(await copyText(text, undefined, `${label} could not be copied — this browser blocked the clipboard. Download it instead.`))) return;
     toast.success(`${label} copied.`);
   };
 

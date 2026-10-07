@@ -170,14 +170,7 @@ export function ShortcutDirectory({
     startTransition(() => router.push(resolveShortcutDirectUrl(id, mode)));
   };
   const copyId = async (id: string) => {
-    if (!(await copyText(id))) {
-      toast({
-        title: "Copy failed",
-        description: "Unable to copy ID",
-        variant: "destructive" as const,
-      });
-      return;
-    }
+    if (!(await copyText(id, undefined, "Unable to copy ID"))) return;
     setCopiedId(id);
     toast({ title: "Copied", description: "Shortcut ID copied" });
     setTimeout(
