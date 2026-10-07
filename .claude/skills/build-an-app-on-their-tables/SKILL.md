@@ -52,6 +52,10 @@ Contract: `common-docs/projects/applets/CONTRACTS.md` (§2 hooks, §8 record). H
    ```
    **A job's run renders ONLY through `<JobOutput job>`** — never `job.text`, never a spinner, never
    `<Kind>` on `job.result`. No room inline → `<JobOutput job={job} mode="window" />` or `job.open()`.
+   **A box a person writes words in is `<WritingBox value={text} onValueChange={setText} label="Notes" />`**
+   (from `@ai-matrx/applets/react`) — never `Textarea`: it carries the platform's microphone and read-aloud.
+   A chat with a job is `useConversation` + `<ConversationOutput>` + `<ConversationComposer>` (it writes
+   through `<WritingBox>`).
    Rows are keyed by field key; a link field answers ids or `{ id }` refs — read both.
    Pages: `<Pages layout="tabs" />` in the entry file, `usePage().params`, `<Link to="/clients/123">`.
 3. **Insert the record** in her organization (explicit `organization_id`; slugs are unique

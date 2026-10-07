@@ -242,7 +242,7 @@ function ButtonEditor({ label, actions, spaceId, onDone }: { label: string; acti
           {a.kind === "insert" ? (
             <ProTextarea aria-label="Blocks to insert" rows={3} value={linesFromBlocks(a.blocks)} onChange={(e) => set(i, { ...a, blocks: blocksFromLines(e.target.value) })} placeholder="One block per line: - bullet, [] to-do, # heading" />
           ) : a.kind === "addPage" || a.kind === "editPages" ? (
-            <ProTextarea aria-label="Property values" rows={2} value={valuesText(a.values)} onChange={(e) => set(i, { ...a, values: valuesFrom(e.target.value) } as ButtonAction)} placeholder="Property: value" />
+            <ProTextarea aria-label="Values" rows={2} value={valuesText(a.values)} onChange={(e) => set(i, { ...a, values: valuesFrom(e.target.value) } as ButtonAction)} placeholder="Property: value" />
           ) : a.kind === "open" ? (
             <ProInput aria-label="Page or link to open" value={a.spaceId ? `/spaces/${a.spaceId}` : (a.url ?? "")} onChange={(e) => {
               const v = e.target.value;

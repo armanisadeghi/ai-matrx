@@ -8,9 +8,15 @@
 //   3. the record is written to `app.definition` as her, with its organization explicit. A new Applet is
 //      born a draft (preview with held-back writes); every later save is a new version
 //      (`app.definition_version`, the snapshot trigger) and "Use it" publishes.
+//   4. TABLES SHE DOES NOT HAVE are part of the answer (`new_table` sources, applets 0.9.1): checked with
+//      `checkAppletSources` before saving, previewed empty, and made by `makeNewTables` (the store's own
+//      `ensureTable`, as her, in the Applet's organization) when she presses "Use it" — never an
+//      unrelated table, never "make a table and come back".
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { checkAppletSources, makeNewTables, type MadeTable } from "@ai-matrx/applets/platform";
+import type { AppletSource, NewTableDeclaration } from "@ai-matrx/applets";
 
-import type { Database } from "@/types/database.types";
+import type { Database, Json } from "@/types/database.types";
 import { isReservedAppletSlug } from "@/features/applets/reserved-slugs";
 
 
@@ -29,8 +35,24 @@ export interface BuilderApplet {
   entry: string;
   files: BuilderFile[];
   pages: { path: string; title: string; file: string; parent?: string }[];
-  sources: { alias: string; table_id?: string; organization_id?: string; entity?: string }[];
+  sources: BuilderSource[];
   mandates: { alias: string; key: string }[];
+}
+
+/** One source as the builder writes it: her table, a platform record type, or a table to make. */
+export type BuilderSource =
+  | { alias: string; table_id: string; organization_id: string }
+  | { alias: string; entity: string }
+  | { alias: string; new_table: NewTableDeclaration };
+
+/** The tables an answer reads that already exist, by id — the card names them in words. */
+export function boundTableIds(applet: Pick<BuilderApplet, "sources">): string[] {
+  return applet.sources.flatMap((s) => ("table_id" in s && s.table_id ? [s.table_id] : []));
+}
+
+/** The tables an answer will make, for the person to see before she presses "Use it". */
+export function tablesToMake(applet: Pick<BuilderApplet, "sources">): { alias: string; name: string; fields: string[] }[] {
+  return applet.sources.flatMap((s) => ("new_table" in s ? [{ alias: s.alias, name: s.new_table.name, fields: s.new_table.fields.map((f) => f.label) }] : []));
 }
 
 export interface BuildAnswer {
@@ -67,12 +89,14 @@ export function coerceBuildAnswer(value: unknown): BuildAnswer {
       ? [{ path: p.path, title: str(p.title) || p.path, file: p.file, ...(typeof p.parent === "string" && p.parent ? { parent: p.parent } : {}) }]
       : [],
   );
-  const sources = (Array.isArray(a.sources) ? a.sources : []).flatMap((s) =>
+  const sources = (Array.isArray(a.sources) ? a.sources : []).flatMap((s): BuilderSource[] =>
     isRecord(s) && typeof s.alias === "string"
       ? [
-          typeof s.entity === "string" && s.entity
-            ? { alias: s.alias, entity: s.entity }
-            : { alias: s.alias, table_id: str(s.table_id), organization_id: str(s.organization_id) },
+          isRecord(s.new_table)
+            ? { alias: s.alias, new_table: s.new_table as unknown as NewTableDeclaration }
+            : typeof s.entity === "string" && s.entity
+              ? { alias: s.alias, entity: s.entity }
+              : { alias: s.alias, table_id: str(s.table_id), organization_id: str(s.organization_id) },
         ]
       : [],
   );
@@ -119,7 +143,11 @@ function namesIn(files: BuilderFile[], pattern: RegExp): Set<string> {
  * declares refuses the whole answer — the app would otherwise open on
  * `no data source called "tasks"` (2026-10-07). Run on a fresh builder answer only.
  */
-export function checkBuildAnswer(raw: unknown, answer: BuildAnswer): BuildAnswer {
+export function checkBuildAnswer(
+  raw: unknown,
+  answer: BuildAnswer,
+  context: { organizationId?: string; tables?: readonly { table_id: string; organization_id: string; name: string }[] } = {},
+): BuildAnswer {
   const { applet } = answer;
   const rawApplet = isRecord(raw) && isRecord(raw.applet) ? raw.applet : {};
   const problems: string[] = [];
@@ -127,8 +155,16 @@ export function checkBuildAnswer(raw: unknown, answer: BuildAnswer): BuildAnswer
   if (rawSources !== applet.sources.length) problems.push(`${rawSources - applet.sources.length} of its sources had no alias`);
   const rawMandates = Array.isArray(rawApplet.mandates) ? rawApplet.mandates.length : 0;
   if (rawMandates !== applet.mandates.length) problems.push(`${rawMandates - applet.mandates.length} of its jobs had no alias or key`);
-  for (const s of applet.sources) {
-    if (!s.entity && (!s.table_id || !s.organization_id)) problems.push(`source "${s.alias}" names no table_id and organization_id (or entity)`);
+  // ONE check for every source (applets 0.9.1): a bound table must be the Applet organization's own (an
+  // Applet in one organization bound to another's table opens on data its members cannot read — audit
+  // 2026-10-07), and a table the app asks for is checked whole — a missing choice list, a link to nowhere,
+  // or a "new" table that repeats one she has is said before anything is saved.
+  if (context.organizationId) {
+    problems.push(...checkAppletSources(applet.sources as AppletSource[], { organizationId: context.organizationId, ...(context.tables ? { existing: context.tables } : {}) }));
+  } else {
+    for (const s of applet.sources) {
+      if ("table_id" in s && (!s.table_id || !s.organization_id)) problems.push(`source "${s.alias}" names no table_id and organization_id`);
+    }
   }
   const declared = new Set(applet.sources.map((s) => s.alias));
   for (const alias of namesIn(applet.files, READS_SOURCE)) {
@@ -244,8 +280,25 @@ export async function saveBuiltApplet(
   throw new Error(`Every address near "/applets/${base}" is taken.`);
 }
 
-/** "Use it": the draft goes live at /applets/<slug>. */
-export async function publishApplet(client: Client, appletId: string): Promise<void> {
+/**
+ * "Use it": first the tables the app asked for are made (as her, in the Applet's organization) and the
+ * record is bound to them; then the draft goes live at /applets/<slug>. A refusal while making tables
+ * publishes nothing and names the table; what was made stays, and the next "Use it" finds it.
+ */
+export async function publishApplet(client: Client, appletId: string, userId: string): Promise<{ made: MadeTable[] }> {
+  const { data, error: readError } = await client.schema("app").from("definition").select("organization_id, sources").eq("id", appletId).maybeSingle();
+  if (readError) throw new Error(readError.message);
+  if (!data) throw new Error("That app is not there, or it has not been shared with you.");
+  const sources = (Array.isArray(data.sources) ? data.sources : []) as unknown as AppletSource[];
+  let made: MadeTable[] = [];
+  if (sources.some((s) => "new_table" in s)) {
+    const answer = await makeNewTables({ supabase: client, userId, organizationId: data.organization_id, sources });
+    made = answer.made;
+    if (!answer.ok) throw new Error(answer.message);
+    const bound = await client.schema("app").from("definition").update({ sources: answer.sources as unknown as Json }).eq("id", appletId);
+    if (bound.error) throw new Error(bound.error.message);
+  }
   const { error } = await client.schema("app").from("definition").update({ status: "published" }).eq("id", appletId);
   if (error) throw new Error(error.message);
+  return { made };
 }

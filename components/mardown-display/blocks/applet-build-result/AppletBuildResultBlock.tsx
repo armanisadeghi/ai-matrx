@@ -11,7 +11,7 @@
 import { useState } from "react";
 import CodeBlock from "@ai-matrx/rich-content/code-block/CodeBlock";
 import { Badge, DisclosureHeader } from "@ai-matrx/design-system/controls";
-import { AppWindow, Code2, Database, FileText, Workflow } from "lucide-react";
+import { AppWindow, Code2, Database, FileText, Table2, Workflow } from "lucide-react";
 
 import type { AppletBuildResultData } from "@/features/content-ir/kinds/applet-build-result";
 
@@ -62,11 +62,17 @@ export default function AppletBuildResultBlock({ serverData }: { serverData?: un
         <div className="flex flex-col gap-1">
           <span className="text-xs font-medium text-muted-foreground">Built on</span>
           <div className="flex flex-wrap gap-1.5">
-            {data.sources.map((source) => (
-              <Badge key={`s:${source.alias}`} tone="neutral">
-                <Database className="h-3 w-3" /> {source.alias}
-              </Badge>
-            ))}
+            {data.sources.map((source) =>
+              source.newTable ? (
+                <Badge key={`s:${source.alias}`} tone="info" title={source.newTable.fields.join(", ")}>
+                  <Table2 className="h-3 w-3" /> New: {source.newTable.name}
+                </Badge>
+              ) : (
+                <Badge key={`s:${source.alias}`} tone="neutral">
+                  <Database className="h-3 w-3" /> {source.alias}
+                </Badge>
+              ),
+            )}
             {data.jobs.map((job) => (
               <Badge key={`j:${job}`} tone="primary">
                 <Workflow className="h-3 w-3" /> {job}

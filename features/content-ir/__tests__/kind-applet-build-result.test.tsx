@@ -96,4 +96,54 @@ describe("applet_build_result", () => {
     ]);
     expect(answer.note).toBe(ANSWER.note);
   });
+
+  // The 2026-10-07 social-post planner: she had no tables for it, so the answer DECLARES them.
+  const PLANNER = {
+    ...ANSWER,
+    applet: {
+      ...ANSWER.applet,
+      files: [
+        ANSWER.applet.files[0]!,
+        { name: "Approvals.tsx", source: 'import { useRows } from "@ai-matrx/applets/react";\nexport default function Approvals() { const posts = useRows("posts"); const brands = useRows("brands"); return <ul />; }' },
+      ],
+      sources: [
+        {
+          alias: "posts",
+          new_table: {
+            name: "Posts",
+            title_field: "title",
+            fields: [
+              { key: "title", label: "Title", type: "text" },
+              { key: "brand", label: "Brand", type: "relation", links_to: { alias: "brands" } },
+              { key: "status", label: "Status", type: "select", options: ["Idea", "Planned", "Assets ready", "Posted"] },
+            ],
+          },
+        },
+        { alias: "brands", new_table: { name: "Brands", fields: [{ key: "name", label: "Name", type: "text" }] } },
+      ],
+    },
+  };
+
+  it("keeps new_table sources, names them in the window, and refuses a broken declaration before saving", () => {
+    const answer = checkBuildAnswer(PLANNER, coerceBuildAnswer(PLANNER), { organizationId: "344cfaa8-2b0c-4971-854a-9694614816f2", tables: [] });
+    expect(answer.applet.sources.map((s) => ("new_table" in s ? s.new_table.name : s.alias))).toEqual(["Posts", "Brands"]);
+    const data = appletBuildResultServerDataFromEnvelope(envelopeFromCompleteValue(PLANNER, APPLET_BUILD_RESULT_KIND));
+    expect(data?.sources.map((s) => s.newTable?.name)).toEqual(["Posts", "Brands"]);
+    const broken = JSON.parse(JSON.stringify(PLANNER));
+    broken.applet.sources[0].new_table.fields[2].options = [];
+    expect(() => checkBuildAnswer(broken, coerceBuildAnswer(broken), { organizationId: "o" })).toThrow(/"status" is a choice and lists no options/);
+    const repeats = () => checkBuildAnswer(PLANNER, coerceBuildAnswer(PLANNER), { organizationId: "o", tables: [{ table_id: "t", organization_id: "o", name: "Brands" }] });
+    expect(repeats).toThrow(/already has a table called "Brands"/);
+  });
+
+  // Audit 2026-10-07: an Applet built in "AI Matrx" was bound to a blank "Untitled database" of "Oak & River".
+  it("refuses an answer that binds a table of another organization, naming it", () => {
+    const crossOrg = { ...ANSWER, applet: { ...ANSWER.applet, sources: [{ alias: "posts", table_id: "0b6f6a2e-4c1d-4f7a-9f55-3e2b1c9d8a71", organization_id: "oak-and-river" }] } };
+    const bind = () =>
+      checkBuildAnswer(crossOrg, coerceBuildAnswer(crossOrg), {
+        organizationId: "ai-matrx",
+        tables: [{ table_id: "0b6f6a2e-4c1d-4f7a-9f55-3e2b1c9d8a71", organization_id: "oak-and-river", name: "Untitled database" }],
+      });
+    expect(bind).toThrow(/binds "Untitled database", a table of another organization/);
+  });
 });

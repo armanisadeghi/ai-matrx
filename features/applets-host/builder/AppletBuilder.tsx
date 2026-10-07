@@ -20,7 +20,7 @@ import { storedMandateKey } from "@ai-matrx/agents/mandates";
 import { useHeadlessAgentJson } from "@ai-matrx/chat/agents/hooks/useHeadlessAgentJson";
 import { useDeclaredSurfaceMandates } from "@ai-matrx/chat/surfaces/runtime/surface-mandates";
 import { Badge, Button, EmptyState } from "@ai-matrx/design-system/controls";
-import { AppWindow, ExternalLink, Wrench } from "lucide-react";
+import { AppWindow, ExternalLink, Table2, Wrench } from "lucide-react";
 
 import { createClient } from "@/utils/supabase/client";
 import { ProTextarea } from "@/components/official/ProTextarea";
@@ -29,7 +29,24 @@ import { useOrganizationRequired } from "@/features/organizations/useOrganizatio
 import { ensureOrganizationForWrite, isOrganizationSelectionCancelled } from "@/lib/organization/organization-gate";
 import { useOpenLiveRunWindow, type LiveRunWindowHandle } from "@/features/overlays/openers/liveRunWindow";
 import { AppletHostMount } from "@/features/applets-host/AppletHostMount";
-import { BuildRefused, checkBuildAnswer, coerceBuildAnswer, publishApplet, readBuilderApplet, saveBuiltApplet, type BuildAnswer, type BuilderApplet, type SavedApplet } from "./build-applet";
+import { useAppSelector } from "@/lib/redux/hooks";
+import { selectUserId } from "@/lib/redux/selectors/userSelectors";
+import { tableHref } from "@/features/records-tool-display/readRecordsAnswer";
+import { useSourceTableNames } from "@/features/applets/hooks/useSourceTableNames";
+import {
+  BuildRefused,
+  checkBuildAnswer,
+  coerceBuildAnswer,
+  publishApplet,
+  readBuilderApplet,
+  saveBuiltApplet,
+  boundTableIds,
+  tablesToMake,
+  type BuildAnswer,
+  type BuilderApplet,
+  type BuilderSource,
+  type SavedApplet,
+} from "./build-applet";
 import { readBuildRecord, type BuildEntry } from "./build-session";
 import { useAppletBuildSession } from "./useAppletBuildSession";
 import { BuildHistory } from "./BuildHistory";
@@ -43,7 +60,16 @@ const DISCLOSURE = [
   { mandateKey: FIX, does: "fixes an error in your app" },
 ] as const;
 
-type Phase = { kind: "idle" } | { kind: "building" } | { kind: "failed"; why: string };
+type Phase = { kind: "idle" } | { kind: "building" } | { kind: "publishing" } | { kind: "failed"; why: string };
+
+/** The saved draft as the card shows it: the tables "Use it" will make, then the tables it made. */
+type SavedCard = SavedApplet & {
+  note: string;
+  toMake: ReturnType<typeof tablesToMake>;
+  /** Her existing tables it reads, by id (named in words on the card). */
+  bound: string[];
+  made: { name: string; table_id: string }[];
+};
 
 type Fix = { where: string; message: string };
 
@@ -57,7 +83,8 @@ export function AppletBuilder({ appletId: initialId, routed = false }: { appletI
 
   const [sentence, setSentence] = useState("");
   const [phase, setPhase] = useState<Phase>({ kind: "idle" });
-  const [saved, setSaved] = useState<(SavedApplet & { note: string }) | null>(null);
+  const userId = useAppSelector(selectUserId);
+  const [saved, setSaved] = useState<SavedCard | null>(null);
   const [appletId, setAppletId] = useState<string | null>(initialId);
   const [held, setHeld] = useState(0);
   const [lastError, setLastError] = useState<Fix | null>(null);
@@ -82,7 +109,7 @@ export function AppletBuilder({ appletId: initialId, routed = false }: { appletI
         const current = record.hasContent ? await readBuilderApplet(client, id) : null;
         const org = current?.organizationId ?? record.organizationId;
         const catalogue = await readAppletCatalogue(client, { organizationId: org, request: entry.text });
-        const answer = checkBuildAnswer(value, coerceBuildAnswer(value));
+        const answer = checkBuildAnswer(value, coerceBuildAnswer(value), { organizationId: org, tables: catalogue.tables });
         await finish(id, entry, answer, current?.applet ?? null, org);
       } catch (err) {
         await failed(id, entry, err);
@@ -101,14 +128,15 @@ export function AppletBuilder({ appletId: initialId, routed = false }: { appletI
 
   // The saved app as the card and the preview show it (null while a new build has no app yet).
   const loadSaved = async (id: string, note: string) => {
-    const { data, error } = await createClient().schema("app").from("definition").select("id, slug, version, status, entry").eq("id", id).maybeSingle();
+    const { data, error } = await createClient().schema("app").from("definition").select("id, slug, version, status, sources, entry").eq("id", id).maybeSingle();
     if (error || !data) {
       setPhase({ kind: "failed", why: error?.message ?? "That app is not there, or it has not been shared with you." });
       return;
     }
-    const { entry, ...row } = data;
+    const { sources, entry, ...row } = data;
     if (!entry) return;
-    setSaved({ ...row, note });
+    const list = (Array.isArray(sources) ? sources : []) as unknown as BuilderSource[];
+    setSaved({ ...row, note, toMake: tablesToMake({ sources: list }), bound: boundTableIds({ sources: list }), made: [] });
   };
 
   // Reopening a build (or changing an existing Applet): its saved version, and how its last request ended.
@@ -146,7 +174,7 @@ export function AppletBuilder({ appletId: initialId, routed = false }: { appletI
     const result = await saveBuiltApplet(client, { organizationId: org, appletId: id, current, answer, request: entry.text, conversationId: entry.conversation_id });
     await session.settle(id, entry.id, { state: "saved", version: result.version, note: answer.note });
     shown.current = `${id}|${entry.id}:saved`;
-    setSaved({ ...result, note: answer.note });
+    setSaved({ ...result, note: answer.note, toMake: tablesToMake(answer.applet), bound: boundTableIds(answer.applet), made: [] });
     setHeld(0);
     setLastError(null);
     setRefused(null);
@@ -202,7 +230,7 @@ export function AppletBuilder({ appletId: initialId, routed = false }: { appletI
           attached = session.running(record.id, entry.id, cid).catch((err) => console.error("[applet-build] could not record the run", err));
           live.handle = openRunWindow({ conversationId: cid, label: fix ? "Fixing your app" : appletId ? "Changing your app" : "Building your app" });
         },
-        coerce: (v) => checkBuildAnswer(v, coerceBuildAnswer(v)),
+        coerce: (v) => checkBuildAnswer(v, coerceBuildAnswer(v), { organizationId: runOrg, tables: catalogue.tables }),
       });
       await attached;
       await finish(record.id, entry, answer, current?.applet ?? null, runOrg);
@@ -219,16 +247,21 @@ export function AppletBuilder({ appletId: initialId, routed = false }: { appletI
   };
 
   const useIt = async () => {
-    if (!saved) return;
+    if (!saved || !userId) return;
+    setPhase({ kind: "publishing" });
     try {
-      await publishApplet(createClient(), saved.id);
-      setSaved({ ...saved, status: "published" });
+      const { made } = await publishApplet(createClient(), saved.id, userId);
+      // The record now reads the made tables by id: remount the preview on the new version.
+      const { data } = await createClient().schema("app").from("definition").select("version").eq("id", saved.id).maybeSingle();
+      setSaved({ ...saved, status: "published", version: data?.version ?? saved.version, toMake: [], made });
+      setPhase({ kind: "idle" });
     } catch (err) {
       setPhase({ kind: "failed", why: err instanceof Error ? err.message : String(err) });
     }
   };
 
-  const busy = phase.kind === "building" || session.rejoining;
+  const busy = phase.kind === "building" || phase.kind === "publishing" || session.rejoining;
+  const boundNames = useSourceTableNames(saved?.bound ?? []);
   return (
     <div className="grid h-full min-h-0 grid-cols-1 gap-3 p-3 lg:grid-cols-[minmax(320px,2fr)_5fr]">
       <div className="flex min-h-0 flex-col gap-3">
@@ -270,9 +303,45 @@ export function AppletBuilder({ appletId: initialId, routed = false }: { appletI
               {saved.status === "published" ? <Badge tone="success">Live</Badge> : null}
             </div>
             {saved.note ? <p className="text-muted-foreground">{saved.note}</p> : null}
+            {saved.bound.length ? (
+              <div className="flex flex-wrap items-center gap-2 text-xs" data-applet-bound-tables="">
+                {saved.bound.map((id) => (
+                  <Link key={id} href={tableHref(id)} target="_blank" className="inline-flex min-w-0 items-center gap-1 text-primary">
+                    <Table2 className="h-3.5 w-3.5 shrink-0" />
+                    <span className="truncate">
+                      {boundNames[id]?.name ?? "Table"}
+                      {boundNames[id]?.organizationName ? ` · ${boundNames[id]?.organizationName}` : ""}
+                    </span>
+                  </Link>
+                ))}
+              </div>
+            ) : null}
+            {saved.toMake.length ? (
+              <div className="flex flex-col gap-1" data-applet-new-tables="">
+                <span className="text-xs font-medium">Use it makes {saved.toMake.length === 1 ? "1 table" : `${saved.toMake.length} tables`}</span>
+                {saved.toMake.map((t) => (
+                  <div key={t.alias} className="flex min-w-0 items-center gap-2 text-xs">
+                    <Table2 className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+                    <span className="shrink-0 font-medium">{t.name}</span>
+                    <span className="truncate text-muted-foreground" title={t.fields.join(", ")}>
+                      {t.fields.join(", ")}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            ) : null}
+            {saved.made.length ? (
+              <div className="flex flex-wrap items-center gap-2 text-xs" data-applet-made-tables="">
+                {saved.made.map((t) => (
+                  <Link key={t.table_id} href={tableHref(t.table_id)} target="_blank" className="inline-flex items-center gap-1 text-primary">
+                    <Table2 className="h-3.5 w-3.5" /> {t.name}
+                  </Link>
+                ))}
+              </div>
+            ) : null}
             <div className="flex flex-wrap gap-2">
               {saved.status !== "published" ? (
-                <Button variant="primary" onClick={() => void useIt()}>
+                <Button variant="primary" disabled={busy || !userId} onClick={() => void useIt()}>
                   Use it
                 </Button>
               ) : null}

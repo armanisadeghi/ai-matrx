@@ -51,11 +51,12 @@ Package mechanics: `aidream/apps/shared/applets/FEATURE.md`.
   `KindInstanceRender`; a kind the APPLET's organization owns (read through `host.kinds` → `app.applet_kind`, so a
   viewer from another organization gets it too) compiles its stored web component with `compileStoredComponent`
   and renders it with `data={value}`; a build failure is captured (`foreign_kind_unbuilt`) and the shared floor shows.
+- `AppletWritingBox.tsx` — `renderWritingBox`: every Applet box a person writes in is ProTextarea.
 - `AppletRunOutput.tsx` — `renderRun`: a job run through `LiveRunDisplay` (→ `MarkdownStream` → kind
   registry) keyed on the run's requestId; before/without an adopted request, the run's settled kind or error.
 
 - `builder/AppletBuilder.tsx` + `builder/build-applet.ts` — one sentence → `readAppletCatalogue` (as the
-  viewer) → mandate `applets.build` (`applets.fix` for Fix it) via `useHeadlessAgentJson`, the run streaming
+  viewer; the Applet organization's tables only) → mandate `applets.build` (`applets.fix` for Fix it) via `useHeadlessAgentJson`, the run streaming
   in the floating `LiveRunWindow` → the record saved as a draft (a change = UPDATE = new version) → preview
   through `AppletHostMount preview` (live reads, writes held by `holdWrites`, errors → Fix it) → "Use it"
   publishes.
@@ -74,6 +75,7 @@ Package mechanics: `aidream/apps/shared/applets/FEATURE.md`.
 | `reportError` | `captureError({ source: "applet" })` |
 | `renderKind` | `AppletKind`: `KindInstanceRender` (the one kind pipeline, `variant="bare"`) for routable kinds; the Applet organization's own kinds through `host.kinds` + code-runtime |
 | `renderRun` | `AppletRunOutput` — `<JobOutput job>` inline (CONTRACTS amendment 2.4) |
+| `renderWritingBox` | `AppletWritingBox` — the platform's ProTextarea (dictation, read-aloud, "…" actions) on the Applet's surface, for `<WritingBox>` and `<ConversationComposer>` (amendment 2.9) |
 | `openRun` | `openLiveRunWindowAction` — the floating `LiveRunWindow`, one instance per (Applet, mandate) |
 
 Scope: `react`, `lucide-react`, `@ai-matrx/design-system/controls`, `@ai-matrx/applets/react`, plus the
@@ -98,6 +100,14 @@ record's own `scope` (`{ entries, shadowDangerousGlobals }`); app-owned modules 
 ## Change Log
 
 - 2026-10-07 — A build is a record with its own URL (lane G): `/applets/build/<id>` (the draft Applet, born at Build), request history in `metadata.build.requests` (`BuildHistory`), refresh/later visit rejoins the live run or saves the finished answer once (claim), the held-for-organization Build resumes with the pick (`ensureOrganizationForWrite`), the preview says "Saved vN", the list card shows "building". `saveBuiltApplet` no longer overwrites `metadata`; an empty draft claims the builder's slug on its first save.
+- 2026-10-07 — THE BUILDER MAKES THE TABLES IT NEEDS (lane F, applets 0.9.1, CONTRACTS v2.10). An answer may declare
+  `new_table` sources; `checkBuildAnswer` runs `checkAppletSources` (refuses a table of another organization than the
+  Applet's, a broken declaration, or a new table repeating one she has) before saving; the card lists the tables "Use it"
+  makes, the bound tables by name and organization (`features/applets/hooks/useSourceTableNames.ts`, linked to
+  `/data/<id>`); the preview answers new tables empty with held writes; "Use it" (`publishApplet`) makes them through
+  `makeNewTables` (records `ensureTable`, as her, in the Applet's organization), binds the record, then publishes.
+  The catalogue offers only the Applet organization's tables. Overview names each source's real table, not its alias.
+
 - 2026-10-07 — The builder's answer is the kind `applet_build_result` (aidream `aidream/kinds/applets.py`; `applets.build` / `applets.fix` declare it): the "Building your app" window renders it through `AppletBuildResultBlock` (name + pages as they stream, the finished app in words, code behind "Show the code"). `coerceBuildAnswer` ignores `__kind`; Open stays on the builder card (the slug exists only after save). Conversation Applet rows use `<ConversationComposer>` (applets 0.7.6).
 - 2026-10-07 — `files`, `embedded` and `renderDataPage`; the Applet's jobs are disclosed in the Agents menu; adopts applets 0.7.1, records 0.76.8, agents 0.48.0 (AP-0 lane A).
 - 2026-10-07 — Conversation turns (`useConversation`, applets 0.7.x) are teed into the live-run pipeline like job starts.
@@ -113,5 +123,6 @@ record's own `scope` (`{ entries, shadowDangerousGlobals }`); app-owned modules 
   `openRun`, mandate streams adopted into the execution system).
 - 2026-10-07 — Build by talking (AP-0 lane D, G5): `/applets/build`, `AppletBuilder`, preview mode on `AppletHostMount` (held writes via `@ai-matrx/applets/preview`, in-memory pages, errors to Fix it); `basePath` prop (default `/applets/<slug>`).
 - 2026-10-07 — Adopted `@ai-matrx/applets` 0.7.3: `hrefFor` on every Link; the code preview overlays the open unsaved file (`files`); the record's `scope` replaces `allowed_imports`/`component_code` (writers and DB readers rewritten).
+- 2026-10-07 — Adopted `@ai-matrx/applets` 0.8.0: `renderWritingBox` → `AppletWritingBox` (ProTextarea), so `<WritingBox>` and `<ConversationComposer>` carry dictation and read-aloud.
 - 2026-10-07 — "agent app" retired (lane A): the Applet runs at `/applets/<slug>` (was `/apps/<slug>`), the old
   `(public)/applets/[slug]` intro folded into the same route; owner tools at `/applets/manage/<id>/…`.
