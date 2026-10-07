@@ -88,12 +88,14 @@ await member.page.screenshot({ path: `${shots}/7-member-sees-duplicate.png` });
 await member.page.getByTestId("public-duplicate").click();
 await member.page.getByTestId("confirm-duplicate").waitFor({ timeout: 120_000 });
 await member.page.screenshot({ path: `${shots}/7b-duplicate-landing.png` });
+await member.page.waitForTimeout(5000); // hydrated: the press is the person's own act
 await member.page.getByTestId("confirm-duplicate").click();
-// No organization chosen yet in a fresh session: the platform's picker asks; take the first one offered.
+// No organization chosen yet in a fresh session: the platform's picker asks ("Which organization is this for?").
 const picker = member.page.getByRole("dialog");
-if (await picker.waitFor({ timeout: 8_000 }).then(() => true, () => false)) {
+if (await picker.waitFor({ timeout: 15_000 }).then(() => true, () => false)) {
   await member.page.screenshot({ path: `${shots}/7c-org-picker.png` });
-  await picker.getByRole("button").filter({ hasText: /Willow Bend/ }).first().click().catch(async () => picker.getByRole("option").first().click());
+  await picker.getByText("Ashford Labs", { exact: true }).click();
+  await picker.getByRole("button", { name: "Continue" }).click();
 }
 const landed = await member.page.waitForURL(/\/spaces\/[0-9a-f]{8}-[0-9a-f-]{27}$/, { timeout: 120_000 }).then(() => true, () => false);
 await member.page.waitForTimeout(3000);
