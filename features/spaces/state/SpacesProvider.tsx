@@ -24,6 +24,7 @@ import { createLiveSpacesStore, type LiveSpacesStore } from "./live-store";
 import { hasSignedInSession, isRefusal, onSignedIn, type LoadAccess } from "./load-access";
 import { sampleTemplatePlan } from "./template-plan";
 import { listTemplateIds, setTemplate, copyTemplate } from "./templates";
+import { bringTemplateTables } from "./template-tables";
 
 const FAVORITES_KEY = "spaces:favorites";
 const RECENT_KEY = "spaces:recent";
@@ -363,7 +364,15 @@ export function SpacesProvider({ children }: { children: ReactNode }) {
   };
   const applyTemplate = async (id: SpaceId, title: string) => {
     try {
-      showCopy(await copyTemplate(id, title, orgRef.current), title, id);
+      const copyId = await copyTemplate(id, title, orgRef.current);
+      // Filed in another organization: its tables come along (copied there, the blocks pointed at them).
+      try {
+        const brought = await bringTemplateTables(store, copyId, setSampleProgress);
+        if (brought) toast.info(brought === 1 ? "1 table copied with the template" : `${brought} tables copied with the template`);
+      } finally {
+        setSampleProgress(null);
+      }
+      showCopy(copyId, title, id);
     } catch (err) {
       if (!isOrganizationSelectionCancelled(err)) toast.error(err instanceof Error ? err.message : "We couldn't use this template.");
     }

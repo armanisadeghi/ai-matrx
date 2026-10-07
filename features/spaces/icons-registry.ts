@@ -1,7 +1,8 @@
 // features/spaces/icons-registry.ts — the page icons a Space can wear (Lucide only; no emoji in UI).
 //
-// A curated set instead of all of Lucide keeps the bundle small. SpaceMedia { icon: name } names one of
-// these; { url } is an image (uploaded in-tab or linked). Unknown names fall back to the page glyph.
+// The curated set draws at once; any other Lucide name ("Info", "Squirrel") draws through the platform's
+// DynamicIcon (@ai-matrx/icons, one lazy Lucide chunk) and the picker's search reaches every Lucide icon
+// (`allIconNames`, the same chunk). SpaceMedia { icon: name }; { url } is an image.
 
 import type { LucideIcon } from "lucide-react";
 import {
@@ -233,3 +234,10 @@ export const SPACE_ICONS: Record<string, LucideIcon> = {
 };
 
 export const SPACE_ICON_NAMES = Object.keys(SPACE_ICONS);
+
+let everyName: Promise<string[]> | null = null;
+/** Every Lucide icon name (PascalCase), loaded once on first search — the chunk DynamicIcon already uses. */
+export function allIconNames(): Promise<string[]> {
+  everyName ??= import("lucide-react").then((m) => Object.keys((m as unknown as { icons: Record<string, unknown> }).icons ?? {}).sort());
+  return everyName;
+}

@@ -195,7 +195,7 @@ export async function findSamplePage(store: SpacesStore): Promise<{ id: string }
  * saved in between — never the version the page had when it was made. A sample page is visible (and
  * openable) while its sub-pages are made; a write made meanwhile must not leave it empty.
  */
-async function saveOnCurrent(store: SpacesStore, id: SpaceId, build: (current: SpaceDoc) => SpaceDoc): Promise<SpaceDoc> {
+export async function saveOnCurrent(store: SpacesStore, id: SpaceId, build: (current: SpaceDoc) => SpaceDoc): Promise<SpaceDoc> {
   let last: unknown = null;
   for (let attempt = 0; attempt < 4; attempt++) {
     const current = await store.get(id);

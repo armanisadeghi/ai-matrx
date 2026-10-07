@@ -1049,24 +1049,42 @@
   position: absolute;
   z-index: 3;
   top: 0;
-  right: -37px;
+  right: -41px;
   bottom: 0;
-  width: 8px;
+  width: 16px;
   height: auto;
 }
 .spaces-column {
   width: 100%;
   height: 100%;
 }
+/* The gutter between two columns (Notion C17): a 16px grab area; hovering a column shows a faint bar in
+   it, hovering the gutter itself a strong one, so the handle is found by sight, not by luck. */
 .spaces-column-resizer {
+  position: relative;
   width: 100%;
   height: 100%;
   cursor: col-resize;
-  border-radius: 4px;
 }
-.spaces-column-resizer:hover,
-.spaces-column-resizer:active {
-  background: hsl(var(--primary) / 0.25);
+.spaces-column-resizer::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 50%;
+  width: 2px;
+  transform: translateX(-50%);
+  border-radius: 2px;
+  background: transparent;
+  transition: background 120ms ease, width 120ms ease;
+}
+.spaces-editor .bn-block:has(> .react-renderer > .bn-block-content[data-content-type="column"]):hover > .react-renderer > .bn-block-content .spaces-column-resizer::after {
+  background: var(--spaces-rule);
+}
+.spaces-editor .bn-block:has(> .react-renderer > .bn-block-content[data-content-type="column"]) > .react-renderer > .bn-block-content .spaces-column-resizer:hover::after,
+.spaces-editor .bn-block:has(> .react-renderer > .bn-block-content[data-content-type="column"]) > .react-renderer > .bn-block-content .spaces-column-resizer:active::after {
+  width: 4px;
+  background: hsl(var(--primary) / 0.6);
 }
 /* A column or column list holding ProseMirror's node selection (a click in the gutter, the caret
    landing at a list's edge) draws no selection box: between two columns its 4px ring read as a
