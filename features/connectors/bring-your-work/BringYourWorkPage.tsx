@@ -52,13 +52,30 @@ function cursorInstallHref(): string {
   return `cursor://anysphere.cursor-deeplink/mcp/install?name=ai-matrx&config=${encodeURIComponent(config)}`;
 }
 
-const MOVES: readonly { id: string; label: string; mark: React.ReactNode; app?: string; text: string }[] = [
+const NOTION_MCP_URL = "https://mcp.notion.com/mcp";
+
+/** Claude Code can add both servers itself, so its Notion prompt carries the whole job. */
+const NOTION_CLAUDE_CODE_TEXT = `Move my whole Notion workspace into AI Matrx: pages become Spaces (sub-pages, comments, icons and covers kept), databases become tables with all their rows.
+1. Make sure two MCP servers are connected; add any that are missing: claude mcp add --transport http notion ${NOTION_MCP_URL} and claude mcp add --transport http ai-matrx ${MATRX_MCP_URL}. If one needs sign-in, tell me to run /mcp and sign in, then wait.
+2. Call the AI Matrx how_to tool with topic "notion" and follow it exactly, in its order.
+3. Finish with the check list from how_to: counts per database, pages moved, and what could not come over.`;
+
+const MOVES: readonly {
+  id: string;
+  label: string;
+  mark: React.ReactNode;
+  app?: string;
+  text: string;
+  /** Replaces `text` when the person picked Claude Code. */
+  claudeCodeText?: string;
+}[] = [
   {
     id: "notion",
     label: "Move from Notion",
     mark: <NotionMark className="size-5" />,
     app: "Notion",
-    text: "Please move everything from my Notion into AI Matrx. Keep it all just the way it is, and tell me when it's done.",
+    text: "Please move everything from my Notion into AI Matrx: my pages as Spaces, my databases as tables. Keep it all just the way it is, and tell me when it's done.",
+    claudeCodeText: NOTION_CLAUDE_CODE_TEXT,
   },
   {
     id: "airtable",
@@ -286,6 +303,7 @@ export function BringYourWorkPage() {
         <div className="grid grid-cols-1 gap-2 md:grid-cols-2">
           {MOVES.map((move) => {
             const open = openPrompt === move.id;
+            const promptText = client === "claude-code" && move.claudeCodeText ? move.claudeCodeText : move.text;
             return (
               <div
                 key={move.id}
@@ -301,12 +319,16 @@ export function BringYourWorkPage() {
                   <div className="flex min-w-0 flex-1 flex-col">
                     <span className="truncate type-title text-foreground">{move.label}</span>
                     {move.app ? (
-                      <span className="type-secondary text-muted-foreground">Connect {move.app} in your AI too</span>
+                      <span className="type-secondary text-muted-foreground">
+                        {client === "claude-code" && move.claudeCodeText
+                          ? `Claude connects ${move.app} for you`
+                          : `Connect ${move.app} in your AI too`}
+                      </span>
                     ) : null}
                   </div>
                 </div>
                 <div className="flex flex-wrap items-center gap-0">
-                  <CopyAction text={move.text} label={copyFor} />
+                  <CopyAction text={promptText} label={copyFor} />
                   <Button
                     variant="quiet"
                     iconEnd={<ChevronDown className={cn("transition-transform", open && "rotate-180")} />}
@@ -317,7 +339,7 @@ export function BringYourWorkPage() {
                   </Button>
                 </div>
                 {open ? (
-                  <p className="m-0 rounded-md bg-muted/50 px-3 py-2 type-secondary text-muted-foreground">{move.text}</p>
+                  <p className="m-0 whitespace-pre-line rounded-md bg-muted/50 px-3 py-2 type-secondary text-muted-foreground">{promptText}</p>
                 ) : null}
               </div>
             );

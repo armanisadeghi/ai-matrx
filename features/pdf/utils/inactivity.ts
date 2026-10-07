@@ -5,7 +5,8 @@
  * is wrong for pipelines (a 500-page extract legitimately runs for minutes);
  * the failure mode that strands UI forever is a stream that stops EMITTING —
  * socket stalled, server hung, proxy half-closed. The watchdog aborts only
- * after `idleMs` with no events, and every callback bumps it.
+ * after `idleMs` with no events, and every callback bumps it. A separate hard
+ * `maxMs` cap (default 15 min) aborts even while heartbeats keep arriving.
  *
  * Usage:
  *   const watchdog = createInactivityWatchdog(90_000);
@@ -27,19 +28,37 @@ export interface InactivityWatchdog {
   bump: () => void;
   /** True once the watchdog (not the caller) triggered the abort. */
   readonly timedOut: boolean;
+  /** Which limit tripped: silence (`idle`) or the hard ceiling (`max`). */
+  readonly timeoutReason: "idle" | "max" | null;
   /** Clear the timer — always call in `finally`. */
   dispose: () => void;
 }
 
-export function createInactivityWatchdog(idleMs: number): InactivityWatchdog {
+/** Hard ceiling on one stream, however many heartbeats keep arriving. */
+export const DEFAULT_WATCHDOG_MAX_MS = 15 * 60_000;
+
+export function createInactivityWatchdog(
+  idleMs: number,
+  maxMs: number = DEFAULT_WATCHDOG_MAX_MS,
+): InactivityWatchdog {
   const controller = new AbortController();
   let timer: ReturnType<typeof setTimeout> | null = null;
+  let maxTimer: ReturnType<typeof setTimeout> | null = null;
   let timedOut = false;
+  let reason: "idle" | "max" | null = null;
+
+  // Absolute cap: heartbeats reset the idle timer, never this one.
+  maxTimer = setTimeout(() => {
+    timedOut = true;
+    reason = "max";
+    controller.abort();
+  }, maxMs);
 
   const arm = () => {
     if (timer) clearTimeout(timer);
     timer = setTimeout(() => {
       timedOut = true;
+      reason = "idle";
       controller.abort();
     }, idleMs);
   };
@@ -51,9 +70,14 @@ export function createInactivityWatchdog(idleMs: number): InactivityWatchdog {
     get timedOut() {
       return timedOut;
     },
+    get timeoutReason() {
+      return reason;
+    },
     dispose: () => {
       if (timer) clearTimeout(timer);
+      if (maxTimer) clearTimeout(maxTimer);
       timer = null;
+      maxTimer = null;
     },
   };
 }

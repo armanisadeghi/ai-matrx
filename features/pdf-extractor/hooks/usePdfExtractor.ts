@@ -1153,7 +1153,7 @@ export function usePdfExtractor(options: UsePdfExtractorOptions = {}) {
       let recordStatus: string | null = null;
       let confirmedUpdate = false;
       const runStreamOnce = async (): Promise<string | null> => {
-        const watchdog = createInactivityWatchdog(90_000);
+        const watchdog = createInactivityWatchdog(90_000, 15 * 60_000);
         try {
           const result = await streamPdfClean({
             docId,
@@ -1217,7 +1217,9 @@ export function usePdfExtractor(options: UsePdfExtractorOptions = {}) {
           // place the stall becomes the timeout message the retry logic sees.
           if (watchdog.timedOut) {
             throw new Error(
-              "No response from the server for 90s — the cleanup may still finish in the background. Refetch in a moment or retry.",
+              watchdog.timeoutReason === "max"
+                ? "The cleanup ran past the 15 minute limit — it may still finish in the background. Refetch in a moment or retry."
+                : "No response from the server for 90s — the cleanup may still finish in the background. Refetch in a moment or retry.",
             );
           }
           throw err;
@@ -1283,6 +1285,7 @@ export function usePdfExtractor(options: UsePdfExtractorOptions = {}) {
         }
 
         if (queued) {
+          markAutoCleanHandled(docId);
           setProcessingStatus((prev) => ({
             ...prev,
             [docId]: CLEAN_QUEUED_LABEL,
@@ -1458,7 +1461,7 @@ export function usePdfExtractor(options: UsePdfExtractorOptions = {}) {
       );
 
       // Same stall protection as cleanContent — see createInactivityWatchdog.
-      const watchdog = createInactivityWatchdog(90_000);
+      const watchdog = createInactivityWatchdog(90_000, 30 * 60_000);
       try {
         // Canonical source wire — media.file_id / media.url.
         // The server's PdfRequest reads `options.force_ocr` (NOT top-level)
@@ -1542,7 +1545,9 @@ export function usePdfExtractor(options: UsePdfExtractorOptions = {}) {
         return { success: true, childDocId };
       } catch (err) {
         const msg = watchdog.timedOut
-          ? "No response from the server for 90s — the pipeline may still finish in the background. Refetch in a moment or retry."
+          ? watchdog.timeoutReason === "max"
+            ? "The pipeline ran past the 30 minute limit — it may still finish in the background. Refetch in a moment or retry."
+            : "No response from the server for 90s — the pipeline may still finish in the background. Refetch in a moment or retry."
           : err instanceof Error
             ? err.message
             : "Pipeline run failed";
