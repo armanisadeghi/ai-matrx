@@ -9,7 +9,10 @@ import { useIsMobile } from "@ai-matrx/kit/media-query";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 
 import { Drawer, DrawerContent, DrawerTitle } from "@/components/ui/drawer";
+import { useAppSelector } from "@/lib/redux/hooks";
+import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 
+import { DatabaseDesignerHost } from "../ai/DatabaseDesigner";
 import { SpaceBuilderHost } from "../ai/SpaceBuilder";
 import { QuickFind } from "../nav/QuickFind";
 import { SpacesSidebarContent } from "../sidebar/SpacesSidebar";
@@ -99,10 +102,13 @@ function Frame({ children }: { children: ReactNode }) {
 }
 
 export function SpacesWorkspace({ children }: { children: ReactNode }) {
+  const userId = useAppSelector(selectUserId);
   return (
     <SpacesProvider>
       <SpaceBuilderHost>
-        <Frame>{children}</Frame>
+        <DatabaseDesignerHost userId={userId}>
+          <Frame>{children}</Frame>
+        </DatabaseDesignerHost>
       </SpaceBuilderHost>
     </SpacesProvider>
   );

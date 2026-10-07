@@ -42,13 +42,17 @@ import {
 } from "lucide-react";
 import { useState, type ReactNode } from "react";
 
+import { AGENT_ICON } from "@/components/icons/domain-icons";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { toast } from "@/lib/toast";
 
 import { DataMount } from "./DataMount";
 import { EntityDatabase } from "./EntityDatabase";
+import { useDatabaseDesigner } from "../ai/DatabaseDesigner";
+import { designMarkdown } from "./designed-database";
 import { FieldList, MenuRow, SidePeek, ViewerSaveBar, ViewerSortButton, ViewTab, filtersDiffer, shownFilters, shownSorts, type FilterChoice, type SortChoice } from "./menu-parts";
 import { ChartView, choicesOfField } from "./ChartView";
+import { NewPropertyPanel } from "./NewProperty";
 import { SpaceIcon } from "../page/SpaceIcon";
 import { AGENCY_SAMPLE_ID, newViewId, readDatabaseProps, type ChartSettings, type DatabaseBlockProps, type SpaceDbView, type SpaceViewLayout } from "./sources";
 
@@ -607,7 +611,9 @@ function ViewSettings({
   // choices and their colours, relation, number format, default, look) for one property or a new one.
   const [editing, setEditing] = useState<Field | "new" | null>(null);
   const canShape = editable && !sample;
-  const [page, setPage] = useState<"main" | "layout" | "group" | "x" | "yfield" | "props">("main");
+  const designer = useDatabaseDesigner();
+  const client = useRecordsClient();
+  const [page, setPage] = useState<"main" | "layout" | "group" | "x" | "yfield" | "props" | "newprop">("main");
   const chart = { ...DEFAULT_CHART, ...view.chart };
   const setChart = (p: Partial<ChartSettings>) => onView({ chart: { ...chart, ...p } });
   const label = (key?: string | null) => (key ? (fields.find((f) => f.key === key)?.label ?? key) : "None");
@@ -683,6 +689,17 @@ function ViewSettings({
                   <MenuRow key={id} icon={<Icon size={15} />} label={text} active={(props.openAs ?? "side") === id} onClick={() => editable && onBlock({ openAs: id })} />
                 ))}
                 <MenuRow icon={<Database size={15} />} label="Show database title" end={<Switch checked={props.showTitle !== false} tabIndex={-1} aria-hidden />} onClick={() => editable && onBlock({ showTitle: props.showTitle === false })} />
+                {canShape && designer.wired ? (
+                  <MenuRow
+                    icon={<AGENT_ICON size={15} />}
+                    label="Redesign with AI"
+                    onClick={() =>
+                      void designer
+                        .redesign({ spaceId: null, title: "", markdown: "", tableId, client, existingLabels: fields.map((f) => f.label), currentDesign: designMarkdown(props.title ?? "Database", fields, props.views ?? [view], []) })
+                        .then((made) => made && onBlock({ views: made.views, activeViewId: made.views[0]?.id }))
+                    }
+                  />
+                ) : null}
               </>
             ) : null}
           </>
@@ -716,9 +733,10 @@ function ViewSettings({
                 </div>
               );
             })}
-            {canShape ? <MenuRow icon={<Plus size={15} />} label="New property" onClick={() => setEditing("new")} /> : null}
+            {canShape ? <MenuRow icon={<Plus size={15} />} label="New property" onClick={() => setPage("newprop")} /> : null}
           </>
         ) : null}
+        {page === "newprop" ? <NewPropertyPanel tableId={tableId} takenKeys={fields.map((f) => f.key)} onDone={() => setPage("props")} /> : null}
         {page === "group" ? <FieldList fields={fields} value={view.groupField} onPick={(k) => (onView({ groupField: k }), setPage("main"))} /> : null}
         {page === "x" ? <FieldList fields={fields} value={chart.groupBy} onPick={(k) => (setChart({ groupBy: k }), setPage("main"))} /> : null}
         {page === "yfield" ? (

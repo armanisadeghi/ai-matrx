@@ -18,6 +18,7 @@ import { selectUserEmail, selectUserFullName, selectUserId } from "@/lib/redux/s
 import { useAccess } from "@/utils/permissions/access";
 
 import { useSourcePicker } from "../data/SourcePicker";
+import { useDatabaseDesigner } from "../ai/DatabaseDesigner";
 import { createPageDatabase } from "../data/new-database";
 import { newViewId } from "../data/sources";
 import { AskAiMenu, type AskAiTarget } from "../ai/AskAiMenu";
@@ -546,6 +547,7 @@ function SpacePageScreen({ spaceId }: { spaceId: string }) {
 
   // Every hook runs before the loading / missing returns below (React's order of hooks).
   const builder = useSpaceBuilder();
+  const designer = useDatabaseDesigner();
 
   if (doc === undefined) return <div className="spaces-page" aria-busy="true" />;
   if (doc === null) {
@@ -884,6 +886,7 @@ function SpacePageScreen({ spaceId }: { spaceId: string }) {
                   }),
                 ),
               pickSource,
+              designDatabase: designer.wired ? () => designer.design({ spaceId: doc.id, ...pageForAi() }) : undefined,
               newDatabase: async (fullPage) => {
                 try {
                   const table = await createPageDatabase(doc.id, activeOrg, userId);

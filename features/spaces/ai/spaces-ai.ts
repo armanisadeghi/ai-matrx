@@ -28,6 +28,8 @@ export const WRITING_ASSIST_KEY = declaredKey("spaces__writing_assist");
 export const ASK_PAGE_KEY = declaredKey("spaces__ask_page");
 /** "Build with AI" / "Ask AI to change this page" — the Space Builder (ai/SpaceBuilder.tsx). */
 export const BUILD_KEY = declaredKey("spaces__build");
+/** "Database with AI" / "Redesign with AI" — the Database Designer (ai/DatabaseDesigner.tsx). */
+export const DESIGN_DATABASE_KEY = declaredKey("spaces__design_database");
 
 const SURFACE_KEY = "spaces-page";
 const SOURCE_FEATURE = "documents" as const;

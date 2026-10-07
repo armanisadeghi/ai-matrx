@@ -52,21 +52,24 @@ export interface SlashContext {
    * Inline answers the table (a block shows it here); full page answers the sub-page that shows it.
    */
   newDatabase: (fullPage: boolean) => Promise<{ table: PickedSource; pageId?: string } | null>;
+  /** "Database with AI" (mandate spaces.design_database): a NEW table designed from the person's words, with its views. */
+  designDatabase?: () => Promise<{ table: PickedSource; views: SpaceDbView[] } | null>;
 }
 
 function stored(type: string, props: Record<string, unknown>): SpacesPartialBlock {
   return { type, props: { data: JSON.stringify({ props }) } } as unknown as SpacesPartialBlock;
 }
 
-function databaseBlock(src: PickedSource, view: SpaceDbView, linked: boolean): SpacesPartialBlock {
+function databaseBlock(src: PickedSource, view: SpaceDbView | SpaceDbView[], linked: boolean): SpacesPartialBlock {
+  const views = Array.isArray(view) ? view : [view];
   return stored("database", {
     source: src.entity ? { kind: "entity", token: src.entity } : { kind: "table", tableId: src.tableId },
     inline: true,
     title: src.name,
     ...(src.sample ? { sample: src.sample } : {}),
     linked,
-    views: [view],
-    activeViewId: view.id,
+    views,
+    activeViewId: views[0]?.id,
   });
 }
 
@@ -176,6 +179,23 @@ export function slashItems(editor: SpacesEditor, ctx: SlashContext): DefaultReac
         });
       },
     },
+    ...(ctx.designDatabase
+      ? [
+          {
+            title: "Database with AI",
+            subtext: "Describe what to track; AI designs it.",
+            aliases: ["ai database", "database ai", "design database", "ai table"],
+            group: database,
+            icon: <Database size={ICON} />,
+            onItemClick: () => {
+              const at = slashTarget(editor);
+              void ctx.designDatabase?.().then((made) => {
+                if (made) insertAtSlash(editor, at, databaseBlock(made.table, made.views, false));
+              });
+            },
+          },
+        ]
+      : []),
     { title: "Linked view of database", subtext: "Show a view of an existing database.", aliases: ["linked", "database", "view"], group: database, icon: <Database size={ICON} />, onItemClick: withSource((s) => databaseBlock(s, { id: newViewId(), name: "All", layout: "grid" }, true)) },
     { title: "Chart", subtext: "Chart the records of a database.", aliases: ["chart", "donut", "graph"], group: database, icon: <PieChart size={ICON} />, onItemClick: withSource((s) => databaseBlock(s, { id: newViewId(), name: s.name, layout: "chart", chart: { type: "donut", groupBy: null, op: "count", centerValue: true } }, true)) },
     { title: "Code", subtext: "Capture a code snippet.", aliases: ["code", "```", "snippet"], group: media, icon: <Code size={ICON} />, onItemClick: set({ type: "codeBlock" }) },
