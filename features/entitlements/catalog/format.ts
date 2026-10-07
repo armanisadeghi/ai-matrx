@@ -4,7 +4,7 @@
 // row — price from exact cents, the annual saving from the two prices, points
 // and limits from `limits`. Nothing here is a number about a plan.
 
-import { formatCount, formatFileSize, formatUsd } from "@ai-matrx/kit/format";
+import { formatCount, formatFileSize, formatMoney } from "@ai-matrx/kit/format";
 import { CAPABILITY_REGISTRY, isCapability } from "../registry";
 import type { BillingCycle, CatalogPlan, PlanAudience, PlanLimitPeriod } from "./types";
 
@@ -13,7 +13,7 @@ export const POINTS_CAPABILITY = "platform.points";
 
 /** Plans carry no currency column; every billing.plan price is in US cents. */
 export function formatCents(cents: number): string {
-  return formatUsd(cents / 100, { digits: "whole" });
+  return formatMoney(cents, { currency: "USD", unit: "minor", digits: "whole" });
 }
 
 export type PlanPrice =

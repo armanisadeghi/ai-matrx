@@ -6,7 +6,7 @@
 // deploy" half of that rule — without it the rows are just a nicer place to
 // hardcode.
 
-import { formatUsd, pointsToUsd } from "@ai-matrx/kit/format";
+import { formatMoney, pointsToUsd } from "@ai-matrx/kit/format";
 import { formatAdminCost } from "@/components/cost/formatAdminCost";
 
 /** One operational knob: a ceiling, backstop, cadence or default. */
@@ -124,7 +124,7 @@ export function groupPlansByAudience(plans: Plan[]): Array<{ audience: string; l
 export function planPriceLabel(plan: Pick<Plan, "monthly_cents" | "per_seat">): string {
   if (plan.monthly_cents === null) return "Custom";
   if (plan.monthly_cents === 0) return "Free";
-  const money = formatUsd(plan.monthly_cents / 100, { digits: "whole" });
+  const money = formatMoney(plan.monthly_cents, { currency: "USD", unit: "minor", digits: "whole" });
   return `${money}${plan.per_seat ? "/seat" : ""}/mo`;
 }
 
