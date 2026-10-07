@@ -11,7 +11,7 @@ import { ensureEffectiveKnob } from "@/lib/scoped-config/effectiveKnobs";
 
 import type { SpaceDoc } from "../contract";
 import { pageOrganizationId } from "../data/agency-install";
-import { SpaceCollabSession, type SpaceMeta } from "./space-collab";
+import { SpaceCollabSession, trace, type SpaceMeta } from "./space-collab";
 import type { SpaceRoom } from "./useSpaceRoom";
 
 export interface SaveCadence {
@@ -86,6 +86,7 @@ export function useSpaceCollab(args: {
       const host = live && s.isHost(present.current);
       if (host === hostRef.current) return;
       hostRef.current = host;
+      trace({ ev: "host", host, presence: present.current ? [...present.current].length : null });
       setIsHost(host);
       if (host) latest.current.onBecameHost();
     };
@@ -102,7 +103,10 @@ export function useSpaceCollab(args: {
         elect.current();
       });
     void readCadence(spaceId, userId).then(
-      (c) => live && setCadence(c),
+      (c) => {
+        trace({ ev: "cadence", ...c });
+        if (live) setCadence(c);
+      },
       (e: unknown) => console.error("[spaces] save cadence knobs", e),
     );
     return () => {

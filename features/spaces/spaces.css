@@ -1348,11 +1348,6 @@
 .spaces-mention-muted { color: var(--spaces-ink-soft); }
 .spaces-db-host { width: 100%; min-width: 0; }
 .spaces-db-loading { min-height: 120px; }
-/* A first visit: a database block in view with nothing kept settles before the body shows (database-host.tsx,
-   round 28) — the body appears whole instead of moving under a table that draws its rows late. */
-.spaces-editor:has(.spaces-db-host[data-settling]) .bn-editor { visibility: hidden; }
-/* …and the body shows once every React block has drawn into its node view (SpaceEditor.tsx, capped). */
-.spaces-editor:not(.spaces-editor-shown):has(.bn-react-node-view-renderer:empty) .bn-editor { visibility: hidden; }
 /* A chart view's loading state is its frame's own geometry (373px + the frame's 4px margins): the tile
    is its final size before the data lands (round 26, CLS). */
 .spaces-db-host[data-layout="chart"] > .spaces-db-loading, .spaces-db-host[data-layout="chart"] .spaces-db-frame.spaces-db-note { min-height: 373px; margin: 4px 0; border: 1px solid transparent; }

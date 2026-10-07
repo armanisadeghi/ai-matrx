@@ -14,4 +14,9 @@ export function isBlankBody(blocks: SpaceBlock[] | undefined): boolean {
  *  no blocks is not a change (opening a page never writes a version — it would refuse the write of
  *  whoever is filling that page, e.g. the sample being added). */
 export const contentKey = (d: Pick<SpaceDoc, "title" | "icon" | "cover" | "settings" | "blocks">) =>
-  JSON.stringify([d.title, d.icon ?? null, d.cover ?? null, d.settings, isBlankBody(d.blocks) ? [] : d.blocks]);
+  JSON.stringify([d.title, d.icon ?? null, d.cover ?? null, d.settings, isBlankBody(d.blocks) ? [] : d.blocks], skipPaintedSize);
+
+/** A database block's `paintedSize` (database-host.tsx) rides along with a save; it never makes one. */
+function skipPaintedSize(key: string, value: unknown): unknown {
+  return key === "paintedSize" ? undefined : value;
+}

@@ -8,7 +8,7 @@
 import { createReactBlockSpec } from "@blocknote/react";
 import { createExtension, defaultProps, type Extension, type ExtensionFactoryInstance } from "@blocknote/core";
 import { Plugin } from "@tiptap/pm/state";
-import { DATABASE_EVENT_CLAIMS, DatabaseHost, activeLayout } from "./database-host";
+import { DATABASE_EVENT_CLAIMS, DatabaseHost, activeLayout, readPaintedSize } from "./database-host";
 import DisplayMath from "@/features/math/components/DisplayMath";
 import InlineMathText from "@/features/math/components/InlineMathText";
 import { FileText, Globe, Paperclip, TriangleAlert } from "lucide-react";
@@ -318,7 +318,7 @@ export const storedBlockSpecs = {
   tableOfContents: storedSpec("tableOfContents", (_p, ctx) => <TableOfContents editor={ctx.editor} />),
   breadcrumb: storedSpec("breadcrumb", () => <Breadcrumb />),
   database: storedSpec("database", (p, ctx) => (
-    <DatabaseHost blockId={ctx.blockId} layout={activeLayout(p)}>
+    <DatabaseHost blockId={ctx.blockId} layout={activeLayout(p)} painted={readPaintedSize(p.paintedSize)}>
       <BlockBoundary>
         <DatabaseBlockView blockId={ctx.blockId} props={p} onChange={ctx.update} editable={(ctx.editor as unknown as { isEditable: boolean }).isEditable} />
       </BlockBoundary>
