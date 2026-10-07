@@ -96,7 +96,7 @@ export function PeekDialog({
           <DialogTitle className="flex items-center gap-2 text-base">
             {icon}
             <span className="truncate">{title}</span>
-            {headerActions ? <span className="ml-auto mr-6 shrink-0 font-normal">{headerActions}</span> : null}
+            {headerActions ? <span className="ml-auto mr-10 shrink-0 font-normal">{headerActions}</span> : null}
           </DialogTitle>
         </DialogHeader>
 

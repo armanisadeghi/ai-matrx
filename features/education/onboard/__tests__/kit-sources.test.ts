@@ -43,7 +43,7 @@ describe("kitMaterialFromSources", () => {
       ]),
     );
     expect(m.text.indexOf("chloroplast")).toBeLessThan(m.text.indexOf("fixes carbon"));
-    expect(m.title).toBe("Photosynthesis and 1 more");
+    expect(m.title).toBe("Photosynthesis");
     expect(m.sourceCount).toBe(2);
   });
 

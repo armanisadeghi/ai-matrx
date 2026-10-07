@@ -80,3 +80,18 @@ describe("humanizeSourceTitle — edge cases the camelCase split can break", () 
     expect(humanizeSourceTitle("final_v2_copy.pdf")).not.toBe("");
   });
 });
+
+import { balancedSample, NAMER_SAMPLE_CHARS } from "../kitTitle";
+
+describe("balancedSample", () => {
+  it("reads a share of every Source when there are several", () => {
+    const out = balancedSample("ignored", ["alpha ".repeat(2000), "beta ".repeat(2000), "gamma ".repeat(2000)]);
+    expect(out).toContain("alpha");
+    expect(out).toContain("beta");
+    expect(out).toContain("gamma");
+    expect(out.length).toBeLessThanOrEqual(NAMER_SAMPLE_CHARS + 40);
+  });
+  it("reads the opening of one Source", () => {
+    expect(balancedSample("hello world")).toBe("hello world");
+  });
+});

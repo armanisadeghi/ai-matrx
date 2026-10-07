@@ -33,6 +33,7 @@ import { useAppSelector } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
+import { getActiveOrgId } from "@/lib/organizations/activeOrg";
 import {
   holdDeliberateIntent,
   isOrganizationSelectionCancelled,
@@ -133,6 +134,7 @@ export function useSourceIntake(
       },
     },
     ensureOrganization: () => ensureOrgId(activeOrgId),
+    hasOrganization: () => Boolean(activeOrgId || getActiveOrgId()),
     holdIntent: holdDeliberateIntent,
     waitsForOrganization,
     failureSentence: addFailureSentence,
