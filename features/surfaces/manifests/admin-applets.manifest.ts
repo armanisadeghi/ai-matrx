@@ -62,18 +62,18 @@ const groups: SurfaceValueGroup[] = [
     label: "Dashboard",
     sortOrder: 150,
     description:
-      "Aggregate stat-tile counts and the featured / recently-updated app previews on the dashboard.",
+      "Aggregate stat-tile counts and the featured / recently-updated Applet previews on the dashboard.",
   },
   {
     key: "apps_list",
-    label: "Apps list",
+    label: "Applets list",
     sortOrder: 200,
     description:
-      "The full apps table's filters, sort, and loaded rows on the Apps tab.",
+      "The full Applets table's filters, sort, and loaded rows on the Applets tab.",
   },
   {
     key: "app_detail",
-    label: "App detail",
+    label: "Applet detail",
     sortOrder: 300,
     description:
       "The single Applet open in the edit/[id] admin shell — its identity, analytics, active tab, and timestamps.",
@@ -111,7 +111,7 @@ const surfaceSpecific: SurfaceValue[] = [
     name: "admin_section",
     label: "Admin section",
     description:
-      'Which sub-route is rendering: "dashboard", "apps", "edit", "categories", "executions", "analytics", or "rate_limits". Always present — each emitter declares its own value.',
+      'Which sub-route is rendering: "dashboard", "Applets", "edit", "categories", "executions", "analytics", or "rate_limits". Always present — each emitter declares its own value.',
     valueType: "string",
     alwaysAvailable: true,
     typicalCharCount: 10,
@@ -122,7 +122,7 @@ const surfaceSpecific: SurfaceValue[] = [
   // ── Dashboard ────────────────────────────────────────────────────────
   {
     name: "dashboard_total_apps",
-    label: "Dashboard: total apps",
+    label: "Dashboard: total Applets",
     description:
       "Total applet count shown on the dashboard stat tiles. Absent outside the dashboard section.",
     valueType: "number",
@@ -135,7 +135,7 @@ const surfaceSpecific: SurfaceValue[] = [
     name: "dashboard_published_count",
     label: "Dashboard: published count",
     description:
-      "Number of apps with status=published. Absent outside the dashboard section.",
+      "Number of Applets with status=published. Absent outside the dashboard section.",
     valueType: "number",
     alwaysAvailable: false,
     typicalCharCount: 4,
@@ -146,7 +146,7 @@ const surfaceSpecific: SurfaceValue[] = [
     name: "dashboard_featured_count",
     label: "Dashboard: featured count",
     description:
-      "Number of apps with is_featured=true. Absent outside the dashboard section.",
+      "Number of Applets with is_featured=true. Absent outside the dashboard section.",
     valueType: "number",
     alwaysAvailable: false,
     typicalCharCount: 4,
@@ -157,7 +157,7 @@ const surfaceSpecific: SurfaceValue[] = [
     name: "dashboard_verified_count",
     label: "Dashboard: verified count",
     description:
-      "Number of apps with is_verified=true. Absent outside the dashboard section.",
+      "Number of Applets with is_verified=true. Absent outside the dashboard section.",
     valueType: "number",
     alwaysAvailable: false,
     typicalCharCount: 4,
@@ -166,9 +166,9 @@ const surfaceSpecific: SurfaceValue[] = [
   },
   {
     name: "dashboard_featured_apps",
-    label: "Dashboard: featured apps",
+    label: "Dashboard: featured Applets",
     description:
-      "Up to 6 published+featured apps shown in the 'Featured apps' preview row (id, name, slug, status). Bindable rather than auto-context. Absent outside the dashboard section; empty array when none are featured.",
+      "Up to 6 published+featured Applets shown in the 'Featured Applets' preview row (id, name, slug, status). Bindable rather than auto-context. Absent outside the dashboard section; empty array when none are featured.",
     valueType: "array",
     alwaysAvailable: false,
     typicalCharCount: 600,
@@ -178,9 +178,9 @@ const surfaceSpecific: SurfaceValue[] = [
   },
   {
     name: "dashboard_recent_apps",
-    label: "Dashboard: recently updated apps",
+    label: "Dashboard: recently updated Applets",
     description:
-      "Up to 6 apps sorted by updated_at desc, shown in the 'Recently updated' preview row. Bindable rather than auto-context. Absent outside the dashboard section.",
+      "Up to 6 Applets sorted by updated_at desc, shown in the 'Recently updated' preview row. Bindable rather than auto-context. Absent outside the dashboard section.",
     valueType: "array",
     alwaysAvailable: false,
     typicalCharCount: 600,
@@ -192,9 +192,9 @@ const surfaceSpecific: SurfaceValue[] = [
   // ── Apps list ────────────────────────────────────────────────────────
   {
     name: "apps_list_total_count",
-    label: "Apps list: total count",
+    label: "Applets list: total count",
     description:
-      "Total apps loaded (before column filters are applied). Absent outside the apps-list section.",
+      "Total Applets loaded (before column filters are applied). Absent outside the apps-list section.",
     valueType: "number",
     alwaysAvailable: false,
     typicalCharCount: 4,
@@ -203,7 +203,7 @@ const surfaceSpecific: SurfaceValue[] = [
   },
   {
     name: "apps_list_filtered_count",
-    label: "Apps list: filtered count",
+    label: "Applets list: filtered count",
     description:
       "Number of rows visible after the current column filters are applied. Absent outside the apps-list section.",
     valueType: "number",
@@ -214,7 +214,7 @@ const surfaceSpecific: SurfaceValue[] = [
   },
   {
     name: "apps_list_filters",
-    label: "Apps list: active filters",
+    label: "Applets list: active filters",
     description:
       "The column filter state: name/slug/creator text filters, status/category multi-select, featured/verified tri-state. Absent outside the apps-list section.",
     valueType: "object",
@@ -225,7 +225,7 @@ const surfaceSpecific: SurfaceValue[] = [
   },
   {
     name: "apps_list_sort",
-    label: "Apps list: sort",
+    label: "Applets list: sort",
     description:
       "Which column the table is sorted by and the direction (asc/desc). Absent outside the apps-list section.",
     valueType: "object",
@@ -236,7 +236,7 @@ const surfaceSpecific: SurfaceValue[] = [
   },
   {
     name: "apps_list_table_query",
-    label: "Apps table query",
+    label: "Applets table query",
     description:
       "The canonical table's current global search, any-of query, per-column filters, sort, and pagination state. Absent outside the apps-list section.",
     valueType: "object",
@@ -247,9 +247,9 @@ const surfaceSpecific: SurfaceValue[] = [
   },
   {
     name: "apps_list_rows",
-    label: "Apps list: rows",
+    label: "Applets list: rows",
     description:
-      "The filtered+sorted apps table rows: id, name, slug, status, category, creator_email, is_featured, is_verified, total_executions, unique_users_count, success_rate, total_cost, updated_at. Bindable rather than auto-context — this can be hundreds of rows. Absent outside the apps-list section.",
+      "The filtered+sorted Applets table rows: id, name, slug, status, category, creator_email, is_featured, is_verified, total_executions, unique_users_count, success_rate, total_cost, updated_at. Bindable rather than auto-context — this can be hundreds of rows. Absent outside the apps-list section.",
     valueType: "array",
     alwaysAvailable: false,
     typicalCharCount: 4000,
@@ -261,7 +261,7 @@ const surfaceSpecific: SurfaceValue[] = [
   // ── App detail (edit/[id]) ───────────────────────────────────────────
   {
     name: "selected_app_id",
-    label: "Selected app id",
+    label: "Selected Applet id",
     description:
       "UUID of the Applet open in the admin edit shell (edit/[id]). Absent outside the edit section.",
     valueType: "string",
@@ -272,9 +272,9 @@ const surfaceSpecific: SurfaceValue[] = [
   },
   {
     name: "selected_app_summary",
-    label: "Selected app summary",
+    label: "Selected Applet summary",
     description:
-      "Identity of the app being edited: name, slug, category, creator_email, tagline, description, tags, status. Absent outside the edit section.",
+      "Identity of the Applet being edited: name, slug, category, creator_email, tagline, description, tags, status. Absent outside the edit section.",
     valueType: "object",
     alwaysAvailable: false,
     typicalCharCount: 600,
@@ -283,9 +283,9 @@ const surfaceSpecific: SurfaceValue[] = [
   },
   {
     name: "available_app_categories",
-    label: "Available app categories",
+    label: "Available Applet categories",
     description:
-      "Every system applet category NAME (platform.categories, dimension='app'), in display order — the exact vocabulary the app_category write target accepts. Absent outside the edit section; empty array when the category list failed to load.",
+      "Every system applet category NAME (platform.categories, dimension='Applet'), in display order — the exact vocabulary the app_category write target accepts. Absent outside the edit section; empty array when the category list failed to load.",
     valueType: "array",
     alwaysAvailable: false,
     typicalCharCount: 200,
@@ -294,9 +294,9 @@ const surfaceSpecific: SurfaceValue[] = [
   },
   {
     name: "selected_app_analytics",
-    label: "Selected app analytics",
+    label: "Selected Applet analytics",
     description:
-      "Aggregate counters for the app being edited: total_executions, unique_users_count, success_rate, total_cost. Absent outside the edit section.",
+      "Aggregate counters for the Applet being edited: total_executions, unique_users_count, success_rate, total_cost. Absent outside the edit section.",
     valueType: "object",
     alwaysAvailable: false,
     typicalCharCount: 120,
@@ -316,9 +316,9 @@ const surfaceSpecific: SurfaceValue[] = [
   },
   {
     name: "selected_app_timestamps",
-    label: "Selected app timestamps",
+    label: "Selected Applet timestamps",
     description:
-      "created_at, updated_at, published_at, last_execution_at for the app being edited. published_at/last_execution_at may be null. Absent outside the edit section.",
+      "created_at, updated_at, published_at, last_execution_at for the Applet being edited. published_at/last_execution_at may be null. Absent outside the edit section.",
     valueType: "object",
     alwaysAvailable: false,
     typicalCharCount: 150,
@@ -421,9 +421,9 @@ const surfaceSpecific: SurfaceValue[] = [
   },
   {
     name: "executions_app_filter",
-    label: "Executions app filter",
+    label: "Executions Applet filter",
     description:
-      "Text filter applied to the execution rows by app name/slug/id. Absent outside the Executions tab; empty when untouched.",
+      "Text filter applied to the execution rows by Applet name/slug/id. Absent outside the Executions tab; empty when untouched.",
     valueType: "string",
     alwaysAvailable: false,
     typicalCharCount: 20,
@@ -443,9 +443,9 @@ const surfaceSpecific: SurfaceValue[] = [
   },
   {
     name: "executions_app_id",
-    label: "Executions app scope",
+    label: "Executions Applet scope",
     description:
-      "App UUID from ?app= when the console is scoped to one app. Absent when showing all apps.",
+      "Applet UUID from ?Applet= when the console is scoped to one app. Absent when showing all apps.",
     valueType: "string",
     alwaysAvailable: false,
     typicalCharCount: 36,
@@ -526,7 +526,7 @@ const surfaceSpecific: SurfaceValue[] = [
     name: "analytics_totals",
     label: "Analytics: platform totals",
     description:
-      "Sum across every loaded app: totalExecutions, totalUniqueUsers, totalCost, totalTokens — plus appsMissing* counts saying how many apps reported nothing for each, which makes the matching total a floor rather than a measurement. Absent outside the analytics section.",
+      "Sum across every loaded app: totalExecutions, totalUniqueUsers, totalCost, totalTokens — plus appsMissing* counts saying how many Applets reported nothing for each, which makes the matching total a floor rather than a measurement. Absent outside the analytics section.",
     valueType: "object",
     alwaysAvailable: false,
     typicalCharCount: 100,
@@ -537,7 +537,7 @@ const surfaceSpecific: SurfaceValue[] = [
     name: "analytics_overall_success_rate",
     label: "Analytics: overall success rate",
     description:
-      "Execution-weighted success rate across all apps, as a percentage (0-100), computed over only the apps that report BOTH a rate and an execution count. Absent outside the analytics section, and absent when no app reports both.",
+      "Execution-weighted success rate across all Applets, as a percentage (0-100), computed over only the Applets that report BOTH a rate and an execution count. Absent outside the analytics section, and absent when no Applet reports both.",
     valueType: "number",
     alwaysAvailable: false,
     typicalCharCount: 6,
@@ -721,7 +721,7 @@ const writeTargets: SurfaceWriteTarget[] = [
   // ── edit/[id] shell — the app's own authored copy (entity, ask) ──────────
   {
     name: "app_metadata",
-    label: "App metadata",
+    label: "Applet metadata",
     description:
       "Rewrite the Applet's authored copy on the edit shell. Value: a partial object with any of { name?: string, tagline?: string, description?: string } — the three fields the admin's 'Edit name / tagline' modal edits. Omitted fields keep their current value; an empty string CLEARS tagline or description, but the name may never be blanked. Any other key throws: the slug, status, featured/verified/public flags, rate limits and component code are NOT authored copy. Persists immediately through the same PATCH the modal's Save button calls, and the Metadata card + selected_app_summary show the result.",
     valueType: "object",
@@ -733,9 +733,9 @@ const writeTargets: SurfaceWriteTarget[] = [
   },
   {
     name: "app_category",
-    label: "App category",
+    label: "Applet category",
     description:
-      "Assign the Applet open in the edit shell to ONE system category. Value: a single category name, matched case-insensitively against the live vocabulary published as available_app_categories (read that value first — it is the exact accepted list) and stored using that list's canonical casing. A name outside the vocabulary throws and the error names every valid option: the human picker also allows free-text categories, but an agent inventing one fragments a taxonomy that apps reference by loose text. Clearing the category is a human decision and is refused. Persists immediately through the same PATCH the metadata modal uses.",
+      "Assign the Applet open in the edit shell to ONE system category. Value: a single category name, matched case-insensitively against the live vocabulary published as available_app_categories (read that value first — it is the exact accepted list) and stored using that list's canonical casing. A name outside the vocabulary throws and the error names every valid option: the human picker also allows free-text categories, but an agent inventing one fragments a taxonomy that Applets reference by loose text. Clearing the category is a human decision and is refused. Persists immediately through the same PATCH the metadata modal uses.",
     valueType: "string",
     updatesValue: "selected_app_summary",
     mode: "entity",
@@ -745,7 +745,7 @@ const writeTargets: SurfaceWriteTarget[] = [
   },
   {
     name: "app_tags",
-    label: "App tags",
+    label: "Applet tags",
     description:
       "Set the discovery tags of the Applet open in the edit shell. Value: an array of non-empty strings that REPLACES the full tag set — to add one, include the existing tags from selected_app_summary.tags. An empty array clears every tag. Tags are a set: sending the same tag twice (case-insensitively) throws rather than being collapsed. Persists immediately through the same PATCH the metadata modal uses.",
     valueType: "array",
@@ -763,7 +763,7 @@ export const adminAppletsManifest: SurfaceManifest = {
   executor: MATRX_WEB_APP_EXECUTOR,
   executionMode: "python-stream",
   description:
-    "Agent-app admin",
+    "Applet admin",
   readiness: "verified",
   label: "Applets Admin",
   urlPattern: "/administration/applets",

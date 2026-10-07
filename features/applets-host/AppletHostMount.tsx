@@ -240,7 +240,7 @@ export function AppletHostMount({
         },
         (err: unknown) => {
           if (cancelled) return;
-          const message = err && typeof err === "object" && "message" in err ? String(err.message) : "This app could not be opened.";
+          const message = err && typeof err === "object" && "message" in err ? String(err.message) : "This Applet could not be opened.";
           setMounted({ error: message });
         },
       );
@@ -263,14 +263,14 @@ export function AppletHostMount({
   if (!mounted) {
     return (
       <div className="mx-auto max-w-5xl p-4">
-        <RegionSkeleton shape="cards" count={6} aria-label="Opening app" />
+        <RegionSkeleton shape="cards" count={6} aria-label="Opening Applet" />
       </div>
     );
   }
   if ("error" in mounted) {
     return (
       <div className="mx-auto max-w-5xl p-6">
-        <EmptyState icon={<AppWindow />} title="This app could not open" line={mounted.error} />
+        <EmptyState icon={<AppWindow />} title="This Applet could not open" line={mounted.error} />
       </div>
     );
   }

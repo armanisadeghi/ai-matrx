@@ -71,5 +71,5 @@ export function AppletEditPageClient({ app }: AppletEditPageClientProps) {
 const PROMPT_APP_DEV_MANDATE = MANDATE_KEYS.agent_apps__prompt_app_dev;
 
 const CODE_EDITOR_DISCLOSURE = [
-  { mandateKey: PROMPT_APP_DEV_MANDATE, does: "Writes and fixes this app's code with you." },
+  { mandateKey: PROMPT_APP_DEV_MANDATE, does: "Writes and fixes this Applet's code with you." },
 ] as const;

@@ -169,7 +169,7 @@ export function AppletCategoryPicker({
               <div className="px-3 py-4 text-sm text-muted-foreground">
                 <SuspenseLoader
                   centered={false}
-                  message="Loading app categories…"
+                  message="Loading Applet categories…"
                 />
               </div>
             )}

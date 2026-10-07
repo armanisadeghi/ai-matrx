@@ -56,7 +56,7 @@ const error = {
   app_slug: "fact-checker",
 } as AppletErrorRow;
 
-describe("Agent-app execution canonical table contract", () => {
+describe("Applet execution canonical table contract", () => {
   it("keeps independent filterable accessors, nullable metrics, and capped coverage", () => {
     expect(EXECUTIONS_COVERAGE).toEqual({
       noun: "execution",

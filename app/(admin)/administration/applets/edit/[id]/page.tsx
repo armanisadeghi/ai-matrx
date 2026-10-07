@@ -212,7 +212,7 @@ export default function AdminEditAppletPage({
       setApp((prev) =>
         prev ? { ...prev, ...(saved as AppletAdminView) } : prev,
       );
-      toast({ title: "Saved", description: "App metadata updated" });
+      toast({ title: "Saved", description: "Applet metadata updated" });
     } catch (err) {
       toast({
         title: "Error",
@@ -288,7 +288,7 @@ export default function AdminEditAppletPage({
           id={id}
           onRetry={() => void load()}
           fallbackHref="/administration/applets/all"
-          fallbackLabel="All apps"
+          fallbackLabel="All Applets"
         />
       </div>
     );

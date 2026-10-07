@@ -204,7 +204,7 @@ export function RateLimitsClient() {
     },
     {
       accessorKey: "app_slug",
-      header: "App slug",
+      header: "Applet slug",
       filter: "text",
       width: 180,
       hidden: true,
@@ -405,7 +405,7 @@ export function RateLimitsClient() {
           toolbar={{
             title: "Rate limits",
             search: true,
-            searchPlaceholder: "Search apps and identifiers…",
+            searchPlaceholder: "Search Applets and identifiers…",
             facets: [
               {
                 type: "button-group",

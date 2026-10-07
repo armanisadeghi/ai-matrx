@@ -19,7 +19,7 @@ export default function AppletManageUnavailable() {
         token="app"
         id={id}
         fallbackHref="/applets"
-        fallbackLabel="Your apps"
+        fallbackLabel="Your Applets"
       />
     </div>
   );

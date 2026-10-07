@@ -330,11 +330,11 @@ export function appletsCopyConfig(): MatrxDataTableCopyConfig<AppletAdminView> {
       {
         id: "briefs",
         label: "This view briefs",
-        hint: "One line per app currently shown",
+        hint: "One line per Applet currently shown",
         build: () => ({
           kind: "applets-briefs",
           location: "AI Matrx Admin — Applets",
-          description: "One-line briefs for the apps currently shown.",
+          description: "One-line briefs for the Applets currently shown.",
           data: visibleApps.map(appBrief),
           attributes: { count: visibleApps.length },
         }),
@@ -348,14 +348,14 @@ export function appletsCopyConfig(): MatrxDataTableCopyConfig<AppletAdminView> {
           kind: "toggle",
           key: "onlyFiltered",
           label: "Only this view",
-          hint: "Off = every loaded app",
+          hint: "Off = every loaded Applet",
           default: true,
         },
         {
           kind: "toggle",
           key: "includeDescription",
           label: "Include description",
-          hint: "Adds each app's full description text",
+          hint: "Adds each Applet's full description text",
           default: false,
         },
       ],
@@ -561,7 +561,7 @@ export default function AppletsAdminListPage() {
                       >
                         {app.is_featured
                           ? "Remove from featured"
-                          : "Feature app"}
+                          : "Feature Applet"}
                       </DropdownMenuItem>
                       <DropdownMenuItem
                         onSelect={() =>
@@ -572,7 +572,7 @@ export default function AppletsAdminListPage() {
                           )
                         }
                       >
-                        {app.is_verified ? "Remove verification" : "Verify app"}
+                        {app.is_verified ? "Remove verification" : "Verify Applet"}
                       </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>

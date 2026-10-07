@@ -9,12 +9,15 @@ import type { ReactNode } from "react";
 
 import { AppletHostMount } from "@/features/applets-host/AppletHostMount";
 import { resolveAppletRoute } from "@/features/applets-host/resolve-applet-route";
+import { showsAppletIntro } from "@/features/marketing/applets/publicApplets.server";
 import { getSessionVerdict } from "@/utils/supabase/sessionVerdict";
 
-export default async function AppletLayout({ children, params }: { children: ReactNode; params: Promise<{ app: string }> }) {
-  const { app } = await params;
+export default async function AppletLayout({ children, params }: { children: ReactNode; params: Promise<{ slug: string }> }) {
+  const { slug } = await params;
   const { isAuthenticated } = await getSessionVerdict();
-  const applet = isAuthenticated ? await resolveAppletRoute(app) : null;
+  // A template's address is its introductory page (the page renders it), never a running copy.
+  const intro = isAuthenticated ? await showsAppletIntro(decodeURIComponent(slug), true) : null;
+  const applet = isAuthenticated && !intro ? await resolveAppletRoute(slug) : null;
   if (!applet) return <>{children}</>;
   return (
     <main className="min-h-dvh bg-background text-foreground">

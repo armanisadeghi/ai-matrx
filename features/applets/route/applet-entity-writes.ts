@@ -93,7 +93,7 @@ export function buildAppletEntityWriteHandlers({
     const app = getApp();
     if (!app) {
       throw new Error(
-        `Cannot apply ${target}: no Applet is open yet on this page. Wait for the app to load, or open an app at /applets/manage/[id] first.`,
+        `Cannot apply ${target}: no Applet is open yet on this page. Wait for the Applet to load, or open an Applet at /applets/manage/[id] first.`,
       );
     }
     return app;

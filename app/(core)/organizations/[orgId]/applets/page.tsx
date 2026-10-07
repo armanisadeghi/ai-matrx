@@ -62,7 +62,7 @@ export default function OrgAppletsPage() {
           ownedQuery={fetchOwned}
           mapRow={mapRow}
           emptyTitle="No shared Applets yet"
-          emptyDescription="Applets you publish under this organization will appear here, along with apps other members share with this organization."
+          emptyDescription="Applets you publish under this organization will appear here, along with Applets other members share with this organization."
           emptyIcon={<LayoutGrid className="h-8 w-8 text-rose-600 dark:text-rose-400" />}
         />
       )}

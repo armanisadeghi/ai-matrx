@@ -119,7 +119,7 @@ export function AppletHeader({
         await dispatch(
           setAppletPublication({ appId, published: !isPublished }),
         ).unwrap();
-        toast.success(isPublished ? "App unpublished." : "App published.");
+        toast.success(isPublished ? "Applet unpublished." : "Applet published.");
       } catch (error) {
         toast.error(
           error instanceof Error

@@ -16,10 +16,10 @@ import { PUBLIC_GALLERY_PATH } from "@/features/make/gallery/publicGallery";
 export const revalidate = 3600;
 
 export const metadata: Metadata = createRouteMetadata(APPLET_TEMPLATES_PATH, {
-  title: "App templates",
-  description: "Ready-made apps for client approvals, sales pipelines and time tracking, with their tables and sample data. Pick one and it is yours.",
+  title: "Applet templates",
+  description: "Ready-made Applets for client approvals, sales pipelines and time tracking, with their tables and sample data. Pick one and it is yours.",
   canonicalPath: APPLET_TEMPLATES_PATH,
-  keywords: ["app templates", "no-code app", "client portal template", "crm template", "time tracking template"],
+  keywords: ["Applet templates", "no-code Applet", "client portal template", "crm template", "time tracking template"],
 });
 
 export default async function AppletTemplatesPage() {
@@ -32,7 +32,7 @@ export default async function AppletTemplatesPage() {
             <Link href={PUBLIC_GALLERY_PATH} className="type-body text-muted-foreground hover:text-foreground">
               All templates
             </Link>
-            <h1 className="text-3xl font-semibold tracking-tight">App templates</h1>
+            <h1 className="text-3xl font-semibold tracking-tight">Applet templates</h1>
             <span className="type-body text-muted-foreground tabular-nums">{cards.length} templates</span>
           </div>
           <AppletSignUpLink href={signUpHref(APPLET_TEMPLATES_PATH)} />

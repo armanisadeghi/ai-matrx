@@ -29,14 +29,14 @@ export const APPLETS_SURFACE_NAME = "matrx-user/agent-apps";
 const groups: SurfaceValueGroup[] = [
   {
     key: "app_identity",
-    label: "App identity",
+    label: "Applet identity",
     sortOrder: 100,
     description:
       "Which Applet is open: naming, lifecycle and version.",
   },
   {
     key: "app_content",
-    label: "App content",
+    label: "Applet content",
     sortOrder: 200,
     description:
       "What the Applet is made of: its code files, entry, pages, jobs and data sources.",
@@ -46,7 +46,7 @@ const groups: SurfaceValueGroup[] = [
     label: "Run state",
     sortOrder: 300,
     description:
-      "Which workspace UI is active and the app's accumulated usage evidence.",
+      "Which workspace UI is active and the Applet's accumulated usage evidence.",
   },
   {
     key: "catalog",
@@ -61,9 +61,9 @@ const surfaceSpecific: SurfaceValue[] = [
   // ── App identity ──────────────────────────────────────────────────────
   {
     name: "app_id",
-    label: "App ID",
+    label: "Applet ID",
     description:
-      "UUID of the Applet open in the workspace (`/applets/manage/[id]`). Empty on the hub grid, templates, and /new — no app is open there.",
+      "UUID of the Applet open in the workspace (`/applets/manage/[id]`). Empty on the hub grid, templates, and /new — no Applet is open there.",
     valueType: "string",
     alwaysAvailable: false,
     typicalCharCount: 36,
@@ -72,9 +72,9 @@ const surfaceSpecific: SurfaceValue[] = [
   },
   {
     name: "app_slug",
-    label: "App slug",
+    label: "Applet slug",
     description:
-      "URL slug of the open app — the public route is `/p/[slug]`. Empty when no app is open.",
+      "URL slug of the open Applet — the public route is `/p/[slug]`. Empty when no Applet is open.",
     valueType: "string",
     alwaysAvailable: false,
     typicalCharCount: 30,
@@ -83,9 +83,9 @@ const surfaceSpecific: SurfaceValue[] = [
   },
   {
     name: "app_name",
-    label: "App name",
+    label: "Applet name",
     description:
-      "Display name of the open Applet. Empty when no app is open.",
+      "Display name of the open Applet. Empty when no Applet is open.",
     valueType: "string",
     alwaysAvailable: false,
     typicalCharCount: 40,
@@ -94,9 +94,9 @@ const surfaceSpecific: SurfaceValue[] = [
   },
   {
     name: "app_tagline",
-    label: "App tagline",
+    label: "Applet tagline",
     description:
-      "Short marketing tagline of the open app. Empty when no app is open or the app has no tagline.",
+      "Short marketing tagline of the open app. Empty when no Applet is open or the Applet has no tagline.",
     valueType: "string",
     alwaysAvailable: false,
     typicalCharCount: 80,
@@ -105,9 +105,9 @@ const surfaceSpecific: SurfaceValue[] = [
   },
   {
     name: "app_description",
-    label: "App description",
+    label: "Applet description",
     description:
-      "Longer description of what the open app does. Empty when no app is open or none was written.",
+      "Longer description of what the open Applet does. Empty when no Applet is open or none was written.",
     valueType: "string",
     alwaysAvailable: false,
     typicalCharCount: 300,
@@ -116,9 +116,9 @@ const surfaceSpecific: SurfaceValue[] = [
   },
   {
     name: "app_status",
-    label: "App status",
+    label: "Applet status",
     description:
-      "Lifecycle status of the open app: draft, published, archived, or suspended. Empty when no app is open.",
+      "Lifecycle status of the open app: draft, published, archived, or suspended. Empty when no Applet is open.",
     valueType: "string",
     alwaysAvailable: false,
     typicalCharCount: 10,
@@ -127,9 +127,9 @@ const surfaceSpecific: SurfaceValue[] = [
   },
   {
     name: "app_category",
-    label: "App category",
+    label: "Applet category",
     description:
-      "Category label of the open app. Empty when no app is open or the app is uncategorized.",
+      "Category label of the open app. Empty when no Applet is open or the Applet is uncategorized.",
     valueType: "string",
     alwaysAvailable: false,
     typicalCharCount: 20,
@@ -138,9 +138,9 @@ const surfaceSpecific: SurfaceValue[] = [
   },
   {
     name: "app_tags",
-    label: "App tags",
+    label: "Applet tags",
     description:
-      "Tag strings on the open app. Absent when no app is open; empty array when the app has no tags.",
+      "Tag strings on the open app. Absent when no Applet is open; empty array when the Applet has no tags.",
     valueType: "array",
     alwaysAvailable: false,
     typicalCharCount: 80,
@@ -151,7 +151,7 @@ const surfaceSpecific: SurfaceValue[] = [
     name: "app_visibility",
     label: "Published to the web",
     description:
-      '"Published to the web" (anyone, signed in or not, reaches it at `/p/[slug]`) or "Not published" — the open app\'s web state. Absent when no app is open.',
+      '"Published to the web" (anyone, signed in or not, reaches it at `/p/[slug]`) or "Not published" — the open Applet\'s web state. Absent when no Applet is open.',
     valueType: "string",
     alwaysAvailable: false,
     typicalCharCount: 5,
@@ -162,7 +162,7 @@ const surfaceSpecific: SurfaceValue[] = [
     name: "app_version",
     label: "Current version",
     description:
-      "The open app's current version number (increments on publish-worthy saves). Absent when no app is open.",
+      "The open Applet's current version number (increments on publish-worthy saves). Absent when no Applet is open.",
     valueType: "number",
     alwaysAvailable: false,
     typicalCharCount: 3,
@@ -171,7 +171,7 @@ const surfaceSpecific: SurfaceValue[] = [
   },
   {
     name: "app_summary",
-    label: "App summary",
+    label: "Applet summary",
     description:
       "Composite of the open Applet's identity as one object: { id, slug, name, tagline, status, category, tags, published_to_web, version }. Mirrors the individual identity values (completeness law). Absent when no Applet is open.",
     valueType: "object",
@@ -183,7 +183,7 @@ const surfaceSpecific: SurfaceValue[] = [
 
   {
     name: "app_bundle",
-    label: "Open app",
+    label: "Open Applet",
     description:
       "The open Applet condensed as one XML bundle — read this first: <applet id name slug public_url status published_to_web category tags version entry view> with <tagline>, <description>, <pages> (one <page path title file/> each), <jobs> (one <job alias key/> each), <sources> (one <source alias table_id|entity/> each), <files> (one <file name chars/> each) and <usage runs success_rate last_run/>. The full sources are app_files. Absent when no Applet is open or it has not loaded yet.",
     valueType: "string",
@@ -268,7 +268,7 @@ const surfaceSpecific: SurfaceValue[] = [
     name: "usage_stats",
     label: "Usage statistics",
     description:
-      "Accumulated execution evidence of the open app: { total_executions, total_tokens_used, total_cost, unique_users_count, success_rate, avg_execution_time_ms, last_execution_at }. Absent when no app is open; individual fields are null until the app has run.",
+      "Accumulated execution evidence of the open app: { total_executions, total_tokens_used, total_cost, unique_users_count, success_rate, avg_execution_time_ms, last_execution_at }. Absent when no Applet is open; individual fields are null until the Applet has run.",
     valueType: "object",
     alwaysAvailable: false,
     typicalCharCount: 250,
@@ -281,7 +281,7 @@ const surfaceSpecific: SurfaceValue[] = [
   // ── Catalog (hub grid) ────────────────────────────────────────────────
   {
     name: "listed_app_count",
-    label: "Listed app count",
+    label: "Listed Applet count",
     description:
       "Number of Applets shown on the hub grid. Absent on `/applets/manage/[id]` routes — the grid is not mounted there.",
     valueType: "number",
@@ -292,9 +292,9 @@ const surfaceSpecific: SurfaceValue[] = [
   },
   {
     name: "listed_apps_summary",
-    label: "Listed apps",
+    label: "Listed Applets",
     description:
-      "One entry per app card on the hub grid with { id, slug, name, status }, in display order. Absent on `/applets/manage/[id]` routes; empty array when the user has no apps.",
+      "One entry per Applet card on the hub grid with { id, slug, name, status }, in display order. Absent on `/applets/manage/[id]` routes; empty array when the user has no apps.",
     valueType: "array",
     alwaysAvailable: false,
     typicalCharCount: 1200,
@@ -366,9 +366,9 @@ const surfaceSpecific: SurfaceValue[] = [
 const writeTargets: SurfaceWriteTarget[] = [
   {
     name: "app_name",
-    label: "App name",
+    label: "Applet name",
     description:
-      "Stages a new display name into the open app's Name field on the Settings > Overview tab. Value: a non-empty plain string, which REPLACES the current name. This is a draft — it lands in the input with a Save button beside it and the user still presses Save, so the app_name read value does not change until they do.",
+      "Stages a new display name into the open Applet's Name field on the Settings > Overview tab. Value: a non-empty plain string, which REPLACES the current name. This is a draft — it lands in the input with a Save button beside it and the user still presses Save, so the app_name read value does not change until they do.",
     valueType: "string",
     updatesValue: "app_name",
     mode: "draft",
@@ -378,9 +378,9 @@ const writeTargets: SurfaceWriteTarget[] = [
   },
   {
     name: "app_tagline",
-    label: "App tagline",
+    label: "Applet tagline",
     description:
-      "Stages a one-line marketing tagline into the open app's Tagline field on the Settings > Overview tab — the short line shown under the app name in the hub and on the public page. Value: a plain string (pass an empty string to clear it), which REPLACES the current tagline. This is a draft — the user still presses Save, so the app_tagline read value does not change until they do.",
+      "Stages a one-line marketing tagline into the open Applet's Tagline field on the Settings > Overview tab — the short line shown under the Applet name in the hub and on the public page. Value: a plain string (pass an empty string to clear it), which REPLACES the current tagline. This is a draft — the user still presses Save, so the app_tagline read value does not change until they do.",
     valueType: "string",
     updatesValue: "app_tagline",
     mode: "draft",
@@ -390,9 +390,9 @@ const writeTargets: SurfaceWriteTarget[] = [
   },
   {
     name: "app_description",
-    label: "App description",
+    label: "Applet description",
     description:
-      "Stages the longer description of what the open app does into the Description field on the Settings > Overview tab. Value: a plain string (pass an empty string to clear it), which REPLACES the full description rather than appending — read app_description first and include any existing text you want kept. This is a draft — the user still presses Save, so the app_description read value does not change until they do.",
+      "Stages the longer description of what the open Applet does into the Description field on the Settings > Overview tab. Value: a plain string (pass an empty string to clear it), which REPLACES the full description rather than appending — read app_description first and include any existing text you want kept. This is a draft — the user still presses Save, so the app_description read value does not change until they do.",
     valueType: "string",
     updatesValue: "app_description",
     mode: "draft",
@@ -402,9 +402,9 @@ const writeTargets: SurfaceWriteTarget[] = [
   },
   {
     name: "app_category",
-    label: "App category",
+    label: "Applet category",
     description:
-      "Sets the open app's category. Saved to the database immediately — there is no draft to review. Value: a plain string naming the category, or null to clear it. The category is free text rather than a fixed enum (the picker offers system categories and accepts a custom one), so prefer an existing category name from the catalog over inventing a near-duplicate.",
+      "Sets the open Applet's category. Saved to the database immediately — there is no draft to review. Value: a plain string naming the category, or null to clear it. The category is free text rather than a fixed enum (the picker offers system categories and accepts a custom one), so prefer an existing category name from the catalog over inventing a near-duplicate.",
     valueType: "string",
     updatesValue: "app_category",
     mode: "entity",
@@ -414,9 +414,9 @@ const writeTargets: SurfaceWriteTarget[] = [
   },
   {
     name: "app_tags",
-    label: "App tags",
+    label: "Applet tags",
     description:
-      "Sets the open app's tags. Saved to the database immediately — there is no draft to review. Value: an array of non-empty plain strings. This REPLACES the FULL tag set rather than appending — read app_tags first and include every existing tag you want kept, or they are dropped. Pass an empty array to remove all tags.",
+      "Sets the open Applet's tags. Saved to the database immediately — there is no draft to review. Value: an array of non-empty plain strings. This REPLACES the FULL tag set rather than appending — read app_tags first and include every existing tag you want kept, or they are dropped. Pass an empty array to remove all tags.",
     valueType: "array",
     updatesValue: "app_tags",
     mode: "entity",
@@ -432,7 +432,7 @@ export const appletsManifest: SurfaceManifest = {
   executor: MATRX_WEB_APP_EXECUTOR,
   executionMode: "python-stream",
   description:
-    "Applets: the editor and hub for a person's small apps (files, pages, jobs, sources)",
+    "Applets: the editor and hub for a person's small Applets (files, pages, jobs, sources)",
   readiness: "partial",
   readinessNote:
     "AP-0 lane B3 2026-10-07: values describe the Applet record (files, entry, pages, jobs, sources); the shell/slot/agent/run keys are gone. Live probe and agent write proof are pending.",

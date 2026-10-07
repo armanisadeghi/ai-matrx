@@ -16,12 +16,12 @@ export function AppletsListHeader() {
             (agent_apps.prompt_app_dev) the builder may swap for their own,
             with no deploy. Deep-linked to the `agent_apps` domain: the bare
             list is 264 mandates across 45 domains. */}
-        <MandateDoorLink feature="agent_apps" label="App builder agents" />
+        <MandateDoorLink feature="agent_apps" label="Applet builder agents" />
         <TapTargetButtonSolid
           href="/applets/build"
           icon={<Plus className="h-4 w-4" />}
-          label="New app"
-          ariaLabel="New app"
+          label="New Applet"
+          ariaLabel="New Applet"
         />
       </HeaderActionsSlot>
     </div>

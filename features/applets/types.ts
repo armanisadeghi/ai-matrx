@@ -15,7 +15,7 @@ export type AppStatus = "draft" | "published" | "archived" | "suspended";
 export type AppShownTo = Database["platform"]["Enums"]["shown_to"];
 
 /** The generated row, for the few readers that take it whole. */
-export type AppletRow = Database["app"]["Tables"]["definition"]["Row"];
+export type AppletTableRow = Database["app"]["Tables"]["definition"]["Row"];
 
 export interface AppletDefinition {
   id: string;

@@ -251,7 +251,7 @@ export function AppletsGrid({
           }
           throw new Error(message);
         }
-        toast.success("App duplicated.");
+        toast.success("Applet duplicated.");
         dispatch(fetchAppsInitial());
       } catch (err) {
         toast.error(
@@ -274,7 +274,7 @@ export function AppletsGrid({
     async (app: AppletCardModel) => {
       const ok = await confirm({
         title: "Delete Applet",
-        description: `This archives "${app.name}". It stops running and disappears from your apps; an admin can restore it.`,
+        description: `This archives "${app.name}". It stops running and disappears from your Applets; an admin can restore it.`,
         confirmLabel: "Delete",
         variant: "destructive",
       });
@@ -282,7 +282,7 @@ export function AppletsGrid({
       setDeletingIds((prev) => new Set(prev).add(app.id));
       try {
         await dispatch(deleteApp(app.id)).unwrap();
-        toast.success("App deleted.");
+        toast.success("Applet deleted.");
       } catch (err) {
         toast.error(
           err instanceof Error
@@ -331,7 +331,7 @@ export function AppletsGrid({
       isEditable={false}
     >
       <NonEditableContextMenu
-        sourceFeature="applet"
+        sourceFeature="agent-app"
         surfaceName={APPLETS_SURFACE_NAME}
         menuVersion={1}
         getApplicationScope={getSurfaceScope}
@@ -409,14 +409,14 @@ export function AppletsGrid({
                   type="text"
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  placeholder="Search apps, jobs, descriptions…"
+                  placeholder="Search Applets, jobs, descriptions…"
                   className="flex-1 bg-transparent border-0 outline-none text-sm text-foreground placeholder:text-muted-foreground"
                 />
                 {searchTerm && (
                   <XTapButton
                     onClick={() => setSearchTerm("")}
                     variant="transparent"
-                    ariaLabel="Clear app search"
+                    ariaLabel="Clear Applet search"
                     tooltip="Clear search"
                     className="text-muted-foreground"
                   />
@@ -461,7 +461,7 @@ export function AppletsGrid({
                   id: app.id,
                   label: app.name,
                 }))}
-                toastLabel={`${filteredApps.length} app${filteredApps.length === 1 ? "" : "s"}`}
+                toastLabel={`${filteredApps.length} Applet${filteredApps.length === 1 ? "" : "s"}`}
               />
             )}
 
@@ -476,7 +476,7 @@ export function AppletsGrid({
                     kind: "applets",
                     location: "AI Matrx — Applets",
                     description:
-                      "The apps currently shown by the /applets grid (filtered).",
+                      "The Applets currently shown by the /applets grid (filtered).",
                     data: filteredApps,
                     attributes: { count: filteredApps.length, tab, sortBy },
                     context: { searchTerm, archFilter, visibilityFilter },
@@ -485,25 +485,25 @@ export function AppletsGrid({
                     {
                       id: "view-briefs",
                       label: "This view briefs",
-                      hint: "One line per app currently shown",
+                      hint: "One line per Applet currently shown",
                       build: () => ({
                         kind: "applets-briefs",
                         location: "AI Matrx — Applets",
                         description:
-                          "One-line briefs for the apps currently shown.",
+                          "One-line briefs for the Applets currently shown.",
                         data: filteredApps.map(appBrief),
                         attributes: { count: filteredApps.length },
                       }),
                     },
                     {
                       id: "all-briefs",
-                      label: "All apps briefs",
-                      hint: "One line per app, ignoring filters",
+                      label: "All Applets briefs",
+                      hint: "One line per Applet, ignoring filters",
                       build: () => ({
                         kind: "applets-briefs",
                         location: "AI Matrx — Applets",
                         description:
-                          "One-line briefs for every app, regardless of the active filters.",
+                          "One-line briefs for every Applet, regardless of the active filters.",
                         data: allAppCardModels.map(appBrief),
                         attributes: { count: allAppCardModels.length },
                       }),
@@ -585,8 +585,8 @@ export function AppletsGrid({
                   <div>
                     <h3 className="text-xl font-semibold mb-2">
                       {hasActiveFilters
-                        ? "No apps match your filters"
-                        : "Create your first app"}
+                        ? "No Applets match your filters"
+                        : "Create your first Applet"}
                     </h3>
                     <p className="text-muted-foreground">
                       {hasActiveFilters

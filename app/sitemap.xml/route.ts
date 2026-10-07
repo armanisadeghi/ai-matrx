@@ -9,7 +9,7 @@ import { readPublicCatalogue } from '@/features/make/gallery/publicCatalogue.ser
 import { industryHref, jobHref, PUBLIC_GALLERY_PATH, publicTemplateHref } from '@/features/make/gallery/publicGallery'
 import { facetValues } from '@/features/make/gallery/catalogue'
 import { readPublicApplets } from '@/features/marketing/applets/publicApplets.server'
-import { APPLET_TEMPLATES_PATH, appletIntroHref } from '@/features/marketing/applets/types'
+import { APPLET_TEMPLATES_PATH, appletHref } from '@/features/marketing/applets/types'
 
 /**
  * THE INDEXED SWITCH (access ladder T-12): every published record in the sitemap comes from
@@ -163,7 +163,7 @@ export async function GET() {
     { loc: `${baseUrl}${APPLET_TEMPLATES_PATH}`, changefreq: 'weekly', priority: '0.8' },
     ...publishedApplets
       .filter((a) => a.is_template || indexedAppIds.has(a.id))
-      .map((a) => ({ loc: `${baseUrl}${appletIntroHref(a.slug)}`, changefreq: 'weekly', priority: a.is_template ? '0.7' : '0.5' })),
+      .map((a) => ({ loc: `${baseUrl}${appletHref(a.slug)}`, changefreq: 'weekly', priority: a.is_template ? '0.7' : '0.5' })),
   ]
 
   const urls = [

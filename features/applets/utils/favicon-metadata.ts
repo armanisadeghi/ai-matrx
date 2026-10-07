@@ -49,7 +49,7 @@ function initialsForName(name: string): string {
 const RETIRED_STORAGE_HOST_REF = "txzxabzwovsujtloxrus";
 
 /**
- * Agent-app tab icon.
+ * Applet tab icon.
  *
  * Computed inline as a `data:` URI — there is no hosted favicon file and no
  * server round-trip. `faviconUrl` is only honoured for legacy rows that were

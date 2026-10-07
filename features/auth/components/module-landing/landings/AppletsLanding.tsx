@@ -16,7 +16,7 @@ import {
 const CAPABILITIES: ModuleCapability[] = [
   {
     icon: Wrench,
-    title: "Wrap any agent as an app",
+    title: "Wrap any agent as an Applet",
     description:
       "Take a powerful agent, expose only the right controls, ship it as a one-click app. Your team gets a button — not a chat prompt to learn.",
   },
@@ -24,7 +24,7 @@ const CAPABILITIES: ModuleCapability[] = [
     icon: LayoutGrid,
     title: "Forms, not freeform",
     description:
-      "Apps render with structured inputs, validated fields, and clear actions. The agent handles the reasoning; the user fills in the form.",
+      "Applets render with structured inputs, validated fields, and clear actions. The agent handles the reasoning; the user fills in the form.",
   },
   {
     icon: Workflow,
@@ -42,7 +42,7 @@ const CAPABILITIES: ModuleCapability[] = [
     icon: Lock,
     title: "Guardrails built in",
     description:
-      "Rate limits, allowed tools, allowed models, output validation — all configured at the app level. End-users can't blow the budget.",
+      "Rate limits, allowed tools, allowed models, output validation — all configured at the Applet level. End-users can't blow the budget.",
   },
 ];
 
@@ -51,7 +51,7 @@ const STEPS: ModuleStep[] = [
     number: "01",
     title: "Pick the agent that does the work",
     description:
-      "Start from your agent library or fork a template. The app inherits the agent's tools, knowledge, and playbook.",
+      "Start from your agent library or fork a template. The Applet inherits the agent's tools, knowledge, and playbook.",
   },
   {
     number: "02",
@@ -69,13 +69,13 @@ const STEPS: ModuleStep[] = [
 
 const SUB_AREAS: ModuleSubArea[] = [
   {
-    title: "My apps",
+    title: "My Applets",
     status: "Live",
     href: "/applets",
     items: ["Build and edit", "Live preview", "Version history", "Org-shared"],
   },
   {
-    title: "App marketplace",
+    title: "Applet marketplace",
     status: "Live",
     href: "/applets",
     items: ["Public templates", "Fork to customize", "Featured by category", "Usage stats"],
@@ -86,7 +86,7 @@ const SUB_AREAS: ModuleSubArea[] = [
     items: ["Public share links", "iFrame embeds", "Custom domains", "Webhook callbacks"],
   },
   {
-    title: "Headless app API",
+    title: "Headless Applet API",
     status: "Coming soon",
     items: ["Programmatic runs", "Bulk inputs", "Org-scoped keys", "Stream + replay"],
   },
@@ -100,18 +100,18 @@ export default function AppletsLanding() {
       eyebrowIcon={AppWindow}
       headline="Agents in"
       headlineGradient="app-shaped clothing."
-      description="Take a complex agent, wrap it in a clean form, ship it as a one-click tool your team and clients can actually use. Apps in AI Matrx turn agents into shippable products."
+      description="Take a complex agent, wrap it in a clean form, ship it as a one-click tool your team and clients can actually use. Applets in AI Matrx turn agents into shippable products."
       primaryCtaHref="/sign-up?source=applets-landing"
-      primaryCtaLabel="Build Your First App Free"
+      primaryCtaLabel="Build Your First Applet Free"
       workspaceHref="/applets"
       workspaceLabel="Applets"
       capabilitiesHeading="From prompt to product"
       capabilitiesDescription="Five capabilities that turn a powerful agent into a tool your users won't need a manual to operate."
       capabilities={CAPABILITIES}
-      stepsDescription="From a working agent to a shareable app in three steps."
+      stepsDescription="From a working agent to a shareable Applet in three steps."
       steps={STEPS}
-      subAreasHeading="App surfaces"
-      subAreasDescription="Build apps, browse the marketplace, share with whomever."
+      subAreasHeading="Applet surfaces"
+      subAreasDescription="Build Applets, browse the marketplace, share with whomever."
       subAreas={SUB_AREAS}
       finalCtaHeading="Stop teaching colleagues to prompt"
       finalCtaDescription="Wrap the agent. Ship the app. Watch adoption climb. Free to start, no credit card."

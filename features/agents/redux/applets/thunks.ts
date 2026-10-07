@@ -14,6 +14,7 @@
  * stubbed below until the composition table lands.
  */
 
+import { assertAppletSlugAllowed } from "@/features/applets/reserved-slugs";
 import { createAsyncThunk } from "@reduxjs/toolkit";
 import { supabase } from "@/utils/supabase/client";
 import { pgErrorToError } from "@ai-matrx/data";
@@ -128,7 +129,7 @@ export const saveApp = createAsyncThunk<void, string, ThunkApi>(
   "applet/save",
   async (appId, { dispatch, getState }) => {
     const record = getState().applet.apps[appId];
-    if (!record) throw new Error(`App ${appId} not in slice`);
+    if (!record) throw new Error(`Applet ${appId} not in slice`);
     if (!record._dirty) return;
 
     const dirtyKeys = fieldFlagsKeys(record._dirtyFields);
@@ -147,6 +148,7 @@ export const saveApp = createAsyncThunk<void, string, ThunkApi>(
     // before the field is set. A dirty patch should never carry a null org
     // id — omit it rather than send a value the column will reject.
     const columnPatch = patch;
+    if (typeof columnPatch.slug === "string") assertAppletSlugAllowed(columnPatch.slug);
     const dbPatch = {
       ...columnPatch,
       organization_id: columnPatch.organization_id ?? undefined,
@@ -188,6 +190,7 @@ export const saveAppField = createAsyncThunk<
   assignField(patch, field, value);
   // See saveApp: organization_id is NOT NULL in the DB; never send null.
   const columnPatch = patch;
+  if (typeof columnPatch.slug === "string") assertAppletSlugAllowed(columnPatch.slug);
   const dbPatch = {
     ...columnPatch,
     organization_id: columnPatch.organization_id ?? undefined,

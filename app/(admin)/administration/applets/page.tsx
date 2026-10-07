@@ -190,11 +190,11 @@ export default function AppletsAdminDashboardPage() {
             <Card className="group/x relative">
               <CardContent className="p-3">
                 <div className="text-2xl font-bold">{counts.apps}</div>
-                <div className="text-xs text-muted-foreground">Total Apps</div>
+                <div className="text-xs text-muted-foreground">Total Applets</div>
               </CardContent>
               <CopyButtons
                 size="xs"
-                label="Total apps"
+                label="Total Applets"
                 className="absolute top-2 right-2 opacity-0 group-hover/x:opacity-100 focus-within:opacity-100"
                 human={() => `Total apps: ${counts.apps}`}
                 agent={() => ({
@@ -215,7 +215,7 @@ export default function AppletsAdminDashboardPage() {
               </CardContent>
               <CopyButtons
                 size="xs"
-                label="Published apps"
+                label="Published Applets"
                 className="absolute top-2 right-2 opacity-0 group-hover/x:opacity-100 focus-within:opacity-100"
                 human={() => `Published apps: ${published}`}
                 agent={() => ({
@@ -236,7 +236,7 @@ export default function AppletsAdminDashboardPage() {
               </CardContent>
               <CopyButtons
                 size="xs"
-                label="Featured apps"
+                label="Featured Applets"
                 className="absolute top-2 right-2 opacity-0 group-hover/x:opacity-100 focus-within:opacity-100"
                 human={() => `Featured apps: ${featured}`}
                 agent={() => ({
@@ -257,7 +257,7 @@ export default function AppletsAdminDashboardPage() {
               </CardContent>
               <CopyButtons
                 size="xs"
-                label="Verified apps"
+                label="Verified Applets"
                 className="absolute top-2 right-2 opacity-0 group-hover/x:opacity-100 focus-within:opacity-100"
                 human={() => `Verified apps: ${verified}`}
                 agent={() => ({
@@ -320,9 +320,9 @@ export default function AppletsAdminDashboardPage() {
                 Featured apps
                 <span className="text-xs font-normal text-muted-foreground">
                   (showing{" "}
-                  <UntrustedCount read={appsRead} label="Featured apps shown" value={featuredApps.length} />{" "}
+                  <UntrustedCount read={appsRead} label="Featured Applets shown" value={featuredApps.length} />{" "}
                   of{" "}
-                  <UntrustedCount read={appsRead} label="Featured apps" value={allFeaturedApps.length} />)
+                  <UntrustedCount read={appsRead} label="Featured Applets" value={allFeaturedApps.length} />)
                 </span>
               </h2>
               <div className="flex items-center gap-1.5">
@@ -340,7 +340,7 @@ export default function AppletsAdminDashboardPage() {
                   <CopyButtons
                     size="icon"
                     // read-gate-exempt: copy-button label counting the rows it copies; rendered only when there are some
-                    label={`Featured apps (${allFeaturedApps.length})`}
+                    label={`Featured Applets (${allFeaturedApps.length})`}
                     human={() => allFeaturedApps.map(humanApplet).join("\n\n")}
                     json={() => allFeaturedApps}
                     agent={() => ({
@@ -355,7 +355,7 @@ export default function AppletsAdminDashboardPage() {
                       {
                         id: "briefs",
                         label: "Briefs",
-                        hint: "One line per featured app",
+                        hint: "One line per featured Applet",
                         build: () => ({
                           kind: "applets-briefs",
                           location: "AI Matrx Admin — Applets — Dashboard",
@@ -413,9 +413,9 @@ export default function AppletsAdminDashboardPage() {
                 Recently updated
                 <span className="text-xs font-normal text-muted-foreground">
                   (showing{" "}
-                  <UntrustedCount read={appsRead} label="Recent apps shown" value={recentlyUpdated.length} />{" "}
+                  <UntrustedCount read={appsRead} label="Recent Applets shown" value={recentlyUpdated.length} />{" "}
                   of{" "}
-                  <UntrustedCount read={appsRead} label="Recently updated apps" value={allRecentlyUpdated.length} />)
+                  <UntrustedCount read={appsRead} label="Recently updated Applets" value={allRecentlyUpdated.length} />)
                 </span>
               </h2>
               <div className="flex items-center gap-1.5">
@@ -433,7 +433,7 @@ export default function AppletsAdminDashboardPage() {
                   <CopyButtons
                     size="icon"
                     // read-gate-exempt: copy-button label counting the rows it copies; rendered only when there are some
-                    label={`Recently updated apps (${allRecentlyUpdated.length})`}
+                    label={`Recently updated Applets (${allRecentlyUpdated.length})`}
                     human={() =>
                       allRecentlyUpdated.map(humanApplet).join("\n\n")
                     }
@@ -450,11 +450,11 @@ export default function AppletsAdminDashboardPage() {
                       {
                         id: "briefs",
                         label: "Briefs",
-                        hint: "One line per app",
+                        hint: "One line per Applet",
                         build: () => ({
                           kind: "applets-briefs",
                           location: "AI Matrx Admin — Applets — Dashboard",
-                          description: "One-line briefs for every app, most recently updated first.",
+                          description: "One-line briefs for every Applet, most recently updated first.",
                           data: allRecentlyUpdated.map(appBrief),
                           attributes: { count: allRecentlyUpdated.length },
                         }),

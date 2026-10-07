@@ -224,12 +224,12 @@ export const ANALYTICS_COLUMNS: MatrxColumnDef<AppletAdminView>[] = [
 ];
 
 const analyticsCopy: MatrxDataTableCopyConfig<AppletAdminView> = {
-  label: "App performance",
-  listLabel: "App performance (this view)",
+  label: "Applet performance",
+  listLabel: "Applet performance (this view)",
   location: "AI Matrx Admin — Applets — Analytics",
   rowKind: "applet",
   listKind: "applets",
-  rowDescription: "A single app's performance metrics.",
+  rowDescription: "A single Applet's performance metrics.",
   listDescription:
     "Per-app performance aggregates currently shown after canonical table filters.",
   humanRow: humanApplet,
@@ -345,7 +345,7 @@ export default function AppletsAnalyticsPage() {
       ? { prefix: "", caveat: null as string | null }
       : {
           prefix: "at least ",
-          caveat: `${missing} app${missing === 1 ? "" : "s"} report no ${noun}, so this total is incomplete`,
+          caveat: `${missing} Applet${missing === 1 ? "" : "s"} report no ${noun}, so this total is incomplete`,
         };
 
   const costPartial = partial(totals.appsMissingCost, "cost");
@@ -525,7 +525,7 @@ export default function AppletsAnalyticsPage() {
                 localPagination={{
                   mode: "numbered",
                   reason:
-                    "App analytics keeps exact page sizes and stable canonical footer controls.",
+                    "Applet analytics keeps exact page sizes and stable canonical footer controls.",
                   approvedBy: "Arman, September 27 2026 footer rule",
                 }}
                 query={{
@@ -535,12 +535,12 @@ export default function AppletsAnalyticsPage() {
                 }}
                 coverage={{ ...ANALYTICS_COVERAGE, total: apps.length }}
                 toolbar={{
-                  title: "App performance",
+                  title: "Applet performance",
                   search: true,
-                  searchPlaceholder: "Search app analytics…",
+                  searchPlaceholder: "Search Applet analytics…",
                   refresh: {
                     onRefresh: loadData,
-                    label: "Refresh app analytics",
+                    label: "Refresh Applet analytics",
                   },
                 }}
                 detail={{ enabled: false }}
@@ -548,10 +548,10 @@ export default function AppletsAnalyticsPage() {
                 copy={analyticsCopy}
                 read={readOf(
                   { loading, error: loadError },
-                  { what: "app analytics", onRetry: () => void loadData() },
+                  { what: "Applet analytics", onRetry: () => void loadData() },
                 )}
                 emptyState={{
-                  title: "No app analytics match the current view.",
+                  title: "No Applet analytics match the current view.",
                 }}
               />
             </div>

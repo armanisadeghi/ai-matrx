@@ -11,6 +11,8 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 import type { Database } from "@/types/database.types";
+import { isReservedAppletSlug } from "@/features/applets/reserved-slugs";
+
 
 type Client = SupabaseClient<Database>;
 
@@ -78,7 +80,7 @@ export function coerceBuildAnswer(value: unknown): BuildAnswer {
     isRecord(m) && typeof m.alias === "string" && typeof m.key === "string" ? [{ alias: m.alias, key: m.key }] : [],
   );
   const applet: BuilderApplet = {
-    name: str(a.name) || "My app",
+    name: str(a.name) || "My Applet",
     slug: str(a.slug),
     description: str(a.description),
     entry: str(a.entry) || "App.tsx",
@@ -87,8 +89,8 @@ export function coerceBuildAnswer(value: unknown): BuildAnswer {
     sources,
     mandates,
   };
-  if (!files.some((f) => f.name === applet.entry)) throw new Error(`The builder's app has no ${applet.entry} file.`);
-  if (pages.length === 0) throw new Error("The builder's app has no pages.");
+  if (!files.some((f) => f.name === applet.entry)) throw new Error(`The builder's Applet has no ${applet.entry} file.`);
+  if (pages.length === 0) throw new Error("The builder's Applet has no pages.");
   return { applet, note: str(value.note) };
 }
 
@@ -151,7 +153,7 @@ export async function readBuilderApplet(client: Client, appletId: string): Promi
     .eq("id", appletId)
     .maybeSingle();
   if (error) throw new Error(error.message);
-  if (!data) throw new Error("That app is not there, or it has not been shared with you.");
+  if (!data) throw new Error("That Applet is not there, or it has not been shared with you.");
   const files = isRecord(data.files) ? Object.entries(data.files).flatMap(([name, source]) => (typeof source === "string" ? [{ name, source }] : [])) : [];
   const answer = coerceBuildAnswer({ applet: { ...data, files }, note: "" });
   return { applet: answer.applet, organizationId: data.organization_id, slug: data.slug, version: data.version };
@@ -178,7 +180,8 @@ function slugOf(raw: string): string {
     .replace(/-+/g, "-")
     .replace(/^-|-$/g, "")
     .slice(0, 48);
-  return SLUG.test(s) ? s : `app-${Date.now().toString(36)}`;
+  if (!SLUG.test(s)) return `applet-${Date.now().toString(36)}`;
+  return isReservedAppletSlug(s) ? `${s}-applet` : s;
 }
 
 /** Write the answer as her: a new draft Applet, or a new version of the one she is changing. */

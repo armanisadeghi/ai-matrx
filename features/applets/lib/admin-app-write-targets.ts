@@ -122,7 +122,7 @@ export function validateAppletCategoryWrite(
   const trimmed = value.trim();
   if (!trimmed) {
     throw new Error(
-      "app_category cannot be empty — clearing an app's category is a human decision, not an agent write.",
+      "app_category cannot be empty — clearing an Applet's category is a human decision, not an agent write.",
     );
   }
   if (systemCategoryNames.length === 0) {

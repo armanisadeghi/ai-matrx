@@ -25,7 +25,7 @@ export default function AppletInPage({ appId }: { appId: string }) {
       .then(({ data, error }) => {
         if (cancelled) return;
         if (error) setFailed(error.message);
-        else if (!data) setFailed("This app has not been shared with you.");
+        else if (!data) setFailed("This Applet has not been shared with you.");
         else setSlug(data.slug);
       });
     return () => {
@@ -33,7 +33,7 @@ export default function AppletInPage({ appId }: { appId: string }) {
     };
   }, [appId]);
   if (failed) return <p className="text-xs text-muted-foreground">{failed}</p>;
-  if (!slug) return <p className="text-xs text-muted-foreground">Opening the app…</p>;
+  if (!slug) return <p className="text-xs text-muted-foreground">Opening the Applet…</p>;
   return (
     <div data-applet-in-page={appId} className="min-h-24">
       <AppletHostMount appletId={appId} slug={slug} embedded />

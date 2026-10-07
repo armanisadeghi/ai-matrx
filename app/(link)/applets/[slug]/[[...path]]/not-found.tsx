@@ -10,10 +10,10 @@ const TOKENS = ["app"] as const;
 
 export default function AppletUnavailable() {
   const params = useParams();
-  const slug = typeof params?.app === "string" ? params.app : "";
+  const slug = typeof params?.slug === "string" ? params.slug : "";
   return (
     <div className="h-dvh bg-textured">
-      <SlugAccessGate tokens={TOKENS} slug={slug} noun="app" fallbackHref="/" fallbackLabel="Home" />
+      <SlugAccessGate tokens={TOKENS} slug={slug} noun="Applet" fallbackHref="/" fallbackLabel="Home" />
     </div>
   );
 }

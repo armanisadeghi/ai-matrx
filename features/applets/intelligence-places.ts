@@ -18,16 +18,16 @@ export const APPLETS_PLACES: FeaturePlaces = {
   places: [
     {
       id: "build",
-      label: "Build an app",
-      trigger: "Describe the app; the builder drafts and fixes it",
+      label: "Build an Applet",
+      trigger: "Describe the Applet; the builder drafts and fixes it",
       urlPattern: "/applets/build",
       mandateKeys: [K.applets__build, K.applets__fix],
       sources: ["features/applets-host/builder/AppletBuilder.tsx"],
     },
     {
       id: "code",
-      label: "App code editor",
-      trigger: "The chat that writes the app's code",
+      label: "Applet code editor",
+      trigger: "The chat that writes the Applet's code",
       urlPattern: "/applets/manage/[appId]/code",
       mandateKeys: [K.agent_apps__prompt_app_dev],
       sources: ["app/(core)/applets/manage/[id]/code/AppletEditPageClient.tsx"],

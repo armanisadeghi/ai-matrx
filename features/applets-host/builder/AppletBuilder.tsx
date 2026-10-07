@@ -94,7 +94,7 @@ export function AppletBuilder({ appletId: initialId }: { appletId: string | null
       const answer = await writer.run<BuildAnswer>({
         mandateKey: fix ? FIX : BUILD,
         surfaceKey: "applets:build",
-        sourceFeature: "applet",
+        sourceFeature: "agent-app",
         expect: "json",
         initiation: "user",
         organizationId: current?.organizationId ?? organizationId,

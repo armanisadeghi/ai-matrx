@@ -31,7 +31,7 @@ export function AppletSourcePreview({ rowId, fieldId, code }: RenderPreviewerPro
       .then(({ data, error: err }) => {
         if (cancelled) return;
         if (err) setError(err.message);
-        else if (!data) setError("This app no longer exists.");
+        else if (!data) setError("This Applet no longer exists.");
         else setSlug(data.slug);
       });
     return () => {

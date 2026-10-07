@@ -143,7 +143,7 @@ export function AppletListCard({
         {/* THE DOOR LAW: the card body opens the manage page on click and
             nothing else — the NAME is the record's own anchor, so cmd-click,
             middle-click, new tab and keyboard focus work, and the peek answers
-            "which app is that?" without leaving the list. */}
+            "which Applet is that?" without leaving the list. */}
         <h3 className="text-sm font-semibold text-foreground break-words group-hover:text-primary transition-colors">
           <EntityRef
             token="app"

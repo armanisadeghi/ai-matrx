@@ -22,7 +22,7 @@ const app = {
   is_verified: false,
 } as AppletAdminView;
 
-describe("Agent-app analytics canonical table contract", () => {
+describe("Applet analytics canonical table contract", () => {
   it("keeps every metric independently sortable and filterable without treating unknown as zero", () => {
     expect(ANALYTICS_COVERAGE).toEqual({ noun: "app", answeredBy: "client" });
     expect(ANALYTICS_COLUMNS.map((column) => column.id)).toEqual(

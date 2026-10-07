@@ -222,7 +222,7 @@ export const EXECUTION_COLUMNS: MatrxColumnDef<AppletExecutionRow>[] = [
   },
   {
     id: "app-id",
-    header: "App ID",
+    header: "Applet ID",
     accessorKey: "app_id",
     filter: "text",
     hidden: true,
@@ -232,7 +232,7 @@ export const EXECUTION_COLUMNS: MatrxColumnDef<AppletExecutionRow>[] = [
   },
   {
     id: "app-slug",
-    header: "App slug",
+    header: "Applet slug",
     accessorFn: (row) => row.app_slug ?? "",
     filter: "text",
     hidden: true,
@@ -364,7 +364,7 @@ export const ERROR_COLUMNS: MatrxColumnDef<AppletErrorRow>[] = [
   },
   {
     id: "app-id",
-    header: "App ID",
+    header: "Applet ID",
     accessorKey: "app_id",
     filter: "text",
     hidden: true,
@@ -374,7 +374,7 @@ export const ERROR_COLUMNS: MatrxColumnDef<AppletErrorRow>[] = [
   },
   {
     id: "app-slug",
-    header: "App slug",
+    header: "Applet slug",
     accessorFn: (row) => row.app_slug ?? "",
     filter: "text",
     hidden: true,

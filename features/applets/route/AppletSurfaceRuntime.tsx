@@ -54,9 +54,9 @@ type ActiveView =
 function viewFromPathname(pathname: string | null): ActiveView | undefined {
   if (!pathname) return undefined;
   const segments = pathname.split("/").filter(Boolean);
-  // ["applets", "<id>", ...rest]
-  if (segments[0] !== "applets" || segments.length < 2) return undefined;
-  const sub = segments[2];
+  // ["applets", "manage", "<id>", ...rest]
+  if (segments[0] !== "applets" || segments[1] !== "manage" || segments.length < 3) return undefined;
+  const sub = segments[3];
   if (!sub) return "overview";
   if (sub === "run" || sub === "code" || sub === "settings" || sub === "versions")
     return sub;
