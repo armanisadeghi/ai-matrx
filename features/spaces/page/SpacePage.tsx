@@ -37,8 +37,8 @@ import type { SpacesEditor } from "../editor/schema";
 import { blockIds, planStoredMerge } from "./merge-stored";
 import { SpaceEditor } from "../editor/SpaceEditor";
 import { useSpaces } from "../state/SpacesProvider";
-import { Cover, randomCover } from "./Cover";
-import { IconPicker, randomIcon } from "./IconPicker";
+import { Cover, CoverPicker } from "./Cover";
+import { IconPicker } from "./IconPicker";
 import { PageMenu } from "./PageMenu";
 import { SpaceIcon } from "./SpaceIcon";
 import { TocRail } from "./TocRail";
@@ -824,16 +824,21 @@ function SpacePageScreen({ spaceId }: { spaceId: string }) {
             {!inTrash ? (
               <div className="spaces-header-controls">
                 {editable && !doc.icon ? (
-                  <button type="button" className="spaces-header-control" onClick={() => update({ icon: randomIcon() })}>
-                    <SmilePlus size={15} />
-                    Add icon
-                  </button>
+                  // Notion's picker opens; nothing is set until the person picks.
+                  <IconPicker value={null} onChange={(icon) => update({ icon })}>
+                    <button type="button" className="spaces-header-control">
+                      <SmilePlus size={15} />
+                      Add icon
+                    </button>
+                  </IconPicker>
                 ) : null}
                 {editable && !doc.cover ? (
-                  <button type="button" className="spaces-header-control" onClick={() => update({ cover: randomCover() })}>
-                    <ImageIcon size={15} />
-                    Add cover
-                  </button>
+                  <CoverPicker onPick={(cover) => update({ cover })}>
+                    <button type="button" className="spaces-header-control">
+                      <ImageIcon size={15} />
+                      Add cover
+                    </button>
+                  </CoverPicker>
                 ) : null}
                 <button type="button" className="spaces-header-control" onClick={() => setAddingPageComment(true)}>
                   <MessageSquare size={15} />

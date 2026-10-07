@@ -16,7 +16,7 @@ const check = (name, ok, extra = {}) => {
   if (!ok) failed++;
   console.log(JSON.stringify({ check: name, ok, ...extra }));
 };
-const only = (process.env.ONLY ?? "slash,page,divider,markdown").split(",");
+const only = (process.env.ONLY ?? "pickers,slash,page,divider,markdown").split(",");
 const endLine = async () => {
   await page.locator(".bn-editor .bn-inline-content").last().click();
   await page.keyboard.press("End");
@@ -24,6 +24,28 @@ const endLine = async () => {
 };
 
 await act(page, async () => {
+  if (only.includes("pickers")) {
+    // D1: "Add icon" opens the picker and sets nothing until a pick; search finds an icon; Remove clears it.
+    const iconNow = () => page.locator(".spaces-page-icon").count();
+    await page.locator(".spaces-title").hover();
+    await page.getByRole("button", { name: /^Add icon$/ }).click();
+    await page.waitForTimeout(400);
+    const pickerOpen = await page.getByRole("tab", { name: "Icons" }).isVisible().catch(() => false);
+    const setOnOpen = await iconNow();
+    await page.getByPlaceholder("Filter…").fill("rocket");
+    await page.getByRole("button", { name: /^rocket$/ }).first().click();
+    await page.waitForTimeout(400);
+    check("Add icon opens the picker, sets only the pick", pickerOpen && setOnOpen === 0 && (await iconNow()) === 1, { pickerOpen, setOnOpen });
+    // D2: "Add cover" opens the gallery; a pick sets it; Change cover offers Remove.
+    await page.locator(".spaces-title").hover();
+    await page.getByRole("button", { name: /^Add cover$/ }).click();
+    await page.waitForTimeout(400);
+    const options = await page.locator("[data-cover-option]").count();
+    const coverOnOpen = await page.locator(".spaces-cover").count();
+    await page.locator("[data-cover-option]").first().click();
+    await page.waitForTimeout(400);
+    check("Add cover opens the gallery, sets only the pick", options >= 8 && coverOnOpen === 0 && (await page.locator(".spaces-cover").count()) === 1, { options, coverOnOpen });
+  }
   if (only.includes("slash")) {
     await endLine();
     await page.keyboard.type("CLIENTS");

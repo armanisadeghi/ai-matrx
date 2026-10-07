@@ -33,11 +33,6 @@ export const COVER_GALLERY: Record<string, string> = {
 };
 
 const GALLERY_KEYS = Object.keys(COVER_GALLERY);
-const RANDOM_KEYS = [...COVER_PHOTOS.map((p) => p.key), ...GALLERY_KEYS];
-
-export function randomCover(): CoverValue {
-  return { url: `gallery:${RANDOM_KEYS[Math.floor(Math.random() * RANDOM_KEYS.length)]}`, offsetY: 50 };
-}
 
 function coverStyle(cover: CoverValue, url: string | null, offsetY: number): React.CSSProperties {
   if ("url" in cover && cover.url.startsWith("gallery:") && !galleryImage(cover.url)) {
@@ -49,7 +44,7 @@ function coverStyle(cover: CoverValue, url: string | null, offsetY: number): Rea
   return { background: "var(--muted)" };
 }
 
-function CoverPicker({ onPick, children }: { onPick: (cover: CoverValue | null) => void; children: React.ReactNode }) {
+export function CoverPicker({ onPick, children }: { onPick: (cover: CoverValue | null) => void; children: React.ReactNode }) {
   const [open, setOpen] = useState(false);
   const [tab, setTab] = useState<"gallery" | "upload" | "link">("gallery");
   const [link, setLink] = useState("");
@@ -86,6 +81,7 @@ function CoverPicker({ onPick, children }: { onPick: (cover: CoverValue | null) 
                 <button
                   key={key}
                   type="button"
+                  data-cover-option={key}
                   aria-label={key.replace("-", " ")}
                   className="h-16 rounded hover:opacity-85"
                   style={{ background: COVER_GALLERY[key] }}
@@ -99,6 +95,7 @@ function CoverPicker({ onPick, children }: { onPick: (cover: CoverValue | null) 
                 <button
                   key={photo.key}
                   type="button"
+                  data-cover-option={photo.key}
                   aria-label={photo.label}
                   title={photo.label}
                   className="h-16 rounded bg-cover bg-center hover:opacity-85"
