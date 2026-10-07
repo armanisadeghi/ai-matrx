@@ -22213,6 +22213,7 @@ export type Database = {
           organization_id: string
           outcome: string
           read_at: string
+          sort_at: string
           subject: string
           target_id: string
           target_kind: string
@@ -40632,6 +40633,113 @@ export type Database = {
           },
         ]
       }
+      udt_dataset_template_fields: {
+        Row: {
+          created_at: string
+          custom_fields: Json
+          data_type: Database["public"]["Enums"]["field_data_type"]
+          default_value: Json | null
+          display_name: string
+          field_name: string
+          field_order: number
+          id: string
+          is_required: boolean
+          metadata: Json
+          organization_id: string
+          template_id: string
+          updated_at: string
+          validation_rules: Json | null
+        }
+        Insert: {
+          created_at?: string
+          custom_fields?: Json
+          data_type?: Database["public"]["Enums"]["field_data_type"]
+          default_value?: Json | null
+          display_name: string
+          field_name: string
+          field_order?: number
+          id?: string
+          is_required?: boolean
+          metadata?: Json
+          organization_id: string
+          template_id: string
+          updated_at?: string
+          validation_rules?: Json | null
+        }
+        Update: {
+          created_at?: string
+          custom_fields?: Json
+          data_type?: Database["public"]["Enums"]["field_data_type"]
+          default_value?: Json | null
+          display_name?: string
+          field_name?: string
+          field_order?: number
+          id?: string
+          is_required?: boolean
+          metadata?: Json
+          organization_id?: string
+          template_id?: string
+          updated_at?: string
+          validation_rules?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "udt_dataset_template_fields_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "udt_dataset_templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      udt_dataset_templates: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          custom_fields: Json
+          deleted_at: string | null
+          description: string
+          id: string
+          is_active: boolean
+          metadata: Json
+          name: string
+          organization_id: string
+          updated_at: string
+          updated_by: string | null
+          version: number
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          custom_fields?: Json
+          deleted_at?: string | null
+          description?: string
+          id?: string
+          is_active?: boolean
+          metadata?: Json
+          name: string
+          organization_id: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          custom_fields?: Json
+          deleted_at?: string | null
+          description?: string
+          id?: string
+          is_active?: boolean
+          metadata?: Json
+          name?: string
+          organization_id?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Relationships: []
+      }
       udt_datasets: {
         Row: {
           created_at: string
@@ -40863,6 +40971,69 @@ export type Database = {
           updated_at?: string | null
           updated_by?: string | null
           user_id?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Relationships: []
+      }
+      working_documents: {
+        Row: {
+          content: string
+          created_at: string
+          created_by: string | null
+          custom_fields: Json
+          deleted_at: string | null
+          id: string
+          kind: string
+          metadata: Json
+          organization_id: string
+          published_to_web: boolean
+          published_to_web_at: string | null
+          published_to_web_by: string | null
+          shown_to: Database["platform"]["Enums"]["shown_to"] | null
+          title: string
+          updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        Insert: {
+          content?: string
+          created_at?: string
+          created_by?: string | null
+          custom_fields?: Json
+          deleted_at?: string | null
+          id?: string
+          kind?: string
+          metadata?: Json
+          organization_id: string
+          published_to_web?: boolean
+          published_to_web_at?: string | null
+          published_to_web_by?: string | null
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
+          title?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          created_by?: string | null
+          custom_fields?: Json
+          deleted_at?: string | null
+          id?: string
+          kind?: string
+          metadata?: Json
+          organization_id?: string
+          published_to_web?: boolean
+          published_to_web_at?: string | null
+          published_to_web_by?: string | null
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
+          title?: string
+          updated_at?: string
+          updated_by?: string | null
           version?: number
           visibility?: Database["platform"]["Enums"]["visibility"]
         }
@@ -91805,6 +91976,17 @@ export type Database = {
         }
         Returns: Json
       }
+      entity_usage: {
+        Args: { p_entity: string; p_ids: string[] }
+        Returns: {
+          entity_id: string
+          failure_count: number
+          last_used_at: string
+          run_count: number
+          success_count: number
+          total_cost: number
+        }[]
+      }
       extensibility_knob: {
         Args: {
           p_definition_id?: string
@@ -98222,20 +98404,25 @@ export type Database = {
           created_by: string
           custom_fields: Json
           description: string
+          failure_count: number
           id: string
           is_active: boolean
           is_archived: boolean
           is_favorite: boolean
           is_owner: boolean
+          last_used_at: string
           model_id: string
           name: string
           offering_id: string
           organization_id: string
           organization_name: string
           owner_email: string
+          run_count: number
           source_agent_id: string
+          success_count: number
           tags: string[]
           task_id: string
+          total_cost: number
           total_count: number
           updated_at: string
           version: number
@@ -105656,6 +105843,7 @@ export type Database = {
           created_by: string
           custom_fields: Json
           description: string
+          failure_count: number
           id: string
           is_active: boolean
           is_archived: boolean
@@ -105670,11 +105858,14 @@ export type Database = {
           owner_email: string
           run_count: number
           step_count: number
+          success_count: number
           tags: string[]
+          total_cost: number
           total_count: number
           updated_at: string
           version: number
           visibility: string
+          workflow_type: string
         }[]
       }
       wsp_resolve_system_task: {
@@ -134697,113 +134888,6 @@ export type Database = {
         }
         Relationships: []
       }
-      udt_dataset_template_fields: {
-        Row: {
-          created_at: string
-          custom_fields: Json
-          data_type: Database["public"]["Enums"]["field_data_type"]
-          default_value: Json | null
-          display_name: string
-          field_name: string
-          field_order: number
-          id: string
-          is_required: boolean
-          metadata: Json
-          organization_id: string
-          template_id: string
-          updated_at: string
-          validation_rules: Json | null
-        }
-        Insert: {
-          created_at?: string
-          custom_fields?: Json
-          data_type?: Database["public"]["Enums"]["field_data_type"]
-          default_value?: Json | null
-          display_name: string
-          field_name: string
-          field_order?: number
-          id?: string
-          is_required?: boolean
-          metadata?: Json
-          organization_id: string
-          template_id: string
-          updated_at?: string
-          validation_rules?: Json | null
-        }
-        Update: {
-          created_at?: string
-          custom_fields?: Json
-          data_type?: Database["public"]["Enums"]["field_data_type"]
-          default_value?: Json | null
-          display_name?: string
-          field_name?: string
-          field_order?: number
-          id?: string
-          is_required?: boolean
-          metadata?: Json
-          organization_id?: string
-          template_id?: string
-          updated_at?: string
-          validation_rules?: Json | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "udt_dataset_template_fields_template_id_fkey"
-            columns: ["template_id"]
-            isOneToOne: false
-            referencedRelation: "udt_dataset_templates"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      udt_dataset_templates: {
-        Row: {
-          created_at: string
-          created_by: string | null
-          custom_fields: Json
-          deleted_at: string | null
-          description: string
-          id: string
-          is_active: boolean
-          metadata: Json
-          name: string
-          organization_id: string
-          updated_at: string
-          updated_by: string | null
-          version: number
-        }
-        Insert: {
-          created_at?: string
-          created_by?: string | null
-          custom_fields?: Json
-          deleted_at?: string | null
-          description?: string
-          id?: string
-          is_active?: boolean
-          metadata?: Json
-          name: string
-          organization_id: string
-          updated_at?: string
-          updated_by?: string | null
-          version?: number
-        }
-        Update: {
-          created_at?: string
-          created_by?: string | null
-          custom_fields?: Json
-          deleted_at?: string | null
-          description?: string
-          id?: string
-          is_active?: boolean
-          metadata?: Json
-          name?: string
-          organization_id?: string
-          updated_at?: string
-          updated_by?: string | null
-          version?: number
-        }
-        Relationships: []
-      }
       udt_document_snapshots: {
         Row: {
           created_at: string
@@ -135048,69 +135132,6 @@ export type Database = {
           version?: number
           visibility?: Database["platform"]["Enums"]["visibility"]
           workbook_name?: string
-        }
-        Relationships: []
-      }
-      working_documents: {
-        Row: {
-          content: string
-          created_at: string
-          created_by: string | null
-          custom_fields: Json
-          deleted_at: string | null
-          id: string
-          kind: string
-          metadata: Json
-          organization_id: string
-          published_to_web: boolean
-          published_to_web_at: string | null
-          published_to_web_by: string | null
-          shown_to: Database["platform"]["Enums"]["shown_to"] | null
-          title: string
-          updated_at: string
-          updated_by: string | null
-          version: number
-          visibility: Database["platform"]["Enums"]["visibility"]
-        }
-        Insert: {
-          content?: string
-          created_at?: string
-          created_by?: string | null
-          custom_fields?: Json
-          deleted_at?: string | null
-          id?: string
-          kind?: string
-          metadata?: Json
-          organization_id: string
-          published_to_web?: boolean
-          published_to_web_at?: string | null
-          published_to_web_by?: string | null
-          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
-          title?: string
-          updated_at?: string
-          updated_by?: string | null
-          version?: number
-          visibility?: Database["platform"]["Enums"]["visibility"]
-        }
-        Update: {
-          content?: string
-          created_at?: string
-          created_by?: string | null
-          custom_fields?: Json
-          deleted_at?: string | null
-          id?: string
-          kind?: string
-          metadata?: Json
-          organization_id?: string
-          published_to_web?: boolean
-          published_to_web_at?: string | null
-          published_to_web_by?: string | null
-          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
-          title?: string
-          updated_at?: string
-          updated_by?: string | null
-          version?: number
-          visibility?: Database["platform"]["Enums"]["visibility"]
         }
         Relationships: []
       }
@@ -135438,6 +135459,7 @@ export type Database = {
           version: number
           viewport: Json
           visibility: Database["platform"]["Enums"]["visibility"]
+          workflow_type: string
         }
         Insert: {
           card_visibility?: Database["platform"]["Enums"]["visibility"]
@@ -135488,6 +135510,7 @@ export type Database = {
           version?: number
           viewport?: Json
           visibility?: Database["platform"]["Enums"]["visibility"]
+          workflow_type?: string
         }
         Update: {
           card_visibility?: Database["platform"]["Enums"]["visibility"]
@@ -135538,6 +135561,7 @@ export type Database = {
           version?: number
           viewport?: Json
           visibility?: Database["platform"]["Enums"]["visibility"]
+          workflow_type?: string
         }
         Relationships: []
       }
@@ -137736,6 +137760,7 @@ export type Database = {
           version: number
           viewport: Json
           visibility: Database["platform"]["Enums"]["visibility"]
+          workflow_type: string
         }[]
         SetofOptions: {
           from: "*"

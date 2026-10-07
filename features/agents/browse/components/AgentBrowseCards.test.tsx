@@ -75,6 +75,12 @@ const sharedAgent: AgentBrowseRow = {
   updated_at: "2026-08-29T00:00:00.000Z",
   version: 1,
   visibility: "shared",
+  // Never run: the usage rollup answers zeros and a null last-used time.
+  run_count: 0,
+  success_count: 0,
+  failure_count: 0,
+  last_used_at: null as unknown as string,
+  total_cost: 0,
 };
 
 describe("AgentBrowseCards", () => {

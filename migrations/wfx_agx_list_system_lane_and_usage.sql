@@ -1,3 +1,4 @@
+-- chair-step: wfx_list_scoped and agx_list_scoped change their return shape and platform.entity_usage(text, uuid) becomes set-based, so the old functions are DROPPED and recreated; non-additive by construction
 -- Workflows and agents: ONE list experience — the System lane and the shared usage columns.
 --
 -- workflow.definition.workflow_type (user | builtin | generated, mirrors agent.definition.agent_type)
