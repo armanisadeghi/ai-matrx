@@ -241,6 +241,9 @@ export function NoteEditorDock({
           sheetOpen && "opacity-0",
         )}
         aria-hidden={sheetOpen ? true : undefined}
+        // Floating chrome: the shell measures it, so a toast rests ABOVE this dock (sonner's offset reads
+        // `--matrx-floating-clearance`) instead of covering its Copy chevron.
+        data-matrx-floating-bottom=""
       >
         <div
           ref={navRef}

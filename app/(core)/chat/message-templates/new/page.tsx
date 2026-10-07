@@ -40,5 +40,5 @@ export default async function NewTemplatePage({ searchParams }: PageProps) {
     }
   }
 
-  return <TemplateEditor mode="create" template={sourceTemplate} />;
+  return <TemplateEditor template={sourceTemplate} />;
 }

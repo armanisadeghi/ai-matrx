@@ -12,26 +12,17 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
-import {
-  ArrowLeft,
-  Save,
-  Loader2,
-  FileText,
-  GitCompareArrows,
-} from "lucide-react";
-import { useOpenDiffViewerWindow } from "@/features/overlays/openers/diffViewerWindow";
+import { ArrowLeft, Save, Loader2, FileText } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 import { describeWriteFailure } from "@/lib/errors/writeFailure";
 import {
   MessageTemplateEditorSource,
   CreateMessageTemplateInput,
-  UpdateMessageTemplateInput,
   MessageRole,
   readMessageTemplateMetadata,
 } from "@/features/message-templates/types/message-templates-db";
 import {
   createTemplate,
-  updateTemplate,
   clearTemplateCache,
 } from "@/features/message-templates/services/message-templates-service";
 import RouteHeader from "@/features/shell/components/header/RouteHeader";
@@ -57,24 +48,20 @@ function readSubjectTemplate(metadata: unknown): string {
 }
 
 interface TemplateEditorProps {
+  /** A template to start from ("duplicate"); its id is never written. */
   template?: MessageTemplateEditorSource | null;
-  mode: "create" | "edit";
 }
 
 function EditorHeader({
-  mode,
   isSaving,
   canSave,
   onBack,
   onSave,
-  onCompare,
 }: {
-  mode: "create" | "edit";
   isSaving: boolean;
   canSave: boolean;
   onBack: () => void;
   onSave: () => void;
-  onCompare?: () => void;
 }) {
   return (
     <RouteHeader
@@ -89,18 +76,9 @@ function EditorHeader({
           <div className="flex items-center gap-1.5 flex-1 min-w-0">
             <FileText className="h-4 w-4 text-primary flex-shrink-0" />
             <span className="text-sm font-semibold truncate">
-              {mode === "create" ? "New Template" : "Edit Template"}
+              New Template
             </span>
           </div>
-          {onCompare && (
-            <Button
-              icon={<GitCompareArrows />} aria-label="Compare saved vs draft"
-              variant="quiet"
-              onClick={onCompare}
-              className="flex-shrink-0"
-              title="Compare saved vs draft"
-            />
-          )}
           <Button
             icon={isSaving ? (
               <Loader2 className="animate-spin" />
@@ -119,7 +97,12 @@ function EditorHeader({
   );
 }
 
-export function TemplateEditor({ template, mode }: TemplateEditorProps) {
+/**
+ * The NEW-template form only. Editing a saved template is ONE editor — `TemplateViewPage`
+ * (`/chat/message-templates/[id]?mode=edit`), the page every menu links to; the old
+ * `/chat/message-templates/edit/[id]` route redirects there.
+ */
+export function TemplateEditor({ template }: TemplateEditorProps) {
   const router = useRouter();
   const { toast } = useToast();
   const [isSaving, setIsSaving] = useState(false);
@@ -136,23 +119,6 @@ export function TemplateEditor({ template, mode }: TemplateEditorProps) {
   const [tagsInput, setTagsInput] = useState((template?.tags ?? []).join(", "));
 
   const canSave = label.trim().length > 0 && content.trim().length > 0;
-
-  const openDiff = useOpenDiffViewerWindow();
-  const canCompare =
-    mode === "edit" && !!template && template.content !== content;
-  const handleCompare = useCallback(() => {
-    if (!template) return;
-    openDiff({
-      original: template.content ?? "",
-      modified: content,
-      originalLabel: "Saved",
-      modifiedLabel: "Draft",
-      title: `${template.label ?? "Template"} — compare`,
-      engine: "auto",
-      language: "markdown",
-      defaultView: "split",
-    });
-  }, [openDiff, template, content]);
 
   const handleBack = useCallback(
     () => router.push("/chat/message-templates"),
@@ -176,33 +142,17 @@ export function TemplateEditor({ template, mode }: TemplateEditorProps) {
           : {}),
       };
       if (!subjectTemplate.trim()) delete metadata.subject_template;
-      if (mode === "create") {
-        const input: CreateMessageTemplateInput = {
-          organization_id: await ensureOrganizationContext(),
-          label: label.trim(),
-          content: content.trim(),
-          role,
-          published_to_web: isPublic,
-          tags,
-          metadata,
-        };
-        await createTemplate(input);
-        toast({ title: "Template created" });
-      } else if (template?.id) {
-        const input: UpdateMessageTemplateInput = {
-          id: template.id,
-          label: label.trim(),
-          content: content.trim(),
-          role,
-          ...(isPublic !== (template.published_to_web === true)
-            ? { published_to_web: isPublic }
-            : {}),
-          tags,
-          metadata,
-        };
-        await updateTemplate(input);
-        toast({ title: "Template saved" });
-      }
+      const input: CreateMessageTemplateInput = {
+        organization_id: await ensureOrganizationContext(),
+        label: label.trim(),
+        content: content.trim(),
+        role,
+        published_to_web: isPublic,
+        tags,
+        metadata,
+      };
+      await createTemplate(input);
+      toast({ title: "Template created" });
       clearTemplateCache();
       router.push("/chat/message-templates");
     } catch (err) {
@@ -213,7 +163,7 @@ export function TemplateEditor({ template, mode }: TemplateEditorProps) {
       // The refusal is already a sentence ("Nothing was saved: … your access
       // does not allow saving it.") — say it, never a bare "Failed".
       const words = describeWriteFailure(err, {
-        action: mode === "create" ? "create this template" : "save this template",
+        action: "create this template",
       });
       toast({
         title: words.title,
@@ -226,7 +176,6 @@ export function TemplateEditor({ template, mode }: TemplateEditorProps) {
   }, [
     canSave,
     isSaving,
-    mode,
     label,
     content,
     role,
@@ -241,12 +190,10 @@ export function TemplateEditor({ template, mode }: TemplateEditorProps) {
   return (
     <>
       <EditorHeader
-        mode={mode}
         isSaving={isSaving}
         canSave={canSave}
         onBack={handleBack}
         onSave={handleSave}
-        onCompare={canCompare ? handleCompare : undefined}
       />
 
       {/* Single page scroll — no bounded inner container */}
