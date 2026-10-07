@@ -2,7 +2,7 @@
 
 // features/spaces/editor/schema.tsx — the block schema: BlockNote's defaults plus the Notion blocks it lacks.
 //
-// Built here (never @blocknote/xl-*, which is GPL): callout, page, link to page, columns, and `slot`
+// Built here (never @blocknote/xl-*, which is GPL): callout (callout-block.tsx), page, link to page, columns, and `slot`
 // (a marked place where a phase-2 block will sit). Callout bodies and columns hold their content as
 // ordinary block children; spaces.css draws the callout box around them and lays columns side by side.
 
@@ -18,6 +18,7 @@ import { IconPicker } from "../page/IconPicker";
 import { notionCodeBlock } from "./code-block";
 import { equationInline, mentionInline } from "./inline";
 import { storedBlockSpecs } from "./stored-blocks";
+import { CalloutBlock } from "./callout-block";
 
 /** C10: Notion's code-block language picker (the stored `language` prop rides through convert.ts as is). */
 const CODE_BLOCK = notionCodeBlock(createCodeBlockSpec({
@@ -49,36 +50,6 @@ const CODE_BLOCK = notionCodeBlock(createCodeBlockSpec({
     yaml: { name: "YAML", aliases: ["yml"] },
   },
 }));
-
-const CalloutBlock = createReactBlockSpec(
-  {
-    type: "callout",
-    propSchema: {
-      textColor: defaultProps.textColor,
-      backgroundColor: defaultProps.backgroundColor,
-      icon: { default: "Lightbulb" },
-    },
-    content: "inline",
-  },
-  {
-    render: ({ block, editor, contentRef }) => (
-      <div className="spaces-callout" data-has-icon={block.props.icon ? "true" : "false"} data-empty={Array.isArray(block.content) && block.content.length === 0 ? "true" : undefined}>
-        {block.props.icon ? (
-          <IconPicker
-            value={{ icon: block.props.icon }}
-            disabled={!editor.isEditable}
-            onChange={(media) => editor.updateBlock(block, { props: { icon: media && "icon" in media ? media.icon : "" } })}
-          >
-            <button type="button" className="spaces-callout-icon" contentEditable={false} aria-label="Change icon">
-              <SpaceIcon media={{ icon: block.props.icon }} size={20} />
-            </button>
-          </IconPicker>
-        ) : null}
-        <div className="spaces-callout-text" ref={contentRef} />
-      </div>
-    ),
-  },
-);
 
 function PageRow({ spaceId, linked }: { spaceId: string; linked: boolean }) {
   const { byId, archived, linkTarget, requestLink, ready, open, pageHref, missingPageLabel } = useSpaces();

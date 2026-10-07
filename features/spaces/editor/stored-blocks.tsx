@@ -8,7 +8,9 @@
 import { createReactBlockSpec } from "@blocknote/react";
 import { createExtension, defaultProps, type Extension, type ExtensionFactoryInstance } from "@blocknote/core";
 import { Plugin } from "@tiptap/pm/state";
-import { DATABASE_EVENT_CLAIMS, DatabaseHost, activeLayout, readPaintedSize } from "./database-host";
+import { Decoration, DecorationSet } from "@tiptap/pm/view";
+import type { Node as PmNode } from "@tiptap/pm/model";
+import { DATABASE_EVENT_CLAIMS, DatabaseHost, activeLayout, pickPainted, readPaintedSizes } from "./database-host";
 import DisplayMath from "@/features/math/components/DisplayMath";
 import InlineMathText from "@/features/math/components/InlineMathText";
 import { FileText, Globe, Paperclip, TriangleAlert } from "lucide-react";
@@ -33,6 +35,39 @@ const DatabaseBlockView = dynamic(() => import("../data/DatabaseBlock").then((m)
 const databaseOwnsItsEvents = createExtension({
   key: "spacesDatabaseOwnsItsEvents",
   prosemirrorPlugins: [new Plugin({ props: { handleDOMEvents: DATABASE_EVENT_CLAIMS } })],
+});
+
+/**
+ * A database block's view is drawn by React a moment after the editor, so its node view's wrapper is empty
+ * (0px) in the first frame and the blocks under it moved when the table landed (round 29). The block's
+ * stored `paintedSize` goes on that wrapper as `--spaces-painted-h` IN THE SAME PASS as the text
+ * (a node decoration), and spaces.css holds an empty wrapper at it.
+ */
+function paintedDecorations(doc: PmNode): DecorationSet {
+  const decos: Decoration[] = [];
+  doc.descendants((node, pos) => {
+    if (node.type.name !== "database") return true;
+    const h = typeof window === "undefined" ? undefined : pickPainted(readPaintedSizes(readData(node.attrs.data).paintedSize), { vw: window.innerWidth })?.h;
+    if (h) decos.push(Decoration.node(pos, pos + node.nodeSize, { style: `--spaces-painted-h:${h}px` }));
+    return false;
+  });
+  return DecorationSet.create(doc, decos);
+}
+const databasePaintedGeometry = createExtension({
+  key: "spacesDatabasePaintedGeometry",
+  prosemirrorPlugins: [
+    new Plugin<DecorationSet>({
+      state: {
+        init: (_config, state) => paintedDecorations(state.doc),
+        apply: (tr, set) => (tr.docChanged ? paintedDecorations(tr.doc) : set),
+      },
+      props: {
+        decorations(state) {
+          return this.getState(state);
+        },
+      },
+    }),
+  ],
 });
 
 type Data = { props?: Record<string, unknown> };
@@ -318,12 +353,12 @@ export const storedBlockSpecs = {
   tableOfContents: storedSpec("tableOfContents", (_p, ctx) => <TableOfContents editor={ctx.editor} />),
   breadcrumb: storedSpec("breadcrumb", () => <Breadcrumb />),
   database: storedSpec("database", (p, ctx) => (
-    <DatabaseHost blockId={ctx.blockId} layout={activeLayout(p)} painted={readPaintedSize(p.paintedSize)}>
+    <DatabaseHost blockId={ctx.blockId} layout={activeLayout(p)} painted={readPaintedSizes(p.paintedSize)}>
       <BlockBoundary>
         <DatabaseBlockView blockId={ctx.blockId} props={p} onChange={ctx.update} editable={(ctx.editor as unknown as { isEditable: boolean }).isEditable} />
       </BlockBoundary>
     </DatabaseHost>
-  ), [databaseOwnsItsEvents]),
+   ), [databaseOwnsItsEvents, databasePaintedGeometry]),
   unknownBlock: createReactBlockSpec(
     { type: "unknownBlock", propSchema: dataProp, content: "none" },
     {

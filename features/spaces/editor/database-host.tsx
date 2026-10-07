@@ -48,22 +48,38 @@ const heightKey = (blockId: string, width: number) => `spaces:blockh:${blockId}:
 const SETTLE_QUIET_MS = 450;
 const SAMPLE_MS = 150;
 const SETTLE_MAX_MS = 4000;
-/** A block's size as its page's last save measured it (CSS px). */
+/** A database block finished drawing (its content still): the page may store its new size. */
+export const DATABASE_PAINTED_EVENT = "spaces:database-painted";
+
+/**
+ * A block's size as a save measured it (CSS px): its own width `w`, height `h`, and the window's width `vw`
+ * then. A block keeps one per window width it was painted at (a person at 1280 and one at 1699 each find
+ * theirs), newest first, at most PAINTED_KEEP.
+ */
 export interface PaintedSize {
   w: number;
   h: number;
+  vw: number;
 }
 /** A stored size counts at a width this close to the one it was painted at. */
 const PAINTED_WIDTH_SLACK = 24;
+const PAINTED_KEEP = 4;
 
-export function readPaintedSize(raw: unknown): PaintedSize | null {
-  const v = raw as { w?: unknown; h?: unknown } | null | undefined;
-  return v && typeof v.w === "number" && typeof v.h === "number" && v.h > 0 ? { w: v.w, h: v.h } : null;
+export function readPaintedSizes(raw: unknown): PaintedSize[] {
+  const list = Array.isArray(raw) ? raw : raw ? [raw] : [];
+  return list.flatMap((v: { w?: unknown; h?: unknown; vw?: unknown }) =>
+    v && typeof v.w === "number" && typeof v.h === "number" && v.h > 0 ? [{ w: v.w, h: v.h, vw: typeof v.vw === "number" ? v.vw : 0 }] : [],
+  );
+}
+/** The stored size for a block drawn `width` wide (else, before layout, in a window `vw` wide). */
+export function pickPainted(list: PaintedSize[], at: { width?: number; vw?: number }): PaintedSize | null {
+  const near = (a: number, b: number | undefined) => b !== undefined && Math.abs(a - b) <= PAINTED_WIDTH_SLACK;
+  return list.find((p) => near(p.w, at.width)) ?? (at.width === undefined ? (list.find((p) => near(p.vw, at.vw)) ?? null) : null);
 }
 
-function useHeldHeight(blockId: string | undefined, ref: React.RefObject<HTMLDivElement | null>, painted: PaintedSize | null): number | undefined {
+function useHeldHeight(blockId: string | undefined, ref: React.RefObject<HTMLDivElement | null>, painted: PaintedSize[]): number | undefined {
   // The first frame already holds the stored size (before any effect): the block is never drawn short.
-  const [hold, setHold] = useState<number | undefined>(painted?.h);
+  const [hold, setHold] = useState<number | undefined>(() => (typeof window === "undefined" ? undefined : pickPainted(painted, { vw: window.innerWidth })?.h));
   useLayoutEffect(() => {
     const el = ref.current;
     if (!el || !blockId) return;
@@ -92,6 +108,8 @@ function useHeldHeight(blockId: string | undefined, ref: React.RefObject<HTMLDiv
       const h = measure();
       if (h !== null) keep(h);
       setHold(undefined);
+      // The page compares this with the size its last save stored (SpacePage: a drift saves it once).
+      if (h !== null) window.dispatchEvent(new CustomEvent(DATABASE_PAINTED_EVENT));
     };
     // Stillness is sampled, not observed: the element the content lives in is replaced as it loads
     // (loading → frame), and a held block's own box never changes size.
@@ -121,7 +139,7 @@ function useHeldHeight(blockId: string | undefined, ref: React.RefObject<HTMLDiv
       } catch {
         held = 0;
       }
-      if (!(held > 0) && painted && Math.abs(painted.w - width) <= PAINTED_WIDTH_SLACK) held = painted.h;
+      if (!(held > 0)) held = pickPainted(painted, { width })?.h ?? 0;
       setHold(held > 0 ? held : undefined);
       arm();
     };
@@ -150,9 +168,9 @@ function useHeldHeight(blockId: string | undefined, ref: React.RefObject<HTMLDiv
 }
 
 /** The block's element. It stops nothing: every press and key reaches the table and React above it. */
-export function DatabaseHost({ children, blockId, layout, painted }: { children: ReactNode; blockId?: string; layout?: string; painted?: PaintedSize | null }) {
+export function DatabaseHost({ children, blockId, layout, painted }: { children: ReactNode; blockId?: string; layout?: string; painted?: PaintedSize[] }) {
   const ref = useRef<HTMLDivElement>(null);
-  const hold = useHeldHeight(blockId, ref, painted ?? null);
+  const hold = useHeldHeight(blockId, ref, painted ?? []);
   return (
     <div
       ref={ref}
@@ -188,9 +206,40 @@ export function withPaintedSizes<B extends { type: string; id: string; props?: R
         const el = document.querySelector<HTMLElement>(`.${DATABASE_HOST_CLASS}[data-block-id="${CSS.escape(b.id)}"]`);
         // Still holding (style.height set) or loading: not its own size yet.
         const r = el && !el.style.height && !el.querySelector(".spaces-db-loading") ? el.getBoundingClientRect() : null;
-        if (r && r.height > 0) props = { ...props, paintedSize: { w: Math.round(r.width), h: Math.round(r.height) } };
+        if (r && r.height > 0) {
+          const now: PaintedSize = { w: Math.round(r.width), h: Math.round(r.height), vw: window.innerWidth };
+          const kept = readPaintedSizes(props?.paintedSize).filter((p) => Math.abs(p.w - now.w) > PAINTED_WIDTH_SLACK);
+          props = { ...props, paintedSize: [now, ...kept].slice(0, PAINTED_KEEP) };
+        }
       }
       return props === b.props && kids === b.children ? b : { ...b, props, children: kids };
     });
   return walk(blocks);
+}
+
+/** Each database block's stored sizes, by block id (a page's `paintedSize`s). */
+export function paintedHeights(blocks: ReadonlyArray<{ type: string; id: string; props?: Record<string, unknown>; children?: unknown[] }>): Map<string, PaintedSize[]> {
+  const out = new Map<string, PaintedSize[]>();
+  const walk = (list: ReadonlyArray<{ type: string; id: string; props?: Record<string, unknown>; children?: unknown[] }>) => {
+    for (const b of list) {
+      const sizes = b.type === "database" ? readPaintedSizes(b.props?.paintedSize) : [];
+      if (sizes.length) out.set(b.id, sizes);
+      if (b.children?.length) walk(b.children as typeof list);
+    }
+  };
+  walk(blocks);
+  return out;
+}
+
+/** A painted height this far from the stored one is worth a save (a re-measure by a pixel is not). */
+const PAINTED_DRIFT_PX = 8;
+/** Whether the sizes measured now (the first of each block's list) are missing from, or differ from, what is stored at that width. */
+export function paintedDrift(now: Map<string, PaintedSize[]>, stored: Map<string, PaintedSize[]>): boolean {
+  for (const [id, list] of now) {
+    const cur = list[0];
+    if (!cur) continue;
+    const was = pickPainted(stored.get(id) ?? [], { width: cur.w });
+    if (!was || Math.abs(was.h - cur.h) > PAINTED_DRIFT_PX) return true;
+  }
+  return false;
 }

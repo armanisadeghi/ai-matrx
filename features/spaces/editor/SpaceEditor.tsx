@@ -48,6 +48,7 @@ import { currentBlockId, duplicateBlocks, selectedOrCurrent } from "./block-acti
 import { fromEngine, toEngine, type EngineBlock } from "./convert";
 import { PasteUrlMenu, pastedUrl, type PastedUrl } from "./PasteUrlMenu";
 import { useRubberBand } from "./rubber-band";
+import { CalloutIconHost } from "./callout-block";
 import { spacesSchema, type SpacesEditor } from "./schema";
 import { insideDatabaseBlock } from "./database-host";
 import { linkPageAt, slashItems, type SlashContext } from "./slash-items";
@@ -364,6 +365,7 @@ export function SpaceEditor({ spaceId, initialBlocks, editable, onChange, slash,
       }}
     >
     <style>{widths}</style>
+    <CalloutIconHost editor={editor as never} />
     <BlockNoteView
       editor={editor}
       editable={editable}
