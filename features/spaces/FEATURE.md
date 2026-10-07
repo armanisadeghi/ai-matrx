@@ -45,6 +45,12 @@ Block document: a tree of `SpaceBlock` (`id`, `type`, `text: RichSpan[]`, `color
 
 ## Change log
 
+- 2026-10-06 — builder round 23: column gutter 46px (Notion's spacer; a column row nested in a column takes 16px);
+  a chart tile under 200px wraps its name (≤3 lines, 13px) so five-across KPI tiles stay readable; chart tiles carry
+  Filter / Sort and count + order what their view shows (`data/chart-rules.ts`, test `data/__tests__/chart-follows-its-view.test.ts`,
+  walk `__tests__/walk/chart-filter.walk.mjs`); view tab icons draw any Lucide name (SpaceIcon → DynamicIcon); type, view
+  pill and table rows on NOTION-MEASUREMENTS (title 40/48, body 16/24, 32px radius-20 pill, 36px header, 37px rows); the
+  table magnifier sits in the toolbar row (records-ui's own search row hidden in Spaces).
 - 2026-10-06 — Build with AI (Space Builder, mandate `spaces.build`): `ai/SpaceBuilder.tsx` hosts one request box and
   one floating run (`useFloatingAgentRun` → LiveRunWindow) above every page (`SpacesWorkspace`), so a 1–8 min build
   survives page switches. Doors: sidebar New page options → Build with AI, a blank page's starter, page ••• → Ask AI

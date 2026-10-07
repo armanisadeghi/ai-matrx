@@ -66,6 +66,7 @@ jest.mock("@/features/content-ir/records/KindRecordChrome", () => ({
 
 // The dispatched block reports exactly the two ids it was handed.
 jest.mock("@ai-matrx/rich-content/display/chat-markdown/block-registry/block-dispatch", () => ({
+  registerBlockDispatch: () => undefined,
   isBlockLoading: () => false,
   reportUnregisteredBlockType: () => {},
   resolveBlockDispatch:

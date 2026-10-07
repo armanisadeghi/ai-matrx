@@ -8,7 +8,7 @@
 // own `useUnifiedTable` / `UnifiedTableBody`, so a record opens exactly when its table would.
 
 import { useRouter } from "next/navigation";
-import { RecordPanel, recordNameIn } from "@ai-matrx/records-ui";
+import { RecordPanel, RecordsSkeleton, recordNameIn } from "@ai-matrx/records-ui";
 import { useRecord, useTable } from "@ai-matrx/records/react";
 import RouteHeader from "@/features/shell/components/header/RouteHeader";
 import { ChevronLeftTapButton } from "@ai-matrx/tap-target/buttons";
@@ -57,6 +57,8 @@ export function UnifiedRecordPage({ tableId, recordId }: { tableId: string; reco
         <UnifiedTableBody
           mount={mount}
           onLeave={() => router.push(mount.allTablesHref)}
+          /* A property page, not a grid, while the table is found (STABLE-TABLES). */
+          skeleton={<RecordsSkeleton layout="record" embedded />}
           content={
             <>
               <RecordCrumbs tableId={tableId} recordId={recordId} />

@@ -1901,4 +1901,12 @@ type _EveryKnownTypeIsDispatched = AssertNever<
   Exclude<KnownBlockType, keyof typeof DOMAIN_BLOCK_DISPATCH | keyof typeof ENGINE_BLOCK_DISPATCH>
 >;
 
+/** This app's half of the classification buckets (the engine's half: BLOCK_DISPATCH_CLASSIFICATION). */
+export const DOMAIN_BLOCK_DISPATCH_CLASSIFICATION = {
+  protocol: Object.keys(PROTOCOL_BLOCK_DISPATCH),
+  scalar_generic: Object.keys(SCALAR_GENERIC_BLOCK_DISPATCH),
+  shape: Object.keys(SHAPE_BLOCK_DISPATCH),
+  intentionally_opaque: Object.keys(OPAQUE_BLOCK_DISPATCH),
+} as const;
+
 registerBlockDispatch(DOMAIN_BLOCK_DISPATCH);
