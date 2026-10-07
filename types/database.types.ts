@@ -4179,11 +4179,9 @@ export type Database = {
     Tables: {
       definition: {
         Row: {
-          allowed_imports: Json | null
           app_kind: string
           avg_execution_time_ms: number | null
           category: string | null
-          component_code: string
           component_language: string
           created_at: string
           created_by: string | null
@@ -4239,11 +4237,9 @@ export type Database = {
           visibility: Database["platform"]["Enums"]["visibility"]
         }
         Insert: {
-          allowed_imports?: Json | null
           app_kind?: string
           avg_execution_time_ms?: number | null
           category?: string | null
-          component_code?: string
           component_language?: string
           created_at?: string
           created_by?: string | null
@@ -4299,11 +4295,9 @@ export type Database = {
           visibility?: Database["platform"]["Enums"]["visibility"]
         }
         Update: {
-          allowed_imports?: Json | null
           app_kind?: string
           avg_execution_time_ms?: number | null
           category?: string | null
-          component_code?: string
           component_language?: string
           created_at?: string
           created_by?: string | null
@@ -4370,12 +4364,10 @@ export type Database = {
       }
       definition_version: {
         Row: {
-          allowed_imports: Json | null
           app_id: string
           category: string | null
           change_note: string | null
           changed_at: string
-          component_code: string | null
           component_language: string | null
           created_at: string
           created_by: string | null
@@ -4405,12 +4397,10 @@ export type Database = {
           version_number: number
         }
         Insert: {
-          allowed_imports?: Json | null
           app_id: string
           category?: string | null
           change_note?: string | null
           changed_at?: string
-          component_code?: string | null
           component_language?: string | null
           created_at?: string
           created_by?: string | null
@@ -4440,12 +4430,10 @@ export type Database = {
           version_number: number
         }
         Update: {
-          allowed_imports?: Json | null
           app_id?: string
           category?: string | null
           change_note?: string | null
           changed_at?: string
-          component_code?: string | null
           component_language?: string | null
           created_at?: string
           created_by?: string | null
@@ -24705,327 +24693,6 @@ export type Database = {
           value_version?: number | null
           was_useful?: boolean | null
         }
-        Relationships: [
-          {
-            foreignKeyName: "context_access_log_value_id_fkey"
-            columns: ["value_id"]
-            isOneToOne: false
-            referencedRelation: "context_item_values"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      context_item_values: {
-        Row: {
-          authored_by: string | null
-          change_summary: string | null
-          char_count: number | null
-          context_item_id: string
-          created_at: string
-          custom_fields: Json
-          data_point_count: number | null
-          has_nested_objects: boolean
-          id: string
-          is_current: boolean
-          metadata: Json
-          organization_id: string
-          scope_id: string
-          source_type: Database["public"]["Enums"]["context_source_type"]
-          value_boolean: boolean | null
-          value_date: string | null
-          value_document_size_bytes: number | null
-          value_document_url: string | null
-          value_json: Json | null
-          value_number: number | null
-          value_reference_id: string | null
-          value_reference_type: string | null
-          value_text: string | null
-          value_time: string | null
-          value_timestamp: string | null
-          version: number
-        }
-        Insert: {
-          authored_by?: string | null
-          change_summary?: string | null
-          char_count?: number | null
-          context_item_id: string
-          created_at?: string
-          custom_fields?: Json
-          data_point_count?: number | null
-          has_nested_objects?: boolean
-          id?: string
-          is_current?: boolean
-          metadata?: Json
-          organization_id: string
-          scope_id: string
-          source_type?: Database["public"]["Enums"]["context_source_type"]
-          value_boolean?: boolean | null
-          value_date?: string | null
-          value_document_size_bytes?: number | null
-          value_document_url?: string | null
-          value_json?: Json | null
-          value_number?: number | null
-          value_reference_id?: string | null
-          value_reference_type?: string | null
-          value_text?: string | null
-          value_time?: string | null
-          value_timestamp?: string | null
-          version?: number
-        }
-        Update: {
-          authored_by?: string | null
-          change_summary?: string | null
-          char_count?: number | null
-          context_item_id?: string
-          created_at?: string
-          custom_fields?: Json
-          data_point_count?: number | null
-          has_nested_objects?: boolean
-          id?: string
-          is_current?: boolean
-          metadata?: Json
-          organization_id?: string
-          scope_id?: string
-          source_type?: Database["public"]["Enums"]["context_source_type"]
-          value_boolean?: boolean | null
-          value_date?: string | null
-          value_document_size_bytes?: number | null
-          value_document_url?: string | null
-          value_json?: Json | null
-          value_number?: number | null
-          value_reference_id?: string | null
-          value_reference_type?: string | null
-          value_text?: string | null
-          value_time?: string | null
-          value_timestamp?: string | null
-          version?: number
-        }
-        Relationships: []
-      }
-      context_items: {
-        Row: {
-          allowed_reference_types: string[] | null
-          allowed_scope_type_ids: string[] | null
-          category: string | null
-          created_at: string
-          created_by: string | null
-          custom_component: Json | null
-          custom_fields: Json
-          deleted_at: string | null
-          depends_on: string[]
-          description: string
-          display_name: string
-          feed_config: Json
-          feed_error: string | null
-          feed_status: string | null
-          feed_type: Database["public"]["Enums"]["context_feed_type"]
-          fetch_hint: Database["public"]["Enums"]["context_fetch_hint"]
-          id: string
-          is_active: boolean
-          key: string
-          last_fed_at: string | null
-          last_verified_at: string | null
-          max_items: number
-          metadata: Json
-          next_review_at: string | null
-          reference_source: Json | null
-          refresh_task_id: string | null
-          review_interval_days: number | null
-          scope_type_id: string
-          sensitivity: Database["public"]["Enums"]["context_sensitivity"]
-          slug: string
-          sort_order: number
-          source_type: Database["public"]["Enums"]["context_source_type"]
-          status: Database["public"]["Enums"]["context_item_status"]
-          status_note: string | null
-          status_updated_at: string
-          status_updated_by: string | null
-          tags: string[]
-          template_item_key: string | null
-          updated_at: string
-          updated_by: string | null
-          value_type: Database["public"]["Enums"]["context_value_type"]
-          version: number
-        }
-        Insert: {
-          allowed_reference_types?: string[] | null
-          allowed_scope_type_ids?: string[] | null
-          category?: string | null
-          created_at?: string
-          created_by?: string | null
-          custom_component?: Json | null
-          custom_fields?: Json
-          deleted_at?: string | null
-          depends_on?: string[]
-          description?: string
-          display_name: string
-          feed_config?: Json
-          feed_error?: string | null
-          feed_status?: string | null
-          feed_type?: Database["public"]["Enums"]["context_feed_type"]
-          fetch_hint?: Database["public"]["Enums"]["context_fetch_hint"]
-          id?: string
-          is_active?: boolean
-          key: string
-          last_fed_at?: string | null
-          last_verified_at?: string | null
-          max_items?: number
-          metadata?: Json
-          next_review_at?: string | null
-          reference_source?: Json | null
-          refresh_task_id?: string | null
-          review_interval_days?: number | null
-          scope_type_id: string
-          sensitivity?: Database["public"]["Enums"]["context_sensitivity"]
-          slug: string
-          sort_order?: number
-          source_type?: Database["public"]["Enums"]["context_source_type"]
-          status?: Database["public"]["Enums"]["context_item_status"]
-          status_note?: string | null
-          status_updated_at?: string
-          status_updated_by?: string | null
-          tags?: string[]
-          template_item_key?: string | null
-          updated_at?: string
-          updated_by?: string | null
-          value_type?: Database["public"]["Enums"]["context_value_type"]
-          version?: number
-        }
-        Update: {
-          allowed_reference_types?: string[] | null
-          allowed_scope_type_ids?: string[] | null
-          category?: string | null
-          created_at?: string
-          created_by?: string | null
-          custom_component?: Json | null
-          custom_fields?: Json
-          deleted_at?: string | null
-          depends_on?: string[]
-          description?: string
-          display_name?: string
-          feed_config?: Json
-          feed_error?: string | null
-          feed_status?: string | null
-          feed_type?: Database["public"]["Enums"]["context_feed_type"]
-          fetch_hint?: Database["public"]["Enums"]["context_fetch_hint"]
-          id?: string
-          is_active?: boolean
-          key?: string
-          last_fed_at?: string | null
-          last_verified_at?: string | null
-          max_items?: number
-          metadata?: Json
-          next_review_at?: string | null
-          reference_source?: Json | null
-          refresh_task_id?: string | null
-          review_interval_days?: number | null
-          scope_type_id?: string
-          sensitivity?: Database["public"]["Enums"]["context_sensitivity"]
-          slug?: string
-          sort_order?: number
-          source_type?: Database["public"]["Enums"]["context_source_type"]
-          status?: Database["public"]["Enums"]["context_item_status"]
-          status_note?: string | null
-          status_updated_at?: string
-          status_updated_by?: string | null
-          tags?: string[]
-          template_item_key?: string | null
-          updated_at?: string
-          updated_by?: string | null
-          value_type?: Database["public"]["Enums"]["context_value_type"]
-          version?: number
-        }
-        Relationships: [
-          {
-            foreignKeyName: "ctx_context_items_scope_type_id_fkey"
-            columns: ["scope_type_id"]
-            isOneToOne: false
-            referencedRelation: "scope_types"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      context_value_refs: {
-        Row: {
-          context_item_id: string
-          created_at: string
-          custom_fields: Json
-          id: string
-          ref_key: string
-          ref_type: string
-          scope_id: string
-          value_id: string
-        }
-        Insert: {
-          context_item_id: string
-          created_at?: string
-          custom_fields?: Json
-          id?: string
-          ref_key: string
-          ref_type: string
-          scope_id: string
-          value_id: string
-        }
-        Update: {
-          context_item_id?: string
-          created_at?: string
-          custom_fields?: Json
-          id?: string
-          ref_key?: string
-          ref_type?: string
-          scope_id?: string
-          value_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "context_value_refs_value_id_fkey"
-            columns: ["value_id"]
-            isOneToOne: false
-            referencedRelation: "context_item_values"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      scope_dataset_instances: {
-        Row: {
-          context_item_id: string
-          created_at: string
-          created_by: string | null
-          custom_fields: Json
-          dataset_id: string
-          id: string
-          metadata: Json
-          organization_id: string
-          scope_id: string
-          template_id: string
-          template_version: number
-        }
-        Insert: {
-          context_item_id: string
-          created_at?: string
-          created_by?: string | null
-          custom_fields?: Json
-          dataset_id: string
-          id?: string
-          metadata?: Json
-          organization_id: string
-          scope_id: string
-          template_id: string
-          template_version: number
-        }
-        Update: {
-          context_item_id?: string
-          created_at?: string
-          created_by?: string | null
-          custom_fields?: Json
-          dataset_id?: string
-          id?: string
-          metadata?: Json
-          organization_id?: string
-          scope_id?: string
-          template_id?: string
-          template_version?: number
-        }
         Relationships: []
       }
       scope_door_registry: {
@@ -25048,173 +24715,6 @@ export type Database = {
           reviewed_at?: string
         }
         Relationships: []
-      }
-      scope_types: {
-        Row: {
-          color: string
-          created_at: string
-          created_by: string | null
-          custom_fields: Json
-          default_variable_keys: string[]
-          deleted_at: string | null
-          description: string
-          icon: string
-          id: string
-          label_plural: string
-          label_singular: string
-          max_assignments_per_entity: number | null
-          metadata: Json
-          organization_id: string
-          parent_type_id: string | null
-          slug: string
-          sort_order: number
-          updated_at: string
-          updated_by: string | null
-          version: number
-        }
-        Insert: {
-          color?: string
-          created_at?: string
-          created_by?: string | null
-          custom_fields?: Json
-          default_variable_keys?: string[]
-          deleted_at?: string | null
-          description?: string
-          icon?: string
-          id?: string
-          label_plural: string
-          label_singular: string
-          max_assignments_per_entity?: number | null
-          metadata?: Json
-          organization_id: string
-          parent_type_id?: string | null
-          slug: string
-          sort_order?: number
-          updated_at?: string
-          updated_by?: string | null
-          version?: number
-        }
-        Update: {
-          color?: string
-          created_at?: string
-          created_by?: string | null
-          custom_fields?: Json
-          default_variable_keys?: string[]
-          deleted_at?: string | null
-          description?: string
-          icon?: string
-          id?: string
-          label_plural?: string
-          label_singular?: string
-          max_assignments_per_entity?: number | null
-          metadata?: Json
-          organization_id?: string
-          parent_type_id?: string | null
-          slug?: string
-          sort_order?: number
-          updated_at?: string
-          updated_by?: string | null
-          version?: number
-        }
-        Relationships: [
-          {
-            foreignKeyName: "ctx_scope_types_parent_type_id_fkey"
-            columns: ["parent_type_id"]
-            isOneToOne: false
-            referencedRelation: "scope_types"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      scopes: {
-        Row: {
-          created_at: string
-          created_by: string | null
-          custom_fields: Json
-          deleted_at: string | null
-          description: string
-          id: string
-          metadata: Json
-          name: string
-          organization_id: string
-          parent_scope_id: string | null
-          published_to_web: boolean
-          published_to_web_at: string | null
-          published_to_web_by: string | null
-          scope_type_id: string
-          settings: Json
-          shown_to: Database["platform"]["Enums"]["shown_to"] | null
-          slug: string
-          sort_order: number
-          updated_at: string
-          updated_by: string | null
-          version: number
-          visibility: Database["platform"]["Enums"]["visibility"]
-        }
-        Insert: {
-          created_at?: string
-          created_by?: string | null
-          custom_fields?: Json
-          deleted_at?: string | null
-          description?: string
-          id?: string
-          metadata?: Json
-          name: string
-          organization_id: string
-          parent_scope_id?: string | null
-          published_to_web?: boolean
-          published_to_web_at?: string | null
-          published_to_web_by?: string | null
-          scope_type_id: string
-          settings?: Json
-          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
-          slug: string
-          sort_order?: number
-          updated_at?: string
-          updated_by?: string | null
-          version?: number
-          visibility?: Database["platform"]["Enums"]["visibility"]
-        }
-        Update: {
-          created_at?: string
-          created_by?: string | null
-          custom_fields?: Json
-          deleted_at?: string | null
-          description?: string
-          id?: string
-          metadata?: Json
-          name?: string
-          organization_id?: string
-          parent_scope_id?: string | null
-          published_to_web?: boolean
-          published_to_web_at?: string | null
-          published_to_web_by?: string | null
-          scope_type_id?: string
-          settings?: Json
-          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
-          slug?: string
-          sort_order?: number
-          updated_at?: string
-          updated_by?: string | null
-          version?: number
-          visibility?: Database["platform"]["Enums"]["visibility"]
-        }
-        Relationships: [
-          {
-            foreignKeyName: "ctx_scopes_parent_scope_id_fkey"
-            columns: ["parent_scope_id"]
-            isOneToOne: false
-            referencedRelation: "scopes"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "ctx_scopes_scope_type_id_fkey"
-            columns: ["scope_type_id"]
-            isOneToOne: false
-            referencedRelation: "scope_types"
-            referencedColumns: ["id"]
-          },
-        ]
       }
       system_context_item: {
         Row: {
@@ -39945,6 +39445,277 @@ export type Database = {
   }
   deprecated: {
     Tables: {
+      context_item_values: {
+        Row: {
+          authored_by: string | null
+          change_summary: string | null
+          char_count: number | null
+          context_item_id: string
+          created_at: string
+          custom_fields: Json
+          data_point_count: number | null
+          has_nested_objects: boolean
+          id: string
+          is_current: boolean
+          metadata: Json
+          organization_id: string
+          scope_id: string
+          source_type: Database["public"]["Enums"]["context_source_type"]
+          value_boolean: boolean | null
+          value_date: string | null
+          value_document_size_bytes: number | null
+          value_document_url: string | null
+          value_json: Json | null
+          value_number: number | null
+          value_reference_id: string | null
+          value_reference_type: string | null
+          value_text: string | null
+          value_time: string | null
+          value_timestamp: string | null
+          version: number
+        }
+        Insert: {
+          authored_by?: string | null
+          change_summary?: string | null
+          char_count?: number | null
+          context_item_id: string
+          created_at?: string
+          custom_fields?: Json
+          data_point_count?: number | null
+          has_nested_objects?: boolean
+          id?: string
+          is_current?: boolean
+          metadata?: Json
+          organization_id: string
+          scope_id: string
+          source_type?: Database["public"]["Enums"]["context_source_type"]
+          value_boolean?: boolean | null
+          value_date?: string | null
+          value_document_size_bytes?: number | null
+          value_document_url?: string | null
+          value_json?: Json | null
+          value_number?: number | null
+          value_reference_id?: string | null
+          value_reference_type?: string | null
+          value_text?: string | null
+          value_time?: string | null
+          value_timestamp?: string | null
+          version?: number
+        }
+        Update: {
+          authored_by?: string | null
+          change_summary?: string | null
+          char_count?: number | null
+          context_item_id?: string
+          created_at?: string
+          custom_fields?: Json
+          data_point_count?: number | null
+          has_nested_objects?: boolean
+          id?: string
+          is_current?: boolean
+          metadata?: Json
+          organization_id?: string
+          scope_id?: string
+          source_type?: Database["public"]["Enums"]["context_source_type"]
+          value_boolean?: boolean | null
+          value_date?: string | null
+          value_document_size_bytes?: number | null
+          value_document_url?: string | null
+          value_json?: Json | null
+          value_number?: number | null
+          value_reference_id?: string | null
+          value_reference_type?: string | null
+          value_text?: string | null
+          value_time?: string | null
+          value_timestamp?: string | null
+          version?: number
+        }
+        Relationships: []
+      }
+      context_items: {
+        Row: {
+          allowed_reference_types: string[] | null
+          allowed_scope_type_ids: string[] | null
+          category: string | null
+          created_at: string
+          created_by: string | null
+          custom_component: Json | null
+          custom_fields: Json
+          deleted_at: string | null
+          depends_on: string[]
+          description: string
+          display_name: string
+          feed_config: Json
+          feed_error: string | null
+          feed_status: string | null
+          feed_type: Database["public"]["Enums"]["context_feed_type"]
+          fetch_hint: Database["public"]["Enums"]["context_fetch_hint"]
+          id: string
+          is_active: boolean
+          key: string
+          last_fed_at: string | null
+          last_verified_at: string | null
+          max_items: number
+          metadata: Json
+          next_review_at: string | null
+          reference_source: Json | null
+          refresh_task_id: string | null
+          review_interval_days: number | null
+          scope_type_id: string
+          sensitivity: Database["public"]["Enums"]["context_sensitivity"]
+          slug: string
+          sort_order: number
+          source_type: Database["public"]["Enums"]["context_source_type"]
+          status: Database["public"]["Enums"]["context_item_status"]
+          status_note: string | null
+          status_updated_at: string
+          status_updated_by: string | null
+          tags: string[]
+          template_item_key: string | null
+          updated_at: string
+          updated_by: string | null
+          value_type: Database["public"]["Enums"]["context_value_type"]
+          version: number
+        }
+        Insert: {
+          allowed_reference_types?: string[] | null
+          allowed_scope_type_ids?: string[] | null
+          category?: string | null
+          created_at?: string
+          created_by?: string | null
+          custom_component?: Json | null
+          custom_fields?: Json
+          deleted_at?: string | null
+          depends_on?: string[]
+          description?: string
+          display_name: string
+          feed_config?: Json
+          feed_error?: string | null
+          feed_status?: string | null
+          feed_type?: Database["public"]["Enums"]["context_feed_type"]
+          fetch_hint?: Database["public"]["Enums"]["context_fetch_hint"]
+          id?: string
+          is_active?: boolean
+          key: string
+          last_fed_at?: string | null
+          last_verified_at?: string | null
+          max_items?: number
+          metadata?: Json
+          next_review_at?: string | null
+          reference_source?: Json | null
+          refresh_task_id?: string | null
+          review_interval_days?: number | null
+          scope_type_id: string
+          sensitivity?: Database["public"]["Enums"]["context_sensitivity"]
+          slug: string
+          sort_order?: number
+          source_type?: Database["public"]["Enums"]["context_source_type"]
+          status?: Database["public"]["Enums"]["context_item_status"]
+          status_note?: string | null
+          status_updated_at?: string
+          status_updated_by?: string | null
+          tags?: string[]
+          template_item_key?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          value_type?: Database["public"]["Enums"]["context_value_type"]
+          version?: number
+        }
+        Update: {
+          allowed_reference_types?: string[] | null
+          allowed_scope_type_ids?: string[] | null
+          category?: string | null
+          created_at?: string
+          created_by?: string | null
+          custom_component?: Json | null
+          custom_fields?: Json
+          deleted_at?: string | null
+          depends_on?: string[]
+          description?: string
+          display_name?: string
+          feed_config?: Json
+          feed_error?: string | null
+          feed_status?: string | null
+          feed_type?: Database["public"]["Enums"]["context_feed_type"]
+          fetch_hint?: Database["public"]["Enums"]["context_fetch_hint"]
+          id?: string
+          is_active?: boolean
+          key?: string
+          last_fed_at?: string | null
+          last_verified_at?: string | null
+          max_items?: number
+          metadata?: Json
+          next_review_at?: string | null
+          reference_source?: Json | null
+          refresh_task_id?: string | null
+          review_interval_days?: number | null
+          scope_type_id?: string
+          sensitivity?: Database["public"]["Enums"]["context_sensitivity"]
+          slug?: string
+          sort_order?: number
+          source_type?: Database["public"]["Enums"]["context_source_type"]
+          status?: Database["public"]["Enums"]["context_item_status"]
+          status_note?: string | null
+          status_updated_at?: string
+          status_updated_by?: string | null
+          tags?: string[]
+          template_item_key?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          value_type?: Database["public"]["Enums"]["context_value_type"]
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ctx_context_items_scope_type_id_fkey"
+            columns: ["scope_type_id"]
+            isOneToOne: false
+            referencedRelation: "scope_types"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      context_value_refs: {
+        Row: {
+          context_item_id: string
+          created_at: string
+          custom_fields: Json
+          id: string
+          ref_key: string
+          ref_type: string
+          scope_id: string
+          value_id: string
+        }
+        Insert: {
+          context_item_id: string
+          created_at?: string
+          custom_fields?: Json
+          id?: string
+          ref_key: string
+          ref_type: string
+          scope_id: string
+          value_id: string
+        }
+        Update: {
+          context_item_id?: string
+          created_at?: string
+          custom_fields?: Json
+          id?: string
+          ref_key?: string
+          ref_type?: string
+          scope_id?: string
+          value_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "context_value_refs_value_id_fkey"
+            columns: ["value_id"]
+            isOneToOne: false
+            referencedRelation: "context_item_values"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       custom_entity_definition: {
         Row: {
           ai_exposure: string
@@ -40360,6 +40131,223 @@ export type Database = {
           visibility?: Database["platform"]["Enums"]["visibility"]
         }
         Relationships: []
+      }
+      scope_dataset_instances: {
+        Row: {
+          context_item_id: string
+          created_at: string
+          created_by: string | null
+          custom_fields: Json
+          dataset_id: string
+          id: string
+          metadata: Json
+          organization_id: string
+          scope_id: string
+          template_id: string
+          template_version: number
+        }
+        Insert: {
+          context_item_id: string
+          created_at?: string
+          created_by?: string | null
+          custom_fields?: Json
+          dataset_id: string
+          id?: string
+          metadata?: Json
+          organization_id: string
+          scope_id: string
+          template_id: string
+          template_version: number
+        }
+        Update: {
+          context_item_id?: string
+          created_at?: string
+          created_by?: string | null
+          custom_fields?: Json
+          dataset_id?: string
+          id?: string
+          metadata?: Json
+          organization_id?: string
+          scope_id?: string
+          template_id?: string
+          template_version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "scope_dataset_instances_dataset_id_fkey"
+            columns: ["dataset_id"]
+            isOneToOne: true
+            referencedRelation: "udt_datasets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      scope_types: {
+        Row: {
+          color: string
+          created_at: string
+          created_by: string | null
+          custom_fields: Json
+          default_variable_keys: string[]
+          deleted_at: string | null
+          description: string
+          icon: string
+          id: string
+          label_plural: string
+          label_singular: string
+          max_assignments_per_entity: number | null
+          metadata: Json
+          organization_id: string
+          parent_type_id: string | null
+          slug: string
+          sort_order: number
+          updated_at: string
+          updated_by: string | null
+          version: number
+        }
+        Insert: {
+          color?: string
+          created_at?: string
+          created_by?: string | null
+          custom_fields?: Json
+          default_variable_keys?: string[]
+          deleted_at?: string | null
+          description?: string
+          icon?: string
+          id?: string
+          label_plural: string
+          label_singular: string
+          max_assignments_per_entity?: number | null
+          metadata?: Json
+          organization_id: string
+          parent_type_id?: string | null
+          slug: string
+          sort_order?: number
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Update: {
+          color?: string
+          created_at?: string
+          created_by?: string | null
+          custom_fields?: Json
+          default_variable_keys?: string[]
+          deleted_at?: string | null
+          description?: string
+          icon?: string
+          id?: string
+          label_plural?: string
+          label_singular?: string
+          max_assignments_per_entity?: number | null
+          metadata?: Json
+          organization_id?: string
+          parent_type_id?: string | null
+          slug?: string
+          sort_order?: number
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ctx_scope_types_parent_type_id_fkey"
+            columns: ["parent_type_id"]
+            isOneToOne: false
+            referencedRelation: "scope_types"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      scopes: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          custom_fields: Json
+          deleted_at: string | null
+          description: string
+          id: string
+          metadata: Json
+          name: string
+          organization_id: string
+          parent_scope_id: string | null
+          published_to_web: boolean
+          published_to_web_at: string | null
+          published_to_web_by: string | null
+          scope_type_id: string
+          settings: Json
+          shown_to: Database["platform"]["Enums"]["shown_to"] | null
+          slug: string
+          sort_order: number
+          updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          custom_fields?: Json
+          deleted_at?: string | null
+          description?: string
+          id?: string
+          metadata?: Json
+          name: string
+          organization_id: string
+          parent_scope_id?: string | null
+          published_to_web?: boolean
+          published_to_web_at?: string | null
+          published_to_web_by?: string | null
+          scope_type_id: string
+          settings?: Json
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
+          slug: string
+          sort_order?: number
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          custom_fields?: Json
+          deleted_at?: string | null
+          description?: string
+          id?: string
+          metadata?: Json
+          name?: string
+          organization_id?: string
+          parent_scope_id?: string | null
+          published_to_web?: boolean
+          published_to_web_at?: string | null
+          published_to_web_by?: string | null
+          scope_type_id?: string
+          settings?: Json
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
+          slug?: string
+          sort_order?: number
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ctx_scopes_parent_scope_id_fkey"
+            columns: ["parent_scope_id"]
+            isOneToOne: false
+            referencedRelation: "scopes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ctx_scopes_scope_type_id_fkey"
+            columns: ["scope_type_id"]
+            isOneToOne: false
+            referencedRelation: "scope_types"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       udt_dataset_fields: {
         Row: {
@@ -96181,7 +96169,7 @@ export type Database = {
             } & "Could not choose the best candidate function between: public._edu_access_mode(p_scope => scopes), public._edu_access_mode(p_scope => _edu_class_row). Try renaming the parameters or the function itself in the database so function overloading can be resolved"
           }
         | {
-            Args: { p_scope: Database["context"]["Tables"]["scopes"]["Row"] }
+            Args: { p_scope: Database["deprecated"]["Tables"]["scopes"]["Row"] }
             Returns: {
               error: true
             } & "Could not choose the best candidate function between: public._edu_access_mode(p_scope => scopes), public._edu_access_mode(p_scope => _edu_class_row). Try renaming the parameters or the function itself in the database so function overloading can be resolved"
@@ -96220,7 +96208,7 @@ export type Database = {
             } & "Could not choose the best candidate function between: public._edu_ensure_owner_membership(p_scope => scopes), public._edu_ensure_owner_membership(p_scope => _edu_class_row). Try renaming the parameters or the function itself in the database so function overloading can be resolved"
           }
         | {
-            Args: { p_scope: Database["context"]["Tables"]["scopes"]["Row"] }
+            Args: { p_scope: Database["deprecated"]["Tables"]["scopes"]["Row"] }
             Returns: {
               error: true
             } & "Could not choose the best candidate function between: public._edu_ensure_owner_membership(p_scope => scopes), public._edu_ensure_owner_membership(p_scope => _edu_class_row). Try renaming the parameters or the function itself in the database so function overloading can be resolved"
@@ -96239,7 +96227,7 @@ export type Database = {
             } & "Could not choose the best candidate function between: public._edu_is_owner(p_scope => scopes), public._edu_is_owner(p_scope => _edu_class_row). Try renaming the parameters or the function itself in the database so function overloading can be resolved"
           }
         | {
-            Args: { p_scope: Database["context"]["Tables"]["scopes"]["Row"] }
+            Args: { p_scope: Database["deprecated"]["Tables"]["scopes"]["Row"] }
             Returns: {
               error: true
             } & "Could not choose the best candidate function between: public._edu_is_owner(p_scope => scopes), public._edu_is_owner(p_scope => _edu_class_row). Try renaming the parameters or the function itself in the database so function overloading can be resolved"

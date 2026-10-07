@@ -1,4 +1,3 @@
--- draft: held 2026-10-07 by SCOPES-W3 — slug reader resolved (scopesw3a) and the two label-only views are allowlisted below, but the deprecated-boundary guard (platform._deprecated_outbound_fk_guard) refuses the move while the six tables hold 19 FKs, 12 of them into live iam.users, iam.organizations and workbench.udt_dataset_templates; drop those 14 first (inverse must re-add them), then remove this line.
 -- chair-step: wave 3 of SCOPES-ON-THE-STORE. It MOVES the six old scope tables — context.scopes, scope_types, context_items, context_item_values, context_value_refs, scope_dataset_instances — into the `deprecated` schema with ALTER TABLE … SET SCHEMA (no row is touched; indexes, constraints, triggers, owned sequences and the 13 outside foreign keys move with them by OID). The reference tables stay in `context`. THIS FILE REFUSES ITSELF while any function body outside `deprecated` still names one of the six by its old name (a plpgsql body resolves the name at run time and would fail after the move): on 2026-10-05 that census lists 86 bodies (the lane-9 doors' image write and follow, the old RPCs, the instruments and the class-C readers), so wave 2's remaining moves and the image-write removal must land first. Reversible: the inverse moves the six back.
 -- lane: FINISH-THE-SWITCH (FTS-1, wave 3 prep of SCOPES-ON-THE-STORE)
 -- lock: custom
@@ -50,8 +49,26 @@ begin
   end if;
 end $pre$;
 
-alter table context.scopes set schema deprecated;
+-- THE 14 OUTBOUND FOREIGN KEYS INTO LIVE SCHEMAS (chair ruling 2026-10-07: GO; the deprecated-boundary guard refuses a retired relation that constrains live objects).
+set lock_timeout = '2s';
+alter table context.context_item_values drop constraint context_context_item_values_organization_id_fkey;
+alter table context.context_item_values drop constraint context_item_values_authored_by_fkey;
+alter table context.context_items drop constraint context_items_created_by_fkey;
+alter table context.context_items drop constraint context_items_status_updated_by_fkey;
+alter table context.context_items drop constraint context_items_updated_by_fkey;
+alter table context.scope_dataset_instances drop constraint context_scope_dataset_instances_organization_id_fkey;
+alter table context.scope_dataset_instances drop constraint scope_dataset_instances_created_by_fkey;
+alter table context.scope_dataset_instances drop constraint scope_dataset_instances_template_id_fkey;
+alter table context.scope_types drop constraint ctx_scope_types_organization_id_fkey;
+alter table context.scope_types drop constraint scope_types_created_by_fkey;
+alter table context.scope_types drop constraint scope_types_updated_by_fkey;
+alter table context.scopes drop constraint ctx_scopes_created_by_fkey;
+alter table context.scopes drop constraint ctx_scopes_organization_id_fkey;
+alter table context.scopes drop constraint scopes_updated_by_fkey;
+
+-- ORDER: scope_types first, so the foreign keys between the six point at an already-retired table when the guard looks.
 alter table context.scope_types set schema deprecated;
+alter table context.scopes set schema deprecated;
 alter table context.context_items set schema deprecated;
 alter table context.context_item_values set schema deprecated;
 alter table context.context_value_refs set schema deprecated;
