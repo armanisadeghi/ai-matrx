@@ -31,6 +31,7 @@ import {
   FormRunner,
   RecordsUiProvider,
   endingsFromDocument,
+  hiddenFromLink,
   themeFromDocument,
   welcomeFromDocument,
   type FormSubmitOutcome,
@@ -110,13 +111,15 @@ function newVisitKey(): string {
 export function PublicFormRunner({
   form,
   prefill,
-  hidden,
+  linkQuery,
 }: {
   form: PublicForm;
   prefill?: Record<string, unknown>;
-  /** TYPEFORM-DUP: the hidden fields' values the link carried, sent beside the answers. */
-  hidden?: Record<string, string>;
+  /** The link's query. TYPEFORM-DUP: the form's HIDDEN FIELDS (utm_source, ref, …) are read from it —
+   *  only the names the form declares — sent beside the answers and kept on the submission, never shown. */
+  linkQuery?: Record<string, string | string[] | undefined>;
 }) {
+  const hidden = hiddenFromLink(form.presentation?.hidden_fields ?? [], linkQuery ?? {});
   // ── COUNTED HONESTLY (TYPEFORM-DUP): view, start, each question reached — through our own route.
   const visitKey = useRef<string | null>(null);
   const count = useCallback(

@@ -162,7 +162,13 @@ async function branch(name: string, utm: string, steps: (p: Page) => Promise<voi
   await page.getByRole("button", { name: "Start" }).click();
   await steps(page);
   const end = page.locator("[data-records-form-ending]");
-  await end.waitFor({ timeout: 60_000 });
+  try {
+    await end.waitFor({ timeout: 60_000 });
+  } catch (e) {
+    await page.screenshot({ path: `/tmp/typeform-${name}-stuck.png` });
+    console.log(`STUCK ${name}: ` + (await page.innerText("main")).slice(0, 800).replace(/\n+/g, " | "));
+    throw e;
+  }
   const reached = await end.getAttribute("data-records-form-ending");
   check(`${name}: reaches the ending "${ending}"`, reached === ending, { reached, title: await end.innerText() });
   await page.screenshot({ path: `/tmp/typeform-${name}.png` });
