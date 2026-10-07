@@ -29,6 +29,7 @@ import {
   type CaptureMethod,
 } from "@/hooks/useScreenCapture";
 import { toast } from "@/lib/toast";
+import { downloadUrl } from "@ai-matrx/kit/download";
 
 const PANEL_CLASS = "capture-demo-panel";
 
@@ -122,14 +123,14 @@ function PanelBody() {
                   className="w-full h-28 object-cover"
                 />
                 <div className="absolute top-1 right-1 flex gap-1">
-                  <a
-                    href={result.dataUrl}
-                    download={result.file.name}
+                  <button
+                    type="button"
+                    onClick={() => downloadUrl(result.dataUrl, result.file.name)}
                     className="p-1 rounded bg-black/60 text-white hover:bg-black/80 transition-colors"
                     title="Download"
                   >
                     <Download className="w-3 h-3" />
-                  </a>
+                  </button>
                   <button
                     type="button"
                     onClick={() =>

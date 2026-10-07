@@ -12,6 +12,7 @@ import {
 } from "@/hooks/useScreenCapture";
 import { toast } from "@/lib/toast";
 import { formatFileSize } from "@ai-matrx/kit/format";
+import { downloadUrl } from "@ai-matrx/kit/download";
 
 // ─── Shared preview card ─────────────────────────────────────────────────────
 
@@ -31,14 +32,14 @@ function PreviewCard({
         className="w-full h-auto max-h-80 object-contain bg-black/5"
       />
       <div className="absolute top-2 right-2 flex gap-1.5">
-        <a
-          href={result.dataUrl}
-          download={result.file.name}
+        <button
+          type="button"
+          onClick={() => downloadUrl(result.dataUrl, result.file.name)}
           className="flex items-center gap-1 px-2 py-1 text-[11px] font-medium rounded-md bg-black/60 text-white hover:bg-black/80 transition-colors"
         >
           <Download className="w-3 h-3" />
           Save
-        </a>
+        </button>
         <button
           type="button"
           onClick={onClear}
