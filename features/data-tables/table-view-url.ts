@@ -56,8 +56,8 @@ export type TableViewState = {
   order: string[];
   /**
    * How the grid uses horizontal space in THIS view. `default` = the person
-   * has not chosen: the ORGANIZATION's default applies (a knob,
-   * itself auto | fit | scroll).
+   * has not chosen: the ORGANIZATION's default applies
+   * (auto | fit | scroll).
    * Anything else is the person's own override — including an explicit `auto`,
    * which is how someone picks Automatic inside an organization whose default
    * is something else.
