@@ -57,10 +57,12 @@ export interface AppletBuildPage {
 
 export interface AppletBuildSource {
   alias: string;
-  /** "table" for one of her tables, "entity" for a platform record type. */
-  type: "table" | "entity";
+  /** "table" for one of her tables, "entity" for a platform record type, "new" for a table "Use it" makes. */
+  type: "table" | "entity" | "new";
   /** The entity token when `type` is "entity". */
   entity: string | null;
+  /** A new table's name and its column labels (applets 0.9.0 `new_table`). */
+  newTable?: { name: string; fields: string[] };
 }
 
 /** What `AppletBuildResultBlock` receives — read once, here. */
@@ -99,9 +101,19 @@ export function readAppletBuildResult(
     sources: list(applet.sources).flatMap((s) =>
       typeof s.alias === "string"
         ? [
-            typeof s.entity === "string" && s.entity
-              ? { alias: s.alias, type: "entity" as const, entity: s.entity }
-              : { alias: s.alias, type: "table" as const, entity: null },
+            isRecord(s.new_table)
+              ? {
+                  alias: s.alias,
+                  type: "new" as const,
+                  entity: null,
+                  newTable: {
+                    name: text(s.new_table.name) || s.alias,
+                    fields: list(s.new_table.fields).map((f) => text(f.label) || text(f.key)).filter(Boolean),
+                  },
+                }
+              : typeof s.entity === "string" && s.entity
+                ? { alias: s.alias, type: "entity" as const, entity: s.entity }
+                : { alias: s.alias, type: "table" as const, entity: null },
           ]
         : [],
     ),

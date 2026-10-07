@@ -21,6 +21,7 @@ import { useChangeByTalkingDisclosure } from "@/features/applets/route/useChange
 import { useOpenMandateWindow } from "@/features/overlays/openers/mandateWindow";
 import { storedMandateKey } from "@ai-matrx/agents/mandates";
 import { appletJobs, appletPages, appletSources } from "@/features/applets/types";
+import { useSourceTableNames } from "@/features/applets/hooks/useSourceTableNames";
 
 /** "summarize_book" → "Summarize book": the code's name for a job, as words. */
 function humanizeAlias(alias: string): string {
@@ -36,6 +37,7 @@ export function AppletOverviewContent({ appId }: AppletOverviewContentProps) {
   const app = useAppSelector((state) => selectAppById(state, appId));
   const openMandate = useOpenMandateWindow();
   useChangeByTalkingDisclosure();
+  const tableNames = useSourceTableNames(app ? appletSources(app).flatMap((s) => ("table_id" in s ? [s.table_id] : [])) : []);
 
   if (!app) {
     return (
@@ -125,11 +127,20 @@ export function AppletOverviewContent({ appId }: AppletOverviewContentProps) {
           {sources.length === 0 ? (
             <EmptyState icon={<SettingsIcon />} title="No sources" />
           ) : (
-            sources.map((source) => (
+            sources.map((source) => {
+              // The real table in words — never the code's alias alone (2026-10-07 audit: "books" hid a
+              // blank table of another organization).
+              const table = "table_id" in source ? tableNames[source.table_id] : undefined;
+              const otherOrg = "table_id" in source && source.organization_id !== app.organization_id;
+              return (
               <SettingRow
                 key={source.alias}
-                label={source.alias}
-                line={"entity" in source ? `Record type: ${source.entity}` : "Table"}
+                label={table?.name ?? source.alias}
+                line={
+                  "entity" in source
+                    ? `Record type: ${source.entity}`
+                    : `${otherOrg ? "Another organization's table" : "Table"}${table?.organizationName ? ` · ${table.organizationName}` : ""}`
+                }
               >
                 {"table_id" in source && (
                   <Button variant="quiet" asChild>
@@ -137,7 +148,8 @@ export function AppletOverviewContent({ appId }: AppletOverviewContentProps) {
                   </Button>
                 )}
               </SettingRow>
-            ))
+              );
+            })
           )}
         </RowGroup>
 
