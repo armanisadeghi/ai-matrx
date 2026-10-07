@@ -11,6 +11,7 @@ import { useIsMobile } from "@ai-matrx/kit/media-query";
 import { Backlinks } from "./Backlinks";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { toast } from "@/lib/toast";
+import { supabase } from "@/utils/supabase/client";
 import { selectActiveOrganizationId } from "@/features/scopes/redux/selectors/active-context";
 import { isOrganizationSelectionCancelled } from "@/lib/organization/selection-cancelled";
 import { useAppSelector } from "@/lib/redux/hooks";
@@ -173,7 +174,11 @@ function SpacePageScreen({ spaceId }: { spaceId: string }) {
   // H5 — what this person may do here: the database decides (get_resource_access); a viewer or
   // commenter never gets editing affordances, never writes, and sees the room read-only.
   const access = useAccess("document", spaceId);
-  const canEdit = access.level === "edit" || access.level === "admin";
+  // Full editing (structure, sharing, settings) vs "Can edit content" (edit_content: the page's text and rows only);
+  // the database refuses the rest, so the page only stops offering it.
+  const fullEdit = access.level === "edit" || access.level === "admin";
+  const contentOnly = useContentEditOnly(spaceId, access.level === "view");
+  const canEdit = fullEdit || contentOnly;
   // A page in Trash (its own row or an ancestor's, by the store's read or the list) takes no edits and no
   // saves, and this member gives up the room's host role at once; Restore brings both back.
   const trashedNow = !!doc && (doc.isArchived || trashedByList(doc.id, doc.parentId, spaces.archived, spaces.byId));
@@ -632,7 +637,7 @@ function SpacePageScreen({ spaceId }: { spaceId: string }) {
   const moveIn = useMoveIn();
   // N2 — Remind on a date mention: this person's reminders follow the page's date mentions.
   usePageReminders(spaceId, doc?.title ?? "", doc?.blocks, userId ?? null, !!doc && !trashedNow);
-  useSyncedEdges(spaceId, doc?.blocks, !!doc && !trashedNow && canEdit);
+  useSyncedEdges(spaceId, doc?.blocks, !!doc && !trashedNow && fullEdit);
   // N3: suggestions carry this person as their author; suggest mode is per page.
   useEffect(() => {
     setSuggestAuthor(userId ?? null);
@@ -807,7 +812,7 @@ function SpacePageScreen({ spaceId }: { spaceId: string }) {
         </nav>
         <span className="flex-1" />
         {locked ? (
-          <button type="button" className="spaces-locked-pill" onClick={() => canEdit && setSettings({ locked: false })} disabled={!canEdit} title={canEdit ? "Unlock page" : "Locked"}>
+          <button type="button" className="spaces-locked-pill" onClick={() => fullEdit && setSettings({ locked: false })} disabled={!fullEdit} title={fullEdit ? "Unlock page" : "Locked"}>
             <Lock size={13} />
             Locked
           </button>
@@ -849,6 +854,7 @@ function SpacePageScreen({ spaceId }: { spaceId: string }) {
         </button>
         <PageMenu
           suggestPageId={canEdit ? doc.id : undefined}
+          contentOnly={contentOnly}
           settings={doc.settings}
           onSettings={setSettings}
           onCopyLink={copyLink}
@@ -1060,4 +1066,23 @@ function SpacePageScreen({ spaceId }: { spaceId: string }) {
       </div>
     </div>
   );
+}
+
+/** True when this person holds "Can edit content" (edit_content) on the page but not editor — asked only for a viewer. */
+function useContentEditOnly(spaceId: string, ask: boolean): boolean {
+  const [yes, setYes] = useState(false);
+  useEffect(() => {
+    if (!ask) return setYes(false);
+    let live = true;
+    const iam = supabase.schema("iam" as never) as unknown as {
+      rpc: (fn: string, args: Record<string, unknown>) => PromiseLike<{ data: unknown; error: { message: string } | null }>;
+    };
+    void iam.rpc("has_access", { p_type: "document", p_id: spaceId, p_required: "edit_content" }).then(({ data, error }) => {
+      if (live) setYes(!error && data === true);
+    });
+    return () => {
+      live = false;
+    };
+  }, [spaceId, ask]);
+  return yes;
 }
