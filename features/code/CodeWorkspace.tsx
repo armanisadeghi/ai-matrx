@@ -78,6 +78,9 @@ export interface CodeWorkspaceProps {
    *  Use on focused-edit routes where the user is working inside one
    *  specific source. */
   focusedLibrarySourceId?: string;
+  /** With `focusedLibrarySourceId`: the ONE row being edited — the Library
+   *  then lists only that row's files (the Applet editor). */
+  focusedLibraryRowId?: string;
   className?: string;
   /** Authenticated sandbox handoff from the `/code?sandbox=` route. */
   initialSandbox?: SandboxInstance | null;
@@ -101,6 +104,7 @@ export const CodeWorkspace: React.FC<CodeWorkspaceProps> = ({
   defaultSideSize,
   showActivityBar = true,
   focusedLibrarySourceId,
+  focusedLibraryRowId,
   className,
   initialSandbox,
   onInitialSandboxError,
@@ -114,6 +118,7 @@ export const CodeWorkspace: React.FC<CodeWorkspaceProps> = ({
       initialFilesystem={adapter}
       initialProcess={process}
       focusedLibrarySourceId={focusedLibrarySourceId}
+      focusedLibraryRowId={focusedLibraryRowId}
     >
       {initialSandbox && onInitialSandboxError ? (
         <SandboxDeepLinkConnection

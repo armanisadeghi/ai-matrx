@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { useAppStore } from "@/lib/redux/hooks";
+import { useAppDispatch, useAppStore } from "@/lib/redux/hooks";
+import { setOpen as setBottomOpen } from "@/features/code/redux/terminalSlice";
 import { CodeWorkspaceRoute } from "@/features/code/host/CodeWorkspaceRoute";
 import { ChatPanelSlot } from "@/features/code/chat/ChatPanelSlot";
 import { useOpenSourceEntry } from "@/features/code/hooks/useOpenSourceEntry";
@@ -20,6 +21,7 @@ interface AppletEditPageClientProps {
 
 export function AppletEditPageClient({ app }: AppletEditPageClientProps) {
   const store = useAppStore();
+  const dispatch = useAppDispatch();
   const openSourceEntry = useOpenSourceEntry();
   const openRenderPreview = useOpenRenderPreview();
   const bootstrappedRef = useRef(false);
@@ -36,6 +38,9 @@ export function AppletEditPageClient({ app }: AppletEditPageClientProps) {
   useEffect(() => {
     if (bootstrappedRef.current) return;
     bootstrappedRef.current = true;
+    // A person editing an Applet has no sandbox: the terminal starts closed
+    // (its tab stays one click away in the bottom bar).
+    dispatch(setBottomOpen(false));
 
     const entry = app.entry || "App.tsx";
     const sourceTabId = agaAppsAdapter.makeTabId(app.id, entry);
@@ -48,26 +53,30 @@ export function AppletEditPageClient({ app }: AppletEditPageClientProps) {
       .catch((err) => {
         console.error("[applets] failed to open code+preview tabs", err);
       });
-  }, [app.id, app.entry, openSourceEntry, openRenderPreview, store]);
+  }, [app.id, app.entry, openSourceEntry, openRenderPreview, store, dispatch]);
 
   return (
     <CodeWorkspaceRoute
       showActivityBar
       defaultSideSize={12}
       focusedLibrarySourceId={agaAppsAdapter.sourceId}
+      // This Applet's files only — never every Applet the person can see.
+      focusedLibraryRowId={app.id}
+      // The chat is about this Applet; the agent's other runs live at /code.
+      hideHistory
       rightSlot={
         <ChatPanelSlot
-          basePath={basePath}
-          defaultAgentId={promptAppDev?.agentId}
+          basePath={`${basePath}/code`}
+          mandateAgentId={promptAppDev?.agentId}
+          historyToggle={false}
         />
       }
     />
   );
 }
 
-/** Coding agent specialised for prompt-app / applet development. The
- *  chat panel boots with this agent on the applet editor unless the
- *  user already has `?agentId=` pinned in the URL. */
+/** Coding agent specialised for Applet development. The chat panel runs the
+ *  agent this mandate resolves to; the URL carries no agent id. */
 const PROMPT_APP_DEV_MANDATE = MANDATE_KEYS.agent_apps__prompt_app_dev;
 
 const CODE_EDITOR_DISCLOSURE = [
