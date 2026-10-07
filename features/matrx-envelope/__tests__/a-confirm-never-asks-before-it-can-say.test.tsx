@@ -136,7 +136,8 @@ describe("a confirm never asks before it can say what it will do", () => {
     expect(settled).toBe(false);
     const before = q.read();
     expect(before.description).toContain("Reading this Note");
-    expect(before.loadingName).toBe(true);
+    // While the name is read the title is a whole sentence — never "Update Note ?" (G11B).
+    expect(before.title).toBe("Update this Note?");
     expect(before.title).not.toMatch(/ae33f4e0|its organization/);
     expect(before.description).not.toMatch(/its organization/);
 
@@ -188,6 +189,52 @@ describe("a confirm never asks before it can say what it will do", () => {
     expect(after.title).toBe("Delete Task G8A cleanup again?");
     expect(after.description).toContain("G8A cleanup is already in the trash in Bellweather Co.");
     expect(after.description).not.toContain("Moves");
+    await q.done();
+  });
+});
+
+describe("G11B: no orphan punctuation, and nothing to change is said", () => {
+  const ORPHAN = /\s[?!.,:;]/;
+  for (const [slug, noun] of [
+    ["directive_v1_update_note", "Note"],
+    ["directive_v1_delete_task", "Task"],
+  ] as const) {
+    for (const again of [false, true]) {
+      it(`${slug}${again ? " (again)" : ""}: the title has no stray space before punctuation, loading or read`, async () => {
+        const row = deferred<Record<string, unknown> | null>();
+        readDirectiveRecord.mockReturnValue(row.promise);
+        resolveReferenceName.mockResolvedValue("G11B named");
+        const q = await openQuestion(request(slug, [{ id: NOTE_ID, label: "G11B v2" }], noun, again));
+        expect(q.read().title).not.toMatch(ORPHAN);
+        expect(q.read().title.length).toBeGreaterThan(0);
+        row.resolve({ id: NOTE_ID, label: "G11B named", organization_id: "org-bellweather" });
+        await q.settle();
+        expect(q.read().title).not.toMatch(ORPHAN);
+        await q.done();
+      });
+    }
+  }
+
+  for (const again of [false, true]) {
+    it(`an update whose record already holds every value says Nothing to change${again ? " (Run again)" : ""}`, async () => {
+      readDirectiveRecord.mockResolvedValue({ id: NOTE_ID, label: "G11B same", organization_id: "org-bellweather" });
+      resolveReferenceName.mockResolvedValue("G11B same");
+      const q = await openQuestion(request("directive_v1_update_note", [{ id: NOTE_ID, label: "G11B same" }], "Note", again));
+      await q.settle();
+      const after = q.read();
+      expect(after.description).toContain("Nothing to change");
+      expect(after.description).not.toMatch(/Overwrites|Writes these fields again/);
+      await q.done();
+    });
+  }
+
+  it("an update with one field that changes does not say Nothing to change", async () => {
+    readDirectiveRecord.mockResolvedValue({ id: NOTE_ID, label: "G11B old", organization_id: "org-bellweather" });
+    resolveReferenceName.mockResolvedValue("G11B old");
+    const q = await openQuestion(request("directive_v1_update_note", [{ id: NOTE_ID, label: "G11B new" }], "Note", true));
+    await q.settle();
+    expect(q.read().description).not.toContain("Nothing to change");
+    expect(q.read().description).toContain("Writes these fields again");
     await q.done();
   });
 });

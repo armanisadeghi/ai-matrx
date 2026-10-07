@@ -29,6 +29,7 @@ import {
   type DirectiveNounCatalog,
 } from "@ai-matrx/content-ir";
 import {
+  changesNothing,
   DirectiveChangeList,
   directiveValueWord,
   itemChanges,
@@ -569,7 +570,7 @@ export function directiveConsequenceDialog(
       const prepared = prepareDirectiveQuestion(request, organizationNameOf, options.readTimeoutMs, titleColumn);
       return {
         title: one ? (
-          <WhenRead prepared={prepared} loading={<>Delete {noun} <DirectiveTitlePlaceholder />{twice}?</>}>
+          <WhenRead prepared={prepared} loading={<>Delete this {noun}{twice}?</>}>
             {(question) => {
               const name = onlyRecordName(request, question);
               // A record whose name cannot be read is "this note" — never its id.
@@ -625,7 +626,7 @@ export function directiveConsequenceDialog(
       const prepared = prepareDirectiveQuestion(request, organizationNameOf, options.readTimeoutMs, titleColumn);
       return {
         title: one ? (
-          <WhenRead prepared={prepared} loading={<>Update {noun} <DirectiveTitlePlaceholder />{twice}?</>}>
+          <WhenRead prepared={prepared} loading={<>Update this {noun}{twice}?</>}>
             {(question) => {
               const name = onlyRecordName(request, question);
               // A record whose name cannot be read is "this note" — never its id.
@@ -640,11 +641,21 @@ export function directiveConsequenceDialog(
             {(question) => {
               const named = namedTargets(request, question);
               const org = <Org name={question.organization} />;
+              // Every record read already holds every value: the question says
+              // so, first time or "Run again" (G11B) — the yes stays offered.
+              const nothing =
+                named.length > 0 &&
+                named.every((entry) => entry.values !== null && changesNothing(itemChanges(entry.item, entry.values)));
               return (
                 <>
                   {question.unread ? <UnreadLine /> : null}
                   <p>
-                    {again ? (
+                    {nothing ? (
+                      <span data-directive-nothing-to-change="">
+                        {again ? `${ranBefore} ` : null}Nothing to change — {one ? "it" : "they"} already{" "}
+                        {one ? "has" : "have"} these values in {org}.
+                      </span>
+                    ) : again ? (
                       <>
                         {ranBefore} Writes these fields again in {org}, as you.
                       </>
@@ -731,11 +742,6 @@ export function directiveConsequenceDialog(
       };
     }
   }
-}
-
-/** The name slot of a question title while its record is read. */
-function DirectiveTitlePlaceholder() {
-  return <NamePlaceholder />;
 }
 
 /**

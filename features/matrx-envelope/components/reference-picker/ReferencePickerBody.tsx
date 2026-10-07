@@ -145,7 +145,10 @@ function loadCatalog(baseUrl: string): Promise<DirectiveCatalog> {
   return promise;
 }
 
+/** A real noun wins over an alias of the same name (`document` is both). */
 function findNoun(catalog: DirectiveCatalog, token: string): NounDirectives | null {
+  const exact = catalog.nouns.find((n) => n.noun === token);
+  if (exact) return exact;
   const canonical = CATALOG_ALIASES[token] ?? token;
   return catalog.nouns.find((n) => n.noun === canonical) ?? null;
 }

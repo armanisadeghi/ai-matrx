@@ -21,6 +21,7 @@ import { useFileUpload } from "@/features/files/handler/hooks/useFileUpload";
 import { formatFileSize } from "@ai-matrx/kit/format";
 import { knobInt } from "@/lib/knobs/featureKnobs";
 import { KIT_KNOB_FEATURE } from "@/features/education/convert/coverage";
+import { NAMER_SAMPLE_CHARS } from "./kitTitle";
 import { kitFileAnchor, kitMaterialFromSources, kitSourceRefs } from "./kitSources";
 import type { NormalizedIngest, IngestProgress } from "./types";
 
@@ -198,6 +199,7 @@ export function useIngest(): UseIngestResult {
           sourceCount: material.sourceCount,
           notes,
           sourceTitles: material.sources.map((src) => src.label),
+          sourceSamples: material.sources.map((src) => src.text.slice(0, NAMER_SAMPLE_CHARS)),
         },
       };
     },

@@ -13,6 +13,7 @@ import { GENERIC_PARTY_WORDS } from "@/features/crm/party-words";
 import { referenceTypeLabel } from "@/features/scopes/utils/referenceCell";
 import { tryGetEntityInfo } from "@/features/scopes/registry/entityRegistry";
 import { titleCaseGroupLabel } from "@/features/scopes/utils/referenceTypeGroups";
+import { isEntityTypeToken } from "@ai-matrx/associations";
 import {
   CATALOG_ALIASES,
   CATALOG_NOUN_DISPLAY,
@@ -79,8 +80,20 @@ export const FRIENDLY_REFERENCE_TYPE_LABELS: Readonly<Record<string, string>> =
  * headings — the registry mixes "Careers portal" with "Agent Template", and one
  * list must read one way. An alias reads as its canonical type.
  */
+/**
+ * The canonical token for a type. An alias reads as its canonical type — but a
+ * real type never reads as an alias: the catalog both lists `document`
+ * (content.document, the Markdown document) AND aliases `document` →
+ * `udt_document`, and alias-first printed the Markdown document as "Document",
+ * the Univer document's name (G11A review, 2026-10-07: two "Document"s).
+ */
+function canonicalTypeToken(type: string): string {
+  if (isEntityTypeToken(type) || CATALOG_NOUN_DISPLAY[type]) return type;
+  return (CATALOG_ALIASES as Record<string, string>)[type] ?? type;
+}
+
 export function referenceTypeDisplayLabel(type: string): string {
-  const token = (CATALOG_ALIASES as Record<string, string>)[type] ?? type;
+  const token = canonicalTypeToken(type);
   const known = referenceTypeLabel(token);
   const fromToken = humanizeIdentifier(token) || token;
   const catalog = CATALOG_NOUN_DISPLAY[token]?.label?.trim() ?? "";
@@ -101,7 +114,7 @@ export function referenceTypeDisplayLabel(type: string): string {
  * otherwise the display label plus "s".
  */
 export function referenceTypeDisplayPlural(type: string): string {
-  const token = (CATALOG_ALIASES as Record<string, string>)[type] ?? type;
+  const token = canonicalTypeToken(type);
   const friendly = FRIENDLY_REFERENCE_TYPE_WORDS[token];
   if (friendly) return friendly.plural;
   const display = referenceTypeDisplayLabel(token);

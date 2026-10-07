@@ -1,0 +1,11 @@
+import { chromium } from "playwright";
+const b = await chromium.launch({ headless: true });
+const p = await b.newPage();
+const errs = []; p.on("console", (m) => m.type() === "error" && errs.push(m.text().slice(0, 300)));
+const r = await p.goto("http://localhost:3001/f/47209f01-8d15-421a-be1a-bd3de4578a18?utm_source=instagram", { waitUntil: "networkidle", timeout: 120000 });
+console.log("status", r.status());
+console.log((await p.innerText("body")).slice(0, 600));
+console.log("buttons", await p.getByRole("button").allInnerTexts());
+console.log(errs.slice(0, 4).join("\n"));
+await p.screenshot({ path: "/tmp/typeform-peek.png" });
+await b.close();
