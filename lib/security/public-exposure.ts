@@ -535,15 +535,15 @@ export const ANON_COLUMN_SURFACE: ReadonlyArray<AnonColumnSurface> = [
     columns: [
       "id", "organization_id", "project_id", "task_id", "version",
       "slug", "name", "tagline", "description", "category", "tags",
-      "files", "entry", "pages", "mandates", "sources", "parent_applet_id",
-      "component_code", "component_language", "allowed_imports", "layout_config", "styling_config",
+      "files", "entry", "pages", "mandates", "sources", "parent_applet_id", "scope",
+      "component_language", "layout_config", "styling_config",
       "app_kind", "shared_context_policies", "preview_image_url", "favicon_url", "status", "is_featured",
       "is_verified", "rate_limit_per_ip", "rate_limit_window_hours", "rate_limit_authenticated", "pinned_version", "total_executions",
       "total_tokens_used", "total_cost", "unique_users_count", "success_rate", "avg_execution_time_ms", "last_execution_at",
       "created_at", "updated_at", "published_at", "search_tsv", "visibility", "published_to_web", "deleted_at",
     ],
     why:
-"The public app page /p/[slug] renders a signed-out visitor's Applet through the Applet host, which reads the published record (files, entry, pages, jobs, sources) and its name, tagline, description, preview_image_url, favicon_url. component_code/allowed_imports leave with their columns (AP-0 item 3).",
+"The public app page /p/[slug] renders a signed-out visitor's Applet through the Applet host, which reads the published record (files, entry, pages, jobs, sources) and its name, tagline, description, preview_image_url, favicon_url. its imports scope is read from `scope`.",
   },
   {
     relation: "billing.capability_limit",

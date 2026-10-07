@@ -129,7 +129,7 @@ export async function POST(
         mandates: original.mandates,
         sources: original.sources,
         parent_applet_id: original.parent_applet_id,
-        component_code: "",
+        scope: original.scope,
         metadata: original.metadata,
         preview_image_url: original.preview_image_url,
         favicon_url: original.favicon_url,

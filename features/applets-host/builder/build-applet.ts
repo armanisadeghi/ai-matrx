@@ -164,7 +164,7 @@ export async function saveBuiltApplet(
     const { data, error } = await client
       .schema("app")
       .from("definition")
-      .insert({ ...content, organization_id: input.organizationId, slug, component_code: "", status: "draft" })
+      .insert({ ...content, organization_id: input.organizationId, slug, status: "draft" })
       .select("id, slug, version, status")
       .single();
     if (!error) return data;
