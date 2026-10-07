@@ -1,6 +1,6 @@
 {
   "note": "Checked-in snapshot of public._schema_migrations for the files under migrations/campaign and migrations/inverse. Written by `pnpm db:apply` on every successful production apply and refreshed whole by the nightly catch-up. Never hand-edited: a self-written checksum is a claim nobody can check. Guard: pnpm check:ledgered-files-unedited.",
-  "generated_at": "2026-10-07T10:20:20.613Z",
+  "generated_at": "2026-10-07T10:28:35.805Z",
   "files": {
     "migrations/campaign/a_chunk_is_the_size_the_client_door_can_actually_carry.sql": {
       "source": "matrx-frontend",
@@ -5894,11 +5894,23 @@
       "checksum": "85f014db1a1ae07e581de8e51f6b6bf534588bd78fa2bcf4ba8806591540524f",
       "applied_at": "2026-10-05 03:50:09.430583+00"
     },
+    "migrations/campaign/scopesw3_the_old_scope_tables_move_to_deprecated.sql": {
+      "source": "matrx-frontend",
+      "filename": "scopesw3_the_old_scope_tables_move_to_deprecated.sql",
+      "checksum": "93bb379f54a073a7e198e668ae14b6ec8c1784865495fb1757eb670398ad406c",
+      "applied_at": "2026-10-07 10:23:15.237728+00"
+    },
     "migrations/campaign/scopesw3a_the_scope_types_view_reads_the_store_slug.sql": {
       "source": "matrx-frontend",
       "filename": "scopesw3a_the_scope_types_view_reads_the_store_slug.sql",
       "checksum": "7cc87f587cfabc7adfcab9c968cb19e02728cae9c97add2885272a8b2d23bc46",
       "applied_at": "2026-10-07 10:20:19.580794+00"
+    },
+    "migrations/campaign/scopesw3b_the_membrane_registry_matches_the_moved_tables.sql": {
+      "source": "matrx-frontend",
+      "filename": "scopesw3b_the_membrane_registry_matches_the_moved_tables.sql",
+      "checksum": "16bcde51132eccefb1324722dcc957212dd969f4a2683656b186cb3c10393fb8",
+      "applied_at": "2026-10-07 10:28:34.827696+00"
     },
     "migrations/campaign/scopeswt_a_template_applies_and_a_value_brings_its_field.sql": {
       "source": "matrx-frontend",

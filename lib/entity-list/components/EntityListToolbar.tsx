@@ -51,7 +51,8 @@ import type {
 import type { ListScope } from "@/lib/list-scope/types";
 import { EntityFilterPanel } from "./EntityFilterPanel";
 import { EntityColumnPicker } from "./EntityColumnPicker";
-import { reserveSlotScript, useReservedSlot } from "./useReservedSlot";
+import { ReservedSlot } from "./ReservedSlot";
+import { useReservedSlot } from "./useReservedSlot";
 
 interface Props<TRow> {
   query: EntityListQuery;
@@ -444,15 +445,15 @@ export function EntityListToolbar<TRow>({
           package draws them and scrolls its strip — this slot only places it, at the strip's own
           width (a 16rem cap let two tabs and their "+" run over the search, /research/topics). */}
       {tableTabsRef && (
-        <div
-          ref={tabsSlot.ref}
+        <ReservedSlot
+          slotRef={tabsSlot.ref}
           style={tabsSlot.style}
+          surfaceKey={surfaceKey}
+          name="tabs"
+          reserve={prefs.view === "table"}
           data-entity-list-table-tabs=""
           className="flex min-w-0 max-w-[45%] shrink-0 items-center empty:hidden @3xl/list:max-w-full"
         />
-      )}
-      {tableTabsRef && surfaceKey && prefs.view === "table" && (
-        <script suppressHydrationWarning dangerouslySetInnerHTML={{ __html: reserveSlotScript(surfaceKey, "tabs") }} />
       )}
 
       {searchBox}
@@ -530,19 +531,19 @@ export function EntityListToolbar<TRow>({
         </IconToggle>
       </div>
 
+      {/* The table's own controls (copy / export, the eraser while filtered) close the row on
+          the right. The package keeps its row on one line (`singleRow`); nothing here reaches
+          into it. */}
       {tableControlsRef && (
-        <div
-          ref={controlsSlot.ref}
+        <ReservedSlot
+          slotRef={controlsSlot.ref}
           style={controlsSlot.style}
+          surfaceKey={surfaceKey}
+          name="controls"
+          reserve={prefs.view === "table"}
           data-entity-list-table-controls=""
-          // The table's own controls (copy / export, the eraser while filtered) close the row on
-          // the right. The package keeps its row on one line (`singleRow`); nothing here reaches
-          // into it.
           className="ml-auto flex min-w-0 shrink-0 items-center empty:hidden"
         />
-      )}
-      {tableControlsRef && surfaceKey && prefs.view === "table" && (
-        <script suppressHydrationWarning dangerouslySetInnerHTML={{ __html: reserveSlotScript(surfaceKey, "controls") }} />
       )}
     </div>
   );
