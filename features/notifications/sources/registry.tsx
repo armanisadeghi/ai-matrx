@@ -18,11 +18,14 @@
  * React Compiler can memoise every row.
  */
 
-import type { ComponentType } from "react";
+import { useEffect, type ComponentType } from "react";
 import type { LucideIcon } from "lucide-react";
 import {
+  CheckCheck,
   CheckSquare,
   ClipboardCheck,
+  EyeOff,
+  MoreHorizontal,
   Lightbulb,
   Table2,
   Users,
@@ -39,7 +42,15 @@ import { queryAssists } from "@/features/assists/service";
 import type { AssistsQuery } from "@/features/assists/types";
 import { listMyTaskUserStates } from "@/features/tasks/services/taskUserStateService";
 import { cn } from "@/lib/utils";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { useWorkWaiting } from "../useInbox";
+import { useInboxMemory } from "../useInboxMemory";
+import { above, lowerMarks, markAt } from "../badge";
 
 /** How a source interrupts: needs_you/direct add to the badge, updates a dot, quiet nothing. */
 export type SourceBucket = "needs_you" | "direct" | "updates" | "quiet";
@@ -161,8 +172,31 @@ function useWaitingRunsState(): SourceState {
   return { count: error ? null : rows.length, hidden: null, loading, error: error !== null };
 }
 
-/** What a source shows beside its label: "N snoozed" and its count. */
-export function SourceIndicatorView({ state, bucket }: { state: SourceState; bucket: SourceBucket }) {
+/**
+ * What a source shows beside its label: "N snoozed", its count ABOVE what the person last cleared,
+ * and its one-click actions (Clear · Hide from bell). Arman, 2026-10-07: nothing hard to resolve
+ * (38 workflows waiting) may be a number the person cannot get to zero — the work stays on the
+ * source's own page; the bell's number clears in one click and comes back only for something new.
+ */
+export function SourceIndicatorView({
+  state,
+  bucket,
+  sourceKey,
+}: {
+  state: SourceState;
+  bucket: SourceBucket;
+  sourceKey: string;
+}) {
+  const memory = useInboxMemory();
+  // A source still reading (or unreadable) says nothing about its marks.
+  const counts: Record<string, number | null> = state.loading || state.error ? {} : { [sourceKey]: state.count };
+  const lowered = memory.ready ? lowerMarks(memory.sourcesCleared, counts) : null;
+  useEffect(() => {
+    // Items handled elsewhere lower the mark, so the next new one shows.
+    if (lowered) memory.save({ sourcesCleared: lowered });
+  }, [lowered, memory]);
+
+  const shown = memory.ready ? above(state.count, memory.sourcesCleared[sourceKey]) : (state.count ?? 0);
   const loud = bucket === "needs_you" || bucket === "direct";
   return (
     <>
@@ -173,34 +207,93 @@ export function SourceIndicatorView({ state, bucket }: { state: SourceState; buc
         <span className="shrink-0 text-[11px] text-muted-foreground" title="Count unavailable">
           —
         </span>
-      ) : state.count !== null && state.count > 0 && bucket !== "quiet" ? (
+      ) : shown > 0 && bucket !== "quiet" ? (
         <span
+          data-source-count={sourceKey}
           className={cn(
             "inline-flex h-[18px] min-w-[18px] shrink-0 items-center justify-center rounded-full px-1.5 text-[10px] font-semibold",
             loud ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground",
           )}
         >
-          {state.count > 99 ? "99+" : state.count}
+          {shown > 99 ? "99+" : shown}
         </span>
       ) : null}
+      <SourceMenu
+        sourceKey={sourceKey}
+        canClear={memory.ready && shown > 0 && sourceKey in counts && state.count !== null}
+        onClear={() => {
+          if (!(sourceKey in counts)) return;
+          memory.save({ sourcesCleared: markAt(memory.sourcesCleared, counts) });
+        }}
+        onHide={() => {
+          if (memory.hiddenSources.includes(sourceKey)) return;
+          memory.save({ hiddenSources: [...memory.hiddenSources, sourceKey] });
+        }}
+      />
     </>
   );
 }
 
+function SourceMenu({
+  sourceKey,
+  canClear,
+  onClear,
+  onHide,
+}: {
+  sourceKey: string;
+  canClear: boolean;
+  onClear: () => void;
+  onHide: () => void;
+}) {
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <button
+          type="button"
+          aria-label="Place options"
+          title="Place options"
+          data-source-menu={sourceKey}
+          onClick={(event) => event.stopPropagation()}
+          onKeyDown={(event) => event.stopPropagation()}
+          className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md text-muted-foreground hover:bg-[var(--matrx-glass-bg-hover)] hover:text-foreground"
+        >
+          <MoreHorizontal className="h-3.5 w-3.5" />
+        </button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent
+        align="end"
+        className="w-44"
+        // The menu is portalled, but React events still bubble to the row that opens the place.
+        onClick={(event) => event.stopPropagation()}
+        onKeyDown={(event) => event.stopPropagation()}
+      >
+        <DropdownMenuItem disabled={!canClear} onSelect={onClear} data-source-clear={sourceKey}>
+          <CheckCheck className="mr-2 h-4 w-4" />
+          Clear
+        </DropdownMenuItem>
+        <DropdownMenuItem onSelect={onHide} data-source-hide={sourceKey}>
+          <EyeOff className="mr-2 h-4 w-4" />
+          Hide from bell
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+}
+
 function ApprovalsIndicator() {
-  return <SourceIndicatorView state={useApprovalsState()} bucket="needs_you" />;
+  return <SourceIndicatorView state={useApprovalsState()} bucket="needs_you" sourceKey="approvals" />;
 }
 function WorkIndicator() {
-  return <SourceIndicatorView state={useWorkState()} bucket="needs_you" />;
+  return <SourceIndicatorView state={useWorkState()} bucket="needs_you" sourceKey="work" />;
 }
 function WaitingRunsIndicator() {
-  return <SourceIndicatorView state={useWaitingRunsState()} bucket="needs_you" />;
+  return <SourceIndicatorView state={useWaitingRunsState()} bucket="needs_you" sourceKey="workflows" />;
 }
 function AssistsIndicator() {
-  return <SourceIndicatorView state={useAssistsState()} bucket="updates" />;
+  return <SourceIndicatorView state={useAssistsState()} bucket="updates" sourceKey="assists" />;
 }
 function TasksIndicator() {
-  return <SourceIndicatorView state={useTasksState()} bucket="quiet" />;
+  return <SourceIndicatorView state={useTasksState()} bucket="quiet" sourceKey="tasks" />;
 }
 function NoIndicator() {
   return null;

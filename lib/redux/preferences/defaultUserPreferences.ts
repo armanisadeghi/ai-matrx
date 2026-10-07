@@ -266,4 +266,6 @@ export const defaultUserPreferences: UserPreferences = {
   // THE REVERSIBLE ACTION (lib/reversible): nothing done yet, so the first one teaches.
   // Keep in sync with userPreferencesSlice.ts.
   reversible: { verbs: {}, pairs: {} },
+  // The bell's source memory (features/notifications). Keep in sync with userPreferencesSlice.ts.
+  inbox: { sourcesSeen: {}, sourcesCleared: {}, hiddenSources: [] },
 };

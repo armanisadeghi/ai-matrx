@@ -591,6 +591,20 @@ export interface ConnectorsPreferences {
  * guided the next few, plain after — and it is synced, so a person taught on their laptop is not
  * taught again on their phone. Undo never lowers it. Shape = kit's `ReversibleCounts`.
  */
+/**
+ * The bell's memory of this person (features/notifications), synced so it follows them to every
+ * device. Notices carry their own server-side `seen_at`; these are for the bell's SOURCES (approvals,
+ * record-store work, workflows waiting …), which have no "seen" of their own:
+ *   - `sourcesSeen`    — each source's count when the bell was last opened (the badge counts above it)
+ *   - `sourcesCleared` — each source's count when the person last cleared it (the list counts above it)
+ *   - `hiddenSources`  — sources the person took out of the bell ("Hide from bell"); default none
+ */
+export interface InboxPreferences {
+  sourcesSeen: Record<string, number>;
+  sourcesCleared: Record<string, number>;
+  hiddenSources: string[];
+}
+
 export interface ReversiblePreferences {
   verbs: Record<string, number>;
   pairs: Record<string, number>;
@@ -829,6 +843,7 @@ export interface UserPreferences {
   assists: AssistsPreferences;
   connectors: ConnectorsPreferences;
   reversible: ReversiblePreferences;
+  inbox: InboxPreferences;
 }
 
 /**
@@ -1372,6 +1387,8 @@ export const initializeUserPreferencesState = (
     connectors: { promptDismissedAt: {} },
     // Nothing done yet: the first reversible action teaches.
     reversible: { verbs: {}, pairs: {} },
+    // Nothing seen, cleared or hidden yet: every source shows in the bell.
+    inbox: { sourcesSeen: {}, sourcesCleared: {}, hiddenSources: [] },
   };
 
   // Merge with defaults to ensure all properties exist
@@ -1469,6 +1486,11 @@ export const initializeUserPreferencesState = (
     reversible: {
       verbs: { ...defaultPreferences.reversible.verbs, ...preferences.reversible?.verbs },
       pairs: { ...defaultPreferences.reversible.pairs, ...preferences.reversible?.pairs },
+    },
+    inbox: {
+      sourcesSeen: { ...preferences.inbox?.sourcesSeen },
+      sourcesCleared: { ...preferences.inbox?.sourcesCleared },
+      hiddenSources: [...(preferences.inbox?.hiddenSources ?? [])],
     },
   };
 
@@ -1905,6 +1927,7 @@ const PERSISTED_PREFERENCE_MODULES: Record<keyof UserPreferences, true> = {
   assists: true,
   connectors: true,
   reversible: true,
+  inbox: true,
 };
 
 const PREFERENCE_MODULE_KEYS = Object.keys(

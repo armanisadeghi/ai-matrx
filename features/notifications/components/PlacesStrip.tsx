@@ -11,11 +11,12 @@
  */
 
 import { useState } from "react";
-import { ChevronDown, ChevronUp, ExternalLink } from "lucide-react";
+import { ChevronDown, ChevronUp, ExternalLink, EyeOff } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { selectIsAdminPerson } from "@/lib/redux/selectors/userSelectors";
 import { visibleSources, type NoticeSource } from "../sources/registry";
+import { useInboxMemory } from "../useInboxMemory";
 
 const FOLD_AT = 4;
 
@@ -32,13 +33,24 @@ export function SourceItem({
 }) {
   const dispatch = useAppDispatch();
   const Icon = source.icon;
+  const open = () => {
+    source.open(dispatch);
+    onOpened?.();
+  };
+  // A row, not a <button>: its count carries its own Clear / Hide menu, and a button may not
+  // hold a button. Enter and Space open it like one.
   return (
-    <button
-      type="button"
+    <div
+      role="button"
+      tabIndex={0}
+      data-clickable
       data-notice-source={source.key}
-      onClick={() => {
-        source.open(dispatch);
-        onOpened?.();
+      onClick={open}
+      onKeyDown={(event) => {
+        if (event.key === "Enter" || event.key === " ") {
+          event.preventDefault();
+          open();
+        }
       }}
       className={cn(
         "flex w-full items-center gap-2 rounded-md text-left text-xs transition-colors hover:bg-[var(--matrx-glass-bg-hover)]",
@@ -53,14 +65,19 @@ export function SourceItem({
       {source.opensIn === "tab" ? (
         <ExternalLink className="h-3 w-3 shrink-0 text-muted-foreground" aria-hidden />
       ) : null}
-    </button>
+    </div>
   );
 }
 
 export function PlacesStrip({ onOpened, columns = 2 }: { onOpened?: () => void; columns?: 1 | 2 }) {
   const isAdmin = useAppSelector(selectIsAdminPerson);
-  const sources = visibleSources(Boolean(isAdmin));
+  const memory = useInboxMemory();
+  const all = visibleSources(Boolean(isAdmin));
+  // "Hide from bell" takes a place out of the strip and the badge; it comes back from Hidden.
+  const sources = all.filter((source) => !memory.hiddenSources.includes(source.key));
+  const hidden = all.filter((source) => memory.hiddenSources.includes(source.key));
   const [more, setMore] = useState(false);
+  const [showHidden, setShowHidden] = useState(false);
   const shown = more ? sources : sources.slice(0, FOLD_AT);
   return (
     <section aria-label="All places" className="border-t border-border px-1 py-1">
@@ -72,17 +89,51 @@ export function PlacesStrip({ onOpened, columns = 2 }: { onOpened?: () => void; 
           <SourceItem key={source.key} source={source} layout="strip" onOpened={onOpened} />
         ))}
       </div>
-      {sources.length > FOLD_AT ? (
-        <button
-          type="button"
-          onClick={() => setMore((v) => !v)}
-          className="flex h-7 w-full items-center gap-1 rounded-md px-2 text-[11px] text-muted-foreground hover:bg-[var(--matrx-glass-bg-hover)] hover:text-foreground"
-          aria-expanded={more}
-        >
-          {more ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
-          {more ? "Fewer" : `More · ${sources.length - FOLD_AT}`}
-        </button>
-      ) : null}
+      <div className="flex items-center">
+        {sources.length > FOLD_AT ? (
+          <button
+            type="button"
+            onClick={() => setMore((v) => !v)}
+            className="flex h-7 items-center gap-1 rounded-md px-2 text-[11px] text-muted-foreground hover:bg-[var(--matrx-glass-bg-hover)] hover:text-foreground"
+            aria-expanded={more}
+          >
+            {more ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
+            {more ? "Fewer" : `More · ${sources.length - FOLD_AT}`}
+          </button>
+        ) : null}
+        {hidden.length > 0 ? (
+          <button
+            type="button"
+            onClick={() => setShowHidden((v) => !v)}
+            className="ml-auto flex h-7 items-center gap-1 rounded-md px-2 text-[11px] text-muted-foreground hover:bg-[var(--matrx-glass-bg-hover)] hover:text-foreground"
+            aria-expanded={showHidden}
+          >
+            <EyeOff className="h-3 w-3" />
+            Hidden · {hidden.length}
+          </button>
+        ) : null}
+      </div>
+      {showHidden
+        ? hidden.map((source) => {
+            const Icon = source.icon;
+            return (
+              <div key={source.key} className="flex h-8 items-center gap-2 px-2 text-xs text-muted-foreground">
+                <Icon className="h-3.5 w-3.5 shrink-0" />
+                <span className="min-w-0 flex-1 truncate">{source.label}</span>
+                <button
+                  type="button"
+                  data-source-unhide={source.key}
+                  onClick={() =>
+                    memory.save({ hiddenSources: memory.hiddenSources.filter((key) => key !== source.key) })
+                  }
+                  className="h-6 rounded-md px-2 text-[11px] font-medium text-primary hover:bg-[var(--matrx-glass-bg-hover)]"
+                >
+                  Show in bell
+                </button>
+              </div>
+            );
+          })
+        : null}
     </section>
   );
 }
