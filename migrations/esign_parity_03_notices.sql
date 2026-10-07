@@ -538,16 +538,35 @@ begin
 end
 $function$;
 
+-- ═══ DOORS (generated) ═══
+
 -- Every new SECURITY DEFINER function declares who may call it (§5.8; provision_shape_guard).
-insert into platform.client_callable_door (schema_name, function_name, identity_args, identity_argtypes, reason, declared_by, non_client_lane, signed_in_callers, anonymous_callers)
-select n.nspname, p.proname, pg_get_function_identity_arguments(p.oid), platform.door_argtypes(p.proargtypes),
-       'Internal e-sign step; every id argument is a row the calling door already authorised.', 'esign_parity_03_notices',
-       'server_only: called only inside e-sign doors and the notice scheduler; no client calls it directly', false, false
-  from pg_proc p join pg_namespace n on n.oid = p.pronamespace
- where (n.nspname, p.proname) in (
+delete from platform.client_callable_door d
+ where (d.schema_name, d.function_name) in (
+  ('esign','_format_date'),
   ('esign','_notice_facts'),
   ('esign','_notify'),
   ('esign','_cancel_scheduled_notices'),
-  ('esign','_schedule_signer_notices'))
+  ('esign','_outside_quiet_hours'),
+  ('esign','_schedule_signer_notices'),
+  ('esign','_notify_actionable'),
+  ('communication','stamp_notification_render'))
+   and not exists (select 1 from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+                    where n.nspname = d.schema_name and p.proname = d.function_name
+                      and pg_get_function_identity_arguments(p.oid) = d.identity_args);
+insert into platform.client_callable_door (schema_name, function_name, identity_args, identity_argtypes, reason, declared_by, non_client_lane, signed_in_callers, anonymous_callers)
+select n.nspname, p.proname, pg_get_function_identity_arguments(p.oid), platform.door_argtypes(p.proargtypes),
+       'Internal e-sign step; every id argument is a row the calling door already authorised.', 'esign_parity_03_notices',
+       'server_only: called only inside e-sign doors, the notice scheduler and the notification render pass; no client calls it directly', false, false
+  from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+ where (n.nspname, p.proname) in (
+  ('esign','_format_date'),
+  ('esign','_notice_facts'),
+  ('esign','_notify'),
+  ('esign','_cancel_scheduled_notices'),
+  ('esign','_outside_quiet_hours'),
+  ('esign','_schedule_signer_notices'),
+  ('esign','_notify_actionable'),
+  ('communication','stamp_notification_render'))
    and p.prosecdef
 on conflict do nothing;
