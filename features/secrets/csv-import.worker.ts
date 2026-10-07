@@ -1,4 +1,8 @@
-/** Parses a CSV import off the main thread: a file near the size limit would otherwise freeze the dialog. */
+/**
+ * Parses a CSV import off the main thread: a file near the size limit would otherwise freeze the dialog.
+ * Imports only the pure parser module; reaching `csv-import-file.ts` (which starts this worker) hangs
+ * the Turbopack build (`pnpm check:worker-cycles`).
+ */
 import { parseCsvText, type CsvImportLimits, type CsvImportPreview } from "./csv-import";
 
 export type CsvWorkerRequest = { text: string; limits: CsvImportLimits };

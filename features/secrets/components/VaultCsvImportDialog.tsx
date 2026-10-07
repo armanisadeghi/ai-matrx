@@ -41,7 +41,6 @@ import {
 import {
   hasAmbiguousCsvMapping,
   isPossibleDuplicateRow,
-  parseCsvFile,
   prepareCsvImportRow,
   runCsvImportCommands,
   suggestedCsvMapping,
@@ -51,6 +50,7 @@ import {
   type CsvImportOutcome,
   type CsvImportPreview,
 } from "../csv-import";
+import { parseCsvFile } from "../csv-import-file";
 import {
   createVaultItem,
   getVaultImportActor,

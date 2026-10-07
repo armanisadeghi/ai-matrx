@@ -5,7 +5,7 @@
     "repo-only": "reads the repository and nothing else"
   },
   "counts": {
-    "repo-only": 157,
+    "repo-only": 159,
     "live-db": 65
   },
   "rows": {
@@ -586,6 +586,20 @@
       "label": "Turbopack filesystem tracing",
       "class": "repo-only",
       "cmd": "pnpm exec tsx scripts/check-turbopack-fs-tracing.ts",
+      "reason": "no database access in 2 file(s) reached",
+      "evidence": []
+    },
+    "worker-reaches-the-module-that-starts-it-turbopack-hang": {
+      "label": "Worker reaches the module that starts it (Turbopack hang)",
+      "class": "repo-only",
+      "cmd": "pnpm check:worker-cycles",
+      "reason": "no database access in 2 file(s) reached",
+      "evidence": []
+    },
+    "worker-cycle-guard-self-test": {
+      "label": "Worker-cycle guard self-test",
+      "class": "repo-only",
+      "cmd": "pnpm check:worker-cycles:self-test",
       "reason": "no database access in 2 file(s) reached",
       "evidence": []
     },

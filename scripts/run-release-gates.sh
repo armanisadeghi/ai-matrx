@@ -252,6 +252,10 @@ if $STRICT; then
         "Route metadata and favicons|pnpm check:route-metadata:strict"
         "Pattern Patrol manifest contracts|pnpm exec tsx scripts/pattern-patrol/check-manifest.ts --repo-only"
         "Turbopack filesystem tracing|pnpm exec tsx scripts/check-turbopack-fs-tracing.ts"
+        # A worker that reaches the module that starts it hangs the Turbopack compile until
+        # Vercel's 45-minute limit (v0.4.2931-2934, 2026-10-07).
+        "Worker reaches the module that starts it (Turbopack hang)|pnpm check:worker-cycles"
+        "Worker-cycle guard self-test|pnpm check:worker-cycles:self-test"
         # BROWSER DIALOGS exit 1 under --strict. Zero findings at introduction
         # (2026-09-11) and no lawful exception, so there is no backlog to
         # grandfather. eslint.config.mjs has carried `no-alert` /
@@ -1113,6 +1117,10 @@ else
         "Route metadata and favicons|pnpm check:route-metadata"
         "Pattern Patrol manifest contracts|pnpm exec tsx scripts/pattern-patrol/check-manifest.ts --repo-only"
         "Turbopack filesystem tracing|pnpm exec tsx scripts/check-turbopack-fs-tracing.ts"
+        # A worker that reaches the module that starts it hangs the Turbopack compile until
+        # Vercel's 45-minute limit (v0.4.2931-2934, 2026-10-07).
+        "Worker reaches the module that starts it (Turbopack hang)|pnpm check:worker-cycles"
+        "Worker-cycle guard self-test|pnpm check:worker-cycles:self-test"
         # Browser dialogs — see the strict lane above for why this class is
         # a dead control, not a style nit. Zero backlog, so the report is
         # the whole finding.
