@@ -316,11 +316,32 @@ An agent made for a mandate is not done until the mandate runs it. Two REQUIRED 
    Mandate Holder needs is fed" and aidream `scripts/check_mandate_default_maps.py --only <key>`
    prints `ok`. An empty map still delivers by name at run time, but nobody can see or review
    it — 2026-10-06, `spaces.writing_assist` shipped that way and read "0 of 7 fed".
-2. **One run through the mandate door**, never only `agent_run` on the agent:
-   `POST /ai/mandates/{key}` as `admin@admin.com` with `dry_run: true, store: false` (plus
-   `conversation_id`, `is_new: true`, `organization_id`). Done when each value you sent appears
-   in the returned `messages`/`system_prompt`. Record it in the approval package beside the
-   direct runs.
+2. **Two runs through the mandate door**, never only `agent_run` on the agent. Mint the
+   token with aidream `scripts/shared/matrx_session.py` `admin_access_token()` (reads
+   `AI_ADMIN_USERNAME`/`AI_ADMIN_PASSWORD` from aidream `.env`; never print either). Body
+   fields are `conversation_id` (fresh uuid), `is_new: true`, `store: false`, `dry_run: true`,
+   `organization_id`, `user_input`, `variables`; `X-Organization-Id` must ALSO be sent as a
+   header (the body field alone returns 400 `organization_required`). The admin
+   organization is `884d1ce8-7b49-4fba-a2f3-0f7dd7c83d4f` (`scripts/ci_live_target.py`).
+   Verified 2026-10-06 against `spaces.ask_page`:
+
+   ```python
+   httpx.post("https://server.app.matrxserver.com/ai/mandates/spaces.ask_page",
+     headers={"Authorization": f"Bearer {admin_access_token()}", "X-Organization-Id": ORG},
+     json={"conversation_id": str(uuid4()), "is_new": True, "store": False, "dry_run": True,
+           "organization_id": ORG, "user_input": "What is still open?",
+           "variables": {"page_markdown": "...", "space_id": "...", "page_title": "Zephyr Title Marker"}})
+   ```
+
+   The 200 body has `model, system_prompt, messages, tools, params, ...`. Check that each
+   value you sent appears in `messages` (here `messages[0]` carried the title and page body;
+   the value can land in `system_prompt` instead, depending on the variable) — search for a
+   distinctive marker string, not a word the page body also contains.
+   **Run A** sends every offered value. **Run B** omits one OPTIONAL value (`page_title`) and
+   must match that mapping's `when_absent`: `skip` returns 200 with the value absent from the
+   prompt (observed), `use_default` shows the default, `fail` returns an error naming it.
+   Done when both runs behave as the map says. The approval package carries both as the
+   "door dry run" artifact (see the showable artifacts below).
 
 ## Anatomy of a great agent
 
@@ -430,7 +451,7 @@ on the Masterwork Approach Selector and Coherence Partner (2026-08-22):
 | Always-needed reference data left out of the prompt | The agent fetches or GUESSES it every session (the Steward invented step-type names live); bake it in — it caches |
 | Outcome-owning agent framed as an assistant | It defers to the user instead of solving; posture is part of identity |
 
-## The four showable artifacts — how this skill is enforced
+## The four showable artifacts (plus the door dry run for a mandate's agent) — how this skill is enforced
 
 The minimum-effort failure is real: coding agents asked to "define an agent" as one step
 of a bigger task reliably do the least that produces a row. So a create or update is
@@ -443,6 +464,9 @@ request:
    teaches how it serves the mission.
 4. **The WHAT user message** — the authored conversational user turn that puts the agent
    to work on the result.
+
+5. **The door dry run** (mandate agents only) — the two step-10 runs: request, the marker
+   found in the returned `messages`/`system_prompt`, and the omit-one run's result.
 
 No artifacts, no agent. "It has the right tools" is not a defense — tools without a
 taught mission produced a Steward that refused to build.
