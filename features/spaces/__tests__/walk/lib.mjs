@@ -121,3 +121,35 @@ export async function slash(page, query, itemName = query) {
   await item.click();
 }
 export { chromium };
+
+/** Open the ⋮⋮ block menu of `block` (a locator of its .bn-block-content). */
+export async function blockMenu(page, block) {
+  assertOwnPage(page);
+  for (let attempt = 0; attempt < 4; attempt++) {
+    await page.mouse.move(0, 0);
+    await block.scrollIntoViewIfNeeded();
+    await block.hover({ position: { x: 8, y: 6 } });
+    await page.waitForTimeout(350);
+    const handle = page.locator(".bn-side-menu [draggable=true]").first();
+    if (await handle.isVisible().catch(() => false)) {
+      await handle.click();
+      if (await page.locator(".bn-menu-dropdown").getByText("Color", { exact: true }).first().isVisible({ timeout: 1500 }).catch(() => false)) return;
+      await page.keyboard.press("Escape");
+    }
+  }
+  throw new Error("the block menu did not open");
+}
+
+/** Block menu → Color → `section` ("Text" | "Background") → `color` ("Default", "Gray", "Red"…). */
+export async function setBlockColor(page, block, section, color) {
+  await blockMenu(page, block);
+  await page.locator(".bn-menu-dropdown").getByText("Color", { exact: true }).first().hover();
+  await page.waitForTimeout(400);
+  const items = page.locator(".bn-menu-dropdown").last().locator(".bn-menu-item, [role=menuitem], [role=menuitemcheckbox]").filter({ hasText: new RegExp(`^\\s*A\\s*${color}\\s*$`) });
+  await items.nth(section === "Text" ? 0 : 1).click();
+  await page.keyboard.press("Escape");
+  await page.waitForTimeout(250);
+}
+
+/** The last block of a type (data-content-type), e.g. "heading", "callout". */
+export const lastBlock = (page, type) => page.locator(`.bn-block-content[data-content-type="${type}"]`).last();

@@ -1,4 +1,6 @@
-// features/spaces/editor/toggle-enter.ts — Enter at the end of a toggle's title (Notion).
+// features/spaces/editor/toggle-enter.ts — Enter at the end of a toggle's title or a callout's line (Notion).
+//
+// Callout: the new line is the callout's first child — inside the box (an empty callout stays a box).
 //
 // Open toggle: the new line is the toggle's FIRST CHILD (inside it, above anything already there).
 // Closed toggle: BlockNote's own Enter — a sibling below. A toggle heading behaves the same.
@@ -9,6 +11,10 @@ type SpacesPartialBlock = Parameters<SpacesEditor["insertBlocks"]>[0][number];
 type AnyBlock = { id: string; type: string; props?: Record<string, unknown>; children?: AnyBlock[] };
 
 const isToggle = (b: AnyBlock) => b.type === "toggleListItem" || (b.type === "heading" && b.props?.isToggleable === true);
+// A callout holds its lines inside the box (Notion): Enter at the end of its first line writes inside it.
+// BlockNote's own Enter on an EMPTY callout turned the box into plain text, so a box of links (the
+// Traveling SMM OS link boxes) could not be started by typing.
+const isCallout = (b: AnyBlock) => b.type === "callout";
 
 /** Is the toggle open on screen? (BlockNote keeps it on the wrapper; closed when not drawn.) */
 export function toggleOpenInDom(id: string): boolean {
@@ -21,7 +27,7 @@ export function enterIntoOpenToggle(editor: SpacesEditor, isOpen: (id: string) =
   const sel = editor.prosemirrorState.selection;
   if (!sel.empty) return false;
   const block = editor.getTextCursorPosition().block as unknown as AnyBlock;
-  if (!isToggle(block) || !isOpen(block.id)) return false;
+  if (!isCallout(block) && (!isToggle(block) || !isOpen(block.id))) return false;
   // Only at the end of the title: a caret inside it splits the title as usual.
   if (sel.$from.parentOffset !== sel.$from.parent.content.size) return false;
   const first = block.children?.[0];

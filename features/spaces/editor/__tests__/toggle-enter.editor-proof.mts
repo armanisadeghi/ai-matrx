@@ -20,6 +20,7 @@ async function main() {
         { id: "t", type: "toggleListItem", content: "Launch checklist", children: [{ id: "c1", type: "paragraph", content: "Book the venue" }] },
         { id: "h", type: "heading", props: { level: 2, isToggleable: true }, content: "Notes" },
         { id: "z", type: "paragraph", content: "After" },
+        { id: "box", type: "callout", props: { icon: "" } },
       ],
     } as never) as unknown as { mount: (el: HTMLElement) => void };
     editor.mount(document.createElement("div"));
@@ -48,6 +49,13 @@ async function main() {
     r.midTitleLeftToEditor = enterIntoOpenToggle(e, () => true) === false;
     e.setTextCursorPosition("z", "end");
     r.plainLineLeftToEditor = enterIntoOpenToggle(e, () => true) === false;
+  }
+  {
+    // Round 21: Enter in an EMPTY callout keeps the box and writes its first line inside it (a box of links).
+    const e = make();
+    e.setTextCursorPosition("box", "end");
+    r.calloutHandled = enterIntoOpenToggle(e, () => false);
+    r.calloutStaysBox = e.getBlock("box")?.type === "callout" && kids(e, "box").length === 1 && e.getTextCursorPosition().block.id === kids(e, "box")[0];
   }
   console.log(JSON.stringify(r, null, 1));
   process.exit(Object.values(r).every((v) => v === true) ? 0 : 1);
