@@ -90,7 +90,12 @@ export function useSpaceCollab(args: {
       if (host) latest.current.onBecameHost();
     };
     void s
-      .start(snapshot, () => (latest.current.room.viewers.some((v) => v.userId !== userId)), latest.current.made === true)
+      .start(
+        snapshot,
+        // Presence not connected yet = not known (null), never "nobody here": the join waits for it.
+        () => (latest.current.room.status === "connected" ? latest.current.room.viewers.some((v) => v.userId !== userId) : null),
+        latest.current.made === true,
+      )
       .then(() => {
         if (!live) return;
         setSession(s);

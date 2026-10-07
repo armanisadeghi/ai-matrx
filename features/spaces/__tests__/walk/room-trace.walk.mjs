@@ -35,7 +35,7 @@ for (let i = 0; i < loads; i++) {
   await page.goto(`${originOf(page)}/spaces/${id}`, { waitUntil: "domcontentloaded" });
   await page.waitForTimeout(Number(process.env.WAIT ?? 12000));
   const r = await page.evaluate(() => ({ cls: window.__cls, trace: window.__spacesCollabTrace, counts: window.__counts }));
-  const answer = r.trace.find((e) => e.ev === "answer");
+  const answer = r.trace.find((e) => e.ev === "joined");
   const stored = answer?.stored ?? null;
   const shown = r.counts.filter((c) => c.n > 0);
   const minShown = shown.length ? Math.min(...shown.slice(shown.findIndex((c) => c.n >= (stored ?? 0))).map((c) => c.n)) : 0;

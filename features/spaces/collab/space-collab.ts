@@ -12,8 +12,8 @@
 // people opening an empty room at once would each build it — and two independent builds of the same blocks
 // are two copies of every block. So the seed is built in a scratch document whose Yjs client id is a hash of
 // (page, stored version): every member seeding the same version writes byte-identical items, which Yjs
-// merges into one. A member waits for the room's answer first (and asks again while the presence channel
-// says someone else is here) and seeds only when nobody holds the page.
+// merges into one. A member seeds only when it knows nobody else holds the page (join-room.ts): it waits
+// for the room's answer, for presence to report, and for a present member's body.
 //
 // THE HOST. Exactly one member writes snapshots: among members whose awareness says `canEdit`, still
 // present on the page's presence channel, the lowest `uid:clientID` — and, inside one tab, only the
@@ -32,6 +32,7 @@ import { Awareness, removeAwarenessStates } from "y-protocols/awareness";
 import { SupabaseYjsProvider } from "@/features/data-tables/collab/SupabaseYjsProvider";
 
 import type { SpaceDoc } from "../contract";
+import { joinRoom } from "./join-room";
 import { toEngine } from "../editor/convert";
 import { spacesSchema } from "../editor/schema";
 
@@ -43,8 +44,6 @@ export type SpaceMeta = Pick<SpaceDoc, (typeof META_KEYS)[number]>;
 /** Origin of this member's own meta writes (the observer skips them: the page already shows them). */
 const LOCAL_META = "spaces-local-meta";
 const SEED = "spaces-seed";
-/** While someone else is on the page, ask the room this many more times before building from the snapshot. */
-const EXTRA_STATE_ASKS = 3;
 
 /** Notion-like person colours: one per person, the same on every screen. */
 const PALETTE = ["#2383e2", "#0f7b6c", "#d9730d", "#e03e3e", "#9065b0", "#ad1a72", "#dfab01", "#448361"];
@@ -211,7 +210,7 @@ export class SpaceCollabSession {
    * Join the room, then make sure the body exists: the room's copy when someone holds it, else the seed
    * built from `snapshot` (the latest stored version). `othersHere` reads the presence channel at call time.
    */
-  async start(snapshot: SpaceDoc, othersHere: () => boolean, made = false): Promise<void> {
+  async start(snapshot: SpaceDoc, othersHere: () => boolean | null, made = false): Promise<void> {
     if (made) {
       // A page this tab just made (new, duplicate): nobody can hold its room yet, so the body is the seed
       // now and the room is joined behind it — the page opens with its content, never blank while the
@@ -222,24 +221,28 @@ export class SpaceCollabSession {
       void this.provider.connect().catch((e: unknown) => console.error("[spaces] room join", e));
       return;
     }
-    this.provider = this.makeProvider();
-    await this.provider.connect();
-    await this.provider.ready();
-    for (let ask = 0; ask < EXTRA_STATE_ASKS && !this.disposed && this.fragment.length === 0 && othersHere(); ask++) {
-      // Someone is on the page but no state arrived in time: ask again with a fresh provider.
-      await this.rebuildProvider();
-    }
-    if (this.disposed) return;
-    trace({ ev: "answer", version: snapshot.version, stored: countBlocks(snapshot.blocks), roomTop: this.fragment.length, room: fragmentBlockIds(this.fragment).length, othersHere: othersHere() });
-    if (this.fragment.length > 0) {
-      this.fromRoom = true;
-      const meta: Partial<SpaceMeta> = {};
-      for (const k of META_KEYS) if (this.meta.has(k)) (meta as Record<string, unknown>)[k] = this.meta.get(k) ?? null;
-      this.opts.onMeta(meta);
-      return;
-    }
-    Y.applyUpdateV2(this.doc, seedUpdate(snapshot), SEED);
-    this.seededBlocks = yXmlFragmentToBlocks(seedEditor(), this.fragment);
+    const result = await joinRoom({
+      fragment: this.fragment,
+      connect: async () => {
+        this.provider = this.makeProvider();
+        await this.provider.connect();
+        await this.provider.ready();
+      },
+      reask: () => this.rebuildProvider(),
+      othersHere,
+      disposed: () => this.disposed,
+      seed: () => {
+        trace({ ev: "seed", version: snapshot.version, stored: countBlocks(snapshot.blocks), othersHere: othersHere() });
+        Y.applyUpdateV2(this.doc, seedUpdate(snapshot), SEED);
+        this.seededBlocks = yXmlFragmentToBlocks(seedEditor(), this.fragment);
+      },
+    });
+    trace({ ev: "joined", result, version: snapshot.version, stored: countBlocks(snapshot.blocks), room: fragmentBlockIds(this.fragment).length, top: this.fragment.length });
+    if (result !== "room") return;
+    this.fromRoom = true;
+    const meta: Partial<SpaceMeta> = {};
+    for (const k of META_KEYS) if (this.meta.has(k)) (meta as Record<string, unknown>)[k] = this.meta.get(k) ?? null;
+    this.opts.onMeta(meta);
   }
 
   private async rebuildProvider(): Promise<void> {
