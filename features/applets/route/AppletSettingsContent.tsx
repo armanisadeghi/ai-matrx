@@ -24,6 +24,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { toast } from "@/lib/toast-service";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { archiveConfirmSentence } from "@/features/trash/archiveCopy";
+import { useChangeByTalkingDisclosure } from "@/features/applets/route/useChangeByTalkingDisclosure";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
 import { appletJobs, appletPages, appletSources } from "@/features/applets/types";
 import {
@@ -129,6 +130,7 @@ export function AppletSettingsContent({
   // Controlled so the copy payload can state WHICH slice of the form the user
   // is actually in — "what is the user doing here" is half the context.
   const [activeTab, setActiveTab] = useState("details");
+  useChangeByTalkingDisclosure();
 
   const [rateIp, setRateIp] = useState<string>(
     String(app?.rate_limit_per_ip ?? ""),
