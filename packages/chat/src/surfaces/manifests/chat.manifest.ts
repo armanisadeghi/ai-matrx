@@ -155,7 +155,9 @@ const surfaceSpecific: SurfaceValue[] = [
     valueType: "array",
     alwaysAvailable: false,
     typicalCharCount: 6000,
-    inlineUpTo: 8000,
+    // Page budget 10,000 (shared with the 2,000 custom_fields baseline and the two 1,000 values above):
+    // the newest messages fit in 6,000; older text is a `transcript` lookup away.
+    inlineUpTo: 6000,
     sortOrder: 295,
     group: "thread",
   },
