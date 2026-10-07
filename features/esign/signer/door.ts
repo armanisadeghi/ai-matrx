@@ -168,7 +168,11 @@ export function createSignerDoor(dispatch: AppDispatch, target: SignerTarget): S
     },
 
     async adopt(input: AdoptInput) {
-      const a = await act("adopt", { ...input });
+      // The published api-types name two mark kinds; an uploaded image goes through once they name
+      // the third (wave B) — until then the step says it is not available yet.
+      const kind = input.kind === "typed" || input.kind === "drawn" ? input.kind : null;
+      if (!kind) throw new DoorRefusal("unknown_action", reasonText("unknown_action"));
+      const a = await act("adopt", { ...input, kind });
       const image = str(a.image_base64) ?? str(input.image_data_url)?.replace(/^data:[^,]+,/, "") ?? "";
       const t: MarkTarget = a.target === "initials" ? "initials" : a.target === "signature" ? "signature" : input.target;
       return { target: t, image_base64: image };
