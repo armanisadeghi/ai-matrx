@@ -167,11 +167,7 @@ export function ScribeScreen({ sessionId, onBack }: ScribeScreenProps) {
             type: "transcript_session",
             id: sessionId,
             label: session?.title,
-          }),
-        ))) {
-          toast.error("Failed to copy reference");
-          return;
-        }
+          }), undefined, "Failed to copy reference"))) return;
         toast.success("Reference copied to clipboard", {
           description: session?.title ?? "Session",
         });
@@ -191,11 +187,7 @@ export function ScribeScreen({ sessionId, onBack }: ScribeScreenProps) {
                   sessionId,
                   transcriptId: session.transcriptId!,
                   label: session.title ?? undefined,
-                }),
-              ))) {
-                toast.error("Failed to copy reference");
-                return;
-              }
+                }), undefined, "Failed to copy reference"))) return;
               toast.success("Transcript reference copied");
             },
           },

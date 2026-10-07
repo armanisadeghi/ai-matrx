@@ -668,10 +668,7 @@ function ResourceIdCopy({ id }: { id: string }) {
   const [copied, setCopied] = useState(false);
 
   const handleCopy = async () => {
-    if (!(await copyText(id))) {
-      toast.error("Could not copy ID");
-      return;
-    }
+    if (!(await copyText(id, undefined, "Could not copy ID"))) return;
     setCopied(true);
     toast.success("ID copied");
     setTimeout(() => setCopied(false), 1500);

@@ -213,11 +213,7 @@ export function AgentAppsGrid({
   const handleCopyUrl = useCallback(async (app: AgentAppCardModel) => {
     const origin = typeof window !== "undefined" ? window.location.origin : "";
     const url = `${origin}/p/${app.slug}`;
-    if (!(await copyText(url, "Public URL copied to clipboard."))) {
-      toast.error(
-        "Could not copy to clipboard. URL: " + url.slice(0, 80) + "…",
-      );
-    }
+    await copyText(url, "Public URL copied to clipboard.", "Could not copy to clipboard. URL: " + url.slice(0, 80) + "…");
   }, []);
 
   const handleDuplicate = useCallback(

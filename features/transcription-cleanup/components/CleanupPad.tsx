@@ -2056,9 +2056,7 @@ export default function CleanupPad({
     const parts: string[] = [];
     if (transcript) parts.push(transcript);
     if (response) parts.push(kindTextToMarkdown(response));
-    if (!(await copyText(parts.join("\n\n---\n\n"), "Both copied to clipboard"))) {
-      toast.error("Copy failed — try selecting the text and copying manually");
-    }
+    await copyText(parts.join("\n\n---\n\n"), "Both copied to clipboard", "Copy failed — try selecting the text and copying manually");
   }, []);
 
   // ── Session switching ──────────────────────────────────────────────────────

@@ -166,13 +166,15 @@ export function VaultPasswordGenerator({
     )
       return;
     const snapshot = contextRef.current;
-    if (!(await copyText(candidate.value))) {
-      // Keep the candidate: clearing it here would lose the only copy.
-      toast.error(
+    // Keep the candidate on failure: clearing it would lose the only copy.
+    if (
+      !(await copyText(
+        candidate.value,
+        undefined,
         "Could not copy the generated value. Reveal it and copy it yourself.",
-      );
+      ))
+    )
       return;
-    }
     clear();
     if (snapshot !== contextRef.current) {
       toast.warning(

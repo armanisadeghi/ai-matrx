@@ -63,9 +63,7 @@ function SiteDataKeyCard() {
 
   const handleCopy = async () => {
     if (!key) return;
-    if (!(await copyText(key, "Site data key copied"))) {
-      toast.error("Could not copy — reveal the key and copy it manually");
-    }
+    await copyText(key, "Site data key copied", "Could not copy — reveal the key and copy it manually");
   };
 
   const handleRotate = async () => {

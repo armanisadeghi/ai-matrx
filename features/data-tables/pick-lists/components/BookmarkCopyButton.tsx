@@ -31,10 +31,7 @@ export function BookmarkCopyButton({
   const handleCopy = async (e: React.MouseEvent) => {
     e.stopPropagation();
     e.preventDefault();
-    if (!(await copyText(buildBookmarkReferenceFence(bookmark)))) {
-      toast.error("Failed to copy bookmark");
-      return;
-    }
+    if (!(await copyText(buildBookmarkReferenceFence(bookmark), undefined, "Failed to copy bookmark"))) return;
     setCopied(true);
     toast.success("Bookmark copied to clipboard", {
       description: label,

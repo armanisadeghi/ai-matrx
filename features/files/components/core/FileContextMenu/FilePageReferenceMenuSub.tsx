@@ -31,11 +31,7 @@ export function FilePageReferenceMenuSub({
         fileId,
         pageNumber,
         label: fileName,
-      }),
-    ))) {
-      toast.error("Failed to copy page reference");
-      return;
-    }
+      }), undefined, "Failed to copy page reference"))) return;
     toast.success("Page reference copied", {
       description: fileName
         ? `${fileName} · p.${pageNumber}`

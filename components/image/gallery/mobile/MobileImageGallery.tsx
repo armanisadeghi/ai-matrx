@@ -131,14 +131,7 @@ export function MobileImageGallery({
   };
 
   const handleShare = async (photo: SimplePhoto) => {
-    if (!(await copyText(photo.url))) {
-      toast({
-        title: "Copy failed",
-        description: "There was an issue copying the link.",
-        variant: "destructive",
-      });
-      return;
-    }
+    if (!(await copyText(photo.url, undefined, "There was an issue copying the link."))) return;
     toast({
       title: "Link copied",
       description: "The image link has been copied to your clipboard.",
