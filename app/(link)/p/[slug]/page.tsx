@@ -1,13 +1,11 @@
 import { createClient } from "@/utils/supabase/server";
 import { notFound } from "next/navigation";
 import { AccessGate } from "@/features/access-gate/components/AccessGate";
-import { AgentAppPublicRenderer } from "@/features/agent-apps/components/AgentAppPublicRenderer";
-import { PUBLIC_AGENT_APP_SURFACE_NAME } from "@/features/surfaces/manifests/public-agent-app.manifest";
+import { AppletHostMount } from "@/features/applets-host/AppletHostMount";
 import { getAgentAppIconsMetadata } from "@/features/agent-apps/utils/favicon-metadata";
 import type { Metadata } from "next";
 import { NOT_INDEXED_ROBOTS } from "@/lib/seo/search-engine-indexed";
 import { searchEngineRobots } from "@/lib/seo/search-engine-indexed.server";
-import type { PublicAgentApp } from "@/features/agent-apps/types";
 import { MadeWithAiMatrx } from "@/components/matrx/MadeWithAiMatrx";
 import { isUuidShape } from "@ai-matrx/kit/uuid";
 
@@ -119,76 +117,15 @@ export default async function PublicAppPage({
     notFound();
   }
 
-  if (process.env.NODE_ENV !== "production") {
-    console.log(`[p/${slug}] resolved path=agent-app embed=${embed ?? ""}`);
-  }
+  // The published Applet runs through the ONE Applet host — the same frame as /apps/<slug> — for a
+  // signed-in viewer and a guest alike (a guest's jobs ride the guest lane; it has no data reach).
+  // `?embed=widget` is the same Applet without the attribution row.
+  const applet = <AppletHostMount appletId={rpcRow.id} slug={rpcRow.slug} />;
+  if (embed === "widget") return applet;
 
-  // The public RPC intentionally omits internal/admin-only fields
-  // (app_kind, shared_context_policies, search_tsv, usage/cost aggregates)
-  // that PublicAgentApp declares but the public renderer never reads.
-  const app: PublicAgentApp = {
-    id: rpcRow.id,
-    slug: rpcRow.slug,
-    name: rpcRow.name,
-    tagline: rpcRow.tagline,
-    description: rpcRow.description,
-    category: rpcRow.category,
-    tags: rpcRow.tags,
-    agent_id: rpcRow.agent_id,
-    agent_version_id: rpcRow.agent_version_id,
-    use_latest: rpcRow.use_latest,
-    // The app's JOB, plus the system-default Holder the RPC resolved for us.
-    // A guest cannot read `mandate.definition` and has no bindings, so this IS
-    // their whole resolution — see `features/agent-apps/lib/appHolder.ts`.
-    // Ignored entirely while APP_MANDATE_CUTOVER is OFF.
-    mandate_id: rpcRow.mandate_id,
-    mandate_key: rpcRow.mandate_key,
-    mandate_agent_id: rpcRow.mandate_agent_id,
-    mandate_agent_version_id: rpcRow.mandate_agent_version_id,
-    app_kind: "custom",
-    shared_context_policies: null,
-    search_tsv: null,
-    component_code: rpcRow.component_code,
-    component_language: rpcRow.component_language as PublicAgentApp["component_language"],
-    allowed_imports: rpcRow.allowed_imports,
-    variable_schema: rpcRow.variable_schema,
-    layout_config: rpcRow.layout_config,
-    styling_config: rpcRow.styling_config,
-    shell_kind: rpcRow.shell_kind as PublicAgentApp["shell_kind"],
-    shell_config: rpcRow.shell_config,
-    slot_overrides: rpcRow.slot_overrides,
-    slot_code: rpcRow.slot_code,
-    preview_image_url: rpcRow.preview_image_url,
-    favicon_url: rpcRow.favicon_url,
-    total_executions: rpcRow.total_executions,
-    success_rate: rpcRow.success_rate,
-  };
-
-  // Embed switch: `?embed=widget` forces the widget shell regardless of the
-  // row's configured shell_kind. One row, two deployments (full page + iframe).
-  if (embed === "widget") {
-    return (
-      <>
-        <AgentAppPublicRenderer
-          app={{ ...app, shell_kind: "widget" }}
-          slug={app.slug}
-          surfaceName={PUBLIC_AGENT_APP_SURFACE_NAME}
-        />
-      </>
-    );
-  }
-
-  // This route is the ONLY one that emits `matrx-public/p` — the anonymous
-  // visitor surface. Authed agent-app routes inherit `matrx-user/agent-apps`.
   return (
     <>
-      <main className="min-h-0 flex-1 overflow-x-hidden">
-        <AgentAppPublicRenderer
-          app={app}
-          slug={app.slug}
-          surfaceName={PUBLIC_AGENT_APP_SURFACE_NAME}
-        />
-      </main>
+      <main className="min-h-0 flex-1 overflow-x-hidden">{applet}</main>
       <MadeWithAiMatrx publisherName={rpcRow.publisher_name} />
     </>
   );
