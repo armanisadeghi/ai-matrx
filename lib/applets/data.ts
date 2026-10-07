@@ -5,6 +5,7 @@
 // resolve a row and translate Postgres errors into Next.js notFound().
 
 import "server-only";
+import { cache } from "react";
 import { notFound } from "next/navigation";
 import * as z from "zod";
 import { createClient } from "@/utils/supabase/server";
@@ -64,8 +65,11 @@ export interface AppletVersionRow {
   sources: Json;
 }
 
-/** Fetch by id-or-slug; calls notFound() if RLS hides it or no row exists. */
-export async function getApplet(idOrSlug: string): Promise<AppletRow> {
+/**
+ * Fetch by id-or-slug; calls notFound() if RLS hides it or no row exists. Once per request (React
+ * `cache`): the manage layout, its metadata and the page all ask for the same row.
+ */
+export const getApplet = cache(async function getApplet(idOrSlug: string): Promise<AppletRow> {
   const supabase = await createClient();
   const column = isUuidShape(idOrSlug) ? "id" : "slug";
   const result = await supabase
@@ -80,7 +84,7 @@ export async function getApplet(idOrSlug: string): Promise<AppletRow> {
     notFound();
   }
   return parseAppletRow(result.data);
-}
+});
 
 /** Fetch all version snapshots for an app, newest first. RLS scopes by app. */
 export async function getAppletVersions(

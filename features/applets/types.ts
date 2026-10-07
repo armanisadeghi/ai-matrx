@@ -6,6 +6,8 @@
 // never agents: there is no agent binding on the record.
 // ============================================================================
 
+import type { AppletSource as RecordSource, NewTableDeclaration } from "@ai-matrx/applets";
+
 import type { Database, Json } from "@/types/database.types";
 
 export type AppStatus = "draft" | "published" | "archived" | "suspended";
@@ -85,9 +87,8 @@ export interface AppletPage {
   parent?: string;
 }
 
-export type AppletSource =
-  | { alias: string; table_id: string; organization_id: string }
-  | { alias: string; entity: string };
+/** One source of the record — her table, a platform record type, or a table "Use it" makes (`new_table`). */
+export type AppletSource = RecordSource;
 
 function objects(value: Json | undefined): Record<string, unknown>[] {
   if (!Array.isArray(value)) return [];
@@ -125,7 +126,14 @@ export function appletPages(app: Pick<AppletDefinition, "pages">): AppletPage[] 
 export function appletSources(app: Pick<AppletDefinition, "sources">): AppletSource[] {
   return objects(app.sources).flatMap((s): AppletSource[] => {
     if (typeof s.alias !== "string") return [];
-    if (typeof s.entity === "string") return [{ alias: s.alias, entity: s.entity }];
+    // A table the draft asks for (not made until "Use it") — kept whole, or editing sources in
+    // Settings would save the draft without it and the app would read a source that is gone.
+    // Only a NAMED declaration counts: a strict provider wire fills every optional arm.
+    const declared = s.new_table;
+    if (declared && typeof declared === "object" && !Array.isArray(declared) && typeof (declared as { name?: unknown }).name === "string" && (declared as { name: string }).name.trim()) {
+      return [{ alias: s.alias, new_table: declared as unknown as NewTableDeclaration }];
+    }
+    if (typeof s.entity === "string" && s.entity) return [{ alias: s.alias, entity: s.entity }];
     if (typeof s.table_id === "string" && typeof s.organization_id === "string") {
       return [{ alias: s.alias, table_id: s.table_id, organization_id: s.organization_id }];
     }

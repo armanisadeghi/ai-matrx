@@ -72,7 +72,9 @@ export function buildAppletBundle(app: AppletBundleSource, activeView?: string):
       xmlList("sources", appletSources(app), (s) =>
         "entity" in s
           ? xmlElement("source", { alias: s.alias, entity: s.entity })
-          : xmlElement("source", { alias: s.alias, table_id: s.table_id }),
+          : "new_table" in s
+            ? xmlElement("source", { alias: s.alias, new_table: s.new_table.name })
+            : xmlElement("source", { alias: s.alias, table_id: s.table_id }),
       ),
       xmlList("files", Object.entries(files), ([name, source]) =>
         xmlElement("file", { name, chars: source.length }),

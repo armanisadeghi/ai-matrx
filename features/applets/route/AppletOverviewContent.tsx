@@ -135,11 +135,13 @@ export function AppletOverviewContent({ appId }: AppletOverviewContentProps) {
               return (
               <SettingRow
                 key={source.alias}
-                label={table?.name ?? source.alias}
+                label={"new_table" in source ? source.new_table.name : (table?.name ?? source.alias)}
                 line={
                   "entity" in source
                     ? `Record type: ${source.entity}`
-                    : `${otherOrg ? "Another organization's table" : "Table"}${table?.organizationName ? ` · ${table.organizationName}` : ""}`
+                    : "new_table" in source
+                      ? "New table · made by Use it"
+                      : `${otherOrg ? "Another organization's table" : "Table"}${table?.organizationName ? ` · ${table.organizationName}` : ""}`
                 }
               >
                 {"table_id" in source && (

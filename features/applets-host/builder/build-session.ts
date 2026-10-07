@@ -37,6 +37,8 @@ export interface BuildEntry {
   finished_at?: string;
   /** The Applet version this request saved. */
   version?: number;
+  /** When THE CLAIM moved it to "saving" — a claim this old whose tab never settled it is released. */
+  claimed_at?: string;
   /** The builder's one-line note. */
   note?: string;
   error?: string;
@@ -80,6 +82,7 @@ function readEntry(raw: unknown): BuildEntry | null {
     started_at: typeof raw.started_at === "string" ? raw.started_at : "",
     state,
     ...(typeof raw.finished_at === "string" ? { finished_at: raw.finished_at } : {}),
+    ...(typeof raw.claimed_at === "string" ? { claimed_at: raw.claimed_at } : {}),
     ...(typeof raw.version === "number" ? { version: raw.version } : {}),
     ...(typeof raw.note === "string" ? { note: raw.note } : {}),
     ...(typeof raw.error === "string" ? { error: raw.error } : {}),
@@ -236,10 +239,42 @@ export async function patchBuildEntry(client: Client, appletId: string, entryId:
  * other waiter on the same run stands down.
  */
 export async function claimBuildEntry(client: Client, appletId: string, entryId: string): Promise<boolean> {
+  const claimedAt = new Date().toISOString();
   const outcome = await editRequests(client, appletId, (requests) => {
     const entry = requests.find((r) => r.id === entryId);
     if (!entry || (entry.state !== "starting" && entry.state !== "running")) return null;
-    return requests.map((r) => (r.id === entryId ? { ...r, state: "saving" as const } : r));
+    return requests.map((r) => (r.id === entryId ? { ...r, state: "saving" as const, claimed_at: claimedAt } : r));
+  });
+  return outcome.status === "saved";
+}
+
+/**
+ * A save takes seconds (one row write). A claim older than this was taken by a tab that closed or
+ * crashed between claiming the answer and settling it — nobody is saving it any more.
+ */
+export const STALE_CLAIM_MS = 90_000;
+
+/** The entry sits in "saving" under a claim nobody is going to finish. */
+export function isStaleClaim(entry: BuildEntry | null | undefined, now: number = Date.now()): entry is BuildEntry {
+  if (!entry || entry.state !== "saving") return false;
+  const since = Date.parse(entry.claimed_at ?? entry.started_at ?? "");
+  return !Number.isFinite(since) || now - since > STALE_CLAIM_MS;
+}
+
+/**
+ * Release a stale claim: the entry goes back to "running", so the next opener rejoins its run and
+ * THE CLAIM decides again who saves it. Exactly one releaser writes (the guarded merge re-reads on a
+ * race and finds the entry no longer stale). True when this caller released it.
+ */
+export async function releaseStaleClaim(client: Client, appletId: string, entryId: string, now: number = Date.now()): Promise<boolean> {
+  const outcome = await editRequests(client, appletId, (requests) => {
+    const entry = requests.find((r) => r.id === entryId);
+    if (!isStaleClaim(entry, now)) return null;
+    return requests.map((r) => {
+      if (r.id !== entryId) return r;
+      const { claimed_at: _released, ...rest } = r;
+      return { ...rest, state: "running" as const };
+    });
   });
   return outcome.status === "saved";
 }
