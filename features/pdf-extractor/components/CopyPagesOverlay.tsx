@@ -550,7 +550,7 @@ export function CopyPagesOverlay({
   const handleCopySection = useCallback(
     async (idx: number) => {
       try {
-        await copyText(sections[idx].text);
+        if (!(await copyText(sections[idx].text))) return;
         setCopiedIdx(idx);
         setTimeout(() => setCopiedIdx(null), 1800);
       } catch {
@@ -571,7 +571,7 @@ export function CopyPagesOverlay({
       source,
     );
     try {
-      await copyText(combined);
+      if (!(await copyText(combined))) return;
       setCopiedAll(true);
       setTimeout(() => setCopiedAll(false), 1800);
     } catch {

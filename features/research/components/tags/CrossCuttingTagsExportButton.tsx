@@ -66,7 +66,7 @@ export function CrossCuttingTagsExportButton({
           mode === "ai"
             ? tagInputToAiText(topicId, topicName, data)
             : tagInputToText(topicName, data);
-        await copyText(text);
+        if (!(await copyText(text))) return;
         toast.success(
           mode === "ai" ? "Copied tag input for AI" : "Copied tag input",
           {

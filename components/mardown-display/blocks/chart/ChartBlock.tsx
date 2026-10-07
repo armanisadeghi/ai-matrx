@@ -71,7 +71,7 @@ export const ChartBlock: React.FC<ChartBlockProps> = ({ content = "", isStreamAc
 
   const handleCopy = async () => {
     try {
-      await copyText(source);
+      if (!(await copyText(source))) return;
       setCopied(true);
       setTimeout(() => setCopied(false), 1500);
     } catch {

@@ -68,7 +68,7 @@ export function IslandBlockView({ node, updateAttributes, deleteNode, selected, 
 
   const copy = async () => {
     try {
-      await copyText(raw);
+      if (!(await copyText(raw))) return;
       setCopied(true);
       window.setTimeout(() => setCopied(false), 1200);
     } catch {

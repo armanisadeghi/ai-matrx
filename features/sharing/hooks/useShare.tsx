@@ -51,19 +51,22 @@ export function useShare(): UseShareResult {
       text: string,
       fallback?: { title?: string; description?: string },
     ): Promise<"copied" | "manual"> => {
-      try {
-        await copyTextKit(text);
-        setCopied(true);
-        window.setTimeout(() => setCopied(false), 2_000);
-        return "copied";
-      } catch {
+      const showManualFallback = () => {
         setFallbackTitle(fallback?.title ?? "Copy link");
         setFallbackDescription(
           fallback?.description ??
             "Press Cmd/Ctrl+C to copy, or use the Copy button below.",
         );
         setFallbackUrl(text);
-        return "manual";
+        return "manual" as const;
+      };
+      try {
+        if (!(await copyTextKit(text))) return showManualFallback();
+        setCopied(true);
+        window.setTimeout(() => setCopied(false), 2_000);
+        return "copied";
+      } catch {
+        return showManualFallback();
       }
     },
     [],

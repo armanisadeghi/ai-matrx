@@ -317,7 +317,8 @@ function RagAiCopyWindowInner({
               void copyText(
                 combineSelectedHumanText(bundle, options),
               ).then(
-                () => {
+                (copied) => {
+      if (!copied) return;
                   flash("text");
                   toast.success("Selected Knowledge content copied");
                 },
@@ -339,7 +340,8 @@ function RagAiCopyWindowInner({
               void copyText(
                 buildAgentPayload(buildRagAiPayload(bundle, options)),
               ).then(
-                () => {
+                (copied) => {
+      if (!copied) return;
                   flash("ai");
                   toast.success("Knowledge result copied for AI");
                 },

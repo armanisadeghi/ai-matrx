@@ -495,8 +495,10 @@ export function ImageViewerWindow({
                   icon: Copy,
                   disabled: images.length < 2,
                   onSelect: () => {
-                    void copyText(images.join("\n"));
-                    toast.success(`${images.length} image URLs copied`);
+                    void copyText(images.join("\n")).then((copied) => {
+  if (!copied) return;
+  toast.success(`${images.length} image URLs copied`);
+});
                   },
                 },
               ],

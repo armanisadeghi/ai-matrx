@@ -156,7 +156,7 @@ export default function TaskDetailsPanel({
   const [showDescPreview, setShowDescPreview] = useState(false);
 
   const handleCopyId = async () => {
-    await copyText(task.id);
+    if (!(await copyText(task.id))) return;
     setIdCopied(true);
     setTimeout(() => setIdCopied(false), 2000);
   };

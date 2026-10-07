@@ -50,8 +50,10 @@ export function RagContentActions({
         title={`Copy ${label} to clipboard`}
         onClick={(event) => {
           stop(event);
-          void copyText(humanText, `${label} copied to clipboard`);
-          setCopied(true);
+          void copyText(humanText, `${label} copied to clipboard`).then((copied) => {
+  if (!copied) return;
+  setCopied(true);
+});
           window.setTimeout(() => setCopied(false), 1_500);
         }}
       >

@@ -252,7 +252,7 @@ export default function SurfaceContextWindow({
     : "This Page";
 
   const copyText = async (text: string, key: string) => {
-    await copyTextKit(text);
+    if (!(await copyTextKit(text))) return;
     setCopied(key);
     window.setTimeout(() => setCopied(null), 1200);
   };

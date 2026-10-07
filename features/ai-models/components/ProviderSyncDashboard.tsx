@@ -642,8 +642,10 @@ function CopyBtn({ text }: { text: string }) {
   return (
     <button
       onClick={() => {
-        copyText(text);
-        setCopied(true);
+        void copyText(text).then((copied) => {
+  if (!copied) return;
+  setCopied(true);
+});
         setTimeout(() => setCopied(false), 1500);
       }}
       className="h-6 w-6 flex items-center justify-center rounded hover:bg-accent text-muted-foreground hover:text-foreground"

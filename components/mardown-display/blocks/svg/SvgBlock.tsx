@@ -68,7 +68,7 @@ export const SvgBlock: React.FC<SvgBlockProps> = ({ content = "", isStreamActive
 
   const handleCopy = async () => {
     try {
-      await copyText(svg);
+      if (!(await copyText(svg))) return;
       setCopied(true);
       setTimeout(() => setCopied(false), 1500);
     } catch {

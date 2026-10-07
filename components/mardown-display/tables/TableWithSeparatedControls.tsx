@@ -122,9 +122,9 @@ const TableControls: React.FC<TableControlsProps> = ({
 
   const copyJsonToClipboard = useCallback(async () => {
     try {
-      await copyText(
+      if (!(await copyText(
         JSON.stringify(debouncedTableData.normalizedData, null, 2),
-      );
+      ))) return;
       toast.success("JSON copied to clipboard");
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Failed to copy JSON");

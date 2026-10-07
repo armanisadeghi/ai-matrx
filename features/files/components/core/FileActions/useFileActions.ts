@@ -185,7 +185,7 @@ export function useFileActions(fileId: string): FileActionHandlers {
       // on the file's share state.
       if (opts?.expiresIn !== undefined) {
         const result = await dispatch(getFileUrl({ fileId })).unwrap();
-        await copyText(result.url);
+        if (!(await copyText(result.url))) return null;
         return result.url;
       }
 
@@ -205,7 +205,7 @@ export function useFileActions(fileId: string): FileActionHandlers {
           }
         }
         if (cdnUrl) {
-          await copyText(cdnUrl);
+          if (!(await copyText(cdnUrl))) return null;
           return cdnUrl;
         }
         // publicUrl unavailable even after REST fetch (CDN not configured
@@ -262,7 +262,7 @@ export function useFileActions(fileId: string): FileActionHandlers {
       if (!token) return null;
 
       const url = pythonShareUrl(token);
-      await copyText(url);
+      if (!(await copyText(url))) return null;
       return url;
     },
     [dispatch, fileId, isVirtual, store],

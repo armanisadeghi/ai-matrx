@@ -60,7 +60,7 @@ function useCopy(
     const value =
       ref.current?.value || String(props.value || props.defaultValue || "");
     if (!value) return;
-    await copyText(value);
+    if (!(await copyText(value))) return;
     setHasCopied(true);
     setTimeout(() => setHasCopied(false), 450);
   };

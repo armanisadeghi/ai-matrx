@@ -78,7 +78,7 @@ export const CopyButton: React.FC<{ text: string; className?: string }> = ({
   const [copied, setCopied] = useState(false);
 
   const handleCopy = async () => {
-    await copyText(text);
+    if (!(await copyText(text))) return;
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };

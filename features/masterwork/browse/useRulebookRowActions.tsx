@@ -108,8 +108,10 @@ export function useRulebookRowActions(
               onSelect: () => {
                 void copyText(
                   `${window.location.origin}/masterwork/${row.id}`,
-                );
-                toast.success("Link copied");
+                ).then((copied) => {
+  if (!copied) return;
+  toast.success("Link copied");
+});
               },
             },
           ],

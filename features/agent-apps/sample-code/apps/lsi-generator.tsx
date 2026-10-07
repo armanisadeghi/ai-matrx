@@ -119,8 +119,10 @@ export default function LSIMarkdownGenerator({
   };
 
   const copyToClipboard = (text: string, categoryName: string) => {
-    copyText(text);
-    setCopiedCategory(categoryName);
+    void copyText(text).then((copied) => {
+  if (!copied) return;
+  setCopiedCategory(categoryName);
+});
     setTimeout(() => setCopiedCategory(null), 2000);
   };
 

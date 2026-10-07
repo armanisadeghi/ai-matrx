@@ -157,8 +157,10 @@ export default function ServerEventInspector({ content: controlled }: ServerEven
   const abortRef = useRef<AbortController | null>(null);
 
   const copyText = useCallback((text: string) => {
-    copyTextKit(text);
-    setCopied(true);
+    void copyTextKit(text).then((copied) => {
+  if (!copied) return;
+  setCopied(true);
+});
     setTimeout(() => setCopied(false), 1500);
   }, []);
 

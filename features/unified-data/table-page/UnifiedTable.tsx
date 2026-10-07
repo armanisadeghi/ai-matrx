@@ -20,7 +20,7 @@
 
 import { type ReactNode } from "react";
 import { useRouter } from "next/navigation";
-import { RecordsMount, TablePage, WhereItLives } from "@ai-matrx/records-ui";
+import { RecordsMount, TablePage, TablePageSkeleton, WhereItLives, skeletonLayoutFor } from "@ai-matrx/records-ui";
 import type { PageView, RecordsMountProps, TablePageActionHost, ViewAddressState } from "@ai-matrx/records-ui";
 import type { RecordFilter } from "@ai-matrx/records";
 import { Button } from "@ai-matrx/design-system";
@@ -344,8 +344,10 @@ export function UnifiedTableBody({
     </>
   );
 
+  // The table page's own skeleton at its final geometry — never a line of text that a grey box
+  // and then the page replace (lane STABLE-TABLES, Arman 2026-10-06).
   if (object.state === "resolving" || (object.state === "not-given" && pendingInvitation === undefined)) {
-    return <p className="text-sm text-muted-foreground">Opening the table&hellip;</p>;
+    return <TablePageSkeleton layout={skeletonLayoutFor(address.view)} />;
   }
   if (object.state === "not-given" && pendingInvitation) {
     return <PendingTableInvitation invitation={pendingInvitation} />;
@@ -378,7 +380,7 @@ export function UnifiedTableBody({
     );
   }
   if (!mount.recordsConfig) {
-    return <p className="text-sm text-muted-foreground">Opening the table&hellip;</p>;
+    return <TablePageSkeleton layout={skeletonLayoutFor(address.view)} />;
   }
   return (
     // The table page's right-click is the proposed menu (`DataMenuProvider`); its ⋯ is the action list.

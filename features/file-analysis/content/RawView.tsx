@@ -58,7 +58,7 @@ export function RawView({
   })();
 
   const handleCopy = async () => {
-    await copyText(jsonText);
+    if (!(await copyText(jsonText))) return;
     setCopied(true);
     setTimeout(() => setCopied(false), 1500);
   };

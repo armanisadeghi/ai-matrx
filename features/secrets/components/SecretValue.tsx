@@ -297,7 +297,7 @@ export function useFieldSecret(
     if (!isCurrent(operation) || value === null) return;
     try {
       if (!isCurrent(operation)) return;
-      await copyText(value);
+      if (!(await copyText(value))) return;
     } catch {
       if (isCurrent(operation))
         toast.error("Your browser blocked clipboard access");

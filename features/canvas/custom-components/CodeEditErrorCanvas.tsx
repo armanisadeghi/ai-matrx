@@ -34,7 +34,7 @@ export function CodeEditErrorCanvas({
 
   const handleCopyResponse = async () => {
     try {
-      await copyText(rawResponse);
+      if (!(await copyText(rawResponse))) return;
       setIsCopied(true);
       setTimeout(() => setIsCopied(false), 2000);
     } catch (err) {

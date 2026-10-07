@@ -310,7 +310,8 @@ export function PayloadTab({ conversationId }: PayloadTabProps) {
     if (!request) return;
     try {
       const text = JSON.stringify(request, null, 2);
-      void copyText(text).then(() => {
+      void copyText(text).then((copied) => {
+      if (!copied) return;
         setCopied(true);
         window.setTimeout(() => setCopied(false), 1500);
       });

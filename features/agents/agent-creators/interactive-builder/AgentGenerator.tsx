@@ -670,19 +670,23 @@ export function AgentGenerator({ onComplete, mandate }: AgentGeneratorProps) {
 
   const handleCopyGenerated = useCallback(() => {
     if (extractedValue) {
-      copyText(JSON.stringify(extractedValue, null, 2));
-      toast.success("Copied generated JSON to clipboard", {
+      void copyText(JSON.stringify(extractedValue, null, 2)).then((copied) => {
+  if (!copied) return;
+  toast.success("Copied generated JSON to clipboard", {
         position: TOAST_POSITION,
       });
+});
     }
   }, [extractedValue]);
 
   const handleCopyRaw = useCallback(() => {
     if (streamingText) {
-      copyText(streamingText);
-      toast.success("Copied raw response to clipboard", {
+      void copyText(streamingText).then((copied) => {
+  if (!copied) return;
+  toast.success("Copied raw response to clipboard", {
         position: TOAST_POSITION,
       });
+});
     }
   }, [streamingText]);
 

@@ -1,23 +1,16 @@
-import { TableSkeleton } from "@/components/user-generated-table-data/TableSkeleton";
+import { TablePageSkeleton } from "@ai-matrx/records-ui";
 
+/**
+ * THE ROUTE'S FIRST FRAME IS THE TABLE PAGE'S OWN SKELETON (lane STABLE-TABLES, Arman 2026-10-06:
+ * "They must properly show skeletons and they should not cause shifts"): the same padding the
+ * table page sits in (`UnifiedDataTablePage`) and the package's page skeleton, so the frames that
+ * follow fill these boxes instead of replacing them.
+ */
 export default function Loading() {
   return (
-    <div className="w-full h-full overflow-hidden bg-muted/40 pt-[var(--shell-header-h)] p-4 rounded-lg space-y-4">
-      <div className="flex justify-between items-center">
-        <div className="w-1/3 h-10 bg-muted rounded animate-pulse" />
-        <div className="flex space-x-2">
-          <div className="w-24 h-10 bg-muted rounded animate-pulse" />
-          <div className="w-24 h-10 bg-muted rounded animate-pulse" />
-        </div>
-      </div>
-      <TableSkeleton rows={10} columns={7} />
-      <div className="flex justify-between items-center">
-        <div className="w-24 h-10 bg-muted rounded animate-pulse" />
-        <div className="flex space-x-2">
-          <div className="w-10 h-10 bg-muted rounded animate-pulse" />
-          <div className="w-10 h-10 bg-muted rounded animate-pulse" />
-        </div>
-        <div className="w-24 h-10 bg-muted rounded animate-pulse" />
+    <div className="h-full overflow-hidden pt-[var(--shell-header-h)]">
+      <div className="h-full overflow-y-auto px-3 pb-2 pt-1">
+        <TablePageSkeleton />
       </div>
     </div>
   );

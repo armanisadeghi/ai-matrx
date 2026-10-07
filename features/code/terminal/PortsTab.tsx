@@ -106,7 +106,8 @@ export const PortsTab: React.FC<PortsTabProps> = ({ className }) => {
   }, [activeSandboxId, fetchPorts]);
 
   const copy = useCallback((key: string, text: string) => {
-    void copyText(text).then(() => {
+    void copyText(text).then((copied) => {
+      if (!copied) return;
       setCopiedKey(key);
       setTimeout(() => {
         setCopiedKey((cur) => (cur === key ? null : cur));

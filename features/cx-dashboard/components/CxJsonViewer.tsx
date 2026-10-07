@@ -24,8 +24,10 @@ export function CxJsonViewer({ data, label, defaultCollapsed = true, maxHeight =
   const jsonStr = JSON.stringify(data, null, 2);
 
   const handleCopy = () => {
-    copyText(jsonStr);
-    setCopied(true);
+    void copyText(jsonStr).then((copied) => {
+  if (!copied) return;
+  setCopied(true);
+});
     setTimeout(() => setCopied(false), 1500);
   };
 

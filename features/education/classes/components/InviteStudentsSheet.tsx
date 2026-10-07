@@ -66,7 +66,7 @@ export function InviteStudentsSheet({
 
   async function copyText(value: string, what: string) {
     try {
-      await copyTextKit(value);
+      if (!(await copyTextKit(value))) return;
       toast.success(`${what} copied.`);
     } catch {
       setClipboardFallback({ value, what });

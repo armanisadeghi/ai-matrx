@@ -72,7 +72,7 @@ export function WebpageFooter({ item }: ContextItemBodyProps) {
 
   const copy = async () => {
     try {
-      await copyText(url);
+      if (!(await copyText(url))) return;
       setCopied(true);
       setTimeout(() => setCopied(false), 1500);
     } catch {

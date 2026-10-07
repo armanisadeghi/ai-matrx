@@ -263,7 +263,7 @@ const TroubleshootingBlock: React.FC<TroubleshootingBlockProps> = ({
 
   const copyCommand = async (command: string, commandId: string) => {
     try {
-      await copyText(command);
+      if (!(await copyText(command))) return;
       setCopiedCommands(new Set([...copiedCommands, commandId]));
       setTimeout(() => {
         setCopiedCommands((prev) => {

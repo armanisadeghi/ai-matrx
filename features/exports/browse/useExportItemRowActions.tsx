@@ -109,8 +109,10 @@ export function useExportItemRowActions(
                   ]
                     .filter(Boolean)
                     .join("\n"),
-                );
-                toast.success("Details copied");
+                ).then((copied) => {
+  if (!copied) return;
+  toast.success("Details copied");
+});
               },
             },
           ],

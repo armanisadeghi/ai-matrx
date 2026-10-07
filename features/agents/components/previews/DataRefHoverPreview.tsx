@@ -78,7 +78,7 @@ export function DataRefPreviewContent({ dataRef }: DataRefPreviewContentProps) {
 
   const handleCopyJson = async () => {
     try {
-      await copyText(JSON.stringify(dataRef, null, 2));
+      if (!(await copyText(JSON.stringify(dataRef, null, 2)))) return;
       setCopied(true);
       toast.success("Reference copied as JSON");
       setTimeout(() => setCopied(false), 1500);

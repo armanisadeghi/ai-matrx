@@ -79,7 +79,7 @@ export function RecordExportMenu({
 
   const copy = async (label: string, text: string) => {
     try {
-      await copyText(text);
+      if (!(await copyText(text))) return;
       toast.success(`${label} copied.`);
     } catch {
       toast.error(

@@ -45,8 +45,10 @@ function CopyButton({
   });
   const [copied, setCopied] = useState(false);
   const handleCopy = () => {
-    copyText(text);
-    setCopied(true);
+    void copyText(text).then((copied) => {
+  if (!copied) return;
+  setCopied(true);
+});
     setTimeout(() => setCopied(false), 1500);
   };
   return (
@@ -102,8 +104,10 @@ export default function SqlFunctionDetail({
 
   const handleCopyCode = () => {
     if (func.definition) {
-      copyText(func.definition);
-      setDefCopied(true);
+      void copyText(func.definition).then((copied) => {
+  if (!copied) return;
+  setDefCopied(true);
+});
       setTimeout(() => setDefCopied(false), 1500);
     }
   };

@@ -439,7 +439,7 @@ export function useAICodeEditor({
 
   const handleCopyResponse = useCallback(async () => {
     try {
-      await copyText(rawAIResponse);
+      if (!(await copyText(rawAIResponse))) return;
       setIsCopied(true);
       setTimeout(() => setIsCopied(false), 2000);
     } catch (err) {

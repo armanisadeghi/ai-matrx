@@ -214,8 +214,10 @@ export function GoogleEmbeddingLab() {
                   onClick={() => {
                     void copyText(
                       JSON.stringify(result.vectors),
-                    );
-                    setCopied(true);
+                    ).then((copied) => {
+  if (!copied) return;
+  setCopied(true);
+});
                     setTimeout(() => setCopied(false), 1500);
                   }}
                 >

@@ -29,8 +29,10 @@ const JsonDisplay: React.FC<JsonDisplayProps> = ({
   const formattedJson = JSON.stringify(cleanedData, null, indentLevel);
   
   const handleCopy = () => {
-    copyText(formattedJson);
-    setCopied(true);
+    void copyText(formattedJson).then((copied) => {
+  if (!copied) return;
+  setCopied(true);
+});
     setTimeout(() => setCopied(false), 2000);
   };
 

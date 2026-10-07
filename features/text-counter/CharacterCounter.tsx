@@ -95,7 +95,7 @@ export function CharacterCounter({
 
   const copyText = async () => {
     try {
-      await copyTextKit(text);
+      if (!(await copyTextKit(text))) return;
       setCopied(true);
       toast.success("Text copied to clipboard");
       window.setTimeout(() => setCopied(false), 1400);

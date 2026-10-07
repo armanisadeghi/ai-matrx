@@ -41,7 +41,7 @@ export default function KindEmitTemplate({
         ? emitPayloadFence(kind, value)
         : emitPayloadJson(kind, value);
     try {
-      await copyText(text);
+      if (!(await copyText(text))) return;
       setCopied(mode);
       toast.success(
         mode === "fence"

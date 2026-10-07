@@ -78,14 +78,14 @@ export default function UUIDGenerator() {
     }
 
     const copyToClipboard = async (text: string) => {
-        await copyText(text)
+        if (!(await copyText(text))) return;
         setCopied(text)
         setTimeout(() => setCopied(null), 1500)
         toast.success('Copied to clipboard!')
     }
 
     const copyAllToClipboard = async () => {
-        await copyText(multipleUUIDs.join('\n'))
+        if (!(await copyText(multipleUUIDs.join('\n')))) return;
         toast.success('All UUIDs copied to clipboard!')
     }
 

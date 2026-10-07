@@ -83,7 +83,7 @@ export function MobileImageViewer({
   // Handle share with clipboard
   const handleShare = async () => {
     try {
-      await copyText(photos[imageIndex]?.url);
+      if (!(await copyText(photos[imageIndex]?.url))) return;
       setIsSharing(true);
       setTimeout(() => setIsSharing(false), 2000);
       onShare(photos[imageIndex]);

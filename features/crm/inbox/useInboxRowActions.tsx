@@ -166,8 +166,10 @@ export function useInboxRowActions(
                 }
                 void copyText(
                   `${window.location.origin}${path}`,
-                );
-                toast.success("Link copied");
+                ).then((copied) => {
+  if (!copied) return;
+  toast.success("Link copied");
+});
               },
             },
             {
@@ -182,8 +184,10 @@ export function useInboxRowActions(
                     id: row.party_id as string,
                     label: row.party_name ?? "Contact",
                   }),
-                );
-                toast.success("Reference copied");
+                ).then((copied) => {
+  if (!copied) return;
+  toast.success("Reference copied");
+});
               },
             },
           ],

@@ -105,7 +105,7 @@ function RecoveryItem({ item, onDismiss, onClose }: RecoveryItemProps) {
 
   const handleCopyText = async () => {
     if (!localText) return;
-    await copyText(localText);
+    if (!(await copyText(localText))) return;
     setCopied(true);
     setTimeout(() => setCopied(false), 1500);
     toast.success("Text copied to clipboard");
@@ -133,7 +133,7 @@ function RecoveryItem({ item, onDismiss, onClose }: RecoveryItemProps) {
   const handleOpenInChat = async () => {
     if (localText.trim()) {
       try {
-        await copyText(localText.trim(), "Transcription copied — paste it into your conversation");
+        if (!(await copyText(localText.trim(), "Transcription copied — paste it into your conversation"))) return;
       } catch {
         toast.info("Navigate to chat and paste your transcription");
       }
@@ -175,7 +175,7 @@ function RecoveryItem({ item, onDismiss, onClose }: RecoveryItemProps) {
     ].join("\n");
 
     try {
-      await copyText(report, "Bug report copied — paste it into the description below");
+      if (!(await copyText(report, "Bug report copied — paste it into the description below"))) return;
     } catch {
       toast.info("Opening feedback form — please describe what happened");
     }

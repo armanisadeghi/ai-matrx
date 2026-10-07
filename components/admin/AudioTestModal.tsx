@@ -137,8 +137,10 @@ function AudioTestModalContent({
   };
 
   const handleCopy = () => {
-    copyText(speechText);
-    setCopied(true);
+    void copyText(speechText).then((copied) => {
+  if (!copied) return;
+  setCopied(true);
+});
     toast.success('Copied to clipboard');
     setTimeout(() => setCopied(false), 2000);
   };

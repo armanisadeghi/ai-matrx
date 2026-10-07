@@ -476,7 +476,7 @@ function SaveResultPanel({
       return;
     }
     try {
-      await copyText(shareUrl);
+      if (!(await copyText(shareUrl))) return;
       setCopied(true);
       toast.success("URL copied");
       setTimeout(() => setCopied(false), 1500);

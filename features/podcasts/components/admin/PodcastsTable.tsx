@@ -80,7 +80,8 @@ function CopyLinkButton({ slug }: { slug: string }) {
   const handleCopy = (e: React.MouseEvent) => {
     e.stopPropagation();
     const url = `${window.location.origin}/podcast/${slug}`;
-    copyText(url).then(() => {
+    copyText(url).then((copied) => {
+      if (!copied) return;
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     });

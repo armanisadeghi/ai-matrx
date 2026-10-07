@@ -147,8 +147,10 @@ export function MessageTemplateManager({
 
   const copyRawApiData = useCallback(() => {
     if (!rawApiDataRef.current) return;
-    copyText(rawApiDataRef.current);
-    setRawCopied(true);
+    void copyText(rawApiDataRef.current).then((copied) => {
+  if (!copied) return;
+  setRawCopied(true);
+});
     setTimeout(() => setRawCopied(false), 1500);
   }, []);
 

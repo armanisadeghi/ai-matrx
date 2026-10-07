@@ -158,8 +158,10 @@ export function DirectTestMode({
     if (responseText) {
       // The button is a plain "Copy" beside a drawn answer: a person gets what
       // they see (a kind as its markdown), never raw `{"__kind":…}` JSON.
-      copyText(kindTextToMarkdown(responseText));
-      setCopied(true);
+      void copyText(kindTextToMarkdown(responseText)).then((copied) => {
+  if (!copied) return;
+  setCopied(true);
+});
       setTimeout(() => setCopied(false), 2000);
     }
   }, [responseText]);

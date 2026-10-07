@@ -107,16 +107,20 @@ export default function EnumDetail({
   // Handle copy enum definition
   const handleCopyDefinition = () => {
     const definition = `CREATE TYPE ${enumType.schema}.${enumType.name} AS ENUM (${enumType.values.map((v) => `'${v}'`).join(", ")});`;
-    copyText(definition);
-    setIsCopied(true);
+    void copyText(definition).then((copied) => {
+  if (!copied) return;
+  setIsCopied(true);
+});
     setTimeout(() => setIsCopied(false), 2000);
   };
 
   // Handle copy values
   const handleCopyValues = () => {
     const values = enumType.values.join(", ");
-    copyText(values);
-    setIsCopied(true);
+    void copyText(values).then((copied) => {
+  if (!copied) return;
+  setIsCopied(true);
+});
     setTimeout(() => setIsCopied(false), 2000);
   };
 

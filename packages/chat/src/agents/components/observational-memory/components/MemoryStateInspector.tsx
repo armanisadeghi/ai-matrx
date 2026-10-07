@@ -356,8 +356,10 @@ function BufferedObservationCard({
 
   const handleCopy = useCallback(() => {
     if (!hasText) return;
-    copyText(text);
-    setCopied(true);
+    void copyText(text).then((copied) => {
+  if (!copied) return;
+  setCopied(true);
+});
     setTimeout(() => setCopied(false), 1500);
   }, [text, hasText]);
 
@@ -683,8 +685,10 @@ function TextPayload({
 
   const handleCopy = useCallback(() => {
     if (!text) return;
-    copyText(text);
-    setCopied(true);
+    void copyText(text).then((copied) => {
+  if (!copied) return;
+  setCopied(true);
+});
     setTimeout(() => setCopied(false), 1500);
   }, [text]);
 

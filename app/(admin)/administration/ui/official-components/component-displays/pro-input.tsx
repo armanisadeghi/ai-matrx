@@ -383,10 +383,12 @@ import { Field } from '@/components/official/Field';
             <Button
               variant="outline"
               onClick={() => {
-                copyText(
+                void copyText(
                   `import { ProInput } from "@/components/official/ProInput";`,
-                );
-                toast.success("Import copied");
+                ).then((copied) => {
+  if (!copied) return;
+  toast.success("Import copied");
+});
               }}
             >
               Copy import

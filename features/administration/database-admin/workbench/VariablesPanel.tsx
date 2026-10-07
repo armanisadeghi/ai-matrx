@@ -40,8 +40,10 @@ export function VariablesPanel({
       kind === "error" ? toast.error(message) : toast.success(message),
   });
   const handleCopy = (token: string) => {
-    copyText(token);
-    toast.success(`Copied ${token}`);
+    void copyText(token).then((copied) => {
+  if (!copied) return;
+  toast.success(`Copied ${token}`);
+});
   };
 
   return (

@@ -221,8 +221,10 @@ export const EditableJsonViewer: React.FC<EditableJsonViewerProps> = ({
 
   const copyToClipboard = () => {
     const stringified = jsonUtils.stringify(parsedData);
-    copyText(stringified);
-    setIsCopied(true);
+    void copyText(stringified).then((copied) => {
+  if (!copied) return;
+  setIsCopied(true);
+});
     setTimeout(() => setIsCopied(false), 2000);
   };
 

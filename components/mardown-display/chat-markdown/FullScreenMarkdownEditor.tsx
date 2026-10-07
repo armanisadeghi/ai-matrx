@@ -172,7 +172,8 @@ function useCopyButton() {
   });
   const [copied, setCopied] = useState(false);
   const copy = useCallback((text: string) => {
-    copyText(text).then(() => {
+    copyText(text).then((copied) => {
+      if (!copied) return;
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     });

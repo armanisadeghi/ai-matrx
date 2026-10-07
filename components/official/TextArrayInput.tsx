@@ -44,7 +44,7 @@ const TextArrayInput = ({
   const handleCopy = async () => {
     const textToCopy = value.join(", ");
     try {
-      await copyText(textToCopy);
+      if (!(await copyText(textToCopy))) return;
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch (err) {

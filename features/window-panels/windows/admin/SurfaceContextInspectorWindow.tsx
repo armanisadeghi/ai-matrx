@@ -104,7 +104,8 @@ function useCopyText() {
   });
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
   const copy = useCallback((text: string, key: string) => {
-    void copyText(text).then(() => {
+    void copyText(text).then((copied) => {
+      if (!copied) return;
       setCopiedKey(key);
       setTimeout(() => setCopiedKey(null), 1200);
     });

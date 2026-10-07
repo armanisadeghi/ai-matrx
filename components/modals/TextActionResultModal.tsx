@@ -56,7 +56,7 @@ export function TextActionResultModal({
   const [copied, setCopied] = useState(false);
 
   const handleCopy = async () => {
-    await copyText(kindTextToMarkdown(aiResponse));
+    if (!(await copyText(kindTextToMarkdown(aiResponse)))) return;
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };

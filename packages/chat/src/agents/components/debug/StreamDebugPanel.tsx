@@ -85,8 +85,10 @@ function useCopy() {
   });
   const [copied, setCopied] = useState<string | null>(null);
   const copy = (text: string, id: string) => {
-    copyText(text);
-    setCopied(id);
+    void copyText(text).then((copied) => {
+  if (!copied) return;
+  setCopied(id);
+});
     setTimeout(() => setCopied(null), 1500);
   };
   return { copied, copy };

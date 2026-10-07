@@ -217,7 +217,7 @@ export default function ShapeTestTab({
   async function copyInstance(): Promise<void> {
     if (instance === null) return;
     try {
-      await copyText(JSON.stringify(instance, null, 2));
+      if (!(await copyText(JSON.stringify(instance, null, 2)))) return;
       toast.success(`Copied ${kind} instance`);
     } catch (error) {
       toast.error(

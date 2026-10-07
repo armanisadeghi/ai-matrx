@@ -152,8 +152,10 @@ export function useTranscriptRowActions(
                 onSelect: () => {
                   void copyText(
                     `${window.location.origin}${href}`,
-                  );
-                  toast.success("Link copied");
+                  ).then((copied) => {
+  if (!copied) return;
+  toast.success("Link copied");
+});
                 },
               },
               {
@@ -169,8 +171,10 @@ export function useTranscriptRowActions(
                       id: row.id,
                       label: row.title,
                     }),
-                  );
-                  toast.success("Reference copied");
+                  ).then((copied) => {
+  if (!copied) return;
+  toast.success("Reference copied");
+});
                 },
               },
             ],

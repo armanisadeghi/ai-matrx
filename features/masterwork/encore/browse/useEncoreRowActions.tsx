@@ -121,8 +121,10 @@ export function useEncoreRowActions(
             onSelect: () => {
               void copyText(
                 `${window.location.origin}${doorHref(row)}`,
-              );
-              toast.success("Link copied");
+              ).then((copied) => {
+  if (!copied) return;
+  toast.success("Link copied");
+});
             },
           },
         ],

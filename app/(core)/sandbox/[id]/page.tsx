@@ -286,7 +286,7 @@ export default function SandboxDetailPage() {
       })
       .join("\n");
 
-    await copyText(text);
+    if (!(await copyText(text))) return;
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   }, [terminalHistory]);

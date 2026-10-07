@@ -1288,7 +1288,8 @@ const CopyButton: React.FC<{ value: string; label?: string }> = ({
     <button
       type="button"
       onClick={() => {
-        void copyText(value).then(() => {
+        void copyText(value).then((copied) => {
+      if (!copied) return;
           setCopied(true);
           setTimeout(() => setCopied(false), 1200);
         });

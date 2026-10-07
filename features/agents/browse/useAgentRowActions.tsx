@@ -307,8 +307,10 @@ export function useAgentRowActions({
               id: agent.id,
               label: agent.name,
             }),
-          );
-          toast.success("Agent reference copied");
+          ).then((copied) => {
+  if (!copied) return;
+  toast.success("Agent reference copied");
+});
         },
 
         onDelete: () => void remove(agent),

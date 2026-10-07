@@ -56,7 +56,8 @@ function CopyButton({
       size="sm"
       variant={variant}
       onClick={() => {
-        void copyText(value).then(() => {
+        void copyText(value).then((copied) => {
+  if (!copied) return;
           setCopied(true);
           setTimeout(() => setCopied(false), 2000);
         });

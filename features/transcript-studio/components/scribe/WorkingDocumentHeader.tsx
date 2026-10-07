@@ -118,7 +118,7 @@ export function WorkingDocumentHeader({
     const text = draft || docContent;
     if (!text.trim()) return;
     try {
-      await copyTextKit(text);
+      if (!(await copyTextKit(text))) return;
       setHasCopied(true);
       setTimeout(() => setHasCopied(false), 450);
     } catch {

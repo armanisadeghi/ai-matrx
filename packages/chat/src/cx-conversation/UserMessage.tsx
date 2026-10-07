@@ -190,7 +190,8 @@ export function UserMessage({
 
   const handleCopy = (e: React.MouseEvent) => {
     e.stopPropagation();
-    copyText(message.content).then(() => {
+    copyText(message.content).then((copied) => {
+      if (!copied) return;
       setIsCopied(true);
       setTimeout(() => setIsCopied(false), 2000);
     });

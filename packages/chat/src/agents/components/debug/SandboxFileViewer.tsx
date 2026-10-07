@@ -85,7 +85,7 @@ export function SandboxFileViewer({
 
   const handleCopy = async () => {
     if (content == null) return;
-    await copyText(content);
+    if (!(await copyText(content))) return;
     setCopied(true);
     toast.success("File contents copied");
     setTimeout(() => setCopied(false), 1500);

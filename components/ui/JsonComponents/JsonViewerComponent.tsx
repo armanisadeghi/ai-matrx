@@ -65,8 +65,10 @@ const JsonViewerBody: React.FC<JsonViewerProps> = (
 
     const copyToClipboard = useCallback(() => {
         if (disabled) return;
-        copyText(JSON.stringify(parsedData, null, 2));
-        setIsCopied(true);
+        void copyText(JSON.stringify(parsedData, null, 2)).then((copied) => {
+  if (!copied) return;
+  setIsCopied(true);
+});
         setTimeout(() => setIsCopied(false), 2000);
     }, [parsedData, disabled]);
 

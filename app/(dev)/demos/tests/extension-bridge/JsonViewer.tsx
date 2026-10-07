@@ -35,7 +35,7 @@ export function JsonViewer({
 
   const handleCopy = async () => {
     try {
-      await copyText(text);
+      if (!(await copyText(text))) return;
       setCopied(true);
       setTimeout(() => setCopied(false), 1500);
     } catch {

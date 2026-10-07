@@ -770,7 +770,7 @@ function ServerToolsTab({
       );
       const text = formatEnabledTools(tools, format);
       try {
-        await copyText(text);
+        if (!(await copyText(text))) return;
         setCopiedFormat(format);
         setTimeout(() => setCopiedFormat(null), 1500);
       } catch (err) {
@@ -4245,7 +4245,8 @@ function ToolDetailPanel({ toolId }: { toolId: string }) {
       null,
       2,
     );
-    copyText(json).then(() => {
+    copyText(json).then((copied) => {
+      if (!copied) return;
       setCopied(true);
       setTimeout(() => setCopied(false), 1500);
     });

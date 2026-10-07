@@ -300,7 +300,9 @@ export function UnifiedDataTablePage({ tableId }: { tableId: string }) {
             }
           />
         )}
-        <div className={mount.mountsTheTable ? "h-full overflow-y-auto px-3 pb-2 pt-1" : "h-full overflow-y-auto p-4"}>
+        {/* While the table is still being found it already sits in the table's own padding: the
+            page skeleton is drawn where the table will be (STABLE-TABLES). */}
+        <div className={mount.mountsTheTable || mount.object.state === "resolving" ? "h-full overflow-y-auto px-3 pb-2 pt-1" : "h-full overflow-y-auto p-4"}>
           <UnifiedTableBody
             mount={mount}
             before={before}

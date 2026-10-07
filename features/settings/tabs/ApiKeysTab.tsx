@@ -135,7 +135,7 @@ export default function ApiKeysTab() {
   const handleCopy = async () => {
     if (!created) return;
     try {
-      await copyText(created.api_key);
+      if (!(await copyText(created.api_key))) return;
       setCopied(true);
       toast.success("Key copied");
       setTimeout(() => setCopied(false), 2000);

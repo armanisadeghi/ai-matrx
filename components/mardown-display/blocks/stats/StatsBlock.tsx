@@ -98,7 +98,7 @@ export const StatsBlock: React.FC<StatsBlockProps> = ({ content = "", isStreamAc
 
   const handleCopy = async () => {
     try {
-      await copyText(content.trim());
+      if (!(await copyText(content.trim()))) return;
       setCopied(true);
       setTimeout(() => setCopied(false), 1500);
     } catch {

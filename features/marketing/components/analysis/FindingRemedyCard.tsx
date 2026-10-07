@@ -71,8 +71,10 @@ function CopyInstructionButton({ instruction }: { instruction: string }) {
       )}
       variant="outline"
       onClick={() => {
-        void copyText(instruction, "Instructions copied");
-        setCopied(true);
+        void copyText(instruction, "Instructions copied").then((copied) => {
+  if (!copied) return;
+  setCopied(true);
+});
         setTimeout(() => setCopied(false), 1500);
       }}
     >

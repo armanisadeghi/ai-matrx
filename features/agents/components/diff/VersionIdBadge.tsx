@@ -31,7 +31,7 @@ export function VersionIdBadge({
   const handleCopy = async (e: React.MouseEvent) => {
     e.stopPropagation();
     try {
-      await copyText(versionId);
+      if (!(await copyText(versionId))) return;
       setCopied(true);
       setTimeout(() => setCopied(false), 1500);
     } catch {

@@ -39,8 +39,10 @@ const HelpIcon: React.FC<HelpIconProps> = ({
   const handleCopy = (e: React.MouseEvent) => {
     e.stopPropagation();
     if (text) {
-      copyText(text);
-      setCopied(true);
+      void copyText(text).then((copied) => {
+  if (!copied) return;
+  setCopied(true);
+});
       setTimeout(() => setCopied(false), 2000);
     }
   };

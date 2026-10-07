@@ -31,7 +31,8 @@ function useCopyText(text: string) {
   });
   const [copied, setCopied] = useState(false);
   const copy = () => {
-    copyText(text).then(() => {
+    copyText(text).then((copied) => {
+      if (!copied) return;
       setCopied(true);
       setTimeout(() => setCopied(false), 1500);
     });

@@ -239,8 +239,10 @@ export function useWorkflowRowActions({
               id: row.id,
               label: row.name,
             }),
-          );
-          toast.success("Workflow reference copied");
+          ).then((copied) => {
+  if (!copied) return;
+  toast.success("Workflow reference copied");
+});
         },
 
         onDelete: () => void remove(row),

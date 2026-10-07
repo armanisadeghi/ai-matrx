@@ -200,7 +200,7 @@ export function AnalysisView({
   const handleCopyFullReport = async () => {
     if (!result) return;
     try {
-      await copyText(
+      if (!(await copyText(
         buildDriftReportXml(result, {
           route: typeof window !== "undefined" ? window.location.pathname : "/markdown-studio",
           tool: "Block Parser Comparison (V2 local · Redux accumulator · Python server)",
@@ -208,7 +208,7 @@ export function AnalysisView({
           reduxMode,
           serverUrl: apiConfig.baseUrl,
         }),
-      );
+      ))) return;
       toast.success("Full report copied (XML with block contents and the raw input)");
     } catch {
       toast.error("Clipboard copy failed");

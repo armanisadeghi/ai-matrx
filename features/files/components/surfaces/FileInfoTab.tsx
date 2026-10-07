@@ -460,7 +460,7 @@ function CopyableRow({
   const onCopy = useCallback(async () => {
     if (disabled || !copyValue) return;
     try {
-      await copyText(copyValue);
+      if (!(await copyText(copyValue))) return;
       setCopied(true);
       window.setTimeout(() => setCopied(false), 1400);
     } catch {

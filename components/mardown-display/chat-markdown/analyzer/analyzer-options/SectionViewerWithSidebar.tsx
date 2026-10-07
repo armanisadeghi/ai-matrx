@@ -144,7 +144,7 @@ const SectionViewerWithSidebar = ({ data }: { data: unknown }) => {
   });
   const [copied, setCopied] = useState(false);
   const copy = async (text: string): Promise<boolean> => {
-    await copyText(text, "Copied");
+    if (!(await copyText(text, "Copied"))) return false;
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
     return true;

@@ -73,8 +73,10 @@ export function useTopicRowActions(
             onSelect: () => {
               void copyText(
                 `${window.location.origin}${topicHref(row.id)}`,
-              );
-              toast.success("Link copied");
+              ).then((copied) => {
+  if (!copied) return;
+  toast.success("Link copied");
+});
             },
           },
         ],

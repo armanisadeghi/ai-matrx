@@ -168,7 +168,7 @@ export function useFolderActions(folderId: string): FolderActionHandlers {
     const origin =
       typeof window !== "undefined" ? window.location.origin : "";
     const url = `${origin}/s/${token}`;
-    await copyText(url);
+    if (!(await copyText(url))) return null;
     return url;
   }, [dispatch, folderId, isVirtual, store]);
 

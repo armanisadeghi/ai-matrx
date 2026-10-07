@@ -111,8 +111,10 @@ export function AgentWiringDashboard() {
     };
 
     const copyId = (id: string) => {
-        copyText(id);
-        setCopiedId(id);
+        void copyText(id).then((copied) => {
+  if (!copied) return;
+  setCopiedId(id);
+});
         setTimeout(() => setCopiedId(null), 2000);
     };
 

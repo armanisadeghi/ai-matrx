@@ -167,7 +167,7 @@ export function VaultPasswordGenerator({
       return;
     const snapshot = contextRef.current;
     try {
-      await copyText(candidate.value);
+      if (!(await copyText(candidate.value))) return;
       clear();
       if (snapshot !== contextRef.current) {
         toast.warning(

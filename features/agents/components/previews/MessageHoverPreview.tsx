@@ -108,7 +108,7 @@ export function MessagePreviewContent({
   const handleCopy = async () => {
     if (!text) return;
     try {
-      await copyText(text);
+      if (!(await copyText(text))) return;
       setCopied(true);
       toast.success("Message text copied");
       setTimeout(() => setCopied(false), 1500);

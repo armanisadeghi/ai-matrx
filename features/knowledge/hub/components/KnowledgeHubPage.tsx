@@ -876,7 +876,7 @@ export function KnowledgeHubPage({
 
   const copyText = async (text: string, done: string) => {
     try {
-      await copyTextKit(text);
+      if (!(await copyTextKit(text))) return;
       toast.success(done);
     } catch (err) {
       toast.error(`Nothing was copied: ${err instanceof Error ? err.message : "the clipboard refused."}`);

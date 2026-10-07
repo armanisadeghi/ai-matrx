@@ -76,7 +76,7 @@ export function MarkdownPreview({
   const onCopy = useCallback(async () => {
     if (content == null) return;
     try {
-      await copyText(content);
+      if (!(await copyText(content))) return;
       setCopied(true);
       setTimeout(() => setCopied(false), 1500);
     } catch {

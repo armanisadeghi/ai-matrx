@@ -140,7 +140,7 @@ export function SimpleImageViewer({
 
   const handleShare = async (photo: SimplePhoto) => {
     try {
-      await copyText(photo.url);
+      if (!(await copyText(photo.url))) return;
       setIsSharing(true);
       setTimeout(() => setIsSharing(false), 2000);
     } catch (err) {

@@ -132,7 +132,7 @@ export function MobileImageGallery({
 
   const handleShare = async (photo: SimplePhoto) => {
     try {
-      await copyText(photo.url);
+      if (!(await copyText(photo.url))) return;
       toast({
         title: "Link copied",
         description: "The image link has been copied to your clipboard.",

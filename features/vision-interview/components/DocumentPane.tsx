@@ -158,9 +158,9 @@ export function DocumentPane() {
     try {
       // The user's copy is clean markdown — no machine section markers.
       MARKER_RE.lastIndex = 0;
-      await copyText(
+      if (!(await copyText(
         document.replace(MARKER_RE, "").replace(/\n{3,}/g, "\n\n").trim(),
-      );
+      ))) return;
       setCopied(true);
       setTimeout(() => setCopied(false), 900);
     } catch {

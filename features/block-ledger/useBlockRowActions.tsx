@@ -144,8 +144,10 @@ export function useBlockRowActions(
                   ]
                     .filter(Boolean)
                     .join("\n"),
-                );
-                toast.success("Block copied");
+                ).then((copied) => {
+  if (!copied) return;
+  toast.success("Block copied");
+});
               },
             },
           ],

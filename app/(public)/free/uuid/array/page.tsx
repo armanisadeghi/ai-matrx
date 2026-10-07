@@ -61,7 +61,7 @@ const UUIDArrayField = () => {
   const copyToClipboard = async (uuid: string, e?: React.SyntheticEvent) => {
     e?.stopPropagation();
         try {
-            await copyText(uuid);
+            if (!(await copyText(uuid))) return;
             setCopiedId(uuid);
             setTimeout(() => setCopiedId(null), 2000);
         } catch (err) {

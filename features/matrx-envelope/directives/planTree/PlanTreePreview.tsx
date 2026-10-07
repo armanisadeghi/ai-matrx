@@ -175,7 +175,7 @@ export function PlanTreePreview({
   );
 
   async function copyJson() {
-    await copyText(json);
+    if (!(await copyText(json))) return;
     setCopied(true);
     setTimeout(() => setCopied(false), 1500);
   }

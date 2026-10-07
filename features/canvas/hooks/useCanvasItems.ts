@@ -227,7 +227,12 @@ export function useCanvasItems(initialFilters?: CanvasItemFilters) {
       return { shareUrl: null, error: result.error ?? 'Failed to share' };
     }
 
-    await copyText(result.url, 'Share link copied to clipboard!');
+    if (!(await copyText(result.url, 'Share link copied to clipboard!'))) {
+      return {
+        shareUrl: result.url,
+        error: 'Share link created, but it could not be copied',
+      };
+    }
     return { shareUrl: result.url, error: null };
   }, []);
 
@@ -307,4 +312,3 @@ export function useCanvasItems(initialFilters?: CanvasItemFilters) {
     updateFilters,
   };
 }
-
