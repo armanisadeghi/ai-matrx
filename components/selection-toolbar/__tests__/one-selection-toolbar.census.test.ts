@@ -66,6 +66,9 @@ const ALLOW: Record<string, string> = {
   // acts on (and anchors the menu at the pointer). It draws nothing; every module that imports it
   // reaches it only through the context-menu hooks.
   "features/context-menu-v3/utils/selection-tracking.ts": "the right-click menu's selection capture; draws nothing",
+  // Since the chat package move (P17, 2026-10-05) the capture helper's source lives in the chat
+  // package; the file above is only its re-export. Same module, same reason.
+  "packages/chat/src/context-menu/utils/selection-tracking.ts": "the right-click menu's selection capture (package home); draws nothing",
 };
 
 const RULES: { id: string; pattern: RegExp; allowCanonical: boolean; alsoNeeds?: RegExp }[] = [
