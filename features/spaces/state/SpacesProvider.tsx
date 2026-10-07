@@ -103,6 +103,10 @@ interface SpacesContextValue {
   setSidebarCollapsed: (collapsed: boolean) => void;
   mobileSidebarOpen: boolean;
   setMobileSidebarOpen: (open: boolean) => void;
+  /** A page link's address (the public web page addresses pages by their link); default `/spaces/<id>`. */
+  pageHref?: (id: SpaceId) => string;
+  /** What a link to a page this screen cannot show says; default "Page in Trash". */
+  missingPageLabel?: string;
 }
 
 /** A picker that can also make the page: `first` lists "New page" above the matches (Notion's `[+`). */
@@ -441,5 +445,15 @@ export function SpacesProvider({ children }: { children: ReactNode }) {
     mobileSidebarOpen,
     setMobileSidebarOpen,
   };
+  return <SpacesContext.Provider value={value}>{children}</SpacesContext.Provider>;
+}
+
+export type { SpacesContextValue };
+
+/**
+ * A read-only page with no workspace around it (the public web page, J1): the blocks read `byId`, `open`
+ * and `pathTo` from here. The caller builds a value whose writing doors refuse — nothing on that screen writes.
+ */
+export function StaticSpacesProvider({ value, children }: { value: SpacesContextValue; children: ReactNode }) {
   return <SpacesContext.Provider value={value}>{children}</SpacesContext.Provider>;
 }

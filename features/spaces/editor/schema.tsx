@@ -81,12 +81,12 @@ const CalloutBlock = createReactBlockSpec(
 );
 
 function PageRow({ spaceId, linked }: { spaceId: string; linked: boolean }) {
-  const { byId, open } = useSpaces();
+  const { byId, open, pageHref, missingPageLabel } = useSpaces();
   const page = byId.get(spaceId);
-  const title = page ? page.title || "Untitled" : "Page in Trash";
+  const title = page ? page.title || "Untitled" : (missingPageLabel ?? "Page in Trash");
   return (
     <Link
-      href={`/spaces/${spaceId}`}
+      href={pageHref ? pageHref(spaceId) : `/spaces/${spaceId}`}
       className="spaces-page-link"
       data-missing={page ? undefined : "true"}
       contentEditable={false}

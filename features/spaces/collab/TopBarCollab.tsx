@@ -5,9 +5,10 @@
 //   ShareMenu       — Notion's Share (H4): Invite opens the platform's ONE share dialog (ShareModal:
 //                     people, levels, public link, who can see this) on this page's `document`; Copy link.
 //                     No permission logic here — the sharing system and row security decide.
+//                     The Publish tab (J1) is Notion's "Share to web": PublishPanel.
 
 import { Popover, PopoverContent, PopoverTrigger } from "@ai-matrx/design-system";
-import { Button } from "@ai-matrx/design-system/controls";
+import { Button, Tabs } from "@ai-matrx/design-system/controls";
 import { Link2, UserPlus } from "lucide-react";
 import { useState } from "react";
 
@@ -15,6 +16,7 @@ import { ShareModal } from "@/features/sharing/components/ShareModal";
 
 import { pageOrganizationId } from "../data/agency-install";
 import { PersonAvatar } from "./CommentsPanel";
+import { PublishPanel } from "./PublishPanel";
 import { personColor } from "./space-collab";
 import type { SpaceViewer } from "./useSpaceRoom";
 
@@ -50,6 +52,7 @@ export function PresenceAvatars({ viewers, me }: { viewers: SpaceViewer[]; me: s
 
 export function ShareMenu({ spaceId, title, onCopyLink }: { spaceId: string; title: string; onCopyLink: () => void }) {
   const [open, setOpen] = useState(false);
+  const [tab, setTab] = useState<"share" | "publish">("share");
   const [dialog, setDialog] = useState(false);
   const [orgId, setOrgId] = useState<string | undefined>(undefined);
   const invite = () => {
@@ -68,7 +71,20 @@ export function ShareMenu({ spaceId, title, onCopyLink }: { spaceId: string; tit
             Share
           </button>
         </PopoverTrigger>
-        <PopoverContent surface="solid" align="end" className="w-[320px] p-2">
+        <PopoverContent surface="solid" align="end" className="w-[360px] p-2">
+          <Tabs
+            value={tab}
+            onValueChange={setTab}
+            aria-label="Share or publish"
+            className="mb-2"
+            data={[
+              { value: "share", label: "Share" },
+              { value: "publish", label: "Publish" },
+            ]}
+          />
+          {tab === "publish" ? (
+            <PublishPanel spaceId={spaceId} />
+          ) : (
           <div className="grid gap-1.5">
             <Button variant="primary" className="w-full" onClick={invite}>
               <UserPlus size={15} />
@@ -86,6 +102,7 @@ export function ShareMenu({ spaceId, title, onCopyLink }: { spaceId: string; tit
               Copy link
             </Button>
           </div>
+          )}
         </PopoverContent>
       </Popover>
       {dialog ? (

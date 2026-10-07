@@ -372,17 +372,20 @@ export class SupabaseSpacesStore implements SpacesStore {
     // parent's organization and visibility; "Private" is a person choosing `personal` (hidden from lists).
     let organizationId = this.organizationId;
     let visibility: DocumentRow["visibility"] = "internal";
+    let web: { web_include_sub_pages: boolean; web_allow_duplicate: boolean } | null = null;
     if (input.parentId) {
       const { data: parent, error: parentError } = await this.db
         .schema("content")
         .from("document")
-        .select("organization_id, visibility")
+        .select("organization_id, visibility, web_include_sub_pages, web_allow_duplicate")
         .eq("id", input.parentId)
         .maybeSingle();
       if (parentError) fail("open the parent Space", parentError);
       if (!parent) throw new Error("The parent Space no longer exists, or you cannot open it.");
       organizationId = parent.organization_id;
-      visibility = parent.visibility;
+      // J1: a sub-page of a page on the web is on the web only when that page includes its sub-pages.
+      visibility = parent.visibility === "public" && !parent.web_include_sub_pages ? "internal" : parent.visibility;
+      web = { web_include_sub_pages: parent.web_include_sub_pages, web_allow_duplicate: parent.web_allow_duplicate };
     }
     const row = {
       organization_id: organizationId,
@@ -390,6 +393,7 @@ export class SupabaseSpacesStore implements SpacesStore {
       format: "spaces",
       title: input.title ?? "",
       visibility,
+      ...(web ?? {}),
     };
     const { data, error } = await this.db
       .schema("content")
