@@ -19,12 +19,15 @@ import {
   ExternalLink,
   Library,
   Loader2,
+  Pencil,
+  Plus,
   RefreshCw,
   Trash2,
 } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@ai-matrx/design-system/controls";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { ReadFailure } from "@/components/read-state/ReadFailure";
 import { toast } from "@/lib/toast";
@@ -36,6 +39,7 @@ import {
   fetchAgentSamples,
   fetchCandidateRuns,
   fetchRunFinalResponse,
+  renameAgentSample,
   sampleFreshness,
   sampleInputContent,
   sampleInputText,
@@ -52,6 +56,7 @@ import {
   buildTestCaseParts,
   TestCaseInputs,
 } from "@/features/agents/components/samples/TestCaseInputs";
+import { NewTestCaseDialog } from "@/features/agents/components/samples/NewTestCaseDialog";
 import { LoadFromLibraryDialog } from "@/features/agents/components/samples/LoadFromLibraryDialog";
 import { SampleOriginLine } from "@/features/agents/components/samples/SampleOriginLine";
 
@@ -148,6 +153,9 @@ export function AgentSamplesManager({
   const [pendingId, setPendingId] = useState<string | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<AgentSampleRow | null>(null);
   const [libraryOpen, setLibraryOpen] = useState(false);
+  const [newOpen, setNewOpen] = useState(false);
+  const [renamingId, setRenamingId] = useState<string | null>(null);
+  const [renameValue, setRenameValue] = useState("");
   /**
    * `undefined` means "nobody has chosen yet" — the first case in the list then
    * opens on its own. `null` means the person closed it, which must STICK:
@@ -252,9 +260,33 @@ export function AgentSamplesManager({
                   ellipsize, never push its own status badge onto a second
                   line and cost the card a row of height. */}
               <span className="flex items-center gap-1.5">
-                <span className="min-w-0 flex-1 truncate type-title">
-                  {sample.label}
-                </span>
+                {renamingId === sample.id ? (
+                  <span
+                    className="min-w-0 flex-1"
+                    onClick={(event) => event.stopPropagation()}
+                  >
+                    <Input
+                      autoFocus
+                      aria-label="Test case name"
+                      value={renameValue}
+                      onChange={(event) => setRenameValue(event.target.value)}
+                      onKeyDown={(event) => {
+                        if (event.key === "Escape") setRenamingId(null);
+                        if (event.key === "Enter" && renameValue.trim()) {
+                          const next = renameValue.trim();
+                          setRenamingId(null);
+                          void withPending(sample.id, () =>
+                            renameAgentSample(sample.id, next),
+                          );
+                        }
+                      }}
+                    />
+                  </span>
+                ) : (
+                  <span className="min-w-0 flex-1 truncate type-title">
+                    {sample.label}
+                  </span>
+                )}
                 <span className="shrink-0">
                   <FreshnessBadge freshness={freshness} />
                 </span>
@@ -325,6 +357,16 @@ export function AgentSamplesManager({
               </Button>
             ) : null}
             <Button
+              icon={<Pencil />} aria-label="Rename test case"
+              variant="quiet"
+              title="Rename test case"
+              disabled={busy}
+              onClick={() => {
+                setRenamingId(sample.id);
+                setRenameValue(sample.label);
+              }}
+            />
+            <Button
               icon={<Trash2 />} aria-label="Delete test case"
               variant="quiet"
               title="Delete test case"
@@ -379,13 +421,22 @@ export function AgentSamplesManager({
           <h3 className="type-secondary font-semibold uppercase tracking-wide text-muted-foreground">
             Candidates
           </h3>
-          <Button
-            icon={<Library />}
-            variant="outline"
-            onClick={() => setLibraryOpen(true)}
-          >
-            Load from a Library
-          </Button>
+          <div className="flex items-center gap-1">
+            <Button
+              icon={<Plus />}
+              variant="outline"
+              onClick={() => setNewOpen(true)}
+            >
+              New test case
+            </Button>
+            <Button
+              icon={<Library />}
+              variant="outline"
+              onClick={() => setLibraryOpen(true)}
+            >
+              Load from a Library
+            </Button>
+          </div>
         </div>
         {candidates.length === 0 ? (
           <p className="type-secondary text-muted-foreground">None</p>
@@ -398,6 +449,14 @@ export function AgentSamplesManager({
         agentId={agentId}
         declarations={head?.variableDeclarations ?? []}
         onBorrowed={reload}
+      />
+
+      <NewTestCaseDialog
+        agentId={agentId}
+        head={head}
+        open={newOpen}
+        onOpenChange={setNewOpen}
+        onCreated={reload}
       />
 
       <LoadFromLibraryDialog

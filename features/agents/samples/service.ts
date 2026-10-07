@@ -294,6 +294,57 @@ export async function renameAgentSample(
   );
 }
 
+/**
+ * A test case typed by hand ("New test case" on the samples screen). The same
+ * insert the borrow button makes, minus the run it came from. Values are kept
+ * verbatim — empty variables are dropped, text is never trimmed or merged.
+ */
+export async function createAgentSample(input: {
+  agentId: string;
+  label: string;
+  variables: Record<string, string>;
+  userInput: string;
+  referenceOutput: string;
+  head: AgentContractHead | null;
+}): Promise<AgentSampleRow> {
+  const label = input.label.trim();
+  if (!label) throw new Error("Give the test case a name.");
+  const variables: JsonObject = {};
+  for (const [name, value] of Object.entries(input.variables)) {
+    if (value !== "") variables[name] = value;
+  }
+  const userInput = input.userInput === "" ? null : input.userInput;
+  const supabase = createClient();
+  // org-filter: write-target writes into the organization the person is working in; no list reads it
+  const organizationId = await ensureOrgId(null);
+  const { data, error } = await supabase
+    .schema("agent")
+    .from("exemplar")
+    .insert({
+      agent_id: input.agentId,
+      label,
+      variables,
+      user_input: userInput,
+      reference_output: input.referenceOutput === "" ? null : input.referenceOutput,
+      source: "authored",
+      status: "candidate",
+      agent_version: input.head?.version ?? null,
+      input_contract_hash: input.head?.inputContractHash ?? null,
+      output_contract_hash: input.head?.outputContractHash ?? null,
+      visibility: "personal",
+      organization_id: organizationId,
+      metadata: {
+        [SAMPLE_INPUT_CONTENT_KEY]: userInput
+          ? [{ type: "text", text: userInput }]
+          : [],
+      },
+    })
+    .select("*")
+    .single();
+  if (error) throw error;
+  return data;
+}
+
 // ── Borrow from real runs ────────────────────────────────────────────────────
 
 export interface CandidateRun {
