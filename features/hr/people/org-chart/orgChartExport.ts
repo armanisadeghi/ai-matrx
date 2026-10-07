@@ -142,15 +142,17 @@ export function downloadOrgChartCsv(chart: HrOrgChart): void {
   export.
 */
 
-/** Shared by both raster paths: the chart as a canvas, at a readable scale. */
+/**
+ * Shared by both raster paths: the chart as a canvas, at a readable scale. A picture of a
+ * visual surface (SVG connectors, transforms, modern colours) is Alchemy's html-to-image door,
+ * `renderElement`; html2canvas (`captureElement`) is for documents.
+ */
 async function rasterise(node: HTMLElement): Promise<HTMLCanvasElement> {
-  const { captureElement } = await import("@ai-matrx/alchemy/operate/capture");
-  return captureElement(node, {
+  const { renderElement } = await import("@ai-matrx/alchemy/operate/capture");
+  return renderElement(node, {
     // 2× so text stays legible when the image is scaled in a deck or a print.
-    scale: 2,
+    pixelRatio: 2,
     backgroundColor: getComputedStyle(document.body).backgroundColor || "#ffffff",
-    logging: false,
-    useCORS: true,
   });
 }
 
