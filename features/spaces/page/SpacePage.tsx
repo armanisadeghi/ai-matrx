@@ -18,6 +18,7 @@ import { selectUserEmail, selectUserFullName, selectUserId } from "@/lib/redux/s
 import { useAccess } from "@/utils/permissions/access";
 
 import { useSourcePicker, type PickedSource } from "../data/SourcePicker";
+import { FindInPage } from "./FindInPage";
 import { DATABASE_PAINTED_EVENT, paintedDrift, paintedHeights, withPaintedSizes } from "../editor/database-host";
 import { useDatabaseDesigner } from "../ai/DatabaseDesigner";
 import { useMoveIn } from "../ai/MoveIn";
@@ -998,6 +999,7 @@ function SpacePageScreen({ spaceId }: { spaceId: string }) {
             <div className="spaces-editor-pending" aria-busy="true" />
           )}
           {sourcePicker}
+          <FindInPage rootSelector=".spaces-page .spaces-editor" />
           {aiTarget && editorRef.current ? <AskAiMenu editor={editorRef.current} target={aiTarget} page={pageForAi} onClose={() => setAiTarget(null)} /> : null}
           <ExportDialog open={exportOpen} onOpenChange={setExportOpen} spaceId={doc.id} beforeExport={flush} />
           <PageHistory
