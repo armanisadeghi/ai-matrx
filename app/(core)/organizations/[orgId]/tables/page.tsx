@@ -113,6 +113,7 @@ export default function OrgTablesPage() {
             key={reread}
             orgId={resolvedOrgId}
             resourceType="record"
+            doorToken="table"
             hydrateShared={sharedTables}
             selectColumns={SELECT_COLS}
             ownedQuery={ownedQuery}
