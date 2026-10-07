@@ -95,6 +95,7 @@ jest.mock("@ai-matrx/chat/agents/redux/agent-definition/thunks", () => ({
   fetchAgentExecutionMinimal: () => ({ type: "noop" }),
 }));
 jest.mock("@ai-matrx/chat/agents/redux/agent-definition/selectors", () => ({
+  ...jest.requireActual("@ai-matrx/chat/agents/redux/agent-definition/selectors"),
   selectAgentExecutionPayload: () => null,
 }));
 

@@ -51,7 +51,12 @@ jest.mock("@/lib/redux/hooks", () => ({
 // The chat package reads these hooks through its own module (P3): one double covers both.
 jest.mock("@ai-matrx/chat/store/hooks", () => jest.requireMock("@/lib/redux/hooks"));
 jest.mock("@ai-matrx/chat/agents/redux/agent-definition/selectors", () => ({
+  ...jest.requireActual("@ai-matrx/chat/agents/redux/agent-definition/selectors"),
   selectBuiltinAgents: () => [{ id: "system-agent-1" }],
+}));
+jest.mock("@ai-matrx/chat/agents/identity/agent-catalog-lists", () => ({
+  ...jest.requireActual("@ai-matrx/chat/agents/identity/agent-catalog-lists"),
+  useBuiltinAgents: () => [{ id: "system-agent-1" }],
 }));
 jest.mock("@/features/agents/redux/builder-versions.thunks", () => ({
   // The version control reads the agent's history through this thunk.

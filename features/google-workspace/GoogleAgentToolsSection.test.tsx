@@ -47,6 +47,7 @@ jest.mock("@ai-matrx/chat/agents/redux/tools/tools.selectors", () => ({
   selectToolsError: () => toolsError(),
 }));
 jest.mock("@ai-matrx/chat/agents/redux/agent-definition/selectors", () => ({
+  ...jest.requireActual("@ai-matrx/chat/agents/redux/agent-definition/selectors"),
   selectAgentById: (_state: unknown, id: string) => agent(id),
   selectAgentReadyForCustomExecution: (_state: unknown, id: string) =>
     agentReady(id),

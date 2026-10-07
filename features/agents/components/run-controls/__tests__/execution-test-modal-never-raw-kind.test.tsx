@@ -29,7 +29,8 @@ jest.mock("@ai-matrx/chat/agents/hooks/useAgentLauncher", () => ({
   useAgentLauncher: () => ({ launchAgent: async () => ({ conversationId: "c1" }), close: () => {} }),
 }));
 jest.mock("@ai-matrx/chat/agents/hooks/useWidgetHandle", () => ({ useWidgetHandle: () => ({}) }));
-jest.mock("@ai-matrx/chat/agents/redux/agent-definition/selectors", () => ({ selectAgentName: () => () => "" }));
+jest.mock("@ai-matrx/chat/agents/redux/agent-definition/selectors", () => ({
+  ...jest.requireActual("@ai-matrx/chat/agents/redux/agent-definition/selectors"), selectAgentName: () => () => "" }));
 
 jest.mock("@ai-matrx/design-system", () => ({
   ...jest.requireActual<Record<string, unknown>>("@ai-matrx/design-system"),

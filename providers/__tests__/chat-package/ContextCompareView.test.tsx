@@ -72,7 +72,12 @@ jest.mock("@ai-matrx/agents/catalog/react", () => ({
   ),
 }));
 jest.mock("@ai-matrx/chat/agents/redux/agent-definition/selectors", () => ({
+  ...jest.requireActual("@ai-matrx/chat/agents/redux/agent-definition/selectors"),
   selectAllAgents: () => ({ [INTAKE_AGENT]: { name: "Client Intake Reviewer" } }),
+}));
+jest.mock("@ai-matrx/chat/agents/identity/agent-identity", () => ({
+  ...jest.requireActual("@ai-matrx/chat/agents/identity/agent-identity"),
+  useAgentName: (id: string | null | undefined) => (id === INTAKE_AGENT ? "Client Intake Reviewer" : undefined),
 }));
 jest.mock("@ai-matrx/chat/agents/redux/agent-definition/thunks", () => ({
   fetchAgentsList: () => ({ type: "agents/list" }),

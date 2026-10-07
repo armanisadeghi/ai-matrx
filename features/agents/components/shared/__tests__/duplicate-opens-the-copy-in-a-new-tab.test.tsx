@@ -26,6 +26,7 @@ jest.mock("@ai-matrx/chat/store/hooks", () => ({
 }));
 jest.mock("@ai-matrx/chat/host/identity", () => ({ selectUserId: () => state.userId }));
 jest.mock("@ai-matrx/chat/agents/redux/agent-definition/selectors", () => ({
+  ...jest.requireActual("@ai-matrx/chat/agents/redux/agent-definition/selectors"),
   selectAgentById: () => state.record,
   selectAgentReadyForBuilder: () => true,
 }));
