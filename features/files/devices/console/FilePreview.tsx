@@ -16,6 +16,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { toast } from "@/lib/toast";
 
 import { imageMime, previewKind } from "./paths";
+import { copyToClipboard } from "@/lib/clipboard/copy";
 
 const TEXT_LIMIT = 262_144;
 const BINARY_LIMIT = 4 * 1024 * 1024;
@@ -123,7 +124,7 @@ export function FilePreview({ client, entry, onOpenChange }: { client: DesktopCl
             type="button"
             className="inline-flex h-9 items-center gap-1.5 rounded-md border border-border px-3 text-sm hover:bg-muted"
             onClick={() => {
-              if (entry) void navigator.clipboard?.writeText(entry.path).then(() => toast.success("Path copied"));
+              if (entry) void copyToClipboard(entry.path, "Path copied");
             }}
           >
             <Copy className="h-4 w-4" />

@@ -5,6 +5,7 @@
  */
 
 import type { MathProblemProps } from "../types";
+import { copyText } from "@ai-matrx/kit/clipboard";
 
 /**
  * Download math problem as JSON file
@@ -77,7 +78,7 @@ export async function copyMathProblemToClipboard(problem: Omit<MathProblemProps,
     };
     
     const json = JSON.stringify(data, null, 2);
-    await navigator.clipboard.writeText(json);
+    if (!(await copyText(json))) throw new Error("Could not copy the math problem to the clipboard");
 }
 
 /**

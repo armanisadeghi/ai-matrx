@@ -1,3 +1,5 @@
+import { copyText } from "@ai-matrx/kit/clipboard";
+
 import { getCurationData } from "../service";
 
 /** Chunk-size choices. `"0"` = all in one. */
@@ -30,15 +32,7 @@ export function authorityExportBatchLabel(
   return `${opt.label} × ${batches}`;
 }
 
+/** Throws when the copy did not land, so a caller's catch never reports a batch as copied. */
 export async function writeExportClipboard(text: string): Promise<void> {
-  try {
-    await navigator.clipboard.writeText(text);
-  } catch {
-    const textarea = document.createElement("textarea");
-    textarea.value = text;
-    document.body.appendChild(textarea);
-    textarea.select();
-    document.execCommand("copy");
-    document.body.removeChild(textarea);
-  }
+  if (!(await copyText(text))) throw new Error("Could not copy to the clipboard");
 }

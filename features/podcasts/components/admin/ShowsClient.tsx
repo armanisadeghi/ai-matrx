@@ -37,6 +37,7 @@ import {
 } from "./shows-table-contract";
 import { pushAppHref, replaceAppHref } from "@/lib/deployment/navigate";
 import { archiveConfirmSentence } from "@/features/trash/archiveCopy";
+import { copyToClipboard } from "@/lib/clipboard/copy";
 
 function CopyLinkButton({ slug }: { slug: string }) {
   const [copied, setCopied] = useState(false);
@@ -44,12 +45,11 @@ function CopyLinkButton({ slug }: { slug: string }) {
     <button
       onClick={(e) => {
         e.stopPropagation();
-        navigator.clipboard
-          .writeText(`${window.location.origin}/podcast/${slug}`)
-          .then(() => {
-            setCopied(true);
-            setTimeout(() => setCopied(false), 2000);
-          });
+        void copyToClipboard(`${window.location.origin}/podcast/${slug}`).then((ok) => {
+          if (!ok) return;
+          setCopied(true);
+          setTimeout(() => setCopied(false), 2000);
+        });
       }}
       className={`p-1.5 rounded hover:bg-muted text-muted-foreground hover:text-foreground ${PODCAST_TABLE_ROW_ACTION_REVEAL_CLASS}`}
       title={copied ? "Copied!" : "Copy the link to its page on the web"}

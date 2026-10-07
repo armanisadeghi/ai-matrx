@@ -76,7 +76,7 @@ export function CharacterCounter({
   className,
   compact = false,
 }: CharacterCounterProps) {
-  const { copyText: copyTextKit } = useClipboard({
+  const { copyText: copyTextKit, pasteText: pasteClipboardText } = useClipboard({
     notify: (message, kind) =>
       kind === "error" ? toast.error(message) : toast.success(message),
   });
@@ -104,12 +104,13 @@ export function CharacterCounter({
   };
 
   const pasteText = async () => {
-    try {
-      setText(await navigator.clipboard.readText());
-      toast.success("Text pasted from clipboard");
-    } catch {
+    const pasted = await pasteClipboardText();
+    if (!pasted) {
       toast.error("Allow clipboard access, then paste into the editor");
+      return;
     }
+    setText(pasted);
+    toast.success("Text pasted from clipboard");
   };
 
   const downloadText = () => {

@@ -10,6 +10,7 @@ import { createCodeBlockSpec } from "@blocknote/core";
 import { toast } from "@/lib/toast";
 
 import type { RichSpan } from "../contract";
+import { copyToClipboard } from "@/lib/clipboard/copy";
 
 type CodeSpec = ReturnType<typeof createCodeBlockSpec>;
 
@@ -61,10 +62,7 @@ export function notionCodeBlock(base: CodeSpec): CodeSpec {
     const copy = button("Copy", () => {
       const text = (view.contentDOM as HTMLElement | undefined)?.textContent ?? "";
       // A toast, never a label change: any DOM change here makes ProseMirror redraw the block.
-      void navigator.clipboard.writeText(text).then(
-        () => toast.success("Copied code"),
-        () => toast.error("Could not copy the code"),
-      );
+      void copyToClipboard(text, "Copied code");
     });
     bar.append(copy);
     if (editor.isEditable) {

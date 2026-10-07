@@ -49,6 +49,7 @@ import {
   type ContextMenuExtraSection,
   type ResolvedContextMenuContext,
 } from "@/features/context-menu-v3/types";
+import { copyToClipboard } from "@/lib/clipboard/copy";
 
 // ---------------------------------------------------------------------------
 // The one thing every CRM surface can say about a right-clicked row.
@@ -294,13 +295,6 @@ const SECTION_LABEL: Record<CrmMenuTargetKind, string> = {
   "outreach-list": "This outreach list",
   "outreach-member": "This member",
 };
-
-function copyToClipboard(text: string, done: string) {
-  void navigator.clipboard
-    .writeText(text)
-    .then(() => toast.success(done))
-    .catch(() => toast.error("Could not copy to the clipboard"));
-}
 
 export function useCrmRowMenu<T extends { id: string }>(
   opts: CrmRowMenuOptions<T>,

@@ -41,6 +41,7 @@ import { Button } from "@/components/ui/button";
 import { openContextMenuForElement } from "@/features/context-menu-v3/utils/open-context-menu";
 import { validateFilesystemEntryName } from "./fileTreePaths";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { copyToClipboard } from "@/lib/clipboard/copy";
 
 interface FileTreeNodeProps {
   node: FilesystemNode;
@@ -292,10 +293,7 @@ export const FileTreeNode: React.FC<FileTreeNodeProps> = ({
   }, [adapter, invalidate, isDir, node.name, node.path]);
 
   const handleCopyPath = useCallback(() => {
-    void navigator.clipboard
-      .writeText(node.path)
-      .then(() => toast.success("Path copied"))
-      .catch(() => toast.error("Clipboard blocked"));
+    void copyToClipboard(node.path, "Path copied");
   }, [node.path]);
 
   const handleDownload = useCallback(async () => {

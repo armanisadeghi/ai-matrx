@@ -42,6 +42,7 @@ import type {
   CxUserRequest,
 } from "@/features/cx-dashboard/types/cxDashboardTypes";
 import { conversationTitleText } from "@/features/content-ir/surfaces/kind-text-label";
+import { copyToClipboard } from "@/lib/clipboard/copy";
 
 // ---------------------------------------------------------------------------
 // The one thing every CX surface can say about a right-clicked row.
@@ -180,13 +181,6 @@ const SECTION_LABEL: Record<CxMenuTargetKind, string> = {
   api_request: "This iteration",
   tool_call: "This tool call",
 };
-
-function copyToClipboard(text: string, done: string) {
-  void navigator.clipboard
-    .writeText(text)
-    .then(() => toast.success(done))
-    .catch(() => toast.error("Could not copy to the clipboard"));
-}
 
 export interface CxRowMenu {
   /** Hand straight to `NonEditableContextMenu.resolveContextOnOpen`. */

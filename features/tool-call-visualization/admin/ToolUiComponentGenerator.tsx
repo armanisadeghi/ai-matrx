@@ -62,6 +62,7 @@ import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { buildToolComponentGenerationOffer } from "@/features/tool-call-visualization/admin/toolComponentGenerationOffer";
 import { IntelligenceIndicator } from "@/features/mandates/feature-intelligence/IntelligenceIndicator";
 import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
+import { copyToClipboard } from "@/lib/clipboard/copy";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -1085,19 +1086,7 @@ export function ToolUiComponentGenerator({
                     icon={<Copy />}
                     variant="outline"
                     onClick={() => {
-                      navigator.clipboard
-                        .writeText(saveError.raw ?? "")
-                        .then(() => {
-                          toast({ title: "Copied to clipboard" });
-                        })
-                        .catch(() => {
-                          toast({
-                            title: "Copy failed",
-                            description:
-                              "Use Ctrl+A / Cmd+A to select the text below manually.",
-                            variant: "destructive",
-                          });
-                        });
+                      void copyToClipboard(saveError.raw ?? "", "Copied to clipboard");
                     }}
                   >
                     Copy All

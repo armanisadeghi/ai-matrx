@@ -30,9 +30,9 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { toast } from "@/lib/toast";
 import { fetchWorkflowPeek, type WorkflowPeek } from "../service";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { copyToClipboard } from "@/lib/clipboard/copy";
 
 /** One in-flight read per workflow, shared by the peek body and the copy menu. */
 function useWorkflowPeek(workflowId: string, active: boolean) {
@@ -227,12 +227,7 @@ export function WorkflowSneakPeekContent({
 }
 
 async function copy(text: string, what: string) {
-  try {
-    await navigator.clipboard.writeText(text);
-    toast.success(`${what} copied`);
-  } catch {
-    toast.error(`${what} could not be copied — your browser refused clipboard access.`);
-  }
+  await copyToClipboard(text, `${what} copied`);
 }
 
 /** The peek's copy menu: the whole definition, or just what a caller must feed it. */

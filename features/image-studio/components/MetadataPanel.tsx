@@ -25,6 +25,7 @@ import { DESCRIPTION_LIMITS } from "@/features/marketing/seo/serp/metrics";
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { Textarea } from "@/components/ui/textarea";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { copyToClipboard } from "@/lib/clipboard/copy";
 
 interface MetadataPanelProps {
   file: StudioSourceFile;
@@ -388,11 +389,7 @@ function ColorSwatches({
             type="button"
             key={`${c}-${i}`}
             onClick={() => {
-              if (typeof navigator !== "undefined" && navigator.clipboard) {
-                navigator.clipboard.writeText(c).catch(() => {
-                  /* noop */
-                });
-              }
+              void copyToClipboard(c);
             }}
             title={`Click to copy ${c}`}
             className="group relative flex items-center gap-1.5 rounded-full border border-border bg-background px-1 pr-2 py-0.5 text-[10px] font-mono hover:border-primary/40 transition-colors"

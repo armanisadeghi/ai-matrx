@@ -35,6 +35,7 @@ import type {
 } from "../../library-sources/types";
 import { Button } from "@/components/ui/button";
 import { openContextMenuForElement } from "@/features/context-menu-v3/utils/open-context-menu";
+import { copyToClipboard } from "@/lib/clipboard/copy";
 
 interface SourceEntryNodeProps {
   adapter: LibrarySourceAdapter;
@@ -154,10 +155,7 @@ export const SourceEntryNode: React.FC<SourceEntryNodeProps> = ({
   ]);
 
   const handleCopyPath = useCallback(() => {
-    void navigator.clipboard
-      .writeText(`${adapter.tabIdPrefix}${entry.rowId}`)
-      .then(() => toast.success("Tab id copied"))
-      .catch(() => toast.error("Clipboard blocked"));
+    void copyToClipboard(`${adapter.tabIdPrefix}${entry.rowId}`, "Tab id copied");
   }, [adapter.tabIdPrefix, entry.rowId]);
 
   const menuItems: ContextMenuExtraItem[] = [];

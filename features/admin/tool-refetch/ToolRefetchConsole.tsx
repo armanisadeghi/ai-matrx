@@ -40,7 +40,6 @@ import { ADMIN_REPORTING_SURFACE_NAME } from "@/features/surfaces/manifests/admi
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { tryGetEntityInfo } from "@/features/scopes/registry/entityRegistry";
-import { toast } from "@/lib/toast";
 import { cn } from "@/lib/utils";
 import {
   MatrxDataTable,
@@ -64,6 +63,7 @@ import {
 } from "./service";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { readOf } from "@/components/read-state/ReadGate";
+import { copyToClipboard } from "@/lib/clipboard/copy";
 
 /* ── formatters that refuse to invent a number ─────────────────────────────── */
 
@@ -305,10 +305,7 @@ function ConversationCell({ id }: { id: string | null }) {
       title={`Copy conversation id ${id}`}
       className="inline-flex items-center gap-1 font-mono text-[11px] text-muted-foreground hover:text-foreground"
       onClick={() => {
-        void navigator.clipboard
-          .writeText(id)
-          .then(() => toast.success("Conversation id copied"))
-          .catch(() => toast.error("Clipboard unavailable — the id is in the tooltip"));
+        void copyToClipboard(id, "Conversation id copied");
       }}
     >
       {short}

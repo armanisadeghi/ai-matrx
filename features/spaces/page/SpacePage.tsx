@@ -48,6 +48,7 @@ import { editedAgo } from "./time";
 import { mayWrite, roomCanEdit, trashedByList } from "./trash-state";
 import { attemptSave, deviceStorage, forgetUnsaved, keepUnsaved, readUnsaved } from "./unsaved";
 import { sendOnLeave, trackAccessToken } from "./leave-save";
+import { copyToClipboard } from "@/lib/clipboard/copy";
 
 type Editable = Pick<SpaceDoc, "title" | "icon" | "cover" | "settings" | "blocks">;
 
@@ -588,10 +589,7 @@ export function SpacePage({ spaceId }: { spaceId: string }) {
   };
 
   const copyLink = () => {
-    void navigator.clipboard.writeText(`${window.location.origin}/spaces/${doc.id}`).then(
-      () => toast.success("Copied link"),
-      () => toast.error("Could not copy the link"),
-    );
+    void copyToClipboard(`${window.location.origin}/spaces/${doc.id}`, "Copied link");
   };
 
   const jumpToBlock = (anchor: SpaceCommentAnchor) => {

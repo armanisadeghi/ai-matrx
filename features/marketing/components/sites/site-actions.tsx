@@ -16,7 +16,7 @@ import type {
 import { webCopy } from "@/features/marketing/lib/copy-payloads";
 import { marketingRoutes } from "@/features/marketing/lib/routes";
 import type { MarketingSite, SiteListRow } from "@/features/marketing/types";
-import { toast } from "@/lib/toast";
+import { copyToClipboard } from "@/lib/clipboard/copy";
 
 export interface SiteActionCallbacks<
   TSite extends MarketingSite = MarketingSite,
@@ -49,20 +49,6 @@ export type SiteMenuContext<TSite extends MarketingSite = MarketingSite> =
 type DefaultSiteMenuContext = SiteMenuContextBase<SiteListRow> & {
   copy?: undefined;
 };
-
-async function copyToClipboard(text: string, message: string) {
-  try {
-    await navigator.clipboard.writeText(text);
-  } catch {
-    const textarea = document.createElement("textarea");
-    textarea.value = text;
-    document.body.appendChild(textarea);
-    textarea.select();
-    document.execCommand("copy");
-    document.body.removeChild(textarea);
-  }
-  toast.success(message);
-}
 
 export function siteRowCopy(site: SiteListRow) {
   return webCopy({

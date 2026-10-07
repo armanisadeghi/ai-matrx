@@ -92,7 +92,7 @@ export function useImageActions({
   currentSrc,
   fileId,
 }: UseImageActionsArgs): ImageActionsApi {
-  const { copyText } = useClipboard({
+  const { copyText, copyImage: copyImageToClipboard } = useClipboard({
     notify: (message, kind) =>
       kind === "error" ? toast.error(message) : toast.success(message),
   });
@@ -206,17 +206,9 @@ export function useImageActions({
 
   const copyImage = useCallback(async () => {
     if (!currentSrc) return;
-    try {
-      const response = await fetch(currentSrc);
-      const blob = await response.blob();
-      await navigator.clipboard.write([
-        new ClipboardItem({ [blob.type]: blob }),
-      ]);
-      toast.success("Image copied to clipboard");
-    } catch {
-      toast.error("Could not copy image — try downloading instead");
-    }
-  }, [currentSrc]);
+    // The kit reports a refusal through the toast above; it never throws.
+    await copyImageToClipboard(currentSrc, "Image copied to clipboard");
+  }, [currentSrc, copyImageToClipboard]);
 
   // downloadUrl only exists on matrx-origin blocks (where the server
   // mints a Content-Disposition: attachment signed URL). External blocks

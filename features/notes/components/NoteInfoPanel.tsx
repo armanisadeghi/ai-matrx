@@ -31,7 +31,6 @@ import {
   Globe,
   Users,
 } from "lucide-react";
-import { toast } from "@/lib/toast";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { fetchNoteContent, moveNoteToFolder, moveNoteToNewFolder } from "../redux/thunks";
 import {
@@ -52,6 +51,7 @@ import { AccessSummaryPanel } from "@/features/sharing/components/AccessSummaryP
 import { MatrxUuidCell } from "@ai-matrx/design-system/data-table/uuid-cell";
 import { surfaceValueLabels } from "@ai-matrx/chat/surfaces/utils/surface-display";
 import { LinkedRecordsSection } from "@/features/scopes/components/linked-records/LinkedRecordsSection";
+import { copyToClipboard } from "@/lib/clipboard/copy";
 
 interface NoteInfoPanelProps {
   noteId: string;
@@ -137,14 +137,11 @@ function CopyableRow({
 
   const handleCopy = useCallback(() => {
     if (!value) return;
-    navigator.clipboard
-      .writeText(value)
-      .then(() => {
-        setCopied(true);
-        toast.success(`${label} copied`);
-        setTimeout(() => setCopied(false), 1200);
-      })
-      .catch(() => toast.error("Copy failed"));
+    void copyToClipboard(value, `${label} copied`).then((ok) => {
+      if (!ok) return;
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1200);
+    });
   }, [value, label]);
 
   return (

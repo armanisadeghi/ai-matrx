@@ -72,6 +72,7 @@ import {
 } from "../format";
 import { createAssistsScope } from "@/features/surfaces/manifests/assists.manifest";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { copyToClipboard } from "@/lib/clipboard/copy";
 
 /** The registered `matrx-user/assists` surface — this IS its manager. */
 const ASSISTS_SURFACE_NAME = "matrx-user/assists";
@@ -428,9 +429,7 @@ export function AssistsManager() {
         label: "Copy config for AI",
         icon: Copy,
         onSelect: () => {
-          void navigator.clipboard.writeText(humanAssistRow(row)).then(() => {
-            toast.success("Copied assist config");
-          });
+          void copyToClipboard(humanAssistRow(row), "Copied assist config");
         },
       },
     ];

@@ -24,7 +24,6 @@
 
 import { useEffect, useEffectEvent, useState } from "react";
 import { StaleDataNotice } from "@/components/official/stale-data/StaleDataNotice";
-import { toast } from "@/lib/toast";
 import { useCostDisplay } from "@/components/cost/useCostDisplay";
 import {
   AlertCircle,
@@ -38,6 +37,7 @@ import { supabase } from "@/utils/supabase/client";
 import { cn } from "@/lib/utils";
 import { formatDurationMs } from "@ai-matrx/kit/format";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { copyToClipboard } from "@/lib/clipboard/copy";
 
 interface RunTruthInspectorProps {
   /** The durable agent_run id (source of truth). */
@@ -80,12 +80,7 @@ function pretty(value: unknown): string {
 }
 
 async function copyText(text: string, label: string) {
-  try {
-    await navigator.clipboard.writeText(text);
-    toast.success(`${label} copied`);
-  } catch {
-    toast.error("Couldn't copy to clipboard");
-  }
+  await copyToClipboard(text, `${label} copied`);
 }
 
 function durationLabel(start: unknown, end: unknown): string | null {

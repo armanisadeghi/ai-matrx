@@ -30,10 +30,10 @@ import {
 import { useState } from "react";
 
 import { AGENT_ICON } from "@/components/icons/domain-icons";
-import { toast } from "@/lib/toast";
 
 import type { SpacesEditor } from "./schema";
 import { duplicateBlocks, selectedOrCurrent } from "./block-actions";
+import { copyToClipboard } from "@/lib/clipboard/copy";
 
 const I = 16;
 
@@ -176,13 +176,9 @@ export function makeBlockMenu(actions: BlockMenuActions) {
           icon={<Link size={I} />}
           onClick={() => {
             const url = `${window.location.origin}/spaces/${actions.spaceId}#block-${block.id}`;
-            void navigator.clipboard.writeText(url).then(
-              () => {
-                closeMenus();
-                toast.success("Copied link to block");
-              },
-              () => toast.error("Could not copy the link"),
-            );
+            void copyToClipboard(url, "Copied link to block").then((ok) => {
+              if (ok) closeMenus();
+            });
           }}
         >
           Copy link to block

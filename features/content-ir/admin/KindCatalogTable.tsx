@@ -15,7 +15,6 @@ import { useMemo, useState, useTransition, type ReactNode } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Copy, ExternalLink, Loader2 } from "lucide-react";
-import { toast } from "@/lib/toast";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { MatrxDataTable } from "@ai-matrx/design-system/data-table";
@@ -37,6 +36,7 @@ import {
   type ResolvedContextMenuContext,
 } from "@/features/context-menu-v3/types";
 import { ADMIN_KIND_REGISTRY_SURFACE_NAME } from "@/features/surfaces/manifests/admin-kind-registry.manifest";
+import { copyToClipboard } from "@/lib/clipboard/copy";
 
 const STATUS_FILTER_OPTIONS = [
   { value: "ok", label: "ok" },
@@ -195,9 +195,7 @@ export default function KindCatalogTable({ rows }: { rows: KindBoardRow[] }) {
       label: "Copy __kind id",
       icon: Copy,
       onSelect: () => {
-        void navigator.clipboard.writeText(row.kind).then(() => {
-          toast.success("Copied __kind id");
-        });
+        void copyToClipboard(row.kind, "Copied __kind id");
       },
     });
     const examplesHref = kindTabHref(row, "examples");

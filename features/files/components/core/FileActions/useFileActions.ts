@@ -191,13 +191,7 @@ export function useFileActions(fileId: string): FileActionHandlers {
       // on the file's share state.
       if (opts?.expiresIn !== undefined) {
         const result = await dispatch(getFileUrl({ fileId })).unwrap();
-        if (typeof navigator !== "undefined" && navigator.clipboard) {
-          try {
-            await copyText(result.url);
-          } catch {
-            /* ignore clipboard failures (non-secure contexts) */
-          }
-        }
+        await copyText(result.url);
         return result.url;
       }
 
@@ -217,13 +211,7 @@ export function useFileActions(fileId: string): FileActionHandlers {
           }
         }
         if (cdnUrl) {
-          if (typeof navigator !== "undefined" && navigator.clipboard) {
-            try {
-              await copyText(cdnUrl);
-            } catch {
-              /* ignore clipboard failures (non-secure contexts) */
-            }
-          }
+          await copyText(cdnUrl);
           return cdnUrl;
         }
         // publicUrl unavailable even after REST fetch (CDN not configured
@@ -280,13 +268,7 @@ export function useFileActions(fileId: string): FileActionHandlers {
       if (!token) return null;
 
       const url = pythonShareUrl(token);
-      if (typeof navigator !== "undefined" && navigator.clipboard) {
-        try {
-          await copyText(url);
-        } catch {
-          /* ignore clipboard failures */
-        }
-      }
+      await copyText(url);
       return url;
     },
     [dispatch, fileId, isVirtual, store],

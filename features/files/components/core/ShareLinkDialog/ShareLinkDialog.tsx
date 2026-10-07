@@ -41,6 +41,7 @@ import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { ReadFailure } from "@/components/read-state/ReadFailure";
 import { useRead } from "@/components/read-state/useRead";
 import { StaleDataNotice } from "@/components/official/stale-data/StaleDataNotice";
+import { copyToClipboard } from "@/lib/clipboard/copy";
 
 export interface ShareLinkDialogProps {
   open: boolean;
@@ -173,18 +174,9 @@ export function ShareLinkDialogBody({
 
   const handleCopy = useCallback(
     async (key: string, url: string) => {
-      if (typeof navigator !== "undefined" && navigator.clipboard) {
-        try {
-          await copyText(url);
-          setCopiedKey(key);
-          setTimeout(
-            () => setCopiedKey((k) => (k === key ? null : k)),
-            1500,
-          );
-        } catch {
-          toast.error("Couldn't copy the link — select it and copy it by hand.");
-        }
-      }
+      if (!(await copyToClipboard(url))) return;
+      setCopiedKey(key);
+      setTimeout(() => setCopiedKey((k) => (k === key ? null : k)), 1500);
     },
     [],
   );

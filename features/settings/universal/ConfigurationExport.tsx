@@ -36,14 +36,15 @@ import {
   fetchOrganizationConfiguration,
   type ConfigurationDifference,
 } from "@/lib/scoped-config/history";
+import { copyText } from "@ai-matrx/kit/clipboard";
 
-async function copyText(text: string, title: string) {
-  try {
-    await navigator.clipboard.writeText(text);
+async function copyConfiguration(text: string, title: string) {
+  // The manual-copy dialog is the failure surface here, so no error toast is injected.
+  if (await copyText(text)) {
     toast.success(`${title} copied.`);
-  } catch {
-    showManualCopy({ text, title, description: "Your browser blocked the clipboard; copy it from here." });
+    return;
   }
+  showManualCopy({ text, title, description: "Your browser blocked the clipboard; copy it from here." });
 }
 
 export function ConfigurationExport(props: {
@@ -69,7 +70,7 @@ export function ConfigurationExport(props: {
     setBusy(true);
     try {
       const config = await fetchOrganizationConfiguration(organizationId);
-      await copyText(
+      await copyConfiguration(
         JSON.stringify({ organization: organizationName, ...config }, null, 2),
         `${organizationName}'s configuration`,
       );

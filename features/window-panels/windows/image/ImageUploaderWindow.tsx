@@ -27,7 +27,7 @@ import {
 import { emitImageUploaderEvent } from "./callbacks";
 import type { AssetPreset } from "@/features/files/types";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
-import { toast } from "@/lib/toast";
+import { copyToClipboard } from "@/lib/clipboard/copy";
 
 /**
  * Flatten the asset's variant map to `{ variantKey: url }`, dropping variants
@@ -216,10 +216,7 @@ export default function ImageUploaderWindow({
                                               id: "copy-url",
                                               label: "Copy image URL",
                                               onSelect: () => {
-                                                  navigator.clipboard
-                                                      .writeText(result.primary_url ?? "")
-                                                      .then(() => toast.success("URL copied"))
-                                                      .catch(() => toast.error("Copy failed"));
+                                                  void copyToClipboard(result.primary_url ?? "", "URL copied");
                                               },
                                           },
                                       ],

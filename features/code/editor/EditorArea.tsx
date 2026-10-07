@@ -54,6 +54,7 @@ import {
   tabOriginLabel,
 } from "../utils/tab-copy-bridge";
 import { isReadOnlyEditorTab } from "../utils/editor-tab-access";
+import { copyToClipboard } from "@/lib/clipboard/copy";
 
 interface EditorAreaProps {
   rightSlotAvailable?: boolean;
@@ -351,18 +352,9 @@ export const EditorArea: React.FC<EditorAreaProps> = ({
                   });
                   return;
                 }
-                if (
-                  reload.previousContent &&
-                  typeof navigator !== "undefined" &&
-                  navigator.clipboard
-                ) {
-                  void navigator.clipboard
-                    .writeText(reload.previousContent)
-                    .catch(() => {
-                      // Clipboard access can be denied silently — the
-                      // user can still see the remote content in the
-                      // editor.
-                    });
+                if (reload.previousContent) {
+                  // A refused copy announces itself through the app toast.
+                  void copyToClipboard(reload.previousContent);
                 }
                 toast.success("Reloaded from remote");
               });

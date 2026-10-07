@@ -129,6 +129,7 @@ import {
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 import { Chip } from "@ai-matrx/design-system/controls";
+import { copyToClipboard } from "@/lib/clipboard/copy";
 
 // ── Tab type ─────────────────────────────────────────────────────────────────
 type SettingsTab =
@@ -432,12 +433,11 @@ function IssueTable({
 
   const handleCopyDiagnostic = () => {
     if (!diagnosticPayload) return;
-    navigator.clipboard
-      .writeText(JSON.stringify(diagnosticPayload, null, 2))
-      .then(() => {
-        setCopied(true);
-        setTimeout(() => setCopied(false), 1500);
-      });
+    void copyToClipboard(JSON.stringify(diagnosticPayload, null, 2)).then((ok) => {
+      if (!ok) return;
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    });
   };
 
   return (
