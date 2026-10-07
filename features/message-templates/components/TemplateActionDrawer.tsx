@@ -15,6 +15,7 @@ import {
     DrawerTitle,
 } from "@/components/ui/drawer";
 import { Button } from "@/components/ui/button";
+import { TextCopySplit } from "@/components/agent-copy/TextCopySplit";
 import {
     Pencil,
     Eye,
@@ -77,6 +78,9 @@ function TemplateActionContent({
                             Not published
                         </span>
                     )}
+                    {template.content ? (
+                        <TextCopySplit text={template.content} label="Copy template" size="xs" className="ml-auto" />
+                    ) : null}
                 </div>
                 <p className="text-sm font-semibold mb-3">{template.label}</p>
                 {template.content && (
