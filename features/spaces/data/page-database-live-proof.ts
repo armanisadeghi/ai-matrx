@@ -68,8 +68,8 @@ async function main() {
       check(`share ${id === page.id ? "the page" : "the linked-view page"} with test@test.com at Can edit content`, !error, error?.message ?? "");
     }
 
-    const read = await second.records.list({ table_id: own.data } as never);
-    const rows = read.ok ? ((read.data as { rows?: Array<{ id: string; data: Record<string, unknown> }> }).rows ?? []) : [];
+    const read = await second.records.list({ table_id: own.data });
+    const rows = read.ok ? read.data.rows : [];
     check("test@test.com sees the page's inline database rows", read.ok && rows.length === 1, read.ok ? `${rows.length} row(s)` : read.error.message);
 
     const edited = rows[0] ? await second.records.recordUpdate({ record_id: rows[0].id, patch: { name: "Biscuit — full groom, Tue 11:30" } }) : null;
@@ -84,8 +84,8 @@ async function main() {
     const col = await second.records.fieldDeclare({ table_id: own.data, spec: { key: "groomer", label: "Groomer", type: "text" } as never });
     check("test@test.com cannot add a property at Can edit content", !col.ok, col.ok ? "added" : col.error.message);
 
-    const outsideRead = await second.records.list({ table_id: outside.data } as never);
-    const outsideRows = outsideRead.ok ? ((outsideRead.data as { rows?: unknown[] }).rows ?? []) : [];
+    const outsideRead = await second.records.list({ table_id: outside.data });
+    const outsideRows = outsideRead.ok ? outsideRead.data.rows : [];
     check("a page that only links an outside table gives test@test.com none of it", !outsideRead.ok || outsideRows.length === 0, outsideRead.ok ? `${outsideRows.length} row(s)` : outsideRead.error.message);
 
     const claim = await (second.db.rpc as never as (fn: string, a: object) => Promise<{ error: { message: string } | null }>)("assoc_link", {
