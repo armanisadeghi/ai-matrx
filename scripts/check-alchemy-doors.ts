@@ -9,7 +9,7 @@
  *
  * Rules (canonical exit named in each finding):
  *  clipboard   raw navigator.clipboard / execCommand('copy'|'cut') / new ClipboardItem
- *              -> writeClipboard (packages/chat/src/agent-copy/clipboard.ts) or the Alchemy copy menu.
+ *              -> an id or plain string: @ai-matrx/kit/clipboard (useClipboard in a component); content: the Alchemy copy menu (CopyButtons).
  *  downloads   hand-built URL.createObjectURL + anchor download / a.click() / saveAs(
  *              -> the Alchemy menu's download action.
  *  formatlibs  direct import of xlsx exceljs jspdf html2canvas marked dompurify papaparse
@@ -37,7 +37,7 @@ type Rule = "clipboard" | "downloads" | "formatlibs" | "doorbypass" | "registrie
 const RULES: Rule[] = ["clipboard", "downloads", "formatlibs", "doorbypass", "registries"];
 
 const ADVICE: Record<Rule, string> = {
-  clipboard: "copy through writeClipboard (packages/chat/src/agent-copy/clipboard.ts) or the Alchemy copy menu",
+  clipboard: "copy an id or plain string through @ai-matrx/kit/clipboard (useClipboard), and content through the Alchemy copy menu (CopyButtons)",
   downloads: "download through the Alchemy menu's download action, not a hand-built blob + anchor",
   formatlibs: "convert through the Alchemy format engine in components/agent-copy, not a direct library import",
   doorbypass: "write through the surface write door (declared write target + handler), never applySurfaceWrite directly",
