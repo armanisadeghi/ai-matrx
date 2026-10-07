@@ -554,6 +554,10 @@ export function EntityListTable<TRow>({
       getRowId={config.getRowId}
       isLoading={isLoading}
       isFetching={isFetching}
+      // THE FIRST READ TAKES THE FRAME (STABLE-2, /data home: the pager jumped 400px when the page of
+      // rows landed under a six-row skeleton): a list's page is a full screen of rows, so the loading
+      // frame is the full height and the footer is already where it will be.
+      loadingRows="fill"
       // No row count until the rows arrive (page-pass 2026-09-27): the footer
       // read "0 rows" under the loading skeleton.
       paginationLabelFormat={(start, end, count) =>

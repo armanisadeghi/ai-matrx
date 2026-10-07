@@ -51,6 +51,7 @@ import type {
 import type { ListScope } from "@/lib/list-scope/types";
 import { EntityFilterPanel } from "./EntityFilterPanel";
 import { EntityColumnPicker } from "./EntityColumnPicker";
+import { reserveSlotScript, useReservedSlot } from "./useReservedSlot";
 
 interface Props<TRow> {
   query: EntityListQuery;
@@ -108,6 +109,8 @@ interface Props<TRow> {
    * LEFT edge (owner, /agents/all 2026-10-04: "They need to be all the way to the left").
    */
   tableTabsRef?: (element: HTMLDivElement | null) => void;
+  /** The surface this toolbar belongs to: its two table slots remember their size under it. */
+  surfaceKey?: string;
   /**
    * Below `sm` the page draws this toolbar INSIDE its lane row (EntityListPage): search becomes an
    * icon that opens the box in place, Filters and View are icons, and the columns move into View.
@@ -183,11 +186,15 @@ export function EntityListToolbar<TRow>({
   onResetView,
   tableControlsRef,
   tableTabsRef,
+  surfaceKey,
   phoneRow,
   columnsInViewMenu = Boolean(phoneRow),
 }: Props<TRow>) {
   const hasAltViews = hasCards || hasRows;
   const isMobile = useIsMobile();
+  // The tabs and the table's controls land after the first frame; each holds the size it last had.
+  const tabsSlot = useReservedSlot(surfaceKey, "tabs", prefs.view === "table", tableTabsRef);
+  const controlsSlot = useReservedSlot(surfaceKey, "controls", prefs.view === "table", tableControlsRef);
   const placeholder =
     isMobile && shortSearchPlaceholder ? shortSearchPlaceholder : searchPlaceholder;
   const searchBox = (
@@ -438,10 +445,14 @@ export function EntityListToolbar<TRow>({
           width (a 16rem cap let two tabs and their "+" run over the search, /research/topics). */}
       {tableTabsRef && (
         <div
-          ref={tableTabsRef}
+          ref={tabsSlot.ref}
+          style={tabsSlot.style}
           data-entity-list-table-tabs=""
           className="flex min-w-0 max-w-[45%] shrink-0 items-center empty:hidden @3xl/list:max-w-full"
         />
+      )}
+      {tableTabsRef && surfaceKey && prefs.view === "table" && (
+        <script suppressHydrationWarning dangerouslySetInnerHTML={{ __html: reserveSlotScript(surfaceKey, "tabs") }} />
       )}
 
       {searchBox}
@@ -521,13 +532,17 @@ export function EntityListToolbar<TRow>({
 
       {tableControlsRef && (
         <div
-          ref={tableControlsRef}
+          ref={controlsSlot.ref}
+          style={controlsSlot.style}
           data-entity-list-table-controls=""
           // The table's own controls (copy / export, the eraser while filtered) close the row on
           // the right. The package keeps its row on one line (`singleRow`); nothing here reaches
           // into it.
           className="ml-auto flex min-w-0 shrink-0 items-center empty:hidden"
         />
+      )}
+      {tableControlsRef && surfaceKey && prefs.view === "table" && (
+        <script suppressHydrationWarning dangerouslySetInnerHTML={{ __html: reserveSlotScript(surfaceKey, "controls") }} />
       )}
     </div>
   );

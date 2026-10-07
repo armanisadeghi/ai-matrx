@@ -165,17 +165,25 @@ export function scopeKindLabel(kind: ListScopeKind): string {
   return SCOPE_META[kind]?.label ?? kind;
 }
 
-function CountPill({ n, active }: { n: number | null; active: boolean }) {
-  // Absent, never dishonest: no pill at all until the number is real.
-  if (n === null) return null;
+function CountPill({ n, active, pending }: { n: number | null; active: boolean; pending: boolean }) {
+  // Counted nothing and not reading (a failed or unknowable count): no pill, never a stand-in forever.
+  if (n === null && !pending) return null;
+  // ONE FIXED-WIDTH SLOT (STABLE-2, /data home: the lane tabs widened 36px each when their counts
+  // landed): the pill is three digits wide before the number is real and after, so a count arriving
+  // moves nothing. Absent, never dishonest: until the number is real the slot is an empty shape,
+  // no digit in it.
   return (
     <span
+      data-scope-count={n === null ? "pending" : "ready"}
+      aria-hidden={n === null ? true : undefined}
       className={cn(
-        "rounded px-1 type-meta font-semibold tabular-nums",
+        "inline-block min-w-[3ch] rounded px-1 text-center type-meta font-semibold tabular-nums",
         active ? "bg-primary-foreground/20" : "bg-muted-foreground/15",
+        n === null && "animate-pulse",
       )}
     >
-      {n}
+      {/* a non-breaking space keeps the pill the line's height while it waits */}
+      {n === null ? "\u00a0" : n}
     </span>
   );
 }
@@ -340,7 +348,7 @@ export function EntityScopeTabs({
             <span className="whitespace-nowrap">
               {narrowed?.label ?? meta.label}
             </span>
-            <CountPill n={count} active={active} />
+            <CountPill n={count} active={active} pending={Boolean(countsLoading)} />
           </button>
         );
 

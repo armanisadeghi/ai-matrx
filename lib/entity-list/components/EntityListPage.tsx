@@ -1146,6 +1146,7 @@ export function EntityListPage<TRow>({
             panelSwitches={config.panelSwitches}
             tableControlsRef={setTableControlsSlot}
             tableTabsRef={setTableTabsSlot}
+            surfaceKey={config.surfaceKey}
             onPatchQuery={list.patchQuery}
             // Sort changes route through commitSort so the panel's sort and the
             // table header's sort write the same two places (prefs + URL).
