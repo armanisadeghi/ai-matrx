@@ -28,7 +28,6 @@ import type { ItemMenuConfig } from "@/components/official/item/types";
 import { buildAgentMenu } from "./agentActionRegistry";
 import { agentHref, isSystemAgentRow } from "./agentPaths";
 import type { AgentBrowseRow } from "./types";
-import { getUserMessage } from "@/lib/api/errors";
 
 export interface AgentRowActionsHost {
   /** Build the full menu for one row. Lazy — pass straight to ItemMenu/ItemRow. */

@@ -151,9 +151,9 @@ export function KitBoard({
           {/* THE KIT'S OWN DOOR. Without this the kit dies with the tab: the
               artifacts persist but the THING the learner made — one subject,
               everything for it — was reachable from nowhere afterwards. */}
-          {done && finished > 0 && kit.source?.ref?.fileId && (
+          {done && finished > 0 && (kit.source?.ref?.kitId || kit.source?.ref?.fileId) && (
             <Button variant="primary" asChild>
-              <Link href={kitHref("file", kit.source.ref.fileId)}>
+              <Link href={kit.source?.ref?.kitId ? kitHref("scope", kit.source.ref.kitId) : kitHref("file", kit.source!.ref.fileId!)}>
                 <Package className="h-4 w-4" />
                 Open your kit
               </Link>

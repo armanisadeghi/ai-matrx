@@ -50,6 +50,16 @@ export interface RichSpan {
   mention?: SpaceMention;
   /** Inline equation (KaTeX source). `text` repeats the source so search and plain text see it. */
   equation?: string;
+  /** N3 suggested edits: this run is someone's suggestion (an insert to accept, or a delete to confirm). */
+  suggestion?: SpaceSuggestion;
+}
+
+/** N3: one suggested edit on a run of text — `by` = user id, `at` = ISO time; runs of one suggestion share `id`. */
+export interface SpaceSuggestion {
+  id: string;
+  kind: "insert" | "delete";
+  by: string;
+  at: string;
 }
 
 /** One block: `type` names it, `props` holds its own settings, `children` its nested blocks. */
@@ -107,6 +117,8 @@ export const RENDERED_BLOCK_TYPES = [
   "slot",
   "tabs",
   "tab",
+  "synced",
+  "button",
 ] as const;
 
 export const SCHEMA_ONLY_BLOCK_TYPES = [
@@ -206,4 +218,32 @@ export interface TabsProps extends Record<string, unknown> {
 /** Marks a block an importer could not map. It is a `text` block that says what it was. */
 export interface UnsupportedProps extends Record<string, unknown> {
   unsupported: { from: string; kind: string; source: string };
+}
+
+/** C18 synced block: its content is the Space `sourceId` (one source); every copy holds the same id. */
+export interface SyncedProps extends Record<string, unknown> {
+  sourceId: string;
+}
+
+/** C19 button: what one press does, in order. */
+export const BUTTON_ACTION_KINDS = ["insert", "addPage", "editPages", "open", "notify", "agent"] as const;
+export type ButtonActionKind = (typeof BUTTON_ACTION_KINDS)[number];
+export type ButtonAction =
+  /** Insert these blocks right below the button (or above when `where` is "above"). */
+  | { kind: "insert"; blocks: SpaceBlock[]; where?: "below" | "above" }
+  /** Add a page (row) to a database with these values (field id -> value). */
+  | { kind: "addPage"; tableId: string; values?: Record<string, unknown>; open?: boolean }
+  /** Set these values on every row of a database (or those matching `where`). */
+  | { kind: "editPages"; tableId: string; values: Record<string, unknown>; where?: Record<string, unknown> }
+  /** Open a Space or a web address. */
+  | { kind: "open"; spaceId?: string; url?: string }
+  /** Send a notification to a person ("me" = whoever pressed). */
+  | { kind: "notify"; userId: string; message: string }
+  /** Run an AI agent with a prompt. */
+  | { kind: "agent"; agentId: string; prompt?: string };
+
+export interface ButtonProps extends Record<string, unknown> {
+  label: string;
+  icon?: string;
+  actions: ButtonAction[];
 }
