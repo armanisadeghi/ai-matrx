@@ -101,7 +101,7 @@ export function readAppletBuildResult(
     sources: list(applet.sources).flatMap((s) =>
       typeof s.alias === "string"
         ? [
-            isRecord(s.new_table)
+            isRecord(s.new_table) && text(s.new_table.name).trim()
               ? {
                   alias: s.alias,
                   type: "new" as const,
