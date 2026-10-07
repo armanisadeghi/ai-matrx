@@ -3,6 +3,8 @@ import { createClient } from "@/utils/supabase/server";
 import { ChatConversationRoom } from "@ai-matrx/chat/agents/components/chat/ChatConversationRoom";
 import { DEFAULT_NEW_CHAT_MANDATE_KEY } from "@ai-matrx/chat/agents/components/chat/chat-quick-actions.config";
 import { AccessGate } from "@/features/access-gate/components/AccessGate";
+import { ServerReadRecheck } from "@/features/access-gate/components/ServerReadRecheck";
+import { ChatNewLandingSkeleton } from "@ai-matrx/chat/agents/components/chat/ChatNewClient";
 import { resolveMandateSeed } from "@/features/mandates/seed.server";
 import { ChatRunHeader } from "@ai-matrx/chat/agents/components/chat/ChatRunHeader";
 import { readComposerModeCookie } from "@ai-matrx/chat/next/server/composer-mode.server";
@@ -127,13 +129,22 @@ export default async function ChatConversationPage({
     return (
       <>
         <ChatRunHeader conversationId={conversationId} />
-        <AccessGate
+        {/* The SSR read can run WITHOUT the person's identity (an expired token
+            whose refresh outran the server's 2.5s budget goes out as anon), so
+            the browser re-reads with its own session before any gate shows. */}
+        <ServerReadRecheck
           token="conversation"
           id={conversationId}
-          error={seed.error ?? undefined}
-          fallbackHref="/chat/new"
-          fallbackLabel="New chat"
-        />
+          pending={<ChatNewLandingSkeleton />}
+        >
+          <AccessGate
+            token="conversation"
+            id={conversationId}
+            error={seed.error ?? undefined}
+            fallbackHref="/chat/new"
+            fallbackLabel="New chat"
+          />
+        </ServerReadRecheck>
       </>
     );
   }
