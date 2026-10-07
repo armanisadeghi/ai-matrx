@@ -42,7 +42,7 @@ import {
   Timer,
   Type,
 } from "lucide-react";
-import { CopyButtons } from "@/components/agent-copy/CopyButtons";
+import { RichCopySplit } from "@/components/agent-copy/RichCopySplit";
 import { cn } from "@/lib/utils";
 import MarkdownCore from "@ai-matrx/rich-content/markdown-core/MarkdownCore";
 import PageCleaningReportBlock from "./PageCleaningReportBlock";
@@ -333,7 +333,7 @@ export default function ScrapedPageBlock({ serverData, className }: Props) {
                   </Pill>
                 </button>
               )}
-              <CopyButtons
+              <RichCopySplit
                 size="xs"
                 label={title ?? responseUrl ?? "This page"}
                 human={() => active.body ?? ""}

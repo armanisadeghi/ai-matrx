@@ -16,7 +16,7 @@
 // Copy and JSON copy the editor never had.
 
 import { useAppSelector } from "@/lib/redux/hooks";
-import { CopyButtons } from "@/components/agent-copy/CopyButtons";
+import { RichCopySplit } from "@/components/agent-copy/RichCopySplit";
 import { selectSubtasksByParent } from "@/features/agent-context/redux/tasksSlice";
 import { fetchTaskExportBundle } from "@/features/tasks/services/aiExportService";
 import { serializeTaskForAi } from "@/features/tasks/utils/serializeProjectTaskForAi";
@@ -86,7 +86,7 @@ export function TaskEditorCopyButtonsForDraft({
   const current = getInput();
 
   return (
-    <CopyButtons
+    <RichCopySplit
       sourceId={`task:${current.taskId}`}
       references={current.saved ? [{ id: current.taskId, label: "Copy task reference", noun: "task", items: [{ id: current.taskId, label: current.saved.title ?? "Task" }] }] : []}
       size={size}

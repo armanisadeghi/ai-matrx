@@ -5,7 +5,7 @@ import { cn } from "@/styles/themes/utils";
 import CodeBlock from "@ai-matrx/rich-content/code-block/CodeBlock";
 import { parseMarkdownTable } from "@ai-matrx/rich-content/display/markdown-classification/processors/bock-processors/parse-markdown-table";
 import MarkdownTable from "@ai-matrx/rich-content/display/tables/TableWithSeparatedControls";
-import { CopyButtons } from "@/components/agent-copy/CopyButtons";
+import { RichCopySplit } from "@/components/agent-copy/RichCopySplit";
 import { KindTextGate } from "@ai-matrx/rich-content/display/chat-markdown/KindTextGate";
 
 import type { ComponentPropsWithoutRef } from "react";
@@ -233,7 +233,7 @@ const MarkdownRendererBody: React.FC<MarkdownRendererProps> = ({
       className={`${type === "message" ? "mb-4 w-full" : ""} ${role === "user" ? "text-right" : "text-left"}`}
     >
       <div className={containerStyles + " relative"}>
-        <CopyButtons
+        <RichCopySplit
           label="Content"
           human={content}
           contentFlavor="markdown"

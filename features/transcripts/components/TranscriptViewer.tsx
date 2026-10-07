@@ -30,7 +30,7 @@ import {
 } from "lucide-react";
 import { copyContent } from "@ai-matrx/rich-content/copy/copy-commands";
 import { ReferenceCopyButton } from "@/features/matrx-envelope/components/ReferenceCopyButton";
-import { CopyButtons } from "@/components/agent-copy/CopyButtons";
+import { RichCopySplit } from "@/components/agent-copy/RichCopySplit";
 import { ExportMenu } from "@/components/agent-copy/ExportMenu";
 import {
   csvExportItem,
@@ -657,7 +657,7 @@ export function TranscriptViewer() {
                  * button. The plain "Copy transcript text" button above is a
                  * different affordance and stays.
                  */}
-                <CopyButtons
+                <RichCopySplit
                   size="icon"
                   label={`Transcript "${transcriptDisplayTitle(activeTranscript)}"`}
                   human={() => buildTranscriptView().human}
