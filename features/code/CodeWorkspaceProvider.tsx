@@ -35,6 +35,10 @@ export interface CodeWorkspaceContextValue {
    *  panel to auto-expand on first mount. `null` keeps the canonical
    *  /code behaviour (everything collapsed lazily). */
   focusedLibrarySourceId: string | null;
+  /** One row of the focused source the host is editing (e.g. the open
+   *  Applet). When set, the Library shows ONLY that row — no other sources,
+   *  no other rows, no "My Files". */
+  focusedLibraryRowId: string | null;
 }
 
 const CodeWorkspaceContext = createContext<CodeWorkspaceContextValue | null>(
@@ -54,6 +58,8 @@ export interface CodeWorkspaceProviderProps {
    *  panel to auto-expand. Read by the LibraryTree at first paint;
    *  changing later does not force a re-collapse. */
   focusedLibrarySourceId?: string | null;
+  /** See `CodeWorkspaceContextValue.focusedLibraryRowId`. */
+  focusedLibraryRowId?: string | null;
   children: React.ReactNode;
 }
 
@@ -62,6 +68,7 @@ export const CodeWorkspaceProvider: React.FC<CodeWorkspaceProviderProps> = ({
   initialFilesystem,
   initialProcess,
   focusedLibrarySourceId = null,
+  focusedLibraryRowId = null,
   children,
 }) => {
   const store = useAppStore();
@@ -110,8 +117,9 @@ export const CodeWorkspaceProvider: React.FC<CodeWorkspaceProviderProps> = ({
       setFilesystem,
       setProcess,
       focusedLibrarySourceId,
+      focusedLibraryRowId,
     }),
-    [workspaceId, filesystem, process, focusedLibrarySourceId],
+    [workspaceId, filesystem, process, focusedLibrarySourceId, focusedLibraryRowId],
   );
 
   return (

@@ -44,6 +44,13 @@ interface ChatPanelSlotProps {
    *  prompt-app-development assistant. The user can still pick a
    *  different agent after mount. */
   defaultAgentId?: string;
+  /** The agent a MANDATE resolved for this host (the Applet editor). Used
+   *  when the URL pins none, and never written into the URL — the address
+   *  carries no agent id; the mandate is the identity. */
+  mandateAgentId?: string;
+  /** Show the "Show History" toggle. Off where the host renders no history
+   *  column (a focused editor whose chat is about one record). */
+  historyToggle?: boolean;
 }
 
 const CODE_WORKSPACE_SETTINGS_TAB = "editor.codeWorkspace";
@@ -61,12 +68,14 @@ export const ChatPanelSlot: React.FC<ChatPanelSlotProps> = ({
   className,
   rightmost = false,
   defaultAgentId,
+  mandateAgentId,
+  historyToggle = true,
 }) => {
   const dispatch = useAppDispatch();
   const searchParams = useSearchParams();
   const pathname = usePathname();
   const router = useRouter();
-  const agentId = searchParams.get("agentId");
+  const agentId = searchParams.get("agentId") ?? mandateAgentId ?? null;
   const conversationIdFromUrl = searchParams.get("conversationId");
 
   // If the host supplied a `defaultAgentId` and the URL doesn't already
@@ -145,8 +154,9 @@ export const ChatPanelSlot: React.FC<ChatPanelSlotProps> = ({
       pathname,
       searchParams,
       agentId,
+      agentInUrl: !mandateAgentId || Boolean(searchParams.get("agentId")),
     });
-  }, [agentId, dispatch, pathname, router, searchParams]);
+  }, [agentId, dispatch, pathname, router, searchParams, mandateAgentId]);
 
   // Code workspace lives at `${basePath}?agentId=X` — no nested `/run` segment.
   // Override the runner's default URL builder so fork / retry navigation
@@ -157,11 +167,12 @@ export const ChatPanelSlot: React.FC<ChatPanelSlotProps> = ({
     if (!agentId) return undefined;
     return (conversationId: string) => {
       const next = new URLSearchParams(searchParams.toString());
-      next.set("agentId", agentId);
+      // A mandate-pinned host keeps the agent out of the address.
+      if (!mandateAgentId || searchParams.get("agentId")) next.set("agentId", agentId);
       next.set("conversationId", conversationId);
       return `${basePath}?${next.toString()}`;
     };
-  }, [agentId, basePath, searchParams]);
+  }, [agentId, basePath, searchParams, mandateAgentId]);
 
   return (
     <div className={`flex h-full min-h-0 flex-col ${className ?? ""}`}>
@@ -183,12 +194,14 @@ export const ChatPanelSlot: React.FC<ChatPanelSlotProps> = ({
               label="Chat settings"
               onClick={openSettings}
             />
-            <SidePanelAction
-              icon={farRightOpen ? PanelRightOpen : PanelRight}
-              label={farRightOpen ? "Hide History" : "Show History"}
-              active={farRightOpen}
-              onClick={() => dispatch(setFarRightOpen(!farRightOpen))}
-            />
+            {historyToggle && (
+              <SidePanelAction
+                icon={farRightOpen ? PanelRightOpen : PanelRight}
+                label={farRightOpen ? "Hide History" : "Show History"}
+                active={farRightOpen}
+                onClick={() => dispatch(setFarRightOpen(!farRightOpen))}
+              />
+            )}
           </div>
         }
         className={rightmost ? AVATAR_RESERVE : undefined}

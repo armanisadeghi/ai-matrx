@@ -10,7 +10,7 @@ const AGA_APP_PREFIX = "aga-app:";
  */
 export const AGA_APP_ENVIRONMENT: MonacoEnvironmentDescriptor = {
   id: "aga-app",
-  label: "AGA App",
+  label: "Applet",
   description:
     "React 19 + Lucide + ShadCN UI ambients for `aga_apps.component_code`.",
   applies: (tab) => tab.id.startsWith(AGA_APP_PREFIX),
