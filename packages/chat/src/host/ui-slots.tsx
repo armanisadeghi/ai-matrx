@@ -306,7 +306,6 @@ export interface ChatUiSlots {
   AccessGate: AnyComponent;
   ReferenceCopyMenuItem: AnyComponent;
   ReferenceCopyButton: AnyComponent;
-  InlineCopyButton: AnyComponent;
   MandateNotesPanel: AnyComponent;
   SurfaceBoundAgentsList: SlotComponent<AgentsListProps>;
   ProposedDirectivesZone: AnyComponent;
@@ -835,8 +834,6 @@ export const AccessGate = slotComponent("AccessGate", unregisteredWidget("Access
 export const ReferenceCopyMenuItem = slotComponent("ReferenceCopyMenuItem", unregisteredWidget("ReferenceCopyMenuItem"));
 
 export const ReferenceCopyButton = slotComponent("ReferenceCopyButton", unregisteredWidget("ReferenceCopyButton"));
-export const InlineCopyButton = slotComponent("InlineCopyButton", unregisteredWidget("InlineCopyButton"));
-
 export const MandateNotesPanel = slotComponent("MandateNotesPanel", unregisteredWidget("MandateNotesPanel"));
 
 export const SurfaceBoundAgentsList = slotComponent("SurfaceBoundAgentsList", unregisteredWidget("SurfaceBoundAgentsList"));
