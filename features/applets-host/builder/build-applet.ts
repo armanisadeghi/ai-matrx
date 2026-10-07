@@ -92,7 +92,10 @@ export function coerceBuildAnswer(value: unknown): BuildAnswer {
   const sources = (Array.isArray(a.sources) ? a.sources : []).flatMap((s): BuilderSource[] =>
     isRecord(s) && typeof s.alias === "string"
       ? [
-          isRecord(s.new_table)
+          // Only a NAMED declaration is a table to make: a strict provider wire fills every optional arm,
+          // so a bound source arrives with `new_table: { name: "", fields: [] }` (and a declaration with
+          // `table_id: ""`). The arm with content decides.
+          isRecord(s.new_table) && str(s.new_table.name).trim()
             ? { alias: s.alias, new_table: s.new_table as unknown as NewTableDeclaration }
             : typeof s.entity === "string" && s.entity
               ? { alias: s.alias, entity: s.entity }

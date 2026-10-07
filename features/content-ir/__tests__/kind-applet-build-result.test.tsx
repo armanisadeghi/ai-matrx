@@ -136,6 +136,21 @@ describe("applet_build_result", () => {
     expect(repeats).toThrow(/already has a table called "Brands"/);
   });
 
+  // Observed live (run over Cedar Ridge PT's own tables): every optional arm arrives filled — empty strings and an
+  // EMPTY declaration beside the bound table. The bound table decides; nothing is "made".
+  it("reads a bound source carrying an empty strict-wire declaration as the bound table", () => {
+    const wire = {
+      ...ANSWER,
+      applet: {
+        ...ANSWER.applet,
+        sources: [{ alias: "posts", entity: "", table_id: "0b6f6a2e-4c1d-4f7a-9f55-3e2b1c9d8a71", organization_id: "344cfaa8-2b0c-4971-854a-9694614816f2", new_table: { name: "", label_singular: "", title_field: "", fields: [] } }],
+      },
+    };
+    const answer = checkBuildAnswer(wire, coerceBuildAnswer(wire), { organizationId: "344cfaa8-2b0c-4971-854a-9694614816f2", tables: [] });
+    expect(answer.applet.sources).toEqual([{ alias: "posts", table_id: "0b6f6a2e-4c1d-4f7a-9f55-3e2b1c9d8a71", organization_id: "344cfaa8-2b0c-4971-854a-9694614816f2" }]);
+    expect(appletBuildResultServerDataFromEnvelope(envelopeFromCompleteValue(wire, APPLET_BUILD_RESULT_KIND))?.sources[0]?.type).toBe("table");
+  });
+
   // Audit 2026-10-07: an Applet built in "AI Matrx" was bound to a blank "Untitled database" of "Oak & River".
   it("refuses an answer that binds a table of another organization, naming it", () => {
     const crossOrg = { ...ANSWER, applet: { ...ANSWER.applet, sources: [{ alias: "posts", table_id: "0b6f6a2e-4c1d-4f7a-9f55-3e2b1c9d8a71", organization_id: "oak-and-river" }] } };
