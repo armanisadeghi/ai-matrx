@@ -68,7 +68,7 @@ If `variants.length === 0` AND `settings.length === 0`, `usePrintOptions` calls 
 | PD rating report | HTML template | `features/legal/wc/pd-ratings/print/pd-report-printer.ts` |
 | Performance review report | HTML template | `features/employee-performance-reviews/review-report.ts` |
 | **QR label sheets** | HTML template (registry-driven grid) | `@ai-matrx/print/labels` (qrLabelsPrinter) — Avery + roll stock QR labels; template registry, calibration page, LabelSheetPreview (in /react) + jsPDF lane |
-| Various display blocks | DOM capture | inline in component via `@ai-matrx/print/pdf` (captureBlockElement) |
+| Various display blocks | DOM capture | inline in component via `@ai-matrx/alchemy/operate/capture` (`captureDocumentPdf`) + kit `downloadFile` |
 
 ## Adding an HTML Template Printer
 
@@ -95,8 +95,11 @@ const handlePrint = useCallback(async () => {
     if (!blockContentRef.current || isPrinting) return;
     setIsPrinting(true);
     try {
-        const { captureBlockElement } = await import('@ai-matrx/print/pdf');
-        await captureBlockElement(blockContentRef.current, 'filename', 'landscape'); // or 'portrait'
+        const [{ captureDocumentPdf }, { downloadFile }] = await Promise.all([
+            import('@ai-matrx/alchemy/operate/capture'),
+            import('@ai-matrx/kit/download'),
+        ]);
+        downloadFile('filename.pdf', await captureDocumentPdf(blockContentRef.current, { orientation: 'portrait' }), 'application/pdf'); // or 'landscape'
     } catch (err) {
         console.error('[BlockName] Print failed:', err);
     } finally {
@@ -106,7 +109,7 @@ const handlePrint = useCallback(async () => {
 ```
 
 Key rules:
-- `captureBlockElement` signature: `(element, filename, orientation?: "landscape" | "portrait")` — default is `"landscape"`
+- `captureDocumentPdf(element, { orientation })` returns the PDF bytes (`orientation`: `"landscape" | "portrait"`); save them with kit `downloadFile`. App code never imports `@ai-matrx/print/pdf` directly (guard: `pnpm check:alchemy-doors`)
 - Always `await` it — missing await means errors are invisible silent rejections
 - Attach `ref` to the **content container**, not the whole block shell or a stats summary
 - `disabled={isPrinting}` on the button; show `"Saving…"` label while active
@@ -131,12 +134,12 @@ All in `@ai-matrx/print` (`/core`, `/pdf`, `/markdown`, `/react`). Since 0.3.0 t
 - `printHtmlContent(bodyHtml, title?, extraStyles?)` → shorthand combo
 - `markdownToPdfBlob(markdown)` (`/pdf`) → styled multi-page PDF Blob, no arguments beyond the markdown
 - `markdownToHtml` / `getMarkdownStylesheet` / `printMarkdown` (`/markdown`) → the shipped converter, the two default stylesheets ("document" and "article"), and the one-call print window. Brand it with `tokens`; never fork the sheet.
-- `captureBlockElement(el, filename, orientation?)` → delegates to `captureToPDF` with scale:2
+- `captureDocumentPdf(el, opts)` (`@ai-matrx/alchemy/operate/capture`) → loads print's DOM-capture engine and returns the PDF bytes
 - Fixed-geometry sheets (`@page { size: …; margin: 0 }`, inch-exact cells, screen-only "100% scale, no margins" banner, FIT_TEXT auto-shrink): patterns in the package's `flashcards.ts` (Avery 5388) and, generalized to a template registry, `labels.ts`
 
 ## Common Bugs to Watch For
 
-1. **Missing `await` on `captureBlockElement`** — errors silently swallowed
+1. **Missing `await` on `captureDocumentPdf`** — errors silently swallowed
 2. **`ref` on wrong element** — attach to content, not stats/header/outer shell
 3. **Print button absent in fullscreen** — must add to fullscreen header explicitly
 4. **Missing `settings` param in `print()`** — use `settings?.key ?? defaultValue` pattern
