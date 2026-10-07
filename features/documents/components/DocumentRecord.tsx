@@ -29,6 +29,7 @@ import { useAppStore } from "@/lib/redux/hooks";
 import { documentWorkingCopy } from "@/features/documents/document-model/documentModels";
 import { getClaimsUser } from "@/utils/supabase/claimsUser";
 import { ShareButton } from "@/features/sharing/components/ShareButton";
+import { univerDocToMarkdown } from "@/features/documents/univer-doc-to-markdown";
 import { RichCopySplit } from "@/components/agent-copy/RichCopySplit";
 import { ReferenceCopyButton } from "@/features/matrx-envelope/components/ReferenceCopyButton";
 import { AccessGate } from "@/features/access-gate/components/AccessGate";
@@ -370,7 +371,11 @@ export function DocumentRecord({
         size="sm"
         human={() => {
           const port = bodyPortRef.current;
-          return port ? bodyTextOf(port.getDataStream()).text : "";
+          if (!port) return "";
+          // Markdown WITH its markup (headings, bold, italics, lists, tables) from the live
+          // snapshot; the plain choice strips it downstream. Falls back to the bare text.
+          const markdown = univerDocToMarkdown(port.getSnapshot?.());
+          return markdown || bodyTextOf(port.getDataStream()).text;
         }}
       />
       <span className="hidden sm:inline-flex">

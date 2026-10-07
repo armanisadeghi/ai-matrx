@@ -26,6 +26,8 @@
  * PURE — no React, no Redux, no IO.
  */
 
+const TABLE_CELL_SEP = "   |   ";
+
 interface TextRunLike {
   st?: number;
   ed?: number;
@@ -162,15 +164,45 @@ export function univerDocToMarkdown(snapshot: unknown): string {
   }
 
   // Univer keeps one paragraph per visual line; markdown wants a blank line
-  // between blocks, and consecutive blank paragraphs collapse.
+  // between blocks (but not inside a list or a table), and consecutive blank
+  // paragraphs collapse. The writer (`markdownToUniverDoc`) flattens a list item
+  // to a literal "• " / "1. " prefix and a table row to cells joined by
+  // TABLE_CELL_SEP, so those shapes are read back as the markdown they came from.
+  type Kind = "text" | "list" | "table";
+  const kindOf = (line: string): Kind =>
+    /^\s*(?:\u2022|[-*+]|\d+[.)])\s+/.test(line) ? "list" : line.includes(TABLE_CELL_SEP) ? "table" : "text";
   const out: string[] = [];
-  for (const line of lines) {
-    if (!line.trim()) {
+  let prev: Kind | null = null;
+  let tableRow = 0;
+  for (const raw of lines) {
+    if (!raw.trim()) {
       if (out.length && out[out.length - 1] !== "") out.push("");
+      prev = null;
       continue;
     }
-    if (out.length && out[out.length - 1] !== "") out.push("");
-    out.push(line.replace(/\s+$/, ""));
+    let line = raw.replace(/\s+$/, "");
+    const kind = kindOf(line);
+    if (kind === "list") {
+      line = line.replace(/^(\s*)\u2022\s+/, "$1- ").replace(/^(\s*)\*\s+/, "$1- ");
+      // Four spaces per nesting level in the document; two read as nesting in markdown.
+      line = line.replace(/^( +)/, (m) => " ".repeat(Math.floor(m.length / 2)));
+    }
+    if (kind === "table") {
+      const cells = line.split(/\s*\|\s*/).map((c) => c.trim());
+      const isHeader = prev !== "table";
+      const shown = cells.map((c) => (isHeader ? c.replace(/^\*\*(.*)\*\*$/, "$1") : c));
+      line = `| ${shown.join(" | ")} |`;
+      if (isHeader) tableRow = shown.length;
+      out.push(...(prev === "table" || prev === null || !out.length || out[out.length - 1] === "" ? [] : [""]));
+      out.push(line);
+      if (isHeader) out.push(`|${" --- |".repeat(tableRow)}`);
+      prev = "table";
+      continue;
+    }
+    const tight = kind === "list" && prev === "list";
+    if (out.length && out[out.length - 1] !== "" && !tight) out.push("");
+    out.push(line);
+    prev = kind;
   }
   return out.join("\n").trim();
 }

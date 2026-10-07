@@ -127,3 +127,29 @@ describe("Clean HTML is the platform's one value cleaner", () => {
     expect(recordsCleanText("<p>Owner called: <b>limping</b> on the left hind&nbsp;leg</p>")).toBe("Owner called: limping on the left hind leg");
   });
 });
+
+describe("the agent writes the table's description, on confirm", () => {
+  it("sends the trimmed sentence through the table's own door", async () => {
+    const latest = { current: SNAPSHOT };
+    const described: string[] = [];
+    const handlers = recordStoreWriteHandlers(latest, async () => ({ ok: true }), async (text) => (described.push(text), { ok: true }));
+    expect(handlers["table_description"]).toBeDefined();
+    await applyOf(handlers["table_description"])("  Every visit booked at the clinic, with its fee and status.  ");
+    expect(described).toEqual(["Every visit booked at the clinic, with its fee and status."]);
+  });
+
+  it("refuses JSON, an empty sentence, a read-only table and a store refusal, writing nothing", async () => {
+    const described: string[] = [];
+    const door = async (text: string) => (described.push(text), text.startsWith("Stale") ? { ok: false as const, says: "A colleague changed it first." } : { ok: true as const });
+    const handlers = recordStoreWriteHandlers({ current: SNAPSHOT }, async () => ({ ok: true }), door);
+    await expect(applyOf(handlers["table_description"])({ description: "x" })).rejects.toThrow(/PLAIN TEXT/);
+    await expect(applyOf(handlers["table_description"])("   ")).rejects.toThrow(/cannot be empty/);
+    await expect(applyOf(handlers["table_description"])("x".repeat(2001))).rejects.toThrow(/limit is 2000/);
+    const readOnly = recordStoreWriteHandlers({ current: { ...SNAPSHOT, canWrite: false } }, async () => ({ ok: true }), door);
+    await expect(applyOf(readOnly["table_description"])("A fine sentence.")).rejects.toThrow(/is_read_only/);
+    const noTable = recordStoreWriteHandlers({ current: SNAPSHOT }, async () => ({ ok: true }));
+    await expect(applyOf(noTable["table_description"])("A fine sentence.")).rejects.toThrow(/not over one table/);
+    expect(described).toEqual([]);
+    await expect(applyOf(handlers["table_description"])("Stale sentence.")).rejects.toThrow(/colleague/);
+  });
+});

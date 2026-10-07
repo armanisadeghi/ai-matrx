@@ -350,9 +350,9 @@ const surfaceSpecific: SurfaceValue[] = [
  *  - `table_description` is authored prose. It is the field users leave blank
  *    because writing it is a chore, an agent that has just read the columns
  *    and a page of rows can write it better than a blank field, and it is
- *    metadata — nothing downstream computes on it. It persists to one column
- *    through the seam's `updateTableMetadata`, which leaves every other field alone, so it cannot disturb
- *    the table's name or its web state.
+ *    metadata — nothing downstream computes on it. It persists through
+ *    records-ui's `saveTableDescription` (the table's own record, version-checked), which changes only
+ *    the description, so it cannot disturb the table's name or its columns.
  *  - `cell_value` is the operation this surface exists for ("clean this
  *    value", "reformat this date", "fill in the category"). It is ONE cell,
  *    identified by an explicit `{row_id, field_name}` pair the agent must have
@@ -406,7 +406,7 @@ const writeTargets: SurfaceWriteTarget[] = [
     name: "table_description",
     label: "Table description",
     description:
-      "Sets the open table's description — the short prose that says what this table holds and what it is for. Value is PLAIN TEXT, not JSON and not JSON-encoded: send the sentence itself, with no surrounding quotes and no escaped newlines. Replaces the existing description in full, so include anything from table_description worth keeping; read that value first. 1-3 sentences is right (hard limit 2000 characters, refused above it) and an empty or whitespace-only value is refused — clearing the description is the user's call, not an agent's. Persists immediately on confirm through the table-metadata RPC, which writes ONLY this column: the table's name and web state are left untouched. Refused when is_read_only is true.",
+      "Sets the open table's description — the short prose that says what this table holds and what it is for. Value is PLAIN TEXT, not JSON and not JSON-encoded: send the sentence itself, with no surrounding quotes and no escaped newlines. Replaces the existing description in full, so include anything from table_description worth keeping; read that value first. 1-3 sentences is right (hard limit 2000 characters, refused above it) and an empty or whitespace-only value is refused — clearing the description is the user's call, not an agent's. Persists immediately on confirm through the table's own record (`custom.record_update` on the Table, version-checked, so a colleague's change since is refused, never overwritten), which changes ONLY the description: the table's name, columns and other settings are left untouched. Refused when is_read_only is true.",
     valueType: "string",
     updatesValue: "table_description",
     mode: "entity",
@@ -437,7 +437,7 @@ export const dataTablesManifest: SurfaceManifest = {
     "Tables and spreadsheet views",
   readiness: "partial",
   readinessNote:
-    "Emitter + write handler: RecordStoreTableSurface over the one table page (UnifiedTableBody) — /data/[tableId] and every host that mounts it (table window, chat view-table modal, canvas table, Quick Data, Board tile), enabled with the merged grid (data_tables.merged_grid knob, platform default On). The merged grid reports cell / block / ticked rows / rows on screen through onGridContext; one confirmed cell write goes through @ai-matrx/records. full_table_json has no Locate target: the grid renders only the current page. Partial until surface certification runs. The /data home emits nothing by design (no authored table state).",
+    "Emitter + write handler: RecordStoreTableSurface over the one table page (UnifiedTableBody) — /data/[tableId] and every host that mounts it (table window, chat view-table modal, canvas table, Quick Data, Board tile), enabled with the merged grid (data_tables.merged_grid knob, platform default On). The merged grid reports cell / block / ticked rows / rows on screen through onGridContext; one confirmed cell write, or the table's description, goes through @ai-matrx/records. full_table_json has no Locate target: the grid renders only the current page. Partial until surface certification runs. The /data home emits nothing by design (no authored table state).",
   label: "Data Tables",
   urlPattern: "/data/[tableId]",
   intro: `<surface_intro>

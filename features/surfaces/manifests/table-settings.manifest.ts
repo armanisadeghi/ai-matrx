@@ -1,28 +1,29 @@
 /**
  * Surface manifest — Table settings (`matrx-user/table-settings`).
  *
- * The data table's settings window (`TableConfigModal`: Fields & Order, Table
- * Settings, Actions) — a LAYER over `matrx-user/data-tables`. It is the
- * worked example of the surface chain (register
+ * The table's settings panel on the store grid (records-ui `TableSettings`: About this table,
+ * the columns, row actions) — a LAYER over `matrx-user/data-tables`. It is the worked example of
+ * the surface chain (register
  * `common-docs/systems/platform/ui-shell/projects/ai-reachable-everywhere`, ARE-010 / ARE-011):
  *
  *   - While it is open it is the primary surface (it renders inside a
  *     `SurfaceLayerBoundary`), so the Agents menu, right-click AI and the
- *     assist dock speak for THIS window.
- *   - The table itself is NOT re-declared here. The data table's own provider
- *     is still mounted under the window, so its values (the table, its
+ *     assist dock speak for THIS panel.
+ *   - The table itself is NOT re-declared here. The table page's own provider
+ *     is still mounted under the panel, so its values (the table, its
  *     columns, the rows on screen, the selected cell) reach the agent as a
  *     `page` level of the surface chain — this manifest owns only what the
- *     settings window alone can see. That is the family doctrine applied at
- *     run time: the page conveys the container, the layer owns its layer.
+ *     settings panel alone can see.
  *   - Its root carries `data-surface-layer`, so the unregistered-window
  *     reader (`window-forms.ts`) leaves it to this surface.
  *
- * Emitter: `SurfaceRuntimeProvider` inside `TableConfigModal` (tab, pending
- * column/table edits); the Actions tab's `RowActionsEditor` contributes the
- * row-action values and owns both row-action write targets
- * (`useSurfaceScopeContribution` + `useSurfaceWriteHandlers`), because the
- * action being edited lives in its state.
+ * Emitter: records-ui's `settingsAgent` port, bound in
+ * `features/data-tables/records-ui-host/recordsAgentPorts.tsx`. The package hands a
+ * `TableSettingsAgent` — what the panel shows (the description as edited, the row actions and
+ * the one open in the editor, what stops it saving) and three staging calls. Staging fills the
+ * panel exactly as if typed; nothing is saved until the person presses Save. (The older Sheet's
+ * settings window also staged column changes and switched tabs; the store grid's panel has no
+ * tabs, and a column is changed in its own field panel, so neither is offered here.)
  */
 
 import type {
@@ -41,7 +42,7 @@ const groups: SurfaceValueGroup[] = [
     key: "settings_window",
     label: "Settings window",
     sortOrder: 100,
-    description: "Which tab is open and what is waiting to be saved.",
+    description: "The table's details as edited and what is waiting to be saved.",
   },
   {
     key: "row_actions",
@@ -53,21 +54,10 @@ const groups: SurfaceValueGroup[] = [
 
 const values: SurfaceValue[] = [
   {
-    name: "settings_tab",
-    label: "Open tab",
-    description:
-      "The tab the person has open: `fields` (Fields & Order — column names, types, formats, validation, order), `table` (Table Settings — name, description, row label, validation mode) or `actions` (row actions).",
-    valueType: "string",
-    alwaysAvailable: true,
-    typicalCharCount: 8,
-    sortOrder: 100,
-    group: "settings_window",
-  },
-  {
     name: "has_unsaved_changes",
     label: "Unsaved changes",
     description:
-      "True when the Fields & Order or Table Settings tab holds edits the person has not saved with Save Changes yet. Row actions save on their own and never count here.",
+      "True when the description holds an edit not saved yet, or a row action is open in the editor and not saved with Save action yet.",
     valueType: "boolean",
     alwaysAvailable: true,
     typicalCharCount: 5,
@@ -75,21 +65,10 @@ const values: SurfaceValue[] = [
     group: "settings_window",
   },
   {
-    name: "pending_column_changes",
-    label: "Pending column changes",
-    description:
-      "Column edits made in this window and not saved yet: `type_changes` (column → new data type), `format_changes` (column → new display format) and `validation_changes` (column → new validation rules), each keyed by the column's machine name. Absent when there are none.",
-    valueType: "object",
-    alwaysAvailable: false,
-    typicalCharCount: 400,
-    sortOrder: 120,
-    group: "settings_window",
-  },
-  {
     name: "table_details_draft",
     label: "Table details as edited",
     description:
-      "The table's name, description and validation mode as they stand in this window, including unsaved edits.",
+      "The table's name, its description as it stands in the panel (including an unsaved edit) and its row label (the column that names each record).",
     valueType: "object",
     alwaysAvailable: true,
     typicalCharCount: 300,
@@ -170,37 +149,13 @@ const writeTargets: SurfaceWriteTarget[] = [
     name: "table_details",
     label: "Table details",
     description:
-      'Stage new table details in the Table Settings tab: { "table_name"?: "<name>", "description"?: "<text>", "validation_mode"?: "permissive" | "strict" }. Only the keys you send change. Nothing is saved until the person presses Save Changes.',
+      'Stage the table\'s description in About this table: { "description": "<1-3 sentences, plain text>" }. Only `description` is staged here — the table is renamed from its menu and the row label is picked by the person. Nothing is saved until the person presses Save under the description.',
     valueType: "object",
     mode: "draft",
     applyPolicy: "ask",
     updatesValue: "table_details_draft",
     group: "settings_window",
     sortOrder: 112,
-  },
-  {
-    name: "column_changes",
-    label: "Column changes",
-    description:
-      'Stage changes to one or more columns in the Fields & Order tab: { "changes": [{ "column": "<machine name or display name>", "display_name"?: "<label>", "data_type"?: "string" | "number" | "integer" | "boolean" | "date" | "datetime" | "json" | "array", "is_required"?: true | false, "formula"?: "<formula, makes it a calculated column>" }] }. Every change is checked first (the column exists, the type is real, a formula parses and names real columns); one bad change stages nothing. Changing a data type converts existing values when the person saves. Nothing is saved until the person presses Save Changes.',
-    valueType: "object",
-    mode: "draft",
-    applyPolicy: "ask",
-    updatesValue: "pending_column_changes",
-    group: "settings_window",
-    sortOrder: 114,
-  },
-  {
-    name: "settings_tab",
-    label: "Open tab",
-    description:
-      'Switch the settings window to another tab: "fields", "table" or "actions".',
-    valueType: "string",
-    mode: "ui",
-    applyPolicy: "auto",
-    updatesValue: "settings_tab",
-    group: "settings_window",
-    sortOrder: 120,
   },
 ];
 
@@ -214,9 +169,9 @@ export const tableSettingsManifest: SurfaceManifest = {
   label: "Table Settings",
   readiness: "partial",
   readinessNote:
-    "Emitter and write targets wired 2026-09-26 (the surface-chain worked example): row actions, table details, column label/type/required/formula. Not agent-writable yet: column display formats other than formula, validation rules and column order.",
+    "Fed by records-ui's settings panel through the `settingsAgent` port (2026-10-07, Sheet retirement): the description as edited, row actions and the one being edited, with what stops it saving. Agent-stageable: a whole row action, one Calculate step's formula, the description. Not offered: column changes (each column has its own field panel) and table rename (its menu).",
   intro: `<surface_intro>
-You are in the Table settings window of one of the person's data tables. The table itself (its columns, the rows on screen, the selected cell) is in the surface chain as the page under this window — read it there. This window adds what only it can see: which tab is open, edits not saved yet, the table's row actions, and the row action being edited, with every reason it cannot be saved yet.
+You are in the settings panel of one of the person's data tables. The table itself (its columns, the rows on screen, the selected cell) is in the surface chain as the page under this panel — read it there. This panel adds what only it can see: the description as edited, edits not saved yet, the table's row actions, and the row action being edited, with every reason it cannot be saved yet.
 
 A row action is a button on every row. An update action sets, clears or calculates cells; a Calculate step writes the result of a formula into one column, evaluated against the row as it is before the action runs. When the person asks for a formula, write it with row_action_step_formula using formula_language and the table's real column names — never invent a column. Nothing you stage is saved until the person presses Save action.
 </surface_intro>`,
@@ -226,17 +181,15 @@ A row action is a button on every row. An update action sets, clears or calculat
   skipBaselineValues: true,
 };
 
-/** Type-safe payload for the window's own provider (`TableConfigModal`). */
+/** Type-safe payload for the panel's own values (records-ui `settingsAgent`, `recordsAgentPorts.tsx`). */
 export function createTableSettingsScope(values: {
-  settings_tab: string;
   has_unsaved_changes: boolean;
   table_details_draft: Record<string, unknown>;
-  pending_column_changes?: Record<string, unknown>;
 }): SurfaceScopePayload {
   return values as SurfaceScopePayload;
 }
 
-/** Type-safe payload for the Actions tab's contribution (`RowActionsEditor`). */
+/** Type-safe payload for the row actions' values (records-ui `RowActionsSection`, through the same port). */
 export function createTableSettingsRowActionsScope(values: {
   saved_row_actions?: unknown[];
   editing_row_action?: Record<string, unknown>;

@@ -55,6 +55,8 @@ import {
   STUDY_TOOL_BUTTON_ACTIVE,
 } from "@/features/education/study/components/studyToolbar";
 import { Button } from "@/components/ui/button";
+import { TextCopySplit } from "@/components/agent-copy/TextCopySplit";
+import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 import { AccessGate } from "@/features/access-gate/components/AccessGate";
 import MatrxMiniLoader from "@/components/loaders/MatrxMiniLoader";
 import { cn } from "@/lib/utils";
@@ -986,6 +988,13 @@ export function StudyDeck(props: StudyDeckProps) {
           </Button>
         )}
 
+        {/* The split Copy: one click copies this card (front then back) as markdown, the chevron offers plain. */}
+        <TextCopySplit
+          size="xs"
+          label="Copy card"
+          text={() => `**Front**\n\n${card.front}\n\n**Back**\n\n${card.back ?? ""}`}
+        />
+
         {renderOptionsMenu()}
       </div>
     );
@@ -1377,6 +1386,8 @@ export function StudyDeck(props: StudyDeckProps) {
             />
           ) : (
             <>
+              {/* The card face is a selection surface: dragging across its text gets the one selection toolbar (Copy first). */}
+              <NonEditableContextMenu sourceFeature="system">
               <FlashcardItem
                 key={`fc-card-${current.id}`}
                 front={cardFaces.front}
@@ -1391,6 +1402,7 @@ export function StudyDeck(props: StudyDeckProps) {
                 backImage={getCardImages(current).back}
                 heightClassName="h-[clamp(15rem,46dvh,32rem)]"
               />
+              </NonEditableContextMenu>
 
               {/* P0 Trust — once the answer is revealed, show where it came
                   from. Renders nothing for hand-made cards. */}

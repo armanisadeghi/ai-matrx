@@ -74,7 +74,13 @@ function walk(dir: string, out: string[] = [], exts: readonly string[] = [".tsx"
   return out;
 }
 
-const read = (file: string) => readFileSync(join(ROOT, file), "utf8");
+// P27 (618a850bf1): the chat package source lives in the aidream checkout. The packages' published
+// place maps still name their sources as `packages/chat/src/...`; resolve those to where the files are.
+const resolveSource = (file: string) =>
+  file.startsWith("packages/chat/src/")
+    ? join(ROOT, "..", "aidream", "apps", "shared", "chat", "src", file.slice("packages/chat/src/".length))
+    : join(ROOT, file);
+const read = (file: string) => readFileSync(resolveSource(file), "utf8");
 const features = DECLARED_FEATURES.filter((entry) => !OWN_GUARD.has(entry.feature)).map(
   (entry) => ({ ...entry, places: entry.places.filter((place) => !place.app) }),
 );
@@ -103,7 +109,7 @@ describe("declared intelligence places", () => {
         // call in the client source and the job in the aidream `server` files.
         const serverRun = Boolean(place.calls);
         for (const source of place.sources) {
-          expect({ source, exists: existsSync(join(ROOT, source)) }).toEqual({ source, exists: true });
+          expect({ source, exists: existsSync(resolveSource(source)) }).toEqual({ source, exists: true });
           const code = read(source);
           if (serverRun) {
             expect({ source, calls: place.calls, found: code.includes(place.calls!) }).toEqual({

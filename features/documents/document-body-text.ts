@@ -31,6 +31,8 @@ export const DOCUMENT_BODY_MAX_LENGTH = 200_000;
 export interface DocumentBodyPort {
   /** The main body's Univer data stream (ends with `\r\n`). */
   getDataStream: () => string;
+  /** The live document snapshot (body with its text runs), for reading the formatting back out. */
+  getSnapshot?: () => unknown;
   /** Delete `[start, end)` of the data stream; false when Univer refused. */
   deleteRange: (start: number, end: number) => boolean;
   /** Insert plain text (a `\n` starts a new paragraph) at a stream index. */

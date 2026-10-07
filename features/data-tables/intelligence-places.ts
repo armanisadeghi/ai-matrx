@@ -28,10 +28,11 @@ export const DATA_PLACES: FeaturePlaces = {
     {
       id: "formula",
       label: "Column formula editor",
-      trigger: "Write a formula with AI",
+      trigger: "Help with this… in the formula box",
       urlPattern: "/data/[tableId]",
       mandateKeys: [K.data__formula_writing],
-      sources: ["features/data-tables/components/FormulaExpressionEditor.tsx"],
+      // records-ui's formula box offers help through its `formulaHelp` port; this app binds it.
+      sources: ["features/data-tables/records-ui-host/recordsAgentPorts.tsx"],
     },
   ],
 };

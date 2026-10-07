@@ -11,13 +11,7 @@ import { CollaborationExtension } from "@blocknote/core/yjs";
 import { en } from "@blocknote/core/locales";
 import {
   AddBlockButton,
-  BasicTextStyleButton,
-  BlockTypeSelect,
-  ColorStyleButton,
-  CreateLinkButton,
   DragHandleButton,
-  FormattingToolbar,
-  FormattingToolbarController,
   SideMenu,
   SideMenuController,
   SuggestionMenuController,
@@ -33,7 +27,11 @@ import { AGENT_ICON } from "@/components/icons/domain-icons";
 import { mentionCandidates } from "@/features/rich-document/annotations/service";
 import { applyMarkdownKey } from "./markdown-keys";
 import { openMissedSlash } from "./slash-guard";
-import { CalendarDays, MessageSquare } from "lucide-react";
+import { Bold, CalendarDays, Code, Italic, MessageSquare, Strikethrough } from "lucide-react";
+import type { Action } from "@ai-matrx/alchemy/actions";
+import { registerAlchemyIcon } from "@ai-matrx/rich-content/utils/alchemy-icon-keys";
+import { PASSAGE_ACTIONS_HOST_KEY, shownInSelectionMode } from "@ai-matrx/rich-content/selection-toolbar/selection-actions";
+import { useSelectionZone } from "@ai-matrx/rich-content/selection-toolbar/selection-zones";
 
 import { spaceCommentSource } from "../collab/comments";
 import { PersonAvatar } from "../collab/CommentsPanel";
@@ -133,24 +131,6 @@ function useDarkMode(): boolean {
     return () => obs.disconnect();
   }, []);
   return dark;
-}
-
-function AskAiButton({ onClick }: { onClick: () => void }) {
-  const C = useComponentsContext()!;
-  return (
-    <C.FormattingToolbar.Button mainTooltip="Ask AI" icon={<AGENT_ICON size={16} />} onClick={onClick} label="Ask AI">
-      Ask AI
-    </C.FormattingToolbar.Button>
-  );
-}
-
-function CommentButton({ onClick }: { onClick: () => void }) {
-  const C = useComponentsContext()!;
-  return (
-    <C.FormattingToolbar.Button mainTooltip="Comment" icon={<MessageSquare size={16} />} onClick={onClick} label="Comment">
-      Comment
-    </C.FormattingToolbar.Button>
-  );
 }
 
 export interface SpaceEditorProps {
@@ -272,6 +252,59 @@ export function SpaceEditor({ spaceId, initialBlocks, editable, onChange, slash,
 
   useRubberBand(editor, editable);
 
+  // THE ONE SELECTION TOOLBAR (components/selection-toolbar) serves this editor: Copy first (the common pair),
+  // then these registered actions — the inline styles, Ask AI and Comment. BlockNote's own formatting bubble is
+  // gone (two bubbles over one selection); the toolbar's mode table decides what shows while editing.
+  const [zoneElement, setZoneElement] = useState<HTMLElement | null>(null);
+  const passageActions: Action[] = [
+    ...(editable
+      ? ([
+          ["selection:format-bold", "Bold", Bold, "bold"],
+          ["selection:format-italic", "Italic", Italic, "italic"],
+          ["selection:format-strike", "Strikethrough", Strikethrough, "strike"],
+          ["selection:format-code", "Code", Code, "code"],
+        ] as const).map(
+          ([id, label, Icon, style], i): Action => ({
+            id,
+            label,
+            icon: registerAlchemyIcon(Icon),
+            category: "format",
+            order: 10 + i,
+            placement: "primary",
+            preserveSelection: true,
+            eligible: (t) => (shownInSelectionMode(id, t) ? { status: "available" } : { status: "absent" }),
+            run: () => {
+              editor.focus();
+              editor.toggleStyles({ [style]: true } as never);
+            },
+          }),
+        )
+      : []),
+    {
+      id: "selection:ai",
+      label: "Ask AI",
+      icon: registerAlchemyIcon(AGENT_ICON),
+      category: "ai",
+      order: 20,
+      placement: "primary",
+      preserveSelection: true,
+      eligible: (t) => (editable && shownInSelectionMode("selection:ai", t) ? { status: "available" } : { status: "absent" }),
+      run: () => menu.askAi(),
+    },
+    {
+      id: "selection:comment",
+      label: "Comment",
+      icon: registerAlchemyIcon(MessageSquare),
+      category: "comment",
+      order: 21,
+      placement: "primary",
+      preserveSelection: true,
+      eligible: (t) => (onComment && shownInSelectionMode("selection:comment", t) ? { status: "available" } : { status: "absent" }),
+      run: () => commentOnSelection(),
+    },
+  ];
+  useSelectionZone(zoneElement, { editable, host: { [PASSAGE_ACTIONS_HOST_KEY]: passageActions } });
+
   // Deep link to a block (#block-<id>): scroll to it and flash it (E2). Polls until the block renders.
   useEffect(() => {
     let timer = 0;
@@ -300,7 +333,9 @@ export function SpaceEditor({ spaceId, initialBlocks, editable, onChange, slash,
 
   return (
     <div
+      ref={setZoneElement}
       className="contents"
+      data-space-selection-zone=""
       onKeyDownCapture={(e) => {
         // A KEY PRESSED IN A DATABASE BLOCK IS THE TABLE'S (stored-blocks `insideDatabaseBlock`): Enter,
         // Space and Escape there must never write into a toggle, open Ask AI or move the page's caret.
@@ -444,31 +479,6 @@ export function SpaceEditor({ spaceId, initialBlocks, editable, onChange, slash,
             </span>
           </SideMenu>
         )}
-      />
-      ) : null}
-      {editable ? (
-      <FormattingToolbarController
-        floatingUIOptions={INSTANT_CLOSE}
-        formattingToolbar={() =>
-          // BlockNote re-evaluates the toolbar on every document change without asking for focus, so the
-          // room's first sync over a page that starts with columns left a block (node) selection on the
-          // first column and drew "Ask AI | Comment" over the title with nothing selected. A block
-          // selection nobody made in a focused editor shows no toolbar (Notion).
-          (editor.prosemirrorState.selection as { node?: unknown }).node && !editor.isFocused() ? null : (
-          <FormattingToolbar>
-            <AskAiButton onClick={menu.askAi} />
-            <BlockTypeSelect key="blockTypeSelect" />
-            <CreateLinkButton key="createLinkButton" />
-            <BasicTextStyleButton basicTextStyle="bold" key="boldStyleButton" />
-            <BasicTextStyleButton basicTextStyle="italic" key="italicStyleButton" />
-            <BasicTextStyleButton basicTextStyle="underline" key="underlineStyleButton" />
-            <BasicTextStyleButton basicTextStyle="strike" key="strikeStyleButton" />
-            <BasicTextStyleButton basicTextStyle="code" key="codeStyleButton" />
-            <ColorStyleButton key="colorStyleButton" />
-            {onComment ? <CommentButton onClick={commentOnSelection} /> : null}
-          </FormattingToolbar>
-          )
-        }
       />
       ) : null}
     </BlockNoteView>

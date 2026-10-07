@@ -198,6 +198,7 @@ export default function DocumentEditor({
     };
     onBodyPort({
       getDataStream: () => liveDocument().getBody().dataStream,
+      getSnapshot: () => liveDocument().getSnapshot(),
       deleteRange: (start, end) =>
         liveDocument().deleteRange({ startOffset: start, endOffset: end }),
       insertText: (at, text) => liveDocument().insertText(at, text),

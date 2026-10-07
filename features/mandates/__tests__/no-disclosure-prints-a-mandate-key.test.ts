@@ -35,7 +35,8 @@
  */
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
-import { execFileSync } from "node:child_process";
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const { gitFiles } = require("../../../scripts/lib/source-roots.cjs");
 
 const ROOT = join(__dirname, "..", "..", "..");
 
@@ -44,7 +45,8 @@ const ROOT = join(__dirname, "..", "..", "..");
  */
 const KEY_IS_THE_SUBJECT: ReadonlyArray<readonly [string, string]> = [
   [
-    "features/mandates/mandate-words.ts",
+    // The primitive moved into the chat package (P27, 618a850bf1); features/mandates/mandate-words.ts is now its shim.
+    "../aidream/apps/shared/chat/src/ui/mandate-words.ts",
     "THE primitive itself — the one sanctioned last resort when a key has no derivable segment",
   ],
   [
@@ -137,13 +139,12 @@ const KEY_AS_LABEL_FALLBACK =
 const LINE_OPT_OUT = /\/(?:\/|\*)\s*key-is-the-subject:\s*\S/;
 
 function sourceFiles(): string[] {
-  const out = execFileSync(
-    "git",
-    ["ls-files", "features", "../aidream/apps/shared/chat/src", "app", "components", "lib"],
-    { cwd: ROOT, encoding: "utf8", maxBuffer: 64 * 1024 * 1024 },
+  // P27 (618a850bf1): the chat package source lives in the aidream checkout, which a plain
+  // `git ls-files` from this repo cannot list; the repo's one source-roots door can.
+  const out = (
+    gitFiles(ROOT, ["ls-files", "--", "features", "../aidream/apps/shared/chat/src", "app", "components", "lib"]) as string[] | string
   );
-  return out
-    .split("\n")
+  return (Array.isArray(out) ? out : out.split("\n"))
     .filter((p) => /\.tsx?$/.test(p))
     .filter((p) => !/\.(test|spec)\.tsx?$/.test(p))
     .filter((p) => !p.includes("/__tests__/"))

@@ -55,7 +55,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { CopyButtons } from "@/components/agent-copy/CopyButtons";
+import { RichCopySplit } from "@/components/agent-copy/RichCopySplit";
 import { AGENT_ICON } from "@/components/icons/domain-icons";
 import {
   asDeckView,
@@ -1309,7 +1309,7 @@ export function SetDetailView({
                   </DropdownMenu>
                 )}
                 {!deckEmpty && (
-                  <CopyButtons
+                  <RichCopySplit
                     size="sm"
                     triggerVariant="transparent"
                     label={`Deck: ${data.set.name}`}

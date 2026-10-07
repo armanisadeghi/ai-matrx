@@ -50,7 +50,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { CopyButtons } from "@/components/agent-copy/CopyButtons";
+import { RichCopySplit } from "@/components/agent-copy/RichCopySplit";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { toast } from "@/lib/toast";
 import { cn } from "@/lib/utils";
@@ -784,7 +784,7 @@ export function TemplateViewPage({ template, canEdit, create = false }: Template
                     {metaLine}
                   </div>
                   {viewFields.length > 0 && <ShowToggle value={show} onChange={setShow} />}
-                  <CopyButtons
+                  <RichCopySplit
                     size="sm"
                     label={`Message template ${displayLabel}`}
                     human={copyText}

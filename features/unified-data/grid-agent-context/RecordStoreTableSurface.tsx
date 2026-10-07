@@ -6,7 +6,9 @@
  * The merged grid on /data tells the page where the person is (`onGridContext`); this mounts
  * the `matrx-user/data-tables` surface runtime over the table page, so an agent in the side chat
  * sees the table, its columns, the cell / block / ticked rows and the rows on screen, and may write
- * ONE confirmed cell — through `@ai-matrx/records` (`custom.record_update`), never the older doors.
+ * ONE confirmed cell, or the table's description — through `@ai-matrx/records` (`custom.record_update`
+ * on the row, or on the table's own record through records-ui's `saveTableDescription`), never the
+ * older doors.
  *
  * `useGridContextChannel` is created by the page (the host port is bound OUTSIDE `RecordsMount`);
  * `RecordStoreTableSurface` sits INSIDE it, so its write reaches the store as this person.
@@ -15,6 +17,7 @@ import { useRef, useState, type ReactNode } from "react";
 import { VersionLedger, updateRecordAt, versionRefusalLabel } from "@/lib/records/record-versions";
 import type { GridContextSnapshot } from "./recordStoreTableScope";
 import { useFields, useRecordsClient, useTable } from "@ai-matrx/records/react";
+import { saveTableDescription } from "@ai-matrx/records-ui";
 
 import { SurfaceRuntimeProvider, type SurfaceWriteHandlers } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import { createDataTablesScope } from "@/features/surfaces/manifests/data-tables.manifest";
@@ -54,15 +57,42 @@ function describe(value: unknown): string {
  * The write targets, read through the channel at Apply time (never a render closure: the confirm
  * dialog resolves the handler before the person answers, and the page may have moved since).
  */
+type Written = { ok: true } | { ok: false; says: string };
+
+/** The longest description a table keeps (the older Sheet's limit, said in the manifest). */
+export const MAX_TABLE_DESCRIPTION_CHARS = 2000;
+
 export function recordStoreWriteHandlers(
   latest: { current: GridContextSnapshot | null },
-  write: (recordId: string, key: string, value: unknown) => Promise<{ ok: true } | { ok: false; says: string }>,
+  write: (recordId: string, key: string, value: unknown) => Promise<Written>,
+  describeTable?: (text: string) => Promise<Written>,
 ): SurfaceWriteHandlers {
   return {
-    table_description: async () => {
-      throw new Error(
-        "table_description cannot be written on this table: a record-store table's description is changed by the person in Table settings. Tell the user the sentence you would set.",
-      );
+    table_description: async (value: unknown) => {
+      const live = latest.current;
+      if (!describeTable) {
+        throw new Error("Cannot apply table_description here: this view is not over one table's page, so there is no table to describe.");
+      }
+      if (!gridHasLoaded(live)) {
+        throw new Error("Cannot apply table_description: the table has not finished loading. Wait for the grid to render and try again.");
+      }
+      if (!live.canWrite) {
+        throw new Error("Cannot apply table_description: this person may not change this table (is_read_only is true), so no write is permitted.");
+      }
+      if (typeof value !== "string") {
+        throw new Error(
+          `table_description takes PLAIN TEXT, not JSON and not JSON-encoded — received ${describe(value)}. Send the sentence itself, with no surrounding quotes, no wrapper object and no escaped newlines.`,
+        );
+      }
+      const text = value.trim();
+      if (!text) {
+        throw new Error("table_description cannot be empty or whitespace-only. Clearing a table's description is the user's call, not an agent's — send the description you want it to have.");
+      }
+      if (text.length > MAX_TABLE_DESCRIPTION_CHARS) {
+        throw new Error(`table_description is ${text.length} characters; the limit is ${MAX_TABLE_DESCRIPTION_CHARS}. This field is a short summary of what the table holds — 1-3 sentences.`);
+      }
+      const written = await describeTable(text);
+      if (!written.ok) throw new Error(`The store refused the table description: ${written.says}`);
     },
     cell_value: async (value: unknown) => {
       const live = latest.current;
@@ -153,7 +183,8 @@ export function RecordStoreTableSurface({
         not_loaded_yet: true,
       };
     }
-    return buildDataTablesScope(scopeInputFromGrid(snapshot));
+    const description = typeof known.data?.metadata?.["description"] === "string" ? (known.data.metadata["description"] as string).trim() : "";
+    return buildDataTablesScope({ ...scopeInputFromGrid(snapshot), ...(description ? { tableDescription: description } : {}) });
   };
   const handlers = recordStoreWriteHandlers(latest, async (recordId, key, value) => {
     const answer = await updateRecordAt(client, {
@@ -167,7 +198,7 @@ export function RecordStoreTableSurface({
     }
     const label = versionRefusalLabel(answer.error);
     return { ok: false, says: label ? `${label}: ${answer.error.message}` : answer.error.message };
-  });
+  }, tableId ? (text) => saveTableDescription(client, tableId, text) : undefined);
   const snapshot = latest.current;
   if (!enabled) return <>{children}</>;
   return (
