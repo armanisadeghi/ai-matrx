@@ -583,6 +583,8 @@ export function PdfStudioShell({ initialDocumentId }: PdfStudioShellProps) {
       Boolean(activeTabForDoc?.error),
     pagesSettled: !pagesLoading && !pagesError,
     pagesHaveCleanText: pages.some((p) => p.cleanedText.trim().length > 0),
+    pageCount: pages.length,
+    pagesHaveSectionKind: pages.some((p) => Boolean(p.sectionKind)),
     run: () => void handleRunAiClean(),
   });
 

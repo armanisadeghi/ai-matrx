@@ -1,11 +1,12 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { SlidersHorizontal, AlertTriangle } from "lucide-react";
+import { SlidersHorizontal, AlertTriangle, X } from "lucide-react";
 import { useIsMobile } from "@ai-matrx/kit/media-query";
 import { Button } from "@ai-matrx/design-system";
 import {
   Dialog,
+  DialogClose,
   DialogContent,
   DialogDescription,
   DialogHeader,
@@ -178,8 +179,11 @@ export function AgentSettingsModal({
           else handleOpen();
         }}
       >
-        <DialogContent className="max-w-xl p-0 overflow-hidden flex flex-col h-[65dvh] max-h-[65dvh]">
-          <DialogHeader className="px-4 py-2.5 border-b border-border flex-shrink-0">
+        <DialogContent
+          showCloseButton={false}
+          className="max-w-xl p-0 overflow-hidden flex flex-col h-[65dvh] max-h-[65dvh]"
+        >
+          <DialogHeader className="flex-row items-center justify-between space-y-0 pl-4 pr-1 border-b border-border flex-shrink-0">
             <DialogTitle className="type-secondary font-semibold uppercase tracking-wide">
               Model Settings
             </DialogTitle>
@@ -187,6 +191,16 @@ export function AgentSettingsModal({
               Configure model settings, view raw JSON, and inspect model
               parameters.
             </DialogDescription>
+            <DialogClose asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-11 w-11 shrink-0"
+                aria-label="Close model settings"
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            </DialogClose>
           </DialogHeader>
           <div className="flex-1 min-h-0 flex flex-col px-3 py-1 overflow-hidden">
             <AgentSettingsCore
