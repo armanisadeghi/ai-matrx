@@ -19,8 +19,22 @@
  *  doorbypass  applySurfaceWrite / loadSurfaceWriteDoor / surfaceWriteDeclarations referenced as
  *              code outside surfaces/runtime, components/agent-copy and the agent write thunk
  *              -> dispatch through the surface write door (a declared write target + handler).
- *  registries  a module-level `new Map` of actions/handlers in a file named *registry*
+ *  registries  a module-level `new Map` of actions/handlers in a file named *registry*, OR (any
+ *              file name) a module-level `new Map`/`new Set` beside an exported `register*` function
  *              -> register with Alchemy's registry instead of a private one.
+ *  handcsv     a hand-rolled CSV/TSV writer: quote-doubling (`.replace(/"/g, '""')`) or a
+ *              `.join(",")` / `.join("\t")` over rows within 15 lines of a csv/tsv mime or filename
+ *              -> toDelimitedText (/operate/read) or buildFile (/operate): ONE dialect, spreadsheet-safe.
+ *  windowopen  `window.open(` of a blob / object URL (a file handed to a popup, which blockers kill)
+ *              -> downloadFile / downloadUrl (kit), or the Alchemy menu's open/preview action.
+ *  anchorclick `a.href = …; a.click()` with no `download` attribute (navigates instead of saving)
+ *              -> downloadUrl (kit); a real link is an <a href> element, not a script click.
+ *
+ * Named exemptions (ALLOW) carry their reason beside them: components/dialogs/clipboard-fallback/
+ * is the dialog that appears when the browser REFUSES the kit clipboard door (permission denied /
+ * insecure context) - it holds the person's text in a selectable field to copy by hand, and must
+ * itself touch the raw clipboard API / execCommand once to try, so it cannot route through the door
+ * that sends people to it.
  *
  * Scanned: tracked .ts/.tsx/.js/.jsx/.mjs under app features components lib hooks providers utils
  * packages (tests, .d.ts, generated, node_modules excluded). Comments are ignored.
@@ -34,8 +48,8 @@ import { REPO_ROOT, repoFiles } from "./lib/repo-files";
 const BASELINE = "scripts/alchemy-doors-baseline.json";
 const SCAN_DIRS = ["app", "features", "components", "lib", "hooks", "providers", "utils", "packages"];
 
-type Rule = "clipboard" | "downloads" | "formatlibs" | "doorbypass" | "registries";
-const RULES: Rule[] = ["clipboard", "downloads", "formatlibs", "doorbypass", "registries"];
+type Rule = "clipboard" | "downloads" | "formatlibs" | "doorbypass" | "registries" | "handcsv" | "windowopen" | "anchorclick";
+const RULES: Rule[] = ["clipboard", "downloads", "formatlibs", "doorbypass", "registries", "handcsv", "windowopen", "anchorclick"];
 
 const ADVICE: Record<Rule, string> = {
   clipboard: "copy an id or plain string through @ai-matrx/kit/clipboard (useClipboard), and content through the Alchemy copy menu (CopyButtons)",
@@ -43,10 +57,15 @@ const ADVICE: Record<Rule, string> = {
   formatlibs: "export with buildFile (@ai-matrx/alchemy/operate), read with readFile/readWorkbook/parseDelimited (@ai-matrx/alchemy/operate/read), capture with @ai-matrx/alchemy/operate/capture — never a direct library import",
   doorbypass: "write through the surface write door (declared write target + handler), never applySurfaceWrite directly",
   registries: "register the action with Alchemy's registry; no private action/handler map",
+  handcsv: "write CSV/TSV with toDelimitedText (@ai-matrx/alchemy/operate/read) or buildFile (@ai-matrx/alchemy/operate) — never a hand-rolled quote/join writer",
+  windowopen: "hand a file to downloadFile / downloadUrl (@ai-matrx/kit/download); never window.open of a blob or object URL",
+  anchorclick: "save through downloadUrl (@ai-matrx/kit/download); a script-clicked anchor with no download attribute navigates instead of saving",
 };
 
 /** Canonical engines + named exceptions, by repo-relative prefix or exact path, per rule. */
 const ALLOW: Record<Rule, string[]> = {
+  // components/dialogs/clipboard-fallback/: the manual-copy dialog shown when the browser refuses the
+  // kit clipboard door; it must try the raw API itself and cannot route through the door that sent it there.
   clipboard: ["packages/chat/src/agent-copy/", "components/agent-copy/", "components/dialogs/clipboard-fallback/"],
   downloads: ["packages/chat/src/agent-copy/", "components/agent-copy/"],
   formatlibs: ["packages/chat/src/agent-copy/", "components/agent-copy/", "components/rich-editor/core/gfm-lexer.ts"],
@@ -64,13 +83,35 @@ const ALLOW: Record<Rule, string[]> = {
     // A naming map of surface-config namespaces: validate / merge / empty for
     // `ui.ui_surface_config` JSONB rows. No runnable entries, no actions, no menu items.
     "packages/chat/src/surfaces/config/namespace-registry.ts",
+    // The DECLARATION store behind a provider that IS registered into Alchemy's one registry
+    // (`richDocumentActionProvider`, T0, ensureRichDocumentProvider): handler modules add their
+    // RichDocumentAction at load (hoisted store, import-cycle safe) and the provider converts each
+    // to an Alchemy Action. Nothing resolves or runs from this Map except through that provider.
+    "features/rich-document/actions/provider.ts",
+    // Binds a record's menu rows to the DOM root that shows it (`data-record-menu`), read at open by
+    // ContextMenuV3 and joined into that menu's `extraSections`, which the shell hands to Alchemy.
+    // A lookup of owner getters by element key; the rows' actions reach the registry the same way
+    // every other extraSections row does. Not an action store.
+    "features/context-menu-v3/record-menu-registry.ts",
   ],
+  handcsv: [],
+  windowopen: [],
+  // The sandbox escape probe clicks a `javascript:` anchor on purpose, to PROVE the sandbox refuses it —
+  // it saves nothing and navigates nowhere.
+  anchorclick: ["features/content-ir/sandbox/browser/probes.ts"],
 };
 
 const LIBS = "xlsx|exceljs|jspdf|jspdf-autotable|html2canvas|marked|dompurify|isomorphic-dompurify|papaparse";
 const LIB_IMPORT = new RegExp(
   `(?:from\\s*|import\\s*\\(\\s*|require\\s*\\(\\s*|import\\s+)["'](?:${LIBS})(?:/[^"']*)?["']`,
 );
+
+const CSV_QUOTE_DOUBLING = /\.replace(?:All)?\(\s*(?:\/"\/g|["']"["'])\s*,\s*(?:["']""["']|`""`)\s*\)/;
+const CSV_JOIN = /\.join\(\s*["'`](?:,|\\t)["'`]\s*\)/;
+const CSV_NAME = /text\/csv|text\/tab-separated|["'`.][\w-]*\.(?:csv|tsv)\b|\b(?:csv|tsv)\b/i;
+/** A module Map whose declared value can RUN (a handler, action, command, provider, adapter, resolver, door, callback). */
+const RUNNABLE_VALUE = /action|handler|command|menu|provider|adapter|resolver|generator|door|callback|=>|Fn\b/i;
+const OBJECT_URL = /URL\.createObjectURL\s*\(|["'`]blob:/;
 
 const DOWNLOAD_MARK = [/\.download\s*=/, /setAttribute\(\s*["']download["']/, /<a\b[^>]*\sdownload\b/, /\bsaveAs\s*\(/];
 
@@ -95,6 +136,9 @@ export function scanSource(file: string, src: string): Hit[] {
   };
   const hasDownload = lines.some((l) => DOWNLOAD_MARK.some((r) => r.test(l)));
   const isRegistry = /registry/i.test(base);
+  const near = (i: number, back: number, fwd: number, test: (l: string) => boolean) =>
+    lines.slice(Math.max(0, i - back), i + fwd + 1).some(test);
+  const hasRegisterFn = lines.some((l) => /^export\s+(?:async\s+)?(?:function\s+register\w*\s*[(<]|const\s+register\w*\s*[:=])/.test(l));
   lines.forEach((l, i) => {
     if (/navigator\.clipboard\b|execCommand\(\s*["'](copy|cut)["']|new\s+ClipboardItem\b/.test(l)) add("clipboard", i);
     if (DOWNLOAD_MARK.some((r) => r.test(l)) || (hasDownload && /URL\.createObjectURL\s*\(/.test(l))) add("downloads", i);
@@ -106,12 +150,17 @@ export function scanSource(file: string, src: string): Hit[] {
       /action|handler/i.test(l)
     )
       add("registries", i);
+    else if (hasRegisterFn && /^(export\s+)?(const|let)\s+\w+\s*(:[^=]*)?=\s*new\s+Map\b/.test(l) && RUNNABLE_VALUE.test(l)) add("registries", i);
+    if (CSV_QUOTE_DOUBLING.test(l) || (CSV_JOIN.test(l) && near(i, 15, 15, (x) => CSV_NAME.test(x)))) add("handcsv", i);
+    if (/\bwindow\.open\s*\(/.test(l) && near(i, 6, 0, (x) => OBJECT_URL.test(x))) add("windowopen", i);
+    if (/\.click\s*\(\s*\)/.test(l) && near(i, 6, 0, (x) => /\.href\s*=(?!=)/.test(x)) && !near(i, 8, 3, (x) => DOWNLOAD_MARK.some((r) => r.test(x))))
+      add("anchorclick", i);
   });
   return hits;
 }
 
 type Counts = Record<Rule, Record<string, number>>;
-const emptyCounts = (): Counts => ({ clipboard: {}, downloads: {}, formatlibs: {}, doorbypass: {}, registries: {} });
+const emptyCounts = (): Counts => ({ clipboard: {}, downloads: {}, formatlibs: {}, doorbypass: {}, registries: {}, handcsv: {}, windowopen: {}, anchorclick: {} });
 
 export function tally(hits: Hit[]): Counts {
   const c = emptyCounts();
@@ -162,18 +211,36 @@ function selfTest(): number {
     formatlibs: ["features/x/Foo.ts", "import * as XLSX from 'xlsx';\n"],
     doorbypass: ["features/x/Foo.ts", "import { applySurfaceWrite } from 'w';\nawait applySurfaceWrite(t, v);\n"],
     registries: ["features/x/action-registry.ts", "const handlers = new Map<string, Handler>();\n"],
+    handcsv: ["features/x/Foo.ts", "const csv = rows.map((r) => r.map((c) => `\"${c.replace(/\"/g, '\"\"')}\"`).join(\",\"));\n"],
+    windowopen: ["features/x/Foo.ts", "const u = URL.createObjectURL(blob);\nwindow.open(u, '_blank');\n"],
+    anchorclick: ["features/x/Foo.ts", "const a = document.createElement('a');\na.href = url;\na.click();\n"],
   };
+  // Extra plants for the second detection paths and for the shapes each rule must NOT flag.
+  const extra: { rule: Rule; file: string; src: string; red: boolean; what: string }[] = [
+    { rule: "registries", file: "features/x/Foo.ts", src: "const store = new Map<string, () => void>();\nexport function registerThing(k: string, f: () => void) { store.set(k, f); }\n", red: true, what: "module Map beside exported register*" },
+    { rule: "registries", file: "features/x/Foo.ts", src: "const store = new Map<string, number>();\nexport function lookup(k: string) { return store.get(k); }\n", red: false, what: "module Map with no register*" },
+    { rule: "handcsv", file: "features/x/Foo.ts", src: "const mime = 'text/csv';\nconst body = rows.map((r) => r.join(','));\n", red: true, what: "join(',') beside a csv mime" },
+    { rule: "handcsv", file: "features/x/Foo.ts", src: "const label = parts.join(',');\n", red: false, what: "join(',') with no csv nearby" },
+    { rule: "windowopen", file: "features/x/Foo.ts", src: "window.open('https://example.com', '_blank');\n", red: false, what: "window.open of a plain URL" },
+    { rule: "anchorclick", file: "features/x/Foo.ts", src: "const a = document.createElement('a');\na.href = url;\na.download = 'f.csv';\na.click();\n", red: false, what: "anchor click WITH a download attribute (the downloads rule owns it)" },
+  ];
   let bad = 0;
   for (const r of RULES) {
     const [file, src] = plant[r];
     const hits = scanSource(file, src).filter((h) => h.rule === r);
     const red = compare(tally(hits), emptyCounts()).length > 0;
     const green = compare(tally(hits), tally(hits)).length === 0;
-    const allowedFile = ALLOW[r][0].endsWith("/") ? ALLOW[r][0] + "x.ts" : ALLOW[r][0];
-    const allowedHits = scanSource(allowedFile, src).filter((h) => h.rule === r);
+    const allowedFile = ALLOW[r].length ? (ALLOW[r][0].endsWith("/") ? ALLOW[r][0] + "x.ts" : ALLOW[r][0]) : null;
+    const allowedHits = allowedFile ? scanSource(allowedFile, src).filter((h) => h.rule === r) : [];
     const commentOnly = scanSource(file, `// ${src.split("\n").join("\n// ")}`).filter((h) => h.rule === r);
     const ok = hits.length > 0 && red && green && allowedHits.length === 0 && commentOnly.length === 0;
-    console.log(`[self-test] ${r}: planted->${red ? "RED" : "not red"}, baselined->${green ? "GREEN" : "not green"}, allowlist ${allowedHits.length === 0 ? "exempt" : "NOT exempt"}, comment ${commentOnly.length === 0 ? "ignored" : "COUNTED"} ${ok ? "ok" : "FAIL"}`);
+    console.log(`[self-test] ${r}: planted->${red ? "RED" : "not red"}, baselined->${green ? "GREEN" : "not green"}, allowlist ${allowedFile === null ? "none" : allowedHits.length === 0 ? "exempt" : "NOT exempt"}, comment ${commentOnly.length === 0 ? "ignored" : "COUNTED"} ${ok ? "ok" : "FAIL"}`);
+    if (!ok) bad++;
+  }
+  for (const e of extra) {
+    const hit = scanSource(e.file, e.src).some((h) => h.rule === e.rule);
+    const ok = hit === e.red;
+    console.log(`[self-test] ${e.rule}: ${e.what} -> ${hit ? "RED" : "green"} ${ok ? "ok" : "FAIL"}`);
     if (!ok) bad++;
   }
   return bad ? 1 : 0;

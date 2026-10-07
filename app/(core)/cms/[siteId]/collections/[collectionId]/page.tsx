@@ -30,6 +30,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { formatDistanceToNow } from "date-fns";
+import { tableToCsv } from "@/components/mardown-display/tables/table-csv";
 import { CmsCollectionService } from "@/features/cms/services/cmsService";
 import type {
   CollectionExportRow,
@@ -122,18 +123,6 @@ function cellText(value: unknown): string {
   return JSON.stringify(value) ?? "";
 }
 
-/**
- * Excel / Sheets treat a leading =, +, -, @, tab or CR as a formula. This data
- * is visitor-submitted, so `=cmd|'/c calc'!A1` would otherwise become live code
- * in the admin's spreadsheet. Prefixing an apostrophe forces text.
- */
-const CSV_INJECTION_PREFIX_RE = /^[=+\-@\t\r]/;
-
-function csvEscape(value: string): string {
-  const safe = CSV_INJECTION_PREFIX_RE.test(value) ? `'${value}` : value;
-  return `"${safe.replace(/"/g, '""')}"`;
-}
-
 function buildCsv(
   items: CollectionExportRow[],
   schemaKeys: string[],
@@ -153,14 +142,14 @@ function buildCsv(
     "seen_at",
     "source_url",
   ] as const;
-  const header = [...dataKeys, ...metaKeys].map(csvEscape).join(",");
-  const rows = items.map((item) =>
-    [
-      ...dataKeys.map((k) => csvEscape(cellText(readField(item.data, k)))),
-      ...metaKeys.map((k) => csvEscape(cellText(item[k]))),
-    ].join(","),
+  // Visitor-submitted data: Alchemy's writer prefixes `'` on text a spreadsheet would run as a formula.
+  return tableToCsv(
+    [...dataKeys, ...metaKeys],
+    items.map((item) => [
+      ...dataKeys.map((k) => cellText(readField(item.data, k))),
+      ...metaKeys.map((k) => cellText(item[k])),
+    ]),
   );
-  return [header, ...rows].join("\n");
 }
 
 export default function CollectionItemsPage() {

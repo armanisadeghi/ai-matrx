@@ -80,6 +80,7 @@ import {
   type ParsedTable,
 } from "@ai-matrx/rich-content/display/blocks/table/parseMarkdownTable";
 import { downloadFile } from "@ai-matrx/kit/download";
+import { tableToCsv } from "@/components/mardown-display/tables/table-csv";
 
 // ============================================================================
 // TYPES
@@ -410,9 +411,9 @@ const StreamingTableRendererCore: React.FC<
 
   const copyJsonToClipboard = async () => {
     try {
-      await copyText(
+      if (!(await copyText(
         JSON.stringify(tableData.normalizedData, null, 2),
-      );
+      ))) return;
       toast.success("JSON copied to clipboard");
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Failed to copy JSON");
@@ -435,17 +436,7 @@ const StreamingTableRendererCore: React.FC<
 
   const downloadCSV = () => {
     try {
-      const csvContent = [
-        headers.map((h) => h.replace(/"/g, '""')).join(","),
-        ...rows.map((row) =>
-          row
-            .map((cell) => {
-              const escaped = cell.replace(/"/g, '""');
-              return cell.includes(",") ? `"${escaped}"` : escaped;
-            })
-            .join(","),
-        ),
-      ].join("\n");
+      const csvContent = tableToCsv(headers, rows);
       const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
       downloadFile("table_data.csv", blob, blob.type);
       toast.success("Table exported to CSV", {

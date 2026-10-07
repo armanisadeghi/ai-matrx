@@ -3,5 +3,36 @@
   "downloads": {},
   "formatlibs": {},
   "doorbypass": {},
-  "registries": {}
+  "registries": {
+    "components/mermaid/model/adapter.ts": 1,
+    "features/code/library-sources/registry.ts": 1,
+    "features/education/convert/registry.ts": 1,
+    "features/files/virtual-sources/registry.ts": 1,
+    "features/mandates/feature-intelligence/page-intelligence-doors.ts": 1,
+    "features/rich-document/annotations/record-annotations-store.ts": 1,
+    "features/rich-document/runtime/providerBridge.ts": 1,
+    "features/window-panels/popout/usePopoutControl.ts": 1,
+    "packages/chat/src/agents/redux/execution-system/client-capabilities/registry.ts": 1,
+    "packages/chat/src/agents/redux/execution-system/thunks/abort-registry.ts": 1,
+    "packages/chat/src/agents/ui-first-tools/redux/ask-resolver-registry.ts": 1,
+    "packages/chat/src/surfaces/runtime/custom-field-targets.ts": 1
+  },
+  "handcsv": {
+    "features/connected-sources/browse/listConfig.tsx": 2,
+    "features/cx-dashboard/utils/export.ts": 2,
+    "features/data-tables/agent-context/buildDataTablesScope.ts": 1,
+    "features/education/onboard/export/deckFormats.ts": 1,
+    "features/flashcards/utils/importExportCsv.ts": 1,
+    "features/hr/people/org-chart/orgChartExport.ts": 2,
+    "features/hr/time/punches/registerCsv.ts": 2,
+    "features/masterwork/sourceTypes.ts": 1,
+    "features/product-capture/components/pipeline/ListingPanel.tsx": 1,
+    "features/window-panels/windows/TableViewerWindow.tsx": 1,
+    "packages/chat/src/agent-copy/export.ts": 2,
+    "utils/ts-function-registry/register-utility-functions.ts": 3
+  },
+  "windowopen": {
+    "features/agent-apps/components/QuickHtmlShareModal.tsx": 1
+  },
+  "anchorclick": {}
 }
