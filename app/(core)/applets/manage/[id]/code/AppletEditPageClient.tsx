@@ -69,6 +69,7 @@ export function AppletEditPageClient({ app }: AppletEditPageClientProps) {
           basePath={`${basePath}/code`}
           mandateAgentId={promptAppDev?.agentId}
           historyToggle={false}
+          activeFileVariable="current_code"
         />
       }
     />

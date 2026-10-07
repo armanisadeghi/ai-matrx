@@ -123,7 +123,6 @@ async function main() {
     }
   }
   if (AGAINST_LIVE) {
-    // @ts-expect-error plain .mjs helper, no declarations
     const { checkRowsAgainstLive, describeFinding } = await import("./against-live.mjs");
     const effective = rows.map((row) => {
       const entry = row.entry ?? "App.tsx";
