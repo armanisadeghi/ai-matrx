@@ -1,25 +1,17 @@
 // lib/redux/thunks/activeOrgBootstrap.ts
 //
-// The single sanctioned UI write path for SWITCHING the active org, plus a
-// back-compat bootstrap wrapper.
+// The single sanctioned UI write path for SWITCHING the active organization,
+// plus the imperative re-runs of the load ladder (retry after a failed read,
+// re-check after a not-a-member refusal).
 //
-// ⚠️ Active-org HYDRATION is no longer owned here. It is now a first-class
-// citizen of the unified sync engine via `appContextPolicy`
-// (lib/redux/slices/appContextSlice.ts, registered in lib/sync/registry.ts):
-// the engine rehydrates the org from IDB→localStorage before first paint and
-// reconciles via `remote.fetch` → `resolveActiveOrgContext`. The old
-// `ActiveOrgBootstrap` island that called `bootstrapActiveOrganization()` on
-// every launch (and paid ~4 round-trips each time) has been RETIRED.
+// The load itself is owned by `appContextPolicy` (lib/redux/slices/
+// appContextSlice.ts): every load runs `remote.fetch` → `resolveActiveOrgContext`.
+// The thunks below run that SAME resolver, never a second answer.
 //
-// `bootstrapActiveOrganization()` is kept as a thin, idempotent back-compat
-// wrapper over the same shared resolver — for any legacy caller that still
-// wants to force a resolve imperatively. New code should NOT call it; the
-// policy already keeps the org present and fresh.
-//
-// Why the eslint-disable below: setOrganization is an
-// appContextSlice WRITE action, gated to Surface-A active-context components
-// (eslint.config.mjs `appContextWriteSyntaxRestrictions`). This module is a
-// legitimate Surface-A writer — switching the global active org IS its job.
+// Why the eslint-disable below: setOrganization is an appContextSlice WRITE
+// action, gated to Surface-A active-context components (eslint.config.mjs
+// `appContextWriteSyntaxRestrictions`). Switching the active org IS this
+// module's job.
 
 // eslint-disable-next-line no-restricted-syntax -- Surface A: canonical active-org switcher + back-compat bootstrap
 import {
@@ -31,6 +23,9 @@ import { resolveActiveOrgContext } from "@/lib/organizations/resolveActiveOrgCon
 import { getUserId } from "@/utils/auth/getUserId";
 import type { AppDispatch, RootState } from "@/lib/redux/store";
 import { markOrgBootstrapResolved } from "@/lib/organizations/orgBootstrapGate";
+import { writeLastActiveOrganization } from "@/lib/organizations/accountOrganizationChoices";
+import { announceActiveOrganizationReplaced } from "@/lib/organizations/announceActiveOrganizationReplaced";
+import { toast } from "@/lib/toast";
 
 /**
  * Back-compat imperative bootstrap. Delegates to the shared resolver and
@@ -53,7 +48,12 @@ export const bootstrapActiveOrganization =
       // forever (2026-09-17).
       const userId = explicitUserId ?? getUserId();
       if (!userId) return;
-      const resolved = await resolveActiveOrgContext(userId);
+      const tab = getState().appContext;
+      const held =
+        tab.orgBootstrapResolved && tab.organization_id ? tab.organization_id : null;
+      const resolved = await resolveActiveOrgContext(userId, {
+        heldOrganizationId: held,
+      });
       if (!resolved) {
         dispatch(setOrgBootstrapFailure(null));
         return;
@@ -68,14 +68,17 @@ export const bootstrapActiveOrganization =
         dispatch(setOrgBootstrapFailure(null));
       }
 
-      // Respect an org already actively selected (deep-link / restored context).
-      if (!getState().appContext.organization_id && resolved.organization_id) {
+      // The account's answer wins over a painted cache; a tab that holds an
+      // organization keeps it unless it is no longer theirs — then the
+      // switch is announced.
+      if (resolved.organization_id && resolved.organization_id !== held) {
         dispatch(
           setOrganization({
             id: resolved.organization_id,
             name: resolved.organization_name,
           }),
         );
+        if (held) announceActiveOrganizationReplaced(tab.organization_name, resolved.organization_name);
       }
     } catch (err) {
       console.error("[activeOrgBootstrap] failed to hydrate active org", err);
@@ -97,14 +100,33 @@ export const bootstrapActiveOrganization =
   };
 
 /**
- * Switch the active organization from a UI surface. Just dispatches — the
- * active org is the global working context; durable cross-session restore is
- * the job of the default-org preference, not this switcher.
+ * Switch the active organization from a UI surface — the sidebar switcher and
+ * every picker. It moves THIS tab only (nothing is broadcast) and saves the
+ * choice as the account's last active organization, so the next load — on any
+ * device — opens to it (`users.set_last_active_organization`).
  */
 export const chooseActiveOrganization =
   (org: { id: string | null; name?: string | null }) =>
   (dispatch: AppDispatch) => {
+    if (!org.id) return; // the active organization is never none
     dispatch(setOrganization({ id: org.id, name: org.name ?? null }));
+    // The person's choice answers the question for this tab.
+    markOrgBootstrapResolved();
+    void writeLastActiveOrganization(org.id).catch((err: unknown) => {
+      console.error("[activeOrgBootstrap] saving the last active organization failed", err);
+      toast.error("Couldn't save this organization for your next visit");
+    });
+  };
+
+/**
+ * A request was refused because the person is not a member of the active
+ * organization (removed while it was active). Re-run the ladder: a held
+ * organization that is no longer a membership is replaced, and the switch is
+ * announced. A refusal while the membership still reads true changes nothing.
+ */
+export const recheckActiveOrganizationAfterRefusal =
+  () => async (dispatch: AppDispatch) => {
+    await dispatch(bootstrapActiveOrganization());
   };
 
 /**

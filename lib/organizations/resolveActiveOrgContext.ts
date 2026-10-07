@@ -1,57 +1,35 @@
 // lib/organizations/resolveActiveOrgContext.ts
 //
-// The ONE pure resolver for the user's organization context — the EXPLICIT
-// active org — with no Redux dispatch and no side effects. It is the body that the
-// `appContextPolicy` sync `remote.fetch` runs on cold-boot + stale-refresh, and
-// that the back-compat `bootstrapActiveOrganization` thunk delegates to.
+// THE LOAD LADDER — the ONE pure resolver for the active organization, with no
+// Redux dispatch and no side effects. `appContextPolicy.remote.fetch` runs it on
+// every load (and on refresh, to confirm the held organization is still theirs).
 //
-// 🚨 BOOT NO LONGER PICKS AN ORGANIZATION FOR ANYONE (Arman, 2026-09-19).
-// The ruling is that a "default organization" is at most a per-client DISPLAY
-// preference — the org picker may show it and nothing else may read it — and
-// that nothing may PICK an organization for the user from a cookie, a saved
-// preference, or "their first/oldest org". A boot that always ends with a
-// selection is a boot that has quietly decided where your work goes, and the
-// platform stops having organizations at all:
+// 🚨 ONE ACTIVE ORGANIZATION, SET ONCE WHEN THE APP LOADS, NEVER NONE (Arman,
+// 2026-10-07; organizations VISION §10, STATE rules 11–14):
 //
-//   "one missed org check that should have just failed turns into 50 in a
-//    month and 5,000 in a year, and suddenly we don't have orgs any more, we
-//    have a user and a default org, which means we just have user now."
+//   "Active Org is set ONCE at the top of the app. Active Org can never be none.
+//    Active org should set to your last active org or a db fallback FOR THE UI
+//    ONLY!! The UI (Sidebar) allows for you to see and change your active org.
+//    from then on, all requests use the ONE SINGLE active org and that's it."
 //
-// What a null selection costs is now paid for properly, at the ONE funnel:
-// `ensureOrgId` HOLDS the action, the picker opens, the person SETS an
-// organization, and the action resumes with it. Refusing is no longer a dead
-// end, so boot no longer has to guess to avoid one.
+// THE RUNGS, each kept only if it is a CURRENT membership:
+//   0. this tab's HELD organization (refreshes only) — a tab keeps the
+//      organization it loaded with until the person switches in that tab;
+//   1. the LINK's own organization (`?org=`) — `lib/organizations/linkOrganization.ts`;
+//   2. the account's LAST ACTIVE organization (`last_active_organization_id`);
+//   3. the account's START-UP organization setting (`startup_organization_id`);
+//   4. their FIRST organization — the oldest active membership.
+// Zero memberships → null (the shell shows "create an organization"). A failed
+// read THROWS, and the caller shows the honest retry state — never a guess.
 //
-// THE RUNGS THAT REMAIN, and why each is not a substitution:
-//  -1. THE LINK'S OWN ORGANIZATION — `?org=<uuid>` on the URL that brought the
-//      person here (`lib/organizations/linkOrganization.ts`), added 2026-09-21
-//      because a notification deep link landed people on "Select an
-//      organization first" instead of the thing the link named. It sits ABOVE
-//      the remembered choice because it is the NEWER and more specific fact:
-//      the cookie says "where you were last", the link says "where THIS thing
-//      lives". It is NOT a default and it is not a guess — it is stated with
-//      the navigation, it is honoured only against the live membership list,
-//      it substitutes NOTHING when absent, malformed, or not theirs, and a
-//      real move is always announced. All four properties are argued at length
-//      in that module's header and pinned by its tests.
-//   0. this device's REMEMBERED CHOICE — the shared apex cookie
-//      (`lib/organizations/activeOrgCookie.ts`), identity-keyed, written only
-//      when the person themselves selected an organization on this browser
-//      (`activeOrgCookieMiddleware` mirrors real changes of
-//      `appContext.organization_id`). It restores what THEY set, on the
-//      machine they set it on, and it is how a choice made in Workflow Studio
-//      is honoured here. It is client-only by design: nothing server-side
-//      reads `matrx-active-org`, and nothing may start to — a cookie the
-//      server trusts is a default wearing a disguise. A stale one (no longer
-//      a membership) is dropped, never used.
-//   c. exactly ONE membership → that org. Nothing to choose, so nothing is
-//      being chosen FOR them.
-//   d. otherwise null ON PURPOSE. The UI says so with a remedy and a picker
-//      (`OrganizationRequiredNotice`), and the first action that needs an
-//      organization asks for one.
+// This module is the ONLY reader of the two account columns
+// (`accountOrganizationChoices.ts`); nothing else may read them to decide where
+// anything acts.
 
 import { getUserOrganizations } from "@/features/organizations/service";
-import { activeOrgCookie } from "@/lib/organizations/activeOrgCookie";
+import { membershipsService } from "@/features/organizations/service/membershipsService";
+import { isScopesRpcErr } from "@/features/scopes/types";
+import { readAccountOrganizationChoices } from "@/lib/organizations/accountOrganizationChoices";
 import {
   classifyLinkOrganizationValue,
   decideLinkOrganization,
@@ -104,6 +82,12 @@ export interface ResolveActiveOrgContextOptions {
   switchWhenALinkAsks?: boolean;
   /** The account they are signed in as, for the refusal sentence. */
   signedInAs?: string | null;
+  /**
+   * The organization THIS TAB already resolved (a refresh, never a load). It
+   * stays while it is still a membership; the account's last active — which
+   * another tab may have moved — never pulls an open tab elsewhere.
+   */
+  heldOrganizationId?: string | null;
 }
 
 export async function resolveActiveOrgContext(
@@ -118,29 +102,20 @@ export async function resolveActiveOrgContext(
   if (!orgs || orgs.length === 0) return null;
 
   // THE LADDER BELOW THE LINK, computed first. The link's decision needs to
-  // know where the person WOULD be working, because the difference between "we
-  // moved you" (announce it) and "you were already there" (say nothing) is
-  // exactly that comparison. So rungs 0 and c run first and the link rung is
-  // applied on top; nothing about their behaviour changes when no link speaks.
-  let laddered: { id: string; name: string } | null = null;
+  // know where the person WOULD be working, because "we moved you" (announce
+  // it) and "you were already there" (say nothing) is exactly that comparison.
+  const member = (id: string | null | undefined) =>
+    id ? (orgs.find((o) => o.id === id) ?? null) : null;
+  const pick = (o: { id: string; name: string } | null) =>
+    o ? { id: o.id, name: o.name } : null;
 
-  // 0. THIS DEVICE'S REMEMBERED CHOICE (the shared apex cookie) — if still a
-  //    membership. It restores an organization the person themselves selected
-  //    on this browser; a stale one is dropped so it cannot shadow rung c.
-  const storedOrgId = activeOrgCookie.read(userId);
-  if (storedOrgId) {
-    const match = orgs.find((o) => o.id === storedOrgId);
-    if (match) {
-      laddered = { id: match.id, name: match.name };
-    } else {
-      activeOrgCookie.clear();
-    }
-  }
-
-  // c. Exactly ONE membership → that org. Auto-selecting the only option is
-  //    not choosing for anybody; there is nothing to choose.
-  if (!laddered && orgs.length === 1) {
-    laddered = { id: orgs[0].id, name: orgs[0].name };
+  let laddered = pick(member(options.heldOrganizationId));
+  if (!laddered) {
+    const account = await readAccountOrganizationChoices(userId);
+    laddered =
+      pick(member(account.lastActiveOrganizationId)) ??
+      pick(member(account.startupOrganizationId)) ??
+      pick(await firstOrganization(orgs));
   }
 
   // -1. THE LINK'S OWN ORGANIZATION. Decided in one pure place so every branch
@@ -197,18 +172,28 @@ export async function resolveActiveOrgContext(
     };
   }
 
-  // d. Genuinely unresolved: the person belongs to several organizations and
-  //    has not told THIS device which one they are working in. That is a real
-  //    answer, not a gap to be filled: the header shows the picker, and the
-  //    first action that needs an organization holds and asks (`ensureOrgId`).
+  // Unreachable while the person has a membership (rung 4 always answers);
+  // kept total so a future rung change cannot invent an organization.
   return {
     organization_id: null,
     organization_name: null,
     ...(link.kind === "no-link" ? {} : { link }),
-    // A real answer, read from a real membership list: they belong to several
-    // organizations and have not said which one this device is working in.
-    // Never "unreadable" — that would hide the one question only they can
-    // answer behind a Try again button.
-    unreadableReason: null,
+    unreadableReason: "no organization could be chosen from your memberships",
   };
+}
+
+/**
+ * Rung 4: the oldest ACTIVE membership among the organizations the person can
+ * open (archived organizations are already left out of `orgs`).
+ */
+async function firstOrganization(
+  orgs: ReadonlyArray<{ id: string; name: string }>,
+): Promise<{ id: string; name: string } | null> {
+  const result = await membershipsService.forUser("organization");
+  if (isScopesRpcErr(result)) throw new Error(result.error.message);
+  const live = new Map(orgs.map((o) => [o.id, o]));
+  const oldest = result.data.memberships
+    .filter((m) => m.status === "active" && live.has(m.containerId))
+    .sort((x, y) => x.createdAt.localeCompare(y.createdAt))[0];
+  return oldest ? (live.get(oldest.containerId) ?? null) : (orgs[0] ?? null);
 }
