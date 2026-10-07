@@ -13,7 +13,7 @@
 //   QUERY (scope, search, filters, page) → useEntityList, always starts clean.
 
 import { useEffect, useRef, useState, type ReactNode } from "react";
-import { columnsWithoutRoom } from "../columnPriority";
+import { clearNoRoomMarks, columnsWithoutRoom, NO_ROOM_CSS, noRoomScript } from "../columnPriority";
 import { usePhoneWidth } from "../usePhoneWidth";
 import type { ListViewPrefs } from "@/lib/redux/preferences/userPreferencesSlice";
 import { cn } from "@/lib/utils";
@@ -886,6 +886,10 @@ export function EntityListPage<TRow>({
     ro.observe(body);
     return () => ro.disconnect();
   }, []);
+  // Once React has applied the real hidden set, the server-time marks have done their job.
+  useEffect(() => {
+    if (listWidth !== null && bodyRef.current) clearNoRoomMarks(bodyRef.current);
+  }, [listWidth, noRoom.join("|")]);
   const pointerInPaneRef = useRef(false);
   const hoveredRowIdRef = useRef<string | null>(null);
   // Every handler on the controller is a fresh function each render (the
@@ -1555,6 +1559,19 @@ export function EntityListPage<TRow>({
           >
             {view === "cards" && cardsView ? cardsView(altViewProps) : rowsView?.(altViewProps)}
           </div>
+        ) : null}
+
+        {view === "table" ? (
+          // First paint = settled paint: hide the columns with no room while the HTML parses
+          // (columnPriority.ts). Both carry suppressHydrationWarning: the script text is the
+          // same on both sides, and the marks it writes are attributes on the table's own cells.
+          <>
+            <style suppressHydrationWarning dangerouslySetInnerHTML={{ __html: NO_ROOM_CSS }} />
+            <script
+              suppressHydrationWarning
+              dangerouslySetInnerHTML={{ __html: noRoomScript(pageConfig.columns) }}
+            />
+          </>
         ) : null}
 
         {view !== "table" && (
