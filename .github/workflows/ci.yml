@@ -1361,11 +1361,33 @@ jobs:
   # Both run even if the other fails — a masked second failure is how two
   # regressions ship as one.
   # ---------------------------------------------------------------------------
+  #
+  # Since the rich-content switch (2026-10-06) the engine half of the block
+  # dispatch, the splitter literals and the kind-correction OWNER live in
+  # aidream's apps/shared — the content-ir suites read them at ../aidream (the
+  # sibling-checkout layout every reader resolves through SHAPE_SOURCE_FILES).
+  # The checkout is moved OUT of the workspace so jest never collects aidream's
+  # own tests. Without AIDREAM_REPO_TOKEN those suites fail BY NAME (missing
+  # ../aidream file) — never a silent pass.
   suites:
     name: content-ir + workflow-runtime suites
     runs-on: ubuntu-latest
+    needs: secrets-preflight
+    if: always()
     steps:
       - uses: actions/checkout@v4
+      - name: Check out aidream's shared packages (dispatch engine half, splitter, correctors)
+        if: needs.secrets-preflight.outputs.aidream_repo == 'true'
+        uses: actions/checkout@v4
+        with:
+          repository: AI-Matrix-Engine/aidream
+          path: aidream-sibling
+          token: ${{ secrets.AIDREAM_REPO_TOKEN }}
+          sparse-checkout: apps/shared
+          sparse-checkout-cone-mode: false
+      - name: Place aidream beside this checkout (../aidream)
+        if: needs.secrets-preflight.outputs.aidream_repo == 'true'
+        run: mv aidream-sibling "$GITHUB_WORKSPACE/../aidream"
       - uses: pnpm/action-setup@v4
       - uses: actions/setup-node@v4
         with:

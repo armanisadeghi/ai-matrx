@@ -24,6 +24,7 @@
 
 import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
 import { dirname, relative, resolve } from "node:path";
+import { SHAPE_SOURCE_FILES } from "../../features/content-ir/registry/shape-doctor-extract";
 import { resolveArtifactDefByKind } from "../../features/canvas/artifact-types/artifact-type-registry";
 
 export const ONE_RECORD_CARD_CODE = "one-record-card";
@@ -34,7 +35,7 @@ const ALLOWED = new Set([
   "components/mardown-display/blocks/result-kinds/use-table-record.ts",
 ]);
 export const RENDER_ROOTS = [
-  "components/mardown-display/chat-markdown/block-registry/block-dispatch.tsx",
+  SHAPE_SOURCE_FILES.blockDispatch.path,
   "components/official/structured-value/KindValueRenderImpl.tsx",
   "features/canvas/artifact-types/artifact-renderers.tsx",
 ];
