@@ -260,7 +260,7 @@ const DURABLE: Case[] = [
   {
     kind: "quiz",
     durableKey: "quizState",
-    act: () => click(byText('[data-testid="quiz-options"] > div', "object")),
+    act: () => click(byText('[data-testid="quiz-options"] button', "object")),
   },
   {
     kind: "questionnaire",
