@@ -716,8 +716,8 @@ sal` and an invented id comes back as the handler's error. Handlers in
   three-valued in the ref (null = "not loaded, refuse"): `isReadOnly` computes
   to `false` before the table row and the signed-in user have loaded, and false
   means writable. The provider is OPT-IN via `emitSurfaceScope`, which only
-  `DataTableDetailClient` passes, because `UserTableViewer` is also rendered
-  inside `DatasetOverlay`, `ViewTableModal` and the `UserTableWindow` panel —
+  `DataTableDetailClient` passes, because the store table page is also rendered
+  inside `DatasetOverlay` and other table windows —
   and since `listLiveWriteTargets()` walks the whole mounted stack, an
   unconditional provider would offer THIS surface's targets on someone else's
   page (the `matrx-user/pick-lists` `asRoute` gate, expressed as a prop). The `/data`

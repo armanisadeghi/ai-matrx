@@ -1037,7 +1037,7 @@ this is nearly free: `AgentSneakPeekModal` (6 consumers; `AgentPeekWindow.tsx`
 already wraps this exact modal in a `WindowPanel` with 1 consumer) ·
 `AgentSettingsModal` (`agentSettingsWindow` exists; `SystemInstructionModal`
 already offers Dialog/Window side by side two files over) · `TaskDetails`
-(`taskEditorWindow` has 13 call sites) · `UserTableViewer` (`userTableWindow`
+(`taskEditorWindow` has 13 call sites) · the store table page (`userTableWindow`
 exists). No twin yet: `AdvancedTranscriptViewer` (1278 LOC) ·
 `DocumentViewer` (RAG) · `FeedbackDetailDialog` (2648 LOC, the record's only door).
 
