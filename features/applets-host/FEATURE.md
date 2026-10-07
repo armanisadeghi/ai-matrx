@@ -87,6 +87,7 @@ record's own `scope` (`{ entries, shadowDangerousGlobals }`); app-owned modules 
 
 ## Change Log
 
+- 2026-10-07 — The builder's answer is the kind `applet_build_result` (aidream `aidream/kinds/applets.py`; `applets.build` / `applets.fix` declare it): the "Building your app" window renders it through `AppletBuildResultBlock` (name + pages as they stream, the finished app in words, code behind "Show the code"). `coerceBuildAnswer` ignores `__kind`; Open stays on the builder card (the slug exists only after save). Conversation Applet rows use `<ConversationComposer>` (applets 0.7.6).
 - 2026-10-07 — `files`, `embedded` and `renderDataPage`; the Applet's jobs are disclosed in the Agents menu; adopts applets 0.7.1, records 0.76.8, agents 0.48.0 (AP-0 lane A).
 - 2026-10-07 — Conversation turns (`useConversation`, applets 0.7.x) are teed into the live-run pipeline like job starts.
 - 2026-10-07 — `renderKind` is `AppletKind` (foreign kinds, PLAN AP-0 item 11); the Applet surface follows its record
