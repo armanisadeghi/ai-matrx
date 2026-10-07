@@ -25,7 +25,8 @@
  *              file name) a module-level `new Map`/`new Set` beside an exported `register*` function, OR a
  *              module-level object/Record store (`const X: Record<…> = {}`, `= {} as Record<…>`,
  *              `Object.create(null)`) that the file fills by key (`X[k] =` / `Object.assign(X`) beside an
- *              exported `register*`, OR any module Map in a *registry* file beside an exported `register*`
+ *              exported `register*`, OR any module Map in a *registry* file beside an exported `register*`, OR a
+ *              CLOSURE store (a Map made inside a function, declared under an action/handler/command/… name)
  *              -> register with Alchemy's registry instead of a private one, or ALLOW with the true reason.
  *  handcsv     a SPLIT-based CSV/TSV reader: a line split (`.split("\n")`, `.split(/\r?\n/)`) followed within
  *              6 lines by a field split on `,` / a tab / a delimiter variable, within 20 lines of csv/tsv/delimited
@@ -34,18 +35,20 @@
  *              `.join(",")` / `.join("\t")` over rows within 15 lines of a csv/tsv mime or filename
  *              (the join counts only when it follows a row `.map(` / `.forEach(` — a join of a plain list, e.g. a file-extension
  *              accept string beside the word "csv", is not a writer)
- *              -> toDelimitedText (/operate/read) or buildFile (/operate): ONE dialect, spreadsheet-safe.
+ *              or the ROW/LINE STRUCTURE with no csv/tsv word needed: a `.join("\t")` over mapped cells, a
+ *              `.join(",")`/`.join("\t")` ending a row whose rows are then joined by a line break, or a line
+ *              split followed by a tab split
+ *              -> toDelimitedText (/operate/read) or buildFile (/operate), or kit toDelimited / parseDelimited:
+ *              ONE dialect, spreadsheet-safe.
  *  windowopen  `window.open(` of a blob / object URL (a file handed to a popup, which blockers kill)
  *              -> downloadFile / downloadUrl (kit), or the Alchemy menu's open/preview action.
  *  anchorclick `a.href = …; a.click()` with no `download` attribute (navigates instead of saving)
  *              -> downloadUrl (kit); a real link is an <a href> element, not a script click.
  *
  * Named exemptions (ALLOW) are exact files (or one named directory) and carry their reason beside
- * them - never a whole feature directory without one. components/dialogs/clipboard-fallback/
- * is the dialog that appears when the browser REFUSES the kit clipboard door (permission denied /
- * insecure context) - it holds the person's text in a selectable field to copy by hand, and must
- * itself touch the raw clipboard API / execCommand once to try, so it cannot route through the door
- * that sends people to it.
+ * them - never a whole feature directory without one. An ALLOW path that no longer exists FAILS the
+ * run (a dead exemption silently covers whatever file lands there next). The clipboard-fallback
+ * dialog is NOT exempt: its retry goes through kit copyText like every other copy.
  *
  * Scanned: tracked .ts/.tsx/.js/.jsx/.mjs under app features components lib hooks providers utils
  * packages (tests, .d.ts, generated, node_modules excluded). Comments are ignored.
@@ -75,17 +78,17 @@ const ADVICE: Record<Rule, string> = {
 
 /** Canonical engines + named exceptions, by repo-relative prefix or exact path, per rule. */
 const ALLOW: Record<Rule, string[]> = {
-  // components/dialogs/clipboard-fallback/: the manual-copy dialog shown when the browser refuses the
-  // kit clipboard door; it must try the raw API itself and cannot route through the door that sent it there.
-  // No agent-copy file is exempt: the Alchemy copy surfaces copy through the kit door like everyone else.
-  clipboard: ["components/dialogs/clipboard-fallback/"],
+  // No exemption: the manual-copy dialog's retry goes through kit copyText like everyone else (AP-2
+  // fifth check), and no agent-copy file is exempt either.
+  clipboard: [],
   downloads: [
     // A static asset of OUR OWN origin (public/) behind a plain <a download>: same-origin, so the browser
     // honors the name and saves it; no blob, no script click, no cross-origin navigation for the kit door to fix.
     "app/(public)/the-landscape/page.tsx",
     "features/messaging/demo/DemoAttachment.tsx",
   ],
-  formatlibs: ["components/rich-editor/core/gfm-lexer.ts"],
+  // No exemption: app code reaches every format engine through Alchemy (the gfm-lexer twin is gone).
+  formatlibs: [],
   doorbypass: [
     "../aidream/apps/shared/chat/src/surfaces/runtime/",
     // THE ONE WRITE DOOR bound for the app (ALC-17): it IS the door - it wraps applySurfaceWrite /
@@ -100,19 +103,12 @@ const ALLOW: Record<Rule, string[]> = {
     // A naming map of surface-config namespaces: validate / merge / empty for
     // `ui.ui_surface_config` JSONB rows. No runnable entries, no actions, no menu items.
     "../aidream/apps/shared/chat/src/surfaces/config/namespace-registry.ts",
-    // The DECLARATION store behind a provider that IS registered into Alchemy's one registry
-    // (`richDocumentActionProvider`, T0, ensureRichDocumentProvider): handler modules add their
-    // RichDocumentAction at load (hoisted store, import-cycle safe) and the provider converts each
-    // to an Alchemy Action. Nothing resolves or runs from this Map except through that provider.
-    "features/rich-document/actions/provider.ts",
     // Binds a record's menu rows to the DOM root that shows it (`data-record-menu`), read at open by
     // ContextMenuV3 and joined into that menu's `extraSections`, which the shell hands to Alchemy.
     // A lookup of owner getters by element key; the rows' actions reach the registry the same way
     // every other extraSections row does. Not an action store.
     "features/context-menu-v3/record-menu-registry.ts",
     // AP-2 triage (2026-10-07): each holds ADAPTERS / DATA / HANDLES, no runnable menu or toolbar action.
-    // Mermaid structural-editing adapters (parse / serialize / applyOp per diagram type) - the workbench's model layer.
-    "components/mermaid/model/adapter.ts",
     // Library tab-source adapters (tab-id prefix -> loader); a data-source lookup.
     "features/code/library-sources/registry.ts",
     // Content-conversion generators keyed by target kind - the converter contract's dispatch table, not a menu.
@@ -121,9 +117,6 @@ const ALLOW: Record<Rule, string[]> = {
     "features/files/virtual-sources/registry.ts",
     // Declared mandate PLACES (where a feature's agent runs) - declarations read by the intelligence page.
     "features/mandates/feature-intelligence/page-intelligence-doors.ts",
-    // Live-instance lookup providerId -> getCtx + the resolved action list of a mounted RichDocument; those
-    // actions are the SAME ones the Alchemy richDocumentActionProvider owns and run through the Alchemy ClickTarget.
-    "features/rich-document/runtime/providerBridge.ts",
     // WindowPanel's own imperative openPopout handle by window id; not a menu action.
     "features/window-panels/popout/usePopoutControl.ts",
     // Providers of client-state payloads sent WITH an agent request (client.capabilities), not user-invoked actions.
@@ -202,6 +195,18 @@ const LISTENER_SET = /Set<\s*\(\s*\)\s*=>\s*void\s*>/;
 const LINE_SPLIT = /\.split\(\s*(?:["'`](?:\\r)?\\n["'`]|\/[^/\n]*\\n[^/\n]*\/)/;
 /** ...then a field split on a comma, a tab, or a delimiter variable. */
 const FIELD_SPLIT = /\.split\(\s*(?:["'`](?:,|\\t)["'`]|\/,\/|\/\\t\/|delim\w*\s*\)|separator\s*\)|sep\s*\))/i;
+/** A tab field split — after a line split it is a TSV reader whatever the file is named. */
+const TAB_SPLIT = /\.split\(\s*(?:["'`]\\t["'`]|\/\\t\/)\s*\)/;
+/** Row writers: a cell join on a tab or a comma, and the line join that stacks the rows. */
+const TAB_JOIN = /\.join\(\s*["'`]\\t["'`]\s*\)/;
+const COMMA_JOIN = /\.join\(\s*["'`],["'`]\s*\)/;
+const COMMA_ROW_END = /\.join\(\s*["'`],["'`]\s*\)(?:\s*\))*\s*(?:[;,]?\s*$|\.join\()/;
+/** The NAME/type a closure Map is declared under (not its constructor arguments) says whether it can run. */
+const RUNNABLE_NAME = /action|handler|command|provider|adapter|resolver|generator|door|callback|Fn\b/i;
+const closureDecl = (l: string) => l.replace(/new\s+Map\s*(<[^(]*>)?\s*\(.*$/, "$1");
+const LINE_JOIN = /\.join\(\s*(?:["'`](?:\\r)?\\n["'`]|lineEnding|eol|EOL|newline)\s*\)/;
+/** A Map made inside a function: an object-literal property (`actions: new Map(`) or an indented assignment. */
+const CLOSURE_MAP = /\b\w+\s*:\s*new\s+Map\b|^\s+(?:(?:const|let)\s+)?\w+\s*(?::[^=]*)?=\s*new\s+Map\b/;
 /** A module-level object store: `const X: Record<…> = {}`, `const X: { [k: string]: … } = {}`, `= {} as Record<…>`, `Object.create(null)`. */
 const MODULE_OBJECT = /^(export\s+)?(const|let)\s+(\w+)\s*(?::\s*([^=]+?))?\s*=\s*(?:\{\s*\}|Object\.create\(\s*null\s*\))\s*(?:as\s+([^;]+))?;?\s*$/;
 /**
@@ -291,6 +296,17 @@ export function scanSource(file: string, src: string): Hit[] {
   const hasRegisterFn = lines.some((l) => /^export\s+(?:async\s+)?(?:function\s+register\w*\s*[(<]|const\s+register\w*\s*[:=])/.test(l));
   const mutatedByKey = (name: string) =>
     lines.some((x) => new RegExp(`\\b${name}\\s*\\[[^\\]]+\\]\\s*=(?!=)|Object\\.assign\\(\\s*${name}\\b`).test(x));
+  // THE ROW/LINE STRUCTURE, no csv/tsv word needed (AP-2 fifth check): a tab join over mapped cells is
+  // a TSV row; a comma or tab join over mapped cells whose rows are then joined by a line break is a
+  // delimited table. Either one writes a cell holding the delimiter, a quote or a line break wrong.
+  const isRowWriter = (i: number) => {
+    const l = lines[i];
+    const mapped = near(i, 8, 0, (x) => /\.map\(|\.forEach\(|\.push\(/.test(x));
+    if (TAB_JOIN.test(l)) return mapped || near(i, 0, 4, (x) => LINE_JOIN.test(x));
+    // A comma join counts only where it ENDS a row (end of the line, or straight into the line join) —
+    // `${list.join(",")}` inside a template is a label, not a row.
+    return COMMA_ROW_END.test(l) && mapped && near(i, 0, 4, (x) => LINE_JOIN.test(x));
+  };
   lines.forEach((l, i) => {
     if (RAW_CLIPBOARD.test(l)) add("clipboard", i);
     if (markLines.has(i) || (hasDownload && /URL\.createObjectURL\s*\(/.test(l))) add("downloads", i);
@@ -303,11 +319,14 @@ export function scanSource(file: string, src: string): Hit[] {
     )
       add("registries", i);
     else if (hasRegisterFn && /^(export\s+)?(const|let)\s+\w+\s*(:[^=]*)?=\s*new\s+Map\b/.test(l) && (isRegistry || RUNNABLE_VALUE.test(l)) && !LISTENER_SET.test(l)) add("registries", i);
+    else if (hasRegisterFn && CLOSURE_MAP.test(l) && !LISTENER_SET.test(l) && RUNNABLE_NAME.test(closureDecl(l))) add("registries", i);
     else {
       const obj = MODULE_OBJECT.exec(l);
       if (obj && hasRegisterFn && (obj[4] || obj[5]) && mutatedByKey(obj[3])) add("registries", i);
     }
     if (FIELD_SPLIT.test(l) && near(i, 6, 0, (x) => LINE_SPLIT.test(x)) && near(i, 20, 20, (x) => /csv|tsv|delimited/i.test(x))) add("handcsv", i);
+    else if (TAB_SPLIT.test(l) && near(i, 6, 0, (x) => LINE_SPLIT.test(x))) add("handcsv", i);
+    else if (!CSV_QUOTE_DOUBLING.test(l) && isRowWriter(i)) add("handcsv", i);
     if (CSV_QUOTE_DOUBLING.test(l) || (CSV_JOIN.test(l) && near(i, 8, 0, (x) => /\.map\(|\.forEach\(/.test(x)) && near(i, 15, 15, (x) => CSV_NAME.test(x)))) add("handcsv", i);
     if (readsCsvByHand && CSV_QUOTE_FLAG_TOGGLE.test(l)) add("handcsv", i);
     if (/\bwindow\.open\s*\(/.test(l) && near(i, 6, 3, (x) => OBJECT_URL.test(x))) add("windowopen", i);
@@ -360,6 +379,13 @@ function sorted(c: Counts): Counts {
   const o = emptyCounts();
   for (const r of RULES) for (const k of Object.keys(c[r]).sort()) o[r][k] = c[r][k];
   return o;
+}
+
+/** ALLOW entries whose path no longer exists — a dead exemption silently covers whatever lands there next. */
+export function staleAllows(allow: Record<Rule, string[]> = ALLOW, exists = (p: string) => existsSync(join(REPO_ROOT, p))): string[] {
+  const out: string[] = [];
+  for (const r of RULES) for (const a of allow[r]) if (!exists(a.replace(/\/$/, ""))) out.push(`${r}: ${a}`);
+  return out;
 }
 
 function selfTest(): number {
@@ -416,9 +442,8 @@ function selfTest(): number {
   for (const lib of ["html-to-image", "jszip", "pptxgenjs", "file-saver", "docx", "pdf-lib", "dom-to-image-more"]) {
     const src = `const m = await import("${lib}");\n`;
     const red = scanSource("features/x/Foo.ts", src).some((h) => h.rule === "formatlibs");
-    const exempt = scanSource("components/rich-editor/core/gfm-lexer.ts", src).length === 0;
-    console.log(`[self-test] formatlibs ${lib}: ${red ? "RED" : "NOT RED"}, allowlist ${exempt ? "exempt" : "NOT exempt"} ${red && exempt ? "ok" : "FAIL"}`);
-    if (!(red && exempt)) bad++;
+    console.log(`[self-test] formatlibs ${lib}: ${red ? "RED" : "NOT RED"} ${red ? "ok" : "FAIL"}`);
+    if (!red) bad++;
   }
   for (const r of RULES) {
     const [file, src] = plant[r];
@@ -430,6 +455,32 @@ function selfTest(): number {
     const commentOnly = scanSource(file, `// ${src.split("\n").join("\n// ")}`).filter((h) => h.rule === r);
     const ok = hits.length > 0 && red && green && allowedHits.length === 0 && commentOnly.length === 0;
     console.log(`[self-test] ${r}: planted->${red ? "RED" : "not red"}, baselined->${green ? "GREEN" : "not green"}, allowlist ${allowedFile === null ? "none" : allowedHits.length === 0 ? "exempt" : "NOT exempt"}, comment ${commentOnly.length === 0 ? "ignored" : "COUNTED"} ${ok ? "ok" : "FAIL"}`);
+    if (!ok) bad++;
+  }
+  // AP-2 fifth check: the row/line STRUCTURE is a delimited writer/reader with no csv/tsv word near,
+  // planted in each fixed site's OLD shape; the negatives keep plain list joins out.
+  extra.push(
+    { rule: "handcsv", file: "features/google-workspace/X.tsx", src: "const values = sheetValues.split(\"\\n\").map((row) => row.split(\"\\t\"));\n", red: true, what: "Google sheet read: split lines then split tabs (no tsv word)" },
+    { rule: "handcsv", file: "features/google-workspace/X.tsx", src: "setSheetValues(\n  outcome.result.values.map((row) => row.join(\"\\t\")).join(\"\\n\"),\n);\n", red: true, what: "Google sheet write: rows.map(join tab).join newline" },
+    { rule: "handcsv", file: "features/rag/X.tsx", src: "const lines = header.length ? [header.join(\"\\t\")] : [];\nfor (const row of rows) {\n  lines.push((row.cells.length ? row.cells : [row.fallback]).join(\"\\t\"));\n}\nreturn lines.join(\"\\n\");\n", red: true, what: "RAG table group: tab rows pushed then joined by newline" },
+    { rule: "handcsv", file: "features/page-extraction/X.ts", src: "return toMatrix(columns, rows)\n  .map((row) =>\n    row.map((c) => c.replace(/\\t/g, \" \")).join(\"\\t\"),\n  )\n  .join(\"\\n\");\n", red: true, what: "page-extraction TSV: lossy collapse then tab join" },
+    { rule: "handcsv", file: "features/legal/X.tsx", src: "  return [\n    String(index + 1),\n    name,\n  ].join(\"\\t\");\n}\nconst lines = rows.map((row, idx) => rowToTsv(row, idx));\nreturn [TSV_HEADER.join(\"\\t\"), ...lines].join(\"\\n\");\n", red: true, what: "a tab row helper, rows joined by newline" },
+    { rule: "handcsv", file: "features/x/Foo.ts", src: "const body = rows\n  .map((r) => r.join(\",\"))\n  .join(\"\\n\");\n", red: true, what: "comma rows joined by a line break" },
+    { rule: "handcsv", file: "features/x/Foo.ts", src: "const label = items.map((x) => x.name).join(\", \");\n", red: false, what: "a label list joined by ', '" },
+    { rule: "handcsv", file: "features/x/Foo.ts", src: "const q = ids.map((id) => encodeURIComponent(id)).join(\",\");\n", red: false, what: "ids joined by ',' with no line join (a query param)" },
+    { rule: "handcsv", file: "features/x/Foo.ts", src: "const t = [\n  `orgs=${r.orgs.map((o) => o.name).join(\",\") || \"none\"}`,\n  `id=${r.id}`,\n].join(\"\\n\");\n", red: false, what: "a comma list inside a template, lines joined by newline (a label)" },
+    { rule: "handcsv", file: "features/x/Foo.ts", src: "const t = lines.map((l) => l.trim()).join(\"\\n\");\n", red: false, what: "lines trimmed and joined by newline" },
+    { rule: "handcsv", file: "features/x/Foo.ts", src: "return toDelimited([header, ...rows], { format: \"tsv\" });\n", red: false, what: "the one writer" },
+    { rule: "clipboard", file: "components/dialogs/clipboard-fallback/ClipboardFallbackDialog.tsx", src: "await navigator.clipboard.writeText(url);\n", red: true, what: "the clipboard-fallback dialog is NOT exempt (it retries through kit copyText)" },
+    { rule: "registries", file: "features/x/provider.ts", src: "function store() {\n  let s = g[key];\n  if (!s) {\n    s = { actions: new Map(), listeners: new Set() };\n    g[key] = s;\n  }\n  return s;\n}\nexport function registerAction(a: A) { store().actions.set(a.id, a); }\n", red: true, what: "a CLOSURE store `{ actions: new Map() }` filled by registerAction" },
+    { rule: "registries", file: "features/x/Foo.ts", src: "function watch() {\n  const watching = new Map<string, () => void>();\n}\nexport function registerThing() {}\n", red: false, what: "a closure Map of bare callbacks (cancel handles) beside register*" },
+    { rule: "registries", file: "features/x/Foo.ts", src: "function f() {\n  const byId = new Map(ITEMS.map((c) => [c.id, c]));\n}\nexport function registerThing() {}\n", red: false, what: "a closure lookup Map built from a list beside register*" },
+  );
+  {
+    const dead = staleAllows({ ...ALLOW, registries: [...ALLOW.registries, "features/gone/nope.ts"] });
+    const live = staleAllows();
+    const ok = dead.length === 1 && live.length === 0;
+    console.log(`[self-test] stale ALLOW: a dead path -> ${dead.length === 1 ? "RED" : "not red"}, the live list -> ${live.length === 0 ? "GREEN" : live.join("; ")} ${ok ? "ok" : "FAIL"}`);
     if (!ok) bad++;
   }
   for (const e of extra) {
@@ -444,6 +495,12 @@ function selfTest(): number {
 function main(): number {
   const args = process.argv.slice(2);
   if (args.includes("--self-test")) return selfTest();
+  const stale = staleAllows();
+  if (stale.length) {
+    for (const e of stale) console.error(`stale ALLOW entry (path does not exist — delete it): ${e}`);
+    console.error(`alchemy-doors: FAIL ${stale.length} stale ALLOW entr${stale.length === 1 ? "y" : "ies"}`);
+    return 1;
+  }
   const hits = scanRepo();
   const now = tally(hits);
   if (args.includes("--list")) for (const h of hits) console.log(`${h.rule}  ${h.file}:${h.line}  ${h.text}\n   -> ${ADVICE[h.rule]}`);

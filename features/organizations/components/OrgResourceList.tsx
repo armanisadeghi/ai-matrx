@@ -65,6 +65,11 @@ export interface ResourceCardData {
 export interface OrgResourceListProps {
   orgId: string;
   resourceType: ResourceType;
+  /**
+   * The entity token whose doors (peek, icon) the cards use, when it differs from the share
+   * token. A Table is shared as `record` (it is a custom.record row) but its peek is `table`.
+   */
+  doorToken?: string;
   /** Omit only with `hydrateShared`. */
   tableName?: string;
   /** Reads the shared rows by id through the kind's own door, instead of `tableName`. */
@@ -96,6 +101,7 @@ export interface OrgResourceListProps {
 export function OrgResourceList({
   orgId,
   resourceType,
+  doorToken,
   tableName,
   hydrateShared,
   selectColumns,
@@ -221,7 +227,7 @@ export function OrgResourceList({
   const archivedItems = items.filter((item) => item.archived);
 
   const renderCard = (item: ResourceCardData) => {
-        const doors = resolveEntityDoors(resourceType, item.id);
+        const doors = resolveEntityDoors(doorToken ?? resourceType, item.id);
         const href = getHref?.(item.id) ?? doors.href;
 
         const body = (
@@ -325,7 +331,7 @@ export function OrgResourceList({
       </ArchivedDisclosure>
       {peekId && (
         <ResourcePeekHost
-          kind={resolveEntityDoors(resourceType, peekId).peekKind}
+          kind={resolveEntityDoors(doorToken ?? resourceType, peekId).peekKind}
           id={peekId}
           onClose={() => setPeekId(null)}
         />

@@ -13,6 +13,7 @@ import { kindValueToMarkdown } from "@/features/canvas/export/exportArtifactMark
 import { kindTextToMarkdown } from "@/features/content-ir/surfaces/kind-text-to-markdown";
 import { valueCarriesKind } from "@/features/content-ir/surfaces/json-kind-signal";
 import { downloadFile } from "@ai-matrx/kit/download";
+import { toDelimited } from "@ai-matrx/kit/delimited";
 
 export interface ExportColumn {
   key: string;
@@ -70,13 +71,12 @@ export function toCSV(columns: ExportColumn[], rows: ExportRow[]): string {
   return tableToCsv(header, body);
 }
 
-/** Tab-separated — what spreadsheets accept on paste. */
+/**
+ * Tab-separated — what spreadsheets accept on paste — through THE one writer: a cell holding a
+ * tab or a line break is quoted (never collapsed), and scraped text is formula-guarded.
+ */
 export function toTSV(columns: ExportColumn[], rows: ExportRow[]): string {
-  return toMatrix(columns, rows)
-    .map((row) =>
-      row.map((c) => c.replace(/\t/g, " ").replace(/\r?\n/g, " ")).join("\t"),
-    )
-    .join("\n");
+  return toDelimited(toMatrix(columns, rows), { format: "tsv" });
 }
 
 /** JSON array of objects keyed by column key (not label). */

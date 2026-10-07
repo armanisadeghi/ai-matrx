@@ -52,6 +52,10 @@ const OLD_TEXT: Array<[string, RegExp]> = [
   // A Table has ONE token, `table` (@ai-matrx/associations 0.13.156); `dataset` is a retired spelling that is
   // only READ. The peek, the item type and the Open door no longer write it; the result kinds are table_*.
   ["the old table peek or entity token", /DatasetPeek|entityToken:\s*["']dataset["']|peekHref\(\s*["']dataset["']/],
+  // A Table is shared as `record` (it is a custom.record row; platform.shareable_resource_registry has no
+  // active `dataset` row and one token per governed table). A share or permissions call naming `dataset`
+  // fails with "Unknown shareable resource type" (the org Tables page did, 2026-10-07).
+  ["the old table share type", /resourceType(=|:\s*)\{?\s*["']dataset["']/],
   ["the old table result kinds", /\bdataset_(tool|metadata|fields)_result\b/],
   ["the old table tool names", /\busertable_(get|create|add|update|search|delete)\w*|\buser_table_add_row\b|\bdata_user_(lists|tables)\w*/],
 ];
