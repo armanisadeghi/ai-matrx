@@ -1,7 +1,7 @@
 "use server";
 
 import { createClient } from "@/utils/supabase/server";
-import { hasAdminPower } from "@/utils/auth/adminLaneServer";
+import { hasAdminFeature, hasAdminPower } from "@/utils/auth/adminLaneServer";
 import { createAdminClient } from "@/utils/supabase/adminClient";
 import { resolveSystemOrgId } from "@/lib/organizations/systemOrg";
 import { notifyFeedbackAssigned } from "@/lib/services/feedback-assignment-notifier";
@@ -93,7 +93,11 @@ export async function submitFeedback(
     const username = user.user_metadata?.username || user.email || "Anonymous";
 
     // Admin-gated extras
-    const isAdmin = await hasAdminPower(supabase, user.id, "any");
+    const isAdmin = await hasAdminFeature(
+      supabase,
+      user.id,
+      "feedback.triage-fields",
+    );
     const categoryId = isAdmin && input.category_id ? input.category_id : null;
     const assignedTo = isAdmin && input.assigned_to ? input.assigned_to : null;
 
