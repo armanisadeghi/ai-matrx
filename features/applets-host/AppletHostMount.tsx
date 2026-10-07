@@ -67,7 +67,10 @@ function adoptAppletRunStreams(base: MatrxTransport, store: AppStore): MatrxTran
   return {
     async fetch(path, init) {
       const response = await base.fetch(path, init);
-      if (init.method !== "POST" || !path.startsWith("/ai/mandates/") || !response.ok || !response.body) return response;
+      // A job's start (`/ai/mandates/<key>`) and every later turn of its conversation (`/ai/conversations/<id>`,
+      // `useConversation`) render through the same pipeline; `/resume` and other sub-paths are not turns.
+      const turn = path.startsWith("/ai/mandates/") || /^\/ai\/conversations\/[^/]+$/.test(path);
+      if (init.method !== "POST" || !turn || !response.ok || !response.body) return response;
       const [forJob, forPipeline] = response.body.tee();
       const consume = store.dispatch(adoptForeignStream({ preferServerIds: true }));
       const ids = { requestId: response.headers.get("X-Request-ID"), conversationId: response.headers.get("X-Conversation-ID") };

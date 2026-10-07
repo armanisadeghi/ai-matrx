@@ -52,7 +52,7 @@ Package mechanics: `aidream/apps/shared/applets/FEATURE.md`.
 | Port | Bound to |
 |---|---|
 | `supabase` | the browser client `@/utils/supabase/client` (the viewer's session) |
-| `agents` | `createIntelligencePort({ transport })` over `createMatrxTransport(store.getState)`, wrapped by `adoptAppletRunStreams`: every `POST /ai/mandates/*` body is teed — one branch to the agents port (`useJob` state), one to `adoptForeignStream` under the server's `X-Request-ID` (the execution system, so the run renders canonically) |
+| `agents` | `createIntelligencePort({ transport })` over `createMatrxTransport(store.getState)`, wrapped by `adoptAppletRunStreams`: every `POST /ai/mandates/*` and conversation turn `POST /ai/conversations/<id>` (`useConversation`) body is teed — one branch to the agents port (`useJob` state), one to `adoptForeignStream` under the server's `X-Request-ID` (the execution system, so the run renders canonically) |
 | `activeOrganizationId` | `selectActiveOrganizationId` at mount — reported to the frame; never narrows a read. The host is NOT rebuilt when it changes (a running job would die) |
 | job organization | `@ai-matrx/applets` 0.3.0 decides for EVERY run (direct and Action): a member of the Applet's organization runs there; anyone else is answered by `resolveOrganization` (`ensureOrganizationContext` — the gate asks), null refuses `organization_required`. No wrapper around `host.intelligence.run` |
 | `nav` | `go(to)` → `history.pushState` to `/apps/<slug><to>` (Next syncs `usePathname`; no server round trip, no remount); `current()` reads the URL; every URL change (incl. Back/Forward) is pushed to `subscribe` listeners |
@@ -82,6 +82,7 @@ record's own `allowed_imports`; app-owned modules come from `lib/code-runtime/st
 
 ## Change Log
 
+- 2026-10-07 — Conversation turns (`useConversation`, applets 0.7.x) are teed into the live-run pipeline like job starts.
 - 2026-10-07 — `renderKind` is `AppletKind` (foreign kinds, PLAN AP-0 item 11); the Applet surface follows its record
   by trigger; entity sources documented (AP-0 lane A, contracts 2.5).
 - 2026-10-06 — Created (AP-0, gate G1). Replaced `features/person-apps` (code registry + `PersonAppMount`
