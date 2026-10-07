@@ -1,10 +1,6 @@
 // features/administration/canonicalization/utils/exportCsv.ts
 
-<<<<<<< Updated upstream
-import Papa from "papaparse";
-=======
 import { toDelimitedText } from "@ai-matrx/alchemy/operate/read";
->>>>>>> Stashed changes
 import { downloadFile } from "@ai-matrx/kit/download";
 
 /** Exports the currently visible (filtered + sorted) rows as a downloadable CSV. */
