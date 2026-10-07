@@ -7,6 +7,7 @@
 //   WALK_ORIGIN=http://localhost:3001 WALK_BUDGET=0.1 node scripts/fixed-under-transform-walk.mjs "/tasks,/approvals,/podcast,/schedules,/projects,/meetings,/transcripts"
 // Knobs (all optional): WALK_BUDGET (no budget = report only), WALK_WIDTHS="375,1440" (default 375),
 // WALK_RUNS=3 (fresh page per run, the WORST run is judged), WALK_CPU=4 (CPU slowdown factor, default 1),
+// WALK_WARM=0 (skip the unmeasured warm-up visit that absorbs a dev server's first-hit compile),
 // WALK_SOURCES=1 (print each shifting node: selector, value, before/after rect).
 // Same thing with the standard 17-route list, both widths, 3 runs, CPU x4:  pnpm check:cls
 // Measure only while `uptime` 1-minute load is under 60 - a busy machine inflates CLS.
@@ -66,6 +67,9 @@ for (const width of WIDTHS) {
   if (CPU > 1) { const cdp = await ctx.newCDPSession(page); await cdp.send("Emulation.setCPUThrottlingRate", { rate: CPU }); }
   for (const r of ROUTES) {
     const runs = [];
+    // A dev server compiles a route on its first hit, and that cold load paints a different (slower, shifting)
+    // page than anyone gets afterwards: one unmeasured visit first. WALK_WARM=0 measures the cold load instead.
+    if (process.env.WALK_WARM !== "0") { try { await page.goto(ORIGIN + r, { waitUntil: "domcontentloaded", timeout: 120000 }); await sleep(2500); } catch {} }
     for (let i = 0; i < RUNS; i++) {
       try {
         await page.goto(ORIGIN + r, { waitUntil: "domcontentloaded", timeout: 120000 });
