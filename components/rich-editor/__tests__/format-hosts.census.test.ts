@@ -22,8 +22,9 @@ const REQUIRED: Record<string, RegExp> = {
   "components/matrx/MatrxSplit.tsx": /useTextareaFormatting\(/,
   "features/notes/components/NoteEditorCore.tsx": /useTextareaFormatting\(/,
   "features/notes/components/mobile/MobileNoteEditor.tsx": /useTextareaFormatting\(/,
-  "components/rich-editor/source/SourceEditor.tsx": /markdownFormatHost\(/,
-  "components/rich-editor/visual/VisualEditor.tsx": /RICH_EDITOR_HOST_KEY/,
+  // The editor's own views ship in @ai-matrx/rich-editor (read from the installed package).
+  "node_modules/@ai-matrx/rich-editor/dist/source/SourceEditor.js": /markdownFormatHost\(/,
+  "node_modules/@ai-matrx/rich-editor/dist/visual/VisualEditor.js": /RICH_EDITOR_HOST_KEY/,
   "packages/chat/src/agents/components/inputs/smart-input/AgentTextarea.tsx": /useTextareaFormatting\(/,
   // The editors that used to change capability by tab / were bare textareas.
   "components/mardown-display/chat-markdown/FullScreenMarkdownEditor.tsx": /useTextareaFormatting\(/,
