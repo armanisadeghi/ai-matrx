@@ -77,9 +77,8 @@ export function DataRefPreviewContent({ dataRef }: DataRefPreviewContentProps) {
   const recordName = dataRef.label?.trim() || dataRef.table;
 
   const handleCopyJson = async () => {
-    if (!(await copyText(JSON.stringify(dataRef, null, 2)))) return;
+    if (!(await copyText(JSON.stringify(dataRef, null, 2), "Reference copied as JSON"))) return;
     setCopied(true);
-    toast.success("Reference copied as JSON");
     setTimeout(() => setCopied(false), 1500);
   };
 

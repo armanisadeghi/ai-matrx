@@ -90,9 +90,8 @@ function CopyButton({ value, label }: { value: string; label: string }) {
   });
   const [copied, setCopied] = useState(false);
   const onCopy = async () => {
-    if (!(await copyText(value))) return;
+    if (!(await copyText(value, `${label} copied`))) return;
     setCopied(true);
-    toast.success(`${label} copied`);
     setTimeout(() => setCopied(false), 2000);
   };
   return (

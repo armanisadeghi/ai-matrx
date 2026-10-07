@@ -65,11 +65,10 @@ export function InviteStudentsSheet({
   } | null>(null);
 
   async function copyText(value: string, what: string) {
-    if (!(await copyTextKit(value))) {
+    if (!(await copyTextKit(value, `${what} copied.`))) {
       setClipboardFallback({ value, what });
       return;
     }
-    toast.success(`${what} copied.`);
   }
 
   const parsedEmails = extractEmails(emailText);

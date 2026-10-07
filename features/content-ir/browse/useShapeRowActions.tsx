@@ -72,9 +72,8 @@ export function useShapeRowActions(
               icon: Link2,
               onSelect: async () => {
                 if (!(await copyText(
-                  `${window.location.origin}${href}`,
+                  `${window.location.origin}${href}`, "Shape link copied",
                 ))) return;
-                toast.success("Shape link copied");
               },
             },
             {
@@ -87,9 +86,8 @@ export function useShapeRowActions(
                     type: "content_ir_kind",
                     id: row.id,
                     label: row.label,
-                  }),
+                  }), "Shape reference copied",
                 ))) return;
-                toast.success("Shape reference copied");
               },
             },
           ],

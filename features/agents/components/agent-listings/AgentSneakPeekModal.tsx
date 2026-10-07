@@ -755,9 +755,8 @@ export function AgentSneakPeekCopyMenu({ agentId }: { agentId: string }) {
   const [copied, setCopied] = useState(false);
 
   const copyToClipboard = async (text: string, label: string) => {
-    if (!(await copyText(text))) return;
+    if (!(await copyText(text, `${label} copied to clipboard`))) return;
     setCopied(true);
-    toast.success(`${label} copied to clipboard`);
     setTimeout(() => setCopied(false), 2000);
   };
 

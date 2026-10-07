@@ -20,7 +20,6 @@ import { toast as copyToast } from "@/lib/toast";
 import { useEffect, useState } from "react";
 import { Loader2, Copy, RefreshCw, AlertTriangle } from "lucide-react";
 import { Button } from "@ai-matrx/design-system/controls";
-import { toast } from "../../host/notify";
 import { useAppStore } from "../../store/hooks";
 import { requestPromptPreview } from "./service";
 import type { PromptPreview } from "./types";
@@ -67,8 +66,7 @@ export function PromptPreviewContent({
   }, [conversationId, store, nonce]);
 
   const copy = async (label: string, text: string) => {
-    if (!(await copyText(text))) return;
-    toast.success(`${label} copied`);
+    if (!(await copyText(text, `${label} copied`))) return;
   };
 
   return (

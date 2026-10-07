@@ -17,7 +17,6 @@ import { toast as copyToast } from "@/lib/toast";
 import { Badge, Button, Tile } from "@ai-matrx/design-system/controls";
 import { useEffect, useReducer, useState } from "react";
 import { Bug, Check, ChevronDown, ChevronUp, Copy, Trash2 } from "lucide-react";
-import { toast } from "../../host/notify";
 import { cn } from "@ai-matrx/design-system";
 import {
   voiceDebugClear,
@@ -119,10 +118,9 @@ export function VoiceDebugPanel({
           })}  [${e.level}] ${e.label}${e.detail ? ` — ${e.detail}` : ""}`,
       ),
     ];
-    if (!(await copyText(lines.join("\n")))) return;
+    if (!(await copyText(lines.join("\n"), "Voice debug copied"))) return;
     setCopied(true);
     setTimeout(() => setCopied(false), 1500);
-    toast.success("Voice debug copied");
   };
 
   return (

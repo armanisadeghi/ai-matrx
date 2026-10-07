@@ -119,9 +119,8 @@ function TimelineEntry({
   const hasData = Object.keys(event.data).length > 0;
 
   const handleCopy = async () => {
-    if (!(await copyText(JSON.stringify(event.data, null, 2)))) return;
+    if (!(await copyText(JSON.stringify(event.data, null, 2), "Copied event data"))) return;
     setCopied(true);
-    toast.success("Copied event data");
     setTimeout(() => setCopied(false), 2000);
   };
 

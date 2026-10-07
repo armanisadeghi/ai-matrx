@@ -216,6 +216,10 @@ jobs:
         run: pnpm check:copy-result-gated
       - name: The clipboard result guard can still fail
         run: pnpm check:copy-result-gated:self-test
+      - name: The Alchemy doors stay the only clipboard, download and export doors
+        run: pnpm check:alchemy-doors
+      - name: The Alchemy doors guard can still fail
+        run: pnpm check:alchemy-doors:self-test
       - name: Measured production build-cache contract
         run: node --test scripts/build-lab/config-contract.test.mjs
       - name: The Ignored Build Step sees releases that arrive behind a merge commit

@@ -384,9 +384,8 @@ import { Field } from '@/components/official/Field';
               variant="outline"
               onClick={async () => {
                 if (!(await copyText(
-                  `import { ProInput } from "@/components/official/ProInput";`,
+                  `import { ProInput } from "@/components/official/ProInput";`, "Import copied",
                 ))) return;
-                toast.success("Import copied");
               }}
             >
               Copy import

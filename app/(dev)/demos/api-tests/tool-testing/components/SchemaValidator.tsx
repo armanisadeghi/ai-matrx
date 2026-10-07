@@ -53,9 +53,8 @@ function InlineCopyButton({ text }: { text: string }) {
   });
   const [copied, setCopied] = useState(false);
   const handleCopy = async () => {
-    if (!(await copyText(text))) return;
+    if (!(await copyText(text, 'Copied'))) return;
     setCopied(true);
-    toast.success('Copied');
     setTimeout(() => setCopied(false), 2000);
   };
   return (

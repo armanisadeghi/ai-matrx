@@ -4,21 +4,30 @@
  * A refused clipboard (the kit copy resolves `false`; it never throws) must not strand the person:
  * "Open in Chat" still closes and navigates, and "Report Lost Recording" still opens the feedback
  * form — AP-2 regression: an early `return` on the failed copy skipped both.
+ *
+ * Every copy is ONE notice: the REAL kit hook runs here (only the browser clipboard is stubbed),
+ * so its own success/failure toast and any toast the modal adds are both counted (AP-2: the modal
+ * used to add "Text copied to clipboard" on top of the kit's, and a paste-it-yourself info on top
+ * of the kit's failure).
  */
 import React, { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
-const copyText = jest.fn<Promise<boolean>, [string, string?]>();
+const writeText = jest.fn<Promise<void>, [string]>();
 const push = jest.fn();
 const dispatch = jest.fn();
-const toastInfo = jest.fn();
-jest.mock("@ai-matrx/kit/clipboard", () => ({ useClipboard: () => ({ copyText }) }));
+const notices: Array<[string, string]> = [];
 jest.mock("@ai-matrx/kit/format", () => ({ formatDurationSeconds: () => "0:01" }));
 jest.mock("next/navigation", () => ({ useRouter: () => ({ push }) }));
 jest.mock("@/lib/toast", () => ({
-  toast: { info: (...a: unknown[]) => toastInfo(...a), error: jest.fn(), success: jest.fn() },
+  toast: {
+    info: (m: string) => notices.push(["info", m]),
+    error: (m: string) => notices.push(["error", m]),
+    success: (m: string) => notices.push(["success", m]),
+    warning: (m: string) => notices.push(["warning", m]),
+  },
 }));
 jest.mock("@/lib/redux/hooks", () => ({ useAppDispatch: () => dispatch }));
 jest.mock("@/lib/redux/slices/overlaySlice", () => ({
@@ -77,8 +86,13 @@ const click = async (text: string) => {
 };
 
 beforeEach(() => {
-  [copyText, push, dispatch, toastInfo, onClose].forEach((m) => m.mockReset());
-  copyText.mockResolvedValue(false);
+  [writeText, push, dispatch, onClose].forEach((m) => m.mockReset());
+  notices.length = 0;
+  // A refused clipboard: the async write rejects and the execCommand fallback reports false.
+  writeText.mockRejectedValue(new DOMException("denied", "NotAllowedError"));
+  Object.defineProperty(navigator, "clipboard", { value: { writeText }, configurable: true });
+  document.execCommand = jest.fn(() => false);
+  jest.spyOn(console, "error").mockImplementation(() => {});
   items.length = 0;
   container = document.createElement("div");
   document.body.appendChild(container);
@@ -89,29 +103,39 @@ afterEach(() => {
   container.remove();
 });
 
-it("Open in Chat closes and navigates even when the clipboard refuses", async () => {
+it("Open in Chat closes and navigates even when the clipboard refuses — with ONE notice", async () => {
   items.push(record({ accumulatedText: "my transcript" }));
   await act(async () => root.render(<AudioRecoveryModal isOpen onClose={onClose} />));
   await click("Open in Chat");
-  expect(copyText).toHaveBeenCalled();
+  expect(writeText).toHaveBeenCalledWith("my transcript");
   expect(onClose).toHaveBeenCalled();
   expect(push).toHaveBeenCalledWith("/agents/all");
-  expect(toastInfo).toHaveBeenCalledWith("Navigate to chat and paste your transcription");
+  expect(notices).toEqual([["error", "Couldn't copy the transcription — copy it here before opening chat"]]);
 });
 
-it("Report Lost Recording opens the feedback form even when the clipboard refuses", async () => {
+it("Report Lost Recording opens the feedback form even when the clipboard refuses — with ONE notice", async () => {
   items.push(record({ accumulatedText: "" }));
   await act(async () => root.render(<AudioRecoveryModal isOpen onClose={onClose} />));
   await click("Report Lost Recording");
-  expect(copyText).toHaveBeenCalled();
+  expect(writeText).toHaveBeenCalled();
   expect(dispatch).toHaveBeenCalledWith({ type: "overlay/open", payload: { overlayId: "feedbackDialog" } });
+  expect(notices).toEqual([["error", "Couldn't copy the bug report — please describe what happened"]]);
 });
 
-it("a landed copy navigates without the paste-it-yourself hint", async () => {
-  copyText.mockResolvedValue(true);
+it("a landed copy navigates with the one copied notice, no paste-it-yourself hint", async () => {
+  writeText.mockResolvedValue(undefined);
   items.push(record({ accumulatedText: "my transcript" }));
   await act(async () => root.render(<AudioRecoveryModal isOpen onClose={onClose} />));
   await click("Open in Chat");
   expect(push).toHaveBeenCalledWith("/agents/all");
-  expect(toastInfo).not.toHaveBeenCalled();
+  expect(notices).toEqual([["success", "Transcription copied — paste it into your conversation"]]);
+});
+
+it("Copy Text that lands shows exactly ONE success toast (AP-2: the kit's and the modal's both fired)", async () => {
+  writeText.mockResolvedValue(undefined);
+  items.push(record({ accumulatedText: "my transcript" }));
+  await act(async () => root.render(<AudioRecoveryModal isOpen onClose={onClose} />));
+  await click("Copy Text");
+  expect(writeText).toHaveBeenCalledWith("my transcript");
+  expect(notices).toEqual([["success", "Text copied to clipboard"]]);
 });

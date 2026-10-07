@@ -206,9 +206,8 @@ export function AnalysisView({
         source: runLabel,
         reduxMode,
         serverUrl: apiConfig.baseUrl,
-      }),
+      }), "Full report copied (XML with block contents and the raw input)",
     ))) return;
-    toast.success("Full report copied (XML with block contents and the raw input)");
   };
 
   const handleCopyReport = async () => {

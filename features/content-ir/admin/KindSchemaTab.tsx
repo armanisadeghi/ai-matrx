@@ -127,8 +127,7 @@ export default function KindSchemaTab({
 
   async function copySchema() {
     if (!schemaText) return;
-    if (!(await copyText(schemaText))) return;
-    toast.success(`Copied ${kind} emitted_json_schema`);
+    if (!(await copyText(schemaText, `Copied ${kind} emitted_json_schema`))) return;
   }
 
   return (

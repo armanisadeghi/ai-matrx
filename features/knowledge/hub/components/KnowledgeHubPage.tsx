@@ -875,8 +875,7 @@ export function KnowledgeHubPage({
   const absolute = (href: string) => (href.startsWith("http") ? href : `${window.location.origin}${href}`);
 
   const copyText = async (text: string, done: string) => {
-    if (!(await copyTextKit(text))) return;
-    toast.success(done);
+    if (!(await copyTextKit(text, done))) return;
   };
 
   const transcriptAgentInput = (rows: TranscriptListRow[]) => ({

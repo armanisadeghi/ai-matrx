@@ -107,9 +107,8 @@ export function useRulebookRowActions(
               icon: Link2,
               onSelect: async () => {
                 if (!(await copyText(
-                  `${window.location.origin}/masterwork/${row.id}`,
+                  `${window.location.origin}/masterwork/${row.id}`, "Link copied",
                 ))) return;
-                toast.success("Link copied");
               },
             },
           ],

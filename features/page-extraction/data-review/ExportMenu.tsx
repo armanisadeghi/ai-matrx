@@ -71,10 +71,7 @@ export function ExportMenu({
   const empty = rows.length === 0 || columns.length === 0;
 
   const copy = async (text: string, label: string) => {
-    if (!(await copyText(text))) return;
-    toast.success(`${label} copied`, {
-      description: `${rows.length} row${rows.length === 1 ? "" : "s"}`,
-    });
+    if (!(await copyText(text, `${label} copied (${rows.length} row${rows.length === 1 ? "" : "s"})`))) return;
   };
 
   return (

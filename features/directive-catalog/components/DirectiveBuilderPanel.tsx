@@ -562,10 +562,9 @@ export function DirectiveBuilderPanel({
   const handleCopy = async () => {
     if (!displayedEnvelope) return;
     if (!(await copyText(
-      JSON.stringify(displayedEnvelope, null, 2),
+      JSON.stringify(displayedEnvelope, null, 2), "Envelope copied",
     ))) return;
     setCopied(true);
-    toast.success("Envelope copied");
     setTimeout(() => setCopied(false), 1500);
   };
 

@@ -72,9 +72,8 @@ export function useTopicRowActions(
             icon: Link2,
             onSelect: async () => {
               if (!(await copyText(
-                `${window.location.origin}${topicHref(row.id)}`,
+                `${window.location.origin}${topicHref(row.id)}`, "Link copied",
               ))) return;
-              toast.success("Link copied");
             },
           },
         ],

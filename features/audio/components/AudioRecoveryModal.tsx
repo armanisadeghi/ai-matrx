@@ -105,10 +105,9 @@ function RecoveryItem({ item, onDismiss, onClose }: RecoveryItemProps) {
 
   const handleCopyText = async () => {
     if (!localText) return;
-    if (!(await copyText(localText))) return;
+    if (!(await copyText(localText, "Text copied to clipboard"))) return;
     setCopied(true);
     setTimeout(() => setCopied(false), 1500);
-    toast.success("Text copied to clipboard");
   };
 
   const handleSaveToNotes = () => {
@@ -133,10 +132,12 @@ function RecoveryItem({ item, onDismiss, onClose }: RecoveryItemProps) {
   const handleOpenInChat = async () => {
     if (localText.trim()) {
       // Opening chat never depends on the clipboard: a refused copy still
-      // navigates, and the person is told to paste it by hand.
-      if (!(await copyText(localText.trim(), "Transcription copied — paste it into your conversation"))) {
-        toast.info("Navigate to chat and paste your transcription");
-      }
+      // navigates, and its one notice says the text did not come along.
+      await copyText(
+        localText.trim(),
+        "Transcription copied — paste it into your conversation",
+        "Couldn't copy the transcription — copy it here before opening chat",
+      );
     }
     onClose();
     router.push("/agents/all");
@@ -174,9 +175,11 @@ function RecoveryItem({ item, onDismiss, onClose }: RecoveryItemProps) {
       `The recording was saved to IndexedDB (status: ${record.status}) but the session ended before any audio chunks could be captured. The recovery modal correctly detected the orphaned entry but had nothing to play back or transcribe.`,
     ].join("\n");
 
-    if (!(await copyText(report, "Bug report copied — paste it into the description below"))) {
-      toast.info("Opening feedback form — please describe what happened");
-    }
+    await copyText(
+      report,
+      "Bug report copied — paste it into the description below",
+      "Couldn't copy the bug report — please describe what happened",
+    );
     dispatch(openOverlay({ overlayId: "feedbackDialog" }));
   };
 

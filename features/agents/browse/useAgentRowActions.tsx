@@ -306,9 +306,8 @@ export function useAgentRowActions({
               type: "agent",
               id: agent.id,
               label: agent.name,
-            }),
+            }), "Agent reference copied",
           ))) return;
-          toast.success("Agent reference copied");
         },
 
         onDelete: () => void remove(agent),

@@ -151,9 +151,8 @@ export function useTranscriptRowActions(
                 icon: Link2,
                 onSelect: async () => {
                   if (!(await copyText(
-                    `${window.location.origin}${href}`,
+                    `${window.location.origin}${href}`, "Link copied",
                   ))) return;
-                  toast.success("Link copied");
                 },
               },
               {
@@ -168,9 +167,8 @@ export function useTranscriptRowActions(
                       type: referenceType,
                       id: row.id,
                       label: row.title,
-                    }),
+                    }), "Reference copied",
                   ))) return;
-                  toast.success("Reference copied");
                 },
               },
             ],

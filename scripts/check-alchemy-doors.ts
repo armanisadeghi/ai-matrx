@@ -19,7 +19,7 @@
  *              buildPresentation (/operate/pptx). The editor's
  *              gfm-lexer `marked` is ruled to stay.
  *  doorbypass  applySurfaceWrite / loadSurfaceWriteDoor / surfaceWriteDeclarations referenced as
- *              code outside surfaces/runtime, components/agent-copy and the agent write thunk
+ *              code outside surfaces/runtime, components/agent-copy/alchemy-door.ts and the agent write thunk
  *              -> dispatch through the surface write door (a declared write target + handler).
  *  registries  a module-level `new Map` of actions/handlers in a file named *registry*, OR (any
  *              file name) a module-level `new Map`/`new Set` beside an exported `register*` function
@@ -34,7 +34,8 @@
  *  anchorclick `a.href = …; a.click()` with no `download` attribute (navigates instead of saving)
  *              -> downloadUrl (kit); a real link is an <a href> element, not a script click.
  *
- * Named exemptions (ALLOW) carry their reason beside them: components/dialogs/clipboard-fallback/
+ * Named exemptions (ALLOW) are exact files (or one named directory) and carry their reason beside
+ * them - never a whole feature directory without one. components/dialogs/clipboard-fallback/
  * is the dialog that appears when the browser REFUSES the kit clipboard door (permission denied /
  * insecure context) - it holds the person's text in a selectable field to copy by hand, and must
  * itself touch the raw clipboard API / execCommand once to try, so it cannot route through the door
@@ -70,24 +71,23 @@ const ADVICE: Record<Rule, string> = {
 const ALLOW: Record<Rule, string[]> = {
   // components/dialogs/clipboard-fallback/: the manual-copy dialog shown when the browser refuses the
   // kit clipboard door; it must try the raw API itself and cannot route through the door that sent it there.
-  clipboard: ["packages/chat/src/agent-copy/", "components/agent-copy/", "components/dialogs/clipboard-fallback/"],
+  // No agent-copy file is exempt: the Alchemy copy surfaces copy through the kit door like everyone else.
+  clipboard: ["components/dialogs/clipboard-fallback/"],
   downloads: [
-    "packages/chat/src/agent-copy/",
-    "components/agent-copy/",
     // A static asset of OUR OWN origin (public/) behind a plain <a download>: same-origin, so the browser
     // honors the name and saves it; no blob, no script click, no cross-origin navigation for the kit door to fix.
     "app/(public)/the-landscape/page.tsx",
     "features/messaging/demo/DemoAttachment.tsx",
   ],
-  formatlibs: ["packages/chat/src/agent-copy/", "components/agent-copy/", "components/rich-editor/core/gfm-lexer.ts"],
+  formatlibs: ["components/rich-editor/core/gfm-lexer.ts"],
   doorbypass: [
     "packages/chat/src/surfaces/runtime/",
-    "components/agent-copy/",
+    // THE ONE WRITE DOOR bound for the app (ALC-17): it IS the door - it wraps applySurfaceWrite /
+    // loadSurfaceWriteDoor into the Alchemy host's `door` port. Only this file of agent-copy/ is exempt.
+    "components/agent-copy/alchemy-door.ts",
     "packages/chat/src/agents/redux/execution-system/thunks/dispatch-surface-write.thunk.ts",
   ],
   registries: [
-    "packages/chat/src/agent-copy/",
-    "components/agent-copy/",
     // Client directives are the server -> client stream INSTRUCTION vocabulary
     // (what the stream tells the page to do), not Actions or menu items (coordinator ruling).
     "lib/client-directives/directiveRegistry.ts",
@@ -154,6 +154,14 @@ const CSV_NAME = /text\/csv|text\/tab-separated|["'`.][\w-]*\.(?:csv|tsv)\b|\b(?
 const RUNNABLE_VALUE = /action|handler|command|menu|provider|adapter|resolver|generator|door|callback|=>|Fn\b/i;
 /** A Map/Set of bare `() => void` listeners (pub/sub, abort waiters) holds subscriptions, not runnable actions. */
 const LISTENER_SET = /Set<\s*\(\s*\)\s*=>\s*void\s*>/;
+/**
+ * The raw clipboard, however it is reached: `navigator.clipboard` / `navigator?.clipboard` /
+ * `navigator["clipboard"]`, a clipboard method on ANY receiver (a cast `(navigator as …).clipboard
+ * .writeText(`, `window.navigator.clipboard?.read(`, a destructured `clipboard.writeText(`), the
+ * destructuring itself (`const { clipboard } = navigator`), execCommand copy/cut, new ClipboardItem.
+ */
+const RAW_CLIPBOARD =
+  /navigator\s*\??\.\s*clipboard\b|navigator\s*\[\s*["'`]clipboard["'`]\s*\]|\bclipboard\s*[!?]?\.\s*(?:writeText|write|readText|read)\s*\(|\{[^}]*\bclipboard\b[^}]*\}\s*=\s*(?:window\.)?navigator\b|execCommand\(\s*["'](copy|cut)["']|new\s+ClipboardItem\b/;
 const OBJECT_URL = /URL\.createObjectURL\s*\(|["'`]blob:/;
 
 const DOWNLOAD_MARK = [/\.download\s*=/, /setAttribute\(\s*["']download["']/, /\bsaveAs\s*\(/];
@@ -232,7 +240,7 @@ export function scanSource(file: string, src: string): Hit[] {
     lines.some((l) => /csv|tsv|delimited/i.test(l));
   const hasRegisterFn = lines.some((l) => /^export\s+(?:async\s+)?(?:function\s+register\w*\s*[(<]|const\s+register\w*\s*[:=])/.test(l));
   lines.forEach((l, i) => {
-    if (/navigator\.clipboard\b|execCommand\(\s*["'](copy|cut)["']|new\s+ClipboardItem\b/.test(l)) add("clipboard", i);
+    if (RAW_CLIPBOARD.test(l)) add("clipboard", i);
     if (markLines.has(i) || (hasDownload && /URL\.createObjectURL\s*\(/.test(l))) add("downloads", i);
     if (LIB_IMPORT.test(l)) add("formatlibs", i);
     if (/\b(applySurfaceWrite|loadSurfaceWriteDoor|surfaceWriteDeclarations)\b/.test(l)) add("doorbypass", i);
@@ -326,12 +334,21 @@ function selfTest(): number {
     { rule: "windowopen", file: "features/x/Foo.ts", src: "const u = URL.createObjectURL(blob);\nwindow.open(\n  u,\n  '_blank',\n);\n", red: true, what: "multi-line window.open of an object URL" },
     { rule: "windowopen", file: "features/x/Foo.ts", src: "window.open('https://example.com', '_blank');\n", red: false, what: "window.open of a plain URL" },
     { rule: "anchorclick", file: "features/x/Foo.ts", src: "const a = document.createElement('a');\na.href = url;\na.download = 'f.csv';\na.click();\n", red: false, what: "anchor click WITH a download attribute (the downloads rule owns it)" },
+    { rule: "clipboard", file: "components/x/Foo.tsx", src: "await (\n  navigator as { clipboard?: { writeText(t: string): Promise<void> } }\n).clipboard.writeText(url);\n", red: true, what: "clipboard reached through a cast receiver" },
+    { rule: "clipboard", file: "components/x/Foo.tsx", src: "await navigator[\"clipboard\"].writeText(url);\n", red: true, what: "navigator[\"clipboard\"]" },
+    { rule: "clipboard", file: "components/x/Foo.tsx", src: "const { clipboard } = window.navigator;\n", red: true, what: "clipboard destructured off navigator" },
+    { rule: "clipboard", file: "components/x/Foo.tsx", src: "const items = await nav.clipboard?.read();\n", red: true, what: "clipboard?.read( on an alias receiver" },
+    { rule: "clipboard", file: "components/agent-copy/CopyButtons.tsx", src: "navigator.clipboard.writeText(a);\n", red: true, what: "an agent-copy file is NOT exempt" },
+    { rule: "clipboard", file: "components/x/Foo.tsx", src: "const text = e.clipboardData.getData('text/plain');\n", red: false, what: "a paste event's clipboardData" },
+    { rule: "clipboard", file: "components/x/Foo.tsx", src: "const ok = await copyText(url, 'Link copied');\n", red: false, what: "the kit copy" },
+    { rule: "doorbypass", file: "components/agent-copy/AlchemyHost.tsx", src: "await applySurfaceWrite(t, v);\n", red: true, what: "agent-copy beyond the one door file is NOT exempt" },
+    { rule: "doorbypass", file: "components/agent-copy/alchemy-door.ts", src: "await applySurfaceWrite(t, v);\n", red: false, what: "the one write door file" },
   ];
   let bad = 0;
   for (const lib of ["html-to-image", "jszip", "pptxgenjs", "file-saver", "docx", "pdf-lib", "dom-to-image-more"]) {
     const src = `const m = await import("${lib}");\n`;
     const red = scanSource("features/x/Foo.ts", src).some((h) => h.rule === "formatlibs");
-    const exempt = scanSource("components/agent-copy/x.ts", src).length === 0;
+    const exempt = scanSource("components/rich-editor/core/gfm-lexer.ts", src).length === 0;
     console.log(`[self-test] formatlibs ${lib}: ${red ? "RED" : "NOT RED"}, allowlist ${exempt ? "exempt" : "NOT exempt"} ${red && exempt ? "ok" : "FAIL"}`);
     if (!(red && exempt)) bad++;
   }

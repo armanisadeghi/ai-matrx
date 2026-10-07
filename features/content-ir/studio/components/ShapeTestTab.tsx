@@ -216,8 +216,7 @@ export default function ShapeTestTab({
 
   async function copyInstance(): Promise<void> {
     if (instance === null) return;
-    if (!(await copyText(JSON.stringify(instance, null, 2)))) return;
-    toast.success(`Copied ${kind} instance`);
+    if (!(await copyText(JSON.stringify(instance, null, 2), `Copied ${kind} instance`))) return;
   }
 
   // Surface scope (matrx-user/shapes) — the Test tab nests DEEPER than the

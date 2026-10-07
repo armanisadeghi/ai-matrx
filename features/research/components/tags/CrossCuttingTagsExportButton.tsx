@@ -66,13 +66,11 @@ export function CrossCuttingTagsExportButton({
           mode === "ai"
             ? tagInputToAiText(topicId, topicName, data)
             : tagInputToText(topicName, data);
-        if (!(await copyText(text))) return;
-        toast.success(
-          mode === "ai" ? "Copied tag input for AI" : "Copied tag input",
-          {
-            description:
-              "Paste into the Cross-Cutting Tag Generator agent, then add your own prompt at the end to steer it.",
-          },
+        await copyText(
+          text,
+          mode === "ai"
+            ? "Copied tag input for AI — paste into the Cross-Cutting Tag Generator"
+            : "Copied tag input — paste into the Cross-Cutting Tag Generator",
         );
       } catch (err) {
         toast.error(err instanceof Error ? err.message : "Export failed");

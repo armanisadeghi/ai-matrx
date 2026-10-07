@@ -91,10 +91,13 @@ export function InjuriesList({
   const handleCopyAll = async () => {
     if (rows.length === 0) return;
     const tsv = rowsToTsv(rows);
-    if (!(await copyText(tsv))) return;
-    toast.success(`Copied ${rows.length} injuries`, {
-      description: "Tab-separated — paste into Excel or Sheets.",
-    });
+    if (
+      !(await copyText(
+        tsv,
+        `Copied ${rows.length} injuries — paste into Excel or Sheets`,
+      ))
+    )
+      return;
   };
 
   return (

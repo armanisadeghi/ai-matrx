@@ -1,4 +1,5 @@
 "use client";
+import { useClipboard } from "@ai-matrx/kit/clipboard";
 import React, { useRef, useCallback, useState, useEffect } from "react";
 import { AnimatePresence } from "motion/react";
 import { DesktopImageCard } from "@/components/image/shared/DesktopImageCard";
@@ -26,6 +27,12 @@ export function ImageGallery({ imageUrls = [] }: { imageUrls?: string[] }) {
   const [viewMode, setViewMode] = useState<"grid" | "natural">("grid");
 
   const { toast } = useToast();
+  const { copyText } = useClipboard({
+    notify: (message, kind) =>
+      kind === "error"
+        ? toast({ title: message, variant: "destructive" })
+        : toast({ title: message }),
+  });
 
   const observer = useRef<IntersectionObserver | null>(null);
   const photosPerPage = 12;
@@ -124,40 +131,23 @@ export function ImageGallery({ imageUrls = [] }: { imageUrls?: string[] }) {
   };
 
   const handleShare = async (photo: SimplePhoto) => {
-    try {
-      if ("share" in navigator) {
+    if ("share" in navigator) {
+      try {
         await navigator.share({
           title: photo.description || "Shared image",
           text: `Check out this image!`,
           url: photo.url,
         });
-      } else if (
-        "clipboard" in
-        (navigator as {
-          clipboard: { writeText: (text: string) => Promise<void> };
-        })
-      ) {
-        await (
-          navigator as {
-            clipboard: { writeText: (text: string) => Promise<void> };
-          }
-        ).clipboard.writeText(photo.url);
-        toast({
-          title: "Link copied",
-          description: "The image link has been copied to your clipboard.",
-        });
-      } else {
-        throw new Error("Sharing or clipboard not supported");
+        return;
+      } catch (err) {
+        // Closing the share sheet is a choice, not a failure.
+        if (err instanceof DOMException && err.name === "AbortError") return;
+        console.error("Share failed, copying the link instead: ", err);
       }
-    } catch (err) {
-      console.error("Failed to share or copy: ", err);
-      toast({
-        title: "Copy/Share failed",
-        description: "There was an issue sharing or copying the link.",
-        variant: "destructive",
-      });
     }
+    await copyText(photo.url, "Link copied", "There was an issue copying the link.");
   };
+
 
   const handleSearchChange = (query: string) => {
     setSearchQuery(query);

@@ -10,6 +10,13 @@ const CLIPBOARD_MODULES = new Set([
   "@ai-matrx/kit/clipboard",
 ]);
 const COPY_METHODS = new Set(["copyText", "copyImage", "copyLink"]);
+/**
+ * The app's bound copy (`lib/clipboard/copy.ts`): the kit `copyText` with the app toast as `notify`.
+ * It ALWAYS notifies a failure (unless `options.failureMessage` replaces the words) and notifies
+ * success when its second argument is given. Only the double-notice rules read it.
+ */
+const APP_COPY_MODULE = "@/lib/clipboard/copy";
+const APP_COPY = "copyToClipboard";
 
 export type BoundCall = {
   file: string;
@@ -43,7 +50,20 @@ export function trackedFiles(): string[] {
 function importBindings(sourceFile: ts.SourceFile) {
   const hookNames = new Set<string>();
   const standalone = new Map<string, string>();
+  const appCopy = new Set<string>();
   for (const statement of sourceFile.statements) {
+    if (
+      ts.isImportDeclaration(statement) &&
+      ts.isStringLiteral(statement.moduleSpecifier) &&
+      statement.moduleSpecifier.text === APP_COPY_MODULE
+    ) {
+      const named = statement.importClause?.namedBindings;
+      if (named && ts.isNamedImports(named))
+        for (const element of named.elements)
+          if ((element.propertyName?.text ?? element.name.text) === APP_COPY)
+            appCopy.add(element.name.text);
+      continue;
+    }
     if (
       !ts.isImportDeclaration(statement) ||
       !ts.isStringLiteral(statement.moduleSpecifier) ||
@@ -59,7 +79,7 @@ function importBindings(sourceFile: ts.SourceFile) {
         standalone.set(element.name.text, imported);
     }
   }
-  return { hookNames, standalone };
+  return { hookNames, standalone, appCopy };
 }
 
 function unwrap(expression: ts.Expression): ts.Expression {
@@ -276,12 +296,19 @@ export function censusSource(file: string, source: string): BoundCall[] {
  *   with no per-call `failureMessage`) whose `false` branch toasts again: a
  *   refused copy then shows two toasts. Pass the specific words as
  *   `failureMessage` (kit 0.30) and drop the branch toast, or construct the
- *   hook without `notify`.
+ *   hook without `notify`. The second notice may be any toast (info and
+ *   warning included, a `?:` false arm too) or an inline error setter.
+ * - `double-success` — a copy that ALREADY notifies its own success (every
+ *   copy from a `useClipboard({ notify })` hook — the kit falls back to "Text
+ *   copied to clipboard!" — a standalone copy given `notify` +
+ *   `successMessage`, or `copyToClipboard(text, words)`) followed on its
+ *   success path by the component's own success/info toast: one copy, two
+ *   toasts. Pass the words as the call's success argument and drop the toast.
  */
 export type DoorMisuse = {
   file: string;
   line: number;
-  rule: "dead-catch" | "work-skipped" | "double-toast";
+  rule: "dead-catch" | "work-skipped" | "double-toast" | "double-success";
   detail: string;
 };
 
@@ -319,7 +346,16 @@ function isFailedCopyReturn(
       ts.isReturnStatement(then.statements[0]));
 }
 
-const FAILURE_TOAST = /\btoast\.(?:error|warning)\s*\(|\btoast\s*\(|\bnotify\s*\(/;
+/**
+ * A second failure notice: any toast (error, warning, info, message, bare), a `notify`, or an
+ * inline error setter (`setError(…)`, `setErrorMsg(…)`, `setCopyError(…)`). One refused copy gets
+ * ONE surface: pass the words as `failureMessage`, or build the hook without `notify` and keep
+ * the inline error.
+ */
+const FAILURE_TOAST =
+  /\b(?:toast|copyToast)\.(?:error|warning|info|message)\s*\(|\b(?:toast|copyToast)\s*\(|\bnotify\s*\(|\bset(?:Error\w*|\w+Error)\s*\(/;
+/** A success notice the component adds itself: a success/info/message/bare toast. */
+const SUCCESS_TOAST_CALLEE = /^(?:toast|copyToast)(?:\.(?:success|info|message))?$/;
 
 /** Local copy names whose hook was built with a `notify` (they already toast a failure). */
 function notifyingHookLocals(
@@ -360,25 +396,52 @@ function notifyingHookLocals(
   return names;
 }
 
+type CopyKind = "hook" | "standalone" | "app";
+
+function objectHas(options: ts.Expression | undefined, name: string): boolean {
+  return Boolean(
+    options &&
+      ts.isObjectLiteralExpression(options) &&
+      options.properties.some(
+        (p) => p.name && ts.isIdentifier(p.name) && p.name.text === name,
+      ),
+  );
+}
+
 /** True when this call notifies its own failure with the generic words (no per-call `failureMessage`). */
 function callNotifiesFailure(
   call: ts.CallExpression,
   hookNotifying: boolean,
-  isStandalone: boolean,
+  kind: CopyKind,
   method: string,
 ): boolean {
-  if (isStandalone) {
+  if (kind === "app") return !objectHas(call.arguments[2], "failureMessage");
+  if (kind === "standalone") {
     const options = call.arguments[1];
-    if (!options || !ts.isObjectLiteralExpression(options)) return false;
-    const has = (name: string) =>
-      options.properties.some(
-        (p) => p.name && ts.isIdentifier(p.name) && p.name.text === name,
-      );
-    return has("notify") && !has("failureMessage");
+    return objectHas(options, "notify") && !objectHas(options, "failureMessage");
   }
   if (!hookNotifying) return false;
   const failureIndex = method === "copyLink" ? 3 : 2;
   return call.arguments.length <= failureIndex;
+}
+
+/**
+ * True when this call already notifies its own success: every copy from a hook built with
+ * `notify` (the kit falls back to "Text copied to clipboard!"), a standalone copy given both
+ * `notify` and `successMessage`, and the app copy given its success words.
+ */
+function callNotifiesSuccess(
+  call: ts.CallExpression,
+  hookNotifying: boolean,
+  kind: CopyKind,
+): boolean {
+  if (kind === "app") return call.arguments.length >= 2;
+  if (kind === "standalone")
+    return (
+      objectHas(call.arguments[1], "notify") &&
+      objectHas(call.arguments[1], "successMessage")
+    );
+  return hookNotifying;
 }
 
 function doubleToastSource(
@@ -387,6 +450,7 @@ function doubleToastSource(
   locals: Map<string, string>,
   standalone: Map<string, string>,
   hookNotifying: Set<string>,
+  appCopy: Set<string>,
 ): DoorMisuse[] {
   const found: DoorMisuse[] = [];
   const lineOf = (node: ts.Node) =>
@@ -396,76 +460,132 @@ function doubleToastSource(
     while (ts.isParenthesizedExpression(c)) c = c.expression;
     return c;
   };
-  /** Failure branches of every `if` in `scope` that tests `matches` (negated: then, plain: else). */
+  /**
+   * Failure branches of every `if` / `?:` in `scope` that tests `matches` (negated: then,
+   * plain: else), plus everything after a bare `if (!result) return;` is NOT failure.
+   */
   function failureBranches(scope: ts.Node, matches: (e: ts.Expression) => boolean) {
-    const branches: ts.Statement[] = [];
+    const branches: ts.Node[] = [];
     const walk = (n: ts.Node) => {
-      if (ts.isIfStatement(n)) {
-        const cond = strip(n.expression);
+      if (ts.isIfStatement(n) || ts.isConditionalExpression(n)) {
+        const cond = strip(ts.isIfStatement(n) ? n.expression : n.condition);
+        const whenTrue = ts.isIfStatement(n) ? n.thenStatement : n.whenTrue;
+        const whenFalse = ts.isIfStatement(n) ? n.elseStatement : n.whenFalse;
         if (
           ts.isPrefixUnaryExpression(cond) &&
           cond.operator === ts.SyntaxKind.ExclamationToken &&
           matches(strip(cond.operand))
         )
-          branches.push(n.thenStatement);
-        else if (matches(cond) && n.elseStatement) branches.push(n.elseStatement);
+          branches.push(whenTrue);
+        else if (matches(cond) && whenFalse) branches.push(whenFalse);
       }
       ts.forEachChild(n, walk);
     };
     walk(scope);
     return branches;
   }
-  function visit(node: ts.Node) {
+  /** Where the copy's result is decided, and which branches of it are the refused path. */
+  function resultScope(call: ts.CallExpression): {
+    scope: ts.Node;
+    failure: ts.Node[];
+  } {
+    let top: ts.Node = call;
+    while (ts.isParenthesizedExpression(top.parent)) top = top.parent;
+    const parent = top.parent;
     if (
-      ts.isCallExpression(node) &&
-      ts.isIdentifier(node.expression) &&
-      locals.has(node.expression.text)
+      ts.isPropertyAccessExpression(parent) &&
+      parent.name.text === "then" &&
+      ts.isCallExpression(parent.parent)
     ) {
+      const cb = parent.parent.arguments[0];
+      if (cb && (ts.isArrowFunction(cb) || ts.isFunctionExpression(cb))) {
+        const param = cb.parameters[0];
+        const id = param && ts.isIdentifier(param.name) ? param.name.text : undefined;
+        return {
+          scope: cb.body,
+          failure: id
+            ? failureBranches(cb, (e) => ts.isIdentifier(e) && e.text === id)
+            : [],
+        };
+      }
+    }
+    let fn: ts.Node = call;
+    while (fn.parent && !ts.isFunctionLike(fn)) fn = fn.parent;
+    const scope = ts.isFunctionLike(fn) && "body" in fn && fn.body ? fn.body : sourceFile;
+    if (ts.isAwaitExpression(parent)) {
+      const holder = parent.parent;
+      if (ts.isVariableDeclaration(holder) && ts.isIdentifier(holder.name)) {
+        const id = holder.name.text;
+        return {
+          scope,
+          failure: failureBranches(scope, (e) => ts.isIdentifier(e) && e.text === id),
+        };
+      }
+      return { scope, failure: failureBranches(scope, (e) => e === parent) };
+    }
+    return { scope, failure: [] };
+  }
+  function visit(node: ts.Node) {
+    if (ts.isCallExpression(node) && ts.isIdentifier(node.expression)) {
       const name = node.expression.text;
-      const method = locals.get(name) as string;
-      if (callNotifiesFailure(node, hookNotifying.has(name), standalone.has(name), method)) {
-        let top: ts.Node = node;
-        while (ts.isParenthesizedExpression(top.parent)) top = top.parent;
-        const parent = top.parent;
-        let branches: ts.Statement[] = [];
-        if (ts.isAwaitExpression(parent)) {
-          const awaited = parent;
-          const holder = parent.parent;
-          let scope: ts.Node = holder;
-          while (scope.parent && !ts.isFunctionLike(scope.parent)) scope = scope.parent;
-          const root = scope.parent ?? sourceFile;
-          if (ts.isVariableDeclaration(holder) && ts.isIdentifier(holder.name)) {
-            const id = holder.name.text;
-            branches = failureBranches(root, (e) => ts.isIdentifier(e) && e.text === id);
-          } else {
-            branches = failureBranches(root, (e) => e === awaited);
-          }
-        } else if (
-          ts.isPropertyAccessExpression(parent) &&
-          parent.name.text === "then" &&
-          ts.isCallExpression(parent.parent)
-        ) {
-          const cb = parent.parent.arguments[0];
-          if (
-            cb &&
-            ts.isFunctionLike(cb) &&
-            cb.parameters[0] &&
-            ts.isIdentifier(cb.parameters[0].name)
-          ) {
-            const id = cb.parameters[0].name.text;
-            branches = failureBranches(cb, (e) => ts.isIdentifier(e) && e.text === id);
-          }
-        }
-        for (const branch of branches) {
-          const text = branch.getText(sourceFile);
-          if (FAILURE_TOAST.test(text)) {
-            found.push({
-              file,
-              line: lineOf(branch),
-              rule: "double-toast",
-              detail: text.replace(/\s+/g, " ").slice(0, 160),
-            });
-            break;
+      const kind: CopyKind | undefined = appCopy.has(name)
+        ? "app"
+        : locals.has(name)
+          ? standalone.has(name)
+            ? "standalone"
+            : "hook"
+          : undefined;
+      if (kind) {
+        const method = locals.get(name) ?? "copyText";
+        const notifiesFailure = callNotifiesFailure(
+          node,
+          hookNotifying.has(name),
+          kind,
+          method,
+        );
+        const notifiesSuccess = callNotifiesSuccess(node, hookNotifying.has(name), kind);
+        if (notifiesFailure || notifiesSuccess) {
+          const { scope, failure } = resultScope(node);
+          if (notifiesFailure)
+            for (const branch of failure) {
+              const text = branch.getText(sourceFile);
+              if (FAILURE_TOAST.test(text)) {
+                found.push({
+                  file,
+                  line: lineOf(branch),
+                  rule: "double-toast",
+                  detail: text.replace(/\s+/g, " ").slice(0, 160),
+                });
+                break;
+              }
+            }
+          if (notifiesSuccess) {
+            const inFailure = (n: ts.Node) =>
+              failure.some((b) => n.pos >= b.pos && n.end <= b.end);
+            let reported = false;
+            const walk = (n: ts.Node) => {
+              if (reported) return;
+              // A toast in a nested function (a timer, a later handler) or a catch is not this copy's success notice.
+              if (n !== scope && ts.isFunctionLike(n)) return;
+              if (ts.isCatchClause(n)) return;
+              if (
+                ts.isCallExpression(n) &&
+                n.pos >= node.end &&
+                SUCCESS_TOAST_CALLEE.test(n.expression.getText(sourceFile)) &&
+                !inFailure(n)
+              ) {
+                reported = true;
+                found.push({
+                  file,
+                  line: lineOf(n),
+                  rule: "double-success",
+                  detail: n.getText(sourceFile).replace(/\s+/g, " ").slice(0, 160),
+                });
+                return;
+              }
+              ts.forEachChild(n, walk);
+            };
+            walk(scope);
           }
         }
       }
@@ -484,8 +604,8 @@ export function doorMisuseSource(file: string, source: string): DoorMisuse[] {
     true,
     file.endsWith(".tsx") ? ts.ScriptKind.TSX : ts.ScriptKind.TS,
   );
-  const { hookNames, standalone } = importBindings(sourceFile);
-  if (!hookNames.size && !standalone.size) return [];
+  const { hookNames, standalone, appCopy } = importBindings(sourceFile);
+  if (!hookNames.size && !standalone.size && !appCopy.size) return [];
   const locals = boundLocals(sourceFile, hookNames, standalone);
   const found: DoorMisuse[] = [];
   const lineOf = (node: ts.Node) =>
@@ -563,6 +683,7 @@ export function doorMisuseSource(file: string, source: string): DoorMisuse[] {
       locals,
       standalone,
       notifyingHookLocals(sourceFile, hookNames),
+      appCopy,
     ),
   );
   return found;
@@ -598,8 +719,13 @@ function resetsCopiedState(text: string | undefined): boolean {
 
 export function violations(calls: BoundCall[]): BoundCall[] {
   return calls.filter((call) => {
+    // Work that must run whether or not the copy landed (closing, navigating, a caller's
+    // callback) is not a success signal: gating it is the `work-skipped` defect.
     if (call.kind === "await-discarded" || call.kind === "promise-discarded")
-      return signalsCopySuccess(call.nextStatement);
+      return (
+        signalsCopySuccess(call.nextStatement) &&
+        !REQUIRED_WORK.test(call.nextStatement ?? "")
+      );
     if (call.kind === "then-result-ignored")
       return signalsCopySuccess(call.statement);
     if (call.kind === "menu-result-forwarded") return true;
@@ -750,8 +876,86 @@ export function selfTest() {
     `import { copyText } from "@ai-matrx/kit/clipboard";
      async function run() { if (!(await copyText("v", { notify }))) { toast.error("no"); } }`,
   );
+  const rule = (found: DoorMisuse[], name: DoorMisuse["rule"]) =>
+    found.filter((f) => f.rule === name).length;
+  const doubleSuccess = doorMisuseSource(
+    "double-success.tsx",
+    `${hookN} async function run() { if (!(await copyText("v"))) return; setCopied(true); toast.success("URL copied"); } }`,
+  );
+  const doubleSuccessThen = doorMisuseSource(
+    "double-success-then.tsx",
+    `${hookN} function run() { void copyText("v").then((ok) => { if (!ok) return; toast({ title: "Copied" }); }); } }`,
+  );
+  const doubleSuccessIf = doorMisuseSource(
+    "double-success-if.tsx",
+    `${hookN} async function run() { if (await copyText("v")) toast.info("Paste it in chat"); } }`,
+  );
+  const successWordsPassed = doorMisuseSource(
+    "success-words.tsx",
+    `${hookN} async function run() { if (!(await copyText("v", "URL copied"))) return; setCopied(true); setTimeout(() => toast.success("later"), 1); } }`,
+  );
+  const quietHookSuccess = doorMisuseSource(
+    "quiet-hook-success.tsx",
+    `${kit} function V() { const { copyText } = useClipboard();
+       async function run() { if (!(await copyText("v"))) return; toast.success("Copied"); } }`,
+  );
+  const failureToastNotSuccess = doorMisuseSource(
+    "failure-only.tsx",
+    `${hookN} async function run() { const ok = await copyText("v", "Copied", "No"); if (!ok) { toast.info("x"); } } }`,
+  );
+  const appCopyDouble = doorMisuseSource(
+    "app-copy.tsx",
+    `import { copyToClipboard } from "@/lib/clipboard/copy";
+     async function run() { if (await copyToClipboard("v", "Copied")) toast.success("Copied!"); }`,
+  );
+  const appCopyQuiet = doorMisuseSource(
+    "app-copy-quiet.tsx",
+    `import { copyToClipboard } from "@/lib/clipboard/copy";
+     async function run() { if (await copyToClipboard("v")) toast.success("Copied!"); }`,
+  );
+  const appCopyFailure = doorMisuseSource(
+    "app-copy-failure.tsx",
+    `import { copyToClipboard } from "@/lib/clipboard/copy";
+     async function run() { if (!(await copyToClipboard("v"))) toast.error("no"); }`,
+  );
+  const ternaryDouble = doorMisuseSource(
+    "ternary.tsx",
+    `${hookN} function run() { void copyText("v").then((ok) => ok ? toast.success("Copied.") : toast.warning("Could not copy.")); } }`,
+  );
+  const infoFailure = doorMisuseSource(
+    "info-failure.tsx",
+    `${hookN} async function run() { if (!(await copyText("v", "Copied"))) { toast.info("Paste it by hand"); } onClose(); } }`,
+  );
+  const inlineErrorFailure = doorMisuseSource(
+    "inline-error.tsx",
+    `${hookN} async function run() { if (!(await copyText("v"))) { setErrorMsg("Could not write"); return; } setCopied(true); } }`,
+  );
+  const inlineErrorQuietHook = doorMisuseSource(
+    "inline-error-quiet.tsx",
+    `${kit} function V() { const { copyText } = useClipboard();
+       async function run() { if (!(await copyText("v"))) { setErrorMsg("Could not write"); return; } } }`,
+  );
+  const requiredWorkAfterDiscard = censusSource(
+    "required-work.tsx",
+    `${hookN} async function run() { await copyText("v", "Copied", "Not copied"); onClose(); router.push("/chat"); } }`,
+  );
   const repositoryFiles = trackedFiles();
   const results = [
+    rule(doubleSuccess, "double-success") === 1,
+    rule(doubleSuccessThen, "double-success") === 1,
+    rule(doubleSuccessIf, "double-success") === 1,
+    rule(successWordsPassed, "double-success") === 0,
+    rule(quietHookSuccess, "double-success") === 0,
+    rule(failureToastNotSuccess, "double-success") === 0,
+    rule(appCopyDouble, "double-success") === 1,
+    rule(appCopyQuiet, "double-success") === 0,
+    rule(appCopyFailure, "double-toast") === 1,
+    rule(ternaryDouble, "double-toast") === 1 &&
+      rule(ternaryDouble, "double-success") === 1,
+    rule(infoFailure, "double-toast") === 1 && rule(infoFailure, "double-success") === 0,
+    rule(inlineErrorFailure, "double-toast") === 1,
+    rule(inlineErrorQuietHook, "double-toast") === 0,
+    violations(requiredWorkAfterDiscard).length === 0,
     violations(unsafeAwait).length === 1,
     violations(guardedAwait).length === 0,
     violations(unsafeThen).length === 1,

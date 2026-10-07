@@ -131,11 +131,7 @@ export function MobileImageGallery({
   };
 
   const handleShare = async (photo: SimplePhoto) => {
-    if (!(await copyText(photo.url, undefined, "There was an issue copying the link."))) return;
-    toast({
-      title: "Link copied",
-      description: "The image link has been copied to your clipboard.",
-    });
+    if (!(await copyText(photo.url, "Link copied", "There was an issue copying the link."))) return;
   };
 
   const handleSearchChange = (query: string) => {
