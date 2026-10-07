@@ -45,6 +45,18 @@ Block document: a tree of `SpaceBlock` (`id`, `type`, `text: RichSpan[]`, `color
 
 ## Change log
 
+- 2026-10-07 — phase 6, Publish (J1, I4, O10; lane spaces-publish): Share menu gains Notion's Publish tab (`collab/PublishPanel.tsx`):
+  Publish, the public link (copy / open), Include sub-pages (on), Allow search engines (off, the T-12 switch
+  `platform.set_search_engine_indexed`), Allow duplicate as template (on), Site customization (the link), Unpublish.
+  Doors (`publish/publish-doors.ts`): `content.space_publish` (editor-only, sub-pages follow), `content.space_public_view`
+  (the one anonymous read, `published_to_web`), `content.space_duplicate_published`. Public page `/site/<link>`
+  (`app/(link)/site/[slug]`, outside the fence, entry `public/PublicSpace.tsx` + `public/public-view.ts`): the same
+  SpaceEditor read-only behind `StaticSpacesProvider`, title/description/cover OG image, noindex unless allowed.
+  Duplicate lands on `/spaces/duplicate?from=<link>` (sign-in first when signed out; the platform's organization
+  picker on the person's press). A sub-page made under a published page is published only when it includes sub-pages.
+  Proofs: `publish/publish-live-proof.ts` 19/19 (refusals: unpublished, sub-pages off, signed out, non-editor,
+  duplicate off), walk `__tests__/walk/publish.walk.mjs` 11/11. Open: NEEDS rows (anonymous table rows, uploaded
+  media signed out, custom domain, embed).
 - 2026-10-07 — builder round 25: the real chart-tile rule (round 24 overstated it). Tile width follows the window (172px at 1699,
   114px at 1280). Name pill: 14px/600 and a 10px/10px symmetric pad, start-aligned and cut with an ellipsis, down to a 130px-wide
   tile; at or under 130px the name is 12px, 4px/5px pad, no icon. Centre number: ONE size, 20px, for any value of up to five
