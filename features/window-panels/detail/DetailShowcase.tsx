@@ -36,7 +36,7 @@ import { Skeleton } from "@ai-matrx/design-system";
 import { cn } from "@/lib/utils";
 import { toast } from "@/lib/toast";
 import { supabase } from "@/utils/supabase/client";
-import { copyToClipboard } from "@/components/matrx/buttons/markdown-copy-utils";
+import { copyToClipboard } from "@/components/agent-copy/copy-commands";
 import { useDetailHost } from "@ai-matrx/detail/react";
 import { useOpenDetail } from "@ai-matrx/detail/react";
 import { detailInstanceKey } from "@ai-matrx/detail";

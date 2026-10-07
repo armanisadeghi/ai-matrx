@@ -168,11 +168,6 @@ registerChatUi({
   JsonInspector: Host_JsonInspector,
 });
 
-import { InlineCopyButton as Host_InlineCopyButton } from "@/components/matrx/buttons/InlineCopyButton";
-registerChatUi({
-  InlineCopyButton: Host_InlineCopyButton,
-});
-
 import { ConfirmDialog as Host_ConfirmDialog } from "@/components/ui/confirm-dialog";
 registerChatUi({
   ConfirmDialog: Host_ConfirmDialog,

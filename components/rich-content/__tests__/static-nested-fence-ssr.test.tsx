@@ -21,9 +21,7 @@ jest.mock("@ai-matrx/rich-content/markdown-core/MarkdownCore", () => ({
   __esModule: true,
   default: () => null,
 }));
-jest.mock("@/components/matrx/buttons/MarkdownCopyButton", () => ({
-  InlineCopyButton: () => null,
-}));
+jest.mock("@/components/agent-copy/CopyButtons", () => ({ CopyButtons: () => null }));
 
 import { RichContentServer } from "@/components/rich-content/server/RichContentServer";
 import { RichContentStaticStandard } from "@/components/rich-content/RichContentStaticProse";

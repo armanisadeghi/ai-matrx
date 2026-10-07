@@ -44,7 +44,7 @@ import { Skeleton } from "@ai-matrx/design-system";
 import { Badge, Button, Chip } from "@ai-matrx/design-system/controls";
 import { Textarea } from "@ai-matrx/design-system";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@ai-matrx/chat/ui/tabs";
-import { InlineCopyButton } from "@ai-matrx/chat/host/ui-slots";
+import { CopyButtons } from "@ai-matrx/chat/host/ui-slots";
 import { RichContent } from "@ai-matrx/chat/host/ui-slots";
 import { SystemItemsLine } from "./SystemItemsLine";
 import { useAppDispatch, useAppSelector } from "../../../store/hooks";
@@ -190,11 +190,11 @@ function Block({
           <pre data-kind-source="explicit" className="whitespace-pre-wrap break-words rounded-md border border-border bg-muted/40 px-2.5 py-2 font-mono text-[11px] leading-relaxed text-foreground">
             {block}
           </pre>
-          <InlineCopyButton
-            content={block}
-            formatJson={false}
+          <CopyButtons
+            label="Copy"
+            human={block}
             size="sm"
-            className="opacity-0 transition-opacity pointer-coarse:opacity-100 group-hover/block:opacity-100"
+            className="absolute top-1 right-1 z-10 opacity-0 transition-opacity pointer-coarse:opacity-100 group-hover/block:opacity-100"
           />
         </div>
       ) : (
@@ -232,11 +232,11 @@ function FedBlock({ label, text, slot }: { label: string; text?: string | null; 
           <pre data-kind-source="explicit" className="max-h-[28rem] overflow-auto whitespace-pre-wrap break-words rounded-md border border-border bg-muted/40 px-2.5 py-2 font-mono text-[11px] leading-relaxed text-foreground">
             {text}
           </pre>
-          <InlineCopyButton
-            content={text}
-            formatJson={false}
+          <CopyButtons
+            label="Copy"
+            human={text}
             size="sm"
-            className="opacity-0 transition-opacity pointer-coarse:opacity-100 group-hover/block:opacity-100"
+            className="absolute top-1 right-1 z-10 opacity-0 transition-opacity pointer-coarse:opacity-100 group-hover/block:opacity-100"
           />
         </div>
       ) : (
@@ -428,11 +428,11 @@ function JsonBlock({ label, value, slot }: { label: string; value: unknown; slot
         <pre data-kind-source="explicit" className="overflow-auto whitespace-pre-wrap break-all rounded-md border border-border bg-muted/40 px-2.5 py-2 font-mono text-[11px] leading-relaxed text-foreground">
           {text}
         </pre>
-        <InlineCopyButton
-          content={text}
-          formatJson={false}
+        <CopyButtons
+          label="Copy"
+          human={text}
           size="sm"
-          className="opacity-0 transition-opacity pointer-coarse:opacity-100 group-hover/block:opacity-100"
+          className="absolute top-1 right-1 z-10 opacity-0 transition-opacity pointer-coarse:opacity-100 group-hover/block:opacity-100"
         />
       </div>
     </div>

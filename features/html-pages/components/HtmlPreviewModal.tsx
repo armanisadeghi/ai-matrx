@@ -30,7 +30,7 @@ import {
   useSaveAndOpenInCodeEditor,
   CHAT_CAPTURES_FOLDER_NAME,
 } from "@/features/code/actions/saveAndOpenInCodeEditor";
-import { copyToClipboard } from "@/components/matrx/buttons/markdown-copy-utils";
+import { copyToClipboard } from "@/components/agent-copy/copy-commands";
 import {
   getMarkdownStylesheet,
   removeThinkingContent,

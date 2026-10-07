@@ -51,9 +51,7 @@ jest.mock("@/utils/auth/getUserId", () => ({
   getUserId: () => "a1e2c3d4-0000-4000-8000-00000000a1e7",
   requireUserId: () => "a1e2c3d4-0000-4000-8000-00000000a1e7",
 }));
-jest.mock("@/components/matrx/buttons/InlineCopyButton", () => ({
-  InlineCopyButton: () => null,
-}));
+jest.mock("@/components/agent-copy/CopyButtons", () => ({ CopyButtons: () => null }));
 // THE platform diff viewer, stood in so the test can read exactly what it is asked to diff.
 jest.mock("@ai-matrx/diff/react", () => ({
   DiffViewer: (props: { original: string; modified: string; originalLabel?: string; modifiedLabel?: string }) => (

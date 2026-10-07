@@ -28,7 +28,7 @@ import {
   Copy,
   CheckCheck,
 } from "lucide-react";
-import { copyToClipboard } from "@/components/matrx/buttons/markdown-copy-utils";
+import { copyToClipboard } from "@/components/agent-copy/copy-commands";
 import { ReferenceCopyButton } from "@/features/matrx-envelope/components/ReferenceCopyButton";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
 import { ExportMenu } from "@/components/agent-copy/ExportMenu";

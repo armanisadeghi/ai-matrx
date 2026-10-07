@@ -26,9 +26,7 @@ jest.mock("@ai-matrx/rich-content/markdown-core/MarkdownCore", () => {
   ) as typeof import("@ai-matrx/rich-content/markdown-core/MarkdownCoreImpl");
   return { __esModule: true, default: actual.default };
 });
-jest.mock("@/components/matrx/buttons/MarkdownCopyButton", () => ({
-  InlineCopyButton: () => null,
-}));
+jest.mock("@/components/agent-copy/CopyButtons", () => ({ CopyButtons: () => null }));
 jest.mock("@/features/code-editor/components/code-block/CodeBlock", () => ({
   __esModule: true,
   default: ({ code }: { code: string }) => <pre>{code}</pre>,

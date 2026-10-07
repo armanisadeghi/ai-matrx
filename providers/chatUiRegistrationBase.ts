@@ -45,7 +45,7 @@ import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import {
   copyRichContent,
   copyToClipboard,
-} from "@/components/matrx/buttons/markdown-copy-utils";
+} from "@/components/agent-copy/copy-commands";
 import {
   selectAllSkills,
   selectSkillsStatus,

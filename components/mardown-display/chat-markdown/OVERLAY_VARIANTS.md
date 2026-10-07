@@ -16,7 +16,7 @@ Inventory of components that are **nearly identical** (same shell pattern, overl
 | **Preview** | `MarkdownStream` in a centered column | `MarkdownPreviewTab` (“Matrx Preview”) |
 | **Extra** | Optional **analysis** tabs when `analysisData` has fields (metadata, classified output, section viewers, …) | **HTML Files**, **Custom Copy**, **Publish** tabs |
 | **Close API** | `onCancel` | `onClose` |
-| **Save** | `onSave` optional; copy button via `MarkdownCopyButton` | `onSave` optional; `showSaveButton` prop |
+| **Save** | `onSave` optional; copy button via `CopyButtons` (alchemy menu) | `onSave` optional; `showSaveButton` prop |
 
 These two are the main “duplicate product” surfaces: same overlay primitive, different state depth (chat vs HTML publishing).
 

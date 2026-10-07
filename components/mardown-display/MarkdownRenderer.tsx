@@ -5,7 +5,7 @@ import { cn } from "@/styles/themes/utils";
 import CodeBlock from "@/features/code-editor/components/code-block/CodeBlock";
 import { parseMarkdownTable } from "@ai-matrx/rich-content/display/markdown-classification/processors/bock-processors/parse-markdown-table";
 import MarkdownTable from "./tables/TableWithSeparatedControls";
-import { InlineCopyButton } from "@/components/matrx/buttons/MarkdownCopyButton";
+import { CopyButtons } from "@/components/agent-copy/CopyButtons";
 import { KindTextGate } from "@/components/mardown-display/chat-markdown/KindTextGate";
 
 import type { ComponentPropsWithoutRef } from "react";
@@ -233,11 +233,13 @@ const MarkdownRendererBody: React.FC<MarkdownRendererProps> = ({
       className={`${type === "message" ? "mb-4 w-full" : ""} ${role === "user" ? "text-right" : "text-left"}`}
     >
       <div className={containerStyles + " relative"}>
-        <InlineCopyButton
-          markdownContent={content}
-          position="top-right"
-          className="mt-1 mr-1"
-          isMarkdown={true}
+        <CopyButtons
+          label="Content"
+          human={content}
+          contentFlavor="markdown"
+          stripThinking
+          size="sm"
+          className="absolute top-1 right-1 z-10 mt-1 mr-1"
         />
         <div className="text-base leading-relaxed tracking-wide h-full w-full">
           <MarkdownCore preset="gfm-math" components={components}>

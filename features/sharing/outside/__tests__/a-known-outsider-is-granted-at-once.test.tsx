@@ -63,7 +63,7 @@ jest.mock("@/utils/supabase/client", () => ({
 const mockToast = jest.fn();
 jest.mock("@/components/ui/use-toast", () => ({ useToast: () => ({ toast: mockToast }) }));
 jest.mock("@/components/dialogs/confirm/ConfirmDialogHost", () => ({ confirm: jest.fn(async () => false) }));
-jest.mock("@/components/matrx/buttons/markdown-copy-utils", () => ({ copyToClipboard: jest.fn(async () => true) }));
+jest.mock("@/components/agent-copy/copy-commands", () => ({ copyToClipboard: jest.fn(async () => true) }));
 
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const { OutsideSharePanel } = require(process.env.PANEL_UNDER_TEST ?? "../OutsideSharePanel") as {

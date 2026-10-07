@@ -20,7 +20,7 @@ import { createRoot, type Root } from "react-dom/client";
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 jest.mock("server-only", () => ({}));
-jest.mock("@/components/matrx/buttons/MarkdownCopyButton", () => ({ InlineCopyButton: () => null }));
+jest.mock("@/components/agent-copy/CopyButtons", () => ({ CopyButtons: () => null }));
 
 // The knob layer, at its network edge: tests set what the org/person resolved.
 const knobs: Record<string, unknown> = {};

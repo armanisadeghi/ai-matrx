@@ -10,7 +10,7 @@ import {
 import { showManualCopy } from "@/components/dialogs/clipboard-fallback/manualCopyOpener";
 import { toast } from "@/lib/toast";
 import { getSessionKnob } from "@/lib/scoped-config/sessionKnob";
-import { markdownToReadableText } from "./markdown-readable-text";
+import { markdownToReadableText } from "@/components/matrx/buttons/markdown-readable-text";
 // The print seam — the kind sandbox frame aliases this module (no KaTeX in the frame).
 import { formattedCopyHtml, removeThinkingContent } from "@/components/matrx/buttons/markdown-copy-html";
 

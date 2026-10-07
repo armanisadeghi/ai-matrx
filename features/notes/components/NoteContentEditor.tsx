@@ -98,7 +98,7 @@ import { usePreparedNoteContentSource } from "../usePreparedNoteContentSource";
 import { NoteWorkingCopyAlert } from "./NoteWorkingCopyAlert";
 import { authoredBy } from "@/components/rich-content/prose/remote-image-policy";
 import { insertAtRichCaret } from "@/components/rich-editor/caretInsert";
-import { copyRichContent } from "@/components/matrx/buttons/markdown-copy-utils";
+import { copyRichContent } from "@/components/agent-copy/copy-commands";
 
 interface NoteContentEditorProps {
   noteId: string;

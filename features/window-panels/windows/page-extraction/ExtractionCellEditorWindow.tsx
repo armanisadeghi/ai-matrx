@@ -11,7 +11,7 @@ import { toast } from "@/lib/toast";
 
 import { BasicContentEditor } from "@/components/content-refine/BasicContentEditor";
 import { JsonViewer } from "@/components/ui/JsonComponents/JsonViewerComponent";
-import { MarkdownCopyButton } from "@/components/matrx/buttons/MarkdownCopyButton";
+import { CopyButtons } from "@/components/agent-copy/CopyButtons";
 import { Button } from "@/components/ui/button";
 import { WindowPanel } from "@/features/window-panels/WindowPanel";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
@@ -122,10 +122,12 @@ export default function ExtractionCellEditorWindow({
             {readOnly ? "Close" : "Cancel"}
           </Button>
           {readOnly && !structuredValue ? (
-            <MarkdownCopyButton
-              markdownContent={draft}
-              title={`Copy ${target.columnLabel}`}
-              hideHTMLPreview
+            <CopyButtons
+              label={`Copy ${target.columnLabel}`}
+              human={draft}
+              contentFlavor="markdown"
+              stripThinking
+              htmlPreview={false}
             />
           ) : !readOnly ? (
             <Button

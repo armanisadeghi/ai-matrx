@@ -102,7 +102,7 @@ fully self-contained, these are the ones to internalize.
 | Import | Used By | Action |
 |--------|---------|--------|
 | `@/utils/markdown-processors/parse-markdown-for-speech` | AssistantMessage | **Keep** — small utility |
-| `@/components/matrx/buttons/markdown-copy-utils` | MessageOptionsMenu | **Keep** — shared utility |
+| `@/components/agent-copy/copy-commands` | MessageOptionsMenu | **Keep** — shared utility |
 
 ---
 

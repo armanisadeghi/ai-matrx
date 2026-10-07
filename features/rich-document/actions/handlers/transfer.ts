@@ -18,7 +18,7 @@ import {
   Type,
 } from "lucide-react";
 import { toast } from "@/lib/toast";
-import { copyRichContent, copyToClipboard } from "@/components/matrx/buttons/markdown-copy-utils";
+import { copyRichContent, copyToClipboard } from "@/components/agent-copy/copy-commands";
 import { registerAction } from "../provider";
 import { contentFileName, deriveContentTitle, getErrorMessage, contentForDestination } from "../utils";
 import { hasTableShape } from "@ai-matrx/records-ui/table-shape";

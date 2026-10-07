@@ -35,7 +35,7 @@ function MaybeSourceEdit({ source, save, children }: { source: string; save?: (n
     </OptionalMarkdownSourceEditProvider>
   );
 }
-import { InlineCopyButton } from "@/components/matrx/buttons/MarkdownCopyButton";
+import { CopyButtons } from "@/components/agent-copy/CopyButtons";
 import { ShimmerText } from "@/components/loaders/ShimmerText";
 import {
   RunJobWorkingLine,
@@ -1653,12 +1653,13 @@ export const EnhancedChatMarkdownInternal: React.FC<
                 console.error("[MarkdownStream] CopyButton error:", error)
               }
             >
-              <InlineCopyButton
-                markdownContent={currentContent}
+              <CopyButtons
+                label="Content"
+                human={currentContent}
+                contentFlavor="markdown"
+                stripThinking
                 size="xs"
-                position="center-right"
-                isMarkdown={true}
-                constrainToParent={true}
+                className="absolute top-1/2 right-1 z-10 -translate-y-1/2"
               />
             </MarkdownErrorBoundary>
           )}

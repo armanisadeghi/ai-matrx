@@ -42,7 +42,7 @@ import type {
   ResolvedContextMenuContext,
 } from "@/features/context-menu-v3/types";
 import type { ApplicationScope } from "@ai-matrx/chat/agents/types/scope.types";
-import { copyToClipboard } from "@/components/matrx/buttons/markdown-copy-utils";
+import { copyToClipboard } from "@/components/agent-copy/copy-commands";
 import { toast } from "@/lib/toast";
 
 import { credentialIdentity } from "../credential-identity";

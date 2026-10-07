@@ -271,14 +271,6 @@ export const componentList: ComponentEntry[] = [
     tags: ["icon", "tooltip", "action", "feedback", "success"],
   },
   {
-    id: "inline-copy-button",
-    name: "Inline Copy Button",
-    path: "components/matrx/buttons/InlineCopyButton.tsx",
-    description: "Button that copies content to clipboard with visual feedback",
-    categories: ["buttons", "utilities", "feedback"],
-    tags: ["copy", "clipboard", "tooltip", "json", "formatting"],
-  },
-  {
     id: "accordion-wrapper",
     name: "Accordion Collapsible Wrapper",
     path: "components/matrx/matrx-collapsible/AccordionWrapper.tsx",

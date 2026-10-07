@@ -1,6 +1,6 @@
 import { Maximize2, Braces, Copy, Eraser, X, FileText } from "lucide-react";
 import { toast } from "@/lib/toast";
-import { copyToClipboard } from "@/components/matrx/buttons/markdown-copy-utils";
+import { copyToClipboard } from "@/components/agent-copy/copy-commands";
 
 // View-mode toggle has moved to MessageViewModeMenu next to the role
 // selector. This file owns the action icon row only.

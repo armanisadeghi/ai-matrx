@@ -9,7 +9,7 @@ import { Eye, Globe, Mail } from "lucide-react";
 import { toast } from "@/lib/toast";
 import { openOverlay } from "@/lib/redux/slices/overlaySlice";
 import { createFullScreenEditorCallbackGroup } from "@/features/overlays/callbacks/fullScreenEditor";
-import { copyToClipboard } from "@/components/matrx/buttons/markdown-copy-utils";
+import { copyToClipboard } from "@/components/agent-copy/copy-commands";
 import { getMarkdownStylesheet } from "@ai-matrx/print/markdown";
 import { registerAction } from "../provider";
 import { getErrorMessage, serializeError, contentForDestination } from "../utils";

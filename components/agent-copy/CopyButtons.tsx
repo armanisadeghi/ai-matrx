@@ -6,7 +6,7 @@ import {
 } from "@ai-matrx/alchemy/react/workspace";
 import { sendRowsToSheetOutcome } from "@/components/agent-copy/useExportActions";
 
-import { copyRichContent } from "@/components/matrx/buttons/markdown-copy-utils";
+import { copyRichContent } from "@/components/agent-copy/copy-commands";
 import { useAlchemyDisclosure } from "@/components/agent-copy/useAlchemyDisclosure";
 
 export type CopyButtonsProps = MatrxCopyMenuProps;

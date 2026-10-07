@@ -37,9 +37,7 @@ jest.mock("@/features/files/hooks/useFileBlob", () => ({
     return { blob: mockBlobs.get(mockBlobText), loading: false, error: null };
   },
 }));
-jest.mock("@/components/matrx/buttons/MarkdownCopyButton", () => ({
-  InlineCopyButton: () => null,
-}));
+jest.mock("@/components/agent-copy/CopyButtons", () => ({ CopyButtons: () => null }));
 jest.mock("@/features/code-editor/components/code-block/CodeBlock", () => ({
   __esModule: true,
   default: ({ code }: { code: string }) => <pre>{code}</pre>,

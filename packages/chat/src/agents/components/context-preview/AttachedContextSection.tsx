@@ -53,7 +53,7 @@ import { setConversationDocumentEnabledThunk } from "../../redux/execution-syste
 import { setScratchpadGateThunk } from "../../redux/execution-system/instance-working-document/scratchpad.thunks";
 import { useActiveContextLayerItems } from "../context-items/useActiveContextLayerItems";
 import { docKindForContextKey } from "../../utils/workingDocumentContext";
-import { InlineCopyButton } from "@ai-matrx/chat/host/ui-slots";
+import { CopyButtons } from "@ai-matrx/chat/host/ui-slots";
 import type {
   InstanceContextEntry,
   ManagedResource,
@@ -281,10 +281,11 @@ export function AttachedContextSection({
                   </span>
                 ))}
               </div>
-              <InlineCopyButton
-                content={variables}
+              <CopyButtons
+                label="Copy"
+                json={variables}
                 size="xs"
-                className={cn(COPY_REVEAL, "group-hover/vars:opacity-100")}
+                className={cn("absolute top-1 right-1 z-10", COPY_REVEAL, "group-hover/vars:opacity-100")}
               />
             </li>
           )}
@@ -400,11 +401,11 @@ export function AttachedContextSection({
                         </span>
                       )}
                     </div>
-                    <InlineCopyButton
-                      content={item.preview}
-                      formatJson={false}
+                    <CopyButtons
+                      label="Copy"
+                      human={item.preview}
                       size="xs"
-                      className={cn(COPY_REVEAL, "group-hover/entry:opacity-100")}
+                      className={cn("absolute top-1 right-1 z-10", COPY_REVEAL, "group-hover/entry:opacity-100")}
                     />
                   </li>
                 );

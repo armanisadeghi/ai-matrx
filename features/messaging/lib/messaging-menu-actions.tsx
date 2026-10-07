@@ -31,7 +31,7 @@ import {
 } from "lucide-react";
 
 import { toast } from "@/lib/toast";
-import { copyToClipboard } from "@/components/matrx/buttons/markdown-copy-utils";
+import { copyToClipboard } from "@/components/agent-copy/copy-commands";
 import { showManualCopy } from "@/components/dialogs/clipboard-fallback/manualCopyOpener";
 import { summarizeMatrxText } from "@/features/matrx-envelope/referenceText";
 import type {

@@ -44,9 +44,7 @@ jest.mock("@/features/files/hooks/useFileBlob", () => ({
 }));
 
 // MarkdownRenderer's copy button opens overlays through Redux; not math.
-jest.mock("@/components/matrx/buttons/MarkdownCopyButton", () => ({
-  InlineCopyButton: () => null,
-}));
+jest.mock("@/components/agent-copy/CopyButtons", () => ({ CopyButtons: () => null }));
 
 // The code-block surfaces are heavy editors; math parity only needs the text.
 jest.mock("@/features/code-editor/components/code-block/CodeBlock", () => ({

@@ -36,7 +36,7 @@ import {
   XCircle,
 } from "lucide-react";
 import { toast } from "@/lib/toast";
-import { copyToClipboard } from "@/components/matrx/buttons/markdown-copy-utils";
+import { copyToClipboard } from "@/components/agent-copy/copy-commands";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
