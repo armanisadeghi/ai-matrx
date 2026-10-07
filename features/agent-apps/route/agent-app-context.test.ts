@@ -1,53 +1,43 @@
-import { APP_BUNDLE_CODE_MAX_CHARS, buildAgentAppBundle } from "./agent-app-context";
+import { buildAgentAppBundle, type AgentAppBundleSource } from "./agent-app-context";
 
-const base = {
-  id: "0a20e787-aee2-4de1-b245-5df2b687dab5",
-  slug: "precision-fact-checker",
-  name: "Fact Checker",
-  tagline: "Deconstruct claims & uncover the truth.",
+const base: AgentAppBundleSource = {
+  id: "0d2b45a2-bf89-4e74-a212-bbaec63904cd",
+  slug: "holloway-content",
+  name: "Content & approvals",
+  tagline: "Posts, clients & approvals.",
+  description: null,
   status: "published",
   published_to_web: true,
+  category: null,
   tags: [],
   version: 3,
-  shell_kind: "fully_custom",
-  component_language: "tsx",
-  variable_schema: [{ name: "claim", type: "string", label: "Claim", required: false }],
+  entry: "App.tsx",
+  files: { "App.tsx": "export default function App() { return null; }", "Approvals.tsx": "x".repeat(20_000) },
+  pages: [{ path: "/", title: "Posts", file: "App.tsx" }, { path: "/approvals", title: "Approvals", file: "Approvals.tsx" }],
+  mandates: [{ alias: "polish", key: "brand.voice_rewrite" }],
+  sources: [{ alias: "posts", table_id: "t-1", organization_id: "o-1" }, { alias: "contacts", entity: "party" }],
   total_executions: 12,
+  success_rate: null,
+  last_execution_at: null,
 };
 
-it("packs the open app as one escaped XML element within the page budget", () => {
-  const xml = buildAgentAppBundle(
-    { ...base, component_code: "x".repeat(20_000) },
-    "run",
-  );
-  expect(xml.startsWith('<agent_app id="0a20e787')).toBe(true);
-  expect(xml).toContain('public_url="/p/precision-fact-checker"');
-  expect(xml).toContain('view="run"');
-  expect(xml).toContain("&amp; uncover");
-  expect(xml).toContain('<variable name="claim" label="Claim" type="string"/>');
-  expect(xml).toContain('clipped="true" total_chars="20000"');
-  expect(xml).not.toContain("tags=");
-  expect(xml.length).toBeLessThan(APP_BUNDLE_CODE_MAX_CHARS + 2000);
+it("packs the open Applet as one escaped XML element: pages, jobs, sources, file sizes", () => {
+  const xml = buildAgentAppBundle(base, "settings");
+  expect(xml.startsWith('<applet id="0d2b45a2')).toBe(true);
+  expect(xml).toContain('public_url="/p/holloway-content"');
+  expect(xml).toContain('view="settings"');
+  expect(xml).toContain("&amp; approvals");
+  expect(xml).toContain('<page path="/approvals" title="Approvals" file="Approvals.tsx"/>');
+  expect(xml).toContain('<job alias="polish" key="brand.voice_rewrite"/>');
+  expect(xml).toContain('<source alias="contacts" entity="party"/>');
+  expect(xml).toContain('<file name="Approvals.tsx" chars="20000"/>');
+  expect(xml).not.toContain("xxxxxxxx");
   expect(xml.length).toBeLessThanOrEqual(9000);
 });
 
-it("omits parts the app does not have instead of rendering blanks", () => {
-  const xml = buildAgentAppBundle({ ...base, published_to_web: false, component_code: "" });
+it("omits parts the Applet does not have instead of rendering blanks", () => {
+  const xml = buildAgentAppBundle({ ...base, published_to_web: false, mandates: [], description: null });
   expect(xml).not.toContain("public_url");
-  expect(xml).not.toContain("<component_code");
+  expect(xml).not.toContain("<job ");
   expect(xml).not.toContain("<description");
-});
-
-it("carries the latest run — input, status, clipped result — and nothing for an idle page", () => {
-  const withRun = buildAgentAppBundle(base, "run", {
-    status: "done",
-    conversationId: "c-1",
-    input: { claim: "Goldfish have a three-second memory." },
-    result: "r".repeat(9000),
-  });
-  expect(withRun).toContain('<latest_run status="done" conversation_id="c-1">');
-  expect(withRun).toContain('<value name="claim">Goldfish have a three-second memory.</value>');
-  expect(withRun).toContain('clipped="true" total_chars="9000"');
-  expect(withRun.length).toBeLessThanOrEqual(9000);
-  expect(buildAgentAppBundle(base, "run", { status: "idle" })).not.toContain("latest_run");
 });

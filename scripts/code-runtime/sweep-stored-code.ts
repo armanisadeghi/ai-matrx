@@ -11,8 +11,8 @@
  *     rendered with the kind's canonical example (props_transform applied),
  *     exactly the props the reader's renderer passes;
  *   - tool.ui                    active, not deleted (DB tool renderers);
- *   - app.definition             not deleted (Applets: component_code and
- *     every non-empty slot body).
+ *   - app.definition             not deleted (Applets: every file in `files`;
+ *     a file importing a sibling file reports it unresolved).
  *
  * Verdict per body:
  *   - compile_error   the compiler refused it (a regression unless the old
@@ -90,8 +90,8 @@ async function main(): Promise<void> {
   const tools = await readAll<{ id: string; tool_name: string; surface_name: string; inline_code: string | null; allowed_imports: unknown }>((a, b) =>
     sb.schema("tool").from("ui").select("id,tool_name,surface_name,inline_code,allowed_imports").eq("is_active", true).is("deleted_at", null).order("id").range(a, b),
   );
-  const apps = await readAll<{ id: string; slug: string | null; component_code: string | null; slot_code: Record<string, unknown> | null; allowed_imports: unknown }>((a, b) =>
-    sb.schema("app").from("definition").select("id,slug,component_code,slot_code,allowed_imports").is("deleted_at", null).order("id").range(a, b),
+  const apps = await readAll<{ id: string; slug: string | null; files: Record<string, unknown> | null }>((a, b) =>
+    sb.schema("app").from("definition").select("id,slug,files").is("deleted_at", null).order("id").range(a, b),
   );
 
   const kindName = new Map(defs.map((d) => [d.id, d.kind]));
@@ -137,9 +137,8 @@ async function main(): Promise<void> {
   };
   for (const t of tools) if (t.inline_code?.trim()) softRender(`tool:${t.tool_name}:${t.surface_name}`, "tool.ui", t.id, t.inline_code, t.allowed_imports);
   for (const a of apps) {
-    if (a.component_code?.trim()) softRender(`app:${a.slug ?? a.id}`, "app.definition", a.id, a.component_code, a.allowed_imports);
-    for (const [slot, code] of Object.entries(a.slot_code ?? {})) {
-      if (typeof code === "string" && code.trim()) softRender(`app:${a.slug ?? a.id}:slot:${slot}`, "app.definition", a.id, code, a.allowed_imports);
+    for (const [file, code] of Object.entries(a.files ?? {})) {
+      if (typeof code === "string" && code.trim()) softRender(`app:${a.slug ?? a.id}:${file}`, "app.definition", a.id, code, undefined);
     }
   }
 

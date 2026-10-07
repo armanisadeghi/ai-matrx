@@ -11,7 +11,6 @@ import type {
   AgentDefinition,
   AgentListRow,
 } from "@ai-matrx/chat/agents/types/agent-definition.types";
-import type { AgentAppSummary, AppStatus } from "@/features/agent-apps/types";
 
 /**
  * SSR seed for the agents list page.
@@ -75,42 +74,3 @@ export const getAgentSnapshot = cache(
   },
 );
 
-/**
- * Apps that run a specific agent — backs `/agents/[id]/apps`.
- *
- * `aga_apps.agent_id` is a real FK to `agx_agent.id`, so the relationship
- * is direct (no compiled-recipe indirection). RLS gates the query: the
- * caller sees their own apps + public published apps + org/admin apps
- * per the standard agent-apps policy.
- */
-const APP_STATUSES: readonly AppStatus[] = [
-  "draft",
-  "published",
-  "archived",
-  "suspended",
-];
-
-export const getAppsForAgent = cache(
-  async (agentId: string): Promise<AgentAppSummary[]> => {
-    const supabase = await createClient();
-    const { data, error } = await supabase
-      .schema("app")
-      .from("definition")
-      .select(
-        "id, slug, name, tagline, description, category, tags, preview_image_url, favicon_url, status, published_to_web, is_featured, total_executions, last_execution_at, agent_id, agent_version_id, use_latest, created_at, updated_at",
-      )
-      .is("deleted_at", null)
-      .eq("agent_id", agentId)
-      .order("updated_at", { ascending: false });
-    if (error) throw error;
-    return (data ?? []).map((row) => ({
-      ...row,
-      // DB stores status as a plain string; the app never writes an out-of-
-      // enum value, but validate at the boundary instead of asserting it.
-      status: APP_STATUSES.includes(row.status as AppStatus)
-        ? (row.status as AppStatus)
-        : "draft",
-      tags: row.tags ?? [],
-    }));
-  },
-);

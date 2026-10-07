@@ -9,7 +9,7 @@
  * app counts are still small; reintroduce later when needed.
  *
  * Filter dimensions: tab (mine/shared/all), sort, search, categories,
- * tags, agents (by id; name shown in UI), archive, published to the web.
+ * tags, archive, published to the web.
  */
 
 import { useClipboard } from "@ai-matrx/kit/clipboard";
@@ -58,7 +58,6 @@ import {
   makeSelectFilteredApps,
   selectAllAppCategories,
   selectAllAppTags,
-  selectAllAppAgents,
 } from "@/features/agent-apps/redux/agent-app-consumers/selectors";
 import type { AgentAppCardModel } from "@/features/agent-apps/redux/agent-app-consumers/selectors";
 import {
@@ -66,7 +65,6 @@ import {
   deleteApp,
 } from "@/features/agents/redux/agent-apps/thunks";
 import { selectAppsStatus } from "@/features/agents/redux/agent-apps/selectors";
-import { fetchAgentsList } from "@ai-matrx/chat/agents/redux/agent-definition/thunks";
 import type {
   AgentAppSortOption,
   AgentAppTab,
@@ -95,7 +93,6 @@ const SORT_OPTIONS: { value: AgentAppSortOption; label: string }[] = [
   { value: "name-asc", label: "Name (A-Z)" },
   { value: "name-desc", label: "Name (Z-A)" },
   { value: "category-asc", label: "Category (A-Z)" },
-  { value: "agent-asc", label: "Agent (A-Z)" },
   { value: "executions-desc", label: "Most Executions" },
   { value: "last-run-desc", label: "Recently Run" },
 ];
@@ -140,11 +137,9 @@ export function AgentAppsGrid({
   const router = useRouter();
   const [, startTransition] = useTransition();
 
-  // Hydrate apps + agents the first time this grid mounts. Both thunks are
-  // idempotent — if another surface already loaded them, no extra fetch.
+  // Hydrate apps the first time this grid mounts (idempotent).
   useEffect(() => {
     dispatch(fetchAppsInitial());
-    dispatch(fetchAgentsList());
   }, [dispatch]);
 
   const sliceStatus = useAppSelector(selectAppsStatus);
@@ -164,7 +159,6 @@ export function AgentAppsGrid({
     searchTerm,
     includedCats,
     includedTags,
-    includedAgents,
     archFilter,
     visibilityFilter,
     hasActiveFilters,
@@ -175,7 +169,6 @@ export function AgentAppsGrid({
     setVisibilityFilter,
     toggleCategory,
     toggleTag,
-    toggleAgent,
     resetFilters,
   } = consumer;
 
@@ -187,7 +180,6 @@ export function AgentAppsGrid({
   const allAppCardModels = useAppSelector(selectAllAppCardModels);
   const allCategories = useAppSelector(selectAllAppCategories);
   const allTags = useAppSelector(selectAllAppTags);
-  const allAgents = useAppSelector(selectAllAppAgents);
 
   // Counts for tab pills — recomputed off the (already filtered for status,
   // web state, search, etc) result is misleading; instead we apply only
@@ -320,7 +312,6 @@ export function AgentAppsGrid({
     (tab !== "mine" ? 1 : 0) +
     (includedCats.length > 0 ? 1 : 0) +
     (includedTags.length > 0 ? 1 : 0) +
-    (includedAgents.length > 0 ? 1 : 0) +
     (archFilter !== "active" ? 1 : 0) +
     (visibilityFilter !== "all" ? 1 : 0);
 
@@ -391,12 +382,6 @@ export function AgentAppsGrid({
                     onChange={setVisibilityFilter}
                   />
                   <CheckboxSection
-                    label="Agent"
-                    items={allAgents.map((a) => ({ key: a.id, label: a.name }))}
-                    selected={includedAgents}
-                    onToggle={toggleAgent}
-                  />
-                  <CheckboxSection
                     label="Category"
                     items={allCategories.map((c) => ({ key: c, label: c }))}
                     selected={includedCats}
@@ -430,7 +415,7 @@ export function AgentAppsGrid({
                   type="text"
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  placeholder="Search apps, agents, descriptions…"
+                  placeholder="Search apps, jobs, descriptions…"
                   className="flex-1 bg-transparent border-0 outline-none text-sm text-foreground placeholder:text-muted-foreground"
                 />
                 {searchTerm && (

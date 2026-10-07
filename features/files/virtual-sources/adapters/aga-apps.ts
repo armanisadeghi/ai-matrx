@@ -1,9 +1,12 @@
 /**
  * features/files/virtual-sources/adapters/aga-apps.ts
  *
- * Agent Apps virtual source. Backed by `aga_apps` (single `component_code`
- * column). Lists user-owned apps as flat file leaves under the "Agent Apps"
- * root. Double-click opens the `/code` workspace with the right tab.
+ * Applets virtual source. Backed by `app.definition`: each Applet is one leaf,
+ * its ENTRY file (`files[entry]`). The other files of a multi-file Applet are
+ * edited through the Library source (`features/code/library-sources/adapters/
+ * aga-apps.ts`, one leaf per file). A save merges the one file into `files`
+ * on the record's `version` (`mergeJsonColumn`) and the version trigger keeps
+ * a snapshot. Double-click opens the `/code` workspace with the right tab.
  *
  * Ported from the older `LibrarySourceAdapter` at
  * `features/code/library-sources/adapters/aga-apps.ts` and extended with
@@ -26,35 +29,35 @@ import type {
 import type { Database } from "@/types/database.types";
 import { recordUnavailable } from "@/lib/records/recordUnavailable";
 import { writeOne } from "@/utils/supabase/writeOne";
+import { mergeJsonColumn } from "@ai-matrx/data/db";
 import { defaultListFilter, type ListScopeWord } from "@/lib/list-scope";
 
 const TAB_ID_PREFIX = "aga-app:";
 
-const COLUMNS =
-  "id,name,slug,component_code,component_language,updated_at,status,description,version";
+const COLUMNS = "id,name,slug,files,entry,updated_at,status,description,version";
 
 type AgaAppRow = Pick<
   Database["app"]["Tables"]["definition"]["Row"],
-  | "id"
-  | "name"
-  | "slug"
-  | "component_code"
-  | "component_language"
-  | "updated_at"
-  | "status"
-  | "description"
-  | "version"
+  "id" | "name" | "slug" | "files" | "entry" | "updated_at" | "status" | "description" | "version"
 >;
 
-function mapLanguage(raw: string | null | undefined): string {
-  const v = (raw ?? "tsx").toLowerCase();
-  if (v === "react" || v === "tsx" || v === "jsx") return "typescript";
-  return v;
+type FilesMap = Record<string, string>;
+
+function filesOf(value: unknown): FilesMap {
+  const out: FilesMap = {};
+  if (!value || typeof value !== "object" || Array.isArray(value)) return out;
+  for (const [name, source] of Object.entries(value)) if (typeof source === "string") out[name] = source;
+  return out;
+}
+
+/** The entry file's name: the record's `entry`, else its first file, else App.tsx. */
+function entryName(row: Pick<AgaAppRow, "files" | "entry">): string {
+  return row.entry || Object.keys(filesOf(row.files))[0] || "App.tsx";
 }
 
 const agaAppsAdapter: VirtualSourceAdapter = {
   sourceId: "aga_apps",
-  label: "Agent Apps",
+  label: "Applets",
   icon: Workflow,
   capabilities: {
     list: true,
@@ -102,9 +105,9 @@ const agaAppsAdapter: VirtualSourceAdapter = {
       parentId: null,
       updatedAt: row.updated_at,
       extension: "tsx",
-      language: mapLanguage(row.component_language),
+      language: "typescript",
       mimeType: "text/typescript",
-      hasContent: !!row.component_code,
+      hasContent: !!filesOf(row.files)[entryName(row)],
       badge:
         row.status && row.status !== "published"
           ? row.status
@@ -136,33 +139,46 @@ const agaAppsAdapter: VirtualSourceAdapter = {
       });
     }
     const row = data as AgaAppRow;
-    const language = mapLanguage(row.component_language);
+    const entry = entryName(row);
     return {
       id: row.id,
-      name: `${row.slug || row.name}.tsx`,
-      path: `aga-app:/${row.slug || row.id}.tsx`,
-      language,
+      name: entry,
+      path: `aga-app:/${row.slug || row.id}/${entry}`,
+      language: "typescript",
       mimeType: "text/typescript",
-      content: row.component_code,
+      content: filesOf(row.files)[entry] ?? "",
       updatedAt: row.updated_at,
     };
   },
 
   async write(supabase, _userId, args: WriteArgs) {
-    let query = supabase
-      .schema("app").from("definition")
-      .update({ component_code: args.content })
-      .eq("id", args.id);
-    if (args.expectedUpdatedAt) {
-      query = query.eq("updated_at", args.expectedUpdatedAt);
-    }
-    const { data, error } = await query.select("updated_at").maybeSingle();
-    if (error || !data) {
-      throw new Error(
-        "We couldn't save this agent app. It may have been changed somewhere else — reload it and reapply your edit.",
-      );
-    }
-    return { updatedAt: (data as { updated_at: string }).updated_at };
+    type Row = Pick<AgaAppRow, "id" | "version" | "files" | "entry" | "updated_at">;
+    const columns = "id,version,files,entry,updated_at";
+    const fetchCurrent = () =>
+      supabase.schema("app").from("definition").select(columns).eq("id", args.id).is("deleted_at", null).maybeSingle();
+    const first = await fetchCurrent();
+    if (first.error || !first.data) throw new Error("This Applet no longer exists.");
+    const entry = entryName(first.data);
+    const result = await mergeJsonColumn<Row>({
+      fetchCurrent,
+      readColumn: (row) => row.files,
+      merge: (current) => ({ ...filesOf(current), [entry]: args.content }),
+      applyUpdate: ({ value, expectedVersion, nextVersion }) =>
+        supabase
+          .schema("app")
+          .from("definition")
+          .update({ files: value as Database["app"]["Tables"]["definition"]["Update"]["files"], version: nextVersion })
+          .eq("id", args.id)
+          .eq("version", expectedVersion)
+          .select(columns)
+          .maybeSingle(),
+    });
+    if (result.status === "saved") return { updatedAt: result.row.updated_at };
+    throw new Error(
+      result.status === "not_found"
+        ? "This Applet no longer exists."
+        : "We couldn't save this Applet. It may have been changed somewhere else — reload it and reapply your edit.",
+    );
   },
 
   async rename(supabase, userId, args: RenameArgs) {

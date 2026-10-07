@@ -19,9 +19,7 @@ describe("Agent Apps canonical table contract", () => {
     const app: AgentAppAdminView = {
       id: "app-test",
       created_by: null,
-      agent_id: "agent-test",
-      mandate_id: null,
-      mandate_key: null,
+      job_keys: [],
       slug: "test",
       name: "Test",
       tags: [],
@@ -81,7 +79,7 @@ describe("Agent Apps canonical table contract", () => {
       "name",
       "id",
       "slug",
-      "mandate",
+      "jobs",
       "status",
       "category",
       "creator",
@@ -136,8 +134,7 @@ describe("Agent Apps canonical table contract", () => {
   });
   it("keeps missing metrics distinct from measured zero", () => {
     const app: AgentAppAdminView = {
-      id: "app-test", created_by: null, agent_id: "agent-test",
-      mandate_id: null, mandate_key: null, slug: "test", name: "Test",
+      id: "app-test", created_by: null, job_keys: [], slug: "test", name: "Test",
       tags: [], status: "draft", published_to_web: false,
       is_verified: false, is_featured: false, rate_limit_per_ip: null,
       rate_limit_window_hours: null, rate_limit_authenticated: null,

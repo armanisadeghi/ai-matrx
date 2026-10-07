@@ -3,10 +3,10 @@
 /**
  * AgentAppSettingsContent — /agent-apps/[id]/settings page body.
  *
- * Tabbed surface. Each tab edits one coherent slice of `aga_apps`. Saves
- * are atomic per-field; no batch save button. The user knows what each
- * field is — there are no helper paragraphs, no warnings, no
- * explanations of what an agent or version is.
+ * Tabbed surface over the Applet record (`app.definition`, CONTRACTS §8):
+ * Overview (identity, slug, images), Pages, Jobs, Sources, Sharing, Danger.
+ * Identity fields save per field; pages/jobs/sources save as a whole column
+ * through the version-guarded `saveAppletRecord`.
  */
 
 import { useClipboard } from "@ai-matrx/kit/clipboard";
@@ -22,6 +22,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { toast } from "@/lib/toast-service";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
+import { appletJobs, appletPages, appletSources } from "@/features/agent-apps/types";
 import {
   agentAppSettingsAgentPayload,
   agentAppSettingsHuman,
@@ -32,13 +33,13 @@ import {
 import { siteConfig } from "@/config/extras/site";
 import { AgentAppCategoryPicker } from "@/features/agent-apps/components/inputs/AgentAppCategoryPicker";
 import { AgentAppTagsInput } from "@/features/agent-apps/components/inputs/AgentAppTagsInput";
-import { AgentBindingCompact } from "@/features/agent-apps/components/inputs/AgentBindingCompact";
-import { AgentVersionCompact } from "@/features/agent-apps/components/inputs/AgentVersionCompact";
-import { AppMandateBinding } from "@/features/agent-apps/components/inputs/AppMandateBinding";
 import {
-  APP_MANDATE_CUTOVER,
-  useAppHolder,
-} from "@/features/agent-apps/lib/appHolder";
+  AppletJobsEditor,
+  AppletPagesEditor,
+  AppletSourcesEditor,
+} from "./AppletRecordEditors";
+import Link from "next/link";
+import { MessageSquare } from "lucide-react";
 import { AgentAppImageField } from "@/features/agent-apps/components/inputs/AgentAppImageField";
 import { EntityEngagementPicker } from "@/features/scopes/components/active-context/engagement/EntityEngagementPicker";
 import { EmbedSnippet } from "@/features/agent-apps/components/builder/EmbedSnippet";
@@ -56,7 +57,6 @@ import {
   validateAppCategory,
   validateAppTags,
 } from "./agent-app-entity-writes";
-import { selectAgentById } from "@ai-matrx/chat/agents/redux/agent-definition/selectors";
 import { ProTextarea } from "@/components/official/ProTextarea";
 
 interface AgentAppSettingsContentProps {
@@ -99,13 +99,6 @@ export function AgentAppSettingsContent({
   });
   const dispatch = useAppDispatch();
   const app = useAppSelector((state) => selectAppById(state, appId));
-  // What this app RUNS — pinned today, the mandate's Holder after the cutover.
-  // Read through the router so the Agent tab and the run seam can never
-  // disagree about which agent a user is looking at.
-  const holder = useAppHolder(app);
-  const agent = useAppSelector((state) =>
-    holder.agentId ? selectAgentById(state, holder.agentId) : undefined,
-  );
 
   // This is an OBJECT page: the app already knows its organization, so a red
   // "Choose org" over it would be a lie (GATES-TAIL, VERIFIER-23 #8 note (a)).
@@ -122,13 +115,14 @@ export function AgentAppSettingsContent({
   );
 
   const [name, setName] = useState(app?.name ?? "");
+  const [slug, setSlug] = useState(app?.slug ?? "");
   const [tagline, setTagline] = useState(app?.tagline ?? "");
   const [description, setDescription] = useState(app?.description ?? "");
   const [savingField, setSavingField] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
   // Controlled so the copy payload can state WHICH slice of the form the user
   // is actually in — "what is the user doing here" is half the context.
-  const [activeTab, setActiveTab] = useState("identity");
+  const [activeTab, setActiveTab] = useState("overview");
 
   const [rateIp, setRateIp] = useState<string>(
     String(app?.rate_limit_per_ip ?? ""),
@@ -143,6 +137,7 @@ export function AgentAppSettingsContent({
   useEffect(() => {
     if (!app) return;
     setName(app.name);
+    setSlug(app.slug);
     setTagline(app.tagline ?? "");
     setDescription(app.description ?? "");
     setRateIp(String(app.rate_limit_per_ip ?? ""));
@@ -234,16 +229,10 @@ export function AgentAppSettingsContent({
     },
   });
 
-  const handleAgentChange = (nextAgentId: string) => {
-    if (!app || nextAgentId === app.agent_id) return;
-    saveField("agent_id", nextAgentId);
-    saveField("agent_version_id", null);
-  };
-
   const handleDelete = async () => {
     if (!app) return;
     const ok = await confirm({
-      title: "Delete agent app",
+      title: "Delete Applet",
       description: `This archives "${app.name}". It stops running and disappears from your apps; an admin can restore it.`,
       confirmLabel: "Delete",
       variant: "destructive",
@@ -311,6 +300,7 @@ export function AgentAppSettingsContent({
     // unsaved diff matches the Save buttons the user can see.
     const drafts: AgentAppFieldDraft[] = [
       { field: "name", label: "Name", live: name, saved: app.name },
+      { field: "slug", label: "Slug", live: slug, saved: app.slug },
       {
         field: "tagline",
         label: "Tagline",
@@ -368,9 +358,9 @@ export function AgentAppSettingsContent({
       committed: {
         category: app.category,
         tags: Array.isArray(app.tags) ? app.tags : [],
-        agent: agent?.name ?? app.agent_id,
-        agent_version_id: app.agent_version_id,
-        use_latest: app.use_latest,
+        jobs: appletJobs(app),
+        pages: appletPages(app),
+        sources: appletSources(app),
         favicon_url: app.favicon_url,
         preview_image_url: app.preview_image_url,
         status: app.status,
@@ -396,9 +386,10 @@ export function AgentAppSettingsContent({
         >
           <div className="flex items-center justify-between gap-3">
             <TabsList>
-              <TabsTrigger value="identity">Identity</TabsTrigger>
-              <TabsTrigger value="agent">Agent</TabsTrigger>
-              <TabsTrigger value="branding">Branding</TabsTrigger>
+              <TabsTrigger value="overview">Overview</TabsTrigger>
+              <TabsTrigger value="pages">Pages</TabsTrigger>
+              <TabsTrigger value="jobs">Jobs</TabsTrigger>
+              <TabsTrigger value="sources">Sources</TabsTrigger>
               <TabsTrigger value="sharing">Sharing</TabsTrigger>
               <TabsTrigger value="danger">Danger</TabsTrigger>
             </TabsList>
@@ -433,8 +424,8 @@ export function AgentAppSettingsContent({
             />
           </div>
 
-          {/* ── Identity ───────────────────────────────────────────────── */}
-          <TabsContent value="identity" className="space-y-5">
+          {/* ── Overview ───────────────────────────────────────────────── */}
+          <TabsContent value="overview" className="space-y-5">
             <FieldRow
               label="Name"
               busy={savingField === "name"}
@@ -445,6 +436,21 @@ export function AgentAppSettingsContent({
                 value={name}
                 onChange={(e) => setName(e.target.value)}
               />
+            </FieldRow>
+            <FieldRow
+              label="Slug"
+              busy={savingField === "slug"}
+              dirty={slug !== app.slug}
+              onSave={() => {
+                const next = slug.trim().toLowerCase();
+                if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(next)) {
+                  toast.error("Use lowercase letters, digits and dashes.");
+                  return;
+                }
+                saveField("slug", next);
+              }}
+            >
+              <Input value={slug} onChange={(e) => setSlug(e.target.value)} />
             </FieldRow>
             <FieldRow
               label="Tagline"
@@ -485,42 +491,6 @@ export function AgentAppSettingsContent({
                 disabled={savingField === "tags"}
               />
             </Row>
-          </TabsContent>
-
-          {/* ── Agent ──────────────────────────────────────────────────── */}
-          <TabsContent value="agent" className="space-y-3">
-            {APP_MANDATE_CUTOVER ? (
-              /* ONE UI for one fact: after the cutover the app's agent IS the
-                 mandate's Holder, edited on the mandate page. This states what
-                 runs and links there — it never forks a second editor. */
-              <AppMandateBinding holder={holder} agentName={agent?.name} />
-            ) : (
-              <>
-                <AgentBindingCompact
-                  agentId={app.agent_id}
-                  agentName={agent?.name}
-                  onChange={handleAgentChange}
-                  disabled={savingField === "agent_id"}
-                />
-                <AgentVersionCompact
-                  agentId={app.agent_id}
-                  agentVersionId={app.agent_version_id}
-                  useLatest={app.use_latest}
-                  onAgentVersionIdChange={(next) =>
-                    saveField("agent_version_id", next)
-                  }
-                  onUseLatestChange={(next) => saveField("use_latest", next)}
-                  disabled={
-                    savingField === "agent_version_id" ||
-                    savingField === "use_latest"
-                  }
-                />
-              </>
-            )}
-          </TabsContent>
-
-          {/* ── Branding ───────────────────────────────────────────────── */}
-          <TabsContent value="branding" className="space-y-5">
             <Row label="Icon">
               <AgentAppImageField
                 value={app.favicon_url}
@@ -539,6 +509,29 @@ export function AgentAppSettingsContent({
                 disabled={savingField === "preview_image_url"}
               />
             </Row>
+            <Row label="By talking">
+              <Button
+                variant="outline"
+                icon={<MessageSquare />}
+                asChild
+              >
+                <Link href={`/agent-apps/build?applet=${app.id}`}>
+                  Change it by talking
+                </Link>
+              </Button>
+            </Row>
+          </TabsContent>
+
+          <TabsContent value="pages">
+            <AppletPagesEditor app={app} />
+          </TabsContent>
+
+          <TabsContent value="jobs">
+            <AppletJobsEditor app={app} />
+          </TabsContent>
+
+          <TabsContent value="sources">
+            <AppletSourcesEditor app={app} />
           </TabsContent>
 
           {/* ── Sharing (publication + URL + scope + limits) ─────────── */}
@@ -573,7 +566,7 @@ export function AgentAppSettingsContent({
                   </>
                 ) : (
                   <span className="text-sm text-muted-foreground">
-                    Publish this app to activate its public link.
+                    Publish to turn on the public link.
                   </span>
                 )}
               </div>
@@ -680,7 +673,7 @@ export function AgentAppSettingsContent({
           {/* ── Danger zone ────────────────────────────────────────────── */}
           <TabsContent value="danger">
             <div className="flex items-center justify-between gap-3 px-4 py-3 rounded-md border border-destructive/30 bg-destructive/5">
-              <span className="text-sm">Delete this app</span>
+              <span className="text-sm">Delete this Applet</span>
               <Button
                 icon={isDeleting ? (
                   <Loader2 className="animate-spin" />

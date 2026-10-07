@@ -42,7 +42,6 @@ const VALID_SORTS: AgentAppSortOption[] = [
   "name-asc",
   "name-desc",
   "category-asc",
-  "agent-asc",
   "executions-desc",
   "last-run-desc",
 ];
@@ -106,8 +105,6 @@ export function useAgentAppConsumerUrlSync(
     if (cats.length) patch.includedCats = cats;
     const tags = csvParse(searchParams.get("tags"));
     if (tags.length) patch.includedTags = tags;
-    const agents = csvParse(searchParams.get("agents"));
-    if (agents.length) patch.includedAgents = agents;
 
     if (Object.keys(patch).length > 0) {
       dispatch(setAgentAppConsumerFilter({ consumerId, patch }));
@@ -135,8 +132,6 @@ export function useAgentAppConsumerUrlSync(
       next.set("cats", csvStringify(consumer.includedCats));
     if (consumer.includedTags.length)
       next.set("tags", csvStringify(consumer.includedTags));
-    if (consumer.includedAgents.length)
-      next.set("agents", csvStringify(consumer.includedAgents));
 
     const nextStr = next.toString();
     const currentStr = searchParams.toString();
@@ -151,7 +146,6 @@ export function useAgentAppConsumerUrlSync(
     consumer.searchTerm,
     consumer.includedCats,
     consumer.includedTags,
-    consumer.includedAgents,
     pathname,
     router,
     searchParams,

@@ -72,11 +72,6 @@ export const selectAppName = createSelector(
   (record): string | null => record?.name ?? null,
 );
 
-export const selectAppAgentId = createSelector(
-  [selectAppById],
-  (record): string | null => record?.agent_id ?? null,
-);
-
 export const selectAppSlug = createSelector(
   [selectAppById],
   (record): string | null => record?.slug ?? null,

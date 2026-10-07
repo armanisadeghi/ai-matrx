@@ -37,7 +37,7 @@ import { buildAgentAppBundle } from "./agent-app-context";
 import { SurfaceRuntimeProvider } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import { useDeclaredSurfaceMandates } from "@ai-matrx/chat/surfaces/runtime/surface-mandates";
 import { storedMandateKey } from "@ai-matrx/agents/mandates";
-import { appletJobs } from "@/features/agent-apps/types";
+import { appletFiles, appletJobs, appletPages, appletSources } from "@/features/agent-apps/types";
 import type { SurfaceScopePayload } from "@ai-matrx/chat/surfaces/types";
 import type { RootState } from "@/lib/redux/store";
 import { publishedToWebLabel } from "@/lib/row-access";
@@ -62,20 +62,6 @@ function viewFromPathname(pathname: string | null): ActiveView | undefined {
     return sub;
   if (sub === "v") return "version_detail";
   return undefined;
-}
-
-function asObject(value: unknown): Record<string, unknown> | undefined {
-  return value && typeof value === "object" && !Array.isArray(value)
-    ? (value as Record<string, unknown>)
-    : undefined;
-}
-
-function asObjectArray(
-  value: unknown,
-): Array<Record<string, unknown>> | undefined {
-  return Array.isArray(value)
-    ? (value as Array<Record<string, unknown>>)
-    : undefined;
 }
 
 /**
@@ -104,10 +90,7 @@ export function buildAgentAppsWorkspaceScope(
     app_tags: app.tags,
     // Surface key keeps its manifest name; the value is the row word.
     app_visibility: publishedToWebLabel(app.published_to_web),
-    agent_id: app.agent_id,
     app_version: app.version,
-    pinned_version: app.pinned_version ?? undefined,
-    use_latest: app.use_latest,
     app_summary: {
       id: app.id,
       slug: app.slug,
@@ -117,17 +100,13 @@ export function buildAgentAppsWorkspaceScope(
       category: app.category,
       tags: app.tags,
       published_to_web: app.published_to_web,
-      agent_id: app.agent_id,
       version: app.version,
-      pinned_version: app.pinned_version,
-      use_latest: app.use_latest,
     },
-    shell_kind: app.shell_kind,
-    component_language: app.component_language,
-    component_code: app.component_code || undefined,
-    variable_schema: asObjectArray(app.variable_schema),
-    shell_config: asObject(app.shell_config),
-    slot_overrides: asObject(app.slot_overrides),
+    app_entry: app.entry ?? undefined,
+    app_pages: appletPages(app).map((p) => ({ ...p })),
+    app_jobs: appletJobs(app).map((j) => ({ ...j })),
+    app_sources: appletSources(app).map((s) => ({ ...s })),
+    app_files: appletFiles(app),
     active_view,
     usage_stats: {
       total_executions: app.total_executions,

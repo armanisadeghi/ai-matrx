@@ -7,7 +7,7 @@
  * / versions). One surface covers the whole family, so NOTHING app-specific
  * is `alwaysAvailable` — the hub route has no active app. When an app IS open
  * (`/agent-apps/[id]/**`) the emitter fills the app_identity / app_content /
- * run_state values from the Redux agent-app slice (`state.agentApp`, hydrated
+ * run_state (active view + usage) values from the Redux agent-app slice (`state.agentApp`, hydrated
  * by `AgentAppHydratorServer`).
  *
  * Runtime emitter: `features/agent-apps/route/AgentAppSurfaceRuntime.tsx`,
@@ -32,14 +32,14 @@ const groups: SurfaceValueGroup[] = [
     label: "App identity",
     sortOrder: 100,
     description:
-      "Which agent app is open: naming, lifecycle, versioning, and the agent that powers it.",
+      "Which Applet is open: naming, lifecycle and version.",
   },
   {
     key: "app_content",
     label: "App content",
     sortOrder: 200,
     description:
-      "What the app is made of: shell kind, custom component code, variable schema, and shell configuration.",
+      "What the Applet is made of: its code files, entry, pages, jobs and data sources.",
   },
   {
     key: "run_state",
@@ -53,7 +53,7 @@ const groups: SurfaceValueGroup[] = [
     label: "Catalog",
     sortOrder: 400,
     description:
-      "The hub listing — the set of agent apps shown on the /agent-apps grid.",
+      "The hub listing — the set of Applets shown on the /agent-apps grid.",
   },
 ];
 
@@ -159,17 +159,6 @@ const surfaceSpecific: SurfaceValue[] = [
     group: "app_identity",
   },
   {
-    name: "agent_id",
-    label: "Powering agent ID",
-    description:
-      "UUID of the agent (`agent.definition`) that powers the open app's executions. Empty when no app is open.",
-    valueType: "string",
-    alwaysAvailable: false,
-    typicalCharCount: 36,
-    sortOrder: 345,
-    group: "app_identity",
-  },
-  {
     name: "app_version",
     label: "Current version",
     description:
@@ -181,32 +170,10 @@ const surfaceSpecific: SurfaceValue[] = [
     group: "app_identity",
   },
   {
-    name: "pinned_version",
-    label: "Pinned version",
-    description:
-      "Version number the app is pinned to serve, when the owner froze it. Absent when no app is open or the app follows latest.",
-    valueType: "number",
-    alwaysAvailable: false,
-    typicalCharCount: 3,
-    sortOrder: 355,
-    group: "app_identity",
-  },
-  {
-    name: "use_latest",
-    label: "Uses latest agent version",
-    description:
-      "True when the app always runs the powering agent's latest version instead of a pinned agent version. Absent when no app is open.",
-    valueType: "boolean",
-    alwaysAvailable: false,
-    typicalCharCount: 5,
-    sortOrder: 360,
-    group: "app_identity",
-  },
-  {
     name: "app_summary",
     label: "App summary",
     description:
-      "Composite of the open app's identity as one object: { id, slug, name, tagline, status, category, tags, is_public, agent_id, version, pinned_version, use_latest }. Mirrors the individual identity values (completeness law). Absent when no app is open.",
+      "Composite of the open Applet's identity as one object: { id, slug, name, tagline, status, category, tags, published_to_web, version }. Mirrors the individual identity values (completeness law). Absent when no Applet is open.",
     valueType: "object",
     alwaysAvailable: false,
     typicalCharCount: 500,
@@ -218,7 +185,7 @@ const surfaceSpecific: SurfaceValue[] = [
     name: "app_bundle",
     label: "Open app",
     description:
-      "The open app condensed as one XML bundle — read this first: <agent_app id name slug public_url status published_to_web category tags version shell view> with <tagline>, <description>, <variables total> (one <variable name label type required/> each), <usage runs success_rate last_run/> and <component_code language> (clipped at 3,500 chars with clipped=\"true\" total_chars=\"N\"; the full source is component_code) and, once the app has run here, <latest_run status conversation_id> with its <input>, <typed>, <error> and <result> (clipped at 2,500; the full text is run_result). Absent when no app is open or it has not loaded yet.",
+      "The open Applet condensed as one XML bundle — read this first: <applet id name slug public_url status published_to_web category tags version entry view> with <tagline>, <description>, <pages> (one <page path title file/> each), <jobs> (one <job alias key/> each), <sources> (one <source alias table_id|entity/> each), <files> (one <file name chars/> each) and <usage runs success_rate last_run/>. The full sources are app_files. Absent when no Applet is open or it has not loaded yet.",
     valueType: "string",
     alwaysAvailable: false,
     typicalCharCount: 5000,
@@ -229,72 +196,58 @@ const surfaceSpecific: SurfaceValue[] = [
 
   // ── App content ───────────────────────────────────────────────────────
   {
-    name: "shell_kind",
-    label: "Shell kind",
-    description:
-      "Which built-in layout shell renders the open app (chat, form_to_result, widget, …, or fully_custom when the whole UI is custom code). Empty when no app is open.",
+    name: "app_entry",
+    label: "Entry file",
+    description: "The file the open Applet starts from (the record's `entry`). Absent when no Applet is open.",
     valueType: "string",
     alwaysAvailable: false,
-    typicalCharCount: 15,
+    typicalCharCount: 12,
     sortOrder: 400,
     group: "app_content",
   },
   {
-    name: "component_language",
-    label: "Component language",
+    name: "app_pages",
+    label: "Pages",
     description:
-      "Language of the app's custom component code (tsx, jsx, html, …). Empty when no app is open.",
-    valueType: "string",
+      "The open Applet's pages, one entry per page: { path, title, file, parent? }. Empty array when the entry file renders alone. Absent when no Applet is open.",
+    valueType: "array",
     alwaysAvailable: false,
-    typicalCharCount: 10,
+    typicalCharCount: 300,
     sortOrder: 410,
     group: "app_content",
   },
   {
-    name: "component_code",
-    label: "Component code",
+    name: "app_jobs",
+    label: "Jobs",
     description:
-      "The app's FULL custom component source (the fully_custom UI, edited on the Code tab). Empty when no app is open or the app has no custom code. Large — bindable for code-editing agents.",
-    valueType: "document",
+      "The jobs the open Applet runs, one entry per job: { alias, key } — the alias is what its code passes to useJob, the key names the mandate. Absent when no Applet is open.",
+    valueType: "array",
     alwaysAvailable: false,
-    typicalCharCount: 8000,
-    autoContext: false,
+    typicalCharCount: 200,
     sortOrder: 420,
     group: "app_content",
   },
   {
-    name: "variable_schema",
-    label: "Variable schema",
+    name: "app_sources",
+    label: "Data sources",
     description:
-      "Declared input variables of the open app (one entry per variable with name/type/config). Absent when no app is open; empty array when the app takes no variables.",
+      "The data the open Applet reads, one entry per alias: { alias, table_id, organization_id } for a table or { alias, entity } for a platform record type. Absent when no Applet is open.",
     valueType: "array",
     alwaysAvailable: false,
-    typicalCharCount: 800,
+    typicalCharCount: 300,
     sortOrder: 430,
     group: "app_content",
   },
   {
-    name: "shell_config",
-    label: "Shell configuration",
+    name: "app_files",
+    label: "Code files",
     description:
-      "Per-shell settings of the open app (title, chat allowance, variable panel, input chrome, branding, …). Absent when no app is open.",
+      "The open Applet's FULL code: an object of file name → source (edited on the Code tab). Large — bindable for code-editing agents. Absent when no Applet is open.",
     valueType: "object",
     alwaysAvailable: false,
-    typicalCharCount: 600,
+    typicalCharCount: 8000,
     autoContext: false,
     sortOrder: 440,
-    group: "app_content",
-  },
-  {
-    name: "slot_overrides",
-    label: "Slot overrides",
-    description:
-      "Which shell slots the open app swapped for custom code (slot name → default|custom). Absent when no app is open; empty object when no slot is overridden.",
-    valueType: "object",
-    alwaysAvailable: false,
-    typicalCharCount: 120,
-    autoContext: false,
-    sortOrder: 450,
     group: "app_content",
   },
 
@@ -323,62 +276,6 @@ const surfaceSpecific: SurfaceValue[] = [
     group: "run_state",
   },
 
-  {
-    name: "run_status",
-    label: "Latest run status",
-    description:
-      "The app's latest run on this page: idle (nothing run yet), running, done or error. Emitted on every per-app route (idle when the app has not been run here).",
-    valueType: "string",
-    alwaysAvailable: false,
-    typicalCharCount: 7,
-    sortOrder: 520,
-    group: "run_state",
-  },
-  {
-    name: "run_conversation_id",
-    label: "Latest run conversation",
-    description:
-      "Conversation id of the app's latest run on this page — the same id the address carries as ?conversationId=. Absent until the app has been run.",
-    valueType: "string",
-    alwaysAvailable: false,
-    typicalCharCount: 36,
-    sortOrder: 525,
-    group: "run_state",
-  },
-  {
-    name: "run_input",
-    label: "Latest run input",
-    description:
-      "What the person gave the app's latest run: its form variables by name (e.g. { claim }) plus `typed` when they typed free text. Absent until the app has been run.",
-    valueType: "object",
-    alwaysAvailable: false,
-    typicalCharCount: 300,
-    sortOrder: 530,
-    group: "run_state",
-  },
-  {
-    name: "run_result",
-    label: "Latest run result",
-    description:
-      "The full answer text of the app's latest run (live while it streams, the saved answer after). \"\" while nothing has arrived yet. app_bundle carries it clipped at 2,500 chars. Absent until the app has been run.",
-    valueType: "document",
-    alwaysAvailable: false,
-    typicalCharCount: 4000,
-    autoContext: false,
-    sortOrder: 535,
-    group: "run_state",
-  },
-  {
-    name: "run_error",
-    label: "Latest run error",
-    description:
-      "Why the latest run failed, in the words the person saw. Present only when run_status is error.",
-    valueType: "string",
-    alwaysAvailable: false,
-    typicalCharCount: 120,
-    sortOrder: 540,
-    group: "run_state",
-  },
 
   // ── Catalog (hub grid) ────────────────────────────────────────────────
   {
@@ -420,9 +317,8 @@ const surfaceSpecific: SurfaceValue[] = [
  * built from the slug — renaming it breaks every existing link).
  * `app_visibility` is a sharing decision and `app_status` (draft → published)
  * is a release decision — both are the human's call, not a copy edit.
- * `agent_id` / `app_version` / `pinned_version` / `use_latest` are structural
- * bindings, `component_code` / `shell_config` / `slot_overrides` belong to
- * the /code and /layout editors (a different job, not declared here), rate
+ * `app_version` is structural, the files / pages / jobs / sources change in
+ * the Code and Settings editors or by talking (a different job), rate
  * limits are abuse controls, and deletion stays human by doctrine.
  *
  * MODE IS PER-FIELD, because the page's own UI is per-field. Name, tagline
@@ -471,7 +367,7 @@ const writeTargets: SurfaceWriteTarget[] = [
     name: "app_name",
     label: "App name",
     description:
-      "Stages a new display name into the open app's Name field on the Settings > Identity tab. Value: a non-empty plain string, which REPLACES the current name. This is a draft — it lands in the input with a Save button beside it and the user still presses Save, so the app_name read value does not change until they do.",
+      "Stages a new display name into the open app's Name field on the Settings > Overview tab. Value: a non-empty plain string, which REPLACES the current name. This is a draft — it lands in the input with a Save button beside it and the user still presses Save, so the app_name read value does not change until they do.",
     valueType: "string",
     updatesValue: "app_name",
     mode: "draft",
@@ -483,7 +379,7 @@ const writeTargets: SurfaceWriteTarget[] = [
     name: "app_tagline",
     label: "App tagline",
     description:
-      "Stages a one-line marketing tagline into the open app's Tagline field on the Settings > Identity tab — the short line shown under the app name in the hub and on the public page. Value: a plain string (pass an empty string to clear it), which REPLACES the current tagline. This is a draft — the user still presses Save, so the app_tagline read value does not change until they do.",
+      "Stages a one-line marketing tagline into the open app's Tagline field on the Settings > Overview tab — the short line shown under the app name in the hub and on the public page. Value: a plain string (pass an empty string to clear it), which REPLACES the current tagline. This is a draft — the user still presses Save, so the app_tagline read value does not change until they do.",
     valueType: "string",
     updatesValue: "app_tagline",
     mode: "draft",
@@ -495,7 +391,7 @@ const writeTargets: SurfaceWriteTarget[] = [
     name: "app_description",
     label: "App description",
     description:
-      "Stages the longer description of what the open app does into the Description field on the Settings > Identity tab. Value: a plain string (pass an empty string to clear it), which REPLACES the full description rather than appending — read app_description first and include any existing text you want kept. This is a draft — the user still presses Save, so the app_description read value does not change until they do.",
+      "Stages the longer description of what the open app does into the Description field on the Settings > Overview tab. Value: a plain string (pass an empty string to clear it), which REPLACES the full description rather than appending — read app_description first and include any existing text you want kept. This is a draft — the user still presses Save, so the app_description read value does not change until they do.",
     valueType: "string",
     updatesValue: "app_description",
     mode: "draft",
@@ -535,17 +431,16 @@ export const agentAppsManifest: SurfaceManifest = {
   executor: MATRX_WEB_APP_EXECUTOR,
   executionMode: "python-stream",
   description:
-    "Agent-backed apps directory (replaces prompt-apps)",
+    "Applets: the editor and hub for a person's small apps (files, pages, jobs, sources)",
   readiness: "partial",
   readinessNote:
-    "page-pass 2026-09-27 (/agent-apps/[id]/run): app_bundle added; the app's own run is declared the page's own conversation; no workspace chosen shows the inline picker. Live probe and agent write proof are pending.",
+    "AP-0 lane B3 2026-10-07: values describe the Applet record (files, entry, pages, jobs, sources); the shell/slot/agent/run keys are gone. Live probe and agent write proof are pending.",
   label: "Agent Apps",
   urlPattern: "/agent-apps",
   intro: `<surface_intro>
-You are on Agent Apps: the user's workspace for shareable AI mini-apps — each app wraps one agent in a custom UI (a shell kind plus optional custom component code) and can be published publicly at /p/[slug].
-When app_id is present the user has one app open in its workspace; read app_bundle first — it is the open app (identity, variables, usage and its code) in one place. active_view tells you which UI they are on (overview, run, code, settings, versions); on run, the app's own run is the app doing its job and is not yours to steer — run_status, run_input and run_result tell you what it was asked and what it answered. When app_id is absent the user is on the hub grid — only the catalog values apply.
-Read app_identity for what the app is, app_content for what it is made of (shell, code, variables, config), and run_state for the active view plus usage evidence. Code-editing work targets component_code; configuration work targets shell_config and variable_schema — never invent usage statistics.
-You can also WRITE the open app's storefront copy through apply_surface_write — its name, tagline, description, category and tags. Name, tagline and description stage into the Settings > Identity inputs for the user to Save and are available only on that tab; category and tags save to the database as soon as the user approves and remain available on every per-app sub-route. Those five are the only writable fields: the slug, publish status, public sharing, agent binding and code are not agent-writable, so propose those in words instead. Every write requires an app to be open (app_id present); the hub grid has no writable app.
+You are on Agent Apps: the user's Applets — small apps each made of code files, pages, jobs (mandates it runs, by key) and data sources (their tables or platform record types). An Applet can be published at /p/[slug].
+When app_id is present one Applet is open in its editor; read app_bundle first — it is the open Applet in one place. active_view tells you which UI they are on (overview, run, code, settings, versions). app_content holds what it is made of: app_entry, app_pages, app_jobs, app_sources and the full code in app_files. Never invent usage statistics.
+You can WRITE the open Applet's storefront copy through apply_surface_write — its name, tagline, description, category and tags. Name, tagline and description stage into the Settings > Overview inputs for the user to Save and are available only on that tab; category and tags save as soon as the user approves and remain available on every per-app sub-route. Those five are the only writable fields: the slug, publishing, pages, jobs, sources and code are not agent-writable here — the code changes by talking at /agent-apps/build?applet=<id>. Every write requires an Applet to be open (app_id present).
 </surface_intro>`,
   groups,
   values: mergeBaselineValues(
@@ -570,11 +465,6 @@ export interface AgentAppsListedEntry {
  */
 export function createAgentAppsScope(values: {
   app_bundle?: string;
-  run_status?: "idle" | "running" | "done" | "error";
-  run_conversation_id?: string;
-  run_input?: Record<string, unknown>;
-  run_result?: string;
-  run_error?: string;
   app_id?: string;
   app_slug?: string;
   app_name?: string;
@@ -584,17 +474,13 @@ export function createAgentAppsScope(values: {
   app_category?: string;
   app_tags?: string[];
   app_visibility?: string;
-  agent_id?: string;
   app_version?: number;
-  pinned_version?: number;
-  use_latest?: boolean;
   app_summary?: Record<string, unknown>;
-  shell_kind?: string;
-  component_language?: string;
-  component_code?: string;
-  variable_schema?: Array<Record<string, unknown>>;
-  shell_config?: Record<string, unknown>;
-  slot_overrides?: Record<string, unknown>;
+  app_entry?: string;
+  app_pages?: Array<Record<string, unknown>>;
+  app_jobs?: Array<Record<string, unknown>>;
+  app_sources?: Array<Record<string, unknown>>;
+  app_files?: Record<string, string>;
   active_view?:
     "overview" | "run" | "code" | "settings" | "versions" | "version_detail";
   usage_stats?: Record<string, unknown>;

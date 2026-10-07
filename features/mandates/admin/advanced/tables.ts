@@ -152,11 +152,11 @@ export const ADVANCED_RELATIONS: readonly AdvancedRelation[] = [
     table: "definition",
     label: "app.definition",
     blurb:
-      "Every agent app. APP_MANDATE_CUTOVER is ON, so mandate_id is the column that decides which agent an app actually runs — agent_id is no longer the serving source.",
+      "Every Applet. Its jobs are the `mandates` column ([{ alias, key }]) — an Applet names jobs by key, never an agent.",
     pk: "id",
     writable: true,
     softDeletes: true,
-    lead: ["slug", "name", "mandate_id", "agent_id", "status", "organization_id"],
+    lead: ["slug", "name", "mandates", "status", "organization_id"],
   },
 ];
 

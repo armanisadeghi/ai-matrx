@@ -1,8 +1,9 @@
 // ============================================================================
-// AGENT APPS — TypeScript Type Definitions
+// APPLETS — the record the /agent-apps editor edits (`app.definition`)
 // ============================================================================
-// Public shareable AI-powered mini-apps with custom UIs, backed by agents
-// (agent.definition / agx_version). Parity port of features/prompt-apps/types.
+// An Applet is code files + pages + jobs (mandates by key) + data sources
+// (CONTRACTS §8, common-docs/projects/applets/CONTRACTS.md). It names JOBS,
+// never agents: there is no agent binding on the record.
 // ============================================================================
 
 import type { Database, Json } from "@/types/database.types";
@@ -10,182 +11,11 @@ import type { Database, Json } from "@/types/database.types";
 export type AppStatus = "draft" | "published" | "archived" | "suspended";
 
 /** The row's "Shown to" (lists only). "Published to the web" is the boolean
- *  `published_to_web` — an app IS the public face of an agent, so publishing it
- *  to the web is a normal, expected state here. */
+ *  `published_to_web`. */
 export type AppShownTo = Database["platform"]["Enums"]["shown_to"];
 
-
-// ============================================================================
-// Shell + slots model (Phase 1a — see plan)
-// ============================================================================
-//
-// Every app has a `shell_kind` that drives which top-level layout pattern
-// renders it. 'fully_custom' = the entire UI lives in `component_code` (text)
-// and is Babel-compiled at runtime — that's the legacy/escape-hatch path.
-// All other kinds render a built-in shell that consumes the universal
-// `useAgentApp()` hook.
-//
-// `shell_config` is per-shell settings (untyped on the DB, typed in TS per
-// shell_kind). `slot_overrides` declares which slots within the chosen shell
-// have been swapped for custom code; `slot_code` holds the actual code,
-// keyed by slot name.
-
-export type AgentAppShellKind =
-  | "chat"
-  | "form_to_result"
-  | "widget"
-  | "compact_modal"
-  | "full_modal"
-  | "sidebar_overlay"
-  | "floating_bubble"
-  | "inline_overlay"
-  | "panel_overlay"
-  | "toast_overlay"
-  | "card_stack"
-  | "fully_custom";
-
-/** Slot names a shell may expose for Tier-2 customisation. Stable contract. */
-export type AgentAppSlotName =
-  | "variableInput"
-  | "resultRenderer"
-  | "loadingComponent"
-  | "messageDisplay"
-  | "preExecutionGate"
-  | "input"
-  | "header"
-  | "historySidebar"
-  | "app"; // reserved for fully_custom whole-app code
-
-export type AgentAppSlotOverride = "default" | "custom";
-
-export type AgentAppSlotOverrides = Partial<
-  Record<AgentAppSlotName, AgentAppSlotOverride>
->;
-
-export type AgentAppSlotCode = Partial<Record<AgentAppSlotName, string>>;
-
-/**
- * Common shell_config keys that most shells honour. Per-shell additions are
- * tolerated — the runtime never strict-validates this object.
- */
-export interface AgentAppShellConfigCommon {
-  /** Display name override (defaults to app.name). */
-  title?: string;
-  /** Hide the shell's own title row. */
-  hideTitle?: boolean;
-  /**
-   * Auto-fire the first execution on mount. RARELY useful for apps —
-   * an app has no variables filled in at mount, so auto-running just
-   * burns tokens on a default-state run. Kept for parity with the
-   * launcher's underlying option; default is `false` for apps.
-   */
-  autoRun?: boolean;
-  /**
-   * Allow the user to continue a conversation with the agent (turn 2+).
-   * Set false for one-shot apps.
-   */
-  allowChat?: boolean;
-  /** Show the variables panel. Default: visible when the agent has variables. */
-  showVariablePanel?: boolean;
-  /**
-   * Variable input style — one of SmartAgentVariables' six variants.
-   * @see features/agents/components/inputs/variable-input-variations
-   */
-  variableInputStyle?:
-    "form" | "inline" | "wizard" | "compact" | "guided" | "cards";
-  /** Show the pre-execution gate (welcome / consent / setup) before the first run. */
-  showPreExecutionGate?: boolean;
-  /** Custom message shown on the pre-execution gate (when enabled). */
-  preExecutionMessage?: string;
-  /** Show agent-authored definition messages (e.g. instructions, welcome text). */
-  showDefinitionMessages?: boolean;
-  /** Show the body content of definition messages (default: header-only). */
-  showDefinitionMessageContent?: boolean;
-  /** Hide reasoning blocks from the transcript. */
-  hideReasoning?: boolean;
-  /** Hide tool-result blocks from the transcript. */
-  hideToolResults?: boolean;
-  /**
-   * History sidebar scope:
-   *   - "hidden": no sidebar
-   *   - "app":   only conversations powered by this app's agent (approximates
-   *              "this app's chats" until app-id filtering lands)
-   *   - "all":   every conversation the user can access
-   */
-  historyView?: "hidden" | "app" | "all";
-  // ── Input + display chrome (Redux-backed, read by Smart input /
-  //    message option menus / etc.). Saved here so apps lock in their
-  //    desired UX; useAgentApp dispatches each onto the instance.
-  /** Override the textarea placeholder. */
-  inputPlaceholder?: string | null;
-  /** Render the freeform text input. False = variables-only mode. */
-  showFreeformInput?: boolean;
-  /** Show attachment button + resource chips. */
-  showAttachments?: boolean;
-  /** Show the mic button. */
-  showMicrophone?: boolean;
-  /** Show the ⋯ menu on user messages. */
-  showUserMessageOptions?: boolean;
-  /** Show the ⋯ menu on assistant messages. */
-  showAssistantMessageOptions?: boolean;
-  /** Enter submits / Shift+Enter newline. */
-  submitOnEnter?: boolean;
-  /** Buffer the stream — paint the full response on completion. */
-  bufferStream?: boolean;
-  /**
-   * Lucide icon name (or Matrx svg path) for the centered hero shown
-   * before the first message. Falls back to the built-in Webhook icon.
-   */
-  displayIconName?: string | null;
-  /** Branding overrides. */
-  primaryColor?: string;
-  accentColor?: string;
-  /** Layout density / scale. */
-  compact?: boolean;
-}
-
-export type ComponentLanguage =
-  "tsx" | "jsx" | "typescript" | "javascript" | "html" | "react";
-
-export type ErrorType =
-  | "missing_variable"
-  | "extra_variable"
-  | "invalid_variable_type"
-  | "component_render_error"
-  | "api_error"
-  | "rate_limit"
-  | "other";
-
-export type ExecutionErrorType =
-  | "missing_variables"
-  | "invalid_variables"
-  | "rate_limit_exceeded"
-  | "execution_error"
-  | "timeout"
-  | "cost_limit_exceeded";
-
-// ============================================================================
-// Auto-Create
-// ============================================================================
-
-export interface AppMetadata {
-  name: string;
-  tagline: string;
-  description: string;
-  slug_options: string[];
-  category: string | null;
-  tags: string[];
-}
-
-// ============================================================================
-// Core — backed by DB row shape (when generated types land, swap in DbRow)
-// ============================================================================
-
-export type AgentAppRow = Database["public"]["Tables"] extends {
-  agent_apps: { Row: infer R };
-}
-  ? R
-  : never;
+/** The generated row, for the few readers that take it whole. */
+export type AgentAppRow = Database["app"]["Tables"]["definition"]["Row"];
 
 export interface AgentAppRecord {
   id: string;
@@ -195,45 +25,6 @@ export interface AgentAppRecord {
   description: string | null;
   category: string | null;
   tags: string[];
-
-  agent_id: string;
-  agent_version_id: string | null;
-  use_latest: boolean;
-
-  /**
-   * The JOB this app fronts (`mandate.definition`). Phase 6.9 gave every app
-   * one; `agent_id` above stays the serving source until APP_MANDATE_CUTOVER
-   * flips. Read it ONLY through `features/agent-apps/lib/appHolder.ts` — that
-   * module is the single place this repo decides which agent an app runs.
-   */
-  mandate_id: string | null;
-
-  /**
-   * The same job addressed by KEY, hydrated at read time from `mandate_id`
-   * (`features/agents/redux/agent-apps/thunks.ts` → `withMandateKeys`) because
-   * `app.definition` stores only the id. `useAppHolder` resolves by key, so a
-   * row without this refuses to run for a signed-in caller. Never derived from
-   * the slug — identity resolves, keys describe.
-   */
-  mandate_key?: string | null;
-
-  app_kind: string;
-  shared_context_policies: Json | null;
-  search_tsv: unknown;
-
-  component_code: string;
-  component_language: ComponentLanguage;
-  allowed_imports: string[] | Json;
-
-  variable_schema: VariableSchemaItem[] | Json;
-  layout_config: LayoutConfig | Json;
-  styling_config: StylingConfig | Json;
-
-  // Shell + slots model (Phase 1a). See AgentAppShellKind etc above.
-  shell_kind: AgentAppShellKind;
-  shell_config: AgentAppShellConfigCommon | Json;
-  slot_overrides: AgentAppSlotOverrides | Json;
-  slot_code: AgentAppSlotCode | Json;
 
   preview_image_url: string | null;
   favicon_url: string | null;
@@ -249,7 +40,6 @@ export interface AgentAppRecord {
   rate_limit_authenticated: number | null;
 
   version: number;
-  pinned_version: number | null;
 
   total_executions: number | null;
   total_tokens_used: number | null;
@@ -270,188 +60,91 @@ export interface AgentAppRecord {
   updated_at: string;
   published_at: string | null;
 
-  /** The Applet record (CONTRACTS §8): code files, entry, pages, jobs (`[{ alias, key }]`), sources. */
-  files?: Json;
-  entry?: string | null;
-  pages?: Json;
-  mandates?: Json;
-  sources?: Json;
-  parent_applet_id?: string | null;
+  /** The Applet record (CONTRACTS §8). */
+  files: Json;
+  entry: string | null;
+  pages: Json;
+  mandates: Json;
+  sources: Json;
+  parent_applet_id: string | null;
 }
 
 export type AgentApp = AgentAppRecord;
 
-/** The jobs an Applet names (`mandates` column), read defensively from the stored jsonb. */
-export function appletJobs(app: Pick<AgentAppRecord, "mandates">): { alias: string; key: string }[] {
-  if (!Array.isArray(app.mandates)) return [];
-  return app.mandates.flatMap((entry) => {
-    if (!entry || typeof entry !== "object" || Array.isArray(entry)) return [];
-    const { alias, key } = entry as Record<string, unknown>;
-    return typeof alias === "string" && typeof key === "string" && key ? [{ alias, key }] : [];
+// ── The record's parts, read defensively from the stored jsonb ───────────────
+
+export interface AppletJob {
+  alias: string;
+  key: string;
+}
+
+export interface AppletPage {
+  path: string;
+  title: string;
+  file: string;
+  parent?: string;
+}
+
+export type AppletSource =
+  | { alias: string; table_id: string; organization_id: string }
+  | { alias: string; entity: string };
+
+function objects(value: Json | undefined): Record<string, unknown>[] {
+  if (!Array.isArray(value)) return [];
+  return value.flatMap((entry) =>
+    entry && typeof entry === "object" && !Array.isArray(entry)
+      ? [entry as Record<string, unknown>]
+      : [],
+  );
+}
+
+/** The jobs an Applet names (`mandates` column). */
+export function appletJobs(app: Pick<AgentAppRecord, "mandates">): AppletJob[] {
+  return objects(app.mandates).flatMap(({ alias, key }) =>
+    typeof alias === "string" && typeof key === "string" && key ? [{ alias, key }] : [],
+  );
+}
+
+/** The pages an Applet routes (`pages` column). */
+export function appletPages(app: Pick<AgentAppRecord, "pages">): AppletPage[] {
+  return objects(app.pages).flatMap(({ path, title, file, parent }) =>
+    typeof path === "string" && typeof file === "string"
+      ? [
+          {
+            path,
+            title: typeof title === "string" ? title : path,
+            file,
+            ...(typeof parent === "string" && parent ? { parent } : {}),
+          },
+        ]
+      : [],
+  );
+}
+
+/** The data sources an Applet reads (`sources` column). */
+export function appletSources(app: Pick<AgentAppRecord, "sources">): AppletSource[] {
+  return objects(app.sources).flatMap((s): AppletSource[] => {
+    if (typeof s.alias !== "string") return [];
+    if (typeof s.entity === "string") return [{ alias: s.alias, entity: s.entity }];
+    if (typeof s.table_id === "string" && typeof s.organization_id === "string") {
+      return [{ alias: s.alias, table_id: s.table_id, organization_id: s.organization_id }];
+    }
+    return [];
   });
 }
 
-// PublicAgentApp now keeps `agent_id`, `agent_version_id`, and `use_latest`.
-// The renderer needs them so it can call the standard agent-execution path
-// (`/ai/agents/{agentId}` / `/ai/conversations/{id}`) directly from the
-// client — same model as shortcuts, no bespoke Next.js proxy.
-export type PublicAgentApp = Omit<
-  AgentAppRecord,
-  | "created_by"
-  | "organization_id"
-  | "project_id"
-  | "task_id"
-  | "rate_limit_per_ip"
-  | "rate_limit_window_hours"
-  | "rate_limit_authenticated"
-  | "metadata"
-  | "pinned_version"
-  | "version"
-  | "published_at"
-  | "created_at"
-  | "updated_at"
-  | "is_featured"
-  | "is_verified"
-  | "total_tokens_used"
-  | "total_cost"
-  | "unique_users_count"
-  | "avg_execution_time_ms"
-  | "last_execution_at"
-  | "status"
-  | "published_to_web"
-  | "shown_to"
-> & {
-  /**
-   * The mandate columns the public RPC carries so an ANONYMOUS visitor never
-   * has to read `mandate.definition` (it cannot: `anon` has no grant, and a
-   * guest has no bindings anyway, so the system default is the whole honest
-   * answer). Consumed only by `useAppHolder(app, { guest: true })`.
-   */
-  mandate_key: string | null;
-  mandate_agent_id: string | null;
-  mandate_agent_version_id: string | null;
-};
-
-export interface VariableSchemaItem {
-  name: string;
-  type: "string" | "number" | "boolean" | "object" | "array";
-  required: boolean;
-  default?: unknown;
-  description?: string;
-  validation?: {
-    min?: number;
-    max?: number;
-    pattern?: string;
-    options?: string[];
-  };
+/** The code files an Applet carries (`files` column, name → source). */
+export function appletFiles(app: Pick<AgentAppRecord, "files">): Record<string, string> {
+  const out: Record<string, string> = {};
+  const files = app.files;
+  if (!files || typeof files !== "object" || Array.isArray(files)) return out;
+  for (const [name, source] of Object.entries(files)) {
+    if (typeof source === "string") out[name] = source;
+  }
+  return out;
 }
 
-export interface LayoutConfig {
-  theme?: "light" | "dark" | "auto";
-  maxWidth?: string;
-  showBranding?: boolean;
-  showCredit?: boolean;
-  customLayout?: string;
-}
-
-export interface StylingConfig {
-  primaryColor?: string;
-  secondaryColor?: string;
-  fontFamily?: string;
-  customCSS?: string;
-  tailwindClasses?: Record<string, string>;
-}
-
-// ============================================================================
-// Execution
-// ============================================================================
-
-export interface AgentAppExecution {
-  id: string;
-  app_id: string;
-  created_by?: string;
-
-  fingerprint?: string;
-  ip_address?: string;
-  user_agent?: string;
-
-  task_id: string;
-  variables_provided: Record<string, unknown>;
-  variables_used: Record<string, unknown>;
-
-  success: boolean;
-  error_type?: ExecutionErrorType;
-  error_message?: string;
-
-  execution_time_ms?: number;
-  tokens_used?: number;
-  cost?: number;
-
-  referer?: string;
-  metadata: Record<string, unknown>;
-
-  created_at: string;
-}
-
-export interface AgentAppError {
-  id: string;
-  app_id: string;
-  execution_id?: string;
-
-  error_type: ErrorType;
-  error_code?: string;
-  error_message?: string;
-  error_details: Record<string, unknown>;
-
-  variables_sent: Record<string, unknown>;
-  expected_variables: Record<string, unknown>;
-
-  resolved: boolean;
-  resolved_at?: string;
-  resolved_by?: string;
-  resolution_notes?: string;
-
-  created_at: string;
-}
-
-export interface RateLimitInfo {
-  allowed: boolean;
-  remaining: number;
-  reset_at: string;
-  is_blocked: boolean;
-}
-
-// ============================================================================
-// API
-// ============================================================================
-
-
-
-export interface CreateAgentAppInput {
-  agent_id: string;
-  agent_version_id?: string;
-  use_latest?: boolean;
-  slug: string;
-  name: string;
-  tagline?: string;
-  description?: string;
-  category?: string;
-  tags?: string[];
-  component_code?: string;
-  component_language?: ComponentLanguage;
-  variable_schema?: VariableSchemaItem[];
-  allowed_imports?: string[];
-  layout_config?: LayoutConfig;
-  styling_config?: StylingConfig;
-  shell_kind?: AgentAppShellKind;
-  shell_config?: AgentAppShellConfigCommon;
-  slot_overrides?: AgentAppSlotOverrides;
-  slot_code?: AgentAppSlotCode;
-  /** Ownership scope for the new app.
-   *  - `"user"` (default) — owned by the authenticated user.
-   *  - `"global"` — admin-only; creates a system app with all scope columns null. */
-  scope?: "user" | "global";
-}
+// ── Admin edit ───────────────────────────────────────────────────────────────
 
 export interface UpdateAgentAppInput {
   slug?: string;
@@ -461,52 +154,15 @@ export interface UpdateAgentAppInput {
   category?: string;
   tags?: string[];
   preview_image_url?: string;
-  component_code?: string;
-  variable_schema?: VariableSchemaItem[];
-  allowed_imports?: string[];
-  layout_config?: LayoutConfig;
-  styling_config?: StylingConfig;
   status?: AppStatus;
   rate_limit_per_ip?: number;
   rate_limit_window_hours?: number;
   rate_limit_authenticated?: number;
 }
 
-// ============================================================================
-// Component Props
-// ============================================================================
-
-
-// ============================================================================
-// List / Filter
-// ============================================================================
-
-export interface AgentAppsListFilters {
-  status?: AppStatus;
-  category?: string;
-  tags?: string[];
-  search?: string;
-  featured?: boolean;
-  verified?: boolean;
-  limit?: number;
-  offset?: number;
-  sort_by?: "created_at" | "total_executions" | "name" | "last_execution_at";
-  sort_direction?: "asc" | "desc";
-}
-
-export interface AgentAppsListResponse {
-  apps: AgentApp[];
-  total: number;
-  hasMore: boolean;
-}
-
 /**
- * The exact column subset `getAppsForAgent` (lib/agents/data.ts) selects from
- * `app.definition` for the per-agent apps list — enough for a card/grid, not
- * the full record (no component_code, shell config, etc). Named so the panel
- * chain (AgentAppsPanel → AgentAppsGrid → AgentAppCard, all in
- * features/agent-apps/components/layouts/) can accept it honestly instead of
- * casting a partial select up to the full `AgentApp`.
+ * The column subset a card/grid needs — enough for a listing, not the full
+ * record (no files).
  */
 export type AgentAppSummary = Pick<
   AgentAppRecord,
@@ -524,9 +180,6 @@ export type AgentAppSummary = Pick<
   | "is_featured"
   | "total_executions"
   | "last_execution_at"
-  | "agent_id"
-  | "agent_version_id"
-  | "use_latest"
   | "created_at"
   | "updated_at"
 >;

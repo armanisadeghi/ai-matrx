@@ -128,7 +128,6 @@ export const adminNavigationRegistry: readonly AdminNavigationDomain[] = [
           destination("/administration/agents/system-agents"),
           destination("/administration/agents/system-agents/agents", [
             "/administration/agents/system-agents/agents/[id]",
-            "/administration/agents/system-agents/agents/[id]/apps",
             "/administration/agents/system-agents/agents/[id]/build",
             "/administration/agents/system-agents/agents/[id]/latest",
             "/administration/agents/system-agents/agents/[id]/run",

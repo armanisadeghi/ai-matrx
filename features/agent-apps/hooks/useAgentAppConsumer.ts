@@ -12,7 +12,6 @@
  * Usage:
  *   const consumer = useAgentAppConsumer("apps-main");
  *   consumer.setSearchTerm("tutor");
- *   consumer.toggleAgent(agentId);
  *
  * Mirrors `features/agents/hooks/useAgentConsumer.ts`. To add a new
  * filter/sort dimension, add the field to AgentAppConsumerState in
@@ -45,7 +44,6 @@ export interface UseAgentAppConsumerReturn {
   searchTerm: string;
   includedCats: string[];
   includedTags: string[];
-  includedAgents: string[];
   archFilter: AgentAppArchFilter;
   visibilityFilter: AgentAppVisibilityFilter;
   listPage: number;
@@ -64,8 +62,6 @@ export interface UseAgentAppConsumerReturn {
   toggleCategory: (cat: string) => void;
   /** Add tag to inclusion set; if already present, remove (toggle). */
   toggleTag: (tag: string) => void;
-  /** Add agent_id to inclusion set; if already present, remove (toggle). */
-  toggleAgent: (agentId: string) => void;
 
   /** Advance the list page by 1. */
   loadMoreList: () => void;
@@ -180,21 +176,6 @@ export function useAgentAppConsumer(
     [consumerId, consumer.includedTags, dispatch],
   );
 
-  const toggleAgent = useCallback(
-    (agentId: string) => {
-      const current = consumer.includedAgents;
-      const next = current.includes(agentId)
-        ? current.filter((a) => a !== agentId)
-        : [...current, agentId];
-      dispatch(
-        setAgentAppConsumerFilter({
-          consumerId,
-          patch: { includedAgents: next },
-        }),
-      );
-    },
-    [consumerId, consumer.includedAgents, dispatch],
-  );
 
   const loadMoreList = useCallback(
     () =>
@@ -222,7 +203,6 @@ export function useAgentAppConsumer(
     consumer.sortBy !== d.sortBy ||
     consumer.includedCats.length > 0 ||
     consumer.includedTags.length > 0 ||
-    consumer.includedAgents.length > 0 ||
     consumer.archFilter !== d.archFilter ||
     consumer.visibilityFilter !== d.visibilityFilter;
 
@@ -233,7 +213,6 @@ export function useAgentAppConsumer(
     searchTerm: consumer.searchTerm,
     includedCats: consumer.includedCats,
     includedTags: consumer.includedTags,
-    includedAgents: consumer.includedAgents,
     archFilter: consumer.archFilter,
     visibilityFilter: consumer.visibilityFilter,
     listPage: consumer.listPage,
@@ -246,7 +225,6 @@ export function useAgentAppConsumer(
     setVisibilityFilter,
     toggleCategory,
     toggleTag,
-    toggleAgent,
     loadMoreList,
     resetFilters,
   };

@@ -1,4 +1,5 @@
 import { createClient } from "@/utils/supabase/client";
+import { appletJobs } from "@/features/agent-apps/types";
 import { catWriteArgs, categoryRow } from "@/lib/db/category-door";
 import { getScriptSupabaseClient } from "@/utils/supabase/getScriptClient";
 import { requireUserId } from "@/utils/auth/getUserId";
@@ -45,16 +46,8 @@ export interface UpdateAgentAppCategoryInput {
 export interface AgentAppAdminView {
   id: string;
   created_by: string | null;
-  agent_id: string;
-  /**
-   * THE APP'S JOB (census #61). After 6.9 an app's job is its mandate:
-   * `app.definition.mandate_id` points at the discovered mandate the app runs,
-   * and the holder behind it is the mandate's business, not the app's.
-   * `mandate_key` is the human-readable identity, joined below — read-only in
-   * this console; binding is edited on the app's own settings page.
-   */
-  mandate_id: string | null;
-  mandate_key: string | null;
+  /** The jobs the Applet runs (`mandates` [{ alias, key }]) — the keys, read-only here. */
+  job_keys: string[];
   slug: string;
   name: string;
   tagline?: string | null;
@@ -333,10 +326,6 @@ export async function fetchAgentAppsAdmin(filters?: {
         { label: "app.definition (agent apps administration)" },
       );
 
-  const keyByMandateId = await fetchMandateKeys(
-    (data ?? []).map((r) => (r as { mandate_id?: string | null }).mandate_id),
-  );
-
   if (data && data.length > 0) {
     const userIds = [
       ...new Set(data.map((r) => r.created_by).filter((v): v is string => !!v)),
@@ -350,10 +339,7 @@ export async function fetchAgentAppsAdmin(filters?: {
       const userMap = new Map((users ?? []).map((u) => [u.id, u]));
       return data.map((item) => ({
         ...item,
-        mandate_key:
-          keyByMandateId.get(
-            (item as { mandate_id?: string | null }).mandate_id ?? "",
-          ) ?? null,
+        job_keys: appletJobs(item).map((j) => j.key),
         creator_email: item.created_by
           ? userMap.get(item.created_by)?.email
           : undefined,
@@ -362,38 +348,9 @@ export async function fetchAgentAppsAdmin(filters?: {
   }
   return (data ?? []).map((item) => ({
     ...item,
-    mandate_key:
-      keyByMandateId.get(
-        (item as { mandate_id?: string | null }).mandate_id ?? "",
-      ) ?? null,
+    job_keys: appletJobs(item).map((j) => j.key),
     creator_email: undefined,
   })) as AgentAppAdminView[];
-}
-
-/**
- * mandate id → mandate key, for the apps this console is showing (census #61).
- * A separate read rather than a PostgREST embed: `app.definition` and
- * `mandate.definition` live in different schemas, and this mirrors the
- * creator-email lookup right above it. Empty in, empty out.
- */
-async function fetchMandateKeys(
-  ids: readonly (string | null | undefined)[],
-): Promise<Map<string, string>> {
-  const unique = [...new Set(ids.filter((v): v is string => !!v))];
-  if (unique.length === 0) return new Map();
-  const supabase = getClient();
-  const rows = await readAllRows<{ id: string; mandate_key: string }>(
-    ({ from, to }) =>
-      supabase
-        .schema("mandate")
-        .from("definition")
-        .select("id,mandate_key", { count: "exact" })
-        .in("id", unique)
-        .order("id", { ascending: true })
-        .range(from, to),
-    { label: "mandate.definition (admin apps console)" },
-  );
-  return new Map(rows.map((r) => [r.id, r.mandate_key]));
 }
 
 export async function getAgentAppById(
@@ -411,16 +368,7 @@ export async function getAgentAppById(
     if (error.code === "PGRST116") return null;
     throw error;
   }
-  const keyByMandateId = await fetchMandateKeys([
-    (data as { mandate_id?: string | null }).mandate_id,
-  ]);
-  return {
-    ...(data as object),
-    mandate_key:
-      keyByMandateId.get(
-        (data as { mandate_id?: string | null }).mandate_id ?? "",
-      ) ?? null,
-  } as AgentAppAdminView;
+  return { ...data, job_keys: appletJobs(data).map((j) => j.key) } as AgentAppAdminView;
 }
 
 export async function updateAgentAppAdmin(
@@ -450,11 +398,7 @@ export async function updateAgentAppAdmin(
     { action: "update", noun: "definition" },
   );
   if (error) throw error;
-  const keyByMandateId = await fetchMandateKeys([data.mandate_id]);
-  return {
-    ...data,
-    mandate_key: keyByMandateId.get(data.mandate_id ?? "") ?? null,
-  } as AgentAppAdminView;
+  return { ...data, job_keys: appletJobs(data).map((j) => j.key) } as AgentAppAdminView;
 }
 
 export async function fetchAgentAppExecutions(filters?: {
