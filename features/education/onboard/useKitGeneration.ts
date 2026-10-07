@@ -290,6 +290,7 @@ export function useKitGeneration(): UseKitGeneration {
         text: normalized.text,
         rawTitle: normalized.title,
         sourceTitles: normalized.meta.sourceTitles,
+        sourceSamples: normalized.meta.sourceSamples,
         focus: options.focus,
         orgId,
       }));

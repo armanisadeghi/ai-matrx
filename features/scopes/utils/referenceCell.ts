@@ -45,7 +45,9 @@ const REFERENCE_TYPE_LABELS: Record<string, string> = {
   note: "Note",
   project: "Project",
   organization: "Organization",
-  document: "Document",
+  // ONE name per type, never shared (G11A, 2026-10-07): `udt_document` (the
+  // Univer editor at /documents) is "Document"; `content.document` keeps its
+  // registry label, "Markdown document" — both once printed "Document".
   udt_document: "Document",
   transcript: "Transcript",
   workbook: "Workbook",

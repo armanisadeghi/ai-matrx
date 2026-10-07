@@ -27,6 +27,10 @@ import type {
   ResourceType,
   ShareActionResult,
 } from "@/utils/permissions/types";
+import {
+  PERMISSION_LEVEL_HINTS,
+  PERMISSION_LEVEL_SHORT_LABELS,
+} from "@/utils/permissions/levels";
 import { PermissionLevelDescription } from "../PermissionBadge";
 import { createClient } from "@/utils/supabase/client";
 import {
@@ -601,6 +605,14 @@ export function ShareWithUserTab({
                   this picker was the one place a person could not choose it (lane SHARE,
                   2026-09-19). A ladder with a rung nobody can reach is not one ladder. */}
               <SelectItem value="commenter">Commenter</SelectItem>
+              {/* `edit_content` — Notion's "Can edit content": rows and page content, never structure or sharing.
+                  Label and tooltip come from the one ladder (utils/permissions/levels.ts). */}
+              <SelectItem
+                value="edit_content"
+                title={PERMISSION_LEVEL_HINTS.edit_content}
+              >
+                {PERMISSION_LEVEL_SHORT_LABELS.edit_content}
+              </SelectItem>
               <SelectItem value="editor">Editor</SelectItem>
               {/* THE SCOPE-QUALIFIED ADMIN RULE (access/DECISIONS.md 2026-09-10): the heading
                   above is "Permission Level", which names no item, so the bare "Admin" is

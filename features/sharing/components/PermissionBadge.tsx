@@ -53,6 +53,13 @@ export function PermissionBadge({
         "bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200 border-purple-300",
       icon: MessageSquare,
     },
+    // `edit_content` ("Can edit content"): rows and page content, never structure or sharing.
+    edit_content: {
+      label: "Content editor",
+      className:
+        "bg-teal-100 text-teal-800 dark:bg-teal-900 dark:text-teal-200 border-teal-300",
+      icon: Users,
+    },
     editor: {
       label: "Editor",
       className:
@@ -130,6 +137,7 @@ export function PermissionLevelDescription({
   const descriptions: Record<PermissionLevel, string> = {
     viewer: "Can view",
     commenter: "Can view and comment",
+    edit_content: "Can edit content (not structure or sharing)",
     editor: "Can view and edit",
     admin: "Admin of this item (view, edit, share, delete)",
   };

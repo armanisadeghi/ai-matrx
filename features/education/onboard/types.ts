@@ -27,6 +27,8 @@ export interface NormalizedIngest {
     notes: string[];
     /** Each Source's own name, in pick order — what the kit namer reads beside the text. */
     sourceTitles?: string[];
+    /** The opening of each Source's text, so a kit of several is named from all of them. */
+    sourceSamples?: string[];
   };
 }
 

@@ -55,7 +55,9 @@ export function kitMaterialFromSources(resolved: ResolvedSourceSet): KitMaterial
   }
   return {
     text: sources.map((s) => s.text).join("\n\n"),
-    title: sources.length > 1 ? `${first} and ${sources.length - 1} more` : first,
+    // Never "X and N more": the namer titles a kit of several from the material;
+    // this is only the floor under it.
+    title: first,
     truncated: sources.some((s) => s.truncated),
     sourceCount: sources.length,
     pages: pages.size > 0 ? pages.size : undefined,
