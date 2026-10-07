@@ -702,6 +702,7 @@ export function AgentSyncBody({
           includeIdentity: pullIdentity,
           expectedFromUpdatedAt: baseAgent.updatedAt,
           expectedToUpdatedAt: copyAgent.updatedAt,
+          targetIsSystem: copySide.agentType === "builtin",
         }),
       ).unwrap();
       setFieldHistoryState(null);
@@ -738,6 +739,7 @@ export function AgentSyncBody({
           includeIdentity: true,
           expectedFromUpdatedAt: copyAgent.updatedAt,
           expectedToUpdatedAt: baseAgent.updatedAt,
+          targetIsSystem: baseSide.agentType === "builtin",
         }),
       ).unwrap();
       setFieldHistoryState(null);

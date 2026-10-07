@@ -788,6 +788,13 @@ export interface SyncLinkedAgentsArgs {
   expectedFromUpdatedAt: string;
   /** Saved target timestamp shown in the comparison the user reviewed. */
   expectedToUpdatedAt: string;
+  /**
+   * True when the agent being overwritten is a SYSTEM agent. Only then does the
+   * request carry the admin lane (admin feature "agent.system-sync"); writing
+   * into a person's agent never does, so an admin on a user page can only
+   * write into agents they could save themselves.
+   */
+  targetIsSystem?: boolean;
 }
 
 /**
@@ -809,19 +816,20 @@ export const syncLinkedAgents = createAsyncThunk<
     includeIdentity = true,
     expectedFromUpdatedAt,
     expectedToUpdatedAt,
+    targetIsSystem = false,
   }) => {
-    // Writing into a SYSTEM agent from the user page is the registered admin
-    // feature "agent.system-sync": this one request carries the admin lane.
-    const { data, error } = await withAdminFeature(
-      "agent.system-sync",
-      supabase.rpc("agx_sync_linked_agents_reviewed", {
-        p_from_id: fromId,
-        p_to_id: toId,
-        p_include_identity: includeIdentity,
-        p_expected_from_updated_at: expectedFromUpdatedAt,
-        p_expected_to_updated_at: expectedToUpdatedAt,
-      }),
-    );
+    const request = supabase.rpc("agx_sync_linked_agents_reviewed", {
+      p_from_id: fromId,
+      p_to_id: toId,
+      p_include_identity: includeIdentity,
+      p_expected_from_updated_at: expectedFromUpdatedAt,
+      p_expected_to_updated_at: expectedToUpdatedAt,
+    });
+    // Writing into a SYSTEM agent from a user page is the registered admin
+    // feature "agent.system-sync": only that request carries the admin lane.
+    const { data, error } = await (targetIsSystem
+      ? withAdminFeature("agent.system-sync", request)
+      : request);
     if (error) throw pgErrorToError(error);
 
     const targetId = data as string;
