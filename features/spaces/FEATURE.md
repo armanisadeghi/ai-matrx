@@ -174,6 +174,15 @@ Block document: a tree of `SpaceBlock` (`id`, `type`, `text: RichSpan[]`, `color
   of an open toggle's title writes its first child (`editor/toggle-enter.ts`). Inline tables at natural widths, scrolling
   sideways; grey toggle triangles; no selection ring between columns. Viewer search on table blocks (records-ui
   `searchOverride`); built-in Load more reads one 50-row page by offset.
+- 2026-10-06 — builder round 21 (by-hand rebuild): a margin click beside a line puts the caret there (`editor/rubber-band.ts`
+  `lineBeside`; the next "/" went nowhere); "/2 columns" in a column and a drop beside a block sharing its column nest a
+  column row there (`slash-insert.ts`, `column-drop.ts`); colour "Default" (renamed from Auto) draws the callout's border;
+  Enter in a callout writes inside the box (`toggle-enter.ts`); Link to page / `[[` / `[+` offer New page "name"
+  (QuickFind `create`); `/Database - Inline|Full page` make a real table (`data/new-database.ts`); Properties → edit / New
+  property in records-ui `FieldEditor`; view names and database titles typed in place; column gutter bar on hover; any
+  Lucide name draws (DynamicIcon) and the icon search reaches all of Lucide; Use template into another organization
+  copies its tables (`state/template-tables.ts`); collab resync rebuild removed, teardown synchronous. Walk tooling:
+  `__tests__/walk/lib.mjs` (dev-login, org pick, sample-page guard, block menu / colour helpers).
 - 2026-10-06 — builder round 20 (Arman: Use template on the Traveling SMM™ OS "set up" but the first page was empty):
   the sample page gets its content the moment it is made and every later write lands on its CURRENT version
   (`store/sample.ts` `saveOnCurrent`) — opening it mid-install used to write the editor's empty starting line and the
