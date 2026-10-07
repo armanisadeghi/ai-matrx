@@ -173,16 +173,6 @@ export const selectOrganizationPreferences = createSelector(
   (state): OrganizationPreferences => state.organization,
 );
 
-/**
- * The user's default active organization id (or null if none chosen). Read by
- * the active-org bootstrap at startup to auto-select an org, and by the org
- * pickers to reflect/toggle the "Set as default" switch.
- */
-export const selectDefaultOrganizationId = createSelector(
-  selectOrganizationPreferences,
-  (org): string | null => org.defaultOrganizationId,
-);
-
 // Per-property selectors so unrelated preference changes don't re-render a
 // component that only reads one device id (every property gets its own
 // selector — house rule).

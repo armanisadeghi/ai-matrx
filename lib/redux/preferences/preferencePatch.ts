@@ -7,7 +7,7 @@
  * every device and every agent acting for the person. Until 2026-09-27 the sync
  * engine saved the tab's WHOLE cached record (`update({ preferences: body })`),
  * so any save from a tab holding an older copy silently put that copy back —
- * observed live: an agent set `organization.defaultOrganizationId` at
+ * observed live: an agent set an organization preference at
  * 23:28:56 and it was null again at 23:29:11, written by a browser whose cache
  * still held the old record.
  *
