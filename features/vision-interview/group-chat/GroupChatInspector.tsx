@@ -174,11 +174,9 @@ function ParticipantRow({
   const [pickerOpen, setPickerOpen] = useState(false);
   if (!participant) {
     return (
-      <tr className="border-b border-border/60" data-participant={row.id}>
-        <td colSpan={5} className="px-2 py-1 type-secondary text-destructive">
-          {row.error ?? "Unreadable participant"}
-        </td>
-      </tr>
+      <div className="border-b border-border/60 px-2 py-1 type-secondary text-destructive" data-participant={row.id}>
+        {row.error ?? "Unreadable participant"}
+      </div>
     );
   }
   const full = draft ?? readPolicy(participant.policy);
@@ -196,21 +194,28 @@ function ParticipantRow({
   const round = turn?.status === "ready" ? (turn.turn?.roomView?.round ?? null) : null;
   const band = selected ? "bg-accent/60" : "hover:bg-muted/50";
   return (
-    <>
-    <tr
-      className={cn("align-middle", band)}
+    <div
+      className={cn("flex min-w-0 flex-col gap-1 border-b border-border/60 px-2 py-1", band)}
       data-participant={participant.key}
       aria-selected={selected}
       onClick={onSelect}
       data-clickable
     >
-      <td className="px-2 py-1">
-        <div className="truncate type-secondary font-medium text-foreground">{participantName(participant)}</div>
-        {problem ? <div className="truncate type-meta text-destructive">{problem}</div> : null}
-      </td>
-      <td className="px-1 py-1 type-secondary tabular-nums text-muted-foreground">{round ?? "—"}</td>
-      <td className="px-1 py-1" onClick={(e) => e.stopPropagation()}>
-        <div className="flex items-center gap-1">
+      <div className="flex min-w-0 items-baseline gap-2">
+        <div className="min-w-0 flex-1">
+          <div className="truncate type-secondary font-medium text-foreground">{participantName(participant)}</div>
+          {problem ? <div className="truncate type-meta text-destructive">{problem}</div> : null}
+        </div>
+        <span className="shrink-0 type-meta tabular-nums text-muted-foreground" title="Round of its latest turn">
+          {round == null ? "R —" : `R${round}`}
+        </span>
+        <span className="shrink-0 type-meta tabular-nums text-muted-foreground" title="Policy version">
+          {saving ? "…" : `v${participant.policy_version ?? 1}`}
+        </span>
+      </div>
+      <div className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1" onClick={(e) => e.stopPropagation()}>
+        <div className="flex min-w-0 items-center gap-1">
+          <span className="type-meta text-muted-foreground">Sees</span>
           <Select
             value={full.sees}
             onValueChange={(v) => {
@@ -242,8 +247,6 @@ function ParticipantRow({
             />
           ) : null}
         </div>
-      </td>
-      <td className="px-1 py-1" onClick={(e) => e.stopPropagation()}>
         <SegmentedControl aria-label="Labels"
           value={full.labels}
           onValueChange={(v) => change({ labels: v as FullPolicy["labels"] })}
@@ -252,13 +255,8 @@ function ParticipantRow({
             { value: "anonymous", label: "Anon", ariaLabel: "Anonymous" },
           ]}
         />
-      </td>
-      <td className="px-2 py-1 text-right type-meta tabular-nums text-muted-foreground" title="Policy version">
-        {saving ? "…" : `v${participant.policy_version ?? 1}`}
-      </td>
-    </tr>
-    <tr className={cn("border-b border-border/60 align-middle", band)} data-participant-rules={participant.key} onClick={onSelect} data-clickable>
-      <td colSpan={5} className="px-2 pb-1" onClick={(e) => e.stopPropagation()}>
+      </div>
+      <div className="min-w-0" data-participant-rules={participant.key} onClick={(e) => e.stopPropagation()}>
         <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
           <div className="flex items-center gap-1">
             <span className="type-meta text-muted-foreground">Reveal</span>
@@ -323,9 +321,8 @@ function ParticipantRow({
             />
           </div>
         </div>
-      </td>
-    </tr>
-    </>
+      </div>
+    </div>
   );
 }
 
@@ -412,40 +409,25 @@ export function GroupChatInspector({ anchorType, anchorId, initialKey }: { ancho
           }} className="ml-auto" />
       </div>
       <div className="min-h-0 flex-1 overflow-y-auto scrollbar-thin">
-        <div className="overflow-x-auto">
-          <table className="w-full border-collapse">
-            <thead>
-              <tr className="border-b border-border text-left type-meta font-medium uppercase tracking-wide text-muted-foreground">
-                <th className="px-2 py-1 font-medium">Participant</th>
-                <th className="px-1 py-1 font-medium" title="Round of its latest turn">Round</th>
-                <th className="px-1 py-1 font-medium">Sees</th>
-                <th className="px-1 py-1 font-medium">Labels</th>
-                <th className="px-2 py-1 text-right font-medium" title="Policy version">Version</th>
-              </tr>
-            </thead>
-            <tbody>
-              {rows.map((row) => (
-                <ParticipantRow
-                  key={`${row.id}:${row.participant?.policy_version ?? 0}`}
-                  row={row}
-                  groupKeys={groupKeys}
-                  nameOf={nameOf}
-                  turn={turns[row.conversation_id]}
-                  selected={row === selected}
-                  saving={saving === row.id}
-                  onSelect={() => setSelectedKey(row.participant?.key ?? null)}
-                  onSave={(policy) => void savePolicy(row, policy)}
-                />
-              ))}
-              {anchorType === "interview_session" ? (
-                <tr className="border-b border-border/60" data-participant="scribe">
-                  <td className="px-2 py-1 type-secondary text-muted-foreground" colSpan={5}>
-                    Scribe · background pass, not a group participant
-                  </td>
-                </tr>
-              ) : null}
-            </tbody>
-          </table>
+        <div className="min-w-0 overflow-x-hidden" data-participants>
+          {rows.map((row) => (
+            <ParticipantRow
+              key={`${row.id}:${row.participant?.policy_version ?? 0}`}
+              row={row}
+              groupKeys={groupKeys}
+              nameOf={nameOf}
+              turn={turns[row.conversation_id]}
+              selected={row === selected}
+              saving={saving === row.id}
+              onSelect={() => setSelectedKey(row.participant?.key ?? null)}
+              onSave={(policy) => void savePolicy(row, policy)}
+            />
+          ))}
+          {anchorType === "interview_session" ? (
+            <div className="border-b border-border/60 px-2 py-1 type-secondary text-muted-foreground" data-participant="scribe">
+              Scribe · background pass, not a group participant
+            </div>
+          ) : null}
         </div>
         {selected ? (
           <section className="border-t border-border" data-latest-turn={selected.participant?.key}>

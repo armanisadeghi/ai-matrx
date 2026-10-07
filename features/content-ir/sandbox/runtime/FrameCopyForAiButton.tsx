@@ -8,8 +8,6 @@
  * deliberately omitting page-level mandate disclosure; the host page owns
  * that disclosure outside the sandbox.
  */
-import { useClipboard } from "@ai-matrx/kit/clipboard";
-import { toast } from "@/lib/toast";
 import { createElement, useState } from "react";
 import { cn } from "@/lib/utils";
 import {
@@ -41,10 +39,6 @@ export function CopyForAiButton({
   icon,
   compact = false,
 }: CopyForAiButtonProps) {
-  const { copyText } = useClipboard({
-    notify: (message, kind) =>
-      kind === "error" ? toast.error(message) : toast.success(message),
-  });
   const [status, setStatus] = useState<"idle" | "copied" | "error">("idle");
   const copyForAi = async () => {
     try {
@@ -55,7 +49,7 @@ export function CopyForAiButton({
                 FrameAgentPayload | string | Promise<FrameAgentPayload | string>
             )()
           : agent;
-      await copyText(
+      await navigator.clipboard.writeText(
         typeof value === "string" ? value : serializeFrameAgentPayload(value),
       );
       setStatus("copied");
