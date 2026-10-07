@@ -12,7 +12,7 @@
 //           publishes it at /applets/<slug>.
 // While the builder works its run streams in the floating LiveRunWindow (never a spinner).
 
-import { useEffect, useState } from "react";
+import { useEffect, useEffectEvent, useRef, useState } from "react";
 import Link from "next/link";
 import { readAppletCatalogue } from "@ai-matrx/applets/catalogue";
 import type { HeldWrite } from "@ai-matrx/applets/preview";
@@ -26,10 +26,13 @@ import { createClient } from "@/utils/supabase/client";
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { APPLETS_SURFACE_NAME, createAppletsScope } from "@/features/surfaces/manifests/applets.manifest";
 import { useOrganizationRequired } from "@/features/organizations/useOrganizationRequired";
-import { OrganizationContextNotice } from "@/features/organizations/components/OrganizationRequiredNotice";
+import { ensureOrganizationForWrite, isOrganizationSelectionCancelled } from "@/lib/organization/organization-gate";
 import { useOpenLiveRunWindow, type LiveRunWindowHandle } from "@/features/overlays/openers/liveRunWindow";
 import { AppletHostMount } from "@/features/applets-host/AppletHostMount";
 import { BuildRefused, checkBuildAnswer, coerceBuildAnswer, publishApplet, readBuilderApplet, saveBuiltApplet, type BuildAnswer, type BuilderApplet, type SavedApplet } from "./build-applet";
+import { readBuildRecord, type BuildEntry } from "./build-session";
+import { useAppletBuildSession } from "./useAppletBuildSession";
+import { BuildHistory } from "./BuildHistory";
 
 // Declared in aidream (client_mandates.py, applets.build / applets.fix); allowlisted in
 // scripts/mandate-keys-allowlist.json until @ai-matrx/agents publishes MANDATE_KEYS.applets__build.
@@ -42,7 +45,9 @@ const DISCLOSURE = [
 
 type Phase = { kind: "idle" } | { kind: "building" } | { kind: "failed"; why: string };
 
-export function AppletBuilder({ appletId: initialId }: { appletId: string | null }) {
+type Fix = { where: string; message: string };
+
+export function AppletBuilder({ appletId: initialId, routed = false }: { appletId: string | null; routed?: boolean }) {
   // org-filter: write-target the Applet is saved in the organization new things go to; reads are her own
   const active = useOrganizationRequired();
   const organizationId = active.organizationState === "ready" ? active.organizationId : null;
@@ -55,51 +60,137 @@ export function AppletBuilder({ appletId: initialId }: { appletId: string | null
   const [saved, setSaved] = useState<(SavedApplet & { note: string }) | null>(null);
   const [appletId, setAppletId] = useState<string | null>(initialId);
   const [held, setHeld] = useState(0);
-  const [lastError, setLastError] = useState<{ where: string; message: string } | null>(null);
+  const [lastError, setLastError] = useState<Fix | null>(null);
   // An answer refused before saving: "Fix it" hands it back with the reason, so nothing is lost.
   const [refused, setRefused] = useState<BuilderApplet | null>(null);
-  const [askOrganization, setAskOrganization] = useState(false);
+  const rejoinWindow = useRef<LiveRunWindowHandle | null>(null);
 
-  // Changing an existing Applet: show its current version in the preview first.
+  // The build's record (the draft Applet + its request history) — the truth a refresh reopens.
+  const session = useAppletBuildSession({
+    appletId: initialId,
+    routed,
+    onRejoin: (entry) => {
+      setPhase({ kind: "building" });
+      rejoinWindow.current = openRunWindow({ conversationId: entry.conversation_id, label: entry.fix ? "Fixing your app" : "Building your app" });
+    },
+    onReopenedAnswer: async ({ entry, value }) => {
+      const id = initialId;
+      if (!id) return;
+      const client = createClient();
+      try {
+        const record = await readBuildRecord(client, id);
+        const current = record.hasContent ? await readBuilderApplet(client, id) : null;
+        const org = current?.organizationId ?? record.organizationId;
+        const catalogue = await readAppletCatalogue(client, { organizationId: org, request: entry.text });
+        const answer = checkBuildAnswer(value, coerceBuildAnswer(value));
+        await finish(id, entry, answer, current?.applet ?? null, org);
+      } catch (err) {
+        await failed(id, entry, err);
+      }
+    },
+  });
+
+  // The rejoined run has ended (saved, refused or failed): the live window stops waiting.
+  const rejoining = session.rejoining;
   useEffect(() => {
-    if (!initialId) return;
-    let cancelled = false;
-    void createClient()
-      .schema("app")
-      .from("definition")
-      .select("id, slug, version, status")
-      .eq("id", initialId)
-      .maybeSingle()
-      .then(({ data, error }) => {
-        if (cancelled) return;
-        if (error || !data) setPhase({ kind: "failed", why: error?.message ?? "That app is not there, or it has not been shared with you." });
-        else setSaved({ ...data, note: "" });
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [initialId]);
+    if (rejoining || !rejoinWindow.current) return;
+    rejoinWindow.current.update({ pending: false });
+    rejoinWindow.current = null;
+    setPhase((p) => (p.kind === "building" ? { kind: "idle" } : p));
+  }, [rejoining]);
 
-  const run = async (request: string, fix: { where: string; message: string } | null) => {
-    if (!organizationId) {
-      setAskOrganization(true);
+  // The saved app as the card and the preview show it (null while a new build has no app yet).
+  const loadSaved = async (id: string, note: string) => {
+    const { data, error } = await createClient().schema("app").from("definition").select("id, slug, version, status, entry").eq("id", id).maybeSingle();
+    if (error || !data) {
+      setPhase({ kind: "failed", why: error?.message ?? "That app is not there, or it has not been shared with you." });
       return;
     }
-    setAskOrganization(false);
+    const { entry, ...row } = data;
+    if (!entry) return;
+    setSaved({ ...row, note });
+  };
+
+  // Reopening a build (or changing an existing Applet): its saved version, and how its last request ended.
+  const shown = useRef<string | null>(null);
+  const showOutcome = useEffectEvent((key: string) => {
+    const record = session.record;
+    if (!initialId || !record || shown.current === key) return;
+    shown.current = key;
+    const latest = record.requests.at(-1);
+    const lastNote = [...record.requests].reverse().find((r) => r.state === "saved")?.note ?? "";
+    void loadSaved(initialId, lastNote);
+    if (latest?.state === "refused" && latest.refused_applet) {
+      setRefused(latest.refused_applet);
+      setLastError({ where: "record", message: latest.error ?? "Not saved." });
+    } else if (latest?.state === "failed") {
+      setPhase({ kind: "failed", why: latest.error ?? "The builder stopped." });
+      // Never lose what she typed: a request that failed comes back into the box.
+      if (!latest.fix) setSentence((s) => s || latest.text);
+    }
+  });
+  const latest = session.record?.requests.at(-1) ?? null;
+  const outcomeKey = session.record ? `${session.record.id}|${latest ? `${latest.id}:${latest.state}` : "none"}` : null;
+  useEffect(() => {
+    if (outcomeKey) showOutcome(outcomeKey);
+  }, [outcomeKey]);
+
+  /** Save an answer exactly once (the claim), then show it. Shared by a live run and a rejoined one. */
+  const finish = async (id: string, entry: BuildEntry, answer: BuildAnswer, current: BuilderApplet | null, org: string) => {
+    const client = createClient();
+    if (!(await session.claim(id, entry.id))) {
+      // Another tab saved this answer first: show what it saved.
+      await session.refresh(id);
+      return;
+    }
+    const result = await saveBuiltApplet(client, { organizationId: org, appletId: id, current, answer, request: entry.text, conversationId: entry.conversation_id });
+    await session.settle(id, entry.id, { state: "saved", version: result.version, note: answer.note });
+    shown.current = `${id}|${entry.id}:saved`;
+    setSaved({ ...result, note: answer.note });
+    setHeld(0);
+    setLastError(null);
+    setRefused(null);
+    setPhase({ kind: "idle" });
+  };
+
+  /** How a request ended without a save — written to its history, and said on screen. */
+  const failed = async (id: string, entry: BuildEntry, err: unknown) => {
+    const message = err instanceof Error ? err.message : String(err);
+    shown.current = `${id}|${entry.id}:${err instanceof BuildRefused ? "refused" : "failed"}`;
+    if (err instanceof BuildRefused) {
+      setRefused(err.applet);
+      setLastError({ where: "record", message: err.message });
+    }
+    setPhase({ kind: "failed", why: message });
+    await session
+      .settle(id, entry.id, err instanceof BuildRefused ? { state: "refused", error: message, refused_applet: err.applet } : { state: "failed", error: message })
+      .catch((writeErr) => console.error("[applet-build] could not record how the request ended", writeErr));
+  };
+
+  const run = async (request: string, fix: Fix | null) => {
     setPhase({ kind: "building" });
     const client = createClient();
     const live: { handle: LiveRunWindowHandle | null } = { handle: null };
-    let conversationId: string | null = null;
+    let started: { id: string; entry: BuildEntry } | null = null;
     try {
-      const current = appletId ? await readBuilderApplet(client, appletId) : null;
-      const catalogue = await readAppletCatalogue(client, { organizationId: current?.organizationId ?? organizationId, request });
+      // A new app needs an organization: with none set, the picker asks and THIS build continues with the pick.
+      const org = appletId ? null : (organizationId ?? (await ensureOrganizationForWrite(null, { interactive: true })));
+      // The request is written BEFORE anything runs — a new app is born here and the address becomes its own.
+      const { record, entry } = await session.begin({ appletId, organizationId: org ?? "", text: request, fix });
+      started = { id: record.id, entry };
+      setAppletId(record.id);
+      setSentence("");
+      const current = record.hasContent ? await readBuilderApplet(client, record.id) : null;
+      const runOrg = current?.organizationId ?? record.organizationId;
+      const catalogue = await readAppletCatalogue(client, { organizationId: runOrg, request });
+      let attached: Promise<void> = Promise.resolve();
       const answer = await writer.run<BuildAnswer>({
         mandateKey: fix ? FIX : BUILD,
         surfaceKey: "applets:build",
         sourceFeature: "agent-app",
         expect: "json",
         initiation: "user",
-        organizationId: current?.organizationId ?? organizationId,
+        organizationId: runOrg,
         variables: {
           request,
           applet: fix && refused ? JSON.stringify(refused) : current ? JSON.stringify(current.applet) : "",
@@ -107,32 +198,21 @@ export function AppletBuilder({ appletId: initialId }: { appletId: string | null
           last_check: fix ? JSON.stringify({ file: fix.where, message: fix.message }) : "",
         },
         onConversationCreated: (cid) => {
-          conversationId = cid;
+          entry.conversation_id = cid;
+          attached = session.running(record.id, entry.id, cid).catch((err) => console.error("[applet-build] could not record the run", err));
           live.handle = openRunWindow({ conversationId: cid, label: fix ? "Fixing your app" : appletId ? "Changing your app" : "Building your app" });
         },
         coerce: (v) => checkBuildAnswer(v, coerceBuildAnswer(v)),
       });
-      const result = await saveBuiltApplet(client, {
-        organizationId: current?.organizationId ?? organizationId,
-        appletId,
-        current: current?.applet ?? null,
-        answer,
-        request,
-        conversationId,
-      });
-      setAppletId(result.id);
-      setSaved({ ...result, note: answer.note });
-      setHeld(0);
-      setLastError(null);
-      setRefused(null);
-      setSentence("");
-      setPhase({ kind: "idle" });
+      await attached;
+      await finish(record.id, entry, answer, current?.applet ?? null, runOrg);
     } catch (err) {
-      if (err instanceof BuildRefused) {
-        setRefused(err.applet);
-        setLastError({ where: "record", message: err.message });
+      if (isOrganizationSelectionCancelled(err)) {
+        setPhase({ kind: "idle" });
+        return;
       }
-      setPhase({ kind: "failed", why: err instanceof Error ? err.message : String(err) });
+      if (started) await failed(started.id, started.entry, err);
+      else setPhase({ kind: "failed", why: err instanceof Error ? err.message : String(err) });
     } finally {
       live.handle?.update({ pending: false });
     }
@@ -148,7 +228,7 @@ export function AppletBuilder({ appletId: initialId }: { appletId: string | null
     }
   };
 
-  const busy = phase.kind === "building";
+  const busy = phase.kind === "building" || session.rejoining;
   return (
     <div className="grid h-full min-h-0 grid-cols-1 gap-3 p-3 lg:grid-cols-[minmax(320px,2fr)_5fr]">
       <div className="flex min-h-0 flex-col gap-3">
@@ -179,15 +259,8 @@ export function AppletBuilder({ appletId: initialId }: { appletId: string | null
             </Button>
           ) : null}
         </div>
-        {askOrganization ? (
-          <OrganizationContextNotice
-            state={active.organizationState === "ready" ? "required" : active.organizationState}
-            what="Your app"
-            description="New apps are saved in the organization you choose"
-            compact
-          />
-        ) : null}
         {phase.kind === "failed" ? <p className="text-sm text-destructive">{phase.why}</p> : null}
+        <BuildHistory requests={session.record?.requests ?? []} />
         {lastError ? <p className="text-sm text-destructive" data-applet-error="">{lastError.message}</p> : null}
         {saved ? (
           <div className="flex flex-col gap-2 rounded-lg border border-border bg-card p-3 text-sm">
@@ -214,7 +287,7 @@ export function AppletBuilder({ appletId: initialId }: { appletId: string | null
         {appletId && saved ? (
           <>
             <div className="flex items-center gap-2 border-b border-border px-3 py-1.5 text-xs text-muted-foreground">
-              <span>Preview — changes are not saved</span>
+              <span>{saved.status === "published" ? "Live" : "Saved"} v{saved.version} · test writes are held</span>
               {held ? <Badge tone="warning">{held} held</Badge> : null}
             </div>
             <div className="min-h-0 flex-1 overflow-y-auto">
