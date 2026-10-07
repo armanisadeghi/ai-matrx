@@ -21,6 +21,8 @@ export default function FlashcardsArtifact({
   conversationId,
   messageId,
   blockIndex,
+  metadata,
+  isStreamActive,
 }: ArtifactRendererProps) {
   const pointerArtifactId = readArtifactPointerId(data);
 
@@ -52,6 +54,11 @@ export default function FlashcardsArtifact({
 
   if (!content && !sd) return null;
 
+  // Still being written only while the stream is live AND this artifact's own
+  // region has not closed. A closed `<artifact>`, a saved row (no stream
+  // flag) or an ended stream — however it ended — is settled.
+  const streaming = isStreamActive === true && metadata?.isComplete !== true;
+
   return (
     <Suspense fallback={<MatrxMiniLoader />}>
       <FlashcardsBlock
@@ -62,6 +69,7 @@ export default function FlashcardsArtifact({
         messageId={messageId}
         conversationId={conversationId}
         blockIndex={blockIndex}
+        isStreamActive={streaming}
       />
     </Suspense>
   );

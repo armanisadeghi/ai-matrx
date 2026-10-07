@@ -54,6 +54,12 @@ export interface UseFlashcardsSetOptions {
   messageId?: string;
   conversationId?: string;
   blockIndex?: number;
+  /**
+   * The producer is done with this set (see `deriveFlashcardsSet`). Defaults
+   * to true: only a live, still-streaming block passes false — a saved row,
+   * a canvas copy or a window snapshot never grows again.
+   */
+  settled?: boolean;
 }
 
 export function useFlashcardsSet({
@@ -64,6 +70,7 @@ export function useFlashcardsSet({
   messageId,
   conversationId,
   blockIndex,
+  settled = true,
 }: UseFlashcardsSetOptions) {
   const [layoutMode, setLayoutMode] = useState<LayoutMode>("grid");
   const {
@@ -86,8 +93,9 @@ export function useFlashcardsSet({
         content,
         serverData,
         additionalDetails: blockAdditionalDetails,
+        settled,
       }),
-    [content, serverData, blockAdditionalDetails],
+    [content, serverData, blockAdditionalDetails, settled],
   );
 
   const completeCount = flashcards.length;

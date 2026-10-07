@@ -33,31 +33,67 @@ export interface DeriveFlashcardsSetArgs {
   serverData?: FlashcardsBlockData;
   /** Optional JSON merged into each card's additionalDetails (pre-parsed paths only). */
   additionalDetails?: Record<string, unknown>;
+  /**
+   * The producer is done with this block — the stream ended (for ANY reason:
+   * success, error, stop, provider safety stop) or the content came from a
+   * saved row. A settled set is ALWAYS complete: every card that arrived
+   * renders, and nothing waits for more. Without it, completion is inferred
+   * from the `</flashcards>` sentinel alone, which `<artifact>` framing and
+   * saved canvas rows never carry — the "Loading flashcard..." that never
+   * ends (2026-10-06, a recitation-stopped Flashcard Generator turn).
+   */
+  settled?: boolean;
 }
+
+/** Shown on a settled card whose answer never arrived. */
+export const MISSING_BACK_TEXT = "_No answer — the response stopped early._";
+
+const COMPLETION_SENTINEL = "</flashcards>";
 
 export function deriveFlashcardsSet({
   content,
   serverData,
   additionalDetails,
+  settled = false,
 }: DeriveFlashcardsSetArgs): {
   flashcards: NormalizedFlashcard[];
   isComplete: boolean;
 } {
   if (serverData) {
+    const cards = EXPERIMENTAL_normalizePreParsedFlashcards(
+      serverData.cards ?? [],
+      additionalDetails,
+    );
+    if (!settled) {
+      return { flashcards: cards, isComplete: serverData.isComplete ?? false };
+    }
     return {
-      flashcards: EXPERIMENTAL_normalizePreParsedFlashcards(
-        serverData.cards ?? [],
-        additionalDetails,
+      flashcards: cards.map((card) =>
+        card.back === null || card.back === undefined
+          ? { ...card, back: MISSING_BACK_TEXT }
+          : card,
       ),
-      isComplete: serverData.isComplete ?? false,
+      isComplete: true,
     };
   }
-  const parsed = parseFlashcards(content ?? "");
-  return {
-    flashcards: parsed.flashcards.map((card) => ({
-      front: card.front,
-      back: card.back,
-    })),
-    isComplete: parsed.isComplete,
-  };
+  const text = content ?? "";
+  // Settled text is final: append the sentinel so the parser includes the
+  // last card instead of holding it as a "partial" that never completes.
+  const parsed = parseFlashcards(
+    settled && !text.includes(COMPLETION_SENTINEL)
+      ? `${text}\n${COMPLETION_SENTINEL}`
+      : text,
+  );
+  const flashcards: NormalizedFlashcard[] = parsed.flashcards.map((card) => ({
+    front: card.front,
+    back: card.back,
+  }));
+  // A settled card cut off after its front keeps its place, saying so.
+  if (settled && parsed.partialCard?.front) {
+    flashcards.push({
+      front: parsed.partialCard.front,
+      back: parsed.partialCard.back || MISSING_BACK_TEXT,
+    });
+  }
+  return { flashcards, isComplete: settled || parsed.isComplete };
 }

@@ -35,6 +35,12 @@ interface FlashcardsBlockProps {
   messageId?: string;
   conversationId?: string;
   blockIndex?: number;
+  /**
+   * True only while the producer is still writing this set. Anything else —
+   * ended (for any reason, errors included), saved, reopened — is settled:
+   * every card renders and nothing shows "Loading" again.
+   */
+  isStreamActive?: boolean;
 }
 
 const FlashcardsBlock: React.FC<FlashcardsBlockProps> = ({
@@ -47,6 +53,7 @@ const FlashcardsBlock: React.FC<FlashcardsBlockProps> = ({
   messageId,
   conversationId,
   blockIndex,
+  isStreamActive,
 }) => {
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [showMobilePrompt, setShowMobilePrompt] = useState(false);
@@ -65,6 +72,7 @@ const FlashcardsBlock: React.FC<FlashcardsBlockProps> = ({
     messageId,
     conversationId,
     blockIndex,
+    settled: isStreamActive !== true,
   });
 
   const {

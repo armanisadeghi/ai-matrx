@@ -678,12 +678,58 @@ export function isFailedRecord(record: MessageRecord | undefined): boolean {
   if (record.status === "failed") return true;
   if (record.error) return true;
   const md = record.metadata;
-  return (
+  if (
     !!md &&
     typeof md === "object" &&
     !Array.isArray(md) &&
     (md as Record<string, unknown>).failed === true
-  );
+  ) {
+    return true;
+  }
+  return abnormalFinishReason(record) !== null;
+}
+
+/**
+ * Provider stop reasons that mean the answer finished normally. Every other
+ * value is a turn the provider cut short (safety, recitation, refusal,
+ * malformed tool call, length…).
+ */
+const NORMAL_FINISH_REASONS = new Set([
+  "stop",
+  "end_turn",
+  "stop_sequence",
+  "tool_use",
+  "tool_calls",
+  "function_call",
+  "pause_turn",
+  "completed",
+  "success",
+]);
+
+/**
+ * The provider stop reason a reloaded turn was saved with, when it is NOT a
+ * normal finish — or null. A turn the provider stopped early can be saved as
+ * an ordinary `active` message with its partial text and only
+ * `metadata.finish_reason` telling the truth (a recitation stop, 2026-10-06);
+ * that row reloaded with no error at all.
+ */
+export function abnormalFinishReason(
+  record: MessageRecord | undefined,
+): string | null {
+  if (!record || record.role !== "assistant") return null;
+  const md = record.metadata;
+  if (!md || typeof md !== "object" || Array.isArray(md)) return null;
+  const reason = (md as Record<string, unknown>).finish_reason;
+  if (typeof reason !== "string" || reason.length === 0) return null;
+  const normalized = reason.toLowerCase().replace(/^finishreason\./, "");
+  return NORMAL_FINISH_REASONS.has(normalized) ? null : normalized;
+}
+
+/** The sentence a reloaded early-stopped turn shows. */
+export function earlyStopMessage(reason: string): string {
+  return reason === "max_tokens" || reason === "length"
+    ? "The response hit its length limit before it finished."
+    : "The response was stopped early by the model provider, so it may be incomplete.";
 }
 
 /**
@@ -706,6 +752,9 @@ export function extractRecordError(
     const err = (md as Record<string, unknown>).error;
     if (typeof err === "string" && err.length > 0) return err;
   }
+  // An early-stopped turn's body is its (partial) ANSWER, never an error text.
+  const stopped = abnormalFinishReason(record);
+  if (stopped) return earlyStopMessage(stopped);
   const flat = extractFlatText(record);
   return flat.length > 0 ? flat : undefined;
 }

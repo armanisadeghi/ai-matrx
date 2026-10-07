@@ -70,6 +70,7 @@ import {
   type MemoryObserverCompletedData,
   type MemoryReflectorCompletedData,
   type UntypedDataPayload,
+  type ErrorPayload,
 } from "@ai-matrx/agents/generated/stream-events";
 import {
   appendChunk,
@@ -100,6 +101,10 @@ import {
   appendCitation,
 } from "../active-requests/active-requests.slice";
 import { parseNormalizedCitation } from "../messages/message-citations";
+import {
+  terminalFailureFromCompletion,
+  terminalFailureFromRecordUpdate,
+} from "./terminal-request-failure";
 import { confirmServerSync } from "../conversations/conversations.slice";
 import { receivedFsChange } from "@ai-matrx/chat/host/ui-slots";
 import {
@@ -804,6 +809,21 @@ export async function processStream({
     }, POST_TERMINAL_GRACE_MS);
   };
 
+  // A terminal FAILED status (completion or record_update on the user_request)
+  // marks the request failed exactly like an `error` event would — unless an
+  // error event already did (its payload is the more precise one, so it wins).
+  const failRequestFromTerminalStatus = (error: ErrorPayload | null) => {
+    if (!error) return;
+    if (getState().activeRequests.byRequestId[requestId]?.status === "error") {
+      return;
+    }
+    console.warn(
+      `[stream:${requestId.slice(0, 8)}] user request ended FAILED without an error event (${error.error_type}) — surfacing it as a failed turn.`,
+    );
+    dispatch(setRequestStatus({ requestId, status: "error", error }));
+    dispatch(setInstanceStatus({ conversationId, status: "error" }));
+  };
+
   let lastTransportSeq =
     getState().activeRequests.byRequestId[requestId]?.lastTransportSeq ?? 0;
   let transportStreamId =
@@ -1121,6 +1141,10 @@ export async function processStream({
 
         if (d.operation === "user_request") {
           dispatch(setCompletion({ requestId, data: d }));
+          // A user request the server ended FAILED (no `error` event — e.g. a
+          // provider safety/recitation stop) is a failed turn, never a
+          // "complete" one: the `end` handler below keeps `error` intact.
+          failRequestFromTerminalStatus(terminalFailureFromCompletion(d));
 
           completionStats = result as CompletionStats;
 
@@ -2615,6 +2639,7 @@ export async function processStream({
             refreshUserMessageWithoutBody(d.record_id);
           }
         } else if (d.table === "user_request") {
+          failRequestFromTerminalStatus(terminalFailureFromRecordUpdate(d));
           dispatch(
             patchUserRequest({
               id: d.record_id,
