@@ -52,7 +52,12 @@ Block document: a tree of `SpaceBlock` (`id`, `type`, `text: RichSpan[]`, `color
   system's public form inline (`FormToAnswer`, server action `data/form-actions.ts`, cb55940755) — blocked from showing after a reload
   because the snapshot schema refuses layout `form` (NEEDS). (3) A built-in table block saved before its "+ New page" row reads its
   stored size with 34px added (`paintedSizesOf`, `nr` marker on new saves, 0dc23598bf). (4) The advanced-filter popover is opaque
-  (solid surface, white, no backdrop). (5) NEEDS rows for N9 automations, N3 suggested edits, N11 "Can edit content" + share wording.
+  (solid surface, white, no backdrop). (5) N9 Automations (`data/Automations.tsx`, b614bdc129) on `@ai-matrx/records` 0.77.1's
+  automation doors: trigger (page added / property edited [to] / form answered; schedule shown unavailable), condition, actions
+  (set with value / now / me / empty / copy-from, add page, edit pages, notify author or a person property, webhook, agent), on/off,
+  archive / restore, run history with each step (count = knob `spaces.automation_runs_shown`); walk `automations.walk.mjs`.
+  (6) Width drag fixed in design-system 0.73.1 (3ca9d4ef31): the grip sat half outside its clipping header cell. NEEDS rows: N3
+  suggested edits, N11 "Can edit content" + share wording, Form layout in the snapshot schema, duplicate values door.
 - 2026-10-07 — builder round 30: (1) built-in tables: a magnifier search holds still (rows held dimmed while the read
   runs, the grid remounts per answer, the body keeps its height while a term is on, the count keeps its width; CLS 0.21 -> 0,
   walk `entity-search.walk.mjs`); the "70 unrelated rows" were the page's other tables counted page-wide; built-in tables get
