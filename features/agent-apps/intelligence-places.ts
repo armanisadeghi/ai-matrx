@@ -11,6 +11,8 @@ const K = MANDATE_KEYS;
 
 export const AGENT_APPS_PLACES: FeaturePlaces = {
   feature: "agent_apps",
+  // The builder's jobs are declared as applets.build / applets.fix (d46539068d).
+  extraPrefixes: ["applets"],
   label: "Agent apps",
   roots: ["features/agent-apps", "app/(core)/agent-apps"],
   places: [

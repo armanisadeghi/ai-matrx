@@ -11,6 +11,15 @@ const mockToastError = jest.fn();
 jest.mock("@/lib/toast", () => ({
   toast: { error: (...a: unknown[]) => mockToastError(...a) },
 }));
+// The refusal is shown through the chat host's notify port (7bff33803f); the host here is the toast the test spies on.
+jest.mock("@ai-matrx/chat/host/configure", () => ({
+  ...jest.requireActual("@ai-matrx/chat/host/configure"),
+  isChatHostConfigured: () => true,
+  getChatHost: () => ({
+    notify: { error: (...a: unknown[]) => mockToastError(...a) },
+  }),
+}));
+
 
 import { OrganizationSelectionCancelled } from "@/lib/organization/selection-cancelled";
 import { OrganizationContextError } from "@/lib/api/organization-context";

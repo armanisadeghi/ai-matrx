@@ -393,6 +393,15 @@ if (typeof globalThis.CSS === "undefined" || typeof globalThis.CSS?.escape !== "
     uiSeam.registerChatUi({
       ErrorAlchemyMenu: slot("@/components/errors/ErrorAlchemyMenu", "ErrorAlchemyMenu"),
       ErrorNotice: slot("@/components/errors/ErrorNotice", "ErrorNotice"),
+      // Package cards (RunFailureCard, ...) print the server's sentence through these two slots.
+      TextWithDoors: slot("@/components/official/entity-ref/TextWithDoors", "TextWithDoors"),
+      ServerNotes: slot("@/components/official/ServerNotes", "ServerNotes"),
+      // Function slots the package calls through (read lazily, so a test's own mock of the catalogue wins).
+      /* eslint-disable @typescript-eslint/no-require-imports */
+      peekMandateCatalogueEntry: (...args: unknown[]) =>
+        (require("@/features/mandates/catalogue").peekMandateCatalogueEntry as (...a: unknown[]) => unknown)(...args),
+      invalidateMandateCatalogueCache: () => require("@/features/mandates/catalogue").invalidateMandateCatalogueCache(),
+      /* eslint-enable @typescript-eslint/no-require-imports */
     });
   }
   const scopes = lazy({

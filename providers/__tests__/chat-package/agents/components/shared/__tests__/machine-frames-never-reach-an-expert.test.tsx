@@ -176,12 +176,13 @@ describe("thinking is gated at the one block renderer", () => {
     // persisted segment, inline <reasoning> tags — renders through
     // BlockRenderer, so the gate lives there, once.
     const renderer = read(
-      "components/mardown-display/chat-markdown/block-registry/BlockRenderer.tsx",
+      // Moved into @ai-matrx/rich-content; its source lives in the aidream checkout.
+      "../aidream/apps/shared/rich-content/src/display/chat-markdown/block-registry/BlockRenderer.tsx",
     );
     expect(renderer).toContain("const machineFramesVisible = useMachineFramesVisible();");
     expect(renderer).toMatch(/hideToolResults,\s*machineFramesVisible,/);
     const dispatch = read(
-      "components/mardown-display/chat-markdown/block-registry/block-dispatch.tsx",
+      "../aidream/apps/shared/rich-content/src/display/chat-markdown/block-registry/block-dispatch.tsx",
     );
     expect(dispatch).toContain("if (ctx.machineFramesVisible === false) {");
     expect(dispatch).toContain(

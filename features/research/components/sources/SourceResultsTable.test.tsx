@@ -97,6 +97,8 @@ describe("SourceResultsTable", () => {
       "authority",
       "post",
       "verdict",
+      // 5d1e0a8e91: the Actions column (open the source in a new tab) closes every column list.
+      "custom-actions",
     ]);
   });
 
@@ -135,6 +137,8 @@ describe("SourceResultsTable", () => {
       "characters",
       "hostname",
       "source-id",
+      // 5d1e0a8e91: the Actions column (open the source in a new tab) closes every column list.
+      "custom-actions",
     ]);
     const sourceColumn = tableProps.columns.find(
       (column) => column.id === "source",

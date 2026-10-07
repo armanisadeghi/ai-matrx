@@ -105,7 +105,9 @@ jest.mock("@ai-matrx/records-ui", () => ({
     { keep }: { keep?: string | null },
   ) => ({ entries: rows.filter((r) => !r.kept_by_the_app || r.id === keep).map((table) => ({ table })) }),
 }));
+// Keeps the real module (the chat package reads `cn` etc. from it at import time); only the two inputs are stand-ins.
 jest.mock("@ai-matrx/design-system", () => ({
+  ...jest.requireActual("@ai-matrx/design-system"),
   Input: () => null,
   Textarea: () => null,
 }));

@@ -20,6 +20,8 @@ jest.mock("@ai-matrx/chat/store/hooks", () =>
 );
 jest.mock("@/lib/redux/selectors/userSelectors", () => ({
   selectIsSuperAdmin: () => mockAdmission.isSuperAdmin,
+  // 9b938b6a0f: the window asks the registered admin feature "google.internal-review", not the raw admin selector.
+  selectAdminFeature: () => mockAdmission.isSuperAdmin,
   selectUserEmail: () => mockAdmission.email,
 }));
 jest.mock("@/features/window-panels/WindowPanel", () => ({

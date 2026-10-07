@@ -43,6 +43,8 @@ jest.mock("@ai-matrx/chat/agent-copy/AlchemySurfaceBridge", () => ({
 
 const DATA_TABLES = "matrx-user/data-tables";
 const TABLE_SETTINGS = "matrx-user/table-settings";
+// b33211c816: the table-settings panel has no tabs any more (`settings_tab` retired with the Sheet);
+// `has_unsaved_changes` is the panel's own declared, provider-owned value these cases use.
 const MARKETING_SITE = "matrx-user/marketing-site";
 
 describe("layers outrank pages wherever they mount (ARE-012)", () => {
@@ -85,12 +87,12 @@ describe("layers outrank pages wherever they mount (ARE-012)", () => {
 
 describe("descendant contributions are merged by the registry", () => {
   it("a contribution reaches every reader with no wiring in the provider", async () => {
-    const off = registerSurfaceRuntime({ surfaceName: TABLE_SETTINGS, getScope: () => ({ settings_tab: "actions" }) }, 1);
+    const off = registerSurfaceRuntime({ surfaceName: TABLE_SETTINGS, getScope: () => ({ has_unsaved_changes: true }) }, 1);
     const offContribution = registerSurfaceScopeContribution(TABLE_SETTINGS, "RowActionsEditor", () => ({
       editing_row_action: { name: "Restock" },
     }));
     expect(await getSurfaceRuntimeForName(TABLE_SETTINGS)?.getScope()).toEqual({
-      settings_tab: "actions",
+      has_unsaved_changes: true,
       editing_row_action: { name: "Restock" },
     });
     offContribution();
@@ -98,9 +100,9 @@ describe("descendant contributions are merged by the registry", () => {
   });
 
   it("a contribution may not replace a provider-owned value", () => {
-    const off = registerSurfaceRuntime({ surfaceName: TABLE_SETTINGS, getScope: () => ({ settings_tab: "actions" }) }, 1);
-    const offContribution = registerSurfaceScopeContribution(TABLE_SETTINGS, "Rogue", () => ({ settings_tab: "fields" }));
-    expect(() => getSurfaceRuntimeForName(TABLE_SETTINGS)?.getScope()).toThrow(/provider-owned value "settings_tab"/);
+    const off = registerSurfaceRuntime({ surfaceName: TABLE_SETTINGS, getScope: () => ({ has_unsaved_changes: true }) }, 1);
+    const offContribution = registerSurfaceScopeContribution(TABLE_SETTINGS, "Rogue", () => ({ has_unsaved_changes: false }));
+    expect(() => getSurfaceRuntimeForName(TABLE_SETTINGS)?.getScope()).toThrow(/provider-owned value "has_unsaved_changes"/);
     offContribution();
     off();
   });
@@ -121,7 +123,7 @@ describe("the surface chain carries every other open screen (ARE-010)", () => {
       1,
     );
     const offLayer = registerSurfaceRuntime(
-      { surfaceName: TABLE_SETTINGS, layer: true, getScope: () => ({ settings_tab: "actions" }) },
+      { surfaceName: TABLE_SETTINGS, layer: true, getScope: () => ({ has_unsaved_changes: true }) },
       1001,
     );
 
@@ -134,7 +136,7 @@ describe("the surface chain carries every other open screen (ARE-010)", () => {
     env.NODE_ENV = "development";
     let scope: Record<string, unknown>;
     try {
-      scope = await withLiveSurfaceContext(TABLE_SETTINGS, { settings_tab: "actions" });
+      scope = await withLiveSurfaceContext(TABLE_SETTINGS, { has_unsaved_changes: true });
     } finally {
       env.NODE_ENV = previousEnv;
     }
