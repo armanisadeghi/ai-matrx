@@ -7,7 +7,7 @@ Read this when creating a brand-new manifest file: the full-contract template, w
 - The manifest file (full-contract template)
   - The scope builder — where it lives
 - Wiring it up
-  - Seeding the `ui_surface` row
+  - Syncing the `ui_surface` mirror
   - Seeding a new `ui_client` row
 
 ## The manifest file (full-contract template)
@@ -21,6 +21,7 @@ Read this when creating a brand-new manifest file: the full-contract template, w
 
 import type {
   SurfaceManifest,
+  SurfaceScopePayload,
   SurfaceValue,
   SurfaceValueGroup,
 } from "@ai-matrx/chat/surfaces/types";
@@ -95,14 +96,14 @@ What this surface IS, what the user does here, how to read its values.
    ```bash
    pnpm check:surface-drift && pnpm check:surface-routes
    ```
-   `check:surface-drift` validates manifest invariants (unique names, regex, valueType, surface-name shape, **label presence + per-client uniqueness, group key/band/label rules**). It validates manifests *against themselves* and is blind to route coverage — which is how ten live `/agents/shortcuts` routes pointed at a surface with **no manifest and no DB row** until 2026-08-17.
+   `check:surface-drift` validates manifest invariants (unique names, regex, valueType, surface-name shape, **label presence + per-client uniqueness, group key/band/label rules**). It validates manifests against themselves and is blind to route coverage.
    `check:surface-routes` closes that: it walks every `(core)` route through the real resolver. A mapping pointing at a surface with no manifest **fails** (a PHANTOM); a route resolving to nothing is **reported** unless it carries a written reason in that script's `DELIBERATELY_UNMAPPED` list. Never silence a route by adding it there without a real reason — that re-creates the blindness.
 4. **Sync the focused DB mirror.** The client row must already exist; this transaction creates or updates the selected `ui_surface` and every declared child row:
    ```bash
    pnpm exec tsx scripts/sync-surface-manifests-direct.ts --surface <client>/<local>
    pnpm exec tsx scripts/sync-surface-manifests-direct.ts --check --surface <client>/<local>
    ```
-   It neither creates a client nor deletes or sweeps another surface. `--check` verifies surface metadata and every declared value, role, write target, and client tool, including system ownership and public visibility.
+   It neither creates a client nor touches another surface. Stale child rows of the selected surface are soft-archived (`deleted_at`), and declared archived rows are revived; nothing is hard-deleted. `--check` verifies surface metadata and every declared value, role, write target, and client tool, including system ownership, public visibility, and both missing and stale live children.
 
 ### Seeding a new `ui_client` row
 

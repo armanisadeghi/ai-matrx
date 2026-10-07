@@ -4,6 +4,10 @@ Read this when you need the location of a surface type, helper, service, API rou
 
 ## Quick reference — file map
 
+Frontend consumers import `@ai-matrx/chat/<subpath>` from the installed package.
+The `../aidream/apps/shared/chat/src/` paths below locate canonical source for inspection
+or package implementation; never import that sibling source or patch installed `dist`.
+
 | What | Where |
 |---|---|
 | `SurfaceManifest` / `SurfaceValue` / `SurfaceValueGroup` / `ValueMapping` types | `../aidream/apps/shared/chat/src/surfaces/types.ts` |
