@@ -35,10 +35,7 @@ const SCAN_DIRS = ["app", "components", "features", "packages/chat/src"];
 
 /** Editable rendered hosts that are not wired, each with its reason. Shrink-only. */
 const EXEMPT: Record<string, string> = {
-  "features/rich-document/RichDocument.tsx": "the renderer itself — its hosts wrap it in EditInPlace",
   "components/mardown-display/chat-markdown/EnhancedChatMarkdown.tsx": "the renderer itself",
-  "components/rich-content/RichContent.tsx": "the renderer itself",
-  "components/mardown-display/tables/TableWithSeparatedControls.tsx": "an in-body table editor inside the renderer",
   "components/matrx/MatrxSplit.tsx": "Split: the source editor is always open beside the preview",
   "components/markdown-studio/MarkdownStudio.tsx": "routes the buffer to PreviewPanel (wired) and its Editor mode",
   // Click-to-edit already swaps to their own editor in place; the move onto
