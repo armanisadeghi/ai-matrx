@@ -2,7 +2,7 @@
 // on the page": formula columns, relation words, built-in module blocks, and the CDN address of public pictures (J1).
 //
 // Run: pnpm tsx --env-file=.env --env-file=.env.local features/spaces/publish/published-extras-live-proof.ts \
-//        <crm-org-id> <table-org-id> <table-id> <formula-key> <public-file-id> <private-file-id>
+//        <crm-org-id> <table-org-id> <table-id> <formula-key> <public-file-id> <private-file-id> <locked-table-id>
 // Signs in as admin@admin.com (AI_ADMIN_USERNAME / AI_ADMIN_PASSWORD). Makes its own fresh pages (never the sample),
 // publishes them, reads SIGNED OUT, and puts every page in Trash at the end.
 //   formula     → a published row carries the value the signed-in store computes (same value, same row)
@@ -17,8 +17,8 @@ import { SupabaseSpacesStore } from "../store-db/supabase-store";
 
 const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const key = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
-const [crmOrg, tableOrg, tableId, formulaKey, publicFile, privateFile] = process.argv.slice(2);
-if (!url || !key || !crmOrg || !tableOrg || !tableId || !formulaKey || !publicFile || !privateFile) throw new Error("Need Supabase env and all six arguments.");
+const [crmOrg, tableOrg, tableId, formulaKey, publicFile, privateFile, lockedTable] = process.argv.slice(2);
+if (!url || !key || !crmOrg || !tableOrg || !tableId || !formulaKey || !publicFile || !privateFile || !lockedTable) throw new Error("Need Supabase env and all seven arguments.");
 
 type Db = SupabaseClient<Database>;
 const fresh = (): Db => createClient<Database>(url!, key!, { auth: { persistSession: false, autoRefreshToken: false } });
@@ -60,6 +60,7 @@ async function main() {
   const taskBlock = crypto.randomUUID();
   const lockedBlock = crypto.randomUUID();
   const tableBlock = crypto.randomUUID();
+  const lockedTableBlock = crypto.randomUUID();
   const entity = (id: string, token: string, views: unknown[]) => ({ id, type: "database", props: { source: { kind: "entity", token }, inline: true, views, activeViewId: (views[0] as { id: string }).id } });
 
   try {
@@ -80,7 +81,11 @@ async function main() {
     await tbl.save(
       {
         ...b!,
-        blocks: [{ id: tableBlock, type: "database", props: { source: { kind: "table", tableId }, inline: true, views: [{ id: "view-all", name: "All", layout: "grid" }], activeViewId: "view-all" } }],
+        blocks: ["table", "locked"].map((which) => ({
+          id: which === "table" ? tableBlock : lockedTableBlock,
+          type: "database",
+          props: { source: { kind: "table", tableId: which === "table" ? tableId : lockedTable }, inline: true, views: [{ id: "view-all", name: "All", layout: "grid" }], activeViewId: "view-all" },
+        })),
       } as never,
       b!.version,
     );
@@ -103,9 +108,14 @@ async function main() {
     check("built-in: the view's filter narrows to its rows", !!ent && ent.rows.every((r) => String(r.status).toLowerCase() === "active") && (ent.views?.["view-open"]?.length ?? 0) === ent.rows.length);
     check("built-in: a module not on offer (agents) answers nothing", !va?.entities?.[lockedBlock]);
     check("built-in: a block of another page answers nothing", !(await view(anon, pageB.id))?.entities?.[taskBlock]);
-    for (const helper of ["_space_public_entities", "_space_public_media", "_space_public_databases"]) {
-      const { error } = await anon.schema("content").rpc(helper as never, {} as never);
-      check(`the helper ${helper} is not callable signed out`, !!error, error?.message?.slice(0, 80));
+    const calls: Array<[string, Record<string, unknown>]> = [
+      ["_space_public_entities", { p_doc: {}, p_snap: {} }],
+      ["_space_public_media", { p_blob: {} }],
+      ["_space_public_databases", { p_doc: {}, p_snap: {} }],
+    ];
+    for (const [helper, args] of calls) {
+      const { error } = await anon.schema("content").rpc(helper as never, args as never);
+      check(`the helper ${helper} refuses a signed-out caller`, !!error && /permission denied/i.test(error.message), error?.message?.slice(0, 80));
     }
 
     // ── 1. pictures ──────────────────────────────────────────────────────────────
@@ -143,6 +153,9 @@ async function main() {
       return s && String(doc(s)[formulaKey]) === String(r.data[formulaKey]);
     });
     check("formula: the value is the signed-in store's own value for that row", filled.length > 0 && same.length === filled.length, `${same.length} of ${filled.length} equal; signed-in rows ${rows.length}`);
+
+    const locked = vb?.databases?.[lockedTableBlock];
+    check("table: a table the publisher cannot open answers no rows", !locked || (locked.rows ?? []).length === 0, JSON.stringify(locked ?? null).slice(0, 60));
 
     const related = db?.related ?? {};
     const relFields = (db?.fields ?? []).filter((f) => f.data.type === "relation").map((f) => String(f.data.key));
