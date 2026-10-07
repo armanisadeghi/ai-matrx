@@ -301,7 +301,7 @@ export const INTEGRATIONS: Integration[] = [
     claims: { "matrx-frontend": ["app/(core)/organizations/[orgId]/tables/page.tsx", "features/organizations/**"] },
     proofs: [
       { kind: "contains", repo: "matrx-frontend", file: "app/(core)/organizations/[orgId]/tables/page.tsx", pattern: "table_list_everywhere", says: "the page lists both stores" },
-      { kind: "contains", repo: "matrx-frontend", file: "features/organizations/peek/kinds/DatasetPeek.tsx", pattern: "locateTable", says: "the peek locates" },
+      { kind: "contains", repo: "matrx-frontend", file: "features/organizations/peek/kinds/TablePeek.tsx", pattern: "locateTable", says: "the peek locates" },
     ],
   },
   {
