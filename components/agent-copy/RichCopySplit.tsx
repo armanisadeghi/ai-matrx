@@ -13,8 +13,8 @@ export type RichCopySplitProps = CopyButtonsProps & { human: NonNullable<CopyBut
  * THE split Copy over a markdown host's Alchemy menu (Arman, 2026-10-04: "one click to get either
  * the markdown version or the no-markup version"). One click copies the person's flavor
  * (`copy.default_flavor`); the chevron offers Copy markdown and Copy plain text, then the Alchemy
- * palette (formatted, download, AI) below them. The button, the two rows and the palette's copy
- * tiles all end in `copyRichContent` over the same `human` — they cannot disagree.
+ * palette (formatted, download, AI) below them — without repeating the two rows. The button and the rows end in
+ * `copyRichContent` over the same `human` — they cannot disagree.
  * Guard: components/matrx/buttons/__tests__/rich-copy-hosts.census.test.ts.
  */
 export function RichCopySplit(props: RichCopySplitProps) {
@@ -30,7 +30,9 @@ export function RichCopySplit(props: RichCopySplitProps) {
   return (
     <span className={cn("inline-flex shrink-0 items-center", className)}>
       <CopySplitButton copy={copy} size={size === "xs" || size === "icon" ? "xs" : "sm"} label={`Copy ${props.label ?? ""}`.trim()} mountMore={mountMore} />
-      <CopyButtons {...props} className={undefined} contentFlavor="markdown" triggerHidden controllerRef={palette} />
+      {/* richCopyFlavors={[]}: the split's own menu already offers Copy markdown / Copy plain text, so the
+          palette beneath carries only what is unique to it (Formatted, JSON, download, AI) — once. */}
+      <CopyButtons {...props} className={undefined} contentFlavor="markdown" richCopyFlavors={[]} triggerHidden controllerRef={palette} />
     </span>
   );
 }
