@@ -4,13 +4,16 @@ import { use } from "react";
 import { ChevronLeftTapButton } from "@ai-matrx/tap-target/buttons";
 import RouteHeader from "@/features/shell/components/header/RouteHeader";
 import { DocumentRecord } from "@/features/documents/components/DocumentRecord";
+import { useContentDocumentRedirect } from "@/features/documents/hooks/useContentDocumentRedirect";
 
 /**
  * `/documents/[id]` — the route chrome only (RouteHeader, back button, header
  * clearance). Everything about the document itself — load, edit gate, rename,
  * Copy reference, Share, Rulebook notice, the editor and the
  * `matrx-user/documents` surface — is `DocumentRecord`, the same component the
- * Board's Document tile renders.
+ * Board's Document tile renders. A `content.document` id (markdown, working
+ * document, Space) that lands here through a generic link is replaced with its
+ * own editor (`useContentDocumentRedirect`).
  */
 export default function DocumentPage({
   params,
@@ -18,6 +21,8 @@ export default function DocumentPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = use(params);
+  const door = useContentDocumentRedirect(id);
+  if (door) return null;
   return (
     <DocumentRecord
       documentId={id}
