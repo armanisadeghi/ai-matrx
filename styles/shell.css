@@ -2175,43 +2175,50 @@ body:has(.shell-root[data-pathname^="/administration"]) {
   display: none;
 }
 
-/* Ultra-thin auto-hiding scrollbar (global for shell) */
-.shell-main,
-.shell-main * {
-  scrollbar-width: thin;
-  scrollbar-color: transparent transparent;
-}
+/* Ultra-thin auto-hiding scrollbar (global for shell).
+   In the BASE layer: it is the default, so anything that says otherwise wins —
+   a `scrollbar-none` / `[scrollbar-width:none]` utility, a component's own rule.
+   Unlayered, `.shell-main *` beat every layered utility and put a thin bar back
+   on rows built to hide it (the composer's quick actions, 2026-10-07: the bar
+   sat over the pills and swallowed clicks). */
+@layer base {
+  .shell-main,
+  .shell-main * {
+    scrollbar-width: thin;
+    scrollbar-color: transparent transparent;
+  }
 
-.shell-main:hover,
-.shell-main *:hover {
-  scrollbar-color: var(--matrx-glass-bg-hover) transparent;
-}
+  .shell-main:hover,
+  .shell-main *:hover {
+    scrollbar-color: var(--matrx-glass-bg-hover) transparent;
+  }
 
-.shell-main::-webkit-scrollbar,
-.shell-main *::-webkit-scrollbar {
-  width: 4px;
-  height: 4px;
-}
+  .shell-main::-webkit-scrollbar,
+  .shell-main *::-webkit-scrollbar {
+    width: 4px;
+    height: 4px;
+  }
 
-.shell-main::-webkit-scrollbar-track,
-.shell-main *::-webkit-scrollbar-track {
-  background: transparent;
-}
+  .shell-main::-webkit-scrollbar-track,
+  .shell-main *::-webkit-scrollbar-track {
+    background: transparent;
+  }
 
-.shell-main::-webkit-scrollbar-thumb,
-.shell-main *::-webkit-scrollbar-thumb {
-  background: transparent;
-  border-radius: 2px;
-  transition: background 200ms ease;
-}
+  .shell-main::-webkit-scrollbar-thumb,
+  .shell-main *::-webkit-scrollbar-thumb {
+    background: transparent;
+    border-radius: 2px;
+    transition: background 200ms ease;
+  }
 
-.shell-main:hover::-webkit-scrollbar-thumb,
-.shell-main *:hover::-webkit-scrollbar-thumb {
-  background: var(--matrx-glass-bg-hover);
-}
+  .shell-main:hover::-webkit-scrollbar-thumb,
+  .shell-main *:hover::-webkit-scrollbar-thumb {
+    background: var(--matrx-glass-bg-hover);
+  }
 
-.shell-main *::-webkit-scrollbar-thumb:hover {
-  background: var(--matrx-glass-bg-active);
+  .shell-main *::-webkit-scrollbar-thumb:hover {
+    background: var(--matrx-glass-bg-active);
+  }
 }
 
 /* ---------------------------------------------------------------------------
