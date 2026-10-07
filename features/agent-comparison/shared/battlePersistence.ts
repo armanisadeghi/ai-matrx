@@ -13,6 +13,7 @@
  * differently. This module only guarantees the write order and the naming.
  */
 
+import { selectAgentById } from "@ai-matrx/chat/agents/redux/agent-definition/selectors";
 import { createAsyncThunk, type PayloadAction } from "@reduxjs/toolkit";
 import type { AppDispatch, RootState } from "@/lib/redux/store";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
@@ -166,7 +167,7 @@ export function createBattlePersistence(config: BattlePersistenceConfig) {
       const setId = config.selectActiveSetId(state);
       const agentId = config.selectNamingAgentId(state);
       const agentName = agentId
-        ? (state.agentDefinition.agents?.[agentId]?.name ?? null)
+        ? (selectAgentById(state, agentId)?.name ?? null)
         : null;
       const result = await persistBattleSnapshot({
         setId,

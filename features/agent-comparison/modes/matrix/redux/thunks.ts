@@ -6,6 +6,7 @@
  * would archive every result.
  */
 
+import { selectAgentById } from "@ai-matrx/chat/agents/redux/agent-definition/selectors";
 import { createAsyncThunk } from "@reduxjs/toolkit";
 import type { AppDispatch, RootState } from "@/lib/redux/store";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
@@ -57,7 +58,7 @@ export interface SavedMatrix {
 
 function baseAgentName(state: RootState): string | null {
   const agentId = state.agentComparisonMatrix.setup.base.agent_id;
-  return agentId ? (state.agentDefinition.agents?.[agentId]?.name ?? null) : null;
+  return agentId ? (selectAgentById(state, agentId)?.name ?? null) : null;
 }
 
 /** Create the battle on first save; afterwards rewrite only its setup. */

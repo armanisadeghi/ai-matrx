@@ -19,6 +19,7 @@
  * The hook does NOT subscribe to the full RootState.
  */
 
+import { selectAllAgents } from "@ai-matrx/chat/agents/redux/agent-definition/selectors";
 import { useEffect, useMemo } from "react";
 import { createSelector } from "@reduxjs/toolkit";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
@@ -68,7 +69,7 @@ function buildMergedSelector(agentIds: readonly string[]) {
       (state: RootState) => state.conversations.byConversationId,
       (state: RootState) => state.conversations.allConversationIds,
       (state: RootState) => state.messages.byConversationId,
-      (state: RootState) => state.agentDefinition.agents,
+      (state: RootState) => selectAllAgents(state),
     ],
     (
       agentCaches,

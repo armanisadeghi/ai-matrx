@@ -6,7 +6,7 @@
  * owns a SYNTHETIC clone of the template agent — a `cmp-<uuid>` record kept
  * entirely in Redux. The variation's manual instance is keyed to that
  * synthetic id so the execute-manual-instance thunk reads the per-variation
- * Builder edits live from `state.agentDefinition.agents[syntheticId]`.
+ * Builder edits live from `selectAgentById(state, syntheticId)`.
  *
  * Why the manual endpoint? The Agent Builder's manual path ships the full
  * agent definition with every request — exactly what lets us vary everything
@@ -15,6 +15,7 @@
  * `agent-definition/synthetic-id.ts`).
  */
 
+import { selectAgentById } from "@ai-matrx/chat/agents/redux/agent-definition/selectors";
 import { createAsyncThunk } from "@reduxjs/toolkit";
 import type { AppDispatch, RootState } from "@/lib/redux/store";
 import {
@@ -97,7 +98,7 @@ function extractVariationSnapshot(
   state: RootState,
   agentId: string,
 ): VariationAgentSnapshot | null {
-  const a = state.agentDefinition.agents?.[agentId];
+  const a = selectAgentById(state, agentId);
   if (!a) return null;
   return {
     modelId: a.modelId ?? null,
@@ -426,7 +427,7 @@ export const promoteVariationToAgent = createAsyncThunk<
     );
     // access-errors: ok — in-memory Redux lookup of a local comparison column, no record read
     if (!col) throw new Error("Variation not found");
-    const synthetic = state.agentDefinition.agents?.[col.syntheticAgentId];
+    const synthetic = selectAgentById(state, col.syntheticAgentId);
     if (!synthetic) throw new Error("Variation agent not loaded");
 
     // createAgent omits id and mints a fresh uuid — the synthetic never

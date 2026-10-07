@@ -36,6 +36,7 @@ import type { FlashcardMobileCard } from "./flashcard-mobile-bridge";
 import { FlashcardFaceImage, hasFaceImage } from "./FlashcardFaceImage";
 import { markdownToPlainText } from "@/lib/markdown/plain-text";
 import { Button } from "@ai-matrx/design-system/controls";
+import { TextCopySplit } from "@/components/agent-copy/TextCopySplit";
 
 const ANIM_MS = 320;
 const TEXT_FADE_OUT_MS = 120;
@@ -977,6 +978,14 @@ const FlashcardMobileView: React.FC<FlashcardMobileViewProps> = ({
         </div>
 
         <div className="flex items-center gap-1">
+          {card && card.back !== null && (
+            <TextCopySplit
+              size="xs"
+              label="Copy card"
+              className="text-white"
+              text={() => `**Front**\n\n${card.front ?? ""}\n\n**Back**\n\n${card.back ?? ""}`}
+            />
+          )}
           <Button variant="quiet" icon={<Layers />} onClick={() => {
               setMenuOpen(false);
               setScrubOpen((s) => !s);

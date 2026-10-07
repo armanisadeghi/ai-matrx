@@ -14,6 +14,7 @@
  * column inputs before submitting.
  */
 
+import { selectAgentById } from "@ai-matrx/chat/agents/redux/agent-definition/selectors";
 import { useState } from "react";
 import { Plus, Trash2, Send, Pencil, Check } from "lucide-react";
 import { toast } from "@/lib/toast";
@@ -253,7 +254,7 @@ function ColumnMappingPicker({
 }) {
   const dispatch = useAppDispatch();
   const agent = useAppSelector((s: RootState) =>
-    column.agentId ? s.agentDefinition.agents?.[column.agentId] : undefined,
+    column.agentId ? selectAgentById(s, column.agentId) : undefined,
   );
   const agentName = agent?.name ?? "Unconfigured";
   const definitions = agent?.variableDefinitions ?? [];

@@ -44,3 +44,8 @@ describe("univerDocToMarkdown carries the document's markup", () => {
     expect(md).toMatch(/^\| Ion \| Charge \|\n\| --- \| --- \|\n\| sodium \| \+1 \|\n\| chloride \| -1 \|$/m);
   });
 });
+
+describe("a table pasted as literal pipe lines stays one table", () => {
+  const out = univerDocToMarkdown(snapshot([[["| A | B |"]], [[""]], [["|---|---|"]], [[""]], [["| 1 | 2 |"]], [["After"]]]));
+  test("rows are tight, the next paragraph is separate", () => expect(out).toBe("| A | B |\n|---|---|\n| 1 | 2 |\n\nAfter"));
+});

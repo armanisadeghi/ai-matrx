@@ -12,6 +12,7 @@
  * since the only varied piece is a single LLM param (`model`).
  */
 
+import { selectAgentById } from "@ai-matrx/chat/agents/redux/agent-definition/selectors";
 import { createAsyncThunk } from "@reduxjs/toolkit";
 import type { AppDispatch, RootState } from "@/lib/redux/store";
 import { selectModelColumnTitle } from "../columnTitle";
@@ -77,7 +78,7 @@ function resolveAgentModelLabel(
   state: RootState,
   agentId: string,
 ): string | null {
-  const agent = state.agentDefinition.agents?.[agentId];
+  const agent = selectAgentById(state, agentId);
   const modelId = agent?.modelId;
   if (!modelId) return null;
   const row = state.modelRegistry?.entities?.[modelId];
@@ -250,7 +251,7 @@ export const addColumnToModelBattle = createAsyncThunk<
   const columnId = crypto.randomUUID();
   const conversationId = generateConversationId();
   const isFirstColumn = state.agentComparisonModel.columns.length === 0;
-  const agentModelId = state.agentDefinition.agents?.[agentId]?.modelId;
+  const agentModelId = selectAgentById(state, agentId)?.modelId;
   if (isFirstColumn && agentModelId) {
     try {
       await dispatch(fetchModelById(agentModelId)).unwrap();

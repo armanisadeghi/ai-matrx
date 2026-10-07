@@ -37,6 +37,7 @@
  *     5. Fork the watcher from rootSaga
  */
 
+import { selectAgentById } from "@ai-matrx/chat/agents/redux/agent-definition/selectors";
 import { debounce, put, select, takeEvery } from "redux-saga/effects";
 import type { ChatRootState } from "@ai-matrx/chat/store/root-state";
 import {
@@ -96,7 +97,7 @@ function* handleSettingsChanged(
   const state = (yield select()) as ChatRootState;
   // updateBaseSettings REPLACES baseSettings wholesale, so re-fold the current
   // model to preserve the override delta guard.
-  const agent = state.agentDefinition.agents?.[agentId];
+  const agent = selectAgentById(state, agentId);
   const modelId = agent?.modelId;
   const allIds = state.conversations.allConversationIds;
   const byId = state.conversations.byConversationId;
@@ -125,7 +126,7 @@ function* handleModelChanged(
   const agentId = action.payload.id;
 
   const state = (yield select()) as ChatRootState;
-  const agent = state.agentDefinition.agents?.[agentId];
+  const agent = selectAgentById(state, agentId);
   const allIds = state.conversations.allConversationIds;
   const byId = state.conversations.byConversationId;
 
@@ -167,7 +168,7 @@ export function* handleDefinitionResync(action: {
   }
   const agentId = action.payload.id;
   const state = (yield select()) as ChatRootState;
-  const agent = state.agentDefinition.agents?.[agentId];
+  const agent = selectAgentById(state, agentId);
   if (!agent) return;
   const allIds = state.conversations.allConversationIds;
   const byId = state.conversations.byConversationId;
@@ -226,7 +227,7 @@ function* handleAgentSettingsLoaded(action: {
 }): Generator {
   const agentId = action.payload.id;
   const state = (yield select()) as ChatRootState;
-  const agent = state.agentDefinition.agents?.[agentId];
+  const agent = selectAgentById(state, agentId);
   const pin = (agent?.settings as { offering_id?: unknown } | undefined)?.offering_id;
   if (!agent?.modelId || typeof pin !== "string" || !pin) return;
   const byId = state.conversations.byConversationId;

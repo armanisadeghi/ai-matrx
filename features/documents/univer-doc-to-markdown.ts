@@ -171,16 +171,33 @@ export function univerDocToMarkdown(snapshot: unknown): string {
   type Kind = "text" | "list" | "table";
   const kindOf = (line: string): Kind =>
     /^\s*(?:\u2022|[-*+]|\d+[.)])\s+/.test(line) ? "list" : line.includes(TABLE_CELL_SEP) ? "table" : "text";
+  // A document typed or pasted as markdown keeps a table as literal `| a | b |` lines, one paragraph each, often
+  // with an empty paragraph between rows: those rows are ONE table, so the gaps between them close.
+  const rawRow = (l: string) => /^\s*\|.*\|\s*$/.test(l);
+  const rows = lines.filter((l, i) => {
+    if (l.trim()) return true;
+    let a = i - 1;
+    while (a >= 0 && !lines[a].trim()) a--;
+    let z = i + 1;
+    while (z < lines.length && !lines[z].trim()) z++;
+    return !(a >= 0 && z < lines.length && rawRow(lines[a]) && rawRow(lines[z]));
+  });
   const out: string[] = [];
   let prev: Kind | null = null;
   let tableRow = 0;
-  for (const raw of lines) {
+  for (const raw of rows) {
     if (!raw.trim()) {
       if (out.length && out[out.length - 1] !== "") out.push("");
       prev = null;
       continue;
     }
     let line = raw.replace(/\s+$/, "");
+    if (rawRow(line)) {
+      if (prev !== "table" && out.length && out[out.length - 1] !== "") out.push("");
+      out.push(line.trim());
+      prev = "table";
+      continue;
+    }
     const kind = kindOf(line);
     if (kind === "list") {
       line = line.replace(/^(\s*)\u2022\s+/, "$1- ").replace(/^(\s*)\*\s+/, "$1- ");

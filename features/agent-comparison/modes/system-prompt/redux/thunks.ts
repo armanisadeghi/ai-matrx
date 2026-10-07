@@ -7,7 +7,7 @@
  * `cmp-<uuid>` AgentDefinition record kept entirely in Redux. The
  * column's manual instance is keyed to that synthetic id so when the
  * execute-manual-instance thunk reads
- * `state.agentDefinition.agents[sourceId]`, it sees the per-column
+ * `selectAgentById(state, sourceId)`, it sees the per-column
  * system-message edits naturally.
  *
  * Why manual (not agent) endpoint? The Agent Builder's manual API path
@@ -17,6 +17,7 @@
  * uploading these.
  */
 
+import { selectAgentById } from "@ai-matrx/chat/agents/redux/agent-definition/selectors";
 import { createAsyncThunk } from "@reduxjs/toolkit";
 import type { AppDispatch, RootState } from "@/lib/redux/store";
 import {
@@ -94,7 +95,7 @@ interface ThunkApi {
  * save time so the loader can rebuild each column with the same prompt.
  */
 function extractSystemText(state: RootState, agentId: string): string {
-  const agent = state.agentDefinition.agents?.[agentId];
+  const agent = selectAgentById(state, agentId);
   if (!agent?.messages) return "";
   const sys = agent.messages.find((m) => m.role === "system");
   if (!sys) return "";
@@ -116,7 +117,7 @@ function writeSystemText(
   agentId: string,
   text: string,
 ) {
-  const agent = state.agentDefinition.agents?.[agentId];
+  const agent = selectAgentById(state, agentId);
   if (!agent) return;
   const allMessages = agent.messages ?? [];
   const nonSystem = allMessages.filter((m) => m.role !== "system");

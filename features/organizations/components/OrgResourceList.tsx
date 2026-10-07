@@ -230,6 +230,10 @@ export function OrgResourceList({
         const doors = resolveEntityDoors(doorToken ?? resourceType, item.id);
         const href = getHref?.(item.id) ?? doors.href;
 
+        // The card's own aside (where the record lives) takes the line under "Updated", never the same line:
+        // both sat at the bottom edge and drew on top of each other.
+        const aside = renderCardAside?.(item) ?? null;
+
         const body = (
           <>
             <div className="flex items-start justify-between gap-2">
@@ -257,7 +261,7 @@ export function OrgResourceList({
                 ))}
               </div>
             )}
-            <div className="mt-auto flex items-end justify-between gap-2">
+            <div className={`mt-auto flex items-end justify-between gap-2${aside ? " mb-5" : ""}`}>
               <span className="text-xs text-muted-foreground">
                 {item.updatedAt
                   ? `Updated ${formatDistanceToNow(new Date(item.updatedAt), {
@@ -305,11 +309,10 @@ export function OrgResourceList({
           <div className={`${CARD_CLASS} h-full`}>{body}</div>
         );
 
-        const aside = renderCardAside?.(item) ?? null;
         return (
           <div key={item.id} className="relative">
             {card}
-            {aside ? <div className="absolute bottom-2 right-9">{aside}</div> : null}
+            {aside ? <div className="absolute bottom-2 left-4 max-w-[calc(100%-3.5rem)] truncate">{aside}</div> : null}
             {peekControl}
           </div>
         );

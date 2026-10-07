@@ -8,6 +8,7 @@
  * shares them so analytics can attribute all runs to /agents/battle.
  */
 
+import { selectAgentById } from "@ai-matrx/chat/agents/redux/agent-definition/selectors";
 import { createAsyncThunk, type ThunkDispatch, type UnknownAction } from "@reduxjs/toolkit";
 import type { RootState } from "@/lib/redux/store";
 import { generateConversationId } from "@ai-matrx/chat/agents/redux/execution-system/utils/ids";
@@ -589,7 +590,7 @@ export const reconcileMasterFieldMappings = createAsyncThunk<
     const colVars = columns.map((col) => {
       if (!col.agentId)
         return { columnId: col.columnId, varNames: [] as string[] };
-      const agent = state.agentDefinition.agents?.[col.agentId];
+      const agent = selectAgentById(state, col.agentId);
       const varNames = (agent?.variableDefinitions ?? []).map((v) => v.name);
       return { columnId: col.columnId, varNames };
     });
