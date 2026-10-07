@@ -22,7 +22,7 @@ import { validateOutputSchema } from "@/features/agents/components/settings-mana
 import {
   parseAgentCatalogProfile,
   type AgentCatalogProfilePatch,
-} from "@ai-matrx/chat/agents/surface-catalog-profile";
+} from "@/features/agents/surface-catalog-profile";
 
 /** Canonical surface name — the ONE string chrome and handlers agree on. */
 export const AGENT_ADVANCED_EDITOR_SURFACE_NAME =

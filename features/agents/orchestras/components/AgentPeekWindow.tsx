@@ -15,7 +15,7 @@ import {
   AgentSneakPeekContent,
   AgentSneakPeekCopyMenu,
 } from "@/features/agents/components/agent-listings/AgentSneakPeekModal";
-import { AgentPeekDuplicateButton } from "@ai-matrx/chat/agents/components/shared/AgentPeekDuplicateButton";
+import { AgentPeekDuplicateButton } from "@/features/agents/components/shared/AgentPeekDuplicateButton";
 
 export default function AgentPeekWindow({
   agentId,

@@ -57,13 +57,13 @@ import type {
   AgentDefinitionMessage,
   PrimingMessageRole,
 } from "@ai-matrx/chat/agents/types/agent-message-types";
-import { useAgentUndoRedo } from "@ai-matrx/chat/agents/hooks/useAgentUndoRedo";
+import { useAgentUndoRedo } from "@/features/agents/hooks/useAgentUndoRedo";
 import { useAgentBuilderSurfaceScope } from "@/features/agents/hooks/useAgentBuilderSurfaceScope";
 import { RichContent } from "@ai-matrx/rich-content/levels/RichContent";
 import { MatrxSplit } from "@/components/matrx/MatrxSplit";
 import { useTextareaFormatting } from "@ai-matrx/rich-editor/format/useTextareaFormatting";
 import { MessageFlagToggles } from "@ai-matrx/chat/agents/message-flags/MessageFlagToggles";
-import { useMessageFlags } from "@ai-matrx/chat/agents/message-flags/useMessageFlags";
+import { useMessageFlags } from "@/features/agents/message-flags/useMessageFlags";
 
 /** Extract text from a TextBlock. */
 function extractTextFromBlock(block: Record<string, unknown>): string {

@@ -1,7 +1,7 @@
 import { getAgent } from "@/lib/agents/data";
 import { AgentHeader } from "@ai-matrx/chat/agents/components/shared/AgentHeader";
 import PageHeader from "@/features/shell/components/header/PageHeader";
-import { AgentWidgetsPage } from "@ai-matrx/chat/agents/components/widgets/AgentWidgetsPage";
+import { AgentWidgetsPage } from "@/features/agents/components/widgets/AgentWidgetsPage";
 import { AccessGate } from "@/features/access-gate/components/AccessGate";
 
 export const metadata = { title: "Widgets | System Agents" };

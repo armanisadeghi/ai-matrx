@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import { getSessionVerdict } from "@/utils/supabase/sessionVerdict";
 import PageHeader from "@/features/shell/components/header/PageHeader";
-import { AgentsListHeader } from "@ai-matrx/chat/agents/components/shell/AgentsListHeader";
+import { AgentsListHeader } from "@/features/agents/components/shell/AgentsListHeader";
 import { AgentBrowsePage } from "@/features/agents/browse/components/AgentBrowsePage";
 
 /**

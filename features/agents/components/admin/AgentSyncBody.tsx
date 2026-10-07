@@ -78,7 +78,7 @@ import { AgentDiffViewer } from "@/features/agents/components/diff/AgentDiffView
 import { compareAgentDefinitions } from "@/features/agents/components/diff/compare-agent-definitions";
 import { getAgentModeHref } from "@ai-matrx/chat/agents/components/shared/AgentModeController";
 import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
-import { fetchSavedAgentDefinition } from "@ai-matrx/chat/agents/services/agent-definition-snapshot.service";
+import { fetchSavedAgentDefinition } from "@/features/agents/services/agent-definition-snapshot.service";
 import type { DiffTemporalMetadata } from "@ai-matrx/diff/structural";
 import {
   deriveAgentFieldChangeMoments,

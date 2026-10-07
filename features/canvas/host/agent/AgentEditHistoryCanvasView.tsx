@@ -3,7 +3,7 @@
 /** The body of an agent-edit-history canvas tab: the chat package's AgentEditHistory. */
 
 import type { CanvasKindProps } from "@ai-matrx/canvas/react";
-import { AgentEditHistory } from "@ai-matrx/chat/agents/components/undo-history/AgentEditHistory";
+import { AgentEditHistory } from "@/features/agents/components/undo-history/AgentEditHistory";
 import { selectAgentName } from "@ai-matrx/chat/agents/redux/agent-definition/selectors";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { subjectTitle, useCanvasTabTitle } from "@/features/canvas/host/toolCanvas";

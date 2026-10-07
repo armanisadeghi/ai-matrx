@@ -33,7 +33,7 @@ jest.mock("next/navigation", () => ({
   usePathname: () => "/agents/a-1/build",
   useRouter: () => ({ push: () => undefined }),
 }));
-jest.mock("@ai-matrx/chat/agents/components/undo-history/AgentEditHistory", () => ({
+jest.mock("@/features/agents/components/undo-history/AgentEditHistory", () => ({
   AgentEditHistory: ({ agentId }: { agentId: string }) => <p data-edit-history="">{agentId}</p>,
 }));
 

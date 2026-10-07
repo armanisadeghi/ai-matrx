@@ -7,7 +7,7 @@ import {
   selectAgentAccessResolved,
   selectAgentIsReadOnly,
 } from "@ai-matrx/chat/agents/redux/agent-definition/selectors";
-import { useAgentDuplicateFlow } from "@ai-matrx/chat/agents/hooks/useAgentDuplicateFlow";
+import { useAgentDuplicateFlow } from "@/features/agents/hooks/useAgentDuplicateFlow";
 import { cn } from "@/lib/utils";
 
 interface AgentBuilderReadOnlyFrameProps {

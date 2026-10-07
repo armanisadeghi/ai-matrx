@@ -23,7 +23,7 @@ import type { AgentDefinitionMessage } from "@ai-matrx/chat/agents/types/agent-m
 import { HighlightedText } from "@/features/agents/components/variables-management/HighlightedText";
 import { SystemMessageButtons } from "@/features/agents/components/builder/message-builders/system-instructions/SystemMessageButtons";
 import { MessageFlagToggles } from "@ai-matrx/chat/agents/message-flags/MessageFlagToggles";
-import { useMessageFlags } from "@ai-matrx/chat/agents/message-flags/useMessageFlags";
+import { useMessageFlags } from "@/features/agents/message-flags/useMessageFlags";
 import {
   MessageViewModeMenu,
   type MessageViewMode,
@@ -44,7 +44,7 @@ import {
 } from "@ai-matrx/chat/agents/redux/agent-definition/selectors";
 import { selectAgentSystemMessage } from "@ai-matrx/chat/agents/redux/agent-definition/selectors";
 import { setAgentMessages } from "@ai-matrx/chat/agents/redux/agent-definition/slice";
-import { useAgentUndoRedo } from "@ai-matrx/chat/agents/hooks/useAgentUndoRedo";
+import { useAgentUndoRedo } from "@/features/agents/hooks/useAgentUndoRedo";
 import { useAgentBuilderSurfaceScope } from "@/features/agents/hooks/useAgentBuilderSurfaceScope";
 import { withAgentSystemInstruction } from "@ai-matrx/chat/agents/utils/agent-system-instruction";
 import { Terminal } from "lucide-react";

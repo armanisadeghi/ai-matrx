@@ -36,7 +36,7 @@ import { EngagementPicker } from "@/features/scopes/components/active-context/en
 import { EMPTY_ENGAGEMENT_SELECTION } from "@/features/scopes/components/active-context/quick-pick/engine";
 import { useState, useEffect, useMemo, useRef } from "react";
 import { useSurfaceWriteHandlers } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
-import { parseAgentCatalogProfile } from "@ai-matrx/chat/agents/surface-catalog-profile";
+import { parseAgentCatalogProfile } from "@/features/agents/surface-catalog-profile";
 import { SETTINGS_CATALOG_PROFILE_TARGET } from "@ai-matrx/chat/agents/constants/agent-settings-surface";
 import {
   clearAgentSettingsDraft,

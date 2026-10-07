@@ -12,7 +12,7 @@ import { cn } from "@ai-matrx/design-system";
 import { toast } from "@ai-matrx/chat/host/notify";
 import { supabase } from "@ai-matrx/chat/host/db";
 import { usePathname } from "next/navigation";
-import { useAgentDuplicateFlow } from "@ai-matrx/chat/agents/hooks/useAgentDuplicateFlow";
+import { useAgentDuplicateFlow } from "@/features/agents/hooks/useAgentDuplicateFlow";
 import { ADMIN_SYSTEM_AGENTS_BASE_PATH } from "@ai-matrx/chat/agents/components/shared/agent-route-context";
 import {
   Copy,

@@ -38,7 +38,7 @@ import {
   Zap,
   Plus,
 } from "lucide-react";
-import { useDriftAlerts } from "@ai-matrx/chat/agents/hooks/useDriftAlerts";
+import { useDriftAlerts } from "@/features/agents/hooks/useDriftAlerts";
 import { DriftSeverityBadge } from "@/features/agents/components/usages/DriftSeverityBadge";
 import {
   DRIFT_SEVERITY_META,

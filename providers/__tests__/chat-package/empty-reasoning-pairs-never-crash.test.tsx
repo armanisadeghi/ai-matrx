@@ -81,7 +81,7 @@ jest.mock("next/dynamic", () => ({
     }
     if (String(loader).includes("CreatorRunPanel")) {
       const { CreatorRunPanel } = jest.requireActual(
-        "@ai-matrx/chat/agents/components/run-controls/CreatorRunPanel",
+        "@/features/agents/components/run-controls/CreatorRunPanel",
       ) as { CreatorRunPanel: React.ComponentType<Record<string, unknown>> };
       const Dynamic = (props: Record<string, unknown>) =>
         React.createElement(CreatorRunPanel, props);

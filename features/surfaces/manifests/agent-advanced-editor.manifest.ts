@@ -117,7 +117,7 @@ import type {
   SurfaceValueGroup,
   SurfaceWriteTarget,
 } from "@ai-matrx/chat/surfaces/types";
-import { agentCatalogProfileTargetDescription } from "@ai-matrx/chat/agents/surface-catalog-profile";
+import { agentCatalogProfileTargetDescription } from "@/features/agents/surface-catalog-profile";
 import { mergeBaselineValues, pickBaseline } from "@ai-matrx/chat/surfaces/manifests/_baseline.manifest";
 import { MATRX_WEB_APP_EXECUTOR } from "@ai-matrx/chat/surfaces/executor";
 

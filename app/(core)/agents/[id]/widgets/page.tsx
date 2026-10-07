@@ -1,5 +1,5 @@
 import { getAgent } from "@/lib/agents/data";
-import { AgentWidgetsPage } from "@ai-matrx/chat/agents/components/widgets/AgentWidgetsPage";
+import { AgentWidgetsPage } from "@/features/agents/components/widgets/AgentWidgetsPage";
 import { AccessGate } from "@/features/access-gate/components/AccessGate";
 
 

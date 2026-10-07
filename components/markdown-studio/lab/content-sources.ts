@@ -23,7 +23,7 @@ import {
   loadStudyGuide,
   loadStudyGuideIndex,
 } from "@/features/education/study-guides/service";
-import { fetchSavedAgentDefinition } from "@ai-matrx/chat/agents/services/agent-definition-snapshot.service";
+import { fetchSavedAgentDefinition } from "@/features/agents/services/agent-definition-snapshot.service";
 import { fetchAgentBrowsePage } from "@/features/agents/browse/service";
 import { extractAgentSystemInstruction } from "@ai-matrx/chat/agents/utils/agent-system-instruction";
 import { messageRowToRecord } from "@ai-matrx/chat/agents/redux/execution-system/thunks/conversation-bundle";

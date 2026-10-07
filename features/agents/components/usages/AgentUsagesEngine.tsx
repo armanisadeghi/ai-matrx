@@ -40,7 +40,7 @@ import type { MatrxTableIconAction, MatrxColumnDef } from "@ai-matrx/design-syst
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { recordToast, toast } from "@/lib/toast";
-import { useAgentUsages } from "@ai-matrx/chat/agents/hooks/useAgentUsages";
+import { useAgentUsages } from "@/features/agents/hooks/useAgentUsages";
 import {
   updateAllUsagesToActive,
   updateUsageToActive,

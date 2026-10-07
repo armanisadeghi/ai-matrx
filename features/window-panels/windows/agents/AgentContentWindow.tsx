@@ -47,7 +47,7 @@ import { AgentContextInjectionSwitch } from "@/features/agents/components/contex
 import { AgentSettingsForm } from "@/features/agents/components/settings/AgentSettingsForm";
 import { AgentSettingsCore } from "@/features/agents/components/settings-management/AgentSettingsCore";
 import { AgentSharePanel } from "@/features/agents/components/sharing/AgentSharePanel";
-import { AgentSaveStatus } from "@ai-matrx/chat/agents/components/shared/AgentSaveStatus";
+import { AgentSaveStatus } from "@/features/agents/components/shared/AgentSaveStatus";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useMemo } from "react";

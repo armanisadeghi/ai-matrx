@@ -18,7 +18,7 @@ import { getAgentListSeed } from "@/lib/agents/data";
 import { AgentListHydrator } from "@ai-matrx/chat/agents/route/AgentListHydrator";
 import { AgentsGrid } from "@/features/agents/components/agent-listings/AgentsGrid";
 import PageHeader from "@/features/shell/components/header/PageHeader";
-import { AgentsListHeader } from "@ai-matrx/chat/agents/components/shell/AgentsListHeader";
+import { AgentsListHeader } from "@/features/agents/components/shell/AgentsListHeader";
 import { ClassicViewReturn } from "@/features/agents/browse/components/ClassicViewNotice";
 
 export default async function AgentsClassicGalleryPage() {

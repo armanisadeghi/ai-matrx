@@ -29,7 +29,7 @@ jest.mock("@ai-matrx/chat/store/hooks", () => jest.requireMock("@/lib/redux/hook
 
 import { useNoteUndoRedo } from "@/features/notes/hooks/useNoteUndoRedo";
 import { useInstanceInputUndoRedo } from "@ai-matrx/chat/agents/hooks/useInstanceInputUndoRedo";
-import { useAgentUndoRedo } from "@ai-matrx/chat/agents/hooks/useAgentUndoRedo";
+import { useAgentUndoRedo } from "@/features/agents/hooks/useAgentUndoRedo";
 
 type HookName = "note" | "composer" | "agent";
 

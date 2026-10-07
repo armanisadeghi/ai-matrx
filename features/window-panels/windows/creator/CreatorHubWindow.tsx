@@ -51,7 +51,7 @@ import {
 import CreatorRunTabContent, {
   useCreatorRunWindows,
   type RunTabId,
-} from "@ai-matrx/chat/agents/components/run-controls/CreatorRunTabContent";
+} from "@/features/agents/components/run-controls/CreatorRunTabContent";
 import type { CreatorHubTabId } from "@/features/overlays/openers/creatorHub";
 import { selectIsCreator } from "@/lib/redux/selectors/userSelectors";
 import { selectIsSuperAdmin } from "@/lib/redux/slices/userSlice";
