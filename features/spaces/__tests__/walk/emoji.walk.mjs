@@ -2,7 +2,7 @@
 // typed in text all hold after a reload; the published page shows the page emoji to a signed-out reader.
 //   MEMBER=1 SPACES_WALK_ORG="Ashford Labs" node features/spaces/__tests__/walk/emoji.walk.mjs
 import { chromium } from "playwright";
-import { open, newPage, act, shot, slash, trashPage, originOf } from "./lib.mjs";
+import { open, newPage, act, shot, trashPage, originOf } from "./lib.mjs";
 
 const shots = process.env.S ?? "/tmp";
 let failures = 0;
@@ -12,6 +12,8 @@ const check = (name, ok, detail = "") => {
 };
 const { browser, page } = await open({ member: !!process.env.MEMBER, width: 1440, height: 1000 });
 const origin = originOf(page);
+page.on("console", (m) => m.type() === "error" && console.log("[console]", m.text().slice(0, 200)));
+process.on("uncaughtException", async (e) => { console.log("CRASH", String(e.message).slice(0, 200)); await page.screenshot({ path: `${shots}/emoji-crash.png` }).catch(() => {}); console.log("trashed:", await trashPage(page).catch(() => "no")); process.exit(1); });
 const id = await newPage(page);
 console.log("page", id);
 
@@ -24,14 +26,16 @@ check("picker opens on Emoji tab", (await page.getByRole("tab", { name: "Emoji" 
 await act(page, () => page.locator(".EmojiPickerReact input[type=text], .EmojiPickerReact input").first().fill("rocket"));
 await page.waitForTimeout(800);
 await shot(page, `${shots}/emoji-1-search.png`);
-await act(page, () => page.locator(".EmojiPickerReact button.epr-emoji, .EmojiPickerReact [data-unified]").first().click());
+await act(page, () => page.locator('.EmojiPickerReact [data-unified="1f680"]').first().click());
 await page.waitForTimeout(1500);
 const pageIcon = () => page.locator(".spaces-page-icon").first().textContent().catch(() => null);
 check("page icon is a rocket", (await pageIcon())?.includes("\u{1F680}"), await pageIcon());
 
 // 2. callout with an emoji
 await page.locator(".bn-editor .bn-inline-content").last().click();
-await slash(page, "callout", "Callout");
+await page.keyboard.type("/callout", { delay: 40 });
+await page.locator(".bn-suggestion-menu-item, [role=option]").filter({ hasText: /^\s*Callout/i }).first().waitFor({ timeout: 60_000 });
+await page.keyboard.press("Enter");
 await page.waitForTimeout(800);
 await act(page, () => page.locator(".spaces-callout-icon").first().click());
 await page.locator(".EmojiPickerReact").first().waitFor({ timeout: 60_000 });

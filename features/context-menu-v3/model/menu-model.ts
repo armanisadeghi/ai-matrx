@@ -16,6 +16,7 @@
 // actionable wherever a layout puts it (top level, inside a fold, in a
 // filtered flat list).
 
+import { hasEditInPlaceTarget, openEditInPlaceFromLastInteraction } from "@ai-matrx/rich-editor/in-place/EditInPlace";
 import { parseKeyCombo } from "../utils/key-combo";
 import type React from "react";
 import {
@@ -26,6 +27,7 @@ import {
   FolderOpen,
   Zap,
   Scissors,
+  Pencil,
   Copy,
   Clipboard,
   Type,
@@ -88,6 +90,23 @@ import { AGENT_ICON } from "@/components/icons/domain-icons";
 
 interface MenuNodeBase {
   id: string;
+}
+
+/**
+ * "Edit" for rendered content that edits in place (Arman, 2026-10-08: never a double-click — the
+ * Edit icon or this right-click row opens it; the caret lands where he right-clicked).
+ */
+function withEditInPlace(sections: MenuSection[]): MenuSection[] {
+  if (!hasEditInPlaceTarget()) return sections;
+  const edit: MenuItemNode = {
+    kind: "item",
+    id: "edit-in-place",
+    label: "Edit",
+    icon: Pencil,
+    iconClassName: "text-muted-foreground",
+    onSelect: () => void openEditInPlaceFromLastInteraction(),
+  };
+  return [{ id: "edit-in-place", group: "editable", nodes: [edit] }, ...sections];
 }
 
 export interface MenuItemNode extends MenuNodeBase {
@@ -1035,7 +1054,7 @@ export function buildMenuModel(
     recordSections.push(surfaceInfo);
     return {
       header,
-      sections: liftPrimarySections(recordSections),
+      sections: withEditInPlace(liftPrimarySections(recordSections)),
       roles: {
         copy, speak, listen: null, copyAs, json, cut, paste, selectAll, find, insertReference, chat,
         undo, redo, viewHistory, compare: null, exportMenu, convert, attach, linkRecord, share,
@@ -1103,7 +1122,7 @@ export function buildMenuModel(
 
   return {
     header,
-    sections: liftPrimarySections(sections),
+    sections: withEditInPlace(liftPrimarySections(sections)),
     roles: {
       copy,
       speak,

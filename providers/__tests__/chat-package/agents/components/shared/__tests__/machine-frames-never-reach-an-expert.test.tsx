@@ -251,11 +251,17 @@ describe("a context snapshot is a builder's record, not the Expert's", () => {
     );
     // Since the server receipt landed, the bubble shows the receipt when one
     // exists and the snapshot strip otherwise — both branches carry the gate.
+    // The gate is `turnContextVisible`, which is the audience answer AND NOT
+    // a host-supplied context (the studio) — strictly narrower than the audience
+    // answer alone, so an Expert still never reaches either branch.
     expect(source).toContain(
-      "machineFramesVisible && contextSnapshot && contextSnapshot.length > 0 && (",
+      "const turnContextVisible = machineFramesVisible && !hostSuppliesContext;",
     );
     expect(source).toContain(
-      "machineFramesVisible && contextReceipt && (contextReceipt.rows?.length ?? 0) > 0 ? (",
+      "turnContextVisible && contextSnapshot && contextSnapshot.length > 0 && (",
+    );
+    expect(source).toContain(
+      "turnContextVisible && contextReceipt && (contextReceipt.rows?.length ?? 0) > 0 ? (",
     );
   });
 

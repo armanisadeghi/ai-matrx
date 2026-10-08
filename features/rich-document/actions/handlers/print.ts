@@ -21,7 +21,7 @@ registerAction({
   renderSlot: "overflow",
   // The ContentActions set in this item's bar already shows it — once per surface.
   order: 10,
-  run: (ctx) => {
+  run: async (ctx) => {
     const title =
       ctx.source.type === "note"
         ? "Note"
@@ -34,7 +34,7 @@ registerAction({
               : ctx.source.type === "scraper-result"
                 ? "Scraper result"
                 : "Content";
-    printMarkdownContent(contentForDestination(ctx), title);
+    await printMarkdownContent(contentForDestination(ctx), title);
   },
 });
 
