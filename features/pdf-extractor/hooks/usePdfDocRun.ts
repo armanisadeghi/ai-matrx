@@ -15,8 +15,9 @@
  * screen) and looks again the moment it ends.
  */
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useServerJob } from "@ai-matrx/agents/react";
+import { getRuntimeOperationsByLink } from "@ai-matrx/agents/matrx";
 import type { ServerJobStatus, ServerJobTarget } from "@ai-matrx/agents/matrx";
 import type { MatrxStreamEnvelope } from "@ai-matrx/agents/stream/ndjson";
 import { createMatrxTransport } from "@/lib/api/matrx-transport";
@@ -24,6 +25,7 @@ import { useAppStore } from "@/lib/redux/hooks";
 import {
   clearPdfRunRequest,
   readPdfRunRequest,
+  type PdfRunRequest,
 } from "../state/runRequests";
 
 export type PdfDocRunPhase = "checking" | "running" | "failed" | "done" | "cancelled" | "idle";
@@ -90,6 +92,26 @@ export function readPdfRunFrame(
   }
 }
 
+/**
+ * Which run to follow for the open doc. The doc's OWN run (its `processed_document`
+ * link) is the truth for status: after a refresh mid-batch the saved request id is
+ * the whole BATCH's, which stays "running" until every file is done. The saved id
+ * only replays the stream when the doc has no run of its own yet — and a saved AI
+ * clean IS the doc's own run, so it is followed directly.
+ */
+export function choosePdfRunTarget(
+  docId: string | null,
+  saved: PdfRunRequest | null,
+  /** null = the by-link lookup has not answered yet; [] = the doc has no run. */
+  linkRunCount: number | null,
+): ServerJobTarget | null {
+  if (!docId) return null;
+  if (saved?.kind === "clean") return { requestId: saved.requestId };
+  if (linkRunCount === null) return null;
+  if (linkRunCount > 0 || !saved) return { linkKind: "processed_document", linkId: docId };
+  return { requestId: saved.requestId };
+}
+
 function phaseOf(status: ServerJobStatus | null): PdfDocRunPhase {
   switch (status) {
     case null:
@@ -146,11 +168,31 @@ export function usePdfDocRun(args: {
   }
 
   const saved = readPdfRunRequest(docId);
-  const target: ServerJobTarget | null = docId
-    ? saved
-      ? { requestId: saved.requestId }
-      : { linkKind: "processed_document", linkId: docId }
-    : null;
+  // How many runs the server holds for this doc (its own, not the batch's).
+  const [linkProbe, setLinkProbe] = useState<{ docId: string; count: number } | null>(null);
+  const needsProbe = Boolean(docId) && saved?.kind !== "clean";
+  useEffect(() => {
+    if (!docId || !needsProbe) return;
+    const controller = new AbortController();
+    void (async () => {
+      let count = 0;
+      try {
+        const view = await getRuntimeOperationsByLink(
+          createMatrxTransport(store.getState, { source: "pdf-run-reconnect" }),
+          "processed_document",
+          docId,
+          { limit: 5, signal: controller.signal },
+        );
+        count = view?.operations?.length ?? 0;
+      } catch {
+        // Unreachable: fall through to the saved id / link follow, which report their own errors.
+      }
+      if (!controller.signal.aborted) setLinkProbe({ docId, count });
+    })();
+    return () => controller.abort();
+  }, [docId, needsProbe, store]);
+  const probed = linkProbe && linkProbe.docId === docId ? linkProbe.count : null;
+  const target = choosePdfRunTarget(docId, saved, needsProbe ? probed : 0);
 
   const job = useServerJob({
     transport: () => createMatrxTransport(store.getState, { source: "pdf-run-reconnect" }),
