@@ -21,6 +21,8 @@ import { CANVAS_OUTPUT_PORTS } from "@/features/canvas/output/canvasOutputPorts"
 // and message Print share it); the page capture port wires Full Print's frame pre-pass.
 import "@/features/canvas/artifact-types/artifact-printers";
 import "@/features/canvas/output/capturePort";
+// The server capture engine (L3) behind the page capture port.
+import "@/features/html-pages/capture/serverPageCaptureEngine";
 
 // Kinds register at module load so a persisted layout renders its tabs on the
 // first paint after hydration, not one tick later.

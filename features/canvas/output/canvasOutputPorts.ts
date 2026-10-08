@@ -12,6 +12,8 @@
 import type { CanvasOutputPorts, CanvasOutputRequest } from "@ai-matrx/canvas/react";
 import { getBlockPrinter, printElement } from "@ai-matrx/print/core";
 import { toast } from "@/lib/toast";
+import { copyImage } from "@ai-matrx/kit/clipboard";
+import { canvasAttachOptions } from "./attachOptions";
 import { readArtifactItemData, contentOf } from "@/features/canvas/host/artifactItem";
 import { capturePage, hasPageCaptureEngine } from "./capturePort";
 import { publishedPageInElement } from "./publishedPage";
@@ -56,6 +58,14 @@ export const CANVAS_OUTPUT_PORTS: CanvasOutputPorts = {
       return canvasToBlob(await captureCanvas(element, { safeColors: true }));
     };
   },
+  // Through the kit clipboard door, never navigator.clipboard directly.
+  copyImage: async (image) => {
+    const ok = await copyImage(image);
+    if (!ok) throw new Error("the clipboard refused the image");
+    toast.success("Image copied");
+  },
+  // "Attach to chat ▸" — screenshot · code · text (attach lane, L3).
+  attachOptions: (request) => canvasAttachOptions(request),
   onError: (message, error) => {
     console.error(`[canvas] ${message}`, error);
     toast.error(`${message}.`);
