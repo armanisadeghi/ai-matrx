@@ -397,7 +397,9 @@ const FullScreenOverlay: React.FC<FullScreenOverlayProps> = ({
   const footerInner = hasFooter ? (
     <div
       className={cn(
-        "border-t flex-shrink-0 bg-background",
+        // w-full: DialogFooter is a flex row that would otherwise hug this row,
+        // squeezing the formatting toolbar (footerLeading) into its More menu.
+        "border-t flex-shrink-0 bg-background w-full",
         isMobile
           ? "flex flex-row items-center justify-between gap-1 p-1.5 pb-safe"
           : "flex items-center justify-end p-1 pr-3",
