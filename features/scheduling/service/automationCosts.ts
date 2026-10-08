@@ -87,6 +87,14 @@ export interface AutomationRunCost {
   mandates: string[];
   conversation_id: string | null;
   workflow_run_id: string | null;
+  /** The organizations this run served, with the cost charged to each (largest first). */
+  served_orgs: AutomationServedOrg[];
+}
+
+export interface AutomationServedOrg {
+  organization_id: string;
+  organization_name: string | null;
+  cost: number;
 }
 
 /** The window every number on these surfaces covers. */
@@ -99,6 +107,22 @@ function num(v: unknown): number {
 
 function numOrNull(v: unknown): number | null {
   return v == null ? null : num(v);
+}
+
+function asServedOrgs(v: unknown): AutomationServedOrg[] {
+  if (!Array.isArray(v)) return [];
+  return v.flatMap((o) => {
+    if (!o || typeof o !== "object") return [];
+    const r = o as Record<string, unknown>;
+    if (typeof r.organization_id !== "string") return [];
+    return [
+      {
+        organization_id: r.organization_id,
+        organization_name: typeof r.organization_name === "string" ? r.organization_name : null,
+        cost: num(r.cost),
+      },
+    ];
+  });
 }
 
 function asAgents(v: unknown): AutomationAgentRef[] {
@@ -194,6 +218,7 @@ export async function fetchAutomationRuns(
     mandates: r.mandates ?? [],
     conversation_id: r.conversation_id,
     workflow_run_id: r.workflow_run_id,
+    served_orgs: asServedOrgs(r.served_orgs),
   }));
 }
 

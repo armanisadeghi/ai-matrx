@@ -142,6 +142,28 @@ export function AutomationRunsTable({
     },
     { id: "max_loop", accessorKey: "max_loop", header: "Max loop", filter: "number", width: 90 },
     {
+      id: "served",
+      header: "Served",
+      accessorFn: (r) => r.served_orgs.map((o) => o.organization_name ?? o.organization_id).join(", "),
+      filter: "text",
+      width: 200,
+      cell: (r) =>
+        r.served_orgs.length === 0 ? (
+          <span className="text-xs text-muted-foreground">—</span>
+        ) : (
+          <div className="flex flex-col gap-0.5 text-xs">
+            {r.served_orgs.map((o) => (
+              <span key={o.organization_id} className="truncate" title={o.organization_id}>
+                {o.organization_name ?? o.organization_id}
+                {r.served_orgs.length > 1 && (
+                  <span className="ml-1 tabular-nums text-muted-foreground">{format(o.cost)}</span>
+                )}
+              </span>
+            ))}
+          </div>
+        ),
+    },
+    {
       id: "models",
       header: "Models",
       accessorFn: (r) => r.models.join(", "),
