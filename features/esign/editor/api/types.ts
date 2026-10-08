@@ -48,7 +48,7 @@ export interface SendResult {
   envelope_id: string;
   status: string;
   notified: number;
-  warnings: { code: string; recipient_key?: string }[];
+  warnings: { code: string; recipient_key?: string | null }[];
 }
 
 export interface EditorApi {

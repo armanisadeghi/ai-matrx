@@ -6,6 +6,7 @@
 // types until the server lane's wave A/B publish — `loose` is the one place that is bridged, and it
 // narrows to typed calls the moment `types/database.types.ts` and api-types carry them.
 
+import type { components } from "@ai-matrx/agents/generated/api-types";
 import { callApi, type ApiCallResult } from "@/lib/api/call-api";
 import type { AppDispatch } from "@/lib/redux/store";
 import type { Database } from "@/types/database.types";
@@ -14,6 +15,7 @@ import { supabase } from "@/utils/supabase/client";
 import type { EnvelopeDraftV1, EnvelopeTemplateV1 } from "../../contract/draft";
 import { DraftRefusal, type EditorApi, type SaveResult, type TemplateRow } from "./types";
 
+type Schemas = components["schemas"];
 type RpcAnswer = { data: unknown; error: { message: string } | null };
 type EsignRpcName = keyof Database["esign"]["Functions"];
 const esign = supabase.schema("esign");
@@ -158,7 +160,8 @@ export function makeRealEditorApi(dispatch: AppDispatch): EditorApi {
         }),
       );
       if (result.error || result.data === undefined) throw refused(result);
-      return { ...result.data, warnings: result.data.warnings ?? [] };
+      const sent = result.data as Schemas["EsignDraftSendAnswer"];
+      return { ...sent, warnings: sent.warnings ?? [] };
     },
 
     async detectFields(fileId) {
@@ -166,7 +169,7 @@ export function makeRealEditorApi(dispatch: AppDispatch): EditorApi {
         callApi({ path: "/esign/detect-fields", method: "POST", body: { file_id: fileId }, expectedErrorStatuses: [400, 403, 404, 409, 422] }),
       );
       if (result.error || result.data === undefined) throw refused(result);
-      return result.data.candidates;
+      return (result.data as Schemas["EsignDetectFieldsAnswer"]).candidates;
     },
 
     async saveTemplate({ organizationId, templateId, name, description, composition, expectedVersion }) {
