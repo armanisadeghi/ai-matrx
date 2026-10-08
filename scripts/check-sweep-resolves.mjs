@@ -76,8 +76,19 @@ function git(root, args, opts = {}) {
 
 /** { changed: [{path, isNew}], deleted: [path] } from `git status`, repo-relative. */
 export function sweepCandidates(root) {
-  const out = git(root, ["status", "--porcelain=v1", "-z", "--untracked-files=all"]);
+  // `root` may be a package folder inside the repository (matrx-local's desktop/): porcelain paths
+  // are always repository-relative, so keep only this folder's and make them root-relative.
+  const prefix = git(root, ["rev-parse", "--show-prefix"]).trim();
+  const out = git(root, ["status", "--porcelain=v1", "-z", "--untracked-files=all", "--", "."]);
+  const strip = (p) => (prefix && p.startsWith(prefix) ? p.slice(prefix.length) : p);
+  // "XY path" entries, and the bare source path that follows a rename/copy entry.
   const parts = out.split("\0");
+  for (let i = 0; i < parts.length; i++) {
+    if (!parts[i]) continue;
+    const renamed = parts[i][0] === "R" || parts[i][0] === "C";
+    parts[i] = parts[i].slice(0, 3) + strip(parts[i].slice(3));
+    if (renamed && parts[i + 1]) parts[i + 1] = strip(parts[++i]);
+  }
   const changed = [];
   const deleted = [];
   for (let i = 0; i < parts.length; i++) {
@@ -423,7 +434,7 @@ export function classify(root) {
       if (!reasons.has(f) || c.isNew) continue;
       let headText;
       try {
-        headText = git(root, ["show", `HEAD:${c.path}`]);
+        headText = git(root, ["show", `HEAD:./${c.path}`]);
       } catch {
         continue;
       }
