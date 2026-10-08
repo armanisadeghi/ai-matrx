@@ -30,6 +30,7 @@ import {
 } from "@/features/html-pages/utils/html-preview-utils";
 import CodeBlock from "@ai-matrx/rich-content/code-block/CodeBlock";
 import { HtmlAppFrame } from "@/features/html-pages/components/HtmlAppFrame";
+import { HtmlAttachToChat } from "@/features/html-pages/components/HtmlAttachToChat";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { useHtmlPreviewChrome } from "@/features/html-pages/components/HtmlPreviewChrome";
 import {
@@ -311,6 +312,13 @@ const HtmlInlinePreview: React.FC<HtmlInlinePreviewProps> = ({
       ) : null}
       <div className="flex shrink-0 items-center">
         {chrome?.actions}
+        <HtmlAttachToChat
+          conversationId={conversationId}
+          canvasItemId={artifactId}
+          pageUrl={url}
+          title={title}
+          frame={() => frameRef.current}
+        />
         <Button
           variant="quiet"
           icon={showCode ? <Eye /> : <Code2 />}
