@@ -26,12 +26,6 @@ function artifactPrinterFor(request: CanvasOutputRequest) {
   return printer ? { printer, data: content.data } : null;
 }
 
-async function canvasToBlob(canvas: HTMLCanvasElement): Promise<Blob> {
-  return new Promise((resolve, reject) =>
-    canvas.toBlob((blob) => (blob ? resolve(blob) : reject(new Error("the capture produced no image"))), "image/png"),
-  );
-}
-
 export const CANVAS_OUTPUT_PORTS: CanvasOutputPorts = {
   print: (request) => {
     const registered = artifactPrinterFor(request);
@@ -54,8 +48,8 @@ export const CANVAS_OUTPUT_PORTS: CanvasOutputPorts = {
       };
     }
     return async () => {
-      const { captureCanvas } = await import("@ai-matrx/print/pdf");
-      return canvasToBlob(await captureCanvas(element, { safeColors: true }));
+      const { elementToImage } = await import("@ai-matrx/alchemy/operate/capture");
+      return elementToImage(element, { safeColors: true });
     };
   },
   // Through the kit clipboard door, never navigator.clipboard directly.

@@ -133,16 +133,15 @@ export async function captureRecordOnServer(
 
 /** Client DOM capture of a same-origin element (the default for DOM kinds). */
 export async function captureDomElement(element: HTMLElement): Promise<Blob> {
-  const { toBlob } = await import("html-to-image");
-  const blob = await toBlob(element, {
+  const { renderElement, canvasToBlob } = await import("@ai-matrx/alchemy/operate/capture");
+  const canvas = await renderElement(element, {
     cacheBust: true,
     pixelRatio: Math.max(1, Math.min(2, window.devicePixelRatio || 1)),
     width: element.scrollWidth,
     height: element.scrollHeight,
     style: { overflow: "visible", maxHeight: "none", height: `${element.scrollHeight}px` },
   });
-  if (!blob) throw new Error("The page could not be drawn as an image.");
-  return blob;
+  return canvasToBlob(canvas);
 }
 
 /**
