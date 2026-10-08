@@ -5,7 +5,7 @@
  * PDF, Copy image): a "dom" tab prints through its type's registered printer
  * when it has one (the same adapter its chat block uses), else as drawn
  * (`printElement`); it captures as drawn (html2canvas). A "frame" HTML page
- * captures through the page capture port once an engine is plugged.
+ * captures through the server engine (record by publication link, L3).
  * "Attach to chat ▸" options are added by the attach lane (`attachOptions`).
  */
 
@@ -13,10 +13,9 @@ import type { CanvasOutputPorts, CanvasOutputRequest } from "@ai-matrx/canvas/re
 import { getBlockPrinter, printElement } from "@ai-matrx/print/core";
 import { toast } from "@/lib/toast";
 import { copyImage } from "@ai-matrx/kit/clipboard";
-import { canvasAttachOptions } from "./attachOptions";
+import { canvasAttachOptions, canvasHtmlItem } from "./attachOptions";
+import { captureRecordOnServer, viewerColorScheme } from "@/features/html-pages/capture/renderedCapture";
 import { readArtifactItemData, contentOf } from "@/features/canvas/host/artifactItem";
-import { capturePage, hasPageCaptureEngine } from "./capturePort";
-import { publishedPageInElement } from "./publishedPage";
 
 function artifactPrinterFor(request: CanvasOutputRequest) {
   const data = readArtifactItemData(request.item.data);
@@ -37,16 +36,25 @@ export const CANVAS_OUTPUT_PORTS: CanvasOutputPorts = {
   },
   capture: (request) => {
     const element = request.element;
-    if (!element) return null;
     if (request.surface === "frame") {
-      const pageUrl = publishedPageInElement(element);
-      if (!pageUrl || !hasPageCaptureEngine()) return null;
+      // One lookup for print, capture and attach (the publication link via
+      // publishedPage.ts); needs nothing mounted.
+      const item = canvasHtmlItem(request);
+      if (!item?.saved) return null;
       return async () => {
-        const image = await capturePage({ pageUrl, width: element.clientWidth });
-        if (!image) throw new Error("the page capture returned no image");
-        return image;
+        const record = await item.resolveRecord();
+        if (!record) throw new Error("this page is not published yet");
+        const result = await captureRecordOnServer({
+          ...record,
+          width: element?.clientWidth || 1024,
+          colorScheme: viewerColorScheme(),
+          includeImage: true,
+        });
+        if (!result.image) throw new Error("the page capture returned no image");
+        return result.image;
       };
     }
+    if (!element) return null;
     return async () => {
       const { elementToImage } = await import("@ai-matrx/alchemy/operate/capture");
       return elementToImage(element, { safeColors: true });
