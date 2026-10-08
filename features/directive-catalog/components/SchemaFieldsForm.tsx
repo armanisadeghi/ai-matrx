@@ -395,13 +395,15 @@ function RecordControl({
   if (!field.recordToken) return null;
 
   return (
-    <div className="flex flex-wrap items-center">
+    // The row's width, like every sibling field (G18 review: a label-width
+    // pill beside full-width pickers).
+    <div className="flex w-full min-w-0 items-center" data-record-control="">
       <Popover open={open} onOpenChange={setOpen}>
         <PopoverTrigger asChild>
           <Button
             variant="outline"
             icon={Icon ? <Icon /> : <Search />}
-            className="max-w-full"
+            className="min-w-0 flex-1 justify-start"
           >
             {picked
               ? (picked.recordTitle ?? `Chosen ${noun}`)

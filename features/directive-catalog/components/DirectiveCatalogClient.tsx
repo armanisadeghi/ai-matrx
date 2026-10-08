@@ -222,7 +222,13 @@ export function DirectiveCatalogClient() {
                 }}
               />
             </div>
-            <div ref={builderRef} className="lg:min-h-0" data-directive-builder-pane="">
+            {/* Phone: the builder comes FIRST (G18 review: under the 50-row
+                table and the other actions it was hard to find). */}
+            <div
+              ref={builderRef}
+              className="order-first border-b border-border lg:order-none lg:min-h-0 lg:border-b-0"
+              data-directive-builder-pane=""
+            >
               <DirectiveBuilderPanel catalog={catalog} pick={builderPick} />
             </div>
           </div>

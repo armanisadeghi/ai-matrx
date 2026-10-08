@@ -33,7 +33,7 @@ import AppLink from "@/components/navigation/AppLink";
 import { InfoHint } from "@/components/official/InfoHint";
 import { readOf } from "@/components/read-state/ReadGate";
 
-import { doorWindow } from "./useDrillExplorer";
+import { doorWindow, drillWindowKey } from "./useDrillExplorer";
 import { useDrillNameBookOr, useDrillNames, type DrillNameBook } from "./drillNames";
 import type { DrillSiblingDefinition } from "./drillSiblings";
 import { asOfPage, doorWhere, type DrillNameResolver, type DrillRecordOpener, type DrillRecordsDeclaration } from "./types";
@@ -81,8 +81,8 @@ export function useRecordsNoun(
 export const DRILL_ALL_TIME_FROM = "2020-01-01T00:00:00Z";
 
 /** "All time" as a window with a start (the door lists records for a window). */
-export function allTimeWindow(now: Date = new Date()): { key: string; from: string; to: string } {
-  return { key: "at", from: DRILL_ALL_TIME_FROM, to: now.toISOString() };
+export function allTimeWindow(key: string, now: Date = new Date()): { key: string; from: string; to: string } {
+  return { key, from: DRILL_ALL_TIME_FROM, to: now.toISOString() };
 }
 
 export function DrillRecords({
@@ -154,7 +154,9 @@ export function DrillRecords({
     // RECORDS ARE LISTED FOR A WINDOW (the door requires a start): "All time" is every record there is,
     // so it is asked as the whole span from the platform's first day to now — never a refusal on screen
     // (lane DRILL-FLIP-FIXES, VERIFY-DRILL-FINAL N2).
-    const win = doorWindow({ by: [], show: [], where: [], window: asked.window ?? null }).window ?? allTimeWindow();
+    // along the definition's own time Dimension (lane DRILL-LIVE-FIX-2 #1); none = no window at all
+    const along = drillWindowKey(dimensions, carried);
+    const win = along ? (doorWindow({ by: [], show: [], where: [], window: asked.window ?? null }, { key: along }).window ?? allTimeWindow(along)) : undefined;
     let cancelled = false;
     setLoading(true);
     setError(null);

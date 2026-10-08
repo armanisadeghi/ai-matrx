@@ -138,8 +138,15 @@ jest.mock("@/features/google-workspace/drivePickerToken", () => ({
   getGoogleDrivePickerToken: jest.fn(),
 }));
 
+// ProTextarea (voice recording, device preferences) reads these two slices; every other slice stays absent.
 jest.mock("@/lib/redux/hooks", () => ({
-  useAppSelector: (selector: (state: unknown) => unknown) => selector({}),
+  useAppSelector: (selector: (state: unknown) => unknown) =>
+    selector({
+      recordings: { isRecording: false, isFinalizing: false, context: null },
+      userPreferences: jest.requireActual("@/lib/redux/preferences/defaultUserPreferences").defaultUserPreferences,
+    }),
+  useAppDispatch: () => () => {},
+  useAppStore: () => ({ getState: () => ({}), dispatch: () => {} }),
 }));
 // The chat package reads these hooks through its own module (P3): one double covers both.
 jest.mock("@ai-matrx/chat/store/hooks", () => jest.requireMock("@/lib/redux/hooks"));

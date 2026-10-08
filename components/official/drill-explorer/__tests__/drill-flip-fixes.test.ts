@@ -93,6 +93,6 @@ describe("L4: the explorer's surface scope", () => {
 describe("N2: All time lists every record", () => {
   it("is the span from the platform's first day to now", () => {
     const now = new Date("2026-10-01T04:00:00Z");
-    expect(allTimeWindow(now)).toEqual({ key: "at", from: DRILL_ALL_TIME_FROM, to: "2026-10-01T04:00:00.000Z" });
+    expect(allTimeWindow("at", now)).toEqual({ key: "at", from: DRILL_ALL_TIME_FROM, to: "2026-10-01T04:00:00.000Z" });
   });
 });

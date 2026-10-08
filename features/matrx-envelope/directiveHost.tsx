@@ -182,6 +182,17 @@ function organizationNameOf(organizationId: string): string | null {
 }
 
 function ask(request: DirectiveAskRequest): Promise<boolean> {
+  return askDirective(request);
+}
+
+/**
+ * THE ONE QUESTION, for every surface that runs a directive: the cards (via
+ * `ask`) and the admin builder (`surface: "admin"` — no "this text" there).
+ */
+export function askDirective(
+  request: DirectiveAskRequest,
+  { surface = "text" }: { surface?: "text" | "admin" } = {},
+): Promise<boolean> {
   // The organization the write will land in — the one `authedDirectiveHeaders`
   // sends with every directive write (the active organization is for writes).
   const organizationName = selectActiveOrganizationName(requireStore().getState());
@@ -190,6 +201,7 @@ function ask(request: DirectiveAskRequest): Promise<boolean> {
   return confirmDialog(
     directiveConsequenceDialog(request, matrxDirectiveNouns, organizationName, organizationNameOf, {
       valueLabel: matrxDirectiveValueLabel,
+      surface,
     }),
   );
 }

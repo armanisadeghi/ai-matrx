@@ -21,7 +21,7 @@ import { drillDoorLabels } from "./dimensionWords";
 import type { DrillCarried } from "./questionParts";
 import { doorWhere, type DrillNameResolver } from "./types";
 import { useDrillNameBookOr, useDrillNames, type DrillNameBook } from "./drillNames";
-import { doorWindow } from "./useDrillExplorer";
+import { doorWindow, drillWindowKey } from "./useDrillExplorer";
 import { drillFailureWords } from "./explorerWords";
 
 /** group value → attribute key → the values it holds */
@@ -55,8 +55,7 @@ export function useDrillAttributes(args: {
   useEffect(() => {
     if (!client || !outer || wanted.length === 0 || groups.length === 0) return;
     let cancelled = false;
-    const windowPart = doorWindow({ by: [], show: [], where: [], window: question.window ?? null }, windowAlign);
-    if (windowPart.window && carried?.windowKey) windowPart.window = { ...windowPart.window, key: carried.windowKey };
+    const windowPart = doorWindow({ by: [], show: [], where: [], window: question.window ?? null }, { key: drillWindowKey(dimensions, carried), align: windowAlign });
     void Promise.all(
       wanted.map(async (attr) => {
         const got = await client

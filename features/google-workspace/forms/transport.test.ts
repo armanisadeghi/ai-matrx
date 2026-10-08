@@ -5,7 +5,11 @@ jest.mock("@/utils/supabase/client", () => {
   const client = { auth: { getSession: (...args: unknown[]) => getSession(...args) } };
   return { createClient: () => client, supabase: client };
 });
-jest.mock("@/lib/redux/store-singleton", () => ({ getStoreSingleton: () => ({ getState }) }));
+// getStore is the singleton's own alias; lib/python-client (resolveBaseUrl, reached via the Google service) reads it.
+jest.mock("@/lib/redux/store-singleton", () => ({
+  getStoreSingleton: () => ({ getState }),
+  getStore: () => ({ getState }),
+}));
 
 import { CHOSEN_ORG, mockFetchJson, organizationHeaderOf, resetGate, selectOrganization } from "@/lib/organization/__tests__/gate-harness";
 import { previewSelectedFormResponses } from "./service";

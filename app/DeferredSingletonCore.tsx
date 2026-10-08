@@ -21,6 +21,7 @@ import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import { PersistentDOMConnector } from "@/providers/persistance/PersistentDOMConnector";
 import OverlayController from "@/features/overlays/OverlayController";
 import AuthSessionWatcher from "@/components/layout/AuthSessionWatcher";
+import PersonTimeZoneCapture from "@/components/layout/PersonTimeZoneCapture";
 import { LinkOrganizationWatcher } from "@/features/organizations/components/LinkOrganizationWatcher";
 import AnnouncementProvider from "@/components/layout/AnnouncementProvider";
 import AdminFeatureProvider from "@/features/admin/AdminFeatureProvider";
@@ -169,6 +170,7 @@ export default function DeferredSingletonCore() {
           a link followed while the app is already warm. */}
       <LinkOrganizationWatcher />
       <AuthSessionWatcher />
+      <PersonTimeZoneCapture />
       <AnnouncementProvider />
       <AdminFeatureProvider />
       <ErrorInspectorBadge />

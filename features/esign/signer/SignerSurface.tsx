@@ -416,9 +416,18 @@ export function SignerSurface({
     change(field.id, null);
   }
 
+  /**
+   * The creator stays open until the server holds the mark. Closing it first lost the mark on a
+   * stalled or failed act (2026-10-07: an adopt hung 40 s, then failed; the creator was already
+   * gone, the field stayed unsigned and nothing said why). Now: a slow act says it is working, a
+   * failed one says so and leaves the creator open with the mark, ready for Adopt again.
+   */
   async function adopted(created: CreatedMark[]) {
+    if (adopting.current) return;
+    adopting.current = true;
     const pending = creator;
-    setCreator(null);
+    const got: Partial<Record<MarkTarget, string | null>> = {};
+    const slow = window.setTimeout(() => toast.loading("Saving your signature…", { id: ADOPT_TOAST }), 1200);
     setBusy("adopt");
     setNotice(null);
     try {

@@ -35,23 +35,25 @@ import { Skeleton } from "@ai-matrx/design-system";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { OptionCombobox } from "@/components/official/option-combobox/OptionCombobox";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
   buildDirectiveSlug,
   buildKindDirective,
   nounLabel as directiveNounLabel,
+  parseDirectiveSlug,
   tryDecodeDirectiveContent,
 } from "@ai-matrx/content-ir";
 import { describeJsonParseError } from "@ai-matrx/kit/json-format";
 import {
-  matrxDirectiveHost,
+  askDirective,
   matrxDirectiveNouns,
 } from "@/features/matrx-envelope/directiveHost";
+import {
+  alreadyApplied,
+  blockKey,
+  clearBuilderOutcome,
+  getBuilderRun,
+  runBuilder,
+  useBuilderRun,
+} from "@/features/directive-catalog/builderRunStore";
 import { executeResultHeadline } from "@/features/directive-catalog/executeResult";
 import { wordServerFieldNames } from "@/features/matrx-envelope/directiveFailureWords";
 import MatrxEnvelopeBlock from "@/features/matrx-envelope/MatrxEnvelopeBlock";
@@ -90,8 +92,8 @@ import { fetchEntityTitles } from "@/features/scopes/service/entityTitles";
 import {
   cellState,
   DIRECTIVE_VERBS,
+  directiveVerbWord,
   isDirectiveVerb,
-  type DirectiveApplyResult,
   type DirectiveCatalog,
   type DirectiveReceipt,
   type DirectiveState,
@@ -125,6 +127,9 @@ const VERB_BUTTON: Partial<Record<DirectiveVerb, string>> = {
   delete: "Delete",
 };
 
+/** The verb and noun pickers share one geometry. */
+const PICKER_GEOMETRY = "h-11 text-base lg:h-8 lg:text-sm";
+
 /** A cell state as words a person reads in a sentence. */
 const STATE_WORDS: Record<DirectiveState, string> = {
   yes: "wired",
@@ -141,11 +146,14 @@ function PanelError({
   raw,
   headline: given,
   titleColumn = null,
+  recordLabel = null,
 }: {
   raw: string;
   headline?: string;
   /** The form's title column: a refused field is named as the form names it. */
   titleColumn?: string | null;
+  /** The type's name ("Task") — the form's word for the record field `id`. */
+  recordLabel?: string | null;
 }) {
   const clean = stripTerminalCodes(raw).trim();
   // The server's own sentence first (humanized: colour codes and ORM dumps
@@ -159,6 +167,7 @@ function PanelError({
     humanizeBackendError(clean) ??
       ((given ? stripTerminalCodes(given).trim() : "") || clean),
     titleColumn,
+    recordLabel,
   );
   const hasDetail = clean.length > 0 && clean !== headline;
   return (
@@ -225,10 +234,16 @@ export function DirectiveBuilderPanel({
     [nouns],
   );
 
-  const initialVerb: DirectiveVerb = verbs[0] ?? "reference";
+  // A panel that mounts while a run is held (a re-render mid-run, or coming
+  // back) opens on that run's verb and type, so its outcome is on screen.
+  const [heldRun] = useState(() => parseDirectiveSlug(getBuilderRun().slug));
+  const initialVerb: DirectiveVerb =
+    heldRun && isDirectiveVerb(heldRun.directiveClass)
+      ? heldRun.directiveClass
+      : (verbs[0] ?? "reference");
   const [verb, setVerb] = useState<DirectiveVerb>(initialVerb);
   // No default noun: any pick made for the admin is a guess (nounOptions.ts).
-  const [nounName, setNounName] = useState<string>("");
+  const [nounName, setNounName] = useState<string>(heldRun?.noun ?? "");
   // The same knob-driven "common types first" tier the reference picker shows.
   const { tokens: commonKnobTokens } = useCommonReferenceTypes();
   const commonNouns = useMemo(
@@ -256,20 +271,18 @@ export function DirectiveBuilderPanel({
   /** Why the last Fields/JSON switch did less than asked — shown inline. */
   const [viewNote, setViewNote] = useState<string | null>(null);
   const [force, setForce] = useState(false);
-  const [executing, setExecuting] = useState(false);
-  const [result, setResult] = useState<DirectiveApplyResult | null>(null);
-  /** The title the last Execute sent — names the written record in its receipt. */
-  const [sentTitle, setSentTitle] = useState<string | null>(null);
+  // The run lives OUTSIDE the panel (builderRunStore): a re-render or remount
+  // mid-run never loses it, and its outcome shows on return (G18 review).
+  const run = useBuilderRun();
+  const { executing, sentTitle } = run;
+  const result = run.result;
+  const execError = run.error;
   const [pendingTitle, setPendingTitle] = useState<string | null>(null);
   /** Values to load into the next verb's form once its fields exist. */
   const [pendingPayload, setPendingPayload] = useState<Record<
     string,
     unknown
   > | null>(null);
-  const [execError, setExecError] = useState<{
-    raw: string;
-    headline?: string;
-  } | null>(null);
 
   const baseUrl = useAppSelector(selectResolvedBaseUrl);
   const openReferencePicker = useOpenDirectiveReferencePickerWindow();
@@ -419,8 +432,7 @@ export function DirectiveBuilderPanel({
     setFields({});
     setSelectedLabels({});
     setRenderNonce(0);
-    setResult(null);
-    setExecError(null);
+    clearBuilderOutcome();
     setWritePayload("");
     setPayloadValues({});
     setPayloadView("fields");
@@ -430,8 +442,7 @@ export function DirectiveBuilderPanel({
   const handleVerbChange = (nextVerb: DirectiveVerb) => {
     setVerb(nextVerb);
     setRenderNonce(0);
-    setResult(null);
-    setExecError(null);
+    clearBuilderOutcome();
     setWritePayload("");
     setPayloadValues({});
     setPayloadView("fields");
@@ -490,6 +501,16 @@ export function DirectiveBuilderPanel({
     });
   };
 
+  // An update/delete with no record chosen says so beside its button.
+  const recordField = writeFields.find((f) => f.key === "id");
+  const missingRecord =
+    (verb === "update" || verb === "delete") &&
+    effectiveView === "fields" &&
+    recordField &&
+    !(payloadValues.id?.touched && typeof payloadValues.id.raw === "string" && payloadValues.id.raw)
+      ? `Choose ${/^[aeiou]/i.test(recordField.label) ? "an" : "a"} ${recordField.label.toLowerCase()}`
+      : null;
+
   // A write verb executes exactly when the catalog says the cell is wired —
   // the server's registration is the only authority (no verb allowlist here).
   const canExecute =
@@ -499,57 +520,62 @@ export function DirectiveBuilderPanel({
     if (!canExecute || !nounName) return;
     const slug = `directive_v${catalog.directive_version}_${verb}_${nounName}`;
     const items = [effectivePayload];
+    const key = blockKey(slug, items);
+    // THE CARD'S RULE: a block that already applied asks "This already ran
+    // once." and a yes runs it again (`force`) — never a silent dedup (G18).
+    const again = alreadyApplied(key);
     // A WRITE STATES ITS CONSEQUENCE FIRST (reviewer, 2026-10-02: Create and
-    // Delete ran on one click). The SAME question an action card asks — the
-    // directive host's `ask` (`directiveConsequenceDialog`) — never a second one.
+    // Delete ran on one click). The SAME question an action card asks
+    // (`askDirective` → `directiveConsequenceDialog`), in the admin's words.
     const directive = tryDecodeDirectiveContent({ __kind: slug, items });
-    if (directive && matrxDirectiveHost.ask) {
-      const ok = await matrxDirectiveHost.ask({
-        directive,
-        items: directive.items,
-        nounLabel: directiveNounLabel(directive.noun, matrxDirectiveNouns),
-      });
+    if (directive) {
+      const ok = await askDirective(
+        {
+          directive,
+          items: directive.items,
+          nounLabel: directiveNounLabel(directive.noun, matrxDirectiveNouns),
+          ...(again ? { again: true } : {}),
+        },
+        { surface: "admin" },
+      );
       if (!ok) return;
     }
-    setExecuting(true);
-    setExecError(null);
-    setResult(null);
-    try {
-      const titleKey = noun ? formTitleColumn(noun) : null;
-      const sent = titleKey ? effectivePayload[titleKey] : undefined;
-      // A delete/update names its record by the one chosen in the form.
-      const chosen = payloadValues.id?.recordTitle ?? null;
-      setSentTitle(typeof sent === "string" && sent.trim() ? sent : chosen);
-      const res = await executeDirective(baseUrl, {
-        directive: slug,
-        items,
-        force,
-      });
-      // The result panel below says what happened, in the receipts' own
-      // terms ("Already applied — nothing new was written."); a toast
-      // repeating it was the second, wrong, copy ("Applied 1 item(s)").
-      setResult(res);
-    } catch (e) {
-      // A server refusal carries a sentence written for a person
-      // (`user_message`) and a technical `detail`; show the first, keep the
-      // second one click away. Terminal colour codes never reach the screen.
-      const raw =
-        e instanceof BackendApiError
-          ? e.detail
-          : e instanceof Error
-            ? e.message
-            : "Execute failed";
-      const headline = e instanceof BackendApiError ? e.userMessage : undefined;
-      setExecError({ raw, headline });
+    const titleKey = noun ? formTitleColumn(noun) : null;
+    const sent = titleKey ? effectivePayload[titleKey] : undefined;
+    // A delete/update names its record by the one chosen in the form.
+    const chosen = payloadValues.id?.recordTitle ?? null;
+    const title = typeof sent === "string" && sent.trim() ? sent : chosen;
+    const recordWord = noun ? nounLabel(noun) : null;
+    const done = await runBuilder(
+      slug,
+      key,
+      title,
+      // The result panel below says what happened, in the receipts' own terms;
+      // a toast repeating it was the second, wrong, copy.
+      () => executeDirective(baseUrl, { directive: slug, items, force: force || again }),
+      (e) => {
+        // A server refusal carries a sentence written for a person
+        // (`user_message`) and a technical `detail`; show the first, keep the
+        // second one click away. Terminal colour codes never reach the screen.
+        const raw =
+          e instanceof BackendApiError
+            ? e.detail
+            : e instanceof Error
+              ? e.message
+              : "Execute failed";
+        const headline = e instanceof BackendApiError ? e.userMessage : undefined;
+        return { raw, headline };
+      },
+    );
+    if (done.error) {
       toast.error(
         wordServerFieldNames(
-          humanizeBackendError(stripTerminalCodes(raw)) ??
-            stripTerminalCodes(headline ?? raw),
+          humanizeBackendError(stripTerminalCodes(done.error.raw)) ??
+            stripTerminalCodes(done.error.headline ?? done.error.raw),
           noun ? formTitleColumn(noun) : null,
+          recordWord,
         ),
       );
-    } finally {
-      setExecuting(false);
     }
   };
 
@@ -603,10 +629,9 @@ export function DirectiveBuilderPanel({
   ) : null;
 
   return (
-    // Phone: natural height in the page's one scroll area, with room at the
-    // foot so the floating chips never cover the last control. lg: its own
-    // scrolling pane.
-    <div className="flex flex-col gap-3 p-3 pb-[calc(7rem+env(safe-area-inset-bottom))] lg:h-full lg:overflow-y-auto lg:pb-3">
+    // Phone: natural height, FIRST in the page's one scroll area (the page's
+    // scroll owner carries the floating-chip runway). lg: its own scrolling pane.
+    <div className="flex flex-col gap-3 p-3 lg:h-full lg:overflow-y-auto">
       <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
         <AGENT_ICON className="h-4 w-4 text-primary" />
         Build &amp; test an action
@@ -616,25 +641,19 @@ export function DirectiveBuilderPanel({
       <div className="grid grid-cols-[minmax(0,8rem)_minmax(0,1fr)] gap-2">
         <div className="flex min-w-0 flex-col gap-1">
           <label className="text-xs text-muted-foreground">Verb</label>
-          <Select
+          {/* ONE control geometry for both pickers (G18 review: the verb was a
+              short pill beside a tall noun box). */}
+          <OptionCombobox
             value={verb}
-            onValueChange={(value) => {
+            onChange={(value) => {
               if (isDirectiveVerb(value)) handleVerbChange(value);
             }}
-          >
-            <SelectTrigger
-              aria-label="Directive verb"
-            >
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {verbs.map((v) => (
-                <SelectItem key={v} value={v} className="capitalize">
-                  {v}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+            options={verbs}
+            getLabel={directiveVerbWord}
+            searchable={false}
+            ariaLabel="Directive verb"
+            className={PICKER_GEOMETRY}
+          />
         </div>
         <div className="flex min-w-0 flex-col gap-1">
           <label className="text-xs text-muted-foreground">Noun</label>
@@ -658,7 +677,7 @@ export function DirectiveBuilderPanel({
             placeholder="Choose a type"
             searchPlaceholder={`Search ${nouns.length.toLocaleString()} types…`}
             ariaLabel="Directive noun"
-            className="h-11 text-base lg:h-8 lg:text-sm"
+            className={PICKER_GEOMETRY}
           />
         </div>
       </div>
@@ -674,7 +693,7 @@ export function DirectiveBuilderPanel({
         <div className="flex items-center justify-between gap-2 rounded-md border border-border bg-card px-3 py-2">
           <div className="flex min-w-0 flex-col">
             <span className="min-w-0 break-words text-sm text-foreground">
-              <span className="font-semibold capitalize">{verb}</span>{" "}
+              <span className="font-semibold">{directiveVerbWord(verb)}</span>{" "}
               <span className="text-muted-foreground">·</span>{" "}
               <span className="font-semibold">{nounLabel(noun)}</span>
             </span>
@@ -857,17 +876,22 @@ export function DirectiveBuilderPanel({
                   values={payloadValues}
                   mode={verb === "update" ? "update" : "create"}
                   warnings={builtPayload.warnings}
-                  onChange={(key, value) =>
+                  onChange={(key, value) => {
+                    // Inputs changed: an old error no longer applies (G18).
+                    clearBuilderOutcome();
                     setPayloadValues((prev) =>
                       applyFieldChange(prev, key, value),
-                    )
-                  }
+                    );
+                  }}
                 />
               ) : (
                 <>
                   <Textarea
                     value={writePayload}
-                    onChange={(e) => setWritePayload(e.target.value)}
+                    onChange={(e) => {
+                      clearBuilderOutcome();
+                      setWritePayload(e.target.value);
+                    }}
                     spellCheck={false}
                     className={cn(
                       "min-h-[120px] font-mono text-base lg:text-xs",
@@ -887,7 +911,10 @@ export function DirectiveBuilderPanel({
               <label className="flex min-h-11 items-center gap-2 text-xs text-muted-foreground">
                 <Checkbox
                   checked={force}
-                  onCheckedChange={(v) => setForce(v === true)}
+                  onCheckedChange={(v) => {
+                    clearBuilderOutcome();
+                    setForce(v === true);
+                  }}
                 />
                 Force — apply even if it already ran
               </label>
@@ -920,11 +947,19 @@ export function DirectiveBuilderPanel({
                 >
                   {VERB_BUTTON[verb] ?? "Execute"}
                 </Button>
-                {verb === "delete" && (
+                {missingRecord ? (
+                  // Said beside the button, never only after a failed run.
+                  <span
+                    className="text-xs text-amber-700 dark:text-amber-300"
+                    data-builder-missing-record=""
+                  >
+                    {missingRecord}
+                  </span>
+                ) : verb === "delete" ? (
                   <span className="text-xs text-muted-foreground">
                     Moves the record to trash.
                   </span>
-                )}
+                ) : null}
               </div>
             </>
           )}
@@ -940,6 +975,7 @@ export function DirectiveBuilderPanel({
               raw={execError.raw}
               headline={execError.headline}
               titleColumn={noun ? formTitleColumn(noun) : null}
+              recordLabel={noun ? nounLabel(noun) : null}
             />
           )}
 
@@ -993,7 +1029,11 @@ export function DirectiveBuilderPanel({
                       );
                     })()}
                   {r.error && (
-                    <PanelError raw={r.error} titleColumn={noun ? formTitleColumn(noun) : null} />
+                    <PanelError
+                      raw={r.error}
+                      titleColumn={noun ? formTitleColumn(noun) : null}
+                      recordLabel={noun ? nounLabel(noun) : null}
+                    />
                   )}
                   {r.status !== "failed" &&
                     verb !== "delete" &&

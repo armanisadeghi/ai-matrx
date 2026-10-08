@@ -5,6 +5,8 @@ export const defaultUserPreferences: UserPreferences = {
     items: [],
   },
   display: {
+    timeZone: "",
+    timeZoneFollowsDevice: true,
     darkMode: true,
     theme: "default",
     dashboardLayout: "default",

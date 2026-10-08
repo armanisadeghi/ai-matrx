@@ -21,7 +21,7 @@ import { useDrillNameBookOr, useDrillNames, type DrillNameBook } from "./drillNa
 import { drillSiblingDimensions, drillSiblingMeasures, type DrillSiblingDefinition } from "./drillSiblings";
 import type { DrillMoneyUnit } from "./measureFormat";
 import { findingQuestion, findingsOf, type DrillNameResolver } from "./types";
-import { doorWindow, drillRowOf } from "./useDrillExplorer";
+import { doorWindow, drillRowOf, drillWindowKey } from "./useDrillExplorer";
 
 const ROWS_SHOWN = 5;
 
@@ -69,7 +69,7 @@ export function DrillSiblingFindings({
     for (const finding of findings) {
       const asked = findingQuestion(finding, { by: [], show: [], where: [], window });
       const measure = asked.sort?.key ?? asked.show[0];
-      void client.drillAsk({ source: sibling.source, question: { ...finding.question, lane, ...doorWindow(asked) } }).then((got) => {
+      void client.drillAsk({ source: sibling.source, question: { ...finding.question, lane, ...doorWindow(asked, { key: drillWindowKey(sibling.def.dimensions) }) } }).then((got) => {
         if (cancelled) return;
         if (!got.ok) {
           setAnswers((h) => ({ ...h, [finding.key]: { state: "failed", message: got.error.message || "This finding could not be read." } }));

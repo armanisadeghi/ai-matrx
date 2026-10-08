@@ -18,7 +18,7 @@ import type { DrillSource } from "@ai-matrx/records";
 import type { RecordsClient } from "@ai-matrx/records/core";
 import { parseDimensionRef, type MatrxDrillQuestion } from "@ai-matrx/design-system/data-table";
 
-import { doorWindow } from "./useDrillExplorer";
+import { doorWindow, drillWindowKey } from "./useDrillExplorer";
 import { doorWhere } from "./types";
 import type { DrillCarried } from "./questionParts";
 
@@ -63,14 +63,20 @@ export function useDrillReconcile(args: {
   useEffect(() => {
     if (!client || !spec || !enabled || unshared.length > 0) return;
     let cancelled = false;
-    const windowPart = doorWindow(question, windowAlign);
-    void Promise.all([
-      client.drillDescribe({ source: spec.source }),
-      client.drillAsk({
-        source: spec.source,
-        question: { by: [], show: [spec.measure], where: { ...(carried?.where ?? {}), ...doorWhere(question) }, lane, ...(windowPart.window ? { window: windowPart.window } : {}) },
-      }),
-    ]).then(([described, asked]) => {
+    // The other definition's window runs along ITS time Dimension (lane DRILL-LIVE-FIX-2 #1): it is
+    // described first, then asked.
+    void client
+      .drillDescribe({ source: spec.source })
+      .then(async (described) => {
+        if (!described.ok) return [described, described] as const;
+        const windowPart = doorWindow(question, { key: drillWindowKey(described.data?.dimensions, carried), align: windowAlign });
+        const asked = await client.drillAsk({
+          source: spec.source,
+          question: { by: [], show: [spec.measure], where: { ...(carried?.where ?? {}), ...doorWhere(question) }, lane, ...(windowPart.window ? { window: windowPart.window } : {}) },
+        });
+        return [described, asked] as const;
+      })
+      .then(([described, asked]) => {
       if (cancelled) return;
       if (!described.ok || !asked.ok) {
         const message = (!described.ok ? described.error.message : !asked.ok ? asked.error.message : "") || "no answer";

@@ -653,13 +653,15 @@ function WriteStep({
           <span className="truncate font-medium text-foreground">
             {target.title ?? `this ${type.label.toLowerCase()}`}
           </span>
-          <button
-            type="button"
+          {/* THE control family, never a bare text link (G18 review). */}
+          <Button
+            variant="quiet"
             onClick={onChangeTarget}
-            className="ml-auto min-h-7 text-muted-foreground hover:text-foreground"
+            className="ml-auto"
+            data-picker-change-target=""
           >
             Change
-          </button>
+          </Button>
         </div>
       )}
 

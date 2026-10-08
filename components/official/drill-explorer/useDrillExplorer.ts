@@ -111,12 +111,31 @@ export function drillRowOf(
   };
 }
 
-/** The window of an address question in the door's words (and the comparison with it). */
-export function doorWindow(question: MatrxDrillQuestion, align?: "hour"): Pick<DrillQuestion, "window" | "compare"> {
-  const range = explorerWindowRange(question.window ?? null, align);
+/**
+ * THE TIME DIMENSION A WINDOW RUNS ALONG, FROM THE DEFINITION (lane DRILL-LIVE-FIX-2 #1): the question's
+ * own declared key (`carried.windowKey`) first, else the definition's "at" when it has one, else its
+ * first time Dimension. Never a hard-coded "at": user_acquisition's time is `created_at`, and every
+ * ask that sent "at" there was refused (400). A definition with no time Dimension has no window (null).
+ */
+export function drillWindowKey(
+  dimensions: readonly { key: string; kind?: string | undefined }[] | null | undefined,
+  carried?: { windowKey?: string | undefined } | null,
+): string | null {
+  if (carried?.windowKey) return carried.windowKey;
+  const times = (dimensions ?? []).filter((d) => d.kind === "time");
+  return (times.find((d) => d.key === "at") ?? times[0])?.key ?? null;
+}
+
+/**
+ * The window of an address question in the door's words (and the comparison with it), along the
+ * definition's own time Dimension (`drillWindowKey`) — required, so no caller can fall back to "at".
+ */
+export function doorWindow(question: MatrxDrillQuestion, along: { key: string | null; align?: "hour" | undefined }): Pick<DrillQuestion, "window" | "compare"> {
+  if (!along.key) return {};
+  const range = explorerWindowRange(question.window ?? null, along.align);
   if (!range) return {};
   return {
-    window: { key: "at", from: range.from, to: range.to },
+    window: { key: along.key, from: range.from, to: range.to },
     ...(question.compare ? { compare: { against: question.compare, from: range.from, to: range.to } } : {}),
   };
 }
@@ -237,8 +256,7 @@ export function useDrillExplorer(args: {
     const parsed = JSON.parse(askKey) as MatrxDrillQuestion & { carried: DrillCarried | null; lines: DrillGrainLines | null };
     const door = parsed.carried;
     const asked = withAutoGrain(def, parsed, parsed.lines);
-    const windowPart = doorWindow(asked, windowAlign);
-    if (windowPart.window && door?.windowKey) windowPart.window = { ...windowPart.window, key: door.windowKey };
+    const windowPart = doorWindow(asked, { key: drillWindowKey(def.dimensions, door), align: windowAlign });
     // A RUN RATE NEEDS A WINDOW WITH A START (the door refuses one without, 22023): with "all time" it is
     // left out of the ask and said, never a failed answer (lane DRILL-GAPS)
     const rates = new Set(def.measures.filter((m) => (m.op as string) === "rate").map((m) => m.key));

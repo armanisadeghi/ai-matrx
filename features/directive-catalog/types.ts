@@ -80,6 +80,11 @@ export const DIRECTIVE_VERBS = [
 
 const DIRECTIVE_VERB_SET: ReadonlySet<string> = new Set(DIRECTIVE_VERBS);
 
+/** A verb as a person reads it ("Create", never "create") — grid, builder, readout. */
+export function directiveVerbWord(verb: string): string {
+  return verb ? verb[0].toUpperCase() + verb.slice(1) : verb;
+}
+
 export function isDirectiveVerb(value: string): value is DirectiveVerb {
   return DIRECTIVE_VERB_SET.has(value);
 }

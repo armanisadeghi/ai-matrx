@@ -14,6 +14,7 @@
 import * as React from "react";
 import { act } from "react";
 import { createRoot } from "react-dom/client";
+import { TooltipProvider } from "@/components/ui/tooltip";
 
 import { GoogleDocumentPanel } from "../GoogleDocumentPanel";
 import { DOC_ID, ORG_ID, googleDocumentRow } from "./fixtures";
@@ -81,9 +82,18 @@ jest.mock("@/lib/api/organization-context", () => ({
 }));
 jest.mock("@/lib/redux/store-singleton", () => ({ getStoreSingleton: () => null }));
 jest.mock("@/lib/redux/slices/appContextSlice", () => ({ selectOrganizationId: () => ORG_ID }));
+// ProTextarea (voice recording, device preferences) reads these two slices; every other slice stays absent.
 jest.mock("@/lib/redux/hooks", () => ({
-  useAppSelector: (selector: (state: unknown) => unknown) => selector({}),
+  useAppSelector: (selector: (state: unknown) => unknown) =>
+    selector({
+      recordings: { isRecording: false, isFinalizing: false, context: null },
+      userPreferences: jest.requireActual("@/lib/redux/preferences/defaultUserPreferences").defaultUserPreferences,
+    }),
+  useAppDispatch: () => () => {},
+  useAppStore: () => ({ getState: () => ({}), dispatch: () => {} }),
 }));
+// The chat package reads these hooks through its own module (P3): one double covers both.
+jest.mock("@ai-matrx/chat/store/hooks", () => jest.requireMock("@/lib/redux/hooks"));
 jest.mock("@/features/scopes/redux/selectors/active-context", () => ({
   selectActiveOrganizationId: () => ORG_ID,
 }));
@@ -121,7 +131,11 @@ async function mount(row: GoogleDocumentRow): Promise<void> {
   document.body.appendChild(container);
   root = createRoot(container);
   await act(async () => {
-    root.render(<GoogleDocumentPanel initialRow={row} />);
+    root.render(
+      <TooltipProvider>
+        <GoogleDocumentPanel initialRow={row} />
+      </TooltipProvider>,
+    );
   });
 }
 

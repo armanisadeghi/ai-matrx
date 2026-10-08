@@ -28,6 +28,7 @@ import {
 } from "@/features/directive-catalog/components/StateCell";
 import {
   DIRECTIVE_VERBS,
+  directiveVerbWord,
   type DirectiveCatalog,
   type DirectiveVerb,
   type NounDirectives,
@@ -142,7 +143,7 @@ export function DirectiveCatalogGrid({
       matrixColumns.push({
         id: verb,
         accessorKey: verb,
-        header: verb[0].toUpperCase() + verb.slice(1),
+        header: directiveVerbWord(verb),
         label: verb,
         width: 80,
         align: "center",

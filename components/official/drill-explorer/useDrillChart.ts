@@ -25,7 +25,7 @@ import {
   type MatrxDrillQuestion,
 } from "@ai-matrx/design-system/data-table";
 
-import { doorWindow, drillRowOf } from "./useDrillExplorer";
+import { doorWindow, drillRowOf, drillWindowKey } from "./useDrillExplorer";
 import type { DrillNameBook } from "./drillNames";
 import type { DrillCarried } from "./questionParts";
 
@@ -69,8 +69,7 @@ export function useDrillChart(args: {
     if (!client || !plan || plan.refused || plan.first.length === 0) return;
     let cancelled = false;
     const ask = async (request: MatrxDrillChartRequest): Promise<{ ok: true; rows: MatrxDrillChartRow[] } | { ok: false; message: string }> => {
-      const windowPart = doorWindow({ by: [], show: [], where: [], window: request.window }, windowAlign);
-      if (windowPart.window && carried?.windowKey) windowPart.window = { ...windowPart.window, key: carried.windowKey };
+      const windowPart = doorWindow({ by: [], show: [], where: [], window: request.window }, { key: drillWindowKey(dimensions, carried), align: windowAlign });
       // THE VIEW'S THRESHOLDS PICK THE SPLIT'S SERIES (they are on groups — lane DRILL-FLIP-FIXES L1): asked on
       // the `series` request only, which also shows each Measure a threshold reads; the periods keep their
       // whole totals, so the groups a threshold leaves out are drawn in Other

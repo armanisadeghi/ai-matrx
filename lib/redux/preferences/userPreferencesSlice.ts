@@ -50,6 +50,17 @@ export interface DisplayPreferences {
   markdownStudioPreviewUpdates?: "live" | "manual";
   /** Markdown Studio: editor and preview scroll together. */
   markdownStudioScrollSync?: boolean;
+  /**
+   * THE PERSON'S TIME ZONE (IANA, e.g. "America/Los_Angeles"): the zone every
+   * "today" and "now" for this person is read in, and the zone the database's
+   * `custom.day_zone` reads first. Captured from the browser while
+   * `timeZoneFollowsDevice` is on; never overwritten once the person pins one.
+   * "" = nothing saved yet. Read it through `usePersonTimeZone()`, never
+   * `Intl.DateTimeFormat().resolvedOptions()` at a call site.
+   */
+  timeZone?: string;
+  /** Default on: the saved zone follows this device. Off = the person pinned `timeZone`. */
+  timeZoneFollowsDevice?: boolean;
   darkMode: boolean;
   theme: string;
   dashboardLayout: string;
@@ -1140,6 +1151,8 @@ export const initializeUserPreferencesState = (
     display: {
       markdownStudioPreviewUpdates: "live",
       markdownStudioScrollSync: true,
+      timeZone: "",
+      timeZoneFollowsDevice: true,
       darkMode: false,
       theme: "default",
       dashboardLayout: "default",

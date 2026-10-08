@@ -61,7 +61,16 @@ function fieldKeyOf(path: string): string {
  * rule the form, the card and the confirm share (`directiveFieldLabel` with the
  * form's title column); everything else in the sentence is left as written.
  */
-export function wordServerFieldNames(sentence: string, titleColumn: string | null): string {
+export function wordServerFieldNames(
+  sentence: string,
+  titleColumn: string | null,
+  /**
+   * The type's name ("Task"): the form labels the record an update/delete acts
+   * on by its type, so "id is required" reads "Task is required", never "ID"
+   * (G18 review, 2026-10-07).
+   */
+  recordLabel: string | null = null,
+): string {
   const match = /^(Nothing was applied — )([\s\S]*?)(\.?)$/.exec(sentence.trim());
   if (!match) return sentence;
   const [, head, body, stop] = match;
@@ -72,7 +81,9 @@ export function wordServerFieldNames(sentence: string, titleColumn: string | nul
     const field = FIELD_PHRASE.exec(phrase);
     if (!field) return phrase;
     const [, path, verb, rest] = field;
-    return `${directiveFieldLabel(fieldKeyOf(path), titleColumn)}${verb}${rest}`;
+    const key = fieldKeyOf(path);
+    const label = key === "id" && recordLabel ? recordLabel : directiveFieldLabel(key, titleColumn);
+    return `${label}${verb}${rest}`;
   });
   return `${head}${worded.join("; ")}${tail}${stop}`;
 }
@@ -95,7 +106,7 @@ export function explainDirectiveFailure(
     // assumed an AI). The card has no edit-values door, so the words stay
     // neutral. Details read the same field names the form shows.
     const titleColumn = directiveTitleColumn(failure.noun);
-    const worded = wordServerFieldNames(reason[0], titleColumn);
+    const worded = wordServerFieldNames(reason[0], titleColumn, failure.nounLabel.trim() || null);
     return {
       what: worded,
       next: "Correct it, then apply again.",

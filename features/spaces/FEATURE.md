@@ -45,6 +45,19 @@ Block document: a tree of `SpaceBlock` (`id`, `type`, `text: RichSpan[]`, `color
 
 ## Change log
 
+- 2026-10-07 — builder round 33: (1) structure is Full access / Can edit only (`page/structure.ts`, provided by
+  `SpacePage` from `fullEdit`): an inline or built-in database offers a content editor, commenter or viewer no Add view,
+  Automations, View settings (layout, properties, group, chart), view tab rename/duplicate/delete, database title, filter
+  or sort saved for everyone, or Form builder (they answer the form); rows stay theirs. Walk `edit-content.walk.mjs` (picks
+  an organization test@test.com is not in; proves they cannot open the page before the share). (2) The grid's row-menu
+  "Archive record" is a silent no-op for everyone — NEEDS row (records-ui); walk `archive-row.walk.mjs`. (3) Form view
+  at Can view: a signed-in viewer sees the questions on a fresh load and answers (walk `form-answer.walk.mjs`, now as
+  the admin's page shared Can view + the published page signed out). (4) Main menu: walk `main-menu.walk.mjs`
+  (Content's first row, opens /spaces, admin and member). (5) New property → Relation → a database of the table's
+  organization (`data/NewProperty.tsx`); the selection colour menu has a Background row (`editor/selection-format.tsx`);
+  the by-hand walk scores a narrow left column, "All" + an added view tab, the relation and a struck-through to-do.
+  (6) Walks: calc-row real click, property-edit instant Duplicate property, byhand-r26 comes back from the opened
+  "/page", property-menu makes its own page, walk login waits out a restarting / loaded server.
 - 2026-10-07 — builder round 32: (0) block format: `synced` { sourceId }, `button` { label, icon?, actions }, span mark
   `suggestion` { id, kind, by, at }; live `content.space_snapshot_schema` regenerated (check OK); fence guard opens
   lib/spaces-blocks to `spaces:` commits by owner brief. (1) Form view for non-editors re-walked live

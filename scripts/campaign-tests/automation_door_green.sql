@@ -267,6 +267,7 @@ begin
   perform set_config('role', 'postgres', true);
   update communication.notification_channel_preference set timezone = null where created_by = c_admin;
   update communication.sms_notification_preferences set timezone = null where user_id = c_admin;
+  update users.user_preferences set preferences = preferences #- '{display,timeZone}' where user_id = c_admin;
   perform set_config('role', 'authenticated', true);
 
   -- (i) no zone declared anywhere: the UTC day, exactly as before.
@@ -296,6 +297,17 @@ begin
   end if;
   v_txt := custom.day_zone(v_org);
   if v_txt is distinct from v_zone then raise exception '8h: a saved person zone did not win (got %, want %)', v_txt, v_zone; end if;
+  -- (ii-c) PERSON-TIMEZONE: the zone saved on her PROFILE (preferences.display.timeZone) beats a notification zone.
+  update users.user_preferences
+     set preferences = jsonb_set(preferences, '{display}', coalesce(preferences -> 'display', '{}'::jsonb) || jsonb_build_object('timeZone', 'Pacific/Auckland'))
+   where user_id = c_admin;
+  if not found then raise exception '8i: the test person has no preferences row'; end if;
+  v_txt := custom.day_zone(v_org);
+  if v_txt is distinct from 'Pacific/Auckland' then raise exception '8i: the profile zone did not win (got %)', v_txt; end if;
+  update users.user_preferences set preferences = jsonb_set(preferences, '{display,timeZone}', '"Not/AZone"') where user_id = c_admin;
+  v_txt := custom.day_zone(v_org);
+  if v_txt is distinct from v_zone then raise exception '8j: an invalid profile zone should fall to the next step (got %, want %)', v_txt, v_zone; end if;
+  update users.user_preferences set preferences = preferences #- '{display,timeZone}' where user_id = c_admin;
   perform set_config('custom.time_zone', v_zone, true);
 
   -- (iii) the same resolver serves a row action's TODAY() and the stored coercion of an instant.
