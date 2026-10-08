@@ -639,6 +639,8 @@
     "check:bundle": "tsx scripts/check-bundle-size.ts",
     "check:bundle:capture": "tsx scripts/check-bundle-size.ts --capture",
     "check:bundle:update": "tsx scripts/check-bundle-size.ts --update-baseline",
+    "check:shell-eager-graph": "tsx scripts/check-shell-eager-graph.ts",
+    "check:shell-eager-graph:self-test": "tsx scripts/check-shell-eager-graph.ts --self-test",
     "sync:feature-docs": "tsx scripts/sync-feature-docs.ts --organization-id 39c38960-d30c-4840-b0c1-c9960de95582",
     "test:sync-feature-docs": "tsx scripts/test-sync-feature-docs.ts",
     "validate": "node scripts/validate.mjs",
