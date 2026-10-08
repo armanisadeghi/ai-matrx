@@ -8,6 +8,9 @@
 --       and writes no outbox / history row (with a live control proving the detector sees a write)
 --   (c) a forced bad transition writes exactly one system_error row and one bell per platform
 --       admin, and a second sample in the same bad state repeats neither
+--   (a2) wave 2 rule fix: a watch with fewer than perf.eval_window samples of its own source is
+--       learning — never over_budget or regressed — however slow they are (data_home alerted on
+--       its first single sample, 2026-10-08)
 -- Run (session-mode 5432 connection as postgres; any client that runs a multi-statement script):
 --   the file itself carries BEGIN and ROLLBACK.
 begin;
@@ -102,6 +105,39 @@ begin
 end
 $a$;
 
+-- ── (a2) no budget or regression judgment before eval_window samples (wave 2) ────────────────
+do $a2$
+declare
+  k jsonb := '{"eval_window":3,"baseline_min_samples":12,"baseline_days":7,"regression_pct":50,"regression_min_ms":50,"regression_mad_k":4,"alert_cooldown_minutes":60}';
+  w jsonb := '{"budget_ms":300,"budget_stat":"p95","state":"learning","baseline_pinned":false}';
+  now_ timestamptz := '2026-10-08 12:00:00+00';
+  r jsonb;
+begin
+  -- one sample at 1227 ms against 300 ms (the live data_home case): learning, no alert
+  r := ops.perf_judge_rule(jsonb_build_array(jsonb_build_object('measured_at', now_, 'n', 6, 'errors', 0, 'p95_ms', 1227.7)), w, k, now_);
+  if r->>'state' <> 'learning' or (r->>'alert')::boolean then raise exception '(a2) one slow sample: got %', r; end if;
+  -- two samples: still learning
+  r := ops.perf_judge_rule(jsonb_build_array(
+         jsonb_build_object('measured_at', now_, 'n', 10, 'errors', 0, 'p95_ms', 1200),
+         jsonb_build_object('measured_at', now_ - interval '15 minutes', 'n', 10, 'errors', 0, 'p95_ms', 1300, 'state_after', 'learning')), w, k, now_);
+  if r->>'state' <> 'learning' or (r->>'alert')::boolean then raise exception '(a2) two slow samples: got %', r; end if;
+  -- a pinned baseline does not skip the wait either
+  r := ops.perf_judge_rule(jsonb_build_array(jsonb_build_object('measured_at', now_, 'n', 10, 'errors', 0, 'p95_ms', 250)),
+         w || '{"baseline_pinned":true,"baseline_ms":20}', k, now_);
+  if r->>'state' <> 'learning' or (r->>'alert')::boolean then raise exception '(a2) pinned baseline, one sample: got %', r; end if;
+  -- the third sample: judged, over budget, alerts
+  r := ops.perf_judge_rule(jsonb_build_array(
+         jsonb_build_object('measured_at', now_, 'n', 10, 'errors', 0, 'p95_ms', 1200),
+         jsonb_build_object('measured_at', now_ - interval '15 minutes', 'n', 10, 'errors', 0, 'p95_ms', 1300, 'state_after', 'learning'),
+         jsonb_build_object('measured_at', now_ - interval '30 minutes', 'n', 10, 'errors', 0, 'p95_ms', 1250, 'state_after', 'learning')), w, k, now_);
+  if r->>'state' <> 'over_budget' or not (r->>'alert')::boolean then raise exception '(a2) third sample: got %', r; end if;
+  -- every call failing is still judged at once (erroring is not a budget judgment)
+  r := ops.perf_judge_rule(jsonb_build_array(jsonb_build_object('measured_at', now_, 'n', 10, 'errors', 10)), w, k, now_);
+  if r->>'state' <> 'erroring' then raise exception '(a2) erroring on the first sample: got %', r; end if;
+  raise notice 'PASS (a2) under 3 samples a slow watch stays learning; the third judges it over budget';
+end
+$a2$;
+
 -- ── (b) a probe of custom.record_update writes nothing that survives ─────────────────────────
 do $b$
 declare
@@ -174,6 +210,9 @@ begin
   v_watch := ops.perf_watch_declare('test:perf-w1:forced', 'door', 'TEST forced over budget',
     '{"schema":"custom","function":"data_home","argtypes":"uuid, text, boolean","args":{"p_include_app_tables":false}}',
     1, 'p95', 900, 'PERF-WATCH', 'perf');
+  -- wave 2: judged only from the eval_window-th sample (perf.eval_window, 3)
+  perform ops.perf_record_sample(v_watch, 'probe', v_stats);
+  perform ops.perf_record_sample(v_watch, 'probe', v_stats);
   v_r := ops.perf_record_sample(v_watch, 'probe', v_stats);
   if v_r->>'state' <> 'over_budget' then raise exception '(c) expected over_budget, got %', v_r; end if;
   select count(*) into v_err from ops.system_error where error_type = 'perf_watch:test:perf-w1:forced:over_budget';

@@ -1,6 +1,6 @@
 {
   "note": "Checked-in snapshot of public._schema_migrations for the files under migrations/campaign and migrations/inverse. Written by `pnpm db:apply` on every successful production apply and refreshed whole by the nightly catch-up. Never hand-edited: a self-written checksum is a claim nobody can check. Guard: pnpm check:ledgered-files-unedited.",
-  "generated_at": "2026-10-08T15:34:07.007Z",
+  "generated_at": "2026-10-08T16:16:49.641Z",
   "files": {
     "migrations/campaign/a_chunk_is_the_size_the_client_door_can_actually_carry.sql": {
       "source": "matrx-frontend",
@@ -3932,6 +3932,12 @@
       "checksum": "210c86d6b533075a7bb753eab5a756f3e21ecb14ebf40c5d7ec038d0768dbd17",
       "applied_at": "2026-10-08 15:23:47.100975+00"
     },
+    "migrations/campaign/kernelorgprune_b_the_table_is_read_by_its_key.sql": {
+      "source": "matrx-frontend",
+      "filename": "kernelorgprune_b_the_table_is_read_by_its_key.sql",
+      "checksum": "3a63b747cedc314a2265caf4df7ba625fe2061256fba0ed019fbb19952e8f190",
+      "applied_at": "2026-10-08 15:43:04.431413+00"
+    },
     "migrations/campaign/kerneltails_a_stale_kernel_refusal_is_a_logged_row.sql": {
       "source": "campaign",
       "filename": "kerneltails_a_stale_kernel_refusal_is_a_logged_row.sql",
@@ -4682,6 +4688,12 @@
       "checksum": "17097e7b6aeb7320592f4db3a571035432b275c2f3963669ad4c23c2611b1250",
       "applied_at": "2026-10-07 05:59:26.655704+00"
     },
+    "migrations/campaign/notionprops2_a_table_takes_its_two_way_partner.sql": {
+      "source": "matrx-frontend",
+      "filename": "notionprops2_a_table_takes_its_two_way_partner.sql",
+      "checksum": "aece642bd363fb87f374ce2623d4ffc375a61d79f2caa01022f1675113f6e8a5",
+      "applied_at": "2026-10-08 16:16:47.102827+00"
+    },
     "migrations/campaign/notionprops_a_a_link_is_a_field_on_both_tables.sql": {
       "source": "matrx-frontend",
       "filename": "notionprops_a_a_link_is_a_field_on_both_tables.sql",
@@ -4921,6 +4933,36 @@
       "filename": "perf_watch_w1_e_probe_fair_share.sql",
       "checksum": "6d8bdd50def165b6dd425cab09e34da64bdbddc9ef317b6fb5cbf8f3c2e842ad",
       "applied_at": "2026-10-08 15:33:36.433139+00"
+    },
+    "migrations/campaign/perf_watch_w2_a_rule_and_bytes.sql": {
+      "source": "matrx-frontend",
+      "filename": "perf_watch_w2_a_rule_and_bytes.sql",
+      "checksum": "e7ab3f17de5bb426db5651be683e5d8949ccce58c975a7b53bd0d1117ca6ae71",
+      "applied_at": "2026-10-08 16:06:11.150354+00"
+    },
+    "migrations/campaign/perf_watch_w2_b_statement_snapshot.sql": {
+      "source": "matrx-frontend",
+      "filename": "perf_watch_w2_b_statement_snapshot.sql",
+      "checksum": "0b4efc1818a2e74c5c53b7e1fc80397b1f0b56814a7622983746c91e669be59d",
+      "applied_at": "2026-10-08 16:09:04.471904+00"
+    },
+    "migrations/campaign/perf_watch_w2_c_snapshot_access.sql": {
+      "source": "matrx-frontend",
+      "filename": "perf_watch_w2_c_snapshot_access.sql",
+      "checksum": "277367eee0f77865613c673be1f5e0e82561063091039cfbdb56a9167c4ae0e6",
+      "applied_at": "2026-10-08 16:09:41.451755+00"
+    },
+    "migrations/campaign/perf_watch_w2_d_functions.sql": {
+      "source": "matrx-frontend",
+      "filename": "perf_watch_w2_d_functions.sql",
+      "checksum": "065333554ac7f47af8a20fe8d47355d7a5892ac32c423144f135b00db6cbf23a",
+      "applied_at": "2026-10-08 16:15:55.650532+00"
+    },
+    "migrations/campaign/perf_watch_w2_e_seed_and_cron.sql": {
+      "source": "matrx-frontend",
+      "filename": "perf_watch_w2_e_seed_and_cron.sql",
+      "checksum": "7040bfd4af103c1f91006487907afcebeaeaffbb7faf826646d45d2580f70e3f",
+      "applied_at": "2026-10-08 16:14:07.494067+00"
     },
     "migrations/campaign/perffix1_a_the_read_doors_ask_the_ladder_once.sql": {
       "source": "matrx-frontend",
