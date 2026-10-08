@@ -866,6 +866,10 @@ jobs:
       # and My team is empty for a person on no team (scripts/check-list-counts.ts).
       - name: List counts are the list, and My team is honest
         run: pnpm check:list-counts:strict
+      # Max-tier lock (2026-10-08): no agent/system writer may move a model into or
+      # out of cost_rating 6 unheld (ai._cost_tier_hold; four rolled-back cases).
+      - name: The max cost tier is held against non-person writers
+        run: pnpm check:cost-tier-hold:strict
 
   # ---------------------------------------------------------------------------
   # soft-delete-cascade — liveness for platform.soft_delete_edge and the two

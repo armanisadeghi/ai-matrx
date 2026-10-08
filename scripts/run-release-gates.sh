@@ -152,6 +152,7 @@ if $STRICT; then
         "Cross-deployment links (a CORS preflight on every www hover)|pnpm check:cross-deployment-links:strict"
         "Agent addresses (a system agent linked into the user shell)|pnpm check:agent-links"
         "Sign-out scope (a bare signOut() logs the account out of every device)|pnpm check:signout-scope"
+        "Max cost tier held against agent/system writers (rolled-back cases)|pnpm check:cost-tier-hold:strict"
         # ACCESS LADDER T-13 2.5c: the row column retires into shown_to / published_to_web; no file
         # gains a literal reference to it (shrink-only per-file baseline). The self-test plants in memory.
         "No new code reference to the retiring row column (access ladder T-13)|pnpm check:t13-row-column"
