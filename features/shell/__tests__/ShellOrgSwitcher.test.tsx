@@ -115,6 +115,15 @@ describe("ShellOrgSwitcher — every organization state shows on the one control
     expect(host.querySelector(".ring-primary")).not.toBeNull();
   });
 
+  it("while the name is still loading, shows a skeleton - never the word Organization or 'no organization'", () => {
+    picker = { ...picker, activeOrgId: null, activeOrgName: null, promptForOrg: false };
+    mount();
+    expect(trigger().querySelector("[data-org-name-skeleton]")).not.toBeNull();
+    expect(trigger().textContent?.trim()).toBe("");
+    expect(host.textContent).not.toMatch(/no organization/i);
+    expect(host.textContent).not.toContain("Pick one below");
+  });
+
   it("never asks on an admin page — the admin seat never acts as itself", () => {
     picker = { ...picker, promptForOrg: true };
     pathname = "/administration/users/usage";
