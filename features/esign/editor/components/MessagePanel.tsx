@@ -3,11 +3,12 @@
 // features/esign/editor/components/MessagePanel.tsx — the email's subject and message, then how
 // the envelope behaves once sent: expiry, reminders, hand-off, fill-all, form view, date format.
 
-import { Field, Select, Switch } from "@ai-matrx/design-system/controls";
+import { Select, Switch } from "@ai-matrx/design-system/controls";
 import { ProTextarea } from "@/components/official/ProTextarea";
 
 import type { EnvelopeDraftV1 } from "../../contract/draft";
 import { DATE_FORMATS } from "../model";
+import { ProInput } from "@/components/official/ProInput";
 
 const EXPIRY = [7, 14, 30, 60, 90, 180, 365].map((d) => ({ value: String(d), label: `${d} days` }));
 const CADENCE: { value: string; label: string; days: number[] }[] = [
@@ -46,8 +47,8 @@ export function MessagePanel({ draft, edit, templateMode }: Props) {
     <div className="flex flex-col gap-4">
       <section className="flex flex-col gap-2">
         <h3 className="type-title text-foreground">{templateMode ? "Template email" : "Email to recipients"}</h3>
-        <Field aria-label="Envelope name" placeholder="Envelope name" value={draft.title} onChange={(e) => edit((d) => ({ ...d, title: e.target.value }), "title")} />
-        <Field
+        <ProInput aria-label="Envelope name" placeholder="Envelope name" value={draft.title} onChange={(e) => edit((d) => ({ ...d, title: e.target.value }), "title")} />
+        <ProInput
           aria-label="Email subject"
           placeholder={draft.title.trim() ? `Please sign: ${draft.title.trim()}` : "Email subject"}
           maxLength={200}

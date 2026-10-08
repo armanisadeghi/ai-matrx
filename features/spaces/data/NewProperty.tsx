@@ -11,6 +11,7 @@ import { useState } from "react";
 import { toast } from "@/lib/toast";
 
 import { MenuRow } from "./menu-parts";
+import { ProInput } from "@/components/official/ProInput";
 
 export interface PropertyType {
   label: string;
@@ -91,9 +92,10 @@ export function NewPropertyPanel({ tableId, takenKeys, onDone }: { tableId: stri
   return (
     <div className="flex flex-col gap-1" aria-busy={busy || undefined}>
       <div className="px-1 pt-1">
-        <Input autoFocus value={name} onChange={(e) => setName(e.target.value)} placeholder="Property name" aria-label="Property name" />
+        <ProInput autoFocus value={name} onChange={(e) => setName(e.target.value)} placeholder="Property name" aria-label="Property name" />
       </div>
       <div className="px-1">
+        {/* ui-exception: a search over property types, not writing */}
         <Input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search for a type…" aria-label="Search property types" onKeyDown={(e) => e.key === "Enter" && types[0] && !busy && void make(types[0])} />
       </div>
       <div className="px-2 pt-1 type-secondary text-muted-foreground">Type</div>
@@ -121,6 +123,7 @@ function RelationTarget({ tableId, busy, onBack, onPick }: { tableId: string; bu
     <div className="flex flex-col gap-1" aria-busy={busy || tables.loading || undefined}>
       <MenuRow icon={<ArrowLeft size={15} />} label="Relation" onClick={onBack} />
       <div className="px-1">
+        {/* ui-exception: a search over databases, not writing */}
         <Input autoFocus value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Link to a database…" aria-label="Search databases" />
       </div>
       <div role="listbox" aria-label="Databases" className="max-h-72 overflow-y-auto">

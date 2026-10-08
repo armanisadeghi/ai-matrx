@@ -54,6 +54,7 @@ function makeEmptyRecord(id: string): AppletDefinition {
     rate_limit_authenticated: null,
 
     version: 1,
+    content_version: 0,
 
     total_executions: 0,
     total_tokens_used: 0,

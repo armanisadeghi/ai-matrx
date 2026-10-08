@@ -5,10 +5,11 @@
 
 import { ArrowDown, ArrowUp, FileText, FolderOpen, Trash2, Upload } from "lucide-react";
 
-import { Button, Field } from "@ai-matrx/design-system/controls";
+import { Button } from "@ai-matrx/design-system/controls";
 import { Spinner } from "@/components/ui/loaders/Spinner";
 
 import type { EnvelopeDraftV1 } from "../../contract/draft";
+import { ProInput } from "@/components/official/ProInput";
 
 interface Props {
   draft: EnvelopeDraftV1;
@@ -61,9 +62,9 @@ export function DocumentsPanel({ draft, edit, uploading, onFiles, onPickFromFile
       {draft.documents.map((doc, i) => (
         <div key={doc.key} className="flex items-center gap-1.5 rounded-md border border-border bg-card px-2 py-1.5">
           <FileText className="h-4 w-4 shrink-0 text-muted-foreground" />
-          <Field
+          <ProInput
             aria-label="Document name"
-            className="min-w-0 flex-1"
+            wrapperClassName="min-w-0 flex-1"
             value={doc.name}
             onChange={(e) => edit((d) => ({ ...d, documents: d.documents.map((x) => (x.key === doc.key ? { ...x, name: e.target.value } : x)) }), `dn-${doc.key}`)}
           />

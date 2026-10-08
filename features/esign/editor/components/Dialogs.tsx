@@ -7,7 +7,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { AlertTriangle, CheckCircle2, Send } from "lucide-react";
 
-import { Badge, Button, Field, Select } from "@ai-matrx/design-system/controls";
+import { Badge, Button, Select } from "@ai-matrx/design-system/controls";
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { Spinner } from "@/components/ui/loaders/Spinner";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -17,6 +17,7 @@ import { recipientColor } from "../../contract/paper";
 import { draftWarnings, effectiveSubject, ROLE_LABEL, sendBlockers } from "../model";
 import type { SendResult } from "../api/types";
 import { DocumentStage, type StageHandlers } from "./DocumentStage";
+import { ProInput } from "@/components/official/ProInput";
 
 const VERIFY_LABEL = { none: "Email link", email_code: "Email code", access_code: "Access code" } as const;
 
@@ -123,7 +124,7 @@ export function TemplateDialog(p: {
           <DialogTitle>Save as template</DialogTitle>
           <DialogDescription>Documents, roles and fields. Names and access codes stay out.</DialogDescription>
         </DialogHeader>
-        <Field aria-label="Template name" placeholder="Template name" value={name} onChange={(e) => setName(e.target.value)} />
+        <ProInput aria-label="Template name" placeholder="Template name" value={name} onChange={(e) => setName(e.target.value)} />
         <ProTextarea aria-label="Description" placeholder="Description (optional)" rows={2} value={description} onChange={(e) => setDescription(e.target.value)} />
         {p.error && <p className="type-body text-destructive">{p.error}</p>}
         <DialogFooter>

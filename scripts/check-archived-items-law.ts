@@ -182,6 +182,12 @@ const SOFT_DELETE_IS_THE_ARCHIVE: ReadonlyMap<string, string> = new Map([
       "(platform.soft_delete_edge). Same words on screen, same column.",
   ],
   [
+    "app.definition",
+    "An Applet carries no archive column; the /applets list's Archived filter, the row menu's " +
+      "Archive/Restore and /trash all mean `deleted_at`. Its former second mechanism (status " +
+      "'archived') was retired 2026-10-08 and the database refuses it (aga_apps_status_check).",
+  ],
+  [
     "context.context_items",
     "A context item is removed with its type by the platform cascade. `is_active` is a " +
       "DIFFERENT thing — the person's own on/off switch — and reading it as the archive is " +
@@ -255,6 +261,18 @@ const WRITE_SIGNALS: readonly RegExp[] = [
  */
 const SOFT_DELETE_PREDICATE =
   /\.(?:is|not)\s*\(\s*['"`]deleted_at['"`]\s*,/;
+
+/**
+ * RULE 4 — A SECOND ARCHIVE MECHANISM. For a declared soft-delete-as-archive
+ * entity, `deleted_at` IS the archive; a `status` value of "archived" is a second,
+ * invisible one (the Archived filter cannot see it, so an "archived" row sits in
+ * the default list wearing an Archived badge — app.definition until 2026-10-08).
+ * Fires on the literal in a write payload, and on any status-context "archived"
+ * literal in a file that reads or writes the entity (a status menu, a type union).
+ */
+const STATUS_ARCHIVED_WRITE = /\bstatus\s*:\s*['"`]archived['"`]/;
+const STATUS_ARCHIVED_VALUE =
+  /\bstatus\b[^;\n]{0,80}?['"`]archived['"`]|['"`]archived['"`][^;\n]{0,40}?\bstatus\b/;
 
 const HARDCODED_PREDICATE =
   /\.(?:eq|is)\s*\(\s*['"`](is_archived|archived_at)['"`]\s*,\s*(?:false|true|null)\s*\)/;
@@ -601,6 +619,7 @@ export function scanFile(
 
   const fromPattern = /\.from\s*\(\s*['"`]([A-Za-z0-9_]+)['"`]\s*\)/g;
   let match: RegExpExecArray | null;
+  let declaredEntityInFile: string | null = null;
   while ((match = fromPattern.exec(code)) !== null) {
     const table = match[1];
     if (!table) continue;
@@ -608,7 +627,20 @@ export function scanFile(
     if (!entity) continue;
 
     const window = chainWindow(code, match.index);
-    if (anyMatch(window, WRITE_SIGNALS)) continue;
+    if (SOFT_DELETE_IS_THE_ARCHIVE.has(entity)) declaredEntityInFile ??= entity;
+    if (anyMatch(window, WRITE_SIGNALS)) {
+      if (SOFT_DELETE_IS_THE_ARCHIVE.has(entity) && STATUS_ARCHIVED_WRITE.test(window)) {
+        findings.push({
+          file,
+          line: lineFor(code, match.index),
+          table,
+          reason:
+            `write to \`${entity}\` sets status "archived" — a second archive mechanism; this ` +
+            `entity's archive is \`${SOFT_DELETE_COLUMN}\` (${SOFT_DELETE_IS_THE_ARCHIVE.get(entity)})`,
+        });
+      }
+      continue;
+    }
     if (anyMatch(window, SINGLE_RECORD_SIGNALS)) continue;
 
     // The exemption is read from the RAW text (it lives in a comment) within
@@ -715,6 +747,22 @@ export function scanFile(
             `${SOFT_DELETE_IS_THE_ARCHIVE.get(entity)}), so ` : "the archive column, so ") +
           "archived rows render indistinguishable from live ones — and this repo already " +
           "gives that entity's lists an archive control elsewhere",
+      });
+    }
+  }
+
+  // RULE 4, file half: a status-context "archived" value beside a declared entity
+  // (a status menu option, a status type union) — the second mechanism's UI.
+  if (declaredEntityInFile && !findings.some((f) => f.reason.includes("second archive mechanism"))) {
+    const value = STATUS_ARCHIVED_VALUE.exec(code);
+    if (value && !EXEMPTION.test(raw)) {
+      findings.push({
+        file,
+        line: lineFor(code, value.index),
+        table: declaredEntityInFile,
+        reason:
+          `a status value "archived" beside \`${declaredEntityInFile}\` — a second archive ` +
+          `mechanism; this entity's archive is \`${SOFT_DELETE_COLUMN}\``,
       });
     }
   }
@@ -1107,6 +1155,28 @@ const { data } = await contextDb(supabase)
   .order("sort_order");
 `;
 
+// RULE 4 fixtures — app.definition is declared soft-delete-as-archive.
+const RED_SECOND_MECHANISM_WRITE = `
+export async function archiveApplet(id: string) {
+  await supabase.schema("app").from("definition").update({ status: "archived" }).eq("id", id);
+}
+`;
+const RED_SECOND_MECHANISM_MENU = `
+export async function setStatus(id: string, status: "draft" | "published" | "archived") {
+  await supabase.schema("app").from("definition").update({ status }).eq("id", id);
+}
+`;
+const GREEN_ONE_MECHANISM = `
+export async function archiveApplet(id: string) {
+  await supabase.schema("app").from("definition").update({ deleted_at: new Date().toISOString() }).eq("id", id);
+}
+export async function listApplets(archived: "active" | "archived" | "all") {
+  let q = supabase.schema("app").from("definition").select("id, deleted_at").order("updated_at");
+  if (archived === "archived") q = q.not("deleted_at", "is", null);
+  return q;
+}
+`;
+
 function selfTest(): void {
   const failures: string[] = [];
   const helpers = schemaHelpers([
@@ -1166,6 +1236,22 @@ function selfTest(): void {
     if (found.length > 0) {
       failures.push(`${name}: false positive — ${found[0]?.reason}.`);
     }
+  }
+  if (scanDeclared(RED_SECOND_MECHANISM_WRITE).length === 0) {
+    failures.push(
+      "SECOND-MECHANISM-WRITE: the detector stayed GREEN on `app.definition` written with " +
+        "status \"archived\" — the invisible second archive the /applets list could not see.",
+    );
+  }
+  if (scanDeclared(RED_SECOND_MECHANISM_MENU).length === 0) {
+    failures.push(
+      "SECOND-MECHANISM-VALUE: the detector stayed GREEN on a status union offering " +
+        "\"archived\" beside an `app.definition` write.",
+    );
+  }
+  {
+    const found = scanDeclared(GREEN_ONE_MECHANISM);
+    if (found.length > 0) failures.push(`ONE-MECHANISM: false positive — ${found[0]?.reason}.`);
   }
   if (!SOFT_DELETE_IS_THE_ARCHIVE.has("context.scope_types")) {
     failures.push(
@@ -1243,7 +1329,8 @@ function selfTest(): void {
       "   blind read of a settled entity reached through a schema-binding helper, both\n" +
       "   bound to a name and applied inline, RED on the F6 shape — a list read of a\n" +
       "   DECLARED soft-delete-as-archive entity (context.scope_types) that neither\n" +
-      "   filters nor projects `deleted_at`;\n" +
+      "   filters nor projects `deleted_at`, RED on a second archive mechanism (status\n" +
+      "   \"archived\" written to, or offered beside, app.definition);\n" +
       "   GREEN on an option-driven predicate, a blind read of an unsettled entity, a\n" +
       "   `select(\"*\")` hand-off, a named select-constant that carries the archive\n" +
       "   column, a schema-less read of an ambiguous table name, another schema's\n" +
