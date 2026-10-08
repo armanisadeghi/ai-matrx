@@ -10,7 +10,9 @@ import {
   Maximize2,
   AlertTriangle,
   Globe,
+  Printer,
 } from "lucide-react";
+import { printPublishedPage } from "@/features/canvas/output/printPage";
 import { useClipboard } from "@ai-matrx/kit/clipboard";
 import { downloadFile } from "@ai-matrx/kit/download";
 import { Button } from "@ai-matrx/design-system/controls";
@@ -341,6 +343,15 @@ const HtmlInlinePreview: React.FC<HtmlInlinePreviewProps> = ({
           title="Download .html"
           aria-label="Download .html"
         />
+        {url ? (
+          <Button
+            variant="quiet"
+            icon={<Printer />}
+            onClick={() => printPublishedPage({ pageUrl: url })}
+            title="Print page"
+            aria-label="Print page"
+          />
+        ) : null}
         <Button
           variant="quiet"
           icon={<Maximize2 />}
