@@ -461,7 +461,7 @@ export function SpaceEditor({ spaceId, initialBlocks, editable, onChange, slash,
           (await getDefaultEmojiPickerItems(editor as never, query)).slice(0, 12).map((e) => ({
             title: e.id,
             icon: <span aria-hidden>{e.id}</span>,
-            onItemClick: () => e.onItemClick(editor as never),
+            onItemClick: () => e.onItemClick(),
           }))
         }
       />
