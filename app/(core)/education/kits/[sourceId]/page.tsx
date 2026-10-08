@@ -30,7 +30,7 @@ export default async function StudyKitPage({
     <div className="scroll-page-end-space h-full overflow-y-auto bg-textured">
       <KitHub
         sourceId={sourceId}
-        sourceType={from ?? "file"}
+        sourceType={from}
         addTarget={addTarget}
       />
     </div>

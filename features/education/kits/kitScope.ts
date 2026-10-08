@@ -160,7 +160,13 @@ export async function renameKitScope(kitId: string, name: string): Promise<void>
 /** Archive the kit itself (restorable); its Sources and aids stay saved. */
 export async function archiveKitScope(kitId: string): Promise<void> {
   const res = await scopeStore.deleteScope(kitId);
-  if (isScopesRpcErr(res)) throw new Error("Could not delete this study kit.");
+  if (isScopesRpcErr(res)) throw new Error("Could not archive this study kit.");
+}
+
+/** Bring an archived kit back with all its Sources and aids. */
+export async function restoreKitScope(kitId: string): Promise<void> {
+  const res = await scopeStore.restoreScope(kitId);
+  if (isScopesRpcErr(res)) throw new Error("Could not put this study kit back.");
 }
 
 /**

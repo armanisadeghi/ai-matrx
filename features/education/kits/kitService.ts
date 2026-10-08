@@ -43,6 +43,7 @@ import {
   KIT_TOKEN,
   addKitSource,
   archiveKitScope,
+  restoreKitScope,
   createKitScope,
   edgeKitId,
   kitSourcesFromEdges,
@@ -564,9 +565,18 @@ export async function listKits(): Promise<StudyKit[]> {
     .sort((a, b) => (b.artifacts[0]?.createdAt ?? b.createdAt).localeCompare(a.artifacts[0]?.createdAt ?? a.createdAt));
 }
 
-/** The kit hub route for an anchor. */
+/**
+ * Open a kit from its id alone (a link without `?from=`): a kit scope first,
+ * then the older single-anchor kit of a stored file. An explicit type is honoured.
+ */
+export async function resolveKit(sourceId: string, sourceType?: string): Promise<StudyKit | null> {
+  if (sourceType) return readKit(sourceType, sourceId);
+  return (await readScopeKit(sourceId)) ?? (await readKit("file", sourceId));
+}
+
+/** The kit hub route for an anchor. A kit scope's id alone opens it. */
 export function kitHref(sourceType: string, sourceId: string): string {
-  return sourceType === "file"
+  return sourceType === "file" || sourceType === KIT_TOKEN
     ? `/education/kits/${sourceId}`
     : `/education/kits/${sourceId}?from=${encodeURIComponent(sourceType)}`;
 }
@@ -678,11 +688,17 @@ export async function removeKitMembersVersioned(
 }
 
 /**
- * Delete this association-backed kit by removing all of its membership edges.
- * The source material and every saved study aid remain intact.
+ * Archive a kit (never a hard delete). A kit scope is archived whole: its
+ * Source and aid links stay exactly as they are, so `restoreKit` brings the kit
+ * back complete. An older single-anchor kit has no record of its own, so its
+ * grouping links are removed. Sources and saved study aids stay saved either way.
  */
-export async function deleteKit(kit: StudyKit, expectedFingerprint = kitMembershipFingerprint(kit)): Promise<void> {
+export async function archiveKit(kit: StudyKit, expectedFingerprint = kitMembershipFingerprint(kit)): Promise<void> {
   const current = await currentKitOrThrow(kit, expectedFingerprint);
+  if (kit.sourceType === KIT_TOKEN) {
+    await archiveKitScope(kit.sourceId);
+    return;
+  }
   let completed = 0;
   for (const artifact of current.artifacts) {
     try {
@@ -692,7 +708,12 @@ export async function deleteKit(kit: StudyKit, expectedFingerprint = kitMembersh
       throw new Error(`Removed ${completed} of ${current.artifacts.length} study aids from this kit. The remaining aids still belong to it; reload the kit and try again.`);
     }
   }
-  if (kit.sourceType === KIT_TOKEN) await archiveKitScope(kit.sourceId);
+}
+
+/** Undo `archiveKit` for a kit scope. */
+export async function restoreKit(kit: Pick<StudyKit, "sourceType" | "sourceId">): Promise<void> {
+  if (kit.sourceType !== KIT_TOKEN) throw new Error("This kit can't be put back. Add its aids again.");
+  await restoreKitScope(kit.sourceId);
 }
 
 /**

@@ -12,9 +12,10 @@ import Link from "next/link";
 import { Package } from "lucide-react";
 import { Button } from "@ai-matrx/design-system";
 import { Skeleton } from "@ai-matrx/design-system";
+import SuspenseLoader from "@/components/loaders/SuspenseLoader";
 import { EducationToolHeader } from "@/features/education/components/EducationToolHeader";
 import { TARGET_PRESENTATION } from "@/features/education/convert/targetPresentation";
-import { deleteKit, kitMembershipFingerprint, listKits, kitHref, renameKit, type StudyKit } from "../kitService";
+import { archiveKit, kitMembershipFingerprint, listKits, kitHref, renameKit, type StudyKit } from "../kitService";
 import { AGENT_ICON } from "@/components/icons/domain-icons";
 import { SurfaceRuntimeProvider } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import {
@@ -150,7 +151,7 @@ export function KitsHome() {
     },
     delete: {
       parse: (value) => parseKitDeletes(value, kits),
-      run: async (plan) => { await deleteKit(plan.kit, plan.fingerprint); await reload(); return { id: plan.kit.sourceId, name: plan.kit.title }; },
+      run: async (plan) => { await archiveKit(plan.kit, plan.fingerprint); await reload(); return { id: plan.kit.sourceId, name: plan.kit.title }; },
       nameOf: (plan) => plan.kit.title,
     },
   }, refuseSurfaceWrite);
@@ -182,9 +183,17 @@ export function KitsHome() {
         />
 
         {loading ? (
-          <div className="space-y-2">
-            <Skeleton className="h-16 w-full" />
-            <Skeleton className="h-16 w-full" />
+          <div className="space-y-2" role="status" aria-busy="true" aria-label="Loading your study kits">
+            <SuspenseLoader centered={false} message="Loading your study kits…" />
+            {[0, 1, 2].map((row) => (
+              <div key={row} className="flex items-center gap-3 rounded-xl border border-border bg-card p-4">
+                <Skeleton className="h-9 w-9 shrink-0 rounded-lg" />
+                <span className="min-w-0 flex-1 space-y-2">
+                  <Skeleton className="h-4 w-2/5" />
+                  <Skeleton className="h-3 w-1/5" />
+                </span>
+              </div>
+            ))}
           </div>
         ) : error ? (
           <div className="flex flex-col items-center gap-3 rounded-xl border border-amber-500/40 bg-amber-500/10 p-10 text-center">
