@@ -114694,6 +114694,25 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      _automation_run_costs: {
+        Args: { p_automation_id?: string; p_org_id: string; p_since: string }
+        Returns: {
+          agent_ids: string[]
+          automation_id: string
+          automation_kind: string
+          conversation_id: string
+          cost: number
+          mandates: string[]
+          max_loop: number
+          models: string[]
+          run_at: string
+          run_id: string
+          status: string
+          turns: number
+          workflow_run_id: string
+        }[]
+      }
+      _is_premium_model: { Args: { p_name: string }; Returns: boolean }
       admin_disable_task: {
         Args: { p_reason?: string; p_task_id: string }
         Returns: Json
@@ -114701,6 +114720,64 @@ export type Database = {
       admin_mark_run_failed: {
         Args: { p_reason: string; p_run_id: string }
         Returns: Json
+      }
+      automation_cost_rollup: {
+        Args: { p_days?: number; p_org_id?: string }
+        Returns: {
+          agents: Json
+          approval: string
+          approved_at: string
+          approved_by: string
+          automation_id: string
+          automation_kind: string
+          avg_run_cost: number
+          avg_turns: number
+          cost: number
+          cost_7d: number
+          description: string
+          enabled: boolean
+          est_monthly_cost: number
+          last_run_at: string
+          last_run_cost: number
+          mandates: string[]
+          max_loop: number
+          max_run_cost: number
+          max_turns: number
+          models: string[]
+          name: string
+          organization_id: string
+          organization_is_system: boolean
+          organization_name: string
+          owner_email: string
+          owner_is_platform_admin: boolean
+          owner_user_id: string
+          premium_models: string[]
+          runs: number
+          runs_7d: number
+          trigger_config: Json
+          trigger_type: string
+          workflow_definition_id: string
+        }[]
+      }
+      automation_cost_runs: {
+        Args: {
+          p_automation_id: string
+          p_automation_kind: string
+          p_days?: number
+        }
+        Returns: {
+          agent_ids: string[]
+          conversation_id: string
+          cost: number
+          mandates: string[]
+          max_loop: number
+          models: string[]
+          run_at: string
+          run_id: string
+          status: string
+          turns: number
+          workflow_run_id: string
+        }[]
       }
       realtime_topic_admits: { Args: { p_topic: string }; Returns: boolean }
       sch_run_claim: {

@@ -66,6 +66,8 @@ export function adminSchedulingTabFromPathname(
       return "tasks";
     case "runs":
       return "runs";
+    case "costs":
+      return "costs";
     case "system-jobs":
       return "system_jobs";
     case "orphan-leases":

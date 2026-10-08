@@ -64,6 +64,9 @@ import { recordToast, toast } from "@/lib/toast";
 import { MatrxDataTable } from "@ai-matrx/design-system/data-table";
 import type { MatrxColumnDef } from "@ai-matrx/design-system/data-table/types";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
+import { automationCostColumns } from "@/features/scheduling/components/costs/AutomationCostColumns";
+import { useAutomationCosts } from "@/features/scheduling/components/costs/AutomationCostTable";
+import { automationCostDetailHref } from "@/features/scheduling/service/automationCosts";
 import type { ContextMenuExtraItem } from "@/features/context-menu-v3/types";
 import {
   listDbJobs,
@@ -158,6 +161,10 @@ export default function SystemJobsPage() {
   const { organizationId, canLoad, organizationRequired, organizationState } =
     useOrganizationRequired();
   const [rows, setRows] = useState<SystemTaskResponse[]>([]);
+  // What each job costs and how it behaves — the shared automation rollup
+  // (scheduler.automation_cost_rollup), keyed by the job's sch_task id.
+  const { rows: costRows, error: costError } = useAutomationCosts(null);
+  const costById = new Map(costRows.map((c) => [c.automation_id, c]));
   const [taxonomyNodes, setTaxonomyNodes] = useState<SystemTaskTaxonomyNode[]>(
     [],
   );
@@ -342,7 +349,12 @@ export default function SystemJobsPage() {
       width: 240,
       cell: (r) => (
         <div className="min-w-0">
-          <div className="font-medium truncate">{r.title}</div>
+          <Link
+            href={automationCostDetailHref("scheduled_task", r.id)}
+            className="block truncate font-medium text-primary hover:underline"
+          >
+            {r.title}
+          </Link>
           {r.description && (
             <div
               className="type-secondary text-muted-foreground line-clamp-1"
@@ -929,7 +941,13 @@ export default function SystemJobsPage() {
 
   return (
     <div className="flex h-full min-h-0 flex-col gap-3 overflow-y-auto p-4">
-      <div className="flex justify-end">
+      <div className="flex items-center justify-end gap-2">
+        {costError && (
+          <span className="text-xs text-destructive">
+            Costs unavailable: {costError}
+            <ErrorAlchemyMenu error={costError} />
+          </span>
+        )}
         <PageCaptureButton />
       </div>
       <div
@@ -947,7 +965,12 @@ export default function SystemJobsPage() {
           <MatrxDataTable
             urlState={{ id: "scheduling-system-jobs" }}
             data={rows}
-            columns={[...(columns), { id: "custom-actions", header: "Actions", sortable: false, filter: false, customActions: (r) => renderRowActions(r) }]}
+            columns={[
+              ...columns.slice(0, 1),
+              ...automationCostColumns<SystemTaskResponse>((r) => costById.get(r.id), "admin"),
+              ...columns.slice(1),
+              { id: "custom-actions", header: "Actions", sortable: false, filter: false, customActions: (r) => renderRowActions(r) },
+            ]}
             getRowId={(r) => r.id}
             isLoading={loading}
             isFetching={fetching}
@@ -1327,7 +1350,9 @@ function DbJobEditDialog({
   onSave: (body: DbJobPatchRequest) => void;
 }) {
   const [schedule, setSchedule] = useState(job.schedule);
-  const [taxonomyNodeId, setTaxonomyNodeId] = useState(job.taxonomy_node_id);
+  // An unclassified job has no node (null on the wire); the Select shows its placeholder.
+  const savedNodeId = job.taxonomy_node_id ?? undefined;
+  const [taxonomyNodeId, setTaxonomyNodeId] = useState(savedNodeId);
   const [formError, setFormError] = useState<string | null>(null);
 
   const hint = cronHint(schedule);
@@ -1344,13 +1369,13 @@ function DbJobEditDialog({
       setFormError("Choose a Domain, Feature, or Sub-feature.");
       return;
     }
-    if (next === job.schedule && taxonomyNodeId === job.taxonomy_node_id) {
+    if (next === job.schedule && taxonomyNodeId === savedNodeId) {
       onClose();
       return;
     }
     onSave({
       ...(next !== job.schedule ? { schedule: next } : {}),
-      ...(taxonomyNodeId !== job.taxonomy_node_id
+      ...(taxonomyNodeId !== savedNodeId
         ? { taxonomy_node_id: taxonomyNodeId }
         : {}),
     });

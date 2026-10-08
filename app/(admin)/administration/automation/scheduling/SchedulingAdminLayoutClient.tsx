@@ -10,6 +10,7 @@ import {
   CalendarCheck,
   CalendarClock,
   CalendarRange,
+  DollarSign,
   LayoutDashboard,
   ListChecks,
   ServerCog,
@@ -39,6 +40,11 @@ const NAV_ITEMS: AdminSectionTab[] = [
     label: "Runs",
     href: "/administration/automation/scheduling/runs",
     icon: Activity,
+  },
+  {
+    label: "Costs",
+    href: "/administration/automation/scheduling/costs",
+    icon: DollarSign,
   },
   {
     label: "System jobs",
