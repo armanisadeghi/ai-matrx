@@ -18,7 +18,7 @@
 
 import { cn } from "@/lib/utils";
 import { BasicMarkdownContent } from "@ai-matrx/rich-content/display/chat-markdown/BasicMarkdownContent";
-import { stripThinkingStreaming } from "@ai-matrx/kit/text";
+import { stripThinkingStreaming } from "@ai-matrx/content-ir/source";
 import type { WorkflowNodeStreamEntry } from "@ai-matrx/chat/agents/types/request.types";
 import { ROLES, STRUCTURED_ROLES, type RoleKey } from "../types";
 import { RoleAvatar } from "./RoleAvatar";
