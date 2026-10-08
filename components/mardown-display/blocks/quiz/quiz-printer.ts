@@ -6,7 +6,7 @@
 
 import { buildPrintDocument, openPrintWindow, type BlockPrinter } from "@ai-matrx/print/core";
 import { escapeHtml } from "@ai-matrx/kit/html-escape";
-import type { RawQuizJSON } from "./quiz-parser";
+import { normalizeRawQuizJSON, type RawQuizJSON } from "./quiz-parser";
 
 export type QuizVariant = "with-answers" | "blank" | "answer-key";
 
@@ -190,7 +190,7 @@ export const quizPrinter: BlockPrinter = {
         },
     ],
     print(data: unknown, variantId: string = "blank") {
-        const quiz = data as RawQuizJSON;
+        const quiz = normalizeRawQuizJSON(data);
         if (!quiz?.multipleChoice?.length) {
             openPrintWindow(
                 buildPrintDocument("<p>No quiz data available to print.</p>", "Quiz", QUIZ_STYLES),
@@ -220,7 +220,7 @@ export const quizPrinter: BlockPrinter = {
     },
     // Inside a message's print: the student version (the answers are the quiz's own print).
     toPrintHtml(data: unknown) {
-        const quiz = data as RawQuizJSON;
+        const quiz = normalizeRawQuizJSON(data);
         if (!quiz?.multipleChoice?.length) return null;
         return { html: `<style>${QUIZ_STYLES}</style>${renderBlank(quiz)}` };
     },
