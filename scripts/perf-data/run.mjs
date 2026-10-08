@@ -1,10 +1,12 @@
 #!/usr/bin/env node
-// pnpm perf:data [--doors] [--pages] [--calls 30] [--installs 3] [--base http://s96c6068c.localhost:3001] [--json out.json]
+// pnpm perf:data [--doors] [--pages] [--calls 30] [--installs 3] [--base http://s96c6068c.localhost:3001] [--json out.json] [--record]
+// --record: posts the rows into the performance-watch history (source 'cli', with the git SHA) through the
+// service-only ops.perf_cli_ingest, using the service key from env (never printed). Shown, never judged.
 // Prints door latency and page load against scripts/perf-data/budgets.json. Warns, never blocks (exit 0 always).
 import fs from "node:fs";
 import { measureDoors } from "./doors.mjs";
 import { measurePages } from "./pages.mjs";
-import { signIn, UA, table, verdict, budgets } from "./lib.mjs";
+import { signIn, UA, table, verdict, budgets, recordReport } from "./lib.mjs";
 
 const arg = (n, d) => { const i = process.argv.indexOf(`--${n}`); return i < 0 ? d : (process.argv[i + 1]?.startsWith("--") || process.argv[i + 1] === undefined ? true : process.argv[i + 1]); };
 const wantDoors = arg("doors", false) || !arg("pages", false);
@@ -57,6 +59,10 @@ try {
   console.log(`\n${warns.length} over budget (warning only).`);
   const out = arg("json", null);
   if (out && out !== true) fs.writeFileSync(out, JSON.stringify(report, null, 2));
+  if (arg("record", false)) {
+    const r = await recordReport(report);
+    console.log(`Recorded into performance-watch history: ${r.doors} door row(s), ${r.pages} page row(s) at ${r.sha?.slice(0, 7) ?? "no sha"}${r.unmatched_doors?.length ? ` · not watched: ${r.unmatched_doors.join(", ")}` : ""}`);
+  }
 } catch (e) {
   console.log(`perf-data could not finish: ${e?.stack ?? e}`);
   process.exitCode = 1;

@@ -48,3 +48,24 @@ export function table(rows, cols) {
 }
 
 export const verdict = (value, budget) => (budget == null || Number.isNaN(value) ? "n/a" : value <= budget ? "pass" : "WARN");
+
+/**
+ * `--record`: post a report into the performance-watch history as source 'cli' with the git SHA,
+ * through the service-only door ops.perf_cli_ingest (the service key comes from env and is never
+ * printed). Door rows join the admin-seat door watch of the same label; page rows go to page:<name>.
+ */
+export async function recordReport(report) {
+  const url = env.NEXT_PUBLIC_SUPABASE_URL, key = env.SUPABASE_SECRET_KEY;
+  if (!url || !key) throw new Error("perf-data --record: NEXT_PUBLIC_SUPABASE_URL or SUPABASE_SECRET_KEY is missing from .env.local / aidream/.env");
+  const { execFileSync } = await import("node:child_process");
+  let sha = null;
+  try { sha = execFileSync("git", ["rev-parse", "HEAD"], { cwd: root, encoding: "utf8" }).trim(); } catch { sha = null; }
+  const r = await fetch(`${url}/rest/v1/rpc/perf_cli_ingest`, {
+    method: "POST",
+    headers: { "User-Agent": UA, apikey: key, Authorization: `Bearer ${key}`, "Content-Type": "application/json", "Content-Profile": "ops", "Accept-Profile": "ops" },
+    body: JSON.stringify({ p_report: { ...report, sha } }),
+  });
+  const text = await r.text();
+  if (r.status >= 300) throw new Error(`perf-data --record: ops.perf_cli_ingest answered ${r.status} ${text.slice(0, 300)}`);
+  return JSON.parse(text);
+}
