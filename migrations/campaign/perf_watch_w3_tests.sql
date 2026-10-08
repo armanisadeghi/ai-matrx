@@ -26,7 +26,7 @@ begin
   if v_twin is null then raise exception '(m) door:custom.views@member is not declared'; end if;
   v_r := ops.perf_probe_run(v_twin);
   select note into v_note from ops.perf_sample where check_id = v_twin and source = 'probe' order by measured_at desc limit 1;
-  if v_note is null or v_note not like '%seat hugo.waelchi.cfd403@fixtures.aimatrx.com%' then
+  if v_note is null or v_note not like '%seat test@test.com%' then
     raise exception '(m) the member twin was not probed as the member: % / %', v_note, v_r;
   end if;
 
@@ -292,5 +292,35 @@ begin
   raise notice 'PASS (i) CLI door and page rows land as cli samples with the sha, never judged; unmatched doors are named; service-only';
 end
 $i$;
+
+-- ── (r) event markers and the durable member seat ─────────────────────────────────────────────
+do $r$
+declare
+  v_id uuid;
+  v_r jsonb;
+  i int;
+begin
+  v_id := ops.perf_watch_declare('door:test.w3_event', 'door', 'w3 event',
+            '{"schema":"custom","function":"views","argtypes":"uuid, uuid","args":{"p_table_id":"7ea2340a-f0a8-4a4f-a8f6-29c8604d63cd"}}'::jsonb,
+            300, 'p95', 900, 'PERF-WATCH', 'perf');
+  for i in 1..4 loop
+    perform ops.perf_record_sample(v_id, 'probe', jsonb_build_object('n', 10, 'p50_ms', 900, 'p95_ms', 999,
+                                   'measured_at', now() - make_interval(mins => 60 - i)), true);
+  end loop;
+  v_r := ops.perf_marker('door:test.w3_event', now() - interval '10 minutes', 'w3 test switch');
+  if (v_r->>'marked')::int <> 1 then raise exception '(r) perf_marker marked %', v_r; end if;
+  if not exists (select 1 from ops.perf_sample where check_id = v_id and metadata->>'perf_marker_kind' = 'event' and note = 'w3 test switch') then
+    raise exception '(r) no event marker row';
+  end if;
+  if ops.perf_judge(v_id)->>'state' <> 'over_budget' then
+    raise exception '(r) an event marker cut the judged history: %', ops.perf_judge(v_id);
+  end if;
+  if exists (select 1 from ops.proof_check where slug like 'door:%@member%' and deleted_at is null and perf_subject->>'seat_email' <> 'test@test.com') then
+    raise exception '(r) a member twin is not on the durable seat test@test.com';
+  end if;
+  if has_function_privilege('authenticated', 'ops.perf_marker(text, timestamptz, text)', 'execute') then raise exception '(r) clients may write markers'; end if;
+  raise notice 'PASS (r) event markers land on matching watches without cutting judged history; member twins sit on test@test.com';
+end
+$r$;
 
 rollback;

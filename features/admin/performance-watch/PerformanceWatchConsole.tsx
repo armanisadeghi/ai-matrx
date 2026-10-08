@@ -37,6 +37,7 @@ import {
   stateCounts,
   stateHistory,
   subjectFields,
+  isMarkerSample,
   summarizeWatches,
   watchReason,
   type PerfSample,
@@ -753,6 +754,13 @@ function HistoryChart({ samples, row }: { samples: PerfSample[]; row: WatchRow }
         {w.perf_baseline_ms != null ? (
           <line x1={PAD.l} x2={CHART_W - PAD.r} y1={y(w.perf_baseline_ms)} y2={y(w.perf_baseline_ms)} className="stroke-muted-foreground" strokeWidth={1} strokeDasharray="1 3" />
         ) : null}
+        {/* Markers (a re-declared subject, or an event any lane recorded through ops.perf_marker): a vertical line. */}
+        {ordered.filter(isMarkerSample).map((m) => (
+          <line key={m.id} x1={x(Date.parse(m.measured_at))} x2={x(Date.parse(m.measured_at))} y1={PAD.t} y2={CHART_H - PAD.b}
+            className="stroke-muted-foreground" strokeWidth={1} strokeDasharray="2 2">
+            <title>{m.note ?? "marker"}</title>
+          </line>
+        ))}
         {series.map((s) => {
           const pts = ordered
             .map((p) => ({ t: Date.parse(p.measured_at), v: s.pick(p) }))

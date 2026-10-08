@@ -313,3 +313,8 @@ export function subjectFields(watch: Pick<PerfWatch, "perf_kind" | "perf_subject
   }
   return out;
 }
+
+/** A marker sample (metadata.perf_marker): a re-declared subject or an event, never a measurement. */
+export function isMarkerSample(sample: Pick<PerfSample, "metadata">): boolean {
+  return isRecord(sample.metadata) && sample.metadata.perf_marker === true;
+}

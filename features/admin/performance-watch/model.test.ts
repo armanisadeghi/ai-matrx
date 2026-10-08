@@ -1,6 +1,7 @@
 import {
   budgetTone,
   isLargeTwin,
+  isMarkerSample,
   judgedValue,
   measuresLine,
   subjectFields,
@@ -236,5 +237,13 @@ describe("judgedValue p75 (vitals)", () => {
       metadata: { p75_ms: 3100 } } as PerfSample;
     expect(judgedValue(sample, "p75")).toBe(3100);
     expect(judgedValue({ ...sample, metadata: {} }, "p75")).toBeNull();
+  });
+});
+
+describe("isMarkerSample", () => {
+  it("knows a marker by metadata.perf_marker", () => {
+    expect(isMarkerSample({ metadata: { perf_marker: true, perf_marker_kind: "event" } })).toBe(true);
+    expect(isMarkerSample({ metadata: {} })).toBe(false);
+    expect(isMarkerSample({ metadata: null })).toBe(false);
   });
 });
