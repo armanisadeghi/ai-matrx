@@ -222,6 +222,7 @@ export function TriggersManager({
         [
           "cost_ai",
           "cost_total",
+          "cost_approval",
           "cost_est_month",
           "cost_avg_run",
           "cost_max_run",

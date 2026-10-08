@@ -5,6 +5,8 @@
  * lists automations (Costs tab, System jobs tab, org admin) renders these, so a
  * flag, a link or a number can never disagree between two screens.
  */
+import { RunApprovalCell } from "@/features/admin/spend-approvals/RunApprovalCell";
+import { approvalStatusSync } from "@/features/admin/spend-approvals/spendApprovals";
 import Link from "next/link";
 import { Bot, ScrollText } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -222,6 +224,37 @@ export function automationCostColumns<T>(
       filter: "text",
       width: 260,
       cell: (row) => <AutomationFlagBadges row={get(row)} />,
+    },
+    {
+      id: "cost_approval",
+      header: "Approval",
+      accessorFn: (row) => {
+        const r = get(row);
+        return r
+          ? approvalStatusSync(seat === "admin" ? null : r.organization_id, [[r.automation_kind, r.automation_id]])
+          : "none";
+      },
+      filter: "select",
+      filterOptions: [
+        { value: "waiting", label: "Waiting" },
+        { value: "approved", label: "Approved" },
+        { value: "rejected", label: "Rejected" },
+        { value: "none", label: "None" },
+      ],
+      width: 100,
+      cell: (row) => {
+        const r = get(row);
+        if (!r) return <span className="text-xs text-muted-foreground">—</span>;
+        return (
+          <RunApprovalCell
+            orgId={seat === "admin" ? null : r.organization_id}
+            subjects={[[r.automation_kind, r.automation_id]]}
+            maxRunCost={r.max_run_cost}
+            seat={seat}
+            orgSlug={orgSlug}
+          />
+        );
+      },
     },
     {
       id: "cost_total",

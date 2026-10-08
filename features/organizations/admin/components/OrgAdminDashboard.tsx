@@ -15,6 +15,7 @@ import {
   Coins,
   HardDrive,
   Loader2,
+  BadgeCheck,
   ScrollText,
   UserPlus,
   Users,
@@ -33,6 +34,8 @@ import { OrgAdminAuditTable } from "./OrgAdminAuditTable";
 import { AutomationCostTable } from "@/features/scheduling/components/costs/AutomationCostTable";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { orgAgentSpendPath } from "@/features/admin/agent-spend/agentSpend";
+import { orgSpendApprovalsPath } from "@/features/admin/spend-approvals/spendApprovals";
+import { WaitingApprovalsCount } from "@/features/admin/spend-approvals/WaitingApprovalsCount";
 
 function StatTile({
   icon: Icon,
@@ -127,6 +130,11 @@ export function OrgAdminDashboard({ orgId, organization, role }: Props) {
         <div className="flex gap-2">
           <Button icon={<Coins />} variant="outline" asChild>
             <Link href={orgAgentSpendPath(organization.slug)}>AI spend</Link>
+          </Button>
+          <Button icon={<BadgeCheck />} variant="outline" asChild>
+            <Link href={orgSpendApprovalsPath(organization.slug)}>
+              Spend approvals <WaitingApprovalsCount orgId={organization.id} />
+            </Link>
           </Button>
           <Button icon={<CalendarClock />} variant="outline" onClick={() => setShowAutomations((s) => !s)}>
             Automations

@@ -18,6 +18,8 @@ import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { Cost } from "@/components/cost/Cost";
 import { useCostDisplay } from "@/components/cost/useCostDisplay";
 import { usageViewHref } from "@/features/admin/usage-drill/usageLinks";
+import { RunApprovalCell } from "@/features/admin/spend-approvals/RunApprovalCell";
+import { approvalStatusSync } from "@/features/admin/spend-approvals/spendApprovals";
 import { orgAdminMemberHref } from "@/features/organizations/admin/routes";
 import {
   TEST_ACCOUNT_EMAILS,
@@ -185,6 +187,28 @@ export function AgentSpendBoard({
       filter: "text",
       width: 260,
       cell: (r) => <SpendSubject row={r} seat={seat} orgSlug={orgSlug} days={days} />,
+    },
+    {
+      id: "approval",
+      header: "Approval",
+      accessorFn: (r) => approvalStatusSync(orgId, [["mandate", r.mandate_key], ["agent", r.agent_id]]),
+      filter: "select",
+      filterOptions: [
+        { value: "waiting", label: "Waiting" },
+        { value: "approved", label: "Approved" },
+        { value: "rejected", label: "Rejected" },
+        { value: "none", label: "None" },
+      ],
+      width: 100,
+      cell: (r) => (
+        <RunApprovalCell
+          orgId={orgId}
+          subjects={[["mandate", r.mandate_key], ["agent", r.agent_id]]}
+          maxRunCost={r.max_run_cost}
+          seat={seat}
+          orgSlug={orgSlug}
+        />
+      ),
     },
     {
       id: "flags",
