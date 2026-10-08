@@ -190,6 +190,8 @@ and admin/user route families are live. Remaining migration work is tracked in:
 
 ## Change log
 
+- `2026-10-08` — claude (lane Z2): `/applets/manage/[id]/code` opens on the owner's view — the Applet and "Change it by talking" (`AppletBuilder`, `applets.build`) — and the editor workspace (file tree, terminal, coding chat) mounts only after "Show code" (`?show=code`). Guard: `AppletEditPageClient.test.tsx`. The builder's `checkBuildAnswer` refuses a bare `<textarea>`/`<Textarea>` (Fix-it names `<WritingBox>`); Settings › Tags is a ProInput.
+
 - `2026-10-07` — claude (lane K, page-pass): type list + record, posture sharp after Linear. `/applets` moved onto `EntityListPage` (`features/applets/browse/`: memory service over a complete `app.definition` read, lanes All / Mine / Public, organization filter, Archived filter with Restore for the maker, one "New Applet", one list copy control, one row menu replacing ten card icons, status "Draft"/"Published"); `AppletsGrid`/`AppletListCard`/`AppletsGridSkeleton` deleted. Owner pages: `AppletHeader` on `RecordPageHeader` (Applets crumb, Draft/Published), Overview drops the body copies of the header modes, file names and raw job keys, compact "No jobs"; Settings' first sub-tab is "Details", archive copy names where the owner restores it.
 
 - `2026-10-07` — claude (lane H): one address per Applet. Signed-out visitors of a published public Applet run it at `/applets/<slug>` on the guest lane (`resolveAppletView`); `(link)/p/[slug]` deleted, every `/p/<slug>` link, the embed snippet and the sitemap repointed; `showsAppletIntro` removed.

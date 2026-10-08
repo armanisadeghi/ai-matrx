@@ -1,6 +1,10 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
+import { usePathname, useSearchParams } from "next/navigation";
+import { Code2, Eye } from "lucide-react";
+import { Button } from "@ai-matrx/design-system/controls";
+import { AppletBuilder } from "@/features/applets-host/builder/AppletBuilder";
 import { useAppDispatch, useAppStore } from "@/lib/redux/hooks";
 import { setOpen as setBottomOpen } from "@/features/code/redux/terminalSlice";
 import { CodeWorkspaceRoute } from "@/features/code/host/CodeWorkspaceRoute";
@@ -19,7 +23,56 @@ interface AppletEditPageClientProps {
   app: AppletRow;
 }
 
+/** `?show=code` opens the code; anything else is the owner's view. */
+export const SHOW_CODE_PARAM = "show";
+
+/**
+ * The Code page an Applet's owner sees: the Applet itself and "Change it by
+ * talking" (the builder, `applets.build`) — no file tree, no terminal, no
+ * editor words. The code sits behind one explicit "Show code" for anyone who
+ * wants to read or edit it.
+ */
 export function AppletEditPageClient({ app }: AppletEditPageClientProps) {
+  const searchParams = useSearchParams();
+  const pathname = usePathname();
+  const [showCode, setShowCode] = useState(
+    searchParams.get(SHOW_CODE_PARAM) === "code",
+  );
+  const toggle = () => {
+    const next = !showCode;
+    setShowCode(next);
+    // Keep the choice in the address (a refresh stays where she was); the
+    // workspace's own keys are dropped when she leaves the code.
+    const params = new URLSearchParams(next ? searchParams.toString() : "");
+    if (next) params.set(SHOW_CODE_PARAM, "code");
+    const query = params.toString();
+    window.history.replaceState(null, "", query ? `${pathname}?${query}` : pathname);
+  };
+  return (
+    <div className="flex h-full min-h-0 flex-col">
+      <div className="flex shrink-0 items-center justify-end gap-2 border-b border-border px-3 py-1.5">
+        <Button
+          variant="quiet"
+          icon={showCode ? <Eye /> : <Code2 />}
+          onClick={toggle}
+          aria-pressed={showCode}
+        >
+          {showCode ? "Hide code" : "Show code"}
+        </Button>
+      </div>
+      <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+        {showCode ? (
+          <AppletCodeWorkspace app={app} />
+        ) : (
+          <AppletBuilder appletId={app.id} />
+        )}
+      </div>
+    </div>
+  );
+}
+
+/** The code itself — the editor workspace, only after "Show code". */
+function AppletCodeWorkspace({ app }: AppletEditPageClientProps) {
   const store = useAppStore();
   const dispatch = useAppDispatch();
   const openSourceEntry = useOpenSourceEntry();
