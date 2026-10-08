@@ -160,6 +160,7 @@ export function DrillExplorer({
   siblings,
   groupLabel,
   pageWhere: pageWhereProp,
+  pageWindow,
   base,
   surfaceName,
 }: DrillExplorerProps) {
@@ -184,6 +185,15 @@ export function DrillExplorer({
   // WHAT THE OPEN VIEW ASKS BEYOND THE ADDRESS (VERIFY-DRILL-WAVE1 F3): a declared view's list and
   // range filters, group limit and thresholds ride beside the address question — asked with every
   // request and said on screen — until another view opens or the person drops them.
+  // THE PAGE'S WINDOW IS FOLLOWED (lane DRILL-LIVE-FIX-2 #4): on mount and whenever the page's control moves it
+  const followedWindow = useRef<string | null | undefined>(undefined);
+  useEffect(() => {
+    if (pageWindow === undefined || followedWindow.current === pageWindow) return;
+    followedWindow.current = pageWindow;
+    if ((asked.window ?? null) !== pageWindow) setQuestion({ ...asked, window: pageWindow });
+    // follows the page's window only
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pageWindow]);
   const [carried, setCarried] = useState<DrillCarried | null>(null);
   // WHICH VIEW IS OPEN (VERIFY-DRILL-WAVE2 W2-1): named in the address, so the link reopens the view
   // whole (what it carries included) and Explain this tells a model exactly what was answered.

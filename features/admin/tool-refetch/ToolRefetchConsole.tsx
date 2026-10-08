@@ -728,7 +728,7 @@ export function ToolRefetchConsole() {
 
       {/* Sources: chat.vw_tool_refetch_summary (all time), chat.vw_tool_refetch + chat.tool_call for windows. */}
       {/* The same numbers drilled by tool, conversation and day (drill definition tool_refetch). */}
-      <ToolRefetchExplorer />
+      <ToolRefetchExplorer window={win} />
     </div>
   );
 }

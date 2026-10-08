@@ -275,6 +275,13 @@ export interface DrillExplorerProps {
    */
   pageWhere?: Record<string, unknown> | undefined;
   /**
+   * THE PAGE'S WINDOW (lane DRILL-LIVE-FIX-2 #4): a page whose own control picks the window (the tool
+   * re-fetch table's 7 / 30 / 90 days / All) hands it here, and the explorer follows it — on mount and
+   * whenever it changes. The explorer's own window control still moves it until the page's changes
+   * again. `null` = all time; absent = the explorer keeps its own.
+   */
+  pageWindow?: string | null | undefined;
+  /**
    * THE HOST'S FIXED FILTERS (lane DRILL-PRIMITIVE-3): one site's id, applied to every ask like
    * `pageWhere`, and said first in the trail as a crumb no click removes.
    */

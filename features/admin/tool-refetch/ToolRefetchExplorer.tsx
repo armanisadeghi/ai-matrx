@@ -24,7 +24,8 @@ const FIRST_QUESTION: MatrxDrillQuestion = {
   window: "30d",
 };
 
-export function ToolRefetchExplorer() {
+/** The explorer follows the table's window (lane DRILL-LIVE-FIX-2 #4): "all" is all time. */
+export function ToolRefetchExplorer({ window }: { window?: "7d" | "30d" | "90d" | "all" } = {}) {
   return (
     <DrillExplorer
       source={TOOL_REFETCH_SOURCE}
@@ -34,6 +35,7 @@ export function ToolRefetchExplorer() {
       title="Tool re-fetch"
       rootLabel="Every tool call"
       firstQuestion={FIRST_QUESTION}
+      {...(window ? { pageWindow: window === "all" ? null : window } : {})}
       names={{ person: usageNameResolver(SYSTEM_ORGANIZATION_ID, "person") }}
       headline={{ measure: "repeats", also: ["calls", "same_data_repeats"] }}
       rowNoun="call"
