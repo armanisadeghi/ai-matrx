@@ -41,6 +41,7 @@ import {
 import { waitForAuthReady } from "@/lib/api/call-api";
 import { selectAccessToken } from "@/lib/redux/selectors/userSelectors";
 import { captureError } from "@/lib/diagnostics/errorCaptureStore";
+import { toast } from "@/lib/toast";
 import { provideStoredComponentScopeModules } from "@/lib/code-runtime/stored-scope";
 import { AppletKind } from "@/features/applets-host/AppletForeignKind";
 import { DataPage } from "@/features/applets/embed/DataPage";
@@ -330,6 +331,11 @@ export function AppletHostMount({
             renderWritingBox: (props) => (
               <AppletWritingBox {...props} surfaceName={record.surfaceName} />
             ),
+            // A save the store refused is said where she sees it, in the store's sentence — never silent,
+            // whether or not the Applet shows its own writeError (empty date, social planner 2026-10-08).
+            announceRefusal: (error) => {
+              toast.error(error.message);
+            },
             // Every <Link> carries its real URL (open in new tab, middle-click). /p/<slug> has no sub-paths, so the
             // Applet's pages are addressed at the base path (`/applets/<slug>` by default) there, embedded and in preview.
             hrefFor: (to: string) =>
