@@ -37,6 +37,7 @@ export function WarmupHost({ children }: { children: ReactNode }) {
         const state = store.getState();
         return !!selectAccessToken(state) && !!selectOrganizationId(state);
       },
+      organizationId: () => selectOrganizationId(store.getState()),
       scope: () => {
         const state = store.getState();
         const userId = selectUserId(state);
@@ -45,6 +46,20 @@ export function WarmupHost({ children }: { children: ReactNode }) {
       },
     }),
   );
+
+  // The person and the active org arrive after first paint (storage, network):
+  // tell the warm-up on every change so queued warms go out the moment both are
+  // ready, and pages re-issue theirs for a new org.
+  useEffect(() => {
+    let last = warmup.currentScope();
+    warmup.notifyScopeChanged();
+    return store.subscribe(() => {
+      const next = warmup.currentScope();
+      if (next === last) return;
+      last = next;
+      warmup.notifyScopeChanged();
+    });
+  }, [store, warmup]);
 
   useEffect(() => {
     try {

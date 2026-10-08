@@ -2,6 +2,7 @@
  * Roles / host absence and leaving / ending — P0 states of catalog categories
  * "roles-host-absence" and "leaving-ending".
  */
+import { formatDurationMs } from "@ai-matrx/kit/format";
 import { TIMEOUTS } from "../lib/env";
 import {
   endForEveryone,
@@ -95,7 +96,7 @@ scenario(
     await guest.closeTab();
     await host.closeTab();
     await host.newTab();
-    host.note(`room abandoned; waiting ${TIMEOUTS.emptyRoomEndMs / 1000}s of real time`);
+    host.note(`room abandoned; waiting ${formatDurationMs(TIMEOUTS.emptyRoomEndMs, { style: "compact" })} of real time`);
     await new Promise((r) => setTimeout(r, TIMEOUTS.emptyRoomEndMs));
     // The server ended it by itself, so the next person sees an ended meeting.
     const row = await meetingRow(cast.meeting!);

@@ -2,6 +2,7 @@ import type {
   MatrxColumnDef,
   MatrxDataTableLocalDrillConfig,
 } from "@ai-matrx/design-system/data-table";
+import { formatCount } from "@ai-matrx/kit/format";
 import type { CodexUsageRow } from "@/features/admin/codex-usage/service";
 
 /**
@@ -29,7 +30,6 @@ const credits = new Intl.NumberFormat("en-US", {
   minimumFractionDigits: 2,
   maximumFractionDigits: 2,
 });
-const whole = new Intl.NumberFormat("en-US", { maximumFractionDigits: 0 });
 
 /** Local's `cells` rows are the one flat set every rollup table was a sum of. */
 export function toCodexCells(cells: readonly CodexUsageRow[]): CodexCell[] {
@@ -60,7 +60,7 @@ export function toCodexCells(cells: readonly CodexUsageRow[]): CodexCell[] {
   });
 }
 
-const num = (v: number | null) => (v === null ? "—" : whole.format(v));
+const num = (v: number | null) => formatCount(v);
 
 export const CODEX_COLUMNS: MatrxColumnDef<CodexCell>[] = [
   { accessorKey: "conversation", header: "Conversation", filter: "text", width: 260 },

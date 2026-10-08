@@ -3,6 +3,7 @@
  * (through the UI), plus a cleanup that guarantees the meeting ends.
  */
 import { expect, type Page } from "@playwright/test";
+import { formatDurationMs } from "@ai-matrx/kit/format";
 import type { Actor } from "./actor";
 import { supabasePublic } from "./env";
 import { observe, summarize, type CallPhase, type Observation } from "./observe";
@@ -48,8 +49,8 @@ export async function seeUntil(
     }
     await page.waitForTimeout(500).catch(() => undefined);
   }
-  actor.note(`NEVER SAW ${what} in ${Math.round(timeoutMs / 1000)}s: ${summarize(last)}`);
-  expect(ok(last), `${actor.opts.label} should see ${what} within ${Math.round(timeoutMs / 1000)}s; saw ${summarize(last)}`).toBe(true);
+  actor.note(`NEVER SAW ${what} in ${formatDurationMs(timeoutMs, { style: "compact" })}: ${summarize(last)}`);
+  expect(ok(last), `${actor.opts.label} should see ${what} within ${formatDurationMs(timeoutMs, { style: "compact" })}; saw ${summarize(last)}`).toBe(true);
   return last;
 }
 
@@ -69,11 +70,11 @@ export async function keepsSeeing(
     const o = await observe(page);
     if (!ok(o)) {
       actor.note(`STOPPED seeing ${what}: ${summarize(o)}`);
-      expect(false, `${actor.opts.label} should keep seeing ${what} for ${Math.round(ms / 1000)}s; saw ${summarize(o)}`).toBe(true);
+      expect(false, `${actor.opts.label} should keep seeing ${what} for ${formatDurationMs(ms, { style: "compact" })}; saw ${summarize(o)}`).toBe(true);
     }
     await page.waitForTimeout(1000).catch(() => undefined);
   }
-  actor.note(`kept seeing ${what} for ${Math.round(ms / 1000)}s`);
+  actor.note(`kept seeing ${what} for ${formatDurationMs(ms, { style: "compact" })}`);
 }
 
 /** Host: /meetings → Start now (picking an organization if asked) → the meeting's pre-join. */

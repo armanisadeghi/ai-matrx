@@ -21,6 +21,7 @@ import { Tabs } from "@ai-matrx/design-system/controls";
 import { KpiTile } from "@/components/official/kpi/KpiTile";
 import { UserAcquisitionExplorer, useAcquisitionTotals, useFocusedPersonName } from "./UserAcquisitionExplorer";
 import { MatrxDataTable } from "@ai-matrx/design-system/data-table";
+import { formatCount } from "@ai-matrx/kit/format";
 import type { MatrxColumnDef } from "@ai-matrx/design-system/data-table/types";
 import { useOptionalCanvas } from "@ai-matrx/canvas/react";
 import { openCanvasItem } from "@/features/canvas/host/openCanvasItem";
@@ -595,7 +596,7 @@ export function UserAcquisitionTableClient() {
         />
         {view === "list" && listCap ? (
           <span className="text-xs text-muted-foreground">
-            Newest {listCap.loaded.toLocaleString()} of {listCap.total.toLocaleString()} guests listed
+            Newest {formatCount(listCap.loaded)} of {formatCount(listCap.total)} guests listed
           </span>
         ) : null}
       </div>

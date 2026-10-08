@@ -8,7 +8,7 @@ import { readFileSync } from "node:fs";
 import path from "node:path";
 import { plainTitleFromMarkdown } from "@ai-matrx/rich-content/markdown-core/plain-title";
 import { kindTextLabel } from "../surfaces/kind-text-label";
-import { conversationTitleText } from "@ai-matrx/chat/utils/content-ir/surfaces/kind-text-label";
+import { conversationTitleText } from "@ai-matrx/content-ir/surfaces";
 import { mapRpcRowToConversationListItem } from "@ai-matrx/chat/agents/redux/conversation-list/conversation-list.thunks";
 
 const KIND = '{"__kind":"flashcard_set","title":"Cell biology","cards":[{"front":"a","back":"b"}]}';

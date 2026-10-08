@@ -42,6 +42,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { MatrxDrillChart } from "@ai-matrx/design-system/data-table/drill-chart";
+import { Badge } from "@ai-matrx/design-system/controls";
 import { RefreshCw } from "lucide-react";
 import { formatCount } from "@ai-matrx/kit/format";
 import {
@@ -441,7 +442,6 @@ export function DrillExplorer({
           },
         ]
       : []),
-    ...(behind && asOf ? [{ key: "behind", tone: "warn" as const, attrs: { "data-drill-explorer-behind": "" }, label: "Behind", tip: `Counted through ${clockWords(asOf, zone)}${zone ? ` ${zone}` : ""}` }] : []),
     ...(unread.length > 0
       ? [
           {
@@ -494,9 +494,20 @@ export function DrillExplorer({
           ]}
         />
         <div className="ml-auto flex flex-wrap items-center gap-2 type-secondary text-muted-foreground">
-          <span data-drill-explorer-freshness>
-            {freshness?.recounting ? "Recounting…" : countedThrough ? `Counted through ${clockWords(countedThrough, zone)}` : null}
-          </span>
+          {/* FRESHNESS IS ONE "As of" CHIP (owner ruling 2026-10-08): every number and the records behind
+              it are counted from the same stored facts at that moment; past the stale line it turns amber. */}
+          {freshness?.recounting ? (
+            <Badge data-drill-explorer-freshness>Recounting…</Badge>
+          ) : countedThrough ? (
+            <Badge
+              data-drill-explorer-freshness
+              {...(behind ? { "data-drill-explorer-behind": "" } : {})}
+              tone={behind ? "warning" : "neutral"}
+              title={`Counted through ${clockWords(countedThrough, zone)}${zone ? ` ${zone}` : ""}${behind ? "; the next count is late" : ""}`}
+            >
+              {`As of ${clockWords(countedThrough, zone)}`}
+            </Badge>
+          ) : null}
           {range && freshness?.recount ? (
             <Button
               icon={<RefreshCw />}

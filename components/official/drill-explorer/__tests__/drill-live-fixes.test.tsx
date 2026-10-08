@@ -212,7 +212,6 @@ describe("F3/F4 — the records read in their own noun, with their sums and the 
     expect(host.querySelector("[data-drill-explorer-records-count]")?.textContent).toBe("1,026 executions");
     expect(host.querySelector('[data-drill-explorer-records-sum="cost"]')?.textContent).toMatch(/Cost 3,773,448 points/);
     expect(host.querySelector('[data-drill-explorer-records-sum="requests"]')?.textContent).toMatch(/148 requests/);
-    expect(host.querySelector("[data-drill-explorer-records-settling]")).toBeNull();
     // the pager is the door's: controlled-append over the true total
     const query = tableProps.current!.query as { mode: string; pagination: { totalItems: number; hasNextPage: boolean } };
     expect(query.mode).toBe("controlled-append");
@@ -229,7 +228,7 @@ describe("F3/F4 — the records read in their own noun, with their sums and the 
     act(() => cellRoot.unmount());
   });
 
-  it("a late cost is a Settling badge with both numbers in its tooltip", async () => {
+  it("a records page states its moment as one As of chip, and nothing settles (lane DRILL-FACTS)", async () => {
     const client = {
       drillDescribe: jest.fn(async () => ({ ok: true, data: { grain: "one row per execution of the AI usage ledger" } })),
       drillAsk: jest.fn(async () => ({ ok: true, data: { rows: [] } })),
@@ -242,9 +241,6 @@ describe("F3/F4 — the records read in their own noun, with their sums and the 
           rows: [],
           as_of: "2026-09-30T23:00:00Z",
           measures: { cost: 2, requests: 1 },
-          counted: { cost: 1.5, requests: 1 },
-          settling: { cost: { counted: 1.5, now: 2, difference: 0.5 } },
-          says: "$0.50 more has landed since the count at 23:00 UTC.",
         },
       })),
     };
@@ -264,8 +260,9 @@ describe("F3/F4 — the records read in their own noun, with their sums and the 
       );
     });
     await act(async () => {});
-    const badge = host.querySelector("[data-drill-explorer-records-settling]");
-    expect(badge?.textContent).toMatch(/Settling/);
-    expect(badge?.querySelector("[data-hint]")?.getAttribute("data-hint")).toBe("Cost: counted 30,000 points, now 40,000 points");
+    const chip = host.querySelector("[data-drill-explorer-records-as-of]");
+    expect(chip?.getAttribute("data-matrx-control")).toBe("badge");
+    expect(chip?.textContent).toMatch(/^As of /);
+    expect(host.querySelector('[data-drill-explorer-records-header] [data-hint]')).toBeNull();
   });
 });
