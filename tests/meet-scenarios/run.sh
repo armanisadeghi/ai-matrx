@@ -10,4 +10,4 @@ ROOT="$(cd "$HERE/../.." && pwd)"
 cd "$ROOT"
 ARGS=()
 if [[ $# -gt 0 && "$1" != -* ]]; then ARGS+=(-g "[ ]$1\$"); shift; fi
-exec pnpm exec playwright test -c "$HERE/playwright.config.ts" "${ARGS[@]}" "$@"
+exec pnpm exec playwright test -c "$HERE/playwright.config.ts" ${ARGS[@]+"${ARGS[@]}"} "$@"

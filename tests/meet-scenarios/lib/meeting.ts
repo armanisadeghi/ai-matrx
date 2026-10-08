@@ -204,7 +204,7 @@ export async function endForEveryone(host: Actor, page: Page = host.page): Promi
 
 /** The host's Supabase session, read from their cookie jar (for cleanup only). */
 async function hostSession(host: Actor): Promise<{ token: string; userId: string } | null> {
-  const cookies = (await host.context.cookies()).filter((c) => /^sb-.+-auth-token(\.\d+)?$/.test(c.name));
+  const cookies = (await host.context.cookies()).filter((c) => /^sb-matrx-auth-v2(\.\d+)?$|^sb-.+-auth-token(\.\d+)?$/.test(c.name));
   if (cookies.length === 0) return null;
   cookies.sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true }));
   let raw = cookies.map((c) => c.value).join("");
