@@ -21,7 +21,10 @@ Replay a past sync (for re-testing how conflicts get resolved; commits locally, 
 
 WHAT IT DOES (Arman's sequence, 2026-09-24)
   1. git add -A  +  git commit -m "local work not committed by agents who made them", the body
-     naming the Claude/Codex sessions that edited each file (scripts/find-file-sessions.py)
+     naming the Claude/Codex sessions that edited each file (scripts/find-file-sessions.py) —
+     EXCEPT a file the installed @ai-matrx packages cannot build yet (SWEEP HOLD, see
+     sweep_holds()): it stays uncommitted on disk, named in the output, and goes out on the first
+     sync whose packages serve what it uses
   2. git fetch + git merge origin/main          (this is `git pull --no-rebase`)
      clean  -> go to 4
   3. for every file git stops on:
@@ -39,6 +42,9 @@ WHAT IT DOES (Arman's sequence, 2026-09-24)
      "sync:matrx-packages" (repo root and one level down, e.g. desktop/), run it and commit the
      changed package.json / lockfile. Our packages are not external: a release on stale ones
      breaks (Arman, 2026-09-26). Once per sync; a failed update is announced, never silent.
+     First it waits (max 10 min) for aidream's publish train that started before this sync
+     (wait_for_publish_train()); an update that adds a build failure and fixes none is NOT
+     committed (update_breaks_build()); files held in step 1 are re-swept after an update.
   5. commit the merge, git push. If someone pushed in the meantime, start again at 1.
 
 Nothing is ever lost: every local byte is inside the step-1 commit, forever.
