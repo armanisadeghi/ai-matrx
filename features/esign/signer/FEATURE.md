@@ -24,7 +24,6 @@ doors). Product truth: SPEC-ESIGN in common-docs.
   by default; a code step when the sender asked for one; "Continue here" after a takeover.
 - The sender's preview (`features/esign/preview`, sender lane) renders `SignerSurface` with its own
   in-memory door (`seat: "preview"`).
-- Dev demo: `app/(dev)/demos/esign-signer` over `mocks/` (deleted after the production swap).
 
 ## Key flows
 
@@ -57,9 +56,17 @@ doors). Product truth: SPEC-ESIGN in common-docs.
 - An outsider's ended session (`session_taken_over`, `session_expired`, and the v1
   `link_no_longer_valid`) becomes `SessionEnded`; `OutsiderEntry` re-opens through the link and says
   "dead" only when the link is.
-- The v1 page (`features/esign/signing/`) refuses a v2 map openly (`needsNewSigningPage`) until the
-  swap deletes it.
+- The signature creator stays open until the server holds the mark (`adopted` in
+  `SignerSurface.tsx`): a slow adopt shows "Saving your signature…", a failed one says why in a toast
+  and keeps the mark for Adopt again. Closing it first lost marks on a stalled act.
+- Act arguments sent are exactly the published `EsignActArgs` (`door.ts` `SERVER_ARG_LIST`, checked
+  both ways at type-check). A new server argument fails type-check until listed.
+- A mark applied without a picture on this page (a saved signature: the adopt answer carries no
+  image yet) reads "Signed"/"Initialed", never "Sign here".
 
 ## Change log
 
 - 2026-10-07 — v2 surface, doors, entries, mock demo (esign-parity signer lane).
+- 2026-10-07 — part 2: creator stays open until adopt succeeds (slow/failed acts said); act
+  arguments follow the published types (save to profile now reaches the server); honest "Signed"
+  face for a picture-less mark; mocks, dev demo and the retired v1 `signing/` doc deleted.

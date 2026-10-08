@@ -1,6 +1,62 @@
-import { MOCK_FIELD_MAP } from "./mocks/mockDoor";
+import type { FieldMapV2 } from "../contract/fieldModel";
 import { formatDate, nextField, readEnvelope, readMap, requiredUnits, screenPatch, shownValue } from "./model";
 import { Autosaver } from "./autosave";
+
+// One field of every kind on a two-page document, a second signer, and a radio group — the map the
+// dev demo used before it was retired (esign-parity §17 step 5).
+const ME = "signer-me";
+const CLINIC = "signer-clinic";
+
+function f(
+  id: string,
+  kind: FieldMapV2["fields"][number]["kind"],
+  page: number,
+  x: number,
+  y: number,
+  w: number,
+  h: number,
+  extra: Partial<FieldMapV2["fields"][number]> = {},
+): FieldMapV2["fields"][number] {
+  return { id, kind, signer_id: ME, page, x, y, w, h, required: true, label: "", ...extra };
+}
+
+export const MOCK_FIELD_MAP: FieldMapV2 = {
+  schema_version: 2,
+  fields: [
+    f("f-name", "full_name", 1, 0.215, 0.228, 0.31, 0.026, { label: "Full name" }),
+    f("f-email", "email", 1, 0.18, 0.258, 0.35, 0.026, { label: "Email" }),
+    f("f-company", "company", 1, 0.205, 0.288, 0.33, 0.026, { label: "Company", required: false }),
+    f("f-dob", "date", 1, 0.235, 0.318, 0.24, 0.026, { label: "Date of birth", date_format: "MM/DD/YYYY" }),
+    f("f-visits", "number", 1, 0.345, 0.348, 0.16, 0.026, {
+      label: "Visits per year",
+      number: { min: 0, max: 52, decimals: 0 },
+      required: false,
+    }),
+    f("f-r-phone", "radio", 1, 0.286, 0.43, 0.022, 0.018, { label: "Phone", group_id: "g-contact", option_value: "Phone" }),
+    f("f-r-email", "radio", 1, 0.383, 0.43, 0.022, 0.018, { label: "Email", group_id: "g-contact", option_value: "Email" }),
+    f("f-r-text", "radio", 1, 0.473, 0.43, 0.022, 0.018, { label: "Text", group_id: "g-contact", option_value: "Text" }),
+    f("f-remind", "checkbox", 1, 0.444, 0.46, 0.022, 0.018, { label: "Visit reminders", required: false }),
+    f("f-location", "dropdown", 1, 0.28, 0.49, 0.3, 0.026, {
+      label: "Preferred location",
+      options: ["Downtown", "Riverside", "North Hills", "Telehealth"],
+    }),
+    f("f-notes", "text", 1, 0.118, 0.565, 0.6, 0.06, {
+      label: "Notes for the care team",
+      multiline: true,
+      max_length: 500,
+      placeholder: "Allergies, access needs, anything we should know",
+      required: false,
+    }),
+    f("f-init-1", "initials", 1, 0.478, 0.678, 0.08, 0.032, { label: "Initials 1" }),
+    f("f-privacy", "checkbox", 2, 0.37, 0.18, 0.022, 0.018, { label: "Privacy notice" }),
+    f("f-sign", "signature", 2, 0.273, 0.226, 0.3, 0.045, { label: "Signature 1" }),
+    f("f-date", "date_signed", 2, 0.6, 0.235, 0.16, 0.026, { label: "Date signed", date_format: "MM/DD/YY" }),
+    f("f-init-2", "initials", 2, 0.19, 0.295, 0.08, 0.032, { label: "Initials 2" }),
+    { ...f("c-sign", "signature", 2, 0.33, 0.377, 0.28, 0.045, { label: "Signature" }), signer_id: CLINIC },
+    { ...f("c-date", "date_signed", 2, 0.6, 0.386, 0.16, 0.026, { label: "Date signed" }), signer_id: CLINIC },
+  ],
+  groups: [{ id: "g-contact", kind: "radio", signer_id: ME, label: "Preferred contact", required: true }],
+};
 
 const me = { id: "signer-me", full_name: "Jordan Avery Blake", email: "jordan@example.com", acts_for: ["signer-me"], color_index: 0, field_values: {} };
 
