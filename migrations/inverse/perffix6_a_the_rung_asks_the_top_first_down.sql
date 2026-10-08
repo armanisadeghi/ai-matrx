@@ -1,5 +1,6 @@
 -- chair-step: undo perffix6_a_the_rung_asks_the_top_first.sql - restores custom.effective_level_many as it was
 -- lane: PERF-FIX-6
+-- based-on: custom.effective_level_many(uuid, uuid[], text) 76f7f4182ac453ca42dad57843e1ebfd96d3a26c351b8d64a6ce516655a88db9
 
 set local statement_timeout = '60s';
 

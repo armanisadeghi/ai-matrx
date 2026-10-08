@@ -1,5 +1,6 @@
 -- chair-step: undo perffix6_b_a_features_untouched_knobs_are_read_once.sql - restores platform.knob_resolve as it was
 -- lane: PERF-FIX-6
+-- based-on: platform.knob_resolve(text, text, uuid, uuid, jsonb) 498bf814a2cb430fd1acec39e6d1aae6d5c66374481c000171a47a9c014dbd44
 
 set local statement_timeout = '60s';
 
