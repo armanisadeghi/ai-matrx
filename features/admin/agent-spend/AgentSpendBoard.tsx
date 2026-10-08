@@ -35,10 +35,13 @@ import {
   type AgentSpendRow,
   type SpendFlag,
   type SpendSeat,
+  type SpendSubjectKey,
   type SpendWindowDays,
 } from "./agentSpend";
 
-export function useAgentSpend(orgId: string | null, days: SpendWindowDays) {
+/** `subject` = a detail page: only its rows, and no board total (see fetchAgentSpend). */
+export function useAgentSpend(orgId: string | null, days: SpendWindowDays, subject?: SpendSubjectKey) {
+  const subjectKey = subject ? `${subject.agent_id ?? ""}|${subject.mandate_key ?? ""}|${subject.source ?? ""}` : "";
   const [rows, setRows] = useState<AgentSpendRow[]>([]);
   const [rawTotal, setRawTotal] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
@@ -49,7 +52,10 @@ export function useAgentSpend(orgId: string | null, days: SpendWindowDays) {
     setLoading(true);
     setError(null);
     setRawTotal(null);
-    Promise.all([fetchAgentSpend(orgId, days), fetchAgentSpendRawTotal(orgId, days)])
+    Promise.all([
+      fetchAgentSpend(orgId, days, subject),
+      subject ? Promise.resolve<number | null>(null) : fetchAgentSpendRawTotal(orgId, days),
+    ])
       .then(([r, raw]) => {
         if (!live) return;
         setRows(r);
@@ -60,7 +66,7 @@ export function useAgentSpend(orgId: string | null, days: SpendWindowDays) {
     return () => {
       live = false;
     };
-  }, [orgId, days, tick]);
+  }, [orgId, days, tick, subjectKey]);
   return { rows, rawTotal, loading, error, reload: () => setTick((t) => t + 1) };
 }
 

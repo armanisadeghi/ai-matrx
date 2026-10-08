@@ -303,9 +303,9 @@ export function AgentSpendDetail({
   days: SpendWindowDays;
   onDaysChange: (d: SpendWindowDays) => void;
 }) {
-  const { rows, loading, error } = useAgentSpend(orgId, days);
-  const { format } = useCostDisplay();
   const subject: SpendSubjectKey = { agent_id: agentId, mandate_key: mandateKey, source: source ?? null };
+  const { rows, loading, error } = useAgentSpend(orgId, days, subject);
+  const { format } = useCostDisplay();
   const row = rows.find((r) => rowKey(r) === rowKey({ agent_id: agentId, mandate_key: mandateKey, unattributed_source: source ?? null }));
   // The same mandate run by other agents (and the agentless remainder) — each is its own row with its own runs.
   const siblings = mandateKey ? rows.filter((r) => r.mandate_key === mandateKey && r !== row) : [];
@@ -380,7 +380,7 @@ export function AgentSpendDetail({
                   // suffix tells them apart, and the agent itself opens.
                   const name = r.agent_name ?? "No agent recorded";
                   const twin = r.agent_id != null && all.some((o) => o !== r && o.agent_name === r.agent_name);
-                  const label = twin ? `${name} · ${r.agent_id!.slice(0, 8)}` : name;
+                  const label = twin && r.agent_id ? `${name} · ${r.agent_id.slice(0, 8)}` : name;
                   const agentDoor = seat === "admin" ? spendAgentHref(r) : null;
                   return (
                   <div key={rowKey(r)} className="flex items-center gap-3 text-xs">

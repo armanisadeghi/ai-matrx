@@ -93942,7 +93942,13 @@ export type Database = {
         Returns: Json
       }
       agent_spend_health: {
-        Args: { p_days?: number; p_org_id?: string }
+        Args: {
+          p_agent_id?: string
+          p_days?: number
+          p_mandate_key?: string
+          p_org_id?: string
+          p_source?: string
+        }
         Returns: {
           agent_id: string
           agent_name: string

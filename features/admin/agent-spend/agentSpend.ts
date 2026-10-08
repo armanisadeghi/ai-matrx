@@ -127,10 +127,24 @@ function asList<T>(v: unknown, map: (r: Record<string, unknown>) => T): T[] {
 }
 const str = (v: unknown): string | null => (typeof v === "string" ? v : null);
 
-export async function fetchAgentSpend(orgId: string | null, days: SpendWindowDays): Promise<AgentSpendRow[]> {
-  const { data, error } = await supabase
-    .schema("platform")
-    .rpc("agent_spend_health", { p_org_id: orgId ?? undefined, p_days: days });
+/**
+ * `subject` narrows the read to one detail page's rows (a mandate = every agent
+ * row of it; an agent alone = its agent-only row; a source = that row) — an
+ * index-backed read instead of the whole board, which hit the statement
+ * timeout on a cold first load (57014, 2026-10-08).
+ */
+export async function fetchAgentSpend(
+  orgId: string | null,
+  days: SpendWindowDays,
+  subject?: SpendSubjectKey,
+): Promise<AgentSpendRow[]> {
+  const { data, error } = await supabase.schema("platform").rpc("agent_spend_health", {
+    p_org_id: orgId ?? undefined,
+    p_days: days,
+    p_agent_id: subject?.agent_id ?? undefined,
+    p_mandate_key: subject?.mandate_key ?? undefined,
+    p_source: subject?.source ?? undefined,
+  });
   if (error) throw pgErrorToError(error);
   return (data ?? []).map((r) => ({
     agent_id: r.agent_id,
