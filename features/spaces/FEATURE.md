@@ -45,6 +45,21 @@ Block document: a tree of `SpaceBlock` (`id`, `type`, `text: RichSpan[]`, `color
 
 ## Change log
 
+- 2026-10-08 — builder round 36 (every database block seeded, streaming): `space-page-seed.server.ts` asks, as the
+  person, exactly what each database block's first pass asks — custom tables: `where_id_opens` + `askTablePageSeed`
+  (embedded) + a chart view's two aggregates (`askTileSeed`, specs from `data/first-reads.ts` `chartTileSpecs`, the
+  ones `ChartView` sends); built-in modules: the drill describe + first page `useEntityRows` asks (recorded through
+  the records client with no organization, as the browser's first pass has none yet), `EntityChartBlock`'s
+  `drill_ask` (`askChartSeed`, asked as soon as the describe answers) and the board's `askEntityBlockSeed` (50
+  rows). One promise per block (`SpaceBlockSeeds`), no budget; gate = `data/server_rows` (bundle part for tables,
+  `platform.knob_resolve` in the remembered organization — else a page table's — for built-ins, asked beside the
+  page read). The route flushes the shell at once (Suspense around the body). Spaces' own first reads take the
+  seed synchronously (`useBlockSeedAnswers`); the package's seed provider (`BlockRecordsSeed`) sits inside the
+  block's `RecordsMount` — above it the store closed before the block's content first rendered, so
+  `EntityChartBlock` and the grid read again. Editor blocks mounted before their seed landed wait for it (8s max).
+  Member page 1b5eb9af: browser row reads 45-48 → 11 (no null-org drill reads), charts 1.9-2.1s warm. Left:
+  a grouped grid's rows (`firstGridPageArgs` declines grouping), its `record_aggregate` group counts and
+  `record_headers`, and the built-in charts' re-ask when the active organization resolves (~4-7s).
 - 2026-10-08 — builder round 35 (lazy sidebar, Notion's model): the sidebar no longer reads the whole tree. First
   read `content.space_sidebar(p_expand, p_reveal)` = live top-level pages (kernel enumerator
   `iam.discoverable_ids` once, top level = no discoverable ancestor, set-based) + live children of the open rows
