@@ -5,6 +5,7 @@ import { useState, useMemo, useEffect, useRef } from "react";
 import {
   Save,
   AlertTriangle,
+  CircleCheck,
   Eye,
   Trash2,
   WrenchIcon,
@@ -974,14 +975,14 @@ function TabBar({ active, onChange, issueCount }: TabBarProps) {
   ];
 
   return (
-    <div className="flex border-b border-border flex-shrink-0 -mx-3 px-3">
+    <div className="flex overflow-x-auto border-b border-border flex-shrink-0 -mx-3 px-3 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
       {tabs.map((tab) => {
         const isActive = active === tab.id;
         return (
           <button
             key={tab.id}
             onClick={() => onChange(tab.id)}
-            className={`relative flex items-center gap-1.5 px-3 py-2 text-xs font-medium transition-colors select-none ${
+            className={`relative flex shrink-0 items-center gap-1.5 whitespace-nowrap px-3 py-2 text-xs font-medium transition-colors select-none ${
               isActive
                 ? "text-foreground border-b-2 border-primary -mb-px"
                 : "text-muted-foreground hover:text-foreground"
@@ -1698,7 +1699,6 @@ export function AgentSettingsCore({
       data-setting-row={key}
       data-setting-state="bound"
     >
-      <span className="h-2 w-2 rounded-full shrink-0 bg-primary" aria-hidden />
       <div className="flex items-center gap-2 pt-0.5 flex-shrink-0">
         <Checkbox checked disabled aria-label={`${label} is a run input`} />
         <Label className="text-xs flex-shrink-0 w-36 text-gray-700 dark:text-gray-300">
@@ -1785,12 +1785,13 @@ export function AgentSettingsCore({
     const firstIssue = keyIssues[0];
     const fixable = !!firstIssue && canFixIssue(firstIssue, normalizedControls);
 
-    const dotClass =
+    const StatusIcon = state === "valid" ? CircleCheck : AlertTriangle;
+    const statusClass =
       state === "invalid"
-        ? "bg-orange-500"
+        ? "text-orange-500"
         : state === "unknown"
-          ? "bg-amber-400"
-          : "bg-emerald-500";
+          ? "text-amber-500"
+          : "text-emerald-500";
     const dotTitle =
       state === "invalid"
         ? (firstIssue?.message ?? "Issue detected")
@@ -1805,21 +1806,6 @@ export function AgentSettingsCore({
         data-setting-row={key}
         data-setting-state={isOff ? "off" : view.state}
       >
-        {/* Validity dot */}
-        <TooltipProvider delayDuration={200}>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <span
-                className={`h-2 w-2 rounded-full shrink-0 mt-2 ${dotClass}`}
-                aria-label={dotTitle}
-              />
-            </TooltipTrigger>
-            <TooltipContent side="top" className="type-secondary max-w-[260px]">
-              {dotTitle}
-            </TooltipContent>
-          </Tooltip>
-        </TooltipProvider>
-
         {/* Checkbox + Label */}
         <div
           className="flex items-center gap-2 cursor-pointer hover:opacity-80 transition-opacity pt-1 flex-shrink-0"
@@ -1873,6 +1859,21 @@ export function AgentSettingsCore({
 
         {/* Per-row actions */}
         <div className="flex items-center gap-0 shrink-0">
+          <TooltipProvider delayDuration={200}>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <span
+                  className={`inline-flex h-6 w-6 items-center justify-center ${statusClass}`}
+                  aria-label={dotTitle}
+                >
+                  <StatusIcon className="h-3.5 w-3.5" />
+                </span>
+              </TooltipTrigger>
+              <TooltipContent side="top" className="type-secondary max-w-[260px]">
+                {dotTitle}
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
           {canBind && control && (
             <TooltipProvider delayDuration={200}>
               <Tooltip>
@@ -1947,7 +1948,6 @@ export function AgentSettingsCore({
       data-setting-row={key}
       data-setting-state="translated"
     >
-      <span className="h-2 w-2 rounded-full shrink-0 bg-sky-500" aria-hidden />
       {/* Aligns with the checkbox column of the rows below. */}
       <span className="h-4 w-4 shrink-0" aria-hidden />
       <Label className="text-xs flex-shrink-0 w-36 text-gray-700 dark:text-gray-300">
