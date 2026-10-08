@@ -98,8 +98,8 @@ export interface StoredRun {
   /** null = recorded before placement was saved. */
   placement: MandatePlacement | null;
   provisions: RunProvisionValue[];
-  /** Old runs only: what the record delivered. */
-  delivered: { variables: JsonObject; context: JsonObject; userInput: string | null } | null;
+  /** What the record delivered — the only values an old run (no placement) has. */
+  delivered: { variables: JsonObject; context: JsonObject; userInput: string | null };
 }
 
 /** Variable fates the contract paints red. */
@@ -208,13 +208,12 @@ function parseStoredRun(conversationId: string, data: unknown): StoredRun {
   const holder = obj(d.holder);
   const settings = obj(d.settings);
   const ranBy = isJsonObject(d.ran_by) ? (str(d.ran_by.name) ?? str(d.ran_by.id)) : str(d.ran_by);
-  const delivered = isJsonObject(d.delivered)
-    ? {
-        variables: obj(d.delivered.variables),
-        context: obj(d.delivered.context),
-        userInput: str(d.delivered.user_input),
-      }
-    : null;
+  // What the record delivered (top-level `variables` / `context` / `user_input`).
+  const delivered = {
+    variables: obj(d.variables),
+    context: obj(d.context),
+    userInput: str(d.user_input),
+  };
   const provisions: RunProvisionValue[] = [];
   for (const item of list(d.provisions)) {
     if (!isJsonObject(item)) continue;
