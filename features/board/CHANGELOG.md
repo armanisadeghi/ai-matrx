@@ -1,5 +1,9 @@
 # CHANGELOG — Board (`features/board`)
 
+## 2026-10-08 — The chat tile's conversation list (board-scoped)
+
+- A chat tile has its own conversation list (the /chat list component) limited to the conversations filed on THIS board: New conversation, collapse, switch in place, ⋯ Remove from this board (edge only). Membership = `conversation -> board` association edge (pair registered `container_side none`), filed when a chat tile's / the shell chat's conversation exists on the server. Collapse saved per tile (`meta.list`), header toggle, none at overview, no list read on wake (`@ai-matrx/chat` 0.6.x `keepLoaded`, `onlyConversationIds`, `removeFromList`). Guards: `items/__tests__/chat-list.test.ts`, `board-chats.test.tsx`. Existing conversations are not backfilled.
+
 ## 2026-10-06 — Agent form tile
 
 - New item `agent-form`: pick an agent, fill its inputs (form style, one Run), the reply renders as its shape (no chat). Inputs-layout switch per tile; Run again carries values; reopens the saved run after reload. Menu row, agent add list, remount case (passing). Live walk on test@test.com: Flashcard Topic Deck Composer streamed a `flashcard_set` into the tile and came back after reload.

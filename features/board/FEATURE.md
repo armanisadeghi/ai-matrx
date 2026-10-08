@@ -325,6 +325,19 @@ and is kept. Tile bodies are STATIC imports inside the page's one `ssr:false` ed
   tile's conversation, so the chat beside the board reads what the tile's agent said (through the surface
   chain) and can send into it. A saved tile reopens through the canonical resume sequence, so a turn that
   was mid-run at reload reattaches. Add menu: "Chat" and "Chat with an agent" (the one agent picker).
+- **A chat tile carries the board's conversation list** (Arman, 2026-10-08): `ConversationHistorySidebar`
+  (the list /chat uses) beside the chat, limited to THIS board's conversations — `New conversation`,
+  collapse, rows switch the tile in place (`chat.openExisting`; an unsent conversation is still never
+  saved by id), ⋯ → "Remove from this board". Board membership is a `conversation → board` edge in
+  `platform.associations` (pair registered non-conveying), written/read only through `associationsService`
+  (`items/board-chats.tsx`): filed when the server has a chat tile's conversation (started in the tile,
+  brought in, or added by an agent — each mounts a tile) and for the board's own shell-chat conversation
+  (`BoardHomeChatFiler`). Removing a tile keeps the edge; only the row action deletes it (never the
+  conversation). Read once per opened board; the list passes `keepLoaded`, so a sleeping tile reads nothing
+  on wake. Open/closed is `meta.list` on the tile's saved source (`chatListOpen`: the choice, else open
+  at >= 560 px); the toggle is a header button (`BoardItemType.HeaderAction`, no new row); no list at the
+  overview tier (`usesTier`). Existing conversations are NOT backfilled: a board's list starts with
+  what was filed since this shipped.
 - **An agent form tile runs an agent with no chat display** (`items/AgentFormItemBody.tsx`, Arman
   2026-10-06): the agent's inputs in the composer's FORM style (`showFreeformInput` off — variables and one
   Run; an agent with no inputs keeps its text box), then the reply through `AgentAssistantMessage`, so a

@@ -1,5 +1,6 @@
 "use client";
 
+import { isBundleListerName } from "@ai-matrx/agents/tools";
 import { useClipboard } from "@ai-matrx/kit/clipboard";
 import { useState, useMemo, useCallback, useEffect } from "react";
 import { useRouter } from "next/navigation";
@@ -156,9 +157,6 @@ const BUNDLES_CATEGORY = "__bundles__";
  * made bundles feel "missing"). They stay in the orphan-resolution universe so
  * a selected bundle is never flagged as an unresolved tool.
  */
-function isBundleListerName(name?: string | null): boolean {
-  return typeof name === "string" && name.startsWith("bundle:list_");
-}
 
 // Deterministic color palette for category icons — muted, professional tones
 // that work in both light and dark mode.

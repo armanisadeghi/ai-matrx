@@ -55,6 +55,7 @@ export const PAPER_CSS = `
 .matrx-pl .matrx-pl-bar{height:5pt;background:#e2e8f0;border-radius:3pt;overflow:hidden;margin:2pt 0 6pt}
 .matrx-pl .matrx-pl-bar>span{display:block;height:100%;background:#2563eb}
 .matrx-pl a{color:#1d4ed8;text-decoration:underline;overflow-wrap:anywhere}
+.matrx-pl .matrx-pl-link a[href]::after{content:none}
 .matrx-pl code{font-family:'SF Mono',Menlo,Consolas,monospace;font-size:9pt;background:#f1f5f9;padding:0 2pt;border-radius:2pt}
 .matrx-pl pre{font-family:'SF Mono',Menlo,Consolas,monospace;font-size:8.5pt;background:#f8fafc;border:1px solid #e2e8f0;border-radius:4pt;padding:6pt 8pt;white-space:pre-wrap;overflow-wrap:anywhere;margin:3pt 0 7pt}
 .matrx-pl .matrx-pl-text>:last-child{margin-bottom:0}

@@ -1,7 +1,7 @@
 {
   "version": 1,
   "app": "matrx-frontend",
-  "routeCount": 1366,
+  "routeCount": 1365,
   "routes": [
     {
       "pattern": "/",
@@ -6839,11 +6839,6 @@
       "pattern": "/x/sign/phone",
       "status": "live",
       "source": "app/(link)/x/sign/phone/page.tsx"
-    },
-    {
-      "pattern": "/zz-pictures-proof",
-      "status": "live",
-      "source": "app/(core)/zz-pictures-proof/page.tsx"
     }
   ]
 }

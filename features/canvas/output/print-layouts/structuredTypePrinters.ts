@@ -417,7 +417,7 @@ const resourcesLayout: Layout<Rec> = {
           const item = obj(rawItem) ?? {};
           const url = str(item.url);
           return [
-            `<strong>${url && isUrl(url) ? linkHtml(url, str(item.title)) : inlineHtml(item.title)}</strong>${
+            `<strong class="matrx-pl-link">${url && isUrl(url) ? linkHtml(url, str(item.title)) : inlineHtml(item.title)}</strong>${
               str(item.description) ? `<div>${inlineHtml(item.description)}</div>` : ""
             }${url && isUrl(url) && str(item.title) ? `<div class="matrx-pl-muted matrx-pl-small">${esc(url)}</div>` : ""}`,
             [str(item.type), str(item.difficulty), str(item.duration)].filter(Boolean).map((t) => `<span class="matrx-pl-tag">${esc(t)}</span>`).join("") +

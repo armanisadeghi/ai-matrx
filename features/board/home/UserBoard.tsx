@@ -882,6 +882,7 @@ function BoardItemTile({
         sleeps={type?.sleeps ?? false}
         actions={
           <>
+            {type?.HeaderAction && <type.HeaderAction tileId={id} source={source} width={tile.rect.w} onSource={onSource} />}
             <TileCommentDoor tileId={id} type={type} source={source} title={title} boardRecord={boardRecord} />
             {href ? (
             <a

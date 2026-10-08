@@ -135,7 +135,7 @@ function openOverlayKeys(store: AppStore): Set<string> {
 export async function mountTile(
   type: BoardItemType,
   source: NodeSource,
-  options: { title?: string; prepareStore?: (store: AppStore) => void; loadMs?: number } = {},
+  options: { title?: string; prepareStore?: (store: AppStore) => void; loadMs?: number; wrap?: (children: ReactNode) => ReactNode } = {},
 ): Promise<TileHandle> {
   resetBackendFor();
   // What the platform answers for any signed-in screen; the case adds its record.
@@ -178,13 +178,13 @@ export async function mountTile(
     <AppProviders store={store}>
       <BoardCameraStoreContext.Provider value={cameraStore}>
         <FocusHostContext.Provider value={null}>
-          {present ? (
+          {(options.wrap ?? ((c: ReactNode) => c))(present ? (
             <Activity mode={mode}>
               <SurfaceActivity active capture={capture}>
                 <TileContent type={type} tile={tile} tileId={tileId} />
               </SurfaceActivity>
             </Activity>
-          ) : null}
+          ) : null)}
         </FocusHostContext.Provider>
       </BoardCameraStoreContext.Provider>
     </AppProviders>
@@ -311,6 +311,8 @@ export interface CycleSteps {
   loadMs?: number;
   /** The feature's save debounce: the action's own write lands before the cycle starts. */
   saveDelayMs?: number;
+  /** Providers the board puts around its tiles (the board's conversations). */
+  wrap?: (children: ReactNode) => ReactNode;
 }
 
 /**
@@ -324,6 +326,7 @@ export async function runCycle(type: BoardItemType, source: NodeSource, steps: C
     tile = await mountTile(type, source, {
       title: steps.title,
       loadMs: steps.loadMs,
+      wrap: steps.wrap,
       prepareStore: (store) => {
         steps.prepare?.();
         steps.prepareStore?.(store);
