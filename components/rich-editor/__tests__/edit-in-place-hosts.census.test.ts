@@ -35,7 +35,7 @@ const SCAN_DIRS = ["app", "components", "features", "../aidream/apps/shared/chat
 
 /** Editable rendered hosts that are not wired, each with its reason. Shrink-only. */
 const EXEMPT: Record<string, string> = {
-  "components/mardown-display/chat-markdown/EnhancedChatMarkdown.tsx": "the renderer itself",
+  "../aidream/apps/shared/chat/src/ui/markdown-stream/EnhancedChatMarkdown.tsx": "the renderer itself (moved into @ai-matrx/chat)",
   "components/matrx/MatrxSplit.tsx": "Split: the source editor is always open beside the preview",
   "components/markdown-studio/MarkdownStudio.tsx": "routes the buffer to PreviewPanel (wired) and its Editor mode",
   // Click-to-edit already swaps to their own editor in place; the move onto
