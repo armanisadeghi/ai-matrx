@@ -82627,6 +82627,105 @@ export type Database = {
           },
         ]
       }
+      perf_statement_snapshot: {
+        Row: {
+          calls: number
+          created_at: string
+          created_by: string | null
+          dbid: number
+          deleted_at: string | null
+          id: string
+          in_top: boolean
+          max_exec_time_ms: number | null
+          metadata: Json
+          minmax_stats_since: string | null
+          organization_id: string
+          published_to_web: boolean
+          published_to_web_at: string | null
+          published_to_web_by: string | null
+          query_head: string | null
+          queryid: number
+          run_id: string
+          shown_to: Database["platform"]["Enums"]["shown_to"] | null
+          stats_reset: string | null
+          stats_since: string | null
+          stddev_exec_time_ms: number | null
+          taken_at: string
+          toplevel: boolean
+          total_exec_time_ms: number
+          updated_at: string
+          updated_by: string | null
+          userid: number
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+          watch_slugs: string[]
+        }
+        Insert: {
+          calls: number
+          created_at?: string
+          created_by?: string | null
+          dbid: number
+          deleted_at?: string | null
+          id?: string
+          in_top?: boolean
+          max_exec_time_ms?: number | null
+          metadata?: Json
+          minmax_stats_since?: string | null
+          organization_id: string
+          published_to_web?: boolean
+          published_to_web_at?: string | null
+          published_to_web_by?: string | null
+          query_head?: string | null
+          queryid: number
+          run_id: string
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
+          stats_reset?: string | null
+          stats_since?: string | null
+          stddev_exec_time_ms?: number | null
+          taken_at?: string
+          toplevel?: boolean
+          total_exec_time_ms: number
+          updated_at?: string
+          updated_by?: string | null
+          userid: number
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+          watch_slugs?: string[]
+        }
+        Update: {
+          calls?: number
+          created_at?: string
+          created_by?: string | null
+          dbid?: number
+          deleted_at?: string | null
+          id?: string
+          in_top?: boolean
+          max_exec_time_ms?: number | null
+          metadata?: Json
+          minmax_stats_since?: string | null
+          organization_id?: string
+          published_to_web?: boolean
+          published_to_web_at?: string | null
+          published_to_web_by?: string | null
+          query_head?: string | null
+          queryid?: number
+          run_id?: string
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
+          stats_reset?: string | null
+          stats_since?: string | null
+          stddev_exec_time_ms?: number | null
+          taken_at?: string
+          toplevel?: boolean
+          total_exec_time_ms?: number
+          updated_at?: string
+          updated_by?: string | null
+          userid?: number
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+          watch_slugs?: string[]
+        }
+        Relationships: []
+      }
       proof_check: {
         Row: {
           budget_ms: number | null
@@ -130489,6 +130588,75 @@ export type Database = {
           updated_at?: string
           updated_by?: string | null
           version?: number
+        }
+        Relationships: []
+      }
+      desktop_app_profile: {
+        Row: {
+          account_identity: string | null
+          app_key: string
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          device_id: string | null
+          display_name: string
+          id: string
+          last_opened_at: string | null
+          metadata: Json
+          organization_id: string
+          profile_locator: string | null
+          published_to_web: boolean
+          published_to_web_at: string | null
+          published_to_web_by: string | null
+          shown_to: Database["platform"]["Enums"]["shown_to"] | null
+          updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        Insert: {
+          account_identity?: string | null
+          app_key: string
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          device_id?: string | null
+          display_name: string
+          id?: string
+          last_opened_at?: string | null
+          metadata?: Json
+          organization_id: string
+          profile_locator?: string | null
+          published_to_web?: boolean
+          published_to_web_at?: string | null
+          published_to_web_by?: string | null
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Update: {
+          account_identity?: string | null
+          app_key?: string
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          device_id?: string | null
+          display_name?: string
+          id?: string
+          last_opened_at?: string | null
+          metadata?: Json
+          organization_id?: string
+          profile_locator?: string | null
+          published_to_web?: boolean
+          published_to_web_at?: string | null
+          published_to_web_by?: string | null
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
         }
         Relationships: []
       }
