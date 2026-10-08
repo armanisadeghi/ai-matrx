@@ -72,6 +72,18 @@ import { dirname, join, relative, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { emitItem, endItems } from "./checks/items.mjs";
+import {
+  clearPackageResolution,
+  findInstalled,
+  isWorkspaceSource,
+  pickRuntime,
+  pickTypes,
+  resolveRelativeJs,
+  resolveSubpath,
+  splitSpecifier,
+} from "./lib/matrx-package-resolve.mjs";
+
+export { findInstalled, isWorkspaceSource, resolveSubpath, splitSpecifier };
 
 const require = createRequire(import.meta.url);
 // TypeScript 7 (the native compiler) ships no JS API; a repo on it installs the 6.x API beside it
@@ -109,13 +121,6 @@ function listFiles(root) {
     walk(root);
     return files;
   }
-}
-
-function splitSpecifier(spec) {
-  const parts = spec.split("/");
-  const name = `${parts[0]}/${parts[1]}`;
-  const sub = parts.length > 2 ? `./${parts.slice(2).join("/")}` : ".";
-  return { name, sub };
 }
 
 /** Every @ai-matrx named import/re-export in one file. */
@@ -168,113 +173,6 @@ export function collectImports(file, text) {
 export const WHOLE_MODULE = "*";
 
 // ── installed package resolution ─────────────────────────────────────────────
-
-const pkgDirCache = new Map();
-/** The installed copy Node would resolve from `fromDir`, or null. */
-function findInstalled(fromDir, name, root) {
-  const key = `${fromDir}\0${name}`;
-  if (pkgDirCache.has(key)) return pkgDirCache.get(key);
-  let dir = fromDir;
-  let result = null;
-  for (;;) {
-    const candidate = join(dir, "node_modules", name);
-    if (existsSync(join(candidate, "package.json"))) {
-      result = candidate;
-      break;
-    }
-    const parent = dirname(dir);
-    if (parent === dir || !(dir + sep).startsWith(dirname(root) + sep)) break;
-    dir = parent;
-  }
-  pkgDirCache.set(key, result);
-  return result;
-}
-
-function isWorkspaceSource(pkgDir) {
-  try {
-    if (!lstatSync(pkgDir).isSymbolicLink()) return false;
-    return !realpathSync(pkgDir).split(sep).includes("node_modules");
-  } catch {
-    return false;
-  }
-}
-
-const TYPE_CONDITIONS = ["types", "import", "module", "default", "require", "node", "browser"];
-
-/** Resolve an exports target (string | conditions | array) to a types file. */
-function pickTypes(target) {
-  if (typeof target === "string") return target;
-  if (Array.isArray(target)) {
-    for (const t of target) {
-      const r = pickTypes(t);
-      if (r) return r;
-    }
-    return null;
-  }
-  if (target && typeof target === "object") {
-    for (const cond of TYPE_CONDITIONS) {
-      if (cond in target) {
-        const r = pickTypes(target[cond]);
-        if (r) return r;
-      }
-    }
-  }
-  return null;
-}
-
-function toDeclaration(pkgDir, file) {
-  const abs = join(pkgDir, file);
-  if (/\.d\.[cm]?ts$/.test(abs) || /\.[cm]?tsx?$/.test(abs) || /\.json$/.test(abs)) {
-    return existsSync(abs) ? abs : null;
-  }
-  if (!/\.[cm]?jsx?$/.test(abs)) return null;
-  for (const candidate of [
-    abs.replace(/\.m?js$/, ".d.ts"),
-    abs.replace(/\.cjs$/, ".d.cts"),
-    abs.replace(/\.mjs$/, ".d.mts"),
-  ]) {
-    if (existsSync(candidate)) return candidate;
-  }
-  return null;
-}
-
-// The RUNTIME side. A .d.ts can promise a value the shipped JavaScript does not carry (a
-// hand-written declaration, a bundler that dropped a re-export); the bundler then fails on the
-// JS, not the types. So every VALUE import is also looked up in the runtime entry's own exports.
-const RUNTIME_CONDITIONS = ["import", "module", "browser", "node", "default", "require"];
-
-/** Resolve an exports target to its runtime JS file (never the `types` condition). */
-function pickRuntime(target) {
-  if (typeof target === "string") return /\.d\.[cm]?ts$/.test(target) ? null : target;
-  if (Array.isArray(target)) {
-    for (const t of target) {
-      const r = pickRuntime(t);
-      if (r) return r;
-    }
-    return null;
-  }
-  if (target && typeof target === "object") {
-    for (const cond of RUNTIME_CONDITIONS) {
-      if (cond in target) {
-        const r = pickRuntime(target[cond]);
-        if (r) return r;
-      }
-    }
-  }
-  return null;
-}
-
-function resolveRelativeJs(fromFile, spec) {
-  const base = resolve(dirname(fromFile), spec);
-  for (const c of [base, `${base}.js`, `${base}.mjs`, join(base, "index.js"), join(base, "index.mjs")]) {
-    try {
-      if (existsSync(c) && !lstatSync(c).isDirectory()) return c;
-    } catch {
-      /* next candidate */
-    }
-  }
-  return null;
-}
 
 const runtimeCache = new Map();
 /**
@@ -333,46 +231,11 @@ export function runtimeExportsOf(file, stack = new Set()) {
   return result;
 }
 
-/** { entry } | { missingSubpath: true } | { missingFile: path } | { unresolved: reason } */
-function resolveSubpath(pkgDir, manifest, sub) {
-  const exp = manifest.exports;
-  if (exp === undefined) {
-    if (sub !== ".") return { unresolved: "no exports map" };
-    const t = manifest.types ?? manifest.typings ?? manifest.module ?? manifest.main ?? "index.js";
-    const entry = toDeclaration(pkgDir, t);
-    return entry ? { entry } : { unresolved: `no declaration for ${t}` };
-  }
-  let map = exp;
-  if (typeof exp === "string" || Array.isArray(exp) || !Object.keys(exp).some((k) => k.startsWith("."))) {
-    map = { ".": exp };
-  }
-  let target = map[sub];
-  if (target === undefined) {
-    for (const [key, value] of Object.entries(map)) {
-      const star = key.indexOf("*");
-      if (star === -1) continue;
-      const pre = key.slice(0, star);
-      const post = key.slice(star + 1);
-      if (sub.startsWith(pre) && sub.endsWith(post) && sub.length >= pre.length + post.length) {
-        const mid = sub.slice(pre.length, sub.length - post.length);
-        target = JSON.parse(JSON.stringify(value).split("*").join(mid));
-        break;
-      }
-    }
-  }
-  if (target === undefined || target === null) return { missingSubpath: true };
-  const file = pickTypes(target);
-  if (!file) return { unresolved: "exports target has no usable condition" };
-  const entry = toDeclaration(pkgDir, file);
-  const runtimeRel = pickRuntime(target);
-  const runtime = runtimeRel && /\.m?js$/.test(runtimeRel) && existsSync(join(pkgDir, runtimeRel)) ? join(pkgDir, runtimeRel) : null;
-  // THE 2026-10-07 CASE (v0.4.2980 never deployed): chat 0.4.0 deleted
-  // dist/agents/model-registry/, but its `./agents/*` wildcard still MATCHES the specifier, so the
-  // subpath looked "exported" and the missing file was filed under NOT CHECKED. A specifier whose
-  // exports target names no declaration AND no runtime file on disk is a Turbopack
-  // "Module not found" — a finding, never a skip.
-  if (!entry && !(runtimeRel && existsSync(join(pkgDir, runtimeRel)))) return { missingFile: runtimeRel ?? file };
-  return entry ? { entry, runtime } : { unresolved: `no declaration beside ${file}` };
+/** Forget every resolution: a long-lived caller (the dev-server rescue loader) calls this when an
+ * install changed node_modules under it, so it never judges against the bytes of the old version. */
+export function resetCaches() {
+  clearPackageResolution();
+  runtimeCache.clear();
 }
 
 // ── the run ──────────────────────────────────────────────────────────────────
@@ -802,7 +665,7 @@ function selfTest() {
 
     // RED: 0.18.6 does not ship createKindValidator (the live 2026-09-25 case), and a non-exported subpath.
     writePkg(tmp, "0.18.6", false);
-    pkgDirCache.clear();
+    clearPackageResolution();
     let r = audit(tmp);
     const miss = r.findings.find((f) => f.name === "createKindValidator");
     if (!miss) failures.push("RED: createKindValidator missing from 0.18.6 was not reported");
@@ -815,7 +678,7 @@ function selfTest() {
     // GREEN: 0.19.0 ships it; drop the bad subpath file.
     rmSync(join(tmp, "features", "subpath.ts"));
     writePkg(tmp, "0.19.0", true);
-    pkgDirCache.clear();
+    clearPackageResolution();
     r = audit(tmp);
     if (r.findings.length) failures.push(`GREEN: expected no findings, got ${JSON.stringify(r.findings)}`);
     if (r.imports !== 5) failures.push(`GREEN: expected 5 checked names, got ${r.imports}`);
@@ -828,7 +691,7 @@ function selfTest() {
       `import { Input as PackageInput, SelectTrigger, __resetControls, type ControlSize } from "@ai-matrx/design-system/controls";\nexport { PackageInput, SelectTrigger, __resetControls };\n`,
     );
     writeDesignSystem(tmp, "0.64.0", { types: false, runtime: false });
-    pkgDirCache.clear();
+    clearPackageResolution();
     runtimeCache.clear();
     r = audit(tmp);
     const input = r.findings.find((f) => f.name === "Input");
@@ -840,7 +703,7 @@ function selfTest() {
 
     // RUNTIME: the types promise Input, the shipped JavaScript does not carry it.
     writeDesignSystem(tmp, "0.66.0", { types: true, runtime: false });
-    pkgDirCache.clear();
+    clearPackageResolution();
     runtimeCache.clear();
     r = audit(tmp);
     if (!r.findings.some((f) => f.name === "Input" && f.why === "runtime"))
@@ -850,7 +713,7 @@ function selfTest() {
 
     // GREEN: 0.66.1 ships Input + SelectTrigger in types AND runtime (through a chunk `export *`).
     writeDesignSystem(tmp, "0.66.1", { types: true, runtime: true });
-    pkgDirCache.clear();
+    clearPackageResolution();
     runtimeCache.clear();
     r = audit(tmp);
     if (r.findings.length) failures.push(`GREEN 0.66.1: expected no findings, got ${JSON.stringify(r.findings)}`);
@@ -858,7 +721,7 @@ function selfTest() {
 
     // RED: the half-uninstalled node_modules (frozen install died on a 404 tarball).
     rmSync(join(tmp, "node_modules", "@ai-matrx", "design-system"), { recursive: true, force: true });
-    pkgDirCache.clear();
+    clearPackageResolution();
     r = audit(tmp);
     if (!r.findings.some((f) => f.why === "not-installed" && f.pkg === "@ai-matrx/design-system"))
       failures.push("RED not-installed: an import of a package missing from node_modules was not reported");
@@ -883,7 +746,7 @@ function selfTest() {
       { "./data-table": "./dist/data-table/index.js" },
       `import { normalizeTransferJson } from "@ai-matrx/kit/content-transfer";\nimport { f } from "@ai-matrx/kit/format";\nconst m = () => import("@ai-matrx/design-system/data-table");\n`,
     );
-    pkgDirCache.clear();
+    clearPackageResolution();
     let g = auditPackageGraph(tmp);
     const ct = g.findings.find((f) => f.why === "graph" && f.sub === "./content-transfer");
     if (!ct || ct.importer !== "@ai-matrx/design-system" || ct.version !== "0.25.0" || !ct.file.startsWith("@ai-matrx/design-system@0.69.1/"))
@@ -900,12 +763,12 @@ function selfTest() {
       { "./data-table": "./dist/data-table/index.js" },
       `import { normalizeTransferJson } from "@ai-matrx/kit/transfer-json";\n`,
     );
-    pkgDirCache.clear();
+    clearPackageResolution();
     g = auditPackageGraph(tmp);
     if (g.findings.length || g.specifiers !== 1) failures.push(`GREEN 2026-10-06: expected 1 clean specifier, got ${JSON.stringify(g)}`);
     // RED: the dependency is not installed beside the importer at all.
     rmSync(join(tmp, "node_modules", "@ai-matrx", "kit"), { recursive: true, force: true });
-    pkgDirCache.clear();
+    clearPackageResolution();
     if (!auditPackageGraph(tmp).findings.some((f) => f.why === "graph-missing"))
       failures.push("RED graph-missing: an import of an uninstalled sibling package was not reported");
 
@@ -928,13 +791,13 @@ function selfTest() {
     rmSync(join(tmp, "node_modules", "@ai-matrx", "design-system"), { recursive: true, force: true });
     writeFileSync(join(tmp, "features", "probe.ts"), `import { fetchModelOptions } from "@ai-matrx/chat/agents/model-registry/modelRegistrySlice";\nexport { fetchModelOptions };\n`);
     wild("0.4.0", false);
-    pkgDirCache.clear();
+    clearPackageResolution();
     runtimeCache.clear();
     r = audit(tmp, { only: ["features"] });
     if (!r.findings.some((f) => f.why === "subpath-file" && f.pkg === "@ai-matrx/chat" && f.version === "0.4.0"))
       failures.push(`RED 2026-10-07: a wildcard subpath whose file the package no longer ships was not reported: ${JSON.stringify(r.findings)}`);
     wild("0.4.1", true);
-    pkgDirCache.clear();
+    clearPackageResolution();
     runtimeCache.clear();
     r = audit(tmp, { only: ["features"] });
     if (r.findings.some((f) => f.pkg === "@ai-matrx/chat")) failures.push(`GREEN 2026-10-07: a shipped wildcard file was reported: ${JSON.stringify(r.findings)}`);
@@ -942,11 +805,11 @@ function selfTest() {
     rmSync(join(tmp, "features", "probe.ts"));
     graphPkg("design-system", "0.80.0", { "./data-table": "./dist/data-table/index.js" }, `import { fetchModelOptions } from "@ai-matrx/chat/agents/model-registry/modelRegistrySlice";\n`);
     wild("0.4.0", false);
-    pkgDirCache.clear();
+    clearPackageResolution();
     if (!auditPackageGraph(tmp).findings.some((f) => f.why === "graph-file" && f.importer === "@ai-matrx/design-system"))
       failures.push("RED 2026-10-07 graph: a package importing a wildcard file its sibling no longer ships was not reported");
     wild("0.4.1", true);
-    pkgDirCache.clear();
+    clearPackageResolution();
     if (auditPackageGraph(tmp).findings.length) failures.push("GREEN 2026-10-07 graph: a shipped wildcard file was reported");
 
     // ── v0.4.2984/2985 and v0.4.2989: the specifier sits in a require(), an import() or an
@@ -962,12 +825,12 @@ function selfTest() {
       mkdirSync(join(tmp, "features"), { recursive: true });
       writeFileSync(join(tmp, "features", file), text);
       wild("0.4.0", false);
-      pkgDirCache.clear();
+      clearPackageResolution();
       r = audit(tmp, { only: ["features"] });
       if (!r.findings.some((f) => f.file === `features/${file}` && f.why === "subpath-file" && f.version === "0.4.0"))
         failures.push(`RED whole-module (${file}): a specifier to a file chat 0.4.0 no longer ships was not reported: ${JSON.stringify(r.findings)}`);
       wild("0.4.1", true);
-      pkgDirCache.clear();
+      clearPackageResolution();
       r = audit(tmp, { only: ["features"] });
       if (r.findings.length) failures.push(`GREEN whole-module (${file}): a shipped file was reported: ${JSON.stringify(r.findings)}`);
     }

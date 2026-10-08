@@ -1158,8 +1158,30 @@ function assertSharedDevServer(phase) {
   if (refusal) throw new Error(refusal);
 }
 
+// THE SHARED PREVIEW NEVER 500s ON AN @ai-matrx NAME NOT PUBLISHED YET (2026-10-07: three outages
+// in one day, every route 500 for ~30 agents, each one an edit importing a name the installed
+// package did not ship yet). In `next dev` only, a file that mentions @ai-matrx/ passes through a
+// loader that swaps an import the INSTALLED package certainly cannot satisfy for a loud placeholder
+// (red inline box + one console error naming file, package, installed and source version). A build
+// never gets it — a release must still fail on the real error. Why and the judge:
+// scripts/lib/matrx-pending-imports.mjs; `pnpm check:matrx-pending:self-test`.
+const MATRX_PENDING_LOADER = require.resolve("./lib/turbopack/matrx-pending-imports-loader.cjs");
+function withPendingImportRescue(config) {
+  const rule = {
+    condition: { all: [{ not: "foreign" }, { content: /@ai-matrx\// }] },
+    loaders: [MATRX_PENDING_LOADER],
+  };
+  const rules = { ...(config.turbopack?.rules ?? {}) };
+  for (const glob of ["*.ts", "*.tsx", "*.js", "*.jsx", "*.mjs"]) {
+    if (rules[glob]) throw new Error(`[matrx] turbopack.rules already has ${glob}; merge the pending-import rescue into it`);
+    rules[glob] = rule;
+  }
+  return { ...config, turbopack: { ...config.turbopack, rules } };
+}
+
 copyFiles();
 module.exports = (phase) => {
   assertSharedDevServer(phase);
-  return withBundleAnalyzer(nextConfig);
+  const config = phase === PHASE_DEVELOPMENT_SERVER ? withPendingImportRescue(nextConfig) : nextConfig;
+  return withBundleAnalyzer(config);
 };
