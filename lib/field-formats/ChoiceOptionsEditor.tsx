@@ -90,7 +90,7 @@ export type ChoiceOptionsEditorProps = {
   className?: string;
 };
 
-/** The option id a choice carries on a record-store table (the seam's `StoreChoice`). */
+/** The option id a choice carries on a custom table (the seam's `StoreChoice`). */
 function choiceIdOf(choice: FieldChoice | undefined): string | undefined {
   const id = (choice as (FieldChoice & { id?: unknown }) | undefined)?.id;
   return typeof id === "string" && id !== "" ? id : undefined;

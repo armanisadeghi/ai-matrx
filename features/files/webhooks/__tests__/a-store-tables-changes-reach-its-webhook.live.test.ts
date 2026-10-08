@@ -3,7 +3,7 @@
  *
  * LIVE (owner ruling 2026-10-03: tests run on live as admin@admin.com). The webhook
  * targets a reserved `.example` host, so a delivery attempt reaches nobody.
- * A RECORD-STORE TABLE'S CHANGES ARE SUBSCRIBED FROM THE WEBHOOKS SCREEN (lane INTEG-CLIENTS,
+ * A CUSTOM TABLE'S CHANGES ARE SUBSCRIBED FROM THE WEBHOOKS SCREEN (lane INTEG-CLIENTS,
  * CUTOVER-PLAN rev 3 row F19; the door is GRID-PRIMITIVES G4).
  *
  * The real use case: Rincon Plumbing sends every change to its "Service Calls" table to its
@@ -58,7 +58,7 @@ import { declareTableWebhook, listDeliveries } from "../service";
 
 const describeLive = READY ? describe : describe.skip;
 
-describeLive("a record-store table's changes reach the webhook declared for it", () => {
+describeLive("a custom table's changes reach the webhook declared for it", () => {
   let webhookId = "";
 
   beforeAll(async () => {

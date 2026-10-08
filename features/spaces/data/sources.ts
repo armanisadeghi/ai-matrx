@@ -3,7 +3,7 @@
 // Two kinds of source, both read through the record store's one client:
 //  - the sample agency in memory (`props.sample = AGENCY_SAMPLE_ID`): `templatePreview` installs
 //    data/agency-spec.ts into memory — read-only; drawn only by the template gallery's preview;
-//  - a real store table (no `props.sample`): read live as the table's own organization.
+//  - a real custom table (no `props.sample`): read live as the table's own organization.
 // Blocks are filters only: what a person may open is the database's answer, never this code's.
 
 import { templatePreview, type TemplatePreview } from "@ai-matrx/records/memory";
@@ -105,7 +105,7 @@ export interface DatabaseBlockProps {
   source: SpaceDataSource;
   inline: boolean;
   title?: string;
-  /** The sample world this table lives in; absent = a real store table. */
+  /** The sample world this table lives in; absent = a real custom table. */
   sample?: string;
   /** Linked view of database (F9): shows the source's name with an arrow. */
   linked?: boolean;

@@ -549,7 +549,7 @@ export interface EntityListConfig<TRow> {
 
   /**
    * Page-owned on/off switches drawn in the Filters panel under one heading each — for a choice
-   * that changes WHAT the page reads (the data home's "Show app tables"), not a filter-bag entry.
+   * that changes WHAT the page reads (the data home's "Show platform tables"), not a filter-bag entry.
    * The page holds the state; the panel only draws it.
    */
   panelSwitches?: EntityPanelSwitch[];

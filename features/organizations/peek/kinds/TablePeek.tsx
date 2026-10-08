@@ -2,7 +2,7 @@
 "use client";
 
 /**
- * TablePeek — quick read-only preview of a record-store Table.
+ * TablePeek — quick read-only preview of a custom Table.
  *
  * The table names its own organization (`locateTable`), then the data seam reads its details, its
  * columns and its first rows (`getTablePage`). A failed read says so; an empty table says it is empty.

@@ -62,7 +62,7 @@ format can never end up on a boolean.
 
 ## Consumers
 
-**User data tables (`/data/[id]` and every mount of the store table page).**
+**User data tables (`/data/[id]` and every mount of the custom table page).**
 Persisted on the record store's field (the Table's column) as `format = {id, options}`.
 
 - Write: `setFieldFormat()` in `features/data-tables/service.ts` → the data

@@ -131,7 +131,7 @@ a bespoke grid                      →  compose useMirroredUrlState
 **Worked reference — copy its shape:**
 - `features/data-tables/table-view-url.ts` — the pure codec (+18 tests)
 - `features/data-tables/hooks/useTableViewUrlState.ts` — the wiring
-- the store table page (`@ai-matrx/records-ui` via `records-ui-host/recordsUiHost.tsx`) — the consumer
+- the custom table page (`@ai-matrx/records-ui` via `records-ui-host/recordsUiHost.tsx`) — the consumer
 
 **Use the shared parameter vocabulary.** `q` search · `sort` `<field>.<asc|desc>`
 · `f` JSON filters · `p` page · `ps` page size. A second name for the same

@@ -77,7 +77,7 @@ const surfaceSpecific: SurfaceValue[] = [
     name: "table_id",
     label: "Table ID",
     description:
-      "UUID of the user table being viewed. Empty when no table is open.",
+      "UUID of the custom table being viewed. Empty when no table is open.",
     valueType: "string",
     alwaysAvailable: false,
     typicalCharCount: 36,

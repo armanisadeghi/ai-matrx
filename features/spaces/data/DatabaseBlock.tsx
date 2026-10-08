@@ -231,7 +231,7 @@ function DatabaseFrame({
                 // Notion: an inline database's title IS the database's name (relation pickers, search, the sidebar).
                 // A linked view keeps a title of its own.
                 if (!props.linked && next !== table.data?.name)
-                  void client.recordUpdate({ record_id: tableId, patch: { name: next } }).then((renamed) => {
+                  void client.recordUpdate({ record_id: tableId, patch: { name: next, label_singular: next, label_plural: next } }).then((renamed) => {
                     if (renamed.ok) tableShapeChanged(tableId);
                     else toast.error(`Database not renamed: ${renamed.error.message}`);
                   });

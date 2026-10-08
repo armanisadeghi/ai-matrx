@@ -3,7 +3,7 @@
 /**
  * A TABLE SHOWN AWAY FROM ITS PAGE GETS THE TABLE'S ONE ACTION LIST (lane TABLE-ACTIONS item 11).
  *
- * Mounts that draw a record-store table outside `/data/<id>` — `UserTableWindow`,
+ * Mounts that draw a custom table outside `/data/<id>` — `UserTableWindow`,
  * `QuickDataWindow`'s preview, the store grid on `/data/<id>` — answer a right-click with
  * `tableActions()` from `@ai-matrx/records-ui`, through the one v3 renderer (`toExtraSections`).
  * There is no second list here: the guard `no-table-action-list-outside-the-registry` forbids it.
@@ -30,7 +30,7 @@ export interface DatasetTableMenuRow {
 }
 
 /**
- * THE TABLE'S OWN ENTITY, for right-click's Attach To: a record-store table is a `record` (the Data
+ * THE TABLE'S OWN ENTITY, for right-click's Attach To: a custom table is a `record` (the Data
  * home's `getRowEntity` says the same). No `resourceType`: the table's action list carries Share,
  * so v3's generic Share is not drawn beside it.
  */

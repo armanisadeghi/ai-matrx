@@ -209,7 +209,7 @@ export async function listDeliveries(
 
 
 /**
- * SEND EVERY CHANGE OF ONE RECORD-STORE TABLE TO A WEBHOOK (lane INTEG-CLIENTS, F19).
+ * SEND EVERY CHANGE OF ONE CUSTOM TABLE TO A WEBHOOK (lane INTEG-CLIENTS, F19).
  * `custom.table_webhook_declare` files the webhook in the TABLE's organization with
  * `resource_types = ['record:<table>']` (lane SOURCE-KEY), so the platform's one dispatcher delivers it and
  * signs it exactly like every other webhook here; it refuses a non-admin, a non-https address and

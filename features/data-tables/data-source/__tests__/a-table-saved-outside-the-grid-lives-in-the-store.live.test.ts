@@ -8,7 +8,7 @@
  * came in this week, then clicks "Save as table" on the answer — and, the next morning, appends
  * two more deliveries to the "Parts on order" table it already keeps.
  *
- * The table is born a record-store Table, its rows are readable through the seam, and the
+ * The table is born a custom Table, its rows are readable through the seam, and the
  * appended rows are records of "Parts on order", found by the seam with no placement handed in.
  *
  * Needs NEXT_PUBLIC_SUPABASE_URL + NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY (the live database)
@@ -75,7 +75,7 @@ async function kernelId(): Promise<string> {
   return k.data;
 }
 
-async function isStoreTable(id: string): Promise<boolean> {
+async function isCustomTable(id: string): Promise<boolean> {
   const found = await client.schema("custom" as never).rpc("read_records_by_ids" as never, {
     p_organization_id: ORG,
     p_table_id: await kernelId(),
@@ -180,7 +180,7 @@ describeLive("a table saved or appended to outside the grid lives in its organiz
     });
     expect(written.success ? null : written.error).toBeNull();
 
-    expect(await isStoreTable(tableId)).toBe(true);
+    expect(await isCustomTable(tableId)).toBe(true);
     made.push(tableId);
 
     const rows = await storeRows(tableId);

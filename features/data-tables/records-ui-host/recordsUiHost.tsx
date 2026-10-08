@@ -3,7 +3,7 @@
 /**
  * THE ONE RECORDS-UI HOST BINDING (one-grid merge, step 7).
  *
- * Every place in this app that draws a record-store table — the /data table page, the table
+ * Every place in this app that draws a custom table — the /data table page, the table
  * window, the dataset overlay, a chat table artifact, the quick data sheet, the tables picker,
  * the chat "view table" modal — hands `@ai-matrx/records-ui` the SAME ports: links, toasts, files,
  * members, share, the record chat, agent row actions, "ask an agent", number click-through, the

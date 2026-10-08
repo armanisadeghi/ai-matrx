@@ -96,7 +96,7 @@ it("a schedule made on the table before its move is re-keyed to the store's chan
   const last = saved.at(-1);
   expect(last?.entity_type).toBe(`record:${SERVICE_CALLS}`);
   expect(last?.table_id).toBe(SERVICE_CALLS);
-  // `row.updated` is the older store's word; it never fires on a store table, so it is dropped.
+  // `row.updated` is the older store's word; it never fires on a custom table, so it is dropped.
   expect(last?.actions).toBeUndefined();
   expect(last?.changed_fields).toEqual(["stage"]);
 });

@@ -1,6 +1,6 @@
 // features/spaces/data/agency-spec.ts — the sample agency the data blocks draw while the build runs:
 // a social-media agency's Clients, NPS surveys, Client wins and Tasks. "Add the sample" installs it as real
-// store tables (data/agency-install.ts); the template gallery's preview reads it in memory (`templatePreview`).
+// custom tables (data/agency-install.ts); the template gallery's preview reads it in memory (`templatePreview`).
 //
 // Title fields are not required: Notion's "+ New page" makes an untitled row, and so does the inline grid's.
 //

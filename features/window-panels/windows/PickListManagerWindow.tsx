@@ -54,7 +54,7 @@ export default function PickListManagerWindow({
     >
       {/* 🚨 A WINDOW MOUNTS ITS OWN MENU (context-menu-v3 SKILL). Without
           this, a right-click here is answered by whatever page sits
-          underneath. A record-store Table is itself a custom.record kernel
+          underneath. A custom Table is itself a custom.record kernel
           record (REC-1), so a forced list can truthfully name that record. */}
       <NonEditableContextMenu
         sourceFeature="udt"

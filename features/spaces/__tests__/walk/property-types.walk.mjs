@@ -174,23 +174,43 @@ await act(page, async () => {
   await page.getByText("In progress", { exact: true }).last().click();
   await page.waitForTimeout(2000);
   await page.keyboard.press("Escape");
-  await row.getByRole("button", { name: "Edit Vendors", exact: true }).dblclick();
-  await page.waitForTimeout(2500);
   for (const v of ["Acme Supplies", "Northwind Paper"]) {
-    await page.getByRole("button", { name: v, exact: true }).last().click().catch(() => {});
-    await page.waitForTimeout(1500);
+    const opt = page.locator("[data-radix-popper-content-wrapper]").getByText(v, { exact: true }).first();
+    for (let attempt = 0; attempt < 3 && !(await opt.isVisible().catch(() => false)); attempt++) {
+      await page.keyboard.press("Escape").catch(() => {});
+      await page.waitForTimeout(800);
+      await row.getByRole("button", { name: "Edit Vendors", exact: true }).dblclick();
+      await opt.waitFor({ timeout: 8000 }).catch(() => {});
+    }
+    await page.screenshot({ path: `${SHOT}/r42-5a-relation-${v.split(" ")[0]}.png` });
+    await opt.click();
+    await page.waitForTimeout(2500);
   }
   await page.screenshot({ path: `${SHOT}/r42-5-relation-cell.png` });
   await page.keyboard.press("Escape");
   await page.waitForTimeout(2000);
 
   step("person and file on the opened page");
-  await row.hover();
-  await row.getByRole("button", { name: /^Open / }).click();
+  // A fresh load puts the grid back at its first column, where the row's Open button is.
+  await page.goto(pageUrl, { waitUntil: "domcontentloaded" });
+  await waitGrid(A());
+  await page.waitForTimeout(2500);
+  const first = A().locator("[data-row-id]").first();
+  await first.hover();
+  await first.getByRole("button", { name: /^Open / }).click();
+  await page.waitForURL(/\/r\/[0-9a-f-]{36}/, { timeout: 60_000 });
+  // The record page has drawn (its history list), not the page it left.
+  await page.getByText("Worked out by the system").first().waitFor({ timeout: 180_000 });
   await page.getByRole("button", { name: "Edit Owner", exact: true }).waitFor({ timeout: 60_000 });
   await page.waitForTimeout(2000);
-  await page.getByRole("button", { name: "Edit Owner", exact: true }).click();
-  await page.getByRole("button", { name: /test@test\.com/ }).last().click();
+  const me = page.locator("[data-radix-popper-content-wrapper]").getByRole("button", { name: /test@test\.com/ }).last();
+  for (let attempt = 0; attempt < 4 && !(await me.isVisible().catch(() => false)); attempt++) {
+    await page.keyboard.press("Escape").catch(() => {});
+    await page.getByRole("button", { name: "Edit Owner", exact: true }).click();
+    await me.waitFor({ timeout: 8000 }).catch(() => {});
+  }
+  await page.screenshot({ path: `${SHOT}/r42-5b-person-picker.png` });
+  await me.click();
   await page.waitForTimeout(2500);
   await page.keyboard.press("Escape");
   const file = `${SHOT}/r42-brief.txt`;

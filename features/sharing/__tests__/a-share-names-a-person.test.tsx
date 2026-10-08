@@ -4,7 +4,7 @@
  * The Share dialog used to carry an "Organizations" tab reading "Share with Organization. All
  * members of the organization will have access". That wrote ONE grant to a whole organization,
  * so a person who joined later was let in without anyone naming them. VERIFIER-21 found it still
- * live on a record-store table on 2026-09-25.
+ * live on a custom table on 2026-09-25.
  *
  * What these tests hold:
  *   1. The dialog has no Organizations tab. No share surface imports an organization grant form,

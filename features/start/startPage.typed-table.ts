@@ -1,12 +1,12 @@
-// features/start/startPage.app-table.ts — WHICH PAGE IS THIS PERSON'S START PAGE (v7 APPS-ON-DATA item 3).
+// features/start/startPage.typed-table.ts — WHICH PAGE IS THIS PERSON'S START PAGE (v7 APPS-ON-DATA item 3).
 //
 // Arman's endgame (2026-10-02): one custom start page per person, built from their own data and platform
-// features (pages hold applets; applets hold pages). The choice is one row per person, kept in an app
+// features (pages hold applets; applets hold pages). The choice is one row per person, kept in a typed
 // table the platform keeps for this feature — person scope, so only she sees her row. A person in several
 // organizations may have a row in each; the newest choice wins.
-import { defineAppTable, f } from "@ai-matrx/records/app-table";
+import { defineAppTable as defineTypedTable, f } from "@ai-matrx/records/app-table";
 
-export const startPageChoice = defineAppTable({
+export const startPageChoice = defineTypedTable({
   name: "Start page",
   slug: "start_page",
   kept_for: "start_page",

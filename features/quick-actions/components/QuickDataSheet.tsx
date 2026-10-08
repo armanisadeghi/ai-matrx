@@ -10,7 +10,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-// Located first (lane INTEG-CLIENTS): a moved or record-store table opens from its own store.
+// Located first (lane INTEG-CLIENTS): a moved or custom table opens from its own store.
 import LocatedTableViewer from "@/features/data-tables/components/LocatedTableViewer";
 import { listTablesEverywhere } from "@/features/data-tables/service";
 import { cn } from "@/lib/utils";
@@ -87,7 +87,7 @@ export function QuickDataSheet({
       setLoading(true);
       setError(null);
 
-      // Older tables AND the organization's record-store Tables (lane INTEG-CLIENTS F1/F2);
+      // Older tables AND the organization's custom Tables (lane INTEG-CLIENTS F1/F2);
       // the viewer below locates the picked table before it reads a row.
       const listed = await listTablesEverywhere();
       if (!listed.success) throw new Error(listed.error || "Failed to load tables");

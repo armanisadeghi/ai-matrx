@@ -221,7 +221,7 @@ test("B2. a list menu targets the Table's real custom.record identity", async ()
       />,
     );
   });
-  // REC-1: the list id is the record-store Table's own custom.record id. It
+  // REC-1: the list id is the custom Table's own custom.record id. It
   // must never regress to the retired pick_list/structured_list entity token.
   expect(mockMenuEntities).toContainEqual({
     type: "record",
