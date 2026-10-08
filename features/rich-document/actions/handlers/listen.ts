@@ -169,7 +169,10 @@ registerAction({
           ? "Waiting for other audio — click to cancel"
           : status === "starting"
             ? "Starting… click to cancel"
-            : "Read aloud (reads your selection when text is selected)";
+            : ctx.extensions?.type === "chat-message"
+              ? "Read aloud (reads your selection when text is selected)"
+              : // A text field's or document's menu reads the whole text.
+                "Read aloud";
   },
   icon: Volume2,
   iconColor: "text-primary",
