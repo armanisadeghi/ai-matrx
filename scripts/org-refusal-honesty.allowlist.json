@@ -1,3 +1,0 @@
-{
-  "components/agent-copy/AlchemyHost.tsx": "Capability gate refuses absent user or organization before port I/O; stale ports are rejected after await. Covered by AlchemyHost tests."
-}

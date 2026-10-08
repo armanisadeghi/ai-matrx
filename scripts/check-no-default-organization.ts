@@ -38,6 +38,8 @@ const ROOT = resolve(__dirname, "..");
 /** The ONE module allowed to read the columns and call the RPCs. */
 const THE_READER = "lib/organizations/accountOrganizationChoices.ts";
 
+/** This guard itself names the retired words (its own pattern lists). */
+const SELF = "scripts/check-no-default-organization.ts";
 const SCAN_EXT = /\.(ts|tsx|js|jsx|mjs|cjs|sql|sh)$/;
 const SKIP_PATH =
   /^(migrations|supabase\/migrations|node_modules|\.next|docs)\/|(^|\/)(__tests__|node_modules)\/|\.(test|spec)\.|\.generated\.|(^|\/)database\.types\.ts$|^types\/database\.types\.ts$/;
@@ -91,7 +93,7 @@ export interface Finding {
 }
 
 export function scanFile(file: string, text: string): Finding[] {
-  if (!SCAN_EXT.test(file) || SKIP_PATH.test(file)) return [];
+  if (file === SELF || !SCAN_EXT.test(file) || SKIP_PATH.test(file)) return [];
   const findings: Finding[] = [];
   const lines = text.split("\n");
   if (file !== THE_READER) {
