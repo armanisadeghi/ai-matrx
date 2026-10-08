@@ -104,6 +104,9 @@ record's own `scope` (`{ entries, shadowDangerousGlobals }`); app-owned modules 
 
 ## Change Log
 
+- 2026-10-08 — `AppletHostMount`: an open still pending after `OPENING_SLOW_MS` (20 s) shows "This Applet is slow to open" with
+  Try again (a late answer still mounts; captured as `applet_open_slow`); a failed open renders through `ErrorNotice` with
+  Try again. A gateway that never answered the definition read used to leave the skeleton up forever.
 - 2026-10-08 — Lane AA: `checkBuildAnswer` also refuses a saved field no input sets (`fieldsWithNoInput` — the
   social planner's "Brand Requirements & Guidance" box wrote Guidance and Requirements stayed empty), a button that
   does nothing (`deadButtons`; inside a `<Link>` is fine), a declared new-table field no page shows and a new table
