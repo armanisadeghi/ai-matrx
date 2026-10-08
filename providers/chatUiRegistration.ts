@@ -567,3 +567,8 @@ registerChatUi({
   useCostDisplay: Host_useCostDisplay,
 });
 
+
+import { CanvasItemCard as Host_CanvasItemCard } from "@/features/canvas/components/CanvasItemCard";
+registerChatUi({
+  CanvasItemCard: Host_CanvasItemCard,
+});

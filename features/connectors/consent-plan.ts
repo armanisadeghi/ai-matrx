@@ -120,6 +120,8 @@ export interface ConsentRequest {
   renewals: ConnectorProduct[];
   /** The account being added to, or null for a new connection. */
   targetAccountId: string | null;
+  /** Re-display the provider's consent screen even when every scope is held. */
+  forceConsent?: boolean;
 }
 
 export interface ConsentBlock {
@@ -137,6 +139,103 @@ export interface ConsentPlan {
   alreadyGranted: ConnectorProduct[];
   /** True when pressing the button would ask the provider for nothing. */
   empty: boolean;
+}
+
+export type PermissionsReviewPlan =
+  | { request: ConsentRequest; refusal: null }
+  | { request: null; refusal: string };
+
+/**
+ * Re-open Google consent for one healthy shared connection without changing
+ * what it may do. The stored scope strings are copied literally; the server
+ * remains the atomic guard if Google returns a wider or narrower grant.
+ */
+export function buildPermissionsReviewPlan({
+  provider,
+  account,
+  rollout,
+}: {
+  provider: ConnectorProviderConfig;
+  account: ConnectorAccount;
+  rollout: readonly ConnectorCapabilityRollout[];
+}): PermissionsReviewPlan {
+  const refuse = (refusal: string): PermissionsReviewPlan => ({
+    request: null,
+    refusal,
+  });
+  if (provider.id !== "google" || !account.usable || account.blocked) {
+    return refuse("Reconnect this account before reviewing its permissions.");
+  }
+  if (account.ownerKind === "organization" && !account.organizationId) {
+    return refuse("This shared connection has no organization owner to approve changes.");
+  }
+  const isolatedByPurpose =
+    account.connectionPurpose === "google_ads_isolated" ||
+    account.connectionPurpose === "youtube_isolated";
+  const isolatedByScope = account.grantedScopes.some(
+    (scope) =>
+      scope === GOOGLE_SCOPE.googleAds ||
+      scope === GOOGLE_SCOPE.youtubeReadonly ||
+      scope === GOOGLE_SCOPE.youtubeAnalyticsReadonly,
+  );
+  if (isolatedByPurpose || isolatedByScope) {
+    return refuse(
+      "Review this dedicated Ads or YouTube connection from its own Google settings.",
+    );
+  }
+
+  const identityScopes = new Set([
+    ...provider.identityScopes,
+    GOOGLE_SCOPE.userinfoEmail,
+    GOOGLE_SCOPE.userinfoProfile,
+  ]);
+
+  const products = provider.products.filter((product) => {
+    const grants = requiredScopesFor(provider, product, rollout);
+    return (
+      grants.length > 0 &&
+      grants.every((scope) => account.grantedScopes.includes(scope))
+    );
+  });
+  const representedScopes = new Set(
+    products.flatMap((product) => requiredScopesFor(provider, product, rollout)),
+  );
+  const unrepresented = account.grantedScopes.filter(
+    (scope) => !identityScopes.has(scope) && !representedScopes.has(scope),
+  );
+  if (unrepresented.length > 0) {
+    return refuse(
+      "This connection includes a Google permission that is not listed here. Review it in your Google Account.",
+    );
+  }
+  const ineligible = products.filter(
+    (product) => !productIsEligible(product, rollout),
+  );
+  if (ineligible.length > 0) {
+    return refuse(
+      `${ineligible.map((product) => product.name).join(", ")} cannot be reviewed for this account right now. Try again when available.`,
+    );
+  }
+  const capabilityKeys = [
+    ...new Set(products.flatMap((product) => product.capabilityKeys)),
+  ];
+  if (capabilityKeys.length === 0 || account.grantedScopes.length === 0) {
+    return refuse("This connection has no product permissions to review.");
+  }
+
+  return {
+    request: {
+      connectionPurpose: "google_products",
+      capabilityKeys,
+      scopes: [...account.grantedScopes],
+      addedScopes: [],
+      products,
+      renewals: products,
+      targetAccountId: account.id,
+      forceConsent: true,
+    },
+    refusal: null,
+  };
 }
 
 export function buildConsentPlan({

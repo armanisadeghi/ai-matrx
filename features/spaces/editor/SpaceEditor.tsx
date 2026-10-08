@@ -12,6 +12,8 @@ import { en } from "@blocknote/core/locales";
 import {
   AddBlockButton,
   DragHandleButton,
+  getDefaultReactEmojiPickerItems,
+  GridSuggestionMenuController,
   SideMenu,
   SideMenuController,
   SuggestionMenuController,
@@ -451,6 +453,8 @@ export function SpaceEditor({ spaceId, initialBlocks, editable, onChange, slash,
           return q ? [...dateItems, ...personItems, ...pageItems] : [...personItems, ...pageItems, ...dateItems];
         }}
       />
+      {/* N14 — ":" then a name offers emoji inline (Notion). Text a person types, so it is theirs. */}
+      <GridSuggestionMenuController triggerCharacter=":" columns={8} minQueryLength={2} floatingUIOptions={SLASH_MENU} getItems={async (query) => getDefaultReactEmojiPickerItems(editor, query)} />
       <SuggestionMenuController triggerCharacter="/" floatingUIOptions={SLASH_MENU} getItems={async (query) => rankSlashItems(slashItems(editor, slash), query)} />
       {editable ? (
       <SideMenuController

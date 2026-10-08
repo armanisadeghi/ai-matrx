@@ -93,7 +93,7 @@ describe("Space snapshot JSON Schema", () => {
   });
 
   it("accepts what validateSnapshot accepts (every type, unsupported shape, nulls)", () => {
-    for (const s of [snap(), { ...snap(), icon: null, cover: null }, snap([]), { ...snap(), icon: { url: "https://x.y/i.png" } }]) {
+    for (const s of [snap(), { ...snap(), icon: null, cover: null }, snap([]), { ...snap(), icon: { url: "https://x.y/i.png" } }, { ...snap(), icon: { emoji: "🚀" } }]) {
       expect(validateSnapshot(s)).toEqual([]);
       expect(schemaOk(s)).toBe(true);
     }
@@ -133,6 +133,8 @@ describe("Space snapshot JSON Schema", () => {
     "version 2": (s) => (s.v = 2),
     "no settings": (s) => delete s.settings,
     "bad font": (s) => (s.settings.font = "comic"),
+    "icon with an empty emoji": (s) => (s.icon = { emoji: "" }),
+    "icon with emoji and icon": (s) => (s.icon = { emoji: "🚀", icon: "A" }),
     "icon with two keys": (s) => (s.icon = { icon: "A", url: "https://x.y" }),
     "blocks not an array": (s) => (s.blocks = {}),
     "nested bad type": (s) => (s.blocks[2].children[0].type = "para"),

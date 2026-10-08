@@ -178,9 +178,10 @@ const INSTALLED = path.join(ROOT, "node_modules/@ai-matrx/rich-content/dist");
 describe("one click: markdown or plain text, and the button equals the menu", () => {
   test("A. the chat answer bar leads with the split Copy running the same rows as its menu", () => {
     const bar = fs.readFileSync(path.join(INSTALLED, "rich-document/variants/ActionBar.js"), "utf8");
-    // The bar leads with THE content action set (2026-10-08), whose first control is the split Copy.
+    // The bar leads with THE content action set (2026-10-08, revised): ONE Copy icon whose one click
+    // copies raw through the registry's "copy-markdown" row (content-actions.census owns the shape).
     expect(bar).toMatch(/ContentActions/);
-    expect(fs.readFileSync(path.join(INSTALLED, "copy/ContentActions.js"), "utf8")).toMatch(/CopySplitButton/);
+    expect(fs.readFileSync(path.join(INSTALLED, "copy/ContentActions.js"), "utf8")).toMatch(/CopyMenuButton/);
     expect(bar).toMatch(/"copy-markdown"/);
     expect(bar).toMatch(/"copy-plain-text"/);
     expect(bar).toMatch(/triggerHidden/);
@@ -445,7 +446,8 @@ describe("consistency everywhere: markdown copy is the split Copy across the who
     expect(split).toMatch(/onTransform:/);
     expect(split).not.toMatch(/onExport:/);
     const bar = fs.readFileSync(path.join(REPO_ROOT, "node_modules/@ai-matrx/rich-content/dist/rich-document/variants/ActionBar.js"), "utf8");
-    expect(bar).toMatch(/onTransform:/);
+    // The rich-document bar's palette door is its ⋯ "Alchemy…" row — never a bar icon.
+    expect(bar).not.toMatch(/onTransform:/);
     expect(bar).not.toMatch(/onExport:/);
     // The phone note dock HAS a ⋯ (its More sheet): the content action set's rows live there (Transform
     // opens the palette), one tap each; its copy chevron stays 2 rows.

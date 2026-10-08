@@ -16,6 +16,7 @@ import { createRoot, type Root } from "react-dom/client";
 
 import type { SpaceMedia } from "../contract";
 import { IconPicker } from "../page/IconPicker";
+import { isEmojiText } from "../page/SpaceIcon";
 import { SPACE_ICONS } from "../icons-registry";
 
 const OPEN_PICKER = "spaces:callout-icon";
@@ -23,6 +24,8 @@ const OPEN_PICKER = "spaces:callout-icon";
 type OpenPicker = { blockId: string; icon: string; anchor: HTMLElement };
 
 export function CalloutGlyph({ name }: { name: string }) {
+  // An emoji a person chose is stored as the icon text itself (a Lucide name is plain letters).
+  if (isEmojiText(name)) return <span role="img" aria-label="emoji" style={{ fontSize: 19, lineHeight: 1 }}>{name}</span>;
   const Icon = SPACE_ICONS[name];
   if (Icon) return <Icon size={20} strokeWidth={1.75} aria-hidden />;
   return <DynamicIcon name={name} size={20} fallbackIcon="FileText" />;
@@ -90,7 +93,7 @@ export function CalloutIconHost({ editor }: { editor: { updateBlock: (id: string
   }, []);
   if (!open) return null;
   const r = open.anchor.getBoundingClientRect();
-  const value: SpaceMedia = { icon: open.icon };
+  const value: SpaceMedia = isEmojiText(open.icon) ? { emoji: open.icon } : { icon: open.icon };
   return (
     <IconPicker
       value={value}
@@ -99,7 +102,7 @@ export function CalloutIconHost({ editor }: { editor: { updateBlock: (id: string
         if (!next) setOpen(null);
       }}
       onChange={(media) => {
-        editor.updateBlock(open.blockId, { props: { icon: media && "icon" in media ? media.icon : "" } });
+        editor.updateBlock(open.blockId, { props: { icon: media && "icon" in media ? media.icon : media && "emoji" in media ? media.emoji : "" } });
         setOpen(null);
       }}
     >

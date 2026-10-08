@@ -27,7 +27,7 @@ import { PublishedRowsProvider } from "../data/published-rows";
 import { SpaceEditor } from "../editor/SpaceEditor";
 import { Cover } from "../page/Cover";
 import { PublishedMediaProvider } from "../page/media";
-import { SpaceIcon } from "../page/SpaceIcon";
+import { SpaceIcon, isImageMedia } from "../page/SpaceIcon";
 import {
   StaticSpacesProvider,
   type SpacesContextValue,
@@ -250,11 +250,11 @@ export function PublicSpace({ view }: { view: PublicSpaceView }) {
                       {icon ? (
                         <span
                           className="spaces-page-icon"
-                          data-image={!("icon" in icon) ? "true" : undefined}
+                          data-image={isImageMedia(icon) ? "true" : undefined}
                         >
                           <SpaceIcon
                             media={icon}
-                            size={!("icon" in icon) ? 136 : 78}
+                            size={isImageMedia(icon) ? 136 : 78}
                           />
                         </span>
                       ) : null}

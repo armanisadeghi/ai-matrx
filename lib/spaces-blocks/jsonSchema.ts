@@ -178,7 +178,7 @@ function mediaProps(): J {
 function mediaDef(allowOffset: boolean): J {
   return {
     type: "object",
-    oneOf: ["fileId", "url", "icon"].map((k) => ({ required: [k], properties: { [k]: nonEmptyStr } })),
+    oneOf: ["fileId", "url", "icon", "emoji"].map((k) => ({ required: [k], properties: { [k]: nonEmptyStr } })),
     ...(allowOffset ? { properties: { offsetY: { type: "number" } } } : {}),
   };
 }

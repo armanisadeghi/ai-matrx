@@ -115,6 +115,10 @@ export interface ConnectedAccountHealthProps {
    * nine windows for one repair.
    */
   onReconnectAccount: () => void;
+  /** Re-display consent for exactly this healthy account's held permissions. */
+  onReviewPermissions?: () => void;
+  /** Why this healthy connection cannot safely use shared permission review. */
+  permissionsReviewUnavailableReason?: string | null;
   /** Remove the account. The caller states the consequence before it runs. */
   onRevoke: () => void;
   /**
@@ -146,6 +150,8 @@ export function ConnectedAccountHealth({
   organizationName,
   onReconnect,
   onReconnectAccount,
+  onReviewPermissions,
+  permissionsReviewUnavailableReason,
   onRevoke,
   busy = [],
   revoking = false,
@@ -161,6 +167,11 @@ export function ConnectedAccountHealth({
     (row) => row.actionLabel !== null && row.actionScope === "account",
   );
   const accountBusy = isBusy(busy, { accountId: account.id, productKey: null });
+  const canReviewPermissions =
+    management.allowed &&
+    account.usable &&
+    !account.blocked &&
+    onReviewPermissions !== undefined;
 
   return (
     <div
@@ -267,6 +278,11 @@ export function ConnectedAccountHealth({
                 {management.sentence}
               </p>
             )}
+            {management.allowed && permissionsReviewUnavailableReason ? (
+              <p className="mt-1.5 text-xs text-muted-foreground">
+                {permissionsReviewUnavailableReason}
+              </p>
+            ) : null}
             {/* The account-level refusal, in the words the adapter translated it
                 into — and only when it adds something the status sentence above
                 has not already said, so one fact is stated once. */}
@@ -284,19 +300,34 @@ export function ConnectedAccountHealth({
             )}
           </div>
           {management.allowed ? (
-          <Button
-            icon={revoking ? (
-              <Loader2 className="animate-spin" aria-hidden />
-            ) : (
-              <Trash2 aria-hidden />
-            )}
-            variant="quiet"
-            onClick={onRevoke}
-            disabled={revoking}
-            className="ml-auto shrink-0 sm:ml-0"
-          >
-            Disconnect
-          </Button>
+          <div className="ml-auto flex shrink-0 items-center gap-1 sm:ml-0">
+            {canReviewPermissions ? (
+              <Button
+                icon={accountBusy ? (
+                  <Loader2 className="animate-spin" aria-hidden />
+                ) : (
+                  <RefreshCw aria-hidden />
+                )}
+                variant="quiet"
+                onClick={onReviewPermissions}
+                disabled={accountBusy}
+              >
+                Review permissions
+              </Button>
+            ) : null}
+            <Button
+              icon={revoking ? (
+                <Loader2 className="animate-spin" aria-hidden />
+              ) : (
+                <Trash2 aria-hidden />
+              )}
+              variant="quiet"
+              onClick={onRevoke}
+              disabled={revoking}
+            >
+              Disconnect
+            </Button>
+          </div>
           ) : null}
         </div>
 
