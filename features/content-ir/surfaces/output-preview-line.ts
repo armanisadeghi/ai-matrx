@@ -102,7 +102,8 @@ function cutJsonLine(text: string): string {
 export function outputPreviewLine(text: string | null | undefined): string {
   if (!text) return "";
   // A fenced answer (```json … ```) reads as what is inside the fence.
-  const trimmed = text.trim().replace(/^```[^\n]*(?:\n|$)/, "").replace(/\n?```\s*$/, "").trim();
+  // The run history collapses newlines, so the fence's language tag may be followed by a space.
+  const trimmed = text.trim().replace(/^```[A-Za-z0-9_+-]*\s*/, "").replace(/\s*```\s*$/, "").trim();
   if (!trimmed) return "";
   if (trimmed.startsWith("{") || trimmed.startsWith("[")) {
     try {

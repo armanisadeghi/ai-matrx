@@ -33,6 +33,10 @@ describe("outputPreviewLine", () => {
     expect(outputPreviewLine('```json\n{"__kind":"agent_definition","name":"Supplier Invoice Checker","descr')).toBe(
       "Agent definition: Supplier Invoice Checker",
     );
+    // The run history's preview collapses newlines: "```json { …".
+    expect(
+      outputPreviewLine('```json { "__kind": "directive_v1_action_create_agent_definition", "items": [ { "__kind": "agent_definition", "name": "Supplier Invoice Checker", "desc'),
+    ).toBe("Agent definition: Supplier Invoice Checker");
   });
 
   it("reads text as its first non-empty line", () => {
