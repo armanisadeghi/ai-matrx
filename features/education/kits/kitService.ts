@@ -21,6 +21,7 @@
 
 import { formatDurationSeconds } from "@ai-matrx/kit/format";
 import { associationsService } from "@/features/scopes/service/associationsService";
+import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
 import { withTransientRetry } from "@/lib/db/transientRetry";
 import {
   listGeneratedFrom,
@@ -688,26 +689,19 @@ export async function removeKitMembersVersioned(
 }
 
 /**
- * Archive a kit (never a hard delete). A kit scope is archived whole: its
- * Source and aid links stay exactly as they are, so `restoreKit` brings the kit
- * back complete. An older single-anchor kit has no record of its own, so its
- * grouping links are removed. Sources and saved study aids stay saved either way.
+ * Archive a kit (never a hard delete). Every kit is archived as a kit scope, so
+ * `restoreKit` brings it back complete. An older single-anchor kit has no record
+ * of its own: it is first promoted (nothing deleted), then the new scope is
+ * archived. Returns the archived kit's reference; Undo must restore THAT.
  */
-export async function archiveKit(kit: StudyKit, expectedFingerprint = kitMembershipFingerprint(kit)): Promise<void> {
+export async function archiveKit(kit: StudyKit, expectedFingerprint = kitMembershipFingerprint(kit)): Promise<Pick<StudyKit, "sourceType" | "sourceId">> {
   const current = await currentKitOrThrow(kit, expectedFingerprint);
-  if (kit.sourceType === KIT_TOKEN) {
-    await archiveKitScope(kit.sourceId);
-    return;
+  let kitId = kit.sourceId;
+  if (kit.sourceType !== KIT_TOKEN) {
+    kitId = await promoteAnchorKit(current, current.organizationId ?? (await ensureOrgId(null)));
   }
-  let completed = 0;
-  for (const artifact of current.artifacts) {
-    try {
-      await removeKitMember(current, artifact);
-      completed += 1;
-    } catch {
-      throw new Error(`Removed ${completed} of ${current.artifacts.length} study aids from this kit. The remaining aids still belong to it; reload the kit and try again.`);
-    }
-  }
+  await archiveKitScope(kitId);
+  return { sourceType: KIT_TOKEN, sourceId: kitId };
 }
 
 /** Undo `archiveKit` for a kit scope. */

@@ -569,12 +569,12 @@ export function KitHub({
     setWriting(true);
     setWriteError(null);
     try {
-      await archiveKit(kit);
+      const archived = await archiveKit(kit);
       toast.success(`Archived "${kit.title}".`, {
         action: {
           label: "Undo",
           onClick: () =>
-            void restoreKit(kit).then(
+            void restoreKit(archived).then(
               () => toast.success(`Put back "${kit.title}".`),
               (err: unknown) => toast.error(err instanceof Error ? err.message : "It could not be put back."),
             ),
