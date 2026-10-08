@@ -155,9 +155,10 @@ const VISIBLE_BUTTONS: Record<string, RegExp> = {
   "features/html-pages/components/HtmlPreviewFullScreenEditor.tsx": /activeTab !== "preview" \? \(\s*<FormatButtons\b/,
   // a record's body: the editor's slim format row
   "features/data-tables/records-ui-host/RecordBodyEditor.tsx": /chrome="format"/,
-  "node_modules/@ai-matrx/rich-editor/dist/editor/RichEditorImpl.js": /chrome === "format" && editable[\s\S]{0,300}FormatButtons/,
   // the editor's own toolbar row (chrome "full"), Visual and Source alike: Markdown Studio, documents, prompts
-  "node_modules/@ai-matrx/rich-editor/dist/editor/RichEditorImpl.js": /const editable = view !== "preview" && !readOnly;[\s\S]{0,400}FormatButtons/,
+  // ... and chrome "format" (a host with no row of its own: a record's body) — its one slim row
+  "node_modules/@ai-matrx/rich-editor/dist/editor/RichEditorImpl.js":
+    /^(?=[\s\S]*const editable = view !== "preview" && !readOnly;[\s\S]{0,400}FormatButtons)(?=[\s\S]*chrome === "format" && editable[\s\S]{0,300}FormatButtons)/,
 };
 
 /** Gates that hid the toolbar from Write (the defect): a host must never bring one back. */

@@ -1,6 +1,7 @@
 -- chair-step: the inverse of migrations/campaign/drilltoolfacts_b_a_tool_call_carries_its_repeat_facts.sql (lane DRILL-TOOLFACTS) — drops the eleven refetch triggers on chat.tool_call, chat.request and tool.definition, their five functions and the backfill function, then the seven refetch_* columns of chat.tool_call (a catalogue-only drop, no rewrite). Apply AFTER the inverse of file 3 (the views read these columns until then). No other column or row is touched.
 -- lane: DRILL-TOOLFACTS
 -- lock: platform
+-- window-class: DROP TRIGGER on chat.tool_call, chat.request and tool.definition takes ACCESS EXCLUSIVE plus the 23 auth/storage/realtime relations of the supautils set until commit (measured on the clone); an inverse is an emergency, otherwise run it 01:00-04:00 Pacific
 
 set lock_timeout = '3s';
 
