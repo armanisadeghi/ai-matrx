@@ -24,7 +24,7 @@ export const PROJECTS_PLACES: FeaturePlaces = {
       sources: [
         "features/projects/components/ProjectCreatePanel.tsx",
         // The app path is a shim since P27 (618a850bf1); the job constant lives in the chat package.
-        "packages/chat/src/ui/projectCreateAiDebug.ts",
+        "apps/shared/chat/src/ui/projectCreateAiDebug.ts",
       ],
     },
   ],

@@ -25,6 +25,7 @@ jest.mock("@/lib/scoped-config/sessionKnob", () => ({
   useSessionKnob: () => undefined,
 }));
 jest.mock("@ai-matrx/agents/models/react", () => ({
+  ...jest.requireActual("@ai-matrx/agents/models/react"),
   useModelCatalog: () => ({ models: [] }),
   ModelListDropdown: () => null,
 }));

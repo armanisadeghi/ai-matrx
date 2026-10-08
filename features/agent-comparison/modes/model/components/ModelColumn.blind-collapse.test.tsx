@@ -7,7 +7,6 @@ import type { ModelColumn as ModelColumnType } from "../types";
 let mockState: {
   agentComparison: { blind: { active: boolean; order: string[] } };
   instanceModelOverrides: unknown;
-  modelRegistry: unknown;
 };
 // The column is named after its model, read live — its stored label is stale
 // on purpose ("Model 1"), as it was when a picked model had not loaded yet.
@@ -21,8 +20,11 @@ const MODEL_STATE = {
       },
     },
   },
-  modelRegistry: { entities: { "model-claude": { name: "Claude Sonnet" } } },
 };
+// Model names come from the core model catalog's records (B3).
+jest.mock("@ai-matrx/chat/agents/identity/model-catalog", () => ({
+  readModelRecords: () => ({ entities: { "model-claude": { name: "Claude Sonnet" } }, identityById: {} }),
+}));
 let boundColumnProps: { hideCreatorPanel?: boolean } | null = null;
 
 jest.mock("@/lib/redux/hooks", () => ({

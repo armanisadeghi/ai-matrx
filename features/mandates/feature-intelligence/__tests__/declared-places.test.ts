@@ -21,7 +21,7 @@
  * studio file whose code names a job must be named by a place for that job.
  */
 import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
-import { join, relative } from "node:path";
+import { join, relative, sep } from "node:path";
 
 import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
 import { DECLARED_FEATURES, featurePrefixes } from "../registry";
@@ -81,6 +81,10 @@ const resolveSource = (file: string) =>
   file.startsWith(CHAT_SRC)
     ? join(ROOT, "..", "aidream", ...CHAT_SRC.split("/").filter(Boolean), file.slice(CHAT_SRC.length))
     : join(ROOT, file);
+const CHAT_CHECKOUT = ["..", "aidream", ...CHAT_SRC.split("/").filter(Boolean)].join("/") + "/";
+/** A walked file under the aidream checkout, named the way the place maps name it. */
+const toSource = (file: string) =>
+  file.split(sep).join("/").startsWith(CHAT_CHECKOUT) ? CHAT_SRC + file.split(sep).join("/").slice(CHAT_CHECKOUT.length) : file;
 const read = (file: string) => readFileSync(resolveSource(file), "utf8");
 const features = DECLARED_FEATURES.filter((entry) => !OWN_GUARD.has(entry.feature)).map(
   (entry) => ({ ...entry, places: entry.places.filter((place) => !place.app) }),
@@ -151,7 +155,7 @@ describe("declared intelligence places", () => {
     );
 
     const components = (feature.roots ?? []).flatMap((root) =>
-      walk(resolveSource(root)).map((file) => relative(ROOT, file)),
+      walk(resolveSource(root)).map((file) => toSource(relative(ROOT, file))),
     );
     const running = components
       .map((file) => ({ file, keys: keysNamedIn(read(file), feature) }))
