@@ -5,8 +5,8 @@
 // A guest gets a link through sign-up that comes back here with ?use=1. A signed-in person gets the
 // data template's own install door (TemplatePreview: the organization it saves to — held until one is
 // set — the live progress and the landing); when the install lands, the Applet is copied into that
-// organization with its sources rebound, and "Open your app" goes to /applets/<slug>. An organization
-// that already has the data template gets "Add the app" over the install it has.
+// organization with its sources rebound, and "Open your Applet" goes to /applets/<slug>. An organization
+// that already has the data template gets "Add the Applet" over the install it has.
 
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
@@ -70,7 +70,7 @@ export function AppletUseTemplate({
     };
   }, [signedIn, organizationId, appletId, copy.phase]);
 
-  // Does the chosen organization already have the data template? Then the app is added over it.
+  // Does the chosen organization already have the data template? Then the Applet is added over it.
   useEffect(() => {
     if (!signedIn || !organizationId) return;
     let alive = true;
@@ -135,7 +135,7 @@ export function AppletUseTemplate({
             href={appletHref(copy.applet.slug)}
             className="inline-flex h-9 items-center rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground hover:bg-primary/90"
           >
-            Open your app
+            Open your Applet
           </Link>
         </div>
       ) : null}
@@ -152,19 +152,20 @@ export function AppletUseTemplate({
             href={appletHref(mine.slug)}
             className="inline-flex h-9 items-center rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground hover:bg-primary/90"
           >
-            Open your app
+            Open your Applet
           </Link>
         </div>
       ) : null}
       {alreadyInstalled && !mine && copy.phase !== "done" ? (
         <Button variant="primary" onClick={() => void addOverInstall()} disabled={copy.phase === "copying"} className="self-start">
-          Add the app
+          Add the Applet
         </Button>
       ) : null}
       <TemplatePreview
         templateId={templateId}
         productName={appletName}
         bare
+        installLabel="Use this template"
         autoInstall={params.get(USE_ON_RETURN) === "1"}
         onInstalled={(answer, orgId) => void addApp(answer, orgId)}
       />

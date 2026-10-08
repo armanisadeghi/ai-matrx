@@ -72,6 +72,9 @@ export function useSourceTableNames(tableIds: readonly string[]): Record<string,
             if (!row.table_id || !want.has(row.table_id)) continue;
             out[row.table_id] = { name: row.table_name || "Untitled table", organizationName: row.organization_name || null, organizationId: row.organization_id || null };
           }
+          // A table she cannot see still answers once the read is done — `undefined` means only
+          // "still loading", so a screen shows a skeleton then words, never the code's alias.
+          for (const id of wanted) out[id] ??= UNAVAILABLE_TABLE_NAME;
           setNames(out);
         },
         () => {

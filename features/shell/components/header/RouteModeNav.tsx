@@ -163,6 +163,10 @@ export function RouteModeNav({
     iconTrigger: false,
   });
   const { variant, inflow, iconTrigger } = layout;
+  // Until the first measurement the visible variant is the server's guess ("full"), which can
+  // overlap the title and then snap to icons once hydrated. It holds its place unseen until then:
+  // the first look is the measured one (SSR ZERO LAYOUT SHIFT — no labelled-then-icons flip).
+  const [measured, setMeasured] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const isMobile = useIsMobile();
 
@@ -244,6 +248,7 @@ export function RouteModeNav({
       // Below the title's floor the title wins: a trigger that does not fit
       // is not drawn at all — a clipped one reads as garbage beside the title.
       else next = { variant: "none", inflow: false, iconTrigger: false };
+      setMeasured(true);
       setLayout((prev) =>
         prev.variant === next.variant &&
         prev.inflow === next.inflow &&
@@ -334,7 +339,10 @@ export function RouteModeNav({
     // compact first render (portal not yet laid out) locks the nav in "menu".
     <div
       ref={cellRef}
-      className="relative flex w-full min-w-0 justify-center"
+      className={cn(
+        "relative flex w-full min-w-0 justify-center",
+        !measured && "[&>*:not(:first-child)]:invisible",
+      )}
       data-route-nav-inflow={inflow ? "" : undefined}
     >
       {/* Hidden measurers — always at natural width, never affect layout.

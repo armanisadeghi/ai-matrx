@@ -143,14 +143,8 @@ export function newBuildEntry(text: string, fix: BuildEntry["fix"]): BuildEntry 
   return { id: crypto.randomUUID(), text, fix, conversation_id: null, started_at: new Date().toISOString(), state: "starting" };
 }
 
-/** A name until the builder names it: the person's own words, cut at a word. */
-export function draftNameOf(request: string): string {
-  const flat = request.replace(/\s+/g, " ").trim();
-  if (flat.length <= 60) return flat || "New Applet";
-  const cut = flat.slice(0, 60);
-  const space = cut.lastIndexOf(" ");
-  return `${(space > 30 ? cut.slice(0, space) : cut).trim()}…`;
-}
+/** A draft's name until the builder's answer names it — never her sentence cut off. */
+export const UNTITLED_APPLET = "Untitled Applet";
 
 /**
  * Press Build on a new app: the draft Applet is born NOW, carrying the request, before the builder
@@ -165,7 +159,7 @@ export async function startBuildRecord(client: Client, input: { organizationId: 
       .insert({
         organization_id: input.organizationId,
         slug,
-        name: draftNameOf(input.entry.text),
+        name: UNTITLED_APPLET,
         status: "draft",
         metadata: { build: { requests: [input.entry] } },
       })

@@ -309,9 +309,9 @@ export function getRouteFavicon(
  * So this reads the PARENT's already-resolved title (Next passes it as the
  * second argument) and puts the tab's own name in front of it:
  *
- *   "Acme Launch - AI Matrx"  →  "Sources | Acme Launch - AI Matrx"
+ *   "Acme Launch — AI Matrx"  →  "Sources | Acme Launch — AI Matrx"
  *
- * The resolved parent title already carries the root template (`%s - AI Matrx`);
+ * The resolved parent title already carries the root template (`%s — AI Matrx`);
  * that template is peeled off before prefixing and re-applied by Next, so the
  * brand suffix never doubles. Nothing is fetched twice.
  *

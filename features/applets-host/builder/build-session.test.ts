@@ -7,7 +7,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 
 import type { Database } from "@/types/database.types";
 
-import { STALE_CLAIM_MS, appendBuildEntry, claimBuildEntry, draftNameOf, isOpenEntry, isStaleClaim, newBuildEntry, patchBuildEntry, readBuildRequests, releaseStaleClaim } from "./build-session";
+import { STALE_CLAIM_MS, appendBuildEntry, claimBuildEntry, UNTITLED_APPLET, isOpenEntry, isStaleClaim, newBuildEntry, patchBuildEntry, readBuildRequests, releaseStaleClaim } from "./build-session";
 
 type Row = { id: string; organization_id: string; slug: string; name: string; version: number; status: string; entry: string | null; metadata: unknown };
 
@@ -53,11 +53,8 @@ describe("build session", () => {
     expect(isOpenEntry({ ...entry, state: "failed" })).toBe(false);
   });
 
-  it("names a draft from her own words, cut at a word", () => {
-    expect(draftNameOf("  A simple   reading list ")).toBe("A simple reading list");
-    const long = draftNameOf("A page where I see my clients and approve their posts every single morning before nine");
-    expect(long.length).toBeLessThanOrEqual(61);
-    expect(long.endsWith("…")).toBe(true);
+  it("names a draft Untitled Applet until the builder names it, never her sentence cut off", () => {
+    expect(UNTITLED_APPLET).toBe("Untitled Applet");
   });
 
   it("appends and patches requests without touching the rest of metadata", async () => {

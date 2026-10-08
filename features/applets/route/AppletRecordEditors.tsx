@@ -30,7 +30,9 @@ import {
 } from "@ai-matrx/design-system/controls";
 import { readAppletCatalogue, type AppletCatalogue } from "@ai-matrx/applets/catalogue";
 import { supabase } from "@/utils/supabase/client";
-import { useAppDispatch } from "@/lib/redux/hooks";
+import { useAppDispatch, useAppStore } from "@/lib/redux/hooks";
+import { createIntelligencePort } from "@ai-matrx/agents/intelligence";
+import { createMatrxTransport } from "@/lib/api/matrx-transport";
 import { toast } from "@/lib/toast-service";
 import { saveAppletRecord } from "@/features/agents/redux/applets/thunks";
 import {
@@ -111,6 +113,44 @@ function useAppletCatalogue(organizationId: string | null) {
   return { catalogue, error };
 }
 
+/**
+ * A job's name in words for the keys the catalogue does not label (another organization's job, or a
+ * catalogue row with no label): the server's own description of the job, never the dotted key.
+ * `undefined` = still asking; the select waits on a skeleton.
+ */
+function useJobLabels(keys: readonly string[], catalogue: AppletCatalogue | null): Record<string, string | undefined> {
+  const store = useAppStore();
+  const [labels, setLabels] = useState<Record<string, string>>({});
+  const missing = catalogue
+    ? [...new Set(keys)].filter((k) => k && !catalogue.jobs.some((j) => j.key === k && j.label)).sort().join(",")
+    : "";
+  useEffect(() => {
+    if (!missing) return;
+    let live = true;
+    const port = createIntelligencePort({ transport: createMatrxTransport(store.getState, { source: "applets" }) });
+    void Promise.all(
+      missing.split(",").map(async (key) => {
+        const d = await port.describe(key).catch(() => null);
+        return [key, d?.ok ? d.data.label || d.data.goal || "Unnamed job" : "Job unavailable"] as const;
+      }),
+    ).then((pairs) => live && setLabels((prev) => ({ ...prev, ...Object.fromEntries(pairs) })));
+    return () => {
+      live = false;
+    };
+  }, [missing, store]);
+  const out: Record<string, string | undefined> = {};
+  for (const j of catalogue?.jobs ?? []) if (j.label) out[j.key] = j.label;
+  return { ...labels, ...out };
+}
+
+/** "Calendar.tsx" → the title of the page it draws ("Calendar"), else its name in words. */
+export function fileLabel(file: string, pages: readonly { title: string; file: string }[]): string {
+  const page = pages.find((p) => p.file === file && p.title.trim());
+  if (page) return page.title.trim();
+  const words = file.replace(/\.[a-z]+$/i, "").replace(/([a-z])([A-Z])/g, "$1 $2").replace(/[_\-./]+/g, " ").trim();
+  return words ? words.charAt(0).toUpperCase() + words.slice(1) : file;
+}
+
 function CatalogueGaps({ catalogue, error }: { catalogue: AppletCatalogue | null; error: string | null }) {
   const gaps = error ? [error] : (catalogue?.gaps ?? []);
   if (gaps.length === 0) return null;
@@ -131,7 +171,7 @@ export function AppletPagesEditor({ app }: { app: AppletDefinition }) {
 
   const fileOptions: SelectOption[] = Object.keys(appletFiles(app))
     .sort()
-    .map((name) => ({ value: name, label: name }));
+    .map((name) => ({ value: name, label: fileLabel(name, saved) }));
   const set = (i: number, next: Partial<AppletPage>) =>
     setPages((prev) => prev.map((p, j) => (j === i ? { ...p, ...next } : p)));
 
@@ -164,7 +204,7 @@ export function AppletPagesEditor({ app }: { app: AppletDefinition }) {
                 options={
                   fileOptions.some((o) => o.value === page.file) || !page.file
                     ? fileOptions
-                    : [...fileOptions, { value: page.file, label: `${page.file} (missing)` }]
+                    : [...fileOptions, { value: page.file, label: `${fileLabel(page.file, saved)} (missing)` }]
                 }
                 onValueChange={(file) => set(i, { file })}
                 className="w-44"
@@ -227,13 +267,14 @@ export function AppletJobsEditor({ app }: { app: AppletDefinition }) {
   const { catalogue, error } = useAppletCatalogue(app.organization_id);
   useEffect(() => setJobs(appletJobs(app)), [app.id, app.version]);
 
+  const labels = useJobLabels(jobs.map((j) => j.key), catalogue);
   const jobOptions: SelectOption[] = (catalogue?.jobs ?? []).map((j) => ({
     value: j.key,
-    label: j.label || j.key,
+    label: labels[j.key] ?? (j.label || fileLabel(j.key.split(".").pop() ?? j.key, [])),
     meta: j.own ? "Yours" : undefined,
   }));
   const optionsFor = (key: string): SelectOption[] =>
-    !key || jobOptions.some((o) => o.value === key) ? jobOptions : [{ value: key, label: key }, ...jobOptions];
+    !key || jobOptions.some((o) => o.value === key) ? jobOptions : [{ value: key, label: labels[key] ?? "" }, ...jobOptions];
   const set = (i: number, next: Partial<AppletJob>) =>
     setJobs((prev) => prev.map((j, k) => (k === i ? { ...j, ...next } : j)));
 
@@ -253,7 +294,7 @@ export function AppletJobsEditor({ app }: { app: AppletDefinition }) {
                 onChange={(e) => set(i, { alias: e.target.value })}
                 className="w-40 font-mono"
               />
-              {catalogue ? (
+              {catalogue && (!job.key || labels[job.key] !== undefined) ? (
                 <Select
                   aria-label="Job"
                   value={job.key}

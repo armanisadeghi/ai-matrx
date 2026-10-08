@@ -63,6 +63,7 @@ import {
 } from "./applet-entity-writes";
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { ProInput } from "@/components/official/ProInput";
+import { appletState } from "@/features/applets/lib/applet-state";
 
 interface AppletSettingsContentProps {
   appId: string;
@@ -320,19 +321,19 @@ export function AppletSettingsContent({
       },
       {
         field: "rate_limit_per_ip",
-        label: "Per-IP / window",
+        label: "Runs per visitor",
         live: rateIp.trim(),
         saved: String(app.rate_limit_per_ip ?? ""),
       },
       {
         field: "rate_limit_window_hours",
-        label: "Window (hrs)",
+        label: "Limit resets after (hours)",
         live: rateWindow.trim(),
         saved: String(app.rate_limit_window_hours ?? ""),
       },
       {
         field: "rate_limit_authenticated",
-        label: "Authenticated / window",
+        label: "Runs per signed-in person",
         live: rateAuth.trim(),
         saved: String(app.rate_limit_authenticated ?? ""),
       },
@@ -543,14 +544,14 @@ export function AppletSettingsContent({
           <TabsContent value="sharing" className="space-y-5">
             <Row label={PUBLISHED_TO_WEB_LABEL}>
               <Switch
-                checked={app.status === "published" && app.published_to_web}
+                checked={appletState(app).live}
                 onCheckedChange={handlePublicationChange}
                 disabled={savingField === "publication"}
               />
             </Row>
             <Row label="Web address">
               <div className="flex items-center gap-2 px-3 py-2 rounded-md bg-muted/40 border border-border/60">
-                {app.status === "published" && app.published_to_web ? (
+                {appletState(app).live ? (
                   <>
                     <a
                       href={publicUrl}
@@ -578,7 +579,14 @@ export function AppletSettingsContent({
             </Row>
 
             <div className="border-t border-border/60 pt-4">
-              <EmbedSnippet slug={app.slug} />
+              {/* An embed of an unpublished Applet opens a sign-in wall on the host page. */}
+              {appletState(app).live ? (
+                <EmbedSnippet slug={app.slug} />
+              ) : (
+                <Row label="Embed">
+                  <span className="text-sm text-muted-foreground">Publish to embed it on another site.</span>
+                </Row>
+              )}
             </div>
 
             <div className="border-t border-border/60 pt-4 space-y-1.5">
@@ -607,13 +615,13 @@ export function AppletSettingsContent({
 
             <div className="border-t border-border/60 pt-4 space-y-3">
               <FieldRow
-                label="Per-IP / window"
+                label="Runs per visitor"
                 busy={savingField === "rate_limit_per_ip"}
                 dirty={rateIp.trim() !== String(app.rate_limit_per_ip ?? "")}
                 onSave={() => {
                   const n = rateIp.trim() === "" ? null : Number(rateIp);
                   if (n != null && (!Number.isFinite(n) || n < 0)) {
-                    toast.error("Must be a non-negative integer.");
+                    toast.error("Enter a whole number, 0 or more.");
                     return;
                   }
                   saveField("rate_limit_per_ip", n);
@@ -628,7 +636,7 @@ export function AppletSettingsContent({
                 />
               </FieldRow>
               <FieldRow
-                label="Window (hrs)"
+                label="Limit resets after (hours)"
                 busy={savingField === "rate_limit_window_hours"}
                 dirty={
                   rateWindow.trim() !==
@@ -638,7 +646,7 @@ export function AppletSettingsContent({
                   const n =
                     rateWindow.trim() === "" ? null : Number(rateWindow);
                   if (n != null && (!Number.isFinite(n) || n < 0)) {
-                    toast.error("Must be a non-negative integer.");
+                    toast.error("Enter a whole number, 0 or more.");
                     return;
                   }
                   saveField("rate_limit_window_hours", n);
@@ -653,7 +661,7 @@ export function AppletSettingsContent({
                 />
               </FieldRow>
               <FieldRow
-                label="Authenticated / window"
+                label="Runs per signed-in person"
                 busy={savingField === "rate_limit_authenticated"}
                 dirty={
                   rateAuth.trim() !== String(app.rate_limit_authenticated ?? "")
@@ -661,7 +669,7 @@ export function AppletSettingsContent({
                 onSave={() => {
                   const n = rateAuth.trim() === "" ? null : Number(rateAuth);
                   if (n != null && (!Number.isFinite(n) || n < 0)) {
-                    toast.error("Must be a non-negative integer.");
+                    toast.error("Enter a whole number, 0 or more.");
                     return;
                   }
                   saveField("rate_limit_authenticated", n);

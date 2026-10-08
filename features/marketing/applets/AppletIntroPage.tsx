@@ -50,7 +50,6 @@ export function AppletIntroPage({ applet, related }: { applet: AppletIntro; rela
           <div className="flex flex-wrap items-center gap-2">
             <h1 className="text-3xl font-semibold tracking-tight">{applet.name}</h1>
             {applet.category ? <Badge>{applet.category}</Badge> : null}
-            {applet.template ? <Badge tone="primary">Template</Badge> : null}
           </div>
           {applet.tagline ? <p className="text-lg text-muted-foreground">{applet.tagline}</p> : null}
           <div className="flex flex-wrap items-center gap-3 pt-1">
