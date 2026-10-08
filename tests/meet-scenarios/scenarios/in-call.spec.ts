@@ -3,11 +3,11 @@
  * "connection-network", "presenting", "recording-consent-captions" and
  * "mobile-browser".
  */
+import { expect } from "@playwright/test";
 import { TIMEOUTS } from "../lib/env";
-import { keepsSeeing, seePhase, seeUntil, walkIn } from "../lib/meeting";
-import { observe } from "../lib/observe";
+import { keepsSeeing, seeControl, seePhase, seeUntil, walkIn } from "../lib/meeting";
 import { scenario } from "../lib/scenario";
-import { GUEST, callWithGuest } from "../lib/stories";
+import { GUEST, GUEST_2, admitWaiting, callWithGuest } from "../lib/stories";
 
 const guestIn = (o: { participants: { name: string }[] }) => o.participants.some((p) => p.name.includes(GUEST));
 
@@ -63,35 +63,62 @@ scenario("share-picker-cancelled", async ({ cast }) => {
   await guest.page.evaluate(() => {
     (navigator.mediaDevices as unknown as { getDisplayMedia?: unknown }).getDisplayMedia = undefined;
   });
-  await guest.page.getByRole("button", { name: /^Share screen$/ }).click().catch(() => undefined);
+  await (await seeControl(guest, "the Share screen control (unsupported browser)", guest.page.getByRole("button", { name: /^Share screen$/ }), 5000)).click();
   await keepsSeeing(guest, "still in the call when sharing is unsupported", (o) => o.phase === "in-call", 10_000);
   await seeUntil(guest, "an unsupported-sharing message", (o) => o.notices.includes("share-unavailable") || /can('|no)t share|not supported|doesn't support/i.test(o.text), 5000);
 });
 
 scenario("rec-start-notice", async ({ cast }) => {
   const { host, guest } = await callWithGuest(cast);
-  await host.page.getByRole("button", { name: /^Start recording$/ }).click();
-  // Everyone sees that the meeting is being recorded, driven by server state.
+  await (await seeControl(host, "the Start recording control", host.page.getByRole("button", { name: /^Start recording$/ }), 10_000)).click();
+  // Everyone in the room sees that the meeting is being recorded.
   await seeUntil(host, "the recording indicator", (o) => o.recording === true, 45_000);
   await seeUntil(guest, "the recording indicator", (o) => o.recording === true, 45_000);
-  // A late joiner sees it too.
-  const stop = host.page.getByRole("button", { name: /^Stop recording$/ });
-  if (await stop.isVisible().catch(() => false)) await stop.click();
+  // A late joiner, admitted after recording started, sees it too (server state, not a missed broadcast).
+  const late = await cast.add({ label: "late joiner", seat: "guest", displayName: GUEST_2 });
+  await walkIn(late, cast.meeting!, { until: ["knocking", "in-call"] });
+  await admitWaiting(host, late, GUEST_2);
+  await seeUntil(late, "the recording indicator on arrival", (o) => o.recording === true, TIMEOUTS.noticeMs);
+  // Stopping clears it for everyone.
+  await (await seeControl(host, "the Stop recording control", host.page.getByRole("button", { name: /^Stop recording$/ }), 10_000)).click();
+  for (const p of [host, guest, late]) await seeUntil(p, "the recording indicator cleared", (o) => o.recording === false, 45_000);
 });
 
 scenario("autoplay-blocked", async ({ cast }) => {
-  // The guest's browser enforces the autoplay policy, and no real click ever
-  // reaches their page — the shape of a Safari guest admitted long after a click.
+  // The guest's browser enforces the autoplay policy, and no real click ever reaches their page
+  // before admission — the shape of a Safari guest admitted long after their last click.
   const { guest } = await callWithGuest(cast, {
     launchArgs: ["--autoplay-policy=document-user-activation-required"],
     gesture: false,
   });
-  const playbackBlocked = await guest.page.evaluate(async () => {
-    const els = Array.from(document.querySelectorAll("audio, video")) as HTMLMediaElement[];
-    return els.filter((e) => e.paused && e.srcObject !== null).length;
-  });
-  guest.note(`media elements paused with a stream: ${playbackBlocked}`);
+  const playback = () =>
+    guest.page.evaluate(() => {
+      const els = Array.from(document.querySelectorAll("audio, video")) as HTMLMediaElement[];
+      const audio = els.filter((e) => e.tagName === "AUDIO" && e.srcObject !== null);
+      return { audioWithStream: audio.length, audioPaused: audio.filter((e) => e.paused).length };
+    });
+  // Precondition: the host's audio really is blocked in the guest's page.
+  await seeUntil(guest, "the host's audio element on the page", (o) => o.phase === "in-call", 5000);
+  let p = await playback();
+  for (let i = 0; i < 20 && p.audioWithStream === 0; i++) {
+    await guest.page.waitForTimeout(500);
+    p = await playback();
+  }
+  guest.note(`before any click: ${JSON.stringify(p)}`);
+  expect(p.audioWithStream > 0, "precondition: the guest's page has the host's audio attached").toBe(true);
+  expect(p.audioPaused > 0, `precondition: the browser blocked that audio (paused=${p.audioPaused} of ${p.audioWithStream})`).toBe(true);
+  // The person is offered a way to turn sound on…
   await seeUntil(guest, "a 'click to enable sound' control", (o) => o.audioBlocked === true, TIMEOUTS.noticeMs);
-  const o = await observe(guest.page);
-  guest.note(`audio-blocked offered: ${o.audioBlocked}`);
+  const enable = await seeControl(guest, "the Enable sound control", guest.page.getByRole("button", { name: /^Enable sound$|enable (sound|audio)|turn on sound|allow (sound|audio)|click to (hear|enable)/i }), 5000);
+  // …and one real click makes the audio play and the offer go away.
+  await enable.click();
+  const deadline = Date.now() + 10_000;
+  p = await playback();
+  while (Date.now() < deadline && p.audioPaused > 0) {
+    await guest.page.waitForTimeout(500);
+    p = await playback();
+  }
+  guest.note(`after the click: ${JSON.stringify(p)}`);
+  expect(p.audioWithStream > 0 && p.audioPaused === 0, `audio should play after Enable sound; ${JSON.stringify(p)}`).toBe(true);
+  await seeUntil(guest, "the enable-sound offer gone", (o) => o.audioBlocked !== true, 5000);
 });

@@ -13,8 +13,9 @@ import {
   seeUntil,
   walkIn,
 } from "../lib/meeting";
+import { seeControl } from "../lib/meeting";
 import { scenario } from "../lib/scenario";
-import { GUEST, hostWithMeeting } from "../lib/stories";
+import { GUEST, backInAfterReload, hostWithMeeting, selfName } from "../lib/stories";
 
 scenario("wr-admit-flow", async ({ cast }) => {
   const host = await hostWithMeeting(cast);
@@ -26,10 +27,13 @@ scenario("wr-admit-flow", async ({ cast }) => {
   await seePhase(guest, ["in-call"], 45_000);
   await seeUntil(host, `${GUEST} in the call`, (o) => o.participants.some((p) => p.name.includes(GUEST)), 30_000);
   await seeUntil(host, "nobody waiting", (o) => (o.lobbyCount ?? 0) === 0, TIMEOUTS.noticeMs);
-  // Admission is server truth: a reload neither re-knocks nor loses the seat.
+  // Both see each other: the guest sees the host by name.
+  const hostName = await selfName(host);
+  await seeUntil(guest, `the host "${hostName}" in the call`, (o) => o.participants.some((p) => !p.self && p.name.includes(hostName)), 30_000);
+  // Admission is server truth: after a reload the guest is back in the call — no name prompt, no second knock.
   await guest.refresh();
-  await guest.page.waitForTimeout(5000);
-  await keepsSeeing(guest, "no second knock after a reload", (o) => o.phase !== "knocking", 15_000);
+  await backInAfterReload(guest);
+  await keepsSeeing(guest, "still in the call after the reload", (o) => o.phase === "in-call", 10_000);
 });
 
 scenario("wr-missed-admit", async ({ cast }) => {
@@ -123,12 +127,10 @@ scenario("wr-cancel-leave", async ({ cast }) => {
   await walkIn(host, cast.meeting!, { until: ["in-call"] });
   await walkIn(guest, cast.meeting!, { until: ["knocking"] });
   await seeUntil(host, "one person waiting", (o) => (o.lobbyCount ?? 0) >= 1, TIMEOUTS.noticeMs);
-  const cancel = guest.page.getByRole("button", { name: /Cancel( request)?|Leave|Stop waiting/ });
-  await seeUntil(guest, "a Cancel / Leave control while waiting", () => true, 1000);
-  const visible = await cancel.first().isVisible().catch(() => false);
-  guest.note(`cancel/leave control visible: ${visible}`);
-  if (!visible) throw new Error(`guest sees no Cancel/Leave while waiting`);
-  await cancel.first().click();
+  // Still on the waiting screen (not wrongly shown the room, whose Leave button would also match).
+  await seePhase(guest, ["knocking"], 5000);
+  const cancel = await seeControl(guest, "a Cancel / Leave control while waiting", guest.page.getByRole("button", { name: /Cancel( request)?|Leave|Stop waiting/ }), 5000);
+  await cancel.click();
   await seePhase(guest, ["left", "ended", "resolving", "guest-name", "prejoin"], TIMEOUTS.noticeMs);
   await seeUntil(host, "the cancelled knock gone", (o) => (o.lobbyCount ?? 0) === 0, TIMEOUTS.noticeMs);
 });
