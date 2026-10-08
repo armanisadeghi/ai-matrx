@@ -65,6 +65,7 @@ import { invokeRemoteFetch } from "@/lib/sync/engine/remoteFetch";
 import { createSyncMiddleware } from "@/lib/sync/engine/middleware";
 import { bootSync, resyncForIdentity } from "@/lib/sync/engine/boot";
 import { clearAll, readSlice } from "@/lib/sync/persistence/idb";
+import { forgetAccountPreferencesRow } from "@/lib/account/accountPreferencesRow";
 import { retryPreferencesLoad } from "@/lib/redux/preferences/preferencesLoad";
 import { addFavorite } from "@/lib/redux/preferences/userPreferencesSlice";
 import type { AppStore } from "@/lib/redux/store";
@@ -83,6 +84,8 @@ async function load(store: ReturnType<typeof makeStore>, reason: "cold-boot" | "
 }
 
 beforeEach(() => {
+  // The account row is read once and shared for a moment; each case starts with none held.
+  forgetAccountPreferencesRow();
   nextAnswer = { data: null, error: null };
   remoteWrites.length = 0;
 });
@@ -136,6 +139,7 @@ describe("userPreferences load status", () => {
     nextAnswer = { data: { preferences: { sandbox: { tier: "ec2" } } }, error: null };
     await load(store);
     nextAnswer = { data: null, error: { message: "timeout" } };
+    forgetAccountPreferencesRow(); // a stale refresh runs a minute on; the shared read is long gone
     await load(store, "stale-refresh");
     const state = store.getState().userPreferences;
     expect(state._meta.loadStatus).toBe("loaded");

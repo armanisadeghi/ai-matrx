@@ -1993,14 +1993,11 @@ export const userPreferencesPolicy = definePolicy<UserPreferencesState>({
     },
     fetch: async ({ identity, signal }) => {
       if (identity.type !== "auth") return null; // guests have no server state
-      const { supabase } = await import("@/utils/supabase/client");
-      const { data, error } = await supabase
-        .schema("users")
-        .from("user_preferences")
-        .select("preferences")
-        .eq("user_id", identity.userId)
-        .abortSignal(signal)
-        .maybeSingle();
+      // One shared read of the account row (SHELL-DEDUPE): the load ladder takes its two
+      // organization columns from the same answer instead of asking again.
+      const { readAccountPreferencesRow } = await import("@/lib/account/accountPreferencesRow");
+      const { data, error } = await readAccountPreferencesRow(identity.userId);
+      if (signal.aborted) throw new DOMException("aborted", "AbortError");
       // A failed read THROWS — the engine turns that into the slice's
       // `failed` load status. Returning null here used to make a failure look
       // exactly like "this person saved nothing", and every settings page
@@ -2026,25 +2023,31 @@ export const userPreferencesPolicy = definePolicy<UserPreferencesState>({
       // preselected organization write reverted 15s later). Guard:
       // lib/redux/preferences/__tests__/preference-writes-never-clobber.test.ts
       const table = () => supabase.schema("users").from("user_preferences");
-      await savePreferencePatch({
-        base,
-        body,
-        modules: PREFERENCE_MODULE_KEYS,
-        fetchCurrent: () =>
-          table()
-            .select(PREFERENCES_ROW_COLUMNS)
-            .eq("user_id", identity.userId)
-            .abortSignal(signal)
-            .maybeSingle(),
-        applyUpdate: ({ value, expectedVersion, nextVersion }) =>
-          table()
-            .update({ preferences: value, version: nextVersion })
-            .eq("user_id", identity.userId)
-            .eq("version", expectedVersion)
-            .select(PREFERENCES_ROW_COLUMNS)
-            .abortSignal(signal)
-            .maybeSingle(),
-      });
+      // The row changed (or may have): the next shared read of it asks the database again.
+      const { forgetAccountPreferencesRow } = await import("@/lib/account/accountPreferencesRow");
+      try {
+        await savePreferencePatch({
+          base,
+          body,
+          modules: PREFERENCE_MODULE_KEYS,
+          fetchCurrent: () =>
+            table()
+              .select(PREFERENCES_ROW_COLUMNS)
+              .eq("user_id", identity.userId)
+              .abortSignal(signal)
+              .maybeSingle(),
+          applyUpdate: ({ value, expectedVersion, nextVersion }) =>
+            table()
+              .update({ preferences: value, version: nextVersion })
+              .eq("user_id", identity.userId)
+              .eq("version", expectedVersion)
+              .select(PREFERENCES_ROW_COLUMNS)
+              .abortSignal(signal)
+              .maybeSingle(),
+        });
+      } finally {
+        forgetAccountPreferencesRow();
+      }
     },
   },
 });

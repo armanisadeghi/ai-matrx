@@ -14,6 +14,7 @@
 // active organization the person can see.
 
 import { supabase } from "@/utils/supabase/client";
+import { forgetAccountPreferencesRow, readAccountPreferencesRow } from "@/lib/account/accountPreferencesRow";
 
 export interface AccountOrganizationChoices {
   lastActiveOrganizationId: string | null;
@@ -62,11 +63,7 @@ function usersSchema(): UntypedUsersSchema {
 export async function readAccountOrganizationChoices(
   userId: string,
 ): Promise<AccountOrganizationChoices> {
-  const { data, error } = await usersSchema()
-    .from("user_preferences")
-    .select("last_active_organization_id, startup_organization_id")
-    .eq("user_id", userId)
-    .maybeSingle();
+  const { data, error } = await readAccountPreferencesRow(userId);
   if (error) throw new Error(`the account's organization read failed: ${error.message}`);
   if (!data) return NONE;
   return {
@@ -80,6 +77,7 @@ export async function writeLastActiveOrganization(organizationId: string): Promi
   const { error } = await usersSchema().rpc("set_last_active_organization", {
     p_organization_id: organizationId,
   });
+  forgetAccountPreferencesRow();
   if (error) throw new Error(error.message);
 }
 
@@ -88,5 +86,6 @@ export async function writeStartupOrganization(organizationId: string | null): P
   const { error } = await usersSchema().rpc("set_startup_organization", {
     p_organization_id: organizationId,
   });
+  forgetAccountPreferencesRow();
   if (error) throw new Error(error.message);
 }
