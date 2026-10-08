@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { SavedViewsControl, type TableSavedViewsProps } from "@ai-matrx/design-system/data-table";
+import { SavedViewsControl, sameTableView, type TableSavedViewsProps } from "@ai-matrx/design-system/data-table";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectAccessToken, selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
@@ -119,7 +119,7 @@ function PersonalViews({ tableId, snapshot, defaultSnapshot, onApply, presentati
   return <SavedViewsControl
     views={views}
     activeId={active?.id ?? null}
-    dirty={JSON.stringify(active?.snapshot ?? defaultSnapshot) !== JSON.stringify(snapshot)}
+    dirty={!sameTableView(active?.snapshot ?? defaultSnapshot, snapshot)}
     loading={loading}
     error={[error, archiveWarning].filter(Boolean).join(" ") || null}
     onReload={() => setReloadKey((key) => key + 1)}

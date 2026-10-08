@@ -106,6 +106,8 @@ export function useServerTable<T>(
     query: {
       mode: "controlled" as const,
       state: query,
+      // The untouched view (saved-views "Default view"), never the URL's current state.
+      defaultState: initial,
       totalItems: total,
       onStateChange: setQuery,
       sourceProcessing: {
