@@ -21916,6 +21916,38 @@ export type Database = {
           isSetofReturn: true
         }
       }
+      meet_policy: {
+        Args: { p_key: string; p_meeting_id: string }
+        Returns: Json
+      }
+      meet_policy_all: { Args: { p_meeting_id: string }; Returns: Json }
+      meet_policy_for: {
+        Args: {
+          p_host_user_id: string
+          p_key: string
+          p_meeting_id: string
+          p_organization_id: string
+          p_profile: string
+        }
+        Returns: Json
+      }
+      meet_policy_set:
+        | {
+            Args: {
+              p_feature: string
+              p_key: string
+              p_note?: string
+              p_organization_id: string
+              p_scope_id: string
+              p_scope_kind: string
+              p_value: Json
+            }
+            Returns: Json
+          }
+        | {
+            Args: { p_key: string; p_meeting_id: string; p_value: Json }
+            Returns: Json
+          }
       meet_record_consent: {
         Args: {
           p_acknowledged_at: string
@@ -39692,6 +39724,15 @@ export type Database = {
           p_organization_id: string
         }
         Returns: Json
+      }
+      work_approval_is_approver: {
+        Args: {
+          p_approver_id: string
+          p_organization_id: string
+          p_subject_id: string
+          p_user_id: string
+        }
+        Returns: boolean
       }
       work_approval_kinds: { Args: never; Returns: string[] }
       work_approval_may_decide: {
@@ -91955,6 +91996,15 @@ export type Database = {
         }
         Returns: Json
       }
+      _knob_steward_refusal: {
+        Args: {
+          p_organization_id: string
+          p_scope_id: string
+          p_scope_kind: string
+          p_uid: string
+        }
+        Returns: Json
+      }
       _lifecycle_partition_guard: {
         Args: { p_partition: string }
         Returns: string
@@ -105099,18 +105149,6 @@ export type Database = {
           p_scope?: string
           p_search?: string
           p_sort?: string
-        }
-        Returns: Json
-      }
-      mnd_run_history: {
-        Args: {
-          p_limit?: number
-          p_mandate_key: string
-          p_offset?: number
-          p_org_id?: string
-          p_status?: string
-          p_user_id?: string
-          p_view?: string
         }
         Returns: Json
       }
