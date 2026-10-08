@@ -156,6 +156,8 @@ function DatabaseFrame({
   const views: SpaceDbView[] = props.views?.length ? props.views : [{ id: "view-all", name: "All", layout: "grid" }];
   const active = views.find((v) => v.id === props.activeViewId) ?? views[0];
   const [open, setOpen] = useState<string | null>(null);
+  /** The row "+ New" just made: its peek opens with the cursor in its title. */
+  const [fresh, setFresh] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
   const [expanded, setExpanded] = useState(false);
   // The toolbar sort is this viewer's own, per view, never written to the view (Notion): it reaches the
@@ -183,8 +185,10 @@ function DatabaseFrame({
   // column, a read-only sample) falls back to the whole-record form, which says why.
   const addRow = () => {
     void client.recordWrite({ table_id: tableId, data: {} }).then((res) => {
-      if (res.ok) setOpen(res.data);
-      else if (sample) toast.info("The sample is read-only. Add your own table to add rows.");
+      if (res.ok) {
+        setFresh(res.data);
+        setOpen(res.data);
+      } else if (sample) toast.info("The sample is read-only. Add your own table to add rows.");
       else setCreating(true);
     });
   };
@@ -357,7 +361,7 @@ function DatabaseFrame({
       </div>
       {body}
 
-      {open ? <RecordOpen tableId={tableId} recordId={open} as={props.openAs ?? "side"} onClose={() => setOpen(null)} /> : null}
+      {open ? <RecordOpen tableId={tableId} recordId={open} as={props.openAs ?? "side"} fresh={open === fresh} onClose={() => setOpen(null)} /> : null}
 
       <Dialog open={creating} onOpenChange={setCreating}>
         <DialogContent size="lg">
@@ -864,10 +868,10 @@ function ViewSettings({
   );
 }
 
-function RecordOpen({ tableId, recordId, as, onClose }: { tableId: string; recordId: string; as: "side" | "center" | "page"; onClose: () => void }) {
+function RecordOpen({ tableId, recordId, as, fresh, onClose }: { tableId: string; recordId: string; as: "side" | "center" | "page"; fresh: boolean; onClose: () => void }) {
   if (as === "side") {
     return (
-      <SidePeek onClose={onClose}>
+      <SidePeek onClose={onClose} focusFirstField={fresh}>
         <Peek tableId={tableId} recordId={recordId} onClose={onClose} />
       </SidePeek>
     );

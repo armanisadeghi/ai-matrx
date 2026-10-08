@@ -220,8 +220,28 @@ function layerOpen(): boolean {
  * Notion's side peek: a panel on the right with a close button; Esc closes it. The database host stops
  * key events from reaching the page natively, so Esc is heard on the window in the capture phase.
  */
-export function SidePeek({ onClose, children }: { onClose: () => void; children: ReactNode }) {
+export function SidePeek({ onClose, focusFirstField = false, children }: { onClose: () => void; focusFirstField?: boolean; children: ReactNode }) {
   const close = useRef(onClose);
+  const aside = useRef<HTMLElement>(null);
+  // Round 38 (D5): focus moves INTO the peek when it opens. It stayed on the "New" button, so a person who
+  // typed a title pressed New with every space and with Enter (one row became five). A row the person just
+  // made puts the cursor in its first field (its title), as Notion does; any other opening focuses the panel.
+  useEffect(() => {
+    const panel = aside.current;
+    if (!panel) return;
+    panel.focus({ preventScroll: true });
+    if (!focusFirstField) return;
+    const started = performance.now();
+    let frame = 0;
+    const seek = () => {
+      const field = panel.querySelector<HTMLElement>('.spaces-peek-body input:not([type="hidden"]):not([disabled]), .spaces-peek-body textarea:not([disabled]), .spaces-peek-body [contenteditable="true"]');
+      // Only while the person has not moved on themselves.
+      if (field && (document.activeElement === panel || document.activeElement === document.body)) field.focus({ preventScroll: true });
+      else if (!field && performance.now() - started < 3000) frame = requestAnimationFrame(seek);
+    };
+    frame = requestAnimationFrame(seek);
+    return () => cancelAnimationFrame(frame);
+  }, [focusFirstField]);
   useEffect(() => {
     close.current = onClose;
   });
@@ -236,7 +256,7 @@ export function SidePeek({ onClose, children }: { onClose: () => void; children:
     return () => window.removeEventListener("keydown", onKey, true);
   }, []);
   return (
-    <aside className="spaces-peek-side" aria-label="Side peek">
+    <aside ref={aside} tabIndex={-1} className="spaces-peek-side" aria-label="Side peek">
       <div className="spaces-peek-bar">
         <Button variant="quiet" icon={<X size={16} />} aria-label="Close" onClick={onClose} />
       </div>
