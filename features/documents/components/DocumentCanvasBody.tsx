@@ -20,7 +20,7 @@
  * that will not resolve.
  */
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import dynamic from "next/dynamic";
 import { AlertTriangle, ExternalLink, Loader2 } from "lucide-react";
 
@@ -32,6 +32,10 @@ import { cn } from "@/lib/utils";
 import { getClaimsUser } from "@/utils/supabase/claimsUser";
 import { canActOn } from "@/features/access-gate/service/canActOn";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { printMarkdown } from "@ai-matrx/print/markdown";
+import { useArtifactBodyOutput } from "@/features/canvas/output/bodyOutput";
+import { univerDocToMarkdown } from "@/features/documents/univer-doc-to-markdown";
+import { bodyTextOf, type DocumentBodyPort } from "@/features/documents/document-body-text";
 // Univer hard-depends on `window` / `document`, and it is a heavy chunk — keep
 // it out of the canvas base bundle until a document pane actually opens.
 const DocumentEditor = dynamic(
@@ -100,6 +104,28 @@ export function DocumentCanvasBody({
   // (content loads, then vanishes). Same gate the /documents/[id] route uses.
   const [canEdit, setCanEdit] = useState(false);
   const [permsResolved, setPermsResolved] = useState(false);
+  // The open editor's live text. In a canvas tab, Print prints the document's
+  // own text (vector, its markup kept); Copy image draws the page on screen
+  // (Univer paints on a canvas, so a DOM copy of it would be blank).
+  const [port, setPort] = useState<DocumentBodyPort | null>(null);
+  const pageRef = useRef<HTMLDivElement>(null);
+  const documentName = row?.document_name || fallbackTitle || "Document";
+  useArtifactBodyOutput(
+    port
+      ? {
+          print: () => {
+            const markdown = univerDocToMarkdown(port.getSnapshot?.()) || bodyTextOf(port.getDataStream()).text;
+            printMarkdown(markdown.trim() ? markdown : "_(This document is empty.)_", { title: documentName });
+          },
+          capture: async () => {
+            const page = pageRef.current;
+            if (!page) throw new Error("the document is not on screen");
+            const { renderElement, canvasToBlob } = await import("@ai-matrx/alchemy/operate/capture");
+            return canvasToBlob(await renderElement(page, { pixelRatio: Math.min(window.devicePixelRatio || 1, 2) }));
+          },
+        }
+      : {},
+  );
 
   const load = useCallback(async () => {
     setError(null);
@@ -148,11 +174,12 @@ export function DocumentCanvasBody({
   if (!row || !permsResolved) return <BootSpinner />;
 
   return (
-    <div className={cn("h-full min-h-0", className)}>
+    <div ref={pageRef} className={cn("h-full min-h-0", className)}>
       <DocumentEditor
         documentId={documentId}
         editable={canEdit}
-        documentName={row.document_name || fallbackTitle || "Document"}
+        documentName={documentName}
+        onBodyPort={setPort}
       />
     </div>
   );

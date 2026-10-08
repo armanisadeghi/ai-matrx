@@ -21,7 +21,25 @@ export async function seat(member = false, next = "/data") {
   page.on("pageerror", (e) => errors.push(`PAGEERROR ${String(e).slice(0, 400)}`));
   await page.goto(url, { waitUntil: "domcontentloaded", timeout: 300000 });
   await page.waitForLoadState("load", { timeout: 300000 }).catch(() => {});
+  await live(page, origin + next);
   const shot = (name) => page.screenshot({ path: join(SHOTS, `${name}.png`) });
   return { browser, context, page, origin, errors, shot };
 }
 export const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+
+/** The preview parks a host when its slots are needed; a person presses Resume, and so does the walk. */
+export async function live(page, url) {
+  for (let i = 0; i < 8; i++) {
+    await Promise.race([
+      page.getByText("This preview was paused").waitFor({ timeout: 240000 }),
+      page.getByText("Add row").first().waitFor({ timeout: 240000 }),
+    ]).catch(() => {});
+    const paused = await page.getByText("This preview was paused").isVisible().catch(() => false);
+    if (!paused) return;
+    console.log("[walk] preview paused; pressing Resume");
+    await page.getByRole("button", { name: /Resume this preview/ }).click().catch(() => {});
+    await page.waitForLoadState("load", { timeout: 300000 }).catch(() => {});
+    await sleep(3000);
+    if (url && !page.url().startsWith(url.split("?")[0])) await page.goto(url, { waitUntil: "domcontentloaded", timeout: 300000 }).catch(() => {});
+  }
+}

@@ -32,9 +32,9 @@ import {
   MeetRoot,
   asMeetingId,
   createMeetRepository,
-  isJoinRefusalReason,
+  refusalPhase,
   useMeetHost,
-  type JoinRefusalReason,
+  type MeetPhase,
   type MeetingRecord,
 } from "@ai-matrx/meet/react";
 import type { MeetDiagnostic } from "@ai-matrx/meet/react";
@@ -77,7 +77,7 @@ type Resolution =
       readonly remedy: string;
       readonly detail: string;
       /** The observation contract's phase for this dead end (HARNESS-CONTRACT §2). */
-      readonly phase: `refused:${JoinRefusalReason}` | "disconnected";
+      readonly phase: MeetPhase;
     };
 
 /**
@@ -232,9 +232,9 @@ function MeetingSurfaceBody({
           reason === "not_found"
             ? linkRemedy
             : ((thrown as { remedy?: string }).remedy ?? linkRemedy);
-        const phase = isJoinRefusalReason(reason)
-          ? (`refused:${reason}` as const)
-          : "disconnected";
+        // One rule with the core's machine: `ended` → `ended`, a gate reason → `refused:*`,
+        // anything else → `disconnected` (CORE-DESIGN §3.1).
+        const phase = refusalPhase(reason ?? null);
         setResolution({
           state: "failed",
           message,

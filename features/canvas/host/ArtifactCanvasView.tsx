@@ -16,6 +16,7 @@ import { getDefaultTitle, titleToString, type ArtifactDebugTrace } from "@/featu
 import type { CanvasType } from "@/types/canvas-social";
 import { contentOf, readArtifactItemData } from "./artifactItem";
 import { useArtifactPanel, closeArtifactPanel } from "./artifactPanels";
+import { ArtifactBodyOutputProvider } from "@/features/canvas/output/bodyOutput";
 
 const CanvasShareSheet = dynamic(
   () => import("@/features/canvas/social/CanvasShareSheet").then((m) => m.CanvasShareSheet),
@@ -50,7 +51,14 @@ export default function ArtifactCanvasView({ item }: CanvasKindProps) {
         style={fade.style}
         className="flex-1 min-h-0 overflow-y-auto overscroll-contain scrollbar-overlay"
       >
-        {data.view === "source" ? <CanvasSourceView content={content} /> : <CanvasBody content={content} />}
+        {data.view === "source" ? (
+          <CanvasSourceView content={content} />
+        ) : (
+          // A live body (cloud browser, document) offers its print/capture to this tab's menu.
+          <ArtifactBodyOutputProvider itemId={item.id}>
+            <CanvasBody content={content} />
+          </ArtifactBodyOutputProvider>
+        )}
       </div>
       <CanvasShareSheet
         open={panel === "share"}

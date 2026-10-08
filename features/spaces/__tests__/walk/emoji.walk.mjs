@@ -13,7 +13,7 @@ const check = (name, ok, detail = "") => {
 const { browser, page } = await open({ member: !!process.env.MEMBER, width: 1440, height: 1000 });
 const origin = originOf(page);
 page.on("console", (m) => m.type() === "error" && console.log("[console]", m.text().slice(0, 200)));
-process.on("uncaughtException", async (e) => { console.log("CRASH", String(e.message).slice(0, 200)); await page.screenshot({ path: `${shots}/emoji-crash.png` }).catch(() => {}); console.log("trashed:", await trashPage(page).catch(() => "no")); process.exit(1); });
+process.on("uncaughtException", async (e) => { console.log("CRASH", String(e.message).slice(0, 900)); await page.screenshot({ path: `${shots}/emoji-crash.png` }).catch(() => {}); console.log("trashed:", await trashPage(page).catch(() => "no")); process.exit(1); });
 const id = await newPage(page);
 console.log("page", id);
 
@@ -41,7 +41,8 @@ await act(page, () => page.locator(".spaces-callout-icon").first().click());
 await page.locator(".EmojiPickerReact").first().waitFor({ timeout: 60_000 });
 await act(page, () => page.locator(".EmojiPickerReact input").first().fill("fire"));
 await page.waitForTimeout(800);
-await act(page, () => page.locator(".EmojiPickerReact button.epr-emoji, .EmojiPickerReact [data-unified]").first().click());
+// the search-results label is sticky over the first row, so press the fire emoji by its code, not by pointer
+await act(page, () => page.locator('.EmojiPickerReact [data-unified="1f525"]').first().dispatchEvent("click"));
 await page.waitForTimeout(1000);
 const calloutIcon = () => page.locator(".spaces-callout-icon").first().textContent().catch(() => null);
 check("callout icon is an emoji", /\p{Extended_Pictographic}/u.test((await calloutIcon()) ?? ""), await calloutIcon());
