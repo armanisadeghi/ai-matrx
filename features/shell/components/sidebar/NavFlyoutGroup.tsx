@@ -19,7 +19,7 @@
 // longer one, so a diagonal move from the row into the submenu (crossing other
 // rows) never closes it. Escape / ArrowLeft step back one level.
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import type { KeyboardEvent as ReactKeyboardEvent } from "react";
 import AppLink from "@/components/navigation/AppLink";
 import { usePathname } from "next/navigation";
@@ -302,8 +302,10 @@ export default function NavFlyoutGroup({
   }, [showPanel]);
 
   // Clamp the panel inside the viewport once it's measured; move focus into
-  // it when it was opened from the keyboard.
-  useEffect(() => {
+  // it when it was opened from the keyboard. Layout effect: the clamp lands
+  // before the first paint, so the panel never appears at its unclamped spot
+  // and jumps while its entry animation plays.
+  useLayoutEffect(() => {
     if (!showPanel) return;
     const panel = panelRef.current;
     if (!panel) return;
@@ -325,8 +327,9 @@ export default function NavFlyoutGroup({
 
   // Keep the submenu on screen: flip it up near the viewport bottom, and to
   // the flyout's left when there is no room on its right. It scrolls (CSS
-  // max-height) when it is taller than the viewport.
-  useEffect(() => {
+  // max-height) when it is taller than the viewport. Layout effect so the
+  // flipped position is the first painted frame.
+  useLayoutEffect(() => {
     if (!subKey) return;
     const sub = subPanelRef.current;
     const panel = panelRef.current;

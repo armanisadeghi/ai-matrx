@@ -251,7 +251,15 @@ export default function ProviderReferenceModal({ providers, onClose }: Props) {
   const [activeProviderId, setActiveProviderId] = useState<string>(
     providers[0]?.id ?? "",
   );
-  const [position, setPosition] = useState<Position>({ x: 0, y: 0 });
+  const [position, setPosition] = useState<Position>(() => {
+    // Right side of screen, vertically centered — computed up front so the
+    // first painted frame is already in place.
+    const w = window.innerWidth;
+    const h = window.innerHeight;
+    const modalW = 520;
+    const modalH = Math.min(600, h * 0.75);
+    return { x: w - modalW - 24, y: (h - modalH) / 2 };
+  });
   const [isDragging, setIsDragging] = useState(false);
   const dragStart = useRef<{
     mx: number;
@@ -260,15 +268,6 @@ export default function ProviderReferenceModal({ providers, onClose }: Props) {
     py: number;
   } | null>(null);
   const modalRef = useRef<HTMLDivElement>(null);
-
-  // Initialize position: right side of screen, vertically centered
-  useEffect(() => {
-    const w = window.innerWidth;
-    const h = window.innerHeight;
-    const modalW = 520;
-    const modalH = Math.min(600, h * 0.75);
-    setPosition({ x: w - modalW - 24, y: (h - modalH) / 2 });
-  }, []);
 
   const onMouseDown = useCallback(
     (e: React.MouseEvent) => {

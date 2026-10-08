@@ -116,7 +116,7 @@ export default function MultiFileCodeEditorV2({
       className={cn(
         "w-full rounded-lg overflow-hidden transition-all duration-300 ease-in-out",
         isFullScreen &&
-          "fixed left-1/2 top-1/2 transform -translate-x-1/2 -translate-y-1/2 w-[95%] h-[90%] z-50 bg-background flex flex-col shadow-2xl",
+          "fixed left-1/2 top-1/2 w-[95%] h-[90%] z-50 bg-background flex flex-col shadow-2xl",
       )}
       style={{
         height: isFullScreen ? undefined : height,

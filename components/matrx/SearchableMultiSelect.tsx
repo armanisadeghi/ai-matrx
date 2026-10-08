@@ -6,6 +6,7 @@ import React, {
   useCallback,
   useRef,
   useEffect,
+  useLayoutEffect,
 } from "react";
 import { createPortal } from "react-dom";
 import { ChevronDown, Search, Check } from "lucide-react";
@@ -49,11 +50,7 @@ const SearchableMultiSelect: React.FC<SearchableMultiSelectProps> = ({
   const [internalSelectedValues, setInternalSelectedValues] = useState<
     string[]
   >([]);
-  const [dropdownPosition, setDropdownPosition] = useState({
-    top: 0,
-    left: 0,
-    width: 0,
-  });
+  const [dropdownPosition, setDropdownPosition] = useState<{ top: number; left: number; width: number } | null>(null);
 
   const triggerRef = useRef<HTMLButtonElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -61,7 +58,7 @@ const SearchableMultiSelect: React.FC<SearchableMultiSelectProps> = ({
   const selectedValues = controlledValues ?? internalSelectedValues;
   const selectedCount = selectedValues.length;
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     const updatePosition = () => {
       if (triggerRef.current && open) {
         const rect = triggerRef.current.getBoundingClientRect();
@@ -154,9 +151,10 @@ const SearchableMultiSelect: React.FC<SearchableMultiSelectProps> = ({
             ref={dropdownRef}
             style={{
               position: "absolute",
-              top: `${dropdownPosition.top}px`,
-              left: `${dropdownPosition.left}px`,
-              width: `${dropdownPosition.width}px`,
+              top: `${dropdownPosition?.top ?? 0}px`,
+              left: `${dropdownPosition?.left ?? 0}px`,
+              width: `${dropdownPosition?.width ?? 0}px`,
+              visibility: dropdownPosition ? "visible" : "hidden",
             }}
             className="bg-elevation1 rounded-md border border-elevation3 shadow-lg z-[9999] mt-1"
           >
