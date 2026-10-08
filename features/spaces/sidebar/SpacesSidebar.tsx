@@ -18,6 +18,7 @@ import {
   PenLine,
   Plus,
   Search,
+  House,
   SquarePen,
   Star,
   StarOff,
@@ -26,7 +27,7 @@ import {
   Undo2,
 } from "lucide-react";
 import Link from "next/link";
-import { useParams, usePathname } from "next/navigation";
+import { useParams, usePathname, useRouter } from "next/navigation";
 import { useEffect, useState, type DragEvent } from "react";
 
 import { toast } from "@/lib/toast";
@@ -391,6 +392,7 @@ function TrashPopover() {
 export function SpacesSidebarContent({ onCollapse }: { onCollapse?: () => void }) {
   const spaces = useSpaces();
   const pathname = usePathname();
+  const router = useRouter();
   const params = useParams<{ spaceId?: string }>();
   const currentId = params?.spaceId ?? null;
   const [expanded, setExpanded] = useState<Set<SpaceId>>(new Set());
@@ -453,6 +455,9 @@ export function SpacesSidebarContent({ onCollapse }: { onCollapse?: () => void }
       <Button variant="quiet" icon={<Search size={17} />} onClick={() => spaces.openQuickFind("jump")}>
         Search
         <span className="ml-auto type-secondary text-muted-foreground">⌘K</span>
+      </Button>
+      <Button variant="quiet" className="justify-start" icon={<House size={17} />} data-active={pathname === "/spaces/home" || undefined} onClick={() => router.push(`/spaces/home${typeof window === "undefined" ? "" : window.location.search}`)}>
+        Home
       </Button>
 
       <div className="spaces-sidebar-scroll">

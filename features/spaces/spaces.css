@@ -1961,3 +1961,29 @@ button.spaces-page-prop-name:hover { background: var(--spaces-hover); }
 .spaces-ai-block-tools button:hover { background: var(--spaces-hover); }
 .spaces-ai-block-prompt { display: inline-flex; align-items: center; gap: 4px; min-width: 0; max-width: 60%; padding: 0 6px; }
 @media (hover: none) { .spaces-ai-block-tools { opacity: 1; } }
+
+/* E4 — Spaces Home (workspace/SpacesHomeView.tsx): Notion Home's greeting, card row and lists. */
+.spaces-home { max-width: 900px; margin: 0 auto; padding: 56px 24px 80px; overflow-y: auto; height: 100%; }
+.spaces-home-greeting { text-align: center; font-size: 30px; font-weight: 700; margin-bottom: 36px; }
+.spaces-home-section { margin-bottom: 32px; }
+.spaces-home-heading { display: flex; align-items: center; gap: 6px; margin-bottom: 10px; font-size: 12px; font-weight: 500; color: var(--spaces-ink-soft); }
+.spaces-home-cards { display: flex; gap: 14px; overflow-x: auto; padding-bottom: 6px; }
+.spaces-home-card { position: relative; flex: 0 0 144px; height: 144px; display: flex; flex-direction: column; justify-content: flex-end; gap: 4px; padding: 12px; border-radius: 16px; background: var(--card, var(--background)); box-shadow: 0 0 0 1px var(--border), 0 2px 4px rgba(15, 15, 15, 0.04); text-align: left; overflow: hidden; }
+.spaces-home-card:hover { background: var(--spaces-hover); }
+.spaces-home-card-top { position: absolute; inset: 0 0 auto 0; height: 44px; background: var(--spaces-hover-strong); }
+.spaces-home-card-icon { position: absolute; top: 28px; left: 12px; }
+.spaces-home-card-title { font-size: 14px; font-weight: 600; line-height: 1.3; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.spaces-home-card-meta { font-size: 12px; color: var(--spaces-ink-soft); }
+.spaces-home-list { display: flex; flex-direction: column; border-radius: 12px; box-shadow: 0 0 0 1px var(--border); padding: 4px; min-height: 40px; }
+.spaces-home-row { display: flex; align-items: center; gap: 10px; min-height: 36px; padding: 4px 8px; border-radius: 8px; text-align: left; font-size: 14px; }
+.spaces-home-row:hover { background: var(--spaces-hover); }
+.spaces-home-row-text { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; }
+.spaces-home-row-page, .spaces-home-row-meta, .spaces-home-time { font-size: 12px; color: var(--spaces-ink-soft); }
+.spaces-home-when { flex: 0 0 96px; display: flex; flex-direction: column; }
+.spaces-home-day { font-size: 13px; font-weight: 500; }
+.spaces-home-empty { font-size: 14px; color: var(--spaces-ink-soft); padding: 4px 2px; }
+.spaces-home-row-icon, .spaces-home-card-icon { display: inline-flex; align-items: center; justify-content: center; overflow: hidden; }
+.spaces-home-row-icon { flex: 0 0 20px; width: 20px; height: 20px; }
+.spaces-home-row-icon > *, .spaces-home-row-icon svg, .spaces-home-row-icon img { max-width: 20px; max-height: 20px; }
+.spaces-home-card-icon { width: 30px; height: 30px; }
+.spaces-home-card-icon > *, .spaces-home-card-icon svg, .spaces-home-card-icon img { max-width: 30px; max-height: 30px; }
