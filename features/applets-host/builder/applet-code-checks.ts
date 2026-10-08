@@ -495,3 +495,106 @@ export function parseProblem(file: BuilderFile): string | null {
   const parsed = parseAppletFile(file);
   return parsed.ok ? null : `${file.name} does not parse: ${parsed.error}`;
 }
+
+/** `useEffect(…)` or `React.useEffect(…)`. */
+function isUseEffect(call: t.CallExpression | t.OptionalCallExpression): boolean {
+  if (call.callee.type === "Identifier") return call.callee.name === "useEffect" || call.callee.name === "useLayoutEffect";
+  const name = memberName(call.callee);
+  return name === "useEffect" || name === "useLayoutEffect";
+}
+
+function callsUseRow(node: t.Node | null | undefined): boolean {
+  return !!node && node.type === "CallExpression" && node.callee.type === "Identifier" && node.callee.name === "useRow";
+}
+
+/**
+ * A FORM IS SEEDED ONCE PER RECORD, NEVER FROM THE ROW OBJECT. The social planner's Post Details page seeded
+ * its values with `useEffect(() => setValues({ title: row.title, … }), [row])`; every new row object the store
+ * hands out re-runs it, and a failed save rolled the title she had typed back to the saved one (live
+ * v0.4.3031, 2026-10-08). Named only when an effect whose dependency list holds the `row` a `useRow(…)` call
+ * answered (`const { row } = useRow(…)`, `{ row: post }`, or `x.row` for `const x = useRow(…)`) calls a
+ * `set…` function. `[row?._id]`, `[row._version]` or an effect that sets nothing are not named.
+ */
+export function formsReseededFromRow(file: BuilderFile): string[] {
+  const ast = treeOf(file);
+  if (!ast) return [];
+  const rows = new Set<string>();
+  const holders = new Set<string>();
+  walk(ast, (node) => {
+    if (node.type !== "VariableDeclarator" || !callsUseRow(node.init)) return;
+    if (node.id.type === "Identifier") holders.add(node.id.name);
+    else if (node.id.type === "ObjectPattern") {
+      for (const p of node.id.properties) {
+        if (p.type !== "ObjectProperty" || propertyName(p.key, p.computed) !== "row") continue;
+        const target = p.value.type === "AssignmentPattern" ? p.value.left : p.value;
+        if (target.type === "Identifier") rows.add(target.name);
+      }
+    }
+  });
+  if (rows.size === 0 && holders.size === 0) return [];
+  const out = new Set<string>();
+  walk(ast, (node) => {
+    if ((node.type !== "CallExpression" && node.type !== "OptionalCallExpression") || !isUseEffect(node)) return;
+    const [effect, deps] = node.arguments;
+    if (!effect || !deps || deps.type !== "ArrayExpression") return;
+    let named: string | null = null;
+    for (const d of deps.elements) {
+      if (!d) continue;
+      if (d.type === "Identifier" && rows.has(d.name)) named = d.name;
+      else if ((d.type === "MemberExpression" || d.type === "OptionalMemberExpression") && d.object.type === "Identifier" && holders.has(d.object.name) && memberName(d) === "row") {
+        named = `${d.object.name}.row`;
+      }
+    }
+    if (!named) return;
+    let sets = false;
+    walk(effect, (n) => {
+      if (!sets && (n.type === "CallExpression" || n.type === "OptionalCallExpression") && n.callee.type === "Identifier" && /^set[A-Z]/.test(n.callee.name)) sets = true;
+    });
+    if (sets) out.add(named);
+  });
+  return [...out];
+}
+
+/** The words a confirm's title / description / confirmLabel say. */
+function confirmWords(arg: t.Node | undefined): string {
+  if (!arg || arg.type !== "ObjectExpression") return "";
+  const words: string[] = [];
+  for (const p of arg.properties) {
+    if (p.type !== "ObjectProperty") continue;
+    const key = propertyName(p.key, p.computed);
+    if (key !== "title" && key !== "description" && key !== "confirmLabel") continue;
+    if (p.value.type === "StringLiteral") words.push(p.value.value);
+    else if (p.value.type === "TemplateLiteral") for (const q of p.value.quasis) words.push(q.value.cooked ?? q.value.raw);
+  }
+  return words.join(" ");
+}
+
+const DELETE_WORDS = /\b(?:delete|deleted|deleting|deletes|remove|removed|removes|permanently)\b/i;
+const FUNCTIONS: ReadonlySet<string> = new Set(["FunctionDeclaration", "FunctionExpression", "ArrowFunctionExpression", "ObjectMethod", "ClassMethod"]);
+
+/**
+ * AN ARCHIVE IS NEVER CALLED A DELETE. A button labelled "Archive" asked "Delete this post? This will remove the
+ * post and associated metrics." — but the store's archive can be restored (social planner, live v0.4.3031,
+ * 2026-10-08). Named only when a `confirmAction({ … })` whose title, description or confirmLabel says delete /
+ * remove / permanently sits in the same function as an `archive(…)` / `x.archive(…)` call.
+ */
+export function archiveCalledDelete(file: BuilderFile): string[] {
+  const ast = treeOf(file);
+  if (!ast) return [];
+  const out = new Set<string>();
+  walk(ast, (node, ancestors) => {
+    if (node.type !== "CallExpression" || node.callee.type !== "Identifier" || node.callee.name !== "confirmAction") return;
+    const words = confirmWords(node.arguments[0]);
+    const hit = DELETE_WORDS.exec(words);
+    if (!hit) return;
+    const fn = [...ancestors].reverse().find((a) => FUNCTIONS.has(a.type));
+    if (!fn) return;
+    let archives = false;
+    walk(fn, (n) => {
+      if (archives || (n.type !== "CallExpression" && n.type !== "OptionalCallExpression")) return;
+      if ((n.callee.type === "Identifier" && n.callee.name === "archive") || memberName(n.callee) === "archive") archives = true;
+    });
+    if (archives) out.add(hit[0]);
+  });
+  return [...out];
+}

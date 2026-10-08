@@ -106,6 +106,11 @@ record's own `scope` (`{ entries, shadowDangerousGlobals }`); app-owned modules 
 
 ## Change Log
 
+- 2026-10-08 — Lane AQ: `checkBuildAnswer` refuses a form copied from a `useRow` row on every change
+  (`useEffect(…set…, [row])` — a failed save rolled her typing back) and a confirm that says Delete / remove before
+  `archive()` (an archive can be restored); both read the syntax tree (`formsReseededFromRow`, `archiveCalledDelete`),
+  tested on the live social-planner page. Pairs with `@ai-matrx/applets` 0.14.0 (`useRow` hands out the stored row).
+
 - 2026-10-08 — Lane AO: the builder card shows the Applet's description (what it IS, `SAVED_APPLET_COLUMNS` carries
   it) and a run's note only when that run was not a repair — a fix note ("Fixed import locations…") never stands
   in for the description; a repair answered without a description keeps the one the Applet had

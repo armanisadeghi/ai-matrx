@@ -7,7 +7,7 @@
 import { checkAppletSources } from "@ai-matrx/applets/platform";
 import type { AppletSource } from "@ai-matrx/applets";
 
-import { browserDialogs, deadButtons, fieldsWithNoInput, handBuiltTables, misspelledChoices, parseProblem } from "./applet-code-checks";
+import { archiveCalledDelete, browserDialogs, deadButtons, fieldsWithNoInput, formsReseededFromRow, handBuiltTables, misspelledChoices, parseProblem } from "./applet-code-checks";
 import { BuildRefused, dateFieldsAsText, literalNewlineAttributes, newTableGaps, type BuildAnswer, type BuilderFile } from "./build-applet";
 
 const READS_SOURCE = /\buse(?:Rows|Row|Columns)\(\s*["'`]([^"'`$]+)["'`]/g;
@@ -98,6 +98,14 @@ export function checkBuildAnswer(
     }
     for (const label of deadButtons(f)) {
       problems.push(`${f.name} has a button "${label}" that does nothing — give it an onClick (or type="submit" inside its form)`);
+    }
+    for (const row of formsReseededFromRow(f)) {
+      problems.push(
+        `${f.name} copies ${row} into its form on every change (useEffect(…, [${row}])), so a re-read or a failed save writes the stored values over her typing — seed the form once per record: render <Form key={${row}._id} row={${row}} /> and inside it useState(() => ({ … }))`,
+      );
+    }
+    for (const word of archiveCalledDelete(f)) {
+      problems.push(`${f.name} asks "${word}" before archive() — an archived row can be restored: the button, title and confirmLabel say Archive and the line says she can restore it`);
     }
     if (handBuiltTables(f)) {
       problems.push(`${f.name} draws its own <table> of rows — use <RecordTable source rows columns /> from "@ai-matrx/applets/react", whose every header sorts and filters (a link by its labels)`);
