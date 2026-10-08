@@ -178,7 +178,9 @@ const INSTALLED = path.join(ROOT, "node_modules/@ai-matrx/rich-content/dist");
 describe("one click: markdown or plain text, and the button equals the menu", () => {
   test("A. the chat answer bar leads with the split Copy running the same rows as its menu", () => {
     const bar = fs.readFileSync(path.join(INSTALLED, "rich-document/variants/ActionBar.js"), "utf8");
-    expect(bar).toMatch(/CopySplitButton/);
+    // The bar leads with THE content action set (2026-10-08), whose first control is the split Copy.
+    expect(bar).toMatch(/ContentActions/);
+    expect(fs.readFileSync(path.join(INSTALLED, "copy/ContentActions.js"), "utf8")).toMatch(/CopySplitButton/);
     expect(bar).toMatch(/"copy-markdown"/);
     expect(bar).toMatch(/"copy-plain-text"/);
     expect(bar).toMatch(/triggerHidden/);
@@ -432,17 +434,19 @@ describe("consistency everywhere: markdown copy is the split Copy across the who
     expect(secondSplitBuild(REPO_ROOT)).toEqual([]);
   });
 
-  test("J. CENSUS: one visible copy control; the chevron is 2 rows, plus Export… only where there is no ⋯ menu", () => {
+  test("J. CENSUS: one visible copy control; the chevron is 2 rows; the palette is the set's Transform", () => {
     expect(copyMenuExtras(REPO_ROOT, COPY_MENU_FILES)).toEqual([]);
     // No second visible Export control anywhere (Arman, 2026-10-07): the anchor has no trigger.
     const anchor = fs.readFileSync(path.join(REPO_ROOT, "node_modules/@ai-matrx/rich-content/dist/copy/ExportPalette.js"), "utf8");
     expect(anchor).not.toMatch(/data-export-palette-trigger/);
-    // RichCopySplit hosts have no ⋯ menu → the chevron's one Export… row.
-    const split = fs.readFileSync(path.join(REPO_ROOT, "components/agent-copy/RichCopySplit.tsx"), "utf8");
-    expect(split).toMatch(/onExport=/);
-    // The rich-document bar has a ⋯ → Export… lives there; the chevron gets it only with hideOverflow.
-    const bar = fs.readFileSync(path.join(REPO_ROOT, "../aidream/apps/shared/rich-content/src/rich-document/variants/ActionBar.tsx"), "utf8");
-    expect(bar).toMatch(/hideOverflow \? \{ onExport:/);
+    // 2026-10-08: the palette is the content action set's one-click Transform — in RichCopySplit
+    // (chat package) and in the rich-document bar — never a chevron row any more.
+    const split = fs.readFileSync(path.join(REPO_ROOT, "node_modules/@ai-matrx/chat/dist/agent-copy/RichCopySplit.js"), "utf8");
+    expect(split).toMatch(/onTransform:/);
+    expect(split).not.toMatch(/onExport:/);
+    const bar = fs.readFileSync(path.join(REPO_ROOT, "node_modules/@ai-matrx/rich-content/dist/rich-document/variants/ActionBar.js"), "utf8");
+    expect(bar).toMatch(/onTransform:/);
+    expect(bar).not.toMatch(/onExport:/);
     // The phone note dock HAS a ⋯ (its More sheet): Export… is a row there; its copy chevron stays 2 rows.
     const dock = fs.readFileSync(path.join(REPO_ROOT, "features/notes/components/mobile/NoteEditorDock.tsx"), "utf8");
     expect(dock).toMatch(/data-note-dock-export/);
@@ -462,8 +466,8 @@ describe("consistency everywhere: markdown copy is the split Copy across the who
   });
 
   test("H. the split's Alchemy palette does not repeat the split's own two rows", () => {
-    const src = fs.readFileSync(path.join(REPO_ROOT, "components/agent-copy/RichCopySplit.tsx"), "utf8");
-    expect(src).toMatch(/richCopyFlavors=\{\[\]\}/);
+    const src = fs.readFileSync(path.join(REPO_ROOT, "node_modules/@ai-matrx/chat/dist/agent-copy/RichCopySplit.js"), "utf8");
+    expect(src).toMatch(/richCopyFlavors: \[\]/);
   });
 
   test("I. a saved template has one editor, and the phone note dock keeps toasts off its controls", () => {

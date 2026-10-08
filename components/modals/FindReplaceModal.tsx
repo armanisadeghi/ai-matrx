@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { Input } from '@ai-matrx/design-system';
-import IconButton from '@/components/official/IconButton';
+import { IconButton } from '@ai-matrx/design-system';
 import { TooltipProvider } from '@/components/ui/tooltip';
 
 // Extend Window interface for non-standard find API

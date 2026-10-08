@@ -14,7 +14,7 @@ import { toast } from "@/lib/toast";
 import React, { useState } from "react";
 import { FileText, Eye, Columns2, Copy, RotateCcw, Rocket } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import IconButton from "@/components/official/IconButton";
+import { IconButton } from "@ai-matrx/design-system";
 import {
   Tooltip,
   TooltipContent,

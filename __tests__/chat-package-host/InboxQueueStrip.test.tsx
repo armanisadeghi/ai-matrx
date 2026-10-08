@@ -17,7 +17,7 @@ import inboxReducer, {
 import { InboxQueueStrip } from "@ai-matrx/chat/agents/components/inputs/smart-input/InboxQueueStrip";
 import { promoteQueuedToSteer } from "@ai-matrx/chat/agents/redux/execution-system/inbox/inbox.thunks";
 import { registerChatUi } from "@ai-matrx/chat/host/ui-slots";
-import Host_IconButton from "@/components/official/IconButton";
+import { IconButton as Host_IconButton } from "@ai-matrx/design-system";
 import { TextInputDialog as Host_TextInputDialog } from "@ai-matrx/design-system";
 registerChatUi({ IconButton: Host_IconButton, TextInputDialog: Host_TextInputDialog });
 

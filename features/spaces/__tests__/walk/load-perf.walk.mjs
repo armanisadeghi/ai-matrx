@@ -93,5 +93,18 @@ for (let i = 0; i < loads; i++) {
   else console.log("   rowish", JSON.stringify(rowReads.map((x) => `${x.at}:${x.name}`)));
   for (const w of warnings.slice(0, 3)) console.log("   warn", w);
 }
+if (process.env.DUMP) {
+  const dump = await page.evaluate(() => {
+    const seen = {};
+    for (const el of document.querySelectorAll(".spaces-content .bn-block-outer")) {
+      const ct = el.querySelector(":scope > .bn-block > .bn-block-content, :scope > .bn-block > .react-renderer > .bn-block-content")?.getAttribute("data-content-type");
+      if (!ct || seen[ct]) continue;
+      seen[ct] = el.outerHTML.slice(0, ct === "database" ? 1500 : 3000);
+    }
+    const root = document.querySelector(".spaces-content .bn-editor");
+    return { root: root?.parentElement?.outerHTML.slice(0, 300), editor: root?.outerHTML.slice(0, 300), blocks: seen };
+  });
+  (await import("node:fs")).writeFileSync(process.env.DUMP, JSON.stringify(dump, null, 1));
+}
 if (process.env.SHOT) await page.screenshot({ path: process.env.SHOT, fullPage: false });
 await browser.close();

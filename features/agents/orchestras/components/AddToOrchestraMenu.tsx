@@ -9,7 +9,7 @@
 import { useState } from "react";
 import { Network, Plus, ListTree } from "lucide-react";
 import { useRouter } from "next/navigation";
-import IconButton from "@/components/official/IconButton";
+import { IconButton } from "@ai-matrx/design-system";
 import {
   DropdownMenu,
   DropdownMenuContent,

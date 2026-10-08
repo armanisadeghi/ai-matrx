@@ -29,7 +29,7 @@ import { resolveDeckTheme } from "./presets";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectUser } from "@/lib/redux/selectors/userSelectors";
 import { toast } from "@/lib/toast";
-import IconButton from "@/components/official/IconButton";
+import { IconButton } from "@ai-matrx/design-system";
 import { extractErrorMessage } from "@/utils/errors";
 
 interface PresentationExportMenuProps {

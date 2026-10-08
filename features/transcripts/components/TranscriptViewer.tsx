@@ -619,8 +619,6 @@ export function TranscriptViewer() {
                   toastLabel={activeTranscript.title}
                   size="sm"
                 />
-                  />
-                )}
                 {/*
                  * The transcript RECORD pair. A transcript is the "massive"
                  * size class — thousands of segments is normal — so the AI
@@ -834,6 +832,8 @@ export function TranscriptViewer() {
                 )}
                 {transcriptContent.trim().length > 0 && (
                   <RichDocumentActions
+                    // The RichCopySplit above is this transcript's content action set.
+                    contentActions={false}
                     content={transcriptContent}
                     source={{ type: "raw", title: activeTranscript.title }}
                     actions={{

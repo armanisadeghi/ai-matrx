@@ -274,6 +274,16 @@ function MeetingSurfaceBody({
           <p className="mt-2 text-sm text-muted-foreground">
             {resolution.remedy}
           </p>
+          {/* A link that opened nothing is never a dead end: back to the
+              meetings list (where codes and links are opened) or home. */}
+          <div className="mt-4 flex gap-2">
+            <Button asChild variant="primary">
+              <a href="/meetings">Back to meetings</a>
+            </Button>
+            <Button asChild variant="outline">
+              <a href="/">Go home</a>
+            </Button>
+          </div>
         </Centered>
       </MeetRoot>
     );

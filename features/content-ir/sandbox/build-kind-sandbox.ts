@@ -41,7 +41,7 @@
  * bodies are migrated to the frame-safe implementations without a row
  * changing — including the five that import MarkdownStream.
  */
-import { build, type Metafile } from "esbuild";
+import { build, type Metafile, type Plugin } from "esbuild";
 import { resolve, dirname, relative } from "node:path";
 import { fileURLToPath } from "node:url";
 import { readFile, writeFile, mkdir, rm } from "node:fs/promises";
@@ -58,6 +58,26 @@ const JS_ENTRY = resolve(__dirname, "runtime/entry.tsx");
 const CSS_ENTRY = resolve(__dirname, "runtime/sandbox.css");
 const JS_OUT = resolve(ROOT, "public/kind-sandbox.js");
 const CSS_OUT = resolve(ROOT, "public/kind-sandbox.css");
+
+const FRAME_DESIGN_SYSTEM_ROOT = resolve(
+  __dirname,
+  "runtime/FrameDesignSystemRoot.ts",
+);
+const REAL_DESIGN_SYSTEM_ROOT = resolve(
+  ROOT,
+  "node_modules/@ai-matrx/design-system/dist/index.js",
+);
+const frameDesignSystemRoot: Plugin = {
+  name: "frame-design-system-root",
+  setup(b) {
+    b.onResolve({ filter: /^@ai-matrx\/design-system$/ }, (args) => ({
+      path:
+        args.importer === FRAME_DESIGN_SYSTEM_ROOT
+          ? REAL_DESIGN_SYSTEM_ROOT
+          : FRAME_DESIGN_SYSTEM_ROOT,
+    }));
+  },
+};
 
 const ALIAS: Record<string, string> = {
   "@ai-matrx/chat/ui/markdown-stream/MarkdownStream": resolve(
@@ -89,10 +109,6 @@ const ALIAS: Record<string, string> = {
   "@/components/errors/useErrorSurfaceSnapshot": resolve(
     __dirname,
     "runtime/FrameErrorSurfaceSnapshot.ts",
-  ),
-  "@ai-matrx/design-system": resolve(
-    __dirname,
-    "runtime/FrameReadGate.tsx",
   ),
   "@/features/google-workspace/export/sendToGoogle": resolve(
     __dirname,
@@ -192,6 +208,10 @@ async function buildJs(): Promise<{ code: string; meta: Metafile }> {
     tsconfig: resolve(ROOT, "tsconfig.json"),
     loader: { ".css": "empty", ".svg": "dataurl", ".png": "dataurl" },
     alias: ALIAS,
+    // esbuild `alias` is a PREFIX match, so the design-system root cannot be
+    // an alias entry: it would remap every subpath (`/data-table`, …) into
+    // the frame module. This plugin takes the bare root only.
+    plugins: [frameDesignSystemRoot],
     // THE FRAME HAS NO STORAGE (V-27 finding D). Both globals are
     // replaced with the announcing stand-in: on an opaque origin the real
     // ones throw a SecurityError, and durable state in an invisible place

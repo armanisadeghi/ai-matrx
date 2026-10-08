@@ -3,7 +3,7 @@
 import { AgentProofBadge } from "@/features/agents/factory/components/AgentProofBadge";
 import Link from "next/link";
 import { Card } from "@/components/ui/card";
-import IconButton from "@/components/official/IconButton";
+import { IconButton } from "@ai-matrx/design-system";
 import {
   Eye,
   Pencil,
