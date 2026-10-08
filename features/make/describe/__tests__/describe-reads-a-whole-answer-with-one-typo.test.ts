@@ -15,7 +15,7 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 
-import { extractFirstJson } from "@ai-matrx/kit/json-extract";
+import { extractFirstJson } from "@ai-matrx/content-ir/json-extract";
 
 import { checkDescribeTemplate, coerceDescribeAnswer } from "../describeTemplate";
 

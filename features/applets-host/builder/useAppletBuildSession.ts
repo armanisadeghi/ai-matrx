@@ -15,7 +15,7 @@
 //
 // Nothing here lives in the browser: the row is the truth, the URL only names it.
 import { useEffect, useEffectEvent, useRef, useState } from "react";
-import { extractFirstJson } from "@ai-matrx/kit/json-extract";
+import { extractFirstJson } from "@ai-matrx/content-ir/json-extract";
 import { loadConversation } from "@ai-matrx/chat/agents/redux/execution-system/thunks/load-conversation.thunk";
 import { reconnectServerOperation } from "@ai-matrx/chat/agents/runtime-reconnect/reconnect-server-operation.thunk";
 import { selectLatestAnswerText } from "@ai-matrx/chat/agents/redux/execution-system/messages/messages.selectors";
