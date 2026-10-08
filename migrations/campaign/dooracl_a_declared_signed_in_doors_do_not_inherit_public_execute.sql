@@ -1,6 +1,4 @@
--- target: branch,production
--- additive: yes
--- guard: custom/system_enabled
+-- chair-step: normalize declared signed-in closed-schema door ACLs without restoring inherited PUBLIC execute
 -- lock: custom,platform
 -- based-on: platform.reopen_declared_doors(text) a8b1cd53b5d111e7c17ebc2e73036f0b4b9bc58139b19b9f250c4d8bf0993748
 --
@@ -11,7 +9,6 @@
 -- before the opening pass: retain every existing signed-in/server role, remove
 -- PUBLIC and anon, then let the registry restore authenticated if needed.
 
-set local lock_timeout = '5s';
 set local statement_timeout = '60s';
 
 create or replace function platform.reopen_declared_doors(p_schema text)
@@ -26,8 +23,6 @@ declare
   v_closed boolean;
   v_any    boolean := false;
   v_detail text;
-  v_keep   text[];
-  v_role   text;
 begin
   select not coalesce(e.client_exposed, false) into v_closed
     from platform.schema_client_exposure e where e.schema_name = p_schema;
@@ -37,8 +32,8 @@ begin
 
   -- A signed-in-only declaration is a positive ACL contract.  PUBLIC also
   -- reaches anon, so take it back even when the declaration makes the door
-  -- legitimate.  Preserve every role already able to call it; the database
-  -- records server and dashboard lanes must not lose their existing route.
+  -- legitimate. REVOKE changes only PUBLIC/anon; direct service and dashboard
+  -- grants remain in place, while the opening pass restores authenticated.
   for fn in
     select p.oid::regprocedure::text as sig, p.oid, d.signed_in_callers,
            d.anonymous_callers
@@ -52,18 +47,8 @@ begin
        and (has_function_privilege('public', p.oid, 'EXECUTE')
             or has_function_privilege('anon', p.oid, 'EXECUTE'))
   loop
-    select coalesce(array_agg(r.rolname order by r.rolname), '{}'::text[])
-      into v_keep
-      from pg_roles r
-     where r.rolname in ('authenticated', 'service_role', 'dashboard_user', 'svc_seo')
-       and has_function_privilege(r.rolname, fn.oid, 'EXECUTE');
-
     execute format('revoke execute on function %s from public', fn.sig);
     execute format('revoke execute on function %s from anon', fn.sig);
-    foreach v_role in array v_keep
-    loop
-      execute format('grant execute on function %s to %I', fn.sig, v_role);
-    end loop;
     reopened := format('normalized %s', fn.sig);
     return next;
   end loop;
@@ -123,11 +108,20 @@ begin
       reopened := format('closed %s', fn.sig);
       return next;
     exception when others then
-      raise warning 'platform.reopen_declared_doors(%): could NOT take the client EXECUTE grant back from % (%).', p_schema, fn.sig, sqlerrm;
+      -- NOTHING FAILS SILENTLY. A function this pass could not close is the whole defect
+      -- again, so it screams with the remedy instead of being skipped.
+      raise warning 'platform.reopen_declared_doors(%): could NOT take the client EXECUTE grant back from % (%). That function is reachable by a signed-in caller with no row in platform.client_callable_door. Fix the grant by hand or declare it.', p_schema, fn.sig, sqlerrm;
       continue;
     end;
     begin
-      v_detail := format('%s.%s(%s) held a client EXECUTE grant in a closed schema with no client door declaration.', p_schema, fn.nm, fn.ia);
+      v_detail := format(
+        '%s.%s(%s) held a client EXECUTE grant in a schema declared closed in '
+        'platform.schema_client_exposure, with no row in platform.client_callable_door '
+        'opening a client lane. PUBLIC, anon and authenticated have been taken back. If a '
+        'signed-in person really is meant to call it, declare it — a row with '
+        'signed_in_callers = true and a reason naming that caller — and '
+        'platform.reopen_declared_doors(%L) will hand the grant back.',
+        p_schema, fn.nm, fn.ia, p_schema);
       raise warning 'ddl_guard[undeclared_client_grant_in_a_closed_schema]: %', v_detail;
       insert into platform.ddl_guard_log(severity, rule, object_ref, command_tag, detail)
       values ('error', 'undeclared_client_grant_in_a_closed_schema',

@@ -1,6 +1,6 @@
 {
   "note": "Checked-in snapshot of public._schema_migrations for the files under migrations/campaign and migrations/inverse. Written by `pnpm db:apply` on every successful production apply and refreshed whole by the nightly catch-up. Never hand-edited: a self-written checksum is a claim nobody can check. Guard: pnpm check:ledgered-files-unedited.",
-  "generated_at": "2026-10-08T18:06:54.726Z",
+  "generated_at": "2026-10-08T18:20:27.444Z",
   "files": {
     "migrations/campaign/a_chunk_is_the_size_the_client_door_can_actually_carry.sql": {
       "source": "matrx-frontend",
@@ -1645,6 +1645,24 @@
       "filename": "docgen_the_letterhead_door_can_be_reached.sql",
       "checksum": "43888ec5d1bf3d1a12f4885caada0fdfd6c7e38c2b6d4ef221e29f8d50b1edd1",
       "applied_at": "2026-09-20 14:57:41.81524+00"
+    },
+    "migrations/campaign/dooracl_a_declared_signed_in_doors_do_not_inherit_public_execute.sql": {
+      "source": "matrx-frontend",
+      "filename": "dooracl_a_declared_signed_in_doors_do_not_inherit_public_execute.sql",
+      "checksum": "069116d56dcc3d6e3f365bea7365faa83e312b82014801c806e22ba6e4a28224",
+      "applied_at": "2026-10-08 18:19:51.735027+00"
+    },
+    "migrations/campaign/dooracl_b_existing_signed_in_doors_lose_public_execute.sql": {
+      "source": "matrx-frontend",
+      "filename": "dooracl_b_existing_signed_in_doors_lose_public_execute.sql",
+      "checksum": "d6db81e909c8366c93f56015f41855aa594e57aa55f371fa8948e1611c103105",
+      "applied_at": "2026-10-08 18:20:04.678967+00"
+    },
+    "migrations/campaign/dooracl_c_custom_anon_execute_is_empty.sql": {
+      "source": "matrx-frontend",
+      "filename": "dooracl_c_custom_anon_execute_is_empty.sql",
+      "checksum": "6e5bd89e73eb94a784a4f5dfd4a9667e30a44b493d0085c36a8f00d351a96e46",
+      "applied_at": "2026-10-08 18:20:21.633821+00"
     },
     "migrations/campaign/doorfix_a_field_type_change_converts_or_retires.sql": {
       "source": "matrx-frontend",
@@ -3697,6 +3715,18 @@
       "filename": "hotdoors3_a_a_page_reads_its_rows_once_and_sorts_only_the_page.sql",
       "checksum": "1bff3637b2443ae0779edcb77d9058413e7e8dba5427a7c2216faa62c21c25b3",
       "applied_at": "2026-10-08 18:06:32.914467+00"
+    },
+    "migrations/campaign/hotdoors3_b_the_confidential_header_is_asked_only_of_unopened_ids.sql": {
+      "source": "matrx-frontend",
+      "filename": "hotdoors3_b_the_confidential_header_is_asked_only_of_unopened_ids.sql",
+      "checksum": "a3063dd0dd54da7ab0e7555de7f5281a80988b33a7515a978db8a5ae593f2055",
+      "applied_at": "2026-10-08 18:15:03.463397+00"
+    },
+    "migrations/campaign/hotdoors3_c_a_page_row_is_built_once.sql": {
+      "source": "matrx-frontend",
+      "filename": "hotdoors3_c_a_page_row_is_built_once.sql",
+      "checksum": "fae17d3c33c06081c6c390f0cd3d923528470198a17f2420c7e398eaec941ca7",
+      "applied_at": "2026-10-08 18:20:26.247116+00"
     },
     "migrations/campaign/hotdoors_a_the_list_filter_inlines_and_a_page_walks_once.sql": {
       "source": "matrx-frontend",
