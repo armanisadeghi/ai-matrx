@@ -3989,6 +3989,15 @@ export type Database = {
       }
     }
     Functions: {
+      __cost_tier_hold_conformance: {
+        Args: never
+        Returns: {
+          check_key: string
+          detail: Json
+          ok: boolean
+          severity: string
+        }[]
+      }
       _translation_cell_target_ok: {
         Args: {
           p_layer: string
@@ -18960,7 +18969,7 @@ export type Database = {
           sender_identity: string
           sender_name: string
           sender_user_id: string | null
-          session_id: string | null
+          session_id: string
           updated_at: string
           updated_by: string | null
           version: number
@@ -18979,7 +18988,7 @@ export type Database = {
           sender_identity: string
           sender_name: string
           sender_user_id?: string | null
-          session_id?: string | null
+          session_id: string
           updated_at?: string
           updated_by?: string | null
           version?: number
@@ -18998,7 +19007,7 @@ export type Database = {
           sender_identity?: string
           sender_name?: string
           sender_user_id?: string | null
-          session_id?: string | null
+          session_id?: string
           updated_at?: string
           updated_by?: string | null
           version?: number
@@ -19323,7 +19332,7 @@ export type Database = {
           meeting_id: string
           metadata: Json
           organization_id: string
-          session_id: string | null
+          session_id: string
           text: string
           updated_at: string
           updated_by: string | null
@@ -19339,7 +19348,7 @@ export type Database = {
           meeting_id: string
           metadata?: Json
           organization_id: string
-          session_id?: string | null
+          session_id: string
           text: string
           updated_at?: string
           updated_by?: string | null
@@ -19355,7 +19364,7 @@ export type Database = {
           meeting_id?: string
           metadata?: Json
           organization_id?: string
-          session_id?: string | null
+          session_id?: string
           text?: string
           updated_at?: string
           updated_by?: string | null
@@ -19578,7 +19587,7 @@ export type Database = {
           meeting_id: string
           metadata: Json
           organization_id: string
-          session_id: string | null
+          session_id: string
           started_at: string | null
           started_by: string | null
           state: string
@@ -19600,7 +19609,7 @@ export type Database = {
           meeting_id: string
           metadata?: Json
           organization_id: string
-          session_id?: string | null
+          session_id: string
           started_at?: string | null
           started_by?: string | null
           state?: string
@@ -19622,7 +19631,7 @@ export type Database = {
           meeting_id?: string
           metadata?: Json
           organization_id?: string
-          session_id?: string | null
+          session_id?: string
           started_at?: string | null
           started_by?: string | null
           state?: string
@@ -19779,7 +19788,7 @@ export type Database = {
           meeting_id: string
           metadata: Json
           organization_id: string
-          session_id: string | null
+          session_id: string
           speaker: string
           started_at: string
           text: string
@@ -19797,7 +19806,7 @@ export type Database = {
           meeting_id: string
           metadata?: Json
           organization_id: string
-          session_id?: string | null
+          session_id: string
           speaker?: string
           started_at?: string
           text: string
@@ -19815,7 +19824,7 @@ export type Database = {
           meeting_id?: string
           metadata?: Json
           organization_id?: string
-          session_id?: string | null
+          session_id?: string
           speaker?: string
           started_at?: string
           text?: string
@@ -93120,6 +93129,7 @@ export type Database = {
           request_id: string
           run_key: string
           saved: boolean
+          source: string
           tokens_cached: number
           tokens_in: number
           tokens_out: number
@@ -93954,16 +93964,24 @@ export type Database = {
           payers: Json
           premium_models: string[]
           runs: number
+          unattributed_source: string
           unsaved_cost: number
           unsaved_runs: number
         }[]
+      }
+      agent_spend_raw_total: {
+        Args: { p_days?: number; p_org_id?: string }
+        Returns: number
       }
       agent_spend_runs: {
         Args: {
           p_agent_id?: string
           p_days?: number
+          p_limit?: number
           p_mandate_key?: string
+          p_offset?: number
           p_org_id?: string
+          p_source?: string
         }
         Returns: {
           agent_id: string
@@ -93984,6 +94002,8 @@ export type Database = {
           started_at: string
           tokens_in: number
           tokens_out: number
+          total_cost: number
+          total_runs: number
           turns: number
         }[]
       }
@@ -94311,6 +94331,7 @@ export type Database = {
           model: string
           request_id: string
           saved: boolean
+          source: string
           tokens_cached: number
           tokens_in: number
           tokens_out: number
