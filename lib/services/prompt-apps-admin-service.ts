@@ -147,7 +147,7 @@ export interface PromptAppAdminView {
 
 export interface UpdateAppAdminInput {
   id: string;
-  status?: "draft" | "published" | "archived" | "suspended";
+  status?: "draft" | "published" | "suspended";
   is_verified?: boolean;
   is_featured?: boolean;
 }

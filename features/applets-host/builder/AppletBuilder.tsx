@@ -245,7 +245,7 @@ export function AppletBuilder({ appletId: initialId, routed = false }: { appletI
     }
   };
 
-  const useIt = async () => {
+  const publishAndUse = async () => {
     if (!saved || !userId) return;
     // "Use it" publishes AND creates tables: the click names both before it does either.
     const ok = await confirm({ ...publishConsequence({ name: saved.name, slug: saved.slug, tablesToMake: saved.toMake.map((t) => t.name) }), confirmLabel: "Publish" });
@@ -343,7 +343,7 @@ export function AppletBuilder({ appletId: initialId, routed = false }: { appletI
             ) : null}
             <div className="flex flex-wrap gap-2">
               {appletState(saved).kind === "draft" ? (
-                <Button variant="primary" disabled={busy || !userId} onClick={() => void useIt()}>
+                <Button variant="primary" disabled={busy || !userId} onClick={() => void publishAndUse()}>
                   Use it
                 </Button>
               ) : null}

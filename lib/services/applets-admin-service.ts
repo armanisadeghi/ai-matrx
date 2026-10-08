@@ -54,7 +54,7 @@ export interface AppletAdminView {
   description?: string | null;
   category?: string | null;
   tags: string[];
-  status: "draft" | "published" | "archived" | "suspended";
+  status: "draft" | "published" | "suspended";
   published_to_web: boolean;
   is_verified: boolean;
   is_featured: boolean;
@@ -76,7 +76,7 @@ export interface AppletAdminView {
 
 export interface UpdateAppletAdminInput {
   id: string;
-  status?: "draft" | "published" | "archived" | "suspended";
+  status?: "draft" | "published" | "suspended";
   is_verified?: boolean;
   is_featured?: boolean;
   published_to_web?: boolean;

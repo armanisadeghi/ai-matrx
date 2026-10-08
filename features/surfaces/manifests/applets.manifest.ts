@@ -118,7 +118,7 @@ const surfaceSpecific: SurfaceValue[] = [
     name: "app_status",
     label: "Applet status",
     description:
-      "Lifecycle status of the open app: draft, published, archived, or suspended. Empty when no Applet is open.",
+      "The open Applet's state (`appletState`): draft, published, suspended, or archived. Empty when no Applet is open.",
     valueType: "string",
     alwaysAvailable: false,
     typicalCharCount: 10,
@@ -162,7 +162,7 @@ const surfaceSpecific: SurfaceValue[] = [
     name: "app_version",
     label: "Current version",
     description:
-      "The open Applet's current version number (increments on publish-worthy saves). Absent when no Applet is open.",
+      "The open Applet's saved content version (moves only when its files, pages, jobs or sources change). Absent when no Applet is open.",
     valueType: "number",
     alwaysAvailable: false,
     typicalCharCount: 3,
