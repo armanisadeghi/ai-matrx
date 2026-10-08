@@ -144,6 +144,11 @@ async function retireAutomations(
   return { ok: true, data: true };
 }
 
+/** What each 360 notice says as its subject (in-app and email), and where it opens. */
+export const NOTICE_SUBJECT = { respondent: "Complete your 360 review", hr: "A 360 review response is in" } as const;
+/** The respondent's notice opens her half: the track row's id and the review's organization, both the store's own words. */
+export const RESPOND_LINK = "/hr/performance/respond/{{record_id}}?org={{organization_id}}";
+
 export async function provisionReview360(
   client: RecordsClient,
   organizationId: string,
@@ -171,7 +176,7 @@ export async function provisionReview360(
       {
         name: "360: tell the respondent",
         trigger: { on: "property_edited", field: "link" },
-        actions: [{ do: "notify", to: { field: "respondent_login" }, text: `${TRACK_TITLE}: {{link}}` }],
+        actions: [{ do: "notify", to: { field: "respondent_login" }, subject: NOTICE_SUBJECT.respondent, link: RESPOND_LINK, text: `${TRACK_TITLE}: {{link}}` }],
       },
       // THE HR NOTICE, per half: a respondent READS the review row and may not stamp it, so the
       // half is reported from the track itself; the review page works "both in" out from the tracks.
@@ -179,7 +184,7 @@ export async function provisionReview360(
         name: "360: a response is in",
         trigger: { on: "property_edited", field: "submitted_at" },
         condition: { op: "present", args: [{ field: "submitted_at" }] },
-        actions: [{ do: "notify", to: { field: "hr_manager_login" }, text: "A 360 review response is in: {{review_link}}" }],
+        actions: [{ do: "notify", to: { field: "hr_manager_login" }, subject: NOTICE_SUBJECT.hr, link: "{{review_link}}", text: "A 360 review response is in: {{review_link}}" }],
       },
     ],
     { organizationId },
