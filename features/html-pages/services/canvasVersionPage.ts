@@ -89,7 +89,8 @@ export async function resolveHtmlCanvasPage(
   canvasItemId: string,
   which: "self" | "latest",
 ): Promise<ResolvedHtmlCanvasPage | null> {
-  const columns = "id, version, parent_canvas_id, external_system, external_id";
+  const columns =
+    "id, version, parent_canvas_id, external_system, external_id, created_at";
   const { data: own, error } = await supabase
     .schema("canvas")
     .from("canvas_items")
@@ -106,15 +107,19 @@ export async function resolveHtmlCanvasPage(
     .select(columns)
     .or(`id.eq.${rootId},parent_canvas_id.eq.${rootId}`)
     .is("deleted_at", null)
-    .order("version", { ascending: false })
-    .limit(1)
+    // `version` is ALSO bumped by the platform `_touch_row` trigger on every
+    // update (a link write raises it), so it cannot order a chain: creation
+    // order can. The number shown is the row's place in the chain.
+    .order("created_at", { ascending: true })
     .returns<VersionRow[]>();
   if (chainError) throw new Error(chainError.message);
-  const newest = chain?.[0] ?? own;
+  const rows = chain?.length ? chain : [own];
+  const newest = rows[rows.length - 1];
   const shownRow = which === "latest" ? newest : own;
+  const place = (id: string) => rows.findIndex((r) => r.id === id) + 1 || 1;
   return {
-    shown: { id: shownRow.id, version: shownRow.version, url: urlOf(shownRow) },
-    latest: { id: newest.id, version: newest.version, url: urlOf(newest) },
+    shown: { id: shownRow.id, version: place(shownRow.id), url: urlOf(shownRow) },
+    latest: { id: newest.id, version: place(newest.id), url: urlOf(newest) },
   };
 }
 
