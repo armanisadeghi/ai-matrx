@@ -387,8 +387,17 @@ export async function ensureEnded(meeting: Meeting | null): Promise<string> {
     if (row && row.ended_at) return `ended (ended_at=${String(row.ended_at)})`;
     const id = row?.id;
     if (!id) return "backstop: meeting row not readable";
-    await rpc("meet_end_meeting", { p_meeting_id: id, p_by_user_id: s.userId }, s.token);
-    return "ended via backstop RPC";
+    // The one end door is the server's `POST /api/v1/meet/end` (the `meet_end_meeting`
+    // RPC was dropped in cut-over S3): it ends the run, closes the LiveKit room and
+    // returns the original timestamp when the meeting was already ended.
+    const server = process.env.NEXT_PUBLIC_BACKEND_URL ?? "https://server.app.matrxserver.com";
+    const res = await fetch(`${server}/api/v1/meet/end`, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${s.token}`, "Content-Type": "application/json" },
+      body: JSON.stringify({ meeting_id: id, organization_id: row.organization_id }),
+    });
+    if (!res.ok) throw new Error(`/api/v1/meet/end ${res.status}`);
+    return "ended via backstop server door";
   } catch (e) {
     return `backstop failed: ${(e as Error).message.slice(0, 160)}`;
   }
