@@ -1,7 +1,7 @@
 {
   "version": 1,
   "app": "matrx-frontend",
-  "routeCount": 1355,
+  "routeCount": 1362,
   "routes": [
     {
       "pattern": "/",
@@ -497,6 +497,11 @@
       "pattern": "/administration/automation/scheduling/templates",
       "status": "live",
       "source": "app/(admin)/administration/automation/scheduling/templates/page.tsx"
+    },
+    {
+      "pattern": "/administration/automation/scheduling/triggers",
+      "status": "live",
+      "source": "app/(admin)/administration/automation/scheduling/triggers/page.tsx"
     },
     {
       "pattern": "/administration/automation/workflow-runs",
@@ -1177,6 +1182,16 @@
       "pattern": "/administration/usage",
       "status": "live",
       "source": "app/(admin)/administration/usage/page.tsx"
+    },
+    {
+      "pattern": "/administration/usage/agents",
+      "status": "live",
+      "source": "app/(admin)/administration/usage/agents/page.tsx"
+    },
+    {
+      "pattern": "/administration/usage/agents/detail",
+      "status": "live",
+      "source": "app/(admin)/administration/usage/agents/detail/page.tsx"
     },
     {
       "pattern": "/administration/users",
@@ -5284,6 +5299,26 @@
       "pattern": "/organizations/[orgId]/admin",
       "status": "live",
       "source": "app/(core)/organizations/[orgId]/admin/page.tsx"
+    },
+    {
+      "pattern": "/organizations/[orgId]/admin/ai-spend",
+      "status": "live",
+      "source": "app/(core)/organizations/[orgId]/admin/ai-spend/page.tsx"
+    },
+    {
+      "pattern": "/organizations/[orgId]/admin/ai-spend/detail",
+      "status": "live",
+      "source": "app/(core)/organizations/[orgId]/admin/ai-spend/detail/page.tsx"
+    },
+    {
+      "pattern": "/organizations/[orgId]/admin/automations/[kind]/[id]",
+      "status": "live",
+      "source": "app/(core)/organizations/[orgId]/admin/automations/[kind]/[id]/page.tsx"
+    },
+    {
+      "pattern": "/organizations/[orgId]/admin/triggers",
+      "status": "live",
+      "source": "app/(core)/organizations/[orgId]/admin/triggers/page.tsx"
     },
     {
       "pattern": "/organizations/[orgId]/admin/users/[userId]",
