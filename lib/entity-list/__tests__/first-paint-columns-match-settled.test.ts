@@ -5,7 +5,7 @@
  * paints every column; the script that follows the table must already hide the columns the React
  * rule would drop once it measures — same rule, same answer, before hydration.
  */
-import { columnsWithoutRoom, noRoomScript, NO_ROOM_ATTR, clearNoRoomMarks, ROW_ACTIONS_WIDTH } from "../columnPriority";
+import { columnsWithoutRoom, noRoomScript, NO_ROOM_ATTR, NO_ROOM_CSS, clearNoRoomMarks, ROW_ACTIONS_WIDTH } from "../columnPriority";
 import type { EntityColumnSpec } from "../columns";
 
 type R = { id: string };
@@ -33,9 +33,14 @@ function paint(available: number, specs = HOME, shown = specs.map((s) => s.id)):
   const script = document.createElement("script");
   body.appendChild(script);
   Object.defineProperty(document, "currentScript", { value: script, configurable: true });
+  document.documentElement.removeAttribute(NO_ROOM_ATTR);
+  tableHtmlBefore = body.innerHTML;
   new Function(noRoomScript(specs))();
-  return [...document.querySelectorAll(`thead th[${NO_ROOM_ATTR}]`)].map((th) => th.getAttribute("data-matrx-table-column-id")!);
+  const positions = (document.documentElement.getAttribute(NO_ROOM_ATTR) ?? "").split(" ").filter(Boolean).map(Number);
+  const heads = [...document.querySelectorAll("thead th")];
+  return positions.map((p) => heads[p - 1].getAttribute("data-matrx-table-column-id")!);
 }
+let tableHtmlBefore = "";
 
 const widths = [1280, 1100, 1024, 900, 800, 700];
 it.each(widths)("at %ipx the server paint hides exactly what React's rule hides", (w) => {
@@ -46,11 +51,17 @@ it.each(widths)("at %ipx the server paint hides exactly what React's rule hides"
 it("hides at least one column where the table does not fit (so the test cannot pass vacuously)", () => {
   expect(paint(800).length).toBeGreaterThan(0);
 });
-it("hides the cells of that column too, not only its header, and keeps the others", () => {
+it("never touches the table's own markup, so React hydrates it without a mismatch", () => {
   paint(800);
-  const marked = document.querySelectorAll(`tbody td[${NO_ROOM_ATTR}]`).length;
-  expect(marked).toBe(document.querySelectorAll(`thead th[${NO_ROOM_ATTR}]`).length);
-  expect(document.querySelector(`th[data-matrx-table-column-id="name"][${NO_ROOM_ATTR}]`)).toBeNull();
+  expect(document.getElementById("b")!.innerHTML.replace(/<script><\/script>/, "")).toBe(
+    tableHtmlBefore.replace(/<script><\/script>/, ""),
+  );
+  expect(document.querySelectorAll(`table [${NO_ROOM_ATTR}]`).length).toBe(0);
+});
+it("the CSS hides each marked position, header and cells alike, and never the name", () => {
+  expect(NO_ROOM_CSS).toContain(`html[${NO_ROOM_ATTR}~="3"]`);
+  expect(NO_ROOM_CSS).toContain(":is(th,td):nth-child(3)");
+  expect(paint(800)).not.toContain("name");
 });
 it("a column the person already hid does not count against the room", () => {
   const without = HOME.filter((s) => s.id !== "kind").map((s) => s.id);
@@ -59,6 +70,6 @@ it("a column the person already hid does not count against the room", () => {
 });
 it("clearNoRoomMarks hands the table back to React", () => {
   paint(800);
-  clearNoRoomMarks(document.body);
-  expect(document.querySelectorAll(`[${NO_ROOM_ATTR}]`).length).toBe(0);
+  clearNoRoomMarks();
+  expect(document.documentElement.hasAttribute(NO_ROOM_ATTR)).toBe(false);
 });

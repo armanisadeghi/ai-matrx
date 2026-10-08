@@ -889,7 +889,7 @@ export function EntityListPage<TRow>({
   }, []);
   // Once React has applied the real hidden set, the server-time marks have done their job.
   useEffect(() => {
-    if (listWidth !== null && bodyRef.current) clearNoRoomMarks(bodyRef.current);
+    if (listWidth !== null && bodyRef.current) clearNoRoomMarks();
   }, [listWidth, noRoom.join("|")]);
   const pointerInPaneRef = useRef(false);
   const hoveredRowIdRef = useRef<string | null>(null);
@@ -1565,7 +1565,7 @@ export function EntityListPage<TRow>({
         {view === "table" ? (
           // First paint = settled paint: hide the columns with no room while the HTML parses
           // (columnPriority.ts). Both carry suppressHydrationWarning: the script text is the
-          // same on both sides, and the marks it writes are attributes on the table's own cells.
+          // same on both sides, and the mark it writes is one attribute on <html>, never on hydrated markup.
           <>
             <style suppressHydrationWarning dangerouslySetInnerHTML={{ __html: NO_ROOM_CSS }} />
             <script
