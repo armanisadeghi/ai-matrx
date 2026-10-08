@@ -23,23 +23,19 @@ import type { TablePageSeed } from "./tablePageSeed.server";
  * takes the first answer. So the browser's chain is never slower than the server's, and never
  * waits for it.
  */
-function racingDataSource(source: RecordsDataSource, server: Promise<TablePageSeed | null>): RecordsDataSource {
-  let index: Map<string, unknown> | null | undefined;
-  const indexed = server.then(
-    (s) => {
-      index = s?.records ? seedIndex(s.records) : null;
-    },
-    () => {
-      index = null;
-    },
-  );
+function racingDataSource(source: RecordsDataSource, ...servers: Array<Promise<TablePageSeed | null>>): RecordsDataSource {
+  // The server's opening (where + bundle, the moment they land) and its full seed (rows too, when
+  // they made the cap), each indexed by door + canonical arguments as it lands.
+  const indexes = servers.map((p) => p.then((s) => (s?.records ? seedIndex(s.records) : null), () => null));
+  const landed: Array<Map<string, unknown>> = [];
+  for (const ix of indexes) void ix.then((m) => m && landed.push(m));
+  const never = new Promise<never>(() => {});
   const rpc: RecordsDataSource["rpc"] = (fn, args, options) => {
     const key = seedKey(fn, args);
-    if (index?.has(key)) return Promise.resolve({ data: index.get(key), error: null });
+    for (const m of landed) if (m.has(key)) return Promise.resolve({ data: m.get(key), error: null });
     const network = Promise.resolve(source.rpc(fn, args, options));
-    if (index === null) return network;
-    const fromServer = indexed.then(() => (index?.has(key) ? { data: index.get(key), error: null } : network));
-    return Promise.race([network, fromServer]) as ReturnType<RecordsDataSource["rpc"]>;
+    const fromServer = indexes.map((ix) => ix.then((m) => (m?.has(key) ? { data: m.get(key), error: null } : never)));
+    return Promise.race([network, ...fromServer]) as ReturnType<RecordsDataSource["rpc"]>;
   };
   return new Proxy(source, { get: (target, prop, receiver) => (prop === "rpc" ? rpc : Reflect.get(target, prop, receiver)) });
 }
@@ -52,7 +48,13 @@ function racingDataSource(source: RecordsDataSource, server: Promise<TablePageSe
 export async function askClientTableSeed(
   dataSource: RecordsDataSource,
   tableId: string,
-  options: { userId?: string | null; rows?: boolean; server?: Promise<TablePageSeed | null> } = {},
+  options: {
+    userId?: string | null;
+    rows?: boolean;
+    recordId?: string | null;
+    server?: Promise<TablePageSeed | null>;
+    opening?: Promise<TablePageSeed | null>;
+  } = {},
 ): Promise<TablePageSeed | null> {
   try {
     // `server` is React's streamed thenable: adopt it so it chains as a Promise. Never rejects.
@@ -62,9 +64,13 @@ export async function askClientTableSeed(
     );
     // Where the table lives: the kept answer for this table (`useObjectOrganization` waits on the
     // same one, so the page never asks it again), or the server's, whichever lands first.
-    const racing = racingDataSource(dataSource, server);
+    const opening = Promise.resolve(options.opening ?? null).then(
+      (s) => (s && s.tableId === tableId ? s : null),
+      () => null,
+    );
+    const racing = racingDataSource(dataSource, opening, server);
     const own = ensureObjectOrganization(dataSource, tableId);
-    const fromServer = server.then((s) => (s && s.organizationId ? readObjectOrganizationAnswer(s.where, tableId) : own));
+    const fromServer = Promise.race([opening, server]).then((s) => (s && s.organizationId ? readObjectOrganizationAnswer(s.where, tableId) : own));
     const where = await Promise.race([own, fromServer]);
     if (!where || where.state !== "found") return null;
     const records = await askTablePageSeed({
@@ -73,8 +79,10 @@ export async function askClientTableSeed(
       tableId,
       actor: options.userId ? { actor: "user", user_id: options.userId } : { actor: "user" },
       rows: options.rows !== false,
+      recordId: options.recordId ?? null,
     });
     const bundle = records.answers.find((a) => a.door === "table_page_bundle");
+    const recordBundle = options.recordId ? records.answers.find((a) => a.door === "record_page_bundle") : undefined;
     return {
       tableId,
       where: {
@@ -89,6 +97,8 @@ export async function askClientTableSeed(
       },
       organizationId: where.organizationId,
       bundle: bundle ? { data: bundle.data, error: null } : null,
+      recordId: options.recordId ?? null,
+      recordBundle: recordBundle ? { data: recordBundle.data, error: null } : null,
       records,
     };
   } catch (thrown: unknown) {

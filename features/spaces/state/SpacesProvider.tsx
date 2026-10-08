@@ -276,11 +276,7 @@ export function SpacesProvider({ children }: { children: ReactNode }) {
       // Position and parent stay as the list gave them (a saved doc does not carry the list's order key).
       setAll((prev) => prev.map((s) => (s.id === id ? { ...s, title, icon, updatedAt, isArchived } : s)));
     });
-    // The template labels (I3): the ••• menu shows whether the open page is one.
-    void listTemplateIds().then(
-      (ids) => live && setTemplateIds(ids),
-      (err: unknown) => live && setTemplatesError(err instanceof Error ? err.message : "We couldn't list templates."),
-    );
+    // The template labels (I3) are read when the ••• menu or the template gallery opens (round 40), never on load.
     setFavorites(readList(FAVORITES_KEY));
     setRecent(readList(RECENT_KEY));
     return () => {
@@ -540,28 +536,44 @@ export function SpacesProvider({ children }: { children: ReactNode }) {
     await store.move(id, target.parentId, position);
   };
 
-  // Link targets the tree does not hold, read one by one by id (row security decides; never the organization).
+  // Link targets the tree does not hold and the route did not read (`space-links.tsx`): a link added after
+  // load. Round 40: every link asking in the same moment goes in ONE read (`content.space_summaries`), never
+  // one full page read each. Row security decides; never the organization. Archived = not shown as a page.
   const [linked, setLinked] = useState<Map<SpaceId, SpaceSummary | null>>(new Map());
   const asked = useRef(new Set<SpaceId>());
+  const pendingLinks = useRef<SpaceId[]>([]);
   const linkTarget = (id: SpaceId): SpaceSummary | null | undefined => visibleById.get(id) ?? linked.get(id);
+  const flushLinks = () => {
+    const ids = pendingLinks.current;
+    pendingLinks.current = [];
+    if (!ids.length) return;
+    void store.summaries(ids).then(
+      (found) => {
+        const byFound = new Map(found.map((s) => [s.id, s]));
+        setLinked((prev) => {
+          const next = new Map(prev);
+          for (const id of ids) {
+            const s = byFound.get(id);
+            next.set(id, s && !s.isArchived ? s : null);
+          }
+          return next;
+        });
+      },
+      (err: unknown) => {
+        console.error("[spaces] linked pages could not be read", err);
+        setLinked((prev) => {
+          const next = new Map(prev);
+          for (const id of ids) next.set(id, null);
+          return next;
+        });
+      },
+    );
+  };
   const requestLink = (id: SpaceId) => {
     if (!ready || visibleById.has(id) || asked.current.has(id)) return;
     asked.current.add(id);
-    void store.get(id).then(
-      (doc) =>
-        setLinked((prev) =>
-          new Map(prev).set(
-            id,
-            doc && !doc.isArchived
-              ? { id: doc.id, parentId: doc.parentId, position: doc.position, title: doc.title, icon: doc.icon, isArchived: false, updatedAt: doc.updatedAt }
-              : null,
-          ),
-        ),
-      (err: unknown) => {
-        console.error("[spaces] a linked page could not be read", err);
-        setLinked((prev) => new Map(prev).set(id, null));
-      },
-    );
+    pendingLinks.current.push(id);
+    if (pendingLinks.current.length === 1) setTimeout(flushLinks, 0);
   };
 
   const value: SpacesContextValue = {

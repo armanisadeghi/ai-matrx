@@ -28,9 +28,10 @@ import {
   type KnobRef,
 } from "./effectiveKnobs";
 import { useEffectiveKnob } from "./effectiveKnobs.client";
+import { isOnlyPainted } from "./paintedOrganization";
 
 type PrincipalState = {
-  appContext?: { organization_id?: string | null };
+  appContext?: { organization_id?: string | null; orgBootstrapResolved?: boolean };
   userAuth?: { id?: string | null };
 };
 
@@ -39,7 +40,8 @@ export function sessionKnobPrincipals(): { organizationId: string | null; userId
   if (!store) return { organizationId: null, userId: null };
   const state = store.getState() as PrincipalState;
   return {
-    organizationId: state.appContext?.organization_id ?? null,
+    // A painted (cache-only) organization is not the session's yet: no read leaves on it.
+    organizationId: isOnlyPainted(state.appContext?.organization_id, state) ? null : (state.appContext?.organization_id ?? null),
     userId: state.userAuth?.id ?? null,
   };
 }

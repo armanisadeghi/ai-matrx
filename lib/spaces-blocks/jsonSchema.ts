@@ -41,7 +41,7 @@ const PROPS_SCHEMAS: Record<string, { required?: boolean; schema: J }> = {
     required: true,
     schema: {
       required: ["level"],
-      properties: { level: { type: "number", enum: [1, 2, 3] }, toggleable: bool, ...alignment },
+      properties: { level: { type: "number", enum: [1, 2, 3, 4] }, toggleable: bool, ...alignment },
     },
   },
   bulleted: { schema: { properties: alignment } },

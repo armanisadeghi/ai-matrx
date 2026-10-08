@@ -45,7 +45,10 @@ WHAT IT DOES (Arman's sequence, 2026-09-24)
      First it waits (max 6 min) for aidream's npm publish runs already in flight
      (wait_for_publish_train()); an update that adds a build failure and fixes none is NOT
      committed (update_breaks_build()); files held in step 1 are re-swept after an update.
-  5. commit the merge, git push. If someone pushed in the meantime, start again at 1.
+  5. commit the merge. THE LOCKFILE GUARD (guard_lockfiles()): every tracked pnpm-lock.yaml /
+     package-lock.json in HEAD must parse with unique keys; identical duplicate blocks a merge
+     left behind are dropped and committed; anything unrepairable is never pushed (the one stop).
+  6. git push. If someone pushed in the meantime, start again at 1.
 
 Nothing is ever lost: every local byte is inside the step-1 commit, forever.
 Leftover check: scripts/check-conflict-markers.py.
@@ -1708,6 +1711,92 @@ def update_matrx_packages():
         "; NOT ADOPTED in %s (it would break the build, see above)" % ", ".join(not_adopted) if not_adopted else "")
 
 
+# ── THE LOCKFILE GUARD (2026-10-08) ─────────────────────────────────────────────────────────
+# Merge 406bfce877 kept two byte-identical `'@ai-matrx/records@0.84.4':` blocks in pnpm-lock.yaml
+# (both sides added the same block at adjacent lines, so git saw no conflict). pnpm refuses such a
+# file (ERR_PNPM_BROKEN_LOCKFILE: duplicated mapping key) and release v0.4.3013 failed on all four
+# Vercel projects. So, right before every push: every tracked lockfile in HEAD must parse with
+# unique keys (scripts/check-lockfile-keys.py). The deterministic case — every duplicate block is
+# identical — is repaired and committed here. Anything else (blocks that differ, a conflict marker,
+# JSON that does not parse) is NOT pushed: a lockfile no package manager can read breaks every
+# install on main, every agent's checkout and every build, so this is the one push sync-main refuses.
+LOCKFILE_NAMES = ("pnpm-lock.yaml", "package-lock.json")
+
+
+def _lockfile_checker():
+    import importlib.util
+    here = os.path.join(os.path.dirname(os.path.abspath(__file__)), "check-lockfile-keys.py")
+    if not os.path.isfile(here):
+        return None
+    spec = importlib.util.spec_from_file_location("check_lockfile_keys", here)
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return mod
+
+
+def guard_lockfiles():
+    """Repair identical duplicate blocks in HEAD's lockfiles; die (nothing pushed) on anything else.
+    Returns the repaired paths."""
+    checker = _lockfile_checker()
+    if checker is None:
+        say("LOCKFILE GUARD MISSING: scripts/check-lockfile-keys.py is absent — lockfiles NOT checked before push.")
+        return []
+    _, out, _ = git("ls-files", "-z")
+    paths = [p for p in out.split("\0") if p and os.path.basename(p) in LOCKFILE_NAMES]
+    repaired, broken = [], []
+    for path in paths:
+        _, text, _ = git("show", "HEAD:%s" % path, check=False)
+        status, new, msgs = checker.check_text(os.path.basename(path), text, True)
+        if status == 0:
+            continue
+        for m in msgs:
+            say("LOCKFILE " + m.replace(os.path.basename(path), path, 1))
+        on_disk = None
+        try:
+            with open(path, encoding="utf-8", newline="") as f:
+                on_disk = f.read()
+        except OSError:
+            pass
+        if status == 3 and on_disk == text:
+            with open(path, "w", encoding="utf-8", newline="") as f:
+                f.write(new)
+            repaired.append(path)
+        elif status == 3:
+            broken.append("%s (repairable, but another writer changed it on disk mid-sync)" % path)
+        else:
+            broken.append(path)
+    if repaired:
+        # pnpm must read the repaired file. Only a parse refusal counts here; an out-of-date
+        # lockfile (or no network) is someone else's finding, announced, never a stop.
+        for path in repaired:
+            if not path.endswith("pnpm-lock.yaml"):
+                continue
+            d = os.path.dirname(path) or "."
+            try:
+                r = subprocess.run(["pnpm", "install", "--frozen-lockfile", "--lockfile-only", "--ignore-scripts"],
+                                   cwd=d, capture_output=True, text=True, timeout=300)
+                if "ERR_PNPM_BROKEN_LOCKFILE" in r.stdout + r.stderr:
+                    git("checkout", "HEAD", "--", path, check=False)
+                    repaired.remove(path)
+                    broken.append("%s (pnpm still refuses it after the repair)" % path)
+                elif r.returncode != 0:
+                    say("LOCKFILE %s repaired; pnpm's frozen check then said (not a parse error, pushing anyway):\n%s"
+                        % (path, "\n".join("  " + l for l in (r.stdout + r.stderr).strip().splitlines()[:6])))
+            except (OSError, subprocess.TimeoutExpired) as e:
+                say("LOCKFILE %s repaired; pnpm could not be run to confirm it (%s)." % (path, e))
+    if repaired:
+        git("commit", "--no-verify", "-q", "-m",
+            "deps: drop identical duplicate lockfile blocks a merge left behind (sync-main lockfile guard)",
+            "--only", "--", *repaired)
+        say("LOCKFILE REPAIRED and committed: %s" % ", ".join(repaired))
+    if broken:
+        die("NOT PUSHED — these lockfiles cannot be read by a package manager, and pushing them breaks "
+            "every install and every build:\n  %s\nRegenerate each (`pnpm install --lockfile-only` in its "
+            "folder), commit it, and run sync again. Everything else is committed locally; nothing is lost."
+            % "\n  ".join(broken))
+    return repaired
+
+
 def report(fixed, docs, held, headline):
     say(headline + ": %d auto-fixed, %d docs/comments flagged, %d held" % (len(fixed), len(docs), len(held)))
     for p in fixed:
@@ -1829,6 +1918,7 @@ def main():
             if SWEEP_HELD and packages.startswith("@ai-matrx packages: updated"):
                 say("re-sweeping the %d held file(s) against the packages just installed..." % len(SWEEP_HELD))
                 total_local += commit_all()
+        guard_lockfiles()   # after the sweep, the merge and the package update: what is about to be pushed
         if not push:
             break
         rc, _, err = git("push", "-q", REMOTE, "HEAD:%s" % BRANCH, check=False)

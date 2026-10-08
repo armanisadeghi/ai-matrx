@@ -106,6 +106,7 @@ async function askSeed(
   rows: boolean,
   forceOn: boolean,
   decided: (gate: ServerRowsGate) => void,
+  opened: (opening: TablePageSeed | null) => void,
 ): Promise<TablePageSeed | null> {
   const custom = supabase.schema("custom" as never) as unknown as CustomRpc;
   // PARALLEL AT THE START (lane SSR-ROWS-3): where the table lives and who is asking are asked at
@@ -117,7 +118,9 @@ async function askSeed(
   const organizationId = organizationOf(where);
   if (!organizationId) {
     decided(OFF);
-    return { tableId, where, organizationId: null, bundle: null };
+    const nowhere = { tableId, where, organizationId: null, bundle: null };
+    opened(nowhere);
+    return nowhere;
   }
   const { data: claims } = await claimsAsked;
   const userId = claims.user?.id ?? null;
@@ -128,6 +131,11 @@ async function askSeed(
     actor: userId ? { actor: "user", user_id: userId } : { actor: "user" },
     recordId,
     rows: (asked) => {
+      // THE OPENING, NEVER CAPPED (lane SSR-ROWS-3): where the table lives and its bundle stream to
+      // the browser the moment they land, before (and whatever becomes of) the rows, so the browser's
+      // own chain takes them instead of asking again.
+      const bundle = asked.answers.find((a) => a.door === "table_page_bundle");
+      opened({ tableId, where, organizationId, bundle: bundle ? { data: bundle.data, error: null } : null, records: asked });
       const knob = serverRowsOf(asked);
       const on = forceOn || knob?.on === true;
       decided({ on, capMs: knob?.capMs ?? DEFAULT_CAP_MS });
@@ -155,6 +163,11 @@ export interface TablePageReads {
   gate: Promise<ServerRowsGate>;
   /** The page's first reads. Never rejects; null when they fail or outrun the cap. */
   seed: Promise<TablePageSeed | null>;
+  /**
+   * Where the table lives and its bundle (no rows), the moment they land — not capped, so a miss
+   * never throws them away. The browser's own reads take their doors from it. Never rejects.
+   */
+  opening: Promise<TablePageSeed | null>;
 }
 
 const OFF: ServerRowsGate = { on: false, capMs: DEFAULT_CAP_MS };
@@ -174,12 +187,16 @@ export function readTablePage(
   recordId: string | null = null,
   options: { rows?: boolean; forceOn?: boolean } = {},
 ): TablePageReads {
-  if (!isUuidShape(tableId)) return { gate: Promise.resolve(OFF), seed: Promise.resolve(null) };
+  if (!isUuidShape(tableId)) return { gate: Promise.resolve(OFF), seed: Promise.resolve(null), opening: Promise.resolve(null) };
   const record = recordId && isUuidShape(recordId) ? recordId : null;
   const t0 = Date.now();
   let resolveGate: (gate: ServerRowsGate) => void = () => {};
   const gate = new Promise<ServerRowsGate>((resolve) => {
     resolveGate = resolve;
+  });
+  let resolveOpening: (opening: TablePageSeed | null) => void = () => {};
+  const opening = new Promise<TablePageSeed | null>((resolve) => {
+    resolveOpening = resolve;
   });
   let resolveSeed: (seed: TablePageSeed | null) => void = () => {};
   const seed = new Promise<TablePageSeed | null>((resolve) => {
@@ -204,7 +221,7 @@ export function readTablePage(
     if (g.capMs !== DEFAULT_CAP_MS) capAt(g.capMs);
   };
   createClient()
-    .then((supabase) => askSeed(supabase, tableId, record, options.rows !== false, options.forceOn === true, decide))
+    .then((supabase) => askSeed(supabase, tableId, record, options.rows !== false, options.forceOn === true, decide, resolveOpening))
     .then(
       (answered) => resolveSeed(answered),
       (thrown: unknown) => {
@@ -214,7 +231,8 @@ export function readTablePage(
     )
     .finally(() => {
       resolveGate(OFF);
+      resolveOpening(null); // no-op once the bundle opened it
       clearTimeout(capTimer);
     });
-  return { gate, seed };
+  return { gate, seed, opening };
 }

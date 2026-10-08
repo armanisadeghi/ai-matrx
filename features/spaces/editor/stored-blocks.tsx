@@ -13,11 +13,11 @@ import type { Node as PmNode } from "@tiptap/pm/model";
 import { DATABASE_EVENT_CLAIMS, DatabaseHost, activeLayout, paintedSizesOf, pickPainted } from "./database-host";
 import DisplayMath from "@/features/math/components/DisplayMath";
 import InlineMathText from "@/features/math/components/InlineMathText";
-import { FileText, Globe, Paperclip, TriangleAlert } from "lucide-react";
+import { AlignCenter, AlignLeft, AlignRight, Captions, FileText, Globe, Paperclip, Replace, TriangleAlert } from "lucide-react";
 import { useLinkPreview } from "@/lib/link-preview";
 import dynamic from "next/dynamic";
 import { useParams } from "next/navigation";
-import { Component, useEffect, useRef, useSyncExternalStore, type ReactNode } from "react";
+import { Component, useEffect, useRef, useState, useSyncExternalStore, type ReactNode } from "react";
 
 import { ErrorNotice } from "@ai-matrx/design-system";
 
@@ -26,6 +26,9 @@ import { useSpaceMediaUrl } from "../page/media";
 import { SpaceIcon } from "../page/SpaceIcon";
 import { useSpaces } from "../state/SpacesProvider";
 import { LateSeedRecords } from "../page/space-seed-context";
+import { useSpacesKnob } from "../state/knobs";
+import { embedTarget } from "./embed-providers";
+import { openMediaPicker, type MediaKind } from "./media-insert";
 
 const DatabaseBlockView = dynamic(() => import("../data/DatabaseBlock").then((m) => m.DatabaseBlock), {
   ssr: false,
@@ -139,34 +142,187 @@ function hostOf(url: string): string {
 
 /** YouTube / Vimeo / Loom pages become their embed address; anything else is played as a file. */
 function videoEmbed(url: string): string | null {
-  const yt = url.match(/(?:youtube\.com\/(?:watch\?v=|shorts\/|embed\/)|youtu\.be\/)([\w-]{6,})/);
-  if (yt) return `https://www.youtube.com/embed/${yt[1]}`;
-  const vimeo = url.match(/vimeo\.com\/(\d+)/);
-  if (vimeo) return `https://player.vimeo.com/video/${vimeo[1]}`;
-  const loom = url.match(/loom\.com\/share\/([\w-]+)/);
-  if (loom) return `https://www.loom.com/embed/${loom[1]}`;
-  return null;
+  const t = embedTarget(url);
+  return t && (t.provider === "youtube" || t.provider === "vimeo" || t.provider === "loom") ? (t.src ?? null) : null;
 }
 
-function MediaBlock({ type, p }: { type: string; p: Record<string, unknown> }) {
+/** The editing context a media block gets from the editor (null on a read-only page). */
+interface MediaEdit {
+  update: (next: Record<string, unknown>) => void;
+  blockId: string;
+}
+
+type Align = "left" | "center" | "right";
+
+/**
+ * C20 — Notion's frame around an image, video, PDF or embed: drag either side edge to resize (a centered
+ * block grows both ways), an embed's bottom edge for its height; on hover Align, Caption and Replace.
+ */
+function MediaFrame({ kind, p, edit, children, resizable = true, tall }: { kind: MediaKind | "embed"; p: Record<string, unknown>; edit: MediaEdit | null; children: ReactNode; resizable?: boolean; tall?: number }) {
+  const align: Align = p.align === "left" || p.align === "right" ? p.align : "center";
+  const stored = typeof p.width === "number" ? p.width : undefined;
+  const [width, setWidth] = useState<number | undefined>(stored);
+  const [height, setHeight] = useState<number | undefined>(tall);
+  const [captioning, setCaptioning] = useState(false);
+  const fig = useRef<HTMLElement>(null);
+  const drag = useRef<{ x: number; y: number; w: number; h: number; side: "left" | "right" | "bottom" } | null>(null);
+  useEffect(() => setWidth(stored), [stored]);
+  useEffect(() => setHeight(tall), [tall]);
+  const caption = Array.isArray(p.caption) ? (p.caption as RichSpan[]) : [];
+  const captionText = caption.map((c) => c.text).join("");
+  const showCaptionField = !!edit && (captioning || caption.length > 0);
+
+  const startDrag = (side: "left" | "right" | "bottom") => (e: React.PointerEvent) => {
+    if (!fig.current) return;
+    e.preventDefault();
+    e.stopPropagation();
+    e.currentTarget.setPointerCapture(e.pointerId);
+    const r = fig.current.getBoundingClientRect();
+    drag.current = { x: e.clientX, y: e.clientY, w: r.width, h: height ?? r.height, side };
+  };
+  const moveDrag = (e: React.PointerEvent) => {
+    const d = drag.current;
+    if (!d) return;
+    if (d.side === "bottom") {
+      setHeight(Math.max(120, Math.round(d.h + e.clientY - d.y)));
+      return;
+    }
+    const dx = (e.clientX - d.x) * (d.side === "left" ? -1 : 1) * (align === "center" ? 2 : 1);
+    const max = fig.current?.parentElement?.getBoundingClientRect().width ?? 2000;
+    setWidth(Math.round(Math.min(max, Math.max(80, d.w + dx))));
+  };
+  const endDrag = () => {
+    const d = drag.current;
+    drag.current = null;
+    if (!d || !edit) return;
+    if (d.side === "bottom") edit.update({ ...p, height });
+    else edit.update({ ...p, width });
+  };
+
+  return (
+    <figure
+      ref={fig}
+      className="spaces-media spaces-media-frame"
+      data-align={align}
+      data-media-kind={kind}
+      contentEditable={false}
+      // A picture keeps its own width until resized; a frame (video, PDF, embed, file, audio) spans the line.
+      style={width ? { width, maxWidth: "100%" } : kind === "image" ? undefined : { width: "100%" }}
+    >
+      <div className="spaces-media-body" style={height ? ({ "--spaces-embed-h": `${height}px` } as React.CSSProperties) : undefined}>
+        {children}
+        {edit && resizable ? (
+          <>
+            <span className="spaces-media-handle" data-side="left" aria-hidden onPointerDown={startDrag("left")} onPointerMove={moveDrag} onPointerUp={endDrag} />
+            <span className="spaces-media-handle" data-side="right" aria-hidden onPointerDown={startDrag("right")} onPointerMove={moveDrag} onPointerUp={endDrag} />
+            {kind === "embed" || kind === "pdf" ? (
+              <span className="spaces-media-handle" data-side="bottom" aria-hidden onPointerDown={startDrag("bottom")} onPointerMove={moveDrag} onPointerUp={endDrag} />
+            ) : null}
+          </>
+        ) : null}
+        {edit ? (
+          <div className="spaces-media-tools" onMouseDown={(e) => e.stopPropagation()}>
+            {(["left", "center", "right"] as const).map((a) => {
+              const Icon = a === "left" ? AlignLeft : a === "center" ? AlignCenter : AlignRight;
+              return (
+                <button key={a} type="button" aria-label={`Align ${a}`} data-active={align === a || undefined} onClick={() => edit.update({ ...p, align: a })}>
+                  <Icon size={14} strokeWidth={1.8} />
+                </button>
+              );
+            })}
+            <span className="spaces-media-tools-sep" />
+            <button type="button" aria-label="Caption" onClick={() => setCaptioning(true)}>
+              <Captions size={14} strokeWidth={1.8} />
+            </button>
+            <button
+              type="button"
+              aria-label="Replace"
+              onClick={(e) =>
+                openMediaPicker({
+                  kind,
+                  anchor: e.currentTarget,
+                  onPick: (picked) => {
+                    const { fileId: _f, url: _u, name: _n, ...rest } = p;
+                    edit.update({ ...rest, ...picked });
+                  },
+                })
+              }
+            >
+              <Replace size={14} strokeWidth={1.8} />
+            </button>
+          </div>
+        ) : null}
+      </div>
+      {showCaptionField ? (
+        <CaptionField
+          initial={captionText}
+          autoFocus={captioning && caption.length === 0}
+          onCommit={(text) => {
+            setCaptioning(false);
+            if (text === captionText) return;
+            const { caption: _c, ...rest } = p;
+            edit!.update(text ? { ...rest, caption: [{ text }] } : rest);
+          }}
+        />
+      ) : (
+        <Caption spans={p.caption} />
+      )}
+    </figure>
+  );
+}
+
+/** The caption under a media block, typed in place (a caption with marks is edited as its plain text). Its keys
+ *  never reach the editor: ProseMirror and the page's own key handlers listen natively above it (a space would
+ *  open Ask AI and take the caret), so they are stopped on the field itself. */
+function CaptionField({ initial, autoFocus, onCommit }: { initial: string; autoFocus: boolean; onCommit: (text: string) => void }) {
+  const [text, setText] = useState(initial);
+  const ref = useRef<HTMLInputElement>(null);
+  useEffect(() => setText(initial), [initial]);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const keep = (e: Event) => {
+      e.stopPropagation();
+      if (e instanceof KeyboardEvent && (e.key === "Enter" || e.key === "Escape")) {
+        e.preventDefault();
+        el.blur();
+      }
+    };
+    const types = ["keydown", "keypress", "keyup", "beforeinput", "paste", "mousedown", "pointerdown"] as const;
+    types.forEach((t) => el.addEventListener(t, keep));
+    return () => types.forEach((t) => el.removeEventListener(t, keep));
+  }, []);
+  return (
+    <input
+      ref={ref}
+      className="spaces-caption spaces-caption-field"
+      placeholder="Write a caption…"
+      value={text}
+      autoFocus={autoFocus}
+      onChange={(e) => setText(e.target.value)}
+      onBlur={() => onCommit(text.trim())}
+    />
+  );
+}
+
+function MediaBlock({ type, p, edit }: { type: MediaKind; p: Record<string, unknown>; edit: MediaEdit | null }) {
   const media = mediaOf(p);
   const src = useSpaceMediaUrl(media);
   const width = typeof p.width === "number" ? p.width : undefined;
   const name = typeof p.name === "string" && p.name ? p.name : src ? decodeURIComponent(src.split("?")[0].split("/").pop() || "") : "File";
   if (type === "file") {
     return (
-      <figure className="spaces-media" contentEditable={false}>
+      <MediaFrame kind="file" p={p} edit={edit} resizable={false}>
         <a className="spaces-file-row" href={src ?? undefined} target="_blank" rel="noreferrer" onMouseDown={(e) => e.stopPropagation()}>
           <Paperclip size={16} strokeWidth={1.8} />
           <span className="truncate">{name}</span>
         </a>
-        <Caption spans={p.caption} />
-      </figure>
+      </MediaFrame>
     );
   }
   if (!src) return <div className="spaces-media-empty" contentEditable={false}>{media ? "Loading…" : `Add ${type === "image" ? "an image" : `a ${type}`}`}</div>;
   return (
-    <figure className="spaces-media" contentEditable={false} style={width ? { width, maxWidth: "100%" } : undefined}>
+    <MediaFrame kind={type} p={p} edit={edit} resizable={type !== "audio"} tall={type === "pdf" && typeof p.height === "number" ? p.height : undefined}>
       {type === "image" ? <img src={src} alt={Array.isArray(p.caption) ? (p.caption as RichSpan[]).map((s) => s.text).join("") : ""} className="spaces-image" draggable={false} /> : null}
       {type === "video" ? (
         videoEmbed(src) ? (
@@ -177,8 +333,7 @@ function MediaBlock({ type, p }: { type: string; p: Record<string, unknown> }) {
       ) : null}
       {type === "audio" ? <audio className="spaces-audio" src={src} controls preload="metadata" /> : null}
       {type === "pdf" ? <iframe className="spaces-iframe spaces-iframe-pdf" src={src} title={name} /> : null}
-      <Caption spans={p.caption} />
-    </figure>
+    </MediaFrame>
   );
 }
 
@@ -216,14 +371,28 @@ function BookmarkBlock({ p }: { p: Record<string, unknown> }) {
   );
 }
 
-function EmbedBlock({ p }: { p: Record<string, unknown> }) {
+function EmbedBlock({ p, edit }: { p: Record<string, unknown>; edit: MediaEdit | null }) {
   const url = String(p.url ?? "");
-  const src = videoEmbed(url) ?? url;
+  const target = embedTarget(url);
+  const knobHeight = useSpacesKnob("embedHeightPx");
+  const height = typeof p.height === "number" ? p.height : knobHeight;
   return (
-    <figure className="spaces-media" contentEditable={false}>
-      <iframe className="spaces-iframe spaces-iframe-embed" src={src} title={hostOf(url)} sandbox="allow-scripts allow-same-origin allow-popups allow-forms allow-presentation" />
-      <Caption spans={p.caption} />
-    </figure>
+    <MediaFrame kind="embed" p={p} edit={edit} tall={height}>
+      {target ? (
+        <iframe
+          className="spaces-iframe spaces-iframe-embed"
+          data-provider={target.provider}
+          src={target.src}
+          srcDoc={target.srcDoc}
+          title={hostOf(url)}
+          allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
+          allowFullScreen
+          sandbox="allow-scripts allow-same-origin allow-popups allow-forms allow-presentation"
+        />
+      ) : (
+        <div className="spaces-media-empty">This link can’t be embedded</div>
+      )}
+    </MediaFrame>
   );
 }
 
@@ -343,14 +512,18 @@ export function storedSpec(
   );
 }
 
+function editOf(ctx: { blockId: string; editor: never; update: (next: Record<string, unknown>) => void }): MediaEdit | null {
+  return (ctx.editor as unknown as { isEditable: boolean }).isEditable ? { update: ctx.update, blockId: ctx.blockId } : null;
+}
+
 export const storedBlockSpecs = {
-  image: storedSpec("image", (p) => <MediaBlock type="image" p={p} />),
-  video: storedSpec("video", (p) => <MediaBlock type="video" p={p} />),
-  audio: storedSpec("audio", (p) => <MediaBlock type="audio" p={p} />),
-  file: storedSpec("file", (p) => <MediaBlock type="file" p={p} />),
-  pdf: storedSpec("pdf", (p) => <MediaBlock type="pdf" p={p} />),
+  image: storedSpec("image", (p, ctx) => <MediaBlock type="image" p={p} edit={editOf(ctx)} />),
+  video: storedSpec("video", (p, ctx) => <MediaBlock type="video" p={p} edit={editOf(ctx)} />),
+  audio: storedSpec("audio", (p, ctx) => <MediaBlock type="audio" p={p} edit={editOf(ctx)} />),
+  file: storedSpec("file", (p, ctx) => <MediaBlock type="file" p={p} edit={editOf(ctx)} />),
+  pdf: storedSpec("pdf", (p, ctx) => <MediaBlock type="pdf" p={p} edit={editOf(ctx)} />),
   bookmark: storedSpec("bookmark", (p) => <BookmarkBlock p={p} />),
-  embed: storedSpec("embed", (p) => <EmbedBlock p={p} />),
+  embed: storedSpec("embed", (p, ctx) => <EmbedBlock p={p} edit={editOf(ctx)} />),
   equation: storedSpec("equation", (p) => <EquationBlock p={p} />),
   tableOfContents: storedSpec("tableOfContents", (_p, ctx) => <TableOfContents editor={ctx.editor} />),
   breadcrumb: storedSpec("breadcrumb", () => <Breadcrumb />),

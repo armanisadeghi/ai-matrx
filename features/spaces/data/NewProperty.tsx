@@ -1,11 +1,36 @@
 "use client";
 // features/spaces/data/NewProperty.tsx — Notion's "New property" (D8): a compact panel inside the view
 // menu, never a dialog. Name, a searchable type list; a type click makes the column — two clicks.
-// The column goes through the table's own door (records `addFields`, custom.field_declare).
+// The column goes through the table's own door (custom.field_declare); Formula / Rollup open records-ui's column panel on that kind.
 import { Input } from "@ai-matrx/design-system/controls";
-import { addFields, tokenFor } from "@ai-matrx/records/core";
+import { fieldDeclarationFor, tokenFor, type NewFieldSpec } from "@ai-matrx/records/core";
+import { FieldEditor, type PickableFieldType } from "@ai-matrx/records-ui";
 import { useRecordsClient, useTable, useTables } from "@ai-matrx/records/react";
-import { AlignLeft, ArrowLeft, ArrowUpRight, Calendar, CheckSquare, ChevronDown, Database, Hash, Link2, Mail, Paperclip, Phone, Tags, User, type LucideIcon } from "lucide-react";
+import {
+  AlignLeft,
+  ArrowLeft,
+  ArrowUpRight,
+  Calendar,
+  CheckSquare,
+  ChevronDown,
+  CircleUserRound,
+  Clock,
+  ClockArrowUp,
+  Database,
+  Hash,
+  Key,
+  Link2,
+  Loader,
+  Mail,
+  Paperclip,
+  Phone,
+  Search,
+  Sigma,
+  Tags,
+  User,
+  UserRoundPen,
+  type LucideIcon,
+} from "lucide-react";
 import { useState } from "react";
 
 import { toast } from "@/lib/toast";
@@ -22,7 +47,16 @@ export interface PropertyType {
   choices?: boolean;
   /** Notion's Relation: the next step picks the database it points at. */
   relation?: boolean;
+  /** Notion's Formula / Rollup: the next step is the column panel (records-ui), opened on this kind. */
+  configure?: boolean;
+  /** Anything else the column door takes for this kind (a Status's starting groups). */
+  declaration?: NewFieldSpec["declaration"];
+  /** Notion's Status starts with three choices, one per group. */
+  options?: string[];
 }
+
+/** Notion's Status: Not started (To-do), In progress, Done (Complete) — keyed by words for a new column. */
+export const STATUS_START = { options: ["Not started", "In progress", "Done"], groups: { "Not started": "todo", "In progress": "in_progress", Done: "done" } } as const;
 
 /** Notion's property types, in Notion's order, as the table's door words them. */
 export const PROPERTY_TYPES: PropertyType[] = [
@@ -30,6 +64,7 @@ export const PROPERTY_TYPES: PropertyType[] = [
   { label: "Number", icon: Hash, type: "number" },
   { label: "Select", icon: ChevronDown, type: "select", choices: true },
   { label: "Multi-select", icon: Tags, type: "multi_select", choices: true },
+  { label: "Status", icon: Loader, type: "status", options: [...STATUS_START.options], declaration: { status_groups: { ...STATUS_START.groups } } },
   { label: "Date", icon: Calendar, type: "datetime", kind: "date" },
   { label: "Person", icon: User, type: "member" },
   { label: "Files & media", icon: Paperclip, type: "attachment" },
@@ -37,14 +72,21 @@ export const PROPERTY_TYPES: PropertyType[] = [
   { label: "URL", icon: Link2, type: "url" },
   { label: "Email", icon: Mail, type: "email" },
   { label: "Phone", icon: Phone, type: "phone" },
+  { label: "Formula", icon: Sigma, type: "formula", configure: true },
   { label: "Relation", icon: ArrowUpRight, type: "relation", relation: true },
+  { label: "Rollup", icon: Search, type: "rollup", configure: true },
+  { label: "Created time", icon: Clock, type: "created_time" },
+  { label: "Created by", icon: CircleUserRound, type: "created_by" },
+  { label: "Last edited time", icon: ClockArrowUp, type: "modified_time" },
+  { label: "Last edited by", icon: UserRoundPen, type: "modified_by" },
+  { label: "ID", icon: Key, type: "autonumber" },
 ];
 
 /** Types whose name or Notion synonym ("tags" → Multi-select, "list") matches the search. */
 export function matchTypes(query: string): PropertyType[] {
   const q = query.trim().toLowerCase();
   if (!q) return PROPERTY_TYPES;
-  const synonyms: Record<string, string[]> = { "Multi-select": ["tags", "labels", "multi"], Select: ["choice", "dropdown", "options"], Date: ["day", "when", "due"], Person: ["people", "user", "assignee"], Text: ["string", "words"], Relation: ["link", "connect", "points"] };
+  const synonyms: Record<string, string[]> = { "Multi-select": ["tags", "labels", "multi"], Select: ["choice", "dropdown", "options"], Date: ["day", "when", "due"], Person: ["people", "user", "assignee"], Text: ["string", "words"], Relation: ["link", "connect", "points"], Status: ["state", "progress", "stage"], Formula: ["calculate", "math", "compute"], Rollup: ["aggregate", "count", "sum", "total"], "Files & media": ["attachment", "upload", "image"], "Created time": ["date created"], "Last edited time": ["modified", "updated"], "Last edited by": ["modified", "updated"], ID: ["number", "auto", "unique"] };
   return PROPERTY_TYPES.filter((t) => t.label.toLowerCase().includes(q) || (synonyms[t.label] ?? []).some((s) => s.startsWith(q)));
 }
 
@@ -63,23 +105,37 @@ export function NewPropertyPanel({ tableId, takenKeys, onDone }: { tableId: stri
   const [busy, setBusy] = useState(false);
   /** Relation, step two: which database it points at (Notion: "Select a data source"). */
   const [relating, setRelating] = useState<PropertyType | null>(null);
+  /** Formula / Rollup: the column panel, opened on that kind. */
+  const [configuring, setConfiguring] = useState<PropertyType | null>(null);
   const make = async (t: PropertyType, target?: { id: string; name: string }) => {
     if (t.relation && !target) {
       setRelating(t);
       return;
     }
+    if (t.configure) {
+      setConfiguring(t);
+      return;
+    }
     const label = name.trim() || (target ? target.name : t.label);
     setBusy(true);
-    const made = await addFields(client, tableId, [
-      {
+    // The column door itself (not `addFields`), so an ID column hears back its own id and numbers the rows already here.
+    const made = await client.fieldDeclare({
+      table_id: tableId,
+      spec: fieldDeclarationFor({
         key: freshKey(label, takenKeys),
         label,
         type: t.type as never,
         ...(t.kind ? { kind: t.kind } : {}),
         ...(t.choices ? { options: [] } : {}),
+        ...(t.options ? { options: t.options } : {}),
+        ...(t.declaration ? { declaration: t.declaration } : {}),
         ...(target ? { relationTarget: target.id } : {}),
-      },
-    ]);
+      }),
+    });
+    if (made.ok && t.type === "autonumber") {
+      const numbered = await client.autonumberBackfill({ field_id: made.data });
+      if (!numbered.ok) toast.error(`ID added; existing pages not numbered: ${numbered.error.message}`);
+    }
     setBusy(false);
     if (!made.ok) {
       toast.error(`Property not added: ${made.error.message}`);
@@ -88,6 +144,20 @@ export function NewPropertyPanel({ tableId, takenKeys, onDone }: { tableId: stri
     onDone();
   };
   const types = matchTypes(query);
+  if (configuring)
+    return (
+      <div className="flex flex-col gap-1" data-spaces-configure-property={configuring.type}>
+        <MenuRow icon={<ArrowLeft size={15} />} label={configuring.label} onClick={() => setConfiguring(null)} />
+        <div className="max-h-[70vh] overflow-y-auto px-1 pb-1">
+          <FieldEditor
+            tableId={tableId}
+            startAs={{ type: configuring.type as PickableFieldType, label: name.trim() || configuring.label }}
+            onSaved={onDone}
+            onCancel={() => setConfiguring(null)}
+          />
+        </div>
+      </div>
+    );
   if (relating) return <RelationTarget tableId={tableId} busy={busy} onBack={() => setRelating(null)} onPick={(target) => void make(relating, target)} />;
   return (
     <div className="flex flex-col gap-1" aria-busy={busy || undefined}>

@@ -43,13 +43,14 @@ const only = (md: string) => {
 };
 
 describe("headings", () => {
-  it("maps # / ## / ### and caps deeper levels at 3", () => {
-    const { blocks } = convert("# Clients\n## Fulfillment\n### Team Boards\n#### Weekly sync");
+  it("maps # / ## / ### / #### (Notion's Heading 4) and caps deeper levels at 4", () => {
+    const { blocks } = convert("# Clients\n## Fulfillment\n### Team Boards\n#### Weekly sync\n##### Notes");
     expect(blocks.map((b) => [b.type, b.props?.level, text(b)])).toEqual([
       ["heading", 1, "Clients"],
       ["heading", 2, "Fulfillment"],
       ["heading", 3, "Team Boards"],
-      ["heading", 3, "Weekly sync"],
+      ["heading", 4, "Weekly sync"],
+      ["heading", 4, "Notes"],
     ]);
   });
 
@@ -377,7 +378,7 @@ describe("the validator itself refuses bad shapes", () => {
       { id: "f", type: "text", text: [{ text: "x", color: "teal" }] },
     ];
     const problems = validateBlocks(bad);
-    expect(problems.join("\n")).toMatch(/level must be 1, 2 or 3/);
+    expect(problems.join("\n")).toMatch(/level must be 1, 2, 3 or 4/);
     expect(problems.join("\n")).toMatch(/used twice/);
     expect(problems.join("\n")).toMatch(/columns hold only column blocks/);
     expect(problems.join("\n")).toMatch(/exactly one of props.fileId/);

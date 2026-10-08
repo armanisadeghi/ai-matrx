@@ -266,6 +266,7 @@ export class SupabaseSpacesStore implements SpacesStore {
       settings: snapshot.settings,
       blocks: snapshot.blocks,
       isArchived: head.deleted_at != null,
+      organizationId: head.organization_id,
       version: head.version,
       createdAt: head.created_at,
       updatedAt: head.updated_at,
@@ -310,6 +311,27 @@ export class SupabaseSpacesStore implements SpacesStore {
       { label: "content.space_sidebar" },
     );
     return rows.map(treeSummary);
+  }
+
+  /**
+   * The pages a Space links to (page links, sub-page rows, mentions), by id, in ONE read (round 40): title,
+   * icon, trash state and parent. Pages the person cannot open are simply absent. Was one full page read
+   * (`get`: head + snapshot + edge) per link — about 40 reads x 3 on the admin sample.
+   */
+  async summaries(ids: readonly SpaceId[]): Promise<SpaceSummary[]> {
+    const unique = [...new Set(ids)];
+    if (!unique.length) return [];
+    const { data, error } = await (this.db.schema("content") as unknown as RpcDb).rpc<Omit<TreeRow, "created_at">>("space_summaries", { p_ids: unique });
+    if (error) fail("read the pages this Space links to", error);
+    return (data ?? []).map((r) => ({
+      id: r.id,
+      parentId: r.parent_id ?? null,
+      position: positionKey(r.edge_position),
+      title: r.title ?? "",
+      icon: parseIcon(r.icon),
+      isArchived: r.deleted_at != null,
+      updatedAt: r.updated_at,
+    }));
   }
 
   /** Trash: the person's archived pages, read when Trash opens (never with the tree). */

@@ -36,10 +36,14 @@ import { activeView, chartTileSpecs, DEFAULT_CHART, ENTITY_PAGE, entityChartBy, 
 import { viewSpec } from "../data/view-spec";
 import { AGENCY_SAMPLE_ID, readDatabaseProps, type DatabaseBlockProps, type SpaceDbView } from "../data/sources";
 import { SupabaseSpacesStore } from "../store-db/supabase-store";
+import { linkedPageIds } from "./linked-pages";
+import type { SeededBacklink, SpaceLinks } from "./space-links";
 import type { BlockSeed, SeededWhere, SpaceBlockSeeds } from "./space-seed-context";
 
 /** The page read waits at most this long; past it the browser reads the page as before. */
 const DOC_BUDGET_MS = 2_000;
+/** The linked pages' read (one call, after the page) waits at most this long; past it the browser asks once. */
+const LINKS_BUDGET_MS = 800;
 
 type Supabase = Awaited<ReturnType<typeof createClient>>;
 type Rpc = { rpc: (fn: string, args: Record<string, unknown>) => PromiseLike<{ data: unknown; error: unknown }> };
@@ -225,6 +229,10 @@ export interface SpacePageReads {
   doc: SpaceDoc | undefined;
   /** Per database block id: its first reads, streaming. Never rejects; null when nothing was seeded. */
   seeds: SpaceBlockSeeds;
+  /** Round 40: every page the blocks link to (null = cannot open); undefined = not read, the browser asks. */
+  links?: SpaceLinks;
+  /** Round 40: the pages mentioning this one (`content.space_backlinks`); undefined = the browser asks. */
+  backlinks?: { spaceId: string; rows: SeededBacklink[] };
 }
 
 /** The person, their remembered organization and the page's read memo — known before the page is read. */
@@ -276,5 +284,34 @@ export async function readSpacePage(spaceId: string): Promise<SpacePageReads> {
   const ctx = pageReads(supabase);
   const doc = await within<SpaceDoc | null | undefined>(DOC_BUDGET_MS, store.get(spaceId), undefined);
   if (!doc) return { doc: undefined, seeds: {} };
-  return { doc, seeds: askBlocks(ctx, doc) };
+  const seeds = askBlocks(ctx, doc);
+  const [links, backlinks] = await Promise.all([readLinks(store, doc), readBacklinks(supabase, doc.id)]);
+  return { doc, seeds, links, backlinks };
+}
+
+/** Round 40: "N backlinks" under the title, read with the page (the same door the browser asked). */
+async function readBacklinks(supabase: Supabase, spaceId: string): Promise<SpacePageReads["backlinks"]> {
+  const content = supabase.schema("content") as unknown as Rpc;
+  const asked = Promise.resolve(content.rpc("space_backlinks", { p_space_id: spaceId })).then(({ data, error }) =>
+    error ? undefined : { spaceId, rows: (data ?? []) as SeededBacklink[] },
+  );
+  return within(LINKS_BUDGET_MS, asked, undefined);
+}
+
+/** Round 40: the pages the blocks link to, in ONE read (titles, icons, trash state for rows and mentions). */
+async function readLinks(store: SupabaseSpacesStore, doc: SpaceDoc): Promise<SpaceLinks | undefined> {
+  const ids = linkedPageIds(doc.blocks, doc.id);
+  if (!ids.length) return {};
+  const found = await within(
+    LINKS_BUDGET_MS,
+    store.summaries(ids).catch((thrown: unknown) => {
+      console.warn("[spaces] the server could not read this page's linked pages; the browser will.", thrown);
+      return null;
+    }),
+    null,
+  );
+  if (!found) return undefined;
+  const links: SpaceLinks = Object.fromEntries(ids.map((id) => [id, null]));
+  for (const s of found) links[s.id] = s;
+  return links;
 }

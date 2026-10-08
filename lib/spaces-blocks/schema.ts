@@ -64,6 +64,8 @@ const media: PropsCheck = (p) => {
   const has = Number(nonEmpty(p.fileId)) + Number(nonEmpty(p.url));
   if (has !== 1) return "needs exactly one of props.fileId (our file) or props.url";
   if (p.width !== undefined && typeof p.width !== "number") return "width must be a number of px";
+  if (p.height !== undefined && typeof p.height !== "number") return "height must be a number of px";
+  if (p.align !== undefined && !["left", "center", "right"].includes(String(p.align))) return "align must be left, center or right";
   if (p.name !== undefined && !str(p.name)) return "name must be text";
   if (p.caption !== undefined) return spansProblem(p.caption, "caption");
   return null;
@@ -76,12 +78,12 @@ const SPECS: BlockSpec[] = [
   {
     type: "heading",
     parity: "C2",
-    label: "Heading 1/2/3 (toggle heading when props.toggleable)",
+    label: "Heading 1/2/3/4 (toggle heading when props.toggleable)",
     rendered: true,
     text: "inline",
     children: "blocks",
     props: (p, b) => {
-      if (![1, 2, 3].includes(Number(p?.level)) || typeof p?.level !== "number") return "props.level must be 1, 2 or 3";
+      if (![1, 2, 3, 4].includes(Number(p?.level)) || typeof p?.level !== "number") return "props.level must be 1, 2, 3 or 4";
       if (p.toggleable !== undefined && typeof p.toggleable !== "boolean") return "props.toggleable must be true or false";
       return alignment(p, b);
     },

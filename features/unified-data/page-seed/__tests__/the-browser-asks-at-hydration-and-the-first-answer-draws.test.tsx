@@ -35,12 +35,15 @@ jest.mock("@/utils/supabase/client", () => ({ createClient: () => ({}) }));
 jest.mock("@/lib/boot/primaryContent", () => ({ holdPrimaryContent: () => () => {} }));
 jest.mock("@/lib/redux/hooks", () => ({ useAppSelector: () => "0a54df90-eab8-4d07-ab29-81a45fb41e04" }));
 jest.mock("@/lib/redux/selectors/userSelectors", () => ({ selectUserId: () => null }));
-jest.mock("@ai-matrx/records-ui", () => ({ TablePageSkeleton: () => <div data-testid="skeleton" /> }));
+jest.mock("@ai-matrx/records-ui", () => ({
+  TablePageSkeleton: () => <div data-testid="skeleton" />,
+  RecordsSkeleton: () => <div data-testid="skeleton" />,
+}));
 jest.mock("../primeTablePage", () => ({ primeTablePage: () => {} }));
 jest.mock("@/features/unified-data/table-page/UnifiedDataTablePage", () => ({
   UnifiedDataTablePage: () => <div data-testid="page" />,
 }));
-jest.mock("@/features/unified-data/table-page/UnifiedRecordPage", () => ({ UnifiedRecordPage: () => null }));
+jest.mock("@/features/unified-data/table-page/UnifiedRecordPage", () => ({ UnifiedRecordPage: () => <div data-testid="record" /> }));
 jest.mock("@ai-matrx/records/react", () => ({
   RecordsSeedProvider: ({ seed, children }: { seed: { from?: string } | null; children: React.ReactNode }) => (
     <div data-testid="seeded" data-from={seed?.from ?? "none"}>
@@ -66,7 +69,7 @@ jest.mock("@ai-matrx/records-ui/first-page", () => ({
 }));
 
 import { forgetObjectOrganizations } from "../../objectOrganization";
-import { PrimedTablePage } from "../PrimedTablePages";
+import { PrimedRecordPage, PrimedTablePage } from "../PrimedTablePages";
 import type { ServerRowsGate, TablePageSeed } from "../tablePageSeed.server";
 
 const VISITS = "5a1e0000-0000-4000-8000-0000000000aa";
@@ -143,4 +146,44 @@ it("the server says no rows (knob off): the browser's own answer draws the page"
     await jest.advanceTimersByTimeAsync(400);
   });
   expect(screen.getByTestId("seeded").getAttribute("data-from")).toBe("browser");
+});
+
+const RECORD = "01627457-8a65-42f5-8592-71cc626a77c9";
+
+it("THE RECORD PAGE, a 4 s store: its own read starts within 100 ms and the record is drawn at the browser's time, not at the cap", async () => {
+  const t0 = Date.now();
+  const gate = later<ServerRowsGate>(4000, { on: true, capMs: 1200 });
+  const seed = later<TablePageSeed | null>(4000, { ...serverSeed(), recordId: RECORD });
+  await render(<PrimedRecordPage tableId={VISITS} recordId={RECORD} gate={gate} seed={seed} />);
+  await act(async () => {
+    await jest.advanceTimersByTimeAsync(50);
+  });
+  const firstOwnRead = mockCalls.find((c) => c.what === "where_id_opens");
+  expect(firstOwnRead!.at - t0).toBeLessThan(100);
+  expect(screen.queryByTestId("record")).toBeNull();
+  await act(async () => {
+    await jest.advanceTimersByTimeAsync(300);
+  });
+  expect(Date.now() - t0).toBeLessThan(1200);
+  expect(screen.getByTestId("record")).toBeTruthy();
+  expect(screen.getByTestId("seeded").getAttribute("data-from")).toBe("browser");
+  await act(async () => {
+    await jest.advanceTimersByTimeAsync(4000);
+  });
+  expect(screen.getByTestId("seeded").getAttribute("data-from")).toBe("browser");
+});
+
+it("THE RECORD PAGE: a server seed for this record that lands first draws it, and the browser's later answer changes nothing", async () => {
+  mockOwnDelayMs = 2000;
+  const gate = Promise.resolve<ServerRowsGate>({ on: true, capMs: 1200 });
+  const seed = later<TablePageSeed | null>(200, { ...serverSeed(), recordId: RECORD });
+  await render(<PrimedRecordPage tableId={VISITS} recordId={RECORD} gate={gate} seed={seed} />);
+  await act(async () => {
+    await jest.advanceTimersByTimeAsync(250);
+  });
+  expect(screen.getByTestId("seeded").getAttribute("data-from")).toBe("server");
+  await act(async () => {
+    await jest.advanceTimersByTimeAsync(2500);
+  });
+  expect(screen.getByTestId("seeded").getAttribute("data-from")).toBe("server");
 });

@@ -39,6 +39,8 @@ export interface SpaceDoc {
   };
   blocks: SpaceBlock[];
   isArchived: boolean;
+  /** The page's own organization, as the database read it (absent in the memory store). */
+  organizationId?: string;
   /** Integer row version — the optimistic-concurrency token (guardedUpdate), never updatedAt. */
   version: number;
   createdAt: string;

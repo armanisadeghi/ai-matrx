@@ -25,6 +25,8 @@ export interface LiveSpacesStore extends SpacesStore {
   sidebar(input: { expand: SpaceId[]; reveal: SpaceId[] }): Promise<SpaceSummary[]>;
   /** One page's live sub-pages (a sidebar row expanding). */
   children(parentId: SpaceId): Promise<SpaceSummary[]>;
+  /** The pages a Space links to, by id, in one read (absent = the person cannot open it). */
+  summaries(ids: readonly SpaceId[]): Promise<SpaceSummary[]>;
   /** Trash: archived pages, read when Trash opens. */
   trash(): Promise<SpaceSummary[]>;
   /** Server-side page search ("" = recently edited). */
@@ -51,6 +53,7 @@ export function createLiveSpacesStore(getOrganizationId: () => string | null): L
     list: (options) => base.list(options),
     sidebar: (input) => base.sidebar(input),
     children: (parentId) => base.children(parentId),
+    summaries: (ids) => base.summaries(ids),
     trash: () => base.trash(),
     search: (query, limit) => base.search(query, limit),
     get: (id) => base.get(id),

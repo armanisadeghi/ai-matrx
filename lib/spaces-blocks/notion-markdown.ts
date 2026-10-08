@@ -399,7 +399,7 @@ class Converter {
       // ---- headings (incl. toggle headings: {toggle="true"} or the older "▶#")
       const heading = /^(▶\s*)?(#{1,6})\s+(.*)$/.exec(body);
       if (heading) {
-        const level = Math.min(3, heading[2].length);
+        const level = Math.min(4, heading[2].length);
         const toggleable = Boolean(heading[1]) || attrs.toggle === "true";
         const { kids, next } = childLines(lines, i);
         const p = at();
@@ -574,7 +574,7 @@ class Converter {
         const allColors = { ...colors, ...this.colors(sumAttrs) };
         out.push(
           heading
-            ? this.block(p, "heading", { text: this.spans(heading[2]), props: { level: Math.min(3, heading[1].length), toggleable: true }, children, ...allColors })
+            ? this.block(p, "heading", { text: this.spans(heading[2]), props: { level: Math.min(4, heading[1].length), toggleable: true }, children, ...allColors })
             : this.block(p, "toggle", { text: this.spans(sumText.trim()), children, ...allColors }),
         );
         return next;

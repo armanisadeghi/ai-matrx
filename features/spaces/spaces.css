@@ -848,13 +848,17 @@
 .spaces-editor [data-content-type="heading"][data-level="3"] {
   --level: 1.25em;
 }
+.spaces-editor [data-content-type="heading"][data-level="4"] {
+  --level: 1.125em;
+}
 .spaces-editor .bn-block-outer:has(> .bn-block > [data-content-type="heading"][data-level="1"]) {
   margin-top: 2em;
 }
 .spaces-editor .bn-block-outer:has(> .bn-block > [data-content-type="heading"][data-level="2"]) {
   margin-top: 1.4em;
 }
-.spaces-editor .bn-block-outer:has(> .bn-block > [data-content-type="heading"][data-level="3"]) {
+.spaces-editor .bn-block-outer:has(> .bn-block > [data-content-type="heading"][data-level="3"]),
+.spaces-editor .bn-block-outer:has(> .bn-block > [data-content-type="heading"][data-level="4"]) {
   margin-top: 1em;
 }
 .spaces-editor .bn-block-group > .bn-block-outer:first-child:has(> .bn-block > [data-content-type="heading"]) {
@@ -1885,3 +1889,28 @@ tr:hover .spaces-entity-openpill, .spaces-entity-open:focus-visible .spaces-enti
    (SpacePage `revealWhenPainted`): the hidden editor takes the static body's box and never adds height. */
 .spaces-body-stack { position: relative; }
 .spaces-editor-behind { position: absolute; inset: 0; overflow: hidden; visibility: hidden; pointer-events: none; }
+
+/* C20 / C23 — media frame: Notion's side handles, hover tools, alignment, caption field (round 41). */
+.spaces-media-frame { position: relative; }
+.spaces-media-frame[data-align="center"] { margin-left: auto; margin-right: auto; }
+.spaces-media-frame[data-align="right"] { margin-left: auto; margin-right: 0; }
+.spaces-media-frame[data-align="left"] { margin-left: 0; margin-right: auto; }
+.spaces-media-body { position: relative; }
+.spaces-media-body .spaces-iframe-embed, .spaces-media-body .spaces-iframe-pdf { height: var(--spaces-embed-h, 420px); }
+.spaces-media-frame[data-media-kind="pdf"] .spaces-media-body:not([style]) .spaces-iframe-pdf { height: 640px; }
+.spaces-media-handle { position: absolute; z-index: 2; opacity: 0; transition: opacity 120ms; }
+.spaces-media-handle[data-side="left"], .spaces-media-handle[data-side="right"] { top: 0; bottom: 0; width: 14px; cursor: col-resize; display: flex; align-items: center; justify-content: center; }
+.spaces-media-handle[data-side="left"] { left: 0; }
+.spaces-media-handle[data-side="right"] { right: 0; }
+.spaces-media-handle[data-side="left"]::after, .spaces-media-handle[data-side="right"]::after { content: ""; width: 6px; height: 48px; max-height: 50%; border-radius: 20px; background: rgba(15, 15, 15, 0.6); border: 1px solid rgba(255, 255, 255, 0.9); }
+.spaces-media-handle[data-side="bottom"] { left: 0; right: 0; bottom: -6px; height: 12px; cursor: row-resize; }
+.spaces-media-handle[data-side="bottom"]::after { content: ""; position: absolute; left: 50%; top: 3px; width: 48px; height: 6px; margin-left: -24px; border-radius: 20px; background: rgba(15, 15, 15, 0.6); border: 1px solid rgba(255, 255, 255, 0.9); }
+.spaces-media-frame:hover .spaces-media-handle { opacity: 1; }
+.spaces-media-tools { position: absolute; top: 6px; right: 6px; z-index: 3; display: flex; align-items: center; gap: 1px; padding: 2px; border-radius: 6px; background: var(--popover); color: var(--popover-foreground); border: 1px solid var(--border); box-shadow: 0 2px 6px rgba(15, 15, 15, 0.12); opacity: 0; pointer-events: none; transition: opacity 120ms; }
+.spaces-media-frame:hover .spaces-media-tools, .spaces-media-tools:focus-within { opacity: 1; pointer-events: auto; }
+.spaces-media-tools button { display: inline-flex; align-items: center; justify-content: center; width: 24px; height: 24px; border-radius: 4px; color: var(--spaces-ink-soft); }
+.spaces-media-tools button:hover, .spaces-media-tools button[data-active] { background: var(--spaces-hover-strong); color: var(--foreground); }
+.spaces-media-tools-sep { width: 1px; height: 16px; margin: 0 2px; background: var(--border); }
+.spaces-caption-field { display: block; width: 100%; border: 0; outline: none; background: transparent; padding: 0 2px; }
+.spaces-caption-field::placeholder { color: var(--spaces-ink-faint, var(--muted-foreground)); }
+@media (hover: none) { .spaces-media-tools, .spaces-media-handle { opacity: 1; pointer-events: auto; } }

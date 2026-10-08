@@ -306,6 +306,8 @@ function fromEngineTree(blocks: EngineBlock[]): SpaceBlock[] {
     const { textColor, backgroundColor, isToggleable, textAlignment, ...rest } = block.props ?? {};
     const props: Record<string, unknown> = { ...rest };
     if (isToggleable) props.toggleable = true;
+    // Notion has four heading levels; BlockNote's "#####" / "######" shortcuts land as Heading 4.
+    if (block.type === "heading") props.level = Math.min(4, Math.max(1, Number(props.level ?? 1)));
     if (block.type === "codeBlock") {
       let caption: unknown = null;
       try {

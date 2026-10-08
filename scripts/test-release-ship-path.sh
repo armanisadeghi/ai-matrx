@@ -30,7 +30,7 @@ git config user.name test; git config user.email test@test
 mkdir -p scripts
 cp "$SCRIPT_UNDER_TEST" scripts/release.sh
 # The primitives the script sources ride along when they sit beside it.
-for helper in release-stage.sh release-outcome.sh vercel-ignore-build.sh sync-main.py; do
+for helper in release-stage.sh release-outcome.sh vercel-ignore-build.sh sync-main.py check-lockfile-keys.py; do
     [[ -f "$(dirname "$SCRIPT_UNDER_TEST")/$helper" ]] && cp "$(dirname "$SCRIPT_UNDER_TEST")/$helper" "scripts/$helper"
 done
 printf '{\n  "name": "sandbox",\n  "version": "0.1.0",\n  "private": true\n}\n' > package.json
@@ -165,7 +165,42 @@ check "the held file is named with its reason"    'grep -q "ERROR.*rcstore_b_doc
 check "the waiting file is a WARNING"             'grep -q "WARNING.*1 migration(s) wait on a held file: rcstore_c_blocks.sql" "$SANDBOX/out4"'
 check "the Migrations section closes"             'grep -qx "==================== End of Migrations ====================" "$SANDBOX/out4"'
 check "the vague old sentence is gone"            '! grep -q "failed to apply or was refused" "$SANDBOX/out4"'
+# ── fifth + sixth releases: THE LOCKFILE GUARD (v0.4.3013, 2026-10-08) ──────
+# A merge kept two identical lockfile blocks and every Vercel build died on
+# ERR_PNPM_BROKEN_LOCKFILE. Identical duplicates are dropped inside the release
+# commit (WARNING); duplicates that differ stop the release before the push.
+printf '#!/usr/bin/env bash\nexit 0\n' > "$SANDBOX/bin/uv"
+LOCK_BLOCK="  '@ai-matrx/records@0.84.4':\n    resolution: {integrity: sha512-abc}\n"
+LOCK_HEAD="lockfileVersion: '9.0'\n\npackages:\n\n"
+LOCK_TAIL="  '@ai-matrx/rich-content@0.2.55':\n    resolution: {integrity: sha512-def}\n"
+( cd "$SANDBOX/other" && git pull -q origin main \
+    && printf "${LOCK_HEAD}${LOCK_BLOCK}\n${LOCK_BLOCK}\n${LOCK_TAIL}" > pnpm-lock.yaml \
+    && git add -A && git -c user.name=t -c user.email=t@t commit -qm "merge kept a duplicate block" && git push -q origin main )
+git_q pull --no-rebase origin main || true
+set +e
+PATH="$SANDBOX/bin:$PATH" AIDREAM_DIR="$SANDBOX/aidream" RELEASE_AFTER_PHASE=off RELEASE_LOG_CAPTURED=1 \
+    bash scripts/release.sh > "$SANDBOX/out5" 2>&1
+STATUS5=$?
+set -e
+git fetch -q origin
+echo "release ship path — the lockfile guard"
+check "an identical duplicate still ships v0.1.5" '[[ $STATUS5 -eq 0 ]] && git ls-remote --tags origin | grep -q "refs/tags/v0.1.5$"'
+check "the released lockfile parses clean"        'git show origin/main:pnpm-lock.yaml | python3 scripts/check-lockfile-keys.py --stdin pnpm-lock.yaml'
+check "the released lockfile kept one block"      '[[ $(git show origin/main:pnpm-lock.yaml | grep -c "@ai-matrx/records@0.84.4") -eq 1 ]]'
+check "the repair is a Lockfile WARNING"          'grep -q "WARNING.*Lockfile.*identical duplicate blocks" "$SANDBOX/out5"'
+( cd "$SANDBOX/other" && git pull -q origin main \
+    && printf "${LOCK_HEAD}${LOCK_BLOCK}\n${LOCK_BLOCK//abc/xyz}\n${LOCK_TAIL}" > pnpm-lock.yaml \
+    && git add -A && git -c user.name=t -c user.email=t@t commit -qm "merge kept two different blocks" && git push -q origin main )
+BEFORE6=$(git ls-remote origin refs/heads/main | cut -f1)
+set +e
+PATH="$SANDBOX/bin:$PATH" AIDREAM_DIR="$SANDBOX/aidream" RELEASE_AFTER_PHASE=off RELEASE_LOG_CAPTURED=1 \
+    bash scripts/release.sh > "$SANDBOX/out6" 2>&1
+STATUS6=$?
+set -e
+check "an unreadable lockfile stops the release"  '[[ $STATUS6 -ne 0 ]]'
+check "nothing was pushed for it"                 '[[ "$(git ls-remote origin refs/heads/main | cut -f1)" == "$BEFORE6" ]] && ! git ls-remote --tags origin | grep -q "refs/tags/v0.1.6$"'
+check "the stop names the lockfile"               'grep -q "pnpm-lock.yaml in the release tree cannot be parsed" "$SANDBOX/out6"'
 if [[ $FAILED -ne 0 ]]; then
-    echo "--- script output ---"; tail -25 "$SANDBOX/out"; echo "--- second run ---"; tail -25 "$SANDBOX/out2" 2>/dev/null; echo "--- third run ---"; tail -25 "$SANDBOX/out3" 2>/dev/null; echo "--- fourth run ---"; tail -25 "$SANDBOX/out4" 2>/dev/null
+    echo "--- script output ---"; tail -25 "$SANDBOX/out"; echo "--- second run ---"; tail -25 "$SANDBOX/out2" 2>/dev/null; echo "--- third run ---"; tail -25 "$SANDBOX/out3" 2>/dev/null; echo "--- fourth run ---"; tail -25 "$SANDBOX/out4" 2>/dev/null; echo "--- fifth run ---"; tail -25 "$SANDBOX/out5" 2>/dev/null; echo "--- sixth run ---"; tail -25 "$SANDBOX/out6" 2>/dev/null
     exit 1
 fi

@@ -146,6 +146,10 @@ export interface MediaProps extends Record<string, unknown> {
   name?: string;
   /** Display width in px (image, video, pdf); absent = natural width. */
   width?: number;
+  /** Display height in px (pdf, embed); absent = the default height. */
+  height?: number;
+  /** Where a narrower block sits (Notion's Align); absent = center. */
+  align?: "left" | "center" | "right";
   caption?: RichSpan[];
 }
 

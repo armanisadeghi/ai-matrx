@@ -45,6 +45,39 @@ Block document: a tree of `SpaceBlock` (`id`, `type`, `text: RichSpan[]`, `color
 
 ## Change log
 
+- 2026-10-08 — fixes round 39: (1) "Archive record" follows the `remove` rung (editor), not `write` (edit_content):
+  records-ui 0.110.9 gates it by `rights.remove` and adds `hideRefusedRowActions` on `ViewSwitcher`/`Grid` (Spaces sets
+  it in `DatabaseBlock`): a content editor's row menu has no Archive item, the admin still archives (walk
+  `archive-row.walk.mjs both`). The open row's ••• keeps the package's rule (disabled, saying why). (2) "+ New": the side
+  peek draws the title as text with an "Edit Name" press, so there was no field to focus; `SidePeek` presses it once and
+  the opened input takes the caret (typing names the row; test `side-peek-takes-focus`, walk `peek-focus-archive.walk.mjs`).
+  (3) After an archive `read_record` answered 400: a closed peek's live `useRecord` entry re-read the archived row on the
+  change announcement and on realtime's echo. @ai-matrx/records 0.84.5 marks a deleted record removed
+  (`markRecordRemoved`, lifted by restore) and the live entry skips its re-read; the walk reports no failing request.
+
+- 2026-10-08 — builder round 40 (page-level link reads): a page's links resolved one full page read each
+  (`requestLink` -> `store.get` = document + space_payload + associations per page row, link-to-page and page
+  mention): admin sample ~125 Spaces reads per load (39-42 of each + 3 `reverse_links_many`). Now the route reads
+  every linked page in ONE call, `content.space_summaries(uuid[])` (title, icon, trash state, parent; viewer
+  access per id; door row before grant), ids from `page/linked-pages.ts` (row props, nested blocks, mention
+  spans), plus `space_backlinks`, beside the page; `page/space-links.tsx` hands them to `PageRow`,
+  `PageMention` and `Backlinks` (titles in the HTML). A link added after load asks through `requestLink`,
+  batched per tick into one `space_summaries`. Also gone from load: the page's organization (now
+  `SpaceDoc.organizationId`, used by reminders and the collab cadence), the template label (read when the •••
+  menu or gallery opens), the synced-source check re-asking known ids, and the synced-block edge read on a
+  page with no synced block. `load-perf.walk.mjs` prints `spacesReads` per load. Measured: admin sample 5
+  (space_sidebar 1, synced_source 1, the grid's `reverse_links_many` 3 — records-ui, one per link field);
+  member page 1b5eb9af 2. CLS <= 0.0022, no hydration warnings. Test `page/__tests__/linked-pages.test.ts`.
+- 2026-10-08 — fixes round 38: (D1) "Archive record" works: a modal's `aria-hidden` walk (Radix `hideOthers` keeps every
+  `[aria-live]`, and the grid's dnd-kit live region sits in the editor) marked the editor's blocks, ProseMirror redrew
+  the database block and the grid remounted with its confirm; `editor/aria-hidden-marks.ts` makes the editor ignore
+  those two attributes. (D2) Trash/restore go through `content.space_set_trashed` (creator or editor access): a
+  full-access editor's PATCH was refused 42501 because the owner-only trash rule hides the trashed row from them
+  (the error toast did show; it lasts 5 s). (D4) a seeded first-pass block always reads its seed through `use()`
+  (4/10 reloads logged React's conditional-use error); a room join keeps its own provider. (D5) the side peek takes
+  focus on open — focus stayed on "+ New", so typing a title pressed New per space and on Enter. (D3) checked: every
+  read carried its table's own organization. Guards: `seed-use-retry`, `aria-hidden-marks`, `side-peek-takes-focus`
+  tests, `store-db/trash-by-editor-live-proof.ts`, `archive-row.walk.mjs` (owner must archive and see the notice).
 - 2026-10-08 — builder round 38 (grid spec shared): `data/view-spec.ts` is the one `viewSpec` builder; DatabaseBlock draws
   from it and `space-page-seed.server.ts` passes the same spec as `askTablePageSeed({ view })` (grid/list/gallery
   views; chart, dashboard, form and a board/calendar/timeline missing its field take their default from the table's

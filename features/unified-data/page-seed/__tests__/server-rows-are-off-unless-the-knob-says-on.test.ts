@@ -196,4 +196,20 @@ it("PARALLEL START: where the table lives and who is asking begin together, and 
   }
 });
 
+it("THE OPENING IS NEVER CAPPED: a store slower than the cap still streams where + bundle for the browser's reads", async () => {
+  jest.useFakeTimers();
+  try {
+    mockKnob = { on: true, cap_ms: 1200 };
+    mockDelayMs = 4000;
+    const { readTablePage } = await import("../tablePageSeed.server");
+    const reads = readTablePage(TABLE);
+    await jest.advanceTimersByTimeAsync(1200);
+    await expect(reads.seed).resolves.toBeNull();
+    await jest.advanceTimersByTimeAsync(2800);
+    await expect(reads.opening).resolves.toMatchObject({ organizationId: ORG });
+  } finally {
+    jest.useRealTimers();
+  }
+});
+
 export {};

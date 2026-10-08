@@ -61,6 +61,7 @@ import { mayWrite, roomCanEdit, trashedByList } from "./trash-state";
 import { attemptSave, deviceStorage, forgetUnsaved, keepsChange, keepUnsaved, noteWritten } from "./unsaved";
 import { useRestoreKept } from "./useRestoreKept";
 import { SpaceSeedProvider, useSpaceSeedSettled, type SpaceBlockSeeds } from "./space-seed-context";
+import { SpaceLinksProvider, type SeededBacklink, type SpaceLinks } from "./space-links";
 import { StaticSpaceBody } from "../editor/static-body";
 import { sendOnLeave, trackAccessToken } from "./leave-save";
 import { contentKey } from "./content-key";
@@ -153,7 +154,19 @@ function isBlankPage(blocks: readonly SpaceBlock[]): boolean {
   return only.type === "paragraph" && !(only.text ?? []).some((t) => (t as { text?: string }).text) && !only.children?.length;
 }
 
-export function SpacePage({ spaceId, initialDoc, seeds }: { spaceId: string; initialDoc?: SpaceDoc; seeds?: SpaceBlockSeeds }) {
+export function SpacePage({
+  spaceId,
+  initialDoc,
+  seeds,
+  links,
+  backlinks,
+}: {
+  spaceId: string;
+  initialDoc?: SpaceDoc;
+  seeds?: SpaceBlockSeeds;
+  links?: SpaceLinks;
+  backlinks?: { spaceId: string; rows: SeededBacklink[] };
+}) {
   const { pageEpoch } = useSpaces();
   const key = `${spaceId}:${pageEpoch(spaceId)}`;
   // Round 34: the page as the server read it (its text is in the HTML) opens the FIRST screen only — a
@@ -162,7 +175,9 @@ export function SpacePage({ spaceId, initialDoc, seeds }: { spaceId: string; ini
   const served = key === servedKey && initialDoc?.id === spaceId ? initialDoc : undefined;
   return (
     <SpaceSeedProvider seeds={key === servedKey ? seeds : undefined}>
-      <SpacePageScreen key={key} spaceId={spaceId} initialDoc={served} />
+      <SpaceLinksProvider links={key === servedKey ? links : undefined} backlinks={key === servedKey ? backlinks : undefined}>
+        <SpacePageScreen key={key} spaceId={spaceId} initialDoc={served} />
+      </SpaceLinksProvider>
     </SpaceSeedProvider>
   );
 }
@@ -691,7 +706,7 @@ function SpacePageScreen({ spaceId, initialDoc }: { spaceId: string; initialDoc?
   const designer = useDatabaseDesigner();
   const moveIn = useMoveIn();
   // N2 — Remind on a date mention: this person's reminders follow the page's date mentions.
-  usePageReminders(spaceId, doc?.title ?? "", doc?.blocks, userId ?? null, !!doc && !trashedNow);
+  usePageReminders(spaceId, doc?.title ?? "", doc?.blocks, userId ?? null, !!doc && !trashedNow, doc?.organizationId);
   useSyncedEdges(spaceId, doc?.blocks, !!doc && !trashedNow && fullEdit);
   // N3: suggestions carry this person as their author; suggest mode is per page.
   useEffect(() => {
@@ -934,6 +949,7 @@ function SpacePageScreen({ spaceId, initialDoc }: { spaceId: string; initialDoc?
           onExport={() => setExportOpen(true)}
           onAskAiChange={builder.wired && editable ? () => builder.ask({ spaceId: doc.id, ...pageForAi() }) : undefined}
           isTemplate={spaces.templates.ids ? spaces.templates.ids.includes(doc.id) : null}
+          onOpen={spaces.templates.ids === null ? spaces.templates.refresh : undefined}
           onTemplate={(on) =>
             void spaces.templates
               .setTemplate(doc.id, on)

@@ -103,7 +103,7 @@ describe("Space snapshot JSON Schema", () => {
     "unknown block type": (s) => (s.blocks[0].type = "paragraph"),
     "block without id": (s) => delete s.blocks[0].id,
     "empty id": (s) => (s.blocks[0].id = ""),
-    "heading level 4": (s) => (s.blocks[2].props.level = 4),
+    "heading level 5": (s) => (s.blocks[2].props.level = 5),
     "heading without props": (s) => delete s.blocks[2].props,
     "todo checked not boolean": (s) => (s.blocks[5].props.checked = "no"),
     "wrong props shape (array)": (s) => (s.blocks[0].props = []),

@@ -14,5 +14,5 @@ export default async function UnifiedRecordRoute({
 }) {
   const { tableId, recordId } = await params;
   const reads = readTablePage(tableId, recordId, { rows: false });
-  return <PrimedRecordPage tableId={tableId} recordId={recordId} gate={reads.gate} seed={reads.seed} />;
+  return <PrimedRecordPage tableId={tableId} recordId={recordId} gate={reads.gate} seed={reads.seed} opening={reads.opening} />;
 }

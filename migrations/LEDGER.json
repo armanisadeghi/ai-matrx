@@ -1,6 +1,6 @@
 {
   "note": "Checked-in snapshot of public._schema_migrations for the files under migrations/campaign and migrations/inverse. Written by `pnpm db:apply` on every successful production apply and refreshed whole by the nightly catch-up. Never hand-edited: a self-written checksum is a claim nobody can check. Guard: pnpm check:ledgered-files-unedited.",
-  "generated_at": "2026-10-08T12:12:06.358Z",
+  "generated_at": "2026-10-08T13:55:23.130Z",
   "files": {
     "migrations/campaign/a_chunk_is_the_size_the_client_door_can_actually_carry.sql": {
       "source": "matrx-frontend",
@@ -6691,6 +6691,12 @@
       "filename": "secsweep_two_more_credential_columns_lose_their_client_door.sql",
       "checksum": "051fd9ef0ac22e140f3bdf9a5cb6efac26fb331eb888f0f981f3bd1a9edcb818",
       "applied_at": "2026-09-21 14:54:40.677626+00"
+    },
+    "migrations/campaign/seedentity_reverse_links_many_fields.sql": {
+      "source": "matrx-frontend",
+      "filename": "seedentity_reverse_links_many_fields.sql",
+      "checksum": "464f822dbfb0391f829e1a1a588cc542c08012b481bb652b77d4ab2f6d13788c",
+      "applied_at": "2026-10-08 13:55:21.496011+00"
     },
     "migrations/campaign/selfheal_an_equivalent_kernel_is_re_recorded_by_the_provisioner.sql": {
       "source": "campaign",
