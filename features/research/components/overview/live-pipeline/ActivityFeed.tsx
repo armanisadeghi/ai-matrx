@@ -18,7 +18,7 @@ import type {
   PipelineState,
   StageKind,
 } from "../../../hooks/usePipelineProgress";
-import { AiModelRef } from "@/components/official/entity-ref/AiIdentityRef";
+import { AiModelRef } from "@ai-matrx/chat/agents/components/identity-refs/AiIdentityRef";
 import { streamErrorText } from "@ai-matrx/agents/matrx";
 
 type FilterKey = "all" | "errors" | "info" | "current";

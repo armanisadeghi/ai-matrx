@@ -41,10 +41,12 @@ jest.mock("@/lib/redux/selectors/userSelectors", () => ({
 jest.mock("@/lib/redux/slices/appContextSlice", () => ({
   selectOrganizationId: () => organizationId,
 }));
-jest.mock("@ai-matrx/chat/agents/redux/tools/tools.selectors", () => ({
+jest.mock("@ai-matrx/chat/agents/identity/tool-catalog", () => ({
   selectAllTools: () => tools(),
   selectToolsStatus: () => toolsStatus(),
   selectToolsError: () => toolsError(),
+  useToolCatalog: (select: (s: unknown) => unknown) => select({}),
+  loadAvailableTools: jest.fn(async () => undefined),
 }));
 jest.mock("@ai-matrx/chat/agents/redux/agent-definition/selectors", () => ({
   ...jest.requireActual("@ai-matrx/chat/agents/redux/agent-definition/selectors"),
@@ -70,9 +72,6 @@ jest.mock("@/features/agents/redux/builder-tier.thunks", () => ({
     type: "assignment",
     input,
   })),
-}));
-jest.mock("@ai-matrx/chat/agents/redux/tools/tools.thunks", () => ({
-  fetchAvailableTools: jest.fn(() => ({ type: "tools" })),
 }));
 jest.mock("@ai-matrx/chat/agents/hooks/useModelControls", () => ({
   resolveModelControls: () => ({ normalizedControls: { tools: {} } }),

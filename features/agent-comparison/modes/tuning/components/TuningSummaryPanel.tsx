@@ -22,7 +22,7 @@ import {
   selectAgentModelId,
 } from "@ai-matrx/chat/agents/redux/agent-definition/selectors";
 import { AgentSettingsModal } from "@/features/agents/components/settings-management/AgentSettingsModal";
-import { AiModelRef } from "@/components/official/entity-ref/AiIdentityRef";
+import { AiModelRef } from "@ai-matrx/chat/agents/components/identity-refs/AiIdentityRef";
 
 interface Props {
   syntheticAgentId: string;

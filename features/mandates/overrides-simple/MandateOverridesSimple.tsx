@@ -60,9 +60,9 @@ import { useModelControls } from "@ai-matrx/chat/agents/hooks/useModelControls";
 import { useModelClassControls } from "@ai-matrx/chat/agents/identity/model-catalog";
 import { buildSettingsRows } from "@ai-matrx/chat/agents/redux/agent-settings/settings-catalogue";
 import type { ControlDefinition } from "@ai-matrx/chat/agents/redux/agent-settings/types";
-import { SettingControlInput } from "@/features/agents/components/settings-management/controls/SettingControlInput";
+import { SettingControlInput } from "@ai-matrx/agents/settings/react";
 import { ModelListDropdown } from "@ai-matrx/agents/models/react";
-import { AiModelRef } from "@/components/official/entity-ref/AiIdentityRef";
+import { AiModelRef } from "@ai-matrx/chat/agents/components/identity-refs/AiIdentityRef";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { fetchMandateLadder } from "@/features/mandates/workspace/useMandateLadder";
 import {

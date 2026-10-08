@@ -30,7 +30,7 @@ import { TrashTapButton } from "@ai-matrx/tap-target/buttons";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { extractErrorMessage } from "@/utils/errors";
 import { resolveSystemOrgId } from "@/lib/organizations/systemOrg";
-import { AiModelRef } from "@/components/official/entity-ref/AiIdentityRef";
+import { AiModelRef } from "@ai-matrx/chat/agents/components/identity-refs/AiIdentityRef";
 import { ModelListDropdown } from "@ai-matrx/agents/models/react";
 import { aiModelService } from "../../service";
 import type { AiModelAliasRow, AiModelRow } from "../../types";

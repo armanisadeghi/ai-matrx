@@ -49,7 +49,7 @@ import {
   Loader2,
   AlertTriangle,
 } from "lucide-react";
-import { AiToolRef } from "@/components/official/entity-ref/AiIdentityRef";
+import { AiToolRef } from "@ai-matrx/chat/agents/components/identity-refs/AiIdentityRef";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 // Pull sessionId from activeChatSlice — activeChat slice has been removed, stubbed here.

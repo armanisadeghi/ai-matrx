@@ -23,7 +23,7 @@ import { useResearchStream } from "../../hooks/useResearchStream";
 import { ResearchFilterBar, type FilterDef } from "../shared/ResearchFilterBar";
 import { StoppedEarlyNote } from "../shared/StoppedEarlyNote";
 import { SynthesisVersionHistory } from "./SynthesisVersionHistory";
-import { AiModelRef } from "@/components/official/entity-ref/AiIdentityRef";
+import { AiModelRef } from "@ai-matrx/chat/agents/components/identity-refs/AiIdentityRef";
 import { deriveReadiness } from "../../readiness";
 import type { FilterOption } from "@/components/hierarchy-filter/HierarchyFilterPill";
 import type { ResearchSynthesis, ResearchDataEvent } from "../../types";

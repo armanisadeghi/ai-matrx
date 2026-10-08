@@ -48,7 +48,7 @@ jest.mock("@ai-matrx/tap-target", () => ({
   ),
 }));
 
-jest.mock("@/components/official/entity-ref/AiIdentityRef", () => ({
+jest.mock("@ai-matrx/chat/agents/components/identity-refs/AiIdentityRef", () => ({
   AiModelRef: ({ name }: { name: string | null }) => <span>{name}</span>,
 }));
 

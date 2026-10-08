@@ -8,7 +8,7 @@
 // model then reads "Qwen3.8 27B · Matrx Lightning" on every catalog card.
 
 import type { ReactNode } from "react";
-import { AiModelRef } from "@/components/official/entity-ref/AiIdentityRef";
+import { AiModelRef } from "@ai-matrx/chat/agents/components/identity-refs/AiIdentityRef";
 
 export function renderCatalogModelRef(args: {
   modelId: string;

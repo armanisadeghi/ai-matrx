@@ -25,7 +25,7 @@ jest.mock("@ai-matrx/chat/store/hooks", () => jest.requireMock("@/lib/redux/hook
 jest.mock("@/features/cloud-browser/hooks/useOpenCloudBrowserCanvas", () => ({
   useOpenCloudBrowserCanvas: () => jest.fn(),
 }));
-jest.mock("../useRunControlCounts", () => ({ useRunControlCounts: () => ({}) }));
+jest.mock("@ai-matrx/chat/agents/components/inputs/smart-input/composer/useRunControlCounts", () => ({ useRunControlCounts: () => ({}) }));
 jest.mock("@/lib/toast", () => ({
   toast: { success: jest.fn(), error: jest.fn(), info: jest.fn() },
 }));

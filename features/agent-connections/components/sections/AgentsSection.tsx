@@ -9,7 +9,7 @@ import { SectionFooter } from "../SectionFooter";
 import { ListRow } from "../ListRow";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { EntityDoorControls } from "@/components/official/entity-ref/EntityDoorControls";
-import { AiModelRef } from "@/components/official/entity-ref/AiIdentityRef";
+import { AiModelRef } from "@ai-matrx/chat/agents/components/identity-refs/AiIdentityRef";
 import { useAgentModelLabel } from "@ai-matrx/chat/agents/hooks/useAgentModelLabel";
 import { fetchAgentExecutionFull } from "@/features/agents/redux/builder-tier.thunks";
 import { useAgents } from "../../hooks/useAgents";

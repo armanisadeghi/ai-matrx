@@ -79,7 +79,7 @@ import {
 
 import Link from "next/link";
 import { MatrxUuidCell } from "@ai-matrx/design-system/data-table/uuid-cell";
-import { AiToolRef } from "@/components/official/entity-ref/AiIdentityRef";
+import { AiToolRef } from "@ai-matrx/chat/agents/components/identity-refs/AiIdentityRef";
 import {
   mcpServerHref,
   toolEditHref,

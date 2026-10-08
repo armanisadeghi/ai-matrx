@@ -6,7 +6,7 @@
 import { isValidElement } from "react";
 import { renderCatalogModelRef } from "../catalogModelRef";
 
-jest.mock("@/components/official/entity-ref/AiIdentityRef", () => ({
+jest.mock("@ai-matrx/chat/agents/components/identity-refs/AiIdentityRef", () => ({
   AiModelRef: () => null,
 }));
 

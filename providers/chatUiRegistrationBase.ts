@@ -26,10 +26,6 @@ import { connectorDefinitionFromMcp } from "@/features/connectors/live-connector
 import { useClipboardPaste } from "@/components/ui/file-upload/useClipboardPaste";
 import { useCenterControlFit } from "@/features/shell/components/header/useCenterControlFit";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
-import {
-  selectAllSkills,
-  selectSkillsStatus,
-} from "@/features/skills/redux/skillsSelectors";
 import { summarizeContextCell } from "@/features/scopes/utils/referenceCell";
 import { useEntityTitles } from "@/features/scopes/hooks/useEntityTitles";
 import { registerChatUsageGate } from "@ai-matrx/chat/host/usage-gate";
@@ -74,7 +70,6 @@ import {
 } from "@/features/cloud-browser/hooks/useOpenCloudBrowserCanvas";
 import { SystemInstructionModal } from "@/features/agents/components/builder/message-builders/system-instructions/SystemInstructionModal";
 import { flattenResourcePickerItems } from "@/features/resource-manager/resource-picker/resource-picker-menu-items";
-import { useRunControlCounts } from "@/features/resource-manager/resource-picker/useRunControlCounts";
 import { useAttachResourcePicker } from "@/features/connectors/useAttachResourcePicker";
 import { usePopoutContainer } from "@/features/window-panels/popout/usePopoutContainer";
 import { useUrlSync } from "@/features/window-panels/url-sync/useUrlSync";
@@ -183,7 +178,6 @@ registerChatUi({
   NotePickerPopover: asSlot(NotePickerPopover),
   SmartInputMessageTemplatePicker: asSlot(SmartInputMessageTemplatePicker),
   flattenResourcePickerItems,
-  useRunControlCounts,
   useAttachResourcePicker,
   usePopoutContainer,
   useUrlSync,
@@ -245,10 +239,6 @@ registerChatUi({
       : db.from("tasks").select("organization_id").eq("id", id).maybeSingle();
   },
   summarizeContextCell,
-  loadedSkills: (state: Parameters<typeof selectSkillsStatus>[0]) => ({
-    status: selectSkillsStatus(state),
-    skills: selectAllSkills(state),
-  }),
   useEntityTitles,
   notesCreate: (input: Parameters<typeof NotesAPI.create>[0]) =>
     NotesAPI.create(input),

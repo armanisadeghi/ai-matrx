@@ -116,11 +116,6 @@ import type {
   JsonSchemaProperty,
 } from "@ai-matrx/chat/agents/types/agent-api-types";
 import { createClient } from "@/utils/supabase/client";
-import {
-  selectAllTools,
-  selectToolsStatus,
-} from "@ai-matrx/chat/agents/redux/tools/tools.selectors";
-import { fetchAvailableTools } from "@ai-matrx/chat/agents/redux/tools/tools.thunks";
 import { filterAndSortBySearch } from "@ai-matrx/kit/search-scoring";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { useUserOrganizations } from "@/features/organizations/hooks";
@@ -128,7 +123,7 @@ import {
   isOrgKnobGatedTool,
   toolsWithheldInOrganization,
 } from "@/lib/knobs/toolKnobGating";
-import { useNormalizedControls } from "@ai-matrx/chat/agents/redux/agent-settings/useNormalizedControls";
+import { useNormalizedControls } from "@ai-matrx/chat/agents/identity/settings-store";
 import { useAgentSettingsClassControls } from "@/features/ai-models/hooks/useModelClassControls";
 import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import { supportsTools } from "@ai-matrx/chat/agents/hooks/useModelControls";
@@ -145,6 +140,7 @@ import { readOf } from "@ai-matrx/design-system";
 import { UntrustedCount } from "@ai-matrx/design-system";
 import { InfoHint } from "@/components/official/InfoHint";
 import { toast } from "@/lib/toast";
+import { loadAvailableTools, selectAllTools, selectToolsStatus, useToolCatalog } from "@ai-matrx/chat/agents/identity/tool-catalog";
 
 type ToolsTab = "server" | "custom" | "client" | "mcp";
 
@@ -395,8 +391,8 @@ export function AgentToolsManager({ agentId }: AgentToolsManagerProps) {
     (Array.isArray(savedTools) ? savedTools.length : 0) +
     (Array.isArray(savedCustomTools) ? savedCustomTools.length : 0) +
     (Array.isArray(savedMcpServers) ? savedMcpServers.length : 0);
-  const reduxTools = useAppSelector(selectAllTools);
-  const reduxToolsStatus = useAppSelector(selectToolsStatus);
+  const reduxTools = useToolCatalog(selectAllTools);
+  const reduxToolsStatus = useToolCatalog(selectToolsStatus);
   const externalTools: DatabaseTool[] | undefined =
     reduxToolsStatus === "succeeded" ? reduxTools : undefined;
 
@@ -445,7 +441,7 @@ export function AgentToolsManager({ agentId }: AgentToolsManagerProps) {
   // already loaded, so this is safe to fire on every mount.
   useEffect(() => {
     if (reduxToolsStatus !== "succeeded" && reduxToolsStatus !== "loading") {
-      dispatch(fetchAvailableTools());
+      void loadAvailableTools();
     }
   }, [reduxToolsStatus, dispatch]);
 
@@ -478,7 +474,7 @@ export function AgentToolsManager({ agentId }: AgentToolsManagerProps) {
   const toolsReadError = metadata ? null : metadataError;
   const retryToolsRead = () => {
     setMetadataError(null);
-    dispatch(fetchAvailableTools());
+    void loadAvailableTools();
     setMetadataAttempt((n) => n + 1);
   };
 

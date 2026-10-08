@@ -53,7 +53,7 @@ import {
 import {
   AiModelRef,
   AiToolRef,
-} from "@/components/official/entity-ref/AiIdentityRef";
+} from "@ai-matrx/chat/agents/components/identity-refs/AiIdentityRef";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { unwrapAgentDefinition } from "../utils/agent-config-extractor";
 

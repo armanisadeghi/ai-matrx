@@ -25,7 +25,7 @@ import { CopyButtons } from "@/components/agent-copy/CopyButtons";
 import { ExportMenu } from "@/components/agent-copy/ExportMenu";
 import { csvExportItem, jsonExportItem } from "@/components/agent-copy/export";
 import { webLocation } from "@/features/marketing/lib/copy-payloads";
-import { AiModelRef } from "@/components/official/entity-ref/AiIdentityRef";
+import { AiModelRef } from "@ai-matrx/chat/agents/components/identity-refs/AiIdentityRef";
 
 import { usePlanAiRun, usePlanAiRuns } from "../hooks/usePlanAiRuns";
 import { planAiRunSummary } from "../format";

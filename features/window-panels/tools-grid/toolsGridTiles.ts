@@ -92,7 +92,10 @@ import {
 import { INTELLIGENCE_ICON } from "@/components/icons/domain-icons";
 
 import type { AppDispatch, RootState } from "@/lib/redux/store";
-import { selectActiveAgentId } from "@ai-matrx/chat/agents/redux/agent-settings/selectors";
+import { getSettingsStore } from "@ai-matrx/chat/agents/identity/settings-store";
+
+/** The agent the settings store has active (agent core B4), if any. */
+const selectActiveAgentId = (_state: unknown): string | null => getSettingsStore().getState().activeAgentId;
 import type { OverlayId } from "@/features/overlays/catalogue";
 import { DEFAULT_NEW_CHAT_MANDATE_KEY } from "@ai-matrx/chat/agents/components/chat/chat-quick-actions.config";
 import { resolveMandateAsking } from "@ai-matrx/chat/mandates/resolve-asking";

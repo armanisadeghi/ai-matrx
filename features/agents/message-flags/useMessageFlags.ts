@@ -14,7 +14,7 @@ import {
 import {
   setAgentMessages,
 } from "@/features/agents/redux/agent-builder.slice";
-import { useModelFull } from "@ai-matrx/chat/host/ui-slots";
+import { useModelFull } from "@ai-matrx/chat/agents/identity/model-catalog";
 import { useSessionKnob } from "@ai-matrx/chat/host/prefs-react";
 import type { AgentDefinitionMessage } from "@ai-matrx/chat/agents/types/agent-message-types";
 import {

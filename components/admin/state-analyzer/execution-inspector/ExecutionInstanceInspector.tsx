@@ -74,7 +74,7 @@ import type { ConversationFocusState } from "@ai-matrx/chat/agents/redux/executi
 import type { AgentDefinitionSliceState } from "@ai-matrx/chat/agents/types/agent-definition.types";
 import { JsonInspector } from "@/components/official-candidate/json-inspector/JsonInspector";
 import { JsonTreeViewer } from "@/components/official/json-explorer/JsonTreeViewer";
-import { AiModelRef } from "@/components/official/entity-ref/AiIdentityRef";
+import { AiModelRef } from "@ai-matrx/chat/agents/components/identity-refs/AiIdentityRef";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 // ---------------------------------------------------------------------------
