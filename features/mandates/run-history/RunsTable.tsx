@@ -230,7 +230,8 @@ export function RunsTable({
           {
             id: "mandate",
             header: "Mandate",
-            width: 160,
+            width: 150,
+            mobileHidden: true,
             sortable: false,
             filter: false,
             accessorFn: (run: MandateRun) => run.mandateKey ?? "",
@@ -254,7 +255,8 @@ export function RunsTable({
           {
             id: "holder",
             header: "Agent or workflow",
-            width: 170,
+            width: 150,
+            mobileHidden: true,
             sortable: false,
             filter: false,
             accessorFn: (run: MandateRun) => run.holderName ?? "",
@@ -292,6 +294,8 @@ export function RunsTable({
       id: "duration",
       header: "Duration",
       width: 72,
+      mobileHidden: true,
+      hidden: narrow,
       sortable: true,
       filter: false,
       accessorFn: (run) => run.durationMs,
@@ -318,7 +322,8 @@ export function RunsTable({
       id: "output",
       header: "Output",
       // Takes whatever width is left; a long preview ends in an ellipsis, its full text in the tooltip.
-      className: "w-full min-w-[140px] max-w-0",
+      width: 140,
+      mobileHidden: true,
       sortable: false,
       filter: false,
       accessorFn: (run) => outputPreviewLine(run.outputPreview ?? run.error),
@@ -326,7 +331,10 @@ export function RunsTable({
         // One readable line, never raw JSON: a kind reads as "Agent definition: Its name".
         const text = outputPreviewLine(run.outputPreview ?? run.error);
         return text ? (
-          <span className={run.outputPreview ? "block truncate" : "block truncate text-destructive"} title={text}>
+          <span
+            className={`block truncate ${narrow ? "max-w-[260px]" : "max-w-[460px]"} ${run.outputPreview ? "" : "text-destructive"}`}
+            title={text}
+          >
             {text}
           </span>
         ) : (
