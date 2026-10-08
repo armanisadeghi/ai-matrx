@@ -159,4 +159,46 @@ begin
 end
 $j$;
 
+-- ── (k) job durations ─────────────────────────────────────────────────────────────────────────
+do $k$
+declare
+  v_r jsonb;
+  w record;
+  v_s record;
+  v_base bigint := (select max(runid) + 3000000 from cron.job_run_details);
+  v_n int;
+begin
+  v_r := ops.perf_job_collect();
+  select * into w from ops.proof_check where slug = 'job:perf-watch-probe';
+  if w.id is null or w.perf_kind <> 'job' or w.budget_ms < 1000 or w.perf_subject->>'budget_basis' not like '%p95%' then
+    raise exception '(k) the probe job was not declared with a based budget: % / %', to_jsonb(w), v_r;
+  end if;
+  if (select count(*) from cron.job where active) <> (select count(*) from ops.proof_check where slug like 'job:%' and slug not like 'job:sch:%'
+        and perf_subject->>'jobname' in (select jobname from cron.job where active)) then
+    raise exception '(k) not every active cron job has a watch';
+  end if;
+  if not exists (select 1 from ops.proof_check where slug like 'job:sch:%') then
+    raise exception '(k) no scheduler task watch was declared';
+  end if;
+  insert into cron.job_run_details (runid, jobid, job_pid, database, username, command, status, return_message, start_time, end_time)
+  select v_base + x.k, j.jobid, 0, current_database(), 'postgres', j.command, x.status, x.msg, now() - interval '1 minute', now() - interval '1 minute' + x.dur
+    from cron.job j,
+         (values (1, 'succeeded', '1 row', interval '2 seconds'), (2, 'succeeded', '1 row', interval '4 seconds'),
+                 (3, 'failed', 'ERROR:  w3 job test', interval '6 seconds')) x(k, status, msg, dur)
+   where j.jobname = 'perf-watch-probe';
+  v_r := ops.perf_job_collect();
+  -- Every sample of this transaction shares now(): the one carrying the planted failure is the second collection's.
+  select * into v_s from ops.perf_sample where check_id = w.id and source = 'job' and measured_at >= now() and note like '%w3 job test%';
+  if v_s.id is null or v_s.n < 3 or v_s.errors < 1 or v_s.max_ms < 6000 or v_s.note not like '%w3 job test%' then
+    raise exception '(k) the finished runs were not sampled with the failure counted: % / %', to_jsonb(v_s), v_r;
+  end if;
+  v_n := (select count(*) from ops.perf_sample where check_id = w.id and source = 'job' and measured_at >= now());
+  v_r := ops.perf_job_collect();
+  if (select count(*) from ops.perf_sample where check_id = w.id and source = 'job' and measured_at >= now()) <> v_n then
+    raise exception '(k) the same runs were counted twice';
+  end if;
+  raise notice 'PASS (k) every active cron job and platform scheduler task is declared with a based budget; runs since the cursor sampled once, failures counted (n %, errors %, max % ms)', v_s.n, v_s.errors, v_s.max_ms;
+end
+$k$;
+
 rollback;
