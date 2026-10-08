@@ -43,6 +43,7 @@ import {
   isHostedTab,
 } from "./tabs/SimpleTabs";
 import { CustomTab } from "./tabs/CustomTab";
+import { StartReview360Button } from "@/features/employee-performance-reviews/review-360/StartReview360Button";
 import { LinkedRecordsSection } from "@/features/scopes/components/linked-records/LinkedRecordsSection";
 
 /** The knob that names the tab a profile opens on. Org-overridable (D13). */
@@ -211,6 +212,7 @@ function ProfileBody({
         header={profile.header}
         org={org}
         organizationId={profile.organization_id}
+        actions={<StartReview360Button profile={profile} />}
       />
       <ProfileTabBar employeeId={employeeId} tabs={profile.tabs} org={org} />
 
@@ -218,7 +220,7 @@ function ProfileBody({
         {!known ? (
           <div className="p-3 sm:p-4">
             <p className="max-w-prose text-sm text-muted-foreground">
-              There is nothing here. Pick one of the tabs above.
+              Nothing here. Pick a tab above.
             </p>
           </div>
         ) : (

@@ -8,6 +8,7 @@
 // directly.
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { toast } from "@/lib/toast";
 import {
   createBlankReview,
   Review,
@@ -117,8 +118,19 @@ export interface UseReviews {
   importReviews: (json: string) => boolean;
 }
 
+/**
+ * Where reviews persist when not in this browser (the 360 review's own track record). `load`
+ * answers the saved reviews (throwing = unreadable, never "none"); `save` is debounced like the
+ * local store. Absent = browser storage under `storageKey`.
+ */
+export interface ReviewPersistence {
+  load: () => Promise<Review[]>;
+  save: (reviews: Review[]) => Promise<void>;
+}
+
 export function useReviews(
   storageKey = DEMO_PERFORMANCE_REVIEW_STORAGE_KEY,
+  persistence?: ReviewPersistence,
 ): UseReviews {
   const [hydrated, setHydrated] = useState(false);
   const [loadError, setLoadError] = useState<unknown>(null);
@@ -134,15 +146,9 @@ export function useReviews(
 
   // Hydrate once on mount (client only) to avoid SSR mismatch.
   useEffect(() => {
-    const timer = setTimeout(() => {
-      let loaded: Review[];
-      try {
-        loaded = loadReviews(storageKey);
-      } catch (error) {
-        console.error("Unable to load saved performance reviews", error);
-        setLoadError(error ?? true);
-        return;
-      }
+    let cancelled = false;
+    const settle = (loaded: Review[]) => {
+      if (cancelled) return;
       if (loaded.length === 0) {
         const blank = createBlankReview();
         setReviews([blank]);
@@ -152,10 +158,34 @@ export function useReviews(
         setActiveId(loaded[0].id);
       }
       setHydrated(true);
+    };
+    if (persistence) {
+      persistence.load().then(settle, (error: unknown) => {
+        if (cancelled) return;
+        console.error("Unable to load saved performance reviews", error);
+        setLoadError(error ?? true);
+      });
+      return () => {
+        cancelled = true;
+      };
+    }
+    const timer = setTimeout(() => {
+      let loaded: Review[];
+      try {
+        loaded = loadReviews(storageKey);
+      } catch (error) {
+        console.error("Unable to load saved performance reviews", error);
+        setLoadError(error ?? true);
+        return;
+      }
+      settle(loaded);
     }, 0);
 
-    return () => clearTimeout(timer);
-  }, [storageKey, loadAttempt]);
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
+  }, [storageKey, loadAttempt, persistence]);
 
   // Debounced persistence whenever reviews change (after hydration).
   useEffect(() => {
@@ -163,6 +193,17 @@ export function useReviews(
     const stateTimer = setTimeout(() => setSaveState("saving"), 0);
     if (saveTimer.current) clearTimeout(saveTimer.current);
     saveTimer.current = setTimeout(() => {
+      if (persistence) {
+        persistence.save(reviews).then(
+          () => setSaveState("saved"),
+          (error: unknown) => {
+            console.error("Unable to save the performance review", error);
+            setSaveState("idle");
+            toast.error(`Not saved: ${error instanceof Error ? error.message : String(error)}`);
+          },
+        );
+        return;
+      }
       saveReviews(storageKey, reviews);
       setSaveState("saved");
     }, 400);
@@ -170,7 +211,7 @@ export function useReviews(
       clearTimeout(stateTimer);
       if (saveTimer.current) clearTimeout(saveTimer.current);
     };
-  }, [reviews, hydrated, storageKey]);
+  }, [reviews, hydrated, storageKey, persistence]);
 
   const active = useMemo(
     () => reviews.find((r) => r.id === activeId) ?? null,
