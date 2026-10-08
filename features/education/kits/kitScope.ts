@@ -88,8 +88,8 @@ export function edgeKitId(metadata: Json | undefined): string | null {
 async function ensureKitScopeType(orgId: string): Promise<string> {
   const types = await readScopeTypes([orgId], false);
   if (!types.ok) throw new Error("Could not read your study kit settings. Try again.");
-  const found = types.data.types.find((t) => t.slug === KIT_SCOPE_TYPE_SLUG && t.organization_id === orgId)
-    ?? types.data.types.find((t) => t.slug === KIT_SCOPE_TYPE_SLUG);
+  // Only this organization's own type: a kit never attaches to another org's scope type.
+  const found = types.data.types.find((t) => t.slug === KIT_SCOPE_TYPE_SLUG && t.organization_id === orgId);
   if (found) return found.id;
   const made = await scopeStore.createScopeType({
     org_id: orgId,
