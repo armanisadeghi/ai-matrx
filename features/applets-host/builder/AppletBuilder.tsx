@@ -40,6 +40,7 @@ import {
   coerceBuildAnswer,
   publishApplet,
   publishBlockedBy,
+  repairs,
   readBuilderApplet,
   saveBuiltApplet,
   SAVED_APPLET_COLUMNS,
@@ -50,7 +51,7 @@ import {
   type BuilderSource,
   type SavedApplet,
 } from "./build-applet";
-import { readBuildRecord, type BuildEntry } from "./build-session";
+import { fixLabel, previewLine, readBuildRecord, type BuildEntry } from "./build-session";
 import { useAppletBuildSession } from "./useAppletBuildSession";
 import { BuildHistory } from "./BuildHistory";
 import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
@@ -135,6 +136,13 @@ export function AppletBuilder({ appletId: initialId, routed = false }: { appletI
         await finish(id, entry, answer, current?.applet ?? null, org);
       } catch (err) {
         await failed(id, entry, err);
+        // A run rejoined after a refresh is refused exactly like a live one: it goes to the fix round too
+        // (its own live window; the rejoined run's window stops waiting first).
+        if (repairs(entry, err)) {
+          rejoinWindow.current?.update({ pending: false });
+          rejoinWindow.current = null;
+          await repairRefusal(entry, err);
+        }
       }
     },
   });
@@ -171,7 +179,10 @@ export function AppletBuilder({ appletId: initialId, routed = false }: { appletI
     const latest = record.requests.at(-1);
     const lastNote = [...record.requests].reverse().find((r) => r.state === "saved")?.note ?? "";
     void loadSaved(initialId, lastNote);
-    if (latest?.state === "refused" && latest.refused_applet) {
+    if (latest?.state === "refused" && latest.refused_applet && !latest.fix) {
+      // Refused while no tab was open: its fix round starts now, before anything is shown.
+      void run("Fix this error", { where: "record", message: latest.error ?? "Not saved." }, { refusedApplet: latest.refused_applet });
+    } else if (latest?.state === "refused" && latest.refused_applet) {
       setRefused(latest.refused_applet);
       setLastError({ where: "record", message: latest.error ?? "Not saved." });
     } else if (latest?.state === "failed") {
@@ -208,14 +219,27 @@ export function AppletBuilder({ appletId: initialId, routed = false }: { appletI
   const failed = async (id: string, entry: BuildEntry, err: unknown) => {
     const message = err instanceof Error ? err.message : String(err);
     shown.current = `${id}|${entry.id}:${err instanceof BuildRefused ? "refused" : "failed"}`;
-    if (err instanceof BuildRefused) {
-      setRefused(err.applet);
-      setLastError({ where: "record", message: err.message });
+    // A refused request of hers goes straight to the fix round: nothing about it is put on screen.
+    if (!repairs(entry, err)) {
+      if (err instanceof BuildRefused) {
+        setRefused(err.applet);
+        setLastError({ where: "record", message: err.message });
+      }
+      setPhase({ kind: "failed", why: message });
     }
-    setPhase({ kind: "failed", why: message });
     await session
       .settle(id, entry.id, err instanceof BuildRefused ? { state: "refused", error: message, refused_applet: err.applet } : { state: "failed", error: message })
       .catch((writeErr) => console.error("[applet-build] could not record how the request ended", writeErr));
+  };
+
+  /**
+   * EVERY REFUSAL OF HER REQUEST GOES TO THE ONE AUTOMATIC FIX ROUND — from a live run, from a run
+   * rejoined after a refresh (the social planner's first build was refused there and sat on "Fix it" for
+   * five minutes, v0.4.3010), and from one refused while no tab was open. Only a refused fix round is shown.
+   */
+  const repairRefusal = async (entry: BuildEntry, err: unknown) => {
+    if (!repairs(entry, err) || !(err instanceof BuildRefused)) return;
+    await run("Fix this error", { where: "record", message: err.message }, { refusedApplet: err.applet });
   };
 
   /**
@@ -272,10 +296,10 @@ export function AppletBuilder({ appletId: initialId, routed = false }: { appletI
     } catch (err) {
       if (started) await failed(started.id, started.entry, err);
       else setPhase({ kind: "failed", why: err instanceof Error ? err.message : String(err) });
-      if (started && err instanceof BuildRefused && !fix && !retry) {
+      if (started && repairs(started.entry, err)) {
         live.handle?.update({ pending: false });
         live.handle = null;
-        await run("Fix this error", { where: "record", message: err.message }, { refusedApplet: err.applet });
+        await repairRefusal(started.entry, err);
         return;
       }
     } finally {
@@ -303,6 +327,8 @@ export function AppletBuilder({ appletId: initialId, routed = false }: { appletI
     }
   };
 
+  // The held "Fix it to use it" on the draft's card is THE fix button; the toolbar's shows only without it.
+  const heldOnCard = Boolean(saved && appletState(saved).kind === "draft" && blockedBy);
   const busy = phase.kind === "building" || phase.kind === "publishing" || session.rejoining;
   // Until the page is interactive the button says so, instead of sitting silently disabled.
   const hydrated = useHydrated();
@@ -342,9 +368,9 @@ export function AppletBuilder({ appletId: initialId, routed = false }: { appletI
               Getting ready
             </Button>
           )}
-          {lastError ? (
-            <Button variant="outline" disabled={busy} onClick={() => void run("Fix this error", lastError)}>
-              <Wrench className="h-4 w-4" /> Fix it
+          {lastError && !heldOnCard ? (
+            <Button variant="outline" disabled={busy} onClick={() => void run("Fix this error", lastError)} data-applet-fix="">
+              <Wrench className="h-4 w-4" /> {fixLabel(saved ? appletState(saved).kind : null)}
             </Button>
           ) : null}
         </div>
@@ -417,7 +443,7 @@ export function AppletBuilder({ appletId: initialId, routed = false }: { appletI
           <>
             <div className="flex items-center gap-2 border-b border-border px-3 py-1.5 text-xs text-muted-foreground">
               <span>
-                {[appletState(saved).label, appletVersionLabel(saved.content_version)].filter(Boolean).join(" ")} · preview changes are not saved
+                {previewLine(appletState(saved).label, appletVersionLabel(saved.content_version))}
               </span>
               {held ? <Badge tone="warning">{held} not saved</Badge> : null}
               {step ? <BuildStep step={step} inline /> : null}
