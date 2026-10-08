@@ -53,7 +53,15 @@ const toggle = async (label) => {
   await page.keyboard.press("Escape");
   await page.waitForTimeout(1000);
 };
+const closeInbox = async () => {
+  const w = page.locator('[data-window-id="notifications-inbox-window"]');
+  if (await w.count()) {
+    await w.getByRole("button", { name: /^Close/i }).first().click().catch(() => {});
+    await page.waitForTimeout(800);
+  }
+};
 const editCell = async (row, field, text) => {
+  await closeInbox();
   await row.getByRole("button", { name: `Edit ${field}`, exact: true }).dblclick();
   await page.waitForTimeout(700);
   await page.keyboard.type(text);
@@ -62,6 +70,7 @@ const editCell = async (row, field, text) => {
 };
 const text = () => A.innerText();
 
+try {
 await act(page, async () => {
   await page.locator(".bn-editor .bn-inline-content").last().click();
   await slash(page, "Database - Inline");
@@ -70,7 +79,7 @@ await act(page, async () => {
   for (const [n, t] of [["Budget", "Number"], ["Status", "Status"], ["Region", "Text"], ["Notes", "Text"], ["Channel", "Text"], ["Phase", "Text"], ["Due", "Date"]]) await addProp(n, t);
   await A.hover();
   await A.getByRole("button", { name: /^New$/ }).first().click();
-  await A.locator("[data-row-id]").first().waitFor({ timeout: 60_000 });
+  await A.locator("[data-row-id]").first().waitFor({ timeout: 60_000 }).catch(async (e) => { await page.screenshot({ path: `${SHOT}/r43-norow.png` }); throw e; });
   await page.waitForTimeout(2500);
   await page.keyboard.press("Escape");
   await page.screenshot({ path: `${SHOT}/r43-rows.png` });
@@ -111,6 +120,8 @@ await act(page, async () => {
   }
 });
 check("no [tap-target] console errors", taps.length === 0, { taps });
-if (!process.env.KEEP) await act(page, () => trashPage(page));
+} finally {
+  if (!process.env.KEEP) await act(page, () => trashPage(page)).catch((e) => console.log("trash failed", String(e).slice(0, 100)));
+}
 await browser.close();
 process.exit(failed ? 1 : 0);

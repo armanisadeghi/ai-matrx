@@ -2,7 +2,7 @@
  * Rendered-output standard ruling 1: the card / canvas tab mount never writes,
  * and the html-pages route reuses a page ONLY for the same canvas version.
  */
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 
 const root = join(__dirname, "..", "..", "..");
@@ -20,12 +20,11 @@ describe("one page per canvas version", () => {
     for (const body of effects) expect(body).not.toMatch(/createPage|publishHtmlCanvasVersion/);
   });
 
-  it("the route never overwrites by source message nor reuses by content", () => {
-    const src = read("app/api/html-pages/route.ts");
-    const create = src.slice(src.indexOf('case "create"'), src.indexOf('case "update"'));
-    expect(create).not.toMatch(/\.eq\("source_message_id"/);
-    expect(create).not.toMatch(/\.eq\("html_content"/);
-    expect(create).not.toMatch(/\.eq\("artifact_id"/);
+  it("pages go to the server's /cms/html-pages door — no Next.js proxy", () => {
+    expect(existsSync(join(process.cwd(), "app/api/html-pages/route.ts"))).toBe(false);
+    const src = read("features/html-pages/services/htmlPageService.js");
+    expect(src).not.toMatch(/\/api\/html-pages/);
+    expect(src).toMatch(/path: '\/cms\/html-pages'/);
   });
 
   it("a chat page version publishes through the server's one writer", () => {

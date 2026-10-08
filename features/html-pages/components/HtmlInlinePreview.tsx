@@ -373,7 +373,7 @@ const HtmlInlinePreview: React.FC<HtmlInlinePreviewProps> = ({
           <Button
             variant="quiet"
             icon={<Printer />}
-            onClick={() => printPublishedPage({ pageUrl: url })}
+            onClick={() => printPublishedPage({ canvasItemId: artifactId, version: fill ? "latest" : "self", pageUrl: url })}
             title="Print page"
             aria-label="Print page"
           />

@@ -114,7 +114,6 @@ const CASES: Array<[string, string, Record<string, unknown>]> = [
   ["page", "app/api/cms/pages/route.ts", { action: "delete", pageId: "page-1" }],
   ["component", "app/api/cms/components/route.ts", { action: "delete", componentId: "comp-1" }],
   ["asset", "app/api/cms/assets/route.ts", { action: "delete", assetId: "asset-1" }],
-  ["html page", "app/api/html-pages/route.ts", { action: "delete", pageId: "html-1" }],
 ];
 
 function request(body: Record<string, unknown>) {

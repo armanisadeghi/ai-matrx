@@ -2,7 +2,7 @@
  * HTML persistence adapter for the artifact system.
  *
  * Domain record: an `html_pages` row (in the mymatrx project, reached only via
- * the `/api/html-pages` route — see `HTMLPageService`). Link:
+ * the server's `/cms/html-pages` door — see `HTMLPageService`). Link:
  * `{ externalSystem: 'html_pages', externalId: <page id> }`.
  *
  * HTML is a "self-contained deliverable" (vision R7): the published webpage IS

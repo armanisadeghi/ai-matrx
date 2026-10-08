@@ -14,6 +14,8 @@
 import type { CanvasKind, CanvasKindSurface } from "@ai-matrx/canvas/react";
 import type { CanvasContentType } from "@/features/canvas/canvasContent";
 import { printPublishedPage } from "@/features/canvas/output/printPage";
+import { contentOf, readArtifactItemData } from "@/features/canvas/host/artifactItem";
+import { readArtifactPointerId } from "@/features/canvas/artifact-types/artifactId";
 
 export interface ArtifactOutputDef {
   readonly surface: CanvasKindSurface;
@@ -26,12 +28,21 @@ const NOT_YET = "not available yet";
 const FRAME_NOT_YET: ArtifactOutputDef = { surface: "frame", print: NOT_YET, capture: NOT_YET };
 const DOM: ArtifactOutputDef = { surface: "dom" };
 
+/** The canvas_items id an artifact tab was saved as (null while unsaved). */
+function canvasItemIdOf(itemData: Parameters<typeof readArtifactItemData>[0]): string | null {
+  const data = readArtifactItemData(itemData);
+  if (!data) return null;
+  const content = contentOf(data);
+  return content.metadata?.canvasItemId ?? data.savedItemId ?? readArtifactPointerId(content.data) ?? null;
+}
+
 export const ARTIFACT_OUTPUT: Record<CanvasContentType, ArtifactOutputDef> = {
   // An HTML page prints ITSELF (/p/<id>?print=1, vector, backgrounds kept). Its image comes from
   // the page capture engine (host output port) when one is plugged.
   html: {
     surface: "frame",
-    print: (request) => printPublishedPage({ element: request.element }),
+    // The tab shows the chain's latest version; print that version's own page.
+    print: (request) => printPublishedPage({ canvasItemId: canvasItemIdOf(request.item.data), version: "latest" }),
     capture: NOT_YET,
   },
   iframe: FRAME_NOT_YET,

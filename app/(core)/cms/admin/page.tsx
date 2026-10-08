@@ -196,10 +196,11 @@ const CMS_ADMIN_MAP: FeatureAdminMap = {
       filePath: "features/approvals/cms-door.ts",
     },
     {
-      url: "/api/html-pages",
-      method: "POST",
-      description: "{action}-dispatch for the standalone html_pages system.",
-      filePath: "app/api/html-pages/route.ts",
+      url: "/cms/html-pages[/{page_id}]",
+      method: "GET|POST|PATCH|DELETE",
+      description:
+        "aidream's door for the standalone html_pages system — owner-scoped as the caller, delete archives. Replaced the Next.js /api/html-pages proxy, which is deleted.",
+      filePath: "features/html-pages/services/htmlPageService.js",
     },
   ],
 

@@ -20,7 +20,7 @@ import { recordUnavailable } from "@/lib/records/recordUnavailable";
  *
  * Unlike other adapters, this does NOT query Matrx Main via the passed
  * Supabase client — `html_pages` lives in project `viyklljfdhtidwecakwx`
- * and must go through `/api/html-pages` (HTMLPageService).
+ * and must go through the server's `/cms/html-pages` (HTMLPageService).
  */
 
 const PREFIX = "html-page:";
