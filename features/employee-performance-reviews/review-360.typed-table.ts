@@ -57,6 +57,8 @@ export const review360 = defineTypedTable({
     employee_user: f.member({ label: "Employee login" }),
     manager_user: f.member({ label: "Manager login" }),
     hr_manager: f.member({ label: "HR manager" }),
+    // The notification spine addresses a login, not a Person record: the gather notice goes here.
+    hr_manager_login: f.text({ label: "HR manager login" }),
   },
   confidential: {
     readers: [
@@ -88,6 +90,8 @@ export const review360Track = defineTypedTable({
     submitted_at: f.datetime({ label: "Submitted" }),
     shared: f.checkbox({ label: "Shared" }),
     link: f.url({ label: "Open" }),
+    // The notification spine addresses a login, not a Person record ("not a member of this organization").
+    respondent_login: f.text({ label: "Respondent login" }),
   },
   confidential: {
     readers: [
