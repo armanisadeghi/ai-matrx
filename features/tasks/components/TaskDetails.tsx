@@ -4,6 +4,8 @@
 import React, { useState, useEffect } from "react";
 import { Loader2, Maximize2 } from "lucide-react";
 import { useAppDispatch } from "@/lib/redux/hooks";
+import { useEnsureTaskLoaded } from "@/features/tasks/hooks/useEnsureTaskLoaded";
+import { RegionSkeleton } from "@ai-matrx/design-system/controls";
 import { updateTaskFieldThunk } from "@/features/tasks/redux/thunks";
 import { useDebounce } from "../hooks/useDebounce";
 import { Input } from "@ai-matrx/design-system/controls";
@@ -20,6 +22,9 @@ import { toast } from "@/lib/toast";
 
 export default function TaskDetails({ task }: { task: TaskWithProject }) {
   const dispatch = useAppDispatch();
+  // The nav tree stores a task thin (no description): upgrade it before the box opens, or the
+  // debounced save below would write the blank stand-in over the stored text.
+  const { isFullData } = useEnsureTaskLoaded(task.id);
 
   // Local state for editing
   const [description, setDescription] = useState(task.description || "");
@@ -35,9 +40,10 @@ export default function TaskDetails({ task }: { task: TaskWithProject }) {
   useEffect(() => {
     setDescription(task.description || "");
     setDueDate(task.dueDate || "");
-  }, [task.id]); // Only reset when task changes
+  }, [task.id, isFullData]); // Reset when the task changes or its full text arrives
 
   useEffect(() => {
+    if (!isFullData) return;
     if (debouncedDescription !== task.description) {
       setIsSaving(true);
       dispatch(
@@ -53,7 +59,7 @@ export default function TaskDetails({ task }: { task: TaskWithProject }) {
         })
         .finally(() => setIsSaving(false));
     }
-  }, [debouncedDescription, task.id, task.description, dispatch]);
+  }, [debouncedDescription, task.id, task.description, isFullData, dispatch]);
 
   useEffect(() => {
     if (debouncedDueDate !== task.dueDate) {
@@ -118,11 +124,15 @@ export default function TaskDetails({ task }: { task: TaskWithProject }) {
           data-kind-source="explicit"
           className="w-full"
         >
-          <TaskDescriptionEditor
-            value={description}
-            onChange={setDescription}
-            bodyClassName={fullScreenMode ? "h-96" : "h-64"}
-          />
+          {isFullData ? (
+            <TaskDescriptionEditor
+              value={description}
+              onChange={setDescription}
+              bodyClassName={fullScreenMode ? "h-96" : "h-64"}
+            />
+          ) : (
+            <RegionSkeleton className={fullScreenMode ? "h-96" : "h-64"} />
+          )}
         </div>
       </div>
 
