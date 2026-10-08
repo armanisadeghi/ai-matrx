@@ -299,6 +299,7 @@ Per-module rules live in `org_module_settings` (set in Manage → Modules). Enfo
 
 ## Change log
 
+- `2026-10-08` — **`linkOrganizationSession.ts` is no longer `"use client"`** (lane AF): it renders nothing, and as a client module the org-bootstrap thunk's `import()` of it (from `appContextSlice`, which the layout's server graph reaches) shipped it on every route's first load. Behaviour unchanged.
 - `2026-10-08` — **A reloaded tab keeps its organization.** Three kits made back-to-back landed in three organizations: every full load fell to the account's last active, which other sessions of the same account move. The tab's answered organization is now remembered per tab (sessionStorage, `tabOrganizationMiddleware`) and read as the held rung by `appContextPolicy.remote.fetch` and `bootstrapActiveOrganization`. Test: `lib/organizations/__tests__/a-reloaded-tab-keeps-its-organization.test.ts`.
 - `2026-09-29` — **Tiles and per-kind pages show the whole set** (A5-P). Org tiles for every listable kind
   count through `entity_kind_counts` (same filter as the list; admin org Files 6,575 → 677, machine files

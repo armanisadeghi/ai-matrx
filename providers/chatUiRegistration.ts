@@ -22,7 +22,8 @@ import { NoteEditorCore } from "@/features/notes/components/NoteEditorCore";
 import { ToolResultCanvasOpener } from "@/features/canvas/tool-results/ToolResultCanvasOpener";
 import { CloudBrowserHandoffCanvasOpener } from "@/features/cloud-browser/components/CloudBrowserHandoffCanvasOpener";
 import { SimpleTerminal } from "@/features/code/terminal/SimpleTerminal";
-import { useHtmlPreviewState } from "@/features/html-pages/hooks/useHtmlPreviewState";
+// The preview hook loads its markdown renderer (KaTeX, ~680 KB) when a preview first opens (lane AF).
+import { useHtmlPreviewStateOnDemand } from "@/features/html-pages/hooks/useHtmlPreviewStateOnDemand";
 import { fetchArtifactsForMessageThunk, updateArtifactThunk, registerArtifactThunk } from "@/lib/redux/thunks/artifactThunks";
 import { selectHtmlPageArtifactForMessage } from "@/lib/redux/selectors/artifactSelectors";
 // The compiler (@ai-matrx/code-runtime + the ~2 MB Babel standalone) loads on the first stored
@@ -80,7 +81,7 @@ registerChatUi({
   ToolResultCanvasOpener,
   CloudBrowserHandoffCanvasOpener,
   SimpleTerminal,
-  useHtmlPreviewState,
+  useHtmlPreviewState: useHtmlPreviewStateOnDemand,
   fetchArtifactsForMessageThunk,
   updateArtifactThunk,
   registerArtifactThunk,
