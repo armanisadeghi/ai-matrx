@@ -83993,6 +83993,10 @@ export type Database = {
         Returns: Json
       }
       perf_knobs: { Args: never; Returns: Json }
+      perf_marker: {
+        Args: { p_at: string; p_slug_pattern: string; p_text: string }
+        Returns: Json
+      }
       perf_probe_run: { Args: { p_only_check?: string }; Returns: Json }
       perf_record_sample: {
         Args: {
@@ -84006,7 +84010,12 @@ export type Database = {
       perf_route_template: { Args: { p_route: string }; Returns: string }
       perf_sample_retention: { Args: never; Returns: number }
       perf_statement_collect: { Args: never; Returns: Json }
+      perf_subject_names: { Args: { p_subject: Json }; Returns: Json }
       perf_vital_rollup: { Args: never; Returns: Json }
+      perf_watch_board: {
+        Args: { p_days?: number; p_points?: number }
+        Returns: Json
+      }
       perf_watch_declare: {
         Args: {
           p_budget_ms: number
@@ -84020,6 +84029,10 @@ export type Database = {
           p_subject: Json
         }
         Returns: string
+      }
+      perf_watch_history: {
+        Args: { p_check_id: string; p_limit?: number }
+        Returns: Json
       }
       perf_watch_status: { Args: never; Returns: Json }
       perf_watch_update: {

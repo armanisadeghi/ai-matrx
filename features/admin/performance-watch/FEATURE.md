@@ -47,3 +47,6 @@ Surface: `matrx-admin/reporting`, `reporting_section: "performance"`.
   The drill names and opens the pinned table/organization (`metadata.perf_subject_names`) and shows p75 for vitals.
 - 2026-10-08 wave 2: edit row (budget / baseline pin / pause) through `ops.perf_watch_update`;
   readable subject; reason in list and drill; bytes + note in the sample table; generated types.
+- 2026-10-08 one-call page: the list reads `ops.perf_watch_board(p_days, p_points)` (every watch + per watch its
+  newest sample, markers and ≤60 evenly spaced 7-day samples) and the drill reads `ops.perf_watch_history(p_check_id,
+  p_limit)` — one request each instead of paging every raw sample (was hundreds of requests). Platform admins only.

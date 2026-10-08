@@ -9,18 +9,13 @@
  * Typed by the generated `Database["ops"]`.
  */
 
-import { readAllRows } from "@ai-matrx/data/db";
 import { createClient } from "@/utils/supabase/client";
 import type { PerfSample, PerfWatch, PerfWatchEdit } from "./model";
 
-const WATCH_COLUMNS =
-  "id, slug, label, owner, source_feature, is_active, live_every_seconds, perf_kind, perf_subject, budget_ms, budget_stat, perf_state, perf_state_since, perf_baseline_ms, perf_baseline_pinned, perf_last_alert_at, metadata";
-const SAMPLE_COLUMNS =
-  "id, check_id, measured_at, source, n, p50_ms, p95_ms, max_ms, mean_ms, calls, errors, bytes, release_sha, state_after, note, metadata";
 
 export interface PerfSnapshot {
   watches: PerfWatch[];
-  /** Samples of the last 7 days for every watch (list view: newest number + sparkline). */
+  /** Per watch: newest sample, markers and up to 60 evenly spaced samples of the last 7 days. */
   recent: PerfSample[];
 }
 
@@ -37,46 +32,19 @@ function ops() {
 }
 
 async function loadSnapshot(): Promise<PerfSnapshot> {
-  const since = new Date(Date.now() - 7 * 24 * 3_600_000).toISOString();
-  const watches = await readAllRows<PerfWatch>(
-    ({ from, to }) =>
-      ops()
-        .from("proof_check")
-        .select(WATCH_COLUMNS, { count: "exact" })
-        .eq("kind", "perf")
-        .is("deleted_at", null)
-        .order("slug", { ascending: true })
-        .range(from, to),
-    { label: "ops.proof_check (perf watches)" },
-  );
-  const recent = await readAllRows<PerfSample>(
-    ({ from, to }) =>
-      ops()
-        .from("perf_sample")
-        .select(SAMPLE_COLUMNS, { count: "exact" })
-        .is("deleted_at", null)
-        .gte("measured_at", since)
-        .order("measured_at", { ascending: false })
-        .order("id", { ascending: true })
-        .range(from, to),
-    { label: "ops.perf_sample (last 7 days)" },
-  );
-  return { watches, recent };
+  // One call: every watch + per watch its newest sample, its markers and an evenly spaced sparkline
+  // series (ops.perf_watch_board). Paging every raw 7-day sample used to cost hundreds of requests.
+  const { data, error } = await ops().rpc("perf_watch_board", { p_days: 7, p_points: 60 });
+  if (error) throw new Error(error.message);
+  const board = (data ?? {}) as { watches?: PerfWatch[]; recent?: PerfSample[] };
+  return { watches: board.watches ?? [], recent: board.recent ?? [] };
 }
 
 async function loadHistory(watchId: string): Promise<PerfSample[]> {
-  return readAllRows<PerfSample>(
-    ({ from, to }) =>
-      ops()
-        .from("perf_sample")
-        .select(SAMPLE_COLUMNS, { count: "exact" })
-        .eq("check_id", watchId)
-        .is("deleted_at", null)
-        .order("measured_at", { ascending: false })
-        .order("id", { ascending: true })
-        .range(from, to),
-    { label: `ops.perf_sample (watch ${watchId})` },
-  );
+  // One call: the watch's newest samples (ops.perf_watch_history, default 2,000).
+  const { data, error } = await ops().rpc("perf_watch_history", { p_check_id: watchId, p_limit: 2000 });
+  if (error) throw new Error(error.message);
+  return (data ?? []) as PerfSample[];
 }
 
 async function updateWatch(edit: PerfWatchEdit): Promise<void> {
