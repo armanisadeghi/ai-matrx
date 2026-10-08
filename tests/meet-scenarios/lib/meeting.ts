@@ -2,7 +2,7 @@
  * MEETING — the moves every scenario repeats, done the way a person does them
  * (through the UI), plus a cleanup that guarantees the meeting ends.
  */
-import { expect, type Page } from "@playwright/test";
+import { expect, type Locator, type Page } from "@playwright/test";
 import { formatDurationMs } from "@ai-matrx/kit/format";
 import type { Actor } from "./actor";
 import { supabasePublic } from "./env";
@@ -24,7 +24,7 @@ export interface Meeting {
 export async function resumeIfParked(actor: Actor, page: Page = actor.page): Promise<boolean> {
   const resume = page.getByRole("button", { name: "Resume this preview" });
   if (!(await resume.isVisible().catch(() => false))) return false;
-  actor.note("ENV: preview paused by the walk cap; resuming");
+  actor.env("preview paused by the walk cap; resuming");
   await resume.click();
   await page.waitForLoadState("domcontentloaded").catch(() => undefined);
   return true;
@@ -43,6 +43,7 @@ export async function seeUntil(
   while (Date.now() < deadline) {
     await resumeIfParked(actor, page);
     last = await observe(page);
+    actor.saw(last);
     if (ok(last)) {
       actor.note(`SAW ${what}: ${summarize(last)}`);
       return last;
@@ -68,6 +69,7 @@ export async function keepsSeeing(
   const deadline = Date.now() + ms;
   while (Date.now() < deadline) {
     const o = await observe(page);
+    actor.saw(o);
     if (!ok(o)) {
       actor.note(`STOPPED seeing ${what}: ${summarize(o)}`);
       expect(false, `${actor.opts.label} should keep seeing ${what} for ${formatDurationMs(ms, { style: "compact" })}; saw ${summarize(o)}`).toBe(true);
@@ -75,6 +77,52 @@ export async function keepsSeeing(
     await page.waitForTimeout(1000).catch(() => undefined);
   }
   actor.note(`kept seeing ${what} for ${formatDurationMs(ms, { style: "compact" })}`);
+}
+
+/**
+ * Poll for a CONTROL the person can see and use (a button, a choice). Honest evidence: SAW only when
+ * it is visible; otherwise NEVER SAW plus a failure carrying what the person saw instead.
+ */
+export async function seeControl(actor: Actor, what: string, control: Locator, timeoutMs: number, page: Page = actor.page): Promise<Locator> {
+  const deadline = Date.now() + timeoutMs;
+  while (Date.now() < deadline) {
+    await resumeIfParked(actor, page);
+    if (await control.first().isVisible().catch(() => false)) {
+      actor.note(`SAW control ${what}`);
+      return control.first();
+    }
+    await page.waitForTimeout(300).catch(() => undefined);
+  }
+  const o = await observe(page);
+  actor.saw(o);
+  actor.note(`NEVER SAW control ${what} in ${formatDurationMs(timeoutMs, { style: "compact" })}: ${summarize(o)}`);
+  expect(false, `${actor.opts.label} should see ${what} within ${formatDurationMs(timeoutMs, { style: "compact" })}; saw ${summarize(o)}`).toBe(true);
+  return control.first();
+}
+
+/** The first token request this person's page sent (its URL and body are the probe template). */
+export function firstTokenRequest(actor: Actor): { url: string; body: Record<string, unknown> } {
+  const call = actor.tokenCalls.find((c) => c.body !== null);
+  if (!call || !call.body) throw new Error(`${actor.opts.label} never called the token door; nothing to replay`);
+  return { url: call.url, body: call.body };
+}
+
+/**
+ * Knock on the token door AS this person (their own session, their own name), with the request
+ * shape the product itself sent. Returns the HTTP status; the evidence line never carries a token.
+ */
+export async function tokenProbe(actor: Actor, template: { url: string; body: Record<string, unknown> }, displayName: string): Promise<number> {
+  const s = await actor.session();
+  const body = { ...template.body, display_name: displayName, device_id: `harness-probe-${Math.random().toString(36).slice(2, 10)}`, guest: s === null };
+  const res = await fetch(template.url, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...(s ? { Authorization: `Bearer ${s.token}` } : {}) },
+    body: JSON.stringify(body),
+  });
+  const text = await res.text();
+  const minted = res.ok && /"token"\s*:/.test(text);
+  actor.note(`token door probe as ${displayName}: HTTP ${res.status}${minted ? " — a LiveKit token was MINTED" : ` — ${text.replace(/"token"\s*:\s*"[^"]+"/g, '"token":"…"').slice(0, 160)}`}`);
+  return res.status;
 }
 
 /** Host: /meetings → Start now (picking an organization if asked) → the meeting's pre-join. */
@@ -139,14 +187,19 @@ export async function walkIn(actor: Actor, meeting: Meeting, opts: WalkOptions =
   const deadline = Date.now() + (opts.timeoutMs ?? 90_000);
   let o = await observe(page);
   let lastAction = "";
+  let lastAt = 0;
+  // A press that did not move the screen within this long is pressed again (never a single try).
+  const RETRY_MS = 8000;
+  const due = (action: string) => lastAction !== action || Date.now() - lastAt > RETRY_MS;
   while (Date.now() < deadline) {
     await resumeIfParked(actor, page);
     o = await observe(page);
+    actor.saw(o);
     if (until.includes(o.phase)) break;
     // The name step is read from the field itself: the core may render it under `prejoin`
     // until the contract's `guest_name` phase is adopted (CORE-DESIGN §3.7 C1).
     const nameStep = o.phase === "guest-name" || (await page.locator("#meet-guest-name").isVisible().catch(() => false));
-    if (nameStep && lastAction !== "name") {
+    if (nameStep && due("name")) {
       const name = actor.opts.displayName ?? "Priya Shah";
       if (gesture) {
         await page.locator("#meet-guest-name").fill(name);
@@ -166,15 +219,17 @@ export async function walkIn(actor: Actor, meeting: Meeting, opts: WalkOptions =
           }, 150);
         }, name);
       }
+      actor.note(`${lastAction === "name" ? "retyped" : "typed"} name "${name}"${gesture ? "" : " (no gesture)"}`);
       lastAction = "name";
-      actor.note(`typed name "${name}"${gesture ? "" : " (no gesture)"}`);
-    } else if (o.phase === "prejoin" && lastAction !== "join") {
+      lastAt = Date.now();
+    } else if (o.phase === "prejoin" && due("join")) {
       const join = page.getByRole("button", { name: /^Join now$/ });
       if (await join.isEnabled().catch(() => false)) {
         if (gesture) await join.click();
         else await join.evaluate((el) => (el as HTMLButtonElement).click());
+        actor.note(`${lastAction === "join" ? "pressed Join now AGAIN (the first press did not move the screen)" : "pressed Join now"}${gesture ? "" : " (no gesture)"}`);
         lastAction = "join";
-        actor.note(`pressed Join now${gesture ? "" : " (no gesture)"}`);
+        lastAt = Date.now();
       }
     }
     await page.waitForTimeout(500);
@@ -222,23 +277,6 @@ export async function endForEveryone(host: Actor, page: Page = host.page): Promi
   host.note("ended for everyone (UI)");
 }
 
-/** The host's Supabase session, read from their cookie jar (for cleanup only). */
-async function hostSession(host: Actor): Promise<{ token: string; userId: string } | null> {
-  const cookies = (await host.context.cookies()).filter((c) => /^sb-matrx-auth-v2(\.\d+)?$|^sb-.+-auth-token(\.\d+)?$/.test(c.name));
-  if (cookies.length === 0) return null;
-  cookies.sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true }));
-  let raw = cookies.map((c) => c.value).join("");
-  raw = decodeURIComponent(raw);
-  if (raw.startsWith("base64-")) raw = Buffer.from(raw.slice(7), "base64").toString("utf8");
-  try {
-    const s = JSON.parse(raw) as { access_token?: string; user?: { id?: string } };
-    if (!s.access_token || !s.user?.id) return null;
-    return { token: s.access_token, userId: s.user.id };
-  } catch {
-    return null;
-  }
-}
-
 async function rpc(name: string, body: unknown, token: string): Promise<unknown> {
   const { url, key } = supabasePublic();
   const res = await fetch(`${url}/rest/v1/rpc/${name}`, {
@@ -259,7 +297,7 @@ async function rpc(name: string, body: unknown, token: string): Promise<unknown>
 
 /** Server truth about the meeting (ended_at etc.), read with the host's own session. */
 export async function meetingRow(meeting: Meeting): Promise<Record<string, unknown> | null> {
-  const s = await hostSession(meeting.host);
+  const s = await meeting.host.session();
   if (!s) return null;
   const row = await rpc("meet_meeting_by_slug", { p_slug: meeting.slug }, s.token);
   return (Array.isArray(row) ? row[0] : row) as Record<string, unknown> | null;
@@ -286,7 +324,7 @@ export async function ensureEnded(meeting: Meeting | null): Promise<string> {
     host.note(`UI end failed: ${(e as Error).message.slice(0, 120)}`);
   }
   try {
-    const s = await hostSession(host);
+    const s = await host.session();
     if (!s) return "ended via UI (no session for backstop)";
     const row = await meetingRow(meeting);
     if (row && row.ended_at) return `ended (ended_at=${String(row.ended_at)})`;

@@ -10,7 +10,7 @@ Commands (each prints ONE JSON object on stdout; secrets never printed except th
           a raw auth insert), made an active MEMBER of the host's organization, plus a one-use
           magic-link token hash. The harness opens the product's own /auth/confirm with it, the same
           door a person's emailed sign-in link opens.
-  delete  --user <uuid>
+  delete  --user <uuid> [--org <uuid>]
           Teardown through the factory (the fixture sweeper is the net if a run dies first).
   meeting --slug <slug>
           Server truth for one meeting: id, organization, room, ended_at, and metadata.auto_end
@@ -75,11 +75,24 @@ def member(org: str, suite: str, purpose: str, ttl_hours: float) -> None:
     )
 
 
-def delete(user_id: str) -> None:
+def delete(user_id: str, org: str | None) -> None:
+    import psycopg
+
     from aidream.testing import persona as factory
 
-    factory.delete_fixture_user(factory.fixture_target(), user_id)
-    _print({"deleted": user_id})
+    target = factory.fixture_target()
+    removed = 0
+    if org and target.dsn:
+        # The membership this helper added goes first, so the host's organization is clean at once
+        # even when the account delete below is slow (the factory's sweep clears dependents).
+        with psycopg.connect(target.dsn) as conn:
+            removed = conn.execute(
+                "delete from iam.memberships where organization_id = %s and user_id = %s and container_type = 'organization'",
+                (org, user_id),
+            ).rowcount
+            conn.commit()
+    factory.delete_fixture_user(target, user_id)
+    _print({"deleted": user_id, "memberships_removed": removed})
 
 
 def meeting(slug: str) -> None:
@@ -103,6 +116,14 @@ def meeting(slug: str) -> None:
 
 
 def room(name: str) -> None:
+    import os
+    from pathlib import Path
+
+    from dotenv import dotenv_values
+
+    for key, value in dotenv_values(Path.cwd() / ".env").items():
+        if key.startswith("LIVEKIT_") and value and key not in os.environ:
+            os.environ[key] = value
     from aidream.services.meet.livekit import list_participants, list_rooms, load_livekit_config
 
     async def run() -> dict[str, Any]:
@@ -129,6 +150,7 @@ def main() -> None:
     m.add_argument("--ttl-hours", type=float, default=3)
     d = sub.add_parser("delete")
     d.add_argument("--user", required=True)
+    d.add_argument("--org")
     g = sub.add_parser("meeting")
     g.add_argument("--slug", required=True)
     r = sub.add_parser("room")
@@ -137,7 +159,7 @@ def main() -> None:
     if a.cmd == "member":
         member(a.org, a.suite, a.purpose, a.ttl_hours)
     elif a.cmd == "delete":
-        delete(a.user)
+        delete(a.user, a.org)
     elif a.cmd == "meeting":
         meeting(a.slug)
     else:
