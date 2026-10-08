@@ -4,11 +4,14 @@
 // end screen (esign-parity CONTRACT §13.2; champion S2.1–S2.4, S11.3–S11.6).
 
 import Link from "next/link";
+import { useRef, type ReactNode } from "react";
 import { CheckCircle2, Download, FileSignature, Printer, ShieldCheck, Undo2, UserRoundCheck, XCircle } from "lucide-react";
 
 import { Button } from "@ai-matrx/design-system/controls";
 import { Checkbox } from "@/components/ui/checkbox";
+import { ErrorNotice } from "@/components/errors/ErrorNotice";
 import { Spinner } from "@/components/ui/loaders/Spinner";
+import { usePublishPageBottomDock } from "@/lib/layout/usePublishPageBottomDock";
 import { loginHref, signUpHref } from "@/utils/auth/auth-destination";
 import { withSignerHint } from "@/utils/auth/signer-hint-link";
 
@@ -123,7 +126,7 @@ export function ConsentPanel({
         />
         <span className="type-body text-foreground">I agree to use electronic records and signatures.</span>
       </label>
-      {error ? <p className="type-body text-destructive">{error}</p> : null}
+      {error ? <ErrorNotice size="inline" message={error} operation="Agree to electronic signing" className="type-body" /> : null}
       <Button
         variant="primary"
         disabled={!agreed || !ready || busy}
@@ -282,3 +285,19 @@ const HEADS: Record<EndKind, { title: string; icon: typeof CheckCircle2; tone: s
   reviewed: { title: "Thanks for reviewing", icon: CheckCircle2, tone: "text-success" },
   refused: { title: "This document cannot be opened", icon: XCircle, tone: "text-muted-foreground" },
 };
+
+/** The phone's input drawer. It publishes its height so the assists launcher and the admin error badge rest above it. */
+export function PhoneDrawer({ label, children }: { label: string; children: ReactNode }) {
+  const ref = useRef<HTMLElement>(null);
+  usePublishPageBottomDock(ref, true);
+  return (
+    <section
+      ref={ref}
+      aria-label={label}
+      data-matrx-floating-bottom
+      className="absolute inset-x-0 bottom-0 z-40 flex max-h-[60dvh] flex-col gap-3 overflow-y-auto rounded-t-xl border-t border-border bg-card p-4 pb-[calc(1rem+env(safe-area-inset-bottom))] shadow-2xl"
+    >
+      {children}
+    </section>
+  );
+}

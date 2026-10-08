@@ -1,6 +1,6 @@
 {
   "note": "Checked-in snapshot of public._schema_migrations for the files under migrations/campaign and migrations/inverse. Written by `pnpm db:apply` on every successful production apply and refreshed whole by the nightly catch-up. Never hand-edited: a self-written checksum is a claim nobody can check. Guard: pnpm check:ledgered-files-unedited.",
-  "generated_at": "2026-10-08T03:37:52.757Z",
+  "generated_at": "2026-10-08T03:45:00.150Z",
   "files": {
     "migrations/campaign/a_chunk_is_the_size_the_client_door_can_actually_carry.sql": {
       "source": "matrx-frontend",
@@ -1561,6 +1561,18 @@
       "filename": "describe_install_a_forms_a_template_installs_are_live.sql",
       "checksum": "90c3ade9870a29a19c7b8250506b66d19c4c3995a62d6742bfbd606b184b8e2b",
       "applied_at": "2026-10-08 03:37:51.514377+00"
+    },
+    "migrations/campaign/describe_install_b_the_one_offs_a_describe_run_installed_are_listed.sql": {
+      "source": "matrx-frontend",
+      "filename": "describe_install_b_the_one_offs_a_describe_run_installed_are_listed.sql",
+      "checksum": "d39e66dda18691e2928167584bf7f3a1f474f904aec13d053f6afa3682e0907d",
+      "applied_at": "2026-10-08 03:44:58.596822+00"
+    },
+    "migrations/campaign/describe_install_c_archiving_a_table_archives_what_is_built_on_it.sql": {
+      "source": "matrx-frontend",
+      "filename": "describe_install_c_archiving_a_table_archives_what_is_built_on_it.sql",
+      "checksum": "bd18ed22c854963935f41c0b792b32e7ea09cdfb3ce7cfa6f6cae831c6edd60a",
+      "applied_at": "2026-10-08 03:43:32.041921+00"
     },
     "migrations/campaign/digests_a_saved_view_has_a_door.sql": {
       "source": "matrx-frontend",

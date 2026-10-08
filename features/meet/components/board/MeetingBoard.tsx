@@ -34,18 +34,22 @@ import dynamic from "next/dynamic";
 import { type ReactNode } from "react";
 import { ExternalLink, Lock } from "lucide-react";
 import {
-  AttendanceNotice,
-  Captions,
-  ConsentNotice,
-  ControlBar,
-  HostMenu,
-  RecordingIndicator,
   participantSummary,
   useElapsed,
   useIsHost,
   useMeetSnapshot,
   type MeetingRecord,
 } from "@ai-matrx/meet/react";
+// The Meet skin's PARTS — the Board composes them, never package internals
+// (@ai-matrx/meet S1: the in-call UI is a skin).
+import {
+  AttendanceNotice,
+  Captions,
+  ConsentNotice,
+  ControlBar,
+  HostMenu,
+  RecordingIndicator,
+} from "@ai-matrx/meet/skins/meet";
 import { formatDurationMs } from "@ai-matrx/kit/format";
 import { Button } from "@/components/ui/button";
 import { ShimmerText } from "@/components/loaders/ShimmerText";

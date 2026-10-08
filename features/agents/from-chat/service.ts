@@ -23,6 +23,7 @@ import type {
   TypedStreamEvent,
 } from "@ai-matrx/agents/generated/stream-events";
 import { streamErrorText } from "@ai-matrx/agents/matrx";
+import { adoptForeignStream } from "@ai-matrx/chat/agents/redux/execution-system/thunks/adopt-foreign-stream";
 
 export type FromChatStep = AgentStudioFromChatProgressData["step"];
 export type FromChatResult = AgentStudioFromChatResultData;
@@ -68,13 +69,60 @@ function isResult(d: unknown): d is AgentStudioFromChatResultData {
   return !!d && typeof d === "object" && (d as { type?: unknown }).type === "agent_studio_from_chat_result";
 }
 
+/** The stored run a step just finished (`run_conversation_id` on its progress event). */
+export function progressRunConversationId(d: AgentStudioFromChatProgressData): string | null {
+  const id = (d as { run_conversation_id?: unknown }).run_conversation_id;
+  return typeof id === "string" && id.trim() !== "" ? id : null;
+}
+
+/**
+ * Where one of the pipeline's stored runs opens in full — every message the model saw and
+ * wrote, tool calls, cost. Inside /administration: the CX conversation page; elsewhere the chat.
+ */
+export function fromChatRunHref(conversationId: string): string {
+  return adminDoorOpen()
+    ? `/administration/chat/cx-dashboard/conversations/${conversationId}`
+    : `/chat/${conversationId}`;
+}
+
+/**
+ * KEEP WORKING ON IT (Arman, 2026-10-07: "the key is that we need to be able to talk to the agent
+ * who is doing this work"): a new tab with the new agent open in the Agent Builder and the Agent
+ * Builder's own conversation in the page's side chat. THE ONE place this hand-off address is built
+ * — every "Make an agent" entry point (chat menu, admin list, admin conversation page) goes through
+ * the window that calls it. The side chat opens a conversation named by `?pageChat=`
+ * (`@ai-matrx/chat` canvas/workspace `shellChatHome`); when the shell's routing primitive for
+ * "open this page with this conversation beside it" lands, it replaces the body here.
+ */
+export function continueWithAgentHref(result: FromChatResult): string {
+  const builder = `/agents/${result.agent_id}/build`;
+  const chat = resultRuns(result).building;
+  return chat ? `${builder}?pageChat=${encodeURIComponent(chat)}` : builder;
+}
+
+/**
+ * The stored runs behind a made agent (`brief_conversation_id` / `builder_conversation_id` /
+ * `proof_conversation_id` on the result — aidream `from_chat`; read here until the published
+ * stream type carries them).
+ */
+export function resultRuns(result: FromChatResult): Partial<Record<FromChatStep, string>> {
+  const r = result as unknown as Record<string, unknown>;
+  const id = (k: string) => (typeof r[k] === "string" && (r[k] as string).trim() !== "" ? (r[k] as string) : undefined);
+  return { briefing: id("brief_conversation_id"), building: id("builder_conversation_id"), proving: id("proof_conversation_id") };
+}
+
 /** Turn one chat into an agent; `onStep` hears each step as the server reaches it. */
 export async function makeAgentFromChat(
   dispatch: AppDispatch,
   conversationId: string,
-  onStep: (step: FromChatStep, says: string) => void,
+  onStep: (step: FromChatStep, says: string, runConversationId: string | null) => void,
   /** The person's own examples (R52): more proof cases beside the chat's own request. */
   examples: string[] = [],
+  /**
+   * The live stream's request id, the instant it exists: the brief writer and the first try
+   * stream their tokens into it, rendered by the canonical pipeline (`LiveRunDisplay`).
+   */
+  onAdopted?: (requestId: string) => void,
 ): Promise<FromChatAnswer> {
   const given = examples.map((e) => e.trim()).filter(Boolean);
   const body = given.length > 0 ? { conversation_id: conversationId, examples: given } : { conversation_id: conversationId };
@@ -95,7 +143,7 @@ export async function makeAgentFromChat(
           proofCases = progressProofCases(d);
           buildSays = d.says;
         }
-        onStep(d.step, d.says);
+        onStep(d.step, d.says, progressRunConversationId(d));
       } else if (isResult(d)) {
         result = d;
       }
@@ -103,6 +151,17 @@ export async function makeAgentFromChat(
       refusal = streamErrorText(event) ?? "Making the agent stopped.";
     }
   };
+
+  // The pipeline's own sub-runs stream their tokens on this response: ADOPT it so they render
+  // through the one stream pipeline (never a hand parse); our typed events still arrive here.
+  const consumeStream = dispatch(
+    adoptForeignStream({
+      // The pipeline's header ids name the endpoint, not a run anyone renders elsewhere.
+      preferServerIds: false,
+      onAdopted: (ids) => onAdopted?.(ids.requestId),
+      onEvent: onStreamEvent,
+    }),
+  );
 
   // THE ADMIN DOOR (lib/api/adminDoor.ts): inside /administration the request goes to the
   // server's /admin twin — any person's chat, the agent born in THAT person's account and the
@@ -115,7 +174,7 @@ export async function makeAgentFromChat(
           body,
           stream: true,
           expectedErrorStatuses: [401, 403, 404, 409, 422],
-          onStreamEvent,
+          consumeStream,
         }),
       )
     : await dispatch(
@@ -125,7 +184,7 @@ export async function makeAgentFromChat(
           body,
           stream: true,
           expectedErrorStatuses: [401, 403, 404, 409, 422],
-          onStreamEvent,
+          consumeStream,
         }),
       );
 

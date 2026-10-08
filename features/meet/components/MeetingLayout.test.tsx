@@ -7,7 +7,8 @@ import { MeetingLayout } from "./MeetingLayout";
 let mockPhase = "connected";
 
 jest.mock("@ai-matrx/meet/react", () => ({
-  MeetingRoom: ({ headerControls }: { headerControls?: React.ReactNode }) => (
+  MeetRoot: ({ children }: { children?: React.ReactNode }) => <>{children}</>,
+  MeetingSkinRoot: ({ headerControls }: { headerControls?: React.ReactNode }) => (
     <div data-testid="package-room">
       {headerControls}
       <div className="mx-meet__controls" />
