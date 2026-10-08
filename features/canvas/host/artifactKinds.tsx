@@ -256,6 +256,8 @@ export const ARTIFACT_CANVAS_KINDS: readonly AnyCanvasKind[] = (Object.keys(ICON
 export const SAVED_ITEMS_CANVAS_KIND: AnyCanvasKind = defineCanvasKind<null>({
   id: "saved-items",
   surface: "dom",
+  // A launcher grid (virtualized, with menus): its items print from their own tabs (kindOutputDecisions.ts).
+  print: false,
   label: "Saved",
   icon: LayoutDashboard,
   load: () =>

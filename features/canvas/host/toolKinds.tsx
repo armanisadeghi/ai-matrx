@@ -20,6 +20,7 @@ import { QUICK_SCRIBE_KIND, quickScribeKind } from "@/features/transcript-studio
 import { notificationsKind } from "@/features/notifications/canvas/notificationsKind";
 import { messagesKind } from "@/features/messaging/canvas/messagesKind";
 import { useToolToggle } from "./toolCanvas";
+import { withOutputDecisions } from "./kindOutputDecisions";
 import { documentsKind } from "./conversation/documentsKind";
 import { contextPreviewKind } from "./conversation/contextPreviewKind";
 import { conversationContextKind } from "./conversation/conversationContextKind";
@@ -30,7 +31,7 @@ import { messageContextReceiptKind } from "./conversation/messageContextReceiptK
 import { contextValueKind } from "./conversation/contextValueKind";
 import { workingDocumentHistoryKind } from "./conversation/workingDocumentHistoryKind";
 
-export const TOOL_CANVAS_KINDS: readonly AnyCanvasKind[] = [
+export const TOOL_CANVAS_KINDS: readonly AnyCanvasKind[] = withOutputDecisions([
   quickChatKind,
   quickNotesKind,
   quickTasksKind,
@@ -50,7 +51,7 @@ export const TOOL_CANVAS_KINDS: readonly AnyCanvasKind[] = [
   // The shell header's Messages and Notifications buttons open these.
   messagesKind,
   notificationsKind,
-];
+]);
 
 export function registerToolCanvasKinds(): () => void {
   return registerCanvasKinds(TOOL_CANVAS_KINDS);
