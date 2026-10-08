@@ -15,7 +15,7 @@
 "use client";
 
 import { useShowSystemFiles } from "@/features/files/hooks/useShowSystemFiles";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Search as SearchIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -71,7 +71,7 @@ import {
   memberCountForResource,
 } from "./row-data";
 import type { FilterChipKey } from "./FilterChips";
-import { FileTableRow } from "./FileTableRow";
+import { FileTableRow, type FileTableRowCommands } from "./FileTableRow";
 import { ColumnHeader } from "./ColumnHeader";
 import { ActiveColumnFilters } from "./ActiveColumnFilters";
 import { ColumnSettings } from "./ColumnSettings";
@@ -362,6 +362,32 @@ export function FileTable({
     [dispatch, onActivateFolder, onActivateFile],
   );
 
+  // 🚨 ONE STABLE COMMANDS OBJECT FOR EVERY ROW. Rows used to get three inline
+  // handlers each, so any render of this table — opening a file moves
+  // `activeFileId` — handed every row new functions and redrew all of them
+  // (50 of 51 rows on /files, measured 2026-10-07). The commands are created
+  // once and read this render's logic at click time, so `FileTableRow`'s memo
+  // holds every row whose data did not change.
+  const latestCommands = useRef<FileTableRowCommands | null>(null);
+  useEffect(() => {
+    latestCommands.current = {
+      toggleSelected: (id) => {
+        dispatch(toggleSelection({ id }));
+        dispatch(setFocusedId(id));
+      },
+      activate: (id) => {
+        const row = rows.find((r) => (r.kind === "file" ? r.file.id : r.folder.id) === id);
+        if (row) handleRowActivate(row);
+      },
+      openShare: (id, kind) => setShareTarget({ resourceId: id, resourceType: kind }),
+    };
+  });
+  const [rowCommands] = useState<FileTableRowCommands>(() => ({
+    toggleSelected: (id) => latestCommands.current?.toggleSelected(id),
+    activate: (id) => latestCommands.current?.activate(id),
+    openShare: (id, kind) => latestCommands.current?.openShare(id, kind),
+  }));
+
   if (rows.length === 0) {
     if (treeWideSearch) {
       return (
@@ -503,17 +529,7 @@ export function FileTable({
                   isFocused={focusedId === id}
                   visibleColumnIds={visibleIds}
                   currentUserId={currentUserId}
-                  onToggleSelected={() => {
-                    dispatch(toggleSelection({ id }));
-                    dispatch(setFocusedId(id));
-                  }}
-                  onActivate={() => handleRowActivate(row)}
-                  onOpenShare={() =>
-                    setShareTarget({
-                      resourceId: id,
-                      resourceType: row.kind,
-                    })
-                  }
+                  commands={rowCommands}
                   isShared={isShared}
                   memberCount={memberCount}
                   granteeIds={granteeIds}
