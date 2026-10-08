@@ -101,6 +101,20 @@ function isDateRange(config: unknown): boolean {
 }
 
 /**
+ * A Field's live choices from `custom.entity_fields_across`, in the order the person declared them.
+ * The door answers them as a jsonb OBJECT, which keeps no order (Postgres stores keys shortest
+ * first), so the order rides each option's `position`; unpositioned options follow, as answered.
+ */
+export function optionsInDeclaredOrder(
+  options: Readonly<Record<string, { label: string; retired?: boolean; position?: number | null }>>,
+): StandardFieldOption[] {
+  return Object.entries(options)
+    .filter(([, o]) => !o.retired)
+    .sort(([, a], [, b]) => (a.position ?? Number.MAX_SAFE_INTEGER) - (b.position ?? Number.MAX_SAFE_INTEGER))
+    .map(([key, o]) => ({ key, label: o.label }));
+}
+
+/**
  * The definitions a door returned (any number of organizations) → one column per key.
  * Two organizations that both add "Preferred clinic location" are ONE column, because the
  * value lives under the same key in every row; the first definition names it.
