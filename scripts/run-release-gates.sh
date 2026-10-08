@@ -90,6 +90,14 @@ if $STRICT; then
         # were all green. ~30s, offline, zero findings at introduction.
         # `pnpm check:matrx-imports:self-test` proves it can still fail.
         "Every @ai-matrx import exists in the installed package|pnpm check:matrx-imports"
+        # CODE THAT USES AN @ai-matrx PACKAGE TYPE-CHECKS AGAINST THE LOCKED VERSION. 2026-10-07
+        # v0.4.2990/2991: WarmupHost.tsx called warmup.currentScope() (agents 0.58.0) while the
+        # lockfile pinned 0.57.0 — every page crashed. matrx-imports cannot see a member of a
+        # returned object; type-check sees it buried in its backlog and against whatever is
+        # installed. This checks the files changed since the previous release tag against the
+        # exact locked tarballs and reports ONLY package-API errors, so the next release fixes it.
+        # ~2 min, npm-fetching (cached). `pnpm check:matrx-api-usage:self-test` replays the incident.
+        "Code using @ai-matrx packages type-checks against the locked versions|pnpm check:matrx-api-usage"
         # THE SYNC SWEEP NEVER COMMITS A FILE THE INSTALLED PACKAGES CANNOT BUILD, AND NEVER
         # ADOPTS A PACKAGE UPDATE THAT ONLY BREAKS THE BUILD (2026-10-07: 12 failed Vercel builds in
         # 36h + one green build that crashed manage.aimatrx.com). Proves the hold, the publish-train
@@ -1109,6 +1117,14 @@ else
         # were all green. ~30s, offline, zero findings at introduction.
         # `pnpm check:matrx-imports:self-test` proves it can still fail.
         "Every @ai-matrx import exists in the installed package|pnpm check:matrx-imports"
+        # CODE THAT USES AN @ai-matrx PACKAGE TYPE-CHECKS AGAINST THE LOCKED VERSION. 2026-10-07
+        # v0.4.2990/2991: WarmupHost.tsx called warmup.currentScope() (agents 0.58.0) while the
+        # lockfile pinned 0.57.0 — every page crashed. matrx-imports cannot see a member of a
+        # returned object; type-check sees it buried in its backlog and against whatever is
+        # installed. This checks the files changed since the previous release tag against the
+        # exact locked tarballs and reports ONLY package-API errors, so the next release fixes it.
+        # ~2 min, npm-fetching (cached). `pnpm check:matrx-api-usage:self-test` replays the incident.
+        "Code using @ai-matrx packages type-checks against the locked versions|pnpm check:matrx-api-usage"
         # THE SYNC SWEEP NEVER COMMITS A FILE THE INSTALLED PACKAGES CANNOT BUILD, AND NEVER
         # ADOPTS A PACKAGE UPDATE THAT ONLY BREAKS THE BUILD (2026-10-07: 12 failed Vercel builds in
         # 36h + one green build that crashed manage.aimatrx.com). Proves the hold, the publish-train
