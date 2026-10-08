@@ -20,6 +20,12 @@ export interface RecipeData {
   notes?: string;
 }
 
+const INGREDIENT_UNIT =
+  "(?:tablespoons?|teaspoons?|pounds?|ounces?|cups?|tbsp|tsp|lbs?|kg|ml|oz|g|l)(?![a-zA-Z])";
+const INGREDIENT_AMOUNT = new RegExp(
+  `^([^a-zA-Z]*(?:\\d+(?:\\/\\d+)?(?:\\.\\d+)?\\s*(?:${INGREDIENT_UNIT})?(?:\\s*\\([^)]+\\))?\\s*)+)(.+)$`,
+);
+
 export const parseRecipeMarkdown = (content: string): RecipeData | null => {
   try {
     // Remove the cooking_recipe tags
@@ -101,7 +107,9 @@ export const parseRecipeMarkdown = (content: string): RecipeData | null => {
         const ingredientText = line.replace(/^-\s*/, '').trim();
         
         // Split by first space or number pattern to separate amount from item
-        const match = ingredientText.match(/^([^a-zA-Z]*(?:\d+(?:\/\d+)?(?:\.\d+)?\s*(?:g|kg|ml|l|cup|cups|tsp|tbsp|tablespoon|tablespoons|teaspoon|teaspoons|oz|lb|lbs|pounds?|ounces?)?(?:\s*\([^)]+\))?\s*)+)(.+)$/);
+        // A unit is a WHOLE word (longest spelling first): without the boundary "4 large eggs"
+        // split as "4 l" + "arge eggs", "2 cups" as "2 cup" + "s …", "1 lb" as "1 l" + "b …".
+        const match = ingredientText.match(INGREDIENT_AMOUNT);
         
         if (match) {
           ingredients.push({
