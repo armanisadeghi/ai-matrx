@@ -5,6 +5,7 @@
 // signing page's first bundle. Every tab emits one `Candidate`; the preview shows it; Adopt returns
 // it as `CreatedMark`s. One output for every tab (decision C): a transparent paper-ink PNG.
 
+import { ErrorNotice } from "@/components/errors/ErrorNotice";
 import { useCallback, useEffect, useState } from "react";
 import { Button, Switch, Tabs } from "@ai-matrx/design-system/controls";
 
@@ -219,9 +220,7 @@ export default function SignatureCreatorBody({
           </label>
         )}
         {problem && (
-          <p role="alert" className="text-xs text-destructive">
-            {problem}
-          </p>
+          <ErrorNotice size="inline" message={problem} operation="Create a signature" className="text-xs" />
         )}
 
         <DialogFooter>

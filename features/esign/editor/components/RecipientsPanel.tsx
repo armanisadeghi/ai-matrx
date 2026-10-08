@@ -5,6 +5,7 @@
 // (name + email, a link in their inbox). Each recipient: role, routing step, private message,
 // company, title, verification (Email link / Email code / Access code), colour for life.
 
+import { ErrorNotice } from "@/components/errors/ErrorNotice";
 import { useState } from "react";
 import { ArrowDown, ArrowUp, ChevronDown, ChevronRight, Trash2, UserPlus } from "lucide-react";
 
@@ -219,7 +220,20 @@ export function RecipientsPanel({ draft, edit, people, me, setAccessCode, templa
         </div>
       ) : (
       <div className="flex flex-col gap-1.5">
-        <Field aria-label="Add a person" placeholder="Add a colleague or an email address" value={query} onChange={(e) => setQuery(e.target.value)} />
+        <Field
+          aria-label="Add a person"
+          placeholder="Add a colleague or an email address"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key !== "Enter") return;
+            e.preventDefault();
+            const typed = query.trim();
+            const member = people.find((c) => !taken.has(c.user_id) && c.email?.toLowerCase() === typed.toLowerCase()) ?? (matches.length === 1 ? matches[0] : null);
+            if (member) add({ full_name: member.display_name || member.email?.split("@")[0] || "Member", email: member.email ?? "", user_id: member.user_id });
+            else if (isEmail(typed)) setGuest({ name: "", email: typed });
+          }}
+        />
         {matches.map((c) => (
           <button
             key={c.user_id}
@@ -239,7 +253,18 @@ export function RecipientsPanel({ draft, edit, people, me, setAccessCode, templa
         )}
         {guest && (
           <div className="flex flex-col gap-1.5 rounded-md border border-border p-2">
-            <Field aria-label="Their legal full name" placeholder="Their legal full name" value={guest.name} onChange={(e) => setGuest({ ...guest, name: e.target.value })} />
+            <Field
+              aria-label="Their legal full name"
+              placeholder="Their legal full name"
+              value={guest.name}
+              onChange={(e) => setGuest({ ...guest, name: e.target.value })}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && guest.name.trim() && isEmail(guest.email)) {
+                  e.preventDefault();
+                  add({ full_name: guest.name.trim(), email: guest.email.trim(), user_id: null });
+                }
+              }}
+            />
             <Field aria-label="Their email" type="email" value={guest.email} onChange={(e) => setGuest({ ...guest, email: e.target.value })} />
             <Button variant="primary" disabled={!guest.name.trim() || !isEmail(guest.email)} onClick={() => add({ full_name: guest.name.trim(), email: guest.email.trim(), user_id: null })}>
               Add
@@ -276,7 +301,7 @@ function AccessCodeField({ recipient, setAccessCode, onSet }: { recipient: Draft
         }}
       />
       {recipient.has_access_code && !error && <span className="type-secondary text-muted-foreground">Code set</span>}
-      {error && <span className="type-secondary text-destructive">{error}</span>}
+      {error && <ErrorNotice size="inline" message={error} operation="Set an access code" className="type-secondary" />}
     </div>
   );
 }

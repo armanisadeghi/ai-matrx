@@ -46,7 +46,7 @@ export default function ErrorInspectorBadge() {
         className={cn(
           // Mobile sits ABOVE the bottom band where composers/action bars live
           // — at bottom-4 it covered a composer's controls (2026-08-16).
-          "fixed bottom-24 left-3 z-[60] flex items-center gap-1.5 rounded-full border px-2.5 py-1.5 shadow-lg sm:bottom-4 sm:left-4",
+          "fixed bottom-[calc(6rem+var(--page-bottom-dock-h,0px))] left-3 z-[60] flex items-center gap-1.5 rounded-full border px-2.5 py-1.5 shadow-lg sm:bottom-[calc(1rem+var(--page-bottom-dock-h,0px))] sm:left-4",
           "bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/80 transition-colors",
           unseenRed > 0
             ? "border-destructive/50 text-destructive animate-pulse"
@@ -75,7 +75,7 @@ export default function ErrorInspectorBadge() {
         onClick={toggle}
         title={`${orange} minor issue${orange === 1 ? "" : "s"} — open Error Inspector`}
         aria-label="Open Error Inspector"
-        className="fixed bottom-24 left-3 z-[60] flex h-5 w-5 items-center justify-center rounded-full border border-border bg-card/95 shadow-lg backdrop-blur supports-[backdrop-filter]:bg-card/80 transition-transform hover:scale-110 sm:bottom-4 sm:left-4"
+        className="fixed bottom-[calc(6rem+var(--page-bottom-dock-h,0px))] left-3 z-[60] flex h-5 w-5 items-center justify-center rounded-full border border-border bg-card/95 shadow-lg backdrop-blur supports-[backdrop-filter]:bg-card/80 transition-transform hover:scale-110 sm:bottom-[calc(1rem+var(--page-bottom-dock-h,0px))] sm:left-4"
       >
         <span
           className={cn(

@@ -23,6 +23,7 @@ import { Button } from "@ai-matrx/design-system/controls";
 import { useIsMobile } from "@ai-matrx/kit/media-query";
 import { downloadFile } from "@ai-matrx/kit/download";
 import { Spinner } from "@/components/ui/loaders/Spinner";
+import { ErrorNotice } from "@/components/errors/ErrorNotice";
 import { toast } from "@/lib/toast";
 import { cn } from "@/lib/utils";
 import { useThemeMode } from "@/styles/themes/useThemeMode";
@@ -53,7 +54,7 @@ import {
 import { ControlInput } from "./parts/ControlInput";
 import { AssignDialog, DeclineDialog, FinishDialog, HelpDialog, HistoryDialog, type RecordedRow } from "./parts/Dialogs";
 import { DocumentStack, PageThumbnails, type StackDoc } from "./parts/DocumentStack";
-import { ConsentPanel, EndScreen, type EndKind, type LandingFacts } from "./parts/Panels";
+import { ConsentPanel, EndScreen, PhoneDrawer, type EndKind, type LandingFacts } from "./parts/Panels";
 import { PaperField } from "./parts/PaperField";
 import { TopBar, type GuideMode } from "./parts/TopBar";
 import { errorText, reasonText } from "./text";
@@ -885,12 +886,12 @@ export function SignerSurface({
               Fill all signature fields
             </Button>
           ) : null}
-          {notice ? <span className="ml-2 truncate type-secondary text-destructive" role="alert">{notice}</span> : null}
+          {notice ? <ErrorNotice size="inline" message={notice} operation="Sign" className="ml-2 truncate type-secondary" /> : null}
         </div>
       ) : notice ? (
-        <p className="shrink-0 border-b border-border bg-background px-3 py-1 type-secondary text-destructive" role="alert">
-          {notice}
-        </p>
+        <div className="shrink-0 border-b border-border bg-background px-3 py-1 type-secondary">
+          <ErrorNotice size="inline" message={notice} operation="Sign" />
+        </div>
       ) : null}
 
       <div className="relative flex min-h-0 flex-1">
@@ -942,11 +943,7 @@ export function SignerSurface({
         ) : null}
 
         {compact && active && !locked && !formView ? (
-          <section
-            aria-label={active.label}
-            data-matrx-floating-bottom
-            className="absolute inset-x-0 bottom-0 z-40 flex max-h-[60dvh] flex-col gap-3 overflow-y-auto rounded-t-xl border-t border-border bg-card p-4 pb-[calc(1rem+env(safe-area-inset-bottom))] shadow-2xl"
-          >
+          <PhoneDrawer label={active.label}>
             {control(active, !isMarkKind(active.kind) && active.kind !== "checkbox" && active.kind !== "radio")}
             <div className="flex items-center justify-between gap-2">
               <Button variant="quiet" onClick={() => setActiveId(null)}>
@@ -956,7 +953,7 @@ export function SignerSurface({
                 {isFilled(active, shownValue(active, values, meRecord)) || active.required ? "Next field" : "Skip"}
               </Button>
             </div>
-          </section>
+          </PhoneDrawer>
         ) : null}
       </div>
 
