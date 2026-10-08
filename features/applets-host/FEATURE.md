@@ -104,6 +104,12 @@ record's own `scope` (`{ entries, shadowDangerousGlobals }`); app-owned modules 
 
 ## Change Log
 
+- 2026-10-08 — Lane AB (never publish broken, part 1): `checkBuildAnswer` refuses a browser dialog
+  (`window.confirm`/`alert`/`prompt` → `confirmAction`) and a JSX string attribute carrying a literal `\n`;
+  "Use it" is held while the preview reports any error (`publishBlockedBy`) and becomes "Fix it to use it".
+  Tests: `builder/build-applet.never-broken.test.ts`. Part 2 (import check against the real exports via
+  `appletImportProblems`, refused saves toasted via `announceRefusal`) lands with `@ai-matrx/applets` 0.10.0.
+
 - 2026-10-08 — Lane AD (/applets/build hydration): the builder loads `AppletHostMount` (host + frame + Babel compiler)
   through ONE `next/dynamic` edge gated on a saved version, so the first screen no longer carries it (builder's own
   static graph 12.2 MB → 8.9 MB minified, esbuild metafile). Until the page hydrates, Build renders as a disabled
