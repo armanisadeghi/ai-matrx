@@ -218,7 +218,7 @@ export function audit({ root, graph = true }) {
           const text = readFileSync(p, "utf8"); if (!text.includes("@ai-matrx/")) return;
           for (const imp of parseImports(text)) {
             const sp = splitSpec(imp.spec); if (!sp || sp.pkg === own) continue;
-            checkOne(p, `${own}@${readPkg(real).version}/${path.relative(real, p)}`, { ...imp, names: [] }, null, false);
+            checkOne(p, `${own}@${readPkg(real).version}/${path.relative(real, p)}`, imp, null, true);
           }
         };
         walk(real);
