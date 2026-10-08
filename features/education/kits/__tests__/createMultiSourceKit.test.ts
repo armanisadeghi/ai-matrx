@@ -6,6 +6,7 @@ const mockListForEntity = jest.fn();
 const mockReadScopesById = jest.fn();
 const mockReadScopeTypes = jest.fn();
 const mockCreateScope = jest.fn();
+const mockDeleteScope = jest.fn();
 const mockFetchEducationLibraryPage = jest.fn();
 
 jest.mock("@/features/scopes/service/associationsService", () => ({
@@ -21,7 +22,7 @@ jest.mock("@/features/scopes/service/storeScopeReads", () => ({
   readScopeTypes: (...a: unknown[]) => mockReadScopeTypes(...a),
 }));
 jest.mock("@/features/scopes/service/scopeStore", () => ({
-  scopeStore: { createScope: (...a: unknown[]) => mockCreateScope(...a), createScopeType: jest.fn() },
+  scopeStore: { createScope: (...a: unknown[]) => mockCreateScope(...a), createScopeType: jest.fn(), deleteScope: (...a: unknown[]) => mockDeleteScope(...a) },
 }));
 jest.mock("@/features/sources/api/sourcesApi", () => ({ keepSource: jest.fn().mockResolvedValue(undefined) }));
 jest.mock("@/features/education/library/service", () => ({
@@ -42,6 +43,7 @@ beforeEach(() => {
   mockAdd.mockResolvedValue({ ok: true, data: {} });
   mockReadScopeTypes.mockResolvedValue({ ok: true, data: { types: [{ id: "t1", slug: "study-kit", organization_id: ORG }] } });
   mockCreateScope.mockResolvedValue({ data: { id: KIT } });
+  mockDeleteScope.mockResolvedValue({ data: {} });
   mockReadScopesById.mockResolvedValue({ ok: true, data: [{ id: KIT, name: "Photosynthesis", organization_id: ORG }] });
   mockListForEntity.mockResolvedValue({ ok: true, data: { edges: [] } });
   mockFetchEducationLibraryPage.mockResolvedValue({ rows: [], total: 0 });
@@ -82,8 +84,29 @@ describe("createMultiSourceKit", () => {
     expect(member).toMatchObject({ sourceType: "fc_set", sourceId: "deck-1", targetType: "scope", targetId: KIT });
   });
 
-  it("refuses a kit with no material", async () => {
-    await expect(createMultiSourceKit({ orgId: ORG, title: "Empty", sources: [], artifacts: [] })).rejects.toThrow(/material/);
+  it("refuses a kit with neither material nor aids", async () => {
+    await expect(createMultiSourceKit({ orgId: ORG, title: "Empty", sources: [], artifacts: [] })).rejects.toThrow(/material or a saved study aid/);
     expect(mockCreateScope).not.toHaveBeenCalled();
+  });
+
+  it("makes a kit from saved aids alone, with no material", async () => {
+    const deck = { kind: "fc_set", id: "deck-1", title: "Deck", subtype: "flashcards" };
+    mockFetchEducationLibraryPage.mockResolvedValue({ rows: [deck], total: 1 });
+    const id = await createMultiSourceKit({ orgId: ORG, title: "Aids only", sources: [], artifacts: [deck as never] });
+    expect(id).toBe(KIT);
+    const filed = mockAdd.mock.calls.map(([c]) => c as Record<string, unknown>);
+    expect(filed.some((c) => c.kitSource === true || (c.metadata as { kitSource?: boolean } | undefined)?.kitSource)).toBe(false);
+    expect(filed.find((c) => c.role === "member")).toMatchObject({ sourceId: "deck-1", targetId: KIT });
+  });
+
+  it("archives the half-made kit when a later step fails, and rethrows the real failure", async () => {
+    mockAdd.mockResolvedValueOnce({ ok: true, data: {} }).mockResolvedValueOnce({ ok: false, error: { message: "boom" } });
+    await expect(createMultiSourceKit({
+      orgId: ORG,
+      title: "Half",
+      sources: [{ type: "file", id: "f-1", title: "A" }, { type: "file", id: "f-2", title: "B" }],
+      artifacts: [],
+    })).rejects.toThrow(/Could not add B/);
+    expect(mockDeleteScope).toHaveBeenCalledWith(KIT);
   });
 });

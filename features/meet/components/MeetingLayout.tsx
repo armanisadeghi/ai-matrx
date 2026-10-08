@@ -20,6 +20,7 @@
 
 import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import {
+  MeetRoot,
   MeetingRoom,
   useMeetSnapshot,
   type MeetingRecord,
@@ -139,12 +140,16 @@ export function MeetingLayout({
   const phoneOffset = phoneSwitchOffset(barHeight);
 
   if (inRoom && layout === "board") {
+    // The Board is drawn here, not by `<MeetingRoom>`, so it carries the
+    // package's one observation root itself (S0).
     return (
-      <MeetingBoard
-        meeting={snapshot?.meeting ?? meeting}
-        onLayout={setLayout}
-        headerControls={headerControls}
-      />
+      <MeetRoot meeting={meeting}>
+        <MeetingBoard
+          meeting={snapshot?.meeting ?? meeting}
+          onLayout={setLayout}
+          headerControls={headerControls}
+        />
+      </MeetRoot>
     );
   }
 

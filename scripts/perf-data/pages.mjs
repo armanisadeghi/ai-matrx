@@ -90,7 +90,14 @@ export async function measurePages({ base, fixtures: fixtures0, log = console.lo
       }).catch(() => ({}));
       page.off("request", onReq);
       const b = budgets.pages[p.name] ?? {};
-      out.push({ page: p.name, pass, ttfb_ms: m.ttfb == null ? "" : Math.round(m.ttfb), lcp_ms: Math.round(m.lcp ?? 0), rows_visible_ms: m.rows == null ? "never" : Math.round(m.rows), hydration_start_ms: m.firstStore == null ? "" : Math.round(m.firstStore), calls_before_rows: m.beforeRows ?? "", all_store_calls: m.allStore ?? "", store_calls: calls.length, calls: [...new Set(calls)].join(" "), landed: m.url, budget: b, wallMs: Date.now() - t0 });
+      // SERVER HTML ROWS (lane SSR-ROWS): the grid's cells in the HTML the server sent, before any
+      // script ran — fetched once per page with the same session. 0 = the rows wait for the browser.
+      let serverRows = "";
+      if (pass === "warm" && p.needle?.startsWith("css:")) {
+        const html = await ctx.request.get(`${base}${p.path}`, { timeout: 180000 }).then((r) => r.text()).catch(() => "");
+        serverRows = (html.match(/data-matrx-cell-row/g) ?? []).length;
+      }
+      out.push({ page: p.name, pass, server_html_rows: serverRows, ttfb_ms: m.ttfb == null ? "" : Math.round(m.ttfb), lcp_ms: Math.round(m.lcp ?? 0), rows_visible_ms: m.rows == null ? "never" : Math.round(m.rows), hydration_start_ms: m.firstStore == null ? "" : Math.round(m.firstStore), calls_before_rows: m.beforeRows ?? "", all_store_calls: m.allStore ?? "", store_calls: calls.length, calls: [...new Set(calls)].join(" "), landed: m.url, budget: b, wallMs: Date.now() - t0 });
       log(`  ${p.name} ${pass}: rows ${m.rows == null ? "never" : Math.round(m.rows)} ms, first store call ${m.firstStore == null ? "none" : Math.round(m.firstStore)} ms, ${m.beforeRows} calls before rows, ${m.allStore} store calls (${calls.length} custom/platform)`);
     }
   }

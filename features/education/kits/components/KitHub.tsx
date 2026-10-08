@@ -752,7 +752,7 @@ export function KitHub({
               </p>
               <div className="mt-5 flex flex-wrap gap-2">
                 <span className="rounded-full border border-border bg-background/70 px-3 py-1.5 type-secondary font-medium text-foreground">
-                  {ordered.length} study aids
+                  {ordered.length} study {ordered.length === 1 ? "aid" : "aids"}
                 </span>
                 {!statsLoading && itemTotal > 0 && (
                   <span className="rounded-full border border-border bg-background/70 px-3 py-1.5 type-secondary font-medium text-foreground">

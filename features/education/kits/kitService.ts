@@ -813,20 +813,30 @@ export async function createMultiSourceKit(input: {
   artifacts: readonly EducationLibraryRow[];
 }): Promise<string> {
   const title = writableTitle(input.title);
-  if (!input.sources.length) throw new Error("Pick the material for this kit first.");
+  // Material is optional when saved aids are chosen: a kit of aids alone is a kit.
+  if (!input.sources.length && !input.artifacts.length) throw new Error("Pick the material or a saved study aid first.");
   const scope = await createKitScope(input.orgId, title);
-  for (const source of input.sources) await addKitSource(scope, source);
-  if (input.artifacts.length) {
-    const made = await readKit(KIT_TOKEN, scope.id);
-    if (!made) throw new Error("The kit was made but could not be read back. Open it from Study kits.");
-    await createManualKit({
-      sourceId: scope.id,
-      sourceType: KIT_TOKEN,
-      title,
-      artifacts: input.artifacts,
-      allowExisting: true,
-      expectedFingerprint: kitMembershipFingerprint(made),
+  // All or nothing: a kit that fails partway is archived, so the next try with the
+  // same title starts clean instead of colliding with a half-made kit.
+  try {
+    for (const source of input.sources) await addKitSource(scope, source);
+    if (input.artifacts.length) {
+      const made = await readKit(KIT_TOKEN, scope.id);
+      if (!made) throw new Error("The kit was made but could not be read back.");
+      await createManualKit({
+        sourceId: scope.id,
+        sourceType: KIT_TOKEN,
+        title,
+        artifacts: input.artifacts,
+        allowExisting: true,
+        expectedFingerprint: kitMembershipFingerprint(made),
+      });
+    }
+  } catch (cause) {
+    await archiveKitScope(scope.id).catch((rollback) => {
+      console.error("[kits] could not roll back a half-made kit", scope.id, rollback);
     });
+    throw cause;
   }
   return scope.id;
 }

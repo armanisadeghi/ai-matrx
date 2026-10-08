@@ -57,7 +57,8 @@ export function SavedAidsKitForm({
   const pickedReady = set.sources.filter((c) => c.status === "ready" && c.draft.ref);
   const pickedLanding = set.sources.some((c) => c.status === "pending" || c.status === "resolving");
   const pickedFileId = pickedFileAnchor(set.sources);
-  const saveReady = pickedReady.length > 0 && !pickedLanding && title.trim().length > 0;
+  // Material is optional: saved aids alone make a kit.
+  const saveReady = (pickedReady.length > 0 || selected.length > 0) && !pickedLanding && title.trim().length > 0;
 
   // Restore an unsaved draft (identities only; rows re-read so a stale session
   // value never reaches the kit writer).
@@ -135,9 +136,8 @@ export function SavedAidsKitForm({
 
   /** The same kit the AI mode makes: its own record, each picked Source filed under it, then the aids. */
   const makeKit = async (kitTitle: string, artifacts: readonly EducationLibraryRow[]): Promise<string> => {
-    const resolved = await set.resolve();
-    const sources = kitSourceRefs(resolved);
-    if (!sources.length) throw new Error("None of the picked material had any text. Check each Source, or add another.");
+    const sources = pickedReady.length ? kitSourceRefs(await set.resolve()) : [];
+    if (pickedReady.length && !sources.length) throw new Error("None of the picked material had any text. Check each Source, or add another.");
     return createMultiSourceKit({ orgId: await ensureOrgId(null), title: kitTitle, sources, artifacts });
   };
 
@@ -174,7 +174,7 @@ export function SavedAidsKitForm({
       if (!raw || typeof raw !== "object" || Array.isArray(raw)) throw new Error(`create_kits[${index}] must be an object.`);
       const item = raw as Record<string, unknown>;
       if (typeof item.title !== "string" || !item.title.trim()) throw new Error(`create_kits[${index}].title needs text.`);
-      if (!pickedReady.length || pickedLanding) throw new Error(`create_kits[${index}] needs the material picked first; kit_sources lists what is picked.`);
+      if (pickedLanding) throw new Error(`create_kits[${index}] must wait until the picked material has landed; kit_sources lists what is picked.`);
       if (item.source_file_id !== undefined && item.source_file_id !== pickedFileId) throw new Error(`create_kits[${index}].source_file_id must equal kit_source_file_id, or be left out.`);
       if (!Array.isArray(item.artifact_refs) || !item.artifact_refs.length) throw new Error(`create_kits[${index}].artifact_refs needs one or more visible study aids.`);
       const refs = item.artifact_refs;
