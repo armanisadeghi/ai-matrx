@@ -45,6 +45,12 @@ Block document: a tree of `SpaceBlock` (`id`, `type`, `text: RichSpan[]`, `color
 
 ## Change log
 
+- 2026-10-08 — builder round 38 (grid spec shared): `data/view-spec.ts` is the one `viewSpec` builder; DatabaseBlock draws
+  from it and `space-page-seed.server.ts` passes the same spec as `askTablePageSeed({ view })` (grid/list/gallery
+  views; chart, dashboard, form and a board/calendar/timeline missing its field take their default from the table's
+  fields in the browser, so they pass none). records 0.84.3, records-ui 0.110.7. Member page 1b5eb9af: record reads
+  5 -> 0 (only 2 entitlement snapshots left in the row-ish count); admin sample 4 -> 0. Left at hydration: two
+  identical `enrich_cells` (same org, same table, same 4 record ids) and `field_options`.
 - 2026-10-08 — builder round 37 (merged seed, measured): `askTablePageSeed` now gets `merged: true` (DataMount mounts the
   merged grid). No Spaces grid is grouped (its spec never sets grouping), so reads are unchanged: member page
   1b5eb9af 5 data reads + 2 entitlement, admin sample 4 + 2, merged on or off. What still reads: the grid's

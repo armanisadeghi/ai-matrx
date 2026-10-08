@@ -22,7 +22,7 @@
 import "server-only";
 
 import { isUuidShape } from "@ai-matrx/kit/uuid";
-import type { EntityColumn } from "@ai-matrx/records-ui";
+import type { EntityColumn, SavedViewSpec } from "@ai-matrx/records-ui";
 import { asRecordsDataSource, createRecordsClient, recordingDataSource, type RecordsSeed } from "@ai-matrx/records/core";
 import { askChartSeed, askEntityBlockSeed, askTablePageSeed, askTileSeed, mergeSeeds, serverRowsOf } from "@ai-matrx/records-ui/first-page";
 import { headers } from "next/headers";
@@ -33,7 +33,8 @@ import { createClient } from "@/utils/supabase/server";
 
 import type { SpaceBlock, SpaceDoc } from "../contract";
 import { activeView, chartTileSpecs, DEFAULT_CHART, ENTITY_PAGE, entityChartBy, entityRowsArgs, entityShownColumns, hasListFilter } from "../data/first-reads";
-import { AGENCY_SAMPLE_ID, readDatabaseProps, type DatabaseBlockProps } from "../data/sources";
+import { viewSpec } from "../data/view-spec";
+import { AGENCY_SAMPLE_ID, readDatabaseProps, type DatabaseBlockProps, type SpaceDbView } from "../data/sources";
 import { SupabaseSpacesStore } from "../store-db/supabase-store";
 import type { BlockSeed, SeededWhere, SpaceBlockSeeds } from "./space-seed-context";
 
@@ -120,8 +121,8 @@ class PageReads {
   }
 
   /** The table's page seed; its bundle carries the knob, and the rows are asked only when it is on. */
-  tablePage(tableId: string, organizationId: string): Promise<RecordsSeed> {
-    return this.once(`table:${tableId}`, () =>
+  tablePage(tableId: string, organizationId: string, view: SavedViewSpec | undefined): Promise<RecordsSeed> {
+    return this.once(`table:${tableId}|${JSON.stringify(view ?? null)}`, () =>
       askTablePageSeed({
         dataSource: this.supabase,
         organizationId,
@@ -130,6 +131,8 @@ class PageReads {
         embedded: true,
         // DataMount mounts the merged grid (recordsUiHostFor merged:true): predict its first page the same way.
         merged: true,
+        // The EXACT spec the grid draws from (data/view-spec.ts): its sorts, filter/where and grouping build the first page.
+        ...(view ? { view } : {}),
         rows: (sofar) => serverRowsOf(sofar)?.on === true,
       }),
     );
@@ -162,15 +165,28 @@ class PageReads {
   }
 }
 
+/**
+ * The grid's own spec, when the grid draws from the saved view alone. Chart, dashboard and form views never
+ * mount the grid; a board, calendar or timeline without its field takes a default from the table's fields
+ * (known only in the browser), so those are not predicted here and the browser asks as before.
+ */
+function gridSpecOf(tableId: string, view: SpaceDbView): SavedViewSpec | undefined {
+  const layout: string = view.layout;
+  if (layout === "chart" || layout === "dashboard" || layout === "form") return undefined;
+  if (layout === "kanban" && !view.groupField) return undefined;
+  if ((layout === "calendar" || layout === "timeline") && !view.dateField) return undefined;
+  return viewSpec(tableId, view);
+}
+
 async function tableBlockSeed(reads: PageReads, { props }: DatabaseOnPage): Promise<BlockSeed | null> {
   if (props.source.kind !== "table" || !isUuidShape(props.source.tableId)) return null;
   const tableId = props.source.tableId;
   const where = await reads.where(tableId);
   if (!where) return null;
   if (!where.organizationId || props.sample === AGENCY_SAMPLE_ID) return { tableId, where: where.where, records: null };
-  const page = await reads.tablePage(tableId, where.organizationId);
-  if (serverRowsOf(page)?.on !== true) return { tableId, where: where.where, records: null };
   const view = activeView(props.views, props.activeViewId);
+  const page = await reads.tablePage(tableId, where.organizationId, gridSpecOf(tableId, view));
+  if (serverRowsOf(page)?.on !== true) return { tableId, where: where.where, records: null };
   const filter = (view.filters ?? {}) as Record<string, unknown>;
   let tiles: RecordsSeed | null = null;
   if (view.layout === "chart" && !hasListFilter(filter)) {
