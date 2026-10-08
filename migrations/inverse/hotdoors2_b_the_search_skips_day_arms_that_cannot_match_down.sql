@@ -1,6 +1,6 @@
 -- chair-step: undo hotdoors2_b_the_search_skips_day_arms_that_cannot_match.sql - restores custom.record_search_sql as it was after part a
 -- lane: HOT-DOORS-2
--- based-on: custom.record_search_sql(uuid, uuid, text, text, text) NEWHASH
+-- based-on: custom.record_search_sql(uuid, uuid, text, text, text) 1a74a4b3bdb00a21efb69f9a94d846e05d467050fccacfeac4285bdee6da6215
 
 set local statement_timeout = '60s';
 
