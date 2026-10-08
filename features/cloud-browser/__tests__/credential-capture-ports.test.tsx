@@ -1,6 +1,5 @@
 /**
- * The card IS the leak boundary (D-11), so these pin the invariants that make
- * it one: the typed values reach the vault write and NOTHING else, the receipt
+ * The package card (D-11) over the Cloud Browser host ports: these pin that the typed values reach the vault write and NOTHING else, the receipt
  * that retires the card carries a status and an item id only, and a request the
  * agent has already given up on cannot write a credential at all.
  */
@@ -8,11 +7,26 @@
 import * as React from "react";
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
-import { CredentialCaptureCard } from "./CredentialCaptureCard";
+import { CredentialCaptureCard } from "@ai-matrx/chat/agents/ui-first-tools/ui/CredentialCaptureCard";
+import { cloudBrowserCapturePorts } from "../credential-capture-ports";
 import type { CredentialCaptureRequest } from "../types";
 
 (globalThis as unknown as { IS_REACT_ACT_ENVIRONMENT: boolean })
   .IS_REACT_ACT_ENVIRONMENT = true;
+(globalThis as unknown as { ResizeObserver: unknown }).ResizeObserver ??= class {
+  observe() {}
+  unobserve() {}
+  disconnect() {}
+};
+
+function Card(props: {
+  runId: string;
+  profileId: string;
+  request: CredentialCaptureRequest;
+  onSettled: () => void;
+}) {
+  return <CredentialCaptureCard {...cloudBrowserCapturePorts(props)} />;
+}
 
 const postJson = jest.fn();
 jest.mock("@/lib/python-client", () => ({
@@ -106,7 +120,7 @@ async function render(ui: React.ReactElement) {
   };
 }
 
-describe("CredentialCaptureCard", () => {
+describe("Cloud Browser credential capture ports", () => {
   beforeEach(() => {
     postJson.mockReset();
     postJson.mockResolvedValue({
@@ -122,7 +136,7 @@ describe("CredentialCaptureCard", () => {
 
   it("labels the boxes from the agent's field map and masks the secret one", async () => {
     const v = await render(
-      <CredentialCaptureCard
+      <Card
         runId="run-1"
         profileId="prof-1"
         request={request()}
@@ -139,7 +153,7 @@ describe("CredentialCaptureCard", () => {
   it("sends the values to the vault and a value-free receipt to the control plane", async () => {
     const onSettled = jest.fn();
     const v = await render(
-      <CredentialCaptureCard
+      <Card
         runId="run-1"
         profileId="prof-1"
         request={request()}
@@ -179,7 +193,7 @@ describe("CredentialCaptureCard", () => {
 
   it("refuses to write for a request the agent has already given up on", async () => {
     const v = await render(
-      <CredentialCaptureCard
+      <Card
         runId="run-1"
         profileId="prof-1"
         request={request({

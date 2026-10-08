@@ -59,7 +59,8 @@ import { AccountSettings } from "./AccountSettings";
 import { ShareControl } from "./ShareControl";
 import { DeletionFlow } from "./DeletionFlow";
 import { Walkthrough } from "./Walkthrough";
-import { CredentialCaptureCard } from "./CredentialCaptureCard";
+import { CredentialCaptureCard } from "@ai-matrx/chat/agents/ui-first-tools/ui/CredentialCaptureCard";
+import { cloudBrowserCapturePorts } from "../credential-capture-ports";
 import { LoginCapturePanel } from "./LoginCapturePanel";
 import { AuthenticatorPanel } from "./AuthenticatorPanel";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
@@ -490,10 +491,12 @@ export function CloudBrowserBody({
             {captureRequest && cb.run ? (
               <CredentialCaptureCard
                 key={captureRequest.handoffId}
-                runId={cb.run.id}
-                profileId={cb.run.profileId}
-                request={captureRequest}
-                onSettled={() => void cb.reload()}
+                {...cloudBrowserCapturePorts({
+                  runId: cb.run.id,
+                  profileId: cb.run.profileId,
+                  request: captureRequest,
+                  onSettled: () => void cb.reload(),
+                })}
               />
             ) : isMeDriving &&
               cb.handoff?.reason === "credentials_missing" &&

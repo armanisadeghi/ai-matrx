@@ -94,7 +94,7 @@ password where it can see one. The aidream executor raises a
 `credentials_missing` handoff carrying the card's SPEC — display name, the
 agent's field NAMES + selectors, the known/unknown recipe branch, the expiry —
 on `browser.handoff.metadata.capture_request`, which this surface already reads.
-`CredentialCaptureCard` renders from it, and the outcome (status + the new vault
+The package's `CredentialCaptureCard` (`@ai-matrx/chat/agents/ui-first-tools/ui/CredentialCaptureCard`) renders from it over this feature's host ports (`credential-capture-ports.ts`), and the outcome (status + the new vault
 item id, never a value) goes to `POST …/runs/{id}/capture-result`, which retires
 the card and hands the browser back to the agent — the person never has to take
 control just to give it away again.
@@ -433,7 +433,7 @@ The frontend never receives a password, seed, or generated code from that path.
   action="capture"` on the cloud browser used to return `human_required` guidance
   because the private value box existed only in the Chrome extension. It now raises
   a handoff whose `metadata.capture_request` carries the card spec, and this repo
-  renders `components/CredentialCaptureCard.tsx` from it — values straight to the
+  renders the package `CredentialCaptureCard` (host ports in `credential-capture-ports.ts`) from it — values straight to the
   vault, a value-free receipt to the new `POST …/runs/{id}/capture-result`, and the
   agent unparked without a takeover. aidream side:
   `BrowserManager.open_capture_card` / `record_capture_outcome`
