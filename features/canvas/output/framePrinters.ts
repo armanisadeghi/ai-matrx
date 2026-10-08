@@ -23,7 +23,8 @@ import {
   type BlockPrinter, type PrintBlockOutput } from "@ai-matrx/print/core";
 import { escapeHtml } from "@ai-matrx/kit/html-escape";
 import { parseMap } from "@/components/mardown-display/blocks/map/parseMap";
-import { renderStaticMap } from "./mapCapture";
+import { captureLeafletMap, findLeafletMap, renderStaticMap } from "./mapCapture";
+import { setElementPrintCapture } from "@ai-matrx/chat/host/frame-print";
 
 /** The external URL an iframe block embeds, or null for an inline (srcDoc) page. */
 export function iframeBlockUrl(data: unknown): string | null {
@@ -101,5 +102,15 @@ export const mapPrinter: BlockPrinter = {
 registerBlockPrinter(["iframe"], iframePrinter);
 registerBlockPrinter(["map"], mapPrinter);
 
-// Full Print's map picture (chat `setElementPrintCapture`, published after chat 0.6.0) is plugged
-// once that release is installed — the MapBlock already carries `data-matrx-print-picture`.
+// Full Print's map picture: every `[data-matrx-print-picture]` MapBlock is drawn tile by tile.
+setElementPrintCapture(async (element) => {
+  const map = findLeafletMap(element);
+  if (!map) return null;
+  const blob = await captureLeafletMap(map);
+  return new Promise<string | null>((resolve) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(typeof reader.result === "string" ? reader.result : null);
+    reader.onerror = () => resolve(null);
+    reader.readAsDataURL(blob);
+  });
+});

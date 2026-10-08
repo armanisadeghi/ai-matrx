@@ -58,8 +58,14 @@ export const CANVAS_OUTPUT_PORTS: CanvasOutputPorts = {
     if (request.surface !== "dom") return null;
     if (!element) return null;
     return async () => {
-      const { elementToImage } = await import("@ai-matrx/alchemy/operate/capture");
-      return elementToImage(element, { safeColors: true });
+      // A large tab takes seconds: say so at once (Copy image has no chip of its own).
+      const progress = toast.loading("Capturing…");
+      try {
+        const { elementToImage } = await import("@ai-matrx/alchemy/operate/capture");
+        return await elementToImage(element, { safeColors: true });
+      } finally {
+        toast.dismiss(progress);
+      }
     };
   },
   // Through the kit clipboard door, never navigator.clipboard directly.
@@ -69,7 +75,8 @@ export const CANVAS_OUTPUT_PORTS: CanvasOutputPorts = {
     toast.success("Image copied");
   },
   // "Attach to chat ▸" — screenshot · code · text (attach lane, L3).
-  attachOptions: (request) => canvasAttachOptions(request),
+  // `capture` is the canvas's own resolution (kind capture, then this port) — the one Copy image uses.
+  attachOptions: (request, capture) => canvasAttachOptions(request, capture),
   onError: (message, error) => {
     console.error(`[canvas] ${message}`, error);
     toast.error(`${message}.`);

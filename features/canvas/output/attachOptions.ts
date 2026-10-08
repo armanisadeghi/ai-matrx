@@ -25,6 +25,7 @@ import { chatRouteSurfaceKey } from "@ai-matrx/chat/agents/components/chat/begin
 import { getStore } from "@/lib/redux/store-singleton";
 import { toast } from "@/lib/toast";
 import { publishedPageInElement, resolvePrintablePageUrl } from "./publishedPage";
+import { artifactAttachOptions, attachArtifactToChat } from "./artifactAttach";
 
 interface FocusState {
   conversationFocus?: { bySurface?: Record<string, { input?: string | null } | undefined> };
@@ -95,9 +96,63 @@ export function canvasHtmlItem(
   };
 }
 
-export function canvasAttachOptions(request: CanvasOutputRequest): readonly CanvasMenuItem[] {
+/**
+ * Every other artifact type (rendered-output P2 WP4): its own representations
+ * (artifactAttach.ts), the screenshot through the same capture port the pane's
+ * "Copy image" uses. A saved item attaches by reference, an unsaved one inline.
+ */
+function canvasArtifactAttachOptions(
+  request: CanvasOutputRequest,
+  capture: (() => Promise<Blob>) | null,
+): readonly CanvasMenuItem[] {
+  const data = readArtifactItemData(request.item.data);
+  if (!data) return [];
+  const content = contentOf(data);
+  const itemId = data.savedItemId ?? content.metadata?.canvasItemId ?? null;
+  // Screenshot is offered exactly when the pane can capture this tab (as Copy image is).
+  const frameCapture = capture !== null;
+  const store = getStore();
+  const focused = store ? focusedChatConversationId(store.getState() as unknown as FocusState) : null;
+  return artifactAttachOptions(content.type, content.data, frameCapture).map((option) => ({
+    id: `output:attach:${option.value}`,
+    label: option.unavailable ?? `Attach ${option.label.toLowerCase()} to chat`,
+    disabled: Boolean(option.unavailable),
+    onSelect: () => {
+      const live = getStore();
+      if (!live) return;
+      void (async () => {
+        const conversationId = await resolveAttachConversationId({
+          metadataConversationId: content.metadata?.conversationId ?? null,
+          canvasItemId: itemId && isMaterializedArtifactId(itemId) ? itemId : null,
+          focused,
+        });
+        if (!conversationId) {
+          toast.error("There is no chat to attach to. Open a chat first.");
+          return;
+        }
+        await attachArtifactToChat({
+          store: live,
+          conversationId,
+          type: content.type,
+          title: request.title,
+          data: content.data,
+          canvasItemId: itemId,
+          blockKey: `canvas_${request.item.id}`,
+          representation: option.value,
+          element: () => request.element ?? null,
+          captureImage: capture ?? undefined,
+        });
+      })();
+    },
+  }));
+}
+
+export function canvasAttachOptions(
+  request: CanvasOutputRequest,
+  capture: (() => Promise<Blob>) | null = null,
+): readonly CanvasMenuItem[] {
   const item = canvasHtmlItem(request);
-  if (!item) return [];
+  if (!item) return canvasArtifactAttachOptions(request, capture);
   if (!item.saved) {
     return [{ id: "output:attach", label: "Attach to chat — publishing the page…", disabled: true, onSelect: () => undefined }];
   }
