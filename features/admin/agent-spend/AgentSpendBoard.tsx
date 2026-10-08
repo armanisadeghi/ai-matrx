@@ -189,10 +189,10 @@ export function AgentSpendBoard({
     {
       id: "flags",
       header: "Flags",
-      accessorFn: (r) => agentSpendFlags(r).map((f) => f.label).join(", "),
+      accessorFn: (r) => agentSpendFlags(r, format).map((f) => f.label).join(", "),
       filter: "text",
       width: 220,
-      cell: (r) => <SpendFlagBadges flags={agentSpendFlags(r)} />,
+      cell: (r) => <SpendFlagBadges flags={agentSpendFlags(r, format)} />,
     },
     {
       id: "models",
@@ -347,10 +347,10 @@ export function AgentSpendBoard({
                 r.mandate_key ? `Mandate: ${r.mandate_key}` : null,
                 `Models: ${r.models.join(", ") || "not recorded"}`,
                 `Runs: ${r.runs}`,
-                `Cost: $${r.cost.toFixed(2)} (avg $${r.avg_run_cost.toFixed(2)}, max $${r.max_run_cost.toFixed(2)})`,
+                `Cost: ${format(r.cost)} (avg ${format(r.avg_run_cost)}, max ${format(r.max_run_cost)})`,
                 `Turns: avg ${r.avg_turns}, max ${r.max_turns}`,
                 `Tokens per call: in ${Math.round(r.avg_input_per_call)}, out ${Math.round(r.avg_output_per_call)}`,
-                `Flags: ${agentSpendFlags(r).map((f) => f.label).join(", ") || "none"}`,
+                `Flags: ${agentSpendFlags(r, format).map((f) => f.label).join(", ") || "none"}`,
               ]
                 .filter(Boolean)
                 .join("\n"),

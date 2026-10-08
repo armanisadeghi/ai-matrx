@@ -74,6 +74,11 @@ const QUIZ_STYLES = `
     color: #374151;
     border-radius: 0 4px 4px 0;
   }
+  .answer-lines {
+    height: 72px;
+    border-bottom: 1px solid #94a3b8;
+    background: repeating-linear-gradient(to bottom, transparent 0, transparent 23px, #cbd5e1 23px, #cbd5e1 24px);
+  }
   .answer-key-row {
     display: grid;
     grid-template-columns: 40px 1fr;
@@ -107,10 +112,12 @@ function renderWithAnswers(quiz: RawQuizJSON): string {
                 })
                 .join("\n");
 
+            const openAnswer = !q.options.length && q.answerText ? `<div class="explanation"><strong>Answer:</strong> ${escapeHtml(q.answerText)}</div>` : "";
             return `<div class="question-block">
       <div class="question-number">Question ${qi + 1}</div>
       <div class="question-text">${escapeHtml(q.question)}</div>
       <ul class="options-list">${opts}</ul>
+      ${openAnswer}
       ${q.explanation ? `<div class="explanation"><strong>Explanation:</strong> ${escapeHtml(q.explanation)}</div>` : ""}
     </div>`;
         })
@@ -136,10 +143,12 @@ function renderBlank(quiz: RawQuizJSON): string {
                 })
                 .join("\n");
 
+            const lines = q.options.length ? "" : `<div class="answer-lines"></div>`;
             return `<div class="question-block">
       <div class="question-number">Question ${qi + 1}</div>
       <div class="question-text">${escapeHtml(q.question)}</div>
       <ul class="options-list">${opts}</ul>
+      ${lines}
     </div>`;
         })
         .join("\n");
@@ -154,11 +163,13 @@ ${questions}`;
 function renderAnswerKey(quiz: RawQuizJSON): string {
     const rows = quiz.multipleChoice
         .map((q, qi) => {
-            const correctLetter = LETTERS[q.correctAnswer] ?? String(q.correctAnswer + 1);
-            const correctText = q.options[q.correctAnswer] ?? "";
+            const hasChoice = q.correctAnswer >= 0 && q.correctAnswer < q.options.length;
+            const correctLabel = hasChoice
+                ? `${LETTERS[q.correctAnswer] ?? q.correctAnswer + 1}. ${q.options[q.correctAnswer]}`
+                : (q.answerText ?? "");
             return `<div class="answer-key-row">
       <span class="answer-key-num">${qi + 1}.</span>
-      <span><span class="answer-key-correct">${correctLetter}. ${escapeHtml(correctText)}</span>${q.explanation ? ` — ${escapeHtml(q.explanation)}` : ""}</span>
+      <span><span class="answer-key-correct">${escapeHtml(correctLabel)}</span>${q.explanation ? ` — ${escapeHtml(q.explanation)}` : ""}</span>
     </div>`;
         })
         .join("\n");

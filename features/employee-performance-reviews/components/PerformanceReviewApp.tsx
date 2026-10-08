@@ -3,7 +3,7 @@
 // Shared interactive surface for the retained demo and organization route.
 
 import { ReadFailure } from "@ai-matrx/design-system";
-import { useRef, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { Input } from "@ai-matrx/design-system/controls";
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { Button } from "@/components/ui/button";
@@ -102,7 +102,7 @@ export interface PerformanceReviewAppProps {
    * ONE review persisted somewhere other than this browser (a 360 review track): no review list,
    * no new/duplicate, and `toolbarEnd` (e.g. Submit) sits at the end of the top bar.
    */
-  single?: { persistence: ReviewPersistence; toolbarEnd?: ReactNode };
+  single?: { persistence: ReviewPersistence; toolbarEnd?: ReactNode; readOnly?: boolean };
   organization?: PerformanceReviewOrganizationContext;
   showHero?: boolean;
 }
@@ -115,7 +115,12 @@ export default function PerformanceReviewApp({
 }: PerformanceReviewAppProps) {
   const store = useReviews(storageKey, single?.persistence);
   const [search, setSearch] = useState("");
-  const [viewMode, setViewMode] = useState<"edit" | "report">("edit");
+  const readOnly = single?.readOnly === true;
+  const [viewMode, setViewMode] = useState<"edit" | "report">(readOnly ? "report" : "edit");
+  // A half that was just submitted turns read-only in place: the report, no Edit.
+  useEffect(() => {
+    if (readOnly) setViewMode("report");
+  }, [readOnly]);
   const [isExportingPdf, setIsExportingPdf] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const reportCaptureRef = useRef<HTMLDivElement>(null);
@@ -502,6 +507,7 @@ export default function PerformanceReviewApp({
               </span>
             </div>
             <Separator orientation="vertical" className="hidden h-6 sm:block" />
+            {readOnly ? null : (
             <Button
               icon={<PenLine />}
               variant={viewMode === "edit" ? "outline" : "quiet"}
@@ -509,6 +515,7 @@ export default function PerformanceReviewApp({
             >
               Edit
             </Button>
+            )}
             <Button
               icon={<FileText />}
               variant={viewMode === "report" ? "outline" : "quiet"}

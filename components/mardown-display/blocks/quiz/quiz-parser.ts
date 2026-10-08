@@ -18,6 +18,8 @@ type QuizQuestionJSON = {
   options: string[];
   correctAnswer: number;
   explanation: string;
+  /** Free-text answer for a question that has no options (a `quiz_set` open question). */
+  answerText?: string;
 };
 
 export type RawQuizJSON = {
@@ -42,6 +44,9 @@ export function normalizeRawQuizJSON(data: unknown): RawQuizJSON | null {
   if (!data || typeof data !== "object") return null;
 
   const record = data as Record<string, unknown>;
+  if (record.__kind === "quiz_set" || (Array.isArray(record.questions) && !record.multipleChoice && !record.multiple_choice)) {
+    return normalizeQuizSetKind(record);
+  }
   const quizTitle =
     typeof record.quizTitle === "string"
       ? record.quizTitle
@@ -63,6 +68,42 @@ export function normalizeRawQuizJSON(data: unknown): RawQuizJSON | null {
   }
 
   return { quizTitle, category, multipleChoice };
+}
+
+const OPTION_LETTERS = "abcdefghijklmnop";
+
+/**
+ * A `quiz_set` kind value (`title` + `questions[]`, each `options?` and a
+ * `correct_answer` that is the option's text or its letter) as the printer's
+ * and player's one shape. A question without options keeps its answer as text.
+ */
+function normalizeQuizSetKind(record: Record<string, unknown>): RawQuizJSON | null {
+  const title = typeof record.title === "string" && record.title ? record.title : null;
+  const questions = record.questions;
+  if (!title || !Array.isArray(questions) || questions.length === 0) return null;
+  const multipleChoice: QuizQuestionJSON[] = [];
+  questions.forEach((raw, index) => {
+    if (!raw || typeof raw !== "object") return;
+    const q = raw as Record<string, unknown>;
+    if (typeof q.question !== "string") return;
+    const options = Array.isArray(q.options) ? q.options.filter((o): o is string => typeof o === "string") : [];
+    const answer = typeof q.correct_answer === "string" ? q.correct_answer.trim() : "";
+    let correct = options.findIndex((o) => o.trim() === answer);
+    if (correct < 0 && /^[a-p]$/i.test(answer)) {
+      const byLetter = OPTION_LETTERS.indexOf(answer.toLowerCase());
+      if (byLetter < options.length) correct = byLetter;
+    }
+    multipleChoice.push({
+      id: index + 1,
+      question: q.question,
+      options,
+      correctAnswer: correct,
+      explanation: typeof q.explanation === "string" ? q.explanation : "",
+      ...(answer ? { answerText: answer } : {}),
+    });
+  });
+  if (multipleChoice.length === 0) return null;
+  return { quizTitle: title, multipleChoice };
 }
 
 /**

@@ -14,6 +14,7 @@ import type { MatrxColumnDef } from "@ai-matrx/design-system/data-table/types";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { Cost } from "@/components/cost/Cost";
+import { useCostDisplay } from "@/components/cost/useCostDisplay";
 import { usageViewHref } from "@/features/admin/usage-drill/usageLinks";
 import { orgAdminMemberHref } from "@/features/organizations/admin/routes";
 import { conversationHref } from "@/features/scheduling/service/automationCosts";
@@ -53,6 +54,7 @@ function RunsTable({
   seat: SpendSeat;
   orgSlug?: string;
 }) {
+  const { format } = useCostDisplay();
   const [runs, setRuns] = useState<AgentSpendRun[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -203,7 +205,7 @@ function RunsTable({
         humanRow: (r) =>
           [
             `When: ${r.started_at}`,
-            `Cost: $${r.cost.toFixed(4)}`,
+            `Cost: ${format(r.cost)}`,
             `Turns: ${r.turns}`,
             `Models: ${r.models.join(", ") || "not recorded"}`,
             `Tokens: in ${r.tokens_in}, out ${r.tokens_out}`,
@@ -234,6 +236,7 @@ export function AgentSpendDetail({
   onDaysChange: (d: SpendWindowDays) => void;
 }) {
   const { rows, loading, error } = useAgentSpend(orgId, days);
+  const { format } = useCostDisplay();
   const row = rows.find((r) => rowKey(r) === rowKey({ agent_id: agentId, mandate_key: mandateKey }));
   const backHref = seat === "org" && orgSlug ? orgAgentSpendPath(orgSlug) : AGENT_SPEND_ADMIN_PATH;
 
@@ -267,7 +270,7 @@ export function AgentSpendDetail({
       ) : (
         <>
           <SpendSubject row={row} seat={seat} orgSlug={orgSlug} days={days} />
-          <SpendFlagBadges flags={agentSpendFlags(row)} />
+          <SpendFlagBadges flags={agentSpendFlags(row, format)} />
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-8">
             <Stat label="Total"><Cost usd={row.cost} /></Stat>
             <Stat label="Runs">{row.runs.toLocaleString()}</Stat>

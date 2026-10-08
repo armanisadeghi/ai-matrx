@@ -12,12 +12,15 @@ export type AiModelFilters = {
   is_deprecated?: boolean;
   is_primary?: boolean;
   is_premium?: boolean;
+  /** One-click views of the MAX cost tier (cost_rating 6, "5+"); URL `<tab>.tier`. */
+  tier?: TierView;
   context_window_min?: number;
   context_window_max?: number;
   max_tokens_min?: number;
   max_tokens_max?: number;
 };
 
+import { parseTierView, type TierView } from "../maxTier";
 import {
   parseModelQueryExtras,
   type ModelQueryExtras,
@@ -131,6 +134,8 @@ function serializeTabState(params: URLSearchParams, tab: TabState) {
   if (tab.filters.is_premium !== undefined)
     params.set(`${p}.is_premium`, String(tab.filters.is_premium));
   else params.delete(`${p}.is_premium`);
+  if (tab.filters.tier) params.set(`${p}.tier`, tab.filters.tier);
+  else params.delete(`${p}.tier`);
   if (tab.filters.context_window_min !== undefined)
     params.set(`${p}.cw_min`, String(tab.filters.context_window_min));
   else params.delete(`${p}.cw_min`);
@@ -165,6 +170,7 @@ function deserializeTabState(params: URLSearchParams, id: string): TabState {
       ),
       is_primary: parseBoolean(params.get(`${p}.is_primary`)),
       is_premium: parseBoolean(params.get(`${p}.is_premium`)),
+      tier: parseTierView(params.get(`${p}.tier`)),
       context_window_min: parseNumberParam(params.get(`${p}.cw_min`)),
       context_window_max: parseNumberParam(params.get(`${p}.cw_max`)),
       max_tokens_min: parseNumberParam(params.get(`${p}.mt_min`)),
@@ -265,6 +271,8 @@ export function useTabUrlState() {
           params.set(`${newId}.is_primary`, String(initialFilters.is_primary));
         if (initialFilters?.is_premium !== undefined)
           params.set(`${newId}.is_premium`, String(initialFilters.is_premium));
+        if (initialFilters?.tier)
+          params.set(`${newId}.tier`, initialFilters.tier);
         if (initialFilters?.context_window_min !== undefined)
           params.set(
             `${newId}.cw_min`,

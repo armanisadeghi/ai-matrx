@@ -1,6 +1,7 @@
 import { parseCapabilities } from "@ai-matrx/agents/models";
 import type { AiModel } from "../types";
 import type { AiModelFilters } from "../hooks/useTabUrlState";
+import { matchesTierView } from "../maxTier";
 
 export type AiModelComparisonRow = Pick<
   AiModel,
@@ -12,6 +13,9 @@ export type AiModelComparisonRow = Pick<
   | "is_deprecated"
   | "is_primary"
   | "is_premium"
+  | "cost_rating"
+  | "retired_at"
+  | "pending_cost_rating"
   | "context_window"
   | "max_tokens"
   | "preferred_pricing"
@@ -77,6 +81,10 @@ export function applyAiModelFilters<T extends AiModelComparisonRow>(
     result = result.filter(
       (model) => (model.is_premium ?? false) === filters.is_premium,
     );
+  }
+  if (filters.tier) {
+    const view = filters.tier;
+    result = result.filter((model) => matchesTierView(model, view));
   }
   if (filters.context_window_min !== undefined) {
     const contextWindowMin = filters.context_window_min;

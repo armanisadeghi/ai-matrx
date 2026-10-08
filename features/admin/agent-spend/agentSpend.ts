@@ -241,18 +241,20 @@ export interface SpendFlag {
 const isTestOrAdmin = (p: SpendPayer) =>
   p.is_platform_admin || (p.email != null && (TEST_ACCOUNT_EMAILS as readonly string[]).includes(p.email));
 
-export function agentSpendFlags(row: AgentSpendRow): SpendFlag[] {
+/** `money` is the viewer's cost formatter (useCostDisplay().format): points, or $ for an admin who chose it. */
+export function agentSpendFlags(row: AgentSpendRow, money: (usd: number) => string): SpendFlag[] {
   const L = SPEND_FLAG_LIMITS;
+  const limit = money(L.runCostUsd);
   const flags: SpendFlag[] = [];
   const premium = row.premium_models.length > 0;
   if (premium) {
     flags.push({ id: "premium_model", label: "Premium model", detail: `Uses ${row.premium_models.join(", ")}`, severity: "critical" });
   }
   if (row.avg_run_cost > L.runCostUsd) {
-    flags.push({ id: "avg_run_over_limit", label: `Avg run > $${L.runCostUsd}`, detail: `Average run costs $${row.avg_run_cost.toFixed(2)}`, severity: "critical" });
+    flags.push({ id: "avg_run_over_limit", label: `Avg run > ${limit}`, detail: `Average run costs ${money(row.avg_run_cost)}`, severity: "critical" });
   }
   if (row.max_run_cost > L.runCostUsd) {
-    flags.push({ id: "run_over_limit", label: `A run > $${L.runCostUsd}`, detail: `Most expensive run cost $${row.max_run_cost.toFixed(2)}`, severity: "warning" });
+    flags.push({ id: "run_over_limit", label: `A run > ${limit}`, detail: `Most expensive run cost ${money(row.max_run_cost)}`, severity: "warning" });
   }
   if (row.avg_turns > L.avgTurns) {
     flags.push({ id: "avg_turns_over_limit", label: `Avg turns > ${L.avgTurns}`, detail: `${row.avg_turns} model calls per run on average`, severity: "critical" });
@@ -272,10 +274,10 @@ export function agentSpendFlags(row: AgentSpendRow): SpendFlag[] {
   const parked = row.payers.filter(isTestOrAdmin);
   if (parked.length > 0) {
     const cost = parked.reduce((s, p) => s + p.cost, 0);
-    flags.push({ id: "parked_on_admin", label: "Admin/test account", detail: `$${cost.toFixed(2)} billed to ${parked.map((p) => p.email ?? "an admin").join(", ")}`, severity: "warning" });
+    flags.push({ id: "parked_on_admin", label: "Admin/test account", detail: `${money(cost)} billed to ${parked.map((p) => p.email ?? "an admin").join(", ")}`, severity: "warning" });
   }
   if (row.unsaved_runs > 0) {
-    flags.push({ id: "unsaved_runs", label: "Unsaved runs", detail: `${row.unsaved_runs} runs ($${row.unsaved_cost.toFixed(2)}) left no saved conversation`, severity: "warning" });
+    flags.push({ id: "unsaved_runs", label: "Unsaved runs", detail: `${row.unsaved_runs} runs (${money(row.unsaved_cost)}) left no saved conversation`, severity: "warning" });
   }
   return flags;
 }

@@ -2619,6 +2619,9 @@ export type Database = {
           common_name: string | null
           context_window: number | null
           cost_rating: number | null
+          pending_cost_rating: number | null
+          pending_cost_rating_at: string | null
+          pending_cost_rating_by: string | null
           created_at: string
           created_by: string | null
           deleted_at: string | null
@@ -2655,6 +2658,9 @@ export type Database = {
           common_name?: string | null
           context_window?: number | null
           cost_rating?: number | null
+          pending_cost_rating?: number | null
+          pending_cost_rating_at?: string | null
+          pending_cost_rating_by?: string | null
           created_at?: string
           created_by?: string | null
           deleted_at?: string | null
@@ -2691,6 +2697,9 @@ export type Database = {
           common_name?: string | null
           context_window?: number | null
           cost_rating?: number | null
+          pending_cost_rating?: number | null
+          pending_cost_rating_at?: string | null
+          pending_cost_rating_by?: string | null
           created_at?: string
           created_by?: string | null
           deleted_at?: string | null
@@ -3980,6 +3989,21 @@ export type Database = {
       }
     }
     Functions: {
+      model_cost_rating_history: {
+        Args: { p_limit?: number; p_model_id?: string }
+        Returns: {
+          actor_id: string | null
+          actor_tier: string | null
+          from_rating: number | null
+          held_rating: number | null
+          model_id: string
+          model_name: string | null
+          occurred_at: string
+          operation: string
+          to_rating: number | null
+          version: number
+        }[]
+      }
       _translation_cell_target_ok: {
         Args: {
           p_layer: string

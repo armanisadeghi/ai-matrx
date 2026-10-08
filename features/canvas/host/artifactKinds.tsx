@@ -41,6 +41,8 @@ import {
   Share2,
   LayoutDashboard,
   Database,
+  Copy,
+  Download,
   type LucideIcon,
 } from "lucide-react";
 import { TapTargetButtonTransparent } from "@ai-matrx/tap-target";
@@ -55,9 +57,12 @@ import type { CanvasJson } from "@ai-matrx/canvas";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectIsAdminDebugger } from "@/lib/redux/selectors/userSelectors";
 import { toast } from "@/lib/toast";
+import { copyHtmlSource, downloadHtmlSource, resolveShownHtml } from "@/features/html-pages/output/htmlSourceOutput";
+import { extractTitleFromHTML } from "@/features/html-pages/utils/html-preview-utils";
 import {
   getDefaultTitle,
   isPersistableCanvasType,
+  type CanvasContent,
   titleToString,
   type CanvasContentType,
 } from "@/features/canvas/canvasContent";
@@ -172,10 +177,40 @@ async function saveToCloud(props: CanvasKindProps, data: ArtifactItemData) {
   toast.success(outcome.result.wasCreated ? "Saved to the cloud" : "Already saved");
 }
 
+/** Copy HTML / Download .html for an html tab — the card's own path (htmlSourceOutput), the chain's latest version. */
+function htmlSourceEntries(content: CanvasContent, data: ArtifactItemData): CanvasMenuItem[] {
+  const held = typeof content.data === "string" ? content.data : ((content.data as { html?: string } | null)?.html ?? "");
+  const canvasItemId = content.metadata?.canvasItemId ?? data.savedItemId ?? null;
+  const title = (html: string) => extractTitleFromHTML(html) || titleToString(content.metadata?.title) || "Web page";
+  const failed = (error: unknown) => {
+    console.error("[canvas] the page's HTML could not be read", error);
+    toast.error("The page's HTML could not be read.");
+  };
+  const shown = () => resolveShownHtml({ canvasItemId, version: "latest", held });
+  return [
+    {
+      id: "html:copy",
+      label: "Copy HTML",
+      icon: <Copy />,
+      onSelect: () => void shown().then(copyHtmlSource).catch(failed),
+    },
+    {
+      id: "html:download",
+      label: "Download .html",
+      icon: <Download />,
+      onSelect: () => void shown().then((html) => downloadHtmlSource(title(html), html)).catch(failed),
+    },
+  ];
+}
+
 function artifactMenu(props: CanvasKindProps): readonly CanvasMenuItem[] {
   const data = readArtifactItemData(props.item.data);
   if (!data) return [];
   const content = contentOf(data);
+  return [...(content.type === "html" ? htmlSourceEntries(content, data) : []), ...persistEntries(props, data, content)];
+}
+
+function persistEntries(props: CanvasKindProps, data: ArtifactItemData, content: CanvasContent): CanvasMenuItem[] {
   if (!isPersistableCanvasType(content.type)) return [];
   const savedId = content.metadata?.canvasItemId ?? data.savedItemId;
   const saved = isMaterializedArtifactId(savedId);

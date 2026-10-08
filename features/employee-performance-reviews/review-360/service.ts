@@ -312,6 +312,8 @@ export interface TrackView {
   document: string | null;
   submittedAt: string | null;
   dueOn: string | null;
+  /** The full due moment (the assignment's due date). */
+  dueAt: string | null;
   shared: boolean;
 }
 
@@ -333,6 +335,7 @@ export async function readTrack(client: RecordsClient, trackId: string): Promise
       document: s("document"),
       submittedAt: s("submitted_at"),
       dueOn: s("due_date")?.slice(0, 10) ?? null,
+      dueAt: s("due_date"),
       shared: unwrap(d.shared) === true,
     },
   };
@@ -362,9 +365,26 @@ export async function saveTrack(
 
 // ── the HR manager's side ────────────────────────────────────────────────────────────────────
 
-export async function listReviews360(client: RecordsClient, organizationId: string): Promise<R360<Review360Row[]>> {
+export type Review360ListRow = Review360Row & { selfIn: string | null; managerIn: string | null };
+
+/** Each review with when each half came in — worked out from the tracks (HR reads both), by id. */
+export async function listReviews360(client: RecordsClient, organizationId: string): Promise<R360<Review360ListRow[]>> {
   const rows = await listAppRows(client, review360, { organizationId });
-  return rows.ok ? { ok: true, data: rows.data.rows } : no(rows.error.message);
+  if (!rows.ok) return no(rows.error.message);
+  const when = async (id: unknown) => {
+    if (typeof id !== "string" || !id) return null;
+    const t = await readTrack(client, id);
+    return t.ok && t.data.kind ? t.data.submittedAt : null;
+  };
+  return {
+    ok: true,
+    data: await Promise.all(
+      rows.data.rows.map(async (r) => {
+        const d = r as unknown as Record<string, unknown>;
+        return { ...r, selfIn: await when(d.self_track), managerIn: await when(d.manager_track) };
+      }),
+    ),
+  };
 }
 
 export async function readReview360(

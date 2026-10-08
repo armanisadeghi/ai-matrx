@@ -10,6 +10,7 @@ import type { SettingSwap } from "@/features/ai-models/server/replace-model-refe
 import { isJsonArray, isJsonObject, type JsonObject } from "@/types/json";
 import type {
   AiModel,
+  CostRatingChange,
   AiModelRow,
   AiModelAliasRow,
   AiModelAliasInsert,
@@ -1343,6 +1344,36 @@ export const aiModelService = {
     );
     if (error) throw error;
     return this.withMaker(data);
+  },
+
+  /** Approve or reject a held MAX-tier rating request (a person's own write; the
+   *  guard trigger lets a user-tier write through and clears the hold). */
+  async resolveCostTierHold(
+    model: Pick<AiModel, "id" | "pending_cost_rating">,
+    approve: boolean,
+  ): Promise<AiModel> {
+    const held = model.pending_cost_rating;
+    if (held == null) throw new Error("No held rating change on this model.");
+    const cleared = {
+      pending_cost_rating: null,
+      pending_cost_rating_by: null,
+      pending_cost_rating_at: null,
+    };
+    return this.update(
+      model.id,
+      approve ? { ...cleared, cost_rating: held === 0 ? null : held } : cleared,
+    );
+  },
+
+  /** Every cost_rating change into/out of MAX, and every held request: who, what, when
+   *  (history.row_versions via an admin-only RPC). One model, or the last 60 days of all. */
+  async fetchCostRatingHistory(modelId?: string): Promise<CostRatingChange[]> {
+    const { data, error } = await supabase.schema("ai").rpc("model_cost_rating_history", {
+      p_model_id: modelId,
+      p_limit: 200,
+    });
+    if (error) throw error;
+    return data ?? [];
   },
 
   /** Attach the resolved `maker` (ai.provider.name via the provider_id FK) to a
