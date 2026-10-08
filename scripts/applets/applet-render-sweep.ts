@@ -18,7 +18,8 @@
  * Rows that would break on the live site get verdict `breaks_on_live`. See scripts/applets/against-live.mjs.
  *
  * Verdicts: ok · unbuilt (a build still in progress — not a failure) · unresolved (rendered with named stand-ins) · gate_refused · compile_error · render_threw ·
- * legacy_contract (still reads the old prop contract) · surface_missing (no live `ui.ui_surface` row `applets/<id>`: the
+ * legacy_contract (still reads the old prop contract) · prop_contract (a component imported from a package is given props
+ * its type refuses — applet-prop-contract.ts; a first paint never reaches a page still loading its rows) · surface_missing (no live `ui.ui_surface` row `applets/<id>`: the
  * running Applet's frame refuses `surface_not_found` on every visit — the trigger `app._applet_surface_follows_record`
  * writes it on every insert/update, so a miss means a row the trigger never saw). Exit 1 on anything but ok.
  * Reads NEXT_PUBLIC_SUPABASE_URL + SUPABASE_SECRET_KEY; all reads, no writes.
@@ -44,7 +45,7 @@ for (const key of ["window", "document", "navigator", "HTMLElement", "Node", "ge
 g.matchMedia ??= () => ({ matches: false, addListener() {}, removeListener() {}, addEventListener() {}, removeEventListener() {} });
 g.ResizeObserver ??= class { observe() {} unobserve() {} disconnect() {} };
 
-type Verdict = "ok" | "surface_missing" | "unbuilt" | "unresolved" | "gate_refused" | "compile_error" | "render_threw" | "legacy_contract" | "breaks_on_live";
+type Verdict = "ok" | "surface_missing" | "prop_contract" | "unbuilt" | "unresolved" | "gate_refused" | "compile_error" | "render_threw" | "legacy_contract" | "breaks_on_live";
 type Row = Record<string, unknown> & { id: string; slug: string; files: Record<string, string> | null; entry: string | null };
 
 const LEGACY_PROPS = /export\s+default\s+function\s+\w*\s*\(\s*\{[^}]*\b(onExecute|response|isStreaming|isExecuting|rateLimitInfo)\b/;
@@ -73,6 +74,11 @@ async function main() {
     { label: "ui.ui_surface (applets/*)" },
   );
   const liveSurfaces = new Set(surfaces.map((s) => s.name));
+  const { propContractFindings } = await import("./applet-prop-contract");
+  const contract = new Map<string, string[]>();
+  for (const f of propContractFindings(rows.map((r) => ({ slug: r.slug, files: r.files })))) {
+    contract.set(f.slug, [...(contract.get(f.slug) ?? []), `${f.file}:${f.line} <${f.component}> ${f.message}`]);
+  }
   const results: { slug: string; id: string; public: boolean; verdict: Verdict; detail: string }[] = [];
   for (const row of rows) {
     const entry = row.entry ?? "App.tsx";
@@ -129,11 +135,35 @@ async function main() {
       const html = renderToStaticMarkup(createElement(mounted.Component));
       const standIns = [...html.matchAll(/data-unresolved-import="([^"]+)"/g)].map((m) => m[1]);
       const unresolved = (mounted as { unresolved?: string[] }).unresolved ?? standIns;
-      if (unresolved.length) verdict("unresolved", unresolved.join(", "));
-      else verdict("ok");
+      if (unresolved.length) {
+        verdict("unresolved", unresolved.join(", "));
+        continue;
+      }
     } catch (err) {
       verdict("render_threw", err instanceof Error ? err.message : String(err));
+      continue;
     }
+    // Every OTHER page file paints too — the entry's first paint never reaches a page behind navigation, and a
+    // throw there (e.g. a control given the wrong prop) took the whole /applets/build route down (2026-10-08).
+    const pageThrows: string[] = [];
+    // Only the record's PAGES (`pages[].file`) — other files are components that take props a page never passes.
+    const pageFiles = new Set(((record as { pages?: { file?: string }[] }).pages ?? []).map((p) => p.file).filter((f): f is string => typeof f === "string"));
+    for (const file of pageFiles) {
+      if (file === record.entry || !(file in files)) continue;
+      const page = mountApplet({ ...record, entry: file }, createMemoryHost({ record, viewer: { guest: true, userId: null, organizationIds: [] } }) as never, HOST_SCOPE);
+      if (!page.ok) {
+        pageThrows.push(`${file}: ${page.error.message}`);
+        continue;
+      }
+      try {
+        renderToStaticMarkup(createElement(page.Component));
+      } catch (err) {
+        pageThrows.push(`${file}: ${err instanceof Error ? err.message : String(err)}`);
+      }
+    }
+    if (pageThrows.length) verdict("render_threw", pageThrows.join("; "));
+    else if (contract.has(row.slug) && !override) verdict("prop_contract", (contract.get(row.slug) ?? []).join("; "));
+    else verdict("ok");
   }
   if (AGAINST_LIVE) {
     const { checkRowsAgainstLive, describeFinding } = await import("./against-live.mjs");
@@ -163,7 +193,7 @@ async function main() {
   writeFileSync(REPORT, JSON.stringify(results, null, 2));
   const count = (v: Verdict) => results.filter((r) => r.verdict === v).length;
   console.log(`applet render sweep — ${results.length} rows (${results.filter((r) => r.public).length} public)${FILES_DIR ? `, files from ${FILES_DIR}` : ""}${AGAINST_LIVE ? ", against the deployed site" : ""}`);
-  for (const v of ["ok", "surface_missing", "unbuilt", "unresolved", "legacy_contract", "gate_refused", "compile_error", "render_threw", "breaks_on_live"] as const) console.log(`  ${v.padEnd(16)} ${count(v)}`);
+  for (const v of ["ok", "surface_missing", "prop_contract", "unbuilt", "unresolved", "legacy_contract", "gate_refused", "compile_error", "render_threw", "breaks_on_live"] as const) console.log(`  ${v.padEnd(16)} ${count(v)}`);
   for (const r of results.filter((x) => x.verdict !== "ok" && x.verdict !== "unbuilt")) console.log(`  x ${r.slug}: ${r.verdict} ${r.detail}`);
   console.log(`report: ${REPORT}`);
   if (results.some((r) => r.verdict !== "ok" && r.verdict !== "unbuilt")) process.exitCode = 1;
