@@ -1,5 +1,7 @@
 -- chair-step: undo perffix4_e_the_home_lists_in_a_fixed_order_and_reads_digests_once.sql - restores custom.data_home_items and custom.data_home exactly as they were before
 -- lane: PERF-FIX-4
+-- based-on: custom.data_home_items(uuid) 1483fde459ef9035721a87388410b43c731e7700221572c7bf8aa36142513a23
+-- based-on: custom.data_home(uuid, text, boolean) 998972f4b88dc85249866da1cc09480fd089b4470de783271852fe1ae1b90644
 
 set local statement_timeout = '60s';
 
