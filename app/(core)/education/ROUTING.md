@@ -105,8 +105,8 @@ by design, not that it is unfinished.
 | `classes`        | ✓                                          | — (dialog)                                | `/[classId]`                          | —                            | `/join`                                                                                                                                                                       |
 | `family`         | ✓                                          | —                                         | `/[studentId]` (read-only)            | —                            | —                                                                                                                                                                             |
 | `creator`        | ✓ (dashboard)                              | —                                         | —                                     | —                            | public face is `/c/[handle]`, outside `(core)`                                                                                                                                |
+| `kits`           | ✓                                          | `/new` — THE create page (AI or saved aids) | `/[sourceId]` (add sources/aids there) | —                            | `/education/start` forwards to `/new` (keeps `?source=`)                                                                                                                      |
 | `library`        | ✓ (decks, assessments, study media, notes) | —                                         | subtype-aware doors into owning tools | —                            | `/community` (public certified decks), `/suggestions` (owner inbox)                                                                                                           |
-| `start`          | —                                          | onboarding hero                           | —                                     | —                            | —                                                                                                                                                                             |
 | `data`           | —                                          | —                                         | —                                     | —                            | data-ownership / export / delete                                                                                                                                              |
 | `offline`        | —                                          | —                                         | —                                     | —                            | offline shell — doors: the queue-depth chip + `/education/data`                                                                                                               |
 | `media`          | —                                          | —                                         | `/[id]` (kind router)                 | —                            | the canonical `study_media` entity route — see below                                                                                                                          |
@@ -128,7 +128,7 @@ recorded here on 2026-08-19 were all closed on 2026-08-20:
   `media_kind='summary'`, mirroring `MemoryHome`/`MindMapHome`), and `summaries` now has an
   `EDU_TOOLS` entry, so the hub's Study-tools grid links it automatically. It has **no `/new` by
   design**: a summary is produced by the ingest converter, so the empty state routes to
-  `/education/start`.
+  `/education/kits/new`.
 - **`/education/media/[id]`** is **not** an id-only fallback — it is the **canonical route for the
   `study_media` entity token**, declared in
   [`features/education/data/entityRoutes.ts`](../../../features/education/data/entityRoutes.ts) and
@@ -226,7 +226,8 @@ app/(core)/education/
 ├─ family/          page · [studentId]
 ├─ creator/         page                     (public face: /c/[handle], outside (core))
 ├─ library/         page · community · suggestions
-├─ start/           page
+├─ kits/           page · new · [sourceId]
+├─ start/           redirect → kits/new
 ├─ data/            page
 ├─ offline/         page
 │

@@ -49,7 +49,7 @@ export function StartHereBlock() {
           as a piece of their own material, so that action gets the whole width
           and every other option is visibly secondary. */}
       <Link
-        href="/education/start"
+        href="/education/kits/new"
         className="group relative overflow-hidden rounded-2xl border border-primary/30 bg-gradient-to-br from-primary/15 via-card to-card p-5 transition-colors hover:border-primary/60 sm:p-6"
       >
         <div className="flex flex-col items-start gap-4 sm:flex-row sm:items-center">

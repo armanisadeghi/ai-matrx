@@ -66,6 +66,8 @@ import {
 } from "../kitService";
 import { MakeMoreFromKit } from "./MakeMoreFromKit";
 import { KitSourcesPanel } from "./KitSourcesPanel";
+import { AddSavedAidsDialog } from "./AddSavedAidsDialog";
+import { newKitHref } from "@/features/education/onboard/startRoutes";
 import { KIT_TOKEN } from "../kitScope";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
@@ -308,7 +310,7 @@ export function KitHub({
     enabled: kit !== null,
     staleAfterMs: 60_000,
   });
-  // The saved aids an agent may add (bounded; the add page has the full list). Read once per tab.
+  // The saved aids an agent may add (bounded; the Add saved aids dialog has the full list). Read once per tab.
   const candidatesKey = `education.kit_candidates:${sourceTypeProp ?? "auto"}:${sourceId}`;
   const readCandidates = async (): Promise<EducationLibraryRow[]> => {
     const page = await fetchEducationLibraryPage(
@@ -409,7 +411,7 @@ export function KitHub({
       validate: (value: unknown) => { parseMemberAdd(value); },
       apply: async (value: unknown) => {
         const plan = parseMemberAdd(value);
-        // The same write the add page's button runs.
+        // The same write the Add saved aids dialog runs.
         await createManualKit({ sourceId: kit.sourceId, sourceType: kit.sourceType as ManualKitSourceType, title: plan.title, artifacts: plan.artifacts, allowExisting: true, expectedFingerprint: plan.expectedFingerprint });
         reload();
         return { summary: `Added ${plan.artifacts.length} saved study aid${plan.artifacts.length === 1 ? "" : "s"} to the kit.`, data: { added: plan.artifacts.map((row) => ({ kind: row.kind, id: row.id, title: row.title })) } };
@@ -480,7 +482,7 @@ export function KitHub({
             </p>
             {sourceType === "file" ? (
               <Button asChild size="sm" className="gap-1.5">
-                <Link href={`/education/kits/new?source=${encodeURIComponent(sourceId)}`} data-tap-target>
+                <Link href={newKitHref({ source: sourceId })} data-tap-target>
                   <AGENT_ICON className="h-4 w-4" />
                   Create a study kit from this material
                 </Link>
@@ -621,14 +623,16 @@ export function KitHub({
         buttonVariant="outline"
         buttonClassName={proposedButton}
       />
-      <Button asChild variant="outline" className={proposedButton}>
-        <Link
-          href={`/education/kits/new?source=${encodeURIComponent(kit.sourceId)}&from=${encodeURIComponent(kit.sourceType)}`}
-        >
-          <Plus className="h-4 w-4" />
-          Add saved aid
-        </Link>
-      </Button>
+      <AddSavedAidsDialog
+        kit={kit}
+        onAdded={reload}
+        trigger={
+          <Button variant="outline" className={proposedButton}>
+            <Plus className="h-4 w-4" />
+            Add saved aid
+          </Button>
+        }
+      />
       <Button
         variant="outline"
         className={proposedButton}
@@ -674,7 +678,11 @@ export function KitHub({
             addTarget={addTarget}
             onConverted={() => reload()}
           />
-          <Button asChild variant="outline" size="sm"><Link href={`/education/kits/new?source=${encodeURIComponent(kit.sourceId)}&from=${encodeURIComponent(kit.sourceType)}`}>Add saved aid</Link></Button>
+          <AddSavedAidsDialog
+            kit={kit}
+            onAdded={reload}
+            trigger={<Button variant="outline" size="sm">Add saved aid</Button>}
+          />
           <Button
             variant="outline"
             size="sm"

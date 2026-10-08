@@ -13,7 +13,8 @@
  *   deck is made when the person presses Make; the tile then becomes that deck (`onMade`).
  * - **Study kit** — `KitHub` (`/education/kits/[sourceId]`), its `matrx-user/education-kits`
  *   surface mounted inside it. The kit's id IS its source material's id; a source that is not a
- *   file rides in `source.meta.from`. Start new is `ManualKitCreator` (`/education/kits/new`).
+ *   file rides in `source.meta.from`. Start new is `StartHero` (`/education/kits/new`, THE create page:
+ *   Build with AI or Saved aids); the tile becomes the kit once it is made (`onMade`).
  *
  * Study modes and Edit navigate to their own pages (the same router pushes as on the page).
  * Pure helpers: ./education-items.logic.ts.
@@ -26,7 +27,7 @@ import { SetDetailView } from "@/features/flashcards/components/set-detail/SetDe
 import { CreateDeckPage } from "@/features/flashcards/components/create/CreateDeckPage";
 import { fetchDeckPage, type DeckListRow } from "@/features/flashcards/data/deckListService";
 import { KitHub } from "@/features/education/kits/components/KitHub";
-import { ManualKitCreator } from "@/features/education/kits/components/ManualKitCreator";
+import { StartHero } from "@/features/education/onboard/components/StartHero";
 import { kitHref, listKits, type StudyKit } from "@/features/education/kits/kitService";
 import { EDUCATION_KITS_SURFACE_NAME } from "@/features/surfaces/manifests/education-kits.manifest";
 import { entityComments, type BoardItemType, type ItemBodyProps, type PickerProps } from "./types";
@@ -162,11 +163,11 @@ function KitPicker({ onPick, onCancel }: PickerProps) {
   );
 }
 
-/** A new kit tile before its kit exists: the page's own manual kit creator; nothing is made until Create kit. */
+/** A new kit tile before its kit exists: the page's own create component; nothing is made until Build or Create kit. */
 function KitDraftBody({ onSource }: Pick<ItemBodyProps, "onSource">) {
   return (
     <div className="h-full min-h-0 overflow-y-auto bg-textured">
-      <ManualKitCreator onMade={(kit) => onSource(kitSource(kit.sourceType, kit.sourceId), kit.title)} />
+      <StartHero onMade={(kit) => onSource(kitSource(kit.sourceType, kit.sourceId), kit.title)} />
     </div>
   );
 }

@@ -1,7 +1,9 @@
 /**
  * Surface manifest — Create a study kit (`matrx-user/education-start`).
  *
- * `/education/start`: the study-kit front door. The person picks their
+ * `/education/kits/new` (Build with AI mode; `/education/start` forwards
+ * here): THE study-kit create page. Its Saved aids mode nests the
+ * `matrx-user/education-kits` surface (view "new"). The person picks their
  * material in the ONE Source input (anything they already have, an upload,
  * pasted text, a web page, a YouTube video, a recording, an image), picks
  * what to make from it (flashcards, summary, quiz,
@@ -201,14 +203,14 @@ export const educationStartManifest: SurfaceManifest = {
   executor: MATRX_WEB_APP_EXECUTOR,
   executionMode: "python-stream",
   description:
-    "Create a study kit: the material, outputs, depth and focus form, then the live kit build (/education/start). Fill the form with kit_request_draft.",
+    "Create a study kit: the material, outputs, depth and focus form, then the live kit build (/education/kits/new). Fill the form with kit_request_draft.",
   readiness: "partial",
   readinessNote:
     "Emitter and kit_request_draft shipped 2026-09-27 with unit-tested validation. Not yet proven: no outside-helper binding test; a live build (kit_outputs through to done) is not exercised by the probe because it spends the allowance.",
   label: "Create a study kit",
-  urlPattern: "/education/start",
+  urlPattern: "/education/kits/new",
   intro: `<surface_intro>
-You are on Create a study kit at /education/start. The person picks their material as Sources and picks what to make from it; the page builds a grounded, cited study kit.
+You are on Create a study kit at /education/kits/new, in its Build with AI mode. The person picks their material as Sources and picks what to make from it; the page builds a grounded, cited study kit. (The page's other mode, Saved aids, bundles study aids they already saved.)
 kit_request_draft is everything the form holds; available_outputs lists the outputs that can be made (output_options has their labels); can_build says whether the Build button is enabled; kit_phase and kit_outputs show a build in progress or finished.
 To set up a kit for the person, use the kit_request_draft target: it fills the form (pasted text, a link, or a file they own by id — each added as a Source — plus outputs, depth, count and focus). It does not build — tell the person to press Build my study kit. Its result lists the form as it stands after the fill; trust that over the values you were given at the start of your run. Only the person can upload a new file.
 Do not create flashcards, quizzes or summaries with other tools for this: the page's build grounds and cites every item in the material and files them as one kit.

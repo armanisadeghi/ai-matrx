@@ -11,7 +11,7 @@ import { EDUCATION_LIBRARY_SURFACE } from "../librarySurface";
 export function EducationLibraryPage() {
   const createButton = (
     <ControlButton variant="primary" asChild icon={<FilePlus2 className="h-4 w-4" />} collapse="container">
-      <Link href="/education/start">
+      <Link href="/education/kits/new">
         Create kit
       </Link>
     </ControlButton>

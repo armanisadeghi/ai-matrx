@@ -627,7 +627,7 @@ const INDUSTRY_NAV_CHILDREN: ShellNavChild[] = [
     color: "emerald",
     children: [
       ...educationNavChildren(),
-      { label: "Create a Study Kit", href: "/education/start", iconName: "Plus", group: "More" },
+      { label: "Create a Study Kit", href: "/education/kits/new", iconName: "Plus", group: "More" },
       { label: "Overview", href: "/education/overview", iconName: "LayoutDashboard", group: "More", guestHidden: true },
       { label: "Learn", href: "/education/learn", iconName: "BookOpen", group: "More" },
       { label: "Library", href: "/education/library", iconName: "BookOpen", exact: true, group: "More", guestHidden: true },

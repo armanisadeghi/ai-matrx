@@ -9,6 +9,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { NEW_KIT_HREF } from "@/features/education/onboard/startRoutes";
 import { Package } from "lucide-react";
 import { Button } from "@ai-matrx/design-system";
 import { Skeleton } from "@ai-matrx/design-system";
@@ -169,7 +170,7 @@ export function KitsHome() {
             Keep saved study aids together with their material.
           </p>
           <Button asChild size="sm" className="gap-1.5">
-            <Link href="/education/kits/new" data-tap-target>
+            <Link href={NEW_KIT_HREF} data-tap-target>
               <AGENT_ICON className="h-4 w-4" />
               Create kit
             </Link>
@@ -216,12 +217,11 @@ export function KitsHome() {
               kept together.
             </p>
             <Button asChild size="sm" className="gap-1.5">
-              <Link href="/education/kits/new">
+              <Link href={NEW_KIT_HREF}>
                 <AGENT_ICON className="h-4 w-4" />
                 Create your first kit
               </Link>
             </Button>
-            <Button asChild size="sm" variant="outline"><Link href="/education/start">Generate kit</Link></Button>
           </div>
         ) : filteredKits.length === 0 ? (
           <EducationCollectionNoResults

@@ -302,7 +302,7 @@ export function DataOwnershipPage() {
         ) : decks.length === 0 ? (
           <p className="rounded-lg border border-border bg-muted/40 p-4 text-sm text-muted-foreground">
             No decks yet.{" "}
-            <Link href="/education/start" className="text-primary hover:underline">
+            <Link href="/education/kits/new" className="text-primary hover:underline">
               Create a study kit
             </Link>{" "}
             to get started.

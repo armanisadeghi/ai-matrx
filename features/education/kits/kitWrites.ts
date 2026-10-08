@@ -53,7 +53,7 @@ export const KIT_MEMBER_CANDIDATE_LIMIT = 25;
 /**
  * `add_kit_members` on an OPEN kit: exactly one entry naming this kit, its current membership
  * fingerprint, and qualified { kind, id } refs that each match a current candidate. The same rules
- * the add page's handler enforces; the write itself is `createManualKit` (one write path).
+ * the Add saved aids dialog and add_kit_members enforce; the write itself is `createManualKit` (one write path).
  */
 export function parseKitMemberAdds(
   value: unknown,

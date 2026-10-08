@@ -568,7 +568,7 @@ const GUEST_OK_SINCE_DOMAIN_TREE: readonly string[] = [
   "/education/game/solo",
   "/education/learn",
   "/education/library/community",
-  "/education/start",
+  "/education/kits/new",
   "/features",
   "/knowledge/about",
   "/legal/ca-wc",
