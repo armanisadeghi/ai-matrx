@@ -41,6 +41,7 @@ import { appletFiles, appletJobs, appletPages, appletSources } from "@/features/
 import type { SurfaceScopePayload } from "@ai-matrx/chat/surfaces/types";
 import type { RootState } from "@/lib/redux/store";
 import { publishedToWebLabel } from "@/lib/row-access";
+import { appletState } from "@/features/applets/lib/applet-state";
 
 type ActiveView =
   | "overview"
@@ -85,22 +86,22 @@ export function buildAppletsWorkspaceScope(
     app_name: app.name,
     app_tagline: app.tagline ?? undefined,
     app_description: app.description ?? undefined,
-    app_status: app.status,
+    app_status: appletState(app).kind,
     app_category: app.category ?? undefined,
     app_tags: app.tags,
     // Surface key keeps its manifest name; the value is the row word.
     app_visibility: publishedToWebLabel(app.published_to_web),
-    app_version: app.version,
+    app_version: app.content_version,
     app_summary: {
       id: app.id,
       slug: app.slug,
       name: app.name,
       tagline: app.tagline,
-      status: app.status,
+      status: appletState(app).kind,
       category: app.category,
       tags: app.tags,
       published_to_web: app.published_to_web,
-      version: app.version,
+      version: app.content_version,
     },
     app_entry: app.entry ?? undefined,
     app_pages: appletPages(app).map((p) => ({ ...p })),
