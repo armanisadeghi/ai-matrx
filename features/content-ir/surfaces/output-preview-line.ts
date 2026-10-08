@@ -101,7 +101,8 @@ function cutJsonLine(text: string): string {
 
 export function outputPreviewLine(text: string | null | undefined): string {
   if (!text) return "";
-  const trimmed = text.trim();
+  // A fenced answer (```json … ```) reads as what is inside the fence.
+  const trimmed = text.trim().replace(/^```[^\n]*(?:\n|$)/, "").replace(/\n?```\s*$/, "").trim();
   if (!trimmed) return "";
   if (trimmed.startsWith("{") || trimmed.startsWith("[")) {
     try {
@@ -116,5 +117,5 @@ export function outputPreviewLine(text: string | null | undefined): string {
     const before = firstLine(trimmed.slice(0, trimmed.search(/[{[]\s*"__kind"/)));
     return before || cutJsonLine(trimmed);
   }
-  return firstLine(trimmed.replace(/^```[^\n]*\n/, ""));
+  return firstLine(trimmed);
 }

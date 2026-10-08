@@ -29,6 +29,12 @@ describe("outputPreviewLine", () => {
     expect(outputPreviewLine("[1,2,3]")).toBe("Structured output");
   });
 
+  it("reads a fenced kind (cut mid-fence) as the kind, never the fence", () => {
+    expect(outputPreviewLine('```json\n{"__kind":"agent_definition","name":"Supplier Invoice Checker","descr')).toBe(
+      "Agent definition: Supplier Invoice Checker",
+    );
+  });
+
   it("reads text as its first non-empty line", () => {
     expect(outputPreviewLine("\n\nThe invoice matches.\nSecond line")).toBe("The invoice matches.");
     expect(outputPreviewLine(null)).toBe("");
