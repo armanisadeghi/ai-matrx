@@ -19,7 +19,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs } from "@ai-matrx/design-system/controls";
 import { KpiTile } from "@/components/official/kpi/KpiTile";
-import { UserAcquisitionExplorer, useAcquisitionTotals } from "./UserAcquisitionExplorer";
+import { UserAcquisitionExplorer, useAcquisitionTotals, useFocusedPersonName } from "./UserAcquisitionExplorer";
 import { MatrxDataTable } from "@ai-matrx/design-system/data-table";
 import type { MatrxColumnDef } from "@ai-matrx/design-system/data-table/types";
 import { useOptionalCanvas } from "@ai-matrx/canvas/react";
@@ -247,6 +247,7 @@ export function UserAcquisitionTableClient() {
   // THE TILES ARE COUNTED ON THE DATABASE (user_acquisition, DRILL-SERVER-2): the rows below stop at
   // the API's cap, so a tile summed from them undercounted in silence.
   const counted = useAcquisitionTotals(timeframe, focusUser);
+  const focusedName = useFocusedPersonName(focusUser);
   const totals = counted.totals;
 
   const columns = useMemo(
@@ -550,7 +551,7 @@ export function UserAcquisitionTableClient() {
       {/* The read's failure is said once, by the table (read=). */}
       {focusUser ? (
         <div className="flex items-center rounded-md border px-3 py-1.5 text-xs">
-          Focused on {focused[0]?.display_name ?? focusUser}
+          Focused on {focused[0]?.display_name ?? focusedName ?? "Reading the name…"}
           <Button
             icon={<X />}
             variant="quiet"

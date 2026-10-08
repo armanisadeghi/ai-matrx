@@ -52,6 +52,30 @@ export function UserAcquisitionExplorer({ focusUser }: { focusUser: string | nul
   );
 }
 
+/**
+ * THE FOCUSED PERSON'S WORDS (lane DRILL-LIVE-FIX-2 #1): `?user=` names a person the loaded list may
+ * not hold (it keeps only the newest), so the banner reads the name through the same names door the
+ * explorer's person cells use — never the raw id. null while it is being read.
+ */
+export function useFocusedPersonName(focusUser: string | null): string | null {
+  const [named, setNamed] = useState<{ id: string; words: string } | null>(null);
+  useEffect(() => {
+    if (!focusUser) return;
+    let cancelled = false;
+    void usageNameResolver(SYSTEM_ORGANIZATION_ID, "person")
+      .resolve([focusUser])
+      .then((got) => {
+        if (cancelled) return;
+        const resolver = usageNameResolver(SYSTEM_ORGANIZATION_ID, "person");
+        setNamed({ id: focusUser, words: (got.ok ? got.names[focusUser] : undefined) ?? resolver.unreadLabel ?? "Name could not be read" });
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [focusUser]);
+  return named && named.id === focusUser ? named.words : null;
+}
+
 export interface AcquisitionTotals {
   people: number;
   visitor: number;
