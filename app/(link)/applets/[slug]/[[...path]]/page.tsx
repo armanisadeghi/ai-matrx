@@ -96,7 +96,11 @@ export default async function AppletRoute({ params, searchParams }: Props) {
     );
   }
   // An id-shaped address answers at the Applet's slug, so it has one address.
-  if (view.slug !== key) permanentRedirect(`${appletHref(view.slug)}${path.length ? `/${path.map(encodeURIComponent).join("/")}` : ""}`);
+  // The old owner run page lived at /applets/<id>/run; that address now means the running Applet itself.
+  if (view.slug !== key) {
+    const rest = view.id === key && path.length === 1 && path[0] === "run" ? [] : path;
+    permanentRedirect(`${appletHref(view.slug)}${rest.length ? `/${rest.map(encodeURIComponent).join("/")}` : ""}`);
+  }
   if (view.guest && embed !== "widget") return <MadeWithAiMatrx publisherName={view.guest.publisher_name} />;
   return null;
 }

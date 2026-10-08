@@ -29,6 +29,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { ArrowLeft, Link2Off } from "lucide-react";
+import { isUuidShape } from "@ai-matrx/kit/uuid";
 import { Button } from "@/components/ui/button";
 import { AccessGate } from "@/features/access-gate/components/AccessGate";
 import {
@@ -87,6 +88,12 @@ export function SlugAccessGate({
           if (active) setResolved({ key, token, id, readable });
           return;
         }
+      }
+      // An id-shaped address names the record directly: the full gate (with
+      // its request-access door) answers it, never "doesn't match".
+      if (active && list.length && isUuidShape(slug)) {
+        setResolved({ key, token: list[0], id: slug, readable: false });
+        return;
       }
       if (active) setResolved({ key, token: null, id: null, readable: false });
     })();

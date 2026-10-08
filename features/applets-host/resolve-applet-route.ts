@@ -23,7 +23,11 @@ export const resolveAppletRoute = cache(async (slug: string): Promise<{ id: stri
   const supabase = await createClient();
   const { data, error } = await supabase.schema("app").from("definition").select("id, slug, name, entry").eq("slug", slug).is("deleted_at", null).maybeSingle();
   if (error) throw new Error(`Could not read the Applet "${slug}": ${error.message}`);
-  return data ?? null;
+  if (data || !isUuidShape(slug)) return data ?? null;
+  // An id-shaped address (older links, the owner pages' ids) names the same Applet; the page redirects it to the slug.
+  const byId = await supabase.schema("app").from("definition").select("id, slug, name, entry").eq("id", slug).is("deleted_at", null).maybeSingle();
+  if (byId.error) throw new Error(`Could not read the Applet "${slug}": ${byId.error.message}`);
+  return byId.data ?? null;
 });
 
 export type PublicApplet = {
