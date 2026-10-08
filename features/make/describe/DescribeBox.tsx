@@ -9,7 +9,7 @@
 // THE PIPE (no second path):
 //   1. the mandate `make.describe_template` (launched by mandate key, never an agent id — whoever holds
 //      it owns its quality; this file writes no instruction) answers ONE template spec;
-//   2. validateTemplate ("describe" profile) checks it — a failure is one line and a retry, never a
+//   2. the package's describeCheck (automatic fixes, then validateTemplate "describe" profile) checks it — a failure is one line and a retry, never a
 //      half-build;
 //   3. custom.template_declare('org') files it as the organization's own template, and the gallery's
 //      runTemplateDoor installs it with the gallery's own live progress and landing.
@@ -38,10 +38,9 @@ import { templatePreviewHref } from "../gallery/galleryHref";
 import { secondsWords } from "./made";
 import {
   bindReuses,
-  checkDescribeSpec,
+  checkDescribeTemplate,
   coerceDescribeAnswer,
   declareDescribeSpec,
-  describeSpec,
   describeVariables,
   readExistingTables,
   readOrganizationFacts,
@@ -123,18 +122,19 @@ export function DescribeBox() {
       lap("model");
 
       // The check before anything is built: one line, and a retry.
-      const spec = describeSpec(answer.template);
-      const checked = checkDescribeSpec(spec);
+      // The package's automatic fixes run first; the person sees an error only for what REMAINS.
+      const checked = checkDescribeTemplate(answer.template, tables);
       lap("check");
       if (!checked.ok) {
-        console.warn("[make:describe] the store's check refused the spec", checked.problems);
+        console.warn("[make:describe] the store's check refused the spec", checked.problems, checked.autoFixes);
         setRun({ phase: "failed", why: checked.line, templateId: null, answer: null });
         return;
       }
+      const notes = [...answer.notes, ...checked.autoFixes];
       const stamp = `${startedAt.toString(36)}${Math.random().toString(36).slice(2, 6)}`.toUpperCase();
-      const templateId = await declareDescribeSpec(client, organizationId, bindReuses(spec, answer.reuses, tables), stamp);
+      const templateId = await declareDescribeSpec(client, organizationId, bindReuses(checked.spec, answer.reuses, tables), stamp);
       lap("declare");
-      setRun({ phase: "installing", startedAt, templateId, answer: null, notes: answer.notes });
+      setRun({ phase: "installing", startedAt, templateId, answer: null, notes });
       const done = await runTemplateDoor(source, "template_install", organizationId, templateId, {
         onCall: (a) => setRun((r) => (r.phase === "installing" ? { ...r, answer: a } : r)),
       });
@@ -145,7 +145,7 @@ export function DescribeBox() {
         setRun({ phase: "failed", why: refusal?.message ?? done.error?.message ?? "The install stopped before it finished.", templateId, answer: done.answer });
         return;
       }
-      setRun({ phase: "installed", ms: Date.now() - startedAt, split, templateId, answer: done.answer, notes: answer.notes });
+      setRun({ phase: "installed", ms: Date.now() - startedAt, split, templateId, answer: done.answer, notes });
     } catch (err: unknown) {
       const detail = (err as { detail?: string } | null)?.detail;
       setRun({ phase: "failed", why: [err instanceof Error ? err.message : String(err), detail].filter(Boolean).join(" — "), templateId: null, answer: null });

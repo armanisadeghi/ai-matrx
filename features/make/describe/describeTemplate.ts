@@ -10,63 +10,25 @@
 //      at call time, and today;
 //   2. the keys a one-off spec carries for the install door and nobody else (catalogue id, version, the
 //      template agent slot), filled in, never invented by the model;
-//   3. the check — validateTemplate, "describe" profile — whose first problem is said in one line;
+//   3. the check — the package's describeCheck (automatic fixes, then validateTemplate "describe") — whose first problem is said in one line;
 //   4. the declaration (custom.template_declare 'org') whose id the gallery's runTemplateDoor installs.
 //
 // Pure parts are exported for the guard; the doors take a client.
 
-import { RESOLVABLE_FIELD_TYPE_WORDS } from "@ai-matrx/records/templates";
 import {
-  CONTEXT_POLICIES,
-  FIELD_SENSITIVITIES,
-  FIELD_SOURCES,
-  ON_DELETE,
-  RELATION_CARDINALITIES,
-  RELATION_FLAVORS,
-  STORAGE_MODES,
-  TABLE_DISPLAYS,
-  TABLE_TYPES,
-} from "@ai-matrx/records/core";
-import {
-  CHOICE_COLORS,
-  DEFAULT_TEMPLATE_AGENT,
   capabilitiesUsed,
-  INDUSTRY_GROUPS,
-  sensitivityFloorOf,
-  TEACHES_FEATURES,
-  TEMPLATE_AUDIENCES,
-  TEMPLATE_JOBS,
-  TEMPLATE_VIEW_KINDS,
+  DEFAULT_TEMPLATE_AGENT,
+  describeCheck,
+  describeSpec,
+  describeVocabulary,
   templateDeclaration,
-  validateTemplate,
+  type ExistingTable as PackageExistingTable,
   type TemplateSpec,
 } from "@ai-matrx/records/templates";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
-/** The store's closed lists, as the mandate's `vocabulary` value — read from the package, never typed here. */
-export function describeVocabulary(): Record<string, unknown> {
-  return {
-    field_kinds: RESOLVABLE_FIELD_TYPE_WORDS,
-    table_types: TABLE_TYPES,
-    table_displays: TABLE_DISPLAYS,
-    storage_modes: STORAGE_MODES,
-    field_sensitivities: FIELD_SENSITIVITIES,
-    context_policies: CONTEXT_POLICIES,
-    field_sources: FIELD_SOURCES,
-    relation_flavors: RELATION_FLAVORS,
-    relation_cardinalities: RELATION_CARDINALITIES,
-    on_delete: ON_DELETE,
-    industry_groups: INDUSTRY_GROUPS,
-    template_jobs: TEMPLATE_JOBS,
-    teaches_features: TEACHES_FEATURES,
-    choice_colors: CHOICE_COLORS,
-    template_view_kinds: TEMPLATE_VIEW_KINDS,
-    template_audiences: TEMPLATE_AUDIENCES,
-    form_audiences: ["public", "member", "staff"],
-    extra_kinds_for_describe: ["booking"],
-    booking_window: { weekday: "0 = Sunday … 6 = Saturday", from: "HH:MM", to: "HH:MM later than from" },
-  };
-}
+// The mandate's `vocabulary` value and the spec shape are the package's (describeVocabulary, describeSpec): one copy.
+export { describeSpec, describeVocabulary };
 
 export interface DescribeOrganization {
   name: string;
@@ -114,68 +76,28 @@ export function coerceDescribeAnswer(value: unknown): DescribeAnswer {
   return { template: template as Record<string, unknown>, notes, reuses };
 }
 
-/** Keys only a gallery card carries; a describe spec never sends them to the check. */
-const GALLERY_ONLY = ["catalogueId", "strengths", "provenance", "walk", "agent", "requires", "persona", "extraAgents", "workflows", "guide", "__kind"];
-
 /**
- * The spec as the check reads it: the mandate's template with the lists the shape always has defaulted
- * (an omitted empty list is not a defect) and every gallery-only key taken off.
+ * The check's answer: `spec` is the spec AFTER the package's automatic fixes (what is declared and installed),
+ * `autoFixes` one line per fix made. A failure is said in one line — the first problem that REMAINS after the
+ * fixes, and how many more.
  */
-export function describeSpec(template: Record<string, unknown>): TemplateSpec {
-  const s: Record<string, unknown> = { ...template };
-  for (const k of GALLERY_ONLY) delete s[k];
-  s.specVersion = 1;
-  if (typeof s.version !== "number") s.version = 1;
-  if (typeof s.audience !== "string") s.audience = "organization";
-  if (typeof s.cleanupTag !== "string" && typeof s.id === "string") s.cleanupTag = `describe:${s.id}`;
-  for (const k of ["relationships", "sharedBlocks", "views", "forms", "dimensions", "extras"]) if (!Array.isArray(s[k])) s[k] = [];
-  if (Array.isArray(s.tables)) s.tables = (s.tables as Array<Record<string, unknown>>).map(describeTable);
-  return s as unknown as TemplateSpec;
-}
+export type DescribeCheck =
+  | { ok: true; spec: TemplateSpec; autoFixes: string[] }
+  | { ok: false; line: string; problems: Array<{ at: string; says: string }>; spec: TemplateSpec; autoFixes: string[] };
 
-/**
- * SPEED (lane CHAIR-DESCRIBE-4): every token the mandate writes is ~8 ms the person waits, so the
- * mandate leaves out what is always the same and this fills it — a table's shape keys, and a field's
- * sensitivity and context policy: the store's own floor for what the field holds (sensitivityFloorOf —
- * an address or phone is confidential, a person's health fact restricted; both kept from the AI), else
- * the ordinary internal/include. A phone or email gets its format. What the model DID write always wins.
- */
-const TABLE_DEFAULTS = { type: "entity", display: "grid", weight: "light", ordered: false } as const;
-const CONTACT_KINDS = new Set(["phone", "email"]);
-
-function describeTable(t: Record<string, unknown>): Record<string, unknown> {
-  const own = Array.isArray(t.fields) ? (t.fields as Array<Record<string, unknown>>) : null;
-  const shape = { token: String(t.token ?? ""), labelSingular: String(t.labelSingular ?? ""), subject: t.subject, fields: own ?? [] } as unknown as Parameters<typeof sensitivityFloorOf>[0];
-  const fields = own ? own.map((f) => describeField(f, shape)) : t.fields;
+/** describeCheck (automatic fixes, then validateTemplate "describe" profile) on the mandate's template. */
+export function checkDescribeTemplate(template: Record<string, unknown>, existingTables: ExistingTable[] = []): DescribeCheck {
+  const r = describeCheck(template, { existingTables: existingTables as PackageExistingTable[] });
+  if (!r.problems.length) return { ok: true, spec: r.spec, autoFixes: r.autoFixes };
+  const [first] = r.problems;
+  const more = r.problems.length - 1;
   return {
-    ...TABLE_DEFAULTS,
-    ...t,
-    ...(typeof t.labelPlural !== "string" && typeof t.name === "string" ? { labelPlural: t.name } : {}),
-    fields,
-    rows: Array.isArray(t.rows) ? t.rows : [],
+    ok: false,
+    line: `${first?.says ?? "The setup did not pass the store's check."}${more > 0 ? ` (+${more} more)` : ""}`,
+    problems: r.problems,
+    spec: r.spec,
+    autoFixes: r.autoFixes,
   };
-}
-
-function describeField(f: Record<string, unknown>, table: Parameters<typeof sensitivityFloorOf>[0]): Record<string, unknown> {
-  const contact = CONTACT_KINDS.has(String(f.parityType ?? ""));
-  const floor = sensitivityFloorOf(table, { key: String(f.key ?? ""), label: String(f.label ?? ""), parityType: String(f.parityType ?? "") } as never);
-  return {
-    ...(contact ? { format: f.parityType } : {}),
-    sensitivity: floor ?? "internal",
-    contextPolicy: floor ? "exclude" : "include",
-    ...f,
-  };
-}
-
-export type DescribeCheck = { ok: true } | { ok: false; line: string; problems: Array<{ at: string; says: string }> };
-
-/** validateTemplate, describe profile. A failure is said in one line: the first problem, and how many more. */
-export function checkDescribeSpec(spec: TemplateSpec): DescribeCheck {
-  const v = validateTemplate(spec, { profile: "describe" });
-  if (v.ok) return { ok: true };
-  const [first] = v.problems;
-  const more = v.problems.length - 1;
-  return { ok: false, line: `${first?.says ?? "The setup did not pass the store's check."}${more > 0 ? ` (+${more} more)` : ""}`, problems: v.problems };
 }
 
 /**
