@@ -1,5 +1,6 @@
 -- chair-step: undo perffix4_b_the_set_door_reads_its_own_first_yes.sql - restores custom.reaches_directly_many exactly as it was before
 -- lane: PERF-FIX-4
+-- based-on: custom.reaches_directly_many(uuid, uuid[], text, permission_level) d7ffe36a49022b2469aacecc975c5a0d741fdd089f2fca252089bc90ab64698c
 
 set local statement_timeout = '60s';
 
