@@ -68,6 +68,7 @@ import {
 } from "@/features/admin/reporting/source-links";
 import { formatCount, formatRelativeTime } from "@ai-matrx/kit/format";
 import { useNow } from "@/hooks/useNow";
+import { DEAD_ENDS_DRILL } from "./deadEndsDrill";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 const DOCTRINE_HREF =
@@ -566,6 +567,7 @@ export function DeadEndsConsole({
         >
         <MatrxDataTable
           urlState={{ id: "dead-ends" }}
+          drill={DEAD_ENDS_DRILL}
           data={findings}
           columns={columns}
           getRowId={(f) => deadEndKey(f)}

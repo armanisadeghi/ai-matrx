@@ -29,6 +29,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@ai-matrx/design-system";
+import { AI_MODEL_DRILL } from "./aiModelDrill";
 import GenericTablePagination from "@ai-matrx/design-system/data-table/pagination";
 import {
   AlertDialog,
@@ -1284,6 +1285,23 @@ function CanonicalAiModelTable(props: AiModelTableProps) {
         column.render(model, providerMap)
       ),
   }));
+  // Facts a model has no column for today, read by the drill (hidden until a person adds them).
+  const kinds = (model: AiModel, side: "input" | "output") => {
+    const caps = parseCapabilities(model.capabilities, { modelId: model.id, modelName: model.name });
+    const list = side === "input" ? caps.input : caps.output;
+    return Array.isArray(list) && list.length > 0 ? [...list].sort().join(" + ") : "None";
+  };
+  const drillColumns: MatrxColumnDef<AiModel>[] = [
+    {
+      id: "hosted_by",
+      header: "Hosted by",
+      hidden: true,
+      sortable: false,
+      accessorFn: (model) => (model.provider_id ? (providerMap[model.provider_id] ?? "Unknown") : "None"),
+    },
+    { id: "input_kinds", header: "Accepts", hidden: true, sortable: false, accessorFn: (model) => kinds(model, "input") },
+    { id: "output_kinds", header: "Returns", hidden: true, sortable: false, accessorFn: (model) => kinds(model, "output") },
+  ];
   if (props.loadError && models.length === 0) {
     return (
       <ReadFailure error={props.loadError} what="the model catalog" onRetry={onRefresh} />
@@ -1295,7 +1313,8 @@ function CanonicalAiModelTable(props: AiModelTableProps) {
       tableId="ai/models-canonical"
       viewTabs={false}
       data={models}
-      columns={[...(columns), { id: "custom-actions", header: "Actions", sortable: false, filter: false, customActions: (model) => (
+      drill={AI_MODEL_DRILL}
+      columns={[...(columns), ...drillColumns, { id: "custom-actions", header: "Actions", sortable: false, filter: false, customActions: (model) => (
         <CanonicalModelActions
           model={model}
           onSelect={onSelect}
