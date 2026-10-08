@@ -97,11 +97,13 @@ describe("one state for the history, the card and the header", () => {
     expect(requestOutcome([entry({ state: "refused" }), entry({ fix: { where: "r", message: "x" }, state: "running" })], 0).label).toBe("Fixing");
     expect(requestOutcome([entry({ state: "refused" })], 0).label).toBe("Not saved");
   });
-  it("the held fix button reads Fix it to use it on a draft; the header never says not saved", () => {
+  it("the held fix button reads Fix it to use it on a draft; the header says it is a preview that holds what she adds", () => {
     expect(fixLabel("draft")).toBe("Fix it to use it");
     expect(fixLabel(null)).toBe("Fix it to use it");
     expect(fixLabel("published")).toBe("Fix it");
-    expect(previewLine("Published", "v2")).toBe("Published v2 · try it here, nothing you add is kept");
-    expect(previewLine("Published", "v2")).not.toMatch(/not saved/);
+    expect(previewLine("v2")).toBe("Preview of v2 · what you add here is held, never saved");
+    expect(previewLine(null)).toBe("Preview · what you add here is held, never saved");
+    // One story: the card says Draft or Published; the preview header never restates it.
+    expect(previewLine("v2")).not.toMatch(/Published|Draft/);
   });
 });
