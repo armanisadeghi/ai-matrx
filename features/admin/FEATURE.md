@@ -45,7 +45,7 @@ product feature that does not already have one.
 **Analytics mounts**
 
 - `features/admin/usage-drill/UsageExplorer.tsx` — `/administration/usage`: a mount of `components/official/drill-explorer` (`FEATURE.md` there) for the declared definition `ai_usage` in the platform lane; `useUsageDrill.ts` adds only what usage needs (names of people/organizations/agents via `platform.ai_usage_names`, the rollup's freshness and Recount).
-- `features/admin/agent-spend/` — AI spend health: `/administration/usage/agents` (+ `/detail?agent=&mandate=&days=`) and the org twin `/organizations/<org>/admin/ai-spend`; every agent/mandate with spend (7d/30d), spend-rule flags, every run, unsaved (store:false) runs labeled; `ConversationSpendButton` puts a conversation's per-call cost on the system-agent run page header. Data: read-only `platform.agent_spend_health` / `agent_spend_runs` / `conversation_spend` over private `platform._agent_spend_facts` (super admin for all orgs, org admin for theirs).
+- `features/admin/agent-spend/` — AI spend health: `/administration/usage/agents` (+ `/detail?agent=&mandate=&days=`) and the org twin `/organizations/<org>/admin/ai-spend`; every agent/mandate with spend (7d/30d), spend-rule flags, every run, unsaved (store:false) runs labeled; `ConversationCost` (`ConversationCostMenuRow` + `ConversationSpendDialog`) opens a conversation's per-call cost from the agent ⋮ menu on the system-agent run page; `agent_spend_runs` narrows each subject through `_agent_spend_candidates` (index-backed) before attribution. Data: read-only `platform.agent_spend_health` / `agent_spend_runs` / `conversation_spend` over private `platform._agent_spend_facts` (super admin for all orgs, org admin for theirs).
 
 **Canonical declarations**
 

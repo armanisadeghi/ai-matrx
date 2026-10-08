@@ -3,7 +3,7 @@ import { AgentRunnerPage } from "@ai-matrx/chat/agents/components/run/AgentRunne
 import { AgentRunHeader } from "@ai-matrx/chat/agents/components/run/AgentRunHeader";
 import PageHeader from "@/features/shell/components/header/PageHeader";
 import { AccessGate } from "@/features/access-gate/components/AccessGate";
-import { ConversationSpendDialog } from "@/features/admin/agent-spend/ConversationSpendButton";
+import { ConversationSpendDialog } from "@/features/admin/agent-spend/ConversationCost";
 import { Suspense } from "react";
 
 export const metadata = { title: "System Agent Runner | Admin" };

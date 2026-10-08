@@ -24,6 +24,7 @@ import {
   AGENT_SPEND_ADMIN_PATH,
   SPEND_RUNS_PAGE_SIZE,
   agentSpendDetailHref,
+  spendAgentHref,
   agentSpendFlags,
   fetchAgentSpendRuns,
   orgAgentSpendPath,
@@ -374,22 +375,36 @@ export function AgentSpendDetail({
             <div className="min-w-0">
               <div className="mb-1 text-[10px] uppercase tracking-wide text-muted-foreground">This mandate, by agent</div>
               <div className="flex flex-col gap-1">
-                {[row, ...siblings].map((r) => (
+                {[row, ...siblings].map((r, _i, all) => {
+                  // Two agents can share a name (a copy of a builtin): the id
+                  // suffix tells them apart, and the agent itself opens.
+                  const name = r.agent_name ?? "No agent recorded";
+                  const twin = r.agent_id != null && all.some((o) => o !== r && o.agent_name === r.agent_name);
+                  const label = twin ? `${name} · ${r.agent_id!.slice(0, 8)}` : name;
+                  const agentDoor = seat === "admin" ? spendAgentHref(r) : null;
+                  return (
                   <div key={rowKey(r)} className="flex items-center gap-3 text-xs">
                     {r === row ? (
-                      <span className="min-w-0 flex-1 truncate font-medium">{r.agent_name ?? "No agent recorded"}</span>
+                      <span className="min-w-0 flex-1 truncate font-medium" title={r.agent_id ?? undefined}>{label}</span>
                     ) : (
                       <Link
                         href={agentSpendDetailHref(r, days, seat, orgSlug)}
                         className="min-w-0 flex-1 truncate text-primary hover:underline"
+                        title={r.agent_id ?? undefined}
                       >
-                        {r.agent_name ?? "No agent recorded"}
+                        {label}
+                      </Link>
+                    )}
+                    {agentDoor && (
+                      <Link href={agentDoor} aria-label={`Open agent ${label}`} className="text-muted-foreground hover:text-primary">
+                        <ExternalLink className="h-3 w-3" />
                       </Link>
                     )}
                     <span className="tabular-nums text-muted-foreground">{`${r.runs.toLocaleString()} runs`}</span>
                     <Cost usd={r.cost} className="tabular-nums" />
                   </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
           )}

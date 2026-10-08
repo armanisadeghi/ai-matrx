@@ -70,7 +70,7 @@ import {
 } from "@ai-matrx/design-system";
 import { Drawer, DrawerContent, DrawerTitle } from "@ai-matrx/design-system";
 import { MenuTapButton } from "@ai-matrx/tap-target/buttons";
-import { ConversationCostMenuRow } from "@/features/admin/agent-spend/ConversationSpendButton";
+import { ConversationCostMenuRow } from "@/features/admin/agent-spend/ConversationCost";
 import { useAgentDuplicateFlow } from "../../hooks/useAgentDuplicateFlow";
 import { ReferenceCopyMenuItem } from "@ai-matrx/chat/host/ui-slots";
 import { useAgentLifecycleActions } from "../../lifecycle/useAgentLifecycleActions";
