@@ -8,7 +8,7 @@
 
 const NOT_A_MEMBER_CODES = new Set(["organization_forbidden", "organization_not_member"]);
 const RECHECK_GAP_MS = 30_000;
-let lastRecheckAt = 0;
+let lastRecheckAt = Number.NEGATIVE_INFINITY;
 
 /** True when an error body is the server's not-a-member refusal. */
 export function isNotAMemberRefusal(body: unknown): boolean {
@@ -43,5 +43,5 @@ export function noticeNotAMemberRefusal(
 
 /** Tests only. */
 export function resetNotAMemberRefusalGap(): void {
-  lastRecheckAt = 0;
+  lastRecheckAt = Number.NEGATIVE_INFINITY;
 }

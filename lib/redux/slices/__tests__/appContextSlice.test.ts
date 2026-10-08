@@ -22,22 +22,48 @@ describe("appContext organization resolution", () => {
     expect(selectShouldPromptForOrganization({ appContext: state })).toBe(false);
   });
 
-  it("accepts a cached active organization as immediately resolved", () => {
+  it("a cached organization only PAINTS — it never answers the load ladder", () => {
     const state = reducer(
       undefined,
       buildRehydrateAction(
         "appContext",
         {
-          organization_id: "org-default",
-          organization_name: "Default org",
+          organization_id: "org-cached",
+          organization_name: "Cached org",
           orgBootstrapResolved: false,
         },
         { fromRehydrate: true },
       ),
     );
 
+    expect(state.organization_id).toBe("org-cached");
+    expect(state.orgBootstrapResolved).toBe(false);
+  });
+
+  it("the ladder's answer replaces a painted cache organization", () => {
+    const painted = reducer(
+      undefined,
+      buildRehydrateAction(
+        "appContext",
+        { organization_id: "org-cached", organization_name: "Cached org" },
+        { fromRehydrate: true },
+      ),
+    );
+    const state = reducer(
+      painted,
+      buildRehydrateAction(
+        "appContext",
+        {
+          organization_id: "org-last-active",
+          organization_name: "Last active",
+          orgBootstrapResolved: true,
+          orgBootstrapFailure: null,
+        },
+        { fromRehydrate: true },
+      ),
+    );
+    expect(state.organization_id).toBe("org-last-active");
     expect(state.orgBootstrapResolved).toBe(true);
-    expect(selectShouldPromptForOrganization({ appContext: state })).toBe(false);
   });
 
   it("prompts only after an authoritative no-active-org result", () => {
