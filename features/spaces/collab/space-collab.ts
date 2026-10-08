@@ -224,9 +224,10 @@ export class SpaceCollabSession {
     const result = await joinRoom({
       fragment: this.fragment,
       connect: async () => {
-        this.provider = this.makeProvider();
-        await this.provider.connect();
-        await this.provider.ready();
+        // Its own handle: a session disposed while joining clears this.provider (was "reading 'ready' of null").
+        const provider = (this.provider = this.makeProvider());
+        await provider.connect();
+        await provider.ready();
       },
       reask: () => this.rebuildProvider(),
       othersHere,
@@ -247,9 +248,9 @@ export class SpaceCollabSession {
 
   private async rebuildProvider(): Promise<void> {
     this.provider?.disconnect();
-    this.provider = this.makeProvider();
-    await this.provider.connect();
-    await this.provider.ready();
+    const provider = (this.provider = this.makeProvider());
+    await provider.connect();
+    await provider.ready();
   }
 
   setMeta(patch: Partial<SpaceMeta>): void {
