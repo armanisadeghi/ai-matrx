@@ -11,10 +11,11 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ExternalLink, Layers } from "lucide-react";
+import { ExternalLink, Layers, MessagesSquare } from "lucide-react";
 
 import { Button, EmptyState, SegmentedControl, Tabs } from "@ai-matrx/design-system/controls";
 import { LiveRunProgress } from "@ai-matrx/chat/agents/components/live-run/LiveRunProgress";
+import { LiveRunDisplay } from "@ai-matrx/chat/agents/components/live-run/LiveRunDisplay";
 import type {
   LiveRunProgressItem,
   LiveRunProgressState,
@@ -27,8 +28,11 @@ import { ExamplesField, ProofCount, emptyExamples, filledExamples } from "@/feat
 import { useFactoryDoor } from "@/features/agents/factory/door";
 import {
   FROM_CHAT_STEPS,
+  continueWithAgentHref,
+  fromChatRunHref,
   latestAgentFromChat,
   makeAgentFromChat,
+  resultRuns,
   startMasterworkFromChat,
   type FromChatResult,
   type FromChatStep,
@@ -90,6 +94,9 @@ function AgentFromChatWindowInner({
   // R55: what the started build really proves on, as the server counted it.
   const [proof, setProof] = useState<{ cases: number | null; says: string } | null>(null);
   const [tab, setTab] = useState<ResultTab>("compare");
+  // NOTHING IS HIDDEN (Arman, 2026-10-07): the live stream of every sub-run, and each step's stored run.
+  const [liveRequestId, setLiveRequestId] = useState<string | null>(null);
+  const [runs, setRuns] = useState<Partial<Record<FromChatStep, string>>>({});
   // R52: on the factory path the person may add examples; the chat's own request is case 1.
   const pipelineMode = useFactoryDoor("from_chat") === "pipeline";
   const [examples, setExamples] = useState<string[]>(() => emptyExamples().slice(0, 2));
@@ -125,10 +132,19 @@ function AgentFromChatWindowInner({
     setResult(null);
     setBuildId(null);
     setProof(null);
-    const answer = await makeAgentFromChat(dispatch, conversationId, (step, line) => {
-      setReached(step);
-      setSays(line);
-    }, pipelineMode ? examples : []);
+    setLiveRequestId(null);
+    setRuns({});
+    const answer = await makeAgentFromChat(
+      dispatch,
+      conversationId,
+      (step, line, run) => {
+        setReached(step);
+        setSays(line);
+        if (run) setRuns((r) => ({ ...r, [step]: run }));
+      },
+      pipelineMode ? examples : [],
+      setLiveRequestId,
+    );
     if (answer.ok && "buildId" in answer) {
       setBuildId(answer.buildId);
       setProof({ cases: answer.proofCases, says: answer.says });
@@ -184,21 +200,20 @@ function AgentFromChatWindowInner({
               ? "failed"
               : "running"
             : "waiting";
-      return { id: step, label, status, detail: index === at && phase === "running" ? says : undefined };
+      return { id: step, label, status, detail: index === at && (phase === "running" || phase === "failed") ? says : undefined };
     }),
   };
 
   return (
     <WindowPanel
-      // The window sizes itself once; the door answers a moment after it opens, so it is
-      // opened again at the right height when the answer changes it.
-      key={pipelineMode ? "factory" : "legacy"}
+      // ONE SIZE, from the first frame: the window sizes itself only when it opens, so a small
+      // "idle" size stayed small for the live run and the result (the "midget window", 2026-10-07).
       title="Make an agent"
       id="agent-from-chat-window"
       minWidth={420}
-      minHeight={220}
-      width={phase === "done" ? 960 : 520}
-      height={phase === "done" ? 680 : phase === "idle" ? (pipelineMode && lane === "agent" ? 560 : previous ? 290 : 240) : phase === "building" ? 320 : 420}
+      minHeight={320}
+      width={980}
+      height={760}
       position="center"
       onClose={onClose}
       overlayId="agentFromChatWindow"
@@ -264,6 +279,17 @@ function AgentFromChatWindowInner({
         ) : null}
 
         {phase === "running" || phase === "failed" ? <LiveRunProgress progress={progress} /> : null}
+
+        {phase !== "idle" ? <StepRuns runs={runs} /> : null}
+
+        {(phase === "running" || phase === "failed") && liveRequestId ? (
+          <section className="flex min-h-[240px] flex-1 flex-col rounded-md border border-border">
+            <h3 className="shrink-0 border-b border-border px-3 py-1.5 text-xs font-medium text-muted-foreground">
+              Live output
+            </h3>
+            <LiveRunDisplay requestId={liveRequestId} variant="bare" bodyClassName="min-h-0 flex-1 overflow-y-auto p-3" />
+          </section>
+        ) : null}
 
         {phase === "building" && buildId && proof && proof.cases !== null ? (
           <div className="space-y-1 text-xs text-muted-foreground" data-testid="from-chat-proof-cases">
@@ -343,12 +369,18 @@ function AgentFromChatResult({
             Run
           </a>
         </Button>
-        <Button variant="primary" asChild>
+        <Button variant="outline" asChild>
           <Link href={agentGoHref(result.agent_id, "/build")} onClick={onOpened}>
             Open
           </Link>
         </Button>
+        <Button variant="primary" asChild icon={<MessagesSquare className="h-4 w-4" />}>
+          <a href={continueWithAgentHref(result)} target="_blank" rel="noreferrer" title="The agent in the builder, with the agent that wrote it in the side chat">
+            Keep working on it
+          </a>
+        </Button>
       </div>
+      <StepRuns runs={resultRuns(result)} />
 
       <Tabs
         aria-label="Result"
@@ -400,6 +432,29 @@ function AgentFromChatResult({
           ))}
         </dl>
       ) : null}
+    </div>
+  );
+}
+
+/** Every finished step's stored run, opened in full in a new tab — nothing about the build is hidden. */
+function StepRuns({ runs }: { runs: Partial<Record<FromChatStep, string>> }) {
+  const named = FROM_CHAT_STEPS.filter(({ step }) => runs[step]);
+  if (named.length === 0) return null;
+  return (
+    <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground" data-testid="from-chat-step-runs">
+      <span>Full runs:</span>
+      {named.map(({ step, label }) => (
+        <a
+          key={step}
+          href={fromChatRunHref(runs[step] as string)}
+          target="_blank"
+          rel="noreferrer"
+          className="inline-flex items-center gap-1 text-primary underline-offset-2 hover:underline"
+        >
+          {label}
+          <ExternalLink className="h-3 w-3" />
+        </a>
+      ))}
     </div>
   );
 }
