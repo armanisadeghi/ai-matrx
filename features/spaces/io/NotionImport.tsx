@@ -10,7 +10,7 @@
 // A rerun of the same export changes nothing (the server keys everything by Notion id).
 
 import { Button, Field } from "@ai-matrx/design-system/controls";
-import { useState } from "react";
+import { createContext, useContext, useState, type ReactNode } from "react";
 
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { Progress } from "@/components/ui/progress";
@@ -271,4 +271,24 @@ function Report({ report, onOpen }: { report: Finished; onOpen: (spaceId: string
       </div>
     </div>
   );
+}
+
+type Door = Pick<ReturnType<typeof useNotionImport>, "fromZip" | "connect">;
+const DoorContext = createContext<Door | null>(null);
+
+/** Holds the import above the sidebar, so the run and its report outlive any re-render of the menu that started it. */
+export function NotionImportHost({ children }: { children: ReactNode }) {
+  const state = useNotionImport();
+  return (
+    <DoorContext.Provider value={{ fromZip: state.fromZip, connect: state.connect }}>
+      {children}
+      <NotionImportDialog state={state} />
+    </DoorContext.Provider>
+  );
+}
+
+export function useNotionImportDoor(): Door {
+  const door = useContext(DoorContext);
+  if (!door) throw new Error("useNotionImportDoor needs <NotionImportHost> (SpacesWorkspace mounts it)");
+  return door;
 }

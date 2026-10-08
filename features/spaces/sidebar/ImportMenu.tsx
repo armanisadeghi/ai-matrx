@@ -11,7 +11,7 @@ import { toast } from "@/lib/toast";
 
 import { useMoveIn } from "../ai/MoveIn";
 import { IMPORT_ACCEPT, readImport, type ImportKind } from "../io/import";
-import { NotionImportDialog, useNotionImport } from "../io/NotionImport";
+import { useNotionImportDoor } from "../io/NotionImport";
 import { useSpaces } from "../state/SpacesProvider";
 
 const KINDS: Array<{ kind: ImportKind; label: string; icon: ReactNode }> = [
@@ -27,7 +27,7 @@ export function ImportButton() {
   const input = useRef<HTMLInputElement>(null);
   const kindRef = useRef<ImportKind>("markdown");
   const moveIn = useMoveIn();
-  const notion = useNotionImport();
+  const notion = useNotionImportDoor();
   const zip = useRef<HTMLInputElement>(null);
 
   const pick = (kind: ImportKind) => {
@@ -110,7 +110,6 @@ export function ImportButton() {
           if (file) void notion.fromZip(file);
         }}
       />
-      <NotionImportDialog state={notion} />
       <input
         ref={input}
         type="file"

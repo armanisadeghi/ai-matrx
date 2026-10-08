@@ -14,6 +14,7 @@ import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 
 import { DatabaseDesignerHost } from "../ai/DatabaseDesigner";
 import { MoveInHost } from "../ai/MoveIn";
+import { NotionImportHost } from "../io/NotionImport";
 import { SpaceBuilderHost } from "../ai/SpaceBuilder";
 import { QuickFind } from "../nav/QuickFind";
 import { SpacesSidebarContent } from "../sidebar/SpacesSidebar";
@@ -109,7 +110,9 @@ export function SpacesWorkspace({ children }: { children: ReactNode }) {
       <SpaceBuilderHost>
         <DatabaseDesignerHost userId={userId}>
           <MoveInHost userId={userId}>
-            <Frame>{children}</Frame>
+            <NotionImportHost>
+              <Frame>{children}</Frame>
+            </NotionImportHost>
           </MoveInHost>
         </DatabaseDesignerHost>
       </SpaceBuilderHost>
