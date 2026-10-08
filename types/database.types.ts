@@ -18859,8 +18859,6 @@ export type Database = {
           locked: boolean
           metadata: Json
           organization_id: string
-          outcome: Json | null
-          outcome_state: string | null
           published_to_web: boolean
           published_to_web_at: string | null
           published_to_web_by: string | null
@@ -18900,8 +18898,6 @@ export type Database = {
           locked?: boolean
           metadata?: Json
           organization_id: string
-          outcome?: Json | null
-          outcome_state?: string | null
           published_to_web?: boolean
           published_to_web_at?: string | null
           published_to_web_by?: string | null
@@ -18941,8 +18937,6 @@ export type Database = {
           locked?: boolean
           metadata?: Json
           organization_id?: string
-          outcome?: Json | null
-          outcome_state?: string | null
           published_to_web?: boolean
           published_to_web_at?: string | null
           published_to_web_by?: string | null
@@ -21880,8 +21874,6 @@ export type Database = {
           locked: boolean
           metadata: Json
           organization_id: string
-          outcome: Json | null
-          outcome_state: string | null
           published_to_web: boolean
           published_to_web_at: string | null
           published_to_web_by: string | null
@@ -21955,8 +21947,6 @@ export type Database = {
           locked: boolean
           metadata: Json
           organization_id: string
-          outcome: Json | null
-          outcome_state: string | null
           published_to_web: boolean
           published_to_web_at: string | null
           published_to_web_by: string | null
@@ -22114,8 +22104,6 @@ export type Database = {
           locked: boolean
           metadata: Json
           organization_id: string
-          outcome: Json | null
-          outcome_state: string | null
           published_to_web: boolean
           published_to_web_at: string | null
           published_to_web_by: string | null
@@ -22165,8 +22153,6 @@ export type Database = {
           locked: boolean
           metadata: Json
           organization_id: string
-          outcome: Json | null
-          outcome_state: string | null
           published_to_web: boolean
           published_to_web_at: string | null
           published_to_web_by: string | null
@@ -22453,8 +22439,6 @@ export type Database = {
           locked: boolean
           metadata: Json
           organization_id: string
-          outcome: Json | null
-          outcome_state: string | null
           published_to_web: boolean
           published_to_web_at: string | null
           published_to_web_by: string | null
@@ -22514,8 +22498,6 @@ export type Database = {
           locked: boolean
           metadata: Json
           organization_id: string
-          outcome: Json | null
-          outcome_state: string | null
           published_to_web: boolean
           published_to_web_at: string | null
           published_to_web_by: string | null
@@ -22611,8 +22593,6 @@ export type Database = {
           locked: boolean
           metadata: Json
           organization_id: string
-          outcome: Json | null
-          outcome_state: string | null
           published_to_web: boolean
           published_to_web_at: string | null
           published_to_web_by: string | null
@@ -22783,8 +22763,6 @@ export type Database = {
           locked: boolean
           metadata: Json
           organization_id: string
-          outcome: Json | null
-          outcome_state: string | null
           published_to_web: boolean
           published_to_web_at: string | null
           published_to_web_by: string | null
