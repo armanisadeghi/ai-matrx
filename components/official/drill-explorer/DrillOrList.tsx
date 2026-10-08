@@ -16,20 +16,20 @@ import { supabase } from "@/utils/supabase/client";
 type Presence = "reading" | "present" | "absent";
 
 /** Is this declared definition on the database the app talks to? (`platform.drill_describe` answers or refuses.) */
-export function useDrillDefinitionPresent(definition: string): Presence {
+export function useDrillDefinitionPresent(definition: string, organizationId: string | null = SYSTEM_ORGANIZATION_ID): Presence {
   const [state, setState] = useState<Presence>("reading");
   useEffect(() => {
     let cancelled = false;
     void supabase
       .schema("platform")
-      .rpc("drill_describe", { p_organization_id: SYSTEM_ORGANIZATION_ID, p_source: { kind: "entity", token: definition } })
+      .rpc("drill_describe", { p_organization_id: organizationId, p_source: { kind: "entity", token: definition } })
       .then(({ error }) => {
         if (!cancelled) setState(error ? "absent" : "present");
       });
     return () => {
       cancelled = true;
     };
-  }, [definition]);
+  }, [definition, organizationId]);
   return state;
 }
 
@@ -42,6 +42,7 @@ export function DrillOrList({
   list,
   listParams = [],
   firstScreen = "drill",
+  organizationId = SYSTEM_ORGANIZATION_ID,
 }: {
   definition: string;
   /** What the list is called on its control ("Request list"). */
@@ -53,8 +54,10 @@ export function DrillOrList({
   listParams?: readonly string[];
   /** Which screen opens first. A page that is mostly editing opens its list and offers the explorer (`drill=1`). */
   firstScreen?: "drill" | "list";
+  /** Who the presence check is asked for: the platform organization in admin (default); `null` on a member page, where it means every organization she is in. */
+  organizationId?: string | null;
 }) {
-  const presence = useDrillDefinitionPresent(definition);
+  const presence = useDrillDefinitionPresent(definition, organizationId);
   const router = useRouter();
   const pathname = usePathname();
   const params = useSearchParams();

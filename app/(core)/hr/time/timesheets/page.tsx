@@ -2,7 +2,7 @@ import { Suspense } from "react";
 
 import { HrTimeShell } from "@/features/hr/time/HrTimeShell";
 import { HrLoading } from "@/features/hr/shared/HrStates";
-import { PeriodApprovalGrid } from "@/features/hr/time/timesheet/PeriodApprovalGrid";
+import { PeriodApprovalGridWithDrill } from "@/features/hr/time/timesheet/PeriodApprovalGridWithDrill";
 
 /**
  * Route 28 — `/hr/time/timesheets` (SPEC-UI-IA §3.4 row 28, §5.5; SPEC-TIME §6).
@@ -26,7 +26,7 @@ export default async function TimesheetApprovalPage({
   return (
     <HrTimeShell title="Timesheets">
       <Suspense fallback={<HrLoading variant="table" rows={8} />}>
-        <PeriodApprovalGrid payPeriodId={period ?? null} />
+        <PeriodApprovalGridWithDrill payPeriodId={period ?? null} />
       </Suspense>
     </HrTimeShell>
   );
