@@ -260,9 +260,12 @@ function paintedCss(blocks: EngineBlock[]): string {
   const walk = (list: EngineBlock[]) => {
     for (const b of list) {
       if (b.type === "database") {
-        for (const size of paintedSizesOf(readData(b.props?.data))) {
+        const sizes = paintedSizesOf(readData(b.props?.data));
+        for (const size of sizes) {
           if (!size.vw) continue;
           const id = b.id.replace(/["\\]/g, "\\$&");
+          // A chart tile's height does not follow the window: a width nobody saved at holds the first stored size.
+          if (size === sizes[0] && activeLayout(readData(b.props?.data)) === "chart") rules.push(`.spaces-static-body .bn-block-outer[data-id="${id}"] .spaces-db-host{min-height:${size.h}px}`);
           rules.push(`@media (min-width:${size.vw - PAINTED_WIDTH_SLACK}px) and (max-width:${size.vw + PAINTED_WIDTH_SLACK}px){.spaces-static-body .bn-block-outer[data-id="${id}"] .spaces-db-host{min-height:${size.h}px}}`);
         }
       }

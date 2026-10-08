@@ -18,7 +18,6 @@ import { useState } from "react";
 
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { selectActiveOrganizationId } from "@/features/scopes/redux/selectors/active-context";
-import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { toast } from "@/lib/toast";
 
@@ -55,6 +54,7 @@ export function AutofillRows({
   fields,
   aiFields,
   client,
+  organizationId: tableOrganizationId,
   onAiFields,
 }: {
   tableId: string;
@@ -62,6 +62,8 @@ export function AutofillRows({
   fields: RecordField[];
   aiFields: AiFieldSpec[];
   client: RecordsClient;
+  /** The table's own organization: what each autofill run is filed in (never the active one). */
+  organizationId: string | null;
   onAiFields: (next: AiFieldSpec[]) => void;
 }) {
   useDeclaredSurfaceMandates(AUTOFILL_KEY ? [{ mandateKey: AUTOFILL_KEY, does: "fills AI autofill properties row by row" }] : []);
@@ -80,7 +82,8 @@ export function AutofillRows({
     setBusy(spec.key);
     let done = 0;
     try {
-      const organizationId = await ensureOrgId(null);
+      if (!tableOrganizationId) throw new Error("This table's organization isn't known yet, so the fill can't start.");
+      const organizationId = tableOrganizationId;
       const page = await client.listPage({ table_id: tableId, limit: 200 });
       if (!page.ok) throw new Error(page.error.message);
       const aiKeys = aiFields.map((f) => f.key);

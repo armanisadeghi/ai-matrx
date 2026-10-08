@@ -772,6 +772,7 @@ function ViewSettings({
   const canShape = editable && !sample;
   const designer = useDatabaseDesigner();
   const client = useRecordsClient();
+  const table = useTable(tableId);
   const [page, setPage] = useState<"main" | "layout" | "group" | "x" | "yfield" | "props" | "newprop">("main");
   const chart = { ...DEFAULT_CHART, ...view.chart };
   const setChart = (p: Partial<ChartSettings>) => onView({ chart: { ...chart, ...p } });
@@ -849,7 +850,7 @@ function ViewSettings({
                 ))}
                 <MenuRow icon={<Database size={15} />} label="Show database title" end={<Switch checked={props.showTitle !== false} tabIndex={-1} aria-hidden />} onClick={() => editable && onBlock({ showTitle: props.showTitle === false })} />
                 {canShape ? (
-                  <AutofillRows tableId={tableId} databaseName={props.title ?? "Database"} fields={fields} aiFields={props.aiFields ?? []} client={client} onAiFields={(aiFields) => onBlock({ aiFields })} />
+                  <AutofillRows tableId={tableId} databaseName={props.title ?? "Database"} fields={fields} aiFields={props.aiFields ?? []} client={client} organizationId={(table.data as { organization_id?: string } | null)?.organization_id ?? null} onAiFields={(aiFields) => onBlock({ aiFields })} />
                 ) : null}
                 {canShape && designer.wired ? (
                   <MenuRow

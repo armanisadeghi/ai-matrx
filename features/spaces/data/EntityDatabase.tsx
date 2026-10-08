@@ -33,7 +33,9 @@ import { BlockRecordsSeed, useBlockSeedAnswers } from "../page/space-seed-contex
 import { formatCount } from "@ai-matrx/kit/format";
 import { isUuidShape } from "@ai-matrx/kit/uuid";
 import { useStructureEdit } from "../page/structure";
-import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
+import { useParams } from "next/navigation";
+
+import { writeNewEntityRow } from "./entity-row-add";
 
 /** The layouts a built-in source draws today. */
 const ENTITY_LAYOUTS: Array<{ id: SpaceViewLayout; label: string; icon: typeof Table2 }> = [
@@ -288,21 +290,20 @@ function EntityFrame({ token, props, raw, onChange, editable }: EntityDatabasePr
   // "New" (F7): one row added in place through the module's write door, then opened in the peek.
   // A new row is filed in the organization the person is working in (the write target, never a filter).
   // org-filter: write-target a new row is filed in the organization the person works in
-  const activeOrganizationId = useAppSelector(selectActiveOrganizationId);
+  const spaceId = useParams<{ spaceId?: string }>().spaceId ?? null;
   const addRow = async () => {
-    let organization_id: string;
+    // "New" is a click, always the person's act: the organization gate reads any press inside the page
+    // editor (a contenteditable) as typing and would refuse without asking, so the act is named here.
+    // Notion's new row starts with an empty title ("Untitled" until named); a module's title is required.
+    const title = titleColumn(entity.columns);
+    let res;
     try {
-      // "New" is a click, always the person's act: the organization gate reads any press inside the page
-      // editor (a contenteditable) as typing and would refuse without asking, so the act is named here.
       await whenOrgBootstrapResolved();
-      organization_id = await ensureOrgId(null);
+      res = await writeNewEntityRow(client, { token, spaceId, titleColumn: title?.writable ? title.api_name : null });
     } catch (err) {
       toast.error(sentence(err, "A row could not be added here."));
       return;
     }
-    // Notion's new row starts with an empty title ("Untitled" until named); a module's title is required.
-    const title = titleColumn(entity.columns);
-    const res = await client.entityRowWrite({ token, record_id: null, organization_id, columns: title?.writable ? { [title.api_name]: "" } : {} });
     if (!res.ok) {
       toast.error(sentence(res.error, "A row could not be added here."));
       return;

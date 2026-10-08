@@ -21,6 +21,11 @@ describe("a database block's painted size", () => {
     expect(pickPainted(list, { width: 400 })).toBeNull();
     expect(pickPainted(list, { vw: 1290 })?.h).toBe(300);
   });
+  it("a chart tile keeps a size painted at another width (cold load at a width nobody saved at)", () => {
+    const list = readPaintedSizes([{ w: 172, h: 436, vw: 1699 }]);
+    expect(pickPainted(list, { vw: 1280 })).toBeNull();
+    expect(pickPainted(list, { vw: 1280 }, true)?.h).toBe(436);
+  });
   it("reads a single stored size too", () => {
     expect(readPaintedSizes({ w: 1, h: 2 })).toEqual([{ w: 1, h: 2, vw: 0 }]);
   });

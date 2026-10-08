@@ -48,7 +48,8 @@ function paintedDecorations(doc: PmNode): DecorationSet {
   const decos: Decoration[] = [];
   doc.descendants((node, pos) => {
     if (node.type.name !== "database") return true;
-    const h = typeof window === "undefined" ? undefined : pickPainted(paintedSizesOf(readData(node.attrs.data)), { vw: window.innerWidth })?.h;
+    const data = readData(node.attrs.data);
+    const h = typeof window === "undefined" ? undefined : pickPainted(paintedSizesOf(data), { vw: window.innerWidth }, activeLayout(data) === "chart")?.h;
     if (h) decos.push(Decoration.node(pos, pos + node.nodeSize, { style: `--spaces-painted-h:${h}px` }));
     return false;
   });
