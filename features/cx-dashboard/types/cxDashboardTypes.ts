@@ -3,7 +3,7 @@
 export type {
   CxMessage,
   CxContentBlock as CxMessageContentBlock,
-} from "@ai-matrx/chat/cx-chat/types/cx-tables";
+} from "@ai-matrx/chat/public-chat/types/cx-tables";
 
 export type CxConversation = {
   id: string;

@@ -8,7 +8,6 @@ Pure TypeScript helpers for turning raw chat inputs (stream events or DB rows) i
 |---|---|
 | `types.ts` | `CanonicalBlock` discriminated union (`TextBlock`, `ThinkingBlock`, `MediaBlock`, `ToolCallBlock`, `ErrorBlock`), `CanonicalMessage`, `StreamingState`, and narrowing helpers (`isToolCallBlock`, etc.). |
 | `from-stream.ts` | `buildCanonicalBlocks(events: TypedStreamEvent[])`, `buildStreamingState(...)`, `buildCanonicalMessageFromStream(...)`, `extractPersistableToolBlocks(...)`. Converts wire events to normalized blocks. |
-| `from-db.ts` | `buildCanonicalMessages(cxMessages, cxToolCalls?)` and `buildCanonicalMessage(...)`. Exported but not yet wired into app code — retained for the SSR/DB rendering path. |
 | `index.ts` | Barrel — always import from `@/lib/chat-protocol`, never from a subfile. |
 
 ## Scope
