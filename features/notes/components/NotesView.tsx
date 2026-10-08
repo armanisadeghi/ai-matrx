@@ -758,7 +758,7 @@ export function NotesView({
                 type="button"
                 title={hint}
                 aria-pressed={editorMode === mode}
-                className={cn(modeBtnClass(mode), "justify-center font-medium")}
+                className={cn(modeBtnClass(mode), "justify-center font-medium", (narrowLayout || compactHeader) && "px-2")}
                 onClick={() => setMode(mode)}
               >
                 <Icon />
@@ -773,7 +773,7 @@ export function NotesView({
             layer); what does not fit folds into its More menu. */}
         {headerNoteId && !narrowShowsList && editorMode !== "preview" && (
           <FormatButtons
-            className="ml-3 hidden flex-1 md:flex"
+            className="ml-1 hidden flex-1 md:flex"
             resolve={() => formatTargetWithin(typeof document === "undefined" ? null : document.getElementById("notes-main"))}
           />
         )}
