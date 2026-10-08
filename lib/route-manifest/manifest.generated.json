@@ -1,7 +1,7 @@
 {
   "version": 1,
   "app": "matrx-frontend",
-  "routeCount": 1353,
+  "routeCount": 1355,
   "routes": [
     {
       "pattern": "/",
@@ -442,6 +442,16 @@
       "pattern": "/administration/automation/scheduling",
       "status": "live",
       "source": "app/(admin)/administration/automation/scheduling/page.tsx"
+    },
+    {
+      "pattern": "/administration/automation/scheduling/costs",
+      "status": "live",
+      "source": "app/(admin)/administration/automation/scheduling/costs/page.tsx"
+    },
+    {
+      "pattern": "/administration/automation/scheduling/costs/[kind]/[id]",
+      "status": "live",
+      "source": "app/(admin)/administration/automation/scheduling/costs/[kind]/[id]/page.tsx"
     },
     {
       "pattern": "/administration/automation/scheduling/cron-tester",
