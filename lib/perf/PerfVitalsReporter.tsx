@@ -11,7 +11,7 @@ import { useEffect } from "react";
 import { useParams, usePathname } from "next/navigation";
 import { useReportWebVitals } from "next/web-vitals";
 import { supabase } from "@/utils/supabase/client";
-import { getSessionKnob } from "@/lib/scoped-config/sessionKnob";
+import { getSessionKnob, resolveSessionKnob } from "@/lib/scoped-config/sessionKnob";
 import { addVital, isSampled, routeTemplate, sampleRateOf, type VitalName, type VitalSample } from "./vitals";
 
 const DRAW = typeof window === "undefined" ? 1 : Math.random();
@@ -20,9 +20,12 @@ const batch = new Map<VitalName, VitalSample>();
 let sent = false;
 let accessToken: string | null = null;
 let loadRoute: string | null = null;
+let resolvedRate: number | null = null;
 
 function rateNow(): number {
-  return sampleRateOf(getSessionKnob(RATE_KNOB));
+  if (resolvedRate !== null) return resolvedRate;
+  const cached = getSessionKnob(RATE_KNOB);
+  return sampleRateOf(cached);
 }
 
 function flush(): void {
@@ -55,7 +58,8 @@ function flush(): void {
 // One stable callback (a new reference would replay every metric again).
 function onMetric(metric: { name: string; value: number; rating?: string; navigationType?: string }): void {
   // A load already known to be unsampled keeps nothing.
-  if (getSessionKnob(RATE_KNOB) !== undefined && !isSampled(DRAW, rateNow())) return;
+  const known = resolvedRate ?? (getSessionKnob(RATE_KNOB) === undefined ? null : rateNow());
+  if (known !== null && !isSampled(DRAW, known)) return;
   addVital(batch, metric, loadRoute ?? "/");
 }
 
@@ -72,7 +76,12 @@ export function PerfVitalsReporter() {
   useReportWebVitals(onMetric);
 
   useEffect(() => {
-    getSessionKnob(RATE_KNOB); // warm the knob so the decision is made by the time the page hides
+    // Resolve the knob now so the decision is made by the time the page hides.
+    void resolveSessionKnob(RATE_KNOB)
+      .then((v) => {
+        if (v !== undefined) resolvedRate = sampleRateOf(v);
+      })
+      .catch((error: unknown) => console.error("[perf-vitals] the sample rate could not be resolved", error));
     void supabase.auth.getSession().then(({ data }) => {
       accessToken = data.session?.access_token ?? null;
     });

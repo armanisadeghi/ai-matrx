@@ -39,5 +39,11 @@ Surface: `matrx-admin/reporting`, `reporting_section: "performance"`.
 
 ## Change log
 
+- 2026-10-08 wave 3: each door watch probes as its own seat (`perf_subject.seat_email`; `@member` twins);
+  an empty answer from a read door is probe_broken; re-declared subjects leave a marker sample (judge
+  reads only after it). New kinds: `job:<name>` (hourly `ops.perf_job_collect`, pg_cron + platform
+  scheduler), `vital:<metric>:<route>` (`lib/perf/PerfVitalsReporter` → `ops.perf_client_report` →
+  hourly `ops.perf_vital_rollup`, judged on p75), `page:<name>` + CLI rows (`pnpm perf:data --record`).
+  The drill names and opens the pinned table/organization (`metadata.perf_subject_names`) and shows p75 for vitals.
 - 2026-10-08 wave 2: edit row (budget / baseline pin / pause) through `ops.perf_watch_update`;
   readable subject; reason in list and drill; bytes + note in the sample table; generated types.
