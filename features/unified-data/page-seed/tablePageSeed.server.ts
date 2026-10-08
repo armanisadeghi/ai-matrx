@@ -11,7 +11,7 @@
 //
 // Same doors, same person, same arguments: RLS and every door's own wall decide exactly as they do
 // from the browser. Nothing here decides access. A read that fails, refuses, or is slower than
-// SEED_BUDGET_MS answers null and the browser asks for itself as it always did — never "empty".
+// its budget (the knob `data/server_rows_budget_ms`) answers null and the browser asks for itself as it always did — never "empty".
 
 import "server-only";
 
@@ -56,37 +56,51 @@ export function addressAsksThePlainOpening(searchParams: Record<string, string |
   return !ADDRESS_OPENS_ELSEWHERE.some((key) => searchParams[key] !== undefined && searchParams[key] !== "");
 }
 
+/** The knob `data/server_rows_budget_ms`'s default, used only when the gate itself does not answer. */
+const DEFAULT_BUDGET_MS = 2_500;
+
 /**
- * THE KNOB `data/server_rows` (platform.feature_knob, lane SSR-ROWS-2): whether a table page waits for
- * the server's first reads and draws its rows in the server's HTML. OFF unless the row says `true` —
- * an absent row, an archived one, or a refused read all mean OFF: the page draws as it did before
- * (skeleton, then the browser asks). Read once a minute per server process, as the person.
+ * WHETHER THIS PERSON'S TABLE PAGE DRAWS ITS ROWS ON THE SERVER (lane SSR-ROWS-2): the knobs
+ * `data/server_rows` and `data/server_rows_budget_ms`, resolved for the person in the table's
+ * organization by `custom.table_page_server_rows` (per-person and per-organization overrides decide
+ * as everywhere else). Off unless the door says on: a refusal, a missing door or a slow answer are off.
  */
-const KNOB_TTL_MS = 60_000;
-let knobHeld: { on: boolean; at: number } | null = null;
-export async function serverRowsOn(): Promise<boolean> {
-  if (knobHeld && Date.now() - knobHeld.at < KNOB_TTL_MS) return knobHeld.on;
-  let on = false;
-  try {
-    const supabase = await createClient();
-    const { data } = await supabase
-      .schema("platform" as never)
-      .from("feature_knob" as never)
-      .select("value")
-      .eq("feature", "data")
-      .eq("key", "server_rows")
-      .is("archived_at", null)
-      .maybeSingle();
-    on = (data as { value?: unknown } | null)?.value === true;
-  } catch {
-    on = false;
-  }
-  knobHeld = { on, at: Date.now() };
-  return on;
+export interface ServerRowsGate {
+  on: boolean;
+  budgetMs: number;
 }
 
-/** Past this the browser has booted and would have asked by now: it asks for itself instead. */
-const SEED_BUDGET_MS = 2_500;
+interface GateAnswer extends ServerRowsGate {
+  where: SeededDoorAnswer;
+  organizationId: string | null;
+}
+
+type CustomRpc = { rpc: (fn: string, args: Record<string, unknown>) => PromiseLike<{ data: unknown; error: unknown }> };
+
+async function askGate(custom: CustomRpc, tableId: string): Promise<GateAnswer> {
+  const raw = await custom.rpc("table_page_server_rows", { p_table_id: tableId });
+  const answer = raw.data as { where?: unknown; organization_id?: unknown; on?: unknown; budget_ms?: unknown } | null;
+  if (raw.error || !answer || typeof answer !== "object") {
+    // The gate door refused or is missing: off, and the table's address is asked as before.
+    const whereRaw = await custom.rpc("where_id_opens", { p_id: tableId });
+    const where: SeededDoorAnswer = { data: whereRaw.data ?? null, error: plainError(whereRaw.error) };
+    return { where, organizationId: organizationOf(where), on: false, budgetMs: DEFAULT_BUDGET_MS };
+  }
+  const where: SeededDoorAnswer = { data: answer.where ?? null, error: null };
+  return {
+    where,
+    organizationId: organizationOf(where),
+    on: answer.on === true,
+    budgetMs: typeof answer.budget_ms === "number" && answer.budget_ms > 0 ? answer.budget_ms : DEFAULT_BUDGET_MS,
+  };
+}
+
+function organizationOf(where: SeededDoorAnswer): string | null {
+  const row = where.data as { organization_id?: unknown; kind?: unknown } | null;
+  return !where.error && row && typeof row === "object" && row.kind === "table" && typeof row.organization_id === "string"
+    ? row.organization_id
+    : null;
+}
 
 const plainError = (error: unknown): SeededDoorAnswer["error"] => {
   if (!error || typeof error !== "object") return null;
@@ -97,21 +111,18 @@ const plainError = (error: unknown): SeededDoorAnswer["error"] => {
   };
 };
 
-async function askSeed(tableId: string, recordId: string | null, rows: boolean): Promise<TablePageSeed | null> {
-  const supabase = await createClient();
-  const custom = supabase.schema("custom" as never) as unknown as {
-    rpc: (fn: string, args: Record<string, unknown>) => PromiseLike<{ data: unknown; error: unknown }>;
-  };
-  const whereRaw = await custom.rpc("where_id_opens", { p_id: tableId });
-  const where: SeededDoorAnswer = { data: whereRaw.data ?? null, error: plainError(whereRaw.error) };
-  const row = where.data as { organization_id?: unknown; kind?: unknown } | null;
-  const organizationId =
-    !where.error && row && typeof row === "object" && row.kind === "table" && typeof row.organization_id === "string"
-      ? row.organization_id
-      : null;
+async function askSeed(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  gate: GateAnswer,
+  tableId: string,
+  recordId: string | null,
+  rows: boolean,
+): Promise<TablePageSeed | null> {
+  const { where, organizationId } = gate;
   if (!organizationId) return { tableId, where, organizationId: null, bundle: null };
-  // The table's bundle, the grid's first page and, on a record page, the record's bundle — asked by
-  // the records client exactly as the browser's would ask them, as the person, and recorded.
+  // The table's bundle, the grid's first page (only when server rows are on) and, on a record page,
+  // the record's bundle — asked by the records client exactly as the browser's would ask them, as the
+  // person, and recorded.
   const { data: claims } = await getClaimsUser(supabase);
   const userId = claims.user?.id ?? null;
   const records = await askTablePageSeed({
@@ -137,24 +148,57 @@ async function askSeed(tableId: string, recordId: string | null, rows: boolean):
   };
 }
 
+export interface TablePageReads {
+  /** Whether this person's page draws its rows on the server, and how long it may wait for them. */
+  gate: Promise<ServerRowsGate>;
+  /** The page's first reads. Never rejects; null when they fail or outrun the budget. */
+  seed: Promise<TablePageSeed | null>;
+}
+
+const OFF: ServerRowsGate = { on: false, budgetMs: DEFAULT_BUDGET_MS };
+
 /**
- * Start a table page's first reads as the signed-in person. NOT awaited by the route: the promise
- * is handed to the client page and resolves into the stream. Never rejects.
+ * Start a table page's first reads as the signed-in person. NOT awaited by the route: both promises
+ * are handed to the client page and resolve into the stream. Neither rejects.
+ *
+ * `rows`: the address opens the plain table, so the grid's first page may be asked.
+ * `forceOn`: a development host asked for server rows on this one request (`?server_rows=1`).
  */
-export function readTablePageSeed(
+export function readTablePage(
   tableId: string,
   recordId: string | null = null,
-  options: { rows?: boolean } = {},
-): Promise<TablePageSeed | null> {
-  if (!isUuidShape(tableId)) return Promise.resolve(null);
+  options: { rows?: boolean; forceOn?: boolean } = {},
+): TablePageReads {
+  if (!isUuidShape(tableId)) return { gate: Promise.resolve(OFF), seed: Promise.resolve(null) };
   const record = recordId && isUuidShape(recordId) ? recordId : null;
-  let timer: ReturnType<typeof setTimeout> | undefined;
-  const budget = new Promise<null>((resolve) => {
-    timer = setTimeout(() => resolve(null), SEED_BUDGET_MS);
+  const client = createClient();
+  const asked = client.then(async (supabase) => {
+    const custom = supabase.schema("custom" as never) as unknown as CustomRpc;
+    const gate = await askGate(custom, tableId);
+    return { supabase, gate: options.forceOn ? { ...gate, on: true } : gate };
   });
-  const asked = askSeed(tableId, record, options.rows !== false).catch((thrown: unknown) => {
-    console.warn(`[tablePageSeed] the server could not ask for table ${tableId}; the browser will.`, thrown);
-    return null;
-  });
-  return Promise.race([asked, budget]).finally(() => clearTimeout(timer));
+  // The gate is bounded too: past the default budget the page draws as it did before.
+  let gateTimer: ReturnType<typeof setTimeout> | undefined;
+  const gate = Promise.race([
+    asked.then(({ gate: g }): ServerRowsGate => ({ on: g.on, budgetMs: g.budgetMs })),
+    new Promise<ServerRowsGate>((resolve) => {
+      gateTimer = setTimeout(() => resolve(OFF), DEFAULT_BUDGET_MS);
+    }),
+  ])
+    .catch(() => OFF)
+    .finally(() => clearTimeout(gateTimer));
+  const seed = asked
+    .then(({ supabase, gate: g }) => {
+      let timer: ReturnType<typeof setTimeout> | undefined;
+      const budget = new Promise<null>((resolve) => {
+        timer = setTimeout(() => resolve(null), g.budgetMs);
+      });
+      const rows = g.on && options.rows !== false;
+      return Promise.race([askSeed(supabase, g, tableId, record, rows), budget]).finally(() => clearTimeout(timer));
+    })
+    .catch((thrown: unknown) => {
+      console.warn(`[tablePageSeed] the server could not ask for table ${tableId}; the browser will.`, thrown);
+      return null;
+    });
+  return { gate, seed };
 }

@@ -16,18 +16,18 @@ import { UnifiedDataTablePage } from "@/features/unified-data/table-page/Unified
 import { UnifiedRecordPage } from "@/features/unified-data/table-page/UnifiedRecordPage";
 import { primeTablePage } from "./primeTablePage";
 import { TablePageSeedContext } from "./tablePageSeedContext";
-import type { TablePageSeed } from "./tablePageSeed.server";
+import type { ServerRowsGate, TablePageSeed } from "./tablePageSeed.server";
 
 function Primed({
   tableId,
   seed,
-  serverRows,
+  gate,
   children,
 }: {
   tableId: string;
   seed: Promise<TablePageSeed | null>;
-  /** The knob `data/server_rows` (`serverRowsOn`): OFF draws the page exactly as before SSR-ROWS. */
-  serverRows: boolean;
+  /** The person's knob `data/server_rows` (`readTablePage`): off draws the page as before SSR-ROWS. */
+  gate: Promise<ServerRowsGate>;
   children: ReactNode;
 }) {
   const dataSource = useRecordsDataSource();
@@ -42,7 +42,7 @@ function Primed({
    * HTML holds the table's rows, and while hydrating, so the browser draws the same rows and asks
    * nothing again. A null seed draws exactly what it drew before: the skeleton, then the browser asks.
    */
-  if (!serverRows) return <>{children}</>;
+  if (!use(gate).on) return <>{children}</>;
   const resolved = use(seed);
   const mine = resolved && resolved.tableId === tableId ? resolved : null;
   return (
@@ -85,15 +85,15 @@ function useHoldShellUntilRows(tableId: string): void {
 export function PrimedTablePage({
   tableId,
   seed,
-  serverRows,
+  gate,
 }: {
   tableId: string;
   seed: Promise<TablePageSeed | null>;
-  serverRows: boolean;
+  gate: Promise<ServerRowsGate>;
 }) {
   useHoldShellUntilRows(tableId);
   return (
-    <Primed tableId={tableId} seed={seed} serverRows={serverRows}>
+    <Primed tableId={tableId} seed={seed} gate={gate}>
       <UnifiedDataTablePage tableId={tableId} />
     </Primed>
   );
@@ -103,15 +103,15 @@ export function PrimedRecordPage({
   tableId,
   recordId,
   seed,
-  serverRows,
+  gate,
 }: {
   tableId: string;
   recordId: string;
   seed: Promise<TablePageSeed | null>;
-  serverRows: boolean;
+  gate: Promise<ServerRowsGate>;
 }) {
   return (
-    <Primed tableId={tableId} seed={seed} serverRows={serverRows}>
+    <Primed tableId={tableId} seed={seed} gate={gate}>
       <UnifiedRecordPage tableId={tableId} recordId={recordId} />
     </Primed>
   );
