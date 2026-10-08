@@ -70,6 +70,7 @@ const SORTABLE: Record<string, (row: EnvelopeListRow) => string | number> = {
   status: (r) => r.status,
   sent_at: (r) => r.sent_at ?? "",
   updated_at: (r) => r.updated_at,
+  created_at: (r) => r.created_at,
   progress: (r) => (r.signer_count ? r.signed_count / r.signer_count : 0),
   organization_name: (r) => r.organization_name ?? "",
 };

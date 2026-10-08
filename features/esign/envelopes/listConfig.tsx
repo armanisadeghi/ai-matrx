@@ -20,7 +20,7 @@ export const envelopeListConfig: EntityListConfig<EnvelopeListRow> = {
     fetchFacets: fetchEnvelopeFacets,
   },
   columns: ENVELOPE_COLUMNS,
-  prefsVersion: 1,
+  prefsVersion: 2,
   getRowId: (row) => row.id,
   getRowName: (row) => row.title,
   door: { hrefFor: envelopeHref },
@@ -33,7 +33,9 @@ export const envelopeListConfig: EntityListConfig<EnvelopeListRow> = {
     rowKind: "envelope",
     listKind: "envelope-list",
     humanRow: (row) =>
-      `${row.title} — ${statusLabel(row.status)}, signed ${row.signed_count} of ${row.signer_count}`,
+      row.status === "draft"
+        ? `${row.title} — Draft, created ${row.created_at}`
+        : `${row.title} — ${statusLabel(row.status)}, signed ${row.signed_count} of ${row.signer_count}`,
     showRow: false,
     showToolbar: false,
   },

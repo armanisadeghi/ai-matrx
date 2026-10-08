@@ -8,13 +8,22 @@
 
 import { callApi } from "@/lib/api/call-api";
 import type { AppDispatch } from "@/lib/redux/store";
+import type { Database } from "@/types/database.types";
 import { supabase } from "@/utils/supabase/client";
 
 import type { EnvelopeDraftV1, EnvelopeTemplateV1 } from "../../contract/draft";
 import { DraftRefusal, type DetectCandidate, type EditorApi, type SaveResult, type SendResult, type TemplateRow } from "./types";
 
 type RpcAnswer = { data: unknown; error: { message: string } | null };
-const loose = supabase as unknown as { rpc(name: string, args?: Record<string, unknown>): Promise<RpcAnswer> };
+type EsignRpcName = keyof Database["esign"]["Functions"];
+const esign = supabase.schema("esign");
+// One typed seam: the name is checked against the generated `esign` functions; arguments are
+// built at each call site from the contract shapes.
+const loose = {
+  rpc(name: EsignRpcName, args?: Record<string, unknown>): Promise<RpcAnswer> {
+    return (esign as unknown as { rpc(n: string, a?: Record<string, unknown>): Promise<RpcAnswer> }).rpc(name, args);
+  },
+};
 
 const REFUSAL_TEXT: Record<string, string> = {
   not_a_member: "You are not a member of that organization.",
@@ -37,7 +46,7 @@ function refusal(answer: Record<string, unknown>): DraftRefusal {
   return new DraftRefusal(code, REFUSAL_TEXT[code] ?? "That could not be done right now.", answer);
 }
 
-async function door(name: string, args: Record<string, unknown>): Promise<Record<string, unknown>> {
+async function door(name: EsignRpcName, args: Record<string, unknown>): Promise<Record<string, unknown>> {
   const { data, error } = await loose.rpc(name, args);
   if (error) throw new DraftRefusal("unreachable", "We could not reach AI Matrx just now. Try again in a moment.", { message: error.message });
   const answer = (data ?? {}) as Record<string, unknown>;
@@ -86,9 +95,8 @@ export function makeRealEditorApi(dispatch: AppDispatch): EditorApi {
     },
 
     async loadDraft(envelopeId) {
-      // The draft rides esign_envelope_state (CONTRACT §5.4): `draft` = {composition, revision, …}.
-      // AMENDMENTS-REQUESTED: the revision's exact key — tolerated in three places until the doors ship.
-      const { data, error } = await loose.rpc("esign_envelope_state", { p_envelope_id: envelopeId });
+      // CONTRACT §21: esign_draft_get → {envelope:{id,status,organization_id,title}, draft:{composition,revision,saved_at}}.
+      const { data, error } = await loose.rpc("esign_draft_get", { p_envelope_id: envelopeId });
       if (error) throw new DraftRefusal("unreachable", "We could not reach AI Matrx just now. Try again in a moment.");
       const a = (data ?? {}) as Record<string, unknown>;
       if (a.granted === false) return null;
@@ -127,7 +135,7 @@ export function makeRealEditorApi(dispatch: AppDispatch): EditorApi {
       void fetch(`${base}/rest/v1/rpc/esign_draft_save`, {
         method: "POST",
         keepalive: true,
-        headers: { "Content-Type": "application/json", apikey: key, Authorization: `Bearer ${cachedToken}` },
+        headers: { "Content-Profile": "esign", "Content-Type": "application/json", apikey: key, Authorization: `Bearer ${cachedToken}` },
         body: JSON.stringify({ p_envelope_id: envelopeId, p_composition: composition, p_base_revision: baseRevision }),
       }).catch(() => undefined); // the local mirror restores whatever this misses
     },
