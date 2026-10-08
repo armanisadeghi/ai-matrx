@@ -14,6 +14,7 @@ import {
   seePhase,
   seeUntil,
   refused,
+  setMeetingPolicy,
   tokenProbe,
   walkIn,
 } from "../lib/meeting";
@@ -79,6 +80,9 @@ scenario("host-leave-assign", async ({ cast }) => {
   await seeUntil(guest, "they are the host now", isHost, TIMEOUTS.noticeMs);
 });
 
+// host-leaves-unassigned FOLLOWS THE MEETING'S BEHAVIOR PROFILE (CORE-DESIGN §4.2, knob
+// `host_absent_transfer`): the default Meet profile keeps the meeting headless (no automatic
+// promotion), the Zoom profile promotes the longest-present participant after the grace.
 scenario(
   "host-leaves-unassigned",
   async ({ cast }) => {
@@ -86,10 +90,26 @@ scenario(
     // The host just closes the tab — no hand-over.
     await host.closeTab();
     await host.newTab(); // keep the host's cookie jar alive for cleanup
-    // After the grace window the remaining person is promoted (default profile).
-    await seeUntil(guest, "promoted to host after the grace window", isHost, TIMEOUTS.hostTransferMs + 60_000);
+    // Meet profile: the meeting carries on, headless. Nobody is promoted, and the person still in
+    // the call keeps seeing a call (not an error, not a phantom host) for longer than the Zoom
+    // profile's grace + reconnect window, so a promotion that is merely late would also fail here.
+    await keepsSeeing(guest, "the call going on with nobody promoted to host", (o) => o.phase === "in-call" && !isHost(o), TIMEOUTS.hostTransferMs + 60_000);
   },
   { timeoutMs: TIMEOUTS.hostTransferMs + 6 * 60_000 },
+);
+
+scenario(
+  "host-leaves-unassigned-zoom",
+  async ({ cast }) => {
+    const { host, guest } = await callWithGuest(cast);
+    // Through the product's per-meeting door, as the host (never a row edit).
+    await setMeetingPolicy(cast.meeting!, "behavior_profile", "zoom");
+    await host.closeTab();
+    await host.newTab();
+    // Zoom profile: after the grace window the remaining person is promoted.
+    await seeUntil(guest, "promoted to host after the grace window", isHost, TIMEOUTS.hostTransferMs + 60_000);
+  },
+  { timeoutMs: TIMEOUTS.hostTransferMs + 6 * 60_000, catalogId: "host-leaves-unassigned" },
 );
 
 scenario("leave-or-end-choice", async ({ cast }) => {
