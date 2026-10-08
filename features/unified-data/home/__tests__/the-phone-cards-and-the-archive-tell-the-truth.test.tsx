@@ -27,7 +27,8 @@ jest.mock("next/link", () => {
   );
   return { __esModule: true, default: Link };
 });
-jest.mock("@/components/official/item/ItemMenu", () => ({
+jest.mock("@ai-matrx/design-system/item", () => ({
+  ...jest.requireActual("@ai-matrx/design-system/item"),
   ItemMenu: ({ children }: { children: React.ReactNode }) => <>{children}</>,
 }));
 const archived = jest.fn();

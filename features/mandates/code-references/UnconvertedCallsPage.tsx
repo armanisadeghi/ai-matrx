@@ -18,7 +18,7 @@ import type {
   EntityListConfig,
   EntityRowActionsResult,
 } from "@/lib/entity-list/config";
-import type { ItemMenuConfig } from "@/components/official/item/types";
+import type { ItemMenuConfig } from "@ai-matrx/chat/ui/item-types";
 import { createMemoryListService } from "@/lib/entity-list/memoryService";
 import { plainFailureReason } from "@/lib/entity-list/failure";
 import { ADMIN_MANDATES_HEALTH, ADMIN_MANDATES_UNCONVERTED } from "@/features/mandates/admin-routes";

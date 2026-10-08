@@ -138,7 +138,7 @@ registerChatUi({
   ReadFailure: Host_ReadFailure,
 });
 
-import { ItemRow as Host_ItemRow } from "@/components/official/item/ItemRow";
+import { ItemRow as Host_ItemRow } from "@ai-matrx/design-system/item";
 registerChatUi({
   ItemRow: Host_ItemRow,
 });
@@ -218,7 +218,7 @@ registerChatUi({
   MatrxFloatingFrame: Host_MatrxFloatingFrame,
 });
 
-import { ItemMenu as Host_ItemMenu } from "@/components/official/item/ItemMenu";
+import { ItemMenu as Host_ItemMenu } from "@ai-matrx/design-system/item";
 registerChatUi({
   ItemMenu: Host_ItemMenu,
 });

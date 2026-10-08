@@ -11,7 +11,7 @@
 
 import { useEffect, useRef } from "react";
 import type { ObjectAction } from "@ai-matrx/records-ui/object-actions";
-import type { ItemMenuConfig, ItemMenuEntry } from "@/components/official/item/types";
+import type { ItemMenuConfig, ItemMenuEntry } from "@ai-matrx/chat/ui/item-types";
 import { registerPageCommands, type KnowledgeCommand } from "@/features/knowledge/command-bar/commands";
 import { OBJECT_ACTION_ICONS } from "./tableActionAdapters";
 

@@ -28,8 +28,8 @@ import type {
   ColumnFiltersState,
   MatrxDataTableQueryState,
 } from "@ai-matrx/design-system/data-table/types";
-import { ItemMenu } from "@/components/official/item/ItemMenu";
-import type { ItemMenuConfig } from "@/components/official/item/types";
+import { ItemMenu } from "@ai-matrx/design-system/item";
+import type { ItemMenuConfig } from "@ai-matrx/chat/ui/item-types";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 import { dealMenuTarget, useCrmRowMenu } from "../crm-row-actions";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";

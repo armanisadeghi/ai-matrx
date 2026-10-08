@@ -19,7 +19,7 @@ import { RichContent } from "@ai-matrx/rich-content/levels/RichContent";
 import AssociateTaskButton from "@/features/tasks/widgets/AssociateTaskButton";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ItemMenu } from "@/components/official/item/ItemMenu";
+import { ItemMenu } from "@ai-matrx/design-system/item";
 import { buildConversationMenu } from "@ai-matrx/chat/agents/components/conversation-actions/conversationActionRegistry";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { favoritesService } from "@/features/scopes/service/favoritesService";

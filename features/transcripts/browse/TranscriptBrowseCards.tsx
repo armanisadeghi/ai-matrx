@@ -8,7 +8,7 @@
 
 import Link from "next/link";
 import { FileAudio, MoreHorizontal } from "lucide-react";
-import { ItemMenu } from "@/components/official/item/ItemMenu";
+import { ItemMenu } from "@ai-matrx/design-system/item";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { formatRelativeTime } from "@ai-matrx/kit/format";

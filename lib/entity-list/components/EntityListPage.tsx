@@ -26,14 +26,14 @@ import type { SurfaceScopePayload } from "@ai-matrx/chat/surfaces/types";
 import { AlertCircle } from "lucide-react";
 import { Button } from "@ai-matrx/design-system";
 import { CONTROLS_CONTAINER_NAME, ControlScope } from "@ai-matrx/design-system/controls";
-import { ItemContextMenu } from "@/components/official/item/ItemMenu";
+import { ItemContextMenu } from "@ai-matrx/design-system/item";
 import {
   effectiveHiddenColumns,
   hiddenColumnsPatch,
   uniformColumnIds,
 } from "../columnWidths";
 import { entityListDoorColumnId } from "../doors";
-import type { ItemMenuConfig } from "@/components/official/item/types";
+import type { ItemMenuConfig } from "@ai-matrx/chat/ui/item-types";
 import { CONTEXT_MENU_ENTITY_KEY } from "@/features/context-menu-v3/types";
 import { commitUrlParams } from "@ai-matrx/kit/url-state";
 import { useListSearchParams } from "../useListSearchParams";

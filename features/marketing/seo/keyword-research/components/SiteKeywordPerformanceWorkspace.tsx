@@ -15,8 +15,8 @@ import {
 } from "lucide-react";
 import { toast } from "@/lib/toast";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
-import { ItemMenu } from "@/components/official/item/ItemMenu";
-import type { ItemMenuConfig } from "@/components/official/item/types";
+import { ItemMenu } from "@ai-matrx/design-system/item";
+import type { ItemMenuConfig } from "@ai-matrx/chat/ui/item-types";
 import {
   archiveKeywords,
   restoreKeywords,

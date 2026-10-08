@@ -33,7 +33,7 @@ import {
 } from "lucide-react";
 
 import { MatrxDataTable } from "@ai-matrx/design-system/data-table";
-import { ItemContextMenu, ItemMenu } from "@/components/official/item/ItemMenu";
+import { ItemContextMenu, ItemMenu } from "@ai-matrx/design-system/item";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { MoreHorizontal } from "lucide-react";

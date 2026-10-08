@@ -37,7 +37,7 @@ import { cn } from "@/lib/utils";
 import { ArchivedDisclosure } from "@ai-matrx/design-system";
 import { Input } from "@ai-matrx/design-system/controls";
 import { useIsMobile } from "@ai-matrx/kit/media-query";
-import { ItemMenu, ItemContextMenu } from "@/components/official/item/ItemMenu";
+import { ItemMenu, ItemContextMenu } from "@ai-matrx/design-system/item";
 import { FileContextMenu } from "@/features/files/components/core/FileContextMenu/FileContextMenu";
 import { FileRowContextMenu } from "@/features/files/components/core/RowContextMenu/RowContextMenu";
 import { useEnsureCloudFile } from "@/features/files/hooks/useEnsureCloudFile";

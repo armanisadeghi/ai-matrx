@@ -14,8 +14,8 @@
 
 import Link from "next/link";
 import { CalendarClock, MoreHorizontal } from "lucide-react";
-import { ItemMenu } from "@/components/official/item/ItemMenu";
-import type { ItemMenuConfig } from "@/components/official/item/types";
+import { ItemMenu } from "@ai-matrx/design-system/item";
+import type { ItemMenuConfig } from "@ai-matrx/chat/ui/item-types";
 import { formatRelativeTime } from "@ai-matrx/kit/format";
 import { cn } from "@/lib/utils";
 import {

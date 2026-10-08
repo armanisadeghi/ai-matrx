@@ -33,7 +33,7 @@ import {
   type MergedConversationRow,
 } from "../../hooks/useMergedAgentConversations";
 import type { CodeEditorAgentConfig } from "../../types";
-import { ItemRow } from "@/components/official/item/ItemRow";
+import { ItemRow } from "@ai-matrx/design-system/item";
 import { buildConversationMenu } from "@ai-matrx/chat/agents/components/conversation-actions/conversationActionRegistry";
 import { renameConversation } from "@ai-matrx/chat/agents/redux/conversation-list/conversation-row-actions.thunks";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";

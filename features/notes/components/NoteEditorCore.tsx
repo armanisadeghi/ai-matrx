@@ -29,6 +29,9 @@
 
 import React, { useRef, useCallback, useEffect, useLayoutEffect, useState } from "react";
 import { useTextareaFormatting } from "@ai-matrx/rich-editor/format/useTextareaFormatting";
+import { createMarkdownImageUpload } from "@ai-matrx/rich-editor/format/markdown-image-upload";
+import { useFileUpload } from "@/features/files/handler/hooks/useFileUpload";
+import { fileUrls } from "@/features/files/handler/utils/python-base";
 import { Textarea } from "@/components/ui/textarea";
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { MatrxSplit } from "@/components/matrx/MatrxSplit";
@@ -303,7 +306,11 @@ export function NoteEditorCore({
     const next = editorMode === "plain" && !surfaceName ? textareaRef.current : null;
     if (next !== plainFormatElement) setPlainFormatElement(next);
   });
-  useTextareaFormatting(plainFormatElement, !readOnly);
+  // A pasted or dropped image uploads to the platform's files and lands as
+  // `![name](url)` at the caret — in Plain and Split, as in Write.
+  const { upload } = useFileUpload();
+  const uploadImage = createMarkdownImageUpload(upload, fileUrls);
+  useTextareaFormatting(plainFormatElement, !readOnly, { uploadImage });
 
   useScrollEdgeIntent(
     scrollIntent,
@@ -404,6 +411,7 @@ export function NoteEditorCore({
               data-kind-source="explicit"
               surfaceName={surfaceName}
               getApplicationScope={getApplicationScope}
+              uploadImage={readOnly ? undefined : uploadImage}
               value={content}
               onChange={(e) => onChange(e.target.value)}
               placeholder={placeholder}
@@ -461,6 +469,7 @@ export function NoteEditorCore({
           textareaRef={
             textareaRef as React.RefObject<HTMLTextAreaElement | null>
           }
+          uploadImage={uploadImage}
           placeholder={placeholder}
           className="absolute inset-0"
           singlePane={splitSinglePane}

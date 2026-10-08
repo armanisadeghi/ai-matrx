@@ -20,7 +20,7 @@ import type {
   EntityListConfig,
   EntityRowActionsResult,
 } from "@/lib/entity-list/config";
-import type { ItemMenuConfig, ItemMenuEntry } from "@/components/official/item/types";
+import type { ItemMenuConfig, ItemMenuEntry } from "@ai-matrx/chat/ui/item-types";
 import { createMemoryListService } from "@/lib/entity-list/memoryService";
 import { EntitySourceFailures } from "@/lib/entity-list/components/EntitySourceFailures";
 import { plainFailureReason } from "@/lib/entity-list/failure";

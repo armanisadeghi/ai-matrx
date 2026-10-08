@@ -28,7 +28,7 @@ import type {
   MatrxDataTableMobileCardControls,
   MatrxDataTableSelectionConfig,
 } from "@ai-matrx/design-system/data-table/types";
-import { ItemMenu } from "@/components/official/item/ItemMenu";
+import { ItemMenu } from "@ai-matrx/design-system/item";
 import { cn } from "@/lib/utils";
 import { LIST_VIEW_PAGE_SIZES } from "@/lib/list-views/defaults";
 import type { EntityListConfig, EntityRowActions } from "../config";
@@ -46,8 +46,8 @@ import {
   CONTEXT_MENU_HEADING_KEY,
   type ContextMenuExtraSection,
 } from "@/features/context-menu-v3/types";
-import { itemMenuConfigToExtraSections } from "@/components/official/item/itemMenuToV3";
-import { resolveItemMenuConfig } from "@/components/official/item/types";
+import { itemMenuConfigToExtraSections } from "@/features/context-menu-v3/item/itemMenuToV3";
+import { resolveItemMenuConfig } from "@ai-matrx/chat/ui/item-types";
 import type { ReadOutcome } from "@ai-matrx/design-system";
 import { fitColumnWidths } from "../columnWidths";
 import type { SavedListView } from "@/lib/redux/preferences/userPreferencesSlice";

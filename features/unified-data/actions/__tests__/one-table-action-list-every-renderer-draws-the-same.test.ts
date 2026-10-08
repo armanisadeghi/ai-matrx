@@ -23,7 +23,7 @@ import {
   type ObjectAction,
   type TableActionHost,
 } from "@ai-matrx/records-ui";
-import type { ItemMenuConfig, ItemMenuEntry } from "@/components/official/item/types";
+import type { ItemMenuConfig, ItemMenuEntry } from "@ai-matrx/chat/ui/item-types";
 import type { ContextMenuExtraItem, ContextMenuExtraSection } from "@/features/context-menu-v3/types";
 import { toExtraSections, toItemMenuConfig } from "../tableActionAdapters";
 import { tableMenuExtensions } from "../tableMenuExtensions";

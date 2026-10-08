@@ -10,7 +10,7 @@
 import Link from "next/link";
 import { MoreVertical, Star } from "lucide-react";
 
-import { ItemMenu } from "@/components/official/item/ItemMenu";
+import { ItemMenu } from "@ai-matrx/design-system/item";
 import { MatrxTableRowAlchemyProvider } from "@ai-matrx/design-system/data-table";
 import type { MatrxDataTableRecordControls } from "@ai-matrx/design-system/data-table";
 import type { ComponentProps } from "react";

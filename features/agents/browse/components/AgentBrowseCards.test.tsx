@@ -24,7 +24,8 @@ jest.mock("next/link", () => ({
   ),
 }));
 
-jest.mock("@/components/official/item/ItemMenu", () => ({
+jest.mock("@ai-matrx/design-system/item", () => ({
+  ...jest.requireActual("@ai-matrx/design-system/item"),
   ItemMenu: ({ children }: { children: React.ReactNode }) => <>{children}</>,
 }));
 

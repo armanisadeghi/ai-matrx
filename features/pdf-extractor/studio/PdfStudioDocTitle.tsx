@@ -17,7 +17,7 @@
 
 import React from "react";
 import { EditableLabel } from "@ai-matrx/design-system";
-import { ItemMenu } from "@/components/official/item/ItemMenu";
+import { ItemMenu } from "@ai-matrx/design-system/item";
 import { MoreHorizontalTapButton } from "@ai-matrx/tap-target/buttons";
 import { TapTargetButtonGroup } from "@ai-matrx/tap-target";
 import { PdfNamedSurfaceSwitcher } from "@/features/pdf/components/PdfNamedSurfaceSwitcher";

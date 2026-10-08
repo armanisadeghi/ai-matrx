@@ -35,8 +35,8 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@ai-matrx/design-system/controls";
 import { CrumbTrailHeader } from "@/features/shell/components/header/templates/CrumbTrailHeader";
-import { ItemContextMenu } from "@/components/official/item/ItemMenu";
-import type { ItemMenuConfig } from "@/components/official/item/types";
+import { ItemContextMenu } from "@ai-matrx/design-system/item";
+import type { ItemMenuConfig } from "@ai-matrx/chat/ui/item-types";
 import {
   UserAvatarDisplay,
   type UserLike,

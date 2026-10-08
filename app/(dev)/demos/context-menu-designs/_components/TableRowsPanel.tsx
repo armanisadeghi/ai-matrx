@@ -9,8 +9,8 @@
 
 import { ExternalLink, Star, Table2 } from "lucide-react";
 import { tableActions, whatYouMayDo, type TableActionSubject } from "@ai-matrx/records-ui";
-import { ItemContextMenu } from "@/components/official/item/ItemMenu";
-import type { ItemMenuConfig } from "@/components/official/item/types";
+import { ItemContextMenu } from "@ai-matrx/design-system/item";
+import type { ItemMenuConfig } from "@ai-matrx/chat/ui/item-types";
 import { toItemMenuConfig } from "@/features/unified-data/actions/tableActionAdapters";
 import { toast } from "@/lib/toast";
 import { formatCount } from "@ai-matrx/kit/format";
