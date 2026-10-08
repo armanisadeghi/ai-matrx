@@ -66,9 +66,9 @@ jest.mock("@ai-matrx/records-ui", () => ({
     row.document.patient_name,
   // The picker's one rule (records-ui tablePicking): tables only, the chosen one always kept.
   tablePickerEntries: (
-    rows: Array<{ id: string; kept_by_the_app?: boolean }>,
+    rows: Array<{ id: string; platform_owned?: boolean }>,
     { keep }: { keep?: string | null },
-  ) => ({ entries: rows.filter((r) => !r.kept_by_the_app || r.id === keep).map((table) => ({ table })) }),
+  ) => ({ entries: rows.filter((r) => !r.platform_owned || r.id === keep).map((table) => ({ table })) }),
 }));
 
 jest.mock("@/features/unified-data/hub/useTablesEverywhere", () => ({

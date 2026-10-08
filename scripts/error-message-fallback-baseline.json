@@ -129,7 +129,6 @@
   "app/api/extension/append-message/route.ts": 1,
   "app/api/feedback/notify/route.ts": 1,
   "app/api/feedback/user-review-notify/route.ts": 1,
-  "app/api/html-pages/route.ts": 2,
   "app/api/mcp/oauth/callback/route.ts": 1,
   "app/api/mcp/oauth/start/route.ts": 1,
   "app/api/organizations/invitations/resend/route.ts": 1,

@@ -22,7 +22,7 @@ describe("printMarkdownContent — blocked Chat popup", () => {
         jest.useRealTimers();
     });
 
-    it("downloads message.html and emits the exact fallback toast", () => {
+    it("downloads message.html and emits the exact fallback toast", async () => {
         jest.useFakeTimers();
         jest.spyOn(window, "open").mockReturnValue(null);
 
@@ -46,7 +46,7 @@ describe("printMarkdownContent — blocked Chat popup", () => {
                 downloadName = this.download;
             });
 
-        const outcome = printMarkdownContent("# Verified response", "Message");
+        const outcome = await printMarkdownContent("# Verified response", "Message");
 
         expect(outcome).toBe("downloaded");
         expect(clickSpy).toHaveBeenCalledTimes(1);

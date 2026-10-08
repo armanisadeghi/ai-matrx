@@ -51,6 +51,7 @@ export function roomResourcesOpenInput(sessionId: string, roomTitle?: string | n
 
 export const WAR_ROOM_RESOURCES_CANVAS_KIND: AnyCanvasKind = defineCanvasKind<CanvasJson>({
   id: WAR_ROOM_RESOURCES_KIND,
+  surface: "dom",
   label: "Resources",
   icon: Paperclip,
   load: () => import("./WarRoomResourcesCanvasView"),

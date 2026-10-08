@@ -33,6 +33,7 @@ export function readUserJourneyData(data: unknown): UserJourneyData | null {
 
 export const USER_JOURNEY_CANVAS_KIND: AnyCanvasKind = defineCanvasKind<UserJourneyData>({
   id: USER_JOURNEY_KIND,
+  surface: "dom",
   label: "Journey",
   icon: Route,
   load: () => import("./UserJourneyCanvasView"),

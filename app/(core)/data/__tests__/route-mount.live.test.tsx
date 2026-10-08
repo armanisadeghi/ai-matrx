@@ -284,12 +284,12 @@ describeLive("/data — the route files bind the store, live main database", () 
     if (!tables.ok) throw new Error(`tableList refused: ${tables.error.message}`);
     // A table in one of the person's own lanes. records-ui files a kernel table
     // (the Workspace home) under System and a table the app keeps for itself
-    // (`kept_by_the_app`, or a `records_ui_` slug) under the app's own lane —
+    // (`platform_owned`, or a `records_ui_` slug) under the app's own lane —
     // neither is in the lanes this page promises (records-ui `laneFor`).
     const named = tables.data.find(
-      (t: { name?: string | null; slug?: string | null; is_kernel?: boolean; kept_by_the_app?: boolean }) =>
+      (t: { name?: string | null; slug?: string | null; is_kernel?: boolean; platform_owned?: boolean }) =>
         !t.is_kernel &&
-        t.kept_by_the_app !== true &&
+        t.platform_owned !== true &&
         !(t.slug ?? "").startsWith("records_ui_") &&
         typeof t.name === "string" &&
         t.name.trim().length > 0,

@@ -4,18 +4,17 @@
  * Reads for /administration/reporting/performance. A watch is an `ops.proof_check` row with
  * `kind='perf'`; its history is `ops.perf_sample` (common-docs/systems/architecture/observability/
  * performance-watch/PLAN.md §1, §3). Both are platform-admin-read: the browser client on
- * /administration carries the admin lane (`utils/supabase/adminLane.ts`). This module never writes.
- *
- * The perf columns are not in the generated types yet, so the client is used untyped and the rows
- * are the narrow shapes in model.ts.
+ * /administration carries the admin lane (`utils/supabase/adminLane.ts`). The one write is the
+ * platform-admin edit door `ops.perf_watch_update` (budget, pause/resume, pin baseline; wave 2).
+ * Typed by the generated `Database["ops"]`.
  */
 
 import { readAllRows } from "@ai-matrx/data/db";
 import { createClient } from "@/utils/supabase/client";
-import type { PerfSample, PerfWatch } from "./model";
+import type { PerfSample, PerfWatch, PerfWatchEdit } from "./model";
 
 const WATCH_COLUMNS =
-  "id, slug, label, owner, source_feature, is_active, live_every_seconds, perf_kind, perf_subject, budget_ms, budget_stat, perf_state, perf_state_since, perf_baseline_ms, perf_baseline_pinned, perf_last_alert_at";
+  "id, slug, label, owner, source_feature, is_active, live_every_seconds, perf_kind, perf_subject, budget_ms, budget_stat, perf_state, perf_state_since, perf_baseline_ms, perf_baseline_pinned, perf_last_alert_at, metadata";
 const SAMPLE_COLUMNS =
   "id, check_id, measured_at, source, n, p50_ms, p95_ms, max_ms, mean_ms, calls, errors, bytes, release_sha, state_after, note";
 
@@ -29,14 +28,12 @@ export interface PerfSource {
   loadSnapshot: () => Promise<PerfSnapshot>;
   /** Every sample of one watch, newest first. */
   loadHistory: (watchId: string) => Promise<PerfSample[]>;
+  /** Edit one watch through ops.perf_watch_update (platform admins only). */
+  updateWatch: (edit: PerfWatchEdit) => Promise<void>;
 }
 
-type Untyped = {
-  schema: (s: string) => { from: (t: string) => any }; // eslint-disable-line @typescript-eslint/no-explicit-any
-};
-
 function ops() {
-  return (createClient() as unknown as Untyped).schema("ops");
+  return createClient().schema("ops");
 }
 
 async function loadSnapshot(): Promise<PerfSnapshot> {
@@ -82,4 +79,9 @@ async function loadHistory(watchId: string): Promise<PerfSample[]> {
   );
 }
 
-export const livePerfSource: PerfSource = { loadSnapshot, loadHistory };
+async function updateWatch(edit: PerfWatchEdit): Promise<void> {
+  const { error } = await ops().rpc("perf_watch_update", edit);
+  if (error) throw new Error(error.message);
+}
+
+export const livePerfSource: PerfSource = { loadSnapshot, loadHistory, updateWatch };

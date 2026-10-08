@@ -6,9 +6,10 @@
 
 import { Printer, ScanLine } from "lucide-react";
 import { printMarkdownContent } from "@ai-matrx/chat/conversation/utils/markdown-print";
-import { hasContentActions } from "@ai-matrx/rich-content/copy/content-view-store";
 import { registerAction } from "@ai-matrx/rich-content/rich-document/actions/provider";
-import { contentForDestination } from "../utils";
+import { contentForPrint } from "../utils";
+// Each embedded block prints through its type's adapter (the one block-printer registry).
+import "@/features/canvas/artifact-types/artifact-printers";
 
 registerAction({
   id: "print",
@@ -19,9 +20,8 @@ registerAction({
   supportedSources: "*",
   renderSlot: "overflow",
   // The ContentActions set in this item's bar already shows it — once per surface.
-  visible: (ctx) => !hasContentActions(ctx.instanceKey("alchemy")),
   order: 10,
-  run: (ctx) => {
+  run: async (ctx) => {
     const title =
       ctx.source.type === "note"
         ? "Note"
@@ -34,7 +34,7 @@ registerAction({
               : ctx.source.type === "scraper-result"
                 ? "Scraper result"
                 : "Content";
-    printMarkdownContent(contentForDestination(ctx), title);
+    await printMarkdownContent(contentForPrint(ctx), title);
   },
 });
 

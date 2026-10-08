@@ -589,12 +589,12 @@ export function MarkdownStudio() {
   // Print / Save PDF — the SAME canonical path every markdown surface uses
   // (`printMarkdownContent` -> `@ai-matrx/print/markdown`). Never a second
   // converter or stylesheet. More printables: the hub at /print.
-  const handlePrint = () => {
+  const handlePrint = async () => {
     if (!content.trim()) {
       toast.info("Nothing to print yet");
       return;
     }
-    printMarkdownContent(content, loaded?.sample.name ?? "Markdown");
+    await printMarkdownContent(content, loaded?.sample.name ?? "Markdown");
   };
 
   // Every control lives in the page header's action set (inline icons on

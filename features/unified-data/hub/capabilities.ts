@@ -130,7 +130,7 @@ export interface HubCapability {
 /**
  * THE STORE'S TABLE FACTS, FOLDED ONTO THE TABLE LIST — `custom.table_facts`' columns the lane
  * decision reads (`visibilityLaneFor`): `visibility`, whether the caller made it, and whether
- * the store keeps it for itself (`kept_by_the_app`). The list is built from each Table's
+ * the store keeps it for itself (`platform_owned`). The list is built from each Table's
  * DOCUMENT, which carries none of the three, so without the last one a column's pick list
  * ("Status choices") was listed under Tables beside the organization's own tables instead of
  * under "Platform tables", behind Show everything (lane POST-PUBLISH-FE).
@@ -147,7 +147,7 @@ export function withHubTableFacts(
       ...t,
       visibility: f.visibility,
       created_by: f.mine ? (userId ?? t.created_by) : t.created_by,
-      ...(f.kept_by_the_app === true ? { kept_by_the_app: true } : {}),
+      ...(f.platform_owned === true ? { platform_owned: true } : {}),
       ...(typeof f.keeper_says === "string" && f.keeper_says.trim() ? { keeper_says: f.keeper_says } : {}),
     } as Table;
   });

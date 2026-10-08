@@ -621,7 +621,7 @@
   },
   "route:/administration/database/store-tables": {
    "file": "app/(admin)/administration/database/store-tables/page.tsx",
-   "none": "an admin list of store tables"
+   "none": "an admin list of custom tables"
   },
   "route:/administration/database/switch-presses": {
    "file": "app/(admin)/administration/database/switch-presses/page.tsx",

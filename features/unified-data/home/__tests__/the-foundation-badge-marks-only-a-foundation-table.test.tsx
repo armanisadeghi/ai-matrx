@@ -119,7 +119,7 @@ describe("the mark is the table's own, never a thing built on it", () => {
       tables: [
         {
           table_id: PATIENTS, table_name: "Patients", organization_id: CLINIC, organization_name: "Cedar Ridge Physical Therapy",
-          member: true, visibility: "internal", updated_at: null, mine: true, shared_with_me: false, kept_by_the_app: false,
+          member: true, visibility: "internal", updated_at: null, mine: true, shared_with_me: false, platform_owned: false,
           kind: "table", foundation: true,
         },
       ],

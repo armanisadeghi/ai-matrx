@@ -85,6 +85,7 @@ export function readDirectiveShapeData(
 export const DIRECTIVE_SHAPE_CANVAS_KIND: AnyCanvasKind =
   defineCanvasKind<DirectiveShapeData>({
     id: DIRECTIVE_SHAPE_KIND,
+    surface: "dom",
     label: "Item shape",
     icon: Braces,
     load: () => import("./DirectiveShapeCanvasView"),

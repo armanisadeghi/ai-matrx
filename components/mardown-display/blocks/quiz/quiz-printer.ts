@@ -218,4 +218,10 @@ export const quizPrinter: BlockPrinter = {
             "quiz"
         );
     },
+    // Inside a message's print: the student version (the answers are the quiz's own print).
+    toPrintHtml(data: unknown) {
+        const quiz = data as RawQuizJSON;
+        if (!quiz?.multipleChoice?.length) return null;
+        return { html: `<style>${QUIZ_STYLES}</style>${renderBlank(quiz)}` };
+    },
 };

@@ -12,9 +12,12 @@ import {
   buildTag,
   createFixtureUser,
   liveTarget,
+  aidreamDir,
   makePersona,
+  teardownArgs,
   testTarget,
 } from "./persona.mjs";
+import { execFileSync } from "node:child_process";
 
 const SHAPE = /^[a-z]+\.[a-z]+\.[0-9a-f]{6}@fixtures\.aimatrx\.com$/;
 
@@ -79,4 +82,32 @@ test("tests make their personas on the live database (owner ruling 2026-10-03), 
   const env = { NEXT_PUBLIC_SUPABASE_URL: "https://db.matrxserver.com", SUPABASE_SECRET_KEY: "k" };
   assert.deepEqual(testTarget(env), { url: "https://db.matrxserver.com", secretKey: "k", label: "live (tests)" });
   assert.throws(() => testTarget({}), PersonaFactoryRefusal);
+});
+
+// The sweeper's OWN argparse parser judges the teardown args (2026-10-08: teardown passed `--target live`
+// after the sweeper dropped that flag, so every persona outlived its test until it expired). Needs uv and
+// the aidream checkout the factory itself needs to tear down; without them this fails, never skips.
+function sweeperAccepts(args) {
+  const probe =
+    "import importlib.util, json, sys\n" +
+    "spec = importlib.util.spec_from_file_location('sweeper', 'scripts/sweep_expired_fixtures.py')\n" +
+    "m = importlib.util.module_from_spec(spec); spec.loader.exec_module(m)\n" +
+    "m.build_parser().parse_args(json.loads(sys.argv[1]))\n";
+  try {
+    execFileSync("uv", ["run", "--quiet", "python", "-c", probe, JSON.stringify(args)], { cwd: aidreamDir(), stdio: "pipe" });
+    return { ok: true };
+  } catch (error) {
+    return { ok: false, stderr: String(error.stderr) };
+  }
+}
+
+test("teardown removes exactly one persona with args the sweeper accepts", () => {
+  const id = "b870aae4-0000-4000-8000-000000000001";
+  const args = teardownArgs(id);
+  assert.deepEqual(args.slice(0, 3), ["--apply", "--user-id", id]);
+  const verdict = sweeperAccepts(args);
+  assert.ok(verdict.ok, `the sweeper refused the factory's teardown args: ${verdict.stderr}`);
+  // the call that shipped before 2026-10-08, judged by the same parser, is refused
+  assert.equal(sweeperAccepts(["--target", "live", ...args]).ok, false);
+  assert.throws(() => teardownArgs("--target"), PersonaFactoryRefusal);
 });

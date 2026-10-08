@@ -32,6 +32,7 @@ export function readQuickTaskPrefill(data: CanvasJson | undefined | null): Quick
 
 export const quickTasksKind = defineCanvasKind<CanvasJson>({
   id: QUICK_TASKS_KIND,
+  surface: "dom",
   label: TITLE,
   icon: CheckSquare,
   load: () => import("./QuickTasksCanvasView"),

@@ -1,54 +1,57 @@
 'use client';
 
 import { durableRecordId } from '@ai-matrx/kit/ids';
+import { callApi } from '@/lib/api/call-api';
+import { getStore } from '@/lib/redux/store-singleton';
 
 /**
- * HTMLPageService
+ * HTMLPageService — a person's quick-publish pages.
  *
- * Routes all write/read operations through the Next.js API route at /api/html-pages,
- * which uses the HTML Supabase service role key to bypass RLS and verifies the
- * caller's main-app session server-side.
- *
- * This avoids the cross-project auth problem that arises when writing directly to a
- * separate Supabase project from the browser with an unauthenticated client.
+ * The html_pages database is a separate project with no client access, so the
+ * Python server is the door: `GET|POST /cms/html-pages`,
+ * `GET|PATCH|DELETE /cms/html-pages/{page_id}` (owner-scoped as the caller;
+ * delete archives). No Next.js route sits in between. A chat page VERSION is
+ * never written here — `publishHtmlCanvasVersion` (canvasVersionPage.ts) is its
+ * one writer.
  */
 export class HTMLPageService {
-    static async #call(action, params = {}) {
-        const response = await fetch('/api/html-pages', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ action, ...params }),
-        });
+    static async #call(request) {
+        const store = getStore();
+        if (!store) throw new Error('Pages need the app to be loaded.');
+        const result = await store.dispatch(callApi(request));
+        if (result.error) throw new Error(result.error.message || 'The page request failed.');
+        return result.data;
+    }
 
-        const text = await response.text();
+    static #metaFields(metaFields = {}) {
+        const out = {};
+        if (metaFields.metaKeywords !== undefined) out.meta_keywords = metaFields.metaKeywords || null;
+        if (metaFields.ogImage !== undefined) out.og_image = metaFields.ogImage || null;
+        if (metaFields.canonicalUrl !== undefined) out.canonical_url = metaFields.canonicalUrl || null;
+        if (metaFields.isIndexable !== undefined) out.is_indexable = Boolean(metaFields.isIndexable);
+        return out;
+    }
 
-        let data;
-        try {
-            data = JSON.parse(text);
-        } catch {
-            // The server returned a non-JSON body (e.g. a Next.js HTML error page,
-            // a Vercel 413 payload-too-large, or a plain-text crash message).
-            // Surface the raw response so the error is diagnosable.
-            const preview = text.slice(0, 300).replace(/\s+/g, ' ').trim();
-            throw new Error(
-                `API returned non-JSON response (HTTP ${response.status}): ${preview}`
-            );
-        }
-
-        if (!response.ok) {
-            throw new Error(data.error || `API error: ${response.status}`);
-        }
-
-        return data;
+    /** The answer callers read after a create/update (pageId + url + the saved meta). */
+    static #saved(page) {
+        return {
+            success: true,
+            pageId: page.id,
+            url: page.url,
+            metaTitle: page.meta_title,
+            metaDescription: page.meta_description,
+            isIndexable: page.is_indexable,
+            createdAt: page.created_at,
+            updatedAt: page.updated_at,
+        };
     }
 
     /**
      * Create a new HTML page.
      *
-     * Pass `sourceTracking.sourceMessageId` to make publishing idempotent: the
-     * API updates the existing page for that message in place instead of
-     * inserting a duplicate (used by the inline auto-preview so re-renders /
-     * reloads never accumulate orphan pages). `sourceConversationId` and
+     * `sourceMessageId` / `sourceConversationId` are provenance only.
+     * Always inserts. A chat page version publishes through the server
+     * (canvasVersionPage.publishHtmlCanvasVersion), never here. `sourceConversationId` and
      * `contextMetadata` are stored alongside for provenance.
      */
     static async createPage(
@@ -59,26 +62,29 @@ export class HTMLPageService {
         metaFields = {},
         sourceTracking = {},
     ) {
-        const { sourceMessageId, sourceConversationId, contextMetadata, forceNew } = sourceTracking;
-        return HTMLPageService.#call('create', {
-            htmlContent,
-            metaTitle,
-            metaDescription,
-            metaFields,
-            // `source_message_id` is a uuid: a client-temp answer has no row to dedupe on.
-            ...(durableRecordId(sourceMessageId) ? { sourceMessageId } : {}),
-            ...(sourceConversationId ? { sourceConversationId } : {}),
-            ...(contextMetadata ? { contextMetadata } : {}),
-            ...(forceNew ? { forceNew: true } : {}),
+        const { sourceMessageId, sourceConversationId, contextMetadata } = sourceTracking;
+        const page = await HTMLPageService.#call({
+            path: '/cms/html-pages',
+            method: 'POST',
+            body: {
+                html_content: htmlContent,
+                meta_title: metaTitle,
+                meta_description: metaDescription ?? '',
+                ...HTMLPageService.#metaFields(metaFields),
+                // `source_message_id` is a uuid: a client-temp answer has no row.
+                ...(durableRecordId(sourceMessageId) ? { source_message_id: sourceMessageId } : {}),
+                ...(sourceConversationId ? { source_conv_id: sourceConversationId } : {}),
+                ...(contextMetadata ? { context_metadata: contextMetadata } : {}),
+            },
         });
+        return HTMLPageService.#saved(page);
     }
 
     /**
      * Get user's HTML pages (summary rows — no html_content blob).
      */
     static async getUserPages(userId) {
-        const data = await HTMLPageService.#call('list');
-        return data.pages;
+        return HTMLPageService.#call({ path: '/cms/html-pages', method: 'GET' });
     }
 
     /**
@@ -88,18 +94,28 @@ export class HTMLPageService {
      * saves. Pass `undefined` for any field you do not want to change.
      */
     static async updatePage(pageId, htmlContent, metaTitle, metaDescription, userId, metaFields = {}) {
-        const payload = { pageId, metaFields };
-        if (htmlContent !== undefined) payload.htmlContent = htmlContent;
-        if (metaTitle !== undefined) payload.metaTitle = metaTitle;
-        if (metaDescription !== undefined) payload.metaDescription = metaDescription;
-        return HTMLPageService.#call('update', payload);
+        const body = HTMLPageService.#metaFields(metaFields);
+        if (htmlContent !== undefined) body.html_content = htmlContent;
+        if (metaTitle !== undefined) body.meta_title = metaTitle;
+        if (metaDescription !== undefined) body.meta_description = metaDescription;
+        const page = await HTMLPageService.#call({
+            path: '/cms/html-pages/{page_id}',
+            method: 'PATCH',
+            pathParams: { page_id: pageId },
+            body,
+        });
+        return HTMLPageService.#saved(page);
     }
 
     /**
      * Delete a HTML page
      */
     static async deletePage(pageId, userId) {
-        await HTMLPageService.#call('delete', { pageId });
+        await HTMLPageService.#call({
+            path: '/cms/html-pages/{page_id}',
+            method: 'DELETE',
+            pathParams: { page_id: pageId },
+        });
         return true;
     }
 
@@ -107,6 +123,10 @@ export class HTMLPageService {
      * Get a single HTML page (for viewing / editing)
      */
     static async getPage(pageId) {
-        return HTMLPageService.#call('get', { pageId });
+        return HTMLPageService.#call({
+            path: '/cms/html-pages/{page_id}',
+            method: 'GET',
+            pathParams: { page_id: pageId },
+        });
     }
 }

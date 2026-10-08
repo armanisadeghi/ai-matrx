@@ -9,7 +9,7 @@
 
 "use client";
 
-import { useRef, useState } from "react";
+import { useRef, useState, type MouseEvent } from "react";
 import { newRequestId } from "./useAnnotationSidecar";
 import { EditConflictError } from "./errors";
 import {
@@ -42,7 +42,7 @@ import { ContinueInNewChatItem } from "./ContinueInNewChatItem";
 import { toast } from "@/lib/toast";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { RichContent } from "@ai-matrx/rich-content/levels/RichContent";
-import { CollapsibleText } from "@/components/official/CollapsibleText";
+import { foldMiddle, foldReplies } from "./foldText";
 import { announceMentions, useSidecar } from "./AnnotationSidecar";
 import { SWATCH } from "./annotation-actions";
 import { PassageQuote } from "./PassageQuote";
@@ -278,6 +278,9 @@ const KIND_META: Record<ResolvedItem["kind"], { label: string; Icon: typeof High
 
 function ItemCard({ item, active }: { item: ResolvedItem; active: boolean }) {
   const { api, source, reveal, setActiveKey, setPendingReattach } = useSidecar();
+  // The thread's top (this card) and its newest reply always show; earlier replies fold.
+  const [showEarlier, setShowEarlier] = useState(false);
+  const replies = foldReplies(item.replies, showEarlier);
   const { label, Icon } = KIND_META[item.kind];
   const orphaned = item.resolution?.status === "orphaned";
   const run = async (p: Promise<string | null>, ok?: string) => {
@@ -415,7 +418,17 @@ function ItemCard({ item, active }: { item: ResolvedItem; active: boolean }) {
 
       {item.replies.length > 0 && (
         <div className="mt-2 grid gap-1.5 border-l-2 border-border pl-2">
-          {item.replies.map((r) => (
+          {replies.hidden > 0 && (
+            <button
+              type="button"
+              aria-expanded="false"
+              className="justify-self-start text-[11px] text-muted-foreground hover:text-foreground"
+              onClick={(e) => { e.stopPropagation(); setShowEarlier(true); }}
+            >
+              Show {replies.hidden} earlier {replies.hidden === 1 ? "reply" : "replies"}
+            </button>
+          )}
+          {replies.shown.map((r) => (
             <ReplyRow key={r.id} reply={r} run={run} />
           ))}
         </div>
@@ -730,8 +743,6 @@ function PrivateNote({ item }: { item: ResolvedItem }) {
 }
 
 /** Comment text: people and dates as chips; everything else (incl. [[record]] wikilinks) through the ONE renderer. */
-/** Lines a comment shows before "Show more" (a long paste never floods the thread). */
-export const COMMENT_COLLAPSED_LINES = 8;
 
 /** Who wrote it: a person's name, or an agent's name with the agent mark. */
 function AuthorName({ author }: { author: ResolvedItem["author"] }) {
@@ -753,18 +764,38 @@ const BLOCKS_FLOW_TIGHT = "whitespace-normal [&_.rc-inline-p]:whitespace-pre-wra
 
 export function CommentBody({ body, className }: { body: string; className?: string }) {
   const [expanded, setExpanded] = useState(false);
+  // The MIDDLE folds: the opening and the ending always show (the ending of a reply is its answer).
+  const fold = foldMiddle(body);
+  const cls = cn("text-sm leading-5 text-foreground", QUOTED_BLOCK.test(body) && BLOCKS_FLOW_TIGHT, className);
+  const toggle = (open: boolean) => (e: MouseEvent) => {
+    e.stopPropagation();
+    setExpanded(open);
+  };
+  if (!fold || expanded) {
+    return (
+      <div className={cls}>
+        <CommentTokens body={body} />
+        {fold ? (
+          <button type="button" aria-expanded="true" className="mt-0.5 block text-xs text-muted-foreground hover:text-foreground" onClick={toggle(false)}>
+            Show less
+          </button>
+        ) : null}
+      </div>
+    );
+  }
   return (
-    <CollapsibleText
-      expanded={expanded}
-      onExpandedChange={setExpanded}
-      collapsedLines={COMMENT_COLLAPSED_LINES}
-      expandLabel="Show more"
-      collapseLabel="Show less"
-      showLabel
-      className={cn("text-sm leading-5 text-foreground", QUOTED_BLOCK.test(body) && BLOCKS_FLOW_TIGHT, className)}
-    >
-      <CommentTokens body={body} />
-    </CollapsibleText>
+    <div className={cls}>
+      <CommentTokens body={fold.head} />
+      <button
+        type="button"
+        aria-expanded="false"
+        className="my-1 block text-xs text-muted-foreground hover:text-foreground"
+        onClick={toggle(true)}
+      >
+        … show full text …
+      </button>
+      <CommentTokens body={fold.tail} />
+    </div>
   );
 }
 

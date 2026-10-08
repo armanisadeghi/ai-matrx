@@ -72,6 +72,18 @@ export async function readReview360Knobs(organizationId: string, userId: string)
 
 // ── provisioning: tables, assignment columns, automations, Confidential ────────────────────────
 
+/** One typed table of the family: the organization's copy exists and is Confidential (fail closed). */
+export async function provisionConfidentialTable(
+  client: RecordsClient,
+  def: AnyTypedTableDef,
+  organizationId: string,
+  serverStep: ConfidentialServerStep,
+): Promise<R360<string>> {
+  const made = await ensureTypedTable(client, def, { organizationId });
+  if (!made.ok) return no(made.error.message);
+  return ensureConfidential(client, def, organizationId, serverStep);
+}
+
 async function ensureConfidential(
   client: RecordsClient,
   def: AnyTypedTableDef,
@@ -129,7 +141,7 @@ export async function provisionReview360(
           {
             do: "edit_rows" as const,
             table: review360,
-            where: { review_ref: { trigger: "review_ref" } },
+            where: { op: "eq", args: [{ field: "review_ref" }, { trigger: "review_ref" }] },
             values: { [`${kind}_submitted_at`]: { now: true } },
             limit: 1,
           },

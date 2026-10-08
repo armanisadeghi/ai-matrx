@@ -187,7 +187,7 @@ export interface ArtifactFilters {
   messageId?: string;
 }
 
-// ── HTML page record (from /api/html-pages list response) ─────────────────
+// ── HTML page record (from the server /cms/html-pages list response) ─────────────────
 
 /** A page record as returned by the html-pages API list/get actions. */
 export interface HtmlPageRecord {

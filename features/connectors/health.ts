@@ -82,6 +82,8 @@ export interface ConnectorAccount {
   organizationId: string | null;
   /** The provider identity behind it; two rows may share one. */
   providerSubject: string;
+  /** The provider's stored authorization lane, when it has one. */
+  connectionPurpose?: string | null;
   grantedScopes: readonly string[];
   /** True only when the account can authorize a provider call right now. */
   usable: boolean;

@@ -282,8 +282,9 @@ class Converter {
 
   private icon(raw: string | undefined): string {
     if (!raw) return "";
-    const named = this.ctx.resolveIcon?.(raw) ?? emojiToIcon(raw);
+    const named = this.ctx.resolveIcon?.(raw);
     if (named) return named;
+    if (/\P{ASCII}/u.test(raw)) return raw.trim(); // the emoji itself (a callout's icon text)
     this.warnings.push(`callout icon "${raw}" has no matching Spaces icon; used Lightbulb`);
     return "Lightbulb";
   }
@@ -696,8 +697,10 @@ export function notionMediaToSpace(raw: string | null | undefined, ctx: NotionMa
     return hit ?? { url: raw };
   }
   if (kind === "icon") {
-    const named = ctx.resolveIcon?.(raw) ?? emojiToIcon(raw);
-    return named ? { icon: named } : null;
+    const named = ctx.resolveIcon?.(raw);
+    if (named) return { icon: named };
+    // Emoji a person chose are kept as they are (Arman 2026-10-08), never mapped to a stand-in glyph.
+    return raw.trim() && /\P{ASCII}/u.test(raw) ? { emoji: raw.trim() } : null;
   }
   return null;
 }

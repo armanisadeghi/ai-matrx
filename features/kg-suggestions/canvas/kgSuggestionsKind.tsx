@@ -33,6 +33,7 @@ function OpenManager({ item, canvas }: CanvasKindProps) {
 
 export const KG_SUGGESTIONS_CANVAS_KIND: AnyCanvasKind = defineCanvasKind({
   id: KG_SUGGESTIONS_KIND,
+  surface: "dom",
   label: SUGGESTIONS_TAB_TITLE,
   icon: Lightbulb,
   load: () => import("./SuggestionsInboxCanvasView"),

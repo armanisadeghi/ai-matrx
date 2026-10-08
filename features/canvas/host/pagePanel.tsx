@@ -102,6 +102,7 @@ function PagePanelBody({ item }: CanvasKindProps) {
 
 export const PAGE_PANEL_CANVAS_KIND: AnyCanvasKind = defineCanvasKind({
   id: PAGE_PANEL_KIND,
+  surface: "dom",
   label: "Panel",
   icon: PanelRight,
   component: PagePanelBody,

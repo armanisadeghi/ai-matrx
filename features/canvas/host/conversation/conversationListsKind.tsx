@@ -23,6 +23,7 @@ export function readConversationListsTab(data: CanvasJson | undefined | null): {
 
 export const conversationListsKind = defineCanvasKind<CanvasJson>({
   id: CONVERSATION_LISTS_KIND,
+  surface: "dom",
   label: "Agent lists",
   icon: ListChecks,
   load: () => import("./ConversationListsCanvasView"),

@@ -5,8 +5,8 @@
     "repo-only": "reads the repository and nothing else"
   },
   "counts": {
-    "repo-only": 168,
-    "live-db": 66
+    "repo-only": 171,
+    "live-db": 65
   },
   "rows": {
     "every-ai-matrx-package-is-declared-and-installed-at-npm-late": {
@@ -177,7 +177,7 @@
       "label": "Every @ai-matrx import exists in the installed package",
       "class": "repo-only",
       "cmd": "pnpm check:matrx-imports",
-      "reason": "no database access in 2 file(s) reached",
+      "reason": "no database access in 3 file(s) reached",
       "evidence": []
     },
     "every-ai-matrx-import-resolves-in-the-installed-packages-fas": {
@@ -189,16 +189,10 @@
     },
     "code-using-ai-matrx-packages-type-checks-against-the-locked-": {
       "label": "Code using @ai-matrx packages type-checks against the locked versions",
-      "class": "live-db",
+      "class": "repo-only",
       "cmd": "pnpm check:matrx-api-usage",
-      "reason": "UNCERTAIN — the resolver could not follow everything; classified live-db (safe side)",
-      "evidence": [],
-      "uncertain": [
-        {
-          "file": "(command)",
-          "signal": "unknown binary \"check:matrx-api-usage\" — not followed"
-        }
-      ]
+      "reason": "no database access in 2 file(s) reached",
+      "evidence": []
     },
     "sync-sweep-holds-unbuildable-files-refuses-breaking-package-": {
       "label": "Sync sweep holds unbuildable files, refuses breaking package updates — self-tests",
@@ -638,6 +632,20 @@
       "class": "repo-only",
       "cmd": "pnpm check:host-cycles:self-test",
       "reason": "no database access in 4 file(s) reached",
+      "evidence": []
+    },
+    "heavy-module-in-the-shell-s-eager-client-set": {
+      "label": "Heavy module in the shell's eager client set",
+      "class": "repo-only",
+      "cmd": "pnpm check:shell-eager-graph",
+      "reason": "no database access in 1 file(s) reached",
+      "evidence": []
+    },
+    "shell-eager-graph-guard-self-test": {
+      "label": "Shell-eager-graph guard self-test",
+      "class": "repo-only",
+      "cmd": "pnpm check:shell-eager-graph:self-test",
+      "reason": "no database access in 1 file(s) reached",
       "evidence": []
     },
     "server-only-module-calls-a-use-client-export": {

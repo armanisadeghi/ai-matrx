@@ -1,7 +1,7 @@
 {
   "version": 1,
   "app": "matrx-frontend",
-  "routeCount": 1348,
+  "routeCount": 1353,
   "routes": [
     {
       "pattern": "/",
@@ -639,6 +639,11 @@
       "source": "app/(admin)/administration/database/canonicalization/verify/page.tsx"
     },
     {
+      "pattern": "/administration/database/custom-tables",
+      "status": "live",
+      "source": "app/(admin)/administration/database/custom-tables/page.tsx"
+    },
+    {
       "pattern": "/administration/database/data-integrity",
       "status": "live",
       "source": "app/(admin)/administration/database/data-integrity/page.tsx"
@@ -717,11 +722,6 @@
       "pattern": "/administration/database/sql-queries",
       "status": "live",
       "source": "app/(admin)/administration/database/sql-queries/page.tsx"
-    },
-    {
-      "pattern": "/administration/database/store-tables",
-      "status": "live",
-      "source": "app/(admin)/administration/database/store-tables/page.tsx"
     },
     {
       "pattern": "/administration/database/switch-presses",
@@ -1047,6 +1047,11 @@
       "pattern": "/administration/reporting/lint-debt",
       "status": "live",
       "source": "app/(admin)/administration/reporting/lint-debt/page.tsx"
+    },
+    {
+      "pattern": "/administration/reporting/performance",
+      "status": "live",
+      "source": "app/(admin)/administration/reporting/performance/page.tsx"
     },
     {
       "pattern": "/administration/reporting/producer-yield",
@@ -3318,9 +3323,23 @@
     },
     {
       "pattern": "/hr/performance",
-      "status": "placeholder",
-      "source": "app/(core)/hr/performance/page.tsx",
-      "promiseKey": "hr.performance"
+      "status": "live",
+      "source": "app/(core)/hr/performance/page.tsx"
+    },
+    {
+      "pattern": "/hr/performance/[reviewId]",
+      "status": "live",
+      "source": "app/(core)/hr/performance/[reviewId]/page.tsx"
+    },
+    {
+      "pattern": "/hr/performance/[reviewId]/meeting",
+      "status": "live",
+      "source": "app/(core)/hr/performance/[reviewId]/meeting/page.tsx"
+    },
+    {
+      "pattern": "/hr/performance/respond/[trackId]",
+      "status": "live",
+      "source": "app/(core)/hr/performance/respond/[trackId]/page.tsx"
     },
     {
       "pattern": "/hr/reports",
@@ -6315,6 +6334,11 @@
       "pattern": "/spaces/duplicate",
       "status": "live",
       "source": "app/(core)/spaces/duplicate/page.tsx"
+    },
+    {
+      "pattern": "/spaces/home",
+      "status": "live",
+      "source": "app/(core)/spaces/home/page.tsx"
     },
     {
       "pattern": "/staff",

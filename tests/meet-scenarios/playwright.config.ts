@@ -13,6 +13,7 @@ import { defineConfig, devices } from "@playwright/test";
 import { CHROMIUM_ARGS_BASE } from "./lib/scenario";
 import path from "node:path";
 import { baseURL, runDir } from "./lib/env";
+import { selectedSkins } from "./lib/skins";
 
 // One id per run, set here in the main process before any worker starts (workers inherit it):
 // every run writes to its own .cache/meet-scenarios/runs/<id>/ — concurrent runs never collide.
@@ -38,13 +39,18 @@ export default defineConfig({
     actionTimeout: 20_000,
     navigationTimeout: 90_000,
   },
-  projects: [
+  // One project per browser x skin: every scenario runs once per registered skin (MEET_SKINS, default `meet`).
+  // Project name = browser for the `meet` skin, `<browser>-<skin>` for any other.
+  projects: selectedSkins().flatMap((skin) => [
     ...(browsers.includes("chromium")
       ? [{
-          name: "chromium",
+          name: skin === "meet" ? "chromium" : `chromium-${skin}`,
+          metadata: { skin },
           use: { ...devices["Desktop Chrome"], channel: "chromium", launchOptions: { args: CHROMIUM_ARGS_BASE } },
         }]
       : []),
-    ...(browsers.includes("webkit") ? [{ name: "webkit", use: { ...devices["Desktop Safari"] } }] : []),
-  ],
+    ...(browsers.includes("webkit")
+      ? [{ name: skin === "meet" ? "webkit" : `webkit-${skin}`, metadata: { skin }, use: { ...devices["Desktop Safari"] } }]
+      : []),
+  ]),
 });

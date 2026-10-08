@@ -14,13 +14,24 @@ import { chromium, webkit } from "@playwright/test";
 import { Actor, type ActorOptions } from "./actor";
 import { catalogStates } from "./catalog";
 import { createOrgMember, deleteOrgMember, meetingTruth, type OrgMember } from "./fixtures";
-import { ensureEnded, type Meeting } from "./meeting";
+import { UNPROVEN_PREFIX } from "./env";
+import { activeSkinName, setActiveSkin } from "./skins";
+import { ensureEnded, type EndOutcome, type Meeting } from "./meeting";
 
 export class Cast {
   readonly actors: Actor[] = [];
   readonly extraBrowsers: Browser[] = [];
   readonly members: OrgMember[] = [];
-  meeting: Meeting | null = null;
+  /** Every meeting this run created (the final sweep ends each one still live). */
+  readonly created: Meeting[] = [];
+  private current: Meeting | null = null;
+  get meeting(): Meeting | null {
+    return this.current;
+  }
+  set meeting(m: Meeting | null) {
+    this.current = m;
+    if (m && !this.created.some((c) => c.slug === m.slug)) this.created.push(m);
+  }
   constructor(
     private readonly browser: Browser,
     private readonly baseArgs: string[],
@@ -89,6 +100,7 @@ export const CHROMIUM_ARGS_BASE = [
 
 const test = base.extend<{ cast: Cast }>({
   cast: async ({ browser }, use, testInfo) => {
+    setActiveSkin(((testInfo.project.metadata as { skin?: string } | undefined)?.skin) ?? "meet");
     const launch = (testInfo.project.use as { launchOptions?: { args?: string[] } }).launchOptions;
     const cast = new Cast(browser, launch?.args ?? []);
     // Keep this run's ONE preview host active for the walk cap (utils/supabase/walkCap.ts):
@@ -102,8 +114,11 @@ const test = base.extend<{ cast: Cast }>({
       await use(cast);
     } finally {
       clearInterval(keepAlive);
-      const ended = await ensureEnded(cast.meeting).catch((e: Error) => `cleanup threw: ${e.message}`);
-      if (cast.meeting) testInfo.annotations.push({ type: "cleanup", description: `${cast.meeting.path}: ${ended}` });
+      // Final sweep: end EVERY meeting this run created that is still live; a failure is loud.
+      for (const m of cast.created) {
+        const out: EndOutcome = await ensureEnded(m).catch((e: Error) => ({ detail: `CLEANUP FAILURE: cleanup threw: ${e.message}`, failed: true }));
+        testInfo.annotations.push({ type: out.failed ? "cleanup-failure" : "cleanup", description: `${m.path}: ${out.detail}` });
+      }
       const teardown = await cast.dispose();
       for (const t of teardown) testInfo.annotations.push({ type: "persona", description: t });
       await testInfo.attach("timeline", { body: cast.timeline(), contentType: "text/plain" });
@@ -114,6 +129,15 @@ const test = base.extend<{ cast: Cast }>({
           envEvents: cast.actors.flatMap((a) => a.envEvents.map((e) => ({ ...e, who: a.opts.label }))),
           levers: cast.actors.map((a) => ({ who: a.opts.label, seat: a.opts.seat, levers: a.levers })),
           sources,
+          skin: activeSkinName(),
+          loaded: cast.actors.map((a) => ({
+            who: a.opts.label,
+            scripts: a.loaded.scripts.size,
+            driverLike: [...a.loaded.driverLike],
+            dev: a.loaded.devSignals.size > 0,
+            prod: a.loaded.prodSignals.size > 0,
+            queryDocs: [...a.loaded.queryDocs],
+          })),
           progressAt: Math.max(0, ...cast.actors.map((a) => a.progressAt)),
         }),
         contentType: "application/json",
@@ -121,6 +145,14 @@ const test = base.extend<{ cast: Cast }>({
     }
   },
 });
+
+/**
+ * A scenario whose product verdict cannot be produced right now (its precondition is not
+ * reachable) calls this: the row is reported UNPROVEN with the reason — never FAIL, never PASS.
+ */
+export function unproven(reason: string): never {
+  throw new Error(`${UNPROVEN_PREFIX} ${reason}`);
+}
 
 export function scenario(id: string, body: (args: { cast: Cast }) => Promise<void>, opts: { timeoutMs?: number } = {}): void {
   const state = catalogStates().find((s) => s.id === id);

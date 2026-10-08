@@ -158,7 +158,7 @@ export async function createFixtureUser(target, { suite, purpose, ttlHours = DEF
   return { id: created.id, email: who.email, fullName: who.fullName, jobTitle: who.jobTitle, company: who.company, persona: who, tag, targetLabel: target.label };
 }
 
-function aidreamDir(env = process.env) {
+export function aidreamDir(env = process.env) {
   const here = dirname(fileURLToPath(import.meta.url));
   const candidates = [env.AIDREAM_DIR, join(here, "..", "..", "..", "aidream")].filter(Boolean);
   const found = candidates.find((dir) => existsSync(join(dir, "scripts", "sweep_expired_fixtures.py")));
@@ -167,15 +167,24 @@ function aidreamDir(env = process.env) {
 }
 
 /**
+ * The sweeper invocation that removes exactly one persona. The sweeper has ONE database (live; the
+ * clone resolver and its `--target` flag were removed 2026-10-03), so nothing here names a target.
+ * persona.test.mjs parses these args with the sweeper's own argparse parser.
+ * @param {string} userId
+ */
+export function teardownArgs(userId) {
+  if (!/^[0-9a-f-]{36}$/i.test(String(userId))) throw new PersonaFactoryRefusal(`teardown needs a user id, got "${userId}".`);
+  return ["--apply", "--user-id", userId, "--live-reason", "teardown of a persona this process created"];
+}
+
+/**
  * Remove a fixture account. Every account has dependent rows (a CRM party at minimum) that block
  * GoTrue's own delete, so the one deletion implementation is aidream's sweeper: the same code the
  * Python factory uses, run with `--user-id`. It refuses anything without the tag.
- * @param {FixtureTarget} target
+ * @param {FixtureTarget} _target
  */
-export async function deleteFixtureUser(target, userId) {
-  const target_ = target.label.startsWith("clone:") ? "clone" : "live";
-  const args = ["run", "python", "scripts/sweep_expired_fixtures.py", "--target", target_, "--apply", "--user-id", userId];
-  if (target_ === "live") args.push("--live-reason", "teardown of a persona this process created");
+export async function deleteFixtureUser(_target, userId) {
+  const args = ["run", "python", "scripts/sweep_expired_fixtures.py", ...teardownArgs(userId)];
   try {
     await run("uv", args, { cwd: aidreamDir(), maxBuffer: 10_000_000, timeout: 600_000 });
   } catch (error) {

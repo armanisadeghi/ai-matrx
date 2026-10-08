@@ -149,6 +149,7 @@ export function useCommentThreadHeld(itemId: string): boolean {
 
 export const COMMENT_THREAD_CANVAS_KIND: AnyCanvasKind = defineCanvasKind<CommentThreadData>({
   id: COMMENT_THREAD_KIND,
+  surface: "dom",
   label: "Comments",
   icon: MessagesSquare,
   load: () => import("./CommentThreadCanvasView"),

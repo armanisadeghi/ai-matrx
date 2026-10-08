@@ -1,7 +1,7 @@
 // EVERY TABLE PICKER OFFERS TABLES, NOT LISTS (lane 10 W1-A, verifier finding 1).
 //
 // THE BREAK. Each choice column keeps a backing List ("Status choices"); `custom.data_home_tables()`
-// returns them with `kept_by_the_app: true, kind: "list"`. The Messages custom-data picker mapped
+// returns them with `platform_owned: true, kind: "list"`. The Messages custom-data picker mapped
 // every row straight into its options, so a clinic with five Status columns was offered "Status
 // choices" five times beside its real tables. This mounts it over that account and runs the one
 // rule (`@ai-matrx/records-ui`'s `tablePickerEntries`, through `tablePicking.ts`'s adapter) over the same rows, so a picker that stops calling the rule goes red.
@@ -28,7 +28,7 @@ const row = (id: string, name: string, kept: boolean, kind: string): DataHomeTab
     updated_at: null,
     mine: true,
     shared_with_me: false,
-    kept_by_the_app: kept,
+    platform_owned: kept,
     kind,
   }) as DataHomeTableRow;
 

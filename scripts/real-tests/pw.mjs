@@ -4,6 +4,7 @@
 // Usage: node pw.mjs <run> <command> [args]
 //   start                      launch this run's Chrome (idempotent)
 //   goto <url>                 navigate and wait for load
+//   chat [agentId] [origin]    open /chat/a/<agentId> (default: the cheap Chat Plumbing Test Agent, ccab43ad-…) on origin (default: current origin, else https://www.aimatrx.com)
 //   url | title                print the current address / title
 //   text [selector] [max]      innerText of the page or an element (default 8000 chars)
 //   find <text>                list visible elements whose text contains <text> (role, text, box)
@@ -95,6 +96,7 @@ const L = (s) => page.locator(s).first();
 const out = (v) => console.log(typeof v === "string" ? v : JSON.stringify(v, null, 1));
 switch (cmd) {
   case "goto": await markBrowserAgentTraffic(ctx, "real-tests", args[0]).catch(() => {}); await page.goto(args[0], { waitUntil: "load", timeout: 120000 }); out(page.url()); break;
+  case "chat": { const id = args[0] || process.env.CHAT_TEST_AGENT_ID || "ccab43ad-05e4-45d6-a49f-8e5605ed66f5"; const cur = page.url(); const origin = args[1] || (/^https?:/.test(cur) ? new URL(cur).origin : "https://www.aimatrx.com"); const u = `${origin}/chat/a/${id}`; await markBrowserAgentTraffic(ctx, "real-tests", u).catch(() => {}); await page.goto(u, { waitUntil: "load", timeout: 120000 }); out(page.url()); break; }
   case "url": out(page.url()); break;
   case "title": out(await page.title()); break;
   case "text": { const max = Number(args[1] ?? 8000); const t = args[0] ? await L(args[0]).innerText() : await page.evaluate(() => document.body.innerText); out(t.slice(0, max)); break; }

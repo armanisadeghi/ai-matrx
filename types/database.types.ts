@@ -9416,6 +9416,7 @@ export type Database = {
       canvas_items: {
         Row: {
           artifact_index: number | null
+          chain_version: number
           content: Json
           content_hash: string | null
           conversation_id: string | null
@@ -9456,6 +9457,7 @@ export type Database = {
         }
         Insert: {
           artifact_index?: number | null
+          chain_version?: number
           content: Json
           content_hash?: string | null
           conversation_id?: string | null
@@ -9496,6 +9498,7 @@ export type Database = {
         }
         Update: {
           artifact_index?: number | null
+          chain_version?: number
           content?: Json
           content_hash?: string | null
           conversation_id?: string | null
@@ -18856,8 +18859,6 @@ export type Database = {
           locked: boolean
           metadata: Json
           organization_id: string
-          outcome: Json | null
-          outcome_state: string | null
           published_to_web: boolean
           published_to_web_at: string | null
           published_to_web_by: string | null
@@ -18897,8 +18898,6 @@ export type Database = {
           locked?: boolean
           metadata?: Json
           organization_id: string
-          outcome?: Json | null
-          outcome_state?: string | null
           published_to_web?: boolean
           published_to_web_at?: string | null
           published_to_web_by?: string | null
@@ -18938,8 +18937,6 @@ export type Database = {
           locked?: boolean
           metadata?: Json
           organization_id?: string
-          outcome?: Json | null
-          outcome_state?: string | null
           published_to_web?: boolean
           published_to_web_at?: string | null
           published_to_web_by?: string | null
@@ -21854,15 +21851,6 @@ export type Database = {
           isSetofReturn: true
         }
       }
-      meet_admit_participant: {
-        Args: {
-          p_admitted: boolean
-          p_by_user_id: string
-          p_identity: string
-          p_meeting_id: string
-        }
-        Returns: undefined
-      }
       meet_archive_meeting: {
         Args: { p_by_user_id: string; p_meeting_id: string }
         Returns: {
@@ -21886,8 +21874,6 @@ export type Database = {
           locked: boolean
           metadata: Json
           organization_id: string
-          outcome: Json | null
-          outcome_state: string | null
           published_to_web: boolean
           published_to_web_at: string | null
           published_to_web_by: string | null
@@ -21961,8 +21947,6 @@ export type Database = {
           locked: boolean
           metadata: Json
           organization_id: string
-          outcome: Json | null
-          outcome_state: string | null
           published_to_web: boolean
           published_to_web_at: string | null
           published_to_web_by: string | null
@@ -21987,6 +21971,10 @@ export type Database = {
           isOneToOne: true
           isSetofReturn: false
         }
+      }
+      meet_carries_confidential_record: {
+        Args: { p_metadata: Json }
+        Returns: boolean
       }
       meet_create_call_invite: {
         Args: {
@@ -22120,8 +22108,6 @@ export type Database = {
           locked: boolean
           metadata: Json
           organization_id: string
-          outcome: Json | null
-          outcome_state: string | null
           published_to_web: boolean
           published_to_web_at: string | null
           published_to_web_by: string | null
@@ -22171,8 +22157,6 @@ export type Database = {
           locked: boolean
           metadata: Json
           organization_id: string
-          outcome: Json | null
-          outcome_state: string | null
           published_to_web: boolean
           published_to_web_at: string | null
           published_to_web_by: string | null
@@ -22328,16 +22312,25 @@ export type Database = {
         Returns: Json
       }
       meet_policy_all: { Args: { p_meeting_id: string }; Returns: Json }
-      meet_policy_for: {
-        Args: {
-          p_host_user_id: string
-          p_key: string
-          p_meeting_id: string
-          p_organization_id: string
-          p_profile: string
-        }
-        Returns: Json
-      }
+      meet_policy_for:
+        | {
+            Args: {
+              p_host_user_id: string
+              p_key: string
+              p_organization_id: string
+            }
+            Returns: Json
+          }
+        | {
+            Args: {
+              p_host_user_id: string
+              p_key: string
+              p_meeting_id: string
+              p_organization_id: string
+              p_profile: string
+            }
+            Returns: Json
+          }
       meet_policy_set:
         | {
             Args: {
@@ -22459,8 +22452,6 @@ export type Database = {
           locked: boolean
           metadata: Json
           organization_id: string
-          outcome: Json | null
-          outcome_state: string | null
           published_to_web: boolean
           published_to_web_at: string | null
           published_to_web_by: string | null
@@ -22520,8 +22511,6 @@ export type Database = {
           locked: boolean
           metadata: Json
           organization_id: string
-          outcome: Json | null
-          outcome_state: string | null
           published_to_web: boolean
           published_to_web_at: string | null
           published_to_web_by: string | null
@@ -22617,8 +22606,6 @@ export type Database = {
           locked: boolean
           metadata: Json
           organization_id: string
-          outcome: Json | null
-          outcome_state: string | null
           published_to_web: boolean
           published_to_web_at: string | null
           published_to_web_by: string | null
@@ -22789,8 +22776,6 @@ export type Database = {
           locked: boolean
           metadata: Json
           organization_id: string
-          outcome: Json | null
-          outcome_state: string | null
           published_to_web: boolean
           published_to_web_at: string | null
           published_to_web_by: string | null
@@ -32787,6 +32772,7 @@ export type Database = {
           ordered: boolean | null
           organization_id: string | null
           parent_token: string | null
+          platform_owned: boolean | null
           retention_days: number | null
           row_order: string | null
           slug: string | null
@@ -32823,6 +32809,7 @@ export type Database = {
           ordered?: never
           organization_id?: string | null
           parent_token?: never
+          platform_owned?: never
           retention_days?: never
           row_order?: never
           slug?: never
@@ -32859,6 +32846,7 @@ export type Database = {
           ordered?: never
           organization_id?: string | null
           parent_token?: never
+          platform_owned?: never
           retention_days?: never
           row_order?: never
           slug?: never
@@ -32922,6 +32910,19 @@ export type Database = {
           item: Json
           table_id: string
         }[]
+      }
+      _automation_run: {
+        Args: {
+          p_automation: Json
+          p_byid: Json
+          p_change_id: string
+          p_fields: Json
+          p_organization_id: string
+          p_record_id: string
+          p_table_id: string
+          p_trigger: Json
+        }
+        Returns: string
       }
       _automation_value: {
         Args: { p_me: string; p_value: Json; p_values: Json }
@@ -33543,6 +33544,29 @@ export type Database = {
         Args: { p_organization_id: string; p_table_id: string }
         Returns: boolean
       }
+      _nfx_arglist: {
+        Args: { p_i: number; p_t: Json; p_types: Json }
+        Returns: Json
+      }
+      _nfx_bin: { Args: { p_a: Json; p_b: Json; p_op: string }; Returns: Json }
+      _nfx_call: {
+        Args: { p_args: Json; p_name: string; p_types: Json }
+        Returns: Json
+      }
+      _nfx_colkind: { Args: { p_type: string }; Returns: string }
+      _nfx_expr: {
+        Args: { p_i: number; p_min: number; p_t: Json; p_types: Json }
+        Returns: Json
+      }
+      _nfx_primary: {
+        Args: { p_i: number; p_t: Json; p_types: Json }
+        Returns: Json
+      }
+      _nfx_tokens: { Args: { p_src: string }; Returns: Json }
+      _nfx_unary: {
+        Args: { p_i: number; p_t: Json; p_types: Json }
+        Returns: Json
+      }
       _not_a_member_refusal: { Args: { p_door: string }; Returns: undefined }
       _older_table_copy_refusal: {
         Args: { p_table_id: string }
@@ -33935,6 +33959,10 @@ export type Database = {
         Returns: Json
       }
       _template_token: { Args: { p_text: string }; Returns: string }
+      _two_way_partners: {
+        Args: { p_field_ids: string[]; p_organization_id: string }
+        Returns: string[]
+      }
       _uuid_remap: { Args: { p_doc: Json; p_map: Json }; Returns: Json }
       _value_fits_field: {
         Args: {
@@ -34735,6 +34763,14 @@ export type Database = {
         }
         Returns: number
       }
+      button_press: {
+        Args: {
+          p_field_id: string
+          p_organization_id: string
+          p_record_id: string
+        }
+        Returns: Json
+      }
       cache_lookup: {
         Args: {
           p_container_id: string
@@ -35347,14 +35383,23 @@ export type Database = {
           version: number
         }[]
       }
-      data_home: {
-        Args: {
-          p_include_app_tables?: boolean
-          p_organization_id?: string
-          p_search?: string
-        }
-        Returns: Json
-      }
+      data_home:
+        | {
+            Args: {
+              p_include_app_tables: string
+              p_organization_id?: string
+              p_search?: string
+            }
+            Returns: Json
+          }
+        | {
+            Args: {
+              p_include_platform_tables?: boolean
+              p_organization_id?: string
+              p_search?: string
+            }
+            Returns: Json
+          }
       data_home_changed_by: {
         Args: { p_asks: Json }
         Returns: {
@@ -35376,14 +35421,23 @@ export type Database = {
           table_name: string
         }[]
       }
-      data_home_slim: {
-        Args: {
-          p_include_app_tables?: boolean
-          p_organization_id?: string
-          p_search?: string
-        }
-        Returns: Json
-      }
+      data_home_slim:
+        | {
+            Args: {
+              p_include_app_tables: string
+              p_organization_id?: string
+              p_search?: string
+            }
+            Returns: Json
+          }
+        | {
+            Args: {
+              p_include_platform_tables?: boolean
+              p_organization_id?: string
+              p_search?: string
+            }
+            Returns: Json
+          }
       data_home_tables:
         | {
             Args: { p_organization_id?: string }
@@ -35395,6 +35449,7 @@ export type Database = {
               mine: boolean
               organization_id: string
               organization_name: string
+              platform_owned: boolean
               shared_with_me: boolean
               system: boolean
               table_id: string
@@ -35405,7 +35460,7 @@ export type Database = {
             }[]
           }
         | {
-            Args: { p_include_app_tables: boolean; p_organization_id: string }
+            Args: { p_include_app_tables: string; p_organization_id: string }
             Returns: {
               created_by: string
               kept_by_the_app: boolean
@@ -35414,6 +35469,30 @@ export type Database = {
               mine: boolean
               organization_id: string
               organization_name: string
+              platform_owned: boolean
+              shared_with_me: boolean
+              system: boolean
+              table_id: string
+              table_name: string
+              team: boolean
+              updated_at: string
+              visibility: string
+            }[]
+          }
+        | {
+            Args: {
+              p_include_platform_tables: boolean
+              p_organization_id: string
+            }
+            Returns: {
+              created_by: string
+              kept_by_the_app: boolean
+              kind: string
+              member: boolean
+              mine: boolean
+              organization_id: string
+              organization_name: string
+              platform_owned: boolean
               shared_with_me: boolean
               system: boolean
               table_id: string
@@ -36547,6 +36626,10 @@ export type Database = {
       formula_result_kind: {
         Args: { p_expr: Json; p_organization_id: string }
         Returns: string
+      }
+      formula_translate_notion: {
+        Args: { p_text: string; p_types?: Json }
+        Returns: Json
       }
       formula_value: {
         Args: {
@@ -38649,24 +38732,43 @@ export type Database = {
         }
         Returns: string[]
       }
-      records_search: {
-        Args: {
-          p_include_app_tables?: boolean
-          p_limit?: number
-          p_offset?: number
-          p_organization_ids?: string[]
-          p_search: string
-          p_table_ids?: string[]
-        }
-        Returns: {
-          name: string
-          organization_id: string
-          record_id: string
-          table_id: string
-          table_name: string
-          updated_at: string
-        }[]
-      }
+      records_search:
+        | {
+            Args: {
+              p_include_app_tables: string
+              p_limit?: number
+              p_offset?: number
+              p_organization_ids?: string[]
+              p_search: string
+              p_table_ids?: string[]
+            }
+            Returns: {
+              name: string
+              organization_id: string
+              record_id: string
+              table_id: string
+              table_name: string
+              updated_at: string
+            }[]
+          }
+        | {
+            Args: {
+              p_include_platform_tables?: boolean
+              p_limit?: number
+              p_offset?: number
+              p_organization_ids?: string[]
+              p_search: string
+              p_table_ids?: string[]
+            }
+            Returns: {
+              name: string
+              organization_id: string
+              record_id: string
+              table_id: string
+              table_name: string
+              updated_at: string
+            }[]
+          }
       refusals_claiming_a_level_never_asked: {
         Args: never
         Returns: {
@@ -39588,6 +39690,7 @@ export type Database = {
           kept_for: string
           mine: boolean
           offered_as_context: boolean
+          platform_owned: boolean
           table_id: string
           used_in_id: string
           used_in_kind: string
@@ -39641,9 +39744,16 @@ export type Database = {
       table_kind_facts: { Args: { p_table_id: string }; Returns: Json }
       table_level_facts: { Args: { p_table_id: string }; Returns: Json }
       table_list_everywhere:
+        | {
+            Args: { p_include_app_tables: string; p_organization_id: string }
+            Returns: Json
+          }
         | { Args: { p_organization_id?: string }; Returns: Json }
         | {
-            Args: { p_include_app_tables: boolean; p_organization_id: string }
+            Args: {
+              p_include_platform_tables: boolean
+              p_organization_id: string
+            }
             Returns: Json
           }
       table_move: {
@@ -39999,6 +40109,10 @@ export type Database = {
       text_head_bytes: {
         Args: { p_bytes: number; p_text: string }
         Returns: string
+      }
+      timeline_dependency_shift: {
+        Args: { p_organization_id: string }
+        Returns: boolean
       }
       undeclared_keys: {
         Args: { p_data: Json; p_organization_id: string; p_table_id: string }
@@ -76812,6 +76926,10 @@ export type Database = {
         Args: { p_client_id: string }
         Returns: boolean
       }
+      open_confidential_audited: {
+        Args: { p_id: string; p_purpose?: string; p_type: string }
+        Returns: Json
+      }
       org_access_ids: { Args: never; Returns: string[] }
       org_access_log: {
         Args: { p_limit?: number; p_organization_id: string }
@@ -83410,6 +83528,7 @@ export type Database = {
       }
       perf_alert: { Args: { p_items: Json }; Returns: Json }
       perf_door_sql: { Args: { p_subject: Json }; Returns: string }
+      perf_health_run: { Args: never; Returns: Json }
       perf_judge: { Args: { p_check_id: string }; Returns: Json }
       perf_judge_rule: {
         Args: { p_history: Json; p_knobs: Json; p_now: string; p_watch: Json }
@@ -83427,6 +83546,7 @@ export type Database = {
         Returns: Json
       }
       perf_sample_retention: { Args: never; Returns: number }
+      perf_statement_collect: { Args: never; Returns: Json }
       perf_watch_declare: {
         Args: {
           p_budget_ms: number
@@ -83440,6 +83560,17 @@ export type Database = {
           p_subject: Json
         }
         Returns: string
+      }
+      perf_watch_status: { Args: never; Returns: Json }
+      perf_watch_update: {
+        Args: {
+          p_baseline_ms?: number
+          p_baseline_pinned?: boolean
+          p_budget_ms?: number
+          p_check_id: string
+          p_is_active?: boolean
+        }
+        Returns: Json
       }
       record_system_error: { Args: { p_error: Json }; Returns: string }
     }

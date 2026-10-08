@@ -452,6 +452,9 @@ function MemberRoomBody({ meeting }: { meeting: MeetingRecord }) {
  * The name is asked for BEFORE the provider mounts because `guestName` is part
  * of the provider's identity — changing it later would rebuild every channel.
  */
+/** Where this device remembers a guest's display name (per viewer, CORE-DESIGN §3.5). */
+const GUEST_NAME_KEY = "matrx.meet.guest-name";
+
 function GuestRoom({
   meeting,
   slug,
@@ -471,9 +474,22 @@ function GuestRoom({
   // sentences it renders when the database refuses a link-follower are the
   // whole point of that lane.
   const ended = meeting.endedAt !== null;
-  const [guestName, setGuestName] = useState<string | null>(
-    ended ? "Guest" : null,
+  // The guest's name is remembered on this device (CORE-DESIGN §3.5, per viewer, local
+  // storage): a reload or a second visit never asks again. `undefined` = not read yet
+  // (rendered as `resolving`, never as the name step, so a reload never flashes it).
+  const [guestName, setGuestName] = useState<string | null | undefined>(
+    ended ? "Guest" : undefined,
   );
+  useEffect(() => {
+    if (guestName !== undefined) return;
+    let remembered: string | null = null;
+    try {
+      remembered = window.localStorage.getItem(GUEST_NAME_KEY);
+    } catch {
+      remembered = null;
+    }
+    setGuestName(remembered !== null && remembered.trim().length > 0 ? remembered : null);
+  }, [guestName]);
   const baseUrl = useMemo(() => meetBaseUrl(store.getState()), [store]);
   const noSession = useCallback(async () => null, []);
   const onDiagnostic = useCallback((event: MeetDiagnostic) => {
@@ -484,6 +500,10 @@ function GuestRoom({
     else if (event.level === "warn") console.warn(line);
     else console.info(line);
   }, []);
+
+  if (guestName === undefined) {
+    return <MeetRoot phase="resolving">{null}</MeetRoot>;
+  }
 
   if (guestName === null) {
     // The contract has no guest-name phase yet (CORE-DESIGN §3.7 C1): `prejoin`.
@@ -502,6 +522,11 @@ function GuestRoom({
               event.preventDefault();
               const trimmed = typedName.trim();
               if (trimmed.length === 0) return;
+              try {
+                window.localStorage.setItem(GUEST_NAME_KEY, trimmed);
+              } catch {
+                // Private mode: the name lives for this visit only.
+              }
               setGuestName(trimmed);
             }}
           >

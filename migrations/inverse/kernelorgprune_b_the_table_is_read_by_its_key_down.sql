@@ -1,5 +1,7 @@
 -- chair-step: undo kernelorgprune_b_the_table_is_read_by_its_key.sql - restores custom.confidential_anchor and custom.reaches_directly as kernelorgprune_a left them
 -- lane: KERNEL-ORG-PRUNE
+-- based-on: custom.confidential_anchor(uuid) f4db9a039d6c1e0a83ebecdc6f0ca1ae8e59454023595ea4daef5353b235c48a
+-- based-on: custom.reaches_directly(uuid, text, uuid, permission_level) b4e4fddddd9fe57db7acf8f38dbb2542ea9cb6d0440e74042420901b3036d01b
 
 set local statement_timeout = '120s';
 

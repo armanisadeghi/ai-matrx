@@ -29,7 +29,7 @@ try {
     const s = await signIn();
     const h = (schema) => ({ "User-Agent": UA, apikey: s.key, Authorization: `Bearer ${s.token}`, "Content-Type": "application/json", "Content-Profile": schema, "Accept-Profile": schema });
     const rpc = async (fn, b) => JSON.parse(await (await fetch(`${s.url}/rest/v1/rpc/${fn}`, { method: "POST", headers: h("custom"), body: JSON.stringify(b) })).text());
-    const home = await rpc("data_home", { p_include_app_tables: false });
+    const home = await rpc("data_home", { p_include_platform_tables: false });
     const D = home.items.find((i) => i.table_name === "Deliverables") ?? home.items[0];
     const first = await rpc("read_records_page", { p_organization_id: D.organization_id, p_table_id: D.table_id, p_limit: 1 });
     const views = await rpc("views", { p_organization_id: D.organization_id, p_table_id: D.table_id });

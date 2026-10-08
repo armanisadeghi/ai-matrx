@@ -108,7 +108,7 @@ const TABLES = {
         updated_at: "2026-10-02T15:00:00Z",
         mine: true,
         shared_with_me: false,
-        kept_by_the_app: false,
+        platform_owned: false,
         kind: "table",
       },
   ],

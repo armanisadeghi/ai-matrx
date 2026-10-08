@@ -109,7 +109,7 @@ const SPECS: BlockSpec[] = [
     rendered: true,
     text: "inline",
     children: "blocks",
-    props: (p) => (p?.icon === undefined || str(p.icon) ? null : "props.icon must be a Lucide icon name or empty"),
+    props: (p) => (p?.icon === undefined || str(p.icon) ? null : "props.icon must be a Lucide icon name, an emoji, or empty"),
   },
   { type: "divider", parity: "C9", label: "Divider", rendered: true, text: "none", children: "none", props: ok },
   {
@@ -398,9 +398,9 @@ export function validateBlocks(blocks: unknown, path = "blocks", seen: Set<strin
 
 function mediaProblem(m: unknown, where: string, allowOffset: boolean): string | null {
   if (m === null || m === undefined) return null;
-  if (!isObj(m)) return `${where} must be { fileId } | { url } | { icon } or null`;
-  const keys = ["fileId", "url", "icon"].filter((k) => nonEmpty(m[k]));
-  if (keys.length !== 1) return `${where} must name exactly one of fileId, url, icon`;
+  if (!isObj(m)) return `${where} must be { fileId } | { url } | { icon } | { emoji } or null`;
+  const keys = ["fileId", "url", "icon", "emoji"].filter((k) => nonEmpty(m[k]));
+  if (keys.length !== 1) return `${where} must name exactly one of fileId, url, icon, emoji`;
   if (allowOffset && m.offsetY !== undefined && typeof m.offsetY !== "number") return `${where}.offsetY must be a number`;
   return null;
 }

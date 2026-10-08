@@ -35,7 +35,7 @@ describe("the doors ask for platform tables only when told to", () => {
     expect(calls.map((c) => c.args)).toEqual([
       {},
       { p_organization_id: "org-1" },
-      { p_organization_id: null, p_include_app_tables: true },
+      { p_organization_id: null, p_include_platform_tables: true },
     ]);
   });
 
@@ -47,8 +47,8 @@ describe("the doors ask for platform tables only when told to", () => {
     await dataHomeSearch(source({ ...home, search: "flashcards" }, calls), "flashcards", null, { includePlatformTables: true });
     expect(calls.map((c) => c.args)).toEqual([
       {},
-      { p_include_app_tables: true },
-      { p_search: "flashcards", p_include_app_tables: true },
+      { p_include_platform_tables: true },
+      { p_search: "flashcards", p_include_platform_tables: true },
     ]);
   });
 

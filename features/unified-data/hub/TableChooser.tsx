@@ -37,7 +37,7 @@ import { countsByOrganization, inLane, inOrganization, type TablesEverywhere } f
 export function tableHint(row: DataHomeTableRow): string {
   const parts = [row.organization_name];
   if (row.kind && row.kind !== "table") parts.push(row.kind);
-  if (row.kept_by_the_app) parts.push("platform table");
+  if (row.platform_owned) parts.push("platform table");
   return parts.join(" · ");
 }
 
@@ -79,7 +79,7 @@ export function TableChooser({
     !excluded.has(t.table_id) && (showPlatformTables || offeredByDefault.has(t.table_id));
   const inOrg = inOrganization(tables.rows, orgFilter);
   const allTables = inLane(inOrg, lane);
-  const platformOwnedCount = allTables.filter((t) => t.kept_by_the_app && !excluded.has(t.table_id)).length;
+  const platformOwnedCount = allTables.filter((t) => t.platform_owned && !excluded.has(t.table_id)).length;
   const laneCounts: EntityScopeCounts = {
     byKind: Object.fromEntries(DATA_HOME_SCOPES.map((k) => [k, inLane(inOrg, k).filter(shown).length])),
     narrow: { all: countsByOrganization(inLane(tables.rows, lane).filter(shown)) },

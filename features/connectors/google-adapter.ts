@@ -255,6 +255,10 @@ export function googleAccount(row: GoogleConnectionSummary): ConnectorAccount {
     ownerUserId: row.owner_user_id,
     organizationId: row.organization_id,
     providerSubject: row.provider_subject,
+    connectionPurpose:
+      typeof row.metadata.connection_purpose === "string"
+        ? row.metadata.connection_purpose
+        : null,
     grantedScopes: row.scopes,
     usable: row.health === "connected",
     // 🚨 BLOCKED, NOT MERELY UNUSABLE (V17-1, R22). `unavailable` is Google (or
@@ -357,6 +361,18 @@ export interface ConsentRunOwner {
   organizationId?: string;
 }
 
+/** Preserve the connection's owner tuple when renewing its existing grant. */
+export function consentRunOwnerForAccount(
+  account: ConnectorAccount,
+): ConsentRunOwner | null {
+  if (account.ownerKind === "organization") {
+    return account.organizationId
+      ? { type: "organization", organizationId: account.organizationId }
+      : null;
+  }
+  return { type: "user" };
+}
+
 export interface ConsentRunResult {
   connectionId: string;
 }
@@ -428,7 +444,7 @@ export function useGoogleConsentRunner() {
         const code = await googleAuth.openAuthorizationWindow(
           request.scopes,
           options.loginHint ?? undefined,
-          request.connectionPurpose === "youtube_isolated"
+          request.forceConsent || request.connectionPurpose === "youtube_isolated"
             ? { forceConsent: true }
             : undefined,
           gate,
@@ -485,7 +501,9 @@ export function useGoogleConsentRunner() {
                 : { type: "user" },
             organizationContextId: workspace.organizationId,
             connectionPurpose: request.connectionPurpose,
-            forceConsent: request.connectionPurpose === "youtube_isolated",
+            forceConsent:
+              request.forceConsent ||
+              request.connectionPurpose === "youtube_isolated",
             loginHint: options.loginHint ?? undefined,
             targetConnectionId: request.targetAccountId ?? undefined,
             capabilityKeys: request.capabilityKeys,

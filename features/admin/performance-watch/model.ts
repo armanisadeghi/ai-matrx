@@ -1,10 +1,14 @@
 /**
  * features/admin/performance-watch/model.ts — pure derivations for the performance page.
  *
- * No React, no I/O. Row types are LOCAL and narrow: `ops.perf_sample` and the perf columns on
- * `ops.proof_check` were not in types/database.types.ts when this shipped (wave 1); swap these for
- * `Database["ops"]` after `pnpm db-types` once they are.
+ * No React, no I/O. Row types are the generated `Database["ops"]` rows (`pnpm db-types`), narrowed
+ * to the columns the page selects (service.ts).
  */
+
+import type { Database } from "@/types/database.types";
+
+type ProofCheckRow = Database["ops"]["Tables"]["proof_check"]["Row"];
+type PerfSampleRow = Database["ops"]["Tables"]["perf_sample"]["Row"];
 
 export const PERF_STATES = [
   "learning",
@@ -31,42 +35,48 @@ export const PERF_STATE_LABELS: Record<PerfState, string> = {
 
 export type BudgetStat = "p50" | "p95" | "mean" | "p75";
 
-export interface PerfWatch {
-  id: string;
-  slug: string;
-  label: string;
-  owner: string | null;
-  source_feature: string | null;
-  is_active: boolean;
-  live_every_seconds: number | null;
-  perf_kind: string | null;
-  perf_subject: unknown;
-  budget_ms: number | null;
-  budget_stat: string | null;
-  perf_state: string | null;
-  perf_state_since: string | null;
-  perf_baseline_ms: number | null;
-  perf_baseline_pinned: boolean | null;
-  perf_last_alert_at: string | null;
-}
+export type PerfWatch = Pick<
+  ProofCheckRow,
+  | "id"
+  | "slug"
+  | "label"
+  | "owner"
+  | "source_feature"
+  | "is_active"
+  | "live_every_seconds"
+  | "perf_kind"
+  | "perf_subject"
+  | "budget_ms"
+  | "budget_stat"
+  | "perf_state"
+  | "perf_state_since"
+  | "perf_baseline_ms"
+  | "perf_baseline_pinned"
+  | "perf_last_alert_at"
+  | "metadata"
+>;
 
-export interface PerfSample {
-  id: string;
-  check_id: string;
-  measured_at: string;
-  source: string;
-  n: number | null;
-  p50_ms: number | null;
-  p95_ms: number | null;
-  max_ms: number | null;
-  mean_ms: number | null;
-  calls: number | null;
-  errors: number | null;
-  bytes: number | null;
-  release_sha: string | null;
-  state_after: string | null;
-  note: string | null;
-}
+export type PerfSample = Pick<
+  PerfSampleRow,
+  | "id"
+  | "check_id"
+  | "measured_at"
+  | "source"
+  | "n"
+  | "p50_ms"
+  | "p95_ms"
+  | "max_ms"
+  | "mean_ms"
+  | "calls"
+  | "errors"
+  | "bytes"
+  | "release_sha"
+  | "state_after"
+  | "note"
+>;
+
+/** The edit door's arguments (ops.perf_watch_update); undefined leaves a value as it is. */
+export type PerfWatchEdit = Database["ops"]["Functions"]["perf_watch_update"]["Args"];
 
 export type Tone = "over" | "ok" | "none";
 export type AgeTone = "fresh" | "stale" | "none";
@@ -191,4 +201,88 @@ export function sparklinePoints(values: readonly number[], width: number, height
       return `${+x.toFixed(1)},${+y.toFixed(1)}`;
     })
     .join(" ");
+}
+
+function isRecord(v: unknown): v is Record<string, unknown> {
+  return typeof v === "object" && v !== null && !Array.isArray(v);
+}
+
+/** Why the watch is in its state (metadata.perf_last_reason, written by the judge). */
+export function watchReason(watch: Pick<PerfWatch, "metadata">): string | null {
+  const m = isRecord(watch.metadata) ? watch.metadata : null;
+  const r = m?.perf_last_reason ?? m?.perf_last_collect_note;
+  return typeof r === "string" && r.trim() ? r : null;
+}
+
+/** A large-table twin (`door:<fn>@large`). */
+export function isLargeTwin(watch: Pick<PerfWatch, "slug">): boolean {
+  return watch.slug.endsWith("@large");
+}
+
+/** What a watch measures, in one short line. */
+export function measuresLine(watch: Pick<PerfWatch, "perf_kind">): string {
+  switch (watch.perf_kind) {
+    case "door":
+      return "Database time, probe seat";
+    case "statement":
+      return "Mean, all real callers";
+    case "job":
+      return "Job duration";
+    case "vital":
+      return "Web vital";
+    case "page":
+      return "Page load";
+    default:
+      return "—";
+  }
+}
+
+export interface SubjectField {
+  label: string;
+  value: string;
+}
+
+const PROBE_SEAT = "admin@admin.com";
+const HIDDEN_ARGS = new Set(["p_organization_id", "p_table_id", "p_source"]);
+
+function shortId(v: unknown): string | null {
+  return typeof v === "string" && v ? v.slice(0, 8) : null;
+}
+
+function argValue(v: unknown): string {
+  if (Array.isArray(v)) {
+    const ids = v.every((x) => typeof x === "string" && /^[0-9a-f-]{36}$/i.test(x));
+    return ids ? `${v.length} ids` : JSON.stringify(v);
+  }
+  if (isRecord(v)) return JSON.stringify(v);
+  return v === null ? "null" : String(v);
+}
+
+/** The watch's subject as readable fields (function, table, seat, args) instead of raw JSON. */
+export function subjectFields(watch: Pick<PerfWatch, "perf_kind" | "perf_subject">): SubjectField[] {
+  const s = isRecord(watch.perf_subject) ? watch.perf_subject : null;
+  if (!s) return [];
+  const out: SubjectField[] = [];
+  if (typeof s.schema === "string" && typeof s.function === "string") {
+    out.push({ label: "Function", value: `${s.schema}.${s.function}` });
+  }
+  const args = isRecord(s.args) ? s.args : {};
+  const source = isRecord(args.p_source) ? args.p_source : null;
+  const table = shortId(args.p_table_id) ?? shortId(source?.id);
+  if (table) {
+    const records = typeof s.table_records === "number" ? ` · ${s.table_records.toLocaleString("en-US")} records` : "";
+    out.push({ label: "Table", value: `${table}${records}` });
+  }
+  const org = shortId(args.p_organization_id);
+  if (org) out.push({ label: "Organization", value: org });
+  if (watch.perf_kind === "door") out.push({ label: "Seat", value: PROBE_SEAT });
+  if (watch.perf_kind === "statement") {
+    out.push({ label: "Callers", value: "All real callers" });
+    if (typeof s.match === "string") out.push({ label: "Matches", value: s.match });
+  }
+  const rest = Object.entries(args).filter(([k]) => !HIDDEN_ARGS.has(k));
+  if (rest.length) {
+    out.push({ label: "Args", value: rest.map(([k, v]) => `${k.replace(/^p_/, "")}=${argValue(v)}`).join(", ") });
+  }
+  return out;
 }

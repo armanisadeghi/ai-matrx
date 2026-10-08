@@ -16,6 +16,13 @@ import { reportCanvasOpenDrop } from "@/features/canvas/openRequest";
 import { registerArtifactCanvasKinds } from "./artifactKinds";
 import { registerFeatureCanvasKinds } from "./featureCanvasKinds";
 import { registerToolCanvasKinds } from "./toolKinds";
+import { CANVAS_OUTPUT_PORTS } from "@/features/canvas/output/canvasOutputPorts";
+// Every artifact type's print adapter joins the one block-printer registry (chat block, canvas tab
+// and message Print share it); the page capture port wires Full Print's frame pre-pass.
+import "@/features/canvas/artifact-types/artifact-printers";
+import "@/features/canvas/output/capturePort";
+// The server capture engine (L3) behind the page capture port.
+import "@/features/html-pages/capture/serverPageCaptureEngine";
 
 // Kinds register at module load so a persisted layout renders its tabs on the
 // first paint after hydration, not one tick later.
@@ -74,7 +81,7 @@ export function CanvasHostProvider({ children }: { children: ReactNode }) {
   const [binding] = useState(() => bindCanvasToReduxStore(store, (root) => root.canvasHost));
   const regionWidth = useShellRegionWidth();
   return (
-    <CanvasProvider store={binding} onError={onCanvasError} regionWidth={regionWidth}>
+    <CanvasProvider store={binding} onError={onCanvasError} regionWidth={regionWidth} output={CANVAS_OUTPUT_PORTS}>
       {children}
     </CanvasProvider>
   );

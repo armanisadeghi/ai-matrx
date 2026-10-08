@@ -48,7 +48,7 @@ import { Cover, CoverPicker } from "./Cover";
 import { IconPicker } from "./IconPicker";
 import { AddPropertyMenu, PageProperties } from "./PageProperties";
 import { PageMenu } from "./PageMenu";
-import { SpaceIcon } from "./SpaceIcon";
+import { SpaceIcon, isImageMedia } from "./SpaceIcon";
 import { TocRail } from "./TocRail";
 import { CommentMargin } from "../collab/CommentMargin";
 import { CommentsPanel, PageComments } from "../collab/CommentsPanel";
@@ -1001,8 +1001,8 @@ function SpacePageScreen({ spaceId, initialDoc }: { spaceId: string; initialDoc?
           <div className="spaces-header" ref={headerRef} data-has-cover={doc.cover ? "true" : undefined} data-has-icon={doc.icon ? "true" : undefined}>
             {doc.icon ? (
               <IconPicker value={doc.icon} onChange={(icon) => update({ icon })} disabled={!editable}>
-                <button type="button" className="spaces-page-icon" data-image={doc.icon && !("icon" in doc.icon) ? "true" : undefined} aria-label="Change icon">
-                  <SpaceIcon media={doc.icon} size={doc.icon && !("icon" in doc.icon) ? 136 : 78} />
+                <button type="button" className="spaces-page-icon" data-image={doc.icon && isImageMedia(doc.icon) ? "true" : undefined} aria-label="Change icon">
+                  <SpaceIcon media={doc.icon} size={doc.icon && isImageMedia(doc.icon) ? 136 : 78} />
                 </button>
               </IconPicker>
             ) : null}

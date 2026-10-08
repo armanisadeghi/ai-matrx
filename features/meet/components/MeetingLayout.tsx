@@ -19,7 +19,9 @@
 // state); blocked storage just means the default — the package's room.
 
 import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
+import { useSearchParams } from "next/navigation";
 import {
+  MeetAppPanels,
   MeetRoot,
   MeetingSkinRoot,
   useMeetSnapshot,
@@ -27,6 +29,7 @@ import {
   type RoomName,
 } from "@ai-matrx/meet/react";
 import { MeetingBoard } from "@/features/meet/components/board/MeetingBoard";
+import { MEET_APP_PANELS } from "@/features/meet/app-panels/registry";
 import {
   LayoutSwitch,
   type MeetingLayoutChoice,
@@ -118,6 +121,8 @@ export function MeetingLayout({
 }) {
   const snapshot = useMeetSnapshot();
   const [layout, setLayout] = useMeetingLayoutPreference();
+  // `?observe=1` joins as a SILENT OBSERVER (Meet MD-16); the server decides who may.
+  const observe = useSearchParams()?.get("observe") === "1";
   const phase = snapshot?.phase ?? "idle";
   const inRoom = phase === "connected" || phase === "reconnecting";
   const ended = (snapshot?.meeting ?? meeting).endedAt !== null;
@@ -143,25 +148,30 @@ export function MeetingLayout({
     // The Board is drawn here, not by `<MeetingRoom>`, so it carries the
     // package's one observation root itself (S0).
     return (
-      <MeetRoot meeting={meeting}>
-        <MeetingBoard
-          meeting={snapshot?.meeting ?? meeting}
-          onLayout={setLayout}
-          headerControls={headerControls}
-        />
-      </MeetRoot>
+      <MeetAppPanels panels={MEET_APP_PANELS}>
+        <MeetRoot meeting={meeting}>
+          <MeetingBoard
+            meeting={snapshot?.meeting ?? meeting}
+            onLayout={setLayout}
+            headerControls={headerControls}
+          />
+        </MeetRoot>
+      </MeetAppPanels>
     );
   }
 
   return (
     <div ref={roomRef} className="relative h-full w-full">
-      <MeetingSkinRoot
-        roomName={roomName}
-        meetingId={meetingId}
-        slug={slug}
-        meeting={meeting}
-        headerControls={headerControls}
-      />
+      <MeetAppPanels panels={MEET_APP_PANELS}>
+        <MeetingSkinRoot
+          roomName={roomName}
+          meetingId={meetingId}
+          slug={slug}
+          meeting={meeting}
+          headerControls={headerControls}
+          observe={observe}
+        />
+      </MeetAppPanels>
       {!inRoom && !ended && preJoinControls !== undefined ? (
         <div className="absolute right-3 top-3 z-10 flex items-center gap-2 pt-[env(safe-area-inset-top)]">
           {preJoinControls}

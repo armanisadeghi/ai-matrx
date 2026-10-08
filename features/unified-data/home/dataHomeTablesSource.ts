@@ -31,7 +31,10 @@ let held: Held | null = null;
 
 async function readAll(userId: string | null): Promise<DataHomeRow[]> {
   const dataSource = supabaseDataSource(createClient());
-  const answered = await doors.dataHome(dataSource, null);
+  // SEARCH FINDS EVERYTHING SHE CAN OPEN (lane DATA-HOME-SLIM, 2026-10-08): the door now leaves
+  // platform tables (a choice column's List above all) out unless asked, for the data home's default
+  // view. The bar is a search, not that view, so it asks with them in.
+  const answered = await doors.dataHome(dataSource, null, { includePlatformTables: true });
   if (!answered.ok) {
     throw new Error(`Could not read tables. ${doors.doorFailureLine(answered.error)}`, { cause: answered.error });
   }

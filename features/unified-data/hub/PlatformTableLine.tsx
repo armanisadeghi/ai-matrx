@@ -3,7 +3,7 @@
 // features/unified-data/hub/PlatformTableLine.tsx
 //
 // THE ONE "SHOW EVERYTHING" LINE for tables the app keeps for itself (a column's choice list, a
-// booking page's slots, a test's choices — `kept_by_the_app` on `custom.table_list_everywhere`
+// booking page's slots, a test's choices — `platform_owned` on `custom.table_list_everywhere`
 // and `custom.table_facts`). The /data home drew it inline; the organization's Tables page
 // listed those tables as ordinary ones (lane PROOF-DEFECTS, D5). Both now draw this line: absent
 // when the app keeps nothing, one sentence and one button otherwise.

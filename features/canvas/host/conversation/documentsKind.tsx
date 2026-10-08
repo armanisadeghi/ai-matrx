@@ -44,6 +44,7 @@ export function readDocumentsTab(data: CanvasJson | undefined | null): Documents
 
 export const documentsKind = defineCanvasKind<CanvasJson>({
   id: CONVERSATION_DOCUMENTS_KIND,
+  surface: "dom",
   label: TITLE,
   icon: FileText,
   load: () => import("./DocumentsCanvasView"),

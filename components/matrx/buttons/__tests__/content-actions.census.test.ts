@@ -3,8 +3,10 @@
 // available and a click away" · "plain text one click away without complexity while the default
 // for display should be our beautiful view").
 //
-// The set is `ContentActions` (@ai-matrx/rich-content/copy/ContentActions): split Copy, Plain,
-// Export (one click → PDF · Word · HTML · Markdown file · Text file), Print, Transform. A host gets it
+// Revised 2026-10-08 ("22 icons that don't even look uniform"): the BAR is ONE Copy icon (no
+// chevron — one click copies raw, then Copy raw · Copy formatted · Copy for AI) and the
+// Raw/Formatted toggle; Export, Print and Transform live ONLY in "…" (Alchemy…, the downloads,
+// Print) — never bar icons. The set is `ContentActions` (@ai-matrx/rich-content/copy/ContentActions). A host gets it
 // through `<RichCopySplit>` (chat), the rich-document bar (`<RichDocument actionsVariant="bar">`,
 // `<RichDocumentActions>`, `<RichDocumentActionSurface>`), or `<ContentActions>` itself.
 //
@@ -96,15 +98,44 @@ export function splitsWithoutPlain(root: string, dirs: string[], allowed: Record
   return bad.sort();
 }
 
+/** The bar half of the installed ContentActions module: everything before the "…" rows component. */
+export function barShapeViolations(contentActions: string, copyButton: string, actionBar: string): string[] {
+  const bad: string[] = [];
+  const cut = contentActions.indexOf("function ContentActionMenuRows");
+  const bar = cut >= 0 ? contentActions.slice(0, cut) : contentActions;
+  if (/data-content-export-trigger/.test(bar)) bad.push("Export is a bar icon");
+  if (/"data-content-print"/.test(bar)) bad.push("Print is a bar icon");
+  if (/"data-content-transform"/.test(bar)) bad.push("Transform is a bar icon");
+  if (!/data-content-copy/.test(copyButton) || /ChevronDown|data-copy-split-more/.test(copyButton) || /\(CopySplitButton,/.test(bar)) {
+    bad.push("the Copy has a chevron (or is not the one-icon CopyMenuButton)");
+  }
+  if (!/Copy raw/.test(copyButton) || !/Copy formatted/.test(copyButton) || !/Copy for AI/.test(copyButton)) bad.push("the Copy menu is not raw / formatted / for AI");
+  if (!/data-content-plain-toggle/.test(bar)) bad.push("Raw/Formatted is missing from the bar");
+  if (/onTransform:/.test(actionBar) || !/menu:\s*false/.test(actionBar)) bad.push("the rich-document bar repeats what its ⋯ carries");
+  return bad;
+}
+
 describe("content-actions census", () => {
-  it("the installed packages render the set (Copy, Plain, Export, Print, Transform — one click each)", () => {
-    const actions = installed("rich-content", "copy/ContentActions");
-    expect(actions).toMatch(/data-content-export-trigger/);
-    expect(actions).toMatch(/data-content-print/);
-    expect(actions).toMatch(/data-content-transform/);
-    expect(actions).toMatch(/data-content-plain-toggle/);
+  it("the installed set has the bar shape: one Copy (no chevron) + Raw/Formatted; Export, Print, Transform only in …", () => {
+    expect(
+      barShapeViolations(
+        installed("rich-content", "copy/ContentActions"),
+        installed("rich-content", "copy/CopyMenuButton"),
+        installed("rich-content", "rich-document/variants/ActionBar"),
+      ),
+    ).toEqual([]);
     expect(installed("chat", "agent-copy/RichCopySplit")).toMatch(/ContentActions/);
-    expect(installed("rich-content", "rich-document/variants/ActionBar")).toMatch(/ContentActions/);
+  });
+
+  it("the bar-shape check can fail", () => {
+    const oldBar = 'x({"data-content-export-trigger": ""}); y({"data-content-print": ""}); z({"data-content-transform": ""}); w({"data-content-plain-toggle": 1}); function ContentActionMenuRows(){}';
+    expect(barShapeViolations(oldBar, "ChevronDown data-content-copy Copy raw Copy formatted Copy for AI", "onTransform: () => 1")).toEqual([
+      "Export is a bar icon",
+      "Print is a bar icon",
+      "Transform is a bar icon",
+      "the Copy has a chevron (or is not the one-icon CopyMenuButton)",
+      "the rich-document bar repeats what its ⋯ carries",
+    ]);
   });
 
   it("every display surface renders the content action set", () => {

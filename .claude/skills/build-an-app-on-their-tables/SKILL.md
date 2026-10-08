@@ -1,6 +1,6 @@
 ---
 name: build-an-app-on-their-tables
-description: "Recipe for an agent building a small custom web app (an Applet) for one person or business on THEIR OWN store tables, live at aimatrx.com/applets/<slug>. Use when asked to build an app, portal, calendar, tracker, dashboard screen or client view on someone's tables/data in AI Matrx. NOT for platform features (use build-sub-feature) or tables the platform keeps for itself (defineAppTable)."
+description: "Recipe for an agent building a small custom web app (an Applet) for one person or business on THEIR OWN store tables, live at aimatrx.com/applets/<slug>. Use when asked to build an app, portal, calendar, tracker, dashboard screen or client view on someone's tables/data in AI Matrx. NOT for platform features (use build-sub-feature) or tables the platform keeps for itself (defineTypedTable)."
 ---
 
 # Build an Applet on a person's tables
@@ -85,5 +85,5 @@ them see. The Applet never decides access.
 
 ## Not here
 
-- A table the PLATFORM keeps for one of its own features → `defineAppTable` (records README `/app-table`).
+- A table the PLATFORM keeps for one of its own features → `defineTypedTable` (records README `/typed-table`).
 - A brand-new table for the person → make it first (Table API / MCP `tables` / the SQL door), then step 2.

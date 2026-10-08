@@ -59,7 +59,7 @@ import { designMarkdown } from "./designed-database";
 import { FieldList, MenuRow, SidePeek, ViewerSaveBar, ViewerSortButton, ViewTab, filtersDiffer, shownFilters, shownSorts, type FilterChoice, type SortChoice, NewButton } from "./menu-parts";
 import { ChartView, choicesOfField } from "./ChartView";
 import { DEFAULT_CHART } from "./first-reads";
-import { kindOf, scalarFilters, viewSpec, type ViewWithSummaries } from "./view-spec";
+import { effectiveHidden, kindOf, scalarFilters, viewSpec, type ViewWithSummaries } from "./view-spec";
 import { BlockRecordsSeed } from "../page/space-seed-context";
 import { NewPropertyPanel } from "./NewProperty";
 import { SpaceIcon } from "../page/SpaceIcon";
@@ -777,7 +777,7 @@ function ViewSettings({
               </div>
             ) : null}
             <MenuRow icon={<Table2 size={15} />} label="Layout" end={<span className="type-secondary text-muted-foreground">{LAYOUTS.find((l) => l.id === view.layout)?.label}</span>} onClick={() => editable && setPage("layout")} />
-            <MenuRow icon={<List size={15} />} label="Properties" end={<span className="text-xs text-muted-foreground">{fields.length - (view.hiddenFields ?? []).filter((k) => fields.some((f) => f.key === k)).length} shown</span>} onClick={() => setPage("props")} />
+            <MenuRow icon={<List size={15} />} label="Properties" end={<span className="text-xs text-muted-foreground">{fields.length - effectiveHidden(view, fields).filter((k) => fields.some((f) => f.key === k)).length} shown</span>} onClick={() => setPage("props")} />
             {view.layout === "kanban" ? <MenuRow icon={<Kanban size={15} />} label="Group" end={<span className="type-secondary text-muted-foreground">{label(view.groupField)}</span>} onClick={() => editable && setPage("group")} /> : null}
             {view.layout === "chart" ? (
               <>
@@ -851,13 +851,14 @@ function ViewSettings({
         {page === "props" ? (
           <>
             {fields.map((f) => {
-              const hidden = (view.hiddenFields ?? []).includes(f.key);
+              const hiddenNow = effectiveHidden(view, fields);
+              const hidden = hiddenNow.includes(f.key);
               return (
                 <div key={f.key} className="flex items-center">
                   <MenuRow
                     label={f.label}
                     end={<Switch checked={!hidden} tabIndex={-1} aria-hidden />}
-                    onClick={() => editable && onView({ hiddenFields: hidden ? (view.hiddenFields ?? []).filter((k) => k !== f.key) : [...(view.hiddenFields ?? []), f.key] })}
+                    onClick={() => editable && onView({ hiddenFields: hidden ? hiddenNow.filter((k) => k !== f.key) : [...hiddenNow, f.key] })}
                   />
                   {canShape ? <Button variant="quiet" icon={<Pencil size={14} />} aria-label={`Edit property ${f.label}`} title="Edit property" onClick={() => setEditing(f)} /> : null}
                 </div>

@@ -264,3 +264,14 @@ export function contentForDestination(ctx: RichDocumentActionContext): string {
   // tables), never its `{"summary": …}` payload.
   return structuredAnswerTextOf(kindTextToMarkdown(unwrapKindEnvelopes(ctx.content)), boundOutputSchema(ctx));
 }
+
+/**
+ * The content a PRINT composes: like `contentForDestination`, but the stored
+ * `<artifact …>` envelopes stay — the print composer reads each one as a block
+ * and prints it through its type's adapter (an HTML page as its picture, a quiz
+ * as its questions). Unwrapped, an HTML page reached the print window as raw
+ * markup and printed as a stripped copy of the page.
+ */
+export function contentForPrint(ctx: RichDocumentActionContext): string {
+  return structuredAnswerTextOf(kindTextToMarkdown(ctx.content), boundOutputSchema(ctx));
+}

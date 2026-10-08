@@ -1,12 +1,13 @@
 "use client";
 
-// features/spaces/page/IconPicker.tsx — Notion's icon picker (A3), with Lucide icons in place of emoji.
+// features/spaces/page/IconPicker.tsx — Notion's icon picker (A3), opens on Emoji (search, categories, recently used, skin tone, Random), then Icons (Lucide) / Upload / Link.
 //
 // Tabs Icons / Upload / Link, "Random" and "Remove" top right, a search field and the grid. An upload
 // lives for this tab only (an object URL), which the sample-data marker already says.
 
 import { Popover, PopoverContent, PopoverTrigger } from "@ai-matrx/design-system";
 import { Button, Field, SearchField, Tabs } from "@ai-matrx/design-system/controls";
+import dynamic from "next/dynamic";
 import { useEffect, useState, type ReactNode } from "react";
 
 import { ICON_PICTURES } from "./gallery";
@@ -15,7 +16,23 @@ import type { SpaceMedia } from "../contract";
 import { SPACE_ICON_NAMES, allIconNames } from "../icons-registry";
 import { SpaceIcon } from "./SpaceIcon";
 
-type Tab = "icons" | "upload" | "link";
+type Tab = "emoji" | "icons" | "upload" | "link";
+
+// The emoji dataset (maintained npm package) loads only when the Emoji tab opens.
+const EmojiPicker = dynamic(() => import("emoji-picker-react"), { ssr: false, loading: () => <div className="h-[340px]" aria-busy /> });
+
+// Unicode blocks where every code point is an emoji: faces, animals, food, transport.
+const EMOJI_RANGES: Array<[number, number]> = [[0x1f600, 0x1f64f], [0x1f400, 0x1f43e], [0x1f345, 0x1f37a], [0x1f680, 0x1f6c5], [0x1f990, 0x1f9ac]];
+
+export function randomEmoji(): SpaceMedia {
+  const total = EMOJI_RANGES.reduce((n, [a, b]) => n + (b - a + 1), 0);
+  let i = Math.floor(Math.random() * total);
+  for (const [a, b] of EMOJI_RANGES) {
+    if (i <= b - a) return { emoji: String.fromCodePoint(a + i) };
+    i -= b - a + 1;
+  }
+  return { emoji: String.fromCodePoint(0x1f600) };
+}
 
 function words(name: string): string {
   return name.replace(/([a-z])([A-Z0-9])/g, "$1 $2").toLowerCase();
@@ -46,7 +63,7 @@ export function IconPicker({
     setOwnOpen(next);
     onOpenChange?.(next);
   };
-  const [tab, setTab] = useState<Tab>("icons");
+  const [tab, setTab] = useState<Tab>("emoji");
   const [query, setQuery] = useState("");
   const [link, setLink] = useState("");
   const q = query.trim().toLowerCase();
@@ -76,19 +93,30 @@ export function IconPicker({
             onValueChange={setTab}
             rule={false}
             data={[
+              { value: "emoji", label: "Emoji" },
               { value: "icons", label: "Icons" },
               { value: "upload", label: "Upload" },
               { value: "link", label: "Link" },
             ]}
           />
           <span className="flex-1" />
-          <Button variant="quiet" onClick={() => pick(randomIcon())}>
+          <Button variant="quiet" onClick={() => pick(tab === "emoji" ? randomEmoji() : randomIcon())}>
             Random
           </Button>
           <Button variant="quiet" onClick={() => pick(null)}>
             Remove
           </Button>
         </div>
+        {tab === "emoji" ? (
+          <EmojiPicker
+            width="100%"
+            height={340}
+            lazyLoadEmojis
+            previewConfig={{ showPreview: false }}
+            searchPlaceholder="Search"
+            onEmojiClick={(e) => pick({ emoji: e.emoji })}
+          />
+        ) : null}
         {tab === "icons" ? (
           <div className="p-2">
             <SearchField placeholder="Filter…" value={query} onChange={(e) => setQuery(e.target.value)} autoFocus className="w-full" />

@@ -2,10 +2,11 @@
  * MEETING — the moves every scenario repeats, done the way a person does them
  * (through the UI), plus a cleanup that guarantees the meeting ends.
  */
+import { skin } from "./skins";
 import { expect, type Locator, type Page } from "@playwright/test";
 import { formatDurationMs } from "@ai-matrx/kit/format";
 import type { Actor } from "./actor";
-import { supabasePublic } from "./env";
+import { baseURL, supabasePublic } from "./env";
 import { NO_GESTURE, evaluateIn, observe, summarize, type CallPhase, type Observation } from "./observe";
 
 export interface Meeting {
@@ -165,13 +166,13 @@ export async function startInstantMeeting(host: Actor): Promise<Meeting> {
 async function startOnce(host: Actor): Promise<Meeting> {
   const page = host.page;
   await resumeIfParked(host, page);
-  if (!new URL(page.url()).pathname.startsWith("/meetings")) await page.goto("/meetings");
+  if (!new URL(page.url()).pathname.startsWith(skin().startPath)) await page.goto(skin().startPath);
   await resumeIfParked(host, page);
   const start = page.getByRole("button", { name: /Start an instant meeting now|Start now/ });
   await start.first().waitFor({ state: "visible", timeout: 90_000 });
   await start.first().click();
   const deadline = Date.now() + 60_000;
-  while (Date.now() < deadline && !/\/meet\//.test(page.url())) {
+  while (Date.now() < deadline && !skin().meetingUrl.test(page.url())) {
     if (/__dev-walk/.test(page.url())) break;
     // The organization picker ("Which organization is this for?") — choose the first.
     const picker = page.getByText(/Which organization is this for/i);
@@ -183,10 +184,10 @@ async function startOnce(host: Actor): Promise<Meeting> {
     }
     await page.waitForTimeout(500);
   }
-  const m = page.url().match(/\/meet\/([^/?#]+)/);
+  const m = page.url().match(skin().meetingUrl);
   if (!m) throw new Error(`Start now did not open a meeting; at ${page.url()}`);
-  host.note(`meeting started: /meet/${m[1]}`);
-  return { slug: m[1], path: `/meet/${m[1]}`, host };
+  host.note(`meeting started: ${skin().meetingPath(m[1])}`);
+  return { slug: m[1], path: skin().meetingPath(m[1]), host };
 }
 
 export interface WalkOptions {
@@ -360,12 +361,41 @@ export async function meetingRow(meeting: Meeting): Promise<Record<string, unkno
   return (Array.isArray(row) ? row[0] : row) as Record<string, unknown> | null;
 }
 
+export interface EndOutcome {
+  detail: string;
+  /** True when the meeting could not be proven ended: the report shows this as a CLEANUP FAILURE. */
+  failed: boolean;
+}
+
+/**
+ * The product's own end call (`endForEveryone` in @ai-matrx/meet through the app's api adapter):
+ * POST /api/v1/meet/end with the person's bearer, `X-Organization-Id`, and a browser-like
+ * User-Agent (Cloudflare answers some default agents with error 1010).
+ */
+export async function callEndDoor(token: string, meetingId: string, organizationId: string | null): Promise<number> {
+  const server = process.env.NEXT_PUBLIC_BACKEND_URL ?? "https://server.app.matrxserver.com";
+  const res = await fetch(`${server}/api/v1/meet/end`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+      Accept: "application/json",
+      ...(organizationId ? { "X-Organization-Id": organizationId } : {}),
+      "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36",
+      Origin: baseURL(),
+    },
+    body: JSON.stringify({ meeting_id: meetingId, organization_id: organizationId }),
+  });
+  return res.status;
+}
+
 /**
  * Every meeting a scenario creates is ended by the scenario. UI first (the real
- * path, which also closes the LiveKit room); the meeting RPC as a backstop.
+ * path, which also closes the LiveKit room); the server end door as a backstop.
+ * A backstop that fails is returned as `failed` with the status code, never swallowed.
  */
-export async function ensureEnded(meeting: Meeting | null): Promise<string> {
-  if (meeting === null) return "no meeting";
+export async function ensureEnded(meeting: Meeting | null): Promise<EndOutcome> {
+  if (meeting === null) return { detail: "no meeting", failed: false };
   const host = meeting.host;
   try {
     const live = host.pages.filter((p) => !p.isClosed());
@@ -382,23 +412,17 @@ export async function ensureEnded(meeting: Meeting | null): Promise<string> {
   }
   try {
     const s = await host.session();
-    if (!s) return "ended via UI (no session for backstop)";
+    if (!s) return { detail: "CLEANUP FAILURE: host has no session for the backstop; meeting not proven ended", failed: true };
     const row = await meetingRow(meeting);
-    if (row && row.ended_at) return `ended (ended_at=${String(row.ended_at)})`;
+    if (row && row.ended_at) return { detail: `ended (ended_at=${String(row.ended_at)})`, failed: false };
     const id = row?.id;
-    if (!id) return "backstop: meeting row not readable";
-    // The one end door is the server's `POST /api/v1/meet/end` (the `meet_end_meeting`
-    // RPC was dropped in cut-over S3): it ends the run, closes the LiveKit room and
-    // returns the original timestamp when the meeting was already ended.
-    const server = process.env.NEXT_PUBLIC_BACKEND_URL ?? "https://server.app.matrxserver.com";
-    const res = await fetch(`${server}/api/v1/meet/end`, {
-      method: "POST",
-      headers: { Authorization: `Bearer ${s.token}`, "Content-Type": "application/json" },
-      body: JSON.stringify({ meeting_id: id, organization_id: row.organization_id }),
-    });
-    if (!res.ok) throw new Error(`/api/v1/meet/end ${res.status}`);
-    return "ended via backstop server door";
+    if (!id) return { detail: "CLEANUP FAILURE: backstop could not read the meeting row", failed: true };
+    const status = await callEndDoor(s.token, String(id), (row.organization_id as string | null) ?? null);
+    if (status < 200 || status >= 300) return { detail: `CLEANUP FAILURE: POST /api/v1/meet/end answered HTTP ${status}`, failed: true };
+    const after = await meetingRow(meeting);
+    if (after && !after.ended_at) return { detail: `CLEANUP FAILURE: end door answered HTTP ${status} but the meeting is still live`, failed: true };
+    return { detail: `ended via backstop server door (HTTP ${status})`, failed: false };
   } catch (e) {
-    return `backstop failed: ${(e as Error).message.slice(0, 160)}`;
+    return { detail: `CLEANUP FAILURE: backstop threw: ${(e as Error).message.slice(0, 160)}`, failed: true };
   }
 }

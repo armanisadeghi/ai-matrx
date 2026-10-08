@@ -158,8 +158,8 @@ describe("board_find_records — a topic across the person's records", () => {
     (dataHomeTables as jest.Mock).mockResolvedValue({
       ok: true,
       data: [
-        { table_id: TABLE, table_name: "Harborview move-out costs", organization_id: "o", organization_name: "Home", member: true, visibility: "personal", updated_at: "2026-10-04T09:00:00Z", mine: true, shared_with_me: false, kept_by_the_app: false, kind: "table" },
-        { table_id: "t2", table_name: "Grocery budget", organization_id: "o", organization_name: "Home", member: true, visibility: "personal", updated_at: null, mine: true, shared_with_me: false, kept_by_the_app: false, kind: "table" },
+        { table_id: TABLE, table_name: "Harborview move-out costs", organization_id: "o", organization_name: "Home", member: true, visibility: "personal", updated_at: "2026-10-04T09:00:00Z", mine: true, shared_with_me: false, platform_owned: false, kind: "table" },
+        { table_id: "t2", table_name: "Grocery budget", organization_id: "o", organization_name: "Home", member: true, visibility: "personal", updated_at: null, mine: true, shared_with_me: false, platform_owned: false, kind: "table" },
       ],
     });
     (readPickListIndex as jest.Mock).mockResolvedValue({

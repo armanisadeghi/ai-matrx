@@ -6,8 +6,10 @@ import { MeetingLayout } from "./MeetingLayout";
 
 let mockPhase = "connected";
 
+jest.mock("@/features/meet/app-panels/registry", () => ({ MEET_APP_PANELS: {} }));
 jest.mock("@ai-matrx/meet/react", () => ({
   MeetRoot: ({ children }: { children?: React.ReactNode }) => <>{children}</>,
+  MeetAppPanels: ({ children }: { children?: React.ReactNode }) => <>{children}</>,
   MeetingSkinRoot: ({ headerControls }: { headerControls?: React.ReactNode }) => (
     <div data-testid="package-room">
       {headerControls}

@@ -52,6 +52,7 @@ export function workbookHistoryToggleInput(workbookId: string, editable: boolean
 
 export const DOCUMENT_HISTORY_CANVAS_KIND: AnyCanvasKind = defineCanvasKind<CanvasJson>({
   id: DOCUMENT_HISTORY_KIND,
+  surface: "dom",
   label: "Document history",
   icon: History,
   load: () => import("@/features/documents/canvas/DocumentHistoryCanvasView"),
@@ -61,6 +62,7 @@ export const DOCUMENT_HISTORY_CANVAS_KIND: AnyCanvasKind = defineCanvasKind<Canv
 
 export const WORKBOOK_HISTORY_CANVAS_KIND: AnyCanvasKind = defineCanvasKind<CanvasJson>({
   id: WORKBOOK_HISTORY_KIND,
+  surface: "dom",
   label: "Workbook history",
   icon: History,
   load: () => import("@/features/workbooks/canvas/WorkbookHistoryCanvasView"),

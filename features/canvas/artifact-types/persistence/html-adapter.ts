@@ -2,7 +2,7 @@
  * HTML persistence adapter for the artifact system.
  *
  * Domain record: an `html_pages` row (in the mymatrx project, reached only via
- * the `/api/html-pages` route — see `HTMLPageService`). Link:
+ * the server's `/cms/html-pages` door — see `HTMLPageService`). Link:
  * `{ externalSystem: 'html_pages', externalId: <page id> }`.
  *
  * HTML is a "self-contained deliverable" (vision R7): the published webpage IS
@@ -11,15 +11,18 @@
  * /Users/armanisadeghi/code/common-docs/systems/publish/artifacts/VISION.md (no canvas path set `external_system='html_pages'`
  * before; only the editor path wrote the cx_artifact discovery index).
  *
- * IDEMPOTENT: `createPage` passes `sourceMessageId`, and the API updates the
- * page for that message in place instead of inserting a duplicate — so reconcile
- * re-runs and the inline preview's own publish all converge on ONE page.
+ * ONE PAGE PER VERSION: the page is keyed by this canvas row's id
+ * (`html_pages.artifact_id`), so reconcile re-runs republish the same page and a
+ * later version (a user save, an agent `edit_artifact`) gets its own page — the
+ * chat card and the canvas tab can never overwrite each other's page.
  *
  * No per-viewer interaction state — the page is the whole artifact.
  */
 
-import { HTMLPageService } from "@/features/html-pages/services/htmlPageService";
-import { requireUserId } from "@/utils/auth/getUserId";
+import {
+  HTML_PAGES_SYSTEM,
+  publishHtmlCanvasVersion,
+} from "@/features/html-pages/services/canvasVersionPage";
 import type {
   ArtifactPersistenceAdapter,
   ArtifactLink,
@@ -33,24 +36,8 @@ export const HTML_ADAPTER: ArtifactPersistenceAdapter = {
     const html = typeof info.rawContent === "string" ? info.rawContent : "";
     if (!html.trim()) return;
     try {
-      const userId = requireUserId();
-      const result = await HTMLPageService.createPage(
-        html,
-        info.title || "Generated page",
-        "Generated from chat",
-        userId,
-        {},
-        {
-          // The server's page-per-source idempotency key. For non-chat
-          // sources the source record id plays the same role — one page per
-          // originating record, updated in place on re-materialize.
-          sourceMessageId: info.sourceMessageId ?? info.source.id,
-          sourceConversationId: info.conversationId ?? undefined,
-        },
-      );
-      const pageId = result?.pageId ?? result?.id;
-      if (!pageId) return;
-      return { externalSystem: "html_pages", externalId: String(pageId) };
+      const published = await publishHtmlCanvasVersion(info.artifactId);
+      return { externalSystem: HTML_PAGES_SYSTEM, externalId: published.pageId };
     } catch (err) {
       // Non-blocking: the canvas row already persisted; the link backfills on a
       // later load (loud, not silent).

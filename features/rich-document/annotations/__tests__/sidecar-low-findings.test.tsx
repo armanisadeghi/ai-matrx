@@ -2,7 +2,7 @@
  * @jest-environment jsdom
  *
  * RC-B11 low findings (coordinator round 2026-09-25), each failing on the code before this round:
- *   2. a long comment collapses past COMMENT_COLLAPSED_LINES with a keyboard-reachable "Show more";
+ *   2. a long comment folds in the MIDDLE (top and bottom stay) with a keyboard-reachable "… show full text …";
  *   3. the author edits their own REPLY through the same compare-and-swap door, and an edited
  *      comment or reply says "edited" (from the door's edited_at, never from updated_at);
  *   4. "Report an issue" on a passage files the quote + anchor with the report.
@@ -87,11 +87,11 @@ async function mount() {
 }
 const byText = (t: string) => [...container.querySelectorAll<HTMLElement>("button")].find((b) => b.textContent?.trim() === t);
 
-describe("2 — long comments collapse with a keyboard-reachable Show more", () => {
-  it("collapses past the threshold and expands on Show more", async () => {
+describe("2 — long comments fold in the middle with a keyboard-reachable control", () => {
+  it("folds past the threshold and expands on the fold", async () => {
     service.listCommentThreads.mockResolvedValue({ items: [thread({ body: LONG })], collaborationDoors: true });
     await mount();
-    const more = byText("Show more");
+    const more = byText("… show full text …");
     expect(more).toBeTruthy();
     expect(more!.getAttribute("aria-expanded")).toBe("false");
     expect(more!.tagName).toBe("BUTTON");
@@ -103,7 +103,29 @@ describe("2 — long comments collapse with a keyboard-reachable Show more", () 
   it("leaves a short comment alone", async () => {
     service.listCommentThreads.mockResolvedValue({ items: [thread()], collaborationDoors: true });
     await mount();
-    expect(byText("Show more")).toBeUndefined();
+    expect(byText("… show full text …")).toBeUndefined();
+  });
+});
+
+describe("2b — a long thread folds its MIDDLE: the comment and the newest reply stay", () => {
+  const reply = (n: number) => ({
+    id: `r${n}`, body: `Reading ${n}: cone pack at ${60 + n} degrees.`, createdAt: `2026-09-25T10:0${n}:00Z`,
+    mine: false, version: 1, author: { id: "lead", name: "Dana" },
+  });
+  it("shows the comment, 'Show 3 earlier replies', and the newest reply; the fold opens the rest", async () => {
+    service.listCommentThreads.mockResolvedValue({
+      items: [thread({ body: "Log every cone pack reading here.", replies: [reply(1), reply(2), reply(3), reply(4)] })],
+      collaborationDoors: true,
+    });
+    await mount();
+    expect(container.textContent).toContain("Log every cone pack reading here.");
+    expect(container.textContent).toContain("Reading 4:");
+    expect(container.textContent).not.toContain("Reading 2:");
+    const earlier = byText("Show 3 earlier replies")!;
+    expect(earlier).toBeTruthy();
+    await act(async () => earlier.click());
+    expect(container.textContent).toContain("Reading 1:");
+    expect(container.textContent).toContain("Reading 2:");
   });
 });
 

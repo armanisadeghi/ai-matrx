@@ -24,7 +24,7 @@ const rpc = async (fn, body) => {
 };
 const canon = (v) => JSON.stringify(v, (_k, x) => (x && typeof x === "object" && !Array.isArray(x) ? Object.fromEntries(Object.keys(x).sort().map((k) => [k, x[k]])) : x));
 
-const home = (await rpc("data_home", { p_include_app_tables: false })).json;
+const home = (await rpc("data_home", { p_include_platform_tables: false })).json;
 const tables = (home.items ?? []).slice(0, Number(process.argv[2] ?? 6));
 let bad = 0;
 for (const t of tables) {

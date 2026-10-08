@@ -30,7 +30,7 @@
  *                                expected, never an ARCHIVED finding
  *
  * Each finding is also written once to the error monitor (`ops.record_system_error`, kind
- * `app_table`, error_type = the stable signature `app_table.<state>.<slug>`); a finding whose
+ * `typed_table`, error_type = the stable signature `typed_table.<state>.<slug>`); a finding whose
  * signature already has an open row is not written again.
  *
  * THE ACKNOWLEDGEMENT lives on the definition's Table document(s) as
@@ -394,7 +394,7 @@ export function judge(declarations: readonly Declaration[], copies: readonly Cop
         findings.push({
           state: "graduated",
           slug: def.slug,
-          signature: `app_table.graduated.${def.slug}.${org}`,
+          signature: `typed_table.graduated.${def.slug}.${org}`,
           line: `[WARN] ${def.slug} graduated to ${def.graduatedTo.token} but ${org} still has a live copy — run pnpm tables:graduate (records package) — ${where}`,
           detail: { declared_in: declaredIn, graduated_to: def.graduatedTo.token, organization_id: org },
         });
@@ -406,7 +406,7 @@ export function judge(declarations: readonly Declaration[], copies: readonly Cop
       findings.push({
         state: "missing",
         slug: def.slug,
-        signature: `app_table.missing.${def.slug}`,
+        signature: `typed_table.missing.${def.slug}`,
         line: `[WARN] TYPED TABLE MISSING ${def.slug} — global, no copy in the platform organization — ${where} — run the server path that ensures it once`,
         detail: { declared_in: declaredIn, scope: def.scope },
       });
@@ -417,7 +417,7 @@ export function judge(declarations: readonly Declaration[], copies: readonly Cop
       findings.push({
         state: "archived",
         slug: def.slug,
-        signature: `app_table.archived.${def.slug}`,
+        signature: `typed_table.archived.${def.slug}`,
         line: `[WARN] TYPED TABLE ARCHIVED ${def.slug} — ${orgs(archivedOrgs.length)} — ${where} — restore it from Archived tables`,
         detail: { declared_in: declaredIn, organization_ids: archivedOrgs },
       });
@@ -428,7 +428,7 @@ export function judge(declarations: readonly Declaration[], copies: readonly Cop
       findings.push({
         state: "unmarked",
         slug: def.slug,
-        signature: `app_table.unmarked.${def.slug}`,
+        signature: `typed_table.unmarked.${def.slug}`,
         line: `[WARN] TYPED TABLE UNMARKED ${def.slug} — ${orgs(unmarkedOrgs.length)} — ${where} — not guarded against archive, rename or move until its next ensure marks it`,
         detail: { declared_in: declaredIn, organization_ids: unmarkedOrgs },
       });
@@ -444,7 +444,7 @@ export function judge(declarations: readonly Declaration[], copies: readonly Cop
       findings.push({
         state: "drifted",
         slug: def.slug,
-        signature: `app_table.drifted.${def.slug}`,
+        signature: `typed_table.drifted.${def.slug}`,
         line:
           `[WARN] TYPED TABLE DRIFTED ${def.slug} — ${orgs(new Set(driftByOrg.map((x) => x.org)).size)} — ${aspects.join("; ")} — ${where}` +
           ` — change the definition back, or bring the stored columns in line with it`,
@@ -460,7 +460,7 @@ export function judge(declarations: readonly Declaration[], copies: readonly Cop
       findings.push({
         state: "size",
         slug: def.slug,
-        signature: `app_table.size.${def.slug}`,
+        signature: `typed_table.size.${def.slug}`,
         line:
           `[WARN] TYPED TABLE SIZE ${def.slug} — ${n(total)} rows across ${orgs(liveOrgs.size)} — passed ${n(passed)}; ` +
           `last acknowledged: ${ack ? `${n(ack.rows)} by ${ack.by} on ${ack.on}` : "never"} — ` +
@@ -476,7 +476,7 @@ export function unreadableFindings(unreadable: readonly Unreadable[]): Finding[]
   return unreadable.map((u) => ({
     state: "unreadable" as const,
     slug: u.declaredIn,
-    signature: `app_table.unreadable.${u.declaredIn}`,
+    signature: `typed_table.unreadable.${u.declaredIn}`,
     line: `[WARN] TYPED TABLE DEFINITION UNREADABLE ${u.declaredIn} — ${u.reason} — this check could not see what it declares`,
     detail: { declared_in: u.declaredIn, reason: u.reason },
   }));
@@ -486,7 +486,7 @@ export function unreadableFindings(unreadable: readonly Unreadable[]): Finding[]
 
 const OPEN_SIGNATURES_SQL = `
 select distinct error_type from ops.system_error
- where kind = 'app_table' and resolved_at is null and error_type = any($1::text[])`;
+ where kind = 'typed_table' and resolved_at is null and error_type = any($1::text[])`;
 const RECORD_SQL = `select ops.record_system_error($1::jsonb)::text as id`;
 
 /**
@@ -509,7 +509,7 @@ export async function recordFindings(db: Queryable, findings: readonly Finding[]
     }
     await db.query(RECORD_SQL, [
       JSON.stringify({
-        kind: "app_table",
+        kind: "typed_table",
         source_app: "matrx-frontend",
         source_feature: "typed-tables",
         route: "scripts/check-typed-tables.ts",
@@ -817,7 +817,7 @@ async function offlineSelfTest(): Promise<number> {
     rmSync(dir, { recursive: true, force: true });
   }
 
-  // The error monitor: one row per finding, signature app_table.<state>.<slug>, none for an open one.
+  // The error monitor: one row per finding, signature typed_table.<state>.<slug>, none for an open one.
   const findings = judge(
     [CALLBACKS_DECL, LIBRARY_DECL],
     [
@@ -830,17 +830,17 @@ async function offlineSelfTest(): Promise<number> {
   const fresh = new FakeDb([]);
   await recordFindings(fresh, findings);
   const wrote = fresh.recorded.map((r) => r.error_type).sort();
-  const wantAll = ["app_table.archived.patient_callbacks", "app_table.missing.exercise_library", "app_table.size.patient_callbacks"];
-  const kindsOk = fresh.recorded.every((r) => r.kind === "app_table" && (r.metadata as Record<string, unknown>)?.signature === r.error_type);
-  if (JSON.stringify(wrote) === JSON.stringify(wantAll) && kindsOk) console.log("[ OK ] error monitor: one app_table row per finding, keyed by its signature");
+  const wantAll = ["typed_table.archived.patient_callbacks", "typed_table.missing.exercise_library", "typed_table.size.patient_callbacks"];
+  const kindsOk = fresh.recorded.every((r) => r.kind === "typed_table" && (r.metadata as Record<string, unknown>)?.signature === r.error_type);
+  if (JSON.stringify(wrote) === JSON.stringify(wantAll) && kindsOk) console.log("[ OK ] error monitor: one typed_table row per finding, keyed by its signature");
   else {
     failed += 1;
     console.log(`[FAIL] error monitor: expected ${wantAll.join(", ")}; wrote ${wrote.join(", ") || "nothing"}${kindsOk ? "" : " (kind/metadata wrong)"}`);
   }
-  const reopened = new FakeDb(["app_table.archived.patient_callbacks"]);
+  const reopened = new FakeDb(["typed_table.archived.patient_callbacks"]);
   await recordFindings(reopened, findings);
   const wrote2 = reopened.recorded.map((r) => r.error_type).sort();
-  const want2 = ["app_table.missing.exercise_library", "app_table.size.patient_callbacks"];
+  const want2 = ["typed_table.missing.exercise_library", "typed_table.size.patient_callbacks"];
   if (JSON.stringify(wrote2) === JSON.stringify(want2)) console.log("[ OK ] error monitor: a finding with an open row is not written again");
   else {
     failed += 1;
@@ -935,9 +935,9 @@ async function dbSelfTest(argv: string[]): Promise<number> {
           "archiving the copy through custom.table_archive_deliberately → ARCHIVED line", archived.map((f) => f.line).join(" | ") || "no finding");
         await recordFindings(db, archived);
         const row = (await db.query(
-          `select count(*)::int as n from ops.system_error where kind = 'app_table' and error_type = 'app_table.archived.patient_callbacks' and resolved_at is null`,
+          `select count(*)::int as n from ops.system_error where kind = 'typed_table' and error_type = 'typed_table.archived.patient_callbacks' and resolved_at is null`,
         )).rows[0]!.n as number;
-        expect(row >= 1, "the ARCHIVED finding is in ops.system_error under app_table.archived.patient_callbacks", `rows: ${row}`);
+        expect(row >= 1, "the ARCHIVED finding is in ops.system_error under typed_table.archived.patient_callbacks", `rows: ${row}`);
         await db.query("rollback");
         break;
       } catch (err) {
@@ -1040,7 +1040,7 @@ async function main(argv: string[]): Promise<number> {
       const { written, alreadyOpen } = await recordFindings(client, findings);
       await client.query("commit");
       console.log(
-        `  error monitor: ${written.length} new row(s) (kind app_table)` +
+        `  error monitor: ${written.length} new row(s) (kind typed_table)` +
           (alreadyOpen.length ? `, ${alreadyOpen.length} already open` : "") + ".",
       );
     } catch (err) {

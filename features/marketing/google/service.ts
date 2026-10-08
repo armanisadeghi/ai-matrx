@@ -30,8 +30,7 @@ import {
   googleFaultBlocksEverything,
 } from "@/features/marketing/google/health";
 import { readAllRows } from "@ai-matrx/data/db";
-import { resolveBaseUrl } from "@/lib/python-client";
-import { buildMatrxRequestUrl, sendMatrxRequest } from "@ai-matrx/agents/matrx";
+import { requestRaw, resolveBaseUrl } from "@/lib/python-client";
 import { applyOrganizationContextHeader } from "@/lib/api/organization-context";
 import { operationFailed } from "@/utils/errors";
 import { getFile } from "@/features/files/api/files";
@@ -570,18 +569,24 @@ export async function postGoogleBackend(
       );
     }
   }
-  const response = await sendMatrxRequest(buildMatrxRequestUrl(backendBase(), path), {
-    method: "POST",
-    headers: await organizationContextHeaders(
-      {
-        Authorization: `Bearer ${session.access_token}`,
-        "Content-Type": "application/json",
-      },
-      { method: "POST", interactive: googlePostAsks(path) },
-      organizationIdOverride,
-    ),
-    body: JSON.stringify(body),
-  });
+  const headers = await organizationContextHeaders(
+    {
+      Authorization: `Bearer ${session.access_token}`,
+      "Content-Type": "application/json",
+    },
+    { method: "POST", interactive: googlePostAsks(path) },
+    organizationIdOverride,
+  );
+  const response = await requestRaw(
+    path,
+    { method: "POST", headers, body: JSON.stringify(body) },
+    {
+      baseUrlOverride: backendBase(),
+      organizationId: headers["X-Organization-Id"],
+      bodyCarriedRead: !googlePostAsks(path),
+      allowHttpError: true,
+    },
+  );
   if (!response.ok) {
     const error = await parseHttpError(response);
     throw error.message === `Request failed (${response.status})`
@@ -601,14 +606,19 @@ export async function getGoogleBackend(
     data: { session },
   } = await supabase.auth.getSession();
   if (!session?.access_token) throw new Error("Sign in to manage Google.");
-  const response = await sendMatrxRequest(buildMatrxRequestUrl(backendBase(), path), {
-    method: "GET",
-    headers: await organizationContextHeaders(
-      { Authorization: `Bearer ${session.access_token}` },
-      { method: "GET" },
-    ),
-    signal,
-  });
+  const headers = await organizationContextHeaders(
+    { Authorization: `Bearer ${session.access_token}` },
+    { method: "GET" },
+  );
+  const response = await requestRaw(
+    path,
+    { method: "GET", headers, signal },
+    {
+      baseUrlOverride: backendBase(),
+      organizationId: headers["X-Organization-Id"],
+      allowHttpError: true,
+    },
+  );
   if (!response.ok) {
     const error = await parseHttpError(response);
     throw error.message === `Request failed (${response.status})`

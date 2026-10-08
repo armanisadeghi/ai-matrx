@@ -5,7 +5,7 @@
 -- One fixture Table in Cedar Ridge Physical Therapy, placed as the app keeps it for an agent's output
 -- (`kept_by_the_app: true`, `kept_for: "agent_output"`, SC-1 placement), and the clinic's own Patient
 -- Visit Tracker as the control. From test@test.com's seat (`set local role authenticated` + her claims),
--- every list door is asked twice — as a default list asks, and with p_include_app_tables => true:
+-- every list door is asked twice — as a default list asks, and with p_include_platform_tables => true:
 --   P  custom.table_kept_out_of_lists — the one predicate: agent_output yes; choices, context, null no.
 --   H  custom.data_home_tables — /data's rows, one organization and all of them.
 --   D  custom.data_home — ⌘K and the data home's one call, unsearched and searched.
@@ -82,11 +82,11 @@ begin
     insert into res values ('H4 one org, with the switch: outputs shown',
       exists (select 1 from custom.data_home_tables(c, true) t where t.table_id = o and t.kept_by_the_app), 'data_home_tables(cedar, true)');
     insert into res values ('H5 all orgs, with the switch: outputs shown',
-      exists (select 1 from custom.data_home_tables(null, p_include_app_tables => true) t where t.table_id = o), 'data_home_tables(null, true)');
+      exists (select 1 from custom.data_home_tables(null, p_include_platform_tables => true) t where t.table_id = o), 'data_home_tables(null, true)');
     -- the switch is for its one call: the next default ask in the same transaction is default again
     insert into res values ('H6 the switch does not linger',
       not exists (select 1 from custom.data_home_tables(c) t where t.table_id = o)
-      and current_setting('custom.include_app_tables', true) is distinct from 'on', 'data_home_tables(cedar) after (cedar, true)');
+      and current_setting('custom.include_platform_tables', true) is distinct from 'on', 'data_home_tables(cedar) after (cedar, true)');
   exception when others then insert into res values ('H4/H5 the switch exists', false, sqlerrm);
   end;
 exception when others then insert into res values ('H data_home_tables answers', false, sqlerrm);

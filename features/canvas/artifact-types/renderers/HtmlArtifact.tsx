@@ -52,6 +52,7 @@ export default function HtmlArtifact({
   conversationId,
   isStreamActive,
   isPublic,
+  artifactId,
 }: ArtifactRendererProps) {
   // Inside a canvas tab the page is an APP: it fills the tab body edge to
   // edge, live with the pane's size. Everywhere else (chat, artifact cards)
@@ -99,6 +100,10 @@ export default function HtmlArtifact({
         messageId={messageId}
         conversationId={conversationId}
         fill={fill}
+        artifactId={
+          artifactId ??
+          (typeof metadata?.canvasItemId === "string" ? metadata.canvasItemId : undefined)
+        }
       />
     </Suspense>
   );

@@ -148,7 +148,7 @@ export function WorkflowBuilderPage({ tableId }: { tableId: string }) {
         organization_id: organizationId,
         organization_name: "",
         kind: null,
-        kept_by_the_app: false,
+        platform_owned: false,
       }
     : null;
   const tables = {

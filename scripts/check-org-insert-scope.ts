@@ -45,7 +45,7 @@
  *      types", so the ratchet absorbed the site while all 53 live
  *      `interview.session` rows sat in their creator's personal organization.
  *
- *      `app/api/cms/**` and `app/api/html-pages/**` are OUT OF SCOPE by
+ *      `app/api/cms/**` are OUT OF SCOPE by
  *      declaration (see CMS_PRODUCT_DB_SCOPES) and counted on every run.
  *
  *      The verdicts:
@@ -139,7 +139,7 @@ const UNRESOLVED_WRAPPER = "<unresolved-wrapper:";
  * THE CMS IS A SEPARATE PRODUCT DATABASE — declared here by name, never left to
  * fall into UNRESOLVED.
  *
- * `app/api/cms/**` and `app/api/html-pages/**` build their own supabase client
+ * `app/api/cms/**` build their own supabase client
  * against Supabase project `viyklljfdhtidwecakwx` (env
  * `NEXT_PUBLIC_SUPABASE_HTML_URL` + `SUPABASE_HTML_SECRET_KEY`) — the one
  * declared separate PRODUCT database (aidream CLAUDE.md § ONE database). Its
@@ -159,10 +159,6 @@ const CMS_PRODUCT_DB_SCOPES: ReadonlyArray<{
   {
     prefix: "app/api/cms/",
     client: "getCmsClient() — app/api/cms/_lib/cmsDb.ts",
-  },
-  {
-    prefix: "app/api/html-pages/",
-    client: "getHtmlAdminClient() — built in the route from NEXT_PUBLIC_SUPABASE_HTML_URL",
   },
 ];
 

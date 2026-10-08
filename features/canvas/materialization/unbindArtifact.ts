@@ -32,6 +32,7 @@
  * are exported for tests; the orchestrator takes injectable row-loading deps.
  */
 
+import { latestChainRow } from "@/features/canvas/services/versionChainOwner";
 import type {
   CxContentBlock,
   CxTextContent,
@@ -200,9 +201,7 @@ export async function unbindArtifact(
   try {
     history = await deps.getVersionHistory(artifactId);
     latest =
-      history.length > 0
-        ? history.reduce((max, r) => (r.version > max.version ? r : max), history[0]!)
-        : await deps.getById(artifactId);
+      latestChainRow(history) ?? (await deps.getById(artifactId));
   } catch (err) {
     errors.push(`Could not read the artifact: ${err instanceof Error ? err.message : String(err)}`);
     return fail("read_failed");

@@ -17,8 +17,8 @@ const rpc = jest.fn(async () => ({
   data: {
     success: true,
     tables: [
-      { id: "b00bde4d-1adc-4682-88eb-57453aabf014", store: "records", table_name: "Hygiene Recall Schedule", kept_by_the_app: false, updated_at: "2026-09-26T22:23:55Z" },
-      { id: "a1d011b4-a20f-4162-a0a5-f1251cf37c3b", store: "records", table_name: "Insurance Carriers", kept_by_the_app: true, kept_for: "choices", updated_at: "2026-09-26T16:22:48Z" },
+      { id: "b00bde4d-1adc-4682-88eb-57453aabf014", store: "records", table_name: "Hygiene Recall Schedule", platform_owned: false, updated_at: "2026-09-26T22:23:55Z" },
+      { id: "a1d011b4-a20f-4162-a0a5-f1251cf37c3b", store: "records", table_name: "Insurance Carriers", platform_owned: true, kept_for: "choices", updated_at: "2026-09-26T16:22:48Z" },
     ],
   },
   error: null,

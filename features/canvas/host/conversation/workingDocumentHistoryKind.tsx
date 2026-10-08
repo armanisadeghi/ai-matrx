@@ -18,6 +18,7 @@ export { WORKING_DOCUMENT_HISTORY_KIND };
 
 export const workingDocumentHistoryKind = defineCanvasKind<CanvasJson>({
   id: WORKING_DOCUMENT_HISTORY_KIND,
+  surface: "dom",
   label: "Document history",
   icon: History,
   load: () => import("./WorkingDocumentHistoryCanvasView"),

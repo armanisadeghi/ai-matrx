@@ -39,6 +39,7 @@ function ScratchpadHeaderAction() {
 
 export const scratchpadKind = defineCanvasKind<CanvasJson>({
   id: SCRATCHPAD_KIND,
+  surface: "dom",
   label: SCRATCHPAD_TITLE,
   icon: NotebookPen,
   load: () => import("./ScratchpadCanvasView"),

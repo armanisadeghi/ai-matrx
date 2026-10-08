@@ -21,6 +21,7 @@ export function readNoteKnowledgeTab(data: CanvasJson | undefined | null): { not
 
 export const noteKnowledgeKind = defineCanvasKind<CanvasJson>({
   id: NOTE_KNOWLEDGE_KIND,
+  surface: "dom",
   label: TITLE,
   icon: Database,
   load: () => import("./NoteKnowledgeCanvasView"),

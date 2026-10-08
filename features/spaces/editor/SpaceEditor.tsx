@@ -7,6 +7,7 @@
 // SpaceBlock — the engine never reaches the store.
 
 import { createExtension } from "@blocknote/core";
+import { getDefaultEmojiPickerItems } from "@blocknote/core/extensions";
 import { CollaborationExtension } from "@blocknote/core/yjs";
 import { en } from "@blocknote/core/locales";
 import {
@@ -450,6 +451,19 @@ export function SpaceEditor({ spaceId, initialBlocks, editable, onChange, slash,
           // Typed words that make a date put Date first; an empty "@" lists it last (Notion).
           return q ? [...dateItems, ...personItems, ...pageItems] : [...personItems, ...pageItems, ...dateItems];
         }}
+      />
+      {/* N14 — ":" then a name offers emoji inline (Notion). Text a person types, so it is theirs. */}
+      <SuggestionMenuController
+        triggerCharacter=":"
+        minQueryLength={2}
+        floatingUIOptions={SLASH_MENU}
+        getItems={async (query) =>
+          (await getDefaultEmojiPickerItems(editor as never, query)).slice(0, 12).map((e) => ({
+            title: e.id,
+            icon: <span aria-hidden>{e.id}</span>,
+            onItemClick: () => e.onItemClick(editor as never),
+          }))
+        }
       />
       <SuggestionMenuController triggerCharacter="/" floatingUIOptions={SLASH_MENU} getItems={async (query) => rankSlashItems(slashItems(editor, slash), query)} />
       {editable ? (

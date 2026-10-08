@@ -1,6 +1,6 @@
 {
   "name": "app-matrx",
-  "version": "0.4.3015",
+  "version": "0.4.3023",
   "private": true,
   "scripts": {
     "dev": "bash scripts/agent-dev-server.sh start",
@@ -658,6 +658,8 @@
     "check:matrx-dist-integrity:self-test": "node scripts/check-matrx-dist-integrity.mjs --self-test",
     "check:matrx-imports": "node scripts/check-matrx-imports.mjs",
     "check:matrx-imports:self-test": "node scripts/check-matrx-imports.mjs --self-test",
+    "check:matrx-api-usage": "node scripts/check-matrx-api-usage.mjs",
+    "check:matrx-api-usage:self-test": "node scripts/check-matrx-api-usage.mjs --self-test",
     "check:matrx-pending:self-test": "node scripts/lib/matrx-pending-imports.mjs --self-test",
     "check:package-imports-resolve": "node scripts/check-package-imports-resolve.mjs",
     "check:package-imports-resolve:self-test": "node scripts/check-package-imports-resolve.mjs --self-test",
@@ -1185,6 +1187,7 @@
     "@babel/types": "^8.0.6",
     "@faker-js/faker": "^10.6.0",
     "@iconify/react": "^6.0.2",
+    "@jest/globals": "30.5.2",
     "@next/bundle-analyzer": "^16.3.6",
     "@playwright/test": "1.63.0",
     "@tailwindcss/postcss": "^4.3.3",
@@ -1223,6 +1226,7 @@
     "openapi-typescript": "^7.13.0",
     "os-browserify": "latest",
     "pg": "^8.23.0",
+    "playwright": "1.63.0",
     "postcss": "latest",
     "process": "latest",
     "script-loader": "latest",

@@ -36,10 +36,30 @@ function longDates(fields: Field[]): Record<string, { id: "date"; options: { dat
  */
 export type ViewWithSummaries = SpaceDbView & { summaries?: Record<string, string> };
 
+/** Notion's board / gallery / calendar cards open showing a few of the database's properties, not just the title. */
+export const DEFAULT_CARD_FIELDS = 4;
+
+export function isCardLayout(layout: string): boolean {
+  return layout === "kanban" || layout === "gallery" || layout === "calendar" || layout === "timeline";
+}
+
+/**
+ * The property keys a view hides. A saved list wins (the Properties menu writes it). A card view with none saved
+ * hides every property past the first few (dates always show on a card), so a new view draws like Notion's.
+ */
+export function effectiveHidden(view: Pick<SpaceDbView, "layout" | "hiddenFields" | "groupField" | "dateField">, fields: Field[]): string[] {
+  if (view.hiddenFields) return view.hiddenFields;
+  if (!isCardLayout(view.layout)) return [];
+  // The first property is the record's title (the card's heading), so it never counts against the cap.
+  const pool = fields.slice(1).filter((f) => f.key !== view.groupField && f.key !== view.dateField && kindOf(f) !== "date" && kindOf(f) !== "datetime");
+  return pool.slice(DEFAULT_CARD_FIELDS).map((f) => f.key);
+}
+
 export function viewSpec(tableId: string, view: ViewWithSummaries, fields: Field[] = []): SavedViewSpec {
   const layout = view.layout === "chart" ? "grid" : view.layout;
   const formats = longDates(fields);
   const hasFormats = Object.keys(formats).length > 0;
+  const hidden = effectiveHidden(view, fields);
   return {
     name: view.name,
     subject: tableId,
@@ -52,6 +72,6 @@ export function viewSpec(tableId: string, view: ViewWithSummaries, fields: Field
     ...(view.where ? { where: view.where as unknown as RuleExpression } : {}),
     // Notion's inline table: columns at their natural width, one line each, the table scrolling sideways
     // inside the block when it is wider than the column it sits in (screenshot 1) — never squeezed to "…".
-    presentation: { fit: "scroll", wrap: false, ...(view.hiddenFields?.length ? { hiddenFields: view.hiddenFields } : {}), ...(hasFormats ? { formats } : {}), ...(view.summaries && Object.keys(view.summaries).length ? { summaries: view.summaries } : {}), ...(view.widths && Object.keys(view.widths).length ? { widths: view.widths } : {}), ...(view.columnOrder?.length ? { columnOrder: view.columnOrder } : {}), ...(view.wrapColumns?.length ? { wrapColumns: view.wrapColumns } : {}) },
+    presentation: { fit: "scroll", wrap: false, ...(hidden.length && !isCardLayout(layout) ? { hiddenFields: hidden } : {}), ...(isCardLayout(layout) ? { cardHidden: hidden } : {}), ...(hasFormats ? { formats } : {}), ...(view.summaries && Object.keys(view.summaries).length ? { summaries: view.summaries } : {}), ...(view.widths && Object.keys(view.widths).length ? { widths: view.widths } : {}), ...(view.columnOrder?.length ? { columnOrder: view.columnOrder } : {}), ...(view.wrapColumns?.length ? { wrapColumns: view.wrapColumns } : {}) },
   };
 }

@@ -27,21 +27,21 @@ async function listTables(orgId: string): Promise<{ rows: Array<Record<string, u
     p_organization_id: orgId,
     // The page keeps every table the app keeps behind its own Show everything — an agent's
     // outputs tables included, which the door otherwise leaves out (CHAIR-DOORS-2).
-    p_include_app_tables: true,
+    p_include_platform_tables: true,
   });
   if (store.error) throw new Error(`The organization's tables could not be listed: ${store.error.message}`);
   const tables = ((store.data as { tables?: unknown } | null)?.tables ?? []) as Array<Record<string, unknown>>;
   const byRecent = (a: Record<string, unknown>, b: Record<string, unknown>) =>
     String(b.updated_at ?? "").localeCompare(String(a.updated_at ?? ""));
   return {
-    rows: tables.filter((t) => t.kept_by_the_app !== true).sort(byRecent),
-    kept: tables.filter((t) => t.kept_by_the_app === true).sort(byRecent),
+    rows: tables.filter((t) => t.platform_owned !== true).sort(byRecent),
+    kept: tables.filter((t) => t.platform_owned === true).sort(byRecent),
   };
 }
 
 /** A table another member shared with this organization, read from the store by id. */
 async function sharedTables(ids: string[]): Promise<Array<Record<string, unknown>>> {
-  const store = await (supabase as unknown as SupabaseClient).schema("custom").rpc("table_list_everywhere", { p_organization_id: null, p_include_app_tables: true });
+  const store = await (supabase as unknown as SupabaseClient).schema("custom").rpc("table_list_everywhere", { p_organization_id: null, p_include_platform_tables: true });
   if (store.error) throw new Error(`The shared tables could not be read: ${store.error.message}`);
   const wanted = new Set(ids);
   const tables = ((store.data as { tables?: unknown } | null)?.tables ?? []) as Array<Record<string, unknown>>;

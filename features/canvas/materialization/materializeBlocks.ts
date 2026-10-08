@@ -84,7 +84,28 @@ export interface MaterializeBlocksParams {
    * without a rewritable body; the caller then owns the returned content.
    */
   persistRewrite?: PersistRewrite;
+  /**
+   * Where the canvas writes go. Defaults to the browser's
+   * `canvasArtifactService` (the signed-in person). A server-side caller that
+   * acts as the source's OWNER (the html-canvas backfill,
+   * `scripts/backfill-html-canvas-items.ts`) supplies the same four operations
+   * running under that owner's identity — the owner checks still decide.
+   */
+  writer?: MaterializeWriter;
+  /**
+   * Run each type's domain adapter (`onMaterialize` — html publishes its page)
+   * here. Default true. A caller with no app runtime passes false and runs the
+   * domain step through its own door (the backfill publishes through the
+   * server's one writer, `POST /cms/html-artifacts/{id}/publish`'s function).
+   */
+  runDomainAdapters?: boolean;
 }
+
+/** The canvas writes `materializeBlocks` makes — `canvasArtifactService` by default. */
+export type MaterializeWriter = Pick<
+  typeof canvasArtifactService,
+  "isReadableById" | "upsertForSource" | "setExternalLink" | "upsertDiscoveryIndex"
+>;
 
 export interface MaterializeBlocksResult {
   materializedCount: number;
@@ -116,6 +137,8 @@ export async function materializeBlocks(
   params: MaterializeBlocksParams,
 ): Promise<MaterializeBlocksResult> {
   const { source, content, persistRewrite } = params;
+  const writer: MaterializeWriter = params.writer ?? canvasArtifactService;
+  const runDomainAdapters = params.runDomainAdapters ?? true;
 
   // Never materialize against a temp/optimistic id — the upsert keys on
   // (source_system, source_id); a temp id would orphan the row. Reconcile
@@ -129,7 +152,7 @@ export async function materializeBlocks(
     const checked = await Promise.all(
       plan.materializedArtifactIds.map(async (id) => ({
         id,
-        readable: await canvasArtifactService.isReadableById(id),
+        readable: await writer.isReadableById(id),
       })),
     );
     const missing = new Set(
@@ -148,7 +171,7 @@ export async function materializeBlocks(
   const isChat = source.system === "cx_message";
 
   for (const artifact of plan.artifacts) {
-    const saved = await canvasArtifactService.upsertForSource({
+    const saved = await writer.upsertForSource({
       source,
       artifactIndex: artifact.artifactIndex,
       type: artifact.canvasType,
@@ -182,7 +205,7 @@ export async function materializeBlocks(
       // backfills on a later load. Generic types have no onMaterialize.
       const def = getArtifactDef(artifact.canvasType);
       const adapter = getAdapter(def?.adapter);
-      if (adapter.onMaterialize) {
+      if (runDomainAdapters && adapter.onMaterialize) {
         try {
           const link = await adapter.onMaterialize({
             artifactId: saved.id,
@@ -196,7 +219,7 @@ export async function materializeBlocks(
             artifactIndex: artifact.artifactIndex,
           });
           if (link && (link.externalSystem || link.externalId)) {
-            await canvasArtifactService.setExternalLink(saved.id, link);
+            await writer.setExternalLink(saved.id, link);
           }
         } catch (err) {
           errors.push(
@@ -209,7 +232,7 @@ export async function materializeBlocks(
       // this canvas_items row so materialized artifacts appear in the /artifacts
       // library. NON-BLOCKING — a failure here must never abort the rewrite.
       try {
-        await canvasArtifactService.upsertDiscoveryIndex({
+        await writer.upsertDiscoveryIndex({
           canvasId: saved.id,
           canvasType: artifact.canvasType,
           title: artifact.title ?? null,
