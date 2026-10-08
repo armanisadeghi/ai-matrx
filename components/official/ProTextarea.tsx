@@ -166,8 +166,10 @@ import { Label } from "@/components/ui/label";
 import { TapTargetButtonSolid } from "@ai-matrx/tap-target";
 import {
   CheckTapButton,
+  MaximizeTapButton,
   MoreHorizontalTapButton,
 } from "@ai-matrx/tap-target/buttons";
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import {
   Popover,
   PopoverTrigger,
@@ -459,6 +461,13 @@ export interface ProTextareaProps extends React.TextareaHTMLAttributes<HTMLTextA
    * Contract: `./pro-textarea-editor.ts`.
    */
   editor?: ProTextareaEditorSlot;
+  /**
+   * When the text runs past the box, an Expand button shows in the control
+   * row (never over text) and opens the same field large, in a dialog — the
+   * phone gets it as a sheet. For boxes that hold long values in a small
+   * space (agent variables). Off by default.
+   */
+  expandable?: boolean;
 }
 
 export const ProTextarea = React.forwardRef<
@@ -517,6 +526,7 @@ export const ProTextarea = React.forwardRef<
       editor,
       markdownFormatting,
       uploadImage,
+      expandable = false,
       ...props
     },
     ref,
@@ -525,6 +535,8 @@ export const ProTextarea = React.forwardRef<
     const inputId = idProp ?? (floatingLabel ? generatedId : undefined);
     const [isFocused, setIsFocused] = useState(false);
     const [isHovered, setIsHovered] = useState(false);
+    const [expandOpen, setExpandOpen] = useState(false);
+    const [overflowing, setOverflowing] = useState(false);
     const [isAudioAvailable, setIsAudioAvailable] = useState(true);
     // The element ref is ALWAYS our own, merged into the host's forwarded ref.
     // Reading `ref.current` directly broke every internal feature (apply an
@@ -1217,6 +1229,18 @@ export const ProTextarea = React.forwardRef<
     const showPinnedTextStatsBar = showTextStats && showTextStatsBar;
     const fillHeight = wantsFillHeight(className, wrapperClassName);
 
+    // Expand shows only when the text no longer fits the box.
+    useEffect(() => {
+      if (!expandable || editor) return;
+      const el = internalRef.current;
+      if (!el) return;
+      const measure = () => setOverflowing(el.scrollHeight > el.clientHeight + 2);
+      measure();
+      const observer = new ResizeObserver(measure);
+      observer.observe(el);
+      return () => observer.disconnect();
+    }, [expandable, editor, value]);
+
     const isInvalid =
       props["aria-invalid"] === true || props["aria-invalid"] === "true";
     const labelFloated = isFocused || valueAsString.length > 0;
@@ -1337,6 +1361,27 @@ export const ProTextarea = React.forwardRef<
               />
             )}
 
+            {expandable && !editor ? (
+              <Dialog open={expandOpen} onOpenChange={setExpandOpen}>
+                <DialogContent className="flex max-h-[90dvh] w-[min(56rem,calc(100vw-2rem))] max-w-none flex-col gap-3 sm:max-w-none">
+                  <DialogTitle className="truncate">{auxiliaryControlsLabel ?? floatingLabel ?? "Text"}</DialogTitle>
+                  {/* The SAME field, large: one value, one onChange — what is
+                      typed here is what the small box holds. */}
+                  <ProTextarea
+                    value={value}
+                    onChange={onChange}
+                    placeholder={placeholder}
+                    disabled={disabled}
+                    surfaceName={surfaceName}
+                    getApplicationScope={getApplicationScope}
+                    wrapperClassName="h-[min(70dvh,40rem)]"
+                    className="h-full text-sm"
+                    autoFocus
+                  />
+                </DialogContent>
+              </Dialog>
+            ) : null}
+
             {floatingLabel && inputId && (
               <Label
                 htmlFor={inputId}
@@ -1370,6 +1415,17 @@ export const ProTextarea = React.forwardRef<
                 editor?.singleLine && "top-1/2 bottom-auto -translate-y-1/2",
               )}
             >
+              {expandable && !editor && overflowing ? (
+                // Always shown (not on hover only): it says there is more text.
+                <MaximizeTapButton
+                  tabIndex={auxiliaryControlsTabIndex}
+                  variant="transparent"
+                  ariaLabel={auxiliaryControlsLabel ? `Expand ${auxiliaryControlsLabel}` : "Expand"}
+                  tooltip="Expand"
+                  onClick={() => setExpandOpen(true)}
+                  className="text-muted-foreground"
+                />
+              ) : null}
               {/* Mic + "…" fade in on pointer hover or keyboard focus-within,
             and stay while the menu popover is open. A GLASS PLANE
             (tap-target placement rule 1): it rides over the field's own
