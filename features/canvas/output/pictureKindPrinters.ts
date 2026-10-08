@@ -151,6 +151,7 @@ export async function imageBlob(source: string): Promise<Blob> {
 
 async function imageOutput(source: string, title: string | undefined): Promise<PrintBlockOutput> {
   const alt = title || "Image";
+  if (source.startsWith("data:image/")) return { image: { src: source, alt } };
   try {
     return { image: { src: await blobToDataUrl(await imageBlob(source)), alt } };
   } catch (error) {
@@ -228,6 +229,7 @@ export async function diagramPicture(payload: unknown): Promise<Blob> {
         const signature = boxes.map((b) => `${b.x},${b.y},${b.width},${b.height}`).join("|");
         const settled = boxes.length >= diagram.nodes.length && signature === last;
         last = signature;
+        (window as unknown as { __dbg?: unknown[] }).__dbg = [...(((window as unknown as { __dbg?: unknown[] }).__dbg) ?? []).slice(-6), `${boxes.length}/${diagram.nodes.length} ${signature.slice(0, 80)} flow=${Boolean(flow)}`];
         return settled;
       },
     },
@@ -290,7 +292,7 @@ export async function deckSlidePictures(payload: unknown): Promise<Blob[]> {
     {
       width: SLIDE_STAGE.width,
       background: "#ffffff",
-      ready: (host) => host.querySelectorAll("[data-deck-slide]").length === deck.slides.length && host.scrollHeight >= SLIDE_STAGE.height,
+      ready: (host) => host.querySelectorAll("[data-deck-slide]").length === deck.slides.length,
     },
     async (host) => {
       const pictures: Blob[] = [];
