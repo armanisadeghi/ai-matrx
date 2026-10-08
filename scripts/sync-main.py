@@ -803,10 +803,14 @@ def sweep_holds():
     return [(h["path"], h.get("reasons") or []) for h in data.get("hold") or []]
 
 
+SWEEP_HELD = []   # what the last commit_all held back (main() re-sweeps once after a package update)
+
+
 def commit_all():
     _, common, _ = git("rev-parse", "--git-common-dir")
     planted = live_plants(os.getcwd(), os.path.abspath(common.strip()))
     held = sweep_holds()
+    SWEEP_HELD[:] = held
     excluded = [p for p, _ in planted] + [p for p, _ in held]
     git("add", "-A", "--", ".", *[":(exclude,literal)" + p for p in excluded])
     for p, pid in planted:
@@ -1467,6 +1471,149 @@ def replay(args):
 
 PACKAGE_FILES = ("package.json", "pnpm-lock.yaml", "package-lock.json")
 
+# THE PUBLISH TRAIN (2026-10-07). aidream publishes @ai-matrx packages from GitHub Actions: every
+# push to its main runs "Nominate changed npm packages", which tags each changed package and
+# dispatches "Publish TypeScript Package to npm" runs in dependency order — 1 to 6 minutes each,
+# so a change low in the graph reaches npm 5–40 minutes after its push. ship-all ships aidream
+# first and this repo seconds later, so the package update below used to read npm in the MIDDLE
+# of that train and lock the previous versions. It now waits (bounded) for every nomination that
+# started before this sync, and for the publish runs those nominations dispatched.
+PUBLISH_REPO = "AI-Matrix-Engine/aidream"
+NOMINATE_WORKFLOW = "Nominate changed npm packages"
+PUBLISH_WORKFLOW = "Publish TypeScript Package to npm"
+PUBLISH_WAIT_MAX_SECONDS = 15 * 60   # agent-chosen; the sweep hold covers anything later. Review 2026-11-07.
+PUBLISH_DISPATCH_GRACE_SECONDS = 60  # a finished nomination's tags start their publish runs within this
+PUBLISH_POLL_SECONDS = 20
+
+
+def _gh_runs():
+    r = subprocess.run(["gh", "run", "list", "-R", PUBLISH_REPO, "--limit", "100", "--json",
+                        "status,workflowName,name,createdAt"], capture_output=True, text=True,
+                       timeout=60)
+    if r.returncode != 0:
+        raise RuntimeError((r.stderr or r.stdout).strip()[-300:])
+    out = []
+    for run in json.loads(r.stdout or "[]"):
+        ts = datetime.datetime.strptime(run["createdAt"], "%Y-%m-%dT%H:%M:%SZ").replace(
+            tzinfo=datetime.timezone.utc).timestamp()
+        out.append((run["workflowName"], run["status"] != "completed", ts, run.get("name") or ""))
+    return out
+
+
+def wait_for_publish_train(now=time.time, sleep=time.sleep, runs=_gh_runs):
+    """Block until every publish run started by a nomination older than this call has finished,
+    at most PUBLISH_WAIT_MAX_SECONDS. Returns one line for the report."""
+    t0 = now()
+    cutoff = None   # publish runs created before this belong to pre-sync nominations
+    waited_for = set()
+    last_shown = ""
+    saw_nomination = False
+    while True:
+        try:
+            listing = runs()
+        except (OSError, ValueError, RuntimeError, subprocess.TimeoutExpired) as e:
+            say("PUBLISH TRAIN NOT MEASURED (gh run list -R %s failed: %s) — updating packages "
+                "without waiting; a package still publishing is locked at its previous version."
+                % (PUBLISH_REPO, e))
+            return "publish train: not measured"
+        nominating = [n for (wf, active, ts, n) in listing if wf == NOMINATE_WORKFLOW and active and ts < t0]
+        if nominating:
+            cutoff = None
+            saw_nomination = True
+        elif cutoff is None:
+            # A nomination we watched finish dispatches its publish runs within the grace; with no
+            # nomination in flight there is nothing more to come from before this sync.
+            cutoff = now() + (PUBLISH_DISPATCH_GRACE_SECONDS if saw_nomination else 0)
+        horizon = now() if cutoff is None else cutoff
+        publishing = [n for (wf, active, ts, n) in listing if wf == PUBLISH_WORKFLOW and active and ts < horizon]
+        waited_for.update(publishing)
+        if not nominating and not publishing and now() >= cutoff:
+            spent = int(now() - t0)
+            if not waited_for and not saw_nomination:
+                return "publish train: idle"
+            return "publish train: waited %ds for %s" % (spent, ", ".join(sorted(waited_for)) or "nominations")
+        if now() - t0 >= PUBLISH_WAIT_MAX_SECONDS:
+            still = nominating + publishing
+            say("PUBLISH TRAIN STILL RUNNING after %d min (%s) — updating to what npm serves now; "
+                "a file that needs a later version stays held by the sweep until the next sync."
+                % (PUBLISH_WAIT_MAX_SECONDS // 60, ", ".join(still[:6])))
+            return "publish train: gave up after %d min" % (PUBLISH_WAIT_MAX_SECONDS // 60)
+        showing = ", ".join((nominating + publishing)[:6])
+        if showing and showing != last_shown:
+            say("waiting for the @ai-matrx publish train: %s" % showing)
+            last_shown = showing
+        sleep(PUBLISH_POLL_SECONDS)
+
+
+# NEVER ADOPT A PACKAGE VERSION THAT ONLY BREAKS THE BUILD (2026-10-07). Every @ai-matrx dependency
+# is "latest", so the update below adopts whatever a package last published — including a release
+# that deleted or moved what this repo still imports: chat 0.4.0 deleted agents/model-registry
+# (v0.4.2980), chat moved ui/markdown-stream (v0.4.2984-85) and utils/content-ir/kinds
+# (v0.4.2989), kit dropped json-extract (v0.4.2990), a chat graph change pulled fetch/IndexedDB into
+# the kind sandbox (v0.4.2922, 2924, 2986). The same checks Vercel would fail on — every
+# @ai-matrx import resolves against the installed packages (check-matrx-imports) and the kind
+# sandbox bundle builds — are measured before and after the update. An update that adds a failure
+# and fixes none is NOT committed: the lockfile goes back to HEAD, node_modules is reinstalled
+# from it, and the package and the files it breaks are named. Releases keep shipping on the
+# versions the code builds with; the update is retried every sync.
+ITEM_LINE = re.compile(r"^MATRX-ITEM (\{.*\})\s*$", re.M)
+LOCKED = re.compile(r"^\s+'?(@ai-matrx/[a-z0-9._-]+)@(\d[^('\":\s]*)", re.M)
+
+
+def package_health(d, tool):
+    """{'imports': {key: title} | None, 'sandbox': True | False | None} for folder d.
+    None = not measured (the check is absent or could not run)."""
+    health = {"imports": None, "sandbox": None}
+    guard = os.path.join(d, "scripts", "check-matrx-imports.mjs")
+    if os.path.isfile(guard):
+        try:
+            r = subprocess.run(["node", guard], cwd=d, capture_output=True, text=True, timeout=600,
+                               env=dict(os.environ, MATRX_ITEMS="1"))
+            if "MATRX-ITEMS-END" in r.stdout and r.returncode in (0, 1):
+                items = {}
+                for m in ITEM_LINE.finditer(r.stdout):
+                    try:
+                        it = json.loads(m.group(1))
+                        items[it["key"]] = it.get("title") or it["key"]
+                    except (ValueError, KeyError):
+                        continue
+                health["imports"] = items
+        except (OSError, subprocess.TimeoutExpired):
+            pass
+    try:
+        with open(os.path.join(d, "package.json")) as f:
+            scripts = json.load(f).get("scripts") or {}
+    except (OSError, ValueError):
+        scripts = {}
+    if "build:kind-sandbox" in scripts:
+        try:
+            r = subprocess.run([tool, "run", "-s", "build:kind-sandbox"], cwd=d, capture_output=True,
+                               text=True, timeout=600)
+            health["sandbox"] = r.returncode == 0
+            health["sandbox_tail"] = (r.stdout + r.stderr).strip().splitlines()[-6:]
+        except (OSError, subprocess.TimeoutExpired):
+            pass
+    return health
+
+
+def update_breaks_build(before, after):
+    """[(what broke)] when the update adds a failure and fixes none; [] to adopt it."""
+    broke, fixed = [], []
+    if before["imports"] is not None and after["imports"] is not None:
+        for k in sorted(set(after["imports"]) - set(before["imports"])):
+            broke.append(after["imports"][k])
+        fixed += sorted(set(before["imports"]) - set(after["imports"]))
+    if before["sandbox"] is True and after["sandbox"] is False:
+        broke.append("the kind sandbox bundle no longer builds: " + " / ".join(after.get("sandbox_tail") or [])[-400:])
+    if before["sandbox"] is False and after["sandbox"] is True:
+        fixed.append("kind sandbox")
+    return broke if broke and not fixed else []
+
+
+def locked_versions(text):
+    return {m.group(1): m.group(2) for m in LOCKED.finditer(text or "")}
+
+
 
 def update_matrx_packages():
     """Step 4: run every "sync:matrx-packages" script here, commit what it changed. Returns a line."""
@@ -1484,8 +1631,13 @@ def update_matrx_packages():
     if not dirs:
         return None
     failed = []
+    train = wait_for_publish_train()
+    say(train)
+    not_adopted = []
     for d in dirs:
         tool = "npm" if os.path.isfile(os.path.join(d, "package-lock.json")) else "pnpm"
+        lock = os.path.join(d, "package-lock.json" if tool == "npm" else "pnpm-lock.yaml")
+        before = package_health(d, tool)
         say("updating @ai-matrx packages to npm latest in %s/ (%s run sync:matrx-packages)..." % (d, tool))
         try:
             r = subprocess.run([tool, "run", "sync:matrx-packages"], cwd=d, capture_output=True,
@@ -1497,6 +1649,36 @@ def update_matrx_packages():
             failed.append(d)
             say("PACKAGES NOT FULLY UPDATED in %s/ — the release may run on stale @ai-matrx packages:\n%s"
                 % (d, "\n".join("  " + l for l in out.splitlines()[-15:])))
+        mine = [os.path.normpath(os.path.join(d, f)) for f in PACKAGE_FILES]
+        rc, _, _ = git("diff", "--quiet", "HEAD", "--", *mine, check=False)
+        if rc == 0:
+            continue
+        after = package_health(d, tool)
+        broke = update_breaks_build(before, after)
+        if not broke:
+            continue
+        _, head_lock, _ = git("show", "HEAD:%s" % os.path.normpath(lock), check=False)
+        try:
+            with open(lock) as f:
+                new_lock = f.read()
+        except OSError:
+            new_lock = ""
+        old_v, new_v = locked_versions(head_lock), locked_versions(new_lock)
+        moved = ["%s %s -> %s" % (n, old_v.get(n, "(new)"), v) for n, v in sorted(new_v.items()) if old_v.get(n) != v]
+        git("checkout", "HEAD", "--", *[p for p in mine if blob_at("HEAD", p)], check=False)
+        install = [tool, "ci"] if tool == "npm" else [tool, "install", "--frozen-lockfile"]
+        try:
+            ri = subprocess.run(install, cwd=d, capture_output=True, text=True, timeout=900)
+            reinstalled = ri.returncode == 0
+        except (OSError, subprocess.TimeoutExpired):
+            reinstalled = False
+        not_adopted.append(d)
+        say("PACKAGE UPDATE NOT ADOPTED in %s/ — it would break the build and fixes nothing, so the "
+            "lockfile stays at HEAD%s. The package moved something this repo still uses: fix the "
+            "importers below (or restore the export in the package), and the next sync adopts it.\n"
+            "  versions it would have moved: %s\n  what it breaks:\n%s"
+            % (d, "" if reinstalled else " (REINSTALL FAILED — run `%s` there)" % " ".join(install),
+               ", ".join(moved[:12]) or "(none parsed)", "\n".join("    " + b for b in broke[:12])))
     _, st, _ = git("status", "--porcelain", "--untracked-files=no")
     changed = [l[3:].strip() for l in st.splitlines() if os.path.basename(l[3:].strip()) in PACKAGE_FILES]
     # 2026-10-05: a lockfile naming a version whose tarball npm still 404s breaks every frozen
@@ -1523,9 +1705,10 @@ def update_matrx_packages():
         git("add", "--", *changed)
         git("commit", "--no-verify", "-q", "-m", "chore(deps): every @ai-matrx package to npm latest (sync-main)",
             "--", *changed)
-    return "@ai-matrx packages: %s%s" % (
+    return "@ai-matrx packages: %s%s%s" % (
         "updated (%s)" % ", ".join(changed) if changed else "already at npm latest",
-        "; FAILED in %s (see above)" % ", ".join(failed) if failed else "")
+        "; FAILED in %s (see above)" % ", ".join(failed) if failed else "",
+        "; NOT ADOPTED in %s (it would break the build, see above)" % ", ".join(not_adopted) if not_adopted else "")
 
 
 def report(fixed, docs, held, headline):
@@ -1644,6 +1827,11 @@ def main():
             git("commit", "--no-verify", "-q", "-m", msg)
         if packages is None:
             packages = update_matrx_packages() or ""
+            # Files the sweep held for a package that the update just installed go out in THIS
+            # sync, not the next one: sweep once more against the new node_modules.
+            if SWEEP_HELD and packages.startswith("@ai-matrx packages: updated"):
+                say("re-sweeping the %d held file(s) against the packages just installed..." % len(SWEEP_HELD))
+                total_local += commit_all()
         if not push:
             break
         rc, _, err = git("push", "-q", REMOTE, "HEAD:%s" % BRANCH, check=False)
