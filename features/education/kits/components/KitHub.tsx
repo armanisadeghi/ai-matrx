@@ -577,12 +577,16 @@ export function KitHub({
           label: "Undo",
           onClick: () =>
             void restoreKit(archived).then(
-              () => toast.success(`Put back "${kit.title}".`),
+              () => {
+                toast.success(`Put back "${kit.title}".`);
+                router.push(kitHref(archived.sourceType, archived.sourceId));
+              },
               (err: unknown) => toast.error(err instanceof Error ? err.message : "It could not be put back."),
             ),
         },
       });
-      router.push("/education/kits");
+      // Always leave the archived kit's address, whichever state the page was in.
+      router.replace("/education/kits");
     } catch (error) {
       setWriteError(error instanceof Error ? error.message : "Could not archive this study kit.");
       setWriting(false);
