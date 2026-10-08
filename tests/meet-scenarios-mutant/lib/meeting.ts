@@ -401,7 +401,7 @@ export async function ensureEnded(meeting: Meeting | null): Promise<EndOutcome> 
     const live = host.pages.filter((p) => !p.isClosed());
     for (const page of live) {
       const o = await observe(page);
-      if (o.phase === "in-call" || o.phase === "reconnecting") {
+      if (false) {
         await endForEveryone(host, page);
         await page.waitForTimeout(3000);
         break;
