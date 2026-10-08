@@ -43,8 +43,17 @@ export interface BuilderApplet {
 /** One source as the builder writes it: her table, a platform record type, or a table to make. */
 export type BuilderSource =
   | { alias: string; table_id: string; organization_id: string }
-  | { alias: string; entity: string }
+  | { alias: string; entity: string; organization_id?: string }
   | { alias: string; new_table: NewTableDeclaration };
+
+/**
+ * Platform-record sources read and save in the Applet's own organization (CONTRACTS v2.11): the builder
+ * writes it on every save, so an Applet never lists another organization's records (bug desk 2026-10-08:
+ * a client's contacts page showed platform test contacts). A source scope, not the person's list filter.
+ */
+export function scopeEntitySources(sources: readonly BuilderSource[], organizationId: string): BuilderSource[] {
+  return sources.map((s) => ("entity" in s ? { alias: s.alias, entity: s.entity, organization_id: organizationId } : s));
+}
 
 /** The tables an answer reads that already exist, by id — the card names them in words. */
 export function boundTableIds(applet: Pick<BuilderApplet, "sources">): string[] {
@@ -106,7 +115,7 @@ export function coerceBuildAnswer(value: unknown): BuildAnswer {
           isRecord(s.new_table) && str(s.new_table.name).trim()
             ? { alias: s.alias, new_table: s.new_table as unknown as NewTableDeclaration }
             : typeof s.entity === "string" && s.entity
-              ? { alias: s.alias, entity: s.entity }
+              ? { alias: s.alias, entity: s.entity, ...(typeof s.organization_id === "string" && s.organization_id ? { organization_id: s.organization_id } : {}) }
               : { alias: s.alias, table_id: str(s.table_id), organization_id: str(s.organization_id) },
         ]
       : [],
@@ -254,7 +263,7 @@ export async function saveBuiltApplet(
     entry: applet.entry,
     files: mergeFiles(applet.files, input.current?.files ?? null),
     pages: applet.pages,
-    sources: applet.sources,
+    sources: scopeEntitySources(applet.sources, input.organizationId),
     mandates: applet.mandates,
   };
   // The request, its run and the note live in the build's request history (metadata.build, written by
