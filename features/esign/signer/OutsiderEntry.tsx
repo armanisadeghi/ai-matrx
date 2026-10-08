@@ -163,47 +163,52 @@ export function OutsiderEntry() {
   async function verify(token: string, value: string | null): Promise<boolean> {
     setBusy("verify");
     setNotice(null);
+    let a: Record<string, unknown>;
     try {
-      const a = await post(dispatch, "verify", { token, code: value });
-      const session = str(a.session);
-      if (a.ok === true && session) {
-        store(token, session);
-        setBusy(null);
-        sign(session);
-        return true;
-      }
-      const reason = str(a.reason) ?? str(a.code);
-      if (reason === "code_locked") setNotice(lockedNotice(str(a.locked_until)));
-      else if (typeof a.attempts_left === "number") setNotice(`That code did not work. ${a.attempts_left} ${a.attempts_left === 1 ? "try" : "tries"} left.`);
-      else if (value === null) setPhase({ kind: "dead", message: str(a.message) ?? DEAD });
-      else setNotice("That code did not work. Check it, or send a new one.");
+      a = await post(dispatch, "verify", { token, code: value });
     } catch {
       setNotice(UNREACHABLE);
+      setBusy(null);
+      return false;
     }
-    // No `finally`: the React Compiler cannot compile a try/finally (it would skip this component).
+    // Read outside the try: the React Compiler cannot compile value blocks inside one.
     setBusy(null);
+    const session = str(a.session);
+    if (a.ok === true && session) {
+      store(token, session);
+      sign(session);
+      return true;
+    }
+    const reason = str(a.reason) ?? str(a.code);
+    if (reason === "code_locked") setNotice(lockedNotice(str(a.locked_until)));
+    else if (typeof a.attempts_left === "number") setNotice(`That code did not work. ${a.attempts_left} ${a.attempts_left === 1 ? "try" : "tries"} left.`);
+    else if (value === null) setPhase({ kind: "dead", message: str(a.message) ?? DEAD });
+    else setNotice("That code did not work. Check it, or send a new one.");
     return false;
   }
 
   async function open(token: string) {
     setPhase({ kind: "loading" });
+    let a: Record<string, unknown>;
     try {
-      const a = await post(dispatch, "open", { token });
-      if (a.ok !== true) {
-        setPhase({ kind: "dead", message: str(a.message) ?? DEAD });
-        return;
-      }
-      setLanding(landingOf(a));
-      const factor = factorOf(a);
-      if (factor === "none") {
-        if (!(await verify(token, null))) setPhase((p) => (p.kind === "loading" ? { kind: "dead", message: DEAD } : p));
-        return;
-      }
-      setPhase({ kind: "code", factor, masked: str(a.masked_target), sent: factor === "access_code" });
+      a = await post(dispatch, "open", { token });
     } catch {
       setPhase({ kind: "dead", message: UNREACHABLE });
+      return;
     }
+    if (a.ok !== true) {
+      setPhase({ kind: "dead", message: str(a.message) ?? DEAD });
+      return;
+    }
+    setLanding(landingOf(a));
+    const factor = factorOf(a);
+    if (factor === "none") {
+      if (!(await verify(token, null))) setPhase((p) => (p.kind === "loading" ? { kind: "dead", message: DEAD } : p));
+      return;
+    }
+    setPhase({ kind: "code", factor, masked: str(a.masked_target), sent: factor === "access_code" });
   }
+
 
   // Opening the link runs once per page (an effect event: it reads the latest state, never re-runs).
   const openOnce = useEffectEvent(() => {
@@ -224,14 +229,17 @@ export function OutsiderEntry() {
   async function sendCode(token: string) {
     setBusy("send");
     setNotice(null);
+    let a: Record<string, unknown>;
     try {
-      const a = await post(dispatch, "code", { token });
-      if (a.ok !== true) setNotice(a.reason === "code_locked" ? lockedNotice(str(a.locked_until)) : (str(a.message) ?? DEAD));
-      else if (a.no_code_required === true) await verify(token, null);
-      else setPhase((p) => (p.kind === "code" ? { ...p, sent: true } : p));
+      a = await post(dispatch, "code", { token });
     } catch {
       setNotice(UNREACHABLE);
+      setBusy((b) => (b === "send" ? null : b));
+      return;
     }
+    if (a.ok !== true) setNotice(a.reason === "code_locked" ? lockedNotice(str(a.locked_until)) : (str(a.message) ?? DEAD));
+    else if (a.no_code_required === true) await verify(token, null);
+    else setPhase((p) => (p.kind === "code" ? { ...p, sent: true } : p));
     setBusy((b) => (b === "send" ? null : b));
   }
 

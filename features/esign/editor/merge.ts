@@ -1,35 +1,87 @@
 // features/esign/editor/merge.ts — three-way merge of two edits of one draft, by item id (CONTRACT §15).
 // Documents, recipients, fields and groups are keyed; scalar settings: mine wins. A change to the
 // SAME item by both sides is a conflict the sender resolves ("Keep mine / Take theirs") — never a
-// silent discard.
+// silent discard. Fully typed against the contract (verify B2: no casts).
 
-import type { EnvelopeDraftV1 } from "../contract/draft";
+import type { DraftField, DraftGroup, DraftRecipient, EnvelopeDraftV1 } from "../contract/draft";
 
-type ArrayKey = "documents" | "recipients" | "fields" | "groups";
-const ARRAYS: { key: ArrayKey; id: (x: never) => string }[] = [
-  { key: "documents", id: (x: { key: string }) => x.key },
-  { key: "recipients", id: (x: { key: string }) => x.key },
-  { key: "fields", id: (x: { id: string }) => x.id },
-  { key: "groups", id: (x: { id: string }) => x.id },
-] as never;
+type ItemOf = {
+  documents: EnvelopeDraftV1["documents"][number];
+  recipients: DraftRecipient;
+  fields: DraftField;
+  groups: DraftGroup;
+};
+type ArrayKey = keyof ItemOf;
 
-export interface DraftConflict {
-  array: ArrayKey;
-  id: string;
-  /** The server's copy of the item (null = they deleted it). */
-  theirs: unknown;
-  /** What it is, for the sentence. */
-  label: string;
-}
+export type DraftConflict = {
+  [K in ArrayKey]: {
+    array: K;
+    id: string;
+    /** The server's copy of the item (null = they deleted it). */
+    theirs: ItemOf[K] | null;
+    /** What it is, for the sentence. */
+    label: string;
+  };
+}[ArrayKey];
 
 const same = (a: unknown, b: unknown) => JSON.stringify(a) === JSON.stringify(b);
 
-function labelOf(array: ArrayKey, item: unknown): string {
-  const o = (item ?? {}) as Record<string, unknown>;
-  if (array === "fields") return String(o.label ?? "A field");
-  if (array === "recipients") return String(o.full_name || o.email || "A recipient");
-  if (array === "documents") return String(o.name ?? "A document");
-  return String(o.label ?? "A group");
+const ID: { [K in ArrayKey]: (x: ItemOf[K]) => string } = {
+  documents: (x) => x.key,
+  recipients: (x) => x.key,
+  fields: (x) => x.id,
+  groups: (x) => x.id,
+};
+const LABEL: { [K in ArrayKey]: (x: ItemOf[K]) => string } = {
+  documents: (x) => x.name || "A document",
+  recipients: (x) => x.full_name || x.email || "A recipient",
+  fields: (x) => x.label || "A field",
+  groups: (x) => x.label || "A group",
+};
+
+/** Per key of an object: mine when I changed it, else theirs. */
+function mergeObject<T extends object>(base: T, mine: T, theirs: T): T {
+  const out = { ...theirs };
+  for (const k of Object.keys({ ...theirs, ...mine }) as (keyof T)[]) {
+    out[k] = same(mine[k], base[k]) ? theirs[k] : mine[k];
+  }
+  return out;
+}
+
+function mergeList<K extends ArrayKey>(
+  array: K,
+  base: readonly ItemOf[K][],
+  mine: readonly ItemOf[K][],
+  theirs: readonly ItemOf[K][],
+  onConflict: (id: string, theirs: ItemOf[K] | null, label: string) => void,
+): ItemOf[K][] {
+  const idOf: (x: ItemOf[K]) => string = ID[array];
+  const labelOf: (x: ItemOf[K]) => string = LABEL[array];
+  const pick = (list: readonly ItemOf[K][]) => new Map(list.map((x) => [idOf(x), x] as const));
+  const b = pick(base);
+  const m = pick(mine);
+  const t = pick(theirs);
+  const out: ItemOf[K][] = [];
+  const seen = new Set<string>();
+  // Their order first, then what only I have.
+  for (const itemId of [...t.keys(), ...m.keys()]) {
+    if (seen.has(itemId)) continue;
+    seen.add(itemId);
+    const bi = b.get(itemId);
+    const mi = m.get(itemId);
+    const ti = t.get(itemId);
+    let take: ItemOf[K] | undefined;
+    if (same(mi, bi)) take = ti; // I did not touch it: their version (or their delete)
+    else if (same(ti, bi)) take = mi; // they did not touch it: mine
+    else if (same(mi, ti)) take = mi;
+    else {
+      take = mi; // both changed: keep mine until the sender says otherwise
+      const shown = mi ?? ti;
+      onConflict(itemId, ti ?? null, shown ? labelOf(shown) : "An item");
+    }
+    if (take !== undefined) out.push(take);
+  }
+  return out;
 }
 
 export function mergeDrafts(
@@ -38,61 +90,39 @@ export function mergeDrafts(
   theirs: EnvelopeDraftV1,
 ): { merged: EnvelopeDraftV1; conflicts: DraftConflict[] } {
   const conflicts: DraftConflict[] = [];
-  const merged: Record<string, unknown> = { schema_version: 1 };
+  const merged: EnvelopeDraftV1 = {
+    schema_version: 1,
+    title: same(mine.title, base.title) ? theirs.title : mine.title,
+    email_subject: same(mine.email_subject, base.email_subject) ? theirs.email_subject : mine.email_subject,
+    message: same(mine.message, base.message) ? theirs.message : mine.message,
+    settings: mergeObject(base.settings, mine.settings, theirs.settings),
+    documents: mergeList("documents", base.documents, mine.documents, theirs.documents, (id, t, label) => conflicts.push({ array: "documents", id, theirs: t, label })),
+    recipients: mergeList("recipients", base.recipients, mine.recipients, theirs.recipients, (id, t, label) => conflicts.push({ array: "recipients", id, theirs: t, label })),
+    fields: mergeList("fields", base.fields, mine.fields, theirs.fields, (id, t, label) => conflicts.push({ array: "fields", id, theirs: t, label })),
+    groups: mergeList("groups", base.groups, mine.groups, theirs.groups, (id, t, label) => conflicts.push({ array: "groups", id, theirs: t, label })),
+  };
+  return { merged, conflicts };
+}
 
-  // Scalars: mine wins when I changed it, else theirs.
-  for (const k of ["title", "email_subject", "message"] as const) {
-    merged[k] = same(mine[k], base[k]) ? theirs[k] : mine[k];
-  }
-  const settings: Record<string, unknown> = {};
-  for (const k of Object.keys({ ...theirs.settings, ...mine.settings }) as (keyof EnvelopeDraftV1["settings"])[]) {
-    settings[k] = same(mine.settings[k], base.settings[k]) ? theirs.settings[k] : mine.settings[k];
-  }
-  merged.settings = settings;
-
-  for (const { key, id } of ARRAYS) {
-    const pick = (list: unknown[]) => new Map(list.map((x) => [id(x as never), x]));
-    const b = pick(base[key] as unknown[]);
-    const m = pick(mine[key] as unknown[]);
-    const t = pick(theirs[key] as unknown[]);
-    const out: unknown[] = [];
-    const seen = new Set<string>();
-    // Their order first, then what only I have.
-    const order = [...t.keys(), ...m.keys()];
-    for (const itemId of order) {
-      if (seen.has(itemId)) continue;
-      seen.add(itemId);
-      const bi = b.get(itemId);
-      const mi = m.get(itemId);
-      const ti = t.get(itemId);
-      let take: unknown;
-      if (same(mi, bi)) take = ti; // I did not touch it: their version (or their delete)
-      else if (same(ti, bi)) take = mi; // they did not touch it: mine
-      else if (same(mi, ti)) take = mi;
-      else {
-        take = mi; // both changed: keep mine until the sender says otherwise
-        conflicts.push({ array: key, id: itemId, theirs: ti ?? null, label: labelOf(key, mi ?? ti) });
-      }
-      if (take !== undefined) out.push(take);
-    }
-    merged[key] = out;
-  }
-  return { merged: merged as unknown as EnvelopeDraftV1, conflicts };
+function putBack<K extends ArrayKey>(list: readonly ItemOf[K][], array: K, id: string, theirs: ItemOf[K] | null): ItemOf[K][] {
+  const idOf: (x: ItemOf[K]) => string = ID[array];
+  const next = [...list];
+  const at = next.findIndex((x) => idOf(x) === id);
+  if (theirs === null) {
+    if (at >= 0) next.splice(at, 1);
+  } else if (at >= 0) next[at] = theirs;
+  else next.push(theirs);
+  return next;
 }
 
 /** "Take theirs" for the conflicted items: put the server's copy back (or delete). */
 export function takeTheirs(draft: EnvelopeDraftV1, conflicts: readonly DraftConflict[]): EnvelopeDraftV1 {
-  const next = { ...draft } as Record<ArrayKey, unknown[]> & EnvelopeDraftV1;
-  const idOf = (array: ArrayKey, x: unknown) =>
-    array === "documents" || array === "recipients" ? (x as { key: string }).key : (x as { id: string }).id;
+  let next = draft;
   for (const c of conflicts) {
-    const list = [...(next[c.array] as unknown[])];
-    const at = list.findIndex((x) => idOf(c.array, x) === c.id);
-    if (c.theirs === null) {
-      if (at >= 0) list.splice(at, 1);
-    } else if (at >= 0) list[at] = c.theirs;
-    else list.push(c.theirs);
-    (next as Record<string, unknown>)[c.array] = list;
+    if (c.array === "documents") next = { ...next, documents: putBack(next.documents, "documents", c.id, c.theirs) };
+    else if (c.array === "recipients") next = { ...next, recipients: putBack(next.recipients, "recipients", c.id, c.theirs) };
+    else if (c.array === "fields") next = { ...next, fields: putBack(next.fields, "fields", c.id, c.theirs) };
+    else next = { ...next, groups: putBack(next.groups, "groups", c.id, c.theirs) };
   }
-  return next as EnvelopeDraftV1;
+  return next;
 }

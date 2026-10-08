@@ -15,7 +15,7 @@ import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { selectUserEmail, selectUserFullName, selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
 
-import type { EnvelopeDraftV1, EnvelopeTemplateV1 } from "../../contract/draft";
+import type { EnvelopeDraftV1 } from "../../contract/draft";
 import { makeRealEditorApi } from "../api/realApi";
 import { emptyDraft } from "../model";
 import { readMirror } from "../useDraftSync";
@@ -97,7 +97,8 @@ export function EditorHost({ source }: { source: Source }) {
       if (source.templateId) {
         const t = await api.getTemplate(source.templateId);
         if (!t) throw new Error("You do not have access to this template.");
-        const draft = { ...(t.composition as unknown as EnvelopeDraftV1), recipients: (t.composition as EnvelopeTemplateV1).recipients.map((r) => ({ ...r, has_access_code: false })) };
+        // A template carries no access codes: every recipient starts without one (the editor asks).
+        const draft: EnvelopeDraftV1 = { ...t.composition, recipients: t.composition.recipients.map((r) => ({ ...r, has_access_code: false })) };
         return { envelopeId: null, draft, confirmed: draft, revision: 0, restored: false, template: { id: t.id, name: t.name, version: t.version }, organizationId: t.organizationId } satisfies Loaded;
       }
       const d = emptyDraft();

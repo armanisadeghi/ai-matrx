@@ -45,7 +45,7 @@ type StoreCaller = {
 };
 
 function storeDoors(): StoreCaller {
-  return (createAdminClient() as unknown as { schema(name: string): StoreCaller }).schema("custom");
+  return createAdminClient().schema("custom");
 }
 
 /** Every state a signature request can be in. The STORE derives it; nothing here does. */

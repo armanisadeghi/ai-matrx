@@ -19,13 +19,13 @@ export function useTemplateRowActions(list: EntityListController<TemplateRow>): 
       title: `Delete ${row.name}?`,
       description: "Envelopes already made from it keep working. New ones cannot start from it.",
       confirmLabel: "Delete template",
-      tone: "destructive",
-    } as Parameters<typeof confirm>[0]);
+      variant: "destructive",
+    });
     if (!ok) return;
     try {
       await deleteTemplateRow(row.id);
       toast.success("Template deleted.");
-      (list as unknown as { refresh?: () => void }).refresh?.();
+      list.refresh();
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "The template could not be deleted.");
     }
