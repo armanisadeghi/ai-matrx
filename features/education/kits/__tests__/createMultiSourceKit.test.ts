@@ -110,3 +110,10 @@ describe("createMultiSourceKit", () => {
     expect(mockDeleteScope).toHaveBeenCalledWith(KIT);
   });
 });
+
+describe("createKitScope refusal", () => {
+  it("says the door's own reason instead of only 'Try again'", async () => {
+    mockCreateScope.mockResolvedValueOnce({ ok: false, error: { code: "internal", message: "A kit named Photosynthesis already exists here." } });
+    await expect(createMultiSourceKit({ orgId: ORG, title: "Photosynthesis", sources: [{ type: "file", id: "f", title: "N" }], artifacts: [] })).rejects.toThrow(/already exists here/);
+  });
+});

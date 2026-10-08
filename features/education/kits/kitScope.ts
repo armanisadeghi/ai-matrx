@@ -26,6 +26,7 @@ import { associationsService } from "@/features/scopes/service/associationsServi
 import { scopeStore } from "@/features/scopes/service/scopeStore";
 import { readScopeTypes, readScopesById, readTypeScopesPage } from "@/features/scopes/service/storeScopeReads";
 import { organizationsIAmIn } from "@/features/organizations/organizationsIAmIn";
+import { personSentence } from "@/lib/errors/writeFailure";
 import { isScopesRpcErr } from "@/features/scopes/types";
 import { peekHref } from "@/features/organizations/peek/peekHref";
 import { keepSource } from "@/features/sources/api/sourcesApi";
@@ -114,7 +115,11 @@ export async function createKitScope(orgId: string, name: string): Promise<KitSc
     // Kit names repeat ("Chapter 3"); the slug only has to be unique.
     slug: `kit-${crypto.randomUUID().slice(0, 12)}`,
   });
-  if (isScopesRpcErr(made)) throw new Error("Could not create the study kit. Try again.");
+  if (isScopesRpcErr(made)) {
+    // The door's own sentence when it gave one (a taken name, a refused grant), else the plain line.
+    const reason = personSentence(made.error.message);
+    throw new Error(reason ? `Could not create the study kit. ${reason}` : "Could not create the study kit. Try again.");
+  }
   return { id: made.data.id, name: clean, organizationId: orgId };
 }
 
