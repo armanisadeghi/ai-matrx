@@ -442,7 +442,10 @@ export function rescuePendingImports(file, text, root) {
   const prologue = code.match(/^(?:\s|\/\/[^\n]*|\/\*[\s\S]*?\*\/)*(?:(["'])use [a-z]+\1;?[ \t]*(?:\s|\/\/[^\n]*|\/\*[\s\S]*?\*\/)*?)*/);
   let at = 0;
   if (prologue) {
-    const directives = [...prologue[0].matchAll(/(["'])use [a-z]+\1;?/g)];
+    // Directives only — a comment that MENTIONS "use client" is blanked first (same length, so
+    // indices hold); matching inside it put the helper import inside a JSDoc (2026-10-08).
+    const code_only = prologue[0].replace(/\/\/[^\n]*|\/\*[\s\S]*?\*\//g, (c) => c.replace(/[^\n]/g, " "));
+    const directives = [...code_only.matchAll(/(["'])use [a-z]+\1;?/g)];
     if (directives.length) {
       const last = directives[directives.length - 1];
       at = last.index + last[0].length;
@@ -573,6 +576,9 @@ function selfTest() {
     // A file with no directive gets the helper at the very top.
     const plain = `import { PERMISSION_LEVEL_HINTS } from "@ai-matrx/chat";\nexport const x = PERMISSION_LEVEL_HINTS;\n`;
     const p2 = rescuePendingImports(file, plain, tmp);
+    const mention = `/**\n * That entry is marked "use client", so names are declared here.\n */\nexport { PERMISSION_LEVEL_HINTS } from "@ai-matrx/chat";\n`;
+    const p3 = rescuePendingImports(file, mention, tmp);
+    if (!p3.code.startsWith(`import { matrxPending as __matrxPending }`)) failures.push(`RED: helper placed inside a comment that mentions a directive:\n${p3.code}`);
     if (!p2.code.startsWith(`import { matrxPending as __matrxPending }`)) failures.push(`RED: helper not first in a directive-less file:\n${p2.code}`);
 
     // GREEN: published + installed → the file is left byte-identical.
