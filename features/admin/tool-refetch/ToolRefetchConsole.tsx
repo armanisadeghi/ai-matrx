@@ -63,6 +63,7 @@ import {
 } from "./service";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { readOf } from "@/components/read-state/ReadGate";
+import { ToolRefetchExplorer } from "./ToolRefetchExplorer";
 import { copyToClipboard } from "@/lib/clipboard/copy";
 
 /* ── formatters that refuse to invent a number ─────────────────────────────── */
@@ -726,6 +727,8 @@ export function ToolRefetchConsole() {
       />
 
       {/* Sources: chat.vw_tool_refetch_summary (all time), chat.vw_tool_refetch + chat.tool_call for windows. */}
+      {/* The same numbers drilled by tool, conversation and day (drill definition tool_refetch). */}
+      <ToolRefetchExplorer />
     </div>
   );
 }
