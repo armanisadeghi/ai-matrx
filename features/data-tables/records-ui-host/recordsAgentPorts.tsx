@@ -19,7 +19,8 @@
 
 import { useState, type ReactNode } from "react";
 import { MessageCircleQuestion } from "lucide-react";
-import { FORMULA_FUNCTIONS, type FormulaHelpAsk, type RecordsUiHost, type TableSettingsAgent } from "@ai-matrx/records-ui";
+import { type FormulaHelpAsk, type RecordsUiHost, type TableSettingsAgent } from "@ai-matrx/records-ui";
+import { FORMULA_FUNCTIONS } from "@ai-matrx/kit/formula";
 import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
 import { Button, Popover, PopoverContent, PopoverTrigger } from "@ai-matrx/design-system";
 import {
@@ -157,7 +158,7 @@ function TableSettingsLayer({ agent, children }: { agent: TableSettingsAgent; ch
     <SurfaceLayerBoundary>
       <SurfaceRuntimeProvider
         surfaceName={TABLE_SETTINGS_SURFACE_NAME}
-        getScope={() => tableSettingsScope(agent, FORMULA_FUNCTIONS)}
+        getScope={() => tableSettingsScope(agent, FORMULA_FUNCTIONS.map((fn) => fn.name))}
         isEditable
         getWriteHandlers={() => tableSettingsWriteHandlers(agent)}
       >
