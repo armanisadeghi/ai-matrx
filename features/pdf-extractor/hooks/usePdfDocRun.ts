@@ -58,7 +58,7 @@ export const PDF_RUN_LABEL = {
 export function readPdfRunFrame(
   envelope: MatrxStreamEnvelope,
   docId: string,
-): { label?: string; text?: string; appendText?: string } | null {
+): { label?: string; text?: string; appendText?: string; counter?: boolean; generic?: boolean } | null {
   const data = (envelope.data ?? null) as Record<string, unknown> | null;
   if (!data || typeof data !== "object") return null;
   switch (envelope.event) {
@@ -77,13 +77,23 @@ export function readPdfRunFrame(
       if (data.type === "pdf_page_extracted") {
         return { label: `Extracted page ${String(data.page_number)} of ${String(data.total_pages)}…` };
       }
-      if (data.type === "pdf_clean_started") return { label: PDF_RUN_LABEL.running };
+      if (data.type === "pdf_clean_started") return { label: PDF_RUN_LABEL.running, generic: true };
       if (data.kind === "content.processing.progress") {
         const forDoc = data.processed_document_id;
         if (forDoc && forDoc !== docId) return null;
         const stage = typeof data.stage === "string" ? data.stage : "processing";
         const message = typeof data.message === "string" ? data.message : "";
-        return { label: message ? `${stage}: ${message}` : stage };
+        const phase = typeof data.phase === "string" ? data.phase : "";
+        const current = typeof data.current === "number" ? data.current : 0;
+        const total = typeof data.total === "number" ? data.total : 0;
+        // A per-page frame is the live counter ("Cleaned page 32/48").
+        if (total > 0 && current > 0 && (phase === "page" || phase === "progress")) {
+          const base = message || `${stage} page`;
+          const tail = `${current}/${total}`;
+          return { label: base.includes(tail) ? base : `${base} ${tail}`, counter: true };
+        }
+        const label = message ? `${stage}: ${message}` : stage;
+        return phase === "heartbeat" || phase === "started" ? { label, generic: true } : { label };
       }
       return null;
     }
@@ -131,6 +141,36 @@ export function choosePdfRunTarget(
   return { requestId: saved.requestId };
 }
 
+const LOOKUP_SHARE_MS = 10_000;
+const sharedLookups = new Map<string, { at: number; promise: Promise<number> }>();
+
+/**
+ * One by-link lookup per doc: StrictMode's double effect, a re-render that
+ * flips the probe off and on, and desktop + mobile shells all share the same
+ * in-flight call (and a fresh answer for a few seconds). `fresh` (Retry) skips
+ * the share. A failure is never kept.
+ */
+export function lookupOwnRunCount(
+  run: () => Promise<number>,
+  docId: string,
+  fresh = false,
+  now: number = Date.now(),
+): Promise<number> {
+  const hit = sharedLookups.get(docId);
+  if (!fresh && hit && now - hit.at < LOOKUP_SHARE_MS) return hit.promise;
+  const promise = run();
+  sharedLookups.set(docId, { at: now, promise });
+  promise.catch(() => {
+    if (sharedLookups.get(docId)?.promise === promise) sharedLookups.delete(docId);
+  });
+  return promise;
+}
+
+/** Test seam. */
+export function resetSharedPdfRunLookups(): void {
+  sharedLookups.clear();
+}
+
 function phaseOf(status: ServerJobStatus | null): PdfDocRunPhase {
   switch (status) {
     case null:
@@ -175,12 +215,16 @@ export function usePdfDocRun(args: {
   const store = useAppStore();
   const [label, setLabel] = useState<string | null>(null);
   const [streamingText, setStreamingText] = useState<string | null>(null);
+  const hasCounter = useRef(false);
+  const labelRef = useRef<string | null>(null);
   const [trackedDoc, setTrackedDoc] = useState(docId);
   // When this document was opened here: a run that ended before it is old
   // news (no "Done", no reload); one that ended after it settled while we watched.
   const [openedAt, setOpenedAt] = useState(() => Date.now());
   if (trackedDoc !== docId) {
     setTrackedDoc(docId);
+    hasCounter.current = false;
+    labelRef.current = null;
     setOpenedAt(Date.now());
     setLabel(null);
     setStreamingText(null);
@@ -199,15 +243,22 @@ export function usePdfDocRun(args: {
     void (async () => {
       for (let attempt = 0; attempt <= LOOKUP_RETRY_MS.length; attempt++) {
         try {
-          const view = await getRuntimeOperationsByLink(
-            createMatrxTransport(store.getState, { source: "pdf-run-reconnect" }),
-            "processed_document",
+          const count = await lookupOwnRunCount(
+            async () => {
+              const view = await getRuntimeOperationsByLink(
+                createMatrxTransport(store.getState, { source: "pdf-run-reconnect" }),
+                "processed_document",
+                docId,
+                { limit: 5 },
+              );
+              return countOwnRuns(view?.operations, docId);
+            },
             docId,
-            { limit: 5, signal: controller.signal },
+            nonce > 0 || attempt > 0,
           );
           if (controller.signal.aborted) return;
           setProbeFailed(null);
-          setLinkProbe({ docId, count: countOwnRuns(view?.operations, docId) });
+          setLinkProbe({ docId, count });
           return;
         } catch {
           if (controller.signal.aborted) return;
@@ -231,12 +282,23 @@ export function usePdfDocRun(args: {
       if (!docId) return;
       const read = readPdfRunFrame(envelope, docId);
       if (!read) return;
-      if (read.label) setLabel(read.label);
+      if (read.label) {
+        // Richer live progress is never overwritten by a generic frame or the
+        // run record's plain "Cleaning…": a counter holds until a newer one.
+        const { label: next, counter, generic } = read;
+        if (counter) hasCounter.current = true;
+        else if (generic && (hasCounter.current || labelRef.current)) return;
+        else if (!generic) hasCounter.current = false;
+        labelRef.current = next;
+        setLabel(next);
+      }
       if (read.text !== undefined) setStreamingText(read.text);
       if (read.appendText) setStreamingText((prev) => (prev ?? "") + read.appendText);
     },
     reloadSavedResult: async ({ operation }) => {
       if (docId) clearPdfRunRequest(docId, operation?.request_id ?? saved?.requestId);
+      hasCounter.current = false;
+      labelRef.current = null;
       setLabel(null);
       setStreamingText(null);
       if (endedBefore(operation?.ended_at, openedAt)) return;
@@ -263,7 +325,9 @@ export function usePdfDocRun(args: {
     return () => clearTimeout(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps -- keyed on the failure itself
   }, [lookupFailing, job.error, docId]);
-  const unavailable = !localStreaming && (probeFailed === docId || followFailed === docId);
+  // Only a real, open doc can be "unavailable" — no doc, no lookup, no banner.
+  const unavailable =
+    Boolean(docId) && !localStreaming && (probeFailed === docId || followFailed === docId);
   const recheck = () => {
     followAttempts.current = 0;
     setProbeFailed(null);

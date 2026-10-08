@@ -1382,6 +1382,25 @@ function TextPane({
         onTogglePane={onTogglePane}
         onCopyAll={buildPaneText}
         copyAllLabel={`Copy all ${field === "cleaned" ? "cleaned" : "raw"} pages`}
+        actions={
+          field === "cleaned" ? (
+            <button
+              type="button"
+              data-testid="pdf-pane-ai-clean"
+              onClick={() => void onRunAiClean()}
+              disabled={aiCleanRunning}
+              className="p-0.5 text-muted-foreground/60 hover:text-foreground rounded transition-colors disabled:opacity-50"
+              title={aiCleanRunning ? "AI clean running" : "Run AI clean on this document"}
+              aria-label="Run AI clean on this document"
+            >
+              {aiCleanRunning ? (
+                <Loader2 className="w-3 h-3 animate-spin" />
+              ) : (
+                <AGENT_ICON className="w-3 h-3" />
+              )}
+            </button>
+          ) : undefined
+        }
       />
 
       {/* Suppress the blank-pages banner while a stream is mid-flight —
@@ -1971,18 +1990,21 @@ export function PaneHeader({
   onTogglePane,
   onCopyAll,
   copyAllLabel,
+  actions,
 }: {
   title: string;
   subtitle: string;
   icon: React.ReactNode;
   onTogglePane?: () => void;
+  /** Extra icon buttons in the pane's own action cluster (before Copy). */
+  actions?: React.ReactNode;
   /** Returns the pane's text (markdown). When provided, renders THE split Copy next to the
    *  EyeOff toggle: one click copies the person's default flavor, the chevron offers markdown or
    *  plain text (guard: features/source-studio/__tests__/source-text-copies-split.test.ts). */
   onCopyAll?: () => string;
   copyAllLabel?: string;
 }) {
-  const hasActions = !!(onCopyAll || onTogglePane);
+  const hasActions = !!(onCopyAll || onTogglePane || actions);
   return (
     // Canonical studio sub-header row — same px-3 pt-2 pb-1.5 / h-7 envelope
     // as the sidebar's Files/Pages toggle and the inspector's section nav,
@@ -2002,6 +2024,7 @@ export function PaneHeader({
         )}
         {hasActions && (
           <div className="ml-auto flex shrink-0 items-center gap-0.5">
+            {actions}
             {onCopyAll && (
               <CopySplitButton
                 size="xs"

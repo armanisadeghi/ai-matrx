@@ -17,7 +17,7 @@ function renderHook<T>(fn: () => T): { result: { current: T } } {
   act(() => root.render(createElement(Probe)));
   return { result };
 }
-import { countOwnRuns, usePdfDocRun } from "../usePdfDocRun";
+import { countOwnRuns, resetSharedPdfRunLookups, usePdfDocRun } from "../usePdfDocRun";
 
 const getByLink = jest.fn();
 const jobState: { status: string | null; error: unknown; reconnect: jest.Mock } = {
@@ -42,6 +42,7 @@ const DOC = "8a1f0c2e-6b7d-4e5f-9a0b-1c2d3e4f5a6b";
 beforeEach(() => {
   jest.useFakeTimers();
   getByLink.mockReset();
+  resetSharedPdfRunLookups();
   jobState.status = null;
   jobState.error = null;
   window.sessionStorage.clear();
@@ -78,4 +79,28 @@ it("retries a failed lookup, stays unanswered, then says unavailable", async () 
   expect(getByLink).toHaveBeenCalledTimes(4);
   expect(result.current.phase).toBe("unavailable");
   expect(result.current.answered).toBe(false);
+});
+
+it("no open doc: no lookup, and never 'unavailable'", async () => {
+  const { result } = renderHook(() =>
+    usePdfDocRun({ docId: null, localStreaming: false, onSettled: jest.fn() }),
+  );
+  await act(async () => {});
+  for (const ms of [1000, 2000, 4000, 8000]) {
+    await act(async () => {
+      jest.advanceTimersByTime(ms);
+    });
+  }
+  expect(getByLink).not.toHaveBeenCalled();
+  expect(result.current.phase).not.toBe("unavailable");
+});
+
+it("looks a doc's run up once even when several shells / double effects ask", async () => {
+  getByLink.mockResolvedValue({ operations: [] });
+  const mount = () =>
+    renderHook(() => usePdfDocRun({ docId: DOC, localStreaming: false, onSettled: jest.fn() }));
+  mount();
+  mount(); // desktop + mobile, or a StrictMode remount
+  await act(async () => {});
+  expect(getByLink).toHaveBeenCalledTimes(1);
 });
