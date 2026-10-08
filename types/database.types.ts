@@ -4202,6 +4202,7 @@ export type Database = {
           avg_execution_time_ms: number | null
           category: string | null
           component_language: string
+          content_version: number
           created_at: string
           created_by: string | null
           custom_fields: Json
@@ -4260,6 +4261,7 @@ export type Database = {
           avg_execution_time_ms?: number | null
           category?: string | null
           component_language?: string
+          content_version?: number
           created_at?: string
           created_by?: string | null
           custom_fields?: Json
@@ -4318,6 +4320,7 @@ export type Database = {
           avg_execution_time_ms?: number | null
           category?: string | null
           component_language?: string
+          content_version?: number
           created_at?: string
           created_by?: string | null
           custom_fields?: Json
@@ -4761,6 +4764,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      applet_has_content: {
+        Args: { p_entry: string; p_files: Json }
+        Returns: boolean
+      }
       applet_kind: {
         Args: { p_applet_id: string; p_kind: string; p_platform?: string }
         Returns: Json
@@ -32318,7 +32325,12 @@ export type Database = {
         Args: { p_actions: Json; p_organization_id: string; p_table_id: string }
         Returns: Json
       }
-      _action_coerce: { Args: { p_field: Json; p_value: Json }; Returns: Json }
+      _action_coerce:
+        | { Args: { p_field: Json; p_value: Json }; Returns: Json }
+        | {
+            Args: { p_field: Json; p_organization_id: string; p_value: Json }
+            Returns: Json
+          }
       _agent_change_gate: {
         Args: {
           p_door: string
@@ -33300,6 +33312,10 @@ export type Database = {
       _table_share_invite_payload: {
         Args: { p_invitation_id: string }
         Returns: Json
+      }
+      _table_takes_what_is_built_on_it: {
+        Args: { p_event: string; p_organization_id: string; p_table_id: string }
+        Returns: number
       }
       _take_op_id: { Args: { p_doc: Json; p_door: string }; Returns: Json }
       _template_agent: {
@@ -34834,6 +34850,7 @@ export type Database = {
               visibility: string
             }[]
           }
+      day_zone: { Args: { p_organization_id?: string }; Returns: string }
       declared_conversation: { Args: never; Returns: string }
       decoration_colors: { Args: never; Returns: string[] }
       decoration_rule_ops: {
@@ -35744,6 +35761,7 @@ export type Database = {
           state: string
         }[]
       }
+      form_knobs: { Args: { p_organization_id: string }; Returns: Json }
       form_look_options: {
         Args: { p_organization_id: string; p_presentation?: Json }
         Returns: Json
@@ -35821,6 +35839,15 @@ export type Database = {
       form_redirect_refusal: {
         Args: { p_organization_id: string; p_url: string }
         Returns: string
+      }
+      form_respondent_copy: {
+        Args: {
+          p_form_id: string
+          p_organization_id: string
+          p_record_id: string
+          p_submission_id: string
+        }
+        Returns: Json
       }
       form_restore: {
         Args: { p_form_id: string; p_organization_id: string }
@@ -37779,6 +37806,10 @@ export type Database = {
           undoable: boolean
           version: number
         }[]
+      }
+      record_page_bundle: {
+        Args: { p_organization_id: string; p_record_id: string }
+        Returns: Json
       }
       record_platform_keys: { Args: never; Returns: string[] }
       record_relation_edges: {
@@ -46914,6 +46945,14 @@ export type Database = {
         Returns: Json
       }
       envelope_document_ids: { Args: { p_envelope_id: string }; Returns: Json }
+      envelope_draft_recipients: {
+        Args: { p_envelope_id: string }
+        Returns: {
+          full_name: string
+          ord: number
+          role: string
+        }[]
+      }
       envelope_sender: { Args: { p_envelope_id: string }; Returns: Json }
       esign_draft_create: {
         Args: {
@@ -75366,6 +75405,7 @@ export type Database = {
           token: string
         }[]
       }
+      access_shadow_status: { Args: never; Returns: Json }
       accessible_child_parents: {
         Args: { p_child_type: string }
         Returns: {
@@ -75956,7 +75996,12 @@ export type Database = {
         Returns: boolean
       }
       is_trusted_backend: { Args: never; Returns: boolean }
+      kernel_set_form_on: { Args: { p_person: string }; Returns: boolean }
       kernel_shadow_on: { Args: { p_person: string }; Returns: boolean }
+      kernel_shadow_sweep: {
+        Args: { p_people?: number; p_tables?: number }
+        Returns: Json
+      }
       lane_of: {
         Args: { p_resource_id: string; p_resource_type: string }
         Returns: string
@@ -80007,6 +80052,21 @@ export type Database = {
           subject_user_id: string
           version_live: boolean
         }[]
+      }
+      run_history: {
+        Args: {
+          p_agent_id?: string
+          p_desc?: boolean
+          p_limit?: number
+          p_mandate_key?: string
+          p_offset?: number
+          p_org_id?: string
+          p_sort?: string
+          p_status?: string
+          p_user_id?: string
+          p_view?: string
+        }
+        Returns: Json
       }
       sanitize_app_segment: { Args: { p_seg: string }; Returns: string }
       sanitize_shortcut_segment: { Args: { p_seg: string }; Returns: string }
@@ -91629,6 +91689,26 @@ export type Database = {
         }
         Returns: Json
       }
+      _drill_fine_agg_sql: {
+        Args: {
+          p_cnt: string
+          p_col: string
+          p_filter?: string
+          p_measure: Json
+          p_once: string
+        }
+        Returns: string
+      }
+      _drill_fine_ratio_sql: {
+        Args: {
+          p_cnt: string
+          p_filter?: string
+          p_measure: Json
+          p_once: string
+          p_prefix: string
+        }
+        Returns: string
+      }
       _drill_fk: {
         Args: {
           p_column: string
@@ -93143,14 +93223,25 @@ export type Database = {
       drill_calendar: { Args: { p_organization_id: string }; Returns: Json }
       drill_declared: { Args: { p_key: string }; Returns: Json }
       drill_declared_all: { Args: never; Returns: Json }
+      drill_def__account_roster: { Args: never; Returns: Json }
       drill_def__agents_by_model: { Args: never; Returns: Json }
       drill_def__ai_calls: { Args: never; Returns: Json }
       drill_def__ai_usage: { Args: never; Returns: Json }
       drill_def__ai_usage_executions: { Args: never; Returns: Json }
+      drill_def__app_log: { Args: never; Returns: Json }
+      drill_def__crm_deals: { Args: never; Returns: Json }
+      drill_def__cx_requests: { Args: never; Returns: Json }
+      drill_def__hr_timesheets: { Args: never; Returns: Json }
       drill_def__kg_cost: { Args: never; Returns: Json }
+      drill_def__ops_issue_events: { Args: never; Returns: Json }
+      drill_def__rs_analyses: { Args: never; Returns: Json }
+      drill_def__rs_syntheses: { Args: never; Returns: Json }
+      drill_def__system_errors: { Args: never; Returns: Json }
+      drill_def__tool_calls: { Args: never; Returns: Json }
       drill_def__tool_refetch: { Args: never; Returns: Json }
       drill_def__user_acquisition: { Args: never; Returns: Json }
       drill_def__workflow_runs: { Args: never; Returns: Json }
+      drill_def__write_failures: { Args: never; Returns: Json }
       drill_definition_problems: { Args: { p_def: Json }; Returns: string[] }
       drill_describe: {
         Args: { p_organization_id: string; p_source: Json }
@@ -131105,6 +131196,22 @@ export type Database = {
       }
     }
     Views: {
+      _account_facts: {
+        Row: {
+          blocked: boolean | null
+          campaign: string | null
+          cost: number | null
+          created_at: string | null
+          identity_state: string | null
+          person_id: string | null
+          plan_key: string | null
+          plan_name: string | null
+          referrer_host: string | null
+          requests: number | null
+          traffic_kind: string | null
+        }
+        Relationships: []
+      }
       _acquisition_facts: {
         Row: {
           blocked: boolean | null

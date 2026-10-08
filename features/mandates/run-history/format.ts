@@ -9,6 +9,7 @@ import { currentCostUnit } from "@/components/cost/costUnit";
 
 export const STATUS_WORDS: Record<RunStatus, string> = {
   succeeded: "Succeeded",
+  warned: "Warned",
   failed: "Failed",
   stopped: "Stopped",
   waiting: "Waiting",
@@ -18,6 +19,7 @@ export const STATUS_WORDS: Record<RunStatus, string> = {
 /** Dot colour per status — semantic tokens only. */
 export const STATUS_DOT: Record<RunStatus, string> = {
   succeeded: "bg-success",
+  warned: "bg-warning",
   failed: "bg-destructive",
   stopped: "bg-muted-foreground",
   waiting: "bg-warning",

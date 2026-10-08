@@ -1,7 +1,8 @@
 // features/mandates/run-history/service.ts
 //
-// THE ONE READ of a mandate's run history — `public.mnd_run_history`
-// (migrations/mnd_run_history_2026_09_27.sql). No new log: the database reads
+// THE ONE READ of run history — `mandate.run_history` (successor of
+// public.mnd_run_history, 2026-10-07): one mandate's runs, or one agent's runs
+// across every mandate and direct use. No new log: the database reads
 // the records every funnel already writes (chat.user_request for agent/chat
 // starts, held code calls and `run_mandate`; workflow.run for every workflow
 // Holder run). Which level decided each run is stamped by aidream at the
@@ -19,11 +20,12 @@ import { MandateDoorError } from "../door-error";
 import type { AnyMandateKey } from "@ai-matrx/agents/mandates";
 
 export type RunHistoryView = "mine" | "org" | "platform";
-export type RunStatus = "succeeded" | "failed" | "stopped" | "waiting" | "running";
+export type RunStatus = "succeeded" | "warned" | "failed" | "stopped" | "waiting" | "running";
 export type RunRung = "system" | "org" | "user" | "run";
 
 export const RUN_STATUSES: readonly RunStatus[] = [
   "succeeded",
+  "warned",
   "failed",
   "stopped",
   "waiting",
@@ -53,6 +55,11 @@ export interface MandateRun {
   outputMissingKeys: string[];
   cost: number | null;
   durationMs: number | null;
+  tokens: number | null;
+  /** The mandate this run served; null = the agent was used directly. */
+  mandateKey: string | null;
+  /** The run's answer, one line (≤240 chars); null when none was kept. */
+  outputPreview: string | null;
   conversationId: string | null;
   /** The conversation holds messages to read (a background run keeps none). */
   hasTranscript: boolean;
@@ -90,13 +97,29 @@ export class MandateRunHistoryError extends MandateDoorError {
   }
 }
 
-export async function fetchMandateRuns(query: MandateRunQuery): Promise<MandateRunPage> {
-  const { data, error } = await supabase.rpc("mnd_run_history", {
-    p_mandate_key: query.mandateKey,
+export function fetchMandateRuns(query: MandateRunQuery): Promise<MandateRunPage> {
+  return fetchRuns({ ...query, scope: { mandateKey: query.mandateKey } });
+}
+
+export type RunSort = "started_at" | "duration" | "cost" | "status" | "level";
+
+export interface RunsQuery extends Omit<MandateRunQuery, "mandateKey"> {
+  scope: { mandateKey: AnyMandateKey } | { agentId: string };
+  sort?: RunSort;
+  descending?: boolean;
+}
+
+export async function fetchRuns(query: RunsQuery): Promise<MandateRunPage> {
+  const { data, error } = await supabase.schema("mandate").rpc("run_history", {
+    ...("mandateKey" in query.scope
+      ? { p_mandate_key: query.scope.mandateKey }
+      : { p_agent_id: query.scope.agentId }),
     p_view: query.view,
     ...(query.organizationId ? { p_org_id: query.organizationId } : {}),
     ...(query.userId ? { p_user_id: query.userId } : {}),
     ...(query.status ? { p_status: query.status } : {}),
+    p_sort: query.sort ?? "started_at",
+    p_desc: query.descending ?? true,
     p_limit: query.limit ?? 25,
     p_offset: query.offset ?? 0,
   });
@@ -193,6 +216,9 @@ function parseRun(value: Json): MandateRun | null {
     outputMissingKeys: missing,
     cost: num(value.cost),
     durationMs: num(value.duration_ms),
+    tokens: num(value.tokens),
+    mandateKey: str(value.mandate_key),
+    outputPreview: str(value.output_preview),
     conversationId: str(value.conversation_id),
     hasTranscript: value.has_transcript === true,
   };
