@@ -11,7 +11,7 @@
 import { useState } from "react";
 import CodeBlock from "@ai-matrx/rich-content/code-block/CodeBlock";
 import { Badge, DisclosureHeader } from "@ai-matrx/design-system/controls";
-import { AppWindow, Code2, Database, FileText, Table2, Workflow } from "lucide-react";
+import { AppWindow, Code2, Database, FileCode2, FileText, Table2, Workflow } from "lucide-react";
 
 import type { AppletBuildResultData } from "@/features/content-ir/kinds/applet-build-result";
 import { useSourceTableNames } from "@/features/applets/hooks/useSourceTableNames";
@@ -92,6 +92,24 @@ export default function AppletBuildResultBlock({ serverData }: { serverData?: un
       ) : null}
 
       {data.note ? <p className="text-sm">{data.note}</p> : null}
+
+      {building && data.files.length > 0 ? (
+        // The files as they are written — the window moves the whole build, never a spinner.
+        <div className="flex flex-col gap-1" data-applet-build-writing="">
+          <span className="text-xs font-medium text-muted-foreground">Writing</span>
+          <ul className="flex flex-col gap-1">
+            {data.files.map((file, i) => (
+              <li key={file.name} className="flex min-w-0 items-center gap-2 text-sm">
+                <FileCode2 className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+                <span className="truncate">{file.name}</span>
+                <span className="shrink-0 text-xs text-muted-foreground">
+                  {file.source.split("\n").length} lines{i === data.files.length - 1 ? " so far" : ""}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      ) : null}
 
       {!building && data.files.length > 0 ? (
         <div className="flex flex-col gap-2">
