@@ -19,7 +19,7 @@ jest.mock("@/features/files/handler/handler", () => ({
 
 import "../pictureKindPrinters";
 import { captureFlowGraph, extractSvgMarkup, flowNodeBoxes, parseTranslate, unionBounds } from "../pictureEngine";
-import { SVG_OUTPUT } from "../pictureKindPrinters";
+import { SVG_OUTPUT, readDiagram } from "../pictureKindPrinters";
 
 const SVG = '<svg viewBox="0 0 40 20"><rect width="40" height="20" fill="#09f"/><text x="2" y="12">Hello</text></svg>';
 const ctx = (type: string, raw: string, title?: string) => ({ type, raw, ...(title ? { title } : {}) });
@@ -161,5 +161,30 @@ describe("presentation: every slide, one picture per page", () => {
   it("a deck with no slides says so", async () => {
     const result = await out("presentation", { slides: [] });
     expect(result && "notice" in result ? result.notice : "").toMatch(/Presentation not printed/);
+  });
+});
+
+describe("diagram: the shape stored in a real message (chat.message 0eb2957b, Diagram 9)", () => {
+  const STORED = `{
+  "diagram": {
+    "type": "process",
+    "title": "From Photons to 'Whoa, That's Moving'",
+    "nodes": [
+      {"id": "root", "label": "Light Enters Eye", "type": "start"},
+      {"id": "retina", "label": "Retina Captures Image", "type": "data"},
+      {"id": "illusion", "label": "Illusion Experienced", "type": "end"}
+    ],
+    "edges": [{"from": "root", "to": "retina"}, {"from": "retina", "to": "illusion"}]
+  }
+}`;
+  it("reads the wrapped {diagram:{nodes, edges from/to}} form — never 'reading map of undefined'", async () => {
+    const diagram = await readDiagram(STORED);
+    expect(diagram.nodes.map((n) => n.id)).toEqual(["root", "retina", "illusion"]);
+    expect(diagram.edges).toHaveLength(2);
+    // The same payload already parsed into an object (a canvas tab's data).
+    expect((await readDiagram(JSON.parse(STORED))).nodes).toHaveLength(3);
+  });
+  it("a payload with no nodes says so", async () => {
+    await expect(readDiagram('{"diagram":{"title":"x"}}')).rejects.toThrow(/no nodes/);
   });
 });

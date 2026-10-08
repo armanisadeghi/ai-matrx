@@ -9,7 +9,7 @@
  */
 
 import { registerBlockPrinter, type BlockPrinter } from "@ai-matrx/print/core";
-import { flashcardsPrinter } from "@ai-matrx/print/flashcards";
+import { flashcardsAdapterPrinter } from "@/features/canvas/output/flashcardsPrinter";
 import { quizPrinter } from "@/components/mardown-display/blocks/quiz/quiz-printer";
 import { mathPrinter } from "@/components/mardown-display/blocks/math/math-printer";
 import { blobToDataUrl, capturePage, hasPageCaptureEngine, PAGE_IMAGE_UNAVAILABLE } from "@/features/canvas/output/capturePort";
@@ -47,7 +47,7 @@ export const htmlPagePrinter: BlockPrinter = {
   },
 };
 
-registerBlockPrinter(["flashcards", "flashcard_set"], flashcardsPrinter);
+registerBlockPrinter(["flashcards", "flashcard_set"], flashcardsAdapterPrinter);
 registerBlockPrinter(["quiz", "quiz_set"], quizPrinter);
 registerBlockPrinter(["math_problem"], mathPrinter);
 registerBlockPrinter(["html"], htmlPagePrinter);

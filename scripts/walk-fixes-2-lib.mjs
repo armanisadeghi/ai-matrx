@@ -15,6 +15,12 @@ export async function seat(member = false, next = "/data") {
   const origin = new URL(url).origin;
   const browser = await chromium.launch({ headless: true });
   const context = await browser.newContext({ viewport: { width: Number(process.env.W ?? 2200), height: 1100 } });
+  // The dev server's compile-error overlay belongs to other lanes' in-progress edits in this shared
+  // checkout, not to the page under test; it is hidden so it cannot swallow clicks.
+  await context.addInitScript(() => {
+    const hide = () => { const st = document.createElement("style"); st.textContent = "nextjs-portal{display:none!important}"; document.documentElement.appendChild(st); };
+    if (document.documentElement) hide(); else document.addEventListener("DOMContentLoaded", hide);
+  });
   const page = await context.newPage();
   const errors = [];
   page.on("console", (m) => { if (m.type() === "error" && !/_next\/hmr|WebSocket/.test(m.text())) errors.push(m.text().slice(0, 400)); });

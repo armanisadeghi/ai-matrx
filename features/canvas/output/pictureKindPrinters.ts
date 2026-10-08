@@ -205,15 +205,30 @@ export const chartPrinter: BlockPrinter = {
 
 const DIAGRAM_STAGE = { width: 1600, height: 1000 } as const;
 
+/**
+ * The diagram a block's payload describes, read the way the renderer reads it (`parseDiagramJSON`
+ * over the JSON text): the stored shape is `{ "diagram": { nodes, edges: [{from,to}] } }`, a bare
+ * spec, or already-parsed data — never assume `.nodes` is on the top level.
+ */
+export async function readDiagram(payload: unknown) {
+  const { materializeDiagramDefaults, parseDiagramJSON } = await import("@ai-matrx/rich-content/display/blocks/diagram/parseDiagramJSON");
+  const text = typeof payload === "string" ? payload : JSON.stringify(payload ?? null);
+  let parsed: ReturnType<typeof parseDiagramJSON> | null = null;
+  try {
+    parsed = parseDiagramJSON(text);
+  } catch {
+    parsed = null;
+  }
+  if (!parsed || !Array.isArray((parsed as { nodes?: unknown }).nodes)) throw new Error("the diagram has no nodes to draw");
+  return materializeDiagramDefaults(parsed as Parameters<typeof materializeDiagramDefaults>[0]);
+}
+
 /** The whole diagram (every node) drawn off screen, then captured in full. */
 export async function diagramPicture(payload: unknown): Promise<Blob> {
-  const [{ materializeDiagramDefaults, parseDiagramJSON }, { default: InteractiveDiagramBlock }] = await Promise.all([
-    import("@ai-matrx/rich-content/display/blocks/diagram/parseDiagramJSON"),
+  const [diagram, { default: InteractiveDiagramBlock }] = await Promise.all([
+    readDiagram(payload),
     import("@ai-matrx/rich-content/display/blocks/diagram/InteractiveDiagramBlock"),
   ]);
-  const parsed = typeof payload === "string" ? parseDiagramJSON(payload) : payload;
-  if (!parsed) throw new Error("the diagram could not be read");
-  const diagram = materializeDiagramDefaults(parsed as Parameters<typeof materializeDiagramDefaults>[0]);
   let last = "";
   return withOffscreen(
     createElement(InteractiveDiagramBlock, { diagram, presentation: "workspace" }),
