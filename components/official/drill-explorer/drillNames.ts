@@ -72,19 +72,24 @@ export function createDrillNameBook(initial: Record<string, DrillNameResolver> |
     if (!resolver) return null;
     const unread = resolver.unreadLabel ?? DRILL_NAME_UNREAD;
     let message: string | null = null;
-    const named: Record<string, string> = {};
-    for (let i = 0; i < ids.length; i += BATCH) {
-      const chunk = ids.slice(i, i + BATCH);
-      let got: Awaited<ReturnType<DrillNameResolver["resolve"]>>;
-      try {
-        got = await resolver.resolve(chunk);
-      } catch (e) {
-        got = { ok: false, message: e instanceof Error ? e.message : "The names could not be read." };
-      }
-      if (!got.ok) message = got.message;
-      for (const id of chunk) named[id] = (got.ok ? got.names[id] : undefined) || names[dim]?.[id] || unread;
-    }
-    put(dim, named);
+    // THE BATCHES ARE READ AT ONCE (lane DRILL-LIVE-FIX-2 #3), never one after another, and each lands
+    // as soon as it is back: a page of 2,000 ids was four reads in a row before any name showed.
+    const chunks: string[][] = [];
+    for (let i = 0; i < ids.length; i += BATCH) chunks.push(ids.slice(i, i + BATCH));
+    await Promise.all(
+      chunks.map(async (chunk) => {
+        let got: Awaited<ReturnType<DrillNameResolver["resolve"]>>;
+        try {
+          got = await resolver.resolve(chunk);
+        } catch (e) {
+          got = { ok: false, message: e instanceof Error ? e.message : "The names could not be read." };
+        }
+        if (!got.ok) message = got.message;
+        const named: Record<string, string> = {};
+        for (const id of chunk) named[id] = (got.ok ? got.names[id] : undefined) || names[dim]?.[id] || unread;
+        put(dim, named);
+      }),
+    );
     return message;
   };
 

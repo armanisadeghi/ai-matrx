@@ -56,27 +56,29 @@ export function useDrillAttributes(args: {
     if (!client || !outer || wanted.length === 0 || groups.length === 0) return;
     let cancelled = false;
     const windowPart = doorWindow({ by: [], show: [], where: [], window: question.window ?? null }, { key: drillWindowKey(dimensions, carried), align: windowAlign });
-    void Promise.all(
-      wanted.map(async (attr) => {
-        const got = await client
-          .drillAsk({
-          source,
-          question: {
-            by: [outer, attr],
-            where: { ...(carried?.where ?? {}), ...doorWhere(question), [outer]: groups },
-            lane,
-            limit: groups.length,
-            ...windowPart,
-          },
-        })
-          .catch((e: unknown) => ({ ok: false as const, error: { message: e instanceof Error ? e.message : "" } }));
-        return { attr, rows: got.ok ? got.data!.rows : [], failed: got.ok ? null : drillFailureWords(got.error?.message, "Not read") };
-      }),
-    ).then((results) => {
+    // ONE ASK FOR EVERY GLANCE COLUMN (lane DRILL-LIVE-FIX-2 #3): grouped by the outer Dimension and
+    // every attribute at once, so the door scans the window once — two asks (agent, person) were two
+    // full scans racing the answer's own, and the columns read "…" for 15–40 s on all-people by conversation.
+    void client
+      .drillAsk({
+        source,
+        question: {
+          by: [outer, ...wanted],
+          where: { ...(carried?.where ?? {}), ...doorWhere(question), [outer]: groups },
+          lane,
+          // every combination the groups hold (a conversation with two people is two rows), capped
+          limit: Math.min(groups.length * 4, 2000),
+          ...windowPart,
+        },
+      })
+      .catch((e: unknown) => ({ ok: false as const, error: { message: e instanceof Error ? e.message : "" } }))
+      .then((got) => {
       if (cancelled) return;
       const values: Held = {};
       const failed: Record<string, string> = {};
-      for (const { attr, rows, failed: why } of results) {
+      const why = got.ok ? null : drillFailureWords(got.error?.message, "Not read");
+      const rows = got.ok ? got.data!.rows : [];
+      for (const attr of wanted) {
         if (why) failed[attr] = why;
         for (const row of rows) {
           if (row.kind !== "group" || !row.groups) continue;
@@ -85,8 +87,8 @@ export function useDrillAttributes(args: {
           const v = row.groups[attr];
           (((values[g] ??= {})[attr] ??= new Set()) as Set<string | null>).add(typeof v === "string" ? v : v === null || v === undefined ? null : String(v));
         }
-        book.learn(drillDoorLabels(rows));
       }
+      book.learn(drillDoorLabels(rows));
       // a person's name is the host resolver's (the door carries none for people), through the ONE book
       for (const attr of wanted) void book.want(attr, Object.values(values).flatMap((v) => [...(v[attr] ?? [])]));
       if (!cancelled) setHeld({ key, values, failed });
