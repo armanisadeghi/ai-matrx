@@ -321,19 +321,22 @@ export function useKitGeneration(): UseKitGeneration {
       // (2026-10-08). They were awaited one by one before the fan-out: one
       // slow `assoc_add` (28 s, then a 57014 timeout behind a long-held row
       // lock) held every output back and then threw, sinking a kit that
-      // already existed. Now they file in parallel while the outputs build;
-      // one that fails is named on the board, and the kit goes on.
+      // already existed. Now they file while the outputs build (one after
+      // another, so the kit lists them in the order picked); one that fails is
+      // named on the board, and the kit goes on.
       const kitSources = normalized.ref.kitSources ?? [];
-      linking = Promise.allSettled(kitSources.map((s) => addKitSource(scope, s))).then(
-        (settled) => {
-          const missed = kitSources.filter((_, i) => settled[i].status === "rejected");
-          settled.forEach((r) => {
-            if (r.status === "rejected")
-              console.error("[useKitGeneration] a Source was not filed in the kit:", r.reason);
-          });
-          if (missed.length > 0) setSourcesNotFiled(missed.map((s) => s.title));
-        },
-      );
+      linking = (async () => {
+        const missed: string[] = [];
+        for (const kitSource of kitSources) {
+          try {
+            await addKitSource(scope, kitSource);
+          } catch (e) {
+            console.error("[useKitGeneration] a Source was not filed in the kit:", e);
+            missed.push(kitSource.title);
+          }
+        }
+        if (missed.length > 0) setSourcesNotFiled(missed);
+      })();
     }
     setKitTitle(journal.renamedTo ? { ...titleNow, title: journal.renamedTo } : titleNow);
     // A name that arrives after the deadline still names the kit (applied at

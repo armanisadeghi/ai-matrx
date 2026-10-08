@@ -826,8 +826,8 @@ export async function createMultiSourceKit(input: {
   // All or nothing: a kit that fails partway is archived, so the next try with the
   // same title starts clean instead of colliding with a half-made kit.
   try {
-    // Sources file at once — each edge is independent.
-    await Promise.all(input.sources.map((source) => addKitSource(scope, source)));
+    // In order: a kit lists its Sources oldest first (the order they were picked).
+    for (const source of input.sources) await addKitSource(scope, source);
     if (input.artifacts.length) {
       const made = await readKit(KIT_TOKEN, scope.id);
       if (!made) throw new Error("The kit was made but could not be read back.");

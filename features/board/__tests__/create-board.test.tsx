@@ -112,6 +112,28 @@ describe("a slow route change never invites a second board", () => {
     }
   });
 
+  it("after the open gives up (a cold compile past 30 s), a second press opens the SAME board, never a second one", async () => {
+    jest.useFakeTimers();
+    try {
+      beginBoardCreate.mockResolvedValue({ id: "cold-1" });
+      const { result } = renderHook(() => useCreateBoard());
+      await act(async () => {
+        await result.current.newBoard();
+      });
+      await act(async () => {
+        jest.advanceTimersByTime(31_000); // the give-up fires; the button is enabled again
+      });
+      expect(result.current.creating).toBe(false);
+      await act(async () => {
+        await result.current.newBoard();
+      });
+      expect(beginBoardCreate).toHaveBeenCalledTimes(1);
+      expect(push).toHaveBeenLastCalledWith("/board/cold-1");
+    } finally {
+      jest.useRealTimers();
+    }
+  });
+
   it("is free again once the board is open", async () => {
     beginBoardCreate.mockResolvedValue({ id: "ok-1" });
     const el = document.createElement("div");

@@ -43,6 +43,8 @@ import { noteIdentityContentSource } from "@/features/notes/richDocumentSource";
 import type { Note, NoteListItem } from "@/features/notes/types";
 import { parseNoteOutline, type NoteOutlineItem } from "@/features/notes/utils/noteOutline";
 import { RichDocument } from "@ai-matrx/rich-content/rich-document/RichDocument";
+import { RichCopySplit } from "@ai-matrx/chat/agent-copy/RichCopySplit";
+import { richDocumentViewKey } from "@ai-matrx/rich-content/rich-document/runtime/useActionSurfaceProvider";
 import { EditInPlace } from "@ai-matrx/rich-editor/in-place/EditInPlace";
 import { EditInPlaceText } from "@ai-matrx/rich-editor/in-place/EditInPlaceText";
 import { NotesView } from "@/features/notes/components/NotesView";
@@ -273,6 +275,8 @@ function ReaderContent({ guide, onEdit, onDelete, canDelete, deleting, jumpReque
   }, [jumpRequest]);
   return <main className="relative flex h-full min-h-0 flex-col bg-background">
     <div className="absolute right-3 top-2 z-20 flex gap-1">
+      {/* THE content action set: Copy, Plain, Export, Print, Transform — one click each. */}
+      <RichCopySplit size="sm" label={`Study guide "${guide.label || "Untitled guide"}"`} human={() => guide.content ?? ""} contentFlavor="markdown" exportTitle={guide.label || "Study guide"} viewKey={richDocumentViewKey(noteIdentityContentSource(guide.id), "")} className="rounded-md border border-border bg-background" />
       <Button icon={<Search aria-hidden />} variant="outline" aria-label="Search this guide" title="Search this guide" onClick={openFind} />
       <Button icon={<Pencil aria-hidden />} variant="outline" aria-label="Edit study guide" title="Edit study guide" onClick={canEdit ? () => setEditingBody(true) : onEdit} />
       {canEdit && <Button icon={<TextCursorInput aria-hidden />} variant="outline" aria-label="Rename study guide" title="Rename study guide" onClick={() => setEditingTitle(true)} />}

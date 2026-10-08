@@ -127,9 +127,16 @@ export async function createKitScope(orgId: string, name: string): Promise<KitSc
 export async function listKitScopes(): Promise<KitScopeRow[]> {
   const orgs = await organizationsIAmIn();
   if (!orgs || orgs.size === 0) return [];
-  // One organization at a time: a refusal ("you are not a member there") is that
-  // organization's kits not being hers to read, not a failure of the rest.
-  const perOrg = await Promise.all([...orgs].map((orgId) => readScopeTypes([orgId], false)));
+  // ONE read for every organization she is in (2026-10-08: one request per
+  // organization was ~157 requests a load). Only when that read is refused does
+  // it fall back to one organization at a time, where a refusal ("you are not a
+  // member there") is that organization's kits not being hers, not a failure of
+  // the rest.
+  const all = await readScopeTypes([...orgs], false);
+  const perOrg =
+    all.ok || all.error.code !== "forbidden_org"
+      ? [all]
+      : await Promise.all([...orgs].map((orgId) => readScopeTypes([orgId], false)));
   const kitTypes = perOrg.flatMap((types) => {
     if (types.ok) return types.data.types.filter((t) => t.slug === KIT_SCOPE_TYPE_SLUG);
     if (types.error.code === "forbidden_org") return [];

@@ -12,6 +12,7 @@
 // example value (`lib/merge-fields.ts`); the raw syntax appears only in the
 // edit form, where "Insert field" writes it for the person.
 
+import { ContentView } from "@ai-matrx/rich-content/copy/ContentActions";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -788,6 +789,8 @@ export function TemplateViewPage({ template, canEdit, create = false }: Template
                   <RichCopySplit
                     size="sm"
                     label={`Message template ${displayLabel}`}
+                    exportTitle={displayLabel}
+                    viewKey={`message-template-${saved.id}`}
                     human={copyText}
                     json={() => saved}
                     agent={() =>
@@ -803,7 +806,9 @@ export function TemplateViewPage({ template, canEdit, create = false }: Template
                   />
                 </div>
                 {managedNotice && <div className="border-b border-border">{managedNotice}</div>}
-                <MessageBody subject={savedSubject} body={saved.content ?? ""} show={show} />
+                <ContentView viewKey={`message-template-${saved.id}`} text={copyText}>
+                  <MessageBody subject={savedSubject} body={saved.content ?? ""} show={show} />
+                </ContentView>
                 <div className="border-t border-border px-3 py-2">
                   <EntityCustomFields
                     entityToken="message_template"

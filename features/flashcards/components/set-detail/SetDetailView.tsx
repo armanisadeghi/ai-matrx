@@ -56,6 +56,8 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { RichCopySplit } from "@ai-matrx/chat/agent-copy/RichCopySplit";
+import { PlainTextView } from "@ai-matrx/rich-content/copy/ContentActions";
+import { usePlainView } from "@ai-matrx/rich-content/copy/content-view-store";
 import { AGENT_ICON } from "@/components/icons/domain-icons";
 import {
   asDeckView,
@@ -1053,6 +1055,8 @@ export function SetDetailView({
     });
   };
 
+  // The deck bar's Plain switch (ContentActions): the deck's exact markdown in place of the cards.
+  const deckPlain = usePlainView(data ? `fc-deck-${data.set.id}` : null);
   const filteredCards = data
     ? filterEducationCollection(data.cards.map((card, index) => ({ card, index })), cardSearch, ({ card }) => [
         card.front,
@@ -1313,6 +1317,8 @@ export function SetDetailView({
                     size="sm"
                     triggerVariant="transparent"
                     label={`Deck: ${data.set.name}`}
+                    exportTitle={data.set.name}
+                    viewKey={`fc-deck-${data.set.id}`}
                     human={() => serializeDeck(data.set, data.cards).markdown}
                     json={() => ({ set: data.set, cards: data.cards })}
                     agent={() => ({
@@ -1747,7 +1753,9 @@ export function SetDetailView({
                       )}
                     </div>
                   )}
-                  {filteredCards.length === 0 ? (
+                  {deckPlain ? (
+                    <PlainTextView text={serializeDeck(data.set, data.cards).markdown} />
+                  ) : filteredCards.length === 0 ? (
                     <EducationCollectionNoResults
                       query={cardSearch}
                       label="cards in this deck"

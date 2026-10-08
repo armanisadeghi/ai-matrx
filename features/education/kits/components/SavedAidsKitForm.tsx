@@ -18,6 +18,7 @@ import { Button } from "@ai-matrx/design-system";
 import { ProInput } from "@/components/official/ProInput";
 import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
 import { kitSourceRefs, pickedFileAnchor } from "@/features/education/onboard/kitSources";
+import { humanizeSourceTitle } from "@/features/education/onboard/kitTitle";
 import { fetchEducationLibraryPage } from "@/features/education/library/service";
 import type { EducationLibraryRow } from "@/features/education/library/types";
 import { DEFAULT_ENTITY_LIST_QUERY } from "@/lib/entity-list/types";
@@ -57,8 +58,15 @@ export function SavedAidsKitForm({
   const pickedReady = set.sources.filter((c) => c.status === "ready" && c.draft.ref);
   const pickedLanding = set.sources.some((c) => c.status === "pending" || c.status === "resolving");
   const pickedFileId = pickedFileAnchor(set.sources);
+  // A blank title is never a dead Create (2026-10-08): the kit takes the name
+  // of what it holds — the first picked Source (cleaned by the kit namer's
+  // deterministic floor), else the first chosen aid. Shown as the placeholder.
+  const derivedTitle = pickedReady[0]?.draft.label
+    ? humanizeSourceTitle(pickedReady[0].draft.label)
+    : (selected[0]?.title?.trim() ?? "");
+  const effectiveTitle = title.trim() || derivedTitle;
   // Material is optional: saved aids alone make a kit.
-  const saveReady = (pickedReady.length > 0 || selected.length > 0) && !pickedLanding && title.trim().length > 0;
+  const saveReady = (pickedReady.length > 0 || selected.length > 0) && !pickedLanding && effectiveTitle.length > 0;
 
   // Restore an unsaved draft (identities only; rows re-read so a stale session
   // value never reaches the kit writer).
@@ -151,7 +159,7 @@ export function SavedAidsKitForm({
     setSaving(true);
     setError(null);
     try {
-      const kitTitle = title.trim();
+      const kitTitle = effectiveTitle;
       finish(await makeKit(kitTitle, selected), kitTitle);
     } catch (cause) {
       setError(describeFailure(cause, { action: "creating this kit", fallback: "Could not create this kit." }).sentence);
@@ -199,7 +207,7 @@ export function SavedAidsKitForm({
       <div className="space-y-5">
         <label className="block text-sm font-medium">
           Kit title
-          <ProInput className="mt-1" value={title} onChange={(event) => setTitle(event.target.value)} />
+          <ProInput className="mt-1" value={title} placeholder={derivedTitle || "Named after what you pick"} onChange={(event) => setTitle(event.target.value)} />
         </label>
         <SavedAidPicker selected={selected} onToggle={toggle} onVisibleRows={(rows) => { shownRows.current = rows; }} />
         {error && <ErrorNotice size="inline" message={error} error={error} operation="Make a study kit" />}

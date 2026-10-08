@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 import { toast } from "@/lib/toast";
 import { copyRichContent, copyContent } from "@ai-matrx/rich-content/copy/copy-commands";
+import { hasContentActions } from "@ai-matrx/rich-content/copy/content-view-store";
 import { registerAction } from "@ai-matrx/rich-content/rich-document/actions/provider";
 import { contentFileName, deriveContentTitle, getErrorMessage, contentForDestination } from "../utils";
 import { hasTableShape } from "@ai-matrx/records-ui/table-shape";
@@ -205,6 +206,8 @@ registerAction({
   category: "export",
   supportedSources: "*",
   renderSlot: "overflow",
+  // The ContentActions set in this item's bar already shows it — once per surface.
+  visible: (ctx) => !hasContentActions(ctx.instanceKey("alchemy")),
   order: 12,
   run: async (ctx) => {
     try {
@@ -229,6 +232,8 @@ registerAction({
   category: "export",
   supportedSources: "*",
   renderSlot: "overflow",
+  // The ContentActions set in this item's bar already shows it — once per surface.
+  visible: (ctx) => !hasContentActions(ctx.instanceKey("alchemy")),
   order: 13,
   run: async (ctx) => {
     const toastId = toast.loading("Generating PDF…");
@@ -263,6 +268,8 @@ registerAction({
   category: "export",
   supportedSources: "*",
   renderSlot: "overflow",
+  // The ContentActions set in this item's bar already shows it — once per surface.
+  visible: (ctx) => !hasContentActions(ctx.instanceKey("alchemy")),
   order: 14,
   run: async (ctx) => {
     const toastId = toast.loading("Building the Word document…");

@@ -28,7 +28,6 @@ import {
   Copy,
   CheckCheck,
 } from "lucide-react";
-import { copyContent } from "@ai-matrx/rich-content/copy/copy-commands";
 import { ReferenceCopyButton } from "@/features/matrx-envelope/components/ReferenceCopyButton";
 import { RichCopySplit } from "@ai-matrx/chat/agent-copy/RichCopySplit";
 import { ExportMenu } from "@/components/agent-copy/ExportMenu";
@@ -128,7 +127,6 @@ export function TranscriptViewer() {
   const [isEditingContent, setIsEditingContent] = useState(false);
   const [editContent, setEditContent] = useState("");
   const [contentSaveBusy, setContentSaveBusy] = useState(false);
-  const [copiedAll, setCopiedAll] = useState(false);
 
   // Audio Player State
   const [isPlaying, setIsPlaying] = useState(false);
@@ -225,7 +223,6 @@ export function TranscriptViewer() {
       setEditDescription(activeTranscript.description);
       setIsEditingContent(false);
       setEditContent("");
-      setCopiedAll(false);
       // Reset player when transcript changes
       setIsPlaying(false);
       setCurrentTime(0);
@@ -360,22 +357,6 @@ export function TranscriptViewer() {
       human: `${header}\n\n--- Transcript ---\n${transcriptBody(activeTranscript.segments ?? [])}`,
       data: transcriptData(activeTranscript),
     };
-  };
-
-  const handleCopyAllText = async () => {
-    if (!plainTranscriptText.trim()) return;
-    try {
-      await copyContent(plainTranscriptText, {
-        onSuccess: () => {
-          setCopiedAll(true);
-          toast.success("Transcript copied");
-          setTimeout(() => setCopiedAll(false), 2000);
-        },
-        onError: () => toast.error("Failed to copy"),
-      });
-    } catch {
-      toast.error("Failed to copy");
-    }
   };
 
   const startContentEdit = () => {
@@ -638,24 +619,14 @@ export function TranscriptViewer() {
                   toastLabel={activeTranscript.title}
                   size="sm"
                 />
-                {plainTranscriptText.trim().length > 0 && (
-                  <Button
-                    icon={copiedAll ? (
-                      <CheckCheck className="text-green-500" />
-                    ) : (
-                      <Copy />
-                    )} aria-label="Copy transcript text"
-                    variant="quiet"
-                    title="Copy transcript text"
-                    onClick={() => void handleCopyAllText()}
                   />
                 )}
                 {/*
                  * The transcript RECORD pair. A transcript is the "massive"
                  * size class — thousands of segments is normal — so the AI
                  * control is a dropdown WITH a custom composer, not a single
-                 * button. The plain "Copy transcript text" button above is a
-                 * different affordance and stays.
+                 * button. It is THE content action set here (Copy markdown / plain
+                 * text, Export, Print, Transform); the bar below omits its own.
                  */}
                 <RichCopySplit
                   size="icon"
