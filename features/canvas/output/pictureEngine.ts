@@ -120,16 +120,11 @@ export async function captureFlowGraph(source: HTMLElement | null, options: { pa
   viewport.style.transform = `translate(${pad - bounds.minX}px, ${pad - bounds.minY}px) scale(1)`;
   stage.appendChild(clone);
   try {
-    const { renderElement } = await import("@ai-matrx/alchemy/operate/capture");
     const ratio = Math.min(2, MAX_SIDE / Math.max(width, height));
-    const canvas = await renderElement(stage, {
-      backgroundColor: background,
-      pixelRatio: ratio,
-      width,
-      height,
+    return await elementPicture(stage, background, {
+      ratio,
       filter: (node) => !CHROME.some((name) => node.classList?.contains(name)),
     });
-    return await canvasBlob(canvas);
   } finally {
     wrapper.remove();
   }
@@ -179,16 +174,30 @@ export async function withOffscreen<T>(
 
 /** `withOffscreen`, drawn as one PNG of the whole host. */
 export function renderNodePicture(node: ReactNode, options: OffscreenOptions): Promise<Blob> {
-  return withOffscreen(node, options, async (host) => {
-    const { renderElement } = await import("@ai-matrx/alchemy/operate/capture");
-    return canvasBlob(await renderElement(host, { backgroundColor: options.background ?? pageBackground(), pixelRatio: 2 }));
-  });
+  return withOffscreen(node, options, (host) => elementPicture(host, options.background ?? pageBackground()));
 }
 
-/** One element as a PNG data URL at 2x (a slide, a card). */
-export async function elementPicture(element: HTMLElement, width: number, height: number): Promise<Blob> {
+/**
+ * One element (a slide, a card, a whole host) as a PNG, through Alchemy's html-to-image door
+ * (`renderElement`: it keeps the browser's own layout and modern colours — html2canvas cannot
+ * parse oklab). Width and height are passed explicitly, and `max-width` is lifted on the root, so
+ * a narrow-viewport rule can never clip a wide stage.
+ */
+export async function elementPicture(
+  element: HTMLElement,
+  background = "#ffffff",
+  options: { ratio?: number; filter?: (node: HTMLElement) => boolean } = {},
+): Promise<Blob> {
   const { renderElement } = await import("@ai-matrx/alchemy/operate/capture");
-  return canvasBlob(await renderElement(element, { pixelRatio: 2, width, height, backgroundColor: "#ffffff" }));
+  const canvas = await renderElement(element, {
+    pixelRatio: options.ratio ?? 2,
+    width: element.offsetWidth,
+    height: element.offsetHeight,
+    backgroundColor: background,
+    style: { maxWidth: "none", maxHeight: "none" },
+    ...(options.filter ? { filter: options.filter } : {}),
+  });
+  return canvasBlob(canvas);
 }
 
 // ─── SVG markup ──────────────────────────────────────────────────────────────

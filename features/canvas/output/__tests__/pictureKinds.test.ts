@@ -5,14 +5,12 @@
  */
 import { getBlockPrinter } from "@ai-matrx/print/core";
 
-const renderElement = jest.fn(async () => {
+const renderElement = jest.fn(async (..._args: unknown[]) => {
   const canvas = document.createElement("canvas");
-  canvas.width = 4;
-  canvas.height = 4;
   canvas.toBlob = (cb: BlobCallback) => cb(new Blob(["png"], { type: "image/png" }));
   return canvas;
 });
-jest.mock("@ai-matrx/alchemy/operate/capture", () => ({ renderElement: (...args: unknown[]) => (renderElement as unknown as (...a: unknown[]) => unknown)(...args) }));
+jest.mock("@ai-matrx/alchemy/operate/capture", () => ({ renderElement: (...args: unknown[]) => renderElement(...args) }));
 
 const fileBlob = jest.fn();
 jest.mock("@/features/files/handler/handler", () => ({

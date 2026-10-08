@@ -296,7 +296,7 @@ export async function deckSlidePictures(payload: unknown): Promise<Blob[]> {
     async (host) => {
       const pictures: Blob[] = [];
       for (const slide of host.querySelectorAll<HTMLElement>("[data-deck-slide]")) {
-        pictures.push(await elementPicture(slide, SLIDE_STAGE.width, SLIDE_STAGE.height));
+        pictures.push(await elementPicture(slide));
       }
       return pictures;
     },
