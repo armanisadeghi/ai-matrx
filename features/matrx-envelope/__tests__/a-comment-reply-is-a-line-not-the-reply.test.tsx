@@ -1,12 +1,13 @@
 /**
  * @jest-environment jsdom
  *
- * THE AGENT'S REPLY LIVES IN THE THREAD, NEVER IN THE ANSWER (threads design,
- * 2026-10-03). The agent answers a remark with a `comment_reply` fence; the
- * answer shows ONE line per reply naming the remark's handle — "Replying to
- * c3…" while it streams, then a door that opens the thread in the canvas —
- * and the receipt is the server's sentence plus "Open thread". The reply's
- * words never render in the answer body.
+ * THE AGENT'S THREAD REPLY, SHOWN IN THE ANSWER AS THE EXCHANGE (threads design
+ * 2026-10-03; Arman 2026-10-08: people can't be expected to go find what the
+ * agent said). The agent answers a remark with a `comment_reply` fence; while it
+ * streams the answer says "Replying to c3…", after it shows ONE quoted-thread
+ * card per reply — the person's comment (opening ~300 chars, expandable), any
+ * earlier replies as a count, the agent's reply whole — and the card opens the
+ * thread in the canvas. A reply the ledger has no record of says so.
  *
  * A handle resolves only inside its own conversation's remarks, and a handle
  * two remarks share resolves to nothing.
@@ -18,6 +19,7 @@ import React, { act, useEffect } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { Provider } from "react-redux";
 import { configureStore } from "@reduxjs/toolkit";
+import storeReadsReducer from "@/lib/redux/slices/storeReadsSlice";
 import type { CanvasController } from "@ai-matrx/canvas";
 import { CanvasProvider, registerCanvasKind, useCanvas } from "@ai-matrx/canvas/react";
 import type { DirectiveRendererProps } from "@ai-matrx/content-ir-react";
@@ -39,6 +41,25 @@ jest.mock("@/utils/supabase/client", () => {
   chain.order = async () => ({ data: [], error: null });
   return { supabase: chain };
 });
+// The thread's rows, as cmt_list maps them: the site lead's comment, an earlier reply, the agent's.
+jest.mock("@/features/rich-document/annotations/service", () => ({
+  listCommentThreads: async () => ({
+    collaborationDoors: true,
+    items: [{
+      key: "comment:root-7", kind: "comment", saveState: "confirmed", anchor: null, commentId: "root-7",
+      author: { id: "lead", name: "Dana Ortiz", avatarUrl: null }, mine: false, createdAt: "2026-10-05T00:00:00Z",
+      body: "Truck scale or floor scale?",
+      replies: [
+        { id: "reply-1", body: "Checking the yard plan.", createdAt: "2026-10-05T00:01:00Z", mine: false, version: 1, author: { id: "lead", name: "Dana Ortiz" } },
+        { id: "reply-9", body: "The truck scale — weigh the whole load before it reaches the baler.", createdAt: "2026-10-05T00:02:00Z", mine: true, version: 1,
+          author: { id: "me", name: "Intake Agent", avatarUrl: null, agent: { id: "agent-1", name: "Intake Agent" } } },
+      ],
+    }],
+  }),
+}));
+jest.mock("@ai-matrx/rich-content/levels/RichContent", () => ({
+  RichContent: ({ source }: { source: string }) => <span data-rich>{source}</span>,
+}));
 // Every kept view of the thread is told to read again (realtime can drop the INSERT, 2026-10-08).
 const mockRefreshRecordThreads = jest.fn();
 jest.mock("@/features/rich-document/annotations/sidecarStore", () => ({
@@ -96,13 +117,17 @@ function render(
   const byId = Object.fromEntries(messages.map((m) => [m.id as string, m]));
   const store = configureStore({
     reducer: {
+      // Fixed slices for the transcript and the reader; the real store-reads slice for the reads.
       messages: () => ({ byConversationId: { [CONVERSATION]: { orderedIds: Object.keys(byId), byId } } }),
       // The receipts read is already answered (the zone at the foot reads it once).
       userAuth: () => ({ id: "11111111-1111-1111-1111-111111111111" }), // a signed-in reader: signed-out issues no ledger/message reads
-      storeReads: () => ({
+      storeReads: storeReadsReducer,
+    } as never,
+    preloadedState: {
+      storeReads: {
         byKey: { [`chat.directive-receipts:${CONVERSATION}`]: { status: "ready", data: receipts, hasData: true, error: null, at: Date.now() } },
-      }),
-    },
+      },
+    } as never,
   });
   act(() =>
     root.render(
@@ -136,19 +161,37 @@ describe("the fence in the answer", () => {
     expect(host.textContent).not.toContain("truck scale —");
   });
 
-  it("after: one line per reply that opens its thread in the canvas, focused on the reply", () => {
-    render(<Fence streaming={false} items={[{ to: "c3", body: REPLY_TEXT }, { to: "c4", body: "SQLite keeps the log on the yard laptop." }]} />, undefined, [replyReceipt("c3"), replyReceipt("c4")]);
-    expect(host.textContent).not.toContain("truck scale —");
-    expect(host.textContent).not.toContain("yard laptop");
-    const line = host.querySelector<HTMLButtonElement>('button[data-comment-reply="c3"]')!;
-    expect(line.textContent).toBe("Reply in thread · c3");
-    act(() => line.click());
+  it("after: the exchange itself — the comment, the earlier history as a count, the agent's reply whole — and it opens the thread on the reply", async () => {
+    render(<Fence streaming={false} items={[{ to: "c3", body: REPLY_TEXT }]} />, undefined, [replyReceipt("c3")]);
+    await act(async () => { await new Promise((r) => setTimeout(r, 0)); });
+    const card = host.querySelector<HTMLElement>('[data-comment-reply="c3"]')!;
+    expect(card.getAttribute("data-comment-reply-state")).toBe("posted");
+    expect(card.textContent).toContain("Dana Ortiz");
+    expect(card.textContent).toContain("Truck scale or floor scale?");
+    expect(card.textContent).toContain("1 earlier reply");
+    expect(card.textContent).not.toContain("Checking the yard plan.");
+    expect(card.textContent).toContain("Intake Agent");
+    expect(card.textContent).toContain(REPLY_TEXT);
+    act(() => card.click());
     const tab = items()["comment-thread::message:answer-1" as never] as unknown as { data: { focus: string | null } } | undefined;
     // Focused on the reply that landed, so the panel scrolls to that thread.
     expect(tab?.data.focus).toBe("reply-9");
     expect(mockRefreshRecordThreads).toHaveBeenCalledWith("message", "answer-1");
-    // c4 (a choice) has no comment yet: its thread opens on the answer, unfocused.
-    expect(host.querySelector('button[data-comment-reply="c4"]')).not.toBeNull();
+  });
+
+  it("a long comment shows its opening, the rest behind Show more", async () => {
+    const long = `Truck scale or floor scale? ${"We weigh aluminum bales and loose scrap every shift, ".repeat(12)}End of note.`;
+    render(<Fence streaming={false} items={[{ to: "c3", body: REPLY_TEXT }]} />, [userTurn([{ ...C3, comment_id: "root-x", body: long }])], [{ ...replyReceipt("c3"), thread: { entity_type: "message", entity_id: "answer-1", root_id: "root-x", reply_id: "reply-x", handle: "c3" } }]);
+    await act(async () => { await new Promise((r) => setTimeout(r, 0)); });
+    const card = host.querySelector<HTMLElement>('[data-comment-reply="c3"]')!;
+    expect(card.textContent).toContain("Truck scale or floor scale?");
+    expect(card.textContent).not.toContain("End of note.");
+    // The thread read has no such root: the agent's words come from the fence itself.
+    expect(card.textContent).toContain(REPLY_TEXT);
+    const more = [...card.querySelectorAll("button")].find((b) => b.textContent === "Show more")!;
+    act(() => more.click());
+    expect(card.textContent).toContain("End of note.");
+    expect(items()["comment-thread::message:answer-1" as never]).toBeUndefined();
   });
 
   it("a handle that does not resolve here is a plain line, never a dead door", () => {
@@ -165,13 +208,12 @@ describe("one cue per reply", () => {
     render(<Fence streaming={false} items={[{ to: "c3", body: REPLY_TEXT }]} />, [], [replyReceipt("c3")]);
     const lines = host.querySelectorAll('[data-comment-reply="c3"]');
     expect(lines).toHaveLength(1);
-    expect(lines[0].textContent).toContain("Reply in thread · c3");
-    expect(lines[0].tagName).toBe("BUTTON");
+    expect(lines[0].getAttribute("role")).toBe("button");
   });
 
   it("after a reload (remark gone) the ledger's thread link is the line's working door", () => {
     render(<Fence streaming={false} items={[{ to: "c3", body: REPLY_TEXT }]} />, [], [replyReceipt("c3")]);
-    const line = host.querySelector<HTMLButtonElement>('button[data-comment-reply="c3"]')!;
+    const line = host.querySelector<HTMLElement>('[data-comment-reply="c3"][role="button"]')!;
     expect(line).not.toBeNull();
     act(() => line.click());
     const tab = items()["comment-thread::message:answer-1" as never] as unknown as { data: { focus: string | null } } | undefined;
