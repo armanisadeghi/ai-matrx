@@ -11,6 +11,8 @@ import {
   AlertTriangle,
   ArrowLeft,
   CalendarClock,
+  Timer,
+  Coins,
   HardDrive,
   Loader2,
   ScrollText,
@@ -30,6 +32,7 @@ import { MemberRosterTable } from "./MemberRosterTable";
 import { OrgAdminAuditTable } from "./OrgAdminAuditTable";
 import { AutomationCostTable } from "@/features/scheduling/components/costs/AutomationCostTable";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { orgAgentSpendPath } from "@/features/admin/agent-spend/agentSpend";
 
 function StatTile({
   icon: Icon,
@@ -122,8 +125,16 @@ export function OrgAdminDashboard({ orgId, organization, role }: Props) {
           </p>
         </div>
         <div className="flex gap-2">
+          <Button icon={<Coins />} variant="outline" asChild>
+            <Link href={orgAgentSpendPath(organization.slug)}>AI spend</Link>
+          </Button>
           <Button icon={<CalendarClock />} variant="outline" onClick={() => setShowAutomations((s) => !s)}>
             Automations
+          </Button>
+          <Button variant="outline" asChild>
+            <Link href={`/organizations/${organization.slug}/admin/triggers`}>
+              <Timer className="h-4 w-4" /> Triggers
+            </Link>
           </Button>
           <Button icon={<ScrollText />} variant="outline" onClick={() => setShowAudit((s) => !s)}>
             Audit log
