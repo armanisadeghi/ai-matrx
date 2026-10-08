@@ -49,7 +49,7 @@ import { useOpenNoteKnowledgePanel } from "@/features/notes/canvas/noteKnowledge
 import { useNoteIngestStatus } from "../../hooks/useNoteIngestStatus";
 import { ShareModal } from "@/features/sharing/components/ShareModal";
 import { copyRichContent } from "@ai-matrx/rich-content/copy/copy-commands";
-import { TextCopyChevron } from "@/components/agent-copy/TextCopySplit";
+import { CopyMenuButton } from "@ai-matrx/rich-content/copy/CopyMenuButton";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -343,6 +343,40 @@ export function NoteEditorDock({
                 }}
                 className="relative flex-1 flex items-center justify-center min-w-0"
               >
+                {item.key === "copy" ? (
+                  // THE Copy (Arman, 2026-10-08): one tap copies the raw note, then Copy raw ·
+                  // Copy formatted · Copy for AI — the dock's own tile, never a chevron.
+                  <CopyMenuButton
+                    content={() => content}
+                    label="note"
+                    title={exportNote?.label || "Note"}
+                    trigger={({ onClick, ...data }) => (
+                <button
+                        {...data}
+                        onClick={onClick}
+                        aria-label={item.tooltip}
+                        title={item.tooltip}
+                        className={cn(
+                          "relative z-10 flex w-full flex-col items-center justify-center gap-0.5 px-1 py-1.5 transition-colors duration-200",
+                          isActive
+                            ? "text-primary"
+                            : "text-muted-foreground hover:text-foreground",
+                        )}
+                      >
+                        <Icon
+                          className={cn(
+                            "h-[20px] w-[20px] transition-all duration-200 shrink-0",
+                            isActive &&
+                              "drop-shadow-[0_0_6px_hsl(var(--primary)/0.4)]",
+                          )}
+                        />
+                        <span className="max-w-full truncate text-xs leading-none">
+                          {item.label}
+                        </span>
+                      </button>
+                    )}
+                  />
+                ) : (
                 <button
                   onClick={() => item.onPress(i)}
                   aria-label={item.tooltip}
@@ -365,7 +399,7 @@ export function NoteEditorDock({
                     {item.label}
                   </span>
                 </button>
-                {item.key === "copy" ? <TextCopyChevron text={content} label="Copy note" /> : null}
+                )}
               </div>
             );
           })}

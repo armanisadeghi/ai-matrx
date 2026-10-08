@@ -353,6 +353,70 @@ async function rpc(name: string, body: unknown, token: string): Promise<unknown>
   return text ? JSON.parse(text) : null;
 }
 
+/**
+ * Set ONE rule for ONE meeting through the product's own per-meeting door
+ * (`communication.meet_policy_set(p_meeting_id, p_key, p_value)`, host authority — CORE-DESIGN §4.1),
+ * with the host's own session; never a row edit. Reads the answer back through `meet_policy`.
+ */
+export async function setMeetingPolicy(meeting: Meeting, key: string, value: string | number): Promise<void> {
+  const s = await meeting.host.session();
+  if (!s) throw new Error("the host has no session to set a meeting rule with");
+  const row = await meetingRow(meeting);
+  if (!row?.id) throw new Error("the meeting row is not readable by its host");
+  await rpc("meet_policy_set", { p_meeting_id: row.id, p_key: key, p_value: value }, s.token);
+  const back = await rpc("meet_policy", { p_meeting_id: row.id, p_key: key }, s.token);
+  meeting.host.note(`meeting rule ${key} = ${JSON.stringify(back)} (set through meet_policy_set)`);
+  expect(String(back).replace(/"/g, ""), `meet_policy should answer ${key}=${value} after the host set it`).toBe(String(value));
+}
+
+/** The host lifts a denial the way the product does (`meet_undeny`), for the guest the lobby knew by name. */
+export async function liftDenial(meeting: Meeting, guestName: string): Promise<void> {
+  const s = await meeting.host.session();
+  const row = await meetingRow(meeting);
+  if (!s || !row?.id) throw new Error("no host session / meeting row to lift a denial with");
+  const { url, key } = supabasePublic();
+  const res = await fetch(`${url}/rest/v1/meet_participants?meeting_id=eq.${row.id}&display_name=eq.${encodeURIComponent(guestName)}&select=identity,admission_state`, {
+    headers: { apikey: key, Authorization: `Bearer ${s.token}`, "Accept-Profile": "communication" },
+  });
+  const rows = (await res.json()) as { identity: string; admission_state: string }[];
+  if (!res.ok || !rows.length) throw new Error(`the host cannot read ${guestName}'s row (HTTP ${res.status}: ${JSON.stringify(rows).slice(0, 160)})`);
+  await rpc("meet_undeny", { p_meeting_id: row.id, p_identity: rows[0].identity, p_by_user_id: s.userId }, s.token);
+  meeting.host.note(`lifted the denial of ${guestName} (meet_undeny; row was ${rows[0].admission_state})`);
+}
+
+/**
+ * THE WAITING INVARIANT: from now until `stop()`, the person must never render an in-call screen.
+ * Polls the observation contract's phase every 400 ms (not just at the end). `stop()` fails the
+ * scenario naming the first violation. Call it BEFORE the knock and stop it right before the admit.
+ */
+export function neverInCall(actor: Actor, page: Page = actor.page): { stop: () => void; samples: () => number } {
+  let running = true;
+  let n = 0;
+  const bad: string[] = [];
+  void (async () => {
+    while (running && !page.isClosed()) {
+      const o = await observe(page).catch(() => null);
+      if (o) {
+        n++;
+        if ((o.phase === "in-call" || o.phase === "reconnecting") && bad.length < 3) bad.push(`${o.phase} (${summarize(o)})`);
+      }
+      await page.waitForTimeout(400).catch(() => undefined);
+    }
+  })();
+  return {
+    samples: () => n,
+    stop: () => {
+      running = false;
+      actor.note(`waiting invariant: ${n} phase samples, ${bad.length} in-call`);
+      expect(bad, `${actor.opts.label} must never render an in-call screen while waiting (${n} samples)`).toEqual([]);
+      expect(n, `${actor.opts.label} waiting invariant must have sampled the phase`).toBeGreaterThan(5);
+    },
+  };
+}
+
+/** What the person sees as the reason for a refusal (the contract's data-meet-reason). */
+export const refusalReason = (page: Page) => page.locator("[data-meet-root]").getAttribute("data-meet-reason").catch(() => null);
+
 /** Server truth about the meeting (ended_at etc.), read with the host's own session. */
 export async function meetingRow(meeting: Meeting): Promise<Record<string, unknown> | null> {
   const s = await meeting.host.session();

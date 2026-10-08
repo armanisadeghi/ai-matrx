@@ -154,9 +154,13 @@ export function unproven(reason: string): never {
   throw new Error(`${UNPROVEN_PREFIX} ${reason}`);
 }
 
-export function scenario(id: string, body: (args: { cast: Cast }) => Promise<void>, opts: { timeoutMs?: number } = {}): void {
-  const state = catalogStates().find((s) => s.id === id);
-  if (!state || state.priority !== "P0") throw new Error(`scenario "${id}" is not a P0 state in states-catalog.json`);
+export function scenario(
+  id: string,
+  body: (args: { cast: Cast }) => Promise<void>,
+  opts: { timeoutMs?: number; /** A variant of a catalog state (e.g. one `reknock_after_deny` value): the state's id, any priority. */ catalogId?: string } = {},
+): void {
+  const state = catalogStates().find((s) => s.id === (opts.catalogId ?? id));
+  if (!state || (opts.catalogId === undefined && state.priority !== "P0")) throw new Error(`scenario "${id}" is not a P0 state in states-catalog.json`);
   test(id, async ({ cast }, testInfo) => {
     testInfo.annotations.push(
       { type: "situation", description: state.situation },
