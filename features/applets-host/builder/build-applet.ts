@@ -304,7 +304,16 @@ export function newTableGaps(applet: Pick<BuilderApplet, "files" | "sources">): 
 export function checkBuildAnswer(
   raw: unknown,
   answer: BuildAnswer,
-  context: { organizationId?: string; tables?: readonly { table_id: string; organization_id: string; name: string }[] } = {},
+  context: {
+    organizationId?: string;
+    tables?: readonly { table_id: string; organization_id: string; name: string }[];
+    /**
+     * `appletImportProblems` from `@ai-matrx/applets/frame` (imports checked against the modules' REAL exports —
+     * `useNavigate` from "@ai-matrx/applets/react" published a page that crashed, 2026-10-08). Passed in, loaded
+     * on demand by the builder, so this file keeps the compiler out of the builder's first chunk.
+     */
+    importProblems?: (files: Readonly<Record<string, string>>) => string[];
+  } = {},
 ): BuildAnswer {
   const { applet } = answer;
   const rawApplet = isRecord(raw) && isRecord(raw.applet) ? raw.applet : {};
@@ -332,6 +341,7 @@ export function checkBuildAnswer(
   for (const alias of namesIn(applet.files, RUNS_JOB)) {
     if (!jobs.has(alias)) problems.push(`the code runs job "${alias}" but mandates declares no "${alias}"`);
   }
+  if (context.importProblems) problems.push(...context.importProblems(Object.fromEntries(applet.files.map((f) => [f.name, f.source]))));
   // Every box a person writes words in is <WritingBox> (mic + read-aloud) — never a bare textarea.
   for (const f of applet.files) {
     const bare = [...new Set([...f.source.matchAll(BARE_WRITING_BOX)].map((m) => m[1]))];

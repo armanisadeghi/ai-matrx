@@ -86,3 +86,14 @@ describe("publishBlockedBy", () => {
     expect(publishBlockedBy(null)).toBeNull();
   });
 });
+
+describe("checkBuildAnswer with the package's import check", () => {
+  it("refuses an import the module does not export, read from the real module (useNavigate)", async () => {
+    const { appletImportProblems } = await import("@ai-matrx/applets/frame");
+    const page = `import React from "react";\nimport { usePage, useNavigate } from "@ai-matrx/applets/react";\nexport default function App() { const go = useNavigate(); return <button onClick={() => go("/")}>Back</button>; }`;
+    const { raw, answer } = answerWith({ "App.tsx": page });
+    expect(() => checkBuildAnswer(raw, answer, { importProblems: appletImportProblems })).toThrow(/imports useNavigate from "@ai-matrx\/applets\/react", which does not export it — use navigate/);
+    const fixed = page.replace("usePage, useNavigate", "navigate").replace("const go = useNavigate(); ", "").replace('go("/")', 'navigate("/")');
+    expect(checkBuildAnswer(...Object.values(answerWith({ "App.tsx": fixed })) as [unknown, ReturnType<typeof coerceBuildAnswer>], { importProblems: appletImportProblems }).applet.files).toHaveLength(1);
+  });
+});

@@ -1,6 +1,10 @@
-"use client";
-
 // lib/organizations/linkOrganizationSession.ts
+//
+// NOT "use client" on purpose (lane AF, 2026-10-08): it renders nothing, and the
+// org-bootstrap thunk in `appContextSlice.ts` (a module the layout's SERVER graph
+// reaches) `import()`s it — a "use client" file there becomes a client REFERENCE
+// that ships on every route's first load instead of an on-demand chunk. Guard:
+// `pnpm check:shell-eager-graph`.
 //
 // THE SIDE-EFFECTING HALF of `lib/organizations/linkOrganization.ts`: reading
 // the knob out of the live store, and SAYING the decision to the person.

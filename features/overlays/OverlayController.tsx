@@ -715,7 +715,7 @@ const ContextItemsWindow = lazyOverlay(
 );
 const HtmlPreviewBridge = lazyOverlay(
   () =>
-    import("@ai-matrx/chat/cx-conversation/components/HtmlPreviewBridge").then(
+    import("@ai-matrx/chat/ui/html-preview/HtmlPreviewBridge").then(
       (m) => ({ default: m.HtmlPreviewBridge }),
     ),
   { ssr: false },

@@ -7,7 +7,7 @@
 import reducer, {
   setActivePageId as hostSetActivePageId,
 } from "@/lib/redux/slices/htmlPagesSlice";
-import { setActivePageId } from "@ai-matrx/chat/cx-conversation/utils/html-pages-actions";
+import { setActivePageId } from "@ai-matrx/chat/ui/html-preview/html-pages-actions";
 
 describe("htmlPages answers the chat package's active-page action", () => {
   it("has the same type as the slice's own action creator", () => {

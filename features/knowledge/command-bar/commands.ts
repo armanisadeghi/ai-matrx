@@ -10,7 +10,7 @@
  * added there appears here with no second list to maintain.
  */
 
-import type { LucideIcon } from "lucide-react";
+import type { ItemMenuIcon } from "@ai-matrx/design-system/item";
 import {
   TOOLS_CATEGORIES,
   TOOLS_GRID_TILES,
@@ -23,7 +23,7 @@ export interface KnowledgeCommand {
   label: string;
   /** Sub-heading shown dimmed on the row (the launcher category). */
   group?: string;
-  icon?: LucideIcon;
+  icon?: ItemMenuIcon;
   /** Extra words that should find this command. */
   keywords?: string[];
   /** The command's own key chord, shown on its row (display only; the page answers the keys). */
