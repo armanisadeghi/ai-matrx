@@ -1,6 +1,6 @@
 {
   "note": "Checked-in snapshot of public._schema_migrations for the files under migrations/campaign and migrations/inverse. Written by `pnpm db:apply` on every successful production apply and refreshed whole by the nightly catch-up. Never hand-edited: a self-written checksum is a claim nobody can check. Guard: pnpm check:ledgered-files-unedited.",
-  "generated_at": "2026-10-08T17:05:59.050Z",
+  "generated_at": "2026-10-08T17:08:21.710Z",
   "files": {
     "migrations/campaign/a_chunk_is_the_size_the_client_door_can_actually_carry.sql": {
       "source": "matrx-frontend",
@@ -3674,6 +3674,12 @@
       "checksum": "5ed09659a562794bc810d1bb5854a8549ac89361327373bedf3e07d3d87e7acc",
       "applied_at": "2026-09-20 13:46:28.15849+00"
     },
+    "migrations/campaign/hotdoors2_a_the_search_reads_a_row_once.sql": {
+      "source": "matrx-frontend",
+      "filename": "hotdoors2_a_the_search_reads_a_row_once.sql",
+      "checksum": "de83b8c371b5e8e79bd7f24003eb166c19c9aa07fa354e25734f9db511cba86f",
+      "applied_at": "2026-10-08 17:07:10.429826+00"
+    },
     "migrations/campaign/hotdoors_a_the_list_filter_inlines_and_a_page_walks_once.sql": {
       "source": "matrx-frontend",
       "filename": "hotdoors_a_the_list_filter_inlines_and_a_page_walks_once.sql",
@@ -4717,6 +4723,12 @@
       "filename": "notionprops3_a_button_settings_dependency_prefix.sql",
       "checksum": "903879b65f83df8f405c5d09f886143ad1539ee08b819e55e6af3fb8e87bef1c",
       "applied_at": "2026-10-08 16:49:19.556222+00"
+    },
+    "migrations/campaign/notionprops3_b_sub_items_turn_on_and_off.sql": {
+      "source": "matrx-frontend",
+      "filename": "notionprops3_b_sub_items_turn_on_and_off.sql",
+      "checksum": "5badba1d03da886546472fb121eae1a02d40893c39a2628ddfdbc50cb947697e",
+      "applied_at": "2026-10-08 17:08:17.293047+00"
     },
     "migrations/campaign/notionprops_a_a_link_is_a_field_on_both_tables.sql": {
       "source": "matrx-frontend",
