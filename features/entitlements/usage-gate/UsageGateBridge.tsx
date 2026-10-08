@@ -28,7 +28,7 @@ import {
 } from "../state/selectors";
 import { setUsageRefusal } from "../state/entitlementsSlice";
 import { applyServerUsageState, refreshUsageInBackground } from "./usageGate";
-import { usageNoticeKey } from "./usageState";
+import { resetSubject, usageNoticeKey } from "./usageState";
 import { supabase } from "@/utils/supabase/client";
 import { selectUsageGateFreePeriod } from "../state/selectors";
 import {
@@ -139,7 +139,9 @@ export function UsageGateBridge() {
         : "You've reached your AI usage limit",
       {
         id: "usage-gate-notice",
-        ...(reset ? { description: `Resets ${reset}` } : {}),
+        // The window is NAMED: a person near both her weekly and monthly limits saw "Resets Sun, Nov 1" on
+        // one load and "Resets Mon, Oct 12" on the next as the binding window moved (bug desk 2026-10-08).
+        ...(reset ? { description: `${resetSubject(bindingPeriod)} resets ${reset}` } : {}),
       },
     );
   }, [level, bindingPeriod, resetsAt]);
