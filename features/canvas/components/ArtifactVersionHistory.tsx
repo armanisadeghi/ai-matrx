@@ -1,5 +1,6 @@
 "use client";
 
+import { chainVersionOf } from "@/features/canvas/services/versionChainOwner";
 import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 /**
  * ArtifactVersionHistory — the ONE generic version-history viewer for any
@@ -69,7 +70,7 @@ export function ArtifactVersionHistory({
     setLoading(true);
     try {
       const history = await canvasArtifactService.readVersionHistory(canvasItemId);
-      const sorted = [...history].sort((a, b) => b.version - a.version);
+      const sorted = [...history].sort((a, b) => chainVersionOf(b) - chainVersionOf(a));
       setRows(sorted);
       setSelectedId(sorted[0]?.id ?? null);
       setLoadError(null);
@@ -91,7 +92,7 @@ export function ArtifactVersionHistory({
           type: row.type,
         });
         if (saved) {
-          toast.success(`Restored v${row.version} as a new version`);
+          toast.success(`Restored v${chainVersionOf(row)} as a new version`);
           window.dispatchEvent(
             new CustomEvent(CANVAS_ITEM_UPDATED_EVENT, {
               detail: { rootId: canvasItemId, latestId: saved.id },
@@ -160,7 +161,7 @@ export function ArtifactVersionHistory({
               {rows.map((row, i) => {
                 const isLatest = i === 0;
                 const isOriginal =
-                  row.parent_canvas_id === null || row.version === 1;
+                  row.parent_canvas_id === null || chainVersionOf(row) === 1;
                 const isSelected = row.id === selectedId;
                 return (
                   <div
@@ -175,7 +176,7 @@ export function ArtifactVersionHistory({
                       className="min-w-0 flex-1 text-left"
                     >
                       <div className="font-medium text-foreground">
-                        v{row.version}
+                        v{chainVersionOf(row)}
                         {isLatest && (
                           <span className="ml-1 text-[10px] text-primary">
                             current
@@ -197,7 +198,7 @@ export function ArtifactVersionHistory({
                         onClick={() => restore(row)}
                         disabled={restoringId === row.id}
                         className="shrink-0 rounded p-1 text-muted-foreground hover:bg-background hover:text-foreground"
-                        title={`Restore v${row.version}`}
+                        title={`Restore v${chainVersionOf(row)}`}
                       >
                         {restoringId === row.id ? (
                           <Loader2 className="h-3 w-3 animate-spin" />
@@ -215,10 +216,10 @@ export function ArtifactVersionHistory({
               <div className="border-t border-border">
                 <div className="flex items-center justify-between px-3 pt-2">
                   <span className="text-[10px] uppercase tracking-wider text-muted-foreground">
-                    {selected.version === 1 ||
+                    {chainVersionOf(selected) === 1 ||
                     selected.parent_canvas_id === null
                       ? "Originally streamed"
-                      : `Version ${selected.version}`}
+                      : `Version ${chainVersionOf(selected)}`}
                   </span>
                   {current && selected.id !== current.id && (
                     <button
@@ -227,8 +228,8 @@ export function ArtifactVersionHistory({
                         openDiff({
                           original: versionReadableText(selected),
                           modified: versionReadableText(current),
-                          originalLabel: `v${selected.version}`,
-                          modifiedLabel: `Current (v${current.version})`,
+                          originalLabel: `v${chainVersionOf(selected)}`,
+                          modifiedLabel: `Current (v${chainVersionOf(current)})`,
                           title: `${selected.title ?? "Artifact"} — compare`,
                           engine: "auto",
                           language: selected.type,

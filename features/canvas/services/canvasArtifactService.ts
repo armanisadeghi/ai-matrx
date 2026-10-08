@@ -143,7 +143,10 @@ export interface CanvasArtifactRow {
   conversation_id: string | null;
   source_message_id: string | null;
   artifact_index: number | null;
+  /** Row-revision token (bumped on every UPDATE) — never a chain order. */
   version: number;
+  /** The row's number in its version chain (assigned at INSERT). */
+  chain_version?: number | null;
   parent_canvas_id: string | null;
   source_type: string;
   /** Domain-record link (R6/R7): e.g. "ctx_tasks", "code_files". */

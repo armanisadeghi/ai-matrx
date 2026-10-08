@@ -10,6 +10,7 @@
  * the file-fetch duplication work.)
  */
 
+import { latestChainRow } from "@/features/canvas/services/versionChainOwner";
 import { useEffect, useState, useCallback } from "react";
 import { recordUnavailable } from "@/lib/records/recordUnavailable";
 import {
@@ -66,10 +67,7 @@ async function loadLatestInChain(id: string): Promise<CanvasArtifactRow | null> 
   const p = canvasArtifactService
     .getVersionHistory(id)
     .then((rows) => {
-      const latest =
-        rows.length > 0
-          ? rows.reduce((max, r) => (r.version > max.version ? r : max), rows[0])
-          : null;
+      const latest = latestChainRow(rows);
       cache.set(key, { row: latest, at: Date.now() });
       inflight.delete(key);
       return latest;

@@ -24,6 +24,25 @@ export interface ChainRow {
   user_id?: string | null;
 }
 
+/**
+ * A row's place in its version chain. `chain_version` is assigned once at INSERT;
+ * `version` is the row-revision token every UPDATE bumps (a v1 relinked to its
+ * page reads `version` 4 while v2 reads 2), so `version` never orders a chain.
+ * Rows read without the column (narrow selects) fall back to `version`.
+ */
+export function chainVersionOf(row: { chain_version?: number | null; version?: number | null }): number {
+  return row.chain_version ?? row.version ?? 1;
+}
+
+/** The newest version among chain rows (highest `chain_version`), or null. */
+export function latestChainRow<T extends { chain_version?: number | null; version?: number | null }>(
+  rows: readonly T[],
+): T | null {
+  let latest: T | null = null;
+  for (const row of rows) if (!latest || chainVersionOf(row) > chainVersionOf(latest)) latest = row;
+  return latest;
+}
+
 export function chainOwnerRowsOnly<T extends ChainRow>(rows: T[], requestedId?: string): T[] {
   if (rows.length === 0) return rows;
   const root = rows.find((row) => row.parent_canvas_id === null);

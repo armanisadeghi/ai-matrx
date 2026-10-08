@@ -16,6 +16,7 @@
  * refreshes the context entry.
  */
 
+import { latestChainRow } from "@/features/canvas/services/versionChainOwner";
 import type { AppDispatch, RootState } from "@/lib/redux/store";
 import type {
   CxContentBlock,
@@ -169,10 +170,7 @@ function extractBody(row: { content: unknown }): string {
 async function resolveLatestInChain(id: string) {
   const history = await canvasArtifactService.getVersionHistory(id);
   if (history.length > 0) {
-    return history.reduce(
-      (max, r) => (r.version > max.version ? r : max),
-      history[0]!,
-    );
+    return latestChainRow(history)!;
   }
   return canvasArtifactService.getById(id);
 }
