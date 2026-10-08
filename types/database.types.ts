@@ -33236,6 +33236,16 @@ export type Database = {
             Args: { p_field: Json; p_organization_id: string; p_value: Json }
             Returns: Json
           }
+      _addressed_cap_now: {
+        Args: {
+          p_id: string
+          p_organization_id?: string
+          p_table_id?: string
+          p_type: string
+          p_user_id: string
+        }
+        Returns: Database["public"]["Enums"]["permission_level"]
+      }
       _agent_change_gate: {
         Args: {
           p_door: string
@@ -33906,6 +33916,10 @@ export type Database = {
       }
       _may_know_table: {
         Args: { p_organization_id: string; p_table_id: string }
+        Returns: boolean
+      }
+      _memo_put_bool: {
+        Args: { p_key: string; p_value: boolean }
         Returns: boolean
       }
       _nfx_arglist: {
@@ -76365,6 +76379,10 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      _member_default_level_now: {
+        Args: { p_organization_id: string; p_table_id?: string }
+        Returns: Database["public"]["Enums"]["permission_level"]
+      }
       _notify_door: {
         Args: {
           p_dedupe: string
@@ -77132,6 +77150,7 @@ export type Database = {
         Returns: boolean
       }
       is_trusted_backend: { Args: never; Returns: boolean }
+      kernel_batch_on: { Args: { p_person: string }; Returns: boolean }
       kernel_set_form_on: { Args: { p_person: string }; Returns: boolean }
       kernel_shadow_on: { Args: { p_person: string }; Returns: boolean }
       kernel_shadow_sweep: {
@@ -83008,6 +83027,78 @@ export type Database = {
           },
         ]
       }
+      perf_client_event: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          id: string
+          measured_at: string
+          metadata: Json
+          metric: string
+          navigation_type: string | null
+          organization_id: string
+          published_to_web: boolean
+          published_to_web_at: string | null
+          published_to_web_by: string | null
+          rating: string | null
+          release_sha: string | null
+          route: string
+          shown_to: Database["platform"]["Enums"]["shown_to"] | null
+          updated_at: string
+          updated_by: string | null
+          value_ms: number
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          id?: string
+          measured_at?: string
+          metadata?: Json
+          metric: string
+          navigation_type?: string | null
+          organization_id: string
+          published_to_web?: boolean
+          published_to_web_at?: string | null
+          published_to_web_by?: string | null
+          rating?: string | null
+          release_sha?: string | null
+          route: string
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
+          updated_at?: string
+          updated_by?: string | null
+          value_ms: number
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          id?: string
+          measured_at?: string
+          metadata?: Json
+          metric?: string
+          navigation_type?: string | null
+          organization_id?: string
+          published_to_web?: boolean
+          published_to_web_at?: string | null
+          published_to_web_by?: string | null
+          rating?: string | null
+          release_sha?: string | null
+          route?: string
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
+          updated_at?: string
+          updated_by?: string | null
+          value_ms?: number
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Relationships: []
+      }
       perf_sample: {
         Row: {
           bytes: number | null
@@ -83891,8 +83982,11 @@ export type Database = {
         Returns: Json
       }
       perf_alert: { Args: { p_items: Json }; Returns: Json }
+      perf_cli_ingest: { Args: { p_report: Json }; Returns: Json }
+      perf_client_report: { Args: { p_samples: Json }; Returns: Json }
       perf_door_sql: { Args: { p_subject: Json }; Returns: string }
       perf_health_run: { Args: never; Returns: Json }
+      perf_job_collect: { Args: never; Returns: Json }
       perf_judge: { Args: { p_check_id: string }; Returns: Json }
       perf_judge_rule: {
         Args: { p_history: Json; p_knobs: Json; p_now: string; p_watch: Json }
@@ -83909,8 +84003,10 @@ export type Database = {
         }
         Returns: Json
       }
+      perf_route_template: { Args: { p_route: string }; Returns: string }
       perf_sample_retention: { Args: never; Returns: number }
       perf_statement_collect: { Args: never; Returns: Json }
+      perf_vital_rollup: { Args: never; Returns: Json }
       perf_watch_declare: {
         Args: {
           p_budget_ms: number
@@ -93109,8 +93205,17 @@ export type Database = {
       }
       _action_request_gone: { Args: never; Returns: string }
       _admin_read_ensure: { Args: { p_rel: unknown }; Returns: boolean }
+      _agent_spend_candidates: {
+        Args: { p_agent_id: string; p_mandate_key: string; p_since: string }
+        Returns: string[]
+      }
       _agent_spend_facts: {
-        Args: { p_conversation_id?: string; p_org_id: string; p_since: string }
+        Args: {
+          p_conversation_id?: string
+          p_only?: string[]
+          p_org_id: string
+          p_since: string
+        }
         Returns: {
           agent_id: string
           automated: boolean
