@@ -25,6 +25,7 @@
 
 import * as React from "react";
 import { act } from "react";
+import { TooltipProvider } from "@/components/ui/tooltip";
 import { createRoot } from "react-dom/client";
 
 import { DetailBody } from "@ai-matrx/detail/react";
@@ -252,9 +253,11 @@ async function mount() {
   const root = createRoot(container);
   await act(async () => {
     root.render(
-      <DetailHostProvider ports={ports()}>
-        <Detail />
-      </DetailHostProvider>,
+      <TooltipProvider>
+        <DetailHostProvider ports={ports()}>
+          <Detail />
+        </DetailHostProvider>
+      </TooltipProvider>,
     );
   });
   for (let i = 0; i < 10; i += 1) {

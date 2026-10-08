@@ -18,6 +18,7 @@
 
 import * as React from "react";
 import { act } from "react";
+import { TooltipProvider } from "@/components/ui/tooltip";
 import { createRoot } from "react-dom/client";
 
 import {
@@ -214,7 +215,9 @@ async function mount(which: (typeof PRESENTATIONS)[number]) {
   const root = createRoot(container);
   await act(async () => {
     root.render(
-      <DetailHostProvider ports={ports(which.shells)}>{which.node}</DetailHostProvider>,
+      <TooltipProvider>
+        <DetailHostProvider ports={ports(which.shells)}>{which.node}</DetailHostProvider>
+      </TooltipProvider>,
     );
   });
   for (let i = 0; i < 8; i += 1) {
