@@ -87,15 +87,9 @@ const NO_PAGE: Row[] = [
   },
   {
     name: "Flash-card AI chat",
-    what: "Own chat pop-up in old flash-card code",
+    what: "Own chat pop-up in old flash-card code (one copy left)",
     created: "2024-10-02",
     file: "app/(transitional)/_flash-cards/ai/AiChatModal.tsx",
-  },
-  {
-    name: "Prompt box with actions",
-    what: "Two copies, only commented-out uses",
-    created: "2024-09-02",
-    file: "components/ai/PromptInputWithActions.tsx",
   },
   {
     name: "Voice input button",
