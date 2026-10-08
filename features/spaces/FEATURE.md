@@ -45,6 +45,18 @@ Block document: a tree of `SpaceBlock` (`id`, `type`, `text: RichSpan[]`, `color
 
 ## Change log
 
+- 2026-10-08 — builder round 35 (lazy sidebar, Notion's model): the sidebar no longer reads the whole tree. First
+  read `content.space_sidebar(p_expand, p_reveal)` = live top-level pages (kernel enumerator
+  `iam.discoverable_ids` once, top level = no discoverable ancestor, set-based) + live children of the open rows
+  (`spaces:expanded`) and of every ancestor of the open page / last page / favorites / recents. A row opening reads
+  `content.space_children` (now checks the parent once, child checks after the edges are materialized). Trash reads
+  `content.space_trash` only when its popover opens. Cmd+K, Move to, Link to page, `[[` and `@` search through
+  `content.space_search(q, limit)` (title then body text, path + snippet; "" = recently edited) — QuickFind no longer
+  fetches every page body. Export walks sub-pages from the database. Provider: `loadChildren`, `childrenLoaded`,
+  `reveal`, `loadTrash`/`trashLoaded`; `summaries`/`byId` hold only what is loaded. `content.space_list` stays for the
+  sample/template installers only. Index `platform.assoc_sub_page_live_by_parent_idx`. Cost found: `space_list` ran
+  `iam.has_access` on EVERY live sub_page edge in the database (the planner pushed the filter onto the index scan)
+  and the sidebar asked for archived pages too: 4.8–5.6 s server time → 95–245 ms.
 - 2026-10-08 — builder round 34 (load speed): `/spaces/[id]` reads the Space on the server as the person
   (`page/space-page-seed.server.ts`, same `SupabaseSpacesStore.get`, head + snapshot + parent edge at once) and the page's
   text is in the HTML: the body's first paint is `editor/static-body.tsx` — the stored blocks drawn read-only in the
