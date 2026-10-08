@@ -18,6 +18,13 @@ import type { TranslationBundle, TranslationCellRow } from "../types";
 
 jest.mock("@/lib/redux/hooks", () => ({ useAppDispatch: () => jest.fn() }));
 jest.mock("@/features/ai-models/catalogReload", () => ({ reloadAiCatalog: () => ({ type: "noop" }) }));
+// The notes box is a ProTextarea (2026-10-07) -- dictation, read-aloud and page agents behind a
+// full app store. It is not what this suite examines (what the editor OPENS with), so it renders
+// as the plain textarea it wraps.
+jest.mock("@/components/official/ProTextarea", () => {
+  const React = require("react");
+  return { ProTextarea: React.forwardRef((props: object, ref: unknown) => React.createElement("textarea", { ...props, ref })) };
+});
 jest.mock("../data", () => ({ saveTranslationCell: jest.fn(), archiveTranslationCell: jest.fn() }));
 jest.mock("@/lib/toast", () => ({ toast: { success: jest.fn(), error: jest.fn() } }));
 
