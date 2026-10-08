@@ -1172,7 +1172,7 @@ function withPendingImportRescue(config) {
     loaders: [MATRX_PENDING_LOADER],
   };
   const rules = { ...(config.turbopack?.rules ?? {}) };
-  for (const glob of ["*.ts", "*.tsx", "*.js", "*.jsx", "*.mjs"]) {
+  for (const glob of ["*.ts", "*.tsx", "*.mts", "*.cts", "*.js", "*.jsx", "*.mjs", "*.cjs"]) {
     if (rules[glob]) throw new Error(`[matrx] turbopack.rules already has ${glob}; merge the pending-import rescue into it`);
     rules[glob] = rule;
   }

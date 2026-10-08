@@ -58,7 +58,73 @@ export const PLACEHOLDER_MODULE = "@/lib/turbopack/matrx-pending";
 
 // ── what a shipped file exports (text only) ──────────────────────────────────
 
-const stripComments = (text) => text.replace(/\/\*[\s\S]*?\*\//g, " ").replace(/(^|[^:\\])\/\/[^\n]*/g, "$1");
+// A string-aware scan (review of 1162b05f96: a `//` inside a base64 string in alchemy's shipped
+// operate-pptx.js made a naive stripper delete the real `export{buildPresentation}` after it, so a
+// SHIPPED import read as pending). Comments become spaces (indices and newlines kept); strings,
+// templates and regex literals are skipped intact. Returns { code, hidden } — `hidden` holds the
+// [start, end) ranges inside comments and template literals — or null when the text does not scan
+// cleanly (an unterminated comment/string), which every caller treats as "not knowable".
+const REGEX_AFTER = new Set([..."(,=:[!&|?{};+-*%<>~^"]);
+export function scanCode(text) {
+  const out = text.split("");
+  const hidden = [];
+  let prev = ""; // last significant character outside comments
+  let i = 0;
+  const n = text.length;
+  const blank = (a, b) => {
+    for (let k = a; k < b; k++) if (out[k] !== "\n") out[k] = " ";
+  };
+  while (i < n) {
+    const c = text[i];
+    const d = text[i + 1];
+    if (c === "/" && d === "/") {
+      const end = text.indexOf("\n", i);
+      const stop = end === -1 ? n : end;
+      blank(i, stop);
+      hidden.push([i, stop]);
+      i = stop;
+    } else if (c === "/" && d === "*") {
+      const end = text.indexOf("*/", i + 2);
+      if (end === -1) return null;
+      blank(i, end + 2);
+      hidden.push([i, end + 2]);
+      i = end + 2;
+    } else if (c === '"' || c === "'") {
+      let j = i + 1;
+      while (j < n && text[j] !== c && text[j] !== "\n") j += text[j] === "\\" ? 2 : 1;
+      i = j + 1;
+      prev = c;
+    } else if (c === "`") {
+      let j = i + 1;
+      while (j < n && text[j] !== "`") j += text[j] === "\\" ? 2 : 1;
+      if (j >= n) return null;
+      hidden.push([i, j + 1]);
+      i = j + 1;
+      prev = c;
+    } else if (c === "/" && (prev === "" || REGEX_AFTER.has(prev) || /\b(?:return|typeof|case|in|of|void|throw|delete|new)\s*$/.test(text.slice(Math.max(0, i - 8), i)))) {
+      let j = i + 1;
+      let cls = false;
+      while (j < n && text[j] !== "\n" && (cls || text[j] !== "/")) {
+        if (text[j] === "\\") j++;
+        else if (text[j] === "[") cls = true;
+        else if (text[j] === "]") cls = false;
+        j++;
+      }
+      i = j + 1;
+      prev = "/";
+    } else {
+      if (!/\s/.test(c)) prev = c;
+      i++;
+    }
+  }
+  return { code: out.join(""), hidden };
+}
+const stripComments = (text) => {
+  const scanned = scanCode(text);
+  if (!scanned) throw new Error("unscannable");
+  return scanned.code;
+};
+const inside = (ranges, index) => ranges.some(([a, b]) => index >= a && index < b);
 
 const runtimeCache = new Map();
 /** Names an ESM file exports at runtime, following relative `export *`; null when not knowable. */
@@ -130,7 +196,7 @@ function declarationText(entry) {
     try {
       text = stripComments(readFileSync(file, "utf8"));
     } catch {
-      return;
+      text = readFileSync(file, "utf8");
     }
     parts.push(text);
     for (const m of text.matchAll(/\bfrom\s*["'](\.[^"']*)["']/g)) walk(resolveRelativeDts(file, m[1]));
@@ -212,15 +278,22 @@ function judgeSpecifier(file, specifier, root) {
 // ── the rewrite ──────────────────────────────────────────────────────────────
 
 // `import … from "@ai-matrx/…"` / `export … from "@ai-matrx/…"`, anchored at a line start.
-const STATIC = /^([ \t]*)(import|export)(\s+type)?\s+([^;'"]*?)\s*from\s*(["'])(@ai-matrx\/[^"']+)\5[ \t]*;?/gm;
-const SIDE_EFFECT = /^([ \t]*)import\s*(["'])(@ai-matrx\/[^"']+)\2[ \t]*;?/gm;
+const STATIC = /(?<=^|;)([ \t]*)(import|export)(\s+type)?\s+([^;'"]*?)\s*from\s*(["'])(@ai-matrx\/[^"']+)\5[ \t]*;?/gm;
+const SIDE_EFFECT = /(?<=^|;)([ \t]*)import\s*(["'])(@ai-matrx\/[^"']+)\2[ \t]*;?/gm;
 const DYNAMIC = /\b(import|require)\(\s*(["'])(@ai-matrx\/[^"']+)\2\s*\)/g;
-const IDENT = /^[\w$]+$/;
+// `import a from "…" with { type: "json" }` — rewriting would leave the attributes dangling.
+const ATTRIBUTES_FOLLOW = /^\s*(?:with|assert)\s*\{/;
 
 /** `{ a, type B, c as d }` → [{ imported, local, typeOnly, text }] or null when not plainly readable. */
 function namedList(body) {
   const out = [];
-  for (const raw of stripComments(body).split(",")) {
+  let clean;
+  try {
+    clean = stripComments(body);
+  } catch {
+    return null;
+  }
+  for (const raw of clean.split(",")) {
     const el = raw.trim();
     if (!el) continue;
     const m = el.match(/^(type\s+)?([\w$]+)(?:\s+as\s+([\w$]+))?$/);
@@ -232,7 +305,12 @@ function namedList(body) {
 
 /** Parse an import clause: `D`, `D, { … }`, `D, * as ns`, `{ … }`, `* as ns`. Null when unusual. */
 function importClause(clause) {
-  const c = stripComments(clause).trim();
+  let c;
+  try {
+    c = stripComments(clause).trim();
+  } catch {
+    return null;
+  }
   const m = c.match(/^(?:([\w$]+)\s*(?:,\s*|$))?(?:\*\s*as\s+([\w$]+)|\{([\s\S]*)\})?$/);
   if (!m || (!m[1] && !m[2] && m[3] === undefined)) return null;
   const named = m[3] !== undefined ? namedList(m[3]) : [];
@@ -266,9 +344,13 @@ export function rescuePendingImports(file, text, root) {
   const call = (inf, name) => `__matrxPending(${inf}, ${JSON.stringify(name)})`;
   const ns = (inf) => `__matrxPending.namespace(${inf})`;
   const edits = []; // { start, end, text }
+  // Text inside a comment or template literal is never a statement (a code sample, a fixture).
+  const hidden = scanCode(text)?.hidden ?? [];
+  const skip = (m, end) => inside(hidden, m.index + m[1].length) || ATTRIBUTES_FOLLOW.test(text.slice(end));
 
   for (const m of text.matchAll(STATIC)) {
     const [whole, indent, verb, typeKw, clauseText, , specifier] = m;
+    if (skip(m, m.index + whole.length)) continue;
     if (typeKw) continue; // `import type` / `export type`: erased, never reaches the bundler
     const j = judge(specifier);
     if (!j.pending) continue;
@@ -300,7 +382,12 @@ export function rescuePendingImports(file, text, root) {
         if (parts.length) out.unshift(`import ${parts.join(", ")} from ${quoted};`);
       }
     } else {
-      const c = stripComments(clauseText).trim();
+      let c;
+      try {
+        c = stripComments(clauseText).trim();
+      } catch {
+        continue;
+      }
       const star = c.match(/^\*(?:\s*as\s+([\w$]+))?$/);
       if (star) {
         if (!all) continue;
@@ -326,6 +413,7 @@ export function rescuePendingImports(file, text, root) {
   }
 
   for (const m of text.matchAll(SIDE_EFFECT)) {
+    if (skip(m, m.index + m[0].length)) continue;
     const j = judge(m[3]);
     if (j.pending !== "module") continue;
     void ns(info(j, "*", lineAt(m.index), m[3]));
@@ -333,6 +421,7 @@ export function rescuePendingImports(file, text, root) {
   }
 
   for (const m of text.matchAll(DYNAMIC)) {
+    if (inside(hidden, m.index) || /\bimport\s+[\w$]+\s*=\s*$/.test(text.slice(Math.max(0, m.index - 80), m.index))) continue;
     const j = judge(m[3]);
     if (j.pending !== "module") continue;
     const value = ns(info(j, "*", lineAt(m.index), m[3]));
@@ -391,7 +480,8 @@ function selfTest() {
       }));
       // Built ESM the way tsc/tsup ship it: an `export *` barrel plus `export { … }` lists.
       write("node_modules/@ai-matrx/chat/dist/index.js", `export * from "./levels.js";\nexport { Tool } from "./tool.js";\n`);
-      write("node_modules/@ai-matrx/chat/dist/levels.js", `const PERMISSION_LEVELS = [];\n${published ? "const PERMISSION_LEVEL_HINTS = {};\nexport { PERMISSION_LEVELS, PERMISSION_LEVEL_HINTS };\n" : "export { PERMISSION_LEVELS };\n"}`);
+      // Minified, like alchemy's operate-pptx.js: a `//` inside a string BEFORE an export on the same line.
+      write("node_modules/@ai-matrx/chat/dist/levels.js", `const PERMISSION_LEVELS=[],B="data:x//y",G='/*',R=/["'/]/;${published ? "const PERMISSION_LEVEL_HINTS={};export{PERMISSION_LEVEL_HINTS};" : ""}\nexport { PERMISSION_LEVELS };\n`);
       write("node_modules/@ai-matrx/chat/dist/tool.js", `export class Tool {}\n`);
       write("node_modules/@ai-matrx/chat/dist/index.d.ts", `export * from "./levels";\nexport { Tool } from "./tool";\n`);
       write("node_modules/@ai-matrx/chat/dist/levels.d.ts", `export declare const PERMISSION_LEVELS: string[];\nexport interface Level { id: string }\n${published ? "export declare const PERMISSION_LEVEL_HINTS: Record<string, string>;\n" : ""}`);
@@ -458,6 +548,21 @@ function selfTest() {
     if (red.code.split("\n").length !== text.split("\n").length) failures.push("RED: the rewrite moved line numbers");
     if (!red.code.split("\n")[15].startsWith("export default function Panel()")) failures.push("RED: a later line moved");
     if (!/aidream source|does not ship it/.test(describePending(red.pending[0]))) failures.push(`RED: description names no version: ${describePending(red.pending[0])}`);
+
+    // Review findings (1162b05f96): statements that must NOT be rewritten, and two on one line.
+    const edge = [
+      `const sample = \`import { PERMISSION_LEVEL_HINTS } from "@ai-matrx/chat";\`;`,
+      `/* import { PERMISSION_LEVEL_HINTS } from "@ai-matrx/chat"; */`,
+      `import data from "@ai-matrx/chat/agents/ui/CredentialCaptureCard" with { type: "json" };`,
+      `import legacy = require("@ai-matrx/chat/agents/ui/CredentialCaptureCard");`,
+      `import { Tool } from "@ai-matrx/chat"; import { PERMISSION_LEVEL_HINTS } from "@ai-matrx/chat";`,
+      ``,
+    ].join("\n");
+    const e = rescuePendingImports(file, edge, tmp);
+    const eLines = e.code.split("\n");
+    if (e.pending.length !== 1 || e.pending[0].line !== 5) failures.push(`RED edge: expected only the second statement on line 5 rescued, got ${JSON.stringify(e.pending)}`);
+    for (const k of [0, 1, 2, 3]) if (!e.code.includes(edge.split("\n")[k])) failures.push(`RED edge: line ${k + 1} was touched:\n${e.code}`);
+    if (!eLines[4].startsWith(`import { Tool } from "@ai-matrx/chat"; const PERMISSION_LEVEL_HINTS = __matrxPending(`)) failures.push(`RED edge: same-line statement not rescued:\n${eLines[4]}`);
 
     // A file with no directive gets the helper at the very top.
     const plain = `import { PERMISSION_LEVEL_HINTS } from "@ai-matrx/chat";\nexport const x = PERMISSION_LEVEL_HINTS;\n`;
