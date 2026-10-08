@@ -1,6 +1,6 @@
 {
   "note": "Checked-in snapshot of public._schema_migrations for the files under migrations/campaign and migrations/inverse. Written by `pnpm db:apply` on every successful production apply and refreshed whole by the nightly catch-up. Never hand-edited: a self-written checksum is a claim nobody can check. Guard: pnpm check:ledgered-files-unedited.",
-  "generated_at": "2026-10-08T14:59:34.640Z",
+  "generated_at": "2026-10-08T15:03:51.109Z",
   "files": {
     "migrations/campaign/a_chunk_is_the_size_the_client_door_can_actually_carry.sql": {
       "source": "matrx-frontend",
@@ -3841,6 +3841,12 @@
       "filename": "installspeed2_d_add_rungs_keep_their_plans.sql",
       "checksum": "f7d8fc75d323c84c5081150951c71b37856fa073640397abb0d2a5d58ff78bf9",
       "applied_at": "2026-10-08 12:12:04.767378+00"
+    },
+    "migrations/campaign/installspeed3_a_the_fields_of_an_organization_have_their_indexes.sql": {
+      "source": "matrx-frontend",
+      "filename": "installspeed3_a_the_fields_of_an_organization_have_their_indexes.sql",
+      "checksum": "634889a42cf029ed0fa4d52c271cd6ec4f7a317481ed75508d8c7c9ec520f89e",
+      "applied_at": "2026-10-08 14:32:52.402897+00"
     },
     "migrations/campaign/installspeed3_b_the_table_of_a_field_is_found_by_its_id.sql": {
       "source": "matrx-frontend",
