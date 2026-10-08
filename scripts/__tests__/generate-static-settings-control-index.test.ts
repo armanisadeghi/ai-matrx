@@ -31,4 +31,16 @@ describe("static settings control index", () => {
       }),
     );
   });
+
+  it("registers the Start-up organization row so search finds start-up and startup", () => {
+    const entry = staticSettingsControlIndex.find(
+      (control) => control.label === "Start-up organization",
+    ) as { tabId: string; keywords?: string[]; controlId: string } | undefined;
+    expect(entry).toBeDefined();
+    expect(entry?.tabId).toBe("organizations");
+    expect(entry?.controlId).toBe("settings-control-when-you-sign-in-start-up-organization");
+    const haystack = ["Start-up organization", ...(entry?.keywords ?? [])].join(" ").toLowerCase();
+    expect(haystack).toContain("start-up");
+    expect(haystack).toContain("startup");
+  });
 });

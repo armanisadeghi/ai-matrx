@@ -22,7 +22,18 @@ import {
 /** The "no start-up organization" choice: the ladder falls to the first one. */
 const NONE = "";
 
-export function StartupOrganizationRow({ last = false }: { last?: boolean }) {
+export function StartupOrganizationRow({
+  label = "Start-up organization",
+  description = "Opens when you have no last-used organization",
+  // Read by scripts/generate-static-settings-control-index.ts (settings search).
+  searchKeywords: _searchKeywords,
+  last = false,
+}: {
+  label?: string;
+  description?: string;
+  searchKeywords?: readonly string[];
+  last?: boolean;
+}) {
   const userId = useAppSelector(selectUserId);
   const { organizations, loading } = useUserOrganizations();
   const [value, setValue] = useState<string | null>(null);
@@ -67,8 +78,8 @@ export function StartupOrganizationRow({ last = false }: { last?: boolean }) {
   return (
     <SettingsSelect
       icon={Building2}
-      label="Start-up organization"
-      description="Opens when you have no last-used organization"
+      label={label}
+      description={description}
       value={value ?? NONE}
       onValueChange={onValueChange}
       options={options}

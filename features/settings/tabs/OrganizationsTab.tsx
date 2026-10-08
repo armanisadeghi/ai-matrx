@@ -20,7 +20,12 @@ export default function OrganizationsTab() {
   return (
     <div className="p-4 md:p-6">
       <SettingsSection title="When you sign in">
-        <StartupOrganizationRow last />
+        <StartupOrganizationRow
+          label="Start-up organization"
+          description="Opens when you have no last-used organization"
+          searchKeywords={["start-up", "startup", "organization", "open"]}
+          last
+        />
       </SettingsSection>
       <PreferencesLoadGate what="your link setting">
         {/* Every link the platform sends names the organization its target is filed under. */}
