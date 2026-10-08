@@ -21,11 +21,15 @@ import { usageViewHref } from "@/features/admin/usage-drill/usageLinks";
 import { RunApprovalCell } from "@/features/admin/spend-approvals/RunApprovalCell";
 import { approvalStatusSync } from "@/features/admin/spend-approvals/spendApprovals";
 import { orgAdminMemberHref } from "@/features/organizations/admin/routes";
+import { SPEND_FLAG_LIMITS } from "@/features/scheduling/service/automationCosts";
 import {
-  TEST_ACCOUNT_EMAILS,
+  HUGE_CONTEXT_TOKENS,
   agentSpendDetailHref,
   agentSpendFlags,
   fetchAgentSpend,
+  fetchAgentSpendRawTotal,
+  isTestAccount,
+  reconciles,
   spendAgentHref,
   spendMandateHref,
   type AgentSpendRow,
@@ -36,6 +40,7 @@ import {
 
 export function useAgentSpend(orgId: string | null, days: SpendWindowDays) {
   const [rows, setRows] = useState<AgentSpendRow[]>([]);
+  const [rawTotal, setRawTotal] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [tick, setTick] = useState(0);
@@ -43,19 +48,24 @@ export function useAgentSpend(orgId: string | null, days: SpendWindowDays) {
     let live = true;
     setLoading(true);
     setError(null);
-    fetchAgentSpend(orgId, days)
-      .then((r) => live && setRows(r))
+    setRawTotal(null);
+    Promise.all([fetchAgentSpend(orgId, days), fetchAgentSpendRawTotal(orgId, days)])
+      .then(([r, raw]) => {
+        if (!live) return;
+        setRows(r);
+        setRawTotal(raw);
+      })
       .catch((e: unknown) => live && setError(e instanceof Error ? e.message : String(e)))
       .finally(() => live && setLoading(false));
     return () => {
       live = false;
     };
   }, [orgId, days, tick]);
-  return { rows, loading, error, reload: () => setTick((t) => t + 1) };
+  return { rows, rawTotal, loading, error, reload: () => setTick((t) => t + 1) };
 }
 
-export const rowKey = (r: Pick<AgentSpendRow, "agent_id" | "mandate_key">) =>
-  `${r.agent_id ?? "-"}:${r.mandate_key ?? "-"}`;
+export const rowKey = (r: { agent_id: string | null; mandate_key: string | null; unattributed_source?: string | null }) =>
+  `${r.agent_id ?? "-"}:${r.mandate_key ?? "-"}:${r.unattributed_source ?? "-"}`;
 
 export function SpendFlagBadges({ flags }: { flags: SpendFlag[] }) {
   if (flags.length === 0) return <span className="text-xs text-muted-foreground">—</span>;
@@ -87,7 +97,9 @@ export function SpendSubject({
   orgSlug?: string;
   days: SpendWindowDays;
 }) {
-  const title = row.agent_name ?? row.mandate_label ?? row.mandate_key ?? "Unknown agent";
+  const title = row.unattributed_source
+    ? `Unattributed: ${row.unattributed_source}`
+    : (row.agent_name ?? row.mandate_label ?? row.mandate_key ?? "Unknown agent");
   const agentHref = seat === "admin" ? spendAgentHref(row) : undefined;
   return (
     <div className="flex min-w-0 flex-col gap-0.5">
@@ -101,6 +113,9 @@ export function SpendSubject({
       <div className="flex min-w-0 flex-col gap-0.5 text-xs">
         {row.agent_id && (
           <EntityRef token="agent" id={row.agent_id} name={row.agent_name ?? "Agent"} href={agentHref ?? undefined} />
+        )}
+        {row.unattributed_source && (
+          <span className="truncate text-muted-foreground">No agent or mandate recorded</span>
         )}
         {row.mandate_key && (
           <EntityRef
@@ -136,7 +151,7 @@ export function PaidBy({ row, seat, orgSlug }: { row: AgentSpendRow; seat: Spend
   return (
     <div className="flex min-w-0 flex-col gap-0.5 text-xs">
       {top.map((p) => {
-        const flagged = p.is_platform_admin || (p.email != null && (TEST_ACCOUNT_EMAILS as readonly string[]).includes(p.email));
+        const flagged = isTestAccount(p);
         const label = p.email ?? "Unknown person";
         const href = p.person_id
           ? seat === "admin"
@@ -161,6 +176,49 @@ export function PaidBy({ row, seat, orgSlug }: { row: AgentSpendRow; seat: Spend
   );
 }
 
+/** One fixed-height line proving the board adds up to everything the platform recorded. */
+export function ReconciliationBar({
+  loading,
+  board,
+  raw,
+  unattributed,
+  days,
+  format,
+}: {
+  loading: boolean;
+  board: number;
+  raw: number | null;
+  unattributed: number;
+  days: SpendWindowDays;
+  format: (usd: number) => string;
+}) {
+  const ok = raw != null && reconciles(board, raw);
+  return (
+    <div className="flex h-7 shrink-0 items-center gap-3 overflow-hidden whitespace-nowrap text-xs text-muted-foreground">
+      {loading || raw == null ? (
+        <span>Adding up {days} days of spend</span>
+      ) : (
+        <>
+          <span>
+            Board total <span className="font-medium tabular-nums text-foreground">{format(board)}</span>
+          </span>
+          <span>
+            All recorded AI spend <span className="font-medium tabular-nums text-foreground">{format(raw)}</span>
+          </span>
+          <Badge tone={ok ? "success" : "destructive"}>
+            {ok ? "Matches" : `Gap ${format(Math.abs(raw - board))}`}
+          </Badge>
+          {unattributed > 0 && (
+            <span>
+              Unattributed <span className="font-medium tabular-nums text-foreground">{format(unattributed)}</span>
+            </span>
+          )}
+        </>
+      )}
+    </div>
+  );
+}
+
 export function AgentSpendBoard({
   orgId,
   seat,
@@ -174,10 +232,11 @@ export function AgentSpendBoard({
   days: SpendWindowDays;
   onDaysChange: (d: SpendWindowDays) => void;
 }) {
-  const { rows, loading, error, reload } = useAgentSpend(orgId, days);
+  const { rows, rawTotal, loading, error, reload } = useAgentSpend(orgId, days);
   const { format } = useCostDisplay();
   const total = rows.reduce((s, r) => s + r.cost, 0);
-  const unsaved = rows.reduce((s, r) => s + r.unsaved_cost, 0);
+  const unattributed = rows.reduce((s, r) => s + (r.unattributed_source ? r.cost : 0), 0);
+  const L = SPEND_FLAG_LIMITS;
 
   const columns: MatrxColumnDef<AgentSpendRow>[] = [
     {
@@ -205,7 +264,6 @@ export function AgentSpendBoard({
           orgId={orgId}
           subjects={[["mandate", r.mandate_key], ["agent", r.agent_id]]}
           maxRunCost={r.max_run_cost}
-          thresholdOrgId={r.organization_id}
           seat={seat}
           orgSlug={orgSlug}
         />
@@ -242,7 +300,7 @@ export function AgentSpendBoard({
       header: "Avg / run",
       filter: "number",
       width: 90,
-      cell: (r) => <Cost usd={r.avg_run_cost} className={`tabular-nums text-xs ${r.avg_run_cost > 1 ? "font-semibold text-red-600" : ""}`} />,
+      cell: (r) => <Cost usd={r.avg_run_cost} className={`tabular-nums text-xs ${r.avg_run_cost > L.runCostUsd ? "font-semibold text-red-600" : ""}`} />,
     },
     {
       id: "max_run_cost",
@@ -250,7 +308,7 @@ export function AgentSpendBoard({
       header: "Max / run",
       filter: "number",
       width: 90,
-      cell: (r) => <Cost usd={r.max_run_cost} className={`tabular-nums text-xs ${r.max_run_cost > 1 ? "font-semibold text-red-600" : ""}`} />,
+      cell: (r) => <Cost usd={r.max_run_cost} className={`tabular-nums text-xs ${r.max_run_cost > L.runCostUsd ? "font-semibold text-red-600" : ""}`} />,
     },
     {
       id: "avg_turns",
@@ -258,7 +316,7 @@ export function AgentSpendBoard({
       header: "Turns avg",
       filter: "number",
       width: 80,
-      cell: (r) => <span className={`tabular-nums text-xs ${r.avg_turns > 5 ? "font-semibold text-red-600" : ""}`}>{r.avg_turns}</span>,
+      cell: (r) => <span className={`tabular-nums text-xs ${r.avg_turns > L.avgTurns ? "font-semibold text-red-600" : ""}`}>{r.avg_turns}</span>,
     },
     {
       id: "max_turns",
@@ -266,7 +324,7 @@ export function AgentSpendBoard({
       header: "Turns max",
       filter: "number",
       width: 80,
-      cell: (r) => <span className={`tabular-nums text-xs ${r.max_turns > 20 ? "font-semibold text-red-600" : ""}`}>{r.max_turns}</span>,
+      cell: (r) => <span className={`tabular-nums text-xs ${r.max_turns > L.maxTurns ? "font-semibold text-red-600" : ""}`}>{r.max_turns}</span>,
     },
     {
       id: "avg_input_per_call",
@@ -274,7 +332,7 @@ export function AgentSpendBoard({
       header: "In / call",
       filter: "number",
       width: 90,
-      cell: (r) => <span className={`tabular-nums text-xs ${r.avg_input_per_call > 50_000 ? "font-semibold text-amber-600" : ""}`}>{Math.round(r.avg_input_per_call).toLocaleString()}</span>,
+      cell: (r) => <span className={`tabular-nums text-xs ${r.avg_input_per_call > HUGE_CONTEXT_TOKENS ? "font-semibold text-amber-600" : ""}`}>{Math.round(r.avg_input_per_call).toLocaleString()}</span>,
     },
     {
       id: "avg_output_per_call",
@@ -329,6 +387,14 @@ export function AgentSpendBoard({
           <ErrorAlchemyMenu error={error} />
         </div>
       )}
+      <ReconciliationBar
+        loading={loading}
+        board={total}
+        raw={rawTotal}
+        unattributed={unattributed}
+        days={days}
+        format={format}
+      />
       <div className="min-h-0 flex-1">
         <MatrxDataTable
           data={rows}
@@ -342,9 +408,6 @@ export function AgentSpendBoard({
             searchPlaceholder: "Search agents and mandates…",
             actions: (
               <div className="flex items-center gap-2">
-                <span className="whitespace-nowrap text-xs text-muted-foreground">
-                  {`${format(total)}${unsaved > 0 ? ` · unsaved ${format(unsaved)}` : ""}`}
-                </span>
                 <SegmentedControl<"7" | "30">
                   aria-label="Window"
                   value={String(days) as "7" | "30"}

@@ -35,6 +35,13 @@ export interface SpendOrg {
   cost: number;
 }
 
+/** The exact identity of one board row: an agent and/or mandate, or an unattributed source. */
+export interface SpendSubjectKey {
+  agent_id: string | null;
+  mandate_key: string | null;
+  source: string | null;
+}
+
 export interface AgentSpendRow {
   agent_id: string | null;
   agent_name: string | null;
@@ -58,6 +65,8 @@ export interface AgentSpendRow {
   last_run_at: string | null;
   payers: SpendPayer[];
   organizations: SpendOrg[];
+  /** Set only on an "Unattributed" row: the feature / origin that recorded spend with no agent or mandate. */
+  unattributed_source: string | null;
 }
 
 export interface AgentSpendRun {
@@ -82,6 +91,13 @@ export interface AgentSpendRun {
   mandate_key: string | null;
 }
 
+/** One page of an agent's runs plus the size of the whole set, so a page is never mistaken for everything. */
+export interface AgentSpendRunsPage {
+  runs: AgentSpendRun[];
+  totalRuns: number;
+  totalCost: number;
+}
+
 export interface ConversationSpendCall {
   execution_id: string;
   created_at: string;
@@ -97,6 +113,7 @@ export interface ConversationSpendCall {
   mandate_key: string | null;
   automated: boolean;
   saved: boolean;
+  source: string | null;
 }
 
 const num = (v: unknown): number => {
@@ -148,23 +165,44 @@ export async function fetchAgentSpend(orgId: string | null, days: SpendWindowDay
       is_system: o.is_system === true,
       cost: num(o.cost),
     })),
+    unattributed_source: r.unattributed_source ?? null,
   }));
 }
+
+/** Every dollar the platform recorded in the window, with no attribution filter — the board must add up to it. */
+export async function fetchAgentSpendRawTotal(orgId: string | null, days: SpendWindowDays): Promise<number> {
+  const { data, error } = await supabase
+    .schema("platform")
+    .rpc("agent_spend_raw_total", { p_org_id: orgId ?? undefined, p_days: days });
+  if (error) throw pgErrorToError(error);
+  return num(data);
+}
+
+/** The board's total is trusted when it is within a cent (or 0.05%) of the raw total. */
+export const reconciles = (board: number, raw: number): boolean =>
+  Math.abs(board - raw) <= Math.max(0.01, Math.abs(raw) * 0.0005);
+
+export const SPEND_RUNS_PAGE_SIZE = 500;
 
 export async function fetchAgentSpendRuns(
   orgId: string | null,
   days: SpendWindowDays,
-  agentId: string | null,
-  mandateKey: string | null,
-): Promise<AgentSpendRun[]> {
+  subject: SpendSubjectKey,
+  offset = 0,
+  limit = SPEND_RUNS_PAGE_SIZE,
+): Promise<AgentSpendRunsPage> {
   const { data, error } = await supabase.schema("platform").rpc("agent_spend_runs", {
     p_org_id: orgId ?? undefined,
     p_days: days,
-    p_agent_id: agentId ?? undefined,
-    p_mandate_key: mandateKey ?? undefined,
+    p_agent_id: subject.agent_id ?? undefined,
+    p_mandate_key: subject.mandate_key ?? undefined,
+    p_source: subject.source ?? undefined,
+    p_limit: limit,
+    p_offset: offset,
   });
   if (error) throw pgErrorToError(error);
-  return (data ?? []).map((r) => ({
+  const rows = data ?? [];
+  const runs = rows.map((r) => ({
     run_key: r.run_key,
     started_at: r.started_at,
     cost: num(r.cost),
@@ -185,6 +223,7 @@ export async function fetchAgentSpendRuns(
     agent_id: r.agent_id,
     mandate_key: r.mandate_key,
   }));
+  return { runs, totalRuns: num(rows[0]?.total_runs), totalCost: num(rows[0]?.total_cost) };
 }
 
 export async function fetchConversationSpend(conversationId: string): Promise<ConversationSpendCall[]> {
@@ -207,6 +246,7 @@ export async function fetchConversationSpend(conversationId: string): Promise<Co
     mandate_key: r.mandate_key,
     automated: r.automated === true,
     saved: r.saved === true,
+    source: r.source ?? null,
   }));
 }
 
@@ -221,6 +261,7 @@ export const TEST_ACCOUNT_EMAILS = ["admin@admin.com", "test@test.com"] as const
 
 export type SpendFlagId =
   | "automated"
+  | "unattributed"
   | "premium_model"
   | "avg_run_over_limit"
   | "run_over_limit"
@@ -235,11 +276,12 @@ export interface SpendFlag {
   id: SpendFlagId;
   label: string;
   detail: string;
-  severity: "critical" | "warning";
+  severity: "critical" | "warning" | "info";
 }
 
-const isTestOrAdmin = (p: SpendPayer) =>
-  p.is_platform_admin || (p.email != null && (TEST_ACCOUNT_EMAILS as readonly string[]).includes(p.email));
+/** Only the named shared test accounts count; an ordinary platform admin paying for their own work is not parked spend. */
+export const isTestAccount = (p: Pick<SpendPayer, "email">) =>
+  p.email != null && (TEST_ACCOUNT_EMAILS as readonly string[]).includes(p.email);
 
 /** `money` is the viewer's cost formatter (useCostDisplay().format): points, or $ for an admin who chose it. */
 export function agentSpendFlags(row: AgentSpendRow, money: (usd: number) => string): SpendFlag[] {
@@ -268,13 +310,25 @@ export function agentSpendFlags(row: AgentSpendRow, money: (usd: number) => stri
   if (row.avg_input_per_call > HUGE_CONTEXT_TOKENS) {
     flags.push({ id: "huge_context", label: "Huge context", detail: `${Math.round(row.avg_input_per_call).toLocaleString()} input tokens per call on average`, severity: "warning" });
   }
-  if (row.automated_runs > 0 && flags.length > 0) {
-    flags.unshift({ id: "automated", label: "Automated", detail: `${row.automated_runs} of ${row.runs} runs started with nobody pressing a button`, severity: "critical" });
+  if (row.automated_runs > 0) {
+    flags.unshift({ id: "automated", label: "Automated", detail: `${row.automated_runs} of ${row.runs} runs started with nobody pressing a button`, severity: "info" });
   }
-  const parked = row.payers.filter(isTestOrAdmin);
+  if (row.unattributed_source) {
+    flags.unshift({ id: "unattributed", label: "Unattributed", detail: `Recorded by "${row.unattributed_source}" with no agent or mandate named`, severity: "warning" });
+  }
+  // A test account is only "parked spend" when it pays for system work: an automated run, or the system organization.
+  const systemWork = row.automated_runs > 0 || row.organizations.some((o) => o.is_system);
+  const parked = systemWork ? row.payers.filter(isTestAccount) : [];
   if (parked.length > 0) {
     const cost = parked.reduce((s, p) => s + p.cost, 0);
-    flags.push({ id: "parked_on_admin", label: "Admin/test account", detail: `${money(cost)} billed to ${parked.map((p) => p.email ?? "an admin").join(", ")}`, severity: "warning" });
+    const share = row.cost > 0 ? Math.round((cost / row.cost) * 100) : 0;
+    const why = row.automated_runs > 0 ? `${row.automated_runs} of its ${row.runs} runs were automated` : "it ran for the system organization";
+    flags.push({
+      id: "parked_on_admin",
+      label: "Billed to test account",
+      detail: `${money(cost)} (${share}%) is billed to ${parked.map((p) => p.email).join(", ")}, a shared test account, and ${why}. System work belongs on a system account, user work on its user.`,
+      severity: "warning",
+    });
   }
   if (row.unsaved_runs > 0) {
     flags.push({ id: "unsaved_runs", label: "Unsaved runs", detail: `${row.unsaved_runs} runs (${money(row.unsaved_cost)}) left no saved conversation`, severity: "warning" });
@@ -287,9 +341,9 @@ export function agentSpendFlags(row: AgentSpendRow, money: (usd: number) => stri
 export const AGENT_SPEND_ADMIN_PATH = "/administration/usage/agents";
 export const orgAgentSpendPath = (orgSlug: string) => `/organizations/${orgSlug}/admin/ai-spend`;
 
-/** One (agent, mandate) pair's detail page, by seat. */
+/** One board row's detail page, by seat. */
 export function agentSpendDetailHref(
-  row: Pick<AgentSpendRow, "agent_id" | "mandate_key">,
+  row: Pick<AgentSpendRow, "agent_id" | "mandate_key"> & { unattributed_source?: string | null },
   days: SpendWindowDays,
   seat: SpendSeat,
   orgSlug?: string,
@@ -297,6 +351,7 @@ export function agentSpendDetailHref(
   const p = new URLSearchParams();
   if (row.agent_id) p.set("agent", row.agent_id);
   if (row.mandate_key) p.set("mandate", row.mandate_key);
+  if (row.unattributed_source) p.set("source", row.unattributed_source);
   p.set("days", String(days));
   const base = seat === "org" && orgSlug ? orgAgentSpendPath(orgSlug) : AGENT_SPEND_ADMIN_PATH;
   return `${base}/detail?${p.toString()}`;

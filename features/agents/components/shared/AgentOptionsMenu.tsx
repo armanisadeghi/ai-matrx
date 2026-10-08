@@ -51,6 +51,7 @@ import {
   ArchiveRestore,
   Trash2,
   PackagePlus,
+  Coins,
 } from "lucide-react";
 import { toast } from "@ai-matrx/chat/host/notify";
 import { cn } from "@ai-matrx/design-system";
@@ -69,6 +70,7 @@ import {
 } from "@ai-matrx/design-system";
 import { Drawer, DrawerContent, DrawerTitle } from "@ai-matrx/design-system";
 import { MenuTapButton } from "@ai-matrx/tap-target/buttons";
+import { ConversationCostMenuRow } from "@/features/admin/agent-spend/ConversationSpendButton";
 import { useAgentDuplicateFlow } from "../../hooks/useAgentDuplicateFlow";
 import { ReferenceCopyMenuItem } from "@ai-matrx/chat/host/ui-slots";
 import { useAgentLifecycleActions } from "../../lifecycle/useAgentLifecycleActions";
@@ -633,6 +635,14 @@ export function AgentOptionsMenu({
                   <span className="flex-1">{label}</span>
                 </DropdownMenuItem>
               ))}
+              <ConversationCostMenuRow>
+                {({ label, open: openCost }) => (
+                  <DropdownMenuItem onClick={openCost}>
+                    <Coins className="w-4 h-4 mr-2 text-muted-foreground" />
+                    <span className="flex-1">{label}</span>
+                  </DropdownMenuItem>
+                )}
+              </ConversationCostMenuRow>
             </>
           )}
           {lifecycle.available && (
@@ -944,6 +954,11 @@ function MobileMenuContent({
             {adminItems.map(({ label, icon: Icon }) => (
               <Tile variant="quiet" icon={<Icon />} title={label} key={label} onClick={() => handleItem(label)} />
             ))}
+            <ConversationCostMenuRow>
+              {({ label, open: openCost }) => (
+                <Tile variant="quiet" icon={<Coins />} title={label} onClick={() => { onClose(); openCost(); }} />
+              )}
+            </ConversationCostMenuRow>
           </div>
         </>
       )}

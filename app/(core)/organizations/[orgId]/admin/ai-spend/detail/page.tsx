@@ -22,6 +22,7 @@ function Detail({ orgId, orgSlug }: { orgId: string; orgSlug: string }) {
         orgSlug={orgSlug}
         agentId={params.get("agent")}
         mandateKey={params.get("mandate")}
+        source={params.get("source")}
         days={days}
         onDaysChange={setDays}
       />

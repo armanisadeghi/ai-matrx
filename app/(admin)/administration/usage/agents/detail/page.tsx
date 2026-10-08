@@ -15,6 +15,7 @@ function Detail() {
       seat="admin"
       agentId={params.get("agent")}
       mandateKey={params.get("mandate")}
+      source={params.get("source")}
       days={days}
       onDaysChange={setDays}
     />

@@ -7,8 +7,8 @@
  */
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { ArrowLeft, ExternalLink, Loader2 } from "lucide-react";
-import { Badge, SegmentedControl } from "@ai-matrx/design-system/controls";
+import { ArrowLeft, ExternalLink } from "lucide-react";
+import { Badge, Button, SegmentedControl } from "@ai-matrx/design-system/controls";
 import { MatrxDataTable } from "@ai-matrx/design-system/data-table";
 import type { MatrxColumnDef } from "@ai-matrx/design-system/data-table/types";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
@@ -19,13 +19,17 @@ import { usageViewHref } from "@/features/admin/usage-drill/usageLinks";
 import { orgAdminMemberHref } from "@/features/organizations/admin/routes";
 import { conversationHref } from "@/features/scheduling/service/automationCosts";
 import { humanizeRelative } from "@/features/scheduling/utils/triggerHumanize";
+import { SPEND_FLAG_LIMITS } from "@/features/scheduling/service/automationCosts";
 import {
   AGENT_SPEND_ADMIN_PATH,
+  SPEND_RUNS_PAGE_SIZE,
+  agentSpendDetailHref,
   agentSpendFlags,
   fetchAgentSpendRuns,
   orgAgentSpendPath,
   type AgentSpendRun,
   type SpendSeat,
+  type SpendSubjectKey,
   type SpendWindowDays,
 } from "./agentSpend";
 import { ModelList, PaidBy, SpendFlagBadges, SpendSubject, rowKey, useAgentSpend } from "./AgentSpendBoard";
@@ -42,34 +46,66 @@ function Stat({ label, children }: { label: string; children: React.ReactNode })
 function RunsTable({
   orgId,
   days,
-  agentId,
-  mandateKey,
+  subject,
+  premium,
   seat,
   orgSlug,
 }: {
   orgId: string | null;
   days: SpendWindowDays;
-  agentId: string | null;
-  mandateKey: string | null;
+  subject: SpendSubjectKey;
+  premium: string[];
   seat: SpendSeat;
   orgSlug?: string;
 }) {
   const { format } = useCostDisplay();
+  const L = SPEND_FLAG_LIMITS;
   const [runs, setRuns] = useState<AgentSpendRun[]>([]);
+  const [totals, setTotals] = useState<{ runs: number; cost: number } | null>(null);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const { agent_id: agentId, mandate_key: mandateKey, source } = subject;
   useEffect(() => {
     let live = true;
     setLoading(true);
     setError(null);
-    fetchAgentSpendRuns(orgId, days, agentId, mandateKey)
-      .then((r) => live && setRuns(r))
+    setTotals(null);
+    fetchAgentSpendRuns(orgId, days, { agent_id: agentId, mandate_key: mandateKey, source })
+      .then((page) => {
+        if (!live) return;
+        setRuns(page.runs);
+        setTotals({ runs: page.totalRuns, cost: page.totalCost });
+      })
       .catch((e: unknown) => live && setError(e instanceof Error ? e.message : String(e)))
       .finally(() => live && setLoading(false));
     return () => {
       live = false;
     };
-  }, [orgId, days, agentId, mandateKey]);
+  }, [orgId, days, agentId, mandateKey, source]);
+
+  /** Pull the next runs (one page, or everything left) and append them; never silently stop at the first page. */
+  const loadMore = async (all: boolean) => {
+    setLoadingMore(true);
+    setError(null);
+    try {
+      let acc = runs;
+      let total = totals?.runs ?? 0;
+      do {
+        const page = await fetchAgentSpendRuns(orgId, days, { agent_id: agentId, mandate_key: mandateKey, source }, acc.length, all ? 1000 : SPEND_RUNS_PAGE_SIZE);
+        if (page.runs.length === 0) break;
+        const seen = new Set(acc.map((r) => r.run_key));
+        acc = [...acc, ...page.runs.filter((r) => !seen.has(r.run_key))];
+        total = page.totalRuns;
+        setRuns(acc);
+        setTotals({ runs: page.totalRuns, cost: page.totalCost });
+      } while (all && acc.length < total);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e));
+    } finally {
+      setLoadingMore(false);
+    }
+  };
 
   const columns: MatrxColumnDef<AgentSpendRun>[] = [
     {
@@ -86,7 +122,7 @@ function RunsTable({
       header: "Cost",
       filter: "number",
       width: 100,
-      cell: (r) => <Cost usd={r.cost} className={`tabular-nums text-xs ${r.cost > 1 ? "font-semibold text-red-600" : ""}`} />,
+      cell: (r) => <Cost usd={r.cost} className={`tabular-nums text-xs ${r.cost > L.runCostUsd ? "font-semibold text-red-600" : ""}`} />,
     },
     {
       id: "turns",
@@ -94,7 +130,7 @@ function RunsTable({
       header: "Turns",
       filter: "number",
       width: 70,
-      cell: (r) => <span className={`tabular-nums text-xs ${r.turns > 20 ? "font-semibold text-red-600" : ""}`}>{r.turns}</span>,
+      cell: (r) => <span className={`tabular-nums text-xs ${r.turns > L.maxTurns ? "font-semibold text-red-600" : ""}`}>{r.turns}</span>,
     },
     {
       id: "models",
@@ -102,7 +138,7 @@ function RunsTable({
       accessorFn: (r) => r.models.join(", "),
       filter: "text",
       width: 150,
-      cell: (r) => <ModelList models={r.models} premium={[]} />,
+      cell: (r) => <ModelList models={r.models} premium={premium} />,
     },
     {
       id: "tokens_in",
@@ -187,12 +223,40 @@ function RunsTable({
       </div>
     );
   }
+  const remaining = totals ? Math.max(totals.runs - runs.length, 0) : 0;
   return (
+    <div className="flex flex-col gap-2">
+      <div className="flex h-8 items-center gap-3 whitespace-nowrap text-xs text-muted-foreground">
+        {totals ? (
+          <>
+            <span>
+              {remaining > 0 ? "Showing " : "All "}
+              <span className="font-medium tabular-nums text-foreground">{runs.length.toLocaleString()}</span>
+              {remaining > 0 ? " of " : " runs, "}
+              {remaining > 0 && <span className="font-medium tabular-nums text-foreground">{totals.runs.toLocaleString()} runs</span>}
+              {remaining === 0 && <span className="font-medium tabular-nums text-foreground">{format(totals.cost)}</span>}
+            </span>
+            {remaining > 0 && (
+              <>
+                <Button variant="outline" onClick={() => loadMore(false)} disabled={loadingMore}>
+                  {`Load ${Math.min(SPEND_RUNS_PAGE_SIZE, remaining).toLocaleString()} more`}
+                </Button>
+                <Button variant="outline" onClick={() => loadMore(true)} disabled={loadingMore}>
+                  {`Load all ${remaining.toLocaleString()} left`}
+                </Button>
+                <span>{`Total ${format(totals.cost)}`}</span>
+              </>
+            )}
+          </>
+        ) : (
+          <span>Loading runs</span>
+        )}
+      </div>
     <MatrxDataTable
       data={runs}
       columns={columns}
       getRowId={(r) => r.run_key}
-      isLoading={loading}
+      isLoading={loading || loadingMore}
       defaultSort={{ id: "started_at", direction: "desc" }}
       emptyState={{ title: `No runs in ${days} days` }}
       frameHeight="content"
@@ -215,6 +279,7 @@ function RunsTable({
           ].join("\n"),
       }}
     />
+    </div>
   );
 }
 
@@ -224,6 +289,7 @@ export function AgentSpendDetail({
   orgSlug,
   agentId,
   mandateKey,
+  source,
   days,
   onDaysChange,
 }: {
@@ -232,12 +298,16 @@ export function AgentSpendDetail({
   orgSlug?: string;
   agentId: string | null;
   mandateKey: string | null;
+  source?: string | null;
   days: SpendWindowDays;
   onDaysChange: (d: SpendWindowDays) => void;
 }) {
   const { rows, loading, error } = useAgentSpend(orgId, days);
   const { format } = useCostDisplay();
-  const row = rows.find((r) => rowKey(r) === rowKey({ agent_id: agentId, mandate_key: mandateKey }));
+  const subject: SpendSubjectKey = { agent_id: agentId, mandate_key: mandateKey, source: source ?? null };
+  const row = rows.find((r) => rowKey(r) === rowKey({ agent_id: agentId, mandate_key: mandateKey, unattributed_source: source ?? null }));
+  // The same mandate run by other agents (and the agentless remainder) — each is its own row with its own runs.
+  const siblings = mandateKey ? rows.filter((r) => r.mandate_key === mandateKey && r !== row) : [];
   const backHref = seat === "org" && orgSlug ? orgAgentSpendPath(orgSlug) : AGENT_SPEND_ADMIN_PATH;
 
   return (
@@ -262,9 +332,7 @@ export function AgentSpendDetail({
           <ErrorAlchemyMenu error={error} />
         </div>
       ) : loading && !row ? (
-        <div className="flex items-center gap-2 py-6 text-sm text-muted-foreground">
-          <Loader2 className="h-4 w-4 animate-spin" /> Loading spend
-        </div>
+        <div className="h-[196px] animate-pulse rounded-md bg-muted/50" aria-label="Loading spend" />
       ) : !row ? (
         <div className="py-4 text-sm text-muted-foreground">{`No spend in ${days} days.`}</div>
       ) : (
@@ -302,9 +370,32 @@ export function AgentSpendDetail({
               </div>
             )}
           </div>
+          {siblings.length > 0 && (
+            <div className="min-w-0">
+              <div className="mb-1 text-[10px] uppercase tracking-wide text-muted-foreground">This mandate, by agent</div>
+              <div className="flex flex-col gap-1">
+                {[row, ...siblings].map((r) => (
+                  <div key={rowKey(r)} className="flex items-center gap-3 text-xs">
+                    {r === row ? (
+                      <span className="min-w-0 flex-1 truncate font-medium">{r.agent_name ?? "No agent recorded"}</span>
+                    ) : (
+                      <Link
+                        href={agentSpendDetailHref(r, days, seat, orgSlug)}
+                        className="min-w-0 flex-1 truncate text-primary hover:underline"
+                      >
+                        {r.agent_name ?? "No agent recorded"}
+                      </Link>
+                    )}
+                    <span className="tabular-nums text-muted-foreground">{`${r.runs.toLocaleString()} runs`}</span>
+                    <Cost usd={r.cost} className="tabular-nums" />
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </>
       )}
-      <RunsTable orgId={orgId} days={days} agentId={agentId} mandateKey={mandateKey} seat={seat} orgSlug={orgSlug} />
+      <RunsTable orgId={orgId} days={days} subject={subject} premium={row?.premium_models ?? []} seat={seat} orgSlug={orgSlug} />
     </div>
   );
 }
