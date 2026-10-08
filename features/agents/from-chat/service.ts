@@ -24,6 +24,7 @@ import type {
 } from "@ai-matrx/agents/generated/stream-events";
 import { streamErrorText } from "@ai-matrx/agents/matrx";
 import { adoptForeignStream } from "@ai-matrx/chat/agents/redux/execution-system/thunks/adopt-foreign-stream";
+import { SIDE_CHAT_PARAM } from "@ai-matrx/chat/canvas/workspace/side-chat-address";
 
 export type FromChatStep = AgentStudioFromChatProgressData["step"];
 export type FromChatResult = AgentStudioFromChatResultData;
@@ -90,14 +91,13 @@ export function fromChatRunHref(conversationId: string): string {
  * who is doing this work"): a new tab with the new agent open in the Agent Builder and the Agent
  * Builder's own conversation in the page's side chat. THE ONE place this hand-off address is built
  * — every "Make an agent" entry point (chat menu, admin list, admin conversation page) goes through
- * the window that calls it. The side chat opens a conversation named by `?pageChat=`
- * (`@ai-matrx/chat` canvas/workspace `shellChatHome`); when the shell's routing primitive for
- * "open this page with this conversation beside it" lands, it replaces the body here.
+ * the window that calls it. The Side Chat opens the conversation named by `?side_chat=<id>`
+ * (`@ai-matrx/chat` canvas/workspace `side-chat-address`, the Side Chat's URL contract).
  */
 export function continueWithAgentHref(result: FromChatResult): string {
   const builder = `/agents/${result.agent_id}/build`;
   const chat = resultRuns(result).building;
-  return chat ? `${builder}?pageChat=${encodeURIComponent(chat)}` : builder;
+  return chat ? `${builder}?${SIDE_CHAT_PARAM}=${encodeURIComponent(chat)}` : builder;
 }
 
 /**

@@ -199,13 +199,20 @@ export async function checkApiUsage({ rev, files, lockText }) {
   if (!roots.length) return { findings: [], checked: [], drifted: [] };
 
   const locked = appLockedVersions(lockText);
+  // EVERY @ai-matrx package resolves to the exact locked tarball, never to this shared checkout's
+  // node_modules: other lanes reinstall it all day, and a half-finished install read as "package
+  // missing" here (2026-10-07). Cached per version, so only a new version costs a download.
   const drifted = [];
   const resolveFrom = new Map(); // package name → directory whose node_modules holds the locked copy
-  for (const [name, version] of Object.entries(locked)) {
-    const have = installedVersion(name);
-    if (have === version) continue;
-    drifted.push({ name, locked: version, installed: have });
-    resolveFrom.set(name, await lockedCopy(name, version));
+  const entries = Object.entries(locked);
+  for (let i = 0; i < entries.length; i += 8) {
+    await Promise.all(
+      entries.slice(i, i + 8).map(async ([name, version]) => {
+        const have = installedVersion(name);
+        if (have !== version) drifted.push({ name, locked: version, installed: have });
+        resolveFrom.set(name, await lockedCopy(name, version));
+      }),
+    );
   }
 
   const config = ts.getParsedCommandLineOfConfigFile(join(REPO_ROOT, "tsconfig.json"), {}, {
