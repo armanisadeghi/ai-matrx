@@ -123,11 +123,10 @@ import {
 // supplies only this app's facts: Redux auth / base URL / endpoint overrides /
 // scope, the organization gate, the desktop target, the run-wait knob, and the
 // diagnostics sinks. Grow the pipeline in the package, never here.
-export {
-  bareStatusSentence,
-  buildSafeRequestLog,
-  redactUrlForRequestLog,
-} from "@ai-matrx/agents/matrx";
+export { bareStatusSentence } from "@ai-matrx/agents/matrx";
+// Imported above for this module's own logging; re-exported from the local binding so the
+// name is declared once (Turbopack refuses an import and an `export … from` of the same name).
+export { buildSafeRequestLog, redactUrlForRequestLog };
 
 export {
   applyOrganizationContextHeader,
