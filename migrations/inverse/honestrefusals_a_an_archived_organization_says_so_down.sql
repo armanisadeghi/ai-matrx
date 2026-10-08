@@ -1,6 +1,6 @@
 -- lock: custom
 -- lane: HONEST-REFUSALS
--- based-on: custom.assert_client_may_reach(uuid, text) <hash of the body honestrefusals_a installed; filled by db:based-on>
+-- based-on: custom.assert_client_may_reach(uuid, text) 8513d074907247ff477f7dbb3ecc92eab5cce5ce7d27ddabe4ea567c2ed30f93
 -- chair-step: the inverse of honestrefusals_a_an_archived_organization_says_so.sql. It puts back, byte for byte, the
 -- body of custom.assert_client_may_reach that file replaced, then neuters the two-argument custom._not_a_member_refusal back to the old sentence (it is left standing: the ground rule).
 -- What it undoes: a member of an archived organization is told "You are not a member of that organization" again.

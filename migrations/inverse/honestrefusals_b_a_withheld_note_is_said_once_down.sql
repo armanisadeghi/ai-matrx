@@ -1,6 +1,6 @@
 -- lock: custom
 -- lane: HONEST-REFUSALS
--- based-on: custom.record_aggregate(uuid, uuid, jsonb, jsonb, jsonb, jsonb, integer, text, jsonb, text, text) <hash of the body honestrefusals_b installed>
+-- based-on: custom.record_aggregate(uuid, uuid, jsonb, jsonb, jsonb, jsonb, integer, text, jsonb, text, text) 8670d94fd46c83c3f8c9e22c1502a1d80397b8c6d27469a8c0ee5df2aadf7a02
 -- chair-step: the inverse of honestrefusals_b_a_withheld_note_is_said_once.sql. It puts back, byte for byte, the body of
 -- custom.record_aggregate that file replaced. What it undoes: the withheld explanation repeats on every group row again.
 
