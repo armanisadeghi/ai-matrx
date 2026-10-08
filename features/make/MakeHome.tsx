@@ -66,7 +66,7 @@ import {
 } from "./tiles";
 import { answerForRecent, isTestOrganization, recentlyChanged, withoutTestOrganizations } from "./recent";
 import { MakeMount, NewTableBody, SAVED_WHERE_CHOSEN, SavesTo } from "./MakeMount";
-import { TemplateGallerySection } from "./gallery/TemplateGallery";
+import { InstalledOneOffs, TemplateGallerySection } from "./gallery/TemplateGallery";
 import { DescribeBox } from "./describe/DescribeBox";
 import { formatRelativeTime } from "@ai-matrx/kit/format";
 
@@ -233,6 +233,8 @@ export default function MakeHome() {
               ))}
             </ul>
           </section>
+
+          <InstalledOneOffs />
 
           <RecentSection recent={recent} />
 
