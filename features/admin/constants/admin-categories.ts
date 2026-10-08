@@ -1641,6 +1641,14 @@ export const adminCategoriesData: AdminCategory[] = [
         isNew: true,
       },
       {
+        title: "Performance",
+        description:
+          "Every performance watch: newest number against its budget, state, 7-day trend, baseline and last alert. Drill into one watch's history and samples.",
+        iconName: "Gauge",
+        link: "/administration/reporting/performance",
+        isNew: true,
+      },
+      {
         title: "Unwired Work",
         description:
           "Purpose-built components, services, routers, host installers, and scheduler handlers that still need a runtime path. Ranked by implementation size with a finish-the-wiring brief on every row.",

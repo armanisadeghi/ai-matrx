@@ -95,6 +95,13 @@ const groups: SurfaceValueGroup[] = [
     description:
       "The live checks store: every static check's last run, open counts, and one check's findings by state.",
   },
+  {
+    key: "performance",
+    label: "Performance watches",
+    sortOrder: 800,
+    description:
+      "Every performance watch with its state counts, and one watch's history when a watch is selected.",
+  },
 ];
 
 const surfaceSpecific: SurfaceValue[] = [
@@ -103,7 +110,7 @@ const surfaceSpecific: SurfaceValue[] = [
     name: "reporting_section",
     label: "Reporting section",
     description:
-      'Which child of the Reporting admin family is active: "hub", "events", "reports", "dead_ends", "unwired", "lint_debt", or "check_findings". Always present — each emitter declares which one it is.',
+      'Which child of the Reporting admin family is active: "hub", "events", "reports", "dead_ends", "unwired", "lint_debt", "check_findings", or "performance". Always present — each emitter declares which one it is.',
     valueType: "string",
     alwaysAvailable: true,
     typicalCharCount: 12,
@@ -375,6 +382,30 @@ const surfaceSpecific: SurfaceValue[] = [
     sortOrder: 710,
     group: "check_findings",
   },
+
+  // ── Performance watches ──────────────────────────────────────────────
+  {
+    name: "performance_state_counts",
+    label: "Performance state counts",
+    description:
+      "Watches per state (learning, ok, over_budget, regressed, erroring, stale, probe_broken, paused), read live from ops.proof_check kind=perf. Present only on reporting_section=performance.",
+    valueType: "object",
+    alwaysAvailable: false,
+    typicalCharCount: 120,
+    sortOrder: 800,
+    group: "performance",
+  },
+  {
+    name: "performance_selected_watch",
+    label: "Selected performance watch",
+    description:
+      "The watch whose history is open (id, slug, state), or absent on the list view. Present only on reporting_section=performance.",
+    valueType: "object",
+    alwaysAvailable: false,
+    typicalCharCount: 100,
+    sortOrder: 805,
+    group: "performance",
+  },
 ];
 
 export const adminReportingManifest: SurfaceManifest = {
@@ -408,7 +439,7 @@ Only the values matching the current reporting_section are populated — everyth
  */
 export function createAdminReportingScope(values: {
   // alwaysAvailable: true → required
-  reporting_section: "hub" | "events" | "reports" | "dead_ends" | "unwired" | "lint_debt" | "check_findings";
+  reporting_section: "hub" | "events" | "reports" | "dead_ends" | "unwired" | "lint_debt" | "check_findings" | "performance";
   // alwaysAvailable: false → optional
   context?: Record<string, unknown>;
   events_action_prefix?: string;
@@ -433,6 +464,8 @@ export function createAdminReportingScope(values: {
   check_findings_totals?: Record<string, unknown>;
   check_findings_selected_check?: Record<string, unknown>;
   check_findings_state_filter?: string;
+  performance_state_counts?: Record<string, unknown>;
+  performance_selected_watch?: Record<string, unknown>;
 }): SurfaceScopePayload {
   return values as SurfaceScopePayload;
 }
