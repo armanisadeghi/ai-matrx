@@ -308,7 +308,7 @@ function RunBoard({
       return;
     }
     try {
-      const organizationId = await ensureOrgId(activeOrgId);
+      const organizationId = await ensureOrgId(null);
       await NotesAPI.create({
         label: `${workflowName} — ${spec.title}`,
         content: `# ${spec.title}\n\n${text}`,

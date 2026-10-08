@@ -30,7 +30,7 @@ import { documentWorkingCopy } from "@/features/documents/document-model/documen
 import { getClaimsUser } from "@/utils/supabase/claimsUser";
 import { ShareButton } from "@/features/sharing/components/ShareButton";
 import { univerDocToMarkdown } from "@/features/documents/univer-doc-to-markdown";
-import { RichCopySplit } from "@/components/agent-copy/RichCopySplit";
+import { RichCopySplit } from "@ai-matrx/chat/agent-copy/RichCopySplit";
 import { ReferenceCopyButton } from "@/features/matrx-envelope/components/ReferenceCopyButton";
 import { AccessGate } from "@/features/access-gate/components/AccessGate";
 import { DocumentRulebookNotice } from "@/features/masterwork/components/DocumentRulebookNotice";

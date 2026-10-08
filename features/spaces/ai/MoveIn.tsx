@@ -124,7 +124,7 @@ export function MoveInHost({ children, userId }: { children: ReactNode; userId: 
     setText("");
     setFileName("");
     try {
-      const organizationId = await ensureOrgId(activeOrg);
+      const organizationId = await ensureOrgId(null);
       const page = await run({
         mandateKey: MOVE_IN_KEY,
         variables: { notion_content: content, ...(source ? { source_name: source } : {}) },

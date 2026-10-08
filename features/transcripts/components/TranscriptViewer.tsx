@@ -30,7 +30,7 @@ import {
 } from "lucide-react";
 import { copyContent } from "@ai-matrx/rich-content/copy/copy-commands";
 import { ReferenceCopyButton } from "@/features/matrx-envelope/components/ReferenceCopyButton";
-import { RichCopySplit } from "@/components/agent-copy/RichCopySplit";
+import { RichCopySplit } from "@ai-matrx/chat/agent-copy/RichCopySplit";
 import { ExportMenu } from "@/components/agent-copy/ExportMenu";
 import {
   csvExportItem,

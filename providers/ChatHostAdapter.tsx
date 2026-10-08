@@ -190,10 +190,8 @@ import {
 import { useOpenConversationDocuments } from "@/features/canvas/host/conversation/documentsKind";
 import { useOpenScratchpadPanel } from "@/features/quick-actions/canvas/scratchpadKind";
 import "@/providers/chatUiRegistrationProfile";
-// The rich-document rendering engine (P14).
-import "@/providers/chatMarkdownRegistration";
-import "@/providers/chatContentIrRegistration";
-import "@/providers/chatRichDocumentRegistration";
+// The app data around a rendered message (P29a); the engine itself is @ai-matrx/rich-content.
+import "@/providers/chatAppDataRegistration";
 // Scopes (context sources) and compute targets (P21).
 import "@/providers/chatContextSources";
 

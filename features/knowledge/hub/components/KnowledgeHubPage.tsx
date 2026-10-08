@@ -701,7 +701,7 @@ export function KnowledgeHubPage({
     if (sample) throw new Error(SAMPLE_WRITE_REFUSAL);
     let organizationId: string;
     try {
-      organizationId = await ensureOrgId(activeOrgId);
+      organizationId = await ensureOrgId(null);
     } catch (err) {
       // A saved view is filed in an organization. The dialog prints what it catches, so it
       // gets the platform's sentence with the remedy — never the transport's.
@@ -774,7 +774,7 @@ export function KnowledgeHubPage({
         return runViewWrite(v, () => setViewPinned(v.id, false), `Unpinned "${v.name}".`);
       case "duplicate":
         return runViewWrite(v, async () => {
-          const { id, pinError } = await duplicateView(v, await ensureOrgId(activeOrgId));
+          const { id, pinError } = await duplicateView(v, await ensureOrgId(null));
           if (pinError) throw new Error(pinError);
           write({ view: { kind: "saved", id }, query: v.definition?.query ?? state.query, layout: v.definition?.layout ?? state.layout });
         }, `Made a personal copy of "${v.name}".`);
@@ -1190,7 +1190,7 @@ export function KnowledgeHubPage({
   const triageDoor = async (token: string, id: string, next: TriageState, orgId?: string | null) => {
     if (next === "kept" && token === "processed_document") {
       try {
-        await keepSource(id, { organizationId: await ensureOrgId(orgId ?? activeOrgId) });
+        await keepSource(id, { organizationId: await ensureOrgId(orgId ?? null) });
       } catch (err) {
         throw new Error(sourceRefusalSentence(err));
       }

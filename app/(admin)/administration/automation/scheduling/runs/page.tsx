@@ -68,6 +68,7 @@ export default function AdminRunsPage() {
     INITIAL_STATE,
     "runs",
     `${status}|${surface}`,
+    "scheduling-runs",
   );
   const fetching = loading;
   const load = reload;

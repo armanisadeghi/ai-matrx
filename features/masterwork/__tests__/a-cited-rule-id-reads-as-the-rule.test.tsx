@@ -43,7 +43,7 @@ import { MasterworkRulesProvider } from "../rules-context/MasterworkRulesContext
 
 // The platform markdown primitive is not what this guard is about: capture the
 // exact markdown the component hands it, which IS what the Expert then reads.
-jest.mock("@/components/MarkdownStream", () => ({
+jest.mock("@ai-matrx/chat/ui/markdown-stream/MarkdownStream", () => ({
   __esModule: true,
   default: ({ content }: { content?: string }) => (
     <div data-testid="markdown">{content}</div>

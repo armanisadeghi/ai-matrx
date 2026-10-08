@@ -30,7 +30,7 @@ jest.mock("@/components/official/structured-value/StructuredValueView", () => ({
     <div data-route="floor">{JSON.stringify(value)}</div>
   ),
 }));
-jest.mock("@/components/MarkdownStream", () => ({
+jest.mock("@ai-matrx/chat/ui/markdown-stream/MarkdownStream", () => ({
   __esModule: true,
   default: ({ content }: { content: string }) => {
     markdownContent.push(content);

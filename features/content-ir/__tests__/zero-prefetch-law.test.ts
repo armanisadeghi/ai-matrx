@@ -139,9 +139,9 @@ async function waitForRead(
 }
 
 async function loadPipeline() {
-  // The accumulator reaches the registries through the chat host's slots; the modules are fresh,
-  // so the app's registration is loaded fresh beside them (the same module registry).
-  await import("@/providers/chatContentIrRegistration");
+  // The accumulator reads the registries through @ai-matrx/rich-content's host; the modules are
+  // fresh, so the app's rich-content host is configured fresh beside them (the same module registry).
+  await import("@/providers/richContentHost");
   const { StreamBlockAccumulator } = await import(
     "@ai-matrx/chat/agents/redux/execution-system/utils/stream-block-accumulator"
   );

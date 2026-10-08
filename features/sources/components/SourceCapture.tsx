@@ -166,7 +166,7 @@ export function SourceAddMenu({
     setAddError(null);
     try {
       // Name the organization first: the scraper refuses without one.
-      await ensureOrgId(activeOrgId);
+      await ensureOrgId(null);
       const result = await scrapeUrl(/^https?:\/\//i.test(url) ? url : `https://${url}`);
       if (!result) return; // the hook's `failure` is rendered in the dialog
       if (!result.processedDocumentId) {
@@ -201,7 +201,7 @@ export function SourceAddMenu({
     setAdding(true);
     setAddError(null);
     try {
-      const organizationId = await ensureOrgId(activeOrgId);
+      const organizationId = await ensureOrgId(null);
       const body = await buildPastedTextLanding({ text: textInput, name: textName, organizationId, userId });
       const landed = await landSource(body);
       setAddMode(null);

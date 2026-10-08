@@ -60,7 +60,7 @@ jest.mock("@/components/ui/checkbox", () => ({
 jest.mock("@/components/official/ProTextarea", () => ({
   ProTextarea: (props: React.TextareaHTMLAttributes<HTMLTextAreaElement>) => <textarea {...props} />,
 }));
-jest.mock("@/components/MarkdownStream", () => ({
+jest.mock("@ai-matrx/chat/ui/markdown-stream/MarkdownStream", () => ({
   __esModule: true,
   default: ({ content }: { content: string }) => <div>{content}</div>,
 }));

@@ -10,7 +10,8 @@ import {
   extendMenuSection,
 } from "@ai-matrx/rich-content/rich-document/variants/shared/menuStructure";
 import { CONVERSATION_TRANSFER_ROWS } from "@ai-matrx/chat/agents/conversation-export/conversation-transfer-rows";
-import { chatMessageAdapter } from "@/features/rich-document/actions/sources/chat-message";
+// The chat-message adapter is chat's own; it registers on import.
+import "@ai-matrx/chat/agents/components/messages-display/rich-document/chat-message-source";
 import { noteAdapter } from "@/features/rich-document/actions/sources/note";
 import { promptResultAdapter } from "@/features/rich-document/actions/sources/prompt-result";
 import { artifactAdapter } from "@/features/rich-document/actions/sources/artifact";
@@ -22,7 +23,6 @@ import "@/features/rich-document/actions/handlers";
 // rebuild on extension, so order does not matter).
 extendMenuSection(CONVERSATION_SUBMENU_LABEL, CONVERSATION_TRANSFER_ROWS.map((row) => row.id));
 
-registerSourceAdapter("chat-message", chatMessageAdapter);
 registerSourceAdapter("note", noteAdapter);
 registerSourceAdapter("prompt-result", promptResultAdapter);
 registerSourceAdapter("artifact", artifactAdapter);

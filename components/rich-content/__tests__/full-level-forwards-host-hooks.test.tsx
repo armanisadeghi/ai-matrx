@@ -10,7 +10,7 @@ import { createRoot } from "react-dom/client";
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
 const seen: Record<string, unknown>[] = [];
-jest.mock("@/components/MarkdownStream", () => ({
+jest.mock("@ai-matrx/chat/ui/markdown-stream/MarkdownStream", () => ({
   __esModule: true,
   default: (props: Record<string, unknown>) => {
     seen.push(props);

@@ -43,7 +43,7 @@ import { cn } from "@/lib/utils";
 import { useUserOrganizations } from "@/features/organizations/hooks";
 import { NoteContextSection } from "./NoteContextSection";
 import { CreateFolderDialog } from "./CreateFolderDialog";
-import { RichCopySplit } from "@/components/agent-copy/RichCopySplit";
+import { RichCopySplit } from "@ai-matrx/chat/agent-copy/RichCopySplit";
 import { getNoteLiveContent } from "../utils/noteLiveContent";
 import {
   noteDisplayLabel,

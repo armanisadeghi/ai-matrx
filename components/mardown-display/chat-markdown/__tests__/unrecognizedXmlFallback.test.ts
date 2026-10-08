@@ -2,7 +2,7 @@ import { splitContentIntoBlocksV2 } from "@ai-matrx/rich-content/display/markdow
 import { expandTextBlocksInList } from "@ai-matrx/rich-content/display/markdown-classification/processors/utils/expand-text-blocks";
 import { renderBlockToContentBlock } from "@ai-matrx/rich-content/display/chat-markdown/render-block-to-content-block";
 import { StreamBlockAccumulator } from "@ai-matrx/chat/agents/redux/execution-system/utils/stream-block-accumulator";
-import { buildCanonicalBlocks } from "@/lib/chat-protocol/from-stream";
+import { buildCanonicalBlocks } from "@ai-matrx/chat/ui/chat-protocol-from-stream";
 import type { RenderBlockPayload } from "@ai-matrx/agents/generated/stream-events";
 import type { TypedStreamEvent } from "@ai-matrx/rich-content/display/chat-markdown/types";
 

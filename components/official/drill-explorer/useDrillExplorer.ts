@@ -86,16 +86,20 @@ export function drillValueNumber(v: number | string): number | null {
 export function drillRowOf(
   r: Pick<RawRow, "groups" | "measures" | "row_count"> & Partial<Pick<RawRow, "prior_groups" | "prior_measures" | "distinct_groups" | "kind">>,
   countMeasure?: string,
+  spans?: ReadonlySet<string>,
 ): MatrxDrillAnswerRow & { kind?: "group" | "other" | "total" } {
   const groups: Record<string, string | null> = {};
   // A group that only the PRIOR window had (a compare) arrives with groups null and its values in
   // prior_groups; reading groups alone turned every such group into the same empty key.
   for (const [k, v] of Object.entries(r.groups ?? r.prior_groups ?? {})) groups[k] = v === null || v === undefined ? null : String(v);
+  // A SPAN ON THE EMPTY GROUP IS A STATE, NOT A NUMBER (lane DRILL-LIVE-FIX-2 #5): "No conversation"
+  // gathers unrelated rows, so first-to-last across them ("719h 59m") measures nothing — it reads "—".
+  const emptyGroup = r.kind !== "total" && r.kind !== "other" && Object.values(groups).some((v) => v === null);
   const num = (m: Record<string, number | string | null> | null | undefined) => {
     const out: Record<string, number | null> = {};
     // a moment (unit time, "Last active") arrives as ISO text: it is carried as epoch ms so it sorts
     // and formats like every other value (measureFormat's "time"); any other text is a number
-    for (const [k, v] of Object.entries(m ?? {})) out[k] = v === null || v === undefined ? null : drillValueNumber(v);
+    for (const [k, v] of Object.entries(m ?? {})) out[k] = v === null || v === undefined || (emptyGroup && spans?.has(k)) ? null : drillValueNumber(v);
     return out;
   };
   return {
@@ -274,6 +278,7 @@ export function useDrillExplorer(args: {
     let cancelled = false;
     setError(null);
     const timeKeys = new Set(def.dimensions.filter((d) => d.kind === "time").map((d) => d.key));
+    const spans = new Set(def.measures.filter((m) => (m.op as string) === "span").map((m) => m.key));
     const sortFor = (by: string[]) => doorSort(by, asked.sort ?? null, sortKey, timeKeys);
     // THRESHOLDS ARE ON GROUPS (lane DRILL-FLIP-FIXES L1): the total (no grouping) is asked without them,
     // and a grouped ask also shows every Measure a threshold reads (the door judges a number it shows)
@@ -332,7 +337,7 @@ export function useDrillExplorer(args: {
         const kind = r.by.length === 0 ? "total" : "group";
         const rows = answer.rows
           .filter((row) => row.kind === kind && (kind === "group" || !row.groups || Object.keys(row.groups).length === 0))
-          .map((row) => drillRowOf(row, countMeasure));
+          .map((row) => drillRowOf(row, countMeasure, spans));
         out[r.key] = rows;
         for (const [key, map] of Object.entries(drillDoorLabels(answer.rows))) doorLabels[key] = { ...(doorLabels[key] ?? {}), ...map };
         for (const row of answer.rows) for (const [dim, value] of Object.entries(row.groups ?? {})) note(dim, value);

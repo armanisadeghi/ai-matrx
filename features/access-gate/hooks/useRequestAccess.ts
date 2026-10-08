@@ -63,7 +63,7 @@ export function useRequestAccess(target: RequestAccessTarget) {
         // The request is filed under an organization; with none selected yet, ASK and continue
         // (ensureOrganizationContext waits for boot and opens the picker) — never a refusal
         // spelled from a nullable id while boot is still resolving (check:org-three-states).
-        const organizationId = await ensureOrgId(activeOrganizationId);
+        const organizationId = await ensureOrgId(null);
         const result = await submitFeedback({
           // The feedback vocabulary's access-request type; `metadata` carries
           // the structured target (FEATURE.md, RequestAccess).

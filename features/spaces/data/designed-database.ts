@@ -164,7 +164,7 @@ export function blockViews(design: DatabaseDesign): SpaceDbView[] {
 
 async function clientFor(spaceId: string | null, activeOrg: string | null, userId: string | null): Promise<RecordsClient> {
   // org-filter: write-target the page's organization; the active one only for a page not saved yet.
-  const organizationId = (spaceId ? await pageOrganizationId(spaceId) : null) ?? (await ensureOrgId(activeOrg));
+  const organizationId = (spaceId ? await pageOrganizationId(spaceId) : null) ?? (await ensureOrgId(null));
   return createRecordsClient({
     dataSource: supabaseDataSource(createClient()),
     actor: userId ? { actor: "user", user_id: userId } : { actor: "user" },

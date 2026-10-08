@@ -20,12 +20,14 @@
 import { RecordBodyEditor } from "@/features/data-tables/records-ui-host/RecordBodyEditor";
 import { RecordBodySpace } from "@/features/spaces/embed/RecordBodySpace";
 import { DynamicIcon } from "@ai-matrx/icons";
-import { useCallback, useMemo, type ReactNode } from "react";
+import { useCallback, useLayoutEffect, useMemo, type ReactNode } from "react";
+import { usePersonTimeZone } from "@/hooks/usePersonTimeZone";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
   personActor,
   recordsDataSource,
+  setPersonTimeZone,
   tableRightsAt,
   type AgentBuildAsk,
   type OpenRecordsAsk,
@@ -384,6 +386,12 @@ export interface AppRecordsConfig {
 export function useAppRecordsConfig(organizationId: string | null): AppRecordsConfig {
   const dataSource = useRecordsDataSource();
   const userId = useAppSelector(selectUserId);
+  // THE PERSON'S ZONE reaches every records-ui screen (calendar today, now-line, date picker) here: every
+  // records mount builds its config through this hook, so the saved zone is mirrored once, in one place.
+  const personZone = usePersonTimeZone();
+  useLayoutEffect(() => {
+    setPersonTimeZone(personZone);
+  }, [personZone]);
   return useMemo(
     () => ({
       dataSource,

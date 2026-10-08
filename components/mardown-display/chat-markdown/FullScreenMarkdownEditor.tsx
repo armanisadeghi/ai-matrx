@@ -16,7 +16,7 @@ import React, {
 } from "react";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { useThemeMode } from "@/styles/themes/useThemeMode";
-import { RichCopySplit } from "@/components/agent-copy/RichCopySplit";
+import { RichCopySplit } from "@ai-matrx/chat/agent-copy/RichCopySplit";
 import FullScreenOverlay, {
   TabDefinition,
 } from "@/components/official/FullScreenOverlay";

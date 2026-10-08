@@ -25,7 +25,7 @@ import { ProTextarea } from "@/components/official/ProTextarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Slider } from "@/components/ui/slider";
 import { RichContent } from "@ai-matrx/rich-content/levels/RichContent";
-import MarkdownStream from "@/components/MarkdownStream";
+import MarkdownStream from "@ai-matrx/chat/ui/markdown-stream/MarkdownStream";
 import type {
   TypedStreamEvent,
   RenderBlockEvent,

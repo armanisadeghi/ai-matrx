@@ -68,6 +68,8 @@ export default function AdminTasksPage() {
     fetchTasksAdminPage,
     INITIAL_STATE,
     "scheduled tasks",
+    "",
+    "scheduling-tasks",
   );
   const fetching = loading;
   const {

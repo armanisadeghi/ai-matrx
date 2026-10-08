@@ -35,7 +35,7 @@ jest.mock("@/components/official/structured-value/StructuredValueView", () => ({
     </div>
   ),
 }));
-jest.mock("@/components/MarkdownStream", () => ({
+jest.mock("@ai-matrx/chat/ui/markdown-stream/MarkdownStream", () => ({
   __esModule: true,
   default: () => <div data-route="markdown" />,
 }));

@@ -129,7 +129,7 @@ export function useSourceIntake(
         return linked.ok ? { ok: true } : { ok: false, error: { message: linked.error.message } };
       },
     },
-    ensureOrganization: () => ensureOrgId(activeOrgId),
+    ensureOrganization: () => ensureOrgId(null),
     hasOrganization: () => Boolean(activeOrgId || getActiveOrgId()),
     holdIntent: (work) => Promise.resolve().then(work),
     waitsForOrganization,

@@ -291,7 +291,7 @@ function EntityFrame({ token, props, raw, onChange, editable }: EntityDatabasePr
       // "New" is a click, always the person's act: the organization gate reads any press inside the page
       // editor (a contenteditable) as typing and would refuse without asking, so the act is named here.
       await whenOrgBootstrapResolved();
-      organization_id = await ensureOrgId(activeOrganizationId);
+      organization_id = await ensureOrgId(null);
     } catch (err) {
       toast.error(sentence(err, "A row could not be added here."));
       return;

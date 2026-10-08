@@ -59,7 +59,7 @@ export async function setTemplate(spaceId: string, on: boolean): Promise<void> {
 
 /** "Use template": the template and its sub-pages copied to the top level of the active organization. */
 export async function copyTemplate(templateId: string, title: string, activeOrganizationId: string | null): Promise<string> {
-  const organizationId = await ensureOrgId(activeOrganizationId);
+  const organizationId = await ensureOrgId(null);
   // Not in the generated types until the next regeneration: a typed local shape for this one door.
   const content = supabase.schema("content") as unknown as {
     rpc(fn: "space_duplicate", args: Record<string, unknown>): PromiseLike<{ data: string | null; error: { message: string } | null }>;

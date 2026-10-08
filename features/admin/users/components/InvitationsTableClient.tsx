@@ -118,7 +118,7 @@ export function InvitationsTableClient() {
     rows,
     reload: load,
     tableProps,
-  } = useServerTable<InvitationRequest>(fetchInvitationPage, INITIAL_STATE, "invitation requests");
+  } = useServerTable<InvitationRequest>(fetchInvitationPage, INITIAL_STATE, "invitation requests", "", "user-invitations");
 
   const act = useCallback(
     async (row: InvitationRequest, action: "approve" | "reject") => {

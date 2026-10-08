@@ -12,7 +12,7 @@
  * done" experience.
  */
 
-import MarkdownStream from "@/components/MarkdownStream";
+import MarkdownStream from "@ai-matrx/chat/ui/markdown-stream/MarkdownStream";
 
 export function LiveGenerationPreview({
   requestId,

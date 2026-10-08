@@ -75,9 +75,7 @@ import {
   ASKING_FOR_ORGANIZATION,
   WAITING_FOR_ORGANIZATION,
 } from "@ai-matrx/agents/sources/runtime";
-import {
-  chooseOrganizationFromButton,
-} from "@/lib/organization/organization-gate";
+import { retryActiveOrganization } from "@/lib/organizations/retryActiveOrganization";
 import type { SourceCardModel } from "@ai-matrx/agents/sources/runtime";
 import type { UseSourceSetResult } from "../useSourceSet";
 import { formatCount } from "@ai-matrx/kit/format";
@@ -241,7 +239,7 @@ export function SourceCard({
               className="shrink-0"
               onClick={() => void chooseOrganization()}
             >
-              Choose organization
+              Try again
             </Button>
           ) : resumableInput(card.draft) && onTryAgain ? (
             <Button
@@ -288,7 +286,7 @@ export function SourceCard({
             className="shrink-0"
             onClick={() => void chooseOrganization()}
           >
-            Choose organization
+            Try again
           </Button>
         </p>
       ) : null}
@@ -392,7 +390,7 @@ export function SourceCard({
  * lets every waiting card go on by itself (`useSourceRecovery`); closing it is
  * "not now" and changes nothing.
  */
-const chooseOrganization = chooseOrganizationFromButton;
+const chooseOrganization = retryActiveOrganization;
 
 function isUploadKind(kind: SourceCardModel["draft"]["kind"]): boolean {
   return kind === "upload" || kind === "image" || kind === "audio";

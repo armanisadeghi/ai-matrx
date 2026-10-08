@@ -45,8 +45,11 @@ const ORGANIZATION_ADMISSION_TIMEOUT_MS = 8_000;
 function readAdmission(state: RootState): OrganizationAdmission | null {
   // THE ADMIN SEAT: the admin section binds the platform tenant — nothing to wait for.
   if (adminLaneOrganizationId()) return "ready";
-  if (selectOrganizationId(state)) return "ready";
-  if (selectOrgBootstrapResolved(state)) return "unresolved";
+  // A browser cache may PAINT an organization first, but no request leaves on
+  // it: only the load ladder's answer (`orgBootstrapResolved`) admits one.
+  if (selectOrgBootstrapResolved(state)) {
+    return selectOrganizationId(state) ? "ready" : "unresolved";
+  }
   return null;
 }
 

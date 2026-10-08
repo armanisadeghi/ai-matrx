@@ -91,7 +91,8 @@ export function drillDimensionLabelFor(
   if (dim.kind === "time") return undefined;
   const { names, resolver, hostWords } = context;
   const choices = new Map((dim.choices ?? []).map((c) => [c.value, c.label]));
-  const empty = dim.empty_label ?? resolver?.emptyLabel ?? (hostWords ? hostWords("") : undefined) ?? "None";
+  // a relation's empty group is "No <dimension>" ("No conversation"), never "None" (lane DRILL-LIVE-FIX-2 #5)
+  const empty = dim.empty_label ?? resolver?.emptyLabel ?? (hostWords ? hostWords("") : undefined) ?? (dim.kind === "relation" ? `No ${dim.label.toLowerCase()}` : "None");
   if (dim.kind === "boolean") {
     return (value) => (value === null || value === "" ? empty : value === "true" ? "Yes" : value === "false" ? "No" : plainWords(value, { code: dim.code_shaped === true }));
   }

@@ -73,9 +73,9 @@ jest.mock("next/dynamic", () => ({
 // Resolved at render, not at mock time: the registered app UI (chatUiRegistration, imported
 // first) loads this module while MarkdownStreamImpl is still mid-load, so an eager
 // requireActual here would capture `undefined`. The wrapper is one stable component type.
-jest.mock("@/components/MarkdownStream", () => {
+jest.mock("@ai-matrx/chat/ui/markdown-stream/MarkdownStream", () => {
   const MarkdownStreamForTest = (props: Record<string, unknown>) => {
-    const Impl = jest.requireActual("@/components/MarkdownStreamImpl").default;
+    const Impl = jest.requireActual("@ai-matrx/chat/ui/markdown-stream/MarkdownStreamImpl").default;
     return <Impl {...props} />;
   };
   return { __esModule: true, default: MarkdownStreamForTest };
@@ -124,7 +124,7 @@ jest.mock(
   () => ({ __esModule: true, default: () => null }),
 );
 jest.mock(
-  "@/components/mardown-display/blocks/json/useBoundAgentOutputSchema",
+  "@ai-matrx/chat/ui/markdown-stream/useBoundAgentOutputSchema",
   () => ({ useBoundAgentOutputSchema: () => null }),
 );
 jest.mock("@ai-matrx/chat/agents/components/shared/transcript-audience", () => ({

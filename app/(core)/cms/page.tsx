@@ -221,7 +221,7 @@ export default function SitesListPage() {
     // created, nothing is cleared, and the dialog is exactly as they left it.
     let organizationId: string;
     try {
-      organizationId = await ensureOrgId(activeOrganizationId);
+      organizationId = await ensureOrgId(null);
     } catch (err) {
       setError(
           err instanceof Error

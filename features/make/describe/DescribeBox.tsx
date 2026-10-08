@@ -18,7 +18,6 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { ArrowRight } from "lucide-react";
 import { supabaseDataSource } from "@ai-matrx/records/core";
 import { runTemplateDoor, type TemplateDoorAnswer } from "@ai-matrx/records/templates";
 import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
@@ -160,35 +159,23 @@ export function DescribeBox() {
       <h2 id="make-describe" className="sr-only">
         Describe it
       </h2>
-      <form
-        className="relative"
-        onSubmit={(e) => {
-          e.preventDefault();
-          void start();
-        }}
-      >
-        <ProTextarea
-          value={sentence}
-          onChange={(e) => setSentence(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === "Enter" && !e.shiftKey && enterSendsHere(true)) {
-              e.preventDefault();
-              void start();
-            }
-          }}
-          placeholder="A patient intake form that books the first visit"
-          aria-label="Describe what to make"
-          rows={3}
-          disabled={busy}
-          className="w-full resize-none pb-12"
-          data-make-describe-input=""
-        />
-        <div className="absolute bottom-2 right-2">
-          <Button iconEnd={busy ? null : <ArrowRight aria-hidden />} variant="primary" type="submit" disabled={busy || !sentence.trim()} aria-busy={busy || undefined} data-make-describe-go="">
-            {run.phase === "writing" ? `Designing… ${elapsed}` : run.phase === "installing" ? `Building… ${elapsed}` : "Make it"}
-          </Button>
-        </div>
-      </form>
+      <ProTextarea
+        value={sentence}
+        onChange={(e) => setSentence(e.target.value)}
+        onSubmit={() => void start()}
+        submitOnEnter={enterSendsHere(true)}
+        submitLabel="Make it"
+        isSubmitting={busy}
+        placeholder="A patient intake form that books the first visit"
+        aria-label="Describe what to make"
+        rows={3}
+        disabled={busy}
+        enableTextStats={false}
+        data-make-describe-input=""
+      />
+      <p className="h-5 text-sm text-muted-foreground" role="status" aria-live="polite" data-make-describe-go="" data-busy={busy || undefined}>
+        {run.phase === "writing" ? `Designing… ${elapsed}` : run.phase === "installing" ? `Building… ${elapsed}` : ""}
+      </p>
 
       {askOrganization && !organizationId ? (
         <OrganizationContextNotice
@@ -216,7 +203,7 @@ export function DescribeBox() {
         <div className="flex flex-col gap-2" role="alert" data-make-describe-refusal="">
           <div className="flex flex-wrap items-center gap-2">
             <p className="min-w-0 flex-1 text-sm text-destructive">{run.why}</p>
-            <Button type="submit" variant="outline" onClick={() => void start()} data-make-describe-retry="">
+            <Button type="button" variant="outline" onClick={() => void start()} data-make-describe-retry="">
               Try again
             </Button>
           </div>

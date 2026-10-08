@@ -67,7 +67,7 @@ jest.mock("next/dynamic", () => ({
       return (props: Record<string, unknown>) => React.createElement(BlockRenderer, props);
     }
     if (String(loader).includes("MarkdownStreamImpl")) {
-      const Impl = (jest.requireActual("@/components/MarkdownStreamImpl") as {
+      const Impl = (jest.requireActual("@ai-matrx/chat/ui/markdown-stream/MarkdownStreamImpl") as {
         default: React.ComponentType<Record<string, unknown>>;
       }).default;
       return (props: Record<string, unknown>) => React.createElement(Impl, props);

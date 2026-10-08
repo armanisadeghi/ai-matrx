@@ -741,7 +741,7 @@ function useFeedbackForm({
     // load ladder has answered.
     let organizationId: string;
     try {
-      organizationId = await ensureOrgId(selectedOrganizationId);
+      organizationId = await ensureOrgId(null);
     } catch (err) {
       setError(
         err instanceof Error

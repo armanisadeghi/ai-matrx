@@ -36,7 +36,7 @@ jest.mock(
   }),
 );
 // THE markdown renderer a chat answer goes through, stood in so the test can see what it is handed.
-jest.mock("@/components/MarkdownStream", () => ({
+jest.mock("@ai-matrx/chat/ui/markdown-stream/MarkdownStream", () => ({
   __esModule: true,
   default: (props: { content?: string }) => <div data-markdown-stream>{props.content}</div>,
 }));

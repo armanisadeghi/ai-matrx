@@ -18,7 +18,7 @@ import { createChatTestReducer } from "@ai-matrx/chat/testing/chat-test-reducer"
 import { hydrateMessages, type MessageRecord } from "@ai-matrx/chat/agents/redux/execution-system/messages/messages.slice";
 import { extractFlatText } from "@ai-matrx/chat/agents/redux/execution-system/messages/messages.selectors";
 import { saveAnswerEdit, saveMessageDisplayEdit } from "@ai-matrx/chat/agents/redux/execution-system/message-crud/save-answer-edit.thunk";
-import { chatMessageAdapter } from "@/features/rich-document/actions/sources/chat-message";
+import { chatMessageAdapter } from "@ai-matrx/chat/agents/components/messages-display/rich-document/chat-message-source";
 import {
   describeDisplayChange,
   rebaseEdit,

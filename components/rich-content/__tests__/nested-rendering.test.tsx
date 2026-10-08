@@ -118,7 +118,7 @@ jest.mock("@/components/mardown-display/chat-markdown/FullScreenMarkdownEditor",
   __esModule: true,
   default: () => null,
 }));
-jest.mock("@/components/mardown-display/chat-markdown/internal-handlers/ToolHandlers", () => ({
+jest.mock("@ai-matrx/chat/ui/markdown-stream/internal-handlers/ToolHandlers", () => ({
   InlineToolCard: () => null,
   DbToolCard: () => null,
   InlineToolBatch: () => null,
@@ -129,15 +129,15 @@ jest.mock(
   () => ({ InlineStatusIndicator: () => null }),
 );
 jest.mock(
-  "@/components/mardown-display/chat-markdown/internal-handlers/InlineThinkingSlot",
+  "@ai-matrx/chat/ui/markdown-stream/internal-handlers/InlineThinkingSlot",
   () => ({ InlineThinkingSlot: () => null }),
 );
 jest.mock(
-  "@/components/mardown-display/chat-markdown/internal-handlers/InlineAssistantError",
+  "@ai-matrx/chat/ui/markdown-stream/internal-handlers/InlineAssistantError",
   () => ({ InlineAssistantError: () => null }),
 );
 
-import { EnhancedChatMarkdownInternal } from "@/components/mardown-display/chat-markdown/EnhancedChatMarkdown";
+import { EnhancedChatMarkdownInternal } from "@ai-matrx/chat/ui/markdown-stream/EnhancedChatMarkdown";
 import XmlBlock from "@ai-matrx/rich-content/display/blocks/xml/XmlBlock";
 import { RichContent } from "@ai-matrx/rich-content/levels/RichContent";
 import { NestedRichContent } from "@ai-matrx/rich-content/levels/standard/NestedRichContent";

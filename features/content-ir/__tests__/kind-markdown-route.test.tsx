@@ -29,7 +29,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 // — this suite's job is to prove the ROUTE hands the markdown to that engine,
 // not to re-test the engine. The rendered prose was confirmed in the browser
 // (see the ledger's live-verification note).
-jest.mock("@/components/MarkdownStream", () => ({
+jest.mock("@ai-matrx/chat/ui/markdown-stream/MarkdownStream", () => ({
   __esModule: true,
   default: ({ content }: { content?: string }) => {
     const react = require("react") as typeof React;

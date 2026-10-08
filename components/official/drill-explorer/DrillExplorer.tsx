@@ -40,7 +40,7 @@
 // shrink (they wrap to a second line on a phone); the note row is chips with tooltips
 // (`DrillExplorerNotes`), never sentences.
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { MatrxDrillChart } from "@ai-matrx/design-system/data-table/drill-chart";
 import { RefreshCw } from "lucide-react";
 import { formatCount } from "@ai-matrx/kit/format";
@@ -159,9 +159,18 @@ export function DrillExplorer({
   location,
   siblings,
   groupLabel,
-  pageWhere,
+  pageWhere: pageWhereProp,
+  base,
   surfaceName,
 }: DrillExplorerProps) {
+  // THE FIXED BASE (lane DRILL-PRIMITIVE-3) narrows every ask like the page's own filters, and is said as crumbs.
+  const baseKey = JSON.stringify(base ?? []);
+  const pageWhere = useMemo(() => {
+    const fixed = JSON.parse(baseKey) as { key: string; value: unknown }[];
+    if (fixed.length === 0) return pageWhereProp;
+    return { ...(pageWhereProp ?? {}), ...Object.fromEntries(fixed.map((b) => [b.key, b.value])) };
+  }, [pageWhereProp, baseKey]);
+  const baseCrumbs = useMemo(() => (JSON.parse(baseKey) as { label: string; valueLabel: string }[]).map((b) => ({ label: b.label, value: b.valueLabel })), [baseKey]);
   const userId = useAppSelector(selectUserId);
   const { unit, canToggle, setUnit } = useUnit();
   const rate = usePointsRate();
@@ -542,7 +551,7 @@ export function DrillExplorer({
       {/* ONE toolbar row: the trail, then the window, the Measures, the grouping and the findings. */}
       {/* F9: the controls never shrink — on a phone they wrap to their own line, the trail above them */}
       <div data-drill-explorer-toolbar className="flex flex-wrap items-center gap-x-2 gap-y-1 border-b border-border px-4 py-1.5">
-        <MatrxDrillTrail dimensions={dimensions} question={question} onQuestionChange={setQuestion} rootLabel={rootLabel} emptyLabel={emptyLabel} measures={measures} answers={answers} focusAttributes={focusAttributes} rowNoun={rowNoun} cross={cross} className="min-w-0 max-sm:basis-full" />
+        <MatrxDrillTrail dimensions={dimensions} question={question} onQuestionChange={setQuestion} rootLabel={rootLabel} emptyLabel={emptyLabel} measures={measures} answers={answers} focusAttributes={focusAttributes} rowNoun={rowNoun} cross={cross} {...(baseCrumbs.length > 0 ? { base: baseCrumbs } : {})} className="min-w-0 max-sm:basis-full" />
         <div data-drill-explorer-controls className="ml-auto flex flex-wrap items-center justify-end gap-0 [&>*]:shrink-0">
           <MatrxDrillWindowMenu question={question} onQuestionChange={setQuestion} dimensionLabel="When" />
           <MatrxDrillMeasurePicker measures={measures} question={question} onQuestionChange={setQuestion} />

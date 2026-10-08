@@ -8,7 +8,7 @@ import {
   ResizableHandle,
 } from "@/components/ui/resizable";
 import { RichContent } from "@ai-matrx/rich-content/levels/RichContent";
-import type { MarkdownStreamProps } from "@/components/MarkdownStream";
+import type { MarkdownStreamProps } from "@ai-matrx/chat/ui/markdown-stream/MarkdownStream";
 import { cn } from "@/lib/utils";
 import { useIsMobile } from "@ai-matrx/kit/media-query";
 import { Eye, PenLine } from "lucide-react";

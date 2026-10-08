@@ -8,6 +8,7 @@
 // filters, sort and paging SOURCE-owned. The footer total is the server's total.
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { useTableUrlState } from "@ai-matrx/design-system/data-table";
 import type { MatrxDataTableQueryState } from "@ai-matrx/design-system/data-table/types";
 
 export function serverTableInitialState(
@@ -23,8 +24,36 @@ export function useServerTable<T>(
   what: string,
   /** Anything else the fetcher closes over (a toolbar picker): when it changes the table re-queries from page 1. */
   externalKey = "",
+  /**
+   * The table's address id (`/^[a-z][a-z0-9-]*$/`): search, filters, sort and page live in the URL, so a
+   * reload or a shared link reopens the same view. MatrxDataTable's own `urlState` cannot be combined
+   * with controlled mode, so a server table MUST pass this to keep that platform feature.
+   */
+  urlId?: string,
 ) {
-  const [query, setQuery] = useState<MatrxDataTableQueryState>(initial);
+  const [localQuery, setLocalQuery] = useState<MatrxDataTableQueryState>(initial);
+  const url = useTableUrlState({
+    tableId: urlId ?? "unsaved-view",
+    defaultSort: initial.sort,
+    defaultPageSize: initial.pageSize,
+  });
+  // The table shows the live state; the fetch reads the search-debounced one, keyed by what it SAYS
+  // (the URL hook rebuilds its object every render).
+  const query = urlId ? url.state : localQuery;
+  const fetchKey = JSON.stringify(urlId ? url.queryState : localQuery);
+  const urlStateRef = useRef(url);
+  urlStateRef.current = url;
+  const setQuery = useCallback(
+    (next: MatrxDataTableQueryState | ((q: MatrxDataTableQueryState) => MatrxDataTableQueryState)) => {
+      if (!urlId) {
+        setLocalQuery(next);
+        return;
+      }
+      const u = urlStateRef.current;
+      u.onStateChange(typeof next === "function" ? next(u.state) : next);
+    },
+    [urlId],
+  );
   const [rows, setRows] = useState<T[]>([]);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -38,7 +67,7 @@ export function useServerTable<T>(
     const ticket = ++latest.current;
     setLoading(true);
     fetcherRef
-      .current(query)
+      .current(JSON.parse(fetchKey) as MatrxDataTableQueryState)
       .then((answer) => {
         if (ticket !== latest.current) return;
         setRows(answer.rows);
@@ -52,7 +81,7 @@ export function useServerTable<T>(
       .finally(() => {
         if (ticket === latest.current) setLoading(false);
       });
-  }, [query, reloadTick, what, externalKey]);
+  }, [fetchKey, reloadTick, what, externalKey]);
 
   // An outside filter changed: the old page number may no longer exist.
   const lastExternalKey = useRef(externalKey);
@@ -60,7 +89,7 @@ export function useServerTable<T>(
     if (lastExternalKey.current === externalKey) return;
     lastExternalKey.current = externalKey;
     setQuery((q) => (q.page === 1 ? q : { ...q, page: 1 }));
-  }, [externalKey]);
+  }, [externalKey, setQuery]);
 
   const reload = useCallback(() => setReloadTick((n) => n + 1), []);
 

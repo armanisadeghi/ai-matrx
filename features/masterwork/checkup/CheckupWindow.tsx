@@ -15,7 +15,7 @@ import { toast } from "@/lib/toast";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import LoadingSpinner from "@/components/ui/loading-spinner";
-import MarkdownStream from "@/components/MarkdownStream";
+import MarkdownStream from "@ai-matrx/chat/ui/markdown-stream/MarkdownStream";
 import KindInstanceRender from "@/features/content-ir/studio/components/KindInstanceRender";
 import { WindowPanel } from "@/features/window-panels/WindowPanel";
 import { useRetainRequestForViewer } from "@ai-matrx/chat/agents/redux/execution-system/active-requests/useRetainRequestForViewer";

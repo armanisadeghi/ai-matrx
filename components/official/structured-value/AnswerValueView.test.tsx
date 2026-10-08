@@ -1,7 +1,7 @@
 import { renderToStaticMarkup } from "react-dom/server";
 import { AnswerValueView } from "./AnswerValueView";
 
-jest.mock("@/components/MarkdownStream", () => ({
+jest.mock("@ai-matrx/chat/ui/markdown-stream/MarkdownStream", () => ({
   __esModule: true,
   default: ({ content }: { content: string }) => <pre>{content}</pre>,
 }));

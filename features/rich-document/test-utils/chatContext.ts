@@ -4,7 +4,7 @@
 // /chat bars use (buildChatMessageActions), with every content gate open.
 
 import { getSourceAdapter } from "@ai-matrx/rich-content/rich-document/actions/sources/index";
-import { buildChatMessageActions } from "../chat/chatMessageActions";
+import { buildChatMessageActions } from "@ai-matrx/chat/agents/components/messages-display/rich-document/chatMessageActions";
 import type { RichDocumentActionContext } from "@ai-matrx/rich-content/rich-document/types";
 
 /** A message that makes every content-gated action applicable. */

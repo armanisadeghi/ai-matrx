@@ -56,7 +56,7 @@ jest.mock("./outline/text/TextFocusPicker", () => ({
 }));
 
 let renderedMarkdown: string | null = null;
-jest.mock("@/components/MarkdownStream", () => ({
+jest.mock("@ai-matrx/chat/ui/markdown-stream/MarkdownStream", () => ({
   __esModule: true,
   default: ({ content }: { content?: string }) => {
     renderedMarkdown = content ?? null;

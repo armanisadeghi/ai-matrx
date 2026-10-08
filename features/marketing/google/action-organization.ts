@@ -7,7 +7,7 @@ import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
  */
 export async function resolveGoogleActionOrganizationId(
   connectionOrganizationId: string | null,
-  activeOrganizationId: string | null,
+  _activeOrganizationId?: string | null,
 ): Promise<string> {
-  return ensureOrgId(connectionOrganizationId ?? activeOrganizationId);
+  return ensureOrgId(connectionOrganizationId);
 }

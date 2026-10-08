@@ -160,7 +160,7 @@ function AdminsManagementPageContent() {
     error: auditError,
     reload: reloadAudit,
     tableProps: auditTableProps,
-  } = useServerTable<AuditEntry>(searchAdminAudit, AUDIT_INITIAL_STATE, "the audit log");
+  } = useServerTable<AuditEntry>(searchAdminAudit, AUDIT_INITIAL_STATE, "the audit log", "", "admin-audit");
   const [loading, setLoading] = useState(true);
   const [loadFailed, setLoadFailed] = useState(false);
   const auditFailed = auditError !== null;

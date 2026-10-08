@@ -30,7 +30,7 @@ jest.mock("@/lib/redux/hooks", () => ({
 jest.mock("@ai-matrx/chat/store/hooks", () => jest.requireMock("@/lib/redux/hooks"));
 
 jest.mock(
-  "@/components/mardown-display/blocks/json/useBoundAgentOutputSchema",
+  "@ai-matrx/chat/ui/markdown-stream/useBoundAgentOutputSchema",
   () => ({ useBoundAgentOutputSchema: () => mockOutputSchema }),
 );
 
@@ -93,7 +93,7 @@ jest.mock("../FullScreenMarkdownEditor", () => ({
   default: () => null,
 }));
 
-jest.mock("../internal-handlers/ToolHandlers", () => ({
+jest.mock("@ai-matrx/chat/ui/markdown-stream/internal-handlers/ToolHandlers", () => ({
   InlineToolCard: () => null,
   DbToolCard: () => null,
   InlineToolBatch: () => null,
@@ -104,11 +104,11 @@ jest.mock("@ai-matrx/rich-content/display/chat-markdown/internal-handlers/Inline
   InlineStatusIndicator: () => null,
 }));
 
-jest.mock("../internal-handlers/InlineThinkingSlot", () => ({
+jest.mock("@ai-matrx/chat/ui/markdown-stream/internal-handlers/InlineThinkingSlot", () => ({
   InlineThinkingSlot: () => null,
 }));
 
-jest.mock("../internal-handlers/InlineAssistantError", () => ({
+jest.mock("@ai-matrx/chat/ui/markdown-stream/internal-handlers/InlineAssistantError", () => ({
   InlineAssistantError: () => null,
 }));
 
@@ -130,8 +130,8 @@ jest.mock(
   }),
 );
 
-import { EnhancedChatMarkdownInternal } from "../EnhancedChatMarkdown";
-import { StreamAwareChatMarkdown } from "../StreamAwareChatMarkdown";
+import { EnhancedChatMarkdownInternal } from "@ai-matrx/chat/ui/markdown-stream/EnhancedChatMarkdown";
+import { StreamAwareChatMarkdown } from "@ai-matrx/chat/ui/markdown-stream/StreamAwareChatMarkdown";
 import type { TypedStreamEvent } from "@ai-matrx/rich-content/display/chat-markdown/types";
 import { StreamBlockAccumulator } from "@ai-matrx/chat/agents/redux/execution-system/utils/stream-block-accumulator";
 import type { RenderBlockPayload } from "@ai-matrx/agents/generated/stream-events";

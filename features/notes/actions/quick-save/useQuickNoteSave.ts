@@ -148,7 +148,7 @@ export function useQuickNoteSave({
     let organizationId: string;
     if (isCreate) {
       try {
-        organizationId = await ensureOrgId(selectedOrganizationId);
+        organizationId = await ensureOrgId(null);
       } catch (error) {
         throw error;
       }

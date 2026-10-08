@@ -1,6 +1,6 @@
 import { readEnvelope } from "@ai-matrx/content-ir";
 import { applyIrKindRoute } from "@ai-matrx/rich-content/kinds/react/kind-route";
-import { progressDataRenderBlock } from "../redux/progress-data-block";
+import { progressDataRenderBlock } from "@ai-matrx/chat/agents/redux/execution-system/utils/progress-data-block";
 
 describe("progressDataRenderBlock", () => {
   it("promotes nested Content IR from a typed progress event", () => {

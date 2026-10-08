@@ -80,7 +80,7 @@ export function AutofillRows({
     setBusy(spec.key);
     let done = 0;
     try {
-      const organizationId = await ensureOrgId(activeOrg);
+      const organizationId = await ensureOrgId(null);
       const page = await client.listPage({ table_id: tableId, limit: 200 });
       if (!page.ok) throw new Error(page.error.message);
       const aiKeys = aiFields.map((f) => f.key);

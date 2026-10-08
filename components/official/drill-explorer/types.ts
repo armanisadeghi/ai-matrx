@@ -275,6 +275,11 @@ export interface DrillExplorerProps {
    */
   pageWhere?: Record<string, unknown> | undefined;
   /**
+   * THE HOST'S FIXED FILTERS (lane DRILL-PRIMITIVE-3): one site's id, applied to every ask like
+   * `pageWhere`, and said first in the trail as a crumb no click removes.
+   */
+  base?: readonly DrillExplorerBase[] | undefined;
+  /**
    * THE PAGE'S SURFACE (lane DRILL-FLIP-FIXES L4): given, the explorer registers it and hands it the
    * question and its answer at read time (`drillExplorerScope.ts`), as the old Spend Explorer did.
    */
@@ -283,4 +288,14 @@ export interface DrillExplorerProps {
   headerExtras?: ReactNode;
   /** A data attribute on the root, so a host's walk can find its mount. */
   dataAttributes?: Record<string, string> | undefined;
+}
+
+/** One fixed filter of the explorer: its Dimension key and value, and the crumb's words. */
+export interface DrillExplorerBase {
+  key: string;
+  value: string | number | boolean | null;
+  /** The crumb's name ("Site"). */
+  label: string;
+  /** The value's words ("Acme Dental"). */
+  valueLabel: string;
 }

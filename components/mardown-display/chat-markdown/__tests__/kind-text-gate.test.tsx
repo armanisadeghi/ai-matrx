@@ -45,7 +45,7 @@ jest.mock("@ai-matrx/chat/host/diagnostics", () => ({
 }));
 
 const mockStreamCalls: string[] = [];
-jest.mock("@/components/MarkdownStream", () => ({
+jest.mock("@ai-matrx/chat/ui/markdown-stream/MarkdownStream", () => ({
   __esModule: true,
   default: function MockMarkdownStream({ content }: { content: string }) {
     mockStreamCalls.push(content);

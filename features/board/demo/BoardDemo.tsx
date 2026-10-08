@@ -462,7 +462,7 @@ export function BoardDemo({
       return;
     }
     try {
-      const organizationId = await ensureOrgId(activeOrgId);
+      const organizationId = await ensureOrgId(null);
       await NotesAPI.create({
         label: spec.title,
         content: markdown,

@@ -57,7 +57,7 @@ import { useCostDisplay } from "@/components/cost/useCostDisplay";
 import { useEffect, useRef, useState } from "react";
 import { ChevronDown, ChevronRight, MessagesSquare } from "lucide-react";
 
-import MarkdownStream from "@/components/MarkdownStream";
+import MarkdownStream from "@ai-matrx/chat/ui/markdown-stream/MarkdownStream";
 import { MatrxUuidCell } from "@ai-matrx/design-system/data-table/uuid-cell";
 import { AgentContentList } from "@/features/workflow-runtime/components/AgentContentList";
 import { StructuredValueView } from "@/components/official/structured-value/StructuredValueView";

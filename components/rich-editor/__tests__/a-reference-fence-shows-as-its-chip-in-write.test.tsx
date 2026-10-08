@@ -31,7 +31,7 @@ jest.mock("@/features/audio/hooks/useMicField", () => ({
 }));
 jest.mock("@/features/files/handler/hooks/useFileUpload", () => ({ useFileUpload: () => ({ upload: jest.fn() }) }));
 jest.mock("@ai-matrx/rich-content/rich-document/RichDocument", () => ({ RichDocument: () => null }));
-jest.mock("@/components/MarkdownStream", () => ({
+jest.mock("@ai-matrx/chat/ui/markdown-stream/MarkdownStream", () => ({
   __esModule: true,
   default: ({ content }: { content: string }) => <div data-testid="shared-renderer">{content}</div>,
 }));

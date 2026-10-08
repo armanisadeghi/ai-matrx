@@ -15,7 +15,7 @@ const NAME_FIELD = { key: "name", label: "Name", type: "text", sort: 10, require
 
 export async function createPageDatabase(spaceId: string | null, activeOrg: string | null, userId: string | null, name = "Untitled database"): Promise<PickedSource> {
   // org-filter: write-target the page's organization; the active one only for a page not saved yet.
-  const organizationId = (spaceId ? await pageOrganizationId(spaceId) : null) ?? (await ensureOrgId(activeOrg));
+  const organizationId = (spaceId ? await pageOrganizationId(spaceId) : null) ?? (await ensureOrgId(null));
   const client = createRecordsClient({
     dataSource: supabaseDataSource(createClient()),
     actor: userId ? { actor: "user", user_id: userId } : { actor: "user" },

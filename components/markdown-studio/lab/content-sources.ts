@@ -16,7 +16,7 @@ import type {
 } from "@ai-matrx/rich-content/rich-document/types";
 import type { AnnotationRecord } from "@/features/rich-document/annotations/record-of-source";
 import { AGENT_ICON_NAME } from "@/components/icons/domain-icons";
-import { buildChatMessageActions } from "@/features/rich-document/chat/chatMessageActions";
+import { buildChatMessageActions } from "@ai-matrx/chat/agents/components/messages-display/rich-document/chatMessageActions";
 import { NotesAPI } from "@/features/notes/service/notesApi";
 import { noteIdentityContentSource } from "@/features/notes/richDocumentSource";
 import {

@@ -93,7 +93,7 @@ export function DatabaseDesignerHost({ children, userId }: { children: ReactNode
     setOpen(false);
     setTyped("");
     try {
-      const organizationId = await ensureOrgId(activeOrg);
+      const organizationId = await ensureOrgId(null);
       const design = await run({
         mandateKey: DESIGN_DATABASE_KEY,
         userInput: words,

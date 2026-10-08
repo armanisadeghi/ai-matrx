@@ -563,7 +563,7 @@ export function SourcesPage() {
       // Name the organization first: the scraper refuses without one, and the
       // person should be asked to choose — not told the page was unreadable.
       // org-refusal-presented-by: features/sources/addFailure.ts
-      await ensureOrgId(activeOrgId);
+      await ensureOrgId(null);
       const result = await scrapeUrl(
         /^https?:\/\//i.test(url) ? url : `https://${url}`,
       );
@@ -609,7 +609,7 @@ export function SourcesPage() {
     setAdding(true);
     setAddError(null);
     try {
-      const organizationId = await ensureOrgId(activeOrgId);
+      const organizationId = await ensureOrgId(null);
       const body = await buildPastedTextLanding({
         text: textInput,
         name: textName,

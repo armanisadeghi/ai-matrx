@@ -93,7 +93,7 @@ export function SpaceBuilderHost({ children }: { children: ReactNode }) {
     setOpen(false);
     setTyped("");
     try {
-      const organizationId = await ensureOrgId(activeOrg);
+      const organizationId = await ensureOrgId(null);
       const result = await run({
         mandateKey: BUILD_KEY,
         ...buildRequest(words, target),

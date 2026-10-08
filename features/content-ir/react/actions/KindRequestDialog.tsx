@@ -20,7 +20,7 @@ import type { AnyMandateKey } from "@ai-matrx/agents/mandates";
 
 import { useEffect, useMemo, useState } from "react";
 import { AlertTriangle, Loader2, RotateCcw } from "lucide-react";
-import MarkdownStream from "@/components/MarkdownStream";
+import MarkdownStream from "@ai-matrx/chat/ui/markdown-stream/MarkdownStream";
 import {
   Dialog,
   DialogContent,
