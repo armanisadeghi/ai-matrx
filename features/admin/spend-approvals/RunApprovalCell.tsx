@@ -3,16 +3,17 @@
 /**
  * The approval-status cell every spend board shares (agent spend board, automation costs,
  * system jobs, triggers): Waiting / Approved / Rejected linking to the approval, or
- * "Under $1" when no run crossed the threshold (auto-approved). One fetch per seat.
+ * "Under $N" (N = the threshold of the subject's organization) when no run crossed it. One fetch per seat.
  */
 import Link from "next/link";
 import { Badge } from "@ai-matrx/design-system/controls";
-import { SPEND_FLAG_LIMITS } from "@/features/scheduling/service/automationCosts";
 import {
   APPROVAL_STATUS_LABEL,
   approvalFor,
   approvalHref,
+  underThresholdLabel,
   useApprovalStatusIndex,
+  useApprovalThreshold,
   type ApprovalSeat,
   type ApprovalStatus,
 } from "./spendApprovals";
@@ -29,6 +30,7 @@ export function RunApprovalCell({
   maxRunCost,
   seat,
   orgSlug,
+  thresholdOrgId,
 }: {
   /** null = every organization (platform admin seat). */
   orgId: string | null;
@@ -37,8 +39,11 @@ export function RunApprovalCell({
   maxRunCost: number | null | undefined;
   seat: ApprovalSeat;
   orgSlug?: string;
+  /** The subject's own organization, for its threshold; null = platform default. */
+  thresholdOrgId?: string | null;
 }) {
   const { index, error } = useApprovalStatusIndex(orgId);
+  const threshold = useApprovalThreshold(thresholdOrgId ?? orgId);
   if (error) return <span className="text-xs text-destructive" title={error}>Unavailable</span>;
   if (!index) return <span className="inline-block h-4 w-14 animate-pulse rounded bg-muted/50" />;
   const hit = approvalFor(index, subjects);
@@ -49,8 +54,8 @@ export function RunApprovalCell({
       </Link>
     );
   }
-  if (maxRunCost != null && maxRunCost <= SPEND_FLAG_LIMITS.runCostUsd) {
-    return <span className="text-xs text-muted-foreground" title="No run crossed the approval threshold">Under $1</span>;
+  if (maxRunCost != null && threshold != null && maxRunCost <= threshold) {
+    return <span className="text-xs text-muted-foreground">{underThresholdLabel(threshold)}</span>;
   }
   return <span className="text-xs text-muted-foreground">—</span>;
 }

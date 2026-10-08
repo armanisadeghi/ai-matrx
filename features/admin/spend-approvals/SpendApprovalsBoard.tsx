@@ -136,9 +136,9 @@ function DecisionDialog({
     history: `History — ${name}`,
   };
   const consequence: Record<Pending["decision"], string> = {
-    approve: `It keeps running automatically at about ${format(row.avg_cost_since ?? row.first_run_cost)} a run — about ${format(monthly)} a month.`,
-    reject: "Every automated run is refused once holding is on, until someone approves it.",
-    reopen: "It goes back to waiting; its next automated run is held once holding is on.",
+    approve: `About ${format(row.avg_cost_since ?? row.first_run_cost)} a run, ${format(monthly)} a month.`,
+    reject: "Automated runs stay held.",
+    reopen: "Back to waiting.",
     details: "",
     history: "",
   };
@@ -253,7 +253,7 @@ export function SpendApprovalsBoard({
             )}
             <div className="flex min-w-0 flex-wrap items-center gap-1 text-xs text-muted-foreground">
               <span>{SUBJECT_KIND_LABEL[r.subject_kind]}</span>
-              {r.seeded && <Badge tone="neutral" title="Ran over the threshold before the approval rule existed">Before rule</Badge>}
+              {r.seeded && <Badge tone="neutral" title="Predates the rule">Before rule</Badge>}
             </div>
             {r.subject_kind !== "agent" && r.agent_id && (
               <EntityRef token="agent" id={r.agent_id} name="Agent" />
@@ -291,7 +291,7 @@ export function SpendApprovalsBoard({
                 {when(r.first_run_at)}
               </Link>
             ) : (
-              <span className="text-muted-foreground" title="That run saved no conversation or workflow run">
+              <span className="text-muted-foreground" title="No saved run">
                 {when(r.first_run_at)}
               </span>
             )}

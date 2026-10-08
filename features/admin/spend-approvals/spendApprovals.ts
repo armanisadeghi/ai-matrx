@@ -196,6 +196,50 @@ export async function fetchWaitingApprovalCount(orgId: string | null): Promise<n
   return num(data);
 }
 
+// ── Effective threshold per organization (the knob an org may lower) ─────────
+
+const DEFAULT_THRESHOLD_USD = 1;
+const thresholdCache = new Map<string, Promise<number>>();
+
+export function fetchApprovalThreshold(orgId: string | null): Promise<number> {
+  const k = orgId ?? "*";
+  let p = thresholdCache.get(k);
+  if (!p) {
+    p = (async () => {
+      const { data, error } = await supabase
+        .schema("billing")
+        .rpc("_run_approval_threshold", { p_org: (orgId ?? null) as string });
+      if (error) throw pgErrorToError(error);
+      const n = num(data);
+      return n > 0 ? n : DEFAULT_THRESHOLD_USD;
+    })();
+    p.catch(() => thresholdCache.delete(k));
+    thresholdCache.set(k, p);
+  }
+  return p;
+}
+
+/** The threshold that applies to a subject's organization; null until it resolves. */
+export function useApprovalThreshold(orgId: string | null): number | null {
+  const [t, setT] = useState<number | null>(null);
+  useEffect(() => {
+    let live = true;
+    fetchApprovalThreshold(orgId)
+      .then((v) => live && setT(v))
+      .catch(() => live && setT(DEFAULT_THRESHOLD_USD));
+    return () => {
+      live = false;
+    };
+  }, [orgId]);
+  return t;
+}
+
+/** "Under $1" / "Under $0.50" for the threshold in force. */
+export function underThresholdLabel(thresholdUsd: number): string {
+  const s = Number.isInteger(thresholdUsd) ? String(thresholdUsd) : thresholdUsd.toFixed(2).replace(/0+$/, "");
+  return `Under $${s}`;
+}
+
 // ── Status per subject, shared by every spend board (one fetch per seat) ─────
 
 type StatusIndex = Map<string, ApprovalStatusRow>;

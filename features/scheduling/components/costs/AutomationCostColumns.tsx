@@ -250,6 +250,7 @@ export function automationCostColumns<T>(
             orgId={seat === "admin" ? null : r.organization_id}
             subjects={[[r.automation_kind, r.automation_id]]}
             maxRunCost={r.max_run_cost}
+            thresholdOrgId={r.organization_id}
             seat={seat}
             orgSlug={orgSlug}
           />
