@@ -128,7 +128,7 @@ function exportNames(file, seen = new Set()) {
   const text = readFileSync(file, "utf8");
   if (/module\.exports|__exportStar|__export\(/.test(text)) return null; // CJS shape: not statically certain
   const names = new Set(text.match(/[A-Za-z_$][\w$]*/g) ?? []);
-  for (const m of text.matchAll(/export\s+\*\s+from\s*["']([^"']+)["']/g)) {
+  for (const m of text.matchAll(/export\s*\*\s*from\s*["']([^"']+)["']/g)) {
     const spec = m[1];
     if (!spec.startsWith(".")) return null; // star from another package: unreadable here
     const base = path.resolve(path.dirname(file), spec);
@@ -251,6 +251,7 @@ function selfTest() {
       ["subpath", { "app/x.ts": 'import { useA } from "@ai-matrx/alchemy/react/surface";\n' }, { "@ai-matrx/alchemy": alchemy }, 1, /does not export "\.\/react\/surface"/],
       ["subpath-missing-package-subpath-dynamic", { "app/x.ts": 'const m = await import("@ai-matrx/alchemy/does-not-exist");\n' }, { "@ai-matrx/alchemy": alchemy }, 1, /does-not-exist/],
       ["named", { "app/x.ts": 'import {\n  useA,\n  PERMISSION_LEVEL_HINTS,\n} from "@ai-matrx/alchemy/react";\n' }, { "@ai-matrx/alchemy": alchemy }, 1, /does not export "PERMISSION_LEVEL_HINTS"/],
+      ["minified-external-star", { "app/x.ts": 'import { ContentTransferMenu } from "@ai-matrx/alchemy/react";\n' }, { "@ai-matrx/alchemy": { ...alchemy, files: { ...alchemy.files, "dist/react.d.ts": 'export * from "@ai-matrx/alchemy/react/workspace";\n', "dist/react.js": 'export*from"@ai-matrx/alchemy/react/workspace";\n' } } }, 0, null],
       ["graph", {}, { "@ai-matrx/alchemy": alchemy, "@ai-matrx/chat": { exports: { ".": "./dist/index.js" }, files: { "dist/index.js": 'import { s } from "@ai-matrx/alchemy/react/surface";\nexport { s };\n' } } }, 1, /@ai-matrx\/chat@1\.0\.0\/dist\/index\.js.*alchemy@1\.0\.0 does not export "\.\/react\/surface"/],
     ];
     let bad = 0;
