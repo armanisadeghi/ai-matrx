@@ -45,6 +45,7 @@ export async function seeUntil(
     last = await observe(page);
     actor.saw(last);
     if (ok(last)) {
+      actor.progress();
       actor.note(`SAW ${what}: ${summarize(last)}`);
       return last;
     }
@@ -68,6 +69,7 @@ export async function keepsSeeing(
 ): Promise<void> {
   const deadline = Date.now() + ms;
   while (Date.now() < deadline) {
+    await resumeIfParked(actor, page);
     const o = await observe(page);
     actor.saw(o);
     if (!ok(o)) {
@@ -76,6 +78,7 @@ export async function keepsSeeing(
     }
     await page.waitForTimeout(1000).catch(() => undefined);
   }
+  actor.progress();
   actor.note(`kept seeing ${what} for ${formatDurationMs(ms, { style: "compact" })}`);
 }
 
@@ -88,6 +91,7 @@ export async function seeControl(actor: Actor, what: string, control: Locator, t
   while (Date.now() < deadline) {
     await resumeIfParked(actor, page);
     if (await control.first().isVisible().catch(() => false)) {
+      actor.progress();
       actor.note(`SAW control ${what}`);
       return control.first();
     }
@@ -101,32 +105,56 @@ export async function seeControl(actor: Actor, what: string, control: Locator, t
 }
 
 /** The first token request this person's page sent (its URL and body are the probe template). */
-export function firstTokenRequest(actor: Actor): { url: string; body: Record<string, unknown> } {
-  const call = actor.tokenCalls.find((c) => c.body !== null);
-  if (!call || !call.body) throw new Error(`${actor.opts.label} never called the token door; nothing to replay`);
-  return { url: call.url, body: call.body };
+export interface TokenTemplate {
+  url: string;
+  body: Record<string, unknown>;
+  headers: Record<string, string>;
+}
+
+export function firstTokenRequest(actor: Actor): TokenTemplate {
+  const call = actor.tokenCalls.find((c) => c.body !== null && c.status !== null && c.status < 300);
+  if (!call || !call.body) throw new Error(`${actor.opts.label} never got a token from the token door; nothing to replay`);
+  return { url: call.url, body: call.body, headers: call.headers };
 }
 
 /**
  * Knock on the token door AS this person (their own session, their own name), with the request
  * shape the product itself sent. Returns the HTTP status; the evidence line never carries a token.
  */
-export async function tokenProbe(actor: Actor, template: { url: string; body: Record<string, unknown> }, displayName: string): Promise<number> {
+export async function tokenProbe(actor: Actor, template: TokenTemplate, displayName: string): Promise<number> {
   const s = await actor.session();
   const body = { ...template.body, display_name: displayName, device_id: `harness-probe-${Math.random().toString(36).slice(2, 10)}`, guest: s === null };
   const res = await fetch(template.url, {
     method: "POST",
-    headers: { "Content-Type": "application/json", ...(s ? { Authorization: `Bearer ${s.token}` } : {}) },
+    // The page's own headers (organization header included), with THIS person's credential.
+    headers: { ...template.headers, "content-type": "application/json", ...(s ? { authorization: `Bearer ${s.token}` } : {}) },
     body: JSON.stringify(body),
   });
   const text = await res.text();
   const minted = res.ok && /"token"\s*:/.test(text);
-  actor.note(`token door probe as ${displayName}: HTTP ${res.status}${minted ? " — a LiveKit token was MINTED" : ` — ${text.replace(/"token"\s*:\s*"[^"]+"/g, '"token":"…"').slice(0, 160)}`}`);
+  actor.note(`token door probe as ${displayName}: HTTP ${res.status}${minted ? " — a LiveKit token was MINTED" : ` — ${text.replace(/"token"\s*:\s*"[^"]+"/g, '"token":"…"').slice(0, 200)}`}`);
+  // A malformed probe (400/422) proves nothing about the door: it is a harness failure, never a refusal.
+  if (res.status === 400 || res.status === 422) throw new Error(`token door probe as ${displayName} was malformed (HTTP ${res.status}): ${text.slice(0, 160)}`);
   return res.status;
 }
 
+/** The door refused this person (not a malformed request, not a server error). */
+export const refused = (status: number) => status === 401 || status === 403 || status === 404 || status === 409 || status === 410;
+
 /** Host: /meetings → Start now (picking an organization if asked) → the meeting's pre-join. */
 export async function startInstantMeeting(host: Actor): Promise<Meeting> {
+  // A walk-cap park mid-start (recorded as ENV evidence) restarts the start, up to 3 times.
+  for (let attempt = 1; ; attempt++) {
+    try {
+      return await startOnce(host);
+    } catch (e) {
+      if (attempt >= 3 || !/__dev-walk/.test((e as Error).message)) throw e;
+      await resumeIfParked(host);
+    }
+  }
+}
+
+async function startOnce(host: Actor): Promise<Meeting> {
   const page = host.page;
   await resumeIfParked(host, page);
   if (!new URL(page.url()).pathname.startsWith("/meetings")) await page.goto("/meetings");
@@ -136,6 +164,7 @@ export async function startInstantMeeting(host: Actor): Promise<Meeting> {
   await start.first().click();
   const deadline = Date.now() + 60_000;
   while (Date.now() < deadline && !/\/meet\//.test(page.url())) {
+    if (/__dev-walk/.test(page.url())) break;
     // The organization picker ("Which organization is this for?") — choose the first.
     const picker = page.getByText(/Which organization is this for/i);
     if (await picker.isVisible().catch(() => false)) {
@@ -234,6 +263,7 @@ export async function walkIn(actor: Actor, meeting: Meeting, opts: WalkOptions =
     }
     await page.waitForTimeout(500);
   }
+  if (until.includes(o.phase)) actor.progress();
   actor.note(`walked in -> ${summarize(o)}`);
   expect(until, `${actor.opts.label} should reach ${until.join("|")}; saw ${summarize(o)}`).toContain(o.phase);
   return o;

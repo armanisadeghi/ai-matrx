@@ -41,6 +41,8 @@ export interface TokenCall {
   status: number | null;
   /** The JSON body the page sent (room, org, meeting id, display name, device). */
   body: Record<string, unknown> | null;
+  /** The request headers the page sent, minus credentials (Authorization / cookies). */
+  headers: Record<string, string>;
 }
 
 /** An environment event proven in this run's evidence (walk-cap park, dev-server 5xx, compile error). */
@@ -120,7 +122,8 @@ export class Actor {
       } catch {
         body = null;
       }
-      this.tokenCalls.push({ at: Date.now(), url: req.url(), status: null, body });
+      const headers = Object.fromEntries(Object.entries(req.headers()).filter(([k]) => !/^(authorization|cookie|host|content-length)$/i.test(k)));
+      this.tokenCalls.push({ at: Date.now(), url: req.url(), status: null, body, headers });
     });
     context.on("response", (res) => {
       const url = res.url();
@@ -128,6 +131,10 @@ export class Actor {
         const call = [...this.tokenCalls].reverse().find((c) => c.url === url && c.status === null);
         if (call) call.status = res.status();
         this.note(`token door answered HTTP ${res.status()}`);
+        return;
+      }
+      if (url.startsWith(origin) && (/\/__dev-walk\?parked=1/.test(url) || (res.status() === 409 && new URL(url).pathname === "/__dev-walk"))) {
+        this.env(`walk cap parked this tab (${new URL(url).pathname}${new URL(url).search.slice(0, 20)} HTTP ${res.status()})`);
         return;
       }
       if (res.status() >= 500 && url.startsWith(origin)) {
@@ -144,6 +151,12 @@ export class Actor {
   env(what: string): void {
     this.envEvents.push({ at: Date.now(), what });
     this.note(`ENV: ${what}`);
+  }
+
+  /** Last time this person's scenario made progress (saw what it waited for) — ENV must postdate it. */
+  progressAt = 0;
+  progress(): void {
+    this.progressAt = Date.now();
   }
 
   /** Record what an observation was read from; a compile-error page is environment evidence. */

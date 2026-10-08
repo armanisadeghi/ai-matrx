@@ -12,6 +12,7 @@ import {
   seeControl,
   seePhase,
   seeUntil,
+  refused,
   tokenProbe,
   walkIn,
 } from "../lib/meeting";
@@ -57,15 +58,25 @@ scenario("join-ended-meeting", async ({ cast }) => {
   expect(minted.length, `token door minted for org member ${memberName} on their own page after the meeting ended`).toBe(0);
   // …and knocking directly, as the member and as the guest, is refused.
   const m = await tokenProbe(member, template, memberName);
-  expect(m >= 400 && m < 500, `token door should refuse org member ${memberName} for an ended meeting; answered HTTP ${m}`).toBe(true);
+  expect(refused(m), `token door should refuse org member ${memberName} for an ended meeting; answered HTTP ${m}`).toBe(true);
   const g = await tokenProbe(guest, template, GUEST);
-  expect(g >= 400 && g < 500, `token door should refuse a guest for an ended meeting; answered HTTP ${g}`).toBe(true);
+  expect(refused(g), `token door should refuse a guest for an ended meeting; answered HTTP ${g}`).toBe(true);
   // No room was brought back to life.
   const room = await roomTruth(String(truth.room_name));
   member.note(`LiveKit truth: room exists=${room.exists} participants=[${room.participants.join(", ")}]`);
   expect(room.exists && room.participants.length > 0, `LiveKit room ${room.room} came back with ${room.participants.join(", ")}`).toBe(false);
-  // The ended screen leads to what is left of the meeting: its record or summary.
-  await seeControl(member, "a link to the meeting's record or summary", member.page.getByRole("link", { name: /record|summary|notes|transcript|recording/i }).or(member.page.getByRole("button", { name: /^(View|Open) (the )?(record|summary|notes|transcript|recording)/i })), 5000);
+  // The ended screen leads to what is left of the meeting: its record (summary, notes, transcript)
+  // shown in place, or a link to it.
+  const recordLink = member.page.getByRole("link", { name: /record|summary|notes|transcript|recording/i });
+  await seeUntil(
+    member,
+    "the meeting's record (summary + transcript or notes) or a link to it",
+    (o) => (/\bSummary\b/i.test(o.text) && /\b(Transcript|Notes)\b/i.test(o.text)) || o.notices.includes("record-link"),
+    5000,
+  ).catch(async (e: Error) => {
+    if (!(await recordLink.first().isVisible().catch(() => false))) throw e;
+    member.note("SAW a link to the meeting's record");
+  });
 });
 
 scenario("before-start-host-absent-wait", async ({ cast }) => {

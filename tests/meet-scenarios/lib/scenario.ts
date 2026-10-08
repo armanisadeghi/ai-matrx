@@ -105,6 +105,7 @@ const test = base.extend<{ cast: Cast }>({
           envEvents: cast.actors.flatMap((a) => a.envEvents.map((e) => ({ ...e, who: a.opts.label }))),
           levers: cast.actors.map((a) => ({ who: a.opts.label, seat: a.opts.seat, levers: a.levers })),
           sources,
+          progressAt: Math.max(0, ...cast.actors.map((a) => a.progressAt)),
         }),
         contentType: "application/json",
       });

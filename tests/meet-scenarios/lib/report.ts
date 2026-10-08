@@ -6,8 +6,8 @@
  *
  * Classification (one rule, no regex over error text):
  *   PASS — the scenario's expectations held.
- *   ENV  — it failed AND this run's evidence proves the environment within ENV_WINDOW_MS of the
- *          failure: a walk-cap park, or the dev server failing to serve (HTTP 5xx on a page, chunk
+ *   ENV  — it failed AND this run's evidence proves the environment struck after the scenario's
+ *          last progress and within ENV_WINDOW_MS of the failure: a walk-cap park, or the dev server failing to serve (HTTP 5xx on a page, chunk
  *          or the sign-in door) or showing a compile error. Recorded by lib/actor.ts as it happens.
  *   FAIL — every other failure: a product timeout, a hung page, a crashed page, the app's error page.
  *
@@ -34,6 +34,7 @@ interface Evidence {
   envEvents: { at: number; what: string; who: string }[];
   levers: { who: string; seat: string; levers: string[] }[];
   sources: Record<string, number>;
+  progressAt?: number;
 }
 
 interface Row {
@@ -77,7 +78,9 @@ export default class MeetReport implements Reporter {
       /* no evidence attachment (the fixture never ran) */
     }
     const end = result.startTime.getTime() + result.duration;
-    const proof = ev.envEvents.filter((e) => end - e.at <= ENV_WINDOW_MS && e.at <= end + 5000);
+    // The environment explains a failure only if it struck AFTER the scenario's last progress
+    // (it stopped the walk); a park the run recovered from and moved past proves nothing.
+    const proof = ev.envEvents.filter((e) => end - e.at <= ENV_WINDOW_MS && e.at <= end + 5000 && e.at >= (ev.progressAt ?? 0));
     const status =
       result.status === "passed" ? "PASS" : result.status === "skipped" ? "SKIP" : proof.length > 0 ? "ENV" : "FAIL";
     const annotations = [...test.annotations, ...((result as { annotations?: { type: string; description?: string }[] }).annotations ?? [])]

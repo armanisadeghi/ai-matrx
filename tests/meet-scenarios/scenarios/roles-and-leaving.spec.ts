@@ -13,6 +13,7 @@ import {
   seeControl,
   seePhase,
   seeUntil,
+  refused,
   tokenProbe,
   walkIn,
 } from "../lib/meeting";
@@ -128,9 +129,9 @@ scenario("end-for-all-host", async ({ cast }) => {
   expect(minted.length, `token door minted for org member ${memberName} on their own page after End for everyone`).toBe(0);
   // …and the token door refuses the member and the host by name.
   const m = await tokenProbe(member, template, memberName);
-  expect(m >= 400 && m < 500, `token door should refuse org member ${memberName} after End for everyone; answered HTTP ${m}`).toBe(true);
+  expect(refused(m), `token door should refuse org member ${memberName} after End for everyone; answered HTTP ${m}`).toBe(true);
   const h = await tokenProbe(host, template, "host");
-  expect(h >= 400 && h < 500, `token door should refuse the host after End for everyone; answered HTTP ${h}`).toBe(true);
+  expect(refused(h), `token door should refuse the host after End for everyone; answered HTTP ${h}`).toBe(true);
   const room = await roomTruth(String(truth.room_name));
   host.note(`LiveKit truth: room exists=${room.exists} participants=[${room.participants.join(", ")}]`);
   expect(room.exists && room.participants.length > 0, `LiveKit room ${room.room} came back with ${room.participants.join(", ")}`).toBe(false);
