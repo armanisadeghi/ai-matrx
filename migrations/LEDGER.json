@@ -1,6 +1,6 @@
 {
   "note": "Checked-in snapshot of public._schema_migrations for the files under migrations/campaign and migrations/inverse. Written by `pnpm db:apply` on every successful production apply and refreshed whole by the nightly catch-up. Never hand-edited: a self-written checksum is a claim nobody can check. Guard: pnpm check:ledgered-files-unedited.",
-  "generated_at": "2026-10-08T23:46:15.033Z",
+  "generated_at": "2026-10-08T23:52:48.171Z",
   "files": {
     "migrations/campaign/a_chunk_is_the_size_the_client_door_can_actually_carry.sql": {
       "source": "matrx-frontend",
@@ -5203,6 +5203,12 @@
       "filename": "perf_watch_w3_j_board_reads.sql",
       "checksum": "72cd82b2eea73c8144791cc4ba3a6a9a6f13eba0b6d47275c2a33a2113ad6bbd",
       "applied_at": "2026-10-08 23:43:28.182675+00"
+    },
+    "migrations/campaign/perf_watch_w3_k_reads_before_writes.sql": {
+      "source": "matrx-frontend",
+      "filename": "perf_watch_w3_k_reads_before_writes.sql",
+      "checksum": "b52891988d9f336d0835ac30f89bd6c0dd767364161a864ac1be02c5e2e34110",
+      "applied_at": "2026-10-08 23:52:46.64427+00"
     },
     "migrations/campaign/perffix1_a_the_read_doors_ask_the_ladder_once.sql": {
       "source": "matrx-frontend",
