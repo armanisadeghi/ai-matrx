@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { RichContent } from "@ai-matrx/chat/host/ui-slots";
+import { RichContent } from "@ai-matrx/rich-content/levels/RichContent";
 import {
   FileText,
   Maximize2,

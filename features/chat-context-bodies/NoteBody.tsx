@@ -8,7 +8,7 @@
  */
 
 import { useEffect } from "react";
-import { RichContent } from "@ai-matrx/chat/host/ui-slots";
+import { RichContent } from "@ai-matrx/rich-content/levels/RichContent";
 import { Link } from "@ai-matrx/chat/host/navigation";
 import { Folder, ExternalLink } from "lucide-react";
 import { NoteContentEditor } from "@/features/notes/components/NoteContentEditor";
