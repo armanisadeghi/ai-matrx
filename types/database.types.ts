@@ -46865,6 +46865,7 @@ export type Database = {
         Args: { p_organization_id: string; p_title: string }
         Returns: Json
       }
+      _direct_writer_label: { Args: never; Returns: string }
       _disarm: { Args: never; Returns: undefined }
       _draft_problem: {
         Args: { p_c: Json; p_template?: boolean }
@@ -46890,6 +46891,25 @@ export type Database = {
         }
         Returns: string
       }
+      _evidence_disagreements: {
+        Args: { p_envelope_id: string }
+        Returns: Json
+      }
+      _evidence_roster: {
+        Args: { p_envelope_id: string }
+        Returns: {
+          ev: Json
+          ev_at: string
+          ev_ip: unknown
+          ev_ua: string
+          rm: Json
+          rm_at: string
+          rm_by: string
+          row_present: boolean
+          signer_id: string
+        }[]
+      }
+      _fit_value: { Args: { p_field: Json; p_v: Json }; Returns: Json }
       _format_date: {
         Args: { p_date: string; p_format: string }
         Returns: string

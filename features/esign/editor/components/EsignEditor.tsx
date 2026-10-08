@@ -135,17 +135,18 @@ export function EsignEditor(props: EsignEditorProps) {
   }, [draft.recipients, activeRecipient]);
 
   // Create the draft on the server the first time there is something to keep.
+  const { onCreated, resolveOrganizationId, organizationId: givenOrganizationId } = props;
   const ensureDraft = useCallback(async () => {
     if (templateMode || boot.id) return;
     if (!creating.current) {
       creating.current = (async () => {
-        const organizationId = props.organizationId ?? (await props.resolveOrganizationId?.());
+        const organizationId = givenOrganizationId ?? (await resolveOrganizationId?.());
         if (!organizationId) throw new DraftRefusal("no_organization", "Choose an organization first.");
         return api.createDraft({ organizationId, title: draft.title || "Untitled" });
       })()
         .then((made) => {
           setBoot({ id: made.envelopeId, revision: made.revision, confirmed: made.composition });
-          props.onCreated?.(made.envelopeId);
+          onCreated?.(made.envelopeId);
           return made.envelopeId;
         })
         .catch((err: unknown) => {
@@ -155,8 +156,8 @@ export function EsignEditor(props: EsignEditorProps) {
         });
     }
     await creating.current;
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [api, boot.id, draft.title, props.organizationId, templateMode]);
+    // Honest deps: a new parent callback only re-creates this; `creating` keeps it to one draft.
+  }, [api, boot.id, draft.title, givenOrganizationId, resolveOrganizationId, onCreated, templateMode]);
 
   useEffect(() => {
     if (!boot.id && (draft.documents.length > 0 || draft.recipients.length > 0)) void ensureDraft().catch(() => undefined);
@@ -368,7 +369,7 @@ export function EsignEditor(props: EsignEditorProps) {
     setTemplateSaving(true);
     setTemplateError(null);
     try {
-      const organizationId = props.organizationId ?? (await props.resolveOrganizationId?.());
+      const organizationId = givenOrganizationId ?? (await resolveOrganizationId?.());
       if (!organizationId) throw new DraftRefusal("no_organization", "Choose an organization first.");
       const out = await api.saveTemplate({
         organizationId,

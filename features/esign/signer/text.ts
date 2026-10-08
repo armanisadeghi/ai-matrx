@@ -52,3 +52,11 @@ export function errorText(err: unknown): string {
   if (err instanceof SessionEnded) return "Your session ended.";
   return UNREACHABLE;
 }
+
+/** verify A5: a link locked after too many wrong codes says so, and when it reopens (local time). */
+export function lockedNotice(lockedUntil: string | null | undefined, locale?: string): string {
+  const at = lockedUntil ? new Date(lockedUntil) : null;
+  if (!at || Number.isNaN(at.getTime())) return "Too many tries. Wait a few minutes, then try again.";
+  const time = at.toLocaleTimeString(locale, { hour: "numeric", minute: "2-digit" });
+  return `Too many tries. This link is locked until ${time}.`;
+}

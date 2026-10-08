@@ -16,7 +16,7 @@
 // on-screen map with the hashes of the bytes the signer actually saw.
 
 import dynamic from "next/dynamic";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useEffectEvent, useRef, useState } from "react";
 import { PanelLeft, Minus, Plus, ScanLine } from "lucide-react";
 
 import { Button } from "@ai-matrx/design-system/controls";
@@ -193,13 +193,13 @@ export function SignerSurface({
   }, [saver]);
 
   // ── Load ────────────────────────────────────────────────────────────────
-  useEffect(() => {
-    let live = true;
-    const held = urls.current;
+  // An effect event: it reads the latest state and helpers, and the effect below re-runs only when
+  // the door changes (loading again would record another `opened`).
+  const startLoad = useEffectEvent((isLive: () => boolean) => {
     door
       .load()
       .then(async (load) => {
-        if (!live) return;
+        if (!isLive()) return;
         const read = readEnvelope(load);
         setFields(read.fields);
         setGroups(read.groups);
@@ -231,22 +231,25 @@ export function SignerSurface({
           })),
         );
         setPhase({ kind: "ready", load });
-        for (const d of sorted) void fetchDoc(d.id, () => live);
+        for (const d of sorted) void fetchDoc(d.id, () => isLive());
       })
       .catch((err: unknown) => {
-        if (!live) return;
+        if (!isLive()) return;
         if (err instanceof SessionEnded) {
           fail(err);
           return;
         }
         setPhase({ kind: "refused", message: err instanceof DoorRefusal ? reasonText(err.code) : errorText(err) });
       });
+  });
+  useEffect(() => {
+    let live = true;
+    const held = urls.current;
+    startLoad(() => live);
     return () => {
       live = false;
       for (const url of held) URL.revokeObjectURL(url);
     };
-    // The door is fixed for the life of the page; loading again would record another `opened`.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [door]);
 
   async function fetchDoc(id: string, alive: () => boolean = () => true) {

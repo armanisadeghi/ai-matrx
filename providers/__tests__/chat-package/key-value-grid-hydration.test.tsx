@@ -44,7 +44,7 @@ describe("KeyValueGrid hydration", () => {
 
   it("formats metadata with the fixed server/browser locale", () => {
     expect(formatMetaNumber(1_234)).toBe("1,234");
-    expect(formatMetaNumber(12_345)).toBe("12.3K");
+    expect(formatMetaNumber(12_345)).toBe("12k");
   });
 
   it("hydrates numeric metadata without recoverable text mismatches", async () => {
@@ -58,7 +58,7 @@ describe("KeyValueGrid hydration", () => {
 
     expect(consoleError).not.toHaveBeenCalled();
     expect(container.textContent).toContain("1,234");
-    expect(container.textContent).toContain("12.3K");
+    expect(container.textContent).toContain("12k");
   });
 
   it("renders an ID-backed scalar audio_url as audio before metadata hydration", () => {

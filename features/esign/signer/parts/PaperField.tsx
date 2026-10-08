@@ -257,9 +257,12 @@ function Callout({ field, onMark, onClear, onNext, filled, color }: PaperFieldPr
       )}
       style={{ background: color }}
     >
-      <span className="max-w-[12rem] truncate px-1">
-        {field.label}
-        {field.required ? " *" : ""}
+      <span className="flex max-w-[14rem] flex-col px-1" title={field.tooltip}>
+        <span className="truncate">
+          {field.label}
+          {field.required ? " *" : ""}
+        </span>
+        {field.tooltip ? <span className="truncate text-[11px] font-normal opacity-80">{field.tooltip}</span> : null}
       </span>
       {mark && !filled ? (
         <CalloutButton onClick={() => onMark(field)}>{field.kind === "initials" ? "Initial" : "Sign"}</CalloutButton>

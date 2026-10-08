@@ -106,6 +106,16 @@ function str(value: unknown): string | null {
   return typeof value === "string" && value.trim() !== "" ? value : null;
 }
 
+/** A label as a person would say it: a pasted line of the page ("Initials: ______   Date: ____") becomes
+ *  its first words, without the ruling and the colon. Empty after cleaning means no label. */
+export function cleanLabel(value: unknown): string | null {
+  const raw = str(value);
+  if (!raw) return null;
+  const head = raw.split(/_{2,}|\.{4,}/)[0] ?? "";
+  const text = head.replace(/\s+/g, " ").replace(/[\s:;,\-]+$/, "").trim();
+  return text ? (text.length > 40 ? `${text.slice(0, 39)}…` : text) : null;
+}
+
 function isKind(value: unknown): value is FieldKindV2 {
   return FIELD_KINDS_V2.some((k) => k === value);
 }
@@ -139,7 +149,7 @@ export function readMap(fieldMap: unknown): { fields: FieldDefinitionV2[]; group
       w,
       h,
       required: v2 ? raw.required !== false : true,
-      label: str(raw.label) ?? `${KIND_LABEL[kind]} ${counts[kind]}`,
+      label: cleanLabel(raw.label) ?? `${KIND_LABEL[kind]} ${counts[kind]}`,
     };
     if (v2) {
       if (str(raw.tooltip)) base.tooltip = str(raw.tooltip);

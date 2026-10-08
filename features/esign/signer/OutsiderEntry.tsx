@@ -11,7 +11,7 @@
 // headed by the same facts. A session another window took over says so and offers "Continue here";
 // the dead-link sentence is only for a link that is truly dead.
 
-import { useEffect, useState } from "react";
+import { useEffect, useEffectEvent, useState } from "react";
 import { Lock, MonitorSmartphone, XCircle } from "lucide-react";
 
 import { Button, Field } from "@ai-matrx/design-system/controls";
@@ -24,7 +24,7 @@ import type { SessionEnded, SignerDoorApi } from "../contract/signerDoor";
 import { createSignerDoor } from "./door";
 import { LandingHeader, type LandingFacts } from "./parts/Panels";
 import { SignerSurface } from "./SignerSurface";
-import { UNREACHABLE } from "./text";
+import { lockedNotice, UNREACHABLE } from "./text";
 
 const DEAD = "This link is no longer valid. Ask the sender for a new one.";
 const LINK_KEY = "esign-link";
@@ -168,19 +168,20 @@ export function OutsiderEntry() {
       const session = str(a.session);
       if (a.ok === true && session) {
         store(token, session);
+        setBusy(null);
         sign(session);
         return true;
       }
       const reason = str(a.reason) ?? str(a.code);
-      if (reason === "code_locked") setNotice("Too many tries. Wait a few minutes, then try again.");
+      if (reason === "code_locked") setNotice(lockedNotice(str(a.locked_until)));
       else if (typeof a.attempts_left === "number") setNotice(`That code did not work. ${a.attempts_left} ${a.attempts_left === 1 ? "try" : "tries"} left.`);
       else if (value === null) setPhase({ kind: "dead", message: str(a.message) ?? DEAD });
       else setNotice("That code did not work. Check it, or send a new one.");
     } catch {
       setNotice(UNREACHABLE);
-    } finally {
-      setBusy(null);
     }
+    // No `finally`: the React Compiler cannot compile a try/finally (it would skip this component).
+    setBusy(null);
     return false;
   }
 
@@ -204,7 +205,8 @@ export function OutsiderEntry() {
     }
   }
 
-  useEffect(() => {
+  // Opening the link runs once per page (an effect event: it reads the latest state, never re-runs).
+  const openOnce = useEffectEvent(() => {
     const found = takeSecret();
     if (!found) {
       setPhase({ kind: "dead", message: DEAD });
@@ -214,8 +216,9 @@ export function OutsiderEntry() {
     const held = readStored(found);
     if (held) sign(held);
     else void open(found);
-    // Runs once per page: opening the link is not repeated on a re-render.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+  });
+  useEffect(() => {
+    openOnce();
   }, []);
 
   async function sendCode(token: string) {
@@ -223,14 +226,13 @@ export function OutsiderEntry() {
     setNotice(null);
     try {
       const a = await post(dispatch, "code", { token });
-      if (a.ok !== true) setNotice(str(a.message) ?? DEAD);
+      if (a.ok !== true) setNotice(a.reason === "code_locked" ? lockedNotice(str(a.locked_until)) : (str(a.message) ?? DEAD));
       else if (a.no_code_required === true) await verify(token, null);
       else setPhase((p) => (p.kind === "code" ? { ...p, sent: true } : p));
     } catch {
       setNotice(UNREACHABLE);
-    } finally {
-      setBusy((b) => (b === "send" ? null : b));
     }
+    setBusy((b) => (b === "send" ? null : b));
   }
 
   function closed(why: SessionEnded) {
