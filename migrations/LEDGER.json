@@ -1,6 +1,6 @@
 {
   "note": "Checked-in snapshot of public._schema_migrations for the files under migrations/campaign and migrations/inverse. Written by `pnpm db:apply` on every successful production apply and refreshed whole by the nightly catch-up. Never hand-edited: a self-written checksum is a claim nobody can check. Guard: pnpm check:ledgered-files-unedited.",
-  "generated_at": "2026-10-08T16:28:44.766Z",
+  "generated_at": "2026-10-08T16:29:06.355Z",
   "files": {
     "migrations/campaign/a_chunk_is_the_size_the_client_door_can_actually_carry.sql": {
       "source": "matrx-frontend",
@@ -7177,6 +7177,12 @@
       "filename": "sourcekey_the_readers_stop_accepting_the_old_key.sql",
       "checksum": "412cb1ae5ae999b05d90bd59bb4d70f28eb6e3f842dd22589c366f836409f318",
       "applied_at": "2026-09-25 04:17:05.926942+00"
+    },
+    "migrations/campaign/spacesasks_a_a_notion_formula_is_accepted_as_typed.sql": {
+      "source": "matrx-frontend",
+      "filename": "spacesasks_a_a_notion_formula_is_accepted_as_typed.sql",
+      "checksum": "81cbafb4fec62e88bcbe2afe7c7e025cf05eb3fce3810e4b541a6a02b37b9dbc",
+      "applied_at": "2026-10-08 16:29:03.157681+00"
     },
     "migrations/campaign/stagerules2_a_gate_remembers_what_it_was_asked.sql": {
       "source": "matrx-frontend",
