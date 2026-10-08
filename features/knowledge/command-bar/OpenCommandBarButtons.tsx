@@ -11,7 +11,7 @@
  */
 
 import { Search } from "lucide-react";
-import { SearchTapButton } from "@ai-matrx/tap-target/buttons";
+import { SearchTapButton } from "@ai-matrx/design-system/tap-target/buttons";
 import { useOpenKnowledgeCommandBar } from "@/features/overlays/openers/knowledgeCommandBar";
 import { useOpenAuthGateDialog } from "@/features/overlays/openers/authGate";
 

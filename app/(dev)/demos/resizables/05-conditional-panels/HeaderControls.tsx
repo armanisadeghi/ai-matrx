@@ -3,7 +3,7 @@
 import {
   ChevronLeftTapButton,
   PanelRightTapButton,
-} from "@ai-matrx/tap-target/buttons";
+} from "@ai-matrx/design-system/tap-target/buttons";
 import { useMountState } from "./MountStateProvider";
 import { DemoTitle } from "../_lib/DemoTitle";
 

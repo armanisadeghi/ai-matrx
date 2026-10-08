@@ -15,7 +15,7 @@ import {
   LoadingTapButton,
   SaveTapButton,
   UploadTapButton,
-} from "@ai-matrx/tap-target/buttons";
+} from "@ai-matrx/design-system/tap-target/buttons";
 import { PromoteToSiteDialog } from "@/features/html-pages/components/PromoteToSiteDialog";
 import { Input } from "@ai-matrx/design-system/controls";
 import { ProTextarea } from "@/components/official/ProTextarea";

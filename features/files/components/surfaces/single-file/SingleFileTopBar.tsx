@@ -37,8 +37,8 @@ import { SingleFileActionButtons, SingleFileNameLabel } from "./SingleFileAction
 import { encodeFolderPathSegments } from "@/features/files/utils/url-state";
 import { NavSidebar } from "../desktop/NavSidebar";
 import RouteHeader from "@/features/shell/components/header/RouteHeader";
-import { ChevronLeftTapButton } from "@ai-matrx/tap-target/buttons";
-import { TapTargetButton } from "@ai-matrx/tap-target";
+import { ChevronLeftTapButton } from "@ai-matrx/design-system/tap-target/buttons";
+import { TapTargetButton } from "@ai-matrx/design-system/tap-target";
 
 export interface SingleFileTopBarProps {
   fileId: string;

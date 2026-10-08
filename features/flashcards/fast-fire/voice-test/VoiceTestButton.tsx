@@ -10,7 +10,7 @@
 import { useState } from "react";
 import { Mic } from "lucide-react";
 import { Button } from "@ai-matrx/design-system";
-import { MicTapButton } from "@ai-matrx/tap-target/buttons";
+import { MicTapButton } from "@ai-matrx/design-system/tap-target/buttons";
 import { cn } from "@/lib/utils";
 import { CardVoiceTestDialog } from "./CardVoiceTestDialog";
 

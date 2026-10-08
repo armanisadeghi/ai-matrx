@@ -22,7 +22,7 @@ jest.mock("next/navigation", () => ({
 }));
 
 jest.mock("@ai-matrx/meet/react", () => ({ useMeetHost: () => null }));
-jest.mock("@ai-matrx/tap-target", () => ({
+jest.mock("@ai-matrx/design-system/tap-target", () => ({
   TapTargetButton: () => null,
   TapTargetButtonSolid: () => null,
 }));

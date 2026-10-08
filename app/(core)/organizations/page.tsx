@@ -30,7 +30,7 @@ import {
 import { format } from "date-fns";
 import RouteHeader from "@/features/shell/components/header/RouteHeader";
 import { useIsMobile } from "@ai-matrx/kit/media-query";
-import { TapTargetButtonSolid } from "@ai-matrx/tap-target";
+import { TapTargetButtonSolid } from "@ai-matrx/design-system/tap-target";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";

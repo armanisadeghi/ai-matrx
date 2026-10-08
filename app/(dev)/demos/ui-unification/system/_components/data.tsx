@@ -7,7 +7,7 @@
  */
 
 import { useState } from "react";
-import { MoreHorizontalTapButton, PencilTapButton, TrashTapButton } from "@ai-matrx/tap-target/buttons";
+import { MoreHorizontalTapButton, PencilTapButton, TrashTapButton } from "@ai-matrx/design-system/tap-target/buttons";
 import { CalendarClock, FileText, Trash2, Users, Workflow, type LucideIcon } from "lucide-react";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import {

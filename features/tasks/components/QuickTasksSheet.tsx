@@ -76,7 +76,7 @@ import CompactTaskItem from "./CompactTaskItem";
 import type { TaskWithProject } from "@/features/tasks/types";
 import TaskDetailsPanel from "./TaskDetailsPanel";
 import { QuickTasksToolbarGroup } from "./QuickTasksToolbarGroup";
-import { XTapButton } from "@ai-matrx/tap-target/buttons";
+import { XTapButton } from "@ai-matrx/design-system/tap-target/buttons";
 import type { TaskFilterType } from "../types";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { ReadFailure } from "@ai-matrx/design-system";

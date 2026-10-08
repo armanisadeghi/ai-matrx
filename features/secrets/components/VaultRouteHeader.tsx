@@ -15,7 +15,7 @@ import {
   DropdownMenuItem,
 } from "@/components/ui/dropdown-menu";
 import { ShieldCheck, KeyRound, Globe } from "lucide-react";
-import { TapTargetButton } from "@ai-matrx/tap-target";
+import { TapTargetButton } from "@ai-matrx/design-system/tap-target";
 import RouteHeader from "@/features/shell/components/header/RouteHeader";
 import { VaultFillDevicesDialog } from "./VaultFillDevicesDialog";
 

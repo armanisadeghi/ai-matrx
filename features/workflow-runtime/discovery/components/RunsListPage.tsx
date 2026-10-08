@@ -17,7 +17,7 @@ import { BarChart3, ListOrdered } from "lucide-react";
 
 import AppLink from "@/components/navigation/AppLink";
 import RouteHeader from "@/features/shell/components/header/RouteHeader";
-import { ChevronLeftTapButton } from "@ai-matrx/tap-target/buttons";
+import { ChevronLeftTapButton } from "@ai-matrx/design-system/tap-target/buttons";
 import { AccessGate } from "@/features/access-gate/components/AccessGate";
 
 import { fetchWorkflowFacts } from "../service";

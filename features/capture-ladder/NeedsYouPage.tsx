@@ -19,7 +19,7 @@ import RouteHeader from "@/features/shell/components/header/RouteHeader";
 import {
   ChevronLeftTapButton,
   RefreshCwTapButton,
-} from "@ai-matrx/tap-target/buttons";
+} from "@ai-matrx/design-system/tap-target/buttons";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/lib/toast";
 import { useAppSelector } from "@/lib/redux/hooks";

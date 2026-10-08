@@ -32,7 +32,7 @@
  * truthful description of what it does.
  */
 
-import { TapTargetCopyButton } from "@ai-matrx/tap-target";
+import { TapTargetCopyButton } from "@ai-matrx/design-system/tap-target";
 import { useState } from "react";
 import { Download, ExternalLink, Loader2, ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";

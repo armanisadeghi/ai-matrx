@@ -36,7 +36,7 @@ import {
   selectThreadTaskId,
 } from "@/features/war-room/redux/selectors";
 import { ProInput } from "@/components/official/ProInput";
-import { XTapButton } from "@ai-matrx/tap-target/buttons";
+import { XTapButton } from "@ai-matrx/design-system/tap-target/buttons";
 import { WarRoomRoomThreadPicker } from "../shared/WarRoomRoomThreadPicker";
 import { cn } from "@/lib/utils";
 import { SegmentedControl } from "@ai-matrx/design-system/controls";

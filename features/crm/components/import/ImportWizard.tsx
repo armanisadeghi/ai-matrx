@@ -14,7 +14,7 @@ import { ReadFailure } from "@ai-matrx/design-system";
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ChevronLeftTapButton } from "@ai-matrx/tap-target/buttons";
+import { ChevronLeftTapButton } from "@ai-matrx/design-system/tap-target/buttons";
 import {
   ArrowLeft,
   ArrowRight,

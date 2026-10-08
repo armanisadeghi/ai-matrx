@@ -14,7 +14,7 @@ import { searchEngineRobots } from "@/lib/seo/search-engine-indexed.server";
 import { PodcastEpisodePage } from "@/features/podcasts/components/player/PodcastEpisodePage";
 import { PodcastShowPage } from "@/features/podcasts/components/player/PodcastShowPage";
 import RouteHeader from "@/features/shell/components/header/RouteHeader";
-import { ChevronLeftTapButton } from "@ai-matrx/tap-target/buttons";
+import { ChevronLeftTapButton } from "@ai-matrx/design-system/tap-target/buttons";
 import type {
   PcArticleDisplayRow,
   PcEpisode,

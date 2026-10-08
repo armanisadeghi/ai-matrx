@@ -1,7 +1,7 @@
 "use client";
 
 import RouteHeader from "@/features/shell/components/header/RouteHeader";
-import { SettingsTapButton } from "@ai-matrx/tap-target/buttons";
+import { SettingsTapButton } from "@ai-matrx/design-system/tap-target/buttons";
 import { ShortcutDirectory } from "@/features/agent-shortcuts/components/ShortcutDirectory";
 
 export default function UserAllShortcutsPage() {

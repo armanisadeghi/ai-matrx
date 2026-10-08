@@ -20,7 +20,7 @@
 // Absent for anyone who cannot edit the deck (a viewer cannot accept edits).
 // React Compiler is on — no manual memo.
 
-import { ShieldCheckTapButton } from "@ai-matrx/tap-target/buttons";
+import { ShieldCheckTapButton } from "@ai-matrx/design-system/tap-target/buttons";
 import { useFloatingAgentRun } from "@ai-matrx/chat/agents/hooks/useFloatingAgentRun";
 
 import { readListChangeProposal } from "@/features/content-ir/kinds/list-change-proposal";

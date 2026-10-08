@@ -52,7 +52,7 @@ import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import {
   ChevronLeftTapButton,
   MoreHorizontalTapButton,
-} from "@ai-matrx/tap-target/buttons";
+} from "@ai-matrx/design-system/tap-target/buttons";
 import { cn } from "@/lib/utils";
 import { refuseSurfaceWrite } from "@ai-matrx/chat/surfaces/runtime/surface-writeback";
 

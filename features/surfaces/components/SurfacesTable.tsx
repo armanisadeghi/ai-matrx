@@ -12,7 +12,7 @@ import {
   PencilTapButton,
   TrashTapButton,
   ViewTapButton,
-} from "@ai-matrx/tap-target/buttons";
+} from "@ai-matrx/design-system/tap-target/buttons";
 import {
   AppWindow,
   Eye,

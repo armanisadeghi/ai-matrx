@@ -41,7 +41,7 @@ import {
   type MeetingRecord,
   type UpcomingOccurrence,
 } from "@ai-matrx/meet/react";
-import { TapTargetButton, TapTargetButtonSolid } from "@ai-matrx/tap-target";
+import { TapTargetButton, TapTargetButtonSolid } from "@ai-matrx/design-system/tap-target";
 import { Input } from "@ai-matrx/design-system/controls";
 import { Skeleton } from "@ai-matrx/design-system";
 import RouteHeader from "@/features/shell/components/header/RouteHeader";

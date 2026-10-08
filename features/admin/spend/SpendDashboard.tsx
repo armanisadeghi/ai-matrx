@@ -26,7 +26,7 @@
 
 import { useEffect, useState } from "react";
 import { AlertTriangle, ChevronDown, ChevronRight, Gauge, Info, Package } from "lucide-react";
-import { RefreshCwTapButton } from "@ai-matrx/tap-target/buttons";
+import { RefreshCwTapButton } from "@ai-matrx/design-system/tap-target/buttons";
 
 import { MatrxDataTable } from "@ai-matrx/design-system/data-table";
 import { readOf } from "@ai-matrx/design-system";

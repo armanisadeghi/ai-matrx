@@ -93,7 +93,7 @@ jest.mock("@/features/shell/components/header/variants/variants/HeaderStructured
   // eslint-disable-next-line @typescript-eslint/no-require-imports
   default: ({ title, context }: { title: string; context?: React.ReactNode }) => require("react").createElement("div", null, title, context),
 }));
-jest.mock("@ai-matrx/tap-target/buttons", () => ({
+jest.mock("@ai-matrx/design-system/tap-target/buttons", () => ({
   // eslint-disable-next-line @typescript-eslint/no-require-imports
   ChevronLeftTapButton: ({ ariaLabel }: { ariaLabel: string }) => require("react").createElement("button", { "aria-label": ariaLabel, "data-back": "" }),
 }));

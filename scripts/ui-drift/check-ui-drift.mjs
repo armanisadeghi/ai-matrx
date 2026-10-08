@@ -177,7 +177,7 @@ function isPrimitiveModule(src) {
     /^\.\.?\/.*(ui|official)\/[a-z-]+$/i.test(src)
   );
 }
-const isTapModule = (src) => src.startsWith("@ai-matrx/tap-target") || src === "@ai-matrx/design-system/tap-target" || /components\/icons\/(tap-buttons|TapTargetButton|ai-tap-buttons|MakerTapButton)/.test(src);
+const isTapModule = (src) => src.startsWith("@ai-matrx/design-system/tap-target") || /components\/icons\/(tap-buttons|TapTargetButton|ai-tap-buttons|MakerTapButton)/.test(src);
 
 function stripVariants(tok) {
   const parts = [];
@@ -685,7 +685,7 @@ const PLANTED = `
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge"; import { Tabs, TabsList, TabsContent } from "@/components/ui/tabs";
-import { TapTargetButton, CopyTapButton, TapTargetButtonGroup } from "@ai-matrx/tap-target";
+import { TapTargetButton, CopyTapButton, TapTargetButtonGroup } from "@ai-matrx/design-system/tap-target";
 import { MatrxDataTable } from "@ai-matrx/design-system/data-table";
 import { SegmentedControl } from "@ai-matrx/design-system";
 export function Bad() {
@@ -717,7 +717,7 @@ const COMPLIANT = `
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge"; import { Tabs, TabsList, TabsContent } from "@/components/ui/tabs";
-import { TapTargetButton, CopyTapButton, TapTargetButtonGroup } from "@ai-matrx/tap-target";
+import { TapTargetButton, CopyTapButton, TapTargetButtonGroup } from "@ai-matrx/design-system/tap-target";
 import { MatrxDataTable } from "@ai-matrx/design-system/data-table";
 import { SegmentedControl } from "@ai-matrx/design-system/controls";
 export function Good() {

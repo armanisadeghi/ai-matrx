@@ -29,7 +29,7 @@ import {
 } from "@ai-matrx/design-system";
 import { SearchInput } from "@/components/official/SearchInput";
 import { Button } from "@/components/ui/button";
-import { CopyTapButton, FilterTapButton } from "@ai-matrx/tap-target/buttons";
+import { CopyTapButton, FilterTapButton } from "@ai-matrx/design-system/tap-target/buttons";
 import SuspenseLoader from "@/components/loaders/SuspenseLoader";
 import { ReadFailure } from "@ai-matrx/design-system";
 import { SettingsSection } from "@/components/official/settings/layout/SettingsSection";

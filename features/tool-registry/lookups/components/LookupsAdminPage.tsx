@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import AppLink from "@/components/navigation/AppLink";
 import { Plus, Loader2, Database as DbIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { PencilTapButton } from "@ai-matrx/tap-target/buttons";
+import { PencilTapButton } from "@ai-matrx/design-system/tap-target/buttons";
 import { Input } from "@ai-matrx/design-system/controls";
 import { MatrxDataTable } from "@ai-matrx/design-system/data-table";
 import type { MatrxColumnDef } from "@ai-matrx/design-system/data-table/types";

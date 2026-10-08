@@ -22,7 +22,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@ai-matrx/design-system";
-import { PaperclipTapButton } from "@ai-matrx/tap-target/buttons";
+import { PaperclipTapButton } from "@ai-matrx/design-system/tap-target/buttons";
 import { cn } from "@/lib/utils";
 import { curatedTokens } from "@/features/scopes/registry/entityRegistry";
 import { referenceTypeLabel } from "@/features/scopes/utils/referenceCell";

@@ -19,7 +19,7 @@
  */
 
 import { useEffect, useRef } from "react";
-import { BellRingTapButton, BellTapButton } from "@ai-matrx/tap-target/buttons";
+import { BellRingTapButton, BellTapButton } from "@ai-matrx/design-system/tap-target/buttons";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { openOverlay } from "@/lib/redux/slices/overlaySlice";
 import { useOpenAuthGateDialog } from "@/features/overlays/openers/authGate";

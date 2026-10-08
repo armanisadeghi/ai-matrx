@@ -932,7 +932,6 @@
     "@ai-matrx/records-ui": "latest",
     "@ai-matrx/rich-content": "latest",
     "@ai-matrx/rich-editor": "latest",
-    "@ai-matrx/tap-target": "latest",
     "@ai-matrx/terminal": "latest",
     "@ai-sdk/google": "^4.0.82",
     "@anthropic-ai/sdk": "latest",

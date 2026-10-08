@@ -129,7 +129,7 @@ jest.mock("@/components/agent-copy/CopyButtons", () => ({
   CopyButtons: () => null,
 }));
 
-jest.mock("@ai-matrx/tap-target/buttons", () => ({
+jest.mock("@ai-matrx/design-system/tap-target/buttons", () => ({
   RefreshCwTapButton: () => null,
 }));
 

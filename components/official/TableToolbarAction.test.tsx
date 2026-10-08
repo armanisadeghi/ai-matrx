@@ -3,7 +3,7 @@ import { createRoot, type Root } from "react-dom/client";
 
 import { TableToolbarAction } from "./TableToolbarAction";
 
-jest.mock("@ai-matrx/tap-target", () => ({
+jest.mock("@ai-matrx/design-system/tap-target", () => ({
   TapTargetButtonSolid: ({ ariaLabel, icon }: { ariaLabel: string; icon: React.ReactNode }) => (
     <button type="button" aria-label={ariaLabel}>{icon}</button>
   ),

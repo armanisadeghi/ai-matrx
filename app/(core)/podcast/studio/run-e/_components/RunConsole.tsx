@@ -26,7 +26,7 @@ import { AudioLines, RotateCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import PageHeader from "@/features/shell/components/header/PageHeader";
 import { HeaderActionsSlot } from "@/features/shell/components/header/HeaderActionsSlot";
-import { ChevronLeftTapButton } from "@ai-matrx/tap-target/buttons";
+import { ChevronLeftTapButton } from "@ai-matrx/design-system/tap-target/buttons";
 import { useMockRun } from "./useMockRun";
 import { Pipeline } from "./Pipeline";
 import { StageMonitor } from "./StageMonitor";

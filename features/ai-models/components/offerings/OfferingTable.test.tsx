@@ -32,7 +32,7 @@ jest.mock("@ai-matrx/design-system/data-table", () => ({
   },
 }));
 
-jest.mock("@ai-matrx/tap-target/buttons", () => ({
+jest.mock("@ai-matrx/design-system/tap-target/buttons", () => ({
   TrashTapButton: ({
     ariaLabel,
     onClick,
@@ -42,7 +42,7 @@ jest.mock("@ai-matrx/tap-target/buttons", () => ({
   }) => <button aria-label={ariaLabel} onClick={onClick}>Delete</button>,
 }));
 
-jest.mock("@ai-matrx/tap-target", () => ({
+jest.mock("@ai-matrx/design-system/tap-target", () => ({
   TapTargetCopyButton: ({ value }: { value: string }) => (
     <button data-copy-content={value}>Copy</button>
   ),

@@ -15,7 +15,7 @@ import { useSettingsSectionTitle } from "./SettingsSectionContext";
 import { SettingAnchor } from "@/features/settings/doors/SettingAnchor";
 import { settingsControlSearchId } from "./searchIdentity";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
-import { ResetTapButton } from "@ai-matrx/tap-target/buttons";
+import { ResetTapButton } from "@ai-matrx/design-system/tap-target/buttons";
 
 type SettingsRowProps = SettingsCommonProps & {
   /** Layout variant. Defaults to "inline". */

@@ -1,7 +1,7 @@
 "use client";
 
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
-import { TapTargetCopyButton } from "@ai-matrx/tap-target";
+import { TapTargetCopyButton } from "@ai-matrx/design-system/tap-target";
 import Link from "next/link";
 import type { ReactNode } from "react";
 import {

@@ -147,7 +147,7 @@ describe("RouteHeader on a phone — a menu is never the primary", () => {
   // eslint-disable-next-line @typescript-eslint/no-require-imports
   const ds = require("@ai-matrx/design-system") as typeof import("@ai-matrx/design-system");
   // eslint-disable-next-line @typescript-eslint/no-require-imports
-  const { MoreHorizontalTapButton } = require("@ai-matrx/tap-target/buttons") as typeof import("@ai-matrx/tap-target/buttons");
+  const { MoreHorizontalTapButton } = require("@ai-matrx/design-system/tap-target/buttons") as typeof import("@ai-matrx/design-system/tap-target/buttons");
 
   function render(right: React.ReactNode) {
     PHONE = true;

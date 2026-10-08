@@ -1,5 +1,5 @@
 /**
- * components/icons/tap-target-setup.ts — HOST WIRING for @ai-matrx/tap-target.
+ * components/icons/tap-target-setup.ts — HOST WIRING for @ai-matrx/design-system/tap-target.
  *
  * Side-effect module: registers `next/link` as the tap-target link component
  * and, in development builds, turns on the package's misuse guard
@@ -17,7 +17,7 @@ import {
   enableTapTargetGuard,
   setTapTargetLinkComponent,
   type TapTargetLinkComponent,
-} from "@ai-matrx/tap-target";
+} from "@ai-matrx/design-system/tap-target";
 import { enablePillGuard } from "@ai-matrx/design-system";
 
 setTapTargetLinkComponent(Link as unknown as TapTargetLinkComponent);

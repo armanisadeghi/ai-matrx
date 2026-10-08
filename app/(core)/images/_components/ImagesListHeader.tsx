@@ -2,7 +2,7 @@
 
 import { usePathname } from "next/navigation";
 import { Atom, ImageIcon } from "lucide-react";
-import { PlusTapButton } from "@ai-matrx/tap-target/buttons";
+import { PlusTapButton } from "@ai-matrx/design-system/tap-target/buttons";
 import {
   IMAGES_ROOT_PATH,
   findImagesRoute,

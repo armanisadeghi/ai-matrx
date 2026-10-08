@@ -51,7 +51,7 @@ import {
   type EntityListSurface,
 } from "@/lib/entity-list/components/EntityListPage";
 import { toast } from "@/lib/toast";
-import { RefreshCwTapButton } from "@ai-matrx/tap-target/buttons";
+import { RefreshCwTapButton } from "@ai-matrx/design-system/tap-target/buttons";
 
 function sitesListCopy(rows: SiteListRow[], total: number, managed?: number) {
   return webCopy({

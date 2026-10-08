@@ -26,7 +26,7 @@ import { cn } from "@/lib/utils";
 import {
   TapTargetButtonForGroup,
   TapTargetButtonGroup,
-} from "@ai-matrx/tap-target";
+} from "@ai-matrx/design-system/tap-target";
 import { resolveColor } from "@/features/scopes/constants/scope-colors";
 import {
   previewWrite,

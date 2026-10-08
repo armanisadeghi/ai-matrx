@@ -14,7 +14,7 @@
 "use client";
 
 import { useRef } from "react";
-import { ChevronLeftTapButton } from "@ai-matrx/tap-target/buttons";
+import { ChevronLeftTapButton } from "@ai-matrx/design-system/tap-target/buttons";
 
 import RouteHeader from "@/features/shell/components/header/RouteHeader";
 import { useClippedContentGuard } from "@/lib/layout/useClippedContentGuard";

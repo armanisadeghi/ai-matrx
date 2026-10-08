@@ -23,7 +23,7 @@ import React from "react";
 import {
   ShieldAlertTapButton,
   ShieldCheckTapButton,
-} from "@ai-matrx/tap-target/buttons";
+} from "@ai-matrx/design-system/tap-target/buttons";
 import { useEntityScopes } from "@/features/scopes/hooks/useEntityScopes";
 import {
   ContextAssignmentPopover,

@@ -14,7 +14,7 @@ import {
   PanelLeftTapButton,
   MessageTapButton,
   HistoryTapButton,
-} from "@ai-matrx/tap-target/buttons";
+} from "@ai-matrx/design-system/tap-target/buttons";
 import { ExternalLink } from "lucide-react";
 import { useEffect } from "react";
 import { MandateDoorLink } from "@/features/mandates/components/MandateDoorLink";

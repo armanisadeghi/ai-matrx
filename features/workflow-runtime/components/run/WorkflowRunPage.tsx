@@ -21,8 +21,8 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { CalendarClock, PenLine, RotateCcw } from "lucide-react";
 
 import RouteHeader from "@/features/shell/components/header/RouteHeader";
-import { ChevronLeftTapButton } from "@ai-matrx/tap-target/buttons";
-import { TapTargetButton } from "@ai-matrx/tap-target";
+import { ChevronLeftTapButton } from "@ai-matrx/design-system/tap-target/buttons";
+import { TapTargetButton } from "@ai-matrx/design-system/tap-target";
 import { toast } from "@/lib/toast";
 import { AccessGate } from "@/features/access-gate/components/AccessGate";
 

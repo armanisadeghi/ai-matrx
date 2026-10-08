@@ -60,7 +60,7 @@ import { archiveConfirmSentence } from "@/features/trash/archiveCopy";
 import { restoreSource, trashSource } from "@/features/sources/sourceActions";
 import { formatRelativeTime, formatCount } from "@ai-matrx/kit/format";
 import { useEntityTitles } from "@ai-matrx/associations/react";
-import { TapTargetButton, TapTargetButtonSolid } from "@ai-matrx/tap-target";
+import { TapTargetButton, TapTargetButtonSolid } from "@ai-matrx/design-system/tap-target";
 import { Badge } from "@/components/ui/badge";
 import { SourceStageCell } from "@/features/sources/components/SourceStageCell";
 import { Button } from "@/components/ui/button";

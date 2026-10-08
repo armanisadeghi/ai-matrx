@@ -36,7 +36,7 @@ import {
 import type { ListScopeKind } from "@/lib/list-scope/types";
 import { withStandardLanes } from "@/lib/list-scope/types";
 import { visibilityWords } from "@/lib/record-words";
-import { PlayTapButton, ZapTapButton } from "@ai-matrx/tap-target/buttons";
+import { PlayTapButton, ZapTapButton } from "@ai-matrx/design-system/tap-target/buttons";
 import { Archive } from "lucide-react";
 import { archiveRecord } from "@/features/trash/service";
 import { archiveConfirmSentence } from "@/features/trash/archiveCopy";

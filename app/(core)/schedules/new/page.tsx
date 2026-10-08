@@ -5,7 +5,7 @@
 import { Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import RouteHeader from "@/features/shell/components/header/RouteHeader";
-import { ChevronLeftTapButton } from "@ai-matrx/tap-target/buttons";
+import { ChevronLeftTapButton } from "@ai-matrx/design-system/tap-target/buttons";
 import { ScheduleForm } from "@/features/scheduling/components/form/ScheduleForm";
 import { recordSourceKey, recordSourceTable } from "@/features/scheduling/utils/recordSourceKey";
 

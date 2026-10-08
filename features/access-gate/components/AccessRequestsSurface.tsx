@@ -54,7 +54,7 @@ import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { UserIdentity } from "@/components/user/UserIdentity";
 import { SettingRequestActionButtons } from "@/features/access-gate/components/SettingRequestActionButtons";
 import { ResourceActionRequestButtons } from "@/features/access-gate/components/ResourceActionRequestButtons";
-import { RefreshCwTapButton } from "@ai-matrx/tap-target/buttons";
+import { RefreshCwTapButton } from "@ai-matrx/design-system/tap-target/buttons";
 import {
   NAV_ITEM_SELECTED,
   NAV_ITEM_UNSELECTED,

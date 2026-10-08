@@ -14,15 +14,15 @@
 
 import { useState, type ReactNode } from "react";
 import { Skeleton } from "@ai-matrx/design-system";
-import { TapTargetButtonSolid } from "@ai-matrx/tap-target";
-import { TapTargetButtonGroup } from "@ai-matrx/tap-target";
+import { TapTargetButtonSolid } from "@ai-matrx/design-system/tap-target";
+import { TapTargetButtonGroup } from "@ai-matrx/design-system/tap-target";
 import {
   LayoutGridTapButton,
   ListTapButton,
   MoreHorizontalTapButton,
   PencilTapButton,
   TrashTapButton,
-} from "@ai-matrx/tap-target/buttons";
+} from "@ai-matrx/design-system/tap-target/buttons";
 import { FolderOpen, Loader2, Plus, Search, Trash2, Users } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Alt, MeasuredBare } from "./one-control";

@@ -7,7 +7,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@ai-matrx/design-system";
-import { FilterTapButton } from "@ai-matrx/tap-target/buttons";
+import { FilterTapButton } from "@ai-matrx/design-system/tap-target/buttons";
 import { useTopicContext } from "../../context/ResearchContext";
 import {
   useResearchSources,

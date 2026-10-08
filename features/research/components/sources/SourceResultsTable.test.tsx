@@ -25,7 +25,7 @@ jest.mock("next/navigation", () => ({
 jest.mock("../../hooks/useResearchState", () => ({
   useYouTubeVideoIndex: () => ({ identityFor: () => null }),
 }));
-jest.mock("@ai-matrx/tap-target/buttons", () => ({
+jest.mock("@ai-matrx/design-system/tap-target/buttons", () => ({
   ExternalLinkTapButton: () => null,
 }));
 

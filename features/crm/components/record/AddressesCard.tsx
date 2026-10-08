@@ -3,7 +3,7 @@
 // features/crm/components/record/AddressesCard.tsx — postal addresses.
 
 import { cn } from "@/lib/utils";
-import { PlusTapButton, TrashTapButton, XTapButton } from "@ai-matrx/tap-target/buttons";
+import { PlusTapButton, TrashTapButton, XTapButton } from "@ai-matrx/design-system/tap-target/buttons";
 import { useState } from "react";
 import { toast } from "@/lib/toast";
 import { MapPin } from "lucide-react";

@@ -9,7 +9,7 @@
 // REFUSES a p_org_id that disagrees with the record's own organization.
 
 import { Button } from "@/components/ui/button";
-import { TrashTapButton } from "@ai-matrx/tap-target/buttons";
+import { TrashTapButton } from "@ai-matrx/design-system/tap-target/buttons";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "@/lib/toast";
 import { AlertTriangle, NotebookText } from "lucide-react";

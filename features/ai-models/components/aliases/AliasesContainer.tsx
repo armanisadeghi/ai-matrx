@@ -26,7 +26,7 @@ import {
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { AlertTriangle, Save, X } from "lucide-react";
-import { TrashTapButton } from "@ai-matrx/tap-target/buttons";
+import { TrashTapButton } from "@ai-matrx/design-system/tap-target/buttons";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { extractErrorMessage } from "@/utils/errors";
 import { resolveSystemOrgId } from "@/lib/organizations/systemOrg";

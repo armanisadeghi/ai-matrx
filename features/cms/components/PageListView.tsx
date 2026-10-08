@@ -5,7 +5,7 @@ import {
   MatrxDataTable,
   type MatrxColumnDef,
 } from "@ai-matrx/design-system/data-table";
-import { MoreHorizontalTapButton } from "@ai-matrx/tap-target/buttons";
+import { MoreHorizontalTapButton } from "@ai-matrx/design-system/tap-target/buttons";
 import type {
   ClientComponent,
   ClientPageSummary,

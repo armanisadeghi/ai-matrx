@@ -18,8 +18,8 @@
 import React from "react";
 import { EditableLabel } from "@ai-matrx/design-system";
 import { ItemMenu } from "@ai-matrx/design-system/item";
-import { MoreHorizontalTapButton } from "@ai-matrx/tap-target/buttons";
-import { TapTargetButtonGroup } from "@ai-matrx/tap-target";
+import { MoreHorizontalTapButton } from "@ai-matrx/design-system/tap-target/buttons";
+import { TapTargetButtonGroup } from "@ai-matrx/design-system/tap-target";
 import { PdfNamedSurfaceSwitcher } from "@/features/pdf/components/PdfNamedSurfaceSwitcher";
 import { PdfSurfaceSwitcher } from "@/features/pdf/components/PdfSurfaceSwitcher";
 import { buildPdfDocMenu } from "./pdfDocMenu";

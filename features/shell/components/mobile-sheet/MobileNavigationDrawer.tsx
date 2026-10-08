@@ -5,7 +5,7 @@ import { Search } from "lucide-react";
 import { usePathname } from "next/navigation";
 import AppLink from "@/components/navigation/AppLink";
 import { BottomSheet, BottomSheetBody } from "@ai-matrx/design-system";
-import { XTapButton } from "@ai-matrx/tap-target/buttons";
+import { XTapButton } from "@ai-matrx/design-system/tap-target/buttons";
 import type {
   ShellNavChild,
   ShellNavItem,

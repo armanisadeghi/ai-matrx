@@ -10,7 +10,7 @@ import type {
   MatrxDataTableQueryState,
   MatrxDataTableToolbar,
 } from "@ai-matrx/design-system/data-table/types";
-import { ExternalLinkTapButton } from "@ai-matrx/tap-target/buttons";
+import { ExternalLinkTapButton } from "@ai-matrx/design-system/tap-target/buttons";
 import { cn } from "@/lib/utils";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { StatusBadge } from "../shared/StatusBadge";

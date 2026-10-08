@@ -37,8 +37,8 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { TapTargetButtonTransparent } from "@ai-matrx/tap-target";
-import { PencilTapButton, PlayTapButton } from "@ai-matrx/tap-target/buttons";
+import { TapTargetButtonTransparent } from "@ai-matrx/design-system/tap-target";
+import { PencilTapButton, PlayTapButton } from "@ai-matrx/design-system/tap-target/buttons";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {

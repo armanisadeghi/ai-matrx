@@ -11,7 +11,7 @@ import { agentRunResult } from "../proTextareaAgentActions";
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
 jest.mock("@ai-matrx/agents/catalog/react", () => ({ AgentListDropdown: () => null }));
-jest.mock("@ai-matrx/tap-target/buttons", () => ({ CheckTapButton: () => null, CopyTapButton: () => null }));
+jest.mock("@ai-matrx/design-system/tap-target/buttons", () => ({ CheckTapButton: () => null, CopyTapButton: () => null }));
 jest.mock("@/components/errors/ErrorAlchemyMenu", () => ({ ErrorAlchemyMenu: () => null }));
 jest.mock("@/components/official/structured-value/AnswerValueView", () => ({
   AnswerValueView: ({ text }: { text?: string | null }) => (

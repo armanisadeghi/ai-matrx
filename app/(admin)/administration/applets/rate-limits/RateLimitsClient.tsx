@@ -18,7 +18,7 @@ import {
 } from "@/lib/services/applets-admin-service";
 import { useToast } from "@/components/ui/use-toast";
 import MatrxMiniLoader from "@/components/loaders/MatrxMiniLoader";
-import { ShieldCheckTapButton } from "@ai-matrx/tap-target/buttons";
+import { ShieldCheckTapButton } from "@ai-matrx/design-system/tap-target/buttons";
 import {
   MatrxDataTable,
   type MatrxColumnDef,

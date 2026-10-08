@@ -3,7 +3,7 @@
 import { Suspense, useEffect, useEffectEvent, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Activity, AlertCircle, CheckCircle, XCircle } from "lucide-react";
-import { MoreHorizontalTapButton } from "@ai-matrx/tap-target/buttons";
+import { MoreHorizontalTapButton } from "@ai-matrx/design-system/tap-target/buttons";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";

@@ -16,7 +16,7 @@
  * 404/403 stops are ANSWERS, rendered honestly in place.
  */
 
-import { TapTargetCopyButton } from "@ai-matrx/tap-target";
+import { TapTargetCopyButton } from "@ai-matrx/design-system/tap-target";
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
   AlertTriangle,

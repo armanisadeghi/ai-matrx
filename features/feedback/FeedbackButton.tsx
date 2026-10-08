@@ -5,7 +5,7 @@ import { useCallback, useState } from "react";
 import {
   BugTapButton,
   type TapButtonProps,
-} from "@ai-matrx/tap-target/buttons";
+} from "@ai-matrx/design-system/tap-target/buttons";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { useOpenFeedbackWindow } from "@/features/overlays/openers/feedbackDialog";
 

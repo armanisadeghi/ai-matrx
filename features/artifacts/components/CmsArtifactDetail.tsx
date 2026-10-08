@@ -38,7 +38,7 @@ import { ArtifactRenderDynamic as ArtifactRender } from "@/features/canvas/artif
 import { hasArtifactRenderer } from "@/features/canvas/artifact-types/artifact-renderer-keys";
 import { EntityModeHeader } from "@/features/shell/components/header/templates/EntityModeHeader";
 import RouteHeader from "@/features/shell/components/header/RouteHeader";
-import { ChevronLeftTapButton } from "@ai-matrx/tap-target/buttons";
+import { ChevronLeftTapButton } from "@ai-matrx/design-system/tap-target/buttons";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { useOrganizationLabel } from "@/features/organizations/hooks/useOrganizationLabel";
 import { HTMLPageService } from "@/features/html-pages/services/htmlPageService";

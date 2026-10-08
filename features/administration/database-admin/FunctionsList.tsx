@@ -8,7 +8,7 @@ import {
 import { Check } from "lucide-react";
 import { MatrxDataTable } from "@ai-matrx/design-system/data-table";
 import type { MatrxColumnDef } from "@ai-matrx/design-system/data-table";
-import { ViewTapButton } from "@ai-matrx/tap-target/buttons";
+import { ViewTapButton } from "@ai-matrx/design-system/tap-target/buttons";
 import { databaseFunctionSignature, type DatabaseFunction } from "./types";
 import { readOf } from "@ai-matrx/design-system";
 

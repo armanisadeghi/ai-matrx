@@ -12,7 +12,7 @@ import { useRouter } from "next/navigation";
 
 import { Button as ControlButton } from "@ai-matrx/design-system/controls";
 import RouteHeader from "@/features/shell/components/header/RouteHeader";
-import { ChevronLeftTapButton } from "@ai-matrx/tap-target/buttons";
+import { ChevronLeftTapButton } from "@ai-matrx/design-system/tap-target/buttons";
 import { EntityListPage } from "@/lib/entity-list/components/EntityListPage";
 
 import { buildCertifiedPrinterListConfig } from "../listConfig";

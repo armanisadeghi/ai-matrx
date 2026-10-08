@@ -10,7 +10,7 @@ import { Camera, MessageCircleQuestion } from "lucide-react";
 import {
   TapTargetButton,
   TapTargetButtonSolid,
-} from "@ai-matrx/tap-target";
+} from "@ai-matrx/design-system/tap-target";
 import { ProductCaptureHeader } from "@/features/product-capture/components/ProductCaptureHeader";
 import { AssetsList } from "@/features/commerce-intake/components/AssetsList";
 

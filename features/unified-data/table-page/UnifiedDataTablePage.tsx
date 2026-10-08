@@ -23,7 +23,7 @@ import type { RecordFilter } from "@ai-matrx/records";
 
 import RouteHeader from "@/features/shell/components/header/RouteHeader";
 import { TableFavoriteStar } from "./TableFavoriteStar";
-import { ChevronLeftTapButton } from "@ai-matrx/tap-target/buttons";
+import { ChevronLeftTapButton } from "@ai-matrx/design-system/tap-target/buttons";
 import { TableSwitcher } from "@/features/unified-data/components/TableSwitcher";
 import { useDeclarePageObjectOrganization } from "@/features/shell/pageObjectOrganization";
 import { useUserOrganizations } from "@/features/organizations/hooks";

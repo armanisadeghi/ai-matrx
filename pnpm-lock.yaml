@@ -119,9 +119,6 @@ importers:
       '@ai-matrx/rich-editor':
         specifier: latest
         version: 0.5.33(c64a5a57f886adaecf7f008e9a3231e3)
-      '@ai-matrx/tap-target':
-        specifier: latest
-        version: 0.2.47(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(recharts@3.10.1(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react-is@19.3.0)(react@19.3.0)(redux@5.0.1))
       '@ai-matrx/terminal':
         specifier: latest
         version: 0.1.17(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
@@ -1423,12 +1420,6 @@ packages:
     peerDependencies:
       react: '>=19.0.0'
       react-dom: '>=19.0.0'
-
-  '@ai-matrx/tap-target@0.2.47':
-    resolution: {integrity: sha512-q3Q2VgYp3YE36Tc+OkpV5iZIUusRhSBWN5FAhqQ0F/Md5aOuxE+TlCQblOasM1zJdem3xBLU+5Gyv5gcLFTPwQ==}
-    engines: {node: '>=20'}
-    peerDependencies:
-      react: '>=18.0.0'
 
   '@ai-matrx/terminal@0.1.17':
     resolution: {integrity: sha512-lXDWq4aKawIAd/xDm6i85EdU7ocDnHvpJQ4xBLs42ASNey1CMYGgrCCiETXVUvbsMsI9ZJ26cFF8UVuQstHVSA==}
@@ -13554,17 +13545,6 @@ snapshots:
       - svelte
       - vue
       - ws
-
-  '@ai-matrx/tap-target@0.2.47(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(recharts@3.10.1(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react-is@19.3.0)(react@19.3.0)(redux@5.0.1))':
-    dependencies:
-      '@ai-matrx/design-system': 0.86.17(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(recharts@3.10.1(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react-is@19.3.0)(react@19.3.0)(redux@5.0.1))
-      '@radix-ui/react-tooltip': 1.3.0(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
-      react: 19.3.0
-    transitivePeerDependencies:
-      - '@types/react'
-      - '@types/react-dom'
-      - react-dom
-      - recharts
 
   '@ai-matrx/terminal@0.1.17(react-dom@19.3.0(react@19.3.0))(react@19.3.0)':
     dependencies:

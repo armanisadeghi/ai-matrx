@@ -53,7 +53,7 @@ import {
   Link2,
   Pencil,
 } from "lucide-react";
-import { TapTargetButton } from "@ai-matrx/tap-target";
+import { TapTargetButton } from "@ai-matrx/design-system/tap-target";
 import { useEntityTitles } from "@ai-matrx/associations/react";
 import { isAssociationTargetType } from "@ai-matrx/associations";
 import { ToggleGroup, ToggleGroupItem } from "@ai-matrx/design-system";

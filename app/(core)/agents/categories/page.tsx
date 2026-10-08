@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import RouteHeader from "@/features/shell/components/header/RouteHeader";
-import { RefreshCwTapButton } from "@ai-matrx/tap-target/buttons";
+import { RefreshCwTapButton } from "@ai-matrx/design-system/tap-target/buttons";
 import {
   AlertDialog,
   AlertDialogAction,

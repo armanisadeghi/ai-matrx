@@ -49,9 +49,9 @@ import {
   RetryTapButton,
   LoadingTapButton,
   MoreHorizontalTapButton,
-} from "@ai-matrx/tap-target/buttons";
+} from "@ai-matrx/design-system/tap-target/buttons";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { TapTargetButtonGroup } from "@ai-matrx/tap-target";
+import { TapTargetButtonGroup } from "@ai-matrx/design-system/tap-target";
 import PageHeaderRightPortal from "@/features/shell/components/header/PageHeaderRightPortal";
 import { MandateDoorLink } from "@/features/mandates/components/MandateDoorLink";
 import {

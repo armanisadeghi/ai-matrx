@@ -85,7 +85,7 @@ import {
   MoreHorizontalTapButton,
   SendTapButton,
   XTapButton,
-} from "@ai-matrx/tap-target/buttons";
+} from "@ai-matrx/design-system/tap-target/buttons";
 import {
   Popover,
   PopoverContent,

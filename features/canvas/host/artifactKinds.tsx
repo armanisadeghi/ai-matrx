@@ -46,7 +46,7 @@ import {
   ExternalLink,
   type LucideIcon,
 } from "lucide-react";
-import { TapTargetButtonTransparent } from "@ai-matrx/tap-target";
+import { TapTargetButtonTransparent } from "@ai-matrx/design-system/tap-target";
 import {
   defineCanvasKind,
   registerCanvasKinds,

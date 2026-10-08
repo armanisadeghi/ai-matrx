@@ -7,7 +7,7 @@
 
 import { Camera } from "lucide-react";
 
-import { TapTargetButtonSolid } from "@ai-matrx/tap-target";
+import { TapTargetButtonSolid } from "@ai-matrx/design-system/tap-target";
 import { ProductCaptureHeader } from "@/features/product-capture/components/ProductCaptureHeader";
 import { AssetDetail } from "@/features/commerce-intake/components/AssetDetail";
 

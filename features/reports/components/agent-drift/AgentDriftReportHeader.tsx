@@ -3,7 +3,7 @@
 import { Loader2, RotateCw } from "lucide-react";
 import RouteHeader from "@/features/shell/components/header/RouteHeader";
 import IconButton from "@/features/shell/components/IconButton";
-import { ChevronLeftTapButton } from "@ai-matrx/tap-target/buttons";
+import { ChevronLeftTapButton } from "@ai-matrx/design-system/tap-target/buttons";
 
 interface AgentDriftReportHeaderProps {
   mode: "user" | "admin";

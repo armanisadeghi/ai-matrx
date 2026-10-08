@@ -17,8 +17,8 @@ import {
   Twitter,
   Youtube,
 } from "@/components/icons/brand-icons";
-import { TapTargetButtonTransparent } from "@ai-matrx/tap-target";
-import { PlusTapButton, TrashTapButton, XTapButton } from "@ai-matrx/tap-target/buttons";
+import { TapTargetButtonTransparent } from "@ai-matrx/design-system/tap-target";
+import { PlusTapButton, TrashTapButton, XTapButton } from "@ai-matrx/design-system/tap-target/buttons";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "@/lib/toast";
 import {

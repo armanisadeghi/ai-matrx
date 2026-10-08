@@ -2,12 +2,12 @@
 
 import { useRef } from "react";
 
-import { TapTargetButtonGroup } from "@ai-matrx/tap-target";
+import { TapTargetButtonGroup } from "@ai-matrx/design-system/tap-target";
 import {
   LayoutGridTapButton,
   ListTapButton,
   XTapButton,
-} from "@ai-matrx/tap-target/buttons";
+} from "@ai-matrx/design-system/tap-target/buttons";
 import { DocumentsSortMenu } from "@/features/documents/components/DocumentsSortMenu";
 import type { DocumentSortKey } from "@/features/documents/utils/documentsHubDisplay";
 

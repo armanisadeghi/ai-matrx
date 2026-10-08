@@ -18,7 +18,7 @@ import React from "react";
 import dynamic from "next/dynamic";
 import { AlertTriangle, RefreshCw } from "lucide-react";
 import MatrxMiniLoader from "@/components/loaders/MatrxMiniLoader";
-import { TapTargetButton } from "@ai-matrx/tap-target";
+import { TapTargetButton } from "@ai-matrx/design-system/tap-target";
 import type { CanvasContent } from "@/features/canvas/canvasContent";
 import { getArtifactDef } from "@/features/canvas/artifact-types/artifact-type-registry";
 import {

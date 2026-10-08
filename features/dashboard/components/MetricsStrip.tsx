@@ -8,7 +8,7 @@ import {
 } from "@/components/navigation/MetricNavigation";
 import { formatMetricNumber } from "@/components/navigation/metricNumber";
 import ShellIcon from "@/features/shell/components/ShellIcon";
-import { RefreshCwTapButton } from "@ai-matrx/tap-target/buttons";
+import { RefreshCwTapButton } from "@ai-matrx/design-system/tap-target/buttons";
 import { iconColorMap } from "@/features/shell/constants/nav-data";
 import { cn } from "@/lib/utils";
 import { useDashboardMetrics } from "../hooks/useDashboardMetrics";

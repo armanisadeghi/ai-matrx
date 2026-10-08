@@ -10,8 +10,8 @@
 // Company view: everyone who works / worked here (read-only rows that link
 // to the person).
 
-import { PlusTapButton, XTapButton } from "@ai-matrx/tap-target/buttons";
-import { TapTargetButtonTransparent } from "@ai-matrx/tap-target";
+import { PlusTapButton, XTapButton } from "@ai-matrx/design-system/tap-target/buttons";
+import { TapTargetButtonTransparent } from "@ai-matrx/design-system/tap-target";
 import { ReadFailure } from "@ai-matrx/design-system";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "@/lib/toast";

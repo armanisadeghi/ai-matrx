@@ -31,7 +31,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { EnhancedEditableJsonViewer } from "@/components/ui/JsonComponents/JsonEditor";
 import { AlertTriangle, Lock, Plug, Save, X } from "lucide-react";
-import { TrashTapButton } from "@ai-matrx/tap-target/buttons";
+import { TrashTapButton } from "@ai-matrx/design-system/tap-target/buttons";
 import { extractErrorMessage } from "@/utils/errors";
 import { resolveSystemOrgId } from "@/lib/organizations/systemOrg";
 import { useAppDispatch } from "@/lib/redux/hooks";

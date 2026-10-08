@@ -13,8 +13,8 @@ import {
   PlayTapButton,
   PauseTapButton,
   StopTapButton,
-} from "@ai-matrx/tap-target/buttons";
-import { TapTargetButtonGroup } from "@ai-matrx/tap-target";
+} from "@ai-matrx/design-system/tap-target/buttons";
+import { TapTargetButtonGroup } from "@ai-matrx/design-system/tap-target";
 
 export interface SpeakerGroupProps {
   text: string;

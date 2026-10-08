@@ -56,7 +56,7 @@ import {
 import { toast } from "@ai-matrx/chat/host/notify";
 import { cn } from "@ai-matrx/design-system";
 import { useIsMobile } from "@ai-matrx/kit/media-query";
-import { TapTargetButtonTransparent } from "@ai-matrx/tap-target";
+import { TapTargetButtonTransparent } from "@ai-matrx/design-system/tap-target";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -69,7 +69,7 @@ import {
   DropdownMenuLabel,
 } from "@ai-matrx/design-system";
 import { Drawer, DrawerContent, DrawerTitle } from "@ai-matrx/design-system";
-import { MenuTapButton } from "@ai-matrx/tap-target/buttons";
+import { MenuTapButton } from "@ai-matrx/design-system/tap-target/buttons";
 import { ConversationCostMenuRow } from "@/features/admin/agent-spend/ConversationCost";
 import { useAgentDuplicateFlow } from "../../hooks/useAgentDuplicateFlow";
 import { ReferenceCopyMenuItem } from "@ai-matrx/chat/host/ui-slots";

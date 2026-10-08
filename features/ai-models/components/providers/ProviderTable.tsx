@@ -33,7 +33,7 @@ import {
 import {
   PencilTapButton,
   TrashTapButton,
-} from "@ai-matrx/tap-target/buttons";
+} from "@ai-matrx/design-system/tap-target/buttons";
 import type { AiProvider } from "../../types";
 import { readOf } from "@ai-matrx/design-system";
 

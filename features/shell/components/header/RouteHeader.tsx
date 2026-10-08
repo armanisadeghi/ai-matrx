@@ -74,7 +74,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@ai-matrx/design-system";
-import { MoreHorizontalTapButton } from "@ai-matrx/tap-target/buttons";
+import { MoreHorizontalTapButton } from "@ai-matrx/design-system/tap-target/buttons";
 import PageHeader from "./PageHeader";
 import {
   COMPACT_ACTION_PX,

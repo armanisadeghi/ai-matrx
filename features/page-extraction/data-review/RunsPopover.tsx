@@ -27,7 +27,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@ai-matrx/design-system";
-import { HistoryTapButton } from "@ai-matrx/tap-target/buttons";
+import { HistoryTapButton } from "@ai-matrx/design-system/tap-target/buttons";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { cn } from "@/lib/utils";
 

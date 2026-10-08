@@ -21,7 +21,7 @@
  *     never offered twice for the same snapshot and the panel answers "did the
  *     check pass?" rather than "a case exists".
  */
-import { TapTargetCopyButton } from "@ai-matrx/tap-target";
+import { TapTargetCopyButton } from "@ai-matrx/design-system/tap-target";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ShieldCheck } from "lucide-react";
 

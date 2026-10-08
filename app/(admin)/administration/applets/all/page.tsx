@@ -5,7 +5,7 @@ import AppLink from "@/components/navigation/AppLink";
 import { PUBLISHED_TO_WEB_LABEL, publishedToWebLabel } from "@/lib/row-access";
 import { useRouter } from "next/navigation";
 import { Ban, CheckCircle, Clock, Archive } from "lucide-react";
-import { MoreHorizontalTapButton } from "@ai-matrx/tap-target/buttons";
+import { MoreHorizontalTapButton } from "@ai-matrx/design-system/tap-target/buttons";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { TooltipProvider } from "@/components/ui/tooltip";

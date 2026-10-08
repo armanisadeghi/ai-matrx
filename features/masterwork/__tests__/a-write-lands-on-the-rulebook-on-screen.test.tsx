@@ -116,7 +116,7 @@ jest.mock("@/features/shell/components/header/RouteHeader", () => ({
   __esModule: true,
   default: () => null,
 }));
-jest.mock("@ai-matrx/tap-target/buttons", () => ({
+jest.mock("@ai-matrx/design-system/tap-target/buttons", () => ({
   ChevronLeftTapButton: () => null,
 }));
 jest.mock("@/features/access-gate/components/AccessGate", () => ({

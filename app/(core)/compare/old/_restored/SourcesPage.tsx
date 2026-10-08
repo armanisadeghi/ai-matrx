@@ -45,7 +45,7 @@ import { Textarea } from "@ai-matrx/design-system";
 import { Input } from "@ai-matrx/design-system/controls";
 import { formatRelativeTime, formatCount } from "@ai-matrx/kit/format";
 import { useEntityTitles } from "@ai-matrx/associations/react";
-import { TapTargetButton, TapTargetButtonSolid } from "@ai-matrx/tap-target";
+import { TapTargetButton, TapTargetButtonSolid } from "@ai-matrx/design-system/tap-target";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {

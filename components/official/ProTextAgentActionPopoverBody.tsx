@@ -14,7 +14,7 @@ import {
   RotateCcw,
   X,
 } from "lucide-react";
-import { CheckTapButton, CopyTapButton } from "@ai-matrx/tap-target/buttons";
+import { CheckTapButton, CopyTapButton } from "@ai-matrx/design-system/tap-target/buttons";
 import { AgentListDropdown } from "@ai-matrx/agents/catalog/react";
 import { toast } from "@/lib/toast";
 import type { useProTextareaAgentAction } from "./useProTextareaAgentAction";

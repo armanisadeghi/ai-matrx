@@ -4,7 +4,7 @@ import {
   ChevronLeftTapButton,
   PanelLeftTapButton,
   PanelRightTapButton,
-} from "@ai-matrx/tap-target/buttons";
+} from "@ai-matrx/design-system/tap-target/buttons";
 import { usePanelControls } from "@/features/resizable-panels/PanelControlProvider";
 import { DemoTitle } from "../_lib/DemoTitle";
 
