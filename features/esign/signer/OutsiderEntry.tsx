@@ -129,6 +129,24 @@ function factorOf(open: Record<string, unknown>): Factor {
   return f === "none" || f === "access_code" ? f : "email_code";
 }
 
+/** The document, dimmed behind the code step. The server releases no page before the code, so this is
+ *  a stand-in sheet that says so — never page content. */
+function GatedPaper({ pages }: { pages: number | null }) {
+  return (
+    <div aria-hidden className="pointer-events-none absolute inset-0 flex items-start justify-center overflow-hidden px-5 pt-10 opacity-60">
+      <div className="flex aspect-[8.5/11] w-full max-w-xl flex-col gap-3 rounded-md border border-border bg-card p-8 shadow-sm">
+        <div className="h-4 w-1/2 rounded bg-muted" />
+        {Array.from({ length: 14 }, (_, i) => (
+          <div key={i} className="h-2.5 rounded bg-muted" style={{ width: `${i % 5 === 4 ? 60 : 100 - ((i * 7) % 18)}%` }} />
+        ))}
+        <p className="mt-auto text-center type-secondary text-muted-foreground">
+          {pages ? `${pages} ${pages === 1 ? "page" : "pages"} · opens after the code` : "Opens after the code"}
+        </p>
+      </div>
+    </div>
+  );
+}
+
 export function OutsiderEntry() {
   const dispatch = useAppDispatch();
   const [secret, setSecret] = useState<string | null>(null);
@@ -225,7 +243,7 @@ export function OutsiderEntry() {
   if (phase.kind === "signing") return <SignerSurface door={phase.door} onDoorClosed={closed} />;
 
   return (
-    <main className="flex h-full flex-col items-center justify-center overflow-y-auto bg-textured px-5 py-8">
+    <main className="relative flex h-full flex-col items-center justify-center overflow-y-auto bg-textured px-5 py-8">
       {phase.kind === "loading" ? <Spinner size="sm" className="text-muted-foreground" /> : null}
 
       {phase.kind === "dead" ? (
@@ -246,8 +264,10 @@ export function OutsiderEntry() {
         </div>
       ) : null}
 
+      {phase.kind === "code" && secret ? <GatedPaper pages={landing?.pages ?? null} /> : null}
+
       {phase.kind === "code" && secret ? (
-        <div className="flex w-full max-w-sm flex-col gap-4 rounded-lg border border-border bg-card p-5">
+        <div className="relative flex w-full max-w-sm flex-col gap-4 rounded-lg border border-border bg-card p-5 shadow-lg">
           {landing ? (
             <LandingHeader facts={landing} />
           ) : (
