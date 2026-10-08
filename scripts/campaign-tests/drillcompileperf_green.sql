@@ -7,7 +7,7 @@
 --   psql … -v other=<file>   installs <file> for the second pass instead of the inverse (default: the inverse,
 --                            which puts back the row-by-row platform._drill_compile — "v1" — inside this
 --                            transaction only)
---   psql … -v plant=count    makes the fine path read every fine row once (sum of cnt → count(*)) → E goes RED
+--   psql … -v plant=sum      makes the fine path re-add a sum as the largest fine row's sum (max) → E goes RED
 --   psql … -v quick=1        the page's questions and one seat only (a smoke run)
 --
 -- E. EQUIVALENCE — a matrix of questions over every declared definition (ai_usage, ai_usage_executions,
@@ -232,12 +232,12 @@ begin
   end loop;
 end $$;
 
--- PLANT (count): the fine path counts its fine rows instead of the fact rows they stand for
+-- PLANT (sum): the fine path re-adds a sum as the largest of its fine rows' sums
 do $$
 begin
-  if current_setting('dcp.plant') = 'count' then
+  if current_setting('dcp.plant') = 'sum' then
     execute replace(pg_get_functiondef('platform._drill_fine_agg_sql(jsonb,text,text,text,text)'::regprocedure),
-                    $p$format('coalesce(sum(%s)%s, 0)::bigint', p_cnt, w.once)$p$, $p$format('count(*)%s', w.once)$p$);
+                    $p$format('(sum(%s)%s)', p_col, w.once)$p$, $p$format('(max(%s)%s)', p_col, w.once)$p$);
   end if;
 end $$;
 
