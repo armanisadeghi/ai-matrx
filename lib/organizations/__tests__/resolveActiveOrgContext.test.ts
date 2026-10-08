@@ -83,7 +83,7 @@ jest.mock("@/utils/supabase/client", () => {
     supabaseTouches.push(call);
     throw new Error(
       `A DELETED RUNG CAME BACK: resolveActiveOrgContext reached the database (${call}). ` +
-        "Since 2026-09-19 a stored default organization is a DISPLAY preference " +
+        "Since 2026-09-19 a stored preselected organization is a DISPLAY preference " +
         "that only the org picker may read; nothing may select from it.",
     );
   };

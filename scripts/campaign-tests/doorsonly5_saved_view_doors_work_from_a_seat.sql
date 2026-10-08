@@ -63,9 +63,9 @@ declare
   v_rows    int;
   v_closed  boolean := current_setting('doorsonly5.closed', true) = '1';
 begin
-  select iam.default_organization_id(c_admin) into v_org;
+  select (select m.organization_id from iam.organization_member m join iam.organizations fo on fo.id = m.organization_id where m.user_id = c_admin and m.container_type = 'organization' and m.status = 'active' and fo.archived_at is null order by m.created_at, m.organization_id limit 1) into v_org;
   if v_org is null then
-    raise exception 'setup: admin@admin.com has no default organization, so this suite has no real tenant to write in';
+    raise exception 'setup: admin@admin.com has no first organization, so this suite has no real tenant to write in';
   end if;
 
   -- ── the seat ────────────────────────────────────────────────────────────────

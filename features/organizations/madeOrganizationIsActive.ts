@@ -4,7 +4,7 @@
 //
 // Making an organization is the person's own explicit choice, so the act that creates it also makes
 // it active — the way Notion, Slack and Linear put you in the workspace you just made. This is not a
-// default chosen for her (the no-default-organization law forbids only an organization picked FOR a
+// default chosen for her (the no-preselected-organization law forbids only an organization picked FOR a
 // person from a cookie, a preference or signup). Every client call of `org_create` calls this; guard:
 // features/organizations/__tests__/an-organization-you-make-is-the-one-you-work-in.test.ts.
 //

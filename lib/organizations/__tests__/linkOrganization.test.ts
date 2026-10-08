@@ -10,7 +10,7 @@
  * link named. The server half now stamps `?org=<uuid>` on every deep link the
  * platform emits. This is the client half: the app honours it.
  *
- * 🚨 WHY THIS IS NOT A DEFAULT-ORGANIZATION RUNG (the thing the guards refuse).
+ * 🚨 WHY THIS IS NOT A preselected organization RUNG (the thing the guards refuse).
  * `check-no-default-organization` exists because nothing may PICK an
  * organization for a person out of a cookie, a saved preference, or "their
  * first organization" — each of those is the platform GUESSING. A link's `org=`

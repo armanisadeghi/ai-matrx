@@ -2,7 +2,7 @@
  * pickActiveOrganization.test.ts — BOOT MAY SELECT ONLY WHAT IT IS NOT
  * CHOOSING.
  *
- * Arman, 2026-09-19: a "default organization" is at most a per-client display
+ * Arman, 2026-09-19: a "preselected organization" is at most a per-client display
  * preference. Nothing but the org picker may read it, and nothing may pick an
  * organization for the user from a cookie, a saved preference, or "the one
  * they created". Sole membership is the one exception, because there is
@@ -45,7 +45,7 @@ describe("pickActiveOrganization", () => {
     expect(pickActiveOrganization([A, OWN, B])).toBeNull();
   });
 
-  it("takes no default-organization argument at all", () => {
+  it("takes no preselected organization argument at all", () => {
     // The deleted rung a, enforced at the type level and at run time: extra
     // arguments are ignored, so a re-added preference rung cannot smuggle
     // itself in through this function.

@@ -6,7 +6,7 @@
 // THE CLASS (2026-09-26): mandate-driven chat hosts (a War Room thread chat,
 // the Scribe assistant, the Masterwork build, the interview drive) showed a
 // spinner while "the workspace" was not ready. Which agent runs a job depends
-// on the active workspace, and the no-default-organization rule means nobody
+// on the active workspace, and the no-preselected-organization rule means nobody
 // picks one for the person — so once boot has SETTLED with nothing chosen, the
 // spinner is waiting on something that will never happen. A screen that lies.
 //

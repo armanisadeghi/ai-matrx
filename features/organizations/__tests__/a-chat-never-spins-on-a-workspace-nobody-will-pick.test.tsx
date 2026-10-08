@@ -4,7 +4,7 @@
  * MEASURED: a War Room thread's Chat view, opened with no workspace chosen,
  * showed a spinner forever. The thread's assistant resolves its agent through
  * a Mandate, a Mandate resolves through the ACTIVE workspace, and the
- * no-default-organization rule means nobody picks one for the person — so the
+ * no-preselected-organization rule means nobody picks one for the person — so the
  * spinner was waiting on something that would never happen.
  *
  * WHAT THIS PINS:

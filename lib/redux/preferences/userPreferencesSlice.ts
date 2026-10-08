@@ -641,7 +641,7 @@ export interface OrganizationPreferences {
    * 🚨 It never governs a link's organization when the person is working in
    * NO organization: there is no switch to refuse there, and the alternative
    * is the "Select an organization first" dead end this whole rung exists to
-   * end. And it is not a default-organization preference — nothing reads it to
+   * end. And it is not a preselected organization preference — nothing reads it to
    * CHOOSE an organization; it only decides whether a link that already named
    * one is obeyed.
    */
@@ -2023,7 +2023,7 @@ export const userPreferencesPolicy = definePolicy<UserPreferencesState>({
       // the CURRENT row under compare-and-swap on `version`. Never
       // `update({ preferences: body })`: that put a stale tab's whole cached
       // record back over every newer change (2026-09-27, an agent's
-      // default-organization write reverted 15s later). Guard:
+      // preselected organization write reverted 15s later). Guard:
       // lib/redux/preferences/__tests__/preference-writes-never-clobber.test.ts
       const table = () => supabase.schema("users").from("user_preferences");
       await savePreferencePatch({

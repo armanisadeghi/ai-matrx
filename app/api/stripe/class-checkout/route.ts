@@ -144,7 +144,7 @@ export async function POST(request: NextRequest) {
     //
     // REC-62: the creator's payout account belongs to the creator's ORGANIZATION,
     // and the class scope already names it — so this route reads the owner off the
-    // CLASS, never off a default organization and never off the buyer's own.
+    // CLASS, never off a preselected organization and never off the buyer's own.
     let creatorOwner;
     try {
       creatorOwner = await billingOwnerRef({

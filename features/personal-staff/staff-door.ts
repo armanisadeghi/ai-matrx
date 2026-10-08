@@ -15,7 +15,7 @@
  * the ACTIVE organization is a browser fact and nothing else: `getActiveOrgId`
  * reads Redux `appContext.organization_id`, and no cookie, preference or
  * personal-org fallback may stand in for it server-side (CLAUDE.md § Supabase &
- * database — "A 'default organization' is at most a per-client DISPLAY
+ * database — "A 'preselected organization' is at most a per-client DISPLAY
  * preference"; `ensureOrgIdServer` REFUSES rather than choosing). A Server
  * Component therefore has no honest organization to send, which is why no
  * Server Component in this repo calls aidream with that header. The page still

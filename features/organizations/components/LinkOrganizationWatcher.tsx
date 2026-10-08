@@ -18,7 +18,7 @@
  * (`lib/organizations/linkOrganization.ts`), applied to every later
  * navigation. It renders nothing.
  *
- * 🚨 STILL NOT A DEFAULT-ORGANIZATION RUNG. It only ever acts on an
+ * 🚨 STILL NOT A preselected organization RUNG. It only ever acts on an
  * organization a link NAMED, only after checking it against the live
  * membership list, and it changes nothing at all when the link is absent,
  * malformed, or names an organization this account does not belong to. It is

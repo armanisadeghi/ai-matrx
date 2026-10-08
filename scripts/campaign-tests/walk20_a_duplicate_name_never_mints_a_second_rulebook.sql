@@ -44,9 +44,9 @@ declare
   v_slug   text := 'zone-failure-verdict-hoa-irrigation-' || substr(md5(random()::text), 1, 8);
   v_passes int := 0;
 begin
-  select iam.default_organization_id(c_admin) into v_org;
+  select (select m.organization_id from iam.organization_member m join iam.organizations fo on fo.id = m.organization_id where m.user_id = c_admin and m.container_type = 'organization' and m.status = 'active' and fo.archived_at is null order by m.created_at, m.organization_id limit 1) into v_org;
   if v_org is null then
-    raise exception 'setup: admin@admin.com has no default organization, so this suite has no real tenant to write in';
+    raise exception 'setup: admin@admin.com has no first organization, so this suite has no real tenant to write in';
   end if;
 
   perform set_config('request.jwt.claims',

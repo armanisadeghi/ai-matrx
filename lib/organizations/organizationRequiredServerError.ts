@@ -2,7 +2,7 @@
 //
 // THE SERVER'S ANSWER TO "THIS REQUEST NEEDS AN ORGANIZATION AND NAMES NONE".
 //
-// Ruling (Arman, 2026-09-19): a "default organization" is at most a per-client
+// Ruling (Arman, 2026-09-19): a "preselected organization" is at most a per-client
 // DISPLAY preference. Nothing but the org picker and pure UI display may read
 // it. No data read, no write, no API route, no server action, no transport and
 // no boot ladder may PICK an organization for the user — not from a cookie,

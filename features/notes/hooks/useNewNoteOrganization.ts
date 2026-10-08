@@ -19,7 +19,7 @@
 // used to apply a rung order — stated default-org preference, then the
 // person's own own organization — and dispatch that selection itself, so a
 // note could be filed in an organization nobody named. Both rungs are gone: a
-// "default organization" is at most a per-client display preference that only
+// "preselected organization" is at most a per-client display preference that only
 // the picker may read, and nothing may choose an organization for the person
 // from a preference or their own org.
 //
@@ -107,7 +107,7 @@ export async function resolveNewNoteOrganization(
       // rung order here — stated default → own own org → sole membership
       // — and SELECT one silently, "the same choice
       // `useActiveOrganizationAutoSelect` makes". Both of the first two rungs
-      // were deleted on 2026-09-19: a default organization is at most a
+      // were deleted on 2026-09-19: a preselected organization is at most a
       // display preference, and nothing may pick an organization for the
       // person from a preference or their own organization. The sole
       // membership case never reaches here — boot itself takes it, because

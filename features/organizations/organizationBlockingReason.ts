@@ -17,7 +17,7 @@
 // click with none selected did nothing, silently — exactly the "disabled-
 // looking, or lying" screen law 4 forbids.
 //
-// Owner ruling (Arman, 2026-09-19): there is no default organization, so a
+// Owner ruling (Arman, 2026-09-19): there is no preselected organization, so a
 // primary creation action must make the workspace an explicit, visible
 // choice. Its button is EITHER honest-disabled with the reason beside it (the
 // same pattern `Continue` already uses on the very same screen) OR, when the
