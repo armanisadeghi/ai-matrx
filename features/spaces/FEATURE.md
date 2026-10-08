@@ -83,6 +83,12 @@ Block document: a tree of `SpaceBlock` (`id`, `type`, `text: RichSpan[]`, `color
   page with no synced block. `load-perf.walk.mjs` prints `spacesReads` per load. Measured: admin sample 5
   (space_sidebar 1, synced_source 1, the grid's `reverse_links_many` 3 — records-ui, one per link field);
   member page 1b5eb9af 2. CLS <= 0.0022, no hydration warnings. Test `page/__tests__/linked-pages.test.ts`.
+- 2026-10-08 — emoji (Arman 2026-10-08: a person may choose emoji for their own content): `SpaceMedia` gains `{ emoji }`
+  (types, schema, jsonSchema; live `content.space_snapshot_schema()` updated, drift guard OK). The icon picker opens on an
+  Emoji tab (emoji-picker-react: search, categories, recently used, skin tone) with Random; Icons / Upload / Link stay.
+  A callout stores its emoji as the icon text itself (a Lucide name is plain letters). `:` then a name offers emoji
+  inline (BlockNote emoji grid, N14). Notion imports keep emoji icons (server `notion_import` + `notion-markdown.ts`).
+  Walk `emoji.walk.mjs`. Emoji is never our own chrome: the no-emoji rule covers interface chrome only.
 - 2026-10-08 — fixes round 38: (D1) "Archive record" works: a modal's `aria-hidden` walk (Radix `hideOthers` keeps every
   `[aria-live]`, and the grid's dnd-kit live region sits in the editor) marked the editor's blocks, ProseMirror redrew
   the database block and the grid remounted with its confirm; `editor/aria-hidden-marks.ts` makes the editor ignore
