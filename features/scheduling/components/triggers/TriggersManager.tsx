@@ -13,12 +13,14 @@
  */
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
-import { Loader2, Pause, Play, RefreshCw, Archive } from "lucide-react";
+import { Loader2, RefreshCw, Archive } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { TRIGGER_FLAG_SET, SpendFlagStrip, spendFlagColumn, type SpendFlagHit } from "@/components/cost/SpendFlagStrip";
 import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { toast } from "@/lib/toast";
+import { TapTargetButtonTransparent, TapTargetCopyButton } from "@ai-matrx/design-system/tap-target";
+import { PauseTapButton, PlayTapButton } from "@ai-matrx/design-system/tap-target/buttons";
 import { MatrxDataTable } from "@ai-matrx/design-system/data-table";
 import type { MatrxColumnDef } from "@ai-matrx/design-system/data-table/types";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
@@ -132,19 +134,34 @@ function TriggerActions({
 }) {
   const stop = (e: React.SyntheticEvent) => e.stopPropagation();
   return (
-    <div className="flex items-center gap-1" onClick={stop} onKeyDown={stop}>
+    <div className="flex items-center gap-0.5" onClick={stop} onKeyDown={stop}>
+      <TapTargetCopyButton
+        variant="transparent"
+        value={`${t.cost.name} (${t.overview.trigger_id})`}
+        tooltip="Copy name and id"
+        ariaLabel={`Copy ${t.cost.name}`}
+      />
       {t.overview.is_active ? (
-        <Button variant="outline" icon={<Pause />} onClick={() => onAct(t, "pause")}>
-          Pause
-        </Button>
+        <PauseTapButton
+          variant="transparent"
+          tooltip="Pause"
+          ariaLabel={`Pause ${t.cost.name}`}
+          onClick={() => onAct(t, "pause")}
+        />
       ) : (
-        <Button variant="outline" icon={<Play />} onClick={() => onAct(t, "resume")}>
-          Resume
-        </Button>
+        <PlayTapButton
+          variant="transparent"
+          tooltip="Resume"
+          ariaLabel={`Resume ${t.cost.name}`}
+          onClick={() => onAct(t, "resume")}
+        />
       )}
-      <Button variant="danger" icon={<Archive />} onClick={() => onAct(t, "archive")}>
-        Archive
-      </Button>
+      <TapTargetButtonTransparent
+        icon={<Archive />}
+        tooltip="Archive"
+        ariaLabel={`Archive ${t.cost.name}`}
+        onClick={() => onAct(t, "archive")}
+      />
     </div>
   );
 }
@@ -211,7 +228,7 @@ export function TriggersManager({
       header: "Trigger",
       accessorFn: (t) => t.cost.name,
       filter: "text",
-      width: 200,
+      width: 240,
       cell: (t) => (
         <span className="block truncate text-sm font-medium" title={t.cost.name}>
           {t.cost.name}
@@ -371,7 +388,7 @@ export function TriggersManager({
       header: "Actions",
       sortable: false,
       filter: false,
-      width: 190,
+      width: 120,
       customActions: (t) => <TriggerActions t={t} onAct={(tr, a) => setPending({ t: tr, action: a })} />,
     },
   ];

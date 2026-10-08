@@ -350,7 +350,7 @@ export default function SystemJobsPage() {
       id: "title",
       accessorKey: "title",
       header: "Job",
-      width: 200,
+      width: 240,
       cell: (r) => (
         <Link
           href={automationCostDetailHref("scheduled_task", r.id)}

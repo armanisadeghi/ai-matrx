@@ -59,7 +59,7 @@ function mandateDoor(key: string, seat: AutomationSeat, orgSlug?: string) {
   return (
     <Link href={mandateHref(key)} className="inline-flex min-w-0 items-center gap-1 text-primary hover:underline" title={`Mandate ${key}`}>
       <INTELLIGENCE_ICON className="h-3 w-3 shrink-0" />
-      <span className="truncate">{key}</span>
+      <span className="truncate" title={key}>{key}</span>
     </Link>
   );
 }
@@ -70,7 +70,7 @@ function agentDoor(a: AutomationAgentRef, seat: AutomationSeat) {
   return (
     <Link href={agentHref(a, seat)} className="inline-flex min-w-0 items-center gap-1 text-primary hover:underline" title={`Agent ${a.name}`}>
       <AGENT_ICON className="h-3 w-3 shrink-0" />
-      <span className="truncate">{a.name}</span>
+      <span className="truncate" title={a.name}>{a.name}</span>
     </Link>
   );
 }
@@ -128,7 +128,7 @@ export function automationCostColumns<T>(
       header: "Mandate",
       accessorFn: (row) => get(row)?.mandates.join(", ") ?? "",
       filter: "text",
-      width: 150,
+      width: 130,
       cell: (row) => <MandateCell row={get(row)} seat={seat} orgSlug={orgSlug} />,
     },
     {
@@ -136,7 +136,7 @@ export function automationCostColumns<T>(
       header: "Agent",
       accessorFn: (row) => get(row)?.agents.map((a) => a.name).join(", ") ?? "",
       filter: "text",
-      width: 140,
+      width: 130,
       cell: (row) => <AgentCell row={get(row)} seat={seat} />,
     },
     {

@@ -351,7 +351,7 @@ export function AutomationCostTable({
       accessorKey: "name",
       header: "Automation",
       filter: "text",
-      width: 200,
+      width: 240,
       cell: (r) => (
         <Link
           href={

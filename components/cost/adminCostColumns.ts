@@ -42,7 +42,7 @@ export function adminCostColumns<T>({
       sortable,
       defaultSortDirection: "desc",
       align: "right",
-      width: 130,
+      width: 110,
       mobileHidden,
       cell: (row) => createElement(AdminPoints, { usd: value(row) }),
     },
