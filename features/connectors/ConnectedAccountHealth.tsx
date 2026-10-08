@@ -117,6 +117,8 @@ export interface ConnectedAccountHealthProps {
   onReconnectAccount: () => void;
   /** Re-display consent for exactly this healthy account's held permissions. */
   onReviewPermissions?: () => void;
+  /** Re-display that same consent by redirecting the current tab. */
+  onReviewPermissionsInThisTab?: () => void;
   /** Why this healthy connection cannot safely use shared permission review. */
   permissionsReviewUnavailableReason?: string | null;
   /** Remove the account. The caller states the consequence before it runs. */
@@ -151,6 +153,7 @@ export function ConnectedAccountHealth({
   onReconnect,
   onReconnectAccount,
   onReviewPermissions,
+  onReviewPermissionsInThisTab,
   permissionsReviewUnavailableReason,
   onRevoke,
   busy = [],
@@ -302,18 +305,29 @@ export function ConnectedAccountHealth({
           {management.allowed ? (
           <div className="ml-auto flex shrink-0 items-center gap-1 sm:ml-0">
             {canReviewPermissions ? (
-              <Button
-                icon={accountBusy ? (
-                  <Loader2 className="animate-spin" aria-hidden />
-                ) : (
-                  <RefreshCw aria-hidden />
-                )}
-                variant="quiet"
-                onClick={onReviewPermissions}
-                disabled={accountBusy}
-              >
-                Review permissions
-              </Button>
+              <>
+                <Button
+                  icon={accountBusy ? (
+                    <Loader2 className="animate-spin" aria-hidden />
+                  ) : (
+                    <RefreshCw aria-hidden />
+                  )}
+                  variant="quiet"
+                  onClick={onReviewPermissions}
+                  disabled={accountBusy}
+                >
+                  Review permissions
+                </Button>
+                {onReviewPermissionsInThisTab ? (
+                  <Button
+                    variant="quiet"
+                    onClick={onReviewPermissionsInThisTab}
+                    disabled={accountBusy}
+                  >
+                    Review in this tab
+                  </Button>
+                ) : null}
+              </>
             ) : null}
             <Button
               icon={revoking ? (

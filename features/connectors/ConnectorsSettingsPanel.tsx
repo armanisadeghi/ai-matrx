@@ -305,7 +305,7 @@ function ProviderConnectorsPanel({
     );
   };
 
-  const reviewPermissions = async (accountId: string) => {
+  const reviewPermissions = async (accountId: string, inThisTab = false) => {
     const account = state.accounts.find((row) => row.id === accountId);
     if (!account) return;
     const review = buildPermissionsReviewPlan({
@@ -336,10 +336,11 @@ function ProviderConnectorsPanel({
     try {
       if (!(await confirmGmailReadDisclosure(request))) return;
       if (!(await confirmGmailChangesDisclosure(request))) return;
-      await runner.run(request, {
-        owner,
-        loginHint: account.label,
-      });
+      if (inThisTab) {
+        await runner.runInThisTab(request, { owner, loginHint: account.label });
+        return;
+      }
+      await runner.run(request, { owner, loginHint: account.label });
       await state.refetch();
       toast.success("Permissions reviewed.");
     } catch (cause) {
@@ -484,6 +485,7 @@ function ProviderConnectorsPanel({
               }
               onReconnectAccount={() => reconnectAccount(account.id)}
               onReviewPermissions={() => void reviewPermissions(account.id)}
+              onReviewPermissionsInThisTab={() => void reviewPermissions(account.id, true)}
               onRevoke={() => void revoke(account.id)}
               busy={busy}
               revoking={revokingId === account.id}
@@ -525,6 +527,7 @@ function ProviderConnectorsPanel({
                   }
                   onReconnectAccount={() => reconnectAccount(account.id)}
                   onReviewPermissions={() => void reviewPermissions(account.id)}
+                  onReviewPermissionsInThisTab={() => void reviewPermissions(account.id, true)}
                   onRevoke={() => void revoke(account.id)}
                   busy={busy}
                   revoking={revokingId === account.id}
@@ -601,6 +604,7 @@ function AccountCard({
   onReconnect,
   onReconnectAccount,
   onReviewPermissions,
+  onReviewPermissionsInThisTab,
   onRevoke,
   busy,
   revoking,
@@ -614,6 +618,7 @@ function AccountCard({
   onReconnect: (productKey: string) => void;
   onReconnectAccount: () => void;
   onReviewPermissions: () => void;
+  onReviewPermissionsInThisTab: () => void;
   onRevoke: () => void;
   busy: readonly ConnectorBusyAction[];
   revoking: boolean;
@@ -654,6 +659,11 @@ function AccountCard({
       onReviewPermissions={
         permissionsReview.request
           ? onReviewPermissions
+          : undefined
+      }
+      onReviewPermissionsInThisTab={
+        permissionsReview.request
+          ? onReviewPermissionsInThisTab
           : undefined
       }
       permissionsReviewUnavailableReason={
