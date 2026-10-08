@@ -56,6 +56,8 @@ interface Entry {
   liveManager: RealtimeManager | null;
   graceTimer: ReturnType<typeof setTimeout> | null;
   versionsAsked: Set<number>;
+  /** The source the last read was for — what a re-read asked from outside the views reads. */
+  source: AnnotationSource | null;
 }
 
 const EMPTY: SidecarSnapshot = {
@@ -100,6 +102,7 @@ function entryOf(key: string): Entry {
       liveManager: null,
       graceTimer: null,
       versionsAsked: new Set(),
+      source: null,
     };
     entries.set(key, entry);
   }
@@ -136,6 +139,7 @@ export function loadSidecar(
   options: { force?: boolean; describe?: (e: unknown) => string } = {},
 ): Promise<void> {
   const entry = entryOf(key);
+  entry.source = source;
   if (!options.force) {
     if (entry.inflight) return entry.inflight;
     if (entry.fresh) return Promise.resolve();
@@ -188,6 +192,27 @@ export function scheduleSidecarReload(key: string, source: () => AnnotationSourc
     const src = source();
     if (src) void loadSidecar(key, src, { force: true });
   }, 250);
+}
+
+/**
+ * A write to a record's threads that this tab learned of from somewhere other than realtime — an
+ * agent's `comment_reply` receipt in the chat. Every kept view of that record (any signed-in
+ * person's key) reads again now; one nobody is holding is only marked stale, so its next view reads.
+ *
+ * WHY: the panel learned of a reply written server-side ONLY through the postgres_changes INSERT.
+ * Live 2026-10-08 realtime's replication pool dropped (`PoolingReplicationError`) 0.6 s after the
+ * agent's reply landed on Arman's comment c2; the INSERT never arrived, the kept snapshot stayed
+ * "fresh", and the reply was invisible in the panel while cmt_list returned it.
+ */
+export function refreshRecordThreads(token: string, id: string): void {
+  const record = `${token}:${id}`;
+  for (const [key, entry] of entries) {
+    if (key !== record && !key.endsWith(`|${record}`)) continue;
+    entry.fresh = false;
+    if (entry.source && (entry.holders > 0 || entry.closeLive)) {
+      scheduleSidecarReload(key, () => entry.source);
+    }
+  }
 }
 
 /** Older captured bodies the resolver maps through — each version read once per source. */

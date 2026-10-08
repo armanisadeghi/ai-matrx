@@ -32,6 +32,19 @@ import { COMMENT_THREAD_CANVAS_KIND } from "@/features/rich-document/annotations
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
+// The ledger re-read a line makes before it calls a reply missing: the ledger has no new row.
+jest.mock("@/utils/supabase/client", () => {
+  const chain: Record<string, unknown> = {};
+  for (const k of ["schema", "from", "select", "eq", "not"]) chain[k] = () => chain;
+  chain.order = async () => ({ data: [], error: null });
+  return { supabase: chain };
+});
+// Every kept view of the thread is told to read again (realtime can drop the INSERT, 2026-10-08).
+const mockRefreshRecordThreads = jest.fn();
+jest.mock("@/features/rich-document/annotations/sidecarStore", () => ({
+  refreshRecordThreads: (...args: unknown[]) => mockRefreshRecordThreads(...args),
+}));
+
 const SLUG = "directive_v1_action_comment_reply";
 const REPLY_TEXT = "The truck scale — weigh the whole load before it reaches the baler.";
 const CONVERSATION = "conv-intake";
@@ -123,15 +136,17 @@ describe("the fence in the answer", () => {
     expect(host.textContent).not.toContain("truck scale —");
   });
 
-  it("after: one line per reply that opens its thread in the canvas, focused on the root", () => {
-    render(<Fence streaming={false} items={[{ to: "c3", body: REPLY_TEXT }, { to: "c4", body: "SQLite keeps the log on the yard laptop." }]} />);
+  it("after: one line per reply that opens its thread in the canvas, focused on the reply", () => {
+    render(<Fence streaming={false} items={[{ to: "c3", body: REPLY_TEXT }, { to: "c4", body: "SQLite keeps the log on the yard laptop." }]} />, undefined, [replyReceipt("c3"), replyReceipt("c4")]);
     expect(host.textContent).not.toContain("truck scale —");
     expect(host.textContent).not.toContain("yard laptop");
     const line = host.querySelector<HTMLButtonElement>('button[data-comment-reply="c3"]')!;
     expect(line.textContent).toBe("Reply in thread · c3");
     act(() => line.click());
     const tab = items()["comment-thread::message:answer-1" as never] as unknown as { data: { focus: string | null } } | undefined;
-    expect(tab?.data.focus).toBe("root-7");
+    // Focused on the reply that landed, so the panel scrolls to that thread.
+    expect(tab?.data.focus).toBe("reply-9");
+    expect(mockRefreshRecordThreads).toHaveBeenCalledWith("message", "answer-1");
     // c4 (a choice) has no comment yet: its thread opens on the answer, unfocused.
     expect(host.querySelector('button[data-comment-reply="c4"]')).not.toBeNull();
   });
@@ -160,12 +175,31 @@ describe("one cue per reply", () => {
     expect(line).not.toBeNull();
     act(() => line.click());
     const tab = items()["comment-thread::message:answer-1" as never] as unknown as { data: { focus: string | null } } | undefined;
-    expect(tab?.data.focus).toBe("root-7");
+    expect(tab?.data.focus).toBe("reply-9");
   });
 
   it("another handle's receipt does not hide this reply's line", () => {
     render(<Fence streaming={false} items={[{ to: "c3", body: REPLY_TEXT }]} />, undefined, [replyReceipt("c4")]);
     expect(host.querySelector('[data-comment-reply="c3"]')).not.toBeNull();
+  });
+});
+
+describe("nothing fails silently", () => {
+  // Live 2026-10-08: the line read "Reply in thread · c2" whatever happened to the reply.
+  it("a reply to an answer here with no ledger receipt after the turn says it was not posted, with no door", async () => {
+    mockRefreshRecordThreads.mockClear();
+    render(<Fence streaming={false} items={[{ to: "c3", body: REPLY_TEXT }]} />);
+    await act(async () => { await new Promise((r) => setTimeout(r, 0)); });
+    const line = host.querySelector('[data-comment-reply="c3"]')!;
+    expect(line.getAttribute("data-comment-reply-state")).toBe("failed");
+    expect(line.textContent).toBe("Couldn't post reply to c3: it was not saved");
+    expect(host.querySelector("button")).toBeNull();
+  });
+
+  it("the end of the turn re-reads every open view of the thread", () => {
+    mockRefreshRecordThreads.mockClear();
+    render(<Fence streaming={false} items={[{ to: "c3", body: REPLY_TEXT }]} />, undefined, [replyReceipt("c3")]);
+    expect(mockRefreshRecordThreads).toHaveBeenCalledWith("message", "answer-1");
   });
 });
 
