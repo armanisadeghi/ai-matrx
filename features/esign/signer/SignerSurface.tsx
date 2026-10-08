@@ -23,6 +23,7 @@ import { Button } from "@ai-matrx/design-system/controls";
 import { useIsMobile } from "@ai-matrx/kit/media-query";
 import { downloadFile } from "@ai-matrx/kit/download";
 import { Spinner } from "@/components/ui/loaders/Spinner";
+import { toast } from "@/lib/toast";
 import { cn } from "@/lib/utils";
 import { useThemeMode } from "@/styles/themes/useThemeMode";
 
@@ -83,6 +84,8 @@ async function sha256Hex(bytes: Uint8Array<ArrayBuffer>): Promise<string> {
   return Array.from(new Uint8Array(digest), (b) => b.toString(16).padStart(2, "0")).join("");
 }
 
+const ADOPT_TOAST = "esign-adopt";
+
 function str(record: Record<string, unknown> | null | undefined, key: string): string | null {
   const value = record?.[key];
   return typeof value === "string" && value.trim() !== "" ? value : null;
@@ -139,6 +142,7 @@ export function SignerSurface({
   const [focusNonce, setFocusNonce] = useState(0);
   const urls = useRef<string[]>([]);
   const closed = useRef(onDoorClosed);
+  const adopting = useRef(false);
   useEffect(() => {
     closed.current = onDoorClosed;
   }, [onDoorClosed]);
@@ -445,15 +449,26 @@ export function SignerSurface({
           save_to_profile: mark.save_to_profile,
           make_default: mark.make_default,
         });
-        setMarks((m) => ({ ...m, [answer.target]: dataUrl(answer.image_base64) ?? mark.preview_url }));
+        got[answer.target] = dataUrl(answer.image_base64) ?? mark.preview_url;
       }
+      setCreator(null);
       if (pending?.fieldId) change(pending.fieldId, "applied");
       if (created.some((m) => m.save_to_profile) && !serverTakes("save_to_profile")) {
         setNotice("Saving it to your profile is not available yet.");
       }
     } catch (err) {
-      fail(err);
+      if (err instanceof SessionEnded) {
+        setCreator(null);
+        fail(err);
+      } else {
+        // The creator is a modal over the page: the failure is said above it, and the mark stays.
+        toast.error(`Your signature was not saved. ${errorText(err)}`);
+      }
     } finally {
+      window.clearTimeout(slow);
+      toast.dismiss(ADOPT_TOAST);
+      if (Object.keys(got).length > 0) setMarks((m) => ({ ...m, ...got }));
+      adopting.current = false;
       setBusy(null);
     }
   }
@@ -954,7 +969,7 @@ export function SignerSurface({
           allowed={load.settings.signature_options}
           door={door}
           signedIn={door.seat === "signed_in"}
-          onAdopt={(m) => void adopted(m)}
+          onAdopt={(m) => adopted(m)}
           onClose={() => setCreator(null)}
         />
       ) : null}
