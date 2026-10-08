@@ -29,7 +29,10 @@
  * ───────────────────────────────────────────────────────────────────────────
  * THE FRAME SUBSTITUTIONS (esbuild `alias`) — each one has a module with
  * a header explaining why it exists and what the author sees instead:
- *   @/components/MarkdownStream               → FrameMarkdown     (ruling 1)
+ *   @ai-matrx/chat/ui/markdown-stream/MarkdownStream → FrameMarkdown (ruling 1; the
+ *     module moved into chat with P29a — stored-scope.ts requires it by that path,
+ *     and an alias left on the old app path matches nothing, so the whole chat
+ *     renderer, next/dynamic and Supabase landed in the frame: v0.4.2984–2986)
  *   @/components/agent-copy/CopyForAiButton   → FrameCopyForAiButton
  *   @/features/google-workspace/export/sendToGoogle → FrameSendToGoogle
  *   @/components/matrx/buttons/markdown-copy-html → FrameCopyHtml (plain-text copy, no KaTeX)
@@ -57,7 +60,7 @@ const JS_OUT = resolve(ROOT, "public/kind-sandbox.js");
 const CSS_OUT = resolve(ROOT, "public/kind-sandbox.css");
 
 const ALIAS: Record<string, string> = {
-  "@/components/MarkdownStream": resolve(
+  "@ai-matrx/chat/ui/markdown-stream/MarkdownStream": resolve(
     __dirname,
     "runtime/FrameMarkdown.tsx",
   ),
