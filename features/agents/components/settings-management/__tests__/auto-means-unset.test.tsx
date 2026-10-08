@@ -16,7 +16,7 @@ import { createRoot, type Root } from "react-dom/client";
 import { Provider } from "react-redux";
 import { configureStore } from "@reduxjs/toolkit";
 
-jest.mock("../controls/SettingControlInput", () => ({
+jest.mock("@ai-matrx/agents/settings/react", () => ({
   SettingControlInput: ({
     settingKey,
     onChange,

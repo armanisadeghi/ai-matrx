@@ -50,6 +50,8 @@ export interface TaskDescriptionFieldProps {
   /** Wrap the editing body in the host's right-click menu. */
   withMenu: (body: ReactNode) => ReactNode;
   onSelectionChange: () => void;
+  /** Height of the editing body (default: h-56 compact, h-80 full). Quick-add passes a short one. */
+  bodyClassName?: string;
 }
 
 export function TaskDescriptionField({
@@ -64,6 +66,7 @@ export function TaskDescriptionField({
   richRef,
   withMenu,
   onSelectionChange,
+  bodyClassName,
 }: TaskDescriptionFieldProps) {
   const [measureRef, { width }] = useMeasure<HTMLDivElement>();
   const frameRef = useRef<HTMLDivElement | null>(null);
@@ -110,7 +113,7 @@ export function TaskDescriptionField({
       </div>
 
       {withMenu(
-        <div className={cn("relative w-full", compact ? "h-56" : "h-80")}>
+        <div className={cn("relative w-full", bodyClassName ?? (compact ? "h-56" : "h-80"))}>
           {mode === "write" && (
             <div className="absolute inset-0 [&_.ProseMirror]:font-sans [&_.ProseMirror]:text-sm! [&_.ProseMirror]:px-3!">
               <RichEditor

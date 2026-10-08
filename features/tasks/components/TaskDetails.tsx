@@ -15,7 +15,7 @@ import {
 } from "@/components/ui/dialog";
 import TaskAttachmentsPanel from "./TaskAttachmentsPanel";
 import type { TaskWithProject } from "@/features/tasks/types";
-import { ProTextarea } from "@/components/official/ProTextarea";
+import { TaskDescriptionEditor } from "@/features/tasks/components/editor/TaskDescriptionEditor";
 import { toast } from "@/lib/toast";
 
 export default function TaskDetails({ task }: { task: TaskWithProject }) {
@@ -116,14 +116,12 @@ export default function TaskDetails({ task }: { task: TaskWithProject }) {
         {/* The person's own stored text, edited as written (ruling b, round 6). */}
         <div
           data-kind-source="explicit"
-          className={`${fullScreenMode ? "max-h-96" : "max-h-48"} overflow-y-auto`}
+          className="w-full"
         >
-          <ProTextarea
+          <TaskDescriptionEditor
             value={description}
-            onChange={(e) => setDescription(e.target.value)}
-            placeholder="Add details about this task..."
-            className="text-sm resize-y"
-            rows={fullScreenMode ? 12 : 8}
+            onChange={setDescription}
+            bodyClassName={fullScreenMode ? "h-96" : "h-64"}
           />
         </div>
       </div>

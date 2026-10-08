@@ -37,7 +37,7 @@ import { invalidateAndRefetchFullContext } from "@/features/agent-context/redux/
 import * as taskService from "@/features/tasks/services/taskService";
 import { Input, } from "@ai-matrx/design-system";
 import { ProInput } from "@/components/official/ProInput";
-import { ProTextarea } from "@/components/official/ProTextarea";
+import { TaskDescriptionEditor } from "@/features/tasks/components/editor/TaskDescriptionEditor";
 import { Button } from "@/components/ui/button";
 import {
   Select,
@@ -814,17 +814,11 @@ export default function TaskDetailsPanel({
               )}
             </div>
           ) : (
-            <ProTextarea
-              data-kind-source="explicit"
+            <TaskDescriptionEditor
               value={description}
-              onChange={(e) => handleDescriptionChange(e.target.value)}
-              placeholder="Add a description… Markdown is supported"
-              autoGrow
-              minHeight={100}
-              maxHeight={280}
-              showCopyButton
-              className="text-sm resize-y min-h-[100px]"
-              wrapperClassName="w-full"
+              onChange={handleDescriptionChange}
+              compact
+              bodyClassName="h-64"
             />
           )}
         </div>

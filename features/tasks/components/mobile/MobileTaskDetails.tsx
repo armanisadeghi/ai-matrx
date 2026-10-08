@@ -25,7 +25,7 @@ import { invalidateAndRefetchFullContext } from "@/features/agent-context/redux/
 import { Button } from "@/components/ui/button";
 import { Input } from "@ai-matrx/design-system/controls";
 import { ProInput } from "@/components/official/ProInput";
-import { ProTextarea } from "@/components/official/ProTextarea";
+import { TaskDescriptionEditor } from "@/features/tasks/components/editor/TaskDescriptionEditor";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 import { buildApplicationScopeFromMenuContext } from "@/features/context-menu-v3/utils/build-application-scope";
 import {
@@ -622,20 +622,15 @@ export default function MobileTaskDetails({
                 <label className="text-sm font-medium text-muted-foreground mb-2 block">
                   Description
                 </label>
-                <ProTextarea
-                  ref={descriptionRef}
+                <TaskDescriptionEditor
+                  textareaRef={descriptionRef}
                   value={description}
-                  onChange={(e) => {
-                    setDescription(e.target.value);
+                  onChange={(text) => {
+                    setDescription(text);
                     setIsDirty(true);
                   }}
-                  placeholder="Add details..."
-                  autoGrow
-                  minHeight={100}
-                  maxHeight={240}
-                  showCopyButton={false}
-                  className="text-base resize-y min-h-[100px]"
-                  wrapperClassName="w-full"
+                  compact
+                  bodyClassName="h-64"
                   surfaceName={TASKS_CONTEXT_MENU_PROPS.surfaceName}
                   getApplicationScope={getApplicationScope}
                 />

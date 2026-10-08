@@ -45,7 +45,7 @@ import { useNowMinuteTick } from "@/features/tasks/hooks/useNowMinuteTick";
 import { useRefocusInputAfterAsync } from "@/features/tasks/hooks/useRefocusInputAfterAsync";
 import { Button } from "@/components/ui/button";
 import { ProInput } from "@/components/official/ProInput";
-import { ProTextarea } from "@/components/official/ProTextarea";
+import { TaskDescriptionEditor } from "@/features/tasks/components/editor/TaskDescriptionEditor";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import {
@@ -429,16 +429,11 @@ function QuickTasksSheetContent({ className, prePopulate, onPrePopulated }: Quic
 
                   {showExpandedForm && (
                     <div className="space-y-2 pl-0.5">
-                      <ProTextarea
+                      <TaskDescriptionEditor
                         value={quickAddDescription}
-                        onChange={(e) => setQuickAddDescription(e.target.value)}
-                        placeholder="Description (optional)..."
-                        autoGrow
-                        minHeight={50}
-                        maxHeight={160}
-                        showCopyButton={false}
-                        className="text-xs min-h-[50px] resize-none"
-                        wrapperClassName="w-full"
+                        onChange={setQuickAddDescription}
+                        compact
+                        bodyClassName="h-40"
                       />
                       <div className="flex gap-2">
                         {/* Due date */}

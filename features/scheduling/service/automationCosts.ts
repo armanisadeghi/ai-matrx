@@ -325,6 +325,14 @@ export function agentHref(agent: AutomationAgentRef, seat: AutomationSeat): stri
     : `/agents/${agent.id}`;
 }
 
+/** The org admin's own page for one automation (OrgAdminBoundary-gated). */
+export const orgAutomationCostDetailHref = (orgSlug: string, kind: AutomationKind, id: string) =>
+  `/organizations/${orgSlug}/admin/automations/${kind}/${id}`;
+
+/** A mandate as the ORGANIZATION sees it — the page an org admin can open. */
+export const orgMandateHref = (orgSlug: string, key: string) =>
+  `/organizations/${orgSlug}/mandates/${encodeURIComponent(key)}`;
+
 export const mandateHref = (key: string) =>
   `/administration/intelligence/mandates/${encodeURIComponent(key)}`;
 

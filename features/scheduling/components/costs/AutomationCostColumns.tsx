@@ -15,11 +15,13 @@ import {
 } from "@/components/ui/tooltip";
 import type { MatrxColumnDef } from "@ai-matrx/design-system/data-table/types";
 import { useCostDisplay } from "@/components/cost/useCostDisplay";
+import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import {
   agentHref,
   automationAiState,
   automationFlags,
   mandateHref,
+  orgMandateHref,
   type AutomationCostRow,
   type AutomationSeat,
 } from "@/features/scheduling/service/automationCosts";
@@ -44,8 +46,8 @@ export function AiStateBadge({ row }: { row: AutomationCostRow | undefined }) {
     return (
       <Tooltip>
         <TooltipTrigger asChild>
-          <Badge variant="outline" className="border-amber-500 text-[10px] text-amber-700 dark:text-amber-400">
-            Spend, model unknown
+          <Badge variant="outline" className="max-w-full border-amber-500 text-[10px] text-amber-700 dark:text-amber-400">
+            <span className="truncate">No model linked</span>
           </Badge>
         </TooltipTrigger>
         <TooltipContent>Cost is recorded on its runs, but no model call is linked to them</TooltipContent>
@@ -88,12 +90,36 @@ export function AutomationFlagBadges({ row }: { row: AutomationCostRow | undefin
 export function AgentMandateLinks({
   row,
   seat,
+  orgSlug,
 }: {
   row: AutomationCostRow | undefined;
   seat: AutomationSeat;
+  /** Org seat: mandates open on the organization's own mandate page. */
+  orgSlug?: string;
 }) {
   if (!row || (row.agents.length === 0 && row.mandates.length === 0)) {
     return <span className="text-xs text-muted-foreground">—</span>;
+  }
+  if (seat === "org") {
+    // Org admins are not platform admins: every door here is one they can open —
+    // the organization's mandate page, and the agent's own record (with peek).
+    return (
+      <div className="flex min-w-0 flex-col gap-0.5 text-xs">
+        {row.mandates.map((m) => (
+          <EntityRef
+            key={`m-${m}`}
+            token="mandate"
+            id={m}
+            name={m}
+            href={orgSlug ? orgMandateHref(orgSlug, m) : undefined}
+            disablePeek
+          />
+        ))}
+        {row.agents.map((a) => (
+          <EntityRef key={`a-${a.id}`} token="agent" id={a.id} name={a.name} />
+        ))}
+      </div>
+    );
   }
   return (
     <div className="flex min-w-0 flex-col gap-0.5 text-xs">
@@ -158,6 +184,7 @@ function Num({ v, dim }: { v: number | null | undefined; dim?: boolean }) {
 export function automationCostColumns<T>(
   get: (row: T) => AutomationCostRow | undefined,
   seat: AutomationSeat,
+  orgSlug?: string,
 ): MatrxColumnDef<T>[] {
   const n = (f: (r: AutomationCostRow) => number | null) => (row: T) => {
     const r = get(row);
@@ -174,7 +201,7 @@ export function automationCostColumns<T>(
       filter: "select",
       filterOptions: [
         { value: "ai", label: "AI" },
-        { value: "spend_unattributed", label: "Spend, model unknown" },
+        { value: "spend_unattributed", label: "No model linked" },
         { value: "no_spend", label: "No AI" },
         { value: "no_runs", label: "No runs" },
       ],
@@ -302,7 +329,7 @@ export function automationCostColumns<T>(
       },
       filter: "text",
       width: 240,
-      cell: (row) => <AgentMandateLinks row={get(row)} seat={seat} />,
+      cell: (row) => <AgentMandateLinks row={get(row)} seat={seat} orgSlug={orgSlug} />,
     },
     {
       id: "cost_runs_as",

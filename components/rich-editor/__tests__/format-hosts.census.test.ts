@@ -156,6 +156,13 @@ const VISIBLE_BUTTONS: Record<string, RegExp> = {
   // a task's description (2026-10-08): Write / Split / Plain, the toolbar in the field's one row, every mode
   "features/tasks/components/editor/TaskDescriptionField.tsx": /<FormatButtons\b[\s\S]{0,200}formatTargetWithin\(frameRef/,
   "features/tasks/components/editor/TaskEditorBody.tsx": /<TaskDescriptionField\b/,
+  // every other task description box (2026-10-08): the same field through THE shared wrapper, never a bare textarea
+  "features/tasks/components/editor/TaskDescriptionEditor.tsx": /<TaskDescriptionField\b/,
+  "features/tasks/components/TaskDetailsPanel.tsx": /<TaskDescriptionEditor\b/,
+  "features/tasks/components/mobile/MobileTaskDetails.tsx": /<TaskDescriptionEditor\b/,
+  "features/tasks/components/QuickTasksSheet.tsx": /<TaskDescriptionEditor\b/,
+  "features/tasks/components/TaskContentNew.tsx": /<TaskDescriptionEditor\b/,
+  "features/tasks/components/TaskDetails.tsx": /<TaskDescriptionEditor\b/,
   // a message template's body: the toolbar beside its label row; the field's chips ride the same target
   "features/message-templates/components/TemplateViewPage.tsx": /<FormatButtons\b[\s\S]{0,200}formatTargetWithin\(messageBlockRef/,
   // a record's body: the editor's slim format row

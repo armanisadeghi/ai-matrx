@@ -92745,6 +92745,31 @@ export type Database = {
       }
       _action_request_gone: { Args: never; Returns: string }
       _admin_read_ensure: { Args: { p_rel: unknown }; Returns: boolean }
+      _agent_spend_facts: {
+        Args: { p_conversation_id?: string; p_org_id: string; p_since: string }
+        Returns: {
+          agent_id: string
+          automated: boolean
+          calls: number
+          conversation_id: string
+          cost: number
+          created_at: string
+          execution_id: string
+          feature: string
+          iterations: number
+          mandate_key: string
+          model: string
+          organization_id: string
+          origin: string
+          person_id: string
+          request_id: string
+          run_key: string
+          saved: boolean
+          tokens_cached: number
+          tokens_in: number
+          tokens_out: number
+        }[]
+      }
       _carried_back_value: {
         Args: {
           p_older_type: string
@@ -93332,6 +93357,7 @@ export type Database = {
         Args: { p_default: number; p_key: string }
         Returns: number
       }
+      _spend_access: { Args: { p_org_id: string }; Returns: undefined }
       _store_pick_list_document: {
         Args: { p_list_id: string; p_shape?: string; p_viewer: string }
         Returns: Json
@@ -93549,6 +93575,62 @@ export type Database = {
           p_validation_mode?: string
         }
         Returns: Json
+      }
+      agent_spend_health: {
+        Args: { p_days?: number; p_org_id?: string }
+        Returns: {
+          agent_id: string
+          agent_name: string
+          agent_type: string
+          automated_runs: number
+          avg_input_per_call: number
+          avg_output_per_call: number
+          avg_run_cost: number
+          avg_turns: number
+          calls: number
+          cost: number
+          last_run_at: string
+          mandate_key: string
+          mandate_label: string
+          max_run_cost: number
+          max_turns: number
+          models: string[]
+          organizations: Json
+          payers: Json
+          premium_models: string[]
+          runs: number
+          unsaved_cost: number
+          unsaved_runs: number
+        }[]
+      }
+      agent_spend_runs: {
+        Args: {
+          p_agent_id?: string
+          p_days?: number
+          p_mandate_key?: string
+          p_org_id?: string
+        }
+        Returns: {
+          agent_id: string
+          automated: boolean
+          calls: number
+          conversation_id: string
+          cost: number
+          mandate_key: string
+          models: string[]
+          organization_id: string
+          organization_name: string
+          origin: string
+          person_email: string
+          person_id: string
+          request_id: string
+          run_key: string
+          saved: boolean
+          started_at: string
+          tokens_in: number
+          tokens_out: number
+          turns: number
+        }[]
       }
       ai_latency_filter_options: {
         Args: { p_from: string; p_to: string }
@@ -93859,6 +93941,25 @@ export type Database = {
       continued_access_state: {
         Args: { p_org: string; p_user: string }
         Returns: Json
+      }
+      conversation_spend: {
+        Args: { p_conversation_id: string }
+        Returns: {
+          agent_id: string
+          automated: boolean
+          calls: number
+          cost: number
+          created_at: string
+          execution_id: string
+          iterations: number
+          mandate_key: string
+          model: string
+          request_id: string
+          saved: boolean
+          tokens_cached: number
+          tokens_in: number
+          tokens_out: number
+        }[]
       }
       count_items: {
         Args: {

@@ -79,7 +79,7 @@ import {
   type ModelChangePlan,
 } from "./reconciliation/analyze";
 import { ModelChangeReconciliation } from "./reconciliation/ModelChangeReconciliation";
-import { SettingControlInput } from "./controls/SettingControlInput";
+import { SettingControlInput } from "@ai-matrx/agents/settings/react";
 import { isOffValue, withSettingState } from "./setting-state";
 import { isUnsetChoice } from "@ai-matrx/chat/agents/redux/execution-system/instance-model-overrides/auto-means-unset";
 import { UiGatesEditor } from "./ui-gates/UiGatesEditor";

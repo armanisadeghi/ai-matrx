@@ -14,6 +14,7 @@ import { Button } from "@/components/ui/button";
 import { MatrxDataTable } from "@ai-matrx/design-system/data-table";
 import type { MatrxColumnDef } from "@ai-matrx/design-system/data-table/types";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { useCostDisplay } from "@/components/cost/useCostDisplay";
 import { humanizeRelative, humanizeTrigger } from "@/features/scheduling/utils/triggerHumanize";
 import type { TriggerType } from "@/features/scheduling/types";
@@ -22,6 +23,7 @@ import {
   AUTOMATION_COST_WINDOW_DAYS,
   AUTOMATION_KIND_LABEL,
   automationCostDetailHref,
+  orgAutomationCostDetailHref,
   conversationHref,
   fetchAutomationCosts,
   fetchAutomationRuns,
@@ -85,6 +87,7 @@ export function AutomationRunsTable({
 }: {
   row: Pick<AutomationCostRow, "automation_kind" | "automation_id">;
   seat: AutomationSeat;
+  orgSlug?: string;
 }) {
   const { format } = useCostDisplay();
   const [runs, setRuns] = useState<AutomationRunCost[]>([]);
@@ -144,7 +147,12 @@ export function AutomationRunsTable({
       accessorFn: (r) => r.models.join(", "),
       filter: "text",
       width: 200,
-      cell: (r) => <span className="text-xs">{r.models.join(", ") || "—"}</span>,
+      cell: (r) =>
+        r.turns === 0 && r.models.length === 0 ? (
+          <span className="text-xs text-muted-foreground">No AI calls</span>
+        ) : (
+          <span className="text-xs">{r.models.join(", ") || "—"}</span>
+        ),
     },
     {
       id: "mandates",
@@ -163,18 +171,23 @@ export function AutomationRunsTable({
       width: 150,
       cell: (r) => (
         <div className="flex flex-col gap-0.5 text-xs">
-          {r.conversation_id && (
-            <Link href={conversationHref(r.conversation_id, seat)} className="inline-flex items-center gap-1 text-primary hover:underline">
-              <ExternalLink className="h-3 w-3" /> Conversation
-            </Link>
-          )}
+          {r.conversation_id &&
+            (seat === "org" ? (
+              // The run's conversation belongs to whoever the job runs as; the
+              // canonical ref opens it where the viewer may, and says so where not.
+              <EntityRef token="conversation" id={r.conversation_id} name="Conversation" />
+            ) : (
+              <Link href={conversationHref(r.conversation_id, seat)} className="inline-flex items-center gap-1 text-primary hover:underline">
+                <ExternalLink className="h-3 w-3" /> Conversation
+              </Link>
+            ))}
           {r.workflow_run_id && (
             <Link href={workflowRunHref(r.workflow_run_id)} className="inline-flex items-center gap-1 text-primary hover:underline">
               <ExternalLink className="h-3 w-3" /> Workflow run
             </Link>
           )}
           {!r.conversation_id && !r.workflow_run_id && (
-            <span className="text-muted-foreground">No model call</span>
+            <span className="text-muted-foreground">No AI calls</span>
           )}
         </div>
       ),
@@ -234,12 +247,16 @@ function Stat({ label, children }: { label: string; children: React.ReactNode })
 export function AutomationCostDetail({
   row,
   seat,
+  orgSlug,
 }: {
   row: AutomationCostRow;
   seat: AutomationSeat;
+  orgSlug?: string;
 }) {
   const { format } = useCostDisplay();
-  const recordHref = automationRecordHref(row, seat);
+  // The schedule / workflow record pages are the owner's and the platform
+  // admin's; an org admin's record for this automation is the page they are on.
+  const recordHref = seat === "admin" ? automationRecordHref(row, seat) : null;
   return (
     <div className="flex flex-col gap-3">
       <div className="flex flex-wrap items-center gap-2 text-xs">
@@ -283,10 +300,10 @@ export function AutomationCostDetail({
         </div>
         <div>
           <div className="mb-1 text-[10px] uppercase tracking-wide text-muted-foreground">Mandates & agents</div>
-          <AgentMandateLinks row={row} seat={seat} />
+          <AgentMandateLinks row={row} seat={seat} orgSlug={orgSlug} />
         </div>
       </div>
-      <AutomationRunsTable row={row} seat={seat} />
+      <AutomationRunsTable row={row} seat={seat} orgSlug={orgSlug} />
     </div>
   );
 }
@@ -294,9 +311,12 @@ export function AutomationCostDetail({
 export function AutomationCostTable({
   orgId,
   seat,
+  orgSlug,
 }: {
   orgId: string | null;
   seat: AutomationSeat;
+  /** Org seat: the organization's slug, for the org-side detail and mandate pages. */
+  orgSlug?: string;
 }) {
   const { rows, loading, error, reload } = useAutomationCosts(orgId);
   const { format } = useCostDisplay();
@@ -312,13 +332,16 @@ export function AutomationCostTable({
       width: 280,
       cell: (r) => (
         <div className="min-w-0">
-          {seat === "admin" ? (
-            <Link href={automationCostDetailHref(r.automation_kind, r.automation_id)} className="font-medium text-primary hover:underline">
-              {r.name}
-            </Link>
-          ) : (
-            <span className="font-medium">{r.name}</span>
-          )}
+          <Link
+            href={
+              seat === "admin" || !orgSlug
+                ? automationCostDetailHref(r.automation_kind, r.automation_id)
+                : orgAutomationCostDetailHref(orgSlug, r.automation_kind, r.automation_id)
+            }
+            className="font-medium text-primary hover:underline"
+          >
+            {r.name}
+          </Link>
           <div className="text-xs text-muted-foreground">{automationIntervalText(r)}</div>
         </div>
       ),
@@ -355,7 +378,7 @@ export function AutomationCostTable({
         </span>
       ),
     },
-    ...automationCostColumns<AutomationCostRow>((r) => r, seat),
+    ...automationCostColumns<AutomationCostRow>((r) => r, seat, orgSlug),
   ];
 
   return (
@@ -405,7 +428,7 @@ export function AutomationCostTable({
           detail={{
             title: (r) => r.name,
             description: (r) => r.description ?? undefined,
-            render: (r) => <AutomationCostDetail row={r} seat={seat} />,
+            render: (r) => <AutomationCostDetail row={r} seat={seat} orgSlug={orgSlug} />,
             defaultWidth: 720,
           }}
         />

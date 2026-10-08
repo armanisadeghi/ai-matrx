@@ -143,7 +143,7 @@ export function OrgAdminDashboard({ orgId, organization, role }: Props) {
 
       {showAutomations && (
         <Card className="h-[32rem] p-3">
-          <AutomationCostTable orgId={orgId} seat="org" />
+          <AutomationCostTable orgId={orgId} seat="org" orgSlug={organization.slug} />
         </Card>
       )}
 
