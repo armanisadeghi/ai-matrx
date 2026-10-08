@@ -17,87 +17,54 @@
  * stand-in, because no agent was bound.
  */
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback } from "react";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { callApi } from "@/lib/api/call-api";
 import { extractErrorMessage } from "@/utils/errors";
-import type { components } from "@ai-matrx/agents/generated/api-types";
+import {
+  useCodingReplyResponder as usePackageCodingReplyResponder,
+  type CodingReplyResponderRead,
+} from "@ai-matrx/chat/agents/coding-session-reply/useCodingReplyResponder";
+import type {
+  CodingReplyResponderReport,
+  ReplyDoorState,
+} from "@ai-matrx/chat/agents/coding-session-reply/reply-door";
 
-export type CodingReplyResponderReport =
-  components["schemas"]["CodingReplyResponderReport"];
+export type { CodingReplyResponderReport };
+export type CodingReplyResponderState = ReplyDoorState;
 
-export type CodingReplyResponderStatus = "loading" | "ready" | "error";
-
-export interface CodingReplyResponderState {
-  status: CodingReplyResponderStatus;
-  /** The server's report. Null while loading and after a failed read. */
-  report: CodingReplyResponderReport | null;
-  /** The read's own failure, in the server's words. Null unless status is "error". */
-  error: string | null;
-}
-
+/** The website's read of the one responder report (its API door), driving the package's reply door. */
 export function useCodingReplyResponder(opts: {
   conversationId: string;
   /**
-   * The conversation's OWN durable organization. Local-first, the same way
-   * `useContextPreview` resolves it: the JWT lane of `callApi` is fail-closed
-   * on the organization header, so without this the read dies as "Select an
-   * organization before sending this request" on any session that has not
-   * picked one — and the composer would then say it could not learn who
-   * answers when the server knew perfectly well. Live on aimatrx.com,
-   * 2026-09-15.
+   * The conversation's OWN durable organization. The JWT lane of `callApi` is fail-closed on the
+   * organization header, so without this the read dies as "Select an organization before sending
+   * this request" on any session that has not picked one (live on aimatrx.com, 2026-09-15).
    */
   organizationId?: string | null;
-  /**
-   * Read only where a reply can even be typed. A page that already knows this
-   * conversation is not a coding-session mirror passes `false` and no request
-   * is made.
-   */
+  /** Read only where a reply can even be typed; `false` makes no request. */
   enabled: boolean;
-}): CodingReplyResponderState {
+}): ReplyDoorState {
   const { conversationId, organizationId, enabled } = opts;
   const dispatch = useAppDispatch();
-
-  const [status, setStatus] = useState<CodingReplyResponderStatus>("loading");
-  const [report, setReport] = useState<CodingReplyResponderReport | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const requestSeq = useRef(0);
-
-  const read = useCallback(() => {
-    const seq = ++requestSeq.current;
-    void dispatch(
-      callApi({
-        path: "/coding-sessions/conversations/{conversation_id}/responder",
-        method: "GET",
-        pathParams: { conversation_id: conversationId },
-        scopeOverrides: organizationId
-          ? { organization_id: organizationId }
-          : undefined,
-      }),
-    ).then((result) => {
-      if (seq !== requestSeq.current) return; // superseded
+  const read = useCallback<CodingReplyResponderRead>(
+    async (id) => {
+      const result = await dispatch(
+        callApi({
+          path: "/coding-sessions/conversations/{conversation_id}/responder",
+          method: "GET",
+          pathParams: { conversation_id: id },
+          scopeOverrides: organizationId ? { organization_id: organizationId } : undefined,
+        }),
+      );
       if (result.error) {
-        setReport(null);
-        // `extractErrorMessage` answers "Unknown error" for an absent detail,
-        // which is truthy — so the server's own message would never be reached
-        // through an `||` chain. Ask it only when there IS a detail.
-        const detail = result.error.serverDetail
-          ? extractErrorMessage(result.error.serverDetail)
-          : "";
-        setError(detail || result.error.message || "Unknown error");
-        setStatus("error");
-        return;
+        // `extractErrorMessage` answers "Unknown error" for an absent detail, so ask it only when there IS one.
+        const detail = result.error.serverDetail ? extractErrorMessage(result.error.serverDetail) : "";
+        throw new Error(detail || result.error.message || "Unknown error");
       }
-      setReport((result.data ?? null) as CodingReplyResponderReport | null);
-      setError(null);
-      setStatus("ready");
-    });
-  }, [conversationId, organizationId, dispatch]);
-
-  useEffect(() => {
-    if (!enabled) return;
-    read();
-  }, [enabled, read]);
-
-  return { status, report, error };
+      return (result.data ?? null) as CodingReplyResponderReport;
+    },
+    [dispatch, organizationId],
+  );
+  return usePackageCodingReplyResponder({ conversationId, enabled, read });
 }
