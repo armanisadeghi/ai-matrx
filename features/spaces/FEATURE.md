@@ -45,6 +45,10 @@ Block document: a tree of `SpaceBlock` (`id`, `type`, `text: RichSpan[]`, `color
 
 ## Change log
 
+- 2026-10-08 — new-row refresh: "New" on an inline database wrote the row but the grid kept "No records yet" until a
+  reload — the records page's own-write listener re-read only the rows it held (none on an empty table). Fixed in
+  `@ai-matrx/records` (the written id joins the subset read; test `a-row-added-on-this-page-appears-without-a-reload`).
+  `data/ChartView.tsx` re-asks its aggregates on `useRecordWrites()` so charts follow every add/edit/archive too.
 - 2026-10-08 — builder round 42 (property types, PARITY F5/N20/N21): `data/NewProperty.tsx` lists Notion's types with
   Notion's names — Status (Not started / In progress / Done in To-do / In progress / Complete), Person, Files & media,
   Formula and Rollup (records-ui `FieldEditor` opened on that kind, `startAs`, 0.110.12), Relation (holds many; newest

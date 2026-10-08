@@ -36,10 +36,20 @@ jest.mock("./SectionCard", () => ({
   ),
 }));
 jest.mock("@/components/official/ProInput", () => ({
-  ProInput: () => null,
+  ProInput: ({ value, onChange, "aria-label": label }: React.InputHTMLAttributes<HTMLInputElement>) => (
+    <input aria-label={label} value={value} onChange={onChange} />
+  ),
 }));
 jest.mock("@/components/official/ProTextarea", () => ({
-  ProTextarea: () => null,
+  ProTextarea: ({ value, onChange, onSubmit, submitDisabled }: React.TextareaHTMLAttributes<HTMLTextAreaElement> & {
+    onSubmit: () => Promise<void>;
+    submitDisabled: boolean;
+  }) => (
+    <>
+      <textarea aria-label="Activity details" value={value} onChange={onChange} />
+      <button type="button" disabled={submitDisabled} onClick={() => void onSubmit()}>Log activity</button>
+    </>
+  ),
 }));
 jest.mock("@/components/official/CollapsibleText", () => ({
   CollapsibleText: ({ children }: { children: React.ReactNode }) => (
@@ -85,6 +95,50 @@ const PARTY_ORG = "44444444-4444-4444-8444-444444444444";
 const DEAL_ORG = "55555555-5555-4555-8555-555555555555";
 
 describe("InteractionTimeline files an interaction in its party's organization", () => {
+  // A provider-access operator must record a web inquiry as Other, not invent
+  // an email/call. The mounted composer owns selection, state and save routing.
+  it.each([
+    { label: "Other", channel: "other", direction: "Outbound", code: "outbound", subject: "Warranty API web inquiry", body: "Contact form attempted; delivery unconfirmed." },
+    { label: "Email", channel: "email", direction: "Inbound", code: "inbound", subject: "Warranty API eligibility reply", body: "Provider requests a customer sponsor." },
+  ])("logs $label activity through the visible composer", async ({ label, channel, direction, code, subject, body }) => {
+    jest.clearAllMocks();
+    const changed = jest.fn(async () => undefined);
+    const container = document.createElement("div");
+    document.body.appendChild(container);
+    const root = createRoot(container);
+    try {
+      act(() => root.render(
+        <InteractionTimeline partyId={PARTY_ID} orgId={DEAL_ORG}
+          partyOrganizationId={PARTY_ORG} interactions={[]} onChanged={changed}
+          offerNoteChannel={false} showSendEmail={false} />,
+      ));
+      const channelButton = container.querySelector<HTMLButtonElement>(`button[aria-label="${label}"]`);
+      expect(channelButton).not.toBeNull();
+      const directionButton = container.querySelector<HTMLButtonElement>(`button[aria-label="${direction}"]`);
+      const subjectField = container.querySelector<HTMLInputElement>('input[aria-label="Activity subject"]');
+      const bodyField = container.querySelector<HTMLTextAreaElement>('textarea[aria-label="Activity details"]');
+      act(() => {
+        channelButton!.click();
+        directionButton!.click();
+        Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value")!.set!.call(subjectField, subject);
+        subjectField!.dispatchEvent(new Event("input", { bubbles: true }));
+        Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, "value")!.set!.call(bodyField, body);
+        bodyField!.dispatchEvent(new Event("input", { bubbles: true }));
+      });
+      const logButton = Array.from(container.querySelectorAll("button")).find((button) => button.textContent === "Log activity");
+      await act(async () => logButton!.click());
+      expect(logInteraction).toHaveBeenCalledTimes(1);
+      expect(logInteraction).toHaveBeenCalledWith({ partyId: PARTY_ID, orgId: PARTY_ORG,
+        channel, direction: code, subject, body, durationSeconds: null, dealId: null });
+      expect(changed).toHaveBeenCalledTimes(1);
+      expect(subjectField!.value).toBe("");
+      expect(container.querySelector('button[aria-label="Note"]')).toBeNull();
+    } finally {
+      act(() => root.unmount());
+      container.remove();
+    }
+  });
+
   it("uses the party's org even when the host (a deal) passes another", async () => {
     capturedHandlers.length = 0;
     const container = document.createElement("div");

@@ -21,7 +21,7 @@ import { usePathname } from "next/navigation";
 import { shellChatHome } from "@ai-matrx/chat/canvas/workspace/shell-chat-route";
 import { selectFocusedConversation } from "@ai-matrx/chat/agents/redux/execution-system/conversation-focus/conversation-focus.selectors";
 import { selectIsCacheOnly } from "@ai-matrx/chat/agents/redux/execution-system/conversations/conversations.selectors";
-import { associationsService, type AddAssociationArgs } from "@/features/scopes/service/associationsService";
+import { associationsService } from "@/features/scopes/service/associationsService";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { toast } from "@/lib/toast";
 import { BOARD_CHAT_SOURCE, BOARD_TARGET, chatIdsFromEdges, withChat, withoutChat } from "./board-chats.logic";
@@ -86,9 +86,7 @@ export function BoardChatsProvider({
         .add({
           sourceType: BOARD_CHAT_SOURCE,
           sourceId: conversationId,
-          // `board` is a registered entity token and association target (platform.entity_types /
-          // association_types) the package's `AssociationTargetType` union does not list yet.
-          targetType: BOARD_TARGET as AddAssociationArgs["targetType"],
+          targetType: BOARD_TARGET,
           targetId: boardId,
           ...(organizationId ? { orgId: organizationId } : {}),
         })
