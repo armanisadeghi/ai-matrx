@@ -98,4 +98,65 @@ begin
 end
 $d$;
 
+-- ── (c) a failed run already healed by a later success rings no bell ─────────────────────────
+do $c$
+declare
+  v_r jsonb;
+  v_row record;
+  v_base bigint := (select max(runid) + 2000000 from cron.job_run_details);
+begin
+  insert into cron.job_run_details (runid, jobid, job_pid, database, username, command, status, return_message, start_time, end_time)
+  select v_base + x.k, j.jobid, 0, current_database(), 'postgres', j.command, x.status, x.msg, now() - x.ago, now() - x.ago + interval '5 seconds'
+    from cron.job j,
+         (values (1, 'failed', 'ERROR:  w3 test failure', interval '30 minutes'),
+                 (2, 'succeeded', '1 row', interval '20 minutes')) x(k, status, msg, ago)
+   where j.jobname = 'perf-watch-statements';
+  v_r := ops.perf_health_run();
+  select * into v_row from ops.system_error
+   where error_type = 'perf_watch:collector:statement:failed_run' and context->'runids' @> to_jsonb(v_base + 1);
+  if v_row.id is null or v_row.resolved_at is null then
+    raise exception '(c) the healed failed run was not recorded resolved: % / %', to_jsonb(v_row), v_r;
+  end if;
+  if exists (select 1 from communication.notification where event_key = 'platform.perf.watch_alert'
+               and dedupe_key like 'perf_watch:collector:statement:failed_run:' || (v_base + 1) || ':%') then
+    raise exception '(c) a healed failed run rang a bell';
+  end if;
+  raise notice 'PASS (c) a failed run healed before the health check is recorded resolved, no bell';
+end
+$c$;
+
+-- ── (j) the judge reads only samples after the latest marker; vitals judge p75 ───────────────
+do $j$
+declare
+  v_id uuid;
+  v_r jsonb;
+  i int;
+begin
+  v_id := ops.perf_watch_declare('door:test.w3_judge', 'door', 'w3 judge',
+            '{"schema":"custom","function":"views","argtypes":"uuid, uuid","args":{"p_table_id":"7ea2340a-f0a8-4a4f-a8f6-29c8604d63cd"}}'::jsonb,
+            300, 'p95', 900, 'PERF-WATCH', 'perf');
+  for i in 1..4 loop
+    perform ops.perf_record_sample(v_id, 'probe', jsonb_build_object('n', 10, 'p50_ms', 900, 'p95_ms', 999, 'max_ms', 999, 'mean_ms', 900,
+                                                                       'measured_at', now() - make_interval(mins => 60 - i)), true);
+  end loop;
+  if ops.perf_judge(v_id)->>'state' <> 'over_budget' then raise exception '(j) setup: want over_budget, got %', ops.perf_judge(v_id); end if;
+  perform ops.perf_watch_declare('door:test.w3_judge', 'door', 'w3 judge',
+            '{"schema":"custom","function":"views","argtypes":"uuid, uuid","args":{"p_table_id":"6087f27b-5e8b-48ee-b786-6b4efb39d4cf"}}'::jsonb,
+            300, 'p95', 900, 'PERF-WATCH', 'perf');
+  v_r := ops.perf_judge(v_id);
+  if v_r->>'reason' <> 'no sample to judge' then
+    raise exception '(j) samples from before the marker were judged: %', v_r;
+  end if;
+  v_id := ops.perf_watch_declare('vital:test:LCP:/w3', 'vital', 'w3 vital', '{"metric":"LCP","route":"/w3"}'::jsonb,
+            2500, 'p75', 3600, 'PERF-WATCH', 'perf');
+  for i in 1..4 loop
+    perform ops.perf_record_sample(v_id, 'vital', jsonb_build_object('n', 40, 'p50_ms', 1000, 'p95_ms', 9000,
+                                   'metadata', jsonb_build_object('p75_ms', 3100), 'measured_at', now() - make_interval(mins => 60 - i)), true);
+  end loop;
+  v_r := ops.perf_judge(v_id);
+  if v_r->>'state' <> 'over_budget' then raise exception '(j) a vital was not judged on its p75: %', v_r; end if;
+  raise notice 'PASS (j) the judge reads only post-marker samples; a vital is judged on p75 from metadata';
+end
+$j$;
+
 rollback;
