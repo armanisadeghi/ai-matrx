@@ -45,6 +45,12 @@ Block document: a tree of `SpaceBlock` (`id`, `type`, `text: RichSpan[]`, `color
 
 ## Change log
 
+- 2026-10-08 — builder round 42 (property types, PARITY F5/N20/N21): `data/NewProperty.tsx` lists Notion's types with
+  Notion's names — Status (Not started / In progress / Done in To-do / In progress / Complete), Person, Files & media,
+  Formula and Rollup (records-ui `FieldEditor` opened on that kind, `startAs`, 0.110.12), Relation (holds many; newest
+  Spaces databases first), Created / Last edited time and by, ID (numbers existing rows). An inline database's title
+  renames its table (`DatabaseBlock`); a calendar falls back to Created / Last edited time. Walk
+  `property-types.walk.mjs` (test@test.com: add, fill, board by Status, gallery, calendar, reload — 41 checks).
 - 2026-10-08 — builder round 41: media insert (Upload | Embed link via fileHandler; resize, Align, Caption, Replace;
   `editor/media-insert.tsx`), embeds + providers (`editor/embed-providers.ts`), "/" groups Inline and Embeds, Heading 4
   (stored level 1-4), nested numbering 1./a./i. (`editor/numbering.ts`), Shiki code colors (`editor/code-highlight.ts`),
