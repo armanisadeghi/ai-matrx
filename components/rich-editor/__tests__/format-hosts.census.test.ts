@@ -153,6 +153,11 @@ const VISIBLE_BUTTONS: Record<string, RegExp> = {
   "components/official/content-editor/ContentEditor.tsx": /currentMode !== "preview" && !isCollapsed \? \([\s\S]{0,200}<FormatButtons\b/,
   // the html-pages full-screen editor: its footer row, every tab but Read
   "features/html-pages/components/HtmlPreviewFullScreenEditor.tsx": /activeTab !== "preview" \? \(\s*<FormatButtons\b/,
+  // a task's description (2026-10-08): Write / Split / Plain, the toolbar in the field's one row, every mode
+  "features/tasks/components/editor/TaskDescriptionField.tsx": /<FormatButtons\b[\s\S]{0,200}formatTargetWithin\(frameRef/,
+  "features/tasks/components/editor/TaskEditorBody.tsx": /<TaskDescriptionField\b/,
+  // a message template's body: the toolbar beside its label row; the field's chips ride the same target
+  "features/message-templates/components/TemplateViewPage.tsx": /<FormatButtons\b[\s\S]{0,200}formatTargetWithin\(messageBlockRef/,
   // a record's body: the editor's slim format row
   "features/data-tables/records-ui-host/RecordBodyEditor.tsx": /chrome="format"/,
   // the editor's own toolbar row (chrome "full"), Visual and Source alike: Markdown Studio, documents, prompts

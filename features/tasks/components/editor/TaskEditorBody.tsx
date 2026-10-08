@@ -56,7 +56,9 @@ import TaskAssigneePicker from "../TaskAssigneePicker";
 import TaskAttachmentsPanel from "../TaskAttachmentsPanel";
 import { EntityCustomFields } from "@/features/unified-data/components/EntityCustomFields";
 import { TaskAssociatedResources } from "../TaskAssociatedResources";
-import { ProTextarea } from "@/components/official/ProTextarea";
+import { insertAtRichCaret } from "@ai-matrx/rich-editor/editor/caretInsert";
+import type { RichEditorController } from "@ai-matrx/rich-editor/editor/RichEditor";
+import { TaskDescriptionField, type TaskDescriptionMode } from "./TaskDescriptionField";
 import { ProInput } from "@/components/official/ProInput";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -128,6 +130,8 @@ export function TaskEditorBody({
   // Live selection inside the description editor (read from the DOM at trigger
   // time, mirrored to state so contextData refreshes for menu/agent runs).
   const descriptionRef = useRef<HTMLTextAreaElement | null>(null);
+  const richDescriptionRef = useRef<RichEditorController | null>(null);
+  const [descMode, setDescMode] = useState<TaskDescriptionMode>("write");
   const [descSelectionStart, setDescSelectionStart] = useState(0);
   const [descSelectionEnd, setDescSelectionEnd] = useState(0);
 
@@ -545,72 +549,68 @@ export function TaskEditorBody({
             </PropertyRow>
           </section>
 
-          {/* Description — ProTextarea: floating label + voice dictation +
-            the canonical agent context menu (right-click → run a bound agent
-            on the active task with full `matrx-user/tasks` scope). */}
-          <EditableContextMenu
-            {...TASKS_CONTEXT_MENU_PROPS}
-            extraSections={tasksExtras}
-            getTextarea={() => descriptionRef.current}
+          {/* Description — the rich editor (Write / Split / Plain) with THE formatting
+            toolbar; the canonical agent context menu (right-click → run a bound agent
+            on the active task with full `matrx-user/tasks` scope) wraps the body. */}
+          <TaskDescriptionField
+            value={effective.description}
+            onChange={(text) => patch("description", text)}
+            mode={descMode}
+            onModeChange={setDescMode}
+            compact={compact}
+            surfaceName={TASKS_CONTEXT_MENU_PROPS.surfaceName}
             getApplicationScope={getApplicationScope}
-            onTextReplace={(next) => patch("description", next)}
-            onTextInsertBefore={(text) => {
-              const el = descriptionRef.current;
-              const at = el?.selectionStart ?? 0;
-              patch(
-                "description",
-                effective.description.slice(0, at) +
-                  text +
-                  "\n\n" +
-                  effective.description.slice(at),
-              );
-            }}
-            onTextInsertAfter={(text) => {
-              const el = descriptionRef.current;
-              const at = el?.selectionEnd ?? effective.description.length;
-              patch(
-                "description",
-                effective.description.slice(0, at) +
-                  "\n\n" +
-                  text +
-                  effective.description.slice(at),
-              );
-            }}
-            contextData={contextData}
-            contentSource={{ type: "raw" }}
-            entity={{
-              type: "task",
-              id: taskId,
-              title: effective.title,
-              resourceType: "task",
-            }}
-          >
-            <ProTextarea
-              ref={descriptionRef}
-              surfaceName={TASKS_CONTEXT_MENU_PROPS.surfaceName}
-              getApplicationScope={getApplicationScope}
-              value={effective.description}
-              onChange={(e) => {
-                patch("description", e.target.value);
-                setDescSelectionStart(e.target.selectionStart);
-                setDescSelectionEnd(e.target.selectionEnd);
-              }}
-              onSelect={syncDescriptionSelection}
-              onKeyUp={syncDescriptionSelection}
-              onMouseUp={syncDescriptionSelection}
-              floatingLabel="Description"
-              autoGrow={compact}
-              minHeight={compact ? 72 : 240}
-              maxHeight={compact ? 220 : undefined}
-              showCopyButton={!compact}
-              className={cn(
-                "border-border/60 bg-card/40 text-sm",
-                compact && "resize-none rounded-none border-x-0",
-              )}
-              wrapperClassName="w-full"
-              style={{ fontSize: "16px" }}
-            />
-          </EditableContextMenu>
+            textareaRef={descriptionRef}
+            richRef={richDescriptionRef}
+            onSelectionChange={syncDescriptionSelection}
+            withMenu={(body) => (
+              <EditableContextMenu
+                {...TASKS_CONTEXT_MENU_PROPS}
+                extraSections={tasksExtras}
+                getTextarea={() => (descMode === "write" ? null : descriptionRef.current)}
+                insertAtCaret={
+                  descMode === "write"
+                    ? (text: string, placement?: "inline" | "block") =>
+                        insertAtRichCaret(richDescriptionRef.current, text, placement)
+                    : undefined
+                }
+                getApplicationScope={getApplicationScope}
+                onTextReplace={(next) => patch("description", next)}
+                onTextInsertBefore={(text) => {
+                  const el = descriptionRef.current;
+                  const at = el?.selectionStart ?? 0;
+                  patch(
+                    "description",
+                    effective.description.slice(0, at) +
+                      text +
+                      "\n\n" +
+                      effective.description.slice(at),
+                  );
+                }}
+                onTextInsertAfter={(text) => {
+                  const el = descriptionRef.current;
+                  const at = el?.selectionEnd ?? effective.description.length;
+                  patch(
+                    "description",
+                    effective.description.slice(0, at) +
+                      "\n\n" +
+                      text +
+                      effective.description.slice(at),
+                  );
+                }}
+                contextData={contextData}
+                contentSource={{ type: "raw" }}
+                entity={{
+                  type: "task",
+                  id: taskId,
+                  title: effective.title,
+                  resourceType: "task",
+                }}
+              >
+                {body}
+              </EditableContextMenu>
+            )}
+          />
 
           {/* Labels — tight text chips; section icon only (no "Labels" header row) */}
           <div className="flex flex-wrap items-center gap-1 pl-1.5">

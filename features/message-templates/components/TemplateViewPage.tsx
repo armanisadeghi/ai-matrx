@@ -30,6 +30,8 @@ import {
 } from "@/components/merge-field-input/MergeFieldInput";
 import { TemplateRichText } from "@/features/message-templates/components/TemplateRichText";
 import { MergeFieldTextarea } from "@/components/merge-field-input/MergeFieldTextarea";
+import { FormatButtons } from "@ai-matrx/rich-editor/format/FormatButtons";
+import { formatTargetWithin } from "@ai-matrx/rich-editor/format/format-target";
 import { AppletTagsInput } from "@/features/applets/components/inputs/AppletTagsInput";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
@@ -303,6 +305,8 @@ export function TemplateViewPage({ template, canEdit, create = false }: Template
   const bodyRef = useRef<MergeFieldInputHandle>(null);
   const subjectRef = useRef<MergeFieldInputHandle>(null);
   const nameRef = useRef<MergeFieldInputHandle>(null);
+  // The message block: its label row carries THE formatting toolbar, which acts on the field inside.
+  const messageBlockRef = useRef<HTMLDivElement>(null);
 
   const draft: MessageTemplateDraftScope = {
     label: label.trim(),
@@ -888,10 +892,14 @@ export function TemplateViewPage({ template, canEdit, create = false }: Template
                   />
                 </div>
 
-                <div className="space-y-1">
+                <div ref={messageBlockRef} className="space-y-1">
                   <div className="flex items-center justify-between gap-2">
                     <Label id="template-body-label">Message</Label>
-                    <span className="flex-1" />
+                    <FormatButtons
+                      size="xs"
+                      className="min-w-0 flex-1"
+                      resolve={() => formatTargetWithin(messageBlockRef.current)}
+                    />
                     {usedFields.length > 0 && <ShowToggle value={show} onChange={setShow} />}
                     <InsertFieldMenu
                       target="message"
