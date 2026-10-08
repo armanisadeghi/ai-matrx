@@ -14,6 +14,7 @@
 
 import { Suspense, useEffect } from "react";
 import { useIdleTask } from "@ai-matrx/kit/idle-scheduler";
+import { whenPrimaryContentShown } from "@/lib/boot/primaryContent";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { selectUser } from "@/lib/redux/selectors/userSelectors";
 import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
@@ -64,13 +65,17 @@ export default function DeferredSingletonCore() {
   // THE PAGED TREE (lane SCOPES-TREE-PAGED): the skeleton first (organizations, projects, scope
   // types — what every first paint draws), then the whole tree at idle for the readers that still
   // read every scope. Read switch OFF: the skeleton IS the whole tree and the second task is a no-op.
+  // Both wait for the page's own rows (`lib/boot/primaryContent`, lane PAGE-BUNDLE-2): the tree's
+  // `custom.context_tree` is ~1.2 s of database work that competed with a table page's first page.
   useIdleTask("ensure-scope-tree", 1, async () => {
     if (!user?.id) return;
+    await whenPrimaryContentShown();
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     await dispatch(ensureScopeSkeleton() as any);
   });
   useIdleTask("ensure-scope-tree-whole", 5, async () => {
     if (!user?.id) return;
+    await whenPrimaryContentShown();
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     dispatch(ensureScopeTree() as any);
   });
