@@ -201,7 +201,7 @@ describe("VaultItemDetail credential editing", () => {
       await act(async () => button("Add").click());
       expect(updateItem).toHaveBeenCalledTimes(1);
       expect(updateItem).toHaveBeenCalledWith("credential-1", {
-        login_urls: ["https://id.cisco.com"],
+        login_urls: ["https://id.cisco.com/"],
       });
     },
   );

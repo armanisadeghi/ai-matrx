@@ -188,7 +188,7 @@ worked example.
   passwords, tokens, recovery codes, or other secrets here." Keep it loud.
 - Definitions that predate this keep their URL in an ENCRYPTED field
   (`wordpress_admin.site_url`, `control_panel_login.panel_url`,
-  `registrar_login.portal_url` — `PROMOTABLE_URL_FIELD_KEYS`). Those items
+  `registrar_login.portal_url`, custom `account_url` — `PROMOTABLE_URL_FIELD_KEYS`). Those items
   **cannot browser-match at all** until the user promotes the URL. The detail
   view offers a one-click "Use as login URL" that resolves the encrypted value
   and copies it into `login_urls`, stating that the address becomes visible
