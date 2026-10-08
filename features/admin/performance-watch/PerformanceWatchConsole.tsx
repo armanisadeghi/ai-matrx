@@ -6,18 +6,20 @@
  * One list of every performance watch (`ops.proof_check` kind='perf') with its newest judged
  * number against budget, state, 7-day sparkline, baseline, last alert and sample age; and, on
  * `?watch=<id>`, one watch's history chart, state history and sample table. Platform scope: no
- * organization filter. Read-only in wave 1 — no `ops.perf_*` function for editing a budget or
- * pausing a watch exists yet, so the page offers no control for it (FEATURE.md).
+ * organization filter. The drill edits a watch through the platform-admin door
+ * `ops.perf_watch_update`: budget, pause/resume, pin/unpin the baseline (FEATURE.md).
  */
 
 import { Suspense, useEffect, useMemo, useState, useTransition } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { ChevronLeft, Gauge, RefreshCw, XCircle } from "lucide-react";
+import { ChevronLeft, Gauge, Pause, Pin, PinOff, Play, RefreshCw, XCircle } from "lucide-react";
+import { Field } from "@ai-matrx/design-system/controls";
+import { toast } from "@/lib/toast";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { MatrxDataTable } from "@ai-matrx/design-system/data-table";
 import type { MatrxColumnDef } from "@ai-matrx/design-system/data-table/types";
-import { formatCount, formatDurationMs, formatDurationSeconds, formatRelativeTime } from "@ai-matrx/kit/format";
+import { formatCount, formatDurationMs, formatFileSize, formatDurationSeconds, formatRelativeTime } from "@ai-matrx/kit/format";
 import { useNow } from "@/hooks/useNow";
 import { SurfaceRuntimeProvider } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import {
@@ -29,11 +31,16 @@ import {
   PERF_STATES,
   PERF_STATE_LABELS,
   judgedValue,
+  measuresLine,
   sparklinePoints,
   stateCounts,
   stateHistory,
+  subjectFields,
   summarizeWatches,
+  watchReason,
   type PerfSample,
+  type PerfWatch,
+  type PerfWatchEdit,
   type PerfState,
   type WatchRow,
 } from "./model";
@@ -156,6 +163,10 @@ function ConsoleBody({ source = livePerfSource }: { source?: PerfSource }) {
             now={now || Date.now()}
             onBack={() => navigate(null, true)}
             onRetry={() => setReloadKey((k) => k + 1)}
+            onEdit={async (edit) => {
+              await source.updateWatch(edit);
+              setReloadKey((k) => k + 1);
+            }}
           />
         ) : (
           <WatchBoard
@@ -277,6 +288,24 @@ function WatchBoard({
         </div>
       ),
     },
+    {
+      id: "why",
+      header: "Why",
+      accessorFn: (r) => watchReason(r.watch) ?? "",
+      filter: "text",
+      width: 240,
+      mobileHidden: true,
+      cell: (r) => {
+        const why = watchReason(r.watch);
+        return why ? (
+          <span className="block truncate text-muted-foreground" title={why}>
+            {why}
+          </span>
+        ) : (
+          <span className="text-muted-foreground">—</span>
+        );
+      },
+    },
     { id: "kind", header: "Kind", accessorFn: (r) => r.watch.perf_kind ?? "", filter: "select", width: 90 },
     { id: "owner", header: "Owner", accessorFn: (r) => r.watch.owner ?? "", filter: "select", width: 120, mobileHidden: true },
     {
@@ -391,8 +420,7 @@ function WatchBoard({
         read={{ status: loading ? "loading" : "ready", what: "the performance watches" }}
         emptyState={{
           icon: <Gauge className="h-5 w-5" />,
-          title: "No performance watch is registered yet",
-          description: "Watches appear here once a feature declares one.",
+          title: "No watches yet",
         }}
       />
     </div>
@@ -403,23 +431,6 @@ function WatchBoard({
 
 const PAGE_SIZE = 25;
 
-function subjectLine(row: WatchRow): string {
-  switch (row.watch.perf_kind) {
-    case "door":
-      return "Database time, warm, probe seat";
-    case "statement":
-      return "Database statement mean, from statement stats";
-    case "job":
-      return "Scheduled job duration";
-    case "vital":
-      return "Real-user web vital";
-    case "page":
-      return "Page load";
-    default:
-      return "—";
-  }
-}
-
 function WatchDrill({
   row,
   loadingSnapshot,
@@ -427,6 +438,7 @@ function WatchDrill({
   now,
   onBack,
   onRetry,
+  onEdit,
 }: {
   row: WatchRow | null;
   loadingSnapshot: boolean;
@@ -434,6 +446,7 @@ function WatchDrill({
   now: number;
   onBack: () => void;
   onRetry: () => void;
+  onEdit: (edit: PerfWatchEdit) => Promise<void>;
 }) {
   const [page, setPage] = useState(0);
   if (!row) {
@@ -467,7 +480,7 @@ function WatchDrill({
       </div>
 
       <dl className="grid grid-cols-2 gap-x-4 gap-y-1 rounded-md border border-border bg-card/50 p-2 text-xs sm:grid-cols-4">
-        <Fact label="Measures" value={subjectLine(row)} />
+        <Fact label="Measures" value={measuresLine(w)} />
         <Fact label="Budget" value={`${ms(w.budget_ms)}${w.budget_stat ? ` ${w.budget_stat}` : ""}`} />
         <Fact label="Baseline" value={`${ms(w.perf_baseline_ms)}${w.perf_baseline_pinned ? " (pinned)" : ""}`} />
         <Fact label="Every" value={w.live_every_seconds ? formatDurationSeconds(w.live_every_seconds, { style: "coarse" }) : "—"} />
@@ -476,11 +489,19 @@ function WatchDrill({
         <Fact label="Samples" value={history.status === "ready" ? formatCount(samples.length) : "…"} />
         <Fact label="Last alert" value={w.perf_last_alert_at ? formatRelativeTime(w.perf_last_alert_at) : "—"} />
       </dl>
-      {w.perf_subject != null ? (
-        <pre className="overflow-x-auto rounded-md border border-border bg-muted/30 px-2 py-1 font-mono text-[11px]">
-          {JSON.stringify(w.perf_subject)}
-        </pre>
+      {watchReason(w) ? (
+        <p className="truncate text-xs text-muted-foreground" title={watchReason(w) ?? undefined}>
+          {watchReason(w)}
+        </p>
       ) : null}
+      {subjectFields(w).length ? (
+        <dl className="grid grid-cols-2 gap-x-4 gap-y-1 rounded-md border border-border bg-card/50 p-2 text-xs sm:grid-cols-4">
+          {subjectFields(w).map((f) => (
+            <Fact key={f.label} label={f.label} value={f.value} />
+          ))}
+        </dl>
+      ) : null}
+      <WatchEditor watch={w} onEdit={onEdit} />
 
       {history.status === "error" ? (
         <LoadError what="the sample history" message={history.message} onRetry={onRetry} />
@@ -488,7 +509,7 @@ function WatchDrill({
         <p className="text-xs text-muted-foreground">Loading samples…</p>
       ) : samples.length === 0 ? (
         <p className="rounded-md border border-dashed border-border p-3 text-xs text-muted-foreground">
-          No samples yet. The first probe run writes one.
+          No samples yet
         </p>
       ) : (
         <>
@@ -524,6 +545,72 @@ function WatchDrill({
   );
 }
 
+function WatchEditor({ watch, onEdit }: { watch: PerfWatch; onEdit: (edit: PerfWatchEdit) => Promise<void> }) {
+  const [budget, setBudget] = useState(watch.budget_ms != null ? String(watch.budget_ms) : "");
+  const [busy, setBusy] = useState(false);
+  useEffect(() => setBudget(watch.budget_ms != null ? String(watch.budget_ms) : ""), [watch.budget_ms]);
+  const run = async (edit: Omit<PerfWatchEdit, "p_check_id">, done: string) => {
+    setBusy(true);
+    try {
+      await onEdit({ p_check_id: watch.id, ...edit });
+      toast.success(done);
+    } catch (error) {
+      toast.error(`Could not change the watch: ${messageOf(error)}`);
+    } finally {
+      setBusy(false);
+    }
+  };
+  const next = Number(budget);
+  const budgetValid = budget.trim() !== "" && Number.isFinite(next) && next > 0;
+  return (
+    <div className="flex flex-wrap items-center gap-2 text-xs">
+      <span className="text-muted-foreground">Budget ms</span>
+      <div className="w-24">
+        {/* ui-exception: a raw number of milliseconds */}
+        <Field
+          type="number"
+          inputMode="decimal"
+          min={1}
+          aria-label="Budget in milliseconds"
+          value={budget}
+          onChange={(e) => setBudget(e.target.value)}
+        />
+      </div>
+      <Button
+        variant="outline"
+        disabled={busy || !budgetValid || next === watch.budget_ms}
+        onClick={() => run({ p_budget_ms: next }, `Budget set to ${next} ms`)}
+      >
+        Save budget
+      </Button>
+      {watch.perf_baseline_pinned ? (
+        <Button variant="quiet" icon={<PinOff className="h-3.5 w-3.5" />} disabled={busy} onClick={() => run({ p_baseline_pinned: false }, "Baseline unpinned")}>
+          Unpin baseline
+        </Button>
+      ) : (
+        <Button
+          variant="quiet"
+          icon={<Pin className="h-3.5 w-3.5" />}
+          disabled={busy || watch.perf_baseline_ms == null}
+          title={watch.perf_baseline_ms == null ? "No baseline yet" : undefined}
+          onClick={() => run({ p_baseline_pinned: true }, "Baseline pinned")}
+        >
+          Pin baseline
+        </Button>
+      )}
+      {watch.is_active ? (
+        <Button variant="quiet" icon={<Pause className="h-3.5 w-3.5" />} disabled={busy} onClick={() => run({ p_is_active: false }, "Watch paused")}>
+          Pause
+        </Button>
+      ) : (
+        <Button variant="quiet" icon={<Play className="h-3.5 w-3.5" />} disabled={busy} onClick={() => run({ p_is_active: true }, "Watch resumed")}>
+          Resume
+        </Button>
+      )}
+    </div>
+  );
+}
+
 function Fact({ label, value }: { label: string; value: string }) {
   return (
     <div className="min-w-0">
@@ -552,8 +639,8 @@ function SampleTable({
       <table className="w-full text-xs">
         <thead className="bg-muted/40 text-left text-[11px] text-muted-foreground">
           <tr>
-            {["Measured", "Source", "n", "p50", "p95", "Max", "Mean", "Calls", "Errors", "State", "Release"].map((h) => (
-              <th key={h} className={`px-2 py-1 font-medium ${h === "Measured" || h === "Source" || h === "State" || h === "Release" ? "" : "text-right"}`}>
+            {["Measured", "Source", "n", "p50", "p95", "Max", "Mean", "Calls", "Errors", "Bytes", "State", "Note", "Release"].map((h) => (
+              <th key={h} className={`px-2 py-1 font-medium ${h === "Measured" || h === "Source" || h === "State" || h === "Note" || h === "Release" ? "" : "text-right"}`}>
                 {h}
               </th>
             ))}
@@ -564,7 +651,7 @@ function SampleTable({
             const judged = judgedValue(s, stat);
             const over = judged != null && budget != null && judged > budget;
             return (
-              <tr key={s.id} className="border-t border-border/60" title={s.note ?? undefined}>
+              <tr key={s.id} className="border-t border-border/60">
                 <td className="px-2 py-1" title={new Date(s.measured_at).toLocaleString()}>
                   {formatRelativeTime(s.measured_at)}
                 </td>
@@ -576,7 +663,11 @@ function SampleTable({
                 <td className={`px-2 py-1 text-right tabular-nums ${over && stat === "mean" ? "font-medium text-warning" : ""}`}>{ms(s.mean_ms)}</td>
                 <td className="px-2 py-1 text-right tabular-nums text-muted-foreground">{s.calls ?? "—"}</td>
                 <td className={`px-2 py-1 text-right tabular-nums ${s.errors ? "font-medium text-destructive" : "text-muted-foreground"}`}>{s.errors ?? 0}</td>
+                <td className="px-2 py-1 text-right tabular-nums text-muted-foreground">{s.bytes != null ? formatFileSize(s.bytes) : "—"}</td>
                 <td className="px-2 py-1 text-muted-foreground">{s.state_after ?? "—"}</td>
+                <td className="max-w-[22rem] truncate px-2 py-1 text-muted-foreground" title={s.note ?? undefined}>
+                  {s.note ?? "—"}
+                </td>
                 <td className="px-2 py-1 font-mono text-[11px] text-muted-foreground">{s.release_sha?.slice(0, 7) ?? "—"}</td>
               </tr>
             );

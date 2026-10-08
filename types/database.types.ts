@@ -9416,6 +9416,7 @@ export type Database = {
       canvas_items: {
         Row: {
           artifact_index: number | null
+          chain_version: number
           content: Json
           content_hash: string | null
           conversation_id: string | null
@@ -9456,6 +9457,7 @@ export type Database = {
         }
         Insert: {
           artifact_index?: number | null
+          chain_version?: number
           content: Json
           content_hash?: string | null
           conversation_id?: string | null
@@ -9496,6 +9498,7 @@ export type Database = {
         }
         Update: {
           artifact_index?: number | null
+          chain_version?: number
           content?: Json
           content_hash?: string | null
           conversation_id?: string | null
@@ -32923,6 +32926,19 @@ export type Database = {
           table_id: string
         }[]
       }
+      _automation_run: {
+        Args: {
+          p_automation: Json
+          p_byid: Json
+          p_change_id: string
+          p_fields: Json
+          p_organization_id: string
+          p_record_id: string
+          p_table_id: string
+          p_trigger: Json
+        }
+        Returns: string
+      }
       _automation_value: {
         Args: { p_me: string; p_value: Json; p_values: Json }
         Returns: Json
@@ -33543,6 +33559,29 @@ export type Database = {
         Args: { p_organization_id: string; p_table_id: string }
         Returns: boolean
       }
+      _nfx_arglist: {
+        Args: { p_i: number; p_t: Json; p_types: Json }
+        Returns: Json
+      }
+      _nfx_bin: { Args: { p_a: Json; p_b: Json; p_op: string }; Returns: Json }
+      _nfx_call: {
+        Args: { p_args: Json; p_name: string; p_types: Json }
+        Returns: Json
+      }
+      _nfx_colkind: { Args: { p_type: string }; Returns: string }
+      _nfx_expr: {
+        Args: { p_i: number; p_min: number; p_t: Json; p_types: Json }
+        Returns: Json
+      }
+      _nfx_primary: {
+        Args: { p_i: number; p_t: Json; p_types: Json }
+        Returns: Json
+      }
+      _nfx_tokens: { Args: { p_src: string }; Returns: Json }
+      _nfx_unary: {
+        Args: { p_i: number; p_t: Json; p_types: Json }
+        Returns: Json
+      }
       _not_a_member_refusal: { Args: { p_door: string }; Returns: undefined }
       _older_table_copy_refusal: {
         Args: { p_table_id: string }
@@ -33935,6 +33974,10 @@ export type Database = {
         Returns: Json
       }
       _template_token: { Args: { p_text: string }; Returns: string }
+      _two_way_partners: {
+        Args: { p_field_ids: string[]; p_organization_id: string }
+        Returns: string[]
+      }
       _uuid_remap: { Args: { p_doc: Json; p_map: Json }; Returns: Json }
       _value_fits_field: {
         Args: {
@@ -34734,6 +34777,14 @@ export type Database = {
           p_organization_id?: string
         }
         Returns: number
+      }
+      button_press: {
+        Args: {
+          p_field_id: string
+          p_organization_id: string
+          p_record_id: string
+        }
+        Returns: Json
       }
       cache_lookup: {
         Args: {
@@ -36547,6 +36598,10 @@ export type Database = {
       formula_result_kind: {
         Args: { p_expr: Json; p_organization_id: string }
         Returns: string
+      }
+      formula_translate_notion: {
+        Args: { p_text: string; p_types?: Json }
+        Returns: Json
       }
       formula_value: {
         Args: {
@@ -83410,6 +83465,7 @@ export type Database = {
       }
       perf_alert: { Args: { p_items: Json }; Returns: Json }
       perf_door_sql: { Args: { p_subject: Json }; Returns: string }
+      perf_health_run: { Args: never; Returns: Json }
       perf_judge: { Args: { p_check_id: string }; Returns: Json }
       perf_judge_rule: {
         Args: { p_history: Json; p_knobs: Json; p_now: string; p_watch: Json }
@@ -83427,6 +83483,7 @@ export type Database = {
         Returns: Json
       }
       perf_sample_retention: { Args: never; Returns: number }
+      perf_statement_collect: { Args: never; Returns: Json }
       perf_watch_declare: {
         Args: {
           p_budget_ms: number
@@ -83440,6 +83497,17 @@ export type Database = {
           p_subject: Json
         }
         Returns: string
+      }
+      perf_watch_status: { Args: never; Returns: Json }
+      perf_watch_update: {
+        Args: {
+          p_baseline_ms?: number
+          p_baseline_pinned?: boolean
+          p_budget_ms?: number
+          p_check_id: string
+          p_is_active?: boolean
+        }
+        Returns: Json
       }
       record_system_error: { Args: { p_error: Json }; Returns: string }
     }

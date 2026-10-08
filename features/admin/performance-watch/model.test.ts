@@ -1,6 +1,10 @@
 import {
   budgetTone,
+  isLargeTwin,
   judgedValue,
+  measuresLine,
+  subjectFields,
+  watchReason,
   sampleAgeTone,
   sparklinePoints,
   stateCounts,
@@ -31,6 +35,7 @@ function watch(over: Partial<PerfWatch> = {}): PerfWatch {
     perf_baseline_ms: 40,
     perf_baseline_pinned: false,
     perf_last_alert_at: null,
+    metadata: {},
     ...over,
   };
 }
@@ -145,5 +150,73 @@ describe("sparklinePoints", () => {
     const pts = sparklinePoints([0, 10], 100, 20).split(" ");
     expect(pts[0]).toBe("0,20");
     expect(pts[1]).toBe("100,0");
+  });
+});
+
+describe("subjectFields (wave 2: readable subject, never raw JSON)", () => {
+  it("names function, table with records, organization, seat and the remaining args of a large door twin", () => {
+    const f = subjectFields(
+      watch({
+        slug: "door:custom.read_records_page:sorted_search@large",
+        perf_subject: {
+          schema: "custom",
+          function: "read_records_page",
+          table_records: 25000,
+          args: {
+            p_organization_id: "344cfaa8-2b0c-4971-854a-9694614816f2",
+            p_table_id: "a312f617-a388-41f4-b1ed-37a844827684",
+            p_limit: 50,
+            p_search: "retainer",
+            p_sort: [{ field: "work_date", direction: "asc" }],
+          },
+        },
+      }),
+    );
+    expect(f).toEqual([
+      { label: "Function", value: "custom.read_records_page" },
+      { label: "Table", value: "a312f617 · 25,000 records" },
+      { label: "Organization", value: "344cfaa8" },
+      { label: "Seat", value: "admin@admin.com" },
+      { label: "Args", value: 'limit=50, search=retainer, sort=[{"field":"work_date","direction":"asc"}]' },
+    ]);
+  });
+
+  it("reads drill_rows' table from p_source and counts id arrays", () => {
+    const f = subjectFields(
+      watch({
+        perf_subject: {
+          schema: "custom",
+          function: "relation_words_with_icons_many",
+          args: { p_source: { kind: "table", id: "7ea2340a-f0a8-4a4f-a8f6-29c8604d63cd" }, p_record_ids: ["15a1b961-39ea-48c0-96fb-73f258b2f9aa", "2ccbb0b3-9749-404b-b474-55590fa6e2ca"] },
+        },
+      }),
+    );
+    expect(f).toContainEqual({ label: "Table", value: "7ea2340a" });
+    expect(f).toContainEqual({ label: "Args", value: "record_ids=2 ids" });
+  });
+
+  it("says a statement watch measures every real caller", () => {
+    const w = watch({ perf_kind: "statement", perf_subject: { schema: "custom", function: "data_home", match: '"custom"."data_home"(' } });
+    expect(subjectFields(w)).toEqual([
+      { label: "Function", value: "custom.data_home" },
+      { label: "Callers", value: "All real callers" },
+      { label: "Matches", value: '"custom"."data_home"(' },
+    ]);
+    expect(measuresLine(w)).toBe("Mean, all real callers");
+  });
+
+  it("is empty for a missing subject", () => {
+    expect(subjectFields(watch({ perf_subject: null }))).toEqual([]);
+  });
+});
+
+describe("watchReason / isLargeTwin", () => {
+  it("reads the judge's reason from metadata", () => {
+    expect(watchReason(watch({ metadata: { perf_last_reason: "learning: 1 of 3 samples" } }))).toBe("learning: 1 of 3 samples");
+    expect(watchReason(watch({ metadata: {} }))).toBeNull();
+  });
+  it("knows a large twin by its slug", () => {
+    expect(isLargeTwin(watch({ slug: "door:custom.views@large" }))).toBe(true);
+    expect(isLargeTwin(watch())).toBe(false);
   });
 });
