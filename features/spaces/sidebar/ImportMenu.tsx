@@ -7,7 +7,6 @@ import { Popover, PopoverContent, PopoverTrigger } from "@ai-matrx/design-system
 import { Code2, FileDown, FileInput, FileText, Table } from "lucide-react";
 import { useRef, useState, type ReactNode } from "react";
 
-import { isOrganizationSelectionCancelled } from "@/lib/organization/selection-cancelled";
 import { toast } from "@/lib/toast";
 
 import { useMoveIn } from "../ai/MoveIn";
@@ -50,7 +49,6 @@ export function ImportButton() {
         made += 1;
         if (page.warnings.length) toast.warning(`${file.name}: ${page.warnings.length} part${page.warnings.length === 1 ? "" : "s"} imported as text`);
       } catch (err) {
-        if (isOrganizationSelectionCancelled(err)) break;
         toast.error(err instanceof Error ? err.message : `${file.name} could not be imported.`);
       }
     }

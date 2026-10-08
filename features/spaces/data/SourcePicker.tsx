@@ -15,7 +15,6 @@ import { selectActiveOrganizationId } from "@/features/scopes/redux/selectors/ac
 import { useTablesEverywhere } from "@/features/unified-data/hub/useTablesEverywhere";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
-import { isOrganizationSelectionCancelled } from "@/lib/organization/selection-cancelled";
 
 import { installAgencySample, pageOrganizationId, type AgencyToken } from "./agency-install";
 import { AGENCY_SPEC } from "./agency-spec";
@@ -52,7 +51,7 @@ function Lists({ query, onPick, spaceId }: { query: string; onPick: (s: PickedSo
       if (!made) throw new Error("This organization's sample has no such table yet.");
       onPick({ tableId: made.tableId, name: made.name });
     } catch (err) {
-      if (!isOrganizationSelectionCancelled(err)) setFailed(err instanceof Error ? err.message : "The sample could not be added.");
+      setFailed(err instanceof Error ? err.message : "The sample could not be added.");
     } finally {
       setInstalling(null);
     }

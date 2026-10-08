@@ -18,7 +18,6 @@ import { useState } from "react";
 
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { selectActiveOrganizationId } from "@/features/scopes/redux/selectors/active-context";
-import { isOrganizationSelectionCancelled } from "@/lib/organization/selection-cancelled";
 import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { toast } from "@/lib/toast";
@@ -113,7 +112,6 @@ export function AutofillRows({
       }
       toast.success(done === 1 ? `${spec.label}: 1 row filled` : `${spec.label}: ${done} rows filled`);
     } catch (err) {
-      if (isOrganizationSelectionCancelled(err)) return;
       toast.error(`${spec.label} could not be filled`, { description: err instanceof Error ? err.message : undefined });
     } finally {
       setBusy(null);

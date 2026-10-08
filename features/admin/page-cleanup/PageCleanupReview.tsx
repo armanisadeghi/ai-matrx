@@ -31,10 +31,6 @@ import { personActor, recordsDataSource } from "@ai-matrx/records-ui";
 
 import { InfoHint } from "@/components/official/InfoHint";
 import { copyContent } from "@ai-matrx/rich-content/copy/copy-commands";
-import {
-  ensureOrganizationForWrite,
-  isOrganizationSelectionCancelled,
-} from "@/lib/organization/organization-gate";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { toast } from "@/lib/toast";
@@ -51,6 +47,7 @@ import {
   PAGE_CLEANUP_DECISIONS,
   type PageCleanupDecision,
 } from "./page-cleanup.app-table";
+import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
 
 interface Entry {
   decision: PageCleanupDecision | null;
@@ -172,7 +169,7 @@ export default function PageCleanupReview() {
     if (store.state !== "store") return;
     setSaves((s) => ({ ...s, [path]: "saving" }));
     try {
-      const organizationId = await ensureOrganizationForWrite();
+      const organizationId = await ensureOrgId(null);
       const written = await upsertAppRow(
         recordsClient(userId),
         pageCleanupDecisions,
@@ -183,7 +180,6 @@ export default function PageCleanupReview() {
       setSaves((s) => ({ ...s, [path]: "saved" }));
     } catch (error) {
       setSaves((s) => ({ ...s, [path]: "failed" }));
-      if (isOrganizationSelectionCancelled(error)) return;
       toast.error("Could not save this decision", {
         description: error instanceof Error ? error.message : String(error),
       });

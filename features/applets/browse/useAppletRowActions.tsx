@@ -16,7 +16,6 @@ import type { ItemMenuConfig } from "@/components/official/item/types";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { toast } from "@/lib/toast";
 import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
-import { isOrganizationSelectionCancelled } from "@/lib/organization/selection-cancelled";
 import { applyOrganizationContextHeader } from "@/lib/api/organization-context";
 import { archiveConfirmSentence } from "@/features/trash/archiveCopy";
 import { useAppDispatch } from "@/lib/redux/hooks";
@@ -136,7 +135,6 @@ export function useAppletRowActions(list: EntityListController<AppletListRow>): 
                   await duplicateApplet(row.id);
                   list.refresh();
                 } catch (error) {
-                  if (isOrganizationSelectionCancelled(error)) return;
                   throw new Error(message(error, "The copy failed. Try again."));
                 }
               },

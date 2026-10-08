@@ -16,7 +16,6 @@ import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableCo
 import { collectionWriteHandlers } from "@ai-matrx/chat/surfaces/runtime/collection-write-targets";
 import { refuseSurfaceWrite } from "@ai-matrx/chat/surfaces/runtime/surface-writeback";
 import { EDUCATION_LIBRARY_COMMUNITY_SURFACE_NAME } from "@/features/surfaces/manifests/education-library-community.manifest";
-import { isOrganizationSelectionCancelled } from "@/lib/organization/selection-cancelled";
 import { forkSharedResource } from "@/utils/permissions/shareLinks";
 import {
   buildCommunityLibraryScope,
@@ -121,9 +120,7 @@ export function LibraryBrowser({
         },
         nameOf: (deck: PublicDeck) => deck.name,
         refusalFor: (e) =>
-          isOrganizationSelectionCancelled(e)
-            ? "The person closed the workspace picker, so no decks were copied. Ask which workspace the copies belong in."
-            : undefined,
+          undefined,
       },
     },
     refuseSurfaceWrite,

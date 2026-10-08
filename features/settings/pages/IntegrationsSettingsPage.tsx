@@ -95,10 +95,6 @@ import {
 import { ErrorNotice } from "@/components/errors/ErrorNotice";
 import { InfoHint } from "@/components/official/InfoHint";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
-import {
-  ensureOrganizationForRequest,
-  isOrganizationSelectionCancelled,
-} from "@/lib/organization/organization-gate";
 import { toolCheckFailure } from "./integration-tool-check";
 import { MicrosoftConnectPanel } from "@/features/microsoft-integration/MicrosoftConnectPanel";
 import { StorageConnectionsPanel } from "@/features/storage-connections/StorageConnectionsPanel";
@@ -124,6 +120,7 @@ import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { selectOrganizationsList } from "@/features/scopes/redux/selectors/tree";
 import { splitConnectionsByOwnership } from "@/features/connectors/connection-ownership";
 import { useConnectionViewer } from "@/features/connectors/useConnectionViewer";
+import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
 
 // ─── Constants ───────────────────────────────────────────────────────────────
 
@@ -829,7 +826,7 @@ export function IntegrationsWorkspace({
     try {
       // This explicit click may ask for an organization. Background catalog
       // reads remain non-interactive through the service's GET default.
-      await ensureOrganizationForRequest({ method: "GET", interactive: true });
+      await ensureOrgId(null);
       const discovery = await dispatch(
         discoverServerTools(entry.serverId),
       ).unwrap();
@@ -842,11 +839,9 @@ export function IntegrationsWorkspace({
         },
       );
     } catch (error) {
-      if (!isOrganizationSelectionCancelled(error)) {
-        recordToast.error(record, `Could not check ${entry.name}'s tools`, {
+      recordToast.error(record, `Could not check ${entry.name}'s tools`, {
           description: toolCheckFailure(error),
         });
-      }
     } finally {
       setCheckingServerId(null);
     }

@@ -109,7 +109,6 @@ import {
 import { githubConnectUrl } from "@/features/github-integration/service";
 import { fetchMcpServerConfigs } from "@ai-matrx/chat/agents/services/mcp.service";
 import { headerFieldKey } from "@ai-matrx/chat/agents/services/mcp-connections.service";
-import { isOrganizationSelectionCancelled } from "@/lib/organization/selection-cancelled";
 import type { DatabaseTool } from "@/utils/supabase/tools-service";
 import type {
   CustomToolDefinition,
@@ -3083,7 +3082,6 @@ export function BearerTokenForm({ entry }: { entry: McpCatalogEntry }) {
       ).unwrap();
       setToken("");
     } catch (err) {
-      if (isOrganizationSelectionCancelled(err)) return;
       setError(err instanceof Error ? err.message : "Connection failed");
     }
   };
@@ -3184,7 +3182,6 @@ export function ApiKeyForm({ entry }: { entry: McpCatalogEntry }) {
       ).unwrap();
       setApiKey("");
     } catch (err) {
-      if (isOrganizationSelectionCancelled(err)) return;
       setError(err instanceof Error ? err.message : "Connection failed");
     }
   };
@@ -3339,7 +3336,6 @@ export function EnvVarForm({ entry }: { entry: McpCatalogEntry }) {
       ).unwrap();
       setEnvValues({});
     } catch (err) {
-      if (isOrganizationSelectionCancelled(err)) return;
       setError(err instanceof Error ? err.message : "Connection failed");
     }
   };

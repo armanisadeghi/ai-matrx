@@ -12,7 +12,6 @@ import { toast } from "@/components/ui/use-toast";
 import { useIsMobile } from "@ai-matrx/kit/media-query";
 import { cn } from "@/lib/utils";
 import { Drawer, DrawerContent, DrawerTitle } from "@/components/ui/drawer";
-import { isOrganizationSelectionCancelled } from "@/lib/organization/organization-gate";
 
 export type MenuItemAction = () => void | Promise<void>;
 
@@ -609,10 +608,6 @@ const AdvancedMenu: React.FC<AdvancedMenuProps> = ({
         setTimeout(() => onClose(), 500);
       }
     } catch (error) {
-      if (isOrganizationSelectionCancelled(error)) {
-        setDirectiveState(item.key, "idle");
-        return;
-      }
       setDirectiveState(item.key, "error");
       onActionError?.(item.key, error);
 

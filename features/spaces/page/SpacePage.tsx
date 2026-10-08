@@ -12,7 +12,6 @@ import { Backlinks } from "./Backlinks";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { toast } from "@/lib/toast";
 import { selectActiveOrganizationId } from "@/features/scopes/redux/selectors/active-context";
-import { isOrganizationSelectionCancelled } from "@/lib/organization/selection-cancelled";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectUserEmail, selectUserFullName, selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { useAccess } from "@/utils/permissions/access";
@@ -535,7 +534,7 @@ function SpacePageScreen({ spaceId }: { spaceId: string }) {
       window.setTimeout(() => spaces.open(sub.id), 60);
       return { table, pageId: sub.id };
     } catch (err) {
-      if (!isOrganizationSelectionCancelled(err)) toast.error(err instanceof Error ? err.message : "The database could not be made.");
+      toast.error(err instanceof Error ? err.message : "The database could not be made.");
       return null;
     }
   };

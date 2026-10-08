@@ -27,10 +27,6 @@ import {
 } from "@ai-matrx/chat/agents/redux/execution-system/messages/messages.selectors";
 import { messageMayContainKindBlock } from "@/features/content-ir/studio/message-kind-gate";
 import { hasConvertibleContent } from "@ai-matrx/chat/agents/components/messages-display/message-options/convertibleContent";
-import {
-  ensureOrganizationContext,
-  isOrganizationSelectionCancelled,
-} from "@/lib/organization/organization-gate";
 import { registerAction } from "@ai-matrx/rich-content/rich-document/actions/provider";
 import {
   chatIds,
@@ -41,6 +37,7 @@ import {
   contentForDestination,
 } from "../utils";
 import type { RichDocumentActionContext } from "@ai-matrx/rich-content/rich-document/types";
+import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
 
 /**
  * THE ORACLE TAP's question half: for an ASSISTANT message, the user turn it
@@ -296,11 +293,8 @@ registerAction({
     // instead of guessing; cancelling writes nothing and says nothing.
     let organizationId: string;
     try {
-      organizationId = await ensureOrganizationContext({
-        organizationId: ctx.organizationId,
-      });
+      organizationId = await ensureOrgId(ctx.organizationId);
     } catch (error) {
-      if (isOrganizationSelectionCancelled(error)) return;
       toast.error(getErrorMessage(error, "Failed to save to Shapes"));
       return;
     }

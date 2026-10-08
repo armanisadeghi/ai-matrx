@@ -35,7 +35,7 @@ import { KindValueFrontDoor } from "@/components/official/structured-value/KindV
 import KindInstanceRender from "@/features/content-ir/studio/components/KindInstanceRender";
 import { KindRecordChrome, kindHasRecordChrome } from "@/features/content-ir/records/KindRecordChrome";
 import { KindFixItBar } from "@/features/content-ir/react/fixit/KindFixItBar";
-import MarkdownStream from "@/components/MarkdownStream";
+import MarkdownStream from "@ai-matrx/chat/ui/markdown-stream/MarkdownStream";
 import { CitationMarkerInline } from "@/components/mardown-display/chat-markdown/citations/CitationMarkerInline";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
 import AdvancedMenu from "@/components/official/AdvancedMenu";
@@ -48,7 +48,6 @@ import IconInputWithValidation from "@/components/official/icons/IconInputWithVa
 import LocatedTableViewer from "@/features/data-tables/components/LocatedTableViewer";
 import { OpenDestinationDialog } from "@/features/page-extraction/data-review/OpenDestinationDialog";
 import { HTMLPageService } from "@/features/html-pages/services/htmlPageService";
-import { ensureOrganizationContext, holdDeliberateIntent, isOrganizationSelectionCancelled } from "@/lib/organization/organization-gate";
 import { getSessionKnob } from "@/lib/scoped-config/sessionKnob";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { TextInputDialog } from "@/components/dialogs/text-input/TextInputDialog";
@@ -83,6 +82,7 @@ import "./domain-block-components";
 import "./domain-block-dispatch";
 // This app's rich-document handlers, source adapters and menu rows.
 import "./rich-document-registrations";
+import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
 
 const SmallCodeEditor = dynamic(() => import("@/features/code-editor/components/code-block/SmallCodeEditorImpl"), {
   ssr: false,
@@ -144,7 +144,7 @@ configureRichContent({
     useHostGetState: () => useAppStore().getState,
     useIsSuperAdmin: () => useAppSelector(selectIsSuperAdmin),
     useActiveOrganizationId: () => useAppSelector(selectOrganizationId),
-    holdDeliberateIntent,
+    holdDeliberateIntent: <T,>(work: () => T | Promise<T>) => Promise.resolve().then(work),
     useAlchemyDisclosure,
     useRegistryMenuSource,
     sameContentSource,
@@ -189,8 +189,8 @@ configureRichContent({
     SmallCodeEditor,
     // services
     HTMLPageService,
-    ensureOrganizationContext,
-    isOrganizationSelectionCancelled,
+    ensureOrganizationContext: (options?: { organizationId?: string | null }) => ensureOrgId(options?.organizationId ?? null),
+    isOrganizationSelectionCancelled: () => false,
     loadExportTargets: () => import("@/features/data-tables/export-targets"),
     loadSendToGoogle: () => import("@/features/google-workspace/export/sendToGoogle"),
     announceProposedGoogleWrite,

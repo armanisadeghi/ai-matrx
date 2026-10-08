@@ -12,7 +12,6 @@ import { useEffect, useRef, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
-import { isOrganizationSelectionCancelled } from "@/lib/organization/organization-gate";
 import { toast } from "@/lib/toast";
 import { beginBoardCreate, isBoardError } from "./boardsService";
 
@@ -65,13 +64,11 @@ export function useCreateBoard(): { creating: boolean; newBoard: () => Promise<v
       stayBusy = true;
       setOpening(id);
     } catch (error) {
-      if (!isOrganizationSelectionCancelled(error)) {
-        toast.error(
+      toast.error(
           isBoardError(error)
             ? error.message
             : `The board could not be created: ${error instanceof Error ? error.message : String(error)}`,
         );
-      }
     } finally {
       setCreating(false);
       if (!stayBusy) busy.current = false;

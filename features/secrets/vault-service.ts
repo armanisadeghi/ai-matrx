@@ -22,10 +22,6 @@ import {
   sendMatrxRequest,
 } from "@ai-matrx/agents/matrx";
 import {
-  ensureOrganizationContext,
-  ensureOrganizationForRequest,
-} from "@/lib/organization/organization-gate";
-import {
   downloadVaultAttachment as downloadVaultAttachmentBytes,
   replaceVaultAttachment as replaceVaultAttachmentBytes,
   uploadVaultAttachment,
@@ -88,6 +84,7 @@ import {
   type HoldingRow,
 } from "./empty-read";
 import type { components } from "@ai-matrx/agents/generated/api-types";
+import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
 
 const assertVaultData = makeAssertData("load your vault");
 
@@ -278,7 +275,7 @@ export class VaultImportTransportError extends Error {
  * exactly as before).
  */
 function readActiveOrganizationForIdentity(): Promise<string> {
-  return ensureOrganizationContext({ interactive: false });
+  return ensureOrgId(null);
 }
 
 async function authHeaders(
@@ -296,7 +293,7 @@ async function authHeaders(
   // refusal. An actor-frozen send never asks (see readActiveOrganizationForIdentity).
   const initialOrganizationId = expectedActor
     ? null
-    : await ensureOrganizationForRequest({ method });
+    : await ensureOrgId(null);
   const supabase = createClient();
   const {
     data: { session },

@@ -24,7 +24,6 @@ import { settingDoorHref } from "@/features/settings/doors/settingDoorTarget";
 import { CHAT_DEFAULT_MODEL_KNOB } from "@/features/ai-models/preferredChatModel";
 import { CREATIVITY_LEVEL_OPTIONS, LANGUAGE_OPTIONS, TEXT_TONE_OPTIONS } from "@/features/settings/agent-writable-settings";
 import { fetchWithOrganization } from "@/lib/organizations/fetchWithOrganization";
-import { isOrganizationSelectionCancelled } from "@/lib/organization/organization-gate";
 import { toast } from "@/lib/toast";
 import { ReadFailure } from "@/components/read-state/ReadFailure";
 import { cn } from "@/lib/utils";
@@ -167,7 +166,7 @@ function EmailSample() {
         if (cancelled) return;
         setLoad({
           status: "error",
-          error: isOrganizationSelectionCancelled(err) ? new Error("No organization was chosen for this read") : err,
+          error: err,
         });
       }
     })();

@@ -518,7 +518,7 @@ if (typeof globalThis.CSS === "undefined" || typeof globalThis.CSS?.escape !== "
     },
     ensureOrganizationContext: (options) =>
       // eslint-disable-next-line @typescript-eslint/no-require-imports
-      require("@/lib/organization/organization-gate").ensureOrganizationContext(options),
+      require("@/lib/organizations/ensureOrgId").ensureOrgId(options?.organizationId ?? null),
     shareLinks: lazy("@/utils/permissions/shareLinks"),
     notify: {
       // eslint-disable-next-line @typescript-eslint/no-require-imports

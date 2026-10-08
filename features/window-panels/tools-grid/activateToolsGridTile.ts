@@ -1,4 +1,3 @@
-import { isOrganizationSelectionCancelled } from "@ai-matrx/chat/host/org";
 import { openOverlay } from "@/lib/redux/slices/overlaySlice";
 import type { OverlayId } from "@/features/overlays/catalogue";
 import { getStaticEntryByOverlayId } from "@/features/window-panels/registry/windowRegistryMetadata";
@@ -54,10 +53,6 @@ export function activateToolsGridTile(
   void Promise.resolve(tile.seedData?.(ctx))
     .catch((error: unknown) => {
       // "Not now" on the organization question opens nothing, says nothing.
-      if (isOrganizationSelectionCancelled(error)) {
-        declined = true;
-        return undefined;
-      }
       // A broken seed must not eat the click — open unseeded, loudly.
       console.error(`[ToolsGrid] tile "${tile.id}" seedData failed:`, error);
       return undefined;

@@ -18,7 +18,7 @@ import {
   sendMatrxRequest,
 } from "@ai-matrx/agents/matrx";
 import { applyOrganizationContextHeader } from "@/lib/api/organization-context";
-import { ensureOrganizationForRequest } from "@/lib/organization/organization-gate";
+import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
 
 const CONNECTION_SELECT =
   "id, owner_type, owner_user_id, organization_id, provider, provider_subject, status, last_verified_at, last_error, created_at, updated_at, metadata";
@@ -152,7 +152,7 @@ async function organizationContextHeaders(
   // ORG-GATE-AUDIT: THE GATE, never the bare kernel. Connecting, binding a site or
   // disconnecting Bing with no organization selected asks, then continues this
   // same request instead of a bare refusal.
-  const organizationId = await ensureOrganizationForRequest(request);
+  const organizationId = await ensureOrgId(null);
   return applyOrganizationContextHeader(base, organizationId);
 }
 

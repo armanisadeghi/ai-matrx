@@ -7,7 +7,6 @@ import type {
   UserPersistenceResponse,
 } from "@/types/sandbox";
 import { fetchWithOrganization } from "@/lib/organizations/fetchWithOrganization";
-import { isOrganizationSelectionCancelled } from "@/lib/organization/selection-cancelled";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import { extractErrorMessage } from "@/utils/errors";
@@ -93,10 +92,6 @@ export function useUserPersistence(
         if (reqId !== reqIdRef.current) return;
         // Closing the organization picker is an answer ("not now"), not a
         // failure: keep what was on screen, show no error.
-        if (isOrganizationSelectionCancelled(err)) {
-          setState((s) => ({ ...s, loading: false, error: null }));
-          return;
-        }
         setState({
           info: null,
           loading: false,
@@ -146,7 +141,6 @@ export function useUserPersistence(
         await fetchOnce();
         return { ok: true };
       } catch (err) {
-        if (isOrganizationSelectionCancelled(err)) return { ok: false, cancelled: true };
         const message = extractErrorMessage(err, "Unknown error");
         setState((s) => ({ ...s, error: message }));
         return { ok: false, error: message };

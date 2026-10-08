@@ -3,13 +3,13 @@ import type { GoogleConnectionInventory } from "@/features/marketing/google/type
 import { createClient } from "@/utils/supabase/client";
 import { resolveServiceBaseUrl } from "@/lib/api/resolve-service-url";
 import { applyOrganizationContextHeader } from "@/lib/api/organization-context";
-import { ensureOrganizationForRequest } from "@/lib/organization/organization-gate";
 import { parseHttpError, getUserMessage } from "@/lib/api/errors";
 import { buildMatrxRequestUrl, sendMatrxRequest } from "@ai-matrx/agents/matrx";
 import { consumeStream } from "@/lib/api/stream-parser";
 import { updateSiteIntegrations } from "@/features/marketing/data/integrations-service";
 import { getSite } from "@/features/marketing/data/service";
 import type { MarketingSite } from "@/features/marketing/types";
+import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
 
 export const domainProviders = [
   "vercel",
@@ -183,10 +183,7 @@ export async function siteConnectionOperation<T>(
   } = await createClient().auth.getSession();
   if (!session?.access_token)
     throw new Error("Sign in to manage site connections.");
-  const organizationId = await ensureOrganizationForRequest({
-    method: "POST",
-    organizationId: site.organization_id,
-  });
+  const organizationId = await ensureOrgId(site.organization_id);
   const response = await sendMatrxRequest(
     buildMatrxRequestUrl(
       resolveServiceBaseUrl("aidream"),

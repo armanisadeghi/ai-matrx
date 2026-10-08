@@ -102,7 +102,6 @@ import {
 } from "@/features/sources/api/sourcesApi";
 import { processSourceNow } from "@/features/sources/api/processNow";
 import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
-import { isOrganizationSelectionCancelled } from "@/lib/organization/organization-gate";
 import { presentOrganizationRefusal } from "@ai-matrx/chat/host/org";
 import { useScraperApi } from "@/features/scraper/hooks/useScraperApi";
 import { exportFilename } from "@/components/agent-copy/export";
@@ -403,7 +402,6 @@ export function SourceStudio({ documentId, deepLink, embedded = false }: SourceS
       }
       refreshAll();
     } catch (err) {
-      if (isOrganizationSelectionCancelled(err)) return;
       if (presentOrganizationRefusal(err, { subject: "This Source", act: "processed" })) return;
       toast.error(sourceRefusalSentence(err));
     } finally {
@@ -433,7 +431,6 @@ export function SourceStudio({ documentId, deepLink, embedded = false }: SourceS
         refreshAll();
       }
     } catch (err) {
-      if (isOrganizationSelectionCancelled(err)) return;
       if (presentOrganizationRefusal(err, { subject: "This Source", act: "captured again" })) return;
       toast.error(sourceRefusalSentence(err));
     } finally {
@@ -458,7 +455,6 @@ export function SourceStudio({ documentId, deepLink, embedded = false }: SourceS
       if (embedded) refreshAll();
       else router.replace(`/knowledge/sources/${landed.processed_document_id}`);
     } catch (err) {
-      if (isOrganizationSelectionCancelled(err)) return;
       if (presentOrganizationRefusal(err, { subject: "This Source", act: "saved" })) return;
       toast.error(sourceRefusalSentence(err));
     } finally {

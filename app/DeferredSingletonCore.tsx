@@ -46,7 +46,6 @@ import {
   clearEntitlements,
 } from "@/features/entitlements/state/entitlementsSlice";
 import { UrlPanelManager } from "@/features/window-panels/url-sync/UrlPanelManager";
-import { OrganizationGateDialog } from "@/features/organizations/gate/OrganizationGateDialog";
 import { KindLeakSentinel } from "@/features/content-ir/surfaces/KindLeakSentinel";
 
 
@@ -127,13 +126,6 @@ export default function DeferredSingletonCore() {
       <OverlayController />
       {/* G1: files any `__kind` drawn as raw text (never-raw law). */}
       <KindLeakSentinel />
-      {/* Render-free until an action needs it. The ONE app-wide answer to "you
-          have no organization selected": instead of refusing the action and
-          sending the person somewhere else to fix it, this asks which workspace
-          and then lets the blocked action finish in it. Global on purpose — the
-          question can be raised by any API call, any upload, and any AI run, so
-          it cannot live inside one feature. See lib/organization/organization-gate.ts. */}
-      <OrganizationGateDialog />
       {/* Render-free until a usage limit is hit: the usage gate's boot read,
           server notifications, near/over notice and limit dialog. */}
       <UsageGateBridge />

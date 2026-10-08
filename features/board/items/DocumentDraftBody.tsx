@@ -15,14 +15,11 @@ import { Button } from "@/components/ui/button";
 import { ErrorNotice } from "@/components/errors/ErrorNotice";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
-import {
-  ensureOrganizationContext,
-  isOrganizationSelectionCancelled,
-} from "@/lib/organization/organization-gate";
 import { createDocument } from "@/features/documents/document-service";
 import { isServiceFailure } from "@/features/data-tables/types";
 import type { ItemBodyProps } from "./types";
 import { NEW_DOCUMENT_NAME, documentSource } from "./document-items.logic";
+import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
 
 type Failure = { reason: string; cancelled: boolean };
 
@@ -32,14 +29,11 @@ async function createDraftDocument(
   organizationId: string | null,
 ): Promise<{ id: string; name: string } | { failure: Failure }> {
   try {
-    const organization = await ensureOrganizationContext({ organizationId });
+    const organization = await ensureOrgId(organizationId);
     const res = await createDocument({ name: NEW_DOCUMENT_NAME, organizationId: organization });
     if (isServiceFailure(res)) throw new Error(res.error);
     return { id: res.data.id, name: res.data.document_name };
   } catch (err) {
-    if (isOrganizationSelectionCancelled(err)) {
-      return { failure: { reason: "Choose the workspace this document belongs to, then try again.", cancelled: true } };
-    }
     console.error("[board/document] could not create the document", err);
     return { failure: { reason: err instanceof Error ? err.message : String(err), cancelled: false } };
   }

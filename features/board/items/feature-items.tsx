@@ -67,7 +67,6 @@ import { useMeetingLive } from "@/features/meet/hooks/useMeetingLive";
 import { useBoardCameraStore } from "../engine/react";
 import { MeetingFormDialog } from "@/features/meet/components/manage/MeetingFormDialog";
 import { useMeetingActions } from "@/features/meet/hooks/useMeetingActions";
-import { ensureOrganizationContext } from "@/lib/organization/organization-gate";
 // Workflow run
 import { useRunsList } from "@/features/workflow-runtime/discovery/useRunsList";
 import { useWorkflowFacts } from "@/features/workflow-runtime/discovery/useWorkflowFacts";
@@ -108,6 +107,7 @@ import {
   type FeatureEntityKey,
 } from "./feature-items.logic";
 import { useMeetingStatus, useTaskStatus, useWorkflowRunStatus } from "./item-status";
+import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
 
 // ─── Shared pieces ───────────────────────────────────────────────────────────
 
@@ -590,7 +590,7 @@ function MeetingCreateDialog({ onPick, onCancel }: PickerProps) {
   useEffect(() => {
     if (ready || asked.current) return;
     asked.current = true;
-    ensureOrganizationContext().catch(() => onCancel());
+    ensureOrgId(null).catch(() => onCancel());
   }, [ready, onCancel]);
   if (!ready) return null;
   return (

@@ -32,7 +32,7 @@ import {
   sendMatrxRequest,
 } from "@ai-matrx/agents/matrx";
 import { applyOrganizationContextHeader } from "@/lib/api/organization-context";
-import { ensureOrganizationForRequest } from "@/lib/organization/organization-gate";
+import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
 
 /**
  * Organization admission rides with auth: the server's AuthMiddleware
@@ -61,11 +61,7 @@ async function authedDirectiveHeaders(
   // A background READ (the ledger state a card reads on mount) passes
   // `interactive: false`: nobody pressed anything, so it refuses quietly rather
   // than raise a picker out of nowhere.
-  const organizationId = await ensureOrganizationForRequest({
-    method: "POST",
-    personWrite: true,
-    interactive: options.interactive,
-  });
+  const organizationId = await ensureOrgId(null);
   return applyOrganizationContextHeader(
     {
       "Content-Type": "application/json",

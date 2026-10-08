@@ -24,7 +24,6 @@ import { useAllFolders, getFolderIconAndColor } from "../utils/folderUtils";
 import { NotesAPI } from "../service/notesApi";
 import type { Note } from "../types";
 import { useNewNoteOrganization } from "../hooks/useNewNoteOrganization";
-import { isOrganizationSelectionCancelled } from "@/lib/organization/organization-gate";
 
 export interface NotesTreeViewProps {
   onSelectNote?: (note: Note) => void;
@@ -130,7 +129,6 @@ export function NotesTreeView({
         onSelectNote?.(note);
       } catch (cause) {
         // Cancelling the picker is "nothing happened" — no toast.
-        if (isOrganizationSelectionCancelled(cause)) return;
         // A create that closes its input row and says nothing is a dead button.
         toast.error(noteCreateErrorMessage(cause));
       } finally {
@@ -176,7 +174,6 @@ export function NotesTreeView({
       setExpandedFolder(name);
       onSelectNote?.(note);
     } catch (cause) {
-      if (isOrganizationSelectionCancelled(cause)) return;
       toast.error(noteCreateErrorMessage(cause));
     } finally {
       setBusyAction(null);

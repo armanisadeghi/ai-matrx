@@ -10,7 +10,6 @@ import { AlertTriangle, Minus, Plus } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { cn } from "@/lib/utils";
 import { toast } from "@/lib/toast";
-import { isOrganizationSelectionCancelled } from "@/lib/organization/selection-cancelled";
 import { BattleRouteNotice, useBattleRoute } from "@/features/agent-comparison/shared/useBattleRoute";
 import { MAX_REPEATS, POLL_IDLE_LIMIT_MS, shouldPoll } from "../model";
 import { setBasePatch, setRepeats } from "../redux/slice";
@@ -87,7 +86,6 @@ export function MatrixBattlePage({ setId = null }: { setId?: string | null }) {
     try {
       await dispatch(runMatrixBattle({ cells: [cell], scope: "all" })).unwrap();
     } catch (err) {
-      if (isOrganizationSelectionCancelled(err)) return;
       toast.error(`Re-run failed: ${err instanceof Error ? err.message : String(err)}`);
     }
   };

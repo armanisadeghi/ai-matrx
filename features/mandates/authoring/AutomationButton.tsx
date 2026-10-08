@@ -55,14 +55,11 @@ import { toast } from "@/lib/toast";
 import { useMandate } from "@ai-matrx/chat/mandates/useMandate";
 import { useMandateInputSurface } from "../input-surface";
 import { planInvocation, type KnownValues } from "@ai-matrx/chat/mandates/invoke/supplied-values";
-import {
-  ensureOrganizationContext,
-  isOrganizationSelectionCancelled,
-} from "@/lib/organization/organization-gate";
 import { extractErrorMessage } from "@/utils/errors";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 import { ProTextarea } from "@/components/official/ProTextarea";
+import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
 /** The one line shown when the only thing missing is a chosen workspace. */
 export const CHOOSE_WORKSPACE_LINE = "Choose a workspace to use this.";
 
@@ -224,8 +221,7 @@ export function AutomationButton({
           icon={<BrainCircuit />}
           variant="outline"
           onClick={() => {
-            void ensureOrganizationContext().catch((err: unknown) => {
-              if (isOrganizationSelectionCancelled(err)) return;
+            void ensureOrgId(null).catch((err: unknown) => {
               toast.error(extractErrorMessage(err));
             });
           }}

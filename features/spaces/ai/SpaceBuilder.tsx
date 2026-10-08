@@ -19,7 +19,6 @@ import { createContext, useContext, useState, type ReactNode } from "react";
 
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { selectActiveOrganizationId } from "@/features/scopes/redux/selectors/active-context";
-import { isOrganizationSelectionCancelled } from "@/lib/organization/selection-cancelled";
 import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { toast } from "@/lib/toast";
@@ -113,7 +112,6 @@ export function SpaceBuilderHost({ children }: { children: ReactNode }) {
       else if (result.root_space_id) spaces.open(result.root_space_id);
       toast.success(target ? "Page updated" : "Your Space is ready", result.summary ? { description: result.summary.slice(0, 140) } : undefined);
     } catch (err) {
-      if (isOrganizationSelectionCancelled(err)) return;
       toast.error(target ? "The page could not be changed" : "The Space could not be built", { description: err instanceof Error ? err.message : undefined });
     }
   };

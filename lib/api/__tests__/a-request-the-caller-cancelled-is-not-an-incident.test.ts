@@ -54,7 +54,6 @@ function search(signal: AbortSignal) {
     body: { query: "renewal terms" },
     stream: false,
     signal,
-    interactiveOrganization: false,
     _testOverrides: { forceBaseUrl: "https://server.test" },
   } as unknown as Parameters<typeof callApi>[0])(jest.fn(), state, undefined);
 }

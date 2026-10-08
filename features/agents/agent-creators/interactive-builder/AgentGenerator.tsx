@@ -45,10 +45,6 @@ import { ensureShortcutLoaded } from "@ai-matrx/chat/agents/redux/agent-shortcut
 import { useDebugContext } from "@/hooks/useDebugContext";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { captureError } from "@/lib/diagnostics/errorCaptureStore";
-import {
-  ensureOrganizationContext,
-  isOrganizationSelectionCancelled,
-} from "@/lib/organization/organization-gate";
 import { extractErrorMessage } from "@/utils/errors";
 import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
 import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
@@ -591,7 +587,6 @@ export function AgentGenerator({ onComplete, mandate }: AgentGeneratorProps) {
       setBuildOver(false);
       setBuildId(id);
     } catch (err) {
-      if (isOrganizationSelectionCancelled(err)) return;
       toast.error("The build did not start", {
         description: extractErrorMessage(err, "Unknown error"),
         position: TOAST_POSITION,
@@ -717,8 +712,7 @@ export function AgentGenerator({ onComplete, mandate }: AgentGeneratorProps) {
               <Button
                 variant="outline"
                 onClick={() => {
-                  void ensureOrganizationContext().catch((err: unknown) => {
-                    if (isOrganizationSelectionCancelled(err)) return;
+                  void ensureOrgId(null).catch((err: unknown) => {
                     toast.error(extractErrorMessage(err), {
                       position: TOAST_POSITION,
                     });

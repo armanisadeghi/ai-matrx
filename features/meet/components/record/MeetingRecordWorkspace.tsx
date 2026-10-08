@@ -51,7 +51,7 @@ import {
 import { Skeleton, Button as SurfaceButton, } from "@ai-matrx/design-system";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { chooseOrganizationFromButton } from "@/lib/organization/organization-gate";
+import { retryActiveOrganization } from "@/lib/organizations/retryActiveOrganization";
 import { meetingOrigin } from "@/features/meet/components/invite/MeetingInviteButton";
 import { ActionItemsSection } from "@/features/meet/components/record/ActionItemsSection";
 import { AttendancePanel } from "@/features/meet/components/record/AttendancePanel";
@@ -92,18 +92,18 @@ export function MeetingRecordWorkspace({
 function ChooseOrganizationNotice() {
   return (
     <div className="mx-auto mt-8 max-w-md rounded-md border border-border p-4 text-sm">
-      <p className="font-medium">Choose an organization to open this record.</p>
+      <p className="font-medium">No organization is available to open this record.</p>
       <p className="mt-1 text-muted-foreground">
         The recording, the chat and the recap are read through an organization
-        you belong to.
+        you belong to. Try again, or create an organization.
       </p>
       <Button
         type="submit"
         variant="outline"
         className="mt-3"
-        onClick={() => void chooseOrganizationFromButton()}
+        onClick={() => retryActiveOrganization()}
       >
-        Choose organization
+        Try again
       </Button>
     </div>
   );

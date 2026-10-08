@@ -50,15 +50,11 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { RichCopySplit } from "@/components/agent-copy/RichCopySplit";
+import { RichCopySplit } from "@ai-matrx/chat/agent-copy/RichCopySplit";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { toast } from "@/lib/toast";
 import { cn } from "@/lib/utils";
 import { describeWriteFailure } from "@/lib/errors/writeFailure";
-import {
-  ensureOrganizationContext,
-  isOrganizationSelectionCancelled,
-} from "@/lib/organization/organization-gate";
 import {
   createTemplate,
   updateTemplate,
@@ -92,6 +88,7 @@ import {
   previewParts,
 } from "@/features/message-templates/lib/merge-fields";
 import type { JsonObject } from "@/types/json";
+import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
 
 const LIST_HREF = "/chat/message-templates";
 
@@ -442,7 +439,7 @@ export function TemplateViewPage({ template, canEdit, create = false }: Template
       setSaveError(null);
       try {
         const row = await createTemplate({
-          organization_id: await ensureOrganizationContext(),
+          organization_id: await ensureOrgId(null),
           label: draft.label,
           content,
           role: role ?? "user",
@@ -456,11 +453,9 @@ export function TemplateViewPage({ template, canEdit, create = false }: Template
         router.replace(`${LIST_HREF}/${row.id}`);
       } catch (err) {
         // Declining the organization question is an answer, not a failure.
-        if (!isOrganizationSelectionCancelled(err)) {
-          const message = describeWriteFailure(err, { action: "create this template" });
+        const message = describeWriteFailure(err, { action: "create this template" });
           setSaveError(`${message.title} ${message.description ?? ""}`.trim());
           toast.error(message.title);
-        }
       } finally {
         setIsSaving(false);
       }

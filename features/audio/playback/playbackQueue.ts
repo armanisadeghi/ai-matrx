@@ -135,19 +135,13 @@ async function startItem(id: string): Promise<void> {
     await ensureOrgId(null);
   } catch (err) {
     if (stale()) return;
-    const { isOrganizationSelectionCancelled } = await import(
-      "@/lib/organization/selection-cancelled"
-    );
     const { isOrganizationRequiredError } = await import(
       "@/lib/organizations/organizationRequiredError"
     );
     const { organizationRefusalMessage } = await import(
       "@ai-matrx/chat/host/org"
     );
-    if (isOrganizationSelectionCancelled(err)) {
-      items = items.filter((i) => i.id !== id);
-    } else {
-      patch(id, {
+    patch(id, {
         status: "error",
         error: isOrganizationRequiredError(err)
           ? organizationRefusalMessage({ act: "played", subject: "This item" })
@@ -155,7 +149,6 @@ async function startItem(id: string): Promise<void> {
             ? err.message
             : "Playback failed",
       });
-    }
     active = null;
     void advance();
     return;

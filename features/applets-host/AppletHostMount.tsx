@@ -36,11 +36,11 @@ import { waitForAuthReady } from "@/lib/api/call-api";
 import { selectAccessToken } from "@/lib/redux/selectors/userSelectors";
 import { captureError } from "@/lib/diagnostics/errorCaptureStore";
 import { provideStoredComponentScopeModules } from "@/lib/code-runtime/stored-scope";
-import { ensureOrganizationContext } from "@/lib/organization/organization-gate";
 import { AppletKind } from "@/features/applets-host/AppletForeignKind";
 import { DataPage } from "@/features/applets/embed/DataPage";
 import { useDeclaredSurfaceMandates, type SurfaceMandateRef } from "@ai-matrx/chat/surfaces/runtime/surface-mandates";
 import { storedMandateKey } from "@ai-matrx/agents/mandates";
+import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
 
 /** What every Applet may import beside its own files (the record adds its own entries). */
 const HOST_SCOPE = {
@@ -155,7 +155,7 @@ export function AppletHostMount({
       // asked by the organization gate, and the run continues with their choice — never a guess.
       resolveOrganization: async () => {
         try {
-          return await ensureOrganizationContext({});
+          return await ensureOrgId(null);
         } catch {
           return null;
         }

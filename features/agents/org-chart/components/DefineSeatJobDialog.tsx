@@ -23,7 +23,6 @@ import { useAppDispatch } from "@/lib/redux/hooks";
 import { createSoftMandate } from "@/features/mandates/authoring-level/service";
 import { keyFromName, softMandateNamespace } from "@/features/mandates/authoring-level/soft-key";
 import { BackendApiError } from "@/lib/api/errors";
-import { isOrganizationSelectionCancelled } from "@/lib/organization/selection-cancelled";
 import { updateOrgPosition, loadSeatJobs } from "@/features/agents/redux/orchestras/orgChartThunks";
 import type { OrgPosition } from "../positionsService";
 
@@ -159,7 +158,6 @@ function Body({
       await dispatch(loadSeatJobs([made.mandateId]));
       onDefined({ mandateKey: made.mandateKey, mandateId: made.mandateId });
     } catch (e) {
-      if (isOrganizationSelectionCancelled(e)) return;
       setError(e instanceof Error ? e.message : "The job could not be created.");
     } finally {
       setSaving(false);

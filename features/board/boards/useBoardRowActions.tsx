@@ -12,7 +12,6 @@ import { ArchiveRestore, Copy, ExternalLink, Eye, Pencil, Trash2 } from "lucide-
 import type { ItemMenuConfig } from "@/components/official/item/types";
 import { TextInputDialog } from "@/components/dialogs/text-input/TextInputDialog";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
-import { isOrganizationSelectionCancelled } from "@/lib/organization/organization-gate";
 import { toast } from "@/lib/toast";
 import { trashConfirmSentence } from "@/features/trash/archiveCopy";
 import type { EntityListController, EntityRowActionsResult } from "@/lib/entity-list/config";
@@ -52,7 +51,6 @@ export function useBoardRowActions(list: EntityListController<BoardListRow>): En
       list.refresh();
       startTransition(() => router.push(boardHref(copy)));
     } catch (error) {
-      if (isOrganizationSelectionCancelled(error)) return;
       throw new Error(failure(error, "The board could not be copied. Try again."));
     }
   };

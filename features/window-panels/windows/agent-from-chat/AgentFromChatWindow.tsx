@@ -35,7 +35,6 @@ import {
 } from "@/features/agents/from-chat/service";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
-import { isOrganizationSelectionCancelled } from "@/lib/organization/organization-gate";
 import { toast } from "@/lib/toast";
 import { announceComingSoon } from "@/lib/coming-soon/announce";
 import { adminDoorOpen } from "@/lib/api/adminDoor";
@@ -165,7 +164,6 @@ function AgentFromChatWindowInner({
       onClose();
       router.push(href);
     } catch (err) {
-      if (isOrganizationSelectionCancelled(err)) return;
       toast.error(err instanceof Error ? err.message : "The Masterwork could not be started.");
     } finally {
       setStartingMasterwork(false);

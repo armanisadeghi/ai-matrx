@@ -11,8 +11,8 @@ import {
   reviewedSendRequestBody,
   type ReviewedGmailSendOutcome,
 } from "@/features/crm/gmail/reviewed-send-contract";
-import { ensureOrganizationContext } from "@/lib/organization/organization-gate";
 import { isGoogleWorkspaceResourceType } from "@/features/google-workspace/resource-types";
+import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
 
 export const DEFAULT_GOOGLE_SHEET_RANGE = "A1:C10";
 
@@ -75,7 +75,7 @@ function effectiveOrganizationId(): Promise<string> {
   // organization selected it asks, then continues this same request. The
   // answer is handed to `postGoogleBackend` as the header override too, so the
   // body and the header can never name two organizations.
-  return ensureOrganizationContext();
+  return ensureOrgId(null);
 }
 
 async function responseRecord(
@@ -351,9 +351,7 @@ export async function sendReviewedGmail(
 ): Promise<ReviewedGmailSendOutcome> {
   // ORG-GATE-AUDIT: a CRM record's own organization wins and never asks; a
   // send with no record and no organization selected asks, then continues.
-  const organizationId = await ensureOrganizationContext({
-    organizationId: draft.context.organizationId,
-  });
+  const organizationId = await ensureOrgId(draft.context.organizationId);
   const response = await postGoogleBackend(
     "/api/google-workspace/gmail/send-reviewed",
     reviewedSendRequestBody({
@@ -385,7 +383,7 @@ export async function reviewGmailDraft(input: {
   subject: string;
   body: string;
 }): Promise<ReviewedGmailDraftResult> {
-  const organizationId = await ensureOrganizationContext({ organizationId: input.organizationId ?? null });
+  const organizationId = await ensureOrgId(input.organizationId ?? null);
   const response = await postGoogleBackend(
     "/api/google-workspace/gmail/drafts/review",
     {

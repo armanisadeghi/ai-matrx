@@ -37,7 +37,6 @@ import {
 } from "@/features/sources/api/sourcesApi";
 import { toast } from "@/lib/toast";
 import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
-import { isOrganizationSelectionCancelled } from "@/lib/organization/organization-gate";
 import { isOrganizationRequiredError } from "@/lib/organizations/organizationRequiredError";
 import { organizationRefusalMessage } from "@ai-matrx/chat/host/org";
 import React, {
@@ -1231,8 +1230,6 @@ function TextPane({
       }
       return { error: null };
     } catch (err) {
-      if (isOrganizationSelectionCancelled(err))
-        return { error: "Choose an organization to save this edit." };
       if (isOrganizationRequiredError(err))
         return { error: organizationRefusalMessage({ subject: "This edit", act: "saved" }) };
       return { error: sourceRefusalSentence(err) };

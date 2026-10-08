@@ -42,7 +42,7 @@ import {
   selectOrganizationId,
   selectOrgBootstrapResolved,
 } from "@/lib/redux/slices/appContextSlice";
-import { ensureOrganizationContext } from "@/lib/organization/organization-gate";
+import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
 
 function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -118,7 +118,7 @@ export async function resolveNewNoteOrganization(
       // organization globally, and the note is created in it. Cancelling
       // throws `OrganizationSelectionCancelled`, which every caller treats as
       // "nothing happened" — no note, no toast, no lost title.
-      return ensureOrganizationContext();
+      return ensureOrgId(null);
     }
 
     const remaining = deadline - now();

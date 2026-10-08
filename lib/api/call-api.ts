@@ -140,6 +140,7 @@ export {
 
 import type { paths, components } from "@ai-matrx/agents/generated/api-types";
 import type { TypedStreamEvent } from "@ai-matrx/agents/generated/stream-events";
+import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
 
 // ============================================================================
 // SECTION 1 — UTILITY TYPE HELPERS
@@ -445,19 +446,6 @@ export interface ApiCallConfig<
    */
   organizationFreeRead?: true;
 
-  /**
-   * Whether a WRITE with no workspace selected may open the workspace picker.
-   * Default: yes when the person just acted deliberately (a click/tap, Enter
-   * or Space on a control, or a modifier shortcut within the last few seconds
-   * — `personJustActed`; plain typing never counts), no otherwise — so a write the
-   * person pressed ASKS and continues on the pick, while a background write
-   * (retry, autosave on a timer, rejoin) keeps the fail-closed refusal it
-   * always had and never raises a dialog with nothing behind it (4821555e98).
-   * `true` forces the question for a deliberate action that reaches here after
-   * the activation window (after a long upload); `false` opts a background
-   * write out. Reads never ask.
-   */
-  interactiveOrganization?: boolean;
 
   // ── Test / Demo overrides (placeholder) ──────────────────────────────────
 
@@ -646,33 +634,24 @@ async function readHasNoOrganization(getState: () => RootState): Promise<boolean
 
 /**
  * THE ONE org resolution for a call (callApi and the global MatrxTransport):
- * the call's own org wins, then the admin seat, then the selection; with none,
- * a write the person just pressed HOLDS on the canonical picker, anything else
- * refuses fail-closed. Never picks an organization for anybody.
+ * the call's own org wins, then the admin seat. Otherwise a WRITE acts in the
+ * ACTIVE organization, and `ensureOrgId` holds it until the load ladder has
+ * answered from the account: a browser cache may paint an organization first,
+ * but no write leaves on it. A read keeps its exemption (it may carry the
+ * painted selection). Nothing here ever prompts or picks.
  */
 export async function ensureOrganizationContextForCall(
   selectedOrganizationId: string | null | undefined,
   overrideOrganizationId: string | undefined,
   method: string,
-  interactiveOverride: boolean | undefined,
 ): Promise<string> {
-  const { ensureOrganizationForRequest, ensureOrganizationForWrite, personJustActed } = await import(
-    "@/lib/organization/organization-gate"
-  );
-  // THE ONE LINE, drawn the same way for every write through callApi: a write
-  // the person just pressed ASKS (the canonical picker; the call waits, then
-  // continues with the pick; dismiss = OrganizationSelectionCancelled, which
-  // the catch below turns into "nothing happened"). A background write keeps
-  // the fail-closed refusal. Nothing is ever picked for anybody.
-  const organizationId =
-    overrideOrganizationId ?? adminLaneOrganizationId() ?? selectedOrganizationId;
-  // Reads never ask; a write asks through the ONE write helper.
+  const explicit = overrideOrganizationId ?? adminLaneOrganizationId();
+  if (explicit) return requireOrganizationContext(null, explicit);
   if (/^(GET|HEAD|OPTIONS)$/i.test(method)) {
-    return ensureOrganizationForRequest({ method, organizationId, interactive: false });
+    return requireOrganizationContext(selectedOrganizationId, undefined);
   }
-  return ensureOrganizationForWrite(organizationId, {
-    interactive: interactiveOverride ?? personJustActed(),
-  });
+  const { ensureOrgId } = await import("@/lib/organizations/ensureOrgId");
+  return ensureOrgId(null);
 }
 
 export function resolveScope(
@@ -948,7 +927,6 @@ export function callApi<
               state.appContext?.organization_id,
               config.scopeOverrides?.organization_id,
               config.method,
-              config.interactiveOrganization,
             );
 
       // ── Step 4: Resolve and validate the complete request context ───────
@@ -1085,20 +1063,6 @@ export function callApi<
       }
       return result;
     } catch (err) {
-      // The person was asked which workspace this belongs to and said "not
-      // now". That is an ANSWER, not a failure: no request was sent, nothing
-      // was written, and there is nothing to report. It must never reach the
-      // Error Inspector or a toast — Arman's rule is that cancelling puts you
-      // back exactly where you were, and a red banner is not "where you were".
-      if (err instanceof Error && err.name === "OrganizationSelectionCancelled") {
-        return {
-          error: {
-            type: "abort_error",
-            message: err.message,
-            code: "organization_selection_cancelled",
-          },
-        };
-      }
       const error = normalizeMatrxError(err);
       // Network-layer / thrown failures (timeout, DNS, abort) capture here —
       // UNLESS the stream layer already recorded this exact throw. A dropped
@@ -1386,7 +1350,6 @@ export function callWarmAgent(agentId: string, source?: WarmSource) {
   return callApi({
     path: "/ai/agents/{agent_id}/warm",
     // Background (rejoin / warm-up): never opens the workspace picker.
-    interactiveOrganization: false,
     method: "POST",
     pathParams: { agent_id: agentId },
     body: (source ? { source } : undefined) as any,
@@ -1398,7 +1361,6 @@ export function callWarmConversation(conversationId: string) {
   return callApi({
     path: "/ai/conversations/{conversation_id}/warm",
     // Background (rejoin / warm-up): never opens the workspace picker.
-    interactiveOrganization: false,
     method: "POST",
     pathParams: { conversation_id: conversationId },
     stream: false,
@@ -1446,7 +1408,6 @@ export function callWarmPrompt(promptId: string) {
   return callApi({
     path: "/ai/prompts/{prompt_id}/warm",
     // Background (rejoin / warm-up): never opens the workspace picker.
-    interactiveOrganization: false,
     method: "POST",
     pathParams: { prompt_id: promptId },
     stream: false,

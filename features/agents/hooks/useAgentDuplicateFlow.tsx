@@ -22,7 +22,6 @@ import {
   isAdminSystemAgentsContext,
 } from "@ai-matrx/chat/agents/components/shared/agent-route-context";
 import { getUserMessage } from "@ai-matrx/agents/matrx";
-import { isOrganizationSelectionCancelled } from "@ai-matrx/chat/host/org";
 
 interface UseAgentDuplicateFlowOptions {
   /** The route family the copy opens in. Default: the admin system-agents base on those routes, else "/agents". */
@@ -187,10 +186,6 @@ export function useAgentDuplicateFlow(options?: UseAgentDuplicateFlowOptions) {
       options?.onDuplicated?.(id);
     } catch (err) {
       // Closing the organization picker is "not now", never a failure.
-      if (isOrganizationSelectionCancelled(err)) {
-        setStep("choose");
-        return;
-      }
       setErrorMessage(getUserMessage(err));
       setStep("error");
     }

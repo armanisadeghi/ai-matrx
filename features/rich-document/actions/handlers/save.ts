@@ -17,10 +17,6 @@ import {
 import { toast } from "@/lib/toast";
 import { openOverlay } from "@/lib/redux/slices/overlaySlice";
 import { NotesAPI } from "@/features/notes/service/notesApi";
-import {
-  ensureOrganizationContext,
-  isOrganizationSelectionCancelled,
-} from "@/lib/organization/organization-gate";
 import { CodeFilesAPI } from "@/features/code-files/service/codeFilesApi";
 import { setPendingSource } from "@/features/tasks/redux/taskUiSlice";
 import { registerAction } from "@ai-matrx/rich-content/rich-document/actions/provider";
@@ -39,6 +35,7 @@ import { selectMessagePosition } from "@ai-matrx/chat/agents/redux/execution-sys
 import { buildTaskSeedFromMessage } from "@ai-matrx/chat/agents/components/messages-display/message-options/buildTaskSeedFromMessage";
 import type { ContentSource } from "@ai-matrx/rich-content/rich-document/types";
 import { downloadFile } from "@ai-matrx/kit/download";
+import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
 
 /**
  * Map a ContentSource to the `entity_type` used by save-to-task. Centralized
@@ -117,9 +114,7 @@ registerAction({
     )
       return;
     try {
-      const organizationId = await ensureOrganizationContext({
-        organizationId: ctx.organizationId,
-      });
+      const organizationId = await ensureOrgId(ctx.organizationId);
       // Identical to Save to Notes, minus the questions: folder is Scratch,
       // title auto-derived, saved immediately.
       await NotesAPI.create({
@@ -131,7 +126,6 @@ registerAction({
       });
       toast.success("Saved to Scratch!");
     } catch (error) {
-      if (isOrganizationSelectionCancelled(error)) return;
       toast.error(getErrorMessage(error, "Failed to save"));
     }
   },
@@ -310,9 +304,7 @@ registerAction({
     )
       return;
     try {
-      const organizationId = await ensureOrganizationContext({
-        organizationId: ctx.organizationId,
-      });
+      const organizationId = await ensureOrgId(ctx.organizationId);
       // Lazy-import so Univer (heavy) stays out of the bundle until used.
       const { pushMarkdownToDocument } =
         await import("@/features/data-tables/export-targets");
@@ -334,9 +326,7 @@ registerAction({
         },
       });
     } catch (error) {
-      if (!isOrganizationSelectionCancelled(error)) {
-        toast.error(getErrorMessage(error, "Failed to create document"));
-      }
+      toast.error(getErrorMessage(error, "Failed to create document"));
     }
   },
 });

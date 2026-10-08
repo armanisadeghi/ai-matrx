@@ -21,10 +21,6 @@ import * as React from "react";
 import { DiffViewer } from "@ai-matrx/diff/react";
 import { toast } from "@/lib/toast";
 import {
-  hasPendingOrganizationRequest,
-  isOrganizationGateInteraction,
-} from "@/lib/organization/organization-gate";
-import {
   Dialog,
   DialogContent,
   DialogDescription,
@@ -265,22 +261,14 @@ export function DocumentAgentReview({
   }
 
   return (
-    // Held and set: the workspace picker a run may open takes focus — that must
-    // not close this review and abandon the run.
     <Dialog
       open
       onOpenChange={(open) =>
-        !open && !saving && !hasPendingOrganizationRequest() && onClose()
+        !open && !saving && onClose()
       }
     >
       <DialogContent
         className="flex max-h-[85dvh] w-[min(56rem,95vw)] max-w-none flex-col"
-        onInteractOutside={(event) => {
-          if (isOrganizationGateInteraction(event)) event.preventDefault();
-        }}
-        onFocusOutside={(event) => {
-          if (isOrganizationGateInteraction(event)) event.preventDefault();
-        }}
       >
         <DialogHeader>
           <DialogTitle>

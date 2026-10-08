@@ -67,11 +67,6 @@ import {
 import { toast } from "@/lib/toast";
 import { useTextDraft } from "@ai-matrx/kit/drafts";
 import {
-  ensureOrganizationForWrite,
-  isOrganizationSelectionCancelled,
-  withdrawOrganizationRequest,
-} from "@/lib/organization/organization-gate";
-import {
   feedbackListHref,
   inFeedbackGroup,
   type FeedbackCountGroup,
@@ -94,6 +89,7 @@ import type { FeedbackSubject } from "@/features/overlays/openers/feedbackDialog
 import { describeSubject, subjectMetadata } from "./feedback-subject";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { asClause } from "@ai-matrx/kit/text";
+import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -405,19 +401,9 @@ function useFeedbackForm({
       ? `feedback:${subject.sourceToken}:${subject.sourceId}`
       : `feedback:billing:${subject.billingScope}:${subject.subscriptionId}:${subject.invoiceId ?? "none"}`
     : "feedback";
-  // The workspace question this window asked, if it is still open: a window
-  // that closes withdraws it, so the picker never outlives the window.
-  const askingOrgRef = useRef(false);
   const onClose = useCallback(() => {
-    if (askingOrgRef.current) withdrawOrganizationRequest();
     closeOverlayNow();
   }, [closeOverlayNow]);
-  useEffect(
-    () => () => {
-      if (askingOrgRef.current) withdrawOrganizationRequest();
-    },
-    [],
-  );
   // What the person SEES: the page's own name (its tab title, before the
   // " — AI Matrx" suffix) and the address bar — never the app-internal route
   // (`/agents` rewrites to `/agents/all`). Re-read on every navigation; the
@@ -751,27 +737,18 @@ function useFeedbackForm({
   const handleSubmit = useCallback(async () => {
     if (!description.trim() || isSubmitting) return;
 
-    // Every report is filed under one organization. With none selected the
-    // submit is HELD: the canonical workspace picker asks — ONCE, here — and
-    // the report AND its attachments continue with the pick. Cancelling the
-    // pick is "not now": nothing happened, no error.
+    // Every report is filed under one organization: the active one, once the
+    // load ladder has answered.
     let organizationId: string;
-    askingOrgRef.current = true;
     try {
-      organizationId = await ensureOrganizationForWrite(
-        selectedOrganizationId,
-        {
-          interactive: true,
-        },
-      );
+      organizationId = await ensureOrgId(selectedOrganizationId);
     } catch (err) {
-      if (isOrganizationSelectionCancelled(err)) return;
       setError(
-        "Choose a workspace to send feedback — your report is still here.",
+        err instanceof Error
+          ? `${err.message} Your report is still here.`
+          : "No organization is available to send feedback — your report is still here.",
       );
       return;
-    } finally {
-      askingOrgRef.current = false;
     }
 
     // Pre-flight: check that the client-side session is still valid before

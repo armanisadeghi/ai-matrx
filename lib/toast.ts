@@ -66,12 +66,6 @@
 import type { ReactElement } from "react";
 import { toast as sonnerToast } from "sonner";
 import { captureError } from "@/lib/diagnostics/errorCaptureStore";
-import {
-  isOrganizationSelectionCancelled,
-  organizationSelectionCancelledWithin,
-  WORKSPACE_REFUSAL_PATTERN,
-  workspaceNeededAnnouncedWithin,
-} from "@/lib/organization/selection-cancelled";
 import { createMatrxToast } from "@ai-matrx/kit/toast";
 
 const captured = createMatrxToast({
@@ -527,28 +521,15 @@ function track(
  * arrives here as ""), is never raised and never filed in the Error Inspector.
  * An error toast with no words is never an honest toast anyway.
  */
-function isSilentNotice(message: unknown, options?: RecordToastOptions): boolean {
-  // The backstop already said it, with the remedy: a caller repeating the
-  // transport's "Select an organization…" sentence adds nothing.
-  if (workspaceNeededAnnouncedWithin(5_000)) {
-    const text = `${typeof message === "string" ? message : ""} ${typeof options?.description === "string" ? options.description : ""}`;
-    if (WORKSPACE_REFUSAL_PATTERN.test(text)) return true;
-  }
-  if (isOrganizationSelectionCancelled(message)) return true;
-  if (isOrganizationSelectionCancelled(options?.description)) return true;
-  if (typeof message === "string" && message.trim() === "") return true;
-  // A caller's own title over the cancellation's empty text, raised in the
-  // same breath as the cancellation. Never read without both conditions.
-  return (
-    options?.description === "" && organizationSelectionCancelledWithin(5_000)
-  );
+function isSilentNotice(message: unknown): boolean {
+  return typeof message === "string" && message.trim() === "";
 }
 
 /** Wrap one sonner method onto the wall clock; leave a missing one missing. */
 function onWallClock(emit: Emit | undefined, dropsSilentNotices = false, minimumMs = 0) {
   if (typeof emit !== "function") return undefined;
   return (message: unknown, options?: RecordToastOptions) =>
-    dropsSilentNotices && isSilentNotice(message, options)
+    dropsSilentNotices && isSilentNotice(message)
       ? ("" as ToastId)
       : track(emit, message, options, null, minimumMs);
 }
@@ -632,7 +613,7 @@ function errorOnWallClock(emit: Emit | undefined) {
   if (typeof emit !== "function") return undefined;
   return (rawMessage: unknown, options?: RecordToastOptions) => {
     const message = readableErrorMessage(rawMessage);
-    return isSilentNotice(message, options)
+    return isSilentNotice(message)
       ? ("" as ToastId)
       : track(emit, message, decorateError(message, options, null), null, MIN_ERROR_TOAST_MS);
   };
@@ -678,7 +659,7 @@ export const toastErrorAlreadyCaptured: typeof captured.toastErrorAlreadyCapture
   message,
   options,
 ) =>
-  isSilentNotice(message, options as RecordToastOptions | undefined)
+  isSilentNotice(message)
     ? ("" as ToastId)
     : track(
     captured.toastErrorAlreadyCaptured as unknown as Emit,

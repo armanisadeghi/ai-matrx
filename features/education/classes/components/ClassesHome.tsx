@@ -33,7 +33,6 @@ import {
   EDUCATION_CLASSES_SURFACE_NAME,
   type NewClassDraftScope,
 } from "@/features/surfaces/manifests/education-classes.manifest";
-import { isOrganizationSelectionCancelled } from "@/lib/organization/selection-cancelled";
 import {
   parseCreateClassesValue,
   parseDeleteClassesValue,
@@ -215,9 +214,7 @@ export function ClassesHome() {
         run: async (input) => toRef(await createClass(input)),
         nameOf: (input) => input.name,
         refusalFor: (e) =>
-          isOrganizationSelectionCancelled(e)
-            ? "The person closed the workspace picker, so no classes were created. Ask which workspace the classes belong in."
-            : undefined,
+          undefined,
       },
       update: {
         parse: (value) => parseUpdateClassesValue(value, allOwned),

@@ -31,12 +31,12 @@ import {
   extractMatrxErrorMessage,
   sendMatrxRequest,
 } from "@ai-matrx/agents/matrx";
-import { ensureOrganizationForRequest } from "@/lib/organization/organization-gate";
 import type { paths } from "@ai-matrx/agents/generated/api-types";
 import type {
   ConversationAttachment,
   PendingAttachment,
 } from "./attachable-resources";
+import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
 
 /** Route templates, exactly as the generated contract publishes them. */
 const RESOURCES_ROUTE = "/connections/resources" satisfies keyof paths;
@@ -107,7 +107,7 @@ async function authHeaders(method: string): Promise<Record<string, string>> {
   // bare kernel (ORG-GATE-AUDIT): attaching or detaching with no organization
   // selected asks, then continues this same request; a background list read
   // keeps the fail-closed refusal before any networking.
-  const organizationId = await ensureOrganizationForRequest({ method });
+  const organizationId = await ensureOrgId(null);
   return applyOrganizationContextHeader(
     {
       Authorization: `Bearer ${session.access_token}`,

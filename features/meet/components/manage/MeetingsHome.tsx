@@ -77,7 +77,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
-import { ensureOrganizationContext } from "@/lib/organization/organization-gate";
 import { toast } from "@/lib/toast";
 import {
   isLiveInstant,
@@ -117,6 +116,7 @@ import type {
   MeetingPrefill,
   OccurrenceRef,
 } from "@/features/meet/components/manage/MeetingFormDialog";
+import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
 
 /** One Upcoming row: an AI Matrx occurrence, or an event from the person's other calendar. */
 type AgendaRow =
@@ -222,7 +222,7 @@ export function MeetingsHome() {
   const toggleExternal = async (show: boolean) => {
     try {
       const targetOrganizationId =
-        actions.organizationId ?? (await ensureOrganizationContext());
+        actions.organizationId ?? (await ensureOrgId(null));
       await planning.setShowExternalEvents(show, targetOrganizationId);
     } catch (thrown) {
       toast.error(errorSentence(thrown));
@@ -241,7 +241,7 @@ export function MeetingsHome() {
     }
     setHeld(what);
     try {
-      await ensureOrganizationContext();
+      await ensureOrgId(null);
     } catch {
       setHeld(null);
     }

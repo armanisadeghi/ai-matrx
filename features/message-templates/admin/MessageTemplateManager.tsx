@@ -74,7 +74,7 @@ import {
   clearTemplateCache,
 } from "@/features/message-templates/services/message-templates-service";
 import { RichContent } from "@ai-matrx/rich-content/levels/RichContent";
-import MarkdownStream from "@/components/MarkdownStream";
+import MarkdownStream from "@ai-matrx/chat/ui/markdown-stream/MarkdownStream";
 import MatrxMiniLoader from "@/components/loaders/MatrxMiniLoader";
 import { requestRaw } from "@/lib/python-client";
 import { getUserMessage } from "@ai-matrx/agents/matrx";
@@ -86,12 +86,9 @@ import type {
   RenderBlockEvent,
 } from "@ai-matrx/agents/generated/stream-events";
 import { isJsonObject } from "@/types/json";
-import {
-  ensureOrganizationContext,
-  isOrganizationSelectionCancelled,
-} from "@/lib/organization/organization-gate";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
 
 interface MessageTemplateManagerProps {
   className?: string;
@@ -393,7 +390,7 @@ export function MessageTemplateManager({
       }
 
       const input: CreateMessageTemplateInput = {
-        organization_id: await ensureOrganizationContext(),
+        organization_id: await ensureOrgId(null),
         label: createFormData.label,
         content: createFormData.content,
         role: createFormData.role,
@@ -415,7 +412,6 @@ export function MessageTemplateManager({
     } catch (error) {
       // Declining the organization question is an answer, not a failure:
       // nothing was written and nothing is said. Anything else is real.
-      if (isOrganizationSelectionCancelled(error)) return;
       console.error("Error creating template:", error);
       toast({
         title: "Error",

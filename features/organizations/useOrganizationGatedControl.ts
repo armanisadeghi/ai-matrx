@@ -94,10 +94,7 @@ import {
   useOrganizationRequired,
   type OrganizationState,
 } from "@/features/organizations/useOrganizationRequired";
-import {
-  ensureOrganizationContext,
-  isOrganizationSelectionCancelled,
-} from "@/lib/organization/organization-gate";
+import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
 
 /** What the control shows while boot has not answered yet. Never a refusal. */
 export const ORGANIZATION_RESOLVING_TITLE =
@@ -199,10 +196,9 @@ export function useOrganizationGatedControl(act: string): OrganizationGatedContr
     // moved. Any OTHER failure (no picker mounted at all) is the fail-closed
     // path and is reported rather than silently dropped.
     if (organizationState === "required") {
-      void ensureOrganizationContext()
+      void ensureOrgId(null)
         .then((organizationId) => act(organizationId))
         .catch((error: unknown) => {
-          if (isOrganizationSelectionCancelled(error)) return;
           console.error(
             "[organizations] the picker could not be opened for a gated control; the action did not run.",
             error,

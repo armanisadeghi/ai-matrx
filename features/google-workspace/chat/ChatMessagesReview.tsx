@@ -3,11 +3,11 @@
 import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { ErrorNotice } from "@/components/errors/ErrorNotice";
-import { ensureOrganizationContext } from "@/lib/organization/organization-gate";
 import { extractErrorMessage } from "@/utils/errors";
 import { GOOGLE_SCOPE } from "@/lib/googleScopes";
 import type { GoogleConnectionSummary } from "@/features/marketing/google/types";
 import { previewChatMessages, validateChatRequest, type ChatMessagesPreview, type ChatMessagesRequest } from "./service";
+import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
 
 interface Props {
   connection: GoogleConnectionSummary | null;
@@ -55,7 +55,7 @@ export function ChatMessagesReview({ connection, actorId, organizationId }: Prop
     setBusy(true);
     try {
       validateChatRequest(request);
-      const context = await ensureOrganizationContext({ organizationId });
+      const context = await ensureOrgId(organizationId);
       if (!mounted.current || epoch.current !== own) return;
       const result = await previewChatMessages(request, context);
       if (mounted.current && epoch.current === own) setPage(result);

@@ -34,10 +34,6 @@ import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
 import { getActiveOrgId } from "@/lib/organizations/activeOrg";
-import {
-  holdDeliberateIntent,
-  isOrganizationSelectionCancelled,
-} from "@/lib/organization/organization-gate";
 import { isOrganizationRequiredError } from "@/lib/organizations/organizationRequiredError";
 import { useBackendApi } from "@/hooks/useBackendApi";
 import { useScraperApi } from "@/features/scraper/hooks/useScraperApi";
@@ -68,7 +64,7 @@ if (typeof window !== "undefined") {
 
 /** True when a landing stopped only because no organization is chosen yet. */
 export function waitsForOrganization(error: unknown): boolean {
-  return isOrganizationRequiredError(error) || isOrganizationSelectionCancelled(error);
+  return isOrganizationRequiredError(error);
 }
 
 export function useSourceIntake(
@@ -135,7 +131,7 @@ export function useSourceIntake(
     },
     ensureOrganization: () => ensureOrgId(activeOrgId),
     hasOrganization: () => Boolean(activeOrgId || getActiveOrgId()),
-    holdIntent: holdDeliberateIntent,
+    holdIntent: (work) => Promise.resolve().then(work),
     waitsForOrganization,
     failureSentence: addFailureSentence,
     userId: () => userId,

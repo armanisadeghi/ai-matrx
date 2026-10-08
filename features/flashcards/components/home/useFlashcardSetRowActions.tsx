@@ -105,10 +105,6 @@ export function useFlashcardSetRowActions(
       });
       list.refresh();
     } catch (e) {
-      if (e instanceof Error && e.name === "OrganizationSelectionCancelled") {
-        toast.dismiss(pending);
-        return;
-      }
       toast.error(e instanceof Error ? e.message : "The deck was not copied.", {
         id: pending,
       });

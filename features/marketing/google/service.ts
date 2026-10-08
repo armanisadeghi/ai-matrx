@@ -33,9 +33,9 @@ import { readAllRows } from "@ai-matrx/data/db";
 import { resolveBaseUrl } from "@/lib/python-client";
 import { buildMatrxRequestUrl, sendMatrxRequest } from "@ai-matrx/agents/matrx";
 import { applyOrganizationContextHeader } from "@/lib/api/organization-context";
-import { ensureOrganizationForRequest } from "@/lib/organization/organization-gate";
 import { operationFailed } from "@/utils/errors";
 import { getFile } from "@/features/files/api/files";
+import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
 // Keep this small exchange control local rather than deriving it from the
 // deployed OpenAPI snapshot: the frontend and backend deploy independently,
 // and a newly added fail-closed purpose must be usable as soon as both source
@@ -420,11 +420,7 @@ async function organizationContextHeaders(
   // with no organization selected asks, then continues this same request; a
   // read — including the read-shaped POSTs below — keeps the fail-closed
   // refusal and never raises a dialog on mount.
-  const organizationId = await ensureOrganizationForRequest({
-    method: request.method,
-    interactive: request.interactive,
-    organizationId: organizationIdOverride,
-  });
+  const organizationId = await ensureOrgId(organizationIdOverride);
   return applyOrganizationContextHeader(base, organizationId);
 }
 

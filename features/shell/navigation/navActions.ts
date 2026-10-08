@@ -40,10 +40,6 @@
 import { useRouter } from "next/navigation";
 import { toast } from "@/lib/toast";
 import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
-import {
-  ensureOrganizationContext,
-  isOrganizationSelectionCancelled,
-} from "@/lib/organization/organization-gate";
 import { useOpenCreateProjectWindow } from "@/features/overlays/openers/createProjectWindow";
 import { useOpenPickListManagerWindow } from "@/features/overlays/openers/pickListManagerWindow";
 import { useOpenFavoritesManagerWindow } from "@/features/overlays/openers/favoritesManagerWindow";
@@ -52,6 +48,7 @@ import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { openOverlay } from "@/lib/redux/slices/overlaySlice";
 import { isServiceFailure } from "@/features/data-tables/types";
 import type { ShellNavActionId } from "../constants/nav-data";
+import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
 
 export type ShellNavActionHandlers = Record<ShellNavActionId, () => void>;
 
@@ -87,9 +84,7 @@ export function useNavActions(): ShellNavActionHandlers {
       // in-page "New Note" button behavior (create-then-open).
       void (async () => {
         try {
-          const capturedOrganizationId = await ensureOrganizationContext({
-            organizationId,
-          });
+          const capturedOrganizationId = await ensureOrgId(organizationId);
           const { createNewNote } =
             await import("@/features/notes/redux/thunks");
           const note = await dispatch(
@@ -97,7 +92,6 @@ export function useNavActions(): ShellNavActionHandlers {
           ).unwrap();
           if (note?.id) router.push(`/notes/${note.id}`);
         } catch (error) {
-          if (isOrganizationSelectionCancelled(error)) return;
           toast.error("Couldn't create the note");
         }
       })();
@@ -108,12 +102,9 @@ export function useNavActions(): ShellNavActionHandlers {
       void (async () => {
         let capturedOrganizationId: string;
         try {
-          capturedOrganizationId = await ensureOrganizationContext({
-            organizationId,
-          });
+          capturedOrganizationId = await ensureOrgId(organizationId);
         } catch (error) {
-          if (!isOrganizationSelectionCancelled(error))
-            toast.error("Couldn't create the document");
+          toast.error("Couldn't create the document");
           return;
         }
         const { createDocument } =
@@ -135,12 +126,9 @@ export function useNavActions(): ShellNavActionHandlers {
       void (async () => {
         let capturedOrganizationId: string;
         try {
-          capturedOrganizationId = await ensureOrganizationContext({
-            organizationId,
-          });
+          capturedOrganizationId = await ensureOrgId(organizationId);
         } catch (error) {
-          if (!isOrganizationSelectionCancelled(error))
-            toast.error("Couldn't create the workbook");
+          toast.error("Couldn't create the workbook");
           return;
         }
         const { createWorkbook } =

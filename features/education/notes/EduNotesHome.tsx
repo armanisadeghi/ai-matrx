@@ -43,10 +43,6 @@ import type { NoteListItem } from "@/features/notes/types";
 import { formatRelativeTime } from "@/utils/datetime";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
-import {
-  ensureOrganizationContext,
-  isOrganizationSelectionCancelled,
-} from "@/lib/organization/organization-gate";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
@@ -66,6 +62,7 @@ import {
   parseDeleteEducationNotes,
   parseUpdateEducationNotes,
 } from "./educationNoteAgentWrites";
+import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
 
 type NoteListFilter = "all" | "only_me" | "published";
 const NOTE_LIST_FILTERS: { id: NoteListFilter; label: string }[] = [
@@ -175,9 +172,7 @@ export function EduNotesHome() {
     if (creating) return;
     setCreating(true);
     try {
-      const capturedOrganizationId = await ensureOrganizationContext({
-        organizationId,
-      });
+      const capturedOrganizationId = await ensureOrgId(organizationId);
       const note = await NotesAPI.create({
         label: "Untitled note",
         content: "",
@@ -186,10 +181,6 @@ export function EduNotesHome() {
       });
       startTransition(() => router.push(`/education/notes/${note.id}`));
     } catch (e) {
-      if (isOrganizationSelectionCancelled(e)) {
-        setCreating(false);
-        return;
-      }
       toast.error(e instanceof Error ? e.message : "Could not create the note");
       setCreating(false);
     }
@@ -272,9 +263,7 @@ export function EduNotesHome() {
         create: {
           parse: parseCreateEducationNotes,
           run: async (plan) => {
-            const capturedOrganizationId = await ensureOrganizationContext({
-              organizationId,
-            });
+            const capturedOrganizationId = await ensureOrgId(organizationId);
             const note = await NotesAPI.create({
               label: plan.title,
               content: plan.content,
@@ -288,9 +277,7 @@ export function EduNotesHome() {
           },
           nameOf: (plan) => plan.title,
           refusalFor: (cause) =>
-            isOrganizationSelectionCancelled(cause)
-              ? "The learner closed the organization picker, so no note was created."
-              : undefined,
+            undefined,
         },
         update: {
           parse: (value) => parseUpdateEducationNotes(value, owned),

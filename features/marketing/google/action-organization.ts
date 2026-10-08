@@ -1,4 +1,4 @@
-import { ensureOrganizationContext } from "@/lib/organization/organization-gate";
+import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
 
 /**
  * Resolve organization identity at a deliberate Google action boundary.
@@ -9,7 +9,5 @@ export async function resolveGoogleActionOrganizationId(
   connectionOrganizationId: string | null,
   activeOrganizationId: string | null,
 ): Promise<string> {
-  return ensureOrganizationContext({
-    organizationId: connectionOrganizationId ?? activeOrganizationId,
-  });
+  return ensureOrgId(connectionOrganizationId ?? activeOrganizationId);
 }

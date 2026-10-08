@@ -26,7 +26,6 @@ import { createClient } from "@/utils/supabase/client";
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { APPLETS_SURFACE_NAME, createAppletsScope } from "@/features/surfaces/manifests/applets.manifest";
 import { useOrganizationRequired } from "@/features/organizations/useOrganizationRequired";
-import { ensureOrganizationForWrite, isOrganizationSelectionCancelled } from "@/lib/organization/organization-gate";
 import { useOpenLiveRunWindow, type LiveRunWindowHandle } from "@/features/overlays/openers/liveRunWindow";
 import { AppletHostMount } from "@/features/applets-host/AppletHostMount";
 import { useAppSelector } from "@/lib/redux/hooks";
@@ -50,6 +49,7 @@ import {
 import { readBuildRecord, type BuildEntry } from "./build-session";
 import { useAppletBuildSession } from "./useAppletBuildSession";
 import { BuildHistory } from "./BuildHistory";
+import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
 
 // Declared in aidream (client_mandates.py, applets.build / applets.fix); allowlisted in
 // scripts/mandate-keys-allowlist.json until @ai-matrx/agents publishes MANDATE_KEYS.applets__build.
@@ -202,7 +202,7 @@ export function AppletBuilder({ appletId: initialId, routed = false }: { appletI
     let started: { id: string; entry: BuildEntry } | null = null;
     try {
       // A new app needs an organization: with none set, the picker asks and THIS build continues with the pick.
-      const org = appletId ? null : (organizationId ?? (await ensureOrganizationForWrite(null, { interactive: true })));
+      const org = appletId ? null : (organizationId ?? (await ensureOrgId(null)));
       // The request is written BEFORE anything runs — a new app is born here and the address becomes its own.
       const { record, entry } = await session.begin({ appletId, organizationId: org ?? "", text: request, fix });
       started = { id: record.id, entry };
@@ -235,10 +235,6 @@ export function AppletBuilder({ appletId: initialId, routed = false }: { appletI
       await attached;
       await finish(record.id, entry, answer, current?.applet ?? null, runOrg);
     } catch (err) {
-      if (isOrganizationSelectionCancelled(err)) {
-        setPhase({ kind: "idle" });
-        return;
-      }
       if (started) await failed(started.id, started.entry, err);
       else setPhase({ kind: "failed", why: err instanceof Error ? err.message : String(err) });
     } finally {

@@ -96,7 +96,6 @@ import { selectActiveAgentId } from "@ai-matrx/chat/agents/redux/agent-settings/
 import type { OverlayId } from "@/features/overlays/catalogue";
 import { DEFAULT_NEW_CHAT_MANDATE_KEY } from "@ai-matrx/chat/agents/components/chat/chat-quick-actions.config";
 import { resolveMandateAsking } from "@ai-matrx/chat/mandates/resolve-asking";
-import { isOrganizationSelectionCancelled } from "@ai-matrx/chat/host/org";
 import { GENERIC_CODE_EDITOR_AGENT } from "@/features/code-editor/agent-code-editor/agents";
 import { readOwnedAgents } from "@ai-matrx/chat/agents/identity/agent-catalog-lists";
 
@@ -172,7 +171,6 @@ async function seedDefaultChatWindowAgent(): Promise<{
     initialAgentId = (await resolveMandateAsking(DEFAULT_NEW_CHAT_MANDATE_KEY)).agentId;
   } catch (error) {
     // Declined the organization question: the tile opens nothing.
-    if (isOrganizationSelectionCancelled(error)) throw error;
     console.error(
       `[ToolsGrid] mandate "${DEFAULT_NEW_CHAT_MANDATE_KEY}" failed to resolve — opening the Chat window with the agent picker:`,
       error,

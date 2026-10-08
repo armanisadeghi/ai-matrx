@@ -46,7 +46,6 @@ import { useEffect, useState } from "react";
 import { useIdleReady } from "@ai-matrx/kit/idle-scheduler";
 import { installGlobalErrorCapture } from "@/lib/diagnostics/globalErrorCapture";
 import { installErrorPersistence } from "@/lib/diagnostics/persistCapturedErrors";
-import { registerOrganizationPickerHost } from "@/lib/organization/organization-gate";
 
 // Install the global error listeners at MODULE scope, not in the effect below.
 // React reports hydration mismatches (minified errors #418/#423/#425) through
@@ -72,10 +71,7 @@ const DeferredSingletonCore = dynamic(
 export default function DeferredSingletonWrapper() {
   const [mounted, setMounted] = useState(false);
   const idle = useIdleReady();
-  // A press that needs the organization picker before the page went idle mounts the tree NOW
-  // (the picker lives in it) — the gate waits for it instead of refusing the press.
-  const [needed, setNeeded] = useState(false);
-  const ready = idle || needed;
+  const ready = idle;
 
   // Error capture itself is installed at module scope above (pre-hydration).
   // Persistence stays here: it writes to Supabase and has nothing to gain from
@@ -86,8 +82,6 @@ export default function DeferredSingletonWrapper() {
     // lib/diagnostics/persistCapturedErrors.ts.
     installErrorPersistence();
     setMounted(true);
-    registerOrganizationPickerHost(() => setNeeded(true));
-    return () => registerOrganizationPickerHost(null);
   }, []);
 
   if (!mounted || !ready) return null;

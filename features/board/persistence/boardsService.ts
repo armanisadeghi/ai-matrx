@@ -36,7 +36,6 @@ import { supabase } from "@/utils/supabase/client";
 import { projectsDb } from "@/utils/supabase/projectsDb";
 import { writeOne } from "@/utils/supabase/writeOne";
 import { requireUserId } from "@/utils/auth/getUserId";
-import { ensureOrganizationContext } from "@/lib/organization/organization-gate";
 import { whenOrgBootstrapResolved } from "@/lib/organizations/orgBootstrapGate";
 import { isJsonObject, type JsonObject, type JsonValue } from "@/types/json";
 import type { Database, Json } from "@/types/database.types";
@@ -48,6 +47,7 @@ import {
   type BoardDocument,
 } from "../board/document";
 import { mergeBoardDocuments } from "../board/merge";
+import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
 
 type BoardRow = Database["projects"]["Tables"]["boards"]["Row"];
 /** What a save reads back: the version always; the content only when a CAS missed. */
@@ -297,7 +297,7 @@ export function boardRowHref(row: Pick<BoardListRow, "id" | "archived">): string
 async function resolveOrganization(organizationId: string | null): Promise<string> {
   // Returns at once when boot has already answered (bounded otherwise).
   if (!organizationId) await whenOrgBootstrapResolved();
-  return ensureOrganizationContext({ organizationId });
+  return ensureOrgId(organizationId);
 }
 
 // ── Reads ────────────────────────────────────────────────────────────────────

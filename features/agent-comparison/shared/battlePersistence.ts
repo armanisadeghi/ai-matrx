@@ -17,7 +17,6 @@ import { selectAgentById } from "@ai-matrx/chat/agents/redux/agent-definition/se
 import { createAsyncThunk, type PayloadAction } from "@reduxjs/toolkit";
 import type { AppDispatch, RootState } from "@/lib/redux/store";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
-import { isOrganizationSelectionCancelled } from "@/lib/organization/selection-cancelled";
 import { toast } from "@/lib/toast";
 import {
   createComparisonSet,
@@ -218,9 +217,6 @@ export async function persistForRun(
     await run();
     return { cancelled: false, error: null };
   } catch (err) {
-    if (isOrganizationSelectionCancelled(err)) {
-      return { cancelled: true, error: null };
-    }
     return { cancelled: false, error: persistErrorMessage(err) };
   }
 }

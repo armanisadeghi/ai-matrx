@@ -40,7 +40,6 @@ import {
 import { toast } from "@/lib/toast";
 import { useAppDispatch, useAppStore } from "@/lib/redux/hooks";
 import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
-import { isOrganizationSelectionCancelled } from "@/lib/organization/selection-cancelled";
 import { readArtifactOrigins, type ArtifactOrigin } from "@/features/education/convert/lineage";
 import { recordSourceLineage } from "@/features/education/convert/recordSourceLineage";
 import type { ConvertProgress } from "@/features/education/convert/types";
@@ -387,7 +386,6 @@ function AddMoreCardsDialog({
         onClose();
       });
     } catch (e) {
-      if (isOrganizationSelectionCancelled(e)) return;
       const message = e instanceof Error ? e.message : "More cards could not be made. Try again.";
       setError(message);
       toast.error(message);

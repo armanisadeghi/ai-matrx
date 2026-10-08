@@ -19,7 +19,6 @@ import {
   updateAgentTaskFields,
 } from "../../service/queries";
 import * as scheduler from "../../service/schedulerClient";
-import { ensureOrganizationForRequest } from "@/lib/organization/organization-gate";
 import type {
   AgentTaskCreate,
   TriggerCreate,
@@ -39,6 +38,7 @@ import {
   setMutationStatus,
   upsertTask,
 } from "./slice";
+import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
 
 type AppThunk<T = void> = ThunkAction<Promise<T>, RootState, unknown, Action>;
 
@@ -212,7 +212,7 @@ export const toggleTaskEnabled =
     // question leaves it exactly as it was (nothing flipped, nothing sent).
     const organizationId =
       taskOrganizationId(getState, id) ??
-      (await ensureOrganizationForRequest({ method: "PATCH" }));
+      (await ensureOrgId(null));
     // NOT OPTIMISTIC (GATES-TAIL, VERIFIER-21 #1n): with the PATCH held, Pause used to read
     // Enable before the server had agreed. The row is marked "saving" — the control shows its
     // pending state — and flips only once the write has landed.

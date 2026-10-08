@@ -23,9 +23,9 @@ import { cn } from "@/lib/utils";
 import { NotesAPI } from "@/features/notes/service/notesApi";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
-import { ensureOrganizationContext, isOrganizationSelectionCancelled } from "@/lib/organization/organization-gate";
 import type { Note } from "@/features/notes/types";
 import ActionFeedbackButton from "@/components/official/ActionFeedbackButton";
+import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
 
 export const CONTEXT_FOLDER = "Transcription Contexts";
 
@@ -190,7 +190,7 @@ export function TranscriptionCleanupContextPanel({
         }
         setSavingId(blockId);
         try {
-          const capturedOrganizationId = await ensureOrganizationContext({ organizationId });
+          const capturedOrganizationId = await ensureOrgId(organizationId);
           const note = await NotesAPI.create({
             label: block.title.trim() || "Transcription Context",
             content: block.text,
@@ -212,7 +212,6 @@ export function TranscriptionCleanupContextPanel({
           setContextNotes((prev) => (prev ? [note, ...prev] : [note]));
           toast.success("Saved as note in Transcription Contexts");
         } catch (error) {
-          if (isOrganizationSelectionCancelled(error)) return;
           toast.error("Could not create note");
         } finally {
           setSavingId(null);

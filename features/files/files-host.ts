@@ -54,10 +54,8 @@ if (!isFilesHostConfigured()) configureFilesHost({
     };
   },
   ensureOrganizationContext: async (options) => {
-    const { ensureOrganizationContext } = await import(
-      "@/lib/organization/organization-gate"
-    );
-    return ensureOrganizationContext(options);
+    const { ensureOrgId } = await import("@/lib/organizations/ensureOrgId");
+    return ensureOrgId(options?.organizationId ?? null);
   },
   shareLinks: {
     shareLinkUrl: (token) => shareLinks.shareLinkUrl(token),

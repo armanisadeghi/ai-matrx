@@ -26,7 +26,6 @@ import { useRouter } from "next/navigation";
 import { toast } from "@/lib/toast";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import type { AppDispatch } from "@/lib/redux/store";
-import { isOrganizationSelectionCancelled } from "@/lib/organization/organization-gate";
 import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
 import { duplicateAgent } from "@/features/agents/redux/builder-write.thunks";
 
@@ -134,7 +133,6 @@ export function useCopyMandateAgent(): {
       return newId;
     } catch (err) {
       // Closing the organization picker is "not now", never a failure.
-      if (isOrganizationSelectionCancelled(err)) return null;
       // `.unwrap()` re-throws a Redux SerializedError (a plain object with a
       // `.message`), NOT an Error instance — so `instanceof Error` would hide
       // the real cause behind "unknown error". Read `.message` off either shape.

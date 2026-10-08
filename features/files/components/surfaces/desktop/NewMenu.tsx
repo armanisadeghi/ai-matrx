@@ -42,7 +42,6 @@ import {
 import { stashChatDraftTransfer } from "@ai-matrx/chat/agents/components/chat/chat-draft-transfer";
 import { DEFAULT_NEW_CHAT_MANDATE_KEY } from "@ai-matrx/chat/agents/components/chat/chat-quick-actions.config";
 import { resolveMandateAsking } from "@ai-matrx/chat/mandates/resolve-asking";
-import { isOrganizationSelectionCancelled } from "@ai-matrx/chat/host/org";
 import { toast } from "@/lib/toast";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { createFolder } from "@/features/files/redux/thunks";
@@ -109,7 +108,6 @@ export function NewMenu({ parentFolderId, className }: NewMenuProps) {
           startTransition(() => router.push("/chat/new"));
         })
         .catch((error: unknown) => {
-          if (isOrganizationSelectionCancelled(error)) return;
           console.error(
             `[NewMenu] mandate "${DEFAULT_NEW_CHAT_MANDATE_KEY}" failed to resolve:`,
             error,

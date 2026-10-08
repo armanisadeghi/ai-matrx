@@ -38,7 +38,6 @@ import {
   hasGoogleGrantedScope,
 } from "@/lib/googleScopes";
 import { toast } from "@/lib/toast";
-import { isOrganizationSelectionCancelled } from "@/lib/organization/organization-gate";
 import { useAppSelector } from "@/lib/redux/hooks";
 import {
   selectAdminFeature,
@@ -251,9 +250,7 @@ function ReadOnlySweepWorkspaceInner({ reviewMode }: { reviewMode: boolean }) {
         days: 14,
       });
     } catch (error) {
-      if (!isOrganizationSelectionCancelled(error)) {
-        showReadError("Calendar agenda", error);
-      }
+      showReadError("Calendar agenda", error);
     }
   };
 
@@ -266,9 +263,7 @@ function ReadOnlySweepWorkspaceInner({ reviewMode }: { reviewMode: boolean }) {
         organizationId: await operationOrganizationId(connection),
       });
     } catch (error) {
-      if (!isOrganizationSelectionCancelled(error)) {
-        showReadError("Google Tasks", error);
-      }
+      showReadError("Google Tasks", error);
     }
   };
 
@@ -284,9 +279,7 @@ function ReadOnlySweepWorkspaceInner({ reviewMode }: { reviewMode: boolean }) {
         endDate: isoDate(0),
       });
     } catch (error) {
-      if (!isOrganizationSelectionCancelled(error)) {
-        showReadError("YouTube Analytics", error);
-      }
+      showReadError("YouTube Analytics", error);
     }
   };
 
@@ -299,9 +292,7 @@ function ReadOnlySweepWorkspaceInner({ reviewMode }: { reviewMode: boolean }) {
         organizationId: await operationOrganizationId(connection),
       });
     } catch (error) {
-      if (!isOrganizationSelectionCancelled(error)) {
-        showReadError("Tag Manager", error);
-      }
+      showReadError("Tag Manager", error);
     }
   };
 

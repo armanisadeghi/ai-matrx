@@ -48,10 +48,6 @@ import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { toast } from "@/lib/toast";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
-import {
-  ensureOrganizationContext,
-  isOrganizationSelectionCancelled,
-} from "@/lib/organization/organization-gate";
 import { NotesAPI } from "@/features/notes/service/notesApi";
 import { kindRegistry } from "@/features/content-ir/registry/kind-registry";
 import { componentRegistry } from "@/features/content-ir/registry/component-registry";
@@ -99,6 +95,7 @@ import {
 } from "./demo-content";
 import { useWheelModePreference } from "../board/useWheelModePreference";
 import { useBoardKeys } from "../board/useBoardKeys";
+import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
 
 export interface DemoKindExample {
   kind: string;
@@ -465,9 +462,7 @@ export function BoardDemo({
       return;
     }
     try {
-      const organizationId = await ensureOrganizationContext({
-        organizationId: activeOrgId,
-      });
+      const organizationId = await ensureOrgId(activeOrgId);
       await NotesAPI.create({
         label: spec.title,
         content: markdown,
@@ -476,7 +471,6 @@ export function BoardDemo({
         organization_id: organizationId,
       });
     } catch (err) {
-      if (isOrganizationSelectionCancelled(err)) return;
       toast.error(
         `Could not save "${spec.title}" to Notes: ${err instanceof Error ? err.message : String(err)}`,
       );

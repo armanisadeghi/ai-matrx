@@ -49,7 +49,6 @@ import { NotesView } from "@/features/notes/components/NotesView";
 import { deleteNote, saveNote } from "@/features/notes/redux/thunks";
 import { setNoteEditorMode, updateNoteLabel } from "@/features/notes/redux/slice";
 import { useNewNoteOrganization } from "@/features/notes/hooks/useNewNoteOrganization";
-import { isOrganizationSelectionCancelled } from "@/lib/organization/organization-gate";
 import { SurfaceRuntimeProvider } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import { createEducationStudyGuidesScope } from "@/features/surfaces/manifests/education-study-guides.manifest";
 import { createEducationStudyGuideScope, EDUCATION_STUDY_GUIDE_SURFACE_NAME } from "@/features/surfaces/manifests/education-study-guide.manifest";
@@ -420,7 +419,7 @@ function StudyGuideReaderInner({ initialGuideId, startInEdit = false, defaultLay
       const note = await persistGuide({ title: "Untitled study guide", content: "" });
       router.push(`/education/study-guides/${note.id}?edit=1`);
     } catch (cause) {
-      if (!isOrganizationSelectionCancelled(cause)) setEditError(cause instanceof Error ? cause.message : "Could not create the study guide.");
+      setEditError(cause instanceof Error ? cause.message : "Could not create the study guide.");
     } finally {
       setCreatingGuide(false);
     }
@@ -505,7 +504,7 @@ function StudyGuideReaderInner({ initialGuideId, startInEdit = false, defaultLay
             return { id: note.id, name: note.label };
           },
           nameOf: (plan) => plan.title,
-          refusalFor: (cause) => isOrganizationSelectionCancelled(cause) ? "The person closed the workspace picker, so no study guide was created." : undefined,
+          refusalFor: (cause) => undefined,
         },
         update: {
           parse: (value) => {

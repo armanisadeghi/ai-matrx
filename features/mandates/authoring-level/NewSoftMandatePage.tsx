@@ -28,7 +28,6 @@ import { DraftInputsEditor } from "../authoring/DraftInputsEditor";
 import { OutputKindPicker } from "../authoring/OutputKindPicker";
 import { type DraftInput } from "../authoring/service";
 import { createSoftMandate } from "./service";
-import { isOrganizationSelectionCancelled } from "@/lib/organization/selection-cancelled";
 import { isOrganizationRequiredError } from "@/lib/organizations/organizationRequiredError";
 import { organizationRefusalMessage } from "@ai-matrx/chat/host/org";
 import {
@@ -294,7 +293,6 @@ export function NewSoftMandatePage({ level, orgId = null, orgName = null }: NewS
       });
     } catch (error: unknown) {
       // Closing the organization picker is an answer ("not now"), never an error.
-      if (isOrganizationSelectionCancelled(error)) return;
       setServerError(
         isOrganizationRequiredError(error)
           ? organizationRefusalMessage({ subject: "The mandate", act: "created" })

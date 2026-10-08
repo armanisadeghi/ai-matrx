@@ -19,7 +19,6 @@ import { createContext, useContext, useRef, useState, type ReactNode } from "rea
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { selectActiveOrganizationId } from "@/features/scopes/redux/selectors/active-context";
 import { notionMarkdownToBlocks } from "@/lib/spaces-blocks/notion-markdown";
-import { isOrganizationSelectionCancelled } from "@/lib/organization/selection-cancelled";
 import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { toast } from "@/lib/toast";
@@ -159,7 +158,6 @@ export function MoveInHost({ children, userId }: { children: ReactNode; userId: 
       const left = [...page.notes, ...warnings];
       toast.success(`${page.title} moved in`, left.length ? { description: left.slice(0, 2).join(" · ").slice(0, 140) } : undefined);
     } catch (err) {
-      if (isOrganizationSelectionCancelled(err)) return;
       toast.error("The page could not be moved in", { description: err instanceof Error ? err.message : undefined });
     }
   };

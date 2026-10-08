@@ -13,8 +13,8 @@ import { NotesAPI } from "@/features/notes/service/notesApi";
 import { EDUCATION_NOTE_CREATE_FIELDS } from "@/features/education/notes/education-notes";
 import { useOrganizationRequired } from "@/features/organizations/useOrganizationRequired";
 import { OrganizationContextNotice } from "@/features/organizations/components/OrganizationRequiredNotice";
-import { ensureOrganizationContext, isOrganizationSelectionCancelled } from "@/lib/organization/organization-gate";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
 
 export function EduNoteNew() {
   const router = useRouter();
@@ -33,13 +33,12 @@ export function EduNoteNew() {
     if (started.current || !canLoad || !organizationId) return;
     void (async () => {
       try {
-        const capturedOrganizationId = await ensureOrganizationContext({ organizationId });
+        const capturedOrganizationId = await ensureOrgId(organizationId);
         if (started.current) return;
         started.current = true;
         const note = await NotesAPI.create({ label: "Untitled note", content: "", ...EDUCATION_NOTE_CREATE_FIELDS, organization_id: capturedOrganizationId });
         router.replace(`/education/notes/${note.id}`);
       } catch (e) {
-        if (isOrganizationSelectionCancelled(e)) return;
         setError(e instanceof Error ? e.message : "Could not create the note");
       }
     })();

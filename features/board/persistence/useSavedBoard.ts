@@ -27,7 +27,6 @@ import { useEffect, useRef, useState } from "react";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import { selectAccessToken, selectUserId } from "@/lib/redux/selectors/userSelectors";
-import { isOrganizationSelectionCancelled } from "@/lib/organization/organization-gate";
 import { toast } from "@/lib/toast";
 import type { Camera } from "../engine/camera";
 import type { BoardDocument } from "../board/document";
@@ -88,9 +87,6 @@ export type SavedBoardState =
 
 /** Words for a failure, for a person. Exported for tests. */
 export function describeLoadFailure(error: unknown): string {
-  if (isOrganizationSelectionCancelled(error)) {
-    return "Your board lives in a workspace. Choose one to open it.";
-  }
   if (isBoardError(error)) return error.message;
   if (error instanceof Error && error.message) {
     return `This board could not be opened: ${error.message}`;
@@ -238,9 +234,7 @@ export function useSavedBoard(target: SavedBoardTarget): SavedBoardState {
       },
       (error: unknown) => {
         if (!alive) return;
-        if (!isOrganizationSelectionCancelled(error)) {
-          console.error("[board] opening a saved board failed:", error);
-        }
+        console.error("[board] opening a saved board failed:", error);
         setPhase({ key, status: "failed", reason: describeLoadFailure(error) });
       },
     );

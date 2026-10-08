@@ -18,7 +18,6 @@ import { createContext, useContext, useRef, useState, type ReactNode } from "rea
 
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { selectActiveOrganizationId } from "@/features/scopes/redux/selectors/active-context";
-import { isOrganizationSelectionCancelled } from "@/lib/organization/selection-cancelled";
 import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { toast } from "@/lib/toast";
@@ -128,7 +127,6 @@ export function DatabaseDesignerHost({ children, userId }: { children: ReactNode
     } catch (err) {
       p.resolve(null);
       pending.current = null;
-      if (isOrganizationSelectionCancelled(err)) return;
       toast.error(p.kind === "design" ? "The database could not be designed" : "The database could not be redesigned", { description: err instanceof Error ? err.message : undefined });
     }
   };
