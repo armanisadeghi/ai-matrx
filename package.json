@@ -922,6 +922,7 @@
     "@ai-matrx/terminal": "latest",
     "@ai-sdk/google": "^4.0.82",
     "@anthropic-ai/sdk": "latest",
+    "@babel/parser": "^8.0.7",
     "@blocknote/core": "^0.55.0",
     "@blocknote/react": "^0.55.0",
     "@blocknote/shadcn": "^0.55.0",
@@ -1173,7 +1174,6 @@
   },
   "devDependencies": {
     "@babel/core": "^8.0.6",
-    "@babel/parser": "^7.29.9",
     "@babel/types": "^8.0.6",
     "@faker-js/faker": "^10.6.0",
     "@iconify/react": "^6.0.2",

@@ -2,7 +2,8 @@
  * The builder's answer is refused when a file hand-builds a box a person writes in: every such
  * box is <WritingBox> (the platform's mic + read-aloud). "Fix it" sends this reason back.
  */
-import { checkBuildAnswer, coerceBuildAnswer, BuildRefused } from "./build-applet";
+import { coerceBuildAnswer, BuildRefused } from "./build-applet";
+import { checkBuildAnswer } from "./check-build-answer";
 
 const answer = (source: string) => ({
   applet: {

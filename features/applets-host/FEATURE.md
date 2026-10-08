@@ -59,7 +59,9 @@ Package mechanics: `aidream/apps/shared/applets/FEATURE.md`.
   viewer; the Applet organization's tables only) → mandate `applets.build` (`applets.fix` for Fix it) via `useHeadlessAgentJson`, the run streaming
   in the floating `LiveRunWindow` → the record saved as a draft (a change = UPDATE = new version) → preview
   through `AppletHostMount preview` (live reads, writes held by `holdWrites`, errors → Fix it) → "Use it"
-  publishes.
+  publishes. `builder/check-build-answer.ts` (`checkBuildAnswer`) + `builder/applet-code-checks.ts` are the
+  refusal checks, loaded on demand with the frame: the code checks read the `@babel/parser` syntax tree, never
+  regexes over the source.
 
 ---
 
@@ -104,6 +106,20 @@ record's own `scope` (`{ entries, shadowDangerousGlobals }`); app-owned modules 
 
 ## Change Log
 
+- 2026-10-08 — Lane AL (refusals never block a valid Applet): the code checks moved to
+  `builder/applet-code-checks.ts` and read the syntax tree (`@babel/parser`, now a dependency, ^8): a browser
+  dialog is a real call of the global (`window.confirm(…)`, a bare `alert(…)` the file never imports or defines),
+  never a word in a string, JSX text or a comment; a misspelled choice is a literal COMPARED with, WRITTEN to or
+  an option VALUE of the field, never display text; a button is live under an `asChild` wrapper, in a form with
+  `onSubmit`, as `type="submit"`, in a `<Link>`, or handed to a component as a prop; a hand-built table is
+  refused only as a sortable record LIST (rows mapped one per `<tr>` under sortable-looking headers — a calendar
+  grid or pivot passes); a field with no input counts only when written to the store. A file that does not
+  parse is refused by name. `checkBuildAnswer` moved to `builder/check-build-answer.ts`, loaded on demand
+  (never in the builder's first chunk). THE FIX CLAIM (`claimFixRound`, `fix_entry_id` on the refused entry):
+  exactly one tab starts a refusal's automatic fix round, every other tab follows that run
+  (`session.beginFix` / `session.follow`); reopening starts it only for a fresh, unclaimed refusal
+  (`reopenOutcome`, `FIX_ROUND_FRESH_MS`) — an old one shows "Fix it" and spends nothing. Tests are behaviour
+  pairs (`applet-code-checks.test.ts`, `build-session.test.ts`), no source-reading regexes.
 - 2026-10-08 — Lane AI (the builder repairs its own output): EVERY refusal of her request goes to the ONE
   automatic fix round (`repairs`/`repairRefusal`) — a live run, a run rejoined after a refresh (the planner's
   first build sat on "Fix it" for five minutes there), and one found refused on reopen; only a refused fix

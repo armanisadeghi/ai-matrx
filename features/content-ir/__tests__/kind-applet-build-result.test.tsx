@@ -7,7 +7,8 @@ import { createRoot } from "react-dom/client";
 import { envelopeFromCompleteValue, KIND_KEY } from "@ai-matrx/content-ir";
 
 import AppletBuildResultBlock from "@/components/mardown-display/blocks/applet-build-result/AppletBuildResultBlock";
-import { checkBuildAnswer, coerceBuildAnswer } from "@/features/applets-host/builder/build-applet";
+import { coerceBuildAnswer } from "@/features/applets-host/builder/build-applet";
+import { checkBuildAnswer } from "@/features/applets-host/builder/check-build-answer";
 import {
   APPLET_BUILD_RESULT_KIND,
   appletBuildResultMarkdownFromValue,

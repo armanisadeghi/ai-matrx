@@ -4,10 +4,9 @@
  * read "Not saved" beside a saved card; All Posts was a hand-built <table> whose Brand header sorted
  * nothing; a date was a text box; the pipeline spelled "Assets Ready" against the table's "Assets ready".
  */
-import { readFileSync } from "node:fs";
-import { join } from "node:path";
-
-import { BuildRefused, checkBuildAnswer, coerceBuildAnswer, dateFieldsAsText, handBuiltTables, misspelledChoices, repairs } from "./build-applet";
+import { handBuiltTables, misspelledChoices } from "./applet-code-checks";
+import { BuildRefused, coerceBuildAnswer, dateFieldsAsText, repairs } from "./build-applet";
+import { checkBuildAnswer } from "./check-build-answer";
 import { fixLabel, previewLine, requestOutcome, type BuildEntry } from "./build-session";
 
 const POSTS = {
@@ -68,10 +67,11 @@ describe("a date is never a text box", () => {
 });
 
 describe("one spelling per choice", () => {
-  it("names a hand list that spells a choice in another case", () => {
-    const pipeline = `const STAGES = ["Idea", "Planned", "Assets Ready", "Posted"]; const icon = { tiktok: "x" }["tiktok"];`;
+  it("names a status COMPARED or WRITTEN in another case, never a display word", () => {
+    const pipeline = `const column = posts.rows.filter((p) => p.status === "Assets Ready"); const icon = { tiktok: "x" }["tiktok"];`;
     expect(misspelledChoices({ files: [{ name: "Pipeline.tsx", source: pipeline }], sources: [POSTS] })).toEqual([{ alias: "posts", key: "status", wrote: "Assets Ready", choice: "Assets ready" }]);
-    expect(misspelledChoices({ files: [{ name: "Pipeline.tsx", source: `const S = ["Idea", "Assets ready"];` }], sources: [POSTS] })).toEqual([]);
+    expect(misspelledChoices({ files: [{ name: "Pipeline.tsx", source: `const S = ["Idea", "Assets Ready"]; const n = <h2>Assets Ready</h2>;` }], sources: [POSTS] })).toEqual([]);
+    expect(misspelledChoices({ files: [{ name: "Pipeline.tsx", source: `posts.rows.filter((p) => p.status === "Assets ready");` }], sources: [POSTS] })).toEqual([]);
   });
 });
 
@@ -83,13 +83,6 @@ describe("every refusal of her request goes to the automatic fix round", () => {
     expect(repairs({ fix: null }, new Error("network"))).toBe(false);
   });
 
-  it("the rejoined run (after a refresh) and a refusal found on reopen both start the fix round", () => {
-    const src = readFileSync(join(__dirname, "AppletBuilder.tsx"), "utf8");
-    const reopened = src.slice(src.indexOf("onReopenedAnswer:"), src.indexOf("// The rejoined run has ended"));
-    expect(reopened).toMatch(/repairRefusal\(entry, err\)/);
-    const outcome = src.slice(src.indexOf("const showOutcome"), src.indexOf("const latest = session.record"));
-    expect(outcome).toMatch(/latest\?\.state === "refused" && latest\.refused_applet && !latest\.fix\) \{\s*\/\/[^\n]*\n\s*void run\("Fix this error"/);
-  });
 });
 
 describe("one state for the history, the card and the header", () => {
