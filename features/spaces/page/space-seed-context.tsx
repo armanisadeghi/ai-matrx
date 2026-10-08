@@ -95,10 +95,29 @@ export function useSpaceSeedSettled(): boolean {
 
 /** Suspends until this block's seed answers (a first-pass block inside its own Suspense). */
 export function useAwaitedBlockSeed(blockId: string): BlockSeed | null {
-  const { seeds, landed } = useContext(SpaceSeedContext);
-  if (blockId in landed) return landed[blockId] ?? null;
-  const promise = seeds?.[blockId];
-  return promise ? use(promise) : null;
+  const promise = useContext(SpaceSeedContext).seeds?.[blockId];
+  // Always through use() when there is a promise: a render that suspended must call use() again when it
+  // retries, and the "landed" state can arrive while it is suspended (React: "called use() to suspend in a
+  // previous render but did not call use() when it finished"). A settled seed answers synchronously.
+  return promise ? use(settledSeed(promise)) : null;
+}
+
+/** The seed promise React can read without suspending once it has settled (a refusal reads as null). */
+type TrackedSeed = Promise<BlockSeed | null> & { status?: "pending" | "fulfilled"; value?: BlockSeed | null };
+const trackedSeeds = new WeakMap<Promise<BlockSeed | null>, TrackedSeed>();
+function settledSeed(promise: Promise<BlockSeed | null>): TrackedSeed {
+  let tracked = trackedSeeds.get(promise);
+  if (!tracked) {
+    const t: TrackedSeed = promise.catch(() => null);
+    t.status = "pending";
+    void t.then((value) => {
+      t.status = "fulfilled";
+      t.value = value;
+    });
+    trackedSeeds.set(promise, t);
+    tracked = t;
+  }
+  return tracked;
 }
 
 /** One copy per landed seed and place (the first pass, or an editor block): a block that suspends and
