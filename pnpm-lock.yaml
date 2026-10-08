@@ -891,6 +891,9 @@ importers:
       '@iconify/react':
         specifier: ^6.0.2
         version: 6.0.2(react@19.3.0)
+      '@jest/globals':
+        specifier: 30.5.2
+        version: 30.5.2
       '@next/bundle-analyzer':
         specifier: ^16.3.6
         version: 16.3.6(bufferutil@4.1.0)(utf-8-validate@5.0.10)
@@ -1005,6 +1008,9 @@ importers:
       pg:
         specifier: ^8.23.0
         version: 8.23.0
+      playwright:
+        specifier: 1.63.0
+        version: 1.63.0
       postcss:
         specifier: latest
         version: 8.5.29
