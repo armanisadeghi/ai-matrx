@@ -142,7 +142,10 @@ export async function walkIn(actor: Actor, meeting: Meeting, opts: WalkOptions =
     await resumeIfParked(actor, page);
     o = await observe(page);
     if (until.includes(o.phase)) break;
-    if (o.phase === "guest-name" && lastAction !== "name") {
+    // The name step is read from the field itself: the core may render it under `prejoin`
+    // until the contract's `guest_name` phase is adopted (CORE-DESIGN §3.7 C1).
+    const nameStep = o.phase === "guest-name" || (await page.locator("#meet-guest-name").isVisible().catch(() => false));
+    if (nameStep && lastAction !== "name") {
       const name = actor.opts.displayName ?? "Priya Shah";
       if (gesture) {
         await page.locator("#meet-guest-name").fill(name);

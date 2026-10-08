@@ -74,7 +74,7 @@ function readInPage(): Observation {
     const raw = a("phase") ?? "unknown";
     const conn = a("connection");
     const named: Record<string, CallPhase> = {
-      resolving: "resolving", unsupported: "unknown", prejoin: "prejoin", joining: "joining",
+      resolving: "resolving", unsupported: "unknown", prejoin: "prejoin", joining: "joining", guest_name: "guest-name",
       "waiting:host_not_started": "waiting-for-host", "waiting:knocking": "knocking",
       denied: "denied", knock_expired: "knock-expired", in_call: "in-call",
       disconnected: "disconnected", left: "left", removed: "removed", superseded: "displaced",
@@ -84,6 +84,7 @@ function readInPage(): Observation {
     if (raw === "refused:not_found") phase = "not-found";
     else if (raw === "refused:expired") phase = "expired";
     else if (raw === "refused:ended") phase = "ended";
+    if (phase === "prejoin" && document.querySelector("#meet-guest-name")) phase = "guest-name";
     if (phase === "in-call" && conn !== null && conn !== "stable") phase = "reconnecting";
     const device = (v: string | null) =>
       v === null ? null : /denied|blocked/.test(v) ? "blocked" : /none|revoked/.test(v) ? "missing" : v;
