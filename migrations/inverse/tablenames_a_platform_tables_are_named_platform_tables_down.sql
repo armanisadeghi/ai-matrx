@@ -1,19 +1,19 @@
 -- inverse of tablenames_a_platform_tables_are_named_platform_tables.sql
 -- WHAT IT DOES NOT UNDO: nothing; every body is the live body read out immediately before the up ran.
 
-drop function custom.data_home(p_organization_id uuid, p_search text, p_include_platform_tables boolean);
+drop function custom.data_home(uuid, text, boolean);
 
-drop function custom.data_home_slim(p_organization_id uuid, p_search text, p_include_platform_tables boolean);
+drop function custom.data_home_slim(uuid, text, boolean);
 
-drop function custom.data_home_tables(p_organization_id uuid);
+drop function custom.data_home_tables(uuid);
 
-drop function custom.data_home_tables(p_organization_id uuid, p_include_platform_tables boolean);
+drop function custom.data_home_tables(uuid, boolean);
 
-drop function custom.records_search(p_search text, p_limit integer, p_offset integer, p_table_ids uuid[], p_organization_ids uuid[], p_include_platform_tables boolean);
+drop function custom.records_search(text, integer, integer, uuid[], uuid[], boolean);
 
-drop function custom.table_facts(p_organization_id uuid);
+drop function custom.table_facts(uuid);
 
-drop function custom.table_list_everywhere(p_organization_id uuid, p_include_platform_tables boolean);
+drop function custom.table_list_everywhere(uuid, boolean);
 
 alter view custom."table" rename column platform_owned to kept_by_the_app;
 
@@ -1431,10 +1431,6 @@ end;
 $function$
 ;
 
-revoke all on function custom.data_home(p_organization_id uuid, p_search text, p_include_app_tables boolean) from public;
-
-grant execute on function custom.data_home(p_organization_id uuid, p_search text, p_include_app_tables boolean) to authenticated;
-
 CREATE OR REPLACE FUNCTION custom.data_home_slim(p_organization_id uuid DEFAULT NULL::uuid, p_search text DEFAULT NULL::text, p_include_app_tables boolean DEFAULT false)
  RETURNS jsonb
  LANGUAGE plpgsql
@@ -1462,10 +1458,6 @@ begin
 end;
 $function$
 ;
-
-revoke all on function custom.data_home_slim(p_organization_id uuid, p_search text, p_include_app_tables boolean) from public;
-
-grant execute on function custom.data_home_slim(p_organization_id uuid, p_search text, p_include_app_tables boolean) to authenticated;
 
 CREATE OR REPLACE FUNCTION custom.data_home_tables(p_organization_id uuid DEFAULT NULL::uuid)
  RETURNS TABLE(table_id uuid, table_name text, organization_id uuid, organization_name text, member boolean, visibility text, updated_at timestamp with time zone, mine boolean, shared_with_me boolean, kept_by_the_app boolean, kind text, team boolean, system boolean, created_by uuid)
@@ -1662,16 +1654,6 @@ end;
 $function$
 ;
 
-revoke all on function custom.data_home_tables(p_organization_id uuid) from public;
-
-grant execute on function custom.data_home_tables(p_organization_id uuid) to authenticated;
-
-grant execute on function custom.data_home_tables(p_organization_id uuid) to dashboard_user;
-
-grant execute on function custom.data_home_tables(p_organization_id uuid) to service_role;
-
-grant execute on function custom.data_home_tables(p_organization_id uuid) to svc_seo;
-
 CREATE OR REPLACE FUNCTION custom.data_home_tables(p_organization_id uuid, p_include_app_tables boolean)
  RETURNS TABLE(table_id uuid, table_name text, organization_id uuid, organization_name text, member boolean, visibility text, updated_at timestamp with time zone, mine boolean, shared_with_me boolean, kept_by_the_app boolean, kind text, team boolean, system boolean, created_by uuid)
  LANGUAGE plpgsql
@@ -1694,16 +1676,6 @@ exception when others then
 end
 $function$
 ;
-
-revoke all on function custom.data_home_tables(p_organization_id uuid, p_include_app_tables boolean) from public;
-
-grant execute on function custom.data_home_tables(p_organization_id uuid, p_include_app_tables boolean) to authenticated;
-
-grant execute on function custom.data_home_tables(p_organization_id uuid, p_include_app_tables boolean) to dashboard_user;
-
-grant execute on function custom.data_home_tables(p_organization_id uuid, p_include_app_tables boolean) to service_role;
-
-grant execute on function custom.data_home_tables(p_organization_id uuid, p_include_app_tables boolean) to svc_seo;
 
 CREATE OR REPLACE FUNCTION custom.records_search(p_search text, p_limit integer DEFAULT 50, p_offset integer DEFAULT 0, p_table_ids uuid[] DEFAULT NULL::uuid[], p_organization_ids uuid[] DEFAULT NULL::uuid[], p_include_app_tables boolean DEFAULT false)
  RETURNS TABLE(record_id uuid, table_id uuid, table_name text, name text, organization_id uuid, updated_at timestamp with time zone)
@@ -1850,10 +1822,6 @@ begin
 end;
 $function$
 ;
-
-revoke all on function custom.records_search(p_search text, p_limit integer, p_offset integer, p_table_ids uuid[], p_organization_ids uuid[], p_include_app_tables boolean) from public;
-
-grant execute on function custom.records_search(p_search text, p_limit integer, p_offset integer, p_table_ids uuid[], p_organization_ids uuid[], p_include_app_tables boolean) to authenticated;
 
 CREATE OR REPLACE FUNCTION custom.table_ensure(p_organization_id uuid, p_spec jsonb)
  RETURNS jsonb
@@ -2296,16 +2264,6 @@ end;
 $function$
 ;
 
-revoke all on function custom.table_facts(p_organization_id uuid) from public;
-
-grant execute on function custom.table_facts(p_organization_id uuid) to authenticated;
-
-grant execute on function custom.table_facts(p_organization_id uuid) to dashboard_user;
-
-grant execute on function custom.table_facts(p_organization_id uuid) to service_role;
-
-grant execute on function custom.table_facts(p_organization_id uuid) to svc_seo;
-
 CREATE OR REPLACE FUNCTION custom.table_kept_out_of_lists(p_kept_for text)
  RETURNS boolean
  LANGUAGE sql
@@ -2500,10 +2458,6 @@ exception when others then
 end
 $function$
 ;
-
-revoke all on function custom.table_list_everywhere(p_organization_id uuid, p_include_app_tables boolean) from public;
-
-grant execute on function custom.table_list_everywhere(p_organization_id uuid, p_include_app_tables boolean) to authenticated;
 
 CREATE OR REPLACE FUNCTION custom.table_placement(p_organization_id uuid, p_table_id uuid, p_data jsonb, p_is_kernel boolean DEFAULT false)
  RETURNS jsonb

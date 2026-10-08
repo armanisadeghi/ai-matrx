@@ -1,11 +1,6 @@
--- chair-step: renames five return columns and parameters (DROP + CREATE of seven functions, grants restated) and the custom."table" view column; non-additive by nature, undone whole by migrations/inverse/tablenames_a_platform_tables_are_named_platform_tables_down.sql
+-- chair-step: renames five return columns and parameters (DROP + CREATE of seven functions) and the custom."table" view column; non-additive by nature, undone whole by migrations/inverse/tablenames_a_platform_tables_are_named_platform_tables_down.sql
 -- lane: TABLE-NAMES-FINAL
 -- lock: custom
--- based-on: custom._code_depends_refuse(uuid, jsonb, text) cb959f48fdb4e8663240b8515811dbbde9b2b6fa290850619fece9e422eec1d8
--- based-on: custom._ctx_store_type(uuid, uuid, jsonb) 2b9c4a9388e74b44af5552d74897266602c1b9c49e1e3ab2ef9fbaf97348e5a9
--- based-on: custom._options_table_for(uuid, text, jsonb) 93deed835e55d2919e55ef558a8e8628e8995acade2d48c1c8ae83cb1fd2f507
--- based-on: custom._table_approver(uuid, jsonb) e8fc14af12328bb4fbabb463a0b1a276680396af96e40668de8c33a6e610c99b
--- based-on: custom._table_duplicate_step(uuid, interval) 219b8ff43f2ddd8938a16af1f06611b5f940994f4f1d1c8d3638d0761bc5a136
 -- based-on: custom._table_move_plan(uuid, uuid, uuid) 2c4ee200761a1bd592be936b27fddb420b3ee53bde3883b0ed730e4620f02fc1
 -- based-on: custom._table_shape_guard() ad17b1f9e9b1293f732282f581efed4b22ca3d98f5d0914bafa6ac1f6b7432f6
 -- based-on: custom._value_envelope() 4ceac2188157ebfbf5ea99996b18341585b036bc003bcfeddd2a1242150e7d01
@@ -14,22 +9,12 @@
 -- based-on: custom.data_home_tables(uuid) 3821b9984dec8f74ccddc2327b9f2a7b56d0f965901906ccb9d7be75316346f1
 -- based-on: custom.data_home_tables(uuid, boolean) 9e18834295643b56971b5a20fd156266d99d403884be234a81b2c518e006ec29
 -- based-on: custom.records_search(text, integer, integer, uuid[], uuid[], boolean) 3e3757b8b558fc8e2008efd22c48a1f39120776aa471d67dc68aa2412aae7cea
--- based-on: custom.table_archive_deliberately(uuid, uuid, text, text) eac3e661e044aaf696a8d92afca7d40f6cd115910335f0605a056305468755c6
--- based-on: custom.table_duplicate(uuid, boolean, text, uuid) 4495d6afc320134c70b27c39e253868390b4ff62f5994c95ee6dbca13db05c41
 -- based-on: custom.table_ensure(uuid, jsonb) 7e9d241504c87158851fd1a74a85fc2ea3c4b2c2f0358178705de0a77cc5cae8
 -- based-on: custom.table_facts(uuid) b223bff3af00aaad4a996826c3a74dd827630e641144101d0a3af6160d8b924a
--- based-on: custom.table_kept_for_derived(jsonb, boolean, boolean) ebb06326428bb7e04e6a7c80a7928135d52d4a87411d8aa43cf6657f6a8f3100
 -- based-on: custom.table_kept_out_of_lists(text) a9c57ea71bae062f257cedf6a69931a975f8de65e5209fe9c7d52b5e7dd4f2df
 -- based-on: custom.table_list_everywhere(uuid) 72dcc68ca69c1c989fe4bb639b39b1b5c0019416b11ccc71a3ff81d894f905ea
 -- based-on: custom.table_list_everywhere(uuid, boolean) 6cf48014a153b8d5fe6ff9a780a7cec79a13839478adaa046cfe7b1d4bad0215
 -- based-on: custom.table_placement(uuid, uuid, jsonb, boolean) 9c5211b9fb5638371b22f7b4ea472bd3043b0cd879cdc730bb34b67d276741ff
--- based-on: custom.tables_i_can_open() 58d85d5b3c988410ed375b86edb92527d5a703e5b61f0dc72c1b086fb17dbe80
--- based-on: platform._cutover_carry_back(uuid, platform.cutover_seam_press, boolean, uuid, uuid, boolean) 5154f6497554b583f95b5fef7e8e67eddaede89f1556335c3c0268a8702d345c
--- based-on: platform._pick_list_born_in_store(uuid, text, text, jsonb) fbdca550e4104f55acab9294a72f360c2c1b1350a4bbdaaee90a17e3e0cf3ec4
--- based-on: platform.cutover_copy_differences(uuid) 7d87c17bc9dd69d99c572b77ac5b2d1b946dbe5b8f8c0a1da64d9de249c6edb8
--- based-on: platform.cutover_older_removal_rows(uuid, uuid[]) 56fcbb53330e677005b8cfeccb9ec9afbdd420931df2a193c417a656ddcb56ad
--- based-on: platform.cutover_tables_copied(uuid) 1fdda20a3e9c7b4913261148fe4d1cb966cc397d1c171edfb5a42743733a52c5
--- based-on: platform.data_tables_born_in_the_new_system_for_me() 2c657cf5451444723421276831b2c427198749ecfaf2c5b7a80ceca1b363bacb
 --
 -- Ruled names (vocabulary FEATURE.md, Data words, Arman 2026-10-08): a table the platform keeps is a
 -- PLATFORM TABLE; the words "kept by the app" and "app table" retire. This renames what the store SAYS:
@@ -45,19 +30,19 @@
 -- No policy, grant of a table, or iam kernel function is touched. Callers (records 0.87+, records-ui,
 -- frontend, python) move in the same change.
 
-drop function custom.data_home(p_organization_id uuid, p_search text, p_include_app_tables boolean);
+drop function custom.data_home(uuid, text, boolean);
 
-drop function custom.data_home_slim(p_organization_id uuid, p_search text, p_include_app_tables boolean);
+drop function custom.data_home_slim(uuid, text, boolean);
 
-drop function custom.data_home_tables(p_organization_id uuid);
+drop function custom.data_home_tables(uuid);
 
-drop function custom.data_home_tables(p_organization_id uuid, p_include_app_tables boolean);
+drop function custom.data_home_tables(uuid, boolean);
 
-drop function custom.records_search(p_search text, p_limit integer, p_offset integer, p_table_ids uuid[], p_organization_ids uuid[], p_include_app_tables boolean);
+drop function custom.records_search(text, integer, integer, uuid[], uuid[], boolean);
 
-drop function custom.table_facts(p_organization_id uuid);
+drop function custom.table_facts(uuid);
 
-drop function custom.table_list_everywhere(p_organization_id uuid, p_include_app_tables boolean);
+drop function custom.table_list_everywhere(uuid, boolean);
 
 CREATE OR REPLACE FUNCTION custom._table_move_plan(p_table_id uuid, p_to uuid, p_me uuid)
  RETURNS jsonb
@@ -1473,10 +1458,6 @@ end;
 $function$
 ;
 
-revoke all on function custom.data_home(p_organization_id uuid, p_search text, p_include_platform_tables boolean) from public;
-
-grant execute on function custom.data_home(p_organization_id uuid, p_search text, p_include_platform_tables boolean) to authenticated;
-
 CREATE OR REPLACE FUNCTION custom.data_home_slim(p_organization_id uuid DEFAULT NULL::uuid, p_search text DEFAULT NULL::text, p_include_platform_tables boolean DEFAULT false)
  RETURNS jsonb
  LANGUAGE plpgsql
@@ -1504,10 +1485,6 @@ begin
 end;
 $function$
 ;
-
-revoke all on function custom.data_home_slim(p_organization_id uuid, p_search text, p_include_platform_tables boolean) from public;
-
-grant execute on function custom.data_home_slim(p_organization_id uuid, p_search text, p_include_platform_tables boolean) to authenticated;
 
 CREATE OR REPLACE FUNCTION custom.data_home_tables(p_organization_id uuid DEFAULT NULL::uuid)
  RETURNS TABLE(table_id uuid, table_name text, organization_id uuid, organization_name text, member boolean, visibility text, updated_at timestamp with time zone, mine boolean, shared_with_me boolean, platform_owned boolean, kind text, team boolean, system boolean, created_by uuid)
@@ -1704,16 +1681,6 @@ end;
 $function$
 ;
 
-revoke all on function custom.data_home_tables(p_organization_id uuid) from public;
-
-grant execute on function custom.data_home_tables(p_organization_id uuid) to authenticated;
-
-grant execute on function custom.data_home_tables(p_organization_id uuid) to dashboard_user;
-
-grant execute on function custom.data_home_tables(p_organization_id uuid) to service_role;
-
-grant execute on function custom.data_home_tables(p_organization_id uuid) to svc_seo;
-
 CREATE OR REPLACE FUNCTION custom.data_home_tables(p_organization_id uuid, p_include_platform_tables boolean)
  RETURNS TABLE(table_id uuid, table_name text, organization_id uuid, organization_name text, member boolean, visibility text, updated_at timestamp with time zone, mine boolean, shared_with_me boolean, platform_owned boolean, kind text, team boolean, system boolean, created_by uuid)
  LANGUAGE plpgsql
@@ -1736,16 +1703,6 @@ exception when others then
 end
 $function$
 ;
-
-revoke all on function custom.data_home_tables(p_organization_id uuid, p_include_platform_tables boolean) from public;
-
-grant execute on function custom.data_home_tables(p_organization_id uuid, p_include_platform_tables boolean) to authenticated;
-
-grant execute on function custom.data_home_tables(p_organization_id uuid, p_include_platform_tables boolean) to dashboard_user;
-
-grant execute on function custom.data_home_tables(p_organization_id uuid, p_include_platform_tables boolean) to service_role;
-
-grant execute on function custom.data_home_tables(p_organization_id uuid, p_include_platform_tables boolean) to svc_seo;
 
 CREATE OR REPLACE FUNCTION custom.records_search(p_search text, p_limit integer DEFAULT 50, p_offset integer DEFAULT 0, p_table_ids uuid[] DEFAULT NULL::uuid[], p_organization_ids uuid[] DEFAULT NULL::uuid[], p_include_platform_tables boolean DEFAULT false)
  RETURNS TABLE(record_id uuid, table_id uuid, table_name text, name text, organization_id uuid, updated_at timestamp with time zone)
@@ -1892,10 +1849,6 @@ begin
 end;
 $function$
 ;
-
-revoke all on function custom.records_search(p_search text, p_limit integer, p_offset integer, p_table_ids uuid[], p_organization_ids uuid[], p_include_platform_tables boolean) from public;
-
-grant execute on function custom.records_search(p_search text, p_limit integer, p_offset integer, p_table_ids uuid[], p_organization_ids uuid[], p_include_platform_tables boolean) to authenticated;
 
 CREATE OR REPLACE FUNCTION custom.table_ensure(p_organization_id uuid, p_spec jsonb)
  RETURNS jsonb
@@ -2338,16 +2291,6 @@ end;
 $function$
 ;
 
-revoke all on function custom.table_facts(p_organization_id uuid) from public;
-
-grant execute on function custom.table_facts(p_organization_id uuid) to authenticated;
-
-grant execute on function custom.table_facts(p_organization_id uuid) to dashboard_user;
-
-grant execute on function custom.table_facts(p_organization_id uuid) to service_role;
-
-grant execute on function custom.table_facts(p_organization_id uuid) to svc_seo;
-
 CREATE OR REPLACE FUNCTION custom.table_kept_out_of_lists(p_kept_for text)
  RETURNS boolean
  LANGUAGE sql
@@ -2542,10 +2485,6 @@ exception when others then
 end
 $function$
 ;
-
-revoke all on function custom.table_list_everywhere(p_organization_id uuid, p_include_platform_tables boolean) from public;
-
-grant execute on function custom.table_list_everywhere(p_organization_id uuid, p_include_platform_tables boolean) to authenticated;
 
 CREATE OR REPLACE FUNCTION custom.table_placement(p_organization_id uuid, p_table_id uuid, p_data jsonb, p_is_kernel boolean DEFAULT false)
  RETURNS jsonb

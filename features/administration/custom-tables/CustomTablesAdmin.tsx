@@ -67,7 +67,7 @@ function recordsIn(organizationId: string | null): RecordsClient {
 
 async function readMemberTables(orgId: string | null): Promise<CustomTableRow[]> {
   // An admin list sees every table, the app's own for agents' outputs included (CHAIR-DOORS-2).
-  const answer = await recordsIn(null).dataHomeTables({ organization_id: orgId, include_app_tables: true });
+  const answer = await recordsIn(null).dataHomeTables({ organization_id: orgId, include_platform_tables: true });
   if (!answer.ok) throw new Error(answer.error.message);
   return answer.data.map((r) => ({
     id: r.table_id,
@@ -76,7 +76,7 @@ async function readMemberTables(orgId: string | null): Promise<CustomTableRow[]>
     organizationName: r.organization_name,
     updatedAt: r.updated_at,
     system: r.system === true,
-    platformOwned: r.kept_by_the_app,
+    platformOwned: r.platform_owned,
   }));
 }
 

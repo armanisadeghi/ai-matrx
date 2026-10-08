@@ -32780,7 +32780,7 @@ export type Database = {
           icon: string | null
           id: string | null
           is_kernel: boolean | null
-          kept_by_the_app: boolean | null
+          platform_owned: boolean | null
           kept_for: string | null
           label_plural: string | null
           label_singular: string | null
@@ -32816,7 +32816,7 @@ export type Database = {
           icon?: never
           id?: string | null
           is_kernel?: never
-          kept_by_the_app?: never
+          platform_owned?: never
           kept_for?: never
           label_plural?: never
           label_singular?: never
@@ -32852,7 +32852,7 @@ export type Database = {
           icon?: never
           id?: string | null
           is_kernel?: never
-          kept_by_the_app?: never
+          platform_owned?: never
           kept_for?: never
           label_plural?: never
           label_singular?: never
@@ -35400,7 +35400,7 @@ export type Database = {
       }
       data_home: {
         Args: {
-          p_include_app_tables?: boolean
+          p_include_platform_tables?: boolean
           p_organization_id?: string
           p_search?: string
         }
@@ -35429,7 +35429,7 @@ export type Database = {
       }
       data_home_slim: {
         Args: {
-          p_include_app_tables?: boolean
+          p_include_platform_tables?: boolean
           p_organization_id?: string
           p_search?: string
         }
@@ -35440,7 +35440,7 @@ export type Database = {
             Args: { p_organization_id?: string }
             Returns: {
               created_by: string
-              kept_by_the_app: boolean
+              platform_owned: boolean
               kind: string
               member: boolean
               mine: boolean
@@ -35456,10 +35456,10 @@ export type Database = {
             }[]
           }
         | {
-            Args: { p_include_app_tables: boolean; p_organization_id: string }
+            Args: { p_include_platform_tables: boolean; p_organization_id: string }
             Returns: {
               created_by: string
-              kept_by_the_app: boolean
+              platform_owned: boolean
               kind: string
               member: boolean
               mine: boolean
@@ -38706,7 +38706,7 @@ export type Database = {
       }
       records_search: {
         Args: {
-          p_include_app_tables?: boolean
+          p_include_platform_tables?: boolean
           p_limit?: number
           p_offset?: number
           p_organization_ids?: string[]
@@ -39639,7 +39639,7 @@ export type Database = {
           foundation: boolean
           keeper_group: string
           keeper_says: string
-          kept_by_the_app: boolean
+          platform_owned: boolean
           kept_for: string
           mine: boolean
           offered_as_context: boolean
@@ -39698,7 +39698,7 @@ export type Database = {
       table_list_everywhere:
         | { Args: { p_organization_id?: string }; Returns: Json }
         | {
-            Args: { p_include_app_tables: boolean; p_organization_id: string }
+            Args: { p_include_platform_tables: boolean; p_organization_id: string }
             Returns: Json
           }
       table_move: {

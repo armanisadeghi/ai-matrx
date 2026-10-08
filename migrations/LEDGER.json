@@ -1,6 +1,6 @@
 {
   "note": "Checked-in snapshot of public._schema_migrations for the files under migrations/campaign and migrations/inverse. Written by `pnpm db:apply` on every successful production apply and refreshed whole by the nightly catch-up. Never hand-edited: a self-written checksum is a claim nobody can check. Guard: pnpm check:ledgered-files-unedited.",
-  "generated_at": "2026-10-08T16:49:22.772Z",
+  "generated_at": "2026-10-08T16:50:27.193Z",
   "files": {
     "migrations/campaign/a_chunk_is_the_size_the_client_door_can_actually_carry.sql": {
       "source": "matrx-frontend",
@@ -7867,6 +7867,18 @@
       "filename": "tablenames_a_platform_tables_are_named_platform_tables.sql",
       "checksum": "6d35dbdf934f8e5ebeb65479a16e1a51546cf7d27fd3ef0e7a92b77f5b82ed06",
       "applied_at": "2026-10-08 16:47:22.140976+00"
+    },
+    "migrations/campaign/tablenames_b_the_three_renamed_doors_keep_their_signed_in_grants.sql": {
+      "source": "matrx-frontend",
+      "filename": "tablenames_b_the_three_renamed_doors_keep_their_signed_in_grants.sql",
+      "checksum": "4cdc1abbdfd01e431248cd33595f4830774393150be7caa69ec599bd1caa20d6",
+      "applied_at": "2026-10-08 16:50:11.283799+00"
+    },
+    "migrations/campaign/tablenames_c_the_register_restores_the_renamed_doors_grants.sql": {
+      "source": "matrx-frontend",
+      "filename": "tablenames_c_the_register_restores_the_renamed_doors_grants.sql",
+      "checksum": "420e4ec1f0386dc362f14249559626c95e65a74e5b9a6476644fc5ae97ec6efc",
+      "applied_at": "2026-10-08 16:50:25.640242+00"
     },
     "migrations/campaign/tableowner_a_door_row_renders_like_the_catalog.sql": {
       "source": "matrx-frontend",
