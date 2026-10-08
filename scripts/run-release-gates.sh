@@ -1272,6 +1272,8 @@ else
         # not a blocked release.
         "Reachability standing guards|pnpm check:reachability-guards"
         "DB guards: triggers, planner traps, public exposure|pnpm check:db-guards"
+        "ID-CAST: an id is compared as an id (no id::text = in custom/platform/iam)|pnpm check:id-cast"
+        "ID-CAST self-test: RED on the pre-fix bodies, GREEN on the fixed|pnpm check:id-cast:self-test"
         # THE SIGNED-OUT SURFACE, READ AND WRITE. Both of these existed only as pnpm
         # scripts until 2026-09-14 — in no gate, no CI job and no hook — which is how
         # DD-218 happened: `agent.mandate_exemplar` kept a live 22-column anon grant

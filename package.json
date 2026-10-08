@@ -43,6 +43,8 @@
     "check:theme-color-literals:self-test": "node scripts/check-theme-color-literals.mjs --self-test",
     "check:univer-doc-theme": "node scripts/check-univer-doc-theme.mjs",
     "check:univer-doc-theme:self-test": "node scripts/check-univer-doc-theme.mjs --self-test",
+    "check:id-cast": "tsx scripts/check-id-compared-as-text.ts",
+    "check:id-cast:self-test": "tsx scripts/check-id-compared-as-text.ts --self-test",
     "check:no-session-read-only": "node scripts/check-no-session-read-only.mjs",
     "check:no-session-read-only:self-test": "node scripts/check-no-session-read-only.mjs --self-test",
     "pooler:sweep": "node scripts/pooler-sweep.mjs",
