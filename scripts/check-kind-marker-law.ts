@@ -85,6 +85,12 @@ const BLESSED: Record<string, string> = {
   "components/official/structured-value/StructuredValueView.tsx":
     "not a door — DISPLAY ONLY: the universal document view hides the discriminator from " +
     "the reader; the underlying value is untouched and 'Show the raw data' shows it.",
+  "features/canvas/output/print-layouts/kindValuePrinter.ts":
+    "not a door — DISPLAY ONLY: print field lists and depth-limited prose omit the " +
+    "discriminator from HTML; source values and kind-printer dispatch retain it.",
+  "features/canvas/output/print-layouts/structuredTypePrinters.ts":
+    "not a door — DISPLAY ONLY: research details, table headers and table cells omit " +
+    "the discriminator only in print HTML; the source kind instances are untouched.",
   "features/content-ir/registry/shape-doctor.ts":
     "not a door — a SCHEMA-side comparison: stripKindFromJsonSchema normalises two SCHEMA " +
     "DOCUMENTS before diffing their substance, never an instance. The recomputed gate must " +
