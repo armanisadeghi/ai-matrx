@@ -1,8 +1,8 @@
 // The decision board's picks, kept in the record store (scope: person) instead of localStorage.
-// Declared once; the table is made on first use. Imports only @ai-matrx/records/app-table.
-import { defineAppTable, f } from "@ai-matrx/records/app-table";
+// Declared once; the table is made on first use. Imports only @ai-matrx/records/typed-table.
+import { defineTypedTable, f } from "@ai-matrx/records/typed-table";
 
-export const uiDecisionPicks = defineAppTable({
+export const uiDecisionPicks = defineTypedTable({
   name: "UI decision picks",
   slug: "ui_decision_picks",
   kept_for: "decisions",

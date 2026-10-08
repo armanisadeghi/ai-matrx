@@ -2,7 +2,7 @@
 
 // features/start/useStartPage.ts — read and set this person's start page (the newest choice wins).
 // Must sit under a records provider; writes go to that provider's organization.
-import { useAppTable as useTypedTable } from "@ai-matrx/records/react";
+import { useTypedTable } from "@ai-matrx/records/react";
 
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";

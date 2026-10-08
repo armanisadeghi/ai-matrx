@@ -3,15 +3,15 @@
 /**
  * THE 45-SECOND TABLE, FROM CODE (lane CHAIR-45S, 2026-10-03).
  *
- * One `defineAppTable` declaration below is the whole data layer of this page: the table is made
+ * One `defineTypedTable` declaration below is the whole data layer of this page: the table is made
  * in the active organization on the first save (`custom.table_ensure`, idempotent), the rows are
  * typed from the declaration (`RowOf` / `InsertOf` — a wrong column or type fails `tsc`, no
  * codegen), and every write walks the store's own doors as the signed-in person.
  */
 
 import { useState } from "react";
-import { defineAppTable, f, type InsertOf, type RowOf } from "@ai-matrx/records/app-table";
-import { RecordsProvider, useAppTable } from "@ai-matrx/records/react";
+import { defineTypedTable, f, type InsertOf, type RowOf } from "@ai-matrx/records/typed-table";
+import { RecordsProvider, useTypedTable } from "@ai-matrx/records/react";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { useOrganizationRequired } from "@/features/organizations/useOrganizationRequired";
@@ -20,7 +20,7 @@ import { Button } from "@ai-matrx/design-system/controls";
 import { useAppRecordsConfig } from "@/features/data-tables/records-ui-host/recordsUiHost";
 
 // ── 1. the table, declared once ────────────────────────────────────────────────────────────
-export const supplyReorderPoints = defineAppTable({
+export const supplyReorderPoints = defineTypedTable({
   name: "Supply reorder points",
   slug: "supply_reorder_points",
   scope: "organization",
@@ -62,7 +62,7 @@ const SAMPLE: NewRow[] = [
 ];
 
 function ReorderBoard() {
-  const { rows, upsert, remove, loading, error, status, total } = useAppTable(supplyReorderPoints);
+  const { rows, upsert, remove, loading, error, status, total } = useTypedTable(supplyReorderPoints);
   const [item, setItem] = useState("");
   const [onHand, setOnHand] = useState("");
   const [reorderAt, setReorderAt] = useState("");
