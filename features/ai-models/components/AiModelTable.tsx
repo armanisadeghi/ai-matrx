@@ -55,8 +55,10 @@ import {
 } from "lucide-react";
 import type { AiModel, AiProvider } from "../types";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
-import { AiModelRef } from "@/components/official/entity-ref/AiIdentityRef";
+import { AiModelRef } from "@ai-matrx/chat/agents/components/identity-refs/AiIdentityRef";
 import { aiModelSummary, AI_MODELS_LOCATION } from "../format";
+import { CostRatingCell } from "./CostRatingCell";
+import { matchesTierView } from "../maxTier";
 import {
   DEFAULT_AI_MODEL_FILTERS,
   isDeprecatedFilterNonDefault,
@@ -395,6 +397,13 @@ const COLUMNS: ColDef[] = [
         trueClass="bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-300"
       />
     ),
+  },
+  {
+    key: "cost_rating",
+    header: "Cost",
+    width: "w-[150px] min-w-[130px]",
+    sortable: true,
+    render: (item) => <CostRatingCell model={item} />,
   },
   // Pricing remains read-only here; editing still lives only on ai.offering.
 ];
@@ -1241,6 +1250,10 @@ function CanonicalAiModelTable(props: AiModelTableProps) {
   const providerMap = Object.fromEntries(
     providers.map((provider) => [provider.id, provider.name ?? provider.id]),
   );
+  const tierView = tabState.filters.tier;
+  const tierModels = tierView
+    ? models.filter((model) => matchesTierView(model, tierView))
+    : models;
   const columns: MatrxColumnDef<AiModel>[] = COLUMNS.map((column) => ({
     id: column.key,
     header: column.header,
@@ -1312,7 +1325,7 @@ function CanonicalAiModelTable(props: AiModelTableProps) {
     <MatrxDataTable<AiModel>
       tableId="ai/models-canonical"
       viewTabs={false}
-      data={models}
+      data={tierModels}
       drill={AI_MODEL_DRILL}
       columns={[...(columns), ...drillColumns, { id: "custom-actions", header: "Actions", sortable: false, filter: false, customActions: (model) => (
         <CanonicalModelActions
