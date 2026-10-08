@@ -28,7 +28,7 @@ import React, {
   useRef,
   useState,
 } from "react";
-import { Loader2, Search, X } from "lucide-react";
+import { AlertCircle, CheckCircle2, Loader2, Search, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { DockedSidePanel } from "@/components/official/side-panel/DockedSidePanel";
 import type { SidePanelSizes } from "@/components/official/side-panel/side-panel-width";
@@ -36,7 +36,12 @@ import { RAG_VOCAB } from "@/features/rag/constants/vocabulary";
 import { useDocumentSearch } from "@/features/rag/hooks/useDocumentSearch";
 import { Input } from "@ai-matrx/design-system/controls";
 import PageHeader from "@/features/shell/components/header/PageHeader";
-import { usePdfExtractor, type PdfDocument } from "../hooks/usePdfExtractor";
+import {
+  invalidateProcessedDocumentCache,
+  usePdfExtractor,
+  type PdfDocument,
+} from "../hooks/usePdfExtractor";
+import { usePdfDocRun, type PdfDocRunPhase } from "../hooks/usePdfDocRun";
 import { useProcessedDocumentPages } from "../hooks/useProcessedDocumentPages";
 import { useProcessedDocSync } from "../hooks/useProcessedDocSync";
 import { useAutoCleanOnOpen } from "../hooks/useAutoCleanOnOpen";
@@ -568,6 +573,24 @@ export function PdfStudioShell({ initialDocumentId }: PdfStudioShellProps) {
     }
   }, [activeDoc, extractor, docsState, refreshPages, toast]);
 
+  // The open doc's server run, reconnected after a refresh / from another tab:
+  // live progress resumes and the status comes from the run record.
+  const activeDocId = activeDoc?.id ?? null;
+  const docRun = usePdfDocRun({
+    docId: activeDocId,
+    localStreaming:
+      aiCleanRunning || pipelineRunning || extractor.batchStatus !== "idle",
+    onSettled: async () => {
+      if (!activeDocId) return;
+      invalidateProcessedDocumentCache(activeDocId);
+      const fresh = await extractor.fetchDocument(activeDocId);
+      if (fresh) setActiveDoc(fresh);
+      refreshPages();
+      docsState.refresh();
+    },
+  });
+  const docRunActive = docRun.phase === "running" && !aiCleanRunning;
+
   // A doc opened with extracted text but no clean text runs the AI clean once.
   const activeTabForDoc = activeDoc
     ? extractor.tabs.find((t) => t.id === activeDoc.id)
@@ -577,6 +600,11 @@ export function PdfStudioShell({ initialDocumentId }: PdfStudioShellProps) {
     busy:
       aiCleanRunning ||
       pipelineRunning ||
+      // The run record answers "is a server run going?" — wait for it, and
+      // never start a second clean beside a live one.
+      !docRun.answered ||
+      docRunActive ||
+      docRun.phase === "failed" ||
       extractor.batchStatus !== "idle" ||
       activeProcessingStatus != null ||
       activeTabForDoc?.status === "cleaning" ||
@@ -967,6 +995,10 @@ export function PdfStudioShell({ initialDocumentId }: PdfStudioShellProps) {
             pipelineRunning={pipelineRunning}
             aiCleanRunning={aiCleanRunning}
             liveStatus={liveStatus ?? activeProcessingStatus}
+            runPhase={docRun.phase}
+            runLabel={docRun.label}
+            runError={docRun.errorMessage}
+            onRetry={() => void handleRunAiClean()}
           />
 
           {/* Hidden-panes restore strip */}
@@ -1028,9 +1060,11 @@ export function PdfStudioShell({ initialDocumentId }: PdfStudioShellProps) {
               onRunPipeline={handleRunPipeline}
               pipelineRunning={pipelineRunning}
               onRunAiClean={handleRunAiClean}
-              aiCleanRunning={aiCleanRunning}
-              streamingCleanText={streamingCleanText}
-              streamingStatus={liveStatus ?? activeProcessingStatus}
+              aiCleanRunning={aiCleanRunning || docRunActive}
+              streamingCleanText={streamingCleanText ?? docRun.streamingText}
+              streamingStatus={
+                liveStatus ?? activeProcessingStatus ?? docRun.label
+              }
               onOpenUpload={() => setUploadOpen(true)}
               editMode={pdfPaneEditMode}
               cropPagesInput={cropPagesInput}
@@ -1102,27 +1136,87 @@ export function PdfStudioShell({ initialDocumentId }: PdfStudioShellProps) {
   );
 }
 
-/** Live status — pipeline / AI clean streaming progress, under the header. */
+/**
+ * Live status — pipeline / AI clean streaming progress, under the header. When
+ * no stream of this tab is running, it shows the open doc's server run as the
+ * run record states it: running (with its own progress), failed (+ Retry), or
+ * done (only for a run that settled while the page watched).
+ */
 function LiveStatusStrip({
   pipelineRunning,
   aiCleanRunning,
   liveStatus,
+  runPhase,
+  runLabel,
+  runError,
+  onRetry,
 }: {
   pipelineRunning: boolean;
   aiCleanRunning: boolean;
   liveStatus: string | null;
+  runPhase: PdfDocRunPhase;
+  runLabel: string | null;
+  runError: string | null;
+  onRetry: () => void;
 }) {
-  if (!pipelineRunning && !aiCleanRunning && !liveStatus) return null;
+  const local = pipelineRunning || aiCleanRunning;
+  if (!local && runPhase === "failed") {
+    return (
+      <div
+        className="shrink-0 px-4 py-1 border-b border-border bg-destructive/5 flex items-center gap-2 text-[10px]"
+        data-testid="pdf-run-status"
+        data-run-phase="failed"
+      >
+        <AlertCircle className="w-2.5 h-2.5 text-destructive shrink-0" />
+        <span className="font-medium text-destructive shrink-0">Failed</span>
+        {runError && (
+          <span className="text-muted-foreground truncate" title={runError}>
+            {runError}
+          </span>
+        )}
+        <button
+          type="button"
+          onClick={onRetry}
+          className="ml-auto shrink-0 font-medium text-primary hover:underline"
+        >
+          Retry
+        </button>
+      </div>
+    );
+  }
+  if (!local && runPhase === "done") {
+    return (
+      <div
+        className="shrink-0 px-4 py-1 border-b border-border flex items-center gap-2 text-[10px]"
+        data-testid="pdf-run-status"
+        data-run-phase="done"
+      >
+        <CheckCircle2 className="w-2.5 h-2.5 text-emerald-600 dark:text-emerald-400 shrink-0" />
+        <span className="font-medium text-foreground">Done</span>
+      </div>
+    );
+  }
+  const remote = !local && runPhase === "running";
+  if (!local && !remote && !liveStatus) return null;
+  const detail = liveStatus ?? (remote ? runLabel : null);
   return (
-    <div className="shrink-0 px-4 py-1 border-b border-border bg-primary/5 flex items-center gap-2 text-[10px]">
+    <div
+      className="shrink-0 px-4 py-1 border-b border-border bg-primary/5 flex items-center gap-2 text-[10px]"
+      data-testid="pdf-run-status"
+      data-run-phase="running"
+    >
       <Loader2 className="w-2.5 h-2.5 animate-spin text-primary shrink-0" />
       <span className="font-medium text-primary shrink-0">
-        {aiCleanRunning ? "AI cleanup" : "Pipeline"} running
+        {aiCleanRunning
+          ? "AI cleanup running"
+          : remote
+            ? "Cleaning…"
+            : "Pipeline running"}
       </span>
-      {liveStatus && (
+      {detail && detail !== "Cleaning…" && (
         <>
           <span className="text-muted-foreground">·</span>
-          <span className="text-muted-foreground truncate">{liveStatus}</span>
+          <span className="text-muted-foreground truncate">{detail}</span>
         </>
       )}
     </div>
