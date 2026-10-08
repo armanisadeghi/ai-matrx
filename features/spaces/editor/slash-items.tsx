@@ -2,8 +2,8 @@
 
 // features/spaces/editor/slash-items.tsx — the "/" menu, in Notion's order and groups (B4).
 //
-// Only blocks that work today are listed. Media from a file or link (image, video, audio, file, PDF,
-// bookmark, embed) render when stored (imports) but have no insert flow yet.
+// Media (image, video, audio, file, PDF) open Notion's Upload | Embed link picker (media-insert.tsx);
+// "/embed" and the provider items open Embed link; Inline puts a mention, date or equation in the line.
 
 import type { DefaultReactSuggestionItem } from "@blocknote/react";
 import {
@@ -33,12 +33,26 @@ import {
   PanelTop,
   RefreshCw,
   MousePointerClick,
+  Image as ImageIcon,
+  Video,
+  AudioLines,
+  Paperclip,
+  FileType2,
+  Bookmark,
+  Globe,
+  AtSign,
+  CalendarDays,
+  SquareFunction,
+  Heading4,
 } from "lucide-react";
+import { SuggestionMenu } from "@blocknote/core";
 
 import type { PickedSource } from "../data/SourcePicker";
 import { newViewId, type SpaceDbView } from "../data/sources";
 import type { SpacesEditor } from "./schema";
 import { insertAtSlash, slashTarget } from "./slash-insert";
+import { blockElement, openMediaPicker, type MediaKind, type PickedMedia } from "./media-insert";
+import { EMBED_PROVIDERS, GENERIC_EMBED, type EmbedProvider } from "./embed-providers";
 
 const ICON = 18;
 
@@ -108,6 +122,33 @@ export function linkPageAt(editor: SpacesEditor, ctx: SlashContext, at: string |
   });
 }
 
+/** "/image" … "/pdf", "/bookmark", "/embed" and the providers: the picker opens under the line, the block lands there. */
+function mediaAt(editor: SpacesEditor, kind: MediaKind | "embed" | "bookmark", provider?: EmbedProvider): () => void {
+  return () => {
+    const at = slashTarget(editor);
+    // The "/" menu closes first; the picker opens on the next frame under the line the "/" was on.
+    window.requestAnimationFrame(() =>
+      openMediaPicker({
+        kind,
+        provider: provider?.key,
+        anchor: blockElement(at),
+        onPick: (picked: PickedMedia) => {
+          const type = kind === "bookmark" ? "bookmark" : kind;
+          insertAtSlash(editor, at, stored(type, { ...picked }));
+        },
+      }),
+    );
+  };
+}
+
+/** Inline items: open the "@" menu on the caret (Notion's Mention a person / page, Date or reminder). */
+function openMentionMenu(editor: SpacesEditor, seed = ""): void {
+  window.requestAnimationFrame(() => {
+    editor.getExtension(SuggestionMenu)?.openSuggestionMenu("@", { deleteTriggerCharacter: true, ignoreQueryLength: true });
+    if (seed) editor.insertInlineContent(seed);
+  });
+}
+
 export function slashItems(editor: SpacesEditor, ctx: SlashContext): DefaultReactSuggestionItem[] {
   // Every item lands where its "/" was typed — named at the click, inserted by id (slash-insert.ts).
   const set = (block: SpacesPartialBlock) => () => {
@@ -117,6 +158,8 @@ export function slashItems(editor: SpacesEditor, ctx: SlashContext): DefaultReac
   const advanced = "Advanced blocks";
   const media = "Media";
   const database = "Database";
+  const inline = "Inline";
+  const embeds = "Embeds";
   const withSource = (make: (src: PickedSource) => SpacesPartialBlock) => () => {
     const at = slashTarget(editor);
     void ctx.pickSource().then((src) => {
@@ -128,6 +171,7 @@ export function slashItems(editor: SpacesEditor, ctx: SlashContext): DefaultReac
     { title: "Heading 1", subtext: "Big section heading.", aliases: ["h1", "#", "heading1"], group: basic, icon: <Heading1 size={ICON} />, onItemClick: set({ type: "heading", props: { level: 1 } }) },
     { title: "Heading 2", subtext: "Medium section heading.", aliases: ["h2", "##", "heading2"], group: basic, icon: <Heading2 size={ICON} />, onItemClick: set({ type: "heading", props: { level: 2 } }) },
     { title: "Heading 3", subtext: "Small section heading.", aliases: ["h3", "###", "heading3"], group: basic, icon: <Heading3 size={ICON} />, onItemClick: set({ type: "heading", props: { level: 3 } }) },
+    { title: "Heading 4", subtext: "Smallest section heading.", aliases: ["h4", "####", "heading4"], group: basic, icon: <Heading4 size={ICON} />, onItemClick: set({ type: "heading", props: { level: 4 } } as unknown as SpacesPartialBlock) },
     { title: "Bulleted list", subtext: "Create a simple bulleted list.", aliases: ["bullet", "ul", "-"], group: basic, icon: <List size={ICON} />, onItemClick: set({ type: "bulletListItem" }) },
     { title: "Numbered list", subtext: "Create a list with numbering.", aliases: ["numbered", "ol", "1."], group: basic, icon: <ListOrdered size={ICON} />, onItemClick: set({ type: "numberedListItem" }) },
     { title: "To-do list", subtext: "Track tasks with a to-do list.", aliases: ["todo", "checkbox", "[]"], group: basic, icon: <ListChecks size={ICON} />, onItemClick: set({ type: "checkListItem" }) },
@@ -211,7 +255,26 @@ export function slashItems(editor: SpacesEditor, ctx: SlashContext): DefaultReac
       : []),
     { title: "Linked view of database", subtext: "Show a view of an existing database.", aliases: ["linked", "database", "view"], group: database, icon: <Database size={ICON} />, onItemClick: withSource((s) => databaseBlock(s, { id: newViewId(), name: "All", layout: "grid" }, true)) },
     { title: "Chart", subtext: "Chart the records of a database.", aliases: ["chart", "donut", "graph"], group: database, icon: <PieChart size={ICON} />, onItemClick: withSource((s) => databaseBlock(s, { id: newViewId(), name: s.name, layout: "chart", chart: { type: "donut", groupBy: null, op: "count", centerValue: true } }, true)) },
+    { title: "Image", subtext: "Upload or embed with a link.", aliases: ["image", "img", "picture", "photo"], group: media, icon: <ImageIcon size={ICON} />, onItemClick: mediaAt(editor, "image") },
+    { title: "Bookmark", subtext: "Save a link as a visual bookmark.", aliases: ["bookmark", "link preview", "url"], group: media, icon: <Bookmark size={ICON} />, onItemClick: mediaAt(editor, "bookmark") },
+    { title: "Video", subtext: "Embed from YouTube, Vimeo…", aliases: ["video", "youtube", "vimeo", "movie"], group: media, icon: <Video size={ICON} />, onItemClick: mediaAt(editor, "video") },
+    { title: "Audio", subtext: "Embed audio from a file or link.", aliases: ["audio", "sound", "music", "mp3"], group: media, icon: <AudioLines size={ICON} />, onItemClick: mediaAt(editor, "audio") },
     { title: "Code", subtext: "Capture a code snippet.", aliases: ["code", "```", "snippet"], group: media, icon: <Code size={ICON} />, onItemClick: set({ type: "codeBlock" }) },
+    { title: "File", subtext: "Upload or embed with a link.", aliases: ["file", "attachment", "upload"], group: media, icon: <Paperclip size={ICON} />, onItemClick: mediaAt(editor, "file") },
+    { title: "Mention a person", subtext: "Ping someone so they get a notification.", aliases: ["person", "mention", "@", "people", "user"], group: inline, icon: <AtSign size={ICON} />, onItemClick: () => openMentionMenu(editor) },
+    { title: "Mention a page", subtext: "Link to a page with a mention.", aliases: ["mention page", "page mention", "@page"], group: inline, icon: <FileText size={ICON} />, onItemClick: () => openMentionMenu(editor) },
+    { title: "Date or reminder", subtext: "Add a date or a reminder.", aliases: ["date", "reminder", "remind", "today", "@date"], group: inline, icon: <CalendarDays size={ICON} />, onItemClick: () => openMentionMenu(editor, "today") },
+    {
+      title: "Inline equation",
+      subtext: "Insert a math equation in the line.",
+      aliases: ["inline equation", "inline math", "tex", "$"],
+      group: inline,
+      icon: <SquareFunction size={ICON} />,
+      onItemClick: () => editor.insertInlineContent([{ type: "inlineEquation", props: { span: JSON.stringify({ text: "x", equation: "x" }) } }, " "] as never),
+    },
+    { title: GENERIC_EMBED.title, subtext: GENERIC_EMBED.subtext, aliases: GENERIC_EMBED.aliases, group: embeds, icon: <Globe size={ICON} />, onItemClick: mediaAt(editor, "embed") },
+    { title: "PDF", subtext: "Embed a PDF to read in the page.", aliases: ["pdf", "document"], group: embeds, icon: <FileType2 size={ICON} />, onItemClick: mediaAt(editor, "pdf") },
+    ...EMBED_PROVIDERS.map((p) => ({ title: p.title, subtext: p.subtext, aliases: p.aliases, group: embeds, icon: <Globe size={ICON} />, onItemClick: mediaAt(editor, "embed", p) })),
     { title: "Table of contents", subtext: "Show an outline of this page.", aliases: ["toc", "contents", "outline"], group: advanced, icon: <ListTree size={ICON} />, onItemClick: set(stored("tableOfContents", {})) },
     { title: "Block equation", subtext: "Display a standalone math equation.", aliases: ["math", "equation", "tex", "latex"], group: advanced, icon: <Sigma size={ICON} />, onItemClick: set(stored("equation", { expression: "E = mc^2" })) },
     { title: "Breadcrumb", subtext: "Show where this page sits.", aliases: ["breadcrumb", "path"], group: advanced, icon: <ChevronRight size={ICON} />, onItemClick: set(stored("breadcrumb", {})) },

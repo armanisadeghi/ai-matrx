@@ -43,6 +43,7 @@ import { makeBlockMenu, type BlockMenuActions } from "./BlockMenu";
 import { currentBlockId, duplicateBlocks, selectedOrCurrent } from "./block-actions";
 import { fromEngine, toEngine, type EngineBlock } from "./convert";
 import { PasteUrlMenu, pastedAnchor, pastedUrl, type PastedUrl } from "./PasteUrlMenu";
+import { MediaPickerHost } from "./media-insert";
 import { spacePanel, spaceSelectionActions } from "./selection-format";
 import { SYNCED_CLIP } from "./synced-block";
 import { SuggestionCard, suggestMode } from "./suggest";
@@ -317,6 +318,8 @@ export function SpaceEditor({ spaceId, initialBlocks, editable, onChange, slash,
         // A KEY PRESSED IN A DATABASE BLOCK IS THE TABLE'S (stored-blocks `insideDatabaseBlock`): Enter,
         // Space and Escape there must never write into a toggle, open Ask AI or move the page's caret.
         if (insideDatabaseBlock(e.nativeEvent)) return;
+        // A field inside a block (a media caption, a picker) owns its keys: Space there is a space.
+        if (e.target instanceof HTMLElement && e.target.closest("input, textarea, select")) return;
         turnIntoKey(editor, e);
         // Notion's Markdown shortcuts BlockNote lacks: ``` (code block), " + space (quote).
         if ((e.key === "`" || e.key === " ") && !e.metaKey && !e.ctrlKey && !e.altKey && editable && !document.querySelector(".bn-suggestion-menu") && applyMarkdownKey(editor, e.key)) {
@@ -464,6 +467,7 @@ export function SpaceEditor({ spaceId, initialBlocks, editable, onChange, slash,
       ) : null}
     </BlockNoteView>
     {pasted ? <PasteUrlMenu editor={editor} pasted={pasted} onClose={() => setPasted(null)} /> : null}
+    {editable ? <MediaPickerHost /> : null}
     <SuggestionCard getView={() => editor.prosemirrorView ?? null} canResolve={editable} />
     </div>
   );
