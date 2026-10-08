@@ -238,7 +238,7 @@ describe("tusUploadRaw (injected HttpStack)", () => {
       },
     );
 
-    expect(result.ok).toBe(true);
+    expect(result).toMatchObject({ ok: true });
     if (result.ok) {
       expect(result.fileId).toBe("file-123");
       expect(result.filePath).toBe("Captures/Videos/big.webm");

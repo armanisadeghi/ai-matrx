@@ -20,7 +20,10 @@ import {
 } from "../redux/selectors";
 import { noteWorkingCopy } from "../utils/noteLiveContent";
 import { selectWorkingCopyValue } from "@/lib/working-copy/workingCopySlice";
-import { PlainTextMetricsBar } from "@/components/text/PlainTextMetricsBar";
+import { useMemo } from "react";
+import { measureText } from "@ai-matrx/rich-editor/core/text-metrics";
+import { formatCount } from "@ai-matrx/kit/format";
+import { useDebounce } from "@ai-matrx/kit/hooks";
 import { cn } from "@/lib/utils";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
@@ -42,6 +45,14 @@ export function NoteStatsFooter({
   const reduxContent = useAppSelector(selectNoteContent(noteId)) ?? "";
   const liveContent = useAppSelector((state) => selectWorkingCopyValue(state, noteWorkingCopy.key(noteId)));
   const content = liveContent ?? reduxContent;
+  // What a writer counts (Docs, Bear, iA Writer): words · characters · read time, of the
+  // prose a reader reads (markdown markers and protected blocks are not words). Measured
+  // a beat behind typing — never a full tokenize per keystroke.
+  const settled = useDebounce(content, 250);
+  const metrics = useMemo(() => measureText(settled), [settled]);
+  const words = `${formatCount(metrics.words)} ${metrics.words === 1 ? "word" : "words"}`;
+  const chars = `${formatCount(metrics.characters)} chars`;
+  const read = `${metrics.readingMinutes} min`;
 
   const isDirty = useAppSelector(selectNoteIsDirtyById(noteId));
   const isSaving = useAppSelector(selectNoteIsSavingById(noteId));
@@ -85,14 +96,13 @@ export function NoteStatsFooter({
             "Saved" it was a stray copy icon drawn over the character count. */}
         {saveError && <ErrorAlchemyMenu error={saveError} />}
       </span>
-      <PlainTextMetricsBar
-        text={content}
-        compact
-        // What a writer counts: words and characters, in the page's own font
-        // (whitespace / line / paragraph counters were developer readouts).
-        metrics={["wordCount", "charCount"]}
-        className="min-w-0 flex-1 border-t-0 bg-transparent px-0 py-0 font-sans text-xs shadow-none"
-      />
+      <span
+        className="min-w-0 flex-1 truncate text-xs tabular-nums text-muted-foreground"
+        data-note-metrics=""
+        title={`${words} · ${chars} · ${metrics.readingMinutes} min read`}
+      >
+        {words} · {chars} · {read}
+      </span>
     </div>
   );
 }
