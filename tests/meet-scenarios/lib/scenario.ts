@@ -30,7 +30,7 @@ export class Cast {
   }
   set meeting(m: Meeting | null) {
     this.current = m;
-    if (m && !this.created.includes(m)) this.created.push(m);
+    if (m && !this.created.some((c) => c.slug === m.slug)) this.created.push(m);
   }
   constructor(
     private readonly browser: Browser,
