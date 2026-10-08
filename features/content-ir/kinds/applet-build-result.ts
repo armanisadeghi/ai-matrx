@@ -138,7 +138,10 @@ export const appletBuildResultServerDataFromEnvelope =
       const data = readAppletBuildResult(value, envelope.root.status === "complete");
       // Nothing to show yet (or an answer with no app at all): decline — the skeleton stays up
       // while streaming, and a complete answer with no app falls to the readable fallback.
-      if (!data.name && data.pages.length === 0) return undefined;
+      // A description or a file being written IS something to show: a provider that orders keys
+      // alphabetically (Gemini) sends name and pages LAST, after every file, and declining until
+      // then held the window on a spinner for the whole build (lane P, 2026-10-07).
+      if (!data.name && data.pages.length === 0 && !data.description && data.files.length === 0) return undefined;
       return data;
     },
     { provisional: true },
