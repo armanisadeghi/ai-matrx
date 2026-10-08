@@ -50,8 +50,8 @@ import { Label } from "@/components/ui/label";
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { knobBool, knobInt } from "@/lib/knobs/featureKnobs";
 import { cn } from "@/lib/utils";
-import { primeAudioOutput } from "@/features/audio/unlock";
-import { useSpeech } from "@/features/audio/service/useSpeech";
+import { primeAudioOutput } from "@ai-matrx/media/speech";
+import { useSpeech } from "@ai-matrx/media/react";
 import { saveOutputFeedback } from "@/lib/output-feedback/service";
 import {
   EXPERT_SIGNATURE_SURFACE,

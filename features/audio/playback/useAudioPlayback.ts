@@ -19,7 +19,7 @@ import {
   resumePlayback,
   setPlaybackRate,
   skipPlayback,
-} from "./playbackQueue";
+} from "@ai-matrx/media/speech";
 import {
   selectIsPlaybackActive,
   selectPlaybackCurrentId,
@@ -28,7 +28,7 @@ import {
   selectPlaybackPending,
   selectPlaybackRate,
 } from "./selectors";
-import type { PlaybackRequest } from "./types";
+import type { PlaybackRequest } from "@ai-matrx/media/speech";
 
 export function useAudioPlayback() {
   const items = useAppSelector(selectPlaybackItems);

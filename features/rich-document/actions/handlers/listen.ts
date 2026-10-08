@@ -13,7 +13,7 @@
 
 import { AudioLines, Headphones, Loader2, Pause, Play, Settings2, Volume2 } from "lucide-react";
 import { toast } from "@/lib/toast";
-import { primeAudioOutput } from "@/features/audio/unlock";
+import { primeAudioOutput } from "@ai-matrx/media/speech";
 import { openListenSummaryWindowAction } from "@/features/overlays/openers/listenSummaryWindow";
 import { LISTENING_HOME_SURFACE } from "@/features/audio/service/listeningConfig";
 import {
@@ -104,7 +104,7 @@ registerAction({
 type SpeechStatus = "playing" | "paused" | "queued" | "starting" | null;
 
 async function playbackModule() {
-  return import("@/features/audio/playback/playbackQueue");
+  return import("@ai-matrx/media/speech");
 }
 
 // Filled when a renderer first subscribes (the bar mounting) — the queue
@@ -239,7 +239,7 @@ registerAction({
       if (item) return api.removePlaybackItem(item.id);
       return;
     }
-    const { speak } = await import("@/features/audio/service/speak");
+    const { speak } = await import("@ai-matrx/media/speech");
     // A selection plays as its own utterance; either way this button owns it.
     const { id } = speak({
       text: selectedText(ctx) ?? contentForDestination(ctx),

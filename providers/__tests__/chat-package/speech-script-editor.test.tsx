@@ -56,8 +56,9 @@ jest.mock("@/features/podcasts/generator/useVoices", () => ({
 }));
 
 const mockSpeak = jest.fn();
-jest.mock("@/features/audio/service/speak", () => ({
+jest.mock("@ai-matrx/media/speech", () => ({
   speak: (request: unknown) => mockSpeak(request),
+  primeAudioOutput: () => undefined,
 }));
 
 

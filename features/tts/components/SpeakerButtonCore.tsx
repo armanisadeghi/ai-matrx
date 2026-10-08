@@ -10,7 +10,7 @@
 
 import React, { useEffect, useRef, useCallback } from "react";
 import { ReadAloudButton, type ReadAloudStatus } from "@ai-matrx/media/react";
-import { useSpeech } from "@/features/audio/service/useSpeech";
+import { useSpeech } from "@ai-matrx/media/react";
 import type { SpeakerVariant } from "../types";
 
 export interface SpeakerButtonCoreProps {

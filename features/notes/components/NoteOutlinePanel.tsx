@@ -94,16 +94,19 @@ export function NoteOutlinePanel({
   onJumpInEditor,
   onClose,
 }: NoteOutlinePanelProps) {
-  // Escape closes the outline (a dialog or menu that took the key first keeps it).
+  // Escape closes the outline (an open dialog or menu keeps the key).
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key !== "Escape" || event.defaultPrevented) return;
+      if (event.key !== "Escape") return;
+      // The editor swallows Escape (ProseMirror prevents it), so the key is read in the capture
+      // phase; an open dialog, menu or picker closes first and keeps the key.
       const target = event.target as Element | null;
       if (target?.closest?.("[role='dialog'], [role='menu'], [role='listbox']")) return;
+      if (document.querySelector("[role='dialog'][data-state='open'], [role='menu'][data-state='open']")) return;
       onClose();
     };
-    window.addEventListener("keydown", onKeyDown);
-    return () => window.removeEventListener("keydown", onKeyDown);
+    window.addEventListener("keydown", onKeyDown, true);
+    return () => window.removeEventListener("keydown", onKeyDown, true);
   }, [onClose]);
 
   // Parse on a debounce so a fast typist never pays an O(lines) scan per

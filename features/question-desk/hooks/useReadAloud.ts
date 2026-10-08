@@ -21,8 +21,8 @@
 
 import { useCallback, useMemo } from "react";
 import { useAudioPlayback } from "@/features/audio/playback/useAudioPlayback";
-import { useSpeech } from "@/features/audio/service/useSpeech";
-import { primeAudioOutput } from "@/features/audio/unlock";
+import { useSpeech } from "@ai-matrx/media/react";
+import { primeAudioOutput } from "@ai-matrx/media/speech";
 import type { DecisionQuestionRow } from "../types";
 import type { ReadAloudPart } from "./useQuestionDeskKnobs";
 

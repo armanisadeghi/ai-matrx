@@ -6,8 +6,8 @@ import { useAgentLauncher } from "@ai-matrx/chat/agents/hooks/useAgentLauncher";
 import { acquireMicStream, releaseMicStream } from "@ai-matrx/browser-audio/core";
 import { beginRecordingSession } from "@/features/audio/session/audioSessionRegistry";
 import type { PlaybackSessionHandle } from "@/features/audio/session/types";
-import { getPlaybackSnapshot, skipPlayback, subscribePlayback } from "@/features/audio/playback/playbackQueue";
-import { speak } from "@/features/audio/service/speak";
+import { getPlaybackSnapshot, skipPlayback, subscribePlayback } from "@ai-matrx/media/speech";
+import { speak } from "@ai-matrx/media/speech";
 import { transcribe } from "@/features/audio/service/transcribe";
 
 const AUTO_SLEEP_MS = 60_000;

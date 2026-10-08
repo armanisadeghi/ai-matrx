@@ -11,12 +11,12 @@
  * even after all audio has been received.
  */
 
-import type { SinkAwarePlayer } from "@/features/audio/sinkAwarePlayer";
+import type { SinkAwarePlayer } from "@ai-matrx/media/speech";
 import {
   CartesiaAudioSource,
   connectCartesiaTts,
   type CartesiaTtsRequest,
-} from "@/lib/cartesia/connection";
+} from "@ai-matrx/media/speech";
 import {
   AudioEncoding,
   Language,

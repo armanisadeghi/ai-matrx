@@ -17,7 +17,7 @@ import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
 
 import type { EnvelopeDraftV1 } from "../../contract/draft";
 import { makeRealEditorApi } from "../api/realApi";
-import { emptyDraft } from "../model";
+import { emptyDraft, honestVerification } from "../model";
 import { readMirror } from "../useDraftSync";
 import { EsignEditor, type EditorUploader, type UploadedDoc } from "./EsignEditor";
 
@@ -73,7 +73,7 @@ export function EditorHost({ source }: { source: Source }) {
         const differs = !!mirror && JSON.stringify(mirror.draft) !== JSON.stringify(got.composition);
         return {
           envelopeId: source.envelopeId,
-          draft: differs && mirror ? mirror.draft : got.composition,
+          draft: honestVerification(differs && mirror ? mirror.draft : got.composition),
           confirmed: got.composition,
           revision: got.revision,
           restored: differs,
@@ -92,13 +92,13 @@ export function EditorHost({ source }: { source: Source }) {
           copyOfEnvelopeId: source.kind === "copy" ? source.envelopeId : undefined,
         });
         window.history.replaceState(null, "", draftHref(made.envelopeId));
-        return { envelopeId: made.envelopeId, draft: made.composition, confirmed: made.composition, revision: made.revision, restored: false, template: null, organizationId } satisfies Loaded;
+        return { envelopeId: made.envelopeId, draft: honestVerification(made.composition), confirmed: made.composition, revision: made.revision, restored: false, template: null, organizationId } satisfies Loaded;
       }
       if (source.templateId) {
         const t = await api.getTemplate(source.templateId);
         if (!t) throw new Error("You do not have access to this template.");
         // A template carries no access codes: every recipient starts without one (the editor asks).
-        const draft: EnvelopeDraftV1 = { ...t.composition, recipients: t.composition.recipients.map((r) => ({ ...r, has_access_code: false })) };
+        const draft: EnvelopeDraftV1 = honestVerification({ ...t.composition, recipients: t.composition.recipients.map((r) => ({ ...r, has_access_code: false })) });
         return { envelopeId: null, draft, confirmed: draft, revision: 0, restored: false, template: { id: t.id, name: t.name, version: t.version }, organizationId: t.organizationId } satisfies Loaded;
       }
       const d = emptyDraft();

@@ -202,6 +202,18 @@ export function isEmail(s: string): boolean {
   return EMAIL.test(s.trim());
 }
 
+/**
+ * The sender-set access code is a new refusal, offered only once the owner approves it (law 12;
+ * CONTRACT §18 F1). Until then the server keeps it off and stores an email code instead.
+ */
+export const ACCESS_CODE_OFFERED = false;
+
+/** What a composition's verification will actually be: an unoffered "access_code" is an email code (law 4). */
+export function honestVerification(d: EnvelopeDraftV1): EnvelopeDraftV1 {
+  if (ACCESS_CODE_OFFERED || !d.recipients.some((r) => r.verification === "access_code")) return d;
+  return { ...d, recipients: d.recipients.map((r) => (r.verification === "access_code" ? { ...r, verification: "email_code" as const } : r)) };
+}
+
 /** What stops a Send (the server checks again). Empty = ready. */
 export function sendBlockers(d: EnvelopeDraftV1): string[] {
   const out: string[] = [];
@@ -212,7 +224,7 @@ export function sendBlockers(d: EnvelopeDraftV1): string[] {
     if (!isEmail(r.email)) out.push(`${r.full_name || "A recipient"} needs a valid email.`);
     // verify A3: "Access code" is sent only with a code the sender set (a copy or template never
     // carries one) — so what is sent always matches what the sender chose.
-    if (!r.user_id && r.verification === "access_code" && !r.has_access_code) {
+    if (ACCESS_CODE_OFFERED && !r.user_id && r.verification === "access_code" && !r.has_access_code) {
       out.push(`Set an access code for ${r.full_name || r.email || "a recipient"}.`);
     }
   }

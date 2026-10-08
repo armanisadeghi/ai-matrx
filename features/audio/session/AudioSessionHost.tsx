@@ -29,15 +29,15 @@ import {
   setSessionControls,
 } from "./audioSessionRegistry";
 import type { AudioSession, AudioSessionStatus } from "./types";
-import { subscribePlayback } from "@/features/audio/playback/playbackQueue";
+import { subscribePlayback } from "@ai-matrx/media/speech";
 import {
   pausePlayback,
   resumePlayback,
   skipPlayback,
   playPlaybackItem,
   removePlaybackItem,
-} from "@/features/audio/playback/playbackQueue";
-import type { PlaybackItem } from "@/features/audio/playback/types";
+} from "@ai-matrx/media/speech";
+import type { PlaybackItem } from "@ai-matrx/media/speech";
 
 const QUEUE_SOURCE = "queue" as const;
 

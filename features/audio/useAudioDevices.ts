@@ -39,7 +39,7 @@ import {
   resolveDeviceId,
   subscribeMediaDevices,
 } from "@/features/media-devices/deviceManager";
-import { outputSelectionSupported } from "@/features/audio/audioOutputSink";
+import { outputSelectionSupported } from "@ai-matrx/media/speech";
 
 const EMPTY_SNAPSHOT: MediaDevicesSnapshot = {
   permissionState: "unknown",

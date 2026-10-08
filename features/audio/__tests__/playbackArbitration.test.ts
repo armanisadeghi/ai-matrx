@@ -13,7 +13,7 @@ import {
   claimPlayback,
   getActivePlaybackHolderId,
   releasePlayback,
-} from "@/features/audio/playback/playbackLock";
+} from "@ai-matrx/media/speech";
 
 const ROOT = process.cwd();
 

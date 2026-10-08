@@ -15,11 +15,11 @@ declare global {
 globalThis.IS_REACT_ACT_ENVIRONMENT = true;
 
 const speak = jest.fn((_req: { text: string; label?: string }) => ({ id: "u1" }));
-jest.mock("@/features/audio/service/speak", () => ({
-  speak: (req: { text: string; label?: string }) => speak(req),
-}));
 const primeAudioOutput = jest.fn();
-jest.mock("@/features/audio/unlock", () => ({ primeAudioOutput: () => primeAudioOutput() }));
+jest.mock("@ai-matrx/media/speech", () => ({
+  speak: (req: { text: string; label?: string }) => speak(req),
+  primeAudioOutput: () => primeAudioOutput(),
+}));
 jest.mock("@/lib/toast", () => ({ toast: { error: jest.fn() } }));
 
 async function mount(text: string, onDone = jest.fn()) {

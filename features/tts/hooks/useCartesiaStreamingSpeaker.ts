@@ -38,8 +38,8 @@
 "use client";
 
 import { useEffect, useId, useRef, useCallback, useState } from "react";
-import { SinkAwarePlayer } from "@/features/audio/sinkAwarePlayer";
-import { connectCartesiaTts } from "@/lib/cartesia/connection";
+import { SinkAwarePlayer } from "@ai-matrx/media/speech";
+import { connectCartesiaTts } from "@ai-matrx/media/speech";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { ensureSurfaceConfig } from "@ai-matrx/chat/surfaces/redux/surfaceConfigSlice";
 import {
@@ -61,14 +61,14 @@ import {
 import {
   claimPlayback,
   releasePlayback,
-} from "@/features/audio/playback/playbackLock";
+} from "@ai-matrx/media/speech";
 import {
   registerSession,
   updateSession,
   endSession,
   setSessionControls,
 } from "@/features/audio/session/audioSessionRegistry";
-import { enqueuePlayback } from "@/features/audio/playback/playbackQueue";
+import { enqueuePlayback } from "@ai-matrx/media/speech";
 import type { AudioSessionStatus } from "@/features/audio/session/types";
 
 export type SpeakerPhase =

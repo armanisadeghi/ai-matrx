@@ -15,7 +15,7 @@ import { cn } from "@/lib/utils";
 
 import type { DraftRecipient, EnvelopeDraftV1, RecipientRole, RecipientVerification } from "../../contract/draft";
 import { recipientColor } from "../../contract/paper";
-import { isEmail, newRecipient, ROLE_LABEL } from "../model";
+import { ACCESS_CODE_OFFERED, isEmail, newRecipient, ROLE_LABEL } from "../model";
 import { ProInput } from "@/components/official/ProInput";
 
 export interface Person {
@@ -35,12 +35,6 @@ interface Props {
 }
 
 const ROLE_OPTIONS = (Object.keys(ROLE_LABEL) as RecipientRole[]).map((v) => ({ value: v, label: ROLE_LABEL[v] }));
-/**
- * The sender-set access code is a new refusal (a person can fail it), so it is offered only once the
- * owner approves it (law 12; CONTRACT §18 F1). Until then the server keeps it off (`esign._enforce('F1')`)
- * and the option is not shown — a choice the server would not honour must never be offered.
- */
-const ACCESS_CODE_OFFERED = false;
 const VERIFY_OPTIONS: { value: RecipientVerification; label: string }[] = [
   { value: "none", label: "Email link" },
   { value: "email_code", label: "Email code" },

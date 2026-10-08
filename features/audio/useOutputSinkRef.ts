@@ -15,7 +15,7 @@ import { useCallback, useEffect, useRef } from "react";
 import {
   applySinkToMediaElement,
   subscribeOutputDevice,
-} from "@/features/audio/audioOutputSink";
+} from "@ai-matrx/media/speech";
 
 type MediaEl = HTMLMediaElement | null;
 

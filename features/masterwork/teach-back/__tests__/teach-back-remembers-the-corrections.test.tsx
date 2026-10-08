@@ -64,8 +64,8 @@ jest.mock("@/components/official/ProTextarea", () => ({
   },
 }));
 
-jest.mock("@/features/audio/unlock", () => ({ primeAudioOutput: () => {} }));
-jest.mock("@/features/audio/service/useSpeech", () => ({
+jest.mock("@ai-matrx/media/speech", () => ({ primeAudioOutput: () => {} }));
+jest.mock("@ai-matrx/media/react", () => ({
   useSpeech: () => ({
     speak: () => "id",
     status: null,

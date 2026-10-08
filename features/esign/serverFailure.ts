@@ -28,9 +28,24 @@ export function wasAnswered(error: FailureLike | null | undefined): boolean {
   return Boolean(error && ((typeof error.status === "number" && error.status > 0) || error.code));
 }
 
-/** The sentence for a failure that carried no explanation of its own. */
+/** The readable message the server itself attached to a refusal (user_message, else message), if any. */
+export function serverMessageOf(error: FailureLike | null | undefined): string | null {
+  const body = record(error?.serverDetail);
+  const inner = record(body?.detail);
+  for (const key of ["user_message", "message"]) {
+    for (const where of [inner, body]) {
+      const v = where?.[key];
+      if (typeof v === "string" && v.trim() !== "") return v.trim();
+    }
+  }
+  return null;
+}
+
+/** The sentence for a failure: the server's own readable message when it sent one, else the generic one. */
 export function failureSentence(error: FailureLike | null | undefined): string {
   if (!wasAnswered(error)) return NOT_REACHED;
+  const own = serverMessageOf(error);
+  if (own) return own;
   const id = requestIdOf(error);
   return `AI Matrx hit an error on our side. Try again; if it keeps failing, quote ${id ? `request ${id}` : "the time you tried"}.`;
 }

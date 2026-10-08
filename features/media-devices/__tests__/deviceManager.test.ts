@@ -15,7 +15,7 @@ jest.mock("@ai-matrx/browser-audio/core", () => ({
   setPreferredInputDeviceId: jest.fn(),
   notifyMicPermissionRevoked: jest.fn(),
 }));
-jest.mock("@/features/audio/audioOutputSink", () => ({
+jest.mock("@ai-matrx/media/speech", () => ({
   setPreferredOutputDeviceId: jest.fn(),
 }));
 

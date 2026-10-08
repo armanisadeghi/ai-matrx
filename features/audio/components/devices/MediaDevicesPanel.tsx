@@ -54,7 +54,7 @@ import { useStreamAudioLevel } from "@/features/audio/useStreamAudioLevel";
 import {
   audioContextSinkSupported,
   getPreferredOutputDeviceId,
-} from "@/features/audio/audioOutputSink";
+} from "@ai-matrx/media/speech";
 import type { MediaDeviceDescriptor } from "@/features/media-devices/deviceManager";
 import {
   acquireCameraLease,

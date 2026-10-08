@@ -5,7 +5,7 @@ import {
     connectCartesiaTts,
     type CartesiaTtsSocket,
     type CartesiaTtsVoice,
-} from "@/lib/cartesia/connection";
+} from "@ai-matrx/media/speech";
 import {
     OutputContainer,
     AudioEncoding,
@@ -18,7 +18,7 @@ import {
     EmotionName,
     EmotionLevel
 } from '@/lib/cartesia/cartesia.types';
-import {SinkAwarePlayer} from '@/features/audio/sinkAwarePlayer';
+import {SinkAwarePlayer} from '@ai-matrx/media/speech';
 import {
     buildGenerationConfig,
     READING_VOICE_ID,

@@ -47,7 +47,7 @@ import type { AnyMandateKey } from "@ai-matrx/agents/mandates";
 import { useAgentLauncher } from "@ai-matrx/chat/agents/hooks/useAgentLauncher";
 import { useConversationResume } from "@ai-matrx/chat/agents/hooks/useConversationResume";
 import { selectPrimaryRequest } from "@ai-matrx/chat/agents/redux/execution-system/active-requests/active-requests.selectors";
-import { primeAudioOutput } from "@/features/audio/unlock";
+import { primeAudioOutput } from "@ai-matrx/media/speech";
 import { useVoiceRelaySession } from "@ai-matrx/chat/voice-agent/relay/useVoiceRelaySession";
 import { VOICE_COMMUNICATOR_MANDATE_KEY } from "@ai-matrx/chat/voice-agent/relay/useVoiceRelaySession";
 import { selectVoiceLatestUserTurn } from "@ai-matrx/chat/voice-agent/state/selectors";
@@ -614,7 +614,7 @@ function DriveLiveSession(props: {
     spokenRef.current = line;
     if (!line) return;
     // The app-wide speaker, never a second TTS path (tts-audio-system skill).
-    void import("@/features/audio/service/speak").then(({ speak }) => {
+    void import("@ai-matrx/media/speech").then(({ speak }) => {
       speak({ text: line, label: "Drive status", processMarkdown: false });
     });
   }, [reconnecting, drive.spokenStatus]);

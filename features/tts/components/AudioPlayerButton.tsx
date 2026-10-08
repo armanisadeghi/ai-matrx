@@ -15,7 +15,7 @@ import { Volume2, VolumeX, Loader2, Pause } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Button as SurfaceButton } from "@ai-matrx/design-system";
 import { cn } from "@/lib/utils";
-import { useSpeech } from "@/features/audio/service/useSpeech";
+import { useSpeech } from "@ai-matrx/media/react";
 import { useAppSelector } from "@/lib/redux/hooks";
 import type { EnglishVoice } from "../types";
 

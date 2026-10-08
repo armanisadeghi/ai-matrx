@@ -42,7 +42,7 @@ jest.mock("@/components/matrx/Tooltip", () => ({ SimpleTooltip: ({ children }: {
 jest.mock("@/features/notes/canvas/noteKnowledgeKind", () => ({
   useOpenNoteKnowledgePanel: () => jest.fn(),
 }));
-jest.mock("@/features/audio/service/useSpeech", () => ({
+jest.mock("@ai-matrx/media/react", () => ({
   useSpeech: () => ({ speak: jest.fn(), isSpeaking: false, stop: jest.fn() }),
 }));
 jest.mock("@ai-matrx/chat/surfaces/hooks/useSurfaceBoundAgents", () => ({

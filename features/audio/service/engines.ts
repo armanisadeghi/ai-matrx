@@ -20,7 +20,7 @@
  *                 `transcribe()` routes on it; no new client code.
  */
 
-import type { PlaybackProvider } from "@/features/audio/playback/types";
+import type { PlaybackProvider } from "@ai-matrx/media/speech";
 
 /** Audio OUT — engines that can turn text into speech. */
 export type SpeakEngineId = "cartesia" | "catalog";
@@ -127,9 +127,9 @@ type Assert<T extends true> = T;
 type _EnginesHaveAdapters = Assert<
   SpeakEngineId extends PlaybackProvider ? true : false
 >;
-type _AdaptersHaveEngines = Assert<
-  PlaybackProvider extends SpeakEngineId ? true : false
->;
+// The package queue's provider type is open (any host may register an engine), so the reverse
+// check lives at run time: an engine with no adapter fails its item with "No speech engine … is
+// set up in this app" (@ai-matrx/media/speech speak.test).
 
 export function speakEngine(id: SpeakEngineId | undefined): SpeakEngine {
   return SPEAK_ENGINES[id ?? DEFAULT_SPEAK_ENGINE] ?? SPEAK_ENGINES[DEFAULT_SPEAK_ENGINE];

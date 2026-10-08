@@ -15,9 +15,9 @@ import { useEffect, useRef } from "react";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { playbackSnapshotUpdated } from "@/lib/redux/slices/audioPlaybackSlice";
 import { openOverlay } from "@/lib/redux/slices/overlaySlice";
-import { subscribePlayback } from "./playbackQueue";
-import { subscribePlaybackLock } from "./playbackLock";
-import { installAudioUnlockListeners } from "@/features/audio/unlock";
+import { subscribePlayback } from "@ai-matrx/media/speech";
+import { subscribePlaybackLock } from "@ai-matrx/media/speech";
+import { installAudioUnlockListeners } from "@ai-matrx/media/speech";
 
 const AUDIO_PANEL_OVERLAY_ID = "audioControlWindow";
 

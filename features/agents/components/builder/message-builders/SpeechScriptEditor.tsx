@@ -61,8 +61,8 @@ import { HighlightedText } from "@/features/agents/components/variables-manageme
 import { type AIModelRecord } from "@ai-matrx/chat/agents/redux/model-registry";
 import { useVoices } from "@/features/podcasts/generator/useVoices";
 import { voicesForModel } from "@/features/podcasts/generator/voiceCatalog";
-import { speak } from "@/features/audio/service/speak";
-import { primeAudioOutput } from "@/features/audio/unlock";
+import { speak } from "@ai-matrx/media/speech";
+import { primeAudioOutput } from "@ai-matrx/media/speech";
 import {
   MAX_PAUSE_MS,
   conflictingSpeakers,

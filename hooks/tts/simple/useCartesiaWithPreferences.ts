@@ -1,9 +1,9 @@
 "use client";
-import { SinkAwarePlayer } from "@/features/audio/sinkAwarePlayer";
+import { SinkAwarePlayer } from "@ai-matrx/media/speech";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { parseMarkdownToText } from "@ai-matrx/media/voices";
-import { connectCartesiaTts, type CartesiaTtsSocket } from "@/lib/cartesia/connection";
+import { connectCartesiaTts, type CartesiaTtsSocket } from "@ai-matrx/media/speech";
 import {
   buildGenerationConfig,
   resolveVoiceId,

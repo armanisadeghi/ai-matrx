@@ -9,7 +9,7 @@
  */
 
 import { Volume2 } from "lucide-react";
-import { primeAudioOutput } from "@/features/audio/unlock";
+import { primeAudioOutput } from "@ai-matrx/media/speech";
 import { toast } from "@/lib/toast";
 
 export interface ReadAloudMenuRowProps {
@@ -21,7 +21,7 @@ export interface ReadAloudMenuRowProps {
 export async function readTextAloud(text: string): Promise<void> {
   if (!text.trim()) return;
   try {
-    const { speak } = await import("@/features/audio/service/speak");
+    const { speak } = await import("@ai-matrx/media/speech");
     speak({ text, label: "Read aloud" });
   } catch (error) {
     toast.error("Could not read this aloud", {

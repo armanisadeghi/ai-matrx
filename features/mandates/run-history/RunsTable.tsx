@@ -12,7 +12,7 @@
 // link reopen the same view. Text is data and labels only: every cell is one
 // line, the full value in its tooltip.
 
-import { useTransition, type ReactNode } from "react";
+import { useLayoutEffect, useRef, useState, useTransition, type ReactNode } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ArrowUpRight } from "lucide-react";
@@ -119,6 +119,26 @@ function outputHrefOf(run: MandateRun, audience: "admin" | "product"): string | 
   return run.conversationId && run.hasTranscript ? conversationHref(run.conversationId, audience) : null;
 }
 
+// Below this table width the two "who ran it / which level" columns start
+// hidden (still one click away in the Columns menu), so Date, Result, Cost,
+// Output and Open fit with no sideways scroll beside the open chat pane.
+const NARROW_TABLE_PX = 1100;
+
+/** The table's own width (not the window's: a side pane narrows the table, not the screen). */
+function useContainerWidth() {
+  const ref = useRef<HTMLDivElement>(null);
+  const [width, setWidth] = useState<number | null>(null);
+  useLayoutEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    setWidth(el.clientWidth);
+    const observer = new ResizeObserver(() => setWidth(el.clientWidth));
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+  return { ref, width };
+}
+
 export function RunsTable({
   scope,
   view,
@@ -144,6 +164,9 @@ export function RunsTable({
     startOpening(() => router.push(href));
   };
 
+  const { ref: boxRef, width: boxWidth } = useContainerWidth();
+  const narrow = boxWidth != null && boxWidth < NARROW_TABLE_PX;
+
   const table = useServerTable<MandateRun>(
     async (state) => {
       const page = await fetchRuns({
@@ -167,6 +190,7 @@ export function RunsTable({
     {
       id: "when",
       header: "Date",
+      width: 118,
       sortable: true,
       defaultSortDirection: "desc",
       filter: false,
@@ -180,6 +204,8 @@ export function RunsTable({
     {
       id: "ran_by",
       header: "Ran by",
+      width: 96,
+      hidden: narrow,
       sortable: false,
       filter: false,
       accessorFn: (run) => ranByWords(run, view),
@@ -188,6 +214,8 @@ export function RunsTable({
     {
       id: "level",
       header: "Level",
+      width: 72,
+      hidden: narrow,
       sortable: true,
       filter: false,
       accessorFn: (run) => rungWords(run.rung),
@@ -202,6 +230,7 @@ export function RunsTable({
           {
             id: "mandate",
             header: "Mandate",
+            width: 160,
             sortable: false,
             filter: false,
             accessorFn: (run: MandateRun) => run.mandateKey ?? "",
@@ -225,6 +254,7 @@ export function RunsTable({
           {
             id: "holder",
             header: "Agent or workflow",
+            width: 170,
             sortable: false,
             filter: false,
             accessorFn: (run: MandateRun) => run.holderName ?? "",
@@ -246,6 +276,7 @@ export function RunsTable({
     {
       id: "status",
       header: "Result",
+      width: 92,
       sortable: true,
       filter: "select",
       filterSingle: true,
@@ -260,6 +291,7 @@ export function RunsTable({
     {
       id: "duration",
       header: "Duration",
+      width: 72,
       sortable: true,
       filter: false,
       accessorFn: (run) => run.durationMs,
@@ -268,6 +300,7 @@ export function RunsTable({
     {
       id: "cost",
       header: "Cost",
+      width: 72,
       sortable: true,
       filter: false,
       accessorFn: (run) => run.cost,
@@ -284,6 +317,8 @@ export function RunsTable({
     {
       id: "output",
       header: "Output",
+      // Takes whatever width is left; a long preview ends in an ellipsis, its full text in the tooltip.
+      className: "w-full min-w-[140px] max-w-0",
       sortable: false,
       filter: false,
       accessorFn: (run) => outputPreviewLine(run.outputPreview ?? run.error),
@@ -291,7 +326,7 @@ export function RunsTable({
         // One readable line, never raw JSON: a kind reads as "Agent definition: Its name".
         const text = outputPreviewLine(run.outputPreview ?? run.error);
         return text ? (
-          <span className={run.outputPreview ? undefined : "text-destructive"} title={text}>
+          <span className={run.outputPreview ? "block truncate" : "block truncate text-destructive"} title={text}>
             {text}
           </span>
         ) : (
@@ -308,7 +343,8 @@ export function RunsTable({
       sortable: false,
       filter: false,
       resizable: false,
-      minWidth: 96,
+      width: 84,
+      minWidth: 84,
       cell: (run) => {
         const href = outputHrefOf(run, audience);
         const what = run.runKind === "workflow" ? "workflow run" : "conversation";
@@ -330,7 +366,11 @@ export function RunsTable({
   ];
 
   return (
+    <div ref={boxRef} className="flex min-h-0 w-full min-w-0 flex-1 flex-col">
+      {boxWidth != null && (
     <MatrxDataTable<MandateRun>
+      // The hidden-by-default set is read when the table mounts: crossing the width bar remounts it.
+      key={narrow ? "narrow" : "wide"}
       {...table.tableProps}
       columns={columns}
       getRowId={(run) => `${run.runKind}:${run.runId}`}
@@ -340,6 +380,8 @@ export function RunsTable({
       pageSize={pageSize}
       hidePagination={hidePagination}
       cellLines="one"
+      // Row copy was an Actions column of its own beside Open; copy stays on the right-click menu and the toolbar.
+      copyControls={{ row: false }}
       getRowHref={(run) => outputHrefOf(run, audience) ?? undefined}
       {...(onSelectRun
         ? {
@@ -357,5 +399,7 @@ export function RunsTable({
             window: { enabled: false },
           })}
     />
+      )}
+    </div>
   );
 }

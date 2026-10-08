@@ -12,7 +12,7 @@
  */
 
 import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
-import type { PlaybackItem } from "@/features/audio/playback/types";
+import type { PlaybackItem } from "@ai-matrx/media/speech";
 
 export interface AudioPlaybackState {
   items: PlaybackItem[];

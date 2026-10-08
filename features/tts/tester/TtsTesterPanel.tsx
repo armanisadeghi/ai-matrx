@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { Loader2, Pause, Play, RotateCcw, Square } from "lucide-react";
-import { SinkAwarePlayer } from "@/features/audio/sinkAwarePlayer";
+import { SinkAwarePlayer } from "@ai-matrx/media/speech";
 import { cn } from "@/lib/utils";
 import { Slider } from "@/components/ui/slider";
 import {

@@ -27,7 +27,7 @@ import { activateAudio } from "@/features/audio/activation";
 import {
   claimPlayback,
   releasePlayback,
-} from "@/features/audio/playback/playbackLock";
+} from "@ai-matrx/media/speech";
 import type {
   AudioSession,
   AudioSessionControls,
