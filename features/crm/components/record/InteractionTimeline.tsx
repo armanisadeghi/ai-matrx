@@ -79,6 +79,7 @@ const COMPOSER_CHANNELS: InteractionChannel[] = [
   "call",
   "email",
   "meeting",
+  "other",
   "note",
 ];
 
