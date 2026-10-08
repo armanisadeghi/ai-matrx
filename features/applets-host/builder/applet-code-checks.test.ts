@@ -3,7 +3,7 @@
  * proved the old regex checks refused, beside the true violation the check must still refuse. Every
  * check reads the syntax tree, so a word in a string, JSX text or a comment is never code.
  */
-import { browserDialogs, deadButtons, fieldsWithNoInput, handBuiltTables, misspelledChoices, parseProblem } from "./applet-code-checks";
+import { archiveCalledDelete, browserDialogs, deadButtons, fieldsWithNoInput, formsReseededFromRow, handBuiltTables, misspelledChoices, parseProblem } from "./applet-code-checks";
 import { coerceBuildAnswer } from "./build-applet";
 import { checkBuildAnswer } from "./check-build-answer";
 
@@ -112,5 +112,63 @@ describe("a file the compiler cannot read is refused by name", () => {
     expect(parseProblem(file(`export default () => <div>;`))).toMatch(/^App\.tsx does not parse:/);
     const raw = { applet: { name: "X", entry: "App.tsx", files: [file(`export default () => <div>;`)], pages: [{ path: "/", title: "X", file: "App.tsx" }], sources: [], mandates: [] }, note: "" };
     expect(() => checkBuildAnswer(raw, coerceBuildAnswer(raw))).toThrow(/App\.tsx does not parse/);
+  });
+});
+
+// The live social-post-planner `post_detail.tsx` (app.definition, 2026-10-08 21:14), cut to the lines checked.
+const LIVE_POST_DETAIL = `import React, { useState, useEffect } from 'react';
+import { usePage, useRow, useRows, navigate, RecordField, confirmAction } from '@ai-matrx/applets/react';
+export default function PostDetailPage() {
+  const { params } = usePage();
+  const isNew = !params?.id || params.id === 'new';
+  const { row, status, update, archive } = useRow('posts', isNew ? null : params.id);
+  const [values, setValues] = useState({ title: '' });
+  useEffect(() => {
+    if (row && !isNew) {
+      setValues({ title: row.title || '' });
+    }
+  }, [row, isNew]);
+  async function handleDelete() {
+    if (
+      await confirmAction({
+        title: 'Delete this post?',
+        description: 'This will remove the post and associated metrics.',
+        confirmLabel: 'Delete',
+        variant: 'destructive'
+      })
+    ) {
+      await archive();
+      navigate('/posts');
+    }
+  }
+  return <RecordField source="posts" field="title" value={values.title} onValueChange={(v) => setValues({ title: v })} />;
+}`;
+
+describe("B-5 formsReseededFromRow names a form copied from the row object on every change", () => {
+  it("refuses the live page's useEffect(() => setValues(...row...), [row, isNew])", () => {
+    expect(formsReseededFromRow(file(LIVE_POST_DETAIL, "post_detail.tsx"))).toEqual(["row"]);
+    expect(formsReseededFromRow(file(`const { row: post } = useRow("posts", id);\nReact.useEffect(() => { if (post) setForm({ ...post }); }, [post]);`))).toEqual(["post"]);
+    expect(formsReseededFromRow(file(`const one = useRow("posts", id);\nuseEffect(() => { setForm(one.row); }, [one.row]);`))).toEqual(["one.row"]);
+  });
+  it("passes a form seeded once per record, an effect on the id, and an effect that sets nothing", () => {
+    expect(formsReseededFromRow(file(`const { row } = useRow("posts", id);\nreturn row ? <PostForm key={row._id} row={row} /> : null;\nfunction PostForm({ row }) { const [v, setV] = useState(() => ({ title: row.title })); return null; }`))).toEqual([]);
+    expect(formsReseededFromRow(file(`const { row } = useRow("posts", id);\nuseEffect(() => { if (row) setForm({ ...row }); }, [row?._id]);`))).toEqual([]);
+    expect(formsReseededFromRow(file(`const { row } = useRow("posts", id);\nuseEffect(() => { document.title = row?.title ?? ""; }, [row]);`))).toEqual([]);
+    // A `row` that is not a useRow answer (a list item, a prop) is not this check's business.
+    expect(formsReseededFromRow(file(`function Card({ row }) { useEffect(() => { setOpen(false); }, [row]); return null; }`))).toEqual([]);
+  });
+});
+
+describe("B-6 archiveCalledDelete names a confirm that calls an archive a delete", () => {
+  it("refuses the live page's 'Delete this post?' before archive()", () => {
+    expect(archiveCalledDelete(file(LIVE_POST_DETAIL, "post_detail.tsx"))).toEqual(["Delete"]);
+  });
+  it("passes an archive confirm that says Archive, and a delete confirm with no archive call", () => {
+    expect(archiveCalledDelete(file(`async function a() { if (await confirmAction({ title: "Archive this post?", description: "It leaves every list; you can restore it.", confirmLabel: "Archive" })) posts.archive(row._id); }`))).toEqual([]);
+    expect(archiveCalledDelete(file(`async function d() { if (await confirmAction({ title: "Delete this draft?" })) clearDraft(); }`))).toEqual([]);
+  });
+  it("checkBuildAnswer refuses the live page by name, both ways", () => {
+    const raw = { applet: { name: "X", entry: "post_detail.tsx", files: [file(LIVE_POST_DETAIL, "post_detail.tsx")], pages: [{ path: "/", title: "X", file: "post_detail.tsx" }], sources: [{ alias: "posts", table_id: "t", organization_id: "o" }], mandates: [] }, note: "" };
+    expect(() => checkBuildAnswer(raw, coerceBuildAnswer(raw))).toThrow(/copies row into its form on every change.*asks "Delete" before archive\(\)/);
   });
 });
