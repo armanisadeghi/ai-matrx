@@ -488,7 +488,7 @@ export const adminNavigationRegistry: readonly AdminNavigationDomain[] = [
         name: "Unified Data",
         iconName: "ToggleLeft",
         destinations: [
-          destination("/administration/database/store-tables"),
+          destination("/administration/database/custom-tables"),
           destination("/administration/database/switch-presses"),
         ],
       },

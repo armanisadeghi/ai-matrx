@@ -56,7 +56,7 @@ function str(v: unknown): string | null {
 
 /**
  * What is in `after` and not in `before`, for ONE organization: the person's own new tables
- * (never the app's bookkeeping — a booking page's slots table is kept by the app) and every new
+ * (never the app's bookkeeping — a booking page's slots table is platform table) and every new
  * form, booking page, portal, dashboard, digest or checklist. A booking page IS a form in the store,
  * so an id listed as both is shown once, as the booking page. Tables first, then forms, then
  * bookings, then the rest — the order a person reads "table, form, booking".

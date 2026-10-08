@@ -1,4 +1,4 @@
-// features/unified-data/hub/__tests__/a-pick-list-is-kept-by-the-app-not-a-table.test.ts
+// features/unified-data/hub/__tests__/a-pick-list-is-platform-owned-not-a-table.test.ts
 //
 // A PICK LIST IS LISTED, AND SAYS IT IS A LIST (lane DATA-HOME-1, Arman 2026-09-27 21:40 PT).
 //
@@ -47,8 +47,8 @@ describe("the data home · a pick list is listed, as a list", () => {
     ]);
   });
 
-  it("there is no separate 'Kept by the app' listing on the home", () => {
-    expect(HUB_CAPABILITIES.map((c) => c.id)).not.toContain("kept-by-the-app");
+  it("there is no separate 'Platform tables' listing on the home", () => {
+    expect(HUB_CAPABILITIES.map((c) => c.id)).not.toContain("platform-owned");
   });
 
   it("a Tables read the store refused is the listing's refusal, never an empty list", async () => {

@@ -27,7 +27,7 @@ function execute(file: string, expression: string, context: Record<string, unkno
   const code = ts.transpileModule(`return (${fragment(file, expression)});`, { compilerOptions: { target: ts.ScriptTarget.ES2022, jsx: ts.JsxEmit.React } }).outputText;
   return new Function(...Object.keys(context), code)(...Object.values(context));
 }
-const STORE = "features/administration/store-tables/StoreTablesAdmin.tsx";
+const STORE = "features/administration/custom-tables/CustomTablesAdmin.tsx";
 const LEAVE = "features/hr/leave/manager/LeaveQueueSurface.tsx";
 const SCRAPE = "features/scraper/batch/BatchScrapePage.tsx";
 const noop = () => undefined;

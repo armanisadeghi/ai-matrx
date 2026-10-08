@@ -173,7 +173,7 @@ describe("census items that are wiring", () => {
 
   it("11 · one call for the whole home", () => {
     const corpus = read("dataHomeCorpus.ts");
-    // one read of the home; "Show app tables" (CHAIR-DOORS-2) rides the same call as its third argument
+    // one read of the home; "Show platform tables" (CHAIR-DOORS-2) rides the same call as its third argument
     expect(corpus.match(/\bdataHome\(dataSource, null[,)]/g)).toHaveLength(1);
     expect(list).not.toMatch(/doors\.dataHome\(/);
   });

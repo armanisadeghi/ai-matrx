@@ -1,6 +1,6 @@
-// features/administration/store-tables/testFixtureOrgs.ts — MARK / UNMARK ORGANIZATIONS AS TEST FIXTURES.
+// features/administration/custom-tables/testFixtureOrgs.ts — MARK / UNMARK ORGANIZATIONS AS TEST FIXTURES.
 //
-// One admin-lane bulk action on the Store tables page (lane ONE-HOME, wave 6.2, chair request).
+// One admin-lane bulk action on the Custom tables page (lane ONE-HOME, wave 6.2, chair request).
 // The classification is the stored one every picker already reads: the PRESENCE of the key
 // `iam.organizations.settings.test_fixture` (features/make/recent.ts `isTestOrganization`,
 // features/scopes/service/scopesService.ts `is_test_fixture`). Marked organizations leave the
@@ -60,7 +60,7 @@ export function withTestFixture(settings: Settings | null | undefined, on: boole
 
 /** The provenance stored under the key when this page marks an organization. */
 export function fixtureStamp(now: Date = new Date()): string {
-  return `Store tables admin page, ${now.toISOString().slice(0, 10)}`;
+  return `Custom tables admin page, ${now.toISOString().slice(0, 10)}`;
 }
 
 export async function setTestFixture(

@@ -1,4 +1,4 @@
-// "Test orgs" on the admin Store tables page (lane ONE-HOME, wave 6.2): marking an organization writes
+// "Test orgs" on the admin Custom tables page (lane ONE-HOME, wave 6.2): marking an organization writes
 // the key every picker reads (`settings.test_fixture`) through `public.org_update`, which REPLACES
 // settings whole — so each organization is read fresh and every other setting must survive. Unmark
 // removes the key (presence is the classification). A refusal is reported by name with the door's own
@@ -12,7 +12,7 @@ import {
   type OrgSettingsDoors,
   type Settings,
 } from "../testFixtureOrgs";
-import { filterRows, keepVisibleSelection, type StoreTableRow } from "../archiveTables";
+import { filterRows, keepVisibleSelection, type CustomTableRow } from "../archiveTables";
 
 function recordingDoors(stored: Record<string, Settings | null>, refuse: Record<string, string> = {}) {
   const writes: { orgId: string; settings: Settings }[] = [];
@@ -43,14 +43,14 @@ describe("Test orgs: mark and unmark through org_update", () => {
       { [harbor.id]: "org_update: you are not a manager of this organization." },
     );
 
-    const outcomes = await setTestFixture([cedar, calder, harbor], true, doors, "Store tables admin page, 2026-10-02");
+    const outcomes = await setTestFixture([cedar, calder, harbor], true, doors, "Custom tables admin page, 2026-10-02");
 
     expect(outcomes.map((o) => o.status)).toEqual(["changed", "unchanged", "refused"]);
     expect(writes.map((w) => w.orgId)).toEqual([cedar.id]);
     expect(stored[cedar.id]).toEqual({
       timezone: "America/Los_Angeles",
       modules: { hr: true },
-      test_fixture: "Store tables admin page, 2026-10-02",
+      test_fixture: "Custom tables admin page, 2026-10-02",
     });
     expect(isTestFixture(stored[cedar.id])).toBe(true);
     const refused = outcomes[2];
@@ -73,14 +73,14 @@ describe("Test orgs: mark and unmark through org_update", () => {
 });
 
 describe("a filter change never leaves hidden rows selected", () => {
-  const row = (id: string, name: string, organizationId: string, keptByTheApp = false): StoreTableRow => ({
+  const row = (id: string, name: string, organizationId: string, platformOwned = false): CustomTableRow => ({
     id,
     name,
     organizationId,
     organizationName: organizationId,
     updatedAt: null,
     system: false,
-    keptByTheApp,
+    platformOwned,
   });
   const rows = [
     row("van", "Rincon Plumbing — Van Inventory (archive test)", "admin-ws"),

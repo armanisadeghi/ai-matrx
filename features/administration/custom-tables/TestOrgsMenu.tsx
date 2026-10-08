@@ -1,7 +1,7 @@
 "use client";
 
-// features/administration/store-tables/TestOrgsMenu.tsx — "Test orgs": mark organizations as test
-// fixtures from the Store tables toolbar (one button in the existing bar, no new row).
+// features/administration/custom-tables/TestOrgsMenu.tsx — "Test orgs": mark organizations as test
+// fixtures from the Custom tables toolbar (one button in the existing bar, no new row).
 //
 // READ: every live organization, through the admin-lane read policy on `iam.organizations`
 // (`platform_admin_read` → is_platform_admin(), true only on the admin lane; the browser client
@@ -123,7 +123,7 @@ export function TestOrgsMenu({ onChanged }: { onChanged?: () => void }) {
       }}
     >
       <PopoverTrigger asChild>
-        <Button icon={<FlaskConical />} variant="outline" data-store-tables-test-orgs="">
+        <Button icon={<FlaskConical />} variant="outline" data-custom-tables-test-orgs="">
           Test orgs
         </Button>
       </PopoverTrigger>

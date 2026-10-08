@@ -46,7 +46,7 @@ import { createRecordCountStore } from "./dataHomeRecordCounts";
 import { tableRowCounts } from "@/features/unified-data/hub/doors";
 import { dataHomeColumns, ownerLabel } from "./dataHomeColumns";
 import { DataHomeCards, DataHomeRows } from "./DataHomeViews";
-import { useDataHomeMarks, useDataHomeShowAppTables } from "./useDataHomeMarks";
+import { useDataHomeMarks, useDataHomeShowPlatformTables } from "./useDataHomeMarks";
 import { useDataHomeRowMenus, useReadAgainOnRestore } from "./useDataHomeRowMenus";
 import { DataMenuProvider } from "@/features/unified-data/actions/DataMenuProvider";
 import { useFocusedRowCommands } from "@/features/unified-data/actions/tableActionCommands";
@@ -79,10 +79,10 @@ export function DataHomeList({ dataSource, sharedOnlyHere = false }: DataHomeLis
   const starredSet = useMemo(() => new Set(marks.starred), [marks.starred]);
   const starredKey = marks.starred.join(",");
 
-  // "SHOW APP TABLES" (CHAIR-DOORS-2, N-C8; lane 10 item 7): the tables the app keeps — an agent's
+  // "SHOW PLATFORM TABLES" (CHAIR-DOORS-2, N-C8; lane 10 item 7): the tables the app keeps — an agent's
   // outputs, a choice column's Lists — stay out of the home until the person turns this on in
   // Filters; on, the corpus is read again with them. Her own synced preference, so it holds.
-  const [showAppTables, setShowAppTables] = useDataHomeShowAppTables();
+  const [showPlatformTables, setShowPlatformTables] = useDataHomeShowPlatformTables();
   /** A row's menu renamed, moved or archived a table: the corpus is read again. */
   const [corpusVersion, setCorpusVersion] = useState(0);
   // A restore (Undo, ⌘Z, Restore) on this page lists the table again at once.
@@ -104,9 +104,9 @@ export function DataHomeList({ dataSource, sharedOnlyHere = false }: DataHomeLis
   );
   // THE CORPUS (rows in hand) and the server search beside it — dataHomeCorpus.ts.
   const corpus = useMemo(
-    () => createDataHomeCorpus(client, dataSource, { includeAppTables: showAppTables }),
+    () => createDataHomeCorpus(client, dataSource, { includePlatformTables: showPlatformTables }),
     // `corpusVersion`: a row's menu renamed, moved or archived a table, so the corpus is read again.
-    [client, dataSource, showAppTables, corpusVersion, restoredVersion],
+    [client, dataSource, showPlatformTables, corpusVersion, restoredVersion],
   );
   // THE RECORDS COLUMN, lazily: cells on screen ask this; the list never waits on it.
   const recordCounts = useMemo(
@@ -192,7 +192,7 @@ export function DataHomeList({ dataSource, sharedOnlyHere = false }: DataHomeLis
       // organizations the viewer belongs to or holds a grant in), so System is absent, not empty.
       lanes: { system: false },
       service,
-      serviceKey: `${starredKey}|${serverVersion}|${showAppTables ? "app" : ""}|${corpusVersion}.${restoredVersion}|${[...hiddenIds].join(",")}`,
+      serviceKey: `${starredKey}|${serverVersion}|${showPlatformTables ? "app" : ""}|${corpusVersion}.${restoredVersion}|${[...hiddenIds].join(",")}`,
       columns,
       prefsVersion: 1,
       prefsDefaults: {
@@ -256,7 +256,7 @@ export function DataHomeList({ dataSource, sharedOnlyHere = false }: DataHomeLis
       searchDebounceMs: 0,
       searchToggles: [{ id: "title_only", label: "Title only" }],
       panelSwitches: [
-        { id: "app_tables", section: "App tables", label: "Show app tables", on: showAppTables, onChange: setShowAppTables },
+        { id: "platform_tables", section: "Platform tables", label: "Show platform tables", on: showPlatformTables, onChange: setShowPlatformTables },
       ],
       searchTokens: (search) => tokensToFilters(search, corpus.meta),
       filterChips: true,
@@ -308,7 +308,7 @@ export function DataHomeList({ dataSource, sharedOnlyHere = false }: DataHomeLis
           }
         : { title: "No tables yet", description: "New table makes one." },
     };
-  }, [service, starredKey, serverVersion, showAppTables, corpusVersion, restoredVersion, corpus, recordCounts, order, defaultView, defaultKind, sharedOnlyHere, starredSet, marks, rowMenus, withFocusedRow]);
+  }, [service, starredKey, serverVersion, showPlatformTables, corpusVersion, restoredVersion, corpus, recordCounts, order, defaultView, defaultKind, sharedOnlyHere, starredSet, marks, rowMenus, withFocusedRow]);
 
   return (
     // The right-click on every row and card is the proposed menu (`DataMenuProvider`).

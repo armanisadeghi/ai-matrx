@@ -242,7 +242,7 @@ export function DecisionBoard() {
   return <ConnectedBoard organizationId={active.organizationId} userId={userId} />;
 }
 
-/** One saved pick, as `ui.decision_pick` holds it (graduated from the app table `ui_decision_picks`). */
+/** One saved pick, as `ui.decision_pick` holds it (graduated from the typed table `ui_decision_picks`). */
 interface PickRow {
   id: string;
   decision_id: string;

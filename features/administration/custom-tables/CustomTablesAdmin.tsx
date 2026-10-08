@@ -1,8 +1,8 @@
 "use client";
 
-// features/administration/store-tables/StoreTablesAdmin.tsx — THE ADMIN LIST OF STORE TABLES.
+// features/administration/custom-tables/CustomTablesAdmin.tsx — THE ADMIN LIST OF CUSTOM TABLES.
 //
-// /administration/database/store-tables (lane ONE-HOME, wave 6). Every table in the organizations the
+// /administration/database/custom-tables (lane ONE-HOME, wave 6). Every table in the organizations the
 // admin lane reaches — the admin's memberships plus the system organizations the store's wall admits a
 // super admin to ON THE ADMIN LANE ONLY (iam.has_org_access_for) — with one bulk action, Archive, and a
 // "Test orgs" menu that marks organizations as test fixtures (TestOrgsMenu.tsx).
@@ -44,7 +44,7 @@ import {
   type ArchiveOutcome,
   type DoorAnswer,
   type ProtectionReason,
-  type StoreTableRow,
+  type CustomTableRow,
   type TableArchiveDoor,
 } from "./archiveTables";
 import { TestOrgsMenu } from "./TestOrgsMenu";
@@ -65,7 +65,7 @@ function recordsIn(organizationId: string | null): RecordsClient {
   });
 }
 
-async function readMemberTables(orgId: string | null): Promise<StoreTableRow[]> {
+async function readMemberTables(orgId: string | null): Promise<CustomTableRow[]> {
   // An admin list sees every table, the app's own for agents' outputs included (CHAIR-DOORS-2).
   const answer = await recordsIn(null).dataHomeTables({ organization_id: orgId, include_app_tables: true });
   if (!answer.ok) throw new Error(answer.error.message);
@@ -76,11 +76,11 @@ async function readMemberTables(orgId: string | null): Promise<StoreTableRow[]> 
     organizationName: r.organization_name,
     updatedAt: r.updated_at,
     system: r.system === true,
-    keptByTheApp: r.kept_by_the_app,
+    platformOwned: r.kept_by_the_app,
   }));
 }
 
-async function readSystemTables(org: { id: string; name: string }): Promise<StoreTableRow[]> {
+async function readSystemTables(org: { id: string; name: string }): Promise<CustomTableRow[]> {
   const answer = await recordsIn(org.id).tableList();
   if (!answer.ok) throw new Error(`${org.name}: ${answer.error.message}`);
   return answer.data.map((table) => ({
@@ -90,7 +90,7 @@ async function readSystemTables(org: { id: string; name: string }): Promise<Stor
     organizationName: org.name,
     updatedAt: null,
     system: true,
-    keptByTheApp: documentIsKept(table as unknown as Record<string, unknown>),
+    platformOwned: documentIsKept(table as unknown as Record<string, unknown>),
   }));
 }
 
@@ -104,12 +104,12 @@ const tableArchiveDoor: TableArchiveDoor = async (args) => {
   return { ok: true, data: answer.data } as DoorAnswer;
 };
 
-export function StoreTablesAdmin() {
+export function CustomTablesAdmin() {
   const [orgId, setOrgId] = useOrgFilterParam([]);
   const [name, setName] = useUrlState("name", stringUrlCodec());
   const { organizations: memberships, loading: membershipsLoading } = useUserOrganizations();
   const [systemOrgs, setSystemOrgs] = useState<{ id: string; name: string }[] | null>(null);
-  const [rows, setRows] = useState<StoreTableRow[] | null>(null);
+  const [rows, setRows] = useState<CustomTableRow[] | null>(null);
   const [readError, setReadError] = useState<string | null>(null);
   const [fetching, setFetching] = useState(false);
   const [nonce, setNonce] = useState(0);
@@ -179,7 +179,7 @@ export function StoreTablesAdmin() {
   // A filter change drops selected rows it now hides (the setters below); this second wall keeps the
   // confirm and the archive to visible rows even when the address changes another way (back button).
   const visibleSelectedIds = useMemo(() => keepVisibleSelection(selectedIds, shown), [selectedIds, shown]);
-  const selectedRows = visibleSelectedIds.map((id) => byId.get(id)).filter((r): r is StoreTableRow => Boolean(r));
+  const selectedRows = visibleSelectedIds.map((id) => byId.get(id)).filter((r): r is CustomTableRow => Boolean(r));
   // Copy selection includes every visible table; only archive targets use keeper rules.
   const archiveRows = selectedRows.filter((row) => protectionOf(row) === null);
 
@@ -214,7 +214,7 @@ export function StoreTablesAdmin() {
     setNonce((n) => n + 1);
   }, [archiveRows]);
 
-  const columns: MatrxColumnDef<StoreTableRow>[] = [
+  const columns: MatrxColumnDef<CustomTableRow>[] = [
     { id: "name", header: "Table", width: 320, accessorFn: (r) => r.name, cell: (r) => <span className="block truncate">{r.name}</span> },
     { id: "organization", header: "Organization", width: 240, accessorFn: (r) => r.organizationName, cell: (r) => <span className="block truncate">{r.organizationName}</span> },
     {
@@ -233,7 +233,7 @@ export function StoreTablesAdmin() {
           <TooltipProvider delayDuration={200}>
             <Tooltip>
               <TooltipTrigger asChild>
-                <span className="inline-flex items-center gap-1 text-xs text-muted-foreground" data-store-tables-kept={reason}>
+                <span className="inline-flex items-center gap-1 text-xs text-muted-foreground" data-custom-tables-kept={reason}>
                   <Lock aria-hidden className="h-3.5 w-3.5" />
                   {label}
                 </span>
@@ -261,7 +261,7 @@ export function StoreTablesAdmin() {
               </span>
               <Button icon={<X />} variant="quiet" aria-label="Dismiss" onClick={() => setRefusals([])} />
             </div>
-            <ul className="space-y-0.5" data-store-tables-refusals="">
+            <ul className="space-y-0.5" data-custom-tables-refusals="">
               {refusals.map((o) => (
                 <li key={o.target.tableId}>
                   <span className="font-medium">{o.target.name}</span>: {o.message}
@@ -272,7 +272,7 @@ export function StoreTablesAdmin() {
         </Alert>
       )}
       <MatrxDataTable
-        tableId="admin-store-tables"
+        tableId="admin-custom-tables"
         data={shown}
         columns={columns}
         getRowId={(r) => r.id}
@@ -283,7 +283,7 @@ export function StoreTablesAdmin() {
         detail={{ enabled: false }}
         coverage={{ noun: "table", total: shown.length, answeredBy: "client" }}
         toolbar={{
-          title: "Store tables",
+          title: "Custom tables",
           customSearch: (
             <input
               value={name ?? ""}

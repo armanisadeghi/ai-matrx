@@ -1,5 +1,5 @@
 // CHAIR-DOORS-2 (v6 lane 4 KINDS-GLUE, need N-C8) — the tables the app keeps for agents' outputs
-// stay out of the data home, ⌘K and the pickers; "Show app tables" in the data home's Filters panel
+// stay out of the data home, ⌘K and the pickers; "Show platform tables" in the data home's Filters panel
 // is the one way in. The doors leave them out by default (scripts/campaign-tests/
 // chairdoors2_f_app_tables_wait_behind_one_switch.sql proves that from the member's seat); this
 // proves the client asks for them only when the switch is on, naming both arguments so PostgREST
@@ -26,12 +26,12 @@ function source(answer: unknown, calls: Rpc[]): RecordsDataSource {
   } as unknown as RecordsDataSource;
 }
 
-describe("the doors ask for app tables only when told to", () => {
+describe("the doors ask for platform tables only when told to", () => {
   it("data_home_tables: default sends what it always sent; the switch names both arguments", async () => {
     const calls: Rpc[] = [];
     await dataHomeTables(source([], calls), null);
     await dataHomeTables(source([], calls), "org-1");
-    await dataHomeTables(source([], calls), null, { includeAppTables: true });
+    await dataHomeTables(source([], calls), null, { includePlatformTables: true });
     expect(calls.map((c) => c.args)).toEqual([
       {},
       { p_organization_id: "org-1" },
@@ -43,8 +43,8 @@ describe("the doors ask for app tables only when told to", () => {
     const calls: Rpc[] = [];
     const home = { tables: [], items: [], changed_by: [] };
     await dataHome(source(home, calls), null);
-    await dataHome(source(home, calls), null, { includeAppTables: true });
-    await dataHomeSearch(source({ ...home, search: "flashcards" }, calls), "flashcards", null, { includeAppTables: true });
+    await dataHome(source(home, calls), null, { includePlatformTables: true });
+    await dataHomeSearch(source({ ...home, search: "flashcards" }, calls), "flashcards", null, { includePlatformTables: true });
     expect(calls.map((c) => c.args)).toEqual([
       {},
       { p_include_app_tables: true },
@@ -54,13 +54,13 @@ describe("the doors ask for app tables only when told to", () => {
 
   it("the data home's corpus reads with the switch it was made with", async () => {
     const asked: Array<boolean | undefined> = [];
-    const fakeHome = (async (_ds: RecordsDataSource, _org: string | null, opts?: { includeAppTables?: boolean }) => {
-      asked.push(opts?.includeAppTables);
+    const fakeHome = (async (_ds: RecordsDataSource, _org: string | null, opts?: { includePlatformTables?: boolean }) => {
+      asked.push(opts?.includePlatformTables);
       return { ok: false, error: { message: "stop here", code: null, hint: null, details: null } };
     }) as unknown as typeof dataHome;
     const client = {} as never;
     await createDataHomeCorpus(client, source(null, []), { dataHome: fakeHome }).load().catch(() => undefined);
-    await createDataHomeCorpus(client, source(null, []), { dataHome: fakeHome, includeAppTables: true })
+    await createDataHomeCorpus(client, source(null, []), { dataHome: fakeHome, includePlatformTables: true })
       .load()
       .catch(() => undefined);
     expect(asked).toEqual([false, true]);
@@ -68,7 +68,7 @@ describe("the doors ask for app tables only when told to", () => {
 });
 
 describe("the Filters panel draws a page's switch", () => {
-  it("shows 'Show app tables' under its heading and hands the flip to the page", () => {
+  it("shows 'Show platform tables' under its heading and hands the flip to the page", () => {
     const flips: boolean[] = [];
     const host = document.createElement("div");
     document.body.appendChild(host);
@@ -81,7 +81,7 @@ describe("the Filters panel draws a page's switch", () => {
           columns={[]}
           hasFavorites={false}
           hasArchived={false}
-          panelSwitches={[{ id: "app_tables", section: "App tables", label: "Show app tables", on: false, onChange: (on) => flips.push(on) }]}
+          panelSwitches={[{ id: "platform_tables", section: "Platform tables", label: "Show platform tables", on: false, onChange: (on) => flips.push(on) }]}
           sort="updated"
           direction="desc"
           favoritesFirst={false}
@@ -96,9 +96,9 @@ describe("the Filters panel draws a page's switch", () => {
     const trigger = document.body.querySelector("button");
     expect(trigger).not.toBeNull();
     act(() => trigger!.dispatchEvent(new MouseEvent("click", { bubbles: true })));
-    const box = document.body.querySelector('[role="checkbox"][aria-label="Show app tables"]');
+    const box = document.body.querySelector('[role="checkbox"][aria-label="Show platform tables"]');
     expect(box).not.toBeNull();
-    expect(document.body.textContent).toContain("App tables");
+    expect(document.body.textContent).toContain("Platform tables");
     act(() => box!.dispatchEvent(new MouseEvent("click", { bubbles: true })));
     expect(flips).toEqual([true]);
     act(() => root.unmount());

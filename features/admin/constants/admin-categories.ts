@@ -1433,10 +1433,10 @@ export const adminCategoriesData: AdminCategory[] = [
         isNew: true,
       },
       {
-        title: "Store Tables",
+        title: "Custom Tables",
         description: "Every organization's tables; archive many at once",
         iconName: "Table",
-        link: "/administration/database/store-tables",
+        link: "/administration/database/custom-tables",
         isNew: true,
       },
       {

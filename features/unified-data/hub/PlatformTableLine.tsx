@@ -1,6 +1,6 @@
 "use client";
 
-// features/unified-data/hub/KeptByTheAppLine.tsx
+// features/unified-data/hub/PlatformTableLine.tsx
 //
 // THE ONE "SHOW EVERYTHING" LINE for tables the app keeps for itself (a column's choice list, a
 // booking page's slots, a test's choices — `kept_by_the_app` on `custom.table_list_everywhere`
@@ -10,13 +10,13 @@
 
 import { Button } from "@/components/ui/button";
 
-export interface KeptByTheAppLineProps {
+export interface PlatformTableLineProps {
   keptCount: number;
   showEverything: boolean;
   onToggle: () => void;
 }
 
-export function KeptByTheAppLine({ keptCount, showEverything, onToggle }: KeptByTheAppLineProps) {
+export function PlatformTableLine({ keptCount, showEverything, onToggle }: PlatformTableLineProps) {
   if (keptCount === 0) return null;
   const noun = keptCount === 1 ? "table" : "tables";
   return (

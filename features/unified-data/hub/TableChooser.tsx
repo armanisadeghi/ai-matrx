@@ -37,7 +37,7 @@ import { countsByOrganization, inLane, inOrganization, type TablesEverywhere } f
 export function tableHint(row: DataHomeTableRow): string {
   const parts = [row.organization_name];
   if (row.kind && row.kind !== "table") parts.push(row.kind);
-  if (row.kept_by_the_app) parts.push("kept by the app");
+  if (row.kept_by_the_app) parts.push("platform table");
   return parts.join(" · ");
 }
 
@@ -71,15 +71,15 @@ export function TableChooser({
   const [orgFilter, setOrgFilter] = useState<string | null>(null);
   const [lane, setLane] = useState<DataHomeScope>("all");
   // Tables the app keeps for itself (choice lists, ledgers) are out of sight unless asked for.
-  const [showAppTables, setShowAppTables] = useState(false);
+  const [showPlatformTables, setShowPlatformTables] = useState(false);
 
   const excluded = new Set(exclude ?? []);
   const offeredByDefault = new Set(tablesToPick(tables.rows, value).map((t) => t.table_id));
   const shown = (t: DataHomeTableRow) =>
-    !excluded.has(t.table_id) && (showAppTables || offeredByDefault.has(t.table_id));
+    !excluded.has(t.table_id) && (showPlatformTables || offeredByDefault.has(t.table_id));
   const inOrg = inOrganization(tables.rows, orgFilter);
   const allTables = inLane(inOrg, lane);
-  const appKeptCount = allTables.filter((t) => t.kept_by_the_app && !excluded.has(t.table_id)).length;
+  const platformOwnedCount = allTables.filter((t) => t.kept_by_the_app && !excluded.has(t.table_id)).length;
   const laneCounts: EntityScopeCounts = {
     byKind: Object.fromEntries(DATA_HOME_SCOPES.map((k) => [k, inLane(inOrg, k).filter(shown).length])),
     narrow: { all: countsByOrganization(inLane(tables.rows, lane).filter(shown)) },
@@ -135,14 +135,14 @@ export function TableChooser({
         noun="table"
         manageAction={{ label: "Open Data to add or edit tables", href: "/data" }}
         footerActions={
-          appKeptCount > 0
+          platformOwnedCount > 0
             ? [
                 {
-                  label: showAppTables
+                  label: showPlatformTables
                     ? "Hide the tables the app keeps"
-                    : `Show ${appKeptCount} ${appKeptCount === 1 ? "table" : "tables"} the app keeps`,
+                    : `Show ${platformOwnedCount} ${platformOwnedCount === 1 ? "table" : "tables"} the app keeps`,
                   note: "Choice lists and other tables the app manages for itself.",
-                  onSelect: () => setShowAppTables((v) => !v),
+                  onSelect: () => setShowPlatformTables((v) => !v),
                 },
               ]
             : undefined

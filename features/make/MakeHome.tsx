@@ -116,7 +116,7 @@ function useRead<T>(key: string | null, load: () => Promise<{ ok: true; data: T 
 
 /**
  * RECENT: the data home's one call (`custom.data_home`), built into rows by the home's own builder,
- * archived and app-kept rows taken out first (recent.ts). It starts the moment the page mounts — it
+ * archived and platform-owned rows taken out first (recent.ts). It starts the moment the page mounts — it
  * waits on nothing else; test organizations are dropped from the built rows at render, once the
  * person's organizations are known. Shared-with-me is not asked: an accepted share is already a
  * table row, and that listing costs two more round trips after the home answers.

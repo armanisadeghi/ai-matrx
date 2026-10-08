@@ -1,4 +1,4 @@
-// features/administration/store-tables/archiveTables.ts — BULK ARCHIVE, THROUGH THE STORE'S OWN DOOR.
+// features/administration/custom-tables/archiveTables.ts — BULK ARCHIVE, THROUGH THE STORE'S OWN DOOR.
 //
 // One admin-lane bulk action for any organization's tables (lane ONE-HOME, wave 6). There is no new
 // door and no bypass: every table goes through `custom.table_archive` — the same door the table page's
@@ -104,7 +104,7 @@ async function archiveOne(target: ArchiveTarget, door: TableArchiveDoor): Promis
 }
 
 /** A row of the admin list, from either read door. */
-export interface StoreTableRow {
+export interface CustomTableRow {
   id: string;
   name: string;
   organizationId: string;
@@ -112,7 +112,7 @@ export interface StoreTableRow {
   updatedAt: string | null;
   system: boolean;
   /** The store's own keeper signal (`kept_by_the_app`, a kernel, a context Table). */
-  keptByTheApp: boolean;
+  platformOwned: boolean;
 }
 
 export type ProtectionReason = "kept" | "named-in-code" | "platform-example" | null;
@@ -122,8 +122,8 @@ export type ProtectionReason = "kept" | "named-in-code" | "platform-example" | n
  * code path names by id (generated census); then the platform's "Example: …" seed tables in a system
  * organization, which neither signal marks and one of which no code names.
  */
-export function protectionOf(row: StoreTableRow): ProtectionReason {
-  if (row.keptByTheApp) return "kept";
+export function protectionOf(row: CustomTableRow): ProtectionReason {
+  if (row.platformOwned) return "kept";
   if (CODE_NAMED_TABLE_IDS.has(row.id)) return "named-in-code";
   if (row.system && row.name.startsWith("Example: ")) return "platform-example";
   return null;
@@ -139,13 +139,13 @@ export function documentIsKept(document: Record<string, unknown> | null | undefi
 }
 
 /** Name contains, case-insensitive; blank keeps every row. */
-export function nameMatches(row: StoreTableRow, needle: string): boolean {
+export function nameMatches(row: CustomTableRow, needle: string): boolean {
   const n = needle.trim().toLowerCase();
   return n === "" || row.name.toLowerCase().includes(n);
 }
 
 /** The rows the filters leave: the organization filter (null = every organization), then name contains. */
-export function filterRows(rows: readonly StoreTableRow[], orgId: string | null, needle: string): StoreTableRow[] {
+export function filterRows(rows: readonly CustomTableRow[], orgId: string | null, needle: string): CustomTableRow[] {
   return rows.filter((r) => (!orgId || r.organizationId === orgId) && nameMatches(r, needle));
 }
 
@@ -153,7 +153,7 @@ export function filterRows(rows: readonly StoreTableRow[], orgId: string | null,
  * Copy selection never outlives the page-level filter that showed it. Protected tables remain
  * selectable for copy; the caller separately narrows Archive targets with protectionOf.
  */
-export function keepVisibleSelection(selectedIds: readonly string[], visible: readonly StoreTableRow[]): string[] {
+export function keepVisibleSelection(selectedIds: readonly string[], visible: readonly CustomTableRow[]): string[] {
   const allowed = new Set(visible.map((r) => r.id));
   return selectedIds.filter((id) => allowed.has(id));
 }

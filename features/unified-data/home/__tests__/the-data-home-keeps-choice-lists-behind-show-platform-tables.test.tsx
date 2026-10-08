@@ -1,13 +1,13 @@
 /**
- * THE DATA HOME KEEPS A CHOICE COLUMN'S LISTS BEHIND "SHOW APP TABLES" — PER PERSON (lane 10, item 7).
+ * THE DATA HOME KEEPS A CHOICE COLUMN'S LISTS BEHIND "SHOW PLATFORM TABLES" — PER PERSON (lane 10, item 7).
  *
  * THE BREAK. Every choice column keeps its choices in a List ("Status choices"), and
  * `custom.data_home` answers each one beside the person's real tables (`kind: "list"`,
  * `kept_by_the_app: true` — live 2026-10-02: the admin seat's first page was 18 "… choices" rows).
  * A physical-therapy clinic with five choice columns saw five lists it never made, mixed into its
  * tables. The one rule (`isKeptTable` from `@ai-matrx/records-ui`) now keeps them out by default;
- * "Show app tables" in Filters brings them in, and the choice is the person's own preference
- * (`userPreferences.lists.dataHomeShowAppTables`, synced), so it holds on the next visit.
+ * "Show platform tables" in Filters brings them in, and the choice is the person's own preference
+ * (`userPreferences.lists.dataHomeShowPlatformTables`, synced), so it holds on the next visit.
  *
  * Forced through the REAL page: the real DataHomeList, the real corpus, the real row builder, the
  * real list shell and the real Redux store. Only the door (`custom.data_home` over a fake data
@@ -76,7 +76,7 @@ import type { DataHomeTableRow } from "@/features/unified-data/hub/doors";
 const CLINIC = { id: "7a3c1e52-4b8d-4f0a-9c21-5e6d7f8a9b01", name: "Cedar Ridge Physical Therapy" };
 const ME = "0d5b2f8e-6a1c-4e3b-8f7d-9c2a1b3e4f50";
 
-function table(id: string, name: string, kind: string, keptByTheApp: boolean): DataHomeTableRow {
+function table(id: string, name: string, kind: string, platformOwned: boolean): DataHomeTableRow {
   return {
     table_id: id,
     table_name: name,
@@ -87,7 +87,7 @@ function table(id: string, name: string, kind: string, keptByTheApp: boolean): D
     updated_at: "2026-10-01T16:20:00.000Z",
     mine: true,
     shared_with_me: false,
-    kept_by_the_app: keptByTheApp,
+    kept_by_the_app: platformOwned,
     kind,
     team: false,
     system: false,
@@ -111,7 +111,7 @@ const CHOICE_LISTS = [
   table("9e8d7c6b-0005-4a5b-9c0d-1e2f3a4b5c65", "Referral source choices", "list", true),
 ];
 
-/** The live door answers the value sets whether or not app tables were asked for. */
+/** The live door answers the value sets whether or not platform tables were asked for. */
 function clinicDoor(): RecordsDataSource {
   return {
     rpc: async (fn: string) => {
@@ -162,13 +162,13 @@ const NAMES = (rows: readonly DataHomeTableRow[]) => rows.map((t) => t.table_nam
 /** The names of `rows` the page draws right now. */
 const drawn = (rows: readonly DataHomeTableRow[]) => NAMES(rows).filter(shown);
 
-async function pressShowAppTables() {
+async function pressShowPlatformTables() {
   const filters = [...document.body.querySelectorAll("button")].find((b) => /Filters/.test(b.textContent ?? ""));
   expect(filters).toBeDefined();
   await act(async () => {
     filters!.dispatchEvent(new MouseEvent("click", { bubbles: true }));
   });
-  const box = document.body.querySelector('[role="checkbox"][aria-label="Show app tables"]');
+  const box = document.body.querySelector('[role="checkbox"][aria-label="Show platform tables"]');
   expect(box).not.toBeNull();
   await act(async () => {
     box!.dispatchEvent(new MouseEvent("click", { bubbles: true }));
@@ -183,9 +183,9 @@ describe("the data home and a choice column's lists", () => {
     expect(drawn(MADE_ON_PURPOSE)).toEqual(NAMES(MADE_ON_PURPOSE));
   });
 
-  it("lists all five after Show app tables, and still every table the clinic made", async () => {
+  it("lists all five after Show platform tables, and still every table the clinic made", async () => {
     await mount(makeStore());
-    await pressShowAppTables();
+    await pressShowPlatformTables();
     expect(drawn(CHOICE_LISTS)).toEqual(NAMES(CHOICE_LISTS));
     expect(drawn(MADE_ON_PURPOSE)).toEqual(NAMES(MADE_ON_PURPOSE));
   });
@@ -193,8 +193,8 @@ describe("the data home and a choice column's lists", () => {
   it("keeps the choice as the person's own synced preference, so the next visit opens with it", async () => {
     const store = makeStore();
     await mount(store);
-    await pressShowAppTables();
-    expect(store.getState().userPreferences.lists.dataHomeShowAppTables).toBe(true);
+    await pressShowPlatformTables();
+    expect(store.getState().userPreferences.lists.dataHomeShowPlatformTables).toBe(true);
 
     // The next visit: a fresh page over the same person's preferences, nothing pressed.
     act(() => root.unmount());

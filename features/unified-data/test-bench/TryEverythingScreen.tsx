@@ -606,7 +606,7 @@ function Bench({
                                 what="the form builder"
                                 whatHappens={
                                     "It keeps your forms in a table of its own called Forms, and it makes that " +
-                                    "table the first time it runs — in this organization, under \"Kept by the app\"."
+                                    "table the first time it runs — in this organization, under \"Platform tables\"."
                                 }
                             >
                                 <FormBuilder tableId={table.id} />
@@ -682,7 +682,7 @@ function Bench({
                                 what="the dashboard canvas"
                                 whatHappens={
                                     "It keeps your charts in a table of its own called Dashboards, and it makes " +
-                                    "that table the first time it runs — in this organization, under \"Kept by the app\"."
+                                    "that table the first time it runs — in this organization, under \"Platform tables\"."
                                 }
                             >
                                 <DashboardCanvas tableId={table.id} />

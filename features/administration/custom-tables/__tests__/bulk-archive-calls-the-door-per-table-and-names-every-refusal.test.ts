@@ -1,4 +1,4 @@
-// The admin Store Tables bulk "Archive" (lane ONE-HOME, wave 6): every selected table goes through
+// The admin Custom Tables bulk "Archive" (lane ONE-HOME, wave 6): every selected table goes through
 // `custom.table_archive` itself — once per table, pass after pass until the door says done — and a
 // table the door refuses is reported BY NAME with the door's own sentence while the others carry on.
 // The door here is a recorder standing in for PostgREST; what it answers is the shape the live
@@ -10,7 +10,7 @@ import {
   protectionOf,
   type ArchiveTarget,
   type DoorAnswer,
-  type StoreTableRow,
+  type CustomTableRow,
   type TableArchiveDoor,
 } from "../archiveTables";
 
@@ -100,20 +100,20 @@ describe("bulk archive goes through custom.table_archive, table by table", () =>
 });
 
 describe("tables the platform keeps are never offered", () => {
-  const row = (over: Partial<StoreTableRow>): StoreTableRow => ({
+  const row = (over: Partial<CustomTableRow>): CustomTableRow => ({
     id: "x",
     name: "Records Lane Probe 1a2b3c4d",
     organizationId: "39c38960-d30c-4840-b0c1-c9960de95582",
     organizationName: "Matrx System",
     updatedAt: null,
     system: true,
-    keptByTheApp: false,
+    platformOwned: false,
     ...over,
   });
 
   it("probe debris is selectable; kept, code-named and Example seed tables are not", () => {
     expect(protectionOf(row({}))).toBeNull();
-    expect(protectionOf(row({ keptByTheApp: true }))).toBe("kept");
+    expect(protectionOf(row({ platformOwned: true }))).toBe("kept");
     // Parity Floor: platform table that neither keeper signal marks, named by code.
     expect(protectionOf(row({ id: "11111111-0005-4000-8000-000000000003", name: "Parity Floor" }))).toBe("named-in-code");
     // admin's Workspace — Rincon Plumbing — Customers: the safety nets' fixture.

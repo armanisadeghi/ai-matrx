@@ -1,5 +1,5 @@
 /**
- * The owner's page-cleanup decisions, kept in the record store as an app table (the
+ * The owner's page-cleanup decisions, kept in the record store as a typed table (the
  * PLATFORM-APP-DATA path: `defineAppTable` → each organization's copy on first write).
  *
  * Why the store and not a platform table: a one-off review tool with ~150 rows that will be thrown

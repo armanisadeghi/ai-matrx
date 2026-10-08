@@ -3,7 +3,7 @@
 // The three server calls behind "Connect a database" (aidream `/external-databases`, router
 // aidream/api/routers/external_databases.py). The server tests the connection, lists what it may
 // read, keeps the connection string SEALED in the organization's vault, and lands one picked
-// table as a Synced store Table through `custom.table_sync`. 🚨 The connection string goes UP in
+// table as a Synced custom table through `custom.table_sync`. 🚨 The connection string goes UP in
 // the body of `inspect` / `connect` (the person typed it) and NOTHING sent back ever carries it;
 // never put it in a URL, a log line, an error or any state that outlives the form.
 

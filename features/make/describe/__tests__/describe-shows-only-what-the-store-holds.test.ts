@@ -7,7 +7,7 @@
 // what Cedar Ridge already had, the slots table the app keeps for the booking page, or anything that
 // appeared in a different organization at the same moment.
 //
-// RED ON A PLANT: drop the "before" check, the kept-by-the-app check, the organization check or the
+// RED ON A PLANT: drop the "before" check, the platform-owned check, the organization check or the
 // booking-is-also-a-form de-duplication in `madeSince` and a case below fails.
 
 import type { DataHomeItemRow, DataHomeTableRow } from "@/features/unified-data/hub/doors";

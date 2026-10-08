@@ -66,7 +66,7 @@ export default function TableDataSource({
   const [countColumn, setCountColumn] = useState<string>("");
   const [loadingData, setLoadingData] = useState(false);
 
-  // Load user tables
+  // Load custom tables
   useEffect(() => {
     fetchTables();
   }, []);
