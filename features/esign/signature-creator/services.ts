@@ -7,6 +7,7 @@
 // The saved-signature doors live in the `esign` schema (typed by database.types). The phone routes
 // below are typed by the published api-types.
 
+import type { components } from "@ai-matrx/agents/generated/api-types";
 import { callApi } from "@/lib/api/call-api";
 import type { AppDispatch } from "@/lib/redux/store";
 import { supabase } from "@/utils/supabase/client";
@@ -52,21 +53,10 @@ export const savedSignaturesApi: SavedSignaturesApi = {
 
 // ── The phone page ────────────────────────────────────────────────────────────────────────
 
-export interface HandoffOpenAnswer {
-  ok: boolean;
-  message?: string;
-  target?: "signature" | "initials";
-  first_name?: string;
-  sender_name?: string;
-  organization_name?: string;
-  expires_at?: string;
-  allowed?: { drawn: boolean; uploaded: boolean };
-}
+type Schemas = components["schemas"];
 
-export interface HandoffSubmitAnswer {
-  ok: boolean;
-  message?: string;
-}
+export type HandoffOpenAnswer = Schemas["EsignHandoffOpenAnswer"];
+export type HandoffSubmitAnswer = Schemas["EsignHandoffSubmitAnswer"];
 
 function refusal(error: { serverDetail?: unknown } | null | undefined): Error {
   const detail = error?.serverDetail as { detail?: { message?: unknown } } | undefined;
@@ -86,7 +76,7 @@ export async function openHandoff(dispatch: AppDispatch, secret: string): Promis
       organizationFreeRead: true,
     }),
   );
-  if (!result.error && result.data) return result.data;
+  if (!result.error && result.data) return result.data as Schemas["EsignHandoffOpenAnswer"];
   throw refusal(result.error);
 }
 
@@ -103,6 +93,6 @@ export async function submitHandoff(
       organizationFreeRead: true,
     }),
   );
-  if (!result.error && result.data) return result.data;
+  if (!result.error && result.data) return result.data as Schemas["EsignHandoffSubmitAnswer"];
   throw refusal(result.error);
 }
