@@ -146,9 +146,12 @@ export interface HolderAssignmentProps {
    * job. `"try"` is the Test tab choosing a candidate to run once — nothing is
    * bound, so the labels drop "Mandate Holder" / "Assigned", and the agent
    * version control is absent because a try always runs the agent's latest
-   * version (the try door takes no agent version).
+   * version (the try door takes no agent version). `"pick"` is the Runs tab
+   * choosing a holder to place and run once: try's labels, but agent AND
+   * workflow versions stay (the test-run door takes `version_id`). Nothing is
+   * ever saved by this component in any purpose — the host decides.
    */
-  purpose?: "assign" | "try";
+  purpose?: "assign" | "try" | "pick";
   /** Dropdown consumer slot, when a page mounts this more than once. */
   consumerId?: string;
 }
@@ -198,7 +201,8 @@ export function HolderAssignment({
 }: HolderAssignmentProps) {
   const isWorkflow = holder.kind === "workflow";
   const isTry = purpose === "try";
-  const typeLabel = isTry ? "Run with" : "Mandate Holder Type";
+  const unbound = purpose !== "assign";
+  const typeLabel = unbound ? "Run with" : "Mandate Holder Type";
 
   return (
     <div className="space-y-2.5">
@@ -261,7 +265,7 @@ export function HolderAssignment({
           was the id this screen used to print. */}
       <Row
         label={
-          isTry
+          unbound
             ? isWorkflow
               ? "Workflow"
               : "Agent"
