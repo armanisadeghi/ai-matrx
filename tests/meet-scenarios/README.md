@@ -7,7 +7,10 @@ server truth where the catalog asks for it (the token door, the meeting row, the
 
     bash tests/meet-scenarios/run.sh                 # every P0 scenario, Chromium
     bash tests/meet-scenarios/run.sh wr-denied       # one state id
-    MEET_BROWSERS=webkit bash tests/meet-scenarios/run.sh wr-denied   # needs: pnpm exec playwright install webkit
+    MEET_NO_PROXY=1 MEET_BROWSERS=webkit bash tests/meet-scenarios/run.sh wr-denied   # needs: pnpm exec playwright install webkit
+
+WebKit runs only without the per-person proxy (`MEET_NO_PROXY=1`; through the proxy WebKit never
+finishes loading the app), so network-cut scenarios are Chromium-only for now.
 
 **Each run writes to its own directory**: `.cache/meet-scenarios/runs/<run-id>/` (`report.md`,
 `report.json`, `artifacts/`, `teardown/`). The id is printed at the start; two runs at once never

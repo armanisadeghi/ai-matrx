@@ -89,13 +89,14 @@ export class Actor {
     const grant = browserName === "chromium" && !opts.blockDevices?.length ? ["camera", "microphone"] : [];
     const context = await browser.newContext({
       baseURL: baseURL(),
-      proxy: { server: `http://127.0.0.1:${port}` },
+      // MEET_NO_PROXY=1: no per-person proxy (network-cut scenarios then cannot cut media); used to isolate WebKit.
+      ...(process.env.MEET_NO_PROXY ? {} : { proxy: { server: `http://127.0.0.1:${port}` } }),
       permissions: grant,
       viewport: { width: 1280, height: 800 },
       locale: "en-US",
     });
     const actor = new Actor(opts, context, gate, browserName);
-    actor.levers.push(`browser ${browserName} ${browser.version()}`, ...launchLevers, `network: own proxy (NetGate :${port})`);
+    actor.levers.push(`browser ${browserName} ${browser.version()}`, ...launchLevers, process.env.MEET_NO_PROXY ? "network: NO proxy (MEET_NO_PROXY)" : `network: own proxy (NetGate :${port})`);
     if (grant.length) actor.levers.push(`permission grant: ${grant.join(",")}`);
     if (opts.faults && Object.keys(opts.faults).length) {
       await context.addInitScript(mediaFaultsInit, opts.faults);
