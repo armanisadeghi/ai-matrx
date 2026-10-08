@@ -21,10 +21,13 @@ import type { TablePageSeed } from "./tablePageSeed.server";
 function Primed({
   tableId,
   seed,
+  serverRows,
   children,
 }: {
   tableId: string;
   seed: Promise<TablePageSeed | null>;
+  /** The knob `data/server_rows` (`serverRowsOn`): OFF draws the page exactly as before SSR-ROWS. */
+  serverRows: boolean;
   children: ReactNode;
 }) {
   const dataSource = useRecordsDataSource();
@@ -39,6 +42,7 @@ function Primed({
    * HTML holds the table's rows, and while hydrating, so the browser draws the same rows and asks
    * nothing again. A null seed draws exactly what it drew before: the skeleton, then the browser asks.
    */
+  if (!serverRows) return <>{children}</>;
   const resolved = use(seed);
   const mine = resolved && resolved.tableId === tableId ? resolved : null;
   return (
@@ -78,10 +82,18 @@ function useHoldShellUntilRows(tableId: string): void {
   }, []);
 }
 
-export function PrimedTablePage({ tableId, seed }: { tableId: string; seed: Promise<TablePageSeed | null> }) {
+export function PrimedTablePage({
+  tableId,
+  seed,
+  serverRows,
+}: {
+  tableId: string;
+  seed: Promise<TablePageSeed | null>;
+  serverRows: boolean;
+}) {
   useHoldShellUntilRows(tableId);
   return (
-    <Primed tableId={tableId} seed={seed}>
+    <Primed tableId={tableId} seed={seed} serverRows={serverRows}>
       <UnifiedDataTablePage tableId={tableId} />
     </Primed>
   );
@@ -91,13 +103,15 @@ export function PrimedRecordPage({
   tableId,
   recordId,
   seed,
+  serverRows,
 }: {
   tableId: string;
   recordId: string;
   seed: Promise<TablePageSeed | null>;
+  serverRows: boolean;
 }) {
   return (
-    <Primed tableId={tableId} seed={seed}>
+    <Primed tableId={tableId} seed={seed} serverRows={serverRows}>
       <UnifiedRecordPage tableId={tableId} recordId={recordId} />
     </Primed>
   );

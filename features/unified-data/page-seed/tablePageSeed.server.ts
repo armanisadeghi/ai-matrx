@@ -56,6 +56,35 @@ export function addressAsksThePlainOpening(searchParams: Record<string, string |
   return !ADDRESS_OPENS_ELSEWHERE.some((key) => searchParams[key] !== undefined && searchParams[key] !== "");
 }
 
+/**
+ * THE KNOB `data/server_rows` (platform.feature_knob, lane SSR-ROWS-2): whether a table page waits for
+ * the server's first reads and draws its rows in the server's HTML. OFF unless the row says `true` —
+ * an absent row, an archived one, or a refused read all mean OFF: the page draws as it did before
+ * (skeleton, then the browser asks). Read once a minute per server process, as the person.
+ */
+const KNOB_TTL_MS = 60_000;
+let knobHeld: { on: boolean; at: number } | null = null;
+export async function serverRowsOn(): Promise<boolean> {
+  if (knobHeld && Date.now() - knobHeld.at < KNOB_TTL_MS) return knobHeld.on;
+  let on = false;
+  try {
+    const supabase = await createClient();
+    const { data } = await supabase
+      .schema("platform" as never)
+      .from("feature_knob" as never)
+      .select("value")
+      .eq("feature", "data")
+      .eq("key", "server_rows")
+      .is("archived_at", null)
+      .maybeSingle();
+    on = (data as { value?: unknown } | null)?.value === true;
+  } catch {
+    on = false;
+  }
+  knobHeld = { on, at: Date.now() };
+  return on;
+}
+
 /** Past this the browser has booted and would have asked by now: it asks for itself instead. */
 const SEED_BUDGET_MS = 2_500;
 
