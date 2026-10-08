@@ -55,6 +55,30 @@ describe("the assists control moves off a control", () => {
     expect(dockPlacementVar("--assist-dock-lift")).toBe("");
   });
 
+  it("never moves for a toast: a toast's close button under the dock is not a control to clear", () => {
+    // 2026-10-08, owner: "toasts … moving the UI around". The dock lifted off a toast's button,
+    // which moved the floating clearance, which moved the toast stack — a loop.
+    const dock = document.createElement("div");
+    dock.setAttribute("data-assists-dock", "");
+    document.body.appendChild(dock);
+    dock.getBoundingClientRect = () => rect(700, 730, 1120, 1268);
+    const toaster = document.createElement("section");
+    toaster.setAttribute("data-sonner-toaster", "");
+    const toast = document.createElement("li");
+    toast.setAttribute("data-sonner-toast", "");
+    const close = document.createElement("button");
+    toast.appendChild(close);
+    toaster.appendChild(toast);
+    document.body.appendChild(toaster);
+    const blank = document.createElement("div");
+    document.body.appendChild(blank);
+    (document as unknown as { elementsFromPoint: (x: number, y: number) => Element[] }).elementsFromPoint = () => [dock, close, blank];
+
+    applyAssistDockLift();
+    expect(dockPlacementVar("--assist-dock-lift")).toBe("");
+    expect(dock.hasAttribute("data-assist-dock-yield")).toBe(false);
+  });
+
   it("uses visible footer and attention-dock geometry when a tooltip hides the disabled control from hit testing", () => {
     const dock = document.createElement("div");
     dock.setAttribute("data-assists-dock", "");
