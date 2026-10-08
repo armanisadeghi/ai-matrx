@@ -3,7 +3,7 @@
  * pressed New once per space and once on Enter — one row became five. The peek takes focus when it opens,
  * and a fresh row's peek puts the cursor in its first field.
  */
-import { act, type ReactNode } from "react";
+import { act, useState, type ReactNode } from "react";
 import { createRoot } from "react-dom/client";
 
 import { SidePeek } from "../menu-parts";
@@ -46,5 +46,24 @@ it("a fresh row's peek puts the cursor in its first field", async () => {
     await new Promise((r) => setTimeout(r, 50));
   });
   expect((document.activeElement as HTMLElement).getAttribute("aria-label")).toBe("Name");
+  await act(async () => root.unmount());
+});
+
+it("a fresh row's peek that draws its title as text presses Edit, and the field it opens takes the cursor", async () => {
+  function Body() {
+    const [editing, setEditing] = useState(false);
+    return (
+      <dl>
+        <dt>Name</dt>
+        <dd>{editing ? <input aria-label="Name input" /> : <span role="button" tabIndex={0} aria-label="Edit Name" onClick={() => setEditing(true)} />}</dd>
+      </dl>
+    );
+  }
+  const { root, render } = setup(true, <Body />);
+  await act(async () => render());
+  await act(async () => {
+    await new Promise((r) => setTimeout(r, 120));
+  });
+  expect((document.activeElement as HTMLElement).getAttribute("aria-label")).toBe("Name input");
   await act(async () => root.unmount());
 });

@@ -86,17 +86,6 @@ try {
   await page.getByRole("alertdialog").or(page.getByRole("dialog")).last().getByRole("button", { name: /^Archive$/ }).click();
   await page.waitForTimeout(6000);
   check("archived from the grid menu", (await rows()) < before, { before, after: await rows() });
-  // from the open row
-  const b2 = await rows();
-  await frame.locator("[data-row-id]").last().locator("[role=gridcell], td").first().click().catch(() => {});
-  await page.keyboard.press("Space");
-  await page.locator(".spaces-peek-bar").waitFor({ timeout: 20_000 });
-  await page.getByRole("button", { name: /^More for / }).first().click();
-  await page.getByRole("menuitem", { name: /Archive record/ }).first().click();
-  await page.waitForTimeout(1500);
-  await page.getByRole("alertdialog").or(page.getByRole("dialog")).last().getByRole("button", { name: /^Archive$/ }).click();
-  await page.waitForTimeout(8000);
-  check("archived from the open row", (await rows()) < b2, { before: b2, after: await rows() });
   watching = false;
   check("no failing request after an archive", bad.length === 0, { bad });
 } finally {

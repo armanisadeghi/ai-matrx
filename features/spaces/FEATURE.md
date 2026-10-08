@@ -45,6 +45,16 @@ Block document: a tree of `SpaceBlock` (`id`, `type`, `text: RichSpan[]`, `color
 
 ## Change log
 
+- 2026-10-08 — fixes round 39: (1) "Archive record" follows the `remove` rung (editor), not `write` (edit_content):
+  records-ui 0.110.9 gates it by `rights.remove` and adds `hideRefusedRowActions` on `ViewSwitcher`/`Grid` (Spaces sets
+  it in `DatabaseBlock`): a content editor's row menu has no Archive item, the admin still archives (walk
+  `archive-row.walk.mjs both`). The open row's ••• keeps the package's rule (disabled, saying why). (2) "+ New": the side
+  peek draws the title as text with an "Edit Name" press, so there was no field to focus; `SidePeek` presses it once and
+  the opened input takes the caret (typing names the row; test `side-peek-takes-focus`, walk `peek-focus-archive.walk.mjs`).
+  (3) After an archive `read_record` answered 400: a closed peek's live `useRecord` entry re-read the archived row on the
+  change announcement and on realtime's echo. @ai-matrx/records 0.84.5 marks a deleted record removed
+  (`markRecordRemoved`, lifted by restore) and the live entry skips its re-read; the walk reports no failing request.
+
 - 2026-10-08 — builder round 40 (page-level link reads): a page's links resolved one full page read each
   (`requestLink` -> `store.get` = document + space_payload + associations per page row, link-to-page and page
   mention): admin sample ~125 Spaces reads per load (39-42 of each + 3 `reverse_links_many`). Now the route reads
