@@ -58,7 +58,7 @@ export function useQuickActions() {
             agentId = (await resolveMandateAsking(DEFAULT_NEW_CHAT_MANDATE_KEY))
               .agentId;
           } catch (error) {
-            // The person declined the organization question: nothing happened.
+            // Resolution failed (e.g. the organization question was dismissed): fall back to the picker.
             console.error(
               `[useQuickActions] mandate "${DEFAULT_NEW_CHAT_MANDATE_KEY}" failed to resolve — opening the Chat window with the agent picker:`,
               error,

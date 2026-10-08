@@ -338,7 +338,7 @@ export function NoteTabItem({ noteId, instanceId, standalone = false }: NoteTabI
   // Copy a live record reference (the "bookmark") to the clipboard — same fence
   // ReferenceCopyButton produces, now reachable from the "…" menu.
   const copyReference = useCallback(() => {
-    void copyToClipboard(buildRecordReferenceFence({ type: "note", id: noteId, label }), "Reference copied", { description: label });
+    void copyToClipboard(buildRecordReferenceFence({ type: "note", id: noteId, label }), "Reference copied");
   }, [noteId, label]);
 
   const handleMoveToFolder = useCallback(

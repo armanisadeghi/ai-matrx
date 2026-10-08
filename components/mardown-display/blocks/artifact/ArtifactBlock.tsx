@@ -299,7 +299,9 @@ const ArtifactBlock: React.FC<ArtifactBlockProps> = ({
   // Code, Copy, Download, Open in canvas). This block hands it its title,
   // its extra actions and its canvas opener instead of stacking a label row
   // on top of it.
-  if (canvasType === "html" && isComplete) {
+  // (An `html` artifact whose body is a `{"__kind": …}` value is not a page —
+  // HtmlArtifact sends it to the kind front door — so it keeps this block's row.)
+  if (canvasType === "html" && isComplete && !/^\s*\{\s*"__kind"\s*:/.test(content)) {
     return (
       <HtmlPreviewChromeProvider
         value={{

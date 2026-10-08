@@ -33,3 +33,23 @@ it("keeps only this doc's processing progress", () => {
   expect(readPdfRunFrame(progress("other-doc"), DOC)).toBeNull();
   expect(readPdfRunFrame({ event: "heartbeat", data: {} }, DOC)).toBeNull();
 });
+
+it("a per-page clean frame is a live counter that generic frames never overwrite", () => {
+  const page = readPdfRunFrame(
+    {
+      event: "data",
+      data: { kind: "content.processing.progress", processed_document_id: DOC, stage: "clean", phase: "page", message: "Cleaned page 32/48", current: 32, total: 48 },
+    },
+    DOC,
+  );
+  expect(page).toEqual({ label: "Cleaned page 32/48", counter: true });
+  const noMessage = readPdfRunFrame(
+    { event: "data", data: { kind: "content.processing.progress", stage: "clean", phase: "page", message: "", current: 5, total: 48 } },
+    DOC,
+  );
+  expect(noMessage?.label).toBe("clean page 5/48");
+  expect(readPdfRunFrame({ event: "data", data: { type: "pdf_clean_started" } }, DOC)?.generic).toBe(true);
+  expect(
+    readPdfRunFrame({ event: "data", data: { kind: "content.processing.progress", stage: "clean", phase: "heartbeat", message: "Cleaning…" } }, DOC)?.generic,
+  ).toBe(true);
+});

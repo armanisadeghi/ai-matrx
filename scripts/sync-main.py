@@ -42,7 +42,7 @@ WHAT IT DOES (Arman's sequence, 2026-09-24)
      "sync:matrx-packages" (repo root and one level down, e.g. desktop/), run it and commit the
      changed package.json / lockfile. Our packages are not external: a release on stale ones
      breaks (Arman, 2026-09-26). Once per sync; a failed update is announced, never silent.
-     First it waits (max 10 min) for aidream's publish train that started before this sync
+     First it waits (max 6 min) for aidream's npm publish runs already in flight
      (wait_for_publish_train()); an update that adds a build failure and fixes none is NOT
      committed (update_breaks_build()); files held in step 1 are re-swept after an update.
   5. commit the merge, git push. If someone pushed in the meantime, start again at 1.
@@ -1482,16 +1482,17 @@ PACKAGE_FILES = ("package.json", "pnpm-lock.yaml", "package-lock.json")
 
 # THE PUBLISH TRAIN (2026-10-07). aidream publishes @ai-matrx packages from GitHub Actions: every
 # push to its main runs "Nominate changed npm packages", which tags each changed package and
-# dispatches "Publish TypeScript Package to npm" runs in dependency order — 1 to 6 minutes each,
-# so a change low in the graph reaches npm 5–40 minutes after its push. ship-all ships aidream
-# first and this repo seconds later, so the package update below used to read npm in the MIDDLE
-# of that train and lock the previous versions. It now waits (bounded) for every nomination that
-# started before this sync, and for the publish runs those nominations dispatched.
+# dispatches one "Publish TypeScript Package to npm" run per package, in dependency order (1-10
+# minutes each). ship-all ships aidream seconds before this repo, so the package update below read
+# npm while those tarballs were still building and locked the previous versions. It now waits
+# (bounded) for every publish run ALREADY IN FLIGHT when the sync reached this step. It does not
+# wait for nominations: one nomination walks the whole dependency graph and outlived a 10-minute
+# wait on the first live run (2026-10-07 22:21), and with ~30 developers pushing aidream the train
+# is never idle. What a later publish brings, the sweep hold (sweep_holds) keeps off main until a
+# sync whose packages serve it.
 PUBLISH_REPO = "AI-Matrix-Engine/aidream"
-NOMINATE_WORKFLOW = "Nominate changed npm packages"
 PUBLISH_WORKFLOW = "Publish TypeScript Package to npm"
-PUBLISH_WAIT_MAX_SECONDS = 10 * 60   # agent-chosen; the sweep hold covers anything later. Review 2026-11-07.
-PUBLISH_DISPATCH_GRACE_SECONDS = 60  # a finished nomination's tags start their publish runs within this
+PUBLISH_WAIT_MAX_SECONDS = 6 * 60    # agent-chosen: one publish run took 1-10 min on 2026-10-07. Review 2026-11-07.
 PUBLISH_POLL_SECONDS = 20
 
 
@@ -1510,13 +1511,11 @@ def _gh_runs():
 
 
 def wait_for_publish_train(now=time.time, sleep=time.sleep, runs=_gh_runs):
-    """Block until every publish run started by a nomination older than this call has finished,
-    at most PUBLISH_WAIT_MAX_SECONDS. Returns one line for the report."""
+    """Block until every npm publish run that was in flight when this was called has finished, at
+    most PUBLISH_WAIT_MAX_SECONDS. Returns one line for the report."""
     t0 = now()
-    cutoff = None   # publish runs created before this belong to pre-sync nominations
     waited_for = set()
     last_shown = ""
-    saw_nomination = False
     while True:
         try:
             listing = runs()
@@ -1525,31 +1524,20 @@ def wait_for_publish_train(now=time.time, sleep=time.sleep, runs=_gh_runs):
                 "without waiting; a package still publishing is locked at its previous version."
                 % (PUBLISH_REPO, e))
             return "publish train: not measured"
-        nominating = [n for (wf, active, ts, n) in listing if wf == NOMINATE_WORKFLOW and active and ts < t0]
-        if nominating:
-            cutoff = None
-            saw_nomination = True
-        elif cutoff is None:
-            # A nomination we watched finish dispatches its publish runs within the grace; with no
-            # nomination in flight there is nothing more to come from before this sync.
-            cutoff = now() + (PUBLISH_DISPATCH_GRACE_SECONDS if saw_nomination else 0)
-        horizon = now() if cutoff is None else cutoff
-        publishing = [n for (wf, active, ts, n) in listing if wf == PUBLISH_WORKFLOW and active and ts < horizon]
+        publishing = sorted(n for (wf, active, ts, n) in listing if wf == PUBLISH_WORKFLOW and active and ts < t0)
         waited_for.update(publishing)
-        if not nominating and not publishing and now() >= cutoff:
-            spent = int(now() - t0)
-            if not waited_for and not saw_nomination:
-                return "publish train: idle"
-            return "publish train: waited %ds for %s" % (spent, ", ".join(sorted(waited_for)) or "nominations")
+        if not publishing:
+            if not waited_for:
+                return "publish train: nothing in flight"
+            return "publish train: waited %ds for %s" % (int(now() - t0), ", ".join(sorted(waited_for)))
         if now() - t0 >= PUBLISH_WAIT_MAX_SECONDS:
-            still = nominating + publishing
-            say("PUBLISH TRAIN STILL RUNNING after %d min (%s) — updating to what npm serves now; "
-                "a file that needs a later version stays held by the sweep until the next sync."
-                % (PUBLISH_WAIT_MAX_SECONDS // 60, ", ".join(still[:6])))
+            say("PUBLISH RUNS STILL IN FLIGHT after %d min (%s) — updating to what npm serves now; a "
+                "file that needs a later version stays held by the sweep until a sync that has it."
+                % (PUBLISH_WAIT_MAX_SECONDS // 60, ", ".join(publishing[:6])))
             return "publish train: gave up after %d min" % (PUBLISH_WAIT_MAX_SECONDS // 60)
-        showing = ", ".join((nominating + publishing)[:6])
-        if showing and showing != last_shown:
-            say("waiting for the @ai-matrx publish train: %s" % showing)
+        showing = ", ".join(publishing[:6])
+        if showing != last_shown:
+            say("waiting for @ai-matrx publish runs already in flight: %s" % showing)
             last_shown = showing
         sleep(PUBLISH_POLL_SECONDS)
 

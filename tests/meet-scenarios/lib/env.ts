@@ -87,3 +87,22 @@ export const TIMEOUTS = {
   /** Generic "a person would have noticed by now" wait for a visible change. */
   noticeMs: Number(process.env.MEET_NOTICE_S ?? 15) * 1000,
 };
+
+/**
+ * This run's own output directory. Every run writes its report, artifacts and teardown logs here,
+ * so two runs at once (other lanes run the harness too) never overwrite each other. The id is set
+ * once in the main process (playwright.config.ts) and inherited by every worker.
+ */
+export function runId(): string {
+  if (!process.env.MEET_RUN_ID) {
+    process.env.MEET_RUN_ID = `${new Date().toISOString().replace(/[:.]/g, "-").slice(0, 19)}-${process.pid}`;
+  }
+  return process.env.MEET_RUN_ID;
+}
+
+export function runDir(): string {
+  return path.join(REPO_ROOT, ".cache", "meet-scenarios", "runs", runId());
+}
+
+/** aidream checkout whose environment runs lib/fixtures.py (persona factory, server truth). */
+export const AIDREAM_ROOT = process.env.MEET_AIDREAM_ROOT ?? path.resolve(REPO_ROOT, "..", "aidream");

@@ -121,7 +121,7 @@ const MACHINE_FRAME_TAGS = ["ToolCard", "ToolBatch"];
 
 describe("every machine frame in the shared transcript renderer is gated", () => {
   const source = read(
-    "components/mardown-display/chat-markdown/EnhancedChatMarkdown.tsx",
+    `${CHAT_SRC_REL}/ui/markdown-stream/EnhancedChatMarkdown.tsx`,
   );
 
   const mountSites = (tag: string): number[] => {
@@ -255,7 +255,7 @@ describe("a context snapshot is a builder's record, not the Expert's", () => {
       "machineFramesVisible && contextSnapshot && contextSnapshot.length > 0 && (",
     );
     expect(source).toContain(
-      "{machineFramesVisible && contextReceipt && (contextReceipt.rows?.length ?? 0) > 0 ? (",
+      "machineFramesVisible && contextReceipt && (contextReceipt.rows?.length ?? 0) > 0 ? (",
     );
   });
 

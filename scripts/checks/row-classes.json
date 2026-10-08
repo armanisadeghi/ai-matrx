@@ -5,7 +5,7 @@
     "repo-only": "reads the repository and nothing else"
   },
   "counts": {
-    "repo-only": 167,
+    "repo-only": 168,
     "live-db": 65
   },
   "rows": {
@@ -177,6 +177,13 @@
       "label": "Every @ai-matrx import exists in the installed package",
       "class": "repo-only",
       "cmd": "pnpm check:matrx-imports",
+      "reason": "no database access in 2 file(s) reached",
+      "evidence": []
+    },
+    "code-using-ai-matrx-packages-type-checks-against-the-locked-": {
+      "label": "Code using @ai-matrx packages type-checks against the locked versions",
+      "class": "repo-only",
+      "cmd": "pnpm check:matrx-api-usage",
       "reason": "no database access in 2 file(s) reached",
       "evidence": []
     },

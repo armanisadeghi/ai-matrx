@@ -694,7 +694,13 @@ if [[ "$RELEASE_PHASE" == "ship" ]]; then
         release_lock_cleanup; RELEASE_LOCK_HELD=false
         exec "$0" ${RELEASE_ORIGINAL_ARGS[@]+"${RELEASE_ORIGINAL_ARGS[@]}"}
     fi
-    nohup "$0" ${RELEASE_ORIGINAL_ARGS[@]+"${RELEASE_ORIGINAL_ARGS[@]}"} </dev/null >>"${RELEASE_LOG_FILE:-/dev/null}" 2>&1 &
+    # Its OWN session, not just nohup: an agent's shell tool kills the whole process group when
+    # its command returns, and nohup only ignores SIGHUP. v0.4.2990 and v0.4.2991 (2026-10-07)
+    # lost their after phase seconds after the push — no checks, no rollout watch — and both
+    # were the releases that shipped a crash. macOS has no setsid(1); python's os.setsid is it.
+    nohup python3 -c 'import os,sys
+if os.fork(): sys.exit(0)
+os.setsid(); os.execvp(sys.argv[1], sys.argv[1:])' "$0" ${RELEASE_ORIGINAL_ARGS[@]+"${RELEASE_ORIGINAL_ARGS[@]}"} </dev/null >>"${RELEASE_LOG_FILE:-/dev/null}" 2>&1 &
     disown || true
     exit 0
 fi

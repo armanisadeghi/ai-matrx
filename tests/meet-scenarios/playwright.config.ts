@@ -7,18 +7,24 @@
  *
  * Points at the ONE shared dev server (port 3001) under this checkout's session
  * hostname — it never starts a server. Every scenario creates its own meeting
- * and ends it. Report: .cache/meet-scenarios/report.md (+ report.json).
+ * and ends it. Report: .cache/meet-scenarios/runs/<run-id>/report.md (+ report.json, artifacts).
  */
 import { defineConfig, devices } from "@playwright/test";
 import { CHROMIUM_ARGS_BASE } from "./lib/scenario";
-import { baseURL } from "./lib/env";
+import path from "node:path";
+import { baseURL, runDir } from "./lib/env";
+
+// One id per run, set here in the main process before any worker starts (workers inherit it):
+// every run writes to its own .cache/meet-scenarios/runs/<id>/ — concurrent runs never collide.
+const RUN_DIR = runDir();
 
 const browsers = (process.env.MEET_BROWSERS ?? "chromium").split(",").map((s) => s.trim());
 
 export default defineConfig({
-  testDir: "./scenarios",
+  // MEET_SCENARIOS_DIR points a run at a scratch copy (mutation proofs); default is the real scenarios.
+  testDir: process.env.MEET_SCENARIOS_DIR ?? "./scenarios",
   testMatch: /.*\.spec\.ts$/,
-  outputDir: "../../.cache/meet-scenarios/artifacts",
+  outputDir: path.join(RUN_DIR, "artifacts"),
   timeout: 12 * 60_000,
   expect: { timeout: 15_000 },
   fullyParallel: true,
