@@ -73,7 +73,7 @@ Every file that imports from the TTS/audio system, organized by which hook/compo
 
 ## Markdown-to-Speech Pipeline
 
-`utils/markdown-processors/parse-markdown-for-speech.ts` converts markdown to TTS-friendly text:
+`parseMarkdownToText` in `@ai-matrx/media/voices` converts markdown to TTS-friendly text:
 
 1. Mermaid diagrams → "Please see the diagram provided."
 2. Code blocks → "Please see the [language] code provided."

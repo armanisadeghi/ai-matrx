@@ -21,7 +21,7 @@ import {
   TTS_PLAYBACK_BUFFER_SEC,
 } from "@/lib/cartesia/config";
 import { resolveListeningSettings } from "@/features/audio/service/listeningConfig";
-import { parseMarkdownToText } from "@/utils/markdown-processors/parse-markdown-for-speech";
+import { parseMarkdownToText } from "@ai-matrx/media/voices";
 import type {
   ActivePlayback,
   PlaybackAdapter,

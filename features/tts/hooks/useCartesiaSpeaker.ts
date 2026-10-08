@@ -19,7 +19,7 @@ import {
   selectListeningSpeed,
   useListeningVoice,
 } from '@/features/audio/service/listeningConfig';
-import { parseMarkdownToText } from '@/utils/markdown-processors/parse-markdown-for-speech';
+import { parseMarkdownToText } from "@ai-matrx/media/voices";
 import {
   buildGenerationConfig,
   resolveVoiceId,

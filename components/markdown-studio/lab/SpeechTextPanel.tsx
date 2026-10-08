@@ -13,7 +13,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { SpeakerGroup } from "@/features/tts/components/SpeakerGroup";
 import { AudioTestModal } from "@/components/admin/AudioTestModal";
-import { parseMarkdownToText } from "@/utils/markdown-processors/parse-markdown-for-speech";
+import { parseMarkdownToText } from "@ai-matrx/media/voices";
 
 export interface SpeechTextPanelProps {
   content: string;

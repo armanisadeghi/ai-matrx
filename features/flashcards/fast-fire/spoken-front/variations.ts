@@ -17,7 +17,7 @@
 // These are just strings — they intentionally do NOT have to match the agent's
 // preset options. Tune freely.
 
-import { normalizeSpeechBlanks } from "@/utils/markdown-processors/parse-markdown-for-speech";
+import { normalizeSpeechBlanks } from "@ai-matrx/media/voices";
 
 /** The rotating "Here's the next one." lead-in — the owner asked for the biggest
  *  bank here (20-30) since it's the actual spoken text that repeats every card. */

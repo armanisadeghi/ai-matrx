@@ -2,7 +2,7 @@
 import { SinkAwarePlayer } from "@/features/audio/sinkAwarePlayer";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useAppSelector } from "@/lib/redux/hooks";
-import { parseMarkdownToText } from "@/utils/markdown-processors/parse-markdown-for-speech";
+import { parseMarkdownToText } from "@ai-matrx/media/voices";
 import { connectCartesiaTts, type CartesiaTtsSocket } from "@/lib/cartesia/connection";
 import {
   buildGenerationConfig,
