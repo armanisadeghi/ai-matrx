@@ -1,7 +1,7 @@
 // features/employee-performance-reviews/review-360.typed-table.ts — lane HR-360 (2026-10-08)
 //
 // THE 360 REVIEW TABLE FAMILY, declared once in code (Arman, 2026-10-08: "one of the only reasons
-// we'd create a system-wide custom table"). Two Confidential typed tables per organization:
+// we'd create a system-wide custom table"). Three Confidential typed tables per organization:
 //
 //   · Review — status and timestamps only, never content. Linked to the HR employee record
 //     (`employee`, an entity reference) so it shows in the employee's linked records. Readers: the
@@ -9,6 +9,9 @@
 //   · Track — one per respondent (self | manager). Its content (`document`) is read only by its
 //     respondent and the HR manager; the counterpart reads it only once HR shares both
 //     (`shared = true`, the store's own reader `when`). The maker of either copy is only a reader.
+//   · Meeting notes (wave 3) — the HR manager's notes of the review meeting, one row per review
+//     (the review's `meeting_notes` holds its id). The HR manager writes; the employee and the
+//     manager read only once HR shares them (`shared = true`). Meet's own notes are never used.
 //
 // The Confidential level is applied per organization by the server step (aidream
 // `/typed-tables/confidential`), which refuses unless this declaration equals its registry entry —
@@ -22,7 +25,8 @@ const APPROVAL: TypedTableConfidential["approval"] = {
     "create a system-wide custom table. The meeting also then generates some confidential notes, " +
     "recordings, etc. that have to be handled with a lot of care since they're confidential",
   approvedOn: "2026-10-08",
-  covers: "the employee 360 review table family (reviews and review tracks), each organization's copy",
+  covers:
+    "the employee 360 review table family (reviews, review tracks and review meeting notes), each organization's copy",
 };
 
 const DECLARED_IN = "matrx-frontend:features/employee-performance-reviews/review-360.typed-table.ts";
@@ -49,6 +53,7 @@ export const review360 = defineTypedTable({
     shared_at: f.datetime({ label: "Shared" }),
     self_track: f.text({ label: "Self review track" }),
     manager_track: f.text({ label: "Manager review track" }),
+    meeting_notes: f.text({ label: "Meeting notes record" }),
     employee_user: f.member({ label: "Employee login" }),
     manager_user: f.member({ label: "Manager login" }),
     hr_manager: f.member({ label: "HR manager" }),
@@ -89,6 +94,34 @@ export const review360Track = defineTypedTable({
       { field: "respondent", level: "editor" },
       { field: "hr_manager", level: "viewer" },
       { field: "counterpart", level: "viewer", when: { shared: true } },
+    ],
+    // true: whoever first used the copy would otherwise own (and read) every row.
+    makerIsReader: true,
+    approval: APPROVAL,
+  },
+});
+
+export const review360MeetingNotes = defineTypedTable({
+  name: "360 review meeting notes",
+  slug: "employee_360_review_meeting_notes",
+  scope: "organization",
+  kept_for: "performance",
+  owner: "lane:HR-360",
+  declared_in: DECLARED_IN,
+  fields: {
+    title: f.text({ label: "Title" }),
+    review_ref: f.text({ label: "Review ref", required: true }),
+    notes: f.longText({ label: "Notes" }),
+    hr_manager: f.member({ label: "HR manager" }),
+    employee_user: f.member({ label: "Employee login" }),
+    manager_user: f.member({ label: "Manager login" }),
+    shared: f.checkbox({ label: "Shared" }),
+  },
+  confidential: {
+    readers: [
+      { field: "hr_manager", level: "editor" },
+      { field: "employee_user", level: "viewer", when: { shared: true } },
+      { field: "manager_user", level: "viewer", when: { shared: true } },
     ],
     // true: whoever first used the copy would otherwise own (and read) every row.
     makerIsReader: true,

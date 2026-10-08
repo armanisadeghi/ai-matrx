@@ -19,6 +19,7 @@ export default function Review360MeetPanel({ recordId, organizationId, panelKey 
     <Review360Host organizationId={organizationId}>
       <Review360SideBySide
         reviewId={recordId}
+        organizationId={organizationId}
         section={section}
         movedBy={focus.byName}
         canMove={focus.canMove}

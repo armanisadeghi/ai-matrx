@@ -24,7 +24,7 @@ export function Review360InPersonPage({ reviewId }: { reviewId: string }) {
       ) : (
         <Review360Host organizationId={org}>
           <div className="mx-auto max-w-5xl p-3">
-            <Review360SideBySide reviewId={reviewId} section={section} onSection={setSection} />
+            <Review360SideBySide reviewId={reviewId} organizationId={org} section={section} onSection={setSection} />
           </div>
         </Review360Host>
       )}

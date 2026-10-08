@@ -16,6 +16,7 @@ import { useRecordsClient } from "@ai-matrx/records/react";
 
 import type { Review } from "@/features/employee-performance-reviews/schema";
 
+import { Review360MeetingNotes } from "./Review360MeetingNotes";
 import { parseReview } from "./Review360Pages";
 import { readReview360, type TrackView } from "./service";
 
@@ -63,12 +64,15 @@ function Column({ label, track, section }: { label: string; track: TrackView | n
 
 export function Review360SideBySide({
   reviewId,
+  organizationId,
   section,
   onSection,
   movedBy,
   canMove = true,
 }: {
   reviewId: string;
+  /** The review's organization — the notes box writes there. */
+  organizationId: string;
   section: Review360Section;
   onSection: (section: Review360Section) => void;
   movedBy?: string | null;
@@ -115,6 +119,7 @@ export function Review360SideBySide({
         <Column label="Employee" track={self} section={section} />
         <Column label="Manager" track={manager} section={section} />
       </div>
+      <Review360MeetingNotes reviewId={reviewId} organizationId={organizationId} doc={doc} />
     </div>
   );
 }
