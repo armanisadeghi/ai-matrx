@@ -46,6 +46,8 @@ await act(page, () => page.locator('.EmojiPickerReact [data-unified="1f525"]').f
 await page.waitForTimeout(1000);
 const calloutIcon = () => page.locator(".spaces-callout-icon").first().textContent().catch(() => null);
 check("callout icon is an emoji", /\p{Extended_Pictographic}/u.test((await calloutIcon()) ?? ""), await calloutIcon());
+// the picker closes with focus outside the editor (as in Notion): click back into the callout text
+await page.locator(".spaces-callout-text").first().click();
 await page.keyboard.type("Callout text");
 
 // 3. :smile in text
