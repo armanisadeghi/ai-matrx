@@ -73,7 +73,7 @@ export async function measurePages({ base, fixtures: fixtures0, log = console.lo
       page.on("request", onReq);
       await page.addInitScript((needle) => { window.__needle = needle; }, p.needle);
       const t0 = Date.now();
-      await page.goto(`${base}${p.path}`, { waitUntil: "commit", timeout: 180000 });
+      const navigation = await page.goto(`${base}${p.path}`, { waitUntil: "commit", timeout: 180000 });
       await page.evaluate((n) => { if (window.__perf) window.__perf.needle = n; }, p.needle).catch(() => {});
       // the needle is set after commit; if the page replaced the document, set it again on the next tick
       await page.evaluate((n) => { window.__perf.needle = n; }, p.needle).catch(() => {});
@@ -90,11 +90,14 @@ export async function measurePages({ base, fixtures: fixtures0, log = console.lo
       }).catch(() => ({}));
       page.off("request", onReq);
       const b = budgets.pages[p.name] ?? {};
-      // SERVER HTML ROWS (lane SSR-ROWS): the grid's cells in the HTML the server sent, before any
-      // script ran — fetched once per page with the same session. 0 = the rows wait for the browser.
+      // SERVER HTML ROWS (lane SSR-ROWS): the grid's cells in the HTML the server sent FOR THIS VERY
+      // NAVIGATION, before any script ran. Read from the timed navigation's own response (lane SSR-ROWS-2):
+      // a second GET is a different server render — it can hold rows while the timed one fell back
+      // past its budget, which paired "532 rows in the HTML" with a 9.8 s, 81-call fallback load.
+      // 0 = this load's rows waited for the browser.
       let serverRows = "";
-      if (pass === "warm" && p.needle?.startsWith("css:")) {
-        const html = await ctx.request.get(`${base}${p.path}`, { timeout: 180000 }).then((r) => r.text()).catch(() => "");
+      if (p.needle?.startsWith("css:")) {
+        const html = navigation ? await navigation.text().catch(() => "") : "";
         serverRows = (html.match(/data-matrx-cell-row/g) ?? []).length;
       }
       out.push({ page: p.name, pass, server_html_rows: serverRows, ttfb_ms: m.ttfb == null ? "" : Math.round(m.ttfb), lcp_ms: Math.round(m.lcp ?? 0), rows_visible_ms: m.rows == null ? "never" : Math.round(m.rows), hydration_start_ms: m.firstStore == null ? "" : Math.round(m.firstStore), calls_before_rows: m.beforeRows ?? "", all_store_calls: m.allStore ?? "", store_calls: calls.length, calls: [...new Set(calls)].join(" "), landed: m.url, budget: b, wallMs: Date.now() - t0 });
