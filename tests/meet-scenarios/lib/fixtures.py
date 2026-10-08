@@ -104,11 +104,14 @@ def meeting(slug: str) -> None:
     with psycopg.connect(live_database_url(), row_factory=dict_row) as conn:
         row = conn.execute(
             """
-            select id, organization_id, room_name, started_at, ended_at,
-                   metadata -> 'auto_end' as auto_end,
-                   metadata -> 'note_taker' ->> 'ended_by' as ended_by
-              from communication.meet_meetings
-             where slug = %s and deleted_at is null
+            select m.id, m.organization_id, m.room_name, m.started_at, m.ended_at,
+                   m.metadata -> 'auto_end' as auto_end,
+                   (select s.note_taker ->> 'ended_by'
+                      from communication.meet_sessions s
+                     where s.meeting_id = m.id
+                     order by s.started_at desc limit 1) as ended_by
+              from communication.meet_meetings m
+             where m.slug = %s and m.deleted_at is null
             """,
             (slug,),
         ).fetchone()
