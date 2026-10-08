@@ -148,6 +148,7 @@ function TryWithRun({
   const [previewError, setPreviewError] = useState<string | null>(null);
   const [previewing, setPreviewing] = useState(false);
   const tryRun = useStreamedRun();
+  const [settingsOpen, setSettingsOpen] = useState(false);
 
   useEffect(() => {
     const holder = testHolderOf(draft);
@@ -204,11 +205,27 @@ function TryWithRun({
           <ErrorAlchemyMenu error={overrides.error} operation="Read the agent settings" />
         </p>
       ) : overrides.ready ? (
-        <RunConfigOverrides
-          conversationId={overridesId}
-          words={{ ...JOB_OVERRIDE_WORDS, modelEmptyChoiceLabel: "Agent's model" }}
-          structured
-        />
+        // One line by default — the agent's own settings, or how many are changed; the full
+        // Overrides table opens on request (it is twelve rows nobody needs to read to run).
+        <div className="space-y-2">
+          <div className="flex items-center gap-2 text-[12px]">
+            <span className="text-muted-foreground">
+              {Object.keys(configOverrides).length === 0
+                ? "The agent's own model and settings"
+                : `${Object.keys(configOverrides).length} changed from the agent's settings`}
+            </span>
+            <Button variant="quiet" onClick={() => setSettingsOpen((o) => !o)}>
+              {settingsOpen ? "Hide" : "Change"}
+            </Button>
+          </div>
+          {settingsOpen ? (
+            <RunConfigOverrides
+              conversationId={overridesId}
+              words={{ ...JOB_OVERRIDE_WORDS, modelEmptyChoiceLabel: "Agent's model" }}
+              structured
+            />
+          ) : null}
+        </div>
       ) : (
         <RegionSkeleton shape="form" count={2} aria-label="Reading the agent settings" />
       )}

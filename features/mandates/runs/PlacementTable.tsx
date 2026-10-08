@@ -10,11 +10,7 @@
 // Nothing here decides where a value went — the server's trace is painted.
 
 import type { ReactNode } from "react";
-import {
-  ConfigurationTable,
-  ConfigurationTableRow,
-  StatusToken,
-} from "@/components/official/ConfigurationFields";
+import { StatusToken } from "@/components/official/ConfigurationFields";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
 import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 import type { JsonValue } from "@/types/json";
@@ -27,12 +23,6 @@ import {
   type RunProvisionValue,
 } from "./service";
 
-const COLUMNS = [
-  { key: "name", label: "Provision" },
-  { key: "value", label: "Value" },
-  { key: "landed", label: "Landed" },
-  { key: "verdict", label: "Agent variable" },
-];
 
 const CHANNEL_WORDS: Record<PlacementLanding["channel"], string> = {
   variable: "Variable",
@@ -112,6 +102,34 @@ function landedCell(landed: PlacementLanding[]): ReactNode {
   );
 }
 
+/**
+ * One value: a header line (name → where it landed · the agent-variable verdict), then the
+ * value at full width. A four-column table squeezed the value into a sliver in a half pane.
+ */
+function PlacementBlock({
+  name,
+  landed,
+  verdict,
+  value,
+}: {
+  name: ReactNode;
+  landed: ReactNode;
+  verdict: ReactNode;
+  value: ReactNode;
+}) {
+  return (
+    <div role="listitem" className="space-y-1.5 px-3 py-2">
+      <div className="flex flex-wrap items-start gap-x-3 gap-y-1 text-[12px]">
+        <span className="font-medium text-foreground">{name}</span>
+        <span className="text-muted-foreground">→</span>
+        <span className="min-w-0">{landed}</span>
+        <span className="ml-auto min-w-0">{verdict}</span>
+      </div>
+      {value}
+    </div>
+  );
+}
+
 export interface PlacementTableProps {
   placement: MandatePlacement;
   /** Values resolved from `value_ref` (the stored run) — by provision name. */
@@ -136,20 +154,17 @@ export function PlacementTable({ placement, values = [], problems = [], label }:
     const resolved = valueOf.get(p.name);
     const value = p.value !== undefined ? p.value : resolved?.value;
     return (
-      <ConfigurationTableRow
+      <PlacementBlock
         key={`p:${p.name}`}
-        columns={COLUMNS}
-        cells={{
-          name: (
-            <span className="font-medium">
-              {humanizeIdentifier(p.name) || p.name}
-              {p.supplied ? null : <span className="block text-[12px] text-muted-foreground">Not supplied</span>}
-            </span>
-          ),
-          value: <ValueBox name={p.name} value={value} truncated={p.truncated || resolved?.truncated} />,
-          landed: landedCell(p.landed),
-          verdict: verdictCell(verdict, problem),
-        }}
+        name={
+          <>
+            {humanizeIdentifier(p.name) || p.name}
+            {p.supplied ? null : <span className="ml-1.5 font-normal text-muted-foreground">Not supplied</span>}
+          </>
+        }
+        landed={landedCell(p.landed)}
+        verdict={verdictCell(verdict, problem)}
+        value={<ValueBox name={p.name} value={value} truncated={p.truncated || resolved?.truncated} />}
       />
     );
   });
@@ -159,15 +174,12 @@ export function PlacementTable({ placement, values = [], problems = [], label }:
     const problem = problems.find((x) => x.variable === v.variable && !x.provision);
     if (problem) usedProblems.add(problem);
     return (
-      <ConfigurationTableRow
+      <PlacementBlock
         key={`v:${v.variable}`}
-        columns={COLUMNS}
-        cells={{
-          name: <span className="text-muted-foreground">No provision</span>,
-          value: <span className="text-muted-foreground">—</span>,
-          landed: <span className="font-mono text-[12px]">{v.variable}</span>,
-          verdict: verdictCell(v, problem),
-        }}
+        name={<span className="text-muted-foreground">No provision</span>}
+        landed={<span>Variable <span className="font-mono text-[12px]">{v.variable}</span></span>}
+        verdict={verdictCell(v, problem)}
+        value={null}
       />
     );
   });
@@ -176,10 +188,10 @@ export function PlacementTable({ placement, values = [], problems = [], label }:
 
   return (
     <div className="space-y-2">
-      <ConfigurationTable label={label} columns={COLUMNS}>
+      <div role="list" aria-label={label} className="divide-y divide-border rounded-lg border border-border bg-card">
         {rows}
         {orphanRows}
-      </ConfigurationTable>
+      </div>
       {loose.length ? (
         <ul className="space-y-0.5">
           {loose.map((p, i) => (

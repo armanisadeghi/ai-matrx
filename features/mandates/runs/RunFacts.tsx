@@ -11,6 +11,11 @@ import { useCostDisplay } from "@/components/cost/useCostDisplay";
 import { conversationHref } from "@/features/hindsight/subject-doors";
 import { absoluteWhen, costWords, durationWords } from "@/features/mandates/run-history/format";
 import { LiveRunDisplay } from "@ai-matrx/chat/agents/components/live-run/LiveRunDisplay";
+import { selectModelNameById } from "@ai-matrx/agents/models";
+import { readModelRecords } from "@ai-matrx/chat/agents/identity/model-catalog";
+import { AdminUserRef } from "@/features/admin/users/components/AdminUserRef";
+import { useAppSelector } from "@/lib/redux/hooks";
+import { selectIsSuperAdminPerson, selectUserId } from "@/lib/redux/selectors/userSelectors";
 import type { StoredRun } from "./service";
 import type { StreamedRunState } from "./useStreamedRun";
 
@@ -34,6 +39,22 @@ export function HolderRef({ run }: { run: StoredRun }) {
   );
 }
 
+/** A person, never a bare id: "You", the person's name (platform admins), or "Someone else". */
+function RanBy({ userId }: { userId: string | null }) {
+  const me = useAppSelector(selectUserId);
+  const admin = useAppSelector(selectIsSuperAdminPerson);
+  if (!userId) return <>Not recorded</>;
+  if (userId === me) return <>You</>;
+  if (admin) return <AdminUserRef userId={userId} hideEmail />;
+  return <>Someone else</>;
+}
+
+/** The model's name from the catalog; the id only when the catalog has no row for it. */
+function modelName(id: string | null): string {
+  if (!id) return "Not recorded";
+  return selectModelNameById(readModelRecords(), id) || id;
+}
+
 export function RunFacts({ run, audience }: { run: StoredRun; audience: "admin" | "product" }) {
   const { unit: costDisplay, rate: costRate } = useCostDisplay();
   return (
@@ -50,8 +71,10 @@ export function RunFacts({ run, audience }: { run: StoredRun; audience: "admin" 
       <Fact label="Holder">
         <HolderRef run={run} />
       </Fact>
-      <Fact label="Model">{run.modelId ?? "Not recorded"}</Fact>
-      <Fact label="Ran by">{run.ranBy ?? "Not recorded"}</Fact>
+      <Fact label="Model">{modelName(run.modelId)}</Fact>
+      <Fact label="Ran by">
+        <RanBy userId={run.ranBy} />
+      </Fact>
       <Fact label="When">{run.createdAt ? absoluteWhen(run.createdAt) : "—"}</Fact>
       <Fact label="Cost">{costWords(run.cost, costRate, costDisplay)}</Fact>
       <Fact label="Time">{durationWords(run.durationMs)}</Fact>
