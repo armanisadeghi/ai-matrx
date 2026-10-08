@@ -58,7 +58,7 @@ import {
 import { fileHandler } from "@/features/files/handler/handler";
 import { useAppDispatch, useAppStore } from "@/lib/redux/hooks";
 import type { RootState } from "@/lib/redux/store";
-import { extractFirstJson } from "@ai-matrx/kit/json-extract";
+import { extractFirstJson } from "@ai-matrx/content-ir/json-extract";
 
 import {
   readInstantResult,

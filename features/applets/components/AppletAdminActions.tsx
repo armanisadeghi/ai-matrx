@@ -3,7 +3,6 @@
 import React, { useState } from "react";
 import { publishedToWebLabel } from "@/lib/row-access";
 import {
-  Archive,
   Ban,
   CheckCircle,
   Clock,
@@ -47,7 +46,7 @@ export type AppletAdminActionPatch = {
   is_featured?: boolean;
   is_verified?: boolean;
   published_to_web?: boolean;
-  status?: "draft" | "published" | "archived" | "suspended";
+  status?: "draft" | "published" | "suspended";
   rate_limit_per_ip?: number;
   rate_limit_window_hours?: number;
   rate_limit_authenticated?: number;
@@ -99,7 +98,7 @@ export function AppletAdminActions({
     );
 
   const handleChangeStatus = (
-    newStatus: "draft" | "published" | "archived" | "suspended",
+    newStatus: "draft" | "published" | "suspended",
   ) => withBusy(`status:${newStatus}`, () => onUpdate({ status: newStatus }));
 
   const handleSaveRateLimits = () =>
@@ -235,12 +234,6 @@ export function AppletAdminActions({
             onCheckedChange={() => handleChangeStatus("published")}
           >
             Published
-          </DropdownMenuCheckboxItem>
-          <DropdownMenuCheckboxItem
-            checked={app.status === "archived"}
-            onCheckedChange={() => handleChangeStatus("archived")}
-          >
-            Archived
           </DropdownMenuCheckboxItem>
           <DropdownMenuCheckboxItem
             checked={app.status === "suspended"}
@@ -431,8 +424,6 @@ function StatusIcon({
   switch (status) {
     case "published":
       return <CheckCircle className={className} />;
-    case "archived":
-      return <Archive className={className} />;
     case "suspended":
       return <Ban className={className} />;
     default:

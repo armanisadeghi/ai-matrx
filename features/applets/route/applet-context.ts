@@ -20,6 +20,7 @@ import {
   appletSources,
   type AppletDefinition,
 } from "@/features/applets/types";
+import { appletState } from "@/features/applets/lib/applet-state";
 
 const APP_BUNDLE_DESCRIPTION_MAX_CHARS = 1500;
 
@@ -34,7 +35,7 @@ export type AppletBundleSource = Pick<
   | "published_to_web"
   | "category"
   | "tags"
-  | "version"
+  | "content_version"
   | "entry"
   | "files"
   | "pages"
@@ -54,11 +55,11 @@ export function buildAppletBundle(app: AppletBundleSource, activeView?: string):
       name: app.name,
       slug: app.slug,
       public_url: app.published_to_web ? `/applets/${app.slug}` : null,
-      status: app.status,
+      status: appletState(app).kind,
       published_to_web: app.published_to_web,
       category: app.category,
       tags: app.tags?.length ? app.tags.join(", ") : null,
-      version: app.version,
+      version: app.content_version,
       entry: app.entry,
       view: activeView,
     },

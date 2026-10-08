@@ -16,7 +16,7 @@ export function createAppletListSurfaceScope(list: EntityListSurfaceController<A
       id: row.id,
       slug: row.slug,
       name: row.name,
-      status: row.status,
+      status: row.state.kind,
     })),
   });
 }

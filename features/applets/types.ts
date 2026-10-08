@@ -10,7 +10,8 @@ import type { AppletSource as RecordSource, NewTableDeclaration } from "@ai-matr
 
 import type { Database, Json } from "@/types/database.types";
 
-export type AppStatus = "draft" | "published" | "archived" | "suspended";
+/** Archiving is `deleted_at` (see `lib/applet-state.ts`), never a status — the database refuses 'archived'. */
+export type AppStatus = "draft" | "published" | "suspended";
 
 /** The row's "Shown to" (lists only). "Published to the web" is the boolean
  *  `published_to_web`. */
@@ -41,7 +42,10 @@ export interface AppletDefinition {
   rate_limit_window_hours: number | null;
   rate_limit_authenticated: number | null;
 
+  /** The row's revision (CAS) token — moves on EVERY write. Never shown to a person. */
   version: number;
+  /** The saved content version a person sees (`app.definition_version.version_number`); 0 = nothing built. */
+  content_version: number;
 
   total_executions: number | null;
   total_tokens_used: number | null;

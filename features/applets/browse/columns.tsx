@@ -1,11 +1,12 @@
 "use client";
 
 // features/applets/browse/columns.tsx — the /applets column registry.
-// Status reads "Draft" / "Published" (never the stored lowercase key).
+// Status is THE state (`appletState`): Draft / Published / Suspended / Archived — the same word the
+// manage header and the builder show for the row.
 
 import { Badge } from "@ai-matrx/design-system/controls";
 import { DATE_SORT_WORDS, Muted, timeCell, type EntityColumnSpec } from "@/lib/entity-list/columns";
-import { appletRowHref, appletStatusLabel, type AppletListRow } from "./service";
+import { appletRowHref, type AppletListRow } from "./service";
 
 export const APPLET_COLUMNS: EntityColumnSpec<AppletListRow>[] = [
   {
@@ -23,7 +24,6 @@ export const APPLET_COLUMNS: EntityColumnSpec<AppletListRow>[] = [
         <div className="flex min-w-0 items-center gap-2">
           <span className="truncate font-medium">{row.name}</span>
           {row.build_open ? <Badge tone="info">Building</Badge> : row.unbuilt ? <Badge tone="warning">Not built</Badge> : null}
-          {row.archived && <Badge>Archived</Badge>}
         </div>
       ),
     },
@@ -48,7 +48,7 @@ export const APPLET_COLUMNS: EntityColumnSpec<AppletListRow>[] = [
       accessorKey: "status",
       header: "Status",
       filter: "select",
-      cell: (row) => <Badge tone={row.status === "published" ? "success" : "neutral"}>{appletStatusLabel(row.status)}</Badge>,
+      cell: (row) => <Badge tone={row.state.tone}>{row.state.label}</Badge>,
     },
   },
   {

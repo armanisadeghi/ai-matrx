@@ -7,7 +7,7 @@
 import type { EntityListConfig } from "@/lib/entity-list/config";
 import { formatRelativeTime } from "@ai-matrx/kit/format";
 import { APPLET_COLUMNS } from "./columns";
-import { APPLET_LIST_SCOPES, appletRowHref, appletStatusLabel, createAppletListService, type AppletListRow } from "./service";
+import { APPLET_LIST_SCOPES, appletRowHref, createAppletListService, type AppletListRow } from "./service";
 import { useAppletRowActions } from "./useAppletRowActions";
 
 export const appletListConfig: EntityListConfig<AppletListRow> = {
@@ -35,7 +35,7 @@ export const appletListConfig: EntityListConfig<AppletListRow> = {
     rowKind: "agent_app",
     listKind: "agent-app-list",
     humanRow: (row) =>
-      `${row.name}${row.archived ? " (archived)" : ""} — ${appletStatusLabel(row.status)}${row.published_to_web ? ", on the web" : ""}, ${row.total_executions} runs, edited ${formatRelativeTime(row.updated_at)}`,
+      `${row.name} — ${row.state.label}${row.published_to_web ? ", on the web" : ""}, ${row.total_executions} runs, edited ${formatRelativeTime(row.updated_at)}`,
     showRow: false,
     showToolbar: true,
   },

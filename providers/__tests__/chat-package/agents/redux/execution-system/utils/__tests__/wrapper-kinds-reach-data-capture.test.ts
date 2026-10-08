@@ -3,7 +3,7 @@ import {
   deriveAnswerDataText,
   deriveAnswerText,
 } from "@ai-matrx/chat/agents/redux/execution-system/active-requests/active-requests.selectors";
-import { extractFirstJson } from "@ai-matrx/kit/json-extract";
+import { extractFirstJson } from "@ai-matrx/content-ir/json-extract";
 import type { RenderBlockPayload } from "@ai-matrx/agents/generated/stream-events";
 
 jest.mock("@ai-matrx/chat/host/diagnostics", () => ({

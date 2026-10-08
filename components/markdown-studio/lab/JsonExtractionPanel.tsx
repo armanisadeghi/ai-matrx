@@ -18,11 +18,11 @@ import {
   extractAllJson,
   type ExtractedJson,
   type ExtractionOptions,
-} from "@ai-matrx/kit/json-extract";
+} from "@ai-matrx/content-ir/json-extract";
 import {
   StreamingJsonTracker,
   type StreamingJsonState,
-} from "@ai-matrx/kit/json-extract";
+} from "@ai-matrx/content-ir/json-extract";
 import { copyContent } from "@ai-matrx/rich-content/copy/copy-commands";
 import { StreamSimControls } from "./StreamSimControls";
 import {

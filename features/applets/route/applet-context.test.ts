@@ -10,7 +10,7 @@ const base: AppletBundleSource = {
   published_to_web: true,
   category: null,
   tags: [],
-  version: 3,
+  content_version: 3,
   entry: "App.tsx",
   files: { "App.tsx": "export default function App() { return null; }", "Approvals.tsx": "x".repeat(20_000) },
   pages: [{ path: "/", title: "Posts", file: "App.tsx" }, { path: "/approvals", title: "Approvals", file: "Approvals.tsx" }],

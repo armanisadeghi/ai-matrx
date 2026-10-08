@@ -18,6 +18,7 @@ import type { AppletSource, NewTableDeclaration } from "@ai-matrx/applets";
 
 import type { Database, Json } from "@/types/database.types";
 import { isReservedAppletSlug } from "@/features/applets/reserved-slugs";
+import { appletPublicationPatch } from "@/features/applets/lib/publication";
 
 
 type Client = SupabaseClient<Database>;
@@ -60,12 +61,19 @@ export interface BuildAnswer {
   note: string;
 }
 
+/** The saved Applet as the builder shows it: THE state's fields (`appletState`) + the shown version. */
 export interface SavedApplet {
   id: string;
   slug: string;
-  version: number;
+  name: string;
   status: string;
+  published_to_web: boolean;
+  deleted_at: string | null;
+  /** The saved content version (never `version`, the row's write counter). */
+  content_version: number;
 }
+
+export const SAVED_APPLET_COLUMNS = "id, slug, name, status, published_to_web, deleted_at, content_version";
 
 const UNCHANGED = /^\(unchanged/i;
 
@@ -195,18 +203,18 @@ export function checkBuildAnswer(
 }
 
 /** What the builder is shown for a change: the stored record, files as a list. */
-export async function readBuilderApplet(client: Client, appletId: string): Promise<{ applet: BuilderApplet; organizationId: string; slug: string; version: number }> {
+export async function readBuilderApplet(client: Client, appletId: string): Promise<{ applet: BuilderApplet; organizationId: string; slug: string }> {
   const { data, error } = await client
     .schema("app")
     .from("definition")
-    .select("id, organization_id, slug, name, description, entry, files, pages, sources, mandates, version")
+    .select("id, organization_id, slug, name, description, entry, files, pages, sources, mandates")
     .eq("id", appletId)
     .maybeSingle();
   if (error) throw new Error(error.message);
   if (!data) throw new Error("That Applet is not there, or it has not been shared with you.");
   const files = isRecord(data.files) ? Object.entries(data.files).flatMap(([name, source]) => (typeof source === "string" ? [{ name, source }] : [])) : [];
   const answer = coerceBuildAnswer({ applet: { ...data, files }, note: "" });
-  return { applet: answer.applet, organizationId: data.organization_id, slug: data.slug, version: data.version };
+  return { applet: answer.applet, organizationId: data.organization_id, slug: data.slug };
 }
 
 /** A file the builder answered "(unchanged…)" keeps its stored source. */
@@ -261,7 +269,7 @@ export async function saveBuiltApplet(
         .from("definition")
         .update({ ...content, slug })
         .eq("id", input.appletId)
-        .select("id, slug, version, status")
+        .select(SAVED_APPLET_COLUMNS)
         .single();
       if (!error) return data;
       if (error.code !== "23505") throw new Error(error.message);
@@ -274,7 +282,7 @@ export async function saveBuiltApplet(
       .from("definition")
       .update(content)
       .eq("id", input.appletId)
-      .select("id, slug, version, status")
+      .select(SAVED_APPLET_COLUMNS)
       .single();
     if (error) throw new Error(error.message);
     return data;
@@ -286,7 +294,7 @@ export async function saveBuiltApplet(
       .schema("app")
       .from("definition")
       .insert({ ...content, organization_id: input.organizationId, slug, status: "draft" })
-      .select("id, slug, version, status")
+      .select(SAVED_APPLET_COLUMNS)
       .single();
     if (!error) return data;
     if (error.code !== "23505") throw new Error(error.message);
@@ -312,7 +320,9 @@ export async function publishApplet(client: Client, appletId: string, userId: st
     const bound = await client.schema("app").from("definition").update({ sources: answer.sources as unknown as Json }).eq("id", appletId);
     if (bound.error) throw new Error(bound.error.message);
   }
-  const { error } = await client.schema("app").from("definition").update({ status: "published" }).eq("id", appletId);
+  // THE publication transition — status AND published_to_web together, the same write the manage
+  // header's Publish makes, so every surface reads the Applet as Published (never half of it).
+  const { error } = await client.schema("app").from("definition").update(appletPublicationPatch(true, new Date().toISOString(), userId)).eq("id", appletId);
   if (error) throw new Error(error.message);
   return { made };
 }

@@ -25,7 +25,6 @@ type AppDefinitionRow = Database["app"]["Tables"]["definition"]["Row"];
 const APP_STATUSES = [
   "draft",
   "published",
-  "archived",
   "suspended",
 ] as const satisfies readonly AppStatus[];
 

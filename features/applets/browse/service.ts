@@ -25,6 +25,7 @@ import { tryWriteOne } from "@/utils/supabase/writeOne";
 import { pgErrorToError } from "@ai-matrx/data";
 import type { Database } from "@/types/database.types";
 import { isOpenEntry, readBuildRequests } from "@/features/applets-host/builder/build-session";
+import { appletState, type AppletState } from "@/features/applets/lib/applet-state";
 
 type DefinitionRow = Database["app"]["Tables"]["definition"]["Row"];
 
@@ -52,6 +53,8 @@ export interface AppletListRow {
   unbuilt: boolean;
   archived: boolean;
   deleted_at: string | null;
+  /** THE state (`appletState`) — the same answer the manage header and the builder give. */
+  state: AppletState;
 }
 
 const COLUMNS =
@@ -60,13 +63,6 @@ const COLUMNS =
 /** Where a row opens: its build while one runs or no app is saved yet, else the Applet's own page. */
 export function appletRowHref(row: Pick<AppletListRow, "id" | "build_open" | "unbuilt">): string {
   return row.build_open || row.unbuilt ? `/applets/build/${row.id}` : `/applets/manage/${row.id}`;
-}
-
-/** "Draft" / "Published" — the stored status, as a person says it. */
-export function appletStatusLabel(status: string | null | undefined): string {
-  const s = (status ?? "").trim();
-  if (!s) return "Draft";
-  return s.charAt(0).toUpperCase() + s.slice(1).toLowerCase();
 }
 
 async function currentUserId(): Promise<string | null> {
@@ -106,6 +102,7 @@ export async function listApplets(archived: ArchivedFilter): Promise<AppletListR
     unbuilt: !r.entry,
     archived: r.deleted_at != null,
     deleted_at: r.deleted_at,
+    state: appletState(r),
   }));
 }
 
@@ -136,7 +133,7 @@ export async function restoreApplet(appId: string): Promise<void> {
 const FIELDS: MemoryServiceOptions<AppletListRow>["fields"] = {
   name: { value: (r) => r.name, search: true },
   tagline: { value: (r) => r.tagline, search: true },
-  status: { value: (r) => appletStatusLabel(r.status), facet: true },
+  status: { value: (r) => r.state.label, facet: true },
   published_to_web: { value: (r) => r.published_to_web },
   total_executions: { value: (r) => r.total_executions },
   last_execution_at: { value: (r) => r.last_execution_at },
