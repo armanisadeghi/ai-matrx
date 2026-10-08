@@ -1,5 +1,17 @@
 -- chair-step: undo kernelorgprune_a_every_record_read_names_its_organization.sql - restores the eleven bodies, drops custom.record_org_hint, rebuilds the probes
 -- lane: KERNEL-ORG-PRUNE
+-- based-on: custom.read_record(uuid, uuid, boolean) dfd962e14eeda6bbe411ddd578e5a6c1bff9fd4fdb94a549654e7c330e411b05
+-- based-on: custom._read_record_with(uuid, uuid, boolean, jsonb, jsonb) 1b651a5887dedf7e9ba96db179162fe03e970594039115fcfadb94363b09f662
+-- based-on: custom.read_records_by_ids(uuid, uuid, uuid[], boolean) 48c3482e26c8d0d7105ea3b94583cee323aa051b01bb843e096bd0fe87ac2653
+-- based-on: platform.static_row_probe_sql() 98172b7fa485b4b940c16a7b876bf7f1fd6ded5ab58ad412722fcd59c5bfaf0b
+-- based-on: platform.partitioned_row_attrs(text, text, uuid) ee7a9f9652888c59851932b8d6bce0167c52075535a1fae82224c3b0d4c6cb42
+-- based-on: iam.registry_owner_of(text, uuid) a1d821d467b9657bedf65851470137bc59f731993ec840f9f4a4c011ae49500e
+-- based-on: custom.confidential_anchor(uuid) c6f97221bede1359a81705071c2f9e7a7d02659a1316bdb034e2a2f7cfbada22
+-- based-on: custom._copy_in_progress_hides(uuid, uuid) 826ef9dd458bd697db9a3b46fadb628f53d2bbf07330a6d87a3a6efbae9cd4e9
+-- based-on: custom.confidential_answer(uuid, uuid, permission_level) f2faafbddc17057afdb21b0e80c899f993b5486c9194e35361f9c43f78a0e836
+-- based-on: custom.reaches_directly(uuid, text, uuid, permission_level) 1307788e338d60c66af8039fe2a9711116ecb7ef597e3ed032cdbe0472a9301c
+-- based-on: custom.has_visibility(uuid, text, uuid, permission_level) ff6703db15e5e17b4e45fe5f46db2af6399bff57ae386c665629af7cbcc406d0
+-- based-on: iam.has_access_for_many(uuid, uuid[], text, text) b4916d0ab07d982090e6fc0ad6d8d61176b0b3649888b39fed3524f3fac0c71b
 
 set local statement_timeout = '120s';
 
