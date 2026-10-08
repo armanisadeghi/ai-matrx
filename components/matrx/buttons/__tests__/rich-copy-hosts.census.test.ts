@@ -432,11 +432,17 @@ describe("consistency everywhere: markdown copy is the split Copy across the who
     expect(secondSplitBuild(REPO_ROOT)).toEqual([]);
   });
 
-  test("J. CENSUS: the copy menu is exactly two rows — nothing hangs under the chevron (2026-10-07)", () => {
+  test("J. CENSUS: one visible copy control; the chevron is 2 rows, plus Export… only where there is no ⋯ menu", () => {
     expect(copyMenuExtras(REPO_ROOT, COPY_MENU_FILES)).toEqual([]);
-    // The palette moved, it did not vanish: Export… holds it beside the split and in the ⋯ menu.
+    // No second visible Export control anywhere (Arman, 2026-10-07): the anchor has no trigger.
+    const anchor = fs.readFileSync(path.join(REPO_ROOT, "node_modules/@ai-matrx/rich-content/dist/copy/ExportPalette.js"), "utf8");
+    expect(anchor).not.toMatch(/data-export-palette-trigger/);
+    // RichCopySplit hosts have no ⋯ menu → the chevron's one Export… row.
     const split = fs.readFileSync(path.join(REPO_ROOT, "components/agent-copy/RichCopySplit.tsx"), "utf8");
-    expect(split).toMatch(/<ExportPaletteAnchor\b[^>]*\btrigger\b/);
+    expect(split).toMatch(/onExport=/);
+    // The rich-document bar has a ⋯ → Export… lives there; the chevron gets it only with hideOverflow.
+    const bar = fs.readFileSync(path.join(REPO_ROOT, "../aidream/apps/shared/rich-content/src/rich-document/variants/ActionBar.tsx"), "utf8");
+    expect(bar).toMatch(/hideOverflow \? \{ onExport:/);
   });
 
   test("J detector goes red on the old shape (a palette slot under the chevron) and green without it", () => {

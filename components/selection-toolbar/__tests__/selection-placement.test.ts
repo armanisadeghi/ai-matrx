@@ -25,7 +25,7 @@ const ui = { openPanel() {}, closePanel() {}, close() {} };
 const passage = (id: string) => ({ id } as unknown as Action);
 
 /** Every host half present: the widest strip a surface can draw. */
-function targetFor(mode: SelectionMode, slots: number | null): ClickTarget {
+function targetFor(mode: SelectionMode, slots: number | null, studyGuide = true): ClickTarget {
   const toolbar: SelectionToolbarHost = { kind: "selection-toolbar", mode, knobs: { highlightWhileEditing: true }, ui, slots };
   return createClickTarget({
     host: {
@@ -34,7 +34,7 @@ function targetFor(mode: SelectionMode, slots: number | null): ClickTarget {
       contextMenuSelection: { kind: "context-menu-selection" },
       richEditor: { kind: "rich-editor", inTable: () => true },
       selectionCommon: { kind: "selection-common" },
-      passageActions: [passage("selection:tutor-explain"), passage("selection:tutor-ask"), passage("selection:report")],
+      passageActions: studyGuide ? [passage("selection:tutor-explain"), passage("selection:tutor-ask")] : [],
     },
   });
 }
@@ -42,8 +42,8 @@ function targetFor(mode: SelectionMode, slots: number | null): ClickTarget {
 type Placement = (id: string, target: ClickTarget) => "primary" | "overflow";
 
 /** Visible controls on the strip: the split Copy (one control), each button, and More when anything overflows. */
-export function visibleControls(mode: SelectionMode, slots: number | null, place: Placement): number {
-  const target = targetFor(mode, slots);
+export function visibleControls(mode: SelectionMode, slots: number | null, place: Placement, studyGuide = true): number {
+  const target = targetFor(mode, slots, studyGuide);
   const ids = Object.keys(SELECTION_ACTION_MODES).filter((id) => !id.startsWith("selection:copy") && shownInSelectionMode(id, target));
   const buttons = ids.filter((id) => place(id, target) === "primary").length;
   const more = ids.some((id) => place(id, target) === "overflow") ? 1 : 0;
@@ -55,8 +55,10 @@ export function overBudget(place: Placement): string[] {
   const out: string[] = [];
   for (const mode of ["read", "edit"] as const) {
     for (const slots of [null, 6, 7]) {
-      const n = visibleControls(mode, slots, place);
-      if (n > SELECTION_MAX_VISIBLE) out.push(`${mode}@${slots ?? "desktop"}: ${n}`);
+      for (const studyGuide of [true, false]) {
+        const n = visibleControls(mode, slots, place, studyGuide);
+        if (n > SELECTION_MAX_VISIBLE) out.push(`${mode}@${slots ?? "desktop"}${studyGuide ? "+guide" : ""}: ${n}`);
+      }
     }
   }
   return out;
@@ -72,8 +74,15 @@ it("the census goes red on the old shape (every reading/editing action a button 
   expect(overBudget(old)).toEqual(expect.arrayContaining([expect.stringMatching(/^read@desktop/), expect.stringMatching(/^edit@desktop/)]));
 });
 
+it("study guide: Highlight, I don't get this, Ask AI are the buttons; Comment moves behind More", () => {
+  const t = targetFor("read", null, true);
+  const ids = ["selection:highlight", "selection:tutor-explain", "selection:comment", "selection:ai", "selection:tutor-ask"];
+  expect(ids.filter((id) => selectionPlacement(id, t) === "primary")).toEqual(["selection:highlight", "selection:tutor-explain", "selection:ai"]);
+  expect(selectionPlacement("selection:comment", t)).toBe("overflow");
+});
+
 it("reading: Highlight, Comment, Ask AI are the buttons; the rest is More", () => {
-  const t = targetFor("read", null);
+  const t = targetFor("read", null, false);
   expect(SELECTION_PRIMARY.read.filter((id) => selectionPlacement(id, t) === "primary")).toEqual(["selection:highlight", "selection:comment", "selection:ai"]);
   for (const id of ["selection:suggest", "selection:link-record", "selection:new-chat", "selection:report"]) {
     expect([id, selectionPlacement(id, t)]).toEqual([id, "overflow"]);
