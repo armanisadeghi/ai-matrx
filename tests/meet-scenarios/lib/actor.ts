@@ -167,6 +167,13 @@ export class Actor {
     return page;
   }
 
+  /** A fresh blank tab for this person (tracked, so cleanup and `page` see it). */
+  async newTab(): Promise<Page> {
+    const page = await this.context.newPage();
+    this.track(page);
+    return page;
+  }
+
   async closeTab(page: Page = this.page): Promise<void> {
     await page.close({ runBeforeUnload: true });
     this.note("closed tab");

@@ -50,7 +50,7 @@ scenario(
     const { host, guest } = await callWithGuest(cast);
     // The host just closes the tab — no hand-over.
     await host.closeTab();
-    await host.context.newPage(); // keep the host's cookie jar alive for cleanup
+    await host.newTab(); // keep the host's cookie jar alive for cleanup
     // After the grace window the remaining person is promoted (default profile).
     await seeUntil(guest, "promoted to host after the grace window", isHost, TIMEOUTS.hostTransferMs + 60_000);
   },
@@ -94,7 +94,7 @@ scenario(
     // Everyone vanishes without pressing anything (tabs closed).
     await guest.closeTab();
     await host.closeTab();
-    await host.context.newPage();
+    await host.newTab();
     host.note(`room abandoned; waiting ${TIMEOUTS.emptyRoomEndMs / 1000}s of real time`);
     await new Promise((r) => setTimeout(r, TIMEOUTS.emptyRoomEndMs));
     // The server ended it by itself, so the next person sees an ended meeting.

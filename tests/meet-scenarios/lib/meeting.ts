@@ -157,7 +157,12 @@ export async function walkIn(actor: Actor, meeting: Meeting, opts: WalkOptions =
           const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value")?.set;
           setter?.call(input, n);
           input.dispatchEvent(new Event("input", { bubbles: true }));
-          window.setTimeout(() => input.form?.requestSubmit(), 50);
+          // A script click carries no user activation (unlike Playwright's real click).
+          window.setTimeout(() => {
+            const submit = input.form?.querySelector<HTMLButtonElement>('button[type="submit"]');
+            if (submit) submit.click();
+            else input.form?.requestSubmit();
+          }, 150);
         }, name);
       }
       lastAction = "name";
