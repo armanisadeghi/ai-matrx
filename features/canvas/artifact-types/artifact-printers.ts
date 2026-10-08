@@ -14,6 +14,7 @@ import { quizPrinter } from "@/components/mardown-display/blocks/quiz/quiz-print
 import { mathPrinter } from "@/components/mardown-display/blocks/math/math-printer";
 import { blobToDataUrl, capturePage, hasPageCaptureEngine, PAGE_IMAGE_UNAVAILABLE } from "@/features/canvas/output/capturePort";
 import { printPublishedPage } from "@/features/canvas/output/printPage";
+import { resolvePrintablePageUrl } from "@/features/canvas/output/publishedPage";
 
 const FENCED = /^\s*(`{3,}|~{3,})[^\n]*\n([\s\S]*?)\n?\s*\1\s*$/;
 
@@ -38,7 +39,9 @@ export const htmlPagePrinter: BlockPrinter = {
   },
   async toPrintHtml(_data, context) {
     if (!hasPageCaptureEngine()) return { notice: PAGE_IMAGE_UNAVAILABLE };
-    const image = await capturePage({ html: htmlBlockSource(context.raw) });
+    // The block's own version (an `<artifact id>`) → its published page → an exact picture of it.
+    const pageUrl = await resolvePrintablePageUrl({ canvasItemId: context.attributes?.id ?? null, version: "self" });
+    const image = await capturePage(pageUrl ? { pageUrl } : { html: htmlBlockSource(context.raw) });
     if (!image) return { notice: PAGE_IMAGE_UNAVAILABLE };
     return { image: { src: await blobToDataUrl(image), alt: context.title || "Web page" } };
   },
