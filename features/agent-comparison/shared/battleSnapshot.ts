@@ -1,4 +1,5 @@
 import { selectAgentById } from "@ai-matrx/chat/agents/redux/agent-definition/selectors";
+import { readModelRecords } from "@ai-matrx/chat/agents/identity/model-catalog";
 import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 /**
  * battleSnapshot — the whole battle on screen, as data.
@@ -129,8 +130,8 @@ function versionLabel(v: "current" | number | null | undefined): string {
 function modelLabel(state: RootState, modelId: unknown): string | null {
   if (typeof modelId !== "string" || !modelId) return null;
   const row =
-    state.modelRegistry?.entities?.[modelId] ??
-    state.modelRegistry?.identityById?.[modelId];
+    readModelRecords().entities[modelId] ??
+    readModelRecords().identityById[modelId];
   return row?.common_name || row?.name || modelId;
 }
 

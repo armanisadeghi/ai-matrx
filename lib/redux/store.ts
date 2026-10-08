@@ -171,8 +171,8 @@ function resolveUserPreferencesForBootstrap(
  * Builds slim preloaded state from optional partial bootstrap data.
  * Does NOT include `globalCache` — the slim store has no entity reducers.
  *
- * `modelRegistry` and the SMS unread total are NOT preloaded here.
- * `modelRegistry` hydrates via `SsrShellHydrator` (action-based) and
+ * Model records (the core model catalog, not Redux) and the SMS unread total are NOT preloaded here.
+ * Model records hydrate via `getModelRecords().hydrate` (DeferredShellData) and
  * SMS counts via `PostPaintHydrator` dispatch.
  */
 export function resolveStoreBootstrapState(

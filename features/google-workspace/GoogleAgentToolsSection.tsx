@@ -29,12 +29,8 @@ import {
   selectAgentById,
   selectAgentReadyForCustomExecution,
 } from "@ai-matrx/chat/agents/redux/agent-definition/selectors";
-import {
-  fetchModelById,
-  selectModelById,
-  selectModelDetailError,
-  selectModelFullyLoaded,
-} from "@ai-matrx/chat/agents/model-registry/modelRegistrySlice";
+import { selectModelById, selectModelDetailError, selectModelFullyLoaded } from "@ai-matrx/agents/models";
+import { getModelRecords, readModelRecords, useModelRecords } from "@ai-matrx/chat/agents/identity/model-catalog";
 import {
   resolveModelControls,
   supportsTools,
@@ -94,13 +90,13 @@ function GoogleAgentToolsSectionContent() {
       : false,
   );
   const modelId = selectedAgent?.modelId ?? null;
-  const model = useAppSelector((state) =>
+  const model = useModelRecords((state) =>
     modelId ? selectModelById(state, modelId) : undefined,
   );
-  const modelReady = useAppSelector((state) =>
+  const modelReady = useModelRecords((state) =>
     selectModelFullyLoaded(state, modelId),
   );
-  const modelError = useAppSelector((state) =>
+  const modelError = useModelRecords((state) =>
     modelId ? selectModelDetailError(state, modelId) : null,
   );
   const modelControls =
@@ -151,7 +147,7 @@ function GoogleAgentToolsSectionContent() {
 
   useEffect(() => {
     if (!modelId || modelReady) return;
-    void dispatch(fetchModelById(modelId));
+    getModelRecords().loadModel(modelId);
   }, [dispatch, modelId, modelReady]);
 
   async function applyToolChange(toolId: string, shouldAdd: boolean) {
@@ -278,7 +274,7 @@ function GoogleAgentToolsSectionContent() {
                 setAgentLoadAttempt((attempt) => attempt + 1);
               }}
               onRetryModel={() => {
-                if (modelId) void dispatch(fetchModelById(modelId));
+                if (modelId) getModelRecords().loadModel(modelId);
               }}
               onToggleGoogleWorkspace={
                 googleWorkspaceTool

@@ -1,5 +1,6 @@
 "use client";
 
+import { readModelRecords } from "@ai-matrx/chat/agents/identity/model-catalog";
 import { selectModelColumnTitle } from "./columnTitle";
 import { useAppStore } from "@/lib/redux/hooks";
 import { createAgentComparisonModelScope } from "@/features/surfaces/manifests/agent-comparison-model.manifest";
@@ -152,7 +153,7 @@ export function buildModelBattleScope(state: RootState): SurfaceScopePayload {
       overrides?.overrides.model ?? overrides?.baseSettings.model;
     const modelId =
       typeof selectedModel === "string" ? selectedModel : undefined;
-    const model = modelId ? state.modelRegistry.entities[modelId] : undefined;
+    const model = modelId ? readModelRecords().entities[modelId] : undefined;
     const completion = selectLatestCompletion(column.conversationId)(state);
     return {
       ...common,

@@ -18,7 +18,7 @@
  * That is a real change to how the request runs, so it is stated too.
  */
 
-import type { AIModelRecord } from "@ai-matrx/chat/agents/model-registry/modelRegistrySlice";
+import { type AIModelRecord } from "@ai-matrx/chat/agents/redux/model-registry";
 import { parseCapabilities } from "@ai-matrx/agents/models";
 import { modelTakesDecisions } from "./budget";
 import { isDecisionQuestionsPart, partKind } from "./types";

@@ -52,8 +52,13 @@ jest.mock("@ai-matrx/chat/agents/redux/agent-definition/selectors", () => ({
   selectAgentReadyForCustomExecution: (_state: unknown, id: string) =>
     agentReady(id),
 }));
-jest.mock("@ai-matrx/chat/agents/model-registry/modelRegistrySlice", () => ({
-  fetchModelById: jest.fn((id: string) => ({ type: "model", id })),
+jest.mock("@ai-matrx/chat/agents/identity/model-catalog", () => ({
+  useModelRecords: (select: (s: unknown) => unknown) => select({}),
+  readModelRecords: () => ({}),
+  getModelRecords: () => ({ loadModel: jest.fn(async () => undefined) }),
+}));
+jest.mock("@ai-matrx/agents/models", () => ({
+  ...jest.requireActual("@ai-matrx/agents/models"),
   selectModelById: (_state: unknown, id: string) => model(id),
   selectModelDetailError: (_state: unknown, id: string) => modelError(id),
   selectModelFullyLoaded: (_state: unknown, id: string | null) =>

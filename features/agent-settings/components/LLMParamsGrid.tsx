@@ -26,9 +26,9 @@ import {
 } from "@/components/ui/select";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import {
-  selectEffectiveSettings,
-  selectNormalizedControls,
+  selectEffectiveSettings
 } from "@ai-matrx/chat/agents/redux/agent-settings/selectors";
+import { useNormalizedControls } from "@ai-matrx/chat/agents/redux/agent-settings/useNormalizedControls";
 import { useAgentSettingsClassControls } from "@/features/ai-models/hooks/useModelClassControls";
 import { applySettingsFromDialog } from "@ai-matrx/chat/agents/redux/agent-settings/agentSettingsSlice";
 import type {
@@ -258,9 +258,7 @@ export function LLMParamsGrid({ agentId }: LLMParamsGridProps) {
     selectEffectiveSettings(state, agentId),
   );
   useAgentSettingsClassControls(agentId);
-  const normalizedControls = useAppSelector((state) =>
-    selectNormalizedControls(state, agentId),
-  );
+  const normalizedControls = useNormalizedControls(agentId);
 
   const enabled = new Set(
     Object.entries(effectiveSettings ?? {})

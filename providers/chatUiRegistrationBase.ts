@@ -41,9 +41,6 @@ import {
   selectAllSkills,
   selectSkillsStatus,
 } from "@/features/skills/redux/skillsSelectors";
-import { registerChatModelClassHooks } from "@ai-matrx/chat/host/model-class";
-import { useModelClassControls } from "@/features/ai-models/hooks/useModelClassControls";
-import { useModelClassLabels } from "@/features/ai-models/hooks/useModelClassLabel";
 import { summarizeContextCell } from "@/features/scopes/utils/referenceCell";
 import { useEntityTitles } from "@/features/scopes/hooks/useEntityTitles";
 import { registerChatUsageGate } from "@ai-matrx/chat/host/usage-gate";
@@ -281,4 +278,3 @@ registerChatUi({
 
 registerKindValueMarkdown(kindValueToMarkdown);
 registerChatUsageGate(usageGate);
-registerChatModelClassHooks({ useModelClassControls, useModelClassLabels });

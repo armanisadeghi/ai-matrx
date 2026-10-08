@@ -14,14 +14,8 @@ import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { isUuidValue } from "@/components/official/entity-ref/doors";
 import { aiModelHref } from "@/features/ai-models/doors";
 import { withModelClass } from "@ai-matrx/agents/models";
-import {
-  fetchModelClasses,
-  fetchModelIdentityById,
-  makeSelectModelById,
-  selectModelClassName,
-  selectModelIdentityById,
-  selectModelIdentityLookupStatus,
-} from "@ai-matrx/chat/agents/model-registry/modelRegistrySlice";
+import { selectModelById, selectModelClassName, selectModelIdentityById, selectModelIdentityLookupStatus } from "@ai-matrx/agents/models";
+import { getModelRecords, useModelRecords } from "@ai-matrx/chat/agents/identity/model-catalog";
 import { toolHref } from "@/features/tool-registry/doors";
 import { fetchToolById } from "@ai-matrx/chat/agents/redux/tools/tools.thunks";
 import {
@@ -100,21 +94,20 @@ export function AiModelRef({
   labelClassName,
 }: AiModelRefProps) {
   const dispatch = useAppDispatch();
-  const selectModel = useMemo(() => makeSelectModelById(), []);
-  const model = useAppSelector((state) => selectModel(state, modelId));
-  const historicalIdentity = useAppSelector((state) =>
+  const model = useModelRecords((state) => selectModelById(state, modelId));
+  const historicalIdentity = useModelRecords((state) =>
     selectModelIdentityById(state, modelId),
   );
-  const lookupStatus = useAppSelector((state) =>
+  const lookupStatus = useModelRecords((state) =>
     selectModelIdentityLookupStatus(state, modelId),
   );
   const isSuperAdmin = useAppSelector(selectIsSuperAdmin);
-  const classStatus = useAppSelector((s) => s.modelRegistry?.modelClassStatus);
-  const modelClass = useAppSelector((s) =>
+  const classStatus = useModelRecords((s) => s.modelClassStatus);
+  const modelClass = useModelRecords((s) =>
     showClass ? selectModelClassName(s, modelId, offeringId) : undefined,
   );
   useEffect(() => {
-    if (showClass && !classStatus) void dispatch(fetchModelClasses());
+    if (showClass && !classStatus) getModelRecords().loadClasses();
   }, [dispatch, showClass, classStatus]);
 
   useEffect(() => {
@@ -125,7 +118,7 @@ export function AiModelRef({
       isUuidValue(modelId) &&
       lookupStatus === "idle"
     ) {
-      void dispatch(fetchModelIdentityById(modelId));
+      getModelRecords().loadIdentity(modelId);
     }
   }, [dispatch, historicalIdentity, lookupStatus, model, modelId, name]);
 

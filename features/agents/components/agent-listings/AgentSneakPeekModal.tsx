@@ -33,7 +33,7 @@ import {
   fetchFullAgent,
 } from "@/features/agents/redux/fetch-full-agent.thunk";
 import { useAgentModelLabel } from "@ai-matrx/chat/agents/hooks/useAgentModelLabel";
-import { fetchModelOptions } from "@ai-matrx/chat/agents/model-registry/modelRegistrySlice";
+import { getModelRecords } from "@ai-matrx/chat/agents/identity/model-catalog";
 import {
   selectAllTools,
   selectToolsReady,
@@ -315,7 +315,7 @@ export function AgentSneakPeekContent({
         .then(() => setAgentReadError(null))
         .catch((err: unknown) => setAgentReadError(err ?? true));
     }
-    dispatch(fetchModelOptions());
+    getModelRecords().loadOptions();
     dispatch(fetchAvailableTools());
   }, [active, isReady, agentId, dispatch, readAttempt]);
 

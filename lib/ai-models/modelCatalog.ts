@@ -14,16 +14,15 @@
 //
 // Both are created ONCE, lazily (a second catalog would be a second holder of the rows).
 
+import { getModelCatalog as getChatModelCatalog } from "@ai-matrx/chat/agents/identity/model-catalog";
 import {
-  createModelCatalog,
   createModelFavorites,
   setModelDiagnosticsSink,
   type ModelCatalog,
-  type ModelCatalogClient,
   type ModelFavorites,
   type ModelFavoritesClient,
 } from "@ai-matrx/agents/models";
-import { createClient, supabase } from "@/utils/supabase/client";
+import { createClient } from "@/utils/supabase/client";
 import { getStoreSingleton } from "@/lib/redux/store-singleton";
 import { captureError } from "@/lib/diagnostics/errorCaptureStore";
 import { selectFavoriteModelIds } from "@/lib/redux/preferences/userPreferenceSelectors";
@@ -53,12 +52,16 @@ function bindDiagnostics(): void {
   });
 }
 
+/**
+ * THE page's model catalog is chat's (agent core B3): the picker rows and the model records
+ * (options, full records, class configs) are one instance, so chat's composer and this app's
+ * pickers read the same holder. Read failures reach the Error Inspector through chat's host
+ * diagnostics.
+ */
 export function getModelCatalog(): ModelCatalog {
   if (!catalog) {
     bindDiagnostics();
-    // supabase-js satisfies the package's structural client as-is; the cast narrows this app's
-    // generated `Database` generics onto the package's deliberately generic seam.
-    catalog = createModelCatalog({ client: supabase as unknown as ModelCatalogClient, errorSink: sink });
+    catalog = getChatModelCatalog();
   }
   return catalog;
 }

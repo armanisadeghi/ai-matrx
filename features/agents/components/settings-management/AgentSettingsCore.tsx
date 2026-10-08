@@ -45,7 +45,7 @@ import {
   ControlDefinition,
   NormalizedControls,
 } from "@ai-matrx/chat/agents/hooks/useModelControls";
-import { useModelClassControls } from "@/features/ai-models/hooks/useModelClassControls";
+import { useModelClassControls } from "@ai-matrx/chat/agents/identity/model-catalog";
 import { useAppSelector, useAppDispatch } from "@/lib/redux/hooks";
 import {
   selectAgentSettings,
@@ -57,14 +57,8 @@ import {
 import {
   setAgentControlBinding, setAgentSettings, setAgentField, setAgentTools,
 } from "@/features/agents/redux/agent-builder.slice";
-import {
-  fetchModelById,
-  fetchModelOptions,
-  selectAllModels,
-  selectModelFullyLoaded,
-  selectModelRegistryError,
-  selectModelRegistryLoading,
-} from "@ai-matrx/chat/agents/model-registry/modelRegistrySlice";
+import { selectAllModels, selectModelFullyLoaded } from "@ai-matrx/agents/models";
+import { getModelRecords, readModelRecords, useModelRecords } from "@ai-matrx/chat/agents/identity/model-catalog";
 import { ModelListDropdown, useModelCatalog } from "@ai-matrx/agents/models/react";
 import { withOfferingPin } from "@/features/ai-models/utils/offering-pin";
 import type {
@@ -1052,7 +1046,7 @@ export function AgentSettingsCore({
   const agentTools = useAppSelector((state) =>
     selectAgentTools(state, agentId),
   );
-  const models = useAppSelector(selectAllModels);
+  const models = useModelRecords(selectAllModels);
   const variableDefinitions = useAppSelector((state) =>
     selectAgentVariableDefinitions(state, agentId),
   );
@@ -1063,22 +1057,22 @@ export function AgentSettingsCore({
   const outputSchema = useAppSelector((state) =>
     selectAgentOutputSchema(state, agentId),
   );
-  const isModelFull = useAppSelector((state) =>
+  const isModelFull = useModelRecords((state) =>
     selectModelFullyLoaded(state, modelId),
   );
-  const registryLoading = useAppSelector(selectModelRegistryLoading);
-  const registryError = useAppSelector(selectModelRegistryError);
+  const registryLoading = useModelRecords((s) => s.isLoading);
+  const registryError = useModelRecords((s) => s.error);
 
   // Settings need the model's full controls blob. The registry may only hold
   // lightweight options (or nothing) until explicitly fetched — same pattern as
   // RunConfigOverrides and the canonical model picker in the builder.
   useEffect(() => {
-    dispatch(fetchModelOptions());
+    getModelRecords().loadOptions();
   }, [dispatch]);
 
   useEffect(() => {
     if (modelId && !isModelFull && !registryLoading) {
-      dispatch(fetchModelById(modelId));
+      getModelRecords().loadModel(modelId);
     }
   }, [dispatch, modelId, isModelFull, registryLoading]);
 

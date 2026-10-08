@@ -129,7 +129,7 @@ import {
   isOrgKnobGatedTool,
   toolsWithheldInOrganization,
 } from "@/lib/knobs/toolKnobGating";
-import { selectNormalizedControls } from "@ai-matrx/chat/agents/redux/agent-settings/selectors";
+import { useNormalizedControls } from "@ai-matrx/chat/agents/redux/agent-settings/useNormalizedControls";
 import { useAgentSettingsClassControls } from "@/features/ai-models/hooks/useModelClassControls";
 import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import { supportsTools } from "@ai-matrx/chat/agents/hooks/useModelControls";
@@ -381,9 +381,7 @@ export function AgentToolsManager({ agentId }: AgentToolsManagerProps) {
   // dropped. Permissive by default — only fires for an explicit
   // tools:{allowed:false} model. See supportsTools() / aidream tool_merge.py.
   useAgentSettingsClassControls(agentId);
-  const normalizedControls = useAppSelector((state) =>
-    selectNormalizedControls(state, agentId),
-  );
+  const normalizedControls = useNormalizedControls(agentId);
   const modelSupportsTools = supportsTools(normalizedControls);
 
   // Saved tool set across all three lanes — drives the drop advisory.

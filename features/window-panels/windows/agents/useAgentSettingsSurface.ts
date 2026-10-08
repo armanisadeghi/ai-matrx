@@ -38,6 +38,7 @@
  * or nothing has loaded yet).
  */
 
+import { readModelRecords } from "@ai-matrx/chat/agents/identity/model-catalog";
 import { useCallback, useEffect, useRef } from "react";
 
 import { useAppStore } from "@/lib/redux/hooks";
@@ -49,10 +50,7 @@ import {
   selectAgentIsReadOnly,
   selectAgentOfferingPin,
 } from "@ai-matrx/chat/agents/redux/agent-definition/selectors";
-import {
-  selectModelLabelWithClass,
-  selectModelNameById,
-} from "@ai-matrx/chat/agents/model-registry/modelRegistrySlice";
+import { selectModelLabelWithClass, selectModelNameById } from "@ai-matrx/agents/models";
 import { agentOwnershipLabel } from "@/features/agents/components/settings/AgentSettingsForm";
 import { readAgentSettingsDraft } from "@/features/agents/components/settings/agentSettingsDraftRegistry";
 import { readCatalogAgents } from "@ai-matrx/chat/agents/identity/agent-catalog-lists";
@@ -153,11 +151,11 @@ export function useAgentSettingsSurface(
       agent_model_name: orUndefined(
         (selectAgentOfferingPin(redux, agent.id) !== undefined
           ? selectModelLabelWithClass(
-              redux,
+              readModelRecords(),
               agent.modelId,
               selectAgentOfferingPin(redux, agent.id),
             )
-          : selectModelNameById(redux, agent.modelId || "")) || agent.modelId,
+          : selectModelNameById(readModelRecords(), agent.modelId || "")) || agent.modelId,
       ),
       agent_ownership: agentOwnershipLabel(agent),
       agent_default_rag_boost: agent.defaultRagBoost ?? undefined,

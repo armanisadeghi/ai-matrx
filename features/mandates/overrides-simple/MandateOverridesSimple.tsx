@@ -54,13 +54,10 @@ import {
   resetModelChoice,
   setOfferingPin,
 } from "@ai-matrx/chat/agents/redux/execution-system/instance-model-overrides/offering-pin";
-import {
-  fetchModelById,
-  selectAllModels,
-  selectModelFullyLoaded,
-} from "@ai-matrx/chat/agents/model-registry/modelRegistrySlice";
+import { selectAllModels, selectModelFullyLoaded } from "@ai-matrx/agents/models";
+import { getModelRecords, readModelRecords, useModelRecords } from "@ai-matrx/chat/agents/identity/model-catalog";
 import { useModelControls } from "@ai-matrx/chat/agents/hooks/useModelControls";
-import { useModelClassControls } from "@/features/ai-models/hooks/useModelClassControls";
+import { useModelClassControls } from "@ai-matrx/chat/agents/identity/model-catalog";
 import { buildSettingsRows } from "@ai-matrx/chat/agents/redux/agent-settings/settings-catalogue";
 import type { ControlDefinition } from "@ai-matrx/chat/agents/redux/agent-settings/types";
 import { SettingControlInput } from "@/features/agents/components/settings-management/controls/SettingControlInput";
@@ -398,7 +395,7 @@ function OverridesBody({
   const hasOffer = Boolean(data.offer ?? describedOffer);
 
   // ── The model's controls, for whichever model is effective ────────────────
-  const models = useAppSelector(selectAllModels);
+  const models = useModelRecords(selectAllModels);
   const base = (entry?.baseSettings ?? {}) as Record<string, unknown>;
   const overrides = (entry?.overrides ?? {}) as Record<string, unknown>;
   const removals = entry?.removals ?? [];
@@ -407,13 +404,13 @@ function OverridesBody({
     : (overrides.model ?? base.model);
   const effectiveModelId =
     typeof effectiveModel === "string" ? effectiveModel : "";
-  const isFull = useAppSelector((s) =>
+  const isFull = useModelRecords((s) =>
     selectModelFullyLoaded(s, effectiveModelId),
   );
-  const registryLoading = useAppSelector((s) => s.modelRegistry.isLoading);
+  const registryLoading = useModelRecords((s) => s.isLoading);
   useEffect(() => {
     if (effectiveModelId && !isFull && !registryLoading) {
-      dispatch(fetchModelById(effectiveModelId));
+      getModelRecords().loadModel(effectiveModelId);
     }
   }, [dispatch, effectiveModelId, isFull, registryLoading]);
   const classControls = useModelClassControls(

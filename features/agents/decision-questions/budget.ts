@@ -27,7 +27,7 @@
 
 import { parseCapabilities } from "@ai-matrx/agents/models";
 import { isDecisionModelCapability } from "@ai-matrx/agents/models";
-import type { AIModelRecord } from "@ai-matrx/chat/agents/model-registry/modelRegistrySlice";
+import { type AIModelRecord } from "@ai-matrx/chat/agents/redux/model-registry";
 import { estimateTokensForText } from "@ai-matrx/kit/tokens";
 import type { DecisionQuestionSpec } from "./types";
 

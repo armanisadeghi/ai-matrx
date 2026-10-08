@@ -42,7 +42,7 @@ export interface BaseReduxState {
   userPreferences?: Record<string, any>;
   // Optional SSR pre-population.
   // contextMenuCache shape matches ContextMenuCacheState exactly — safe as preloaded state.
-  // modelRegistry and sms need action-based hydration (their shapes don't match raw arrays)
+  // model records (core catalog) and sms need their own hydration (their shapes don't match raw arrays)
   // so they are handled by SsrShellHydrator client island, not preloaded state.
   contextMenuCache?: { rows: ContextMenuRow[]; hydrated: boolean };
   agentContextMenuCache?: { rows: ContextMenuRow[]; hydrated: boolean };

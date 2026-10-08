@@ -7,12 +7,15 @@
 import type { RootState } from "@/lib/redux/store";
 import { selectModelColumnTitle } from "../columnTitle";
 
+const records: { entities: Record<string, unknown>; identityById: Record<string, unknown> } = { entities: {}, identityById: {} };
+jest.mock("@ai-matrx/chat/agents/identity/model-catalog", () => ({ readModelRecords: () => records }));
+
 function state(
   models: Record<string, { name: string }>,
   overrides: Record<string, unknown>,
 ): RootState {
+  records.entities = models;
   return {
-    modelRegistry: { entities: models },
     instanceModelOverrides: {
       byConversationId: {
         conv: { overrides, removals: [], baseSettings: { model: "agent-model" } },

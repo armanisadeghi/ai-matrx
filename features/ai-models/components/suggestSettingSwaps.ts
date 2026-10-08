@@ -10,7 +10,7 @@
  */
 
 import type { FeLlmParams } from "@ai-matrx/chat/agents/types/agent-api-types";
-import type { AIModelRecord } from "@ai-matrx/chat/agents/model-registry/modelRegistrySlice";
+import { type AIModelRecord } from "@ai-matrx/chat/agents/redux/model-registry";
 import type { ModelConstraint } from "@/features/ai-models/types";
 import { resolveModelControls } from "@ai-matrx/chat/agents/hooks/useModelControls";
 import { analyzeModelChange } from "@/features/agents/components/settings-management/reconciliation/analyze";

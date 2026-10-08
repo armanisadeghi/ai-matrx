@@ -95,8 +95,9 @@ const CHAT_KEYS_ADDED = ["chatHost"];
  * Host keys whose slice moved INTO the package since P2 (P17b, P17), under the SAME key: the host
  * no longer imports these reducers itself, it mounts them through `...chatReducers`.
  */
-// conversationAttachments, modelRegistry: moved in deliberately by 9e363c01e5 (P17b).
-const CHAT_KEYS_MOVED_IN = ["proposedDirectives", "agentSettings", "conversationAttachments", "modelRegistry"];
+// conversationAttachments: moved in deliberately by 9e363c01e5 (P17b). modelRegistry moved in at
+// P17b and RETIRED at B3 (chat 0.4.0): model records live in the core model catalog, not Redux.
+const CHAT_KEYS_MOVED_IN = ["proposedDirectives", "agentSettings", "conversationAttachments"];
 
 const ALL_CHAT_KEYS = [...CHAT_KEYS_BEFORE_P2, ...CHAT_KEYS_ADDED, ...CHAT_KEYS_MOVED_IN];
 

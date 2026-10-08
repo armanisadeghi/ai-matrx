@@ -32,11 +32,8 @@ import {
   fetchFullAgent,
 } from "@/features/agents/redux/fetch-full-agent.thunk";
 import { saveAgent } from "@/features/agents/redux/builder-write.thunks";
-import {
-  fetchModelById,
-  selectAllModels,
-  selectModelFullyLoaded,
-} from "@ai-matrx/chat/agents/model-registry/modelRegistrySlice";
+import { selectAllModels, selectModelFullyLoaded } from "@ai-matrx/agents/models";
+import { getModelRecords, readModelRecords } from "@ai-matrx/chat/agents/identity/model-catalog";
 import type { ModelConstraint } from "@/features/ai-models/types";
 import type { FeLlmParams } from "@ai-matrx/chat/agents/types/agent-api-types";
 import {
@@ -206,11 +203,11 @@ export async function planSettingsFix(
   // object) when the full record is already in the store — which it is on the
   // second fix of the same agent in a session. Read the store first; dispatch
   // only when the full controls are missing.
-  if (!selectModelFullyLoaded(getState(), modelId)) {
+  if (!selectModelFullyLoaded(readModelRecords(), modelId)) {
     try {
-      await dispatch(fetchModelById(modelId)).unwrap();
+      await getModelRecords().loadModel(modelId);
     } catch (error) {
-      if (!selectModelFullyLoaded(getState(), modelId)) {
+      if (!selectModelFullyLoaded(readModelRecords(), modelId)) {
         return {
           status: "cannot",
           ...base,
@@ -219,7 +216,7 @@ export async function planSettingsFix(
       }
     }
   }
-  const models = selectAllModels(getState());
+  const models = selectAllModels(readModelRecords());
   const { normalizedControls, error: controlsError } = resolveModelControls(
     models,
     modelId,

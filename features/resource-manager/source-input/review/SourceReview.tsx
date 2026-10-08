@@ -18,7 +18,8 @@ import { createSourceRef, type SourceManifest, type SourceRef, type SourceSet } 
 import { ErrorBox, Skeleton, cn } from "@ai-matrx/design-system";
 import { Button } from "@/components/ui/button";
 import { useAppSelector } from "@/lib/redux/hooks";
-import { selectModelLabelById } from "@ai-matrx/chat/agents/model-registry/modelRegistrySlice";
+import { selectModelLabelById } from "@ai-matrx/agents/models";
+import { readModelRecords, useModelRecords } from "@ai-matrx/chat/agents/identity/model-catalog";
 import { useClippedContentGuard } from "@/lib/layout/useClippedContentGuard";
 import { estimateTokens, formatChars, formatTokens, pagesPhrase } from "@ai-matrx/kit/tokens";
 import {
@@ -94,7 +95,7 @@ export function SourceReview({
   // The model alone, never "· class": the context window is a MODEL fact —
   // no ai.offering override carries a window (checked 2026-10-02: override
   // keys are constraints/params only), so every class shares this limit.
-  const modelLabel = useAppSelector((s) => selectModelLabelById(s, targetModelId));
+  const modelLabel = useModelRecords((s) => selectModelLabelById(s, targetModelId));
 
   // The manifest is re-read only when a version (form) changes or on retry —
   // parts, caps and delivery are planned locally with the server's own rules.

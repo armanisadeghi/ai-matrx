@@ -13,6 +13,7 @@
  * order entirely, so its runs table showed another mode's columns or none.
  */
 
+import { readModelRecords } from "@ai-matrx/chat/agents/identity/model-catalog";
 import { selectModelColumnTitle } from "../modes/model/columnTitle";
 import { createSelector } from "@reduxjs/toolkit";
 import type { RootState } from "@/lib/redux/store";
@@ -61,7 +62,8 @@ const selectVariations = (s: RootState) => s.agentComparisonVariations;
 const selectConversation = (s: RootState) => s.agentComparisonConversation;
 const selectMatrix = (s: RootState) => s.agentComparisonMatrix;
 // A Model column is named after its model, read live (modes/model/columnTitle).
-const selectModelRegistry = (s: RootState) => s.modelRegistry;
+// The names come from the model catalog's records (a new records state re-runs this selector).
+const selectModelRegistry = () => readModelRecords();
 const selectModelOverrides = (s: RootState) => s.instanceModelOverrides;
 
 interface LockedColumnSource {
@@ -119,10 +121,8 @@ export const selectActiveBattleColumns = createSelector(
       case "settings":
         return lockedColumns(settings, settings.locked.agentId, settings.locked.agentVersion, "settings");
       case "model": {
-        const naming = {
-          modelRegistry,
-          instanceModelOverrides: modelOverrides,
-        } as RootState;
+        void modelRegistry;
+        const naming = { instanceModelOverrides: modelOverrides } as unknown as RootState;
         // Two columns on the same model get "(2)", "(3)"… so a table or a
         // report can tell them apart.
         const seen = new Map<string, number>();

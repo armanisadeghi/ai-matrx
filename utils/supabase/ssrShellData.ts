@@ -1,5 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { AIModel } from "@ai-matrx/chat/agents/model-registry/modelRegistrySlice";
+import { type AIModel } from "@ai-matrx/chat/agents/redux/model-registry";
 
 export interface ContextMenuRow {
   placement_type: string;

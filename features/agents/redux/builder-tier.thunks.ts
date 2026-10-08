@@ -58,9 +58,8 @@ import {
 import type {
   Database,
 } from "@ai-matrx/chat/host/db-types";
-import {
-  selectModelById,
-} from "@ai-matrx/chat/agents/model-registry/modelRegistrySlice";
+import { selectModelById } from "@ai-matrx/agents/models";
+import { readModelRecords } from "@ai-matrx/chat/agents/identity/model-catalog";
 import {
   resolveModelControls,
   supportsTools,
@@ -228,7 +227,7 @@ export const applyOwnedAgentToolDelta = createAsyncThunk<
 
     if (add.length > 0) {
       const selectedModel = base.model_id
-        ? selectModelById(getState(), base.model_id)
+        ? selectModelById(readModelRecords(), base.model_id)
         : undefined;
       const model = isAvailableToolModel(selectedModel)
         ? selectedModel

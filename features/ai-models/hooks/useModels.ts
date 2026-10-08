@@ -1,27 +1,9 @@
 "use client";
 
-import { useEffect, useMemo } from "react";
-import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import {
-  fetchModelById,
-  fetchModelOptions,
-  makeSelectModelById,
-  selectActiveModels,
-  selectActiveModelsReady,
-  selectAllModelOptions,
-  selectAllModels,
-  selectAllModelsReady,
-  selectDeprecatedModels,
-  selectDeprecatedModelsReady,
-  selectModelFetchScope,
-  selectModelFetchType,
-  selectModelFullyLoaded,
-  selectModelOptions,
-  selectModelRegistryError,
-  selectModelRegistryLoading,
-  type AIModel,
-  type AIModelRecord,
-} from "@ai-matrx/chat/agents/model-registry/modelRegistrySlice";
+import { useEffect } from "react";
+import { selectActiveModels, selectActiveModelsReady, selectAllModelOptions, selectAllModels, selectAllModelsReady, selectDeprecatedModels, selectDeprecatedModelsReady, selectModelById, selectModelFetchType, selectModelFullyLoaded, selectModelOptions } from "@ai-matrx/agents/models";
+import { type AIModel, type AIModelRecord } from "@ai-matrx/chat/agents/redux/model-registry";
+import { getModelRecords, useModelRecords } from "@ai-matrx/chat/agents/identity/model-catalog";
 
 // ---------------------------------------------------------------------------
 // Options hooks — lightweight, for dropdowns
@@ -33,15 +15,14 @@ import {
  * Does NOT fetch full model data.
  */
 export function useModels() {
-  const dispatch = useAppDispatch();
-  const models = useAppSelector(selectActiveModels);
-  const isLoading = useAppSelector(selectModelRegistryLoading);
-  const error = useAppSelector(selectModelRegistryError);
-  const isReady = useAppSelector(selectActiveModelsReady);
+  const models = useModelRecords(selectActiveModels);
+  const isLoading = useModelRecords((s) => s.isLoading);
+  const error = useModelRecords((s) => s.error);
+  const isReady = useModelRecords(selectActiveModelsReady);
 
   useEffect(() => {
-    dispatch(fetchModelOptions());
-  }, [dispatch]);
+    void getModelRecords().loadOptions();
+  }, []);
 
   return { models, isLoading, error, isReady };
 }
@@ -52,7 +33,7 @@ export function useModels() {
  */
 export function useModelOptions() {
   const { isLoading, error, isReady } = useModels();
-  const options = useAppSelector(selectModelOptions);
+  const options = useModelRecords(selectModelOptions);
   return { options, isLoading, error, isReady };
 }
 
@@ -62,9 +43,9 @@ export function useModelOptions() {
  */
 export function useAllModelOptions() {
   const { isLoading, error } = useModels();
-  const options = useAppSelector(selectAllModelOptions);
-  const isReady = useAppSelector(selectAllModelsReady);
-  const fetchScope = useAppSelector(selectModelFetchScope);
+  const options = useModelRecords(selectAllModelOptions);
+  const isReady = useModelRecords(selectAllModelsReady);
+  const fetchScope = useModelRecords((s) => s.fetchScope);
   return { options, isLoading, error, isReady, fetchScope };
 }
 
@@ -72,15 +53,14 @@ export function useAllModelOptions() {
  * Deprecated models list.
  */
 export function useDeprecatedModels() {
-  const dispatch = useAppDispatch();
-  const models = useAppSelector(selectDeprecatedModels);
-  const isLoading = useAppSelector(selectModelRegistryLoading);
-  const error = useAppSelector(selectModelRegistryError);
-  const isReady = useAppSelector(selectDeprecatedModelsReady);
+  const models = useModelRecords(selectDeprecatedModels);
+  const isLoading = useModelRecords((s) => s.isLoading);
+  const error = useModelRecords((s) => s.error);
+  const isReady = useModelRecords(selectDeprecatedModelsReady);
 
   useEffect(() => {
-    dispatch(fetchModelOptions());
-  }, [dispatch]);
+    void getModelRecords().loadOptions();
+  }, []);
 
   return { models, isLoading, error, isReady };
 }
@@ -90,9 +70,9 @@ export function useDeprecatedModels() {
  */
 export function useAllModels() {
   const { isLoading, error } = useModels();
-  const models = useAppSelector(selectAllModels);
-  const isReady = useAppSelector(selectAllModelsReady);
-  const fetchScope = useAppSelector(selectModelFetchScope);
+  const models = useModelRecords(selectAllModels);
+  const isReady = useModelRecords(selectAllModelsReady);
+  const fetchScope = useModelRecords((s) => s.fetchScope);
   return { models, isLoading, error, isReady, fetchScope };
 }
 
@@ -113,22 +93,16 @@ export function useAllModels() {
 export function useModelFull(
   modelId: string | null | undefined,
 ): AIModelRecord | undefined {
-  const dispatch = useAppDispatch();
   useModels(); // ensures options fetch is triggered
 
-  const selectModel = useMemo(makeSelectModelById, []);
-  const record = useAppSelector((state) =>
-    modelId ? selectModel(state, modelId) : undefined,
-  );
-  const isFull = useAppSelector((state) =>
-    modelId ? selectModelFullyLoaded(state, modelId) : false,
-  );
+  const record = useModelRecords((s) => selectModelById(s, modelId));
+  const isFull = useModelRecords((s) => selectModelFullyLoaded(s, modelId));
 
   useEffect(() => {
     if (modelId && !isFull) {
-      dispatch(fetchModelById(modelId));
+      void getModelRecords().loadModel(modelId);
     }
-  }, [dispatch, modelId, isFull]);
+  }, [modelId, isFull]);
 
   return isFull ? record : undefined;
 }
@@ -138,9 +112,7 @@ export function useModelFull(
  * Useful for conditional rendering — show skeleton until 'full'.
  */
 export function useModelFetchType(modelId: string | null | undefined) {
-  return useAppSelector((state) =>
-    modelId ? selectModelFetchType(state, modelId) : undefined,
-  );
+  return useModelRecords((s) => (modelId ? selectModelFetchType(s, modelId) : undefined));
 }
 
 /**
@@ -151,8 +123,7 @@ export function useModelFetchType(modelId: string | null | undefined) {
  */
 export function useModelById(modelId: string): AIModelRecord | undefined {
   useModels();
-  const selectModel = useMemo(makeSelectModelById, []);
-  return useAppSelector((state) => selectModel(state, modelId));
+  return useModelRecords((s) => selectModelById(s, modelId));
 }
 
 export type { AIModel, AIModelRecord };

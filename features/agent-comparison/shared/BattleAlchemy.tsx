@@ -24,7 +24,7 @@ import type { AgentPayloadInput } from "@/components/agent-copy/buildAgentPayloa
 import { useEffect, type Ref } from "react";
 import type { ContentTransferController } from "@ai-matrx/alchemy/react/workspace";
 import { useAppDispatch, useAppSelector, useAppStore } from "@/lib/redux/hooks";
-import { fetchModelIdentityById } from "@ai-matrx/chat/agents/model-registry/modelRegistrySlice";
+import { getModelRecords } from "@ai-matrx/chat/agents/identity/model-catalog";
 import { selectActiveBattleColumns } from "./activeBattleColumns";
 import {
   battleMarkdown,
@@ -50,7 +50,7 @@ export function BattleAlchemy({
   const modelIdsKey = useAppSelector((state) => battleModelIds(state).join(","));
   useEffect(() => {
     for (const id of modelIdsKey ? modelIdsKey.split(",") : []) {
-      void dispatch(fetchModelIdentityById(id));
+      getModelRecords().loadIdentity(id);
     }
   }, [modelIdsKey, dispatch]);
 

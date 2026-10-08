@@ -58,7 +58,7 @@ import {
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { cn } from "@/lib/utils";
 import { HighlightedText } from "@/features/agents/components/variables-management/HighlightedText";
-import type { AIModelRecord } from "@ai-matrx/chat/agents/model-registry/modelRegistrySlice";
+import { type AIModelRecord } from "@ai-matrx/chat/agents/redux/model-registry";
 import { useVoices } from "@/features/podcasts/generator/useVoices";
 import { voicesForModel } from "@/features/podcasts/generator/voiceCatalog";
 import { speak } from "@/features/audio/service/speak";

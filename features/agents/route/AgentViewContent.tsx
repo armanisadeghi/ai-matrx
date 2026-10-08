@@ -29,7 +29,7 @@ import {
 import { confirm } from "@ai-matrx/chat/host/ui-slots";
 import { ReadFailure } from "@/components/read-state/ReadFailure";
 import { selectCategoryById } from "@ai-matrx/chat/agents/redux/agent-shortcut-categories/selectors";
-import { fetchModelOptions } from "@ai-matrx/chat/agents/model-registry/modelRegistrySlice";
+import { getModelRecords } from "@ai-matrx/chat/agents/identity/model-catalog";
 import { useAgentModelLabel } from "@ai-matrx/chat/agents/hooks/useAgentModelLabel";
 import { isUuidShape } from "@ai-matrx/kit/uuid";
 import { supabase } from "@ai-matrx/chat/host/db";
@@ -291,7 +291,7 @@ export function AgentViewContent({ agentId, recordSections }: { agentId: string;
 
   useEffect(() => {
     setMounted(true);
-    dispatch(fetchModelOptions());
+    getModelRecords().loadOptions();
   }, [dispatch]);
 
   const agent = useAgentView(agentId);

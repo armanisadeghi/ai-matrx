@@ -17,7 +17,7 @@ import {
 import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 import { mapIcon } from "@/utils/icons/icon-mapper";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import { selectNormalizedControls } from "@ai-matrx/chat/agents/redux/agent-settings/selectors";
+import { useNormalizedControls } from "@ai-matrx/chat/agents/redux/agent-settings/useNormalizedControls";
 import { useAgentSettingsClassControls } from "@/features/ai-models/hooks/useModelClassControls";
 import { supportsTools } from "@ai-matrx/chat/agents/hooks/useModelControls";
 import { selectAgentTools } from "@ai-matrx/chat/agents/redux/agent-definition/selectors";
@@ -46,9 +46,7 @@ export function ToolSelectorPanel({
     selectAgentTools(state, agentId),
   ) ?? [];
   useAgentSettingsClassControls(agentId);
-  const normalizedControls = useAppSelector((state) =>
-    selectNormalizedControls(state, agentId),
-  );
+  const normalizedControls = useNormalizedControls(agentId);
 
   // Canonical capability read — supported unless the model explicitly declares
   // tools:{allowed:false} (mirrors the server's permissive default).

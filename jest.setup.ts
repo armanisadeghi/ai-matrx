@@ -10,7 +10,7 @@
 
 // Dummy Supabase env vars so `utils/supabase/client.ts` doesn't throw when
 // tests transitively import code that instantiates the browser client at
-// module load (e.g. Tools-grid selectors pull in modelRegistrySlice).
+// module load (e.g. Tools-grid selectors pull in chat's store slices).
 // Tests never hit real Supabase — mocks or fake-indexeddb stand in.
 //
 // Only the new sb_publishable_* env var is seeded here. The legacy

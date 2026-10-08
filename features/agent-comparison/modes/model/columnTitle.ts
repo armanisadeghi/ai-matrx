@@ -7,14 +7,15 @@
  * GPT-6 Astra answer. Only a name the person typed (`labelCustom`) is kept.
  */
 
+import { readModelRecords } from "@ai-matrx/chat/agents/identity/model-catalog";
 import type { RootState } from "@/lib/redux/store";
 import type { ModelColumn } from "./types";
 
 function modelName(state: RootState, modelId: string | null): string | null {
   if (!modelId) return null;
   const row =
-    state.modelRegistry?.entities?.[modelId] ??
-    state.modelRegistry?.identityById?.[modelId];
+    readModelRecords().entities[modelId] ??
+    readModelRecords().identityById[modelId];
   const name = row?.common_name || row?.name;
   return name ? String(name) : null;
 }

@@ -43,7 +43,7 @@ import { InlineMediaRef } from "@ai-matrx/media/react";
 import { MediaVariableInput } from "@ai-matrx/chat/agents/components/inputs/input-components/MediaVariableInput";
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { InfoHint } from "@/components/official/InfoHint";
-import type { AIModelRecord } from "@ai-matrx/chat/agents/model-registry/modelRegistrySlice";
+import { type AIModelRecord } from "@ai-matrx/chat/agents/redux/model-registry";
 import {
   DECISION_QUESTIONS_KIND,
   newDecisionQuestionsPart,
