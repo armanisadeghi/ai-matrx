@@ -42,7 +42,7 @@ import { codeDb } from "@/utils/supabase/codeDb";
 import type { components } from "@ai-matrx/agents/generated/api-types";
 import { SurfaceRuntimeProvider } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import { buildKnowledgeRepositoriesContextData } from "@/features/rag/agent-context/buildKnowledgeRepositoriesContextData";
-import { readOf } from "@/components/read-state/ReadGate";
+import { readOf } from "@ai-matrx/design-system";
 
 const KNOWLEDGE_REPOSITORIES_SURFACE = "matrx-user/knowledge-repositories";
 

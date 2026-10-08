@@ -8,7 +8,7 @@
 // inline header, content floats behind the shell glass. React Compiler on.
 
 import { useRef, useState, type ReactNode } from "react";
-import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { ReadFailure } from "@ai-matrx/design-system";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { GraduationCap, Plus, CalendarClock, User, ArchiveRestore } from "lucide-react";

@@ -23,7 +23,7 @@
 import { useEffect, useEffectEvent, useRef, useState } from "react";
 import { RotateCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { ErrorNotice } from "@/components/errors/ErrorNotice";
+import { ErrorNotice } from "@ai-matrx/design-system";
 import { useAppDispatch, useAppSelector, useAppStore } from "@/lib/redux/hooks";
 import { NoteWorkspace } from "@/features/notes/components/NoteWorkspace";
 import { useNewNoteOrganization } from "@/features/notes/hooks/useNewNoteOrganization";

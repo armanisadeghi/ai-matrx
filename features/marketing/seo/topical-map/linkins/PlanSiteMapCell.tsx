@@ -16,7 +16,7 @@ import { useMarketingBrandOptional } from "@/features/marketing/lib/brand-contex
 import { topicalMapErrorText } from "../errors";
 import { useTopicalMap } from "../hooks";
 import { useSiteTopicalMapLink } from "./useSiteTopicalMapLink";
-import { ErrorNotice } from "@/components/errors/ErrorNotice";
+import { ErrorNotice } from "@ai-matrx/design-system";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export function PlanSiteMapCell({ siteId }: { siteId: string }) {

@@ -31,7 +31,7 @@ import {
 } from "@/features/documents/document-service";
 import { isServiceFailure, type DocumentSnapshot } from "@/features/data-tables/types";
 import { AGENT_ICON } from "@/components/icons/domain-icons";
-import { ErrorNotice } from "@/components/errors/ErrorNotice";
+import { ErrorNotice } from "@ai-matrx/design-system";
 
 type Props = {
   documentId: string | null | undefined;

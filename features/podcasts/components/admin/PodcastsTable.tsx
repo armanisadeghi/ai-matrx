@@ -52,7 +52,7 @@ import {
   showsHumanSummary,
 } from "@/features/podcasts/utils/copy-format";
 import { archiveConfirmSentence } from "@/features/trash/archiveCopy";
-import type { ReadOutcome } from "@/components/read-state/ReadGate";
+import type { ReadOutcome } from "@ai-matrx/design-system";
 
 interface PodcastsTableProps {
   activeTab: "shows" | "episodes";

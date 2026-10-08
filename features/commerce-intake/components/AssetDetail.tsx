@@ -39,7 +39,7 @@ import {
 } from "../service";
 import { PrintLabelDialog } from "../labels/components/PrintLabelDialog";
 import { ProTextarea } from "@/components/official/ProTextarea";
-import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { ReadFailure } from "@ai-matrx/design-system";
 import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 
 interface AttributeRow {

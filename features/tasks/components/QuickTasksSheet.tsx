@@ -71,7 +71,7 @@ import {
 } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { cn } from "@/lib/utils";
-import { PANEL_MOTION_CLASS } from "@/lib/motion/panel-motion";
+import { PANEL_MOTION_CLASS } from "@ai-matrx/design-system";
 import CompactTaskItem from "./CompactTaskItem";
 import type { TaskWithProject } from "@/features/tasks/types";
 import TaskDetailsPanel from "./TaskDetailsPanel";
@@ -79,7 +79,7 @@ import { QuickTasksToolbarGroup } from "./QuickTasksToolbarGroup";
 import { XTapButton } from "@ai-matrx/tap-target/buttons";
 import type { TaskFilterType } from "../types";
 import { useAppSelector } from "@/lib/redux/hooks";
-import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { ReadFailure } from "@ai-matrx/design-system";
 import { useTasksRead } from "@/features/tasks/hooks/useTasksRead";
 
 interface QuickTasksPrefill {

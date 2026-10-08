@@ -90,7 +90,7 @@ import {
 } from "../lib/page-draft";
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
-import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { ReadFailure } from "@ai-matrx/design-system";
 
 /**
  * The guided AI actions offered over content that already exists. Each runs the

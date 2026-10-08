@@ -34,8 +34,8 @@ import { useLibraryCatalog } from "@/features/rag/hooks/useLibraryCatalog";
 import { LibraryCatalogPane } from "@/features/rag/components/data-stores/LibraryCatalogPane";
 import { EntitlementChip } from "@/features/rag/components/library-catalog/EntitlementChip";
 import { RagHubHeader } from "@/features/rag/components/shell/RagHubHeader";
-import { ErrorNotice } from "@/components/errors/ErrorNotice";
-import { UntrustedCount } from "@/components/official/stale-data/UntrustedCount";
+import { ErrorNotice } from "@ai-matrx/design-system";
+import { UntrustedCount } from "@ai-matrx/design-system";
 
 export function RagHomePage() {
   const userId = useAppSelector(selectUserId);

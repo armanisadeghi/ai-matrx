@@ -35,7 +35,7 @@ import {
 
 import { supabase } from "@/utils/supabase/client";
 import { toast } from "@/lib/toast";
-import { TextInputDialog } from "@/components/dialogs/text-input/TextInputDialog";
+import { TextInputDialog } from "@ai-matrx/design-system";
 import KindAgentButton from "@/features/content-ir/studio/components/KindAgentButton";
 import { formatRelativeTime } from "@/utils/datetime";
 import {

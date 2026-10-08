@@ -90,7 +90,7 @@ const ALIAS: Record<string, string> = {
     __dirname,
     "runtime/FrameErrorSurfaceSnapshot.ts",
   ),
-  "@/components/read-state/ReadGate": resolve(
+  "@ai-matrx/design-system": resolve(
     __dirname,
     "runtime/FrameReadGate.tsx",
   ),

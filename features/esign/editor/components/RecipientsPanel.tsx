@@ -5,7 +5,7 @@
 // (name + email, a link in their inbox). Each recipient: role, routing step, private message,
 // company, title, verification (Email link / Email code / Access code), colour for life.
 
-import { ErrorNotice } from "@/components/errors/ErrorNotice";
+import { ErrorNotice } from "@ai-matrx/design-system";
 import { useState } from "react";
 import { ArrowDown, ArrowUp, ChevronDown, ChevronRight, Trash2, UserPlus } from "lucide-react";
 

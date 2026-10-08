@@ -20,7 +20,7 @@ import {
   useAgentCatalogRows,
   useAgentCatalogState,
 } from "@ai-matrx/agents/catalog/react";
-import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { ReadFailure } from "@ai-matrx/design-system";
 import type {
   CodeAgentFilter,
   ConversationHistoryGrouping,

@@ -88,7 +88,7 @@ import { readWriteAck, type HrWriteRefusal } from "./writeAck";
 import { DuplicatePanel, type HrDuplicateScan } from "./DuplicatePanel";
 import { RehirePanel, type HrPriorEmployment } from "./RehirePanel";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
-import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { ReadFailure } from "@ai-matrx/design-system";
 
 type Mode = "new-person" | "link-member" | "link-party" | "convert-candidate";
 

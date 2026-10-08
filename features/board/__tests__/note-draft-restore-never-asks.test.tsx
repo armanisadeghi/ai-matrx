@@ -44,7 +44,7 @@ jest.mock("@/features/notes/service/notesApi", () => ({
   NotesAPI: { getById: jest.fn(async () => null), create: jest.fn() },
 }));
 jest.mock("@/features/notes/components/NoteWorkspace", () => ({ NoteWorkspace: () => null }));
-jest.mock("@/components/errors/ErrorNotice", () => ({ ErrorNotice: () => null }));
+jest.mock("@ai-matrx/design-system", () => ({ ErrorNotice: () => null }));
 
 import { NoteItemBody } from "../items/NoteItemBody";
 import { BoardOrganizationProvider } from "../items/board-organization";

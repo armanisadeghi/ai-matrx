@@ -2,7 +2,7 @@
 
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { StaleDataNotice } from "@ai-matrx/design-system";
-import { UntrustedCount, type CountRead } from "@/components/official/stale-data/UntrustedCount";
+import { UntrustedCount, type CountRead } from "@ai-matrx/design-system";
 import { Popover, PopoverContent, PopoverTrigger } from "@ai-matrx/design-system";
 import { Input } from "@ai-matrx/design-system/controls";
 import { Button } from "@ai-matrx/design-system";

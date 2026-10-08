@@ -14,7 +14,7 @@ import type {
   ItemMenuEntry,
 } from "@/components/official/item/types";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
-import { TextInputDialog } from "@/components/dialogs/text-input/TextInputDialog";
+import { TextInputDialog } from "@ai-matrx/design-system";
 import { toast } from "@/lib/toast";
 import type {
   EntityListController,

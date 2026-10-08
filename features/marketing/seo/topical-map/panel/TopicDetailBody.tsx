@@ -70,7 +70,7 @@ import { TopicAgentControls } from "./sections/TopicAgentControls";
 import { TopicChanges, type TopicChangeKind } from "./sections/TopicChanges";
 import { TOPICAL_MAP_SURFACE_NAME } from "./topicCuration";
 import { useTopicPanelData } from "./useTopicPanelData";
-import { ErrorNotice } from "@/components/errors/ErrorNotice";
+import { ErrorNotice } from "@ai-matrx/design-system";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export interface TopicDetailBodyProps {

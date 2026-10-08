@@ -74,8 +74,8 @@ import {
   TasksListContextMenu,
 } from "@/features/tasks/components/TasksListContextMenu";
 import { toast } from "@/lib/toast";
-import { ReadFailure } from "@/components/read-state/ReadFailure";
-import { UntrustedCount } from "@/components/official/stale-data/UntrustedCount";
+import { ReadFailure } from "@ai-matrx/design-system";
+import { UntrustedCount } from "@ai-matrx/design-system";
 import { useTasksRead } from "@/features/tasks/hooks/useTasksRead";
 
 /**

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { UntrustedCount } from "@/components/official/stale-data/UntrustedCount";
+import { UntrustedCount } from "@ai-matrx/design-system";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import {
   Building2,
@@ -59,8 +59,8 @@ import {
   withAvailability,
 } from "@/features/context-menu-v3/utils/availability";
 import { pushAddressWithoutNavigating } from "@/lib/url-state/addressWithoutNavigating";
-import { readOf } from "@/components/read-state/ReadGate";
-import { ErrorNotice } from "@/components/errors/ErrorNotice";
+import { readOf } from "@ai-matrx/design-system";
+import { ErrorNotice } from "@ai-matrx/design-system";
 import {
   ChangePlanDialog,
   type ChangePlanSubject,

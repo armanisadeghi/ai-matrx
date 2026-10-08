@@ -8,7 +8,7 @@ import { OrgResourceList } from "@/features/organizations/components/OrgResource
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { supabase } from "@/utils/supabase/client";
 import { useResolvedOrganization } from "@/features/organizations/hooks";
-import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { ReadFailure } from "@ai-matrx/design-system";
 import { RecordsMount, WhereItLives } from "@ai-matrx/records-ui";
 import { RECORDS_NOTIFY } from "@/features/unified-data/recordsNotify";
 import { KeptByTheAppLine } from "@/features/unified-data/hub/KeptByTheAppLine";

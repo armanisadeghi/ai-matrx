@@ -29,7 +29,7 @@ import {
     type SourceListRow,
 } from "@/features/sources/sourceRows";
 import { CATALOGUED_SOURCE_LABEL, cataloguedSourceIds } from "../catalog/cataloguedSources";
-import { readOf } from "@/components/read-state/ReadGate";
+import { readOf } from "@ai-matrx/design-system";
 
 export function CataloguedSourcesList({
     libraryId,

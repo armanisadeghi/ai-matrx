@@ -159,7 +159,7 @@ export const errorRenderCarriesAlchemy = {
  * matrx/empty-state-needs-read-gate (RC-B12 round 11) — the sibling rule: an
  * empty view ("No tasks found", <VaultEmptyState/>) under a loading check with
  * no failure check says "nothing here" while the read failed. Gate it:
- * <ReadGate status={readStatusOf(read)} …> (components/read-state/ReadGate.tsx),
+ * <ReadGate status={readStatusOf(read)} …> (@ai-matrx/design-system),
  * or a failure branch before it (`isError ? <ReadFailure …/> : …`).
  * Round 13 adds two shapes: an `emptyState=` handed to a list/table primitive
  * over read-backed rows without `read=` (the primitive then cannot tell a
@@ -175,11 +175,11 @@ export const emptyStateNeedsReadGate = {
     schema: [],
     messages: {
       ungated:
-        "This empty view hangs off a read (a loading check is above it) but nothing above it checks whether the read FAILED — a failed read would say \"nothing here\". Wrap it in <ReadGate status={readStatusOf(read)} …> from @/components/read-state/ReadGate, or add a failure branch first (isError ? <ReadFailure error={error} what=\"…\" /> : …).",
+        "This empty view hangs off a read (a loading check is above it) but nothing above it checks whether the read FAILED — a failed read would say \"nothing here\". Wrap it in <ReadGate status={readStatusOf(read)} …> from @ai-matrx/design-system, or add a failure branch first (isError ? <ReadFailure error={error} what=\"…\" /> : …).",
       ungatedProp:
-        "This emptyState is handed to a list/table primitive over read-backed rows, but the primitive is not told the read's outcome — a failed read would show the empty state. Pass read={readOf(query, { what: \"…\" })} (ReadOutcome from @/components/read-state/ReadGate) beside it (RC-B12 round 13).",
+        "This emptyState is handed to a list/table primitive over read-backed rows, but the primitive is not told the read's outcome — a failed read would show the empty state. Pass read={readOf(query, { what: \"…\" })} (ReadOutcome from @ai-matrx/design-system) beside it (RC-B12 round 13).",
       ungatedCount:
-        "This count comes from a read, and nothing above it checks whether that read FAILED — a failed read renders 0 as if it were the answer. Gate it on the read's failure, or render it through <UntrustedCount value={…} trustworthy={!isError} label=\"…\" /> (@/components/official/stale-data/UntrustedCount) (RC-B12 round 13).",
+        "This count comes from a read, and nothing above it checks whether that read FAILED — a failed read renders 0 as if it were the answer. Gate it on the read's failure, or render it through <UntrustedCount value={…} trustworthy={!isError} label=\"…\" /> (@ai-matrx/design-system) (RC-B12 round 13).",
     },
   },
   create(context) {

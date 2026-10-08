@@ -36,12 +36,12 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { cn } from "@/lib/utils";
-import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { ReadFailure } from "@ai-matrx/design-system";
 import {
   UntrustedCount,
   countReadState,
   type CountRead,
-} from "@/components/official/stale-data/UntrustedCount";
+} from "@ai-matrx/design-system";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { useAgentShortcuts } from "@/features/agent-shortcuts/hooks/useAgentShortcuts";
 import { selectShortcutsByAgentId } from "@ai-matrx/chat/agents/redux/agent-shortcuts/selectors";
@@ -55,7 +55,7 @@ import {
 import { fetchMandateConsoleData } from "@/features/mandates/admin/service";
 import { storedMandateKey } from "@ai-matrx/agents/mandates";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
-import { readOf } from "@/components/read-state/ReadGate";
+import { readOf } from "@ai-matrx/design-system";
 import { jsonExportItem, csvExportItem } from "@/components/agent-copy/export";
 import { useAgentCatalogError, useBuiltinAgents, useCatalogAgents } from "@ai-matrx/chat/agents/identity/agent-catalog-lists";
 import { ensureAgentCatalog } from "@ai-matrx/chat/agents/identity/agent-identity";

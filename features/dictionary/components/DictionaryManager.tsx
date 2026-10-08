@@ -7,7 +7,7 @@
 // launches the Dictionary Assistant chat preset to this owner.
 
 import { useCallback, useMemo, useState } from "react";
-import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { ReadFailure } from "@ai-matrx/design-system";
 import {
   Plus, Search, Trash2, Pencil, MessageSquare, ChevronDown, Download, Upload,
 } from "lucide-react";

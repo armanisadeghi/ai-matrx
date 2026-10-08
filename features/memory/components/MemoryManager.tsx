@@ -32,7 +32,7 @@ import {
   type MemoryEntry,
 } from "../service/memoryService";
 import { ProTextarea } from "@/components/official/ProTextarea";
-import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { ReadFailure } from "@ai-matrx/design-system";
 
 const PATH_RE = /^[A-Za-z0-9._/-]+$/;
 

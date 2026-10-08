@@ -54,7 +54,7 @@ import {
   ADMIN_APPLETS_SURFACE_NAME,
   createAdminAppletsScope,
 } from "@/features/surfaces/manifests/admin-applets.manifest";
-import { readOf } from "@/components/read-state/ReadGate";
+import { readOf } from "@ai-matrx/design-system";
 
 export const ANALYTICS_COVERAGE = {
   noun: "app",

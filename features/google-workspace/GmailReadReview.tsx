@@ -23,7 +23,7 @@ import type {
   GmailSearchResult,
 } from "@/features/marketing/google/types";
 import { GOOGLE_SCOPE, hasGoogleGrantedScope } from "@/lib/googleScopes";
-import { ErrorNotice } from "@/components/errors/ErrorNotice";
+import { ErrorNotice } from "@ai-matrx/design-system";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 /** Reviewer-sized mailbox read. Nothing is fetched until the user searches. */

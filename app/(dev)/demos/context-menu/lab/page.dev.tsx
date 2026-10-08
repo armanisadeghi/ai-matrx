@@ -67,7 +67,7 @@
  * first time you engage the menu (right-click or icon).
  */
 
-import { UntrustedCount } from "@/components/official/stale-data/UntrustedCount";
+import { UntrustedCount } from "@ai-matrx/design-system";
 import {
   useCallback,
   useEffect,

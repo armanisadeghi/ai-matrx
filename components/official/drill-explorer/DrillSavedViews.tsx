@@ -25,7 +25,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { TextInputDialog } from "@/components/dialogs/text-input/TextInputDialog";
+import { TextInputDialog } from "@ai-matrx/design-system";
 import { toast } from "@/lib/toast";
 import { supabase } from "@/utils/supabase/client";
 import { useOrganizationRequired } from "@/features/organizations/useOrganizationRequired";

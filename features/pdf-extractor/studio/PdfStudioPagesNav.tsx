@@ -3,7 +3,7 @@
 import React, { useMemo } from "react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
-import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { ReadFailure } from "@ai-matrx/design-system";
 import { PdfStudioPagesMeta } from "./PdfStudioPagesMeta";
 import type { PdfPageRow } from "../hooks/useProcessedDocumentPages";
 import type { PdfDocument } from "../hooks/usePdfExtractor";

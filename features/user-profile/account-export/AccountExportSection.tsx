@@ -4,7 +4,7 @@ import { useState } from "react";
 import { Download } from "lucide-react";
 import { Spinner } from "@/components/ui/loaders/Spinner";
 import { Button } from "@/components/ui/button";
-import { ErrorNotice } from "@/components/errors/ErrorNotice";
+import { ErrorNotice } from "@ai-matrx/design-system";
 import { InfoHint } from "@/components/official/InfoHint";
 import { SettingsSection } from "@/components/official/settings/layout/SettingsSection";
 import { downloadBlob } from "@/utils/file-operations/utils";

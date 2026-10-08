@@ -22,7 +22,7 @@ import type { ResearchSource } from "../../types";
 import type { CurationAnalysisState } from "../../service";
 import { filterAndSortBySearch } from "@ai-matrx/kit/search-scoring";
 import { SourceResultsTable } from "../sources/SourceResultsTable";
-import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { ReadFailure } from "@ai-matrx/design-system";
 import type { MatrxDataTableToolbar } from "@ai-matrx/design-system/data-table/types";
 
 function SourceScopeFilterPopover({ filters }: { filters: FilterDef[] }) {

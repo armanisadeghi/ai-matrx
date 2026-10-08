@@ -6,7 +6,7 @@ import { useEffect, useState } from "react";
 import {
   UntrustedCount,
   type CountRead,
-} from "@/components/official/stale-data/UntrustedCount";
+} from "@ai-matrx/design-system";
 import AppLink from "@/components/navigation/AppLink";
 import {
   Activity,

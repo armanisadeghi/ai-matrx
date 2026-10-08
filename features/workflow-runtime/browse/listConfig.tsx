@@ -19,7 +19,7 @@ import type {
   EntityRowActionsResult,
 } from "@/lib/entity-list/config";
 import { formatRelativeTime } from "@ai-matrx/kit/format";
-import { TextInputDialog } from "@/components/dialogs/text-input/TextInputDialog";
+import { TextInputDialog } from "@ai-matrx/design-system";
 import { WORKFLOW_BROWSE_COLUMNS, workflowTypeLabel } from "./columns";
 import {
   fetchWorkflowBrowsePage,

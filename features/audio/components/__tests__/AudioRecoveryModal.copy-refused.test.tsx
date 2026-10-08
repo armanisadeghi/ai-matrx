@@ -33,7 +33,7 @@ jest.mock("@/lib/redux/hooks", () => ({ useAppDispatch: () => dispatch }));
 jest.mock("@/lib/redux/slices/overlaySlice", () => ({
   openOverlay: (payload: unknown) => ({ type: "overlay/open", payload }),
 }));
-jest.mock("@/components/read-state/ReadFailure", () => ({ ReadFailure: () => null }));
+jest.mock("@ai-matrx/design-system", () => ({ ReadFailure: () => null }));
 jest.mock("@/components/mardown-display/blocks/audio/AudioOutputBlock", () => ({ __esModule: true, default: () => null }));
 jest.mock("@/components/ui/button", () => ({
   Button: (p: { children?: React.ReactNode; onClick?: () => void }) => (

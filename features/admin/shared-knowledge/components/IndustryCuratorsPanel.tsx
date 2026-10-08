@@ -25,7 +25,7 @@ import {
 import type { Industry } from "@/features/industries/types";
 import { UserSearchField } from "@/features/user-search/UserSearchField";
 import { useRead } from "@ai-matrx/design-system";
-import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { ReadFailure } from "@ai-matrx/design-system";
 
 export function IndustryCuratorsPanel({ industry }: { industry: Industry }) {
   const [email, setEmail] = useState("");

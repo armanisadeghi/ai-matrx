@@ -66,8 +66,8 @@ import type { LabelBatch, LabelCode } from "../types";
 import { formatBatchState } from "../columns";
 import { PrinterCertificationNotice } from "../printers/components/PrinterCertificationNotice";
 import { useFailedPrinterGate } from "../printers/useFailedPrinterGate";
-import { readOf } from "@/components/read-state/ReadGate";
-import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { readOf } from "@ai-matrx/design-system";
+import { ReadFailure } from "@ai-matrx/design-system";
 
 function stateTone(state: string): string {
   return state === "open"

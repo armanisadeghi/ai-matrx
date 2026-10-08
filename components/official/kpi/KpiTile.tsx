@@ -27,7 +27,7 @@ import {
   countReadState,
   unavailableCountLabel,
   type CountRead,
-} from "@/components/official/stale-data/UntrustedCount";
+} from "@ai-matrx/design-system";
 
 export type KpiTone = "neutral" | "good" | "warn" | "bad";
 

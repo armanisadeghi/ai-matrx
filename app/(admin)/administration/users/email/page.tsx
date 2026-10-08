@@ -26,7 +26,7 @@ import { UserSearchField } from "@/features/user-search/UserSearchField";
 import { AdminUserSearchResponseSchema } from "@/features/user-search/types";
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { Textarea } from "@/components/ui/textarea";
-import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { ReadFailure } from "@ai-matrx/design-system";
 
 interface EmailTemplate {
   id: string;

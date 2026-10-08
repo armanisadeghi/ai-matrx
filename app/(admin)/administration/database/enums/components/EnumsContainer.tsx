@@ -34,7 +34,7 @@ import {
 } from "@ai-matrx/kit/url-state";
 import type { EnumFilter, EnumSort } from "@/types/enum-types";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
-import { readOf } from "@/components/read-state/ReadGate";
+import { readOf } from "@ai-matrx/design-system";
 
 interface EnumsContainerProps {
   initialEnums?: DatabaseEnum[];

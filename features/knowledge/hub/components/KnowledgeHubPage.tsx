@@ -249,7 +249,7 @@ import {
   type TranscriptFacet,
   type TranscriptMenuAction,
 } from "@/features/knowledge/hub/transcripts/transcriptRows";
-import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { ReadFailure } from "@ai-matrx/design-system";
 import { formatCount } from "@ai-matrx/kit/format";
 
 const GROUP_ID = "knowledge-hub";

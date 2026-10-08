@@ -32,7 +32,7 @@ import {
 
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { TextInputDialog } from "@/components/dialogs/text-input/TextInputDialog";
+import { TextInputDialog } from "@ai-matrx/design-system";
 import { AssistChip } from "@/features/assists/components/AssistChip";
 import { makeEphemeralAssist } from "@/features/assists/types";
 import { useClipboard } from "@ai-matrx/kit/clipboard";

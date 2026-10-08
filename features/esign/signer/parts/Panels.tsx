@@ -9,7 +9,7 @@ import { CheckCircle2, Download, FileSignature, Printer, ShieldCheck, Undo2, Use
 
 import { Button } from "@ai-matrx/design-system/controls";
 import { Checkbox } from "@/components/ui/checkbox";
-import { ErrorNotice } from "@/components/errors/ErrorNotice";
+import { ErrorNotice } from "@ai-matrx/design-system";
 import { Spinner } from "@/components/ui/loaders/Spinner";
 import { usePublishPageBottomDock } from "@/lib/layout/usePublishPageBottomDock";
 import { loginHref, signUpHref } from "@/utils/auth/auth-destination";

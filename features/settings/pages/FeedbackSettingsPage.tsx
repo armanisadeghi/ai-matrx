@@ -1,6 +1,6 @@
 "use client";
 
-import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { ReadFailure } from "@ai-matrx/design-system";
 import { RichContent } from "@ai-matrx/rich-content/levels/RichContent";
 import React, { useEffect, useState, useTransition, useCallback } from "react";
 import Link from "next/link";

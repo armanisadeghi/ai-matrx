@@ -64,7 +64,7 @@ import { usePagesQuery } from "./pages/usePagesQuery";
 import { IntentReviewDeck } from "./pages/review/IntentReviewDeck";
 import { MapRunControls } from "./pages/runs/MapRunControls";
 import type { PagesWorkspaceContext } from "./pages/seams";
-import { ErrorNotice } from "@/components/errors/ErrorNotice";
+import { ErrorNotice } from "@ai-matrx/design-system";
 
 export function PagesWorkspace({ mapId, siteId, host, readOnly }: MapViewProps) {
   const { knobs, loading, error } = useTopicalMapKnobs();

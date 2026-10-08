@@ -7,7 +7,7 @@ import {
   Select,
 } from "@ai-matrx/design-system/controls";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
-import { ErrorNotice } from "@/components/errors/ErrorNotice";
+import { ErrorNotice } from "@ai-matrx/design-system";
 import { formatCents } from "../catalog/format";
 import type { CatalogPlan } from "../catalog/types";
 import { formatMoney } from "@ai-matrx/kit/format";

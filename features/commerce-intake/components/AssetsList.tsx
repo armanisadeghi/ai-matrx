@@ -8,7 +8,7 @@ import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
  * from the list side).
  */
 
-import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { ReadFailure } from "@ai-matrx/design-system";
 import { StaleDataNotice } from "@ai-matrx/design-system";
 import React, { useEffect, useState } from "react";
 import Link from "next/link";

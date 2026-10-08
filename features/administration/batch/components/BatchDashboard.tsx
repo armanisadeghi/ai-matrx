@@ -21,7 +21,7 @@
  */
 import { useAdminCost } from "@/components/cost/useAdminCost";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { UntrustedCount } from "@/components/official/stale-data/UntrustedCount";
+import { UntrustedCount } from "@ai-matrx/design-system";
 import {
   AlertTriangle,
   CheckCircle2,
@@ -51,7 +51,7 @@ import { DELIVERY, fmtInt, fmtPct } from "./presentation";
 import { WorkItemsPanel } from "./WorkItemsPanel";
 import { ProviderBatchesPanel } from "./ProviderBatchesPanel";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
-import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { ReadFailure } from "@ai-matrx/design-system";
 
 const WINDOWS: { key: SavingsWindow; label: string }[] = [
   { key: "7d", label: "7 days" },

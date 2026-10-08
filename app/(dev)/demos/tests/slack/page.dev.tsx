@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import SlackManager from './components/SlackManager';
-import { TextInputDialog } from '@/components/dialogs/text-input/TextInputDialog';
+import { TextInputDialog } from '@ai-matrx/design-system';
 import { replaceAddressWithoutNavigating } from "@/lib/url-state/addressWithoutNavigating";
 
 const clientId = process.env.NEXT_PUBLIC_SLACK_CLIENT_ID;

@@ -23,7 +23,7 @@ import {
 } from "../../utils/timecode";
 import { useScrollSync } from "../scroll-sync/ScrollSyncProvider";
 import { ColumnEmptyState } from "./ColumnEmptyState";
-import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { ReadFailure } from "@ai-matrx/design-system";
 import { StaleDataNotice } from "@ai-matrx/design-system";
 import { ColumnHeader } from "./ColumnHeader";
 import { EditableTextSegmentRow } from "./EditableTextSegmentRow";

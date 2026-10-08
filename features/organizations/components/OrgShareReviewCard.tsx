@@ -42,7 +42,7 @@ import {
   ORG_RESOURCE_CATALOGUE,
   type OrgResourceEntry,
 } from "../resource-catalogue";
-import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { ReadFailure } from "@ai-matrx/design-system";
 
 interface OrgShareReviewCardProps {
   orgId: string;

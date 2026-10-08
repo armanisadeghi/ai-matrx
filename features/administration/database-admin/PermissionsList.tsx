@@ -7,7 +7,7 @@ import { Input } from "@ai-matrx/design-system/controls";
 import { Search } from "lucide-react";
 import type { DatabasePermission } from "./types";
 import { stringUrlCodec, useUrlState } from "@ai-matrx/kit/url-state";
-import { readOf } from "@/components/read-state/ReadGate";
+import { readOf } from "@ai-matrx/design-system";
 
 interface PermissionsListProps {
   permissions?: DatabasePermission[];

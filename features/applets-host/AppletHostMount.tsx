@@ -51,7 +51,7 @@ import {
 import { storedMandateKey } from "@ai-matrx/agents/mandates";
 import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
 import { pushAddressWithoutNavigating } from "@/lib/url-state/addressWithoutNavigating";
-import { ErrorNotice } from "@/components/errors/ErrorNotice";
+import { ErrorNotice } from "@ai-matrx/design-system";
 
 /** What every Applet may import beside its own files (the record adds its own entries). */
 const HOST_SCOPE = {

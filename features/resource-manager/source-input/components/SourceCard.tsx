@@ -50,7 +50,7 @@ import { sourceHref } from "@/features/sources/api/sourcesApi";
 import { cn } from "@/utils/cn";
 import { toast } from "@/lib/toast";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
-import { ErrorNotice } from "@/components/errors/ErrorNotice";
+import { ErrorNotice } from "@ai-matrx/design-system";
 import { describeFailure } from "@/lib/failure/transport";
 import { formatElapsed } from "@/lib/progress/elapsed";
 import { sourceKindDef, sourceKindIcon, sourceKindNoun } from "../sourceKinds";

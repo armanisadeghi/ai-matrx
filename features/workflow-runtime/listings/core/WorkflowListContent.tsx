@@ -1,6 +1,6 @@
 "use client";
 
-import { UntrustedCount } from "@/components/official/stale-data/UntrustedCount";
+import { UntrustedCount } from "@ai-matrx/design-system";
 import { useEffect, useRef } from "react";
 import { CircleAlert, Loader2 } from "lucide-react";
 

@@ -10,7 +10,7 @@ import {
 } from "lucide-react";
 
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
-import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { ReadFailure } from "@ai-matrx/design-system";
 import { SettingsCallout } from "@/components/official/settings/layout/SettingsCallout";
 import { SettingsReadOnlyValue } from "@/components/official/settings/layout/SettingsReadOnlyValue";
 import { SettingsSection } from "@/components/official/settings/layout/SettingsSection";

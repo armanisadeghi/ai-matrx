@@ -8,8 +8,8 @@
 //    one canonical row per module, with the full value in the detail panel.
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { readOf } from "@/components/read-state/ReadGate";
-import { UntrustedCount } from "@/components/official/stale-data/UntrustedCount";
+import { readOf } from "@ai-matrx/design-system";
+import { UntrustedCount } from "@ai-matrx/design-system";
 import { useRouter, useSearchParams } from "next/navigation";
 import AppLink from "@/components/navigation/AppLink";
 import {

@@ -143,7 +143,7 @@ import {
 import { cn } from "@/utils/cn";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { StaleDataNotice } from "@ai-matrx/design-system";
-import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { ReadFailure } from "@ai-matrx/design-system";
 
 /** Canonical `ui_surface.name` this page emits (unchanged from the old library). */
 const RAG_LIBRARY_SURFACE = "matrx-user/knowledge-library";

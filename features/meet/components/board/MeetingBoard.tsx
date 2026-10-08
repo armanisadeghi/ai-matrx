@@ -53,7 +53,7 @@ import {
 import { formatDurationMs } from "@ai-matrx/kit/format";
 import { Button } from "@/components/ui/button";
 import { ShimmerText } from "@/components/loaders/ShimmerText";
-import { ErrorNotice } from "@/components/errors/ErrorNotice";
+import { ErrorNotice } from "@ai-matrx/design-system";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectIsAuthenticated } from "@/lib/redux/selectors/userSelectors";
 import type { BoardDocument } from "@/features/board/board/document";

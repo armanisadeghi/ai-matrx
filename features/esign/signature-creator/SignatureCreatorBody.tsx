@@ -5,7 +5,7 @@
 // signing page's first bundle. Every tab emits one `Candidate`; the preview shows it; Adopt returns
 // it as `CreatedMark`s. One output for every tab (decision C): a transparent paper-ink PNG.
 
-import { ErrorNotice } from "@/components/errors/ErrorNotice";
+import { ErrorNotice } from "@ai-matrx/design-system";
 import { useCallback, useEffect, useState } from "react";
 import { Button, Switch, Tabs } from "@ai-matrx/design-system/controls";
 

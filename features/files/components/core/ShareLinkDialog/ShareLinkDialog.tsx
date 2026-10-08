@@ -38,7 +38,7 @@ import {
 import { formatAbsoluteDate } from "@/features/files/utils/format";
 import type { ResourceType } from "@/features/files/types";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
-import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { ReadFailure } from "@ai-matrx/design-system";
 import { useRead } from "@ai-matrx/design-system";
 import { StaleDataNotice } from "@ai-matrx/design-system";
 import { copyToClipboard } from "@/lib/clipboard/copy";

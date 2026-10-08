@@ -35,7 +35,7 @@ import {
 } from "@/lib/redux/preferences/userPreferencesSlice";
 import type { RootState } from "@/lib/redux/store";
 import type { IdentityKey } from "@/lib/sync/types";
-import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { ReadFailure } from "@ai-matrx/design-system";
 
 // Shape of a slice record written by the engine's IDB persistence layer. Kept
 // local to the demo — production code imports the type from `lib/sync/persistence/idb`

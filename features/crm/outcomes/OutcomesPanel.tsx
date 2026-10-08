@@ -44,7 +44,7 @@ import {
   listOutcomeEvents,
   type OutcomeCounts,
 } from "./service";
-import { readOf } from "@/components/read-state/ReadGate";
+import { readOf } from "@ai-matrx/design-system";
 
 const PAGE_SIZE = 25;
 

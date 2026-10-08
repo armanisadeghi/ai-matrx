@@ -79,7 +79,7 @@ import {
 import { countBy, formatUpdated, withCounts } from "../utils";
 import type { PlanNodeRow, PlanNodeType } from "../types";
 import { PipelineProgressBadge } from "./PipelineProgressBadge";
-import type { ReadOutcome } from "@/components/read-state/ReadGate";
+import type { ReadOutcome } from "@ai-matrx/design-system";
 
 /** Bump `version` when a column is added/removed (lib/list-views backfill contract). */
 const SURFACE_PREFS: Partial<ListViewPrefs> = {

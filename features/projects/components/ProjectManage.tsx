@@ -47,7 +47,7 @@ import { MemberManagement } from "./MemberManagement";
 import { InvitationManager } from "./InvitationManager";
 import { DangerZone } from "./DangerZone";
 import { ProjectCopyForAiButton } from "./ProjectCopyForAiButton";
-import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { ReadFailure } from "@ai-matrx/design-system";
 import { isUuidShape } from "@ai-matrx/kit/uuid";
 
 export function ProjectManage() {

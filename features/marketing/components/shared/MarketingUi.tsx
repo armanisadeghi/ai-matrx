@@ -22,7 +22,7 @@ import {
   countReadState,
   unavailableCountLabel,
   type CountRead,
-} from "@/components/official/stale-data/UntrustedCount";
+} from "@ai-matrx/design-system";
 import { isRecordUnavailableError } from "@/lib/records/recordUnavailable";
 import { RecordUnavailableNotice } from "@/features/marketing/components/shared/RecordUnavailableNotice";
 import { extractErrorMessage, humanizeBackendError } from "@/utils/errors";

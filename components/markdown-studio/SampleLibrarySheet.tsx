@@ -24,7 +24,7 @@ import { Input } from "@ai-matrx/design-system/controls";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { MatrxDynamicPanelHost } from "@/components/matrx/resizable/MatrxDynamicPanelHost";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
-import { TextInputDialog } from "@/components/dialogs/text-input/TextInputDialog";
+import { TextInputDialog } from "@ai-matrx/design-system";
 import { dismissRecordToasts, recordToast, toast } from "@/lib/toast";
 import { cn } from "@/lib/utils";
 import { idMatchesQuery } from "@ai-matrx/kit/search-scoring";
@@ -37,7 +37,7 @@ import type { MarkdownSample } from "@/components/admin/markdown-tester/samples-
 import { formatRelativeTime } from "@ai-matrx/kit/format";
 import { archiveConfirmSentence } from "@/features/trash/archiveCopy";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
-import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { ReadFailure } from "@ai-matrx/design-system";
 
 // Note: the trigger lives in the route header (a `HeaderAction`), so this
 // component is fully controlled from outside — no internal open state or

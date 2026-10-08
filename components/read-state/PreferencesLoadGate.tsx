@@ -25,7 +25,7 @@
  */
 import type { ReactNode } from "react";
 import { Loader2 } from "lucide-react";
-import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { ReadFailure } from "@ai-matrx/design-system";
 import { useAppSelector, useAppStore } from "@/lib/redux/hooks";
 import {
   selectPreferencesLoadError,

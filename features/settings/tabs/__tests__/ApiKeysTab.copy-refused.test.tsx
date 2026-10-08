@@ -26,7 +26,7 @@ jest.mock("@/components/ui/button", () => ({
   ),
 }));
 jest.mock("@/components/ui/confirm-dialog", () => ({ ConfirmDialog: () => null }));
-jest.mock("@/components/errors/ErrorNotice", () => ({ ErrorNotice: () => null }));
+jest.mock("@ai-matrx/design-system", () => ({ ErrorNotice: () => null }));
 jest.mock("@/components/official/settings/layout/SettingsSection", () => ({
   SettingsSection: (p: { title?: string; action?: React.ReactNode; children?: React.ReactNode }) => (
     <section>

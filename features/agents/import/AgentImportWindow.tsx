@@ -38,7 +38,7 @@ import {
 import { ImportQuickFixes } from "./ImportQuickFixes";
 import type { AgentDefinition } from "@ai-matrx/chat/agents/types/agent-definition.types";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
-import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { ReadFailure } from "@ai-matrx/design-system";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 

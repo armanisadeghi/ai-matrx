@@ -30,7 +30,7 @@ import type { ResolvedSurfaceValue } from "@ai-matrx/chat/surfaces/types";
 import { cn } from "@/lib/utils";
 import { toast } from "@/lib/toast";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
-import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { ReadFailure } from "@ai-matrx/design-system";
 import { InfoHint } from "@/components/official/InfoHint";
 import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 import { useIsMobile } from "@ai-matrx/kit/media-query";

@@ -51,7 +51,7 @@ import { useAppDispatch } from "@/lib/redux/hooks";
 import { callApi } from "@/lib/api/call-api";
 import { useEntitlementGuard } from "@/features/entitlements/components/useEntitlementGuard";
 import { useFileUpload } from "@/features/files/handler/hooks/useFileUpload";
-import { TextInputDialog } from "@/components/dialogs/text-input/TextInputDialog";
+import { TextInputDialog } from "@ai-matrx/design-system";
 import { isSignedUrl } from "@/lib/media/signed-url";
 import type { UnsplashPick } from "@/lib/media/unsplash";
 import { trackUnsplashUse } from "@/lib/media/unsplash";

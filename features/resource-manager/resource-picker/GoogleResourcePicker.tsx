@@ -42,7 +42,7 @@ import {
   PickerViewBody,
   ResourcePickerSubViewHeader,
 } from "./ResourcePickerSubViewHeader";
-import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { ReadFailure } from "@ai-matrx/design-system";
 
 export interface GoogleResourcePickerProps {
   onBack: () => void;

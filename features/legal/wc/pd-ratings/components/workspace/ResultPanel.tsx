@@ -5,7 +5,7 @@ import { cn } from "@/lib/utils";
 import { formatCurrency, formatNumber } from "../../lib/formulas";
 import type { StatelessRatingResponse } from "../../api/types";
 import type { LiveRatingState } from "../../state/useLiveRating";
-import { ErrorNotice } from "@/components/errors/ErrorNotice";
+import { ErrorNotice } from "@ai-matrx/design-system";
 
 interface ResultPanelProps {
   liveState: LiveRatingState;

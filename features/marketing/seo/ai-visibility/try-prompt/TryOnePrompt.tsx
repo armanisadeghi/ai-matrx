@@ -24,7 +24,7 @@ import type { ToolEnvelope } from "@ai-matrx/chat/action-requests/screen-run";
 import { Badge, Button, Chip, Select } from "@ai-matrx/design-system/controls";
 import { useCostDisplay } from "@/components/cost/useCostDisplay";
 
-import { ErrorNotice } from "@/components/errors/ErrorNotice";
+import { ErrorNotice } from "@ai-matrx/design-system";
 import { openCanvasItem } from "@/features/canvas/host/openCanvasItem";
 import { toast } from "@/lib/toast";
 import { PROBE_MAX_COST_USD } from "../../domain-research/section-state";

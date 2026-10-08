@@ -51,7 +51,7 @@ import type {
   ResultPhase,
 } from "../data/types";
 import { archiveConfirmSentence } from "@/features/trash/archiveCopy";
-import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { ReadFailure } from "@ai-matrx/design-system";
 
 export function AssessmentDetail({
   assessmentId,

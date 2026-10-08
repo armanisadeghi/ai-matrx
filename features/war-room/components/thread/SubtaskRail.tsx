@@ -19,8 +19,8 @@
  */
 
 import { useSubtasksRead } from "@/features/tasks/hooks/useSubtasksRead";
-import { UntrustedCount } from "@/components/official/stale-data/UntrustedCount";
-import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { UntrustedCount } from "@ai-matrx/design-system";
+import { ReadFailure } from "@ai-matrx/design-system";
 import { useEffect, useState } from "react";
 import { isOpenStatus } from "@/features/tasks/constants/status";
 import {

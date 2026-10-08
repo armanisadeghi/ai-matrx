@@ -102,9 +102,9 @@ import type {
 } from "../types";
 import { checkEin, formatEinInput } from "./ein";
 import { useHrActivationState } from "./useHrActivationState";
-import { ErrorNotice } from "@/components/errors/ErrorNotice";
+import { ErrorNotice } from "@ai-matrx/design-system";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
-import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { ReadFailure } from "@ai-matrx/design-system";
 
 // A short, honest list. IANA carries hundreds; a US-first employer needs these, and
 // anything else is typed. The field accepts any IANA name — this is a shortcut, not

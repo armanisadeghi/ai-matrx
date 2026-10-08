@@ -13,7 +13,7 @@ import { useEffect, useState } from "react";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { Skeleton } from "@ai-matrx/design-system";
 import { supabase } from "@/utils/supabase/client";
-import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { ReadFailure } from "@ai-matrx/design-system";
 import { TranscriptViewer } from "@/features/transcripts/components/TranscriptViewer";
 import { fetchTranscriptById } from "@/features/transcripts/service/transcriptsService";
 import { setActiveTranscript } from "@/features/transcripts/redux/thunks";

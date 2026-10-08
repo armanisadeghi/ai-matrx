@@ -128,7 +128,7 @@ import {
   type LeavePolicyForm,
 } from "./policy-form";
 import { ProTextarea } from "@/components/official/ProTextarea";
-import { ErrorNotice } from "@/components/errors/ErrorNotice";
+import { ErrorNotice } from "@ai-matrx/design-system";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 /** The schedule classes `hr.leave_policy.schedule_class_scope` is filtered against. */

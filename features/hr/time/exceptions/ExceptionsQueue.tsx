@@ -73,7 +73,7 @@ import { useHrMockCase, useHrTimeQuery } from "../shared/useHrTimeQuery";
 import { EXCEPTION_KIND_LABELS, RESOLUTION_LABELS, SEVERITY_LABELS } from "../shared/vocabulary";
 import { listAttendanceExceptions } from "./api";
 import { readExceptionFilters } from "./readExceptionFilters";
-import { readOf } from "@/components/read-state/ReadGate";
+import { readOf } from "@ai-matrx/design-system";
 
 const DEFAULT_PAGE_SIZE = 50;
 

@@ -15,7 +15,7 @@
  */
 
 import { useState } from "react";
-import { TextInputDialog } from "@/components/dialogs/text-input/TextInputDialog";
+import { TextInputDialog } from "@ai-matrx/design-system";
 
 export function ExportAcknowledgeDialog({
   open,

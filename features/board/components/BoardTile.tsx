@@ -63,7 +63,7 @@ import {
 import { startPointerGesture } from "../engine/pointer-gesture";
 import { TileNavigationBoundary } from "../engine/tile-navigation";
 import { ErrorBoundaryWithCapture } from "@/lib/error-boundary/ErrorBoundaryWithCapture";
-import { ErrorNotice } from "@/components/errors/ErrorNotice";
+import { ErrorNotice } from "@ai-matrx/design-system";
 import { Button } from "@/components/ui/button";
 import { type StatusFrom, type TileStatus, useTileStatus } from "../streams/useSourceStatus";
 import type { BoardAccent } from "../items/types";

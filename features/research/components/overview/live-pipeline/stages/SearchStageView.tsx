@@ -1,7 +1,7 @@
 "use client";
 
-import { readOf } from "@/components/read-state/ReadGate";
-import { UntrustedCount } from "@/components/official/stale-data/UntrustedCount";
+import { readOf } from "@ai-matrx/design-system";
+import { UntrustedCount } from "@ai-matrx/design-system";
 import { useEffect, useMemo, useState } from "react";
 import { Search, Globe, CheckCircle2 } from "lucide-react";
 import { cn } from "@/lib/utils";

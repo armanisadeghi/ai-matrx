@@ -16,7 +16,7 @@ import { appDb } from "@/utils/supabase/appDb";
 import { peekHref } from "../peekHref";
 import { PeekDialog, PeekField } from "../PeekDialog";
 import type { PeekProps } from "../types";
-import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { ReadFailure } from "@ai-matrx/design-system";
 
 interface AppletRow {
   name: string | null;

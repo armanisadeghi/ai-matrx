@@ -59,7 +59,7 @@ import { useOpenTaskEditorWindow } from "@/features/overlays/openers/taskEditorW
 import { TaskCopyForAiButton } from "@/features/tasks/components/TaskCopyForAiButton";
 import { isDateOnlyOverdue } from "@ai-matrx/kit/dates";
 import { useRefocusInputAfterAsync } from "@/features/tasks/hooks/useRefocusInputAfterAsync";
-import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { ReadFailure } from "@ai-matrx/design-system";
 import { dispatchThunk, useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { useStoreRead } from "@/lib/redux/store-reads/useStoreRead";
 import {

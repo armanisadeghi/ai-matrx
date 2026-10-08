@@ -77,7 +77,7 @@ import { supabase } from "@/utils/supabase/client";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { MatrxUuidCell } from "@ai-matrx/design-system/data-table/uuid-cell";
-import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { ReadFailure } from "@ai-matrx/design-system";
 import { StaleDataNotice } from "@ai-matrx/design-system";
 
 // ─── Curated scenario scripts ───────────────────────────────────────────────

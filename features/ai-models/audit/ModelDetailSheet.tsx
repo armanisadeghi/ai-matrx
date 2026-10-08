@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Loader2, ArrowUpRight } from "lucide-react";
 import AiModelDetailPanel from "../components/AiModelDetailPanel";
 import { AccessGate } from "@/features/access-gate/components/AccessGate";
-import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { ReadFailure } from "@ai-matrx/design-system";
 import { aiModelService } from "../service";
 import type { AiModel, AiProvider } from "../types";
 

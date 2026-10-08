@@ -31,7 +31,7 @@ import { SearchInput } from "@/components/official/SearchInput";
 import { Button } from "@/components/ui/button";
 import { CopyTapButton, FilterTapButton } from "@ai-matrx/tap-target/buttons";
 import SuspenseLoader from "@/components/loaders/SuspenseLoader";
-import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { ReadFailure } from "@ai-matrx/design-system";
 import { SettingsSection } from "@/components/official/settings/layout/SettingsSection";
 import { SettingsSwitch } from "@/components/official/settings/primitives/SettingsSwitch";
 import { idMatchesQuery } from "@ai-matrx/kit/search-scoring";

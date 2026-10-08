@@ -24,7 +24,7 @@
 import { formatRelativeTime } from "@/utils/datetime";
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { ReadFailure } from "@ai-matrx/design-system";
 import { Scale } from "lucide-react";
 import { toast } from "@/lib/toast";
 import { Button } from "@/components/ui/button";

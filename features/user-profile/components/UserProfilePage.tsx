@@ -69,7 +69,7 @@ import { EmailListEditor } from "./EmailListEditor";
 import { SocialHandleListEditor } from "./SocialHandleListEditor";
 import { EmergencyContactListEditor } from "./EmergencyContactListEditor";
 import { AddressFields, type AddressValues } from "./AddressFields";
-import { ErrorNotice } from "@/components/errors/ErrorNotice";
+import { ErrorNotice } from "@ai-matrx/design-system";
 import { AccountAccessSection } from "@/features/user-profile/account-access/AccountAccessSection";
 import { AccountExportSection } from "@/features/user-profile/account-export/AccountExportSection";
 import { AccountLifecycleSection } from "@/features/account-lifecycle/AccountLifecycleSection";

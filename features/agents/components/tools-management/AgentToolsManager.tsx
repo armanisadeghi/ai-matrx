@@ -140,9 +140,9 @@ import {
   TOOL_AVAILABILITY_LABELS,
 } from "@/features/tool-registry/shared/toolRuntimes.service";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
-import { ReadFailure } from "@/components/read-state/ReadFailure";
-import { readOf } from "@/components/read-state/ReadGate";
-import { UntrustedCount } from "@/components/official/stale-data/UntrustedCount";
+import { ReadFailure } from "@ai-matrx/design-system";
+import { readOf } from "@ai-matrx/design-system";
+import { UntrustedCount } from "@ai-matrx/design-system";
 import { InfoHint } from "@/components/official/InfoHint";
 import { toast } from "@/lib/toast";
 

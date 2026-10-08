@@ -62,7 +62,7 @@ it("ErrorNotice's menu never takes a column of its own or a line of its own", as
   // it wrapped and grew it 16px. It sits under the ⋯ in the column that
   // button already owns; a bare one-line notice keeps it on the sentence.
   const { renderToStaticMarkup } = await import("react-dom/server");
-  const { ErrorNotice } = await import("@/components/errors/ErrorNotice");
+  const { ErrorNotice } = await import("@ai-matrx/design-system");
   // ErrorNotice lives in @ai-matrx/design-system; the app root (AlchemyHost) hands it the menu.
   const { ErrorActionsProvider } = await import("@ai-matrx/design-system");
   const { renderPackageErrorActions } = await import("@/components/errors/PackageErrorActions");

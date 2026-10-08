@@ -41,7 +41,7 @@ import type { ContextMenuExtraItem } from "@/features/context-menu-v3/types";
 import { CONTEXT_MENU_ENTITY_KEY } from "@/features/context-menu-v3/types";
 import type { EntityTypeToken } from "@ai-matrx/associations";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
-import { readOf } from "@/components/read-state/ReadGate";
+import { readOf } from "@ai-matrx/design-system";
 
 /**
  * The href a uuid CELL in this admin console may carry for `(token, id)`.

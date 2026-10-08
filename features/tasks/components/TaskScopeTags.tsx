@@ -24,7 +24,7 @@ import {
 import { DynamicIcon } from "@ai-matrx/icons";
 import { KgSuggestionsChip } from "@/features/kg-suggestions/components/KgSuggestionsChip";
 import { cn } from "@/utils/cn";
-import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { ReadFailure } from "@ai-matrx/design-system";
 
 interface TaskScopeTagsProps {
   taskId: string;

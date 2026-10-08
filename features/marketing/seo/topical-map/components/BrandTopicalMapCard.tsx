@@ -19,7 +19,7 @@ import { marketingRoutes } from "@/features/marketing/lib/routes";
 import { useTopicalMaps } from "../hooks";
 import { topicalMapErrorText } from "../errors";
 import { startMapHref } from "./TopicalMapHome";
-import { ErrorNotice } from "@/components/errors/ErrorNotice";
+import { ErrorNotice } from "@ai-matrx/design-system";
 import { AGENT_ICON } from "@/components/icons/domain-icons";
 
 export function BrandTopicalMapCard({

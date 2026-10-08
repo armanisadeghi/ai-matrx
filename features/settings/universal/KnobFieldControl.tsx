@@ -69,7 +69,7 @@ import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { selectPlatformDefaultTextModelId } from "@/features/ai-models/redux/platformDefaultModel";
 import { useModels } from "@/features/ai-models/hooks/useModels";
 import { getModelRecords } from "@ai-matrx/chat/agents/identity/model-catalog";
-import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { ReadFailure } from "@ai-matrx/design-system";
 import {
   DECISION_DEFAULT_MODEL_KNOB,
   firstDecisionModelId,

@@ -43,7 +43,7 @@ import {
   AdminUserAcquisitionRowSchema,
 } from "../types";
 import { pushAppHref } from "@/lib/deployment/navigate";
-import { readOf } from "@/components/read-state/ReadGate";
+import { readOf } from "@ai-matrx/design-system";
 
 type Timeframe = "7d" | "30d" | "90d" | "all";
 

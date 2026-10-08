@@ -36,7 +36,7 @@ import {
   type SourcePreviewDoc,
 } from "@/features/kg-suggestions/service/sourcePreviewService";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
-import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { ReadFailure } from "@ai-matrx/design-system";
 
 export interface SuggestionSourcePreviewProps {
   kind: string;

@@ -99,7 +99,7 @@ import { resolveSystemOrgId } from "@/lib/organizations/systemOrg";
 import { supabase } from "@/utils/supabase/client";
 import { pushAddressWithoutNavigating } from "@/lib/url-state/addressWithoutNavigating";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
-import { readOf } from "@/components/read-state/ReadGate";
+import { readOf } from "@ai-matrx/design-system";
 import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 
 const PAGE_LOCATION =

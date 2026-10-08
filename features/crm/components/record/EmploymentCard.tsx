@@ -12,7 +12,7 @@
 
 import { PlusTapButton, XTapButton } from "@ai-matrx/tap-target/buttons";
 import { TapTargetButtonTransparent } from "@ai-matrx/tap-target";
-import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { ReadFailure } from "@ai-matrx/design-system";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "@/lib/toast";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";

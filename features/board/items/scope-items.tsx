@@ -21,7 +21,7 @@
 import { useEffect, useState } from "react";
 import { Tag } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { readOf } from "@/components/read-state/ReadGate";
+import { readOf } from "@ai-matrx/design-system";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { canManageSettings } from "@/features/organizations/types";
 import { tryGetEntityInfo } from "@/features/scopes/registry/entityRegistry";

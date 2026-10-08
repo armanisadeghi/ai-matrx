@@ -2,8 +2,8 @@
 
 import { publishedToWebLabel } from "@/lib/row-access";
 import React, { useState, useEffect, useCallback, useMemo, useRef } from "react";
-import { UntrustedCount } from "@/components/official/stale-data/UntrustedCount";
-import { readOf } from "@/components/read-state/ReadGate";
+import { UntrustedCount } from "@ai-matrx/design-system";
+import { readOf } from "@ai-matrx/design-system";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { toast } from "sonner";
 import AiModelTable from "./AiModelTable";

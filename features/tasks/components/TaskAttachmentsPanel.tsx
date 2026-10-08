@@ -31,8 +31,8 @@ import { useFileUpload } from "@/features/files/handler/hooks/useFileUpload";
 import { folderForTask } from "@/features/files/utils/folder-conventions";
 import { resolveEntityDoors } from "@/components/official/entity-ref/doors";
 import { Button } from "@/components/ui/button";
-import { UntrustedCount } from "@/components/official/stale-data/UntrustedCount";
-import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { UntrustedCount } from "@ai-matrx/design-system";
+import { ReadFailure } from "@ai-matrx/design-system";
 import { toast } from "@/lib/toast";
 import { cn } from "@/utils/cn";
 

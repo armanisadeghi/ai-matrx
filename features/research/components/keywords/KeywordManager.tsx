@@ -44,7 +44,7 @@ import type { ResearchKeyword, ResearchSource } from "../../types";
 import { Favicon } from "../overview/live-pipeline/ui/Favicon";
 import { idMatchesQuery } from "@ai-matrx/kit/search-scoring";
 import KeywordOverlapMatrix from "./KeywordOverlapMatrix";
-import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { ReadFailure } from "@ai-matrx/design-system";
 
 /**
  * The keyword's FOCUSED LENS, viewable and editable in place. A goal changes

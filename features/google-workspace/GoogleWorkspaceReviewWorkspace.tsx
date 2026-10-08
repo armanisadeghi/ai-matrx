@@ -80,7 +80,7 @@ import {
   rememberGoogleConnection,
 } from "@/features/google-workspace/connection";
 import { ProTextarea } from "@/components/official/ProTextarea";
-import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { ReadFailure } from "@ai-matrx/design-system";
 import { getGoogleDrivePickerToken } from "@/features/google-workspace/drivePickerToken";
 import {
   OPEN_GOOGLE_RECORD_CONSEQUENCE,

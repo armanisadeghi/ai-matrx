@@ -33,7 +33,7 @@ import type {
   AttentionAction,
   AttentionItem,
 } from "@/features/admin/attention/types";
-import { TextInputDialog } from "@/components/dialogs/text-input/TextInputDialog";
+import { TextInputDialog } from "@ai-matrx/design-system";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { toast } from "@/lib/toast";
 import { useAppSelector } from "@/lib/redux/hooks";

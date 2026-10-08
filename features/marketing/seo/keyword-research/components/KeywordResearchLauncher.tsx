@@ -39,7 +39,7 @@ import {
   assertNoRunInFlight,
   parseStagedKeywordWrite,
 } from "../keyword-research-write";
-import { ErrorNotice } from "@/components/errors/ErrorNotice";
+import { ErrorNotice } from "@ai-matrx/design-system";
 
 export interface KeywordResearchLauncherProps {
   run: ResearchRunState;

@@ -17,7 +17,7 @@ import {
 } from 'lucide-react';
 import type { ToolDefinition } from '@/features/tool-call-visualization/testing/types';
 import { filterAndSortBySearch } from '@ai-matrx/kit/search-scoring';
-import { ReadFailure } from '@/components/read-state/ReadFailure';
+import { ReadFailure } from '@ai-matrx/design-system';
 
 const CATEGORY_ICONS: Record<string, LucideIcon> = {
   web: Globe,

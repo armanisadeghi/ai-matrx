@@ -20,7 +20,7 @@ import {
   selectThreadsStatusForRoom,
 } from "@/features/war-room/redux/selectors";
 import { hydrateWarRoomSession } from "@/features/war-room/redux/thunks";
-import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { ReadFailure } from "@ai-matrx/design-system";
 import { threadDisplayTitle } from "@/features/war-room/utils/threadDisplayTitle";
 import { cn } from "@/lib/utils";
 import type { RootState } from "@/lib/redux/store";

@@ -51,7 +51,7 @@ import { StudioDocRenameDialog } from "./StudioDocRenameDialog";
 import { FileContextDialog } from "@/features/files/components/FileContextSection";
 import { PdfStudioSidebarToggle } from "./PdfStudioSidebarToggle";
 import { PdfStudioPagesNav } from "./PdfStudioPagesNav";
-import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { ReadFailure } from "@ai-matrx/design-system";
 import type { SidebarView } from "../state/types";
 import type { PdfPageRow } from "../hooks/useProcessedDocumentPages";
 import type { PdfDocument } from "../hooks/usePdfExtractor";

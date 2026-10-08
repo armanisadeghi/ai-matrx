@@ -23,7 +23,7 @@ import {
 import { Label } from "@/components/ui/label";
 import { SwitchLegacy as Switch } from "@/components/ui/switch";
 import { Button } from "@ai-matrx/design-system";
-import { ErrorNotice } from "@/components/errors/ErrorNotice";
+import { ErrorNotice } from "@ai-matrx/design-system";
 import { Input } from "@ai-matrx/design-system";
 import { TextareaLegacy as Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";

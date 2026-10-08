@@ -46,7 +46,8 @@ jest.mock("@/features/sharing/components/ShareModal", () => ({
 jest.mock("@/components/ui/confirm-dialog", () => ({
   ConfirmDialog: () => null,
 }));
-jest.mock("@/components/dialogs/text-input/TextInputDialog", () => ({
+jest.mock("@ai-matrx/design-system", () => ({
+  ...jest.requireActual("@ai-matrx/design-system"),
   TextInputDialog: ({
     title,
     defaultValue,

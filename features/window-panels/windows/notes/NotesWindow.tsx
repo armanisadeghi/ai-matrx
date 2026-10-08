@@ -44,7 +44,7 @@ import { NoteStatsFooter } from "@/features/notes/components/NoteStatsFooter";
 import { NotesWindowView } from "@/features/notes/components/NotesWindowView";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 import { Plus } from "lucide-react";
-import { ErrorNotice } from "@/components/errors/ErrorNotice";
+import { ErrorNotice } from "@ai-matrx/design-system";
 
 export interface NotesWindowProps extends Omit<
   WindowPanelProps,

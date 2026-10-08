@@ -19,7 +19,7 @@ import {
 import {
   fetchFullAgent,
 } from "@/features/agents/redux/fetch-full-agent.thunk";
-import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { ReadFailure } from "@ai-matrx/design-system";
 import { accentClasses } from "./accents";
 import type { OrchestraAccent } from "../constants";
 import { variableRunLabel } from "@ai-matrx/agents";

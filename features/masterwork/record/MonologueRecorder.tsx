@@ -26,7 +26,7 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useSimpleRecorder } from "@/features/audio/hooks/useSimpleRecorder";
 import { formatDurationSeconds } from "@ai-matrx/kit/format";
-import { ErrorNotice } from "@/components/errors/ErrorNotice";
+import { ErrorNotice } from "@ai-matrx/design-system";
 
 /** `m:ss` — the only clock a person talking needs. The package's voice. */
 export function formatTalkTime(seconds: number): string {

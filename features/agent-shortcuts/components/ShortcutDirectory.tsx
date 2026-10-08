@@ -47,7 +47,7 @@ import {
   createTableRowMenuDescriptor,
 } from "@/features/context-menu-v3/table-row-item";
 import type { ContextMenuExtraSection } from "@/features/context-menu-v3/types";
-import { readOf } from "@/components/read-state/ReadGate";
+import { readOf } from "@ai-matrx/design-system";
 
 export interface ShortcutDirectoryProps {
   mode: ShortcutDirectoryMode;

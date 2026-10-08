@@ -27,7 +27,7 @@ import {
   PopoverContent,
 } from "@ai-matrx/design-system";
 import { useUserProjects } from "@/features/projects/hooks";
-import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { ReadFailure } from "@ai-matrx/design-system";
 import { useOpenCreateProjectWindow } from "@/features/overlays/openers/createProjectWindow";
 import { cn } from "@/lib/utils";
 import { toast } from "@/lib/toast";

@@ -53,7 +53,7 @@ import {
   fmtStamp,
 } from "./presentation";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
-import { readOf } from "@/components/read-state/ReadGate";
+import { readOf } from "@ai-matrx/design-system";
 
 const ANY = "__any__";
 

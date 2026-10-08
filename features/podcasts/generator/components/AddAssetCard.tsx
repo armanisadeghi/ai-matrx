@@ -8,7 +8,7 @@
 import { useState } from "react";
 import { Plus, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { TextInputDialog } from "@/components/dialogs/text-input/TextInputDialog";
+import { TextInputDialog } from "@ai-matrx/design-system";
 import type { RunAssetKind } from "@/features/podcasts/studio/runs/run-types";
 
 interface AddAssetCardProps {

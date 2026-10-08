@@ -35,7 +35,7 @@ import { USERS_ADMIN_LOCATION } from "../constants";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 import { buildAnnouncementMenuSection } from "./announcement-menu-section";
 import SystemAnnouncementBanner from "@/components/layout/SystemAnnouncementBanner";
-import { readOf } from "@/components/read-state/ReadGate";
+import { readOf } from "@ai-matrx/design-system";
 
 const TYPE_CLASS: Record<string, string> = {
   info: "text-sky-600 border-sky-500/40 bg-sky-500/10",

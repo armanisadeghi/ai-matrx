@@ -1,6 +1,6 @@
 "use client";
 
-import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { ReadFailure } from "@ai-matrx/design-system";
 import { StaleDataNotice } from "@ai-matrx/design-system";
 import React, { useEffect, useState, useCallback } from "react";
 import { Button } from "@/components/ui/button";

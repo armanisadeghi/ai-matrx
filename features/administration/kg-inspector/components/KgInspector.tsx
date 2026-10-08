@@ -74,8 +74,8 @@ import {
   type KgMentionRow,
   type KgEdgeRow,
 } from "../service/kgInspectorService";
-import { ReadFailure } from "@/components/read-state/ReadFailure";
-import { readOf } from "@/components/read-state/ReadGate";
+import { ReadFailure } from "@ai-matrx/design-system";
+import { readOf } from "@ai-matrx/design-system";
 
 const PAGE_SIZE = 50;
 const FETCH_MAX = 200;

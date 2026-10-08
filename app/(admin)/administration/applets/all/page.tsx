@@ -49,8 +49,8 @@ import {
   appletExecutionsHref,
 } from "@/features/applets/components/AppletRef";
 import { pushAppHref } from "@/lib/deployment/navigate";
-import { UntrustedCount } from "@/components/official/stale-data/UntrustedCount";
-import { readOf } from "@/components/read-state/ReadGate";
+import { UntrustedCount } from "@ai-matrx/design-system";
+import { readOf } from "@ai-matrx/design-system";
 
 function getStatusBadge(status: string) {
   const map: Record<string, { cls: string; Icon: typeof Clock }> = {

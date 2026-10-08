@@ -87,7 +87,7 @@ import type {
 } from "@ai-matrx/agents/generated/stream-events";
 import { isJsonObject } from "@/types/json";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
-import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { ReadFailure } from "@ai-matrx/design-system";
 import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
 
 interface MessageTemplateManagerProps {

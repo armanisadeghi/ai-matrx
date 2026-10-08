@@ -33,7 +33,7 @@ import {
   buildPathFilterRules,
   matchesPathFilter,
 } from "@/features/feature-docs/utils/path-filter";
-import { readOf } from "@/components/read-state/ReadGate";
+import { readOf } from "@ai-matrx/design-system";
 
 interface ColumnFilters {
   pathInclude: string;

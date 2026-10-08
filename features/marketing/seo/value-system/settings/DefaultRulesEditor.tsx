@@ -34,7 +34,7 @@ import {
 } from "./default-rules-data";
 import { defaultRuleValidationMessage } from "./default-rules-validation";
 import { InlineQueryError } from "@/features/marketing/components/shared/MarketingUi";
-import { ErrorNotice } from "@/components/errors/ErrorNotice";
+import { ErrorNotice } from "@ai-matrx/design-system";
 
 const RULES_KEY = ["marketing", "seo", "platform-default-rules"] as const;
 

@@ -79,7 +79,7 @@ import { useAgentLauncher } from "@ai-matrx/chat/agents/hooks/useAgentLauncher";
 import { formatCount, formatDurationMs } from "@ai-matrx/kit/format";
 import { costWords } from "@/features/mandates/run-history/format";
 import { useCostDisplay } from "@/components/cost/useCostDisplay";
-import { ErrorNotice } from "@/components/errors/ErrorNotice";
+import { ErrorNotice } from "@ai-matrx/design-system";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { humanizeIdentifier, displayLabel } from "@ai-matrx/kit/text-case";
 

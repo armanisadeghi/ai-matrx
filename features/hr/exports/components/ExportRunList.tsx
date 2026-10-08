@@ -98,7 +98,7 @@ import { ExportFailDialog } from "./ExportFailDialog";
 import { ExportPreconditionAlert } from "./ExportPreconditionAlert";
 import { ExportSupersedeDialog } from "./ExportSupersedeDialog";
 import { HrIdentityDoor, PayPeriodDoor } from "./HrIdentityDoor";
-import { readOf } from "@/components/read-state/ReadGate";
+import { readOf } from "@ai-matrx/design-system";
 
 // ─────────────────────────────────────────────────────────────────────────────────────────────
 // §4.5 — the state machine, as data. One place, so no cell and no menu re-derives it.

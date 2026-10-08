@@ -30,7 +30,7 @@ import {
 } from "@/features/projects/hooks";
 import type { Project, ProjectMemberWithUser, ProjectPriority, ProjectRole, ProjectStatus } from "@/features/projects/types";
 import { toast } from "@/lib/toast";
-import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { ReadFailure } from "@ai-matrx/design-system";
 import { SampleTitle } from "../../_components/kit";
 import { Badge, Button, ControlRow, ControlScope, DeleteButton, EmptyState, Field, RegionSkeleton, RowGroup, Select, SettingRow, Tabs, Textarea, type BadgeTone } from "@ai-matrx/design-system/controls";
 

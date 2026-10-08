@@ -19,7 +19,7 @@ import dynamic from "next/dynamic";
 import { useParams } from "next/navigation";
 import { Component, useEffect, useRef, useSyncExternalStore, type ReactNode } from "react";
 
-import { ErrorNotice } from "@/components/errors/ErrorNotice";
+import { ErrorNotice } from "@ai-matrx/design-system";
 
 import type { RichSpan, SpaceMedia } from "../contract";
 import { useSpaceMediaUrl } from "../page/media";

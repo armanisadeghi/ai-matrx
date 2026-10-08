@@ -24,8 +24,8 @@
  * `selectEffectiveThreadProjectId` (the tile's own project_id ?? the room's).
  */
 
-import { readOf } from "@/components/read-state/ReadGate";
-import { UntrustedCount } from "@/components/official/stale-data/UntrustedCount";
+import { readOf } from "@ai-matrx/design-system";
+import { UntrustedCount } from "@ai-matrx/design-system";
 import { useEffect, useState } from "react";
 import { isOpenStatus } from "@/features/tasks/constants/status";
 import {
@@ -66,7 +66,7 @@ import { useRefocusInputAfterAsync } from "@/features/tasks/hooks/useRefocusInpu
 import { ProInput } from "@/components/official/ProInput";
 import { ProjectCopyForAiButton } from "@/features/projects/components/ProjectCopyForAiButton";
 import { TaskCopyForAiButton } from "@/features/tasks/components/TaskCopyForAiButton";
-import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { ReadFailure } from "@ai-matrx/design-system";
 
 export function ThreadProjectTaskList({
   threadId,

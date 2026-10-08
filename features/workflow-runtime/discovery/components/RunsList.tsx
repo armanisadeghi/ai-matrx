@@ -45,7 +45,7 @@ import { useUserOrganizations } from "@/features/organizations/hooks";
 import { EntityOrgFilter } from "@/lib/entity-list/components/EntityOrgFilter";
 import { useOrgFilterParam } from "@/lib/entity-list/orgFilterUrl";
 import { Button } from "@/components/ui/button";
-import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { ReadFailure } from "@ai-matrx/design-system";
 import { StaleDataNotice } from "@ai-matrx/design-system";
 
 /** A row plus the workflow facts resolved for it. */

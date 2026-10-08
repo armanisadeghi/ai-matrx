@@ -60,7 +60,7 @@ import {
 } from "@/features/scopes/redux/selectors/admin";
 import { ensureScopeTree } from "@/features/scopes/redux/thunks/ensureScopeTree";
 import { selectTreeError } from "@/features/scopes/redux/selectors/tree";
-import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { ReadFailure } from "@ai-matrx/design-system";
 
 export interface HeavyHitterAcceptDialogProps {
   open: boolean;

@@ -15,7 +15,8 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { Provider } from "react-redux";
 import { configureStore } from "@reduxjs/toolkit";
 
-jest.mock("@/components/errors/ErrorNotice", () => ({
+jest.mock("@ai-matrx/design-system", () => ({
+  ...jest.requireActual("@ai-matrx/design-system"),
   ErrorNotice: ({ title, message, error, actions }: { title?: string; message?: string; error?: unknown; actions?: React.ReactNode }) => (
     <div data-error-notice="">
       {title} {message ?? String((error as Error)?.message ?? error)}

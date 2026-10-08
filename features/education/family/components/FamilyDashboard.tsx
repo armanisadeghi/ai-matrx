@@ -43,7 +43,7 @@ import type { GuardianLinkView } from "../types";
 import { GuardianConsentVerifyDialog } from "./GuardianConsentVerifyDialog";
 import { StudentAgeBandControl } from "./StudentAgeBandControl";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
-import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { ReadFailure } from "@ai-matrx/design-system";
 import { SurfaceRuntimeProvider } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import { createEducationFamilyScope, type FamilyLinkEntry } from "@/features/surfaces/manifests/education-family.manifest";
 import { guardianLinkWriteHandlers } from "../guardianLinkWrites";

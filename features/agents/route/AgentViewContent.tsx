@@ -27,7 +27,7 @@ import {
   resetAgentToSource,
 } from "@/features/agents/redux/builder-tier.thunks";
 import { confirm } from "@ai-matrx/chat/host/ui-slots";
-import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { ReadFailure } from "@ai-matrx/design-system";
 import { selectCategoryById } from "@ai-matrx/chat/agents/redux/agent-shortcut-categories/selectors";
 import { getModelRecords } from "@ai-matrx/chat/agents/identity/model-catalog";
 import { useAgentModelLabel } from "@ai-matrx/chat/agents/hooks/useAgentModelLabel";

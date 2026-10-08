@@ -28,7 +28,7 @@ import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { useAppSelector } from "@/lib/redux/hooks";
-import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { ReadFailure } from "@ai-matrx/design-system";
 import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
 

@@ -51,7 +51,7 @@ import {
   SurfacesFilterBar,
   type SurfacesFilterState,
 } from "@/features/surfaces/components/SurfacesFilterBar";
-import type { ReadOutcome } from "@/components/read-state/ReadGate";
+import type { ReadOutcome } from "@ai-matrx/design-system";
 
 const READINESS_SORT_WEIGHT: Record<string, number> = {
   verified: 0,

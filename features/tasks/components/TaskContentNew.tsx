@@ -55,7 +55,7 @@ import {
 } from "@/components/ui/select";
 import { toast } from "@/lib/toast";
 import { replaceAddressOrNavigate } from "@/lib/url-state/addressWithoutNavigating";
-import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { ReadFailure } from "@ai-matrx/design-system";
 import { useTasksRead } from "@/features/tasks/hooks/useTasksRead";
 
 export default function TaskContentNew() {

@@ -7,7 +7,7 @@
 // formats must never leak to user-facing surfaces.
 
 import React, { useCallback, useEffect, useRef, useState } from "react";
-import { UntrustedCount } from "@/components/official/stale-data/UntrustedCount";
+import { UntrustedCount } from "@ai-matrx/design-system";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@ai-matrx/design-system/controls";
@@ -42,7 +42,7 @@ import { ProTextarea } from "@/components/official/ProTextarea";
 import { getUserId } from "@/utils/auth/getUserId";
 import { RowWordsFields, rowWordsWrite } from "../RowWordsFields";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
-import { readOf } from "@/components/read-state/ReadGate";
+import { readOf } from "@ai-matrx/design-system";
 import { ListDetailSplit } from "@/components/official/side-panel/ListDetailSplit";
 
 // ─── Shared bits ─────────────────────────────────────────────────────────────

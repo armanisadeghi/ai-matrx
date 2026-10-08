@@ -23,7 +23,7 @@
  * `fileHandler` through uploads.ts.
  */
 
-import { UntrustedCount } from "@/components/official/stale-data/UntrustedCount";
+import { UntrustedCount } from "@ai-matrx/design-system";
 import React, {
   useCallback,
   useEffect,
@@ -73,7 +73,7 @@ import {
 } from "../hooks/useInstantIntakeAnalysis";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { AGENT_ICON } from "@/components/icons/domain-icons";
-import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { ReadFailure } from "@ai-matrx/design-system";
 
 const INSTANT_MANDATE_REFS = [
   {

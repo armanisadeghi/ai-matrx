@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { ReadFailure } from '@/components/read-state/ReadFailure';
+import { ReadFailure } from '@ai-matrx/design-system';
 import { useQuery } from '@tanstack/react-query';
 import { createClient } from '@/utils/supabase/client';
 import { buildSearchOr } from '@/utils/supabase-search';

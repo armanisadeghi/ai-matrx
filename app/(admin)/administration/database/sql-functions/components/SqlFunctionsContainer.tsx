@@ -28,7 +28,7 @@ import {
 } from "@ai-matrx/kit/url-state";
 import type { SqlFunctionFilter, SqlFunctionSort } from "@/types/sql-functions";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
-import { readOf } from "@/components/read-state/ReadGate";
+import { readOf } from "@ai-matrx/design-system";
 
 interface SqlFunctionsContainerProps {
   initialFunctions?: SqlFunction[];

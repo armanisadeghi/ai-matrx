@@ -78,7 +78,7 @@ import {
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { AgentListDropdown } from "@ai-matrx/agents/catalog/react";
 import { archiveConfirmSentence } from "@/features/trash/archiveCopy";
-import { readOf } from "@/components/read-state/ReadGate";
+import { readOf } from "@ai-matrx/design-system";
 import { useBuiltinAgents } from "@ai-matrx/chat/agents/identity/agent-catalog-lists";
 import { ensureAgentCatalog } from "@ai-matrx/chat/agents/identity/agent-identity";
 

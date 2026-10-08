@@ -31,7 +31,7 @@ import {
 import { Lock, SlidersHorizontal } from "lucide-react";
 import type { AiSetting } from "../../types";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
-import { readOf } from "@/components/read-state/ReadGate";
+import { readOf } from "@ai-matrx/design-system";
 
 function CompactRange({
   min,

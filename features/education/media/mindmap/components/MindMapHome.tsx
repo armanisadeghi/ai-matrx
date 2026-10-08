@@ -7,7 +7,7 @@
 // React Compiler is on: no manual memo.
 
 import { useRead } from "@ai-matrx/design-system";
-import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { ReadFailure } from "@ai-matrx/design-system";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useState } from "react";

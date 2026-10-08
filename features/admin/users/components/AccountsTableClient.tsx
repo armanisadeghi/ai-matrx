@@ -70,7 +70,7 @@ import { buildAdminUsersScope } from "../lib/admin-users-scope";
 import { AdminUserRef } from "./AdminUserRef";
 import { USERS_ADMIN_LOCATION, ADMIN_LEVEL_LABEL } from "../constants";
 import type { AdminUserRow } from "../types";
-import { ErrorNotice } from "@/components/errors/ErrorNotice";
+import { ErrorNotice } from "@ai-matrx/design-system";
 import {
   ChangePlanDialog,
   type ChangePlanSubject,
@@ -87,7 +87,7 @@ import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableCo
 import { buildAdminUserMenuSection } from "./admin-user-menu-section";
 import { pushAppHref } from "@/lib/deployment/navigate";
 import { pushAddressWithoutNavigating } from "@/lib/url-state/addressWithoutNavigating";
-import { readOf } from "@/components/read-state/ReadGate";
+import { readOf } from "@ai-matrx/design-system";
 import { DrillExplorer } from "@/components/official/drill-explorer/DrillExplorer";
 import { DrillOrList } from "@/components/official/drill-explorer/DrillOrList";
 import { SYSTEM_ORGANIZATION_ID } from "@/constants/platform-orgs";

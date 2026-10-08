@@ -30,7 +30,7 @@ import {
   VARIABLE_PANEL_STYLES,
   type VariablesPanelStyle,
 } from "@ai-matrx/chat/agents/components/inputs/variable-input-variations/variable-input-options";
-import { ErrorNotice } from "@/components/errors/ErrorNotice";
+import { ErrorNotice } from "@ai-matrx/design-system";
 import { cn } from "@/lib/utils";
 
 const SURFACE_KEY = "demo:composer-variables";

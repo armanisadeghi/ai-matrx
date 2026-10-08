@@ -58,7 +58,7 @@ import {
   type ProducerYieldOut,
   type ProducerYieldRow,
 } from "./types";
-import { readOf } from "@/components/read-state/ReadGate";
+import { readOf } from "@ai-matrx/design-system";
 import { adminCostColumns } from "@/components/cost/adminCostColumns";
 import { useAdminCost } from "@/components/cost/useAdminCost";
 

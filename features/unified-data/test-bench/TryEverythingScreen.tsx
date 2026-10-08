@@ -27,7 +27,7 @@
 import { getJson } from "@/lib/python-client";
 import { getUserMessage } from "@ai-matrx/agents/matrx";
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
-import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { ReadFailure } from "@ai-matrx/design-system";
 import Link from "next/link";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { useRouter } from "next/navigation";

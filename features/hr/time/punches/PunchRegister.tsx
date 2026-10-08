@@ -54,7 +54,7 @@ import { punchMenuContent, buildPunchMenuSection } from "../shared/punch-menu";
 import { PunchCorrectionDialog, type PunchCorrectionMode } from "./PunchCorrectionDialog";
 import { PunchRegisterScopePicker } from "./PunchRegisterScopePicker";
 import { downloadPunchRegisterCsv, punchRegisterToCsv } from "./registerCsv";
-import { readOf } from "@/components/read-state/ReadGate";
+import { readOf } from "@ai-matrx/design-system";
 
 const DEFAULT_PAGE_SIZE = 50;
 

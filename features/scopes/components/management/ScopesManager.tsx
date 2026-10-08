@@ -37,8 +37,8 @@ import {
   selectTreeError,
   selectTreeStatus,
 } from "@/features/scopes/redux/selectors/tree";
-import { ReadGate, readStatusOf } from "@/components/read-state/ReadGate";
-import { UntrustedCount } from "@/components/official/stale-data/UntrustedCount";
+import { ReadGate, readStatusOf } from "@ai-matrx/design-system";
+import { UntrustedCount } from "@ai-matrx/design-system";
 import { ensureScopeTree } from "@/features/scopes/redux/thunks/ensureScopeTree";
 import { updateScopeType } from "@/features/scopes/redux/thunks/scopeTreeMutations";
 import { OrgScopeTypeSection } from "@/features/scopes/components/management/OrgScopeTypeSection";

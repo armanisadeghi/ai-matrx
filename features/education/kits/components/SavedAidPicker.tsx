@@ -16,7 +16,7 @@ import { educationLibraryHref } from "@/features/education/library/types";
 import { artifactVisual } from "@/features/education/library/artifactVisuals";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { DEFAULT_ENTITY_LIST_QUERY } from "@/lib/entity-list/types";
-import { ErrorNotice } from "@/components/errors/ErrorNotice";
+import { ErrorNotice } from "@ai-matrx/design-system";
 import { describeFailure } from "@/lib/failure/transport";
 
 export const SAVED_AID_PAGE_SIZE = 25;

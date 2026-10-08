@@ -72,7 +72,7 @@ import { useContainerLinks } from "@/features/scopes/hooks/useContainerLinks";
 import { curatedTokens } from "@/features/scopes/registry/entityRegistry";
 import { ProjectTaskList } from "./ProjectTaskList";
 import { ProjectCopyForAiButton } from "./ProjectCopyForAiButton";
-import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { ReadFailure } from "@ai-matrx/design-system";
 import { ReferenceCopyButton } from "@/features/matrx-envelope/components/ReferenceCopyButton";
 
 // Tasks + projects have their own surfaces; don't double-count them as "resources".

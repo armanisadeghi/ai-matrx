@@ -79,7 +79,7 @@ import {
   formatCtr,
   formatPosition,
 } from "@/features/marketing/search-console/types";
-import { ErrorNotice } from "@/components/errors/ErrorNotice";
+import { ErrorNotice } from "@ai-matrx/design-system";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 const DEFAULT_MIN_IMPRESSIONS = 100;

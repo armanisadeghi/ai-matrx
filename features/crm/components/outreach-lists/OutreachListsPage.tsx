@@ -49,7 +49,7 @@ import { OutreachListCreateDialog } from "./OutreachListCreateDialog";
 import { OrgOutreachReportPanel } from "../../analytics/OrgOutreachReportPanel";
 import { LoadingSurface } from "@/features/marketing/components/shared/MarketingUi";
 import { useRead } from "@ai-matrx/design-system";
-import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { ReadFailure } from "@ai-matrx/design-system";
 import { StaleDataNotice } from "@ai-matrx/design-system";
 import { ActivateOutreachListDialog } from "@/features/crm/pitch-advisories/ActivateOutreachListDialog";
 import { MediaResearchDialog } from "@/features/crm/media-research/MediaResearchDialog";

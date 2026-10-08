@@ -1,6 +1,6 @@
 "use client";
 
-import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { ReadFailure } from "@ai-matrx/design-system";
 import { StaleDataNotice } from "@ai-matrx/design-system";
 import { useEffect, useMemo, useState } from "react";
 import AppLink from "@/components/navigation/AppLink";
@@ -39,7 +39,7 @@ import {
 } from "@/features/admin/agent-review/row-text";
 import { matchesTableSearch } from "@ai-matrx/design-system/data-table/filter-engine";
 import { useShare } from "@/features/sharing/hooks/useShare";
-import { UntrustedCount } from "@/components/official/stale-data/UntrustedCount";
+import { UntrustedCount } from "@ai-matrx/design-system";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import {

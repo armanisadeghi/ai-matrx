@@ -1,7 +1,7 @@
 "use client";
 
-import { UntrustedCount } from "@/components/official/stale-data/UntrustedCount";
-import { readOf } from "@/components/read-state/ReadGate";
+import { UntrustedCount } from "@ai-matrx/design-system";
+import { readOf } from "@ai-matrx/design-system";
 import { useRef, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -23,7 +23,7 @@ import {
   useAgentListCore,
   type RightPanel,
 } from "@ai-matrx/agents/catalog/react";
-import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { ReadFailure } from "@ai-matrx/design-system";
 import type { AgentSummary } from "@ai-matrx/agents/catalog";
 import { MatrxUuidCell } from "@ai-matrx/design-system/data-table/uuid-cell";
 import {

@@ -35,7 +35,7 @@ import { ScraperSurfaceMount } from "@/features/scraper/agent-context/ScraperSur
 // page's own Scrape buttons would reject.
 import { normalizeUrl } from "@/features/scraper/utils/scraper-floating-helpers";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
-import { ErrorNotice } from "@/components/errors/ErrorNotice";
+import { ErrorNotice } from "@ai-matrx/design-system";
 
 export default function QuickScrapePage() {
   const { copyText } = useClipboard({

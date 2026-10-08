@@ -6,7 +6,7 @@ import { useEffect, useState, useTransition } from "react";
 import { AlertTriangle, CheckCheck, History, Hourglass, TimerReset } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { TextInputDialog } from "@/components/dialogs/text-input/TextInputDialog";
+import { TextInputDialog } from "@ai-matrx/design-system";
 import { toast } from "@/lib/toast";
 
 import { HrRefusalNotice } from "@/features/hr/tasks/components/HrRefusalNotice";
@@ -43,7 +43,7 @@ import {
     isRefusal,
 } from "@/features/hr/tasks/types";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
-import { readOf } from "@/components/read-state/ReadGate";
+import { readOf } from "@ai-matrx/design-system";
 import { HrLaneTabs } from "@/features/hr/shared/HrLaneTabs";
 
 // The lanes are the shell's words (Mine, My team). The HR queue is a work queue, not an access

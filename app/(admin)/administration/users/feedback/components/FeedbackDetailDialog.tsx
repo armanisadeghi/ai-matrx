@@ -124,7 +124,7 @@ import { MatrxUuidCell } from "@ai-matrx/design-system/data-table/uuid-cell";
 import { AdminUserDoorControls } from "@/features/admin/users/components/AdminUserRef";
 import { feedbackHref } from "@/features/admin/feedback/doors";
 import { ProTextarea } from "@/components/official/ProTextarea";
-import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { ReadFailure } from "@ai-matrx/design-system";
 
 interface FeedbackDetailDialogProps {
   feedback: UserFeedback;

@@ -32,7 +32,7 @@ import {
 import type { SourceImportance } from "../../ranking";
 import { filterAndSortBySearch } from "@ai-matrx/kit/search-scoring";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
-import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { ReadFailure } from "@ai-matrx/design-system";
 
 /** A string with real (non-whitespace) content. */
 const hasText = (s: string | null | undefined): s is string =>

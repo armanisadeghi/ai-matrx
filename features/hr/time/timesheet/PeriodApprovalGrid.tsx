@@ -69,7 +69,7 @@ import { RuleSnapshotProvider } from "../shared/RuleSnapshot";
 import { useHrMockCase, useHrTimeQuery } from "../shared/useHrTimeQuery";
 import { BulkApproveDialog, splitForBulk } from "./BulkApproveDialog";
 import { RawPunchesWindowBody } from "./RawPunchesWindowBody";
-import { readOf } from "@/components/read-state/ReadGate";
+import { readOf } from "@ai-matrx/design-system";
 
 /**
  * ⚠️ `wf.inbox.bulk_max` IS A KNOB AND THIS IS NOT IT (CLAUDE.md § limits are knobs).

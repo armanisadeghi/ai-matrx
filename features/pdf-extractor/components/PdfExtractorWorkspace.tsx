@@ -8,7 +8,7 @@
  * separately — covered by `pdfExtractorWindow`.
  */
 
-import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { ReadFailure } from "@ai-matrx/design-system";
 import { StaleDataNotice } from "@ai-matrx/design-system";
 import React, { useCallback, useState, useMemo } from "react";
 import {

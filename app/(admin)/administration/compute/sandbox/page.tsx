@@ -74,7 +74,7 @@ import {
   type AdminSandboxInstanceEntry,
 } from "@/features/surfaces/manifests/admin-sandbox.manifest";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
-import { readOf } from "@/components/read-state/ReadGate";
+import { readOf } from "@ai-matrx/design-system";
 import { extractErrorMessage } from "@/utils/errors";
 import { downloadFile } from "@ai-matrx/kit/download";
 

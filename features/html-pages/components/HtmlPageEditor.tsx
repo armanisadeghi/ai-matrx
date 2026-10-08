@@ -53,7 +53,7 @@ import {
 } from "@/features/marketing/seo/serp/metrics";
 import { fenceOpenerOf } from "@ai-matrx/content-ir/source";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
-import { UntrustedCount } from "@/components/official/stale-data/UntrustedCount";
+import { UntrustedCount } from "@ai-matrx/design-system";
 
 type EditorTab = "meta" | "html" | "preview";
 

@@ -18,7 +18,7 @@ import {
   mcpConnectionActionLabel,
   mcpConnectionRouteFor,
 } from "../../mcp-connection-route";
-import { ErrorNotice } from "@/components/errors/ErrorNotice";
+import { ErrorNotice } from "@ai-matrx/design-system";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 type McpStatusTone = "stopped" | "running" | "error";

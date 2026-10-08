@@ -28,7 +28,7 @@ import {
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { TextInputDialog } from "@/components/dialogs/text-input/TextInputDialog";
+import { TextInputDialog } from "@ai-matrx/design-system";
 import { cn } from "@/utils/cn";
 import { User, Building2, Users, Plus } from "lucide-react";
 import type { CloudBrowserProfile, ProfileQuota, ShareLevel } from "../types";

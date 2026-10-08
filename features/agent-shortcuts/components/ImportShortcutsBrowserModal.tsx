@@ -23,7 +23,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { ReadFailure } from "@ai-matrx/design-system";
 import {
   AlertCircle,
   Building,
@@ -40,7 +40,7 @@ import { useAppSelector } from "@/lib/redux/hooks";
 import { selectIsSuperAdmin } from "@/lib/redux/slices/userSlice";
 import { useAgentShortcutCrud } from "../hooks/useAgentShortcutCrud";
 import type { AdminNonGlobalShortcutRow } from "@ai-matrx/chat/agents/redux/agent-shortcuts/thunks";
-import { UntrustedCount } from "@/components/official/stale-data/UntrustedCount";
+import { UntrustedCount } from "@ai-matrx/design-system";
 
 type ScopeFilter = "all" | "user" | "organization" | "project" | "task";
 

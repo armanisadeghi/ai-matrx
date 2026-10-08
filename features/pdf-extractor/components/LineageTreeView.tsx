@@ -38,7 +38,7 @@ import {
 } from "../hooks/useDocumentLineage";
 import type { PdfDocument } from "../hooks/usePdfExtractor";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
-import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { ReadFailure } from "@ai-matrx/design-system";
 
 interface LineageTreeViewProps {
   doc: PdfDocument;

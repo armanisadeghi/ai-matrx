@@ -95,7 +95,7 @@ import type {
   SerpLandscape,
   SerpLandscapeResult,
 } from "./types";
-import { ErrorNotice } from "@/components/errors/ErrorNotice";
+import { ErrorNotice } from "@ai-matrx/design-system";
 
 /** Wire value for one `track_keywords` entry (see the manifest's contract). */
 interface TrackKeywordsEntry {

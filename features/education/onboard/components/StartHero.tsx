@@ -50,7 +50,7 @@ import { useOrganizationRequired } from "@/features/organizations/useOrganizatio
 import { OrganizationContextNotice } from "@/features/organizations/components/OrganizationRequiredNotice";
 import { KitBoard } from "./KitBoard";
 import { KitDepthPicker } from "./KitDepthPicker";
-import { ErrorNotice } from "@/components/errors/ErrorNotice";
+import { ErrorNotice } from "@ai-matrx/design-system";
 import { describeFailure } from "@/lib/failure/transport";
 import { RunStoppedNotice } from "@/lib/wizard-draft/RunStoppedNotice";
 import { filesDb } from "@/features/files/filesDb";

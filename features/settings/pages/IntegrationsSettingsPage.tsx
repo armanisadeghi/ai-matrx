@@ -92,7 +92,7 @@ import {
   buildManualMcpCredentials,
   type ManualHeaderInput,
 } from "./manual-mcp-credentials";
-import { ErrorNotice } from "@/components/errors/ErrorNotice";
+import { ErrorNotice } from "@ai-matrx/design-system";
 import { InfoHint } from "@/components/official/InfoHint";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { toolCheckFailure } from "./integration-tool-check";

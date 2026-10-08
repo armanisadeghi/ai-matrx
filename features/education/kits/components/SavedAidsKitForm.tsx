@@ -24,7 +24,7 @@ import { DEFAULT_ENTITY_LIST_QUERY } from "@/lib/entity-list/types";
 import type { UseSourceSetResult } from "@/features/resource-manager/source-input/useSourceSet";
 import { createMultiSourceKit, kitHref } from "../kitService";
 import { KIT_TOKEN } from "../kitScope";
-import { ErrorNotice } from "@/components/errors/ErrorNotice";
+import { ErrorNotice } from "@ai-matrx/design-system";
 import { describeFailure } from "@/lib/failure/transport";
 import { toast } from "@/lib/toast";
 import { SurfaceRuntimeProvider } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";

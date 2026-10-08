@@ -18,7 +18,7 @@ import { InboxQueueStrip } from "@ai-matrx/chat/agents/components/inputs/smart-i
 import { promoteQueuedToSteer } from "@ai-matrx/chat/agents/redux/execution-system/inbox/inbox.thunks";
 import { registerChatUi } from "@ai-matrx/chat/host/ui-slots";
 import Host_IconButton from "@/components/official/IconButton";
-import { TextInputDialog as Host_TextInputDialog } from "@/components/dialogs/text-input/TextInputDialog";
+import { TextInputDialog as Host_TextInputDialog } from "@ai-matrx/design-system";
 registerChatUi({ IconButton: Host_IconButton, TextInputDialog: Host_TextInputDialog });
 
 // Editing itself has separate dialog coverage; this strip test exercises the

@@ -19,7 +19,7 @@ import { useState } from "react";
 import { FilePlus2 } from "lucide-react";
 
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
-import { TextInputDialog } from "@/components/dialogs/text-input/TextInputDialog";
+import { TextInputDialog } from "@ai-matrx/design-system";
 import {
   Select,
   SelectContent,
@@ -37,7 +37,7 @@ import { itemLabel } from "../associationGroups";
 import { makePlannedPage } from "../plannedPage";
 import { PanelEmptyLine, PanelSection, ShowMoreRow, pagedCount } from "../PanelSection";
 import type { KindPaging } from "../useTopicAssociationPages";
-import { ErrorNotice } from "@/components/errors/ErrorNotice";
+import { ErrorNotice } from "@ai-matrx/design-system";
 
 export interface PlannedPagesSectionProps {
   mapId: string;

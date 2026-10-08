@@ -7,7 +7,7 @@
 import { Check, Eraser, PenLine } from "lucide-react";
 
 import { Button, Input, Select, Textarea } from "@ai-matrx/design-system/controls";
-import { ErrorNotice } from "@/components/errors/ErrorNotice";
+import { ErrorNotice } from "@ai-matrx/design-system";
 import { Checkbox } from "@/components/ui/checkbox";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 

@@ -853,7 +853,6 @@ export function findDoubleMenus(source: string, fileName = "file.tsx"): number[]
  * The files the census (and the lint rule matrx/error-render-carries-alchemy)
  * reads. The primitives themselves — they ARE the one place an error box is drawn. */
 export const CENSUS_PRIMITIVES = new Set([
-  "components/errors/ErrorNotice.tsx",
   "components/errors/ErrorAlchemyMenu.tsx",
   // The package error slot and the toast decorator render only for an error.
   "components/errors/PackageErrorActions.tsx",

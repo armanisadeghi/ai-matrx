@@ -21,7 +21,7 @@ import {
 import { toast } from "@/lib/toast";
 
 import { Button } from "@/components/ui/button";
-import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { ReadFailure } from "@ai-matrx/design-system";
 import {
   Popover,
   PopoverContent,

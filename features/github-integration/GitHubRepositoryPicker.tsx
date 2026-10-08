@@ -17,7 +17,7 @@ import { Input } from "@ai-matrx/design-system/controls";
 import { cn } from "@/lib/utils";
 import { GitHubConnectionCard } from "./GitHubConnectionCard";
 import type { GitHubRepository } from "./types";
-import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { ReadFailure } from "@ai-matrx/design-system";
 
 /**
  * Search over what the row actually SHOWS: full name, public/private word, and

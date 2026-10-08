@@ -47,7 +47,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { TextInputDialog } from "@/components/dialogs/text-input/TextInputDialog";
+import { TextInputDialog } from "@ai-matrx/design-system";
 import { ShareModal } from "@/features/sharing/components/ShareModal";
 import { downloadMediaSource } from "@/features/files/media-client/download";
 import { supabase } from "@/utils/supabase/client";

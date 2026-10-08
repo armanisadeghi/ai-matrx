@@ -1,6 +1,6 @@
 "use client";
-import { readOf } from "@/components/read-state/ReadGate";
-import { UntrustedCount } from "@/components/official/stale-data/UntrustedCount";
+import { readOf } from "@ai-matrx/design-system";
+import { UntrustedCount } from "@ai-matrx/design-system";
 import type { AnyMandateKey } from "@ai-matrx/agents/mandates";
 
 /**

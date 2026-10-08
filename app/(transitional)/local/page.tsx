@@ -11,7 +11,7 @@
 import { useClipboard } from "@ai-matrx/kit/clipboard";
 import { toast } from "@/lib/toast";
 import { useEffect, useState, useCallback } from "react";
-import { UntrustedCount, type CountRead } from "@/components/official/stale-data/UntrustedCount";
+import { UntrustedCount, type CountRead } from "@ai-matrx/design-system";
 import { StaleDataNotice } from "@ai-matrx/design-system";
 import { formatRelativeTime } from "@ai-matrx/kit/format";
 import {

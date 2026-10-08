@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import { FilePlus, RefreshCw } from "lucide-react";
-import { TextInputDialog } from "@/components/dialogs/text-input/TextInputDialog";
+import { TextInputDialog } from "@ai-matrx/design-system";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { dismissRecordToasts, recordToast, toast } from "@/lib/toast";

@@ -27,7 +27,7 @@ import {
 } from "lucide-react";
 import { copyReferenceFence } from "@/features/matrx-envelope/referenceClipboard";
 import { useRouter } from "next/navigation";
-import { TextInputDialog } from "@/components/dialogs/text-input/TextInputDialog";
+import { TextInputDialog } from "@ai-matrx/design-system";
 import { noteActions, openNotePrintStudio } from "../note-actions/noteActionSet";
 import { buildRecordReferenceFence } from "@/features/matrx-envelope/recordReference";
 import { cn } from "@/lib/utils";

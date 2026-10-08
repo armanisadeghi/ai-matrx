@@ -20,8 +20,8 @@ import type { CanvasWorkspaceLayout } from "@ai-matrx/chat/canvas/workspace/work
 import { DropdownMenuItem } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
 import { ShimmerText } from "@/components/loaders/ShimmerText";
-import { ErrorNotice } from "@/components/errors/ErrorNotice";
-import { TextInputDialog } from "@/components/dialogs/text-input/TextInputDialog";
+import { ErrorNotice } from "@ai-matrx/design-system";
+import { TextInputDialog } from "@ai-matrx/design-system";
 import { BoardOrganizationProvider } from "../items/board-organization";
 import { type SavedBoardTarget, useSavedBoard } from "../persistence/useSavedBoard";
 import { BOARD_TOKEN } from "../persistence/boardsService";

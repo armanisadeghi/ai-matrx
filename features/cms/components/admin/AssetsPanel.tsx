@@ -23,7 +23,7 @@ import { formatFileSize } from "@ai-matrx/kit/format";
 import { AssetInUseError, CmsAssetService } from '../../services/cmsService';
 import type { AssetComponentUsage, AssetPageUsage, ClientAsset, ClientSiteSummary } from '../../types';
 import { Button } from '@/components/ui/button';
-import { ReadFailure } from '@/components/read-state/ReadFailure';
+import { ReadFailure } from '@ai-matrx/design-system';
 import { Input } from "@ai-matrx/design-system/controls";
 import {
     Select,

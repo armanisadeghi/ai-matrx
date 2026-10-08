@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { Button } from "@ai-matrx/design-system/controls";
-import { ErrorNotice } from "@/components/errors/ErrorNotice";
+import { ErrorNotice } from "@ai-matrx/design-system";
 
 export function RestoreAccountForm({ userId, requestId, token }: { userId: string; requestId: string; token: string }) {
   const [error, setError] = useState<string | null>(null);

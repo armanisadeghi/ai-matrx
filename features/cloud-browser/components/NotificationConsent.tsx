@@ -24,7 +24,7 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/utils/cn";
 import { Bell, Mail, MessageSquare, Inbox, Check } from "lucide-react";
 import type { NotificationChannel, NotificationConsent as Consent } from "../types";
-import { ErrorNotice } from "@/components/errors/ErrorNotice";
+import { ErrorNotice } from "@ai-matrx/design-system";
 
 const ROWS: {
   key: NotificationChannel;

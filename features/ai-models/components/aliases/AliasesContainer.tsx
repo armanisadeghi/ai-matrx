@@ -35,7 +35,7 @@ import { ModelListDropdown } from "@ai-matrx/agents/models/react";
 import { aiModelService } from "../../service";
 import type { AiModelAliasRow, AiModelRow } from "../../types";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
-import { readOf } from "@/components/read-state/ReadGate";
+import { readOf } from "@ai-matrx/design-system";
 import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 
 const ALIAS_KINDS = ["alias", "deprecated", "latest"] as const;

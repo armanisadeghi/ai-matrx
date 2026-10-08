@@ -41,7 +41,7 @@ import {
   makeSelectScopesForType,
   selectTreeError,
 } from "@/features/scopes/redux/selectors/tree";
-import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { ReadFailure } from "@ai-matrx/design-system";
 import { ensureScopeTypeItems } from "@/features/scopes/redux/thunks/ensureScopeTypeItems";
 import {
   makeSelectItemsForType,

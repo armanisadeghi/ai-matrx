@@ -66,7 +66,7 @@ import {
   useOrgContributableItems,
   type MyItem,
 } from "../hooks/useOrgContributableItems";
-import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { ReadFailure } from "@ai-matrx/design-system";
 import {
   useOrgSharedItems,
   type OrgSharedItem,

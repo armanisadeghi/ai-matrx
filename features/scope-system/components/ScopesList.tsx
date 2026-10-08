@@ -1,6 +1,6 @@
 "use client";
 
-import { UntrustedCount } from "@/components/official/stale-data/UntrustedCount";
+import { UntrustedCount } from "@ai-matrx/design-system";
 import { selectTreeError } from "@/features/scopes/redux/selectors/tree";
 import { toastWriteFailure } from "@/lib/errors/toastWriteFailure";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -60,7 +60,7 @@ import {
   selectItemsLoadedForType,
   type ContextItem,
 } from "@/features/scopes/redux/contextItemCatalog";
-import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { ReadFailure } from "@ai-matrx/design-system";
 import { StaleDataNotice } from "@ai-matrx/design-system";
 import {
   getScopeContext,

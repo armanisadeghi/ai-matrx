@@ -189,7 +189,7 @@ import { RulingDialog, type RulingDraft } from "./RulingDialog";
 import { AddLevelDialog } from "../pickers/AddLevelDialog";
 import { RulingSession } from "./RulingSession";
 import { pushAddressWithoutNavigating } from "@/lib/url-state/addressWithoutNavigating";
-import { readOf } from "@/components/read-state/ReadGate";
+import { readOf } from "@ai-matrx/design-system";
 import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 
 const REVIEW_SORTS = new Set(["clicks", "impressions", "score", "keyword"]);

@@ -48,7 +48,7 @@ import { formatLocalDate } from "../../shared/format";
 import { HrRpcError } from "../../api/rpc";
 import { generatePayPeriods, type GeneratePeriodsResult } from "../api/periodReads";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
-import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { ReadFailure } from "@ai-matrx/design-system";
 
 export interface GeneratePeriodsPanelProps {
   /** The employer whose pay groups these are. HR is strictly single-employer. */

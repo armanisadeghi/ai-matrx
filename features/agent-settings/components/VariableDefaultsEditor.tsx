@@ -18,7 +18,7 @@ import {
   selectIsLoading,
   selectVariableDefaults,
 } from "@ai-matrx/chat/agents/redux/agent-settings/selectors";
-import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { ReadFailure } from "@ai-matrx/design-system";
 import {
   addVariable,
   loadAgentSettings,

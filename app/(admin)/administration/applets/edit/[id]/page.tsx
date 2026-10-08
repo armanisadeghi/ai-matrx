@@ -7,7 +7,7 @@ import React, {
   useState,
   useTransition,
 } from "react";
-import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { ReadFailure } from "@ai-matrx/design-system";
 import AppLink from "@/components/navigation/AppLink";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, ExternalLink, Loader2, Pencil } from "lucide-react";

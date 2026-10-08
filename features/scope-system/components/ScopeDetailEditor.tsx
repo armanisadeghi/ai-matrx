@@ -1,7 +1,7 @@
 "use client";
 
-import { UntrustedCount } from "@/components/official/stale-data/UntrustedCount";
-import { readOf } from "@/components/read-state/ReadGate";
+import { UntrustedCount } from "@ai-matrx/design-system";
+import { readOf } from "@ai-matrx/design-system";
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { Boxes, Check, Loader2, Pencil, X as XIcon } from "lucide-react";
@@ -17,7 +17,7 @@ import {
   selectScopeValuesLoading,
   selectScopeValuesReadError,
 } from "@/features/scopes/redux/scopeContextView";
-import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { ReadFailure } from "@ai-matrx/design-system";
 import { StaleDataNotice } from "@ai-matrx/design-system";
 import { ScopeFieldInput } from "./ScopeFieldInput";
 import { AddContextItemInline } from "./AddContextItemInline";

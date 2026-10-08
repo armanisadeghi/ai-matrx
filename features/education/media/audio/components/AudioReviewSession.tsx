@@ -68,7 +68,7 @@ import type {
   CardWithDetails,
   FcSetRow,
 } from "@/features/flashcards/data/types";
-import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { ReadFailure } from "@ai-matrx/design-system";
 import { Chip } from "@ai-matrx/design-system/controls";
 
 const ANSWER_SECONDS = 12;

@@ -56,7 +56,7 @@ import { useAuthorTopicalMap } from "../useAuthorTopicalMap";
 import { TopicalMapFailed } from "../components/TopicalMapStates";
 import { START_MAP_SOURCES, startMapSource } from "./startMapSources";
 import { StartMapResult } from "./StartMapResult";
-import { ErrorNotice } from "@/components/errors/ErrorNotice";
+import { ErrorNotice } from "@ai-matrx/design-system";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { AGENT_ICON } from "@/components/icons/domain-icons";
 

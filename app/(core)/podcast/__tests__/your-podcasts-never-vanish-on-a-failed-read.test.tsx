@@ -24,7 +24,8 @@ jest.mock("@/features/surfaces/manifests/podcast.manifest", () => ({
   podcastShowEntry: jest.fn(),
 }));
 jest.mock("../PodcastGrid", () => ({ PodcastGrid: () => <div>grid</div> }));
-jest.mock("@/components/errors/ErrorNotice", () => ({
+jest.mock("@ai-matrx/design-system", () => ({
+  ...jest.requireActual("@ai-matrx/design-system"),
   ErrorNotice: ({ title, error }: { title?: string; error?: unknown }) => (
     <div data-error-notice="">
       {title} {String(error)}

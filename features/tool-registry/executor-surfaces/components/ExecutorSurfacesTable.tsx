@@ -3,7 +3,7 @@
 import React, { useMemo } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Network, Server } from "lucide-react";
-import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { ReadFailure } from "@ai-matrx/design-system";
 import type { ExecutorWithStats } from "@/features/tool-registry/executor-surfaces/services/executor-surfaces.service";
 
 interface Props {

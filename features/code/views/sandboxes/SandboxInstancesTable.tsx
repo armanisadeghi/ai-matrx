@@ -33,7 +33,7 @@ import {
   STATUS_LABELS,
 } from "@/lib/sandbox/status";
 import type { SandboxInstance } from "@/types/sandbox";
-import { readOf } from "@/components/read-state/ReadGate";
+import { readOf } from "@ai-matrx/design-system";
 
 export interface SandboxInstancesTableProps {
   instances: SandboxInstance[];

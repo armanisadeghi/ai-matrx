@@ -25,7 +25,7 @@ import { Loader2, Lock, Undo2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
-import { TextInputDialog } from "@/components/dialogs/text-input/TextInputDialog";
+import { TextInputDialog } from "@ai-matrx/design-system";
 import { toast } from "@/lib/toast";
 import { transitionPayPeriod } from "../../api/service";
 import { HrRpcError } from "../../api/rpc";

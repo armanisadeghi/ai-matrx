@@ -65,7 +65,7 @@ import {
 } from "@/features/marketing/seo/value-system/data";
 import { levelVocabularyHref } from "@/features/marketing/seo/value-system/reason-links";
 import type { ValueSummaryRow } from "@/features/marketing/seo/value-system/types";
-import { ErrorNotice } from "@/components/errors/ErrorNotice";
+import { ErrorNotice } from "@ai-matrx/design-system";
 import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 
 /**

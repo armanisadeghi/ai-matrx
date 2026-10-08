@@ -29,7 +29,7 @@ import {
 } from "@ai-matrx/design-system";
 import { Button, Select } from "@ai-matrx/design-system/controls";
 import { ProInput } from "@/components/official/ProInput";
-import { ErrorNotice } from "@/components/errors/ErrorNotice";
+import { ErrorNotice } from "@ai-matrx/design-system";
 
 export type AgentDuplicateStep = "choose" | "loading" | "success" | "error";
 

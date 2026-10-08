@@ -10,7 +10,7 @@
 // The agent is the `seo.starter_pack_proposer` mandate — no id in this file.
 
 import { useEffect, useState } from "react";
-import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { ReadFailure } from "@ai-matrx/design-system";
 import {
   Dialog,
   DialogContent,

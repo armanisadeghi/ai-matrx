@@ -56,7 +56,7 @@ import {
 } from "../redux/skillsThunks";
 import type { ResourceRow } from "../types";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
-import { UntrustedCount } from "@/components/official/stale-data/UntrustedCount";
+import { UntrustedCount } from "@ai-matrx/design-system";
 import { DragCursorMonitor } from "@ai-matrx/design-system";
 
 interface SkillResourcesPanelProps {

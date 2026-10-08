@@ -41,7 +41,7 @@ import { RecordingOriginProvider } from "@/features/audio/RecordingOriginProvide
 import { cn } from "@/lib/utils";
 import type { DictationAudio } from "../hooks/useDictationAudio";
 import { questionRecordingOrigin } from "../hooks/useDictationAudio";
-import { ErrorNotice } from "@/components/errors/ErrorNotice";
+import { ErrorNotice } from "@ai-matrx/design-system";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export interface SaveLine {

@@ -7,7 +7,7 @@
  */
 
 import type { ReactNode } from "react";
-import type { ReadOutcome } from "@/components/read-state/ReadGate";
+import type { ReadOutcome } from "@ai-matrx/design-system";
 
 /** One flattened, currently-visible row. The host owns filtering and expansion. */
 export interface TopicTreeRow {

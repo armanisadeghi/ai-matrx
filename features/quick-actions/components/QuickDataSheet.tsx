@@ -26,7 +26,7 @@ import {
   QUICK_DATA_SURFACE_NAME,
   createQuickDataScope,
 } from "@/features/surfaces/manifests/quick-data.manifest";
-import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { ReadFailure } from "@ai-matrx/design-system";
 import SuspenseLoader from "@/components/loaders/SuspenseLoader";
 
 interface QuickDataSheetProps {

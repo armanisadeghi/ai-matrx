@@ -27,7 +27,7 @@ import { HindsightSurfaceEmitter } from "./HindsightSurfaceEmitter";
 import { selectEnrollmentId, type EnrollmentSelection } from "./select-enrollment";
 import { KIND_COLOR, KIND_ICON } from "./tokens";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
-import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { ReadFailure } from "@ai-matrx/design-system";
 import { Cost } from "@/components/cost/Cost";
 import { AssistStrip } from "@/features/assists/components/AssistStrip";
 

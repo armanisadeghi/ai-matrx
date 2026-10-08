@@ -39,7 +39,7 @@ import { useQuickNoteSave } from "./useQuickNoteSave";
 import { NOTE_DRAFT_FIELDS } from "./quickNoteSaveVocabulary";
 import { useSurfaceWriteHandlers } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import { CreateFolderDialog } from "@/features/notes/components/CreateFolderDialog";
-import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { ReadFailure } from "@ai-matrx/design-system";
 
 export type PostSaveAction = "newTab" | "navigate" | "openWindow" | "none";
 

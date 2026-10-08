@@ -71,7 +71,7 @@ import {
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { pushAddressWithoutNavigating } from "@/lib/url-state/addressWithoutNavigating";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
-import { readOf } from "@/components/read-state/ReadGate";
+import { readOf } from "@ai-matrx/design-system";
 import { ClampedNumberInput } from "@/components/official/ClampedNumberInput";
 
 type Filter = "active" | "all";

@@ -31,8 +31,8 @@ import { tryGetEntityInfo } from "@/features/scopes/registry/entityRegistry";
 import { isScopesRpcErr } from "@/features/scopes/types";
 import { cn } from "@/lib/utils";
 import { toast } from "@/lib/toast";
-import { ReadFailure } from "@/components/read-state/ReadFailure";
-import { UntrustedCount } from "@/components/official/stale-data/UntrustedCount";
+import { ReadFailure } from "@ai-matrx/design-system";
+import { UntrustedCount } from "@ai-matrx/design-system";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 import type { ContextMenuExtraItem } from "@/features/context-menu-v3/types";
 

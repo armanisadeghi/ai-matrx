@@ -15,7 +15,7 @@
 // than to a create form that does not exist.
 
 import { useRead } from "@ai-matrx/design-system";
-import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { ReadFailure } from "@ai-matrx/design-system";
 import Link from "next/link";
 import { useState } from "react";
 import { FileText, Plus } from "lucide-react";

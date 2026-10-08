@@ -66,7 +66,7 @@ import { KIND_CONFIG, type KindConfig } from "../kindConfig";
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { IntelligenceIndicator } from "@/features/mandates/feature-intelligence/IntelligenceIndicator";
 import { AGENT_ICON } from "@/components/icons/domain-icons";
-import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { ReadFailure } from "@ai-matrx/design-system";
 import { SOURCES_PATH } from "@/features/knowledge/modulePaths";
 
 const FIELD = "text-base"; // 16px+ prevents iOS zoom-on-focus

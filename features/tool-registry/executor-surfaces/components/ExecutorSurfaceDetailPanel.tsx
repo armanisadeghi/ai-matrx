@@ -29,10 +29,10 @@ import { AddToolBindingDialog } from "@/features/tool-registry/executor-surfaces
 import { SourceKindBadge } from "@/features/tool-call-visualization/admin/mcp-tools/source-kind-badge";
 import { AiToolRef } from "@/components/official/entity-ref/AiIdentityRef";
 import SuspenseLoader from "@/components/loaders/SuspenseLoader";
-import { UntrustedCount, type CountRead } from "@/components/official/stale-data/UntrustedCount";
+import { UntrustedCount, type CountRead } from "@ai-matrx/design-system";
 import { StaleDataNotice } from "@ai-matrx/design-system";
-import { ReadFailure } from "@/components/read-state/ReadFailure";
-import { readOf } from "@/components/read-state/ReadGate";
+import { ReadFailure } from "@ai-matrx/design-system";
+import { readOf } from "@ai-matrx/design-system";
 
 interface Props {
   /**

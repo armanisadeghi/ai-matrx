@@ -29,7 +29,7 @@ import { GeneratePeriodsPanel } from "./GeneratePeriodsPanel";
 import { hrTimePeriodHref } from "@/features/hr/routes";
 import { usePayPeriods } from "../hooks/usePayPeriods";
 import { PayPeriodsTable } from "./PayPeriodsTable";
-import { readOf } from "@/components/read-state/ReadGate";
+import { readOf } from "@ai-matrx/design-system";
 
 const CASES = new Set(["happy", "empty", "error", "edge", "edge2"]);
 

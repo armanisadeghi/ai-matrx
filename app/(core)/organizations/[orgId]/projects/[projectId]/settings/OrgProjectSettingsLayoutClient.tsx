@@ -12,7 +12,7 @@ import { useProject } from "@/features/projects/hooks";
 import { getOrganizationBySlugOrId } from "@/features/organizations/service";
 import { getProjectBySlug, getProject } from "@/features/projects/service";
 import type { Project } from "@/features/projects/types";
-import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { ReadFailure } from "@ai-matrx/design-system";
 import { ProjectSidebar } from "@/features/projects/components/ProjectSidebar";
 import { isUuidShape } from "@ai-matrx/kit/uuid";
 

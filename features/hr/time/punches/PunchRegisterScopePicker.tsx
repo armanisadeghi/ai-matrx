@@ -42,7 +42,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { Building2, ChevronDown, UserRound } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { ReadFailure } from "@ai-matrx/design-system";
 import { HR_ORG_PARAM } from "@/features/hr/constants";
 import { useHrContext } from "@/features/hr/shared/useHrContext";
 

@@ -18,7 +18,7 @@
  * partial file is NEVER presented as whole.
  */
 
-import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { ReadFailure } from "@ai-matrx/design-system";
 import { useCallback, useEffect, useState } from "react";
 import { History, Loader2, Trash2 } from "lucide-react";
 import { toast } from "@/lib/toast";

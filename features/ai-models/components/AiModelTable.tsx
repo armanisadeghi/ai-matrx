@@ -83,7 +83,7 @@ import {
   type ProviderPriceField,
 } from "./ProviderPriceCell";
 import { formatCount } from "@ai-matrx/kit/format";
-import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { ReadFailure } from "@ai-matrx/design-system";
 
 // ─── Provider Colors ──────────────────────────────────────────────────────────
 

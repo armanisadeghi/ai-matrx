@@ -1,7 +1,7 @@
 "use client";
 import { useState } from "react";
 import { z } from "zod";
-import { ErrorNotice } from "@/components/errors/ErrorNotice";
+import { ErrorNotice } from "@ai-matrx/design-system";
 import { Button } from "@/components/ui/button";
 import { Input } from "@ai-matrx/design-system/controls";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";

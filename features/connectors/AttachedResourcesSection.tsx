@@ -36,7 +36,7 @@ import {
 import { useAttachResourcePicker } from "./useAttachResourcePicker";
 import { useConversationAttachments } from "./useConversationAttachments";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
-import { UntrustedCount } from "@/components/official/stale-data/UntrustedCount";
+import { UntrustedCount } from "@ai-matrx/design-system";
 
 export interface AttachableConnectionSummary {
   slug: string;

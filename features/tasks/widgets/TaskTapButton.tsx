@@ -39,8 +39,8 @@ import {
   selectFullContextError,
   selectFullContextStatus,
 } from "@/features/agent-context/redux/hierarchySlice";
-import { ReadFailure } from "@/components/read-state/ReadFailure";
-import { UntrustedCount } from "@/components/official/stale-data/UntrustedCount";
+import { ReadFailure } from "@ai-matrx/design-system";
+import { UntrustedCount } from "@ai-matrx/design-system";
 import { ProTextarea } from "@/components/official/ProTextarea";
 
 /** Stable empty fallback for selectors — a fresh `[]` per call re-renders the subscriber on every dispatch. */

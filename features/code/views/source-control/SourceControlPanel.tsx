@@ -69,7 +69,7 @@ import {
   buildRepositoryContextSnapshot,
   GIT_REPOSITORY_CONTEXT_KEY,
 } from "./gitContext";
-import { ErrorNotice } from "@/components/errors/ErrorNotice";
+import { ErrorNotice } from "@ai-matrx/design-system";
 
 const GIT_CONTEXT_KNOB_FEATURE = "code.source_control";
 const GIT_CONTEXT_KNOB_KEYS = [

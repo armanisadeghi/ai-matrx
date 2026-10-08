@@ -1,7 +1,7 @@
 "use client";
 
-import { UntrustedCount } from "@/components/official/stale-data/UntrustedCount";
-import { readOf } from "@/components/read-state/ReadGate";
+import { UntrustedCount } from "@ai-matrx/design-system";
+import { readOf } from "@ai-matrx/design-system";
 import React, { useState } from "react";
 import { EngagementPicker } from "@/features/scopes/components/active-context/engagement/EngagementPicker";
 import {
@@ -11,7 +11,7 @@ import {
 import { useNavTree } from "@/features/agent-context/hooks/useNavTree";
 import { FolderKanban } from "lucide-react";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
-import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { ReadFailure } from "@ai-matrx/design-system";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { invalidateAndRefetchFullContext } from "@/features/agent-context/redux/hierarchyThunks";
 

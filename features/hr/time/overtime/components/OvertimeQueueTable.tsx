@@ -33,7 +33,7 @@ import {
   type OvertimeQueueState,
 } from "../overtimeVocabulary";
 import { OvertimeStateChip } from "./OvertimeStateChip";
-import type { ReadOutcome } from "@/components/read-state/ReadGate";
+import type { ReadOutcome } from "@ai-matrx/design-system";
 
 /**
  * The row's display state. `unapprovedOtFlagged` wins over the stored state because it is the fact

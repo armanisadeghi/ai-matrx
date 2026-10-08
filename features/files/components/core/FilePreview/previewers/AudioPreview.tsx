@@ -38,7 +38,7 @@ import { useMediaLoadRecovery } from "@ai-matrx/media/core";
 import { recognizeOurFileUrl } from "@/lib/media/our-file-sources";
 import { useMediaElementPlaybackSession } from "@/features/audio/session/useMediaElementPlaybackSession";
 import { formatDurationSeconds } from "@ai-matrx/kit/format";
-import { ErrorNotice } from "@/components/errors/ErrorNotice";
+import { ErrorNotice } from "@ai-matrx/design-system";
 import { useSeekRequest, type SeekRequest } from "@/lib/media/seek-request";
 
 export interface AudioPreviewProps {

@@ -1,7 +1,7 @@
 import { fetchTranscriptsPaginated } from "@/features/transcripts/service/transcriptsService";
 import { Transcript } from "@/features/transcripts/types";
 import { useRead } from "@ai-matrx/design-system";
-import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { ReadFailure } from "@ai-matrx/design-system";
 
 export function VoicePadHistorySidebar({
   onClose,

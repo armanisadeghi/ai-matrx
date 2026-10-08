@@ -29,7 +29,7 @@ import { AlertTriangle, ChevronDown, ChevronRight, Gauge, Info, Package } from "
 import { RefreshCwTapButton } from "@ai-matrx/tap-target/buttons";
 
 import { MatrxDataTable } from "@ai-matrx/design-system/data-table";
-import { readOf } from "@/components/read-state/ReadGate";
+import { readOf } from "@ai-matrx/design-system";
 import type { MatrxColumnDef } from "@ai-matrx/design-system/data-table/types";
 
 import { SpendWindowPanels } from "./SpendWindowPanels";

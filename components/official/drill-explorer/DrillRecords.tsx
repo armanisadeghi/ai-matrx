@@ -31,7 +31,7 @@ import type { MatrxDataTableQueryState, MatrxDrillDimension, MatrxDrillMeasure, 
 
 import AppLink from "@/components/navigation/AppLink";
 import { InfoHint } from "@/components/official/InfoHint";
-import { readOf } from "@/components/read-state/ReadGate";
+import { readOf } from "@ai-matrx/design-system";
 
 import { doorWindow, drillWindowKey } from "./useDrillExplorer";
 import { useDrillNameBookOr, useDrillNames, type DrillNameBook } from "./drillNames";

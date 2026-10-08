@@ -80,7 +80,7 @@ import {
 import { AnnotationPanel } from "@/features/rich-document/annotations/AnnotationPanel";
 import type { AnnotationSource } from "@/features/rich-document/annotations/types";
 import { noteBodyStore, spliceSaveBody } from "@/features/rich-document/annotations/sourceSave";
-import { ErrorNotice } from "@/components/errors/ErrorNotice";
+import { ErrorNotice } from "@ai-matrx/design-system";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { archiveConfirmSentence } from "@/features/trash/archiveCopy";

@@ -133,7 +133,7 @@ registerChatUi({
 });
 
 
-import { ReadFailure as Host_ReadFailure } from "@/components/read-state/ReadFailure";
+import { ReadFailure as Host_ReadFailure } from "@ai-matrx/design-system";
 registerChatUi({
   ReadFailure: Host_ReadFailure,
 });
@@ -143,7 +143,7 @@ registerChatUi({
   ItemRow: Host_ItemRow,
 });
 
-import { UntrustedCount as Host_UntrustedCount } from "@/components/official/stale-data/UntrustedCount";
+import { UntrustedCount as Host_UntrustedCount } from "@ai-matrx/design-system";
 registerChatUi({
   UntrustedCount: Host_UntrustedCount,
 });
@@ -344,7 +344,7 @@ registerChatUi({
   useAuthGuardedAction: Host_useAuthGuardedAction,
 });
 
-import { readOf as Host_readOf } from "@/components/read-state/ReadGate";
+import { readOf as Host_readOf } from "@ai-matrx/design-system";
 registerChatUi({
   readOf: Host_readOf,
 });
@@ -511,7 +511,7 @@ registerChatUi({
   AiToolRef: Host_AiToolRef,
 });
 
-import { TextInputDialog as Host_TextInputDialog } from "@/components/dialogs/text-input/TextInputDialog";
+import { TextInputDialog as Host_TextInputDialog } from "@ai-matrx/design-system";
 registerChatUi({
   TextInputDialog: Host_TextInputDialog,
 });

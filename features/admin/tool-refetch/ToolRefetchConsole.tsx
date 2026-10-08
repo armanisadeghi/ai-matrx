@@ -62,7 +62,7 @@ import {
   type ToolRefetchSummaryRow,
 } from "./service";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
-import { readOf } from "@/components/read-state/ReadGate";
+import { readOf } from "@ai-matrx/design-system";
 import { ToolRefetchExplorer } from "./ToolRefetchExplorer";
 import { copyToClipboard } from "@/lib/clipboard/copy";
 

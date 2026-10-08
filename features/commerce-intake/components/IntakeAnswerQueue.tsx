@@ -18,7 +18,7 @@ import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
  *   Not a quick answer (deferred_at + reason — leaves this flow entirely).
  */
 
-import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { ReadFailure } from "@ai-matrx/design-system";
 import { StaleDataNotice } from "@ai-matrx/design-system";
 import React, { useCallback, useEffect, useState } from "react";
 import Link from "next/link";

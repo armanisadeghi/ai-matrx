@@ -27,7 +27,8 @@ jest.mock("@/features/scopes/redux/selectors/tree", () => ({
   selectTreeError: (s: { scopesTree: typeof state }) => s.scopesTree.treeError,
 }));
 jest.mock("@/features/scopes/redux/thunks/ensureScopeTree", () => ({ ensureScopeTree: () => ({ type: "noop" }) }));
-jest.mock("@/components/read-state/ReadFailure", () => ({
+jest.mock("@ai-matrx/design-system", () => ({
+  ...jest.requireActual("@ai-matrx/design-system"),
   ReadFailure: ({ what }: { what: string }) => <div>Could not load {what}</div>,
 }));
 jest.mock("@/features/access-gate/components/AccessGate", () => ({ AccessGate: () => <div>access gate</div> }));

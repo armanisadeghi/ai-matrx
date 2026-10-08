@@ -10,7 +10,7 @@
 
 import { useState } from "react";
 import type { MatrxDataTableQueryState } from "@ai-matrx/design-system/data-table/types";
-import { readOf } from "@/components/read-state/ReadGate";
+import { readOf } from "@ai-matrx/design-system";
 import { useRouter } from "next/navigation";
 
 import { useHrContext } from "@/features/hr/shared/useHrContext";

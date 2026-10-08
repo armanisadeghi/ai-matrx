@@ -52,7 +52,8 @@ jest.mock("@ai-matrx/chat/store/hooks", () => jest.requireMock("@/lib/redux/hook
 
 jest.mock("@/hooks/useNow", () => ({ useNow: () => new Date(0) }));
 
-jest.mock("@/components/dialogs/text-input/TextInputDialog", () => ({
+jest.mock("@ai-matrx/design-system", () => ({
+  ...jest.requireActual("@ai-matrx/design-system"),
   TextInputDialog: () => null,
 }));
 

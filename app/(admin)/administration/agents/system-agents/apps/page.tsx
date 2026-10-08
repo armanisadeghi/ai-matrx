@@ -50,7 +50,7 @@ import {
   appletExecutionsHref,
 } from "@/features/applets/components/AppletRef";
 import { pushAppHref } from "@/lib/deployment/navigate";
-import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { ReadFailure } from "@ai-matrx/design-system";
 import { StaleDataNotice } from "@ai-matrx/design-system";
 
 const STATUS_VARIANT: Record<

@@ -50,7 +50,7 @@ import { OpenDestinationDialog } from "@/features/page-extraction/data-review/Op
 import { HTMLPageService } from "@/features/html-pages/services/htmlPageService";
 import { getSessionKnob } from "@/lib/scoped-config/sessionKnob";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
-import { TextInputDialog } from "@/components/dialogs/text-input/TextInputDialog";
+import { TextInputDialog } from "@ai-matrx/design-system";
 import { EditableContextMenu } from "@/features/context-menu-v3/EditableContextMenu";
 import { buildApplicationScopeFromMenuContext } from "@/features/context-menu-v3/utils/build-application-scope";
 import { useMicField } from "@/features/audio/hooks/useMicField";

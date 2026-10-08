@@ -104,7 +104,7 @@ import { PlanTree } from "./PlanTree";
 import { SetupView } from "../setup/components/SetupView";
 import { useCmsLink } from "../setup/hooks";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
-import { readOf } from "@/components/read-state/ReadGate";
+import { readOf } from "@ai-matrx/design-system";
 
 // The map chunk loads only when the user switches to it (the conditional
 // render below is the deferral; ssr:false keeps the split shape unchanged).

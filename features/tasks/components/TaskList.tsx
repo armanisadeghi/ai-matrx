@@ -3,7 +3,7 @@ import TaskItem from './TaskItem';
 import { useAppSelector } from '@/lib/redux/hooks';
 import { selectTasksLoading } from '@/features/tasks/redux/taskUiSlice';
 import type { TaskWithProject } from '../types';
-import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { ReadFailure } from "@ai-matrx/design-system";
 import { useTasksRead } from "@/features/tasks/hooks/useTasksRead";
 
 export default function TaskList({ tasks }: { tasks: TaskWithProject[] }) {

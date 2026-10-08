@@ -11,7 +11,7 @@ import { useResearchStream } from "../../hooks/useResearchStream";
 import { assignTagsToSource, removeSourceTag, createTag } from "../../service";
 import type { ResearchDataEvent } from "../../types";
 import { AGENT_ICON } from "@/components/icons/domain-icons";
-import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { ReadFailure } from "@ai-matrx/design-system";
 
 interface Suggestion {
   name: string;

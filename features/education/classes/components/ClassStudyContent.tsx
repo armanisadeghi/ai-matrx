@@ -27,8 +27,8 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { ReadFailure } from "@/components/read-state/ReadFailure";
-import { TextInputDialog } from "@/components/dialogs/text-input/TextInputDialog";
+import { ReadFailure } from "@ai-matrx/design-system";
+import { TextInputDialog } from "@ai-matrx/design-system";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { toast } from "@/lib/toast";
 import { cn } from "@/utils/cn";

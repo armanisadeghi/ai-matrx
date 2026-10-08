@@ -22,7 +22,7 @@ import { formatTimecode } from "../../utils/timecode";
 import { useScrollSync } from "../scroll-sync/ScrollSyncProvider";
 import { AudioImportDialog } from "./AudioImportDialog";
 import { ColumnEmptyState } from "./ColumnEmptyState";
-import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { ReadFailure } from "@ai-matrx/design-system";
 import { StaleDataNotice } from "@ai-matrx/design-system";
 import { selectSessionReadError } from "../../redux/selectors";
 import { ColumnHeader } from "./ColumnHeader";

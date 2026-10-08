@@ -43,10 +43,10 @@ import {
   type ColumnFilterOption,
 } from "../sources/ColumnFilterMenu";
 import { CurationBatchBar } from "./CurationBatchBar";
-import { TextInputDialog } from "@/components/dialogs/text-input/TextInputDialog";
+import { TextInputDialog } from "@ai-matrx/design-system";
 import { ResearchFilterBar, type FilterDef } from "../shared/ResearchFilterBar";
 import type { FilterOption } from "@/components/hierarchy-filter/HierarchyFilterPill";
-import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { ReadFailure } from "@ai-matrx/design-system";
 import {
   MOBILE_TABLE,
 } from "@/components/official/mobile-table/mobileTable";

@@ -25,7 +25,7 @@ import { CHAT_DEFAULT_MODEL_KNOB } from "@/features/ai-models/preferredChatModel
 import { CREATIVITY_LEVEL_OPTIONS, LANGUAGE_OPTIONS, TEXT_TONE_OPTIONS } from "@/features/settings/agent-writable-settings";
 import { fetchWithOrganization } from "@/lib/organizations/fetchWithOrganization";
 import { toast } from "@/lib/toast";
-import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { ReadFailure } from "@ai-matrx/design-system";
 import { cn } from "@/lib/utils";
 import { SampleTitle } from "../../_components/kit";
 import { Button, ControlRow, ControlScope, RegionSkeleton, RowGroup, Select, SettingRow, Switch } from "@ai-matrx/design-system/controls";

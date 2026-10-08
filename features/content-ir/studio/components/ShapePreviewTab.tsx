@@ -16,7 +16,7 @@ import type { Json } from "@/types/database.types";
 import type { ShapeActivationVerdict } from "@/features/content-ir/studio/shape-authoring-service";
 import { SurfaceRuntimeProvider } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import { createShapesScope } from "@/features/surfaces/manifests/shapes.manifest";
-import { readOf } from "@/components/read-state/ReadGate";
+import { readOf } from "@ai-matrx/design-system";
 
 interface ShapePreviewTabProps {
   kind: string;

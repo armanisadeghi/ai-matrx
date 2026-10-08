@@ -2,7 +2,7 @@
 
 // Shared interactive surface for the retained demo and organization route.
 
-import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { ReadFailure } from "@ai-matrx/design-system";
 import { useRef, useState } from "react";
 import { Input } from "@ai-matrx/design-system/controls";
 import { ProTextarea } from "@/components/official/ProTextarea";

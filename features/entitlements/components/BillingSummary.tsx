@@ -13,7 +13,7 @@ import {
 } from "../billing-summary";
 import { usePlanCatalog } from "../catalog/usePlanCatalog";
 import { captureError } from "@/lib/diagnostics/errorCaptureStore";
-import { ErrorNotice } from "@/components/errors/ErrorNotice";
+import { ErrorNotice } from "@ai-matrx/design-system";
 import { InfoHint } from "@/components/official/InfoHint";
 import { ScheduledPlanChange } from "./ScheduledPlanChange";
 import { useOpenFeedbackWindow } from "@/features/overlays/openers/feedbackDialog";

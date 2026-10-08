@@ -7,7 +7,7 @@
 // size/position on ONE pair, defined once in app/globals.css:
 //   --matrx-motion-duration-panel (600ms; 0ms under reduced motion)
 //   --matrx-motion-ease-panel     (cubic-bezier(0.4, 0, 0.2, 1) — never the spring)
-// Tailwind form: PANEL_MOTION_CLASS from lib/motion/panel-motion.ts.
+// Tailwind form: PANEL_MOTION_CLASS from @ai-matrx/design-system.
 //
 // This flags a panel slide that states its own pace instead:
 //   TSX — a geometry transition (transition-[width] / -transform / -all …) with a
@@ -90,7 +90,7 @@ function findingsForSource(src, file) {
     const near = lines.slice(Math.max(0, i - 1), i + 2).join("\n");
     if (!TW_GEOM.test(near)) continue;
     if (!isPanelWindow(win) && !PANEL_CONST.test(lines.slice(Math.max(0, i - 1), i + 1).join("\n"))) continue;
-    out.push(`${file}:${i + 1}  panel slide with its own pace "${m[1]}" — use PANEL_MOTION_CLASS (lib/motion/panel-motion.ts)`);
+    out.push(`${file}:${i + 1}  panel slide with its own pace "${m[1]}" — use PANEL_MOTION_CLASS (@ai-matrx/design-system)`);
   }
   return out;
 }

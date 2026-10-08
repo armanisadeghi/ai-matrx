@@ -17,7 +17,7 @@
  * and pipe the resulting dataUrl through our save helper.
  */
 
-import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { ReadFailure } from "@ai-matrx/design-system";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Loader2, Save, ShieldAlert, Zap } from "lucide-react";
 import { toast } from "@/lib/toast";

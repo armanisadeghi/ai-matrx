@@ -77,7 +77,7 @@ import type { MatrxDataTableSelectionConfig } from "@ai-matrx/design-system/data
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { EntitySourceFailures } from "./EntitySourceFailures";
 import { EntityFilterChips } from "./EntityFilterChips";
-import { UntrustedCount, type CountRead } from "@/components/official/stale-data/UntrustedCount";
+import { UntrustedCount, type CountRead } from "@ai-matrx/design-system";
 import { formatCount } from "@ai-matrx/kit/format";
 
 const EMPTY_ITEM_MENU_CONFIG: ItemMenuConfig = { sections: [] };

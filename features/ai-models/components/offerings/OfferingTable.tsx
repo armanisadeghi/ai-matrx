@@ -20,7 +20,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { AiModelRef } from "@/components/official/entity-ref/AiIdentityRef";
 import type { AiApi, AiEndpoint, AiModel, AiOffering } from "../../types";
-import type { ReadOutcome } from "@/components/read-state/ReadGate";
+import type { ReadOutcome } from "@ai-matrx/design-system";
 import {
   ProviderPriceCell,
   type ProviderPriceField,

@@ -37,7 +37,7 @@ import { StaleDataNotice } from "@ai-matrx/design-system";
 import { useUniversalEntitySearch } from "@/features/scopes/hooks/useUniversalEntitySearch";
 import { useKindItems } from "@/features/scopes/hooks/useKindItems";
 import type { KindScope } from "@/features/scopes/service/kindInventory";
-import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { ReadFailure } from "@ai-matrx/design-system";
 import { getEntityInfo } from "@/features/scopes/registry/entityRegistry";
 import {
   collidingRowIds,

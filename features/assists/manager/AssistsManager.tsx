@@ -16,8 +16,8 @@
  * triage, restore), never a second way to act.
  */
 
-import { UntrustedCount } from "@/components/official/stale-data/UntrustedCount";
-import { readOf } from "@/components/read-state/ReadGate";
+import { UntrustedCount } from "@ai-matrx/design-system";
+import { readOf } from "@ai-matrx/design-system";
 import { useMemo, useState } from "react";
 import {
   Clock,

@@ -1,7 +1,7 @@
 "use client";
 
 import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
-import type { ReadStatus } from "@/components/read-state/ReadGate";
+import type { ReadStatus } from "@ai-matrx/design-system";
 import type { HierarchyState } from "@/features/agent-context/redux/hierarchySlice";
 import type { DatabaseTask, ProjectWithTasks } from "../types/database";
 import type { TaskFilterType } from "../types";

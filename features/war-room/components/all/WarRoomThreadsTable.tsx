@@ -29,7 +29,7 @@ import {
   useWarRoomThreadMenuSection,
   type WarRoomThreadMenuRow,
 } from "@/features/war-room/lib/thread-actions";
-import type { ReadOutcome } from "@/components/read-state/ReadGate";
+import type { ReadOutcome } from "@ai-matrx/design-system";
 
 // context-menu-exempt: surfaceName — the registered matrx-user/war-room surface declares 17 per-ROOM values a cross-room table cannot emit; naming it would hand bound agents empty values
 

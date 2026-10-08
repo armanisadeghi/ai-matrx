@@ -16,7 +16,7 @@ import {
   FASTFIRE_SURFACE_LOAD_TIMEOUT_MESSAGE,
   loadFastFireSurface,
 } from "./fastfire-initial-load";
-import { ErrorNotice } from "@/components/errors/ErrorNotice";
+import { ErrorNotice } from "@ai-matrx/design-system";
 
 type FastFireSurfaceComponent = ComponentType<{ setId?: string | null }>;
 

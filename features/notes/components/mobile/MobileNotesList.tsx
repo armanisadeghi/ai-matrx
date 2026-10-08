@@ -1,6 +1,6 @@
 "use client";
 
-import { UntrustedCount } from "@/components/official/stale-data/UntrustedCount";
+import { UntrustedCount } from "@ai-matrx/design-system";
 import { noteDisplayLabel } from "@/features/notes/format";
 import { plainTitleFromMarkdown } from "@ai-matrx/rich-content/markdown-core/plain-title";
 import React, { useRef, useState, useMemo } from "react";
@@ -44,7 +44,7 @@ import NotesFilterSheet, { NotesFilterState } from "./NotesFilterSheet";
 import type { Note } from "@/features/notes/types";
 import { OrganizationTag } from "@/features/commerce-review/components/OrganizationTag";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
-import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { ReadFailure } from "@ai-matrx/design-system";
 
 interface MobileNotesListProps {
   onNoteSelect: (note: Note) => void;

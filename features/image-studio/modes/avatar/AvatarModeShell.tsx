@@ -18,7 +18,7 @@
  * unchanged.
  */
 
-import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { ReadFailure } from "@ai-matrx/design-system";
 import { useCallback, useState } from "react";
 import Cropper from "react-easy-crop";
 import { useImageSource } from "../shared/use-image-source";

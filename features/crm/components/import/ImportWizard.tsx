@@ -10,7 +10,7 @@
 // exactly what will be created, what already exists (with a door to each
 // existing record), and what cannot be imported.
 
-import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { ReadFailure } from "@ai-matrx/design-system";
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";

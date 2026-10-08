@@ -7,7 +7,7 @@ import { OrgResourceList } from "@/features/organizations/components/OrgResource
 import { supabase } from "@/utils/supabase/client";
 import { appDb } from "@/utils/supabase/appDb";
 import { useResolvedOrganization } from "@/features/organizations/hooks";
-import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { ReadFailure } from "@ai-matrx/design-system";
 
 const SELECT_COLS = "id, name, tagline, updated_at, category, tags";
 

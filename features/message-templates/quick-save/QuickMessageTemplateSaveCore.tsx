@@ -42,7 +42,7 @@ import {
   type TemplateSaveMode,
   type TemplateUpdateMethod,
 } from "./template-save";
-import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { ReadFailure } from "@ai-matrx/design-system";
 import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
 
 interface QuickMessageTemplateSaveCoreProps {

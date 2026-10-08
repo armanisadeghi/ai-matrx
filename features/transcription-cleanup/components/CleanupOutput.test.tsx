@@ -11,7 +11,8 @@ jest.mock("@ai-matrx/rich-content/rich-document/RichDocument", () => ({
     return <div>Rendered answer</div>;
   },
 }));
-jest.mock("@/components/errors/ErrorNotice", () => ({
+jest.mock("@ai-matrx/design-system", () => ({
+  ...jest.requireActual("@ai-matrx/design-system"),
   ErrorNotice: () => <div role="alert">Run failed</div>,
 }));
 

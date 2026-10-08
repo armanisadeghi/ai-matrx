@@ -57,8 +57,8 @@ import {
 import { useAiVisibility } from "./useAiVisibility";
 import type { AiVisibilityEvidenceView } from "./evidence-views";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
-import { UntrustedCount } from "@/components/official/stale-data/UntrustedCount";
-import { readOf } from "@/components/read-state/ReadGate";
+import { UntrustedCount } from "@ai-matrx/design-system";
+import { readOf } from "@ai-matrx/design-system";
 
 interface ClaimRow extends AiVisibilityClaim {
   engine: string;

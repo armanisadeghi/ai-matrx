@@ -8,7 +8,7 @@
 // useListViewPrefs("crm-deals"). Smart views ride the same `platform.saved_view`
 // table as the party list, discriminated by `surface_key='crm/deals'`.
 
-import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { ReadFailure } from "@ai-matrx/design-system";
 import { StaleDataNotice } from "@ai-matrx/design-system";
 import { useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";

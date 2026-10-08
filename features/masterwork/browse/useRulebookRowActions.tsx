@@ -9,7 +9,7 @@ import { Eye, Link2, Pencil, Share2, Trash2, Workflow } from "lucide-react";
 import { toast } from "@/lib/toast";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { ShareModal } from "@/features/sharing/components/ShareModal";
-import { TextInputDialog } from "@/components/dialogs/text-input/TextInputDialog";
+import { TextInputDialog } from "@ai-matrx/design-system";
 import type { ItemMenuConfig } from "@/components/official/item/types";
 import type {
   EntityListController,

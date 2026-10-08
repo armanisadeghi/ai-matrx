@@ -43,8 +43,8 @@ import { MediaPager } from "./MediaPager";
 import { useLongPress } from "../hooks/useLongPress";
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
-import { UntrustedCount } from "@/components/official/stale-data/UntrustedCount";
-import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { UntrustedCount } from "@ai-matrx/design-system";
+import { ReadFailure } from "@ai-matrx/design-system";
 
 const NOTES_AUTOSAVE_MS = 800;
 

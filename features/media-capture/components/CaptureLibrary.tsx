@@ -45,7 +45,7 @@ import { CaptureRecoverySection } from "@/features/media-capture/components/Capt
 import { CaptureTransportStrip } from "@/features/media-capture/components/CaptureTransportStrip";
 import { CaptureItemActions } from "@/features/media-capture/components/CaptureItemActions";
 import { CaptureThumb } from "@/features/media-capture/components/CaptureThumb";
-import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { ReadFailure } from "@ai-matrx/design-system";
 
 type CaptureKindFilter = "all" | "photo" | "video" | "audio";
 

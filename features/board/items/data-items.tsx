@@ -26,7 +26,7 @@ import { Peek, RecordsMount, TablesHome, recordsDataSource, rowName } from "@ai-
 import { useRecords, useTable } from "@ai-matrx/records/react";
 
 import { Button } from "@/components/ui/button";
-import { readOf } from "@/components/read-state/ReadGate";
+import { readOf } from "@ai-matrx/design-system";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { createClient } from "@/utils/supabase/client";

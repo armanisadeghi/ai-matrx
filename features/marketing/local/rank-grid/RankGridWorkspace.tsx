@@ -38,7 +38,7 @@ import type { MatrxColumnDef } from "@ai-matrx/design-system/data-table/types";
 import { useToolAction } from "@ai-matrx/chat/action-requests/hooks/useToolAction";
 import type { ToolEnvelope } from "@ai-matrx/chat/action-requests/screen-run";
 import type { MapMarker } from "@/components/mardown-display/blocks/map/MapCanvas";
-import { ErrorNotice } from "@/components/errors/ErrorNotice";
+import { ErrorNotice } from "@ai-matrx/design-system";
 import { KpiGrid, KpiTile } from "@/components/official/kpi/KpiTile";
 import { RecordPageHeader } from "@/features/shell/components/header/templates/RecordPageHeader";
 import { useBusinessLocations } from "@/features/marketing/data/hooks";

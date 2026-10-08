@@ -12,7 +12,7 @@
 
 import { RotateCcw } from "lucide-react";
 import { Button } from "@ai-matrx/design-system";
-import { ErrorNotice } from "@/components/errors/ErrorNotice";
+import { ErrorNotice } from "@ai-matrx/design-system";
 import { plainFailureReason } from "@/lib/entity-list/failure";
 
 export interface EntitySourceFailure {

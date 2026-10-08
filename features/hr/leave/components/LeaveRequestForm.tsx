@@ -46,7 +46,7 @@ import type {
 } from "../api/types";
 import { LeaveBalanceBlock, formatHours } from "./LeaveBalanceBlock";
 import { ProTextarea } from "@/components/official/ProTextarea";
-import { ErrorNotice } from "@/components/errors/ErrorNotice";
+import { ErrorNotice } from "@ai-matrx/design-system";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 /** How long after the last keystroke the preview re-reads. */

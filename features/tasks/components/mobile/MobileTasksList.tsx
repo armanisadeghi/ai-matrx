@@ -14,7 +14,7 @@ import {
   selectFullContextStatus,
 } from "@/features/agent-context/redux/hierarchySlice";
 import { fetchFullContext } from "@/features/agent-context/redux/hierarchyThunks";
-import { ErrorNotice } from "@/components/errors/ErrorNotice";
+import { ErrorNotice } from "@ai-matrx/design-system";
 import {
   selectFilteredTasks,
   selectProjects,

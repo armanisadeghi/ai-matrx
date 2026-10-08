@@ -11,7 +11,7 @@
 
 import { useState } from "react";
 import KindEmitTemplate from "@/features/content-ir/render-paths/KindEmitTemplate";
-import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { ReadFailure } from "@ai-matrx/design-system";
 import { useKindExamples } from "@/features/content-ir/studio/kind-examples";
 
 interface ShapeTemplateTabProps {

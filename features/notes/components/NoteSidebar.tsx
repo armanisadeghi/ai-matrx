@@ -20,7 +20,7 @@
 // - Empty state when no notes exist
 
 import { Skeleton } from "@ai-matrx/design-system";
-import { UntrustedCount } from "@/components/official/stale-data/UntrustedCount";
+import { UntrustedCount } from "@ai-matrx/design-system";
 import { noteDisplayLabel } from "@/features/notes/format";
 import React, {
   useState,
@@ -140,9 +140,9 @@ import { formatRelativeTime } from "@/utils/datetime";
 const NOTE_AGE_CUTOFF_MS = 7 * 24 * 60 * 60 * 1000;
 import { newNoteFolderDestination, noteFolderIdentityKey, noteFolderReference, type NoteSortField, type NoteSortOrder, type NoteGroupBy } from "../types";
 import { requireOrganizationContext } from "@/lib/api/organization-context";
-import { ErrorNotice } from "@/components/errors/ErrorNotice";
+import { ErrorNotice } from "@ai-matrx/design-system";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
-import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { ReadFailure } from "@ai-matrx/design-system";
 import { StaleDataNotice } from "@ai-matrx/design-system";
 import { useUserOrganizations } from "@/features/organizations/hooks";
 import { CONTEXT_MENU_HEADING_KEY } from "@/features/context-menu-v3/types";

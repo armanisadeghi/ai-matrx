@@ -48,7 +48,7 @@ import {
   selectItemsLoadedForType,
   SYSTEM_ITEMS_KEY,
 } from "@/features/scopes/redux/contextItemCatalog";
-import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { ReadFailure } from "@ai-matrx/design-system";
 import {
   selectAgentContextPolicies,
   selectAgentVariableDefinitions,

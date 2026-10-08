@@ -22,7 +22,7 @@
 
 import { useEffect, useState } from "react";
 import { Layers, NotebookTabs } from "lucide-react";
-import { readOf } from "@/components/read-state/ReadGate";
+import { readOf } from "@ai-matrx/design-system";
 import { SetDetailView } from "@/features/flashcards/components/set-detail/SetDetailView";
 import { CreateDeckPage } from "@/features/flashcards/components/create/CreateDeckPage";
 import { fetchDeckPage, type DeckListRow } from "@/features/flashcards/data/deckListService";

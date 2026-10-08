@@ -1,7 +1,7 @@
 "use client";
 
-import { readOf } from "@/components/read-state/ReadGate";
-import { UntrustedCount } from "@/components/official/stale-data/UntrustedCount";
+import { readOf } from "@ai-matrx/design-system";
+import { UntrustedCount } from "@ai-matrx/design-system";
 import {
   useState,
   useCallback,
@@ -85,7 +85,7 @@ import {
   priorityScoreTone,
 } from "./sourceScoreDisplay";
 import { ColumnFilterMenu, type ColumnFilterOption } from "./ColumnFilterMenu";
-import { TextInputDialog } from "@/components/dialogs/text-input/TextInputDialog";
+import { TextInputDialog } from "@ai-matrx/design-system";
 import type { ResearchTag } from "../../types";
 import { StatusBadge } from "../shared/StatusBadge";
 import { SourceTypeIcon } from "../shared/SourceTypeIcon";
@@ -112,7 +112,7 @@ import {
 import { filterAndSortBySearch } from "@ai-matrx/kit/search-scoring";
 import { setSourceNavOrder } from "../../utils/sourceNavOrder";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
-import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { ReadFailure } from "@ai-matrx/design-system";
 import { StaleDataNotice } from "@ai-matrx/design-system";
 import { researchTopicHubHref } from "@/features/knowledge/hub/legacyRoutes";
 

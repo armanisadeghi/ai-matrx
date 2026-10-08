@@ -70,7 +70,7 @@ import {
   type MatrxColumnDef,
   type MatrxDataTableCopyConfig,
 } from "@ai-matrx/design-system/data-table";
-import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { ReadFailure } from "@ai-matrx/design-system";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 // ─── Types ────────────────────────────────────────────────────────────────

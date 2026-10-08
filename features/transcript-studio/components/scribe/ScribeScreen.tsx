@@ -23,7 +23,7 @@ import { buildRecordReferenceFence } from "@/features/matrx-envelope/recordRefer
 import { buildSessionTranscriptReferenceFence } from "@/features/matrx-envelope/compoundReference";
 import { cn } from "@/lib/utils";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
-import { TextInputDialog } from "@/components/dialogs/text-input/TextInputDialog";
+import { TextInputDialog } from "@ai-matrx/design-system";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { selectSessionById } from "../../redux/selectors";
 import { activeSessionIdSet } from "../../redux/slice";

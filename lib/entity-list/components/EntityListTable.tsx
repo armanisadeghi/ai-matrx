@@ -48,7 +48,7 @@ import {
 } from "@/features/context-menu-v3/types";
 import { itemMenuConfigToExtraSections } from "@/components/official/item/itemMenuToV3";
 import { resolveItemMenuConfig } from "@/components/official/item/types";
-import type { ReadOutcome } from "@/components/read-state/ReadGate";
+import type { ReadOutcome } from "@ai-matrx/design-system";
 import { fitColumnWidths } from "../columnWidths";
 import type { SavedListView } from "@/lib/redux/preferences/userPreferencesSlice";
 

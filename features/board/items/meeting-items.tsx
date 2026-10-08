@@ -19,7 +19,7 @@ import { useState, type ReactNode } from "react";
 import { ListChecks, NotebookPen, Video } from "lucide-react";
 import { useMeeting } from "@ai-matrx/meet/react";
 import { Button } from "@/components/ui/button";
-import { readOf } from "@/components/read-state/ReadGate";
+import { readOf } from "@ai-matrx/design-system";
 import { useMeetingsDirectory } from "@/features/meet/hooks/useMeetingsDirectory";
 import { useMeetingById } from "@/features/meet/hooks/useMeetingById";
 import { useMeetingLive } from "@/features/meet/hooks/useMeetingLive";

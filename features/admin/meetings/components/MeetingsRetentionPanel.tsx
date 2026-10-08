@@ -17,7 +17,7 @@ import { ArrowUpRight, ShieldCheck } from "lucide-react";
 import { MatrxDataTable } from "@ai-matrx/design-system/data-table";
 import type { MatrxColumnDef } from "@ai-matrx/design-system/data-table/types";
 import { formatAbsoluteDate } from "@ai-matrx/kit/format";
-import { ErrorNotice } from "@/components/errors/ErrorNotice";
+import { ErrorNotice } from "@ai-matrx/design-system";
 import { isJsonObject } from "@/types/json";
 import { supabase } from "@/utils/supabase/client";
 import { cn } from "@/lib/utils";

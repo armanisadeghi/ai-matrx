@@ -38,7 +38,7 @@ import {
   formatYouTubeDuration,
 } from "@/features/marketing/discovery/youtube/formatters";
 import type { YouTubeVideoIdentity } from "../../service";
-import type { ReadOutcome } from "@/components/read-state/ReadGate";
+import type { ReadOutcome } from "@ai-matrx/design-system";
 
 function tierFromSource(source: ResearchSource): string | null {
   return authorityTier(source.authority_tier, source.authority_score);

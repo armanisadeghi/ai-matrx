@@ -25,7 +25,7 @@ import {
 } from "@ai-matrx/design-system/data-table";
 import { useTableUrlState } from "@ai-matrx/design-system/data-table/url-state";
 import { Globe, Shield, ShieldOff, User } from "lucide-react";
-import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { ReadFailure } from "@ai-matrx/design-system";
 import { StaleDataNotice } from "@ai-matrx/design-system";
 
 const RATE_LIMITS_TABLE_ID = "admin-applet-rate-limits";

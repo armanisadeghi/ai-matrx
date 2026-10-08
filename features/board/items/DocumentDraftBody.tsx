@@ -12,7 +12,7 @@
 import { useRef, useState } from "react";
 import { FilePlus2, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { ErrorNotice } from "@/components/errors/ErrorNotice";
+import { ErrorNotice } from "@ai-matrx/design-system";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import { createDocument } from "@/features/documents/document-service";

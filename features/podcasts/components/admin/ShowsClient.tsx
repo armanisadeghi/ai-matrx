@@ -1,6 +1,6 @@
 "use client";
 
-import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { ReadFailure } from "@ai-matrx/design-system";
 import { StaleDataNotice } from "@ai-matrx/design-system";
 import { useState, useEffect, useMemo, useTransition } from "react";
 import { toast } from "@/lib/toast";

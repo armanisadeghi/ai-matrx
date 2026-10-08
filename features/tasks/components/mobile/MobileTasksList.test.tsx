@@ -93,8 +93,14 @@ jest.mock("@/components/ui/button", () => ({
 }));
 
 jest.mock("@ai-matrx/design-system", () => ({
+  ...jest.requireActual("@ai-matrx/design-system"),
   Input: (props: React.InputHTMLAttributes<HTMLInputElement>) => (
     <input {...props} />
+  ),
+  ErrorNotice: ({ title, message, error }: { title?: string; message?: string; error?: unknown }) => (
+    <div data-error-notice="">
+      {title} {message ?? String(error)}
+    </div>
   ),
 }));
 
@@ -147,13 +153,6 @@ jest.mock("@/features/agent-context/redux/hierarchySlice", () => ({
 }));
 jest.mock("@/features/agent-context/redux/hierarchyThunks", () => ({
   fetchFullContext: jest.fn(),
-}));
-jest.mock("@/components/errors/ErrorNotice", () => ({
-  ErrorNotice: ({ title, message, error }: { title?: string; message?: string; error?: unknown }) => (
-    <div data-error-notice="">
-      {title} {message ?? String(error)}
-    </div>
-  ),
 }));
 
 beforeEach(() => {

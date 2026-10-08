@@ -29,7 +29,7 @@ import type {
   ComposerPresentation,
   ComposerSize,
 } from "@ai-matrx/chat/agents/components/inputs/smart-input/composer/composer-types";
-import { ErrorNotice } from "@/components/errors/ErrorNotice";
+import { ErrorNotice } from "@ai-matrx/design-system";
 import { AgentListDropdown } from "@ai-matrx/agents/catalog/react";
 import { cn } from "@/lib/utils";
 import { Button } from "@ai-matrx/design-system/controls";

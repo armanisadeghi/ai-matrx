@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { ErrorNotice } from "@/components/errors/ErrorNotice";
+import { ErrorNotice } from "@ai-matrx/design-system";
 import { extractErrorMessage } from "@/utils/errors";
 import { GOOGLE_SCOPE } from "@/lib/googleScopes";
 import type { GoogleConnectionSummary } from "@/features/marketing/google/types";

@@ -5,7 +5,7 @@ import {
   COMMERCE_KIND_SLUGS,
   loadCommerceExamples,
 } from "./load-commerce-examples";
-import { ErrorNotice } from "@/components/errors/ErrorNotice";
+import { ErrorNotice } from "@ai-matrx/design-system";
 
 export const metadata: Metadata = {
   title: "Commerce Kinds — Live Examples",

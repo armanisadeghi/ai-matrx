@@ -61,8 +61,8 @@ import {
   appletExecutionsHref,
 } from "@/features/applets/components/AppletRef";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
-import { readOf, type ReadOutcome } from "@/components/read-state/ReadGate";
-import { UntrustedCount } from "@/components/official/stale-data/UntrustedCount";
+import { readOf, type ReadOutcome } from "@ai-matrx/design-system";
+import { UntrustedCount } from "@ai-matrx/design-system";
 import { currentCostUnit } from "@/components/cost/costUnit";
 
 const LIMIT = 500;

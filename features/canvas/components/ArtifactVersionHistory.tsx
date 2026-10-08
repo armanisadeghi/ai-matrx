@@ -39,7 +39,7 @@ import {
   versionReadableText,
   versionText,
 } from "./ArtifactVersionBody";
-import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { ReadFailure } from "@ai-matrx/design-system";
 
 function relTime(iso: string): string {
   try {

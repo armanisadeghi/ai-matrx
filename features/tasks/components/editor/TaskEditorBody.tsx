@@ -77,7 +77,7 @@ import { formatDateOnly } from "@ai-matrx/kit/dates";
 import { cn } from "@/utils/cn";
 import { useRefocusInputAfterAsync } from "@/features/tasks/hooks/useRefocusInputAfterAsync";
 import { useSubtasksRead } from "@/features/tasks/hooks/useSubtasksRead";
-import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { ReadFailure } from "@ai-matrx/design-system";
 import { EditableContextMenu } from "@/features/context-menu-v3/EditableContextMenu";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 import {

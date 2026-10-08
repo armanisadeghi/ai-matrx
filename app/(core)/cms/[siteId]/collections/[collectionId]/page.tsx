@@ -87,7 +87,7 @@ import {
 import { downloadFile } from "@ai-matrx/kit/download";
 import { toast } from "@/lib/toast";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
-import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { ReadFailure } from "@ai-matrx/design-system";
 
 const FILTERS: { value: CollectionItemFilter; label: string }[] = [
   { value: "all", label: "All" },

@@ -13,7 +13,7 @@ import { AiModelRef } from "@/components/official/entity-ref/AiIdentityRef";
 import { useAgentModelLabel } from "@ai-matrx/chat/agents/hooks/useAgentModelLabel";
 import { fetchAgentExecutionFull } from "@/features/agents/redux/builder-tier.thunks";
 import { useAgents } from "../../hooks/useAgents";
-import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { ReadFailure } from "@ai-matrx/design-system";
 import { selectSelectedItemId, setSelectedItemId } from "../../redux/ui/slice";
 import type { AgentSummary } from "@ai-matrx/agents/catalog";
 import { useAgentView } from "@ai-matrx/chat/agents/identity/agent-identity";

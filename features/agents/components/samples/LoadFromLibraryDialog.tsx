@@ -56,7 +56,7 @@ import type { LibraryRow, VideoRow } from "@/features/source-library/types";
 import { fetchAgentSamples } from "@/features/agents/samples/service";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { LIBRARIES_PATH } from "@/features/knowledge/modulePaths";
-import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { ReadFailure } from "@ai-matrx/design-system";
 
 /**
  * The action reads transcripts (`requires_transcripts: true` in its server

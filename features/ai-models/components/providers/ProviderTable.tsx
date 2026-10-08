@@ -35,7 +35,7 @@ import {
   TrashTapButton,
 } from "@ai-matrx/tap-target/buttons";
 import type { AiProvider } from "../../types";
-import { readOf } from "@/components/read-state/ReadGate";
+import { readOf } from "@ai-matrx/design-system";
 
 function LinkIcon({
   href,

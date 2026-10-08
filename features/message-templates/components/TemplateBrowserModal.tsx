@@ -1,6 +1,6 @@
 "use client";
 
-import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { ReadFailure } from "@ai-matrx/design-system";
 import React, { useState, useEffect, useMemo } from "react";
 import { MobileOverlayWrapper } from "@/components/official/MobileOverlayWrapper";
 import {

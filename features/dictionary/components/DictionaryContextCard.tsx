@@ -6,14 +6,14 @@
 // cleanup agent run includes this dictionary as context; the page's own
 // recording biases STT with it.
 
-import { UntrustedCount } from "@/components/official/stale-data/UntrustedCount";
+import { UntrustedCount } from "@ai-matrx/design-system";
 import { useMemo, useState } from "react";
 import { BookA, ChevronDown, Search, Settings2 } from "lucide-react";
 import { Input } from "@ai-matrx/design-system/controls";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
-import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { ReadFailure } from "@ai-matrx/design-system";
 import { useDictionaryContext } from "@/features/dictionary/hooks/useDictionaryContext";
 import { useOpenDictionarySelectorWindow } from "@/features/overlays/openers/dictionarySelectorWindow";
 import { DICT_LEVEL_LABELS } from "@/features/dictionary/constants";

@@ -26,7 +26,7 @@ import {
 
 import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
-import { TextInputDialog } from "@/components/dialogs/text-input/TextInputDialog";
+import { TextInputDialog } from "@ai-matrx/design-system";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -46,7 +46,7 @@ import { safeVaultLoginUrl } from "../../utils";
 import { VaultCreateDialog } from "../VaultCreateDialog";
 import { AuthenticatorCode } from "./AuthenticatorCode";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
-import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { ReadFailure } from "@ai-matrx/design-system";
 
 /** `totp_label` holds the URI's raw `Issuer:account` path. Show the account
  *  alone when the issuer is already the card's title — nobody wants to read

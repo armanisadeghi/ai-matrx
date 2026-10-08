@@ -39,7 +39,7 @@ import {
   type OrganizationState,
 } from "@/features/organizations/useOrganizationRequired";
 import { Button } from "@ai-matrx/design-system";
-import { ErrorNotice } from "@/components/errors/ErrorNotice";
+import { ErrorNotice } from "@ai-matrx/design-system";
 import Link from "next/link";
 
 // The recogniser's ONE home is `lib/organizations/organizationRequiredError`.

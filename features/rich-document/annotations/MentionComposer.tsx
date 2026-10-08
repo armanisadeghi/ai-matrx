@@ -20,7 +20,7 @@ import { tryGetEntityInfo } from "@/features/scopes/registry/entityRegistry";
 import { dateMention, parseDateQuery, personMention, recordMention } from "./mentions";
 import { mentionCandidates } from "./service";
 import type { AnnotationSource } from "./types";
-import { ErrorNotice } from "@/components/errors/ErrorNotice";
+import { ErrorNotice } from "@ai-matrx/design-system";
 import { enterSendsHere } from "@ai-matrx/kit/composer-keys";
 
 type Option =

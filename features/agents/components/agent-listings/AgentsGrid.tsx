@@ -4,7 +4,7 @@ import { useState, useTransition, useMemo, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { AgentCard } from "./AgentCard";
-import { UntrustedCount } from "@/components/official/stale-data/UntrustedCount";
+import { UntrustedCount } from "@ai-matrx/design-system";
 import { AgentListItem } from "./AgentListItem";
 import { MobileActionBar } from "@/components/official/mobile-action-bar/MobileActionBar";
 import {
@@ -53,7 +53,7 @@ import {
   selectAllAgentTags,
   selectTotalSharedAgentsCount,
 } from "@ai-matrx/agents/catalog";
-import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { ReadFailure } from "@ai-matrx/design-system";
 import { resolveAgentVersionId } from "@/features/agents/redux/builder-versions.thunks";
 import { deleteAgent } from "@/features/agents/redux/builder-write.thunks";
 import { useAgentDuplicateFlow } from "@/features/agents/hooks/useAgentDuplicateFlow";

@@ -101,7 +101,7 @@ import {
 } from "./service";
 import { fetchAidreamAcceptAdapters, markFindingOk } from "./acceptApi";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
-import type { ReadOutcome } from "@/components/read-state/ReadGate";
+import type { ReadOutcome } from "@ai-matrx/design-system";
 
 /** What the server page knows about matrx-frontend's accept adapters (scripts/findings/registry.mjs). */
 /** How a check's findings are accepted (model.ts AcceptInfo); the route builds it from accept-rules.json. */

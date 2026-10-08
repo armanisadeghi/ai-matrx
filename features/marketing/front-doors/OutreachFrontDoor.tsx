@@ -73,7 +73,7 @@ import {
   frontDoorSitePath,
   useFrontDoorSite,
 } from "./FrontDoorSiteSelect";
-import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { ReadFailure } from "@ai-matrx/design-system";
 
 const RECENT_WIN_LIMIT = 5;
 
