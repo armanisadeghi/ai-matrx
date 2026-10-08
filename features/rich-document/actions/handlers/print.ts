@@ -7,7 +7,7 @@
 import { Printer, ScanLine } from "lucide-react";
 import { printMarkdownContent } from "@ai-matrx/chat/conversation/utils/markdown-print";
 import { registerAction } from "@ai-matrx/rich-content/rich-document/actions/provider";
-import { contentForDestination } from "../utils";
+import { contentForPrint } from "../utils";
 // Each embedded block prints through its type's adapter (the one block-printer registry).
 import "@/features/canvas/artifact-types/artifact-printers";
 
@@ -34,7 +34,7 @@ registerAction({
               : ctx.source.type === "scraper-result"
                 ? "Scraper result"
                 : "Content";
-    await printMarkdownContent(contentForDestination(ctx), title);
+    await printMarkdownContent(contentForPrint(ctx), title);
   },
 });
 
