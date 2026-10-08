@@ -151,8 +151,11 @@ create table runtime._ai_usage_execution_facts (
   refreshed_at     timestamptz not null default now()
 );
 -- the page's questions: a window (platform lane), an organization's window, a person's window,
--- one conversation's executions (a drilled conversation), one request's executions
+-- one conversation's executions (a drilled conversation), one request's executions; and the records
+-- behind an hourly number (ai_usage's drill_rows windows and pages by hour, newest first: without this
+-- index every row of the window is built and sorted — 4.3 s for 30 days on the clone, 2 ms with it)
 create index _ai_usage_execution_facts_created_at_idx   on runtime._ai_usage_execution_facts (created_at);
+create index _ai_usage_execution_facts_bucket_at_idx    on runtime._ai_usage_execution_facts (bucket, created_at);
 create index _ai_usage_execution_facts_org_at_idx       on runtime._ai_usage_execution_facts (organization_id, created_at);
 create index _ai_usage_execution_facts_person_at_idx    on runtime._ai_usage_execution_facts (person_id, created_at);
 create index _ai_usage_execution_facts_conv_at_idx      on runtime._ai_usage_execution_facts (conversation_id, created_at) where conversation_id is not null;
