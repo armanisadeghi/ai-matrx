@@ -86,7 +86,10 @@ describe("ResultValue nested Markdown", () => {
     const payload = '{"__kind":"artifact","content":"**literal**"}';
     await act(async () => root.render(<ResultValue value={["```json\n" + payload + "\n```"]} density="full" />));
     expect(container.textContent).not.toContain('"__kind"');
-    expect(container.querySelector("strong")).toBeNull();
+    // The canonical pipeline renders the artifact (its content is Markdown, so "literal" may be
+    // formatted); what must never happen is the raw fence or anything executable.
+    expect(container.textContent).toContain("literal");
+    expect(container.textContent).not.toContain("**literal**");
     expect(container.querySelector("iframe,script")).toBeNull();
   });
 });
