@@ -102,7 +102,7 @@ export function makeMockEditorApi(controls: MockControls) {
     async listTemplates(): Promise<TemplateRow[]> {
       return [...templates.values()].map((t) => ({
         id: t.id, name: t.name, description: t.description, organization_id: "demo-org", organization_name: "Demo org",
-        i_manage: true, updated_at: t.updated_at, documents: t.composition.documents.length, roles: t.composition.recipients.length,
+        i_manage: true, updated_at: t.updated_at, documents: t.composition.documents.map((d) => ({ name: d.name, page_count: d.page_count })), roles: t.composition.recipients.map((r) => r.template_role ?? null),
       }));
     },
     async deleteTemplate(id) {

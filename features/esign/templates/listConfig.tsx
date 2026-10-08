@@ -28,7 +28,7 @@ export const templateListConfig: EntityListConfig<TemplateRow> = {
     location: "/esign/templates",
     rowKind: "template",
     listKind: "template-list",
-    humanRow: (row) => `${row.name} — ${row.documents} documents, ${row.roles} roles`,
+    humanRow: (row) => `${row.name} — ${row.documents.length} documents, ${row.roles.length} roles`,
     showRow: false,
     showToolbar: false,
   },

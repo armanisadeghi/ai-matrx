@@ -39,8 +39,9 @@ export interface TemplateRow {
   organization_name: string | null;
   i_manage: boolean;
   updated_at: string;
-  documents: number;
-  roles: number;
+  /** The door answers each document and each role, not a count (CONTRACT §6.1). */
+  documents: { name: string | null; page_count: number | null }[];
+  roles: (string | null)[];
 }
 
 export interface SendResult {
