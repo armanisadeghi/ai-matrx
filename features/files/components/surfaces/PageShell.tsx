@@ -45,6 +45,7 @@ import {
   type DragEndEvent,
   type DragStartEvent,
 } from "@dnd-kit/core";
+import { POINTER_ACTIVATION_DISTANCE_6 } from "@/lib/dnd/sensor-options";
 import {
   Activity,
   Clock,
@@ -379,7 +380,7 @@ function PageShellDesktop({
   // rows, grid cells, OR sidebar folder list. PointerSensor distance 6
   // keeps single-clicks (selection) clean.
   const dndSensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
+    useSensor(PointerSensor, POINTER_ACTIVATION_DISTANCE_6),
   );
   const [dragLabel, setDragLabel] = useState<string | null>(null);
 

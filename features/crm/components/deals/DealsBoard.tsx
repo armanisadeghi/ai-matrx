@@ -26,6 +26,7 @@ import {
   useSensor,
   useSensors,
 } from "@dnd-kit/core";
+import { POINTER_ACTIVATION_DISTANCE_6 } from "@/lib/dnd/sensor-options";
 import type { DragEndEvent, DragStartEvent } from "@dnd-kit/core";
 import { Building2, CalendarClock, User } from "lucide-react";
 import { recordToast, toast } from "@/lib/toast";
@@ -236,7 +237,7 @@ export function DealsBoard({
   const router = useRouter();
   const [activeId, setActiveId] = useState<string | null>(null);
   const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
+    useSensor(PointerSensor, POINTER_ACTIVATION_DISTANCE_6),
   );
 
   const byStage = useMemo(() => {

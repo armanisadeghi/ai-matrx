@@ -18,10 +18,10 @@ import {
   useSensors,
   type DragEndEvent,
 } from "@dnd-kit/core";
+import { POINTER_ACTIVATION_DISTANCE_8, SORTABLE_KEYBOARD_OPTIONS } from "@/lib/dnd/sensor-options";
 import {
   SortableContext,
   rectSortingStrategy,
-  sortableKeyboardCoordinates,
   useSortable,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
@@ -57,11 +57,9 @@ export function ReviewList({
   onRetry,
 }: ReviewListProps) {
   const sensors = useSensors(
-    useSensor(PointerSensor, {
-      // Small distance so taps still open the crop sheet.
-      activationConstraint: { distance: 8 },
-    }),
-    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
+    // Small distance so taps still open the crop sheet.
+    useSensor(PointerSensor, POINTER_ACTIVATION_DISTANCE_8),
+    useSensor(KeyboardSensor, SORTABLE_KEYBOARD_OPTIONS),
   );
 
   const handleDragEnd = (event: DragEndEvent) => {

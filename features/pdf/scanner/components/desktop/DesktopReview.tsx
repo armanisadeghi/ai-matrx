@@ -20,6 +20,7 @@ import {
   useSensors,
   type DragEndEvent,
 } from "@dnd-kit/core";
+import { POINTER_ACTIVATION_DISTANCE_6 } from "@/lib/dnd/sensor-options";
 import {
   SortableContext,
   useSortable,
@@ -81,7 +82,7 @@ export function DesktopReview({
   const uploadedCount = session.items.length - capturedCount;
 
   const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
+    useSensor(PointerSensor, POINTER_ACTIVATION_DISTANCE_6),
     useSensor(KeyboardSensor),
   );
 

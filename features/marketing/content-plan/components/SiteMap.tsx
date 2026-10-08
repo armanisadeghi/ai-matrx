@@ -36,6 +36,7 @@ import {
   type DragEndEvent,
   type DragStartEvent,
 } from "@dnd-kit/core";
+import { POINTER_ACTIVATION_DISTANCE_8 } from "@/lib/dnd/sensor-options";
 import { ChevronDown, ChevronUp, ZoomIn, ZoomOut } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -323,7 +324,7 @@ export function SiteMap({
     dimension: CATEGORY_DIMENSIONS.planStatus,
   });
   const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
+    useSensor(PointerSensor, POINTER_ACTIVATION_DISTANCE_8),
   );
 
   // Ctrl/⌘ + wheel zooms (native listener — React's wheel is passive, and
