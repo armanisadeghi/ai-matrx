@@ -13,6 +13,8 @@ import { Copy, Eye, FileText, LayoutTemplate, PenLine, Redo2, Send, Trash2, Undo
 import { Button, EmptyState, Tabs } from "@ai-matrx/design-system/controls";
 import { useIsMobile } from "@ai-matrx/kit/media-query";
 import { RecordPageHeader } from "@/features/shell/components/header/templates/RecordPageHeader";
+import { useRouter } from "next/navigation";
+
 import { toast } from "@/lib/toast";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
@@ -86,6 +88,7 @@ export function toTemplate(d: EnvelopeDraftV1): EnvelopeTemplateV1 {
 }
 
 export function EsignEditor(props: EsignEditorProps) {
+  const router = useRouter();
   const { api, mode, uploader } = props;
   const templateMode = mode === "template";
   const isMobile = useIsMobile();
@@ -303,8 +306,23 @@ export function EsignEditor(props: EsignEditorProps) {
     }
   }
 
+  /** A field of this kind already sits where the suggestion points (half their areas overlap): accepting it adds nothing. */
+  const sitsOnField = useCallback((c: DetectCandidate, documentKey: string, fields: readonly DraftField[]) => {
+    return fields.some((f) => {
+      if (f.document_key !== documentKey || f.page !== c.page) return false;
+      const w = Math.min(f.x + f.w, c.x + c.w) - Math.max(f.x, c.x);
+      const h = Math.min(f.y + f.h, c.y + c.h) - Math.max(f.y, c.y);
+      return w > 0 && h > 0 && (w * h) / Math.min(f.w * f.h, c.w * c.h) >= 0.5;
+    });
+  }, []);
+
   const acceptCandidate = useCallback(
     (c: DetectCandidate, documentKey: string, silent = false) => {
+      if (sitsOnField(c, documentKey, draft.fields)) {
+        setCandidates((all) => ({ ...all, [documentKey]: (all[documentKey] ?? []).filter((x) => x.candidate_id !== c.candidate_id) }));
+        toast.info("A field is already there.");
+        return;
+      }
       const who = activeRecipient;
       if (!who) {
         toast.error("Add someone to sign first.");
@@ -318,7 +336,7 @@ export function EsignEditor(props: EsignEditorProps) {
       setCandidates((all) => ({ ...all, [documentKey]: (all[documentKey] ?? []).filter((x) => x.candidate_id !== c.candidate_id) }));
       if (!silent) setSelection(new Set([f.id]));
     },
-    [activeRecipient, draft.fields, edit],
+    [activeRecipient, draft.fields, edit, sitsOnField],
   );
 
   function acceptAll() {
@@ -328,6 +346,7 @@ export function EsignEditor(props: EsignEditorProps) {
     const known = ["signature", "initials", "date_signed", "full_name", "first_name", "last_name", "email", "company", "title", "text", "number", "date", "checkbox", "radio", "dropdown"];
     for (const [documentKey, list] of Object.entries(candidates)) {
       for (const c of list) {
+        if (sitsOnField(c, documentKey, [...draft.fields, ...added])) continue;
         const kind = (known.includes(c.kind) ? c.kind : "text") as FieldKindV2;
         const base = newField(kind, { document_key: documentKey, recipient_key: who, page: c.page, cx: c.x + c.w / 2, cy: c.y + c.h / 2 }, [...draft.fields, ...added]);
         added.push({ ...base, ...clampBox({ x: c.x, y: c.y, w: c.w, h: c.h }), label: c.label || base.label, source: "detected" });
@@ -353,6 +372,12 @@ export function EsignEditor(props: EsignEditorProps) {
       const result = await api.send(id);
       setSendResult(result);
       props.onSendComplete?.(result);
+      // Land on the envelope (or the signing page when only the sender signs): the editable draft
+      // canvas is never left behind a "Sent" dialog.
+      setSendOpen(false);
+      toast.success(onlyMe ? "Ready for you to sign." : `Sent. ${result.notified} ${result.notified === 1 ? "person has" : "people have"} been told.`);
+      if (result.warnings.length > 0) toast.warning(`${result.warnings.length} ${result.warnings.length === 1 ? "recipient has" : "recipients have"} no signature field.`);
+      router.replace(onlyMe ? `/sign/e/${result.envelope_id}` : `/esign/${result.envelope_id}`);
       try {
         localStorage.removeItem(`matrx.esign.draft.${id}`);
       } catch {

@@ -158,11 +158,11 @@ export function RecipientsPanel({ draft, edit, people, me, setAccessCode, templa
               <Button variant="quiet" aria-label={expanded ? "Collapse" : "Expand"} icon={expanded ? <ChevronDown /> : <ChevronRight />} onClick={() => setOpen(expanded ? null : r.key)} />
               {sequential && <span className="w-4 shrink-0 text-center type-secondary tabular-nums text-muted-foreground">{i + 1}</span>}
               <div className="min-w-0 flex-1">
-                <div className="truncate type-title">{r.full_name || r.template_role || "Name needed"}</div>
                 <div className="flex min-w-0 items-center gap-1.5">
+                  <span className="truncate type-title">{r.full_name || r.template_role || "Name needed"}</span>
                   {r.user_id ? <Badge tone="info">Member</Badge> : <Badge>Outside</Badge>}
-                  <span className={cn("truncate type-secondary", isEmail(r.email) || templateMode ? "text-muted-foreground" : "text-destructive")}>{r.email || (templateMode ? "Filled in when used" : "Email needed")}</span>
                 </div>
+                <div title={r.email || undefined} className={cn("break-all type-secondary", isEmail(r.email) || templateMode ? "text-muted-foreground" : "text-destructive")}>{r.email || (templateMode ? "Filled in when used" : "Email needed")}</div>
               </div>
               {sequential && recipients.length > 1 && (
                 <div className="flex shrink-0">

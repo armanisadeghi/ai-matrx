@@ -33,7 +33,7 @@ type Source =
   | { kind: "new" }
   | { kind: "draft"; envelopeId: string }
   | { kind: "from_template"; templateId: string }
-  | { kind: "copy"; envelopeId: string }
+  | { kind: "copy"; envelopeId: string; name?: string }
   | { kind: "template"; templateId: string | null };
 
 interface Loaded {
@@ -87,7 +87,7 @@ export function EditorHost({ source }: { source: Source }) {
         const organizationId = source_template?.organizationId || activeOrg || (await ensureOrgId(null));
         const made = await api.createDraft({
           organizationId,
-          title: source_template?.name ?? "",
+          title: source_template?.name ?? (source.kind === "copy" && source.name ? `Copy of ${source.name}` : ""),
           templateId: source.kind === "from_template" ? source.templateId : undefined,
           copyOfEnvelopeId: source.kind === "copy" ? source.envelopeId : undefined,
         });
