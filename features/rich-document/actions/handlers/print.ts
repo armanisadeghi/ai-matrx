@@ -6,7 +6,6 @@
 
 import { Printer, ScanLine } from "lucide-react";
 import { printMarkdownContent } from "@ai-matrx/chat/conversation/utils/markdown-print";
-import { hasContentActions } from "@ai-matrx/rich-content/copy/content-view-store";
 import { registerAction } from "@ai-matrx/rich-content/rich-document/actions/provider";
 import { contentForDestination } from "../utils";
 // Each embedded block prints through its type's adapter (the one block-printer registry).
@@ -21,7 +20,6 @@ registerAction({
   supportedSources: "*",
   renderSlot: "overflow",
   // The ContentActions set in this item's bar already shows it — once per surface.
-  visible: (ctx) => !hasContentActions(ctx.instanceKey("alchemy")),
   order: 10,
   run: (ctx) => {
     const title =

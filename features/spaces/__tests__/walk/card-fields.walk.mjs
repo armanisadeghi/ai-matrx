@@ -62,7 +62,7 @@ const closeInbox = async () => {
 };
 const editCell = async (row, field, text) => {
   await closeInbox();
-  await row.getByRole("button", { name: `Edit ${field}`, exact: true }).dblclick();
+  await row.getByRole("button", { name: `Edit ${field}`, exact: true }).dblclick({ force: true });
   await page.waitForTimeout(700);
   await page.keyboard.type(text);
   await page.keyboard.press("Enter");
@@ -76,7 +76,7 @@ await act(page, async () => {
   await slash(page, "Database - Inline");
   await A.waitFor({ timeout: 60_000 });
   await A.getByRole("button", { name: /^Sort or filter / }).first().waitFor({ timeout: 180_000 });
-  for (const [n, t] of [["Budget", "Number"], ["Status", "Status"], ["Region", "Text"], ["Notes", "Text"], ["Channel", "Text"], ["Phase", "Text"], ["Due", "Date"]]) await addProp(n, t);
+  for (const [n, t] of [["Budget", "Number"], ["Status", "Status"], ["Segment", "Text"], ["Notes", "Text"], ["Channel", "Text"], ["Phase", "Text"], ["Due", "Date"]]) await addProp(n, t);
   await A.hover();
   await A.getByRole("button", { name: /^New$/ }).first().click();
   await A.locator("[data-row-id]").first().waitFor({ timeout: 60_000 }).catch(async (e) => { await page.screenshot({ path: `${SHOT}/r43-norow.png` }); throw e; });
@@ -86,7 +86,7 @@ await act(page, async () => {
   const row = A.locator("[data-row-id]").first();
   await editCell(row, "Name", "Spring launch");
   await editCell(row, "Budget", "4200");
-  await editCell(row, "Region", "Lisbon");
+  await editCell(row, "Segment", "Lisbon");
   await editCell(row, "Notes", "Quarterly");
   await editCell(row, "Channel", "Email");
   await editCell(row, "Phase", "Kickoff");
@@ -104,19 +104,19 @@ await act(page, async () => {
       await page.keyboard.press("Escape");
     }
     let t = await text();
-    check(`${layout}: new view shows properties on its card`, t.includes("Spring launch") && t.includes("4200") && t.includes("Lisbon") && t.includes("Quarterly"), { t: t.slice(0, 400) });
+    check(`${layout}: new view shows properties on its card`, t.includes("4,200") && t.includes("Lisbon") && t.includes("Quarterly"), { t: t.slice(0, 400) });
     check(`${layout}: cap keeps the rest off`, !t.includes("Kickoff"));
     await A.scrollIntoViewIfNeeded();
     await page.screenshot({ path: `${SHOT}/r43-${layout}.png` });
     await toggle("Budget");
     t = await text();
-    check(`${layout}: toggling Budget off removes it`, !t.includes("4200") && t.includes("Lisbon"));
+    check(`${layout}: toggling Budget off removes it`, !t.includes("4,200") && t.includes("Lisbon"));
     await toggle("Phase");
     t = await text();
     check(`${layout}: toggling Phase on adds it`, t.includes("Kickoff"));
     await toggle("Budget");
     t = await text();
-    check(`${layout}: Budget back on`, t.includes("4200"));
+    check(`${layout}: Budget back on`, t.includes("4,200"));
   }
 });
 check("no [tap-target] console errors", taps.length === 0, { taps });

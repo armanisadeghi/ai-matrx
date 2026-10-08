@@ -175,7 +175,7 @@ registerAction({
                 "Read aloud";
   },
   icon: Volume2,
-  iconColor: "text-primary",
+  // No colour of its own: a bar icon matches its siblings (Arman, 2026-10-08).
   category: "listen",
   supportedSources: "*",
   renderSlot: "primary",
