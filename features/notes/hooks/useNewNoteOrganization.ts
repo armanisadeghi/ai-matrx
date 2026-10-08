@@ -103,21 +103,8 @@ export async function resolveNewNoteOrganization(
 
     const resolved = selectOrgBootstrapResolved(state);
     if (resolved) {
-      // Boot has looked and settled with nothing selected. It used to apply a
-      // rung order here — stated default → own own org → sole membership
-      // — and SELECT one silently, "the same choice
-      // `useActiveOrganizationAutoSelect` makes". Both of the first two rungs
-      // were deleted on 2026-09-19: a preselected organization is at most a
-      // display preference, and nothing may pick an organization for the
-      // person from a preference or their own organization. The sole
-      // membership case never reaches here — boot itself takes it, because
-      // there is nothing to choose.
-      //
-      // So the note asks, through the ONE gate every held action uses: the
-      // picker opens, the person SETS an organization, that becomes the active
-      // organization globally, and the note is created in it. Cancelling
-      // throws `OrganizationSelectionCancelled`, which every caller treats as
-      // "nothing happened" — no note, no toast, no lost title.
+      // The load ladder has answered: the note acts in the active organization (or
+      // `ensureOrgId` states the honest reason there is none).
       return ensureOrgId(null);
     }
 

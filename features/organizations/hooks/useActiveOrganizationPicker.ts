@@ -16,7 +16,6 @@ import { selectIsAuthenticated } from "@/lib/redux/selectors/userSelectors";
 import { chooseActiveOrganization } from "@/lib/redux/thunks/activeOrgBootstrap";
 import { useScopeTree } from "@/features/scopes/hooks/useScopeTree";
 import { ensureScopeTree } from "@/features/scopes/redux/thunks/ensureScopeTree";
-import { useActiveOrganizationAutoSelect } from "./useActiveOrganizationAutoSelect";
 
 export function useActiveOrganizationPicker() {
   const dispatch = useAppDispatch();
@@ -35,11 +34,6 @@ export function useActiveOrganizationPicker() {
     if (!isAuthenticated) return;
     void dispatch(ensureScopeTree({}));
   }, [dispatch, isAuthenticated]);
-
-  // Belt to the resolver's braces: a boot that could name an organization
-  // never ends without one, even if the sync fetch that normally names it
-  // never ran.
-  useActiveOrganizationAutoSelect(organizations);
 
   const selectOrganization = (id: string, name: string) => {
     dispatch(chooseActiveOrganization({ id, name }));
