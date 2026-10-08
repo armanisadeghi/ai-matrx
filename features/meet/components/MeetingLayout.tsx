@@ -123,8 +123,8 @@ export function MeetingLayout({
   const [layout, setLayout] = useMeetingLayoutPreference();
   // `?observe=1` joins as a SILENT OBSERVER (Meet MD-16); the server decides who may.
   const observe = useSearchParams()?.get("observe") === "1";
-  const phase = snapshot?.phase ?? "idle";
-  const inRoom = phase === "connected" || phase === "reconnecting";
+  const phase = snapshot?.phase ?? "resolving";
+  const inRoom = phase === "in_call";
   const ended = (snapshot?.meeting ?? meeting).endedAt !== null;
 
   // Left means "was in the room, now is not": a fresh pre-join that starts

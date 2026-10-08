@@ -197,6 +197,10 @@ export async function POST(request: Request) {
           //   database anyway; the route is behind checkIsSuperAdmin
           organization_id: await resolveSystemOrgId(supabase),
           created_by: user.id,
+          // NOT NULL with no default, so the generated Insert requires it; the
+          // agent._created_via_stamp trigger overwrites it at INSERT from the
+          // declared actor, so this value is never stored.
+          created_via: "unknown",
           task_id: null,
           source_agent_id: agent_id,
           source_snapshot_at: new Date().toISOString(),

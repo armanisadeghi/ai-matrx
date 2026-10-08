@@ -30,6 +30,13 @@
 //   • the file does not parse                                         (v0.4.2928 "Expected a semicolon")
 //   • a COMMITTED file imports a name a swept file no longer exports, or a file the sweep deletes
 //
+// 2026-10-08 (v0.4.3028/3029, sweep 40b33b416b): the sweep deleted features/skills/service/
+// skillsStreamHandler.ts while the committed providers/chatUiRegistration.ts still imported it
+// ("Module not found" on every site). The deletion rule was there; the file was the LAST one in
+// its folder, and TypeScript never probes a file whose folder `directoryExists` denies, so the
+// ghost resolution found no importer. The ghost host now keeps a deleted file's folders too
+// (self-test R7b: sole file in its folder, importer in providers/ via the `@/` alias).
+//
 // and closes the set: a swept file importing a held file is held; a deletion a held file's
 // committed version still imports is held. Only CHANGED lines count for a modified file (a
 // pre-existing error is not this sweep's to hold). Held files stay uncommitted in the working
@@ -287,7 +294,17 @@ export function classify(root) {
   const swept = new Map(changed.map((c) => [abs(c.path), c]));
   const deletedAbs = new Set(deleted.map(abs));
   // Resolution that still SEES a file the sweep deletes, so "who imports it" can be answered.
-  const ghostHost = { ...ts.sys, fileExists: (f) => deletedAbs.has(resolve(f)) || ts.sys.fileExists(f) };
+  // The folders those files lived in must still EXIST to it too: TypeScript skips probing any file
+  // whose folder `directoryExists` denies, so a deleted file that was the last one in its folder
+  // (2026-10-08, features/skills/service/skillsStreamHandler.ts) resolved to nothing, no importer
+  // was found, and the deletion was swept while providers/chatUiRegistration.ts still imported it.
+  const deletedDirs = new Set();
+  for (const f of deletedAbs) for (let d = dirname(f); d.length >= root.length && !deletedDirs.has(d); d = dirname(d)) deletedDirs.add(d);
+  const ghostHost = {
+    ...ts.sys,
+    fileExists: (f) => deletedAbs.has(resolve(f)) || ts.sys.fileExists(f),
+    directoryExists: (d) => deletedDirs.has(resolve(d)) || ts.sys.directoryExists(d),
+  };
 
   // Committed files that import a swept or deleted file (by path). Text pre-filter on the stem,
   // then real resolution, so `import x from "./kind-markdown-utils"` is only counted when it
@@ -487,6 +504,10 @@ function selfTest() {
     w("features/intake/IntakeForm.ts", "import { INTAKE_FIELDS } from '@/lib/intake/fields';\nexport const fields = INTAKE_FIELDS;\n");
     w("features/intake/Summary.ts", "import { REQUIRED_FIELDS } from '@/lib/intake/fields';\nexport const required = REQUIRED_FIELDS;\n");
     w("features/intake/OldPanel.ts", "import { LEGACY } from '@/lib/intake/legacy-form';\nexport const old = LEGACY;\n");
+    // R7b: the deleted file is the ONLY file in its folder (features/skills/service/skillsStreamHandler.ts,
+    // 2026-10-08) and the committed importer sits in providers/ behind the `@/` alias.
+    w("features/recall/service/recallStream.ts", "export const applyRecallEvent = () => 1;\n");
+    w("providers/chatRegistration.ts", "import { applyRecallEvent } from '@/features/recall/service/recallStream';\nexport const apply = applyRecallEvent;\n");
     w("features/intake/broken-before.ts", "// a pre-existing error on an UNCHANGED line is not this sweep's to hold\nimport { gone } from '@/lib/intake/insurers';\nexport const x = gone;\n");
     g("init", "-q", "-b", "main");
     g("-c", "user.email=t@t", "-c", "user.name=t", "add", "-A");
@@ -507,6 +528,8 @@ function selfTest() {
     w("features/intake/UsesWarmup.ts", "import { scope } from '@/providers/WarmupHost';\nexport const s = scope;\n");
     // R7 deletion still imported by a committed file
     rmSync(join(dir, "lib/intake/legacy-form.ts"));
+    // R7b deletion that takes its whole folder with it
+    rmSync(join(dir, "features/recall/service"), { recursive: true });
     // R2 through a committed local `export *` shim: the name must be judged in the PACKAGE behind it
     w("features/intake/PrefetchViaShim.ts", "import { primeIntakeBundle } from '@/lib/intake/warmup-shim';\nexport const p = primeIntakeBundle;\n");
     // Clean: a name a committed local module does export (read through its export surface)
@@ -528,6 +551,7 @@ function selfTest() {
       "lib/intake/fields.ts": /Summary\.ts.*REQUIRED_FIELDS/,
       "features/intake/UsesWarmup.ts": /WarmupHost\.ts, which is held/,
       "lib/intake/legacy-form.ts": /OldPanel\.ts/,
+      "features/recall/service/recallStream.ts": /providers\/chatRegistration\.ts/,
     };
     const expectClear = ["features/intake/Warm.ts", "features/intake/broken-before.ts", "features/intake/VisitNote.ts", "features/intake/Checkin.ts"];
     const fails = [];
@@ -543,13 +567,13 @@ function selfTest() {
       "export interface WarmupController { warmSession(orgId: string): void; currentScope(): string; }\nexport declare function createWarmup(): WarmupController;\nexport declare const primeIntakeBundle: () => void;\n");
     const r2 = classify(dir);
     const held2 = r2.hold.map((h) => h.path).sort().join(",");
-    const want2 = ["features/intake/Models.ts", "features/intake/Rubber.ts", "lib/intake/fields.ts", "lib/intake/legacy-form.ts"].join(",");
+    const want2 = ["features/intake/Models.ts", "features/intake/Rubber.ts", "features/recall/service/recallStream.ts", "lib/intake/fields.ts", "lib/intake/legacy-form.ts"].join(",");
     if (held2 !== want2) fails.push(`after the package is served, held [${held2}] — expected [${want2}]`);
     if (fails.length) {
       console.error("check-sweep-resolves --self-test: RED\n  " + fails.join("\n  "));
       return 1;
     }
-    console.log(`check-sweep-resolves --self-test: GREEN — 7 rules (+ a shim) each held their file, 4 clean files committed; once the package is served the 4 that waited on it go through (${r.seconds}s)`);
+    console.log(`check-sweep-resolves --self-test: GREEN — 7 rules (+ a shim, + a deletion that empties its folder) each held their file, 4 clean files committed; once the package is served the 4 that waited on it go through (${r.seconds}s)`);
     return 0;
   } finally {
     rmSync(dir, { recursive: true, force: true });

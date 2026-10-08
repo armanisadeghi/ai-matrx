@@ -69,9 +69,11 @@ export type ContextScope = {
   name: string;
 };
 
-// DB Row is canonical — ContextItem = full ctx_context_items row + optional join fields
+// DB Row is canonical — ContextItem = full context_items row + optional join fields.
+// SCOPES-W3 (2026-10-07) moved context_items / context_item_values to the
+// `deprecated` schema (columns unchanged); the generated shape lives there now.
 export type ContextItem =
-  Database["context"]["Tables"]["context_items"]["Row"] & {
+  Database["deprecated"]["Tables"]["context_items"]["Row"] & {
     // From current ctx_context_item_values row (when manifest merge runs)
     current_text_value?: string | null;
     value_last_updated?: string | null;
@@ -85,7 +87,7 @@ export type ContextItem =
 export type ContextItemManifest = ContextItem;
 
 export type ContextItemValue =
-  Database["context"]["Tables"]["context_item_values"]["Row"];
+  Database["deprecated"]["Tables"]["context_item_values"]["Row"];
 
 export type ContextTemplate = Database["context"]["Tables"]["templates"]["Row"];
 

@@ -224,14 +224,12 @@ async function main() {
   const args = process.argv.slice(2);
   if (args.includes("--self-test")) {
     exitAfterDrain(selfTest() ? 0 : 1);
-    return;
   }
   const offenders = findOffenders(loadFiles());
   if (args.includes("--census")) {
     for (const o of offenders) console.log(`${o.piece}\t${o.file}:${o.line}\t${o.reason}`);
     console.log(`\n${offenders.length} offender(s)`);
     exitAfterDrain(0);
-    return;
   }
   const baseline = loadBaseline();
   const { fresh, known, stale } = judge(offenders, baseline);

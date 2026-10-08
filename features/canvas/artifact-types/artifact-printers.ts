@@ -51,3 +51,5 @@ registerBlockPrinter(["flashcards", "flashcard_set"], flashcardsPrinter);
 registerBlockPrinter(["quiz", "quiz_set"], quizPrinter);
 registerBlockPrinter(["math_problem"], mathPrinter);
 registerBlockPrinter(["html"], htmlPagePrinter);
+// comparison · timeline · research · recipe · … (16 structured types) + every kind value — print layouts (their own files).
+import "@/features/canvas/output/print-layouts/registerStructuredPrinters";

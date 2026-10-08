@@ -17,7 +17,7 @@ jest.mock("@/features/cloud-browser/hooks/useOpenCloudBrowserCanvas", () => ({
   useOpenCloudBrowserCanvas: () => jest.fn(),
 }));
 
-jest.mock("../useRunControlCounts", () => ({
+jest.mock("@ai-matrx/chat/agents/components/inputs/smart-input/composer/useRunControlCounts", () => ({
   useRunControlCounts: () => ({}),
 }));
 

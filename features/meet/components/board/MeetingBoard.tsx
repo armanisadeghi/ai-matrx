@@ -265,7 +265,7 @@ function BoardHeader({
         ) : null}
         <LayoutSwitch value="board" onChange={onLayout} />
       </header>
-      {snapshot?.phase === "reconnecting" && (
+      {snapshot?.phase === "in_call" && snapshot.connection !== "stable" && (
         <p className="mx-meet__banner" role="status">
           Reconnecting…
         </p>

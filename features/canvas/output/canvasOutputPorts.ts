@@ -17,12 +17,31 @@ import { canvasAttachOptions, canvasHtmlItem } from "./attachOptions";
 import { captureRecordOnServer, viewerColorScheme } from "@/features/html-pages/capture/renderedCapture";
 import { readArtifactItemData, contentOf } from "@/features/canvas/host/artifactItem";
 
+function parsedData(value: unknown): unknown {
+  if (typeof value !== "string") return value;
+  try {
+    return JSON.parse(value);
+  } catch {
+    return value;
+  }
+}
+
+/**
+ * The type's registered printer — only when it recognizes THIS item's data
+ * (its message-print form is real content). A shape the printer does not read
+ * (a `quiz_set` kind value) prints as drawn instead of "No data to print".
+ */
 function artifactPrinterFor(request: CanvasOutputRequest) {
   const data = readArtifactItemData(request.item.data);
   if (!data) return null;
   const content = contentOf(data);
   const printer = getBlockPrinter(content.type);
-  return printer ? { printer, data: content.data } : null;
+  if (!printer) return null;
+  const value = parsedData(content.data);
+  const probe = printer.toPrintHtml?.(value, { type: content.type, raw: typeof content.data === "string" ? content.data : "" });
+  if (probe instanceof Promise) return { printer, data: value };
+  if (!probe || "notice" in probe) return null;
+  return { printer, data: value };
 }
 
 export const CANVAS_OUTPUT_PORTS: CanvasOutputPorts = {

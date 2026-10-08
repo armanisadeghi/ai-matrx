@@ -30,7 +30,7 @@ import {
   getUndoShortcutHint,
   getRedoShortcutHint,
 } from "../../hooks/useAgentUndoRedo";
-import { AiModelRef, AiToolRef } from "@ai-matrx/chat/host/ui-slots";
+import { AiModelRef, AiToolRef } from "@ai-matrx/chat/agents/components/identity-refs/AiIdentityRef";
 import { ModelTierIdentityList } from "@ai-matrx/chat/agents/components/model-tiers/ModelTierIdentityList";
 import { useAgentName } from "@ai-matrx/chat/agents/identity/agent-identity";
 

@@ -80,6 +80,11 @@ const NAV_ITEMS: AdminSectionTab[] = [
     icon: DollarSign,
   },
   {
+    label: "AI spend health",
+    href: "/administration/usage/agents",
+    icon: Activity,
+  },
+  {
     label: "Email",
     href: "/administration/users/email",
     icon: Mail,

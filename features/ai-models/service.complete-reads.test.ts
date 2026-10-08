@@ -184,6 +184,7 @@ function offeringRow(index: number): OfferingRow {
     pricing_verified_at: null,
     priority: index,
     provider_model_id: `provider-model-${index}`,
+    setting_profile_id: null,
     token_billed: false,
     updated_at: "2026-09-12T00:00:00.000Z",
     updated_by: null,

@@ -1244,7 +1244,9 @@ export function EntityListPage<TRow>({
         {notice && (
           // The page top (feature cards, a KPI row, a banner) is a BIG block: the block gap
           // separates it from the list's controls — the header's own 6/8px set gap included.
-          <div className="mb-[calc(var(--matrx-page-block-gap)-0.375rem)] max-h-[42dvh] overflow-y-auto sm:mb-[calc(var(--matrx-page-block-gap)-0.5rem)]">
+          // `empty:hidden`: a notice that renders nothing (an assist strip with no chips) leaves no
+          // phantom gap above the tabs (2026-10-08).
+          <div className="mb-[calc(var(--matrx-page-block-gap)-0.375rem)] max-h-[42dvh] overflow-y-auto empty:hidden sm:mb-[calc(var(--matrx-page-block-gap)-0.5rem)]">
             {typeof notice === "function" ? notice(list) : notice}
           </div>
         )}

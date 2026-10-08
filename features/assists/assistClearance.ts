@@ -30,6 +30,8 @@
 
 import { useEffect } from "react";
 
+import { TRANSIENT_OVERLAY_SELECTOR } from "@/lib/layout/floating-chrome";
+
 const DOCK_SELECTOR = "[data-assists-dock]";
 const CLEARED_ATTR = "data-assist-clearance";
 /** Breathing room between the scroller's last item and the control. */
@@ -339,7 +341,10 @@ function samplePoints(r: DockRect): [number, number][] {
 function hitCoverage(r: DockRect, rowsCount: boolean, points: [number, number][] = samplePoints(r)): Coverage {
   for (const [x, y] of points) {
     const stack = document.elementsFromPoint?.(x, y) ?? [];
-    const under = stack.find((el) => !el.closest(DOCK_SELECTOR));
+    // A toast floats over the page for a few seconds; it is never what the pill must clear. Counting
+    // it hid and re-placed the pill, which moved the floating clearance, which moved the toast
+    // stack — a loop the owner saw as "toasts moving the UI around" (2026-10-08).
+    const under = stack.find((el) => !el.closest(DOCK_SELECTOR) && !el.closest(TRANSIENT_OVERLAY_SELECTOR));
     if (!under) continue;
     if (rowsCount) {
       const row = under.closest(ROW);
@@ -806,6 +811,8 @@ export function useAssistClearance(active: boolean): void {
           continue;
         }
         if (insideDock(m.target)) continue;
+        // Toasts appearing, stacking and leaving change nothing under the dock.
+        if (m.target instanceof Element && m.target.closest(TRANSIENT_OVERLAY_SELECTOR)) continue;
         later = true;
       }
       // The dock's box was replaced (quiet ↔ open): its placement went with it.

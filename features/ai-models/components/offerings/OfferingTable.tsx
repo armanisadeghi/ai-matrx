@@ -18,7 +18,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { AiModelRef } from "@/components/official/entity-ref/AiIdentityRef";
+import { AiModelRef } from "@ai-matrx/chat/agents/components/identity-refs/AiIdentityRef";
 import type { AiApi, AiEndpoint, AiModel, AiOffering } from "../../types";
 import type { ReadOutcome } from "@ai-matrx/design-system";
 import {

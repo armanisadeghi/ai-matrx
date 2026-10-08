@@ -4,7 +4,7 @@ import { useEffect, useRef } from "react";
 import { MousePointerClick } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { RichContent } from "@ai-matrx/rich-content/levels/RichContent";
-import { AiModelRef } from "@/components/official/entity-ref/AiIdentityRef";
+import { AiModelRef } from "@ai-matrx/chat/agents/components/identity-refs/AiIdentityRef";
 
 interface Props {
   text: string;

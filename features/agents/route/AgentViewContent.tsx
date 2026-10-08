@@ -75,7 +75,7 @@ import { JsonInspector } from "@/components/official-candidate/json-inspector/Js
 import {
   AiModelRef,
   AiToolRef,
-} from "@/components/official/entity-ref/AiIdentityRef";
+} from "@ai-matrx/chat/agents/components/identity-refs/AiIdentityRef";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { RichContent } from "@ai-matrx/rich-content/levels/RichContent";
 import { AccessSummaryPanel } from "@/features/sharing/components/AccessSummaryPanel";

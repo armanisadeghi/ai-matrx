@@ -10,9 +10,11 @@ import {
   CalendarCheck,
   CalendarClock,
   CalendarRange,
+  DollarSign,
   LayoutDashboard,
   ListChecks,
   ServerCog,
+  Timer,
   Zap,
 } from "lucide-react";
 import {
@@ -39,6 +41,16 @@ const NAV_ITEMS: AdminSectionTab[] = [
     label: "Runs",
     href: "/administration/automation/scheduling/runs",
     icon: Activity,
+  },
+  {
+    label: "Costs",
+    href: "/administration/automation/scheduling/costs",
+    icon: DollarSign,
+  },
+  {
+    label: "Triggers",
+    href: "/administration/automation/scheduling/triggers",
+    icon: Timer,
   },
   {
     label: "System jobs",

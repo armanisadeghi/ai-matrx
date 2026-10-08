@@ -27,7 +27,7 @@ import {
 } from "@/features/tool-registry/executor-surfaces/services/executor-surfaces.service";
 import { AddToolBindingDialog } from "@/features/tool-registry/executor-surfaces/components/AddToolBindingDialog";
 import { SourceKindBadge } from "@/features/tool-call-visualization/admin/mcp-tools/source-kind-badge";
-import { AiToolRef } from "@/components/official/entity-ref/AiIdentityRef";
+import { AiToolRef } from "@ai-matrx/chat/agents/components/identity-refs/AiIdentityRef";
 import SuspenseLoader from "@/components/loaders/SuspenseLoader";
 import { UntrustedCount, type CountRead } from "@ai-matrx/design-system";
 import { StaleDataNotice } from "@ai-matrx/design-system";

@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from "react";
 import { Brain, ExternalLink, Globe, Gauge, Coins, CheckCircle2, XCircle, RefreshCw, Loader2, Hammer, ChevronLeft, ArrowUpRight, AlertCircle, MinusCircle } from "lucide-react";
-import { AiModelRef } from "@/components/official/entity-ref/AiIdentityRef";
+import { AiModelRef } from "@ai-matrx/chat/agents/components/identity-refs/AiIdentityRef";
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@ai-matrx/design-system";

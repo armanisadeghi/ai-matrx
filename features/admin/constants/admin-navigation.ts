@@ -614,6 +614,11 @@ export const adminNavigationRegistry: readonly AdminNavigationDomain[] = [
         destinations: [destination("/administration/billing/spend")],
       },
       {
+        name: "Approvals",
+        iconName: "BadgeCheck",
+        destinations: [destination("/administration/billing/approvals")],
+      },
+      {
         name: "Plans",
         iconName: "Tags",
         destinations: [destination("/administration/billing/plans")],
@@ -642,6 +647,9 @@ export const adminNavigationRegistry: readonly AdminNavigationDomain[] = [
           destination("/administration/users/limits"),
           destination("/administration/users/usage-limits"),
           destination("/administration/usage"),
+          destination("/administration/usage/agents", [
+            "/administration/usage/agents/detail",
+          ]),
         ],
       },
       {

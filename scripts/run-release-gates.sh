@@ -906,6 +906,10 @@ if $STRICT; then
         # policies/motion-standard.md). Zero findings today; advisory here.
         "Panel slide off THE panel motion (literal duration or curve)|pnpm check:motion-standard"
         "Motion standard guard self-test|pnpm check:motion-standard:self-test"
+        # TRANSFORM MOTION — position and motion never fight over `transform` (tooltips and
+        # toasts painted at the page corner, then jumped; Arman, 2026-10-08). Zero findings.
+        "Element positioned by transform while animating it|pnpm check:transform-motion"
+        "Transform-motion guard self-test|pnpm check:transform-motion:self-test"
         # HISTORY-STATE BYPASS — replaceState/pushState(window.history.state, …) forwards
         # Next's __NA marker, so the router never sees the URL and writes the old one
         # back (2026-10-04). Zero findings; advisory here.
@@ -1619,6 +1623,10 @@ else
         # policies/motion-standard.md). Zero findings today; advisory here.
         "Panel slide off THE panel motion (literal duration or curve)|pnpm check:motion-standard"
         "Motion standard guard self-test|pnpm check:motion-standard:self-test"
+        # TRANSFORM MOTION — position and motion never fight over `transform` (tooltips and
+        # toasts painted at the page corner, then jumped; Arman, 2026-10-08). Zero findings.
+        "Element positioned by transform while animating it|pnpm check:transform-motion"
+        "Transform-motion guard self-test|pnpm check:transform-motion:self-test"
         # HISTORY-STATE BYPASS — replaceState/pushState(window.history.state, …) forwards
         # Next's __NA marker, so the router never sees the URL and writes the old one
         # back (2026-10-04). Zero findings; advisory here.

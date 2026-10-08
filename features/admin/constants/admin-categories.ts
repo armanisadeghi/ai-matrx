@@ -305,6 +305,14 @@ export const adminCategoriesData: AdminCategory[] = [
         isNew: true,
       },
       {
+        title: "Spend Approvals",
+        description:
+          "Agents, mandates and automations whose single run cost more than $1 — approve or reject before they run again.",
+        iconName: "BadgeCheck",
+        link: "/administration/billing/approvals",
+        isNew: true,
+      },
+      {
         title: "Plans & Pricing",
         description:
           "Every plan's name, prices, tagline, badge and listing, plus its allowances — what the pricing page and upgrade dialogs show.",
@@ -1121,6 +1129,14 @@ export const adminCategoriesData: AdminCategory[] = [
           "Per-user AI spend and token usage — the CX usage analytics surfaced inside user management.",
         iconName: "DollarSign",
         link: "/administration/usage",
+        isNew: true,
+      },
+      {
+        title: "AI spend health",
+        description:
+          "Every agent and mandate by cost: premium models, runaway turns, huge contexts, unsaved runs and who paid.",
+        iconName: "Activity",
+        link: "/administration/usage/agents",
         isNew: true,
       },
       {

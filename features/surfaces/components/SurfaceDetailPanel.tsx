@@ -39,7 +39,7 @@ import { getSurfaceDisplayLabel } from "@ai-matrx/chat/surfaces/utils/surface-di
 import { SurfaceValuesTable } from "@/features/surfaces/components/SurfaceValuesTable";
 import { getManifest } from "@/features/surfaces/manifests/registry";
 import type { SurfaceValue } from "@ai-matrx/chat/surfaces/types";
-import { AiToolRef } from "@/components/official/entity-ref/AiIdentityRef";
+import { AiToolRef } from "@ai-matrx/chat/agents/components/identity-refs/AiIdentityRef";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";

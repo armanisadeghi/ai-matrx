@@ -78,7 +78,6 @@ async function main(): Promise<void> {
       console.log(failed === 0 ? "SELF-TEST OK: red on the pre-fix body, green on the fix" : "SELF-TEST FAILED");
       await client.end();
       exitAfterDrain(failed === 0 ? 0 : 1);
-      return;
     }
 
     const err = await tableList();

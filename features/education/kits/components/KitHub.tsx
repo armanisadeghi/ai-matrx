@@ -132,7 +132,7 @@ function ArtifactCard({
     <Link
       href={artifactActionHref(artifact)}
       className={cn(
-        "group flex min-h-48 flex-col rounded-2xl border border-border bg-card p-4 transition-[border-color,transform,background-color] hover:-translate-y-0.5 hover:bg-accent/30",
+        "group flex min-h-48 flex-col rounded-2xl border border-border bg-card p-4 transition-[border-color,transform,translate,background-color] hover:-translate-y-0.5 hover:bg-accent/30",
         look.hoverBorder,
       )}
       aria-label={`${look.verb} ${look.label}`}

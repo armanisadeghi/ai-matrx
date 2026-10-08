@@ -65,6 +65,8 @@ export interface AppletDefinition {
   created_at: string;
   updated_at: string;
   published_at: string | null;
+  /** Archived (in Trash) when set — archiving is never a status (`lib/applet-state.ts`). */
+  deleted_at: string | null;
 
   /** The Applet record (CONTRACTS §8). */
   files: Json;

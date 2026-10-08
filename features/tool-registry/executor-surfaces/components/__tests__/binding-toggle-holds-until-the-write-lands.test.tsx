@@ -17,7 +17,7 @@ jest.mock("@/lib/toast", () => ({
 }));
 jest.mock("@/components/dialogs/confirm/ConfirmDialogHost", () => ({ confirm: jest.fn() }));
 jest.mock("@/components/navigation/AppLink", () => ({ __esModule: true, default: (p: { children: React.ReactNode }) => <a>{p.children}</a> }));
-jest.mock("@/components/official/entity-ref/AiIdentityRef", () => ({ AiToolRef: (p: { name?: string }) => <span>{p.name}</span> }));
+jest.mock("@ai-matrx/chat/agents/components/identity-refs/AiIdentityRef", () => ({ AiToolRef: (p: { name?: string }) => <span>{p.name}</span> }));
 jest.mock("@/features/tool-call-visualization/admin/mcp-tools/source-kind-badge", () => ({ SourceKindBadge: () => null }));
 jest.mock("@/features/tool-registry/executor-surfaces/components/AddToolBindingDialog", () => ({ AddToolBindingDialog: () => null }));
 jest.mock("@/components/loaders/SuspenseLoader", () => ({ __esModule: true, default: () => null }));

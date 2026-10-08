@@ -2634,6 +2634,9 @@ export type Database = {
           mid_fallback_id: string | null
           name: string
           organization_id: string
+          pending_cost_rating: number | null
+          pending_cost_rating_at: string | null
+          pending_cost_rating_by: string | null
           provider_id: string | null
           published_to_web: boolean
           published_to_web_at: string | null
@@ -2670,6 +2673,9 @@ export type Database = {
           mid_fallback_id?: string | null
           name: string
           organization_id: string
+          pending_cost_rating?: number | null
+          pending_cost_rating_at?: string | null
+          pending_cost_rating_by?: string | null
           provider_id?: string | null
           published_to_web?: boolean
           published_to_web_at?: string | null
@@ -2706,6 +2712,9 @@ export type Database = {
           mid_fallback_id?: string | null
           name?: string
           organization_id?: string
+          pending_cost_rating?: number | null
+          pending_cost_rating_at?: string | null
+          pending_cost_rating_by?: string | null
           provider_id?: string | null
           published_to_web?: boolean
           published_to_web_at?: string | null
@@ -3980,6 +3989,15 @@ export type Database = {
       }
     }
     Functions: {
+      __cost_tier_hold_conformance: {
+        Args: never
+        Returns: {
+          check_key: string
+          detail: Json
+          ok: boolean
+          severity: string
+        }[]
+      }
       _translation_cell_target_ok: {
         Args: {
           p_layer: string
@@ -4014,6 +4032,21 @@ export type Database = {
         }[]
       }
       jsonb_num: { Args: { n: number }; Returns: Json }
+      model_cost_rating_history: {
+        Args: { p_limit?: number; p_model_id?: string }
+        Returns: {
+          actor_id: string
+          actor_tier: string
+          from_rating: number
+          held_rating: number
+          model_id: string
+          model_name: string
+          occurred_at: string
+          operation: string
+          to_rating: number
+          version: number
+        }[]
+      }
       model_message_flag_profile:
         | { Args: { p_model_id: string }; Returns: Json }
         | { Args: { p_model_id: string; p_offering_id: string }; Returns: Json }
@@ -6722,6 +6755,191 @@ export type Database = {
         }
         Relationships: []
       }
+      run_approval: {
+        Row: {
+          agent_id: string | null
+          blocked_runs: number
+          created_at: string
+          created_by: string | null
+          decided_at: string | null
+          decided_by: string | null
+          decision_note: string | null
+          deleted_at: string | null
+          expected_result: string | null
+          expected_runs_per_month: number | null
+          first_run_at: string | null
+          first_run_conversation_id: string | null
+          first_run_cost: number | null
+          first_run_key: string | null
+          first_run_models: string[]
+          first_run_person_id: string | null
+          first_run_request_id: string | null
+          first_run_turns: number | null
+          first_run_workflow_run_id: string | null
+          id: string
+          last_blocked_at: string | null
+          mandate_key: string | null
+          metadata: Json
+          organization_id: string
+          published_to_web: boolean
+          published_to_web_at: string | null
+          published_to_web_by: string | null
+          seeded: boolean
+          shown_to: Database["platform"]["Enums"]["shown_to"] | null
+          status: string
+          subject_id: string
+          subject_kind: string
+          subject_name: string | null
+          threshold_usd: number
+          updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        Insert: {
+          agent_id?: string | null
+          blocked_runs?: number
+          created_at?: string
+          created_by?: string | null
+          decided_at?: string | null
+          decided_by?: string | null
+          decision_note?: string | null
+          deleted_at?: string | null
+          expected_result?: string | null
+          expected_runs_per_month?: number | null
+          first_run_at?: string | null
+          first_run_conversation_id?: string | null
+          first_run_cost?: number | null
+          first_run_key?: string | null
+          first_run_models?: string[]
+          first_run_person_id?: string | null
+          first_run_request_id?: string | null
+          first_run_turns?: number | null
+          first_run_workflow_run_id?: string | null
+          id?: string
+          last_blocked_at?: string | null
+          mandate_key?: string | null
+          metadata?: Json
+          organization_id: string
+          published_to_web?: boolean
+          published_to_web_at?: string | null
+          published_to_web_by?: string | null
+          seeded?: boolean
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
+          status?: string
+          subject_id: string
+          subject_kind: string
+          subject_name?: string | null
+          threshold_usd: number
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Update: {
+          agent_id?: string | null
+          blocked_runs?: number
+          created_at?: string
+          created_by?: string | null
+          decided_at?: string | null
+          decided_by?: string | null
+          decision_note?: string | null
+          deleted_at?: string | null
+          expected_result?: string | null
+          expected_runs_per_month?: number | null
+          first_run_at?: string | null
+          first_run_conversation_id?: string | null
+          first_run_cost?: number | null
+          first_run_key?: string | null
+          first_run_models?: string[]
+          first_run_person_id?: string | null
+          first_run_request_id?: string | null
+          first_run_turns?: number | null
+          first_run_workflow_run_id?: string | null
+          id?: string
+          last_blocked_at?: string | null
+          mandate_key?: string | null
+          metadata?: Json
+          organization_id?: string
+          published_to_web?: boolean
+          published_to_web_at?: string | null
+          published_to_web_by?: string | null
+          seeded?: boolean
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
+          status?: string
+          subject_id?: string
+          subject_kind?: string
+          subject_name?: string | null
+          threshold_usd?: number
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Relationships: []
+      }
+      run_approval_event: {
+        Row: {
+          action: string
+          actor: string | null
+          approval_id: string
+          created_at: string
+          created_by: string | null
+          data: Json
+          from_status: string | null
+          id: string
+          metadata: Json
+          note: string | null
+          organization_id: string
+          to_status: string | null
+          updated_at: string
+          updated_by: string | null
+          version: number
+        }
+        Insert: {
+          action: string
+          actor?: string | null
+          approval_id: string
+          created_at?: string
+          created_by?: string | null
+          data?: Json
+          from_status?: string | null
+          id?: string
+          metadata?: Json
+          note?: string | null
+          organization_id: string
+          to_status?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Update: {
+          action?: string
+          actor?: string | null
+          approval_id?: string
+          created_at?: string
+          created_by?: string | null
+          data?: Json
+          from_status?: string | null
+          id?: string
+          metadata?: Json
+          note?: string | null
+          organization_id?: string
+          to_status?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "run_approval_event_approval_id_fkey"
+            columns: ["approval_id"]
+            isOneToOne: false
+            referencedRelation: "run_approval"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       spend_approval: {
         Row: {
           action_request_id: string
@@ -7237,6 +7455,8 @@ export type Database = {
         Args: { p_user: string }
         Returns: Database["billing"]["Enums"]["tier"]
       }
+      _run_approval_can_decide: { Args: { p_org: string }; Returns: boolean }
+      _run_approval_threshold: { Args: { p_org: string }; Returns: number }
       _signup_free_months: { Args: { p_user: string }; Returns: undefined }
       addon_grant: {
         Args: {
@@ -7500,6 +7720,150 @@ export type Database = {
       resolve_tier: {
         Args: { p_user: string }
         Returns: Database["billing"]["Enums"]["tier"]
+      }
+      run_approval_decide: {
+        Args: {
+          p_decision: string
+          p_expected_result?: string
+          p_expected_runs_per_month?: number
+          p_id: string
+          p_note?: string
+        }
+        Returns: {
+          agent_id: string | null
+          blocked_runs: number
+          created_at: string
+          created_by: string | null
+          decided_at: string | null
+          decided_by: string | null
+          decision_note: string | null
+          deleted_at: string | null
+          expected_result: string | null
+          expected_runs_per_month: number | null
+          first_run_at: string | null
+          first_run_conversation_id: string | null
+          first_run_cost: number | null
+          first_run_key: string | null
+          first_run_models: string[]
+          first_run_person_id: string | null
+          first_run_request_id: string | null
+          first_run_turns: number | null
+          first_run_workflow_run_id: string | null
+          id: string
+          last_blocked_at: string | null
+          mandate_key: string | null
+          metadata: Json
+          organization_id: string
+          published_to_web: boolean
+          published_to_web_at: string | null
+          published_to_web_by: string | null
+          seeded: boolean
+          shown_to: Database["platform"]["Enums"]["shown_to"] | null
+          status: string
+          subject_id: string
+          subject_kind: string
+          subject_name: string | null
+          threshold_usd: number
+          updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        SetofOptions: {
+          from: "*"
+          to: "run_approval"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      run_approval_history: {
+        Args: { p_id: string }
+        Returns: {
+          action: string
+          actor: string
+          actor_email: string
+          created_at: string
+          data: Json
+          from_status: string
+          id: string
+          note: string
+          to_status: string
+        }[]
+      }
+      run_approval_holds: {
+        Args: never
+        Returns: {
+          enforced: boolean
+          id: string
+          organization_id: string
+          status: string
+          subject_id: string
+          subject_kind: string
+        }[]
+      }
+      run_approval_list: {
+        Args: { p_org_id?: string }
+        Returns: {
+          agent_id: string
+          agent_type: string
+          avg_cost_since: number
+          blocked_runs: number
+          can_decide: boolean
+          created_at: string
+          decided_at: string
+          decided_by: string
+          decided_by_email: string
+          decision_note: string
+          est_monthly_cost: number
+          expected_result: string
+          expected_runs_per_month: number
+          first_run_at: string
+          first_run_conversation_id: string
+          first_run_cost: number
+          first_run_key: string
+          first_run_models: string[]
+          first_run_person_email: string
+          first_run_person_id: string
+          first_run_request_id: string
+          first_run_turns: number
+          first_run_workflow_run_id: string
+          id: string
+          last_blocked_at: string
+          mandate_key: string
+          max_cost_since: number
+          organization_id: string
+          organization_is_system: boolean
+          organization_name: string
+          runs_30d: number
+          runs_since: number
+          seeded: boolean
+          status: string
+          subject_id: string
+          subject_kind: string
+          subject_name: string
+          threshold_usd: number
+        }[]
+      }
+      run_approval_note_blocked: { Args: { p_id: string }; Returns: undefined }
+      run_approval_status: {
+        Args: { p_org_id?: string }
+        Returns: {
+          decided_at: string
+          first_run_cost: number
+          id: string
+          organization_id: string
+          status: string
+          subject_id: string
+          subject_kind: string
+        }[]
+      }
+      run_approval_sweep: {
+        Args: { p_days?: number; p_seed?: boolean }
+        Returns: number
+      }
+      run_approval_waiting_count: {
+        Args: { p_org_id?: string }
+        Returns: number
       }
       spend_approval_draw: {
         Args: {
@@ -18605,7 +18969,7 @@ export type Database = {
           sender_identity: string
           sender_name: string
           sender_user_id: string | null
-          session_id: string | null
+          session_id: string
           updated_at: string
           updated_by: string | null
           version: number
@@ -18624,7 +18988,7 @@ export type Database = {
           sender_identity: string
           sender_name: string
           sender_user_id?: string | null
-          session_id?: string | null
+          session_id: string
           updated_at?: string
           updated_by?: string | null
           version?: number
@@ -18643,7 +19007,7 @@ export type Database = {
           sender_identity?: string
           sender_name?: string
           sender_user_id?: string | null
-          session_id?: string | null
+          session_id?: string
           updated_at?: string
           updated_by?: string | null
           version?: number
@@ -18968,7 +19332,7 @@ export type Database = {
           meeting_id: string
           metadata: Json
           organization_id: string
-          session_id: string | null
+          session_id: string
           text: string
           updated_at: string
           updated_by: string | null
@@ -18984,7 +19348,7 @@ export type Database = {
           meeting_id: string
           metadata?: Json
           organization_id: string
-          session_id?: string | null
+          session_id: string
           text: string
           updated_at?: string
           updated_by?: string | null
@@ -19000,7 +19364,7 @@ export type Database = {
           meeting_id?: string
           metadata?: Json
           organization_id?: string
-          session_id?: string | null
+          session_id?: string
           text?: string
           updated_at?: string
           updated_by?: string | null
@@ -19223,7 +19587,7 @@ export type Database = {
           meeting_id: string
           metadata: Json
           organization_id: string
-          session_id: string | null
+          session_id: string
           started_at: string | null
           started_by: string | null
           state: string
@@ -19245,7 +19609,7 @@ export type Database = {
           meeting_id: string
           metadata?: Json
           organization_id: string
-          session_id?: string | null
+          session_id: string
           started_at?: string | null
           started_by?: string | null
           state?: string
@@ -19267,7 +19631,7 @@ export type Database = {
           meeting_id?: string
           metadata?: Json
           organization_id?: string
-          session_id?: string | null
+          session_id?: string
           started_at?: string | null
           started_by?: string | null
           state?: string
@@ -19424,7 +19788,7 @@ export type Database = {
           meeting_id: string
           metadata: Json
           organization_id: string
-          session_id: string | null
+          session_id: string
           speaker: string
           started_at: string
           text: string
@@ -19442,7 +19806,7 @@ export type Database = {
           meeting_id: string
           metadata?: Json
           organization_id: string
-          session_id?: string | null
+          session_id: string
           speaker?: string
           started_at?: string
           text: string
@@ -19460,7 +19824,7 @@ export type Database = {
           meeting_id?: string
           metadata?: Json
           organization_id?: string
-          session_id?: string | null
+          session_id?: string
           speaker?: string
           started_at?: string
           text?: string
@@ -92745,6 +93109,32 @@ export type Database = {
       }
       _action_request_gone: { Args: never; Returns: string }
       _admin_read_ensure: { Args: { p_rel: unknown }; Returns: boolean }
+      _agent_spend_facts: {
+        Args: { p_conversation_id?: string; p_org_id: string; p_since: string }
+        Returns: {
+          agent_id: string
+          automated: boolean
+          calls: number
+          conversation_id: string
+          cost: number
+          created_at: string
+          execution_id: string
+          feature: string
+          iterations: number
+          mandate_key: string
+          model: string
+          organization_id: string
+          origin: string
+          person_id: string
+          request_id: string
+          run_key: string
+          saved: boolean
+          source: string
+          tokens_cached: number
+          tokens_in: number
+          tokens_out: number
+        }[]
+      }
       _carried_back_value: {
         Args: {
           p_older_type: string
@@ -93332,6 +93722,7 @@ export type Database = {
         Args: { p_default: number; p_key: string }
         Returns: number
       }
+      _spend_access: { Args: { p_org_id: string }; Returns: undefined }
       _store_pick_list_document: {
         Args: { p_list_id: string; p_shape?: string; p_viewer: string }
         Returns: Json
@@ -93549,6 +93940,72 @@ export type Database = {
           p_validation_mode?: string
         }
         Returns: Json
+      }
+      agent_spend_health: {
+        Args: { p_days?: number; p_org_id?: string }
+        Returns: {
+          agent_id: string
+          agent_name: string
+          agent_type: string
+          automated_runs: number
+          avg_input_per_call: number
+          avg_output_per_call: number
+          avg_run_cost: number
+          avg_turns: number
+          calls: number
+          cost: number
+          last_run_at: string
+          mandate_key: string
+          mandate_label: string
+          max_run_cost: number
+          max_turns: number
+          models: string[]
+          organizations: Json
+          payers: Json
+          premium_models: string[]
+          runs: number
+          unattributed_source: string
+          unsaved_cost: number
+          unsaved_runs: number
+        }[]
+      }
+      agent_spend_raw_total: {
+        Args: { p_days?: number; p_org_id?: string }
+        Returns: number
+      }
+      agent_spend_runs: {
+        Args: {
+          p_agent_id?: string
+          p_days?: number
+          p_limit?: number
+          p_mandate_key?: string
+          p_offset?: number
+          p_org_id?: string
+          p_source?: string
+        }
+        Returns: {
+          agent_id: string
+          automated: boolean
+          calls: number
+          conversation_id: string
+          cost: number
+          mandate_key: string
+          models: string[]
+          organization_id: string
+          organization_name: string
+          origin: string
+          person_email: string
+          person_id: string
+          request_id: string
+          run_key: string
+          saved: boolean
+          started_at: string
+          tokens_in: number
+          tokens_out: number
+          total_cost: number
+          total_runs: number
+          turns: number
+        }[]
       }
       ai_latency_filter_options: {
         Args: { p_from: string; p_to: string }
@@ -93859,6 +94316,26 @@ export type Database = {
       continued_access_state: {
         Args: { p_org: string; p_user: string }
         Returns: Json
+      }
+      conversation_spend: {
+        Args: { p_conversation_id: string }
+        Returns: {
+          agent_id: string
+          automated: boolean
+          calls: number
+          cost: number
+          created_at: string
+          execution_id: string
+          iterations: number
+          mandate_key: string
+          model: string
+          request_id: string
+          saved: boolean
+          source: string
+          tokens_cached: number
+          tokens_in: number
+          tokens_out: number
+        }[]
       }
       count_items: {
         Args: {
@@ -114694,6 +115171,25 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      _automation_run_costs: {
+        Args: { p_automation_id?: string; p_org_id: string; p_since: string }
+        Returns: {
+          agent_ids: string[]
+          automation_id: string
+          automation_kind: string
+          conversation_id: string
+          cost: number
+          mandates: string[]
+          max_loop: number
+          models: string[]
+          run_at: string
+          run_id: string
+          status: string
+          turns: number
+          workflow_run_id: string
+        }[]
+      }
+      _is_premium_model: { Args: { p_name: string }; Returns: boolean }
       admin_disable_task: {
         Args: { p_reason?: string; p_task_id: string }
         Returns: Json
@@ -114701,6 +115197,65 @@ export type Database = {
       admin_mark_run_failed: {
         Args: { p_reason: string; p_run_id: string }
         Returns: Json
+      }
+      automation_cost_rollup: {
+        Args: { p_days?: number; p_org_id?: string }
+        Returns: {
+          agents: Json
+          approval: string
+          approved_at: string
+          approved_by: string
+          automation_id: string
+          automation_kind: string
+          avg_run_cost: number
+          avg_turns: number
+          cost: number
+          cost_7d: number
+          description: string
+          enabled: boolean
+          est_monthly_cost: number
+          last_run_at: string
+          last_run_cost: number
+          mandates: string[]
+          max_loop: number
+          max_run_cost: number
+          max_turns: number
+          models: string[]
+          name: string
+          organization_id: string
+          organization_is_system: boolean
+          organization_name: string
+          owner_email: string
+          owner_is_platform_admin: boolean
+          owner_user_id: string
+          premium_models: string[]
+          runs: number
+          runs_7d: number
+          trigger_config: Json
+          trigger_type: string
+          workflow_definition_id: string
+        }[]
+      }
+      automation_cost_runs: {
+        Args: {
+          p_automation_id: string
+          p_automation_kind: string
+          p_days?: number
+        }
+        Returns: {
+          agent_ids: string[]
+          conversation_id: string
+          cost: number
+          mandates: string[]
+          max_loop: number
+          models: string[]
+          run_at: string
+          run_id: string
+          served_orgs: Json
+          status: string
+          turns: number
+          workflow_run_id: string
+        }[]
       }
       realtime_topic_admits: { Args: { p_topic: string }; Returns: boolean }
       sch_run_claim: {
@@ -114758,6 +115313,14 @@ export type Database = {
               error: true
             } & "Could not choose the best candidate function between: scheduler.sch_tasks_enabled_by_id(p_task_ids => _uuid), scheduler.sch_tasks_enabled_by_id(p_task_ids => jsonb). Try renaming the parameters or the function itself in the database so function overloading can be resolved"[]
           }
+      set_workflow_trigger_state: {
+        Args: { p_action: string; p_trigger_id: string }
+        Returns: {
+          archived: boolean
+          is_active: boolean
+          trigger_id: string
+        }[]
+      }
       system_schedule_alarms: {
         Args: { p_overdue_grace_minutes?: number }
         Returns: {
@@ -114786,6 +115349,29 @@ export type Database = {
           tags: string[]
           task_id: string
           title: string
+        }[]
+      }
+      workflow_trigger_overview: {
+        Args: { p_org_id?: string }
+        Returns: {
+          created_at: string
+          created_by: string
+          created_by_email: string
+          creator_is_platform_admin: boolean
+          cron_expression: string
+          definition_id: string
+          event_source: Json
+          fire_count: number
+          is_active: boolean
+          kind: string
+          last_fired_at: string
+          next_run_at: string
+          organization_id: string
+          organization_is_system: boolean
+          organization_name: string
+          timezone: string
+          trigger_id: string
+          workflow_name: string
         }[]
       }
     }

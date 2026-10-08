@@ -72,3 +72,11 @@ writer.
 - Routes: `/hr/performance` (list), `/hr/performance/[reviewId]?org=` (both halves), `/hr/performance/respond/[trackId]?org=` (respondent).
 - Knobs: `hr.performance/review_360_days_to_complete` (14), `review_360_reminder_lead_days` (3).
 - Chose store assignments + automations over the HR workflow engine: an `hr.workflow_step` deep-links only to its own `/hr/tasks/{instance}` decision panel and its titles come from `hr._wf_display`, so a step cannot point at a store row.
+
+## 360 review, hardening (lane HR-360, 2026-10-08)
+
+- A respondent edits her half only until she submits it: the Track reader `respondent` is editor `when` `submitted_at` is empty and viewer always; the respond page turns read-only and `saveTrack` refuses (`SUBMITTED_REFUSAL`).
+- Respondents READ the review row (viewer); only HR writes it. "Both in" is worked out from the tracks (list + review page); the HR notice is sent per half from the track ("A 360 review response is in: <review link>"). The notify action sets the text only — the in-app subject ("A table you follow changed") and email subject come from the store's notify spine, not this feature.
+- Meeting defaults, the due hour and reminder lead are knobs (`hr.performance/review_360_*`); the lead becomes the .ics reminder (VALARM) on the respond page. In-app reminders before a due date have no mechanism yet (the store reminds after N untouched days; tasks remind the day before).
+- The 360 meeting sets `meet.observers_visible_to = hosts` for that meeting; the observer's token publishes no data and is hidden from other participants.
+- Notes audit: opening notes through this feature goes through `iam.open_confidential_audited` and is logged. A direct read of the notes row through the records store (data pages, API) is NOT logged — only the feature's own door is.

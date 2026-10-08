@@ -27,6 +27,8 @@ import {
 import { cn } from "@/lib/utils";
 import { matchesSearch } from "@ai-matrx/kit/search-scoring";
 import { adminNavigation } from "../categories";
+import { SPEND_APPROVALS_ADMIN_PATH } from "@/features/admin/spend-approvals/spendApprovals";
+import { WaitingApprovalsCount } from "@/features/admin/spend-approvals/WaitingApprovalsCount";
 import {
   adminDomainHref,
   findAdminNavigationLocation,
@@ -157,6 +159,9 @@ export default function AdminNavTreeMenu() {
                   {domain.icon}
                 </span>
                 <span className="min-w-0 flex-1 truncate">{domain.name}</span>
+                {domain.sections.some((section) =>
+                  section.destinations.some((d) => d.link === SPEND_APPROVALS_ADMIN_PATH),
+                ) && <WaitingApprovalsCount orgId={null} />}
                 <span className="text-xs text-muted-foreground">
                   {domain.sections.reduce(
                     (count, section) => count + section.destinations.length,
@@ -199,6 +204,7 @@ export default function AdminNavTreeMenu() {
                               {item.icon}
                             </span>
                             <span className="truncate">{item.title}</span>
+                            {item.link === SPEND_APPROVALS_ADMIN_PATH && <WaitingApprovalsCount orgId={null} />}
                           </AppLink>
                         </DropdownMenuItem>
                       ))}

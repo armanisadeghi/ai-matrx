@@ -29,7 +29,7 @@ jest.mock("@ai-matrx/design-system/item", () => ({
   ItemMenu: ({ children }: { children: React.ReactNode }) => <>{children}</>,
 }));
 
-jest.mock("@/components/official/entity-ref/AiIdentityRef", () => ({
+jest.mock("@ai-matrx/chat/agents/components/identity-refs/AiIdentityRef", () => ({
   AiModelRef: ({
     modelId,
     showClass,

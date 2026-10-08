@@ -33,7 +33,7 @@ import { RegistryTab } from "@/features/tool-registry/tools-admin/components/Reg
 import { Network } from "lucide-react";
 import { SourceKindBadge } from "./source-kind-badge";
 import { MatrxUuidCell } from "@ai-matrx/design-system/data-table/uuid-cell";
-import { AiToolRef } from "@/components/official/entity-ref/AiIdentityRef";
+import { AiToolRef } from "@ai-matrx/chat/agents/components/identity-refs/AiIdentityRef";
 import { mcpServerHref } from "@/features/tool-registry/doors";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
 import { formatToolTimestamp, toolBrief, toolSummary } from "./format";

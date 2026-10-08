@@ -1,6 +1,6 @@
 {
   "note": "Checked-in snapshot of public._schema_migrations for the files under migrations/campaign and migrations/inverse. Written by `pnpm db:apply` on every successful production apply and refreshed whole by the nightly catch-up. Never hand-edited: a self-written checksum is a claim nobody can check. Guard: pnpm check:ledgered-files-unedited.",
-  "generated_at": "2026-10-08T19:24:18.862Z",
+  "generated_at": "2026-10-08T21:07:33.387Z",
   "files": {
     "migrations/campaign/a_chunk_is_the_size_the_client_door_can_actually_carry.sql": {
       "source": "matrx-frontend",
@@ -3746,11 +3746,29 @@
       "checksum": "8cff190cabbedd21942844a312b4805755c0a25cf8ed1c64c21dabd85f130c62",
       "applied_at": "2026-10-08 15:30:58.67814+00"
     },
+    "migrations/campaign/hr360_2_store_notice_subject_and_link.sql": {
+      "source": "matrx-frontend",
+      "filename": "hr360_2_store_notice_subject_and_link.sql",
+      "checksum": "5ec955191abee4791c2144f4decddfe222caefdbfee778451872715c14446472",
+      "applied_at": "2026-10-08 21:07:30.961802+00"
+    },
     "migrations/campaign/hr360_meet_policy_for_before_a_meeting_exists.sql": {
       "source": "matrx-frontend",
       "filename": "hr360_meet_policy_for_before_a_meeting_exists.sql",
       "checksum": "9bb39ce2124169bffe2bd72fe9d115a21f25f724f56d5d1924656eb97cc0e586",
       "applied_at": "2026-10-08 18:47:05.857769+00"
+    },
+    "migrations/campaign/hr360_meeting_and_due_knobs.sql": {
+      "source": "matrx-frontend",
+      "filename": "hr360_meeting_and_due_knobs.sql",
+      "checksum": "c6c3e2d108d94c4719c6385b2383f5e213637c0f2308f60494aff1f67f9d4280",
+      "applied_at": "2026-10-08 20:21:30.230211+00"
+    },
+    "migrations/campaign/hr360_observers_visible_to_per_meeting.sql": {
+      "source": "matrx-frontend",
+      "filename": "hr360_observers_visible_to_per_meeting.sql",
+      "checksum": "f267b45065d6fde51e819e24018046004866fc9b3de2cee8d520e4ea0e4ec31c",
+      "applied_at": "2026-10-08 20:22:00.201462+00"
     },
     "migrations/campaign/hr360_review_knobs.sql": {
       "source": "matrx-frontend",
@@ -9427,6 +9445,12 @@
       "filename": "walkfixes_a_a_link_button_encodes_its_row_values.sql",
       "checksum": "8f25f7d54c9d0c0e1822402542a778b95de9c1c1021e1296dcc1a834d5cba9a2",
       "applied_at": "2026-10-08 19:24:17.668717+00"
+    },
+    "migrations/campaign/walkfixes_b_a_sorted_page_counts_rows_it_cannot_open.sql": {
+      "source": "matrx-frontend",
+      "filename": "walkfixes_b_a_sorted_page_counts_rows_it_cannot_open.sql",
+      "checksum": "330b1dcb1674a570a2f3aa776c2a3ff78596263aa525128c6112832ff4d076b9",
+      "applied_at": "2026-10-08 19:38:11.390196+00"
     },
     "migrations/campaign/wherelives_the_older_table_is_the_writer_until_the_switch.sql": {
       "source": "campaign",

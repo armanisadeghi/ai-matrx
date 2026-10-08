@@ -31,15 +31,8 @@ import { decisionToolsNotice } from "@/features/agents/decision-questions/compat
 import {
   setAgentTools,
 } from "@/features/agents/redux/agent-builder.slice";
-import {
-  selectAllTools,
-  selectToolIdentityMap,
-} from "@ai-matrx/chat/agents/redux/tools/tools.selectors";
-import {
-  fetchAvailableTools,
-  fetchToolById,
-} from "@ai-matrx/chat/agents/redux/tools/tools.thunks";
 import { AgentToolsModal } from "@/features/agents/components/tools-management/AgentToolsModal";
+import { loadAvailableTools, loadToolById, selectAllTools, selectToolIdentityMap, useToolCatalog } from "@ai-matrx/chat/agents/identity/tool-catalog";
 
 interface AgentToolsRowProps {
   agentId: string;
@@ -58,14 +51,14 @@ export function AgentToolsRow({ agentId }: AgentToolsRowProps) {
   const messages = useAppSelector((state) =>
     selectAgentMessages(state, agentId),
   );
-  const catalog = useAppSelector(selectAllTools);
-  const identityById = useAppSelector(selectToolIdentityMap);
+  const catalog = useToolCatalog(selectAllTools);
+  const identityById = useToolCatalog(selectToolIdentityMap);
 
   // The catalogue is what turns an id into a word. Every other consumer fetched
   // it only when the picker opened, which is exactly the gesture this row exists
   // to make unnecessary.
   useEffect(() => {
-    void dispatch(fetchAvailableTools());
+    void loadAvailableTools();
   }, [dispatch]);
 
   const selected = useMemo(
@@ -88,7 +81,7 @@ export function AgentToolsRow({ agentId }: AgentToolsRowProps) {
   // resolved by identity instead of printed as a uuid.
   useEffect(() => {
     for (const id of selected) {
-      if (!byId.has(id)) void dispatch(fetchToolById(id));
+      if (!byId.has(id)) void loadToolById(id);
     }
   }, [dispatch, selected, byId]);
 

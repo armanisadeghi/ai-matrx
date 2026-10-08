@@ -18,6 +18,8 @@ import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { toast } from "@/lib/toast";
 import { supabase } from "@/utils/supabase/client";
 
+import { readReview360Knobs, type Review360Knobs } from "./service";
+
 export const REVIEW_360_PANEL_KEY = "hr.review_360";
 
 const repository = createMeetRepository({ client: supabase });
@@ -51,10 +53,11 @@ function employeeIdOf(value: unknown): string | null {
   return null;
 }
 
-function tomorrowAtTen(): string {
+/** Tomorrow at the hour the knob hr.performance/review_360_meeting_hour names (local time). */
+export function tomorrowAt(hour: number): string {
   const d = new Date();
   d.setDate(d.getDate() + 1);
-  d.setHours(10, 0, 0, 0);
+  d.setHours(hour, 0, 0, 0);
   const pad = (n: number) => String(n).padStart(2, "0");
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
@@ -74,7 +77,19 @@ export function ReviewMeetingActions({
 }) {
   const userId = useAppSelector(selectUserId);
   const [meeting, setMeeting] = useState<MeetingRecord | null | undefined>(undefined);
-  const [when, setWhen] = useState(tomorrowAtTen);
+  const [when, setWhen] = useState("");
+  const [knobs, setKnobs] = useState<Review360Knobs | null>(null);
+  useEffect(() => {
+    if (!userId) return;
+    void readReview360Knobs(organizationId, userId).then((k) => {
+      if (!k.ok) {
+        toast.error(k.message);
+        return;
+      }
+      setKnobs(k.data);
+      setWhen((w) => w || tomorrowAt(k.data.meetingHour));
+    });
+  }, [organizationId, userId]);
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
@@ -93,7 +108,7 @@ export function ReviewMeetingActions({
   const inPerson = `/hr/performance/${reviewId}/meeting?org=${organizationId}`;
 
   const schedule = async () => {
-    if (!userId || busy) return;
+    if (!userId || busy || !knobs) return;
     setBusy(true);
     try {
       const employeeId = employeeIdOf(employee);
@@ -108,10 +123,10 @@ export function ReviewMeetingActions({
         title: "360 review meeting",
         scheduledFor: new Date(when).toISOString(),
         timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC",
-        durationMinutes: 45,
+        durationMinutes: knobs.meetingMinutes,
         agenda: null,
         recurrenceRule: null,
-        settings: { joinBeforeHost: true, lobbyEnabled: false },
+        settings: { joinBeforeHost: knobs.meetingJoinBeforeHost, lobbyEnabled: knobs.meetingLobby },
         appPanel: { key: REVIEW_360_PANEL_KEY, recordId: reviewId },
       });
       await repository.addInvitees(
@@ -122,6 +137,19 @@ export function ReviewMeetingActions({
         ],
         asUserId(userId),
       );
+      // A silent observer stays silent here: in THIS meeting only hosts see "Observing".
+      const quiet = await supabase
+        .schema("communication")
+        .rpc("meet_policy_set", { p_meeting_id: made.id, p_key: "observers_visible_to", p_value: "hosts" });
+      const answer: unknown = quiet.data;
+      const field = (k: string): unknown =>
+        answer !== null && typeof answer === "object" && !Array.isArray(answer) ? Reflect.get(answer, k) : undefined;
+      const refused = field("ok") === false;
+      if (quiet.error || refused) {
+        const said = field("detail");
+        const detail = typeof said === "string" ? said : "refused";
+        throw new Error(`The meeting was scheduled, but observers could not be hidden: ${quiet.error?.message ?? detail}`);
+      }
       setMeeting(made);
       toast.success("Review meeting scheduled");
     } catch (thrown) {

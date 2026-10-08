@@ -656,7 +656,7 @@ function ExtractionTabContent({
   onRunPipeline,
 }: {
   tab: ExtractionTab;
-  onClean: (docId: string) => Promise<void>;
+  onClean: (docId: string) => Promise<unknown>;
   onRefresh: (docId: string) => Promise<boolean>;
   // `onRunPipeline` returns `{ success, childDocId }` from `usePdfExtractor`.
   // The legacy workspace doesn't navigate to the child — it stays put and
@@ -1027,7 +1027,7 @@ function AiCleanView({
   onRefresh,
 }: {
   tab: ExtractionTab;
-  onClean: (docId: string) => Promise<void>;
+  onClean: (docId: string) => Promise<unknown>;
   onRefresh: (docId: string) => Promise<boolean>;
 }) {
   const doc = tab.document;

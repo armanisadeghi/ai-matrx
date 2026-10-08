@@ -36,7 +36,6 @@ import { loadProjectsWithTasks } from "@/features/tasks/redux/thunks";
 import { humanLines } from "@/features/marketing/lib/copy-payloads";
 import { useCanvasOpenGuard } from "@/features/canvas/hooks/useCanvasOpenGuard";
 import { useRegisterChatAttachTarget } from "@/features/knowledge/command-bar/useKnowledgeAttachTarget";
-import { useSkills } from "@/features/skills/hooks/useSkills";
 import { useAutoLabel, generateLabelFromContent } from "@/features/notes/hooks/useAutoLabel";
 import { usePickListForSelection } from "@/features/data-tables/pick-lists/hooks/usePickListForSelection";
 import { useGitHubConnection } from "@/features/github-integration/useGitHubConnection";
@@ -49,7 +48,6 @@ import { selectEditorState } from "@/features/code-editor/redux/editor-state.sli
 import { selectActiveSandboxId, selectActiveSandboxProxyUrl, selectEditorMode } from "@/features/code/redux/codeWorkspaceSlice";
 import { receivedFsChange } from "@/features/code/redux/fsChangesSlice";
 import { loadCodeEditHistoryThunk } from "@/features/code/redux/codeEditHistoryHydration";
-import { applySkillStreamEvent, isSkillStreamEvent } from "@/features/skills/service/skillsStreamHandler";
 import { materializeMessageArtifacts } from "@/features/canvas/materialization/materializeMessageArtifacts";
 import { reconcileMessagesArtifacts } from "@/features/canvas/materialization/reconcileArtifacts";
 import { noteBrowserActivity, selectCloudBrowserRunLive } from "@/features/cloud-browser/redux/cloudBrowserSlice";
@@ -95,7 +93,6 @@ registerChatUi({
   humanLines,
   useCanvasOpenGuard,
   useRegisterChatAttachTarget,
-  useSkills,
   useAutoLabel,
   generateLabelFromContent,
   usePickListForSelection,
@@ -111,8 +108,6 @@ registerChatUi({
   selectEditorMode,
   receivedFsChange,
   loadCodeEditHistoryThunk,
-  applySkillStreamEvent,
-  isSkillStreamEvent,
   materializeMessageArtifacts,
   reconcileMessagesArtifacts,
   noteBrowserActivity,
@@ -334,12 +329,6 @@ registerChatUi({
   FieldHelp: Host_FieldHelp,
 });
 
-import { useModelFull as Host_useModelFull } from "@/features/ai-models/hooks/useModels";
-import { useModelOptions as Host_useModelOptions } from "@/features/ai-models/hooks/useModels";
-registerChatUi({
-  useModelFull: Host_useModelFull,
-  useModelOptions: Host_useModelOptions,
-});
 
 import { useOrganizationRequired as Host_useOrganizationRequired } from "@/features/organizations/useOrganizationRequired";
 registerChatUi({
@@ -446,16 +435,8 @@ registerChatUi({
   awaitEffectiveOrganizationId: Host_awaitEffectiveOrganizationId,
 });
 
-import { getAgentCatalog as Host_getAgentCatalog } from "@/lib/agents/catalog";
-registerChatUi({
-  getAgentCatalog: Host_getAgentCatalog,
-});
 
 
-import { resolvePreferredChatModel as Host_resolvePreferredChatModel } from "@/features/ai-models/preferredChatModel";
-registerChatUi({
-  resolvePreferredChatModel: Host_resolvePreferredChatModel,
-});
 
 import { publishedToWebPatch as Host_publishedToWebPatch } from "@/lib/row-access";
 registerChatUi({
@@ -486,20 +467,8 @@ registerChatUi({
   CreatorRunPanel: Host_CreatorRunPanel,
 });
 
-import { AgentSettingsCore as Host_AgentSettingsCore } from "@/features/agents/components/settings-management/AgentSettingsCore";
-registerChatUi({
-  AgentSettingsCore: Host_AgentSettingsCore,
-});
 
-import { SettingControlInput as Host_SettingControlInput } from "@/features/agents/components/settings-management/controls/SettingControlInput";
-registerChatUi({
-  SettingControlInput: Host_SettingControlInput,
-});
 
-import { InputCapabilitiesEditor as Host_InputCapabilitiesEditor } from "@/features/agents/components/settings-management/ui-gates/InputCapabilitiesEditor";
-registerChatUi({
-  InputCapabilitiesEditor: Host_InputCapabilitiesEditor,
-});
 
 import { CustomDataBindingSummary as Host_CustomDataBindingSummary } from "@/features/agents/components/variables-management/custom-data/CustomDataBindingSummary";
 registerChatUi({
@@ -511,12 +480,6 @@ registerChatUi({
   CustomDataBindingPreview: Host_CustomDataBindingPreview,
 });
 
-import { AiModelRef as Host_AiModelRef } from "@/components/official/entity-ref/AiIdentityRef";
-import { AiToolRef as Host_AiToolRef } from "@/components/official/entity-ref/AiIdentityRef";
-registerChatUi({
-  AiModelRef: Host_AiModelRef,
-  AiToolRef: Host_AiToolRef,
-});
 
 import { TextInputDialog as Host_TextInputDialog } from "@ai-matrx/design-system";
 registerChatUi({

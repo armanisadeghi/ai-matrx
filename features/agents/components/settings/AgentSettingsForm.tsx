@@ -43,7 +43,7 @@ import {
 } from "./agentSettingsDraftRegistry";
 import type { AgentDefinition } from "@ai-matrx/chat/agents/types/agent-definition.types";
 import { useAgentModelLabel } from "@ai-matrx/chat/agents/hooks/useAgentModelLabel";
-import { AiModelRef } from "@/components/official/entity-ref/AiIdentityRef";
+import { AiModelRef } from "@ai-matrx/chat/agents/components/identity-refs/AiIdentityRef";
 import { useCatalogAgents } from "@ai-matrx/chat/agents/identity/agent-catalog-lists";
 
 interface AgentSettingsFormProps {

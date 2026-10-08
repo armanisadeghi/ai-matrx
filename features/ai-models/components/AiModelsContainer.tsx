@@ -10,7 +10,13 @@ import AiModelTable from "./AiModelTable";
 import AiModelTabBar from "./AiModelTabBar";
 import AiModelDetailPanel from "./AiModelDetailPanel";
 import DeprecatedModelsAudit from "./DeprecatedModelsAudit";
-import { useTabUrlState } from "../hooks/useTabUrlState";
+import { DEFAULT_AI_MODEL_FILTERS, useTabUrlState } from "../hooks/useTabUrlState";
+import {
+  TIER_VIEW_LABELS,
+  TIER_VIEW_TITLES,
+  matchesTierView,
+  type TierView,
+} from "../maxTier";
 import { aiModelService } from "../service";
 import type { AiModel, AiProvider } from "../types";
 import { applyFiltersForCount } from "@/features/ai-models/utils/filterUtils";
@@ -135,6 +141,25 @@ export default function AiModelsContainer() {
     }
     return counts;
   }, [models, tabStates]);
+
+  const tierCounts = useMemo(
+    () => ({
+      max: models.filter((m) => matchesTierView(m, "max")).length,
+      mismatch: models.filter((m) => matchesTierView(m, "mismatch")).length,
+      held: models.filter((m) => matchesTierView(m, "held")).length,
+    }),
+    [models],
+  );
+  const toggleTierView = (view: TierView) => {
+    const on = activeTab?.filters.tier === view;
+    updateTabState(activeTabId, {
+      page: 1,
+      // A tier view shows every model of that tier, retired ones included.
+      filters: on
+        ? { tier: undefined, is_deprecated: DEFAULT_AI_MODEL_FILTERS.is_deprecated }
+        : { tier: view, is_deprecated: undefined },
+    });
+  };
 
   const deprecatedCount = useMemo(
     () => models.filter((m) => m.is_deprecated).length,
@@ -338,6 +363,21 @@ export default function AiModelsContainer() {
             />
           </div>
           <div className="shrink-0 px-2 border-l flex items-center gap-1">
+            {(["max", "mismatch", "held"] as const)
+              .filter((view) => view === "max" || tierCounts[view] > 0)
+              .map((view) => (
+                <Button
+                  key={view}
+                  variant={activeTab?.filters.tier === view ? "outline" : "quiet"}
+                  onClick={() => toggleTierView(view)}
+                  title={TIER_VIEW_TITLES[view]}
+                >
+                  {TIER_VIEW_LABELS[view]}
+                  <Badge variant="outline" className="h-4 px-1 text-[10px]">
+                    {tierCounts[view]}
+                  </Badge>
+                </Button>
+              ))}
             <Button
               icon={<BookOpen />}
               variant={referenceOpen ? "outline" : "quiet"}

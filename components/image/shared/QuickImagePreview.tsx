@@ -124,18 +124,22 @@ export function QuickImagePreview({
       <AnimatePresence>
         {showPreview && (
           <div className="fixed top-0 left-0 w-full h-0 overflow-visible pointer-events-none z-[9999]">
-            <motion.div
-              initial={{ opacity: 0, scale: 0.9, y: position === 'bottom' ? -10 : 10 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.9, y: position === 'bottom' ? -10 : 10 }}
-              transition={{ duration: 0.15 }}
-              className="absolute shadow-lg rounded-lg overflow-hidden bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700"
+            {/* Outer box owns placement (translate); the motion child owns scale/y so they never fight over `transform`. */}
+            <div
+              className="absolute"
               style={{
                 width: sizeMap[size].width,
                 left: `${previewPosition.x}px`,
                 top: `${previewPosition.y}px`,
                 transform: `translate(-50%, ${position === 'bottom' ? '0' : '-100%'})`,
               }}
+            >
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9, y: position === 'bottom' ? -10 : 10 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.9, y: position === 'bottom' ? -10 : 10 }}
+              transition={{ duration: 0.15 }}
+              className="relative shadow-lg rounded-lg overflow-hidden bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700"
             >
               <div className="p-1">
                 <div className="relative overflow-hidden rounded">
@@ -166,6 +170,7 @@ export function QuickImagePreview({
                 <div className="absolute left-1/2 bottom-full w-4 h-4 bg-white dark:bg-zinc-800 border-t border-l border-zinc-200 dark:border-zinc-700 transform rotate-45 translate-y-2 -translate-x-1/2"></div>
               )}
             </motion.div>
+            </div>
           </div>
         )}
       </AnimatePresence>

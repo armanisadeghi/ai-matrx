@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useLayoutEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { ChevronDown, Check, Search } from 'lucide-react';
 
@@ -75,9 +75,7 @@ const PortalDropdownSelect: React.FC<SearchableSelectProps> = ({
   const [open, setOpen] = useState<boolean>(false);
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [selectedLabel, setSelectedLabel] = useState<string>('');
-  const [dropdownPosition, setDropdownPosition] = useState<{top: number, left: number, width: number}>({
-    top: 0, left: 0, width: 0
-  });
+  const [dropdownPosition, setDropdownPosition] = useState<{ top: number; left: number; width: number } | null>(null);
   
   // State related to focus/value for floating label
   const [isFocused, setIsFocused] = useState<boolean>(false);
@@ -134,15 +132,18 @@ const PortalDropdownSelect: React.FC<SearchableSelectProps> = ({
   };
   
   // Update dropdown position when it opens
-  useEffect(() => {
-    if (open && triggerRef.current) {
+  useLayoutEffect(() => {
+    const place = () => {
+      if (!triggerRef.current) return;
       const rect = triggerRef.current.getBoundingClientRect();
+      // position: fixed -> viewport coordinates, no scroll offset
       setDropdownPosition({
-        top: Math.min(rect.bottom, window.innerHeight - 250) + window.scrollY + 5,
+        top: Math.min(rect.bottom, window.innerHeight - 250) + 5,
         left: rect.left,
-        width: rect.width
+        width: rect.width,
       });
-    }
+    };
+    if (open) place();
   }, [open]);
   
   // Handle dropdown toggling
@@ -244,9 +245,10 @@ const PortalDropdownSelect: React.FC<SearchableSelectProps> = ({
       <div 
         className={`fixed z-[9999] rounded-md shadow-lg overflow-auto portal-dropdown ${styles.dropdown}`}
         style={{
-          width: dropdownPosition.width,
-          top: dropdownPosition.top,
-          left: dropdownPosition.left,
+          width: dropdownPosition?.width ?? 0,
+          top: dropdownPosition?.top ?? 0,
+          left: dropdownPosition?.left ?? 0,
+          visibility: dropdownPosition ? 'visible' : 'hidden',
           maxHeight: '250px',
         }}
         onMouseDown={(e) => e.stopPropagation()}

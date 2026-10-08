@@ -103,13 +103,23 @@ export async function upsertUiClient(
 }
 
 export async function upsertUiSurface(
-  row: UiSurfaceUpsert,
+  row: Omit<UiSurfaceUpsert, "organization_id">,
 ): Promise<UiSurfaceRow> {
-  const { data, error } = await sb()
+  const client = sb();
+  const { data, error } = await client
     .schema("ui").from("ui_surface")
     // name is the primary key and covers surfaces in Trash: saving a name an
     // archived surface holds revives it.
-    .upsert({ ...row, deleted_at: null }, { onConflict: "name" })
+    .upsert(
+      {
+        ...row,
+        // org-fallback-deliberate: the surface registry is the same platform-wide
+        //   tool-registry vocabulary as ui_client above
+        organization_id: await resolveSystemOrgId(client),
+        deleted_at: null,
+      },
+      { onConflict: "name" },
+    )
     .select()
     .single();
   if (error) throw error;

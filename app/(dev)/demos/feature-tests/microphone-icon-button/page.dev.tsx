@@ -32,7 +32,7 @@ function ResultLog({ items }: { items: string[] }) {
 
 function MicIconVariants() {
   const [results, setResults] = useState<Record<MicVariant, string[]>>({
-    'icon-only': [], 'inline-expand': [], 'modal-controls': [],
+    'icon-only': [], 'inline-expand': [], 'modal-controls': [], control: [],
   });
 
   const append = (variant: MicVariant, text: string) =>

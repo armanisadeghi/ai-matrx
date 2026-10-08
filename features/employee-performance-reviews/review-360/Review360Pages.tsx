@@ -3,7 +3,7 @@
 // The three 360 review screens under /hr/performance: the HR manager's list, one review (both
 // halves side by side once both are in), and a respondent's own half in the existing editor.
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { CalendarPlus, ClipboardCheck, Send, Share2 } from "lucide-react";
@@ -14,7 +14,7 @@ import PerformanceReviewApp from "@/features/employee-performance-reviews/compon
 import { createBlankReview, type Review } from "@/features/employee-performance-reviews/schema";
 import type { ReviewPersistence } from "@/features/employee-performance-reviews/use-reviews";
 import { useHrContext } from "@/features/hr/shared/useHrContext";
-import { googleCalendarUrl } from "@/lib/calendar/eventLinks";
+import { googleCalendarUrl, icsContent, icsFileName } from "@/lib/calendar/eventLinks";
 import { toast } from "@/lib/toast";
 
 import { TRACK_TITLE } from "../review-360.typed-table";
@@ -26,10 +26,11 @@ import { ReviewMeetingActions } from "./ReviewMeetingActions";
 import {
   listReviews360,
   readReview360,
+  readReview360Knobs,
   readTrack,
   saveTrack,
   shareReview360,
-  type Review360Row,
+  type Review360ListRow,
   type TrackView,
 } from "./service";
 
@@ -61,7 +62,7 @@ export function Review360ListPage() {
 
 function ReviewList({ org }: { org: string }) {
   const client = useRecordsClient();
-  const [rows, setRows] = useState<Review360Row[] | null>(null);
+  const [rows, setRows] = useState<Review360ListRow[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   useEffect(() => {
     let live = true;
@@ -96,10 +97,10 @@ function ReviewList({ org }: { org: string }) {
                 {r.employee_name ?? "360 review"}
               </Link>
             </td>
-            <td className="px-2 py-1.5"><Badge>{r.status ?? "collecting"}</Badge></td>
+            <td className="px-2 py-1.5"><Badge>{r.status === "shared" ? "shared" : r.selfIn && r.managerIn ? "ready" : "collecting"}</Badge></td>
             <td className="px-2 py-1.5">{day(r.due_on)}</td>
-            <td className="px-2 py-1.5">{r.self_submitted_at ? day(r.self_submitted_at) : "Waiting"}</td>
-            <td className="px-2 py-1.5">{r.manager_submitted_at ? day(r.manager_submitted_at) : "Waiting"}</td>
+            <td className="px-2 py-1.5">{r.selfIn ? day(r.selfIn) : "Waiting"}</td>
+            <td className="px-2 py-1.5">{r.managerIn ? day(r.managerIn) : "Waiting"}</td>
           </tr>
         ))}
       </tbody>
@@ -185,7 +186,7 @@ function ReviewDetail({ reviewId, org }: { reviewId: string; org: string }) {
     <div className="space-y-3 p-3">
       <div className="flex items-center gap-2">
         <h1 className="text-base font-semibold">{String(doc.employee_name ?? "360 review")}</h1>
-        <Badge>{String(doc.status ?? "collecting")}</Badge>
+        <Badge>{doc.status === "shared" ? "shared" : both ? "ready" : "collecting"}</Badge>
         <span className="text-xs text-muted-foreground">Due {day(doc.due_on)}</span>
         <div className="flex-1" />
         {hr ? (
@@ -227,7 +228,17 @@ function Respond({ trackId, org }: { trackId: string; org: string }) {
   const [track, setTrack] = useState<TrackView | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [submitted, setSubmitted] = useState(false);
+  const submittedRef = useRef(false);
+  useEffect(() => {
+    submittedRef.current = submitted;
+  }, [submitted]);
   const [latest, setLatest] = useState<string>("");
+  const [leadDays, setLeadDays] = useState<number | null>(null);
+  const userId = useAppSelector(selectUserId);
+  useEffect(() => {
+    if (!userId) return;
+    void readReview360Knobs(org, userId).then((k) => setLeadDays(k.ok ? k.data.reminderLeadDays : null));
+  }, [org, userId]);
 
   useEffect(() => {
     let live = true;
@@ -247,10 +258,13 @@ function Respond({ trackId, org }: { trackId: string; org: string }) {
     load: async () => {
       const r = await readTrack(client, trackId);
       if (!r.ok) throw new Error(r.message);
+      submittedRef.current = Boolean(r.data.submittedAt);
       const parsed = parseReview(r.data.document);
       return parsed ? [parsed] : [];
     },
     save: async (reviews) => {
+      // A submitted half is read-only: nothing is saved (the store refuses it too).
+      if (submittedRef.current) return;
       const doc = JSON.stringify(reviews[0] ?? createBlankReview());
       setLatest(doc);
       const r = await saveTrack(client, org, trackId, doc, false);
@@ -268,16 +282,20 @@ function Respond({ trackId, org }: { trackId: string; org: string }) {
       toast.success("Review submitted");
     } else toast.error(r.message);
   };
-  const due = track.dueOn ? `${track.dueOn}T16:00:00.000Z` : null;
-  const calendar = due
-    ? googleCalendarUrl({
+  const due = track.dueAt;
+  const calendarEvent = due
+    ? {
         uid: `review-360-${trackId}`,
         title: TRACK_TITLE,
         start: due,
         end: new Date(Date.parse(due) + 30 * 60_000).toISOString(),
         url: typeof window === "undefined" ? undefined : window.location.href,
-      })
+        // The reminder-lead-days knob: the calendar reminds her that many days before it is due.
+        alarmMinutesBefore: leadDays === null ? null : leadDays * 24 * 60,
+      }
     : null;
+  const calendar = calendarEvent ? googleCalendarUrl(calendarEvent) : null;
+  const icsHref = calendarEvent ? `data:text/calendar;charset=utf-8,${encodeURIComponent(icsContent(calendarEvent))}` : null;
 
   return (
     <div className="h-full overflow-hidden pt-[var(--shell-header-h)]">
@@ -285,11 +303,17 @@ function Respond({ trackId, org }: { trackId: string; org: string }) {
         showHero={false}
         single={{
           persistence,
+          readOnly: submitted,
           toolbarEnd: (
             <>
               {calendar ? (
                 <Button variant="quiet" icon={<CalendarPlus />} asChild>
                   <a href={calendar} target="_blank" rel="noopener noreferrer">Add to calendar</a>
+                </Button>
+              ) : null}
+              {icsHref ? (
+                <Button variant="quiet" asChild>
+                  <a href={icsHref} download={icsFileName(TRACK_TITLE)}>.ics with reminder</a>
                 </Button>
               ) : null}
               <Button variant="primary" icon={<Send />} disabled={submitted} onClick={() => void submit()}>

@@ -26,6 +26,8 @@ import {
   Copy,
 } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
+import { useEnsureTaskLoaded } from "@/features/tasks/hooks/useEnsureTaskLoaded";
+import { RegionSkeleton } from "@ai-matrx/design-system/controls";
 import { selectUser } from "@/lib/redux/slices/userSlice";
 import {
   createSubtaskThunk,
@@ -37,7 +39,7 @@ import { invalidateAndRefetchFullContext } from "@/features/agent-context/redux/
 import * as taskService from "@/features/tasks/services/taskService";
 import { Input, } from "@ai-matrx/design-system";
 import { ProInput } from "@/components/official/ProInput";
-import { ProTextarea } from "@/components/official/ProTextarea";
+import { TaskDescriptionEditor } from "@/features/tasks/components/editor/TaskDescriptionEditor";
 import { Button } from "@/components/ui/button";
 import {
   Select,
@@ -133,6 +135,9 @@ export default function TaskDetailsPanel({
     await dispatch(invalidateAndRefetchFullContext());
   };
 
+  // The nav tree stores a task thin (no description); the box opens only on the full text.
+  const { isFullData } = useEnsureTaskLoaded(task.id);
+
   const [title, setTitle] = useState(task.title || "");
   const [description, setDescription] = useState(task.description || "");
   const [dueDate, setDueDate] = useState(task.dueDate || "");
@@ -168,7 +173,7 @@ export default function TaskDetailsPanel({
     setDueDate(task.dueDate || "");
     setPriority(task.priority || null);
     setIsDirty(false); // Reset dirty state when task updates
-  }, [task.id, task.title, task.description, task.dueDate, task.priority]);
+  }, [task.id, task.title, task.description, task.dueDate, task.priority, isFullData]);
 
   const handleTitleChange = (newTitle: string) => {
     setTitle(newTitle);
@@ -814,18 +819,16 @@ export default function TaskDetailsPanel({
               )}
             </div>
           ) : (
-            <ProTextarea
-              data-kind-source="explicit"
-              value={description}
-              onChange={(e) => handleDescriptionChange(e.target.value)}
-              placeholder="Add a description… Markdown is supported"
-              autoGrow
-              minHeight={100}
-              maxHeight={280}
-              showCopyButton
-              className="text-sm resize-y min-h-[100px]"
-              wrapperClassName="w-full"
-            />
+            isFullData ? (
+              <TaskDescriptionEditor
+                value={description}
+                onChange={handleDescriptionChange}
+                compact
+                bodyClassName="h-64"
+              />
+            ) : (
+              <RegionSkeleton className="h-64" />
+            )
           )}
         </div>
 

@@ -50,6 +50,7 @@ import type {
   ScopeTypeNode,
 } from "@/features/scopes/types";
 import { scopesService } from "@/features/scopes/service/scopesService";
+import { scopeStore } from "@/features/scopes/service/scopeStore";
 import { supabase } from "@/utils/supabase/client";
 
 jest.mock("@/utils/auth/getUserId", () => ({
@@ -64,27 +65,27 @@ jest.mock("@/utils/supabase/client", () => ({
 jest.mock("@/features/scopes/service/scopesService", () => ({
   scopesService: {
     getScopeTree: jest.fn(),
+    listContextItems: jest.fn(),
+  },
+}));
+
+// SCOPES-WRITE-THROUGH: the writes go through the one store-backed writer (scopeStore).
+jest.mock("@/features/scopes/service/scopeStore", () => ({
+  scopeStore: {
     createScopeType: jest.fn(),
     updateScopeType: jest.fn(),
     deleteScopeType: jest.fn(),
     createScope: jest.fn(),
     updateScope: jest.fn(),
     deleteScope: jest.fn(),
-    listContextItems: jest.fn(),
     createContextItem: jest.fn(),
     updateContextItem: jest.fn(),
     deleteContextItem: jest.fn(),
   },
 }));
 
-// SCOPES-WRITE-THROUGH: the writes moved to the one store-backed writer (scopeStore); its doors are
-// stood in by the same mocked methods, so every assertion below reads the write the thunk made.
-jest.mock("@/features/scopes/service/scopeStore", () => {
-  const { scopesService } = jest.requireMock("@/features/scopes/service/scopesService");
-  return { scopeStore: scopesService };
-});
-
 const svc = jest.mocked(scopesService);
+const writer = jest.mocked(scopeStore);
 // A plain mock: `jest.mocked(supabase.rpc)` instantiates the whole generated
 // RPC overload set (TS2589).
 const rpc = supabase.rpc as unknown as jest.Mock;
@@ -192,7 +193,7 @@ describe("scope-type writes patch the tree in place", () => {
   it("create: the new type is in its organization's list, resolvable by slug, description intact", async () => {
     const store = await bootedStore([]);
     const created = typeNode();
-    svc.createScopeType.mockResolvedValue({ ok: true, data: created });
+    writer.createScopeType.mockResolvedValue({ ok: true, data: created });
 
     const res = await store.dispatch(
       createScopeType({
@@ -212,7 +213,7 @@ describe("scope-type writes patch the tree in place", () => {
   it("rename: the type's label and slug change and its scopes stay", async () => {
     const scope = scopeNode();
     const store = await bootedStore([typeNode({ scopes: [scope] })]);
-    svc.updateScopeType.mockResolvedValue({
+    writer.updateScopeType.mockResolvedValue({
       ok: true,
       data: typeNode({ label_plural: "Patients", slug: "patients", scopes: [] }),
     });
@@ -229,18 +230,18 @@ describe("scope-type writes patch the tree in place", () => {
 
   it("archive: given only the type id, the type leaves its organization's list", async () => {
     const store = await bootedStore([typeNode()]);
-    svc.deleteScopeType.mockResolvedValue({ ok: true, data: { id: typeNode().id } });
+    writer.deleteScopeType.mockResolvedValue({ ok: true, data: { id: typeNode().id } });
 
     await store.dispatch(deleteScopeType({ type_id: typeNode().id }));
 
-    expect(svc.deleteScopeType).toHaveBeenCalledWith(typeNode().id);
+    expect(writer.deleteScopeType).toHaveBeenCalledWith(typeNode().id);
     expect(selectScopeTypesByOrg(state(store), ORG)).toEqual([]);
   });
 
   it("a refused write leaves the tree exactly as it was", async () => {
     const store = await bootedStore([typeNode()]);
     const before = state(store).scopesTree.organizations;
-    svc.deleteScopeType.mockResolvedValue({
+    writer.deleteScopeType.mockResolvedValue({
       ok: false,
       error: { code: "forbidden_org", message: "organization admin required" },
     });
@@ -256,7 +257,7 @@ describe("scope writes patch the tree in place", () => {
   it("create: the new scope is under its type with its description and slug", async () => {
     const store = await bootedStore([typeNode()]);
     const created = scopeNode();
-    svc.createScope.mockResolvedValue({ ok: true, data: created });
+    writer.createScope.mockResolvedValue({ ok: true, data: created });
 
     await store.dispatch(
       createScope({
@@ -276,7 +277,7 @@ describe("scope writes patch the tree in place", () => {
 
   it("rename: the scope's name changes in place", async () => {
     const store = await bootedStore([typeNode({ scopes: [scopeNode()] })]);
-    svc.updateScope.mockResolvedValue({
+    writer.updateScope.mockResolvedValue({
       ok: true,
       data: scopeNode({ name: "Harbor Dental Partners" }),
     });
@@ -292,11 +293,11 @@ describe("scope writes patch the tree in place", () => {
 
   it("archive: given only the scope id, the scope leaves its type", async () => {
     const store = await bootedStore([typeNode({ scopes: [scopeNode()] })]);
-    svc.deleteScope.mockResolvedValue({ ok: true, data: { id: scopeNode().id } });
+    writer.deleteScope.mockResolvedValue({ ok: true, data: { id: scopeNode().id } });
 
     await store.dispatch(deleteScope({ scope_id: scopeNode().id }));
 
-    expect(svc.deleteScope).toHaveBeenCalledWith(scopeNode().id);
+    expect(writer.deleteScope).toHaveBeenCalledWith(scopeNode().id);
     expect(selectScopesByType(state(store), typeNode().id)).toEqual([]);
   });
 });
@@ -320,7 +321,7 @@ describe("context-item console writes go through scopesService and update the ON
   it("create", async () => {
     const store = await storeWithLoadedCatalogs([]);
     const created = contextItem();
-    svc.createContextItem.mockResolvedValue({ ok: true, data: created });
+    writer.createContextItem.mockResolvedValue({ ok: true, data: created });
 
     await store
       .dispatch(
@@ -332,14 +333,14 @@ describe("context-item console writes go through scopesService and update the ON
       )
       .unwrap();
 
-    expect(svc.createContextItem).toHaveBeenCalledTimes(1);
+    expect(writer.createContextItem).toHaveBeenCalledTimes(1);
     expect(selectItemsByType(state(store), typeNode().id).map((i) => i.id)).toEqual([created.id]);
     expect(treeItems(store).map((i) => i.id)).toEqual([created.id]);
   });
 
   it("rename", async () => {
     const store = await storeWithLoadedCatalogs([contextItem()]);
-    svc.updateContextItem.mockResolvedValue({
+    writer.updateContextItem.mockResolvedValue({
       ok: true,
       data: contextItem({ display_name: "Tone of voice" }),
     });
@@ -348,7 +349,7 @@ describe("context-item console writes go through scopesService and update the ON
       .dispatch(updateContextItem({ id: contextItem().id, display_name: "Tone of voice" }))
       .unwrap();
 
-    expect(svc.updateContextItem).toHaveBeenCalledWith({
+    expect(writer.updateContextItem).toHaveBeenCalledWith({
       item_id: contextItem().id,
       display_name: "Tone of voice",
     });
@@ -358,18 +359,18 @@ describe("context-item console writes go through scopesService and update the ON
 
   it("archive", async () => {
     const store = await storeWithLoadedCatalogs([contextItem()]);
-    svc.deleteContextItem.mockResolvedValue({ ok: true, data: { id: contextItem().id } });
+    writer.deleteContextItem.mockResolvedValue({ ok: true, data: { id: contextItem().id } });
 
     await store.dispatch(deleteContextItem(contextItem().id)).unwrap();
 
-    expect(svc.deleteContextItem).toHaveBeenCalledWith(contextItem().id);
+    expect(writer.deleteContextItem).toHaveBeenCalledWith(contextItem().id);
     expect(selectItemsByType(state(store), typeNode().id)).toEqual([]);
     expect(treeItems(store)).toEqual([]);
   });
 
   it("a refused edit rejects with the service's message and leaves the catalog unchanged", async () => {
     const store = await storeWithLoadedCatalogs([contextItem()]);
-    svc.updateContextItem.mockResolvedValue({
+    writer.updateContextItem.mockResolvedValue({
       ok: false,
       error: { code: "forbidden_org", message: "organization admin required" },
     });

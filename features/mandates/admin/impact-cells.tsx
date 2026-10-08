@@ -200,7 +200,7 @@ export function ImpactGradeCell({
           type="button"
           onClick={(event) => event.stopPropagation()}
           aria-label={`What changed for ${mandateKey}`}
-          className="inline-flex flex-wrap items-center gap-1 rounded text-left focus:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+          className="inline-flex flex-nowrap items-center gap-1 whitespace-nowrap rounded text-left focus:outline-none focus-visible:ring-1 focus-visible:ring-ring"
         >
           <Badge
             variant="outline"
@@ -283,7 +283,7 @@ export function ImpactBlockerCell({
   const eligibility = batchEligibilityOf(verdict);
   return (
     <div
-      className="flex flex-wrap items-center gap-1"
+      className="flex flex-nowrap items-center gap-1 whitespace-nowrap"
       onClick={(event) => event.stopPropagation()}
     >
       <Badge

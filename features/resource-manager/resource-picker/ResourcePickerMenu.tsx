@@ -40,7 +40,7 @@ import {
   resourcePickerItemsAsTiles,
   type ResourcePickerViewId,
 } from "./resource-picker-menu-items";
-import { useRunControlCounts } from "./useRunControlCounts";
+import { useRunControlCounts } from "@ai-matrx/chat/agents/components/inputs/smart-input/composer/useRunControlCounts";
 import type { Resource } from "@ai-matrx/chat/agents/resources/types";
 import { noteResourceData, projectResourceData, taskResourceData } from "./resource-adapters";
 import { useKnowledgeAttachSearch } from "./useKnowledgeAttachSearch";

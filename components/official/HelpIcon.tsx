@@ -1,7 +1,7 @@
 // New usages: a label's one-sentence definition belongs in `components/official/InfoHint.tsx` (reachable by mouse, keyboard and touch); this icon opens on mouse hover only.
 import { useClipboard } from "@ai-matrx/kit/clipboard";
 import { toast } from "@/lib/toast";
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useLayoutEffect, useRef } from 'react';
 import { Button } from "@ai-matrx/design-system/controls";
 import { InfoIcon, HelpCircleIcon, CopyIcon, CheckIcon, CircleDot } from 'lucide-react';
 import { createPortal } from 'react-dom';
@@ -109,7 +109,9 @@ const HelpIcon: React.FC<HelpIconProps> = ({
     }
   };
   
-  useEffect(() => {
+  // A LAYOUT effect: the card is measured and placed before the browser paints it. As a plain
+  // effect it painted at the window's top-left corner first, then jumped to the icon (2026-10-08).
+  useLayoutEffect(() => {
     if (isVisible) {
       updatePosition();
       window.addEventListener('scroll', updatePosition);

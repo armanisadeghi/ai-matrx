@@ -123,6 +123,8 @@ export default function MapCanvas({
       <TileLayer
         attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+        // CORS tiles (OSM serves them so) keep a drawn copy readable: print and Copy image.
+        crossOrigin="anonymous"
       />
       {markers.map((m, i) => (
         <Marker key={i} position={[m.lat, m.lng]} icon={m.bubble ? bubbleIcon(m.bubble) : PIN}>

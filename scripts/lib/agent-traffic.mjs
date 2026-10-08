@@ -48,7 +48,8 @@ export function agentTrafficStorageState(tool, origin) {
         expires: -1,
         httpOnly: false,
         secure: protocol === "https:",
-        sameSite: "Lax",
+        // JSDoc literal so a TS reader sees Playwright's "Lax" | "None" | "Strict", not string.
+        sameSite: /** @type {"Lax"} */ ("Lax"),
       },
     ],
     origins: [],

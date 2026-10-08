@@ -7,6 +7,7 @@ const row: CrossSiteRankRow = {
   access_level: "admin",
   best_position: 2,
   brand_id: "brand-1",
+  custom_fields: null,
   created_at: "2026-08-01T00:00:00Z",
   created_by: "user-1",
   device: "desktop",

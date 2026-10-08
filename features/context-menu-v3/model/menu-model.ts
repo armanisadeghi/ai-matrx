@@ -55,7 +55,6 @@ import {
   Headphones,
   AudioLines,
   RotateCcw,
-  type LucideIcon,
 } from "lucide-react";
 import type { IconComponentType } from "@ai-matrx/icons";
 import { PLACEMENT_TYPES } from "@/features/agent-shortcuts/constants";
@@ -215,8 +214,8 @@ export interface MenuSection {
   group: MenuGroup;
   /** Muted heading rendered above the section (surface sections). */
   label?: string;
-  /** Icon for the fold a layout may collapse this section into. */
-  icon?: LucideIcon;
+  /** Icon for the fold a layout may collapse this section into (any className-drawn icon, like nodes). */
+  icon?: IconComponentType;
   /** Classic rendering: no separator between this and the previous section. */
   joinPrevious?: boolean;
   /** The clicked target's section — see `ContextMenuExtraSection.primary`. */

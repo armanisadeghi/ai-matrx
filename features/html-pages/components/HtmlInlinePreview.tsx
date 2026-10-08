@@ -13,10 +13,8 @@ import {
   Printer,
 } from "lucide-react";
 import { printPublishedPage } from "@/features/canvas/output/printPage";
-import { useClipboard } from "@ai-matrx/kit/clipboard";
-import { downloadFile } from "@ai-matrx/kit/download";
+import { copyHtmlSource, downloadHtmlSource } from "@/features/html-pages/output/htmlSourceOutput";
 import { Button } from "@ai-matrx/design-system/controls";
-import { toast } from "@/lib/toast";
 import { cn } from "@/styles/themes/utils";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectUser } from "@/lib/redux/selectors/userSelectors";
@@ -188,10 +186,6 @@ const HtmlInlinePreview: React.FC<HtmlInlinePreviewProps> = ({
   const [showPageErrors, setShowPageErrors] = useState(false);
   const frameRef = useRef<HTMLIFrameElement>(null);
   const chrome = useHtmlPreviewChrome();
-  const { copyText } = useClipboard({
-    notify: (message, kind) =>
-      kind === "error" ? toast.error(message) : toast.success(message),
-  });
 
   const analysis =
     language === "html"
@@ -305,8 +299,6 @@ const HtmlInlinePreview: React.FC<HtmlInlinePreviewProps> = ({
     );
   };
 
-  const fileName = `${title.replace(/[^\w\- ]+/g, "").trim().replace(/\s+/g, "-").toLowerCase() || "page"}.html`;
-
   const header = (
     <div
       className="flex min-w-0 items-center gap-1.5 border-b border-border bg-muted/40 py-0.5 pl-3 pr-1"
@@ -358,14 +350,14 @@ const HtmlInlinePreview: React.FC<HtmlInlinePreviewProps> = ({
         <Button
           variant="quiet"
           icon={<Copy />}
-          onClick={() => void copyText(shownHtml ?? code, "Copied HTML")}
+          onClick={() => void copyHtmlSource(shownHtml ?? code)}
           title="Copy HTML"
           aria-label="Copy HTML"
         />
         <Button
           variant="quiet"
           icon={<Download />}
-          onClick={() => downloadFile(fileName, shownHtml ?? code, "text/html")}
+          onClick={() => downloadHtmlSource(title, shownHtml ?? code)}
           title="Download .html"
           aria-label="Download .html"
         />

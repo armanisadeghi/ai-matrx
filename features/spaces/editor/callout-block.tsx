@@ -17,6 +17,7 @@ import { createRoot, type Root } from "react-dom/client";
 import type { SpaceMedia } from "../contract";
 import { IconPicker } from "../page/IconPicker";
 import { isEmojiText } from "../page/SpaceIcon";
+import { ignoresIconSlotMutation } from "./icon-slot";
 import { SPACE_ICONS } from "../icons-registry";
 
 const OPEN_PICKER = "spaces:callout-icon";
@@ -72,6 +73,10 @@ export const CalloutBlock = createBlockSpec(
       return {
         dom,
         contentDOM: text,
+        // The icon slot is React's, not ProseMirror's: with a contentDOM, ProseMirror reads back (and redraws)
+        // every mutation outside it, and the redraw mounts a fresh React root that mutates the slot again --
+        // an endless loop that grew a tab to 10 GB the moment a callout was inserted.
+        ignoreMutation: (mutation) => ignoresIconSlotMutation(dom, mutation),
         destroy: () => {
           const r = root;
           root = null;

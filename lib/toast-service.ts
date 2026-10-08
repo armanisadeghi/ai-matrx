@@ -3,7 +3,7 @@
  *
  * Census taken 2026-09-11 (FIX-Q12), by importing file:
  *   @/lib/toast              1281   ← canonical; every new call site uses this
- *   @/components/ui/use-toast   97   ← the Radix renderer (components/ui/toaster)
+ *   @/components/ui/use-toast   97   ← now an adapter onto @/lib/toast (one sonner stack, 2026-10-08)
  *   @/lib/toast-service         38   ← THIS module
  *   @/hooks/use-toast            1   ← deleted: byte-identical duplicate of the
  *                                     Radix hook, folded into components/ui

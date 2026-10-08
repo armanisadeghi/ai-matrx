@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useRef, forwardRef } from "react";
+import React, { useState, useEffect, useLayoutEffect, useRef, forwardRef } from "react";
 import { createPortal } from "react-dom";
 import { Check, ChevronDown, X } from "lucide-react";
 import { AdvancedTooltip } from "./Tooltip";
@@ -34,13 +34,13 @@ const SelectWithIconDisplay = forwardRef<HTMLElement, SelectWithIconDisplayProps
 }, ref) => {
   const [isOpen, setIsOpen] = useState(false);
   const [internalSelectedItems, setInternalSelectedItems] = useState<Item[]>([]);
-  const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0, width: 0 });
+  const [dropdownPosition, setDropdownPosition] = useState<{ top: number; left: number; width: number } | null>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   const selectedItems = value !== undefined ? value : internalSelectedItems;
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     const updatePosition = () => {
       if (triggerRef.current && isOpen) {
         const rect = triggerRef.current.getBoundingClientRect();
@@ -115,9 +115,10 @@ const SelectWithIconDisplay = forwardRef<HTMLElement, SelectWithIconDisplayProps
             ref={dropdownRef}
             style={{
               position: 'absolute',
-              top: `${dropdownPosition.top}px`,
-              left: `${dropdownPosition.left}px`,
-              width: `${dropdownPosition.width}px`,
+              top: `${dropdownPosition?.top ?? 0}px`,
+              left: `${dropdownPosition?.left ?? 0}px`,
+              width: `${dropdownPosition?.width ?? 0}px`,
+              visibility: dropdownPosition ? 'visible' : 'hidden',
             }}
             className={`mt-1 bg-elevation1 border border-elevation3 rounded-md 
                        shadow-lg ${maxHeight} overflow-auto z-[9999]`}

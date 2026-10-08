@@ -35,14 +35,9 @@ import {
   resolveModelControls,
   supportsTools,
 } from "@ai-matrx/chat/agents/hooks/useModelControls";
-import { fetchAvailableTools } from "@ai-matrx/chat/agents/redux/tools/tools.thunks";
-import {
-  selectAllTools,
-  selectToolsError,
-  selectToolsStatus,
-} from "@ai-matrx/chat/agents/redux/tools/tools.selectors";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { copyToClipboard } from "@/lib/clipboard/copy";
+import { loadAvailableTools, selectAllTools, selectToolsError, selectToolsStatus, useToolCatalog } from "@ai-matrx/chat/agents/identity/tool-catalog";
 
 /** The authenticated AI Dream MCP resource server, not the outbound MCP catalog. */
 const AI_DREAM_MCP_URL = "https://server.app.matrxserver.com/api/mcp";
@@ -66,9 +61,9 @@ export function GoogleAgentToolsSection() {
 function GoogleAgentToolsSectionContent() {
   const dispatch = useAppDispatch();
   const store = useAppStore();
-  const tools = useAppSelector(selectAllTools);
-  const toolsStatus = useAppSelector(selectToolsStatus);
-  const toolsError = useAppSelector(selectToolsError);
+  const tools = useToolCatalog(selectAllTools);
+  const toolsStatus = useToolCatalog(selectToolsStatus);
+  const toolsError = useToolCatalog(selectToolsError);
   const [selectedAgentId, setSelectedAgentId] = useState<string | null>(null);
   const [agentLoadAttempt, setAgentLoadAttempt] = useState(0);
   const [agentLoadError, setAgentLoadError] = useState<string | null>(null);
@@ -114,7 +109,7 @@ function GoogleAgentToolsSectionContent() {
   );
 
   useEffect(() => {
-    void dispatch(fetchAvailableTools());
+    void loadAvailableTools();
   }, [dispatch]);
 
   useEffect(() => {
@@ -210,7 +205,7 @@ function GoogleAgentToolsSectionContent() {
           <Button
             icon={<RefreshCw />}
             variant="outline"
-            onClick={() => void dispatch(fetchAvailableTools())}
+            onClick={() => void loadAvailableTools()}
           > Retry
           </Button>
           <ErrorAlchemyMenu error={toolsError} />

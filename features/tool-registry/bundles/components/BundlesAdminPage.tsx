@@ -51,7 +51,7 @@ import {
 } from "@/features/tool-registry/doors";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { EntityDoorControls } from "@/components/official/entity-ref/EntityDoorControls";
-import { AiToolRef } from "@/components/official/entity-ref/AiIdentityRef";
+import { AiToolRef } from "@ai-matrx/chat/agents/components/identity-refs/AiIdentityRef";
 import { SurfaceRuntimeProvider } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import { ADMIN_BUNDLES_SURFACE_NAME } from "@/features/surfaces/manifests/admin-bundles.manifest";
 import {

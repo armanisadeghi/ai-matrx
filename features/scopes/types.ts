@@ -26,13 +26,21 @@ export {
 //
 // We never re-declare table shapes. The Supabase-generated types are
 // the source of truth. Aliases here are for ergonomic imports.
+//
+// SCOPES-W3 (applied 2026-10-07) moved the four old scope tables from
+// `context` into `deprecated` (ALTER TABLE … SET SCHEMA — columns unchanged).
+// Scopes now live in the record store; `service/storeScopeAdapter.ts` maps
+// store rows onto these legacy row shapes, which the generator now emits
+// under `deprecated`. These four aliases go when the module reads store
+// shapes natively.
 
-export type ScopeTypeRow = Database["context"]["Tables"]["scope_types"]["Row"];
-export type ScopeRow = Database["context"]["Tables"]["scopes"]["Row"];
+export type ScopeTypeRow =
+  Database["deprecated"]["Tables"]["scope_types"]["Row"];
+export type ScopeRow = Database["deprecated"]["Tables"]["scopes"]["Row"];
 export type ContextItemRow =
-  Database["context"]["Tables"]["context_items"]["Row"];
+  Database["deprecated"]["Tables"]["context_items"]["Row"];
 export type ContextItemValueRow =
-  Database["context"]["Tables"]["context_item_values"]["Row"];
+  Database["deprecated"]["Tables"]["context_item_values"]["Row"];
 // `ctx_scope_assignments` is DEPRECATED — scope tags now live in
 // `platform.associations` (reached via scopesService / associationsService).
 // The table is slated for drop, so its row vanishes from the generated types

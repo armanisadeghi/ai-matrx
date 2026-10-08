@@ -7,7 +7,7 @@ import type {
   FieldDiffProps,
   EnrichmentContext,
 } from "@ai-matrx/diff/react";
-import { AiToolRef } from "@/components/official/entity-ref/AiIdentityRef";
+import { AiToolRef } from "@ai-matrx/chat/agents/components/identity-refs/AiIdentityRef";
 
 function resolveTool(id: string, enrichment?: EnrichmentContext): string {
   return enrichment?.resolveToolId(id) ?? id;

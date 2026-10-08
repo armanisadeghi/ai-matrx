@@ -20,9 +20,49 @@ import {
   renderedRecordFor,
   viewerColorScheme,
 } from "@/features/html-pages/capture/renderedCapture";
+import { canvasArtifactService } from "@/features/canvas/services/canvasArtifactService";
+import { chatRouteSurfaceKey } from "@ai-matrx/chat/agents/components/chat/begin-fresh-chat";
 import { getStore } from "@/lib/redux/store-singleton";
 import { toast } from "@/lib/toast";
 import { publishedPageInElement, resolvePrintablePageUrl } from "./publishedPage";
+
+interface FocusState {
+  conversationFocus?: { bySurface?: Record<string, { input?: string | null } | undefined> };
+}
+
+/** The conversation a chat route is focused on right now (the one chat surface that has one), or null. */
+export function focusedChatConversationId(state: FocusState): string | null {
+  const prefix = chatRouteSurfaceKey("");
+  const found = new Set<string>();
+  for (const [key, entry] of Object.entries(state.conversationFocus?.bySurface ?? {})) {
+    if (key.startsWith(prefix) && entry?.input) found.add(entry.input);
+  }
+  return found.size === 1 ? [...found][0] : null;
+}
+
+/**
+ * The chat an attach goes to: the one the canvas item was made in (its own
+ * metadata, else `canvas_items.conversation_id`), else the chat the person is
+ * looking at. Null only when there is truly no chat.
+ */
+export async function resolveAttachConversationId(input: {
+  metadataConversationId: string | null;
+  canvasItemId: string | null;
+  focused: string | null;
+  lookupItem?: (id: string) => Promise<{ conversation_id: string | null } | null>;
+}): Promise<string | null> {
+  if (input.metadataConversationId) return input.metadataConversationId;
+  if (input.canvasItemId) {
+    const lookup = input.lookupItem ?? ((id: string) => canvasArtifactService.getById(id));
+    try {
+      const row = await lookup(input.canvasItemId);
+      if (row?.conversation_id) return row.conversation_id;
+    } catch (error) {
+      console.error("[canvas] the item's conversation could not be read", error);
+    }
+  }
+  return input.focused;
+}
 
 /**
  * The canvas HTML item's page, by the SAME lookup print uses (`publishedPage.ts`
@@ -58,13 +98,13 @@ export function canvasHtmlItem(
 export function canvasAttachOptions(request: CanvasOutputRequest): readonly CanvasMenuItem[] {
   const item = canvasHtmlItem(request);
   if (!item) return [];
-  const { conversationId } = item;
   if (!item.saved) {
     return [{ id: "output:attach", label: "Attach to chat — publishing the page…", disabled: true, onSelect: () => undefined }];
   }
-  if (!conversationId) {
-    return [{ id: "output:attach", label: "Attach to chat — open it from a chat", disabled: true, onSelect: () => undefined }];
-  }
+  const focused = (() => {
+    const store = getStore();
+    return store ? focusedChatConversationId(store.getState() as unknown as FocusState) : null;
+  })();
   return availableRenderedArtifactRepresentations().map((option) => ({
     id: `output:attach:${option.value}`,
     label: `Attach ${option.label.toLowerCase()} to chat`,
@@ -72,6 +112,15 @@ export function canvasAttachOptions(request: CanvasOutputRequest): readonly Canv
       const store = getStore();
       if (!store) return;
       void (async () => {
+      const conversationId = await resolveAttachConversationId({
+        metadataConversationId: item.conversationId,
+        canvasItemId: item.itemRecord?.recordId ?? null,
+        focused,
+      });
+      if (!conversationId) {
+        toast.error("There is no chat to attach to. Open a chat first.");
+        return;
+      }
       const pageRecord = await item.resolveRecord();
       // Code/text attach the canvas item itself (its version chain); the
       // screenshot captures the page published for the version shown.

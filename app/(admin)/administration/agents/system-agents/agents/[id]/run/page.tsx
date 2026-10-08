@@ -3,6 +3,8 @@ import { AgentRunnerPage } from "@ai-matrx/chat/agents/components/run/AgentRunne
 import { AgentRunHeader } from "@ai-matrx/chat/agents/components/run/AgentRunHeader";
 import PageHeader from "@/features/shell/components/header/PageHeader";
 import { AccessGate } from "@/features/access-gate/components/AccessGate";
+import { ConversationSpendButton } from "@/features/admin/agent-spend/ConversationSpendButton";
+import { Suspense } from "react";
 
 export const metadata = { title: "System Agent Runner | Admin" };
 
@@ -35,14 +37,22 @@ export default async function AdminSystemAgentRunPage({
   return (
     <>
       <PageHeader>
-        <AgentRunHeader
-          agentId={id}
-          agentName={agent.name}
-          surfaceKey={surfaceKey}
-          backHref={ADMIN_BASE_PATH}
-          basePath={ADMIN_BASE_PATH}
-          currentPath={`${ADMIN_BASE_PATH}/[id]/run`}
-        />
+        {/* The open conversation's cost rides the header row's end (no new row). */}
+        <div className="flex w-full min-w-0 items-center gap-1">
+          <div className="min-w-0 flex-1">
+            <AgentRunHeader
+              agentId={id}
+              agentName={agent.name}
+              surfaceKey={surfaceKey}
+              backHref={ADMIN_BASE_PATH}
+              basePath={ADMIN_BASE_PATH}
+              currentPath={`${ADMIN_BASE_PATH}/[id]/run`}
+            />
+          </div>
+          <Suspense fallback={null}>
+            <ConversationSpendButton agentId={id} />
+          </Suspense>
+        </div>
       </PageHeader>
       <AgentRunnerPage
         agentId={id}
