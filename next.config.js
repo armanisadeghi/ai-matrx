@@ -488,6 +488,15 @@ const nextConfig = {
       // pages moved from /data-v2 to /data. Saved links, sent notifications and
       // DB-built hrefs keep working; the query string carries over untouched.
       // THE ONLY place "/data-v2" may appear in source (scripts/check-no-data-v2.ts).
+      // 2026-10-07: "agent apps" became Applets. Saved links, bookmarks and sent links to the old
+      // addresses open the same Applet or owner tool (an id after /applets/ resolves to the Applet).
+      { source: "/agent-apps", destination: "/applets", permanent: true },
+      { source: "/agent-apps/build", destination: "/applets/build", permanent: true },
+      { source: "/agent-apps/:id/run", destination: "/applets/:id", permanent: true },
+      { source: "/agent-apps/:id/:rest*", destination: "/applets/manage/:id/:rest*", permanent: true },
+      { source: "/apps/:slug/:path*", destination: "/applets/:slug/:path*", permanent: true },
+      { source: "/p/:slug", destination: "/applets/:slug", permanent: true },
+      { source: "/templates/apps", destination: "/templates/applets", permanent: true },
       { source: "/data-v2", destination: "/data", permanent: true },
       { source: "/data-v2/:path*", destination: "/data/:path*", permanent: true },
       // The old "New table" page; a table is made on the Data home itself.
