@@ -141,6 +141,21 @@ describe("useDraggableFloat", () => {
     expect(surface.style.top).toBe("192px");
   });
 
+  it("places a saved position in the first committed frame, never after a timer", () => {
+    window.localStorage.setItem(
+      "test.draggable-float",
+      JSON.stringify({ x: 120, y: 80 }),
+    );
+
+    // Synchronous act: layout effects flush, timers do not. A restore deferred
+    // to a timer painted the card at its default corner first, then jumped.
+    act(() => root.render(<Fixture visible />));
+
+    const surface = container.firstElementChild as HTMLElement;
+    expect(surface.style.left).toBe("120px");
+    expect(surface.style.top).toBe("80px");
+  });
+
   it("moves only an unsafe saved position clear of an opted-in footer", async () => {
     window.localStorage.setItem(
       "test.draggable-float",

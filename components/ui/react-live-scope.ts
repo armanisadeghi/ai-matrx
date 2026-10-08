@@ -168,7 +168,7 @@ export {
   ToastProvider,
 } from "./matrx/toast";
 export { useToast, toast } from "./matrx/use-toast";
-export { Toaster } from "./toaster";
+export { Toaster } from "./sonner";
 export { Toggle, toggleVariants } from "./toggle";
 export { ToggleGroup, ToggleGroupItem } from "./toggle-group";
 export {

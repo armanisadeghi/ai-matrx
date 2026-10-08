@@ -27,7 +27,6 @@ import "@ai-matrx/messaging/styles.css";
 // Without this the meeting room renders as unstyled document flow — full-size
 // video elements, no stage, no control bar.
 import "@ai-matrx/meet/styles.css";
-import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { cn } from "@/lib/utils";
 import { cookies, headers } from "next/headers";
@@ -137,7 +136,6 @@ export default async function RootLayout({ children }: RootLayoutProps) {
           {children}
           <AgentTrafficForwarder />
           <UserAcquisitionCapture />
-          <Toaster />
           <Sonner />
           {/* Consent-based new-version prompt + post-boot stale-chunk guard.
                         Bakes THIS deployment's id in server-side so the client can

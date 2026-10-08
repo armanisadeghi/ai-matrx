@@ -3,9 +3,8 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { useToast } from "@/components/ui/use-toast";
 import { toast } from "@/lib/toast-service";
-import { ToastAction } from "@/components/ui/toast";
 import type { ToastDefaults } from "@/types/toast.types";
-import type { ToastActionElement } from "@/components/ui/toast";
+import type { LegacyToastAction } from "@/components/ui/use-toast";
 
 type ToastContextType = {
   registerDefaults: (key: string, defaults: ToastDefaults) => void;
@@ -19,18 +18,9 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
   const [configs, setConfigs] = useState<Record<string, ToastDefaults>>({});
   const { toast: showToast, dismiss } = useToast();
 
-  const createToastAction = (options?: any): ToastActionElement | undefined => {
+  const createToastAction = (options?: any): LegacyToastAction | undefined => {
     if (!options?.action) return undefined;
-
-    return (
-      <ToastAction
-        altText={options.action.label}
-        onClick={options.action.onClick}
-        className={options.action.className}
-      >
-        {options.action.label}
-      </ToastAction>
-    ) as ToastActionElement;
+    return { label: options.action.label, onClick: options.action.onClick };
   };
 
   React.useEffect(() => {
