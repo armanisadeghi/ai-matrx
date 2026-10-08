@@ -1,6 +1,6 @@
 {
   "note": "Checked-in snapshot of public._schema_migrations for the files under migrations/campaign and migrations/inverse. Written by `pnpm db:apply` on every successful production apply and refreshed whole by the nightly catch-up. Never hand-edited: a self-written checksum is a claim nobody can check. Guard: pnpm check:ledgered-files-unedited.",
-  "generated_at": "2026-10-07T22:54:32.875Z",
+  "generated_at": "2026-10-08T00:50:42.151Z",
   "files": {
     "migrations/campaign/a_chunk_is_the_size_the_client_door_can_actually_carry.sql": {
       "source": "matrx-frontend",
@@ -4741,6 +4741,18 @@
       "filename": "orphanchoices_an_adopted_lists_choices_take_its_organization.sql",
       "checksum": "5545a43e42134332187f80aa65d3c220e64036dbd717f27ee97cec3383b8081e",
       "applied_at": "2026-10-01 11:41:52.315126+00"
+    },
+    "migrations/campaign/pagebundle2_a_a_record_page_opens_in_one_call.sql": {
+      "source": "matrx-frontend",
+      "filename": "pagebundle2_a_a_record_page_opens_in_one_call.sql",
+      "checksum": "20a563ba1fe941bc6409857870891fcdb855caf89c8ea6a248b4e954474c98ff",
+      "applied_at": "2026-10-08 00:50:13.343243+00"
+    },
+    "migrations/campaign/pagebundle2_b_the_record_bundle_door_is_opened_to_signed_in_callers.sql": {
+      "source": "matrx-frontend",
+      "filename": "pagebundle2_b_the_record_bundle_door_is_opened_to_signed_in_callers.sql",
+      "checksum": "ed52dd44c2932bac5892b62969725075858ce48513c50ac7c33da6883115eed1",
+      "applied_at": "2026-10-08 00:50:41.126506+00"
     },
     "migrations/campaign/paritynightly_the_context_parity_guard_is_a_scheduled_system_job_switched_off.sql": {
       "source": "campaign",

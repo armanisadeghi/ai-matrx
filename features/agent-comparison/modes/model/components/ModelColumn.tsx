@@ -10,6 +10,7 @@
  */
 
 import { selectModelColumnTitle } from "../columnTitle";
+import { useCatalogBoundSelector } from "../../../shared/useCatalogBoundSelector";
 import { ChevronsLeftRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
@@ -76,7 +77,7 @@ function CollapsedView({
 }) {
   const blindActive = useAppSelector(selectBlindActive);
   const blindOrder = useAppSelector(selectBlindOrder);
-  const modelTitle = useAppSelector((state) =>
+  const modelTitle = useCatalogBoundSelector((state) =>
     selectModelColumnTitle(state, column),
   );
   const label = blindActive

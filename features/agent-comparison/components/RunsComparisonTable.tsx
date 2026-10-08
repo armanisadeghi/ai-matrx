@@ -14,6 +14,7 @@
 
 import { EyeOff, Trophy } from "lucide-react";
 import { useAppSelector } from "@/lib/redux/hooks";
+import { useCatalogBoundSelector } from "../shared/useCatalogBoundSelector";
 import { useCostDisplay } from "@/components/cost/useCostDisplay";
 import { BattleTableTools as TableTools } from "../shared/BattleTableTools";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
@@ -41,7 +42,7 @@ import {
 } from "./runsComparisonReport";
 
 export function RunsComparisonTable() {
-  const { stats, sections } = useAppSelector(selectVisibleRunsComparison);
+  const { stats, sections } = useCatalogBoundSelector(selectVisibleRunsComparison);
   const blindActive = useAppSelector(selectBlindActive);
   const { unit: costUnit } = useCostDisplay();
 

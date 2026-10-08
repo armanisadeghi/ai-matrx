@@ -24,6 +24,8 @@ const MODEL_STATE = {
 // Model names come from the core model catalog's records (B3).
 jest.mock("@ai-matrx/chat/agents/identity/model-catalog", () => ({
   readModelRecords: () => ({ entities: { "model-claude": { name: "Claude Sonnet" } }, identityById: {} }),
+  useModelRecords: (select: (s: unknown) => unknown) =>
+    select({ entities: { "model-claude": { name: "Claude Sonnet" } }, identityById: {} }),
 }));
 let boundColumnProps: { hideCreatorPanel?: boolean } | null = null;
 

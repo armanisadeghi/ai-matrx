@@ -30,6 +30,7 @@ import type {
 } from "@ai-matrx/rich-content/rich-document/types";
 import { currentCostUnit } from "@/components/cost/costUnit";
 import { selectActiveBattleColumns } from "../shared/activeBattleColumns";
+import { useCatalogBoundSelector } from "../shared/useCatalogBoundSelector";
 import { buildPrintDocument, printHtmlContent } from "@ai-matrx/print/core";
 import { toast } from "@/lib/toast";
 import { exportFilename } from "@/components/agent-copy/export";
@@ -137,7 +138,7 @@ const REPORT_ACTIONS: RichDocumentActionsProp = {
 };
 
 export function SharedRunsWindow({ id, onClose }: SharedRunsWindowProps) {
-  const columns = useAppSelector(selectActiveBattleColumns);
+  const columns = useCatalogBoundSelector(selectActiveBattleColumns);
   const surfaceId = `battle-runs-${useId()}`;
   const report = useRunsReport();
 

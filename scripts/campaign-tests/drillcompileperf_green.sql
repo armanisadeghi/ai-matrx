@@ -11,7 +11,8 @@
 --   psql … -v quick=1        the page's questions and one seat only (a smoke run)
 --
 -- E. EQUIVALENCE — a matrix of questions over every declared definition (ai_usage, ai_usage_executions,
---    ai_calls, kg_cost, workflow_runs, tool_refetch, user_acquisition, agents_by_model): no grouping, every
+--    ai_calls, kg_cost, workflow_runs, tool_refetch, user_acquisition, agents_by_model) and three standard
+--    tables read as the seat (agent, task, ai_model — enum, date and inexact-number columns): no grouping, every
 --    Dimension alone, time grains (latest periods kept), two and three levels, pivots (a Dimension and a
 --    period across), comparisons, thresholds (value, share of the total, × the median), every Measure
 --    shown at once (ratios, percentiles, spans, run rates, distinct counts), sorts by each Measure and by
@@ -38,8 +39,10 @@
 \set quick 0
 \endif
 
+set transaction_timeout = 0;
 begin isolation level repeatable read;
 set local statement_timeout = 0;
+set local transaction_timeout = 0;
 set local client_min_messages = warning;
 select set_config('dcp.plant', :'plant', true) \g /dev/null
 select set_config('dcp.quick', :'quick', true) \g /dev/null
@@ -96,12 +99,13 @@ declare
   v_quick boolean := current_setting('dcp.quick') = '1';
   v_lanes jsonb;
 begin
-  foreach k in array array['ai_usage_executions','ai_usage','ai_calls','kg_cost','workflow_runs','tool_refetch','user_acquisition','agents_by_model'] loop
+  foreach k in array array['ai_usage_executions','ai_usage','ai_calls','kg_cost','workflow_runs','tool_refetch','user_acquisition','agents_by_model','agent','task','ai_model'] loop
     continue when v_quick and k <> 'ai_usage_executions';
     d := platform._drill_resolve(null, k);
     v_lanes := d -> 'lanes';
-    v_t := (select x ->> 'key' from jsonb_array_elements(d -> 'dimensions') x where x ->> 'kind' = 'time' limit 1);
-    v_tcol := (select x ->> 'from' from jsonb_array_elements(d -> 'dimensions') x where x ->> 'kind' = 'time' limit 1);
+    v_t := (select x ->> 'key' from jsonb_array_elements(d -> 'dimensions') x where x ->> 'kind' = 'time'
+             order by x ->> 'key' in ('at', 'created_at') desc limit 1);
+    v_tcol := (select x ->> 'from' from jsonb_array_elements(d -> 'dimensions') x where x ->> 'key' = v_t);
     select array_agg(x ->> 'key' order by o) into v_dims from jsonb_array_elements(d -> 'dimensions') with ordinality z(x, o) where x ->> 'kind' <> 'time';
     select array_agg(x ->> 'key' order by o) into v_low from jsonb_array_elements(d -> 'dimensions') with ordinality z(x, o)
      where x ->> 'kind' in ('choice', 'boolean') and coalesce(x ->> 'cardinality', 'low') <> 'high';
@@ -117,8 +121,8 @@ begin
     d3 := (select y from unnest(v_dims) y where y not in (d1, d2) and y not in ('model', 'provider', 'call_model') limit 1);
     lo := coalesce((select y from unnest(v_low) y where y not in (d1) limit 1), d2);
     -- the heavy views are asked over a week; the rest over 30 days
-    w := jsonb_build_object('key', v_t, 'preset', case when k in ('ai_usage_executions', 'ai_calls') then '7d' else '30d' end);
-    w90 := jsonb_build_object('key', v_t, 'preset', '90d');
+    w := jsonb_build_object('key', v_t, 'preset', case when k in ('ai_usage_executions', 'ai_calls') then '7d' when d ->> 'mode' = 'invoker' then '365d' else '30d' end);
+    w90 := jsonb_build_object('key', v_t, 'preset', case when d ->> 'mode' = 'invoker' then '3650d' else '90d' end);
     v_all := to_jsonb(v_meas);
     qs := '[]'::jsonb;
     -- the usage page's questions (by person, conversation, model, day; 30 and 90 days; a level's Measures)

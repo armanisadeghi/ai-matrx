@@ -32,6 +32,7 @@ import {
 } from "@ai-matrx/chat/agents/components/run-controls/panels/shared";
 import {
   selectActiveBattleColumns,
+  readsCatalogOptions,
   type BattleColumnDescriptor,
 } from "../shared/activeBattleColumns";
 import { selectBlindActive, selectBlindOrder } from "../redux/selectors";
@@ -843,6 +844,7 @@ const selectRunsComparisonColumnStats = createSelector(
     };
     return columns.map((col) => buildStatsForColumn(col, deps));
   },
+  readsCatalogOptions,
 );
 
 /** Column identities and metric sections exactly as the table shows them (blind masking included). */
@@ -870,5 +872,6 @@ export const selectVisibleRunsComparison = createSelector(
       : SECTIONS;
     return { stats, sections };
   },
+  readsCatalogOptions,
 );
 

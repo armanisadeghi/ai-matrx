@@ -40,6 +40,7 @@ import {
 } from "lucide-react";
 import { toast } from "@/lib/toast";
 import { useAppDispatch, useAppSelector, useAppStore } from "@/lib/redux/hooks";
+import { useCatalogBoundSelector } from "../shared/useCatalogBoundSelector";
 import type { RootState } from "@/lib/redux/store";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import {
@@ -107,7 +108,7 @@ const ANSWER_AI_CONTEXT =
  * is the DB unique index + the auto-clear thunk).
  */
 function useOtherColumnRanks(currentConversationId: string): Record<string, number> {
-  const columns = useAppSelector(selectActiveBattleColumns);
+  const columns = useCatalogBoundSelector(selectActiveBattleColumns);
   return useAppSelector((state: RootState) => {
     const out: Record<string, number> = {};
     for (const col of columns) {
@@ -167,7 +168,7 @@ function ResponseFeedbackBarInner({
   const store = useAppStore();
   const userId = useAppSelector(selectUserId);
   const setId = useAppSelector(selectMountedBattleSetId);
-  const columns = useAppSelector(selectActiveBattleColumns);
+  const columns = useCatalogBoundSelector(selectActiveBattleColumns);
   const blindActive = useAppSelector(selectBlindActive);
 
   const otherRanks = useOtherColumnRanks(conversationId);
