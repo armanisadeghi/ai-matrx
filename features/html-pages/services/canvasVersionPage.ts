@@ -16,6 +16,7 @@
 import { supabase } from "@/utils/supabase/client";
 import { callApi } from "@/lib/api/call-api";
 import { getStore } from "@/lib/redux/store-singleton";
+import type { AppDispatch } from "@/lib/redux/store";
 
 const HTML_SITE_URL =
   process.env.NEXT_PUBLIC_HTML_SITE_URL || "https://www.mymatrx.com";
@@ -38,7 +39,8 @@ export async function publishHtmlCanvasVersion(
 ): Promise<{ pageId: string; url: string }> {
   const store = getStore();
   if (!store) throw new Error("Publishing a page needs the app to be loaded.");
-  const result = await store.dispatch(
+  const dispatch = store.dispatch as AppDispatch;
+  const result = await dispatch(
     callApi({
       path: "/cms/html-artifacts/{canvas_item_id}/publish",
       method: "POST",

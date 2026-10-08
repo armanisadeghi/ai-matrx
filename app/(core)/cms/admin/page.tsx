@@ -197,7 +197,7 @@ const CMS_ADMIN_MAP: FeatureAdminMap = {
     },
     {
       url: "/cms/html-pages[/{page_id}]",
-      method: "GET|POST|PATCH|DELETE",
+      method: "Multiple",
       description:
         "aidream's door for the standalone html_pages system — owner-scoped as the caller, delete archives. Replaced the Next.js /api/html-pages proxy, which is deleted.",
       filePath: "features/html-pages/services/htmlPageService.js",

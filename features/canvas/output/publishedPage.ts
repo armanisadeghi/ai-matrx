@@ -39,8 +39,9 @@ export interface PrintablePageInput {
 
 /** The page to print, or null when this HTML has no published page yet. */
 export async function resolvePrintablePageUrl(input: PrintablePageInput): Promise<string | null> {
-  if (isMaterializedArtifactId(input.canvasItemId)) {
-    const resolved = await resolveHtmlCanvasPage(input.canvasItemId.trim(), input.version ?? "self");
+  const canvasItemId = input.canvasItemId;
+  if (canvasItemId && isMaterializedArtifactId(canvasItemId)) {
+    const resolved = await resolveHtmlCanvasPage(canvasItemId.trim(), input.version ?? "self");
     return bareHtmlPageUrl(resolved?.shown.url);
   }
   return bareHtmlPageUrl(input.pageUrl);
