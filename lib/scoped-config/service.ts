@@ -99,15 +99,35 @@ export async function fetchKnobDefinition(options: {
  * comes back as `{ ok: false, reason, detail }`, never a thrown exception:
  * the reasons are part of the contract and surfaces render them.
  */
-export async function setKnobOverride(options: {
+export async function setKnobOverride(options: KnobDoorWrite): Promise<KnobOverrideSetResult> {
+  const result = await callKnobOverrideSet(options);
+  // DD-221: the platform door REFUSES a key whose namespace declares its own
+  // door and names that door in the refusal. Following the server's own answer
+  // (never guessing a door from where the caller lives) keeps every caller of
+  // this function on the key's own gate and audit trail — `meet.*` keys are
+  // written through `communication.meet_policy_set` this way.
+  const refusal = result as { ok?: boolean; reason?: string; set_door?: string; clear_door?: string };
+  if (refusal.ok === false && refusal.reason === "wrong_door") {
+    const doorName = options.value === null ? refusal.clear_door : refusal.set_door;
+    if (doorName && doorName !== "platform.knob_override_set") {
+      return callDeclaredDoor(doorName, options);
+    }
+  }
+  return result;
+}
+
+type KnobDoorWrite = {
   feature: string;
   key: string;
   scopeKind: KnobScopeKindName;
   scopeId: string;
   organizationId: string;
+  /** `null` CLEARS — the row is removed. */
   value: unknown;
   note?: string;
-}): Promise<KnobOverrideSetResult> {
+};
+
+async function callKnobOverrideSet(options: KnobDoorWrite): Promise<KnobOverrideSetResult> {
   const supabase = createClient();
   const { data, error } = await supabase.schema("platform").rpc("knob_override_set", {
     p_feature: options.feature,
@@ -369,9 +389,32 @@ export async function writeKnobOverrideThroughDoor(options: {
 }): Promise<KnobOverrideSetResult> {
   const { door, value } = options;
   const doorName = value === null ? door.clearDoor : door.setDoor;
+  return callDeclaredDoor(doorName, options);
+}
 
+/** Call ONE declared write door by its schema-qualified name. */
+async function callDeclaredDoor(doorName: string, options: KnobDoorWrite): Promise<KnobOverrideSetResult> {
+  const { value } = options;
   if (doorName === "platform.knob_override_set") {
-    return setKnobOverride(options);
+    return callKnobOverrideSet(options);
+  }
+
+  if (doorName === "communication.meet_policy_set") {
+    // Meeting rules: the host's rung is authorized by the meeting, the other
+    // rungs by the platform steward test — both inside this one door.
+    const supabase = createClient();
+    const { data, error } = await supabase.schema("communication").rpc("meet_policy_set", {
+      p_feature: options.feature,
+      p_key: options.key,
+      p_scope_kind: options.scopeKind,
+      p_scope_id: options.scopeId,
+      p_organization_id: options.organizationId,
+      p_value: value as never,
+      p_note: options.note,
+    });
+    if (error) throw new Error(`${doorName} failed: ${error.message}`);
+    invalidateEffectiveKnob(`${options.feature}.${options.key}`);
+    return data as unknown as KnobOverrideSetResult;
   }
 
   if (doorName === "public.hr_knob_set" || doorName === "public.hr_knob_clear") {
