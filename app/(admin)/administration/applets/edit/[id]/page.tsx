@@ -55,6 +55,7 @@ import {
 // `app.definition.tags` has ONE contract; the user-facing surface owns it.
 import { validateAppTags } from "@/features/applets/route/applet-entity-writes";
 import { pushAppHref } from "@/lib/deployment/navigate";
+import { usePointsRate } from "@/components/cost/pointsRate.client";
 
 // `AppletAdminView` is a hand-narrowed subset of the real DB row used by the
 // list/analytics surfaces (no component_code/variable_schema/shell_* fields).
@@ -91,6 +92,7 @@ export default function AdminEditAppletPage({
   const router = useRouter();
   const { toast } = useToast();
   const formatCostDisplay = useAdminCost();
+  const costRate = usePointsRate();
   const [isPending, startTransition] = useTransition();
 
   const [app, setApp] = useState<AppletAdminView | null>(null);
@@ -303,6 +305,7 @@ export default function AdminEditAppletPage({
   // the agent is never told a stale number is the whole story.
   const buildAdminEditView = (): AppletAdminEditView => ({
     app,
+    rate: costRate,
     activeTab,
     metadataModalOpen: metadataOpen,
     metadata: {
@@ -590,7 +593,7 @@ export default function AdminEditAppletPage({
         onOpenChange={setMetadataOpen}
         app={toApplet(app)}
         onSubmit={handleSaveMetadata}
-        kpis={appletAdminKpis(app)}
+        kpis={appletAdminKpis(app, costRate)}
       />
     </div>
     </SurfaceRuntimeProvider>

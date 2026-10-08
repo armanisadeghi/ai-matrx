@@ -39,8 +39,8 @@ export const RUNG_TITLES: Record<RunRung, string> = {
   run: "An explicit choice for this one run decided it (a test, or a choice made on the page itself).",
 };
 
-export const RUNG_NOT_RECORDED =
-  "Not recorded — this run happened before the level was stamped on every run (27 Sep 2026).";
+// Runs before 27 Sep 2026 carry no level stamp; the cell shows "—" with this on hover.
+export const RUNG_NOT_RECORDED = "Not recorded";
 
 export function rungWords(rung: RunRung | null): string {
   return rung ? RUNG_WORDS[rung] : "—";

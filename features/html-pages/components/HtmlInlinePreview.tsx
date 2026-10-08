@@ -3,14 +3,18 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
   Code2,
+  Copy,
+  Download,
   Eye,
   Loader2,
   Maximize2,
   AlertTriangle,
   Globe,
-  ChevronDown,
-  ChevronUp,
 } from "lucide-react";
+import { useClipboard } from "@ai-matrx/kit/clipboard";
+import { downloadFile } from "@ai-matrx/kit/download";
+import { Button } from "@ai-matrx/design-system/controls";
+import { toast } from "@/lib/toast";
 import { cn } from "@/styles/themes/utils";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectUser } from "@/lib/redux/selectors/userSelectors";
@@ -23,6 +27,11 @@ import {
 import CodeBlock from "@ai-matrx/rich-content/code-block/CodeBlock";
 import { HtmlAppFrame } from "@/features/html-pages/components/HtmlAppFrame";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { useHtmlPreviewChrome } from "@/features/html-pages/components/HtmlPreviewChrome";
+import {
+  htmlPageCanvasContent,
+  readPageHeight,
+} from "@/features/html-pages/components/html-page-frame";
 
 /**
  * HtmlInlinePreview — auto-renders previewable HTML as a live, inline webpage
@@ -35,7 +44,10 @@ import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
  *  4. Error                                      → silent code block + opt-in detail.
  *
  * What auto-previews (see analyzeHtmlForPreview):
- *  - A complete HTML document → card preview (header + iframe), height-bounded.
+ *  - A complete HTML document → card preview: ONE header (the page's <title>,
+ *    Code, Copy, Download, Open in canvas) over a frame sized to the page's
+ *    own content height (reported by the html site's frame script — see
+ *    html-page-frame.ts), capped at PAGE_MAX_HEIGHT with scroll inside beyond.
  *  - A single media embed (one YouTube/Vimeo/etc. iframe, or a lone <video>),
  *    even as a fragment → SEAMLESS preview: snug to the embed's aspect ratio,
  *    no card chrome, so a video just sits in the content.
@@ -66,6 +78,10 @@ const PAGE_SANDBOX =
  * allow-top-navigation — an app may not navigate the app shell away.
  */
 const APP_SANDBOX = `${PAGE_SANDBOX} allow-modals allow-popups-to-escape-sandbox allow-downloads allow-pointer-lock`;
+/** Frame height before the page reports its own. */
+const PAGE_INITIAL_HEIGHT = 480;
+/** Past this the page scrolls inside its frame; the canvas shows it whole. */
+const PAGE_MAX_HEIGHT = "min(85dvh, 1200px)";
 const PAGE_ALLOW =
   "accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share; fullscreen";
 
@@ -142,11 +158,16 @@ const HtmlInlinePreview: React.FC<HtmlInlinePreviewProps> = ({
 
   const [phase, setPhase] = useState<Phase>("idle");
   const [url, setUrl] = useState<string | null>(null);
-  const [pageId, setPageId] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [showCode, setShowCode] = useState(false);
   const [showError, setShowError] = useState(false);
-  const [expanded, setExpanded] = useState(false);
+  const [pageHeight, setPageHeight] = useState<number | null>(null);
+  const frameRef = useRef<HTMLIFrameElement>(null);
+  const chrome = useHtmlPreviewChrome();
+  const { copyText } = useClipboard({
+    notify: (message, kind) =>
+      kind === "error" ? toast.error(message) : toast.success(message),
+  });
 
   // Tracks the exact code we last converted so re-renders don't re-publish, but
   // genuinely edited / re-streamed content does.
@@ -192,7 +213,6 @@ const HtmlInlinePreview: React.FC<HtmlInlinePreviewProps> = ({
         settled = true;
         if (cancelled) return;
         setUrl(result.url);
-        setPageId(typeof result.pageId === "string" ? result.pageId : null);
         setPhase("preview");
       } catch (err) {
         settled = true;
@@ -214,20 +234,76 @@ const HtmlInlinePreview: React.FC<HtmlInlinePreviewProps> = ({
     };
   }, [shouldConvert, code, publishHtml, userId, messageId, conversationId]);
 
-  const title = extractTitleFromHTML(code) || "HTML Preview";
+  const title = extractTitleFromHTML(code) || chrome?.title || "Web page";
 
-  const handleOpenCanvas = useCallback(() => {
-    if (!url) return;
-    openCanvas({
-      type: "iframe",
-      data: url,
-      metadata: {
-        title,
-        sourceMessageId: messageId,
-        ...(pageId ? { htmlPageId: pageId } : {}),
-      },
-    });
-  }, [url, pageId, openCanvas, title, messageId]);
+  // The page reports its own content height (html site frame script); only a
+  // message from THIS frame's window and the page's origin is believed.
+  useEffect(() => {
+    if (!url) return undefined;
+    const onMessage = (event: MessageEvent) => {
+      const height = readPageHeight(event, url, frameRef.current?.contentWindow);
+      if (height !== null) setPageHeight(height);
+    };
+    window.addEventListener("message", onMessage);
+    return () => window.removeEventListener("message", onMessage);
+  }, [url]);
+
+  // ONE canvas path for every html page (html-page-frame.ts): the holder's
+  // opener when a block holds this page, else the same `html` canvas content.
+  const handleOpenCanvas = () => {
+    if (chrome?.openInCanvas) {
+      chrome.openInCanvas();
+      return;
+    }
+    openCanvas(htmlPageCanvasContent({ code, title, messageId }));
+  };
+
+  const fileName = `${title.replace(/[^\w\- ]+/g, "").trim().replace(/\s+/g, "-").toLowerCase() || "page"}.html`;
+
+  const header = (
+    <div
+      className="flex min-w-0 items-center gap-1.5 border-b border-border bg-muted/40 py-0.5 pl-3 pr-1"
+      data-html-preview-header=""
+    >
+      <Globe className="h-3.5 w-3.5 shrink-0 text-primary" />
+      <span className="min-w-0 flex-1 truncate text-xs font-medium text-foreground">
+        {title}
+      </span>
+      <div className="flex shrink-0 items-center">
+        {chrome?.actions}
+        <Button
+          variant="quiet"
+          icon={showCode ? <Eye /> : <Code2 />}
+          onClick={() => setShowCode((v) => !v)}
+          aria-pressed={showCode}
+          title={showCode ? "Show page" : "Show code"}
+          aria-label={showCode ? "Show page" : "Show code"}
+        />
+        <Button
+          variant="quiet"
+          icon={<Copy />}
+          onClick={() => void copyText(code, "Copied HTML")}
+          title="Copy HTML"
+          aria-label="Copy HTML"
+        />
+        <Button
+          variant="quiet"
+          icon={<Download />}
+          onClick={() => downloadFile(fileName, code, "text/html")}
+          title="Download .html"
+          aria-label="Download .html"
+        />
+        <Button
+          variant="quiet"
+          icon={<Maximize2 />}
+          onClick={handleOpenCanvas}
+          aria-pressed={chrome?.canvasOpen}
+          title="Open in canvas"
+          aria-label="Open in canvas"
+        />
+      </div>
+    </div>
+  );
 
   const renderCodeBlock = useCallback(
     () => (
@@ -284,8 +360,17 @@ const HtmlInlinePreview: React.FC<HtmlInlinePreviewProps> = ({
     );
   }
 
-  // 1. Not ready / not previewable → plain code block.
+  // 1. Not ready / not previewable → plain code block (under the holder's
+  // header when a block holds this page, so its actions never vanish).
   if (!isComplete || !analysis.previewable || !user?.id) {
+    if (chrome && isComplete) {
+      return (
+        <div className={cn("my-3 overflow-hidden rounded-lg border border-border bg-card", className)}>
+          {header}
+          <div className="p-2">{renderCodeBlock()}</div>
+        </div>
+      );
+    }
     return renderCodeBlock();
   }
 
@@ -381,13 +466,7 @@ const HtmlInlinePreview: React.FC<HtmlInlinePreviewProps> = ({
     );
   }
 
-  // 3b. Success — full document → card preview (header + bounded iframe).
-  //
-  // The page is a cross-origin published URL, so we can't measure its real
-  // content height to fit it exactly. Instead of an arbitrary hard cut, we cap
-  // the inline height (a generous ~full-page default, taller when expanded) and
-  // fade the bottom edge so the truncation reads as intentional. The fade hosts
-  // the two escape hatches — Expand (more inline height) and Canvas (full view).
+  // 3b. Success — full document → ONE header over a frame sized to the page.
   return (
     <div
       className={cn(
@@ -395,62 +474,26 @@ const HtmlInlinePreview: React.FC<HtmlInlinePreviewProps> = ({
         className,
       )}
     >
-      <div className="flex items-center justify-between gap-2 border-b border-border bg-muted/40 px-3 py-1.5">
-        <div className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
-          <Globe className="h-3.5 w-3.5 text-primary" />
-          <span>{title}</span>
-        </div>
-        <div className="flex items-center gap-0.5">
-          <ToolbarButton
-            icon={showCode ? Eye : Code2}
-            label={showCode ? "Preview" : "Code"}
-            active={showCode}
-            onClick={() => setShowCode((v) => !v)}
-          />
-          <ToolbarButton
-            icon={Maximize2}
-            label="Open in canvas"
-            onClick={handleOpenCanvas}
-          />
-        </div>
-      </div>
+      {header}
       {showCode ? (
         <div className="p-2">{renderCodeBlock()}</div>
       ) : (
-        <div className="relative">
-          <iframe
-            src={url ?? undefined}
-            title={title}
-            className="block w-full bg-white"
-            // Generous default (~a full page), grows to fill available space
-            // when expanded. The canvas gives the true full-height view.
-            style={{
-              height: expanded ? "min(85dvh, 1400px)" : "min(70dvh, 720px)",
-            }}
-            sandbox={pageSandbox(url, PAGE_SANDBOX)}
-            allow={PAGE_ALLOW}
-            allowFullScreen
-            loading="lazy"
-          />
-          {/* Intentional bottom fade + escape-hatch actions. pointer-events
-              are disabled on the gradient so the iframe stays interactive,
-              and re-enabled on the button row. */}
-          <div className="pointer-events-none absolute inset-x-0 bottom-0 flex h-24 items-end justify-center bg-gradient-to-t from-card via-card/80 to-transparent">
-            <div className="pointer-events-auto mb-3 flex items-center gap-1.5 rounded-full border border-border bg-background/90 px-1.5 py-1 shadow-sm backdrop-blur-sm">
-              <ToolbarButton
-                icon={expanded ? ChevronUp : ChevronDown}
-                label={expanded ? "Collapse" : "Expand"}
-                onClick={() => setExpanded((v) => !v)}
-              />
-              <span className="h-4 w-px bg-border" />
-              <ToolbarButton
-                icon={Maximize2}
-                label="Open in canvas"
-                onClick={handleOpenCanvas}
-              />
-            </div>
-          </div>
-        </div>
+        <iframe
+          ref={frameRef}
+          src={url ?? undefined}
+          title={title}
+          data-native-title=""
+          data-html-inline-frame=""
+          className="block w-full bg-white"
+          style={{
+            height: pageHeight ?? PAGE_INITIAL_HEIGHT,
+            maxHeight: PAGE_MAX_HEIGHT,
+          }}
+          sandbox={pageSandbox(url, PAGE_SANDBOX)}
+          allow={PAGE_ALLOW}
+          allowFullScreen
+          loading="lazy"
+        />
       )}
     </div>
   );

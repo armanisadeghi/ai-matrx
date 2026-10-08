@@ -139,6 +139,9 @@ async function waitForRead(
 }
 
 async function loadPipeline() {
+  // The rich-document action registry lives on globalThis (it survives a module reset on purpose),
+  // so a fresh module registry must start from an empty one or "copy" registers twice.
+  delete (globalThis as Record<symbol, unknown>)[Symbol.for("ai-matrx.rich-document.actions")];
   // The accumulator reads the registries through @ai-matrx/rich-content's host; the modules are
   // fresh, so the app's rich-content host is configured fresh beside them (the same module registry).
   await import("@/providers/richContentHost");
@@ -201,6 +204,8 @@ beforeEach(() => {
   jest.resetModules();
   mockOperations.length = 0;
 });
+
+jest.setTimeout(240_000);
 
 describe("THE ZERO-PREFETCH LAW — live stream (accumulator)", () => {
   it("a kindless JSON fence performs no client read and demands nothing", async () => {

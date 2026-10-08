@@ -89,17 +89,25 @@ describe("html artifact in the canvas", () => {
     expect(sandbox).toContain("allow-popups-to-escape-sandbox");
     expect(sandbox).not.toContain("allow-top-navigation");
     expect(byText("Expand")).toHaveLength(0);
-    expect(byText("Open in canvas")).toHaveLength(0);
-    expect(byText("Code")).toHaveLength(0);
+    expect(host.querySelectorAll('[aria-label="Open in canvas"]')).toHaveLength(0);
+    expect(host.querySelectorAll('[aria-label="Show code"]')).toHaveLength(0);
+    expect(host.querySelectorAll("[data-html-preview-header]")).toHaveLength(0);
     // The frame is the body — no card wrapper around it.
     expect(frame.parentElement?.className ?? "").not.toContain("rounded-lg");
   });
 
-  it("keeps the chat card outside the canvas", async () => {
+  it("outside the canvas: ONE header with the page title and actions, a content-sized frame, no fade", async () => {
     presentation.value = null;
     await mount(<HtmlArtifact mode="canvas" data={DOC} isStreamActive={false} />);
-    expect(byText("Expand")).toHaveLength(1);
-    expect(byText("Open in canvas").length).toBeGreaterThan(0);
+    expect(host.querySelectorAll("[data-html-preview-header]")).toHaveLength(1);
+    for (const label of ["Show code", "Copy HTML", "Download .html", "Open in canvas"]) {
+      expect(host.querySelectorAll(`[aria-label="${label}"]`)).toHaveLength(1);
+    }
+    expect(byText("Expand")).toHaveLength(0);
+    const frame = host.querySelector<HTMLIFrameElement>("iframe[data-html-inline-frame]");
+    expect(frame).not.toBeNull();
+    expect(frame?.style.maxHeight).toContain("min(");
+    expect(host.querySelector(".bg-gradient-to-t")).toBeNull();
   });
 });
 
