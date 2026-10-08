@@ -37,7 +37,6 @@
 // (`pnpm check:object-pages-read-the-objects-organization`).
 
 import { createKeptAnswers } from "@/lib/kept-answer/keptAnswer";
-import { useTablePageSeed } from "@/features/unified-data/page-seed/tablePageSeedContext";
 import type { RecordsDataSource } from "@ai-matrx/records";
 
 /**
@@ -187,13 +186,6 @@ export function useObjectOrganization(
   id: string | null,
 ): ObjectOrganizationView & { retry: () => void } {
   const { answer, retry } = objectOrganizations.useAnswer(id, () => resolveObjectOrganization(dataSource, id ?? ""));
-  // THE SERVER ALREADY ASKED (lane SSR-ROWS): on a table page whose server seed answered where this
-  // id lives, that answer is drawn in the first pass — on the server and while hydrating — so the
-  // table mounts in the server's HTML. The kept store holds the same answer once its prime lands.
-  const seeded = useTablePageSeed();
-  if (id && answer === null && seeded && seeded.tableId === id && !seeded.where.error) {
-    return { ...readObjectOrganizationAnswer(seeded.where, id), retry };
-  }
   if (!id || answer === null) return { state: "resolving", retry };
   return { ...answer, retry };
 }
