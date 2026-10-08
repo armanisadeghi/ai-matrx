@@ -1,6 +1,6 @@
 {
   "note": "Checked-in snapshot of public._schema_migrations for the files under migrations/campaign and migrations/inverse. Written by `pnpm db:apply` on every successful production apply and refreshed whole by the nightly catch-up. Never hand-edited: a self-written checksum is a claim nobody can check. Guard: pnpm check:ledgered-files-unedited.",
-  "generated_at": "2026-10-08T07:49:33.760Z",
+  "generated_at": "2026-10-08T09:14:19.097Z",
   "files": {
     "migrations/campaign/a_chunk_is_the_size_the_client_door_can_actually_carry.sql": {
       "source": "matrx-frontend",
@@ -4873,6 +4873,12 @@
       "filename": "perffix4_i_who_changed_what_in_a_fixed_order.sql",
       "checksum": "43ea7d35179a53e83c929c51c906f09468c5d466d66364f2114d9c27087962c4",
       "applied_at": "2026-10-08 05:40:29.65389+00"
+    },
+    "migrations/campaign/perffix5_a_a_read_of_ids_asks_those_ids.sql": {
+      "source": "matrx-frontend",
+      "filename": "perffix5_a_a_read_of_ids_asks_those_ids.sql",
+      "checksum": "e323e82a808bb73162a592a0cd19b10beda1edf7509e2a7a89b27385cc214ee8",
+      "applied_at": "2026-10-08 09:14:15.313305+00"
     },
     "migrations/campaign/person_timezone_day_zone_reads_the_profile_first.sql": {
       "source": "matrx-frontend",
