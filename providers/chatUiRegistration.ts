@@ -25,7 +25,10 @@ import { SimpleTerminal } from "@/features/code/terminal/SimpleTerminal";
 import { useHtmlPreviewState } from "@/features/html-pages/hooks/useHtmlPreviewState";
 import { fetchArtifactsForMessageThunk, updateArtifactThunk, registerArtifactThunk } from "@/lib/redux/thunks/artifactThunks";
 import { selectHtmlPageArtifactForMessage } from "@/lib/redux/selectors/artifactSelectors";
-import { compileStoredComponent } from "@/lib/code-runtime/compile-stored";
+// The compiler (@ai-matrx/code-runtime + the ~2 MB Babel standalone) loads on the first stored
+// body a chat run actually compiles — never in the shell's eager client set (lane AE, 2026-10-08;
+// guard: pnpm check:shell-eager-graph). The package awaits this slot (@ai-matrx/chat ≥ 0.5.0).
+import type { CompileStoredArgs } from "@/lib/code-runtime/compile-stored";
 import { reportCanvasOpenDrop } from "@/features/canvas/openRequest";
 import { refreshNoteContent, fetchNotesList, saveNoteField } from "@/features/notes/redux/thunks";
 import { loadProjectsWithTasks } from "@/features/tasks/redux/thunks";
@@ -82,7 +85,8 @@ registerChatUi({
   updateArtifactThunk,
   registerArtifactThunk,
   selectHtmlPageArtifactForMessage,
-  compileStoredComponent,
+  compileStoredComponent: async (args: CompileStoredArgs) =>
+    (await import("@/lib/code-runtime/compile-stored")).compileStoredComponent(args),
   reportCanvasOpenDrop,
   refreshNoteContent,
   fetchNotesList,
