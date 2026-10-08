@@ -206,7 +206,6 @@ describe("every editor host SHOWS the formatting toolbar in every editable mode"
       "features/html-pages/components/tabs/MarkdownSplitViewTab.tsx": "HtmlPreviewFullScreenEditor's footer row",
       "features/notes/components/NoteEditorCore.tsx": "NotesView / NoteWorkspace header row",
       "features/notes/components/mobile/MobileNoteEditor.tsx": "the note dock",
-      "features/notes/components/NoteEditor.tsx": "unmounted (NotesLayout is imported nowhere)",
     };
     expect(offenders.filter((f) => !VISIBLE_BUTTONS[f] && !HOST_ROW_ELSEWHERE[f])).toEqual([]);
   });
