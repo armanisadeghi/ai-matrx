@@ -264,10 +264,64 @@ export function usageFromConsume(r: EntitlementConsumeResult): EntitlementUsage 
  * The boot path re-runs when the organization is set or switched. Fails soft to
  * the free permissive snapshot on a resolver error.
  */
-export async function fetchEntitlementSnapshot(): Promise<EntitlementSnapshot | null> {
+export async function fetchEntitlementSnapshot(
+  options: { fresh?: boolean } = {},
+): Promise<EntitlementSnapshot | null> {
   // org-filter: server-call the call runs in the organization the person is working in
   const resolution = await awaitEffectiveOrganizationId();
   if (resolution.status !== "ready") return null;
+  // ONE READ PER ORGANIZATION, SHARED (lane DEDUPE-READS). The boot effect, the usage gate and the
+  // meters each asked `billing.entitlement_snapshot` for the same organization within the same
+  // second. They share the read in flight and its answer for SNAPSHOT_SHARED_MS; a caller that
+  // knows the answer changed (a purchase returning, a failed consume) passes `fresh`.
+  const held = sharedSnapshot;
+  if (
+    !options.fresh &&
+    held &&
+    held.organizationId === resolution.organizationId &&
+    (held.at === 0 || Date.now() - held.at < SNAPSHOT_SHARED_MS)
+  ) {
+    return held.read;
+  }
+  const entry: SharedSnapshot = {
+    organizationId: resolution.organizationId,
+    at: 0,
+    read: readEntitlementSnapshot(resolution.organizationId),
+  };
+  sharedSnapshot = entry;
+  void entry.read.then(
+    (answer) => {
+      // A failed read (the free permissive stand-in) is never kept past its flight.
+      if (answer && standIns.has(answer)) {
+        if (sharedSnapshot === entry) sharedSnapshot = null;
+      } else entry.at = Date.now();
+    },
+    () => {
+      if (sharedSnapshot === entry) sharedSnapshot = null;
+    },
+  );
+  return entry.read;
+}
+
+type SharedSnapshot = {
+  organizationId: string;
+  at: number;
+  read: Promise<EntitlementSnapshot | null>;
+};
+/** How long one organization's snapshot is shared: a page load, never a session of stale meters. */
+const SNAPSHOT_SHARED_MS = 30_000;
+let sharedSnapshot: SharedSnapshot | null = null;
+/** The free stand-ins a failed read answers with: announced as what they are, never kept. */
+const standIns = new WeakSet<object>();
+
+/** Sign-out or a known change: the next boot read asks the resolver. */
+export function forgetEntitlementSnapshot(): void {
+  sharedSnapshot = null;
+}
+
+async function readEntitlementSnapshot(
+  organizationId: string,
+): Promise<EntitlementSnapshot | null> {
   const empty: EntitlementSnapshot = {
     tier: "free",
     isSubscribed: false,
@@ -275,12 +329,13 @@ export async function fetchEntitlementSnapshot(): Promise<EntitlementSnapshot | 
     usage: {},
     fetchedAt: Date.now(),
   };
+  standIns.add(empty);
   try {
     const supabase = createClient();
     // org-filter: server-call the call runs in the organization the person is working in
     const { data, error } = await supabase
       .schema("billing")
-      .rpc("entitlement_snapshot", { p_org: resolution.organizationId });
+      .rpc("entitlement_snapshot", { p_org: organizationId });
     if (error || !data) return empty;
     return mapSnapshotRow(data as EntitlementSnapshotRow);
   } catch {

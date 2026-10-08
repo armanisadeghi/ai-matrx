@@ -190,7 +190,7 @@ export function PrimedTablePage({
   // first browser render, outside the boundary the server's rows stream into.
   const asking = useRef<{ tableId: string; answer: Promise<TablePageSeed | null> } | null>(null);
   if (typeof window !== "undefined" && asking.current?.tableId !== tableId) {
-    asking.current = { tableId, answer: askClientTableSeed(dataSource, tableId, { userId, rows }) };
+    asking.current = { tableId, answer: askClientTableSeed(dataSource, tableId, { userId, rows, server: seed }) };
   }
   const [own, setOwn] = useState<{ tableId: string; seed: TablePageSeed | null } | null>(null);
   useEffect(() => {

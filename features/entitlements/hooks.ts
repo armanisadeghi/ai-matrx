@@ -83,7 +83,7 @@ export function useEntitlement(capability: Capability): UseEntitlementResult {
 
   const dispatch = useAppDispatch();
   const refresh = useCallback(async () => {
-    const snapshot = await fetchEntitlementSnapshot();
+    const snapshot = await fetchEntitlementSnapshot({ fresh: true });
     // null = no organization resolved yet: a tier belongs to an organization, so
     // there is nothing to hydrate (the boot path re-runs once one is set).
     if (snapshot) dispatch(setEntitlementSnapshot(snapshot));
@@ -231,7 +231,7 @@ export function useEntitlementConsume(capability: Capability): EntitlementCommit
       } else {
         // The write failed (already screamed in dev). Re-hydrate the whole
         // snapshot so the meter still converges to server truth on next tick.
-        const snapshot = await fetchEntitlementSnapshot();
+        const snapshot = await fetchEntitlementSnapshot({ fresh: true });
         if (snapshot) dispatch(setEntitlementSnapshot(snapshot));
       }
       return result;
