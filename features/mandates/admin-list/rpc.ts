@@ -45,6 +45,13 @@ export interface MandateAdminPageRow {
    * open; absent = a database older than that migration.
    */
   candidate?: MandateCandidateCell | null;
+  /**
+   * The models this job runs on: the default Holder's first ("Workflow" for a
+   * workflow Holder, "No holder" with none), then every other model a binding's
+   * own Holder runs on (migrations/mnd_admin_list_model_and_spend_columns.sql).
+   * Absent = a database older than that migration.
+   */
+  models?: string[];
 }
 
 /** One page row's open-candidate cell — counts derived from its pairs. */
@@ -103,6 +110,11 @@ export interface MandateAdminPageAnswer {
   rows: MandateAdminPageRow[];
   /** Absent only from a database older than the 2026-09-25 migration. */
   console?: MandateAdminPageConsole;
+  /**
+   * Dollars over the period for EVERY row the filters match (all pages), when
+   * the call sent `p_facts.spend`; absent from an older database.
+   */
+  spend_total?: number | string | null;
 }
 
 /**

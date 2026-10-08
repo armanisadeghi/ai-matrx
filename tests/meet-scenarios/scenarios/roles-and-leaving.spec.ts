@@ -113,7 +113,11 @@ scenario("end-for-all-host", async ({ cast }) => {
     await admitWaiting(host, member, memberName);
   }
   await seeUntil(host, `${memberName} in the call`, (o) => o.participants.some((p) => p.name.includes(memberName)), 30_000);
-  const template = firstTokenRequest(member);
+  // EACH PERSON PROBES WITH THEIR OWN REQUEST: the host's request carries the host's organization
+  // header, the member's carries the member's. Replaying one person's template as the other is a
+  // 400 organization_forbidden - a malformed probe that proves nothing about the door.
+  const memberTemplate = firstTokenRequest(member);
+  const hostTemplate = firstTokenRequest(host);
   await endForEveryone(host);
   await seePhase(host, ["ended"], TIMEOUTS.noticeMs);
   await seePhase(member, ["ended"], TIMEOUTS.noticeMs);
@@ -128,9 +132,9 @@ scenario("end-for-all-host", async ({ cast }) => {
   const minted = member.tokenCalls.slice(before).filter((c) => c.status !== null && c.status < 300);
   expect(minted.length, `token door minted for org member ${memberName} on their own page after End for everyone`).toBe(0);
   // …and the token door refuses the member and the host by name.
-  const m = await tokenProbe(member, template, memberName);
+  const m = await tokenProbe(member, memberTemplate, memberName);
   expect(refused(m), `token door should refuse org member ${memberName} after End for everyone; answered HTTP ${m}`).toBe(true);
-  const h = await tokenProbe(host, template, "host");
+  const h = await tokenProbe(host, hostTemplate, "host");
   expect(refused(h), `token door should refuse the host after End for everyone; answered HTTP ${h}`).toBe(true);
   const room = await roomTruth(String(truth.room_name));
   host.note(`LiveKit truth: room exists=${room.exists} participants=[${room.participants.join(", ")}]`);

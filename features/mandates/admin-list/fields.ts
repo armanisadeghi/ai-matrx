@@ -163,6 +163,14 @@ export const FIELDS: Record<string, FieldReader> = {
     sort: (r) => r.sources?.callSites ?? 0,
   },
   languages: listOf((r) => r.sources?.languages),
+  // THE MODEL — any of them matches; sorts by the default Holder's.
+  model: {
+    values: (r) => r.models ?? [],
+    sort: (r) => (r.models?.[0] ?? "").toLowerCase(),
+  },
+  // THE COST COLUMNS — points are dollars at one rate, so both sort alike.
+  spendUsd: { values: () => [], sort: (r) => r.spendUsd ?? -1 },
+  spendPoints: { values: () => [], sort: (r) => r.spendUsd ?? -1 },
 };
 
 /** A multi-valued scan fact; no value reads "None found", never blank. */

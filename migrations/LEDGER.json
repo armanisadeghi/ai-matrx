@@ -1,6 +1,6 @@
 {
   "note": "Checked-in snapshot of public._schema_migrations for the files under migrations/campaign and migrations/inverse. Written by `pnpm db:apply` on every successful production apply and refreshed whole by the nightly catch-up. Never hand-edited: a self-written checksum is a claim nobody can check. Guard: pnpm check:ledgered-files-unedited.",
-  "generated_at": "2026-10-08T18:47:08.888Z",
+  "generated_at": "2026-10-08T19:24:18.862Z",
   "files": {
     "migrations/campaign/a_chunk_is_the_size_the_client_door_can_actually_carry.sql": {
       "source": "matrx-frontend",
@@ -3733,6 +3733,12 @@
       "filename": "hotdoors3_d_a_header_row_asks_for_its_header_once.sql",
       "checksum": "c78862315a891564e885aee34709614d1668c938cc7459d110372cff36f95640",
       "applied_at": "2026-10-08 18:21:52.237421+00"
+    },
+    "migrations/campaign/hotdoors3_e_a_a_named_table_is_read_by_its_index_key.sql": {
+      "source": "matrx-frontend",
+      "filename": "hotdoors3_e_a_a_named_table_is_read_by_its_index_key.sql",
+      "checksum": "2d3b6f7bb784a3755982fde8189c4bb48cc8f201762f03d7ce348edbd67775f0",
+      "applied_at": "2026-10-08 18:52:43.084154+00"
     },
     "migrations/campaign/hotdoors_a_the_list_filter_inlines_and_a_page_walks_once.sql": {
       "source": "matrx-frontend",
@@ -8234,6 +8240,30 @@
       "checksum": "d231301ba14f00feb7362c06a7e0b499cd2f44a148839bf0702e8e55b1aa6065",
       "applied_at": "2026-09-26 07:21:04.950851+00"
     },
+    "migrations/campaign/typeform2_a_form_visit_is_rate_capped_and_a_form_reads_its_knobs.sql": {
+      "source": "matrx-frontend",
+      "filename": "typeform2_a_form_visit_is_rate_capped_and_a_form_reads_its_knobs.sql",
+      "checksum": "d081293ec79777e1907bcd3fe0664237672f455628987ed45eb43cedfa3c47f2",
+      "applied_at": "2026-10-07 22:51:18.048892+00"
+    },
+    "migrations/campaign/typeform2_b_the_visit_cap_names_the_partial_index.sql": {
+      "source": "matrx-frontend",
+      "filename": "typeform2_b_the_visit_cap_names_the_partial_index.sql",
+      "checksum": "3042ef6ea97535507a6bda91abed3538d7e94b8d14d27f5c3f2e67ce44cc01e1",
+      "applied_at": "2026-10-07 22:56:14.181918+00"
+    },
+    "migrations/campaign/typeform2_c_a_form_can_email_the_person_who_answered.sql": {
+      "source": "matrx-frontend",
+      "filename": "typeform2_c_a_form_can_email_the_person_who_answered.sql",
+      "checksum": "0f9a99014349f7f249e56a94a32d489aac6992c7b22ba599a52891e6293fa0f8",
+      "applied_at": "2026-10-08 00:21:50.096068+00"
+    },
+    "migrations/campaign/typeform2_d_the_builder_reads_the_forms_knobs.sql": {
+      "source": "matrx-frontend",
+      "filename": "typeform2_d_the_builder_reads_the_forms_knobs.sql",
+      "checksum": "946348f0027319ccddf8e25ed6ee93756e949bc0d0bb894eea91f5f0ee3820e5",
+      "applied_at": "2026-10-08 00:25:36.312202+00"
+    },
     "migrations/campaign/typeform_a_form_routes_scores_and_counts_itself.sql": {
       "source": "matrx-frontend",
       "filename": "typeform_a_form_routes_scores_and_counts_itself.sql",
@@ -9392,6 +9422,12 @@
       "checksum": "201a2e5d399095adb9bdc9fe7a68f97ffb05da9c18dee476e6519d8c112de7f0",
       "applied_at": "2026-09-19 07:15:41.532395+00"
     },
+    "migrations/campaign/walkfixes_a_a_link_button_encodes_its_row_values.sql": {
+      "source": "matrx-frontend",
+      "filename": "walkfixes_a_a_link_button_encodes_its_row_values.sql",
+      "checksum": "8f25f7d54c9d0c0e1822402542a778b95de9c1c1021e1296dcc1a834d5cba9a2",
+      "applied_at": "2026-10-08 19:24:17.668717+00"
+    },
     "migrations/campaign/wherelives_the_older_table_is_the_writer_until_the_switch.sql": {
       "source": "campaign",
       "filename": "wherelives_the_older_table_is_the_writer_until_the_switch.sql",
@@ -9715,6 +9751,24 @@
       "filename": "share_a_reason_that_names_nothing_down.sql",
       "checksum": "ab2685215dad8ebc7ecff8de7f36501d3fa8d6da4dad7c45f1b4cd82aec79a23",
       "applied_at": "2026-09-19 19:03:59.815425+00"
+    },
+    "migrations/inverse/share_edit_content_documents_and_entity_seat.sql": {
+      "source": "matrx-frontend",
+      "filename": "share_edit_content_documents_and_entity_seat.sql",
+      "checksum": "0165ffe8bc61f83602752001a44a0a7ffe3069183f3693dfb1c6c48e0def6e32",
+      "applied_at": "2026-10-07 20:51:14.459168+00"
+    },
+    "migrations/inverse/share_edit_content_documents_policy.sql": {
+      "source": "matrx-frontend",
+      "filename": "share_edit_content_documents_policy.sql",
+      "checksum": "221d3e9b993f32e76fe95911e185e3f20e41493f47a9ff76b0599d335f331a57",
+      "applied_at": "2026-10-07 20:55:34.197034+00"
+    },
+    "migrations/inverse/share_edit_content_level_doors.sql": {
+      "source": "matrx-frontend",
+      "filename": "share_edit_content_level_doors.sql",
+      "checksum": "e2d503dedf0bf58dcb019595a4e2e691be6bf1170efc61b7abbce2eb8246a42f",
+      "applied_at": "2026-10-07 20:22:02.179658+00"
     },
     "migrations/inverse/share_one_ladder_reaches_the_share_dialog_down.sql": {
       "source": "matrx-frontend",

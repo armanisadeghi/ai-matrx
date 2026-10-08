@@ -131,7 +131,7 @@ export async function provisionReview360(
       {
         name: "360: tell the respondent",
         trigger: { on: "property_edited", field: "link" },
-        actions: [{ do: "notify", to: { field: "respondent" }, text: `${TRACK_TITLE}: {{link}}` }],
+        actions: [{ do: "notify", to: { field: "respondent_login" }, text: `${TRACK_TITLE}: {{link}}` }],
       },
       ...(["self", "manager"] as const).map((kind) => ({
         name: `360: ${kind} half is in`,
@@ -166,7 +166,7 @@ export async function provisionReview360(
       },
       actions: [
         { do: "set" as const, values: { status: "ready" } },
-        { do: "notify" as const, to: { field: "hr_manager" }, text: "Both halves of a 360 review are in. {{review_ref}}" },
+        { do: "notify" as const, to: { field: "hr_manager_login" }, text: "Both halves of a 360 review are in. {{review_ref}}" },
       ],
     })),
     { organizationId },
@@ -234,6 +234,7 @@ export async function startReview360(a: StartReview360Args): Promise<R360<{ revi
       employee_user: ids.emp,
       manager_user: ids.mgr,
       hr_manager: ids.hr,
+      hr_manager_login: a.hrUserId,
     },
     opts,
   );
@@ -255,6 +256,7 @@ export async function startReview360(a: StartReview360Args): Promise<R360<{ revi
         respondent: h.respondent,
         hr_manager: ids.hr,
         counterpart: h.counterpart,
+        respondent_login: h.respondentUser,
         shared: false,
       },
       opts,
@@ -348,7 +350,9 @@ export async function readReview360(
   const one = async (id: unknown) => {
     if (typeof id !== "string" || !id) return null;
     const t = await readTrack(client, id);
-    return t.ok ? t.data : null;
+    // A non-reader gets the store's header ({id, exists, submitted_at = when the ROW was made}),
+    // never the row: no `track` means "not yours to read", never "submitted".
+    return t.ok && t.data.kind ? t.data : null;
   };
   return { ok: true, data: { doc, self: await one(doc.self_track), manager: await one(doc.manager_track) } };
 }

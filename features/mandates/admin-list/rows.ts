@@ -356,6 +356,10 @@ export function buildAdminRows(sources: MandateAdminSources): MandateAdminRow[] 
       sources: null,
       sourcesPending: false,
       sourcesFailed: false,
+      // Filled from the page answer and the spend read (./service.ts).
+      models: null,
+      spendUsd: null,
+      spendPending: false,
     };
   });
 }

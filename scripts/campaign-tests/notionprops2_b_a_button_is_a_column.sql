@@ -80,7 +80,7 @@ begin
     perform set_config('role', 'authenticated', true);
     if v_txt is distinct from 'button' then v_fail := v_fail || ('1b a declared button reads back as ' || coalesce(v_txt, 'null')); end if;
     v_res := custom.button_press(v_org, v_lead, b_site);
-    if v_res ->> 'url' is distinct from 'https://www.google.com/search?q=Hollis Family Residence' then
+    if v_res ->> 'url' is distinct from 'https://www.google.com/search?q=Hollis%20Family%20Residence' then  -- WALK-FIXES D3: values are encoded
       v_fail := v_fail || ('4 open_url answered ' || coalesce(v_res::text, 'null'));
     end if;
   exception when others then

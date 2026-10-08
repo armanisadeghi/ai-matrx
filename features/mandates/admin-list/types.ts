@@ -121,4 +121,16 @@ export interface MandateAdminRow extends MandateRow {
    * the database answer did not carry it).
    */
   candidate?: MandateCandidateCell | null;
+  /**
+   * THE MODEL: the default Holder's model first ("Workflow" for a workflow
+   * Holder), then the other models bindings run on. `null` = the database
+   * answer did not carry models.
+   */
+  models: string[] | null;
+  /**
+   * Dollars over the list's period (./spend.ts). `null` = not read — still
+   * reading (`spendPending`) or the read failed.
+   */
+  spendUsd: number | null;
+  spendPending: boolean;
 }

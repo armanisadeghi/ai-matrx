@@ -64,6 +64,7 @@ import {
   getMandateAdminListState,
   mergeProvisionOffers,
   recordMandateAdminFailure,
+  setMandateSpendTotal,
 } from "./store";
 import type { MandateAdminRow } from "./types";
 import { storedMandateKey } from "@ai-matrx/agents/mandates";
@@ -247,6 +248,9 @@ function buildPageRows(
       ownerLevel: answer.owner_level ?? row.ownerLevel,
       contractCheck: answer.contract_check ?? row.contractCheck,
       candidate: answer.candidate,
+      models: answer.models ?? null,
+      spendUsd: spendOfKey(listState.spend, answer.mandate_key),
+      spendPending: !listState.spend.settled,
       sources: listState.sourceFacts.get(answer.mandate_key) ?? null,
       sourcesPending: !checked,
       sourcesFailed: checked && Boolean(listState.failures.sources),
@@ -274,6 +278,30 @@ function buildPageRows(
       );
   }
   return rows;
+}
+
+/** `p_facts.spend` — only once the period's spend has been read. */
+export function spendFactsOf(byKey: Record<string, number> | null): { spend?: Record<string, number> } {
+  return byKey ? { spend: byKey } : {};
+}
+
+/**
+ * One mandate's dollars. A key the ledger never tagged spent nothing — unless
+ * the answer folded groups into Other, when its figure is unknown.
+ */
+export function spendOfKey(
+  spend: { byKey: Record<string, number> | null; folded: boolean },
+  key: string,
+): number | null {
+  if (!spend.byKey) return null;
+  return spend.byKey[key] ?? (spend.folded ? null : 0);
+}
+
+/** The page answer's spend total, or null when the database did not sum it. */
+export function spendTotalOf(raw: number | string | null | undefined): number | null {
+  if (raw === null || raw === undefined) return null;
+  const usd = typeof raw === "number" ? raw : Number(raw);
+  return Number.isFinite(usd) ? usd : null;
 }
 
 export function countsFromAnswer(
@@ -321,7 +349,12 @@ export function createMandateAdminService(
         p_dir: sort.direction,
         p_limit: sort.pageSize,
         p_offset: (query.page - 1) * sort.pageSize,
-        p_facts: buildFacts(reports, sectionsFor(query, searching ? null : sort.sort)) as Json,
+        p_facts: {
+          ...buildFacts(reports, sectionsFor(query, searching ? null : sort.sort)),
+          // The period's spend, once read: the database sorts by it and sums
+          // it over every matching row (spend_total).
+          ...spendFactsOf(getMandateAdminListState().spend.byKey),
+        } as Json,
       };
       // ONE database call: the page answer carries its own rows (`console`).
       const { answer, data } = await readDbOnce(`${lane}:${JSON.stringify(args)}`, async () => {
@@ -338,6 +371,7 @@ export function createMandateAdminService(
         });
         return { answer: page, data: definitions };
       });
+      setMandateSpendTotal(spendTotalOf(answer.spend_total));
       // Built from the reports as they stand NOW — a report that landed while
       // the database half was read is in these rows.
       const current = getMandateAdminListState().reports;

@@ -17,6 +17,8 @@ const listState = {
     ["podcast.script", { mandateKey: "podcast.script", declaredIn: ["aidream"], calledFrom: ["matrx-frontend"], languages: ["Python"], callSites: 3, flagged: 0 }],
   ]),
   sourceChecked: new Set(["podcast.script"]),
+  // The period's spend, read: podcast.script ran, seo.audit never did.
+  spend: { period: "30d", byKey: { "podcast.script": 12.5 } as Record<string, number> | null, folded: false, settled: true, total: null },
 };
 
 const ensureMandateSourceFacts = jest.fn();
@@ -27,7 +29,9 @@ jest.mock("../store", () => ({
   getMandateAdminListState: () => listState,
   mergeProvisionOffers: jest.fn(),
   recordMandateAdminFailure: jest.fn(),
+  setMandateSpendTotal: (total: number | null) => setMandateSpendTotal(total),
 }));
+const setMandateSpendTotal = jest.fn();
 const callMandateAdminList = jest.fn();
 jest.mock("../rpc", () => ({
   callMandateAdminList: (args: unknown) => callMandateAdminList(args),
@@ -101,10 +105,11 @@ describe("the admin list page read", () => {
     callMandateAdminList.mockResolvedValueOnce({
       total: 2,
       rows: [
-        { id: "m1", mandate_key: "podcast.script", customized_by: ["Default"], serves: ["Feature code"], serves_detail: [], backs_count: 0, home_label: "System", feature_label: "Podcast", contract_check: "Mismatch" },
+        { id: "m1", mandate_key: "podcast.script", customized_by: ["Default"], serves: ["Feature code"], serves_detail: [], backs_count: 0, home_label: "System", feature_label: "Podcast", contract_check: "Mismatch", models: ["Claude Sonnet 5", "Gemini 3.8 Flash"] },
         { id: "m2", mandate_key: "seo.audit", customized_by: ["Default"], serves: ["Nothing found"], serves_detail: [], backs_count: 1, home_label: "System", feature_label: "SEO", contract_check: "Not checked" },
       ],
       console: CONSOLE,
+      spend_total: "12.50000000",
     });
     buildAdminRows.mockImplementation(({ console: data }: { console: ReturnType<typeof consoleDataFromPage> }) =>
       data.mandates.map((m) => ({ mandateKey: m.mandate_key, provisionKey: null, contractCheck: "Not checked" })),
@@ -128,5 +133,15 @@ describe("the admin list page read", () => {
     expect(page.rows[1].sources).toBeNull();
     expect(page.rows[1].sourcesPending).toBe(true);
     expect(ensureMandateSourceFacts).toHaveBeenCalledWith(["podcast.script", "seo.audit"]);
+    // THE COST AND MODEL COLUMNS (2026-10-08): the read sends the period's
+    // spend so the database sorts and totals it; the rows carry the models and
+    // dollars; a mandate the ledger never tagged spent nothing.
+    expect(callMandateAdminList.mock.calls[0][0].p_facts).toMatchObject({ spend: { "podcast.script": 12.5 } });
+    expect(setMandateSpendTotal).toHaveBeenCalledWith(12.5);
+    expect(page.rows[0].models).toEqual(["Claude Sonnet 5", "Gemini 3.8 Flash"]);
+    expect(page.rows[1].models).toBeNull();
+    expect(page.rows[0].spendUsd).toBe(12.5);
+    expect(page.rows[1].spendUsd).toBe(0);
+    expect(page.rows[0].spendPending).toBe(false);
   });
 });

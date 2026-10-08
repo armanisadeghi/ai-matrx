@@ -31,4 +31,3 @@ Its files stay as they are.
 ## Docs and comments — both versions kept
 
 ## Held files
-- _conflicts/2026-10-08-114309/migrations/LEDGER.json.held — LOCAL latest 2026-10-08 11:51; GITHUB latest 2026-10-08 11:51; LOCAL lacks 1 of GITHUB's 6 new lines; GITHUB lacks 5 of LOCAL's 11 new lines; recover: git show be9b15ffc9:'migrations/LEDGER.json' / 7eda0a8811:'migrations/LEDGER.json'
