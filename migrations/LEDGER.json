@@ -1,6 +1,6 @@
 {
   "note": "Checked-in snapshot of public._schema_migrations for the files under migrations/campaign and migrations/inverse. Written by `pnpm db:apply` on every successful production apply and refreshed whole by the nightly catch-up. Never hand-edited: a self-written checksum is a claim nobody can check. Guard: pnpm check:ledgered-files-unedited.",
-  "generated_at": "2026-10-08T00:50:42.151Z",
+  "generated_at": "2026-10-08T01:09:04.386Z",
   "files": {
     "migrations/campaign/a_chunk_is_the_size_the_client_door_can_actually_carry.sql": {
       "source": "matrx-frontend",
@@ -355,6 +355,12 @@
       "filename": "automation_door_a_table_declares_what_happens_when_a_row_changes.sql",
       "checksum": "76804d13c00a68522965dd14bc511813f506677d5530317003982432dc3324f8",
       "applied_at": "2026-10-07 19:14:15.886583+00"
+    },
+    "migrations/campaign/automation_door_b_a_day_is_the_persons_day.sql": {
+      "source": "matrx-frontend",
+      "filename": "automation_door_b_a_day_is_the_persons_day.sql",
+      "checksum": "0ea787f13ad189ebce9194480759ac50718dec9c0c2c035cae5890c40dbd9ab4",
+      "applied_at": "2026-10-08 01:09:01.084498+00"
     },
     "migrations/campaign/automations_a_workflow_text_speaks_only_from_its_own_organization.sql": {
       "source": "matrx-frontend",

@@ -249,7 +249,7 @@ begin
   -- +14 when it is noon UTC or later, -12 before. A date column written with {now:true} must hold that day.
   perform set_config('role', 'postgres', true);
   f_done := custom.field_declare(v_org, v_content, jsonb_build_object('key', 'completed_on', 'label', 'Completed', 'type', 'range', 'config', jsonb_build_object('kind', 'date'), 'sort', 50));
-  f_when := custom.field_declare(v_org, v_content, jsonb_build_object('key', 'completed_at', 'label', 'Completed at', 'type', 'datetime', 'sort', 60));
+  f_when := custom.field_declare(v_org, v_content, jsonb_build_object('key', 'completed_at', 'label', 'Completed at', 'type', 'range', 'config', jsonb_build_object('kind', 'datetime'), 'sort', 60));
   v_zone := case when extract(hour from now() at time zone 'UTC') >= 12 then 'Pacific/Kiritimati' else 'Etc/GMT+12' end;
   v_utc  := to_char(now() at time zone 'UTC', 'YYYY-MM-DD');
   v_want := to_char(now() at time zone v_zone, 'YYYY-MM-DD');
@@ -261,6 +261,13 @@ begin
       jsonb_build_object(f_done, jsonb_build_object('now', true), f_when, jsonb_build_object('now', true))))));
   if not (v_res ->> 'ok')::boolean then raise exception '8a: %', v_res; end if;
   a_added := (v_res ->> 'automation_id')::uuid;
+
+  -- The test runs in a transaction that is rolled back: take away any zone this person has saved, so the
+  -- ladder below starts from "nobody declared one".
+  perform set_config('role', 'postgres', true);
+  update communication.notification_channel_preference set timezone = null where created_by = c_admin;
+  update communication.sms_notification_preferences set timezone = null where user_id = c_admin;
+  perform set_config('role', 'authenticated', true);
 
   -- (i) no zone declared anywhere: the UTC day, exactly as before.
   perform custom.record_update(v_org, r3, jsonb_build_object('step', 'stamp'));
@@ -279,6 +286,17 @@ begin
   if v_got is distinct from v_want then raise exception '8c: a run in % should write her day %, wrote %', v_zone, v_want, v_got; end if;
   if v_txt is null or v_txt not like '%T%' then raise exception '8d: the datetime lost its instant: %', v_txt; end if;
   if (v_txt::timestamptz) < now() - interval '1 minute' then raise exception '8e: the datetime is not now: %', v_txt; end if;
+
+  -- (ii-b) the person's OWN saved zone beats the connection's: a saved preference says her day.
+  perform set_config('role', 'postgres', true);
+  perform set_config('custom.time_zone', 'UTC', true);
+  update communication.sms_notification_preferences set timezone = v_zone where user_id = c_admin;
+  if not found then
+    insert into communication.sms_notification_preferences (user_id, organization_id, timezone) values (c_admin, v_org, v_zone);
+  end if;
+  v_txt := custom.day_zone(v_org);
+  if v_txt is distinct from v_zone then raise exception '8h: a saved person zone did not win (got %, want %)', v_txt, v_zone; end if;
+  perform set_config('custom.time_zone', v_zone, true);
 
   -- (iii) the same resolver serves a row action's TODAY() and the stored coercion of an instant.
   perform set_config('role', 'postgres', true);

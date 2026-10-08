@@ -65,10 +65,7 @@ $fn$;
 comment on function custom.day_zone(uuid) is
   'AUTOMATION-DOOR: the zone a person''s own day is read in: her time zone, else the organization''s (custom/time_zone), else the connection''s (custom.time_zone), else UTC. The one resolver for every date-only write and TODAY().';
 
--- (a re-run after the inverse finds the UTC-only form of this function: replaced whole, so drop it first)
-drop function if exists custom._action_coerce(jsonb, jsonb, uuid);
-
-create function custom._action_coerce(p_field jsonb, p_value jsonb, p_organization_id uuid)
+create or replace function custom._action_coerce(p_field jsonb, p_value jsonb, p_organization_id uuid)
  RETURNS jsonb
  LANGUAGE plpgsql
  STABLE
