@@ -271,7 +271,6 @@
     "bare-text-field|features/entitlements/guardrails/SpendBudgetCard.tsx": 1,
     "bare-text-field|features/esign/envelopes/send/RecipientPicker.tsx": 1,
     "bare-text-field|features/esign/envelopes/SendForSignature.tsx": 1,
-    "bare-text-field|features/esign/signing/AdoptSignature.tsx": 1,
     "bare-text-field|features/exports/components/SendToRulebookDialog.tsx": 1,
     "bare-text-field|features/feature-docs/components/FeatureDocsTable.tsx": 2,
     "bare-text-field|features/file-analysis/components/ValueEditor.tsx": 2,
