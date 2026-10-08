@@ -45,6 +45,21 @@ Block document: a tree of `SpaceBlock` (`id`, `type`, `text: RichSpan[]`, `color
 
 ## Change log
 
+- 2026-10-08 — builder round 34 (load speed): `/spaces/[id]` reads the Space on the server as the person
+  (`page/space-page-seed.server.ts`, same `SupabaseSpacesStore.get`, head + snapshot + parent edge at once) and the page's
+  text is in the HTML: the body's first paint is `editor/static-body.tsx` — the stored blocks drawn read-only in the
+  editor's own DOM (classes/attributes captured from the live BlockNote editor), React blocks through the editor's own
+  components (`PageRow`, `CalloutGlyph`, `DatabaseHost` + `DatabaseBlock`). The editor is built behind it
+  (`.spaces-editor-behind`) once the room is joined and the table seed has landed, and swaps in when it paints the same
+  height (`revealWhenPainted`, 2.5 s cap). Inline custom tables: `custom.where_id_opens` + records-ui
+  `askTablePageSeed({embedded})`, rows asked only when the person's `data/server_rows` (read from the bundle,
+  `serverRowsOf`) is on, bounded at 2.5 s, streamed as a promise to `page/space-seed-context.tsx`
+  (`RecordsSeedProvider` for the first pass; `LateSeedRecords` gives each editor database node view its own live copy,
+  since a seed store dies after its provider's first effect). Title in the HTML; `useSpaceCollab` starts online and the
+  database height hold is CSS per window width in the static paint — no hydration warnings. Walk
+  `__tests__/walk/load-perf.walk.mjs` (text, per-table rows, reads, CLS, hydration; `DUMP=` writes the editor's DOM).
+  Open: built-in module blocks (entity `drill_*`) and charts (`record_aggregate`) are not seedable by this recipe;
+  a block with a store view id still asks with `p_view_id null` (matches the seed).
 - 2026-10-07 — builder round 33: (1) structure is Full access / Can edit only (`page/structure.ts`, provided by
   `SpacePage` from `fullEdit`): an inline or built-in database offers a content editor, commenter or viewer no Add view,
   Automations, View settings (layout, properties, group, chart), view tab rename/duplicate/delete, database title, filter
