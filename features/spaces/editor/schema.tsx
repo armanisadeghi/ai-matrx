@@ -55,7 +55,7 @@ const CODE_BLOCK = notionCodeBlock(createCodeBlockSpec({
   },
 }));
 
-function PageRow({ spaceId, linked }: { spaceId: string; linked: boolean }) {
+export function PageRow({ spaceId, linked }: { spaceId: string; linked: boolean }) {
   const { byId, archived, linkTarget, requestLink, ready, open, pageHref, missingPageLabel } = useSpaces();
   // The tree first; a page it does not hold (shared from another organization) is read by id — never
   // "in Trash" unless it is.

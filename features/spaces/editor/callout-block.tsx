@@ -22,7 +22,7 @@ const OPEN_PICKER = "spaces:callout-icon";
 
 type OpenPicker = { blockId: string; icon: string; anchor: HTMLElement };
 
-function Glyph({ name }: { name: string }) {
+export function CalloutGlyph({ name }: { name: string }) {
   const Icon = SPACE_ICONS[name];
   if (Icon) return <Icon size={20} strokeWidth={1.75} aria-hidden />;
   return <DynamicIcon name={name} size={20} fallbackIcon="FileText" />;
@@ -60,7 +60,7 @@ export const CalloutBlock = createBlockSpec(
           window.dispatchEvent(new CustomEvent<OpenPicker>(OPEN_PICKER, { detail: { blockId: block.id, icon, anchor: button } }));
         });
         root = createRoot(button);
-        root.render(<Glyph name={icon} />);
+        root.render(<CalloutGlyph name={icon} />);
         dom.appendChild(button);
       }
       const text = document.createElement("div");

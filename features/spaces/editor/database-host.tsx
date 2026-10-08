@@ -62,7 +62,7 @@ export interface PaintedSize {
   nr?: 1;
 }
 /** A stored size counts at a width this close to the one it was painted at. */
-const PAINTED_WIDTH_SLACK = 24;
+export const PAINTED_WIDTH_SLACK = 24;
 const PAINTED_KEEP = 4;
 /** The built-in table's "+ New page" row (`.spaces-db-newrow`, 34px), which older saved sizes do not hold. */
 export const NEW_PAGE_ROW_PX = 34;
@@ -95,9 +95,11 @@ export function pickPainted(list: PaintedSize[], at: { width?: number; vw?: numb
   return list.find((p) => near(p.w, at.width)) ?? (at.width === undefined ? (list.find((p) => near(p.vw, at.vw)) ?? null) : null);
 }
 
-function useHeldHeight(blockId: string | undefined, ref: React.RefObject<HTMLDivElement | null>, painted: PaintedSize[]): number | undefined {
+function useHeldHeight(blockId: string | undefined, ref: React.RefObject<HTMLDivElement | null>, painted: PaintedSize[], firstFrame = true): number | undefined {
   // The first frame already holds the stored size (before any effect): the block is never drawn short.
-  const [hold, setHold] = useState<number | undefined>(() => (typeof window === "undefined" ? undefined : pickPainted(painted, { vw: window.innerWidth })?.h));
+  // A block drawn on the server (the static first paint, round 34) holds it by CSS instead — the server
+  // has no window, and the hydrating pass must draw what the server drew.
+  const [hold, setHold] = useState<number | undefined>(() => (!firstFrame || typeof window === "undefined" ? undefined : pickPainted(painted, { vw: window.innerWidth })?.h));
   useLayoutEffect(() => {
     const el = ref.current;
     if (!el || !blockId) return;
@@ -184,9 +186,9 @@ function useHeldHeight(blockId: string | undefined, ref: React.RefObject<HTMLDiv
 }
 
 /** The block's element. It stops nothing: every press and key reaches the table and React above it. */
-export function DatabaseHost({ children, blockId, layout, painted }: { children: ReactNode; blockId?: string; layout?: string; painted?: PaintedSize[] }) {
+export function DatabaseHost({ children, blockId, layout, painted, serverDrawn }: { children: ReactNode; blockId?: string; layout?: string; painted?: PaintedSize[]; serverDrawn?: boolean }) {
   const ref = useRef<HTMLDivElement>(null);
-  const hold = useHeldHeight(blockId, ref, painted ?? []);
+  const hold = useHeldHeight(blockId, ref, painted ?? [], !serverDrawn);
   return (
     <div
       ref={ref}

@@ -121,7 +121,7 @@ function flashBlock(id: string) {
   }, 1700);
 }
 
-function useDarkMode(): boolean {
+export function useDarkMode(): boolean {
   const [dark, setDark] = useState(false);
   useEffect(() => {
     const root = document.documentElement;
@@ -161,12 +161,15 @@ export function growOf(width: number): number {
   return Math.round(width * 1000 * 1000) / 1000;
 }
 
+/** An id inside a quoted attribute selector: only the quote and backslash need escaping (same on the server). */
+const attrValue = (id: string) => id.replace(/["\\]/g, "\\$&");
+
 /** Column widths as CSS keyed by block id (the flex items are BlockNote's own outer elements). */
-function columnCss(blocks: EngineBlock[]): string {
+export function columnCss(blocks: EngineBlock[]): string {
   const rules: string[] = [];
   const walk = (list: EngineBlock[]) => {
     for (const b of list) {
-      if (b.type === "column") rules.push(`.spaces-editor .bn-block-outer[data-id="${CSS.escape(b.id)}"]{flex-grow:${growOf(Number(b.props?.width ?? 0.5))} !important}`);
+      if (b.type === "column") rules.push(`.spaces-editor .bn-block-outer[data-id="${attrValue(b.id)}"]{flex-grow:${growOf(Number(b.props?.width ?? 0.5))} !important}`);
       if (b.children?.length) walk(b.children);
     }
   };

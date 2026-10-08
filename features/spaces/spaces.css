@@ -1879,3 +1879,8 @@ tr:hover .spaces-entity-openpill, .spaces-entity-open:focus-visible .spaces-enti
 .spaces-suggestion-actions { display: inline-flex; gap: 2px; }
 .spaces-suggestion-actions button { display: inline-flex; align-items: center; justify-content: center; width: 24px; height: 24px; border-radius: 4px; color: var(--muted-foreground); }
 .spaces-suggestion-actions button:hover { background: var(--muted); color: var(--foreground); }
+
+/* Round 34 — the static first paint (server HTML) holds the page while the editor is built behind it
+   (SpacePage `revealWhenPainted`): the hidden editor takes the static body's box and never adds height. */
+.spaces-body-stack { position: relative; }
+.spaces-editor-behind { position: absolute; inset: 0; overflow: hidden; visibility: hidden; pointer-events: none; }

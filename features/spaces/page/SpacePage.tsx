@@ -58,6 +58,8 @@ import { editedAgo } from "./time";
 import { mayWrite, roomCanEdit, trashedByList } from "./trash-state";
 import { attemptSave, deviceStorage, forgetUnsaved, keepsChange, keepUnsaved, noteWritten } from "./unsaved";
 import { useRestoreKept } from "./useRestoreKept";
+import { SeedRecords, SpaceSeedProvider, useLandedSpaceSeed, type SpaceTablesSeed } from "./space-seed-context";
+import { StaticSpaceBody } from "../editor/static-body";
 import { sendOnLeave, trackAccessToken } from "./leave-save";
 import { contentKey } from "./content-key";
 import { usePageReminders } from "../editor/reminders";
@@ -66,6 +68,9 @@ import { setSuggestAuthor, setSuggestName, setSuggestPage } from "../editor/sugg
 import { useContentEditOnly } from "./content-edit";
 import { StructureProvider } from "./structure";
 import { copyToClipboard } from "@/lib/clipboard/copy";
+
+/** The longest the static first paint stays once the editor is built behind it. */
+const REVEAL_CAP_MS = 2500;
 
 type Editable = Pick<SpaceDoc, "title" | "icon" | "cover" | "settings" | "blocks">;
 
@@ -83,6 +88,9 @@ function Title({
   onEnter: () => void;
 }) {
   const ref = useRef<HTMLHeadingElement>(null);
+  // The title is in the first paint (server HTML, round 34); React never rewrites it after — later
+  // values (typing here, the room) are written by the effect so the caret is never disturbed.
+  const [first] = useState(value);
   useEffect(() => {
     const el = ref.current;
     if (el && el.textContent !== value) el.textContent = value;
@@ -117,7 +125,9 @@ function Title({
         e.preventDefault();
         document.execCommand("insertText", false, e.clipboardData.getData("text/plain").replace(/\s*\n\s*/g, " "));
       }}
-    />
+    >
+      {first}
+    </h1>
   );
 }
 
@@ -141,16 +151,25 @@ function isBlankPage(blocks: readonly SpaceBlock[]): boolean {
   return only.type === "paragraph" && !(only.text ?? []).some((t) => (t as { text?: string }).text) && !only.children?.length;
 }
 
-export function SpacePage({ spaceId }: { spaceId: string }) {
+export function SpacePage({ spaceId, initialDoc, tablesSeed }: { spaceId: string; initialDoc?: SpaceDoc; tablesSeed?: Promise<SpaceTablesSeed | null> }) {
   const { pageEpoch } = useSpaces();
-  return <SpacePageScreen key={`${spaceId}:${pageEpoch(spaceId)}`} spaceId={spaceId} />;
+  const key = `${spaceId}:${pageEpoch(spaceId)}`;
+  // Round 34: the page as the server read it (its text is in the HTML) opens the FIRST screen only — a
+  // page rewritten outside its screen (a new epoch) opens again on what is stored.
+  const [servedKey] = useState(key);
+  const served = key === servedKey && initialDoc?.id === spaceId ? initialDoc : undefined;
+  return (
+    <SpaceSeedProvider seed={tablesSeed}>
+      <SpacePageScreen key={key} spaceId={spaceId} initialDoc={served} />
+    </SpaceSeedProvider>
+  );
 }
 
-function SpacePageScreen({ spaceId }: { spaceId: string }) {
+function SpacePageScreen({ spaceId, initialDoc }: { spaceId: string; initialDoc?: SpaceDoc }) {
   const spaces = useSpaces();
   const { store, pathTo, favorites, toggleFavorite, markVisited, openQuickFind, sidebarCollapsed, setSidebarCollapsed, setMobileSidebarOpen, patchSummary } = spaces;
   const isMobile = useIsMobile();
-  const [doc, setDoc] = useState<SpaceDoc | null | undefined>(undefined);
+  const [doc, setDoc] = useState<SpaceDoc | null | undefined>(initialDoc);
   const [now, setNow] = useState(() => Date.now());
   const [saveState, setSaveState] = useState<SaveState>("saved");
   /** Why the last save failed — handed to the error menu beside "Not saved". */
@@ -292,7 +311,9 @@ function SpacePageScreen({ spaceId }: { spaceId: string }) {
     // A page made a moment ago arrives in hand; any other is read. Both settle in a callback, so the
     // page's state is set by the answer, never synchronously by the effect.
     const made = spaces.takeFresh(spaceId);
-    void (made ? Promise.resolve(made) : store.get(spaceId)).then(
+    // The server's read of this page (round 34) is the stored page: adopted as if just read.
+    const read = made ?? (initialDoc?.id === spaceId ? initialDoc : null);
+    void (read ? Promise.resolve(read) : store.get(spaceId)).then(
       (d) => {
         if (!live) return;
         setMadeHere(Boolean(made));
@@ -637,6 +658,29 @@ function SpacePageScreen({ spaceId }: { spaceId: string }) {
     // Flush on leaving this Space only.
   }, [spaceId]);
 
+  // Round 34 — the first paint is the page's static body (server HTML); the editor is built behind it
+  // once the room is joined and takes its place when it paints the same height (so nothing moves), or
+  // after REVEAL_CAP_MS whatever it draws.
+  const landedSeed = useLandedSpaceSeed();
+  const stackRef = useRef<HTMLDivElement | null>(null);
+  const [revealed, setRevealed] = useState(false);
+  const revealWhenPainted = () => {
+    const started = performance.now();
+    let same = 0;
+    const tick = () => {
+      const stack = stackRef.current;
+      const shown = stack?.querySelector<HTMLElement>(":scope > .spaces-static-body");
+      const behind = stack?.querySelector<HTMLElement>(":scope > .spaces-editor-behind");
+      if (!stack || !shown || !behind) return setRevealed(true);
+      // Every React block drawn (BlockNote paints them a frame after the text) and the heights agree.
+      const pending = behind.querySelector(".react-renderer:empty, .spaces-db-loading");
+      same = !pending && Math.abs(behind.scrollHeight - shown.getBoundingClientRect().height) <= 1 ? same + 1 : 0;
+      if (same >= 2 || performance.now() - started > REVEAL_CAP_MS) return setRevealed(true);
+      requestAnimationFrame(tick);
+    };
+    requestAnimationFrame(tick);
+  };
+
   // Every hook runs before the loading / missing returns below (React's order of hooks).
   const builder = useSpaceBuilder();
   const designer = useDatabaseDesigner();
@@ -960,7 +1004,11 @@ function SpacePageScreen({ spaceId }: { spaceId: string }) {
             <PageComments source={commentSource} comments={comments} adding={addingPageComment} onAddingDone={() => setAddingPageComment(false)} />
           </div>
           <CommentMargin threads={comments.threads} containerRef={contentRef} tick={String(contentTick)} onOpen={openThread} />
+          <div className="spaces-body-stack" ref={stackRef}>
+          {!revealed ? <StaticSpaceBody blocks={doc.blocks} /> : null}
           {collab.session ? (
+          <div className={revealed ? "contents" : "spaces-editor-behind"} inert={!revealed}>
+          <SeedRecords seed={landedSeed}>
           <StructureProvider value={fullEdit}>
           <SpaceEditor
             key={doc.id}
@@ -973,6 +1021,7 @@ function SpacePageScreen({ spaceId }: { spaceId: string }) {
               editorRef.current = editor;
               // After the room's body is in the editor: a copy kept on this device goes back on top.
               setReadyEditor(editor);
+              revealWhenPainted();
             }}
             slash={{
               createSubpage: async () => {
@@ -1014,9 +1063,10 @@ function SpacePageScreen({ spaceId }: { spaceId: string }) {
             onComment={startComment}
           />
           </StructureProvider>
-          ) : (
-            <div className="spaces-editor-pending" aria-busy="true" />
-          )}
+          </SeedRecords>
+          </div>
+          ) : null}
+          </div>
           {sourcePicker}
           <FindInPage rootSelector=".spaces-page .spaces-editor" />
           {aiTarget && editorRef.current ? <AskAiMenu editor={editorRef.current} target={aiTarget} page={pageForAi} onClose={() => setAiTarget(null)} /> : null}

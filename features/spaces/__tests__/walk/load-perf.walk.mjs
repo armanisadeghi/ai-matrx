@@ -37,8 +37,9 @@ await context.addInitScript(() => {
     }
     document.querySelectorAll('.spaces-content [data-content-type="database"]').forEach((db, i) => {
       if (window.__rowsAt[i] !== undefined) return;
-      const row = db.querySelector("[data-matrx-cell-row], tbody tr, [role='row'] + [role='row']");
-      if (row && row.textContent?.trim() && visible(row)) window.__rowsAt[i] = now;
+      // A table's first row, or a chart's drawn ring/bars (its data has landed).
+      const row = db.querySelector("[data-matrx-cell-row], tbody tr, [role='row'] + [role='row'], svg path[d], svg circle[stroke-dasharray]");
+      if (row && visible(row) && (row.tagName.toLowerCase() !== "tr" || row.textContent?.trim())) window.__rowsAt[i] = now;
     });
     requestAnimationFrame(look);
   };
@@ -47,7 +48,7 @@ await context.addInitScript(() => {
 const warnings = [];
 page.on("console", (m) => {
   const t = m.text();
-  if (/hydrat|did not match|server rendered|Text content does not match/i.test(t)) warnings.push(t.slice(0, 240));
+  if (/hydration|did not match|server rendered HTML|Text content does not match/i.test(t)) warnings.push(t.slice(0, 240));
 });
 let reads = [];
 let navStart = 0;
