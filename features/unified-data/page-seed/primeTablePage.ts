@@ -15,7 +15,7 @@
 // Runs in the browser only: these stores are module state, and on the server they would be shared
 // across every request.
 
-import { primeRecordPageBundle, primeTablePageBundle } from "@ai-matrx/records/core";
+import { primeTablePageBundle } from "@ai-matrx/records/core";
 import type { RecordsDataSource } from "@ai-matrx/records";
 import {
   primeObjectOrganization,
@@ -46,7 +46,9 @@ export function primeTablePage(
           primeTablePageBundle({ organizationId: s.organizationId, tableId, answer: s.bundle });
         }
         if (s.organizationId && s.recordId && s.recordBundle) {
-          primeRecordPageBundle({ organizationId: s.organizationId, recordId: s.recordId, answer: s.recordBundle });
+          // The record page's bundle lives in the same registry under `record:<id>` (what records'
+          // `primeRecordPageBundle` writes); a records build without the record bundle ignores it.
+          primeTablePageBundle({ organizationId: s.organizationId, tableId: `record:${s.recordId}`, answer: s.recordBundle });
         }
         return readObjectOrganizationAnswer(s.where, tableId);
       },
