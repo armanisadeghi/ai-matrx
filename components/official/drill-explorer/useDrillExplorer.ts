@@ -34,13 +34,34 @@ import { carriedAsk, type DrillCarried } from "./questionParts";
 import { drillDoorLabels } from "./dimensionWords";
 
 const clients = new Map<string, RecordsClient>();
+
+/**
+ * A MEMBER ACROSS ALL HER ORGANIZATIONS (lane DRILL-WAVE3): the door counts an unasked standard source over
+ * every organization she is in (her own row rules decide each row), and an `organization` lane over just the
+ * one named. A page whose organization is a visible control (default All organizations) asks the first way:
+ * the questions go out with no lane. The active organization stays only the client's own (its calendar).
+ */
+export function acrossOrganizations(source: ReturnType<typeof recordsDataSource>): ReturnType<typeof recordsDataSource> {
+  return {
+    ...source,
+    rpc: ((fn: string, args: Record<string, unknown>, options: unknown) => {
+      const question = args?.p_question;
+      if ((fn === "drill_ask" || fn === "drill_rows") && question && typeof question === "object") {
+        const { lane: _lane, ...rest } = question as Record<string, unknown>;
+        return (source.rpc as (f: string, a: unknown, o: unknown) => unknown)(fn, { ...args, p_question: rest }, options);
+      }
+      return (source.rpc as (f: string, a: unknown, o: unknown) => unknown)(fn, args, options);
+    }) as typeof source.rpc,
+  };
+}
+
 /** One records client per organization and person (the door needs both). */
-export function drillClientFor(organizationId: string, userId: string | null): RecordsClient {
-  const key = `${organizationId}:${userId ?? ""}`;
+export function drillClientFor(organizationId: string, userId: string | null, across = false): RecordsClient {
+  const key = `${organizationId}:${userId ?? ""}:${across ? "all" : "one"}`;
   let client = clients.get(key);
   if (!client) {
     client = createRecordsClient({
-      dataSource: recordsDataSource(supabase),
+      dataSource: across ? acrossOrganizations(recordsDataSource(supabase)) : recordsDataSource(supabase),
       actor: personActor(userId),
       organizationId,
     });
@@ -173,9 +194,11 @@ export function useDrillExplorer(args: {
   grainLines?: DrillGrainLines | null | undefined;
   /** False while the settings are still being read: nothing is asked until the grain is known. */
   ready?: boolean | undefined;
+  /** Ask with no lane: every organization she is in, her row rules deciding each row (a member page whose organization is a page control). */
+  acrossOrganizations?: boolean | undefined;
 }): DrillExplorerData {
   const { source, lane, organizationId, userId, question, names: resolvers, book: hostBook, version = 0, countMeasure, windowAlign, carried, headlineAlso, headlineMeasure = null, grainLines = null, ready = true } = args;
-  const client = organizationId ? drillClientFor(organizationId, userId) : null;
+  const client = organizationId ? drillClientFor(organizationId, userId, args.acrossOrganizations === true) : null;
   const sourceKey = JSON.stringify(source);
   const [def, setDef] = useState<DrillDefinition | null>(null);
   // THE ANSWERS BELONG TO ONE QUESTION: while a new window or trail is being counted the screen

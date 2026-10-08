@@ -137,6 +137,7 @@ function writeViewParam(ref: string | null) {
 export function DrillExplorer({
   source,
   lane,
+  acrossOrganizations,
   organizationId,
   title,
   rootLabel,
@@ -201,7 +202,7 @@ export function DrillExplorer({
   // THE ONE NAME BOOK (lane DRILL-D1): every relation value on this screen — answer, chart, trail,
   // records, glance columns, findings, a sibling's findings — reads its words here (drillNames.ts).
   const nameBook = useDrillNameBook(resolvers);
-  const drill = useDrillExplorer({ source, lane, organizationId, userId, question: asked, names: resolvers, book: nameBook, version: freshness?.version, countMeasure, windowAlign, carried: asking, headlineAlso: headline?.also, headlineMeasure: headline?.measure ?? null, grainLines: knobs.grainLines, ready: knobs.settled });
+  const drill = useDrillExplorer({ source, lane, organizationId, userId, question: asked, names: resolvers, book: nameBook, version: freshness?.version, countMeasure, windowAlign, carried: asking, headlineAlso: headline?.also, headlineMeasure: headline?.measure ?? null, grainLines: knobs.grainLines, ready: knobs.settled, acrossOrganizations });
   const { def, answers: rawAnswers, whole: rawWhole, says, error, asOf, client } = drill;
   const names = useDrillNames(nameBook);
   // THE CALENDAR THE DOOR CUTS PERIODS IN (F8): the definition's own (`calendar.time_zone`, from the

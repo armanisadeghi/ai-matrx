@@ -208,6 +208,8 @@ export interface DrillExplorerProps {
   lane: "mine" | "organization" | "platform";
   /** The organization whose calendar cuts the periods (the platform organization in admin). */
   organizationId: string | null;
+  /** Ask with no lane: every organization she is in, her own row rules deciding each row. For a member page whose organization is a visible control (default All organizations), never the active organization. */
+  acrossOrganizations?: boolean | undefined;
   /** The trail's first crumb and the header's name ("AI usage"). */
   title: string;
   rootLabel: string;
