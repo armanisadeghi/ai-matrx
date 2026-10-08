@@ -20,7 +20,7 @@ import {
   tusUploadRaw,
   TUS_CHUNK_SIZE_BYTES,
 } from "@/features/files/upload/tusUpload";
-import * as Files from "@/features/files/api/files";
+import * as Files from "@ai-matrx/media/files/engine/api/files";
 import type { HttpStack, HttpRequest, HttpResponse } from "tus-js-client";
 
 jest.mock("@/lib/python-client", () => ({
@@ -35,11 +35,10 @@ jest.mock("@/lib/python-client", () => ({
   resolveBaseUrlForPath: jest.fn(() => "https://api.test"),
 }));
 
-jest.mock("@ai-matrx/media/files/engine/api/files", () => ({
-  getFile: jest.fn(),
-}));
-
-const mockedGetFile = Files.getFile as jest.MockedFunction<typeof Files.getFile>;
+// A setup file already loaded the engine (and its api/files) before this suite's
+// jest.mock could register, so a module mock never reaches tusUploadRaw's binding.
+// Spy on the loaded module instead: the engine reads its exports live.
+const mockedGetFile = jest.spyOn(Files, "getFile") as unknown as jest.MockedFunction<typeof Files.getFile>;
 
 // ─── Policy ──────────────────────────────────────────────────────────────────
 
@@ -238,7 +237,7 @@ describe("tusUploadRaw (injected HttpStack)", () => {
       },
     );
 
-    expect(result).toMatchObject({ ok: true });
+    expect(result.ok).toBe(true);
     if (result.ok) {
       expect(result.fileId).toBe("file-123");
       expect(result.filePath).toBe("Captures/Videos/big.webm");
