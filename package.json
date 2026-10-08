@@ -903,7 +903,7 @@
     "@ai-matrx/desktop-protocol": "latest",
     "@ai-matrx/detail": "latest",
     "@ai-matrx/diff": "latest",
-    "@ai-matrx/icons": "latest",
+    "@ai-matrx/icons": "0.3.5",
     "@ai-matrx/kit": "latest",
     "@ai-matrx/media": "latest",
     "@ai-matrx/meet": "latest",
