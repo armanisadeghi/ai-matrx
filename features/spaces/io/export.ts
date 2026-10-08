@@ -13,8 +13,8 @@ export type ExportFormat = "markdown" | "html" | "pdf";
 
 export interface ExportSource {
   get: (id: SpaceId) => Promise<SpaceDoc | null>;
-  /** Live sub-pages in order. */
-  childrenOf: (id: SpaceId) => Array<{ id: SpaceId }>;
+  /** Live sub-pages in order (the database's read when the tree has not loaded them). */
+  childrenOf: (id: SpaceId) => Array<{ id: SpaceId }> | Promise<Array<{ id: SpaceId }>>;
   titleOf: (id: SpaceId) => string;
 }
 
@@ -40,7 +40,7 @@ async function collect(source: ExportSource, rootId: SpaceId, withChildren: bool
     const path = dir ? `${dir}/${name}` : name;
     out.push({ doc, path });
     if (!withChildren || depth >= 16) return;
-    for (const kid of source.childrenOf(id)) await walk(kid.id, path, depth + 1);
+    for (const kid of await source.childrenOf(id)) await walk(kid.id, path, depth + 1);
   };
   await walk(rootId, "", 0);
   return out;

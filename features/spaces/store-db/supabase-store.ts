@@ -8,13 +8,17 @@
 //
 // React talks to Supabase directly. The only doors are the database's own:
 //   content.space_save  — compare-and-swap on `version`, writes title + icon + body projection + one snapshot
-//   content.space_list  — the person's share roots plus their sub-pages (the assoc_list reveal rule)
+//   content.space_sidebar — the sidebar's first read: top-level pages + children of the open/expanded ones
+//   content.space_children — one page's live sub-pages (a sidebar row expanding)
+//   content.space_trash   — archived pages, read only when Trash opens
+//   content.space_search  — the page search door (Cmd+K, Move to, Link to page)
+//   content.space_list  — the WHOLE tree (scripts and the sample installer only; never the sidebar)
 //   content.space_duplicate — a page or whole tree copied in one transaction
 //   public.assoc_link / assoc_unlink — sub-page edges
 // Archive = soft delete (`deleted_at`); the database carries it to sub-pages and back.
 
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { guardedUpdate, readAllRows } from "@ai-matrx/data/db";
+import { guardedUpdate, readAllRows, type PagedReadResult } from "@ai-matrx/data/db";
 import { defineChannelNamespace, subscribeToRealtimeManager } from "@ai-matrx/realtime";
 import type { Database, Json } from "@/types/database.types";
 import type { SpaceBlock, SpaceDoc, SpaceId, SpaceMedia, SpaceSummary, SpacesStore } from "../contract";
@@ -64,6 +68,47 @@ type DocHead = Pick<
 >;
 
 const SUB_PAGE = "sub_page";
+
+/** One row of content.space_sidebar / space_trash (same columns as space_list). */
+interface TreeRow {
+  id: string;
+  parent_id: string | null;
+  edge_position: number | null;
+  title: string | null;
+  icon: string | null;
+  deleted_at: string | null;
+  updated_at: string;
+  created_at: string;
+}
+interface SearchRow {
+  id: string;
+  parent_id: string | null;
+  title: string | null;
+  icon: string | null;
+  updated_at: string;
+  path: string | null;
+  snippet: string | null;
+}
+/** The round-35 read functions are newer than the generated types (a shared file outside the fence):
+ *  they are called through this narrow typed shape until `pnpm db-types` next regenerates. */
+interface RpcCall<Row> extends PromiseLike<{ data: Row[] | null; error: { message: string; code?: string } | null }> {
+  order(column: string, options: { ascending: boolean }): RpcCall<Row>;
+  range(from: number, to: number): PromiseLike<PagedReadResult<Row>>;
+}
+interface RpcDb {
+  rpc<Row>(fn: string, args: Record<string, unknown>, options?: { count?: "exact" }): RpcCall<Row>;
+}
+
+/** One page found by content.space_search. `path` = the visible ancestors' titles, top first. */
+export interface SpaceSearchHit {
+  id: SpaceId;
+  parentId: SpaceId | null;
+  title: string;
+  icon: SpaceMedia | null;
+  updatedAt: string;
+  path: string;
+  snippet?: string;
+}
 /** Edge positions are gapped integers; a new last child lands this far after the previous one. */
 const POSITION_GAP = 1024;
 const POSITION_WIDTH = 12;
@@ -73,6 +118,19 @@ const DEFAULT_SETTINGS: SpaceDoc["settings"] = { font: "default", smallText: fal
 /** Edge position → the contract's sortable string (fixed-width digits compare like the numbers). */
 function positionKey(position: number | null | undefined): string {
   return String(Math.max(0, position ?? 0)).padStart(POSITION_WIDTH, "0");
+}
+
+/** A tree row → summary: under a parent, order is the edge position; top level keeps created order. */
+function treeSummary(r: TreeRow): SpaceSummary {
+  return {
+    id: r.id,
+    parentId: r.parent_id ?? null,
+    position: r.parent_id ? positionKey(r.edge_position) : positionKey(Date.parse(r.created_at)),
+    title: r.title ?? "",
+    icon: parseIcon(r.icon),
+    isArchived: r.deleted_at != null,
+    updatedAt: r.updated_at,
+  };
 }
 
 function parseIcon(raw: string | null | undefined): SpaceMedia | null {
@@ -234,6 +292,51 @@ export class SupabaseSpacesStore implements SpacesStore {
       icon: parseIcon(r.icon),
       isArchived: r.deleted_at != null,
       updatedAt: r.updated_at,
+    }));
+  }
+
+  /**
+   * The sidebar's tree read (round 35, Notion's lazy tree): live top-level pages, plus the live children of
+   * every page in `expand` and of every ancestor of each page in `reveal` (the open page, favorites).
+   * Never archived pages, never the whole tree — deeper levels come from `children` on expand.
+   */
+  async sidebar(input: { expand: SpaceId[]; reveal: SpaceId[] }): Promise<SpaceSummary[]> {
+    const rows = await readAllRows(
+      ({ from, to }) =>
+        (this.db.schema("content") as unknown as RpcDb)
+          .rpc<TreeRow>("space_sidebar", { p_expand: input.expand, p_reveal: input.reveal }, { count: "exact" })
+          .order("id", { ascending: true })
+          .range(from, to),
+      { label: "content.space_sidebar" },
+    );
+    return rows.map(treeSummary);
+  }
+
+  /** Trash: the person's archived pages, read when Trash opens (never with the tree). */
+  async trash(): Promise<SpaceSummary[]> {
+    const rows = await readAllRows(
+      ({ from, to }) =>
+        (this.db.schema("content") as unknown as RpcDb)
+          .rpc<TreeRow>("space_trash", {}, { count: "exact" })
+          .order("id", { ascending: true })
+          .range(from, to),
+      { label: "content.space_trash" },
+    );
+    return rows.map(treeSummary);
+  }
+
+  /** Page search on the server: title (then body) matches among the pages the person can open; "" = recently edited. */
+  async search(query: string, limit = 50): Promise<SpaceSearchHit[]> {
+    const { data, error } = await (this.db.schema("content") as unknown as RpcDb).rpc<SearchRow>("space_search", { p_query: query, p_limit: limit });
+    if (error) fail("search your pages", error);
+    return (data ?? []).map((r) => ({
+      id: r.id,
+      parentId: r.parent_id ?? null,
+      title: r.title ?? "",
+      icon: parseIcon(r.icon),
+      updatedAt: r.updated_at,
+      path: r.path ?? "",
+      snippet: r.snippet ?? undefined,
     }));
   }
 

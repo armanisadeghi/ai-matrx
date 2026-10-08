@@ -9,7 +9,7 @@ import { createReactInlineContentSpec } from "@blocknote/react";
 import { ArrowUpRight, Bell, FileText, Globe } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@ai-matrx/design-system";
 import { Field, Select } from "@ai-matrx/design-system/controls";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useLinkPreview } from "@/lib/link-preview";
 
 import type { RichSpan } from "../contract";
@@ -30,8 +30,12 @@ function readSpan(raw: unknown): RichSpan {
 }
 
 function PageMention({ spaceId, fallback }: { spaceId: string; fallback: string }) {
-  const { byId, open } = useSpaces();
-  const page = byId.get(spaceId);
+  const { byId, open, linkTarget, requestLink } = useSpaces();
+  // The lazy tree may not hold the linked page: read it once by id (row security decides).
+  const page = byId.get(spaceId) ?? linkTarget?.(spaceId) ?? undefined;
+  useEffect(() => {
+    if (!page) requestLink?.(spaceId);
+  }, [page, requestLink, spaceId]);
   return (
     <button
       type="button"
