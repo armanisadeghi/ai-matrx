@@ -998,6 +998,7 @@ export function PdfStudioShell({ initialDocumentId }: PdfStudioShellProps) {
             runLabel={docRun.label}
             runError={docRun.errorMessage}
             onRetry={() => void handleRunAiClean()}
+            onRecheck={docRun.recheck}
           />
 
           {/* Hidden-panes restore strip */}
@@ -1149,6 +1150,7 @@ function LiveStatusStrip({
   runLabel,
   runError,
   onRetry,
+  onRecheck,
 }: {
   pipelineRunning: boolean;
   aiCleanRunning: boolean;
@@ -1157,8 +1159,28 @@ function LiveStatusStrip({
   runLabel: string | null;
   runError: string | null;
   onRetry: () => void;
+  onRecheck: () => void;
 }) {
   const local = pipelineRunning || aiCleanRunning;
+  if (!local && runPhase === "unavailable") {
+    return (
+      <div
+        className="shrink-0 px-4 py-1 border-b border-border bg-destructive/5 flex items-center gap-2 text-[10px]"
+        data-testid="pdf-run-status"
+        data-run-phase="unavailable"
+      >
+        <AlertCircle className="w-2.5 h-2.5 text-destructive shrink-0" />
+        <span className="font-medium text-destructive shrink-0">Status unavailable</span>
+        <button
+          type="button"
+          onClick={onRecheck}
+          className="ml-auto shrink-0 font-medium text-primary hover:underline"
+        >
+          Retry
+        </button>
+      </div>
+    );
+  }
   if (!local && runPhase === "failed") {
     return (
       <div

@@ -6,6 +6,16 @@
  */
 import type { FullConfig, FullResult, Reporter, Suite, TestCase, TestResult } from "@playwright/test/reporter";
 import { P0_IDS } from "./catalog";
+import { baseURL, REPO_ROOT } from "./env";
+import { readFileSync } from "node:fs";
+
+function meetVersion(): string {
+  try {
+    return (JSON.parse(readFileSync(path.join(REPO_ROOT, "node_modules/@ai-matrx/meet/package.json"), "utf8")) as { version: string }).version;
+  } catch {
+    return "unknown";
+  }
+}
 import { mkdirSync, writeFileSync } from "node:fs";
 import path from "node:path";
 
@@ -72,6 +82,8 @@ export default class MeetReport implements Reporter {
       `# Meet state scenarios — ${new Date().toISOString()} — ${pass} pass, ${fail} fail, ${env} environment (${result.status})`,
       "",
       `P0 states in catalog: ${P0_IDS.length}; with no scenario in this run: ${this.missing.length ? this.missing.join(", ") : "none"}`,
+      "",
+      `Done-oracle: real browsers (${process.env.MEET_BROWSERS ?? "chromium"}), the shared dev server ${baseURL()}, real LiveKit Cloud, @ai-matrx/meet ${meetVersion()}; no fake driver, no jsdom, no test-only build, no harness-only product flag.`,
       "",
       "| State | Browser | Result | s | Evidence |",
       "|---|---|---|---|---|",

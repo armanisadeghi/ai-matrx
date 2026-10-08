@@ -15,7 +15,7 @@
  * screen) and looks again the moment it ends.
  */
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useServerJob } from "@ai-matrx/agents/react";
 import { getRuntimeOperationsByLink } from "@ai-matrx/agents/matrx";
 import type { ServerJobStatus, ServerJobTarget } from "@ai-matrx/agents/matrx";
@@ -28,7 +28,7 @@ import {
   type PdfRunRequest,
 } from "../state/runRequests";
 
-export type PdfDocRunPhase = "checking" | "running" | "failed" | "done" | "cancelled" | "idle";
+export type PdfDocRunPhase = "checking" | "unavailable" | "running" | "failed" | "done" | "cancelled" | "idle";
 
 export interface PdfDocRun {
   /** What the run record says, mapped for the screen. */
@@ -41,7 +41,7 @@ export interface PdfDocRun {
   streamingText: string | null;
   /** The run's error message, when it failed. */
   errorMessage: string | null;
-  /** The lookup has answered (or could not reach the server) — safe to decide on auto-runs. */
+  /** The server really answered — safe to decide on auto-runs. A failed lookup is never an answer. */
   answered: boolean;
   /** Look the document's run up again now. */
   recheck: () => void;
@@ -99,6 +99,25 @@ export function readPdfRunFrame(
  * only replays the stream when the doc has no run of its own yet — and a saved AI
  * clean IS the doc's own run, so it is followed directly.
  */
+const LOOKUP_RETRY_MS = [1_000, 2_000, 4_000];
+
+/**
+ * Runs that belong to THIS doc. The server may answer a batch doc's by-link
+ * lookup with the batch's root run (older shape) or the doc's own child run
+ * (newer): an operation linked to another record is not the doc's run.
+ */
+export function countOwnRuns(
+  operations: ReadonlyArray<{ link_kind: string | null; link_id: string | null }> | null | undefined,
+  docId: string,
+): number {
+  if (!operations) return 0;
+  return operations.filter(
+    (op) =>
+      !op.link_id ||
+      (op.link_id === docId && (!op.link_kind || op.link_kind === "processed_document")),
+  ).length;
+}
+
 export function choosePdfRunTarget(
   docId: string | null,
   saved: PdfRunRequest | null,
@@ -168,29 +187,39 @@ export function usePdfDocRun(args: {
   }
 
   const saved = readPdfRunRequest(docId);
-  // How many runs the server holds for this doc (its own, not the batch's).
+  // How many runs the server holds for THIS doc (its own, not the batch's).
   const [linkProbe, setLinkProbe] = useState<{ docId: string; count: number } | null>(null);
+  const [probeFailed, setProbeFailed] = useState<string | null>(null);
+  const [followFailed, setFollowFailed] = useState<string | null>(null);
+  const [nonce, setNonce] = useState(0);
   const needsProbe = Boolean(docId) && saved?.kind !== "clean";
   useEffect(() => {
     if (!docId || !needsProbe) return;
     const controller = new AbortController();
     void (async () => {
-      let count = 0;
-      try {
-        const view = await getRuntimeOperationsByLink(
-          createMatrxTransport(store.getState, { source: "pdf-run-reconnect" }),
-          "processed_document",
-          docId,
-          { limit: 5, signal: controller.signal },
-        );
-        count = view?.operations?.length ?? 0;
-      } catch {
-        // Unreachable: fall through to the saved id / link follow, which report their own errors.
+      for (let attempt = 0; attempt <= LOOKUP_RETRY_MS.length; attempt++) {
+        try {
+          const view = await getRuntimeOperationsByLink(
+            createMatrxTransport(store.getState, { source: "pdf-run-reconnect" }),
+            "processed_document",
+            docId,
+            { limit: 5, signal: controller.signal },
+          );
+          if (controller.signal.aborted) return;
+          setProbeFailed(null);
+          setLinkProbe({ docId, count: countOwnRuns(view?.operations, docId) });
+          return;
+        } catch {
+          if (controller.signal.aborted) return;
+          if (attempt === LOOKUP_RETRY_MS.length) break;
+          await new Promise((r) => setTimeout(r, LOOKUP_RETRY_MS[attempt]));
+          if (controller.signal.aborted) return;
+        }
       }
-      if (!controller.signal.aborted) setLinkProbe({ docId, count });
+      setProbeFailed(docId);
     })();
     return () => controller.abort();
-  }, [docId, needsProbe, store]);
+  }, [docId, needsProbe, store, nonce]);
   const probed = linkProbe && linkProbe.docId === docId ? linkProbe.count : null;
   const target = choosePdfRunTarget(docId, saved, needsProbe ? probed : 0);
 
@@ -215,12 +244,42 @@ export function usePdfDocRun(args: {
     },
   });
 
+  // A lookup that fails retries with backoff; only after the retries are spent
+  // does the screen say so ("unavailable" + Retry) — never a silent guess.
+  const followAttempts = useRef(0);
+  const lookupFailing = job.error != null && !localStreaming;
+  useEffect(() => {
+    if (!lookupFailing) {
+      if (job.status !== null && job.status !== "connecting") followAttempts.current = 0;
+      setFollowFailed(null);
+      return;
+    }
+    if (followAttempts.current >= LOOKUP_RETRY_MS.length) {
+      setFollowFailed(docId);
+      return;
+    }
+    const delay = LOOKUP_RETRY_MS[followAttempts.current++];
+    const timer = setTimeout(() => job.reconnect(), delay);
+    return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- keyed on the failure itself
+  }, [lookupFailing, job.error, docId]);
+  const unavailable = !localStreaming && (probeFailed === docId || followFailed === docId);
+  const recheck = () => {
+    followAttempts.current = 0;
+    setProbeFailed(null);
+    setFollowFailed(null);
+    setNonce((n) => n + 1);
+    job.reconnect();
+  };
+
   const recordPhase = phaseOf(job.status);
   const settledEarlier = endedBefore(job.operation?.ended_at, openedAt);
   // "Done" / "Stopped" only for a run that settled while this page watched it.
   const phase: PdfDocRunPhase = localStreaming
     ? "running"
-    : (recordPhase === "done" || recordPhase === "cancelled") && settledEarlier
+    : unavailable
+      ? "unavailable"
+      : (recordPhase === "done" || recordPhase === "cancelled") && settledEarlier
       ? "idle"
       : recordPhase;
   const shownLabel =
@@ -240,7 +299,11 @@ export function usePdfDocRun(args: {
     label: localStreaming ? null : shownLabel,
     streamingText: localStreaming ? null : streamingText,
     errorMessage: errorText(job.outcome?.error ?? job.operation?.error),
-    answered: job.error != null || (job.status !== null && job.status !== "connecting"),
-    recheck: job.reconnect,
+    answered:
+      !unavailable &&
+      job.error == null &&
+      job.status !== null &&
+      job.status !== "connecting",
+    recheck,
   };
 }

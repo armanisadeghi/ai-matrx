@@ -417,6 +417,19 @@ export function PdfStudioMobile({ initialDocumentId }: PdfStudioMobileProps) {
           <span className="truncate">{liveStatus ?? docRun.label}</span>
         </div>
       )}
+      {!liveStatus && !aiCleanRunning && docRun.phase === "unavailable" && (
+        <div className="shrink-0 border-b border-border bg-destructive/5 px-3 py-1.5 flex items-center gap-2 text-[11px]">
+          <AlertCircle className="w-3 h-3 text-destructive" />
+          <span className="font-medium text-destructive">Status unavailable</span>
+          <button
+            type="button"
+            onClick={docRun.recheck}
+            className="ml-auto font-medium text-primary"
+          >
+            Retry
+          </button>
+        </div>
+      )}
       {!liveStatus && !aiCleanRunning && docRun.phase === "failed" && (
         <div className="shrink-0 border-b border-border bg-destructive/5 px-3 py-1.5 flex items-center gap-2 text-[11px]">
           <AlertCircle className="w-3 h-3 text-destructive" />

@@ -11,6 +11,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 
 import type { FieldValue } from "../../contract/fieldModel";
+import { PAPER } from "../../contract/paper";
 import { isMarkKind, isNameKind, type SField } from "../model";
 
 export interface ControlInputProps {
@@ -59,16 +60,20 @@ export function ControlInput({
 
   let body: React.ReactNode;
   if (isMarkKind(field.kind)) {
-    const applied = value === "applied" && markUrl;
+    const applied = value === "applied";
     body = (
       <div className="flex items-center gap-2">
         <div
           className="flex h-16 flex-1 items-center justify-center rounded-md border border-border bg-white"
           aria-label={applied ? `${field.label}: applied` : `${field.label}: empty`}
         >
-          {applied ? (
+          {applied && markUrl ? (
             // eslint-disable-next-line @next/next/no-img-element -- a data: URL of the signer's own mark
             <img src={markUrl} alt="" className="max-h-14 max-w-full object-contain" />
+          ) : applied ? (
+            <span className="type-secondary italic" style={{ color: PAPER.ink }}>
+              {field.kind === "initials" ? "Initialed" : "Signed"}
+            </span>
           ) : (
             <span className="type-secondary text-muted-foreground">Not signed yet</span>
           )}

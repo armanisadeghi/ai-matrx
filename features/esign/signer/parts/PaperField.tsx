@@ -125,6 +125,11 @@ function FieldFace({
       // eslint-disable-next-line @next/next/no-img-element -- a data: URL of the signer's own mark
       return <img src={markUrl} alt="" className="h-full w-full object-contain" />;
     }
+    if (filled) {
+      // Applied, but this page holds no picture of it (a saved mark the adopt answer did not echo):
+      // say what is true, never "Sign here" over a field that is signed.
+      return <span className="truncate px-1 font-medium italic">{field.kind === "initials" ? "Initialed" : "Signed"}</span>;
+    }
     return (
       <span
         className="flex h-full max-h-7 min-h-0 w-full items-center justify-center gap-1 rounded-sm px-1 font-semibold text-white"
