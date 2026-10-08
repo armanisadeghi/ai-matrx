@@ -17,7 +17,8 @@
 
 import { useState } from "react";
 import { useServerJob } from "@ai-matrx/agents/react";
-import type { MatrxStreamEnvelope, ServerJobStatus, ServerJobTarget } from "@ai-matrx/agents/matrx";
+import type { ServerJobStatus, ServerJobTarget } from "@ai-matrx/agents/matrx";
+import type { MatrxStreamEnvelope } from "@ai-matrx/agents/stream/ndjson";
 import { createMatrxTransport } from "@/lib/api/matrx-transport";
 import { useAppStore } from "@/lib/redux/hooks";
 import {
