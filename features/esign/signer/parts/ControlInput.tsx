@@ -7,13 +7,12 @@
 import { Check, Eraser, PenLine } from "lucide-react";
 
 import { Button, Input, Select, Textarea } from "@ai-matrx/design-system/controls";
-import { ErrorNotice } from "@ai-matrx/design-system";
 import { Checkbox } from "@/components/ui/checkbox";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 
 import type { FieldValue } from "../../contract/fieldModel";
 import { PAPER } from "../../contract/paper";
-import { isMarkKind, isNameKind, looksNotNumeric, type SField } from "../model";
+import { isMarkKind, isNameKind, type SField } from "../model";
 
 export interface ControlInputProps {
   field: SField;
@@ -24,7 +23,8 @@ export interface ControlInputProps {
   /** For radio options: each option's value. */
   optionValues?: Record<string, FieldValue>;
   markUrl: string | null;
-  problem: string | null;
+  /** A gentle, amber offer about the typed value — never an error, never blocks. */
+  note: string | null;
   onChange: (fieldId: string, value: FieldValue) => void;
   onBlur?: () => void;
   onMark: (field: SField) => void;
@@ -40,7 +40,7 @@ export function ControlInput({
   value,
   optionValues,
   markUrl,
-  problem,
+  note,
   onChange,
   onBlur,
   onMark,
@@ -49,11 +49,10 @@ export function ControlInput({
   dateText,
 }: ControlInputProps) {
   const id = `esign-control-${field.id}`;
-  const describedBy = problem ? `${id}-problem` : undefined;
+  const describedBy = note ? `${id}-note` : undefined;
   const common = {
     id,
     "aria-required": field.required,
-    "aria-invalid": problem ? true : undefined,
     "aria-describedby": describedBy,
     autoFocus,
     onBlur,
@@ -177,16 +176,10 @@ export function ControlInput({
         </label>
       ) : null}
       {body}
-      {!problem && looksNotNumeric(field.kind, value) ? (
-        <p role="status" className="type-secondary text-warning">This does not look like a number. You can still use it.</p>
+      {note ? (
+        <p id={describedBy} role="status" className="type-secondary text-warning">{note}</p>
       ) : null}
-      {problem ? (
-        <div id={describedBy} className="type-secondary">
-          <ErrorNotice size="inline" message={problem} operation="Check a signing field" />
-        </div>
-      ) : field.tooltip ? (
-        <p className="type-secondary text-muted-foreground">{field.tooltip}</p>
-      ) : null}
+      {field.tooltip ? <p className="type-secondary text-muted-foreground">{field.tooltip}</p> : null}
       <p className="flex items-center gap-1 type-secondary text-muted-foreground">
         {field.read_only ? (
           "Filled in by the sender"

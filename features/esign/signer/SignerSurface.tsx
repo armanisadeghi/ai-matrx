@@ -46,7 +46,7 @@ import {
   screenPatch,
   shownValue,
   today,
-  valueProblem,
+  valueOffer,
   walkable,
   type SField,
   type SGroup,
@@ -822,7 +822,7 @@ export function SignerSurface({
         value={v}
         optionValues={options ? Object.fromEntries(options.map((o) => [o.id, shownValue(o, values, meRecord)])) : undefined}
         markUrl={markUrlFor(f)}
-        problem={valueProblem(f, v)}
+        note={valueOffer(f, v)}
         onChange={change}
         onBlur={() => void saver.flush()}
         onMark={pressMark}
