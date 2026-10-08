@@ -116,7 +116,7 @@ export const ITEMS = {
   A08: "AI Matrx MCP via OAuth",
   A09: "Member refusals (API / MCP)",
   A10: "Idempotency (API / MCP writes)",
-  A12: "Dataset tool writes one row into a store table, changes it, and reads it back (real agent run)",
+  A12: "Dataset tool writes one row into a custom table, changes it, and reads it back (real agent run)",
   A11: "Same before/after the press — switching org + switched control (SAFETY-NET-B)",
   // Drill-down
   R01: "drill_describe — both kinds",

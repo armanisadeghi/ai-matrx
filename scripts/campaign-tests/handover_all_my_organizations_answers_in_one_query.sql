@@ -8,7 +8,7 @@
 -- What must hold, from her seat:
 --   A. the door answers inside the 8 s a request may run (it must take under 2 s here; the old body took 2.9 s on the idle clone and 11.8 s on production);
 --   B. it answers exactly the rows the per-organization rule gives: every table of an organization
---      she is admitted to whose store is open, visible to her, not kept by the app.
+--      she is admitted to whose store is open, visible to her, not platform-owned.
 --
 -- RUN IT (clone or production; always rolled back):
 --   psql "<DSN>" -v ON_ERROR_STOP=1 -f scripts/campaign-tests/handover_all_my_organizations_answers_in_one_query.sql

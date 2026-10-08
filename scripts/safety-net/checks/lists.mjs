@@ -13,7 +13,7 @@ export default [
     items: ["L01", "L03"],
     targets: ["clone"],
   },
-  // L01: a new picklist is kept by the app, for the choices (custom.table_placement; the tables list keeps it aside).
+  // L01: a new picklist is platform-owned, for the choices (custom.table_placement; the tables list keeps it aside).
   {
     id: "lists.sql-new-picklist-kept",
     area: "lists",

@@ -6,7 +6,7 @@
 -- record store, and the switch for admin's Workspace is still off. So the agent, a workflow and
 -- the extension must keep writing the OLDER table, and anything that tries to write the copy is
 -- refused with the older table's address. When the owner presses the switch, the copy becomes
--- the table. A table the older store never held (a record-store table) and a table the mover
+-- the table. A table the older store never held (a custom table) and a table the mover
 -- already moved (its older copy archived) live in the record store.
 --
 -- RUN IT (clone; always rolled back):
@@ -91,7 +91,7 @@ begin
     raise exception '2a: a moved table does not answer record';
   end if;
   if v_store is not null and (select w.lives_in from custom.where_tables_live(array[v_store]) w) is distinct from 'record' then
-    raise exception '2b: a record-store table answered older';
+    raise exception '2b: a custom table answered older';
   end if;
   if (select count(*) from custom.where_tables_live(array[c_heat, c_heat, c_rincon, null]) ) <> 2 then
     raise exception '2c: the door does not answer each id once';

@@ -4,7 +4,7 @@
 // (headless, on the CLONE preview — the walk writes a draft variable to the seat's own agent).
 //
 // Proves: the Table list holds as many tables as the data home's door answers for the seat (not
-// kept by the app); the organization filter reads "All organizations"; a table from an
+// platform-owned); the organization filter reads "All organizations"; a table from an
 // organization OTHER than the one the seat works in can be chosen and its preview reads rows.
 //
 //   VP_ORIGIN=http://<session>.localhost:3001 VP_EMAIL=… VP_PASSWORD=… VP_AGENT=<agent id>
@@ -110,7 +110,7 @@ try {
   pass(
     "All organizations lists the data home's count",
     Number.isNaN(EXPECT) ? false : tableRows.length === EXPECT,
-    `${tableRows.length} table rows offered; the data home's door answers ${EXPECT} (not kept by the app); ${count.v} options in all`,
+    `${tableRows.length} table rows offered; the data home's door answers ${EXPECT} (not platform-owned); ${count.v} options in all`,
   );
 
   // THE SHELL'S LANES: the tab bar is the shell's, All is selected, and Mine narrows to the seat's own.

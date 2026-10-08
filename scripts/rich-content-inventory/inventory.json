@@ -4576,7 +4576,7 @@
   "route /administration/database/schema-visualizer-enhanced",
   "route /administration/database/sql-functions",
   "route /administration/database/sql-queries",
-  "route /administration/database/store-tables",
+  "route /administration/database/custom-tables",
   "route /administration/database/workbench",
   "route /administration/documentation",
   "route /administration/documentation/feature-docs/codebase",

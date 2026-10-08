@@ -16,9 +16,9 @@
 -- One transaction, rolled back; nothing is left behind.
 --
 -- RUN IT (dev clone only), session pooler:
---   cd matrx-frontend && psql "${CLONE_DATABASE_URL/:6543/:5432}" -v ON_ERROR_STOP=1 -f scripts/campaign-tests/chairdoors2_f_app_tables_wait_behind_one_switch.sql
+--   cd matrx-frontend && psql "${CLONE_DATABASE_URL/:6543/:5432}" -v ON_ERROR_STOP=1 -f scripts/campaign-tests/chairdoors2_f_platform_tables_wait_behind_one_switch.sql
 \set ON_ERROR_STOP on
-\set suite 'chairdoors2_f_app_tables_wait_behind_one_switch.sql'
+\set suite 'chairdoors2_f_platform_tables_wait_behind_one_switch.sql'
 \set expect 'clone'
 \i scripts/campaign-tests/_preamble.sql
 \if :matrx_skip
@@ -158,7 +158,7 @@ select check_name, coalesce(ok, false) as ok, left(detail, 160) as detail from r
 select coalesce(bool_or(not coalesce(ok, false)), true) as red, count(*) filter (where not coalesce(ok, false)) as nred, count(*) as n from res \gset
 \if :red
 \echo 'RED —' :nred 'of' :n 'checks failed'
-do $$ begin raise exception 'chairdoors2_f_app_tables_wait_behind_one_switch.sql is RED'; end $$;
+do $$ begin raise exception 'chairdoors2_f_platform_tables_wait_behind_one_switch.sql is RED'; end $$;
 \else
 \echo 'GREEN —' :n 'checks'
 \endif

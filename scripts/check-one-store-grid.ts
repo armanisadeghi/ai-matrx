@@ -1,5 +1,5 @@
 /**
- * check-one-store-grid — every place a store table is shown mounts the ONE table page
+ * check-one-store-grid — every place a custom table is shown mounts the ONE table page
  * (`useUnifiedTable` + `UnifiedTableBody`, the component /data/<table> renders), never the old grid
  * and never a second host binding (lane CHAIR-ONE-GRID, 2026-10-04; Arman: "adopt, don't replace").
  * Red on any hit:
@@ -24,7 +24,7 @@ export type Finding = { file: string; line: number; rule: Rule; text: string };
 
 const IMPORT_FROM = /\bfrom\s+["']([^"']+)["']|import\(\s*["']([^"']+)["']\s*\)/;
 
-// An entity source (`{kind: "entity", token}` — tasks, projects, deals…) is not a store table: it has no
+// An entity source (`{kind: "entity", token}` — tasks, projects, deals…) is not a custom table: it has no
 // table id for the one table page to open, so mounting `TablePage` on it directly is the sanctioned door.
 function mountsOnlyEntitySources(text: string): boolean {
   const mounts = [...text.matchAll(/<TablePage\b[\s\S]*?\/?>/g)].map((m) => m[0]);
@@ -97,7 +97,7 @@ if (process.argv.includes("--self-test")) selfTest();
 else {
   const findings = scan(trackedFiles().map((path) => ({ path, text: readFileSync(path, "utf8") })));
   if (findings.length === 0) {
-    console.log("check-one-store-grid: PASS — every store table mounts the one table page.");
+    console.log("check-one-store-grid: PASS — every custom table mounts the one table page.");
     process.exit(0);
   }
   for (const f of findings) console.log(`${f.file}:${f.line}  [${f.rule}]  ${f.text}`);

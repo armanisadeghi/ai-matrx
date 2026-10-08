@@ -124,7 +124,7 @@ begin
   if (after ->> 'older_live')::int <> (before ->> 'older_live')::int - 1 or (after ->> 'archived_older')::int <> (before ->> 'archived_older')::int + 1 then
     raise exception 'RED 2c: archiving one older table moved older_live % -> %', before ->> 'older_live', after ->> 'older_live';
   end if;
-  raise notice 'ok 2 — % app-kept option lists never counted; an archived copy and an archived older table leave the count', before ->> 'app_kept';
+  raise notice 'ok 2 — % platform-owned option lists never counted; an archived copy and an archived older table leave the count', before ->> 'app_kept';
 end;
 $$;
 

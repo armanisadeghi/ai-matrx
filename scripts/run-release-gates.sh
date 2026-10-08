@@ -146,7 +146,7 @@ if $STRICT; then
         "The page-imports guard can still fail (planted in a temp dir)|pnpm check:page-imports:self-test"
         "Demos chat UI routes register required host slots|pnpm check:demos-chat-registration"
         "The demos chat registration guard can still fail|pnpm check:demos-chat-registration:self-test"
-        # Never list every table to find one: tableFind / ensureTable / defineAppTable are the doors.
+        # Never list every table to find one: tableFind / ensureTable / defineTypedTable are the doors.
         "No hand-written find-or-create of a table (list all, search by slug)|pnpm check:hand-written-find-or-create"
         "The find-or-create guard can still fail (planted in a temp dir)|pnpm check:hand-written-find-or-create:self-test"
         "Cross-deployment links (a CORS preflight on every www hover)|pnpm check:cross-deployment-links:strict"
@@ -1017,8 +1017,8 @@ if $STRICT; then
         # command fails a new migration creating a flexible-data table outside custom.* (ONE-HOME wave 5).
         "Nothing new reads the old flexible data tables (ratchet)|pnpm check:no-old-flexible-store"
         "No-old-flexible-store guard can still fail (self-test)|pnpm check:no-old-flexible-store:self-test"
-        # DECLARED APP TABLES — advisory in BOTH lanes (exits 0 on findings; see the advisory list below).
-        "Declared app tables (missing / archived / drifted / size)|pnpm check:app-tables"
+        # DECLARED TYPED TABLES — advisory in BOTH lanes (exits 0 on findings; see the advisory list below).
+        "Declared typed tables (missing / archived / drifted / size)|pnpm check:typed-tables"
     )
 else
     # Non-strict variants still print the full loud report; they exit 0.
@@ -1739,12 +1739,12 @@ else
         # command fails a new migration creating a flexible-data table outside custom.* (ONE-HOME wave 5).
         "Nothing new reads the old flexible data tables (ratchet)|pnpm check:no-old-flexible-store"
         "No-old-flexible-store guard can still fail (self-test)|pnpm check:no-old-flexible-store:self-test"
-        # DECLARED APP TABLES (lane PLATFORM-APP-DATA, wave 3 slice 6). Every `*.app-table.ts`
+        # DECLARED TYPED TABLES (lane PLATFORM-APP-DATA, wave 3 slice 6). Every `*.typed-table.ts`
         # definition, every organization's copy: MISSING (global), ARCHIVED, DRIFTED, and SIZE at
         # 50,000 rows then every 10,000 past Arman's last acknowledgement (DECISIONS.md, custom
         # data, 2026-10-02). One [WARN] line + one ops.system_error row per finding; exits 0 on
         # findings and 2 UNMEASURED when the store cannot be read. Never blocks.
-        "Declared app tables (missing / archived / drifted / size)|pnpm check:app-tables"
+        "Declared typed tables (missing / archived / drifted / size)|pnpm check:typed-tables"
     )
 fi
 

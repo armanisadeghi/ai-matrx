@@ -12,9 +12,9 @@
 --   G10 a refresh that makes a second table, loses a column the person added, duplicates a row,
 --       or destroys a row the sheet dropped instead of archiving it.
 --   G11 a scope that gets a second table on a second call, a table without the template's
---       columns, or a context value that does not name the record-store table; an UNMOVED clinic
+--       columns, or a context value that does not name the custom table; an UNMOVED clinic
 --       whose new scope stops getting its older table, or a MOVED clinic whose new scope still
---       mints an older dataset instead of a store Table.
+--       mints an older dataset instead of a custom table.
 -- RED before the three gridprim_* files (door absent), GREEN after.
 
 \set ON_ERROR_STOP on
@@ -145,10 +145,10 @@ begin
   perform set_config('role', 'authenticated', true);
   if v_n <> 4 then raise exception 'G11b: the table has % of the template''s 4 columns', v_n; end if;
   if coalesce(v_val, '') not like '%' || v_t1::text || '%' or coalesce(v_val, '') not like '%"store": "records"%' then
-    raise exception 'G11c: the context value does not name the record-store table % : %', v_t1, replace(v_val, chr(10), ' ');
+    raise exception 'G11c: the context value does not name the custom table % : %', v_t1, replace(v_val, chr(10), ' ');
   end if;
   -- G11e: the trigger. Unmoved, "Exam room 2" got its OLDER table when the item was added (as
-  -- before); once the clinic has moved, a new "Exam room 3" gets a store Table and no older one.
+  -- before); once the clinic has moved, a new "Exam room 3" gets a custom table and no older one.
   perform set_config('role', 'postgres', true);
   select count(*) into v_n from context.scope_dataset_instances i where i.context_item_id = v_item and i.scope_id = v_scope;
   perform set_config('role', 'authenticated', true);
@@ -192,7 +192,7 @@ begin
      and t.deleted_at is null and t.data -> 'scope_binding' ->> 'scope_id' = v_scope::text;
   perform set_config('role', 'authenticated', true);
   if v_n <> 0 or v_t2 is null then
-    raise exception 'G11e: the moved clinic''s Exam room 3 got % older tables and store Table %', v_n, v_t2;
+    raise exception 'G11e: the moved clinic''s Exam room 3 got % older tables and custom table %', v_n, v_t2;
   end if;
   -- G11f: no Home named — the organization's own Home (the trigger's, the mover's) is used.
   perform set_config('role', 'postgres', true);
@@ -217,7 +217,7 @@ begin
     raise exception 'G11d: a stranger provisioned a table in the clinic';
   exception when insufficient_privilege then null;
   end;
-  raise notice 'G11 PASS — "Exam room 2 — Equipment defects": one table, four template columns, the context value names it in the record store; unmoved, a new scope still gets its older table; moved, "Exam room 3" gets a store Table in the organization''s Home (named or not) and no older one; Exam room 5''s pre-move table is answered with its moved Table, never a second; a stranger is refused.';
+  raise notice 'G11 PASS — "Exam room 2 — Equipment defects": one table, four template columns, the context value names it in the record store; unmoved, a new scope still gets its older table; moved, "Exam room 3" gets a custom table in the organization''s Home (named or not) and no older one; Exam room 5''s pre-move table is answered with its moved Table, never a second; a stranger is refused.';
   raise notice 'GRIDPRIM G9-G11 GREEN — every part passed.';
 end $t$;
 rollback;

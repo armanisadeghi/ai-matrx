@@ -3,7 +3,7 @@
 -- Cedar Ridge Physical Therapy (a fresh fixture organization each run; rolled back). Dr. Ana Whitfield
 -- (admin@admin.com) owns the organization; Marisol Vega (test@test.com) is a member who VIEWS by default
 -- (member_default_level = viewer). The app keeps a "Flashcard outputs" table for agent output in the
--- organization's "Kept by the app" Home (marker kept_for = agent_output on the Home).
+-- organization's "Platform tables" Home (marker kept_for = agent_output on the Home).
 --
 -- WHAT MUST HOLD:
 --   · the outputs Home written through the record door stores the marker and answers viewer on the add rung;

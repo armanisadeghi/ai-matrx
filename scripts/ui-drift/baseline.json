@@ -3091,7 +3091,7 @@
     "primitive-visual-class|features/administration/schema-visualizer/Details/RelationshipDetails.tsx": 2,
     "primitive-visual-class|features/administration/schema-visualizer/Details/TableDetails.tsx": 3,
     "primitive-visual-class|features/administration/schema-visualizer/SchemaActions.tsx": 5,
-    "primitive-visual-class|features/administration/store-tables/TestOrgsMenu.tsx": 2,
+    "primitive-visual-class|features/administration/custom-tables/TestOrgsMenu.tsx": 2,
     "primitive-visual-class|features/applets/components/AppletAdminActions.tsx": 4,
     "primitive-visual-class|features/applets/components/UpdateAppletModal.tsx": 2,
     "primitive-visual-class|features/applets/components/applet-listings/AppletListCard.tsx": 1,

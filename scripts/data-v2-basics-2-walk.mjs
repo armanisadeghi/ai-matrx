@@ -998,7 +998,7 @@ try {
     await page.goto(`${ORIGIN}/organizations/cedar-ridge-physical-therapy/tables`, { waitUntil: "domcontentloaded", timeout: 300000 });
     await sleep(12000);
     await shot("h04-org-tables");
-    step("org tables", { buttons: (await page.getByRole("button").allInnerTexts()).map((b) => b.trim()).filter(Boolean).slice(0, 30) });
+    step("custom tables", { buttons: (await page.getByRole("button").allInnerTexts()).map((b) => b.trim()).filter(Boolean).slice(0, 30) });
   }
 
   if (PHASE === "look-switch") {

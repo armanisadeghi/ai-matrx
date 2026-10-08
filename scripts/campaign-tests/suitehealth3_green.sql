@@ -79,7 +79,7 @@ begin
   raise notice '1 PASS — only custom.context_resolve(jsonb) answers a turn''s context';
 
   -- ── FIXTURE, as the store's owner (asserts nothing) ───────────────────────────────────────
-  -- The copy the mover made: a record-store Table, personal to Ana, and the older table under
+  -- The copy the mover made: a record-custom table, personal to Ana, and the older table under
   -- the same id, still live because the clinic's switch is off.
   perform set_config('request.jwt.claims', c_admin_j, true);
   v_log := custom.table_declare(v_org, jsonb_build_object(

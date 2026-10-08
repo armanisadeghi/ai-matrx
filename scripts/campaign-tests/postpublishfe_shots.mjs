@@ -64,7 +64,7 @@ const hubFacts = (page) =>
       serviceCallsMentions: count("Rincon Plumbing — Service Calls"),
       statusChoicesMentions: count("Status choices"),
       choicesMentions: count(" choices"),
-      keptHeading: count("Kept by the app"),
+      keptHeading: count("Platform tables"),
       showEverything: Boolean(document.querySelector("[data-hub-show-everything]")),
       showEverythingState: document.querySelector("[data-hub-show-everything]")?.getAttribute("data-hub-show-everything") ?? null,
       makeATable: /New table/.test(text),

@@ -1,8 +1,8 @@
 /**
- * DECLARED APP TABLES — THE RELEASE CHECK THAT SCREAMS, NEVER BLOCKS.
+ * DECLARED TYPED TABLES — THE RELEASE CHECK THAT SCREAMS, NEVER BLOCKS.
  *
- * An app table is a store Table the platform keeps for one of its own features, declared once in
- * code (`defineAppTable` in `@ai-matrx/records/app-table`, in a `*.app-table.ts` file) and copied
+ * An typed table is a custom table the platform keeps for one of its own features, declared once in
+ * code (`defineTypedTable` in `@ai-matrx/records/typed-table`, in a `*.typed-table.ts` file) and copied
  * into each organization on first use (lane PLATFORM-APP-DATA, wave 3 slice 6; design:
  * common-docs projects/data-doctrine-adoption/v6/DESIGN-PLATFORM-APP-DATA-WAVE3.md, REV 2).
  *
@@ -11,19 +11,19 @@
  * systems/data/custom-data/DECISIONS.md, last section): "put that starting at 50,000 rows, we
  * have to get a verification from me every 10k rows."
  *
- * For every definition this repo declares (every `*.app-table.ts`, plus any installed
- * `@ai-matrx/<pkg>/app-tables` export), ONE read-only query finds every organization's copy (by
+ * For every definition this repo declares (every `*.typed-table.ts`, plus any installed
+ * `@ai-matrx/<pkg>/typed-tables` export), ONE read-only query finds every organization's copy (by
  * slug AND kept_for — a person's own table of the same slug never answers) and this prints one
  * loud line per finding:
  *
- *   [WARN] APP TABLE MISSING   — a global table with no copy in the platform organization
- *   [WARN] APP TABLE ARCHIVED  — organizations whose copy is archived and that have no live one
- *   [WARN] APP TABLE UNMARKED  — a live copy without the `code_depends` mark, so the store does not
+ *   [WARN] TYPED TABLE MISSING   — a global table with no copy in the platform organization
+ *   [WARN] TYPED TABLE ARCHIVED  — organizations whose copy is archived and that have no live one
+ *   [WARN] TYPED TABLE UNMARKED  — a live copy without the `code_depends` mark, so the store does not
  *                                guard it against archive / rename / move (lane 12 P5)
- *   [WARN] APP TABLE DRIFTED   — a live copy whose columns differ from the definition (aspects named)
- *   [WARN] APP TABLE SIZE      — rows across every live copy ≥ 50,000, and every further 10,000
+ *   [WARN] TYPED TABLE DRIFTED   — a live copy whose columns differ from the definition (aspects named)
+ *   [WARN] TYPED TABLE SIZE      — rows across every live copy ≥ 50,000, and every further 10,000
  *                                above the last step Arman acknowledged
- *   [WARN] APP TABLE DEFINITION UNREADABLE — a `*.app-table.ts` this check could not import
+ *   [WARN] TYPED TABLE DEFINITION UNREADABLE — a `*.typed-table.ts` this check could not import
  *   [WARN] <slug> graduated to <token> but <org> still has a live copy — a definition declaring
  *                                `graduatedTo` (v7 APPS-ON-DATA item 5) expects every organization's
  *                                copy archived by `pnpm tables:graduate`; archived copies are then
@@ -37,16 +37,16 @@
  * `size_ack: { rows, by, on }`, written through the store's own door (`custom.record_update`,
  * which merges the key into the document) on every live copy:
  *
- *   pnpm check:app-tables --ack <slug> --rows <n> --by "<name>"
+ *   pnpm check:typed-tables --ack <slug> --rows <n> --by "<name>"
  *
  * EXIT CODES (the sibling convention, run-release-gates.sh header): 0 — clean OR findings (advisory,
  * the screaming is the output); 2 — UNMEASURED, the database could not be read (never a quiet
  * green). The release runs the gate runner `--advisory || true`, so nothing here stops a release.
  *
- *   pnpm check:app-tables                       # live, read-only + error-monitor rows
- *   pnpm check:app-tables --target clone        # the nightly clone
- *   pnpm check:app-tables:self-test             # offline: every rule planted, each must go red
- *   pnpm check:app-tables --self-test --db      # + the real queries on the CLONE, in one rolled-back transaction
+ *   pnpm check:typed-tables                       # live, read-only + error-monitor rows
+ *   pnpm check:typed-tables --target clone        # the nightly clone
+ *   pnpm check:typed-tables:self-test             # offline: every rule planted, each must go red
+ *   pnpm check:typed-tables --self-test --db      # + the real queries on the CLONE, in one rolled-back transaction
  */
 
 import { spawnSync } from "node:child_process";
@@ -57,7 +57,7 @@ import { pathToFileURL } from "node:url";
 import { exitAfterDrain } from "./lib/exit-after-drain";
 import { repoFiles } from "./lib/repo-files";
 
-const GATE = "check:app-tables";
+const GATE = "check:typed-tables";
 const REPO_ROOT = resolve(__dirname, "..");
 
 /** Arman, 2026-10-02: the first verification at 50,000 rows, then one every 10,000. */
@@ -66,7 +66,7 @@ export const SIZE_STEP = 10_000;
 
 // ── what a definition looks like to this check ─────────────────────────────────────────────────
 
-/** The fields of an `AppTableDef` this check reads (the package's own type; read structurally). */
+/** The fields of an `TypedTableDef` this check reads (the package's own type; read structurally). */
 export interface DeclaredField {
   key: string;
   label?: string;
@@ -82,12 +82,12 @@ export interface DeclaredTable {
   scope: "person" | "organization" | "global";
   kept_for: string;
   specs: readonly DeclaredField[];
-  /** Where the rows went (`defineAppTable({ graduatedTo })`); absent or null while not graduated. */
+  /** Where the rows went (`defineTypedTable({ graduatedTo })`); absent or null while not graduated. */
   graduatedTo?: { token: string; map: Readonly<Record<string, string>> } | null;
 }
 export interface Declaration {
   def: DeclaredTable;
-  /** Where it is declared: a repo-relative file, or `@ai-matrx/<pkg>/app-tables`. */
+  /** Where it is declared: a repo-relative file, or `@ai-matrx/<pkg>/typed-tables`. */
   declaredIn: string;
 }
 
@@ -118,16 +118,16 @@ export interface Unreadable {
   reason: string;
 }
 
-/** Every `*.app-table.ts` in this checkout, plus installed `@ai-matrx/*` packages' `./app-tables` exports. */
+/** Every `*.typed-table.ts` in this checkout, plus installed `@ai-matrx/*` packages' `./typed-tables` exports. */
 export async function loadDeclarations(root: string = REPO_ROOT): Promise<{ declarations: Declaration[]; unreadable: Unreadable[] }> {
   const declarations: Declaration[] = [];
   const unreadable: Unreadable[] = [];
-  const files = repoFiles(root, { match: /\.app-table\.ts$/ }).filter((f) => !f.includes("node_modules/"));
+  const files = repoFiles(root, { match: /\.typed-table\.ts$/ }).filter((f) => !f.includes("node_modules/"));
   for (const file of files) {
     try {
       const mod = (await import(pathToFileURL(join(root, file)).href)) as Record<string, unknown>;
       const defs = definitionsIn(mod);
-      if (defs.length === 0) unreadable.push({ declaredIn: file, reason: "it exports no defineAppTable(...) definition" });
+      if (defs.length === 0) unreadable.push({ declaredIn: file, reason: "it exports no defineTypedTable(...) definition" });
       for (const def of defs) declarations.push({ def, declaredIn: file });
     } catch (err) {
       unreadable.push({ declaredIn: file, reason: firstLine(err) });
@@ -144,8 +144,8 @@ export async function loadDeclarations(root: string = REPO_ROOT): Promise<{ decl
       } catch {
         continue;
       }
-      if (!Object.prototype.hasOwnProperty.call(exportsMap, "./app-tables")) continue;
-      const spec = `@ai-matrx/${pkg}/app-tables`;
+      if (!Object.prototype.hasOwnProperty.call(exportsMap, "./typed-tables")) continue;
+      const spec = `@ai-matrx/${pkg}/typed-tables`;
       try {
         const mod = (await import(spec)) as Record<string, unknown>;
         for (const def of definitionsIn(mod)) declarations.push({ def, declaredIn: spec });
@@ -276,7 +276,7 @@ export async function readSystemOrg(db: Queryable): Promise<string | null> {
 
 /**
  * The store's stored shape for each word a definition sends — `coalesce(parity_type, type)` and
- * `format`. MIRRORS `storedShapeOf` in aidream apps/shared/records/src/app-table/check.ts (not
+ * `format`. MIRRORS `storedShapeOf` in aidream apps/shared/records/src/typed-table/check.ts (not
  * exported by the package); re-measured on the clone 2026-10-02 by `--self-test --db` (text,
  * datetime, select and number columns made by custom.table_ensure must judge clean).
  */
@@ -407,7 +407,7 @@ export function judge(declarations: readonly Declaration[], copies: readonly Cop
         state: "missing",
         slug: def.slug,
         signature: `app_table.missing.${def.slug}`,
-        line: `[WARN] APP TABLE MISSING ${def.slug} — global, no copy in the platform organization — ${where} — run the server path that ensures it once`,
+        line: `[WARN] TYPED TABLE MISSING ${def.slug} — global, no copy in the platform organization — ${where} — run the server path that ensures it once`,
         detail: { declared_in: declaredIn, scope: def.scope },
       });
     }
@@ -418,7 +418,7 @@ export function judge(declarations: readonly Declaration[], copies: readonly Cop
         state: "archived",
         slug: def.slug,
         signature: `app_table.archived.${def.slug}`,
-        line: `[WARN] APP TABLE ARCHIVED ${def.slug} — ${orgs(archivedOrgs.length)} — ${where} — restore it from Archived tables`,
+        line: `[WARN] TYPED TABLE ARCHIVED ${def.slug} — ${orgs(archivedOrgs.length)} — ${where} — restore it from Archived tables`,
         detail: { declared_in: declaredIn, organization_ids: archivedOrgs },
       });
     }
@@ -429,7 +429,7 @@ export function judge(declarations: readonly Declaration[], copies: readonly Cop
         state: "unmarked",
         slug: def.slug,
         signature: `app_table.unmarked.${def.slug}`,
-        line: `[WARN] APP TABLE UNMARKED ${def.slug} — ${orgs(unmarkedOrgs.length)} — ${where} — not guarded against archive, rename or move until its next ensure marks it`,
+        line: `[WARN] TYPED TABLE UNMARKED ${def.slug} — ${orgs(unmarkedOrgs.length)} — ${where} — not guarded against archive, rename or move until its next ensure marks it`,
         detail: { declared_in: declaredIn, organization_ids: unmarkedOrgs },
       });
     }
@@ -446,7 +446,7 @@ export function judge(declarations: readonly Declaration[], copies: readonly Cop
         slug: def.slug,
         signature: `app_table.drifted.${def.slug}`,
         line:
-          `[WARN] APP TABLE DRIFTED ${def.slug} — ${orgs(new Set(driftByOrg.map((x) => x.org)).size)} — ${aspects.join("; ")} — ${where}` +
+          `[WARN] TYPED TABLE DRIFTED ${def.slug} — ${orgs(new Set(driftByOrg.map((x) => x.org)).size)} — ${aspects.join("; ")} — ${where}` +
           ` — change the definition back, or bring the stored columns in line with it`,
         detail: { declared_in: declaredIn, drift: driftByOrg },
       });
@@ -462,9 +462,9 @@ export function judge(declarations: readonly Declaration[], copies: readonly Cop
         slug: def.slug,
         signature: `app_table.size.${def.slug}`,
         line:
-          `[WARN] APP TABLE SIZE ${def.slug} — ${n(total)} rows across ${orgs(liveOrgs.size)} — passed ${n(passed)}; ` +
+          `[WARN] TYPED TABLE SIZE ${def.slug} — ${n(total)} rows across ${orgs(liveOrgs.size)} — passed ${n(passed)}; ` +
           `last acknowledged: ${ack ? `${n(ack.rows)} by ${ack.by} on ${ack.on}` : "never"} — ` +
-          `Arman's verification needed: pnpm check:app-tables --ack ${def.slug} --rows ${total} --by "Arman" — ${where}`,
+          `Arman's verification needed: pnpm check:typed-tables --ack ${def.slug} --rows ${total} --by "Arman" — ${where}`,
         detail: { declared_in: declaredIn, rows: total, step: passed, acknowledged: ack },
       });
     }
@@ -477,7 +477,7 @@ export function unreadableFindings(unreadable: readonly Unreadable[]): Finding[]
     state: "unreadable" as const,
     slug: u.declaredIn,
     signature: `app_table.unreadable.${u.declaredIn}`,
-    line: `[WARN] APP TABLE DEFINITION UNREADABLE ${u.declaredIn} — ${u.reason} — this check could not see what it declares`,
+    line: `[WARN] TYPED TABLE DEFINITION UNREADABLE ${u.declaredIn} — ${u.reason} — this check could not see what it declares`,
     detail: { declared_in: u.declaredIn, reason: u.reason },
   }));
 }
@@ -511,8 +511,8 @@ export async function recordFindings(db: Queryable, findings: readonly Finding[]
       JSON.stringify({
         kind: "app_table",
         source_app: "matrx-frontend",
-        source_feature: "app-tables",
-        route: "scripts/check-app-tables.ts",
+        source_feature: "typed-tables",
+        route: "scripts/check-typed-tables.ts",
         error_type: f.signature,
         error_text: f.line.replace(/^\[WARN\] /, ""),
         metadata: { signature: f.signature, state: f.state, slug: f.slug, ...f.detail },
@@ -574,8 +574,8 @@ const LIBRARY: DeclaredTable & { specHash: string } = {
   specHash: "fixture",
   specs: [{ key: "exercise", label: "Exercise", type: "text", required: true, unique: true }],
 };
-const CALLBACKS_DECL: Declaration = { def: CALLBACKS, declaredIn: "features/front-desk/patient-callbacks.app-table.ts" };
-const LIBRARY_DECL: Declaration = { def: LIBRARY, declaredIn: "features/exercises/exercise-library.app-table.ts" };
+const CALLBACKS_DECL: Declaration = { def: CALLBACKS, declaredIn: "features/front-desk/patient-callbacks.typed-table.ts" };
+const LIBRARY_DECL: Declaration = { def: LIBRARY, declaredIn: "features/exercises/exercise-library.typed-table.ts" };
 /** The callbacks feature caught on and graduated to a standard entity table. */
 const GRADUATED: DeclaredTable & { specHash: string } = {
   ...CALLBACKS,
@@ -637,7 +637,7 @@ function offlineCases(): Case[] {
         healthyLibrary,
       ],
       states: ["archived"],
-      lines: [/^\[WARN\] APP TABLE ARCHIVED patient_callbacks — 2 organizations — declared in features\/front-desk\/patient-callbacks\.app-table\.ts — restore it from Archived tables$/],
+      lines: [/^\[WARN\] TYPED TABLE ARCHIVED patient_callbacks — 2 organizations — declared in features\/front-desk\/patient-callbacks\.typed-table\.ts — restore it from Archived tables$/],
     },
     {
       name: "UNMARKED: a live copy without the code-depends mark (an archived unmarked copy is ARCHIVED only)",
@@ -648,7 +648,7 @@ function offlineCases(): Case[] {
         healthyLibrary,
       ],
       states: ["archived", "unmarked"],
-      lines: [/^\[WARN\] APP TABLE UNMARKED patient_callbacks — 1 organization — declared in features\/front-desk\/patient-callbacks\.app-table\.ts — not guarded/],
+      lines: [/^\[WARN\] TYPED TABLE UNMARKED patient_callbacks — 1 organization — declared in features\/front-desk\/patient-callbacks\.typed-table\.ts — not guarded/],
     },
     {
       name: "DRIFTED: a field's stored type differs from the definition",
@@ -660,7 +660,7 @@ function offlineCases(): Case[] {
         healthyLibrary,
       ],
       states: ["drifted"],
-      lines: [/^\[WARN\] APP TABLE DRIFTED patient_callbacks — 1 organization — callback_at type \(stored text, declared datetime\); callback_at format \(stored none, declared datetime\) — declared in /],
+      lines: [/^\[WARN\] TYPED TABLE DRIFTED patient_callbacks — 1 organization — callback_at type \(stored text, declared datetime\); callback_at format \(stored none, declared datetime\) — declared in /],
     },
     {
       name: "DRIFTED: a declared column missing and an undeclared one present",
@@ -680,19 +680,19 @@ function offlineCases(): Case[] {
       name: "MISSING: a global table with no copy in the platform organization (a per-org table with no copy is not missing)",
       copies: [copy(LIBRARY, ORG.cedarRidge, { rows: 3 })],
       states: ["missing"],
-      lines: [/^\[WARN\] APP TABLE MISSING exercise_library — global, no copy in the platform organization — declared in features\/exercises\/exercise-library\.app-table\.ts/],
+      lines: [/^\[WARN\] TYPED TABLE MISSING exercise_library — global, no copy in the platform organization — declared in features\/exercises\/exercise-library\.typed-table\.ts/],
     },
     {
       name: "MISSING: a global table archived in the platform organization is ARCHIVED, not missing",
       copies: [copy(CALLBACKS, ORG.cedarRidge), copy(LIBRARY, ORG.platform, { archived: true, rows: null, fields: [] })],
       states: ["archived"],
-      lines: [/APP TABLE ARCHIVED exercise_library — 1 organization/],
+      lines: [/TYPED TABLE ARCHIVED exercise_library — 1 organization/],
     },
     {
       name: "SIZE: 50,001 rows across two organizations (stubbed counts)",
       copies: [copy(CALLBACKS, ORG.cedarRidge, { rows: 30_000 }), copy(CALLBACKS, ORG.harborDental, { rows: 20_001 }), healthyLibrary],
       states: ["size"],
-      lines: [/^\[WARN\] APP TABLE SIZE patient_callbacks — 50,001 rows across 2 organizations — passed 50,000; last acknowledged: never — Arman's verification needed: pnpm check:app-tables --ack patient_callbacks --rows 50001 --by "Arman"/],
+      lines: [/^\[WARN\] TYPED TABLE SIZE patient_callbacks — 50,001 rows across 2 organizations — passed 50,000; last acknowledged: never — Arman's verification needed: pnpm check:typed-tables --ack patient_callbacks --rows 50001 --by "Arman"/],
     },
     {
       name: "SIZE: 49,999 rows stays silent; archived copies' rows never count",
@@ -785,30 +785,30 @@ async function offlineSelfTest(): Promise<number> {
     }
   }
 
-  // The glob: a `*.app-table.ts` anywhere in the checkout is found and imported; one that cannot be
+  // The glob: a `*.typed-table.ts` anywhere in the checkout is found and imported; one that cannot be
   // imported is reported by name, never skipped.
-  const dir = mkdtempSync(join(tmpdir(), "check-app-tables-"));
+  const dir = mkdtempSync(join(tmpdir(), "check-typed-tables-"));
   try {
     spawnSync("git", ["init", "-q"], { cwd: dir });
     mkdirSync(join(dir, "features", "front-desk"), { recursive: true });
     mkdirSync(join(dir, "features", "intake"), { recursive: true });
     writeFileSync(
-      join(dir, "features", "front-desk", "patient-callbacks.app-table.ts"),
+      join(dir, "features", "front-desk", "patient-callbacks.typed-table.ts"),
       `export const patientCallbacks = ${JSON.stringify(CALLBACKS)};\nexport const notATable = { slug: "x" };\n`,
     );
     writeFileSync(
-      join(dir, "features", "intake", "new-patient-intake.app-table.ts"),
-      `import { defineAppTable } from "@ai-matrx/records-not-installed/app-table";\nexport const intake = defineAppTable({});\n`,
+      join(dir, "features", "intake", "new-patient-intake.typed-table.ts"),
+      `import { defineTypedTable } from "@ai-matrx/records-not-installed/typed-table";\nexport const intake = defineTypedTable({});\n`,
     );
     writeFileSync(join(dir, "features", "front-desk", "callbacks.ts"), `export const patientCallbacks = ${JSON.stringify(CALLBACKS)};\n`);
     const loaded = await loadDeclarations(dir);
     const got = loaded.declarations.map((d) => `${d.def.slug}@${d.declaredIn}`);
     const bad = loaded.unreadable.map((u) => u.declaredIn);
     if (
-      JSON.stringify(got) === JSON.stringify(["patient_callbacks@features/front-desk/patient-callbacks.app-table.ts"]) &&
-      JSON.stringify(bad) === JSON.stringify(["features/intake/new-patient-intake.app-table.ts"])
+      JSON.stringify(got) === JSON.stringify(["patient_callbacks@features/front-desk/patient-callbacks.typed-table.ts"]) &&
+      JSON.stringify(bad) === JSON.stringify(["features/intake/new-patient-intake.typed-table.ts"])
     ) {
-      console.log("[ OK ] glob: every *.app-table.ts is imported; an unimportable one is named, a plain .ts is not read");
+      console.log("[ OK ] glob: every *.typed-table.ts is imported; an unimportable one is named, a plain .ts is not read");
     } else {
       failed += 1;
       console.log(`[FAIL] glob: found [${got.join(", ")}], unreadable [${bad.join(", ")}]`);
@@ -849,7 +849,7 @@ async function offlineSelfTest(): Promise<number> {
   return failed;
 }
 
-/** `custom.table_ensure`'s spec for a definition — the shape `ensureAppTable` sends (records declareTable.ts). */
+/** `custom.table_ensure`'s spec for a definition — the shape `ensureTypedTable` sends (records declareTable.ts). */
 function ensureSpec(def: DeclaredTable): Record<string, unknown> {
   const title = def.specs[0]!.key;
   return {
@@ -928,10 +928,10 @@ async function dbSelfTest(argv: string[]): Promise<number> {
         expect(drifted.length === 1 && drifted[0]!.state === "drifted" && /callback_at type \(stored datetime, declared text\)/.test(drifted[0]!.line),
           "changing callback_at's type in the definition → DRIFTED", drifted.map((f) => f.line).join(" | ") || "no finding");
         // The copy is marked `code_depends` (lane 12 P5): only the deliberate door archives it.
-        await db.query(`select custom.table_archive_deliberately($1::uuid, $2::uuid, $3, 'check:app-tables self-test')`, [ORG.cedarRidge, ensured.table_id, CALLBACKS.slug]);
+        await db.query(`select custom.table_archive_deliberately($1::uuid, $2::uuid, $3, 'check:typed-tables self-test')`, [ORG.cedarRidge, ensured.table_id, CALLBACKS.slug]);
         const after = own(await readCopies(db, [decl]));
         const archived = judge([decl], after, null);
-        expect(archived.length === 1 && archived[0]!.state === "archived" && /APP TABLE ARCHIVED patient_callbacks — 1 organization/.test(archived[0]!.line),
+        expect(archived.length === 1 && archived[0]!.state === "archived" && /TYPED TABLE ARCHIVED patient_callbacks — 1 organization/.test(archived[0]!.line),
           "archiving the copy through custom.table_archive_deliberately → ARCHIVED line", archived.map((f) => f.line).join(" | ") || "no finding");
         await recordFindings(db, archived);
         const row = (await db.query(
@@ -960,10 +960,10 @@ async function selfTest(argv: string[]): Promise<number> {
   let failed = await offlineSelfTest();
   if (argv.includes("--db")) failed += await dbSelfTest(argv);
   if (failed > 0) {
-    console.log(`\n[FAIL] check:app-tables self-test — ${failed} planted state(s) were not caught. The detector is broken.`);
+    console.log(`\n[FAIL] check:typed-tables self-test — ${failed} planted state(s) were not caught. The detector is broken.`);
     return 1;
   }
-  console.log(`\n✓ check:app-tables self-test — every planted state caught, and the clean fixtures stay silent.`);
+  console.log(`\n✓ check:typed-tables self-test — every planted state caught, and the clean fixtures stay silent.`);
   return 0;
 }
 
@@ -978,8 +978,8 @@ function argValue(argv: readonly string[], flag: string): string | null {
 
 function unmeasured(reason: string): number {
   console.log("");
-  console.log(`[WARN] APP TABLES UNMEASURED — ${reason}`);
-  console.log("  Nothing about the declared app tables was checked: missing, archived, drifted and size are all unknown.");
+  console.log(`[WARN] TYPED TABLES UNMEASURED — ${reason}`);
+  console.log("  Nothing about the declared typed tables was checked: missing, archived, drifted and size are all unknown.");
   console.log("");
   return 2;
 }
@@ -1020,7 +1020,7 @@ async function main(argv: string[]): Promise<number> {
 
     const findings = [...unreadableFindings(unreadable), ...judge(declarations, copies, systemOrg)];
     console.log(
-      `APP TABLES — ${declarations.length} declared (${new Set(declarations.map((d) => d.declaredIn)).size} file(s)), ` +
+      `TYPED TABLES — ${declarations.length} declared (${new Set(declarations.map((d) => d.declaredIn)).size} file(s)), ` +
         `${copies.length} organization cop${copies.length === 1 ? "y" : "ies"} found.`,
     );
     for (const d of declarations) {
@@ -1029,7 +1029,7 @@ async function main(argv: string[]): Promise<number> {
       }
     }
     if (findings.length === 0) {
-      console.log("✓ every declared app table is present, live, matches its definition and is under its size step.");
+      console.log("✓ every declared typed table is present, live, matches its definition and is under its size step.");
       return 0;
     }
     console.log("");
@@ -1045,7 +1045,7 @@ async function main(argv: string[]): Promise<number> {
       );
     } catch (err) {
       await client.query("rollback").catch(() => undefined);
-      console.log(`[WARN] APP TABLE FINDINGS NOT RECORDED in the error monitor — ${firstLine(err)}`);
+      console.log(`[WARN] TYPED TABLE FINDINGS NOT RECORDED in the error monitor — ${firstLine(err)}`);
     }
     return 0;
   } finally {
@@ -1062,7 +1062,7 @@ async function ack(client: Queryable, declarations: readonly Declaration[], slug
   }
   const decl = declarations.find((d) => d.def.slug === slug);
   if (!decl) {
-    console.log(`No app table is declared with slug ${slug} in this checkout. Nothing was written.`);
+    console.log(`No typed table is declared with slug ${slug} in this checkout. Nothing was written.`);
     return 1;
   }
   const record: SizeAck = { rows, by, on: new Date().toISOString().slice(0, 10) };

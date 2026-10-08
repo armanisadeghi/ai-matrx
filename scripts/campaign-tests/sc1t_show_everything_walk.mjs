@@ -11,7 +11,7 @@
  *
  *   S1 owner, Tacoma Yard hub: the scope strip names Tacoma Yard; what the app keeps is NOT listed,
  *      and one sentence + "Show everything" says how many are waiting
- *   S2 owner: Show everything lists "Material choices" under "Kept by the app"; Hide puts it away
+ *   S2 owner: Show everything lists "Material choices" under "Platform tables"; Hide puts it away
  *   S3 owner, the tables list under the hub: every row carries a chip naming Tacoma Yard; its own
  *      Show everything reveals Material choices with the store's sentence for who keeps it
  *   S4 owner: a row chip opens the panel — Scale tickets lives in Tacoma Yard, Portland Depot offered
@@ -64,7 +64,7 @@ try {
     const hubControl = page.locator("[data-hub-show-everything]");
     await hubControl.waitFor({ timeout: 240000 });
     const strip = (await page.locator("[data-hub-scope]").first().innerText()).replace(/\s+/g, " ");
-    const keptToggle = page.locator('[data-hub-listing-toggle="kept-by-the-app"]');
+    const keptToggle = page.locator('[data-hub-listing-toggle="platform-table"]');
     const controlText = (await hubControl.innerText()).replace(/\s+/g, " ");
     pass(
       "S1 owner: the hub names Tacoma Yard and keeps the app's tables behind Show everything",

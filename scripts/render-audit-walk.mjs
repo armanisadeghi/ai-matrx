@@ -1,4 +1,4 @@
-// LANE RENDER-AUDIT — headless render census of the record-store table page.
+// LANE RENDER-AUDIT — headless render census of the custom table page.
 //
 // Installs a minimal React DevTools hook before any page script (scripts/lib/render-counter.js),
 // signs in as admin@admin.com through the login form (credentials from .env.local, never printed),

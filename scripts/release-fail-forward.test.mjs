@@ -119,14 +119,14 @@ test("the clean run prints exactly the ship line; INFO never prints", () => {
   assert.doesNotMatch(code, /\[INFO\]/);
 });
 
-test("declared app tables scream in the release, never block, at most hourly", () => {
-  // Arman, 2026-10-02: a missing / archived / drifted app table must "scream in the app release
+test("declared typed tables scream in the release, never block, at most hourly", () => {
+  // Arman, 2026-10-02: a missing / archived / drifted typed table must "scream in the app release
   // (but never block)"; it reads live, so it is throttled to once an hour (2026-09-25 load rule).
   const after = code.slice(afterStart);
-  const line = after.split("\n").find((l) => l.includes("check:app-tables") && !l.trimStart().startsWith("#"));
-  assert.ok(line, "the after phase does not run pnpm check:app-tables");
-  assert.match(line, /\|\| true\s*$/, "check:app-tables can fail the release");
-  assert.match(after, /APP_TABLES_STAMP[\s\S]{0,200}-mmin \+60/, "check:app-tables is not throttled to once an hour");
+  const line = after.split("\n").find((l) => l.includes("check:typed-tables") && !l.trimStart().startsWith("#"));
+  assert.ok(line, "the after phase does not run pnpm check:typed-tables");
+  assert.match(line, /\|\| true\s*$/, "check:typed-tables can fail the release");
+  assert.match(after, /TYPED_TABLES_STAMP[\s\S]{0,200}-mmin \+60/, "check:typed-tables is not throttled to once an hour");
 });
 
 test("everything else runs after the build started, detached, into the log", () => {

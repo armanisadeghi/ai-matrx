@@ -1,4 +1,4 @@
--- LANE CHAIR-CONFIDENTIAL-STORE — A STORE TABLE CAN BE CONFIDENTIAL.
+-- LANE CHAIR-CONFIDENTIAL-STORE — A CUSTOM TABLE CAN BE CONFIDENTIAL.
 --
 -- THE USE CASE. Cedar Ridge Physical Therapy keeps its employees' performance reviews in a store
 -- Table. A review is Confidential by nature (access ladder: the HR employee record): it opens to
@@ -193,8 +193,8 @@ begin
   exception when others then
     insert into cc_out (check_name, want, got) values ('gate: back to Organization needs no approval', 'written', 'refused ' || sqlerrm);
   end;
-  -- the platform door's route for a store Table landed on the spare Table (approval row recorded)
-  insert into cc_out (check_name, want, got) values ('gate: the platform door records approvals for store Tables', '2',
+  -- the platform door's route for a custom table landed on the spare Table (approval row recorded)
+  insert into cc_out (check_name, want, got) values ('gate: the platform door records approvals for custom tables', '2',
     (select count(*)::text from platform.class_approval_by_arman a where a.token in ('custom.table:' || v_t::text, 'custom.table:' || v_spare::text) and a.txid = pg_current_xact_id()));
 end $gate$;
 
