@@ -230,7 +230,11 @@ export function makeLayoutPrinter<T>(layout: Layout<T>, fallbackType: string): B
     toPrintHtml(data: unknown, context: PrintBlockContext) {
       const model = layout.read(data, context);
       if (!model) return null;
-      return renderPaper(layout, model, context).then((html) => ({ html, css: PAPER_CSS }));
+      // `css` is read by @ai-matrx/print >= 0.12.6 (the composer puts it in the head); older composers ignore it.
+      return renderPaper(layout, model, context).then((html) => {
+        const output = { html, css: PAPER_CSS };
+        return output;
+      });
     },
   };
 }
