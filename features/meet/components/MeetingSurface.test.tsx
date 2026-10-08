@@ -36,11 +36,13 @@ jest.mock("@ai-matrx/meet/react", () => ({
   MeetRoot: ({ children }: { children?: React.ReactNode }) => <>{children}</>,
   useMeetHost: () => mockMeetHost,
   useMeetSnapshot: () => null,
-  createWebRoomTokenStorage: () => ({
-    read: (room: string) => mockStoredPasses[room] ?? null,
-    write: () => undefined,
-    remove: () => undefined,
-  }),
+  MEETING_PASS_HEADER: "x-meet-pass",
+  rememberedMeetingPass: (room: string) => {
+    const raw = mockStoredPasses[room];
+    if (raw === undefined) return null;
+    const parsed = JSON.parse(raw) as { standing?: string; meetingPass?: string };
+    return parsed.standing === "guest" ? (parsed.meetingPass ?? null) : null;
+  },
 }));
 jest.mock("@/features/meet/components/board/MeetingBoard", () => ({
   MeetingBoard: () => <div data-testid="meeting-board" />,
@@ -218,7 +220,7 @@ describe("MeetingSurface authentication hydration", () => {
     mockActiveOrganizationId = "org-mine";
     mockMeetHost = { identity: { organizationId: "org-mine" }, api: { request } };
     mockStoredPasses = {
-      "room-1": JSON.stringify({ token: "a.guest.pass", identity: "guest:d3v1c3" }),
+      "room-1": JSON.stringify({ token: "livekit.jwt", meetingPass: "a.guest.pass", standing: "guest" }),
     };
     window.history.replaceState(null, "", "/meet/meeting-1?claim=1");
     const surface = await renderSurface(true, { ...guestAuth, id: "member-1", authReady: true });
@@ -230,7 +232,7 @@ describe("MeetingSurface authentication hydration", () => {
     const call = (request.mock.calls[0] as unknown as [Record<string, unknown>])[0];
     expect(call.path).toBe("/api/v1/meet/claim");
     expect(call.requireAuth).toBe(true);
-    expect(call.headers).toEqual({ "x-meet-room-token": "a.guest.pass" });
+    expect(call.headers).toEqual({ "x-meet-pass": "a.guest.pass" });
     expect(call.body).toEqual({ meeting_id: "meeting-1" });
     expect(window.location.search).toBe("");
     surface.unmount();
@@ -241,7 +243,7 @@ describe("MeetingSurface authentication hydration", () => {
     const request = jest.fn();
     mockActiveOrganizationId = "org-mine";
     mockMeetHost = { identity: { organizationId: "org-mine" }, api: { request } };
-    mockStoredPasses = { "room-1": JSON.stringify({ token: "a.guest.pass", identity: "guest:x" }) };
+    mockStoredPasses = { "room-1": JSON.stringify({ meetingPass: "a.guest.pass", standing: "guest" }) };
     window.history.replaceState(null, "", "/meet/meeting-1");
     const surface = await renderSurface(true, { ...guestAuth, id: "member-1", authReady: true });
     expect(request).not.toHaveBeenCalled();
