@@ -53,4 +53,20 @@ Its server sent no rows (the seed missed the cap), and the app's first store cal
 same run's `/data` cold load (no page seed involved) also started at 6412 ms. That points to an
 app-wide hydration stall, not the seed, but the rule does not allow exceptions.
 
+Coordinator ruling: run 1's stall did not count, so three more warm ON/OFF pairs were run, alternating
+(the harness also records cold; flip only if every warm ON is ≤ 2.5 s and ≤ its paired OFF):
+
+| Run | cold ON | cold OFF | warm ON | warm OFF |
+|---|---|---|---|---|
+| 4 | 3501 (0) | 1890 (0) | 1113 (532) | 1892 (0) |
+| 5 | 1300 (532) | 1607 (0) | 1390 (532) | 1883 (0) |
+| 6 | 1248 (532) | 3168 (0) | **3353 (0)** | 1977 (0) |
+
+Run 6 warm ON took 3353 ms. That is over 2.5 s and slower than its pair, and nothing else stalled
+(first store call at 851 ms; that run's `/data` loads took 537–596 ms). The same happened on run 4 cold
+ON (3501 ms vs 1890 ms). **When the server misses the cap, the page is ~1.2–1.6 s slower than OFF**:
+the browser only starts asking at the cap, and its reads then take as long as they do with the knob
+off. A load whose seed lands is ~0.5–0.8 s faster than OFF. So "a cap that never costs anything" does
+not hold. A miss costs about the cap itself, and misses happen on production.
+
 **Decision: platform default stays OFF.** This was the last design (SSR-ROWS, -2, -3); no fourth attempt.
