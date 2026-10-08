@@ -18,6 +18,8 @@ import { parseHttpError } from "@/lib/api/errors";
 import { getAccessTokenOrNull, requestRaw } from "@/lib/python-client";
 import { invalidateProcessedDocumentPages } from "./useProcessedDocumentPages";
 import { markAutoCleanHandled } from "./useAutoCleanOnOpen";
+import { savePdfRunRequest } from "../state/runRequests";
+import { isOrganizationRequiredError } from "@/lib/organizations/organizationRequiredError";
 import { consumeBatchExtractNdjsonStream } from "../service/batchExtractDebugStream";
 import {
   appendBatchExtractDebugLine,
@@ -353,6 +355,9 @@ export function usePdfExtractor(options: UsePdfExtractorOptions = {}) {
   // "New extraction" tab state
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [batchStatus, setBatchStatus] = useState<BatchStatus>("idle");
+  // The last upload was refused for want of an active organization; the
+  // selected files are kept so it can run again the moment one is chosen.
+  const [needsOrganization, setNeedsOrganization] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Live post-extraction pipeline status per doc id (clean → chunk → embed →
@@ -493,6 +498,8 @@ export function usePdfExtractor(options: UsePdfExtractorOptions = {}) {
     async (opts: ExtractFilesOptions = {}): Promise<string[]> => {
       if (selectedFiles.length === 0) return [];
 
+      setNeedsOrganization(false);
+      let heldForOrganization = false;
       setBatchStatus("extracting");
       firstCompletedTabRef.current = null;
       const completedDocIds: string[] = [];
@@ -559,6 +566,9 @@ export function usePdfExtractor(options: UsePdfExtractorOptions = {}) {
 
         if (!response.ok) {
           const apiError = await parseHttpError(response);
+          if (isOrganizationRequiredError(apiError)) {
+            throw apiError;
+          }
           if (debugSessionId) {
             dispatch(
               finishBatchExtractDebugSession({
@@ -818,6 +828,12 @@ export function usePdfExtractor(options: UsePdfExtractorOptions = {}) {
               completedDocIds.push(docId);
               // The upload stream owns this doc's clean — never auto-run one.
               markAutoCleanHandled(docId);
+              // A refresh mid-processing reconnects to this upload's run.
+              savePdfRunRequest(
+                docId,
+                response.headers.get("X-Request-ID"),
+                "upload",
+              );
               if (!firstDocIdFired) {
                 firstDocIdFired = true;
                 opts.onFirstDocId?.(docId);
@@ -905,6 +921,30 @@ export function usePdfExtractor(options: UsePdfExtractorOptions = {}) {
           );
         }
       } catch (err) {
+        if (isOrganizationRequiredError(err)) {
+          // Not a failure of the files: offer the organization picker and keep
+          // them selected; the upload runs again once one is chosen.
+          heldForOrganization = true;
+          setNeedsOrganization(true);
+          setTabs((prev) =>
+            prev.filter((tab) => !placeholderTabs.some((p) => p.id === tab.id)),
+          );
+          setActiveTabId((prev) =>
+            placeholderTabs.some((p) => p.id === prev) ? "new" : prev,
+          );
+          if (debugSessionId) {
+            dispatch(
+              finishBatchExtractDebugSession({
+                sessionId: debugSessionId,
+                finishedAt: new Date().toISOString(),
+                status: "error",
+                response: null,
+                error: "organization_required",
+              }),
+            );
+          }
+          return [];
+        }
         const msg = err instanceof Error ? err.message : "Extraction failed";
         if (debugSessionId) {
           dispatch(
@@ -947,23 +987,26 @@ export function usePdfExtractor(options: UsePdfExtractorOptions = {}) {
         );
 
         setBatchStatus("idle");
-        // The stream is over — no more processing events can arrive, so any
-        // leftover per-doc status is stale. Clear it — except docs parked on
-        // the batch queue, whose "Cleaning queued" label is still true.
-        setProcessingStatus((prev) => {
-          const kept: Record<string, string> = {};
-          for (const [id, label] of Object.entries(prev)) {
-            if (label === CLEAN_QUEUED_LABEL) kept[id] = label;
-          }
-          return kept;
-        });
-        clearFiles();
-        // Refresh history
-        loadHistory();
+        // Held for an organization: the files stay selected for the retry.
+        if (!heldForOrganization) {
+          // The stream is over — no more processing events can arrive, so any
+          // leftover per-doc status is stale. Clear it — except docs parked on
+          // the batch queue, whose "Cleaning queued" label is still true.
+          setProcessingStatus((prev) => {
+            const kept: Record<string, string> = {};
+            for (const [id, label] of Object.entries(prev)) {
+              if (label === CLEAN_QUEUED_LABEL) kept[id] = label;
+            }
+            return kept;
+          });
+          clearFiles();
+          // Refresh history
+          loadHistory();
 
-        // Switch to first completed tab
-        if (firstCompletedTabRef.current) {
-          setActiveTabId(firstCompletedTabRef.current);
+          // Switch to first completed tab
+          if (firstCompletedTabRef.current) {
+            setActiveTabId(firstCompletedTabRef.current);
+          }
         }
       }
 
@@ -1162,6 +1205,9 @@ export function usePdfExtractor(options: UsePdfExtractorOptions = {}) {
               // EVERY event (heartbeat, record_reserved, …) proves the
               // server is alive — only silence trips the watchdog.
               onActivity: () => watchdog.bump(),
+              // A refresh mid-clean reconnects to exactly this run.
+              onRequestId: (requestId) =>
+                savePdfRunRequest(docId, requestId, "clean"),
               onCleanStarted: (info) => {
                 perPageMode = info.mode === "per_page";
               },
@@ -1616,6 +1662,7 @@ export function usePdfExtractor(options: UsePdfExtractorOptions = {}) {
     // "New" tab state
     selectedFiles,
     batchStatus,
+    needsOrganization,
     fileInputRef,
     addFiles,
     removeFile,
