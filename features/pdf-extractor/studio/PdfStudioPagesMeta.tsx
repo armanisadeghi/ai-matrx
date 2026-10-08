@@ -14,6 +14,8 @@ import { useEntityScopes } from "@/features/scopes/hooks/useEntityScopes";
 import { ContextAssignmentPopover } from "@/features/scopes/components/context-assignment/ContextAssignmentPopover";
 import { setRowScopes } from "@/features/scopes/components/context-assignment/data";
 import type { PdfDocument } from "../hooks/usePdfExtractor";
+import type { PdfPageRow } from "../hooks/useProcessedDocumentPages";
+import { isDocCleaned } from "../service/cleanOutcome";
 // `formatRelativeTime` is THE package formatter (`@ai-matrx/kit/format`,
 // census H1 2026-09-07). This surface previously carried a local copy.
 import { formatRelativeTime } from "@ai-matrx/kit/format";
@@ -22,17 +24,20 @@ export interface PdfStudioPagesMetaProps {
   doc: PdfDocument;
   pageRowCount: number;
   hasPageRows: boolean;
+  /** The doc's page rows — "Cleaned" is derived from these, not from clean_content alone. */
+  pages?: readonly PdfPageRow[];
 }
 
 export function PdfStudioPagesMeta({
   doc,
   pageRowCount,
   hasPageRows,
+  pages = [],
 }: PdfStudioPagesMetaProps) {
   const pageTotal = doc.totalPages ?? pageRowCount;
   const statuses: string[] = [];
   if (!hasPageRows) statuses.push("No per-page rows");
-  if (doc.cleanContent) statuses.push("Cleaned");
+  if (isDocCleaned(pages, doc.cleanContent)) statuses.push("Cleaned");
 
   return (
     <div className="shrink-0 border-b border-border/60 px-3 py-2.5 space-y-2">

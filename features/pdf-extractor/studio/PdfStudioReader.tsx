@@ -1565,13 +1565,13 @@ function BlankPagesBanner({
         <AlertTriangle className="w-3.5 h-3.5 mt-0.5 shrink-0" />
         <div className="flex-1">
           <p className="font-medium">
-            Per-page rows exist for this doc, but every page is empty.
+            {isCleanPane ? "Not cleaned" : "Every page is empty"}
           </p>
           <p className="mt-0.5 text-amber-700/90 dark:text-amber-300/80 leading-snug">
             {isCleanPane
               ? docHasAggregate
-                ? "Showing the aggregate AI-cleaned text below as a fallback. Run AI Clean again to refresh it, or re-run the pipeline to populate per-page rows for synced scrolling."
-                : "No AI-cleaned text yet. Run AI Clean to generate cleaned content from the raw extraction."
+                ? "No page has cleaned text. The document text is shown below."
+                : "No AI-cleaned text yet."
               : docHasAggregate
                 ? "Showing the aggregate document text below as a fallback. Re-run the pipeline to populate per-page rows so synced scrolling and word-level highlighting work."
                 : "No raw text was persisted. Re-run the pipeline to repopulate."}
@@ -1591,7 +1591,7 @@ function BlankPagesBanner({
                 ) : (
                   <>
                     <AGENT_ICON className="w-3 h-3" />
-                    {docHasAggregate ? "Run AI Clean again" : "Run AI Clean"}
+                    {docHasAggregate ? "Retry" : "Run AI Clean"}
                   </>
                 )}
               </Button>
