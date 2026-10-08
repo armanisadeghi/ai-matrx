@@ -22,6 +22,7 @@ export function readAgentUnsavedChangesTab(data: CanvasJson | undefined | null):
 
 export const agentUnsavedChangesKind = defineCanvasKind<CanvasJson>({
   id: AGENT_UNSAVED_CHANGES_KIND,
+  surface: "dom",
   label: "Unsaved changes",
   icon: FileDiff,
   load: () => import("./AgentUnsavedChangesCanvasView"),

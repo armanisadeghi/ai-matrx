@@ -26,6 +26,7 @@ function hasItems(data: CanvasJson | undefined | null): boolean {
 
 export const contextItemsKind = defineCanvasKind<CanvasJson>({
   id: CONTEXT_ITEMS_KIND,
+  surface: "dom",
   label: "Attachment",
   icon: Paperclip,
   load: () => import("./ContextItemsCanvasView"),

@@ -37,6 +37,7 @@ export function knowledgeAssetsInput(doc: KnowledgeAssetDoc | null): ToolOpenInp
 
 export const KNOWLEDGE_ASSETS_CANVAS_KIND: AnyCanvasKind = defineCanvasKind<CanvasJson>({
   id: KNOWLEDGE_ASSETS_KIND,
+  surface: "dom",
   label: LABEL,
   icon: Wand2,
   load: () => import("./KnowledgeAssetsCanvasView"),

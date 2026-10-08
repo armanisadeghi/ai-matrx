@@ -20,6 +20,7 @@ const KEY = "default";
 
 export const messagesKind = defineCanvasKind<null>({
   id: MESSAGES_KIND,
+  surface: "dom",
   label: TITLE,
   icon: MessageSquare,
   load: () => import("./MessagesCanvasView"),

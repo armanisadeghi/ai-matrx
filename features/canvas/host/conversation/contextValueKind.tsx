@@ -19,6 +19,7 @@ export { CONTEXT_VALUE_KIND };
 
 export const contextValueKind = defineCanvasKind<CanvasJson>({
   id: CONTEXT_VALUE_KIND,
+  surface: "dom",
   label: "Context value",
   icon: Boxes,
   load: () => import("./ContextValueCanvasView"),

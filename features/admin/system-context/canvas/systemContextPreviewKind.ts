@@ -23,6 +23,7 @@ export const SYSTEM_CONTEXT_PREVIEW_TOGGLE: ToolToggleInput = {
 
 export const SYSTEM_CONTEXT_PREVIEW_CANVAS_KIND: AnyCanvasKind = defineCanvasKind({
   id: SYSTEM_CONTEXT_PREVIEW_KIND,
+  surface: "dom",
   label: TITLE,
   icon: Eye,
   load: () => import("./SystemContextPreviewCanvasView"),

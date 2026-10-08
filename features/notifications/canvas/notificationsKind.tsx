@@ -16,6 +16,7 @@ const TITLE = "Notifications";
 
 export const notificationsKind = defineCanvasKind<null>({
   id: NOTIFICATIONS_KIND,
+  surface: "dom",
   label: TITLE,
   icon: Bell,
   load: () => import("./NotificationsCanvasView"),

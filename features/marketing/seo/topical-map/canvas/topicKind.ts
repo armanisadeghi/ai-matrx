@@ -42,6 +42,7 @@ export function readTopicTabData(data: unknown): TopicTabData | null {
 
 export const TOPICAL_MAP_TOPIC_CANVAS_KIND: AnyCanvasKind = defineCanvasKind<TopicTabData>({
   id: TOPICAL_MAP_TOPIC_KIND,
+  surface: "dom",
   label: "Topic",
   icon: Brain,
   load: () => import("./TopicCanvasView"),

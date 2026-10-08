@@ -37,6 +37,7 @@ export function agentPayloadToggleInput(siteId: string, nodeId: string | null, n
 
 export const AGENT_PAYLOAD_CANVAS_KIND: AnyCanvasKind = defineCanvasKind<CanvasJson>({
   id: AGENT_PAYLOAD_KIND,
+  surface: "dom",
   label: "What the AI sees",
   icon: Info,
   load: () => import("./AgentPayloadCanvasView"),

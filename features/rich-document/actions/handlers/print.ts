@@ -9,6 +9,8 @@ import { printMarkdownContent } from "@ai-matrx/chat/conversation/utils/markdown
 import { hasContentActions } from "@ai-matrx/rich-content/copy/content-view-store";
 import { registerAction } from "@ai-matrx/rich-content/rich-document/actions/provider";
 import { contentForDestination } from "../utils";
+// Each embedded block prints through its type's adapter (the one block-printer registry).
+import "@/features/canvas/artifact-types/artifact-printers";
 
 registerAction({
   id: "print",

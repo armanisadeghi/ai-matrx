@@ -14,6 +14,7 @@ const TITLE = "Quick Notes";
 
 export const quickNotesKind = defineCanvasKind<null>({
   id: QUICK_NOTES_KIND,
+  surface: "dom",
   label: TITLE,
   icon: StickyNote,
   load: () => import("./QuickNotesCanvasView"),

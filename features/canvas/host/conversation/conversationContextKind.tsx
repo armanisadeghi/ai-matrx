@@ -42,6 +42,7 @@ export function readConversationContextTab(
 
 export const conversationContextKind = defineCanvasKind<CanvasJson>({
   id: CONVERSATION_CONTEXT_KIND,
+  surface: "dom",
   label: LABEL,
   icon: Eye,
   title: (data) => canvasText(data, "title") ?? LABEL,

@@ -197,4 +197,10 @@ export const mathPrinter: BlockPrinter = {
             "math-problem"
         );
     },
+    // Inside a message's print: the problem with its worked solution.
+    toPrintHtml(data: unknown) {
+        const problem = (data as { math_problem: MathProblem })?.math_problem ?? (data as MathProblem);
+        if (!problem?.title) return null;
+        return { html: `<style>${MATH_STYLES}</style>${renderProblemSection(problem)}${renderSolutionSection(problem)}` };
+    },
 };

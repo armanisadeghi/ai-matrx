@@ -95,6 +95,7 @@ function quickChatMenu({ data }: CanvasKindProps): readonly CanvasMenuItem[] {
 
 export const quickChatKind = defineCanvasKind<QuickChatTabData>({
   id: QUICK_CHAT_KIND,
+  surface: "dom",
   label: TITLE,
   icon: MessageSquare,
   load: () => import("./QuickChatCanvasView"),

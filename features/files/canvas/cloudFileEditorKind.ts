@@ -32,6 +32,7 @@ export function openCloudFileEditor(canvas: CanvasController | null, fileId: str
 
 export const CLOUD_FILE_EDITOR_CANVAS_KIND: AnyCanvasKind = defineCanvasKind<CanvasJson>({
   id: CLOUD_FILE_EDITOR_KIND,
+  surface: "dom",
   label: "Edit file",
   icon: FileCode,
   load: () => import("./CloudFileEditorCanvasView"),

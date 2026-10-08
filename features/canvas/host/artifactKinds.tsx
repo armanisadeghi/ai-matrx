@@ -63,6 +63,7 @@ import {
 } from "@/features/canvas/canvasContent";
 import { canvasContentHasSource } from "@/features/canvas/core/canvasSource";
 import { isMaterializedArtifactId } from "@/features/canvas/artifact-types/artifactId";
+import { artifactOutputDef } from "@/features/canvas/artifact-types/artifact-output";
 import { artifactKey, contentOf, readArtifactItemData, type ArtifactItemData } from "./artifactItem";
 import { openArtifactPanel, toggleArtifactPanel, useArtifactPanel } from "./artifactPanels";
 
@@ -197,6 +198,8 @@ function artifactMenu(props: CanvasKindProps): readonly CanvasMenuItem[] {
 export const ARTIFACT_CANVAS_KINDS: readonly AnyCanvasKind[] = (Object.keys(ICONS) as CanvasContentType[]).map((type) =>
   defineCanvasKind<CanvasJson>({
     id: type,
+    // What its body is and how it prints / captures — on the artifact TYPE (artifact-output.ts).
+    ...artifactOutputDef(type),
     label: getDefaultTitle(type),
     icon: ICONS[type],
     load: loadView,
@@ -217,6 +220,7 @@ export const ARTIFACT_CANVAS_KINDS: readonly AnyCanvasKind[] = (Object.keys(ICON
  */
 export const SAVED_ITEMS_CANVAS_KIND: AnyCanvasKind = defineCanvasKind<null>({
   id: "saved-items",
+  surface: "dom",
   label: "Saved",
   icon: LayoutDashboard,
   load: () =>
