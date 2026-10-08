@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useRef, useCallback, useMemo, useLayoutEffect } from "react";
 import { useTextareaFormatting } from "@ai-matrx/rich-editor/format/useTextareaFormatting";
+import { formatTargetWithin } from "@ai-matrx/rich-editor/format/format-target";
 import { Eye } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { useNotesRedux } from "../../hooks/useNotesRedux";
@@ -133,6 +134,7 @@ export default function MobileNoteEditor({
   useTextareaFormatting(formatElement, !readOnly);
   // THE ONE EDITOR (Write / Source).
   const richRef = useRef<RichEditorController | null>(null);
+  const editorRootRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     localContentRef.current = localContent;
@@ -342,7 +344,7 @@ export default function MobileNoteEditor({
       getWriteHandlers={getWriteHandlers}
     >
     {/* Flex column fills the parent — content scrolls, dock stays at bottom */}
-    <div className="h-full bg-background flex flex-col overflow-hidden relative">
+    <div ref={editorRootRef} className="h-full bg-background flex flex-col overflow-hidden relative">
       {readOnly && (
         <div className="shrink-0 flex items-center gap-2 px-4 py-2 border-b border-border/40 bg-amber-500/10 text-amber-700 dark:text-amber-400">
           <Eye className="w-3.5 h-3.5 shrink-0" />
@@ -501,6 +503,7 @@ export default function MobileNoteEditor({
 
       {/* ── Fixed bottom dock ────────────────────────────────────────────────── */}
       <NoteEditorDock
+        formatResolve={effectiveMode !== "preview" && !readOnly ? () => formatTargetWithin(editorRootRef.current) : null}
         noteId={noteId}
         noteLabel={noteLabel}
         readOnly={readOnly}

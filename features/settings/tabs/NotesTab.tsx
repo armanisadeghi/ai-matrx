@@ -30,7 +30,10 @@ import { useSetting } from "../hooks/useSetting";
 type DesktopMode = "split" | "plain" | "write";
 type PhoneMode = "plain" | "write";
 
+const WRITE_OPTION = { value: "write" as const, label: "Write", description: "The formatted editor." };
+
 const DESKTOP_OPTIONS: SettingsOption<DesktopMode>[] = [
+  WRITE_OPTION,
   {
     value: "split",
     label: "Split",
@@ -41,23 +44,14 @@ const DESKTOP_OPTIONS: SettingsOption<DesktopMode>[] = [
     label: "Plain",
     description: "Quick, unformatted text — nothing is ever formatted for you.",
   },
-  {
-    value: "write",
-    label: "Write",
-    description: "The formatted editor.",
-  },
 ];
 
 const PHONE_OPTIONS: SettingsOption<PhoneMode>[] = [
+  WRITE_OPTION,
   {
     value: "plain",
     label: "Plain",
     description: "Quick, unformatted text — nothing is ever formatted for you.",
-  },
-  {
-    value: "write",
-    label: "Write",
-    description: "The formatted editor.",
   },
 ];
 
@@ -65,7 +59,7 @@ export default function NotesTab() {
   const [desktopStored, setDesktop] = useSetting<string | undefined>(DEFAULT_EDITOR_MODE_SETTING);
   const [phoneStored, setPhone] = useSetting<string | undefined>(DEFAULT_PHONE_EDITOR_MODE_SETTING);
   const desktop = defaultDesktopMode(desktopStored);
-  const desktopValue: DesktopMode = desktop === "plain" || desktop === "write" ? desktop : "split";
+  const desktopValue: DesktopMode = desktop === "plain" || desktop === "split" ? desktop : "write";
   const phoneValue: PhoneMode = phoneNoteMode(phoneStored) ?? PLATFORM_DEFAULT_PHONE_EDITOR_MODE;
 
   return (

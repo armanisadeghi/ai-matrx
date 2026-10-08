@@ -6,7 +6,8 @@
 // (`tablePageSeed.server.ts`) and priming them into the page's own stores during the FIRST render —
 // before any of the page's effects ask. The screens themselves are unchanged.
 
-import { useEffect, useRef, type ReactNode } from "react";
+import { use, useEffect, useRef, type ReactNode } from "react";
+import { RecordsSeedProvider } from "@ai-matrx/records/react";
 
 import { holdPrimaryContent } from "@/lib/boot/primaryContent";
 
@@ -14,6 +15,7 @@ import { useRecordsDataSource } from "@/features/data-tables/records-ui-host/rec
 import { UnifiedDataTablePage } from "@/features/unified-data/table-page/UnifiedDataTablePage";
 import { UnifiedRecordPage } from "@/features/unified-data/table-page/UnifiedRecordPage";
 import { primeTablePage } from "./primeTablePage";
+import { TablePageSeedContext } from "./tablePageSeedContext";
 import type { TablePageSeed } from "./tablePageSeed.server";
 
 function Primed({
@@ -31,7 +33,19 @@ function Primed({
     primed.current = seed;
     primeTablePage(tableId, seed, dataSource);
   }
-  return <>{children}</>;
+  /*
+   * THE ROWS IN THE SERVER'S HTML (lane SSR-ROWS). The page waits for the server's first reads (they
+   * are bounded: `SEED_BUDGET_MS`, else null) and draws from them in this pass — on the server, so the
+   * HTML holds the table's rows, and while hydrating, so the browser draws the same rows and asks
+   * nothing again. A null seed draws exactly what it drew before: the skeleton, then the browser asks.
+   */
+  const resolved = use(seed);
+  const mine = resolved && resolved.tableId === tableId ? resolved : null;
+  return (
+    <TablePageSeedContext value={mine}>
+      <RecordsSeedProvider seed={mine?.records ?? null}>{children}</RecordsSeedProvider>
+    </TablePageSeedContext>
+  );
 }
 
 /**

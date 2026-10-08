@@ -239,8 +239,8 @@ export const defaultUserPreferences: UserPreferences = {
   // right) and Plain on a phone, unless the person chose another mode; a note
   // last edited in Write reopens in Write (noteModes).
   notes: {
-    defaultEditorMode: "split",
-    defaultPhoneEditorMode: "plain",
+    defaultEditorMode: "write",
+    defaultPhoneEditorMode: "write",
     noteModes: {},
   },
   siteWorkbench: {

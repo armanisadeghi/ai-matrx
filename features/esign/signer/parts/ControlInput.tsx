@@ -7,6 +7,7 @@
 import { Check, Eraser, PenLine } from "lucide-react";
 
 import { Button, Input, Select, Textarea } from "@ai-matrx/design-system/controls";
+import { ErrorNotice } from "@/components/errors/ErrorNotice";
 import { Checkbox } from "@/components/ui/checkbox";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 
@@ -177,9 +178,9 @@ export function ControlInput({
       ) : null}
       {body}
       {problem ? (
-        <p id={describedBy} className="type-secondary text-destructive">
-          {problem}
-        </p>
+        <div id={describedBy} className="type-secondary">
+          <ErrorNotice size="inline" message={problem} operation="Check a signing field" />
+        </div>
       ) : field.tooltip ? (
         <p className="type-secondary text-muted-foreground">{field.tooltip}</p>
       ) : null}

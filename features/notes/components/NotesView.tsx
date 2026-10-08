@@ -757,14 +757,18 @@ export function NotesView({
             ))}
           </div>
         )}
-        {/* Plain and Split are plain text: their format buttons sit in THIS row,
-            acting on the note's text field (the one command layer). */}
-        {headerNoteId && !narrowShowsList && (editorMode === "plain" || editorMode === "split") && (
+        {/* THE formatting toolbar, in every editing mode (Write, Split, Plain) —
+            never in Read. It sits in THIS row, in the space beside the mode
+            switch, acting on the editor the person is in (the one command
+            layer); what does not fit folds into its More menu. */}
+        {headerNoteId && !narrowShowsList && editorMode !== "preview" && (
           <FormatButtons
-            className="ml-2 hidden md:flex"
+            className="ml-3 hidden flex-1 md:flex"
             resolve={() => formatTargetWithin(typeof document === "undefined" ? null : document.getElementById("notes-main"))}
           />
         )}
+        {/* Read keeps the switch exactly where the editing modes put it. */}
+        {headerNoteId && !narrowShowsList && editorMode === "preview" && <div aria-hidden className="hidden flex-1 md:block" />}
       </div>
 
       {hidePageHeader ? (

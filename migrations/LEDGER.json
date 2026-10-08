@@ -1,6 +1,6 @@
 {
   "note": "Checked-in snapshot of public._schema_migrations for the files under migrations/campaign and migrations/inverse. Written by `pnpm db:apply` on every successful production apply and refreshed whole by the nightly catch-up. Never hand-edited: a self-written checksum is a claim nobody can check. Guard: pnpm check:ledgered-files-unedited.",
-  "generated_at": "2026-10-08T01:20:36.816Z",
+  "generated_at": "2026-10-08T03:37:52.757Z",
   "files": {
     "migrations/campaign/a_chunk_is_the_size_the_client_door_can_actually_carry.sql": {
       "source": "matrx-frontend",
@@ -1555,6 +1555,12 @@
       "filename": "definer7_the_dictionary_door_rules_its_arguments.sql",
       "checksum": "6e44fff70db44215cb713dfb3ed8aa17495bef7af1320dcef9acb3c5b910e997",
       "applied_at": "2026-09-22 17:46:48.905348+00"
+    },
+    "migrations/campaign/describe_install_a_forms_a_template_installs_are_live.sql": {
+      "source": "matrx-frontend",
+      "filename": "describe_install_a_forms_a_template_installs_are_live.sql",
+      "checksum": "90c3ade9870a29a19c7b8250506b66d19c4c3995a62d6742bfbd606b184b8e2b",
+      "applied_at": "2026-10-08 03:37:51.514377+00"
     },
     "migrations/campaign/digests_a_saved_view_has_a_door.sql": {
       "source": "matrx-frontend",

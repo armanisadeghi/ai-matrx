@@ -85,10 +85,6 @@ begin
      where execution_id = (select execution_id from runtime._ai_usage_execution_facts
                             where created_at > now() - interval '20 days' and created_at < now() - interval '3 days' order by execution_id limit 1);
   end if;
-  if current_setting('dfx.plant') = 'tail' then
-    execute 'create or replace view runtime._ai_usage_calls with (security_invoker = true) as '
-         || replace(pg_get_viewdef('runtime._ai_usage_calls'::regclass), 'l.created_at >= COALESCE(', 'false AND l.created_at >= COALESCE(');
-  end if;
 end $$;
 
 -- ── F / V / R ───────────────────────────────────────────────────────────────────────────────────────
@@ -146,6 +142,10 @@ create temp table dfx_roll_new on commit drop as
          cost, calls, paid_calls, requests, tokens_in, tokens_cached, tokens_out, unpriced_calls
     from runtime._ai_usage_hourly where bucket >= date_trunc('hour', now() - interval '35 days', 'UTC');
 create temp table dfx_wm_new on commit drop as select * from runtime._ai_usage_hourly_watermark;
+-- the fact plant has been judged by F and V: put the cent back (the up file's own census would refuse it)
+update runtime._ai_usage_execution_facts f set cost = l.cost
+  from runtime._ai_usage_calls_live l
+ where current_setting('dfx.plant') = 'fact' and l.execution_id = f.execution_id and l.cost <> f.cost;
 
 -- ── the questions ────────────────────────────────────────────────────────────────────────────────────
 do $$
@@ -314,6 +314,13 @@ select pg_temp.dfx_pass(3);
 \endif
 
 -- ── L. live tail ───────────────────────────────────────────────────────────────────────────────────────
+do $$
+begin
+  if current_setting('dfx.plant') = 'tail' then   -- PLANT: the view forgets the executions after the watermark
+    execute 'create or replace view runtime._ai_usage_calls with (security_invoker = true) as '
+         || replace(pg_get_viewdef('runtime._ai_usage_calls'::regclass), 'l.created_at >= COALESCE(', 'false AND l.created_at >= COALESCE(');
+  end if;
+end $$;
 do $$
 declare v_id uuid := gen_random_uuid(); v_src runtime.global_execution; v_wm timestamptz; v_n int;
 begin

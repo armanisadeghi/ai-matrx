@@ -8,6 +8,8 @@
  * of Link-based navigation, since this is a contextual toolbar, not a nav bar.
  */
 
+import { FormatButtons } from "@ai-matrx/rich-editor/format/FormatButtons";
+import type { FormatTarget } from "@ai-matrx/rich-editor/format/format-target";
 import { useState, useRef, useEffect, useCallback } from "react";
 import type { LucideIcon } from "lucide-react";
 import type { ContentTransferController } from "@ai-matrx/alchemy/react/workspace";
@@ -68,6 +70,8 @@ interface NoteEditorDockProps {
   /** Viewer-level sharee: hide the folder/tags mutators (their saves are
    *  RLS-rejected); copy/export/context/more stay available. */
   readOnly?: boolean;
+  /** The editor the dock's formatting strip acts on — set in the editing modes, null in Read. */
+  formatResolve?: (() => FormatTarget | null) | null;
 }
 
 // ─── Constants (mirrors MobileDock) ──────────────────────────────────────────
@@ -93,6 +97,7 @@ export function NoteEditorDock({
   onRename,
   isDeleting,
   readOnly = false,
+  formatResolve = null,
 }: NoteEditorDockProps) {
   const toast = useToastManager("notes");
   const openKnowledge = useOpenNoteKnowledgePanel();
@@ -290,6 +295,17 @@ export function NoteEditorDock({
         )}
         aria-hidden={sheetOpen ? true : undefined}
       >
+        {/* The phone's formatting: the essential set (text style, B, I, list,
+            checklist, link) and More for the rest — the same toolbar as desktop. */}
+        {formatResolve && !readOnly && (
+          <div className="mb-1.5 flex justify-center">
+            <FormatButtons
+              variant="essential"
+              resolve={formatResolve}
+              className="matrx-glass-core pointer-events-auto rounded-full px-1.5 py-1"
+            />
+          </div>
+        )}
         <div
           ref={navRef}
           className="relative flex items-stretch matrx-glass-core rounded-[22px] mb-2 pointer-events-auto"

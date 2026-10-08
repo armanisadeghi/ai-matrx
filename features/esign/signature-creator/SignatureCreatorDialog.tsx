@@ -33,7 +33,7 @@ export interface SignatureCreatorDialogProps {
   allowed: { typed: boolean; drawn: boolean; uploaded: boolean; phone: boolean };
   door: SignerDoorApi;            // handoff* only
   signedIn: boolean;              // shows Saved tab and "Save as default"
-  onAdopt: (marks: CreatedMark[]) => void;   // signature (+ initials when typed) — the surface calls door.adopt
+  onAdopt: (marks: CreatedMark[]) => Promise<void>;   // awaited: Adopt shows busy until the server holds the mark; signature (+ initials when typed) — the surface calls door.adopt
   onClose: () => void;
 }
 

@@ -411,11 +411,11 @@ export interface AgentContextPreferences {
  * context — unless empty. Null = none yet; the first open/type creates one.
  */
 /**
- * Notes (Arman, 2026-09-27). `defaultEditorMode` is the mode a note opens in on
- * a desktop when the person has not typed in that note before — Split (the quick
- * plain textarea left, the formatted note live right) by default; the modes are
- * split · plain · write (the one editor) · preview. `defaultPhoneEditorMode` is
- * the phone's — Plain by default; the phone has plain · write. Picking a mode
+ * Notes (Arman, 2026-09-27; Write the default 2026-10-07). `defaultEditorMode` is
+ * the mode a note opens in on a desktop when the person has not typed in that note
+ * before — Write (the one editor) by default; the modes are write · split · plain ·
+ * preview. `defaultPhoneEditorMode` is the phone's — Write by default; the phone
+ * has write · plain. Picking a mode
  * saves it for that device. `noteModes` remembers, per note, whether the person
  * last typed it in Write ("write") or as text ("plain"), newest last, bounded —
  * a note last edited in Write reopens in Write. Values stored before the one
@@ -1373,8 +1373,8 @@ export const initializeUserPreferencesState = (
       activeId: null,
     },
     notes: {
-      defaultEditorMode: "split",
-      defaultPhoneEditorMode: "plain",
+      defaultEditorMode: "write",
+      defaultPhoneEditorMode: "write",
       noteModes: {},
     },
     siteWorkbench: {

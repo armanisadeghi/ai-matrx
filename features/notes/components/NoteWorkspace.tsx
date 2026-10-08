@@ -117,8 +117,8 @@ export function NoteWorkspace({ instanceId, noteId, className }: NoteWorkspacePr
               so the capsule can not overlap the outline / versions group. */}
           <div className="flex min-w-0 flex-1 items-center justify-start overflow-x-auto [scrollbar-width:none] @[18rem]:justify-center [&::-webkit-scrollbar]:hidden">
             <NoteModeSwitch noteId={noteId} labels="container" />
-            {(editorMode === "plain" || editorMode === "split") && (
-              <FormatButtons size="xs" className="ml-1" resolve={() => formatTargetWithin(rootRef.current)} />
+            {editorMode !== "preview" && (
+              <FormatButtons size="xs" className="ml-1 flex-1" resolve={() => formatTargetWithin(rootRef.current)} />
             )}
           </div>
           <TapTargetButtonGroup surface="solid">

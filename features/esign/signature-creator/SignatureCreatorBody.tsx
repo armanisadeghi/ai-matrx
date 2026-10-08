@@ -143,7 +143,7 @@ export default function SignatureCreatorBody({
         const png = await renderTypedPng(base.initials, styleByKey(candidate.typed_style));
         marks.push({ ...main, target: "initials", image_data_url: png, preview_url: png });
       }
-      onAdopt(marks);
+      await onAdopt(marks);
     } catch (e) {
       setProblem(e instanceof Error ? e.message : "Could not prepare your mark.");
     } finally {
@@ -229,7 +229,7 @@ export default function SignatureCreatorBody({
             Cancel
           </Button>
           <Button variant="primary" disabled={!candidate || adopting} onClick={() => void adopt()}>
-            {target === "initials" ? "Adopt initials" : "Adopt and sign"}
+            {adopting ? "Saving…" : target === "initials" ? "Adopt initials" : "Adopt and sign"}
           </Button>
         </DialogFooter>
       </DialogContent>

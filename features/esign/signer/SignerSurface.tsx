@@ -969,7 +969,7 @@ export function SignerSurface({
           allowed={load.settings.signature_options}
           door={door}
           signedIn={door.seat === "signed_in"}
-          onAdopt={(m) => adopted(m)}
+          onAdopt={adopted}
           onClose={() => setCreator(null)}
         />
       ) : null}

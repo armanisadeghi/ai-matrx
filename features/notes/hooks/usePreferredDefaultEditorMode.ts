@@ -3,9 +3,9 @@
 // Which mode a note opens in — ONE rule for every notes surface (the page
 // header, the tab chip, the window's view menu, the editor itself, the phone).
 //
-// The modes (Arman, 2026-09-27):
-//   desktop  Split (default) · Plain · Write · Preview
-//   phone    Plain (default) · Write
+// The modes (Arman, 2026-10-07 — Write is the default everywhere):
+//   desktop  Write (default) · Split · Plain · Read
+//   phone    Write (default) · Plain
 // Split = the quick plain textarea on the left, the formatted note live on the
 // right. Plain = that textarea alone. Write = THE ONE EDITOR's visual view.
 //
@@ -18,8 +18,8 @@
 //      phone: Plain) — quick unformatted notes stay unformatted;
 //   3. a legacy per-note `metadata.lastEditorMode` (read, never written);
 //   4. the person's default for the device — the knobs
-//      userPreferences.notes.defaultEditorMode (desktop, default Split) and
-//      userPreferences.notes.defaultPhoneEditorMode (phone, default Plain),
+//      userPreferences.notes.defaultEditorMode (desktop, default Write) and
+//      userPreferences.notes.defaultPhoneEditorMode (phone, default Write),
 //      set only on the Notes settings page (a mode click never writes them).
 //
 // Every stored value passes the one read path (`canonicalNoteEditorMode`), so a
@@ -36,9 +36,9 @@ import type { RootState } from "@/lib/redux/rootReducer";
 export type NoteDevice = "desktop" | "phone";
 export type PhoneNoteMode = "plain" | "write";
 
-/** The platform defaults: plain text with a live preview; the phone types plain. */
-export const PLATFORM_DEFAULT_EDITOR_MODE: EditorMode = "split";
-export const PLATFORM_DEFAULT_PHONE_EDITOR_MODE: PhoneNoteMode = "plain";
+/** The platform defaults (Arman, 2026-10-07): a note opens in Write — the formatted editor — on every device. */
+export const PLATFORM_DEFAULT_EDITOR_MODE: EditorMode = "write";
+export const PLATFORM_DEFAULT_PHONE_EDITOR_MODE: PhoneNoteMode = "write";
 
 /** The per-note memory keeps this many notes (oldest forgotten first). */
 export const NOTE_MODE_MEMORY_LIMIT = 300;
