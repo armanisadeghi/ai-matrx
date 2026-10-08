@@ -26,6 +26,7 @@
 "use client";
 
 import dynamic from "next/dynamic";
+import { useEffect } from "react";
 import {
   confirm as openConfirm,
   confirmOpener,
@@ -44,6 +45,18 @@ export type { ConfirmOptions } from "@ai-matrx/kit/confirm-opener";
  * fact instead of leaving the caller pending forever.
  */
 export const CONFIRM_HOST_WAIT_MS = 5000;
+
+/**
+ * THE HOST IS ON ITS WAY, NOT ABSENT (applets builder, 2026-10-08). The shell below mounts with the page,
+ * but its body is a `next/dynamic` chunk of the design system — on a cold, heavy page it can take longer
+ * than the 5 s above, and the first "Use it" press answered "[confirm] no ConfirmDialogHost mounted" while
+ * the host was still loading. A mounted shell means the host is coming, so a call waits this long for it;
+ * only a tree with NO shell gives up after `CONFIRM_HOST_WAIT_MS`.
+ */
+export const CONFIRM_HOST_LOADING_WAIT_MS = 30_000;
+
+/** How many `<ConfirmDialogHost />` shells are mounted right now (their bodies may still be loading). */
+let mountedShells = 0;
 
 /**
  * ONE question: is a host actually alive to show this dialog? The package
@@ -123,7 +136,7 @@ export async function confirm(options: ConfirmOptions): Promise<boolean> {
   // a pre-hydration call still gets a real question. That queue must not
   // become a silent hang: if no host ever appears, say so rather than leaving
   // the caller pending.
-  if (!(await waitForConfirmHost(CONFIRM_HOST_WAIT_MS))) {
+  if (!(await waitForConfirmHost(mountedShells > 0 ? CONFIRM_HOST_LOADING_WAIT_MS : CONFIRM_HOST_WAIT_MS))) {
     await announceTheQuestionCouldNotBeAsked();
     return false;
   }
@@ -141,5 +154,11 @@ export function ConfirmDialogHost() {
   // already mounted once in every provider tree, and the defect is not the
   // confirm's: it is any two modal layers whose body locks overlap.
   useBodyPointerEventsGuard();
+  useEffect(() => {
+    mountedShells += 1;
+    return () => {
+      mountedShells -= 1;
+    };
+  }, []);
   return <ConfirmDialogHostImpl />;
 }
