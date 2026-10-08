@@ -37,8 +37,9 @@ await context.addInitScript(() => {
     }
     document.querySelectorAll('.spaces-content [data-content-type="database"]').forEach((db, i) => {
       if (window.__rowsAt[i] !== undefined) return;
-      // A table's first row, or a chart's drawn ring/bars (its data has landed).
-      const row = db.querySelector("[data-matrx-cell-row], tbody tr, [role='row'] + [role='row'], svg path[d], svg circle[stroke-dasharray]");
+      // A table's first row, or a chart's drawn ring/bars (its data has landed). Never a Lucide icon: the
+      // frame's own glyphs (view tab, title arrow) are svg paths too and paint before any data (round 36).
+      const row = db.querySelector("[data-matrx-cell-row], tbody tr, [role='row'] + [role='row'], svg:not(.lucide) path[d], svg:not(.lucide) circle[stroke-dasharray]");
       if (row && visible(row) && (row.tagName.toLowerCase() !== "tr" || row.textContent?.trim())) window.__rowsAt[i] = now;
     });
     requestAnimationFrame(look);

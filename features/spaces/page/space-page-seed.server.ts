@@ -98,7 +98,7 @@ async function askWhere(custom: Rpc, tableId: string): Promise<TableWhere> {
 
 /** One page's reads: each question asked once however many blocks ask it (four charts of one module). */
 class PageReads {
-  private memo = new Map<string, Promise<unknown>>();
+  private memo = new Map<string, unknown>();
   constructor(
     readonly supabase: Supabase,
     readonly actor: Actor,
@@ -106,9 +106,9 @@ class PageReads {
     readonly rememberedOrg: string | null,
   ) {}
 
-  once<T>(key: string, ask: () => Promise<T>): Promise<T> {
+  once<T>(key: string, ask: () => T): T {
     const held = this.memo.get(key);
-    if (held) return held as Promise<T>;
+    if (held) return held as T;
     const asked = ask();
     this.memo.set(key, asked);
     return asked;
@@ -145,17 +145,17 @@ class PageReads {
 
   /**
    * A built-in block's describe and first page, exactly as `useEntityRows` asks them on its first pass
-   * (the records client carries no organization then: the app has not resolved it yet).
+   * (the records client carries no organization then: the app has not resolved it yet). `columns` answers
+   * with the describe alone, so a chart's question can be asked while the page is still being read.
    */
-  entityRows(token: string, filters: Record<string, unknown>, sort: { field: string; direction: "asc" | "desc" } | null): Promise<{ seed: RecordsSeed; columns: EntityColumn[] }> {
-    return this.once(`rows:${token}|${JSON.stringify(filters)}|${JSON.stringify(sort)}`, async () => {
+  entityRows(token: string, filters: Record<string, unknown>, sort: { field: string; direction: "asc" | "desc" } | null): { seed: Promise<RecordsSeed>; columns: Promise<EntityColumn[]> } {
+    return this.once(`rows:${token}|${JSON.stringify(filters)}|${JSON.stringify(sort)}`, () => {
       const recording = recordingDataSource(asRecordsDataSource(this.supabase));
       const client = createRecordsClient({ dataSource: recording.source, organizationId: null as never, actor: this.actor, onError: () => undefined });
-      const source = { kind: "entity" as const, token };
-      const [def, page] = await Promise.all([client.drillDescribe({ source }), client.drillRows(entityRowsArgs(token, filters, sort, "", ENTITY_PAGE))]);
-      const api = def.ok ? (def.data as unknown as { api?: { columns?: EntityColumn[] } }).api : undefined;
-      const columns = def.ok && page.ok ? entityShownColumns(api?.columns ?? [], page.data.columns) : [];
-      return { seed: recording.seed(), columns };
+      const def = client.drillDescribe({ source: { kind: "entity", token } });
+      const page = client.drillRows(entityRowsArgs(token, filters, sort, "", ENTITY_PAGE));
+      const columns = def.then((d) => (d.ok ? entityShownColumns((d.data as unknown as { api?: { columns?: EntityColumn[] } }).api?.columns ?? [], undefined) : []));
+      return { seed: Promise.all([def, page]).then(() => recording.seed()), columns };
     });
   }
 }
@@ -185,18 +185,21 @@ async function entityBlockSeed(reads: PageReads, { props }: DatabaseOnPage, knob
   const filters = (view.filters ?? {}) as Record<string, unknown>;
   const sort = view.sorts?.[0] ?? null;
   if (!(await reads.knob(await knobOrg))) return null;
-  const rows = await reads.entityRows(token, filters, sort);
+  const rows = reads.entityRows(token, filters, sort);
   const base = { dataSource: reads.supabase, organizationId: null as never, actor: reads.actor };
-  let more: RecordsSeed | null = null;
+  let more: Promise<RecordsSeed | null> = Promise.resolve(null);
   if (view.layout === "chart") {
-    // `EntityChartBlock`'s question as `EntityFrame` hands it: the view's group, else the module's first choice column.
-    const by = entityChartBy(view, rows.columns);
-    more = await askChartSeed({ ...base, source: { kind: "entity", token }, question: { by, where: Object.keys(filters).length ? filters : undefined } });
+    // `EntityChartBlock`'s question as `EntityFrame` hands it: the view's group, else the module's first
+    // choice column — asked as soon as the describe answers, beside the page.
+    more = rows.columns.then((columns) =>
+      askChartSeed({ ...base, source: { kind: "entity", token }, question: { by: entityChartBy(view, columns), where: Object.keys(filters).length ? filters : undefined } }),
+    );
   } else if (view.layout === "kanban") {
     // The board is records-ui's embedded entity `TablePage` (`useEntityTable`, 50 rows embedded, no search).
-    more = await askEntityBlockSeed({ ...base, token, question: { pageSize: ENTITY_PAGE } });
+    more = askEntityBlockSeed({ ...base, token, question: { pageSize: ENTITY_PAGE } });
   }
-  return { records: mergeSeeds(rows.seed, more) };
+  const [seed, extra] = await Promise.all([rows.seed, more]);
+  return { records: mergeSeeds(seed, extra) };
 }
 
 export interface SpacePageReads {
@@ -206,18 +209,25 @@ export interface SpacePageReads {
   seeds: SpaceBlockSeeds;
 }
 
-function askBlocks(supabase: Supabase, doc: SpaceDoc): SpaceBlockSeeds {
-  const found = databaseBlocks(doc.blocks);
-  if (!found.length) return {};
+/** The person, their remembered organization and the page's read memo — known before the page is read. */
+function pageReads(supabase: Supabase): Promise<PageReads> {
   const who = getClaimsUser(supabase)
     .then((r) => r.data.user?.id ?? null)
     .catch(() => null);
-  const ctx = Promise.all([who, headers().catch(() => null)]).then(([userId, h]) => {
+  return Promise.all([who, headers().catch(() => null)]).then(([userId, h]) => {
     const actor: Actor = userId ? { actor: "user", user_id: userId } : { actor: "user" };
     // org-filter: server-call the person's server-rows knob is resolved in the organization they last chose
     const remembered = h ? activeOrgCookie.readFromCookieHeader(h.get("cookie"), userId) : null;
-    return new PageReads(supabase, actor, userId, remembered);
+    const reads = new PageReads(supabase, actor, userId, remembered);
+    // Asked beside the page itself (one small read): built-in blocks need it the moment the page is known.
+    if (remembered) void reads.knob(remembered).catch(() => false);
+    return reads;
   });
+}
+
+function askBlocks(ctx: Promise<PageReads>, doc: SpaceDoc): SpaceBlockSeeds {
+  const found = databaseBlocks(doc.blocks);
+  if (!found.length) return {};
   // The knob's scope for built-in blocks: the organization the person last chose, else one of the page's
   // own tables' (asked anyway for that table's block).
   const firstTable = found.find((b) => b.props.source.kind === "table");
@@ -245,7 +255,8 @@ export async function readSpacePage(spaceId: string): Promise<SpacePageReads> {
   if (!supabase) return { doc: undefined, seeds: {} };
   // The organization argument is the write target for NEW top-level pages; a read never uses it.
   const store = new SupabaseSpacesStore(supabase as never, "");
+  const ctx = pageReads(supabase);
   const doc = await within<SpaceDoc | null | undefined>(DOC_BUDGET_MS, store.get(spaceId), undefined);
   if (!doc) return { doc: undefined, seeds: {} };
-  return { doc, seeds: askBlocks(supabase, doc) };
+  return { doc, seeds: askBlocks(ctx, doc) };
 }
