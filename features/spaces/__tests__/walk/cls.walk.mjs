@@ -1,6 +1,8 @@
 // Layout shift on load (round 26, item 9): CLS of a Spaces page at each width, with the shifted nodes.
 // Read-only (never types). Exit 1 when any width measures above 0.01.
 //   node features/spaces/__tests__/walk/cls.walk.mjs [pageId] [width...]     (default: admin's sample)
+//   ROUTE=/tasks node ... cls.walk.mjs x 1280 1699      (any route instead of /spaces/<pageId>)
+//   RUNS=4 loads each width that many times (every load is scored on its own).
 import { open, originOf } from "./lib.mjs";
 
 const id = process.argv[2] ?? "ba289103-9ef2-433a-ae94-0cd9a963ae29";
@@ -18,9 +20,9 @@ await context.addInitScript(() => {
   }).observe({ type: "layout-shift", buffered: true });
 });
 let failed = 0;
-for (const w of widths) {
+for (const w of widths.flatMap((x) => Array(Number(process.env.RUNS ?? 1)).fill(x))) {
   await page.setViewportSize({ width: w, height: 1000 });
-  await page.goto(`${originOf(page)}/spaces/${id}`, { waitUntil: "domcontentloaded" });
+  await page.goto(`${originOf(page)}${process.env.ROUTE ?? `/spaces/${id}`}`, { waitUntil: "domcontentloaded" });
   await page.waitForTimeout(Number(process.env.WAIT ?? 12000));
   const cls = await page.evaluate(() => window.__cls);
   if (cls.total > 0.01) failed++;

@@ -627,6 +627,17 @@
   padding: 0.25rem 0.375rem;
 }
 
+/* An admin's footer is reserved at its last settled height before first paint (the inline script
+   beside it publishes --shell-admin-footer-h), so the admin block fills space already there
+   instead of growing the footer after auth resolves. Content stays bottom-aligned. */
+html[data-admin-footer] .shell-sidebar-footer {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  box-sizing: border-box;
+  min-height: var(--shell-admin-footer-h);
+}
+
 /* ---------------------------------------------------------------------------
    9. Nav Items — Sidebar
    --------------------------------------------------------------------------- */
