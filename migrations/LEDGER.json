@@ -3710,6 +3710,12 @@
       "checksum": "36497d561fb7a1073b35887c25827d20b4a88503b441b130430c3127588e2507",
       "applied_at": "2026-10-08 16:28:43.506718+00"
     },
+    "migrations/campaign/hr360w3_a_confidential_meetings_capture_nothing_and_opens_are_logged.sql": {
+      "source": "matrx-frontend",
+      "filename": "hr360w3_a_confidential_meetings_capture_nothing_and_opens_are_logged.sql",
+      "checksum": "f993ce005ac83aa75905633638e6770a254b895f6193bd09b515f37dd96374a8",
+      "applied_at": "2026-10-08 18:06:49.102581+00"
+    },
     "migrations/campaign/hrloopcleanup_a_the_loops_duplicate_failures_are_resolved.sql": {
       "source": "matrx-frontend",
       "filename": "hrloopcleanup_a_the_loops_duplicate_failures_are_resolved.sql",
