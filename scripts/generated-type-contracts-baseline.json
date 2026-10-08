@@ -24,7 +24,6 @@
     "features/crm/compliance/types.ts::EligibilityBlock::EligibilityBlock",
     "features/crm/compliance/types.ts::EligibilityVerdict::EligibilityVerdict",
     "features/crm/sending-identities/types.ts::BringUpReadiness::BringUpReadiness",
-    "../aidream/apps/shared/chat/src/cx-conversation/ConversationInput.tsx::PromptSettings::LLMParams",
     "features/files/types.ts::Asset::Asset",
     "features/files/types.ts::AssetPatchRequest::AssetPatchRequest",
     "features/files/types.ts::AssetVariant::AssetVariant",

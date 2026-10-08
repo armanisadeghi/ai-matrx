@@ -11,7 +11,7 @@ import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
 
 import type { SpaceBlock, SpaceDoc, SpaceId, SpaceSummary, SpacesStore } from "../contract";
 import { createDatabaseSpacesStore } from "../store-db/create-store";
-import type { SpaceHistoryEntry } from "../store-db/supabase-store";
+import type { SpaceHistoryEntry, SpaceSearchHit } from "../store-db/supabase-store";
 
 export type SpacesChange = { kind: "saved"; doc: SpaceDoc; origin?: string } | { kind: "tree" };
 
@@ -21,6 +21,14 @@ export interface LiveSpacesStore extends SpacesStore {
   onChange(listener: (change: SpacesChange) => void): () => void;
   /** Page history: every saved version of a page, newest first. */
   history(id: SpaceId): Promise<SpaceHistoryEntry[]>;
+  /** The sidebar's lazy tree read: top level + children of `expand` and of each `reveal` page's ancestors. */
+  sidebar(input: { expand: SpaceId[]; reveal: SpaceId[] }): Promise<SpaceSummary[]>;
+  /** One page's live sub-pages (a sidebar row expanding). */
+  children(parentId: SpaceId): Promise<SpaceSummary[]>;
+  /** Trash: archived pages, read when Trash opens. */
+  trash(): Promise<SpaceSummary[]>;
+  /** Server-side page search ("" = recently edited). */
+  search(query: string, limit?: number): Promise<SpaceSearchHit[]>;
   /** A write made outside the store (e.g. "Use template"): the open screens re-read the tree. */
   notifyTree(): void;
 }
@@ -41,6 +49,10 @@ export function createLiveSpacesStore(getOrganizationId: () => string | null): L
   const store: LiveSpacesStore = {
     kind: "database",
     list: (options) => base.list(options),
+    sidebar: (input) => base.sidebar(input),
+    children: (parentId) => base.children(parentId),
+    trash: () => base.trash(),
+    search: (query, limit) => base.search(query, limit),
     get: (id) => base.get(id),
     async create(input: { parentId: SpaceId | null; title?: string; blocks?: SpaceBlock[]; afterId?: SpaceId }) {
       let target = base;

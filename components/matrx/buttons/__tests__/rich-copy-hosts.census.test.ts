@@ -447,9 +447,10 @@ describe("consistency everywhere: markdown copy is the split Copy across the who
     const bar = fs.readFileSync(path.join(REPO_ROOT, "node_modules/@ai-matrx/rich-content/dist/rich-document/variants/ActionBar.js"), "utf8");
     expect(bar).toMatch(/onTransform:/);
     expect(bar).not.toMatch(/onExport:/);
-    // The phone note dock HAS a ⋯ (its More sheet): Export… is a row there; its copy chevron stays 2 rows.
+    // The phone note dock HAS a ⋯ (its More sheet): the content action set's rows live there (Transform
+    // opens the palette), one tap each; its copy chevron stays 2 rows.
     const dock = fs.readFileSync(path.join(REPO_ROOT, "features/notes/components/mobile/NoteEditorDock.tsx"), "utf8");
-    expect(dock).toMatch(/data-note-dock-export/);
+    expect(dock).toMatch(/<ContentActionMenuRows[\s\S]*onTransform=\{[^}]*openExportPalette\(exportKey\)/);
     expect(dock).not.toMatch(/<TextCopyChevron[^>]*onExport/);
   });
 

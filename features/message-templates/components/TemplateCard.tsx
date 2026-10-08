@@ -7,6 +7,8 @@ import { FileText, Globe, Lock } from "lucide-react";
 import { ShareButton } from "@/features/sharing/components/ShareButton";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
+import { RichCopySplit } from "@ai-matrx/chat/agent-copy/RichCopySplit";
+import { ContentView } from "@ai-matrx/rich-content/copy/ContentActions";
 
 interface TemplateCardProps {
   template: MessageTemplateDB;
@@ -46,11 +48,21 @@ export function TemplateCard({
         <div className="flex-shrink-0 w-6 h-6 rounded-md bg-primary/10 flex items-center justify-center mt-0.5">
           <FileText className="w-3.5 h-3.5 text-primary" />
         </div>
-        {isOwner && (
-          <div
-            className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity"
-            onClick={(e) => e.stopPropagation()}
-          >
+        {/* The card's corner bar: the content action set (Copy, Plain, Export, Print, Transform) + Share. */}
+        <div
+          className="absolute top-2 right-2 flex items-center gap-0.5 rounded-md bg-card/90 opacity-0 transition-opacity group-hover:opacity-100 focus-within:opacity-100 pointer-coarse:opacity-100"
+          onClick={(e) => e.stopPropagation()}
+        >
+          {template.content ? (
+            <RichCopySplit
+              size="xs"
+              label="template"
+              exportTitle={template.label || "Template"}
+              viewKey={`message-template-card-${template.id}`}
+              human={() => template.content ?? ""}
+            />
+          ) : null}
+          {isOwner && (
             <ShareButton
               resourceType="message_template"
               resourceId={template.id}
@@ -60,8 +72,8 @@ export function TemplateCard({
               size="icon"
               showStatus={false}
             />
-          </div>
-        )}
+          )}
+        </div>
         <div className="flex-1 min-w-0">
           <p
             className={`text-sm font-semibold leading-tight truncate transition-colors duration-200 ${!isDisabled && "group-hover:text-primary"}`}
@@ -91,9 +103,11 @@ export function TemplateCard({
 
       {/* Content preview */}
       {template.content && (
-        <p className="text-xs text-muted-foreground line-clamp-2 leading-relaxed">
-          {template.content}
-        </p>
+        <ContentView viewKey={`message-template-card-${template.id}`} text={template.content} className="max-h-48 overflow-auto p-2 text-xs">
+          <p className="text-xs text-muted-foreground line-clamp-2 leading-relaxed">
+            {template.content}
+          </p>
+        </ContentView>
       )}
 
       {/* Tags */}

@@ -43,7 +43,7 @@ import { tableActions, type BuiltOnDestination, type ObjectAction, type TableAct
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@ai-matrx/design-system";
 
 import type { EntityListController, EntityRowActionsResult } from "@/lib/entity-list/config";
-import type { ItemMenuConfig } from "@/components/official/item/types";
+import type { ItemMenuConfig } from "@ai-matrx/chat/ui/item-types";
 import { toast } from "@/lib/toast";
 import { toItemMenuConfig } from "@/features/unified-data/actions/tableActionAdapters";
 import { useStarToggle } from "@/features/unified-data/actions/useTableFavorite";

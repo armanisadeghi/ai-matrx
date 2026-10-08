@@ -20,7 +20,7 @@ import { cn } from "@/lib/utils";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { Button } from "@/components/ui/button";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
-import { ItemMenu } from "@/components/official/item/ItemMenu";
+import { ItemMenu } from "@ai-matrx/design-system/item";
 import { StaleDataNotice } from "@ai-matrx/design-system";
 import AssociateTaskButton from "@/features/tasks/widgets/AssociateTaskButton";
 import { buildConversationMenu } from "@ai-matrx/chat/agents/components/conversation-actions/conversationActionRegistry";

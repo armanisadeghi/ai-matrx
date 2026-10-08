@@ -54,8 +54,8 @@ import {
   type ArchiveFilterValue,
 } from "@ai-matrx/design-system";
 import { Input } from "@ai-matrx/design-system/controls";
-import { ItemMenu } from "@/components/official/item/ItemMenu";
-import type { ItemMenuConfig } from "@/components/official/item/types";
+import { ItemMenu } from "@ai-matrx/design-system/item";
+import type { ItemMenuConfig } from "@ai-matrx/chat/ui/item-types";
 import { archiveConfirmSentence } from "@/features/trash/archiveCopy";
 import { restoreSource, trashSource } from "@/features/sources/sourceActions";
 import { formatRelativeTime, formatCount } from "@ai-matrx/kit/format";

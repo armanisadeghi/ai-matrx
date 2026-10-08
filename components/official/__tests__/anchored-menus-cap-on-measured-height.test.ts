@@ -20,7 +20,7 @@ import { readFileSync } from "fs";
 import { execSync } from "child_process";
 import path from "path";
 
-const ROOT = path.resolve(__dirname, "../../../..");
+const ROOT = path.resolve(__dirname, "../../..");
 
 /** Radix popper surfaces — every one of them is anchored to a trigger. */
 const ANCHORED = [

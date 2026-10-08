@@ -32,8 +32,8 @@ import type {
   MatrxColumnDef,
   MatrxDataTableMobileCardControls,
 } from "@ai-matrx/design-system/data-table/types";
-import { ItemMenu } from "@/components/official/item/ItemMenu";
-import type { ItemMenuConfig } from "@/components/official/item/types";
+import { ItemMenu } from "@ai-matrx/design-system/item";
+import type { ItemMenuConfig } from "@ai-matrx/chat/ui/item-types";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useOpenKeywordWindow } from "@/features/overlays/openers/keywordWindow";
 import { SurfaceRuntimeProvider } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";

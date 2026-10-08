@@ -179,7 +179,7 @@ export function columnCss(blocks: EngineBlock[]): string {
 
 export function SpaceEditor({ spaceId, initialBlocks, editable, onChange, slash, menu, onReady, onComment, collab }: SpaceEditorProps) {
   const dark = useDarkMode();
-  const { byId } = useSpaces();
+  const { store } = useSpaces();
   // "@today" / "@tomorrow" are the person's own days (their saved time zone), never the device's.
   const zone = usePersonTimeZone();
   const [pasted, setPasted] = useState<PastedUrl | null>(null);
@@ -410,9 +410,13 @@ export function SpaceEditor({ spaceId, initialBlocks, editable, onChange, slash,
                 " ",
               ] as never),
           }));
-          const hits = [...byId.values()]
-            .filter((p) => p.id !== spaceId && (p.title || "Untitled").toLowerCase().includes(q))
-            .slice(0, 8);
+          // Pages come from the server's search door (round 35: the sidebar never holds the whole tree).
+          const hits = (
+            await store.search(query.trim(), 9).catch((err: unknown) => {
+              console.error("[spaces] page search for @ failed", err);
+              return [];
+            })
+          ).filter((p) => p.id !== spaceId).slice(0, 8);
           // N2 — "@today", "@tomorrow", "@yesterday", "@oct 12": a date mention (Notion's Date group).
           const dateItems = dateChoices(query, new Date(), zone).map((c) => ({
             title: c.title,

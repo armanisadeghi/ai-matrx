@@ -13,7 +13,7 @@
 import React, { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 
-import type { ItemMenuCommand, ItemMenuConfig } from "@/components/official/item/types";
+import type { ItemMenuCommand, ItemMenuConfig } from "@ai-matrx/chat/ui/item-types";
 import type { EntityListController } from "@/lib/entity-list/config";
 import { archivedTableRow, type DataHomeRow } from "../dataHomeRows";
 import { ORGS, row } from "./fixtures";

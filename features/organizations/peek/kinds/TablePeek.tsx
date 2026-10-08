@@ -13,8 +13,9 @@ import { toDelimitedText } from "@ai-matrx/alchemy/operate/read";
 import { Table } from "lucide-react";
 import { locateTable } from "@/features/data-tables/data-source/locate-table";
 import { getTablePage, readTableDetails } from "@/features/data-tables/service";
-import { CopySplitButton, type SplitCopyFlavor } from "@ai-matrx/rich-content/copy/CopySplitButton";
-import { copyRichContent } from "@ai-matrx/rich-content/copy/copy-commands";
+import type { SplitCopyFlavor } from "@ai-matrx/rich-content/copy/CopySplitButton";
+import { RichCopySplit } from "@ai-matrx/chat/agent-copy/RichCopySplit";
+import { ContentView } from "@ai-matrx/rich-content/copy/ContentActions";
 import { PeekDialog, PeekField } from "../PeekDialog";
 import type { PeekProps } from "../types";
 
@@ -98,10 +99,13 @@ export default function TablePeek({ id, open, onClose }: PeekProps) {
       loading={loading}
       headerActions={
         view && view.rows.length > 0 ? (
-          <CopySplitButton
+          // The content action set: the table (up to 500 rows) as markdown; Plain shows that source in place of the preview.
+          <RichCopySplit
             size="xs"
-            label="Copy table"
-            copy={(flavor) => copyRichContent(tableCopyText(view, flavor), flavor)}
+            label="table"
+            exportTitle={title}
+            viewKey={`table-peek-${id}`}
+            human={() => tableCopyText(view, "markdown")}
           />
         ) : null
       }
@@ -124,6 +128,7 @@ export default function TablePeek({ id, open, onClose }: PeekProps) {
             ) : view.rows.length === 0 ? (
               <span className="text-muted-foreground">This table has no rows yet.</span>
             ) : (
+              <ContentView viewKey={`table-peek-${id}`} text={() => tableCopyText(view, "markdown")} className="max-h-64 overflow-auto">
               <div className="overflow-x-auto rounded border border-border">
                 <table className="w-full text-xs">
                   <thead>
@@ -148,6 +153,7 @@ export default function TablePeek({ id, open, onClose }: PeekProps) {
                   </tbody>
                 </table>
               </div>
+              </ContentView>
             )}
           </PeekField>
         </>

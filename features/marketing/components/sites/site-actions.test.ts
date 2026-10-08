@@ -1,6 +1,6 @@
 import { toast } from "@/lib/toast";
 
-import type { ItemMenuEntry } from "@/components/official/item/types";
+import type { ItemMenuEntry } from "@ai-matrx/chat/ui/item-types";
 import { webCopy } from "@/features/marketing/lib/copy-payloads";
 import type { MarketingSite, SiteListRow } from "@/features/marketing/types";
 import { buildSiteMenu } from "./site-actions";

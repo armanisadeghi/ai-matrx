@@ -27,6 +27,8 @@ import { listTemplateIds, setTemplate, copyTemplate } from "./templates";
 import { bringTemplateTables } from "./template-tables";
 
 const FAVORITES_KEY = "spaces:favorites";
+/** The sidebar's open rows (written by SpacesSidebar): the tree's first read loads their children too. */
+export const EXPANDED_KEY = "spaces:expanded";
 const RECENT_KEY = "spaces:recent";
 export const LAST_SPACE_KEY = "spaces:last";
 
@@ -38,6 +40,20 @@ function readList(key: string): string[] {
   } catch {
     return [];
   }
+}
+
+function readStored(key: string): string | null {
+  try {
+    return window.localStorage.getItem(key);
+  } catch {
+    return null;
+  }
+}
+
+/** The page the address bar names (`/spaces/<id>`), read when the tree loads so its path comes with it. */
+function currentPageId(): string | null {
+  const m = /^\/spaces\/([0-9a-f-]{36})(?:[/?#]|$)/i.exec(window.location.pathname);
+  return m ? m[1] : null;
 }
 
 function writeList(key: string, list: string[]) {
@@ -82,8 +98,18 @@ interface SpacesContextValue {
     setTemplate: (id: SpaceId, on: boolean) => Promise<void>;
     use: (id: SpaceId, title: string) => Promise<void>;
   };
+  /** The live pages loaded so far (the sidebar loads lazily, like Notion): never the whole tree. */
   summaries: SpaceSummary[];
+  /** Trash: empty until `loadTrash` (Trash opened) has read it. */
   archived: SpaceSummary[];
+  /** Read Trash (the archived pages). `trashLoaded` is false until the first read answers. */
+  loadTrash: () => void;
+  trashLoaded: boolean;
+  /** A page's children are loaded (expanding a row loads them through `loadChildren`). */
+  childrenLoaded: (parentId: SpaceId) => boolean;
+  loadChildren: (parentId: SpaceId) => Promise<void>;
+  /** Load a page and its ancestors into the tree (the open page, a search hit) when it is not there yet. */
+  reveal: (id: SpaceId) => void;
   byId: Map<SpaceId, SpaceSummary>;
   childrenOf: (parentId: SpaceId | null) => SpaceSummary[];
   pathTo: (id: SpaceId) => SpaceSummary[];
@@ -142,10 +168,17 @@ export function SpacesProvider({ children }: { children: ReactNode }) {
   const [store] = useState(() => createLiveSpacesStore(() => orgRef.current));
   const dispatch = useAppDispatch();
   const [all, setAll] = useState<SpaceSummary[]>([]);
+  // Parents whose live children are all in `all` (round 35: the tree is read lazily, never whole).
+  const [loadedParents, setLoadedParents] = useState<ReadonlySet<SpaceId>>(new Set());
+  const loadedRef = useRef<ReadonlySet<SpaceId>>(loadedParents);
+  loadedRef.current = loadedParents;
+  const [trash, setTrash] = useState<SpaceSummary[] | null>(null);
+  const trashWanted = useRef(false);
   const [ready, setReady] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [access, setAccess] = useState<LoadAccess | null>(null);
   const reload = useRef<() => void>(() => {});
+  const trashRead = useRef<() => Promise<unknown>>(() => Promise.resolve());
   const focusTitle = useRef<SpaceId | null>(null);
   const fresh = useRef(new Map<SpaceId, SpaceDoc>());
   const [sampleProgress, setSampleProgress] = useState<string | null>(null);
@@ -165,12 +198,20 @@ export function SpacesProvider({ children }: { children: ReactNode }) {
     let retriedFailure = false;
     let loadedOnce = false;
     const refresh = () => {
-      void store.list({ includeArchived: true }).then(
+      // Round 35 — Notion's lazy sidebar: top level, the children of every open row and of the open page's
+      // (and favorites'/recents') ancestors. Never archived pages (Trash reads its own list when opened).
+      const expand = [...new Set([...loadedRef.current, ...readList(EXPANDED_KEY)])];
+      const reveal = [...new Set([currentPageId(), readStored(LAST_SPACE_KEY), ...readList(FAVORITES_KEY), ...readList(RECENT_KEY)].filter((v): v is string => Boolean(v)))];
+      const startedAt = performance.now();
+      if (trashWanted.current) void trashRead.current();
+      void store.sidebar({ expand, reveal }).then(
         (list) => {
           if (!live) return;
+          if (!loadedOnce) console.info(`[spaces] sidebar tree read: ${list.length} pages in ${Math.round(performance.now() - startedAt)} ms`);
           loadedOnce = true;
           retriedFailure = false;
           setAll(list);
+          setLoadedParents(new Set([...expand, ...list.map((s) => s.parentId).filter((v): v is string => Boolean(v))]));
           setLoadError(null);
           setAccess(null);
           setReady(true);
@@ -220,6 +261,15 @@ export function SpacesProvider({ children }: { children: ReactNode }) {
       retriedRefusal = false;
       refresh();
     });
+    const readTrash = () =>
+      store.trash().then(
+        (list) => live && setTrash(list),
+        (err: unknown) => {
+          console.error("[spaces] Trash could not be read", err);
+          if (live) toast.error("We couldn't read Trash", { action: { label: "Try again", onClick: () => void readTrash() } });
+        },
+      );
+    trashRead.current = readTrash;
     const off = store.onChange((change) => {
       if (change.kind === "tree") return refresh();
       const { id, title, icon, updatedAt, isArchived } = change.doc;
@@ -259,7 +309,55 @@ export function SpacesProvider({ children }: { children: ReactNode }) {
     return true;
   });
   const visibleById = new Map(visible.map((s) => [s.id, s]));
-  const archived = all.filter((s) => s.isArchived && !isSyncedSource(s.id)).sort((a, b) => (a.updatedAt < b.updatedAt ? 1 : -1));
+  const archived = (trash ?? []).filter((s) => !isSyncedSource(s.id)).sort((a, b) => (a.updatedAt < b.updatedAt ? 1 : -1));
+  const loadTrash = () => {
+    trashWanted.current = true;
+    void trashRead.current();
+  };
+  /** Rows merged in from a lazy read: each named parent's children are replaced by what the server said. */
+  const mergeRows = (rows: SpaceSummary[], parents: SpaceId[]) => {
+    const complete = new Set(parents);
+    setAll((prev) => {
+      const incoming = new Map(rows.map((r) => [r.id, r]));
+      const kept = prev.filter((s) => !incoming.has(s.id) && !(s.parentId && complete.has(s.parentId)));
+      return [...kept, ...rows];
+    });
+    setLoadedParents((prev) => new Set([...prev, ...parents]));
+  };
+  const childrenLoading = useRef(new Set<SpaceId>());
+  const loadChildren = async (parentId: SpaceId) => {
+    if (loadedRef.current.has(parentId) || childrenLoading.current.has(parentId)) return;
+    childrenLoading.current.add(parentId);
+    try {
+      mergeRows(await store.children(parentId), [parentId]);
+    } catch (err) {
+      console.error("[spaces] a page's sub-pages could not be read", err);
+      toast.error("We couldn't load the pages inside", { action: { label: "Try again", onClick: () => void loadChildren(parentId) } });
+    } finally {
+      childrenLoading.current.delete(parentId);
+    }
+  };
+  /** The page's whole path is in the tree: every ancestor up to a top-level page. */
+  const pathKnown = (id: SpaceId) => {
+    let cur = byId.get(id);
+    while (cur?.parentId) cur = byId.get(cur.parentId);
+    return Boolean(cur);
+  };
+  const revealing = useRef(new Set<SpaceId>());
+  const reveal = (id: SpaceId) => {
+    if (!ready || pathKnown(id) || revealing.current.has(id)) return;
+    revealing.current.add(id);
+    void store.sidebar({ expand: [], reveal: [id] }).then(
+      (rows) => {
+        const added = rows.filter((r) => r.parentId);
+        mergeRows(added, [...new Set(added.map((r) => r.parentId as string))]);
+      },
+      (err: unknown) => {
+        revealing.current.delete(id);
+        console.error("[spaces] a page's place in the tree could not be read", err);
+      },
+    );
+  };
   const childrenOf = (parentId: SpaceId | null) => visible.filter((s) => s.parentId === parentId).sort(byPosition);
   const pathTo = (id: SpaceId) => {
     const out: SpaceSummary[] = [];
@@ -428,7 +526,8 @@ export function SpacesProvider({ children }: { children: ReactNode }) {
   const moveSpace: SpacesContextValue["moveSpace"] = async (id, targetId, placement) => {
     if (targetId === id) return;
     if (placement === "inside" || targetId === null) {
-      const kids = childrenOf(targetId);
+      // Last among the target's children: read them first when the tree has not loaded them yet.
+      const kids = targetId && !loadedRef.current.has(targetId) ? (await store.children(targetId)).sort(byPosition) : childrenOf(targetId);
       await store.move(id, targetId, between(kids.at(-1)?.position ?? null, null));
       return;
     }
@@ -486,6 +585,11 @@ export function SpacesProvider({ children }: { children: ReactNode }) {
     templates: { ids: templateIds, error: templatesError, refresh: refreshTemplates, setTemplate: markTemplate, use: applyTemplate },
     summaries: visible,
     archived,
+    loadTrash,
+    trashLoaded: trash !== null,
+    childrenLoaded: (parentId) => loadedParents.has(parentId),
+    loadChildren,
+    reveal,
     byId: visibleById,
     childrenOf,
     pathTo,

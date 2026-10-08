@@ -216,6 +216,7 @@ import type { AnyMandateKey } from "@ai-matrx/agents/mandates";
 // (page weight vs build cost) — never a drive-by "optimization".
 import { ProTextareaAgentPanel } from "./ProTextareaAgentPanel";
 import { useTextareaFormatting } from "@ai-matrx/rich-editor/format/useTextareaFormatting";
+import type { MarkdownImageUpload } from "@ai-matrx/rich-editor/format/markdown-image-upload";
 import { sourceFeatureFromSurfaceName } from "@ai-matrx/chat/agents/utils/source-feature-from-surface";
 import type { SourceFeature } from "@ai-matrx/agents/generated/source-attribution";
 import {
@@ -445,6 +446,12 @@ export interface ProTextareaProps extends React.TextareaHTMLAttributes<HTMLTextA
    */
   markdownFormatting?: boolean;
   /**
+   * Pasting or dropping an image uploads it and writes `![name](url)` at the
+   * caret (`useMarkdownImageUpload` from the rich editor). Only for a box whose
+   * text is markdown (notes); absent, images are left to the browser.
+   */
+  uploadImage?: MarkdownImageUpload;
+  /**
    * Host a different editor in place of the <textarea> (e.g. MergeFieldInput,
    * which draws {{merge fields}} as chips). The whole toolbar — mic, "…" menu,
    * agents, stats, right-click menu — reads and writes through `handle`.
@@ -509,6 +516,7 @@ export const ProTextarea = React.forwardRef<
       style,
       editor,
       markdownFormatting,
+      uploadImage,
       ...props
     },
     ref,
@@ -547,7 +555,7 @@ export const ProTextarea = React.forwardRef<
       if (internalRef.current !== formatElement)
         setFormatElement(internalRef.current);
     });
-    useTextareaFormatting(formatElement, formattingOn);
+    useTextareaFormatting(formatElement, formattingOn, { uploadImage });
 
     // ── "…" menu popover ───────────────────────────────────────────────────
     // ONE Popover anchored at the "…" button. Its content swaps between the

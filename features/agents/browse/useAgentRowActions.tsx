@@ -24,7 +24,7 @@ import { buildRecordReferenceFence } from "@/features/matrx-envelope/recordRefer
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { buildAgentDeleteConfirm } from "@/features/agents/deletion/agentDeleteConfirm";
 import { announceComingSoon } from "@/lib/coming-soon/announce";
-import type { ItemMenuConfig } from "@/components/official/item/types";
+import type { ItemMenuConfig } from "@ai-matrx/chat/ui/item-types";
 import { buildAgentMenu } from "./agentActionRegistry";
 import { agentHref, isSystemAgentRow } from "./agentPaths";
 import type { AgentBrowseRow } from "./types";

@@ -13,7 +13,7 @@ import { RULEBOOK_LOOKALIKE } from "./lookalikeRulebooks";
 import { useRulebookMasterworks } from "./useRulebookMasterworks";
 import { MasterworkBrowseCards } from "./components/MasterworkBrowseCards";
 import { MasterworkBrowseRows } from "./components/MasterworkBrowseRows";
-import type { ItemMenuConfig } from "@/components/official/item/types";
+import type { ItemMenuConfig } from "@ai-matrx/chat/ui/item-types";
 import { splitMasterworksByArchive } from "../service";
 import type { Masterwork, RulebookListRow } from "../types";
 

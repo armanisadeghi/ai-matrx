@@ -1,7 +1,7 @@
 "use client";
 
 // NoteSidebarRow — single note row for NoteSidebar, built on the shared
-// ItemRow/ItemMenu primitives (components/official/item/*) so notes get the
+// ItemRow/ItemMenu primitives (@ai-matrx/design-system/item) so notes get the
 // same hover kebab + right-click "..." menu the chat sidebar uses for
 // conversations. Replaces the 3 near-identical inline <button> blocks that
 // used to live directly in NoteSidebar.tsx (recent flat list, default-mode
@@ -11,7 +11,7 @@
 import { FileText } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useAppDispatch } from "@/lib/redux/hooks";
-import { ItemRow } from "@/components/official/item/ItemRow";
+import { ItemRow } from "@ai-matrx/design-system/item";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 import { CONTEXT_MENU_HEADING_KEY } from "@/features/context-menu-v3/types";
 import { cn } from "@/lib/utils";

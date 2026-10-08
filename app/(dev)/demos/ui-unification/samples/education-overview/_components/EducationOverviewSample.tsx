@@ -54,7 +54,7 @@ import { MatrxDataTable } from "@ai-matrx/design-system/data-table";
 import { formatRelativeTime } from "@ai-matrx/kit/format";
 import { SurfaceRuntimeProvider } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import { ScrollAssistantLauncher } from "@ai-matrx/chat/agents/components/ambient-assistant/ScrollAssistantLauncher";
-import { ItemMenu } from "@/components/official/item/ItemMenu";
+import { ItemMenu } from "@ai-matrx/design-system/item";
 import { ComingSoonBadge } from "@/components/coming-soon/ComingSoonBadge";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { AGENT_ICON } from "@/components/icons/domain-icons";

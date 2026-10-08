@@ -16,7 +16,7 @@
 
 import { Boxes, type LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { ItemRow } from "@/components/official/item/ItemRow";
+import { ItemRow } from "@ai-matrx/design-system/item";
 import { TARGET_PRESENTATION } from "./targetPresentation";
 import type { GeneratedArtifact } from "./lineage";
 

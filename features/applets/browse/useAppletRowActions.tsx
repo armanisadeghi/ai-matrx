@@ -12,7 +12,7 @@ import { useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { ArchiveRestore, Copy, ExternalLink, Eye, Link as LinkIcon, Play, Trash2 } from "lucide-react";
 import { useClipboard } from "@ai-matrx/kit/clipboard";
-import type { ItemMenuConfig } from "@/components/official/item/types";
+import type { ItemMenuConfig } from "@ai-matrx/chat/ui/item-types";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { toast } from "@/lib/toast";
 import { ensureOrgId } from "@/lib/organizations/ensureOrgId";

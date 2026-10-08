@@ -18,7 +18,7 @@ import {
 import type {
   ItemMenuConfig,
   ItemMenuEntry,
-} from "@/components/official/item/types";
+} from "@ai-matrx/chat/ui/item-types";
 import { buildRecordReferenceFence } from "@/features/matrx-envelope/recordReference";
 import type {
   EntityListController,

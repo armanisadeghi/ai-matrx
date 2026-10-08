@@ -423,7 +423,6 @@
   "features/crm/outcomes/OutcomesPanel.tsx": 1,
   "features/crm/outreach-single-send/service.ts": 1,
   "../aidream/apps/shared/chat/src/cx-chat/components/user-input/ConversationInput.tsx": 1,
-  "../aidream/apps/shared/chat/src/cx-conversation/ConversationInput.tsx": 1,
   "features/data-tables/components/LocatedTableViewer.tsx": 1,
   "features/documents/document-service.ts": 1,
   "features/data-tables/save-to-table.ts": 2,

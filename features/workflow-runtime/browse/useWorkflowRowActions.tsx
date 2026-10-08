@@ -18,7 +18,7 @@ import { toast, recordToast, dismissRecordToasts } from "@/lib/toast";
 import { toastDoor } from "@/components/official/entity-ref/toastDoor";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { buildRecordReferenceFence } from "@/features/matrx-envelope/recordReference";
-import type { ItemMenuConfig } from "@/components/official/item/types";
+import type { ItemMenuConfig } from "@ai-matrx/chat/ui/item-types";
 import {
   buildWorkflowMenu,
   workflowDesignHref,

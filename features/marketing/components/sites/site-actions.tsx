@@ -12,7 +12,7 @@ import { buildAgentPayload } from "@/components/agent-copy/buildAgentPayload";
 import type {
   ItemMenuConfig,
   ItemMenuSection,
-} from "@/components/official/item/types";
+} from "@ai-matrx/chat/ui/item-types";
 import { webCopy } from "@/features/marketing/lib/copy-payloads";
 import { marketingRoutes } from "@/features/marketing/lib/routes";
 import type { MarketingSite, SiteListRow } from "@/features/marketing/types";

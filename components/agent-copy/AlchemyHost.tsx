@@ -1,5 +1,6 @@
 "use client";
 
+import { ItemMenuHostBinding } from "@/features/context-menu-v3/item/ItemMenuHostBinding";
 import { alchemyReferencePort } from "./alchemy-references";
 import { sendAlchemyEmail } from "./alchemy-email";
 import { alchemyPlainTextFormat } from "./alchemy-plain-text-format";
@@ -184,7 +185,10 @@ export function AlchemyHost({ children }: { children: ReactNode }) {
               and every package box a person writes in is ProTextarea. */}
           <ErrorCardMenusProvider menus={errorCardMenus}>
             <WritingBoxProvider Box={PackageWritingBox}>
+              {/* Every ItemRow / ItemContextMenu (design-system/item) right-clicks into v3. */}
+              <ItemMenuHostBinding>
               {children}
+              </ItemMenuHostBinding>
               <AdminLaneWatcher />
               {/* THE one selection toolbar: every selectable text's passage actions
                   come from this registry (components/selection-toolbar). */}

@@ -47,11 +47,11 @@ import type {
   MatrxColumnDef,
   MatrxDataTableQueryState,
 } from "@ai-matrx/design-system/data-table/types";
-import { ItemMenu } from "@/components/official/item/ItemMenu";
+import { ItemMenu } from "@ai-matrx/design-system/item";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 import { outreachMemberMenuTarget, useCrmRowMenu } from "../crm-row-actions";
 import { resolveEntityDoors } from "@/components/official/entity-ref/doors";
-import type { ItemMenuConfig } from "@/components/official/item/types";
+import type { ItemMenuConfig } from "@ai-matrx/chat/ui/item-types";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { AssistStrip } from "@/features/assists/components/AssistStrip";
 import { CRM_OUTREACH_LISTS_SURFACE_NAME } from "@/features/surfaces/manifests/crm-outreach-lists.manifest";

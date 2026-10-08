@@ -22,7 +22,7 @@ import { dismissRecordToasts, errorSentence, recordToast, toast } from "@/lib/to
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { softDeleteMandate } from "@/features/mandates/admin/service";
 import { invalidateMandateAdminList } from "./store";
-import type { ItemMenuConfig } from "@/components/official/item/types";
+import type { ItemMenuConfig } from "@ai-matrx/chat/ui/item-types";
 import type {
   EntityListConfig,
   EntityListController,

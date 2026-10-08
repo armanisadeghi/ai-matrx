@@ -27,8 +27,8 @@ jest.mock("@/lib/toast", () => ({
   toastErrorAlreadyCaptured: () => undefined,
 }));
 
-import { ItemMenu } from "../ItemMenu";
-import type { ItemMenuConfig } from "../types";
+import { ItemMenu } from "@ai-matrx/design-system/item";
+import type { ItemMenuConfig } from "@ai-matrx/design-system/item";
 
 // ── A viewport too short for the menu ───────────────────────────────────────
 // jsdom does no layout, so the overflow is declared on the element itself:

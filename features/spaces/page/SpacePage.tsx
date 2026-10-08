@@ -31,7 +31,9 @@ import { useSpaceBuilder } from "../ai/SpaceBuilder";
 import { AGENT_ICON } from "@/components/icons/domain-icons";
 import { currentBlockId, selectedOrCurrent } from "../editor/block-actions";
 import { blocksToMarkdownLines, spaceToMarkdown, type MarkdownContext } from "../io/markdown";
-import { TextCopySplit } from "@/components/agent-copy/TextCopySplit";
+import { RichCopySplit } from "@ai-matrx/chat/agent-copy/RichCopySplit";
+import { PlainTextView } from "@ai-matrx/rich-content/copy/ContentActions";
+import { usePlainView } from "@ai-matrx/rich-content/copy/content-view-store";
 import { ExportDialog } from "./ExportDialog";
 import { PageHistory } from "./PageHistory";
 
@@ -183,6 +185,8 @@ function SpacePageScreen({ spaceId, initialDoc }: { spaceId: string; initialDoc?
   // H1 — the comments panel, a thread being started (undefined = none; null anchor = the page), and the
   // page comment being written under the title.
   const [commentsOpen, setCommentsOpen] = useState(false);
+  // The bar's Plain switch: the page's exact markdown in place of the editor (which stays mounted).
+  const plainView = usePlainView(`space-page-${spaceId}`);
   const [draft, setDraft] = useState<SpaceCommentAnchor | null | undefined>(undefined);
   const [addingPageComment, setAddingPageComment] = useState(false);
   /** Bumped on every edit, so the comment margin re-reads block positions. */
@@ -881,8 +885,8 @@ function SpacePageScreen({ spaceId, initialDoc }: { spaceId: string; initialDoc?
           {collab.isHost && saveState === "saving" ? "Saving…" : collab.isHost && saveState === "failed" ? "Not saved — retrying" : collab.isHost && saveState === "refused" ? "Not saved" : editedAgo(doc.updatedAt, now)}
           {collab.isHost && (saveState === "failed" || saveState === "refused") ? <ErrorAlchemyMenu error={saveError} /> : null}
         </span>
-        {/* The split Copy: one click copies the whole page as markdown, the chevron offers plain text. */}
-        <TextCopySplit size="xs" label="Copy page" text={() => pageForAi().markdown} />
+        {/* The content action set (Copy, Plain, Export, Print, Transform): the whole page as markdown. */}
+        <RichCopySplit size="xs" label="page" exportTitle={doc.title || "Untitled"} viewKey={`space-page-${spaceId}`} human={() => pageForAi().markdown} />
         <ShareMenu spaceId={doc.id} title={doc.title} onCopyLink={copyLink} />
         <button
           type="button"
@@ -1005,7 +1009,8 @@ function SpacePageScreen({ spaceId, initialDoc }: { spaceId: string; initialDoc?
             <PageComments source={commentSource} comments={comments} adding={addingPageComment} onAddingDone={() => setAddingPageComment(false)} />
           </div>
           <CommentMargin threads={comments.threads} containerRef={contentRef} tick={String(contentTick)} onOpen={openThread} />
-          <div className="spaces-body-stack" ref={stackRef}>
+          {plainView ? <PlainTextView text={pageForAi().markdown} /> : null}
+          <div className="spaces-body-stack" ref={stackRef} style={plainView ? { display: "none" } : undefined}>
           {!revealed ? <StaticSpaceBody blocks={doc.blocks} /> : null}
           {collab.session && seedSettled ? (
           <div className={revealed ? "contents" : "spaces-editor-behind"} inert={!revealed}>

@@ -45,8 +45,8 @@ import type {
   ColumnFiltersState,
   MatrxDataTableQueryState,
 } from "@ai-matrx/design-system/data-table/types";
-import { ItemMenu } from "@/components/official/item/ItemMenu";
-import type { ItemMenuConfig } from "@/components/official/item/types";
+import { ItemMenu } from "@ai-matrx/design-system/item";
+import type { ItemMenuConfig } from "@ai-matrx/chat/ui/item-types";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { EntityScopeTabs } from "@/lib/entity-list/components/EntityScopeTabs";
 import { EntityOrgFilter } from "@/lib/entity-list/components/EntityOrgFilter";

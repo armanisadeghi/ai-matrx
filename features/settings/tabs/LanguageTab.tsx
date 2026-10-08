@@ -72,6 +72,8 @@ export default function LanguageTab() {
               setZone(next);
             }}
             options={zoneOptions}
+            searchable
+            searchPlaceholder="Search city or zone"
             last
           />
         </SettingsSection>

@@ -5017,10 +5017,6 @@
       "name": "COLLAPSE_THRESHOLD"
     },
     {
-      "file": "aidream/apps/shared/chat/src/cx-conversation/UserMessage.tsx",
-      "name": "COLLAPSE_THRESHOLD"
-    },
-    {
       "file": "matrx-frontend/features/dashboard/components/DiscoverSection.tsx",
       "name": "DISCOVER_WINDOW_SIZE"
     },

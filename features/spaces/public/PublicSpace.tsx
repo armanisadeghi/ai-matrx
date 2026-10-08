@@ -91,6 +91,12 @@ function useStaticValue(
     },
     summaries: [...byId.values()],
     archived: [],
+    loadTrash: noop,
+    trashLoaded: true,
+    // The published page carries its own children; nothing loads lazily here.
+    childrenLoaded: () => true,
+    loadChildren: async () => {},
+    reveal: noop,
     byId,
     childrenOf: (parentId) =>
       parentId === view.id ? view.children.map(summary) : [],

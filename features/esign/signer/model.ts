@@ -407,17 +407,23 @@ export function initialsOf(fullName: string): string {
     .slice(0, 4);
 }
 
-/** A value the field's own rules would refuse (§2.2), as one short sentence — or null. */
-export function valueProblem(field: FieldDefinitionV2, value: FieldValue): string | null {
-  if (value === null || value === "") return null;
-  if (field.kind === "number" && typeof value === "string") {
-    const n = Number(value);
-    if (!Number.isFinite(n)) return "Enter a number.";
-    if (field.number?.min != null && n < field.number.min) return `At least ${field.number.min}.`;
-    if (field.number?.max != null && n > field.number.max) return `At most ${field.number.max}.`;
+/**
+ * A gentle note about what a signer typed — or null. Judging a VALUE's format or range is an
+ * offer, never a problem: the note is amber, it never marks the field invalid and it never stops
+ * Finish (validation offers, never blocks; blocking is an owner decision, F3).
+ */
+export function valueOffer(field: FieldDefinitionV2, value: FieldValue): string | null {
+  if (value === null || value === "" || typeof value !== "string") return null;
+  if (field.kind === "number") {
+    if (looksNotNumeric(field.kind, value)) return "This does not look like a number. You can still use it.";
+    const n = Number(value.trim().replace(/[,\s$€£%]/g, ""));
+    if (Number.isFinite(n)) {
+      if (field.number?.min != null && n < field.number.min) return `Usually at least ${field.number.min}. You can still use it.`;
+      if (field.number?.max != null && n > field.number.max) return `Usually at most ${field.number.max}. You can still use it.`;
+    }
   }
-  if (field.kind === "email" && typeof value === "string" && !/^\S+@\S+\.\S+$/.test(value)) {
-    return "Enter an email address.";
+  if (field.kind === "email" && !/^\S+@\S+\.\S+$/.test(value)) {
+    return "This does not look like an email address. You can still use it.";
   }
   return null;
 }

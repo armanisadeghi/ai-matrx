@@ -15,7 +15,7 @@
 import Link from "next/link";
 import { Mail, Phone } from "lucide-react";
 
-import { ItemMenu } from "@/components/official/item/ItemMenu";
+import { ItemMenu } from "@ai-matrx/design-system/item";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 

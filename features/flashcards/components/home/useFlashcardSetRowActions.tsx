@@ -44,7 +44,7 @@ import { toast } from "@/lib/toast";
 import type {
   ItemMenuConfig,
   ItemMenuEntry,
-} from "@/components/official/item/types";
+} from "@ai-matrx/chat/ui/item-types";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import type {
   EntityListController,
