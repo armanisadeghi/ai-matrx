@@ -6,7 +6,7 @@ import { expect, type Locator, type Page } from "@playwright/test";
 import { formatDurationMs } from "@ai-matrx/kit/format";
 import type { Actor } from "./actor";
 import { supabasePublic } from "./env";
-import { observe, summarize, type CallPhase, type Observation } from "./observe";
+import { NO_GESTURE, evaluateIn, observe, summarize, type CallPhase, type Observation } from "./observe";
 
 export interface Meeting {
   slug: string;
@@ -22,6 +22,14 @@ export interface Meeting {
  * explicit form and record it in the timeline as an ENV interruption.
  */
 export async function resumeIfParked(actor: Actor, page: Page = actor.page): Promise<boolean> {
+  if (NO_GESTURE.has(page)) {
+    // Locator queries carry a user activation in Chromium; a no-gesture page is checked by URL/text only.
+    if (!/__dev-walk/.test(page.url())) return false;
+    actor.env("preview paused by the walk cap; resuming (form submit, no gesture)");
+    await evaluateIn(page, () => document.querySelector<HTMLFormElement>('form[action="/__dev-walk"]')?.submit(), null);
+    await page.waitForLoadState("domcontentloaded").catch(() => undefined);
+    return true;
+  }
   const resume = page.getByRole("button", { name: "Resume this preview" });
   if (!(await resume.isVisible().catch(() => false))) return false;
   actor.env("preview paused by the walk cap; resuming");
@@ -220,21 +228,34 @@ export async function walkIn(actor: Actor, meeting: Meeting, opts: WalkOptions =
   // A press that did not move the screen within this long is pressed again (never a single try).
   const RETRY_MS = 8000;
   const due = (action: string) => lastAction !== action || Date.now() - lastAt > RETRY_MS;
+  let activated = false;
+  if (!gesture) {
+    activated = await evaluateIn(page, () => navigator.userActivation?.hasBeenActive ?? false, null).catch(() => false);
+    if (activated) actor.note("USER ACTIVATION already present when the no-gesture walk began (before any harness read of this page)");
+  }
   while (Date.now() < deadline) {
     await resumeIfParked(actor, page);
     o = await observe(page);
     actor.saw(o);
+    if (!gesture && !activated) {
+      activated = await evaluateIn(page, () => navigator.userActivation?.hasBeenActive ?? false, null).catch(() => false);
+      if (activated) actor.note(`USER ACTIVATION appeared on a no-gesture page (after: ${lastAction || "page load"})`);
+    }
     if (until.includes(o.phase)) break;
     // The name step is read from the field itself: the core may render it under `prejoin`
     // until the contract's `guest_name` phase is adopted (CORE-DESIGN §3.7 C1).
-    const nameStep = o.phase === "guest-name" || (await page.locator("#meet-guest-name").isVisible().catch(() => false));
+    const nameStep =
+      o.phase === "guest-name" ||
+      (gesture
+        ? await page.locator("#meet-guest-name").isVisible().catch(() => false)
+        : await evaluateIn(page, () => !!document.querySelector("#meet-guest-name"), null).catch(() => false));
     if (nameStep && due("name")) {
       const name = actor.opts.displayName ?? "Priya Shah";
       if (gesture) {
         await page.locator("#meet-guest-name").fill(name);
         await page.locator("#meet-guest-name").press("Enter");
       } else {
-        await page.evaluate((n) => {
+        await evaluateIn(page, (n: string) => {
           const input = document.querySelector<HTMLInputElement>("#meet-guest-name");
           if (!input) return;
           const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value")?.set;
@@ -253,9 +274,15 @@ export async function walkIn(actor: Actor, meeting: Meeting, opts: WalkOptions =
       lastAt = Date.now();
     } else if (o.phase === "prejoin" && due("join")) {
       const join = page.getByRole("button", { name: /^Join now$/ });
-      if (await join.isEnabled().catch(() => false)) {
+      const enabled = gesture
+        ? await join.isEnabled().catch(() => false)
+        : await evaluateIn(page, () => Array.from(document.querySelectorAll("button")).some((x) => (x.getAttribute("aria-label") ?? x.textContent ?? "").trim() === "Join now" && !x.disabled), null).catch(() => false);
+      if (enabled) {
         if (gesture) await join.click();
-        else await join.evaluate((el) => (el as HTMLButtonElement).click());
+        else await evaluateIn(page, () => {
+          const b = Array.from(document.querySelectorAll("button")).find((x) => (x.getAttribute("aria-label") ?? x.textContent ?? "").trim() === "Join now");
+          b?.click();
+        }, null);
         actor.note(`${lastAction === "join" ? "pressed Join now AGAIN (the first press did not move the screen)" : "pressed Join now"}${gesture ? "" : " (no gesture)"}`);
         lastAction = "join";
         lastAt = Date.now();

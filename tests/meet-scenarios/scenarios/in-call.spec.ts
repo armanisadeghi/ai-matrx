@@ -6,6 +6,7 @@
 import { expect } from "@playwright/test";
 import { TIMEOUTS } from "../lib/env";
 import { keepsSeeing, seeControl, seePhase, seeUntil, walkIn } from "../lib/meeting";
+import { evaluateIn } from "../lib/observe";
 import { scenario } from "../lib/scenario";
 import { GUEST, GUEST_2, admitWaiting, callWithGuest } from "../lib/stories";
 
@@ -92,11 +93,16 @@ scenario("autoplay-blocked", async ({ cast }) => {
     gesture: false,
   });
   const playback = () =>
-    guest.page.evaluate(() => {
+    evaluateIn(guest.page, () => {
       const els = Array.from(document.querySelectorAll("audio, video")) as HTMLMediaElement[];
       const audio = els.filter((e) => e.tagName === "AUDIO" && e.srcObject !== null);
-      return { audioWithStream: audio.length, audioPaused: audio.filter((e) => e.paused).length };
-    });
+      return {
+        audioWithStream: audio.length,
+        audioPaused: audio.filter((e) => e.paused).length,
+        audioMuted: audio.filter((e) => e.muted).length,
+        userActivated: navigator.userActivation?.hasBeenActive ?? null,
+      };
+    }, null);
   // Precondition: the host's audio really is blocked in the guest's page.
   await seeUntil(guest, "the host's audio element on the page", (o) => o.phase === "in-call", 5000);
   let p = await playback();

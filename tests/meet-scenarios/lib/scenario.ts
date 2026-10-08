@@ -29,9 +29,18 @@ export class Cast {
   async add(opts: ActorOptions & { launchArgs?: string[] }): Promise<Actor> {
     let browser = this.browser;
     let args = this.baseArgs;
-    if (opts.launchArgs) {
+    if (opts.launchArgs || opts.blockDevices?.length) {
+      // Its own browser: the shared one's flags would undo this person's setup. The fake-UI flag
+      // auto-accepts every media prompt (it overrides a Block, and its accept is a user activation),
+      // so it is dropped; camera/mic access comes from the context's permission grant instead.
       const type: BrowserType = this.browser.browserType().name() === "webkit" ? webkit : chromium;
-      args = [...CHROMIUM_ARGS_BASE.filter((a) => type === chromium && !a.startsWith("--autoplay")), ...opts.launchArgs];
+      const extra = opts.launchArgs ?? [];
+      args = [
+        ...CHROMIUM_ARGS_BASE.filter(
+          (a) => type === chromium && !a.startsWith("--use-fake-ui-for-media-stream") && !(a.startsWith("--autoplay") && extra.some((x) => x.startsWith("--autoplay"))),
+        ),
+        ...extra,
+      ];
       browser = await type.launch({ ...(type === chromium ? { channel: "chromium" } : {}), args });
       this.extraBrowsers.push(browser);
     }

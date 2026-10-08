@@ -8,7 +8,28 @@
  * from visible text and accessible names — a best-effort reading recorded as
  * such in the baseline. A skin rebuild changes markup; it never changes this.
  */
-import type { Page } from "@playwright/test";
+import type { CDPSession, Page } from "@playwright/test";
+
+/**
+ * Pages that must never receive a user activation. Playwright's page.evaluate runs with
+ * userGesture: true in Chromium, so every observation would silently "click" the page and unlock
+ * autoplay. These pages are read through CDP Runtime.evaluate with userGesture: false instead.
+ */
+export const NO_GESTURE = new WeakMap<Page, CDPSession>();
+
+/** Evaluate `fn(arg)` in the page; no user activation for pages in NO_GESTURE. */
+export async function evaluateIn<A, R>(page: Page, fn: (arg: A) => R, arg: A): Promise<R> {
+  const cdp = NO_GESTURE.get(page);
+  if (!cdp) return (page.evaluate as (f: unknown, a: unknown) => Promise<R>).call(page, fn, arg);
+  const res = (await cdp.send("Runtime.evaluate", {
+    expression: `(() => { var __name = (f) => f; return (${fn.toString()})(${JSON.stringify(arg)}); })()`,
+    returnByValue: true,
+    awaitPromise: true,
+    userGesture: false,
+  })) as { result: { value?: R }; exceptionDetails?: { text: string; exception?: { description?: string } } };
+  if (res.exceptionDetails) throw new Error(res.exceptionDetails.exception?.description ?? res.exceptionDetails.text);
+  return res.result.value as R;
+}
 
 export type CallPhase =
   | "resolving"
@@ -177,7 +198,7 @@ function readInPage(): Observation {
 
 export async function observe(page: Page): Promise<Observation> {
   try {
-    return await page.evaluate(readInPage);
+    return await evaluateIn(page, readInPage as (a: null) => Observation, null);
   } catch (error) {
     return {
       source: "fallback",

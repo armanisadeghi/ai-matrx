@@ -10,7 +10,7 @@ import type { Browser, BrowserContext, CDPSession, Page } from "@playwright/test
 import { baseURL, devLoginURL, type SignedInAs } from "./env";
 import { NetGate, type Throttle } from "./net-gate";
 import { mediaFaultsInit, type MediaFaults } from "./media-faults";
-import { observe, summarize, type Observation } from "./observe";
+import { NO_GESTURE, observe, summarize, type Observation } from "./observe";
 import type { OrgMember } from "./fixtures";
 
 export type Seat = SignedInAs | "guest" | "org-member";
@@ -30,6 +30,8 @@ export interface ActorOptions {
   faults?: MediaFaults;
   /** The browser's OWN permission state set to Block for these devices (Chromium: CDP Browser.setPermission). */
   blockDevices?: ("camera" | "microphone")[];
+  /** No user activation may ever reach this person's page from the harness (reads go through CDP, userGesture false). */
+  noGesture?: boolean;
   /** Required for seat `org-member`: the persona lib/fixtures.ts created. */
   orgMember?: OrgMember;
 }
@@ -102,6 +104,11 @@ export class Actor {
     actor.watch(context);
     const page = await context.newPage();
     actor.track(page);
+    if (opts.noGesture) {
+      if (browserName !== "chromium") throw new Error("noGesture reads need Chromium's CDP");
+      NO_GESTURE.set(page, await context.newCDPSession(page));
+      actor.levers.push("page reads via CDP Runtime.evaluate userGesture:false (no harness activation)");
+    }
     onCreated?.(actor); // the cast holds this person (and their evidence) even if sign-in fails below
     if (opts.blockDevices?.length) await actor.blockInBrowser(page, opts.blockDevices);
     if (opts.seat === "org-member") {
@@ -195,7 +202,7 @@ export class Actor {
     const { targetInfo } = (await cdp.send("Target.getTargetInfo")) as { targetInfo: { browserContextId?: string } };
     for (const d of devices) {
       await cdp.send("Browser.setPermission", {
-        permission: { name: d === "camera" ? "videoCapture" : "audioCapture" },
+        permission: { name: d },
         setting: "denied",
         origin: new URL(baseURL()).origin,
         ...(targetInfo.browserContextId ? { browserContextId: targetInfo.browserContextId } : {}),

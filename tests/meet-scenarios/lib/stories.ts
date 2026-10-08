@@ -30,6 +30,7 @@ export async function callWithGuest(
     ...(guestOpts.faults ? { faults: guestOpts.faults } : {}),
     ...(guestOpts.launchArgs ? { launchArgs: guestOpts.launchArgs } : {}),
     ...(guestOpts.blockDevices ? { blockDevices: guestOpts.blockDevices } : {}),
+    ...(guestOpts.gesture === false ? { noGesture: true } : {}),
   });
   const meeting = cast.meeting!;
   await walkIn(host, meeting, { until: ["in-call"] });
