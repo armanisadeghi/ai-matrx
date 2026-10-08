@@ -163,8 +163,8 @@ export function triggerExtraFlags(t: ManagedTrigger): TriggerExtraFlag[] {
   if (t.overview.is_active && !t.cost.approval && !t.cost.approved_by) {
     flags.push({
       id: "no_approval",
-      label: "No approval",
-      detail: "Firing on its own with no approval recorded on it",
+      label: "Schedule not approved",
+      detail: "Firing on its own with no schedule approval recorded",
       severity: "warning",
     });
   }
