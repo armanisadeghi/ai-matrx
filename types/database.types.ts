@@ -12210,6 +12210,13 @@ export type Database = {
             foreignKeyName: "fk_cx_tool_call_parent"
             columns: ["parent_call_id"]
             isOneToOne: false
+            referencedRelation: "_tool_call_facts"
+            referencedColumns: ["tool_call_id"]
+          },
+          {
+            foreignKeyName: "fk_cx_tool_call_parent"
+            columns: ["parent_call_id"]
+            isOneToOne: false
             referencedRelation: "tool_call"
             referencedColumns: ["id"]
           },
@@ -12609,6 +12616,48 @@ export type Database = {
       }
     }
     Views: {
+      _tool_call_facts: {
+        Row: {
+          after_trim: number | null
+          agent_id: string | null
+          chars_refetched_same_data: number | null
+          conversation_id: string | null
+          created_at: string | null
+          gap_calls: number | null
+          gap_secs: number | null
+          is_repeat: number | null
+          new_data: number | null
+          output_chars: number | null
+          person_id: string | null
+          same_data: number | null
+          tool_call_id: string | null
+          tool_name: string | null
+          unknown_data: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cx_tool_call_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "admin_conversation_summary"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cx_tool_call_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "conversation"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cx_tool_call_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "conversation_summary"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       admin_conversation_summary: {
         Row: {
           conversation_type: string | null
@@ -93099,6 +93148,8 @@ export type Database = {
       drill_def__ai_usage: { Args: never; Returns: Json }
       drill_def__ai_usage_executions: { Args: never; Returns: Json }
       drill_def__kg_cost: { Args: never; Returns: Json }
+      drill_def__tool_refetch: { Args: never; Returns: Json }
+      drill_def__user_acquisition: { Args: never; Returns: Json }
       drill_def__workflow_runs: { Args: never; Returns: Json }
       drill_definition_problems: { Args: { p_def: Json }; Returns: string[] }
       drill_describe: {
@@ -131054,11 +131105,43 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      _acquisition_facts: {
+        Row: {
+          blocked: boolean | null
+          campaign: string | null
+          converted_at: string | null
+          cost: number | null
+          created_at: string | null
+          guest_id: string | null
+          identity_id: string | null
+          identity_state: string | null
+          landing_host: string | null
+          landing_path: string | null
+          person_id: string | null
+          referrer: string | null
+          referrer_host: string | null
+          referrer_state: string | null
+          requests: number | null
+          traffic_kind: string | null
+          utm_campaign: string | null
+          utm_medium: string | null
+          utm_source: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       _set_own_organization_choice: {
         Args: { p_column: string; p_organization_id: string }
+        Returns: string
+      }
+      acquisition_host_is_local: { Args: { p_host: string }; Returns: boolean }
+      acquisition_traffic_kind: {
+        Args: {
+          p_landing_host: string
+          p_referrer: string
+          p_user_agent: string
+        }
         Returns: string
       }
       admin_account_facts: {
@@ -131123,6 +131206,7 @@ export type Database = {
         }[]
       }
       heal_user_preferences_drift: { Args: never; Returns: number }
+      my_organization_choices: { Args: never; Returns: Json }
       my_organization_vault_access: {
         Args: { p_organization_id: string }
         Returns: string
