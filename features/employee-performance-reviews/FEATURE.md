@@ -63,3 +63,12 @@ writer.
   textarea actions, and manual textarea resizing.
 - 2026-08-26 - Added Job Responsibilities, 2-5 item limits, responsive report
   preview, dedicated print output, and verified two-page Letter PDF export.
+
+
+## 360 review, wave 1 (lane HR-360, 2026-10-08)
+
+- Tables: `review-360.typed-table.ts` — two Confidential typed tables per organization (Review: status + timestamps, `employee` entity reference to `hr_employee`; Track: one per respondent, readers respondent/editor, hr_manager/viewer, counterpart/viewer `when shared=true`, maker only a reader). The aidream registry (`aidream/services/typed_tables/confidential.py`) must equal these declarations or the server step refuses.
+- Flow (`review-360/service.ts`): Start on the HR profile → manager from `header.manager_employee_id` → provision (tables, store assignment columns, gather automations, Confidential via `POST /typed-tables/confidential`) → Review row + two Track rows → `custom.work_assign` (inbox + due + reminders) → link set → notice "Complete your review: <link>" → respondent edits in the existing editor (`PerformanceReviewApp single`, `useReviews(…, persistence)`) → submit stamps `submitted_at` → automation stamps the Review → both in → status ready + HR notified → HR shares both.
+- Routes: `/hr/performance` (list), `/hr/performance/[reviewId]?org=` (both halves), `/hr/performance/respond/[trackId]?org=` (respondent).
+- Knobs: `hr.performance/review_360_days_to_complete` (14), `review_360_reminder_lead_days` (3).
+- Chose store assignments + automations over the HR workflow engine: an `hr.workflow_step` deep-links only to its own `/hr/tasks/{instance}` decision panel and its titles come from `hr._wf_display`, so a step cannot point at a store row.

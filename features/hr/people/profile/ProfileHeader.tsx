@@ -34,6 +34,7 @@
 // the server simply does not send `header.legal_name` to them, and
 // `<SensitiveField>` cannot render a key that is not there.
 
+import type React from "react";
 import Link from "next/link";
 import { IdCard } from "lucide-react";
 
@@ -69,7 +70,10 @@ export function ProfileHeader({
   organizationId,
   spellCount,
   className,
+  actions,
 }: {
+  /** Header-row actions (Start 360 review), at the row's end beside the one chip. */
+  actions?: React.ReactNode;
   header: HrProfileHeaderData;
   org: HrOrgRef;
   organizationId: string;
@@ -225,6 +229,7 @@ export function ProfileHeader({
           className="shrink-0"
         />
       ) : null}
+      {actions ? <div className="flex shrink-0 items-start gap-2">{actions}</div> : null}
     </header>
   );
 }

@@ -3,7 +3,7 @@
 // Shared interactive surface for the retained demo and organization route.
 
 import { ReadFailure } from "@ai-matrx/design-system";
-import { useRef, useState } from "react";
+import { useRef, useState, type ReactNode } from "react";
 import { Input } from "@ai-matrx/design-system/controls";
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { Button } from "@/components/ui/button";
@@ -76,7 +76,7 @@ import {
   isRatingValue,
   ratingKey,
 } from "@/features/employee-performance-reviews/schema";
-import { useReviews } from "@/features/employee-performance-reviews/use-reviews";
+import { useReviews, type ReviewPersistence } from "@/features/employee-performance-reviews/use-reviews";
 import {
   SectionCard,
   Field,
@@ -98,6 +98,11 @@ export interface PerformanceReviewOrganizationContext {
 
 export interface PerformanceReviewAppProps {
   storageKey?: string;
+  /**
+   * ONE review persisted somewhere other than this browser (a 360 review track): no review list,
+   * no new/duplicate, and `toolbarEnd` (e.g. Submit) sits at the end of the top bar.
+   */
+  single?: { persistence: ReviewPersistence; toolbarEnd?: ReactNode };
   organization?: PerformanceReviewOrganizationContext;
   showHero?: boolean;
 }
@@ -106,8 +111,9 @@ export default function PerformanceReviewApp({
   storageKey,
   organization,
   showHero = true,
+  single,
 }: PerformanceReviewAppProps) {
-  const store = useReviews(storageKey);
+  const store = useReviews(storageKey, single?.persistence);
   const [search, setSearch] = useState("");
   const [viewMode, setViewMode] = useState<"edit" | "report">("edit");
   const [isExportingPdf, setIsExportingPdf] = useState(false);
@@ -336,6 +342,7 @@ export default function PerformanceReviewApp({
     >
       <div className="matrx-touch-targets flex h-full overflow-hidden bg-textured">
         {/* ── Sidebar ─────────────────────────────────────────────────────── */}
+        {single ? null : (
         <aside className="hidden w-72 flex-none flex-col border-r border-border bg-card/60 print:hidden lg:flex">
           <div className="flex items-center gap-2 border-b border-border p-4">
             <div className="grid h-9 w-9 place-items-center rounded-lg bg-primary font-bold text-primary-foreground">
@@ -439,9 +446,11 @@ export default function PerformanceReviewApp({
             />
           </div>
         </aside>
+        )}
 
         {/* ── Main ────────────────────────────────────────────────────────── */}
         <div className="flex min-w-0 flex-1 flex-col">
+          {single ? null : (
           <div className="flex flex-none items-center gap-2 border-b border-border bg-card px-3 py-2 lg:hidden">
             <Select
               value={store.activeId ?? undefined}
@@ -465,6 +474,7 @@ export default function PerformanceReviewApp({
               aria-label="New review"
             />
           </div>
+          )}
 
           {/* Top bar */}
           <div className="flex flex-none flex-wrap items-center gap-2 border-b border-border bg-card/70 px-3 py-2 backdrop-blur print:hidden sm:px-6 sm:py-3">
@@ -506,6 +516,8 @@ export default function PerformanceReviewApp({
             >
               Preview
             </Button>
+            {single?.toolbarEnd}
+            {single ? null : (
             <Button
               icon={<Copy />}
               className="hidden lg:inline-flex"
@@ -514,6 +526,7 @@ export default function PerformanceReviewApp({
             >
               Duplicate
             </Button>
+            )}
             <CopyButtons
               size="sm"
               label="Active performance review"
@@ -875,8 +888,7 @@ export default function PerformanceReviewApp({
                 </SectionCard>
 
                 <p className="pt-1 text-center text-xs text-muted-foreground print:hidden">
-                  Everything saves automatically to this browser. Preview the
-                  report before printing or downloading the final PDF.
+                  {single ? "Saves as you type" : "Saved in this browser"}
                 </p>
               </div>
             )}
