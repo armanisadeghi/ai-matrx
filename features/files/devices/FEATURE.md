@@ -49,7 +49,7 @@ Drive a Matrx 2 computer from any browser, phone first: terminal, files, info. S
 | File (`console/`) | What it owns |
 |---|---|
 | `useDeviceClient.ts` | ONE `createDesktopClient` per device page, straight to the relay (token in the subprotocol, re-read every dial; `relay.reauth` on every session refresh; `useDesktopWake`). |
-| `relay.ts` | `NEXT_PUBLIC_MATRX_RELAY_URL` (production default `relay.matrxserver.com`; clone previews get `relay-test`, paired in `scripts/clone-preview/clone-preview-env.cjs`), `/status` reads. |
+| `relay.ts` | `NEXT_PUBLIC_MATRX_RELAY_URL` (production default `relay.matrxserver.com`), `/status` reads. |
 | `connection.ts` | The status pill's honest states (Live / Connecting… / Reconnecting… / Offline / refusals), tested. |
 | `TerminalPanel.tsx` | Shell chips (`exec.list`), `+`, close (kill, confirmed), one live shell in `@ai-matrx/terminal`; `?t=` holds the shell. |
 | `FilesPanel.tsx` / `FilePreview.tsx` / `paths.ts` | Breadcrumb, rows, pull to refresh, swipe Rename / Move / Trash (+ Undo), `…` New folder / Upload / Show hidden; `?path=`. |
