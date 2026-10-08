@@ -3,7 +3,20 @@
  * (answered=false), and after the retries shows "unavailable" — not silence.
  * Also: only runs linked to THIS doc count (batch root vs own child run).
  */
-import { act, renderHook } from "@testing-library/react";
+import { act, createElement } from "react";
+import { createRoot } from "react-dom/client";
+(globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
+
+function renderHook<T>(fn: () => T): { result: { current: T } } {
+  const result = { current: undefined as T };
+  function Probe() {
+    result.current = fn();
+    return null;
+  }
+  const root = createRoot(document.createElement("div"));
+  act(() => root.render(createElement(Probe)));
+  return { result };
+}
 import { countOwnRuns, usePdfDocRun } from "../usePdfDocRun";
 
 const getByLink = jest.fn();
@@ -19,7 +32,10 @@ jest.mock("@ai-matrx/agents/react", () => ({
   useServerJob: () => ({ ...jobState, operation: null, outcome: null }),
 }));
 jest.mock("@/lib/api/matrx-transport", () => ({ createMatrxTransport: () => ({}) }));
-jest.mock("@/lib/redux/hooks", () => ({ useAppStore: () => ({ getState: () => ({}) }) }));
+jest.mock("@/lib/redux/hooks", () => {
+  const store = { getState: () => ({}) };
+  return { useAppStore: () => store };
+});
 
 const DOC = "8a1f0c2e-6b7d-4e5f-9a0b-1c2d3e4f5a6b";
 
