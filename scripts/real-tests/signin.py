@@ -5,6 +5,7 @@
 Mints a one-time magic-link token for admin@admin.com with the live project's secret key (read from
 matrx-frontend/.env.local, never printed) and opens it through the app's own /auth/confirm route
 in that run's private browser (pw.mjs). Usage: signin.py <run> [route=/dashboard] [origin=https://www.aimatrx.com]
+Localhost works: `signin.py <run> /dashboard http://localhost:3000` (that origin's own /auth/confirm sets the cookie; same live Supabase). Then `pw.mjs <run> chat` opens the test agent there.
 """
 import json, subprocess, sys, urllib.request
 from pathlib import Path
