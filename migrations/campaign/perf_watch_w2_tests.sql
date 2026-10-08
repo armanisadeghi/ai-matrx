@@ -10,6 +10,7 @@
 --       transitions → one grouped system_error row + one bell per platform admin, not N); a dead
 --       probe raises ONE collector alert, its watches turn stale silently, a second run repeats
 --       nothing, and a finished probe resolves the collector row
+--   (f) a collector run that failed (timeout) — whose own traces rolled back — alerts once, by runid
 --   (u) ops.perf_watch_update: refuses a signed-in non-admin and an admin outside the admin lane;
 --       an admin in the lane edits the budget, pins a baseline, pauses and resumes — each recorded
 -- Run (session-mode 5432 connection as postgres): the file itself carries BEGIN and ROLLBACK.
@@ -162,6 +163,29 @@ begin
   raise notice 'PASS (h) a finished probe resolved the collector alert';
 end
 $h$;
+
+-- ── (f) a failed collector run alerts once (its own traces were rolled back) ──────────────────
+do $f$
+declare
+  v_admins int;
+  v_r jsonb;
+begin
+  select count(*) into v_admins from admin.admins a join auth.users u on u.id = a.user_id;
+  -- runid far above the sequence (postgres may not draw from cron's runid_seq); rolled back.
+  insert into cron.job_run_details (runid, jobid, job_pid, database, username, command, status, return_message, start_time, end_time)
+  select (select max(runid) + 1000000 from cron.job_run_details), j.jobid, 0, current_database(), 'postgres', j.command, 'failed', 'ERROR:  canceling statement due to statement timeout',
+         now() + interval '1 second', now() + interval '91 seconds'
+    from cron.job j where j.jobname = 'perf-watch-probe';
+  v_r := ops.perf_health_run();
+  v_r := ops.perf_health_run();
+  if (select count(*) from ops.system_error where error_type = 'perf_watch:collector:probe:failed_run' and created_at >= now()) <> 1
+     or (select count(*) from communication.notification where event_key = 'platform.perf.watch_alert'
+           and dedupe_key like 'perf_watch:collector:probe:failed_run:%' and created_at >= now()) <> v_admins then
+    raise exception '(f) a failed probe run: want 1 failed_run row and % bells over two health runs: %', v_admins, v_r;
+  end if;
+  raise notice 'PASS (f) a timed-out probe run → 1 failed_run row + % bells; the next health run repeated nothing', v_admins;
+end
+$f$;
 
 -- ── (u) the admin edit door ───────────────────────────────────────────────────────────────────
 do $u$

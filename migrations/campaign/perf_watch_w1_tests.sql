@@ -8,6 +8,7 @@
 --       and writes no outbox / history row (with a live control proving the detector sees a write)
 --   (c) a forced bad transition writes exactly one system_error row and one bell per platform
 --       admin, and a second sample in the same bad state repeats neither
+--   (a3) wave 2: a cooldown-held episode is alerted once the cooldown passes (review of wave 1)
 --   (a2) wave 2 rule fix: a watch with fewer than perf.eval_window samples of its own source is
 --       learning — never over_budget or regressed — however slow they are (data_home alerted on
 --       its first single sample, 2026-10-08)
@@ -138,6 +139,37 @@ begin
 end
 $a2$;
 
+-- ── (a3) a cooldown never silences an episode forever (wave 2, review of wave 1) ─────────────
+do $a3$
+declare
+  k jsonb := '{"eval_window":3,"baseline_min_samples":12,"baseline_days":7,"regression_pct":50,"regression_min_ms":50,"regression_mad_k":4,"alert_cooldown_minutes":60}';
+  now_ timestamptz := '2026-10-08 12:00:00+00';
+  h jsonb;
+  r jsonb;
+  w jsonb;
+begin
+  select jsonb_agg(jsonb_build_object('measured_at', now_ - make_interval(mins => 15 * i), 'n', 10, 'errors', 0,
+                                      'p95_ms', case when i < 8 then 400 else 100 end,
+                                      'state_after', case when i < 8 then 'over_budget' else 'ok' end) order by i)
+    into h from generate_series(0, 19) i;
+  -- The episode began 2 h ago inside a cooldown (recovered 2 h 10 min ago) and was never alerted.
+  w := jsonb_build_object('budget_ms', 300, 'budget_stat', 'p95', 'state', 'over_budget', 'baseline_pinned', false,
+                          'last_recovery_at', now_ - interval '130 minutes', 'episode_started_at', now_ - interval '2 hours',
+                          'last_alert_at', now_ - interval '1 day');
+  r := ops.perf_judge_rule(h, w, k, now_);
+  if r->>'state' <> 'over_budget' or not coalesce((r->>'alert')::boolean, false) then
+    raise exception '(a3) a held-back episode still bad after the cooldown did not alert: %', r;
+  end if;
+  -- Still inside the cooldown: held.
+  r := ops.perf_judge_rule(h, w || jsonb_build_object('last_recovery_at', now_ - interval '10 minutes'), k, now_);
+  if (r->>'alert')::boolean or r->>'alert_suppressed' is null then raise exception '(a3) inside the cooldown: %', r; end if;
+  -- Already alerted for this episode: never again.
+  r := ops.perf_judge_rule(h, w || jsonb_build_object('last_alert_at', now_ - interval '1 hour'), k, now_);
+  if (r->>'alert')::boolean then raise exception '(a3) an alerted episode alerted again: %', r; end if;
+  raise notice 'PASS (a3) a cooldown-held episode alerts once the cooldown passes, and only once';
+end
+$a3$;
+
 -- ── (b) a probe of custom.record_update writes nothing that survives ─────────────────────────
 do $b$
 declare
@@ -155,7 +187,11 @@ declare
   v_hours jsonb;
 begin
   select version, updated_at, data into v_before from custom.record where id = v_rec;
-  v_hours := '22'::jsonb;  -- the value the seeded watch pins (read through read_records_page on 2026-10-08)
+  -- A DIFFERENT value from the live one (22): every probe call really writes, so only the always-
+  -- raise rollback keeps the record unchanged (review of wave 1: patching to the value it already
+  -- held hit the no-op path, and removing the rollback stayed green).
+  v_hours := '23'::jsonb;
+  if (v_before.data->>'hours')::numeric = 23 then raise exception '(b) the record already holds 23; pick another value'; end if;
   select count(*) into v_outbox_before from custom.io_outbox where record_id = v_rec;
   select count(*) into v_hist_before from history.row_versions where row_id = v_rec;
   v_watch := ops.perf_watch_declare('test:perf-w1:record_update', 'door', 'TEST record_update probe',
@@ -186,7 +222,7 @@ begin
   -- Control: the same door called for real (inside this rolled-back transaction) IS seen.
   perform set_config('request.jwt.claims', '{"sub":"87a6e699-3622-4869-8843-d0867456c0dd","role":"authenticated","email":"admin@admin.com"}', true);
   perform set_config('role', 'authenticated', true);
-  perform custom.record_update(v_org, v_rec, jsonb_build_object('hours', 23));
+  perform custom.record_update(v_org, v_rec, jsonb_build_object('hours', 24));
   perform set_config('role', 'postgres', true);
   select version, updated_at into v_after from custom.record where id = v_rec;
   if v_after.version = v_before.version then
