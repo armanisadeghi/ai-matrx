@@ -6,7 +6,7 @@ import type { Components } from 'react-markdown';
 import {
   guardMarkdownDelimiters,
   reportDelimiterViolations,
-} from '@ai-matrx/kit/delimiter-guard';
+} from '@ai-matrx/content-ir/source';
 import { captureError } from '@/lib/diagnostics/errorCaptureStore';
 import { KindTextGate } from '@ai-matrx/rich-content/display/chat-markdown/KindTextGate';
 
