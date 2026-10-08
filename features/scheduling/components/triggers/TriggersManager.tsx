@@ -50,8 +50,8 @@ function allFlags(t: ManagedTrigger): AnyFlag[] {
   return [...triggerExtraFlags(t), ...automationFlags(t.cost)];
 }
 
-function FlagBadges({ t }: { t: ManagedTrigger }) {
-  const flags = allFlags(t);
+function FlagBadges({ t, extraOnly }: { t: ManagedTrigger; extraOnly?: boolean }) {
+  const flags = extraOnly ? triggerExtraFlags(t) : allFlags(t);
   if (flags.length === 0) return <span className="text-xs text-muted-foreground">—</span>;
   return (
     <div className="flex min-w-0 max-w-full flex-wrap gap-1">
@@ -374,7 +374,7 @@ export function TriggersManager({
                     {`Created ${humanizeRelative(t.overview.created_at)} by ${t.overview.created_by_email ?? "unknown"} · fired ${t.overview.fire_count} times`}
                   </span>
                 </div>
-                <FlagBadges t={t} />
+                <FlagBadges t={t} extraOnly />
                 <AutomationCostDetail row={t.cost} seat={seat} orgSlug={orgSlug} />
               </div>
             ),
