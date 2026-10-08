@@ -52,8 +52,10 @@ export async function POST(
       ? (values["_hidden"] as Record<string, unknown>)
       : null;
   const visit = typeof values["_visit"] === "string" ? values["_visit"] : null;
+  const timeZone = typeof values["_time_zone"] === "string" ? values["_time_zone"] : null;
   delete values["_hidden"];
   delete values["_visit"];
+  delete values["_time_zone"];
 
   // The form tells us the decoy's name; we take it out of the answers and hand
   // it to the door separately, so a real field can never be mistaken for it and
@@ -95,7 +97,7 @@ export async function POST(
       formId,
       origin,
       bucket,
-      values: { ...typed.values, ...(hidden ? { _hidden: hidden } : {}), ...(visit ? { _visit: visit } : {}) },
+      values: { ...typed.values, ...(hidden ? { _hidden: hidden } : {}), ...(visit ? { _visit: visit } : {}), ...(timeZone ? { _time_zone: timeZone } : {}) },
       honeypot,
       clientKey: typeof body.clientKey === "string" ? body.clientKey : null,
     });

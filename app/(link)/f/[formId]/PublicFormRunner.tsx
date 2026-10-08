@@ -308,6 +308,7 @@ export function PublicFormRunner({
               ...values,
               ...(hidden && Object.keys(hidden).length > 0 ? { _hidden: hidden } : {}),
               ...(visitKey.current ? { _visit: visitKey.current } : {}),
+              _time_zone: Intl.DateTimeFormat().resolvedOptions().timeZone,
             },
             clientKey: secretRef.current,
           }),
