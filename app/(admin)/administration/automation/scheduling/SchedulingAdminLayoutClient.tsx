@@ -14,6 +14,7 @@ import {
   LayoutDashboard,
   ListChecks,
   ServerCog,
+  Timer,
   Zap,
 } from "lucide-react";
 import {
@@ -45,6 +46,11 @@ const NAV_ITEMS: AdminSectionTab[] = [
     label: "Costs",
     href: "/administration/automation/scheduling/costs",
     icon: DollarSign,
+  },
+  {
+    label: "Triggers",
+    href: "/administration/automation/scheduling/triggers",
+    icon: Timer,
   },
   {
     label: "System jobs",
