@@ -36,7 +36,9 @@ import type { FlashcardMobileCard } from "./flashcard-mobile-bridge";
 import { FlashcardFaceImage, hasFaceImage } from "./FlashcardFaceImage";
 import { markdownToPlainText } from "@/lib/markdown/plain-text";
 import { Button } from "@ai-matrx/design-system/controls";
-import { TextCopySplit } from "@/components/agent-copy/TextCopySplit";
+import { RichCopySplit } from "@ai-matrx/chat/agent-copy/RichCopySplit";
+import { PlainTextView } from "@ai-matrx/rich-content/copy/ContentActions";
+import { usePlainView } from "@ai-matrx/rich-content/copy/content-view-store";
 
 const ANIM_MS = 320;
 const TEXT_FADE_OUT_MS = 120;
@@ -746,6 +748,7 @@ const FlashcardMobileView: React.FC<FlashcardMobileViewProps> = ({
 
   const total = cards.length;
   const card = cards[index];
+  const plainCard = usePlainView(card ? `fc-card-${card.id}` : null);
   const isAnimating = transition !== null;
   const progress = total > 1 ? (index / (total - 1)) * 100 : 100;
 
@@ -979,11 +982,14 @@ const FlashcardMobileView: React.FC<FlashcardMobileViewProps> = ({
 
         <div className="flex items-center gap-1">
           {card && card.back !== null && (
-            <TextCopySplit
+            // The content action set: Copy + "…" (Plain, the five exports, Print, Transform) for this card.
+            <RichCopySplit
               size="xs"
-              label="Copy card"
+              label="card"
               className="text-white"
-              text={() => `**Front**\n\n${card.front ?? ""}\n\n**Back**\n\n${card.back ?? ""}`}
+              exportTitle={`Flashcard ${index + 1}`}
+              viewKey={`fc-card-${card.id}`}
+              human={() => `**Front**\n\n${card.front ?? ""}\n\n**Back**\n\n${card.back ?? ""}`}
             />
           )}
           <Button variant="quiet" icon={<Layers />} onClick={() => {
@@ -1061,6 +1067,12 @@ const FlashcardMobileView: React.FC<FlashcardMobileViewProps> = ({
               menuOpen={anyPanelOpen}
             />
           )}
+          {plainCard && card ? (
+            // Plain (the set's "…"): this card's exact source in place of the slide.
+            <div className="absolute inset-0 z-10 overflow-auto p-3" onClick={(e) => e.stopPropagation()}>
+              <PlainTextView text={`**Front**\n\n${card.front ?? ""}\n\n**Back**\n\n${card.back ?? ""}`} />
+            </div>
+          ) : null}
           <CardSlide
             card={card}
             isFlipped={isFlipped}

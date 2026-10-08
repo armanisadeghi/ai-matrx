@@ -5,7 +5,7 @@ import { useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { BookOpen, Link2, Play, Rocket, Undo2 } from "lucide-react";
 import { toast } from "@/lib/toast";
-import type { ItemMenuConfig, ItemMenuEntry } from "@/components/official/item/types";
+import type { ItemMenuConfig, ItemMenuEntry } from "@ai-matrx/chat/ui/item-types";
 import type {
   EntityListController,
   EntityRowActionsResult,

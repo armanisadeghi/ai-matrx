@@ -12,7 +12,7 @@ import { Archive, ArchiveRestore, ArrowRight, ExternalLink, Link2, Settings } fr
 import { toast } from "@/lib/toast";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { WriteDidNotLandError } from "@/utils/supabase/writeOne";
-import type { ItemMenuConfig } from "@/components/official/item/types";
+import type { ItemMenuConfig } from "@ai-matrx/chat/ui/item-types";
 import type {
   EntityListController,
   EntityRowActionsResult,

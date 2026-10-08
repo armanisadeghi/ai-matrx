@@ -24,7 +24,7 @@ import {
   RotateCcw,
   Undo2,
 } from "lucide-react";
-import type { ItemMenuConfig } from "@/components/official/item/types";
+import type { ItemMenuConfig } from "@ai-matrx/chat/ui/item-types";
 import type { MarketingFinding } from "@/features/marketing/data/analysis-types";
 import {
   acknowledgeFinding,

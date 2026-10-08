@@ -18,7 +18,7 @@ import {
   Edit2,
 } from "lucide-react";
 import { toast } from "@/lib/toast";
-import type { ItemMenuConfig } from "@/components/official/item/types";
+import type { ItemMenuConfig } from "@ai-matrx/chat/ui/item-types";
 import {
   FILE_CONTEXT_MENU_LABEL,
   FileContextMenuIcon,

@@ -12,7 +12,7 @@ import { DoorOpen, Pencil, Trash2 } from "lucide-react";
 import type {
   ItemMenuConfig,
   ItemMenuEntry,
-} from "@/components/official/item/types";
+} from "@ai-matrx/chat/ui/item-types";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { TextInputDialog } from "@ai-matrx/design-system";
 import { toast } from "@/lib/toast";

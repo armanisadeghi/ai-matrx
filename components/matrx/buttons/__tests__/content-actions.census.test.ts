@@ -45,9 +45,14 @@ const SURFACES: Record<string, string> = {
   "features/transcripts/components/TranscriptViewer.tsx": "transcripts",
   "features/message-templates/components/TemplateViewPage.tsx": "message template view",
   "components/markdown-studio/PreviewPanel.tsx": "Markdown Studio",
+  "features/notes/components/mobile/NoteEditorDock.tsx": "notes on a phone (the dock's More sheet carries the rows)",
+  "features/flashcards/components/study/StudyDeck.tsx": "a single flashcard (study card view)",
+  "features/organizations/peek/kinds/TablePeek.tsx": "table peek",
+  "features/message-templates/components/TemplateCard.tsx": "message template card preview",
+  "features/spaces/page/SpacePage.tsx": "Spaces pages",
 };
 
-const SET = /<RichCopySplit\b|<ContentActions\b|<RichDocumentActions\b|<RichDocumentActionSurface\b|actionsVariant="bar"/;
+const SET = /<RichCopySplit\b|<ContentActions\b|<ContentActionMenuRows\b|<RichDocumentActions\b|<RichDocumentActionSurface\b|actionsVariant="bar"/;
 
 /** Where `<RichCopySplit>` hosts live. */
 const HOST_DIRS = ["features", "components", "app", "../aidream/apps/shared/chat/src"];

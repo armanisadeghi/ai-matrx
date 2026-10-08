@@ -5,7 +5,7 @@
 
 import { useRouter } from "next/navigation";
 import { ExternalLink, Eye, PenLine } from "lucide-react";
-import type { ItemMenuConfig, ItemMenuEntry } from "@/components/official/item/types";
+import type { ItemMenuConfig, ItemMenuEntry } from "@ai-matrx/chat/ui/item-types";
 import type { EntityListController, EntityRowActionsResult } from "@/lib/entity-list/config";
 import { envelopeHref, signHref, type EnvelopeListRow } from "./types";
 

@@ -11,7 +11,7 @@ import {
   Trash2,
 } from "lucide-react";
 
-import type { ItemMenuConfig } from "@/components/official/item/types";
+import type { ItemMenuConfig } from "@ai-matrx/chat/ui/item-types";
 import type { ClientPageSummary } from "@/features/cms/types";
 import { cmsPageHasContent } from "@/features/cms/utils/cmsPageAi";
 

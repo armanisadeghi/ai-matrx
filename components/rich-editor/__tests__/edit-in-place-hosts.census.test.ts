@@ -44,8 +44,6 @@ const EXEMPT: Record<string, string> = {
   "features/agents/components/builder/message-builders/system-instructions/SystemMessage.tsx": "follow-up lane: system instructions click-to-edit",
   // No live route mounts these copies (census 2026-10-05); the live chat is
   // ../aidream/apps/shared/chat/src/agents (wired above).
-  "../aidream/apps/shared/chat/src/cx-conversation/AssistantMessage.tsx": "not mounted by a live route (census 2026-10-05)",
-  "../aidream/apps/shared/chat/src/cx-chat/components/messages/AssistantMessage.tsx": "not mounted by a live route (census 2026-10-05)",
 };
 
 const RENDERS = /<(RichDocument|MarkdownStream|RichContent|EnhancedChatMarkdown)\b/;

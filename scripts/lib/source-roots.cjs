@@ -161,11 +161,11 @@ function isUnderFeature(file, sub) {
  *   gitFiles(ROOT, ["ls-files", "--", "features/**\/*.tsx", `${CHAT_PACKAGE_SRC}/**\/*.tsx`])
  */
 /**
- * Inside the chat package checkout, the app's guards read the module tree the app consumes; the
- * frozen rewrite kept under `src/compat/` (workflow-studio's kernel until P28 deletes it) is not
- * app code and never was in this repo's scans.
+ * Inside the chat package checkout, the app's guards read the module tree the app consumes. The
+ * frozen kernel under `src/compat/` was deleted at P28i, so nothing is excluded any more; the list
+ * stays as the one place a future exclusion would go.
  */
-const CHAT_PACKAGE_EXCLUDES = Object.freeze([":(exclude)apps/shared/chat/src/compat/**"]);
+const CHAT_PACKAGE_EXCLUDES = Object.freeze([]);
 
 function gitFiles(cwd, args, { maxBuffer = 512 * 1024 * 1024, prefixPaths = true } = {}) {
   let base = cwd;

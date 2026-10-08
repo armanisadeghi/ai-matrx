@@ -74,12 +74,6 @@ const NO_PAGE: Row[] = [
     file: "../aidream/apps/shared/chat/src/cx-chat/components/user-input/ConversationInput.tsx",
   },
   {
-    name: "Old conversation input",
-    what: "Second full chat input of the same era",
-    created: "2026-03-17",
-    file: "../aidream/apps/shared/chat/src/cx-conversation/ConversationInput.tsx",
-  },
-  {
     name: "Old + menu",
     what: "Attach / context / compute / connections menu",
     created: "2026-07-05",

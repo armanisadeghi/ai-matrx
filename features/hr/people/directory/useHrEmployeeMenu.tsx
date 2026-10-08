@@ -31,7 +31,7 @@ import {
   Users,
 } from "lucide-react";
 
-import type { ItemMenuConfig } from "@/components/official/item/types";
+import type { ItemMenuConfig } from "@ai-matrx/chat/ui/item-types";
 import { useOpenTaskQuickCreateWindow } from "@/features/overlays/openers/taskQuickCreateWindow";
 import { announceComingSoon } from "@/lib/coming-soon/announce";
 

@@ -25,7 +25,7 @@ import {
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { archiveRecord, restoreFromTrash } from "@/features/trash/service";
 import { archiveConfirmSentence } from "@/features/trash/archiveCopy";
-import type { ItemMenuConfig, ItemMenuEntry } from "@/components/official/item/types";
+import type { ItemMenuConfig, ItemMenuEntry } from "@ai-matrx/chat/ui/item-types";
 import { buildRecordReferenceFence } from "@/features/matrx-envelope/recordReference";
 import type {
   EntityListController,

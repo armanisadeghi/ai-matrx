@@ -4,7 +4,7 @@
 
 import { useRouter } from "next/navigation";
 import { Pencil, Send, Trash2 } from "lucide-react";
-import type { ItemMenuConfig } from "@/components/official/item/types";
+import type { ItemMenuConfig } from "@ai-matrx/chat/ui/item-types";
 import type { EntityListController, EntityRowActionsResult } from "@/lib/entity-list/config";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { toast } from "@/lib/toast";

@@ -333,7 +333,7 @@ export const componentList: ComponentEntry[] = [
   {
     id: "item-row",
     name: "Item Row",
-    path: "components/official/item/ItemRow.tsx",
+    path: "@ai-matrx/design-system/item (ItemRow)",
     description:
       "Reusable list row: full-width label with a deepening right-edge fade (no ellipsis), hover-revealed kebab, inline rename, and right-click menu. The standard sidebar/list/tree row.",
     categories: ["navigation", "data-display", "interactive"],
@@ -351,7 +351,7 @@ export const componentList: ComponentEntry[] = [
   {
     id: "item-menu",
     name: "Item Menu",
-    path: "components/official/item/ItemMenu.tsx",
+    path: "@ai-matrx/design-system/item (ItemMenu)",
     description:
       "Schema-driven menu: non-blocking dropdown on desktop (no backdrop), right-click context menu, and bottom drawer with submenu drill-in on mobile. Sections, destructive items, shortcuts, async actions.",
     categories: ["navigation", "interactive", "feedback"],

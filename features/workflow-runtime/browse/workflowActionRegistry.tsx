@@ -27,7 +27,7 @@ import {
   StarOff,
   Trash2,
 } from "lucide-react";
-import type { ItemMenuConfig } from "@/components/official/item/types";
+import type { ItemMenuConfig } from "@ai-matrx/chat/ui/item-types";
 import type { WorkflowBrowseRow } from "./types";
 
 /**

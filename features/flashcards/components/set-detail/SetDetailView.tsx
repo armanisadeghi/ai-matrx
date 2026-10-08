@@ -1146,6 +1146,53 @@ export function SetDetailView({
 
   /** A loaded deck with no cards: the page offers what makes cards. */
   const deckEmpty = !!data && data.cards.length === 0;
+  // The deck's content action set (Copy, Plain, Export, Print, Transform) — in the desktop bar and
+  // in the phone's tools row, where "…" holds every action one tap away.
+  const deckContentActions = data ? (
+      <RichCopySplit
+        size="sm"
+        triggerVariant="transparent"
+        label={`Deck: ${data.set.name}`}
+        exportTitle={data.set.name}
+        viewKey={`fc-deck-${data.set.id}`}
+        human={() => serializeDeck(data.set, data.cards).markdown}
+        json={() => ({ set: data.set, cards: data.cards })}
+        agent={() => ({
+          kind: "flashcard-deck",
+          location: `AI Matrx — Flashcards — ${EDU_BASE}/${setId}`,
+          description:
+            "A flashcard deck: every card's front and back.",
+          data: {
+            name: data.set.name,
+            topic: data.set.topic,
+            difficulty: data.set.difficulty,
+            cards: data.cards.map((c, i) => {
+              const faces = studyFaces(c);
+              return {
+                n: i + 1,
+                kind: asCardKind(c.card_kind),
+                front: faces ? faces.front : c.front,
+                back: faces ? faces.back : c.back,
+              };
+            }),
+          },
+          summary: serializeDeck(data.set, data.cards).markdown,
+          attributes: { cards: data.cards.length },
+        })}
+        export={{
+          items: [
+            { id: "print", label: "Print", onSelect: handlePrint },
+            ...(["csv", "anki", "md", "json"] as const).map(
+              (format) => ({
+                id: format,
+                label: DECK_EXPORT_FILE[format].label,
+                onSelect: () => exportDeck(format),
+              }),
+            ),
+          ],
+        }}
+/>
+  ) : null;
 
   return (
     <div className="h-full w-full overflow-y-auto bg-textured">
@@ -1312,51 +1359,7 @@ export function SetDetailView({
                     </DropdownMenuContent>
                   </DropdownMenu>
                 )}
-                {!deckEmpty && (
-                  <RichCopySplit
-                    size="sm"
-                    triggerVariant="transparent"
-                    label={`Deck: ${data.set.name}`}
-                    exportTitle={data.set.name}
-                    viewKey={`fc-deck-${data.set.id}`}
-                    human={() => serializeDeck(data.set, data.cards).markdown}
-                    json={() => ({ set: data.set, cards: data.cards })}
-                    agent={() => ({
-                      kind: "flashcard-deck",
-                      location: `AI Matrx — Flashcards — ${EDU_BASE}/${setId}`,
-                      description:
-                        "A flashcard deck: every card's front and back.",
-                      data: {
-                        name: data.set.name,
-                        topic: data.set.topic,
-                        difficulty: data.set.difficulty,
-                        cards: data.cards.map((c, i) => {
-                          const faces = studyFaces(c);
-                          return {
-                            n: i + 1,
-                            kind: asCardKind(c.card_kind),
-                            front: faces ? faces.front : c.front,
-                            back: faces ? faces.back : c.back,
-                          };
-                        }),
-                      },
-                      summary: serializeDeck(data.set, data.cards).markdown,
-                      attributes: { cards: data.cards.length },
-                    })}
-                    export={{
-                      items: [
-                        { id: "print", label: "Print", onSelect: handlePrint },
-                        ...(["csv", "anki", "md", "json"] as const).map(
-                          (format) => ({
-                            id: format,
-                            label: DECK_EXPORT_FILE[format].label,
-                            onSelect: () => exportDeck(format),
-                          }),
-                        ),
-                      ],
-                    }}
-                  />
-                )}
+                {!deckEmpty && deckContentActions}
                 <DropdownMenu>
                   <IconAction label="More" asTrigger>
                     <Ellipsis className="h-4 w-4" />
@@ -1477,7 +1480,7 @@ export function SetDetailView({
                   Study
                 </SurfaceButton>
               )}
-              <div className="grid grid-cols-2 gap-2">
+              <div className="flex items-center gap-2 [&>button]:flex-1">
                 {!deckEmpty && (
                   <Button
                     icon={<GraduationCap />}
@@ -1490,11 +1493,12 @@ export function SetDetailView({
                 <Button
                   icon={<Ellipsis />}
                   variant="outline"
-                  className={cn(deckEmpty && "col-span-2")}
+                  
                   onClick={() => setDeckToolsOpen(true)}
                 >
                   Deck tools
                 </Button>
+                {!deckEmpty && deckContentActions}
               </div>
               {canEdit && (
                 <div className="[&>button]:h-11 [&>button]:w-full">

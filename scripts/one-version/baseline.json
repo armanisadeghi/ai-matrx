@@ -108,11 +108,6 @@
     },
     {
       "piece": "chat-input",
-      "file": "../aidream/apps/shared/chat/src/cx-conversation/ConversationInput.tsx",
-      "reason": "known duplicate, decision pending"
-    },
-    {
-      "piece": "chat-input",
       "file": "../aidream/apps/shared/chat/src/public-chat/components/GuidedVariableInputs.tsx",
       "reason": "known duplicate, decision pending"
     },
