@@ -281,7 +281,16 @@ export const ProInput = React.forwardRef<HTMLInputElement, ProInputProps>(
       if (auxRef.current) observer.observe(auxRef.current);
       return () => observer.disconnect();
     }, []);
-    const inputRef = (ref as React.RefObject<HTMLInputElement>) || internalRef;
+    // The element ref is ALWAYS our own, merged into the host's forwarded ref (twin of
+    // ProTextarea's). Reading a forwarded ref's `.current` broke every internal feature
+    // (apply an agent result, dictation, pre-hydration keep, width measure) whenever a host
+    // forwarded a CALLBACK ref — it has no `.current`, so each one returned silently.
+    const inputRef = internalRef;
+    const setInputRef = (node: HTMLInputElement | null) => {
+      internalRef.current = node;
+      if (typeof ref === "function") ref(node);
+      else if (ref) (ref as React.MutableRefObject<HTMLInputElement | null>).current = node;
+    };
     // THE PRE-HYDRATION KEEP (twin of ProTextarea's): text typed, pasted or dictated into the
     // server-rendered field before React hydrates it reaches the host through its own onChange,
     // instead of being written over by the host's empty value on the next render.
@@ -586,7 +595,7 @@ export const ProInput = React.forwardRef<HTMLInputElement, ProInputProps>(
         onMouseLeave={() => setIsHovered(false)}
       >
         <input
-          ref={inputRef}
+          ref={setInputRef}
           id={inputId}
           type={type}
           placeholder={floatingLabel ? undefined : placeholder}
