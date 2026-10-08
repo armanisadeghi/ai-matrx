@@ -44,6 +44,8 @@ export interface BuildEntry {
   error?: string;
   /** An answer refused before saving — Fix it hands it back, so nothing is lost across a refresh. */
   refused_applet?: BuilderApplet;
+  /** THE FIX CLAIM: the automatic fix round that answers this refusal (one per refusal, whichever tab). */
+  fix_entry_id?: string;
 }
 
 export interface BuildRecord {
@@ -87,6 +89,7 @@ function readEntry(raw: unknown): BuildEntry | null {
     ...(typeof raw.note === "string" ? { note: raw.note } : {}),
     ...(typeof raw.error === "string" ? { error: raw.error } : {}),
     ...(isRecord(raw.refused_applet) ? { refused_applet: raw.refused_applet as unknown as BuilderApplet } : {}),
+    ...(typeof raw.fix_entry_id === "string" ? { fix_entry_id: raw.fix_entry_id } : {}),
   };
 }
 
@@ -240,6 +243,50 @@ export async function claimBuildEntry(client: Client, appletId: string, entryId:
     return requests.map((r) => (r.id === entryId ? { ...r, state: "saving" as const, claimed_at: claimedAt } : r));
   });
   return outcome.status === "saved";
+}
+
+/**
+ * THE FIX CLAIM: the one automatic fix round a refusal gets. Two tabs on the same refused build (the tab
+ * that ran it and one that rejoined it) both see the refusal; whichever stamps the refused entry with its
+ * fix round first appends that round and runs it, the other stands down and follows that run. True only
+ * for the one caller that claimed it; `record` is the row as it now stands either way.
+ */
+export async function claimFixRound(client: Client, appletId: string, refusedEntryId: string, fixEntry: BuildEntry): Promise<{ claimed: boolean; record: BuildRecord }> {
+  const outcome = await editRequests(client, appletId, (requests) => {
+    const refused = requests.find((r) => r.id === refusedEntryId);
+    if (!refused || refused.fix || refused.fix_entry_id) return null;
+    return [...requests.map((r) => (r.id === refusedEntryId ? { ...r, fix_entry_id: fixEntry.id } : r)), fixEntry];
+  });
+  return { claimed: outcome.status === "saved", record: outcome.record };
+}
+
+/**
+ * How long after a refusal reopening the build still starts its fix round unasked: the tab that was
+ * refused closed before it could start one. Older than this, reopening shows "Fix it" and spends nothing
+ * until she presses it.
+ */
+export const FIX_ROUND_FRESH_MS = 120_000;
+
+export type ReopenOutcome =
+  /** A fresh refusal of her request nobody took up: its one fix round starts (through THE FIX CLAIM). */
+  | { kind: "start-fix"; refused: BuildEntry & { refused_applet: BuilderApplet } }
+  /** A refusal shown with "Fix it": a refused fix round, or one too old to spend a run on unasked. */
+  | { kind: "show-refused"; refused: BuildEntry & { refused_applet: BuilderApplet } }
+  | { kind: "failed"; entry: BuildEntry }
+  | { kind: "nothing" };
+
+/** What reopening a build does with how its last request ended. */
+export function reopenOutcome(requests: readonly BuildEntry[], now: number = Date.now()): ReopenOutcome {
+  const latest = requests.at(-1);
+  if (!latest) return { kind: "nothing" };
+  if (latest.state === "refused" && latest.refused_applet) {
+    const refused = { ...latest, refused_applet: latest.refused_applet };
+    const ended = Date.parse(latest.finished_at ?? "");
+    const fresh = Number.isFinite(ended) && now - ended <= FIX_ROUND_FRESH_MS;
+    return !latest.fix && !latest.fix_entry_id && fresh ? { kind: "start-fix", refused } : { kind: "show-refused", refused };
+  }
+  if (latest.state === "failed") return { kind: "failed", entry: latest };
+  return { kind: "nothing" };
 }
 
 /**

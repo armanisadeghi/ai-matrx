@@ -5,7 +5,9 @@
  * refuses the first two (the refusal is what the automatic fix round sends back); `publishBlockedBy` holds
  * publishing while the preview reports any error.
  */
-import { browserDialogs, checkBuildAnswer, coerceBuildAnswer, BuildRefused, literalNewlineAttributes, publishBlockedBy } from "./build-applet";
+import { browserDialogs } from "./applet-code-checks";
+import { coerceBuildAnswer, BuildRefused, literalNewlineAttributes, publishBlockedBy } from "./build-applet";
+import { checkBuildAnswer } from "./check-build-answer";
 
 const file = (name: string, source: string) => ({ name, source });
 

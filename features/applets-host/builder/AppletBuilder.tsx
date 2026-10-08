@@ -36,7 +36,6 @@ import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { appletState, appletVersionLabel, publishConsequence } from "@/features/applets/lib/applet-state";
 import {
   BuildRefused,
-  checkBuildAnswer,
   coerceBuildAnswer,
   publishApplet,
   publishBlockedBy,
@@ -51,7 +50,7 @@ import {
   type BuilderSource,
   type SavedApplet,
 } from "./build-applet";
-import { fixLabel, previewLine, readBuildRecord, type BuildEntry } from "./build-session";
+import { fixLabel, previewLine, readBuildRecord, reopenOutcome, type BuildEntry, type BuildRecord } from "./build-session";
 import { useAppletBuildSession } from "./useAppletBuildSession";
 import { BuildHistory } from "./BuildHistory";
 import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
@@ -131,7 +130,7 @@ export function AppletBuilder({ appletId: initialId, routed = false }: { appletI
         const current = record.hasContent ? await readBuilderApplet(client, id) : null;
         const org = current?.organizationId ?? record.organizationId;
         const catalogue = await readAppletCatalogue(client, { organizationId: org, request: entry.text });
-        const { appletImportProblems } = await import("@ai-matrx/applets/frame");
+        const [{ appletImportProblems }, { checkBuildAnswer }] = await Promise.all([import("@ai-matrx/applets/frame"), import("./check-build-answer")]);
         const answer = checkBuildAnswer(value, coerceBuildAnswer(value), { organizationId: org, tables: catalogue.tables, importProblems: appletImportProblems });
         await finish(id, entry, answer, current?.applet ?? null, org);
       } catch (err) {
@@ -176,19 +175,22 @@ export function AppletBuilder({ appletId: initialId, routed = false }: { appletI
     const record = session.record;
     if (!initialId || !record || shown.current === key) return;
     shown.current = key;
-    const latest = record.requests.at(-1);
     const lastNote = [...record.requests].reverse().find((r) => r.state === "saved")?.note ?? "";
     void loadSaved(initialId, lastNote);
-    if (latest?.state === "refused" && latest.refused_applet && !latest.fix) {
-      // Refused while no tab was open: its fix round starts now, before anything is shown.
-      void run("Fix this error", { where: "record", message: latest.error ?? "Not saved." }, { refusedApplet: latest.refused_applet });
-    } else if (latest?.state === "refused" && latest.refused_applet) {
-      setRefused(latest.refused_applet);
-      setLastError({ where: "record", message: latest.error ?? "Not saved." });
-    } else if (latest?.state === "failed") {
-      setPhase({ kind: "failed", why: latest.error ?? "The builder stopped." });
+    const outcome = reopenOutcome(record.requests);
+    if (outcome.kind === "start-fix") {
+      // Refused moments ago and its tab closed before the fix round started: it starts now, through THE FIX
+      // CLAIM (two tabs opening it start one round). An older refusal waits for her "Fix it".
+      const { refused } = outcome;
+      void run("Fix this error", { where: "record", message: refused.error ?? "Not saved." }, { refusedApplet: refused.refused_applet, refusedEntryId: refused.id });
+    } else if (outcome.kind === "show-refused") {
+      setRefused(outcome.refused.refused_applet);
+      setLastError({ where: "record", message: outcome.refused.error ?? "Not saved." });
+    } else if (outcome.kind === "failed") {
+      const { entry } = outcome;
+      setPhase({ kind: "failed", why: entry.error ?? "The builder stopped." });
       // Never lose what she typed: a request that failed comes back into the box.
-      if (!latest.fix) setSentence((s) => s || latest.text);
+      if (!entry.fix) setSentence((s) => s || entry.text);
     }
   });
   const latest = session.record?.requests.at(-1) ?? null;
@@ -239,7 +241,7 @@ export function AppletBuilder({ appletId: initialId, routed = false }: { appletI
    */
   const repairRefusal = async (entry: BuildEntry, err: unknown) => {
     if (!repairs(entry, err) || !(err instanceof BuildRefused)) return;
-    await run("Fix this error", { where: "record", message: err.message }, { refusedApplet: err.applet });
+    await run("Fix this error", { where: "record", message: err.message }, { refusedApplet: err.applet, refusedEntryId: entry.id });
   };
 
   /**
@@ -247,7 +249,7 @@ export function AppletBuilder({ appletId: initialId, routed = false }: { appletI
    * (`applets.fix` with the refused answer and the reason) before anything is shown — she asked for an
    * app, not a list of what is wrong with it. A refused fix round is shown with "Fix it", as before.
    */
-  const run = async (request: string, fix: Fix | null, retry: { refusedApplet: BuilderApplet } | null = null) => {
+  const run = async (request: string, fix: Fix | null, retry: { refusedApplet: BuilderApplet; refusedEntryId: string } | null = null) => {
     setPhase({ kind: "building" });
     setStep({ label: retry ? "Fixing what the check found" : "Saving your request", since: Date.now() });
     const client = createClient();
@@ -257,7 +259,21 @@ export function AppletBuilder({ appletId: initialId, routed = false }: { appletI
       // A new app needs an organization: with none set, the picker asks and THIS build continues with the pick.
       const org = appletId || retry ? null : (organizationId ?? (await ensureOrgId(null)));
       // The request is written BEFORE anything runs — a new app is born here and the address becomes its own.
-      const { record, entry } = await session.begin({ appletId: retry ? appletIdRef.current : appletId, organizationId: org ?? "", text: request, fix });
+      // An automatic fix round is claimed instead: exactly one tab runs it, every other tab follows that run.
+      let begun: { record: BuildRecord; entry: BuildEntry };
+      if (retry && fix && appletIdRef.current) {
+        const fixRound = await session.beginFix({ appletId: appletIdRef.current, refusedEntryId: retry.refusedEntryId, text: request, fix });
+        if (!fixRound.claimed) {
+          setPhase({ kind: "idle" });
+          setStep(null);
+          await session.follow(appletIdRef.current);
+          return;
+        }
+        begun = { record: fixRound.record, entry: fixRound.entry };
+      } else {
+        begun = await session.begin({ appletId: retry ? appletIdRef.current : appletId, organizationId: org ?? "", text: request, fix });
+      }
+      const { record, entry } = begun;
       started = { id: record.id, entry };
       setAppletId(record.id);
       setSentence("");
@@ -266,8 +282,9 @@ export function AppletBuilder({ appletId: initialId, routed = false }: { appletI
       const current = record.hasContent ? await readBuilderApplet(client, record.id) : null;
       const runOrg = current?.organizationId ?? record.organizationId;
       const catalogue = await readAppletCatalogue(client, { organizationId: runOrg, request });
-      // The frame (already the preview's) answers which names each module really exports.
-      const { appletImportProblems } = await import("@ai-matrx/applets/frame");
+      // The frame (already the preview's) answers which names each module really exports; the checks read
+      // the code's syntax tree, so both load here, on demand — never with the builder's first screen.
+      const [{ appletImportProblems }, { checkBuildAnswer }] = await Promise.all([import("@ai-matrx/applets/frame"), import("./check-build-answer")]);
       setStep({ label: "Starting the builder", since: Date.now() });
       let attached: Promise<void> = Promise.resolve();
       const answer = await writer.run<BuildAnswer>({

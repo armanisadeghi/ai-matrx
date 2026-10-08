@@ -13,7 +13,7 @@
 //      `ensureTable`, as her, in the Applet's organization) when she presses "Use it" — never an
 //      unrelated table, never "make a table and come back".
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { checkAppletSources, makeNewTables, type MadeTable } from "@ai-matrx/applets/platform";
+import { makeNewTables, type MadeTable } from "@ai-matrx/applets/platform";
 import type { AppletSource, NewTableDeclaration } from "@ai-matrx/applets";
 
 import type { Database, Json } from "@/types/database.types";
@@ -156,41 +156,8 @@ export function repairs(entry: { fix: unknown }, err: unknown): err is BuildRefu
   return err instanceof BuildRefused && !entry.fix;
 }
 
-const READS_SOURCE = /\buse(?:Rows|Row|Columns)\(\s*["'`]([^"'`$]+)["'`]/g;
-/** A hand-built prose box in an Applet: the HTML element or the controls' Textarea. */
-const BARE_WRITING_BOX = /<(textarea|Textarea)\b/g;
-const RUNS_JOB = /\buseJob\(\s*["'`]([^"'`$]+)["'`]/g;
-
-function namesIn(files: BuilderFile[], pattern: RegExp): Set<string> {
-  const out = new Set<string>();
-  for (const f of files) for (const m of f.source.matchAll(pattern)) if (m[1]) out.add(m[1]);
-  return out;
-}
-
-/** A useState pair: `const [title, setTitle] = useState(`. */
-const STATE_PAIR = /const\s*\[\s*([A-Za-z_$][\w$]*)\s*,\s*(set[A-Za-z_$][\w$]*)\s*\]\s*=\s*(?:React\.)?useState\b/g;
-
 function escapeRe(s: string): string {
   return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-}
-
-/**
- * EVERY FIELD SHE ASKED FOR HAS ITS OWN INPUT. A form keeps `requirements` in state and saves it, but
- * no input ever calls `setRequirements` — the box labelled "Brand Requirements & Guidance" wrote
- * `guidance`, so what she typed there landed in the wrong field and Requirements stayed empty
- * (social planner, 2026-10-08). A state value that is saved but never set is a field with no input.
- */
-export function fieldsWithNoInput(file: BuilderFile): string[] {
-  const out: string[] = [];
-  for (const m of file.source.matchAll(STATE_PAIR)) {
-    const [, value, setter] = m;
-    if (!value || !setter) continue;
-    const calls = file.source.match(new RegExp(`\\b${escapeRe(setter)}\\b`, "g"))?.length ?? 0;
-    if (calls > 1) continue;
-    // Saved: it is a property's value (`requirements: requirements.trim()`, `{ requirements }` is too rare to chase).
-    if (new RegExp(`:\\s*${escapeRe(value)}\\b`).test(file.source)) out.push(value);
-  }
-  return out;
 }
 
 /** The opening tag starting at `start` (`<Button …>`), braces and quotes respected. */
@@ -211,45 +178,6 @@ function openingTag(source: string, start: number): string {
   return source.slice(start);
 }
 
-/**
- * NO BUTTON THAT DOES NOTHING. "New Post" rendered with no handler: the person presses it and nothing
- * happens (2026-10-08). A button has an onClick, submits its form, or wraps a link (asChild).
- */
-export function deadButtons(file: BuilderFile): string[] {
-  const out: string[] = [];
-  for (const m of file.source.matchAll(/<(Button|button)\b/g)) {
-    const tag = openingTag(file.source, m.index ?? 0);
-    if (/\b(onClick|onPointerDown|onMouseDown|form)\s*=|\basChild\b|\btype\s*=\s*["'{]\s*["']?submit|\{\s*\.\.\./.test(tag)) continue;
-    // Inside a <Link> or <a>, the link does the work (<Link to="/add"><Button>Add</Button></Link>).
-    const before = file.source.slice(Math.max(0, (m.index ?? 0) - 400), m.index ?? 0);
-    const opened = Math.max(before.lastIndexOf("<Link"), before.lastIndexOf("<a "));
-    const closed = Math.max(before.lastIndexOf("</Link>"), before.lastIndexOf("</a>"));
-    if (opened > closed) continue;
-    const rest = file.source.slice((m.index ?? 0) + tag.length);
-    const inner = rest.slice(0, Math.max(0, rest.search(/<\/(Button|button)>/)));
-    const label = inner.replace(/<[^>]*>/g, " ").replace(/\{[^}]*\}/g, " ").replace(/\s+/g, " ").trim().slice(0, 30);
-    out.push(label || m[1] || "button");
-  }
-  return out;
-}
-
-/** A browser dialog: banned on the platform — `window.confirm(` or a bare `confirm(` / `alert(` / `prompt(`. */
-const BROWSER_DIALOG = /(?<![\w$.])(?:window\.)?(confirm|alert|prompt)\s*\(|\bwindow\.(confirm|alert|prompt)\b/g;
-
-/**
- * NO BROWSER DIALOG. A generated page asked `window.confirm("Delete this brand?")` (social planner,
- * 2026-10-08) — the platform's confirm is `confirmAction` from "@ai-matrx/applets/react". A name the
- * Applet imports or defines itself (`confirmAction`) never matches.
- */
-export function browserDialogs(file: BuilderFile): string[] {
-  const out = new Set<string>();
-  for (const m of file.source.matchAll(BROWSER_DIALOG)) {
-    const name = m[1] ?? m[2];
-    if (name) out.add(name);
-  }
-  return [...out];
-}
-
 /** A JSX string attribute holding an escaped newline: `placeholder="a\nb"` shows a literal "\n". */
 const ESCAPED_NEWLINE_ATTR = /\s([A-Za-z][\w-]*)="[^"\n]*\\n[^"\n]*"/g;
 
@@ -267,16 +195,6 @@ export function publishBlockedBy(lastError: { message: string } | null): string 
   return lastError ? `Fix this before using it: ${lastError.message}` : null;
 }
 
-/**
- * A RECORD LIST IS THE PLATFORM TABLE. A generated "All Posts" page hand-built a `<table>` whose headers
- * looked clickable and sorted nothing (social planner live test, v0.4.3010). A file that reads rows and
- * draws a `<table>` is refused: `<RecordTable>` from "@ai-matrx/applets/react" sorts and filters every
- * column (a link by its labels) by itself.
- */
-export function handBuiltTables(file: BuilderFile): boolean {
-  return /<table\b/.test(file.source) && /\buseRows\(/.test(file.source);
-}
-
 /** Every new-table field of one of these types, by key. */
 function newTableFieldsOfType(applet: Pick<BuilderApplet, "sources">, types: ReadonlySet<string>): { alias: string; key: string; options: string[] }[] {
   return applet.sources.flatMap((s) =>
@@ -287,7 +205,6 @@ function newTableFieldsOfType(applet: Pick<BuilderApplet, "sources">, types: Rea
 }
 
 const DATE_TYPES: ReadonlySet<string> = new Set(["date", "datetime"]);
-const CHOICE_TYPES: ReadonlySet<string> = new Set(["select", "multi_select"]);
 
 /**
  * A DATE IS NEVER A TEXT BOX. A plain `<Field>` bound to a date field showed "YYYY-MM-DD" as text to type
@@ -304,31 +221,6 @@ export function dateFieldsAsText(applet: Pick<BuilderApplet, "files" | "sources"
     }
   }
   return [...out];
-}
-
-/**
- * ONE SPELLING PER CHOICE. The status dropdown read "Assets ready" (the table's word) while the pipeline's
- * hand list read "Assets Ready" (social planner, v0.4.3010) — and a row whose status is the table's word
- * never lands in a column spelled otherwise. A string in the code that is a declared choice in another
- * case is refused; the choices are `useColumns(alias)` words.
- */
-export function misspelledChoices(applet: Pick<BuilderApplet, "files" | "sources">): { alias: string; key: string; wrote: string; choice: string }[] {
-  const out: { alias: string; key: string; wrote: string; choice: string }[] = [];
-  const seen = new Set<string>();
-  const literals = new Set(applet.files.flatMap((f) => [...f.source.matchAll(/["'`]([^"'`\n$]{2,40})["'`]/g)].map((m) => m[1] ?? "")));
-  for (const field of newTableFieldsOfType(applet, CHOICE_TYPES)) {
-    for (const choice of field.options) {
-      for (const wrote of literals) {
-        // Only words a person reads (capitalised or several words) — "tiktok" as an icon key is not a label.
-        if (wrote === choice || wrote.toLowerCase() !== choice.toLowerCase() || !(/^[A-Z]/.test(wrote) || /\s/.test(wrote))) continue;
-        const id = `${field.alias}.${field.key}.${wrote}`;
-        if (seen.has(id)) continue;
-        seen.add(id);
-        out.push({ alias: field.alias, key: field.key, wrote, choice });
-      }
-    }
-  }
-  return out;
 }
 
 /** The code names `key` — literally, or built in a template (`${p}_views` names `tt_views`). */
@@ -365,92 +257,6 @@ export function newTableGaps(applet: Pick<BuilderApplet, "files" | "sources">): 
     if (!creates) out.push(`nothing in the app adds a row to "${s.alias}" — give her a way to create one`);
   }
   return out;
-}
-
-/**
- * NOTHING THE BUILDER WROTE IS DROPPED SILENTLY. A source or job the coercion could not
- * read, a table source without its ids, or code that reads an alias the record never
- * declares refuses the whole answer — the app would otherwise open on
- * `no data source called "tasks"` (2026-10-07). Run on a fresh builder answer only.
- */
-export function checkBuildAnswer(
-  raw: unknown,
-  answer: BuildAnswer,
-  context: {
-    organizationId?: string;
-    tables?: readonly { table_id: string; organization_id: string; name: string }[];
-    /**
-     * `appletImportProblems` from `@ai-matrx/applets/frame` (imports checked against the modules' REAL exports —
-     * `useNavigate` from "@ai-matrx/applets/react" published a page that crashed, 2026-10-08). Passed in, loaded
-     * on demand by the builder, so this file keeps the compiler out of the builder's first chunk.
-     */
-    importProblems?: (files: Readonly<Record<string, string>>) => string[];
-  } = {},
-): BuildAnswer {
-  const { applet } = answer;
-  const rawApplet = isRecord(raw) && isRecord(raw.applet) ? raw.applet : {};
-  const problems: string[] = [];
-  const rawSources = Array.isArray(rawApplet.sources) ? rawApplet.sources.length : 0;
-  if (rawSources !== applet.sources.length) problems.push(`${rawSources - applet.sources.length} of its sources had no alias`);
-  const rawMandates = Array.isArray(rawApplet.mandates) ? rawApplet.mandates.length : 0;
-  if (rawMandates !== applet.mandates.length) problems.push(`${rawMandates - applet.mandates.length} of its jobs had no alias or key`);
-  // ONE check for every source (applets 0.9.1): a bound table must be the Applet organization's own (an
-  // Applet in one organization bound to another's table opens on data its members cannot read — audit
-  // 2026-10-07), and a table the app asks for is checked whole — a missing choice list, a link to nowhere,
-  // or a "new" table that repeats one she has is said before anything is saved.
-  if (context.organizationId) {
-    problems.push(...checkAppletSources(applet.sources as AppletSource[], { organizationId: context.organizationId, ...(context.tables ? { existing: context.tables } : {}) }));
-  } else {
-    for (const s of applet.sources) {
-      if ("table_id" in s && (!s.table_id || !s.organization_id)) problems.push(`source "${s.alias}" names no table_id and organization_id`);
-    }
-  }
-  const declared = new Set(applet.sources.map((s) => s.alias));
-  for (const alias of namesIn(applet.files, READS_SOURCE)) {
-    if (!declared.has(alias)) problems.push(`the code reads "${alias}" but sources declares no "${alias}"`);
-  }
-  const jobs = new Set(applet.mandates.map((m) => m.alias));
-  for (const alias of namesIn(applet.files, RUNS_JOB)) {
-    if (!jobs.has(alias)) problems.push(`the code runs job "${alias}" but mandates declares no "${alias}"`);
-  }
-  if (context.importProblems) problems.push(...context.importProblems(Object.fromEntries(applet.files.map((f) => [f.name, f.source]))));
-  // Every box a person writes words in is <WritingBox> (mic + read-aloud) — never a bare textarea.
-  for (const f of applet.files) {
-    const bare = [...new Set([...f.source.matchAll(BARE_WRITING_BOX)].map((m) => m[1]))];
-    for (const tag of bare) {
-      problems.push(
-        `${f.name} has a bare <${tag}> where a person writes — use <WritingBox value={text} onValueChange={setText} label="…" /> from "@ai-matrx/applets/react" (it carries the microphone and read-aloud)`,
-      );
-    }
-  }
-  for (const f of applet.files) {
-    for (const value of fieldsWithNoInput(f)) {
-      problems.push(`${f.name} saves "${value}" but no input ever sets it — every field she asked for needs its own input, labelled for that field alone`);
-    }
-    for (const name of browserDialogs(f)) {
-      problems.push(`${f.name} calls the browser's ${name}() — ask with confirmAction({ title, description, confirmLabel, variant: "destructive" }) from "@ai-matrx/applets/react"; never window.confirm / alert / prompt`);
-    }
-    for (const attr of literalNewlineAttributes(f)) {
-      problems.push(`${f.name} has ${attr}="…\\n…", which shows a literal "\\n" — keep it one line of plain text`);
-    }
-    for (const label of deadButtons(f)) {
-      problems.push(`${f.name} has a button "${label}" that does nothing — give it an onClick (or type="submit" inside its form)`);
-    }
-    if (handBuiltTables(f)) {
-      problems.push(`${f.name} draws its own <table> of rows — use <RecordTable source rows columns /> from "@ai-matrx/applets/react", whose every header sorts and filters (a link by its labels)`);
-    }
-  }
-  for (const key of dateFieldsAsText(applet)) {
-    problems.push(`the date "${key}" is a plain text box — use <RecordField source field="${key}" … /> (or <DateField>) so she picks a date`);
-  }
-  for (const m of misspelledChoices(applet)) {
-    problems.push(`the code writes "${m.wrote}" but the choice in "${m.alias}.${m.key}" is "${m.choice}" — read the choices from useColumns("${m.alias}") and use them as they are spelled`);
-  }
-  problems.push(...newTableGaps(applet));
-  if (problems.length > 0) {
-    throw new BuildRefused(`Not saved: ${problems.join("; ")}.`, applet);
-  }
-  return answer;
 }
 
 /** What the builder is shown for a change: the stored record, files as a list. */

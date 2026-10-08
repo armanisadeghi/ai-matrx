@@ -7,7 +7,8 @@ import { createRoot } from "react-dom/client";
 import { envelopeFromCompleteValue, KIND_KEY } from "@ai-matrx/content-ir";
 
 import AppletBuildResultBlock from "@/components/mardown-display/blocks/applet-build-result/AppletBuildResultBlock";
-import { checkBuildAnswer, coerceBuildAnswer } from "@/features/applets-host/builder/build-applet";
+import { coerceBuildAnswer } from "@/features/applets-host/builder/build-applet";
+import { checkBuildAnswer } from "@/features/applets-host/builder/check-build-answer";
 import {
   APPLET_BUILD_RESULT_KIND,
   appletBuildResultMarkdownFromValue,
@@ -110,7 +111,21 @@ describe("applet_build_result", () => {
       ...ANSWER.applet,
       files: [
         ANSWER.applet.files[0]!,
-        { name: "Approvals.tsx", source: 'import { useRows } from "@ai-matrx/applets/react";\nexport default function Approvals() { const posts = useRows("posts"); const brands = useRows("brands"); return <ul />; }' },
+        {
+          name: "Approvals.tsx",
+          source:
+            'import { useRows, RecordTable } from "@ai-matrx/applets/react";\n' +
+            "export default function Approvals() {\n" +
+            '  const posts = useRows("posts");\n' +
+            '  const brands = useRows("brands");\n' +
+            "  return (<div>\n" +
+            '    <button onClick={() => brands.create({ name: "New brand" })}>Add brand</button>\n' +
+            '    <button onClick={() => posts.create({ title: "New post", status: "Idea" })}>Add post</button>\n' +
+            '    <RecordTable source="brands" rows={brands.rows} columns={["name"]} />\n' +
+            '    <RecordTable source="posts" rows={posts.rows} columns={["title", "brand", "status"]} />\n' +
+            "  </div>);\n" +
+            "}",
+        },
       ],
       sources: [
         {

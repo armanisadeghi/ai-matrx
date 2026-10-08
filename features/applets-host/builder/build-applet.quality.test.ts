@@ -5,7 +5,9 @@
  * table the app makes had no way to add a row. checkBuildAnswer refuses each, and the refusal is the
  * reason the automatic fix round sends back.
  */
-import { checkBuildAnswer, coerceBuildAnswer, BuildRefused, deadButtons, fieldsWithNoInput, newTableGaps } from "./build-applet";
+import { deadButtons, fieldsWithNoInput } from "./applet-code-checks";
+import { coerceBuildAnswer, BuildRefused, newTableGaps } from "./build-applet";
+import { checkBuildAnswer } from "./check-build-answer";
 
 const POST_MODAL = `import { WritingBox } from "@ai-matrx/applets/react";
 import React, { useState } from "react";

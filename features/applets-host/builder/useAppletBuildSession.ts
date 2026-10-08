@@ -26,6 +26,7 @@ import { useAppDispatch, useAppStore } from "@/lib/redux/hooks";
 import {
   appendBuildEntry,
   claimBuildEntry,
+  claimFixRound,
   isOpenEntry,
   isStaleClaim,
   newBuildEntry,
@@ -131,8 +132,9 @@ export function useAppletBuildSession(opts: {
     }
   };
 
-  // Reopen: the row is the truth. A request still open is rejoined once per page.
-  const reopen = useEffectEvent(async (appletId: string) => {
+  // Follow: the row is the truth. A request still open is rejoined once per page — on reopen, and when
+  // another tab took the fix round this one was about to start.
+  const follow = async (appletId: string) => {
     let next = await refresh(appletId);
     let latest = next?.requests.at(-1);
     // A claim whose tab died between claiming the answer and saving it would hold the request in
@@ -146,7 +148,8 @@ export function useAppletBuildSession(opts: {
       reopened.current = latest.id;
       await rejoin(appletId, latest);
     }
-  });
+  };
+  const reopen = useEffectEvent((appletId: string) => follow(appletId));
   const openedAt = opts.appletId;
   useEffect(() => {
     if (openedAt) void reopen(openedAt);
@@ -170,6 +173,18 @@ export function useAppletBuildSession(opts: {
     return { record: next, entry };
   };
 
+  /**
+   * THE FIX CLAIM — the automatic fix round of a refusal is written only by the one tab that claims it.
+   * `claimed: false` means another tab runs it: `follow` the record to watch that run instead.
+   */
+  const beginFix = async (input: { appletId: string; refusedEntryId: string; text: string; fix: NonNullable<BuildEntry["fix"]> }) => {
+    const entry = newBuildEntry(input.text, input.fix);
+    const outcome = await claimFixRound(createClient(), input.appletId, input.refusedEntryId, entry);
+    if (outcome.claimed) reopened.current = entry.id;
+    setRecord(outcome.record);
+    return { ...outcome, entry };
+  };
+
   /** The run exists: its conversation joins the request, so a refresh can rejoin it. */
   const running = (appletId: string, entryId: string, conversationId: string) =>
     patchBuildEntry(createClient(), appletId, entryId, { conversation_id: conversationId, state: "running" }).then(setRecord);
@@ -177,5 +192,5 @@ export function useAppletBuildSession(opts: {
   /** THE CLAIM — true for the one caller that saves this request's answer. */
   const claim = (appletId: string, entryId: string) => claimBuildEntry(createClient(), appletId, entryId);
 
-  return { record, readError, rejoining, begin, running, claim, settle, refresh };
+  return { record, readError, rejoining, begin, beginFix, follow, running, claim, settle, refresh };
 }

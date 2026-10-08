@@ -3,6 +3,11 @@ import { coppaService } from "./coppaService";
 const getSession = jest.fn();
 const rpc = jest.fn();
 const ensureOrgId = jest.fn();
+const captureError = jest.fn();
+
+jest.mock("@/lib/diagnostics/errorCaptureStore", () => ({
+  captureError: (...args: unknown[]) => captureError(...args),
+}));
 
 jest.mock("@/lib/organizations/ensureOrgId", () => ({
   ensureOrgId: (...args: unknown[]) => ensureOrgId(...args),
@@ -75,5 +80,17 @@ describe("coppaService.setAgeBand writes even before an organization resolves", 
     const res = await coppaService.setAgeBand("adult");
     expect(rpc).toHaveBeenCalledWith("edu_set_age_band", { p_band: "adult" });
     expect(res.error).toBeNull();
+    // Never silent: the missing organization is said once, at a low tier.
+    expect(captureError).toHaveBeenCalledWith(expect.objectContaining({ code: "coppa-age-band-no-active-organization", level: "low", recoverable: true }));
+  });
+
+  it("says nothing when the organization resolves", async () => {
+    rpc.mockReset();
+    captureError.mockReset();
+    ensureOrgId.mockResolvedValue("org-1");
+    rpc.mockResolvedValue({ data: { status: "ok", age_band: "adult", reason: "set" }, error: null });
+    await coppaService.setAgeBand("adult");
+    expect(rpc).toHaveBeenCalledWith("edu_set_age_band", { p_band: "adult", p_organization_id: "org-1" });
+    expect(captureError).not.toHaveBeenCalled();
   });
 });
