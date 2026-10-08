@@ -21,6 +21,10 @@ import { selectUser } from "@/lib/redux/selectors/userSelectors";
 import { useCanvas } from "@/features/canvas/hooks/useCanvas";
 import { HTMLPageService } from "@/features/html-pages/services/htmlPageService";
 import {
+  onHtmlVersionPublished,
+  resolveHtmlCanvasPage,
+} from "@/features/html-pages/services/canvasVersionPage";
+import {
   analyzeHtmlForPreview,
   extractTitleFromHTML,
 } from "@/features/html-pages/utils/html-preview-utils";
@@ -53,13 +57,16 @@ import {
  *    no card chrome, so a video just sits in the content.
  * Everything else stays a code block.
  *
- * Dedupe: conversion forwards `messageId` (when present) and the html-pages API
- * also dedupes by identical content, so re-renders/reloads never insert
- * duplicate pages — on any surface. Canonical `<artifact>` rewrite/materialization
- * is owned by the artifact system (see /Users/armanisadeghi/code/common-docs/systems/publish/artifacts/VISION.md).
+ * MOUNT NEVER WRITES (rendered-output standard, ruling 1). A page's truth is its
+ * `canvas_items` version chain; each version is published once, when it is
+ * saved (materializer / user save / agent `edit_artifact`), to its own page.
+ * With `artifactId` this component only READS: the chat card serves its own
+ * version, the canvas tab (`fill`) the chain's latest, and a card whose chain has
+ * moved on shows a "newer version" marker. Without `artifactId` (a fence not yet
+ * materialized, a note) nothing is published until the person asks.
  */
 
-type Phase = "idle" | "converting" | "preview" | "error";
+type Phase = "idle" | "converting" | "preview" | "unpublished" | "error";
 
 /**
  * THE sandbox for a published html page. The page is served from the html
@@ -121,6 +128,8 @@ interface HtmlInlinePreviewProps {
    * canvas / Code controls (the canvas tab header owns the source toggle).
    */
   fill?: boolean;
+  /** The canvas_items version this block shows (from `<artifact id=…>`). */
+  artifactId?: string;
 }
 
 const ToolbarButton: React.FC<{
@@ -152,6 +161,7 @@ const HtmlInlinePreview: React.FC<HtmlInlinePreviewProps> = ({
   conversationId,
   onCodeChange,
   fill = false,
+  artifactId,
 }) => {
   const user = useAppSelector(selectUser);
   const { open: openCanvas } = useCanvas();
@@ -162,16 +172,13 @@ const HtmlInlinePreview: React.FC<HtmlInlinePreviewProps> = ({
   const [showCode, setShowCode] = useState(false);
   const [showError, setShowError] = useState(false);
   const [pageHeight, setPageHeight] = useState<number | null>(null);
+  const [newerVersion, setNewerVersion] = useState<number | null>(null);
   const frameRef = useRef<HTMLIFrameElement>(null);
   const chrome = useHtmlPreviewChrome();
   const { copyText } = useClipboard({
     notify: (message, kind) =>
       kind === "error" ? toast.error(message) : toast.success(message),
   });
-
-  // Tracks the exact code we last converted so re-renders don't re-publish, but
-  // genuinely edited / re-streamed content does.
-  const convertedForRef = useRef<string | null>(null);
 
   const analysis =
     language === "html"
@@ -184,55 +191,76 @@ const HtmlInlinePreview: React.FC<HtmlInlinePreviewProps> = ({
         };
 
   const userId = user?.id;
-  const shouldConvert = isComplete && analysis.previewable && !!userId;
+  const canShow = isComplete && analysis.previewable && !!userId;
   const publishHtml = analysis.html;
 
+  // READ the published page of this version (card) or the chain's latest
+  // (canvas). Re-reads when a version is published; never writes.
   useEffect(() => {
-    if (!shouldConvert || !userId) return undefined;
-    if (convertedForRef.current === code) return undefined;
-
-    convertedForRef.current = code;
+    if (!canShow || !artifactId) return undefined;
     let cancelled = false;
-    let settled = false;
-    setShowCode(false);
-    setShowError(false);
-    setErrorMessage(null);
-    setPhase("converting");
-
-    (async () => {
+    const read = async () => {
       try {
-        const title = extractTitleFromHTML(code) || "HTML Preview";
-        const result = await HTMLPageService.createPage(
-          publishHtml,
-          title,
-          "Generated from chat",
-          userId,
-          {},
-          { sourceMessageId: messageId, sourceConversationId: conversationId },
+        const resolved = await resolveHtmlCanvasPage(
+          artifactId,
+          fill ? "latest" : "self",
         );
-        settled = true;
         if (cancelled) return;
-        setUrl(result.url);
-        setPhase("preview");
+        const pageUrl = resolved?.shown.url ?? null;
+        setNewerVersion(
+          !fill && resolved && resolved.latest.version > resolved.shown.version
+            ? resolved.latest.version
+            : null,
+        );
+        setUrl(pageUrl);
+        setPhase(pageUrl ? "preview" : "unpublished");
       } catch (err) {
-        settled = true;
         if (cancelled) return;
-        console.error("[HtmlInlinePreview] conversion failed:", err);
         setErrorMessage(
-          err instanceof Error ? err.message : "Failed to render HTML preview",
+          err instanceof Error ? err.message : "Could not read this page",
         );
         setPhase("error");
       }
-    })();
-
+    };
+    void read();
+    const stop = onHtmlVersionPublished(() => void read());
     return () => {
       cancelled = true;
-      // A run cancelled by a dependency change BEFORE its answer arrived must be
-      // allowed to start again: leaving the ref set made the next pass skip it,
-      // and the pane spun on "Rendering webpage" forever with its result discarded.
-      if (!settled) convertedForRef.current = null;
+      stop();
     };
-  }, [shouldConvert, code, publishHtml, userId, messageId, conversationId]);
+  }, [canShow, artifactId, fill]);
+
+  // No artifact row yet (a fence still to be materialized, or a note): nothing
+  // publishes on mount — the person opts in.
+  useEffect(() => {
+    if (!canShow || artifactId) return;
+    setPhase((current) => (current === "preview" ? current : "unpublished"));
+  }, [canShow, artifactId]);
+
+  const publishOnRequest = async () => {
+    if (!userId) return;
+    setShowError(false);
+    setErrorMessage(null);
+    setPhase("converting");
+    try {
+      const result = await HTMLPageService.createPage(
+        publishHtml,
+        extractTitleFromHTML(code) || "HTML Preview",
+        "Generated from chat",
+        userId,
+        {},
+        { sourceMessageId: messageId, sourceConversationId: conversationId },
+      );
+      setUrl(result.url);
+      setPhase("preview");
+    } catch (err) {
+      console.error("[HtmlInlinePreview] publish failed:", err);
+      setErrorMessage(
+        err instanceof Error ? err.message : "Failed to render HTML preview",
+      );
+      setPhase("error");
+    }
+  };
 
   const title = extractTitleFromHTML(code) || chrome?.title || "Web page";
 
@@ -255,7 +283,9 @@ const HtmlInlinePreview: React.FC<HtmlInlinePreviewProps> = ({
       chrome.openInCanvas();
       return;
     }
-    openCanvas(htmlPageCanvasContent({ code, title, messageId }));
+    openCanvas(
+      htmlPageCanvasContent({ code, title, messageId, canvasItemId: artifactId }),
+    );
   };
 
   const fileName = `${title.replace(/[^\w\- ]+/g, "").trim().replace(/\s+/g, "-").toLowerCase() || "page"}.html`;
@@ -269,6 +299,16 @@ const HtmlInlinePreview: React.FC<HtmlInlinePreviewProps> = ({
       <span className="min-w-0 flex-1 truncate text-xs font-medium text-foreground">
         {title}
       </span>
+      {newerVersion !== null ? (
+        <Button
+          variant="quiet"
+          onClick={handleOpenCanvas}
+          title={`A newer version (v${newerVersion}) exists — open it`}
+          data-html-newer-version={newerVersion}
+        >
+          {`v${newerVersion} available`}
+        </Button>
+      ) : null}
       <div className="flex shrink-0 items-center">
         {chrome?.actions}
         <Button
@@ -319,6 +359,15 @@ const HtmlInlinePreview: React.FC<HtmlInlinePreviewProps> = ({
     [code, language, onCodeChange, isComplete],
   );
 
+  const unpublishedNotice = (
+    <div className="mt-1 flex items-center gap-2" data-html-unpublished="">
+      <span className="text-xs text-muted-foreground">Not shown as a page yet</span>
+      <Button variant="quiet" icon={<Globe />} onClick={() => void publishOnRequest()}>
+        Show as page
+      </Button>
+    </div>
+  );
+
   if (fill) {
     if (isComplete && analysis.previewable && user?.id && phase === "preview") {
       return (
@@ -350,6 +399,7 @@ const HtmlInlinePreview: React.FC<HtmlInlinePreviewProps> = ({
     return (
       <div className={cn("h-full overflow-auto px-3", className)}>
         {renderCodeBlock()}
+        {phase === "unpublished" ? unpublishedNotice : null}
         {phase === "error" && errorMessage ? (
           <div className="mb-3 rounded-md border border-destructive/30 bg-destructive/5 px-3 py-2 text-xs text-destructive-ink">
             {errorMessage}
@@ -372,6 +422,17 @@ const HtmlInlinePreview: React.FC<HtmlInlinePreviewProps> = ({
       );
     }
     return renderCodeBlock();
+  }
+
+  // 2a. Not published (no version row yet, or a version saved before publishing
+  // existed) → the code, plus the person's own opt-in. Mount never writes.
+  if (phase === "unpublished") {
+    return (
+      <div className={cn("my-3", className)}>
+        {renderCodeBlock()}
+        {unpublishedNotice}
+      </div>
+    );
   }
 
   // 2. Converting → loader.

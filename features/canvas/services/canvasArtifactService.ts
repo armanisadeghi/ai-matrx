@@ -534,7 +534,22 @@ export const canvasArtifactService = {
         );
         return null;
       }
-      return data as CanvasArtifactRow;
+      const saved = data as CanvasArtifactRow;
+      // A saved page version publishes its OWN page (one page per version).
+      if (input.type === "html" && typeof input.content === "string") {
+        const { publishHtmlCanvasVersion } = await import(
+          "@/features/html-pages/services/canvasVersionPage"
+        );
+        void publishHtmlCanvasVersion({
+          id: saved.id,
+          html: input.content,
+          title: input.title ?? saved.title,
+          conversationId: saved.conversation_id,
+        }).catch((err: unknown) =>
+          console.error("[canvasArtifactService.saveUserVersion] publish failed:", err),
+        );
+      }
+      return saved;
     } catch (err) {
       console.error("[canvasArtifactService.saveUserVersion] Error:", err);
       return null;

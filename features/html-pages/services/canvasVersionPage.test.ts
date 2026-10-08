@@ -1,0 +1,35 @@
+/**
+ * Rendered-output standard ruling 1: the card / canvas tab mount never writes,
+ * and the html-pages route reuses a page ONLY for the same canvas version.
+ */
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
+
+const root = join(__dirname, "..", "..", "..");
+const read = (p: string) => readFileSync(join(root, p), "utf8");
+
+describe("one page per canvas version", () => {
+  it("HtmlInlinePreview publishes only from the person's own click", () => {
+    const src = read("features/html-pages/components/HtmlInlinePreview.tsx");
+    const calls = src.match(/HTMLPageService\.createPage\(/g) ?? [];
+    expect(calls).toHaveLength(1);
+    // the one call lives in the click handler, never in an effect
+    const handler = src.slice(src.indexOf("const publishOnRequest"));
+    expect(handler.indexOf("HTMLPageService.createPage(")).toBeGreaterThan(-1);
+    const effects = src.split("useEffect(").slice(1).map((e) => e.slice(0, e.indexOf("}, [")));
+    for (const body of effects) expect(body).not.toMatch(/createPage|publishHtmlCanvasVersion/);
+  });
+
+  it("the route never overwrites by source message nor reuses by content", () => {
+    const src = read("app/api/html-pages/route.ts");
+    const create = src.slice(src.indexOf('case "create"'), src.indexOf('case "update"'));
+    expect(create).not.toMatch(/\.eq\("source_message_id"/);
+    expect(create).not.toMatch(/\.eq\("html_content"/);
+    expect(create).toMatch(/\.eq\("artifact_id", artifactId\)/);
+  });
+
+  it("the materializer publishes the canvas row it just saved", () => {
+    const src = read("features/canvas/artifact-types/persistence/html-adapter.ts");
+    expect(src).toMatch(/publishHtmlCanvasVersion\(\{\s*id: info\.artifactId/);
+  });
+});

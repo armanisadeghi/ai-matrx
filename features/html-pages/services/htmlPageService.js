@@ -45,10 +45,9 @@ export class HTMLPageService {
     /**
      * Create a new HTML page.
      *
-     * Pass `sourceTracking.sourceMessageId` to make publishing idempotent: the
-     * API updates the existing page for that message in place instead of
-     * inserting a duplicate (used by the inline auto-preview so re-renders /
-     * reloads never accumulate orphan pages). `sourceConversationId` and
+     * `sourceMessageId` / `sourceConversationId` are provenance only.
+     * `artifactId` (a canvas_items version id) is the ONLY reuse key: the same
+     * version re-publishes in place; anything else inserts. `sourceConversationId` and
      * `contextMetadata` are stored alongside for provenance.
      */
     static async createPage(
@@ -59,7 +58,7 @@ export class HTMLPageService {
         metaFields = {},
         sourceTracking = {},
     ) {
-        const { sourceMessageId, sourceConversationId, contextMetadata, forceNew } = sourceTracking;
+        const { sourceMessageId, sourceConversationId, contextMetadata, forceNew, artifactId } = sourceTracking;
         return HTMLPageService.#call('create', {
             htmlContent,
             metaTitle,
@@ -70,6 +69,8 @@ export class HTMLPageService {
             ...(sourceConversationId ? { sourceConversationId } : {}),
             ...(contextMetadata ? { contextMetadata } : {}),
             ...(forceNew ? { forceNew: true } : {}),
+            // One page per canvas_items VERSION (the only reuse key the route honours).
+            ...(durableRecordId(artifactId) ? { artifactId } : {}),
         });
     }
 

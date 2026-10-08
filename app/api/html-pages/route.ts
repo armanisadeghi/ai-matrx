@@ -129,6 +129,8 @@ export async function POST(request: NextRequest) {
           sourceMessageId,
           sourceConversationId,
           contextMetadata,
+          // The canvas_items VERSION this page publishes (one page per version).
+          artifactId,
           // Explicit CMS "New Page" must always insert, even if blank HTML
           // matches an existing row (content idempotency would otherwise reuse).
           forceNew = false,
@@ -158,103 +160,60 @@ export async function POST(request: NextRequest) {
           insertData.source_conv_id = sourceConversationId;
         if (contextMetadata) insertData.context_metadata = contextMetadata;
 
-        // Idempotency (artifact → publication is 1:1 per source message): if a
-        // page already exists for this source message, UPDATE it in place rather
-        // than inserting a duplicate. This makes publishing idempotent
-        // server-side — re-publishing the same html artifact never accumulates
-        // orphan pages, even if the client lost track of the published page id.
-        // Best-effort: ANY lookup/update failure (e.g. the source_message_id
-        // column is absent) falls through to the insert below, so publishing can
-        // never break.
-        if (sourceMessageId && !forceNew) {
-          try {
-            // An archived page (CMS 0041) is never the one a re-publish reuses.
-            const { data: existing } = await onlyLive(
-              htmlDb
-                .from("html_pages")
-                .select("id")
-                .eq("user_id", user.id)
-                .eq("source_message_id", sourceMessageId),
-              await archiveLive(htmlDb, "html_pages"),
-            )
-              .order("created_at", { ascending: false })
-              .limit(1)
-              .maybeSingle();
-            if (existing?.id) {
-              const { data: reused, error: reuseError } = await writeOneRow(
-                htmlDb
-                  .from("html_pages")
-                  .update({
-                    html_content: htmlContent,
-                    meta_title: metaTitle,
-                    meta_description: metaDescription,
-                    meta_keywords: metaFields.metaKeywords || null,
-                    og_image: metaFields.ogImage || null,
-                    canonical_url: metaFields.canonicalUrl || null,
-                    is_indexable: metaFields.isIndexable || false,
-                  })
-                  .eq("id", existing.id)
-                  .eq("user_id", user.id)
-                  .select(),
-                { action: "update", noun: "html page" },
-              );
-              if (!reuseError && reused) {
-                return NextResponse.json({
-                  success: true,
-                  pageId: reused.id,
-                  url: `${HTML_SITE_URL}/p/${reused.id}`,
-                  metaTitle: reused.meta_title,
-                  metaDescription: reused.meta_description,
-                  isIndexable: reused.is_indexable,
-                  createdAt: reused.created_at,
-                  reused: true,
-                });
-              }
-            }
-          } catch (lookupErr) {
-            console.warn(
-              "[html-pages API] idempotency pre-check skipped (falling through to insert):",
-              lookupErr,
+        // ONE publication per canvas VERSION (rendered-output standard, ruling 1):
+        // a version's page is keyed by html_pages.artifact_id = canvas_items.id,
+        // the same rule aidream's publish writer uses
+        // (aidream/services/artifacts/html_publication.py). Nothing else is ever
+        // reused: overwrite-by-source-message made the chat card (message
+        // version) and the canvas tab (latest) overwrite one page in turn, and the
+        // content dedupe shared one page id between different sources.
+        if (artifactId && !forceNew) {
+          insertData.artifact_id = artifactId;
+          const { data: existing, error: lookupError } = await onlyLive(
+            htmlDb
+              .from("html_pages")
+              .select("id, html_content, meta_title")
+              .eq("user_id", user.id)
+              .eq("artifact_id", artifactId),
+            await archiveLive(htmlDb, "html_pages"),
+          )
+            .order("created_at", { ascending: false })
+            .limit(1)
+            .maybeSingle();
+          if (lookupError) {
+            return NextResponse.json(
+              { error: lookupError.message },
+              { status: 500 },
             );
           }
-        }
-
-        // Content-based idempotency (covers callers WITHOUT a source message —
-        // e.g. notes / rich-document, where the inline auto-preview would
-        // otherwise insert a fresh row on every mount/reload). If this user
-        // already has a page with byte-identical html_content, reuse it. This
-        // is the safety net that makes auto-publishing duplication-proof on
-        // every surface, not just chat. Best-effort: any failure falls through
-        // to the insert. Skipped when forceNew (explicit CMS create).
-        if (!forceNew) {
-          try {
-            const { data: existingByContent } = await htmlDb
-              .from("html_pages")
-              .select(
-                "id, meta_title, meta_description, is_indexable, created_at",
-              )
-              .eq("user_id", user.id)
-              .eq("html_content", htmlContent)
-              .order("created_at", { ascending: false })
-              .limit(1)
-              .maybeSingle();
-            if (existingByContent?.id) {
-              return NextResponse.json({
-                success: true,
-                pageId: existingByContent.id,
-                url: `${HTML_SITE_URL}/p/${existingByContent.id}`,
-                metaTitle: existingByContent.meta_title,
-                metaDescription: existingByContent.meta_description,
-                isIndexable: existingByContent.is_indexable,
-                createdAt: existingByContent.created_at,
-                reused: true,
-              });
+          if (existing?.id) {
+            const unchanged =
+              existing.html_content === htmlContent &&
+              existing.meta_title === metaTitle;
+            if (!unchanged) {
+              const { error: republishError } = await writeOneRow(
+                htmlDb
+                  .from("html_pages")
+                  .update({ html_content: htmlContent, meta_title: metaTitle })
+                  .eq("id", existing.id)
+                  .eq("user_id", user.id)
+                  .select("id"),
+                { action: "update", noun: "html page" },
+              );
+              if (republishError) {
+                return NextResponse.json(
+                  { error: republishError.message },
+                  { status: 500 },
+                );
+              }
             }
-          } catch (contentLookupErr) {
-            console.warn(
-              "[html-pages API] content idempotency pre-check skipped (falling through to insert):",
-              contentLookupErr,
-            );
+            return NextResponse.json({
+              success: true,
+              pageId: existing.id,
+              url: `${HTML_SITE_URL}/p/${existing.id}`,
+              metaTitle,
+              reused: true,
+            });
           }
         }
 

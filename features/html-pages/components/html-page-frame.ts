@@ -60,14 +60,21 @@ export function htmlPageCanvasContent({
   code,
   title,
   messageId,
+  canvasItemId,
 }: {
   code: string;
   title: string;
   messageId?: string;
+  /** The version chain the canvas tab follows (it shows the chain's latest). */
+  canvasItemId?: string;
 }) {
   return {
     type: "html" as const,
     data: code,
-    metadata: { title, ...(messageId ? { sourceMessageId: messageId } : {}) },
+    metadata: {
+      title,
+      ...(messageId ? { sourceMessageId: messageId } : {}),
+      ...(canvasItemId ? { canvasItemId } : {}),
+    },
   };
 }
