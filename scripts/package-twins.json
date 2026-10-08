@@ -349,6 +349,14 @@
         {
           "file": "utils/supabase/walkCap.ts",
           "why": "IS the duration capability and has not been collapsed yet. The 2026-09-30 duration drain skipped this file because another lane held UNCOMMITTED edits to it in the shared checkout at the time (a pathspec commit would have swept that half-done work into the drain's commit). Collapse: `Retrying in ${KNOB_TTL_MS / 1000}s` and `ago()` become formatDurationMs(ms, { style: \"compact\" }) (+ \" ago\"). A debt, not an exemption."
+        },
+        {
+          "file": "scripts/check-package-imports-resolve.mjs",
+          "why": "IS the duration capability: the guard's elapsed-time readout `((Date.now() - t0) / 1000).toFixed(1)`s in its FAIL line. Not collapsed by the duplicate watch (2026-10-08) for two reasons: this is another lane's release guard, which the watch may not edit, and this guard's whole job is to prove the INSTALLED @ai-matrx packages resolve, so importing @ai-matrx/kit into it would make the guard crash on the very failure it exists to report. Collapse it only with a lane that owns the guard and can import kit lazily after the resolve check passes."
+        },
+        {
+          "file": "scripts/check-shell-eager-graph.ts",
+          "why": "IS the duration capability: the eager-graph check's summary line prints its run time as `((Date.now() - t0) / 1000).toFixed(0)`s. Not collapsed by the duplicate watch (2026-10-08): this is another lane's shell-bundle guard, which the watch may not edit. The collapse is one import of formatDurationMs(Date.now() - t0, { style: \"compact\" }) in a session that owns the guard."
         }
       ]
     },
@@ -1729,6 +1737,10 @@
         {
           "file": "scripts/checks/run.mjs",
           "why": "IS the byte-size capability (`totalmem()` turned into a GB figure in the runner's worker warning) and has not been collapsed: this is the checks runner itself, which the 2026-09-30 formatter-drain lane was told not to edit (guard infrastructure). Collapse it with formatFileSize(totalmem()) in a lane that owns scripts/checks."
+        },
+        {
+          "file": "scripts/check-shell-eager-graph.ts",
+          "why": "IS the byte-size capability: the eager-graph check prints the eager set's source size as `(bytes / 1e6).toFixed(1)` MB and its --report column as `(s / 1e3).toFixed(0)` KB. Not collapsed by the duplicate watch (2026-10-08): this is another lane's shell-bundle guard, which the watch may not edit, and the --report column is a fixed-unit padded table that formatFileSize's auto-scaling units would turn ragged; the owning lane picks between formatFileSize per row and a fixed-unit option."
         }
       ],
       "inputAllow": [],

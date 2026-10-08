@@ -37,7 +37,7 @@ scenario("host-drops-returns", async ({ cast }) => {
   host.note(`host's own tile reads "${hostName}"`);
   await host.cutNetwork();
   await host.page.waitForTimeout(HOST_CUT_MS);
-  await host.snap(`end of the ${HOST_CUT_MS / 1000}s cut (the SDK gives up after ~${SDK_GIVE_UP_MS / 1000}s)`);
+  await host.snap(`end of the ${formatDurationMs(HOST_CUT_MS, { style: "compact" })} cut (the SDK gives up after ~${formatDurationMs(SDK_GIVE_UP_MS, { style: "compact" })})`);
   await guest.snap("guest during the host's absence");
   await host.restoreNetwork();
   // Back in the call, still the host, with no prompt: a pre-join or name screen at ANY point is a prompt.

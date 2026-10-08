@@ -85,7 +85,7 @@ let bump: () => void = () => undefined;
 const calls: string[] = [];
 
 /** Mirrors FileTable: one stable commands object, fresh arrays every render. */
-function Table() {
+function RowsHarness() {
   const [activeFileId, setActiveFileId] = useState<string | null>(null);
   const [, setTick] = useState(0);
   openFile = setActiveFileId;
@@ -138,7 +138,7 @@ const redrawnSince = (before: Map<string, number>) =>
   [...rowDraws].filter(([id, n]) => n > (before.get(id) ?? 0)).map(([id]) => id);
 
 it("a table render that changes nothing a row shows redraws no row", () => {
-  act(() => root.render(<Table />));
+  act(() => root.render(<RowsHarness />));
   expect(rowDraws.size).toBe(FILES.length);
   const before = new Map(rowDraws);
   for (let i = 0; i < 3; i += 1) act(() => bump());
@@ -146,14 +146,14 @@ it("a table render that changes nothing a row shows redraws no row", () => {
 });
 
 it("opening a file redraws only that row", () => {
-  act(() => root.render(<Table />));
+  act(() => root.render(<RowsHarness />));
   const before = new Map(rowDraws);
   act(() => openFile("file-7"));
   expect(redrawnSince(before)).toEqual(["file-7"]);
 });
 
 it("a held row's checkbox reaches the table's commands with its own id", () => {
-  act(() => root.render(<Table />));
+  act(() => root.render(<RowsHarness />));
   act(() => bump());
   const box = container.querySelector<HTMLElement>('[aria-label="Select File 4.pdf"]')!;
   act(() => box.click());

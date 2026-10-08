@@ -1,5 +1,6 @@
 /** Set-ups many scenarios share. Each is the real UI path, not a shortcut. */
 import type { Actor } from "./actor";
+import { formatDurationMs } from "@ai-matrx/kit/format";
 import type { MediaFaults } from "./media-faults";
 import { TIMEOUTS } from "./env";
 import { admit, seePhase, seeUntil, startInstantMeeting, walkIn } from "./meeting";
@@ -90,5 +91,5 @@ export async function backInAfterReload(actor: Actor, timeoutMs = 45_000): Promi
     await actor.page.waitForTimeout(500).catch(() => undefined);
   }
   actor.note(`NEVER got back in after the reload: ${summarize(o)}`);
-  throw new Error(`${actor.opts.label} should be back in the call within ${timeoutMs / 1000}s of a reload; saw ${summarize(o)}`);
+  throw new Error(`${actor.opts.label} should be back in the call within ${formatDurationMs(timeoutMs, { style: "compact" })} of a reload; saw ${summarize(o)}`);
 }

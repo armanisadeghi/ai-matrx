@@ -1,5 +1,5 @@
 /**
- * The readable report: one row per scenario — state id, browser, PASS / FAIL / ENV, seconds,
+ * The readable report: one row per scenario — state id, browser, PASS / FAIL / ENV, time taken,
  * observation source, and the first line of evidence (the failed expectation, which already
  * carries what the person saw). Written to THIS run's own directory
  * (.cache/meet-scenarios/runs/<run-id>/report.md + report.json), so concurrent runs never collide.
@@ -17,6 +17,7 @@
 import type { FullConfig, FullResult, Reporter, Suite, TestCase, TestResult } from "@playwright/test/reporter";
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
+import { formatDurationMs } from "@ai-matrx/kit/format";
 import { P0_IDS } from "./catalog";
 import { baseURL, REPO_ROOT, runDir, runId } from "./env";
 
@@ -41,7 +42,7 @@ interface Row {
   id: string;
   project: string;
   status: string;
-  seconds: number;
+  durationMs: number;
   evidence: string;
   envProof: string;
   sources: string;
@@ -90,7 +91,7 @@ export default class MeetReport implements Reporter {
       id: test.title,
       project: test.parent.project()?.name ?? "",
       status,
-      seconds: Math.round(result.duration / 1000),
+      durationMs: result.duration,
       evidence: firstEvidence(result),
       envProof: proof.map((e) => `${new Date(e.at).toISOString().slice(11, 19)} [${e.who}] ${e.what}`).join("; "),
       sources: Object.entries(ev.sources).map(([k, v]) => `${k}:${v}`).join(" ") || "none",
@@ -124,9 +125,9 @@ export default class MeetReport implements Reporter {
       "",
       ...oracle.map((l) => `- ${l}`),
       "",
-      "| State | Browser | Result | s | Source | Evidence |",
+      "| State | Browser | Result | Took | Source | Evidence |",
       "|---|---|---|---|---|---|",
-      ...this.rows.map((r) => `| ${r.id} | ${r.project} | ${r.status} | ${r.seconds} | ${r.sources} | ${r.status === "ENV" ? `ENV proof: ${r.envProof}. ` : ""}${r.evidence || "-"} |`),
+      ...this.rows.map((r) => `| ${r.id} | ${r.project} | ${r.status} | ${formatDurationMs(r.durationMs, { style: "compact" })} | ${r.sources} | ${r.status === "ENV" ? `ENV proof: ${r.envProof}. ` : ""}${r.evidence || "-"} |`),
       "",
       "## Timelines",
       ...this.rows.flatMap((r) => [

@@ -111,7 +111,7 @@ function Text({ tag, content }: { tag: "p" | "h1" | "h2" | "h3" | "h4" | "h5" | 
   );
 }
 
-function Toggle({ children }: { children: ReactNode }) {
+function ToggleBlock({ children }: { children: ReactNode }) {
   return (
     <div>
       <div className="bn-toggle-wrapper" data-show-children="false">
@@ -135,14 +135,14 @@ function Plain({ b, index, depth = 0 }: { b: EngineBlock; index?: number; depth?
     case "heading": {
       const level = Math.min(6, Math.max(1, Number(props.level ?? 1)));
       const text = <Text tag={`h${level}` as "h1"} content={b.content} />;
-      inner = props.isToggleable ? <Toggle>{text}</Toggle> : text;
+      inner = props.isToggleable ? <ToggleBlock>{text}</ToggleBlock> : text;
       break;
     }
     case "toggleListItem":
       inner = (
-        <Toggle>
+        <ToggleBlock>
           <Text tag="p" content={b.content} />
-        </Toggle>
+        </ToggleBlock>
       );
       break;
     case "checkListItem":

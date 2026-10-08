@@ -22,6 +22,7 @@ import { useHeadlessAgentJson } from "@ai-matrx/chat/agents/hooks/useHeadlessAge
 import { useDeclaredSurfaceMandates } from "@ai-matrx/chat/surfaces/runtime/surface-mandates";
 import { Badge, Button, EmptyState, RegionSkeleton } from "@ai-matrx/design-system/controls";
 import { AppWindow, ExternalLink, Loader2, Table2, Wrench } from "lucide-react";
+import { formatDurationMs } from "@ai-matrx/kit/format";
 
 import { createClient } from "@/utils/supabase/client";
 import { ProTextarea } from "@/components/official/ProTextarea";
@@ -498,11 +499,11 @@ function BuildStep({ step, inline = false }: { step: { label: string; since: num
     const t = setInterval(() => setNow(Date.now()), 1000);
     return () => clearInterval(t);
   }, []);
-  const seconds = Math.max(0, Math.round((now - step.since) / 1000));
-  if (inline) return <Badge tone="info" data-applet-build-step="">{`${step.label} · ${seconds}s`}</Badge>;
+  const elapsed = formatDurationMs(Math.max(0, now - step.since));
+  if (inline) return <Badge tone="info" data-applet-build-step="">{`${step.label} · ${elapsed}`}</Badge>;
   return (
     <div className="flex h-full min-h-0 items-center justify-center" data-applet-build-step="" aria-live="polite">
-      <EmptyState icon={<AppWindow />} title={step.label} line={`${seconds}s so far`} />
+      <EmptyState icon={<AppWindow />} title={step.label} line={`${elapsed} so far`} />
     </div>
   );
 }

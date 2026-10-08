@@ -26,6 +26,7 @@ import type { JobRunView } from "@ai-matrx/applets";
 import { adoptForeignStream } from "@ai-matrx/chat/agents/redux/execution-system/thunks/adopt-foreign-stream";
 import { Button, RegionSkeleton } from "@ai-matrx/design-system/controls";
 import { RotateCw } from "lucide-react";
+import { formatDurationMs } from "@ai-matrx/kit/format";
 
 import { supabase } from "@/utils/supabase/client";
 import { useAppStore } from "@/lib/redux/hooks";
@@ -205,7 +206,7 @@ export function AppletHostMount({
       captureError({
         source: "applet",
         code: "applet_open_slow",
-        message: `Applet ${appletId} has not opened after ${OPENING_SLOW_MS / 1000}s`,
+        message: `Applet ${appletId} has not opened after ${formatDurationMs(OPENING_SLOW_MS, { style: "compact" })}`,
         callSite: "AppletHostMount",
       });
     }, OPENING_SLOW_MS);

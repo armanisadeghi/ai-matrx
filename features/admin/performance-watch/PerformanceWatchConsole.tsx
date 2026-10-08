@@ -17,7 +17,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { MatrxDataTable } from "@ai-matrx/design-system/data-table";
 import type { MatrxColumnDef } from "@ai-matrx/design-system/data-table/types";
-import { formatCount, formatRelativeTime } from "@ai-matrx/kit/format";
+import { formatCount, formatDurationMs, formatDurationSeconds, formatRelativeTime } from "@ai-matrx/kit/format";
 import { useNow } from "@/hooks/useNow";
 import { SurfaceRuntimeProvider } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import {
@@ -222,8 +222,7 @@ function StateBadge({ state }: { state: PerfState }) {
 }
 
 function ms(value: number | null | undefined): string {
-  if (value == null) return "—";
-  return value >= 1000 ? `${(value / 1000).toFixed(2)} s` : `${Math.round(value * 10) / 10} ms`;
+  return formatDurationMs(value, { style: "compact", precision: "fine" });
 }
 
 function Sparkline({ values, over }: { values: number[]; over: boolean }) {
@@ -471,7 +470,7 @@ function WatchDrill({
         <Fact label="Measures" value={subjectLine(row)} />
         <Fact label="Budget" value={`${ms(w.budget_ms)}${w.budget_stat ? ` ${w.budget_stat}` : ""}`} />
         <Fact label="Baseline" value={`${ms(w.perf_baseline_ms)}${w.perf_baseline_pinned ? " (pinned)" : ""}`} />
-        <Fact label="Every" value={w.live_every_seconds ? `${Math.round(w.live_every_seconds / 60)} min` : "—"} />
+        <Fact label="Every" value={w.live_every_seconds ? formatDurationSeconds(w.live_every_seconds, { style: "coarse" }) : "—"} />
         <Fact label="Owner" value={w.owner ?? "—"} />
         <Fact label="Feature" value={w.source_feature ?? "—"} />
         <Fact label="Samples" value={history.status === "ready" ? formatCount(samples.length) : "…"} />

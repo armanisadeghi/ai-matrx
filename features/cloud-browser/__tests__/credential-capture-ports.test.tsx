@@ -19,7 +19,7 @@ import type { CredentialCaptureRequest } from "../types";
   disconnect() {}
 };
 
-function Card(props: {
+function CaptureCard(props: {
   runId: string;
   profileId: string;
   request: CredentialCaptureRequest;
@@ -136,7 +136,7 @@ describe("Cloud Browser credential capture ports", () => {
 
   it("labels the boxes from the agent's field map and masks the secret one", async () => {
     const v = await render(
-      <Card
+      <CaptureCard
         runId="run-1"
         profileId="prof-1"
         request={request()}
@@ -153,7 +153,7 @@ describe("Cloud Browser credential capture ports", () => {
   it("sends the values to the vault and a value-free receipt to the control plane", async () => {
     const onSettled = jest.fn();
     const v = await render(
-      <Card
+      <CaptureCard
         runId="run-1"
         profileId="prof-1"
         request={request()}
@@ -193,7 +193,7 @@ describe("Cloud Browser credential capture ports", () => {
 
   it("refuses to write for a request the agent has already given up on", async () => {
     const v = await render(
-      <Card
+      <CaptureCard
         runId="run-1"
         profileId="prof-1"
         request={request({
