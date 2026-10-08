@@ -26,14 +26,14 @@ export function TypeTab({
   const shown = target === "initials" ? initials : name;
   return (
     <div className="flex flex-col gap-3">
-      <div className="grid grid-cols-[1fr_6rem] gap-2">
+      <div className="grid grid-cols-[minmax(0,1fr)_8.5rem] gap-2">
         {target === "signature" ? (
           <>
-            <label className="flex flex-col gap-1 text-xs text-muted-foreground">
+            <label className="flex min-w-0 flex-col gap-1 text-xs text-muted-foreground">
               Full name
               <Field value={name} autoComplete="name" onChange={(e) => onName(e.target.value)} />
             </label>
-            <label className="flex flex-col gap-1 text-xs text-muted-foreground">
+            <label className="flex min-w-0 flex-col gap-1 text-xs text-muted-foreground">
               Initials
               <Field value={initials} maxLength={5} onChange={(e) => onInitials(e.target.value)} />
             </label>
