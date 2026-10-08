@@ -3,7 +3,7 @@
  * entity form and the older `{ kind: "document" }` shape, so no tile shows
  * "Unavailable"), what "New document" places, where Open goes — and that the
  * document is created only when the person presses Create, through the
- * /documents create path and its organization gate.
+ * /documents create path and `ensureOrgId` (which never prompts).
  */
 
 import { act } from "react";
@@ -106,7 +106,7 @@ describe("starting a new document on the board", () => {
   const createButton = () =>
     [...container.querySelectorAll("button")].find((b) => /Create document|Try again/.test(b.textContent ?? ""));
 
-  it("creates nothing on mount, then one document on Create through the organization gate", async () => {
+  it("creates nothing on mount, then one document on Create through ensureOrgId", async () => {
     ensureOrgId.mockResolvedValue("org-chosen");
     createDocument.mockResolvedValue({ success: true, data: { id: "doc-new", document_name: "Untitled document" } });
     const onSource = jest.fn();
@@ -128,8 +128,8 @@ describe("starting a new document on the board", () => {
     );
   });
 
-  it("says so when no workspace was chosen, and creates nothing", async () => {
-    ensureOrgId.mockRejectedValue(new Error("cancelled"));
+  it("says why when there is no organization to act in (it never asks), and creates nothing", async () => {
+    ensureOrgId.mockRejectedValue(new Error("You don't belong to an organization yet. Create one to continue."));
     const onSource = jest.fn();
     act(() => root.render(<DocumentDraftBody onSource={onSource} />));
     await act(async () => {
@@ -137,7 +137,7 @@ describe("starting a new document on the board", () => {
     });
     expect(createDocument).not.toHaveBeenCalled();
     expect(onSource).not.toHaveBeenCalled();
-    expect(container.textContent).toMatch(/No workspace chosen/);
+    expect(container.textContent).toMatch(/could not be created: You don't belong to an organization yet/);
     expect(createButton()?.textContent).toMatch(/Try again/);
   });
 
