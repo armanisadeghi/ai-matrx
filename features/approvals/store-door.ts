@@ -23,6 +23,7 @@
  */
 
 import { createRecordsClient, type WorkInboxItem } from "@ai-matrx/records/core";
+import { sharedInboxRead } from "./sharedInbox";
 import { personActor, recordsDataSource } from "@ai-matrx/records-ui";
 
 import { createClient } from "@/utils/supabase/client";
@@ -60,7 +61,18 @@ function isDecision(item: WorkInboxItem): boolean {
   return item.kind === "approval" || item.kind === "proposal";
 }
 
+export { forgetWaitingWorkInbox } from "./sharedInbox";
+
+/** Everything waiting on her, read once per page load (`sharedInbox.ts`). */
+export function readWaitingWorkInbox(userId: string): Promise<WorkInboxItem[]> {
+  return sharedInboxRead(userId, () => readWorkInboxOnce(userId));
+}
+
 async function waitingDecisions(userId: string): Promise<WorkInboxItem[]> {
+  return (await readWaitingWorkInbox(userId)).filter((item) => isDecision(item) && item.actionable);
+}
+
+async function readWorkInboxOnce(userId: string): Promise<WorkInboxItem[]> {
   const client = createRecordsClient({
     dataSource: dataSource(),
     actor: personActor(userId),
@@ -75,7 +87,7 @@ async function waitingDecisions(userId: string): Promise<WorkInboxItem[]> {
         "The record store did not list what is waiting on you.",
     );
   }
-  return answer.data.filter((item) => isDecision(item) && item.actionable);
+  return answer.data;
 }
 
 /** How many store approvals wait on this person — the badge's share. */

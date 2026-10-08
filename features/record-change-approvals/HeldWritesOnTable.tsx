@@ -22,6 +22,9 @@ import { Popover, PopoverContent, PopoverTrigger } from "@ai-matrx/design-system
 import { recordsDataSource } from "@ai-matrx/records-ui";
 
 import { createClient } from "@/utils/supabase/client";
+import { getUserId } from "@/utils/auth/getUserId";
+import { readMemberOrganizationRows } from "@/features/organizations/service/memberOrganizationRows";
+import { forgetWaitingWorkInbox, readWaitingWorkInbox } from "@/features/approvals/store-door";
 
 import { RecordChangeApprovalCard } from "./RecordChangeApprovalCard";
 import { waitFromQueueRow, type RecordChangeWait } from "./recordChangeApproval";
@@ -48,13 +51,49 @@ type Held =
  */
 const inFlight = new Map<string, Promise<Held>>();
 
+// …and for HELD_SHARED_MS after it lands (lane PAGE-BUNDLE-2): the second header mounts a moment
+// AFTER the first read lands, so in-flight sharing alone still read the queue twice per table open.
+const HELD_SHARED_MS = 5_000;
+const landedAt = new Map<string, number>();
+
 export function heldWritesOnTable(organizationId: string, tableId: string): Promise<Held> {
   const key = `${organizationId}:${tableId}`;
   const held = inFlight.get(key);
-  if (held) return held;
-  const read = readHeldWritesOnTable(organizationId, tableId).finally(() => inFlight.delete(key));
+  const at = landedAt.get(key);
+  if (held && (at === undefined || Date.now() - at < HELD_SHARED_MS)) return held;
+  landedAt.delete(key);
+  const read = readHeldWritesOnTable(organizationId, tableId);
   inFlight.set(key, read);
+  void read.then(
+    (answer) => {
+      if (answer.state === "unreadable") inFlight.delete(key);
+      else landedAt.set(key, Date.now());
+    },
+    () => inFlight.delete(key),
+  );
   return read;
+}
+
+/** A decision was made on this table: the next ask reads the queue again. */
+export function forgetHeldWritesOnTable(): void {
+  inFlight.clear();
+  landedAt.clear();
+}
+
+/**
+ * THE ONE INBOX READ, WHEN IT COVERS THIS TABLE (lane PAGE-BUNDLE-2): `custom.work_inbox(NULL)` asks
+ * every organization she is a MEMBER of, so for a table in one of those the page reuses the bell's
+ * read (`readWaitingWorkInbox`) instead of asking the queue again. A table she reads from outside
+ * (shared with her) is asked of its own organization, as before.
+ */
+async function rowsFromTheSharedInbox(organizationId: string, tableId: string): Promise<InboxRow[] | null> {
+  const userId = getUserId();
+  if (!userId) return null;
+  const member = await readMemberOrganizationRows().catch(() => null);
+  if (!member?.ok || !member.roleByOrgId.has(organizationId)) return null;
+  const items = await readWaitingWorkInbox(userId).catch(() => null);
+  if (!items) return null;
+  return items.filter((item) => item.table_id === tableId) as unknown as InboxRow[];
 }
 
 async function readHeldWritesOnTable(
@@ -62,7 +101,8 @@ async function readHeldWritesOnTable(
   tableId: string,
 ): Promise<Held> {
   const { rpc } = recordsDataSource(createClient());
-  const inbox = (await rpc(
+  const fromShared = await rowsFromTheSharedInbox(organizationId, tableId);
+  const inbox = fromShared ? { data: fromShared, error: null } : ((await rpc(
     "work_inbox",
     {
       p_organization_id: organizationId,
@@ -72,7 +112,7 @@ async function readHeldWritesOnTable(
       p_view: "inbox",
     },
     { schema: "custom" },
-  )) as { data?: InboxRow[] | null; error?: { message?: string } | null };
+  )) as { data?: InboxRow[] | null; error?: { message?: string } | null });
   if (inbox.error) {
     return { state: "unreadable", why: inbox.error.message ?? "The approval queue could not be read." };
   }
@@ -110,7 +150,12 @@ export function HeldWritesOnTable({
   // A decided card keeps its outcome sentence on screen; the list is read again
   // when the person closes it, so the count in the header tells the truth.
   const [decided, setDecided] = useState(false);
-  const markDecided = () => setDecided(true);
+  const markDecided = () => {
+    // The queue moved: the next read of this table's held writes, and of the inbox, asks again.
+    forgetHeldWritesOnTable();
+    forgetWaitingWorkInbox();
+    setDecided(true);
+  };
 
   useEffect(() => {
     if (!organizationId) return;
