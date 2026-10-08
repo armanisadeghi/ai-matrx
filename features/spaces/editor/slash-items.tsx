@@ -46,6 +46,7 @@ import {
   Heading4,
 } from "lucide-react";
 import { SuggestionMenu } from "@blocknote/core";
+import { AGENT_ICON } from "@/components/icons/domain-icons";
 
 import type { PickedSource } from "../data/SourcePicker";
 import { newViewId, type SpaceDbView } from "../data/sources";
@@ -71,6 +72,8 @@ export interface SlashContext {
   newDatabase: (fullPage: boolean) => Promise<{ table: PickedSource; pageId?: string } | null>;
   /** "Database with AI" (mandate spaces.design_database): a NEW table designed from the person's words, with its views. */
   designDatabase?: () => Promise<{ table: PickedSource; views: SpaceDbView[] } | null>;
+  /** C28 "AI block": shown when the page's writing job is wired. */
+  aiBlock?: boolean;
   /** C18 "Synced block": a new synced source Space under this page (its id), or null. */
   createSyncedSource?: () => Promise<string | null>;
 }
@@ -297,6 +300,9 @@ export function slashItems(editor: SpacesEditor, ctx: SlashContext): DefaultReac
             },
           },
         ]
+      : []),
+    ...(ctx.aiBlock
+      ? [{ title: "AI block", subtext: "Generate content in place with AI.", aliases: ["ai", "ai block", "generate", "write with ai"], group: advanced, icon: <AGENT_ICON size={ICON} />, onItemClick: set(stored("ai", { prompt: "" })) }]
       : []),
     { title: "Button", subtext: "Run actions with one click.", aliases: ["button", "action"], group: advanced, icon: <MousePointerClick size={ICON} />, onItemClick: set(stored("button", { label: "New button", actions: [] })) },
     { title: "Tabs", subtext: "Show content in named tabs.", aliases: ["tabs", "tab"], group: advanced, icon: <PanelTop size={ICON} />, onItemClick: set(tabsBlock()) },

@@ -27,7 +27,7 @@ import { newViewId } from "../data/sources";
 import { AskAiMenu, type AskAiTarget } from "../ai/AskAiMenu";
 import { AskPageButton } from "../ai/AskPageButton";
 import { LoadAccessState } from "../workspace/LoadAccessState";
-import { useSpacesAiDisclosure } from "../ai/spaces-ai";
+import { WRITING_ASSIST_KEY, useSpacesAiDisclosure } from "../ai/spaces-ai";
 import { useSpaceBuilder } from "../ai/SpaceBuilder";
 import { AGENT_ICON } from "@/components/icons/domain-icons";
 import { currentBlockId, selectedOrCurrent } from "../editor/block-actions";
@@ -1093,6 +1093,7 @@ function SpacePageScreen({ spaceId, initialDoc }: { spaceId: string; initialDoc?
               pickSource,
               designDatabase: designer.wired ? () => saveSoon(designer.design({ spaceId: doc.id, ...pageForAi() })) : undefined,
               newDatabase: (fullPage) => saveSoon(newDatabase(fullPage)),
+              aiBlock: Boolean(WRITING_ASSIST_KEY),
               createSyncedSource: async () => {
                 // C18: the synced content is its own Space under this page (inherits its access), hidden from the tree.
                 const source = await spaces.createSpace(doc.id, { open: false, title: "Synced block", blocks: [{ id: crypto.randomUUID(), type: "text", text: [] }] });

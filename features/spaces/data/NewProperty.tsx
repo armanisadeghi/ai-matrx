@@ -129,7 +129,8 @@ export function NewPropertyPanel({ tableId, takenKeys, onDone }: { tableId: stri
         ...(t.choices ? { options: [] } : {}),
         ...(t.options ? { options: t.options } : {}),
         ...(t.declaration ? { declaration: t.declaration } : {}),
-        ...(target ? { relationTarget: target.id } : {}),
+        // Notion's relation holds any number of pages ("Limit: No limit"), which is also what a rollup reads through.
+        ...(target ? { relationTarget: target.id, multi: true } : {}),
       }),
     });
     if (made.ok && t.type === "autonumber") {
@@ -188,7 +189,9 @@ function RelationTarget({ tableId, busy, onBack, onPick }: { tableId: string; bu
   const q = query.trim().toLowerCase();
   const choices = (tables.data ?? [])
     .filter((t) => (org ? (t as { organization_id?: string }).organization_id === org : true))
-    .filter((t) => !q || (t.name ?? "").toLowerCase().includes(q));
+    .filter((t) => !q || (t.name ?? "").toLowerCase().includes(q))
+    // Newest first: the database just made on this page is the one a person is about to link (Notion lists recent first).
+    .sort((a, b) => String(b.created_at ?? "").localeCompare(String(a.created_at ?? "")));
   return (
     <div className="flex flex-col gap-1" aria-busy={busy || tables.loading || undefined}>
       <MenuRow icon={<ArrowLeft size={15} />} label="Relation" onClick={onBack} />
