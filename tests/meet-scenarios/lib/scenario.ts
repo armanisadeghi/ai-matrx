@@ -61,9 +61,17 @@ export const CHROMIUM_ARGS_BASE = [
 const test = base.extend<{ cast: Cast }>({
   cast: async ({ browser }, use, testInfo) => {
     const cast = new Cast(browser);
+    // Keep this run's ONE preview host active for the walk cap (utils/supabase/walkCap.ts):
+    // the same explicit-activity ping the app sends on interaction, from a signed-in tab.
+    const keepAlive = setInterval(() => {
+      const signedIn = cast.actors.find((a) => a.opts.seat !== "guest" && a.pages.some((p) => !p.isClosed()));
+      const page = signedIn?.pages.find((p) => !p.isClosed());
+      void page?.evaluate(() => fetch("/__dev-walk?activity=1", { method: "POST" }).then((r) => r.status)).catch(() => undefined);
+    }, 45_000);
     try {
       await use(cast);
     } finally {
+      clearInterval(keepAlive);
       const ended = await ensureEnded(cast.meeting).catch((e: Error) => `cleanup threw: ${e.message}`);
       if (cast.meeting) testInfo.annotations.push({ type: "cleanup", description: `${cast.meeting.path}: ${ended}` });
       await testInfo.attach("timeline", { body: cast.timeline(), contentType: "text/plain" });
