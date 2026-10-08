@@ -87,10 +87,10 @@ function HistoryList({ id }: { id: string }) {
   return (
     <ol className="flex max-h-48 flex-col gap-1 overflow-y-auto text-xs">
       {events.map((e) => (
-        <li key={e.id} className="flex gap-2">
+        <li key={e.id} className="flex min-w-0 gap-2">
           <span className="shrink-0 tabular-nums text-muted-foreground">{when(e.created_at)}</span>
-          <span className="font-medium">{e.action}</span>
-          <span className="truncate text-muted-foreground" title={e.note ?? undefined}>
+          <span className="shrink-0 whitespace-nowrap font-medium">{e.action}</span>
+          <span className="min-w-0 truncate text-muted-foreground" title={e.note ?? undefined}>
             {[e.actor_email ?? "System", e.note].filter(Boolean).join(" · ")}
           </span>
         </li>
@@ -137,7 +137,7 @@ function DecisionDialog({
   };
   const consequence: Record<Pending["decision"], string> = {
     approve: `About ${format(row.avg_cost_since ?? row.first_run_cost)} a run, ${format(monthly)} a month.`,
-    reject: "Automated runs stay held.",
+    reject: `About ${format(row.avg_cost_since ?? row.first_run_cost)} a run, ${format(monthly)} a month. Automated runs stay held.`,
     reopen: "Back to waiting.",
     details: "",
     history: "",
