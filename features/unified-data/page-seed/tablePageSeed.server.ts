@@ -16,7 +16,10 @@
 import "server-only";
 
 import { isUuidShape } from "@ai-matrx/kit/uuid";
+import type { RecordsSeed } from "@ai-matrx/records/core";
+import { askTablePageSeed } from "@ai-matrx/records-ui/first-page";
 import { createClient } from "@/utils/supabase/server";
+import { getClaimsUser } from "@/utils/supabase/claimsUser";
 
 /** A door's answer as PostgREST gave it — plain JSON, so it streams to the browser as is. */
 export interface SeededDoorAnswer {
@@ -35,6 +38,22 @@ export interface TablePageSeed {
   /** The record page's record, when the page is one (`custom.record_page_bundle(organization, record)`). */
   recordId?: string | null;
   recordBundle?: SeededDoorAnswer | null;
+  /**
+   * EVERY DOOR ANSWER THE SERVER GOT, for `<RecordsSeedProvider>` (lane SSR-ROWS): the bundle's parts,
+   * the grid's first page, the record's bundle. The page is drawn from it in the server's HTML — rows
+   * included — and hydrates onto it without asking again.
+   */
+  records?: RecordsSeed | null;
+}
+
+/**
+ * The address names something other than the plain opening (a view, a filter, a sort, a search, a
+ * page, a grouping, a dashboard): the grid will not ask the plain first page, so the server does not.
+ */
+const ADDRESS_OPENS_ELSEWHERE = ["view", "filter", "sort", "cf", "q", "hide", "page", "group", "dashboard", "grid"];
+export function addressAsksThePlainOpening(searchParams: Record<string, string | string[] | undefined> | null | undefined): boolean {
+  if (!searchParams) return true;
+  return !ADDRESS_OPENS_ELSEWHERE.some((key) => searchParams[key] !== undefined && searchParams[key] !== "");
 }
 
 /** Past this the browser has booted and would have asked by now: it asks for itself instead. */
@@ -49,7 +68,7 @@ const plainError = (error: unknown): SeededDoorAnswer["error"] => {
   };
 };
 
-async function askSeed(tableId: string, recordId: string | null): Promise<TablePageSeed | null> {
+async function askSeed(tableId: string, recordId: string | null, rows: boolean): Promise<TablePageSeed | null> {
   const supabase = await createClient();
   const custom = supabase.schema("custom" as never) as unknown as {
     rpc: (fn: string, args: Record<string, unknown>) => PromiseLike<{ data: unknown; error: unknown }>;
@@ -62,18 +81,30 @@ async function askSeed(tableId: string, recordId: string | null): Promise<TableP
       ? row.organization_id
       : null;
   if (!organizationId) return { tableId, where, organizationId: null, bundle: null };
-  // The table's bundle and, on a record page, the record's — side by side, both as the person.
-  const [bundleRaw, recordRaw] = await Promise.all([
-    custom.rpc("table_page_bundle", { p_organization_id: organizationId, p_table_id: tableId, p_view_id: null }),
-    recordId ? custom.rpc("record_page_bundle", { p_organization_id: organizationId, p_record_id: recordId }) : Promise.resolve(null),
-  ]);
+  // The table's bundle, the grid's first page and, on a record page, the record's bundle — asked by
+  // the records client exactly as the browser's would ask them, as the person, and recorded.
+  const { data: claims } = await getClaimsUser(supabase);
+  const userId = claims.user?.id ?? null;
+  const records = await askTablePageSeed({
+    dataSource: supabase,
+    organizationId,
+    tableId,
+    actor: userId ? { actor: "user", user_id: userId } : { actor: "user" },
+    recordId,
+    rows,
+  });
+  const answered = (door: string): SeededDoorAnswer | null => {
+    const found = records.answers.find((a) => a.door === door);
+    return found ? { data: found.data, error: null } : null;
+  };
   return {
     tableId,
     where,
     organizationId,
-    bundle: { data: bundleRaw.data ?? null, error: plainError(bundleRaw.error) },
+    bundle: answered("table_page_bundle"),
     recordId,
-    recordBundle: recordRaw ? { data: recordRaw.data ?? null, error: plainError(recordRaw.error) } : null,
+    recordBundle: recordId ? answered("record_page_bundle") : null,
+    records,
   };
 }
 
@@ -81,14 +112,18 @@ async function askSeed(tableId: string, recordId: string | null): Promise<TableP
  * Start a table page's first reads as the signed-in person. NOT awaited by the route: the promise
  * is handed to the client page and resolves into the stream. Never rejects.
  */
-export function readTablePageSeed(tableId: string, recordId: string | null = null): Promise<TablePageSeed | null> {
+export function readTablePageSeed(
+  tableId: string,
+  recordId: string | null = null,
+  options: { rows?: boolean } = {},
+): Promise<TablePageSeed | null> {
   if (!isUuidShape(tableId)) return Promise.resolve(null);
   const record = recordId && isUuidShape(recordId) ? recordId : null;
   let timer: ReturnType<typeof setTimeout> | undefined;
   const budget = new Promise<null>((resolve) => {
     timer = setTimeout(() => resolve(null), SEED_BUDGET_MS);
   });
-  const asked = askSeed(tableId, record).catch((thrown: unknown) => {
+  const asked = askSeed(tableId, record, options.rows !== false).catch((thrown: unknown) => {
     console.warn(`[tablePageSeed] the server could not ask for table ${tableId}; the browser will.`, thrown);
     return null;
   });
