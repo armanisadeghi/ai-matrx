@@ -86,11 +86,11 @@ const titleOf = (model: Rec, context: PrintBlockContext, fallback: string): stri
 
 // ─── comparison ───────────────────────────────────────────────────────────────
 
-function cellHtml(value: unknown, type: unknown): string {
+function cellHtml(value: unknown, type: unknown, scale: number): string {
   if (typeof value === "boolean") return value ? "&#10003; Yes" : "&#10007; No";
   if (type === "rating" && typeof value === "number") {
-    const n = Math.max(0, Math.min(5, Math.round(value)));
-    return `${"&#9733;".repeat(n)}${"&#9734;".repeat(5 - n)} <span class="mxp-muted">${esc(value)}</span>`;
+    const n = Math.max(0, Math.min(5, Math.round((value / scale) * 5)));
+    return `${"&#9733;".repeat(n)}${"&#9734;".repeat(5 - n)} <span class="mxp-muted">${esc(value)}/${scale}</span>`;
   }
   return inlineHtml(value);
 }
@@ -113,7 +113,10 @@ const comparisonLayout: Layout<Rec> = {
       const head = `<strong>${inlineHtml(criterion.name)}</strong>${
         typeof criterion.weight === "number" ? ` <span class="mxp-muted mxp-small">weight ${esc(criterion.weight)}</span>` : ""
       }`;
-      return [head, ...items.map((_, i) => cellHtml(values[i], criterion.type))];
+      // Ratings are out of 5 unless a value says otherwise (agents also write 1–10).
+      const top = Math.max(0, ...values.filter((v): v is number => typeof v === "number"));
+      const scale = top > 5 ? (top > 10 ? 100 : 10) : 5;
+      return [head, ...items.map((_, i) => cellHtml(values[i], criterion.type, scale))];
     });
     return paperHtml(
       comparisonLayout.title(m, c),
@@ -149,9 +152,12 @@ const timelineLayout: Layout<Rec> = {
           ];
         });
         const hasDates = rows.some((row) => row[0]);
-        const table = hasDates
-          ? tableHtml(["When", "Event", ""], rows)
-          : tableHtml(["Event", ""], rows.map((row) => [row[1] ?? "", row[2] ?? ""]));
+        const hasTags = rows.some((row) => row[2]);
+        const keep = [hasDates, true, hasTags];
+        const table = tableHtml(
+          ["When", "Event", "Tags"].filter((_, i) => keep[i]),
+          rows.map((row) => row.filter((_, i) => keep[i])),
+        );
         return `${str(period.period) ? `<h3>${inlineHtml(period.period)}</h3>` : ""}${table}`;
       })
       .join("");
@@ -197,7 +203,7 @@ const researchLayout: Layout<Rec> = {
   render: (m, c) => {
     const findings = (raw: unknown) => {
       const finding = obj(raw) ?? {};
-      const urls = arr(finding.urls).filter(isUrl);
+      const urls = arr(finding.urls).filter((u): u is string => isUrl(u));
       return `<div class="mxp-card"><h4>${inlineHtml(finding.title)}</h4>${textHtml(finding.keyDetails)}${kvHtml([
         ["Significance", str(finding.significance) ? inlineHtml(finding.significance) : null],
         ["Confidence", str(finding.confidenceLevel) ? esc(finding.confidenceLevel) : null],
@@ -383,7 +389,7 @@ const recipeLayout: Layout<Rec> = {
           ["Cook time", str(m.cookTime) ? inlineHtml(m.cookTime) : null],
           ["Total time", str(m.totalTime) ? inlineHtml(m.totalTime) : null],
         ]),
-        section("Ingredients", ingredients.length ? `<ul>${ingredients.map((i) => `<li>${checkHtml(false)} ${i[0]}</li>`).join("")}</ul>` : ""),
+        section("Ingredients", ingredients.length ? `<ul style="list-style:none;padding-left:2pt">${ingredients.map((i) => `<li>${checkHtml(false)} ${i[0]}</li>`).join("")}</ul>` : ""),
         section("Instructions", steps ? `<ol>${steps}</ol>` : ""),
         section("Notes", textHtml(m.notes)),
       ].join(""),
@@ -419,7 +425,7 @@ const resourcesLayout: Layout<Rec> = {
               (typeof item.rating === "number" ? `<div class="mxp-small">${"&#9733;".repeat(Math.max(0, Math.min(5, Math.round(item.rating))))}</div>` : ""),
           ];
         });
-        return `<h3>${inlineHtml(cat.name)}</h3>${str(cat.description) ? `<p class="mxp-muted">${inlineHtml(cat.description)}</p>` : ""}${tableHtml(["Resource", ""], rows)}`;
+        return `<h3>${inlineHtml(cat.name)}</h3>${str(cat.description) ? `<p class="mxp-muted">${inlineHtml(cat.description)}</p>` : ""}${tableHtml(["Resource", "Details"], rows)}`;
       })
       .join("");
     return paperHtml(resourcesLayout.title(m, c), str(m.description), categories);

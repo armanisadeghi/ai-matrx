@@ -59,7 +59,7 @@ export const PAPER_CSS = `
 const URL_RE = /^https?:\/\/\S+$/i;
 const MARKDOWN_HINT = /(\*\*|__|`|\[[^\]]+\]\([^)]+\)|^\s{0,3}(#{1,6}\s|[-*+]\s|\d+\.\s|>\s))/m;
 
-export function isUrl(value: unknown): value is string {
+export function isUrl(value: unknown): boolean {
   return typeof value === "string" && URL_RE.test(value.trim());
 }
 

@@ -68,17 +68,20 @@ function resolveRef(ref: string, root: JsonSchema | null): JsonSchema | null {
 
 /** The schema node with `$ref` followed and `anyOf`/`oneOf` narrowed to its non-null branch. */
 export function derefSchema(schema: unknown, root: JsonSchema | null, guard = 0): JsonSchema | null {
-  let node = obj(schema);
-  if (!node || guard > 12) return node;
+  const start = obj(schema);
+  if (!start || guard > 12) return start;
+  let node: JsonSchema = start;
   if (typeof node.$ref === "string") {
     const target = resolveRef(node.$ref, root);
     const { $ref: _ref, ...rest } = node;
-    node = target ? { ...derefSchema(target, root, guard + 1), ...rest } : rest;
+    node = target ? { ...(derefSchema(target, root, guard + 1) ?? {}), ...rest } : rest;
   }
   for (const key of ["anyOf", "oneOf"] as const) {
-    const branches = node[key];
+    const branches: unknown = node[key];
     if (Array.isArray(branches)) {
-      const real = branches.map((b) => derefSchema(b, root, guard + 1)).find((b) => b && b.type !== "null");
+      const real: JsonSchema | null | undefined = branches
+        .map((b: unknown) => derefSchema(b, root, guard + 1))
+        .find((b: JsonSchema | null) => !!b && b.type !== "null");
       if (real) {
         const { [key]: _drop, ...rest } = node;
         node = { ...real, ...rest };
@@ -88,7 +91,7 @@ export function derefSchema(schema: unknown, root: JsonSchema | null, guard = 0)
   if (Array.isArray(node.allOf)) {
     const merged: JsonSchema = { ...node };
     const props: Record<string, unknown> = { ...(obj(node.properties) ?? {}) };
-    for (const part of node.allOf) {
+    for (const part of node.allOf as unknown[]) {
       const resolved = derefSchema(part, root, guard + 1);
       Object.assign(props, obj(resolved?.properties) ?? {});
       for (const [k, v] of Object.entries(resolved ?? {})) if (!(k in merged) && k !== "properties") merged[k] = v;
@@ -132,18 +135,56 @@ function isEmpty(value: unknown): boolean {
   return false;
 }
 
+/**
+ * Field order. A stored schema is `jsonb`, which re-sorts object keys (shortest
+ * first), so `properties` order is not the author's order; `required` is an
+ * array and keeps it. Title-like fields lead, then `required` order, then the
+ * remaining properties, then keys the schema does not name.
+ */
+function orderedKeys(keys: readonly string[], schema: JsonSchema | null): string[] {
+  const required = Array.isArray(schema?.required) ? (schema.required as unknown[]).filter((k): k is string => typeof k === "string") : [];
+  const declared = Object.keys(obj(schema?.properties) ?? {});
+  const rank = (key: string): number => {
+    const title = (TITLE_KEYS as readonly string[]).indexOf(key);
+    if (title >= 0) return title;
+    const req = required.indexOf(key);
+    if (req >= 0) return 100 + req;
+    const dec = declared.indexOf(key);
+    if (dec >= 0) return 1000 + dec;
+    return 10000;
+  };
+  return keys
+    .map((key, index) => ({ key, index }))
+    .sort((a, b) => rank(a.key) - rank(b.key) || a.index - b.index)
+    .map(({ key }) => key);
+}
+
 function visibleEntries(record: Rec, schema: JsonSchema | null): Array<[string, unknown]> {
-  const order = Object.keys(obj(schema?.properties) ?? {});
-  const keys = [...order.filter((k) => k in record), ...Object.keys(record).filter((k) => !order.includes(k))];
-  return keys.filter((k) => k !== KIND_KEY && !k.startsWith("_") && !isEmpty(record[k])).map((k) => [k, record[k]]);
+  return orderedKeys(Object.keys(record), schema)
+    .filter((k) => k !== KIND_KEY && !k.startsWith("_") && !isEmpty(record[k]))
+    .map((k) => [k, record[k]]);
 }
 
 function isLongText(value: unknown): boolean {
-  return typeof value === "string" && (value.length > 160 || value.includes("\n"));
+  return typeof value === "string" && (value.length > 160 || value.includes("\n") || isCodeText(value));
+}
+
+/** A string field whose content is code (JSON, markup): printed as code, never as a sentence. */
+function isCodeText(value: unknown): value is string {
+  if (typeof value !== "string") return false;
+  const text = value.trim();
+  if (text.length < 12) return false;
+  return parseJsonText(text) != null || (/^<[a-z!?]/i.test(text) && /<\/[a-z]+>\s*$/i.test(text));
+}
+
+function codeHtml(text: string): string {
+  const json = parseJsonText(text);
+  return `<pre>${esc(json != null ? JSON.stringify(json, null, 2) : text.trim())}</pre>`;
 }
 
 /** A cell-sized value: scalar, or a short list of scalars. */
 function isCellValue(value: unknown): boolean {
+  if (isCodeText(value)) return false;
   if (value == null || isScalar(value)) return !isLongText(value) || (typeof value === "string" && value.length <= 400);
   if (Array.isArray(value)) return value.length <= 12 && value.every((v) => v == null || (isScalar(v) && String(v).length <= 80));
   return false;
@@ -171,7 +212,11 @@ function scalarHtml(value: unknown, schema: JsonSchema | null): string {
 function cellHtml(value: unknown, schema: JsonSchema | null, root: JsonSchema | null): string {
   if (Array.isArray(value)) {
     const items = itemSchema(schema, root);
-    return value.filter((v) => !isEmpty(v)).map((v) => scalarHtml(v, items)).join(", ");
+    const kept = value.filter((v) => !isEmpty(v));
+    if (kept.some((v) => String(v).length > 30)) {
+      return `<ul style="margin:0;padding-left:11pt">${kept.map((v) => `<li>${scalarHtml(v, items)}</li>`).join("")}</ul>`;
+    }
+    return kept.map((v) => scalarHtml(v, items)).join(", ");
   }
   return value == null ? "" : scalarHtml(value, schema);
 }
@@ -216,14 +261,14 @@ function arrayHtml(values: unknown[], schema: JsonSchema | null, depth: number, 
   if (items.every(isScalar)) {
     const short = items.every((v) => String(v).length <= 40);
     if (short && items.length <= 6) return `<p>${items.map((v) => scalarHtml(v, itemSch)).join(" · ")}</p>`;
-    return `<ul>${items.map((v) => `<li>${isLongText(v) ? textHtml(v) : scalarHtml(v, itemSch)}</li>`).join("")}</ul>`;
+    return `<ul>${items.map((v) => `<li>${isCodeText(v) ? codeHtml(v) : isLongText(v) ? textHtml(v) : scalarHtml(v, itemSch)}</li>`).join("")}</ul>`;
   }
   const records = items.map((v) => obj(v));
   if (records.every((r): r is Rec => !!r)) {
     const columns: string[] = [];
     for (const key of Object.keys(obj(itemSch?.properties) ?? {})) if (records.some((r) => !isEmpty(r[key]))) columns.push(key);
     for (const r of records) for (const key of Object.keys(r)) if (!columns.includes(key) && !isEmpty(r[key])) columns.push(key);
-    const visible = columns.filter((k) => k !== KIND_KEY && !k.startsWith("_"));
+    const visible = orderedKeys(columns, itemSch).filter((k) => k !== KIND_KEY && !k.startsWith("_"));
     const flat = visible.length > 0 && visible.length <= 7 && records.every((r) => visible.every((k) => isCellValue(r[k])));
     if (flat) {
       const headers = visible.map((k) => esc(fieldLabel(k, propertySchema(itemSch, k, ctx.root))));
@@ -246,6 +291,7 @@ function arrayHtml(values: unknown[], schema: JsonSchema | null, depth: number, 
 
 function valueHtml(value: unknown, schema: JsonSchema | null, depth: number, ctx: Ctx): string {
   if (value == null) return "";
+  if (isCodeText(value)) return codeHtml(value);
   if (isScalar(value)) return isLongText(value) ? textHtml(value) : scalarHtml(value, schema);
   if (depth > MAX_DEPTH) return `<p>${esc(flatText(value))}</p>`;
   if (Array.isArray(value)) return arrayHtml(value, schema, depth, ctx);
