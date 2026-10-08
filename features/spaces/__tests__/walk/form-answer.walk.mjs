@@ -3,7 +3,7 @@
 // view: on a fresh load the SIGNED-IN viewer sees the question list, answers it, and the answer is a row. (b) The
 // page is published to the web; a SIGNED-OUT visitor sees the fillable form inline and answers it; that answer is
 // a row too. Unpublishes and trashes the page. Exit 1 on failure.
-//   SHOT_DIR=<dir> node features/spaces/__tests__/walk/form-answer.walk.mjs
+//   SHOT_DIR=<dir> node features/spaces/__tests__/walk/form-answer.walk.mjs [leftover page ids…]
 import { chromium } from "playwright";
 import { open, newPage, act, slash, originOf, trashPage, loginUrl, orgWithoutMember, shareWith } from "./lib.mjs";
 
@@ -39,14 +39,15 @@ await act(page, async () => {
   await page.keyboard.press("Escape");
   const form = frame.locator(".spaces-db-form");
   await form.waitFor({ timeout: 30_000 });
+  // The forms builder (records-ui) starts the form with the table's Name asked; the question's words are its
+  // first text box holding "Name". Older builders had an "Ask for Name" switch and a "How to ask for Name" box.
+  await form.getByRole("button", { name: "Add a question" }).or(form.getByRole("checkbox", { name: "Ask for Name" })).first().waitFor({ timeout: 60_000 });
   const ask = form.getByRole("checkbox", { name: "Ask for Name" });
-  await ask.waitFor({ timeout: 60_000 }).catch(async (e) => {
-    await page.screenshot({ path: `${SHOT}/form-builder-missing.png` });
-    console.log(JSON.stringify({ formText: (await form.innerText().catch(() => "")).replace(/\s+/g, " ").slice(0, 300) }));
-    throw e;
-  });
-  if ((await ask.getAttribute("aria-checked")) !== "true" && (await ask.getAttribute("data-state")) !== "checked") await ask.click();
-  await form.getByRole("textbox", { name: "How to ask for Name" }).fill("Your full name");
+  if ((await ask.count()) && (await ask.getAttribute("aria-checked")) !== "true" && (await ask.getAttribute("data-state")) !== "checked") await ask.click();
+  const words = form.getByRole("textbox", { name: "How to ask for Name" });
+  await words.fill("Your full name");
+  await words.press("Tab");
+  await page.waitForTimeout(1500);
   const publish = form.getByRole("button", { name: /^(Save and publish|Publish)$/ });
   if (await publish.count()) await publish.click();
   await form.getByRole("button", { name: /^(Copy link|Copied)$/ }).waitFor({ timeout: 30_000 });
@@ -92,11 +93,11 @@ await act(page, async () => {
   await page.keyboard.press("Escape");
 });
 check("the page is published", !!site, { site });
-if (site) {
+if (site) try {
   const anon = await chromium.launch({ headless: true });
   const p2 = await (await anon.newContext({ viewport: { width: 1280, height: 1000 } })).newPage();
   p2.on("pageerror", (e) => console.log("[anon pageerror]", e.message.slice(0, 200)));
-  await p2.goto(site.startsWith("http") ? site : `${originOf(page)}${site}`, { waitUntil: "domcontentloaded" });
+  await p2.goto(site.startsWith("http") ? site : `${originOf(page)}${site}`, { waitUntil: "domcontentloaded", timeout: 240_000 });
   const inline = p2.getByTestId("spaces-form-answer");
   const shown = await inline.waitFor({ timeout: 90_000 }).then(() => true, () => false);
   await p2.waitForTimeout(4000);
@@ -127,6 +128,11 @@ if (site) {
   check("the visitor's answer is a row of the table", (await page.locator(".spaces-db-frame").first().getByText(answer).count()) > 0, { answer });
   check("the viewer's answer is a row of the table", (await page.locator(".spaces-db-frame").first().getByText(viewerAnswer).count()) > 0, { viewerAnswer });
   await page.screenshot({ path: `${SHOT}/form-answer-row.png` });
+} catch (e) {
+  check("the published half ran", false, { error: String(e.message).split("\n")[0].slice(0, 200) });
+} finally {
+  if (!page.url().includes(id)) await page.goto(`${originOf(page)}/spaces/${id}`, { waitUntil: "domcontentloaded" }).catch(() => {});
+  await page.locator(".bn-editor").first().waitFor({ timeout: 120_000 }).catch(() => {});
   await act(page, async () => {
     await page.getByRole("button", { name: /^Share$/ }).first().click();
     await page.getByRole("tab", { name: "Publish" }).or(page.getByRole("radio", { name: "Publish" })).first().click();
@@ -136,5 +142,17 @@ if (site) {
   });
 }
 check("scratch page trashed", await act(page, () => trashPage(page)));
+// Leftovers of an earlier run (argv): unpublish, then Trash.
+for (const old of process.argv.slice(2)) {
+  await page.goto(`${originOf(page)}/spaces/${old}`, { waitUntil: "domcontentloaded" });
+  await page.locator(".bn-editor").first().waitFor({ timeout: 120_000 }).catch(() => {});
+  await page.waitForTimeout(2500);
+  await page.getByRole("button", { name: /^Share$/ }).first().click().catch(() => {});
+  await page.getByRole("tab", { name: "Publish" }).or(page.getByRole("radio", { name: "Publish" })).first().click().catch(() => {});
+  await page.getByTestId("unpublish-button").click({ timeout: 10_000 }).catch(() => {});
+  await page.waitForTimeout(2000);
+  await page.keyboard.press("Escape");
+  console.log(JSON.stringify({ leftover: old, trashed: await trashPage(page).catch(() => false) }));
+}
 await browser.close();
 process.exit(failed ? 1 : 0);

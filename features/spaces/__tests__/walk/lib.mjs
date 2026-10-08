@@ -27,15 +27,17 @@ export function loginUrl(next = "/spaces", member = false) {
 }
 
 export async function login(page, next = "/spaces", member = false) {
-  // A shared dev server under load can take minutes to sign in and compile the first route: one retry with a fresh nonce.
+  // A shared dev server under load can take minutes to sign in and compile the first route: retries with a fresh nonce.
   for (let attempt = 0; ; attempt++) {
     try {
       await page.goto(loginUrl(next, member), { waitUntil: "domcontentloaded", timeout: 240_000 });
       await page.waitForURL((u) => !u.pathname.startsWith("/api/dev-login"), { timeout: 240_000, waitUntil: "commit" });
       return;
     } catch (e) {
-      if (attempt >= 1) throw e;
+      // A restarting server refuses connections for a minute or two: wait it out (three tries in all).
+      if (attempt >= 2) throw e;
       console.log(JSON.stringify({ retry: "dev-login", why: String(e.message).split("\n")[0].slice(0, 120) }));
+      if (/ERR_CONNECTION_REFUSED/.test(String(e.message))) await page.waitForTimeout(60_000);
     }
   }
 }
@@ -179,8 +181,9 @@ export async function trashPage(page) {
 
 /** The slugs of every organization the signed-in person belongs to (read from /organizations' cards). */
 export async function orgSlugs(page) {
-  await page.goto(`${originOf(page)}/organizations`, { waitUntil: "domcontentloaded", timeout: 120_000 });
-  await page.locator('a[href^="/organizations/"]').first().waitFor({ timeout: 120_000 });
+  await page.goto(`${originOf(page)}/organizations`, { waitUntil: "domcontentloaded", timeout: 240_000 });
+  await resumeIfPaused(page);
+  await page.locator('a[href^="/organizations/"]').first().waitFor({ timeout: 180_000 });
   await page.waitForTimeout(2500);
   const hrefs = await page.locator('a[href^="/organizations/"]').evaluateAll((as) => as.map((a) => a.getAttribute("href") ?? ""));
   return [...new Set(hrefs.map((h) => h.split("/")[2]).filter((s) => s && /^[a-z0-9][a-z0-9-]*$/.test(s)))];
