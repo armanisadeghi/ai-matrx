@@ -124,6 +124,7 @@ function exportNames(file, seen = new Set()) {
   const text = readFileSync(file, "utf8");
   const names = new Set();
   for (const m of text.matchAll(/export\s+(?:declare\s+)?(?:async\s+)?(?:const|let|var|function\*?|class|abstract\s+class|enum|const\s+enum|interface|type|namespace)\s+([\w$]+)/g)) names.add(m[1]);
+  for (const m of text.matchAll(/export\s+(?:declare\s+)?(?:const|let|var)\s*\{([^}]*)\}/g)) for (const part of m[1].split(",")) { const p = part.trim().split("=")[0].trim(); if (!p) continue; const as = p.split(":"); names.add((as[1] ?? as[0]).trim()); }
   for (const m of text.matchAll(/export\s+(?:type\s+)?\{([^}]*)\}(?!\s*from)/g)) for (const part of m[1].split(",")) { const p = part.trim().replace(/^type\s+/, ""); if (!p) continue; const as = p.split(/\s+as\s+/); names.add((as[1] ?? as[0]).trim()); }
   for (const m of text.matchAll(/export\s+(?:type\s+)?\{([^}]*)\}\s*from\s*["']([^"']+)["']/g)) for (const part of m[1].split(",")) { const p = part.trim().replace(/^type\s+/, ""); if (!p) continue; const as = p.split(/\s+as\s+/); names.add((as[1] ?? as[0]).trim()); }
   if (/export\s+default\b/.test(text) || /export\s*\{[^}]*\bas\s+default\b/.test(text)) names.add("default");
