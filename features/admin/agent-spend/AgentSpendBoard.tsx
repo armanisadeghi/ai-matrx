@@ -11,6 +11,7 @@ import { useEffect, useState } from "react";
 import { Loader2, RefreshCw } from "lucide-react";
 import { Badge, Button, SegmentedControl } from "@ai-matrx/design-system/controls";
 import { adminCostColumns } from "@/components/cost/adminCostColumns";
+import { CostFigures } from "@/components/cost/AdminCost";
 import { AGENT_FLAG_SET, SpendFlagStrip, spendFlagColumn, type SpendFlagHit } from "@/components/cost/SpendFlagStrip";
 import { FirstPlusMore } from "@/components/official/first-plus-more/FirstPlusMore";
 import { MatrxDataTable } from "@ai-matrx/design-system/data-table";
@@ -203,19 +204,17 @@ export function ReconciliationBar({
         <span>Adding up {days} days of spend</span>
       ) : (
         <>
-          <span>
-            Board total <span className="font-medium tabular-nums text-foreground">{format(board)}</span>
-          </span>
-          <span>
-            All recorded AI spend <span className="font-medium tabular-nums text-foreground">{format(raw)}</span>
-          </span>
+          <CostFigures
+            items={[
+              { usdLabel: "Board total $", pointsLabel: "Board total points", usd: board },
+              { usdLabel: "All recorded $", pointsLabel: "All recorded points", usd: raw },
+            ]}
+          />
           <Badge tone={ok ? "success" : "destructive"}>
             {ok ? "Matches" : `Gap ${format(Math.abs(raw - board))}`}
           </Badge>
           {unattributed > 0 && (
-            <span>
-              Unattributed <span className="font-medium tabular-nums text-foreground">{format(unattributed)}</span>
-            </span>
+            <CostFigures items={[{ usdLabel: "Unattributed $", pointsLabel: "Unattributed points", usd: unattributed }]} />
           )}
         </>
       )}
@@ -251,13 +250,13 @@ export function AgentSpendBoard({
       : null;
   const hits = (r: AgentSpendRow) => agentFlagHits(r, format);
 
-  const columns: MatrxColumnDef<AgentSpendRow>[] = [
+  const unordered: MatrxColumnDef<AgentSpendRow>[] = [
     {
       id: "name",
       header: "Spend on",
       accessorFn: (r) => subjectTitle(r),
       filter: "text",
-      width: 220,
+      width: 200,
       cell: (r) => (
         <Link
           href={agentSpendDetailHref(r, days, seat, orgSlug)}
@@ -458,6 +457,12 @@ export function AgentSpendBoard({
         />
       ),
     },
+  ];
+  // Money right after who does the work (owner, 2026-10-08).
+  const ORDER = ["name", "mandate", "agent", "cost", "cost_points", "runs", "avg_run_cost", "avg_run_cost_points", "flags", "approval"];
+  const columns: MatrxColumnDef<AgentSpendRow>[] = [
+    ...ORDER.flatMap((id) => unordered.filter((c) => String(c.id) === id)),
+    ...unordered.filter((c) => !ORDER.includes(String(c.id))),
   ];
 
   return (

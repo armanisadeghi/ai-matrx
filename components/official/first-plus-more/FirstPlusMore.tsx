@@ -7,6 +7,7 @@
  */
 import type { ReactNode } from "react";
 import { Popover, PopoverContent, PopoverTrigger } from "@ai-matrx/design-system";
+import { Button } from "@ai-matrx/design-system/controls";
 
 export function FirstPlusMore<T>({
   items,
@@ -30,14 +31,14 @@ export function FirstPlusMore<T>({
       {rest.length > 0 && (
         <Popover>
           <PopoverTrigger asChild>
-            <button
-              type="button"
-              className="shrink-0 rounded px-1 tabular-nums text-muted-foreground hover:bg-muted hover:text-foreground"
+            <Button
+              variant="quiet"
+              className="shrink-0"
               aria-label={`${rest.length} more ${label}`}
               onClick={(e) => e.stopPropagation()}
             >
               {`+${rest.length}`}
-            </button>
+            </Button>
           </PopoverTrigger>
           <PopoverContent align="start" onClick={(e) => e.stopPropagation()}>
             <div className="flex max-h-72 flex-col gap-1 overflow-auto text-xs">

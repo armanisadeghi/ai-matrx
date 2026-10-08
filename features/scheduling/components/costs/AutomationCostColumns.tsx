@@ -122,13 +122,13 @@ export function automationCostColumns<T>(
   };
   const money = (id: string, label: string, f: (r: AutomationCostRow) => number | null) =>
     adminCostColumns<T>({ id, label, value: (row) => { const r = get(row); return r ? f(r) : null; } });
-  return [
+  const cols: MatrxColumnDef<T>[] = [
     {
       id: "cost_mandate",
       header: "Mandate",
       accessorFn: (row) => get(row)?.mandates.join(", ") ?? "",
       filter: "text",
-      width: 200,
+      width: 150,
       cell: (row) => <MandateCell row={get(row)} seat={seat} orgSlug={orgSlug} />,
     },
     {
@@ -136,7 +136,7 @@ export function automationCostColumns<T>(
       header: "Agent",
       accessorFn: (row) => get(row)?.agents.map((a) => a.name).join(", ") ?? "",
       filter: "text",
-      width: 180,
+      width: 140,
       cell: (row) => <AgentCell row={get(row)} seat={seat} />,
     },
     {
@@ -266,4 +266,39 @@ export function automationCostColumns<T>(
       cell: (row) => text(get(row)?.organization_name),
     },
   ];
+  const at = new Map(cols.map((c) => [String(c.id), c]));
+  return AUTOMATION_COLUMN_ORDER.flatMap((id) => (at.has(id) ? [at.get(id)!] : []));
 }
+
+/**
+ * THE column order (owner, 2026-10-08): the money right after who does the work, so the
+ * sort column is on screen at 1440 with the chat panel open; behavior after it.
+ * The first AUTOMATION_LEAD_COLUMNS ids go right after a board's name column; a board's own
+ * descriptive columns (cadence, kind, state) follow them.
+ */
+export const AUTOMATION_COLUMN_ORDER = [
+  "cost_mandate",
+  "cost_agent",
+  "cost_total",
+  "cost_total_points",
+  "cost_runs",
+  "cost_avg_run",
+  "cost_avg_run_points",
+  "cost_flags",
+  "cost_approval",
+  "cost_ai",
+  "cost_est_month",
+  "cost_est_month_points",
+  "cost_max_run",
+  "cost_max_run_points",
+  "cost_avg_turns",
+  "cost_max_turns",
+  "cost_models",
+  "cost_runs_as",
+  "cost_for_org",
+  "cost_7d",
+  "cost_7d_points",
+  "cost_last_run",
+  "cost_last_run_points",
+] as const;
+export const AUTOMATION_LEAD_COLUMNS = 9;

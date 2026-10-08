@@ -33,10 +33,13 @@ import {
   type AutomationSeat,
 } from "@/features/scheduling/service/automationCosts";
 import {
+  AUTOMATION_LEAD_COLUMNS,
   AgentMandateLinks,
   AutomationFlagStrip,
   automationCostColumns,
 } from "./AutomationCostColumns";
+import { AdminPoints, AdminUsd, CostFigures } from "@/components/cost/AdminCost";
+import { adminCostColumns } from "@/components/cost/adminCostColumns";
 
 export function automationIntervalText(r: AutomationCostRow): string {
   if (!r.trigger_type) return "—";
@@ -115,18 +118,7 @@ export function AutomationRunsTable({
       cell: (r) => <span className="text-xs" title={r.run_at}>{humanizeRelative(r.run_at)}</span>,
     },
     { id: "status", accessorKey: "status", header: "Status", filter: "select", width: 100 },
-    {
-      id: "cost",
-      accessorKey: "cost",
-      header: "Cost",
-      filter: "number",
-      width: 100,
-      cell: (r) => (
-        <span className={`tabular-nums text-xs ${r.cost > 1 ? "font-semibold text-red-600" : ""}`}>
-          {format(r.cost)}
-        </span>
-      ),
-    },
+    ...adminCostColumns<AutomationRunCost>({ id: "cost", label: "Cost", value: (r) => r.cost }),
     {
       id: "turns",
       accessorKey: "turns",
@@ -294,14 +286,21 @@ export function AutomationCostDetail({
       </div>
       <AutomationFlagStrip row={row} />
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-        <Stat label="Cost 30d">{format(row.cost)}</Stat>
-        <Stat label="Cost 7d">{format(row.cost_7d)}</Stat>
-        <Stat label="Est. / month">{format(row.est_monthly_cost)}</Stat>
+        <Stat label="Cost 30d $"><AdminUsd usd={row.cost} /></Stat>
+        <Stat label="Points 30d"><AdminPoints usd={row.cost} /></Stat>
+        <Stat label="Cost 7d $"><AdminUsd usd={row.cost_7d} /></Stat>
+        <Stat label="Points 7d"><AdminPoints usd={row.cost_7d} /></Stat>
+        <Stat label="Est./month $"><AdminUsd usd={row.est_monthly_cost} /></Stat>
+        <Stat label="Est./month points"><AdminPoints usd={row.est_monthly_cost} /></Stat>
         <Stat label="Runs 30d">{row.runs.toLocaleString()}</Stat>
-        <Stat label="Last run">{row.last_run_cost == null ? "—" : format(row.last_run_cost)}</Stat>
-        <Stat label="Avg / run">{row.avg_run_cost == null ? "—" : format(row.avg_run_cost)}</Stat>
-        <Stat label="Max / run">{row.max_run_cost == null ? "—" : format(row.max_run_cost)}</Stat>
-        <Stat label="Turns avg / max">{`${row.avg_turns} / ${row.max_turns}`}</Stat>
+        <Stat label="Last run $"><AdminUsd usd={row.last_run_cost} /></Stat>
+        <Stat label="Last run points"><AdminPoints usd={row.last_run_cost} /></Stat>
+        <Stat label="Avg cost/run $"><AdminUsd usd={row.avg_run_cost} /></Stat>
+        <Stat label="Avg cost/run points"><AdminPoints usd={row.avg_run_cost} /></Stat>
+        <Stat label="Max cost/run $"><AdminUsd usd={row.max_run_cost} /></Stat>
+        <Stat label="Max cost/run points"><AdminPoints usd={row.max_run_cost} /></Stat>
+        <Stat label="Avg turns">{row.avg_turns}</Stat>
+        <Stat label="Max turns">{row.max_turns}</Stat>
       </div>
       <div className="grid gap-3 sm:grid-cols-2">
         <div>
@@ -352,7 +351,7 @@ export function AutomationCostTable({
       accessorKey: "name",
       header: "Automation",
       filter: "text",
-      width: 260,
+      width: 200,
       cell: (r) => (
         <Link
           href={
@@ -367,7 +366,7 @@ export function AutomationCostTable({
         </Link>
       ),
     },
-    ...automationCostColumns<AutomationCostRow>((r) => r, seat, orgSlug).slice(0, 2),
+    ...automationCostColumns<AutomationCostRow>((r) => r, seat, orgSlug).slice(0, AUTOMATION_LEAD_COLUMNS),
     {
       id: "cadence",
       header: "Cadence",
@@ -424,7 +423,7 @@ export function AutomationCostTable({
       hidden: true,
       cell: (r) => <span className="block truncate text-xs" title={r.approval ?? undefined}>{r.approval ?? "—"}</span>,
     },
-    ...automationCostColumns<AutomationCostRow>((r) => r, seat, orgSlug).slice(2),
+    ...automationCostColumns<AutomationCostRow>((r) => r, seat, orgSlug).slice(AUTOMATION_LEAD_COLUMNS),
   ];
 
   return (
@@ -448,9 +447,12 @@ export function AutomationCostTable({
             searchPlaceholder: "Search automations…",
             actions: (
               <div className="flex items-center gap-2">
-                <span className="whitespace-nowrap text-xs text-muted-foreground">
-                  {`${AUTOMATION_COST_WINDOW_DAYS}d ${format(total)} · est. ${format(monthly)}/mo`}
-                </span>
+                <CostFigures
+                  items={[
+                    { usdLabel: `Cost ${AUTOMATION_COST_WINDOW_DAYS}d`, pointsLabel: `Points ${AUTOMATION_COST_WINDOW_DAYS}d`, usd: total },
+                    { usdLabel: "Est./month $", pointsLabel: "Est./month points", usd: monthly },
+                  ]}
+                />
                 <Button variant="outline" onClick={() => void reload()} disabled={loading}>
                   {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
                 </Button>

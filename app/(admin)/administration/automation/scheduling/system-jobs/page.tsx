@@ -64,7 +64,10 @@ import { recordToast, toast } from "@/lib/toast";
 import { MatrxDataTable } from "@ai-matrx/design-system/data-table";
 import type { MatrxColumnDef } from "@ai-matrx/design-system/data-table/types";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
-import { automationCostColumns } from "@/features/scheduling/components/costs/AutomationCostColumns";
+import {
+  AUTOMATION_LEAD_COLUMNS,
+  automationCostColumns,
+} from "@/features/scheduling/components/costs/AutomationCostColumns";
 import { useAutomationCosts } from "@/features/scheduling/components/costs/AutomationCostTable";
 import { automationCostDetailHref } from "@/features/scheduling/service/automationCosts";
 import type { ContextMenuExtraItem } from "@/features/context-menu-v3/types";
@@ -165,6 +168,7 @@ export default function SystemJobsPage() {
   // (scheduler.automation_cost_rollup), keyed by the job's sch_task id.
   const { rows: costRows, error: costError } = useAutomationCosts(null);
   const costById = new Map(costRows.map((c) => [c.automation_id, c]));
+  const jobCostColumns = automationCostColumns<SystemTaskResponse>((r) => costById.get(r.id), "admin");
   const [taxonomyNodes, setTaxonomyNodes] = useState<SystemTaskTaxonomyNode[]>(
     [],
   );
@@ -346,7 +350,7 @@ export default function SystemJobsPage() {
       id: "title",
       accessorKey: "title",
       header: "Job",
-      width: 240,
+      width: 200,
       cell: (r) => (
         <Link
           href={automationCostDetailHref("scheduled_task", r.id)}
@@ -696,7 +700,7 @@ export default function SystemJobsPage() {
       id: "jobname",
       accessorFn: (r) => r.jobname ?? String(r.jobid),
       header: "Job",
-      width: 240,
+      width: 220,
       cell: (r) => (
         <span className="font-medium truncate" title={r.jobname ?? undefined}>
           {r.jobname ?? `job ${r.jobid}`}
@@ -974,8 +978,9 @@ export default function SystemJobsPage() {
             data={rows}
             columns={[
               ...columns.slice(0, 1),
-              ...automationCostColumns<SystemTaskResponse>((r) => costById.get(r.id), "admin"),
+              ...jobCostColumns.slice(0, AUTOMATION_LEAD_COLUMNS),
               ...columns.slice(1),
+              ...jobCostColumns.slice(AUTOMATION_LEAD_COLUMNS),
               { id: "custom-actions", header: "Actions", sortable: false, filter: false, customActions: (r) => renderRowActions(r) },
             ]}
             getRowId={(r) => r.id}

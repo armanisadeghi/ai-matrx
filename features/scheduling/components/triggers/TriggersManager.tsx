@@ -23,6 +23,7 @@ import { MatrxDataTable } from "@ai-matrx/design-system/data-table";
 import type { MatrxColumnDef } from "@ai-matrx/design-system/data-table/types";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { useCostDisplay } from "@/components/cost/useCostDisplay";
+import { AdminPoints, AdminUsd, CostFigures } from "@/components/cost/AdminCost";
 import { humanizeRelative } from "@/features/scheduling/utils/triggerHumanize";
 import { automationAiState } from "@/features/scheduling/service/automationCosts";
 import { automationIntervalText } from "@/features/scheduling/components/costs/AutomationCostTable";
@@ -76,16 +77,21 @@ function Stat({ label, children }: { label: string; children: React.ReactNode })
 }
 
 function TriggerStats({ t }: { t: ManagedTrigger }) {
-  const { format } = useCostDisplay();
   const c = t.cost;
   return (
     <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-      <Stat label="Cost 30d">{format(c.cost)}</Stat>
-      <Stat label="Est. / month">{format(c.est_monthly_cost)}</Stat>
-      <Stat label="Runs 7d / 30d">{`${c.runs_7d} / ${c.runs}`}</Stat>
-      <Stat label="Turns avg / max">{`${c.avg_turns} / ${c.max_turns}`}</Stat>
-      <Stat label="Avg / run">{c.avg_run_cost == null ? "—" : format(c.avg_run_cost)}</Stat>
-      <Stat label="Max / run">{c.max_run_cost == null ? "—" : format(c.max_run_cost)}</Stat>
+      <Stat label="Cost 30d $"><AdminUsd usd={c.cost} /></Stat>
+      <Stat label="Points 30d"><AdminPoints usd={c.cost} /></Stat>
+      <Stat label="Est./month $"><AdminUsd usd={c.est_monthly_cost} /></Stat>
+      <Stat label="Est./month points"><AdminPoints usd={c.est_monthly_cost} /></Stat>
+      <Stat label="Runs 7d">{c.runs_7d}</Stat>
+      <Stat label="Runs 30d">{c.runs}</Stat>
+      <Stat label="Avg turns">{c.avg_turns}</Stat>
+      <Stat label="Max turns">{c.max_turns}</Stat>
+      <Stat label="Avg cost/run $"><AdminUsd usd={c.avg_run_cost} /></Stat>
+      <Stat label="Avg cost/run points"><AdminPoints usd={c.avg_run_cost} /></Stat>
+      <Stat label="Max cost/run $"><AdminUsd usd={c.max_run_cost} /></Stat>
+      <Stat label="Max cost/run points"><AdminPoints usd={c.max_run_cost} /></Stat>
       <Stat label="Runs as">{c.owner_email ?? "Unknown"}</Stat>
       <Stat label="For">{c.organization_name ?? "No organization"}</Stat>
       <div className="col-span-2 min-w-0 sm:col-span-4">
@@ -128,21 +134,16 @@ function TriggerActions({
   return (
     <div className="flex items-center gap-1" onClick={stop} onKeyDown={stop}>
       {t.overview.is_active ? (
-        <Button variant="outline" size="sm" className="h-7 gap-1 px-2 text-xs" onClick={() => onAct(t, "pause")}>
-          <Pause className="h-3 w-3" /> Pause
+        <Button variant="outline" icon={<Pause />} onClick={() => onAct(t, "pause")}>
+          Pause
         </Button>
       ) : (
-        <Button variant="outline" size="sm" className="h-7 gap-1 px-2 text-xs" onClick={() => onAct(t, "resume")}>
-          <Play className="h-3 w-3" /> Resume
+        <Button variant="outline" icon={<Play />} onClick={() => onAct(t, "resume")}>
+          Resume
         </Button>
       )}
-      <Button
-        variant="outline"
-        size="sm"
-        className="h-7 gap-1 px-2 text-xs text-destructive"
-        onClick={() => onAct(t, "archive")}
-      >
-        <Archive className="h-3 w-3" /> Archive
+      <Button variant="danger" icon={<Archive />} onClick={() => onAct(t, "archive")}>
+        Archive
       </Button>
     </div>
   );
@@ -204,13 +205,13 @@ export function TriggersManager({
   const costCols = automationCostColumns<ManagedTrigger>((t) => t.cost, seat, orgSlug);
   const pick = (ids: string[]) => ids.flatMap((id) => costCols.filter((c) => String(c.id) === id));
 
-  const columns: MatrxColumnDef<ManagedTrigger>[] = [
+  const unordered: MatrxColumnDef<ManagedTrigger>[] = [
     {
       id: "name",
       header: "Trigger",
       accessorFn: (t) => t.cost.name,
       filter: "text",
-      width: 240,
+      width: 200,
       cell: (t) => (
         <span className="block truncate text-sm font-medium" title={t.cost.name}>
           {t.cost.name}
@@ -374,6 +375,17 @@ export function TriggersManager({
       customActions: (t) => <TriggerActions t={t} onAct={(tr, a) => setPending({ t: tr, action: a })} />,
     },
   ];
+  // Money right after who does the work (owner, 2026-10-08); description after it.
+  const ORDER = [
+    "name", "cost_mandate", "cost_agent", "cost_total", "cost_total_points", "runs_30d",
+    "cost_avg_run", "cost_avg_run_points", "flags", "cost_approval", "cost_ai",
+    "workflow", "trigger_id", "kind", "cadence", "state", "cost_est_month", "cost_est_month_points",
+    "runs_7d", "last_fired",
+  ];
+  const columns: MatrxColumnDef<ManagedTrigger>[] = [
+    ...ORDER.flatMap((id) => unordered.filter((c) => String(c.id) === id)),
+    ...unordered.filter((c) => !ORDER.includes(String(c.id))),
+  ];
 
   // "AI only" hides triggers that ran and spent nothing on AI. A trigger that has
   // never run stays listed: it may still spend the first time it fires.
@@ -406,12 +418,16 @@ export function TriggersManager({
             searchPlaceholder: "Search triggers…",
             actions: (
               <div className="flex items-center gap-2">
-                <Button variant={aiOnly ? "secondary" : "outline"} onClick={() => setAiOnly((v) => !v)}>
+                <Button variant={aiOnly ? "quiet" : "outline"} aria-pressed={aiOnly} onClick={() => setAiOnly((v) => !v)}>
                   {aiOnly ? `AI only (${hidden.length} hidden)` : "Showing all"}
                 </Button>
-                <span className="whitespace-nowrap text-xs text-muted-foreground">
-                  {`${shown.length} triggers · 30d ${format(total)} · est. ${format(monthly)}/mo`}
-                </span>
+                <span className="whitespace-nowrap text-xs text-muted-foreground">{`${shown.length} triggers`}</span>
+                <CostFigures
+                  items={[
+                    { usdLabel: "Cost 30d", pointsLabel: "Points 30d", usd: total },
+                    { usdLabel: "Est./month $", pointsLabel: "Est./month points", usd: monthly },
+                  ]}
+                />
                 <Button variant="outline" onClick={() => void load()} disabled={loading}>
                   {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
                 </Button>

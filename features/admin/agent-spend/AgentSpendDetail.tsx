@@ -15,6 +15,7 @@ import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { Cost } from "@/components/cost/Cost";
 import { adminCostColumns } from "@/components/cost/adminCostColumns";
+import { AdminPoints, AdminUsd, CostFigures } from "@/components/cost/AdminCost";
 import { FirstPlusMore } from "@/components/official/first-plus-more/FirstPlusMore";
 import { useCostDisplay } from "@/components/cost/useCostDisplay";
 import { usageViewHref } from "@/features/admin/usage-drill/usageLinks";
@@ -248,10 +249,10 @@ function RunsTable({
             <span>
               {remaining > 0 ? "Showing " : "All "}
               <span className="font-medium tabular-nums text-foreground">{runs.length.toLocaleString()}</span>
-              {remaining > 0 ? " of " : " runs, "}
+              {remaining > 0 ? " of " : " runs"}
               {remaining > 0 && <span className="font-medium tabular-nums text-foreground">{totals.runs.toLocaleString()} runs</span>}
-              {remaining === 0 && <span className="font-medium tabular-nums text-foreground">{format(totals.cost)}</span>}
             </span>
+            <CostFigures items={[{ usdLabel: "Total $", pointsLabel: "Total points", usd: totals.cost }]} />
             {remaining > 0 && (
               <>
                 <Button variant="outline" onClick={() => loadMore(false)} disabled={loadingMore}>
@@ -260,7 +261,6 @@ function RunsTable({
                 <Button variant="outline" onClick={() => loadMore(true)} disabled={loadingMore}>
                   {`Load all ${remaining.toLocaleString()} left`}
                 </Button>
-                <span>{`Total ${format(totals.cost)}`}</span>
               </>
             )}
           </>
@@ -356,11 +356,15 @@ export function AgentSpendDetail({
           <SpendSubject row={row} seat={seat} orgSlug={orgSlug} days={days} />
           <AgentSpendFlagStrip row={row} money={format} />
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-8">
-            <Stat label="Total"><Cost usd={row.cost} /></Stat>
+            <Stat label="Cost $"><AdminUsd usd={row.cost} /></Stat>
+            <Stat label="Points"><AdminPoints usd={row.cost} /></Stat>
             <Stat label="Runs">{row.runs.toLocaleString()}</Stat>
-            <Stat label="Avg / run"><Cost usd={row.avg_run_cost} /></Stat>
-            <Stat label="Max / run"><Cost usd={row.max_run_cost} /></Stat>
-            <Stat label="Turns avg / max">{`${row.avg_turns} / ${row.max_turns}`}</Stat>
+            <Stat label="Avg cost/run $"><AdminUsd usd={row.avg_run_cost} /></Stat>
+            <Stat label="Avg cost/run points"><AdminPoints usd={row.avg_run_cost} /></Stat>
+            <Stat label="Max cost/run $"><AdminUsd usd={row.max_run_cost} /></Stat>
+            <Stat label="Max cost/run points"><AdminPoints usd={row.max_run_cost} /></Stat>
+            <Stat label="Avg turns">{row.avg_turns}</Stat>
+            <Stat label="Max turns">{row.max_turns}</Stat>
             <Stat label="In / call">{Math.round(row.avg_input_per_call).toLocaleString()}</Stat>
             <Stat label="Out / call">{Math.round(row.avg_output_per_call).toLocaleString()}</Stat>
             <Stat label="Automated">{`${row.automated_runs} / ${row.runs}`}</Stat>
@@ -416,7 +420,8 @@ export function AgentSpendDetail({
                       </Link>
                     )}
                     <span className="tabular-nums text-muted-foreground">{`${r.runs.toLocaleString()} runs`}</span>
-                    <Cost usd={r.cost} className="tabular-nums" />
+                    <span className="tabular-nums"><AdminUsd usd={r.cost} /></span>
+                    <span className="tabular-nums text-muted-foreground"><AdminPoints usd={r.cost} /></span>
                   </div>
                   );
                 })}
