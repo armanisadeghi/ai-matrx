@@ -163,8 +163,6 @@ function ChatPicker({ onPick, onCancel }: PickerProps) {
             onPick([chatItem(conv.conversationId, conv.title, conv.agentId ?? null)])
           }
           openInPlace
-          historyLabel="Conversations"
-          initialSearchOpen
           className="h-full bg-transparent"
         />
       </div>

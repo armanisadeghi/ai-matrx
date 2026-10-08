@@ -1828,7 +1828,15 @@ function WindowHeader({
         // a window is 360px on a 1440px screen — that is how D4 stayed invisible).
         // The name is `window-header`; `lib/detail/core/headerGeometry.ts` holds it.
         "@container/window-header",
-        "relative flex items-center justify-between gap-1 px-2 py-1 min-h-[26px] z-20 shrink-0",
+        // Open: three in-flow columns — left zone, title, right zone. The two
+        // side columns share the free space equally (never less than their
+        // real content), so the title sits at the WINDOW's centre whatever
+        // each side carries, and still truncates instead of running under an
+        // action cluster when space is tight (D4). Minimized has no title
+        // column, so it keeps the plain row.
+        isMinimized
+          ? "relative flex items-center justify-between gap-1 px-2 py-1 min-h-[26px] z-20 shrink-0"
+          : "relative grid grid-cols-[minmax(max-content,1fr)_minmax(0,auto)_minmax(max-content,1fr)] items-center gap-1 px-2 py-1 min-h-[26px] z-20 shrink-0",
         "border-b border-border/50 bg-muted/40 select-none",
         isMaximized || isMinimized
           ? "cursor-default"
@@ -1942,7 +1950,7 @@ function WindowHeader({
       )}
 
       {/* Right action zone */}
-      <div className="flex items-center gap-1 z-10 shrink-0">
+      <div className="flex items-center justify-end gap-1 z-10 shrink-0">
         {!isMinimized && (onPopOut || actionsRight) && (
           <div
             className={WINDOW_CHROME_ACTIONS}
