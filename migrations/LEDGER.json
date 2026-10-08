@@ -1,6 +1,6 @@
 {
   "note": "Checked-in snapshot of public._schema_migrations for the files under migrations/campaign and migrations/inverse. Written by `pnpm db:apply` on every successful production apply and refreshed whole by the nightly catch-up. Never hand-edited: a self-written checksum is a claim nobody can check. Guard: pnpm check:ledgered-files-unedited.",
-  "generated_at": "2026-10-08T17:18:32.118Z",
+  "generated_at": "2026-10-08T17:26:37.412Z",
   "files": {
     "migrations/campaign/a_chunk_is_the_size_the_client_door_can_actually_carry.sql": {
       "source": "matrx-frontend",
@@ -7903,6 +7903,24 @@
       "filename": "tablenames_c_the_register_restores_the_renamed_doors_grants.sql",
       "checksum": "420e4ec1f0386dc362f14249559626c95e65a74e5b9a6476644fc5ae97ec6efc",
       "applied_at": "2026-10-08 16:50:25.640242+00"
+    },
+    "migrations/campaign/tablenames_d_old_and_new_names_both_answer_until_the_release.sql": {
+      "source": "matrx-frontend",
+      "filename": "tablenames_d_old_and_new_names_both_answer_until_the_release.sql",
+      "checksum": "971970205c22a70b13283cb058e72182c12c12c4f329ee4c8508629be4f0855d",
+      "applied_at": "2026-10-08 17:23:55.233635+00"
+    },
+    "migrations/campaign/tablenames_e_the_old_name_overloads_are_declared_doors.sql": {
+      "source": "matrx-frontend",
+      "filename": "tablenames_e_the_old_name_overloads_are_declared_doors.sql",
+      "checksum": "9dd4e03ec9b0e4d1b900f4d7609ccb9b200de78c902221fc16939865c4a1536c",
+      "applied_at": "2026-10-08 17:26:15.805965+00"
+    },
+    "migrations/campaign/tablenames_f_the_register_opens_the_old_name_doors.sql": {
+      "source": "matrx-frontend",
+      "filename": "tablenames_f_the_register_opens_the_old_name_doors.sql",
+      "checksum": "5e848a4768a9a5621e4a30d5abb3772a8d3eb7953ca1f798555d98b055115148",
+      "applied_at": "2026-10-08 17:26:34.777498+00"
     },
     "migrations/campaign/tableowner_a_door_row_renders_like_the_catalog.sql": {
       "source": "matrx-frontend",

@@ -60,6 +60,11 @@ export function useMeetDefaults(
         .rpc("meet_policy_for", {
           p_organization_id: organizationId,
           p_host_user_id: userId,
+          // A meeting not yet scheduled: no meeting row, and the host's own profile.
+          // The SQL door reads NULL as exactly that; generated Args type every
+          // parameter as non-null, so the NULLs are named here.
+          p_profile: null as unknown as string,
+          p_meeting_id: null as unknown as string,
           p_key: key,
         })
         .then(({ data, error }) => (error ? undefined : data));

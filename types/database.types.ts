@@ -21857,15 +21857,6 @@ export type Database = {
           isSetofReturn: true
         }
       }
-      meet_admit_participant: {
-        Args: {
-          p_admitted: boolean
-          p_by_user_id: string
-          p_identity: string
-          p_meeting_id: string
-        }
-        Returns: undefined
-      }
       meet_archive_meeting: {
         Args: { p_by_user_id: string; p_meeting_id: string }
         Returns: {
@@ -32780,7 +32771,7 @@ export type Database = {
           icon: string | null
           id: string | null
           is_kernel: boolean | null
-          platform_owned: boolean | null
+          kept_by_the_app: boolean | null
           kept_for: string | null
           label_plural: string | null
           label_singular: string | null
@@ -32790,6 +32781,7 @@ export type Database = {
           ordered: boolean | null
           organization_id: string | null
           parent_token: string | null
+          platform_owned: boolean | null
           retention_days: number | null
           row_order: string | null
           slug: string | null
@@ -32816,7 +32808,7 @@ export type Database = {
           icon?: never
           id?: string | null
           is_kernel?: never
-          platform_owned?: never
+          kept_by_the_app?: never
           kept_for?: never
           label_plural?: never
           label_singular?: never
@@ -32826,6 +32818,7 @@ export type Database = {
           ordered?: never
           organization_id?: string | null
           parent_token?: never
+          platform_owned?: never
           retention_days?: never
           row_order?: never
           slug?: never
@@ -32852,7 +32845,7 @@ export type Database = {
           icon?: never
           id?: string | null
           is_kernel?: never
-          platform_owned?: never
+          kept_by_the_app?: never
           kept_for?: never
           label_plural?: never
           label_singular?: never
@@ -32862,6 +32855,7 @@ export type Database = {
           ordered?: never
           organization_id?: string | null
           parent_token?: never
+          platform_owned?: never
           retention_days?: never
           row_order?: never
           slug?: never
@@ -35398,14 +35392,23 @@ export type Database = {
           version: number
         }[]
       }
-      data_home: {
-        Args: {
-          p_include_platform_tables?: boolean
-          p_organization_id?: string
-          p_search?: string
-        }
-        Returns: Json
-      }
+      data_home:
+        | {
+            Args: {
+              p_include_app_tables: string
+              p_organization_id?: string
+              p_search?: string
+            }
+            Returns: Json
+          }
+        | {
+            Args: {
+              p_include_platform_tables?: boolean
+              p_organization_id?: string
+              p_search?: string
+            }
+            Returns: Json
+          }
       data_home_changed_by: {
         Args: { p_asks: Json }
         Returns: {
@@ -35427,25 +35430,35 @@ export type Database = {
           table_name: string
         }[]
       }
-      data_home_slim: {
-        Args: {
-          p_include_platform_tables?: boolean
-          p_organization_id?: string
-          p_search?: string
-        }
-        Returns: Json
-      }
+      data_home_slim:
+        | {
+            Args: {
+              p_include_app_tables: string
+              p_organization_id?: string
+              p_search?: string
+            }
+            Returns: Json
+          }
+        | {
+            Args: {
+              p_include_platform_tables?: boolean
+              p_organization_id?: string
+              p_search?: string
+            }
+            Returns: Json
+          }
       data_home_tables:
         | {
             Args: { p_organization_id?: string }
             Returns: {
               created_by: string
-              platform_owned: boolean
+              kept_by_the_app: boolean
               kind: string
               member: boolean
               mine: boolean
               organization_id: string
               organization_name: string
+              platform_owned: boolean
               shared_with_me: boolean
               system: boolean
               table_id: string
@@ -35456,15 +35469,39 @@ export type Database = {
             }[]
           }
         | {
-            Args: { p_include_platform_tables: boolean; p_organization_id: string }
+            Args: { p_include_app_tables: string; p_organization_id: string }
             Returns: {
               created_by: string
-              platform_owned: boolean
+              kept_by_the_app: boolean
               kind: string
               member: boolean
               mine: boolean
               organization_id: string
               organization_name: string
+              platform_owned: boolean
+              shared_with_me: boolean
+              system: boolean
+              table_id: string
+              table_name: string
+              team: boolean
+              updated_at: string
+              visibility: string
+            }[]
+          }
+        | {
+            Args: {
+              p_include_platform_tables: boolean
+              p_organization_id: string
+            }
+            Returns: {
+              created_by: string
+              kept_by_the_app: boolean
+              kind: string
+              member: boolean
+              mine: boolean
+              organization_id: string
+              organization_name: string
+              platform_owned: boolean
               shared_with_me: boolean
               system: boolean
               table_id: string
@@ -38704,24 +38741,43 @@ export type Database = {
         }
         Returns: string[]
       }
-      records_search: {
-        Args: {
-          p_include_platform_tables?: boolean
-          p_limit?: number
-          p_offset?: number
-          p_organization_ids?: string[]
-          p_search: string
-          p_table_ids?: string[]
-        }
-        Returns: {
-          name: string
-          organization_id: string
-          record_id: string
-          table_id: string
-          table_name: string
-          updated_at: string
-        }[]
-      }
+      records_search:
+        | {
+            Args: {
+              p_include_app_tables: string
+              p_limit?: number
+              p_offset?: number
+              p_organization_ids?: string[]
+              p_search: string
+              p_table_ids?: string[]
+            }
+            Returns: {
+              name: string
+              organization_id: string
+              record_id: string
+              table_id: string
+              table_name: string
+              updated_at: string
+            }[]
+          }
+        | {
+            Args: {
+              p_include_platform_tables?: boolean
+              p_limit?: number
+              p_offset?: number
+              p_organization_ids?: string[]
+              p_search: string
+              p_table_ids?: string[]
+            }
+            Returns: {
+              name: string
+              organization_id: string
+              record_id: string
+              table_id: string
+              table_name: string
+              updated_at: string
+            }[]
+          }
       refusals_claiming_a_level_never_asked: {
         Args: never
         Returns: {
@@ -39639,10 +39695,11 @@ export type Database = {
           foundation: boolean
           keeper_group: string
           keeper_says: string
-          platform_owned: boolean
+          kept_by_the_app: boolean
           kept_for: string
           mine: boolean
           offered_as_context: boolean
+          platform_owned: boolean
           table_id: string
           used_in_id: string
           used_in_kind: string
@@ -39696,9 +39753,16 @@ export type Database = {
       table_kind_facts: { Args: { p_table_id: string }; Returns: Json }
       table_level_facts: { Args: { p_table_id: string }; Returns: Json }
       table_list_everywhere:
+        | {
+            Args: { p_include_app_tables: string; p_organization_id: string }
+            Returns: Json
+          }
         | { Args: { p_organization_id?: string }; Returns: Json }
         | {
-            Args: { p_include_platform_tables: boolean; p_organization_id: string }
+            Args: {
+              p_include_platform_tables: boolean
+              p_organization_id: string
+            }
             Returns: Json
           }
       table_move: {
@@ -40054,6 +40118,10 @@ export type Database = {
       text_head_bytes: {
         Args: { p_bytes: number; p_text: string }
         Returns: string
+      }
+      timeline_dependency_shift: {
+        Args: { p_organization_id: string }
+        Returns: boolean
       }
       undeclared_keys: {
         Args: { p_data: Json; p_organization_id: string; p_table_id: string }
