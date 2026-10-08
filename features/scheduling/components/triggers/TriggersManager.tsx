@@ -25,13 +25,13 @@ import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { useCostDisplay } from "@/components/cost/useCostDisplay";
 import { humanizeRelative } from "@/features/scheduling/utils/triggerHumanize";
 import {
+  automationAiState,
   automationFlags,
   type AutomationFlag,
 } from "@/features/scheduling/service/automationCosts";
-import {
-  AutomationCostDetail,
-  automationIntervalText,
-} from "@/features/scheduling/components/costs/AutomationCostTable";
+import { automationIntervalText } from "@/features/scheduling/components/costs/AutomationCostTable";
+import { EntityRef } from "@/components/official/entity-ref/EntityRef";
+import { TriggerRunsTable } from "./TriggerRunsTable";
 import {
   RunsAsCell,
   automationCostColumns,
@@ -40,18 +40,28 @@ import {
   fetchManagedTriggers,
   setWorkflowTriggerState,
   triggerExtraFlags,
+  triggerIdSuffix,
+  triggerWorkflowHref,
   type ManagedTrigger,
   type TriggerAction,
 } from "@/features/scheduling/service/workflowTriggers";
 
-type AnyFlag = Pick<AutomationFlag, "id" | "label" | "detail" | "severity">;
+type AnyFlag = Pick<AutomationFlag, "id" | "label" | "detail"> & {
+  severity: "critical" | "warning" | "hint";
+};
+
+const FLAG_CLASS: Record<AnyFlag["severity"], string> = {
+  critical: "bg-red-600 text-white hover:bg-red-600",
+  warning: "bg-amber-500 text-white hover:bg-amber-500",
+  hint: "border border-dashed border-muted-foreground/50 bg-transparent text-muted-foreground hover:bg-transparent",
+};
 
 function allFlags(t: ManagedTrigger): AnyFlag[] {
   return [...triggerExtraFlags(t), ...automationFlags(t.cost)];
 }
 
-function FlagBadges({ t, extraOnly }: { t: ManagedTrigger; extraOnly?: boolean }) {
-  const flags = extraOnly ? triggerExtraFlags(t) : allFlags(t);
+function FlagBadges({ t }: { t: ManagedTrigger }) {
+  const flags = allFlags(t);
   if (flags.length === 0) return <span className="text-xs text-muted-foreground">—</span>;
   return (
     <div className="flex min-w-0 max-w-full flex-wrap gap-1">
@@ -59,11 +69,7 @@ function FlagBadges({ t, extraOnly }: { t: ManagedTrigger; extraOnly?: boolean }
         <Tooltip key={f.id}>
           <TooltipTrigger asChild>
             <Badge
-              className={`max-w-full ${
-                f.severity === "critical"
-                  ? "bg-red-600 text-white hover:bg-red-600"
-                  : "bg-amber-500 text-white hover:bg-amber-500"
-              } text-[10px]`}
+              className={`max-w-full ${FLAG_CLASS[f.severity]} text-[10px]`}
             >
               <span className="truncate">{f.label}</span>
             </Badge>
@@ -71,6 +77,51 @@ function FlagBadges({ t, extraOnly }: { t: ManagedTrigger; extraOnly?: boolean }
           <TooltipContent>{f.detail}</TooltipContent>
         </Tooltip>
       ))}
+    </div>
+  );
+}
+
+function Stat({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div className="min-w-0">
+      <div className="text-[10px] uppercase tracking-wide text-muted-foreground">{label}</div>
+      <div className="truncate text-sm font-medium tabular-nums">{children}</div>
+    </div>
+  );
+}
+
+function TriggerStats({ t }: { t: ManagedTrigger }) {
+  const { format } = useCostDisplay();
+  const c = t.cost;
+  return (
+    <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+      <Stat label="Cost 30d">{format(c.cost)}</Stat>
+      <Stat label="Est. / month">{format(c.est_monthly_cost)}</Stat>
+      <Stat label="Runs 7d / 30d">{`${c.runs_7d} / ${c.runs}`}</Stat>
+      <Stat label="Turns avg / max">{`${c.avg_turns} / ${c.max_turns}`}</Stat>
+      <Stat label="Avg / run">{c.avg_run_cost == null ? "—" : format(c.avg_run_cost)}</Stat>
+      <Stat label="Max / run">{c.max_run_cost == null ? "—" : format(c.max_run_cost)}</Stat>
+      <Stat label="Runs as">{c.owner_email ?? "Unknown"}</Stat>
+      <Stat label="For">{c.organization_name ?? "No organization"}</Stat>
+      <div className="col-span-2 min-w-0 sm:col-span-4">
+        <div className="text-[10px] uppercase tracking-wide text-muted-foreground">Approval</div>
+        <div className="text-xs">{c.approval ?? c.approved_by ?? "No approval recorded"}</div>
+      </div>
+      <div className="col-span-2 min-w-0 sm:col-span-4">
+        <div className="text-[10px] uppercase tracking-wide text-muted-foreground">Models</div>
+        <div className="flex flex-wrap gap-1">
+          {c.models.length === 0 && <span className="text-xs">—</span>}
+          {c.models.map((m) => (
+            <Badge
+              key={m}
+              variant="outline"
+              className={`max-w-full text-[10px] ${c.premium_models.includes(m) ? "border-red-500 text-red-700 dark:text-red-400" : ""}`}
+            >
+              <span className="truncate">{m}</span>
+            </Badge>
+          ))}
+        </div>
+      </div>
     </div>
   );
 }
@@ -127,6 +178,7 @@ export function TriggersManager({
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState<{ t: ManagedTrigger; action: TriggerAction } | null>(null);
   const [busy, setBusy] = useState(false);
+  const [aiOnly, setAiOnly] = useState(true);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -188,23 +240,37 @@ export function TriggersManager({
       accessorFn: (t) => t.cost.name,
       filter: "text",
       width: 280,
-      cell: (t) => (
-        <div className="min-w-0">
-          <div className="truncate text-sm font-medium" title={t.cost.name}>
-            {t.cost.name}
+      cell: (t) => {
+        const wfHref = t.overview.definition_id ? triggerWorkflowHref(seat, t.overview.definition_id) : null;
+        return (
+          <div className="min-w-0">
+            <div className="truncate text-sm font-medium" title={t.cost.name}>
+              {t.cost.name}
+              <span className="ml-1 font-mono text-[10px] font-normal text-muted-foreground">
+                #{triggerIdSuffix(t.overview.trigger_id)}
+              </span>
+            </div>
+            {t.overview.definition_id &&
+              (wfHref ? (
+                <Link
+                  href={wfHref}
+                  onClick={(e) => e.stopPropagation()}
+                  className="block truncate text-xs text-primary hover:underline"
+                  title={t.overview.workflow_name ?? undefined}
+                >
+                  {t.overview.workflow_name ?? "Workflow"}
+                </Link>
+              ) : (
+                <EntityRef
+                  token="workflow"
+                  id={t.overview.definition_id}
+                  name={t.overview.workflow_name ?? "Workflow"}
+                  showIcon={false}
+                />
+              ))}
           </div>
-          {t.overview.definition_id && (
-            <Link
-              href={`/workflows/${t.overview.definition_id}/triggers`}
-              onClick={(e) => e.stopPropagation()}
-              className="block truncate text-xs text-primary hover:underline"
-              title={t.overview.workflow_name ?? undefined}
-            >
-              {t.overview.workflow_name ?? "Workflow"}
-            </Link>
-          )}
-        </div>
-      ),
+        );
+      },
     },
     {
       id: "kind",
@@ -305,14 +371,19 @@ export function TriggersManager({
     },
     ...costCols,
     {
-      id: "actions",
+      id: "custom-actions",
       header: "Actions",
-      accessorFn: () => "",
+      sortable: false,
+      filter: false,
       width: 190,
-      cell: (t) => <TriggerActions t={t} onAct={(tr, a) => setPending({ t: tr, action: a })} />,
+      customActions: (t) => <TriggerActions t={t} onAct={(tr, a) => setPending({ t: tr, action: a })} />,
     },
   ];
 
+  // "AI only" hides triggers that ran and spent nothing on AI. A trigger that has
+  // never run stays listed: it may still spend the first time it fires.
+  const hidden = rows.filter((r) => automationAiState(r.cost) === "no_spend");
+  const shown = aiOnly ? rows.filter((r) => automationAiState(r.cost) !== "no_spend") : rows;
   const total = rows.reduce((s, r) => s + r.cost.cost, 0);
   const monthly = rows.reduce((s, r) => s + (r.overview.is_active ? r.cost.est_monthly_cost : 0), 0);
   const where = pending
@@ -329,7 +400,7 @@ export function TriggersManager({
       )}
       <div className="min-h-0 flex-1">
         <MatrxDataTable
-          data={rows}
+          data={shown}
           columns={columns}
           getRowId={(t) => t.overview.trigger_id}
           isLoading={loading}
@@ -340,8 +411,11 @@ export function TriggersManager({
             searchPlaceholder: "Search triggers…",
             actions: (
               <div className="flex items-center gap-2">
+                <Button variant={aiOnly ? "secondary" : "outline"} onClick={() => setAiOnly((v) => !v)}>
+                  {aiOnly ? `AI only (${hidden.length} hidden)` : "Showing all"}
+                </Button>
                 <span className="whitespace-nowrap text-xs text-muted-foreground">
-                  {`${rows.length} triggers · 30d ${format(total)} · est. ${format(monthly)}/mo`}
+                  {`${shown.length} triggers · 30d ${format(total)} · est. ${format(monthly)}/mo`}
                 </span>
                 <Button variant="outline" onClick={() => void load()} disabled={loading}>
                   {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
@@ -374,8 +448,9 @@ export function TriggersManager({
                     {`Created ${humanizeRelative(t.overview.created_at)} by ${t.overview.created_by_email ?? "unknown"} · fired ${t.overview.fire_count} times`}
                   </span>
                 </div>
-                <FlagBadges t={t} extraOnly />
-                <AutomationCostDetail row={t.cost} seat={seat} orgSlug={orgSlug} />
+                <FlagBadges t={t} />
+                <TriggerStats t={t} />
+                <TriggerRunsTable triggerId={t.overview.trigger_id} seat={seat} orgSlug={orgSlug} />
               </div>
             ),
             defaultWidth: 720,
