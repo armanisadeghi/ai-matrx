@@ -185,9 +185,9 @@ export function UnifiedDataTablePage({ tableId }: { tableId: string }) {
    * the person makes is written back, replacing the entry, so a copied link opens the same look.
    * Same history write as the layout above.
    */
-  // From the router's own params, never `window` (lane SSR-ROWS): the server renders the grid now, and
-  // a server pass that read "no address" beside a browser pass that read one would not hydrate.
-  const [viewAddress] = useState<ViewAddressState | null>(() => viewAddressFromParams((key) => searchParams.get(key)));
+  const [viewAddress] = useState<ViewAddressState | null>(() =>
+    viewAddressFromParams((key) => (typeof window === "undefined" ? null : new URLSearchParams(window.location.search).get(key))),
+  );
   const onViewAddressChange = useCallback((state: ViewAddressState | null) => {
     const next = new URLSearchParams(typeof window === "undefined" ? "" : window.location.search);
     for (const key of VIEW_ADDRESS_KEYS) next.delete(key);
