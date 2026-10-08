@@ -1,7 +1,7 @@
 -- chair-step: undo hotdoors3_e_a_a_named_table_is_read_by_its_index_key.sql - restores custom.visible_set and custom._record_shown_to_ctx as part d left them
 -- lane: HOT-DOORS-3
--- based-on: custom.visible_set(uuid, uuid, uuid, permission_level) HASH_V
--- based-on: custom._record_shown_to_ctx(uuid[], uuid) HASH_R
+-- based-on: custom.visible_set(uuid, uuid, uuid, permission_level) 7f1b41a16871a8d58d84170d6f2a6347c8c94666f868fbb632910e06da0ef4fd
+-- based-on: custom._record_shown_to_ctx(uuid[], uuid) d48f0353757f55e192a1c39605c8578b46d42b9cb3cfa0d0ef969730beb701bf
 
 set local statement_timeout = '60s';
 
