@@ -118,6 +118,7 @@ jest.mock("@ai-matrx/records-ui", () => ({
   ArchivedDisclosure: () => null,
   RecordsMount: ({ children }: { children: React.ReactNode }) => <>{children}</>,
   personActor: () => ({}),
+  setPersonTimeZone: () => {},
   recordsDataSource: () => ({}),
 }));
 const STORE_WRITES: Array<{ door: string; args: unknown }> = [];

@@ -52,6 +52,8 @@ jest.mock("@/utils/supabase/client", () => ({
 }));
 jest.mock("@/features/agent-context/hooks/useNavTree", () => ({
   useNavTree: () => ({ orgs: [{ id: ORG, name: "Oak & River" }], isLoading: false }),
+  // The picker now offers only organizations the person can create in (open ones).
+  useOrganizationsToCreateIn: () => ({ orgs: [{ id: ORG, name: "Oak & River" }], isLoading: false }),
 }));
 jest.mock("@/lib/redux/hooks", () => ({
   useAppSelector: (sel: (s: unknown) => unknown) => sel({ appContext: {} }),
