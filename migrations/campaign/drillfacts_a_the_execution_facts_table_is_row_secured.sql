@@ -1,4 +1,3 @@
--- draft: DRILL-FACTS rehearsed green on the clone; held for the owner's ruling on drillledger_records_green L2 (a ledger cost that lands after the count is no longer in the records until the next refresh)
 -- chair-step: lane DRILL-FACTS — CREATES the server-only table runtime._ai_usage_execution_facts (one row per ledger execution holding every column runtime._ai_usage_calls derives today: Cube's pre-aggregation at execution grain), registers it as System machinery (token ai_usage_execution_facts), revokes it from every client role and switches its row security on, and CREATES the view runtime._ai_usage_calls_live — the CURRENT body of runtime._ai_usage_calls, verbatim, under a new name: the one rules source the facts are filled from. Nothing is replaced, nothing of anybody's data is read into the new table (the fill is its own file), and no live table is locked beyond ACCESS SHARE. Switching row security on fires the event trigger admin_read_follows_rls, whose CREATE POLICY takes ACCESS EXCLUSIVE on 16 auth, 5 storage and 2 realtime relations until COMMIT — so this file is tiny, row security is its LAST statement, and it is applied in the 01:00–04:00 PT window.
 -- lane: DRILL-FACTS
 -- lock: platform
@@ -13,8 +12,8 @@
 -- nightly for 35 days). So the derived row is stored once per execution by that same refresh, under the
 -- same advisory lock and watermark, and the view reads it (drillfacts_c_…).
 --
--- APPLY ORDER: this file, then drillfacts_b_the_execution_facts_are_filled.sql (autocommit, from
--- aidream), then drillfacts_c_usage_is_counted_from_the_execution_facts.sql.
+-- APPLY ORDER: this file, then drillfacts_b_the_execution_facts_are_filled.sql (one plain
+-- transaction), then drillfacts_c_usage_is_counted_from_the_execution_facts.sql, then drillfacts_d_….sql.
 -- INVERSE: migrations/inverse/drillfacts_a_the_execution_facts_table_is_row_secured_down.sql
 
 -- ─────────────────────────────────────────────────────────────────────────────────────────

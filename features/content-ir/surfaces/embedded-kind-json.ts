@@ -1,1 +1,15 @@
-export * from "@ai-matrx/chat/utils/content-ir/surfaces/embedded-kind-json";
+export {
+  type EmbeddedKindJsonRegion,
+  type EmbeddedKindJsonPiece,
+  balancedEnds,
+  frontMatterEnd,
+  type EmbeddedKindSearchOptions,
+  findEmbeddedKindJsonRegions,
+  splitAroundEmbeddedKindJson,
+  normalizeRecoveredProsePiece,
+  normalizeRecoveredContainerPiece,
+  type KindCarryingJsonRegion,
+  findKindCarryingJsonValues,
+  type BrokenKindJsonRegion,
+  findBrokenKindJsonRegions,
+} from "@ai-matrx/content-ir/surfaces";
