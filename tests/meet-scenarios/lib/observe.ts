@@ -70,17 +70,34 @@ function readInPage(): Observation {
   if (root) {
     const a = (n: string) => root.getAttribute(`data-meet-${n}`);
     const lobby = a("lobby-count");
+    // The core's phase vocabulary (CORE-DESIGN §3.1) -> the harness names.
+    const raw = a("phase") ?? "unknown";
+    const conn = a("connection");
+    const named: Record<string, CallPhase> = {
+      resolving: "resolving", unsupported: "unknown", prejoin: "prejoin", joining: "joining",
+      "waiting:host_not_started": "waiting-for-host", "waiting:knocking": "knocking",
+      denied: "denied", knock_expired: "knock-expired", in_call: "in-call",
+      disconnected: "disconnected", left: "left", removed: "removed", superseded: "displaced",
+      inactive: "left", ended: "ended", record: "ended",
+    };
+    let phase: CallPhase = named[raw] ?? (raw as CallPhase);
+    if (raw === "refused:not_found") phase = "not-found";
+    else if (raw === "refused:expired") phase = "expired";
+    else if (raw === "refused:ended") phase = "ended";
+    if (phase === "in-call" && conn !== null && conn !== "stable") phase = "reconnecting";
+    const device = (v: string | null) =>
+      v === null ? null : /denied|blocked/.test(v) ? "blocked" : /none|revoked/.test(v) ? "missing" : v;
     return {
       source: "contract",
-      phase: (a("phase") ?? "unknown") as CallPhase,
+      phase,
       role: a("role"),
-      connection: a("connection"),
+      connection: conn === "server_unreachable" ? "server-unreachable" : conn,
       hostPresent: bool(a("host-present")),
       recording: bool(a("recording")),
       audioBlocked: bool(a("audio-blocked")),
       lobbyCount: lobby === null ? null : Number(lobby),
-      camera: a("camera"),
-      microphone: a("microphone"),
+      camera: device(a("camera")),
+      microphone: device(a("microphone")),
       notices: Array.from(document.querySelectorAll("[data-meet-notice]"))
         .filter(visible)
         .map((n) => n.getAttribute("data-meet-notice") ?? ""),
