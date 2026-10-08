@@ -21,6 +21,13 @@ const viewSettings = async () => {
   await A.getByRole("button", { name: "View settings" }).click();
 };
 const addProp = async (name, type) => {
+  for (let attempt = 0; attempt < 3; attempt++) {
+    await addPropOnce(name, type);
+    if (await A.getByText(name, { exact: true }).first().waitFor({ timeout: 20_000 }).then(() => true, () => false)) return;
+  }
+  throw new Error(`property ${name} never appeared`);
+};
+const addPropOnce = async (name, type) => {
   await viewSettings();
   await page.getByText("Properties", { exact: true }).click();
   await page.getByText("New property", { exact: true }).click();
@@ -63,8 +70,10 @@ await act(page, async () => {
   for (const [n, t] of [["Budget", "Number"], ["Status", "Status"], ["Region", "Text"], ["Notes", "Text"], ["Channel", "Text"], ["Phase", "Text"], ["Due", "Date"]]) await addProp(n, t);
   await A.hover();
   await A.getByRole("button", { name: /^New$/ }).first().click();
+  await A.locator("[data-row-id]").first().waitFor({ timeout: 60_000 });
   await page.waitForTimeout(2500);
   await page.keyboard.press("Escape");
+  await page.screenshot({ path: `${SHOT}/r43-rows.png` });
   const row = A.locator("[data-row-id]").first();
   await editCell(row, "Name", "Spring launch");
   await editCell(row, "Budget", "4200");
