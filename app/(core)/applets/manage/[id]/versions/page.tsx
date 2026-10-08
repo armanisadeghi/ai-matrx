@@ -26,6 +26,7 @@ export default async function AppletVersionsPage({
         appId={app.id}
         versions={versions}
         currentVersion={app.content_version}
+        applet={{ status: app.status, published_to_web: app.published_to_web, deleted_at: app.deleted_at }}
       />
     </>
   );

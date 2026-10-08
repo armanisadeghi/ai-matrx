@@ -22,19 +22,22 @@ import { saveAppletRecord } from "@/features/agents/redux/applets/thunks";
 import { appletFiles, appletJobs, appletPages, appletSources } from "@/features/applets/types";
 import type { AppletVersionRow } from "@/lib/applets/data";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
+import { appletVersionStatusLabel, type AppletStateFields } from "@/features/applets/lib/applet-state";
 import { formatDateTime } from "@/features/applets/format";
 
 interface AppletVersionsContentProps {
   appId: string;
   versions: AppletVersionRow[];
   currentVersion: number;
+  /** The Applet's own state fields — the current version's badge says what the Applet is. */
+  applet: AppletStateFields;
 }
 
-function versionHuman(v: AppletVersionRow, isCurrent: boolean): string {
+function versionHuman(v: AppletVersionRow, isCurrent: boolean, statusLabel: string | null): string {
   return [
     `v${v.version_number}${isCurrent ? " (current)" : ""}`,
     v.name,
-    v.status ? `Status: ${v.status}` : null,
+    statusLabel ? `Status: ${statusLabel}` : null,
     `Changed: ${formatDateTime(v.changed_at)}`,
     v.change_note,
   ]
@@ -71,6 +74,7 @@ export function AppletVersionsContent({
   appId,
   versions,
   currentVersion,
+  applet,
 }: AppletVersionsContentProps) {
   const dispatch = useAppDispatch();
   const router = useRouter();
@@ -144,6 +148,7 @@ export function AppletVersionsContent({
           <div className="rounded-lg border border-border divide-y divide-border bg-card">
             {versions.map((v, i) => {
               const isCurrent = v.version_number === currentVersion;
+              const statusLabel = appletVersionStatusLabel(isCurrent, applet, v.status);
               const summary = changeSummary(v, versions[i + 1]);
               return (
                 <div key={v.id} className="group/x relative flex items-stretch">
@@ -164,9 +169,9 @@ export function AppletVersionsContent({
                             current
                           </span>
                         )}
-                        {v.status && (
-                          <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-muted text-muted-foreground capitalize">
-                            {v.status}
+                        {statusLabel && (
+                          <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-muted text-muted-foreground">
+                            {statusLabel}
                           </span>
                         )}
                       </div>
@@ -195,14 +200,14 @@ export function AppletVersionsContent({
                     size="icon"
                     label={`v${v.version_number}`}
                     className="absolute right-3 top-1/2 -translate-y-1/2 opacity-0 group-hover/x:opacity-100 focus-within:opacity-100"
-                    human={() => versionHuman(v, isCurrent)}
+                    human={() => versionHuman(v, isCurrent, statusLabel)}
                     json={() => v}
                     agent={() => ({
                       kind: "applet-version",
                       location: `AI Matrx — Applet — Versions`,
                       description: "A single version snapshot row.",
                       data: v,
-                      summary: versionHuman(v, isCurrent),
+                      summary: versionHuman(v, isCurrent, statusLabel),
                       attributes: {
                         appId,
                         version: v.version_number,
