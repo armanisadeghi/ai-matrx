@@ -705,7 +705,11 @@ const tasksLayout: Layout<{ title: string | null; items: TaskNode[] }> = {
     const items = attempt(() => parseMarkdownChecklist(data)) ?? [];
     if (!items.length) return null;
     const heading = /^\s*#{1,6}\s+(.+)$/m.exec(data);
-    return { title: heading?.[1]?.trim() ?? null, items: toTaskNodes(items) };
+    const nodes = toTaskNodes(items);
+    // The checklist parser already turns the heading into a section: lift it to the title, never both.
+    const [first] = nodes;
+    if (nodes.length === 1 && first?.type === "section") return { title: first.title, items: first.children ?? [] };
+    return { title: heading?.[1]?.trim() ?? null, items: nodes };
   },
   title: (m, c) => m.title ?? str(c.title) ?? "Checklist",
   render: (m, c) => paperHtml(tasksLayout.title(m, c), null, taskNodesHtml(m.items, 0)),
