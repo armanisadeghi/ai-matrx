@@ -11,18 +11,18 @@ import { normalizeRawQuizJSON, type RawQuizJSON } from "./quiz-parser";
 export type QuizVariant = "with-answers" | "blank" | "answer-key";
 
 const QUIZ_STYLES = `
-  .quiz-header {
+  .matrx-quiz-quiz-header {
     margin-bottom: 20px;
     padding-bottom: 14px;
     border-bottom: 2px solid #1e293b;
   }
-  .quiz-title { font-size: 20pt; font-weight: 700; margin-bottom: 4px; }
-  .quiz-meta { font-size: 9.5pt; color: #64748b; }
-  .question-block {
+  .matrx-quiz-quiz-title { font-size: 20pt; font-weight: 700; margin-bottom: 4px; }
+  .matrx-quiz-quiz-meta { font-size: 9.5pt; color: #64748b; }
+  .matrx-quiz-question-block {
     margin-bottom: 20px;
     page-break-inside: avoid;
   }
-  .question-number {
+  .matrx-quiz-question-number {
     font-size: 8.5pt;
     font-weight: 700;
     text-transform: uppercase;
@@ -30,14 +30,14 @@ const QUIZ_STYLES = `
     color: #64748b;
     margin-bottom: 4px;
   }
-  .question-text {
+  .matrx-quiz-question-text {
     font-size: 11pt;
     font-weight: 600;
     margin-bottom: 10px;
     line-height: 1.4;
   }
-  .options-list { list-style: none; padding: 0; margin: 0; }
-  .option-item {
+  .matrx-quiz-options-list { list-style: none; padding: 0; margin: 0; }
+  .matrx-quiz-option-item {
     display: flex;
     align-items: flex-start;
     gap: 10px;
@@ -47,17 +47,17 @@ const QUIZ_STYLES = `
     border-radius: 6px;
     font-size: 10.5pt;
   }
-  .option-letter {
+  .matrx-quiz-option-letter {
     font-weight: 700;
     min-width: 20px;
     color: #374151;
   }
-  .option-correct {
+  .matrx-quiz-option-correct {
     background: #f0fdf4;
     border-color: #22c55e;
   }
-  .option-correct .option-letter { color: #16a34a; }
-  .option-bubble {
+  .matrx-quiz-option-correct .matrx-quiz-option-letter { color: #16a34a; }
+  .matrx-quiz-option-bubble {
     width: 16px;
     height: 16px;
     border: 1.5px solid #94a3b8;
@@ -65,7 +65,7 @@ const QUIZ_STYLES = `
     flex-shrink: 0;
     margin-top: 2px;
   }
-  .explanation {
+  .matrx-quiz-explanation {
     margin-top: 8px;
     padding: 8px 12px;
     background: #f8fafc;
@@ -74,12 +74,12 @@ const QUIZ_STYLES = `
     color: #374151;
     border-radius: 0 4px 4px 0;
   }
-  .answer-lines {
+  .matrx-quiz-answer-lines {
     height: 72px;
     border-bottom: 1px solid #94a3b8;
     background: repeating-linear-gradient(to bottom, transparent 0, transparent 23px, #cbd5e1 23px, #cbd5e1 24px);
   }
-  .answer-key-row {
+  .matrx-quiz-answer-key-row {
     display: grid;
     grid-template-columns: 40px 1fr;
     gap: 8px;
@@ -88,12 +88,12 @@ const QUIZ_STYLES = `
     font-size: 10pt;
     page-break-inside: avoid;
   }
-  .answer-key-num { font-weight: 700; color: #64748b; }
-  .answer-key-correct { color: #16a34a; font-weight: 600; }
+  .matrx-quiz-answer-key-num { font-weight: 700; color: #64748b; }
+  .matrx-quiz-answer-key-correct { color: #16a34a; font-weight: 600; }
 
   @media print {
-    .option-correct { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-    .explanation { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .matrx-quiz-option-correct { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .matrx-quiz-explanation { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
   }
 `;
 
@@ -105,27 +105,27 @@ function renderWithAnswers(quiz: RawQuizJSON): string {
             const opts = q.options
                 .map((opt, oi) => {
                     const isCorrect = oi === q.correctAnswer;
-                    return `<li class="option-item${isCorrect ? " option-correct" : ""}">
-          <span class="option-letter">${LETTERS[oi] ?? oi + 1}.</span>
+                    return `<li class="matrx-quiz-option-item${isCorrect ? " matrx-quiz-option-correct" : ""}">
+          <span class="matrx-quiz-option-letter">${LETTERS[oi] ?? oi + 1}.</span>
           <span>${escapeHtml(opt)}</span>
         </li>`;
                 })
                 .join("\n");
 
-            const openAnswer = !q.options.length && q.answerText ? `<div class="explanation"><strong>Answer:</strong> ${escapeHtml(q.answerText)}</div>` : "";
-            return `<div class="question-block">
-      <div class="question-number">Question ${qi + 1}</div>
-      <div class="question-text">${escapeHtml(q.question)}</div>
-      <ul class="options-list">${opts}</ul>
+            const openAnswer = !q.options.length && q.answerText ? `<div class="matrx-quiz-explanation"><strong>Answer:</strong> ${escapeHtml(q.answerText)}</div>` : "";
+            return `<div class="matrx-quiz-question-block">
+      <div class="matrx-quiz-question-number">Question ${qi + 1}</div>
+      <div class="matrx-quiz-question-text">${escapeHtml(q.question)}</div>
+      <ul class="matrx-quiz-options-list">${opts}</ul>
       ${openAnswer}
-      ${q.explanation ? `<div class="explanation"><strong>Explanation:</strong> ${escapeHtml(q.explanation)}</div>` : ""}
+      ${q.explanation ? `<div class="matrx-quiz-explanation"><strong>Explanation:</strong> ${escapeHtml(q.explanation)}</div>` : ""}
     </div>`;
         })
         .join("\n");
 
-    return `<div class="quiz-header">
-  <div class="quiz-title">${escapeHtml(quiz.quizTitle)}</div>
-  <div class="quiz-meta">${quiz.multipleChoice.length} questions${quiz.category ? ` • ${escapeHtml(quiz.category)}` : ""} • Answers shown</div>
+    return `<div class="matrx-quiz-quiz-header">
+  <div class="matrx-quiz-quiz-title">${escapeHtml(quiz.quizTitle)}</div>
+  <div class="matrx-quiz-quiz-meta">${quiz.multipleChoice.length} questions${quiz.category ? ` • ${escapeHtml(quiz.category)}` : ""} • Answers shown</div>
 </div>
 ${questions}`;
 }
@@ -135,27 +135,27 @@ function renderBlank(quiz: RawQuizJSON): string {
         .map((q, qi) => {
             const opts = q.options
                 .map((opt, oi) => {
-                    return `<li class="option-item">
-          <span class="option-bubble"></span>
-          <span class="option-letter">${LETTERS[oi] ?? oi + 1}.</span>
+                    return `<li class="matrx-quiz-option-item">
+          <span class="matrx-quiz-option-bubble"></span>
+          <span class="matrx-quiz-option-letter">${LETTERS[oi] ?? oi + 1}.</span>
           <span>${escapeHtml(opt)}</span>
         </li>`;
                 })
                 .join("\n");
 
-            const lines = q.options.length ? "" : `<div class="answer-lines"></div>`;
-            return `<div class="question-block">
-      <div class="question-number">Question ${qi + 1}</div>
-      <div class="question-text">${escapeHtml(q.question)}</div>
-      <ul class="options-list">${opts}</ul>
+            const lines = q.options.length ? "" : `<div class="matrx-quiz-answer-lines"></div>`;
+            return `<div class="matrx-quiz-question-block">
+      <div class="matrx-quiz-question-number">Question ${qi + 1}</div>
+      <div class="matrx-quiz-question-text">${escapeHtml(q.question)}</div>
+      <ul class="matrx-quiz-options-list">${opts}</ul>
       ${lines}
     </div>`;
         })
         .join("\n");
 
-    return `<div class="quiz-header">
-  <div class="quiz-title">${escapeHtml(quiz.quizTitle)}</div>
-  <div class="quiz-meta">${quiz.multipleChoice.length} questions${quiz.category ? ` • ${escapeHtml(quiz.category)}` : ""} • Name: _________________________ Score: _____/${quiz.multipleChoice.length}</div>
+    return `<div class="matrx-quiz-quiz-header">
+  <div class="matrx-quiz-quiz-title">${escapeHtml(quiz.quizTitle)}</div>
+  <div class="matrx-quiz-quiz-meta">${quiz.multipleChoice.length} questions${quiz.category ? ` • ${escapeHtml(quiz.category)}` : ""} • Name: _________________________ Score: _____/${quiz.multipleChoice.length}</div>
 </div>
 ${questions}`;
 }
@@ -167,16 +167,16 @@ function renderAnswerKey(quiz: RawQuizJSON): string {
             const correctLabel = hasChoice
                 ? `${LETTERS[q.correctAnswer] ?? q.correctAnswer + 1}. ${q.options[q.correctAnswer]}`
                 : (q.answerText ?? "");
-            return `<div class="answer-key-row">
-      <span class="answer-key-num">${qi + 1}.</span>
-      <span><span class="answer-key-correct">${escapeHtml(correctLabel)}</span>${q.explanation ? ` — ${escapeHtml(q.explanation)}` : ""}</span>
+            return `<div class="matrx-quiz-answer-key-row">
+      <span class="matrx-quiz-answer-key-num">${qi + 1}.</span>
+      <span><span class="matrx-quiz-answer-key-correct">${escapeHtml(correctLabel)}</span>${q.explanation ? ` — ${escapeHtml(q.explanation)}` : ""}</span>
     </div>`;
         })
         .join("\n");
 
-    return `<div class="quiz-header">
-  <div class="quiz-title">${escapeHtml(quiz.quizTitle)} — Answer Key</div>
-  <div class="quiz-meta">${quiz.multipleChoice.length} questions</div>
+    return `<div class="matrx-quiz-quiz-header">
+  <div class="matrx-quiz-quiz-title">${escapeHtml(quiz.quizTitle)} — Answer Key</div>
+  <div class="matrx-quiz-quiz-meta">${quiz.multipleChoice.length} questions</div>
 </div>
 <div style="margin-top:12px;">${rows}</div>`;
 }
@@ -233,6 +233,8 @@ export const quizPrinter: BlockPrinter = {
     toPrintHtml(data: unknown) {
         const quiz = normalizeRawQuizJSON(data);
         if (!quiz?.multipleChoice?.length) return null;
-        return { html: `<style>${QUIZ_STYLES}</style>${renderBlank(quiz)}` };
+        // The composed print strips <style> and non-matrx classes: the sheet travels as `css`.
+        const output = { html: `<style>${QUIZ_STYLES}</style>${renderBlank(quiz)}`, css: QUIZ_STYLES };
+        return output;
     },
 };
