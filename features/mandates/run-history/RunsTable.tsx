@@ -338,7 +338,12 @@ export function RunsTable({
             rowClassName: (run: MandateRun) =>
               selectedConversationId && run.conversationId === selectedConversationId ? "bg-primary/10" : undefined,
           }
-        : { onRowOpen: openRun })}
+        : {
+            // The row IS the door to its run — no raw-field detail window on the way.
+            onRowOpen: openRun,
+            detail: { enabled: false },
+            window: { enabled: false },
+          })}
     />
   );
 }
