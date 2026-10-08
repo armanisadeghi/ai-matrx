@@ -441,6 +441,7 @@ function DatabaseBody({
         searchOverride={search.value || null}
         onSearchChange={search.onChange}
         searchBox={false}
+        hideRefusedRowActions
         onOpenRecord={onOpenRecord}
         filter={view.filters && Object.keys(view.filters).length ? scalarFilters(view.filters) : undefined}
         onViewChange={

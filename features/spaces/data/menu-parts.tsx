@@ -233,11 +233,27 @@ export function SidePeek({ onClose, focusFirstField = false, children }: { onClo
     if (!focusFirstField) return;
     const started = performance.now();
     let frame = 0;
+    let opened = false;
+    const FIELD = '.spaces-peek-body input:not([type="hidden"]):not([disabled]), .spaces-peek-body textarea:not([disabled]), .spaces-peek-body [contenteditable="true"]';
     const seek = () => {
-      const field = panel.querySelector<HTMLElement>('.spaces-peek-body input:not([type="hidden"]):not([disabled]), .spaces-peek-body textarea:not([disabled]), .spaces-peek-body [contenteditable="true"]');
       // Only while the person has not moved on themselves.
-      if (field && (document.activeElement === panel || document.activeElement === document.body)) field.focus({ preventScroll: true });
-      else if (!field && performance.now() - started < 3000) frame = requestAnimationFrame(seek);
+      const idle = document.activeElement === panel || document.activeElement === document.body || document.activeElement === null;
+      if (!idle) return;
+      const field = panel.querySelector<HTMLElement>(FIELD);
+      if (field) {
+        field.focus({ preventScroll: true });
+        return;
+      }
+      // The record page draws a field as text with an "Edit <name>" press (the title is its first one): press
+      // it once, and the field it opens takes the caret on the next frame.
+      if (!opened) {
+        const edit = panel.querySelector<HTMLElement>('.spaces-peek-body dl [role="button"][aria-label^="Edit "]');
+        if (edit) {
+          opened = true;
+          edit.click();
+        }
+      }
+      if (performance.now() - started < 3000) frame = requestAnimationFrame(seek);
     };
     frame = requestAnimationFrame(seek);
     return () => cancelAnimationFrame(frame);
