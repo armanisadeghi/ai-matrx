@@ -62,6 +62,17 @@ export function EntityBackLinks(props: EntityBackLinksProps) {
 function BackLinksSection({ entityToken, recordId, organizationId, className }: EntityBackLinksProps & { organizationId: string }) {
   const links = useKeptEntityBackLinks(entityToken, recordId, { organizationId });
 
+  // A RECORD OF AN ORGANIZATION THE READER IS NOT IN (lane DRILL-LIVE-FIX-2 #7): the wall's refusal
+  // (42501 → "door") is a state, not a failure — a platform admin peeking another organization's
+  // conversation read "…custom.entity_back_links has nothing to do there". Said plainly; no Retry.
+  if (links.error?.code === "door" && links.items.length === 0) {
+    return (
+      <section data-section="back-links" data-state="walled" className={className}>
+        <h3 className="text-sm font-medium">Linked records</h3>
+        <EmptyState icon={<Link2 className="h-5 w-5" />} title="Only its organization's members see these" />
+      </section>
+    );
+  }
   if (links.error && links.items.length === 0) {
     return (
       <section data-section="back-links" data-state="error" className={className}>
