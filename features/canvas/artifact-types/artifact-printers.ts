@@ -51,5 +51,9 @@ registerBlockPrinter(["flashcards", "flashcard_set"], flashcardsPrinter);
 registerBlockPrinter(["quiz", "quiz_set"], quizPrinter);
 registerBlockPrinter(["math_problem"], mathPrinter);
 registerBlockPrinter(["html"], htmlPagePrinter);
+// iframe (link card) and map (drawn tile by tile) — their own file.
+import "@/features/canvas/output/framePrinters";
+// svg · image · chart · diagram · presentation — pictures (their own file).
+import "@/features/canvas/output/pictureKindPrinters";
 // comparison · timeline · research · recipe · … (16 structured types) + every kind value — print layouts (their own files).
 import "@/features/canvas/output/print-layouts/registerStructuredPrinters";

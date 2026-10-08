@@ -43,6 +43,7 @@ import {
   Database,
   Copy,
   Download,
+  ExternalLink,
   type LucideIcon,
 } from "lucide-react";
 import { TapTargetButtonTransparent } from "@ai-matrx/tap-target";
@@ -68,7 +69,9 @@ import {
 } from "@/features/canvas/canvasContent";
 import { canvasContentHasSource } from "@/features/canvas/core/canvasSource";
 import { isMaterializedArtifactId } from "@/features/canvas/artifact-types/artifactId";
+import { artifactPrinterFor } from "@/features/canvas/output/canvasOutputPorts";
 import { artifactOutputDef } from "@/features/canvas/artifact-types/artifact-output";
+import { iframeBlockUrl } from "@/features/canvas/output/framePrinters";
 import { artifactKey, contentOf, readArtifactItemData, type ArtifactItemData } from "./artifactItem";
 import { openArtifactPanel, toggleArtifactPanel, useArtifactPanel } from "./artifactPanels";
 
@@ -203,11 +206,35 @@ function htmlSourceEntries(content: CanvasContent, data: ArtifactItemData): Canv
   ];
 }
 
+/** The type's other print variants (a quiz: with answers, answer key) beside the pane's standard Print. */
+function printVariantEntries(props: CanvasKindProps): CanvasMenuItem[] {
+  const registered = artifactPrinterFor({ item: props.item });
+  if (!registered) return [];
+  const { printer, data } = registered;
+  return (printer.variants ?? []).slice(1).map((variant) => ({
+    id: `output:print:${variant.id}`,
+    label: `Print — ${variant.label}`,
+    onSelect: () => void printer.print(data, variant.id),
+  }));
+}
+
 function artifactMenu(props: CanvasKindProps): readonly CanvasMenuItem[] {
   const data = readArtifactItemData(props.item.data);
   if (!data) return [];
   const content = contentOf(data);
-  return [...(content.type === "html" ? htmlSourceEntries(content, data) : []), ...persistEntries(props, data, content)];
+  return [
+    ...printVariantEntries(props),
+    ...(content.type === "html" ? htmlSourceEntries(content, data) : []),
+    ...(content.type === "iframe" ? embeddedSiteEntries(content) : []),
+    ...persistEntries(props, data, content),
+  ];
+}
+
+/** An embedded site cannot be printed or captured here (another origin) — the way to it is opening it. */
+function embeddedSiteEntries(content: CanvasContent): CanvasMenuItem[] {
+  const url = iframeBlockUrl(content.data);
+  if (!url) return [];
+  return [{ id: "open-site", label: "Open site", icon: <ExternalLink />, onSelect: () => window.open(url, "_blank", "noopener") }];
 }
 
 function persistEntries(props: CanvasKindProps, data: ArtifactItemData, content: CanvasContent): CanvasMenuItem[] {

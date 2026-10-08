@@ -8,7 +8,7 @@
  *
  * "dom" types print and capture through the host's DOM engines (or their
  * registered printer). "frame" types never do — a DOM copy of an iframe, a
- * canvas or a map prints blank — so each says how, or honestly that it cannot yet.
+ * canvas or a map prints blank — so each says how (output/frameKindOutputs), or honestly why not.
  */
 
 import type { CanvasKind, CanvasKindSurface } from "@ai-matrx/canvas/react";
@@ -16,6 +16,22 @@ import type { CanvasContentType } from "@/features/canvas/canvasContent";
 import { printPublishedPage } from "@/features/canvas/output/printPage";
 import { contentOf, readArtifactItemData } from "@/features/canvas/host/artifactItem";
 import { readArtifactPointerId } from "@/features/canvas/artifact-types/artifactId";
+import {
+  captureHtmlArtifact,
+  CLOUD_BROWSER_OUTPUT,
+  CODE_PREVIEW_OUTPUT,
+  IFRAME_OUTPUT,
+  MAP_OUTPUT,
+  SANDBOX_OUTPUT,
+  UDT_DOCUMENT_OUTPUT,
+} from "@/features/canvas/output/frameKindOutputs";
+import {
+  CHART_OUTPUT,
+  GRAPH_OUTPUT,
+  IMAGE_OUTPUT,
+  PRESENTATION_OUTPUT,
+  SVG_OUTPUT,
+} from "@/features/canvas/output/pictureKindPrinters";
 
 export interface ArtifactOutputDef {
   readonly surface: CanvasKindSurface;
@@ -23,9 +39,6 @@ export interface ArtifactOutputDef {
   readonly capture?: CanvasKind["capture"];
 }
 
-/** A frame type whose print/capture is not built yet (rendered-output standard P2). */
-const NOT_YET = "not available yet";
-const FRAME_NOT_YET: ArtifactOutputDef = { surface: "frame", print: NOT_YET, capture: NOT_YET };
 const DOM: ArtifactOutputDef = { surface: "dom" };
 
 /** The canvas_items id an artifact tab was saved as (null while unsaved). */
@@ -43,20 +56,32 @@ export const ARTIFACT_OUTPUT: Record<CanvasContentType, ArtifactOutputDef> = {
     surface: "frame",
     // The tab shows the chain's latest version; print that version's own page.
     print: (request) => printPublishedPage({ canvasItemId: canvasItemIdOf(request.item.data), version: "latest" }),
-    capture: NOT_YET,
+    // The server's real browser renders the published page at the viewer's width.
+    capture: captureHtmlArtifact,
   },
-  iframe: FRAME_NOT_YET,
-  react: FRAME_NOT_YET,
-  code_preview: FRAME_NOT_YET,
-  map: FRAME_NOT_YET,
-  sandbox: FRAME_NOT_YET,
-  cloud_browser: FRAME_NOT_YET,
-  udt_document: FRAME_NOT_YET,
+  // An external site: its pixels belong to another origin and the capture engine takes record
+  // ids, never client URLs — honest reasons, plus "Open site" in the menu (artifactKinds).
+  iframe: { surface: "frame", ...IFRAME_OUTPUT },
+  // Compiled and run in-app (ReactCodeBlock) — same-origin DOM.
+  react: DOM,
+  // A diff of code (CodePreviewCanvas) — same-origin DOM; Print prints the proposed code in full.
+  code_preview: { surface: "dom", ...CODE_PREVIEW_OUTPUT },
+  // Leaflet: tiles from another origin taint a DOM copy — drawn tile by tile (mapCapture).
+  map: { surface: "frame", ...MAP_OUTPUT },
+  // Terminal, files and activity are DOM; Print reads the terminal's scrollback as text.
+  sandbox: { surface: "dom", ...SANDBOX_OUTPUT },
+  // A live stream in a frame: its latest screenshot is the picture (the body offers it).
+  cloud_browser: { surface: "frame", ...CLOUD_BROWSER_OUTPUT },
+  // Univer draws on a canvas: the body prints the document's text and captures its page.
+  udt_document: { surface: "frame", ...UDT_DOCUMENT_OUTPUT },
   quiz: DOM,
-  presentation: DOM,
+  // Every slide, one picture per page (not only the slide on screen).
+  presentation: { surface: "dom", ...PRESENTATION_OUTPUT },
   code: DOM,
-  image: DOM,
-  diagram: DOM,
+  // The file itself, read through the file funnel (a DOM copy of a cross-origin image taints).
+  image: { surface: "dom", ...IMAGE_OUTPUT },
+  // React Flow paints only its viewport: print and capture draw the WHOLE graph.
+  diagram: { surface: "dom", ...GRAPH_OUTPUT },
   comparison: DOM,
   timeline: DOM,
   research: DOM,
@@ -69,8 +94,9 @@ export const ARTIFACT_OUTPUT: Record<CanvasContentType, ArtifactOutputDef> = {
   progress: DOM,
   math_problem: DOM,
   mermaid: DOM,
-  svg: DOM,
-  chart: DOM,
+  // Drawn inside a sandboxed frame — a DOM copy is blank; the markup itself is the picture.
+  svg: { surface: "frame", ...SVG_OUTPUT },
+  chart: { surface: "dom", ...CHART_OUTPUT },
   stats: DOM,
   diff: DOM,
   questionnaire: DOM,
@@ -79,7 +105,8 @@ export const ARTIFACT_OUTPUT: Record<CanvasContentType, ArtifactOutputDef> = {
   structured_info: DOM,
   tree: DOM,
   tasks: DOM,
-  topical_map: DOM,
+  // The map workspace is React Flow too: the whole graph, when the graph view is showing.
+  topical_map: { surface: "dom", ...GRAPH_OUTPUT },
   kind_value: DOM,
 };
 

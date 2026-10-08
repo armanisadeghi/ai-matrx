@@ -4,8 +4,8 @@
  * The web host's engines behind the canvas's standard entries (Print, Save as
  * PDF, Copy image): a "dom" tab prints through its type's registered printer
  * when it has one (the same adapter its chat block uses), else as drawn
- * (`printElement`); it captures as drawn (html2canvas). A "frame" HTML page
- * captures through the server engine (record by publication link, L3).
+ * (`printElement`); it captures as drawn (html2canvas). A "frame" type
+ * prints and captures through its own handlers (artifact-output.ts).
  * "Attach to chat ▸" options are added by the attach lane (`attachOptions`).
  */
 
@@ -13,8 +13,7 @@ import type { CanvasOutputPorts, CanvasOutputRequest } from "@ai-matrx/canvas/re
 import { getBlockPrinter, printElement } from "@ai-matrx/print/core";
 import { toast } from "@/lib/toast";
 import { copyImage } from "@ai-matrx/kit/clipboard";
-import { canvasAttachOptions, canvasHtmlItem } from "./attachOptions";
-import { captureRecordOnServer, viewerColorScheme } from "@/features/html-pages/capture/renderedCapture";
+import { canvasAttachOptions } from "./attachOptions";
 import { readArtifactItemData, contentOf } from "@/features/canvas/host/artifactItem";
 
 function parsedData(value: unknown): unknown {
@@ -31,7 +30,7 @@ function parsedData(value: unknown): unknown {
  * (its message-print form is real content). A shape the printer does not read
  * (a `quiz_set` kind value) prints as drawn instead of "No data to print".
  */
-function artifactPrinterFor(request: CanvasOutputRequest) {
+export function artifactPrinterFor(request: Pick<CanvasOutputRequest, "item">) {
   const data = readArtifactItemData(request.item.data);
   if (!data) return null;
   const content = contentOf(data);
@@ -55,24 +54,8 @@ export const CANVAS_OUTPUT_PORTS: CanvasOutputPorts = {
   },
   capture: (request) => {
     const element = request.element;
-    if (request.surface === "frame") {
-      // One lookup for print, capture and attach (the publication link via
-      // publishedPage.ts); needs nothing mounted.
-      const item = canvasHtmlItem(request);
-      if (!item?.saved) return null;
-      return async () => {
-        const record = await item.resolveRecord();
-        if (!record) throw new Error("this page is not published yet");
-        const result = await captureRecordOnServer({
-          ...record,
-          width: element?.clientWidth || 1024,
-          colorScheme: viewerColorScheme(),
-          includeImage: true,
-        });
-        if (!result.image) throw new Error("the page capture returned no image");
-        return result.image;
-      };
-    }
+    // A frame type captures through its own handler (artifact-output.ts) — never a DOM copy.
+    if (request.surface !== "dom") return null;
     if (!element) return null;
     return async () => {
       const { elementToImage } = await import("@ai-matrx/alchemy/operate/capture");
