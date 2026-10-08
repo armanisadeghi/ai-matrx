@@ -6,6 +6,7 @@ import { open, newPage, act, slash, trashPage } from "./lib.mjs";
 
 const { browser, page } = await open({ member: true, width: 1440, height: 1000 });
 const id = await newPage(page);
+console.log(JSON.stringify({ page: id }));
 await page.waitForTimeout(2000);
 let failed = 0;
 const check = (name, ok, extra = {}) => {

@@ -79,7 +79,9 @@ export async function open({ next = "/spaces", member = false, width = 2000, hei
 
 /** Open a fresh blank page through the sidebar's "New page" and return its id. */
 export async function newPage(page) {
-  await page.goto(`${originOf(page)}/spaces`, { waitUntil: "domcontentloaded" });
+  // Keep the address's own query (?org=) — the organization a walk asked for.
+  const search = new URL(page.url()).search;
+  await page.goto(`${originOf(page)}/spaces${search}`, { waitUntil: "domcontentloaded", timeout: 240_000 });
   await ensureSignedIn(page, "/spaces");
   // /spaces lands on the last page opened (often a sample) once the tree has loaded: wait for that first.
   await page.locator(".bn-editor").first().waitFor({ timeout: 120_000 }).catch(() => {});
@@ -202,7 +204,8 @@ export async function orgWithoutMember() {
   await admin.browser.close();
   // An empty list means the page did not load (a paused or restarting preview), never "a member of nothing".
   if (!memberOrgs.length || !adminOrgs.length) throw new Error(`organizations not read (member ${memberOrgs.length}, admin ${adminOrgs.length})`);
-  const org = adminOrgs.find((s) => !memberOrgs.includes(s) && !s.startsWith("5dc930e9"));
+  // Never the CRM organization (5dc930e9…, slug ai-matrx).
+  const org = adminOrgs.find((s) => !memberOrgs.includes(s) && !s.startsWith("5dc930e9") && s !== "ai-matrx");
   if (!org) throw new Error("no organization the admin is in and test@test.com is not");
   return org;
 }

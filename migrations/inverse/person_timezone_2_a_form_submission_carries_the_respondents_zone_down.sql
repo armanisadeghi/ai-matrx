@@ -1,0 +1,3 @@
+-- lane: PERSON-TIMEZONE-2
+-- lock: custom
+-- chair-step: the inverse. Re-create custom.form_submit and custom.form_respondent_copy without the respondent_time_zone lines (the added lines are marked by that name).

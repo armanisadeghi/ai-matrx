@@ -61,6 +61,8 @@ sections when next in here.
 
 ## Change Log
 
+- 2026-10-07 — **Runs reconnect.** `hooks/usePdfDocRun.ts` (over `useServerJob`, `@ai-matrx/agents/react`) asks the run record about the open doc — this tab's saved `X-Request-ID` (`state/runRequests.ts`, sessionStorage, written by uploads and AI cleans) or the doc's `processed_document` link — rejoins a live run (progress + text replay, deduped), shows its status in the strip (running / Failed + Retry / Done) and reloads the doc when it settles. Auto-clean now waits for that answer and never starts beside a live or failed run. Still in place until reconnect is verified live: the 3-minute recent-update window in `useAutoCleanOnOpen` and `pollForCleanContent` after a clean stream. An upload refused for want of an active organization keeps its files and offers the organization picker inline (`PdfStudioUpload`), then runs again on the choice.
+
 - 2026-08-24 — Unprocessed Files PDFs retain their `file_id` across “Open in PDF Extractor,” auto-run the remote pipeline, and are selectable from the studio through the canonical Cloud Files picker; the upload-only dead end is removed.
 
 - 2026-08-12 — `PDF_EXTRACTOR_SURFACE_NAME` is now exported from

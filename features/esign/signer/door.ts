@@ -40,15 +40,23 @@ function knownAction(name: string): Action | null {
 }
 
 /**
- * The act arguments aidream's `EsignActArgs` accepts today (routers/esign_signing.py, a model with
- * extra="forbid"). An argument outside it is never sent; a step that needs one says it is not
- * available yet. Grows with the server lane's waves.
+ * The act arguments aidream's `EsignActArgs` accepts (routers/esign_signing.py, a model with
+ * extra="forbid"). An argument outside it is never sent. The list is checked against the published
+ * api-types in BOTH directions (`satisfies` + `MissingArg`), so a server wave that adds an argument
+ * fails type-check here until it is listed — it can no longer go stale silently (it did: 2026-10-07
+ * the server took save_to_profile while this list still said "not available yet").
  */
-const SERVER_ARGS: ReadonlySet<string> = new Set([
+const SERVER_ARG_LIST = [
+  "organization_id", "project_id", "task_id", "source_app", "source_feature", "initiation",
   "document_id", "disclosure_id", "kind", "target", "source", "values", "message_to_sender",
   "full_name", "email", "message", "typed_name", "typed_style", "strokes", "image_data_url",
-  "observed", "action_id", "reason", "time_zone",
-]);
+  "observed", "action_id", "reason", "handoff_id", "saved_signature_id", "save_to_profile",
+  "make_default", "secret", "phone", "parts", "combine", "document_ids", "time_zone",
+] as const satisfies readonly (keyof ActArgs)[];
+type MissingArg = Exclude<keyof ActArgs, (typeof SERVER_ARG_LIST)[number]>;
+const everyArgListed: [MissingArg] extends [never] ? true : MissingArg = true;
+void everyArgListed;
+const SERVER_ARGS: ReadonlySet<string> = new Set(SERVER_ARG_LIST);
 
 export function serverTakes(arg: string): boolean {
   return SERVER_ARGS.has(arg);

@@ -54,6 +54,7 @@ import { linkPageAt, slashItems, type SlashContext } from "./slash-items";
 import { rankSlashItems } from "./slash-rank";
 import { planColumnHeal, type HealBlock } from "./column-heal";
 import { columnDropper } from "./column-drop";
+import { usePersonTimeZone } from "@/hooks/usePersonTimeZone";
 
 const PLACEHOLDERS = {
   ...en.placeholders,
@@ -176,6 +177,8 @@ function columnCss(blocks: EngineBlock[]): string {
 export function SpaceEditor({ spaceId, initialBlocks, editable, onChange, slash, menu, onReady, onComment, collab }: SpaceEditorProps) {
   const dark = useDarkMode();
   const { byId } = useSpaces();
+  // "@today" / "@tomorrow" are the person's own days (their saved time zone), never the device's.
+  const zone = usePersonTimeZone();
   const [pasted, setPasted] = useState<PastedUrl | null>(null);
   // H3: with a room, BlockNote's own Yjs binding drives the body (sync, cursors, Yjs undo) — exactly what
   // @blocknote/core/yjs `withCollaboration` adds: the extension, ProseMirror history off, and its fixed-id
@@ -408,7 +411,7 @@ export function SpaceEditor({ spaceId, initialBlocks, editable, onChange, slash,
             .filter((p) => p.id !== spaceId && (p.title || "Untitled").toLowerCase().includes(q))
             .slice(0, 8);
           // N2 — "@today", "@tomorrow", "@yesterday", "@oct 12": a date mention (Notion's Date group).
-          const dateItems = dateChoices(query, new Date()).map((c) => ({
+          const dateItems = dateChoices(query, new Date(), zone).map((c) => ({
             title: c.title,
             group: "Date",
             icon: <CalendarDays size={16} />,
