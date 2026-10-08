@@ -18,9 +18,12 @@
  * Rows that would break on the live site get verdict `breaks_on_live`. See scripts/applets/against-live.mjs.
  *
  * Verdicts: ok · unbuilt (a build still in progress — not a failure) · unresolved (rendered with named stand-ins) · gate_refused · compile_error · render_threw ·
- * legacy_contract (still reads the old prop contract). Exit 1 on anything but ok.
+ * legacy_contract (still reads the old prop contract) · surface_missing (no live `ui.ui_surface` row `applets/<id>`: the
+ * running Applet's frame refuses `surface_not_found` on every visit — the trigger `app._applet_surface_follows_record`
+ * writes it on every insert/update, so a miss means a row the trigger never saw). Exit 1 on anything but ok.
  * Reads NEXT_PUBLIC_SUPABASE_URL + SUPABASE_SECRET_KEY; all reads, no writes.
  */
+import { readAllRows } from "@ai-matrx/data/db";
 import { createClient } from "@supabase/supabase-js";
 import { JSDOM } from "jsdom";
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
@@ -41,7 +44,7 @@ for (const key of ["window", "document", "navigator", "HTMLElement", "Node", "ge
 g.matchMedia ??= () => ({ matches: false, addListener() {}, removeListener() {}, addEventListener() {}, removeEventListener() {} });
 g.ResizeObserver ??= class { observe() {} unobserve() {} disconnect() {} };
 
-type Verdict = "ok" | "unbuilt" | "unresolved" | "gate_refused" | "compile_error" | "render_threw" | "legacy_contract" | "breaks_on_live";
+type Verdict = "ok" | "surface_missing" | "unbuilt" | "unresolved" | "gate_refused" | "compile_error" | "render_threw" | "legacy_contract" | "breaks_on_live";
 type Row = Record<string, unknown> & { id: string; slug: string; files: Record<string, string> | null; entry: string | null };
 
 const LEGACY_PROPS = /export\s+default\s+function\s+\w*\s*\(\s*\{[^}]*\b(onExecute|response|isStreaming|isExecuting|rateLimitInfo)\b/;
@@ -64,6 +67,12 @@ async function main() {
   const { data, error } = await sb.schema("app").from("definition").select(`${DEFINITION_COLUMNS}, published_to_web`).is("deleted_at", null).order("slug");
   if (error) throw new Error(`Could not read app.definition: ${error.message}`);
   const rows = (data ?? []) as unknown as Row[];
+  // Every live Applet owns a live surface `applets/<id>` — the frame mounts it on every visit (alchemy readSurfaceChain).
+  const surfaces = await readAllRows<{ name: string }>(
+    ({ from, to }) => sb.schema("ui").from("ui_surface").select("name", { count: "exact" }).like("name", "applets/%").is("deleted_at", null).order("name").range(from, to),
+    { label: "ui.ui_surface (applets/*)" },
+  );
+  const liveSurfaces = new Set(surfaces.map((s) => s.name));
   const results: { slug: string; id: string; public: boolean; verdict: Verdict; detail: string }[] = [];
   for (const row of rows) {
     const entry = row.entry ?? "App.tsx";
@@ -71,6 +80,10 @@ async function main() {
     const files = { ...(row.files ?? {}) };
     if (override && existsSync(override)) files[entry] = readFileSync(override, "utf8");
     const verdict = (v: Verdict, detail = "") => results.push({ slug: row.slug, id: row.id, public: row.published_to_web === true, verdict: v, detail });
+    if (!liveSurfaces.has(`applets/${row.id}`)) {
+      verdict("surface_missing", `no live ui.ui_surface "applets/${row.id}" — write it with ui.save_applet_surface`);
+      continue;
+    }
     // A build is born as an empty draft the moment Build is pressed (features/applets-host/builder/build-session.ts):
     // no entry, no files, until its first answer saves. That is a build in progress, not a broken Applet.
     if (!row.entry && Object.keys(files).length === 0) {
@@ -150,7 +163,7 @@ async function main() {
   writeFileSync(REPORT, JSON.stringify(results, null, 2));
   const count = (v: Verdict) => results.filter((r) => r.verdict === v).length;
   console.log(`applet render sweep — ${results.length} rows (${results.filter((r) => r.public).length} public)${FILES_DIR ? `, files from ${FILES_DIR}` : ""}${AGAINST_LIVE ? ", against the deployed site" : ""}`);
-  for (const v of ["ok", "unbuilt", "unresolved", "legacy_contract", "gate_refused", "compile_error", "render_threw", "breaks_on_live"] as const) console.log(`  ${v.padEnd(16)} ${count(v)}`);
+  for (const v of ["ok", "surface_missing", "unbuilt", "unresolved", "legacy_contract", "gate_refused", "compile_error", "render_threw", "breaks_on_live"] as const) console.log(`  ${v.padEnd(16)} ${count(v)}`);
   for (const r of results.filter((x) => x.verdict !== "ok" && x.verdict !== "unbuilt")) console.log(`  x ${r.slug}: ${r.verdict} ${r.detail}`);
   console.log(`report: ${REPORT}`);
   if (results.some((r) => r.verdict !== "ok" && r.verdict !== "unbuilt")) process.exitCode = 1;
