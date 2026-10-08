@@ -642,6 +642,9 @@ export const adminNavigationRegistry: readonly AdminNavigationDomain[] = [
           destination("/administration/users/limits"),
           destination("/administration/users/usage-limits"),
           destination("/administration/usage"),
+          destination("/administration/usage/agents", [
+            "/administration/usage/agents/detail",
+          ]),
         ],
       },
       {

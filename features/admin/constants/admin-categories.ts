@@ -1124,6 +1124,14 @@ export const adminCategoriesData: AdminCategory[] = [
         isNew: true,
       },
       {
+        title: "AI spend health",
+        description:
+          "Every agent and mandate by cost: premium models, runaway turns, huge contexts, unsaved runs and who paid.",
+        iconName: "Activity",
+        link: "/administration/usage/agents",
+        isNew: true,
+      },
+      {
         title: "Email Users",
         description:
           "Send emails to users directly from the admin portal using custom or template-based messages.",

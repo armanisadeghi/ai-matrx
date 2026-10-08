@@ -46,7 +46,23 @@ export type ConfidentialServerStep = (body: ConfidentialRequest) => Promise<void
 export interface Review360Knobs {
   daysToComplete: number;
   reminderLeadDays: number;
+  /** The hour of the due day, UTC, a half is due (knob review_360_due_hour_utc). */
+  dueHourUtc: number;
+  meetingHour: number;
+  meetingMinutes: number;
+  meetingLobby: boolean;
+  meetingJoinBeforeHost: boolean;
 }
+
+export const REVIEW_360_KNOB_KEYS = {
+  daysToComplete: "review_360_days_to_complete",
+  reminderLeadDays: "review_360_reminder_lead_days",
+  dueHourUtc: "review_360_due_hour_utc",
+  meetingHour: "review_360_meeting_hour",
+  meetingMinutes: "review_360_meeting_minutes",
+  meetingLobby: "review_360_meeting_lobby",
+  meetingJoinBeforeHost: "review_360_meeting_join_before_host",
+} as const;
 
 export async function readReview360Knobs(organizationId: string, userId: string): Promise<R360<Review360Knobs>> {
   const read = (key: string) =>
@@ -56,18 +72,23 @@ export async function readReview360Knobs(organizationId: string, userId: string)
       p_organization_id: organizationId,
       p_user_id: userId,
     });
-  const [days, lead] = await Promise.all([read("review_360_days_to_complete"), read("review_360_reminder_lead_days")]);
-  const failure = days.error ?? lead.error;
+  const entries = Object.entries(REVIEW_360_KNOB_KEYS) as Array<[keyof Review360Knobs, string]>;
+  const answers = await Promise.all(entries.map(([, key]) => read(key)));
+  const failure = answers.find((x) => x.error)?.error;
   if (failure) return no(`The 360 review settings could not be read: ${failure.message}`);
-  const num = (v: unknown): number | null => {
-    const raw = v && typeof v === "object" && "value" in (v as Record<string, unknown>) ? (v as { value: unknown }).value : v;
-    const n = typeof raw === "string" ? Number(raw) : raw;
-    return typeof n === "number" && Number.isFinite(n) ? n : null;
-  };
-  const d = num(days.data);
-  const l = num(lead.data);
-  if (d === null || l === null) return no("The 360 review settings answered no number.");
-  return { ok: true, data: { daysToComplete: d, reminderLeadDays: l } };
+  const raw = (v: unknown) => (v && typeof v === "object" && "value" in (v as Record<string, unknown>) ? (v as { value: unknown }).value : v);
+  const out: Partial<Record<keyof Review360Knobs, number | boolean>> = {};
+  for (let i = 0; i < entries.length; i++) {
+    const [name, key] = entries[i]!;
+    const v = raw(answers[i]!.data);
+    const want = name === "meetingLobby" || name === "meetingJoinBeforeHost" ? "boolean" : "number";
+    const n = want === "number" && typeof v === "string" ? Number(v) : v;
+    if (want === "boolean" ? typeof n !== "boolean" : typeof n !== "number" || !Number.isFinite(n)) {
+      return no(`The 360 review setting ${key} answered no ${want}.`);
+    }
+    out[name] = n as number | boolean;
+  }
+  return { ok: true, data: out as unknown as Review360Knobs };
 }
 
 // ── provisioning: tables, assignment columns, automations, Confidential ────────────────────────
@@ -104,6 +125,25 @@ async function ensureConfidential(
 }
 
 /** Make this organization ready: both tables, the Track's real assignment columns, the gather, Confidential. */
+async function retireAutomations(
+  client: RecordsClient,
+  organizationId: string,
+  plan: Array<[AnyTypedTableDef, string[]]>,
+): Promise<R360<true>> {
+  for (const [def, names] of plan) {
+    const t = await ensureTypedTable(client, def, { organizationId });
+    if (!t.ok) return no(t.error.message);
+    const list = await client.automations({ table_id: t.data.table });
+    if (!list.ok) return no(list.error.message);
+    for (const a of list.data.automations) {
+      if (!names.includes(a.name) || a.archived_at) continue;
+      const done = await client.automationArchive({ automation_id: a.id });
+      if (!done.ok) return no(done.error.message);
+    }
+  }
+  return { ok: true, data: true };
+}
+
 export async function provisionReview360(
   client: RecordsClient,
   organizationId: string,
@@ -133,45 +173,24 @@ export async function provisionReview360(
         trigger: { on: "property_edited", field: "link" },
         actions: [{ do: "notify", to: { field: "respondent_login" }, text: `${TRACK_TITLE}: {{link}}` }],
       },
-      ...(["self", "manager"] as const).map((kind) => ({
-        name: `360: ${kind} half is in`,
-        trigger: { on: "property_edited" as const, field: "submitted_at" },
-        condition: { op: "eq", args: [{ field: "track" }, { const: kind }] },
-        actions: [
-          {
-            do: "edit_rows" as const,
-            table: review360,
-            where: { op: "eq", args: [{ field: "review_ref" }, { trigger: "review_ref" }] },
-            values: { [`${kind}_submitted_at`]: { now: true } },
-            limit: 1,
-          },
-        ],
-      })),
+      // THE HR NOTICE, per half: a respondent READS the review row and may not stamp it, so the
+      // half is reported from the track itself; the review page works "both in" out from the tracks.
+      {
+        name: "360: a response is in",
+        trigger: { on: "property_edited", field: "submitted_at" },
+        condition: { op: "present", args: [{ field: "submitted_at" }] },
+        actions: [{ do: "notify", to: { field: "hr_manager_login" }, text: "A 360 review response is in: {{review_link}}" }],
+      },
     ],
     { organizationId },
   );
   if (!gather.ok) return no(gather.error.message);
-  const ready = await ensureAppAutomations(
-    client,
-    review360,
-    (["self", "manager"] as const).map((kind) => ({
-      name: `360: both halves are in (${kind} last)`,
-      trigger: { on: "property_edited" as const, field: `${kind}_submitted_at` },
-      condition: {
-        op: "and",
-        args: [
-          { op: "present", args: [{ field: "self_submitted_at" }] },
-          { op: "present", args: [{ field: "manager_submitted_at" }] },
-        ],
-      },
-      actions: [
-        { do: "set" as const, values: { status: "ready" } },
-        { do: "notify" as const, to: { field: "hr_manager_login" }, text: "Both halves of a 360 review are in. {{review_ref}}" },
-      ],
-    })),
-    { organizationId },
-  );
-  if (!ready.ok) return no(ready.error.message);
+  // The wave-1 gather wrote the review row as the respondent; respondents are viewers there now.
+  const retired = await retireAutomations(client, organizationId, [
+    [review360Track, ["360: self half is in", "360: manager half is in"]],
+    [review360, ["360: both halves are in (self last)", "360: both halves are in (manager last)"]],
+  ]);
+  if (!retired.ok) return retired;
 
   const reviewTable = await ensureConfidential(client, review360, organizationId, serverStep);
   if (!reviewTable.ok) return reviewTable;
@@ -257,13 +276,15 @@ export async function startReview360(a: StartReview360Args): Promise<R360<{ revi
         hr_manager: ids.hr,
         counterpart: h.counterpart,
         respondent_login: h.respondentUser,
+        hr_manager_login: a.hrUserId,
+        review_link: `${a.origin}/hr/performance/${review.data}?org=${a.organizationId}`,
         shared: false,
       },
       opts,
     );
     if (!made.ok) return no(made.error.message);
     trackIds[h.kind] = made.data;
-    const assigned = await a.client.workAssign({ record_id: made.data, user_id: h.respondentUser, dueDate: `${dueOn}T17:00:00.000Z` });
+    const assigned = await a.client.workAssign({ record_id: made.data, user_id: h.respondentUser, dueDate: `${dueOn}T${String(a.knobs.dueHourUtc).padStart(2, "0")}:00:00.000Z` });
     if (!assigned.ok) return no(assigned.error.message);
     const linked = await a.client.recordUpdate({
       record_id: made.data,
@@ -318,6 +339,9 @@ export async function readTrack(client: RecordsClient, trackId: string): Promise
 }
 
 /** Save (and optionally submit) the respondent's own half — gated on the copy being Confidential. */
+/** The one sentence a write to a submitted half is refused with (the store refuses it too). */
+export const SUBMITTED_REFUSAL = "This review was submitted and can no longer be changed.";
+
 export async function saveTrack(
   client: RecordsClient,
   organizationId: string,
@@ -327,6 +351,9 @@ export async function saveTrack(
 ): Promise<R360<true>> {
   const gate = await confidentialGate(client, review360Track, { organizationId });
   if (!gate.ok) return no(gate.error.message);
+  const now = await readTrack(client, trackId);
+  if (!now.ok) return now;
+  if (now.data.submittedAt) return no(SUBMITTED_REFUSAL);
   const patch: Record<string, unknown> = { document };
   if (submit) patch.submitted_at = new Date().toISOString();
   const res = await client.recordUpdate({ record_id: trackId, patch });

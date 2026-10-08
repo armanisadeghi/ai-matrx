@@ -63,8 +63,9 @@ export const review360 = defineTypedTable({
   confidential: {
     readers: [
       { field: "hr_manager", level: "editor" },
-      { field: "employee_user", level: "editor" },
-      { field: "manager_user", level: "editor" },
+      // Respondents read the review row; only HR writes it (the HR manager, pointers, status).
+      { field: "employee_user", level: "viewer" },
+      { field: "manager_user", level: "viewer" },
     ],
     // true: whoever first used the copy would otherwise own (and read) every row.
     makerIsReader: true,
@@ -92,10 +93,15 @@ export const review360Track = defineTypedTable({
     link: f.url({ label: "Open" }),
     // The notification spine addresses a login, not a Person record ("not a member of this organization").
     respondent_login: f.text({ label: "Respondent login" }),
+    // Where the HR notice for this half goes, and the review page it links to.
+    hr_manager_login: f.text({ label: "HR manager login" }),
+    review_link: f.url({ label: "Review page" }),
   },
   confidential: {
     readers: [
-      { field: "respondent", level: "editor" },
+      // A respondent edits her half only until she submits it; after that she reads it.
+      { field: "respondent", level: "viewer" },
+      { field: "respondent", level: "editor", when: { submitted_at: null } },
       { field: "hr_manager", level: "viewer" },
       { field: "counterpart", level: "viewer", when: { shared: true } },
     ],

@@ -9,6 +9,15 @@ await page.locator(".spaces-header").first().hover();
 await act(page, () => page.getByRole("button", { name: /Add icon/ }).first().click());
 await page.locator(".EmojiPickerReact").first().waitFor({ timeout: 60000 });
 await heap("picker open");
+await page.locator(".EmojiPickerReact input").first().fill("rocket"); await page.waitForTimeout(800);
 await act(page, () => page.locator('.EmojiPickerReact [data-unified="1f680"]').first().click().catch(()=>{}));
 for (let i = 0; i < 6; i++) { await page.waitForTimeout(2000); await heap("after pick +" + (i+1)*2 + "s").catch((e)=>console.log("heap err", e.message.slice(0,80))); }
+await page.locator(".bn-editor .bn-inline-content").last().click();
+await heap("clicked editor");
+const t = setInterval(() => heap("tick").catch(()=>{}), 1500);
+for (const ch of "/callout") { await page.keyboard.type(ch, { delay: 0 }); await page.waitForTimeout(400); await heap("typed " + ch).catch(()=>{}); }
+await page.locator(".bn-suggestion-menu-item, [role=option]").filter({ hasText: /^\s*Callout/i }).first().waitFor({ timeout: 60000 });
+await heap("menu shown");
+await page.keyboard.press("Enter");
+await page.waitForTimeout(8000); clearInterval(t);
 await browser.close();
