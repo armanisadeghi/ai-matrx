@@ -221,26 +221,12 @@ export async function voidEnvelope(dispatch: AppDispatch, envelopeId: string, re
   );
 }
 
-// ─── e-sign parity routes (CONTRACT §7) — typed once api-types publish them ───────────
+// ─── e-sign parity routes (CONTRACT §7) ───────────────────────────────────────────────
 
 export interface DownloadedFile {
   name: string;
   mime_type: string;
   content_base64: string;
-}
-
-async function post<T>(dispatch: AppDispatch, path: string, envelopeId: string, body: unknown): Promise<T> {
-  const result = await dispatch(
-    callApi({
-      path,
-      method: "POST",
-      pathParams: { envelope_id: envelopeId },
-      ...scopeFor(envelopeId),
-      body,
-      expectedErrorStatuses: [403, 404, 409, 422],
-    } as unknown as Parameters<typeof callApi>[0]),
-  );
-  return read<T>(result);
 }
 
 /** The documents, the certificate, or both — each file or one combined PDF. */
@@ -249,11 +235,18 @@ export async function downloadEnvelope(
   envelopeId: string,
   input: { parts: ("documents" | "certificate")[]; combine: boolean; documentIds?: string[] },
 ): Promise<DownloadedFile[]> {
-  const out = await post<{ files: DownloadedFile[] }>(dispatch, "/esign/envelopes/{envelope_id}/download", envelopeId, {
-    parts: input.parts,
-    combine: input.combine,
-    document_ids: input.documentIds,
-  });
+  const out = read<{ files: DownloadedFile[] }>(
+    await dispatch(
+      callApi({
+        path: "/esign/envelopes/{envelope_id}/download",
+        method: "POST",
+        pathParams: { envelope_id: envelopeId },
+        ...scopeFor(envelopeId),
+        body: { parts: input.parts, combine: input.combine, document_ids: input.documentIds },
+        expectedErrorStatuses: [403, 404, 409, 422],
+      }),
+    ),
+  );
   return out.files ?? [];
 }
 
@@ -266,5 +259,16 @@ export interface FinalizeAnswer {
 
 /** Finish whatever completion still owes (signed copies, certificate, emails). Idempotent. */
 export async function finalizeEnvelope(dispatch: AppDispatch, envelopeId: string): Promise<FinalizeAnswer> {
-  return post<FinalizeAnswer>(dispatch, "/esign/envelopes/{envelope_id}/finalize", envelopeId, {});
+  return read<FinalizeAnswer>(
+    await dispatch(
+      callApi({
+        path: "/esign/envelopes/{envelope_id}/finalize",
+        method: "POST",
+        pathParams: { envelope_id: envelopeId },
+        ...scopeFor(envelopeId),
+        body: {},
+        expectedErrorStatuses: [403, 404, 409, 422],
+      }),
+    ),
+  );
 }

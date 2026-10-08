@@ -38,6 +38,7 @@ declare
   r1 uuid; r2 uuid; r3 uuid; r4 uuid;
   a_ready uuid; a_pub uuid; a_loop1 uuid; a_loop2 uuid; a_fail uuid; a_added uuid;
   v_res jsonb; v_n integer; v_txt text; v_runs jsonb; v_row jsonb;
+  f_done uuid; f_when uuid; v_zone text; v_want text; v_got text; v_utc text; v_expr jsonb;
 begin
   perform set_config('app.actor_system', 'campaign-test/automation-door', true);
   perform set_config('request.jwt.claims', c_admin_j, true);
@@ -241,6 +242,54 @@ begin
     if v_txt <> sqlstate then raise exception '7e: foreign and invented answer differently'; end if;
   end;
   raise notice '7 PASS — a stranger is refused (42501); another organization''s id and an invented id answer the same 23503.';
+
+
+  -- ══ PART 8 — A DAY IS THE PERSON'S DAY ═════════════════════════════════════════════════
+  -- The clock cannot be set, so the zone is chosen so its day DIFFERS from the UTC day right now:
+  -- +14 when it is noon UTC or later, -12 before. A date column written with {now:true} must hold that day.
+  perform set_config('role', 'postgres', true);
+  f_done := custom.field_declare(v_org, v_content, jsonb_build_object('key', 'completed_on', 'label', 'Completed', 'type', 'range', 'config', jsonb_build_object('kind', 'date'), 'sort', 50));
+  f_when := custom.field_declare(v_org, v_content, jsonb_build_object('key', 'completed_at', 'label', 'Completed at', 'type', 'datetime', 'sort', 60));
+  v_zone := case when extract(hour from now() at time zone 'UTC') >= 12 then 'Pacific/Kiritimati' else 'Etc/GMT+12' end;
+  v_utc  := to_char(now() at time zone 'UTC', 'YYYY-MM-DD');
+  v_want := to_char(now() at time zone v_zone, 'YYYY-MM-DD');
+  if v_utc = v_want then raise exception '8-: the chosen zone shares the UTC day'; end if;
+  perform set_config('role', 'authenticated', true);
+  v_res := custom.automation_declare(v_org, v_content, jsonb_build_object('name', 'Stamp the day it was published',
+    'trigger', jsonb_build_object('on', 'property_edited', 'field', f_step, 'to', 'stamp'),
+    'actions', jsonb_build_array(jsonb_build_object('do', 'set', 'values',
+      jsonb_build_object(f_done, jsonb_build_object('now', true), f_when, jsonb_build_object('now', true))))));
+  if not (v_res ->> 'ok')::boolean then raise exception '8a: %', v_res; end if;
+  a_added := (v_res ->> 'automation_id')::uuid;
+
+  -- (i) no zone declared anywhere: the UTC day, exactly as before.
+  perform custom.record_update(v_org, r3, jsonb_build_object('step', 'stamp'));
+  perform set_config('role', 'postgres', true);
+  select x.data ->> 'completed_on' into v_got from custom.record x where x.id = r3;
+  perform set_config('role', 'authenticated', true);
+  if v_got is distinct from v_utc then raise exception '8b: with no zone the day should be UTC (%), got %', v_utc, v_got; end if;
+
+  -- (ii) the connection declares the person's zone: the date column holds HER day, the datetime keeps the instant.
+  perform set_config('custom.time_zone', v_zone, true);
+  perform custom.record_update(v_org, r3, jsonb_build_object('step', 'again'));
+  perform custom.record_update(v_org, r3, jsonb_build_object('step', 'stamp'));
+  perform set_config('role', 'postgres', true);
+  select x.data ->> 'completed_on', x.data ->> 'completed_at' into v_got, v_txt from custom.record x where x.id = r3;
+  perform set_config('role', 'authenticated', true);
+  if v_got is distinct from v_want then raise exception '8c: a run in % should write her day %, wrote %', v_zone, v_want, v_got; end if;
+  if v_txt is null or v_txt not like '%T%' then raise exception '8d: the datetime lost its instant: %', v_txt; end if;
+  if (v_txt::timestamptz) < now() - interval '1 minute' then raise exception '8e: the datetime is not now: %', v_txt; end if;
+
+  -- (iii) the same resolver serves a row action's TODAY() and the stored coercion of an instant.
+  perform set_config('role', 'postgres', true);
+  v_expr := custom.formula_eval(v_org, jsonb_build_object('op', 'fx.today', 'args', '[]'::jsonb), '{}'::jsonb, '{}'::jsonb);
+  if v_expr #>> '{}' is distinct from v_want then raise exception '8f: TODAY() read % (want %)', v_expr, v_want; end if;
+  v_got := custom._action_coerce(jsonb_build_object('type', 'range', 'config', jsonb_build_object('kind', 'date')),
+             to_jsonb(to_char(now() at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS"Z"')), v_org) #>> '{}';
+  if v_got is distinct from v_want then raise exception '8g: an instant written to a date column gave % (want %)', v_got, v_want; end if;
+  perform set_config('custom.time_zone', '', true);
+  perform set_config('role', 'authenticated', true);
+  raise notice '8 PASS — in % (day %, UTC day %): the automation''s date column, TODAY() and an instant coerced to a date all hold her day; the datetime keeps the instant; with no zone declared it stays UTC.', v_zone, v_want, v_utc;
 
   raise notice 'AUTOMATION-DOOR GREEN — all parts pass.';
 end

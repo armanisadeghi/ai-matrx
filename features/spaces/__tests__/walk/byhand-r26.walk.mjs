@@ -1,6 +1,6 @@
 // Round 26 by-hand rebuild of the tester's flow on a NEW page as test@test.com — every step through the
 // UI a person uses (header buttons, "/" menu, Markdown shortcuts, block menu, view menu). Scores the 10
-// elements and prints the page id.  SPACES_WALK_ORG="Oak & River" node .../byhand-r26.walk.mjs
+// elements and prints the page id.  node .../byhand-r26.walk.mjs
 import { open, newPage, act, slash, setBlockColor, originOf } from "./lib.mjs";
 
 const W = Number(process.env.WIDTH ?? 1440);
@@ -56,8 +56,22 @@ await act(page, async () => {
       await type("/page");
       await page.locator(".bn-suggestion-menu").waitFor({ timeout: 5000 });
       await page.keyboard.press("Enter");
-      // The sub-page goes in where "/" was typed; the caret waits on the next line (round 26).
-      await page.waitForTimeout(2500);
+      // Notion (round 32): "/page" opens the new sub-page at once. A person comes back with Back and clicks
+      // into the line after the sub-page block (the caret's line), then keeps typing.
+      await page.waitForURL((u) => u.pathname.includes("/spaces/") && !u.pathname.includes(id), { timeout: 20_000 }).catch(() => {});
+      await page.waitForTimeout(1500);
+      if (!page.url().includes(id)) {
+        await page.goBack({ waitUntil: "domcontentloaded" });
+        await page.waitForURL((u) => u.pathname.includes(id), { timeout: 30_000 });
+      }
+      await page.locator(".bn-editor").first().waitFor({ timeout: 90_000 });
+      await page.waitForTimeout(2000);
+      const line = colOuter().nth(0).locator('.bn-block-content[data-content-type="paragraph"]').last();
+      await line.click();
+      if ((await line.innerText()).trim()) {
+        await page.keyboard.press("End");
+        await enter();
+      }
     };
     for (const h of ["CLIENTS", "FULFILLMENT", "TEAM BOARDS"]) {
       await type(`### ${h}`);

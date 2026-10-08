@@ -1,11 +1,11 @@
-// app/(core)/esign/[envelopeId]/page.tsx — one envelope, for its sender.
+// app/(core)/esign/[envelopeId]/page.tsx — one envelope: the editor while it is a draft, the tracking page once sent.
 
 import type { Metadata } from "next";
-import { EnvelopeDetail } from "@/features/esign/envelopes/EnvelopeDetail";
+import { EnvelopeRoute } from "@/features/esign/editor/components/EnvelopeRoute";
 
 export const metadata: Metadata = { title: "Envelope" };
 
-export default async function EnvelopePage({ params }: { params: Promise<{ envelopeId: string }> }) {
+export default async function Page({ params }: { params: Promise<{ envelopeId: string }> }) {
   const { envelopeId } = await params;
-  return <EnvelopeDetail envelopeId={envelopeId} />;
+  return <EnvelopeRoute envelopeId={envelopeId} />;
 }

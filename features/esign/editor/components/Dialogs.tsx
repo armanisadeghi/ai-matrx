@@ -141,7 +141,6 @@ export function PreviewDialog(p: {
   open: boolean;
   draft: EnvelopeDraftV1;
   initialRecipient: string | null;
-  documentUrls?: Record<string, string>;
   onClose(): void;
 }) {
   const recipients = [...p.draft.recipients].sort((a, b) => a.order - b.order);
@@ -185,7 +184,6 @@ export function PreviewDialog(p: {
             selection={new Set()}
             armed={null}
             candidates={{}}
-            documentUrls={p.documentUrls}
             onlyRecipient={r?.key ?? null}
             readOnly
             zoom={zoom}

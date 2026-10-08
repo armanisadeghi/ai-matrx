@@ -54,24 +54,25 @@ const saveDialog = async () => {
 
 // 1. Duplicate property.
 step("duplicate");
-if (!(await headerNames()).includes("Name (1)")) await act(page, async () => {
+// Round 33: duplicating is instant (Notion) — no dialog; the copy lands beside the column with the store's name.
+const namesBefore = await headerNames();
+await act(page, async () => {
   await menu("Name");
   await item("Duplicate property").click();
-  await dialog().waitFor({ timeout: 10_000 });
-  await page.waitForTimeout(800);
-  await dumpDialog("duplicate");
-  const named = await dialog().locator("input").evaluateAll((els) => els.map((e) => e.value));
-  check("the copy starts named Name (1)", named.includes("Name (1)"), { named });
-  await page.screenshot({ path: `${SHOT}/dup-dialog.png` });
-  await saveDialog();
 });
-await page.waitForTimeout(2500);
-check("Duplicate property adds the copy beside it", (await headerNames()).some((n) => n.includes("Name (1)")), { headers: await headerNames() });
+await page.waitForFunction(
+  (n) => document.querySelectorAll('.spaces-db-frame [aria-label^="Sort or filter "]').length > n,
+  namesBefore.length,
+  { timeout: 20_000 },
+).catch(() => {});
+await page.waitForTimeout(1500);
+const COPY = (await headerNames()).find((n) => !namesBefore.includes(n) && n.startsWith("Name")) ?? "";
+check("Duplicate property adds the copy at once (no dialog)", !!COPY && !(await page.getByRole("dialog").count()), { copy: COPY, headers: await headerNames() });
 
-// 2. Change type (Name (1) -> Select).
+// 2. Change type (the copy -> Select).
 step("retype");
 await act(page, async () => {
-  await menu("Name (1)");
+  await menu(COPY);
   await item("Change type…").click();
   await dialog().waitFor({ timeout: 10_000 });
   await page.waitForTimeout(800);
@@ -97,7 +98,7 @@ await act(page, async () => {
 });
 check("Change type: the copy now holds numbers", true);
 await act(page, async () => {
-  await menu("Name (1)");
+  await menu(COPY);
   await item("Column settings…").click();
   await dialog().waitFor({ timeout: 10_000 });
   await page.waitForTimeout(1500);

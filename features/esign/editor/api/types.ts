@@ -1,5 +1,5 @@
 // features/esign/editor/api/types.ts — everything the editor needs from the server, as one interface
-// so the dev demo can run on an in-memory mock and production on the real doors (CONTRACT §6.1, §7).
+// over the real doors (CONTRACT §6.1, §7).
 
 import type { EnvelopeDraftV1, EnvelopeTemplateV1 } from "../../contract/draft";
 
@@ -52,8 +52,6 @@ export interface SendResult {
 }
 
 export interface EditorApi {
-  /** Mark of what the page is running on, shown nowhere in production; the demo prints it. */
-  readonly kind: "real" | "mock";
   createDraft(input: { organizationId: string; title: string; templateId?: string; copyOfEnvelopeId?: string }): Promise<{
     envelopeId: string;
     revision: number;

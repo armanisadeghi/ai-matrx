@@ -1,12 +1,16 @@
-// N8 Form view for a non-editor (round 31): a scratch page's inline database in Form layout with a published
-// form; the page is published to the web; a SIGNED-OUT visitor (no edit right) sees the fillable form inline,
-// answers it, and the answer is a row of the table. Unpublishes and trashes the page. Exit 1 on failure.
-//   SPACES_WALK_ORG="Ashford Labs" SHOT_DIR=<dir> node features/spaces/__tests__/walk/form-answer.walk.mjs
+// N8 Form view for a non-editor (rounds 31, 33): the admin makes a scratch page (in an organization test@test.com
+// is not in) whose inline database is in Form layout with a published form. (a) Shared with test@test.com at Can
+// view: on a fresh load the SIGNED-IN viewer sees the question list, answers it, and the answer is a row. (b) The
+// page is published to the web; a SIGNED-OUT visitor sees the fillable form inline and answers it; that answer is
+// a row too. Unpublishes and trashes the page. Exit 1 on failure.
+//   SHOT_DIR=<dir> node features/spaces/__tests__/walk/form-answer.walk.mjs
 import { chromium } from "playwright";
-import { open, newPage, act, slash, originOf, trashPage } from "./lib.mjs";
+import { open, newPage, act, slash, originOf, trashPage, loginUrl, orgWithoutMember, shareWith } from "./lib.mjs";
 
 const SHOT = process.env.SHOT_DIR ?? "/tmp";
-const { browser, page } = await open({ member: true, width: 1440, height: 1000 });
+const org = await orgWithoutMember();
+console.log(JSON.stringify({ org }));
+const { browser, page } = await open({ member: false, next: `/spaces?org=${org}`, width: 1440, height: 1000 });
 page.on("response", async (r) => {
   if (r.status() >= 400 && /rpc|rest\/v1/.test(r.url())) console.log("[refused]", r.status(), r.url().split("?")[0].slice(-60), (await r.text().catch(() => "")).slice(0, 400));
 });
@@ -20,6 +24,7 @@ const check = (name, ok, extra = {}) => {
 await page.locator(".bn-editor").first().waitFor({ timeout: 90_000 });
 await page.waitForTimeout(2500);
 const answer = `Maya Okafor ${Date.now() % 100000}`;
+const viewerAnswer = `Daniel Reyes ${Date.now() % 100000}`;
 let formLink = null;
 await act(page, async () => {
   await page.locator(".bn-editor .bn-inline-content").last().click();
@@ -48,6 +53,29 @@ check("the form is published", !!formLink, { formLink });
 // The page saves (the view's form) before it is published.
 const saved = await page.locator('.spaces-edited[data-state="saved"]').waitFor({ timeout: 30_000 }).then(() => true, () => false);
 check("the page saved", saved, { state: await page.locator(".spaces-edited").getAttribute("data-state"), toasts: await page.locator("[data-sonner-toast]").allInnerTexts() });
+// (a) A signed-in viewer (Can view) on a fresh load sees the questions and answers.
+await act(page, () => shareWith(page, "test@test.com", "Can view"));
+{
+  const vb = await chromium.launch({ headless: true });
+  const vp = await (await vb.newContext({ viewport: { width: 1440, height: 1000 } })).newPage();
+  vp.on("pageerror", (e) => console.log("[viewer pageerror]", e.message.slice(0, 200)));
+  await vp.goto(loginUrl(`/spaces/${id}`, true), { waitUntil: "domcontentloaded", timeout: 120_000 });
+  await vp.waitForURL((u) => u.pathname.includes(id), { timeout: 120_000 }).catch(() => {});
+  const inline = vp.getByTestId("spaces-form-answer");
+  const shown = await inline.waitFor({ timeout: 90_000 }).then(() => true, () => false);
+  const asked = shown && (await inline.getByLabel(/Your full name/).waitFor({ timeout: 30_000 }).then(() => true, () => false));
+  await vp.screenshot({ path: `${SHOT}/form-answer-viewer.png` });
+  check("a signed-in viewer sees the form's questions on a fresh load", asked, { shown, note: (await vp.locator(".spaces-db-frame").first().innerText().catch(() => "")).replace(/\s+/g, " ").slice(0, 160) });
+  if (asked) {
+    await inline.getByLabel(/Your full name/).fill(viewerAnswer);
+    const sent = vp.waitForResponse((r) => r.url().includes("/submit") && r.request().method() === "POST", { timeout: 60_000 }).catch(() => null);
+    await inline.getByRole("button", { name: /^(Submit|Send)$/ }).click();
+    const res = await sent;
+    check("the viewer's answer is sent", !!res && res.ok(), { status: res?.status() });
+    await vp.waitForTimeout(2000);
+  }
+  await vb.close();
+}
 // Publish the page to the web (Share -> Publish).
 let site = null;
 await act(page, async () => {
@@ -92,7 +120,8 @@ if (site) {
   await page.reload({ waitUntil: "domcontentloaded" });
   await page.locator(".spaces-db-frame").first().waitFor({ timeout: 90_000 });
   await page.waitForTimeout(8000);
-  check("the answer is a row of the table", (await page.locator(".spaces-db-frame").first().getByText(answer).count()) > 0, { answer });
+  check("the visitor's answer is a row of the table", (await page.locator(".spaces-db-frame").first().getByText(answer).count()) > 0, { answer });
+  check("the viewer's answer is a row of the table", (await page.locator(".spaces-db-frame").first().getByText(viewerAnswer).count()) > 0, { viewerAnswer });
   await page.screenshot({ path: `${SHOT}/form-answer-row.png` });
   await act(page, async () => {
     await page.getByRole("button", { name: /^Share$/ }).first().click();

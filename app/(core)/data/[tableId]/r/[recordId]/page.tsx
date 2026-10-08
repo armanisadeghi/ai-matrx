@@ -13,5 +13,5 @@ export default async function UnifiedRecordRoute({
   params: Promise<{ tableId: string; recordId: string }>;
 }) {
   const { tableId, recordId } = await params;
-  return <PrimedRecordPage tableId={tableId} recordId={recordId} seed={readTablePageSeed(tableId)} />;
+  return <PrimedRecordPage tableId={tableId} recordId={recordId} seed={readTablePageSeed(tableId, recordId)} />;
 }

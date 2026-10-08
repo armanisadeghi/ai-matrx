@@ -26,8 +26,7 @@ const FilePickerWindow = dynamic(
   { ssr: false, loading: () => null },
 );
 
-// Staging: the editor lives at /esign/v2/<id> until the production swap (CONTRACT §17); then "/esign".
-const DRAFT_BASE = "/esign/v2";
+const DRAFT_BASE = "/esign";
 const draftHref = (id: string) => `${DRAFT_BASE}/${id}`;
 
 type Source =
