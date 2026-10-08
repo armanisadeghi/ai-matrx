@@ -32,6 +32,8 @@ import { useAppSelector } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { tableHref } from "@/features/records-tool-display/readRecordsAnswer";
 import { useSourceTableNames } from "@/features/applets/hooks/useSourceTableNames";
+import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
+import { appletState, appletVersionLabel, publishConsequence } from "@/features/applets/lib/applet-state";
 import {
   BuildRefused,
   checkBuildAnswer,
@@ -39,6 +41,7 @@ import {
   publishApplet,
   readBuilderApplet,
   saveBuiltApplet,
+  SAVED_APPLET_COLUMNS,
   boundTableIds,
   tablesToMake,
   type BuildAnswer,
@@ -128,7 +131,7 @@ export function AppletBuilder({ appletId: initialId, routed = false }: { appletI
 
   // The saved app as the card and the preview show it (null while a new build has no app yet).
   const loadSaved = async (id: string, note: string) => {
-    const { data, error } = await createClient().schema("app").from("definition").select("id, slug, version, status, sources, entry").eq("id", id).maybeSingle();
+    const { data, error } = await createClient().schema("app").from("definition").select(`${SAVED_APPLET_COLUMNS}, sources, entry`).eq("id", id).maybeSingle();
     if (error || !data) {
       setPhase({ kind: "failed", why: error?.message ?? "That app is not there, or it has not been shared with you." });
       return;
@@ -172,7 +175,7 @@ export function AppletBuilder({ appletId: initialId, routed = false }: { appletI
       return;
     }
     const result = await saveBuiltApplet(client, { organizationId: org, appletId: id, current, answer, request: entry.text, conversationId: entry.conversation_id });
-    await session.settle(id, entry.id, { state: "saved", version: result.version, note: answer.note });
+    await session.settle(id, entry.id, { state: "saved", version: result.content_version, note: answer.note });
     shown.current = `${id}|${entry.id}:saved`;
     setSaved({ ...result, note: answer.note, toMake: tablesToMake(answer.applet), bound: boundTableIds(answer.applet), made: [] });
     setHeld(0);
@@ -244,12 +247,15 @@ export function AppletBuilder({ appletId: initialId, routed = false }: { appletI
 
   const useIt = async () => {
     if (!saved || !userId) return;
+    // "Use it" publishes AND creates tables: the click names both before it does either.
+    const ok = await confirm({ ...publishConsequence({ name: saved.name, slug: saved.slug, tablesToMake: saved.toMake.map((t) => t.name) }), confirmLabel: "Publish" });
+    if (!ok) return;
     setPhase({ kind: "publishing" });
     try {
       const { made } = await publishApplet(createClient(), saved.id, userId);
-      // The record now reads the made tables by id: remount the preview on the new version.
-      const { data } = await createClient().schema("app").from("definition").select("version").eq("id", saved.id).maybeSingle();
-      setSaved({ ...saved, status: "published", version: data?.version ?? saved.version, toMake: [], made });
+      // The record now reads the made tables by id (a new content version): the preview remounts on it.
+      const { data } = await createClient().schema("app").from("definition").select(SAVED_APPLET_COLUMNS).eq("id", saved.id).maybeSingle();
+      setSaved({ ...saved, ...(data ?? { status: "published", published_to_web: true }), toMake: [], made });
       setPhase({ kind: "idle" });
     } catch (err) {
       setPhase({ kind: "failed", why: err instanceof Error ? err.message : String(err) });
@@ -274,7 +280,7 @@ export function AppletBuilder({ appletId: initialId, routed = false }: { appletI
           getApplicationScope={() =>
             createAppletsScope({
               ...(appletId ? { app_id: appletId } : {}),
-              ...(saved ? { app_slug: saved.slug, app_status: saved.status, app_version: saved.version } : {}),
+              ...(saved ? { app_slug: saved.slug, app_status: appletState(saved).kind, app_version: saved.content_version } : {}),
             })
           }
         />
@@ -295,8 +301,8 @@ export function AppletBuilder({ appletId: initialId, routed = false }: { appletI
           <div className="flex flex-col gap-2 rounded-lg border border-border bg-card p-3 text-sm">
             <div className="flex flex-wrap items-center gap-2">
               <span className="font-medium">/applets/{saved.slug}</span>
-              <Badge tone={saved.status === "published" ? "success" : "neutral"}>v{saved.version}</Badge>
-              {saved.status === "published" ? <Badge tone="success">Live</Badge> : null}
+              {appletVersionLabel(saved.content_version) ? <Badge>{appletVersionLabel(saved.content_version)}</Badge> : null}
+              <Badge tone={appletState(saved).tone}>{appletState(saved).label}</Badge>
             </div>
             {saved.note ? <p className="text-muted-foreground">{saved.note}</p> : null}
             {saved.bound.length ? (
@@ -336,7 +342,7 @@ export function AppletBuilder({ appletId: initialId, routed = false }: { appletI
               </div>
             ) : null}
             <div className="flex flex-wrap gap-2">
-              {saved.status !== "published" ? (
+              {appletState(saved).kind === "draft" ? (
                 <Button variant="primary" disabled={busy || !userId} onClick={() => void useIt()}>
                   Use it
                 </Button>
@@ -352,12 +358,14 @@ export function AppletBuilder({ appletId: initialId, routed = false }: { appletI
         {appletId && saved ? (
           <>
             <div className="flex items-center gap-2 border-b border-border px-3 py-1.5 text-xs text-muted-foreground">
-              <span>{saved.status === "published" ? "Live" : "Saved"} v{saved.version} · preview changes are not saved</span>
+              <span>
+                {[appletState(saved).label, appletVersionLabel(saved.content_version)].filter(Boolean).join(" ")} · preview changes are not saved
+              </span>
               {held ? <Badge tone="warning">{held} not saved</Badge> : null}
             </div>
             <div className="min-h-0 flex-1 overflow-y-auto">
               <AppletHostMount
-                key={`${appletId}:${saved.version}`}
+                key={`${appletId}:${saved.content_version}`}
                 appletId={appletId}
                 slug={saved.slug}
                 preview={{

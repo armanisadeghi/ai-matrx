@@ -32,7 +32,7 @@ export default async function AppletVersionPage({
   const snapshot = await getAppletVersion(app.id, versionNumber);
   if (!snapshot) notFound();
 
-  const isCurrent = snapshot.version_number === app.version;
+  const isCurrent = snapshot.version_number === app.content_version;
   const snapshotFiles = appletFiles(snapshot);
   const currentFiles = appletFiles(app);
   const fileNames = [...new Set([...Object.keys(snapshotFiles), ...Object.keys(currentFiles)])].sort();

@@ -125,7 +125,6 @@ export function UpdateAppletModal({
           <SelectContent>
             <SelectItem value="draft">Draft</SelectItem>
             <SelectItem value="published">Published</SelectItem>
-            <SelectItem value="archived">Archived</SelectItem>
           </SelectContent>
         </Select>
       </div>
