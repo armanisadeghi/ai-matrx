@@ -460,6 +460,9 @@ export function parseFeedbackUserMessageJson(
   // rather than inventing a value.
   if (!("custom_fields" in o)) return null;
   const customFields: Json = o.custom_fields;
+  // `metadata` is NOT NULL jsonb (default '{}') on the same whole-row payload.
+  if (!("metadata" in o)) return null;
+  const metadata: Json = o.metadata;
   if (!Array.isArray(o.image_file_ids)) return null;
   const imageFileIds: string[] = [];
   for (const x of o.image_file_ids) {
@@ -491,6 +494,7 @@ export function parseFeedbackUserMessageJson(
       content: o.content,
       created_at: o.created_at,
       custom_fields: customFields,
+      metadata,
       email_sent: o.email_sent,
       sender_name: senderName,
       sender_type: o.sender_type,

@@ -108,7 +108,8 @@ describe("rich-content copy goes through the one module", () => {
 //   D. inside one host, every copy copies the SAME source (button = menu).
 // ═══════════════════════════════════════════════════════════════════════════
 
-const SPLIT = /\b(CopySplitButton|RichCopySplit|TextCopySplit|TextCopyChevron)\b/;
+// CopyMenuButton / ContentActions (2026-10-08): one click raw, then Copy raw · Copy formatted · Copy for AI.
+const SPLIT = /\b(CopySplitButton|RichCopySplit|TextCopySplit|TextCopyChevron|CopyMenuButton|ContentActions)\b/;
 const ALCHEMY_TRIGGER = /<(CopyButtons|MatrxCopyMenu|ContentTransferMenu|AlchemyDocumentMenu)\b([\s\S]*?)\/>/g;
 
 /** Hosts that copy one flavor on purpose — file → why there is no plain-text choice to make. */

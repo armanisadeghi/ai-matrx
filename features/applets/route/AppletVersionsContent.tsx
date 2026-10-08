@@ -123,9 +123,10 @@ export function AppletVersionsContent({
               className="ml-auto"
               human={() =>
                 versions
-                  .map((v) =>
-                    versionHuman(v, v.version_number === currentVersion),
-                  )
+                  .map((v) => {
+                    const isCurrent = v.version_number === currentVersion;
+                    return versionHuman(v, isCurrent, appletVersionStatusLabel(isCurrent, applet, v.status));
+                  })
                   .join("\n\n")
               }
               json={() => versions}

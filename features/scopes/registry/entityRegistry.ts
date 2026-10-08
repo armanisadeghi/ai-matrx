@@ -425,10 +425,6 @@ const ENTITY_OVERLAY: Partial<Record<EntityTypeToken, EntityOverlay>> = {
     labelPlural: "Documents",
     hrefFor: (id) => `/documents/${id}`,
   },
-  working_document: {
-    Icon: FilePen,
-    labelPlural: "Working Documents",
-  },
   // `docproc.processed_documents` — a document as the PDF pipeline produced it,
   // NOT `udt_document` (workbench.udt_documents) despite the similar name.
   // The studio's own detail route keys on exactly this id, so every surface

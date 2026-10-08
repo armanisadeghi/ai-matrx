@@ -51,7 +51,7 @@ export function useIsInMeetingRoom(meetingId: string): boolean {
   const liveId = useMeetingId();
   const snapshot = useMeetSnapshot();
   const phase = snapshot?.phase;
-  return liveId === meetingId && (phase === "connected" || phase === "reconnecting");
+  return liveId === meetingId && phase === "in_call";
 }
 
 /** One part of one meeting: live in its room, its durable record elsewhere. */

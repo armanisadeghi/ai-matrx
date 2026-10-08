@@ -18,6 +18,8 @@ import {
   parseSpendPeriod,
   spendQuestion,
 } from "../spend";
+import { FIELDS } from "../fields";
+import type { MandateAdminRow } from "../types";
 import { spendFactsOf, spendOfKey, spendTotalOf } from "../service";
 
 const row = (
@@ -135,5 +137,21 @@ describe("what the list sends and reads back", () => {
     expect(spendTotalOf(67.99)).toBe(67.99);
     expect(spendTotalOf(undefined)).toBeNull();
     expect(spendTotalOf(null)).toBeNull();
+  });
+});
+
+describe("a workflow Holder in the Model column", () => {
+  // organization.referral_letter_drafter (a workflow default Holder) lives in an
+  // organization, so the platform list has none — the support lookup shows it.
+  const asRow = (models: string[] | null) => ({ models }) as unknown as MandateAdminRow;
+
+  it("is a filterable Model value, so the filter offers Workflow whenever one exists", () => {
+    expect(FIELDS.model.values(asRow(["Workflow"]))).toEqual(["Workflow"]);
+    expect(FIELDS.model.values(asRow(["Gemini 3.8 Flash", "Workflow"]))).toContain("Workflow");
+  });
+
+  it("matches on a binding's workflow while sorting by the default Holder's model", () => {
+    expect(FIELDS.model.sort(asRow(["Claude Opus 5.5", "Workflow"]))).toBe("claude opus 5.5");
+    expect(FIELDS.model.values(asRow(null))).toEqual([]);
   });
 });

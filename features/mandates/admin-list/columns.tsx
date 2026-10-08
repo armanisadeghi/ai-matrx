@@ -9,6 +9,7 @@
 // removed. Filter/sort values come from ./fields.ts, the one reader.
 
 import { Badge } from "@/components/ui/badge";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "@/lib/toast";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
@@ -141,14 +142,25 @@ function ModelCell({ row }: { row: MandateAdminRow }) {
   const cell = modelCellOf(row.models);
   if (!cell) return <Muted>—</Muted>;
   return (
-    <span className="flex min-w-0 items-center gap-1">
-      <span className="truncate type-secondary" title={cell.primary}>
+    <span className="flex min-w-0 items-center gap-1 whitespace-nowrap">
+      <span className="min-w-0 truncate type-secondary" title={cell.primary}>
         {cell.primary}
       </span>
       {cell.others.length > 0 ? (
-        <Badge variant="outline" title={`Bindings also run on ${cell.others.join(", ")}`}>
-          +{cell.others.length}
-        </Badge>
+        // The platform tooltip, anchored to the badge; the badge never shrinks
+        // (it used to clip to "+." when the model name was long).
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <span className="shrink-0">
+              <Badge variant="outline" className="shrink-0 whitespace-nowrap">
+                +{cell.others.length}
+              </Badge>
+            </span>
+          </TooltipTrigger>
+          <TooltipContent side="top">
+            Bindings also run on {cell.others.join(", ")}
+          </TooltipContent>
+        </Tooltip>
       ) : null}
     </span>
   );
@@ -196,7 +208,7 @@ function HealthCell({ row }: { row: MandateAdminRow }) {
   if (row.factsPending.codeTruth) return <Checking what="the code declarations" />;
   return (
     <div
-      className="flex flex-wrap items-center gap-1"
+      className="flex min-w-0 flex-nowrap items-center gap-1 whitespace-nowrap"
       onClick={(event) => event.stopPropagation()}
     >
       <Badge
@@ -225,7 +237,7 @@ function HealthCell({ row }: { row: MandateAdminRow }) {
         </Badge>
       ) : null}
       {row.health === "code ↔ agent drift" && row.codeTruth && (
-        <span className="basis-full type-meta leading-tight text-rose-600">
+        <span className="min-w-0 truncate type-meta leading-tight text-rose-600">
           code: {row.codeTruth.code_variables.join(", ") || "none"}
           {" · "}agent:{" "}
           {row.codeTruth.bound_agent?.declared_variables.join(", ") || "none"}
@@ -503,7 +515,7 @@ export const ADMIN_MANDATE_COLUMNS: Spec[] = [
   facetColumn(
     "impactGrade",
     "Grade",
-    120,
+    240,
     (row) =>
       !row.defaultVerdict && row.workflowVerdicts.length > 0 ? (
         <WorkflowImpactGradeCell
@@ -519,7 +531,7 @@ export const ADMIN_MANDATE_COLUMNS: Spec[] = [
       />
     ),
   ),
-  facetColumn("impactBlocker", "Blocker", 190, (row) => (
+  facetColumn("impactBlocker", "Blocker", 250, (row) => (
     <BlockerCell row={row} />
   )),
   facetColumn("health", "Health", 190, (row) => <HealthCell row={row} />),

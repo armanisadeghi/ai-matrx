@@ -59,14 +59,12 @@ const STATUS_VARIANT: Record<
 > = {
   draft: "outline",
   published: "default",
-  archived: "secondary",
   suspended: "destructive",
 };
 
 const STATUS_OPTIONS: AppletAdminView["status"][] = [
   "draft",
   "published",
-  "archived",
   "suspended",
 ];
 

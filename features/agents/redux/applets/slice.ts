@@ -74,6 +74,7 @@ function makeEmptyRecord(id: string): AppletDefinition {
     created_at: "",
     updated_at: "",
     published_at: null,
+    deleted_at: null,
 
     _dirty: false,
     _dirtyFields: createFieldFlags<keyof AppletRow>(),

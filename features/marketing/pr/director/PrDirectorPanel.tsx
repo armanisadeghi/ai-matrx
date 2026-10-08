@@ -135,7 +135,8 @@ async function serverIsWorkingOn(conversationId: string): Promise<boolean> {
         link_kind: "conversation",
         link_id: conversationId,
       }),
-      { expectedErrorStatuses: [404] },
+      // 404 is an expected answer here (no operation), so it stays out of the Error Inspector.
+      { captureErrors: false },
     );
     return ((data as { operation_count?: number } | null)?.operation_count ?? 0) > 0;
   } catch (error) {
