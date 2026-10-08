@@ -271,7 +271,15 @@ export function RunsTable({
       sortable: true,
       filter: false,
       accessorFn: (run) => run.cost,
-      cell: (run) => <span className="tabular-nums">{costWords(run.cost, costRate, costUnit)}</span>,
+      cell: (run) =>
+        // The points rate arrives a moment after the rows; "—" would claim the cost is unknown.
+        run.cost != null && costUnit === "points" && costRate == null ? (
+          <span className="tabular-nums text-muted-foreground" title="Loading the points rate">
+            …
+          </span>
+        ) : (
+          <span className="tabular-nums">{costWords(run.cost, costRate, costUnit)}</span>
+        ),
     },
     {
       id: "output",
@@ -300,6 +308,7 @@ export function RunsTable({
       sortable: false,
       filter: false,
       resizable: false,
+      minWidth: 96,
       cell: (run) => {
         const href = outputHrefOf(run, audience);
         const what = run.runKind === "workflow" ? "workflow run" : "conversation";
