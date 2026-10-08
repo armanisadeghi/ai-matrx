@@ -94,6 +94,10 @@ export function AppletBuilder({ appletId: initialId, routed = false }: { appletI
   // An answer refused before saving: "Fix it" hands it back with the reason, so nothing is lost.
   const [refused, setRefused] = useState<BuilderApplet | null>(null);
   const rejoinWindow = useRef<LiveRunWindowHandle | null>(null);
+  // The record a request belongs to, readable inside the automatic fix round (state lags a render).
+  const appletIdRef = useRef<string | null>(initialId);
+  // What the build is doing right now — the preview never sits on a bare placeholder while it works.
+  const [step, setStep] = useState<{ label: string; since: number } | null>(null);
 
   // The build's record (the draft Applet + its request history) — the truth a refresh reopens.
   const session = useAppletBuildSession({
@@ -101,6 +105,7 @@ export function AppletBuilder({ appletId: initialId, routed = false }: { appletI
     routed,
     onRejoin: (entry) => {
       setPhase({ kind: "building" });
+      setStep({ label: entry.fix ? "Fixing your Applet" : "Writing your Applet", since: Date.parse(entry.started_at) || Date.now() });
       rejoinWindow.current = openRunWindow({ conversationId: entry.conversation_id, label: entry.fix ? "Fixing your Applet" : "Building your Applet" });
     },
     onReopenedAnswer: async ({ entry, value }) => {
@@ -126,6 +131,7 @@ export function AppletBuilder({ appletId: initialId, routed = false }: { appletI
     if (rejoining || !rejoinWindow.current) return;
     rejoinWindow.current.update({ pending: false });
     rejoinWindow.current = null;
+    setStep(null);
     setPhase((p) => (p.kind === "building" ? { kind: "idle" } : p));
   }, [rejoining]);
 
@@ -198,22 +204,31 @@ export function AppletBuilder({ appletId: initialId, routed = false }: { appletI
       .catch((writeErr) => console.error("[applet-build] could not record how the request ended", writeErr));
   };
 
-  const run = async (request: string, fix: Fix | null) => {
+  /**
+   * One request. A NEW build or change whose answer the checks refuse gets ONE automatic fix round
+   * (`applets.fix` with the refused answer and the reason) before anything is shown — she asked for an
+   * app, not a list of what is wrong with it. A refused fix round is shown with "Fix it", as before.
+   */
+  const run = async (request: string, fix: Fix | null, retry: { refusedApplet: BuilderApplet } | null = null) => {
     setPhase({ kind: "building" });
+    setStep({ label: retry ? "Fixing what the check found" : "Saving your request", since: Date.now() });
     const client = createClient();
     const live: { handle: LiveRunWindowHandle | null } = { handle: null };
     let started: { id: string; entry: BuildEntry } | null = null;
     try {
       // A new app needs an organization: with none set, the picker asks and THIS build continues with the pick.
-      const org = appletId ? null : (organizationId ?? (await ensureOrgId(null)));
+      const org = appletId || retry ? null : (organizationId ?? (await ensureOrgId(null)));
       // The request is written BEFORE anything runs — a new app is born here and the address becomes its own.
-      const { record, entry } = await session.begin({ appletId, organizationId: org ?? "", text: request, fix });
+      const { record, entry } = await session.begin({ appletId: retry ? appletIdRef.current : appletId, organizationId: org ?? "", text: request, fix });
       started = { id: record.id, entry };
       setAppletId(record.id);
       setSentence("");
+      appletIdRef.current = record.id;
+      setStep({ label: "Reading your tables", since: Date.now() });
       const current = record.hasContent ? await readBuilderApplet(client, record.id) : null;
       const runOrg = current?.organizationId ?? record.organizationId;
       const catalogue = await readAppletCatalogue(client, { organizationId: runOrg, request });
+      setStep({ label: "Starting the builder", since: Date.now() });
       let attached: Promise<void> = Promise.resolve();
       const answer = await writer.run<BuildAnswer>({
         mandateKey: fix ? FIX : BUILD,
@@ -224,7 +239,7 @@ export function AppletBuilder({ appletId: initialId, routed = false }: { appletI
         organizationId: runOrg,
         variables: {
           request,
-          applet: fix && refused ? JSON.stringify(refused) : current ? JSON.stringify(current.applet) : "",
+          applet: fix && (retry?.refusedApplet ?? refused) ? JSON.stringify(retry?.refusedApplet ?? refused) : current ? JSON.stringify(current.applet) : "",
           catalogue: JSON.stringify(catalogue),
           last_check: fix ? JSON.stringify({ file: fix.where, message: fix.message }) : "",
         },
@@ -232,6 +247,7 @@ export function AppletBuilder({ appletId: initialId, routed = false }: { appletI
           entry.conversation_id = cid;
           attached = session.running(record.id, entry.id, cid).catch((err) => console.error("[applet-build] could not record the run", err));
           live.handle = openRunWindow({ conversationId: cid, label: fix ? "Fixing your Applet" : appletId ? "Changing your Applet" : "Building your Applet" });
+          setStep({ label: fix ? "Fixing your Applet" : "Writing your Applet", since: Date.now() });
         },
         coerce: (v) => checkBuildAnswer(v, coerceBuildAnswer(v), { organizationId: runOrg, tables: catalogue.tables }),
       });
@@ -240,8 +256,15 @@ export function AppletBuilder({ appletId: initialId, routed = false }: { appletI
     } catch (err) {
       if (started) await failed(started.id, started.entry, err);
       else setPhase({ kind: "failed", why: err instanceof Error ? err.message : String(err) });
+      if (started && err instanceof BuildRefused && !fix && !retry) {
+        live.handle?.update({ pending: false });
+        live.handle = null;
+        await run("Fix this error", { where: "record", message: err.message }, { refusedApplet: err.applet });
+        return;
+      }
     } finally {
       live.handle?.update({ pending: false });
+      setStep(null);
     }
   };
 
@@ -362,6 +385,7 @@ export function AppletBuilder({ appletId: initialId, routed = false }: { appletI
                 {[appletState(saved).label, appletVersionLabel(saved.content_version)].filter(Boolean).join(" ")} · preview changes are not saved
               </span>
               {held ? <Badge tone="warning">{held} not saved</Badge> : null}
+              {step ? <BuildStep step={step} inline /> : null}
             </div>
             <div className="min-h-0 flex-1 overflow-y-auto">
               <AppletHostMount
@@ -375,10 +399,32 @@ export function AppletBuilder({ appletId: initialId, routed = false }: { appletI
               />
             </div>
           </>
+        ) : step ? (
+          <BuildStep step={step} />
         ) : (
           <EmptyState icon={<AppWindow />} title="Your Applet shows here" line="Say what you want, then Build." />
         )}
       </div>
+    </div>
+  );
+}
+
+/**
+ * What the build is doing, with how long it has been at it — never a bare placeholder while the builder
+ * works (the live window opens only once the run exists; reading her tables and starting the run took
+ * ~45 s with nothing said, 2026-10-08).
+ */
+function BuildStep({ step, inline = false }: { step: { label: string; since: number }; inline?: boolean }) {
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    const t = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(t);
+  }, []);
+  const seconds = Math.max(0, Math.round((now - step.since) / 1000));
+  if (inline) return <Badge tone="info" data-applet-build-step="">{`${step.label} · ${seconds}s`}</Badge>;
+  return (
+    <div className="flex h-full min-h-0 items-center justify-center" data-applet-build-step="" aria-live="polite">
+      <EmptyState icon={<AppWindow />} title={step.label} line={`${seconds}s so far`} />
     </div>
   );
 }
