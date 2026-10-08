@@ -12,22 +12,22 @@
 //           publishes it at /applets/<slug>.
 // While the builder works its run streams in the floating LiveRunWindow (never a spinner).
 
-import { useEffect, useEffectEvent, useRef, useState } from "react";
+import { useEffect, useEffectEvent, useRef, useState, useSyncExternalStore } from "react";
 import Link from "next/link";
+import dynamic from "next/dynamic";
 import { readAppletCatalogue } from "@ai-matrx/applets/catalogue";
 import type { HeldWrite } from "@ai-matrx/applets/preview";
 import { storedMandateKey } from "@ai-matrx/agents/mandates";
 import { useHeadlessAgentJson } from "@ai-matrx/chat/agents/hooks/useHeadlessAgentJson";
 import { useDeclaredSurfaceMandates } from "@ai-matrx/chat/surfaces/runtime/surface-mandates";
-import { Badge, Button, EmptyState } from "@ai-matrx/design-system/controls";
-import { AppWindow, ExternalLink, Table2, Wrench } from "lucide-react";
+import { Badge, Button, EmptyState, RegionSkeleton } from "@ai-matrx/design-system/controls";
+import { AppWindow, ExternalLink, Loader2, Table2, Wrench } from "lucide-react";
 
 import { createClient } from "@/utils/supabase/client";
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { APPLETS_SURFACE_NAME, createAppletsScope } from "@/features/surfaces/manifests/applets.manifest";
 import { useOrganizationRequired } from "@/features/organizations/useOrganizationRequired";
 import { useOpenLiveRunWindow, type LiveRunWindowHandle } from "@/features/overlays/openers/liveRunWindow";
-import { AppletHostMount } from "@/features/applets-host/AppletHostMount";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { tableHref } from "@/features/records-tool-display/readRecordsAnswer";
@@ -39,6 +39,7 @@ import {
   checkBuildAnswer,
   coerceBuildAnswer,
   publishApplet,
+  publishBlockedBy,
   readBuilderApplet,
   saveBuiltApplet,
   SAVED_APPLET_COLUMNS,
@@ -53,6 +54,18 @@ import { readBuildRecord, type BuildEntry } from "./build-session";
 import { useAppletBuildSession } from "./useAppletBuildSession";
 import { BuildHistory } from "./BuildHistory";
 import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
+
+// The preview (the Applet host, its frame and compiler) is needed only once a saved version exists, so it
+// loads then — never with the first screen. One edge, ssr:false (it mounts browser-only code), gated on
+// `saved` below (code-splitting skill, Method A).
+const AppletHostMount = dynamic(() => import("@/features/applets-host/AppletHostMount").then((m) => m.AppletHostMount), {
+  ssr: false,
+  loading: () => <RegionSkeleton />,
+});
+
+const noopSubscribe = () => () => {};
+/** False in the server HTML and the hydration render, true once the page answers clicks. */
+const useHydrated = () => useSyncExternalStore(noopSubscribe, () => true, () => false);
 
 // Declared in aidream (client_mandates.py, applets.build / applets.fix); allowlisted in
 // scripts/mandate-keys-allowlist.json until @ai-matrx/agents publishes MANDATE_KEYS.applets__build.
@@ -268,8 +281,10 @@ export function AppletBuilder({ appletId: initialId, routed = false }: { appletI
     }
   };
 
+  // "Use it" never publishes a broken Applet: while the preview reports an error, Fix it is the action.
+  const blockedBy = publishBlockedBy(lastError);
   const publishAndUse = async () => {
-    if (!saved || !userId) return;
+    if (!saved || !userId || blockedBy) return;
     // "Use it" publishes AND creates tables: the click names both before it does either.
     const ok = await confirm({ ...publishConsequence({ name: saved.name, slug: saved.slug, tablesToMake: saved.toMake.map((t) => t.name) }), confirmLabel: "Publish" });
     if (!ok) return;
@@ -286,6 +301,8 @@ export function AppletBuilder({ appletId: initialId, routed = false }: { appletI
   };
 
   const busy = phase.kind === "building" || phase.kind === "publishing" || session.rejoining;
+  // Until the page is interactive the button says so, instead of sitting silently disabled.
+  const hydrated = useHydrated();
   const boundNames = useSourceTableNames(saved?.bound ?? []);
   return (
     <div className="grid h-full min-h-0 grid-cols-1 gap-3 p-3 lg:grid-cols-[minmax(320px,2fr)_5fr]">
@@ -308,9 +325,20 @@ export function AppletBuilder({ appletId: initialId, routed = false }: { appletI
           }
         />
         <div className="flex flex-wrap items-center gap-2">
-          <Button variant="primary" disabled={busy || !sentence.trim()} onClick={() => void run(sentence.trim(), null)}>
-            {appletId ? "Change it" : "Build"}
-          </Button>
+          {hydrated ? (
+            <Button
+              variant="primary"
+              disabled={busy || !sentence.trim()}
+              title={sentence.trim() ? undefined : "Say what you want first"}
+              onClick={() => void run(sentence.trim(), null)}
+            >
+              {appletId ? "Change it" : "Build"}
+            </Button>
+          ) : (
+            <Button variant="primary" disabled aria-busy icon={<Loader2 className="animate-spin" />} data-applet-build-pending="">
+              Getting ready
+            </Button>
+          )}
           {lastError ? (
             <Button variant="outline" disabled={busy} onClick={() => void run("Fix this error", lastError)}>
               <Wrench className="h-4 w-4" /> Fix it
@@ -365,7 +393,11 @@ export function AppletBuilder({ appletId: initialId, routed = false }: { appletI
               </div>
             ) : null}
             <div className="flex flex-wrap gap-2">
-              {appletState(saved).kind === "draft" ? (
+              {appletState(saved).kind === "draft" && blockedBy ? (
+                <Button variant="primary" disabled={busy} title={blockedBy} onClick={() => lastError && void run("Fix this error", lastError)} data-applet-use-it-held="">
+                  <Wrench className="h-4 w-4" /> Fix it to use it
+                </Button>
+              ) : appletState(saved).kind === "draft" ? (
                 <Button variant="primary" disabled={busy || !userId} onClick={() => void publishAndUse()}>
                   Use it
                 </Button>
