@@ -34,7 +34,7 @@ import { summarizeContextCell } from "@/features/scopes/utils/referenceCell";
 import { useEntityTitles } from "@/features/scopes/hooks/useEntityTitles";
 import { registerChatUsageGate } from "@ai-matrx/chat/host/usage-gate";
 import * as usageGate from "@/features/entitlements/usage-gate/usageGate";
-import { registerKindValueMarkdown } from "@ai-matrx/chat/utils/content-ir/kinds/kind-value-markdown";
+import { registerKindValueMarkdown } from "@ai-matrx/content-ir/surfaces";
 import { useKnowledgeAttachSearch } from "@/features/resource-manager/resource-picker/useKnowledgeAttachSearch";
 import { useConversationAttachments } from "@/features/connectors/useConversationAttachments";
 import { useHeldWriteTableName } from "@/features/record-change-approvals/useHeldWriteTableName";

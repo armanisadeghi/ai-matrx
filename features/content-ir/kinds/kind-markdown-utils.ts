@@ -1,1 +1,13 @@
-export * from "@ai-matrx/chat/utils/content-ir/kinds/kind-markdown-utils";
+export {
+  isRecordValue,
+  formatInlineValue,
+  collectExtras,
+  plainFieldLabel,
+  extrasList,
+  additionalDetailsSection,
+  joinBlocks,
+  humanizeKind,
+  type NestedKindMarkdown,
+  genericKindMarkdown,
+  plainValueMarkdown,
+} from "@ai-matrx/content-ir/surfaces";
