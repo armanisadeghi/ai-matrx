@@ -69,7 +69,7 @@ import {
 import { toast } from "@ai-matrx/chat/host/notify";
 import { cn } from "@ai-matrx/design-system";
 import type { AgentDefinitionMessage } from "@ai-matrx/chat/agents/types/agent-message-types";
-import { RichDocument } from "@ai-matrx/chat/host/ui-slots";
+import { RichDocument } from "@ai-matrx/rich-content/rich-document/RichDocument";
 import type { ContentSource } from "@ai-matrx/rich-content/rich-document/types";
 import { JsonInspector } from "@/components/official-candidate/json-inspector/JsonInspector";
 import {
@@ -77,7 +77,7 @@ import {
   AiToolRef,
 } from "@/components/official/entity-ref/AiIdentityRef";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
-import { RichContent } from "@ai-matrx/chat/host/ui-slots";
+import { RichContent } from "@ai-matrx/rich-content/levels/RichContent";
 import { AccessSummaryPanel } from "@/features/sharing/components/AccessSummaryPanel";
 import { CopyButtons } from "@ai-matrx/chat/host/ui-slots";
 import { agentDefinitionSummary } from "@ai-matrx/chat/agents/format";

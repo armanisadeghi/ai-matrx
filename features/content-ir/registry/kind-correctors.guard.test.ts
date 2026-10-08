@@ -29,7 +29,7 @@ const SCAN = [
 const OWNER = "../aidream/apps/shared/rich-content/src/kinds/registry/kind-correctors.ts";
 // The chat package's bare-host stand-in for the `sessionEnvelope` slot (a host with NO correctors
 // takes the session's own envelope, reported once). Every real host registers `sessionEnvelope`
-// from OWNER (providers/chatContentIrRegistration.ts), so no render path in this app uses it.
+// from OWNER (@ai-matrx/chat imports it from @ai-matrx/rich-content directly), so no render path in this app uses it.
 const BARE_HOST_STAND_IN = "../aidream/apps/shared/chat/src/host/content-ir-slots.ts";
 
 function files(dir: string, out: string[] = []): string[] {

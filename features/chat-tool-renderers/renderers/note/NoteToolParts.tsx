@@ -12,7 +12,7 @@ import { toast as copyToast } from "@/lib/toast";
 import React, { useEffect, useRef, useState } from "react";
 import { Check, Copy, Eye, FileText, Loader2, NotebookPen } from "lucide-react";
 
-import { RichContent } from "@ai-matrx/chat/host/ui-slots";
+import { RichContent } from "@ai-matrx/rich-content/levels/RichContent";
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { NOTE_ACCENT, type NoteToolMode } from "./useNoteToolData";
 
