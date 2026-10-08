@@ -369,6 +369,30 @@ export async function setMeetingPolicy(meeting: Meeting, key: string, value: str
   expect(String(back).replace(/"/g, ""), `meet_policy should answer ${key}=${value} after the host set it`).toBe(String(value));
 }
 
+/**
+ * Choose the host's behavior profile (`meet`/`zoom`/`teams`) through the product's own settings door:
+ * `communication.meet_policy_set` at the host's USER rung (CORE-DESIGN §4.1: "each host's own choice"),
+ * with the host's own session - never a row edit. A meeting whose own `behavior_profile` column is
+ * unset runs its host's rules, so this applies to every meeting the harness host starts. Call it
+ * BEFORE anyone joins: the run caches the resolved rules when it opens. Reads the answer back
+ * through `meet_policy`.
+ */
+export async function setHostBehaviorProfile(meeting: Meeting, profile: "meet" | "zoom" | "teams"): Promise<void> {
+  const s = await meeting.host.session();
+  if (!s) throw new Error("the host has no session to set a profile with");
+  const row = await meetingRow(meeting);
+  if (!row?.id || !row.organization_id) throw new Error("the meeting row is not readable by its host");
+  const set = (await rpc(
+    "meet_policy_set",
+    { p_feature: "meet", p_key: "behavior_profile", p_scope_kind: "user", p_scope_id: s.userId, p_organization_id: row.organization_id, p_value: profile, p_note: null },
+    s.token,
+  )) as { ok?: boolean; reason?: string; detail?: string } | null;
+  expect(set?.ok, `meet_policy_set refused the host's profile: ${JSON.stringify(set)}`).not.toBe(false);
+  const back = await rpc("meet_policy", { p_meeting_id: row.id, p_key: "behavior_profile" }, s.token);
+  meeting.host.note(`host behavior profile = ${JSON.stringify(back)} (set through meet_policy_set, user rung)`);
+  expect(String(back).replace(/"/g, ""), `meet_policy should answer behavior_profile=${profile} after the host chose it`).toBe(profile);
+}
+
 /** The host lifts a denial the way the product does (`meet_undeny`), for the guest the lobby knew by name. */
 export async function liftDenial(meeting: Meeting, guestName: string): Promise<void> {
   const s = await meeting.host.session();

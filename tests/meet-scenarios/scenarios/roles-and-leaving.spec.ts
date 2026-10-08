@@ -14,7 +14,7 @@ import {
   seePhase,
   seeUntil,
   refused,
-  setMeetingPolicy,
+  setHostBehaviorProfile,
   tokenProbe,
   walkIn,
 } from "../lib/meeting";
@@ -101,9 +101,13 @@ scenario(
 scenario(
   "host-leaves-unassigned-zoom",
   async ({ cast }) => {
-    const { host, guest } = await callWithGuest(cast);
-    // Through the product's per-meeting door, as the host (never a row edit).
-    await setMeetingPolicy(cast.meeting!, "behavior_profile", "zoom");
+    const host = await hostWithMeeting(cast);
+    // The host chooses the Zoom profile through the product's settings door, before anyone joins.
+    await setHostBehaviorProfile(cast.meeting!, "zoom");
+    const guest = await cast.add({ label: "guest", seat: "guest", displayName: GUEST });
+    await walkIn(host, cast.meeting!, { until: ["in-call"] });
+    await walkIn(guest, cast.meeting!, { until: ["knocking", "in-call"], gesture: true });
+    await admitWaiting(host, guest, GUEST);
     await host.closeTab();
     await host.newTab();
     // Zoom profile: after the grace window the remaining person is promoted.
