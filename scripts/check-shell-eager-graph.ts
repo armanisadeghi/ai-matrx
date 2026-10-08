@@ -53,6 +53,7 @@ export const HEAVY: ReadonlyArray<{ match: RegExp; why: string }> = [
   { match: /^three\//, why: "three.js" },
   { match: /^xlsx\//, why: "SheetJS" },
   { match: /^pdfjs-dist\//, why: "PDF.js" },
+  { match: /^katex\//, why: "KaTeX (~680 KB) — markdown math, loaded with @ai-matrx/print/markdown on first use" },
 ];
 
 /** next.config.js turbopack.resolveAlias, for the production (non-demos) profile. Kept in sync

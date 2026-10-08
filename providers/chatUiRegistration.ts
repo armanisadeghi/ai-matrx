@@ -57,7 +57,6 @@ import { adoptCloudBrowserRunFromStream } from "@/features/cloud-browser/redux/a
 import { dispatchWarRoomTool } from "@/features/agents/war-room-tools/dispatcher/dispatch-war-room-tool.thunk";
 import { dispatchWarRoomMasterTool } from "@/features/agents/war-room-master-tools/dispatcher/dispatch-war-room-master-tool.thunk";
 import { resolveGmailSendConnection } from "@/features/google-workspace/connection";
-import { convertMarkdownToHtml } from "@/features/html-pages/utils/html-preview-utils";
 import { selectAllContentBlocksArray, selectContentBlocksByScope, selectContentBlocksByScopeRef, selectActiveContentBlocks } from "@/features/agent-connections/redux/skl/content-block-compat";
 import { createElement } from "react";
 import { Loader2 } from "lucide-react";
@@ -127,7 +126,10 @@ registerChatUi({
   createSandboxFilesystemAdapter: (instanceId: string) => new SandboxFilesystemAdapter(instanceId),
   notesGetById: (id: string) => NotesAPI.getById(id),
   createHtmlPage: (...args: Parameters<typeof HTMLPageService.createPage>) => HTMLPageService.createPage(...args),
-  convertMarkdownToHtml,
+  // Loads @ai-matrx/print/markdown (KaTeX, ~680 KB) on the first share, never on every page;
+  // @ai-matrx/chat >= 0.5.2 awaits this slot.
+  convertMarkdownToHtml: async (markdown: string) =>
+    (await import("@/features/html-pages/utils/html-preview-utils")).convertMarkdownToHtml(markdown),
   sklActions: sklActions,
   selectAllContentBlocksArray,
   selectContentBlocksByScope,
