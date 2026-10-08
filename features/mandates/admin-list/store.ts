@@ -35,6 +35,9 @@ import {
 } from "@/features/mandates/code-references/data";
 import type { MandateAdminReports } from "./facts";
 import { callMandateAdminList } from "./rpc";
+import { SYSTEM_ORGANIZATION_ID } from "@/constants/platform-orgs";
+import { drillClientFor } from "@/components/official/drill-explorer/useDrillExplorer";
+import { mandateSpendFromAnswer, spendQuestion } from "./spend";
 
 export type MandateAdminReportName = "codeTruth" | "coverage" | "impact" | "workflowImpact";
 
@@ -61,6 +64,19 @@ export interface MandateAdminListState {
    */
   sourceFacts: Map<string, MandateSourceFacts>;
   sourceChecked: Set<string>;
+  /**
+   * THE COST COLUMNS (./spend.ts): the period's dollars per mandate key, read
+   * once per period from the usage ledger. `byKey` null = not read yet (or the
+   * read failed — `failures.spend`); `total` is the database's sum over every
+   * row the list's filters match (absent before the 2026-10-08 list read).
+   */
+  spend: {
+    period: string | null;
+    byKey: Record<string, number> | null;
+    folded: boolean;
+    settled: boolean;
+    total: number | null;
+  };
   /** Source name → its own error sentence. */
   failures: Record<string, string>;
   error: Error | null;
@@ -82,6 +98,7 @@ let state: MandateAdminListState = {
   offersByProvision: new Map(),
   sourceFacts: new Map(),
   sourceChecked: new Set(),
+  spend: { period: null, byKey: null, folded: false, settled: false, total: null },
   failures: {},
   error: null,
   version: 0,
@@ -160,6 +177,57 @@ export function ensureMandateSourceFacts(keys: readonly string[]): void {
   );
 }
 
+let spendAsk = 0;
+let spendViewer: string | null = null;
+
+/**
+ * The period's spend per mandate key — one usage-ledger question, asked once
+ * per period (`force` asks again). Never awaited by the list: the rows paint
+ * first and the cost cells say "Checking…" until it lands.
+ */
+export function ensureMandateSpend(period: string, viewerId: string | null, force = false): void {
+  spendViewer = viewerId;
+  if (!force && state.spend.period === period) return;
+  const myAsk = ++spendAsk;
+  const { spend: _dropped, ...failures } = state.failures;
+  publish({
+    spend: { period, byKey: null, folded: false, settled: false, total: null },
+    failures,
+  });
+  void drillClientFor(SYSTEM_ORGANIZATION_ID, viewerId)
+    .drillAsk({ source: { kind: "entity", token: "ai_usage" }, question: spendQuestion(period) })
+    .then(
+      (got) => {
+        if (myAsk !== spendAsk) return;
+        if (!got.ok || !got.data) {
+          publish({
+            spend: { ...state.spend, settled: true },
+            failures: {
+              ...state.failures,
+              spend: got.ok ? "The usage ledger gave no answer." : got.error.message,
+            },
+          });
+          return;
+        }
+        const read = mandateSpendFromAnswer(got.data);
+        publish({ spend: { ...state.spend, byKey: read.byKey, folded: read.folded, settled: true } });
+      },
+      (error: unknown) => {
+        if (myAsk !== spendAsk) return;
+        publish({
+          spend: { ...state.spend, settled: true },
+          failures: { ...state.failures, spend: describe(error) },
+        });
+      },
+    );
+}
+
+/** The database's spend total for the current filters — never a re-ask. */
+export function setMandateSpendTotal(total: number | null): void {
+  if (state.spend.total === total) return;
+  publish({ spend: { ...state.spend, total } }, false);
+}
+
 /**
  * Ask every failed source again (the list notice's Try again). Reports are
  * re-read from scratch; the code-scan facts forget which keys they checked, so
@@ -168,6 +236,9 @@ export function ensureMandateSourceFacts(keys: readonly string[]): void {
 export function retryMandateAdminFailures(): void {
   const failed = Object.keys(state.failures);
   if (failed.length === 0) return;
+  if (failed.includes("spend") && state.spend.period) {
+    ensureMandateSpend(state.spend.period, spendViewer, true);
+  }
   const reports: readonly string[] = ["codeTruth", "coverage", "impact", "workflowImpact"];
   const reloadReports = failed.some((source) => reports.includes(source));
   dbEpoch += 1;

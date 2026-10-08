@@ -63,6 +63,9 @@ import {
   adminMandateSupportRecordHref,
 } from "@/features/mandates/admin-routes";
 import { useAgentLineageIndex } from "@ai-matrx/chat/agents/identity/agent-catalog-lists";
+import { AdminPoints } from "@/components/cost/AdminCost";
+import { formatAdminUsd } from "@/components/cost/formatAdminCost";
+import { modelCellOf } from "./spend";
 
 type Spec = EntityColumnSpec<MandateAdminRow>;
 
@@ -132,6 +135,37 @@ function HolderCell({ row }: { row: MandateAdminRow }) {
     />
   );
 }
+
+/** The default Holder's model, and "+N" for the other models bindings run on. */
+function ModelCell({ row }: { row: MandateAdminRow }) {
+  const cell = modelCellOf(row.models);
+  if (!cell) return <Muted>—</Muted>;
+  return (
+    <span className="flex min-w-0 items-center gap-1">
+      <span className="truncate type-secondary" title={cell.primary}>
+        {cell.primary}
+      </span>
+      {cell.others.length > 0 ? (
+        <Badge variant="outline" title={`Bindings also run on ${cell.others.join(", ")}`}>
+          +{cell.others.length}
+        </Badge>
+      ) : null}
+    </span>
+  );
+}
+
+/** The period's cost, in dollars or points. Points follow the platform rate. */
+function SpendCell({ row, unit }: { row: MandateAdminRow; unit: "usd" | "points" }) {
+  if (row.spendPending) return <Checking what="the cost" />;
+  if (row.spendUsd === null) return <Muted>—</Muted>;
+  return (
+    <span className="block text-right type-secondary tabular-nums">
+      {unit === "usd" ? formatAdminUsd(row.spendUsd) : <AdminPoints usd={row.spendUsd} />}
+    </span>
+  );
+}
+
+const SPEND_SORT_WORDS = { asc: "cheapest first", desc: "costliest first" };
 
 function BlockerCell({ row }: { row: MandateAdminRow }) {
   const actions = useMandateAdminListActions();
@@ -413,6 +447,40 @@ export const ADMIN_MANDATE_COLUMNS: Spec[] = [
       {row.pinText}
     </Badge>
   )),
+  // THE MODEL (Arman, 2026-10-08): what the default Holder runs on, "Workflow"
+  // for a workflow Holder. The filter matches a mandate using ANY chosen model
+  // — its default Holder's or any binding's (database `vals.model`).
+  facetColumn("model", "Model", 170, (row) => <ModelCell row={row} />),
+  // THE COST over the header's period, from the usage ledger (./spend.ts).
+  // Sorted by the database across every page; no number filter is served.
+  {
+    id: "spendUsd",
+    label: "Cost (USD)",
+    sortWords: SPEND_SORT_WORDS,
+    column: {
+      id: "spendUsd",
+      header: "Cost (USD)",
+      filter: false,
+      align: "right",
+      defaultSortDirection: "desc",
+      width: 100,
+      cell: (row) => <SpendCell row={row} unit="usd" />,
+    },
+  },
+  {
+    id: "spendPoints",
+    label: "Points",
+    sortWords: SPEND_SORT_WORDS,
+    column: {
+      id: "spendPoints",
+      header: "Points",
+      filter: false,
+      align: "right",
+      defaultSortDirection: "desc",
+      width: 120,
+      cell: (row) => <SpendCell row={row} unit="points" />,
+    },
+  },
   facetColumn("coverage", "Coverage", 110, (row) => {
     if (!row.coverage) {
       return row.factsPending.coverage ? (
@@ -673,6 +741,9 @@ export const MANDATE_OWNER_COLUMN: Spec = facetColumn(
  * the system copy's verdict for the same key — neither is true of that row.
  */
 export const SYSTEM_ONLY_REPORT_COLUMNS: readonly string[] = [
+  // A tenant's mandate can share a system key, and the ledger tags runs by key.
+  "spendUsd",
+  "spendPoints",
   "impactGrade",
   "impactBlocker",
   "health",
