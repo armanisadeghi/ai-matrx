@@ -12,6 +12,7 @@
 // link reopen the same view. Text is data and labels only: every cell is one
 // line, the full value in its tooltip.
 
+import type { ReactNode } from "react";
 import Link from "next/link";
 import { ArrowUpRight } from "lucide-react";
 import { MatrxDataTable } from "@ai-matrx/design-system/data-table";
@@ -56,6 +57,17 @@ export interface RunsTableProps {
   audience: "admin" | "product";
   /** URL address of the table's state (`/^[a-z][a-z0-9-]*$/`). */
   urlId: string;
+  /** Rows per page (default 25). */
+  pageSize?: number;
+  /** Hide paging — a fixed "newest N" strip. */
+  hidePagination?: boolean;
+  title?: string;
+  /** Right-side toolbar actions. */
+  actions?: ReactNode;
+  /** Row click selects the run (the Runs tab); absent = rows only open doors. */
+  onSelectRun?: (run: MandateRun) => void;
+  /** The selected run's conversation id — its row is highlighted. */
+  selectedConversationId?: string | null;
 }
 
 const SORT_BY_COLUMN: Record<string, RunSort> = {
@@ -105,7 +117,18 @@ function outputHrefOf(run: MandateRun, audience: "admin" | "product"): string | 
   return run.conversationId && run.hasTranscript ? conversationHref(run.conversationId, audience) : null;
 }
 
-export function RunsTable({ scope, view, audience, urlId }: RunsTableProps) {
+export function RunsTable({
+  scope,
+  view,
+  audience,
+  urlId,
+  pageSize = 25,
+  hidePagination = false,
+  title = "Runs",
+  actions,
+  onSelectRun,
+  selectedConversationId = null,
+}: RunsTableProps) {
   const { unit: costUnit } = useCostDisplay();
   const scopeKey = "mandateKey" in scope ? `m:${scope.mandateKey}` : `a:${scope.agentId}`;
   const byAgent = "agentId" in scope;
@@ -123,7 +146,7 @@ export function RunsTable({ scope, view, audience, urlId }: RunsTableProps) {
       });
       return { rows: page.rows, total: page.total };
     },
-    serverTableInitialState({ id: "when", direction: "desc" }, 25),
+    serverTableInitialState({ id: "when", direction: "desc" }, pageSize),
     "runs",
     `${scopeKey}|${view}`,
     urlId,
@@ -291,10 +314,18 @@ export function RunsTable({ scope, view, audience, urlId }: RunsTableProps) {
       columns={columns}
       getRowId={(run) => `${run.runKind}:${run.runId}`}
       tableId={urlId}
-      toolbar={{ title: "Runs", search: false }}
+      toolbar={{ title, search: false, actions }}
       viewTabs={false}
-      pageSize={25}
+      pageSize={pageSize}
+      hidePagination={hidePagination}
       cellLines="one"
+      {...(onSelectRun
+        ? {
+            onRowOpen: onSelectRun,
+            rowClassName: (run: MandateRun) =>
+              selectedConversationId && run.conversationId === selectedConversationId ? "bg-primary/10" : undefined,
+          }
+        : {})}
     />
   );
 }

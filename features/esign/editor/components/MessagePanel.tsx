@@ -50,7 +50,7 @@ export function MessagePanel({ draft, edit, templateMode }: Props) {
         <ProInput aria-label="Envelope name" placeholder="Envelope name" value={draft.title} onChange={(e) => edit((d) => ({ ...d, title: e.target.value }), "title")} />
         <ProInput
           aria-label="Email subject"
-          placeholder={draft.title.trim() ? `Please sign: ${draft.title.trim()}` : "Email subject"}
+          placeholder={draft.title.trim() ? `Your name sent you ${draft.title.trim()} to sign` : "Email subject"}
           maxLength={200}
           value={draft.email_subject}
           onChange={(e) => edit((d) => ({ ...d, email_subject: e.target.value }), "subject")}

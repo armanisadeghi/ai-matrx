@@ -11,12 +11,15 @@ import AppLink from "@/components/navigation/AppLink";
 export function RailMenuHeader({
   mark,
   title,
+  titleNode,
   subtitle,
   href,
   onNavigate,
 }: {
   mark: ReactNode;
   title: string;
+  /** Stands in for the title (a skeleton while the name is on its way). */
+  titleNode?: ReactNode;
   subtitle?: string | null;
   href?: string;
   onNavigate?: () => void;
@@ -27,7 +30,7 @@ export function RailMenuHeader({
         {mark}
       </span>
       <span className="flex min-w-0 flex-col">
-        <span className="truncate text-base font-medium text-foreground">{title}</span>
+        <span className="truncate text-base font-medium text-foreground">{titleNode ?? title}</span>
         {subtitle ? <span className="truncate type-secondary text-muted-foreground">{subtitle}</span> : null}
       </span>
     </>

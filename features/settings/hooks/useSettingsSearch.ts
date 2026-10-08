@@ -30,7 +30,7 @@ export function useSettingsControlSearch(
   const staticHits: SettingsControlSearchHit[] = staticSettingsControlIndex
     .filter((control) => visibleTabIds.has(control.tabId))
     .filter((control) =>
-      [control.label, control.description]
+      [control.label, control.description, ...(control.keywords ?? [])]
         .filter((value): value is string => typeof value === "string")
         .some((value) => value.toLowerCase().includes(trimmed)),
     )

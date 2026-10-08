@@ -82,14 +82,27 @@ export function ShellOrgSwitcher({ variant = "rail" }: { variant?: Variant }) {
       ? objectOrganization.name
       : null;
 
-  const label = name ?? (asking ? "Choose organization" : "Organization");
+  // Never "no organization" and never a placeholder word: the name is the
+  // painted/cached one, or "Choose organization" when boot truly answered
+  // none, or — while the name is still on its way — a skeleton in its place.
+  const nameLoading = !name && !asking;
+  const label: string | null = name ?? (asking ? "Choose organization" : null);
+  const labelNode = label ?? (
+    <span
+      className="block h-3 w-24 animate-pulse rounded bg-muted"
+      data-org-name-skeleton=""
+      aria-hidden="true"
+    />
+  );
   const description = loadFailed
-    ? `Organization: ${name ?? "none"}. Your organizations could not be loaded`
+    ? `Organization: ${name ?? "unknown"}. Your organizations could not be loaded`
     : offer
-      ? `Organization: ${name ?? "none"}. This page lives in ${offer.name}`
+      ? `Organization: ${name ?? "unknown"}. This page lives in ${offer.name}`
       : name
         ? `Organization: ${name}. Change organization`
-        : "Choose an organization";
+        : asking
+          ? "Choose an organization"
+          : "Organization name is loading";
 
   const mark = (
     <span className="relative flex shrink-0 items-center justify-center">
@@ -146,8 +159,17 @@ export function ShellOrgSwitcher({ variant = "rail" }: { variant?: Variant }) {
           </span>
         )
       }
-      title={name ?? "No organization"}
-      subtitle={name ? "Organization" : "Pick one below"}
+      title={name ?? (asking ? "Choose organization" : "")}
+      titleNode={
+        nameLoading ? (
+          <span
+            className="block h-3.5 w-28 animate-pulse rounded bg-muted"
+            data-org-name-skeleton=""
+            aria-hidden="true"
+          />
+        ) : undefined
+      }
+      subtitle={name ? "Organization" : asking ? "Pick one below" : null}
       href={active ? `/organizations/${active.slug || active.id}` : "/organizations"}
       onNavigate={() => setOpen(false)}
     />
@@ -189,12 +211,12 @@ export function ShellOrgSwitcher({ variant = "rail" }: { variant?: Variant }) {
       <button
         type="button"
         aria-label={description}
-        title={label}
+        title={label ?? undefined}
         data-shell-org-switcher="rail"
         className="shell-nav-item shell-nav-stable shell-tactile-subtle"
       >
         <span className="shell-nav-icon">{mark}</span>
-        <span className={cn("shell-nav-label", asking && "text-primary")}>{label}</span>
+        <span className={cn("shell-nav-label", asking && "text-primary")}>{labelNode}</span>
       </button>
     ) : (
       <button
@@ -204,7 +226,7 @@ export function ShellOrgSwitcher({ variant = "rail" }: { variant?: Variant }) {
         className="shell-mobile-nav-item w-full"
       >
         <span className="shell-nav-icon">{mark}</span>
-        <span className={cn("min-w-0 flex-1 truncate text-left", asking && "text-primary")}>{label}</span>
+        <span className={cn("min-w-0 flex-1 truncate text-left", asking && "text-primary")}>{labelNode}</span>
         <SelectChevron size="sm" />
       </button>
     );
