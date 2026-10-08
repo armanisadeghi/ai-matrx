@@ -19,6 +19,9 @@ import { toast } from "@/lib/toast";
 
 import { TRACK_TITLE } from "../review-360.typed-table";
 import { Review360Host } from "./Review360Host";
+import { isReviewHrManager } from "./seat";
+import { useAppSelector } from "@/lib/redux/hooks";
+import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { ReviewMeetingActions } from "./ReviewMeetingActions";
 import {
   listReviews360,
@@ -159,6 +162,7 @@ function ReviewDetail({ reviewId, org }: { reviewId: string; org: string }) {
   const client = useRecordsClient();
   const [data, setData] = useState<Awaited<ReturnType<typeof readReview360>> | null>(null);
   const [tick, setTick] = useState(0);
+  const userId = useAppSelector(selectUserId);
   useEffect(() => {
     let live = true;
     void readReview360(client, reviewId).then((r) => live && setData(r));
@@ -170,6 +174,7 @@ function ReviewDetail({ reviewId, org }: { reviewId: string; org: string }) {
   if (!data.ok) return <EmptyState icon={<ClipboardCheck />} title="This review could not be opened" line={data.message} />;
   const { doc, self, manager } = data.data;
   const both = Boolean(self?.submittedAt && manager?.submittedAt);
+  const hr = isReviewHrManager(doc, userId);
   const share = async () => {
     const ids = [self?.id, manager?.id].filter((x): x is string => Boolean(x));
     const r = await shareReview360(client, reviewId, ids);
@@ -183,13 +188,15 @@ function ReviewDetail({ reviewId, org }: { reviewId: string; org: string }) {
         <Badge>{String(doc.status ?? "collecting")}</Badge>
         <span className="text-xs text-muted-foreground">Due {day(doc.due_on)}</span>
         <div className="flex-1" />
-        <ReviewMeetingActions
-          reviewId={reviewId}
-          organizationId={org}
-          employee={doc.employee}
-          ready={both}
-        />
-        {both && doc.status !== "shared" ? (
+        {hr ? (
+          <ReviewMeetingActions
+            reviewId={reviewId}
+            organizationId={org}
+            employee={doc.employee}
+            ready={both}
+          />
+        ) : null}
+        {hr && both && doc.status !== "shared" ? (
           <Button variant="primary" icon={<Share2 />} onClick={() => void share()}>
             Share with both
           </Button>
