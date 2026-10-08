@@ -1,6 +1,6 @@
 {
   "note": "Checked-in snapshot of public._schema_migrations for the files under migrations/campaign and migrations/inverse. Written by `pnpm db:apply` on every successful production apply and refreshed whole by the nightly catch-up. Never hand-edited: a self-written checksum is a claim nobody can check. Guard: pnpm check:ledgered-files-unedited.",
-  "generated_at": "2026-10-08T16:40:01.284Z",
+  "generated_at": "2026-10-08T16:49:22.772Z",
   "files": {
     "migrations/campaign/a_chunk_is_the_size_the_client_door_can_actually_carry.sql": {
       "source": "matrx-frontend",
@@ -4712,6 +4712,12 @@
       "checksum": "f15e0dee19d84aed1ab408cf05a413c66496a84291e5ca09f9e88758ca80850a",
       "applied_at": "2026-10-08 16:26:34.038398+00"
     },
+    "migrations/campaign/notionprops3_a_button_settings_dependency_prefix.sql": {
+      "source": "matrx-frontend",
+      "filename": "notionprops3_a_button_settings_dependency_prefix.sql",
+      "checksum": "903879b65f83df8f405c5d09f886143ad1539ee08b819e55e6af3fb8e87bef1c",
+      "applied_at": "2026-10-08 16:49:19.556222+00"
+    },
     "migrations/campaign/notionprops_a_a_link_is_a_field_on_both_tables.sql": {
       "source": "matrx-frontend",
       "filename": "notionprops_a_a_link_is_a_field_on_both_tables.sql",
@@ -7855,6 +7861,12 @@
       "filename": "tableexperience_b_a_card_keeps_its_own_fields.sql",
       "checksum": "8eafb76f7515998b430fe89fbb98368fb1a3f55fe54c04a9904be9cd2ff788b9",
       "applied_at": "2026-10-05 06:42:07.315788+00"
+    },
+    "migrations/campaign/tablenames_a_platform_tables_are_named_platform_tables.sql": {
+      "source": "matrx-frontend",
+      "filename": "tablenames_a_platform_tables_are_named_platform_tables.sql",
+      "checksum": "6d35dbdf934f8e5ebeb65479a16e1a51546cf7d27fd3ef0e7a92b77f5b82ed06",
+      "applied_at": "2026-10-08 16:47:22.140976+00"
     },
     "migrations/campaign/tableowner_a_door_row_renders_like_the_catalog.sql": {
       "source": "matrx-frontend",
