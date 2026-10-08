@@ -386,13 +386,13 @@ function RecentRecordSearch({
     token,
     list.items.map((item) => item.id),
   );
-  const organizationName = useOrganizationNames();
+  const { nameOf: organizationName, multiple } = useOrganizationNames();
   const now = Date.now();
   // `null`: the plain lines, before any rung of the ladder.
-  const firstPass = recordRows(list.items, facts, organizationName, now, null);
+  const firstPass = recordRows(list.items, facts, organizationName, now, null, multiple);
   // Rows that still read the same climb the ladder, starting with when each was created.
   const created = useRecordCreatedAt(token, collidingRowIds(firstPass));
-  const rows = recordRows(list.items, facts, organizationName, now, created);
+  const rows = recordRows(list.items, facts, organizationName, now, created, multiple);
   return (
     <CandidateSearch
       token={token}
@@ -442,13 +442,22 @@ export function recordRows(
   organizationName: (id: string) => string | null,
   now: number,
   created: ReadonlyMap<string, string> | null = new Map(),
+  /**
+   * The person belongs to more than one organization. ONE FACTS RULE FOR EVERY
+   * SEARCH (G18 review, 2026-10-07): a Workbook named its organization in the
+   * Update search but not in the Delete search, because "the rows span
+   * organizations" was judged over whatever the query happened to return. A
+   * member of several organizations sees every row's organization, in every
+   * search; a member of one never does.
+   */
+  multipleMemberships: boolean | null = null,
 ): Array<{ id: string; title: string; secondary: string | null }> {
   const organizations = new Set(
     items
       .map((item) => facts.get(item.id)?.organizationId)
       .filter((id): id is string => Boolean(id)),
   );
-  const spansOrganizations = organizations.size > 1;
+  const spansOrganizations = multipleMemberships ?? organizations.size > 1;
   const parts = (item: (typeof items)[number]) => {
     const fact = facts.get(item.id);
     return {
@@ -585,10 +594,17 @@ function useRecordFacts(
 }
 
 /** The person's organizations by id — the membership list, never the active org. */
-function useOrganizationNames(): (id: string) => string | null {
-  const { organizations } = useUserOrganizations();
+function useOrganizationNames(): {
+  nameOf: (id: string) => string | null;
+  /** Null until the memberships load — the rows' own spread decides meanwhile. */
+  multiple: boolean | null;
+} {
+  const { organizations, loading } = useUserOrganizations();
   const byId = new Map(organizations.map((org) => [org.id, org.name] as const));
-  return (id) => byId.get(id) ?? null;
+  return {
+    nameOf: (id) => byId.get(id) ?? null,
+    multiple: loading && organizations.length === 0 ? null : organizations.length > 1,
+  };
 }
 
 function RecordReferenceSearch({
