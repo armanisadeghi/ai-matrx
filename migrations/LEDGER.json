@@ -1,6 +1,6 @@
 {
   "note": "Checked-in snapshot of public._schema_migrations for the files under migrations/campaign and migrations/inverse. Written by `pnpm db:apply` on every successful production apply and refreshed whole by the nightly catch-up. Never hand-edited: a self-written checksum is a claim nobody can check. Guard: pnpm check:ledgered-files-unedited.",
-  "generated_at": "2026-10-08T11:38:43.110Z",
+  "generated_at": "2026-10-08T12:12:06.358Z",
   "files": {
     "migrations/campaign/a_chunk_is_the_size_the_client_door_can_actually_carry.sql": {
       "source": "matrx-frontend",
@@ -3811,6 +3811,30 @@
       "filename": "inspectortails_the_context_door_reads_the_triple_from_the_record_it_opened.sql",
       "checksum": "364ccadbad6213d80e0566fc33c8358c4598dc7f16437f19ec6048655a7c235f",
       "applied_at": "2026-09-25 13:51:33.271074+00"
+    },
+    "migrations/campaign/installspeed2_a_write_path_asks_once.sql": {
+      "source": "matrx-frontend",
+      "filename": "installspeed2_a_write_path_asks_once.sql",
+      "checksum": "05b496a862238d55aa06196f914d3e24088f508ff8d3026f313b421700529ef5",
+      "applied_at": "2026-10-08 12:03:37.355145+00"
+    },
+    "migrations/campaign/installspeed2_b_readers_walk_names_first.sql": {
+      "source": "matrx-frontend",
+      "filename": "installspeed2_b_readers_walk_names_first.sql",
+      "checksum": "68b10c63fe9890d90aecc7bade49cb6fba415d962fb994746bd25fae5d7ee5e3",
+      "applied_at": "2026-10-08 12:07:41.867704+00"
+    },
+    "migrations/campaign/installspeed2_c_readers_walk_asks_names_first_in_order.sql": {
+      "source": "matrx-frontend",
+      "filename": "installspeed2_c_readers_walk_asks_names_first_in_order.sql",
+      "checksum": "4210db8939f40bcf6fad1c48ccfab732e4db40f5311a4e0a370b14f1a32bdd4c",
+      "applied_at": "2026-10-08 12:10:10.153611+00"
+    },
+    "migrations/campaign/installspeed2_d_add_rungs_keep_their_plans.sql": {
+      "source": "matrx-frontend",
+      "filename": "installspeed2_d_add_rungs_keep_their_plans.sql",
+      "checksum": "f7d8fc75d323c84c5081150951c71b37856fa073640397abb0d2a5d58ff78bf9",
+      "applied_at": "2026-10-08 12:12:04.767378+00"
     },
     "migrations/campaign/installspeed_a_realtime_readback_and_non_formula_fields.sql": {
       "source": "matrx-frontend",
