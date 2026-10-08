@@ -115,6 +115,12 @@ export interface AssistantPreferences {
    * `UserOverrides.apply_policy` on every turn when not `"default"`.
    */
   directiveApplyPolicy: DirectiveApplyPolicy;
+  /**
+   * The creator panel above an agent's variables (the agent's creator or a
+   * system admin). Saved, so it opens the way the person last left it
+   * (Arman, 2026-10-08).
+   */
+  showCreatorPanel: boolean;
 }
 
 // Suggested preferences for email management (you can adjust or remove as needed)
@@ -1217,6 +1223,7 @@ export const initializeUserPreferencesState = (
       preferredProvider: "default",
       preferredModel: "default",
       directiveApplyPolicy: "default",
+      showCreatorPanel: false,
     },
     email: {
       primaryEmail: "",

@@ -25,6 +25,7 @@
 // right now."
 
 import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
+import { setPreference } from "./userPreferencesSlice";
 
 export interface CreatorDebugSettings {
   /** Show raw IDs (agent, shortcut, conversation, etc.) inline next to
@@ -58,9 +59,6 @@ export interface CreatorDebugState {
   isCreator: boolean;
   isCreatorMode: boolean;
   showCreatorTools: boolean;
-  /** Show the inline Creator Run Panel above the agent input. Default false;
-   *  toggled from the Creator Hub Settings tab or the admin indicator. */
-  showCreatorPanel: boolean;
   /** Per-feature visibility flags. Keys are namespaced: "Agents:RawState",
    *  "Shortcuts:JsonInspector", etc. Anything not present is treated as
    *  false. */
@@ -76,7 +74,6 @@ const initialState: CreatorDebugState = {
   isCreator: false,
   isCreatorMode: false,
   showCreatorTools: false,
-  showCreatorPanel: false,
   visibility: {},
   debugData: {},
   settings: {
@@ -108,13 +105,6 @@ const creatorDebugSlice = createSlice({
     },
     setCreatorTools: (state, action: PayloadAction<boolean>) => {
       state.showCreatorTools = action.payload;
-    },
-
-    toggleShowCreatorPanel: (state) => {
-      state.showCreatorPanel = !state.showCreatorPanel;
-    },
-    setShowCreatorPanel: (state, action: PayloadAction<boolean>) => {
-      state.showCreatorPanel = action.payload;
     },
 
     setVisibilityFlag: (
@@ -193,8 +183,6 @@ export const {
   setCreatorMode,
   toggleCreatorTools,
   setCreatorTools,
-  toggleShowCreatorPanel,
-  setShowCreatorPanel,
   setVisibilityFlag,
   toggleVisibilityFlag,
   clearVisibilityFlag,
@@ -220,8 +208,22 @@ export const selectIsCreatorMode = (state: WithCreatorDebug): boolean =>
 export const selectShowCreatorTools = (state: WithCreatorDebug): boolean =>
   state.creatorDebug.showCreatorTools;
 
-export const selectShowCreatorPanel = (state: WithCreatorDebug): boolean =>
-  state.creatorDebug.showCreatorPanel;
+// The creator panel is a SAVED preference (userPreferences.assistant), not
+// session state: it opens the way the person last left it (Arman, 2026-10-08).
+export const selectShowCreatorPanel = (state: {
+  userPreferences?: { assistant?: { showCreatorPanel?: boolean } };
+}): boolean => state.userPreferences?.assistant?.showCreatorPanel === true;
+
+export const setShowCreatorPanel = (value: boolean) =>
+  setPreference({ module: "assistant", preference: "showCreatorPanel", value });
+
+export const toggleShowCreatorPanel =
+  () =>
+  (
+    dispatch: (action: ReturnType<typeof setShowCreatorPanel>) => unknown,
+    getState: () => Parameters<typeof selectShowCreatorPanel>[0],
+  ) =>
+    dispatch(setShowCreatorPanel(!selectShowCreatorPanel(getState())));
 
 export const selectCreatorVisibility = (state: WithCreatorDebug) =>
   state.creatorDebug.visibility;
