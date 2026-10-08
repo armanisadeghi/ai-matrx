@@ -86,12 +86,28 @@ export interface SpacePageSettings {
 
 export const DEFAULT_PAGE_SETTINGS: SpacePageSettings = { font: "default", smallText: false, fullWidth: false, locked: false };
 
+/** N13 — the property types a normal page can carry under its title (Notion's page properties). */
+export const PAGE_PROPERTY_TYPES = ["text", "number", "select", "date", "person"] as const;
+export type PagePropertyType = (typeof PAGE_PROPERTY_TYPES)[number];
+
+/** One page property: text / number / a select option id / an ISO date / a user id. */
+export interface PageProperty {
+  id: string;
+  name: string;
+  type: PagePropertyType;
+  value?: string | number | null;
+  /** select: its options. */
+  options?: Array<{ id: string; name: string; color?: SpaceColor }>;
+}
+
 /** One stored snapshot = one row of `content.space_payload` = one page version. */
 export interface SpaceSnapshot {
   v: 1;
   settings: SpacePageSettings;
   icon: SpaceMedia | null;
   cover: (SpaceMedia & { offsetY?: number }) | null;
+  /** N13 — properties shown under the title; absent = none. */
+  properties?: PageProperty[];
   blocks: SpaceBlock[];
 }
 
@@ -119,6 +135,7 @@ export const RENDERED_BLOCK_TYPES = [
   "tab",
   "synced",
   "button",
+  "ai",
 ] as const;
 
 export const SCHEMA_ONLY_BLOCK_TYPES = [
@@ -203,7 +220,7 @@ export interface DatabaseProps extends Record<string, unknown> {
   /** true = inline database in the page body; false = a full-page database shown as a row that opens it. */
   inline: boolean;
   title?: string;
-  /** The sample world the table lives in (the agency sample); absent = a real store table. */
+  /** The sample world the table lives in (the agency sample); absent = a real custom table. */
   sample?: string;
   /** Linked view of a database: shows the source's name with an arrow. */
   linked?: boolean;

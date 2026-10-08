@@ -124,7 +124,7 @@ Visible effect: every toolbar and form row in the app becomes 28px and evenly sp
 
 **Page kinds: inviting vs functional (owner, 2026-10-04).** Every page is one of two kinds, and the density rules in this plan (the 28px one control, hairline rows, prose-to-tooltip, tight padding) apply ONLY to **functional** pages — tables, settings, builders, tools someone drives all day. An **inviting** page (a study kit, a landing, a learner's home) keeps its large hero, open spacing, elevated cards and big type; unification there fixes the header, makes its buttons one consistent style, and removes stray text — it never shrinks or packs anything. The owner, on the study kit sample that was packed into a strip: *"this is where you don't understand the difference between a page with large open things that is inviting and a FUNCTIONAL page that needs things to be densely packed. This page should not be packed!!!"* Before touching any page, name its kind; if it is inviting, the reference is the real `/education/kits/<id>` page, not the 28px system.
 
-**Persistence for the board:** the custom-data probe showed storage works, but the page-level primitive (`ensureTable` + `useAppTable`) is missing. It is filed as its own task, and the board stays on local storage plus Markdown export until it lands.
+**Persistence for the board:** the custom-data probe showed storage works, but the page-level primitive (`ensureTable` + `useTypedTable`) is missing. It is filed as its own task, and the board stays on local storage plus Markdown export until it lands.
 
 ## 1d. Sets, not single picks (owner, 2026-10-02)
 

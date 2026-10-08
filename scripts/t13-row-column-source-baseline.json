@@ -366,7 +366,7 @@
   "features/unified-data/cutover/__tests__/data-home-keeps-tables-made-in-the-new-system-after-switch-back.test.tsx": 2,
   "features/unified-data/cutover/__tests__/data-home-lists-tables-where-they-now-live.test.tsx": 2,
   "features/unified-data/cutover/dataTablesSwitched.ts": 2,
-  "features/unified-data/hub/__tests__/a-pick-list-is-kept-by-the-app-not-a-table.test.ts": 2,
+  "features/unified-data/hub/__tests__/a-pick-list-is-platform-table-not-a-table.test.ts": 2,
   "features/unified-data/hub/capabilities.ts": 5,
   "features/unified-data/hub/dataHomeScope.ts": 6,
   "features/unified-data/hub/doors.ts": 4,

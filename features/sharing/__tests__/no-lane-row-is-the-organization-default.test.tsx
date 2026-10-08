@@ -4,7 +4,7 @@
  * says so under Current Access instead of leaving "Not shared with anyone" as the whole truth.
  *
  *   1. getResourceVisibility carries the lane door's `organization_default` (level + name) for a
- *      record-store table, and null when the door names none (the owner chose "Only people I
+ *      custom table, and null when the door names none (the owner chose "Only people I
  *      share it with").
  *   2. OrgAvailabilityNote draws one line naming the organization and what members can do, and
  *      draws nothing when there is no default and no availability row.

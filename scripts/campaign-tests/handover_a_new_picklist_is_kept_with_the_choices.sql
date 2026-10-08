@@ -3,7 +3,7 @@
 -- THE REAL USE CASE: the owner of an organization on the new system makes a picklist "Visit Types".
 -- From her seat (admin@admin.com in Cedar Ridge Physical Therapy on production, or admin's Workspace
 -- on the clone when it is switched), rolled back:
---   A. the picklist the store makes is kept by the app, for the choices (custom.table_placement);
+--   A. the picklist the store makes is platform-owned, for the choices (custom.table_placement);
 --   B. so custom.table_list_everywhere keeps it with the tables the app keeps.
 -- RUN IT: psql "<DSN>" -v ON_ERROR_STOP=1 -f scripts/campaign-tests/handover_a_new_picklist_is_kept_with_the_choices.sql
 -- ITS RED: on the body before the campaign file A fails (kept_by_the_app false).
@@ -40,7 +40,7 @@ begin
   if coalesce((v_place ->> 'kept_by_the_app')::boolean, false) is not true or v_place ->> 'kept_for' <> 'choices' then
     raise exception 'A FAILED: a new picklist is placed %', v_place;
   end if;
-  raise notice 'A passed: a new picklist is kept by the app, for the choices';
+  raise notice 'A passed: a new picklist is platform-owned, for the choices';
   select e into v_listed from jsonb_array_elements(custom.table_list_everywhere(v_org) -> 'tables') e where (e ->> 'id')::uuid = v_id;
   if coalesce((v_listed ->> 'kept_by_the_app')::boolean, false) is not true then
     raise exception 'B FAILED: the tables list does not keep it with the app''s tables';

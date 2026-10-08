@@ -1,4 +1,4 @@
-// Headless proof for lane TAILS item 2: /data/<record-store table id> no longer
+// Headless proof for lane TAILS item 2: /data/<custom table id> no longer
 // answers "We couldn't open this dataset" — it lands the person on /data/<id>.
 //
 // Ironline Fitness's `members` table, 60df8b1e-…, owned by admin@admin.com.

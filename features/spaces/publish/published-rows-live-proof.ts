@@ -2,7 +2,7 @@
 // database rows to a signed-out reader, and nothing else (J1, Notion), plus the two publish repairs.
 //
 // Run: pnpm tsx --env-file=.env --env-file=.env.local features/spaces/publish/published-rows-live-proof.ts <admin-org-id> <table-id>
-// Signs in as admin@admin.com (AI_ADMIN_USERNAME / AI_ADMIN_PASSWORD). <table-id>: a store table admin can
+// Signs in as admin@admin.com (AI_ADMIN_USERNAME / AI_ADMIN_PASSWORD). <table-id>: a custom table admin can
 // open that has a `status` column with an "Active" choice (e.g. the Agency OS Clients table). Makes a fresh
 // Private page + sub-page, each with a database block on that table, then proves, SIGNED OUT:
 //   unpublished              → content.space_public_view answers null (no rows anywhere)

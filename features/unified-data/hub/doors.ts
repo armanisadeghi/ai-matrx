@@ -326,14 +326,14 @@ export interface DataHomeTableRow {
 export function dataHomeTables(
   dataSource: RecordsDataSource,
   organizationId: string | null = null,
-  options: AppTablesOption = {},
+  options: PlatformTablesOption = {},
 ): Promise<DoorAnswer<DataHomeTableRow[]>> {
   return call<DataHomeTableRow[]>(
     dataSource,
     "data_home_tables",
-    // "SHOW APP TABLES" (CHAIR-DOORS-2, N-C8): the door leaves out the tables the app keeps for
+    // "SHOW PLATFORM TABLES" (CHAIR-DOORS-2, N-C8): the door leaves out the tables the app keeps for
     // agents' outputs; the (uuid, boolean) overload is picked by naming BOTH arguments.
-    options.includeAppTables
+    options.includePlatformTables
       ? { p_organization_id: organizationId, p_include_app_tables: true }
       : organizationId
         ? { p_organization_id: organizationId }
@@ -576,12 +576,12 @@ export function dataHomeChangedBy(
 }
 
 /**
- * "SHOW APP TABLES" (CHAIR-DOORS-2, v6 N-C8): every table door leaves out the tables the app
+ * "SHOW PLATFORM TABLES" (CHAIR-DOORS-2, v6 N-C8): every table door leaves out the tables the app
  * keeps out of default lists (`custom.table_kept_out_of_lists` — an agent's outputs tables) unless
  * asked. Omitted or false = the default list.
  */
-export interface AppTablesOption {
-  includeAppTables?: boolean;
+export interface PlatformTablesOption {
+  includePlatformTables?: boolean;
 }
 
 /** The data home in one answer (`custom.data_home`, DATA-HOME-2). */
@@ -601,11 +601,11 @@ export interface DataHomeAnswer {
 export async function dataHome(
   dataSource: RecordsDataSource,
   organizationId: string | null = null,
-  options: AppTablesOption = {},
+  options: PlatformTablesOption = {},
 ): Promise<DoorAnswer<DataHomeAnswer>> {
   const answered = await call<DataHomeAnswer | null>(dataSource, "data_home", {
     ...(organizationId ? { p_organization_id: organizationId } : {}),
-    ...(options.includeAppTables ? { p_include_app_tables: true } : {}),
+    ...(options.includePlatformTables ? { p_include_app_tables: true } : {}),
   });
   if (!answered.ok) return answered;
   const data = answered.data && !Array.isArray(answered.data) ? answered.data : null;
@@ -652,14 +652,14 @@ export async function dataHomeSearch(
   dataSource: RecordsDataSource,
   search: string,
   organizationId: string | null = null,
-  options: AppTablesOption = {},
+  options: PlatformTablesOption = {},
 ): Promise<DoorAnswer<DataHomeSearchAnswer>> {
   const q = search.trim();
   if (q === "") return { ok: true, data: { search: "", tables: [], items: [], changed_by: [] } };
   const answered = await call<DataHomeSearchAnswer | null>(dataSource, "data_home", {
     ...(organizationId ? { p_organization_id: organizationId } : {}),
     p_search: q,
-    ...(options.includeAppTables ? { p_include_app_tables: true } : {}),
+    ...(options.includePlatformTables ? { p_include_app_tables: true } : {}),
   });
   if (!answered.ok) return answered;
   const data = answered.data && !Array.isArray(answered.data) ? answered.data : null;

@@ -9,7 +9,7 @@
 -- name here is synthesized.
 --
 -- WHAT MAKES IT FAIL:
---   A  a store Table, a record, a dashboard, a digest or a form that does not open on its own
+--   A  a custom table, a record, a dashboard, a digest or a form that does not open on its own
 --      screen, stamped with ITS organization
 --   B  the hospital's shared table opening as anything but the hospital's (the active
 --      organization deciding) — or not opening at all because she is not a member
@@ -74,7 +74,7 @@ begin
   values ('Controlled substances log', 'DEA schedule II–V dispensing, Dr. Whitfield only', c_admin, v_org, c_admin, 'personal')
   returning id into v_drugs;
 
-  -- Marisol's vaccine-reminder list was MOVED last night: the store Table and her archived older copy
+  -- Marisol's vaccine-reminder list was MOVED last night: the custom table and her archived older copy
   -- share one id, exactly as the mover leaves them.
   v_moved := custom.table_declare(v_org, jsonb_build_object(
     'name', 'Vaccine reminders', 'slug', 'vaccine_reminders', 'type', 'entity',

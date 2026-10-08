@@ -31,7 +31,7 @@ export interface NotionMarkdownContext {
   resolvePerson?: (ref: string, name: string) => string | null | undefined;
   /** A Notion file / image URL → our file id (preferred) or a URL to keep. Null = not imported. */
   resolveFile?: (url: string, kind: NotionMediaKind) => { fileId: string } | { url: string } | null | undefined;
-  /** A Notion database (URL, id or exported `.csv` path) → the store table (and view) it became. */
+  /** A Notion database (URL, id or exported `.csv` path) → the custom table (and view) it became. */
   resolveDatabase?: (ref: string, title: string) => { tableId: string; viewId?: string } | null | undefined;
   /** A Notion icon (emoji or URL) → a Lucide icon name; defaults to `emojiToIcon`. */
   resolveIcon?: (icon: string) => string | null | undefined;

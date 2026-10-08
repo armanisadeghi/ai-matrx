@@ -1,4 +1,4 @@
-// features/data-tables/data-source/table-home.ts — WHO IS READING THIS RECORD-STORE TABLE.
+// features/data-tables/data-source/table-home.ts — WHO IS READING THIS CUSTOM TABLE.
 //
 // THE ONE DATA-SOURCE SEAM (lane GRID-PORT, 2026-09-23). The table page — records-ui, its
 // dialogs, its hooks — reaches its data through the exports of `features/data-tables/service.ts`
@@ -13,7 +13,7 @@
 
 import { createClient } from "@/utils/supabase/client";
 
-/** Who is reading a record-store table, which the store's doors need on every call. */
+/** Who is reading a custom table, which the store's doors need on every call. */
 export type RecordStoreHome = {
   store: "record";
   /** REC-29: the store is keyed (organization, id); the table names it, every time. */

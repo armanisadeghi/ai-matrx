@@ -28,7 +28,7 @@ const OUT = resolve(HERE, "shots");
 mkdirSync(OUT, { recursive: true });
 
 // THE UNIFIED RECORD STORE'S OWN SCREEN. `/data/<id>` is the OLDER user-generated-table
-// viewer and answers "We couldn't open this dataset" for a record-store table — a real
+// viewer and answers "We couldn't open this dataset" for a custom table — a real
 // thing to know, and not this lane's to change.
 const ROUTE = `/data/${fixture.tableId}`;
 

@@ -233,7 +233,7 @@ async function fetchRow(
 
 type StoreRow = { id: string; name: string | null; description: string | null };
 
-async function readStoreTable(id: string): Promise<StoreRow | "unopenable"> {
+async function readCustomTable(id: string): Promise<StoreRow | "unopenable"> {
   const [{ locateTable }, { readTableDetails }] = await Promise.all([
     import("@/features/data-tables/data-source/locate-table"),
     import("@/features/data-tables/service"),
@@ -284,7 +284,7 @@ function storeDetail(
   });
 }
 
-const STORE_TABLE_DETAIL = storeDetail((_client, id) => readStoreTable(id));
+const CUSTOM_TABLE_DETAIL = storeDetail((_client, id) => readCustomTable(id));
 const STORE_LIST_DETAIL = storeDetail(readStoreList);
 
 // ---------------------------------------------------------------------------
@@ -695,8 +695,8 @@ const REGISTRY: Record<KnownItemType, ItemTypeConfig> = {
       ring: "ring-cyan-500/20",
     },
     open: { kind: "table" },
-    refineDetail: STORE_TABLE_DETAIL,
-    enrich: storeEnrich((_client, id) => readStoreTable(id)),
+    refineDetail: CUSTOM_TABLE_DETAIL,
+    enrich: storeEnrich((_client, id) => readCustomTable(id)),
   },
   pick_list: {
     type: "pick_list",

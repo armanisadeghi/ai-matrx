@@ -21,6 +21,10 @@ guidance. Missing endpoint discovery and stdio's unsupported network probe use
 an informational toast; only a probe that actually reaches the network and
 fails uses an error toast and enters structured error capture.
 
+The connection-test API checks the canonical super-admin role before reading
+the server, making an outbound request or persisting a privileged result.
+Anonymous callers receive 401; other roles and failed role lookups receive 403.
+
 **Refresh sync is server catalog reconciliation, never OAuth refresh.** It
 calls `POST /api/mcp-connections/{server_id}/catalog-refresh`; public no-auth
 servers do not need or create `tool.mcp_user_conn` or Vault rows.

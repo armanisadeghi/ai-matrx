@@ -9,7 +9,7 @@
  *   append  — two deliveries rendered the same way → Save → "Save to an existing table instead" →
  *             the picker lists the MOVED "Rincon Plumbing — Parts on order" once (F1) → Append rows.
  * test@test.com, same organization:
- *   picker  — Quick Data lists the record-store tables this person may open.
+ *   picker  — Quick Data lists the custom tables this person may open.
  *
  * Signs in through the login form (seat-browser.mjs), never a cookie or a nonce. Prints what the
  * screen said; the database half of the proof (born in the store, rows in the store, older copy
@@ -217,7 +217,7 @@ try {
   // Only a TABLE option carries "<n> rows · <m> cols"; the organization switcher's own options can
   // still be in the DOM behind the dialog, so they are not counted as tables.
   const testTables = (testOptions.v ?? []).filter((t) => /\d+ rows? · \d+ cols?/.test(t));
-  pass("test-picker-lists-store-tables", testTables.length > 0, `${testTables.length} table(s) offered: ${testTables.join(" | ")}`);
+  pass("test-picker-lists-custom-tables", testTables.length > 0, `${testTables.length} table(s) offered: ${testTables.join(" | ")}`);
   await test.keyboard.press("Escape");
 } finally {
   await browser.close();

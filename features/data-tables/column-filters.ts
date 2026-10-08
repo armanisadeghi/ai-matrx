@@ -207,7 +207,7 @@ export function defaultFilterMode(args: {
 // ─── Facets from rows already in memory ──────────────────────────────────────
 //
 // LOCAL DATA FIRST — never ask the server a question the browser can already
-// answer. Most user tables are small enough that every row is already on screen
+// answer. Most custom tables are small enough that every row is already on screen
 // (or already cached for filtering), and in that case "what values are in this
 // column" is a loop over an array, not a round trip. Computing it locally is
 // instant, works offline, cannot fail, and shows no spinner at all.

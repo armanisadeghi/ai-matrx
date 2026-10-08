@@ -1,5 +1,5 @@
 // features/spaces/data/agency-install.ts — "Add the sample" installs the agency (data/agency-spec.ts) as
-// REAL store tables, through the same door the template gallery's Install button uses: the spec is
+// REAL custom tables, through the same door the template gallery's Install button uses: the spec is
 // declared as the organization's own template (custom.template_declare, an upsert on its catalogue id
 // and version) and custom.template_install runs it to done. A second press finds the install and
 // answers `already` with the same tables — nothing is made twice.

@@ -43,7 +43,7 @@ export function TableSwitcher({ tableId, name, allTablesHref, footer }: TableSwi
   const [query, setQuery] = useState("");
   const tables = useTables();
   // A person switches between THEIR tables. The app's own tables — a choice column's list of
-  // choices ("Plan Type options"), a scope's table (Patient, Procedure) — are kept by the app and
+  // choices ("Plan Type options"), a scope's table (Patient, Procedure) — are platform table and
   // are not places to go (lane DATA-V2-BASICS: the switcher listed "Spore test choices" three times
   // among Harbor Dental's real tables). The same rule as the tables home's lanes (`laneFor`).
   const listed = useMemo(

@@ -12,7 +12,7 @@
  * (header, address, capture) stays on the route.
  *
  * Lane CHAIR-ONE-GRID (2026-10-04): this used to mount a second host binding of its own
- * (a records-ui mount with fewer ports); `pnpm check:one-store-grid` keeps every store-table host on this one.
+ * (a records-ui mount with fewer ports); `pnpm check:one-store-grid` keeps every custom-table host on this one.
  */
 
 import type { ObjectAction } from "@ai-matrx/records-ui/object-actions";

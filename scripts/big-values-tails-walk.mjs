@@ -4,7 +4,7 @@
 // /data/<table>, as admin@admin.com, on the shared preview (live database): the cell names the
 // file and opens it on the file's own page, and the table's CSV export writes the WHOLE text.
 //
-//   TABLE=<store table id> SHA=<sha256 of the whole text> BYTES=<n> [FILE=<file id> FILE_NAME=<name>] \
+//   TABLE=<custom table id> SHA=<sha256 of the whole text> BYTES=<n> [FILE=<file id> FILE_NAME=<name>] \
 //     node scripts/big-values-tails-walk.mjs
 //
 // Reads only (plus one file download to a temp dir). Prints a JSON verdict; exit 1 on any miss.

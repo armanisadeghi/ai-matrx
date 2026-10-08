@@ -133,7 +133,7 @@ export interface HubCapability {
  * the store keeps it for itself (`kept_by_the_app`). The list is built from each Table's
  * DOCUMENT, which carries none of the three, so without the last one a column's pick list
  * ("Status choices") was listed under Tables beside the organization's own tables instead of
- * under "Kept by the app", behind Show everything (lane POST-PUBLISH-FE).
+ * under "Platform tables", behind Show everything (lane POST-PUBLISH-FE).
  */
 export function withHubTableFacts(
   listed: readonly Table[],

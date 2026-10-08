@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * WHICH TABLE GRID A RECORD-STORE TABLE DRAWS — the `data_tables.merged_grid` Feature Knob
+ * WHICH TABLE GRID A CUSTOM TABLE DRAWS — the `data_tables.merged_grid` Feature Knob
  * (one-grid merge, steps 7-8).
  *
  * On (the platform default since the switch-on, 2026-09-30): the merged grid — the one grid,

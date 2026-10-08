@@ -66,7 +66,7 @@ export interface WritingRequest {
 /** Registers the wired jobs in the top Agents menu; draws nothing. */
 export function useSpacesAiDisclosure(): void {
   const refs: SurfaceMandateRef[] = [];
-  if (WRITING_ASSIST_KEY) refs.push({ mandateKey: WRITING_ASSIST_KEY, does: "writes and edits text on this page" });
+  if (WRITING_ASSIST_KEY) refs.push({ mandateKey: WRITING_ASSIST_KEY, does: "writes and edits text on this page, and writes AI blocks" });
   if (ASK_PAGE_KEY) refs.push({ mandateKey: ASK_PAGE_KEY, does: "answers questions about this page" });
   useDeclaredSurfaceMandates(refs);
 }

@@ -2437,10 +2437,10 @@
       "reason": "no database access in 2 file(s) reached",
       "evidence": []
     },
-    "declared-app-tables-missing-archived-drifted-size": {
-      "label": "Declared app tables (missing / archived / drifted / size)",
+    "declared-typed-tables-missing-archived-drifted-size": {
+      "label": "Declared typed tables (missing / archived / drifted / size)",
       "class": "live-db",
-      "cmd": "pnpm check:app-tables",
+      "cmd": "pnpm check:typed-tables",
       "reason": "reaches code that can open the live database",
       "evidence": [
         {

@@ -1,0 +1,29 @@
+{
+  "_why": "Known state on 2026-10-08, listed not fixed: functions the audit snapshot (audit.broken_functions, severity real) says name a relation that no longer exists, and active platform.entity_types rows whose table is gone. This list may only shrink. A NEW entry fails scripts/check-no-missing-relation-references.ts.",
+  "functions": [
+    "platform._custom_record_grant_guard()",
+    "platform._cutover_carry_back(uuid,platform.cutover_seam_press,boolean,uuid,uuid,boolean)",
+    "platform._cutover_copy_resync(uuid,uuid,uuid)",
+    "platform._cutover_seam_apply(text,uuid,text,uuid,uuid)",
+    "platform.cutover_copy_differences(uuid)",
+    "platform.search_item_backfill(text,uuid,integer)",
+    "platform.search_item_parity(text)",
+    "public.get_full_table(jsonb)",
+    "public.udt_dataset_row_versions_trim_scoped(uuid,boolean)",
+    "workbench._moved_older_table_takes_no_writes()",
+    "workbench._udt_row_words(uuid,uuid,jsonb,integer)",
+    "workbench.dataset_readable_by(uuid,uuid)",
+    "workbench.udt_dataset_archive(uuid,uuid,text)",
+    "workbench.udt_dataset_unarchive(uuid)",
+    "workbench.udt_structured_list_archive(uuid,uuid,text)",
+    "workbench.udt_structured_list_unarchive(uuid)"
+  ],
+  "registryRows": [
+    "context_item",
+    "context_value_refs",
+    "context_item_value",
+    "scope_dataset_instance",
+    "scope",
+    "scope_type"
+  ]
+}

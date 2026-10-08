@@ -1,4 +1,4 @@
-// A new picklist is no longer kept by the app for its choices: it shows up among a person's tables.
+// A new picklist is no longer platform-owned for its choices: it shows up among a person's tables.
 export default {
   id: "lists-picklist-not-kept",
   check: "lists.sql-new-picklist-kept",

@@ -5,7 +5,7 @@
 // ONE READ PATH: THE RECORD STORE (lane 9 SCOPES-ON-THE-STORE, the flip, 2026-10-03; Arman's ruling
 // "burn the boats"). Every read below goes through the record store's `custom.context_*` doors via
 // `storeScopeReads.ts`, decoded by `storeScopeAdapter.ts` into the same node types. A scope type is a
-// store Table (`kept_for = context`), a scope a Record, a context item a Field, a value the Record's
+// custom Table (`kept_for = context`), a scope a Record, a context item a Field, a value the Record's
 // document under the item's key. The old `context.*` read path and its switch
 // (`custom.scope_readers_read_the_store`) are gone; `pnpm check:old-system-unreachable` keeps them gone.
 //

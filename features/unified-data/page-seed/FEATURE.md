@@ -103,3 +103,23 @@ test accounts' per-person ON overrides were removed, so the platform default is 
 The record page (`PrimedRecordPage`) races the same way: the server's seed for that record against
 the browser's own (`askClientTableSeed` with `recordId`, the record's bundle). Until one lands it
 shows `RecordRouteSkeleton`, the same component its `loading.tsx` draws.
+
+## After the flip: a plain member was slower (SSR-ROWS-3, 2026-10-08)
+
+test@test.com, no override, live `6c4a1ef1b1`, Deliverables. Default ON vs a per-person OFF override,
+rows visible in ms, no server rows in any load:
+
+| Pair | cold ON | cold OFF | warm ON | warm OFF |
+|---|---|---|---|---|
+| 1 | 4106 | 3225 | 8061 (stall: first store call 5217) | 2978 |
+| 2 | 8380 (stall: first store call 5209) | 3797 | 3910 | 3059 |
+| 3 | 5760 | 3167 | 3582 | 2827 |
+
+Cause, from a network probe: with the knob ON the server also asks the rows, its seed misses the
+cap, and the capped seed threw away the `where` + bundle answers that had already landed. The
+browser then asked where → bundle → page in series (bundle at ~1.1 s, page at ~1.6 s). With the
+knob OFF it took the bundle from the server and asked the page at ~0.85 s.
+Fix (`f6a8ef7be4`): `readTablePage` also returns `opening`, the server's where + bundle streamed the
+moment they land and never capped. The browser's reads take each door from the opening, the full
+seed or the network, whichever comes first. **Not yet measured on production:** the release train
+had not shipped since `6c4a1ef1b1` when this was written.

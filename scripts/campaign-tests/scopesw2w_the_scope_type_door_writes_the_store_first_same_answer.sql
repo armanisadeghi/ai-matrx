@@ -6,7 +6,7 @@
 -- Referral Source). test@test.com and admin@admin.com are members; test@test.com is no member of Castellano.
 -- HOW: as the scope door's suite — every case on the OLD body (the inverse), then on the NEW body, each in
 -- its own rolled-back sub-transaction; answer (ok, SQLSTATE, message, JSON with the new id normalised) and
--- effect (the context.scope_types image row, the store Table record, its column Fields) compared per case.
+-- effect (the context.scope_types image row, the custom table record, its column Fields) compared per case.
 -- No refusal is expected to change. RED on any difference, or when a seat class compared nothing.
 -- Round 2 (after scopes-verify-w2w.md): the effect also holds the sweep queue, the search index, history and the
 -- Fields made (_scopesw2w_side_effects.sql), and the cases hold JSON-null words and a store-only type.

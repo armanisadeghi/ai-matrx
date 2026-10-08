@@ -3,7 +3,7 @@
  * (records-ui ports `pickFiles` and `renderText` slot "cell").
  *
  * The use case: a veterinary front desk keeps each visit's X-rays in an attachment column and
- * writes its desk notes in markdown. Every record-store table in the app (the /data page, the
+ * writes its desk notes in markdown. Every custom table in the app (the /data page, the
  * table window, the dataset overlay, a chat table artifact, the quick sheet, the picker, the chat
  * modal) takes its host from `recordsUiHostFor`, so the break each case names is one line away:
  *   · the binding never spreads `pickFiles` → the attachment cell offers no way to add a file the

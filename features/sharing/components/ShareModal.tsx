@@ -508,7 +508,7 @@ export function ShareModal({
                     alreadySharedUserIds={userPermissions
                       .map((p) => p.grantedToUserId)
                       .filter((id): id is string => !!id)}
-                    // A record-store TABLE: a listed member may sit outside the table's own
+                    // A custom TABLE: a listed member may sit outside the table's own
                     // organization, so each one goes through the outside door, which grants an
                     // existing account outright whether inside or out.
                     {...(outsideShare

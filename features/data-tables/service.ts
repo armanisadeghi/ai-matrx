@@ -1,5 +1,5 @@
 /**
- * THE DATA SEAM for user tables. Every table lives in the record store (`custom.*`); every export
+ * THE DATA SEAM for custom tables. Every table lives in the record store (`custom.*`); every export
  * here takes the table's id, finds the table's own organization once (`locateTable`, remembered in
  * `data-source/table-home.ts`) and answers through `data-source/record-store.ts`. Call these from
  * any client-side code (components, hooks, agent tools) — never a store door directly — so a UI

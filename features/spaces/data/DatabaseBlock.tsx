@@ -17,7 +17,7 @@ import { PublicFormRunner } from "@/app/(link)/f/[formId]/PublicFormRunner";
 import { spacesFormForAnswering } from "./form-actions";
 import { AutomationsPanel } from "./Automations";
 import type { RuleExpression } from "@ai-matrx/records";
-import { useFields, useRecordsClient, useTable, type Field } from "@ai-matrx/records/react";
+import { tableShapeChanged, useFields, useRecordsClient, useTable, type Field } from "@ai-matrx/records/react";
 import {
   ArrowDownUp,
   ArrowUpRight,
@@ -226,7 +226,15 @@ function DatabaseFrame({
               className="spaces-db-title-input"
               onBlur={(e) => {
                 const next = e.target.value.trim();
-                if (next && next !== (props.title || sourceName)) save({ title: next });
+                if (!next || next === (props.title || sourceName)) return;
+                save({ title: next });
+                // Notion: an inline database's title IS the database's name (relation pickers, search, the sidebar).
+                // A linked view keeps a title of its own.
+                if (!props.linked && next !== table.data?.name)
+                  void client.recordUpdate({ record_id: tableId, patch: { name: next, label_singular: next, label_plural: next } }).then((renamed) => {
+                    if (renamed.ok) tableShapeChanged(tableId);
+                    else toast.error(`Database not renamed: ${renamed.error.message}`);
+                  });
               }}
               onKeyDown={(e) => e.key === "Enter" && (e.currentTarget as HTMLInputElement).blur()}
             />
@@ -425,7 +433,8 @@ function DatabaseBody({
   const needsGroup = view.layout === "kanban" && !view.groupField;
   const group = needsGroup ? fields.find((f) => ["select", "status", "list"].includes(kindOf(f)))?.key : undefined;
   const needsDate = (view.layout === "calendar" || view.layout === "timeline") && !view.dateField;
-  const date = needsDate ? fields.find((f) => ["datetime", "date"].includes(kindOf(f)))?.key : undefined;
+  // Notion: a calendar reads any date property, Created time and Last edited time included.
+  const date = needsDate ? (fields.find((f) => ["datetime", "date"].includes(kindOf(f))) ?? fields.find((f) => ["created_time", "modified_time"].includes(kindOf(f))))?.key : undefined;
   const spec = viewSpec(tableId, { ...view, groupField: view.groupField ?? group ?? null, dateField: view.dateField ?? date ?? null }, fields);
   // Notion's inline database: records-ui's embedded grid (no tick-boxes, Actions column or pager; one-line
   // rows; its own "New page" line, which writes the row in place). The magnifier is this block's own, in

@@ -1,6 +1,6 @@
 // Notion's "New property" list (R42, PARITY F5): every type a person can add, by Notion's name, and what each
 // sends — Status starts with its three groups, Formula / Rollup open the column panel, ID is the record number.
-import { matchTypes, PROPERTY_TYPES, STATUS_START } from "../NewProperty";
+import { madeAt, matchTypes, PROPERTY_TYPES, STATUS_START } from "../NewProperty";
 
 describe("New property offers Notion's types", () => {
   const byLabel = new Map(PROPERTY_TYPES.map((t) => [t.label, t]));
@@ -34,5 +34,13 @@ describe("New property offers Notion's types", () => {
     expect(matchTypes("sum").map((t) => t.label)).toContain("Rollup");
     expect(matchTypes("calc").map((t) => t.label)).toContain("Formula");
     expect(matchTypes("updated").map((t) => t.label)).toEqual(["Last edited time", "Last edited by"]);
+  });
+
+  it("orders relation targets newest first by the stamp Spaces puts on a table's address", () => {
+    const older = `vendors_${(1_700_000_000_000).toString(36)}`;
+    const newer = `vendors_${(1_800_000_000_000).toString(36)}`;
+    expect(madeAt(newer)).toBeGreaterThan(madeAt(older));
+    expect(madeAt("crm_contacts")).toBe(0);
+    expect(madeAt("customer")).toBe(0);
   });
 });

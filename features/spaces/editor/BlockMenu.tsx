@@ -7,6 +7,7 @@
 import { SideMenuExtension } from "@blocknote/core/extensions";
 import { BlockColorsItem, useBlockNoteEditor, useComponentsContext, useExtensionState, usePortalElement } from "@blocknote/react";
 import {
+  Database,
   ArrowRightLeft,
   Code,
   Copy,
@@ -35,6 +36,11 @@ import { AGENT_ICON } from "@/components/icons/domain-icons";
 import type { SpacesEditor } from "./schema";
 import { duplicateBlocks, selectedOrCurrent } from "./block-actions";
 import { copyToClipboard } from "@/lib/clipboard/copy";
+import type { PickedSource } from "../data/SourcePicker";
+import type { SimpleTable } from "../data/table-to-database";
+import { newViewId } from "../data/sources";
+import { fromEngine } from "./convert";
+import { databaseBlock } from "./slash-items";
 
 const I = 16;
 
@@ -71,6 +77,15 @@ export interface BlockMenuActions {
   askAi: () => void;
   /** H1 — a comment on the block (its own text is the quote). */
   comment: (blockId: string) => void;
+  /** C14 — a simple table becomes a new database of this page (its rows become records). */
+  tableToDatabase?: (table: SimpleTable) => Promise<PickedSource | null>;
+}
+
+/** The cells of a simple table block as plain text, and whether its first row is a header. */
+function simpleTableOf(block: unknown): SimpleTable {
+  const stored = fromEngine([block as never])[0];
+  const props = (stored?.props ?? {}) as { headerRow?: boolean; rows?: Array<{ cells: Array<Array<{ text: string }>> }> };
+  return { headerRow: !!props.headerRow, rows: (props.rows ?? []).map((r) => r.cells.map((spans) => spans.map((s) => s.text).join(""))) };
 }
 
 export function makeBlockMenu(actions: BlockMenuActions) {
@@ -212,6 +227,23 @@ export function makeBlockMenu(actions: BlockMenuActions) {
         >
           Copy link to block
         </C.Generic.Menu.Item>
+        ) : null}
+        {block.type === "table" && actions.tableToDatabase && shows("Turn into database") ? (
+          <C.Generic.Menu.Item
+            className="bn-menu-item"
+            icon={<Database size={I} />}
+            onClick={() => {
+              closeMenus();
+              const id = block.id;
+              const table = simpleTableOf(editor.getBlock(id));
+              void actions.tableToDatabase!(table).then((src) => {
+                if (!src || !editor.getBlock(id)) return;
+                editor.replaceBlocks([id], [databaseBlock(src, { id: newViewId(), name: "Table", layout: "grid" }, false)]);
+              });
+            }}
+          >
+            Turn into database
+          </C.Generic.Menu.Item>
         ) : null}
         {shows("Move to") ? (
           <C.Generic.Menu.Item className="bn-menu-item" icon={<CornerUpRight size={I} />} onClick={() => {

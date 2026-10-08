@@ -1,4 +1,4 @@
--- LANE SOURCE-KEY — A RECORD-STORE TABLE'S CHANGES ARE `record:<table id>` EVENTS.
+-- LANE SOURCE-KEY — A RECORD-CUSTOM TABLE'S CHANGES ARE `record:<table id>` EVENTS.
 --
 -- THE RULING. The store's token is `record`; `custom_record` is the retired tier-2 table and
 -- nothing new names it. The event-source key a webhook subscribes to and a schedule listens for
@@ -9,7 +9,7 @@
 -- (step 4, once the new @ai-matrx/records is installed and live) refuses the old key outright.
 --
 -- THE USE CASE. Harbor Point Plumbing & Drain (Tacoma, WA) dispatches service calls from a
--- record-store table. Its office manager (admin@admin.com) keeps a schedule "when a service
+-- custom table. Its office manager (admin@admin.com) keeps a schedule "when a service
 -- call's Status changes, draft the invoice" and a webhook that tells the accounting system about
 -- every change. Technician Sam Oduya (test@test.com) closes calls from the van. Every name,
 -- address and phone below is synthesized.

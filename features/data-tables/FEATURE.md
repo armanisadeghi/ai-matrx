@@ -1,4 +1,4 @@
-# FEATURE.md — `data-tables` (user tables: the seam to the record store, and the table page)
+# FEATURE.md — `data-tables` (custom tables: the seam to the record store, and the table page)
 
 Cross-repo system-of-record: /Users/armanisadeghi/code/common-docs/systems/data/custom-data/STATE.md — read it before touching this feature in ANY repo.
 
@@ -10,7 +10,7 @@ Cross-repo system-of-record: /Users/armanisadeghi/code/common-docs/systems/data/
 
 ## Where a table lives — the data seam
 
-**Every user table lives in the record store (`custom.*`).** The older `workbench` store is gone
+**Every custom table lives in the record store (`custom.*`).** The older `workbench` store is gone
 from the code; nothing here reads or writes it.
 
 - **`service.ts` is the one door.** Every export takes the table's id, finds the table's own
@@ -32,7 +32,7 @@ from the code; nothing here reads or writes it.
   gallery, cell editor, row forms, column menu, saved views, clipboard and undo all live in that
   package (its CHANGELOG is the record). Hosts outside the page open a table by id through
   `components/LocatedTableViewer.tsx`, which mounts the same page; `pnpm check:one-store-grid`
-  keeps every store-table host on it. `components/user-generated-table-data/ColumnHeaderMenu.tsx`
+  keeps every custom-table host on it. `components/user-generated-table-data/ColumnHeaderMenu.tsx`
   is the one older component left (the CMS collection page uses it); it reaches data only
   through `service.ts`.
 
@@ -115,7 +115,7 @@ type ValidationRules = {
 | Inline cell edit (records-ui) | The reason beside the cell; the editor STAYS OPEN holding what was typed (same as a server refusal) |
 | Add row / Edit row (records-ui) | Inline red line under that field; the rules print under every field that has them |
 | Agent write (`cell_value`) | THROWS the reason plus every rule the column carries, so the retry is informed |
-| Store | The record store judges every write by the column's rules — always (a store table is strict by construction) |
+| Store | The record store judges every write by the column's rules — always (a custom table is strict by construction) |
 Client enforcement is unconditional; the store is the backstop.
 
 **The reason strings are the product.** `features/data-tables/validation.ts` words them: `Must be

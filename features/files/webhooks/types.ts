@@ -104,7 +104,7 @@ export const WEBHOOK_EVENT_CATALOGUE: ReadonlyArray<{
   { group: "Jobs", value: "run.failed", label: "Long-running job failed" },
   // Data tables NOT YET MOVED into the record store — one event per row change (entity_type
   // `user_table_row`, metadata carries table_id / table_name / changed_fields). Producer:
-  // migrations/udt_row_change_events.sql. A moved or record-store table never emits these; it
+  // migrations/udt_row_change_events.sql. A moved or custom table never emits these; it
   // is subscribed ONE TABLE AT A TIME (`TABLE_WEBHOOK_EVENTS` below).
   { group: "Data tables", value: "row.created", label: "Row added (older table)" },
   { group: "Data tables", value: "row.updated", label: "Row changed (older table)" },
@@ -114,8 +114,8 @@ export const WEBHOOK_EVENT_CATALOGUE: ReadonlyArray<{
 ];
 
 /**
- * THE EVENTS OF ONE RECORD-STORE TABLE (lane INTEG-CLIENTS, CUTOVER-PLAN F19; GRID-PRIMITIVES G4).
- * A record-store table's changes reach a webhook only when that webhook names the table
+ * THE EVENTS OF ONE CUSTOM TABLE (lane INTEG-CLIENTS, CUTOVER-PLAN F19; GRID-PRIMITIVES G4).
+ * A custom table's changes reach a webhook only when that webhook names the table
  * (`resource_types` = `record:<table id>`, lane SOURCE-KEY), which `custom.table_webhook_declare` does —
  * admin on the table, https only, the signing secret returned once. These are that door's
  * words, exactly; an empty choice hears every one of them.

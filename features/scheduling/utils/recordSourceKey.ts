@@ -1,8 +1,8 @@
 /**
- * THE EVENT-SOURCE KEY OF A RECORD-STORE TABLE, AS THE SCHEDULE SCREENS READ AND WRITE IT
+ * THE EVENT-SOURCE KEY OF A CUSTOM TABLE, AS THE SCHEDULE SCREENS READ AND WRITE IT
  * (lane SOURCE-KEY, closed 2026-09-25).
  *
- * A record-store table's changes are `record:<table id>` events: the store's token is `record`;
+ * A custom table's changes are `record:<table id>` events: the store's token is `record`;
  * the older `custom_record:<table id>` named the retired tier-2 table and nothing reads or writes
  * it any more. The store refuses a write of the old key by name (`custom._record_source_key_is_record`,
  * 23514) and its two readers (`custom.record_source_keys`, `custom.record_source_table`) no longer
@@ -25,12 +25,12 @@ export function recordSourceTable(key: string | null | undefined): string | null
   return m ? m[1]! : null;
 }
 
-/** Whether a trigger's key names a record-store table's changes. */
+/** Whether a trigger's key names a custom table's changes. */
 export function isRecordSourceKey(key: string | null | undefined): boolean {
   return recordSourceTable(key) !== null;
 }
 
-/** The one key a record-store table's changes are saved under: `record:<table id>`. */
+/** The one key a custom table's changes are saved under: `record:<table id>`. */
 export function recordSourceKey(tableId: string): string {
   return `record:${tableId}`;
 }

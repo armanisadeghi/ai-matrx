@@ -115,5 +115,5 @@
   - module home: `EntityListPage`;
   - internal: `RouteHeader` (118), `EntityModeHeader` (25), `CrumbTrailHeader` (18), and 233 raw `PageHeader`s with no template;
   - full-bleed: six groups, each opting out differently.
-- **Custom data:** brief in `common-docs/operations/for-arman/2026-10-02/custom-data-requirements.md` and a task chip. The board keeps localStorage until `useAppTable` exists.
+- **Custom data:** brief in `common-docs/operations/for-arman/2026-10-02/custom-data-requirements.md` and a task chip. The board keeps localStorage until `useTypedTable` exists.
 - **Census leftovers:** glass on table pagination ("Page 1"), the chat history sidebar refresh, and the tasks quick-add neighbour within 3px. Fix them in the rollout.

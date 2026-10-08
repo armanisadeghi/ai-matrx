@@ -129,7 +129,8 @@ export function NewPropertyPanel({ tableId, takenKeys, onDone }: { tableId: stri
         ...(t.choices ? { options: [] } : {}),
         ...(t.options ? { options: t.options } : {}),
         ...(t.declaration ? { declaration: t.declaration } : {}),
-        ...(target ? { relationTarget: target.id } : {}),
+        // Notion's relation holds any number of pages ("Limit: No limit"), which is also what a rollup reads through.
+        ...(target ? { relationTarget: target.id, multi: true } : {}),
       }),
     });
     if (made.ok && t.type === "autonumber") {
@@ -179,6 +180,14 @@ export function NewPropertyPanel({ tableId, takenKeys, onDone }: { tableId: stri
   );
 }
 
+/** When Spaces made a table: its slug ends `_<Date.now() in base 36>` (data/new-database.ts); other tables answer 0. */
+export function madeAt(slug: string | null | undefined): number {
+  const stamp = /_([0-9a-z]{8})$/.exec(slug ?? "")?.[1];
+  const ms = stamp ? parseInt(stamp, 36) : 0;
+  // A word that happens to be eight letters ("contacts") is not a moment: only 2020–2100 counts.
+  return ms > 1_577_836_800_000 && ms < 4_102_444_800_000 ? ms : 0;
+}
+
 /** Relation, step two (Notion): the databases of this table's organization, searchable; a click makes the property. */
 function RelationTarget({ tableId, busy, onBack, onPick }: { tableId: string; busy: boolean; onBack: () => void; onPick: (target: { id: string; name: string }) => void }) {
   const tables = useTables();
@@ -188,7 +197,9 @@ function RelationTarget({ tableId, busy, onBack, onPick }: { tableId: string; bu
   const q = query.trim().toLowerCase();
   const choices = (tables.data ?? [])
     .filter((t) => (org ? (t as { organization_id?: string }).organization_id === org : true))
-    .filter((t) => !q || (t.name ?? "").toLowerCase().includes(q));
+    .filter((t) => !q || (t.name ?? "").toLowerCase().includes(q))
+    // Newest first: the database just made on this page is the one a person is about to link (Notion lists recent first).
+    .sort((a, b) => madeAt(b.slug) - madeAt(a.slug));
   return (
     <div className="flex flex-col gap-1" aria-busy={busy || tables.loading || undefined}>
       <MenuRow icon={<ArrowLeft size={15} />} label="Relation" onClick={onBack} />

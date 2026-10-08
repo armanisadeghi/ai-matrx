@@ -346,7 +346,7 @@ function hasKeys(o: object | null | undefined): boolean {
 export type StoreFormatWrite = { ok: true; patches: Array<Record<string, unknown>> } | { ok: false; says: string };
 
 /**
- * A choice as the column editor holds it on a store table: the grid's `FieldChoice` plus the id
+ * A choice as the column editor holds it on a custom table: the grid's `FieldChoice` plus the id
  * of the option record it IS. The editor spreads a choice when a person edits it, so the id rides
  * along; a re-worded choice is therefore sent as {id, words} and the store re-words THAT option
  * in place (same key, every cell keeps meaning it) instead of retiring it and making another.
@@ -713,7 +713,7 @@ export function storeDefaultSort(
 export type StoreHandOrder = { status: string; enabled: boolean; order: string[] };
 
 /**
- * THE OLDER `row_ordering_config` FOR A STORE TABLE (ORDER-FIX): `{enabled, order}` when the Table's
+ * THE OLDER `row_ordering_config` FOR A CUSTOM TABLE (ORDER-FIX): `{enabled, order}` when the Table's
  * view keeps a hand-set order — that order IS the sort, so the Table's saved sort is NOT handed on
  * beside it (it drew over the order on production: VERIFIER-19 finding 2). Otherwise the saved sort
  * only; where the store cannot keep an order the grid then draws no Reorder.

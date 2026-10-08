@@ -875,7 +875,7 @@ export async function deleteRow(
 }
 
 /**
- * Archive a whole record-store Table (lane SWITCH-AFTERMATH: /data's home lists a switched
+ * Archive a whole custom Table (lane SWITCH-AFTERMATH: /data's home lists a switched
  * organization's tables where they now live, with the same Delete). `record_delete` is soft: the
  * Table goes to Trash and Restore brings it back under its own id.
  */
@@ -1113,7 +1113,7 @@ export async function setTableRowLabel(
 ): Promise<ServiceResult<{ row_label: unknown }>> {
   if (args.rowLabel && args.rowLabel.kind !== "field") {
     return plainFailure(
-      "A record-store table names its rows by one of its columns; a label worked out by a formula is not something it keeps yet. Pick a column instead.",
+      "A custom table names its rows by one of its columns; a label worked out by a formula is not something it keeps yet. Pick a column instead.",
     );
   }
   if (args.rowLabel?.field) {
@@ -1125,7 +1125,7 @@ export async function setTableRowLabel(
     const picked = fields.data.find((f) => f.key === args.rowLabel!.field);
     if (picked && String(picked.type) === "formula") {
       return plainFailure(
-        `"${picked.label || picked.key}" is worked out by the table, and a record-store table names its rows by a column that holds its own words. Pick a column people fill in. Nothing was changed.`,
+        `"${picked.label || picked.key}" is worked out by the table, and a custom table names its rows by a column that holds its own words. Pick a column people fill in. Nothing was changed.`,
       );
     }
   }
@@ -1145,7 +1145,7 @@ export async function updateTableMetadata(
 ): Promise<ServiceResult<{ id: string; table_name: string; description: string | null; version: number | null; is_public: boolean | null; updated_at: string }>> {
   if (args.isPublic !== undefined) {
     return plainFailure(
-      "A record-store table is shared by the Share button, person by person or with the organization — it has no public switch. Nothing was changed.",
+      "A custom table is shared by the Share button, person by person or with the organization — it has no public switch. Nothing was changed.",
     );
   }
   const patch: Record<string, unknown> = {};
@@ -1590,7 +1590,7 @@ export async function updateTableConfig(
   if (tableUnknown.length) {
     return plainFailure(
       tableUnknown.includes("is_public")
-        ? "A record-store table is shared by the Share button, person by person or with the organization — it has no public switch. Nothing was changed."
+        ? "A custom table is shared by the Share button, person by person or with the organization — it has no public switch. Nothing was changed."
         : `The record store has nowhere to keep this table's ${tableUnknown.map((k) => `"${k}"`).join(" or ")} setting. Nothing was changed.`,
     );
   }
@@ -1818,7 +1818,7 @@ export async function createTable(
   const asked = args.fields.filter((f) => f.is_required).map((f) => f.display_name || f.field_name);
   if (asked.length) {
     warnings.push(
-      `${asked.map((n) => `"${n}"`).join(", ")} ${asked.length === 1 ? "was" : "were"} made optional: a new record-store table demands no column until someone marks it required in the column's settings.`,
+      `${asked.map((n) => `"${n}"`).join(", ")} ${asked.length === 1 ? "was" : "were"} made optional: a new custom table demands no column until someone marks it required in the column's settings.`,
     );
   }
   if (args.description && args.description.trim()) {

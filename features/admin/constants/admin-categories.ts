@@ -1433,10 +1433,10 @@ export const adminCategoriesData: AdminCategory[] = [
         isNew: true,
       },
       {
-        title: "Store Tables",
+        title: "Custom Tables",
         description: "Every organization's tables; archive many at once",
         iconName: "Table",
-        link: "/administration/database/store-tables",
+        link: "/administration/database/custom-tables",
         isNew: true,
       },
       {
@@ -1638,6 +1638,14 @@ export const adminCategoriesData: AdminCategory[] = [
           "Every check's last run, verdict, scan completeness, open findings and the oldest one's age — live from the checks store. Drill into a check to see its findings by work unit, and mark a false alarm OK once, with a reason, so it never raises again.",
         iconName: "ListChecks",
         link: "/administration/reporting/check-findings",
+        isNew: true,
+      },
+      {
+        title: "Performance",
+        description:
+          "Every performance watch: newest number against its budget, state, 7-day trend, baseline and last alert. Drill into one watch's history and samples.",
+        iconName: "Gauge",
+        link: "/administration/reporting/performance",
         isNew: true,
       },
       {

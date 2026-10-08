@@ -44,7 +44,7 @@ export const ROW_EVENT_ACTIONS: readonly { value: string; label: string }[] = [
   { value: "row.deleted", label: "A row is deleted" },
 ];
 
-/** A record-store table's changes (GRIDPRIM G4/G8 — the store's own words, `record.*`). */
+/** A custom table's changes (GRIDPRIM G4/G8 — the store's own words, `record.*`). */
 export const RECORD_EVENT_ACTIONS: readonly { value: string; label: string }[] = [
   { value: "record.created", label: "A row is added" },
   { value: "record.updated", label: "A row is changed" },
@@ -73,8 +73,8 @@ export function EventForm({ value, onChange, error }: Props) {
 
   // What a change to the CHOSEN table is called, asked of where that table lives (lane
   // INTEG-CLIENTS, CUTOVER-PLAN rev 3 F9): an older table's rows say `user_table_row`; a
-  // record-store table's say `record:<id>` (GRIDPRIM G8, lane SOURCE-KEY; an older trigger's
-  // `custom_record:<id>` is read and saved as the new key). `cannotFire` = a store table on
+  // custom table's say `record:<id>` (GRIDPRIM G8, lane SOURCE-KEY; an older trigger's
+  // `custom_record:<id>` is read and saved as the new key). `cannotFire` = a custom table on
   // a database without G8, where a schedule on it would never run — said, never saved silently.
   const [changeWord, setChangeWord] = useState<{
     tableId: string;
@@ -117,7 +117,7 @@ export function EventForm({ value, onChange, error }: Props) {
     if (!chosenTableId) return;
     let cancelled = false;
     void (async () => {
-      // Locate first: it PLACES a record-store table, so the column read below and the change
+      // Locate first: it PLACES a custom table, so the column read below and the change
       // word both go to the store the table lives in.
       const located = await locateTable(chosenTableId);
       if (cancelled) return;
@@ -151,7 +151,7 @@ export function EventForm({ value, onChange, error }: Props) {
     };
   }, [chosenTableId]);
   // Keep the saved word in step with where the chosen table lives. Actions of the other store's
-  // vocabulary are dropped with it (a `row.updated` never fires on a store table, and back).
+  // vocabulary are dropped with it (a `row.updated` never fires on a custom table, and back).
   const liveWord = changeWord && changeWord.tableId === chosenTableId ? changeWord : null;
   useEffect(() => {
     if (!liveWord?.entityType || liveWord.entityType === config.entity_type) return;
@@ -174,11 +174,11 @@ export function EventForm({ value, onChange, error }: Props) {
         ? watched.filter((f) => f !== fieldName)
         : [...watched, fieldName],
     });
-  // A schedule on ONE record-store table: its change words are the store's own.
+  // A schedule on ONE custom table: its change words are the store's own.
   const onRecordStoreTable = isRecordSourceKey(config.entity_type);
   const actionChoices = onRecordStoreTable ? RECORD_EVENT_ACTIONS : ROW_EVENT_ACTIONS;
-  // "Any table" can only mean the older store's tables (a record-store table is named one by
-  // one), so the words say so as soon as this person has a record-store table at all.
+  // "Any table" can only mean the older store's tables (a custom table is named one by
+  // one), so the words say so as soon as this person has a custom table at all.
   const anyTableLabel = (tables ?? []).some((t) => t.store === "records")
     ? "Any of my older tables (pick a table to use a newer one)"
     : "Any of my tables";
@@ -204,7 +204,7 @@ export function EventForm({ value, onChange, error }: Props) {
         <Select
           value={config.table_id ?? ANY_TABLE}
           onValueChange={(v) =>
-            // "Any table" listens for the older store's row events: a record-store table is
+            // "Any table" listens for the older store's row events: a custom table is
             // always named one by one, by its own change word (set once the table is located).
             v === ANY_TABLE ? update({ table_id: undefined, entity_type: "user_table_row" }) : update({ table_id: v })
           }

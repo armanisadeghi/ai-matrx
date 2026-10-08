@@ -1,7 +1,7 @@
 /**
  * @jest-environment node
  *
- * LIVE (owner ruling 2026-10-03: tests run on live as admin@admin.com). A MOVED ORGANIZATION'S SCOPE TABLE IS ITS RECORD-STORE TABLE
+ * LIVE (owner ruling 2026-10-03: tests run on live as admin@admin.com). A MOVED ORGANIZATION'S SCOPE TABLE IS ITS CUSTOM TABLE
  * (lane INTEG-CLIENTS, CUTOVER-PLAN rev 3 rows F11 / D5).
  *
  * The real use case: a repository scope ("matrx-frontend") keeps its "known defects" list as a
@@ -63,7 +63,7 @@ if (!READY) {
   console.warn("[a-moved-organizations-scope-table-lives-in-the-store] SKIPPED: set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY (the live database).");
 }
 
-describeLive("a moved organization's scope table is its record-store Table", () => {
+describeLive("a moved organization's scope table is its custom Table", () => {
   beforeAll(async () => {
     holder.client = createSupabaseClient(URL_, KEY, { auth: { persistSession: false } });
     const signed = await holder.client.auth.signInWithPassword({ email: EMAIL, password: PASSWORD });

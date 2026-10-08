@@ -199,7 +199,7 @@ describe("structure", () => {
     expect(blocks[1]).toMatchObject({ type: "database", props: { source: { kind: "table", tableId: "table-clients" }, inline: false } });
   });
 
-  it("inline and full-page databases carry the store table id and optional view id", () => {
+  it("inline and full-page databases carry the custom table id and optional view id", () => {
     const { blocks } = convert(
       [
         '<database url="https://www.notion.so/Client-Database-9f8e?v=abc" inline="true">Client Database</database>',

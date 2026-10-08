@@ -3,7 +3,7 @@
 // features/spaces/page/SpacePage.tsx — one open Space: top bar, cover, icon, title, editor (§A).
 
 import { Button, EmptyState } from "@ai-matrx/design-system/controls";
-import { ChevronsRight, CloudOff, FileInput, FileQuestion, ImageIcon, Lock, Menu, MessageSquare, MessageSquareText, SmilePlus, Star } from "lucide-react";
+import { ChevronsRight, CloudOff, FileInput, FileQuestion, ImageIcon, Lock, Menu, MessageSquare, MessageSquareText, ListPlus, SmilePlus, Star } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 
@@ -22,11 +22,12 @@ import { withPaintedSizes } from "../editor/database-host";
 import { useDatabaseDesigner } from "../ai/DatabaseDesigner";
 import { useMoveIn } from "../ai/MoveIn";
 import { adoptPageDatabase, createPageDatabase } from "../data/new-database";
+import { tableToDatabase as convertTableToDatabase, type SimpleTable } from "../data/table-to-database";
 import { newViewId } from "../data/sources";
 import { AskAiMenu, type AskAiTarget } from "../ai/AskAiMenu";
 import { AskPageButton } from "../ai/AskPageButton";
 import { LoadAccessState } from "../workspace/LoadAccessState";
-import { useSpacesAiDisclosure } from "../ai/spaces-ai";
+import { WRITING_ASSIST_KEY, useSpacesAiDisclosure } from "../ai/spaces-ai";
 import { useSpaceBuilder } from "../ai/SpaceBuilder";
 import { AGENT_ICON } from "@/components/icons/domain-icons";
 import { currentBlockId, selectedOrCurrent } from "../editor/block-actions";
@@ -45,6 +46,7 @@ import { SpaceEditor } from "../editor/SpaceEditor";
 import { useSpaces } from "../state/SpacesProvider";
 import { Cover, CoverPicker } from "./Cover";
 import { IconPicker } from "./IconPicker";
+import { AddPropertyMenu, PageProperties } from "./PageProperties";
 import { PageMenu } from "./PageMenu";
 import { SpaceIcon } from "./SpaceIcon";
 import { TocRail } from "./TocRail";
@@ -75,7 +77,7 @@ import { copyToClipboard } from "@/lib/clipboard/copy";
 /** The longest the static first paint stays once the editor is built behind it. */
 const REVEAL_CAP_MS = 2500;
 
-type Editable = Pick<SpaceDoc, "title" | "icon" | "cover" | "settings" | "blocks">;
+type Editable = Pick<SpaceDoc, "title" | "icon" | "cover" | "settings" | "blocks" | "properties">;
 
 function Title({
   value,
@@ -406,7 +408,7 @@ function SpacePageScreen({ spaceId, initialDoc }: { spaceId: string; initialDoc?
         editor.replaceBlocks(editor.document, toEngine(copy.doc.blocks) as never);
       }
       keptLocally.current = true;
-      update({ title: copy.doc.title, icon: copy.doc.icon, cover: copy.doc.cover, settings: copy.doc.settings, blocks: fromEngine(editor.document as unknown as EngineBlock[]) });
+      update({ title: copy.doc.title, icon: copy.doc.icon, cover: copy.doc.cover, settings: copy.doc.settings, properties: copy.doc.properties, blocks: fromEngine(editor.document as unknown as EngineBlock[]) });
     },
     offer: (_copy, { restore, discard }) =>
       toast.warning("Unsaved changes from this device", {
@@ -555,6 +557,15 @@ function SpacePageScreen({ spaceId, initialDoc }: { spaceId: string; initialDoc?
       return value;
     });
   const warnNotAdopted = (err: unknown) => toast.warning("Not shared with the page", { description: err instanceof Error ? err.message : undefined });
+  /** C14 — a simple table's "Turn into database": a new table of this page holding its rows. */
+  const tableToDatabase = async (table: SimpleTable): Promise<PickedSource | null> => {
+    try {
+      return await convertTableToDatabase(spaceId, userId, table);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "The table could not be turned into a database.");
+      return null;
+    }
+  };
   /** "/" → Database (inline or full page): a new table in this page's organization, as a sub-page when asked. */
   const newDatabase = async (fullPage: boolean): Promise<{ table: PickedSource; pageId?: string } | null> => {
     try {
@@ -1014,6 +1025,14 @@ function SpacePageScreen({ spaceId, initialDoc }: { spaceId: string; initialDoc?
                     </button>
                   </CoverPicker>
                 ) : null}
+                {editable && !doc.properties?.length ? (
+                  <AddPropertyMenu onAdd={(p) => update({ properties: [p] })}>
+                    <button type="button" className="spaces-header-control">
+                      <ListPlus size={15} />
+                      Add property
+                    </button>
+                  </AddPropertyMenu>
+                ) : null}
                 <button type="button" className="spaces-header-control" onClick={() => setAddingPageComment(true)}>
                   <MessageSquare size={15} />
                   Add comment
@@ -1021,6 +1040,7 @@ function SpacePageScreen({ spaceId, initialDoc }: { spaceId: string; initialDoc?
               </div>
             ) : null}
             <Title value={doc.title} editable={editable} autoFocus={focusTitle} onChange={(title) => update({ title })} onEnter={focusFirstBlock} />
+            <PageProperties spaceId={doc.id} properties={doc.properties ?? []} editable={editable} onChange={(properties) => update({ properties })} />
             <Backlinks key={doc.id} spaceId={doc.id} />
             <PageComments source={commentSource} comments={comments} adding={addingPageComment} onAddingDone={() => setAddingPageComment(false)} />
           </div>
@@ -1073,6 +1093,7 @@ function SpacePageScreen({ spaceId, initialDoc }: { spaceId: string; initialDoc?
               pickSource,
               designDatabase: designer.wired ? () => saveSoon(designer.design({ spaceId: doc.id, ...pageForAi() })) : undefined,
               newDatabase: (fullPage) => saveSoon(newDatabase(fullPage)),
+              aiBlock: Boolean(WRITING_ASSIST_KEY),
               createSyncedSource: async () => {
                 // C18: the synced content is its own Space under this page (inherits its access), hidden from the tree.
                 const source = await spaces.createSpace(doc.id, { open: false, title: "Synced block", blocks: [{ id: crypto.randomUUID(), type: "text", text: [] }] });
@@ -1080,7 +1101,7 @@ function SpacePageScreen({ spaceId, initialDoc }: { spaceId: string; initialDoc?
                 return source.id;
               },
             }}
-            menu={{ moveBlocksTo, turnIntoPageIn, askAi: openAskAi }}
+            menu={{ moveBlocksTo, turnIntoPageIn, askAi: openAskAi, tableToDatabase }}
             onComment={startComment}
           />
           </StructureProvider>

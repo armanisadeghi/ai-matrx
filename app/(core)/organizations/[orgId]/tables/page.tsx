@@ -11,7 +11,7 @@ import { useResolvedOrganization } from "@/features/organizations/hooks";
 import { ReadFailure } from "@ai-matrx/design-system";
 import { RecordsMount, WhereItLives } from "@ai-matrx/records-ui";
 import { RECORDS_NOTIFY } from "@/features/unified-data/recordsNotify";
-import { KeptByTheAppLine } from "@/features/unified-data/hub/KeptByTheAppLine";
+import { PlatformTableLine } from "@/features/unified-data/hub/PlatformTableLine";
 import { useAppRecordsConfig } from "@/features/data-tables/records-ui-host/recordsUiHost";
 
 const SELECT_COLS = "id, table_name, description, version, updated_at";
@@ -75,7 +75,7 @@ export default function OrgTablesPage() {
   const dataSource = recordsConfig.dataSource;
   // A table moved from a card re-reads the list (the moved card leaves this organization's page).
   const [reread, setReread] = React.useState(0);
-  // THE SAME "SHOW EVERYTHING" AS /data (KeptByTheAppLine): the tables the app keeps for
+  // THE SAME "SHOW EVERYTHING" AS /data (PlatformTableLine): the tables the app keeps for
   // itself are counted, and listed only when asked.
   const [showEverything, setShowEverything] = React.useState(false);
   const [keptCount, setKeptCount] = React.useState(0);
@@ -134,7 +134,7 @@ export default function OrgTablesPage() {
             )}
           />
           <div className="mt-4">
-            <KeptByTheAppLine
+            <PlatformTableLine
               keptCount={keptCount}
               showEverything={showEverything}
               onToggle={() => setShowEverything((on) => !on)}

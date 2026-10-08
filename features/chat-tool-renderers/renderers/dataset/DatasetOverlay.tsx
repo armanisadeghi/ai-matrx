@@ -2,7 +2,7 @@
 
 import { useMemo } from "react";
 import { Table2, ExternalLink } from "lucide-react";
-// Located first (lane INTEG-CLIENTS): a moved or record-store table opens from its own store.
+// Located first (lane INTEG-CLIENTS): a moved or custom table opens from its own store.
 import LocatedTableViewer from "@/features/data-tables/components/LocatedTableViewer";
 import type { ToolRendererProps } from "@ai-matrx/chat/tool-call-visualization/types";
 import { parseDataset } from "./parseDataset";

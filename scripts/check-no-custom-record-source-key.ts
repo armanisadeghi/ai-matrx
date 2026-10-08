@@ -3,7 +3,7 @@
  * `pnpm check:no-custom-record-source-key` — NOTHING NEW WRITES A `custom_record:<table id>`
  * EVENT-SOURCE KEY (lane SOURCE-KEY, 2026-09-25).
  *
- * A record-store table's changes are `record:<table id>` events; `custom_record` is the retired
+ * A custom table's changes are `record:<table id>` events; `custom_record` is the retired
  * tier-2 table and nothing new names it. The store refuses (step 2) or rewrites (step 1) the old
  * key at its own door (`custom._record_source_key_is_record` on scheduler.sch_trigger and
  * files.webhooks), so a runtime write is caught there. This guard catches the SOURCE before it

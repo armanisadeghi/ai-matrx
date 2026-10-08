@@ -96,7 +96,7 @@ jest.mock("@ai-matrx/records-ui", () => ({
   fieldName: (f: { key: string }) => f.key,
   rowNameIn: () => "",
   tableName: (t: { name: string }) => t.name,
-  keptByTheApp: (t: { kept_by_the_app?: boolean }) => t.kept_by_the_app === true,
+  platformOwned: (t: { kept_by_the_app?: boolean }) => t.kept_by_the_app === true,
   recordsDataSource: () => ({ rpc: jest.fn() }),
   personActor: () => ({}),
   // The picker's one rule (records-ui tablePicking): tables only, the chosen one always kept.
@@ -251,7 +251,7 @@ it("keeps the old picker's fold for tables the app keeps, counted across every o
   const fold = host.querySelector<HTMLButtonElement>("[data-footer]");
   expect(fold?.textContent).toBe("Show 1 table the app keeps");
   await act(async () => fold!.click());
-  expect(offered().join("\n")).toContain("Status choices — Rincon Plumbing Co · list · kept by the app");
+  expect(offered().join("\n")).toContain("Status choices — Rincon Plumbing Co · list · platform table");
 });
 
 it("shows the shell's organization filter on the Table row, starting on All organizations", async () => {
@@ -262,7 +262,7 @@ it("shows the shell's organization filter on the Table row, starting on All orga
   // All organizations first; each organization with its count from the complete answer.
   expect(choices[0]).toContain("All organizations");
   expect(choices.join("|")).toContain("Harbor Dental Group1");
-  // Counts are what the list shows: Rincon's "Status choices" sits behind the kept-by-the-app fold.
+  // Counts are what the list shows: Rincon's "Status choices" sits behind the platform-owned fold.
   expect(choices.join("|")).toContain("Rincon Plumbing Co1");
 });
 

@@ -193,9 +193,9 @@ export function registerDatabaseFunctions() {
   registerFunction(
     {
       name: 'createTable',
-      displayName: 'Create User Table',
+      displayName: 'Create Custom Table',
       description: 'Create a new user-generated table',
-      category: 'User Tables',
+      category: 'Custom Tables',
       parameters: [
         {
           name: 'tableName',
@@ -246,7 +246,7 @@ export function registerDatabaseFunctions() {
       name: 'addColumn',
       displayName: 'Add Column to Table',
       description: 'Add a new column to an existing table',
-      category: 'User Tables',
+      category: 'Custom Tables',
       parameters: [
         {
           name: 'tableId',
@@ -300,7 +300,7 @@ export function registerDatabaseFunctions() {
       name: 'getTableDetails',
       displayName: 'Get Table Details',
       description: 'Get details of a table including its fields',
-      category: 'User Tables',
+      category: 'Custom Tables',
       parameters: [
         {
           name: 'tableId',
@@ -324,7 +324,7 @@ export function registerDatabaseFunctions() {
       name: 'addRow',
       displayName: 'Add Row to Table',
       description: 'Add a new row of data to a table',
-      category: 'User Tables',
+      category: 'Custom Tables',
       parameters: [
         {
           name: 'tableId',

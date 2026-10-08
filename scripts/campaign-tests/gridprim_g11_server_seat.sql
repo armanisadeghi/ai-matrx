@@ -12,7 +12,7 @@
 --             be refused with the organization wall's named sentence and keep nothing;
 --   MEMBER    admin@admin.com from the browser (the member's own seat).
 -- WHAT MAKES IT FAIL: an ORM or MEMBER insert that is rolled back, or whose van gets an older
--- dataset or no store Table; a SERVICE insert that is KEPT, or refused with any other sentence
+-- dataset or no custom table; a SERVICE insert that is KEPT, or refused with any other sentence
 -- (a silent pass-through would mean the wall was widened).
 
 \set ON_ERROR_STOP on
@@ -82,7 +82,7 @@ begin
       if v_seat = 'SERVICE' then
         v_fail := v_fail || ' SERVICE: the service-role insert was KEPT — the organization wall was widened;';
       elsif v_tbl is null or v_n <> 0 then
-        v_fail := v_fail || format(' %s: store Table %s, older datasets %s;', v_seat, coalesce(v_tbl::text, 'none'), v_n);
+        v_fail := v_fail || format(' %s: custom table %s, older datasets %s;', v_seat, coalesce(v_tbl::text, 'none'), v_n);
       else
         raise notice '% PASS — the van was kept and its "Van inspection" table is in the store (%).', v_seat, v_tbl;
       end if;

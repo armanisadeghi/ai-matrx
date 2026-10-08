@@ -856,13 +856,13 @@ else
         || { RUNNER_OK=false; warn "The check runner itself crashed — nothing was measured. The release is not affected."; }
 fi
 [[ -n "$WATCH_PID" ]] && wait "$WATCH_PID"
-# Declared app tables (missing / archived / drifted / unmarked / past a 10k size step): Arman's
+# Declared typed tables (missing / archived / drifted / unmarked / past a 10k size step): Arman's
 # "scream in the app release, never block". It reads the live database, so it runs at most once an
 # hour (the 2026-09-25 release-load rule) and never fails the release; its [WARN] lines print here.
-APP_TABLES_STAMP="${TMPDIR:-/tmp}/matrx-check-app-tables.last"
-if [[ ! -f "$APP_TABLES_STAMP" ]] || [[ -n "$(find "$APP_TABLES_STAMP" -mmin +60 2>/dev/null)" ]]; then
-    touch "$APP_TABLES_STAMP"
-    ( cd "$REPO_ROOT" && pnpm -s check:app-tables 2>&1 | tee -a "${RELEASE_LOG_FILE:-/dev/null}" | grep -E '^\[(WARN|UNMEASURED)' ) || true
+TYPED_TABLES_STAMP="${TMPDIR:-/tmp}/matrx-check-typed-tables.last"
+if [[ ! -f "$TYPED_TABLES_STAMP" ]] || [[ -n "$(find "$TYPED_TABLES_STAMP" -mmin +60 2>/dev/null)" ]]; then
+    touch "$TYPED_TABLES_STAMP"
+    ( cd "$REPO_ROOT" && pnpm -s check:typed-tables 2>&1 | tee -a "${RELEASE_LOG_FILE:-/dev/null}" | grep -E '^\[(WARN|UNMEASURED)' ) || true
 fi
 # The checks' own streaks, then tell a person about anything past the threshold. A
 # crashed runner measured nothing, so its file must not clear a standing streak.

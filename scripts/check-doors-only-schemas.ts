@@ -249,7 +249,7 @@ with t as (
   from pg_class c join pg_namespace n on n.oid = c.relnamespace
   where n.nspname = any($1::text[]) and c.relkind in ('r', 'p')
     -- A hash/list PARTITION is reached only through its parent; the parent carries the grant
-    -- and the policy, and counting both would double every provisioned store table.
+    -- and the policy, and counting both would double every provisioned custom table.
     and not exists (select 1 from pg_inherits i where i.inhrelid = c.oid)
 ),
 g as (

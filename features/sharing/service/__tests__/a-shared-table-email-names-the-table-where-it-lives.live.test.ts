@@ -54,7 +54,7 @@ const URL_ = ENV.NEXT_PUBLIC_SUPABASE_URL ?? "";
 const KEY = ENV.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ?? "";
 const EMAIL = ENV.AI_ADMIN_USERNAME ?? process.env.AI_ADMIN_USERNAME ?? "";
 const PASSWORD = ENV.AI_ADMIN_PASSWORD ?? process.env.AI_ADMIN_PASSWORD ?? "";
-/** A record-store Table, made by this suite's own beforeAll (normal path) and archived in afterAll. */
+/** A custom Table, made by this suite's own beforeAll (normal path) and archived in afterAll. */
 let PARTS_ON_ORDER = "";
 const READY = Boolean(URL_ && KEY && EMAIL && PASSWORD);
 const describeLive = READY ? describe : describe.skip;

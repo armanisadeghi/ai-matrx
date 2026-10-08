@@ -1,5 +1,5 @@
 // LANE SOURCE-KEY — headless proof on the shared preview: a row-change schedule made through the
-// schedule form on a record-store table is saved under `record:<table id>` and fires ONCE on a
+// schedule form on a custom table is saved under `record:<table id>` and fires ONCE on a
 // real row change; then it is retired and the table archived.
 //
 // Seat: admin@admin.com (credentials from .env.local, never printed), admin's Workspace, a

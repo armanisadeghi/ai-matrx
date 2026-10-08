@@ -23,6 +23,7 @@ import { CalloutBlock } from "./callout-block";
 import { TabBlock, TabsBlock } from "./tabs-block";
 import { SyncedBlock } from "./synced-block";
 import { ButtonBlock } from "./button-block";
+import { AiBlock } from "./ai-block";
 import { SuggestionStyle } from "./suggest";
 
 /** C10: Notion's code-block language picker (the stored `language` prop rides through convert.ts as is). */
@@ -234,6 +235,7 @@ export const spacesSchema = BlockNoteSchema.create({
     tab: TabBlock(),
     synced: SyncedBlock(),
     button: ButtonBlock(),
+    ai: AiBlock(),
     table: defaultBlockSpecs.table,
     image: storedBlockSpecs.image(),
     video: storedBlockSpecs.video(),
