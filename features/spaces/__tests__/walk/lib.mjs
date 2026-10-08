@@ -27,8 +27,17 @@ export function loginUrl(next = "/spaces", member = false) {
 }
 
 export async function login(page, next = "/spaces", member = false) {
-  await page.goto(loginUrl(next, member), { waitUntil: "domcontentloaded", timeout: 120_000 });
-  await page.waitForURL((u) => !u.pathname.startsWith("/api/dev-login"), { timeout: 120_000, waitUntil: "commit" });
+  // A shared dev server under load can take minutes to sign in and compile the first route: one retry with a fresh nonce.
+  for (let attempt = 0; ; attempt++) {
+    try {
+      await page.goto(loginUrl(next, member), { waitUntil: "domcontentloaded", timeout: 240_000 });
+      await page.waitForURL((u) => !u.pathname.startsWith("/api/dev-login"), { timeout: 240_000, waitUntil: "commit" });
+      return;
+    } catch (e) {
+      if (attempt >= 1) throw e;
+      console.log(JSON.stringify({ retry: "dev-login", why: String(e.message).split("\n")[0].slice(0, 120) }));
+    }
+  }
 }
 
 /** A refused session (bounced to /login or 401) signs in again and returns to `next`. */

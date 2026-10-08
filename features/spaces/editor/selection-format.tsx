@@ -133,27 +133,52 @@ function LinkPanel({ editor, ui }: { editor: SpacesEditor; ui: SelectionToolbarU
 }
 
 function ColorPanel({ editor, ui }: { editor: SpacesEditor; ui: SelectionToolbarUi }) {
+  // Notion's "A" menu: a row of text colours, then a row of background colours (a highlight on the words).
+  const pick = (style: "textColor" | "backgroundColor", c: (typeof COLORS)[number]) => {
+    editor.focus();
+    if (c === "default") editor.removeStyles({ [style]: "default" } as never);
+    else editor.addStyles({ [style]: c } as never);
+    ui.close();
+  };
   return (
-    <div className="flex items-center gap-1 p-1" data-selection-panel="">
-      {COLORS.map((c) => (
-        <button
-          key={c}
-          type="button"
-          title={c === "default" ? "Default" : c}
-          aria-label={`Text colour ${c}`}
-          onClick={() => {
-            editor.focus();
-            if (c === "default") editor.removeStyles({ textColor: "default" } as never);
-            else editor.addStyles({ textColor: c } as never);
-            ui.close();
-          }}
-          className="flex h-7 w-7 items-center justify-center rounded-md hover:bg-accent"
-        >
-          <span style={{ color: c === "default" ? undefined : `var(--bn-colors-highlights-${c}-text, ${c})` }} className="text-base font-semibold">
-            A
-          </span>
-        </button>
-      ))}
+    <div className="flex flex-col gap-0.5 p-1" data-selection-panel="">
+      <span className="px-1 type-secondary text-muted-foreground">Text</span>
+      <div className="flex items-center gap-1">
+        {COLORS.map((c) => (
+          <button
+            key={c}
+            type="button"
+            title={c === "default" ? "Default" : c}
+            aria-label={`Text colour ${c}`}
+            onClick={() => pick("textColor", c)}
+            className="flex h-7 w-7 items-center justify-center rounded-md hover:bg-accent"
+          >
+            <span style={{ color: c === "default" ? undefined : `var(--bn-colors-highlights-${c}-text, ${c})` }} className="text-base font-semibold">
+              A
+            </span>
+          </button>
+        ))}
+      </div>
+      <span className="px-1 type-secondary text-muted-foreground">Background</span>
+      <div className="flex items-center gap-1">
+        {COLORS.map((c) => (
+          <button
+            key={c}
+            type="button"
+            title={c === "default" ? "Default background" : `${c} background`}
+            aria-label={`Background colour ${c}`}
+            onClick={() => pick("backgroundColor", c)}
+            className="flex h-7 w-7 items-center justify-center rounded-md hover:bg-accent"
+          >
+            <span
+              style={{ background: c === "default" ? undefined : `var(--bn-colors-highlights-${c}-background, ${c})` }}
+              className="flex h-5 w-5 items-center justify-center rounded border border-border text-sm font-semibold"
+            >
+              A
+            </span>
+          </button>
+        ))}
+      </div>
     </div>
   );
 }
