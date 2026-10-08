@@ -8,7 +8,7 @@ import { SlackChannel } from "@/app/(dev)/demos/tests/slack/slackClientUtils";
 import { Hash, RefreshCw, Loader2 } from 'lucide-react';
 import { useState } from 'react';
 import { ReadFailure } from "@/components/read-state/ReadFailure";
-import { StaleDataNotice } from "@/components/official/stale-data/StaleDataNotice";
+import { StaleDataNotice } from "@ai-matrx/design-system";
 
 export function ChannelSelector() {
   const dispatch = useAppDispatch();

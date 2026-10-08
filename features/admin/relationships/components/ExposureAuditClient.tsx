@@ -17,8 +17,8 @@ import {
 } from "lucide-react";
 import { MatrxDataTable } from "@ai-matrx/design-system/data-table";
 import { readOf } from "@/components/read-state/ReadGate";
-import { useRead } from "@/components/read-state/useRead";
-import { StaleDataNotice } from "@/components/official/stale-data/StaleDataNotice";
+import { useRead } from "@ai-matrx/design-system";
+import { StaleDataNotice } from "@ai-matrx/design-system";
 import {
   UntrustedCount,
   type CountRead,

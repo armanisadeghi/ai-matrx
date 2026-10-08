@@ -49,7 +49,7 @@ import type { ResearchTag } from "../../types";
 import { filterAndSortBySearch } from "@ai-matrx/kit/search-scoring";
 import { CrossCuttingTagsPanel } from "./CrossCuttingTagsPanel";
 import { ReadFailure } from "@/components/read-state/ReadFailure";
-import { StaleDataNotice } from "@/components/official/stale-data/StaleDataNotice";
+import { StaleDataNotice } from "@ai-matrx/design-system";
 
 export default function TagManager() {
   const { topicId } = useTopicContext();

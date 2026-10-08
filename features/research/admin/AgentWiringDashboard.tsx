@@ -35,7 +35,7 @@ import { } from '@ai-matrx/chat/agents/redux/agent-definition/selectors';
 import { } from '@ai-matrx/chat/agents/redux/agent-definition/thunks';
 import { AgentListDropdown } from "@ai-matrx/agents/catalog/react";
 import { UntrustedCount } from "@/components/official/stale-data/UntrustedCount";
-import { StaleDataNotice } from "@/components/official/stale-data/StaleDataNotice";
+import { StaleDataNotice } from "@ai-matrx/design-system";
 import { useBuiltinAgents } from "@ai-matrx/chat/agents/identity/agent-catalog-lists";
 import { ensureAgentCatalog } from "@ai-matrx/chat/agents/identity/agent-identity";
 

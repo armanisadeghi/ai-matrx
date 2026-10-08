@@ -162,7 +162,7 @@ import {
 } from "@/features/sources/sourceRows";
 import { cn } from "@/utils/cn";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
-import { StaleDataNotice } from "@/components/official/stale-data/StaleDataNotice";
+import { StaleDataNotice } from "@ai-matrx/design-system";
 import { ReadFailure } from "@/components/read-state/ReadFailure";
 
 /** Canonical `ui_surface.name` this page emits (unchanged from the old library). */

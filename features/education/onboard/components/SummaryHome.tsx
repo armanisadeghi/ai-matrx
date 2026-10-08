@@ -14,7 +14,7 @@
 // converter, so the empty state sends the learner to the kit builder rather
 // than to a create form that does not exist.
 
-import { useRead } from "@/components/read-state/useRead";
+import { useRead } from "@ai-matrx/design-system";
 import { ReadFailure } from "@/components/read-state/ReadFailure";
 import Link from "next/link";
 import { useState } from "react";

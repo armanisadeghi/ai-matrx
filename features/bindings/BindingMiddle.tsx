@@ -38,7 +38,7 @@ import {
   PropertyRow,
   StatusToken,
   FieldHelp,
-} from "@/components/official/ConfigurationFields";
+} from "@ai-matrx/design-system/controls";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {

@@ -51,7 +51,7 @@ import {
 } from "@/features/applets/components/AppletRef";
 import { pushAppHref } from "@/lib/deployment/navigate";
 import { ReadFailure } from "@/components/read-state/ReadFailure";
-import { StaleDataNotice } from "@/components/official/stale-data/StaleDataNotice";
+import { StaleDataNotice } from "@ai-matrx/design-system";
 
 const STATUS_VARIANT: Record<
   AppletAdminView["status"],

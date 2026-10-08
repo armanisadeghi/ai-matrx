@@ -58,7 +58,7 @@ import {
   type AgentShortcutsPanelKpis,
 } from "@/features/agent-shortcuts/format";
 import { ReadFailure } from "@/components/read-state/ReadFailure";
-import { StaleDataNotice } from "@/components/official/stale-data/StaleDataNotice";
+import { StaleDataNotice } from "@ai-matrx/design-system";
 import { readOf } from "@/components/read-state/ReadGate";
 import {
   UntrustedCount,

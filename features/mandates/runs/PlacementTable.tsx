@@ -10,7 +10,7 @@
 // Nothing here decides where a value went — the server's trace is painted.
 
 import type { ReactNode } from "react";
-import { StatusToken } from "@/components/official/ConfigurationFields";
+import { StatusToken } from "@ai-matrx/design-system/controls";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
 import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 import type { JsonValue } from "@/types/json";

@@ -21,7 +21,7 @@ import { useAppDispatch } from "@/lib/redux/hooks";
 import { Button } from "@/components/ui/button";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { ItemMenu } from "@/components/official/item/ItemMenu";
-import { StaleDataNotice } from "@/components/official/stale-data/StaleDataNotice";
+import { StaleDataNotice } from "@ai-matrx/design-system";
 import AssociateTaskButton from "@/features/tasks/widgets/AssociateTaskButton";
 import { buildConversationMenu } from "@ai-matrx/chat/agents/components/conversation-actions/conversationActionRegistry";
 import { humanizeIdentifier } from "@ai-matrx/kit/text-case";

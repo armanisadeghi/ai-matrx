@@ -15,7 +15,7 @@ import {
   selectScopeValuesReadError,
 } from "@/features/scopes/redux/scopeContextView";
 import { ReadFailure } from "@/components/read-state/ReadFailure";
-import { StaleDataNotice } from "@/components/official/stale-data/StaleDataNotice";
+import { StaleDataNotice } from "@ai-matrx/design-system";
 import { listScopeTypeItems } from "@/features/scopes/redux/contextItemCatalog";
 import { ScopeFieldInput } from "./ScopeFieldInput";
 import { AddContextItemInline } from "./AddContextItemInline";

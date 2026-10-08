@@ -4,7 +4,7 @@
 import { readOf } from "@/components/read-state/ReadGate";
 import { UntrustedCount } from "@/components/official/stale-data/UntrustedCount";
 import { ReadFailure } from "@/components/read-state/ReadFailure";
-import { StaleDataNotice } from "@/components/official/stale-data/StaleDataNotice";
+import { StaleDataNotice } from "@ai-matrx/design-system";
 import React, { useState, useMemo } from "react";
 import { useTranscripts } from "../hooks/useTranscripts";
 import { Button } from "@/components/ui/button";

@@ -8,7 +8,7 @@ import { Drawer, DrawerContent, DrawerTitle } from '@/components/ui/drawer';
 import { useDocumentVersions } from '../../hooks/useResearchState';
 import type { ResearchDocument } from '../../types';
 import { ReadFailure } from '@/components/read-state/ReadFailure';
-import { StaleDataNotice } from '@/components/official/stale-data/StaleDataNotice';
+import { StaleDataNotice } from "@ai-matrx/design-system";
 
 interface VersionHistoryProps {
     open: boolean;

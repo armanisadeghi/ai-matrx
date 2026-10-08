@@ -23,7 +23,7 @@
 // unresolved id is SAID, never rendered as empty records.
 
 import { useEffect, useEffectEvent, useState } from "react";
-import { StaleDataNotice } from "@/components/official/stale-data/StaleDataNotice";
+import { StaleDataNotice } from "@ai-matrx/design-system";
 import { useCostDisplay } from "@/components/cost/useCostDisplay";
 import {
   AlertCircle,

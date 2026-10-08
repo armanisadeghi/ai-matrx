@@ -24,7 +24,7 @@ import {
 } from "@/features/industries/service";
 import type { Industry } from "@/features/industries/types";
 import { UserSearchField } from "@/features/user-search/UserSearchField";
-import { useRead } from "@/components/read-state/useRead";
+import { useRead } from "@ai-matrx/design-system";
 import { ReadFailure } from "@/components/read-state/ReadFailure";
 
 export function IndustryCuratorsPanel({ industry }: { industry: Industry }) {

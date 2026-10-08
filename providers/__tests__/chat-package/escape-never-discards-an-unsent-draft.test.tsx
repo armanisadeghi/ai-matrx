@@ -48,7 +48,7 @@ import instanceResources, {
 } from "@ai-matrx/chat/agents/redux/execution-system/instance-resources/instance-resources.slice";
 
 import { registerChatUi } from "@ai-matrx/chat/host/ui-slots";
-import Host_FloatingSheet from "@/components/official/FloatingSheet";
+import { FloatingSheet as Host_FloatingSheet } from "@ai-matrx/design-system";
 
 import { AgentSidebarOverlay } from "@ai-matrx/chat/agents/components/agent-widgets/AgentSidebarOverlay";
 import { AgentPanelOverlay } from "@ai-matrx/chat/agents/components/agent-widgets/AgentPanelOverlay";

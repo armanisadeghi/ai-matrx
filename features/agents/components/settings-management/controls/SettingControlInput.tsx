@@ -45,8 +45,8 @@ import {
 import type { ControlDefinition } from "@ai-matrx/chat/agents/redux/agent-settings/types";
 import { NumberInput } from "./NumberInput";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
-import { AspectRatioSelect } from "@/components/official/aspect-ratio/AspectRatioSelect";
-import { OptionCombobox } from "@/components/official/option-combobox/OptionCombobox";
+import { AspectRatioSelect } from "@ai-matrx/design-system/controls";
+import { OptionCombobox } from "@ai-matrx/design-system/controls";
 import { choiceControlFor } from "@ai-matrx/chat/agents/utils/choice-rule";
 import { ENUM_OFF_VALUE } from "../setting-state";
 import { humanizeIdentifier } from "@ai-matrx/kit/text-case";

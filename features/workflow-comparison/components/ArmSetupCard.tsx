@@ -20,7 +20,7 @@ import {
   type WorkflowChoice,
 } from "../service";
 import type { ArmDraft } from "../types";
-import { StaleDataNotice } from "@/components/official/stale-data/StaleDataNotice";
+import { StaleDataNotice } from "@ai-matrx/design-system";
 import { extractErrorMessage } from "@/utils/errors";
 
 export function ArmSetupCard({

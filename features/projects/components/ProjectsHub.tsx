@@ -66,7 +66,7 @@ import {
 } from "@/components/navigation/MetricNavigation";
 import { WORKSPACES_NAV_GROUP } from "@/features/shell/constants/nav-data";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
-import { StaleDataNotice } from "@/components/official/stale-data/StaleDataNotice";
+import { StaleDataNotice } from "@ai-matrx/design-system";
 import { ProjectCopyForAiButton } from "@/features/projects/components/ProjectCopyForAiButton";
 import {
   Table,

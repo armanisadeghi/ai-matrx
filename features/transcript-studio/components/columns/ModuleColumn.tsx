@@ -24,7 +24,7 @@ import { useStudioSettings } from "../../hooks/useStudioSettings";
 import { useScrollSync } from "../scroll-sync/ScrollSyncProvider";
 import { ColumnEmptyState } from "./ColumnEmptyState";
 import { ReadFailure } from "@/components/read-state/ReadFailure";
-import { StaleDataNotice } from "@/components/official/stale-data/StaleDataNotice";
+import { StaleDataNotice } from "@ai-matrx/design-system";
 import { ColumnHeader } from "./ColumnHeader";
 import { WatchRunButton } from "./WatchRunButton";
 import { EditableTextSegmentRow } from "./EditableTextSegmentRow";

@@ -9,7 +9,7 @@
  */
 
 import { ReadFailure } from "@/components/read-state/ReadFailure";
-import { StaleDataNotice } from "@/components/official/stale-data/StaleDataNotice";
+import { StaleDataNotice } from "@ai-matrx/design-system";
 import React, { useCallback, useState, useMemo } from "react";
 import {
   Upload,

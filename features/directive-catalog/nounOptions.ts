@@ -17,7 +17,7 @@ import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
  * opens on "Choose a type" with the common tier on top.
  */
 
-import type { OptionComboboxGroup } from "@/components/official/option-combobox/OptionCombobox";
+import type { OptionComboboxGroup } from "@ai-matrx/design-system/controls";
 import { CATALOG_ALIASES } from "@/features/matrx-envelope/catalog-nouns.generated";
 import { FRIENDLY_REFERENCE_TYPE_LABELS } from "@/features/matrx-envelope/components/reference-picker/referencePickerTypes";
 import {

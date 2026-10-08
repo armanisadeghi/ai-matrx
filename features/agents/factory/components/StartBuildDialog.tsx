@@ -22,7 +22,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { OptionCombobox } from "@/components/official/option-combobox/OptionCombobox";
+import { OptionCombobox } from "@ai-matrx/design-system/controls";
 import { ModelListDropdown } from "@ai-matrx/agents/models/react";
 import { toast } from "@/lib/toast";
 import { listFactoryMandates, startFactoryBuild, type FactoryMandateOption } from "../service";

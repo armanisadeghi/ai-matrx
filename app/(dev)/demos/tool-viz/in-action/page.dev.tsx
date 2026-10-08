@@ -78,7 +78,7 @@ import { useAppSelector } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { MatrxUuidCell } from "@ai-matrx/design-system/data-table/uuid-cell";
 import { ReadFailure } from "@/components/read-state/ReadFailure";
-import { StaleDataNotice } from "@/components/official/stale-data/StaleDataNotice";
+import { StaleDataNotice } from "@ai-matrx/design-system";
 
 // ─── Curated scenario scripts ───────────────────────────────────────────────
 // The surrounding "around" content for a turn — intro markdown the agent

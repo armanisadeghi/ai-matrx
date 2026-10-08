@@ -148,7 +148,7 @@ registerChatUi({
   UntrustedCount: Host_UntrustedCount,
 });
 
-import { StaleDataNotice as Host_StaleDataNotice } from "@/components/official/stale-data/StaleDataNotice";
+import { StaleDataNotice as Host_StaleDataNotice } from "@ai-matrx/design-system";
 registerChatUi({
   StaleDataNotice: Host_StaleDataNotice,
 });
@@ -203,7 +203,7 @@ registerChatUi({
   ServerNotes: Host_ServerNotes,
 });
 
-import { OptionCombobox as Host_OptionCombobox } from "@/components/official/option-combobox/OptionCombobox";
+import { OptionCombobox as Host_OptionCombobox } from "@ai-matrx/design-system/controls";
 registerChatUi({
   OptionCombobox: Host_OptionCombobox,
 });
@@ -228,7 +228,7 @@ registerChatUi({
   ClampedNumberInput: Host_ClampedNumberInput,
 });
 
-import { AspectRatioSelect as Host_AspectRatioSelect } from "@/components/official/aspect-ratio/AspectRatioSelect";
+import { AspectRatioSelect as Host_AspectRatioSelect } from "@ai-matrx/design-system/controls";
 registerChatUi({
   AspectRatioSelect: Host_AspectRatioSelect,
 });
@@ -283,7 +283,7 @@ registerChatUi({
   VoiceTextarea: Host_VoiceTextarea,
 });
 
-import Host_FloatingSheet from "@/components/official/FloatingSheet";
+import { FloatingSheet as Host_FloatingSheet } from "@ai-matrx/design-system";
 registerChatUi({
   FloatingSheet: Host_FloatingSheet,
 });
@@ -318,9 +318,9 @@ registerChatUi({
   ErrorBoundaryWithCapture: Host_ErrorBoundaryWithCapture,
 });
 
-import { ConfigurationTable as Host_ConfigurationTable } from "@/components/official/ConfigurationFields";
-import { ConfigurationTableRow as Host_ConfigurationTableRow } from "@/components/official/ConfigurationFields";
-import { FieldHelp as Host_FieldHelp } from "@/components/official/ConfigurationFields";
+import { ConfigurationTable as Host_ConfigurationTable } from "@ai-matrx/design-system/controls";
+import { ConfigurationTableRow as Host_ConfigurationTableRow } from "@ai-matrx/design-system/controls";
+import { FieldHelp as Host_FieldHelp } from "@ai-matrx/design-system/controls";
 registerChatUi({
   ConfigurationTable: Host_ConfigurationTable,
   ConfigurationTableRow: Host_ConfigurationTableRow,

@@ -28,7 +28,7 @@ import { useEffect, useState } from "react";
 import {
   PropertyRow,
   StatusToken,
-} from "@/components/official/ConfigurationFields";
+} from "@ai-matrx/design-system/controls";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import {
   fetchMandateLineage,

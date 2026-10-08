@@ -35,7 +35,7 @@ import {
   ConfigurationTableRow,
   StatusToken,
   FieldHelp,
-} from "@/components/official/ConfigurationFields";
+} from "@ai-matrx/design-system/controls";
 import { SYSTEM_ORGANIZATION_ID } from "@/constants/platform-orgs";
 import { Button } from "@/components/ui/button";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";

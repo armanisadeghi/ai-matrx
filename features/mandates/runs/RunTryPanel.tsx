@@ -12,7 +12,7 @@ import { Play } from "lucide-react";
 import { Button, RegionSkeleton } from "@ai-matrx/design-system/controls";
 import { useAppDispatch, useAppSelector, useAppStore } from "@/lib/redux/hooks";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
-import { PropertyRow } from "@/components/official/ConfigurationFields";
+import { PropertyRow } from "@ai-matrx/design-system/controls";
 import { HolderAssignment } from "@/features/bindings/HolderAssignment";
 import type { HolderDraft } from "@/features/bindings/ScopeHolderBar";
 import { JOB_OVERRIDE_WORDS } from "@/features/bindings/words";

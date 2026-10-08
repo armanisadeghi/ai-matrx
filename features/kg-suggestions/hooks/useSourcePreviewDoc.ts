@@ -8,7 +8,7 @@
 
 "use client";
 
-import { useRead } from "@/components/read-state/useRead";
+import { useRead } from "@ai-matrx/design-system";
 import {
   loadSourcePreview,
   type SourcePreviewDoc,

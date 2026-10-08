@@ -29,7 +29,7 @@ import { TriangleAlert } from "lucide-react";
 import {
   PropertyRow,
   StatusToken,
-} from "@/components/official/ConfigurationFields";
+} from "@ai-matrx/design-system/controls";
 import { Button } from "@/components/ui/button";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import type { AgentTab } from "@ai-matrx/agents/catalog";

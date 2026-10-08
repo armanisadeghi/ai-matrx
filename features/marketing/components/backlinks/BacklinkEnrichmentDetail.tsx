@@ -43,7 +43,7 @@ import { CaptureThumb } from "@/features/marketing/components/shared/CaptureThum
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { AGENT_ICON } from "@/components/icons/domain-icons";
-import { StaleDataNotice } from "@/components/official/stale-data/StaleDataNotice";
+import { StaleDataNotice } from "@ai-matrx/design-system";
 import { extractErrorMessage } from "@/utils/errors";
 import { Chip } from "@ai-matrx/design-system/controls";
 

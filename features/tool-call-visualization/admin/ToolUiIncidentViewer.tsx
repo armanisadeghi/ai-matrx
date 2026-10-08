@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { UntrustedCount, type CountRead } from "@/components/official/stale-data/UntrustedCount";
 import { ReadFailure } from "@/components/read-state/ReadFailure";
-import { StaleDataNotice } from "@/components/official/stale-data/StaleDataNotice";
+import { StaleDataNotice } from "@ai-matrx/design-system";
 import {
   AlertTriangle,
   CheckCircle,

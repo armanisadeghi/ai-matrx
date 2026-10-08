@@ -23,7 +23,7 @@ import {
   PropertyRow,
   ConfigurationTable,
   ConfigurationTableRow,
-} from "@/components/official/ConfigurationFields";
+} from "@ai-matrx/design-system/controls";
 import {
   OFFERED_ALWAYS_WORDS,
   OFFERED_EAGER_WORDS,

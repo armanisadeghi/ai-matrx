@@ -52,7 +52,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { OptionCombobox } from "@/components/official/option-combobox/OptionCombobox";
+import { OptionCombobox } from "@ai-matrx/design-system/controls";
 import { toast } from "@/lib/toast";
 import { RecurrenceEditor } from "@/features/meet/components/manage/RecurrenceEditor";
 import { GuestPicker } from "@/features/meet/components/manage/GuestPicker";

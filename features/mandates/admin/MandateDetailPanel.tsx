@@ -89,7 +89,7 @@ import {
   ConfigurationTableRow,
   FieldHelp,
   StatusToken,
-} from "@/components/official/ConfigurationFields";
+} from "@ai-matrx/design-system/controls";
 import { VariableVerdictList } from "./variable-verdict-presentation";
 import {
   CreateSystemTwinButton,

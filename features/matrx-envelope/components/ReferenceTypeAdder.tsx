@@ -33,7 +33,7 @@ import {
   makeSelectScopeTypesForOrg,
   selectTreeError,
 } from "@/features/scopes/redux/selectors/tree";
-import { StaleDataNotice } from "@/components/official/stale-data/StaleDataNotice";
+import { StaleDataNotice } from "@ai-matrx/design-system";
 import { useUniversalEntitySearch } from "@/features/scopes/hooks/useUniversalEntitySearch";
 import { useKindItems } from "@/features/scopes/hooks/useKindItems";
 import type { KindScope } from "@/features/scopes/service/kindInventory";

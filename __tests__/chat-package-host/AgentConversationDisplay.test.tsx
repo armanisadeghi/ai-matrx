@@ -30,7 +30,7 @@ import conversations from "@ai-matrx/chat/agents/redux/execution-system/conversa
 import { loadConversation } from "@ai-matrx/chat/agents/redux/execution-system/thunks/load-conversation.thunk";
 import { AgentConversationDisplay } from "@ai-matrx/chat/agents/components/messages-display/AgentConversationDisplay";
 import { registerChatUi } from "@ai-matrx/chat/host/ui-slots";
-import { StaleDataNotice as Host_StaleDataNotice } from "@/components/official/stale-data/StaleDataNotice";
+import { StaleDataNotice as Host_StaleDataNotice } from "@ai-matrx/design-system";
 registerChatUi({ StaleDataNotice: Host_StaleDataNotice });
 
 jest.mock(

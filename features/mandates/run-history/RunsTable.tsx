@@ -25,7 +25,7 @@ import { storedMandateKey } from "@ai-matrx/agents/mandates";
 import { useCostDisplay } from "@/components/cost/useCostDisplay";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { NewTabLink } from "@/components/official/entity-ref/NewTabLink";
-import { StatusToken } from "@/components/official/ConfigurationFields";
+import { StatusToken } from "@ai-matrx/design-system/controls";
 import { useServerTable, serverTableInitialState } from "@/features/admin/shared/server-table/useServerTable";
 import { conversationHref } from "@/features/hindsight/subject-doors";
 import { runHref } from "@/features/workflow-runtime/run-doors";

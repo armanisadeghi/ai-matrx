@@ -26,7 +26,7 @@ import React, {
   useState,
 } from "react";
 import { UntrustedCount } from "@/components/official/stale-data/UntrustedCount";
-import { StaleDataNotice } from "@/components/official/stale-data/StaleDataNotice";
+import { StaleDataNotice } from "@ai-matrx/design-system";
 import { ExternalLink, Plus } from "lucide-react";
 import { recordToast, toast } from "@/lib/toast";
 import { Button } from "@/components/ui/button";

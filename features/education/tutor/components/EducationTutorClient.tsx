@@ -99,7 +99,7 @@ import { TutorTurnTrust } from "./TutorTurnTrust";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { asClause } from "@ai-matrx/kit/text";
 import { WorkspaceGate } from "@/features/organizations/components/WorkspaceGate";
-import { StaleDataNotice } from "@/components/official/stale-data/StaleDataNotice";
+import { StaleDataNotice } from "@ai-matrx/design-system";
 import {
   tutorConversationWriteHandlers,
   type OwnedTutorConversation,

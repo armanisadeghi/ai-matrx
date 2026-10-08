@@ -6,7 +6,7 @@
 // or can see (RLS-filtered, recent-first) with a New button.
 // React Compiler is on: no manual memo.
 
-import { useRead } from "@/components/read-state/useRead";
+import { useRead } from "@ai-matrx/design-system";
 import { ReadFailure } from "@/components/read-state/ReadFailure";
 import { useRouter } from "next/navigation";
 import Link from "next/link";

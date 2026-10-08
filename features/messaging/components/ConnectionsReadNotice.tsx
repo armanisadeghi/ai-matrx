@@ -8,7 +8,7 @@
  * Renders nothing when the read was whole.
  */
 import { ReadFailure } from "@/components/read-state/ReadFailure";
-import { StaleDataNotice } from "@/components/official/stale-data/StaleDataNotice";
+import { StaleDataNotice } from "@ai-matrx/design-system";
 import {
   describeConnectionFailures,
   type ConnectionReadFailure,

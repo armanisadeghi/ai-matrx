@@ -41,7 +41,7 @@ import type {
   ExpertExtraction,
 } from "../../types";
 import { UntrustedCount } from "@/components/official/stale-data/UntrustedCount";
-import { StaleDataNotice } from "@/components/official/stale-data/StaleDataNotice";
+import { StaleDataNotice } from "@ai-matrx/design-system";
 import { ReadFailure } from "@/components/read-state/ReadFailure";
 
 const TIER_STYLE: Record<ExpertCandidateTier, string> = {

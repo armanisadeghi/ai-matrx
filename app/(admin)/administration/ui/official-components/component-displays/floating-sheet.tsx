@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import { ComponentEntry } from '../parts/component-list';
 import { ComponentDisplayWrapper } from '../component-usage';
-import FloatingSheet from '@/components/official/FloatingSheet';
+import { FloatingSheet } from "@ai-matrx/design-system";
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Input } from "@ai-matrx/design-system/controls";
@@ -26,7 +26,7 @@ export default function FloatingSheetDisplay({ component }: ComponentDisplayProp
   const [customSheet, setCustomSheet] = useState(false);
   
   // Example code with all available props
-  const code = `import FloatingSheet from '@/components/official/FloatingSheet';
+  const code = `import { FloatingSheet } from "@ai-matrx/design-system";
 
 // Basic Usage - Right Side Sheet
 <FloatingSheet

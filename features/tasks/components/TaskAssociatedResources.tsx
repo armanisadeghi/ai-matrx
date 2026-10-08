@@ -17,7 +17,7 @@ import {
 import { useContainerInventory } from "@/features/organizations/hooks/useContainerInventory";
 import { OrgResourceRoleSection } from "@/features/organizations/components/OrgResourceRoleSection";
 import { ContainerResourceSheet } from "@/features/organizations/components/ContainerResourceSheet";
-import { StaleDataNotice } from "@/components/official/stale-data/StaleDataNotice";
+import { StaleDataNotice } from "@ai-matrx/design-system";
 
 // Tasks/projects have their own surfaces; don't list them as task "resources".
 const EXCLUDE = new Set(["task", "project"]);

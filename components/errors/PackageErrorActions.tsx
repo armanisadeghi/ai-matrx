@@ -12,14 +12,22 @@
  * (a destructive `Alert` whose words are its children), the menu reads the
  * rendered box at the click.
  */
-import type { ErrorActionsInput } from "@ai-matrx/design-system";
+import type { ErrorActionsInput, ErrorCardMenus } from "@ai-matrx/design-system";
+import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
+import { OpenOneMenuButton } from "@ai-matrx/rich-content/rich-document/variants/shared/OpenOneMenuButton";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export function renderPackageErrorActions(facts: ErrorActionsInput) {
-  const details = facts.origin ? { drawn_by: facts.origin } : undefined;
+  const details =
+    facts.origin || facts.details
+      ? { ...(facts.details ?? {}), ...(facts.origin ? { drawn_by: facts.origin } : {}) }
+      : undefined;
+  // An ErrorNotice card/line ("inline") carries the small menu on its sentence.
+  const inline = facts.source === "inline";
   if (facts.message) {
     return (
       <ErrorAlchemyMenu
+        {...(inline ? { size: "xs" as const } : {})}
         input={{
           message: facts.message,
           ...(facts.title ? { title: facts.title } : {}),
@@ -28,7 +36,10 @@ export function renderPackageErrorActions(facts: ErrorActionsInput) {
           ...(facts.records ? { records: facts.records } : {}),
           ...(facts.unsavedInput !== undefined ? { unsavedInput: facts.unsavedInput } : {}),
           ...(details ? { details } : {}),
-          source: "alert",
+          ...(facts.code !== undefined ? { code: facts.code } : {}),
+          ...(facts.status !== undefined ? { status: facts.status } : {}),
+          ...(facts.calls ? { calls: facts.calls } : {}),
+          source: inline ? "inline" : "alert",
         }}
       />
     );
@@ -43,3 +54,24 @@ export function renderPackageErrorActions(facts: ErrorActionsInput) {
     />
   );
 }
+
+/**
+ * The error card's corner menu and right-click menu (`ErrorCardMenusProvider`): the ONE content
+ * action registry over the card's sentence, read-only (ALC-15). Mounted in `AlchemyHost`.
+ */
+export const errorCardMenus: ErrorCardMenus = {
+  Button: function ErrorCardMenuButton({ title, text: _text, className }) {
+    return <OpenOneMenuButton source={{ type: "raw", title, readOnly: true }} className={className} />;
+  },
+  Boundary: function ErrorCardMenuBoundary({ title, text, children }) {
+    return (
+      <NonEditableContextMenu
+        sourceFeature="system"
+        contentSource={{ type: "raw", title, readOnly: true }}
+        contextData={{ content: text }}
+      >
+        {children}
+      </NonEditableContextMenu>
+    );
+  },
+};

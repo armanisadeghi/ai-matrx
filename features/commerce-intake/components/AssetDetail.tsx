@@ -11,7 +11,7 @@
  * capture surface makes — the transition IS the contract (§2 policy 3).
  */
 
-import { StaleDataNotice } from "@/components/official/stale-data/StaleDataNotice";
+import { StaleDataNotice } from "@ai-matrx/design-system";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Camera, Loader2, QrCode, RotateCw } from "lucide-react";

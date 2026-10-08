@@ -30,7 +30,7 @@ import { SourceKindBadge } from "@/features/tool-call-visualization/admin/mcp-to
 import { AiToolRef } from "@/components/official/entity-ref/AiIdentityRef";
 import SuspenseLoader from "@/components/loaders/SuspenseLoader";
 import { UntrustedCount, type CountRead } from "@/components/official/stale-data/UntrustedCount";
-import { StaleDataNotice } from "@/components/official/stale-data/StaleDataNotice";
+import { StaleDataNotice } from "@ai-matrx/design-system";
 import { ReadFailure } from "@/components/read-state/ReadFailure";
 import { readOf } from "@/components/read-state/ReadGate";
 

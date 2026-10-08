@@ -6,7 +6,6 @@
  * dropdown: expand/collapse-all toggles and sortable column headers.
  */
 import { execFileSync } from "node:child_process";
-import { readFileSync } from "node:fs";
 import path from "node:path";
 
 const ROOT = path.join(__dirname, "..", "..", "..");
@@ -36,7 +35,5 @@ it("no dropdown trigger draws the up-down chevron", () => {
   expect(offenders).toEqual([]);
 });
 
-it("the official combobox draws the one chevron", () => {
-  const src = readFileSync(path.join(ROOT, "components/official/option-combobox/OptionCombobox.tsx"), "utf8");
-  expect(src).toContain("<SelectChevron");
-});
+// The official combobox (OptionCombobox) moved into @ai-matrx/design-system/controls (2026-10-08);
+// it draws the package's one SelectChevron there.

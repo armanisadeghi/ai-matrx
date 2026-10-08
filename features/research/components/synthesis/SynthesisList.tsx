@@ -60,7 +60,7 @@ import {
 } from "@/features/research/copy";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { ReadFailure } from "@/components/read-state/ReadFailure";
-import { StaleDataNotice } from "@/components/official/stale-data/StaleDataNotice";
+import { StaleDataNotice } from "@ai-matrx/design-system";
 
 const hasText = (s: string | null | undefined): s is string =>
   !!s && s.trim().length > 0;

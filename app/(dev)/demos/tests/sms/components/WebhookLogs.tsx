@@ -9,7 +9,7 @@ import { Loader2, RefreshCw, Webhook, CheckCircle2, XCircle } from 'lucide-react
 import { formatDistanceToNow } from 'date-fns';
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { ReadFailure } from "@/components/read-state/ReadFailure";
-import { StaleDataNotice } from "@/components/official/stale-data/StaleDataNotice";
+import { StaleDataNotice } from "@ai-matrx/design-system";
 import { UntrustedCount } from "@/components/official/stale-data/UntrustedCount";
 
 interface WebhookLog {

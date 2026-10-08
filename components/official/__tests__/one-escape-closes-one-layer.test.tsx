@@ -12,7 +12,7 @@ import { act } from "react";
 import { createRoot } from "react-dom/client";
 import { readdirSync, readFileSync, statSync } from "node:fs";
 import { join } from "node:path";
-import FloatingSheet from "../FloatingSheet";
+import { FloatingSheet } from "@ai-matrx/design-system";
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 

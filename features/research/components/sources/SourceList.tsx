@@ -113,7 +113,7 @@ import { filterAndSortBySearch } from "@ai-matrx/kit/search-scoring";
 import { setSourceNavOrder } from "../../utils/sourceNavOrder";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { ReadFailure } from "@/components/read-state/ReadFailure";
-import { StaleDataNotice } from "@/components/official/stale-data/StaleDataNotice";
+import { StaleDataNotice } from "@ai-matrx/design-system";
 import { researchTopicHubHref } from "@/features/knowledge/hub/legacyRoutes";
 
 function formatPageAge(pageAge: string | null): {

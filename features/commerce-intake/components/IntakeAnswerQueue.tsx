@@ -19,7 +19,7 @@ import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
  */
 
 import { ReadFailure } from "@/components/read-state/ReadFailure";
-import { StaleDataNotice } from "@/components/official/stale-data/StaleDataNotice";
+import { StaleDataNotice } from "@ai-matrx/design-system";
 import React, { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import {

@@ -143,7 +143,7 @@ import { requireOrganizationContext } from "@/lib/api/organization-context";
 import { ErrorNotice } from "@/components/errors/ErrorNotice";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { ReadFailure } from "@/components/read-state/ReadFailure";
-import { StaleDataNotice } from "@/components/official/stale-data/StaleDataNotice";
+import { StaleDataNotice } from "@ai-matrx/design-system";
 import { useUserOrganizations } from "@/features/organizations/hooks";
 import { CONTEXT_MENU_HEADING_KEY } from "@/features/context-menu-v3/types";
 import { ensureOrgId } from "@/lib/organizations/ensureOrgId";

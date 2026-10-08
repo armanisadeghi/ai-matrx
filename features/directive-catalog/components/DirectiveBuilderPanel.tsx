@@ -33,7 +33,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Skeleton } from "@ai-matrx/design-system";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
-import { OptionCombobox } from "@/components/official/option-combobox/OptionCombobox";
+import { OptionCombobox } from "@ai-matrx/design-system/controls";
 import {
   buildDirectiveSlug,
   buildKindDirective,

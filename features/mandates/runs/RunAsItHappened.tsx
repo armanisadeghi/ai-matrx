@@ -7,7 +7,7 @@
 
 import { RotateCcw } from "lucide-react";
 import { Button, RegionSkeleton } from "@ai-matrx/design-system/controls";
-import { ConfigurationTable, ConfigurationTableRow } from "@/components/official/ConfigurationFields";
+import { ConfigurationTable, ConfigurationTableRow } from "@ai-matrx/design-system/controls";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import MarkdownStream from "@ai-matrx/chat/ui/markdown-stream/MarkdownStream";
 import { humanizeIdentifier } from "@ai-matrx/kit/text-case";

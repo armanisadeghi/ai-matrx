@@ -23,7 +23,7 @@ import {
   UntrustedCount,
   type CountRead,
 } from "@/components/official/stale-data/UntrustedCount";
-import { StaleDataNotice } from "@/components/official/stale-data/StaleDataNotice";
+import { StaleDataNotice } from "@ai-matrx/design-system";
 import {
   AlertCircle,
   ArrowDownToLine,

@@ -48,9 +48,9 @@ import { ListKindBadge, ListStatusBadge } from "./badges";
 import { OutreachListCreateDialog } from "./OutreachListCreateDialog";
 import { OrgOutreachReportPanel } from "../../analytics/OrgOutreachReportPanel";
 import { LoadingSurface } from "@/features/marketing/components/shared/MarketingUi";
-import { useRead } from "@/components/read-state/useRead";
+import { useRead } from "@ai-matrx/design-system";
 import { ReadFailure } from "@/components/read-state/ReadFailure";
-import { StaleDataNotice } from "@/components/official/stale-data/StaleDataNotice";
+import { StaleDataNotice } from "@ai-matrx/design-system";
 import { ActivateOutreachListDialog } from "@/features/crm/pitch-advisories/ActivateOutreachListDialog";
 import { MediaResearchDialog } from "@/features/crm/media-research/MediaResearchDialog";
 

@@ -7,7 +7,7 @@
 import React from "react";
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
-import { useRead } from "@/components/read-state/useRead";
+import { useRead } from "@ai-matrx/design-system";
 
 function Probe({ read, deps = [] as unknown[] }: { read: () => Promise<string[]>; deps?: unknown[] }) {
   const r = useRead(read, deps, { initialData: [] });

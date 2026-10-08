@@ -5,7 +5,7 @@
 
 import Link from "next/link";
 import { ArrowUpRight } from "lucide-react";
-import { StatusToken } from "@/components/official/ConfigurationFields";
+import { StatusToken } from "@ai-matrx/design-system/controls";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { useCostDisplay } from "@/components/cost/useCostDisplay";
 import { conversationHref } from "@/features/hindsight/subject-doors";

@@ -91,7 +91,7 @@ import {
   selectScopeTypesByOrg,
   selectScopesByOrg,
 } from "@/features/scopes/redux/selectors/admin";
-import { StaleDataNotice } from "@/components/official/stale-data/StaleDataNotice";
+import { StaleDataNotice } from "@ai-matrx/design-system";
 
 export function OrgWorkspace() {
   const params = useParams();

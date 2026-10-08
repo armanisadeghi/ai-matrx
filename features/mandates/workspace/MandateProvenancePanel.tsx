@@ -36,7 +36,7 @@ import { useMandateAlchemyTabCapture } from "./MandateAlchemy";
 
 import Link from "next/link";
 import { ExternalLink } from "lucide-react";
-import { PropertyRow } from "@/components/official/ConfigurationFields";
+import { PropertyRow } from "@ai-matrx/design-system/controls";
 import { Section } from "./Section";
 import {
   ORIGIN_LABELS,

@@ -58,7 +58,7 @@ import {
   CONFIGURATION_CHOICE_SIZE,
   PropertyRow,
   FieldHelp,
-} from "@/components/official/ConfigurationFields";
+} from "@ai-matrx/design-system/controls";
 import { cn } from "@/lib/utils";
 import {
   Select,
