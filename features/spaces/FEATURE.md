@@ -28,7 +28,7 @@ Notion code, fonts or logos.
 | Port | Now | Later (owner session) |
 |---|---|---|
 | `SpacesStore` | the database store (`store-db/`, owner's) wrapped by `state/live-store.ts` (active org via `ensureOrgId` for new top-level pages, change events for the tree) | realtime merge |
-| `SpacesDataPort` | live store tables (`DataMount`, the table's own org) + built-in modules via drill doors; the sample's tables are installed by `data/agency-install.ts` (`custom.template_declare` + `template_install`, the gallery's Install door); `templatePreview` only in the template gallery preview | — |
+| `SpacesDataPort` | live custom tables (`DataMount`, the table's own org) + built-in modules via drill doors; the sample's tables are installed by `data/agency-install.ts` (`custom.template_declare` + `template_install`, the gallery's Install door); `templatePreview` only in the template gallery preview | — |
 | `SpacesAiPort` | `ai/spaces-ai.ts`: `spaces.writing_assist` (useLiveAgentRun) and `spaces.ask_page` (launchAgentExecution) looked up in `MANDATE_KEYS`; a missing key = "AI is not connected yet" | — |
 
 Block document: a tree of `SpaceBlock` (`id`, `type`, `text: RichSpan[]`, `color`, `background`,
@@ -45,6 +45,15 @@ Block document: a tree of `SpaceBlock` (`id`, `type`, `text: RichSpan[]`, `color
 
 ## Change log
 
+- 2026-10-08 — builder round 41: media insert (Upload | Embed link via fileHandler; resize, Align, Caption, Replace;
+  `editor/media-insert.tsx`), embeds + providers (`editor/embed-providers.ts`), "/" groups Inline and Embeds, Heading 4
+  (stored level 1-4), nested numbering 1./a./i. (`editor/numbering.ts`), Shiki code colors (`editor/code-highlight.ts`),
+  simple table -> database (`data/table-to-database.ts`), page properties (`page/PageProperties.tsx`, snapshot
+  `properties`), AI block (`editor/ai-block.tsx`, block `ai`, spaces.writing_assist), Home at /spaces/home
+  (`workspace/SpacesHomeView.tsx`, door `content.space_upcoming`). Knobs `spaces.media.max_upload_mb`,
+  `spaces.media.embed_height_px`, `spaces.home.recent_count`, `spaces.home.upcoming_days` (`state/knobs.ts`). A field
+  inside a block owns its keys: the editor's capture handler skips inputs, and a field that stops keys natively handles
+  Enter itself (React never sees them). Walks: media, editor-r41, page-properties, ai-block, home.
 - 2026-10-08 — fixes round 39: (1) "Archive record" follows the `remove` rung (editor), not `write` (edit_content):
   records-ui 0.110.9 gates it by `rights.remove` and adds `hideRefusedRowActions` on `ViewSwitcher`/`Grid` (Spaces sets
   it in `DatabaseBlock`): a content editor's row menu has no Archive item, the admin still archives (walk
@@ -364,7 +373,7 @@ Block document: a tree of `SpaceBlock` (`id`, `type`, `text: RichSpan[]`, `color
   print window); K2 `io/import.ts` + `sidebar/ImportMenu.tsx`. C22/B12 `useLinkPreview` cards and mention titles. M1/M2/M4 `ai/` (Ask AI box,
   Ask about this page; disclosed through `useDeclaredSurfaceMandates`). Data: `ViewSwitcher embedded` + `sortOverride` + "New page" line;
   built-in boards on `TablePage source`, built-in charts on `EntityChartBlock`, New adds task / project rows.
-- 2026-10-05 — builder round 11: "Add the sample" installs the agency spec as REAL store tables in the active org
+- 2026-10-05 — builder round 11: "Add the sample" installs the agency spec as REAL custom tables in the active org
   (`data/agency-install.ts`: `template_declare` upsert on catalogue id `T-SPACES-1` + `runTemplateDoor("template_install")`,
   the same door as the template gallery's Install; a second add answers `already` with the same tables) and points the
   page's ring and client blocks at them (`{kind:"table", tableId, viewId}`, no `sample`); an older copy is repointed in
