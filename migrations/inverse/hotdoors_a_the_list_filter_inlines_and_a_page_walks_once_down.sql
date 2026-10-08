@@ -1,5 +1,7 @@
 -- chair-step: undo hotdoors_a_the_list_filter_inlines_and_a_page_walks_once.sql - restores platform.shown_to_lists and custom.read_records_page as they were
 -- lane: HOT-DOORS
+-- based-on: platform.shown_to_lists(platform.shown_to, platform.visibility, uuid, uuid, uuid, jsonb) ef5e877c62b190b8b15fbd9cb6330c694cd0d127e0e27ab6894b875b5dcef209
+-- based-on: custom.read_records_page(uuid, uuid, jsonb, text, jsonb, uuid, boolean, integer, integer, text) eabbb505c931214758f31dde713228ed79fad79dde7a0514730a802e75678be3
 
 set local statement_timeout = '60s';
 
