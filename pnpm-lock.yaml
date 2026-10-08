@@ -1369,18 +1369,6 @@ packages:
       react:
         optional: true
 
-  '@ai-matrx/records@0.84.4':
-    resolution: {integrity: sha512-q2M9mc0xNGn/OM+DmL788oXIh/YrbeZZFSNS4jVBe5J6SJiVBC/rLr7v3ZbG1dAHZHrhIlTHrtM9h8IaG1e/Ig==}
-    engines: {node: '>=20'}
-    peerDependencies:
-      '@tanstack/react-query': '>=5.100.0'
-      react: '>=18.0.0'
-    peerDependenciesMeta:
-      '@tanstack/react-query':
-        optional: true
-      react:
-        optional: true
-
   '@ai-matrx/rich-content@0.2.55':
     resolution: {integrity: sha512-laaRaYUO1OEfYRb/SjxXEwou1oEuj84oj+JvVaST/tA53oxW+oFMMRw55WguxyUYAm+vnnmqzwqojEf3eDx2Aw==}
     engines: {node: '>=20'}
