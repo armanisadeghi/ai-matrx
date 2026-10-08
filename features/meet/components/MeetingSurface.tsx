@@ -32,7 +32,9 @@ import {
   MeetRoot,
   asMeetingId,
   createMeetRepository,
+  isJoinRefusalReason,
   useMeetHost,
+  type JoinRefusalReason,
   type MeetingRecord,
 } from "@ai-matrx/meet/react";
 import type { MeetDiagnostic } from "@ai-matrx/meet/react";
@@ -75,8 +77,7 @@ type Resolution =
       readonly remedy: string;
       readonly detail: string;
       /** The observation contract's phase for this dead end (HARNESS-CONTRACT §2). */
-      readonly phase:
-        "refused:not_found" | "refused:cancelled" | "disconnected";
+      readonly phase: `refused:${JoinRefusalReason}` | "disconnected";
     };
 
 /**
@@ -209,29 +210,31 @@ function MeetingSurfaceBody({
       .catch((thrown: unknown) => {
         if (!live) return;
         // The person reads the sentence, never the operation tag a server
-        // error carries ("meet_meeting_by_slug: no meeting for that link");
+        // error carries ("meet_meeting_by_slug: ...");
         // the untouched text still reaches the error menu below.
         const raw = (thrown as Error)?.message ?? "";
         const sentence = raw.replace(/^[A-Za-z_.]+(\([^)]*\))?:\s*/, "");
+        const reason = (thrown as { reason?: string | null }).reason ?? null;
         const message =
-          sentence.length > 0
-            ? sentence.charAt(0).toUpperCase() + sentence.slice(1)
-            : "This meeting link could not be opened.";
+          reason === "not_found"
+            ? "No meeting matches that link."
+            : sentence.length > 0
+              ? sentence.charAt(0).toUpperCase() + sentence.slice(1)
+              : "This meeting link could not be opened.";
         // A link that matches no meeting is not transient: "retry in a
         // moment" (the generic server remedy) would send them in circles.
         const linkRemedy =
           "Check the link — meeting links exclude the characters people mishear " +
           "(no 0/O, no 1/l). If it was shared with you, ask the organizer to resend it.";
-        const remedy = /no meeting for that link/i.test(raw)
-          ? linkRemedy
-          : ((thrown as { remedy?: string }).remedy ?? linkRemedy);
-        const code = (thrown as { code?: string }).code;
-        const phase =
-          /no meeting for that link/i.test(raw) || code === "not-found"
-            ? "refused:not_found"
-            : code === "cancelled"
-              ? "refused:cancelled"
-              : "disconnected";
+        // THE SCREEN IS DECIDED BY THE REASON CODE the package attached (one
+        // vocabulary with the server, CORE-DESIGN §2.5) - never by the message text.
+        const remedy =
+          reason === "not_found"
+            ? linkRemedy
+            : ((thrown as { remedy?: string }).remedy ?? linkRemedy);
+        const phase = isJoinRefusalReason(reason)
+          ? (`refused:${reason}` as const)
+          : "disconnected";
         setResolution({
           state: "failed",
           message,
