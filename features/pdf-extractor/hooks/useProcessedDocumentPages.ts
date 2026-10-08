@@ -187,6 +187,8 @@ export function invalidateProcessedDocumentPages(
   }
 }
 
+const EMPTY_PAGES: PdfPageRow[] = [];
+
 export function useProcessedDocumentPages({
   processedDocumentId,
   enabled = true,
@@ -197,7 +199,11 @@ export function useProcessedDocumentPages({
   refresh: () => void;
 } {
   const userId = useAppSelector(selectUserId);
-  const [pages, setPages] = useState<PdfPageRow[]>([]);
+  // Pages are stored WITH the doc they belong to: after a doc switch the old
+  // doc's rows are never returned under the new doc (derived at render, so
+  // there is no frame where they show).
+  const [loaded, setLoaded] = useState<{ docId: string; pages: PdfPageRow[] } | null>(null);
+  const pages = loaded && loaded.docId === processedDocumentId ? loaded.pages : EMPTY_PAGES;
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [refreshKey, setRefreshKey] = useState(0);
@@ -218,6 +224,8 @@ export function useProcessedDocumentPages({
     let cancelled = false;
     setLoading(true);
     setError(null);
+    // A switch to another doc must not show the previous doc's pages while loading.
+    setLoaded((prev) => (prev && prev.docId !== processedDocumentId ? null : prev));
 
     (async () => {
       try {
@@ -226,7 +234,7 @@ export function useProcessedDocumentPages({
           userId,
         );
         if (cancelled) return;
-        setPages(result);
+        setLoaded({ docId: processedDocumentId, pages: result });
       } catch (e) {
         if (cancelled) return;
         setError(e instanceof Error ? e.message : "Could not load pages");

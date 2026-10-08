@@ -18,8 +18,13 @@
 import { useEffect, useRef, useState } from "react";
 import { useServerJob } from "@ai-matrx/agents/react";
 import { getRuntimeOperationsByLink } from "@ai-matrx/agents/matrx";
-import type { ServerJobStatus, ServerJobTarget } from "@ai-matrx/agents/matrx";
+import type {
+  MatrxRuntimeOperationView,
+  ServerJobStatus,
+  ServerJobTarget,
+} from "@ai-matrx/agents/matrx";
 import type { MatrxStreamEnvelope } from "@ai-matrx/agents/stream/ndjson";
+import { describeRunError } from "../service/cleanOutcome";
 import { createMatrxTransport } from "@/lib/api/matrx-transport";
 import { useAppStore } from "@/lib/redux/hooks";
 import {
@@ -142,20 +147,22 @@ export function choosePdfRunTarget(
 }
 
 const LOOKUP_SHARE_MS = 10_000;
-const sharedLookups = new Map<string, { at: number; promise: Promise<number> }>();
+type LinkOps = ReadonlyArray<MatrxRuntimeOperationView>;
+const sharedLookups = new Map<string, { at: number; promise: Promise<LinkOps> }>();
 
 /**
- * One by-link lookup per doc: StrictMode's double effect, a re-render that
- * flips the probe off and on, and desktop + mobile shells all share the same
- * in-flight call (and a fresh answer for a few seconds). `fresh` (Retry) skips
- * the share. A failure is never kept.
+ * One by-link read per doc: the run probe AND the follow's identify step (via
+ * `useServerJob`'s `identifyLink`), StrictMode's double effect, a re-render
+ * that flips the probe off and on, and desktop + mobile shells all share the
+ * same in-flight call (and a fresh answer for a few seconds). `fresh` (Retry)
+ * skips the share. A failure is never kept.
  */
-export function lookupOwnRunCount(
-  run: () => Promise<number>,
+export function lookupLinkOperations(
+  run: () => Promise<LinkOps>,
   docId: string,
   fresh = false,
   now: number = Date.now(),
-): Promise<number> {
+): Promise<LinkOps> {
   const hit = sharedLookups.get(docId);
   if (!fresh && hit && now - hit.at < LOOKUP_SHARE_MS) return hit.promise;
   const promise = run();
@@ -198,12 +205,6 @@ function endedBefore(endedAt: string | null | undefined, openedAt: number): bool
   return Number.isFinite(t) && t < openedAt;
 }
 
-function errorText(error: Record<string, unknown> | null | undefined): string | null {
-  if (!error) return null;
-  const msg = error.user_message ?? error.message;
-  return typeof msg === "string" && msg ? msg : null;
-}
-
 export function usePdfDocRun(args: {
   docId: string | null;
   /** This tab's own stream for the doc is running — it owns the screen. */
@@ -236,6 +237,22 @@ export function usePdfDocRun(args: {
   const [probeFailed, setProbeFailed] = useState<string | null>(null);
   const [followFailed, setFollowFailed] = useState<string | null>(null);
   const [nonce, setNonce] = useState(0);
+  // The ONE by-link read for this doc: the probe below and the follow's
+  // identify step both go through it (shared in-flight + short cache).
+  const readLinkOperations = (id: string, fresh = false): Promise<LinkOps> =>
+    lookupLinkOperations(
+      async () =>
+        (
+          await getRuntimeOperationsByLink(
+            createMatrxTransport(store.getState, { source: "pdf-run-reconnect" }),
+            "processed_document",
+            id,
+            { limit: 5 },
+          )
+        )?.operations ?? [],
+      id,
+      fresh,
+    );
   const needsProbe = Boolean(docId) && saved?.kind !== "clean";
   useEffect(() => {
     if (!docId || !needsProbe) return;
@@ -243,19 +260,8 @@ export function usePdfDocRun(args: {
     void (async () => {
       for (let attempt = 0; attempt <= LOOKUP_RETRY_MS.length; attempt++) {
         try {
-          const count = await lookupOwnRunCount(
-            async () => {
-              const view = await getRuntimeOperationsByLink(
-                createMatrxTransport(store.getState, { source: "pdf-run-reconnect" }),
-                "processed_document",
-                docId,
-                { limit: 5 },
-              );
-              return countOwnRuns(view?.operations, docId);
-            },
-            docId,
-            nonce > 0 || attempt > 0,
-          );
+          const ops = await readLinkOperations(docId, nonce > 0 || attempt > 0);
+          const count = countOwnRuns(ops, docId);
           if (controller.signal.aborted) return;
           setProbeFailed(null);
           setLinkProbe({ docId, count });
@@ -278,6 +284,8 @@ export function usePdfDocRun(args: {
     transport: () => createMatrxTransport(store.getState, { source: "pdf-run-reconnect" }),
     target,
     enabled: !localStreaming,
+    identifyLink: (kind, id) =>
+      kind === "processed_document" ? readLinkOperations(id) : Promise.resolve([]),
     onFrame: (envelope) => {
       if (!docId) return;
       const read = readPdfRunFrame(envelope, docId);
@@ -362,7 +370,7 @@ export function usePdfDocRun(args: {
     status: job.status,
     label: localStreaming ? null : shownLabel,
     streamingText: localStreaming ? null : streamingText,
-    errorMessage: errorText(job.outcome?.error ?? job.operation?.error),
+    errorMessage: describeRunError(job.outcome?.error ?? job.operation?.error),
     answered:
       !unavailable &&
       job.error == null &&

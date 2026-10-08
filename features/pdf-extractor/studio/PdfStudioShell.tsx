@@ -20,6 +20,8 @@
  * `pdfStudio` Redux slice so new panes/columns share the same contract.
  */
 
+import Link from "next/link";
+import { USAGE_LIMIT_MESSAGE } from "../service/cleanOutcome";
 import { AccessGate } from "@/features/access-gate/components/AccessGate";
 import React, {
   useCallback,
@@ -1194,6 +1196,11 @@ function LiveStatusStrip({
           <span className="text-muted-foreground truncate" title={runError}>
             {runError}
           </span>
+        )}
+        {runError === USAGE_LIMIT_MESSAGE && (
+          <Link href="/pricing" className="shrink-0 font-medium text-primary hover:underline">
+            Upgrade
+          </Link>
         )}
         <button
           type="button"

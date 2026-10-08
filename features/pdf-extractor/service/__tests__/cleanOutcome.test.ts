@@ -70,3 +70,36 @@ describe("preferAggregateClean", () => {
     expect(preferAggregateClean(["a", "b"], "ab")).toBe(false);
   });
 });
+
+import { describeRunError, isDocCleaned, USAGE_LIMIT_MESSAGE } from "../cleanOutcome";
+
+describe("describeRunError", () => {
+  it("never leaves a trailing colon or a bare machine code", () => {
+    expect(describeRunError({ message: "pdfclean_error: Content cleaner agent failed:" })).toBe(
+      "Content cleaner agent failed",
+    );
+    expect(describeRunError({ message: "pdfclean_error:" })).toBeNull();
+    expect(describeRunError(null)).toBeNull();
+  });
+  it("reads a usage limit as one fixed sentence", () => {
+    expect(
+      describeRunError({ message: "pdfclean_error: Content cleaner agent failed:", detail: "Usage limit reached for plan" }),
+    ).toBe(USAGE_LIMIT_MESSAGE);
+    expect(describeRunError({ user_message: "You've reached your AI usage limit" })).toBe(USAGE_LIMIT_MESSAGE);
+  });
+});
+
+describe("isDocCleaned", () => {
+  const page = (cleanedText: string, sectionKind: string | null = null) => ({ cleanedText, sectionKind });
+  it("a clean_content beside never-cleaned pages is not cleaned", () => {
+    expect(isDocCleaned([page(""), page("")], "raw copy")).toBe(false);
+  });
+  it("cleaned text or a section kind on any page is cleaned", () => {
+    expect(isDocCleaned([page(""), page("x")], null)).toBe(true);
+    expect(isDocCleaned([page("", "body")], null)).toBe(true);
+  });
+  it("legacy doc with no page rows falls back to clean_content", () => {
+    expect(isDocCleaned([], "text")).toBe(true);
+    expect(isDocCleaned([], null)).toBe(false);
+  });
+});

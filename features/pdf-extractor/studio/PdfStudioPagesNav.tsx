@@ -44,6 +44,7 @@ export function PdfStudioPagesNav({
         doc={doc}
         pageRowCount={pageRowCount}
         hasPageRows={hasPageRows}
+        pages={pages}
       />
       <div className="px-3 py-1.5 border-b border-border/60 text-[10px] font-medium uppercase tracking-wide text-muted-foreground/70">
         Pages
