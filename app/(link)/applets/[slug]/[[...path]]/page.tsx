@@ -29,6 +29,8 @@ import { getSessionVerdict } from "@/utils/supabase/sessionVerdict";
 type Props = { params: Promise<{ slug: string; path?: string[] }>; searchParams: Promise<{ embed?: string }> };
 
 const RELATED = 6;
+/** Owner-tool segments the retired `/agent-apps/<id>/…` routes carried after the id. */
+const OWNER_TOOL_SEGMENTS = new Set(["run", "code", "settings", "versions", "v"]);
 
 export async function generateMetadata({ params }: Pick<Props, "params">): Promise<Metadata> {
   const { slug, path = [] } = await params;
@@ -94,6 +96,12 @@ export default async function AppletRoute({ params, searchParams }: Props) {
         <AppletIntroPage applet={intro} related={related} />
       </main>
     );
+  }
+  // An old owner link (`/applets/<id>/run|code|settings|versions…`, from the retired /agent-apps routes) opens what it
+  // meant: `run` is the Applet itself; the owner tools live under /applets/manage/<id>.
+  if (view.slug !== key && OWNER_TOOL_SEGMENTS.has(path[0] ?? "")) {
+    if (path[0] === "run") permanentRedirect(appletHref(view.slug));
+    redirect(`/applets/manage/${view.id}/${path.map(encodeURIComponent).join("/")}`);
   }
   // An id-shaped address answers at the Applet's slug, so it has one address.
   if (view.slug !== key) permanentRedirect(`${appletHref(view.slug)}${path.length ? `/${path.map(encodeURIComponent).join("/")}` : ""}`);

@@ -124,7 +124,7 @@ export function SlugAccessGate({
 
   return (
     <Notice
-      title={`This address doesn't match a ${noun} you can open`}
+      title={`This address doesn't match ${/^[aeiou]/i.test(noun) ? "an" : "a"} ${noun} you can open`}
       body="Check the link, or sign in with the account it was shared with."
       fallbackHref={fallbackHref}
       fallbackLabel={fallbackLabel}

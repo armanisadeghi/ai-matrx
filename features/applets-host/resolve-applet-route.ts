@@ -18,12 +18,16 @@ import type { Database } from "@/types/database.types";
 import { getScriptSupabaseClient } from "@/utils/supabase/getScriptClient";
 import { createClient } from "@/utils/supabase/server";
 
-/** The Applet `slug` names for THIS viewer (their own server client: row security decides). */
+/** The Applet `slug` (or, UUID-shaped, its id) names for THIS viewer (their own server client: row security decides). */
 export const resolveAppletRoute = cache(async (slug: string): Promise<{ id: string; slug: string; name: string; entry: string | null } | null> => {
   const supabase = await createClient();
-  const { data, error } = await supabase.schema("app").from("definition").select("id, slug, name, entry").eq("slug", slug).is("deleted_at", null).maybeSingle();
-  if (error) throw new Error(`Could not read the Applet "${slug}": ${error.message}`);
-  return data ?? null;
+  const read = async (column: "slug" | "id") => {
+    const { data, error } = await supabase.schema("app").from("definition").select("id, slug, name, entry").eq(column, slug).is("deleted_at", null).maybeSingle();
+    if (error) throw new Error(`Could not read the Applet "${slug}": ${error.message}`);
+    return data ?? null;
+  };
+  // A UUID-shaped address is the slug first, then the Applet's id (links built from the id, old owner links).
+  return (await read("slug")) ?? (isUuidShape(slug) ? await read("id") : null);
 });
 
 export type PublicApplet = {
