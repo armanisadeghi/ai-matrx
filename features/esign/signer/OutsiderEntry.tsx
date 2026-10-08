@@ -25,6 +25,7 @@ import { createSignerDoor } from "./door";
 import { LandingHeader, type LandingFacts } from "./parts/Panels";
 import { SignerSurface } from "./SignerSurface";
 import { lockedNotice, UNREACHABLE } from "./text";
+import { failureSentence, wasAnswered } from "../serverFailure";
 
 const DEAD = "This link is no longer valid. Ask the sender for a new one.";
 const LINK_KEY = "esign-link";
@@ -88,6 +89,10 @@ function answerOf(result: ApiCallResult): Record<string, unknown> {
   if (!result.error && isRecord(result.data)) return result.data;
   const body = result.error?.serverDetail;
   if (isRecord(body) && isRecord(body.detail)) return { ok: false, ...body.detail };
+  // Answered with no readable body: our error, never "could not reach" (law 4).
+  if (result.error && wasAnswered(result.error)) {
+    return { ok: false, reason: "server_error", message: `${failureSentence(result.error)} Your link is fine.` };
+  }
   throw new Error("transport");
 }
 
@@ -180,7 +185,8 @@ export function OutsiderEntry() {
       return true;
     }
     const reason = str(a.reason) ?? str(a.code);
-    if (reason === "code_locked") setNotice(lockedNotice(str(a.locked_until)));
+    if (reason === "server_error") setNotice(str(a.message));
+    else if (reason === "code_locked") setNotice(lockedNotice(str(a.locked_until)));
     else if (typeof a.attempts_left === "number") setNotice(`That code did not work. ${a.attempts_left} ${a.attempts_left === 1 ? "try" : "tries"} left.`);
     else if (value === null) setPhase({ kind: "dead", message: str(a.message) ?? DEAD });
     else setNotice("That code did not work. Check it, or send a new one.");
