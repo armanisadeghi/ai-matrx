@@ -70,7 +70,7 @@ const PLACEHOLDERS = {
 
 /** Notion keys BlockNote does not ship: Cmd+D duplicate, `>` toggle, `"` quote (Cmd+Opt+4…8: see NOTION_TURN_INTO). */
 /** A modal's `aria-hidden` marks on the page's blocks are never edits (aria-hidden-marks.ts). */
-const outsideAriaMarks = createExtension({ key: "spacesOutsideAriaMarks", prosemirrorPlugins: [outsideAriaMarksPlugin()] });
+const outsideAriaMarks = createExtension(() => ({ key: "spacesOutsideAriaMarks", prosemirrorPlugins: [outsideAriaMarksPlugin()] }));
 
 const notionKeys = createExtension(({ editor }: { editor: SpacesEditor }) => {
   return {

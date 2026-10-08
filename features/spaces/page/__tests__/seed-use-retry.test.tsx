@@ -5,7 +5,7 @@
  * a previous render but did not call use() when it finished" (4 of 10 reloads of an admin page, live) and
  * which can throw the first pass off its hydration. The retry must read the seed through use() again.
  */
-import { act, createElement, Suspense } from "react";
+import { act, Suspense } from "react";
 import { createRoot } from "react-dom/client";
 
 import { SpaceSeedProvider, useAwaitedBlockSeed, type BlockSeed } from "../space-seed-context";
@@ -14,7 +14,7 @@ import { SpaceSeedProvider, useAwaitedBlockSeed, type BlockSeed } from "../space
 
 function Probe({ id }: { id: string }) {
   const seed = useAwaitedBlockSeed(id);
-  return createElement("span", null, seed ? "seeded" : "no seed");
+  return <span>{seed ? "seeded" : "no seed"}</span>;
 }
 
 it("a block that suspended on its seed reads it through use() again when it lands", async () => {
@@ -26,7 +26,11 @@ it("a block that suspended on its seed reads it through use() again when it land
   const root = createRoot(host);
   await act(async () => {
     root.render(
-      createElement(SpaceSeedProvider, { seeds: { b1: promise } }, createElement(Suspense, { fallback: "waiting" }, createElement(Probe, { id: "b1" }))),
+      <SpaceSeedProvider seeds={{ b1: promise }}>
+        <Suspense fallback="waiting">
+          <Probe id="b1" />
+        </Suspense>
+      </SpaceSeedProvider>,
     );
   });
   expect(host.textContent).toBe("waiting");
