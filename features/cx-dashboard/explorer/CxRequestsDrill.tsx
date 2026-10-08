@@ -58,11 +58,16 @@ const PAGES: Record<CxDrillPage, { title: string; rootLabel: string; listLabel: 
   },
 };
 
+// The conversations tab is where an admin FINDS a conversation (by person, agent, cost…), so its list
+// opens first and the drill-down is one control away (`drill=1`).
+const FIRST_SCREEN: Record<CxDrillPage, "drill" | "list"> = { requests: "drill", errors: "drill", conversations: "list" };
+
 export function CxRequestsDrill({ page, children }: { page: CxDrillPage; children: ReactNode }) {
   const p = PAGES[page];
   return (
     <DrillOrList
       definition="cx_requests"
+      firstScreen={FIRST_SCREEN[page]}
       listLabel={p.listLabel}
       list={children}
       renderDrill={(extras) => (
