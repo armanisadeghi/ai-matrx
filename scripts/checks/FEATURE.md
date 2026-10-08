@@ -12,6 +12,16 @@ times in a row. Not a failed check, not a failed migration, not a dirty
 checkout, not a diverged branch, not an unmerged local commit. Every one of
 those is a finding — an ERROR or WARNING row with a remedy — never a stop.
 
+**The one exception: a lockfile no package manager can read** (2026-10-08). A
+stop exists to protect shipping; this one IS shipping — Vercel refuses such a
+file before it installs anything, so pushing it guarantees a failed build on
+every project and ships nothing. Step 7 reads every `pnpm-lock.yaml` /
+`package-lock.json` in the release tree (`scripts/check-lockfile-keys.py`,
+offline, ~0.1 s): byte-identical duplicate blocks are dropped inside the release
+commit (WARNING); anything else (blocks that differ under one key, a conflict
+marker, JSON that does not parse) stops the release before the push (ERROR).
+`scripts/sync-main.py` runs the same guard before every push to `main`.
+
 ## The ship path (`scripts/release.sh`, `RELEASE_PHASE=ship`)
 
 Does ONLY what makes the build, in this order:
@@ -37,7 +47,7 @@ Does ONLY what makes the build, in this order:
    ERROR finding naming the commit left behind. A checkout parked on another
    branch contributes nothing (WARNING).
 6. Wait for the migrations.
-7. Bump `package.json` in a temporary index (`GIT_INDEX_FILE` + `read-tree` +
+7. THE LOCKFILE GUARD (`ship_guard_lockfiles`, see the exception above), then bump `package.json` in a temporary index (`GIT_INDEX_FILE` + `read-tree` +
    `hash-object`; skipping any tag already taken locally or on origin),
    `commit-tree` it with the Vercel prefix (`release:` / `release-admin:` /
    `release-demos:` / `release-all:`), push `<sha>:refs/heads/main`. A rejected
@@ -200,6 +210,15 @@ Shrink-only census (ALC-20) of raw clipboard, hand-built downloads, direct forma
 
 ## Change log
 
+- 2026-10-08 — THE LOCKFILE GUARD. v0.4.3013 failed on all four Vercel projects with
+  `ERR_PNPM_BROKEN_LOCKFILE ... duplicated mapping key (1372:3)`: merge 406bfce877 kept two identical
+  `'@ai-matrx/records@0.84.4':` blocks. `scripts/check-lockfile-keys.py` (`pnpm check:lockfile-keys`,
+  `:self-test`) finds duplicate mapping keys / conflict markers / bad JSON and repairs only the identical
+  case (its repair of the 406bfce877 lockfile is byte-identical to the hand fix aece035bad). `release.sh`
+  repairs inside the release tree or refuses the push (the one exception to "never a stop");
+  `sync-main.py` `guard_lockfiles()` repairs + commits or refuses the push. Tests:
+  `test-release-ship-path.sh` releases 5–6 (red against the previous release.sh, green now) and
+  `test_sync_main_lockfile_guard.py`.
 - 2026-10-06 — added `check:alchemy-doors` (+ `:self-test`), advisory row in `run-release-gates.sh`.
 - 2026-10-03 — Arman: checks and tests run on live as `admin@admin.com`; the clone is only for destructive-migration rehearsal. The clone checks leg, `--db-only --target clone` and the heavy-checks-default-to-clone rule are retired (docs only; code lane removes the code).
 - 2026-09-30 — `run.mjs --db-only --target clone` + `clone-target-guard.cjs` (checks-run-in-the-app P3, the
