@@ -68,8 +68,10 @@ READY is the after phase's first question.
 
 ## The after phase (`RELEASE_PHASE=after`, detached, never on the terminal)
 
-Relaunched by the ship path with `nohup`, output appended to the same dated
-log, holding its own lock (`--with-checks` runs it in the foreground instead;
+Relaunched by the ship path with `nohup` in its OWN session (`os.setsid` via python3 — macOS
+has no setsid(1)), so a caller that kills its process group when its command returns (an agent's
+shell tool) cannot take the checks and the rollout watch down with it — that is how v0.4.2990 and
+v0.4.2991 lost theirs. Output is appended to the same dated log; it holds its own lock (`--with-checks` runs it in the foreground instead;
 `--no-gates` skips it entirely):
 
 - **Rollout watch** — `scripts/release-outcome.sh` (THE RELEASE-BANNER TRUTH
@@ -210,6 +212,16 @@ Shrink-only census (ALC-20) of raw clipboard, hand-built downloads, direct forma
 
 ## Change log
 
+- 2026-10-08 — `check:matrx-api-usage` (+ `:self-test`), an ERROR row after the push. v0.4.2990/2991
+  shipped `providers/WarmupHost.tsx` calling `warmup.currentScope()` (@ai-matrx/agents 0.58.0) while
+  the lockfile pinned an older agents: every page crashed. `check:matrx-imports` sees named imports
+  only; `type-check` saw it as one WARNING row inside a ~100-error backlog, against whatever the
+  shared checkout had INSTALLED. The new row type-checks the files changed since the previous
+  release tag that import `@ai-matrx/*`, resolving every package to the exact LOCKED tarball (cached
+  in `node_modules/.cache/matrx-api-usage/`), and reports only package-API diagnostics. Self-test
+  replays the incident: RED on 349d36738d, GREEN on af5b5a1e62; it also catches the v0.4.2990 build
+  failure (`@ai-matrx/kit/json-extract` absent from the locked kit). ~2 min. Never blocks. Same day:
+  the after phase now runs in its own session (see "The after phase").
 - 2026-10-08 — THE LOCKFILE GUARD. v0.4.3013 failed on all four Vercel projects with
   `ERR_PNPM_BROKEN_LOCKFILE ... duplicated mapping key (1372:3)`: merge 406bfce877 kept two identical
   `'@ai-matrx/records@0.84.4':` blocks. `scripts/check-lockfile-keys.py` (`pnpm check:lockfile-keys`,
