@@ -2,6 +2,7 @@ import type { PostgrestError } from "@supabase/supabase-js";
 import { createClient } from "@/utils/supabase/server";
 import { ChatConversationRoom } from "@ai-matrx/chat/agents/components/chat/ChatConversationRoom";
 import { DEFAULT_NEW_CHAT_MANDATE_KEY } from "@ai-matrx/chat/agents/components/chat/chat-quick-actions.config";
+import { ChatConversationWarmup } from "@/components/warmup/ChatConversationWarmup";
 import { AccessGate } from "@/features/access-gate/components/AccessGate";
 import { ServerReadRecheck } from "@/features/access-gate/components/ServerReadRecheck";
 import { ChatNewLandingSkeleton } from "@ai-matrx/chat/agents/components/chat/ChatNewClient";
@@ -160,6 +161,10 @@ export default async function ChatConversationPage({
 
   return (
     <>
+      <ChatConversationWarmup
+        conversationId={conversationId}
+        agentId={display?.agentId ?? null}
+      />
       <ChatRunHeader
         activeAgentId={display?.agentId ?? undefined}
         initialAgentName={display?.agentName ?? undefined}

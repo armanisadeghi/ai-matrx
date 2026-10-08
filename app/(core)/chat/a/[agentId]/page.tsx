@@ -1,4 +1,5 @@
 import { createClient } from "@/utils/supabase/server";
+import { WarmOnRoute } from "@/components/warmup/WarmOnRoute";
 import { ChatRoomClient } from "@ai-matrx/chat/agents/components/chat/ChatRoomClient";
 import { ChatRunHeader } from "@ai-matrx/chat/agents/components/chat/ChatRunHeader";
 import { readComposerModeCookie } from "@ai-matrx/chat/next/server/composer-mode.server";
@@ -43,6 +44,7 @@ export default async function DirectAgentChatPage({
   ]);
   return (
     <>
+      <WarmOnRoute items={[{ key: "agent", id: agentId }]} reason="route" />
       <ChatRunHeader
         activeAgentId={agentId}
         initialAgentName={agentName ?? undefined}

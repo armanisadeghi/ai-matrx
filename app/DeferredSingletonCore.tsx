@@ -12,7 +12,8 @@
 // deferred further, that logic belongs in the wrapper (or the widget's own
 // file), never in this core.
 
-import { Suspense, useEffect } from "react";
+import { Suspense, useEffect, useRef } from "react";
+import { useWarmup } from "@ai-matrx/agents/react";
 import { useIdleTask } from "@ai-matrx/kit/idle-scheduler";
 import { whenPrimaryContentShown } from "@/lib/boot/primaryContent";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
@@ -53,6 +54,33 @@ export default function DeferredSingletonCore() {
   const dispatch = useAppDispatch();
   const user = useAppSelector(selectUser);
   const organizationId = useAppSelector(selectOrganizationId);
+
+  // WARM-UP (contract: common-docs systems/architecture/warm-cache/CONTRACT.md).
+  // Session ready (signed in + an active org) → warm the person's core data;
+  // the active org changing for the SAME person → re-warm core + that org.
+  // A rehydrate that re-dispatches the same id never changes `organizationId`,
+  // so it never re-warms (the same before/after rule as
+  // features/mandates/redux/org-switch-cache-middleware.ts). The primitive
+  // dedupes per person+org for 60s and is silent when the server says no.
+  const warmup = useWarmup();
+  const warmedFor = useRef<{ userId: string; organizationId: string } | null>(
+    null,
+  );
+  useEffect(() => {
+    if (!warmup || !user?.id || !organizationId) return;
+    const before = warmedFor.current;
+    if (before?.userId === user.id && before.organizationId === organizationId)
+      return;
+    warmedFor.current = { userId: user.id, organizationId };
+    if (before?.userId === user.id) {
+      warmup.warm(
+        [{ key: "core" }, { key: "org", id: organizationId }],
+        "org_change",
+      );
+    } else {
+      warmup.warm([{ key: "core" }], "session");
+    }
+  }, [warmup, user?.id, organizationId]);
 
   // NOTE: global error capture + persistence install live in the WRAPPER
   // (DeferredSingletonWrapper.tsx), not here — they must be running during

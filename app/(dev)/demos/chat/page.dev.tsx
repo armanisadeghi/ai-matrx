@@ -9,8 +9,6 @@ import {
 } from "@ai-matrx/chat/cx-chat/components/agent/agents";
 import { FastPathMandateGuard } from "@ai-matrx/chat/mandates/FastPathMandateGuard";
 import { resolveMandateSeed } from "@/features/mandates/seed.server";
-import { BACKEND_URLS } from "@/lib/api/endpoints";
-import { warmAgent } from "@/lib/api/warm-helpers";
 
 export default async function ChatPage() {
   // The default cx-chat agent is the `chat.cx_default` mandate — the user's own
@@ -24,7 +22,6 @@ export default async function ChatPage() {
     ? resolveAgentForSSR(seed.agentId)
     : getDefaultAgent();
 
-  warmAgent(agent.promptId, { baseUrl: BACKEND_URLS.production ?? "" });
 
   return (
     <>
