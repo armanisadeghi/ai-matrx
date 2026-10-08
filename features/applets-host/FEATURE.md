@@ -104,6 +104,20 @@ record's own `scope` (`{ entries, shadowDangerousGlobals }`); app-owned modules 
 
 ## Change Log
 
+- 2026-10-08 — Lane AB (never publish broken, part 1): `checkBuildAnswer` refuses a browser dialog
+  (`window.confirm`/`alert`/`prompt` → `confirmAction`) and a JSX string attribute carrying a literal `\n`;
+  "Use it" is held while the preview reports any error (`publishBlockedBy`) and becomes "Fix it to use it".
+  Tests: `builder/build-applet.never-broken.test.ts`. Part 2 (import check against the real exports via
+  `appletImportProblems`, refused saves toasted via `announceRefusal`) lands with `@ai-matrx/applets` 0.10.0.
+
+- 2026-10-08 — Lane AD (/applets/build hydration): the builder loads `AppletHostMount` (host + frame + Babel compiler)
+  through ONE `next/dynamic` edge gated on a saved version, so the first screen no longer carries it (builder's own
+  static graph 12.2 MB → 8.9 MB minified, esbuild metafile). Until the page hydrates, Build renders as a disabled
+  "Getting ready" button with a spinner (never silently disabled); after, an empty box gives it a "Say what you want
+  first" tooltip. Measured live: every (core) route loads ~270 scripts / ~24.5 MB decoded JS from the shell's merged
+  client chunk group (Babel included); /applets/build added only 3 chunks / 653 KB of its own — the shell is the
+  dominant hydration cost.
+
 - 2026-10-08 — `AppletHostMount`: an open still pending after `OPENING_SLOW_MS` (20 s) shows "This Applet is slow to open" with
   Try again (a late answer still mounts; captured as `applet_open_slow`); a failed open renders through `ErrorNotice` with
   Try again. A gateway that never answered the definition read used to leave the skeleton up forever.

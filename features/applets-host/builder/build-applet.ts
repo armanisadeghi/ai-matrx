@@ -225,6 +225,40 @@ export function deadButtons(file: BuilderFile): string[] {
   return out;
 }
 
+/** A browser dialog: banned on the platform — `window.confirm(` or a bare `confirm(` / `alert(` / `prompt(`. */
+const BROWSER_DIALOG = /(?<![\w$.])(?:window\.)?(confirm|alert|prompt)\s*\(|\bwindow\.(confirm|alert|prompt)\b/g;
+
+/**
+ * NO BROWSER DIALOG. A generated page asked `window.confirm("Delete this brand?")` (social planner,
+ * 2026-10-08) — the platform's confirm is `confirmAction` from "@ai-matrx/applets/react". A name the
+ * Applet imports or defines itself (`confirmAction`) never matches.
+ */
+export function browserDialogs(file: BuilderFile): string[] {
+  const out = new Set<string>();
+  for (const m of file.source.matchAll(BROWSER_DIALOG)) {
+    const name = m[1] ?? m[2];
+    if (name) out.add(name);
+  }
+  return [...out];
+}
+
+/** A JSX string attribute holding an escaped newline: `placeholder="a\nb"` shows a literal "\n". */
+const ESCAPED_NEWLINE_ATTR = /\s([A-Za-z][\w-]*)="[^"\n]*\\n[^"\n]*"/g;
+
+/** Every JSX attribute whose plain string shows a literal "\n" on screen (social planner placeholder, 2026-10-08). */
+export function literalNewlineAttributes(file: BuilderFile): string[] {
+  return [...new Set([...file.source.matchAll(ESCAPED_NEWLINE_ATTR)].map((m) => m[1]!))];
+}
+
+/**
+ * "USE IT" NEVER PUBLISHES A BROKEN APPLET. While the preview (or the last check) reports an error,
+ * publishing is refused with the reason, and Fix it is the action — the social planner was published
+ * with "Missing in this Applet: useNavigate" in red beside an enabled "Use it" (2026-10-08).
+ */
+export function publishBlockedBy(lastError: { message: string } | null): string | null {
+  return lastError ? `Fix this before using it: ${lastError.message}` : null;
+}
+
 /** The code names `key` — literally, or built in a template (`${p}_views` names `tt_views`). */
 function namesField(all: string, key: string): boolean {
   if (new RegExp(`\\b${escapeRe(key)}\\b`).test(all)) return true;
@@ -310,6 +344,12 @@ export function checkBuildAnswer(
   for (const f of applet.files) {
     for (const value of fieldsWithNoInput(f)) {
       problems.push(`${f.name} saves "${value}" but no input ever sets it — every field she asked for needs its own input, labelled for that field alone`);
+    }
+    for (const name of browserDialogs(f)) {
+      problems.push(`${f.name} calls the browser's ${name}() — ask with confirmAction({ title, description, confirmLabel, variant: "destructive" }) from "@ai-matrx/applets/react"; never window.confirm / alert / prompt`);
+    }
+    for (const attr of literalNewlineAttributes(f)) {
+      problems.push(`${f.name} has ${attr}="…\\n…", which shows a literal "\\n" — keep it one line of plain text`);
     }
     for (const label of deadButtons(f)) {
       problems.push(`${f.name} has a button "${label}" that does nothing — give it an onClick (or type="submit" inside its form)`);
