@@ -89,6 +89,8 @@ export interface StoredRun {
   ranBy: string | null;
   holder: RunHolder & { name: string | null; versionNumber: number | null };
   modelId: string | null;
+  /** The model's name from the server (`settings.model_name`); null when it was not read. */
+  modelName: string | null;
   configOverrides: JsonObject;
   success: boolean | null;
   error: string | null;
@@ -236,6 +238,7 @@ function parseStoredRun(conversationId: string, data: unknown): StoredRun {
       versionNumber: num(holder.version_number),
     },
     modelId: str(settings.model_id) ?? str(d.model_id),
+    modelName: str(settings.model_name),
     configOverrides: obj(settings.config_overrides),
     success: typeof d.success === "boolean" ? d.success : null,
     error: str(d.error),

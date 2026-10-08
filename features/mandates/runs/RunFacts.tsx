@@ -71,7 +71,7 @@ export function RunFacts({ run, audience }: { run: StoredRun; audience: "admin" 
       <Fact label="Holder">
         <HolderRef run={run} />
       </Fact>
-      <Fact label="Model">{modelName(run.modelId)}</Fact>
+      <Fact label="Model">{run.modelName ?? modelName(run.modelId)}</Fact>
       <Fact label="Ran by">
         <RanBy userId={run.ranBy} />
       </Fact>
