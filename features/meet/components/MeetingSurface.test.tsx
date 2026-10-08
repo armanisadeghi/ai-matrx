@@ -18,6 +18,7 @@ jest.mock("@/utils/supabase/client", () => ({ supabase: {} }));
 jest.mock("@/features/meet/lib/meetBaseUrl", () => ({
   meetBaseUrl: () => "https://www.aimatrx.com",
 }));
+jest.mock("@/features/meet/app-panels/registry", () => ({ MEET_APP_PANELS: {} }));
 jest.mock("@ai-matrx/meet/react", () => ({
   createMeetRepository: () => ({
     meetingBySlug: async () => ({
@@ -34,6 +35,7 @@ jest.mock("@ai-matrx/meet/react", () => ({
   ),
   MeetingSkinRoot: () => <div data-testid="member-room" />,
   MeetRoot: ({ children }: { children?: React.ReactNode }) => <>{children}</>,
+  MeetAppPanels: ({ children }: { children?: React.ReactNode }) => <>{children}</>,
   useMeetHost: () => mockMeetHost,
   useMeetSnapshot: () => null,
   MEETING_PASS_HEADER: "x-meet-pass",

@@ -38,7 +38,9 @@ import { useHtmlPreviewChrome } from "@/features/html-pages/components/HtmlPrevi
 import {
   cardFrameUrl,
   htmlPageCanvasContent,
+  readPageError,
   readPageHeight,
+  type PageRuntimeError,
 } from "@/features/html-pages/components/html-page-frame";
 import { WIDE_FIGURE_CLASS } from "@ai-matrx/chat/agents/components/shared/assistant-message-layout";
 
@@ -178,6 +180,12 @@ const HtmlInlinePreview: React.FC<HtmlInlinePreviewProps> = ({
   const [showError, setShowError] = useState(false);
   const [pageHeight, setPageHeight] = useState<number | null>(null);
   const [newerVersion, setNewerVersion] = useState<number | null>(null);
+  // The HTML of the version this surface SHOWS (canvas = latest). Copy and
+  // Download hand over exactly this, never the message's older text.
+  const [shownHtml, setShownHtml] = useState<string | null>(null);
+  // The page's own runtime errors (frame script → validated postMessage).
+  const [pageErrors, setPageErrors] = useState<PageRuntimeError[]>([]);
+  const [showPageErrors, setShowPageErrors] = useState(false);
   const frameRef = useRef<HTMLIFrameElement>(null);
   const chrome = useHtmlPreviewChrome();
   const { copyText } = useClipboard({
@@ -217,6 +225,7 @@ const HtmlInlinePreview: React.FC<HtmlInlinePreviewProps> = ({
             ? resolved.latest.version
             : null,
         );
+        setShownHtml(resolved?.shown.html ?? null);
         setUrl(pageUrl);
         setPhase(pageUrl ? "preview" : "unpublished");
       } catch (err) {
@@ -272,10 +281,13 @@ const HtmlInlinePreview: React.FC<HtmlInlinePreviewProps> = ({
   // The page reports its own content height (html site frame script); only a
   // message from THIS frame's window and the page's origin is believed.
   useEffect(() => {
+    setPageErrors([]);
     if (!url) return undefined;
     const onMessage = (event: MessageEvent) => {
       const height = readPageHeight(event, url, frameRef.current?.contentWindow);
       if (height !== null) setPageHeight(height);
+      const pageError = readPageError(event, url, frameRef.current?.contentWindow);
+      if (pageError) setPageErrors((prev) => (prev.length >= 5 ? prev : [...prev, pageError]));
     };
     window.addEventListener("message", onMessage);
     return () => window.removeEventListener("message", onMessage);
@@ -304,6 +316,18 @@ const HtmlInlinePreview: React.FC<HtmlInlinePreviewProps> = ({
       <span className="min-w-0 flex-1 truncate text-xs font-medium text-foreground">
         {title}
       </span>
+      {pageErrors.length > 0 ? (
+        <Button
+          variant="quiet"
+          icon={<AlertTriangle />}
+          onClick={() => setShowPageErrors((v) => !v)}
+          aria-pressed={showPageErrors}
+          title={pageErrors[0].message}
+          data-html-page-errors={pageErrors.length}
+        >
+          {pageErrors.length === 1 ? "Page error" : `${pageErrors.length} page errors`}
+        </Button>
+      ) : null}
       {newerVersion !== null ? (
         <Button
           variant="quiet"
@@ -334,14 +358,14 @@ const HtmlInlinePreview: React.FC<HtmlInlinePreviewProps> = ({
         <Button
           variant="quiet"
           icon={<Copy />}
-          onClick={() => void copyText(code, "Copied HTML")}
+          onClick={() => void copyText(shownHtml ?? code, "Copied HTML")}
           title="Copy HTML"
           aria-label="Copy HTML"
         />
         <Button
           variant="quiet"
           icon={<Download />}
-          onClick={() => downloadFile(fileName, code, "text/html")}
+          onClick={() => downloadFile(fileName, shownHtml ?? code, "text/html")}
           title="Download .html"
           aria-label="Download .html"
         />
@@ -559,6 +583,19 @@ const HtmlInlinePreview: React.FC<HtmlInlinePreviewProps> = ({
       )}
     >
       {header}
+      {showPageErrors && pageErrors.length > 0 ? (
+        <ul
+          className="border-b border-border bg-destructive/5 px-3 py-1.5 text-xs text-destructive-ink"
+          data-html-page-error-list=""
+        >
+          {pageErrors.map((e, i) => (
+            <li key={i} className="truncate" title={e.message}>
+              {e.line ? `Line ${e.line}: ` : ""}
+              {e.message}
+            </li>
+          ))}
+        </ul>
+      ) : null}
       {showCode ? (
         <div className="p-2">{renderCodeBlock()}</div>
       ) : (

@@ -95,3 +95,16 @@ describe("the inline card asks the page to fit (?fit=card)", () => {
     expect(cardFrame).toContain("src={cardFrameUrl(url)}");
   });
 });
+
+describe("readPageError", () => {
+  const { readPageError } = jest.requireActual("./html-page-frame") as typeof import("./html-page-frame");
+  const frame = {} as Window;
+  const url = "https://www.mymatrx.com/p/abc";
+  it("believes only this frame and the page origin", () => {
+    const data = { type: "matrx-html-page:error", kind: "error", message: "x is not defined", line: 12 };
+    expect(readPageError({ origin: "https://www.mymatrx.com", source: frame, data }, url, frame)).toEqual({ kind: "error", message: "x is not defined", line: 12 });
+    expect(readPageError({ origin: "https://evil.example", source: frame, data }, url, frame)).toBeNull();
+    expect(readPageError({ origin: "https://www.mymatrx.com", source: {} as Window, data }, url, frame)).toBeNull();
+    expect(readPageError({ origin: "https://www.mymatrx.com", source: frame, data: { ...data, type: "other" } }, url, frame)).toBeNull();
+  });
+});

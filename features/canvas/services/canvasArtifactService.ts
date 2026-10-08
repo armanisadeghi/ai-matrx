@@ -540,12 +540,7 @@ export const canvasArtifactService = {
         const { publishHtmlCanvasVersion } = await import(
           "@/features/html-pages/services/canvasVersionPage"
         );
-        void publishHtmlCanvasVersion({
-          id: saved.id,
-          html: input.content,
-          title: input.title ?? saved.title,
-          conversationId: saved.conversation_id,
-        }).catch((err: unknown) =>
+        void publishHtmlCanvasVersion(saved.id).catch((err: unknown) =>
           console.error("[canvasArtifactService.saveUserVersion] publish failed:", err),
         );
       }

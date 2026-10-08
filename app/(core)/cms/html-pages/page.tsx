@@ -84,7 +84,6 @@ function HtmlPagesListBody() {
         metaTitle: "New Page",
         metaDescription: "",
         metaFields: { isIndexable: false },
-        forceNew: true,
       });
       toast.success("Page created");
       openPage(result.pageId, { tab: "meta" });

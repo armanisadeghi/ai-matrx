@@ -129,11 +129,6 @@ export async function POST(request: NextRequest) {
           sourceMessageId,
           sourceConversationId,
           contextMetadata,
-          // The canvas_items VERSION this page publishes (one page per version).
-          artifactId,
-          // Explicit CMS "New Page" must always insert, even if blank HTML
-          // matches an existing row (content idempotency would otherwise reuse).
-          forceNew = false,
         } = params;
 
         if (!htmlContent || !metaTitle) {
@@ -160,63 +155,11 @@ export async function POST(request: NextRequest) {
           insertData.source_conv_id = sourceConversationId;
         if (contextMetadata) insertData.context_metadata = contextMetadata;
 
-        // ONE publication per canvas VERSION (rendered-output standard, ruling 1):
-        // a version's page is keyed by html_pages.artifact_id = canvas_items.id,
-        // the same rule aidream's publish writer uses
-        // (aidream/services/artifacts/html_publication.py). Nothing else is ever
-        // reused: overwrite-by-source-message made the chat card (message
-        // version) and the canvas tab (latest) overwrite one page in turn, and the
-        // content dedupe shared one page id between different sources.
-        if (artifactId && !forceNew) {
-          insertData.artifact_id = artifactId;
-          const { data: existing, error: lookupError } = await onlyLive(
-            htmlDb
-              .from("html_pages")
-              .select("id, html_content, meta_title")
-              .eq("user_id", user.id)
-              .eq("artifact_id", artifactId),
-            await archiveLive(htmlDb, "html_pages"),
-          )
-            .order("created_at", { ascending: false })
-            .limit(1)
-            .maybeSingle();
-          if (lookupError) {
-            return NextResponse.json(
-              { error: lookupError.message },
-              { status: 500 },
-            );
-          }
-          if (existing?.id) {
-            const unchanged =
-              existing.html_content === htmlContent &&
-              existing.meta_title === metaTitle;
-            if (!unchanged) {
-              const { error: republishError } = await writeOneRow(
-                htmlDb
-                  .from("html_pages")
-                  .update({ html_content: htmlContent, meta_title: metaTitle })
-                  .eq("id", existing.id)
-                  .eq("user_id", user.id)
-                  .select("id"),
-                { action: "update", noun: "html page" },
-              );
-              if (republishError) {
-                return NextResponse.json(
-                  { error: republishError.message },
-                  { status: 500 },
-                );
-              }
-            }
-            return NextResponse.json({
-              success: true,
-              pageId: existing.id,
-              url: `${HTML_SITE_URL}/p/${existing.id}`,
-              metaTitle,
-              reused: true,
-            });
-          }
-        }
-
+        // Always a NEW page. A chat page's publication is never made here: the
+        // server's one writer publishes each canvas version
+        // (aidream POST /cms/html-artifacts/{id}/publish). Reuse by source
+        // message or identical content is gone — it made the chat card and the
+        // canvas tab overwrite one page in turn.
         const { data, error } = await htmlDb
           .from("html_pages")
           .insert(insertData)

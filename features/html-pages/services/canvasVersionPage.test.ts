@@ -25,11 +25,17 @@ describe("one page per canvas version", () => {
     const create = src.slice(src.indexOf('case "create"'), src.indexOf('case "update"'));
     expect(create).not.toMatch(/\.eq\("source_message_id"/);
     expect(create).not.toMatch(/\.eq\("html_content"/);
-    expect(create).toMatch(/\.eq\("artifact_id", artifactId\)/);
+    expect(create).not.toMatch(/\.eq\("artifact_id"/);
+  });
+
+  it("a chat page version publishes through the server's one writer", () => {
+    const src = read("features/html-pages/services/canvasVersionPage.ts");
+    expect(src).toMatch(/path: "\/cms\/html-artifacts\/\{canvas_item_id\}\/publish"/);
+    expect(src).not.toMatch(/HTMLPageService/);
   });
 
   it("the materializer publishes the canvas row it just saved", () => {
     const src = read("features/canvas/artifact-types/persistence/html-adapter.ts");
-    expect(src).toMatch(/publishHtmlCanvasVersion\(\{\s*id: info\.artifactId/);
+    expect(src).toMatch(/publishHtmlCanvasVersion\(info\.artifactId\)/);
   });
 });

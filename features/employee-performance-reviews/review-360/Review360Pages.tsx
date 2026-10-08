@@ -19,6 +19,7 @@ import { toast } from "@/lib/toast";
 
 import { TRACK_TITLE } from "../review-360.typed-table";
 import { Review360Host } from "./Review360Host";
+import { ReviewMeetingActions } from "./ReviewMeetingActions";
 import {
   listReviews360,
   readReview360,
@@ -111,13 +112,13 @@ export function Review360ReviewPage({ reviewId }: { reviewId: string }) {
   return (
     <Review360Host organizationId={org}>
       <Shell>
-        <ReviewDetail reviewId={reviewId} />
+        <ReviewDetail reviewId={reviewId} org={org} />
       </Shell>
     </Review360Host>
   );
 }
 
-function parseReview(doc: string | null): Review | null {
+export function parseReview(doc: string | null): Review | null {
   if (!doc) return null;
   try {
     return { ...createBlankReview(), ...(JSON.parse(doc) as Partial<Review>) };
@@ -154,7 +155,7 @@ function Half({ label, track }: { label: string; track: TrackView | null }) {
   );
 }
 
-function ReviewDetail({ reviewId }: { reviewId: string }) {
+function ReviewDetail({ reviewId, org }: { reviewId: string; org: string }) {
   const client = useRecordsClient();
   const [data, setData] = useState<Awaited<ReturnType<typeof readReview360>> | null>(null);
   const [tick, setTick] = useState(0);
@@ -182,6 +183,12 @@ function ReviewDetail({ reviewId }: { reviewId: string }) {
         <Badge>{String(doc.status ?? "collecting")}</Badge>
         <span className="text-xs text-muted-foreground">Due {day(doc.due_on)}</span>
         <div className="flex-1" />
+        <ReviewMeetingActions
+          reviewId={reviewId}
+          organizationId={org}
+          employee={doc.employee}
+          ready={both}
+        />
         {both && doc.status !== "shared" ? (
           <Button variant="primary" icon={<Share2 />} onClick={() => void share()}>
             Share with both

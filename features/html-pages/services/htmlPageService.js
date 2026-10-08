@@ -46,8 +46,8 @@ export class HTMLPageService {
      * Create a new HTML page.
      *
      * `sourceMessageId` / `sourceConversationId` are provenance only.
-     * `artifactId` (a canvas_items version id) is the ONLY reuse key: the same
-     * version re-publishes in place; anything else inserts. `sourceConversationId` and
+     * Always inserts. A chat page version publishes through the server
+     * (canvasVersionPage.publishHtmlCanvasVersion), never here. `sourceConversationId` and
      * `contextMetadata` are stored alongside for provenance.
      */
     static async createPage(
@@ -58,7 +58,7 @@ export class HTMLPageService {
         metaFields = {},
         sourceTracking = {},
     ) {
-        const { sourceMessageId, sourceConversationId, contextMetadata, forceNew, artifactId } = sourceTracking;
+        const { sourceMessageId, sourceConversationId, contextMetadata } = sourceTracking;
         return HTMLPageService.#call('create', {
             htmlContent,
             metaTitle,
@@ -68,9 +68,6 @@ export class HTMLPageService {
             ...(durableRecordId(sourceMessageId) ? { sourceMessageId } : {}),
             ...(sourceConversationId ? { sourceConversationId } : {}),
             ...(contextMetadata ? { contextMetadata } : {}),
-            ...(forceNew ? { forceNew: true } : {}),
-            // One page per canvas_items VERSION (the only reuse key the route honours).
-            ...(durableRecordId(artifactId) ? { artifactId } : {}),
         });
     }
 

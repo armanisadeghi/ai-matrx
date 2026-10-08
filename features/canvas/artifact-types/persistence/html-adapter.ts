@@ -36,14 +36,7 @@ export const HTML_ADAPTER: ArtifactPersistenceAdapter = {
     const html = typeof info.rawContent === "string" ? info.rawContent : "";
     if (!html.trim()) return;
     try {
-      const published = await publishHtmlCanvasVersion({
-        id: info.artifactId,
-        html,
-        title: info.title || "Generated page",
-        sourceMessageId: info.sourceMessageId ?? null,
-        conversationId: info.conversationId ?? null,
-      });
-      if (!published) return;
+      const published = await publishHtmlCanvasVersion(info.artifactId);
       return { externalSystem: HTML_PAGES_SYSTEM, externalId: published.pageId };
     } catch (err) {
       // Non-blocking: the canvas row already persisted; the link backfills on a

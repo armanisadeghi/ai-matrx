@@ -77,6 +77,37 @@ export function cardFrameUrl(pageUrl: string | null | undefined): string | undef
   }
 }
 
+/** Must equal ERROR_MESSAGE_TYPE in my-matrx/lib/render/servedHtmlDocument.js. */
+export const HTML_PAGE_ERROR_MESSAGE = "matrx-html-page:error";
+
+export interface PageRuntimeError {
+  kind: "error" | "rejection";
+  message: string;
+  line: number;
+}
+
+/**
+ * A runtime error the page reported (its uncaught error or unhandled
+ * rejection), or null when the message is not a valid report from THIS
+ * frame's page — same frame + origin test as the height report.
+ */
+export function readPageError(
+  event: Pick<MessageEvent, "origin" | "source" | "data">,
+  pageUrl: string | null | undefined,
+  frameWindow: Window | null | undefined,
+): PageRuntimeError | null {
+  if (!frameWindow || event.source !== frameWindow) return null;
+  if (!pageOrigins(pageUrl).includes(event.origin)) return null;
+  const data = event.data as Record<string, unknown> | null;
+  if (!data || typeof data !== "object" || data.type !== HTML_PAGE_ERROR_MESSAGE) return null;
+  if (typeof data.message !== "string" || !data.message.trim()) return null;
+  return {
+    kind: data.kind === "rejection" ? "rejection" : "error",
+    message: data.message.slice(0, 300),
+    line: typeof data.line === "number" && Number.isFinite(data.line) ? data.line : 0,
+  };
+}
+
 /** The ONE canvas content for an html page — see the header. */
 export function htmlPageCanvasContent({
   code,
