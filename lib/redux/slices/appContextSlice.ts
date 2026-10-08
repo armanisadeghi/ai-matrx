@@ -617,13 +617,18 @@ export const appContextPolicy = definePolicy<AppContextState>({
       const linkOrganizationId = readLinkOrganizationFromLocation();
       const ourLink = claimLinkOrganizationDecision(linkOrganizationId);
       // THIS TAB'S HELD ORGANIZATION: only once the ladder (or the person)
-      // has answered in this tab — a painted cache value is never held.
+      // has answered in this tab — a painted cache value is never held. A
+      // RELOAD of this tab starts with an empty Redux, so the organization it
+      // held before the reload comes back from this tab's own memory
+      // (`tabOrganization.ts`) — never from the account's last active, which
+      // any other session of the account may have moved (2026-10-08).
       const tab = (getStoreSingleton()?.getState() as
         | { appContext?: AppContextState }
         | undefined)?.appContext;
-      const heldOrganizationId =
-        tab?.orgBootstrapResolved && tab.organization_id ? tab.organization_id : null;
-      const heldOrganizationName = tab?.organization_name ?? null;
+      const { heldOrganizationForTab } = await import("@/lib/organizations/tabOrganization");
+      const heldOrganizationId = heldOrganizationForTab(tab, identity.userId);
+      const heldOrganizationName =
+        tab?.orgBootstrapResolved && tab.organization_id ? (tab.organization_name ?? null) : null;
       let resolved: Awaited<ReturnType<typeof resolveActiveOrgContext>>;
       try {
         resolved = await resolveActiveOrgContext(identity.userId, {
