@@ -57,7 +57,6 @@ export interface EsignEditorProps {
   people: Person[];
   me: Person | null;
   uploader: EditorUploader;
-  documentUrls?: Record<string, string>;
   /** The draft now exists on the server: the host moves the address bar. */
   onCreated?(envelopeId: string): void;
   onSendComplete?(result: SendResult): void;
@@ -476,7 +475,6 @@ export function EsignEditor(props: EsignEditorProps) {
         selection={selection}
         armed={armed}
         candidates={candidates}
-        documentUrls={props.documentUrls}
         zoom={zoom}
         onZoom={setZoom}
         onSelect={(ids, additive) => {
@@ -571,7 +569,7 @@ export function EsignEditor(props: EsignEditorProps) {
 
       <SendDialog open={sendOpen} draft={draft} sending={sending} result={sendResult} error={sendError} onlyMe={onlyMe} onClose={() => setSendOpen(false)} onSend={() => void send()} />
       <TemplateDialog key={String(templateOpen)} open={templateOpen} initialName={templateState?.name ?? draft.title} saving={templateSaving} error={templateError} onClose={() => setTemplateOpen(false)} onSave={(n, d) => void saveTemplate(n, d)} />
-      {previewOpen && <PreviewDialog open draft={draft} initialRecipient={activeRecipient} documentUrls={props.documentUrls} onClose={() => setPreviewOpen(false)} />}
+      {previewOpen && <PreviewDialog open draft={draft} initialRecipient={activeRecipient} onClose={() => setPreviewOpen(false)} />}
       <span className="sr-only" aria-live="polite">{effectiveSubject(draft)} {blockers.length ? "" : "ready"}</span>
     </>
   );

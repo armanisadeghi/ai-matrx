@@ -1,4 +1,5 @@
 import { Suspense } from "react";
+import { CxRequestsDrill } from "@/features/cx-dashboard/explorer/CxRequestsDrill";
 import { fetchErrors } from "@/features/cx-dashboard/service";
 import { CxErrorPanel } from "@/features/cx-dashboard/components/CxErrorPanel";
 import { CxErrorsSkeleton } from "@/features/cx-dashboard/components/CxTabSkeletons";
@@ -21,5 +22,9 @@ async function ErrorsData() {
     return <CxErrorPanel what="error reports" message={result.error} />;
   }
 
-  return <ErrorsContent errors={result.data} />;
+  return (
+    <CxRequestsDrill page="errors">
+      <ErrorsContent errors={result.data} />
+    </CxRequestsDrill>
+  );
 }

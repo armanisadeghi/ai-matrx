@@ -26,8 +26,7 @@ const FilePickerWindow = dynamic(
   { ssr: false, loading: () => null },
 );
 
-// Staging: the editor lives at /esign/v2/<id> until the production swap (CONTRACT §17); then "/esign".
-const DRAFT_BASE = "/esign/v2";
+const DRAFT_BASE = "/esign";
 const draftHref = (id: string) => `${DRAFT_BASE}/${id}`;
 
 type Source =
@@ -83,10 +82,12 @@ export function EditorHost({ source }: { source: Source }) {
         } satisfies Loaded;
       }
       if (source.kind === "from_template" || source.kind === "copy") {
-        const organizationId = activeOrg ?? (await ensureOrgId(null));
+        // A draft from a template carries the template's name and organization (its own, not a guess).
+        const source_template = source.kind === "from_template" ? await api.getTemplate(source.templateId) : null;
+        const organizationId = source_template?.organizationId || activeOrg || (await ensureOrgId(null));
         const made = await api.createDraft({
           organizationId,
-          title: "",
+          title: source_template?.name ?? "",
           templateId: source.kind === "from_template" ? source.templateId : undefined,
           copyOfEnvelopeId: source.kind === "copy" ? source.envelopeId : undefined,
         });

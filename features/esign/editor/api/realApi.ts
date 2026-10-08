@@ -6,14 +6,16 @@
 // types until the server lane's wave A/B publish — `loose` is the one place that is bridged, and it
 // narrows to typed calls the moment `types/database.types.ts` and api-types carry them.
 
-import { callApi } from "@/lib/api/call-api";
+import type { components } from "@ai-matrx/agents/generated/api-types";
+import { callApi, type ApiCallResult } from "@/lib/api/call-api";
 import type { AppDispatch } from "@/lib/redux/store";
 import type { Database } from "@/types/database.types";
 import { supabase } from "@/utils/supabase/client";
 
 import type { EnvelopeDraftV1, EnvelopeTemplateV1 } from "../../contract/draft";
-import { DraftRefusal, type DetectCandidate, type EditorApi, type SaveResult, type SendResult, type TemplateRow } from "./types";
+import { DraftRefusal, type EditorApi, type SaveResult, type TemplateRow } from "./types";
 
+type Schemas = components["schemas"];
 type RpcAnswer = { data: unknown; error: { message: string } | null };
 type EsignRpcName = keyof Database["esign"]["Functions"];
 const esign = supabase.schema("esign");
@@ -72,18 +74,16 @@ export async function deleteTemplateRow(templateId: string): Promise<void> {
 }
 
 export function makeRealEditorApi(dispatch: AppDispatch): EditorApi {
-  const server = async <T,>(path: string, pathParams: Record<string, string> | undefined, body: unknown): Promise<T> => {
-    const result = await dispatch(
-      callApi({ path, method: "POST", pathParams, body, expectedErrorStatuses: [400, 403, 404, 409, 422] } as unknown as Parameters<typeof callApi>[0]),
-    );
-    if (!result.error && result.data !== undefined) return result.data as T;
+  const refused = (result: ApiCallResult): DraftRefusal => {
     const detail = (result.error?.serverDetail as { detail?: { code?: string; message?: string } } | undefined)?.detail;
-    throw new DraftRefusal(detail?.code ?? "unreachable", detail?.message || REFUSAL_TEXT[detail?.code ?? ""] || "We could not reach AI Matrx just now. Try again in a moment.", detail as Record<string, unknown> | undefined);
+    return new DraftRefusal(
+      detail?.code ?? "unreachable",
+      detail?.message || REFUSAL_TEXT[detail?.code ?? ""] || "We could not reach AI Matrx just now. Try again in a moment.",
+      detail as Record<string, unknown> | undefined,
+    );
   };
 
   return {
-    kind: "real",
-
     async createDraft({ organizationId, title, templateId, copyOfEnvelopeId }) {
       const a = await door("esign_draft_create", {
         p_organization_id: organizationId,
@@ -150,12 +150,26 @@ export function makeRealEditorApi(dispatch: AppDispatch): EditorApi {
     },
 
     async send(envelopeId) {
-      return server<SendResult>("/esign/drafts/{envelope_id}/send", { envelope_id: envelopeId }, {});
+      const result = await dispatch(
+        callApi({
+          path: "/esign/drafts/{envelope_id}/send",
+          method: "POST",
+          pathParams: { envelope_id: envelopeId },
+          body: {},
+          expectedErrorStatuses: [400, 403, 404, 409, 422],
+        }),
+      );
+      if (result.error || result.data === undefined) throw refused(result);
+      const sent = result.data as Schemas["EsignDraftSendAnswer"];
+      return { ...sent, warnings: sent.warnings ?? [] };
     },
 
     async detectFields(fileId) {
-      const a = await server<{ candidates: DetectCandidate[] }>("/esign/detect-fields", undefined, { file_id: fileId });
-      return a.candidates ?? [];
+      const result = await dispatch(
+        callApi({ path: "/esign/detect-fields", method: "POST", body: { file_id: fileId }, expectedErrorStatuses: [400, 403, 404, 409, 422] }),
+      );
+      if (result.error || result.data === undefined) throw refused(result);
+      return (result.data as Schemas["EsignDetectFieldsAnswer"]).candidates;
     },
 
     async saveTemplate({ organizationId, templateId, name, description, composition, expectedVersion }) {

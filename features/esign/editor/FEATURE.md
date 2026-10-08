@@ -14,7 +14,6 @@ Contract: `common-docs/projects/esign-parity/CONTRACT.md` §1, §12, §15 (froze
   mirror restored after refresh, `stale_draft` three-way merge (`merge.ts`) with Keep mine / Take theirs.
 - `history.ts` — 50-step undo / redo. `model.ts` — kinds, defaults, warnings.
 - `api/types.ts` is the ONE interface to the server; `api/realApi.ts` the real doors;
-  `mocks/` (dev demo only, `app/(dev)/demos/esign-sender`) an in-memory twin.
 - `components/EditorHost.tsx` / `EnvelopeRoute.tsx` — the real routes (draft → editor, sent → envelope page).
 - `features/esign/templates/` — the template list; `features/esign/envelopes/EnvelopeDetail.tsx` — the sent envelope page.
 

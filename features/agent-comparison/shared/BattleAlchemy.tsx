@@ -26,6 +26,7 @@ import type { ContentTransferController } from "@ai-matrx/alchemy/react/workspac
 import { useAppDispatch, useAppSelector, useAppStore } from "@/lib/redux/hooks";
 import { getModelRecords } from "@ai-matrx/chat/agents/identity/model-catalog";
 import { selectActiveBattleColumns } from "./activeBattleColumns";
+import { useCatalogBoundSelector } from "./useCatalogBoundSelector";
 import {
   battleMarkdown,
   battleMarkdownForPeople,
@@ -43,7 +44,7 @@ export function BattleAlchemy({
 } = {}) {
   const store = useAppStore();
   const dispatch = useAppDispatch();
-  const columns = useAppSelector(selectActiveBattleColumns);
+  const columns = useCatalogBoundSelector(selectActiveBattleColumns);
 
   // Load the names of the models this battle compares, so every copy names
   // them. The thunk skips ids it already has or is already fetching.

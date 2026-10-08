@@ -3,8 +3,12 @@
 // Can view (Notion's order); shares with test@test.com at Can edit content. As test@test.com: the page body is editable
 // and an edit saves; a row can be added to the database; the page's structure controls (Move to, Move to Trash, Lock
 // page) are not offered and the Share dialog has no invite form. The admin then trashes the page. Exit 1 on failure.
-//   SPACES_WALK_ORG="Bayside Orthodontics" SHOT_DIR=<dir> node features/spaces/__tests__/walk/edit-content.walk.mjs
-import { open, newPage, act, slash, originOf, trashPage, chromium, loginUrl } from "./lib.mjs";
+// The page is made in an organization test@test.com is NOT a member of (picked here from both people's
+// /organizations), so the share is the only way in; the walk proves test@test.com cannot open it before the share.
+// Round 33: the inline database offers a content editor no structure controls (Add view, Automations, View
+// settings, the database title), and a row action either works or says why (nothing fails silently).
+//   SHOT_DIR=<dir> node features/spaces/__tests__/walk/edit-content.walk.mjs
+import { open, newPage, act, slash, originOf, trashPage, chromium, loginUrl, orgWithoutMember } from "./lib.mjs";
 
 const SHOT = process.env.SHOT_DIR ?? "/tmp";
 let failed = 0;
@@ -13,9 +17,23 @@ const check = (name, ok, extra = {}) => {
   console.log(JSON.stringify({ check: name, ok, ...extra }));
 };
 const stamp = Date.now() % 100000;
-const { browser, page } = await open({ member: false, width: 1440, height: 1000 });
+// The organization: one the admin belongs to and test@test.com does not.
+const org = await orgWithoutMember();
+console.log(JSON.stringify({ org }));
+const { browser, page } = await open({ member: false, next: `/spaces?org=${org}`, width: 1440, height: 1000 });
 const id = await newPage(page);
 console.log(JSON.stringify({ page: id }));
+{
+  // Before the share: test@test.com cannot open the page (the organization is not theirs).
+  const b0 = await chromium.launch({ headless: true });
+  const p0 = await (await b0.newContext({ viewport: { width: 1440, height: 1000 } })).newPage();
+  await p0.goto(loginUrl(`/spaces/${id}`, true), { waitUntil: "domcontentloaded", timeout: 120_000 });
+  await p0.waitForURL((u) => u.pathname.includes(id), { timeout: 120_000 }).catch(() => {});
+  await p0.waitForTimeout(12_000);
+  const opened = await p0.locator(".bn-editor").count();
+  check("before the share, test@test.com cannot open the page", opened === 0, { opened });
+  await b0.close();
+}
 await page.waitForTimeout(2500);
 const body = (p) => p.locator(".bn-editor").first();
 await act(page, async () => {
@@ -53,6 +71,7 @@ await act(page, async () => {
 const b2 = await chromium.launch({ headless: true });
 const ctx2 = await b2.newContext({ viewport: { width: 1440, height: 1000 } });
 const p2 = await ctx2.newPage();
+p2.on("pageerror", (e) => console.log("[pageerror member]", e.message.slice(0, 300)));
 await p2.goto(loginUrl(`/spaces/${id}`, true), { waitUntil: "domcontentloaded", timeout: 120_000 });
 await p2.waitForURL((u) => u.pathname.includes(id), { timeout: 120_000 }).catch(() => {});
 await body(p2).waitFor({ timeout: 120_000 });
@@ -74,7 +93,7 @@ await frame.waitFor({ timeout: 60_000 }).catch(() => {});
 await p2.waitForTimeout(4000);
 // The page's own inline database is part of the page (association page_database): its share reaches the table.
 check("the page's inline database opens for the content editor", !(await frame.getByText(/isn.t shared with you/).count()));
-const rowsIn = (f) => f.locator("tbody tr, [role=row]").count();
+const rowsIn = (f) => f.locator("[data-row-id]").count();
 const before = await rowsIn(frame);
 await frame.getByRole("button", { name: /New( page)?$/ }).first().click().catch(() => {});
 await p2.waitForTimeout(5000);
@@ -87,6 +106,37 @@ await p2.screenshot({ path: `${SHOT}/edit-content-member.png` });
 await p2.keyboard.press("Escape");
 if (await p2.locator(".spaces-peek-bar").count()) await p2.locator(".spaces-peek-bar button").first().click().catch(() => {});
 await p2.waitForTimeout(800);
+// Round 33 (1): no structure control on the inline database for a content editor.
+const offered = {};
+for (const name of ["Add view", "Automations", "View settings"]) offered[name] = await frame.getByRole("button", { name, exact: true }).count();
+offered["Database title"] = await frame.getByRole("textbox", { name: "Database title" }).count();
+check("the database offers no structure control (Add view, Automations, View settings, title)", Object.values(offered).every((n) => n === 0), offered);
+// Round 33 (2): a row's menu — Archive record either is not offered, or works, or says why.
+const rowCell = frame.locator("[data-row-id]").first();
+let archive = "no row";
+if (await rowCell.count()) {
+  const rowsBefore = await rowsIn(frame);
+  await rowCell.click({ button: "right" }).catch(() => {});
+  await p2.waitForTimeout(800);
+  const item = p2.getByRole("menuitem", { name: /Archive record/ }).first();
+  if (!(await item.isVisible().catch(() => false))) archive = "not offered";
+  else if ((await item.getAttribute("aria-disabled")) === "true" || (await item.getAttribute("data-disabled")) !== null) archive = "disabled";
+  else {
+    await item.click();
+    await p2.waitForTimeout(4000);
+    const confirm = p2.getByRole("button", { name: /^(Archive|Confirm|Yes)/ }).last();
+    if (await confirm.isVisible().catch(() => false)) {
+      await confirm.click();
+      await p2.waitForTimeout(4000);
+    }
+    const rowsAfter = await rowsIn(frame);
+    const said = await p2.locator("[data-sonner-toast]").allInnerTexts().catch(() => []);
+    archive = rowsAfter < rowsBefore ? "archived" : said.length ? `said: ${said.join(" | ").slice(0, 160)}` : "nothing happened";
+  }
+  await p2.keyboard.press("Escape");
+}
+check("a row's Archive record never fails silently", archive !== "nothing happened", { archive });
+await p2.screenshot({ path: `${SHOT}/edit-content-archive.png` });
 await p2.getByRole("button", { name: "Page options", exact: true }).first().click();
 await p2.waitForTimeout(800);
 const menu = await p2.locator("[data-radix-popper-content-wrapper]").last().innerText().catch(() => "");

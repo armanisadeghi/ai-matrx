@@ -1,5 +1,5 @@
 // features/esign/editor/api/types.ts — everything the editor needs from the server, as one interface
-// so the dev demo can run on an in-memory mock and production on the real doors (CONTRACT §6.1, §7).
+// over the real doors (CONTRACT §6.1, §7).
 
 import type { EnvelopeDraftV1, EnvelopeTemplateV1 } from "../../contract/draft";
 
@@ -39,20 +39,19 @@ export interface TemplateRow {
   organization_name: string | null;
   i_manage: boolean;
   updated_at: string;
-  documents: number;
-  roles: number;
+  /** The door answers each document and each role, not a count (CONTRACT §6.1). */
+  documents: { name: string | null; page_count: number | null }[];
+  roles: (string | null)[];
 }
 
 export interface SendResult {
   envelope_id: string;
   status: string;
   notified: number;
-  warnings: { code: string; recipient_key?: string }[];
+  warnings: { code: string; recipient_key?: string | null }[];
 }
 
 export interface EditorApi {
-  /** Mark of what the page is running on, shown nowhere in production; the demo prints it. */
-  readonly kind: "real" | "mock";
   createDraft(input: { organizationId: string; title: string; templateId?: string; copyOfEnvelopeId?: string }): Promise<{
     envelopeId: string;
     revision: number;

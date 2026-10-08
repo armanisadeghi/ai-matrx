@@ -2,7 +2,7 @@ import { Handshake } from "lucide-react";
 import { getSessionVerdict } from "@/utils/supabase/sessionVerdict";
 import { ModuleSignInGate } from "@/features/auth/components/module-landing/ModuleSignInGate";
 import { RecordPageHeader } from "@/features/shell/components/header/templates/RecordPageHeader";
-import { DealsPage } from "@/features/crm/components/deals/DealsPage";
+import { DealsPageWithDrill } from "@/features/crm/components/deals/DealsPageWithDrill";
 
 /**
  * /crm/deals — deals + kanban pipelines: the dense list (saved-view capable)
@@ -25,7 +25,7 @@ export default async function CrmDealsRoute() {
   return (
     <>
       <RecordPageHeader record={{ name: "Deals" }} />
-      <DealsPage />
+      <DealsPageWithDrill />
     </>
   );
 }

@@ -1,7 +1,7 @@
 // N6 (round 29): Notion's calculation row on an inline database. On a NEW page as test@test.com: a new
 // inline database, a Number property "Budget", two rows (one with a budget); pick Sum under Budget and
 // Percent empty under Name; reload; the footer still says both. Exit 1 on any failure.
-//   SPACES_WALK_ORG="Ashford Labs" node features/spaces/__tests__/walk/calc-row.walk.mjs
+//   node features/spaces/__tests__/walk/calc-row.walk.mjs
 import { open, newPage, act, slash, trashPage } from "./lib.mjs";
 
 const { browser, page } = await open({ member: true, width: 1440, height: 1000 });
@@ -50,7 +50,12 @@ await act(page, async () => {
   await page.keyboard.press("Enter");
   await page.waitForTimeout(1500);
   for (const [key, op] of [[budgetKey, "sum"], [nameKey, "percent_empty"]]) {
-    await frame.locator(`tfoot [data-records-summary="${key}"]`).click({ force: true });
+    // A real click (no force): the footer cell shows its "Calculate" button on hover, as in Notion.
+    const cellBtn = frame.locator(`tfoot [data-records-summary="${key}"]`);
+    await cellBtn.scrollIntoViewIfNeeded();
+    await cellBtn.hover();
+    await page.waitForTimeout(300);
+    await cellBtn.click();
     const item = page.locator(`[data-records-summary-choice="${op}"]`);
     await item.waitFor({ timeout: 10_000 });
     await item.click();

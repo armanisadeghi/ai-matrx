@@ -27,8 +27,17 @@ export function loginUrl(next = "/spaces", member = false) {
 }
 
 export async function login(page, next = "/spaces", member = false) {
-  await page.goto(loginUrl(next, member), { waitUntil: "domcontentloaded", timeout: 120_000 });
-  await page.waitForURL((u) => !u.pathname.startsWith("/api/dev-login"), { timeout: 120_000, waitUntil: "commit" });
+  // A shared dev server under load can take minutes to sign in and compile the first route: one retry with a fresh nonce.
+  for (let attempt = 0; ; attempt++) {
+    try {
+      await page.goto(loginUrl(next, member), { waitUntil: "domcontentloaded", timeout: 240_000 });
+      await page.waitForURL((u) => !u.pathname.startsWith("/api/dev-login"), { timeout: 240_000, waitUntil: "commit" });
+      return;
+    } catch (e) {
+      if (attempt >= 1) throw e;
+      console.log(JSON.stringify({ retry: "dev-login", why: String(e.message).split("\n")[0].slice(0, 120) }));
+    }
+  }
 }
 
 /** A refused session (bounced to /login or 401) signs in again and returns to `next`. */
@@ -166,4 +175,47 @@ export async function trashPage(page) {
   await item.waitFor({ timeout: 10_000 });
   await item.click();
   return page.getByText("This page is in Trash.").first().waitFor({ timeout: 15_000 }).then(() => true, () => false);
+}
+
+/** The slugs of every organization the signed-in person belongs to (read from /organizations' cards). */
+export async function orgSlugs(page) {
+  await page.goto(`${originOf(page)}/organizations`, { waitUntil: "domcontentloaded", timeout: 120_000 });
+  await page.locator('a[href^="/organizations/"]').first().waitFor({ timeout: 120_000 });
+  await page.waitForTimeout(2500);
+  const hrefs = await page.locator('a[href^="/organizations/"]').evaluateAll((as) => as.map((a) => a.getAttribute("href") ?? ""));
+  return [...new Set(hrefs.map((h) => h.split("/")[2]).filter((s) => s && /^[a-z0-9][a-z0-9-]*$/.test(s)))];
+}
+
+/**
+ * An organization the admin belongs to and test@test.com does not (never the CRM organization), so a page
+ * made there reaches test@test.com only by a share. Open the admin with `open({ next: `/spaces?org=${org}` })`.
+ */
+export async function orgWithoutMember() {
+  const member = await open({ member: true, next: "/organizations", width: 1440, height: 1000 });
+  const memberOrgs = await orgSlugs(member.page);
+  await member.browser.close();
+  const admin = await open({ member: false, next: "/organizations", width: 1440, height: 1000 });
+  const adminOrgs = await orgSlugs(admin.page);
+  await admin.browser.close();
+  const org = adminOrgs.find((s) => !memberOrgs.includes(s) && !s.startsWith("5dc930e9"));
+  if (!org) throw new Error("no organization the admin is in and test@test.com is not");
+  return org;
+}
+
+/** Share the open page with `email` at `level` ("Can edit content", "Can view", …) through Share → Invite. */
+export async function shareWith(page, email, level) {
+  assertOwnPage(page);
+  await page.getByRole("button", { name: /^Share$/ }).first().click();
+  await page.getByRole("button", { name: "Invite" }).click();
+  await page.locator("#user-email").waitFor({ timeout: 30_000 });
+  await page.locator("#user-email").fill(email);
+  await page.waitForTimeout(1500);
+  await page.locator("#user-permission").click({ timeout: 15_000 }).catch(async () => {
+    await page.locator("#user-permission").focus();
+    await page.keyboard.press("Enter");
+  });
+  await page.getByRole("option", { name: level, exact: true }).click();
+  await page.getByRole("button", { name: "Share with User" }).click();
+  await page.waitForTimeout(4000);
+  await page.keyboard.press("Escape");
 }

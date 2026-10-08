@@ -65,6 +65,7 @@ import { usePageReminders } from "../editor/reminders";
 import { markNewSource, useSyncedEdges } from "../state/synced-sources";
 import { setSuggestAuthor, setSuggestName, setSuggestPage } from "../editor/suggest";
 import { useContentEditOnly } from "./content-edit";
+import { StructureProvider } from "./structure";
 import { copyToClipboard } from "@/lib/clipboard/copy";
 
 type Editable = Pick<SpaceDoc, "title" | "icon" | "cover" | "settings" | "blocks">;
@@ -961,6 +962,7 @@ function SpacePageScreen({ spaceId }: { spaceId: string }) {
           </div>
           <CommentMargin threads={comments.threads} containerRef={contentRef} tick={String(contentTick)} onOpen={openThread} />
           {collab.session ? (
+          <StructureProvider value={fullEdit}>
           <SpaceEditor
             key={doc.id}
             spaceId={doc.id}
@@ -1012,6 +1014,7 @@ function SpacePageScreen({ spaceId }: { spaceId: string }) {
             menu={{ moveBlocksTo, turnIntoPageIn, askAi: openAskAi }}
             onComment={startComment}
           />
+          </StructureProvider>
           ) : (
             <div className="spaces-editor-pending" aria-busy="true" />
           )}

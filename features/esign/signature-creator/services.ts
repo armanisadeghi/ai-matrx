@@ -5,7 +5,7 @@
 // Nothing here decides a right; the database and aidream do.
 //
 // The saved-signature doors live in the `esign` schema (typed by database.types). The phone routes
-// below still carry one narrow cast until the published api-types name them.
+// below are typed by the published api-types.
 
 import { callApi } from "@/lib/api/call-api";
 import type { AppDispatch } from "@/lib/redux/store";
@@ -68,28 +68,41 @@ export interface HandoffSubmitAnswer {
   message?: string;
 }
 
-type LooseCall = (config: Record<string, unknown>) => Parameters<AppDispatch>[0];
-
-async function post<T>(dispatch: AppDispatch, path: string, body: Record<string, unknown>): Promise<T> {
-  const call = callApi as unknown as LooseCall;
-  const result = (await dispatch(
-    call({ path, method: "POST", body, expectedErrorStatuses: [409, 422], organizationFreeRead: true }),
-  )) as { data?: unknown; error?: { serverDetail?: unknown } | null };
-  if (!result.error && result.data !== undefined) return result.data as T;
-  const detail = result.error?.serverDetail as { detail?: { message?: unknown } } | undefined;
+function refusal(error: { serverDetail?: unknown } | null | undefined): Error {
+  const detail = error?.serverDetail as { detail?: { message?: unknown } } | undefined;
   const message = detail?.detail?.message;
-  throw new Error(
+  return new Error(
     typeof message === "string" && message !== "" ? message : "We could not reach AI Matrx just now. Try again in a moment.",
   );
 }
 
-export function openHandoff(dispatch: AppDispatch, secret: string): Promise<HandoffOpenAnswer> {
-  return post<HandoffOpenAnswer>(dispatch, "/esign/signing/handoff/open", { secret });
+export async function openHandoff(dispatch: AppDispatch, secret: string): Promise<HandoffOpenAnswer> {
+  const result = await dispatch(
+    callApi({
+      path: "/esign/signing/handoff/open",
+      method: "POST",
+      body: { secret },
+      expectedErrorStatuses: [409, 422],
+      organizationFreeRead: true,
+    }),
+  );
+  if (!result.error && result.data) return result.data;
+  throw refusal(result.error);
 }
 
-export function submitHandoff(
+export async function submitHandoff(
   dispatch: AppDispatch,
   input: { secret: string; method: "drawn" | "uploaded"; image_data_url: string },
 ): Promise<HandoffSubmitAnswer> {
-  return post<HandoffSubmitAnswer>(dispatch, "/esign/signing/handoff/submit", input);
+  const result = await dispatch(
+    callApi({
+      path: "/esign/signing/handoff/submit",
+      method: "POST",
+      body: input,
+      expectedErrorStatuses: [409, 422],
+      organizationFreeRead: true,
+    }),
+  );
+  if (!result.error && result.data) return result.data;
+  throw refusal(result.error);
 }

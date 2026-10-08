@@ -1,10 +1,9 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   CalendarDays,
   CircleAlert,
-  ExternalLink,
   Laptop,
   Loader2,
   RefreshCw,
@@ -16,9 +15,7 @@ import {
   readCodexUsageAllowance,
   CodexUsageCollectionBusyError,
   type CodexUsageAllowance,
-  type CodexUsageGrouping,
   type CodexUsageMetrics,
-  type CodexUsageRow,
   type CodexUsageSnapshot,
 } from "@/features/admin/codex-usage/service";
 import { useDesktopPresence } from "@ai-matrx/chat/agents/hooks/useDesktopPresence";
@@ -26,7 +23,8 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { formatCount, formatPercent } from "@ai-matrx/kit/format";
-import { MatrxDataTable, type MatrxColumnDef } from "@ai-matrx/design-system/data-table";
+import { MatrxDataTable } from "@ai-matrx/design-system/data-table";
+import { CODEX_COLUMNS, CODEX_DRILL, toCodexCells, type CodexCell } from "@/features/admin/codex-usage/codexDrill";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 type RangePreset = "today" | "yesterday" | "last-12-hours" | "custom";
@@ -39,11 +37,6 @@ type UsageLoad = {
   range: TimeRange;
   presence: ReturnType<typeof useDesktopPresence>;
 };
-type UsageScope =
-  | { kind: "model"; model: string | null; effort?: string | null }
-  | { kind: "project"; project: string | null }
-  | { kind: "conversation" | "worker"; conversationId: string | null };
-
 const number = new Intl.NumberFormat("en-US", { maximumFractionDigits: 0 });
 const credits = new Intl.NumberFormat("en-US", {
   minimumFractionDigits: 2,
@@ -119,18 +112,6 @@ function percentage(value: number | null | undefined): string {
   return formatPercent(value, { unknown: "Not available" });
 }
 
-function labelFor(row: CodexUsageRow, fallback: string): string {
-  return (
-    row.label ??
-    row.title ??
-    row.conversation_title ??
-    row.project ??
-    row.model ??
-    row.worker ??
-    fallback
-  );
-}
-
 function CountCard({
   label,
   value,
@@ -148,46 +129,6 @@ function CountCard({
       </p>
       <p className="mt-1 text-xs text-muted-foreground">{detail}</p>
     </div>
-  );
-}
-
-function UsageTable({
-  title,
-  rows,
-  empty,
-  onSelect,
-  selected,
-}: {
-  title: string;
-  rows: CodexUsageRow[];
-  empty: string;
-  onSelect?: (row: CodexUsageRow) => void;
-  selected?: (row: CodexUsageRow) => boolean;
-}) {
-  const columns: MatrxColumnDef<CodexUsageRow>[] = [
-    { id: "name", header: "Name", accessorFn: (row) => labelFor(row, "Unnamed activity"), cell: (usage) => {
-      const name = labelFor(usage, "Unnamed activity");
-      return <div className="min-w-0">{onSelect ? <button type="button" onClick={() => onSelect(usage)} className="max-w-full truncate text-left font-medium text-primary hover:underline">{name}</button> : usage.href ? <a href={usage.href} target="_blank" rel="noopener noreferrer" className="inline-flex max-w-full items-center gap-1 font-medium text-primary hover:underline"><span className="truncate">{name}</span><ExternalLink className="h-3.5 w-3.5 shrink-0" aria-hidden /></a> : <span className="block truncate font-medium">{name}</span>}{usage.project && usage.project !== name ? <span className="mt-0.5 block truncate text-xs text-muted-foreground">{usage.project}</span> : null}</div>;
-    } },
-    { accessorKey: "model", header: "Model", cell: (row) => row.model ?? "—" },
-    { accessorKey: "effort", header: "Effort", cell: (row) => row.effort ?? "—" },
-    { accessorKey: "response_count", header: "Responses", cell: (row) => metric(row.response_count), className: "text-right tabular-nums" },
-    { accessorKey: "estimated_standard_credits", header: "Estimated standard credits", cell: (row) => estimatedCredits(row.estimated_standard_credits), className: "text-right tabular-nums" },
-  ];
-  return (
-    <section className="min-w-0 rounded-lg border bg-card">
-      <MatrxDataTable<CodexUsageRow>
-        tableId={`admin/codex-usage/${title.toLowerCase().replaceAll(" ", "-")}`}
-        data={rows}
-        columns={columns}
-        getRowId={(row) => `${row.task_id ?? row.conversation_id ?? row.id ?? row.label ?? labelFor(row, "Unnamed activity")}-${row.model ?? ""}-${row.effort ?? ""}`}
-        density="condensed"
-        detail={{ enabled: false }}
-        rowClassName={(row) => selected?.(row) ? "bg-primary/5" : undefined}
-        emptyState={{ title: empty }}
-        toolbar={{ title, search: true }}
-      />
-    </section>
   );
 }
 
@@ -214,14 +155,12 @@ function optionalActivity(
 export function CodexUsageDashboard() {
   const presence = useDesktopPresence();
   const [preset, setPreset] = useState<RangePreset>("today");
-  const [grouping, setGrouping] = useState<CodexUsageGrouping>("model");
   const [startDate, setStartDate] = useState(() => localDate(new Date()));
   const [endDate, setEndDate] = useState(() => localDate(new Date()));
   const [resumeRange, setResumeRange] = useState<TimeRange | null>(null);
   const [snapshot, setSnapshot] = useState<CodexUsageSnapshot | null>(null);
   const [allowance, setAllowance] = useState<CodexUsageAllowance | null>(null);
   const [allowanceError, setAllowanceError] = useState<string | null>(null);
-  const [scope, setScope] = useState<UsageScope | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -345,44 +284,7 @@ export function CodexUsageDashboard() {
     typeof successfullyReadCandidates === "number"
       ? successfullyReadCandidates
       : null;
-  const scopeRows = snapshot?.cells.filter((row) => {
-    if (!scope) return false;
-    if (scope.kind === "model")
-      return (
-        row.model === scope.model &&
-        (scope.effort === undefined || row.effort === scope.effort)
-      );
-    if (scope.kind === "project") return row.project === scope.project;
-    return row.conversation_id === scope.conversationId;
-  });
-  const scopeCredits = scopeRows?.some(
-    (row) =>
-      (row.response_count ?? 0) > 0 &&
-      row.estimated_standard_credits == null,
-  )
-    ? null
-    : scopeRows?.reduce(
-        (total, row) => total + (row.estimated_standard_credits ?? 0),
-        0,
-      );
-  const scopeResponses = scopeRows?.reduce(
-    (total, row) => total + (row.response_count ?? 0),
-    0,
-  );
-  const scopeShare =
-    scopeCredits != null &&
-    snapshot?.credits.estimated_standard != null &&
-    snapshot.credits.estimated_standard > 0
-      ? (scopeCredits / snapshot.credits.estimated_standard) * 100
-      : null;
-  const scopeTitle =
-    scope?.kind === "model"
-      ? `${scope.model ?? "Unknown model"}${scope.effort ? ` · ${scope.effort}` : ""}`
-      : scope?.kind === "project"
-        ? (scope.project ?? "Unknown project")
-        : scopeRows?.[0]
-          ? labelFor(scopeRows[0], "Unnamed conversation")
-          : "Selected conversation";
+  const cells = useMemo(() => toCodexCells(snapshot?.cells ?? []), [snapshot]);
   const coverageText = snapshot
     ? Object.entries(snapshot.coverage)
         .filter(
@@ -479,17 +381,6 @@ export function CodexUsageDashboard() {
               />
             </>
           ) : null}
-          <select
-            aria-label="Usage grouping"
-            value={grouping}
-            onChange={(event) =>
-              setGrouping(event.target.value as CodexUsageGrouping)
-            }
-            className="h-8 rounded-md border bg-background px-2 text-xs"
-          >
-            <option value="model">By model</option>
-            <option value="model_effort">By model and effort</option>
-          </select>
           <Button
             icon={refreshing ? (
               <Loader2 className="animate-spin" aria-hidden />
@@ -700,112 +591,19 @@ export function CodexUsageDashboard() {
             </section>
           ) : null}
 
-          {scope ? (
-            <section className="rounded-lg border bg-card p-4">
-              <div className="flex flex-wrap items-start justify-between gap-3">
-                <div>
-                  <p className="text-sm font-semibold">Selected scope</p>
-                  <p className="mt-1 text-sm text-muted-foreground">
-                    {scopeTitle}
-                  </p>
-                </div>
-                <Button
-                  variant="outline"
-                  onClick={() => setScope(null)}
-                >
-                  Clear selection
-                </Button>
-              </div>
-              <div className="mt-3 grid gap-3 sm:grid-cols-3">
-                <CountCard
-                  label="Scope estimate"
-                  value={estimatedCredits(scopeCredits)}
-                  detail="Estimated standard credits in this selected scope"
-                />
-                <CountCard
-                  label="Share of report"
-                  value={
-                    scopeShare == null
-                      ? "Not available"
-                      : percentage(scopeShare)
-                  }
-                  detail="Of the displayed report estimate"
-                />
-                <CountCard
-                  label="Scope responses"
-                  value={metric(scopeResponses)}
-                  detail="Captured responses in this selected scope"
-                />
-              </div>
-            </section>
-          ) : null}
-
-          <UsageTable
-            title={
-              grouping === "model" ? "Model usage" : "Model and effort usage"
-            }
-            rows={
-              grouping === "model" ? snapshot.models : snapshot.model_effort
-            }
-            empty="No model activity was captured in this range."
-            onSelect={(row) =>
-              setScope({
-                kind: "model",
-                model: row.model ?? null,
-                ...(grouping === "model_effort"
-                  ? { effort: row.effort ?? null }
-                  : {}),
-              })
-            }
-            selected={(row) =>
-              scope?.kind === "model" &&
-              scope.model === (row.model ?? null) &&
-              (scope.effort === undefined ||
-                scope.effort === (row.effort ?? null))
-            }
-          />
-          <UsageTable
-            title="Projects"
-            rows={snapshot.projects}
-            empty="No project rollups were returned in this range."
-            onSelect={(row) =>
-              setScope({ kind: "project", project: row.project ?? null })
-            }
-            selected={(row) =>
-              scope?.kind === "project" &&
-              scope.project === (row.project ?? null)
-            }
-          />
-          <UsageTable
-            title="Conversations"
-            rows={snapshot.conversations}
-            empty="No conversation rollups were returned in this range."
-            onSelect={(row) =>
-              setScope({
-                kind: "conversation",
-                conversationId: row.conversation_id ?? null,
-              })
-            }
-            selected={(row) =>
-              scope?.kind === "conversation" &&
-              scope.conversationId === (row.conversation_id ?? null)
-            }
-          />
-          <UsageTable
-            title="Workers"
-            rows={snapshot.workers}
-            empty="No worker rollups were returned in this range."
-            onSelect={(row) =>
-              setScope({
-                kind: "worker",
-                conversationId: row.conversation_id ?? null,
-              })
-            }
-            selected={(row) =>
-              scope?.kind === "worker" &&
-              scope.conversationId === (row.conversation_id ?? null)
-            }
-          />
+          <section className="min-w-0 rounded-lg border bg-card">
+            <MatrxDataTable<CodexCell>
+              tableId="admin/codex-usage/usage"
+              data={cells}
+              columns={CODEX_COLUMNS}
+              getRowId={(row) => row.id}
+              drill={CODEX_DRILL}
+              density="condensed"
+              detail={{ enabled: false }}
+              emptyState={{ title: "No usage was captured in this range." }}
+              toolbar={{ title: "Usage", search: true }}
+            />
+          </section>
         </>
       ) : null}
     </main>

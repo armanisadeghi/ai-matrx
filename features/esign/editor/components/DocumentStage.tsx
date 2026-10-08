@@ -50,8 +50,6 @@ interface Props extends StageHandlers {
   selection: ReadonlySet<string>;
   armed: FieldKindV2 | null;
   candidates: Record<string, DetectCandidate[]>;
-  /** Dev demo only: file id → a URL PdfPreview may read. */
-  documentUrls?: Record<string, string>;
   /** Preview as a recipient: only this recipient's fields, nothing editable. */
   onlyRecipient?: string | null;
   readOnly?: boolean;
@@ -76,7 +74,6 @@ export function DocumentStage(props: Props) {
               <div className="overflow-hidden rounded-sm bg-white shadow-md ring-1 ring-black/10">
                 <PdfPreview
                   fileId={doc.file_id}
-                  remoteUrl={props.documentUrls?.[doc.file_id] ?? null}
                   layout="continuous"
                   onDocumentLoad={(n) => props.onPages(doc.key, n)}
                   renderOverlay={({ pageNumber, rotation }) =>

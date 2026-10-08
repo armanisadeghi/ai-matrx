@@ -60,6 +60,7 @@ import { FieldList, MenuRow, SidePeek, ViewerSaveBar, ViewerSortButton, ViewTab,
 import { ChartView, choicesOfField } from "./ChartView";
 import { NewPropertyPanel } from "./NewProperty";
 import { SpaceIcon } from "../page/SpaceIcon";
+import { useStructureEdit } from "../page/structure";
 import { AGENCY_SAMPLE_ID, newViewId, readDatabaseProps, type ChartSettings, type DatabaseBlockProps, type SpaceDbView, type SpaceViewLayout } from "./sources";
 
 type Layout = SpaceViewLayout | "dashboard" | "form";
@@ -147,6 +148,10 @@ function DatabaseFrame({
 }) {
   const client = useRecordsClient();
   const table = useTable(tableId);
+  // Structure (views, properties, layout, automations, saved filters) is Full access / Can edit only (Notion);
+  // a content editor adds and edits rows. The database enforces it; this only stops offering it.
+  const structure = useStructureEdit();
+  const shape = editable && structure;
   // On a page published to the web the rows are the page's own read-only copy: no automations, charts count rows.
   const published = usePublishedRows() !== null;
   const fields = useFields(tableId).data ?? [];
@@ -198,7 +203,8 @@ function DatabaseFrame({
       overRows={sample || published}
       sortOverride={sortOverride}
       search={search}
-      onSummaries={editable && !sample && !published ? (summaries) => saveView({ summaries } as Partial<SpaceDbView>) : undefined}
+      shape={shape}
+      onSummaries={shape && !sample && !published ? (summaries) => saveView({ summaries } as Partial<SpaceDbView>) : undefined}
       onFormId={(formId) => saveView({ formId })}
       onLook={saveView}
     />
@@ -209,7 +215,7 @@ function DatabaseFrame({
       {props.showTitle !== false && !isChart ? (
         <div className="spaces-db-title">
           {props.linked ? <ArrowUpRight size={14} strokeWidth={2} className="spaces-db-linked" /> : null}
-          {editable && !sample ? (
+          {shape && !sample ? (
             // Notion: the database's title is typed in place.
             <Input
               variant="bare"
@@ -239,7 +245,7 @@ function DatabaseFrame({
                 icon={viewIcon(v, isChart ? 16 : 14)}
                 active={v.id === active.id}
                 pill={isChart}
-                editable={editable}
+                editable={shape}
                 onSelect={() => save({ activeViewId: v.id })}
                 onRename={(name) => save({ views: views.map((x) => (x.id === v.id ? { ...x, name } : x)), activeViewId: v.id })}
                 onDuplicate={() => {
@@ -257,8 +263,8 @@ function DatabaseFrame({
               />
             );
           })}
-          {isChart ? (
-            <ViewSettings tableId={tableId} sample={sample} view={active} fields={fields} props={props} onView={saveView} onBlock={save} editable={editable} compact />
+          {isChart && shape ? (
+            <ViewSettings tableId={tableId} sample={sample} view={active} fields={fields} props={props} onView={saveView} onBlock={save} editable={shape} compact />
           ) : null}
           {isChart ? (
             // Notion's chart view keeps its view's filter and sort: the tile counts and orders what they show.
@@ -268,7 +274,7 @@ function DatabaseFrame({
                 fields={fields}
                 choice={filterChoices[active.id]}
                 onChoice={(c) => setFilterChoices((all) => ({ ...all, [active.id]: c }))}
-                canSave={editable}
+                canSave={shape}
                 onSave={(filters) => saveView({ filters })}
               />
               <ViewerSortButton
@@ -276,13 +282,13 @@ function DatabaseFrame({
                 fields={fields}
                 choice={sortChoices[active.id]}
                 onChoice={(c) => setSortChoices((all) => ({ ...all, [active.id]: c }))}
-                canSave={editable}
+                canSave={shape}
                 onSave={(sorts) => saveView({ sorts })}
                 icon={<ArrowDownUp size={14} strokeWidth={1.8} />}
               />
             </span>
           ) : null}
-          {editable && !isChart ? (
+          {shape && !isChart ? (
             <Button variant="quiet" icon={<Plus size={14} />} aria-label="Add view" onClick={() => {
                 const v: SpaceDbView = { id: newViewId(), name: "Table", layout: "grid" };
                 save({ views: [...views, v], activeViewId: v.id });
@@ -296,20 +302,20 @@ function DatabaseFrame({
               fields={fields}
               choice={filterChoices[active.id]}
               onChoice={(c) => setFilterChoices((all) => ({ ...all, [active.id]: c }))}
-              canSave={editable}
+              canSave={shape}
               onSave={(filters) => saveView({ filters })}
-              onSaveWhere={editable && !sample && !published ? (where) => saveView({ where }) : undefined}
+              onSaveWhere={shape && !sample && !published ? (where) => saveView({ where }) : undefined}
             />
             <ViewerSortButton
               view={active}
               fields={fields}
               choice={sortChoices[active.id]}
               onChoice={(c) => setSortChoices((all) => ({ ...all, [active.id]: c }))}
-              canSave={editable}
+              canSave={shape}
               onSave={(sorts) => saveView({ sorts })}
               icon={<ArrowDownUp size={15} strokeWidth={1.8} />}
             />
-            {published ? null : <AutomationsButton tableId={tableId} sample={sample} fields={fields} organizationId={(table.data as { organization_id?: string } | null)?.organization_id ?? null} />}
+            {published || !shape ? null : <AutomationsButton tableId={tableId} sample={sample} fields={fields} organizationId={(table.data as { organization_id?: string } | null)?.organization_id ?? null} />}
             {/* Notion's magnifier sits in this icon row and opens in place (records-ui's own box is hidden by spaces.css). */}
             {searchOpen[active.id] || search.value ? (
               <div className="spaces-db-search">
@@ -347,7 +353,7 @@ function DatabaseFrame({
               <Button variant="quiet" icon={<Search size={15} strokeWidth={1.8} />} aria-label="Search" title="Search" onClick={() => setSearchOpen((all) => ({ ...all, [active.id]: true }))} />
             )}
             <Button variant="quiet" icon={<Maximize2 size={15} strokeWidth={1.8} />} aria-label="Open as full page" title="Open as full page" onClick={() => setExpanded(true)} />
-            <ViewSettings tableId={tableId} sample={sample} view={active} fields={fields} props={props} onView={saveView} onBlock={save} editable={editable} />
+            {shape ? <ViewSettings tableId={tableId} sample={sample} view={active} fields={fields} props={props} onView={saveView} onBlock={save} editable={shape} /> : null}
             {published ? null : <NewButton onNew={addRow} />}
           </div>
         ) : null}
@@ -366,7 +372,7 @@ function DatabaseFrame({
       <Dialog open={expanded} onOpenChange={setExpanded}>
         <DialogContent size="2xl" height="tall" className="spaces-db-expanded overflow-auto">
           <DialogTitle>{props.title || sourceName}</DialogTitle>
-          <DatabaseBody tableId={tableId} view={shown} fields={fields} onOpenRecord={setOpen} editable={editable} sample={sample} overRows={sample || published} sortOverride={sortOverride} search={search} onSummaries={editable && !sample && !published ? (summaries) => saveView({ summaries } as Partial<SpaceDbView>) : undefined} onFormId={(formId) => saveView({ formId })} onLook={saveView} />
+          <DatabaseBody tableId={tableId} view={shown} fields={fields} onOpenRecord={setOpen} editable={editable} shape={shape} sample={sample} overRows={sample || published} sortOverride={sortOverride} search={search} onSummaries={shape && !sample && !published ? (summaries) => saveView({ summaries } as Partial<SpaceDbView>) : undefined} onFormId={(formId) => saveView({ formId })} onLook={saveView} />
         </DialogContent>
       </Dialog>
     </div>
@@ -420,6 +426,7 @@ function DatabaseBody({
   fields,
   onOpenRecord,
   editable,
+  shape,
   sample,
   overRows,
   sortOverride,
@@ -433,6 +440,8 @@ function DatabaseBody({
   fields: Field[];
   onOpenRecord: (id: string) => void;
   editable: boolean;
+  /** Full access / Can edit: the Form view's builder (a content editor, commenter or viewer answers it). */
+  shape: boolean;
   sample: boolean;
   /** The store has no aggregate door (the sample, a published page): charts count read rows. */
   overRows: boolean;
@@ -452,7 +461,7 @@ function DatabaseBody({
     return <ChartView tableId={tableId} settings={settings} title={view.name} overRows={overRows} filter={view.filters ?? {}} sorts={view.sorts ?? []} />;
   }
   if ((view.layout as Layout) === "dashboard") return <DashboardCanvas tableId={tableId} />;
-  if ((view.layout as Layout) === "form") return <FormViewBody tableId={tableId} view={view} editable={editable && !overRows} onFormId={onFormId} />;
+  if ((view.layout as Layout) === "form") return <FormViewBody tableId={tableId} view={view} editable={shape && !overRows} onFormId={onFormId} />;
   const needsGroup = view.layout === "kanban" && !view.groupField;
   const group = needsGroup ? fields.find((f) => ["select", "status", "list"].includes(kindOf(f)))?.key : undefined;
   const needsDate = (view.layout === "calendar" || view.layout === "timeline") && !view.dateField;

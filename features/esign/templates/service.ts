@@ -16,8 +16,8 @@ async function rows(lane: "all" | "mine", query: EntityListQuery): Promise<Templ
 const SORTABLE: Record<string, (r: TemplateRow) => string | number> = {
   name: (r) => r.name.toLowerCase(),
   updated_at: (r) => r.updated_at,
-  documents: (r) => r.documents,
-  roles: (r) => r.roles,
+  documents: (r) => r.documents.length,
+  roles: (r) => r.roles.length,
   organization_name: (r) => r.organization_name ?? "",
 };
 

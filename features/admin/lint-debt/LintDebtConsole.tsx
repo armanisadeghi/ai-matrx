@@ -69,6 +69,7 @@ import {
 import { fixPromptForBucket, fixPromptForFinding } from "./fix-prompt";
 import { formatCount, formatRelativeTime } from "@ai-matrx/kit/format";
 import { useNow } from "@/hooks/useNow";
+import { LINT_DRILL } from "./lintDrill";
 
 /** A scan older than this is stale enough that the page must say so. */
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -553,6 +554,7 @@ export function LintDebtConsole({
         >
           <MatrxDataTable
             urlState={{ id: "lint-debt" }}
+            drill={LINT_DRILL}
             data={findings}
             columns={columns}
             getRowId={(f) => lintFindingKey(f)}

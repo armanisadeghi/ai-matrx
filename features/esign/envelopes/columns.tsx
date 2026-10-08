@@ -73,6 +73,7 @@ export const ENVELOPE_COLUMNS: EntityColumnSpec<EnvelopeListRow>[] = [
   {
     id: "signer_names",
     label: "Signers",
+    defaultHidden: true,
     column: {
       id: "signer_names",
       accessorKey: "signer_names",

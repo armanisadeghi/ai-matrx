@@ -30,7 +30,10 @@ type Answer = components["schemas"]["EsignSigningAnswer"];
  * sent only once its name is in this list — `satisfies` makes the list follow the types, so adding a
  * name here compiles exactly when the server lane's api-types carry it.
  */
-const KNOWN_ACTIONS = ["load", "preview", "consent", "document", "adopt", "sign", "decline", "signed_copy"] as const satisfies readonly Action[];
+const KNOWN_ACTIONS = [
+  "load", "preview", "consent", "document", "adopt", "sign", "decline", "save_values", "acknowledge",
+  "history", "delegate", "download", "handoff_start", "handoff_text", "handoff_status", "handoff_cancel",
+] as const satisfies readonly Action[];
 
 function knownAction(name: string): Action | null {
   return KNOWN_ACTIONS.find((a) => a === name) ?? null;
@@ -188,14 +191,7 @@ export function createSignerDoor(dispatch: AppDispatch, target: SignerTarget): S
     },
 
     async adopt(input: AdoptInput) {
-      // The published api-types name two mark kinds; an uploaded image goes through once they name
-      // the third (wave B) — until then the step says it is not available yet.
-      const kind = input.kind === "typed" || input.kind === "drawn" ? input.kind : null;
-      if (!kind) throw new DoorRefusal("unknown_action", reasonText("unknown_action"));
-      // A phone or saved mark names its source by id; until the server takes that id, say so.
-      if (input.source === "phone" && !serverTakes("handoff_id")) throw new DoorRefusal("unknown_action", reasonText("unknown_action"));
-      if (input.source === "saved" && !serverTakes("saved_signature_id")) throw new DoorRefusal("unknown_action", reasonText("unknown_action"));
-      const a = await act("adopt", { ...input, kind });
+      const a = await act("adopt", { ...input });
       const image = str(a.image_base64) ?? str(input.image_data_url)?.replace(/^data:[^,]+,/, "") ?? "";
       const t: MarkTarget = a.target === "initials" ? "initials" : a.target === "signature" ? "signature" : input.target;
       return { target: t, image_base64: image };

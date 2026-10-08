@@ -10,7 +10,7 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 
-import { InternalSigning } from "@/features/esign/signing/InternalSigning";
+import { InternalEntry } from "@/features/esign/signer/InternalEntry";
 import { currentRequestLoginHref } from "@/utils/auth/server-login-href";
 import { getSessionVerdict } from "@/utils/supabase/sessionVerdict";
 
@@ -29,5 +29,9 @@ export default async function InternalSignPage({
   const { envelopeId } = await params;
   const { isAuthenticated } = await getSessionVerdict();
   if (!isAuthenticated) redirect(await currentRequestLoginHref(`/sign/e/${envelopeId}`));
-  return <InternalSigning envelopeId={envelopeId} />;
+  return (
+    <div className="h-dvh">
+      <InternalEntry envelopeId={envelopeId} />
+    </div>
+  );
 }

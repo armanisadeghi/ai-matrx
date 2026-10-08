@@ -33,6 +33,7 @@ import {
   Download,
   ExternalLink,
 } from "lucide-react";
+import { SANDBOX_DRILL } from "./sandboxDrill";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -621,6 +622,7 @@ export default function AdminSandboxManagementPage() {
             <MatrxDataTable<SandboxInstance>
               tableId="administration/compute/sandbox"
               data={instances}
+              drill={SANDBOX_DRILL}
               columns={[...(columns), { id: "custom-actions", header: "Actions", sortable: false, filter: false, customActions: (instance) => {
                 const busy = isLifecycleReserved(instance.id);
                 const active = ["ready", "running"].includes(instance.status);

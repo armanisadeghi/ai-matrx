@@ -50,6 +50,14 @@ export interface BattleColumnDescriptor {
 
 const EMPTY: BattleColumnDescriptor[] = [];
 
+/**
+ * Selector options for anything that reads the model catalog (not Redux state)
+ * through its inputs: reselect would otherwise skip the inputs whenever the
+ * Redux state is the same object, and a model list that just loaded would never
+ * reach the names. The result function is still memoized on the inputs.
+ */
+export const readsCatalogOptions = { argsMemoize: <F extends (...a: never[]) => unknown>(fn: F) => fn } as const;
+
 const selectMountedMode = (s: RootState) => s.agentComparison.mountedMode;
 const selectOpen = (s: RootState) => s.agentComparison;
 const selectSettings = (s: RootState) => s.agentComparisonSettings;
@@ -173,6 +181,7 @@ export const selectActiveBattleColumns = createSelector(
         return EMPTY;
     }
   },
+  readsCatalogOptions,
 );
 
 /**

@@ -32,6 +32,7 @@ import { FieldList, MenuRow, NewButton, SidePeek, ViewerSaveBar, ViewerSortButto
 import { BUILT_IN_SOURCES, newViewId, type DatabaseBlockProps, type SpaceDbView, type SpaceViewLayout } from "./sources";
 import { formatCount } from "@ai-matrx/kit/format";
 import { isUuidShape } from "@ai-matrx/kit/uuid";
+import { useStructureEdit } from "../page/structure";
 
 /** The layouts a built-in source draws today. */
 const ENTITY_LAYOUTS: Array<{ id: SpaceViewLayout; label: string; icon: typeof Table2 }> = [
@@ -248,6 +249,9 @@ export function EntityDatabase(p: EntityDatabaseProps) {
 }
 
 function EntityFrame({ token, props, raw, onChange, editable }: EntityDatabaseProps) {
+  // Views, saved filters and settings are structure: Full access / Can edit only (page/structure.ts).
+  const structure = useStructureEdit();
+  const shape = editable && structure;
   const views: SpaceDbView[] = props.views?.length ? props.views : [{ id: "view-all", name: "All", layout: "grid" }];
   const active = views.find((v) => v.id === props.activeViewId) ?? views[0];
   // The toolbar sort is this viewer's own, per view, never written to the view (Notion); the store is
@@ -326,7 +330,7 @@ function EntityFrame({ token, props, raw, onChange, editable }: EntityDatabasePr
                 view={v}
                 icon={<Icon size={14} strokeWidth={1.8} />}
                 active={v.id === active.id}
-                editable={editable}
+                editable={shape}
                 onSelect={() => save({ activeViewId: v.id })}
                 onRename={(name) => save({ views: views.map((x) => (x.id === v.id ? { ...x, name } : x)), activeViewId: v.id })}
                 onDuplicate={() => {
@@ -344,7 +348,7 @@ function EntityFrame({ token, props, raw, onChange, editable }: EntityDatabasePr
               />
             );
           })}
-          {editable ? (
+          {shape ? (
             <Button
               variant="quiet"
               icon={<Plus size={14} />}
@@ -384,7 +388,7 @@ function EntityFrame({ token, props, raw, onChange, editable }: EntityDatabasePr
             columns={entity.columns}
             choice={filterChoices[active.id]}
             onChoice={(c) => setFilterChoices((all) => ({ ...all, [active.id]: c }))}
-            canSave={editable}
+            canSave={shape}
             onSave={(filters) => saveView({ filters })}
           />
           <ViewerSortButton
@@ -392,12 +396,12 @@ function EntityFrame({ token, props, raw, onChange, editable }: EntityDatabasePr
             fields={asFields(entity.columns.filter((c) => !c.lookup))}
             choice={sortChoices[active.id]}
             onChoice={(c) => setSortChoices((all) => ({ ...all, [active.id]: c }))}
-            canSave={editable}
+            canSave={shape}
             onSave={(sorts) => saveView({ sorts })}
             icon={<ArrowDownUp size={15} strokeWidth={1.8} />}
           />
           <Button variant="quiet" icon={<Maximize2 size={15} strokeWidth={1.8} />} aria-label="Open as full page" title="Open as full page" onClick={() => setExpanded(true)} />
-          <EntitySettings view={active} columns={entity.columns} props={props} onView={saveView} onBlock={save} editable={editable} />
+          {shape ? <EntitySettings view={active} columns={entity.columns} props={props} onView={saveView} onBlock={save} editable={shape} /> : null}
           {editable ? <NewButton onNew={() => void addRow()} /> : null}
         </div>
       </div>

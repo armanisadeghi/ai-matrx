@@ -33,12 +33,12 @@ export const TEMPLATE_COLUMNS: EntityColumnSpec<TemplateRow>[] = [
   {
     id: "documents",
     label: "Documents",
-    column: { id: "documents", accessorKey: "documents", header: "Documents", filter: false, cell: (row) => <span className="tabular-nums">{row.documents}</span> },
+    column: { id: "documents", accessorKey: "documents", header: "Documents", filter: false, cell: (row) => (row.documents.length ? <span className="line-clamp-1" title={row.documents.map((d) => d.name ?? "").join(", ")}>{row.documents.map((d) => d.name ?? "Untitled").join(", ")}</span> : <Muted>—</Muted>) },
   },
   {
     id: "roles",
     label: "Roles",
-    column: { id: "roles", accessorKey: "roles", header: "Roles", filter: false, cell: (row) => <span className="tabular-nums">{row.roles}</span> },
+    column: { id: "roles", accessorKey: "roles", header: "Roles", filter: false, cell: (row) => (row.roles.length ? <span className="line-clamp-1">{row.roles.map((r) => r ?? "Role").join(", ")}</span> : <Muted>—</Muted>) },
   },
   {
     id: "organization_name",

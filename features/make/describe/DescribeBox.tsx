@@ -37,6 +37,7 @@ import { templatePreviewHref } from "../gallery/galleryHref";
 
 import { secondsWords } from "./made";
 import {
+  applySafeReuses,
   bindReuses,
   checkDescribeTemplate,
   coerceDescribeAnswer,
@@ -123,16 +124,17 @@ export function DescribeBox() {
 
       // The check before anything is built: one line, and a retry.
       // The package's automatic fixes run first; the person sees an error only for what REMAINS.
-      const checked = checkDescribeTemplate(answer.template, tables);
+      const safe = applySafeReuses(answer, tables);
+      const checked = checkDescribeTemplate(safe.template, tables);
       lap("check");
       if (!checked.ok) {
         console.warn("[make:describe] the store's check refused the spec", checked.problems, checked.autoFixes);
         setRun({ phase: "failed", why: checked.line, templateId: null, answer: null });
         return;
       }
-      const notes = [...answer.notes, ...checked.autoFixes];
+      const notes = [...answer.notes, ...safe.notes, ...checked.autoFixes];
       const stamp = `${startedAt.toString(36)}${Math.random().toString(36).slice(2, 6)}`.toUpperCase();
-      const templateId = await declareDescribeSpec(client, organizationId, bindReuses(checked.spec, answer.reuses, tables), stamp);
+      const templateId = await declareDescribeSpec(client, organizationId, bindReuses(checked.spec, safe.reuses, tables), stamp);
       lap("declare");
       setRun({ phase: "installing", startedAt, templateId, answer: null, notes });
       const done = await runTemplateDoor(source, "template_install", organizationId, templateId, {
