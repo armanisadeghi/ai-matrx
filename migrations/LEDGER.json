@@ -1,6 +1,6 @@
 {
   "note": "Checked-in snapshot of public._schema_migrations for the files under migrations/campaign and migrations/inverse. Written by `pnpm db:apply` on every successful production apply and refreshed whole by the nightly catch-up. Never hand-edited: a self-written checksum is a claim nobody can check. Guard: pnpm check:ledgered-files-unedited.",
-  "generated_at": "2026-10-08T15:03:51.109Z",
+  "generated_at": "2026-10-08T15:21:22.366Z",
   "files": {
     "migrations/campaign/a_chunk_is_the_size_the_client_door_can_actually_carry.sql": {
       "source": "matrx-frontend",
@@ -3668,6 +3668,12 @@
       "checksum": "5ed09659a562794bc810d1bb5854a8549ac89361327373bedf3e07d3d87e7acc",
       "applied_at": "2026-09-20 13:46:28.15849+00"
     },
+    "migrations/campaign/hr360_review_knobs.sql": {
+      "source": "matrx-frontend",
+      "filename": "hr360_review_knobs.sql",
+      "checksum": "aa9917d1d6da9d97f92b9d05be8d45bca9b094aa8ded8038d238f486c9704724",
+      "applied_at": "2026-10-08 15:05:30.99561+00"
+    },
     "migrations/campaign/hrloopcleanup_a_the_loops_duplicate_failures_are_resolved.sql": {
       "source": "matrx-frontend",
       "filename": "hrloopcleanup_a_the_loops_duplicate_failures_are_resolved.sql",
@@ -4484,6 +4490,12 @@
       "checksum": "783b1c16e02a04ee8bf57960e6085452374579efb7f2214c70a15efe37125dff",
       "applied_at": "2026-09-21 21:54:38.048046+00"
     },
+    "migrations/campaign/list_tables_skips_registry_rows_whose_table_is_gone.sql": {
+      "source": "matrx-frontend",
+      "filename": "list_tables_skips_registry_rows_whose_table_is_gone.sql",
+      "checksum": "73e0f93663fcbe12e11df1f91f4ab384a60973d7bc0817fa9e213ce7e3c4b92f",
+      "applied_at": "2026-10-08 15:20:58.279277+00"
+    },
     "migrations/campaign/listcopypermissive_b_a_removal_is_named_before_an_invented_choice.sql": {
       "source": "matrx-frontend",
       "filename": "listcopypermissive_b_a_removal_is_named_before_an_invented_choice.sql",
@@ -4861,6 +4873,18 @@
       "filename": "paritynightly_the_context_parity_guard_is_a_scheduled_system_job_switched_off.sql",
       "checksum": "b4fc35e4d8b0c67493c9e474a38a56d50bc69de2b1b8177791f177b7410c84bd",
       "applied_at": "2026-09-25 14:24:13.036153+00"
+    },
+    "migrations/campaign/perf_watch_w1_a_catalog_and_sample.sql": {
+      "source": "matrx-frontend",
+      "filename": "perf_watch_w1_a_catalog_and_sample.sql",
+      "checksum": "23459e6d45a9ef645d8a05572c4ff78d89392063a638443ca9af5559ddf92161",
+      "applied_at": "2026-10-08 15:20:35.436074+00"
+    },
+    "migrations/campaign/perf_watch_w1_b_sample_access.sql": {
+      "source": "matrx-frontend",
+      "filename": "perf_watch_w1_b_sample_access.sql",
+      "checksum": "afcb93500d7a4b293ed035590ee5d84fd85252568045ec24c1c6518d7c3c2e95",
+      "applied_at": "2026-10-08 15:21:00.452546+00"
     },
     "migrations/campaign/perffix1_a_the_read_doors_ask_the_ladder_once.sql": {
       "source": "matrx-frontend",
