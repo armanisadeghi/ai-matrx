@@ -11,7 +11,8 @@
 //
 // Same doors, same person, same arguments: RLS and every door's own wall decide exactly as they do
 // from the browser. Nothing here decides access. A read that fails, refuses, or is slower than
-// its hang guard (the knob `data/server_rows_budget_ms`) answers null and the browser asks for itself as it always did — never "empty".
+// the cap (the knob `data/server_rows_cap_ms`, lane SSR-ROWS-3) answers null and the browser asks for
+// itself at once, as it always did — never "empty".
 
 import "server-only";
 
@@ -57,26 +58,27 @@ export function addressAsksThePlainOpening(searchParams: Record<string, string |
 }
 
 /**
- * A HANG GUARD, NEVER A BUDGET (lane SSR-ROWS-2, ruling 2026-10-08). The route's HTML shell and the
- * table's own final-geometry skeleton (`app/(core)/data/[tableId]/loading.tsx`, the route's Suspense
- * fallback) are flushed at once; the page — rows included when the person's knob is on — streams into
- * that boundary in the same response the moment the server's reads land. Nothing waits for a clock.
- * Only a read that never answers is cut off: past this (or the person's `data/server_rows_budget_ms`,
- * once the bundle names it) the boundary resolves without a seed and the browser asks for itself.
- * Equal to the knob's platform default.
+ * A SHORT CAP THAT NEVER COSTS ANYTHING (lane SSR-ROWS-3). The route's HTML shell and the table's
+ * own final-geometry skeleton (`app/(core)/data/[tableId]/loading.tsx`, the route's Suspense fallback)
+ * flush at once. The page waits for the server's first reads at most this long from the request's
+ * start (or the person's `data/server_rows_cap_ms`, once the bundle names it): past it the boundary
+ * resolves with no seed and the browser asks for itself at once. A cold chain that would have
+ * outrun it therefore costs the page ~nothing over asking from the browser alone, and a warm one
+ * draws its rows from the server. Equal to the knob's platform default.
  */
-const DEFAULT_BUDGET_MS = 8_000;
+export const DEFAULT_CAP_MS = 1_200;
 
 /**
- * WHETHER THIS PERSON'S TABLE PAGE DRAWS ITS ROWS ON THE SERVER (lane SSR-ROWS-2): the knobs
- * `data/server_rows` and `data/server_rows_budget_ms`, resolved for the person in the table's
+ * WHETHER THIS PERSON'S TABLE PAGE DRAWS ITS ROWS ON THE SERVER (lanes SSR-ROWS-2, SSR-ROWS-3): the
+ * knobs `data/server_rows` and `data/server_rows_cap_ms`, resolved for the person in the table's
  * organization and carried by the table's own bundle (`custom.table_page_bundle`'s `server_rows`
  * part, `serverRowsOf`) — the read the page makes anyway, so deciding costs no extra read. Off unless
- * the bundle says on: a refused part, an older store, no organization or a slow answer are all off.
+ * the bundle says on: a refused part, an older store, no organization or a bundle slower than the cap
+ * are all off.
  */
 export interface ServerRowsGate {
   on: boolean;
-  budgetMs: number;
+  capMs: number;
 }
 
 type CustomRpc = { rpc: (fn: string, args: Record<string, unknown>) => PromiseLike<{ data: unknown; error: unknown }> };
@@ -106,6 +108,10 @@ async function askSeed(
   decided: (gate: ServerRowsGate) => void,
 ): Promise<TablePageSeed | null> {
   const custom = supabase.schema("custom" as never) as unknown as CustomRpc;
+  // PARALLEL AT THE START (lane SSR-ROWS-3): where the table lives and who is asking are asked at
+  // once; the bundle (and the record's bundle) start the moment the organization is known — they
+  // cannot start sooner, both doors take it — and the first page the moment the bundle names its sort.
+  const claimsAsked = getClaimsUser(supabase).catch(() => ({ data: { user: null } }));
   const whereRaw = await custom.rpc("where_id_opens", { p_id: tableId });
   const where: SeededDoorAnswer = { data: whereRaw.data ?? null, error: plainError(whereRaw.error) };
   const organizationId = organizationOf(where);
@@ -113,10 +119,7 @@ async function askSeed(
     decided(OFF);
     return { tableId, where, organizationId: null, bundle: null };
   }
-  // The table's bundle, the grid's first page (only when the person's knob, read from that bundle,
-  // says on) and, on a record page, the record's bundle — asked by the records client exactly as the
-  // browser's would ask them, as the person, and recorded.
-  const { data: claims } = await getClaimsUser(supabase);
+  const { data: claims } = await claimsAsked;
   const userId = claims.user?.id ?? null;
   const records = await askTablePageSeed({
     dataSource: supabase,
@@ -127,7 +130,7 @@ async function askSeed(
     rows: (asked) => {
       const knob = serverRowsOf(asked);
       const on = forceOn || knob?.on === true;
-      decided({ on, budgetMs: knob?.budgetMs ?? DEFAULT_BUDGET_MS });
+      decided({ on, capMs: knob?.capMs ?? DEFAULT_CAP_MS });
       return on && rows;
     },
   });
@@ -150,15 +153,18 @@ async function askSeed(
 export interface TablePageReads {
   /** Whether this person's page draws its rows on the server, and how long it may wait for them. */
   gate: Promise<ServerRowsGate>;
-  /** The page's first reads. Never rejects; null when they fail or outrun the budget. */
+  /** The page's first reads. Never rejects; null when they fail or outrun the cap. */
   seed: Promise<TablePageSeed | null>;
 }
 
-const OFF: ServerRowsGate = { on: false, budgetMs: DEFAULT_BUDGET_MS };
+const OFF: ServerRowsGate = { on: false, capMs: DEFAULT_CAP_MS };
 
 /**
  * Start a table page's first reads as the signed-in person. NOT awaited by the route: both promises
- * are handed to the client page and resolve into the stream. Neither rejects.
+ * are handed to the client page and resolve into the stream. Neither rejects, and neither takes
+ * longer than the cap (`DEFAULT_CAP_MS`, or the person's `data/server_rows_cap_ms` once the bundle
+ * names it) counted from this call: past it the gate is off and the seed is null, and the browser
+ * asks for itself at once.
  *
  * `rows`: the address opens the plain table, so the grid's first page may be asked.
  * `forceOn`: a development host asked for server rows on this one request (`?server_rows=1`).
@@ -170,35 +176,45 @@ export function readTablePage(
 ): TablePageReads {
   if (!isUuidShape(tableId)) return { gate: Promise.resolve(OFF), seed: Promise.resolve(null) };
   const record = recordId && isUuidShape(recordId) ? recordId : null;
-  // The gate is decided by the bundle (first decision wins); only a hang cuts it off.
   const t0 = Date.now();
-  let decide: (gate: ServerRowsGate) => void = () => {};
-  const decidedGate = new Promise<ServerRowsGate>((resolve) => {
-    decide = resolve;
+  let resolveGate: (gate: ServerRowsGate) => void = () => {};
+  const gate = new Promise<ServerRowsGate>((resolve) => {
+    resolveGate = resolve;
   });
-  let gateTimer: ReturnType<typeof setTimeout> | undefined;
-  const gate = Promise.race([
-    decidedGate,
-    new Promise<ServerRowsGate>((resolve) => {
-      gateTimer = setTimeout(() => resolve(OFF), DEFAULT_BUDGET_MS);
-    }),
-  ]).finally(() => clearTimeout(gateTimer));
-  const asked = createClient().then((supabase) => askSeed(supabase, tableId, record, options.rows !== false, options.forceOn === true, decide));
-  // The seed streams when it lands; the person's hang guard counts from the request's start.
-  const seed = Promise.race([
-    asked,
-    gate.then(
-      (g) =>
-        new Promise<null>((resolve) => {
-          const timer = setTimeout(() => resolve(null), Math.max(0, g.budgetMs - (Date.now() - t0)));
-          const clear = () => clearTimeout(timer);
-          asked.then(clear, clear);
-        }),
-    ),
-  ]).catch((thrown: unknown) => {
-    decide(OFF);
-    console.warn(`[tablePageSeed] the server could not ask for table ${tableId}; the browser will.`, thrown);
-    return null;
+  let resolveSeed: (seed: TablePageSeed | null) => void = () => {};
+  const seed = new Promise<TablePageSeed | null>((resolve) => {
+    resolveSeed = resolve;
   });
+  // ONE CLOCK FROM THE REQUEST'S START. The first decision wins (a promise resolves once): the bundle's
+  // knob, or "off / no seed" when the cap fires first. The person's own cap, once known, re-times it.
+  let capTimer: ReturnType<typeof setTimeout> | undefined;
+  const capAt = (ms: number) => {
+    clearTimeout(capTimer);
+    capTimer = setTimeout(
+      () => {
+        resolveGate(OFF);
+        resolveSeed(null);
+      },
+      Math.max(0, ms - (Date.now() - t0)),
+    );
+  };
+  capAt(DEFAULT_CAP_MS);
+  const decide = (g: ServerRowsGate) => {
+    resolveGate(g);
+    if (g.capMs !== DEFAULT_CAP_MS) capAt(g.capMs);
+  };
+  createClient()
+    .then((supabase) => askSeed(supabase, tableId, record, options.rows !== false, options.forceOn === true, decide))
+    .then(
+      (answered) => resolveSeed(answered),
+      (thrown: unknown) => {
+        console.warn(`[tablePageSeed] the server could not ask for table ${tableId}; the browser will.`, thrown);
+        resolveSeed(null);
+      },
+    )
+    .finally(() => {
+      resolveGate(OFF);
+      clearTimeout(capTimer);
+    });
   return { gate, seed };
 }

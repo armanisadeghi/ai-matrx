@@ -37,10 +37,11 @@ function Primed({
     primeTablePage(tableId, seed, dataSource);
   }
   /*
-   * THE ROWS IN THE SERVER'S HTML (lane SSR-ROWS). The page waits for the server's first reads (they
-   * are bounded: `SEED_BUDGET_MS`, else null) and draws from them in this pass — on the server, so the
-   * HTML holds the table's rows, and while hydrating, so the browser draws the same rows and asks
-   * nothing again. A null seed draws exactly what it drew before: the skeleton, then the browser asks.
+   * THE ROWS IN THE SERVER'S HTML (lanes SSR-ROWS, SSR-ROWS-3). The page waits for the server's first
+   * reads — never past the cap (`DEFAULT_CAP_MS` / `data/server_rows_cap_ms`, counted from the request's
+   * start; past it both promises resolve off / null) — and draws from them in this pass: on the server,
+   * so the HTML holds the table's rows, and while hydrating, so the browser draws the same rows and asks
+   * nothing again. A null seed draws exactly what it drew before and the browser asks at once.
    */
   if (!use(gate).on) return <>{children}</>;
   const resolved = use(seed);
