@@ -1,7 +1,7 @@
 -- chair-step: lane DRILL-PRIMITIVE-2 (Arman 2026-10-07: "usage by user and I click … see the user results by provider, agent, conversation") — A LEVEL MAY BREAK OUT INTO A SIBLING DEFINITION. Replaces ONE body, the validator platform.drill_definition_problems: a level's breakout may be `<definition>:<dimension>[:<grain>]` (ai_usage's person → `ai_usage_executions:conversation`), judged against that definition's own declared body. Nothing else in the body changes. No table, policy, grant or row of anybody's data is touched.
 -- lane: DRILL-PRIMITIVE-2
 -- lock: platform
--- based-on: platform.drill_definition_problems(jsonb) — the body of migrations/campaign/drillspan_a_measure_may_be_a_time_span.sql (lane DRILL-SPAN); stamp the live hash with db:based-on before applying
+-- based-on: platform.drill_definition_problems(jsonb) 6e95080acd7c87ec915e29578a3141c26a6192e20ac1e714dc3a081f78780bfd
 --
 -- ORDER: apply AFTER drillspan_a_measure_may_be_a_time_span.sql and BEFORE the definitions file
 -- `pnpm drill:sync --write --lane DRILL-PRIMITIVE-2` writes for ai_usage (its person level names
