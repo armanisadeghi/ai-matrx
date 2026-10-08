@@ -11,6 +11,7 @@ import { supabase } from "@/utils/supabase/client";
 import { fail } from "@/features/education/study/service/serviceError";
 import type { StudyResult } from "@/features/education/study/types";
 import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
+import { captureError } from "@/lib/diagnostics/errorCaptureStore";
 import {
   mapAgeBandWrite,
   mapCoppaGate,
@@ -135,7 +136,18 @@ export const coppaService = {
       let organizationId: string | undefined;
       try {
         organizationId = await ensureOrgId(undefined);
-      } catch {
+      } catch (orgError) {
+        // Not silent: said once in the Error Inspector, at a low tier — the write still goes ahead.
+        captureError({
+          source: "runtime-exception",
+          code: "coppa-age-band-no-active-organization",
+          message: "[coppa] No active organization yet; the age band is saved without one.",
+          details: orgError instanceof Error ? orgError.message : String(orgError),
+          callSite: "coppaService.setAgeBand",
+          recoverable: true,
+          level: "low",
+          durable: false,
+        });
         organizationId = undefined;
       }
       const { data, error } = await supabase.rpc("edu_set_age_band", {
