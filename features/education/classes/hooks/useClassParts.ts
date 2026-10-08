@@ -100,9 +100,10 @@ export function useClassParts(
   const partTypes = allTypes.filter(
     (t) => t.slug === CLASS_PART_SCOPE_TYPE_SLUG,
   );
-  const ownType =
-    partTypes.find((t) => t.organization_id === cls.organizationId) ??
-    partTypes[0];
+  // Only the class's own organization's type — never another org's labels.
+  const ownType = partTypes.find(
+    (t) => t.organization_id === cls.organizationId,
+  );
   const nameById = new Map<string, string>(
     partTypes.flatMap((t) =>
       t.scopes.map((s): [string, string] => [s.id, s.name]),
