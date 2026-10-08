@@ -69,7 +69,6 @@ jest.mock("@ai-matrx/chat/ui/markdown-stream/MarkdownStream", () => ({
 import BasicMarkdownContent from "@ai-matrx/rich-content/display/chat-markdown/BasicMarkdownContent";
 import { ConfigurableMarkdownContent } from "@ai-matrx/rich-content/display/chat-markdown/ConfigurableMarkdownContent";
 import MarkdownRenderer from "@/components/mardown-display/MarkdownRenderer";
-import MarkdownWithPlugins from "@/components/message-display/MarkdownWithPlugins";
 import { resetKindAtRawRendererReports } from "@/features/content-ir/surfaces/report-kind-at-raw-renderer";
 // The engine reports through its own copy (one dedupe set each until chat depends on rich-content).
 import { resetKindAtRawRendererReports as resetEngineKindAtRawRendererReports } from "@ai-matrx/rich-content/utils/report-kind-at-raw-renderer";
@@ -83,7 +82,6 @@ const LEAVES: Leaf[] = [
   ["BasicMarkdownContent", (c) => <BasicMarkdownContent content={c} showCopyButton={false} />],
   ["ConfigurableMarkdownContent", (c) => <ConfigurableMarkdownContent content={c} showCopyButton={false} />],
   ["MarkdownRenderer", (c) => <MarkdownRenderer content={c} />],
-  ["MarkdownWithPlugins", (c) => <MarkdownWithPlugins content={c} components={{}} />],
 ];
 
 describe("markdown leaves hand kind text to the canonical pipeline", () => {
