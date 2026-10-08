@@ -26,7 +26,12 @@ import {
   type ItemMenuEntry,
   type ItemMenuSection,
 } from "@ai-matrx/design-system/item";
+import type { LucideIcon } from "lucide-react";
 import { toast } from "@/lib/toast";
+
+// design-system's item icon is any component taking a className; every website entry passes a
+// lucide icon, which is what v3 draws.
+const iconOf = (entry: ItemMenuEntry) => entry.icon as LucideIcon | undefined;
 
 const toastPromise = (promise: Promise<unknown>, messages: { loading: string; success: string; error: (e: unknown) => string }) => {
   toast.promise(promise, messages);
@@ -49,7 +54,7 @@ function entryToExtraItem(entry: ItemMenuEntry): ContextMenuExtraItem {
       kind: "submenu",
       id: entry.id,
       label: entry.label,
-      icon: entry.icon,
+      icon: iconOf(entry),
       disabled: entry.disabled,
       children: submenuChildren(entry.sections),
     };
@@ -59,7 +64,7 @@ function entryToExtraItem(entry: ItemMenuEntry): ContextMenuExtraItem {
       kind: "checkbox",
       id: entry.id,
       label: entry.label,
-      icon: entry.icon,
+      icon: iconOf(entry),
       description,
       checked: entry.checked,
       onCheckedChange: (next) => runToggle(entry, next),
@@ -72,7 +77,7 @@ function entryToExtraItem(entry: ItemMenuEntry): ContextMenuExtraItem {
       kind: "link",
       id: entry.id,
       label: entry.label,
-      icon: entry.icon,
+      icon: iconOf(entry),
       description,
       href: entry.href,
       target: entry.target,
@@ -84,7 +89,7 @@ function entryToExtraItem(entry: ItemMenuEntry): ContextMenuExtraItem {
     kind: "item",
     id: entry.id,
     label: entry.label,
-    icon: entry.icon,
+    icon: iconOf(entry),
     description,
     destructive: entry.tone === "destructive",
     disabled: entry.disabled,
