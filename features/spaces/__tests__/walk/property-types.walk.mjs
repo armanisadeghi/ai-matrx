@@ -177,7 +177,7 @@ await act(page, async () => {
   for (const v of ["Acme Supplies", "Northwind Paper"]) {
     const opt = page.locator("[data-radix-popper-content-wrapper]").getByText(v, { exact: true }).first();
     for (let attempt = 0; attempt < 3 && !(await opt.isVisible().catch(() => false)); attempt++) {
-      await page.keyboard.press("Escape").catch(() => {});
+      await page.mouse.click(300, 1050);
       await page.waitForTimeout(800);
       await row.getByRole("button", { name: "Edit Vendors", exact: true }).dblclick();
       await opt.waitFor({ timeout: 8000 }).catch(() => {});
@@ -187,7 +187,8 @@ await act(page, async () => {
     await page.waitForTimeout(2500);
   }
   await page.screenshot({ path: `${SHOT}/r42-5-relation-cell.png` });
-  await page.keyboard.press("Escape");
+  // Close the picker the way a person does — a click outside it.
+  await page.mouse.click(300, 1050);
   await page.waitForTimeout(2000);
 
   step("person and file on the opened page");
@@ -203,7 +204,7 @@ await act(page, async () => {
   await page.getByText("Worked out by the system").first().waitFor({ timeout: 180_000 });
   await page.getByRole("button", { name: "Edit Owner", exact: true }).waitFor({ timeout: 60_000 });
   await page.waitForTimeout(2000);
-  const me = page.locator("[data-radix-popper-content-wrapper]").getByRole("button", { name: /test@test\.com/ }).last();
+  const me = page.getByText("test@test.com", { exact: true }).filter({ visible: true }).first();
   for (let attempt = 0; attempt < 4 && !(await me.isVisible().catch(() => false)); attempt++) {
     await page.keyboard.press("Escape").catch(() => {});
     await page.getByRole("button", { name: "Edit Owner", exact: true }).click();
