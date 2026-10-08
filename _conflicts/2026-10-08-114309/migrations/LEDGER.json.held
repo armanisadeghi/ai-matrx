@@ -1,6 +1,57 @@
+matrx-auto-git-conflict-file-work-delete-this-when-resolved
+
+HELD CONFLICT, written by scripts/sync-main.py
+File:      migrations/LEDGER.json
+Why held:  both sides changed the same code
+GITHUB's version is live in the repo at the path above. LOCAL's version is at the bottom
+of this file, below the FACTS.
+Done with it: the final code is in the live file, this .held file is deleted, and its line
+in _conflicts/README.md is deleted. The list of open items is _conflicts/README.md.
+
+FACTS (computed by sync-main from git)
+
+THE TWO VERSIONS
+  LOCAL  = the version that was on this Mac. It is saved below, in this .held file.
+  GITHUB = the version from GitHub. It is LIVE in the repo right now, at migrations/LEDGER.json
+  Both grew from the same COMMON version: commit 5c6e77c826, 2026-10-08 11:51.
+
+WHEN EACH SIDE CHANGED THIS FILE (newest first)
+  LOCAL:
+    2026-10-08 11:51  (uncommitted edit; the time the file was last saved on this Mac)
+    2026-10-08 11:52  be9b15ffc9  collected by the sync; the edit itself happened at or before this time
+  GITHUB:
+    2026-10-08 11:51  10e8535975  "meet: meeting defaults ask meet_policy_for in its no-meeting form, no cast (lane HR-360)"
+  LOCAL's latest change is 0m AFTER GITHUB's latest change.
+
+SIZE: common version 9792 lines, LOCAL 9804 lines, GITHUB 9798 lines
+
+WHAT EACH SIDE DID, compared with the common version
+  LOCAL added 11 lines and removed 1 lines.
+  GITHUB added 6 lines and removed 1 lines.
+
+CODE ONE SIDE HAS THAT THE OTHER DOES NOT
+  LOCAL has 5 of the 6 lines GITHUB added.
+    Lines GITHUB added that LOCAL does NOT have:
+      | "generated_at": "2026-10-08T18:47:08.888Z",
+  GITHUB has 6 of the 11 lines LOCAL added.
+    Lines LOCAL added that GITHUB does NOT have:
+      | "generated_at": "2026-10-08T18:52:44.841Z",
+      | "migrations/campaign/hotdoors3_e_a_a_named_table_is_read_by_its_index_key.sql": {
+      | "filename": "hotdoors3_e_a_a_named_table_is_read_by_its_index_key.sql",
+      | "checksum": "2d3b6f7bb784a3755982fde8189c4bb48cc8f201762f03d7ce348edbd67775f0",
+      | "applied_at": "2026-10-08 18:52:43.084154+00"
+
+COMPARE THEM (the labels are correct; '-' lines are GITHUB, '+' lines are LOCAL):
+  diff -u --label 'GITHUB (live)' --label 'LOCAL (held)' <(git show 7eda0a881148:'migrations/LEDGER.json') <(git show be9b15ffc9b4:'migrations/LEDGER.json')
+
+RECOVER EITHER VERSION FOREVER (works even after this .held file is deleted):
+  LOCAL : git show be9b15ffc9b4:'migrations/LEDGER.json'
+  GITHUB: git show 7eda0a881148:'migrations/LEDGER.json'
+
+---------------- LOCAL VERSION BELOW ----------------
 {
   "note": "Checked-in snapshot of public._schema_migrations for the files under migrations/campaign and migrations/inverse. Written by `pnpm db:apply` on every successful production apply and refreshed whole by the nightly catch-up. Never hand-edited: a self-written checksum is a claim nobody can check. Guard: pnpm check:ledgered-files-unedited.",
-  "generated_at": "2026-10-08T18:47:08.888Z",
+  "generated_at": "2026-10-08T18:52:44.841Z",
   "files": {
     "migrations/campaign/a_chunk_is_the_size_the_client_door_can_actually_carry.sql": {
       "source": "matrx-frontend",
@@ -3733,6 +3784,12 @@
       "filename": "hotdoors3_d_a_header_row_asks_for_its_header_once.sql",
       "checksum": "c78862315a891564e885aee34709614d1668c938cc7459d110372cff36f95640",
       "applied_at": "2026-10-08 18:21:52.237421+00"
+    },
+    "migrations/campaign/hotdoors3_e_a_a_named_table_is_read_by_its_index_key.sql": {
+      "source": "matrx-frontend",
+      "filename": "hotdoors3_e_a_a_named_table_is_read_by_its_index_key.sql",
+      "checksum": "2d3b6f7bb784a3755982fde8189c4bb48cc8f201762f03d7ce348edbd67775f0",
+      "applied_at": "2026-10-08 18:52:43.084154+00"
     },
     "migrations/campaign/hotdoors_a_the_list_filter_inlines_and_a_page_walks_once.sql": {
       "source": "matrx-frontend",
