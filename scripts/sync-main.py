@@ -806,6 +806,9 @@ def sweep_holds():
         say("SWEEP CHECK COULD NOT RUN (%s) — sweeping every file as before, so a file that needs "
             "an unpublished @ai-matrx version can reach the release: %s" % (SWEEP_CHECK, e))
         return []
+    if data.get("checked") or data.get("deletions"):
+        say("sweep check: %d changed file(s), %d deletion(s) against the installed packages, %d held (%ss)"
+            % (data.get("checked", 0), data.get("deletions", 0), len(data.get("hold") or []), data.get("seconds")))
     return [(h["path"], h.get("reasons") or []) for h in data.get("hold") or []]
 
 
