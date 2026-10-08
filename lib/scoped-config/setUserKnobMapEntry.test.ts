@@ -28,6 +28,7 @@ import { createClient } from "@/utils/supabase/client";
 
 import { ensureEffectiveKnob, invalidateEffectiveKnob } from "./effectiveKnobs";
 import { setUserKnobMapEntry } from "./service";
+import { legacyWire } from "./__tests__/legacyWire";
 
 jest.mock("@/utils/supabase/client", () => ({ createClient: jest.fn() }));
 
@@ -120,7 +121,7 @@ function fakeLadder(initialUser: unknown, initialOrg: Record<string, unknown> | 
   jest.mocked(createClient).mockReturnValue({
     rpc,
     from,
-    schema: () => ({ rpc, from }),
+    schema: () => ({ rpc: legacyWire(rpc), from }),
   } as unknown as ReturnType<typeof createClient>);
   return { state, calls, writes: () => calls.filter((c) => c.fn === "knob_override_set") };
 }

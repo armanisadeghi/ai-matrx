@@ -1,6 +1,6 @@
 {
   "note": "Checked-in snapshot of public._schema_migrations for the files under migrations/campaign and migrations/inverse. Written by `pnpm db:apply` on every successful production apply and refreshed whole by the nightly catch-up. Never hand-edited: a self-written checksum is a claim nobody can check. Guard: pnpm check:ledgered-files-unedited.",
-  "generated_at": "2026-10-08T05:40:31.092Z",
+  "generated_at": "2026-10-08T07:49:33.760Z",
   "files": {
     "migrations/campaign/a_chunk_is_the_size_the_client_door_can_actually_carry.sql": {
       "source": "matrx-frontend",
@@ -3955,6 +3955,12 @@
       "filename": "knobguard_a_key_is_a_pair_not_a_word.sql",
       "checksum": "8f06442129438848369a66b20214ea06c8b5345064370f1ddf0acc34220c08fa",
       "applied_at": "2026-09-22 17:19:39.27188+00"
+    },
+    "migrations/campaign/knobsnapshot_one_pass_defaults_once_and_a_small_delta.sql": {
+      "source": "matrx-frontend",
+      "filename": "knobsnapshot_one_pass_defaults_once_and_a_small_delta.sql",
+      "checksum": "3b0f77ce9297a2364c2f5f2ff2c27954e28f1f852decdef3ccfa7c6a5bed5d29",
+      "applied_at": "2026-10-08 07:49:30.108277+00"
     },
     "migrations/campaign/laddercap_a_ceiling_cannot_refuse_at_the_floor.sql": {
       "source": "matrx-frontend",

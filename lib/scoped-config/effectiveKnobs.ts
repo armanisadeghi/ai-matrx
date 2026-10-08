@@ -267,7 +267,91 @@ export function isSignedOutVisitor(): boolean {
   return !(store.getState() as { userAuth?: { id: string | null } }).userAuth?.id;
 }
 
-/** ONE round trip. No caching, no races — the caller owns both. */
+type RpcResult = { data: unknown; error: { message: string } | null };
+type PlatformRpc = (name: string, args: Record<string, unknown>) => Promise<RpcResult>;
+
+/**
+ * 🚨 THE PLATFORM VALUES ARE SHIPPED ONCE, THE PERSON'S ANSWER IS A DIFFERENCE (KNOB-SNAPSHOT, 2026-10-08).
+ * `platform.knob_snapshot` resolved all ~3,900 knobs one function call at a time (2.5-3.9 s, 214 kB) to tell
+ * a person that all but a handful equal the platform value. Now `platform.knob_defaults` carries the platform
+ * values (a ~214 kB read keyed by a content version, kept in memory and localStorage, re-read only when an
+ * admin edits a default) and `platform.knob_snapshot_delta` carries only the keys this person's ladder
+ * moves (about 0.5 kB) plus an etag. `resolved` below is `{...defaults, ...overrides}` — the exact map the
+ * old call returned (proven equal per person by scripts/campaign-tests/knobsnapshot_equivalence.sql).
+ */
+type DefaultsEntry = { version: string; values: Record<string, unknown> };
+const DEFAULTS_STORAGE_KEY = "matrx.knobDefaults.v1";
+let defaultsCache: DefaultsEntry | null = null;
+let defaultsInFlight: Promise<DefaultsEntry> | null = null;
+
+/** What the last answer for an address was, kept ACROSS invalidations: the etag is a content hash, so a stale one is merely a miss. */
+const lastAnswers = new Map<string, { etag: string; resolved: Record<string, unknown> }>();
+
+function readStoredDefaults(): DefaultsEntry | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = window.localStorage.getItem(DEFAULTS_STORAGE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as DefaultsEntry;
+    return parsed && typeof parsed.version === "string" && parsed.values ? parsed : null;
+  } catch {
+    return null;
+  }
+}
+
+function storeDefaults(entry: DefaultsEntry): void {
+  if (typeof window === "undefined") return;
+  try {
+    window.localStorage.setItem(DEFAULTS_STORAGE_KEY, JSON.stringify(entry));
+  } catch {
+    // Storage full or blocked: the in-memory copy still serves this tab.
+  }
+}
+
+function platformRpc(supabase: ReturnType<typeof createClient>): PlatformRpc {
+  const schema = supabase.schema("platform") as unknown as { rpc: PlatformRpc };
+  return (name, args) => schema.rpc(name, args);
+}
+
+/** The platform values, from memory, then localStorage, then one `knob_defaults` read that is skipped when the version still matches. */
+async function ensureDefaults(
+  rpc: PlatformRpc,
+  wantVersion: string | null,
+): Promise<DefaultsEntry> {
+  defaultsCache = defaultsCache ?? readStoredDefaults();
+  if (defaultsCache && (wantVersion === null || defaultsCache.version === wantVersion)) {
+    return defaultsCache;
+  }
+  if (defaultsInFlight) return defaultsInFlight;
+  const known = defaultsCache?.version ?? null;
+  const run = (async () => {
+    try {
+      const { data, error } = await rpc("knob_defaults", { p_known_version: known });
+      if (error) {
+        throw new Error(
+          `platform.knob_defaults could not answer: ${error.message}. Every setting on this screen is ` +
+            "falling back to its consumer's own default until it can.",
+        );
+      }
+      const payload = (data ?? {}) as {
+        version?: string;
+        unchanged?: boolean;
+        defaults?: Record<string, unknown>;
+      };
+      if (payload.unchanged && defaultsCache) return defaultsCache;
+      const entry = { version: payload.version ?? "", values: payload.defaults ?? {} };
+      defaultsCache = entry;
+      storeDefaults(entry);
+      return entry;
+    } finally {
+      defaultsInFlight = null;
+    }
+  })();
+  defaultsInFlight = run;
+  return run;
+}
+
+/** One small round trip (plus the defaults read on a cold browser). No caching, no races — the caller owns both. */
 async function fetchKnobSnapshot(
   supabase: ReturnType<typeof createClient>,
   organizationId: string | null,
@@ -275,43 +359,45 @@ async function fetchKnobSnapshot(
   scopes: readonly KnobScope[] | undefined,
   deviceId: string | null,
 ): Promise<Snapshot> {
-  // `knob_snapshot` is not in `types/database.types.ts` yet: regenerating it
-  // needs `NEXT_PUBLIC_SUPABASE_URL` + `SUPABASE_SECRET_KEY` (the strip step
-  // reads `platform.entity_types.client_excluded_columns`, and a file that
-  // was not stripped must never be committed as if it were), and this
-  // session has neither. So the RPC name is cast HERE, narrowly, and the
-  // remedy is: run `pnpm db-types` from an environment that has those two
-  // variables, then delete this cast — the call itself needs no other
-  // change. Nothing else in this file is untyped.
-  const { data, error } = await (
-    supabase.schema("platform") as unknown as {
-      rpc: (
-        name: string,
-        args: Record<string, unknown>,
-      ) => Promise<{ data: unknown; error: { message: string } | null }>;
-    }
-  ).rpc("knob_snapshot", {
+  // `knob_snapshot_delta` / `knob_defaults` are not in `types/database.types.ts` yet: the RPC names are cast
+  // in `platformRpc` and nowhere else. Remedy: `pnpm db-types` from an environment that has the service
+  // key, then type the calls.
+  const rpc = platformRpc(supabase);
+  const addr = snapshotAddr(organizationId, userId, scopes);
+  const prior = lastAnswers.get(addr);
+  // Start the defaults read beside the delta on a cold browser; it is skipped when the cache is warm.
+  const warmDefaults = defaultsCache ?? readStoredDefaults();
+  const defaultsEarly = warmDefaults ? null : ensureDefaults(rpc, null);
+  const { data, error } = await rpc("knob_snapshot_delta", {
     // NULL, sent explicitly: `p_organization_id` has NO default in the SQL
     // signature, so OMITTING it makes PostgREST answer 404 (no function matches).
     p_organization_id: organizationId ?? null,
     p_user_id: userId ?? undefined,
     p_scopes: buildScopes(deviceId, scopes),
+    p_etag: prior?.etag ?? undefined,
   });
   if (error) {
     throw new Error(
-      `platform.knob_snapshot could not answer for organization='${organizationId}': ` +
+      `platform.knob_snapshot_delta could not answer for organization='${organizationId}': ` +
         `${error.message}. Every setting on this screen is falling back to its ` +
         "consumer's own default until it can. A 42501 here means the signed-in " +
         "person is not a member of that organization — the read is gated on " +
         "membership by design.",
     );
   }
-  const payload = (data ?? {}) as { resolved?: Record<string, unknown>; stamp?: string };
-  return {
-    resolved: payload.resolved ?? {},
-    stamp: payload.stamp ?? null,
-    at: Date.now(),
+  const payload = (data ?? {}) as {
+    etag?: string;
+    defaults_version?: string;
+    unchanged?: boolean;
+    overrides?: Record<string, unknown>;
   };
+  if (payload.unchanged && prior && prior.etag === payload.etag) {
+    return { resolved: prior.resolved, stamp: payload.etag ?? null, at: Date.now() };
+  }
+  const defaults = await (defaultsEarly ?? ensureDefaults(rpc, payload.defaults_version ?? null));
+  const resolved = { ...defaults.values, ...(payload.overrides ?? {}) };
+  if (payload.etag) lastAnswers.set(addr, { etag: payload.etag, resolved });
+  return { resolved, stamp: payload.etag ?? null, at: Date.now() };
 }
 
 /**
