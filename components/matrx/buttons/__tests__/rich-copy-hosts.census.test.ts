@@ -443,6 +443,10 @@ describe("consistency everywhere: markdown copy is the split Copy across the who
     // The rich-document bar has a ⋯ → Export… lives there; the chevron gets it only with hideOverflow.
     const bar = fs.readFileSync(path.join(REPO_ROOT, "../aidream/apps/shared/rich-content/src/rich-document/variants/ActionBar.tsx"), "utf8");
     expect(bar).toMatch(/hideOverflow \? \{ onExport:/);
+    // The phone note dock HAS a ⋯ (its More sheet): Export… is a row there; its copy chevron stays 2 rows.
+    const dock = fs.readFileSync(path.join(REPO_ROOT, "features/notes/components/mobile/NoteEditorDock.tsx"), "utf8");
+    expect(dock).toMatch(/data-note-dock-export/);
+    expect(dock).not.toMatch(/<TextCopyChevron[^>]*onExport/);
   });
 
   test("J detector goes red on the old shape (a palette slot under the chevron) and green without it", () => {

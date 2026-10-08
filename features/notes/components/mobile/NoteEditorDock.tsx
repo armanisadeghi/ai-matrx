@@ -10,8 +10,14 @@
 
 import { useState, useRef, useEffect, useCallback } from "react";
 import type { LucideIcon } from "lucide-react";
+import type { ContentTransferController } from "@ai-matrx/alchemy/react/workspace";
+import { ExportPaletteAnchor, openExportPalette, useExportPaletteKey } from "@ai-matrx/rich-content/copy/ExportPalette";
+import { CopyButtons } from "@/components/agent-copy/CopyButtons";
+import { noteRecordData, type NoteRecordView } from "@/features/notes/format";
+import { selectNoteById } from "../../redux/selectors";
 import {
   FolderOpen,
+  Share,
   MoreHorizontal,
   Copy,
   Loader2,
@@ -91,6 +97,22 @@ export function NoteEditorDock({
   const toast = useToastManager("notes");
   const openKnowledge = useOpenNoteKnowledgePanel();
   const ingest = useNoteIngestStatus(noteId);
+  // Export… (the More sheet's row): the note's one Alchemy palette — Formatted, JSON (the live
+  // record), download, AI — the same palette the desktop note's copy chevron opens.
+  const exportPalette = useRef<ContentTransferController | null>(null);
+  const exportKey = useExportPaletteKey();
+  const exportNote = useAppSelector(selectNoteById(noteId));
+  const exportRecord = (): NoteRecordView | null =>
+    exportNote
+      ? {
+          note: exportNote,
+          content: exportNote.content ?? null,
+          dirtyFields: exportNote._dirtyFields ? [...exportNote._dirtyFields] : [],
+          error: exportNote._error ?? null,
+          saving: !!exportNote._saving,
+          consecutiveSaveFailures: exportNote._consecutiveSaveFailures ?? 0,
+        }
+      : null;
   const folderReferences = useAppSelector(selectFolderReferences);
   const availableFolders = folderReferences.filter(
     (candidate) => candidate.organizationId === organizationId,
@@ -330,6 +352,19 @@ export function NoteEditorDock({
             );
           })}
         </div>
+        <ExportPaletteAnchor exportKey={exportKey} controllerRef={exportPalette} className="absolute right-2 top-0" />
+        <CopyButtons
+          human={() => content}
+          contentFlavor="markdown"
+          richCopyFlavors={[]}
+          triggerHidden
+          controllerRef={exportPalette}
+          label={`Note "${noteLabel}"`}
+          json={() => {
+            const view = exportRecord();
+            return view ? noteRecordData(view) : { content };
+          }}
+        />
       </nav>
 
       {/* Folder + Tags sheet */}
@@ -400,6 +435,19 @@ export function NoteEditorDock({
           {/* THE note actions (noteActionSet.ts) — the same rows, names and
               order as every right-click menu on the note. */}
           <div className="px-2 py-1">
+            {/* The dock's ⋯ is this sheet, so Export… lives here (never on the copy chevron). */}
+            <button
+              type="button"
+              data-note-dock-export=""
+              onClick={() => {
+                setSheetOpen(null);
+                openExportPalette(exportKey);
+              }}
+              className="flex min-h-11 w-full items-center gap-3 rounded-lg px-3 text-sm text-foreground transition-colors hover:bg-accent"
+            >
+              <Share className="h-4 w-4 shrink-0 text-muted-foreground" />
+              Export…
+            </button>
             {noteActions({
               rename: readOnly ? undefined : () => setRenameOpen(true),
               duplicate: onDuplicate,
