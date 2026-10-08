@@ -158,16 +158,7 @@ export {
 } from "./table";
 export { Tabs, TabsList, TabsTrigger, TabsContent } from "./tabs";
 export { Textarea } from "./textarea";
-export {
-  Toast,
-  ToastViewport,
-  ToastAction,
-  ToastClose,
-  ToastTitle,
-  ToastDescription,
-  ToastProvider,
-} from "./matrx/toast";
-export { useToast, toast } from "./matrx/use-toast";
+export { useToast, toast } from "./use-toast";
 export { Toaster } from "./sonner";
 export { Toggle, toggleVariants } from "./toggle";
 export { ToggleGroup, ToggleGroupItem } from "./toggle-group";

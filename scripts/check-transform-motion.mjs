@@ -26,7 +26,7 @@ import { join, relative, resolve } from "node:path";
 
 const ROOT = resolve(new URL("..", import.meta.url).pathname);
 const SHARED = resolve(ROOT, "../aidream/apps/shared");
-const SKIP_DIRS = new Set(["node_modules", ".next", ".next-preview", "public", "dist", ".wt", "work", "tmp", ".git", "coverage"]);
+const SKIP_DIRS = new Set(["node_modules", ".next", ".next-preview", ".cache", "public", "dist", ".wt", "work", "tmp", ".git", "coverage"]);
 
 function* walk(dir) {
   let entries;

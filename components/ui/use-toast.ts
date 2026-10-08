@@ -30,7 +30,7 @@ export type LegacyToastAction =
 export interface LegacyToast {
   title?: React.ReactNode
   description?: React.ReactNode
-  /** `destructive` → an error toast; `success` → a success toast; anything else → a plain one. */
+  /** `destructive` → error; `success` / `warning` / `info` → the same; anything else → a plain toast. */
   variant?: string | null
   action?: LegacyToastAction
   duration?: number
@@ -52,6 +52,8 @@ function show(props: LegacyToast, id?: ToastId): ToastId {
   }
   if (variant === "destructive") return sonnerToast.error(message, options)
   if (variant === "success") return sonnerToast.success(message, options)
+  if (variant === "warning") return sonnerToast.warning(message, options)
+  if (variant === "info") return sonnerToast.info(message, options)
   return sonnerToast(message, options)
 }
 

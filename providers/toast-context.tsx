@@ -29,6 +29,7 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
         showToast({
           ...props,
           action: props.options ? createToastAction(props.options) : undefined,
+          className: props.options?.className ?? props.className,
         }).id,
       dismiss,
     );
