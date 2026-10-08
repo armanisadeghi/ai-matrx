@@ -599,7 +599,18 @@ export const canvasArtifactService = {
         console.error("[canvasArtifactService.createManual] RPC error:", error);
         return null;
       }
-      return data as CanvasArtifactRow;
+      const created = data as CanvasArtifactRow;
+      // A new page is its v1: it publishes its own page on save, exactly as
+      // `saveUserVersion` does for every later version (rendered-output ruling 1).
+      if (input.type === "html" && input.content.trim()) {
+        const { publishHtmlCanvasVersion } = await import(
+          "@/features/html-pages/services/canvasVersionPage"
+        );
+        void publishHtmlCanvasVersion(created.id).catch((err: unknown) =>
+          console.error("[canvasArtifactService.createManual] publish failed:", err),
+        );
+      }
+      return created;
     } catch (err) {
       // The person declined to pick an organization: an answer, not a failure.
       // Propagate it so the caller's org-refusal handling shows it honestly.
