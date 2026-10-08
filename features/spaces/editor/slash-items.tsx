@@ -79,7 +79,7 @@ function stored(type: string, props: Record<string, unknown>): SpacesPartialBloc
   return { type, props: { data: JSON.stringify({ props }) } } as unknown as SpacesPartialBlock;
 }
 
-function databaseBlock(src: PickedSource, view: SpaceDbView | SpaceDbView[], linked: boolean): SpacesPartialBlock {
+export function databaseBlock(src: PickedSource, view: SpaceDbView | SpaceDbView[], linked: boolean): SpacesPartialBlock {
   const views = Array.isArray(view) ? view : [view];
   return stored("database", {
     source: src.entity ? { kind: "entity", token: src.entity } : { kind: "table", tableId: src.tableId },

@@ -19,6 +19,7 @@
 import dynamic from "next/dynamic";
 import { Suspense, type ReactNode } from "react";
 
+import { listMarker } from "./list-marker";
 import type { SpaceBlock } from "../contract";
 import { ResolvedBlockSeed, useAwaitedBlockSeed } from "../page/space-seed-context";
 import { CalloutGlyph } from "./callout-block";
@@ -124,9 +125,10 @@ function Toggle({ children }: { children: ReactNode }) {
 }
 
 /** A plain (vanilla-spec) block's content element. */
-function Plain({ b, index }: { b: EngineBlock; index?: number }) {
+function Plain({ b, index, depth = 0 }: { b: EngineBlock; index?: number; depth?: number }) {
   const attrs = contentAttrs(b);
   if (b.type === "numberedListItem" && index !== undefined) attrs["data-index"] = String(index);
+  if (b.type === "numberedListItem" && index !== undefined && depth > 0) attrs["data-marker"] = listMarker(index, depth);
   let inner: ReactNode = null;
   const props = b.props ?? {};
   switch (b.type) {
@@ -230,19 +232,19 @@ function ReactBlock({ b }: { b: EngineBlock }) {
   );
 }
 
-function Group({ blocks }: { blocks: EngineBlock[] }) {
+function Group({ blocks, numDepth = 0 }: { blocks: EngineBlock[]; numDepth?: number }) {
   let run = 0;
   return (
     <div className="bn-block-group" data-node-type="blockGroup">
       {blocks.map((b) => {
         const start = Number(b.props?.start);
         run = b.type === "numberedListItem" ? (run === 0 && Number.isFinite(start) && start > 0 ? start : run + 1) : 0;
-        const content = REACT_BLOCKS.has(b.type) ? <ReactBlock b={b} /> : PLAIN_BLOCKS.has(b.type) ? <Plain b={b} index={b.type === "numberedListItem" ? run : undefined} /> : <div className="bn-block-content" data-content-type={b.type} />;
+        const content = REACT_BLOCKS.has(b.type) ? <ReactBlock b={b} /> : PLAIN_BLOCKS.has(b.type) ? <Plain b={b} index={b.type === "numberedListItem" ? run : undefined} depth={numDepth} /> : <div className="bn-block-content" data-content-type={b.type} />;
         return (
           <div key={b.id} className="bn-block-outer" data-node-type="blockOuter" data-id={b.id}>
             <div className="bn-block" data-node-type="blockContainer" data-id={b.id}>
               {content}
-              {b.children?.length ? <Group blocks={b.children} /> : null}
+              {b.children?.length ? <Group blocks={b.children} numDepth={b.type === "numberedListItem" ? numDepth + 1 : numDepth} /> : null}
             </div>
           </div>
         );

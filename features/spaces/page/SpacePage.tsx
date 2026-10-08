@@ -22,6 +22,7 @@ import { withPaintedSizes } from "../editor/database-host";
 import { useDatabaseDesigner } from "../ai/DatabaseDesigner";
 import { useMoveIn } from "../ai/MoveIn";
 import { adoptPageDatabase, createPageDatabase } from "../data/new-database";
+import { tableToDatabase as convertTableToDatabase, type SimpleTable } from "../data/table-to-database";
 import { newViewId } from "../data/sources";
 import { AskAiMenu, type AskAiTarget } from "../ai/AskAiMenu";
 import { AskPageButton } from "../ai/AskPageButton";
@@ -555,6 +556,15 @@ function SpacePageScreen({ spaceId, initialDoc }: { spaceId: string; initialDoc?
       return value;
     });
   const warnNotAdopted = (err: unknown) => toast.warning("Not shared with the page", { description: err instanceof Error ? err.message : undefined });
+  /** C14 — a simple table's "Turn into database": a new table of this page holding its rows. */
+  const tableToDatabase = async (table: SimpleTable): Promise<PickedSource | null> => {
+    try {
+      return await convertTableToDatabase(spaceId, userId, table);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "The table could not be turned into a database.");
+      return null;
+    }
+  };
   /** "/" → Database (inline or full page): a new table in this page's organization, as a sub-page when asked. */
   const newDatabase = async (fullPage: boolean): Promise<{ table: PickedSource; pageId?: string } | null> => {
     try {
@@ -1080,7 +1090,7 @@ function SpacePageScreen({ spaceId, initialDoc }: { spaceId: string; initialDoc?
                 return source.id;
               },
             }}
-            menu={{ moveBlocksTo, turnIntoPageIn, askAi: openAskAi }}
+            menu={{ moveBlocksTo, turnIntoPageIn, askAi: openAskAi, tableToDatabase }}
             onComment={startComment}
           />
           </StructureProvider>

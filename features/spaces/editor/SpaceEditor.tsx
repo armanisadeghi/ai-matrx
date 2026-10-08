@@ -44,6 +44,8 @@ import { currentBlockId, duplicateBlocks, selectedOrCurrent } from "./block-acti
 import { fromEngine, toEngine, type EngineBlock } from "./convert";
 import { PasteUrlMenu, pastedAnchor, pastedUrl, type PastedUrl } from "./PasteUrlMenu";
 import { MediaPickerHost } from "./media-insert";
+import { notionNumbering } from "./numbering";
+import { codeHighlighting } from "./code-highlight";
 import { spacePanel, spaceSelectionActions } from "./selection-format";
 import { SYNCED_CLIP } from "./synced-block";
 import { SuggestionCard, suggestMode } from "./suggest";
@@ -227,7 +229,7 @@ export function SpaceEditor({ spaceId, initialBlocks, editable, onChange, slash,
       disableExtensions: room ? ["history"] : undefined,
       // Notion names the no-colour choice "Default" (a callout on Default draws a bordered box).
       dictionary: { ...en, placeholders: PLACEHOLDERS, color_picker: { ...en.color_picker, colors: { ...en.color_picker.colors, default: "Default" } } },
-      extensions: room ? [notionKeys(), suggestMode(), outsideAriaMarks(), room] : [notionKeys(), suggestMode(), outsideAriaMarks()],
+      extensions: room ? [notionKeys(), suggestMode(), outsideAriaMarks(), notionNumbering(), codeHighlighting(), room] : [notionKeys(), suggestMode(), outsideAriaMarks(), notionNumbering(), codeHighlighting()],
       tabBehavior: "prefer-indent",
       dropCursor: { color: "rgba(35, 131, 226, 0.43)", width: 4, hooks: columnDrop.hooks },
       // Notion keeps no empty line after the last block; the page end (SpacePage) adds one on click.
