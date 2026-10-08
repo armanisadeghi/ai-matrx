@@ -1247,6 +1247,10 @@ packages:
     resolution: {integrity: sha512-cU+9N/dFe9KAa7xf4jWu4om7dOrOKUEfsDaLOGdVfAb2JHF+k1d5q3d8RPlU+EeMDadvpyOgdl7PAq3M25CjyA==}
     engines: {node: '>=20'}
 
+  '@ai-matrx/content-ir@0.24.4':
+    resolution: {integrity: sha512-rCN/m9kcz+Af6+Ik9sBhBK2eIjzOdfAS9XrwLG4x9+StdXoNhfcFDGpePC8zXZmVmLEnvso8HJbLHqxQxhK8vw==}
+    engines: {node: '>=20'}
+
   '@ai-matrx/data@0.22.1':
     resolution: {integrity: sha512-X10PWKDWKfjabJRQehV/hcmjI3ZgyW4FEmr1EDeqJZmmyQJ1teCkdHL2/u94UDWlMcpZSecgFVJIBaL5oEzedA==}
     engines: {node: '>=20'}
@@ -12947,7 +12951,7 @@ snapshots:
       '@ai-matrx/associations': 0.13.162(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(recharts@3.10.1(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react-is@19.3.0)(react@19.3.0)(redux@5.0.1))
       '@ai-matrx/browser-audio': 0.5.0(react@19.3.0)
       '@ai-matrx/canvas': 0.10.2(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(recharts@3.10.1(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react-is@19.3.0)(react@19.3.0)(redux@5.0.1))
-      '@ai-matrx/content-ir': 0.24.3(react@19.3.0)
+      '@ai-matrx/content-ir': 0.24.4(react@19.3.0)
       '@ai-matrx/content-ir-react': 0.25.4(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(recharts@3.10.1(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react-is@19.3.0)(react@19.3.0)(redux@5.0.1))
       '@ai-matrx/data': 0.22.4(@supabase/supabase-js@2.117.2(@opentelemetry/api@1.9.0))(react@19.3.0)
       '@ai-matrx/design-system': 0.85.0(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(recharts@3.10.1(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react-is@19.3.0)(react@19.3.0)(redux@5.0.1))
@@ -13093,6 +13097,16 @@ snapshots:
       - react
 
   '@ai-matrx/content-ir@0.24.3(react@19.3.0)':
+    dependencies:
+      '@ai-matrx/kit': 0.40.0(react@19.3.0)
+      '@types/react': 19.3.0
+      ajv: 8.20.0
+      json5: 2.2.3
+      jsonrepair: 3.15.0
+    transitivePeerDependencies:
+      - react
+
+  '@ai-matrx/content-ir@0.24.4(react@19.3.0)':
     dependencies:
       '@ai-matrx/kit': 0.40.0(react@19.3.0)
       '@types/react': 19.3.0

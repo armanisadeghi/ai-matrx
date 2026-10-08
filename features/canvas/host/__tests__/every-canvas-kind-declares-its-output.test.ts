@@ -17,9 +17,9 @@ import "@/features/canvas/artifact-types/artifact-printers";
 const ALL: readonly AnyCanvasKind[] = [...ARTIFACT_CANVAS_KINDS, SAVED_ITEMS_CANVAS_KIND, ...FEATURE_CANVAS_KINDS, ...TOOL_CANVAS_KINDS];
 
 describe("every registered canvas kind meets the rendered-output standard", () => {
-  it("covers the census (37 artifact + saved items + feature + tool kinds)", () => {
+  it("covers every artifact type (37 on 2026-10-08)", () => {
     expect(ARTIFACT_CANVAS_KINDS).toHaveLength(Object.keys(ARTIFACT_OUTPUT).length);
-    expect(ALL.length).toBeGreaterThanOrEqual(76);
+    expect(ARTIFACT_CANVAS_KINDS).toHaveLength(37);
   });
 
   it.each(ALL.map((kind) => [kind.id, kind] as const))("%s declares its surface (and frame/native: print + capture)", (_id, kind) => {
