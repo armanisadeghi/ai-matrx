@@ -13,7 +13,7 @@ import { useCanvas } from "@/features/canvas/hooks/useCanvas";
 import { useOpenArtifactInCanvas } from "@/features/canvas/hooks/useOpenArtifactInCanvas";
 import { isMaterializedArtifactId } from "@/features/canvas/artifact-types/artifactId";
 import { getArtifactDef } from "@/features/canvas/artifact-types/artifact-type-registry";
-import IconButton from "@/components/official/IconButton";
+import { IconButton } from "@ai-matrx/design-system";
 import {
   DropdownMenu,
   DropdownMenuContent,

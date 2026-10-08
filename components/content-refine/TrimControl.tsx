@@ -4,7 +4,7 @@ import * as React from "react";
 import * as SliderPrimitive from "@radix-ui/react-slider";
 import { ChevronLeft, ChevronRight, ZoomIn, ZoomOut } from "lucide-react";
 import { formatCount } from "@ai-matrx/kit/format";
-import IconButton from "@/components/official/IconButton";
+import { IconButton } from "@ai-matrx/design-system";
 import { Button } from "@/components/ui/button";
 import {
   Tooltip,

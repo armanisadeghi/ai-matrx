@@ -230,7 +230,7 @@ export const componentList: ComponentEntry[] = [
   {
     id: "icon-button",
     name: "Icon Button with Tooltip",
-    path: "components/official/IconButton.tsx",
+    path: "@ai-matrx/design-system (npm package)",
     description: "Button with icon and tooltip support for quick actions",
     categories: ["buttons", "interactive"],
     tags: ["icon", "tooltip", "action", "clickable"],

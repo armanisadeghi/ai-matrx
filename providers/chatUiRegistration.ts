@@ -293,7 +293,7 @@ registerChatUi({
   AppLink: Host_AppLink,
 });
 
-import Host_IconButton from "@/components/official/IconButton";
+import { IconButton as Host_IconButton } from "@ai-matrx/design-system";
 registerChatUi({
   IconButton: Host_IconButton,
 });

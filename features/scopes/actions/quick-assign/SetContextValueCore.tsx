@@ -21,7 +21,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import IconButton from "@/components/official/IconButton";
+import { IconButton } from "@ai-matrx/design-system";
 import {
   Tooltip,
   TooltipContent,

@@ -3,7 +3,7 @@
 import React from 'react';
 import { ComponentEntry } from '../parts/component-list';
 import { ComponentDisplayWrapper } from '../component-usage';
-import IconButton from '@/components/official/IconButton';
+import { IconButton } from '@ai-matrx/design-system';
 import { Copy } from 'lucide-react';
 
 interface ComponentDisplayProps {
@@ -14,7 +14,7 @@ export default function IconButtonDisplay({ component }: ComponentDisplayProps) 
   if (!component) return null;
   
   // Example code with all available props and their default values
-  const code = `import IconButton from '@/components/official/IconButton';
+  const code = `import { IconButton } from '@ai-matrx/design-system';
 import { Copy } from 'lucide-react';
 
 <IconButton
