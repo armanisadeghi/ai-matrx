@@ -83,12 +83,17 @@ function ExplorerBody(props: Omit<OrganizationDrillExplorerProps, "list" | "list
 }
 
 export function OrganizationDrillExplorer({ list, listLabel, ...rest }: OrganizationDrillExplorerProps) {
+  const active = useOrganizationRequired();
+  const memberships = useUserOrganizations();
+  // org-fallback-deliberate: asking whether the definition exists needs some organization the person is in; it reads no rows
+  const presenceOrganization =
+    active.organizationState === "ready" && active.organizationId ? active.organizationId : memberships.organizations[0]?.id ?? null;
   return (
     <DrillOrList
       definition={rest.definition}
       listLabel={listLabel}
       firstScreen="list"
-      organizationId={null}
+      organizationId={presenceOrganization}
       list={list}
       renderDrill={(extras) => <ExplorerBody {...rest} extras={extras} />}
     />

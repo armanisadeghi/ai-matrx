@@ -19,6 +19,9 @@ type Presence = "reading" | "present" | "absent";
 export function useDrillDefinitionPresent(definition: string, organizationId: string | null = SYSTEM_ORGANIZATION_ID): Presence {
   const [state, setState] = useState<Presence>("reading");
   useEffect(() => {
+    // No organization yet (a member whose memberships are still loading): the door cannot be asked, so
+    // the answer stays "reading" until one is known — never a false "not on this database".
+    if (!organizationId) return;
     let cancelled = false;
     void supabase
       .schema("platform")

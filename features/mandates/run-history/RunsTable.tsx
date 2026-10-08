@@ -292,6 +292,7 @@ export function RunsTable({ scope, view, audience, urlId }: RunsTableProps) {
       getRowId={(run) => `${run.runKind}:${run.runId}`}
       tableId={urlId}
       toolbar={{ title: "Runs", search: false }}
+      viewTabs={false}
       pageSize={25}
       cellLines="one"
     />
