@@ -1,6 +1,6 @@
 {
   "note": "Checked-in snapshot of public._schema_migrations for the files under migrations/campaign and migrations/inverse. Written by `pnpm db:apply` on every successful production apply and refreshed whole by the nightly catch-up. Never hand-edited: a self-written checksum is a claim nobody can check. Guard: pnpm check:ledgered-files-unedited.",
-  "generated_at": "2026-10-08T18:21:53.428Z",
+  "generated_at": "2026-10-08T18:47:08.888Z",
   "files": {
     "migrations/campaign/a_chunk_is_the_size_the_client_door_can_actually_carry.sql": {
       "source": "matrx-frontend",
@@ -3739,6 +3739,12 @@
       "filename": "hotdoors_a_the_list_filter_inlines_and_a_page_walks_once.sql",
       "checksum": "8cff190cabbedd21942844a312b4805755c0a25cf8ed1c64c21dabd85f130c62",
       "applied_at": "2026-10-08 15:30:58.67814+00"
+    },
+    "migrations/campaign/hr360_meet_policy_for_before_a_meeting_exists.sql": {
+      "source": "matrx-frontend",
+      "filename": "hr360_meet_policy_for_before_a_meeting_exists.sql",
+      "checksum": "9bb39ce2124169bffe2bd72fe9d115a21f25f724f56d5d1924656eb97cc0e586",
+      "applied_at": "2026-10-08 18:47:05.857769+00"
     },
     "migrations/campaign/hr360_review_knobs.sql": {
       "source": "matrx-frontend",

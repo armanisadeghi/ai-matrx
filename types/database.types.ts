@@ -21972,6 +21972,10 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      meet_carries_confidential_record: {
+        Args: { p_metadata: Json }
+        Returns: boolean
+      }
       meet_create_call_invite: {
         Args: {
           p_callee_ids: string[]
@@ -22308,16 +22312,25 @@ export type Database = {
         Returns: Json
       }
       meet_policy_all: { Args: { p_meeting_id: string }; Returns: Json }
-      meet_policy_for: {
-        Args: {
-          p_host_user_id: string
-          p_key: string
-          p_meeting_id: string
-          p_organization_id: string
-          p_profile: string
-        }
-        Returns: Json
-      }
+      meet_policy_for:
+        | {
+            Args: {
+              p_host_user_id: string
+              p_key: string
+              p_organization_id: string
+            }
+            Returns: Json
+          }
+        | {
+            Args: {
+              p_host_user_id: string
+              p_key: string
+              p_meeting_id: string
+              p_organization_id: string
+              p_profile: string
+            }
+            Returns: Json
+          }
       meet_policy_set:
         | {
             Args: {
@@ -76912,6 +76925,10 @@ export type Database = {
       oauth_client_is_dynamic: {
         Args: { p_client_id: string }
         Returns: boolean
+      }
+      open_confidential_audited: {
+        Args: { p_id: string; p_purpose?: string; p_type: string }
+        Returns: Json
       }
       org_access_ids: { Args: never; Returns: string[] }
       org_access_log: {

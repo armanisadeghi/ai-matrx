@@ -60,11 +60,8 @@ export function useMeetDefaults(
         .rpc("meet_policy_for", {
           p_organization_id: organizationId,
           p_host_user_id: userId,
-          // A meeting not yet scheduled: no meeting row, and the host's own profile.
-          // The SQL door reads NULL as exactly that; generated Args type every
-          // parameter as non-null, so the NULLs are named here.
-          p_profile: null as unknown as string,
-          p_meeting_id: null as unknown as string,
+          // A meeting not yet scheduled: the 3-argument form of the door is exactly "no
+          // meeting row, and the host's own profile" (hr360_meet_policy_for_before_a_meeting_exists.sql).
           p_key: key,
         })
         .then(({ data, error }) => (error ? undefined : data));
