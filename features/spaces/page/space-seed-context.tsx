@@ -29,20 +29,29 @@ export interface SpaceTablesSeed {
 interface SeedState {
   promise: Promise<SpaceTablesSeed | null> | null;
   resolved: SpaceTablesSeed | null;
+  /** The seed has answered (or there is none): blocks mounted now start from it. */
+  settled: boolean;
 }
 
-const SpaceSeedContext = createContext<SeedState>({ promise: null, resolved: null });
+const SpaceSeedContext = createContext<SeedState>({ promise: null, resolved: null, settled: true });
 
 export function SpaceSeedProvider({ seed, children }: { seed?: Promise<SpaceTablesSeed | null>; children: ReactNode }) {
-  const [resolved, setResolved] = useState<SpaceTablesSeed | null>(null);
+  const [landed, setLanded] = useState<{ seed: Promise<SpaceTablesSeed | null>; value: SpaceTablesSeed | null } | null>(null);
   useEffect(() => {
     let live = true;
-    void seed?.then((s) => live && setResolved(s));
+    const settle = (value: SpaceTablesSeed | null) => live && seed && setLanded({ seed, value });
+    void seed?.then(settle, () => settle(null));
     return () => {
       live = false;
     };
   }, [seed]);
-  return <SpaceSeedContext value={{ promise: seed ?? null, resolved }}>{children}</SpaceSeedContext>;
+  const mine = landed && landed.seed === seed ? landed : null;
+  return <SpaceSeedContext value={{ promise: seed ?? null, resolved: mine?.value ?? null, settled: !seed || !!mine }}>{children}</SpaceSeedContext>;
+}
+
+/** Whether the page's seed has answered (true when there is none). */
+export function useSpaceSeedSettled(): boolean {
+  return useContext(SpaceSeedContext).settled;
 }
 
 /** The page's seed once landed (null before, or when there is none). Never suspends. */
@@ -63,6 +72,18 @@ export function SeedRecords({ seed, children }: { seed: SpaceTablesSeed | null; 
   return <RecordsSeedProvider seed={seed.records}>{children}</RecordsSeedProvider>;
 }
 
+/**
+ * For a block mounted AFTER the first pass (an editor node view, drawn a frame after its editor): a seed
+ * store is live only until its provider's first effect, so each such block gets its own copy of the
+ * landed seed, live for its own first pass — it starts from the server's answers and asks nothing.
+ */
+export function LateSeedRecords({ children }: { children: ReactNode }) {
+  const landed = useContext(SpaceSeedContext).resolved;
+  const [copy] = useState(() => (landed?.records ? { at: landed.records.at, answers: landed.records.answers } : null));
+  if (!copy) return <>{children}</>;
+  return <RecordsSeedProvider seed={copy}>{children}</RecordsSeedProvider>;
+}
+
 /** Where one table opens, from the page's seed (null when the server did not ask it). */
 export function useSeededWhere(tableId: string): SeededWhere | null {
   const { resolved } = useContext(SpaceSeedContext);
@@ -73,7 +94,7 @@ export function useSeededWhere(tableId: string): SeededWhere | null {
 export function ResolvedSpaceSeed({ seed, children }: { seed: SpaceTablesSeed | null; children: ReactNode }) {
   const outer = useContext(SpaceSeedContext);
   return (
-    <SpaceSeedContext value={{ promise: outer.promise, resolved: seed }}>
+    <SpaceSeedContext value={{ promise: outer.promise, resolved: seed, settled: true }}>
       <SeedRecords seed={seed}>{children}</SeedRecords>
     </SpaceSeedContext>
   );

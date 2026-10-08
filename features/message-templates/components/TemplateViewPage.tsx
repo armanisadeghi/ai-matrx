@@ -898,11 +898,12 @@ export function TemplateViewPage({ template, canEdit, create = false }: Template
                 </div>
 
                 <div ref={messageBlockRef} className="space-y-1">
-                  <div className="flex items-center justify-between gap-2">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
                     <Label id="template-body-label">Message</Label>
+                    {/* On a phone the toolbar takes the row's second line. */}
                     <FormatButtons
                       size="xs"
-                      className="min-w-0 flex-1"
+                      className="order-last w-full sm:order-none sm:w-auto sm:min-w-0 sm:flex-1"
                       resolve={() => formatTargetWithin(messageBlockRef.current)}
                     />
                     {usedFields.length > 0 && <ShowToggle value={show} onChange={setShow} />}

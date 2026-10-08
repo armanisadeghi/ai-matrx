@@ -11,7 +11,7 @@
 //
 // Same doors, same person, same arguments: RLS and every door's own wall decide exactly as they do
 // from the browser. Nothing here decides access. A read that fails, refuses, or is slower than
-// its budget (the knob `data/server_rows_budget_ms`) answers null and the browser asks for itself as it always did — never "empty".
+// its hang guard (the knob `data/server_rows_budget_ms`) answers null and the browser asks for itself as it always did — never "empty".
 
 import "server-only";
 
@@ -56,8 +56,16 @@ export function addressAsksThePlainOpening(searchParams: Record<string, string |
   return !ADDRESS_OPENS_ELSEWHERE.some((key) => searchParams[key] !== undefined && searchParams[key] !== "");
 }
 
-/** The knob `data/server_rows_budget_ms`'s default, used only when the gate itself does not answer. */
-const DEFAULT_BUDGET_MS = 2_500;
+/**
+ * A HANG GUARD, NEVER A BUDGET (lane SSR-ROWS-2, ruling 2026-10-08). The route's HTML shell and the
+ * table's own final-geometry skeleton (`app/(core)/data/[tableId]/loading.tsx`, the route's Suspense
+ * fallback) are flushed at once; the page — rows included when the person's knob is on — streams into
+ * that boundary in the same response the moment the server's reads land. Nothing waits for a clock.
+ * Only a read that never answers is cut off: past this (or the person's `data/server_rows_budget_ms`,
+ * once the bundle names it) the boundary resolves without a seed and the browser asks for itself.
+ * Equal to the knob's platform default.
+ */
+const DEFAULT_BUDGET_MS = 8_000;
 
 /**
  * WHETHER THIS PERSON'S TABLE PAGE DRAWS ITS ROWS ON THE SERVER (lane SSR-ROWS-2): the knobs
@@ -162,8 +170,8 @@ export function readTablePage(
 ): TablePageReads {
   if (!isUuidShape(tableId)) return { gate: Promise.resolve(OFF), seed: Promise.resolve(null) };
   const record = recordId && isUuidShape(recordId) ? recordId : null;
-  // The gate is decided by the bundle (first decision wins), and bounded: past the default budget the
-  // page draws as it did before.
+  // The gate is decided by the bundle (first decision wins); only a hang cuts it off.
+  const t0 = Date.now();
   let decide: (gate: ServerRowsGate) => void = () => {};
   const decidedGate = new Promise<ServerRowsGate>((resolve) => {
     decide = resolve;
@@ -175,14 +183,14 @@ export function readTablePage(
       gateTimer = setTimeout(() => resolve(OFF), DEFAULT_BUDGET_MS);
     }),
   ]).finally(() => clearTimeout(gateTimer));
-  // The seed's budget runs from the moment the gate is decided: the person's `server_rows_budget_ms`.
   const asked = createClient().then((supabase) => askSeed(supabase, tableId, record, options.rows !== false, options.forceOn === true, decide));
+  // The seed streams when it lands; the person's hang guard counts from the request's start.
   const seed = Promise.race([
     asked,
     gate.then(
       (g) =>
         new Promise<null>((resolve) => {
-          const timer = setTimeout(() => resolve(null), g.budgetMs);
+          const timer = setTimeout(() => resolve(null), Math.max(0, g.budgetMs - (Date.now() - t0)));
           const clear = () => clearTimeout(timer);
           asked.then(clear, clear);
         }),

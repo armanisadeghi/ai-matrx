@@ -37,8 +37,9 @@ await context.addInitScript(() => {
     }
     document.querySelectorAll('.spaces-content [data-content-type="database"]').forEach((db, i) => {
       if (window.__rowsAt[i] !== undefined) return;
-      const row = db.querySelector("[data-matrx-cell-row], tbody tr, [role='row'] + [role='row']");
-      if (row && row.textContent?.trim() && visible(row)) window.__rowsAt[i] = now;
+      // A table's first row, or a chart's drawn ring/bars (its data has landed).
+      const row = db.querySelector("[data-matrx-cell-row], tbody tr, [role='row'] + [role='row'], svg path[d], svg circle[stroke-dasharray]");
+      if (row && visible(row) && (row.tagName.toLowerCase() !== "tr" || row.textContent?.trim())) window.__rowsAt[i] = now;
     });
     requestAnimationFrame(look);
   };
@@ -47,7 +48,7 @@ await context.addInitScript(() => {
 const warnings = [];
 page.on("console", (m) => {
   const t = m.text();
-  if (/hydrat|did not match|server rendered|Text content does not match/i.test(t)) warnings.push(t.slice(0, 240));
+  if (/hydration|did not match|server rendered HTML|Text content does not match/i.test(t)) warnings.push(t.slice(0, 240));
 });
 let reads = [];
 let navStart = 0;
@@ -55,7 +56,7 @@ page.on("request", (r) => {
   const u = r.url();
   if (!/\/rest\/v1\//.test(u)) return;
   const name = u.replace(/^.*\/rest\/v1\//, "").split("?")[0];
-  reads.push({ at: Date.now() - navStart, name, schema: r.headers()["content-profile"] ?? r.headers()["accept-profile"] ?? "" });
+  reads.push({ at: Date.now() - navStart, name, schema: r.headers()["content-profile"] ?? r.headers()["accept-profile"] ?? "", body: process.env.BODIES ? (r.postData() ?? "").slice(0, 300) : "" });
 });
 const out = [];
 for (let i = 0; i < loads; i++) {
@@ -89,7 +90,7 @@ for (let i = 0; i < loads; i++) {
   };
   out.push(row);
   console.log(JSON.stringify(row));
-  if (process.env.VERBOSE) for (const x of reads) console.log("   read", x.at, x.schema, x.name);
+  if (process.env.VERBOSE) for (const x of reads) console.log("   read", x.at, x.schema, x.name, x.body);
   else console.log("   rowish", JSON.stringify(rowReads.map((x) => `${x.at}:${x.name}`)));
   for (const w of warnings.slice(0, 3)) console.log("   warn", w);
 }

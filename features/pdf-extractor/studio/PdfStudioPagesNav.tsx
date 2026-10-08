@@ -83,7 +83,8 @@ export function PdfStudioPagesNav({
                   >
                     <div className="flex flex-col gap-0.5">
                       <span className="font-medium tabular-nums">
-                        Page {p.pageNumber}: {humanizeIdentifier(p.sectionKind ?? "")}
+                        Page {p.pageNumber}
+                        {p.sectionKind ? `: ${humanizeIdentifier(p.sectionKind)}` : ""}
                       </span>
                       {/* {p.sectionKind && (
                         <span className="text-xs text-foreground">

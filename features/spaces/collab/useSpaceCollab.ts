@@ -134,8 +134,11 @@ export function useSpaceCollab(args: {
 
   // Offline (Notion's indicator); when the connection comes back the provider catches up by itself and
   // the election runs again.
-  const [online, setOnline] = useState(() => (typeof navigator === "undefined" ? true : navigator.onLine));
+  // Online until the browser says otherwise: the server render (where Node's `navigator` has no `onLine`)
+  // and the hydrating pass must draw the same top bar (round 34).
+  const [online, setOnline] = useState(true);
   useEffect(() => {
+    if (navigator.onLine === false) setOnline(false);
     const up = () => setOnline(true);
     const down = () => setOnline(false);
     window.addEventListener("online", up);

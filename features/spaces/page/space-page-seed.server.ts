@@ -6,9 +6,9 @@
 // the person's session, so the route asks AS THEM:
 //   1. the page itself (the same `SupabaseSpacesStore.get` the browser runs) — awaited, so the page's
 //      text is in the HTML;
-//   2. for every inline custom table on it, `custom.table_page_server_rows` (where the table opens + the
-//      person's knobs `data/server_rows` / `data/server_rows_budget_ms`, resolved in the table's
-//      organization), and when the knob is on, `askTablePageSeed` (records-ui `/first-page`, embedded) —
+//   2. for every inline custom table on it, `custom.where_id_opens` (its organization) and
+//      `askTablePageSeed` (records-ui `/first-page`, embedded), whose bundle carries the person's knob
+//      `data/server_rows` (`serverRowsOf`): rows are asked, and the seed kept, only when it is on —
 //      handed to the page as a promise that streams in.
 // Same doors, same person, same arguments: row security decides exactly as from the browser. A read that
 // fails, refuses or outruns its budget answers null and the browser asks for itself as it always did.
@@ -17,7 +17,7 @@ import "server-only";
 
 import { isUuidShape } from "@ai-matrx/kit/uuid";
 import type { RecordsSeed } from "@ai-matrx/records/core";
-import { askTablePageSeed } from "@ai-matrx/records-ui/first-page";
+import { askTablePageSeed, serverRowsOf } from "@ai-matrx/records-ui/first-page";
 
 import { getClaimsUser } from "@/utils/supabase/claimsUser";
 import { createClient } from "@/utils/supabase/server";
@@ -28,8 +28,9 @@ import type { SpaceTablesSeed, SeededWhere } from "./space-seed-context";
 
 /** The page read waits at most this long; past it the browser reads the page as before. */
 const DOC_BUDGET_MS = 2_000;
-/** `data/server_rows_budget_ms`'s default, used when the gate itself does not answer. */
-const DEFAULT_ROWS_BUDGET_MS = 2_500;
+/** The inline tables' reads wait at most this long (`data/server_rows_budget_ms`'s default; the knob is only
+ *  known once the bundle answers, so the whole read is bounded by it). */
+const ROWS_BUDGET_MS = 2_500;
 
 type Supabase = Awaited<ReturnType<typeof createClient>>;
 type CustomRpc = { rpc: (fn: string, args: Record<string, unknown>) => PromiseLike<{ data: unknown; error: unknown }> };
@@ -57,51 +58,49 @@ export function inlineTableIds(blocks: readonly SpaceBlock[]): string[] {
   return [...out];
 }
 
-interface TableGate {
+interface TableWhere {
   tableId: string;
   where: SeededWhere;
   organizationId: string | null;
-  on: boolean;
-  budgetMs: number;
 }
 
-async function askGate(custom: CustomRpc, tableId: string): Promise<TableGate | null> {
-  const raw = await custom.rpc("table_page_server_rows", { p_table_id: tableId });
-  const answer = raw.data as { where?: unknown; on?: unknown; budget_ms?: unknown } | null;
-  if (raw.error || !answer || typeof answer !== "object") return null;
-  const where: SeededWhere = { data: answer.where ?? null, error: null };
-  const row = answer.where as { organization_id?: unknown; kind?: unknown } | null;
-  const organizationId = row && typeof row === "object" && row.kind === "table" && typeof row.organization_id === "string" ? row.organization_id : null;
-  return {
-    tableId,
-    where,
-    organizationId,
-    on: answer.on === true,
-    budgetMs: typeof answer.budget_ms === "number" && answer.budget_ms > 0 ? answer.budget_ms : DEFAULT_ROWS_BUDGET_MS,
+async function askWhere(custom: CustomRpc, tableId: string): Promise<TableWhere> {
+  const raw = await custom.rpc("where_id_opens", { p_id: tableId });
+  const e = raw.error as { code?: unknown; message?: unknown } | null;
+  const where: SeededWhere = {
+    data: raw.data ?? null,
+    error: e ? { code: typeof e.code === "string" ? e.code : null, message: typeof e.message === "string" ? e.message : "The record store refused." } : null,
   };
+  const row = raw.data as { organization_id?: unknown; kind?: unknown } | null;
+  const organizationId = !e && row && typeof row === "object" && row.kind === "table" && typeof row.organization_id === "string" ? row.organization_id : null;
+  return { tableId, where, organizationId };
 }
 
 async function askTables(supabase: Supabase, tableIds: string[]): Promise<SpaceTablesSeed | null> {
   if (!tableIds.length) return null;
   const custom = supabase.schema("custom" as never) as unknown as CustomRpc;
-  const [gates, claims] = await Promise.all([
-    Promise.all(tableIds.map((id) => askGate(custom, id).catch(() => null))),
+  const [wheres, userId] = await Promise.all([
+    Promise.all(tableIds.map((id) => askWhere(custom, id).catch(() => null))),
     getClaimsUser(supabase).then((r) => r.data.user?.id ?? null).catch(() => null),
   ]);
-  const actor = claims ? { actor: "user" as const, user_id: claims } : { actor: "user" as const };
+  const actor = userId ? { actor: "user" as const, user_id: userId } : { actor: "user" as const };
   const where: Record<string, SeededWhere> = {};
   const asked: Promise<RecordsSeed | null>[] = [];
-  for (const gate of gates) {
-    if (!gate) continue;
-    where[gate.tableId] = gate.where;
-    if (!gate.on || !gate.organizationId) continue;
-    asked.push(
-      within(
-        gate.budgetMs,
-        askTablePageSeed({ dataSource: supabase, organizationId: gate.organizationId, tableId: gate.tableId, actor, embedded: true }),
-        null,
-      ),
-    );
+  for (const w of wheres) {
+    if (!w) continue;
+    where[w.tableId] = w.where;
+    if (!w.organizationId) continue;
+    // The table's bundle carries the person's knobs (`serverRowsOf`): its first rows are asked only when
+    // `data/server_rows` is on, at no extra read; a table whose knob is off is not seeded at all.
+    const seed = askTablePageSeed({
+      dataSource: supabase,
+      organizationId: w.organizationId,
+      tableId: w.tableId,
+      actor,
+      embedded: true,
+      rows: (sofar) => serverRowsOf(sofar)?.on === true,
+    }).then((s) => (serverRowsOf(s)?.on === true ? s : null));
+    asked.push(within(ROWS_BUDGET_MS, seed, null));
   }
   const seeds = (await Promise.all(asked)).filter((s): s is RecordsSeed => !!s);
   if (!Object.keys(where).length) return null;

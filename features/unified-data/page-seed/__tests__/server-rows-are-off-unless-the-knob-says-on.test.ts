@@ -11,6 +11,7 @@ jest.mock("server-only", () => ({}), { virtual: true });
 let mockWhere: unknown = null;
 let mockKnob: unknown = null;
 let mockHang = false;
+let mockDelayMs = 0;
 const mockAsked: string[] = [];
 const mockRowsAsked: boolean[] = [];
 
@@ -20,7 +21,8 @@ jest.mock("@/utils/supabase/server", () => ({
       rpc: (fn: string) => {
         mockAsked.push(fn);
         if (mockHang) return new Promise(() => {});
-        if (fn === "where_id_opens") return Promise.resolve({ data: mockWhere, error: null });
+        if (fn === "where_id_opens")
+          return new Promise((resolve) => (mockDelayMs ? setTimeout(() => resolve({ data: mockWhere, error: null }), mockDelayMs) : resolve({ data: mockWhere, error: null })));
         return Promise.resolve({ data: null, error: { message: `unexpected ${fn}` } });
       },
     }),
@@ -50,6 +52,7 @@ beforeEach(() => {
   mockWhere = { kind: "table", organization_id: ORG };
   mockKnob = null;
   mockHang = false;
+  mockDelayMs = 0;
 });
 
 async function read(options: { rows?: boolean; forceOn?: boolean } = {}) {
@@ -74,7 +77,7 @@ it("the knob says off: no rows asked on the server", async () => {
 });
 
 it("a bundle without the knob: off", async () => {
-  expect((await read()).gate).toEqual({ on: false, budgetMs: 2500 });
+  expect((await read()).gate).toEqual({ on: false, budgetMs: 8000 });
   expect(mockRowsAsked).toEqual([false]);
 });
 
@@ -101,14 +104,31 @@ it("a development request may force it on", async () => {
   expect(mockRowsAsked).toEqual([true]);
 });
 
-it("a gate slower than the default budget is off", async () => {
+it("a gate that never answers is cut off by the hang guard (8 s), never by a budget", async () => {
   jest.useFakeTimers();
   try {
     mockHang = true;
     const { readTablePage } = await import("../tablePageSeed.server");
     const reads = readTablePage(TABLE);
-    await jest.advanceTimersByTimeAsync(2600);
-    await expect(reads.gate).resolves.toEqual({ on: false, budgetMs: 2500 });
+    await jest.advanceTimersByTimeAsync(8100);
+    await expect(reads.gate).resolves.toEqual({ on: false, budgetMs: 8000 });
+  } finally {
+    jest.useRealTimers();
+  }
+});
+
+it("a seed slower than the old 2.5 s budget still streams — nothing waits for a clock", async () => {
+  jest.useFakeTimers();
+  try {
+    mockKnob = { on: true, budget_ms: 8000 };
+    const { readTablePage } = await import("../tablePageSeed.server");
+    // A slow store: where_id_opens answers after 4 s (the old design cut it off at 2.5 s).
+    mockDelayMs = 4000;
+    const reads = readTablePage(TABLE);
+    const seed = reads.seed;
+    await jest.advanceTimersByTimeAsync(4000);
+    await expect(seed).resolves.toMatchObject({ organizationId: ORG });
+    await expect(reads.gate).resolves.toEqual({ on: true, budgetMs: 8000 });
   } finally {
     jest.useRealTimers();
   }

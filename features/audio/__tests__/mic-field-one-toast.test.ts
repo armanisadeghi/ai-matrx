@@ -4,21 +4,35 @@
  * also toasts from `onTranscriptionError` shows the person two toasts for one
  * denied microphone — the rich editor did (verify-RC-B4 F8e).
  *
- * SUT: every source file that calls useMicField. The handler passed as
- * `onTranscriptionError` must not call a toast.
+ * SUT: every source file that calls useMicField — this app's own files AND the
+ * shipped `@ai-matrx/rich-editor` build the app runs (the rich editor moved into
+ * that package; it reaches useMicField through the rich-content host binding).
+ * The handler passed as `onTranscriptionError` must not call a toast.
  */
 import { execFileSync } from "node:child_process";
-import { readFileSync } from "node:fs";
+import { readFileSync, readdirSync } from "node:fs";
 import path from "node:path";
 
 const ROOT = path.resolve(__dirname, "../../..");
 
+const RICH_EDITOR_DIST = "node_modules/@ai-matrx/rich-editor/dist";
+
+/** Package build files (as installed) that call useMicField. */
+function packageConsumers(): string[] {
+  const entries = readdirSync(path.join(ROOT, RICH_EDITOR_DIST), { recursive: true, encoding: "utf8" });
+  return entries
+    .filter((file) => file.endsWith(".js"))
+    .map((file) => `${RICH_EDITOR_DIST}/${file.split(path.sep).join("/")}`)
+    .filter((file) => readFileSync(path.join(ROOT, file), "utf8").includes("useMicField("));
+}
+
 function consumers(): string[] {
   const out = execFileSync("git", ["grep", "-l", "useMicField(", "--", "*.ts", "*.tsx"], { cwd: ROOT, encoding: "utf8" });
-  return out
+  const own = out
     .split("\n")
     .filter(Boolean)
     .filter((file) => !file.includes("__tests__") && !file.endsWith("hooks/useMicField.ts"));
+  return [...own, ...packageConsumers()];
 }
 
 /** The text of the `onTranscriptionError:` handler up to the next top-level property. */
@@ -43,7 +57,7 @@ function errorHandlers(source: string): string[] {
 
 describe("useMicField consumers never add a second error toast", () => {
   it("finds the consumers (the scan is live)", () => {
-    expect(consumers()).toContain("components/rich-editor/RichEditorImpl.tsx");
+    expect(consumers()).toContain(`${RICH_EDITOR_DIST}/editor/RichEditorImpl.js`);
   });
 
   it("no onTranscriptionError handler calls a toast", () => {
