@@ -24,6 +24,7 @@ import type * as Y from "yjs";
 
 import { AGENT_ICON } from "@/components/icons/domain-icons";
 import { mentionCandidates } from "@/features/rich-document/annotations/service";
+import { outsideAriaMarksPlugin } from "./aria-hidden-marks";
 import { applyMarkdownKey } from "./markdown-keys";
 import { openMissedSlash } from "./slash-guard";
 import { CalendarDays } from "lucide-react";
@@ -68,6 +69,9 @@ const PLACEHOLDERS = {
 };
 
 /** Notion keys BlockNote does not ship: Cmd+D duplicate, `>` toggle, `"` quote (Cmd+Opt+4…8: see NOTION_TURN_INTO). */
+/** A modal's `aria-hidden` marks on the page's blocks are never edits (aria-hidden-marks.ts). */
+const outsideAriaMarks = createExtension({ key: "spacesOutsideAriaMarks", prosemirrorPlugins: [outsideAriaMarksPlugin()] });
+
 const notionKeys = createExtension(({ editor }: { editor: SpacesEditor }) => {
   return {
     key: "spacesNotionKeys",
@@ -222,7 +226,7 @@ export function SpaceEditor({ spaceId, initialBlocks, editable, onChange, slash,
       disableExtensions: room ? ["history"] : undefined,
       // Notion names the no-colour choice "Default" (a callout on Default draws a bordered box).
       dictionary: { ...en, placeholders: PLACEHOLDERS, color_picker: { ...en.color_picker, colors: { ...en.color_picker.colors, default: "Default" } } },
-      extensions: room ? [notionKeys(), suggestMode(), room] : [notionKeys(), suggestMode()],
+      extensions: room ? [notionKeys(), suggestMode(), outsideAriaMarks(), room] : [notionKeys(), suggestMode(), outsideAriaMarks()],
       tabBehavior: "prefer-indent",
       dropCursor: { color: "rgba(35, 131, 226, 0.43)", width: 4, hooks: columnDrop.hooks },
       // Notion keeps no empty line after the last block; the page end (SpacePage) adds one on click.
