@@ -1481,7 +1481,7 @@ PACKAGE_FILES = ("package.json", "pnpm-lock.yaml", "package-lock.json")
 PUBLISH_REPO = "AI-Matrix-Engine/aidream"
 NOMINATE_WORKFLOW = "Nominate changed npm packages"
 PUBLISH_WORKFLOW = "Publish TypeScript Package to npm"
-PUBLISH_WAIT_MAX_SECONDS = 15 * 60   # agent-chosen; the sweep hold covers anything later. Review 2026-11-07.
+PUBLISH_WAIT_MAX_SECONDS = 10 * 60   # agent-chosen; the sweep hold covers anything later. Review 2026-11-07.
 PUBLISH_DISPATCH_GRACE_SECONDS = 60  # a finished nomination's tags start their publish runs within this
 PUBLISH_POLL_SECONDS = 20
 
