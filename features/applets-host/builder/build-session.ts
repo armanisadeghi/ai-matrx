@@ -354,7 +354,11 @@ export function fixLabel(kind: string | null): string {
   return kind === "published" ? "Fix it" : "Fix it to use it";
 }
 
-/** The preview's header line — what she is looking at, and that trying it here keeps nothing. */
-export function previewLine(stateLabel: string, versionLabel: string | null): string {
-  return `${[stateLabel, versionLabel].filter(Boolean).join(" ")} · try it here, nothing you add is kept`;
+/**
+ * The preview's header line — ONE story: this pane is a preview, and what she adds in it is held here, never
+ * written to her tables. Whether the Applet is a draft or published is the card's word, never repeated here:
+ * "Published v2 · try it here, nothing you add is kept" read as a published app that throws her work away.
+ */
+export function previewLine(versionLabel: string | null): string {
+  return `Preview${versionLabel ? ` of ${versionLabel}` : ""} · what you add here is held, never saved`;
 }

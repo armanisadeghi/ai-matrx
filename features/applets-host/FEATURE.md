@@ -106,6 +106,11 @@ record's own `scope` (`{ entries, shadowDangerousGlobals }`); app-owned modules 
 
 ## Change Log
 
+- 2026-10-08 — Lane AM: the build page's header re-reads the Applet's name after the first save (`router.refresh()`,
+  was "Untitled Applet" until a reload); the preview line is one story — `previewLine(version)` "Preview of v2 · what
+  you add here is held, never saved" (Draft/Published is the card's word only); `confirm()` waits up to 30 s for a
+  mounted `<ConfirmDialogHost />` whose dynamic body is still loading (the first "Use it" press failed after 5 s).
+  Record-form inputs (one vs many, link picker, long text) are fixed in `@ai-matrx/applets` 0.12.0.
 - 2026-10-08 — Lane AL (refusals never block a valid Applet): the code checks moved to
   `builder/applet-code-checks.ts` and read the syntax tree (`@babel/parser`, now a dependency, ^8): a browser
   dialog is a real call of the global (`window.confirm(…)`, a bare `alert(…)` the file never imports or defines),
