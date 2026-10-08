@@ -20976,6 +20976,10 @@ export type Database = {
         Args: { p_actor: string; p_level: string; p_meeting_id: string }
         Returns: boolean
       }
+      _meet_may_admit: {
+        Args: { p_actor: string; p_meeting_id: string }
+        Returns: boolean
+      }
       _meet_overrides_json: { Args: { p_meeting_id: string }; Returns: Json }
       _meet_rsvp_payload: { Args: { p_invitee_id: string }; Returns: Json }
       _meet_rsvp_token: {
@@ -20988,6 +20992,7 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      _meet_touch_session: { Args: { p_meeting_id: string }; Returns: number }
       _meet_valid_tz: { Args: { p_tz: string }; Returns: string }
       _set_notification_outcome: {
         Args: {
@@ -21769,6 +21774,86 @@ export type Database = {
         Args: { p_from: string; p_to: string }
         Returns: Json
       }
+      meet_admit: {
+        Args: { p_by_user_id: string; p_identity: string; p_meeting_id: string }
+        Returns: {
+          admission_session_id: string | null
+          admission_state: string
+          avatar_url: string | null
+          consent_acknowledged_at: string | null
+          consent_session_id: string | null
+          created_at: string
+          created_by: string | null
+          custom_fields: Json
+          decided_at: string | null
+          decided_by: string | null
+          display_name: string
+          hand_raised_at: string | null
+          id: string
+          identity: string
+          is_agent: boolean
+          joined_at: string | null
+          knock_expires_at: string | null
+          knocked_at: string
+          left_at: string | null
+          meeting_id: string
+          metadata: Json
+          organization_id: string
+          participant_user_id: string | null
+          presence: string
+          removal_signals: Json
+          role: string
+          updated_at: string
+          updated_by: string | null
+          version: number
+        }
+        SetofOptions: {
+          from: "*"
+          to: "meet_participants"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      meet_admit_all: {
+        Args: { p_by_user_id: string; p_meeting_id: string }
+        Returns: {
+          admission_session_id: string | null
+          admission_state: string
+          avatar_url: string | null
+          consent_acknowledged_at: string | null
+          consent_session_id: string | null
+          created_at: string
+          created_by: string | null
+          custom_fields: Json
+          decided_at: string | null
+          decided_by: string | null
+          display_name: string
+          hand_raised_at: string | null
+          id: string
+          identity: string
+          is_agent: boolean
+          joined_at: string | null
+          knock_expires_at: string | null
+          knocked_at: string
+          left_at: string | null
+          meeting_id: string
+          metadata: Json
+          organization_id: string
+          participant_user_id: string | null
+          presence: string
+          removal_signals: Json
+          role: string
+          updated_at: string
+          updated_by: string | null
+          version: number
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "meet_participants"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
       meet_admit_participant: {
         Args: {
           p_admitted: boolean
@@ -21950,52 +22035,42 @@ export type Database = {
           isSetofReturn: false
         }
       }
-      meet_end_meeting: {
-        Args: { p_by_user_id: string; p_meeting_id: string }
+      meet_deny: {
+        Args: { p_by_user_id: string; p_identity: string; p_meeting_id: string }
         Returns: {
-          agenda: string | null
-          ai_enabled: boolean
-          behavior_profile: string | null
-          calendar_sequence: number
-          cancellation_reason: string | null
-          cancelled_at: string | null
-          cancelled_by: string | null
+          admission_session_id: string | null
+          admission_state: string
+          avatar_url: string | null
+          consent_acknowledged_at: string | null
+          consent_session_id: string | null
           created_at: string
           created_by: string | null
           custom_fields: Json
-          deleted_at: string | null
-          ended_at: string | null
-          host_user_id: string
+          decided_at: string | null
+          decided_by: string | null
+          display_name: string
+          hand_raised_at: string | null
           id: string
-          join_before_host: boolean
-          kind: string
-          lobby_enabled: boolean
-          locked: boolean
+          identity: string
+          is_agent: boolean
+          joined_at: string | null
+          knock_expires_at: string | null
+          knocked_at: string
+          left_at: string | null
+          meeting_id: string
           metadata: Json
           organization_id: string
-          outcome: Json | null
-          outcome_state: string | null
-          published_to_web: boolean
-          published_to_web_at: string | null
-          published_to_web_by: string | null
-          recording_policy: string
-          recurrence_rule: string | null
-          room_name: string
-          scheduled_duration_minutes: number | null
-          scheduled_for: string | null
-          shown_to: Database["platform"]["Enums"]["shown_to"] | null
-          slug: string
-          started_at: string | null
-          time_zone: string
-          title: string
+          participant_user_id: string | null
+          presence: string
+          removal_signals: Json
+          role: string
           updated_at: string
           updated_by: string | null
           version: number
-          visibility: Database["platform"]["Enums"]["visibility"]
         }
         SetofOptions: {
           from: "*"
-          to: "meet_meetings"
+          to: "meet_participants"
           isOneToOne: true
           isSetofReturn: false
         }
@@ -22642,6 +22717,46 @@ export type Database = {
         SetofOptions: {
           from: "*"
           to: "meet_call_invites"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      meet_undeny: {
+        Args: { p_by_user_id: string; p_identity: string; p_meeting_id: string }
+        Returns: {
+          admission_session_id: string | null
+          admission_state: string
+          avatar_url: string | null
+          consent_acknowledged_at: string | null
+          consent_session_id: string | null
+          created_at: string
+          created_by: string | null
+          custom_fields: Json
+          decided_at: string | null
+          decided_by: string | null
+          display_name: string
+          hand_raised_at: string | null
+          id: string
+          identity: string
+          is_agent: boolean
+          joined_at: string | null
+          knock_expires_at: string | null
+          knocked_at: string
+          left_at: string | null
+          meeting_id: string
+          metadata: Json
+          organization_id: string
+          participant_user_id: string | null
+          presence: string
+          removal_signals: Json
+          role: string
+          updated_at: string
+          updated_by: string | null
+          version: number
+        }
+        SetofOptions: {
+          from: "*"
+          to: "meet_participants"
           isOneToOne: true
           isSetofReturn: false
         }
@@ -23825,7 +23940,77 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      space_search: {
+        Args: { p_limit?: number; p_query: string }
+        Returns: {
+          icon: string
+          id: string
+          parent_id: string
+          path: string
+          snippet: string
+          title: string
+          updated_at: string
+        }[]
+      }
+      space_set_trashed: {
+        Args: { p_document_id: string; p_trashed: boolean }
+        Returns: string
+      }
+      space_sidebar: {
+        Args: { p_expand?: string[]; p_reveal?: string[] }
+        Returns: {
+          created_at: string
+          deleted_at: string
+          edge_position: number
+          icon: string
+          id: string
+          organization_id: string
+          parent_id: string
+          title: string
+          updated_at: string
+          version: number
+        }[]
+      }
       space_snapshot_schema: { Args: never; Returns: Json }
+      space_summaries: {
+        Args: { p_ids: string[] }
+        Returns: {
+          deleted_at: string
+          edge_position: number
+          icon: string
+          id: string
+          organization_id: string
+          parent_id: string
+          title: string
+          updated_at: string
+          version: number
+        }[]
+      }
+      space_trash: {
+        Args: never
+        Returns: {
+          created_at: string
+          deleted_at: string
+          edge_position: number
+          icon: string
+          id: string
+          organization_id: string
+          parent_id: string
+          title: string
+          updated_at: string
+          version: number
+        }[]
+      }
+      space_upcoming: {
+        Args: { p_limit?: number; p_until?: string }
+        Returns: {
+          body: string
+          deep_link: string
+          due_at: string
+          space_id: string
+          title: string
+        }[]
+      }
       space_upsert_external: {
         Args: {
           p_cover?: Json
@@ -33141,6 +33326,10 @@ export type Database = {
         Returns: undefined
       }
       _field_kinds_sentence: { Args: never; Returns: string }
+      _field_readers_within: {
+        Args: { p_field_id: string; p_organization_id: string }
+        Returns: string[]
+      }
       _field_value_carry: {
         Args: {
           p_from: Json
@@ -33366,6 +33555,10 @@ export type Database = {
       _options_table_for: {
         Args: { p_label: string; p_options: Json; p_organization_id: string }
         Returns: string
+      }
+      _org_admin_table_gate: {
+        Args: { p_door: string; p_table_id: string }
+        Returns: Record<string, unknown>
       }
       _organization_of_record: {
         Args: { p_record_id: string }
@@ -33604,6 +33797,14 @@ export type Database = {
         }
         Returns: number
       }
+      _reverse_field_of: {
+        Args: { p_forward_field_id: string; p_organization_id: string }
+        Returns: {
+          id: string
+          key: string
+          label: string
+        }[]
+      }
       _rich_text_problem: { Args: { p_text: string }; Returns: string }
       _row_control_columns: { Args: never; Returns: Json }
       _rule_eval_seated: {
@@ -33641,6 +33842,10 @@ export type Database = {
         Returns: string
       }
       _status_group_word: { Args: { p_word: string }; Returns: string }
+      _table_approver: {
+        Args: { p_data: Json; p_organization_id: string }
+        Returns: string
+      }
       _table_dimensions_build: {
         Args: {
           p_organization_id: string
@@ -36330,6 +36535,15 @@ export type Database = {
         Args: { p_organization_id: string; p_table_id: string; p_text: string }
         Returns: Json
       }
+      formula_preview: {
+        Args: {
+          p_organization_id: string
+          p_record_id: string
+          p_table_id: string
+          p_text: string
+        }
+        Returns: Json
+      }
       formula_result_kind: {
         Args: { p_expr: Json; p_organization_id: string }
         Returns: string
@@ -38175,6 +38389,10 @@ export type Database = {
           version: number
         }[]
       }
+      record_org_hint: {
+        Args: { p_id: string; p_organization_id: string }
+        Returns: string
+      }
       record_page_bundle: {
         Args: { p_organization_id: string; p_record_id: string }
         Returns: Json
@@ -38519,6 +38737,24 @@ export type Database = {
         Args: { p_organization_id: string; p_relation_id: string }
         Returns: boolean
       }
+      relation_reverse_field: {
+        Args: {
+          p_field_id: string
+          p_label?: string
+          p_organization_id: string
+        }
+        Returns: string
+      }
+      relation_reverse_set: {
+        Args: {
+          p_add?: string[]
+          p_field_id: string
+          p_organization_id: string
+          p_record_id: string
+          p_remove?: string[]
+        }
+        Returns: number
+      }
       relation_target_card: {
         Args: {
           p_organization_id: string
@@ -38660,6 +38896,22 @@ export type Database = {
           p_table_id: string
         }
         Returns: {
+          links: Json
+          record_id: string
+          total: number
+        }[]
+      }
+      reverse_links_many_fields: {
+        Args: {
+          p_field_ids: string[]
+          p_limit?: number
+          p_offset?: number
+          p_organization_id: string
+          p_record_ids: string[]
+          p_table_id: string
+        }
+        Returns: {
+          field_id: string
           links: Json
           record_id: string
           total: number
@@ -38930,6 +39182,10 @@ export type Database = {
         Returns: string[]
       }
       sensitivity_rank: { Args: { p_sensitivity: string }; Returns: number }
+      set_table_confidential: {
+        Args: { p_readers: Json; p_reason: string; p_table_id: string }
+        Returns: Json
+      }
       set_table_confidential_arman_explicitly_approved: {
         Args: {
           p_approved_on: string
@@ -38938,6 +39194,10 @@ export type Database = {
           p_readers: Json
           p_table_id: string
         }
+        Returns: Json
+      }
+      set_table_organization: {
+        Args: { p_reason: string; p_table_id: string }
         Returns: Json
       }
       share_access: {
@@ -39379,6 +39639,7 @@ export type Database = {
       }
       table_kernel_id: { Args: never; Returns: string }
       table_kind_facts: { Args: { p_table_id: string }; Returns: Json }
+      table_level_facts: { Args: { p_table_id: string }; Returns: Json }
       table_list_everywhere:
         | { Args: { p_organization_id?: string }; Returns: Json }
         | {
@@ -39401,7 +39662,6 @@ export type Database = {
         }
         Returns: Json
       }
-      table_page_server_rows: { Args: { p_table_id: string }; Returns: Json }
       table_placement: {
         Args: {
           p_data: Json
@@ -82266,8 +82526,111 @@ export type Database = {
           },
         ]
       }
+      perf_sample: {
+        Row: {
+          bytes: number | null
+          calls: number | null
+          check_id: string
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          errors: number
+          id: string
+          max_ms: number | null
+          mean_ms: number | null
+          measured_at: string
+          metadata: Json
+          n: number
+          note: string | null
+          organization_id: string
+          p50_ms: number | null
+          p95_ms: number | null
+          published_to_web: boolean
+          published_to_web_at: string | null
+          published_to_web_by: string | null
+          release_sha: string | null
+          shown_to: Database["platform"]["Enums"]["shown_to"] | null
+          source: string
+          state_after: string | null
+          updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        Insert: {
+          bytes?: number | null
+          calls?: number | null
+          check_id: string
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          errors?: number
+          id?: string
+          max_ms?: number | null
+          mean_ms?: number | null
+          measured_at?: string
+          metadata?: Json
+          n?: number
+          note?: string | null
+          organization_id: string
+          p50_ms?: number | null
+          p95_ms?: number | null
+          published_to_web?: boolean
+          published_to_web_at?: string | null
+          published_to_web_by?: string | null
+          release_sha?: string | null
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
+          source: string
+          state_after?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Update: {
+          bytes?: number | null
+          calls?: number | null
+          check_id?: string
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          errors?: number
+          id?: string
+          max_ms?: number | null
+          mean_ms?: number | null
+          measured_at?: string
+          metadata?: Json
+          n?: number
+          note?: string | null
+          organization_id?: string
+          p50_ms?: number | null
+          p95_ms?: number | null
+          published_to_web?: boolean
+          published_to_web_at?: string | null
+          published_to_web_by?: string | null
+          release_sha?: string | null
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
+          source?: string
+          state_after?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "perf_sample_check_id_fkey"
+            columns: ["check_id"]
+            isOneToOne: false
+            referencedRelation: "proof_check"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       proof_check: {
         Row: {
+          budget_ms: number | null
+          budget_stat: string | null
           command: string | null
           consecutive_failures: number
           created_at: string
@@ -82293,6 +82656,14 @@ export type Database = {
           max_cost_usd: number
           metadata: Json
           organization_id: string
+          owner: string | null
+          perf_baseline_ms: number | null
+          perf_baseline_pinned: boolean
+          perf_kind: string | null
+          perf_last_alert_at: string | null
+          perf_state: string | null
+          perf_state_since: string | null
+          perf_subject: Json | null
           published_to_web: boolean
           published_to_web_at: string | null
           published_to_web_by: string | null
@@ -82312,6 +82683,8 @@ export type Database = {
           watch: string | null
         }
         Insert: {
+          budget_ms?: number | null
+          budget_stat?: string | null
           command?: string | null
           consecutive_failures?: number
           created_at?: string
@@ -82337,6 +82710,14 @@ export type Database = {
           max_cost_usd: number
           metadata?: Json
           organization_id: string
+          owner?: string | null
+          perf_baseline_ms?: number | null
+          perf_baseline_pinned?: boolean
+          perf_kind?: string | null
+          perf_last_alert_at?: string | null
+          perf_state?: string | null
+          perf_state_since?: string | null
+          perf_subject?: Json | null
           published_to_web?: boolean
           published_to_web_at?: string | null
           published_to_web_by?: string | null
@@ -82356,6 +82737,8 @@ export type Database = {
           watch?: string | null
         }
         Update: {
+          budget_ms?: number | null
+          budget_stat?: string | null
           command?: string | null
           consecutive_failures?: number
           created_at?: string
@@ -82381,6 +82764,14 @@ export type Database = {
           max_cost_usd?: number
           metadata?: Json
           organization_id?: string
+          owner?: string | null
+          perf_baseline_ms?: number | null
+          perf_baseline_pinned?: boolean
+          perf_kind?: string | null
+          perf_last_alert_at?: string | null
+          perf_state?: string | null
+          perf_state_since?: string | null
+          perf_subject?: Json | null
           published_to_web?: boolean
           published_to_web_at?: string | null
           published_to_web_by?: string | null
@@ -82917,6 +83308,39 @@ export type Database = {
       db_long_transactions: {
         Args: { p_min_age_seconds: number }
         Returns: Json
+      }
+      perf_alert: { Args: { p_items: Json }; Returns: Json }
+      perf_door_sql: { Args: { p_subject: Json }; Returns: string }
+      perf_judge: { Args: { p_check_id: string }; Returns: Json }
+      perf_judge_rule: {
+        Args: { p_history: Json; p_knobs: Json; p_now: string; p_watch: Json }
+        Returns: Json
+      }
+      perf_knobs: { Args: never; Returns: Json }
+      perf_probe_run: { Args: { p_only_check?: string }; Returns: Json }
+      perf_record_sample: {
+        Args: {
+          p_check_id: string
+          p_defer_alert?: boolean
+          p_source: string
+          p_stats: Json
+        }
+        Returns: Json
+      }
+      perf_sample_retention: { Args: never; Returns: number }
+      perf_watch_declare: {
+        Args: {
+          p_budget_ms: number
+          p_budget_stat: string
+          p_cadence_seconds: number
+          p_label: string
+          p_owner: string
+          p_perf_kind: string
+          p_slug: string
+          p_source_feature: string
+          p_subject: Json
+        }
+        Returns: string
       }
       record_system_error: { Args: { p_error: Json }; Returns: string }
     }
@@ -84495,6 +84919,90 @@ export type Database = {
           },
         ]
       }
+      ai_request_latency: {
+        Row: {
+          agent_id: string | null
+          cache_outcome: Json
+          client_prep_ms: number | null
+          client_sent_at: string | null
+          conversation_id: string | null
+          created_at: string
+          created_by: string | null
+          id: string
+          metadata: Json
+          model: string | null
+          network_ms: number | null
+          organization_id: string
+          prep_blocks: Json
+          prep_s: number | null
+          provider_ttft_ms: number | null
+          request_id: string
+          route: string
+          server_arrived_at: string
+          server_task_id: string | null
+          status: string | null
+          time_to_first_provider_s: number | null
+          updated_at: string
+          updated_by: string | null
+          user_id: string | null
+          version: number
+        }
+        Insert: {
+          agent_id?: string | null
+          cache_outcome?: Json
+          client_prep_ms?: number | null
+          client_sent_at?: string | null
+          conversation_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          metadata?: Json
+          model?: string | null
+          network_ms?: number | null
+          organization_id: string
+          prep_blocks?: Json
+          prep_s?: number | null
+          provider_ttft_ms?: number | null
+          request_id: string
+          route: string
+          server_arrived_at: string
+          server_task_id?: string | null
+          status?: string | null
+          time_to_first_provider_s?: number | null
+          updated_at?: string
+          updated_by?: string | null
+          user_id?: string | null
+          version?: number
+        }
+        Update: {
+          agent_id?: string | null
+          cache_outcome?: Json
+          client_prep_ms?: number | null
+          client_sent_at?: string | null
+          conversation_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          metadata?: Json
+          model?: string | null
+          network_ms?: number | null
+          organization_id?: string
+          prep_blocks?: Json
+          prep_s?: number | null
+          provider_ttft_ms?: number | null
+          request_id?: string
+          route?: string
+          server_arrived_at?: string
+          server_task_id?: string | null
+          status?: string | null
+          time_to_first_provider_s?: number | null
+          updated_at?: string
+          updated_by?: string | null
+          user_id?: string | null
+          version?: number
+        }
+        Relationships: []
+      }
       anon_function_birth_grandfather: {
         Row: {
           argtypes: string
@@ -85453,6 +85961,51 @@ export type Database = {
           recorded_by_role?: string | null
           recorded_by_session?: string
           recorded_by_user?: string | null
+          token?: string
+          txid?: unknown
+        }
+        Relationships: []
+      }
+      class_approval_by_org_admin: {
+        Row: {
+          application_name: string | null
+          approved_on: string
+          approver_role: string
+          approver_user_id: string
+          id: number
+          level: string
+          organization_id: string
+          readers: Json | null
+          reason: string
+          recorded_at: string
+          token: string
+          txid: unknown
+        }
+        Insert: {
+          application_name?: string | null
+          approved_on?: string
+          approver_role: string
+          approver_user_id: string
+          id?: never
+          level: string
+          organization_id: string
+          readers?: Json | null
+          reason: string
+          recorded_at?: string
+          token: string
+          txid?: unknown
+        }
+        Update: {
+          application_name?: string | null
+          approved_on?: string
+          approver_role?: string
+          approver_user_id?: string
+          id?: never
+          level?: string
+          organization_id?: string
+          readers?: Json | null
+          reason?: string
+          recorded_at?: string
           token?: string
           txid?: unknown
         }
@@ -92766,6 +93319,32 @@ export type Database = {
           p_validation_mode?: string
         }
         Returns: Json
+      }
+      ai_latency_filter_options: {
+        Args: { p_from: string; p_to: string }
+        Returns: {
+          kind: string
+          n: number
+          value: string
+        }[]
+      }
+      ai_latency_report: {
+        Args: {
+          p_agent_id?: string
+          p_from: string
+          p_organization_id?: string
+          p_route?: string
+          p_server_task_id?: string
+          p_to: string
+        }
+        Returns: {
+          day: string
+          metric: string
+          n: number
+          p50: number
+          p90: number
+          route: string
+        }[]
       }
       ai_usage_names: {
         Args: { p_ids: Json; p_organization_id: string }

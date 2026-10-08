@@ -1,6 +1,6 @@
 {
   "note": "Checked-in snapshot of public._schema_migrations for the files under migrations/campaign and migrations/inverse. Written by `pnpm db:apply` on every successful production apply and refreshed whole by the nightly catch-up. Never hand-edited: a self-written checksum is a claim nobody can check. Guard: pnpm check:ledgered-files-unedited.",
-  "generated_at": "2026-10-08T15:31:00.039Z",
+  "generated_at": "2026-10-08T15:34:07.007Z",
   "files": {
     "migrations/campaign/a_chunk_is_the_size_the_client_door_can_actually_carry.sql": {
       "source": "matrx-frontend",
@@ -4909,6 +4909,18 @@
       "filename": "perf_watch_w1_c_functions.sql",
       "checksum": "a01ac4ce532e92a5b4addb6985e26b8b34a364a093f0f6467a461cb16881e437",
       "applied_at": "2026-10-08 15:25:51.879379+00"
+    },
+    "migrations/campaign/perf_watch_w1_d_seed_and_cron.sql": {
+      "source": "matrx-frontend",
+      "filename": "perf_watch_w1_d_seed_and_cron.sql",
+      "checksum": "6d1cd8955f508b91465add325fa2ca89ef44f7b17c1c14698f81da7c4a2d499b",
+      "applied_at": "2026-10-08 15:34:06.06157+00"
+    },
+    "migrations/campaign/perf_watch_w1_e_probe_fair_share.sql": {
+      "source": "matrx-frontend",
+      "filename": "perf_watch_w1_e_probe_fair_share.sql",
+      "checksum": "6d8bdd50def165b6dd425cab09e34da64bdbddc9ef317b6fb5cbf8f3c2e842ad",
+      "applied_at": "2026-10-08 15:33:36.433139+00"
     },
     "migrations/campaign/perffix1_a_the_read_doors_ask_the_ladder_once.sql": {
       "source": "matrx-frontend",
