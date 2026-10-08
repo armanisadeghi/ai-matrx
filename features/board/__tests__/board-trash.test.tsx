@@ -33,9 +33,8 @@ function builder(): unknown {
 jest.mock("@/utils/supabase/client", () => ({
   supabase: { schema: () => ({ from: () => builder() }), rpc: jest.fn() },
 }));
-jest.mock("@/lib/organization/organization-gate", () => ({
-  ensureOrganizationContext: jest.fn(),
-  isOrganizationSelectionCancelled: () => false,
+jest.mock("@/lib/organizations/ensureOrgId", () => ({
+  ensureOrgId: jest.fn(),
 }));
 jest.mock("@/utils/auth/getUserId", () => ({ requireUserId: () => "u1", getUserId: () => "u1" }));
 const restoreFromTrash = jest.fn<Promise<void>, [string, string]>(async () => {});

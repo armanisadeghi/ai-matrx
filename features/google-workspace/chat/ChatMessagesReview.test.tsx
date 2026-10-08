@@ -11,8 +11,8 @@ jest.mock("./service", () => ({
   ...jest.requireActual("./service"),
   previewChatMessages: (...args: unknown[]) => preview(...args),
 }));
-jest.mock("@/lib/organization/organization-gate", () => ({
-  ensureOrganizationContext: async ({ organizationId }: { organizationId: string }) => organizationId,
+jest.mock("@/lib/organizations/ensureOrgId", () => ({
+  ensureOrgId: async (organizationId: string) => organizationId,
 }));
 
 const connection = {

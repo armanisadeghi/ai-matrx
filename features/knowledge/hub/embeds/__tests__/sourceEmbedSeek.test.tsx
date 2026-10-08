@@ -87,7 +87,6 @@ jest.mock("@/components/ui/drawer", () => ({
 jest.mock("@/features/sources/api/sourcesApi", () => ({ editSource: jest.fn(), keepSource: jest.fn(), sourceRefusalSentence: () => "" }));
 jest.mock("@/features/sources/api/processNow", () => ({ processSourceNow: jest.fn() }));
 jest.mock("@/lib/organizations/ensureOrgId", () => ({ ensureOrgId: jest.fn() }));
-jest.mock("@/lib/organization/organization-gate", () => ({ isOrganizationSelectionCancelled: () => false }));
 jest.mock("@/components/agent-copy/export", () => ({ exportFilename: () => "x.md" }));
 jest.mock("@ai-matrx/kit/download", () => ({ downloadFile: jest.fn(), downloadUrl: jest.fn() }));
 

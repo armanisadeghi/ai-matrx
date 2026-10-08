@@ -52,16 +52,15 @@ jest.mock("@/components/official/ProTextarea", () => {
 
 import { KIND_CONVERTER_MANDATE_KEY } from "./constants";
 import { CHOOSE_WORKSPACE_LINE } from "./AutomationButton";
-import { ensureOrganizationContext } from "@/lib/organization/organization-gate";
+import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
 import { useMandate, type MandateState } from "@ai-matrx/chat/mandates/useMandate";
 
 jest.mock("@/lib/toast", () => ({
   toast: { error: jest.fn(), info: jest.fn() },
 }));
 jest.mock("@ai-matrx/chat/mandates/useMandate", () => ({ useMandate: jest.fn() }));
-jest.mock("@/lib/organization/organization-gate", () => ({
-  ensureOrganizationContext: jest.fn(() => Promise.resolve("org-1")),
-  isOrganizationSelectionCancelled: jest.fn(() => false),
+jest.mock("@/lib/organizations/ensureOrgId", () => ({
+  ensureOrgId: jest.fn(() => Promise.resolve("org-1")),
 }));
 // The seam reads the job's SERVED inputs before it can run. These cases are
 // about the KEY resolving, so the surface is held at a known-good empty
@@ -314,6 +313,6 @@ describe("AutomationButton — no workspace chosen yet (UX punch list 2026-09-26
     expect(text).not.toContain("cannot resolve");
 
     act(() => button.click());
-    expect(ensureOrganizationContext).toHaveBeenCalledTimes(1);
+    expect(ensureOrgId).toHaveBeenCalledTimes(1);
   });
 });

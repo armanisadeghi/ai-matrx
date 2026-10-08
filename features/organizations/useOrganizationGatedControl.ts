@@ -30,10 +30,9 @@
 //                            open({ organizationId: org.organizationId }); }} />
 //
 //   resolving   → disabled, "Checking which organization you are working in…"
-//   required    → ENABLED, "Choose an organization to continue." — pressing it
-//                 OPENS THE PICKER, the person sets one, and the act it was
-//                 wrapping runs with it (2026-09-19; see THE REFUSAL IS A
-//                 QUESTION below).
+//   required    → ENABLED, "You do not belong to an organization yet. Create
+//                 one before …" — the person has no memberships; pressing it
+//                 re-runs the organization read. It never prompts or picks.
 //   unavailable → ENABLED, "We could not check which organization you are
 //                 working in. Press to try again." — never the refusal (R37,
 //                 2026-09-18): the read failed, so nothing is known about this
@@ -94,7 +93,6 @@ import {
   useOrganizationRequired,
   type OrganizationState,
 } from "@/features/organizations/useOrganizationRequired";
-import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
 
 /** What the control shows while boot has not answered yet. Never a refusal. */
 export const ORGANIZATION_RESOLVING_TITLE =
@@ -106,7 +104,7 @@ export const ORGANIZATION_RESOLVING_TITLE =
  * so the sentence reads as an instruction with a remedy, never as a wire error.
  */
 export function organizationControlRefusal(act: string): string {
-  return `Choose an organization before ${act}.`;
+  return `You do not belong to an organization yet. Create one before ${act}.`;
 }
 
 /**
@@ -146,8 +144,7 @@ export interface OrganizationGatedControl {
    *
    *   ready       → runs `act` with the organization, never null;
    *   unavailable → re-runs the organization read (the sentence's own remedy);
-   *   required    → opens the picker and, once the person SETS an
-   *                 organization, runs `act` with it. Cancelling does nothing;
+   *   required    → re-runs the organization read (the person has none);
    *   resolving   → nothing, and the control is disabled anyway.
    */
   press: (act: (organizationId: string) => void) => () => void;
@@ -189,21 +186,11 @@ export function useOrganizationGatedControl(act: string): OrganizationGatedContr
       }
       return;
     }
-    // The refusal's press IS the question. Hold the act, open the ONE picker,
-    // and run it with whatever the person sets — never with a guess, and never
-    // with nothing. Cancelling (`OrganizationSelectionCancelled`) is an answer
-    // meaning "not now", so it is swallowed here: no toast, no banner, nothing
-    // moved. Any OTHER failure (no picker mounted at all) is the fail-closed
-    // path and is reported rather than silently dropped.
+    // No organization after the ladder: the person belongs to none. The press
+    // re-runs the ONE read (they may have just created or accepted one); it
+    // never prompts and never picks.
     if (organizationState === "required") {
-      void ensureOrgId(null)
-        .then((organizationId) => act(organizationId))
-        .catch((error: unknown) => {
-          console.error(
-            "[organizations] the picker could not be opened for a gated control; the action did not run.",
-            error,
-          );
-        });
+      retry();
       return;
     }
     // Never act on a guess. `disabled` already covers `resolving` for a mouse;

@@ -14,7 +14,6 @@ let currentPath = "/board";
 jest.mock("next/navigation", () => ({ useRouter: () => ({ push }), usePathname: () => currentPath }));
 jest.mock("@/lib/redux/hooks", () => ({ useAppSelector: () => "org-1" }));
 jest.mock("@/lib/redux/slices/appContextSlice", () => ({ selectOrganizationId: () => "org-1" }));
-jest.mock("@/lib/organization/organization-gate", () => ({ isOrganizationSelectionCancelled: () => false }));
 jest.mock("@/lib/toast", () => ({ toast: { error: jest.fn(), warning: jest.fn() } }));
 const beginBoardCreate = jest.fn();
 jest.mock("../persistence/boardsService", () => ({

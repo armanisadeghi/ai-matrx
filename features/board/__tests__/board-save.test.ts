@@ -30,7 +30,7 @@ function builder(): Record<string, unknown> {
 jest.mock("@/utils/supabase/client", () => ({
   supabase: { schema: () => ({ from: (...a: unknown[]) => (builder().from as (...x: unknown[]) => unknown)(...a) }) },
 }));
-jest.mock("@/lib/organization/organization-gate", () => ({ ensureOrganizationContext: jest.fn() }));
+jest.mock("@/lib/organizations/ensureOrgId", () => ({ ensureOrgId: jest.fn() }));
 
 import { parseBoardDocument } from "../board/document";
 import { documentColumns, documentFingerprint, saveBoardDocument } from "../persistence/boardsService";

@@ -21,7 +21,6 @@ jest.mock("@ai-matrx/chat/host/configure", () => ({
 }));
 
 
-import { OrganizationSelectionCancelled } from "@/lib/organization/selection-cancelled";
 import { OrganizationContextError } from "@/lib/api/organization-context";
 import { runResearchAction } from "../researchAction";
 
@@ -88,13 +87,6 @@ it("says the same when the SERVER refuses for a missing organization (organizati
   expectOrganizationRefusal();
 });
 
-it("treats closing the picker as the person's answer: nothing runs, nothing shouts", async () => {
-  mockEnsureOrgId.mockRejectedValue(new OrganizationSelectionCancelled());
-  const action = jest.fn();
-  expect(await runResearchAction("Couldn't re-read", action)).toBeNull();
-  expect(action).not.toHaveBeenCalled();
-  expect(mockToastError).not.toHaveBeenCalled();
-});
 
 it("says any other failure in its own words", async () => {
   mockEnsureOrgId.mockResolvedValue("org1");

@@ -71,18 +71,6 @@ jest.mock("@/features/organizations/components/OrganizationPickerPanel", () => (
   OrganizationPickerPanel: () => null,
 }));
 
-// THE PICKER THE REFUSAL NOW OPENS (2026-09-19). Only `ensureOrganizationContext`
-// is stood in — `OrganizationSelectionCancelled` stays the REAL class, so the
-// swallow below is proved against the error the real gate actually throws and
-// not against a look-alike.
-const ensureOrganizationContext =
-  jest.fn<Promise<string>, [unknown?]>();
-jest.mock("@/lib/organization/organization-gate", () => ({
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
-  ...(jest.requireActual("@/lib/organization/organization-gate") as object),
-  ensureOrganizationContext: (options?: unknown) =>
-    ensureOrganizationContext(options),
-}));
 
 const retryActiveOrgBootstrap = jest.fn(() => ({ type: "test/retry" }));
 jest.mock("@/lib/redux/thunks/activeOrgBootstrap", () => ({
@@ -132,8 +120,6 @@ const { OrganizationContextNotice } =
   require("@/features/organizations/components/OrganizationRequiredNotice") as {
     OrganizationContextNotice: React.ComponentType<Record<string, unknown>>;
   };
-const { OrganizationSelectionCancelled } =
-  require("@/lib/organization/organization-gate") as typeof import("@/lib/organization/organization-gate");
 /* eslint-enable @typescript-eslint/no-require-imports */
 
 /** Let the gate's promise chain (`.then(act)` / `.catch(...)`) settle. */
@@ -201,7 +187,6 @@ beforeEach(() => {
   dispatched.length = 0;
   retryActiveOrgBootstrap.mockClear();
   resolveActiveOrgContext.mockReset();
-  ensureOrganizationContext.mockReset();
 });
 
 describe("a failed organization read is unavailable, never required", () => {
@@ -281,13 +266,9 @@ describe("a failed organization read is unavailable, never required", () => {
     ready.press(theAct)();
     expect(theAct).toHaveBeenCalledWith("org-7");
     expect(retryActiveOrgBootstrap).not.toHaveBeenCalled();
-    // A ready control never asks: the person already answered this question.
-    expect(ensureOrganizationContext).not.toHaveBeenCalled();
 
-    // 🚨 Settled with nothing: the press is the QUESTION (2026-09-19). This
-    // half asserted `disabled === true` and a press that did nothing until
-    // today. The control stays LIVE, the picker opens, and the act runs with
-    // the organization the PERSON set — never one the platform guessed.
+    // Settled with nothing (the person belongs to none): the press re-runs the
+    // one read. It never prompts, never picks, and never runs the act.
     resolveActiveOrgContext.mockResolvedValue({
       organization_id: null,
       organization_name: null,
@@ -301,68 +282,10 @@ describe("a failed organization read is unavailable, never required", () => {
     expect(refused.disabled).toBe(false);
 
     theAct.mockClear();
-    ensureOrganizationContext.mockResolvedValue("org-the-person-chose");
+    retryActiveOrgBootstrap.mockClear();
     refused.press(theAct)();
-    // Never before the person has answered — the act is HELD, not fired at a
-    // guess while the picker is still open.
     expect(theAct).not.toHaveBeenCalled();
-    await settleGate();
-    expect(ensureOrganizationContext).toHaveBeenCalledTimes(1);
-    expect(theAct).toHaveBeenCalledTimes(1);
-    expect(theAct).toHaveBeenCalledWith("org-the-person-chose");
-    // And the refusal's press is the picker, never the read's Try again.
-    expect(retryActiveOrgBootstrap).not.toHaveBeenCalled();
-  });
-
-  it("CANCELLING the picker does nothing at all — no act, no error, nothing moved", async () => {
-    // "Not now" is an answer. `OrganizationSelectionCancelled` is swallowed
-    // where the press lives, so the person lands exactly where they were.
-    resolveActiveOrgContext.mockResolvedValue({
-      organization_id: null,
-      organization_name: null,
-      unreadableReason: null,
-    });
-    current = await boot();
-
-    const theAct = jest.fn();
-    const errored = jest.spyOn(console, "error").mockImplementation(() => {});
-    ensureOrganizationContext.mockRejectedValue(new OrganizationSelectionCancelled());
-
-    const control = readHook(() =>
-      useOrganizationGatedControl("importing Google Tasks"),
-    );
-    control.press(theAct)();
-    await settleGate();
-
-    expect(ensureOrganizationContext).toHaveBeenCalledTimes(1);
-    expect(theAct).not.toHaveBeenCalled();
-    expect(errored).not.toHaveBeenCalled();
-    errored.mockRestore();
-  });
-
-  it("a picker that cannot open FAILS LOUDLY — the press never dies silently", async () => {
-    // The fail-closed path: no picker mounted at all, so the gate re-throws the
-    // original `OrganizationContextError`. That is not "not now", so it is
-    // reported rather than swallowed (law 4 — nothing fails silently).
-    resolveActiveOrgContext.mockResolvedValue({
-      organization_id: null,
-      organization_name: null,
-      unreadableReason: null,
-    });
-    current = await boot();
-
-    const theAct = jest.fn();
-    const errored = jest.spyOn(console, "error").mockImplementation(() => {});
-    ensureOrganizationContext.mockRejectedValue(new Error("no picker is mounted"));
-
-    readHook(() => useOrganizationGatedControl("importing Google Tasks")).press(
-      theAct,
-    )();
-    await settleGate();
-
-    expect(theAct).not.toHaveBeenCalled();
-    expect(errored).toHaveBeenCalled();
-    errored.mockRestore();
+    expect(retryActiveOrgBootstrap).toHaveBeenCalledTimes(1);
   });
 
   it("the shared notice says we could not check, and offers Retry", async () => {

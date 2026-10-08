@@ -12,7 +12,7 @@ const mockClose = jest.fn();
 jest.mock("./formPicker", () => ({ pickGoogleFormForConnection: (...args: unknown[]) => mockPick(...args) }));
 jest.mock("./service", () => ({ previewSelectedFormResponses: (...args: unknown[]) => mockPreview(...args) }));
 jest.mock("@/features/overlays/openers/saveToTable", () => ({ useOpenSaveToTable: () => mockOpen }));
-jest.mock("@/lib/organization/organization-gate", () => ({ ensureOrganizationContext: async ({ organizationId }: { organizationId: string }) => organizationId }));
+jest.mock("@/lib/organizations/ensureOrgId", () => ({ ensureOrgId: async (organizationId: string) => organizationId }));
 
 const first = {
   status: "next_page_available",

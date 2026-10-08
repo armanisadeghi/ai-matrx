@@ -1,43 +1,37 @@
-import { ensureOrganizationContext } from "@/lib/organization/organization-gate";
+import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
 import { resolveGoogleActionOrganizationId } from "./action-organization";
 
-jest.mock("@/lib/organization/organization-gate", () => ({
-  ensureOrganizationContext: jest.fn(),
+jest.mock("@/lib/organizations/ensureOrgId", () => ({
+  ensureOrgId: jest.fn(),
 }));
 
-const ensureOrganizationContextMock = jest.mocked(ensureOrganizationContext);
+const ensureOrgIdMock = jest.mocked(ensureOrgId);
 
 describe("resolveGoogleActionOrganizationId", () => {
-  beforeEach(() => ensureOrganizationContextMock.mockReset());
+  beforeEach(() => ensureOrgIdMock.mockReset());
 
   it("preserves a connection-owned organization", async () => {
-    ensureOrganizationContextMock.mockResolvedValue("connection-org");
+    ensureOrgIdMock.mockResolvedValue("connection-org");
 
     await expect(
       resolveGoogleActionOrganizationId("connection-org", "active-org"),
     ).resolves.toBe("connection-org");
-    expect(ensureOrganizationContextMock).toHaveBeenCalledWith({
-      organizationId: "connection-org",
-    });
+    expect(ensureOrgIdMock).toHaveBeenCalledWith("connection-org");
   });
 
   it("uses the active organization for a personal connection", async () => {
-    ensureOrganizationContextMock.mockResolvedValue("active-org");
+    ensureOrgIdMock.mockResolvedValue("active-org");
 
     await resolveGoogleActionOrganizationId(null, "active-org");
-    expect(ensureOrganizationContextMock).toHaveBeenCalledWith({
-      organizationId: "active-org",
-    });
+    expect(ensureOrgIdMock).toHaveBeenCalledWith("active-org");
   });
 
-  it("invokes the interactive organization gate when none is selected", async () => {
-    ensureOrganizationContextMock.mockResolvedValue("chosen-org");
+  it("falls through to the active-organization funnel when none is given", async () => {
+    ensureOrgIdMock.mockResolvedValue("chosen-org");
 
     await expect(resolveGoogleActionOrganizationId(null, null)).resolves.toBe(
       "chosen-org",
     );
-    expect(ensureOrganizationContextMock).toHaveBeenCalledWith({
-      organizationId: null,
-    });
+    expect(ensureOrgIdMock).toHaveBeenCalledWith(null);
   });
 });

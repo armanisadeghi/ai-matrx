@@ -20,9 +20,6 @@ jest.mock("@/lib/redux/selectors/userSelectors", () => ({
 jest.mock("@/lib/redux/slices/appContextSlice", () => ({
   selectOrganizationId: (s: { appContext: { organization_id: string } }) => s.appContext.organization_id,
 }));
-jest.mock("@/lib/organization/organization-gate", () => ({
-  isOrganizationSelectionCancelled: (e: unknown) => (e as { name?: string })?.name === "OrganizationSelectionCancelled",
-}));
 const toastError = jest.fn();
 const toastDismiss = jest.fn();
 jest.mock("@/lib/toast", () => ({

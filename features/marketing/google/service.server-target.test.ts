@@ -6,8 +6,8 @@ jest.mock("@/lib/python-client", () => ({
 jest.mock("@/utils/supabase/client", () => ({
   createClient: () => ({ auth: { getSession: mockGetSession } }),
 }));
-jest.mock("@/lib/organization/organization-gate", () => ({
-  ensureOrganizationForRequest: async () =>
+jest.mock("@/lib/organizations/ensureOrgId", () => ({
+  ensureOrgId: async () =>
     "39c38960-d30c-4840-b0c1-c9960de95582",
 }));
 import { listGoogleCapabilities, postGoogleBackend } from "./service";

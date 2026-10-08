@@ -25,7 +25,6 @@ jest.mock("@/lib/redux/selectors/userSelectors", () => ({
   selectUserId: () => "u1",
   selectAccessToken: () => "tok",
 }));
-jest.mock("@/lib/organization/organization-gate", () => ({ isOrganizationSelectionCancelled: () => false }));
 jest.mock("@/components/loaders/ShimmerText", () => ({ ShimmerText: ({ text }: { text: string }) => <span>{text}</span> }));
 jest.mock("@/components/errors/ErrorNotice", () => ({ ErrorNotice: ({ message }: { message: string }) => <div>{message}</div> }));
 jest.mock("@/components/ui/button", () => ({ Button: (p: { children: unknown }) => <button>{p.children as string}</button> }));

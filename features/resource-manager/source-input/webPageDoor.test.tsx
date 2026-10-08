@@ -40,10 +40,6 @@ jest.mock("@/features/scraper/hooks/useScraperApi", () => ({
 }));
 const ensureOrgId = jest.fn();
 jest.mock("@/lib/organizations/ensureOrgId", () => ({ ensureOrgId: (...a: unknown[]) => ensureOrgId(...a) }));
-jest.mock("@/lib/organization/organization-gate", () => ({
-  holdDeliberateIntent: <T,>(run: () => Promise<T>) => run(),
-  isOrganizationSelectionCancelled: () => false,
-}));
 const keepSource = jest.fn();
 jest.mock("@/features/sources/api/sourcesApi", () => ({
   keepSource: (...a: unknown[]) => keepSource(...a),
