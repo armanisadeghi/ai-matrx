@@ -278,7 +278,8 @@ export function InlineTestMode({
         },
         runtime: {
           surfaceName: null,
-          userInput: userInput || `Process this text: "${selectedText}"`,
+          // The selection already rides as the `selection` variable above.
+          ...(userInput ? { userInput } : {}),
         },
       });
       setConversationId(result.conversationId);

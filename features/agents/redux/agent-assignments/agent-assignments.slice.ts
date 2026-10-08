@@ -50,8 +50,9 @@ const initialState: AgentAssignmentsState = {
   agentId: null,
   agentName: null,
   mode: "coordinated_rows",
-  userInput:
-    "Write a useful blog article using the assigned topic and its paired research.",
+  // Typed by the person only — the chosen agent's own authored user message
+  // carries the topic/research variables; code never pre-writes the turn.
+  userInput: "",
   singleVariableName: "topic",
   rows: [
     {

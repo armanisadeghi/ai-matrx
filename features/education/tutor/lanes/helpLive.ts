@@ -150,8 +150,8 @@ export function helpLive(ctx: HelpLiveContext) {
         // normal chats via a distinct system source_feature (source-registry.ts).
         sourceFeature: "education-flashcards",
         ...livePosture(ctx.onConversationCreated),
-        userInput:
-          ctx.question?.trim() || "I'm confused — help me with this card.",
+        // Typed question only; the blank case is the agent's own default.
+        ...(ctx.question?.trim() ? { userInput: ctx.question.trim() } : {}),
         variables: {
           front: ctx.front,
           back: ctx.back,
