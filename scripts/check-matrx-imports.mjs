@@ -74,7 +74,11 @@ import { fileURLToPath } from "node:url";
 import { emitItem, endItems } from "./checks/items.mjs";
 
 const require = createRequire(import.meta.url);
-const ts = require("typescript");
+// TypeScript 7 (the native compiler) ships no JS API; a repo on it installs the 6.x API beside it
+// as "typescript-js-api" (npm:typescript@^6), matrx-local's desktop/ for one.
+const ts = [() => require("typescript"), () => require("typescript-js-api")]
+  .map((load) => { try { return load(); } catch { return null; } })
+  .find((m) => typeof m?.createProgram === "function") ?? require("typescript");
 
 const SCOPE = "@ai-matrx/";
 const SOURCE_EXT = /\.(ts|tsx|mts|cts|js|jsx|mjs)$/;
