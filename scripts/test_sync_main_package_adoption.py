@@ -72,25 +72,27 @@ class PublishTrain(unittest.TestCase):
     def run_train(self, train):
         return self.sm.wait_for_publish_train(now=train.now, sleep=train.sleep, runs=train.listing)
 
-    def test_waits_for_the_publish_runs_a_pre_sync_nomination_dispatches_and_no_later_ones(self):
+    def test_waits_for_publish_runs_in_flight_and_for_nothing_that_starts_later(self):
         train = Train([
-            (NOMINATE, "Nominate changed npm packages", 900, 1040),        # started before the sync
-            (PUBLISH, "Publish npm/agents/v0.58.0", 1050, 1130),           # its dispatch, after t0
-            (NOMINATE, "Nominate changed npm packages", 1010, None),       # a later push: not ours
-            (PUBLISH, "Publish npm/records/v0.82.0", 1150, None),          # dispatched by the later one
+            (PUBLISH, "Publish npm/agents/v0.58.0", 940, 1130),            # in flight at the sync
+            (PUBLISH, "Publish npm/chat/v0.4.18", 990, 1050),              # in flight, ends first
+            (NOMINATE, "Nominate changed npm packages", 900, None),        # walks the graph for an hour
+            (PUBLISH, "Publish npm/records/v0.82.0", 1010, None),          # started after the sync
         ])
         line = self.run_train(train)
         self.assertIn("npm/agents/v0.58.0", line)
+        self.assertIn("npm/chat/v0.4.18", line)
         self.assertNotIn("records", line)
-        self.assertEqual(train.now(), 1140, "returned before agents 0.58.0 finished, or waited on the later train")
+        self.assertEqual(train.now(), 1140, "returned before agents 0.58.0 finished, or waited on a later run")
 
-    def test_idle_train_costs_no_wait(self):
-        train = Train([(PUBLISH, "Publish npm/chat/v0.4.15", 100, 400)])
-        self.assertEqual(self.run_train(train), "publish train: idle")
+    def test_nothing_in_flight_costs_no_wait(self):
+        train = Train([(PUBLISH, "Publish npm/chat/v0.4.15", 100, 400),
+                       (NOMINATE, "Nominate changed npm packages", 900, None)])
+        self.assertEqual(self.run_train(train), "publish train: nothing in flight")
         self.assertEqual(train.sleeps, 0)
 
-    def test_a_train_that_never_finishes_is_given_up_on_at_the_bound(self):
-        train = Train([(NOMINATE, "Nominate changed npm packages", 900, None)])
+    def test_a_publish_that_never_finishes_is_given_up_on_at_the_bound(self):
+        train = Train([(PUBLISH, "Publish npm/records-ui/v0.109.5", 900, None)])
         line = self.run_train(train)
         self.assertIn("gave up", line)
         self.assertEqual(train.now() - 1000, self.sm.PUBLISH_WAIT_MAX_SECONDS)
