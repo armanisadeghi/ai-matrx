@@ -264,6 +264,7 @@ export function AgentSpendBoard({
           orgId={orgId}
           subjects={[["mandate", r.mandate_key], ["agent", r.agent_id]]}
           maxRunCost={r.max_run_cost}
+          thresholdOrgId={r.organizations[0]?.id ?? null}
           seat={seat}
           orgSlug={orgSlug}
         />
