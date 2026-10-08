@@ -3,6 +3,7 @@
 import { publishedToWebLabel } from "@/lib/row-access";
 import React, { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { UntrustedCount } from "@ai-matrx/design-system";
+import { SegmentedControl } from "@ai-matrx/design-system/controls";
 import { readOf } from "@ai-matrx/design-system";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { toast } from "sonner";
@@ -12,6 +13,7 @@ import AiModelDetailPanel from "./AiModelDetailPanel";
 import DeprecatedModelsAudit from "./DeprecatedModelsAudit";
 import { DEFAULT_AI_MODEL_FILTERS, useTabUrlState } from "../hooks/useTabUrlState";
 import {
+  TIER_VIEWS,
   TIER_VIEW_LABELS,
   TIER_VIEW_TITLES,
   matchesTierView,
@@ -363,21 +365,19 @@ export default function AiModelsContainer() {
             />
           </div>
           <div className="shrink-0 px-2 border-l flex items-center gap-1">
-            {(["max", "mismatch", "held"] as const)
-              .filter((view) => view === "max" || tierCounts[view] > 0)
-              .map((view) => (
-                <Button
-                  key={view}
-                  variant={activeTab?.filters.tier === view ? "outline" : "quiet"}
-                  onClick={() => toggleTierView(view)}
-                  title={TIER_VIEW_TITLES[view]}
-                >
-                  {TIER_VIEW_LABELS[view]}
-                  <Badge variant="outline" className="h-4 px-1 text-[10px]">
-                    {tierCounts[view]}
-                  </Badge>
-                </Button>
-              ))}
+            {/* Always rendered, counts included, so nothing pops in after load. The count slot is two digits wide at 0. */}
+            <SegmentedControl<TierView>
+              aria-label="Tier views"
+              value={activeTab?.filters.tier ?? null}
+              onValueChange={toggleTierView}
+              className="[&_.matrx-control-count]:inline-block [&_.matrx-control-count]:min-w-[2ch] [&_.matrx-control-count]:text-center"
+              data={TIER_VIEWS.map((view) => ({
+                value: view,
+                label: TIER_VIEW_LABELS[view],
+                count: tierCounts[view],
+                title: TIER_VIEW_TITLES[view],
+              }))}
+            />
             <Button
               icon={<BookOpen />}
               variant={referenceOpen ? "outline" : "quiet"}
@@ -386,26 +386,24 @@ export default function AiModelsContainer() {
             >
               Provider Ref
             </Button>
-            {deprecatedCount > 0 && (
-              <Button
-                icon={<AlertTriangle className="text-amber-500" />}
-                variant={auditOpen ? "outline" : "quiet"}
-                onClick={() => setAuditOpen((v) => !v)}
-                title="View and fix deprecated model references"
+            <Button
+              icon={<AlertTriangle className="text-amber-500" />}
+              variant={auditOpen ? "outline" : "quiet"}
+              onClick={() => setAuditOpen((v) => !v)}
+              title="View and fix deprecated model references"
+            >
+              Deprecated Audit
+              <Badge
+                variant="outline"
+                className="h-4 px-1 text-[10px] bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-300 border-amber-300"
               >
-                Deprecated Audit
-                <Badge
-                  variant="outline"
-                  className="h-4 px-1 text-[10px] bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-300 border-amber-300"
-                >
-                  <UntrustedCount
-                    read={readOf({ loading: isLoading, error: loadError, hasData: models.length > 0 })}
-                    label="Deprecated references"
-                    value={deprecatedCount}
-                  />
-                </Badge>
-              </Button>
-            )}
+                <UntrustedCount
+                  read={readOf({ loading: isLoading, error: loadError, hasData: models.length > 0 })}
+                  label="Deprecated references"
+                  value={deprecatedCount}
+                />
+              </Badge>
+            </Button>
           </div>
         </div>
 

@@ -601,6 +601,8 @@
     "check:mandate-fallback-pin:strict": "tsx scripts/check-mandate-fallback-pin.ts --strict",
     "check:mandate-pin-names-agent": "tsx scripts/check-mandate-pin-names-agent.ts",
     "check:mandate-pin-names-agent:strict": "tsx scripts/check-mandate-pin-names-agent.ts --strict",
+    "check:cost-tier-hold": "tsx scripts/check-cost-tier-hold.ts",
+    "check:cost-tier-hold:strict": "tsx scripts/check-cost-tier-hold.ts --strict",
     "check:migration-slot-guard": "tsx scripts/check-migration-slot-guard.ts",
     "check:list-counts": "tsx scripts/check-list-counts.ts",
     "check:list-counts:strict": "tsx scripts/check-list-counts.ts --strict",

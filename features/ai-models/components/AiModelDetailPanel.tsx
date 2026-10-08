@@ -41,7 +41,7 @@ import {
 } from "lucide-react";
 import AiModelForm from "./AiModelForm";
 import ModelTierStrip from "./ModelTierStrip";
-import { crossesMaxTier } from "../maxTier";
+import { tierConfirmFor } from "../maxTier";
 import { costRatingTier } from "../format";
 import { useSurfaceWriteHandlers } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import { ADMIN_AI_MODELS_SURFACE_NAME } from "@/features/surfaces/manifests/admin-ai-models.manifest";
@@ -1051,18 +1051,13 @@ export default function AiModelDetailPanel({
 
     // The rating the save would write, and whether it crosses the MAX-tier line.
     if (!tierConfirmedRef.current) {
-      let intended: number | null;
-      if (rawJsonDirty && rawJsonText.trim() !== "{}" && rawJsonText.trim() !== "") {
-        const raw: unknown = JSON.parse(rawJsonText);
-        const rawRating =
-          raw && typeof raw === "object" ? (raw as Record<string, unknown>).cost_rating : undefined;
-        intended = typeof rawRating === "number" ? rawRating : (model?.cost_rating ?? null);
-      } else {
-        intended = formData.cost_rating ? parseInt(formData.cost_rating) : null;
-      }
-      const current = isNew ? null : (model?.cost_rating ?? null);
-      if (crossesMaxTier(current, intended)) {
-        setTierConfirm({ from: current, to: intended, closeAfter: closeAfterSave.current });
+      const crossing = tierConfirmFor({
+        rawJson: rawJsonDirty ? rawJsonText : null,
+        formRating: formData.cost_rating,
+        current: isNew ? null : (model?.cost_rating ?? null),
+      });
+      if (crossing) {
+        setTierConfirm({ ...crossing, closeAfter: closeAfterSave.current });
         return null;
       }
     }
