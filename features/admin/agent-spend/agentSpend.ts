@@ -340,7 +340,7 @@ export function agentSpendFlags(row: AgentSpendRow, money: (usd: number) => stri
     flags.push({
       id: "parked_on_admin",
       label: "Billed to test account",
-      detail: `${money(cost)} (${share}%) is billed to ${parked.map((p) => p.email).join(", ")}, a shared test account, and ${why}. System work belongs on a system account, user work on its user.`,
+      detail: `${money(cost)} (${share}%) billed to shared test account ${parked.map((p) => p.email).join(", ")}; ${why}`,
       severity: "warning",
     });
   }

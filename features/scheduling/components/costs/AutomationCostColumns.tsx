@@ -8,176 +8,104 @@
 import { RunApprovalCell } from "@/features/admin/spend-approvals/RunApprovalCell";
 import { approvalStatusSync } from "@/features/admin/spend-approvals/spendApprovals";
 import Link from "next/link";
-import { Bot, ScrollText } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
 import type { MatrxColumnDef } from "@ai-matrx/design-system/data-table/types";
-import { useCostDisplay } from "@/components/cost/useCostDisplay";
+import { adminCostColumns } from "@/components/cost/adminCostColumns";
+import {
+  AUTOMATION_FLAG_SET,
+  AiIcon,
+  SpendFlagStrip,
+  spendFlagColumn,
+  type SpendFlagHit,
+} from "@/components/cost/SpendFlagStrip";
+import { AGENT_ICON, INTELLIGENCE_ICON } from "@/components/icons/domain-icons";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
+import { FirstPlusMore } from "@/components/official/first-plus-more/FirstPlusMore";
 import {
   agentHref,
   automationAiState,
   automationFlags,
   mandateHref,
   orgMandateHref,
+  type AutomationAgentRef,
   type AutomationCostRow,
   type AutomationSeat,
 } from "@/features/scheduling/service/automationCosts";
 
-export function AiStateBadge({ row }: { row: AutomationCostRow | undefined }) {
-  if (!row) {
-    return (
-      <Badge variant="outline" className="text-[10px] text-muted-foreground">
-        Not measured
-      </Badge>
-    );
+/** The automation rules' flags as icon-strip hits (plus "no model linked" from the AI state). */
+export function automationFlagHits(row: AutomationCostRow | undefined): SpendFlagHit[] {
+  if (!row) return [];
+  const hits: SpendFlagHit[] = automationFlags(row).map((f) => ({
+    slot: f.id === "automated_spend" ? "automated" : f.id === "admin_account" ? "test_account" : f.id,
+    severity: f.severity,
+    detail: f.detail,
+  }));
+  if (automationAiState(row) === "spend_unattributed") {
+    hits.push({ slot: "unattributed", severity: "warning", detail: "Cost is recorded on its runs, but no model call is linked" });
   }
-  const state = automationAiState(row);
-  if (state === "ai") {
-    return (
-      <Badge className="gap-1 bg-violet-600 text-[10px] text-white hover:bg-violet-600">
-        <Bot className="h-3 w-3" /> AI
-      </Badge>
-    );
-  }
-  if (state === "spend_unattributed") {
-    return (
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <Badge variant="outline" className="max-w-full border-amber-500 text-[10px] text-amber-700 dark:text-amber-400">
-            <span className="truncate">No model linked</span>
-          </Badge>
-        </TooltipTrigger>
-        <TooltipContent>Cost is recorded on its runs, but no model call is linked to them</TooltipContent>
-      </Tooltip>
-    );
-  }
-  return (
-    <Badge variant="outline" className="text-[10px] text-muted-foreground">
-      {state === "no_runs" ? "No runs" : "No AI"}
-    </Badge>
-  );
+  return hits;
 }
 
-export function AutomationFlagBadges({ row }: { row: AutomationCostRow | undefined }) {
-  if (!row) return null;
-  const flags = automationFlags(row);
-  if (flags.length === 0) return <span className="text-xs text-muted-foreground">—</span>;
-  return (
-    <div className="flex flex-wrap gap-1">
-      {flags.map((f) => (
-        <Tooltip key={f.id}>
-          <TooltipTrigger asChild>
-            <Badge
-              className={
-                f.severity === "critical"
-                  ? "bg-red-600 text-[10px] text-white hover:bg-red-600"
-                  : "bg-amber-500 text-[10px] text-white hover:bg-amber-500"
-              }
-            >
-              {f.label}
-            </Badge>
-          </TooltipTrigger>
-          <TooltipContent>{f.detail}</TooltipContent>
-        </Tooltip>
-      ))}
-    </div>
-  );
+/** The detail panel's flag line: the same strip the table row shows. */
+export function AutomationFlagStrip({ row }: { row: AutomationCostRow | undefined }) {
+  return <SpendFlagStrip set={AUTOMATION_FLAG_SET} hits={automationFlagHits(row)} />;
 }
 
-export function AgentMandateLinks({
-  row,
-  seat,
-  orgSlug,
-}: {
-  row: AutomationCostRow | undefined;
-  seat: AutomationSeat;
-  /** Org seat: mandates open on the organization's own mandate page. */
-  orgSlug?: string;
-}) {
-  if (!row || (row.agents.length === 0 && row.mandates.length === 0)) {
-    return <span className="text-xs text-muted-foreground">—</span>;
-  }
+function mandateDoor(key: string, seat: AutomationSeat, orgSlug?: string) {
   if (seat === "org") {
-    // Org admins are not platform admins: every door here is one they can open —
-    // the organization's mandate page, and the agent's own record (with peek).
     return (
-      <div className="flex min-w-0 flex-col gap-0.5 text-xs">
-        {row.mandates.map((m) => (
-          <EntityRef
-            key={`m-${m}`}
-            token="mandate"
-            id={m}
-            name={m}
-            href={orgSlug ? orgMandateHref(orgSlug, m) : undefined}
-            disablePeek
-          />
-        ))}
-        {row.agents.map((a) => (
-          <EntityRef key={`a-${a.id}`} token="agent" id={a.id} name={a.name} />
-        ))}
-      </div>
+      <EntityRef token="mandate" id={key} name={key} href={orgSlug ? orgMandateHref(orgSlug, key) : undefined} disablePeek />
     );
   }
+  return (
+    <Link href={mandateHref(key)} className="inline-flex min-w-0 items-center gap-1 text-primary hover:underline" title={`Mandate ${key}`}>
+      <INTELLIGENCE_ICON className="h-3 w-3 shrink-0" />
+      <span className="truncate">{key}</span>
+    </Link>
+  );
+}
+
+function agentDoor(a: AutomationAgentRef, seat: AutomationSeat) {
+  // Org admins are not platform admins: the agent's own record (with peek) is the door they can open.
+  if (seat === "org") return <EntityRef token="agent" id={a.id} name={a.name} />;
+  return (
+    <Link href={agentHref(a, seat)} className="inline-flex min-w-0 items-center gap-1 text-primary hover:underline" title={`Agent ${a.name}`}>
+      <AGENT_ICON className="h-3 w-3 shrink-0" />
+      <span className="truncate">{a.name}</span>
+    </Link>
+  );
+}
+
+export function MandateCell({ row, seat, orgSlug }: { row: AutomationCostRow | undefined; seat: AutomationSeat; orgSlug?: string }) {
+  return (
+    <FirstPlusMore items={row?.mandates ?? []} getKey={(m) => m} label="mandates" render={(m) => mandateDoor(m, seat, orgSlug)} />
+  );
+}
+
+export function AgentCell({ row, seat }: { row: AutomationCostRow | undefined; seat: AutomationSeat }) {
+  return <FirstPlusMore items={row?.agents ?? []} getKey={(a) => a.id} label="agents" render={(a) => agentDoor(a, seat)} />;
+}
+
+export function AgentMandateLinks({ row, seat, orgSlug }: { row: AutomationCostRow | undefined; seat: AutomationSeat; orgSlug?: string }) {
   return (
     <div className="flex min-w-0 flex-col gap-0.5 text-xs">
-      {row.mandates.map((m) => (
-        <Link
-          key={`m-${m}`}
-          href={mandateHref(m)}
-          className="inline-flex min-w-0 items-center gap-1 text-primary hover:underline"
-          title={`Mandate ${m}`}
-        >
-          <ScrollText className="h-3 w-3 shrink-0" />
-          <span className="truncate">{m}</span>
-        </Link>
-      ))}
-      {row.agents.map((a) => (
-        <Link
-          key={`a-${a.id}`}
-          href={agentHref(a, seat)}
-          className="inline-flex min-w-0 items-center gap-1 text-primary hover:underline"
-          title={`Agent ${a.name}`}
-        >
-          <Bot className="h-3 w-3 shrink-0" />
-          <span className="truncate">{a.name}</span>
-        </Link>
-      ))}
+      {(row?.mandates ?? []).map((m) => <div key={`m-${m}`} className="min-w-0 truncate">{mandateDoor(m, seat, orgSlug)}</div>)}
+      {(row?.agents ?? []).map((a) => <div key={`a-${a.id}`} className="min-w-0 truncate">{agentDoor(a, seat)}</div>)}
+      {!row?.mandates.length && !row?.agents.length && <span className="text-muted-foreground">—</span>}
     </div>
   );
 }
 
-export function RunsAsCell({ row }: { row: AutomationCostRow | undefined }) {
-  if (!row) return <span className="text-xs text-muted-foreground">—</span>;
-  return (
-    <div className="min-w-0 text-xs">
-      <div className="truncate" title={row.owner_email ?? undefined}>
-        {row.owner_email ?? "Unknown account"}
-      </div>
-      <div className="truncate text-muted-foreground" title={row.organization_name ?? undefined}>
-        {row.organization_name ?? "No organization"}
-        {row.organization_is_system ? " (system)" : ""}
-      </div>
-    </div>
-  );
+function Num({ v }: { v: number | null | undefined }) {
+  return <span className="tabular-nums text-xs">{v == null ? "—" : v.toLocaleString(undefined, { maximumFractionDigits: 2 })}</span>;
 }
 
-function Money({ usd }: { usd: number | null | undefined }) {
-  const { format } = useCostDisplay();
-  return <span className="tabular-nums text-xs">{usd == null ? "—" : format(usd)}</span>;
-}
+const text = (v: string | null | undefined) => (
+  <span className={`block truncate text-xs ${v ? "" : "text-muted-foreground"}`} title={v ?? undefined}>
+    {v ?? "—"}
+  </span>
+);
 
-function Num({ v, dim }: { v: number | null | undefined; dim?: boolean }) {
-  return (
-    <span className={`tabular-nums text-xs ${dim ? "text-muted-foreground" : ""}`}>
-      {v == null ? "—" : v.toLocaleString(undefined, { maximumFractionDigits: 2 })}
-    </span>
-  );
-}
+const hide = <T,>(cols: MatrxColumnDef<T>[]) => cols.map((c) => ({ ...c, hidden: true }));
 
 /**
  * The cost/behavior columns for any table whose rows map to an automation.
@@ -192,7 +120,25 @@ export function automationCostColumns<T>(
     const r = get(row);
     return r ? f(r) : null;
   };
+  const money = (id: string, label: string, f: (r: AutomationCostRow) => number | null) =>
+    adminCostColumns<T>({ id, label, value: (row) => { const r = get(row); return r ? f(r) : null; } });
   return [
+    {
+      id: "cost_mandate",
+      header: "Mandate",
+      accessorFn: (row) => get(row)?.mandates.join(", ") ?? "",
+      filter: "text",
+      width: 200,
+      cell: (row) => <MandateCell row={get(row)} seat={seat} orgSlug={orgSlug} />,
+    },
+    {
+      id: "cost_agent",
+      header: "Agent",
+      accessorFn: (row) => get(row)?.agents.map((a) => a.name).join(", ") ?? "",
+      filter: "text",
+      width: 180,
+      cell: (row) => <AgentCell row={get(row)} seat={seat} />,
+    },
     {
       id: "cost_ai",
       header: "AI",
@@ -207,27 +153,18 @@ export function automationCostColumns<T>(
         { value: "no_spend", label: "No AI" },
         { value: "no_runs", label: "No runs" },
       ],
-      width: 110,
-      cell: (row) => <AiStateBadge row={get(row)} />,
-    },
-    {
-      id: "cost_flags",
-      header: "Flags",
-      accessorFn: (row) => {
+      width: 44,
+      compact: true,
+      align: "center",
+      cell: (row) => {
         const r = get(row);
-        return r ? automationFlags(r).map((f) => f.label).join(", ") : "";
+        return <AiIcon state={r ? automationAiState(r) : "not_measured"} />;
       },
-      sortValue: (row) => {
-        const r = get(row);
-        return r ? automationFlags(r).length : 0;
-      },
-      filter: "text",
-      width: 260,
-      cell: (row) => <AutomationFlagBadges row={get(row)} />,
     },
+    spendFlagColumn<T>(AUTOMATION_FLAG_SET, (row) => automationFlagHits(get(row)), "cost_flags"),
     {
       id: "cost_approval",
-      header: "Approval",
+      header: "Approval status",
       accessorFn: (row) => {
         const r = get(row);
         return r
@@ -241,7 +178,7 @@ export function automationCostColumns<T>(
         { value: "rejected", label: "Rejected" },
         { value: "none", label: "None" },
       ],
-      width: 100,
+      width: 120,
       cell: (row) => {
         const r = get(row);
         if (!r) return <span className="text-xs text-muted-foreground">—</span>;
@@ -257,76 +194,36 @@ export function automationCostColumns<T>(
         );
       },
     },
-    {
-      id: "cost_total",
-      header: "Cost 30d",
-      accessorFn: n((r) => r.cost),
-      filter: "number",
-      defaultSortDirection: "desc",
-      width: 150,
-      cell: (row) => <Money usd={get(row)?.cost} />,
-    },
-    {
-      id: "cost_7d",
-      header: "Cost 7d",
-      accessorFn: n((r) => r.cost_7d),
-      filter: "number",
-      width: 150,
-      cell: (row) => <Money usd={get(row)?.cost_7d} />,
-    },
-    {
-      id: "cost_est_month",
-      header: "Est. / month",
-      accessorFn: n((r) => r.est_monthly_cost),
-      filter: "number",
-      width: 150,
-      cell: (row) => <Money usd={get(row)?.est_monthly_cost} />,
-    },
+    ...money("cost_total", "Cost 30d", (r) => r.cost),
+    ...hide(money("cost_7d", "Cost 7d", (r) => r.cost_7d)),
+    ...money("cost_est_month", "Est./month", (r) => r.est_monthly_cost),
     {
       id: "cost_runs",
       header: "Runs 30d",
-      accessorFn: n((r) => r.runs),
+      accessorFn: (row) => get(row)?.runs ?? null,
       filter: "number",
+      align: "right",
       width: 90,
       cell: (row) => <Num v={get(row)?.runs} />,
     },
-    {
-      id: "cost_last_run",
-      header: "Last run",
-      accessorFn: n((r) => r.last_run_cost),
-      filter: "number",
-      width: 150,
-      cell: (row) => <Money usd={get(row)?.last_run_cost} />,
-    },
-    {
-      id: "cost_avg_run",
-      header: "Avg / run",
-      accessorFn: n((r) => r.avg_run_cost),
-      filter: "number",
-      width: 150,
-      cell: (row) => <Money usd={get(row)?.avg_run_cost} />,
-    },
-    {
-      id: "cost_max_run",
-      header: "Max / run",
-      accessorFn: n((r) => r.max_run_cost),
-      filter: "number",
-      width: 150,
-      cell: (row) => <Money usd={get(row)?.max_run_cost} />,
-    },
+    ...hide(money("cost_last_run", "Last run cost", (r) => r.last_run_cost)),
+    ...money("cost_avg_run", "Avg cost/run", (r) => r.avg_run_cost),
+    ...money("cost_max_run", "Max cost/run", (r) => r.max_run_cost),
     {
       id: "cost_avg_turns",
       header: "Avg turns",
-      accessorFn: n((r) => r.avg_turns),
+      accessorFn: (row) => get(row)?.avg_turns ?? null,
       filter: "number",
+      align: "right",
       width: 90,
       cell: (row) => <Num v={get(row)?.avg_turns} />,
     },
     {
       id: "cost_max_turns",
       header: "Max turns",
-      accessorFn: n((r) => r.max_turns),
+      accessorFn: (row) => get(row)?.max_turns ?? null,
       filter: "number",
+      align: "right",
       width: 90,
       cell: (row) => <Num v={get(row)?.max_turns} />,
     },
@@ -338,43 +235,35 @@ export function automationCostColumns<T>(
       width: 200,
       cell: (row) => {
         const r = get(row);
-        if (!r || r.models.length === 0) return <span className="text-xs text-muted-foreground">—</span>;
         return (
-          <div className="flex flex-wrap gap-1">
-            {r.models.map((m) => (
-              <Badge
-                key={m}
-                variant="outline"
-                className={`text-[10px] ${r.premium_models.includes(m) ? "border-red-500 text-red-700 dark:text-red-400" : ""}`}
-              >
+          <FirstPlusMore
+            items={r?.models ?? []}
+            getKey={(m) => m}
+            label="models"
+            render={(m) => (
+              <span className={r?.premium_models.includes(m) ? "font-semibold text-destructive" : ""} title={m}>
                 {m}
-              </Badge>
-            ))}
-          </div>
+              </span>
+            )}
+          />
         );
       },
     },
     {
-      id: "cost_invokes",
-      header: "Mandates & agents",
-      accessorFn: (row) => {
-        const r = get(row);
-        return r ? [...r.mandates, ...r.agents.map((a) => a.name)].join(", ") : "";
-      },
+      id: "cost_runs_as",
+      header: "Runs as",
+      accessorFn: (row) => get(row)?.owner_email ?? "",
       filter: "text",
-      width: 240,
-      cell: (row) => <AgentMandateLinks row={get(row)} seat={seat} orgSlug={orgSlug} />,
+      width: 200,
+      cell: (row) => text(get(row)?.owner_email),
     },
     {
-      id: "cost_runs_as",
-      header: "Runs as / for",
-      accessorFn: (row) => {
-        const r = get(row);
-        return r ? `${r.owner_email ?? ""} ${r.organization_name ?? ""}` : "";
-      },
+      id: "cost_for_org",
+      header: "For org",
+      accessorFn: (row) => get(row)?.organization_name ?? "",
       filter: "text",
-      width: 220,
-      cell: (row) => <RunsAsCell row={get(row)} />,
+      width: 180,
+      cell: (row) => text(get(row)?.organization_name),
     },
   ];
 }

@@ -348,22 +348,25 @@ export default function SystemJobsPage() {
       header: "Job",
       width: 240,
       cell: (r) => (
-        <div className="min-w-0">
-          <Link
-            href={automationCostDetailHref("scheduled_task", r.id)}
-            className="block truncate font-medium text-primary hover:underline"
-          >
-            {r.title}
-          </Link>
-          {r.description && (
-            <div
-              className="type-secondary text-muted-foreground line-clamp-1"
-              title={r.description}
-            >
-              {r.description}
-            </div>
-          )}
-        </div>
+        <Link
+          href={automationCostDetailHref("scheduled_task", r.id)}
+          className="block truncate font-medium text-primary hover:underline"
+          title={r.title}
+        >
+          {r.title}
+        </Link>
+      ),
+    },
+    {
+      id: "description",
+      accessorKey: "description",
+      header: "Description",
+      width: 260,
+      hidden: true,
+      cell: (r) => (
+        <span className="block truncate type-secondary text-muted-foreground" title={r.description ?? undefined}>
+          {r.description ?? "—"}
+        </span>
       ),
     },
     {
@@ -412,36 +415,35 @@ export default function SystemJobsPage() {
       header: "State",
       accessorFn: (r) => (r.enabled ? "Enabled" : "Disabled"),
       filter: "select",
-      width: 150,
+      width: 90,
       cell: (r) => (
-        <span className="flex flex-wrap items-center gap-1">
-          <Badge
-            variant={r.enabled ? "secondary" : "outline"}
-            className="text-[10px]"
-          >
-            {r.enabled ? "Enabled" : "Disabled"}
-          </Badge>
-          {r.handler_registered === false && (
-            <Badge
-              variant="destructive"
-              className="gap-0.5 text-[10px]"
-              title="No handler is registered on the server for this tool — enabling will be refused."
-            >
-              <AlertTriangle className="h-2.5 w-2.5" />
-              handler missing
-            </Badge>
-          )}
-          {r.handler_gate_pending && (
-            <Badge
-              variant="outline"
-              className="border-warning/60 text-[10px]"
-              title="The handler is registered but waiting on a pending approval gate."
-            >
-              gate pending
-            </Badge>
-          )}
+        <span className={`type-secondary ${r.enabled ? "" : "text-muted-foreground"}`}>
+          {r.enabled ? "Enabled" : "Disabled"}
         </span>
       ),
+    },
+    {
+      id: "handler",
+      header: "Handler",
+      accessorFn: (r) =>
+        r.handler_registered === false ? "Missing" : r.handler_gate_pending ? "Gate pending" : "Registered",
+      filter: "select",
+      width: 120,
+      cell: (r) =>
+        r.handler_registered === false ? (
+          <span
+            className="inline-flex items-center gap-1 whitespace-nowrap type-secondary text-destructive"
+            title="No handler is registered on the server for this tool; enabling will be refused."
+          >
+            <AlertTriangle className="h-3 w-3" /> Missing
+          </span>
+        ) : r.handler_gate_pending ? (
+          <span className="whitespace-nowrap type-secondary text-warning" title="Registered, waiting on a pending approval gate.">
+            Gate pending
+          </span>
+        ) : (
+          <span className="type-secondary text-muted-foreground">Registered</span>
+        ),
     },
     {
       id: "cadence",
@@ -462,7 +464,7 @@ export default function SystemJobsPage() {
           return (
             <Tooltip>
               <TooltipTrigger asChild>
-                <span className="type-secondary line-clamp-2" tabIndex={0}>
+                <span className="block truncate type-secondary" tabIndex={0}>
                   {cadenceText(r)}
                   {trig.enabled === false ? " (trigger off)" : ""}
                 </span>
@@ -474,7 +476,7 @@ export default function SystemJobsPage() {
           );
         }
         return (
-          <span className="type-secondary">
+          <span className="block truncate type-secondary">
             {cadenceText(r)}
             {trig.enabled === false && (
               <span className="ml-1 text-muted-foreground">(trigger off)</span>
@@ -498,33 +500,38 @@ export default function SystemJobsPage() {
     },
     {
       id: "last_run",
-      header: "Last run",
+      header: "Last run status",
       accessorFn: (r) => r.last_run?.status ?? "",
-      width: 170,
+      filter: "select",
+      width: 130,
       cell: (r) => {
         const run = r.last_run;
-        if (!run?.status) {
-          return <span className="type-secondary text-muted-foreground">Never</span>;
-        }
-        const when = run.finished_at ?? run.started_at;
+        if (!run?.status) return <span className="type-secondary text-muted-foreground">Never</span>;
+        const tone = lastRunTone(run.status);
         return (
-          <span
-            className="flex items-center gap-1.5"
-            title={run.error_message ?? undefined}
-          >
-            <Badge variant={lastRunTone(run.status)} className="text-[10px]">
-              {run.status}
-            </Badge>
-            <span className="type-secondary text-muted-foreground">
-              {when ? humanizeRelative(when) : ""}
-            </span>
-            {run.error_message && (
-              <>
-                <AlertTriangle className="h-3 w-3 shrink-0 text-destructive" />
-                <ErrorAlchemyMenu error={run.error_message} />
-              </>
-            )}
+          <span className="flex items-center gap-1.5 whitespace-nowrap" title={run.error_message ?? undefined}>
+            <span
+              aria-hidden
+              className={`size-1.5 shrink-0 rounded-full ${tone === "destructive" ? "bg-destructive" : tone === "secondary" ? "bg-success" : "bg-muted-foreground/60"}`}
+            />
+            <span className="type-secondary">{run.status}</span>
+            {run.error_message && <ErrorAlchemyMenu error={run.error_message} />}
           </span>
+        );
+      },
+    },
+    {
+      id: "last_run_at",
+      header: "Last run at",
+      accessorFn: (r) => r.last_run?.finished_at ?? r.last_run?.started_at ?? "",
+      filter: "date",
+      width: 110,
+      cell: (r) => {
+        const when = r.last_run?.finished_at ?? r.last_run?.started_at;
+        return when ? (
+          <span className="type-secondary" title={when}>{humanizeRelative(when)}</span>
+        ) : (
+          <span className="type-secondary text-muted-foreground">—</span>
         );
       },
     },

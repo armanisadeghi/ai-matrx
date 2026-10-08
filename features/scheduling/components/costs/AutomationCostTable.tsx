@@ -34,8 +34,7 @@ import {
 } from "@/features/scheduling/service/automationCosts";
 import {
   AgentMandateLinks,
-  AutomationFlagBadges,
-  RunsAsCell,
+  AutomationFlagStrip,
   automationCostColumns,
 } from "./AutomationCostColumns";
 
@@ -293,7 +292,7 @@ export function AutomationCostDetail({
           </Link>
         )}
       </div>
-      <AutomationFlagBadges row={row} />
+      <AutomationFlagStrip row={row} />
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         <Stat label="Cost 30d">{format(row.cost)}</Stat>
         <Stat label="Cost 7d">{format(row.cost_7d)}</Stat>
@@ -306,8 +305,10 @@ export function AutomationCostDetail({
       </div>
       <div className="grid gap-3 sm:grid-cols-2">
         <div>
-          <div className="mb-1 text-[10px] uppercase tracking-wide text-muted-foreground">Runs as / for</div>
-          <RunsAsCell row={row} />
+          <div className="mb-1 text-[10px] uppercase tracking-wide text-muted-foreground">Runs as</div>
+          <div className="truncate text-xs">{row.owner_email ?? "Unknown account"}</div>
+          <div className="mb-1 mt-2 text-[10px] uppercase tracking-wide text-muted-foreground">For org</div>
+          <div className="truncate text-xs">{row.organization_name ?? "No organization"}</div>
         </div>
         <div>
           <div className="mb-1 text-[10px] uppercase tracking-wide text-muted-foreground">Approval</div>
@@ -351,21 +352,32 @@ export function AutomationCostTable({
       accessorKey: "name",
       header: "Automation",
       filter: "text",
-      width: 280,
+      width: 260,
       cell: (r) => (
-        <div className="min-w-0">
-          <Link
-            href={
-              seat === "admin" || !orgSlug
-                ? automationCostDetailHref(r.automation_kind, r.automation_id)
-                : orgAutomationCostDetailHref(orgSlug, r.automation_kind, r.automation_id)
-            }
-            className="font-medium text-primary hover:underline"
-          >
-            {r.name}
-          </Link>
-          <div className="text-xs text-muted-foreground">{automationIntervalText(r)}</div>
-        </div>
+        <Link
+          href={
+            seat === "admin" || !orgSlug
+              ? automationCostDetailHref(r.automation_kind, r.automation_id)
+              : orgAutomationCostDetailHref(orgSlug, r.automation_kind, r.automation_id)
+          }
+          className="block truncate font-medium text-primary hover:underline"
+          title={r.name}
+        >
+          {r.name}
+        </Link>
+      ),
+    },
+    ...automationCostColumns<AutomationCostRow>((r) => r, seat, orgSlug).slice(0, 2),
+    {
+      id: "cadence",
+      header: "Cadence",
+      accessorFn: (r) => automationIntervalText(r),
+      filter: "text",
+      width: 170,
+      cell: (r) => (
+        <span className="block truncate text-xs" title={automationIntervalText(r)}>
+          {automationIntervalText(r)}
+        </span>
       ),
     },
     {
@@ -374,33 +386,45 @@ export function AutomationCostTable({
       accessorFn: (r) => AUTOMATION_KIND_LABEL[r.automation_kind],
       filter: "select",
       width: 130,
-      cell: (r) => <span className="text-xs">{AUTOMATION_KIND_LABEL[r.automation_kind]}</span>,
+      cell: (r) => <span className="whitespace-nowrap text-xs">{AUTOMATION_KIND_LABEL[r.automation_kind]}</span>,
     },
     {
       id: "enabled",
       header: "State",
       accessorFn: (r) => (r.enabled ? "Enabled" : "Off"),
       filter: "select",
-      width: 90,
-      cell: (r) => (
-        <Badge variant={r.enabled ? "secondary" : "outline"} className="text-[10px]">
-          {r.enabled ? "Enabled" : "Off"}
-        </Badge>
-      ),
+      width: 80,
+      cell: (r) => <span className={`text-xs ${r.enabled ? "" : "text-muted-foreground"}`}>{r.enabled ? "Enabled" : "Off"}</span>,
     },
     {
-      id: "approved",
-      header: "Approved",
-      accessorFn: (r) => r.approval ?? r.approved_by ?? "",
+      id: "approved_by",
+      header: "Approved by",
+      accessorFn: (r) => r.approved_by ?? "",
       filter: "text",
       width: 160,
-      cell: (r) => (
-        <span className="line-clamp-2 text-xs" title={r.approval ?? undefined}>
-          {r.approval ?? r.approved_by ?? "—"}
-        </span>
-      ),
+      hidden: true,
+      cell: (r) => <span className="block truncate text-xs" title={r.approved_by ?? undefined}>{r.approved_by ?? "—"}</span>,
     },
-    ...automationCostColumns<AutomationCostRow>((r) => r, seat, orgSlug),
+    {
+      id: "approved_at",
+      header: "Approved at",
+      accessorFn: (r) => r.approved_at ?? "",
+      filter: "date",
+      width: 120,
+      hidden: true,
+      cell: (r) =>
+        r.approved_at ? <span className="text-xs" title={r.approved_at}>{humanizeRelative(r.approved_at)}</span> : <span className="text-xs text-muted-foreground">—</span>,
+    },
+    {
+      id: "approval_record",
+      header: "Schedule approval",
+      accessorFn: (r) => r.approval ?? "",
+      filter: "text",
+      width: 200,
+      hidden: true,
+      cell: (r) => <span className="block truncate text-xs" title={r.approval ?? undefined}>{r.approval ?? "—"}</span>,
+    },
+    ...automationCostColumns<AutomationCostRow>((r) => r, seat, orgSlug).slice(2),
   ];
 
   return (

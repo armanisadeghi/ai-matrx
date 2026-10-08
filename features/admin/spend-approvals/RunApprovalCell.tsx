@@ -6,7 +6,6 @@
  * "Under $N" (N = the threshold of the subject's organization) when no run crossed it. One fetch per seat.
  */
 import Link from "next/link";
-import { Badge } from "@ai-matrx/design-system/controls";
 import {
   APPROVAL_STATUS_LABEL,
   approvalFor,
@@ -18,11 +17,21 @@ import {
   type ApprovalStatus,
 } from "./spendApprovals";
 
-const TONE: Record<ApprovalStatus, "warning" | "success" | "destructive"> = {
-  waiting: "warning",
-  approved: "success",
-  rejected: "destructive",
+const DOT: Record<ApprovalStatus, string> = {
+  waiting: "bg-warning",
+  approved: "bg-success",
+  rejected: "bg-destructive",
 };
+
+/** An approval status as plain text with a small status dot — never a bordered pill in a table row. */
+export function ApprovalStatusText({ status }: { status: ApprovalStatus }) {
+  return (
+    <span className="inline-flex items-center gap-1.5 whitespace-nowrap text-xs">
+      <span aria-hidden className={`size-1.5 shrink-0 rounded-full ${DOT[status]}`} />
+      {APPROVAL_STATUS_LABEL[status]}
+    </span>
+  );
+}
 
 export function RunApprovalCell({
   orgId,
@@ -50,12 +59,12 @@ export function RunApprovalCell({
   if (hit) {
     return (
       <Link href={approvalHref(hit.id, seat, orgSlug)} className="hover:underline">
-        <Badge tone={TONE[hit.status]}>{APPROVAL_STATUS_LABEL[hit.status]}</Badge>
+        <ApprovalStatusText status={hit.status} />
       </Link>
     );
   }
   if (maxRunCost != null && threshold != null && maxRunCost <= threshold) {
-    return <span className="text-xs text-muted-foreground">{underThresholdLabel(threshold)}</span>;
+    return <span className="whitespace-nowrap text-xs text-muted-foreground">{underThresholdLabel(threshold)}</span>;
   }
   return <span className="text-xs text-muted-foreground">—</span>;
 }

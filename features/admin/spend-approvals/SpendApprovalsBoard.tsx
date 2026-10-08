@@ -11,14 +11,16 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { Check, History, Loader2, RefreshCw, RotateCcw, X } from "lucide-react";
-import { Badge, Button, SegmentedControl } from "@ai-matrx/design-system/controls";
+import { Button, SegmentedControl } from "@ai-matrx/design-system/controls";
+import { adminCostColumns } from "@/components/cost/adminCostColumns";
+import { FirstPlusMore } from "@/components/official/first-plus-more/FirstPlusMore";
+import { ApprovalStatusText } from "./RunApprovalCell";
 import { MatrxDataTable } from "@ai-matrx/design-system/data-table";
 import type { MatrxColumnDef } from "@ai-matrx/design-system/data-table/types";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
-import { Cost } from "@/components/cost/Cost";
 import { useCostDisplay } from "@/components/cost/useCostDisplay";
 import { toast } from "@/lib/toast";
 import {
@@ -38,15 +40,7 @@ import {
 
 type StatusFilter = ApprovalStatus | "all";
 
-const STATUS_TONE: Record<ApprovalStatus, "warning" | "success" | "destructive"> = {
-  waiting: "warning",
-  approved: "success",
-  rejected: "destructive",
-};
 
-export function ApprovalStatusBadge({ status }: { status: ApprovalStatus }) {
-  return <Badge tone={STATUS_TONE[status]}>{APPROVAL_STATUS_LABEL[status]}</Badge>;
-}
 
 const when = (iso: string | null) => (iso ? new Date(iso).toLocaleString() : "—");
 
@@ -236,35 +230,48 @@ export function SpendApprovalsBoard({
   const columns: MatrxColumnDef<SpendApprovalRow>[] = [
     {
       id: "subject",
-      header: "Agent / mandate / automation",
-      accessorFn: (r) => `${r.subject_name ?? ""} ${r.subject_id}`,
+      header: "Subject",
+      accessorFn: (r) => r.subject_name ?? r.subject_id,
       filter: "text",
-      width: 280,
+      width: 240,
       cell: (r) => {
         const href = subjectHref(r, seat, orgSlug);
-        return (
-          <div className="flex min-w-0 flex-col gap-0.5">
-            {href ? (
-              <Link href={href} className="truncate font-medium text-primary hover:underline" title={r.subject_name ?? r.subject_id}>
-                {r.subject_name ?? r.subject_id}
-              </Link>
-            ) : (
-              <span className="truncate font-medium">{r.subject_name ?? r.subject_id}</span>
-            )}
-            <div className="flex min-w-0 flex-wrap items-center gap-1 text-xs text-muted-foreground">
-              <span>{SUBJECT_KIND_LABEL[r.subject_kind]}</span>
-              {r.seeded && <Badge tone="neutral" title="Predates the rule">Before rule</Badge>}
-            </div>
-            {r.subject_kind !== "agent" && r.agent_id && (
-              <EntityRef token="agent" id={r.agent_id} name="Agent" />
-            )}
-          </div>
+        const name = r.subject_name ?? r.subject_id;
+        return href ? (
+          <Link href={href} className="block truncate font-medium text-primary hover:underline" title={name}>
+            {name}
+          </Link>
+        ) : (
+          <span className="block truncate font-medium" title={name}>{name}</span>
         );
       },
     },
     {
+      id: "subject_kind",
+      header: "Type",
+      accessorFn: (r) => SUBJECT_KIND_LABEL[r.subject_kind],
+      filter: "select",
+      width: 130,
+      cell: (r) => <span className="whitespace-nowrap text-xs">{SUBJECT_KIND_LABEL[r.subject_kind]}</span>,
+    },
+    {
+      id: "agent",
+      header: "Agent",
+      accessorFn: (r) => r.agent_id ?? "",
+      filter: "text",
+      width: 160,
+      cell: (r) =>
+        r.subject_kind !== "agent" && r.agent_id ? (
+          <div className="min-w-0 truncate text-xs">
+            <EntityRef token="agent" id={r.agent_id} name="Agent" />
+          </div>
+        ) : (
+          <span className="text-xs text-muted-foreground">—</span>
+        ),
+    },
+    {
       id: "status",
-      header: "Status",
+      header: "Approval status",
       accessorFn: (r) => r.status,
       filter: "select",
       filterOptions: [
@@ -272,117 +279,127 @@ export function SpendApprovalsBoard({
         { value: "approved", label: "Approved" },
         { value: "rejected", label: "Rejected" },
       ],
-      width: 100,
-      cell: (r) => <ApprovalStatusBadge status={r.status} />,
+      width: 120,
+      cell: (r) => <ApprovalStatusText status={r.status} />,
     },
     {
-      id: "first_run_cost",
-      accessorKey: "first_run_cost",
-      header: "First run",
-      filter: "number",
-      width: 150,
+      id: "seeded",
+      header: "Before rule",
+      accessorFn: (r) => (r.seeded ? "Yes" : "No"),
+      filter: "select",
+      width: 90,
+      hidden: true,
+      cell: (r) => <span className="text-xs">{r.seeded ? "Yes" : "No"}</span>,
+    },
+    ...adminCostColumns<SpendApprovalRow>({ id: "first_run_cost", label: "First run cost", value: (r) => r.first_run_cost }),
+    {
+      id: "first_run_at",
+      header: "First run at",
+      accessorFn: (r) => r.first_run_at ?? "",
+      filter: "date",
+      width: 170,
       cell: (r) => {
         const href = firstRunHref(r, seat);
-        return (
-          <div className="flex flex-col text-xs">
-            <Cost usd={r.first_run_cost} className="font-semibold tabular-nums text-red-600" />
-            {href ? (
-              <Link href={href} className="text-primary hover:underline">
-                {when(r.first_run_at)}
-              </Link>
-            ) : (
-              <span className="text-muted-foreground" title="No saved run">
-                {when(r.first_run_at)}
-              </span>
-            )}
-            <span className="truncate text-muted-foreground" title={r.first_run_models.join(", ")}>
-              {[`${r.first_run_turns} turns`, r.first_run_models[0]].filter(Boolean).join(" · ")}
-            </span>
-          </div>
+        return href ? (
+          <Link href={href} className="block truncate text-xs text-primary hover:underline">{when(r.first_run_at)}</Link>
+        ) : (
+          <span className="block truncate text-xs text-muted-foreground" title="No saved run">{when(r.first_run_at)}</span>
         );
       },
+    },
+    {
+      id: "first_run_turns",
+      header: "First run turns",
+      accessorFn: (r) => r.first_run_turns,
+      filter: "number",
+      align: "right",
+      width: 110,
+      hidden: true,
+      cell: (r) => <span className="tabular-nums text-xs">{r.first_run_turns}</span>,
+    },
+    {
+      id: "first_run_model",
+      header: "First run model",
+      accessorFn: (r) => r.first_run_models.join(", "),
+      filter: "text",
+      width: 170,
+      hidden: true,
+      cell: (r) => (
+        <FirstPlusMore items={r.first_run_models} getKey={(m) => m} label="models" render={(m) => <span title={m}>{m}</span>} />
+      ),
     },
     {
       id: "runs_since",
       accessorKey: "runs_since",
       header: "Runs since",
       filter: "number",
+      align: "right",
       width: 90,
       cell: (r) => <span className="tabular-nums text-xs">{r.runs_since}</span>,
     },
-    {
-      id: "avg_cost_since",
-      accessorFn: (r) => r.avg_cost_since ?? 0,
-      header: "Avg since",
-      filter: "number",
-      width: 100,
-      cell: (r) => (r.avg_cost_since == null ? <span className="text-xs text-muted-foreground">—</span> : <Cost usd={r.avg_cost_since} className="tabular-nums text-xs" />),
-    },
-    {
-      id: "max_cost_since",
-      accessorFn: (r) => r.max_cost_since ?? 0,
-      header: "Max since",
-      filter: "number",
-      width: 100,
-      cell: (r) => (r.max_cost_since == null ? <span className="text-xs text-muted-foreground">—</span> : <Cost usd={r.max_cost_since} className="tabular-nums text-xs" />),
-    },
-    {
-      id: "est_monthly_cost",
-      accessorKey: "est_monthly_cost",
-      header: "Est. / month",
-      filter: "number",
-      width: 110,
-      cell: (r) => (
-        <span title={r.expected_runs_per_month != null ? `${r.expected_runs_per_month} runs a month (expected)` : `${r.runs_30d} runs in 30 days`}>
-          <Cost usd={r.est_monthly_cost} className="tabular-nums text-xs font-medium" />
-        </span>
-      ),
-    },
+    ...adminCostColumns<SpendApprovalRow>({ id: "avg_cost_since", label: "Avg cost since", value: (r) => r.avg_cost_since }),
+    ...adminCostColumns<SpendApprovalRow>({ id: "max_cost_since", label: "Max cost since", value: (r) => r.max_cost_since }),
+    ...adminCostColumns<SpendApprovalRow>({ id: "est_monthly_cost", label: "Est./month", value: (r) => r.est_monthly_cost }),
     {
       id: "blocked_runs",
       accessorKey: "blocked_runs",
-      header: "Held",
+      header: "Held runs",
       filter: "number",
-      width: 70,
+      align: "right",
+      width: 90,
       cell: (r) => (
-        <span className={`tabular-nums text-xs ${r.blocked_runs > 0 ? "font-semibold text-amber-600" : "text-muted-foreground"}`} title={r.last_blocked_at ? `Last held ${when(r.last_blocked_at)}` : undefined}>
+        <span className={`tabular-nums text-xs ${r.blocked_runs > 0 ? "font-semibold text-warning" : "text-muted-foreground"}`} title={r.last_blocked_at ? `Last held ${when(r.last_blocked_at)}` : undefined}>
           {r.blocked_runs}
         </span>
       ),
     },
     {
       id: "who",
-      header: "Who / org",
-      accessorFn: (r) => `${r.first_run_person_email ?? ""} ${r.organization_name ?? ""}`,
+      header: "First run by",
+      accessorFn: (r) => r.first_run_person_email ?? "",
       filter: "text",
       width: 200,
-      cell: (r) => (
-        <div className="flex min-w-0 flex-col text-xs">
-          <span className="truncate">{r.first_run_person_email ?? "Unknown person"}</span>
-          {seat === "admin" ? (
-            <EntityRef token="organization" id={r.organization_id} name={r.organization_name ?? "Organization"} />
-          ) : (
-            <span className="truncate text-muted-foreground">{r.organization_name}</span>
-          )}
-        </div>
-      ),
+      cell: (r) => <span className="block truncate text-xs" title={r.first_run_person_email ?? undefined}>{r.first_run_person_email ?? "Unknown person"}</span>,
     },
     {
-      id: "decided",
-      header: "Decided",
-      accessorFn: (r) => r.decided_at ?? "",
+      id: "organization",
+      header: "Organization",
+      accessorFn: (r) => r.organization_name ?? "",
       filter: "text",
       width: 180,
       cell: (r) =>
-        r.decided_at ? (
-          <div className="flex min-w-0 flex-col text-xs">
-            <span className="truncate">{r.decided_by_email ?? "—"}</span>
-            <span className="text-muted-foreground">{when(r.decided_at)}</span>
-            {r.expected_result && <span className="truncate text-muted-foreground" title={r.expected_result}>{r.expected_result}</span>}
+        seat === "admin" ? (
+          <div className="min-w-0 truncate text-xs">
+            <EntityRef token="organization" id={r.organization_id} name={r.organization_name ?? "Organization"} />
           </div>
         ) : (
-          <span className="text-xs text-muted-foreground">—</span>
+          <span className="block truncate text-xs">{r.organization_name ?? "—"}</span>
         ),
+    },
+    {
+      id: "decided_by",
+      header: "Decided by",
+      accessorFn: (r) => r.decided_by_email ?? "",
+      filter: "text",
+      width: 180,
+      cell: (r) => <span className={`block truncate text-xs ${r.decided_by_email ? "" : "text-muted-foreground"}`}>{r.decided_by_email ?? "—"}</span>,
+    },
+    {
+      id: "decided_at",
+      header: "Decided at",
+      accessorFn: (r) => r.decided_at ?? "",
+      filter: "date",
+      width: 170,
+      cell: (r) => <span className={`block truncate text-xs ${r.decided_at ? "" : "text-muted-foreground"}`}>{when(r.decided_at)}</span>,
+    },
+    {
+      id: "expected_result",
+      header: "Expected result",
+      accessorFn: (r) => r.expected_result ?? "",
+      filter: "text",
+      width: 220,
+      hidden: true,
+      cell: (r) => <span className="block truncate text-xs" title={r.expected_result ?? undefined}>{r.expected_result ?? "—"}</span>,
     },
     {
       id: "actions",

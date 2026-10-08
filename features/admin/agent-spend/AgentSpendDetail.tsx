@@ -14,6 +14,8 @@ import type { MatrxColumnDef } from "@ai-matrx/design-system/data-table/types";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { Cost } from "@/components/cost/Cost";
+import { adminCostColumns } from "@/components/cost/adminCostColumns";
+import { FirstPlusMore } from "@/components/official/first-plus-more/FirstPlusMore";
 import { useCostDisplay } from "@/components/cost/useCostDisplay";
 import { usageViewHref } from "@/features/admin/usage-drill/usageLinks";
 import { orgAdminMemberHref } from "@/features/organizations/admin/routes";
@@ -25,7 +27,6 @@ import {
   SPEND_RUNS_PAGE_SIZE,
   agentSpendDetailHref,
   spendAgentHref,
-  agentSpendFlags,
   fetchAgentSpendRuns,
   orgAgentSpendPath,
   type AgentSpendRun,
@@ -33,7 +34,7 @@ import {
   type SpendSubjectKey,
   type SpendWindowDays,
 } from "./agentSpend";
-import { ModelList, PaidBy, SpendFlagBadges, SpendSubject, rowKey, useAgentSpend } from "./AgentSpendBoard";
+import { AgentSpendFlagStrip, ModelList, PaidBy, SpendSubject, rowKey, useAgentSpend } from "./AgentSpendBoard";
 
 function Stat({ label, children }: { label: string; children: React.ReactNode }) {
   return (
@@ -117,14 +118,7 @@ function RunsTable({
       width: 110,
       cell: (r) => <span className="text-xs" title={r.started_at}>{humanizeRelative(r.started_at)}</span>,
     },
-    {
-      id: "cost",
-      accessorKey: "cost",
-      header: "Cost",
-      filter: "number",
-      width: 100,
-      cell: (r) => <Cost usd={r.cost} className={`tabular-nums text-xs ${r.cost > L.runCostUsd ? "font-semibold text-red-600" : ""}`} />,
-    },
+    ...adminCostColumns<AgentSpendRun>({ id: "cost", label: "Cost", value: (r) => r.cost }),
     {
       id: "turns",
       accessorKey: "turns",
@@ -139,7 +133,19 @@ function RunsTable({
       accessorFn: (r) => r.models.join(", "),
       filter: "text",
       width: 150,
-      cell: (r) => <ModelList models={r.models} premium={premium} />,
+      cell: (r) => (
+        <FirstPlusMore
+          items={r.models}
+          getKey={(m) => m}
+          label="models"
+          empty="Not recorded"
+          render={(m) => (
+            <span className={premium.includes(m) ? "font-semibold text-destructive" : ""} title={m}>
+              {m}
+            </span>
+          )}
+        />
+      ),
     },
     {
       id: "tokens_in",
@@ -168,7 +174,7 @@ function RunsTable({
     {
       id: "paid_by",
       header: "Paid by",
-      accessorFn: (r) => `${r.person_email ?? ""} ${r.organization_name ?? ""}`,
+      accessorFn: (r) => r.person_email ?? "",
       filter: "text",
       width: 200,
       cell: (r) => {
@@ -179,19 +185,28 @@ function RunsTable({
               ? orgAdminMemberHref(orgSlug, r.person_id)
               : null
           : null;
-        return (
-          <div className="flex min-w-0 flex-col gap-0.5 text-xs">
-            {personHref ? (
-              <Link href={personHref} className="truncate text-primary hover:underline">{r.person_email ?? "Person"}</Link>
-            ) : (
-              <span className="truncate text-muted-foreground">{r.person_email ?? "Unknown person"}</span>
-            )}
-            {seat === "admin" && r.organization_id && (
-              <EntityRef token="organization" id={r.organization_id} name={r.organization_name ?? "Organization"} />
-            )}
-          </div>
+        return personHref ? (
+          <Link href={personHref} className="block truncate text-xs text-primary hover:underline">{r.person_email ?? "Person"}</Link>
+        ) : (
+          <span className="block truncate text-xs text-muted-foreground">{r.person_email ?? "Unknown person"}</span>
         );
       },
+    },
+    {
+      id: "organization",
+      header: "Organization",
+      accessorFn: (r) => r.organization_name ?? "",
+      filter: "text",
+      width: 180,
+      hidden: seat !== "admin",
+      cell: (r) =>
+        r.organization_id && seat === "admin" ? (
+          <div className="min-w-0 truncate text-xs">
+            <EntityRef token="organization" id={r.organization_id} name={r.organization_name ?? "Organization"} />
+          </div>
+        ) : (
+          <span className="block truncate text-xs">{r.organization_name ?? "—"}</span>
+        ),
     },
     {
       id: "open",
@@ -209,9 +224,9 @@ function RunsTable({
             <EntityRef token="conversation" id={r.conversation_id} name="Conversation" />
           )
         ) : (
-          <Badge tone="warning" title={r.saved ? "Saved request, no conversation" : "Sent with store off — nothing was saved"}>
+          <span className="whitespace-nowrap text-xs text-warning" title={r.saved ? "Saved request, no conversation" : "Sent with store off — nothing was saved"}>
             {r.saved ? "No conversation" : "Unsaved"}
-          </Badge>
+          </span>
         ),
     },
   ];
@@ -339,7 +354,7 @@ export function AgentSpendDetail({
       ) : (
         <>
           <SpendSubject row={row} seat={seat} orgSlug={orgSlug} days={days} />
-          <SpendFlagBadges flags={agentSpendFlags(row, format)} />
+          <AgentSpendFlagStrip row={row} money={format} />
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-8">
             <Stat label="Total"><Cost usd={row.cost} /></Stat>
             <Stat label="Runs">{row.runs.toLocaleString()}</Stat>

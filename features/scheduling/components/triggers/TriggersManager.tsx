@@ -12,11 +12,11 @@
  * last fired, the extra flags, and the controls.
  */
 import Link from "next/link";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Loader2, Pause, Play, RefreshCw, Archive } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { TRIGGER_FLAG_SET, SpendFlagStrip, spendFlagColumn, type SpendFlagHit } from "@/components/cost/SpendFlagStrip";
 import { Button } from "@/components/ui/button";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { toast } from "@/lib/toast";
 import { MatrxDataTable } from "@ai-matrx/design-system/data-table";
@@ -24,17 +24,13 @@ import type { MatrxColumnDef } from "@ai-matrx/design-system/data-table/types";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { useCostDisplay } from "@/components/cost/useCostDisplay";
 import { humanizeRelative } from "@/features/scheduling/utils/triggerHumanize";
-import {
-  automationAiState,
-  automationFlags,
-  type AutomationFlag,
-} from "@/features/scheduling/service/automationCosts";
+import { automationAiState } from "@/features/scheduling/service/automationCosts";
 import { automationIntervalText } from "@/features/scheduling/components/costs/AutomationCostTable";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { TriggerRunsTable } from "./TriggerRunsTable";
 import {
-  RunsAsCell,
   automationCostColumns,
+  automationFlagHits,
 } from "@/features/scheduling/components/costs/AutomationCostColumns";
 import {
   fetchManagedTriggers,
@@ -46,39 +42,28 @@ import {
   type TriggerAction,
 } from "@/features/scheduling/service/workflowTriggers";
 
-type AnyFlag = Pick<AutomationFlag, "id" | "label" | "detail"> & {
-  severity: "critical" | "warning" | "hint";
-};
+const RANK: Record<SpendFlagHit["severity"], number> = { critical: 3, warning: 2, info: 1, hint: 0 };
 
-const FLAG_CLASS: Record<AnyFlag["severity"], string> = {
-  critical: "bg-red-600 text-white hover:bg-red-600",
-  warning: "bg-amber-500 text-white hover:bg-amber-500",
-  hint: "border border-dashed border-muted-foreground/50 bg-transparent text-muted-foreground hover:bg-transparent",
-};
-
-function allFlags(t: ManagedTrigger): AnyFlag[] {
-  return [...triggerExtraFlags(t), ...automationFlags(t.cost)];
+/** Every flag a trigger raises, one per icon slot (the stronger wins when two rules share a slot). */
+function triggerHits(t: ManagedTrigger): SpendFlagHit[] {
+  const raw: SpendFlagHit[] = [
+    ...triggerExtraFlags(t).map((f) => ({
+      slot: f.id === "test_looking_name" ? ("disposable" as const) : f.id,
+      severity: f.severity,
+      detail: f.detail,
+    })),
+    ...automationFlagHits(t.cost),
+  ];
+  const bySlot = new Map<string, SpendFlagHit>();
+  for (const h of raw) {
+    const prev = bySlot.get(h.slot);
+    if (!prev || RANK[h.severity] > RANK[prev.severity]) bySlot.set(h.slot, h);
+  }
+  return [...bySlot.values()];
 }
 
-function FlagBadges({ t }: { t: ManagedTrigger }) {
-  const flags = allFlags(t);
-  if (flags.length === 0) return <span className="text-xs text-muted-foreground">—</span>;
-  return (
-    <div className="flex min-w-0 max-w-full flex-wrap gap-1">
-      {flags.map((f) => (
-        <Tooltip key={f.id}>
-          <TooltipTrigger asChild>
-            <Badge
-              className={`max-w-full ${FLAG_CLASS[f.severity]} text-[10px]`}
-            >
-              <span className="truncate">{f.label}</span>
-            </Badge>
-          </TooltipTrigger>
-          <TooltipContent>{f.detail}</TooltipContent>
-        </Tooltip>
-      ))}
-    </div>
-  );
+function FlagStrip({ t }: { t: ManagedTrigger }) {
+  return <SpendFlagStrip set={TRIGGER_FLAG_SET} hits={triggerHits(t)} />;
 }
 
 function Stat({ label, children }: { label: string; children: React.ReactNode }) {
@@ -216,23 +201,8 @@ export function TriggersManager({
     }
   };
 
-  const costCols = useMemo(
-    () =>
-      automationCostColumns<ManagedTrigger>((t) => t.cost, seat, orgSlug).filter((c) =>
-        [
-          "cost_ai",
-          "cost_total",
-          "cost_approval",
-          "cost_est_month",
-          "cost_avg_run",
-          "cost_max_run",
-          "cost_avg_turns",
-          "cost_max_turns",
-          "cost_models",
-        ].includes(String(c.id)),
-      ),
-    [seat, orgSlug],
-  );
+  const costCols = automationCostColumns<ManagedTrigger>((t) => t.cost, seat, orgSlug);
+  const pick = (ids: string[]) => ids.flatMap((id) => costCols.filter((c) => String(c.id) === id));
 
   const columns: MatrxColumnDef<ManagedTrigger>[] = [
     {
@@ -240,39 +210,54 @@ export function TriggersManager({
       header: "Trigger",
       accessorFn: (t) => t.cost.name,
       filter: "text",
-      width: 280,
+      width: 240,
+      cell: (t) => (
+        <span className="block truncate text-sm font-medium" title={t.cost.name}>
+          {t.cost.name}
+        </span>
+      ),
+    },
+    {
+      id: "trigger_id",
+      header: "ID",
+      accessorFn: (t) => triggerIdSuffix(t.overview.trigger_id),
+      filter: "text",
+      width: 80,
+      cell: (t) => (
+        <span className="font-mono text-xs text-muted-foreground" title={t.overview.trigger_id}>
+          {`#${triggerIdSuffix(t.overview.trigger_id)}`}
+        </span>
+      ),
+    },
+    {
+      id: "workflow",
+      header: "Workflow",
+      accessorFn: (t) => t.overview.workflow_name ?? "",
+      filter: "text",
+      width: 200,
       cell: (t) => {
-        const wfHref = t.overview.definition_id ? triggerWorkflowHref(seat, t.overview.definition_id) : null;
-        return (
-          <div className="min-w-0">
-            <div className="truncate text-sm font-medium" title={t.cost.name}>
-              {t.cost.name}
-              <span className="ml-1 font-mono text-[10px] font-normal text-muted-foreground">
-                #{triggerIdSuffix(t.overview.trigger_id)}
-              </span>
-            </div>
-            {t.overview.definition_id &&
-              (wfHref ? (
-                <Link
-                  href={wfHref}
-                  onClick={(e) => e.stopPropagation()}
-                  className="block truncate text-xs text-primary hover:underline"
-                  title={t.overview.workflow_name ?? undefined}
-                >
-                  {t.overview.workflow_name ?? "Workflow"}
-                </Link>
-              ) : (
-                <EntityRef
-                  token="workflow"
-                  id={t.overview.definition_id}
-                  name={t.overview.workflow_name ?? "Workflow"}
-                  showIcon={false}
-                />
-              ))}
-          </div>
+        if (!t.overview.definition_id) return <span className="text-xs text-muted-foreground">—</span>;
+        const wfHref = triggerWorkflowHref(seat, t.overview.definition_id);
+        return wfHref ? (
+          <Link
+            href={wfHref}
+            onClick={(e) => e.stopPropagation()}
+            className="block truncate text-xs text-primary hover:underline"
+            title={t.overview.workflow_name ?? undefined}
+          >
+            {t.overview.workflow_name ?? "Workflow"}
+          </Link>
+        ) : (
+          <EntityRef
+            token="workflow"
+            id={t.overview.definition_id}
+            name={t.overview.workflow_name ?? "Workflow"}
+            showIcon={false}
+          />
         );
       },
     },
+    ...pick(["cost_mandate", "cost_agent"]),
     {
       id: "kind",
       header: "Kind",
@@ -298,53 +283,41 @@ export function TriggersManager({
       header: "State",
       accessorFn: (t) => (t.overview.is_active ? "Enabled" : "Paused"),
       filter: "select",
-      width: 90,
+      width: 80,
       cell: (t) => (
-        <Badge variant={t.overview.is_active ? "secondary" : "outline"} className="text-[10px]">
+        <span className={`text-xs ${t.overview.is_active ? "" : "text-muted-foreground"}`}>
           {t.overview.is_active ? "Enabled" : "Paused"}
-        </Badge>
+        </span>
       ),
     },
+    ...pick(["cost_ai"]),
+    spendFlagColumn<ManagedTrigger>(TRIGGER_FLAG_SET, triggerHits),
+    ...pick(["cost_approval"]),
+    ...pick(["cost_total", "cost_total_points", "cost_est_month", "cost_est_month_points"]),
     {
-      id: "flags",
-      header: "Flags",
-      accessorFn: (t) => allFlags(t).map((f) => f.label).join(", "),
-      sortValue: (t) => allFlags(t).length,
-      filter: "text",
-      width: 280,
-      cell: (t) => <FlagBadges t={t} />,
+      id: "runs_7d",
+      header: "Runs 7d",
+      accessorFn: (t) => t.cost.runs_7d,
+      filter: "number",
+      align: "right",
+      width: 80,
+      cell: (t) => <span className="text-xs tabular-nums">{t.cost.runs_7d}</span>,
     },
     {
-      id: "created",
-      header: "Created",
-      accessorFn: (t) => t.overview.created_at,
-      filter: "date",
-      width: 190,
-      cell: (t) => (
-        <div className="min-w-0 text-xs">
-          <div className="truncate" title={t.overview.created_by_email ?? undefined}>
-            {t.overview.created_by_email ?? "Unknown"}
-          </div>
-          <div className="text-muted-foreground" title={t.overview.created_at}>
-            {humanizeRelative(t.overview.created_at)}
-          </div>
-        </div>
-      ),
-    },
-    {
-      id: "runs_as",
-      header: "Runs as / for",
-      accessorFn: (t) => `${t.cost.owner_email ?? ""} ${t.cost.organization_name ?? ""}`,
-      filter: "text",
-      width: 220,
-      cell: (t) => <RunsAsCell row={t.cost} />,
+      id: "runs_30d",
+      header: "Runs 30d",
+      accessorFn: (t) => t.cost.runs,
+      filter: "number",
+      align: "right",
+      width: 85,
+      cell: (t) => <span className="text-xs tabular-nums">{t.cost.runs}</span>,
     },
     {
       id: "last_fired",
       header: "Last fired",
       accessorFn: (t) => t.overview.last_fired_at ?? "",
       filter: "date",
-      width: 120,
+      width: 110,
       cell: (t) =>
         t.overview.last_fired_at ? (
           <span className="text-xs" title={t.overview.last_fired_at}>
@@ -354,23 +327,44 @@ export function TriggersManager({
           <span className="text-xs text-muted-foreground">Never</span>
         ),
     },
+    ...pick([
+      "cost_avg_run",
+      "cost_avg_run_points",
+      "cost_max_run",
+      "cost_max_run_points",
+      "cost_avg_turns",
+      "cost_max_turns",
+      "cost_models",
+      "cost_runs_as",
+      "cost_for_org",
+    ]),
     {
-      id: "runs_7d",
-      header: "Runs 7d",
-      accessorFn: (t) => t.cost.runs_7d,
-      filter: "number",
-      width: 80,
-      cell: (t) => <span className="text-xs tabular-nums">{t.cost.runs_7d}</span>,
+      id: "created_by",
+      header: "Created by",
+      accessorFn: (t) => t.overview.created_by_email ?? "",
+      filter: "text",
+      width: 190,
+      hidden: true,
+      cell: (t) => (
+        <span className="block truncate text-xs" title={t.overview.created_by_email ?? undefined}>
+          {t.overview.created_by_email ?? "Unknown"}
+        </span>
+      ),
     },
     {
-      id: "runs_30d",
-      header: "Runs 30d",
-      accessorFn: (t) => t.cost.runs,
-      filter: "number",
-      width: 85,
-      cell: (t) => <span className="text-xs tabular-nums">{t.cost.runs}</span>,
+      id: "created_at",
+      header: "Created at",
+      accessorFn: (t) => t.overview.created_at,
+      filter: "date",
+      width: 110,
+      hidden: true,
+      cell: (t) => (
+        <span className="text-xs" title={t.overview.created_at}>
+          {humanizeRelative(t.overview.created_at)}
+        </span>
+      ),
     },
-    ...costCols,
+    ...pick(["cost_7d", "cost_7d_points", "cost_last_run", "cost_last_run_points"]),
     {
       id: "custom-actions",
       header: "Actions",
@@ -435,7 +429,7 @@ export function TriggersManager({
                 `Trigger: ${t.cost.name} (${t.overview.kind}, ${t.overview.is_active ? "enabled" : "paused"})`,
                 `Created by ${t.overview.created_by_email ?? "?"} ${t.overview.created_at} · last fired ${t.overview.last_fired_at ?? "never"}`,
                 `Runs 7d/30d: ${t.cost.runs_7d}/${t.cost.runs} · cost 30d ${format(t.cost.cost)} · est/month ${format(t.cost.est_monthly_cost)}`,
-                `Flags: ${allFlags(t).map((f) => f.label).join(", ") || "none"}`,
+                `Flags: ${triggerHits(t).map((h) => h.detail ?? h.slot).join("; ") || "none"}`,
               ].join("\n"),
           }}
           detail={{
@@ -449,7 +443,7 @@ export function TriggersManager({
                     {`Created ${humanizeRelative(t.overview.created_at)} by ${t.overview.created_by_email ?? "unknown"} · fired ${t.overview.fire_count} times`}
                   </span>
                 </div>
-                <FlagBadges t={t} />
+                <FlagStrip t={t} />
                 <TriggerStats t={t} />
                 <TriggerRunsTable triggerId={t.overview.trigger_id} seat={seat} orgSlug={orgSlug} />
               </div>
