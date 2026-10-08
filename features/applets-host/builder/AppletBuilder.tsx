@@ -130,7 +130,8 @@ export function AppletBuilder({ appletId: initialId, routed = false }: { appletI
         const current = record.hasContent ? await readBuilderApplet(client, id) : null;
         const org = current?.organizationId ?? record.organizationId;
         const catalogue = await readAppletCatalogue(client, { organizationId: org, request: entry.text });
-        const answer = checkBuildAnswer(value, coerceBuildAnswer(value), { organizationId: org, tables: catalogue.tables });
+        const { appletImportProblems } = await import("@ai-matrx/applets/frame");
+        const answer = checkBuildAnswer(value, coerceBuildAnswer(value), { organizationId: org, tables: catalogue.tables, importProblems: appletImportProblems });
         await finish(id, entry, answer, current?.applet ?? null, org);
       } catch (err) {
         await failed(id, entry, err);
@@ -241,6 +242,8 @@ export function AppletBuilder({ appletId: initialId, routed = false }: { appletI
       const current = record.hasContent ? await readBuilderApplet(client, record.id) : null;
       const runOrg = current?.organizationId ?? record.organizationId;
       const catalogue = await readAppletCatalogue(client, { organizationId: runOrg, request });
+      // The frame (already the preview's) answers which names each module really exports.
+      const { appletImportProblems } = await import("@ai-matrx/applets/frame");
       setStep({ label: "Starting the builder", since: Date.now() });
       let attached: Promise<void> = Promise.resolve();
       const answer = await writer.run<BuildAnswer>({
@@ -262,7 +265,7 @@ export function AppletBuilder({ appletId: initialId, routed = false }: { appletI
           live.handle = openRunWindow({ conversationId: cid, label: fix ? "Fixing your Applet" : appletId ? "Changing your Applet" : "Building your Applet" });
           setStep({ label: fix ? "Fixing your Applet" : "Writing your Applet", since: Date.now() });
         },
-        coerce: (v) => checkBuildAnswer(v, coerceBuildAnswer(v), { organizationId: runOrg, tables: catalogue.tables }),
+        coerce: (v) => checkBuildAnswer(v, coerceBuildAnswer(v), { organizationId: runOrg, tables: catalogue.tables, importProblems: appletImportProblems }),
       });
       await attached;
       await finish(record.id, entry, answer, current?.applet ?? null, runOrg);
