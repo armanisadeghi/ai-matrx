@@ -201,4 +201,96 @@ begin
 end
 $k$;
 
+-- ── (v) real-user page speed: the client door and the hourly roll-up ──────────────────────────
+do $v$
+declare
+  v_r jsonb;
+  v_n int;
+  v_w record;
+  v_s record;
+  v_caught boolean;
+begin
+  -- Signed in as the member seat (not an admin).
+  perform set_config('request.jwt.claims', '{"sub":"043f73e2-e6cd-4ffb-af6f-ea96dc4e59b3","role":"authenticated"}', true);
+  perform set_config('request.jwt.claim.sub', '043f73e2-e6cd-4ffb-af6f-ea96dc4e59b3', true);
+  set local role authenticated;
+  v_r := ops.perf_client_report('[{"name":"LCP","value":1834.5,"route":"/tables/7ea2340a-f0a8-4a4f-a8f6-29c8604d63cd?view=1#x","rating":"good"},
+                                  {"name":"CLS","value":0.02,"route":"/notes/123456"},
+                                  {"name":"FID","value":12,"route":"/"}]'::jsonb);
+  if (v_r->>'accepted')::int <> 2 or (v_r->>'rejected')::int <> 1 then raise exception '(v) want 2 accepted 1 rejected: %', v_r; end if;
+  v_caught := false;
+  begin
+    perform ops.perf_client_report((select jsonb_agg(jsonb_build_object('name','LCP','value',1,'route','/')) from generate_series(1,21)));
+  exception when sqlstate '22023' then v_caught := true;
+  end;
+  if not v_caught then raise exception '(v) 21 samples were accepted'; end if;
+  reset role;
+  perform set_config('request.jwt.claims', '', true);
+  perform set_config('request.jwt.claim.sub', '', true);
+  set local role anon;
+  v_caught := false;
+  begin
+    perform ops.perf_client_report('[{"name":"LCP","value":1,"route":"/"}]'::jsonb);
+  exception when sqlstate '42501' then v_caught := true;
+  end;
+  reset role;
+  if not v_caught then raise exception '(v) a signed-out caller was accepted'; end if;
+  if not exists (select 1 from ops.perf_client_event where route = '/tables/[id]' and metric = 'LCP' and measured_at >= now())
+     or not exists (select 1 from ops.perf_client_event where route = '/notes/[n]' and metric = 'CLS' and value_ms = 20 and measured_at >= now()) then
+    raise exception '(v) routes were not reduced to templates / CLS not stored ×1000: %',
+      (select jsonb_agg(to_jsonb(e)) from ops.perf_client_event e where measured_at >= now());
+  end if;
+  if exists (select 1 from ops.perf_client_event where measured_at >= now() and created_by = '043f73e2-e6cd-4ffb-af6f-ea96dc4e59b3') then
+    raise exception '(v) the caller''s id was stored';
+  end if;
+  -- Roll-up: 30 loads in the last full hour on one route → one vital sample; 5 on another → none.
+  insert into ops.perf_client_event (measured_at, metric, route, value_ms, organization_id, created_by)
+  select date_trunc('hour', now()) - interval '30 minutes', 'LCP', '/w3test', 1000 + g * 100, '39c38960-d30c-4840-b0c1-c9960de95582'::uuid, '87a6e699-3622-4869-8843-d0867456c0dd'::uuid
+    from generate_series(1, 30) g
+  union all
+  select date_trunc('hour', now()) - interval '30 minutes', 'LCP', '/w3few', 900, '39c38960-d30c-4840-b0c1-c9960de95582'::uuid, '87a6e699-3622-4869-8843-d0867456c0dd'::uuid
+    from generate_series(1, 5) g;
+  v_r := ops.perf_vital_rollup();
+  select * into v_w from ops.proof_check where slug = 'vital:LCP:/w3test';
+  if v_w.id is null or v_w.budget_ms <> 2500 or v_w.budget_stat <> 'p75' then raise exception '(v) the vital watch was not declared with the web.dev budget: % / %', to_jsonb(v_w), v_r; end if;
+  select * into v_s from ops.perf_sample where check_id = v_w.id and source = 'vital';
+  if v_s.n <> 30 or (v_s.metadata->>'p75_ms')::numeric not between 3000 and 3400 then raise exception '(v) the roll-up sample is wrong: %', to_jsonb(v_s); end if;
+  if exists (select 1 from ops.proof_check where slug = 'vital:LCP:/w3few') then raise exception '(v) a route under vital_min_n was rolled up'; end if;
+  v_r := ops.perf_vital_rollup();
+  if (select count(*) from ops.perf_sample where check_id = v_w.id and source = 'vital') <> 1 then raise exception '(v) the same hour was rolled up twice'; end if;
+  raise notice 'PASS (v) the signed-in door stores route templates, CLS ×1000, no user id; refuses 21 samples and signed-out callers; the roll-up writes one p75 sample per hour only at n ≥ vital_min_n';
+end
+$v$;
+
+-- ── (i) CLI ingest ────────────────────────────────────────────────────────────────────────────
+do $i$
+declare
+  v_r jsonb;
+  v_door record;
+  v_after record;
+  v_page record;
+begin
+  select * into v_door from ops.proof_check where slug = 'door:custom.views';
+  v_r := ops.perf_cli_ingest('{"sha":"w3testsha","base":"http://localhost:3001",
+     "doors":[{"door":"custom.views","calls":5,"p50":40,"p95":55,"max":60,"kb":0.8,"errors":0},{"door":"custom.template_install","calls":1,"p50":0,"p95":0,"max":0,"kb":0,"errors":1}],
+     "pages":[{"page":"w3 test page","pass":"warm","rows_visible_ms":900,"ttfb_ms":120,"budget":{"rows_visible_ms":1500}}]}'::jsonb);
+  if (v_r->>'doors')::int <> 1 or (v_r->>'pages')::int <> 1 or v_r->'unmatched_doors' <> '["custom.template_install"]'::jsonb then
+    raise exception '(i) ingest counts: %', v_r;
+  end if;
+  if not exists (select 1 from ops.perf_sample where check_id = v_door.id and source = 'cli' and release_sha = 'w3testsha' and p95_ms = 55) then
+    raise exception '(i) the CLI door row did not land as a cli sample with the sha';
+  end if;
+  select * into v_after from ops.proof_check where id = v_door.id;
+  if v_after.perf_state is distinct from v_door.perf_state or v_after.last_run_at is distinct from v_door.last_run_at then
+    raise exception '(i) a CLI sample moved the door watch (judged): % → %', v_door.perf_state, v_after.perf_state;
+  end if;
+  select * into v_page from ops.proof_check where slug = 'page:w3 test page';
+  if v_page.perf_kind <> 'page' or not exists (select 1 from ops.perf_sample where check_id = v_page.id and source = 'cli' and p50_ms = 900) then
+    raise exception '(i) the page row did not land';
+  end if;
+  if has_function_privilege('authenticated', 'ops.perf_cli_ingest(jsonb)', 'execute') then raise exception '(i) a signed-in client may call the ingest'; end if;
+  raise notice 'PASS (i) CLI door and page rows land as cli samples with the sha, never judged; unmatched doors are named; service-only';
+end
+$i$;
+
 rollback;
