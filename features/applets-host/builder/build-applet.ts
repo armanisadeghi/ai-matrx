@@ -132,6 +132,8 @@ export class BuildRefused extends Error {
 }
 
 const READS_SOURCE = /\buse(?:Rows|Row|Columns)\(\s*["'`]([^"'`$]+)["'`]/g;
+/** A hand-built prose box in an Applet: the HTML element or the controls' Textarea. */
+const BARE_WRITING_BOX = /<(textarea|Textarea)\b/g;
 const RUNS_JOB = /\buseJob\(\s*["'`]([^"'`$]+)["'`]/g;
 
 function namesIn(files: BuilderFile[], pattern: RegExp): Set<string> {
@@ -176,6 +178,15 @@ export function checkBuildAnswer(
   const jobs = new Set(applet.mandates.map((m) => m.alias));
   for (const alias of namesIn(applet.files, RUNS_JOB)) {
     if (!jobs.has(alias)) problems.push(`the code runs job "${alias}" but mandates declares no "${alias}"`);
+  }
+  // Every box a person writes words in is <WritingBox> (mic + read-aloud) — never a bare textarea.
+  for (const f of applet.files) {
+    const bare = [...new Set([...f.source.matchAll(BARE_WRITING_BOX)].map((m) => m[1]))];
+    for (const tag of bare) {
+      problems.push(
+        `${f.name} has a bare <${tag}> where a person writes — use <WritingBox value={text} onValueChange={setText} label="…" /> from "@ai-matrx/applets/react" (it carries the microphone and read-aloud)`,
+      );
+    }
   }
   if (problems.length > 0) {
     throw new BuildRefused(`Not saved: ${problems.join("; ")}.`, applet);

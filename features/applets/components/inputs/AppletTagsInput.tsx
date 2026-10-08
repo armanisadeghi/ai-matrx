@@ -5,15 +5,16 @@
  *
  * Chip-style multi-tag input. Replaces the comma-separated text field.
  *
- * - Type a tag, press Enter or comma to commit it.
+ * - Type or dictate a tag (ProInput: mic + read-aloud), press Enter or comma to commit it.
  * - Each tag renders as a removable pill with an X.
  * - Backspace at empty input removes the last tag.
  * - Enforces uniqueness (case-insensitive) and trims whitespace.
  */
 
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useState } from "react";
 import { X } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { ProInput } from "@/components/official/ProInput";
 
 interface AppletTagsInputProps {
   value: string[];
@@ -32,7 +33,6 @@ export function AppletTagsInput({
   maxTags,
 }: AppletTagsInputProps) {
   const [input, setInput] = useState("");
-  const inputRef = useRef<HTMLInputElement>(null);
 
   const addTag = useCallback(
     (raw: string) => {
@@ -74,53 +74,47 @@ export function AppletTagsInput({
     if (input.trim()) addTag(input);
   };
 
-  const handleContainerClick = (e: React.MouseEvent) => {
-    // Clicking the container focuses the input — except when clicking a chip's
-    // remove button.
-    if (e.target instanceof HTMLElement && e.target.closest("[data-chip-x]")) {
-      return;
-    }
-    inputRef.current?.focus();
-  };
-
   return (
     <div
       role="group"
-      onClick={handleContainerClick}
+      aria-label="Tags"
+      // focusout bubbles: leaving the box commits what was typed or dictated.
+      onBlur={handleBlur}
       className={cn(
-        "min-h-9 w-full flex flex-wrap items-center gap-1.5 px-2 py-1.5 rounded-md border border-input bg-background transition-colors focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-1",
+        "flex w-full flex-col gap-1.5",
         disabled && "opacity-60 cursor-not-allowed",
       )}
     >
-      {value.map((tag, i) => (
-        <span
-          key={`${tag}-${i}`}
-          className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-secondary text-secondary-foreground text-xs font-medium"
-        >
-          <span className="break-all">{tag}</span>
-          {!disabled && (
-            <button
-              type="button"
-              data-chip-x
-              onClick={() => removeAt(i)}
-              className="rounded-full p-0.5 hover:bg-foreground/10 transition-colors"
-              aria-label={`Remove tag ${tag}`}
+      {value.length > 0 && (
+        <div className="flex flex-wrap items-center gap-1.5">
+          {value.map((tag, i) => (
+            <span
+              key={`${tag}-${i}`}
+              className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-secondary text-secondary-foreground text-xs font-medium"
             >
-              <X className="w-3 h-3" />
-            </button>
-          )}
-        </span>
-      ))}
-      <input
-        ref={inputRef}
-        type="text"
+              <span className="break-all">{tag}</span>
+              {!disabled && (
+                <button
+                  type="button"
+                  onClick={() => removeAt(i)}
+                  className="rounded-full p-0.5 hover:bg-foreground/10 transition-colors"
+                  aria-label={`Remove tag ${tag}`}
+                >
+                  <X className="w-3 h-3" />
+                </button>
+              )}
+            </span>
+          ))}
+        </div>
+      )}
+      {/* The platform's writing box: mic + read-aloud; Enter or comma adds the tag. */}
+      <ProInput
+        aria-label="Add a tag"
         value={input}
         onChange={(e) => setInput(e.target.value)}
         onKeyDown={handleKeyDown}
-        onBlur={handleBlur}
-        placeholder={value.length === 0 ? placeholder : ""}
+        placeholder={value.length === 0 ? placeholder : "Add another tag"}
         disabled={disabled}
-        className="flex-1 min-w-[120px] bg-transparent border-0 outline-none text-sm text-foreground placeholder:text-muted-foreground"
       />
     </div>
   );

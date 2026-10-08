@@ -113,6 +113,7 @@ import { useProTextareaAgentAction } from "./useProTextareaAgentAction";
 import { ProTextAgentActionPopoverBody } from "./ProTextAgentActionPopoverBody";
 import { AGENT_ICON } from "@/components/icons/domain-icons";
 import { copyText } from "@ai-matrx/kit/clipboard";
+import { ReadAloudMenuRow } from "./ReadAloudMenuRow";
 /** Real HTMLInputElement with optional expando methods set by ProInput. */
 export interface ProInputElement extends HTMLInputElement {
   requestClose?: () => void;
@@ -570,7 +571,7 @@ export const ProInput = React.forwardRef<HTMLInputElement, ProInputProps>(
       !disabled &&
       // An open menu never unmounts under the person if the field shrinks.
       (clusterTier !== "none" || menuOpen) &&
-      (showCopyButton || cleanupEligible || micChoiceInMenu);
+      (showCopyButton || cleanupEligible || micChoiceInMenu || hasContent);
     const rightPadding = rightPaddingClass(!!onSubmit, showClear);
     const auxVisible =
       (showHoverControls || menuOpen) && (showMicInline || showMenu);
@@ -737,6 +738,10 @@ export const ProInput = React.forwardRef<HTMLInputElement, ProInputProps>(
                 >
                   {menuMode === "menu" ? (
                     <div className="flex flex-col p-1">
+                      <ReadAloudMenuRow
+                        text={valueAsString}
+                        onDone={() => setMenuOpen(false)}
+                      />
                       {voiceInMenu && (
                         <button
                           type="button"
