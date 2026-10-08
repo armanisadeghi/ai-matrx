@@ -26,12 +26,10 @@ import {
   type ItemMenuEntry,
   type ItemMenuSection,
 } from "@ai-matrx/design-system/item";
-import type { LucideIcon } from "lucide-react";
 import { toast } from "@/lib/toast";
 
-// design-system's item icon is any component taking a className; every website entry passes a
-// lucide icon, which is what v3 draws.
-const iconOf = (entry: ItemMenuEntry) => entry.icon as LucideIcon | undefined;
+// design-system's item icon is any component taking a className; the v3 menu's icon slot takes the same.
+const iconOf = (entry: ItemMenuEntry) => entry.icon;
 
 const toastPromise = (promise: Promise<unknown>, messages: { loading: string; success: string; error: (e: unknown) => string }) => {
   toast.promise(promise, messages);
