@@ -1,5 +1,6 @@
 -- chair-step: undo perffix4_d_the_changed_by_asks_only_the_viewer_question.sql - restores custom.data_home_changed_by exactly as perffix4_a left it
 -- lane: PERF-FIX-4
+-- based-on: custom.data_home_changed_by(jsonb) b576c0fdb4e5bf0be96157b559b415b9f528c9caf8f2b9892698c480308f6b73
 
 set local statement_timeout = '60s';
 
