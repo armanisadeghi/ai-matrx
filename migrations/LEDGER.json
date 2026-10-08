@@ -1,6 +1,6 @@
 {
   "note": "Checked-in snapshot of public._schema_migrations for the files under migrations/campaign and migrations/inverse. Written by `pnpm db:apply` on every successful production apply and refreshed whole by the nightly catch-up. Never hand-edited: a self-written checksum is a claim nobody can check. Guard: pnpm check:ledgered-files-unedited.",
-  "generated_at": "2026-10-08T10:02:29.667Z",
+  "generated_at": "2026-10-08T10:13:11.850Z",
   "files": {
     "migrations/campaign/a_chunk_is_the_size_the_client_door_can_actually_carry.sql": {
       "source": "matrx-frontend",
@@ -4879,6 +4879,18 @@
       "filename": "perffix5_a_a_read_of_ids_asks_those_ids.sql",
       "checksum": "e323e82a808bb73162a592a0cd19b10beda1edf7509e2a7a89b27385cc214ee8",
       "applied_at": "2026-10-08 09:14:15.313305+00"
+    },
+    "migrations/campaign/perffix6_a_the_rung_asks_the_top_first.sql": {
+      "source": "matrx-frontend",
+      "filename": "perffix6_a_the_rung_asks_the_top_first.sql",
+      "checksum": "528373d5cca90ae7850cf1f4482c538058d644fa438a673292d2df2d47875fa9",
+      "applied_at": "2026-10-08 10:13:00.645779+00"
+    },
+    "migrations/campaign/perffix6_b_a_features_untouched_knobs_are_read_once.sql": {
+      "source": "matrx-frontend",
+      "filename": "perffix6_b_a_features_untouched_knobs_are_read_once.sql",
+      "checksum": "153125b2388d0300172c33134bd73c6ef3057ae6071081f30d43dc8163c217b8",
+      "applied_at": "2026-10-08 10:13:10.694179+00"
     },
     "migrations/campaign/person_timezone_2_a_form_submission_carries_the_respondents_zone.sql": {
       "source": "matrx-frontend",

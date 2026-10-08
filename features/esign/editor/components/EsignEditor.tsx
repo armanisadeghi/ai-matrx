@@ -11,7 +11,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Copy, Eye, FileText, LayoutTemplate, PenLine, Redo2, Send, Trash2, Undo2, Upload, SlidersHorizontal } from "lucide-react";
 
 import { Button, EmptyState, Tabs } from "@ai-matrx/design-system/controls";
-import { useIsMobile } from "@ai-matrx/kit/media-query";
+import { useIsMobile, useMediaQuery } from "@ai-matrx/kit/media-query";
 import { RecordPageHeader } from "@/features/shell/components/header/templates/RecordPageHeader";
 import { useRouter } from "next/navigation";
 
@@ -92,7 +92,10 @@ export function EsignEditor(props: EsignEditorProps) {
   const router = useRouter();
   const { api, mode, uploader } = props;
   const templateMode = mode === "template";
-  const isMobile = useIsMobile();
+  // Below 1024 px the side panels collapse into sheets (a 768 px tablet left the page ~130 px wide).
+  const isPhone = useIsMobile();
+  const isNarrow = useMediaQuery("(max-width: 1023px)");
+  const isMobile = isPhone || isNarrow;
   const { draft, edit, replace, undo, redo, canUndo, canRedo } = useDraftHistory(props.initial.draft);
 
   const senderName = useSenderName();

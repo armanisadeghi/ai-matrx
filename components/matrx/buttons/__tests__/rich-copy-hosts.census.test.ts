@@ -524,7 +524,7 @@ describe("consistency everywhere: markdown copy is the split Copy across the who
 const SURFACE_REQUIRES: Record<string, Array<[RegExp, string]>> = {
   "features/flashcards/components/study/StudyDeck.tsx": [
     [/<NonEditableContextMenu\b[\s\S]*?<FlashcardItem\b/, "the card face is a selection zone (selection toolbar, Copy first)"],
-    [/<TextCopySplit\b/, "the current card has the split Copy"],
+    [/<RichCopySplit\b/, "the current card has the content action set (split Copy first)"],
   ],
   "features/spaces/editor/SpaceEditor.tsx": [
     [/useSelectionZone\(/, "a Space is a selection zone of the one toolbar"],
@@ -538,7 +538,7 @@ const SURFACE_REQUIRES: Record<string, Array<[RegExp, string]>> = {
   "features/documents/components/DocumentRecord.tsx": [
     [/univerDocToMarkdown\(/, "a Univer document copies with its markup (headings, bold, lists, tables)"],
   ],
-  "features/organizations/peek/kinds/TablePeek.tsx": [[/<CopySplitButton\b/, "the table peek copies the table"]],
+  "features/organizations/peek/kinds/TablePeek.tsx": [[/<RichCopySplit\b/, "the table peek carries the content action set (copies the table)"]],
   "features/rag/components/library/ChunkList.tsx": [
     [/<TextCopySplit\b/, "a chunk card without provenance still has the split Copy"],
     [/<RichCopySplit\b/, "a chunk card with provenance has the split Copy over its palette"],

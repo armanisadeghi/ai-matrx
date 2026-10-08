@@ -14,12 +14,14 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import type { LucideIcon } from "lucide-react";
 import type { ContentTransferController } from "@ai-matrx/alchemy/react/workspace";
 import { ExportPaletteAnchor, openExportPalette, useExportPaletteKey } from "@ai-matrx/rich-content/copy/ExportPalette";
+import { ContentActionMenuRows } from "@ai-matrx/rich-content/copy/ContentActions";
+import { richDocumentViewKey } from "@ai-matrx/rich-content/rich-document/runtime/useActionSurfaceProvider";
+import { noteIdentityContentSource } from "@/features/notes/richDocumentSource";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
 import { noteRecordData, type NoteRecordView } from "@/features/notes/format";
 import { selectNoteById } from "../../redux/selectors";
 import {
   FolderOpen,
-  Share,
   MoreHorizontal,
   Copy,
   Loader2,
@@ -451,19 +453,16 @@ export function NoteEditorDock({
           {/* THE note actions (noteActionSet.ts) — the same rows, names and
               order as every right-click menu on the note. */}
           <div className="px-2 py-1">
-            {/* The dock's ⋯ is this sheet, so Export… lives here (never on the copy chevron). */}
-            <button
-              type="button"
-              data-note-dock-export=""
-              onClick={() => {
-                setSheetOpen(null);
-                openExportPalette(exportKey);
-              }}
-              className="flex min-h-11 w-full items-center gap-3 rounded-lg px-3 text-sm text-foreground transition-colors hover:bg-accent"
-            >
-              <Share className="h-4 w-4 shrink-0 text-muted-foreground" />
-              Export…
-            </button>
+            {/* The dock's ⋯ is this sheet, so the content action set lives here, each one tap:
+                Plain, PDF · Word · HTML · Markdown file · Text file, Print, Transform. */}
+            <ContentActionMenuRows
+              content={() => content}
+              title={exportNote?.label || "Note"}
+              viewKey={richDocumentViewKey(noteIdentityContentSource(noteId), "")}
+              onTransform={() => void openExportPalette(exportKey)}
+              onDone={() => setSheetOpen(null)}
+              rowClassName="min-h-11 gap-3 rounded-lg px-3"
+            />
             {noteActions({
               rename: readOnly ? undefined : () => setRenameOpen(true),
               duplicate: onDuplicate,
