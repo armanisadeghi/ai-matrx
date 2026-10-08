@@ -8,6 +8,9 @@
 --   psql … -v plant=fact   moves one stored execution's cost by a cent → F and V go RED
 --   psql … -v plant=tail   the view forgets the executions after the watermark → L goes RED
 --   psql … -v quick=1      the page's questions only, platform seat
+--   psql … -v compiler=migrations/campaign/drillcompileperf_a_drill_counts_its_groups_before_it_ranks_them.sql
+--                          a third pass, timed only: the facts with that compiler installed inside this
+--                          transaction (lane DRILL-COMPILE-PERF's pending rewrite; never kept)
 --
 -- F. FACTS — the facts before the watermark equal runtime._ai_usage_calls_live (the rules, verbatim the
 --    old view) row for row, every column, over the whole ledger and over the nightly's 35 days.
@@ -35,6 +38,11 @@
 \if :{?quick}
 \else
 \set quick 0
+\endif
+\if :{?compiler}
+\set third 1
+\else
+\set third 0
 \endif
 
 set transaction_timeout = 0;
@@ -298,8 +306,14 @@ select 'E the matrix answers (not every question refused)', count(*) filter (whe
        format('%s questions, %s answered, %s refused (the same way in both passes)', count(*), count(*) filter (where a1.a not like 'REFUSED%'), count(*) filter (where a1.a like 'REFUSED%'))
   from dfx_a a1 where a1.pass = 1;
 
--- ── L. live tail (back on the NEW bodies) ────────────────────────────────────────────────────────────
+-- ── back on the NEW bodies ─────────────────────────────────────────────────────────────────────────────
 \i migrations/campaign/drillfacts_c_usage_is_counted_from_the_execution_facts.sql
+\if :third
+\i :compiler
+select pg_temp.dfx_pass(3);
+\endif
+
+-- ── L. live tail ───────────────────────────────────────────────────────────────────────────────────────
 do $$
 declare v_id uuid := gen_random_uuid(); v_src runtime.global_execution; v_wm timestamptz; v_n int;
 begin
@@ -323,11 +337,14 @@ end $$;
 \pset footer off
 select what, max(ms) filter (where body = 'old (view)') as old_ms, max(ms) filter (where body = 'new (facts)') as new_ms
   from dfx_t group by what order by what;
-select q.def, q.seat, q.label, a2.ms as old_ms, a1.ms as new_ms
+select q.def, q.seat, q.label, a2.ms as old_ms, a1.ms as new_ms, a3.ms as new_with_compiler_ms,
+       case when a3.a is null then null when a3.a is not distinct from a1.a then 'same' else 'DIFFERS' end as compiler_answer
   from dfx_q q join dfx_a a1 on a1.pass = 1 and a1.n = q.n join dfx_a a2 on a2.pass = 2 and a2.n = q.n
+  left join dfx_a a3 on a3.pass = 3 and a3.n = q.n
  where q.label like 'page%' order by q.n;
-select format('all questions: old %s ms (slowest %s), facts %s ms (slowest %s)', sum(a2.ms), max(a2.ms), sum(a1.ms), max(a1.ms)) as time
-  from dfx_a a1 join dfx_a a2 on a2.pass = 2 and a2.n = a1.n where a1.pass = 1;
+select format('all questions: old %s ms (slowest %s), facts %s ms (slowest %s), facts + compiler %s ms (slowest %s)',
+              sum(a2.ms), max(a2.ms), sum(a1.ms), max(a1.ms), sum(a3.ms), max(a3.ms)) as time
+  from dfx_a a1 join dfx_a a2 on a2.pass = 2 and a2.n = a1.n left join dfx_a a3 on a3.pass = 3 and a3.n = a1.n where a1.pass = 1;
 
 select n, case when ok then 'PASS' else 'FAIL' end as result, name, detail from dfx_r where not ok or name not like 'E %·%' order by n;
 select format('%s passed, %s failed', count(*) filter (where ok), count(*) filter (where not ok)) as summary from dfx_r;
