@@ -128,6 +128,8 @@ class PageReads {
         tableId,
         actor: this.actor,
         embedded: true,
+        // DataMount mounts the merged grid (recordsUiHostFor merged:true): predict its first page the same way.
+        merged: true,
         rows: (sofar) => serverRowsOf(sofar)?.on === true,
       }),
     );

@@ -45,6 +45,13 @@ Block document: a tree of `SpaceBlock` (`id`, `type`, `text: RichSpan[]`, `color
 
 ## Change log
 
+- 2026-10-08 — builder round 37 (merged seed, measured): `askTablePageSeed` now gets `merged: true` (DataMount mounts the
+  merged grid). No Spaces grid is grouped (its spec never sets grouping), so reads are unchanged: member page
+  1b5eb9af 5 data reads + 2 entitlement, admin sample 4 + 2, merged on or off. What still reads: the grid's
+  per-choice-field value counts (`record_aggregate` group_by status, limit 500, records-ui `value_counts`, asked
+  at ~2s and again ~1.5s later when the org resolves), `record_headers` link words, and on the member page the
+  grid's first page itself (`firstGridOpening` needs a saved database view and that table has none; Spaces
+  draws from its own spec). All three need a records-ui change (seed value counts; seed from a spec).
 - 2026-10-08 — builder round 36 (every database block seeded, streaming): `space-page-seed.server.ts` asks, as the
   person, exactly what each database block's first pass asks — custom tables: `where_id_opens` + `askTablePageSeed`
   (embedded) + a chart view's two aggregates (`askTileSeed`, specs from `data/first-reads.ts` `chartTileSpecs`, the
