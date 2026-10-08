@@ -58,7 +58,7 @@ export interface AppletListRow {
 }
 
 const COLUMNS =
-  "id, slug, name, tagline, status, published_to_web, organization_id, created_by, total_executions, last_execution_at, created_at, updated_at, deleted_at, metadata, entry";
+  "id, slug, name, tagline, description, status, published_to_web, organization_id, created_by, total_executions, last_execution_at, created_at, updated_at, deleted_at, metadata, entry";
 
 /** Where a row opens: its build while one runs or no app is saved yet, else the Applet's own page. */
 export function appletRowHref(row: Pick<AppletListRow, "id" | "build_open" | "unbuilt">): string {
@@ -88,7 +88,9 @@ export async function listApplets(archived: ArchivedFilter): Promise<AppletListR
     id: r.id,
     slug: r.slug,
     name: r.name,
-    tagline: r.tagline,
+    // About: the one-line tagline when one was written, else what the Applet IS — the description the build
+    // saves (the builder writes no tagline, so every built Applet read "—", final live test 2026-10-08).
+    tagline: r.tagline || r.description || null,
     status: r.status,
     published_to_web: Boolean(r.published_to_web),
     organization_id: r.organization_id,

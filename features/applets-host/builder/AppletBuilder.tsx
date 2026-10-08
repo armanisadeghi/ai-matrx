@@ -178,7 +178,8 @@ export function AppletBuilder({ appletId: initialId, routed = false }: { appletI
     const record = session.record;
     if (!initialId || !record || shown.current === key) return;
     shown.current = key;
-    const lastNote = [...record.requests].reverse().find((r) => r.state === "saved")?.note ?? "";
+    // A repair round's note ("Fixed import locations…") says what the FIX did, never what the Applet is.
+    const lastNote = [...record.requests].reverse().find((r) => r.state === "saved" && !r.fix)?.note ?? "";
     void loadSaved(initialId, lastNote);
     const outcome = reopenOutcome(record.requests);
     if (outcome.kind === "start-fix") {
@@ -213,7 +214,7 @@ export function AppletBuilder({ appletId: initialId, routed = false }: { appletI
     const result = await saveBuiltApplet(client, { organizationId: org, appletId: id, current, answer, request: entry.text, conversationId: entry.conversation_id });
     await session.settle(id, entry.id, { state: "saved", version: result.content_version, note: answer.note });
     shown.current = `${id}|${entry.id}:saved`;
-    setSaved({ ...result, note: answer.note, toMake: tablesToMake(answer.applet), bound: boundTableIds(answer.applet), made: [] });
+    setSaved({ ...result, note: entry.fix ? "" : answer.note, toMake: tablesToMake(answer.applet), bound: boundTableIds(answer.applet), made: [] });
     // The page header (and tab title) read the Applet's name on the server when the page opened — the draft's
     // "Untitled Applet". The first saved answer names it, so the header re-reads (social planner, 2026-10-08).
     if (initialId && routed) router.refresh();
@@ -407,7 +408,8 @@ export function AppletBuilder({ appletId: initialId, routed = false }: { appletI
               {appletVersionLabel(saved.content_version) ? <Badge>{appletVersionLabel(saved.content_version)}</Badge> : null}
               <Badge tone={appletState(saved).tone}>{appletState(saved).label}</Badge>
             </div>
-            {saved.note ? <p className="text-muted-foreground">{saved.note}</p> : null}
+            {saved.description ? <p className="text-muted-foreground">{saved.description}</p> : null}
+            {saved.note && saved.note !== saved.description ? <p>{saved.note}</p> : null}
             {saved.bound.length ? (
               <div className="flex flex-wrap items-center gap-2 text-xs" data-applet-bound-tables="">
                 {saved.bound.map((id) => (

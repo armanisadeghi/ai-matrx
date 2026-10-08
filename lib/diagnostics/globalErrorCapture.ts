@@ -230,6 +230,9 @@ export function installGlobalErrorCapture(): void {
       try {
         const reason = event.reason;
         if (isChunkLoadError(reason)) return;
+        // A refusal the platform already showed and reported (an Applet's refused save THROWS so the code
+        // after its await stops — @ai-matrx/applets 0.13.0) is not a second, unexplained error.
+        if (reason && typeof reason === "object" && (reason as { announced?: unknown }).announced === true) return;
         captureError({
           source: "unhandled-rejection",
           message: extractErrorMessage(reason) || "Unhandled promise rejection",

@@ -75,6 +75,8 @@ export interface SavedApplet {
   id: string;
   slug: string;
   name: string;
+  /** What the Applet IS, as the build wrote it — never a run's note ("Fixed import locations…"). */
+  description: string | null;
   status: string;
   published_to_web: boolean;
   deleted_at: string | null;
@@ -82,7 +84,7 @@ export interface SavedApplet {
   content_version: number;
 }
 
-export const SAVED_APPLET_COLUMNS = "id, slug, name, status, published_to_web, deleted_at, content_version";
+export const SAVED_APPLET_COLUMNS = "id, slug, name, description, status, published_to_web, deleted_at, content_version";
 
 const UNCHANGED = /^\(unchanged/i;
 
@@ -307,7 +309,8 @@ export async function saveBuiltApplet(
   const { applet } = input.answer;
   const content = {
     name: applet.name,
-    description: applet.description || null,
+    // What the Applet IS: a round that answers without one (a repair) keeps the description it had.
+    description: applet.description || input.current?.description || null,
     entry: applet.entry,
     files: mergeFiles(applet.files, input.current?.files ?? null),
     pages: applet.pages,
