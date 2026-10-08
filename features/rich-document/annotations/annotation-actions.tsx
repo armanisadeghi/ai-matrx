@@ -1,15 +1,14 @@
 // features/rich-document/annotations/annotation-actions.tsx
 //
-// The annotation sidecar's passage actions — highlight (five colours),
-// comment, suggest an edit, link a record — as actions of the ONE Alchemy
+// The annotation sidecar's passage actions — highlight (ONE button that opens
+// the five colours, 2026-10-07), comment, suggest an edit, link a record — as actions of the ONE Alchemy
 // registry, shown by the ONE selection toolbar (components/selection-toolbar).
 // `AnnotatedContent` registers its text as a selection zone carrying the
 // `annotation` half of the click target; the actions capture the selection
 // into a text anchor at click time and write exactly as before (the sidecar
 // API: addHighlight / postComment / link).
 
-import type { ComponentType } from "react";
-import { CircleArrowOutUpRight, Link2, MessageSquarePlus, PencilLine, Send } from "lucide-react";
+import { CircleArrowOutUpRight, Highlighter, Link2, MessageSquarePlus, PencilLine, Send } from "lucide-react";
 import type { Action, ActionProvider, ClickTarget } from "@ai-matrx/alchemy/actions";
 import { registerAlchemyIcon } from "@ai-matrx/rich-content/utils/alchemy-icon-keys";
 import {
@@ -21,7 +20,7 @@ import {
   shownInSelectionMode,
   type SelectionCommonHost,
 } from "@ai-matrx/rich-content/selection-toolbar/selection-actions";
-import { HIGHLIGHT_COLORS, type HighlightColor } from "./constants";
+import type { HighlightColor } from "./constants";
 import type { TextAnchor } from "./anchor";
 import type { AnnotationSource } from "./types";
 import type { AnnotationSidecarApi } from "./useAnnotationSidecar";
@@ -59,6 +58,7 @@ export function annotationHostOf(target: ClickTarget): AnnotationSelectionHost |
 
 /** Panels AnnotatedContent draws inside the toolbar frame. */
 export const ANNOTATION_PANELS = {
+  highlight: "annotation:highlight",
   comment: "annotation:comment",
   suggest: "annotation:suggest",
   link: "annotation:link",
@@ -73,15 +73,6 @@ export const SWATCH: Record<HighlightColor, string> = {
   purple: "bg-violet-300",
 };
 
-/** One swatch glyph per colour, resolved through the Alchemy icon port. */
-function swatchIcon(color: HighlightColor): string {
-  const Swatch: ComponentType<{ className?: string }> = ({ className }) => (
-    <span aria-hidden className={`${className ?? ""} inline-block rounded-full border border-border ${SWATCH[color]}`} />
-  );
-  Swatch.displayName = `HighlightSwatch${color[0].toUpperCase()}${color.slice(1)}`;
-  return registerAlchemyIcon(Swatch);
-}
-
 const absent = { status: "absent" } as const;
 const available = { status: "available" } as const;
 
@@ -92,28 +83,6 @@ function eligibleHere(id: string, t: ClickTarget, extra?: (host: AnnotationSelec
   if (extra && !extra(host)) return absent;
   return available;
 }
-
-const HIGHLIGHTS: Action[] = HIGHLIGHT_COLORS.map((color, index) => {
-  const id = `selection:highlight-${color}`;
-  return {
-    id,
-    label: `Highlight ${color}`,
-    icon: swatchIcon(color),
-    category: "save",
-    order: index,
-    placement: "primary",
-    preserveSelection: true,
-    // Absent where no annotation document may sit on this kind of record (no document → token pair).
-    eligible: (t) => eligibleHere(id, t, (h) => h.api.state.capabilities.highlights),
-    run: async (t) => {
-      const host = annotationHostOf(t);
-      const selection = host?.capture();
-      if (!host || !selection) return;
-      selectionToolbarHostOf(t)?.ui.close({ clearSelection: true });
-      await host.api.addHighlight(selection.anchor, color);
-    },
-  };
-});
 
 function panelAction(
   id: string,
@@ -194,7 +163,10 @@ const NEW_CHAT: Action = {
 };
 
 const ACTIONS: Action[] = [
-  ...HIGHLIGHTS,
+  {
+    ...panelAction("selection:highlight", "Highlight", Highlighter, 0, ANNOTATION_PANELS.highlight, (h) => h.api.state.capabilities.highlights),
+    category: "save",
+  },
   REPORT,
   NEW_CHAT,
   panelAction("selection:comment", "Comment", COMMENT_ICON, 10, ANNOTATION_PANELS.comment),

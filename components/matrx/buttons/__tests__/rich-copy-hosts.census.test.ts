@@ -346,6 +346,31 @@ export function rawCopyOnMarkdown(root: string, allowed: Record<string, string>)
 }
 
 /** F: hosts that must carry the split Copy and not the old trigger. */
+/**
+ * THE COPY MENU IS TWO ROWS (Arman, 2026-10-07): "Copy markdown" and "Copy plain text", nothing else.
+ * The 0.2.40 split took a `mountMore` slot and drew the whole Alchemy palette (Formatted, JSON,
+ * download, AI) under the chevron; it lives behind Export… now. Every file that builds or hosts the
+ * split is read for a way to hang rows under the chevron again.
+ */
+const COPY_MENU_FILES = [
+  "../aidream/apps/shared/rich-content/src/copy/CopySplitButton.tsx",
+  "../aidream/apps/shared/rich-content/src/rich-document/variants/ActionBar.tsx",
+  "../aidream/apps/shared/rich-content/src/selection-toolbar/SelectionToolbarFrame.tsx",
+  "components/agent-copy/RichCopySplit.tsx",
+  "components/agent-copy/TextCopySplit.tsx",
+];
+
+export function copyMenuExtras(root: string, files: readonly string[]): string[] {
+  const out: string[] = [];
+  for (const rel of files) {
+    const file = path.join(root, rel);
+    if (!fs.existsSync(file)) continue;
+    const src = fs.readFileSync(file, "utf8");
+    for (const name of ["mountMore", "MoreSlot"]) if (new RegExp(`\\b${name}\\b`).test(src)) out.push(`${rel}: ${name}`);
+  }
+  return out;
+}
+
 const SPLIT_HOSTS = [
   "components/mardown-display/MarkdownRenderer.tsx",
   "components/mardown-display/blocks/scraper-kinds/ScrapedPageBlock.tsx",
@@ -405,6 +430,25 @@ describe("consistency everywhere: markdown copy is the split Copy across the who
 
   test("G. there is one split-Copy build (the package's), not a second of our own", () => {
     expect(secondSplitBuild(REPO_ROOT)).toEqual([]);
+  });
+
+  test("J. CENSUS: the copy menu is exactly two rows — nothing hangs under the chevron (2026-10-07)", () => {
+    expect(copyMenuExtras(REPO_ROOT, COPY_MENU_FILES)).toEqual([]);
+    // The palette moved, it did not vanish: Export… holds it beside the split and in the ⋯ menu.
+    const split = fs.readFileSync(path.join(REPO_ROOT, "components/agent-copy/RichCopySplit.tsx"), "utf8");
+    expect(split).toMatch(/<ExportPaletteAnchor\b[^>]*\btrigger\b/);
+  });
+
+  test("J detector goes red on the old shape (a palette slot under the chevron) and green without it", () => {
+    const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "copy-menu-"));
+    const file = path.join(tmp, "Split.tsx");
+    fs.writeFileSync(file, '<CopySplitButton copy={copy} size="sm" mountMore={mountMore} />\n');
+    expect(copyMenuExtras(tmp, ["Split.tsx"])).toEqual(["Split.tsx: mountMore"]);
+    fs.writeFileSync(file, 'function MoreSlot() {}\n');
+    expect(copyMenuExtras(tmp, ["Split.tsx"])).toEqual(["Split.tsx: MoreSlot"]);
+    fs.writeFileSync(file, '<CopySplitButton copy={copy} size="sm" />\n');
+    expect(copyMenuExtras(tmp, ["Split.tsx"])).toEqual([]);
+    fs.rmSync(tmp, { recursive: true, force: true });
   });
 
   test("H. the split's Alchemy palette does not repeat the split's own two rows", () => {

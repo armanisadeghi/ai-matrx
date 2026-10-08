@@ -50,9 +50,11 @@ import { stageRemark } from "@ai-matrx/chat/agents/redux/execution-system/instan
 import {
   ANNOTATION_HOST_KEY,
   ANNOTATION_PANELS,
+  SWATCH,
   type AnnotationSelectionHost,
   type CapturedSelection,
 } from "./annotation-actions";
+import { HIGHLIGHT_COLORS } from "./constants";
 
 interface SidecarContextValue {
   source: AnnotationSource;
@@ -366,6 +368,30 @@ function AnnotationPanelBody({
   setPendingReattach: (key: string | null) => void;
 }) {
   const done = () => ui.close({ clearSelection: true });
+
+  if (panel === ANNOTATION_PANELS.highlight) {
+    // The ONE Highlight button's colour choice (2026-10-07: one button, not five on the strip).
+    return (
+      <div role="group" aria-label="Highlight colour" className="flex items-center gap-1 p-0.5">
+        {HIGHLIGHT_COLORS.map((color) => (
+          <button
+            key={color}
+            type="button"
+            aria-label={`Highlight ${color}`}
+            title={color}
+            onMouseDown={(event) => event.preventDefault()}
+            onClick={async () => {
+              done();
+              await api.addHighlight(selection.anchor, color);
+            }}
+            className="flex h-7 w-7 items-center justify-center rounded-md hover:bg-accent pointer-coarse:h-11 pointer-coarse:w-11"
+          >
+            <span aria-hidden className={cn("h-4 w-4 rounded-full border border-border", SWATCH[color])} />
+          </button>
+        ))}
+      </div>
+    );
+  }
 
   if (panel === ANNOTATION_PANELS.reattach) {
     const item = pendingReattach ? api.state.items.find((i) => i.key === pendingReattach) : null;

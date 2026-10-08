@@ -4,7 +4,7 @@
 //
 // Every window's body is a selectable surface: text selected anywhere inside a
 // window gets the ONE selection toolbar (components/selection-toolbar) — the
-// common pair (copy, save to notes) and "AI and more" — and a right-click gets
+// common pair (copy, save to notes) and "Ask AI" — and a right-click gets
 // the same Alchemy menu as the rest of the app. Mounted once by WindowPanel, so
 // every window inherits it; a window whose content has its own, richer menu
 // (a note, a chat) is nested inside and its menu wins for its own text.

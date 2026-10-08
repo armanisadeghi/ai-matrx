@@ -715,7 +715,7 @@ export function ContextMenuV3({
     }
   };
 
-  // Opened from the ONE selection toolbar's "AI and more" (components/selection-
+  // Opened from the ONE selection toolbar's "Ask AI" (components/selection-
   // toolbar; it replaced the floating selection icon): the same menu over the
   // selected text — a panel under the selection on desktop, the sheet on a phone.
   const openFromSelection = () => {
