@@ -1,1 +1,7 @@
-export * from "@ai-matrx/chat/utils/content-ir/surfaces/kind-text-to-markdown";
+export {
+  unfinishedKindLabel,
+  UNREADABLE_KIND_NOTE,
+  kindTextToMarkdown,
+  type KindTextPreview,
+  kindTextPreview,
+} from "@ai-matrx/content-ir/surfaces";

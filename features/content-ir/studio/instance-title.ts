@@ -1,1 +1,5 @@
-export * from "@ai-matrx/chat/utils/content-ir/instance-title";
+export {
+  INSTANCE_TITLE_KEYS,
+  kindTitleKeyFromMetadata,
+  deriveInstanceTitle,
+} from "@ai-matrx/content-ir/surfaces";

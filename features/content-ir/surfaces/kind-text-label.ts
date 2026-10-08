@@ -1,1 +1,4 @@
-export * from "@ai-matrx/chat/utils/content-ir/surfaces/kind-text-label";
+export {
+  kindTextLabel,
+  conversationTitleText,
+} from "@ai-matrx/content-ir/surfaces";
