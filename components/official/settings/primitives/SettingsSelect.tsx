@@ -1,6 +1,17 @@
 "use client";
 
-import { useId } from "react";
+import { useId, useState } from "react";
+import { Check, ChevronsUpDown } from "lucide-react";
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command";
+import { Popover, PopoverContent, PopoverTrigger } from "@ai-matrx/design-system";
+import { cn } from "@/lib/utils";
 import {
   Select,
   SelectContent,
@@ -54,7 +65,21 @@ export type SettingsSelectProps<T extends string = string> =
     /** Renders as a stacked layout. Use when the select should span full width. */
     stacked?: boolean;
     last?: boolean;
+    /** Long lists: a search box that filters by label and value (case-insensitive contains). */
+    searchable?: boolean;
+    searchPlaceholder?: string;
   };
+
+/** Case-insensitive contains over the label and the raw value; "/" and "_" read as spaces. */
+export function matchesSearch(
+  query: string,
+  option: { label: string; value: string },
+): boolean {
+  const norm = (t: string) => t.toLowerCase().replace(/[_/]/g, " ");
+  const q = norm(query).trim();
+  if (!q) return true;
+  return norm(option.label).includes(q) || norm(option.value).includes(q);
+}
 
 /**
  * Radix Select reads a value of "" as "nothing selected" and shows a blank
@@ -73,8 +98,11 @@ export function SettingsSelect<T extends string = string>({
   width = "md",
   stacked,
   last,
+  searchable,
+  searchPlaceholder = "Search",
   ...rowProps
 }: SettingsSelectProps<T>) {
+  const [open, setOpen] = useState(false);
   const generatedId = useId().replace(/:/g, "");
   const id = rowProps.id ?? `settings-${generatedId}`;
   const variant = stacked ? "stacked" : "inline";
@@ -91,6 +119,64 @@ export function SettingsSelect<T extends string = string>({
       controlLayout="wide"
       last={last}
     >
+      {searchable ? (
+        <Popover open={open} onOpenChange={setOpen}>
+          <PopoverTrigger asChild>
+            <button
+              type="button"
+              id={id}
+              role="combobox"
+              aria-expanded={open}
+              disabled={rowProps.disabled}
+              className={`${widthClass[effectiveWidth]} ${triggerMinHeight[size]} flex items-center justify-between gap-2 rounded-md border border-input bg-background px-3 text-left text-sm disabled:opacity-50`}
+            >
+              <span className="truncate">
+                {options.find((o) => o.value === value)?.label ??
+                  placeholder ??
+                  value}
+              </span>
+              <ChevronsUpDown className="h-3.5 w-3.5 shrink-0 opacity-50" />
+            </button>
+          </PopoverTrigger>
+          <PopoverContent sizing="content" className="p-0" align="end">
+            <Command
+              filter={(itemValue, search) => {
+                const opt = options.find((o) => o.value === itemValue);
+                return opt ? (matchesSearch(search, opt) ? 1 : 0) : 0;
+              }}
+            >
+              <CommandInput
+                placeholder={searchPlaceholder}
+                className="h-9 text-sm"
+              />
+              <CommandList>
+                <CommandEmpty>No results found.</CommandEmpty>
+                <CommandGroup className="max-h-72 overflow-auto">
+                  {options.map((opt) => (
+                    <CommandItem
+                      key={opt.value}
+                      value={opt.value}
+                      disabled={opt.disabled}
+                      onSelect={() => {
+                        onValueChange(opt.value as T);
+                        setOpen(false);
+                      }}
+                    >
+                      <Check
+                        className={cn(
+                          "mr-2 h-3.5 w-3.5",
+                          opt.value === value ? "opacity-100" : "opacity-0",
+                        )}
+                      />
+                      {opt.label}
+                    </CommandItem>
+                  ))}
+                </CommandGroup>
+              </CommandList>
+            </Command>
+          </PopoverContent>
+        </Popover>
+      ) : (
       <Select
         value={value === "" && hasEmptyOption ? EMPTY_OPTION_VALUE : value}
         onValueChange={(v) =>
@@ -123,6 +209,7 @@ export function SettingsSelect<T extends string = string>({
           ))}
         </SelectContent>
       </Select>
+      )}
     </SettingsRow>
   );
 }
