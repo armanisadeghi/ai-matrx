@@ -7,6 +7,7 @@ import {
 import { ChatNewHeader } from "@ai-matrx/chat/agents/components/chat/ChatNewHeader";
 import { readComposerModeCookie } from "@ai-matrx/chat/next/server/composer-mode.server";
 import { DEFAULT_NEW_CHAT_MANDATE_KEY } from "@ai-matrx/chat/agents/components/chat/chat-quick-actions.config";
+import { ChatMandateWarmup } from "@/components/warmup/ChatMandateWarmup";
 import { resolveMandateSeed } from "@/features/mandates/seed.server";
 import { isUuidShape } from "@ai-matrx/kit/uuid";
 
@@ -68,6 +69,12 @@ export default async function NewChatPage({
   const defaultAgentName = agentId ? await resolveAgentName(agentId) : null;
   return (
     <>
+      {!pinnedAgentId && (
+        <ChatMandateWarmup
+          mandateKey={DEFAULT_NEW_CHAT_MANDATE_KEY}
+          agentId={agentId}
+        />
+      )}
       <ChatNewHeader
         agentId={agentId}
         initialAgentName={defaultAgentName ?? undefined}
