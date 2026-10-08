@@ -6,15 +6,19 @@
 // (`tablePageSeed.server.ts`) and priming them into the page's own stores during the FIRST render —
 // before any of the page's effects ask. The screens themselves are unchanged.
 
-import { use, useEffect, useRef, type ReactNode } from "react";
+import { Suspense, use, useEffect, useRef, useState, type RefObject, type ReactNode } from "react";
 import { RecordsSeedProvider } from "@ai-matrx/records/react";
 
 import { holdPrimaryContent } from "@/lib/boot/primaryContent";
+import { useAppSelector } from "@/lib/redux/hooks";
+import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 
 import { useRecordsDataSource } from "@/features/data-tables/records-ui-host/recordsUiHost";
 import { UnifiedDataTablePage } from "@/features/unified-data/table-page/UnifiedDataTablePage";
 import { UnifiedRecordPage } from "@/features/unified-data/table-page/UnifiedRecordPage";
+import { askClientTableSeed } from "./clientTableSeed";
 import { primeTablePage } from "./primeTablePage";
+import { TableRouteSkeleton } from "./TableRouteSkeleton";
 import { TablePageSeedContext } from "./tablePageSeedContext";
 import type { ServerRowsGate, TablePageSeed } from "./tablePageSeed.server";
 
@@ -83,20 +87,130 @@ function useHoldShellUntilRows(tableId: string): void {
   }, []);
 }
 
+/** A page drawn from a seed — the server's or the browser's own — primed once into the page's stores. */
+const primedSeeds = new WeakSet<TablePageSeed>();
+function Seeded({ tableId, seed, children }: { tableId: string; seed: TablePageSeed | null; children: ReactNode }) {
+  const dataSource = useRecordsDataSource();
+  if (seed && typeof window !== "undefined" && !primedSeeds.has(seed)) {
+    primedSeeds.add(seed);
+    primeTablePage(tableId, Promise.resolve(seed), dataSource);
+  }
+  return (
+    <TablePageSeedContext value={seed}>
+      <RecordsSeedProvider seed={seed?.records ?? null}>{children}</RecordsSeedProvider>
+    </TablePageSeedContext>
+  );
+}
+
+/**
+ * THE RACE (lane SSR-ROWS-3). Two answers to the same question, the same shape, the same doors and
+ * arguments: the server's seed (`seed`, only when the person's knob is on, streamed into this
+ * boundary) and the browser's own (`own`, asked the moment the page hydrated). Whichever lands first
+ * draws the page; the other is discarded:
+ *  - the server's lands first → the page is drawn from it, in the server's HTML, and `settled`
+ *    holds it there: the browser's answer arriving later changes nothing (no second draw, no flicker);
+ *  - the browser's lands first → the page is drawn from it at once (a pending server boundary is
+ *    client-rendered by the update), and the server's seed, arriving later, is ignored.
+ * Until one lands the page shows the route's own skeleton, the same box `loading.tsx` drew.
+ */
+function RacedTable({
+  tableId,
+  gate,
+  seed,
+  own,
+  settled,
+  children,
+}: {
+  tableId: string;
+  gate: Promise<ServerRowsGate>;
+  seed: Promise<TablePageSeed | null>;
+  own: { tableId: string; seed: TablePageSeed | null } | null;
+  settled: RefObject<string | null>;
+  children: ReactNode;
+}) {
+  // Two components, so the one that waits on the server (`use`) is never the one the browser's
+  // answer replaces it with.
+  if (own && own.tableId === tableId && settled.current !== tableId) {
+    return (
+      <Seeded tableId={tableId} seed={own.seed}>
+        {children}
+      </Seeded>
+    );
+  }
+  return (
+    <ServerDrawn tableId={tableId} gate={gate} seed={seed} settled={settled}>
+      {children}
+    </ServerDrawn>
+  );
+}
+
+function ServerDrawn({
+  tableId,
+  gate,
+  seed,
+  settled,
+  children,
+}: {
+  tableId: string;
+  gate: Promise<ServerRowsGate>;
+  seed: Promise<TablePageSeed | null>;
+  settled: RefObject<string | null>;
+  children: ReactNode;
+}) {
+  const server = use(gate).on ? use(seed) : null;
+  const mine = server && server.tableId === tableId && server.records ? server : null;
+  if (mine) {
+    settled.current = tableId;
+    return (
+      <Seeded tableId={tableId} seed={mine}>
+        {children}
+      </Seeded>
+    );
+  }
+  // No server rows: the browser's own reads (already running) draw the page the moment they land.
+  return <TableRouteSkeleton tableId={tableId} />;
+}
+
 export function PrimedTablePage({
   tableId,
   seed,
   gate,
+  rows = true,
 }: {
   tableId: string;
   seed: Promise<TablePageSeed | null>;
   gate: Promise<ServerRowsGate>;
+  /** The address opens the plain table (`addressAsksThePlainOpening`): the grid's first page is asked. */
+  rows?: boolean;
 }) {
   useHoldShellUntilRows(tableId);
+  const dataSource = useRecordsDataSource();
+  const userId = useAppSelector(selectUserId);
+  // THE BROWSER ASKS AT HYDRATION, NEVER AFTER THE SERVER'S BOUNDARY: started in this component's
+  // first browser render, outside the boundary the server's rows stream into.
+  const asking = useRef<{ tableId: string; answer: Promise<TablePageSeed | null> } | null>(null);
+  if (typeof window !== "undefined" && asking.current?.tableId !== tableId) {
+    asking.current = { tableId, answer: askClientTableSeed(dataSource, tableId, { userId, rows }) };
+  }
+  const [own, setOwn] = useState<{ tableId: string; seed: TablePageSeed | null } | null>(null);
+  useEffect(() => {
+    const asked = asking.current;
+    if (!asked) return;
+    let current = true;
+    void asked.answer.then((answered) => {
+      if (current) setOwn({ tableId: asked.tableId, seed: answered });
+    });
+    return () => {
+      current = false;
+    };
+  }, [tableId]);
+  const settled = useRef<string | null>(null);
   return (
-    <Primed tableId={tableId} seed={seed} gate={gate}>
-      <UnifiedDataTablePage tableId={tableId} />
-    </Primed>
+    <Suspense fallback={<TableRouteSkeleton tableId={tableId} />}>
+      <RacedTable tableId={tableId} gate={gate} seed={seed} own={own} settled={settled}>
+        <UnifiedDataTablePage tableId={tableId} />
+      </RacedTable>
+    </Suspense>
   );
 }
 
