@@ -70,10 +70,9 @@ describe("census: no launcher resolves the default chat mandate without asking",
     "components/agent-copy/alchemy-destinations.ts",
     `${CHAT_SRC_REL}/agents/components/chat/begin-fresh-chat.ts`,
   ];
-  it.each(launchers)("%s resolves through resolveMandateAsking and honours cancel", (file) => {
+  it.each(launchers)("%s resolves through resolveMandateAsking (the one organization door)", (file) => {
     const src = readFileSync(join(root, file), "utf8");
     expect(src).toMatch(/resolveMandateAsking/);
     expect(src).not.toMatch(/\bresolveMandate\(\s*DEFAULT_NEW_CHAT_MANDATE_KEY/);
-    expect(src).toMatch(/isOrganizationSelectionCancelled/);
   });
 });

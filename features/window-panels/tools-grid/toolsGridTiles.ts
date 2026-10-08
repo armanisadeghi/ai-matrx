@@ -170,7 +170,7 @@ async function seedDefaultChatWindowAgent(): Promise<{
   try {
     initialAgentId = (await resolveMandateAsking(DEFAULT_NEW_CHAT_MANDATE_KEY)).agentId;
   } catch (error) {
-    // Declined the organization question: the tile opens nothing.
+    // Resolution failed (e.g. the organization question was dismissed): fall back to the picker.
     console.error(
       `[ToolsGrid] mandate "${DEFAULT_NEW_CHAT_MANDATE_KEY}" failed to resolve — opening the Chat window with the agent picker:`,
       error,
