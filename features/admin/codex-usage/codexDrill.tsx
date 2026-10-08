@@ -60,8 +60,6 @@ export function toCodexCells(cells: readonly CodexUsageRow[]): CodexCell[] {
   });
 }
 
-const num = (v: number | null) => formatCount(v);
-
 export const CODEX_COLUMNS: MatrxColumnDef<CodexCell>[] = [
   { accessorKey: "conversation", header: "Conversation", filter: "text", width: 260 },
   { accessorKey: "kind", header: "Kind", filter: "text", width: 120 },
@@ -75,7 +73,7 @@ export const CODEX_COLUMNS: MatrxColumnDef<CodexCell>[] = [
     filter: "number",
     align: "right",
     width: 110,
-    cell: (r) => <span className="tabular-nums">{num(r.responses)}</span>,
+    cell: (r) => <span className="tabular-nums">{formatCount(r.responses)}</span>,
   },
   {
     accessorKey: "credits",
@@ -95,7 +93,7 @@ export const CODEX_COLUMNS: MatrxColumnDef<CodexCell>[] = [
     filter: "number",
     align: "right",
     width: 120,
-    cell: (r) => <span className="tabular-nums">{num(r.inputTokens)}</span>,
+    cell: (r) => <span className="tabular-nums">{formatCount(r.inputTokens)}</span>,
   },
   {
     accessorKey: "outputTokens",
@@ -103,7 +101,7 @@ export const CODEX_COLUMNS: MatrxColumnDef<CodexCell>[] = [
     filter: "number",
     align: "right",
     width: 120,
-    cell: (r) => <span className="tabular-nums">{num(r.outputTokens)}</span>,
+    cell: (r) => <span className="tabular-nums">{formatCount(r.outputTokens)}</span>,
   },
   {
     accessorKey: "totalTokens",
@@ -111,7 +109,7 @@ export const CODEX_COLUMNS: MatrxColumnDef<CodexCell>[] = [
     filter: "number",
     align: "right",
     width: 110,
-    cell: (r) => <span className="tabular-nums">{num(r.totalTokens)}</span>,
+    cell: (r) => <span className="tabular-nums">{formatCount(r.totalTokens)}</span>,
   },
 ];
 

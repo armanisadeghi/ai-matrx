@@ -704,6 +704,10 @@
           "why": "IS the count capability and has not been collapsed yet. Eight abbreviators (including the two \"B = billion\" bodies) were collapsed onto kit 0.14.0's compact voice in this session, along with the Spend/Usage/console counts; the rest is listed here so it is READ OUT every run and RATCHETED shrink-only. A debt, not an exemption."
         },
         {
+          "file": "features/admin/codex-usage/codexDrill.tsx",
+          "why": "IS the grouped-number capability for the Codex 'Estimated standard credits' column and its sum (a FRACTIONAL quantity shown at exactly two decimals, e.g. 0.37 or 1,204.50). formatCount's plain voice has no fixed fraction-digits option, so collapsing today would print 0.37 credits as '0' \u2014 worse for the reader. Blocker: kit/format needs a `fractionDigits` option on formatCount (with a test), published first; then this Intl.NumberFormat goes. The token and response counts in this file were collapsed onto formatCount 2026-10-07."
+        },
+        {
           "file": "features/admin/relationships/access-planner/AccessPlannerImpl.tsx",
           "why": "IS the count capability and has not been collapsed yet. Eight abbreviators (including the two \"B = billion\" bodies) were collapsed onto kit 0.14.0's compact voice in this session, along with the Spend/Usage/console counts; the rest is listed here so it is READ OUT every run and RATCHETED shrink-only. A debt, not an exemption."
         },
