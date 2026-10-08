@@ -45,6 +45,16 @@ Block document: a tree of `SpaceBlock` (`id`, `type`, `text: RichSpan[]`, `color
 
 ## Change log
 
+- 2026-10-08 — fixes round 38: (D1) "Archive record" works: a modal's `aria-hidden` walk (Radix `hideOthers` keeps every
+  `[aria-live]`, and the grid's dnd-kit live region sits in the editor) marked the editor's blocks, ProseMirror redrew
+  the database block and the grid remounted with its confirm; `editor/aria-hidden-marks.ts` makes the editor ignore
+  those two attributes. (D2) Trash/restore go through `content.space_set_trashed` (creator or editor access): a
+  full-access editor's PATCH was refused 42501 because the owner-only trash rule hides the trashed row from them
+  (the error toast did show; it lasts 5 s). (D4) a seeded first-pass block always reads its seed through `use()`
+  (4/10 reloads logged React's conditional-use error); a room join keeps its own provider. (D5) the side peek takes
+  focus on open — focus stayed on "+ New", so typing a title pressed New per space and on Enter. (D3) checked: every
+  read carried its table's own organization. Guards: `seed-use-retry`, `aria-hidden-marks`, `side-peek-takes-focus`
+  tests, `store-db/trash-by-editor-live-proof.ts`, `archive-row.walk.mjs` (owner must archive and see the notice).
 - 2026-10-08 — builder round 38 (grid spec shared): `data/view-spec.ts` is the one `viewSpec` builder; DatabaseBlock draws
   from it and `space-page-seed.server.ts` passes the same spec as `askTablePageSeed({ view })` (grid/list/gallery
   views; chart, dashboard, form and a board/calendar/timeline missing its field take their default from the table's
