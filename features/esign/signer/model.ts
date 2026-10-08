@@ -421,3 +421,10 @@ export function valueProblem(field: FieldDefinitionV2, value: FieldValue): strin
   }
   return null;
 }
+
+/** A number field holding something that is not a number: offered, never blocked (validation offers). */
+export function looksNotNumeric(kind: string, value: unknown): boolean {
+  if (kind !== "number" || typeof value !== "string") return false;
+  const t = value.trim().replace(/[,\s$€£%]/g, "");
+  return t !== "" && !Number.isFinite(Number(t));
+}

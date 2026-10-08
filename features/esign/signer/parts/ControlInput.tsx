@@ -13,7 +13,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 
 import type { FieldValue } from "../../contract/fieldModel";
 import { PAPER } from "../../contract/paper";
-import { isMarkKind, isNameKind, type SField } from "../model";
+import { isMarkKind, isNameKind, looksNotNumeric, type SField } from "../model";
 
 export interface ControlInputProps {
   field: SField;
@@ -177,6 +177,9 @@ export function ControlInput({
         </label>
       ) : null}
       {body}
+      {!problem && looksNotNumeric(field.kind, value) ? (
+        <p role="status" className="type-secondary text-warning">This does not look like a number. You can still use it.</p>
+      ) : null}
       {problem ? (
         <div id={describedBy} className="type-secondary">
           <ErrorNotice size="inline" message={problem} operation="Check a signing field" />

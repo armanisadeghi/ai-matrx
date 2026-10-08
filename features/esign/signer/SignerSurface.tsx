@@ -210,7 +210,10 @@ export function SignerSurface({
         });
         const me = load.me;
         const completed = str(load.envelope, "status") === "completed";
-        if (str(me, "signed_at") || completed) {
+        if (str(me, "status") === "declined") {
+          setEnd({ kind: "declined" });
+          setStage("end");
+        } else if (str(me, "signed_at") || completed) {
           setEnd({ kind: "already_signed" });
           setStage("end");
         } else if (str(me, "consented_at") || !load.consent) {
@@ -739,6 +742,10 @@ export function SignerSurface({
             senderName={senderName}
             everyoneSigned={everyone}
             remaining={result?.remaining ?? load.remaining_after_me}
+            waitingOn={load.other_signers
+              .filter((o) => ["signer", "approver", "viewer"].includes(o.role) && !["signed", "acknowledged", "delegated"].includes(o.status))
+              .map((o) => o.name)
+              .filter((n): n is string => Boolean(n))}
             signedAt={signedAt}
             recorded={end.kind === "finalized" ? recordedRows(result?.final_values ?? null) : []}
             outsider={door.seat === "outsider"}

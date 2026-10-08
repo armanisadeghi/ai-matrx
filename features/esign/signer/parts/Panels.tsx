@@ -147,6 +147,7 @@ export function EndScreen({
   senderName,
   everyoneSigned,
   remaining,
+  waitingOn = [],
   signedAt,
   recorded,
   outsider,
@@ -163,6 +164,8 @@ export function EndScreen({
   senderName: string;
   everyoneSigned: boolean;
   remaining: number;
+  /** Names of the people who have not signed yet (may be shorter than `remaining`). */
+  waitingOn?: string[];
   signedAt: string | null;
   recorded: RecordedRow[];
   outsider: boolean;
@@ -184,7 +187,7 @@ export function EndScreen({
         ? onDownload
           ? `Everyone has signed. We emailed ${senderName}. Your signed copy is ready to download.`
           : `Everyone has signed. We emailed ${senderName}. Your signed copy is still being put together.`
-        : `We emailed ${senderName} that you signed. ${remaining > 0 ? `${remaining} more ${remaining === 1 ? "person signs" : "people sign"}, then everyone gets the signed copy.` : "You get the signed copy by email when it is complete."}`
+        : `We emailed ${senderName} that you signed. ${remaining > 0 ? `${waitingOn.length > 0 ? `Still to sign: ${waitingOn.join(", ")}.` : `${remaining} more ${remaining === 1 ? "person signs" : "people sign"}.`} Then everyone gets the signed copy.` : "You get the signed copy by email when it is complete."}`
       : kind === "declined"
         ? `We told ${senderName} you declined, with your reason.`
         : kind === "assigned"

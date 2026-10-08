@@ -15,7 +15,7 @@ import { cn } from "@/lib/utils";
 
 import type { FieldValue } from "../../contract/fieldModel";
 import { PAPER, recipientColor } from "../../contract/paper";
-import { formatIsoDate, isFilled, isMarkKind, KIND_LABEL, KIND_TAG, type SField } from "../model";
+import { formatIsoDate, isFilled, isMarkKind, KIND_LABEL, KIND_TAG, looksNotNumeric, type SField } from "../model";
 
 export interface PaperFieldProps {
   field: SField;
@@ -237,7 +237,8 @@ function InlineInput({ field, value, dateFormat, onChange, onBlur, onActivate, d
       value={typeof value === "string" ? value : ""}
       maxLength={field.kind === "text" ? (field.max_length ?? 4000) : undefined}
       placeholder={field.placeholder ?? KIND_TAG[field.kind] ?? KIND_LABEL[field.kind]}
-      title={field.tooltip ?? (field.kind === "date" ? `Format ${field.date_format ?? dateFormat}` : undefined)}
+      aria-invalid={looksNotNumeric(field.kind, value) || undefined}
+      title={looksNotNumeric(field.kind, value) ? "This does not look like a number. You can still use it." : (field.tooltip ?? (field.kind === "date" ? `Format ${field.date_format ?? dateFormat}` : undefined))}
       onChange={(e) => onChange(field.id, e.target.value)}
     />
   );

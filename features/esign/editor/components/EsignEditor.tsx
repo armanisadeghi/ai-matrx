@@ -325,11 +325,23 @@ export function EsignEditor(props: EsignEditorProps) {
     });
   }, []);
 
+  /** Whose field already sits on a suggestion (by design a spot holds one field), named so the sender knows why nothing was added. */
+  const ownerOfSpot = useCallback(
+    (c: DetectCandidate, documentKey: string, fields: readonly DraftField[]): string | null => {
+      const hit = fields.find((f) => sitsOnField(c, documentKey, [f]));
+      if (!hit) return null;
+      const r = draft.recipients.find((x) => x.key === hit.recipient_key);
+      return r?.full_name.trim() || r?.email || "someone";
+    },
+    [draft.recipients, sitsOnField],
+  );
+
   const acceptCandidate = useCallback(
     (c: DetectCandidate, documentKey: string, silent = false) => {
       if (sitsOnField(c, documentKey, draft.fields)) {
         setCandidates((all) => ({ ...all, [documentKey]: (all[documentKey] ?? []).filter((x) => x.candidate_id !== c.candidate_id) }));
-        toast.info("A field is already there.");
+        const owner = ownerOfSpot(c, documentKey, draft.fields);
+        toast.info(owner ? `${owner} already has a field there. Place this one by hand.` : "A field is already there.");
         return;
       }
       const who = activeRecipient;
@@ -345,17 +357,21 @@ export function EsignEditor(props: EsignEditorProps) {
       setCandidates((all) => ({ ...all, [documentKey]: (all[documentKey] ?? []).filter((x) => x.candidate_id !== c.candidate_id) }));
       if (!silent) setSelection(new Set([f.id]));
     },
-    [activeRecipient, draft.fields, edit, sitsOnField],
+    [activeRecipient, draft.fields, edit, ownerOfSpot, sitsOnField],
   );
 
   function acceptAll() {
     const who = activeRecipient;
     if (!who) return;
     const added: DraftField[] = [];
+    let taken = 0;
     const known = ["signature", "initials", "date_signed", "full_name", "first_name", "last_name", "email", "company", "title", "text", "number", "date", "checkbox", "radio", "dropdown"];
     for (const [documentKey, list] of Object.entries(candidates)) {
       for (const c of list) {
-        if (sitsOnField(c, documentKey, [...draft.fields, ...added])) continue;
+        if (sitsOnField(c, documentKey, [...draft.fields, ...added])) {
+          taken += 1;
+          continue;
+        }
         const kind = (known.includes(c.kind) ? c.kind : "text") as FieldKindV2;
         const base = newField(kind, { document_key: documentKey, recipient_key: who, page: c.page, cx: c.x + c.w / 2, cy: c.y + c.h / 2 }, [...draft.fields, ...added]);
         added.push({ ...base, ...clampBox({ x: c.x, y: c.y, w: c.w, h: c.h }), label: c.label || base.label, source: "detected" });
@@ -363,7 +379,7 @@ export function EsignEditor(props: EsignEditorProps) {
     }
     edit((d) => ({ ...d, fields: [...d.fields, ...added] }));
     setCandidates({});
-    toast.success(`Added ${added.length} ${added.length === 1 ? "field" : "fields"}.`);
+    toast.success(`Added ${added.length} ${added.length === 1 ? "field" : "fields"}.${taken > 0 ? ` ${taken} ${taken === 1 ? "spot" : "spots"} already had a field.` : ""}`);
   }
 
   const candidateCount = Object.values(candidates).reduce((a, l) => a + l.length, 0);
