@@ -123,3 +123,24 @@ Fix (`f6a8ef7be4`): `readTablePage` also returns `opening`, the server's where +
 moment they land and never capped. The browser's reads take each door from the opening, the full
 seed or the network, whichever comes first. **Not yet measured on production:** the release train
 had not shipped since `6c4a1ef1b1` when this was written.
+
+## With the opening fix live: still slower for a member, so OFF (SSR-ROWS-3, 2026-10-08)
+
+Live `9a262e1a00` (contains `f6a8ef7be4`), platform OFF (set back at 15:19 UTC), ON by a temporary
+per-person override, fresh browser per run, Deliverables, rows visible in ms. All overrides cleared
+afterwards.
+
+| Who / pair | cold ON | cold OFF | warm ON | warm OFF |
+|---|---|---|---|---|
+| member 1 | 4611 | 3256 | 7412 (first store call 4264) | 2971 |
+| member 2 | 3359 | 3626 | 3796 | 2867 |
+| member 3 | 4550 | 3127 | 3335 | 2813 |
+| admin 1 | 4419 | 2051 | 1714 | 1900 |
+| admin 2 | 2005 | 2412 | 1044 | 2233 |
+| admin 3 | 1692 | 4312 | 1401 | 3499 |
+
+For admin, ON is faster in 5 of 6 comparisons (server rows land). For the member, ON is slower in 5 of
+6 even with the uncapped opening: the member's server seed never carries rows, so ON only adds the
+server's extra work and a later page. **Platform default stays OFF.** The member path needs its own
+diagnosis (why the member's server seed has no rows on a table where admin's does) before ON can help
+everyone.
