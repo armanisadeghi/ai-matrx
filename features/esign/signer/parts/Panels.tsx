@@ -181,7 +181,9 @@ export function EndScreen({
   const next =
     kind === "finalized" || kind === "already_signed"
       ? everyoneSigned
-        ? `Everyone has signed. We emailed ${senderName}, and your signed copy is on its way.`
+        ? onDownload
+          ? `Everyone has signed. We emailed ${senderName}. Your signed copy is ready to download.`
+          : `Everyone has signed. We emailed ${senderName}. Your signed copy is still being put together.`
         : `We emailed ${senderName} that you signed. ${remaining > 0 ? `${remaining} more ${remaining === 1 ? "person signs" : "people sign"}, then everyone gets the signed copy.` : "You get the signed copy by email when it is complete."}`
       : kind === "declined"
         ? `We told ${senderName} you declined, with your reason.`

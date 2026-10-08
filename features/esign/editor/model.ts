@@ -114,8 +114,11 @@ export function emptyDraft(title = ""): EnvelopeDraftV1 {
 }
 
 /** The subject the email carries: the sender's own words, else the server words it: "<sender> sent you <title> to sign". */
-export function effectiveSubject(d: Pick<EnvelopeDraftV1, "email_subject" | "title">): string {
-  return d.email_subject.trim() || (d.title.trim() ? `Sender name sent you ${d.title.trim()} to sign` : "");
+export function effectiveSubject(d: Pick<EnvelopeDraftV1, "email_subject" | "title">, senderName: string): string {
+  const title = d.title.trim();
+  if (d.email_subject.trim()) return d.email_subject.trim();
+  if (!title) return "";
+  return senderName ? `${senderName} sent you ${title} to sign` : `You have ${title} to sign`;
 }
 
 /** Lowest colour index no recipient holds; kept for life (paper.ts rule). */

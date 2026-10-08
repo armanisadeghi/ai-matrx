@@ -13,6 +13,7 @@ import { Spinner } from "@/components/ui/loaders/Spinner";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
 import type { EnvelopeDraftV1 } from "../../contract/draft";
+import { useSenderName } from "../useSenderName";
 import { recipientColor } from "../../contract/paper";
 import { draftWarnings, effectiveSubject, ROLE_LABEL, sendBlockers } from "../model";
 import type { SendResult } from "../api/types";
@@ -32,6 +33,7 @@ export function SendDialog(p: {
   /** Where "Only me" goes straight to signing. */
   onlyMe: boolean;
 }) {
+  const sender = useSenderName();
   const blockers = sendBlockers(p.draft);
   const warnings = draftWarnings(p.draft);
   const recipients = [...p.draft.recipients].sort((a, b) => a.order - b.order);
@@ -64,7 +66,7 @@ export function SendDialog(p: {
           <>
             <DialogHeader>
               <DialogTitle>Send for signature</DialogTitle>
-              <DialogDescription className="truncate">{effectiveSubject(p.draft)}</DialogDescription>
+              <DialogDescription className="truncate">{effectiveSubject(p.draft, sender)}</DialogDescription>
             </DialogHeader>
             <ol className="flex flex-col gap-1.5">
               {recipients.map((r, i) => (
@@ -144,6 +146,7 @@ export function PreviewDialog(p: {
   initialRecipient: string | null;
   onClose(): void;
 }) {
+  const sender = useSenderName();
   const recipients = [...p.draft.recipients].sort((a, b) => a.order - b.order);
   const [key, setKey] = useState<string | null>(p.initialRecipient);
   const [zoom, setZoom] = useState(1);
@@ -170,7 +173,7 @@ export function PreviewDialog(p: {
             onValueChange={setKey}
           />
           {r && <Badge tone="info">{required} required</Badge>}
-          <span className="min-w-0 flex-1 truncate type-secondary text-muted-foreground">{effectiveSubject(p.draft)}</span>
+          <span className="min-w-0 flex-1 truncate type-secondary text-muted-foreground">{effectiveSubject(p.draft, sender)}</span>
         </div>
         {(p.draft.message || r?.private_message) && (
           <div className="rounded-md border border-border bg-card p-2.5 type-body">

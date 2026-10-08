@@ -190,7 +190,15 @@ function PageLayer(p: LayerProps) {
             borderColor: PAPER.rule, background: "rgba(250,204,21,0.18)", color: PAPER.ink,
           }}
         >
-          <span className="min-w-0 truncate type-meta leading-none">{c.label}</span>
+          {/* A small box has no room beside its two buttons: the label rides on a chip above it. */}
+          <span
+            className={c.w < 0.18
+              ? "absolute bottom-full left-0 mb-0.5 whitespace-nowrap rounded-sm px-1 py-0.5 type-meta leading-none"
+              : "min-w-0 truncate type-meta leading-none"}
+            style={c.w < 0.18 ? { background: "rgba(250,204,21,0.9)", color: PAPER.ink } : undefined}
+          >
+            {c.label}
+          </span>
           <span className="flex shrink-0 gap-0.5" onPointerDown={(e) => e.stopPropagation()}>
             <button type="button" aria-label={`Accept ${c.label}`} onClick={() => p.onAcceptCandidate(c, p.documentKey)} className="flex h-5 w-5 items-center justify-center rounded-full bg-white shadow ring-1 ring-black/15">
               <Check className="h-3 w-3 text-emerald-600" />

@@ -13,6 +13,7 @@ import { isJsonObject } from "@/types/json";
 import { supabase } from "@/utils/supabase/client";
 
 import type { EnvelopeDraftV1, EnvelopeTemplateV1 } from "../../contract/draft";
+import { failureSentence } from "../../serverFailure";
 import { DraftRefusal, type EditorApi, type SaveResult, type TemplateRow } from "./types";
 
 type Schemas = components["schemas"];
@@ -45,7 +46,7 @@ function refusal(answer: Record<string, unknown>): DraftRefusal {
 
 async function door<N extends EsignRpcName>(name: N, args: EsignArgs<N>): Promise<Record<string, unknown>> {
   const { data, error } = await esign.rpc(name, args);
-  if (error) throw new DraftRefusal("unreachable", "We could not reach AI Matrx just now. Try again in a moment.", { message: error.message });
+  if (error) throw new DraftRefusal(error.code ? "server_error" : "unreachable", failureSentence({ code: error.code }), { message: error.message });
   const answer: Record<string, unknown> = isJsonObject(data) ? data : {};
   if (answer.granted === false) throw refusal(answer);
   return answer;
@@ -72,8 +73,8 @@ export function makeRealEditorApi(dispatch: AppDispatch): EditorApi {
   const refused = (result: ApiCallResult): DraftRefusal => {
     const detail = (result.error?.serverDetail as { detail?: { code?: string; message?: string } } | undefined)?.detail;
     return new DraftRefusal(
-      detail?.code ?? "unreachable",
-      detail?.message || REFUSAL_TEXT[detail?.code ?? ""] || "We could not reach AI Matrx just now. Try again in a moment.",
+      detail?.code ?? (result.error?.status ? "server_error" : "unreachable"),
+      detail?.message || REFUSAL_TEXT[detail?.code ?? ""] || failureSentence(result.error),
       detail as Record<string, unknown> | undefined,
     );
   };
@@ -92,7 +93,7 @@ export function makeRealEditorApi(dispatch: AppDispatch): EditorApi {
     async loadDraft(envelopeId) {
       // CONTRACT §21: esign_draft_get → {envelope:{id,status,organization_id,title}, draft:{composition,revision,saved_at}}.
       const { data, error } = await esign.rpc("esign_draft_get", { p_envelope_id: envelopeId });
-      if (error) throw new DraftRefusal("unreachable", "We could not reach AI Matrx just now. Try again in a moment.");
+      if (error) throw new DraftRefusal(error.code ? "server_error" : "unreachable", failureSentence({ code: error.code }));
       const a = (data ?? {}) as Record<string, unknown>;
       if (a.granted === false) return null;
       const envelope = (a.envelope ?? {}) as Record<string, unknown>;
@@ -112,7 +113,7 @@ export function makeRealEditorApi(dispatch: AppDispatch): EditorApi {
         p_composition: composition,
         p_base_revision: baseRevision,
       });
-      if (error) throw new DraftRefusal("unreachable", "We could not reach AI Matrx just now.");
+      if (error) throw new DraftRefusal(error.code ? "server_error" : "unreachable", failureSentence({ code: error.code }));
       const a = (data ?? {}) as Record<string, unknown>;
       if (a.granted === false) {
         if (a.reason === "stale_draft") {

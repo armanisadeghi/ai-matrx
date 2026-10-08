@@ -21,6 +21,7 @@ import { cn } from "@/lib/utils";
 
 import type { DraftField, EnvelopeDraftV1, EnvelopeTemplateV1 } from "../../contract/draft";
 import type { FieldKindV2 } from "../../contract/fieldModel";
+import { useSenderName } from "../useSenderName";
 import { clampBox, effectiveSubject, fieldRecipients, newField, newId, sendBlockers } from "../model";
 import { useDraftHistory } from "../history";
 import { useDraftSync, type SaveStatus } from "../useDraftSync";
@@ -94,6 +95,7 @@ export function EsignEditor(props: EsignEditorProps) {
   const isMobile = useIsMobile();
   const { draft, edit, replace, undo, redo, canUndo, canRedo } = useDraftHistory(props.initial.draft);
 
+  const senderName = useSenderName();
   const [boot, setBoot] = useState({ id: props.envelopeId, revision: props.initial.revision, confirmed: props.initial.confirmed ?? props.initial.draft });
   const [selection, setSelection] = useState<ReadonlySet<string>>(new Set());
   const [armed, setArmed] = useState<FieldKindV2 | null>(null);
@@ -621,7 +623,7 @@ export function EsignEditor(props: EsignEditorProps) {
       <SendDialog open={sendOpen} draft={draft} sending={sending} result={sendResult} error={sendError} onlyMe={onlyMe} onClose={() => setSendOpen(false)} onSend={() => void send()} />
       <TemplateDialog key={String(templateOpen)} open={templateOpen} initialName={templateState?.name ?? draft.title} saving={templateSaving} error={templateError} onClose={() => setTemplateOpen(false)} onSave={(n, d) => void saveTemplate(n, d)} />
       {previewOpen && <PreviewDialog open draft={draft} initialRecipient={activeRecipient} onClose={() => setPreviewOpen(false)} />}
-      <span className="sr-only" aria-live="polite">{effectiveSubject(draft)} {blockers.length ? "" : "ready"}</span>
+      <span className="sr-only" aria-live="polite">{effectiveSubject(draft, senderName)} {blockers.length ? "" : "ready"}</span>
     </>
   );
 }

@@ -7,6 +7,7 @@
 // `/esign/envelopes` (services/esign/envelopes.py), which checks the caller's right and then
 // drives the server-only create/send/remind/resend/void doors. Nothing here decides a right.
 
+import { failureSentence } from "../serverFailure";
 import { callApi } from "@/lib/api/call-api";
 import type { ApiCallResult } from "@/lib/api/call-api";
 import type { AppDispatch } from "@/lib/redux/store";
@@ -52,7 +53,7 @@ function read<T>(result: ApiCallResult): T {
   throw new EnvelopeRefusal(
     typeof message === "string" && message !== ""
       ? message
-      : "We could not reach AI Matrx just now. Try again in a moment.",
+      : failureSentence(result.error),
   );
 }
 

@@ -7,6 +7,7 @@ import { Select, Switch } from "@ai-matrx/design-system/controls";
 import { ProTextarea } from "@/components/official/ProTextarea";
 
 import type { EnvelopeDraftV1 } from "../../contract/draft";
+import { useSenderName } from "../useSenderName";
 import { DATE_FORMATS } from "../model";
 import { ProInput } from "@/components/official/ProInput";
 
@@ -40,6 +41,7 @@ interface Props {
 }
 
 export function MessagePanel({ draft, edit, templateMode }: Props) {
+  const sender = useSenderName();
   const s = draft.settings;
   const setting = <K extends keyof typeof s>(k: K, v: (typeof s)[K]) => edit((d) => ({ ...d, settings: { ...d.settings, [k]: v } }));
   const cadenceKey = CADENCE.find((c) => JSON.stringify(c.days) === JSON.stringify(s.reminders.cadence_days))?.value ?? "3-7";
@@ -50,7 +52,7 @@ export function MessagePanel({ draft, edit, templateMode }: Props) {
         <ProInput aria-label="Envelope name" placeholder="Envelope name" value={draft.title} onChange={(e) => edit((d) => ({ ...d, title: e.target.value }), "title")} />
         <ProInput
           aria-label="Email subject"
-          placeholder={draft.title.trim() ? `Your name sent you ${draft.title.trim()} to sign` : "Email subject"}
+          placeholder={draft.title.trim() ? (sender ? `${sender} sent you ${draft.title.trim()} to sign` : `You have ${draft.title.trim()} to sign`) : "Email subject"}
           maxLength={200}
           value={draft.email_subject}
           onChange={(e) => edit((d) => ({ ...d, email_subject: e.target.value }), "subject")}

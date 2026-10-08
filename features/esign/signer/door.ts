@@ -12,6 +12,7 @@
 //   - an act the server does not know yet → `DoorRefusal("unknown_action")`, whose sentence says
 //     the step is not available yet (law 4), never a silent no-op.
 
+import { failureSentence, wasAnswered } from "../serverFailure";
 import { callApi, type ApiCallResult } from "@/lib/api/call-api";
 import type { AppDispatch } from "@/lib/redux/store";
 import type { components } from "@ai-matrx/agents/generated/api-types";
@@ -130,6 +131,10 @@ export function createSignerDoor(dispatch: AppDispatch, target: SignerTarget): S
     const body = result.error?.serverDetail;
     const detail = isRecord(body) && isRecord(body.detail) ? body.detail : null;
     if (detail) throw refusalFrom(str(detail.code), detail.message, detail);
+    // The server answered with an error and no readable body: that is our error, never "could not reach".
+    if (result.error && wasAnswered(result.error)) {
+      throw new DoorRefusal("server_error", `${failureSentence(result.error)} Your link is fine.`);
+    }
     throw new Error("transport"); // never answered: errorText says "could not reach"
   }
 

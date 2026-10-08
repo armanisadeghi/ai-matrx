@@ -7,6 +7,7 @@
 // The saved-signature doors live in the `esign` schema (typed by database.types). The phone routes
 // below are typed by the published api-types.
 
+import { failureSentence } from "../serverFailure";
 import type { components } from "@ai-matrx/agents/generated/api-types";
 import { callApi } from "@/lib/api/call-api";
 import type { AppDispatch } from "@/lib/redux/store";
@@ -62,7 +63,7 @@ function refusal(error: { serverDetail?: unknown } | null | undefined): Error {
   const detail = error?.serverDetail as { detail?: { message?: unknown } } | undefined;
   const message = detail?.detail?.message;
   return new Error(
-    typeof message === "string" && message !== "" ? message : "We could not reach AI Matrx just now. Try again in a moment.",
+    typeof message === "string" && message !== "" ? message : failureSentence(error as { status?: number; serverDetail?: unknown } | null | undefined),
   );
 }
 

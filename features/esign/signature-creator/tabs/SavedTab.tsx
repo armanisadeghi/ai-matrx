@@ -14,7 +14,7 @@ import type { Candidate } from "../types";
 
 export function Thumb({ item }: { item: SavedSignature }) {
   if (item.preview_url) {
-    // eslint-disable-next-line @next/next/no-img-element -- demo-only inline image
+    // eslint-disable-next-line @next/next/no-img-element -- a short-lived signed URL of the stored mark; next/image would need a remote pattern for it
     return <img src={item.preview_url} alt="" className="max-h-full max-w-full object-contain" />;
   }
   if (item.kind === "typed" && item.typed_text) {
