@@ -29,6 +29,12 @@
  *       string literal (this covers metadata titles).
  * Variants matched: "Agent App(s)", agent-app(s), agent_app(s), agentApp(s).
  *
+ * THE APPLET SCOPE (single word, made precise by place): the lexicon row
+ * "Applet" retires "App ... (for a customer-built Applet)". A single word is
+ * too generic platform-wide, but inside the Applet surfaces every visible
+ * "app"/"apps" IS a customer-built Applet, so there the bare word is a
+ * finding too (alias label "app (Applet surfaces)"). APPLET_SCOPES below.
+ *
  * THE BASELINE IS A SHRINK-ONLY RATCHET: scripts/lexicon-baseline.json holds
  * today's per-(file, alias) counts; a hit above its baseline is NEW and fails.
  * --write only ever lowers it. A deliberate exception goes in
@@ -52,6 +58,18 @@ const ALLOWLIST_FILE = join(ROOT, "scripts", "lexicon-allowlist.json");
 const LEXICON_REL = "systems/platform/vocabulary/FEATURE.md";
 const LEXICON_DIRS = ["../matrx-common-docs", "../common-docs"];
 const SELF = "scripts/check-lexicon.ts";
+/** Where a visible bare "app"/"apps" can only mean a customer-built Applet. */
+export const APPLET_SCOPES = ["features/applets/", "features/applets-host/", "app/(core)/applets/", "app/(link)/applets/"];
+/** The scoped single-word alias: "app"/"apps"/"App", never "Applet"/"apply"/"app.definition". */
+export const APPLET_SCOPE_ALIAS: Alias = {
+  words: ["app"],
+  label: "app (Applet surfaces)",
+  term: "Applet",
+  re: /(?<![A-Za-z.\/_-])apps?(?![A-Za-z.\/_?[-])/gi,
+};
+export function inAppletScope(file: string): boolean {
+  return APPLET_SCOPES.some((p) => file.startsWith(p));
+}
 
 export interface Alias {
   /** Lower-case words, e.g. ["agent","app"]. */
@@ -141,13 +159,16 @@ function stripComments(source: string): string {
 
 const PROP_RE =
   /\b(?:title|label|placeholder|aria-label|description|tooltip|alt|heading|subtitle)\s*[=:]\s*(?:\{\s*)?(["'`])((?:\\.|(?!\1)[^\\\n])*)\1/g;
+/** Inside the Applet scope also: EmptyState's `line` and a disclosure's `does` (both on screen). */
+const SCOPED_PROP_RE = /\b(?:line|does)\s*[=:]\s*(?:\{\s*)?(["'`])((?:\\.|(?!\1)[^\\\n])*)\1/g;
 const JSX_TEXT_RE = />([^<>{}\n][^<>{}]*)(?=<)/g;
 
 /** User-visible strings in one .tsx source. Pure. */
-export function visibleStrings(source: string): string[] {
+export function visibleStrings(source: string, scoped = false): string[] {
   const code = stripComments(source);
   const out: string[] = [];
   for (const m of code.matchAll(PROP_RE)) out.push(m[2]);
+  if (scoped) for (const m of code.matchAll(SCOPED_PROP_RE)) out.push(m[2]);
   for (const m of code.matchAll(JSX_TEXT_RE)) {
     const t = m[1].trim();
     if (/[A-Za-z]/.test(t)) out.push(t);
@@ -171,7 +192,8 @@ export function scanSegment(name: string, aliases: Alias[]): Record<string, numb
 }
 export function scanSource(source: string, aliases: Alias[]): Record<string, number> {
   const out: Record<string, number> = {};
-  for (const s of visibleStrings(source)) countHits(s, aliases, out, "");
+  const scoped = aliases.includes(APPLET_SCOPE_ALIAS);
+  for (const s of visibleStrings(source, scoped)) countHits(s, aliases, out, "");
   return out;
 }
 
@@ -213,7 +235,8 @@ function scanTree(aliases: Alias[], allow: Allow[]): Counts {
       for (let i = 1; i <= parts.length; i++) dirs.add(parts.slice(0, i).join("/"));
     }
     if (!file.endsWith(".tsx")) continue;
-    for (const [k, n] of Object.entries(scanSource(readFileSync(join(ROOT, file), "utf8"), aliases))) {
+    const scoped = inAppletScope(file) ? [...aliases, APPLET_SCOPE_ALIAS] : aliases;
+    for (const [k, n] of Object.entries(scanSource(readFileSync(join(ROOT, file), "utf8"), scoped))) {
       counts[`${file}${k}`] = n;
     }
   }
@@ -285,6 +308,13 @@ function selfTest(): number {
   check("GREEN: Applet copy", Object.keys(scanSource(`<h1>My Applets</h1><X title="New Applet" />`, aliases)).length === 0);
   check("GREEN: comment", Object.keys(scanSource(`// agent app\n/* <p>agent app</p> */`, aliases)).length === 0);
   check("GREEN: identifier not user-visible", Object.keys(scanSource(`const agentApp = 1; fn("agent-app-id");`, aliases)).length === 0);
+  const scoped = [...aliases, APPLET_SCOPE_ALIAS];
+  check("RED (Applet scope): bare app in JSX text", Object.keys(scanSource(`<p>Your app shows here</p>`, scoped)).length === 1);
+  check("RED (Applet scope): label prop", Object.keys(scanSource(`openRunWindow({ label: "Building your app" })`, scoped)).length === 1);
+  check("RED (Applet scope): EmptyState line + disclosure does", Object.keys(scanSource(`<E line="Open the app" />{ does: "fixes your apps" }`, scoped)).length === 1);
+  check("GREEN (Applet scope): Applet / apply / app.definition / path", Object.keys(scanSource(`<p>Your Applet</p><X label="Apply" title="/applets/x" description="app.definition" />`, scoped)).length === 0);
+  check("GREEN (Applet scope): code between generics (app?.x)", Object.keys(scanSource("useState<string>(String(app?.limit))<X/>", scoped)).length === 0);
+  check("scope: features/applets-host in, features/agents out", inAppletScope("features/applets-host/builder/AppletBuilder.tsx") && !inAppletScope("features/agents/x.tsx"));
   check("GREEN: clean segment", Object.keys(scanSegment("applets", aliases)).length === 0);
   const r = judge({ "a|x": 2, "b|x": 1, "c|x": 1 }, { "a|x": 2, "b|x": 2 });
   check("ratchet: new key fails, lower count cleared", r.newSites.length === 1 && r.newSites[0].key === "c|x" && r.cleared.join() === "b|x");
@@ -336,7 +366,7 @@ function main(): number {
     console.log("FAIL: a retired product name (platform lexicon, 'Retired aliases') is used. Use the lexicon's term instead:");
     for (const s of verdict.newSites) {
       const alias = s.key.split("|")[1];
-      const a = aliases.find((x) => x.label === alias);
+      const a = [...aliases, APPLET_SCOPE_ALIAS].find((x) => x.label === alias);
       console.log(`  NEW  ${s.key.split("|")[0]}  "${alias}" -> ${a?.term ?? "?"}  (${s.count}, baseline ${s.baseline})`);
     }
     return 1;
@@ -349,4 +379,4 @@ function main(): number {
   return 0;
 }
 
-exitAfterDrain(main());
+if (process.argv[1]?.endsWith("check-lexicon.ts")) exitAfterDrain(main());

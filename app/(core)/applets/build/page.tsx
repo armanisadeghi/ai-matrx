@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { getSessionVerdict } from "@/utils/supabase/sessionVerdict";
 import { RecordPageHeader } from "@/features/shell/components/header/templates/RecordPageHeader";
@@ -8,6 +9,8 @@ import { AppletBuilder } from "@/features/applets-host/builder/AppletBuilder";
  * Pressing Build creates the draft Applet and the address becomes /applets/build/<id>; changing an
  * existing app opens that same address (`?applet=<id>` is forwarded there).
  */
+export const metadata: Metadata = { title: "Build | Applets" };
+
 export default async function BuildAppletPage({ searchParams }: { searchParams: Promise<{ applet?: string }> }) {
   const { isAuthenticated } = await getSessionVerdict();
   if (!isAuthenticated) redirect("/applets");

@@ -16,7 +16,8 @@ export const metadata: Metadata = {
     metadataBase: new URL(siteConfig.url),
     title: {
         default: "AI Matrx",
-        template: `%s - AI Matrx`,
+        // ONE tab-title suffix platform-wide — the same em dash (core) uses.
+        template: `%s — AI Matrx`,
     },
     description: "AI Matrx is a revolutionary no-code AI platform that empowers businesses to build sophisticated AI applications without writing a single line of code. Unleash the power of AI with our intuitive drag-and-drop interface and pre-built components, streamlining your workflows and automating complex tasks. Experience the future of business automation with AI Matrx.",
     keywords: [

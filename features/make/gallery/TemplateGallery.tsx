@@ -339,8 +339,11 @@ export function TemplatePreview({
   autoInstall = false,
   onInstalled,
   productName,
+  installLabel = "Install",
 }: {
   templateId: string;
+  /** The install button's name where the host calls the act something else (an Applet template: "Use this template"). */
+  installLabel?: string;
   bare?: boolean;
   /** What the person installed, when it is not the data template itself (an Applet template's own name). */
   productName?: string;
@@ -555,7 +558,7 @@ export function TemplatePreview({
             </>
           ) : (
             <Button icon={run.phase === "running" && run.door === "template_install" ? <Loader2 className="animate-spin" /> : null} variant="primary" onClick={install} disabled={run.phase === "running"} data-make-template-install={stuck ? "finish" : ""}>
-              {stuck ? "Finish install" : "Install"}
+              {stuck ? "Finish install" : installLabel}
             </Button>
           )}
           {installId ? (

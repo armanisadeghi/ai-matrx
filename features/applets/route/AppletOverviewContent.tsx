@@ -22,6 +22,7 @@ import { useOpenMandateWindow } from "@/features/overlays/openers/mandateWindow"
 import { storedMandateKey } from "@ai-matrx/agents/mandates";
 import { appletJobs, appletPages, appletSources } from "@/features/applets/types";
 import { useSourceTableNames } from "@/features/applets/hooks/useSourceTableNames";
+import { appletState, appletVersionLabel } from "@/features/applets/lib/applet-state";
 
 /** "summarize_book" → "Summarize book": the code's name for a job, as words. */
 function humanizeAlias(alias: string): string {
@@ -52,7 +53,8 @@ export function AppletOverviewContent({ appId }: AppletOverviewContentProps) {
   const pages = appletPages(app);
   const jobs = appletJobs(app);
   const sources = appletSources(app);
-  const isPublished = app.status === "published" && app.published_to_web;
+  const isPublished = appletState(app).live;
+  const versionLabel = appletVersionLabel(app.content_version);
   const base = `/applets/manage/${app.id}`;
 
   return (
@@ -61,7 +63,7 @@ export function AppletOverviewContent({ appId }: AppletOverviewContentProps) {
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div className="flex flex-wrap items-center gap-1.5">
             {/* Published / Draft is the header's; one fact, once. */}
-            <Badge>{`Version ${app.version}`}</Badge>
+            {versionLabel ? <Badge>{versionLabel}</Badge> : null}
           </div>
           <CopyButtons
             size="sm"
@@ -71,7 +73,7 @@ export function AppletOverviewContent({ appId }: AppletOverviewContentProps) {
               kind: "applet",
               location: `AI Matrx — Applet — ${app.name}`,
               description: "This Applet: pages, jobs and sources.",
-              data: { id: app.id, slug: app.slug, name: app.name, version: app.version, pages, jobs, sources },
+              data: { id: app.id, slug: app.slug, name: app.name, version: app.content_version, pages, jobs, sources },
             })}
           />
         </div>
@@ -132,10 +134,12 @@ export function AppletOverviewContent({ appId }: AppletOverviewContentProps) {
               // blank table of another organization).
               const table = "table_id" in source ? tableNames[source.table_id] : undefined;
               const otherOrg = "table_id" in source && source.organization_id !== app.organization_id;
+              // Names still loading: a skeleton, never the alias ("posts") for a moment.
+              if ("table_id" in source && !table) return <RegionSkeleton key={source.alias} shape="rows" count={1} />;
               return (
               <SettingRow
                 key={source.alias}
-                label={"new_table" in source ? source.new_table.name : (table?.name ?? source.alias)}
+                label={"new_table" in source ? source.new_table.name : "entity" in source ? humanizeAlias(source.entity) : (table?.name ?? "")}
                 line={
                   "entity" in source
                     ? `Record type: ${source.entity}`

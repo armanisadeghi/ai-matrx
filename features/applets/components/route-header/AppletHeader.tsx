@@ -24,6 +24,7 @@ import { buildRecordReferenceFence } from "@/features/matrx-envelope/recordRefer
 import { copyReferenceFence } from "@/features/matrx-envelope/referenceClipboard";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import type { AppStatus } from "@/features/applets/types";
+import { appletState, publishConsequence } from "@/features/applets/lib/applet-state";
 
 export type AppletHeaderTab =
   "overview" | "run" | "code" | "versions" | "settings";
@@ -34,7 +35,7 @@ interface AppletHeaderProps {
   initialStatus: AppStatus;
   initialPublishedToWeb: boolean;
   active: AppletHeaderTab;
-  /** Defaults to `/applets`. Admin/org variants pass their own root. */
+  /** Defaults to `/applets/manage` (the owner pages). Admin/org variants pass their own root. */
   basePath?: string;
   backHref?: string;
 }
@@ -54,16 +55,19 @@ export function AppletHeader({
   initialStatus,
   initialPublishedToWeb,
   active,
-  basePath = "/applets",
+  basePath = "/applets/manage",
   backHref = "/applets",
 }: AppletHeaderProps) {
   const dispatch = useAppDispatch();
   const app = useAppSelector((state) => selectAppById(state, appId));
   const [publicationBusy, setPublicationBusy] = useState(false);
 
-  const status = app?.status ?? initialStatus;
-  const publishedToWeb = app?.published_to_web ?? initialPublishedToWeb;
-  const isPublished = status === "published" && publishedToWeb;
+  // THE state (`appletState`) — the same answer the /applets list and the builder give for this row.
+  const state = appletState({
+    status: app?.status ?? initialStatus,
+    published_to_web: app?.published_to_web ?? initialPublishedToWeb,
+  });
+  const isPublished = state.live;
 
   const modes: RouteNavItem[] = [
     { name: "Overview", href: `${basePath}/${appId}`, icon: AppWindow },
@@ -106,11 +110,7 @@ export function AppletHeader({
               confirmLabel: "Unpublish",
               variant: "destructive",
             }
-          : {
-              title: `Publish ${appName}?`,
-              description: `Anyone with the link can open it at ${publicUrl}, without signing in.`,
-              confirmLabel: "Publish",
-            },
+          : { ...publishConsequence({ name: appName, slug: app?.slug }), confirmLabel: "Publish" },
       );
       if (!ok) return;
       setPublicationBusy(true);
@@ -136,7 +136,7 @@ export function AppletHeader({
       backHref={backHref}
       parents={[{ label: "Applets", href: backHref }]}
       record={{ name: appName }}
-      status={isPublished ? { label: "Published", tone: "success" } : { label: "Draft" }}
+      status={{ label: state.label, tone: state.tone }}
       modes={modes}
       actions={actions}
     />

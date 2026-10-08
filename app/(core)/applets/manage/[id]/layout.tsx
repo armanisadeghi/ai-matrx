@@ -18,7 +18,7 @@ export async function generateMetadata({
   const description =
     rawDesc && rawDesc.trim() !== ""
       ? rawDesc.slice(0, 120)
-      : "Manage your AI-powered agent application";
+      : "Manage this Applet";
 
   return createDynamicRouteMetadata("/applets", {
     title: name,

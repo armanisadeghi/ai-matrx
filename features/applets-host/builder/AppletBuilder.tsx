@@ -56,8 +56,8 @@ import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
 const BUILD = storedMandateKey("applets.build");
 const FIX = storedMandateKey("applets.fix");
 const DISCLOSURE = [
-  { mandateKey: BUILD, does: "builds your app from your sentence" },
-  { mandateKey: FIX, does: "fixes an error in your app" },
+  { mandateKey: BUILD, does: "builds your Applet from your sentence" },
+  { mandateKey: FIX, does: "fixes an error in your Applet" },
 ] as const;
 
 type Phase = { kind: "idle" } | { kind: "building" } | { kind: "publishing" } | { kind: "failed"; why: string };
@@ -98,7 +98,7 @@ export function AppletBuilder({ appletId: initialId, routed = false }: { appletI
     routed,
     onRejoin: (entry) => {
       setPhase({ kind: "building" });
-      rejoinWindow.current = openRunWindow({ conversationId: entry.conversation_id, label: entry.fix ? "Fixing your app" : "Building your app" });
+      rejoinWindow.current = openRunWindow({ conversationId: entry.conversation_id, label: entry.fix ? "Fixing your Applet" : "Building your Applet" });
     },
     onReopenedAnswer: async ({ entry, value }) => {
       const id = initialId;
@@ -228,7 +228,7 @@ export function AppletBuilder({ appletId: initialId, routed = false }: { appletI
         onConversationCreated: (cid) => {
           entry.conversation_id = cid;
           attached = session.running(record.id, entry.id, cid).catch((err) => console.error("[applet-build] could not record the run", err));
-          live.handle = openRunWindow({ conversationId: cid, label: fix ? "Fixing your app" : appletId ? "Changing your app" : "Building your app" });
+          live.handle = openRunWindow({ conversationId: cid, label: fix ? "Fixing your Applet" : appletId ? "Changing your Applet" : "Building your Applet" });
         },
         coerce: (v) => checkBuildAnswer(v, coerceBuildAnswer(v), { organizationId: runOrg, tables: catalogue.tables }),
       });
@@ -314,7 +314,7 @@ export function AppletBuilder({ appletId: initialId, routed = false }: { appletI
             ) : null}
             {saved.toMake.length ? (
               <div className="flex flex-col gap-1" data-applet-new-tables="">
-                <span className="text-xs font-medium">Use it makes {saved.toMake.length === 1 ? "1 table" : `${saved.toMake.length} tables`}</span>
+                <span className="text-xs font-medium">Using it creates {saved.toMake.length === 1 ? "1 table" : `${saved.toMake.length} tables`}</span>
                 {saved.toMake.map((t) => (
                   <div key={t.alias} className="flex min-w-0 items-center gap-2 text-xs">
                     <Table2 className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
@@ -352,8 +352,8 @@ export function AppletBuilder({ appletId: initialId, routed = false }: { appletI
         {appletId && saved ? (
           <>
             <div className="flex items-center gap-2 border-b border-border px-3 py-1.5 text-xs text-muted-foreground">
-              <span>{saved.status === "published" ? "Live" : "Saved"} v{saved.version} · test writes are held</span>
-              {held ? <Badge tone="warning">{held} held</Badge> : null}
+              <span>{saved.status === "published" ? "Live" : "Saved"} v{saved.version} · preview changes are not saved</span>
+              {held ? <Badge tone="warning">{held} not saved</Badge> : null}
             </div>
             <div className="min-h-0 flex-1 overflow-y-auto">
               <AppletHostMount
@@ -368,7 +368,7 @@ export function AppletBuilder({ appletId: initialId, routed = false }: { appletI
             </div>
           </>
         ) : (
-          <EmptyState icon={<AppWindow />} title="Your app shows here" line="Say what you want, then Build." />
+          <EmptyState icon={<AppWindow />} title="Your Applet shows here" line="Say what you want, then Build." />
         )}
       </div>
     </div>

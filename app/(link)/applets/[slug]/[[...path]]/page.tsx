@@ -46,7 +46,7 @@ export async function generateMetadata({ params }: Pick<Props, "params">): Promi
     }
     const description = shared.tagline || shared.description || undefined;
     return {
-      ...createRouteMetadata(appletHref(shared.slug), { title: shared.name, titlePrefix: "Applet", description, canonicalPath: appletHref(shared.slug) }),
+      ...createRouteMetadata(appletHref(shared.slug), { title: "Applet", titlePrefix: shared.name, description, canonicalPath: appletHref(shared.slug) }),
       robots: await searchEngineRobots([{ type: "app", key: shared.slug }]),
       icons: getAppletIconsMetadata(shared.favicon_url, shared.name),
       ...(shared.preview_image_url
@@ -56,8 +56,9 @@ export async function generateMetadata({ params }: Pick<Props, "params">): Promi
   }
   const href = appletHref(applet.slug);
   const meta = createRouteMetadata(href, {
-    title: applet.name,
-    titlePrefix: applet.template ? "Applet template" : "Applet",
+    // Most specific first, like every Applet tab: "<Name> | Applet — AI Matrx".
+    title: applet.template ? "Applet template" : "Applet",
+    titlePrefix: applet.name,
     description: applet.tagline ? `${applet.tagline}. ${applet.description ?? ""}`.trim() : (applet.description ?? undefined),
     canonicalPath: href,
     keywords: [...applet.tags, applet.category ?? "", applet.template ? "applet template" : "custom applet", "no-code applet"].filter(Boolean),
