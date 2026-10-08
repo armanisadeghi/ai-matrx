@@ -23,6 +23,7 @@ jest.mock("@/features/organizations/service/membershipsService", () => ({
       counts.memberships += 1;
       return { ok: true, data: { memberships: [{ containerId: ORG, role: "owner" }] } };
     },
+    counts: async () => ({ ok: true, data: { counts: [{ containerId: ORG, memberCount: 3 }] } }),
   },
 }));
 
@@ -68,6 +69,7 @@ jest.mock("@/features/scopes/service/associationsService", () => ({
 }));
 
 import { forgetSharedScopeBootRead, scopesService } from "@/features/scopes/service/scopesService";
+import { getUserOrganizations } from "@/features/organizations/service";
 
 beforeEach(() => {
   forgetSharedScopeBootRead();
@@ -90,4 +92,17 @@ it("a refresh asks again", async () => {
   forgetSharedScopeBootRead();
   await scopesService.getScopeTree();
   expect(counts.organizations).toBe(2);
+});
+
+it("the member list (active and all) and the scope tree share the same one read of her organizations", async () => {
+  const [active, all, tree] = await Promise.all([
+    getUserOrganizations("active"),
+    getUserOrganizations("all"),
+    scopesService.getScopeTree({ shape: "skeleton" }),
+  ]);
+  expect(active.map((o) => o.id)).toEqual([ORG]);
+  expect(all.map((o) => o.id)).toEqual([ORG]);
+  expect(tree.ok).toBe(true);
+  expect(counts.organizations).toBe(1);
+  expect(counts.memberships).toBe(1);
 });

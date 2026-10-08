@@ -55,6 +55,7 @@ import { runWithSessionRetry } from "@/lib/supabase/authRetry";
 import { recordUnavailable } from "@/lib/records/recordUnavailable";
 import { associationsService } from "@/features/scopes/service/associationsService";
 import { membershipsService } from "@/features/organizations/service/membershipsService";
+import { forgetMemberOrganizationRows, readMemberOrganizationRows } from "@/features/organizations/service/memberOrganizationRows";
 import { isScopesRpcErr } from "@/features/scopes/types";
 import {
   err,
@@ -164,6 +165,7 @@ function sharedScopeBootRead<T>(read: () => Promise<T>): Promise<T> {
 /** A refresh, or a write that changed her organizations or projects: the next tree read asks again. */
 export function forgetSharedScopeBootRead(): void {
   sharedBoot = null;
+  forgetMemberOrganizationRows();
 }
 
 async function provisionScopeTableInTheStore(
@@ -269,17 +271,13 @@ export const scopesService = {
       // (2 × chunks × 2 tables per page load). They now share one read while it is in flight and for
       // SHARED_BOOT_READ_MS after; a `refresh` asks again (`forgetSharedScopeBootRead`).
       const boot = await sharedScopeBootRead(async () => {
-        const orgMembersRes = await membershipsService.forUser("organization");
-        if (isScopesRpcErr(orgMembersRes)) return { read: false as const, failed: orgMembersRes };
-        const roleByOrgId = new Map<string, string>();
-        for (const m of orgMembersRes.data.memberships) {
-          roleByOrgId.set(m.containerId, m.role);
+        // Her memberships and organization rows: the ONE shared read (`memberOrganizationRows.ts`).
+        const member = await readMemberOrganizationRows();
+        if (!member.ok) {
+          return { read: false as const, failed: err(...mapPgErrorPair(member.error)) };
         }
+        const roleByOrgId = member.roleByOrgId;
         const orgIds = [...roleByOrgId.keys()];
-
-        // READ IN CHUNKS (lane FINISH-THE-SWITCH, 2026-10-05): a person in ~1000 organizations put every
-        // id in ONE GET url (~38 KB) and the gateway answered 400 — /scopes said "Couldn't load your
-        // scopes". Each read below sends at most IN_CHUNK ids (`inChunks.ts`).
         type OrgRow = {
           id: string;
           name: string;
@@ -290,18 +288,7 @@ export const scopesService = {
           created_by: string | null;
           archived_at: string | null;
         };
-        // `settings` carries the `test_fixture` classification and `created_by` says whose
-        // organization it is — the org picker hides fixtures behind the archived-items disclosure and
-        // draws the person's own first (VERIFIER-8 MEDIUM-3). `archived_at` is read so an ARCHIVED
-        // organization never appears in a "which one am I working in" list; the organizations page's
-        // own archive disclosure is where those live.
-        const orgsP = readInChunks(orgIds, (chunk) =>
-          supabase
-            .schema("iam")
-            .from("organizations")
-            .select("id, name, abbreviation, logo_url, slug, settings, created_by, archived_at")
-            .in("id", chunk) as unknown as PromiseLike<{ data: OrgRow[] | null; error: PostgrestErrorLike | null }>,
-        );
+        const orgsP = Promise.resolve({ data: member.rows as unknown as OrgRow[], error: null as PostgrestErrorLike | null });
 
         // VIEW LAW: org-scoped — restricted to orgIds (see orgsP above).
         const projectsP = readInChunks(orgIds, (chunk) =>

@@ -53,7 +53,7 @@ import {
 import { emailErrorMessage } from "@/lib/email/error-message";
 import { isUuidShape } from "@ai-matrx/kit/uuid";
 import { makeCreatedOrganizationActive } from "./madeOrganizationIsActive";
-import { readInChunks } from "@/features/scopes/service/inChunks";
+import { forgetMemberOrganizationRows, readMemberOrganizationRows } from "./service/memberOrganizationRows";
 
 // ============================================================================
 // Organization CRUD Operations
@@ -67,6 +67,7 @@ import { readInChunks } from "@/features/scopes/service/inChunks";
 export async function createOrganization(
   options: CreateOrganizationOptions,
 ): Promise<OrganizationResult> {
+  forgetMemberOrganizationRows(); // her organizations change: the next read asks again
   try {
     const {
       name,
@@ -171,6 +172,7 @@ export async function updateOrganization(
   orgId: string,
   updates: UpdateOrganizationOptions,
 ): Promise<OrganizationResult> {
+  forgetMemberOrganizationRows(); // her organizations change: the next read asks again
   try {
     const updateData: Database["iam"]["Tables"]["organizations"]["Update"] = {};
 
@@ -251,6 +253,7 @@ export async function updateOrganization(
 export async function deleteOrganization(
   orgId: string,
 ): Promise<OperationResult> {
+  forgetMemberOrganizationRows(); // her organizations change: the next read asks again
   try {
     // The archive door confirms by name.
     const { data: org } = await supabase
@@ -389,46 +392,26 @@ export async function getUserOrganizations(
 ): Promise<OrganizationWithRole[]> {
   requireUserId();
 
-  // Canonical membership read — the current user's org memberships from
-  // iam.memberships via the mbr_* RPCs (org membership row: container_type
-  // 'organization', container_id = organization_id). No cross-schema embed of
-  // `organizations` — we resolve those in a second public-table read.
-  const membersResult = await membershipsService.forUser("organization");
-  if (isScopesRpcErr(membersResult)) {
-    // The Supabase capture boundary already owns the structured error. Throw
-    // only to preserve failure semantics for the UI; do not mirror it to the
-    // console and create a duplicate captured incident.
-    throw new Error(membersResult.error.message);
+  // ONE READ OF HER ORGANIZATIONS PER PAGE LOAD (lane PAGE-BUNDLE-2): her memberships and every
+  // organization row she is in, shared with the scope tree's boot reads
+  // (`memberOrganizationRows.ts`). THE ARCHIVED-ITEMS LAW is applied here, on the shared rows: the
+  // default HIDES archived organizations, and the reveal is this one parameter.
+  const shared = await readMemberOrganizationRows();
+  if (!shared.ok) {
+    if (shared.stage === "memberships") {
+      // The Supabase capture boundary already owns the structured error. Throw only to preserve
+      // failure semantics for the UI; do not mirror it to the console (a duplicate incident).
+      throw new Error(shared.error.message);
+    }
+    throw pgErrorToError(shared.error as Parameters<typeof pgErrorToError>[0]);
   }
-
-  const memberships = membersResult.data.memberships;
-  if (memberships.length === 0) return [];
-
+  if (shared.roleByOrgId.size === 0) return [];
   const roleByOrgId = new Map<string, OrgRole>();
-  for (const m of memberships) {
-    roleByOrgId.set(m.containerId, toOrgRole(m.role));
-  }
+  for (const [orgId, role] of shared.roleByOrgId) roleByOrgId.set(orgId, toOrgRole(role));
   const orgIds = [...roleByOrgId.keys()];
-
-  // Resolve the org rows (public table — direct read, RLS-scoped).
-  // THE ARCHIVED-ITEMS LAW: the default HIDES archived organizations, and the
-  // reveal is this one parameter — never a literal predicate nothing can flip.
-  // ONE GET url can carry ~100 ids, not a person's 970 memberships: read in chunks.
-  const { data: orgRows, error: orgsError } = await readInChunks(
-    orgIds,
-    (chunk) => {
-      let orgQuery = supabase
-        .schema("iam")
-        .from("organizations")
-        .select("*")
-        .in("id", chunk);
-      if (archiveFilter === "active") orgQuery = orgQuery.is("archived_at", null);
-      else if (archiveFilter === "archived")
-        orgQuery = orgQuery.not("archived_at", "is", null);
-      return orgQuery;
-    },
+  const orgRows = shared.rows.filter((row) =>
+    archiveFilter === "active" ? !row.archived_at : archiveFilter === "archived" ? Boolean(row.archived_at) : true,
   );
-  if (orgsError) throw pgErrorToError(orgsError);
 
   // Batch member counts — one round-trip instead of N.
   const countsResult = await membershipsService.counts("organization", orgIds);
@@ -667,6 +650,7 @@ export async function transferOwnership(
   orgId: string,
   newOwnerId: string,
 ): Promise<OperationResult> {
+  forgetMemberOrganizationRows(); // her organizations change: the next read asks again
   try {
     const currentUserId = requireUserId();
 
@@ -700,6 +684,7 @@ export async function transferOwnership(
 export async function leaveOrganization(
   orgId: string,
 ): Promise<OperationResult> {
+  forgetMemberOrganizationRows(); // her organizations change: the next read asks again
   try {
     const currentUserId = requireUserId();
 
@@ -949,6 +934,7 @@ export async function resendInvitation(
 export async function acceptInvitation(
   token: string,
 ): Promise<OrganizationResult> {
+  forgetMemberOrganizationRows(); // her organizations change: the next read asks again
   forgetOrganizationMemberRows();
   try {
     requireUserId();
