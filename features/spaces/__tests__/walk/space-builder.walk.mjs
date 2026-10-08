@@ -1,14 +1,18 @@
 // "Build with AI" walk (round 22, item 4): the three doors, then one launch from the sidebar menu.
 // Records every agent request the page sends (URL, mandate, user input, variables, organization), and
 // whether the floating live-run window opened. Prints JSON; screenshots to WALK_OUT.
-//   node features/spaces/__tests__/walk/space-builder.walk.mjs ["what to build"]
+//   [MEMBER=1] [LEFTOVERS=<id,id>] node features/spaces/__tests__/walk/space-builder.walk.mjs ["what to build"]
+// Round 33: MEMBER=1 walks as test@test.com; the sidebar must load (no "We couldn't load your pages") before and
+// after the build, and the ready state opens the new Space. LEFTOVERS: blank pages of earlier runs go to Trash.
 import { writeFileSync } from "node:fs";
 import { open, newPage, act, trashPage } from "./lib.mjs";
 import { formatDurationMs } from "@ai-matrx/kit/format";
 
 const OUT = process.env.WALK_OUT ?? "/tmp";
 const ASK = process.argv[2] ?? "A simple reading list tracker: book title, author, status (to read, reading, done) and a rating.";
-const { browser, page } = await open();
+const MEMBER = !!process.env.MEMBER;
+const { browser, page } = await open({ member: MEMBER });
+const sidebarError = () => page.getByText("We couldn't load your pages").count();
 const sent = [];
 page.on("request", (r) => {
   if (r.method() !== "POST") return;
@@ -31,6 +35,7 @@ page.on("response", async (r) => {
 
 const id = await newPage(page);
 await page.waitForTimeout(2500);
+const sidebarBefore = (await sidebarError()) === 0;
 const doors = {};
 doors.emptyPageStarter = await page.getByRole("button", { name: "Build with AI" }).first().isVisible().catch(() => false);
 await act(page, async () => {
@@ -71,9 +76,21 @@ const toastText = await page.locator("[data-sonner-toast]").allInnerTexts().catc
 const runWindowText = await page.getByText("Building your Space").first().locator("xpath=ancestor::*[4]").innerText().catch(() => null);
 const result = { id, doors, outcome, url: page.url(), toastText, runWindowText: runWindowText?.slice(0, 800) ?? null, sent: sent.map((s) => ({ url: s.url, body: JSON.stringify(s.body)?.slice(0, 1500) })), responses };
 writeFileSync(`${OUT}/builder-result.json`, JSON.stringify(result, null, 1));
-console.log(JSON.stringify({ outcome, url: page.url(), toastText }));
+const opened = page.url().match(/\/spaces\/([0-9a-f-]{36})/)?.[1] ?? null;
+const sidebarAfter = (await sidebarError()) === 0;
+const openedInTree = opened ? (await page.locator(".spaces-sidebar").getByText(/./).count()) > 0 : false;
+console.log(JSON.stringify({ outcome, url: page.url(), toastText, sidebarBefore, sidebarAfter, openedNew: !!opened && opened !== id }));
+const ok = outcome === "ready" && sidebarBefore && sidebarAfter && !!opened && opened !== id && openedInTree;
 await page.screenshot({ path: `${OUT}/builder-outcome.png` });
 await page.goto(page.url().replace(/spaces\/[0-9a-f-]{36}/, `spaces/${id}`), { waitUntil: "domcontentloaded" });
 await page.locator(".bn-editor").first().waitFor({ timeout: 60_000 });
 console.log("trashed blank", await trashPage(page).catch((e) => `not trashed: ${e.message.slice(0, 80)}`));
+for (const old of (process.env.LEFTOVERS ?? "").split(",").filter(Boolean)) {
+  await page.goto(page.url().replace(/spaces\/[0-9a-f-]{36}/, `spaces/${old}`), { waitUntil: "domcontentloaded" });
+  await page.locator(".bn-editor").first().waitFor({ timeout: 90_000 }).catch(() => {});
+  await page.waitForTimeout(2500);
+  console.log(JSON.stringify({ leftover: old, trashed: await trashPage(page).catch(() => false) }));
+}
 await browser.close();
+console.log(JSON.stringify({ check: "built, ready, opened, sidebar loaded before and after", ok }));
+process.exit(ok ? 0 : 1);

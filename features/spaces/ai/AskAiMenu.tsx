@@ -34,7 +34,7 @@ import { useRef, useState, type ReactNode } from "react";
 
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { AGENT_ICON } from "@/components/icons/domain-icons";
-import MarkdownStream from "@/components/MarkdownStream";
+import MarkdownStream from "@ai-matrx/chat/host/markdown-slots";
 import { notionMarkdownToBlocks } from "@/lib/spaces-blocks/notion-markdown";
 
 import { toEngine } from "../editor/convert";

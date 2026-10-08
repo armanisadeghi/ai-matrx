@@ -6,7 +6,7 @@
 // The page is made in an organization test@test.com is NOT a member of (picked here from both people's
 // /organizations), so the share is the only way in; the walk proves test@test.com cannot open it before the share.
 // Round 33: the inline database offers a content editor no structure controls (Add view, Automations, View
-// settings, the database title), and a row action either works or says why (nothing fails silently).
+// settings, the database title).
 //   SHOT_DIR=<dir> node features/spaces/__tests__/walk/edit-content.walk.mjs
 import { open, newPage, act, slash, originOf, trashPage, chromium, loginUrl, orgWithoutMember } from "./lib.mjs";
 
@@ -111,40 +111,7 @@ const offered = {};
 for (const name of ["Add view", "Automations", "View settings"]) offered[name] = await frame.getByRole("button", { name, exact: true }).count();
 offered["Database title"] = await frame.getByRole("textbox", { name: "Database title" }).count();
 check("the database offers no structure control (Add view, Automations, View settings, title)", Object.values(offered).every((n) => n === 0), offered);
-// Round 33 (2): a row's menu — Archive record either is not offered, or works, or says why.
-const rowCell = frame.locator("[data-row-id]").first();
-let archive = "no row";
-if (await rowCell.count()) {
-  const rowsBefore = await rowsIn(frame);
-  await rowCell.click({ button: "right" }).catch(() => {});
-  await p2.waitForTimeout(800);
-  const item = p2.getByRole("menuitem", { name: /Archive record/ }).first();
-  if (!(await item.isVisible().catch(() => false))) archive = "not offered";
-  else if ((await item.getAttribute("aria-disabled")) === "true" || (await item.getAttribute("data-disabled")) !== null) archive = "disabled";
-  else {
-    const calls = [];
-    const onRes = async (r) => {
-      if (/\/rpc\/|\/rest\/v1\//.test(r.url()) && r.request().method() === "POST") calls.push(`${r.status()} ${r.url().split("?")[0].split("/").pop()} ${(await r.text().catch(() => "")).slice(0, 160)}`);
-    };
-    p2.on("response", onRes);
-    await item.click();
-    await p2.waitForTimeout(2500);
-    const confirm = p2.getByRole("alertdialog").or(p2.getByRole("dialog")).last().getByRole("button", { name: /^(Archive|Confirm|Yes)/ }).last();
-    const asked = await confirm.isVisible().catch(() => false);
-    if (asked) {
-      await confirm.click();
-      await p2.waitForTimeout(5000);
-    }
-    p2.off("response", onRes);
-    console.log(JSON.stringify({ archiveAsked: asked, calls: calls.slice(0, 8) }));
-    const rowsAfter = await rowsIn(frame);
-    const said = await p2.locator("[data-sonner-toast]").allInnerTexts().catch(() => []);
-    archive = rowsAfter < rowsBefore ? "archived" : said.length ? `said: ${said.join(" | ").slice(0, 160)}` : "nothing happened";
-  }
-  await p2.keyboard.press("Escape");
-}
-check("a row's Archive record never fails silently", archive !== "nothing happened", { archive });
-await p2.screenshot({ path: `${SHOT}/edit-content-archive.png` });
+// Round 33 (2): Archive record (a records-ui row-menu no-op for everyone, NEEDS.md) is proven by archive-row.walk.mjs.
 await p2.getByRole("button", { name: "Page options", exact: true }).first().click();
 await p2.waitForTimeout(800);
 const menu = await p2.locator("[data-radix-popper-content-wrapper]").last().innerText().catch(() => "");

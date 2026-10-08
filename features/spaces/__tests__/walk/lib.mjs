@@ -200,6 +200,8 @@ export async function orgWithoutMember() {
   const admin = await open({ member: false, next: "/organizations", width: 1440, height: 1000 });
   const adminOrgs = await orgSlugs(admin.page);
   await admin.browser.close();
+  // An empty list means the page did not load (a paused or restarting preview), never "a member of nothing".
+  if (!memberOrgs.length || !adminOrgs.length) throw new Error(`organizations not read (member ${memberOrgs.length}, admin ${adminOrgs.length})`);
   const org = adminOrgs.find((s) => !memberOrgs.includes(s) && !s.startsWith("5dc930e9"));
   if (!org) throw new Error("no organization the admin is in and test@test.com is not");
   return org;

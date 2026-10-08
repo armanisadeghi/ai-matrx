@@ -267,7 +267,8 @@ await act(page, async () => {
   const levels = (await page.getByRole("option").allInnerTexts()).map((t) => t.trim());
   console.log(JSON.stringify({ shareLevels: levels }));
   await page.screenshot({ path: `${SHOT}/share-levels.png` });
-  check("Share offers viewer, commenter, editor and full access", ["Viewer", "Commenter", "Editor"].every((l) => levels.includes(l)) && levels.some((l) => /Admin|Full access/.test(l)), { levels });
+  // Notion's five levels, in Notion's order (round 32: Can edit content).
+  check("Share offers Notion's levels", levels.join(" · ") === "Full access · Can edit · Can edit content · Can comment · Can view", { levels });
   await page.keyboard.press("Escape");
   await page.keyboard.press("Escape");
 });

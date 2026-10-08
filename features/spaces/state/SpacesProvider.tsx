@@ -12,7 +12,6 @@ import { createContext, useContext, useEffect, useRef, useState, type ReactNode 
 
 import { selectActiveOrganizationId } from "@/features/scopes/redux/selectors/active-context";
 import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
-import { isOrganizationSelectionCancelled } from "@/lib/organization/selection-cancelled";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { toast } from "@/lib/toast";
 
@@ -161,10 +160,16 @@ export function SpacesProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     let live = true;
     let retriedRefusal = false;
+    // A failed read that is not a refusal (a statement timeout on a busy database) is read once more before it
+    // is shown; once the tree has loaded, a failed re-read (after Build with AI, a tree change) keeps the tree.
+    let retriedFailure = false;
+    let loadedOnce = false;
     const refresh = () => {
       void store.list({ includeArchived: true }).then(
         (list) => {
           if (!live) return;
+          loadedOnce = true;
+          retriedFailure = false;
           setAll(list);
           setLoadError(null);
           setAccess(null);
@@ -186,7 +191,18 @@ export function SpacesProvider({ children }: { children: ReactNode }) {
             setLoadError(null);
           } else {
             console.error("[spaces] the page tree could not be read", err);
+            if (!retriedFailure) {
+              retriedFailure = true;
+              window.setTimeout(() => live && refresh(), 2000);
+              return;
+            }
             setAccess(null);
+            if (loadedOnce) {
+              // The last list stays on screen; the person is told it is not fresh and can read it again.
+              retriedFailure = false;
+              toast.error("Your pages could not be refreshed", { action: { label: "Try again", onClick: () => reload.current() } });
+              return;
+            }
             setLoadError("We couldn't load your pages.");
           }
           setReady(true);
@@ -289,7 +305,7 @@ export function SpacesProvider({ children }: { children: ReactNode }) {
       }
       return doc;
     } catch (err) {
-      if (!isOrganizationSelectionCancelled(err)) toast.error(err instanceof Error ? err.message : "We couldn't create the page.");
+      toast.error(err instanceof Error ? err.message : "We couldn't create the page.");
       throw err;
     }
   };
@@ -355,12 +371,10 @@ export function SpacesProvider({ children }: { children: ReactNode }) {
         open(plan.id);
       }
     } catch (err) {
-      if (!isOrganizationSelectionCancelled(err)) {
-        toast.error(err instanceof Error ? err.message : "We couldn't add the sample.", {
+      toast.error(err instanceof Error ? err.message : "We couldn't add the sample.", {
           duration: Infinity,
           action: { label: "Try again", onClick: () => void addSample(opts) },
         });
-      }
     } finally {
       setSampleProgress(null);
     }
@@ -398,7 +412,7 @@ export function SpacesProvider({ children }: { children: ReactNode }) {
       }
       showCopy(copyId, title, id);
     } catch (err) {
-      if (!isOrganizationSelectionCancelled(err)) toast.error(err instanceof Error ? err.message : "We couldn't use this template.");
+      toast.error(err instanceof Error ? err.message : "We couldn't use this template.");
     }
   };
   const archiveSpace = (id: SpaceId) => store.archive(id);
