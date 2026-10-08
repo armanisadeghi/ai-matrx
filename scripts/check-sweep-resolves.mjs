@@ -136,16 +136,24 @@ function compilerSetup(root) {
     esModuleInterop: true,
     types: [],
   };
-  let globals = [];
   if (existsSync(configPath)) {
-    const parsed = ts.getParsedCommandLineOfConfigFile(configPath, {}, { ...ts.sys, onUnRecoverableConfigFileDiagnostic: () => {} });
-    if (parsed) {
-      options = { ...parsed.options, noEmit: true, incremental: false, tsBuildInfoFile: undefined, composite: false };
-      // Ambient declarations (next-env.d.ts, *.d.ts for css/svg imports) are what make an
-      // asset import resolve; without them every `import "./x.css"` would read as missing.
-      globals = parsed.fileNames.filter((f) => /\.d\.[cm]?ts$/.test(f));
-    }
+    // compilerOptions only: letting TypeScript expand `include` walks the whole tree (~60 s here).
+    const { config } = ts.readConfigFile(configPath, ts.sys.readFile);
+    const { options: parsed } = ts.convertCompilerOptionsFromJson(config?.compilerOptions ?? {}, root, configPath);
+    options = { ...parsed, noEmit: true, incremental: false, tsBuildInfoFile: undefined, composite: false };
   }
+  // Ambient declarations (global.d.ts, next-env.d.ts, css/svg modules) are what make an asset
+  // import resolve; without them every `import "./x.css"` would read as missing.
+  let globals = [];
+  try {
+    globals = git(root, ["ls-files", "-z", "--cached", "--others", "--exclude-standard", "--", "*.d.ts"])
+      .split("\0")
+      .filter((f) => f && !SKIP.test(f))
+      .map((f) => resolve(root, f));
+  } catch {
+    globals = [];
+  }
+  for (const f of ["next-env.d.ts"]) if (existsSync(join(root, f))) globals.push(resolve(root, f));
   return { options, globals };
 }
 
@@ -174,6 +182,47 @@ function specifiersOf(file, text) {
   };
   visit(sf);
   return { sf, specs: out };
+}
+
+/**
+ * A local module reduced to its export surface: every exported name as `any` (value AND type, so
+ * either kind of import resolves), every `export … from` kept verbatim. Members of these are `any`,
+ * so the type-check backlog in our own code never reads as a held file — only names, modules and
+ * @ai-matrx package types are judged.
+ */
+export function stubSource(file, text) {
+  const kind = /\.(tsx|jsx)$/.test(file) ? ts.ScriptKind.TSX : ts.ScriptKind.TS;
+  const sf = ts.createSourceFile(file, text, ts.ScriptTarget.Latest, false, kind);
+  const names = new Set();
+  const lines = [];
+  let hasDefault = false;
+  const mods = (n) => ts.getModifiers?.(n) ?? n.modifiers ?? [];
+  const has = (n, k) => mods(n).some((m) => m.kind === k);
+  const bind = (name) => {
+    if (ts.isIdentifier(name)) names.add(name.text);
+    else for (const el of name.elements ?? []) if (el.name) bind(el.name);
+  };
+  for (const st of sf.statements) {
+    if (ts.isExportDeclaration(st)) {
+      if (st.moduleSpecifier) lines.push(st.getText(sf));
+      else if (st.exportClause && ts.isNamedExports(st.exportClause)) {
+        for (const el of st.exportClause.elements) {
+          if (el.name.text === "default") hasDefault = true;
+          else names.add(el.name.text);
+        }
+      }
+    } else if (ts.isExportAssignment(st)) {
+      hasDefault = true;
+    } else if (has(st, ts.SyntaxKind.ExportKeyword)) {
+      if (has(st, ts.SyntaxKind.DefaultKeyword)) hasDefault = true;
+      else if (ts.isVariableStatement(st)) for (const d of st.declarationList.declarations) bind(d.name);
+      else if (st.name && ts.isIdentifier(st.name)) names.add(st.name.text);
+    }
+  }
+  for (const n of names) lines.push(`export declare const ${n}: any; export type ${n} = any;`);
+  if (hasDefault) lines.push("declare const __matrx_stub_default: any; export default __matrx_stub_default;");
+  if (lines.length === 0) lines.push("export {};");
+  return lines.join("\n") + "\n";
 }
 
 function lineOf(sf, pos) {
@@ -237,35 +286,80 @@ export function classify(root) {
     if (!stems.has(stem)) stems.set(stem, []);
     stems.get(stem).push(t);
   }
-  for (const [stem, ts_] of stems) {
-    let hits = [];
+  const resolutionCache = ts.createModuleResolutionCache(root, (x) => x, options);
+  const resolveCached = (spec, from, host) => {
+    const r = ts.resolveModuleName(spec, from, options, host, host === ts.sys ? resolutionCache : undefined);
+    return r.resolvedModule?.resolvedFileName ? resolve(r.resolvedModule.resolvedFileName) : null;
+  };
+  // ONE `git grep` for every stem (a grep per stem was ~2 s of system time each): only files whose
+  // TEXT names a specifier ending in a stem ("…/stem'" or "…/stem.ts\"") are opened.
+  const esc = (x) => x.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const stemOf = new Map([...stems.keys()].map((st) => [st, new RegExp(`/${esc(st)}(\\.[cm]?[jt]sx?)?$`)]));
+  let hits = [];
+  if (stems.size) {
+    const pats = [...stems.keys()].flatMap((st) => ["-e", `/${esc(st)}(\\.[cm]?[jt]sx?)?["']`]);
     try {
-      hits = git(root, ["grep", "-l", "-z", "-F", "-e", stem, "--", "*.ts", "*.tsx", "*.js", "*.jsx", "*.mjs", "*.mts"]).split("\0").filter(Boolean);
+      hits = git(root, ["grep", "-l", "-z", "-E", ...pats, "--", "*.ts", "*.tsx", "*.js", "*.jsx", "*.mjs", "*.mts"])
+        .split("\0")
+        .filter(Boolean);
     } catch {
       hits = [];
     }
-    for (const h of hits.slice(0, IMPORTER_SCAN_CAP)) {
-      const habs = abs(h);
-      if (swept.has(habs) || SKIP.test(h)) continue;
-      let text;
-      try {
-        text = readFileSync(habs, "utf8");
-      } catch {
-        continue;
+  }
+  for (const h of hits.slice(0, IMPORTER_SCAN_CAP * Math.max(1, stems.size))) {
+    const habs = abs(h);
+    if (swept.has(habs) || SKIP.test(h)) continue;
+    let text;
+    try {
+      text = readFileSync(habs, "utf8");
+    } catch {
+      continue;
+    }
+    // Cheap first: quoted strings in the text that end in a stem AND resolve to a target. Only
+    // then is the file parsed for the statement's position (most "./types" are someone else's).
+    const wanted = new Set();
+    for (const m of text.matchAll(/["']([^"'\n]+)["']/g)) {
+      const spec = m[1];
+      for (const [st, re] of stemOf) {
+        if (!re.test(spec)) continue;
+        const target = deletedAbs.size ? resolveSpec(spec, habs, options, ghostHost) : resolveCached(spec, habs, ts.sys);
+        if (target && stems.get(st).includes(target)) wanted.add(spec);
       }
-      const { sf, specs } = specifiersOf(habs, text);
-      for (const { spec, node } of specs) {
-        const target = resolveSpec(spec, habs, options, ghostHost);
-        if (target && ts_.includes(target)) {
-          if (!importersOf.has(habs)) importersOf.set(habs, []);
-          importersOf.get(habs).push({ target, start: node.getStart(sf), end: node.getEnd(), spec });
-        }
-      }
+    }
+    if (wanted.size === 0) continue;
+    const { sf, specs } = specifiersOf(habs, text);
+    for (const { spec, node } of specs) {
+      if (!wanted.has(spec)) continue;
+      const target = deletedAbs.size ? resolveSpec(spec, habs, options, ghostHost) : resolveCached(spec, habs, ts.sys);
+      if (!importersOf.has(habs)) importersOf.set(habs, []);
+      importersOf.get(habs).push({ target, start: node.getStart(sf), end: node.getEnd(), spec });
     }
   }
 
   const roots = [...new Set([...swept.keys(), ...importersOf.keys(), ...globals])].filter((f) => existsSync(f));
-  const program = ts.createProgram({ rootNames: roots, options });
+  // Every OTHER local source file is read as its export surface only (stubSource). Loading the
+  // real closure pulled 12,379 files and took ~2 minutes; the surface keeps every name a file
+  // exports (so a missing local export is still TS2305) and every `export … from` verbatim (so a
+  // `export * from "@ai-matrx/…"` shim still reaches the real package), and imports nothing else.
+  const realFiles = new Set(roots);
+  const host = ts.createCompilerHost(options, true);
+  const baseGetSourceFile = host.getSourceFile.bind(host);
+  const rootPrefix = root + sep;
+  host.getSourceFile = (fileName, languageVersion, onError, shouldCreate) => {
+    const f = resolve(fileName);
+    if (
+      f.startsWith(rootPrefix) &&
+      !realFiles.has(f) &&
+      SOURCE_EXT.test(f) &&
+      !/\.d\.[cm]?ts$/.test(f) &&
+      !f.slice(rootPrefix.length).split(sep).includes("node_modules")
+    ) {
+      const text = host.readFile(fileName);
+      if (text !== undefined) return ts.createSourceFile(fileName, stubSource(fileName, text), languageVersion, true);
+    }
+    return baseGetSourceFile(fileName, languageVersion, onError, shouldCreate);
+  };
+  const program = ts.createProgram({ rootNames: roots, options, host });
   const checker = program.getTypeChecker();
   const reasons = new Map(); // abs path → [reason]
   const hold = (f, why) => {

@@ -771,14 +771,52 @@ def live_plants(top, common_dir):
 
 
 # ── step 1 ──────────────────────────────────────────────────────────────────────────────────
+# SWEEP HOLD (2026-10-07). The sweep used to commit every uncommitted file, so the consumer half
+# of a cross-repo change (written against @ai-matrx source while the package's npm publish was
+# still in flight) went to main with the OLD package locked: 12 failed Vercel builds in 36 hours
+# and one green build that crashed manage.aimatrx.com ("v.currentScope is not a function"). Before
+# staging, scripts/check-sweep-resolves.mjs asks the TypeScript checker, against the packages
+# actually installed, which uncommitted files would break the build (a module or name that does
+# not resolve, a member an @ai-matrx type lacks, a file that does not parse, a committed importer
+# left dangling) and closes that set over their importers. Those files stay uncommitted on disk,
+# untouched; the next sync takes them once the package is served. Scream, never block: everything
+# else is committed and released as before. A check that cannot run holds nothing and says so.
+SWEEP_CHECK = os.path.join("scripts", "check-sweep-resolves.mjs")
+SWEEP_CHECK_TIMEOUT = 300   # seconds; ~20 s for 45 files on 2026-10-07. Review 2026-11-07.
+
+
+def sweep_holds():
+    """[(path, [reason])] the sweep must not commit yet. [] when there is nothing to hold or the
+    check is absent; a check that fails to run is announced and holds nothing."""
+    if not os.path.isfile(SWEEP_CHECK):
+        return []
+    try:
+        r = subprocess.run(["node", SWEEP_CHECK, "--json"], capture_output=True, text=True,
+                           timeout=SWEEP_CHECK_TIMEOUT)
+        if r.returncode != 0:
+            raise RuntimeError((r.stderr or r.stdout).strip()[-600:] or "exit %d" % r.returncode)
+        data = json.loads(r.stdout.strip().splitlines()[-1])
+    except (OSError, ValueError, RuntimeError, subprocess.TimeoutExpired) as e:
+        say("SWEEP CHECK COULD NOT RUN (%s) — sweeping every file as before, so a file that needs "
+            "an unpublished @ai-matrx version can reach the release: %s" % (SWEEP_CHECK, e))
+        return []
+    return [(h["path"], h.get("reasons") or []) for h in data.get("hold") or []]
+
+
 def commit_all():
     _, common, _ = git("rev-parse", "--git-common-dir")
     planted = live_plants(os.getcwd(), os.path.abspath(common.strip()))
-    git("add", "-A", "--", ".", *[":(exclude,literal)" + p for p, _ in planted])
+    held = sweep_holds()
+    excluded = [p for p, _ in planted] + [p for p, _ in held]
+    git("add", "-A", "--", ".", *[":(exclude,literal)" + p for p in excluded])
     for p, pid in planted:
         git("restore", "--staged", "--", ":(literal)" + p, check=False)
         say("SWEEP SKIPPED %s: a forcing-function plant (pid %d) is live in it; the next sync "
             "commits it." % (p, pid))
+    for p, reasons in held:
+        git("restore", "--staged", "--", ":(literal)" + p, check=False)
+        say("SWEEP HELD %s — it would break the build, so it stays uncommitted on disk and the "
+            "next sync retries it:\n        %s" % (p, "\n        ".join(reasons[:4])))
     rc, _, _ = git("diff", "--cached", "--quiet", check=False)
     if rc == 0:
         return 0
