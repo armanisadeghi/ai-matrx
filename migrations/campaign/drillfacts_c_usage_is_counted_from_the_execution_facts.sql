@@ -111,6 +111,12 @@ begin
 end
 $check$;
 
+-- THE VIEW: every stored fact, plus the executions after the watermark that are not stored yet, computed
+-- live. The facts hold exactly the executions before the watermark (the writer stores [from, cut) and
+-- removes what lies past the cut; the watermark only moves forward), so the facts branch carries no
+-- bound — a bound read from the watermark row is a parameter the planner cannot estimate (it guessed
+-- 1,824 rows for 214,544 on the clone); the live branch skips any execution already stored, so no
+-- execution is ever counted twice.
 create or replace view runtime._ai_usage_calls with (security_invoker = true) as
 select f.execution_id, f.created_at, f.bucket, f.bucket_10m, f.organization_id, f.person_id,
        f.agent_id, f.provider, f.model, f.app, f.feature, f.origin, f.trigger, f.source, f.cost,
@@ -118,7 +124,6 @@ select f.execution_id, f.created_at, f.bucket, f.bucket_10m, f.organization_id, 
        f.unpriced_calls, f.request_id, f.conversation_id, f.session_id, f.got_nothing_back,
        f.iterations, f.call_model, f.has_request, f.finish_reason, f.tool_calls
   from runtime._ai_usage_execution_facts f
- where f.created_at < coalesce((select w.covered_to from runtime._ai_usage_hourly_watermark w where w.singleton), '-infinity'::timestamptz)
 union all
 select l.execution_id, l.created_at, l.bucket, l.bucket_10m, l.organization_id, l.person_id,
        l.agent_id, l.provider, l.model, l.app, l.feature, l.origin, l.trigger, l.source, l.cost,
@@ -126,4 +131,5 @@ select l.execution_id, l.created_at, l.bucket, l.bucket_10m, l.organization_id, 
        l.unpriced_calls, l.request_id, l.conversation_id, l.session_id, l.got_nothing_back,
        l.iterations, l.call_model, l.has_request, l.finish_reason, l.tool_calls
   from runtime._ai_usage_calls_live l
- where l.created_at >= coalesce((select w.covered_to from runtime._ai_usage_hourly_watermark w where w.singleton), '-infinity'::timestamptz);
+ where l.created_at >= coalesce((select w.covered_to from runtime._ai_usage_hourly_watermark w where w.singleton), '-infinity'::timestamptz)
+   and not exists (select 1 from runtime._ai_usage_execution_facts f2 where f2.execution_id = l.execution_id);

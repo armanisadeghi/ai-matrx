@@ -1,6 +1,9 @@
 -- chair-step: the inverse of migrations/campaign/drillfacts_c_usage_is_counted_from_the_execution_facts.sql (lane DRILL-FACTS) — puts back the bodies production held before it: runtime.ai_usage_hourly_refresh summing the hours straight from runtime._ai_usage_calls, and runtime._ai_usage_calls deriving every execution live from the ledger (verbatim, drillserver2_a_usage_record_checks_its_ids_without_a_pattern.sql). The facts table is left as it is (its own inverse drops it). No row of anybody's data is touched.
 -- lane: DRILL-FACTS
 -- lock: platform
+-- based-on: runtime.ai_usage_hourly_refresh(timestamp with time zone, timestamp with time zone) c87eb38d6b1e6b55aa0e5cf7a166992c4c6e15216bc305607ac3c999ee5042fd
+-- based-on: view runtime._ai_usage_calls 47b5493d46c3dd007205a278ce37068e63649b4ee380458a453e0d0f78ee476f
+-- (based-on: the bodies drillfacts_c_usage_is_counted_from_the_execution_facts.sql installs, read on the clone 2026-10-08)
 
 CREATE OR REPLACE FUNCTION runtime.ai_usage_hourly_refresh(p_from timestamp with time zone, p_to timestamp with time zone)
  RETURNS bigint
