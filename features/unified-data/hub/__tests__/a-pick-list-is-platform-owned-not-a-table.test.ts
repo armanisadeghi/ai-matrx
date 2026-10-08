@@ -26,14 +26,14 @@ const row = (over: Partial<DataHomeTableRow>): DataHomeTableRow => ({
   updated_at: "2026-09-27T15:40:00Z",
   mine: true,
   shared_with_me: false,
-  kept_by_the_app: false,
+  platform_owned: false,
   kind: "table",
   ...over,
 });
 
 const EVERYWHERE = [
   row({}),
-  row({ table_id: STATUS_CHOICES, table_name: "Status choices", kept_by_the_app: true, kind: "list" }),
+  row({ table_id: STATUS_CHOICES, table_name: "Status choices", platform_owned: true, kind: "list" }),
 ];
 
 describe("the data home · a pick list is listed, as a list", () => {
@@ -62,7 +62,7 @@ describe("the data home · a pick list is listed, as a list", () => {
   it("the organization's facts still fold onto its own Table list: Service Calls is mine", () => {
     const listed = [{ id: SERVICE_CALLS, name: "Rincon Plumbing — Service Calls", fields: [] }] as unknown as Table[];
     const facts = new Map<string, TableFactRow>([
-      [SERVICE_CALLS, { table_id: SERVICE_CALLS, visibility: "internal", mine: true, kept_by_the_app: false }],
+      [SERVICE_CALLS, { table_id: SERVICE_CALLS, visibility: "internal", mine: true, platform_owned: false }],
     ]);
     const [calls] = withHubTableFacts(listed, facts, ME);
     expect((calls as Table & { created_by?: string }).created_by).toBe(ME);

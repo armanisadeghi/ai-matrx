@@ -129,7 +129,7 @@ export async function provisionReview360(
           {
             do: "edit_rows" as const,
             table: review360,
-            where: { review_ref: { trigger: "review_ref" } },
+            where: { op: "eq", args: [{ field: "review_ref" }, { trigger: "review_ref" }] },
             values: { [`${kind}_submitted_at`]: { now: true } },
             limit: 1,
           },

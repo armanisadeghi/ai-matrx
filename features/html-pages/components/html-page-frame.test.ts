@@ -2,6 +2,7 @@ import { existsSync, readFileSync } from "node:fs";
 import path from "node:path";
 import {
   HTML_PAGE_HEIGHT_MESSAGE,
+  cardFrameUrl,
   htmlPageCanvasContent,
   pageOrigins,
   readPageHeight,
@@ -76,5 +77,21 @@ describe("one canvas path for an html page", () => {
     }
     const preview = readFileSync(path.resolve(__dirname, "HtmlInlinePreview.tsx"), "utf8");
     expect(preview).toContain("htmlPageCanvasContent(");
+  });
+});
+
+describe("the inline card asks the page to fit (?fit=card)", () => {
+  it("adds fit=card to the page URL and keeps the origin the height check trusts", () => {
+    const card = cardFrameUrl(PAGE)!;
+    expect(new URL(card).searchParams.get("fit")).toBe("card");
+    expect(new URL(card).origin).toBe(new URL(PAGE).origin);
+    expect(new URL(card).pathname).toBe(new URL(PAGE).pathname);
+  });
+
+  it("only the inline card frame uses it (the seamless embed and canvas never scale)", () => {
+    const src = readFileSync(path.join(__dirname, "HtmlInlinePreview.tsx"), "utf8");
+    expect(src.match(/cardFrameUrl\(url\)/g)).toHaveLength(1);
+    const cardFrame = src.slice(src.lastIndexOf("<iframe", src.indexOf("data-html-inline-frame")), src.indexOf("data-html-inline-frame"));
+    expect(cardFrame).toContain("src={cardFrameUrl(url)}");
   });
 });

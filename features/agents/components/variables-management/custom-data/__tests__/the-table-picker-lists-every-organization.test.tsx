@@ -37,7 +37,7 @@ function row(id: string, name: string, org: string, orgName: string, extra: Reco
     updated_at: "2026-09-27T15:40:00Z",
     mine: false,
     shared_with_me: org === OJAI,
-    kept_by_the_app: false,
+    platform_owned: false,
     kind: "table",
     team: false,
     system: false,
@@ -51,7 +51,7 @@ const EVERY_ROW = [
   row("a1000000-0000-4000-8000-000000000002", "Service calls", RINCON, "Rincon Plumbing Co"),
   row("a1000000-0000-4000-8000-000000000003", "Backflow test schedule", OJAI, "Ojai Valley Home Services"),
   row("a1000000-0000-4000-8000-000000000004", "Status choices", RINCON, "Rincon Plumbing Co", {
-    kept_by_the_app: true,
+    platform_owned: true,
     kind: "list",
   }),
   // Published by an organization she is not in: Public lane only, never folded into All.
@@ -96,14 +96,14 @@ jest.mock("@ai-matrx/records-ui", () => ({
   fieldName: (f: { key: string }) => f.key,
   rowNameIn: () => "",
   tableName: (t: { name: string }) => t.name,
-  platformOwned: (t: { kept_by_the_app?: boolean }) => t.kept_by_the_app === true,
+  platformOwned: (t: { platform_owned?: boolean }) => t.platform_owned === true,
   recordsDataSource: () => ({ rpc: jest.fn() }),
   personActor: () => ({}),
   // The picker's one rule (records-ui tablePicking): tables only, the chosen one always kept.
   tablePickerEntries: (
-    rows: Array<{ id: string; kept_by_the_app?: boolean }>,
+    rows: Array<{ id: string; platform_owned?: boolean }>,
     { keep }: { keep?: string | null },
-  ) => ({ entries: rows.filter((r) => !r.kept_by_the_app || r.id === keep).map((table) => ({ table })) }),
+  ) => ({ entries: rows.filter((r) => !r.platform_owned || r.id === keep).map((table) => ({ table })) }),
 }));
 // Keeps the real module (the chat package reads `cn` etc. from it at import time); only the two inputs are stand-ins.
 jest.mock("@ai-matrx/design-system", () => ({

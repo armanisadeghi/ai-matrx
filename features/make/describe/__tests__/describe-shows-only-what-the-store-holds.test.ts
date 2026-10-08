@@ -27,7 +27,7 @@ const table = (id: string, name: string, org = CEDAR, extra: Partial<DataHomeTab
   updated_at: "2026-10-02T21:00:00Z",
   mine: true,
   shared_with_me: false,
-  kept_by_the_app: false,
+  platform_owned: false,
   kind: "table",
   ...extra,
 });
@@ -80,7 +80,7 @@ describe("the describe box shows only what the sentence made", () => {
   it("never lists the slots table the app keeps for a booking page", () => {
     const made = madeSince(
       before,
-      { tables: [table("t-slots", "Book your first visit slots", CEDAR, { kept_by_the_app: true, kind: "booking" })], items: [] },
+      { tables: [table("t-slots", "Book your first visit slots", CEDAR, { platform_owned: true, kind: "booking" })], items: [] },
       CEDAR,
     );
     expect(made).toEqual([]);

@@ -531,7 +531,7 @@ function TableChoice({ tables: tablesRead, testOrganizationIds, activeOrganizati
   // The person's own tables in every organization she reaches (never the app's bookkeeping), the
   // most recently changed first and test organizations last; each names its organization.
   const tables = tablesRead.data
-    .filter((t) => t.kind === "table" && !t.kept_by_the_app)
+    .filter((t) => t.kind === "table" && !t.platform_owned)
     .slice()
     .sort(
       (a, b) =>

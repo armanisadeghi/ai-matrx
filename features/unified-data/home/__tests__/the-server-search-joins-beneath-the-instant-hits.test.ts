@@ -73,7 +73,7 @@ describe("the server layer", () => {
     tables: [
       {
         table_id: "t1", table_name: "Service Calls", organization_id: "o1", organization_name: "Ironclad Mobile Mechanics",
-        member: true, visibility: "internal", updated_at: null, mine: true, shared_with_me: false, kept_by_the_app: false,
+        member: true, visibility: "internal", updated_at: null, mine: true, shared_with_me: false, platform_owned: false,
         kind: "table", match_rank: 4, matched_in: "field", matched_field: "Furnace model",
       },
     ],

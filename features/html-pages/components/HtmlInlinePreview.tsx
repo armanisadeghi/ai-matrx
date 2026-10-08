@@ -36,9 +36,11 @@ import { HtmlAttachToChat } from "@/features/html-pages/components/HtmlAttachToC
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { useHtmlPreviewChrome } from "@/features/html-pages/components/HtmlPreviewChrome";
 import {
+  cardFrameUrl,
   htmlPageCanvasContent,
   readPageHeight,
 } from "@/features/html-pages/components/html-page-frame";
+import { WIDE_FIGURE_CLASS } from "@ai-matrx/chat/agents/components/shared/assistant-message-layout";
 
 /**
  * HtmlInlinePreview — auto-renders previewable HTML as a live, inline webpage
@@ -549,8 +551,10 @@ const HtmlInlinePreview: React.FC<HtmlInlinePreviewProps> = ({
   // 3b. Success — full document → ONE header over a frame sized to the page.
   return (
     <div
+      data-html-figure=""
       className={cn(
         "my-3 overflow-hidden rounded-lg border border-border bg-card",
+        WIDE_FIGURE_CLASS,
         className,
       )}
     >
@@ -560,7 +564,7 @@ const HtmlInlinePreview: React.FC<HtmlInlinePreviewProps> = ({
       ) : (
         <iframe
           ref={frameRef}
-          src={url ?? undefined}
+          src={cardFrameUrl(url)}
           title={title}
           data-native-title=""
           data-html-inline-frame=""

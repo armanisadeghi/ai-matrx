@@ -217,7 +217,7 @@ function syncedFromOf(table: DataHomeTableRow): string | null {
 }
 
 export function keptTableRow(table: DataHomeTableRow): boolean {
-  return isKeptTable({ id: table.table_id, name: table.table_name, kind: table.kind, kept_by_the_app: table.kept_by_the_app });
+  return isKeptTable({ id: table.table_id, name: table.table_name, kind: table.kind, platform_owned: table.platform_owned });
 }
 
 function toRow(

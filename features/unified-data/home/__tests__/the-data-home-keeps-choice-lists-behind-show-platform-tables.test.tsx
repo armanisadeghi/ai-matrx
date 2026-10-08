@@ -3,7 +3,7 @@
  *
  * THE BREAK. Every choice column keeps its choices in a List ("Status choices"), and
  * `custom.data_home` answers each one beside the person's real tables (`kind: "list"`,
- * `kept_by_the_app: true` — live 2026-10-02: the admin seat's first page was 18 "… choices" rows).
+ * `platform_owned: true` — live 2026-10-02: the admin seat's first page was 18 "… choices" rows).
  * A physical-therapy clinic with five choice columns saw five lists it never made, mixed into its
  * tables. The one rule (`isKeptTable` from `@ai-matrx/records-ui`) now keeps them out by default;
  * "Show platform tables" in Filters brings them in, and the choice is the person's own preference
@@ -87,7 +87,7 @@ function table(id: string, name: string, kind: string, platformOwned: boolean): 
     updated_at: "2026-10-01T16:20:00.000Z",
     mine: true,
     shared_with_me: false,
-    kept_by_the_app: platformOwned,
+    platform_owned: platformOwned,
     kind,
     team: false,
     system: false,

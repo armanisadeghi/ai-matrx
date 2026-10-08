@@ -16,7 +16,7 @@ const ROW = (over: Partial<DataHomeTableRow>): DataHomeTableRow => ({
   updated_at: "2026-09-27T15:40:00Z",
   mine: false,
   shared_with_me: false,
-  kept_by_the_app: false,
+  platform_owned: false,
   kind: "table",
   ...over,
 });

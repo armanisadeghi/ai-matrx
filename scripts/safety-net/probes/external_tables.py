@@ -359,11 +359,11 @@ async def mcp_calls(key: str, calls: list[dict]) -> list[tuple[bool, str]]:
 
 def visibility(admin: Seat, member: Seat, fx: dict, member_key: str | None, admin_key: str | None) -> None:
     T = fx["table"]
-    s, b, raw = member.rpc("data_home", {"p_organization_id": None, "p_search": None, "p_include_app_tables": True})
+    s, b, raw = member.rpc("data_home", {"p_organization_id": None, "p_search": None, "p_include_platform_tables": True})
     step(["EXT04"], "data home: test@test.com does not meet the table", s == 200 and T not in raw, f"status {s} listed={T in raw}")
-    s, b, raw = member.rpc("data_home", {"p_organization_id": None, "p_search": "Appointments", "p_include_app_tables": True})
+    s, b, raw = member.rpc("data_home", {"p_organization_id": None, "p_search": "Appointments", "p_include_platform_tables": True})
     step(["EXT04"], "data home search 'Appointments': not found", s == 200 and T not in raw, f"status {s} listed={T in raw}")
-    for door, args in (("table_list_everywhere", {"p_organization_id": ORG, "p_include_app_tables": True}),
+    for door, args in (("table_list_everywhere", {"p_organization_id": ORG, "p_include_platform_tables": True}),
                        ("tables_i_can_open", {})):
         s, b, raw = member.rpc(door, args)
         # named with an organization she is outside of, the door refuses her by name (403); that is "not offered" too

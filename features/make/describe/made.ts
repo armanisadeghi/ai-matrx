@@ -69,7 +69,7 @@ export function madeSince(
   const made: MadeThing[] = [];
   for (const t of after.tables) {
     if (t.organization_id !== organizationId || before.tables.has(t.table_id)) continue;
-    if (t.kept_by_the_app || t.kind !== "table") continue;
+    if (t.platform_owned || t.kind !== "table") continue;
     made.push({ kind: "table", id: t.table_id, title: t.table_name, href: `/data/${t.table_id}` });
   }
   const bookingIds = new Set(

@@ -225,7 +225,7 @@ export interface TableFactRow {
    * folds it on from here — otherwise a pick list is listed as one of the organization's tables.
    * Absent on a store whose door answers only the first three columns.
    */
-  kept_by_the_app?: boolean | null;
+  platform_owned?: boolean | null;
   /** The store's sentence for who keeps a kept Table. */
   keeper_says?: string | null;
 }
@@ -287,7 +287,7 @@ export interface DataHomeTableRow {
   /** A live grant names the person signed in, given by somebody else. */
   shared_with_me: boolean;
   /** The store keeps this Table for itself (custom.table_placement). Listed all the same. */
-  kept_by_the_app: boolean;
+  platform_owned: boolean;
   /**
    * What it is, in the store's one word: table (the person's own) · list · scope · form · view ·
    * comment · dashboard · action · checklist · booking · workflow · kit · store · demo · app.
@@ -334,7 +334,7 @@ export function dataHomeTables(
     // "SHOW PLATFORM TABLES" (CHAIR-DOORS-2, N-C8): the door leaves out the tables the app keeps for
     // agents' outputs; the (uuid, boolean) overload is picked by naming BOTH arguments.
     options.includePlatformTables
-      ? { p_organization_id: organizationId, p_include_app_tables: true }
+      ? { p_organization_id: organizationId, p_include_platform_tables: true }
       : organizationId
         ? { p_organization_id: organizationId }
         : {},
@@ -605,7 +605,7 @@ export async function dataHome(
 ): Promise<DoorAnswer<DataHomeAnswer>> {
   const answered = await call<DataHomeAnswer | null>(dataSource, "data_home", {
     ...(organizationId ? { p_organization_id: organizationId } : {}),
-    ...(options.includePlatformTables ? { p_include_app_tables: true } : {}),
+    ...(options.includePlatformTables ? { p_include_platform_tables: true } : {}),
   });
   if (!answered.ok) return answered;
   const data = answered.data && !Array.isArray(answered.data) ? answered.data : null;
@@ -659,7 +659,7 @@ export async function dataHomeSearch(
   const answered = await call<DataHomeSearchAnswer | null>(dataSource, "data_home", {
     ...(organizationId ? { p_organization_id: organizationId } : {}),
     p_search: q,
-    ...(options.includePlatformTables ? { p_include_app_tables: true } : {}),
+    ...(options.includePlatformTables ? { p_include_platform_tables: true } : {}),
   });
   if (!answered.ok) return answered;
   const data = answered.data && !Array.isArray(answered.data) ? answered.data : null;

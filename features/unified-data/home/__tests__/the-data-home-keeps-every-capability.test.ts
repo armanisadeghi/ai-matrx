@@ -45,7 +45,7 @@ const T = (id: string, name: string, extra: Record<string, unknown> = {}) => ({
   updated_at: "2026-09-29T00:00:00Z",
   mine: false,
   shared_with_me: false,
-  kept_by_the_app: false,
+  platform_owned: false,
   kind: "table",
   created_by: "u-sam",
   ...extra,
@@ -63,7 +63,7 @@ const I = (kind: string, item_id: string, item_row: Record<string, unknown>, tab
 const ANSWER: DataHomeAnswer = {
   tables: [
     T("t-recall", "Patient Recall", { mine: true }),
-    T("t-choices", "Status choices", { kind: "list", kept_by_the_app: true }),
+    T("t-choices", "Status choices", { kind: "list", platform_owned: true }),
     T("t-shared", "Job Board", { organization_id: "o-rincon", organization_name: "Rincon Plumbing Co", member: false, shared_with_me: true }),
   ] as DataHomeAnswer["tables"],
   items: [

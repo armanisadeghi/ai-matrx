@@ -55,6 +55,28 @@ export function readPageHeight(
   return Math.ceil(height);
 }
 
+/**
+ * 3. FIT. The inline chat card asks the page to fit its frame (`?fit=card`):
+ *    a page a little wider than the card is scaled to the card's width so its
+ *    layout survives; only a phone-width card reflows. A page opened on its
+ *    own or in the canvas app frame carries no parameter and is never scaled
+ *    (scaling breaks games and drag code). Must match MODE in the frame script.
+ */
+export const CARD_FIT_PARAM = "fit";
+export const CARD_FIT_VALUE = "card";
+
+/** The URL the inline card frames: the page URL with `?fit=card`. */
+export function cardFrameUrl(pageUrl: string | null | undefined): string | undefined {
+  if (!pageUrl) return undefined;
+  try {
+    const url = new URL(pageUrl);
+    url.searchParams.set(CARD_FIT_PARAM, CARD_FIT_VALUE);
+    return url.toString();
+  } catch {
+    return pageUrl;
+  }
+}
+
 /** The ONE canvas content for an html page — see the header. */
 export function htmlPageCanvasContent({
   code,

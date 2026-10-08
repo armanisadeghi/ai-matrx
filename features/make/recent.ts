@@ -12,7 +12,7 @@
 //   · a row in a TEST organization — `iam.organizations.settings.test_fixture`, the stored
 //     classification the organization picker already hides test organizations by
 //     (features/organizations/components/OrganizationPickerPanel.tsx); never a name match;
-//   · a Table the app keeps for itself (`kept_by_the_app`: scopes, choice lists, bookkeeping).
+//   · a Table the app keeps for itself (`platform_owned`: scopes, choice lists, bookkeeping).
 // "Changed", not "opened": there is no door for what a person opened across kinds.
 
 import type { DataHomeAnswer } from "@/features/unified-data/hub/doors";
@@ -81,7 +81,7 @@ export function answerForRecent(answer: DataHomeAnswer, testOrganizationIds: Rea
   return {
     tables: answer.tables.filter(
       (t) =>
-        !t.kept_by_the_app &&
+        !t.platform_owned &&
         !testOrganizationIds.has(t.organization_id) &&
         !carriesArchived(t as unknown as Record<string, unknown>),
     ),

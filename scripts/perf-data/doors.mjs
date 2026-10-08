@@ -12,7 +12,7 @@ export async function measureDoors({ calls = 30, installs = 3, log = console.log
   };
 
   // Realistic fixtures: the Deliverables table in Holloway Creative, found through the data home.
-  const home = JSON.parse((await rpc("custom", "data_home", { p_include_app_tables: false })).text);
+  const home = JSON.parse((await rpc("custom", "data_home", { p_include_platform_tables: false })).text);
   const D = home.items.find((i) => i.table_name === "Deliverables") ?? home.items[0];
   const org = D.organization_id, tableId = D.table_id;
   const ws = home.items.find((i) => i.organization_name === "admin's Workspace");
@@ -24,7 +24,7 @@ export async function measureDoors({ calls = 30, installs = 3, log = console.log
   const clientIds = [...new Set(JSON.parse((await rpc("custom", "read_records_page", { p_organization_id: org, p_table_id: tableId, p_limit: 50 })).text).rows.map((r) => r.document.client).filter(Boolean))];
 
   const doors = [
-    ["custom.data_home", "custom", "data_home", { p_include_app_tables: false }],
+    ["custom.data_home", "custom", "data_home", { p_include_platform_tables: false }],
     ["custom.read_records_page (first 50)", "custom", "read_records_page", { p_organization_id: org, p_table_id: tableId, p_limit: 50, p_offset: 0 }],
     ["custom.read_records_page (sorted+search)", "custom", "read_records_page", { p_organization_id: org, p_table_id: tableId, p_limit: 50, p_offset: 0, p_search: "email", p_sort: sortSpec }],
     ["custom.views", "custom", "views", { p_organization_id: org, p_table_id: tableId }],

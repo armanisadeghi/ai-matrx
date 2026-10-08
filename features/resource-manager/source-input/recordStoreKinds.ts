@@ -129,7 +129,7 @@ async function readAllFresh(kind: RecordStoreKind, scope: KindScope, userId: str
     }
     // The store's word "table" is a person's own table; lists, forms, scopes… are other kinds.
     return answered.data
-      .filter((t) => t.kind === "table" && !t.kept_by_the_app)
+      .filter((t) => t.kind === "table" && !t.platform_owned)
       .map((t) => ({
         id: t.table_id,
         title: (t.table_name ?? "").trim() || "Untitled table",
