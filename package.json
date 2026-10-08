@@ -763,6 +763,8 @@
     "check:history-state-bypass:self-test": "node scripts/check-history-state-bypass.mjs --self-test",
     "check:motion-standard": "node scripts/check-motion-standard.mjs",
     "check:motion-standard:self-test": "node scripts/check-motion-standard.mjs --self-test",
+    "check:transform-motion": "node scripts/check-transform-motion.mjs",
+    "check:transform-motion:self-test": "node scripts/check-transform-motion.mjs --self-test",
     "check:cursor-law": "node scripts/check-cursor-law.mjs",
     "check:agent-traffic-marker": "node scripts/check-agent-traffic-marker.mjs",
     "check:agent-traffic-marker:self-test": "node scripts/check-agent-traffic-marker.mjs --self-test",

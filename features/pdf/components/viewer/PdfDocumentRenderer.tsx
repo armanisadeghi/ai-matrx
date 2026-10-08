@@ -1036,7 +1036,7 @@ export default function PdfDocumentRenderer({
               onClick={() => setPageNumber((page) => Math.max(1, page - 1))}
               disabled={pageNumber <= 1}
               aria-label={`Previous ${pageLabel}`}
-              className="absolute left-3 top-1/2 z-20 flex h-12 w-12 -translate-y-1/2 items-center justify-center rounded-full border border-glass-edge bg-glass text-foreground opacity-75 shadow-glass backdrop-blur-glass backdrop-saturate-glass transition-[opacity,transform,background-color] hover:scale-105 hover:bg-glass-hover hover:opacity-100 focus-visible:opacity-100 disabled:pointer-events-none disabled:opacity-0"
+              className="absolute left-3 top-1/2 z-20 flex h-12 w-12 -translate-y-1/2 items-center justify-center rounded-full border border-glass-edge bg-glass text-foreground opacity-75 shadow-glass backdrop-blur-glass backdrop-saturate-glass transition-[opacity,transform,scale,background-color] hover:scale-105 hover:bg-glass-hover hover:opacity-100 focus-visible:opacity-100 disabled:pointer-events-none disabled:opacity-0"
             >
               <ChevronLeft className="h-6 w-6" />
             </button>
@@ -1047,7 +1047,7 @@ export default function PdfDocumentRenderer({
               }
               disabled={pageNumber >= numPages}
               aria-label={`Next ${pageLabel}`}
-              className="absolute right-3 top-1/2 z-20 flex h-12 w-12 -translate-y-1/2 items-center justify-center rounded-full border border-glass-edge bg-glass text-foreground opacity-75 shadow-glass backdrop-blur-glass backdrop-saturate-glass transition-[opacity,transform,background-color] hover:scale-105 hover:bg-glass-hover hover:opacity-100 focus-visible:opacity-100 disabled:pointer-events-none disabled:opacity-0"
+              className="absolute right-3 top-1/2 z-20 flex h-12 w-12 -translate-y-1/2 items-center justify-center rounded-full border border-glass-edge bg-glass text-foreground opacity-75 shadow-glass backdrop-blur-glass backdrop-saturate-glass transition-[opacity,transform,scale,background-color] hover:scale-105 hover:bg-glass-hover hover:opacity-100 focus-visible:opacity-100 disabled:pointer-events-none disabled:opacity-0"
             >
               <ChevronRight className="h-6 w-6" />
             </button>
