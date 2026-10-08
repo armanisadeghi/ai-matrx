@@ -422,6 +422,11 @@ export function rescuePendingImports(file, text, root) {
 
   for (const m of text.matchAll(DYNAMIC)) {
     if (inside(hidden, m.index) || /\bimport\s+[\w$]+\s*=\s*$/.test(text.slice(Math.max(0, m.index - 80), m.index))) continue;
+    // `import("…").Name` / `typeof import("…")` is a TYPE query — erased at compile time, so a
+    // runtime placeholder there is a syntax error (2026-10-08: `export type X = import("…").Y`
+    // 500'd every route). A runtime import() is a Promise: only .then/.catch/.finally follow it.
+    const after = text.slice(m.index + m[0].length, m.index + m[0].length + 24);
+    if (m[1] === "import" && (/^\s*\.(?!\s*(?:then|catch|finally)\b)/.test(after) || /^\s*</.test(after) || /\btypeof\s*$/.test(text.slice(Math.max(0, m.index - 12), m.index)))) continue;
     const j = judge(m[3]);
     if (j.pending !== "module") continue;
     const value = ns(info(j, "*", lineAt(m.index), m[3]));
@@ -556,12 +561,13 @@ function selfTest() {
       `import data from "@ai-matrx/chat/agents/ui/CredentialCaptureCard" with { type: "json" };`,
       `import legacy = require("@ai-matrx/chat/agents/ui/CredentialCaptureCard");`,
       `import { Tool } from "@ai-matrx/chat"; import { PERMISSION_LEVEL_HINTS } from "@ai-matrx/chat";`,
+      `export type Opts = import("@ai-matrx/chat/canvas/workspace/side-chat-address").Options;`,
       ``,
     ].join("\n");
     const e = rescuePendingImports(file, edge, tmp);
     const eLines = e.code.split("\n");
     if (e.pending.length !== 1 || e.pending[0].line !== 5) failures.push(`RED edge: expected only the second statement on line 5 rescued, got ${JSON.stringify(e.pending)}`);
-    for (const k of [0, 1, 2, 3]) if (!e.code.includes(edge.split("\n")[k])) failures.push(`RED edge: line ${k + 1} was touched:\n${e.code}`);
+    for (const k of [0, 1, 2, 3, 5]) if (!e.code.includes(edge.split("\n")[k])) failures.push(`RED edge: line ${k + 1} was touched:\n${e.code}`);
     if (!eLines[4].startsWith(`import { Tool } from "@ai-matrx/chat"; const PERMISSION_LEVEL_HINTS = __matrxPending(`)) failures.push(`RED edge: same-line statement not rescued:\n${eLines[4]}`);
 
     // A file with no directive gets the helper at the very top.
