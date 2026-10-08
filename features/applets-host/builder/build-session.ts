@@ -272,3 +272,42 @@ export async function releaseStaleClaim(client: Client, appletId: string, entryI
   });
   return outcome.status === "saved";
 }
+
+/**
+ * HOW EACH REQUEST ENDED, as the history reads it — one state for the history, the card and the header.
+ * A request refused and then saved by its fix round reads as that save ("Fixed · Saved v1"), never
+ * "Not saved" beside a saved card (social planner, v0.4.3010).
+ */
+export function requestOutcome(requests: readonly BuildEntry[], index: number): { label: string; tone: "neutral" | "success" | "warning" | "destructive" } {
+  const entry = requests[index];
+  if (!entry) return { label: "Stopped", tone: "destructive" };
+  switch (entry.state) {
+    case "starting":
+    case "running":
+    case "saving":
+      return { label: entry.fix ? "Fixing" : "Building", tone: "neutral" };
+    case "saved":
+      return { label: entry.version ? `Saved v${entry.version}` : "Saved", tone: "success" };
+    case "refused": {
+      // The fix rounds that answered this request (up to her next request).
+      for (const later of requests.slice(index + 1)) {
+        if (!later.fix) break;
+        if (later.state === "saved") return { label: later.version ? `Fixed · Saved v${later.version}` : "Fixed · Saved", tone: "success" };
+        if (later.state === "starting" || later.state === "running" || later.state === "saving") return { label: "Fixing", tone: "neutral" };
+      }
+      return { label: "Not saved", tone: "warning" };
+    }
+    default:
+      return { label: "Stopped", tone: "destructive" };
+  }
+}
+
+/** The fix button's words: a draft is fixed so she can use it; a published Applet is just fixed. */
+export function fixLabel(kind: string | null): string {
+  return kind === "published" ? "Fix it" : "Fix it to use it";
+}
+
+/** The preview's header line — what she is looking at, and that trying it here keeps nothing. */
+export function previewLine(stateLabel: string, versionLabel: string | null): string {
+  return `${[stateLabel, versionLabel].filter(Boolean).join(" ")} · try it here, nothing you add is kept`;
+}

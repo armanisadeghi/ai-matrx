@@ -15,7 +15,7 @@
 import { readFileSync } from "node:fs";
 import path from "node:path";
 
-import { appletState, appletVersionLabel, publishConsequence } from "@/features/applets/lib/applet-state";
+import { appletState, appletVersionLabel, appletVersionStatusLabel, publishConsequence } from "@/features/applets/lib/applet-state";
 import { appletPublicationPatch } from "@/features/applets/lib/publication";
 
 const ROOT = path.resolve(__dirname, "../../..");
@@ -80,5 +80,21 @@ describe("every surface reads appletState — no surface derives its own", () =>
     expect(builder).not.toMatch(/saved\.version\b/);
     expect(builder).toContain("saved.content_version");
     expect(read("features/applets/route/AppletOverviewContent.tsx")).not.toMatch(/`Version \$\{app\.version\}`/);
+  });
+});
+
+describe("Versions page badge — the current version says what the Applet is", () => {
+  const published = { status: "published", published_to_web: true };
+  it("current row reads the Applet's state, not its frozen snapshot status", () => {
+    // v2 snapshot was saved while the Applet was still a draft; the Applet is now published.
+    expect(appletVersionStatusLabel(true, published, "draft")).toBe("Published");
+    expect(appletVersionStatusLabel(true, { status: "draft", published_to_web: false }, "published")).toBe("Draft");
+  });
+  it("older rows keep their own snapshot status", () => {
+    expect(appletVersionStatusLabel(false, published, "draft")).toBe("Draft");
+    expect(appletVersionStatusLabel(false, published, null)).toBeNull();
+  });
+  it("the versions content uses the helper, not v.status", () => {
+    expect(read("features/applets/route/AppletVersionsContent.tsx")).toContain("appletVersionStatusLabel(");
   });
 });

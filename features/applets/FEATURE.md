@@ -191,6 +191,8 @@ and admin/user route families are live. Remaining migration work is tracked in:
 
 ## Change log
 
+- `2026-10-08` — claude (lane AJ): Versions page — the current version's badge says the Applet's state via `appletVersionStatusLabel` (it read the snapshot's frozen `status`, so a published v2 showed "Draft"); older rows keep their snapshot status.
+
 - `2026-10-08` — claude (lane Y): shown version = `app.definition.content_version` (new column; snapshot triggers own it, history renumbered densely, empty Build-born drafts seed no v1) — opening/reloading the builder no longer reads as a new version. `appletState` is the one state derivation (list, header, overview, settings, builder, agent context, Code/Files badges). "Use it" writes the full publication transition behind a confirm naming the link and tables. status `archived` retired (rows moved to `deleted_at`; check constraint; admin menus; Files adapter delete now archives via `deleted_at`). `check:archived-items-law` declares `app.definition` and gains rule 4 (second archive mechanism).
 
 - `2026-10-08` — claude (lane Z2): `/applets/manage/[id]/code` opens on the owner's view — the Applet and "Change it by talking" (`AppletBuilder`, `applets.build`) — and the editor workspace (file tree, terminal, coding chat) mounts only after "Show code" (`?show=code`). Guard: `AppletEditPageClient.test.tsx`. The builder's `checkBuildAnswer` refuses a bare `<textarea>`/`<Textarea>` (Fix-it names `<WritingBox>`); Settings › Tags is a ProInput.

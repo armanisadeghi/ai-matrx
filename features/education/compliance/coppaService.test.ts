@@ -2,6 +2,11 @@ import { coppaService } from "./coppaService";
 
 const getSession = jest.fn();
 const rpc = jest.fn();
+const ensureOrgId = jest.fn();
+
+jest.mock("@/lib/organizations/ensureOrgId", () => ({
+  ensureOrgId: (...args: unknown[]) => ensureOrgId(...args),
+}));
 
 jest.mock("@/utils/supabase/client", () => ({
   supabase: {
@@ -54,10 +59,21 @@ describe("coppaService.getGate session boundary", () => {
       error: null,
     });
 
-    await expect(coppaService.getGate()).resolves.toMatchObject({
+    await expect(coppaService.getGate({ force: true })).resolves.toMatchObject({
       data: { ageBand: "adult", aiAllowed: true, reason: "allowed" },
       error: null,
     });
     expect(rpc).toHaveBeenCalledWith("edu_coppa_gate");
+  });
+});
+
+describe("coppaService.setAgeBand writes even before an organization resolves", () => {
+  it("still calls edu_set_age_band when no active organization is set", async () => {
+    rpc.mockReset();
+    ensureOrgId.mockRejectedValue(new Error("organization_context_required"));
+    rpc.mockResolvedValue({ data: { status: "ok", age_band: "adult", reason: "set" }, error: null });
+    const res = await coppaService.setAgeBand("adult");
+    expect(rpc).toHaveBeenCalledWith("edu_set_age_band", { p_band: "adult" });
+    expect(res.error).toBeNull();
   });
 });

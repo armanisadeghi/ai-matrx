@@ -104,6 +104,15 @@ record's own `scope` (`{ entries, shadowDangerousGlobals }`); app-owned modules 
 
 ## Change Log
 
+- 2026-10-08 — Lane AI (the builder repairs its own output): EVERY refusal of her request goes to the ONE
+  automatic fix round (`repairs`/`repairRefusal`) — a live run, a run rejoined after a refresh (the planner's
+  first build sat on "Fix it" for five minutes there), and one found refused on reopen; only a refused fix
+  round is shown. The fix button reads "Fix it to use it" on a draft (`fixLabel`), one button only. History
+  reads a refused request saved by its fix round as "Fixed · Saved vN" (`requestOutcome`); the preview header
+  no longer says "not saved" (`previewLine`). `checkBuildAnswer` refuses a hand-built `<table>` of rows (use
+  `RecordTable`, applets 0.11.0 — headers sort and filter, links by label), a date bound to a plain text box
+  (use `RecordField`/`DateField`), and a choice spelled in another case than the table's ("Assets Ready").
+
 - 2026-10-08 — Lane AB (never publish broken, part 1): `checkBuildAnswer` refuses a browser dialog
   (`window.confirm`/`alert`/`prompt` → `confirmAction`) and a JSX string attribute carrying a literal `\n`;
   "Use it" is held while the preview reports any error (`publishBlockedBy`) and becomes "Fix it to use it".

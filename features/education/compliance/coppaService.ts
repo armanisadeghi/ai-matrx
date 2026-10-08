@@ -11,7 +11,6 @@ import { supabase } from "@/utils/supabase/client";
 import { fail } from "@/features/education/study/service/serviceError";
 import type { StudyResult } from "@/features/education/study/types";
 import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
-import { isOrganizationRequiredError } from "@/lib/organizations/organizationRequiredError";
 import {
   mapAgeBandWrite,
   mapCoppaGate,
@@ -129,16 +128,14 @@ export const coppaService = {
    */
   async setAgeBand(band: AgeBand): Promise<StudyResult<AgeBandWriteResult>> {
     try {
-      // p_organization_id only matters the first time this account ever calls
-      // it (no users.profiles row yet — the ordinary path is an UPDATE of the
-      // row signup already created, which needs nothing here); the RPC itself
-      // decides whether it's needed, but we always have it ready so that rare
-      // path never silently 500s.
+      // p_organization_id only matters when this account has no users.profiles row yet (the RPC
+      // raises organization_required itself then). The ordinary path UPDATEs the row signup made and
+      // needs nothing, so a not-yet-resolved active organization (a fresh load) must never stop the
+      // answer from being written: that left the dialog open and the person asked again next load.
       let organizationId: string | undefined;
       try {
         organizationId = await ensureOrgId(undefined);
-      } catch (e) {
-        if (isOrganizationRequiredError(e)) throw e;
+      } catch {
         organizationId = undefined;
       }
       const { data, error } = await supabase.rpc("edu_set_age_band", {
@@ -151,7 +148,6 @@ export const coppaService = {
         error: null,
       };
     } catch (e) {
-      if (isOrganizationRequiredError(e)) throw e;
       return fail("coppa.setAgeBand", e);
     }
   },

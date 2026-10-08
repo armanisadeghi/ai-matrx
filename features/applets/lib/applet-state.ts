@@ -56,6 +56,20 @@ export function appletVersionLabel(contentVersion: number | null | undefined): s
 }
 
 /**
+ * The state word on a Versions row. The CURRENT version is the Applet itself, so it says the Applet's
+ * state (`appletState`); a snapshot's own `status` was frozen when it was saved and only describes an
+ * older version, so it is shown for those rows alone.
+ */
+export function appletVersionStatusLabel(
+  isCurrent: boolean,
+  applet: AppletStateFields,
+  snapshotStatus: string | null | undefined,
+): string | null {
+  if (isCurrent) return appletState(applet).label;
+  return snapshotStatus ? snapshotStatus.charAt(0).toUpperCase() + snapshotStatus.slice(1) : null;
+}
+
+/**
  * What Publish (the manage header) and "Use it" (the builder) say BEFORE they act — a publication
  * reaches strangers, and "Use it" also creates tables, so the click names both first.
  */

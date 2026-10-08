@@ -148,6 +148,14 @@ export class BuildRefused extends Error {
   }
 }
 
+/**
+ * Does this refusal go to the automatic fix round? Every refusal of a request SHE made (never one of a fix
+ * round itself, which would loop) — however the answer arrived (a live run, a run rejoined after a refresh).
+ */
+export function repairs(entry: { fix: unknown }, err: unknown): err is BuildRefused {
+  return err instanceof BuildRefused && !entry.fix;
+}
+
 const READS_SOURCE = /\buse(?:Rows|Row|Columns)\(\s*["'`]([^"'`$]+)["'`]/g;
 /** A hand-built prose box in an Applet: the HTML element or the controls' Textarea. */
 const BARE_WRITING_BOX = /<(textarea|Textarea)\b/g;
@@ -259,6 +267,70 @@ export function publishBlockedBy(lastError: { message: string } | null): string 
   return lastError ? `Fix this before using it: ${lastError.message}` : null;
 }
 
+/**
+ * A RECORD LIST IS THE PLATFORM TABLE. A generated "All Posts" page hand-built a `<table>` whose headers
+ * looked clickable and sorted nothing (social planner live test, v0.4.3010). A file that reads rows and
+ * draws a `<table>` is refused: `<RecordTable>` from "@ai-matrx/applets/react" sorts and filters every
+ * column (a link by its labels) by itself.
+ */
+export function handBuiltTables(file: BuilderFile): boolean {
+  return /<table\b/.test(file.source) && /\buseRows\(/.test(file.source);
+}
+
+/** Every new-table field of one of these types, by key. */
+function newTableFieldsOfType(applet: Pick<BuilderApplet, "sources">, types: ReadonlySet<string>): { alias: string; key: string; options: string[] }[] {
+  return applet.sources.flatMap((s) =>
+    "new_table" in s && Array.isArray(s.new_table.fields)
+      ? s.new_table.fields.filter((f) => types.has(f.type)).map((f) => ({ alias: s.alias, key: f.key, options: Array.isArray(f.options) ? f.options : [] }))
+      : [],
+  );
+}
+
+const DATE_TYPES: ReadonlySet<string> = new Set(["date", "datetime"]);
+const CHOICE_TYPES: ReadonlySet<string> = new Set(["select", "multi_select"]);
+
+/**
+ * A DATE IS NEVER A TEXT BOX. A plain `<Field>` bound to a date field showed "YYYY-MM-DD" as text to type
+ * (social planner, v0.4.3010). `<RecordField>` picks the date picker by itself; `<DateField>` is the control.
+ */
+export function dateFieldsAsText(applet: Pick<BuilderApplet, "files" | "sources">): string[] {
+  const dates = newTableFieldsOfType(applet, DATE_TYPES).map((f) => f.key);
+  const out = new Set<string>();
+  for (const f of applet.files) {
+    for (const m of f.source.matchAll(/<(Field|input)\b/g)) {
+      const tag = openingTag(f.source, m.index ?? 0);
+      if (/\btype\s*=\s*["'{]\s*["']?(date|datetime-local)/.test(tag)) continue;
+      for (const key of dates) if (new RegExp(`\\b${escapeRe(key)}\\b`).test(tag)) out.add(key);
+    }
+  }
+  return [...out];
+}
+
+/**
+ * ONE SPELLING PER CHOICE. The status dropdown read "Assets ready" (the table's word) while the pipeline's
+ * hand list read "Assets Ready" (social planner, v0.4.3010) — and a row whose status is the table's word
+ * never lands in a column spelled otherwise. A string in the code that is a declared choice in another
+ * case is refused; the choices are `useColumns(alias)` words.
+ */
+export function misspelledChoices(applet: Pick<BuilderApplet, "files" | "sources">): { alias: string; key: string; wrote: string; choice: string }[] {
+  const out: { alias: string; key: string; wrote: string; choice: string }[] = [];
+  const seen = new Set<string>();
+  const literals = new Set(applet.files.flatMap((f) => [...f.source.matchAll(/["'`]([^"'`\n$]{2,40})["'`]/g)].map((m) => m[1] ?? "")));
+  for (const field of newTableFieldsOfType(applet, CHOICE_TYPES)) {
+    for (const choice of field.options) {
+      for (const wrote of literals) {
+        // Only words a person reads (capitalised or several words) — "tiktok" as an icon key is not a label.
+        if (wrote === choice || wrote.toLowerCase() !== choice.toLowerCase() || !(/^[A-Z]/.test(wrote) || /\s/.test(wrote))) continue;
+        const id = `${field.alias}.${field.key}.${wrote}`;
+        if (seen.has(id)) continue;
+        seen.add(id);
+        out.push({ alias: field.alias, key: field.key, wrote, choice });
+      }
+    }
+  }
+  return out;
+}
+
 /** The code names `key` — literally, or built in a template (`${p}_views` names `tt_views`). */
 function namesField(all: string, key: string): boolean {
   if (new RegExp(`\\b${escapeRe(key)}\\b`).test(all)) return true;
@@ -364,6 +436,15 @@ export function checkBuildAnswer(
     for (const label of deadButtons(f)) {
       problems.push(`${f.name} has a button "${label}" that does nothing — give it an onClick (or type="submit" inside its form)`);
     }
+    if (handBuiltTables(f)) {
+      problems.push(`${f.name} draws its own <table> of rows — use <RecordTable source rows columns /> from "@ai-matrx/applets/react", whose every header sorts and filters (a link by its labels)`);
+    }
+  }
+  for (const key of dateFieldsAsText(applet)) {
+    problems.push(`the date "${key}" is a plain text box — use <RecordField source field="${key}" … /> (or <DateField>) so she picks a date`);
+  }
+  for (const m of misspelledChoices(applet)) {
+    problems.push(`the code writes "${m.wrote}" but the choice in "${m.alias}.${m.key}" is "${m.choice}" — read the choices from useColumns("${m.alias}") and use them as they are spelled`);
   }
   problems.push(...newTableGaps(applet));
   if (problems.length > 0) {
