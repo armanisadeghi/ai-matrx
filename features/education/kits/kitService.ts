@@ -777,17 +777,24 @@ export async function createManualKit(input: {
   }
   const wanted = new Set(input.artifacts.map((artifact) => `${artifact.kind}:${artifact.id}`));
   const fresh: EducationLibraryRow[] = [];
+  // Re-read ONLY the picked aids (filtered by id) — scanning the whole library
+  // page by page held Create for ~20 s on a full library (2026-10-08).
+  const ids = [...new Set(input.artifacts.map((artifact) => artifact.id))];
   for (let page = 1; wanted.size; page += 1) {
-    const result = await fetchEducationLibraryPage({ ...DEFAULT_ENTITY_LIST_QUERY, scope: { kind: "mine" }, page }, { sort: "updated", direction: "desc", favoritesFirst: false, pageSize: KIT_SCAN_PAGE });
+    const result = await fetchEducationLibraryPage({ ...DEFAULT_ENTITY_LIST_QUERY, scope: { kind: "mine" }, filters: { id: { kind: "select", values: ids } }, page }, { sort: "updated", direction: "desc", favoritesFirst: false, pageSize: KIT_SCAN_PAGE });
     for (const row of result.rows) if (wanted.delete(`${row.kind}:${row.id}`)) fresh.push(row);
     if (result.rows.length < KIT_SCAN_PAGE || page * KIT_SCAN_PAGE >= result.total) break;
   }
   if (wanted.size) throw new Error("One or more selected study aids are no longer available in your library. Reload and choose again.");
-  let completed = 0;
-  for (const artifact of fresh) {
+  const planned = fresh.map((artifact) => {
     const targetKind = targetKindForSubtype(artifact.subtype);
     if (!targetKind) throw new Error(`"${artifact.title}" is not a study aid that can join a kit.`);
-    const result = await associationsService.add({
+    return { artifact, targetKind };
+  });
+  // Every aid joins at once (each edge is independent and idempotent) — one by
+  // one, each slow `assoc_add` added to the wait before the kit opened.
+  const results = await Promise.all(planned.map(({ artifact, targetKind }) =>
+    associationsService.add({
       sourceType: artifact.kind,
       sourceId: artifact.id,
       targetType: sourceType,
@@ -795,10 +802,10 @@ export async function createManualKit(input: {
       // Manual grouping is membership, never generated-from provenance.
       metadata: { educationKit: true, targetKind, href: educationLibraryHref(artifact), kitTitle: sourceTitle },
       role: "member",
-    });
-    if (!result.ok) throw new Error(`Added ${completed} of ${input.artifacts.length} study aids. The remaining aids were not added; try again from the kit page.`);
-    completed += 1;
-  }
+    }).catch(() => ({ ok: false as const })),
+  ));
+  const completed = results.filter((result) => result.ok).length;
+  if (completed < results.length) throw new Error(`Added ${completed} of ${input.artifacts.length} study aids. The remaining aids were not added; try again from the kit page.`);
 }
 
 /**
@@ -819,7 +826,8 @@ export async function createMultiSourceKit(input: {
   // All or nothing: a kit that fails partway is archived, so the next try with the
   // same title starts clean instead of colliding with a half-made kit.
   try {
-    for (const source of input.sources) await addKitSource(scope, source);
+    // Sources file at once — each edge is independent.
+    await Promise.all(input.sources.map((source) => addKitSource(scope, source)));
     if (input.artifacts.length) {
       const made = await readKit(KIT_TOKEN, scope.id);
       if (!made) throw new Error("The kit was made but could not be read back.");

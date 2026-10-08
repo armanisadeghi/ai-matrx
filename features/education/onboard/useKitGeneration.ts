@@ -137,6 +137,8 @@ export interface UseKitGeneration {
   errorCause: unknown;
   /** True when this run continues one that stopped with its page. */
   continued: boolean;
+  /** Titles of picked Sources the kit could not file (the kit itself was made). */
+  sourcesNotFiled: string[];
   busy: boolean;
   /**
    * Start a kit build. Resolves true once the material was read and every
@@ -188,6 +190,7 @@ export function useKitGeneration(): UseKitGeneration {
   const [startedAt, setStartedAt] = useState<number | null>(null);
   const [ingestFinishedAt, setIngestFinishedAt] = useState<number | null>(null);
   const [continued, setContinued] = useState(false);
+  const [sourcesNotFiled, setSourcesNotFiled] = useState<string[]>([]);
   // The running build's journal and its writer — a rename typed mid-build goes
   // into it, so the run applies it at the end and a continuation keeps it.
   const live = useRef<{ journal: KitRunJournal; write: () => void } | null>(null);
@@ -203,6 +206,7 @@ export function useKitGeneration(): UseKitGeneration {
     setStartedAt(null);
     setIngestFinishedAt(null);
     setContinued(false);
+    setSourcesNotFiled([]);
   };
 
   const patchTarget = (kind: TargetKind, patch: Partial<KitTargetState>) => {
@@ -240,6 +244,8 @@ export function useKitGeneration(): UseKitGeneration {
     live.current = { journal, write };
     // Set once every output settled — a late name then renames the kit itself.
     let finished = false;
+    // The kit's Sources being filed (started once the kit exists, awaited at the end).
+    let linking: Promise<void> = Promise.resolve();
     const { kinds, options, orgId } = request;
 
     setError(null);
@@ -247,6 +253,7 @@ export function useKitGeneration(): UseKitGeneration {
     setSource(null);
     setKitTitle(null);
     setContinued(isContinuation);
+    setSourcesNotFiled([]);
     setPhase("ingesting");
     setIngestProgress(null);
     setStartedAt(Date.now());
@@ -305,14 +312,28 @@ export function useKitGeneration(): UseKitGeneration {
     if (!normalized.ref.kitId) {
       setIngestProgress({ phase: "ready", message: "Making your kit" });
       const scope = await createKitScope(orgId, journal.renamedTo ?? titleNow.title);
-      for (const kitSource of normalized.ref.kitSources ?? []) {
-        await addKitSource(scope, kitSource);
-      }
       normalized = { ...normalized, ref: { ...normalized.ref, kitId: scope.id } };
       setSource(normalized);
       const { text: _kept, ...kept } = normalized;
       journal.source = kept;
       write();
+      // THE SOURCES ARE FILED BESIDE THE BUILD, NEVER IN FRONT OF IT
+      // (2026-10-08). They were awaited one by one before the fan-out: one
+      // slow `assoc_add` (28 s, then a 57014 timeout behind a long-held row
+      // lock) held every output back and then threw, sinking a kit that
+      // already existed. Now they file in parallel while the outputs build;
+      // one that fails is named on the board, and the kit goes on.
+      const kitSources = normalized.ref.kitSources ?? [];
+      linking = Promise.allSettled(kitSources.map((s) => addKitSource(scope, s))).then(
+        (settled) => {
+          const missed = kitSources.filter((_, i) => settled[i].status === "rejected");
+          settled.forEach((r) => {
+            if (r.status === "rejected")
+              console.error("[useKitGeneration] a Source was not filed in the kit:", r.reason);
+          });
+          if (missed.length > 0) setSourcesNotFiled(missed.map((s) => s.title));
+        },
+      );
     }
     setKitTitle(journal.renamedTo ? { ...titleNow, title: journal.renamedTo } : titleNow);
     // A name that arrives after the deadline still names the kit (applied at
@@ -443,6 +464,7 @@ export function useKitGeneration(): UseKitGeneration {
       );
     }
 
+    await linking;
     finished = true;
     const rename = journal.renamedTo;
     if (rename && anchorId) {
@@ -527,6 +549,7 @@ export function useKitGeneration(): UseKitGeneration {
     error,
     errorCause,
     continued,
+    sourcesNotFiled,
     busy: phase === "ingesting" || phase === "generating",
     run,
     stopped: tabRun.stopped
