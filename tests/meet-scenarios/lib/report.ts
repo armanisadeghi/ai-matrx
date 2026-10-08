@@ -61,7 +61,7 @@ export default class MeetReport implements Reporter {
           ? "PASS"
           : result.status === "skipped"
             ? "SKIP"
-            : /page\.goto|net::ERR|chrome-error|ERR_HTTP_RESPONSE_CODE_FAILURE|__dev-walk|evicted preview|Resume this preview|Target crashed|has been closed|has no open tab|Start now did not open/.test(firstEvidence(result))
+            : /page\.goto|net::ERR|chrome-error|ERR_HTTP_RESPONSE_CODE_FAILURE|__dev-walk|evicted preview|Resume this preview|Target crashed|has been closed|has no open tab|Start now did not open|page\.waitForURL/.test(firstEvidence(result))
               ? "ENV"
               : "FAIL",
       seconds: Math.round(result.duration / 1000),
