@@ -10,7 +10,12 @@
 //   • chat 0.4.18 published importing an `@ai-matrx/alchemy` subpath alchemy 0.20.6 lacks (the
 //     installed graph is broken even though no app line is wrong).
 //
-// THREE CHECKS (each fails on its own; `--self-test` proves each separately):
+//   • 2026-10-08, v0.4.3016: features/html-pages/capture/renderedCapture.ts did `await import("html-to-image")`.
+//     html-to-image is NOT in package.json — it resolved on every dev machine only because .npmrc has
+//     shamefully-hoist=true and @ai-matrx/alchemy depends on it. On Vercel: "Module not found: Can't
+//     resolve 'html-to-image'", and v0.4.3016 failed on all three Vercel projects (check 4).
+//
+// FOUR CHECKS (each fails on its own; `--self-test` proves each separately):
 //   1. SUBPATH   — the specifier's subpath is in the installed package's `exports` map and the mapped
 //                  file exists on disk.
 //   2. NAMED     — for `import { a, b as c } from "…"` / `export { a } from "…"`: when the target's
@@ -19,10 +24,18 @@
 //                  here — `pnpm check:matrx-imports` (TypeScript checker, minutes under load) owns that.
 //   3. GRAPH     — every `@ai-matrx/<dep>[/subpath]` that an installed @ai-matrx package's dist imports
 //                  must resolve in the <dep> installed beside it (subpath level).
+//   4. DECLARED  — every bare specifier in app source (static import / export-from, `import("…")`,
+//                  `require("…")`; `import type` skipped) names a package in the root package.json
+//                  (dependencies, devDependencies, optionalDependencies, peerDependencies), or is a Node
+//                  builtin, a tsconfig `paths` alias, or a relative/absolute path. A package that is only
+//                  hoisted into node_modules is NOT declared — it works here and breaks the Vercel build.
+//                  Remedy: declare the dependency, or (for formats/copy/export) go through the
+//                  @ai-matrx/alchemy door. Baseline (shrink-only): scripts/package-imports-declared-baseline.json.
 //
 //   node scripts/check-package-imports-resolve.mjs              # exit 1 on a broken import
 //   node scripts/check-package-imports-resolve.mjs --root DIR   # audit another tree (git or plain)
 //   node scripts/check-package-imports-resolve.mjs --no-graph   # app source only
+//   node scripts/check-package-imports-resolve.mjs --update-baseline  # shrink the declared baseline (never grows it)
 //   node scripts/check-package-imports-resolve.mjs --self-test  # RED per rule, then GREEN
 //
 // Exit: 0 clean · 1 a broken import · 2 the script could not run (never a silent pass).
@@ -34,6 +47,7 @@ import { execFileSync } from "node:child_process";
 import {
   existsSync, lstatSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, realpathSync, rmSync, statSync, symlinkSync, writeFileSync,
 } from "node:fs";
+import { builtinModules } from "node:module";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -228,6 +242,86 @@ export function audit({ root, graph = true }) {
   return { findings: [...new Set(findings)], imports, skippedWorkspace, graphPkgs };
 }
 
+// ── 4: DECLARED — a bare specifier must name a package.json dependency (hoisting is not a declaration) ──
+const ANY_FROM_RE = /^[ \t]*(import|export)\s+(type\s+)?(?:[\w$]+\s*,\s*)?(?:\{[^}]*\}|\*\s*(?:as\s+[\w$]+)?|[\w$]+)\s*from\s*["']([^"'\n]+)["']/gm;
+const ANY_DYN_RE = /(?:(?<![\w$.])import|(?<![\w$.])require)\s*\(\s*["']([^"'\n]+)["']\s*\)/g;
+const ANY_BARE_RE = /^[ \t]*import\s*["']([^"'\n]+)["']/gm;
+const BUILTINS = new Set(builtinModules.map((m) => m.replace(/^node:/, "").split("/")[0]));
+
+function stripJsonc(t) {
+  let out = ""; let i = 0; let str = false;
+  while (i < t.length) {
+    const c = t[i];
+    if (str) { out += c; if (c === "\\") { out += t[i + 1] ?? ""; i += 2; continue; } if (c === '"') str = false; i += 1; continue; }
+    if (c === '"') { str = true; out += c; i += 1; continue; }
+    if (c === "/" && t[i + 1] === "/") { while (i < t.length && t[i] !== "\n") i += 1; continue; }
+    if (c === "/" && t[i + 1] === "*") { i += 2; while (i < t.length && !(t[i] === "*" && t[i + 1] === "/")) i += 1; i += 2; continue; }
+    out += c; i += 1;
+  }
+  return out.replace(/,(\s*[}\]])/g, "$1");
+}
+
+function declaredContext(root) {
+  const pj = path.join(root, "package.json");
+  if (!existsSync(pj)) return null;
+  const j = JSON.parse(readFileSync(pj, "utf8"));
+  const declared = new Set();
+  for (const k of ["dependencies", "devDependencies", "optionalDependencies", "peerDependencies"]) for (const n of Object.keys(j[k] ?? {})) declared.add(n);
+  const aliases = [];
+  const tj = path.join(root, "tsconfig.json");
+  if (existsSync(tj)) {
+    try {
+      const c = JSON.parse(stripJsonc(readFileSync(tj, "utf8"))).compilerOptions ?? {};
+      for (const k of Object.keys(c.paths ?? {})) aliases.push(k.endsWith("*") ? { prefix: k.slice(0, -1) } : { exact: k });
+    } catch { die("tsconfig.json is not parseable for the DECLARED check"); }
+  }
+  return { declared, aliases };
+}
+
+export function packageOf(spec) {
+  if (spec.startsWith("@")) { const [s, n] = spec.split("/"); return n ? `${s}/${n}` : null; }
+  return spec.split("/")[0];
+}
+
+function undeclaredIn(text, ctx) {
+  const out = [];
+  const lineOf = (i) => text.slice(0, i).split("\n").length;
+  const seen = (spec, index) => {
+    const ls = text.lastIndexOf("\n", index - 1) + 1;
+    const before = text.slice(ls, index);
+    if (/^\s*(?:\*|\/\/|\/\*)/.test(before) || /\/\/|\/\*/.test(before)) return; // quoted inside a comment, not an import
+    if (spec.startsWith(".") || spec.startsWith("/") || /^[a-z][a-z0-9+.-]*:/i.test(spec) && !spec.startsWith("node:")) return;
+    if (spec.startsWith("node:")) return;
+    if (ctx.aliases.some((a) => (a.exact ? spec === a.exact : spec.startsWith(a.prefix)))) return;
+    const pkg = packageOf(spec);
+    if (!pkg || ctx.declared.has(pkg) || BUILTINS.has(pkg)) return;
+    out.push({ pkg, spec, line: lineOf(index) });
+  };
+  for (const m of text.matchAll(ANY_FROM_RE)) if (!m[2]) seen(m[3], m.index);
+  for (const m of text.matchAll(ANY_DYN_RE)) seen(m[1], m.index);
+  for (const m of text.matchAll(ANY_BARE_RE)) seen(m[1], m.index);
+  return out;
+}
+
+export function auditDeclared({ root }) {
+  root = path.resolve(root);
+  const ctx = declaredContext(root);
+  if (!ctx) return { findings: [], scanned: 0, skipped: true };
+  const findings = []; let scanned = 0;
+  for (const rel of listFiles(root)) {
+    if (rel.startsWith(".scratch/")) continue; // untracked-by-design scratch, never built
+    let text; try { text = readFileSync(path.join(root, rel), "utf8"); } catch { continue; }
+    scanned += 1;
+    for (const f of undeclaredIn(text, ctx)) findings.push({ file: rel, pkg: f.pkg, line: f.line, spec: f.spec });
+  }
+  return { findings, scanned };
+}
+
+const BASELINE = path.join(path.dirname(fileURLToPath(import.meta.url)), "package-imports-declared-baseline.json");
+function readBaseline() { return existsSync(BASELINE) ? JSON.parse(readFileSync(BASELINE, "utf8")) : {}; }
+// the baseline is keyed file -> [undeclared package names]; line numbers drift, names do not
+function groupByFile(findings) { const g = {}; for (const f of findings) (g[f.file] ??= new Set()).add(f.pkg); return g; }
+
 function selfTest() {
   const work = mkdtempSync(path.join(tmpdir(), "pkg-imports-resolve-"));
   try {
@@ -260,6 +354,20 @@ function selfTest() {
       const ok = r.findings.length === want && (!re || re.test(r.findings[0]));
       if (!ok) { bad += 1; console.error(`SELF-TEST FAIL ${label}: wanted ${want}, got ${JSON.stringify(r.findings)}`); } else console.log(`self-test ${label}: ${want ? "RED as required" : "GREEN as required"}`);
     }
+    // 4: DECLARED — RED on an undeclared (merely hoisted) package, GREEN once declared / builtin / alias / relative / type-only
+    const declCases = [
+      ["declared-red-dynamic", { "package.json": '{"dependencies":{"react":"1"}}', "tsconfig.json": '{"compilerOptions":{"paths":{"@/*":["./*"]}}}', "features/x.ts": 'const m = await import("html-to-image");\n' }, 1, /html-to-image/],
+      ["declared-red-static-scoped", { "package.json": '{"dependencies":{}}', "x.ts": 'import { a } from "@scope/pkg/deep/path";\n' }, 1, /@scope\/pkg/],
+      ["declared-red-require", { "package.json": '{"dependencies":{}}', "x.js": 'const z = require("left-pad");\n' }, 1, /left-pad/],
+      ["declared-green", { "package.json": '{"dependencies":{"html-to-image":"1","@scope/pkg":"1"},"devDependencies":{"vitest":"1"}}', "tsconfig.json": '// c\n{"compilerOptions":{"paths":{"@/*":["./*"],}}}', "a.ts": 'import { toPng } from "html-to-image";\nimport { b } from "@scope/pkg/deep";\nimport { t } from "vitest";\nimport fs from "node:fs";\nimport path from "path";\nimport fsp from "fs/promises";\nimport x from "@/lib/x";\nimport y from "./y";\nimport type { Q } from "type-only-undeclared";\n// import("in-a-comment")\n' }, 0, null],
+    ];
+    for (const [label, files, want, re] of declCases) {
+      const root = path.join(work, label); mkdirSync(root, { recursive: true });
+      for (const [rel, body] of Object.entries(files)) { const p = path.join(root, rel); mkdirSync(path.dirname(p), { recursive: true }); writeFileSync(p, body); }
+      const r = auditDeclared({ root }).findings;
+      const ok = r.length === want && (!re || re.test(r[0].pkg));
+      if (!ok) { bad += 1; console.error(`SELF-TEST FAIL ${label}: wanted ${want}, got ${JSON.stringify(r)}`); } else console.log(`self-test ${label}: ${want ? "RED as required" : "GREEN as required"}`);
+    }
     if (bad) process.exit(1);
     console.log("[package-imports-resolve] self-test OK");
   } finally { rmSync(work, { recursive: true, force: true }); }
@@ -273,6 +381,25 @@ if (isMain) {
   const root = ri >= 0 ? args[ri + 1] : path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
   if (!existsSync(path.join(root, "node_modules"))) die(`no node_modules under ${root} (run pnpm install first)`);
   const t0 = Date.now();
+  const decl = auditDeclared({ root });
+  const grouped = groupByFile(decl.findings);
+  if (args.includes("--update-baseline")) {
+    // SHRINK-ONLY: the baseline may only lose entries; a new undeclared import is declared in package.json, not baselined.
+    const old = readBaseline(); const next = {};
+    for (const [f, pk] of Object.entries(grouped)) { const kept = [...pk].filter((n) => (old[f] ?? []).includes(n)); if (kept.length) next[f] = kept.sort(); }
+    if (args.includes("--seed")) for (const [f, pk] of Object.entries(grouped)) next[f] = [...pk].sort();
+    writeFileSync(BASELINE, JSON.stringify(Object.fromEntries(Object.entries(next).sort()), null, 2) + "\n");
+    console.log(`[package-imports-resolve] declared baseline written: ${Object.keys(next).length} file(s).`); process.exit(0);
+  }
+  const base = readBaseline(); const newOnes = []; const stale = [];
+  for (const [f, pk] of Object.entries(grouped)) for (const n of pk) if (!(base[f] ?? []).includes(n)) newOnes.push(`${f} imports "${n}" which is not declared in package.json`);
+  for (const [f, names] of Object.entries(base)) for (const n of names) if (!grouped[f]?.has(n)) stale.push(`${f}: baseline lists "${n}" but it is no longer imported undeclared (run --update-baseline)`);
+  if (newOnes.length || stale.length) {
+    console.error(`[FAIL] [package-imports-resolve] DECLARED: ${newOnes.length} undeclared import(s), ${stale.length} stale baseline entr(ies):\n`);
+    for (const f of [...newOnes, ...stale]) console.error(`  - ${f}`);
+    console.error("\n  A package that is only hoisted into node_modules works on this machine and fails the Vercel build\n  (v0.4.3016, html-to-image). Declare it in package.json, or use the @ai-matrx door that owns it.");
+    process.exit(1);
+  }
   const r = audit({ root, graph: !args.includes("--no-graph") });
   const secs = ((Date.now() - t0) / 1000).toFixed(1);
   if (r.findings.length) {
@@ -281,5 +408,5 @@ if (isMain) {
     console.error("\n  The consumer shipped before the package. Publish the package, then `pnpm sync:matrx-packages` (waits for the tarball)\n  and commit the lockfile. Never pin; never delete the import to go green.");
     process.exit(1);
   }
-  console.log(`[package-imports-resolve] OK — ${r.imports} @ai-matrx import(s) resolve (${r.skippedWorkspace} workspace-linked skipped, ${r.graphPkgs} installed package(s) graph-checked) in ${secs}s.`);
+  console.log(`[package-imports-resolve] OK — ${r.imports} @ai-matrx import(s) resolve; ${decl.scanned} files DECLARED-checked (${decl.findings.length} baselined) (${r.skippedWorkspace} workspace-linked skipped, ${r.graphPkgs} installed package(s) graph-checked) in ${secs}s.`);
 }

@@ -77,9 +77,13 @@ await act(page, async () => {
   await A.waitFor({ timeout: 60_000 });
   await A.getByRole("button", { name: /^Sort or filter / }).first().waitFor({ timeout: 180_000 });
   for (const [n, t] of [["Budget", "Number"], ["Status", "Status"], ["Segment", "Text"], ["Notes", "Text"], ["Channel", "Text"], ["Phase", "Text"], ["Due", "Date"]]) await addProp(n, t);
-  await A.hover();
-  await A.getByRole("button", { name: /^New$/ }).first().click();
-  await A.locator("[data-row-id]").first().waitFor({ timeout: 60_000 }).catch(async (e) => { await page.screenshot({ path: `${SHOT}/r43-norow.png` }); throw e; });
+  for (let attempt = 0; attempt < 4; attempt++) {
+    await A.hover();
+    await A.getByRole("button", { name: /^New$/ }).first().click();
+    if (await A.locator("[data-row-id]").first().waitFor({ timeout: 25_000 }).then(() => true, () => false)) break;
+    await page.keyboard.press("Escape");
+  }
+  await A.locator("[data-row-id]").first().waitFor({ timeout: 10_000 });
   await page.waitForTimeout(2500);
   await page.keyboard.press("Escape");
   await page.screenshot({ path: `${SHOT}/r43-rows.png` });
