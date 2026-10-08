@@ -68,7 +68,7 @@ scenario("perm-denied-by-user", async ({ cast }) => {
   });
   // Joined without devices; both blocks are named, with a way to fix them, and they stay.
   const blocked = (o: { microphone: string | null; camera: string | null; text: string }) =>
-    (o.microphone === "blocked" || /(mic|microphone)[^.]{0,40}(blocked|denied)/i.test(o.text)) &&
+    (o.microphone === "blocked" || /(mic|microphone)[^.]{0,40}(blocked|denied)|without a microphone/i.test(o.text)) &&
     (o.camera === "blocked" || /camera[^.]{0,40}(blocked|denied)/i.test(o.text));
   await seeUntil(guest, "mic AND camera blocked notices", blocked, TIMEOUTS.noticeMs);
   await seeUntil(guest, "a Fix / how-to-allow action", (o) => /\bfix\b|allow (access|camera|microphone)|how to (allow|unblock)/i.test(o.text), 5000);

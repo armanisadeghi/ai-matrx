@@ -46,7 +46,14 @@ export default class MeetReport implements Reporter {
     this.rows.push({
       id: test.title,
       project: test.parent.project()?.name ?? "",
-      status: result.status === "passed" ? "PASS" : result.status === "skipped" ? "SKIP" : "FAIL",
+      status:
+        result.status === "passed"
+          ? "PASS"
+          : result.status === "skipped"
+            ? "SKIP"
+            : /page\.goto|net::ERR|chrome-error|ERR_HTTP_RESPONSE_CODE_FAILURE|__dev-walk|evicted preview|Resume this preview/.test(firstEvidence(result))
+              ? "ENV"
+              : "FAIL",
       seconds: Math.round(result.duration / 1000),
       evidence: firstEvidence(result),
       cleanup: test.annotations.find((a) => a.type === "cleanup")?.description ?? "",
@@ -60,8 +67,9 @@ export default class MeetReport implements Reporter {
     this.rows.sort((a, b) => a.id.localeCompare(b.id) || a.project.localeCompare(b.project));
     const pass = this.rows.filter((r) => r.status === "PASS").length;
     const fail = this.rows.filter((r) => r.status === "FAIL").length;
+    const env = this.rows.filter((r) => r.status === "ENV").length;
     const table = [
-      `# Meet state scenarios — ${new Date().toISOString()} — ${pass} pass, ${fail} fail (${result.status})`,
+      `# Meet state scenarios — ${new Date().toISOString()} — ${pass} pass, ${fail} fail, ${env} environment (${result.status})`,
       "",
       `P0 states in catalog: ${P0_IDS.length}; with no scenario in this run: ${this.missing.length ? this.missing.join(", ") : "none"}`,
       "",

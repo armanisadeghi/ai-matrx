@@ -84,8 +84,18 @@ export class Actor {
   }
 
   async signIn(as: SignedInAs, next = "/meetings"): Promise<void> {
-    const url = devLoginURL(as, next);
-    await this.page.goto(url, { waitUntil: "domcontentloaded" });
+    // The shared dev server restarts, recompiles and caps walks under other agents; retry, noted as ENV.
+    for (let attempt = 1; ; attempt++) {
+      try {
+        const res = await this.page.goto(devLoginURL(as, next), { waitUntil: "domcontentloaded" });
+        if (res && res.status() >= 400 && attempt < 6) throw new Error(`HTTP ${res.status()}`);
+        break;
+      } catch (e) {
+        if (attempt >= 6) throw e;
+        this.note(`ENV: sign-in attempt ${attempt} failed (${(e as Error).message.slice(0, 80)}); retrying`);
+        await new Promise((r) => setTimeout(r, 20_000));
+      }
+    }
     await this.page.waitForURL((u) => !u.pathname.startsWith("/api/dev-login"), { timeout: 60_000 });
     const resume = this.page.getByRole("button", { name: "Resume this preview" });
     if (await resume.isVisible().catch(() => false)) {

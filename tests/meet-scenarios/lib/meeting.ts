@@ -123,7 +123,18 @@ export async function walkIn(actor: Actor, meeting: Meeting, opts: WalkOptions =
   const until = opts.until ?? ["in-call", "knocking"];
   const page = opts.page ?? actor.page;
   const gesture = opts.gesture ?? true;
-  if (!page.url().includes(meeting.path)) await page.goto(meeting.path, { waitUntil: "domcontentloaded" });
+  if (!page.url().includes(meeting.path)) {
+    for (let attempt = 1; ; attempt++) {
+      try {
+        await page.goto(meeting.path, { waitUntil: "domcontentloaded" });
+        break;
+      } catch (e) {
+        if (attempt >= 3) throw e;
+        actor.note(`ENV: opening the link failed (${(e as Error).message.slice(0, 80)}); retrying`);
+        await page.waitForTimeout(15_000);
+      }
+    }
+  }
   const deadline = Date.now() + (opts.timeoutMs ?? 90_000);
   let o = await observe(page);
   let lastAction = "";

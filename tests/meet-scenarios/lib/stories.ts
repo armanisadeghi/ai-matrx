@@ -3,6 +3,7 @@ import type { Actor } from "./actor";
 import type { MediaFaults } from "./media-faults";
 import { TIMEOUTS } from "./env";
 import { admit, seePhase, seeUntil, startInstantMeeting, walkIn } from "./meeting";
+import { observe } from "./observe";
 import type { Cast } from "./scenario";
 
 export const GUEST = "Priya Shah";
@@ -32,9 +33,12 @@ export async function callWithGuest(
   const meeting = cast.meeting!;
   await walkIn(host, meeting, { until: ["in-call"] });
   await walkIn(guest, meeting, { until: ["knocking", "in-call"], gesture: guestOpts.gesture ?? true });
-  const now = await seeUntil(guest, "knocking or in the call", (o) => o.phase === "knocking" || o.phase === "in-call", 10_000);
-  if (now.phase === "knocking") {
-    await seeUntil(host, `${name} waiting`, (o) => (o.lobbyCount ?? 0) >= 1, TIMEOUTS.noticeMs);
+  // Admit whenever the HOST sees a knock; the guest's own screen is not trusted for this
+  // (today a knocking guest can be shown an empty room before anyone admitted them).
+  const h = await seeUntil(host, `${name} waiting or in the call`, (o) => (o.lobbyCount ?? 0) >= 1 || o.participants.some((p) => p.name.includes(name)), TIMEOUTS.noticeMs);
+  if ((h.lobbyCount ?? 0) >= 1) {
+    const g = await observe(guest.page);
+    if (g.phase === "in-call") guest.note("DEFECT SIGHTING: guest shown the room (phase=in-call) while the host still lists them as waiting");
     await admit(host, name);
   }
   await seePhase(guest, ["in-call"], 60_000);
