@@ -12,8 +12,9 @@
 //          drill doors `useEntityRows` asks), the chart's `drill_ask` (`askChartSeed`) for a chart view,
 //          the board's entity-engine reads (`askEntityBlockSeed`) for a board view.
 // The gate is the person's `data/server_rows` knob: a table's own bundle carries it (`serverRowsOf`) at no
-// extra read; a built-in block reads it once per page (`platform.knob_resolve`) in an organization of the
-// page's tables, else the person's remembered one. Off = nothing is asked and the browser reads as before.
+// extra read; a built-in block reads it once per page (`platform.knob_resolve`) in the organization the
+// person last chose (the shared cookie), else in one of the page's tables' organizations. Off = nothing is
+// asked and the browser reads as before.
 // Same doors, same person, same arguments: row security decides exactly as from the browser. A read that
 // fails or refuses is simply not in the seed and the block asks for it itself. Nothing here has a budget:
 // the shell and the static body flush first and every block's rows stream in when they land.
@@ -180,10 +181,10 @@ async function tableBlockSeed(reads: PageReads, { props }: DatabaseOnPage): Prom
 async function entityBlockSeed(reads: PageReads, { props }: DatabaseOnPage, knobOrg: Promise<string | null>): Promise<BlockSeed | null> {
   if (props.source.kind !== "entity") return null;
   const token = props.source.token;
-  if (!(await reads.knob(await knobOrg))) return null;
   const view = activeView(props.views, props.activeViewId);
   const filters = (view.filters ?? {}) as Record<string, unknown>;
   const sort = view.sorts?.[0] ?? null;
+  if (!(await reads.knob(await knobOrg))) return null;
   const rows = await reads.entityRows(token, filters, sort);
   const base = { dataSource: reads.supabase, organizationId: null as never, actor: reads.actor };
   let more: RecordsSeed | null = null;
@@ -217,11 +218,13 @@ function askBlocks(supabase: Supabase, doc: SpaceDoc): SpaceBlockSeeds {
     const remembered = h ? activeOrgCookie.readFromCookieHeader(h.get("cookie"), userId) : null;
     return new PageReads(supabase, actor, userId, remembered);
   });
-  // The knob's scope for built-in blocks: an organization of the page's own tables, else the remembered one.
+  // The knob's scope for built-in blocks: the organization the person last chose, else one of the page's
+  // own tables' (asked anyway for that table's block).
   const firstTable = found.find((b) => b.props.source.kind === "table");
   const knobOrg = ctx.then(async (reads) => {
+    if (reads.rememberedOrg) return reads.rememberedOrg;
     const table = firstTable?.props.source.kind === "table" ? await reads.where(firstTable.props.source.tableId) : null;
-    return table?.organizationId ?? reads.rememberedOrg;
+    return table?.organizationId ?? null;
   });
   const seeds: SpaceBlockSeeds = {};
   for (const block of found) {

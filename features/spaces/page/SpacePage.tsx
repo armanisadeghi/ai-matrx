@@ -60,7 +60,7 @@ import { editedAgo } from "./time";
 import { mayWrite, roomCanEdit, trashedByList } from "./trash-state";
 import { attemptSave, deviceStorage, forgetUnsaved, keepsChange, keepUnsaved, noteWritten } from "./unsaved";
 import { useRestoreKept } from "./useRestoreKept";
-import { SpaceSeedProvider, useSpaceSeedSettled, type SpaceTablesSeed } from "./space-seed-context";
+import { SpaceSeedProvider, useSpaceSeedSettled, type SpaceBlockSeeds } from "./space-seed-context";
 import { StaticSpaceBody } from "../editor/static-body";
 import { sendOnLeave, trackAccessToken } from "./leave-save";
 import { contentKey } from "./content-key";
@@ -153,7 +153,7 @@ function isBlankPage(blocks: readonly SpaceBlock[]): boolean {
   return only.type === "paragraph" && !(only.text ?? []).some((t) => (t as { text?: string }).text) && !only.children?.length;
 }
 
-export function SpacePage({ spaceId, initialDoc, tablesSeed }: { spaceId: string; initialDoc?: SpaceDoc; tablesSeed?: Promise<SpaceTablesSeed | null> }) {
+export function SpacePage({ spaceId, initialDoc, seeds }: { spaceId: string; initialDoc?: SpaceDoc; seeds?: SpaceBlockSeeds }) {
   const { pageEpoch } = useSpaces();
   const key = `${spaceId}:${pageEpoch(spaceId)}`;
   // Round 34: the page as the server read it (its text is in the HTML) opens the FIRST screen only — a
@@ -161,7 +161,7 @@ export function SpacePage({ spaceId, initialDoc, tablesSeed }: { spaceId: string
   const [servedKey] = useState(key);
   const served = key === servedKey && initialDoc?.id === spaceId ? initialDoc : undefined;
   return (
-    <SpaceSeedProvider seed={tablesSeed}>
+    <SpaceSeedProvider seeds={key === servedKey ? seeds : undefined}>
       <SpacePageScreen key={key} spaceId={spaceId} initialDoc={served} />
     </SpaceSeedProvider>
   );

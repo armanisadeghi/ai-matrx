@@ -71,3 +71,48 @@ export function entityDefaultGroup(columns: readonly EntityColumn[]): EntityColu
 export function entityChartBy(view: SpaceDbView, columns: readonly EntityColumn[]): string | undefined {
   return view.chart?.groupBy ?? view.groupField ?? entityDefaultGroup(columns)?.api_name ?? undefined;
 }
+
+type SeedAnswer = { door: string; args: Record<string, unknown>; data: unknown };
+
+/** Arguments compared as data: key order never matters, an absent key equals an empty object. */
+function same(a: unknown, b: unknown): boolean {
+  const canon = (v: unknown): unknown =>
+    Array.isArray(v) ? v.map(canon) : v && typeof v === "object" ? Object.fromEntries(Object.keys(v).sort().map((k) => [k, canon((v as Record<string, unknown>)[k])])) : v;
+  return JSON.stringify(canon(a ?? {})) === JSON.stringify(canon(b ?? {}));
+}
+
+/**
+ * A built-in block's first describe and page from its block seed (the server asked them through the
+ * same client calls, `entityRowsArgs`). Read synchronously by the block's first render. Null when absent.
+ */
+export function seededEntityFirst(answers: readonly SeedAnswer[] | null, token: string, filters: Record<string, unknown>, sort: EntitySort, search: string, limit: number): { def: unknown; page: unknown } | null {
+  if (!answers) return null;
+  const { source, limit: l, ...rest } = entityRowsArgs(token, filters, sort, search, limit);
+  const question = { ...("where" in rest ? { where: rest.where } : {}), ...("sort" in rest ? { sort: rest.sort } : {}), ...("search" in rest ? { search: rest.search } : {}), limit: l };
+  const def = answers.find((a) => a.door === "drill_describe" && same(a.args.p_source, source));
+  const page = answers.find((a) => a.door === "drill_rows" && same(a.args.p_source, source) && same(a.args.p_question, question));
+  return def && page ? { def: def.data, page: page.data } : null;
+}
+
+/**
+ * A table chart's two aggregates from its block seed (the server asked `chartTileSpecs` through the
+ * records client, whose `recordAggregate` fills `p_group_by` [], `p_filter` {} and `p_limit` 200). Raw
+ * door rows: the caller lifts them as the client does (`liftWithheld`). Null when absent.
+ */
+export function seededChartTiles(answers: readonly SeedAnswer[] | null, tableId: string, settings: ChartSettings, filter: Record<string, unknown>): { grouped: unknown; whole: unknown } | null {
+  if (!answers) return null;
+  const { grouped, whole } = chartTileSpecs(settings, filter);
+  const find = (spec: { groupBy?: string[]; measures: unknown; limit?: number; filter?: unknown }) =>
+    answers.find(
+      (a) =>
+        a.door === "record_aggregate" &&
+        a.args.p_table_id === tableId &&
+        same(a.args.p_group_by, spec.groupBy ?? []) &&
+        same(a.args.p_measures, spec.measures) &&
+        same(a.args.p_filter, spec.filter ?? {}) &&
+        a.args.p_limit === (spec.limit ?? GROUP_LIMIT),
+    );
+  const g = find(grouped);
+  const w = find(whole);
+  return g && w ? { grouped: g.data, whole: w.data } : null;
+}

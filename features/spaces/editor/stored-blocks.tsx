@@ -356,7 +356,7 @@ export const storedBlockSpecs = {
   database: storedSpec("database", (p, ctx) => (
     <DatabaseHost blockId={ctx.blockId} layout={activeLayout(p)} painted={paintedSizesOf(p)}>
       <BlockBoundary>
-        <LateSeedRecords>
+        <LateSeedRecords blockId={ctx.blockId} fallback={<div className="spaces-db-loading" />}>
           <DatabaseBlockView blockId={ctx.blockId} props={p} onChange={ctx.update} editable={(ctx.editor as unknown as { isEditable: boolean }).isEditable} />
         </LateSeedRecords>
       </BlockBoundary>

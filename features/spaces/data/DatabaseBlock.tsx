@@ -58,6 +58,8 @@ import { AutofillRows } from "./ai-autofill";
 import { designMarkdown } from "./designed-database";
 import { FieldList, MenuRow, SidePeek, ViewerSaveBar, ViewerSortButton, ViewTab, filtersDiffer, shownFilters, shownSorts, type FilterChoice, type SortChoice, NewButton } from "./menu-parts";
 import { ChartView, choicesOfField } from "./ChartView";
+import { DEFAULT_CHART } from "./first-reads";
+import { BlockRecordsSeed } from "../page/space-seed-context";
 import { NewPropertyPanel } from "./NewProperty";
 import { SpaceIcon } from "../page/SpaceIcon";
 import { useStructureEdit } from "../page/structure";
@@ -91,7 +93,6 @@ function kindOf(f: Field): string {
   return typeof parity === "string" ? parity : String(f.type);
 }
 
-const DEFAULT_CHART: ChartSettings = { type: "donut", groupBy: null, op: "count", centerValue: true };
 
 export interface DatabaseBlockViewProps {
   blockId: string;
@@ -126,7 +127,9 @@ export function DatabaseBlock({ blockId, props: raw, onChange, editable }: Datab
         </div>
       )}
     >
-      <DatabaseFrame tableId={tableId} props={props} raw={raw} onChange={onChange} editable={editable} sample={props.sample === AGENCY_SAMPLE_ID} />
+      <BlockRecordsSeed>
+        <DatabaseFrame tableId={tableId} props={props} raw={raw} onChange={onChange} editable={editable} sample={props.sample === AGENCY_SAMPLE_ID} />
+      </BlockRecordsSeed>
     </DataMount>
   );
 }

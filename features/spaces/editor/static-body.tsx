@@ -20,7 +20,7 @@ import dynamic from "next/dynamic";
 import { Suspense, type ReactNode } from "react";
 
 import type { SpaceBlock } from "../contract";
-import { ResolvedSpaceSeed, useAwaitedSpaceSeed } from "../page/space-seed-context";
+import { ResolvedBlockSeed, useAwaitedBlockSeed } from "../page/space-seed-context";
 import { CalloutGlyph } from "./callout-block";
 import { toEngine, type EngineBlock } from "./convert";
 import { DatabaseHost, PAINTED_WIDTH_SLACK, activeLayout, paintedSizesOf } from "./database-host";
@@ -189,13 +189,13 @@ function Plain({ b, index }: { b: EngineBlock; index?: number }) {
 const REACT_BLOCKS = new Set(["page", "linkToPage", "columnList", "column", "database"]);
 const PLAIN_BLOCKS = new Set(["paragraph", "heading", "bulletListItem", "numberedListItem", "checkListItem", "toggleListItem", "quote", "divider", "callout"]);
 
-/** The server's rows for this table (the page's seed, awaited inside the block's own Suspense). */
+/** The server's answers for this block (its own seed, awaited inside the block's own Suspense). */
 function SeededDatabase({ blockId, p }: { blockId: string; p: Record<string, unknown> }) {
-  const seed = useAwaitedSpaceSeed();
+  const seed = useAwaitedBlockSeed(blockId);
   return (
-    <ResolvedSpaceSeed seed={seed}>
+    <ResolvedBlockSeed blockId={blockId} seed={seed}>
       <DatabaseBlock blockId={blockId} props={p} onChange={() => undefined} editable={false} />
-    </ResolvedSpaceSeed>
+    </ResolvedBlockSeed>
   );
 }
 

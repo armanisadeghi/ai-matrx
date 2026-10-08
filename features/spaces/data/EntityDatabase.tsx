@@ -28,6 +28,8 @@ import { toast } from "@/lib/toast";
 
 import { FieldList, MenuRow, NewButton, SidePeek, ViewerSaveBar, ViewerSortButton, ViewTab, filtersDiffer, shownFilters, shownSorts, type FilterChoice, type SortChoice } from "./menu-parts";
 import { BUILT_IN_SOURCES, newViewId, type DatabaseBlockProps, type SpaceDbView, type SpaceViewLayout } from "./sources";
+import { ENTITY_PAGE, entityDefaultGroup, entityRowsArgs, entityShownColumns, seededEntityFirst } from "./first-reads";
+import { BlockRecordsSeed, useBlockSeedAnswers } from "../page/space-seed-context";
 import { formatCount } from "@ai-matrx/kit/format";
 import { isUuidShape } from "@ai-matrx/kit/uuid";
 import { useStructureEdit } from "../page/structure";
@@ -44,7 +46,7 @@ const ENTITY_LAYOUTS: Array<{ id: SpaceViewLayout; label: string; icon: typeof T
 const CHART_KIND: Record<string, ChartKind> = { donut: "donut", bar: "column", hbar: "bar", line: "line" };
 
 /** Rows per read: the first page, and each "Load more" asks only the NEXT page (offset = rows held). */
-const PAGE = 50;
+const PAGE = ENTITY_PAGE;
 /** How long a read may go unanswered before it is asked again (once), then named. */
 const STALL_MS = 15000;
 
@@ -64,6 +66,21 @@ function sentence(e: unknown, fallback: string): string {
   return fallback;
 }
 
+type EntityFirstRead = { def: unknown; page: { rows?: unknown[]; columns?: unknown[]; total?: unknown } };
+
+function entityStateOf(token: string, read: EntityFirstRead, question: string): EntityState {
+  const api = (read.def as { api?: { label?: string; columns?: EntityColumn[] }; label?: string }).api;
+  return {
+    label: api?.label ?? (read.def as { label?: string }).label ?? token,
+    columns: entityShownColumns(api?.columns ?? [], read.page.columns),
+    rows: (read.page.rows ?? []) as EntityRow[],
+    total: Number(read.page.total ?? 0),
+    loading: false,
+    error: null,
+    answered: question,
+  };
+}
+
 /**
  * One built-in source's presented columns and one page of rows for the view's question — the filter
  * and the sort are asked of the store (never applied to a page here), so a count and a page agree.
@@ -71,9 +88,19 @@ function sentence(e: unknown, fallback: string): string {
 function useEntityRows(token: string, view: SpaceDbView, search: string) {
   const client = useRecordsClient();
   const [tick, setTick] = useState(0);
-  const [state, setState] = useState<EntityState>({ label: null, columns: [], rows: [], total: 0, loading: true, error: null, answered: "" });
   const where = JSON.stringify(view.filters ?? {});
   const sortKey = JSON.stringify(view.sorts?.[0] ?? null);
+  const question = `${token}|${where}|${sortKey}|${search}`;
+  // Round 36: the server's answers for this first question (this block's seed), drawn without asking again.
+  const answers = useBlockSeedAnswers();
+  const [seeded] = useState(() => {
+    const first = seededEntityFirst(answers, token, view.filters ?? {}, view.sorts?.[0] ?? null, search, PAGE);
+    return first ? (first as EntityFirstRead) : null;
+  });
+  const seededFor = useRef<string | null>(seeded ? question : null);
+  const [state, setState] = useState<EntityState>(() =>
+    seeded ? entityStateOf(token, seeded, question) : { label: null, columns: [], rows: [], total: 0, loading: true, error: null, answered: "" },
+  );
   // A read that never answers (a stalled session in a long-lived tab) must not leave blank skeleton
   // rows forever: past STALL_MS the read is asked once more, then the block says so with Try again.
   const [stalls, setStalls] = useState(0);
@@ -81,11 +108,13 @@ function useEntityRows(token: string, view: SpaceDbView, search: string) {
   const held = useRef(PAGE);
   const [loadingMore, setLoadingMore] = useState(false);
   const asked = useRef("");
-  const question = `${token}|${where}|${sortKey}|${search}`;
   useEffect(() => {
     // A new question (filter, sort, source) starts again at one page; a re-read keeps what is held.
     if (asked.current !== question) held.current = PAGE;
     asked.current = question;
+    // The server already answered this question (the first one): nothing to ask until a re-read.
+    if (seededFor.current === question && tick === 0 && stalls === 0) return;
+    seededFor.current = null;
     let cancelled = false;
     let settled = false;
     const stall = setTimeout(() => {
@@ -96,33 +125,13 @@ function useEntityRows(token: string, view: SpaceDbView, search: string) {
     const source = { kind: "entity" as const, token };
     const filters = JSON.parse(where) as Record<string, unknown>;
     const sort = JSON.parse(sortKey) as { field: string; direction: "asc" | "desc" } | null;
-    void Promise.all([
-      client.drillDescribe({ source }),
-      client.drillRows({
-        source,
-        ...(Object.keys(filters).length ? { where: filters } : {}),
-        ...(sort ? { sort: { key: sort.field, direction: sort.direction } } : {}),
-        ...(search ? { search } : {}),
-        limit: held.current,
-      }),
-    ]).then(
+    void Promise.all([client.drillDescribe({ source }), client.drillRows(entityRowsArgs(token, filters, sort, search, held.current))]).then(
       ([def, page]) => {
         settled = true;
         if (cancelled) return;
         if (!def.ok) return setState((s) => ({ ...s, loading: false, error: sentence(def.error, "This database could not be read.") }));
         if (!page.ok) return setState((s) => ({ ...s, loading: false, error: sentence(page.error, "This database’s rows could not be read.") }));
-        const api = (def.data as unknown as { api?: { label?: string; columns?: EntityColumn[] }; label?: string }).api;
-        const shown = new Set((page.data.columns ?? []).filter((c): c is string => typeof c === "string"));
-        const columns = (api?.columns ?? []).filter((c) => c.api_name !== "id" && (shown.size === 0 || shown.has(c.api_name) || shown.has(c.lookup?.via ?? "")));
-        setState({
-          label: api?.label ?? (def.data as unknown as { label?: string }).label ?? token,
-          columns,
-          rows: (page.data.rows ?? []) as EntityRow[],
-          total: Number(page.data.total ?? 0),
-          loading: false,
-          error: null,
-          answered: question,
-        });
+        setState(entityStateOf(token, { def: def.data, page: page.data as unknown as EntityFirstRead["page"] }, question));
       },
       (thrown: unknown) => {
         settled = true;
@@ -149,14 +158,7 @@ function useEntityRows(token: string, view: SpaceDbView, search: string) {
     const filters = JSON.parse(where) as Record<string, unknown>;
     const sort = JSON.parse(sortKey) as { field: string; direction: "asc" | "desc" } | null;
     try {
-      const page = await client.drillRows({
-        source: { kind: "entity", token },
-        ...(Object.keys(filters).length ? { where: filters } : {}),
-        ...(sort ? { sort: { key: sort.field, direction: sort.direction } } : {}),
-        ...(search ? { search } : {}),
-        limit: PAGE,
-        offset: rows.length,
-      });
+      const page = await client.drillRows(entityRowsArgs(token, filters, sort, search, PAGE, rows.length));
       if (!page.ok) {
         toast.error(sentence(page.error, "More rows could not be read."));
         return;
@@ -242,7 +244,9 @@ export function EntityDatabase(p: EntityDatabaseProps) {
   return (
     // org-filter: write-target a built-in source's writes go through the active organization
     <RecordsMount letTheStoreDecideRights config={p.published ?? config}>
-      <EntityFrame {...p} />
+      <BlockRecordsSeed>
+        <EntityFrame {...p} />
+      </BlockRecordsSeed>
     </RecordsMount>
   );
 }
@@ -467,7 +471,7 @@ function EntityBody({ token, entity, view, onOpen, search, onNew }: { token: str
   }
   // The default grouping is a choice the module names in words (a project's Status), never a lookup
   // the door answers as bare ids (Created by) — those drew a legend of uuids.
-  const choice = entity.columns.find((c) => c.type === "choice") ?? entity.columns.find((c) => c.lookup && c.lookup.replaces);
+  const choice = entityDefaultGroup(entity.columns);
   if (view.layout === "chart") {
     const by = view.chart?.groupBy ?? view.groupField ?? choice?.api_name;
     return (
