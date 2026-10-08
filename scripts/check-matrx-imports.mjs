@@ -304,7 +304,7 @@ export function runtimeExportsOf(file, stack = new Set()) {
   return result;
 }
 
-/** { entry } | { missingSubpath: true } | { unresolved: reason } */
+/** { entry } | { missingSubpath: true } | { missingFile: path } | { unresolved: reason } */
 function resolveSubpath(pkgDir, manifest, sub) {
   const exp = manifest.exports;
   if (exp === undefined) {
@@ -337,6 +337,12 @@ function resolveSubpath(pkgDir, manifest, sub) {
   const entry = toDeclaration(pkgDir, file);
   const runtimeRel = pickRuntime(target);
   const runtime = runtimeRel && /\.m?js$/.test(runtimeRel) && existsSync(join(pkgDir, runtimeRel)) ? join(pkgDir, runtimeRel) : null;
+  // THE 2026-10-07 CASE (v0.4.2980 never deployed): chat 0.4.0 deleted
+  // dist/agents/model-registry/, but its `./agents/*` wildcard still MATCHES the specifier, so the
+  // subpath looked "exported" and the missing file was filed under NOT CHECKED. A specifier whose
+  // exports target names no declaration AND no runtime file on disk is a Turbopack
+  // "Module not found" — a finding, never a skip.
+  if (!entry && !(runtimeRel && existsSync(join(pkgDir, runtimeRel)))) return { missingFile: runtimeRel ?? file };
   return entry ? { entry, runtime } : { unresolved: `no declaration beside ${file}` };
 }
 
@@ -384,6 +390,10 @@ export function audit(root, { only = null } = {}) {
       const rel = relative(root, file);
       if (res.missingSubpath) {
         findings.push({ file: rel, line: imp.line, pkg, version: manifest.version, sub, name: imp.name, why: "subpath" });
+        continue;
+      }
+      if (res.missingFile) {
+        findings.push({ file: rel, line: imp.line, pkg, version: manifest.version, sub, name: imp.name, why: "subpath-file", target: res.missingFile });
         continue;
       }
       if (res.unresolved) {
@@ -519,6 +529,30 @@ function exportsHasSubpath(exportsField, sub) {
   return false;
 }
 
+/** False only when the exports map MATCHES `sub` but no file it names exists (a wildcard over a deleted directory). */
+function subpathFileShipped(pkgDir, exportsField, sub) {
+  if (exportsField == null || typeof exportsField !== "object" || Array.isArray(exportsField)) return true;
+  if (!Object.keys(exportsField).some((k) => k.startsWith("."))) return true;
+  let target = exportsField[sub];
+  if (target === undefined) {
+    for (const [k, v] of Object.entries(exportsField)) {
+      const star = k.indexOf("*");
+      if (star === -1) continue;
+      const pre = k.slice(0, star);
+      const post = k.slice(star + 1);
+      if (sub.startsWith(pre) && sub.endsWith(post) && sub.length >= pre.length + post.length) {
+        target = JSON.parse(JSON.stringify(v).split("*").join(sub.slice(pre.length, sub.length - post.length)));
+        break;
+      }
+    }
+  }
+  if (target == null) return true;
+  const runtimeRel = pickRuntime(target);
+  const typesRel = pickTypes(target);
+  if (!runtimeRel && !typesRel) return true;
+  return [runtimeRel, typesRel].some((r) => r && existsSync(join(pkgDir, r)));
+}
+
 function shippedScripts(pkgDir) {
   const out = [];
   const walk = (dir) => {
@@ -585,6 +619,8 @@ export function auditPackageGraph(root) {
       const dep = JSON.parse(readFileSync(join(depDir, "package.json"), "utf8"));
       if (!exportsHasSubpath(dep.exports, sub))
         findings.push({ file: where, line: 0, pkg: name, version: dep.version, sub, name: spec, why: "graph", importer: manifest.name });
+      else if (!subpathFileShipped(depDir, dep.exports, sub))
+        findings.push({ file: where, line: 0, pkg: name, version: dep.version, sub, name: spec, why: "graph-file", importer: manifest.name });
     }
   }
   return { packages: seen.size, specifiers, findings };
@@ -598,6 +634,9 @@ export function findingKey(f) {
 function describe(f) {
   const target = f.sub === "." ? f.pkg : `${f.pkg}/${f.sub.slice(2)}`;
   if (f.why === "subpath") return `subpath "${f.sub}" is not in the package's exports map`;
+  if (f.why === "subpath-file") return `subpath "${f.sub}" matches the exports map but the package ships no ${f.target} (Module not found)`;
+  if (f.why === "graph-file")
+    return `${f.importer} imports "${f.name}", but the ${f.pkg}@${f.version} installed beside it ships no file for "${f.sub}"`;
   if (f.why === "not-installed") return `"${f.name}" from "${target}": ${f.pkg} is NOT INSTALLED (node_modules has no copy)`;
   if (f.why === "graph")
     return `${f.importer} imports "${f.name}", but the ${f.pkg}@${f.version} installed beside it does not export "${f.sub}"`;
@@ -839,6 +878,46 @@ function selfTest() {
     pkgDirCache.clear();
     if (!auditPackageGraph(tmp).findings.some((f) => f.why === "graph-missing"))
       failures.push("RED graph-missing: an import of an uninstalled sibling package was not reported");
+
+    // ── THE 2026-10-07 CASE (v0.4.2980–2982 never deployed): chat 0.4.0 deleted
+    // dist/agents/model-registry/ while its `./agents/*` wildcard still matched the app's import.
+    const wild = (version, withSlice) => {
+      const dir = join(tmp, "node_modules", "@ai-matrx", "chat");
+      rmSync(dir, { recursive: true, force: true });
+      mkdirSync(join(dir, "dist", "agents", "model-registry"), { recursive: true });
+      writeFileSync(
+        join(dir, "package.json"),
+        JSON.stringify({ name: "@ai-matrx/chat", version, type: "module", exports: { "./agents/*": { types: "./dist/agents/*.d.ts", import: "./dist/agents/*.js" } } }),
+      );
+      if (withSlice) {
+        writeFileSync(join(dir, "dist", "agents", "model-registry", "modelRegistrySlice.d.ts"), "export declare function fetchModelOptions(): void;\n");
+        writeFileSync(join(dir, "dist", "agents", "model-registry", "modelRegistrySlice.js"), "export function fetchModelOptions() {}\n");
+      }
+    };
+    rmSync(join(tmp, "components"), { recursive: true, force: true });
+    rmSync(join(tmp, "node_modules", "@ai-matrx", "design-system"), { recursive: true, force: true });
+    writeFileSync(join(tmp, "features", "probe.ts"), `import { fetchModelOptions } from "@ai-matrx/chat/agents/model-registry/modelRegistrySlice";\nexport { fetchModelOptions };\n`);
+    wild("0.4.0", false);
+    pkgDirCache.clear();
+    runtimeCache.clear();
+    r = audit(tmp, { only: ["features"] });
+    if (!r.findings.some((f) => f.why === "subpath-file" && f.pkg === "@ai-matrx/chat" && f.version === "0.4.0"))
+      failures.push(`RED 2026-10-07: a wildcard subpath whose file the package no longer ships was not reported: ${JSON.stringify(r.findings)}`);
+    wild("0.4.1", true);
+    pkgDirCache.clear();
+    runtimeCache.clear();
+    r = audit(tmp, { only: ["features"] });
+    if (r.findings.some((f) => f.pkg === "@ai-matrx/chat")) failures.push(`GREEN 2026-10-07: a shipped wildcard file was reported: ${JSON.stringify(r.findings)}`);
+    // The same class between packages: another package imports the deleted wildcard file.
+    rmSync(join(tmp, "features", "probe.ts"));
+    graphPkg("design-system", "0.80.0", { "./data-table": "./dist/data-table/index.js" }, `import { fetchModelOptions } from "@ai-matrx/chat/agents/model-registry/modelRegistrySlice";\n`);
+    wild("0.4.0", false);
+    pkgDirCache.clear();
+    if (!auditPackageGraph(tmp).findings.some((f) => f.why === "graph-file" && f.importer === "@ai-matrx/design-system"))
+      failures.push("RED 2026-10-07 graph: a package importing a wildcard file its sibling no longer ships was not reported");
+    wild("0.4.1", true);
+    pkgDirCache.clear();
+    if (auditPackageGraph(tmp).findings.length) failures.push("GREEN 2026-10-07 graph: a shipped wildcard file was reported");
   } finally {
     rmSync(tmp, { recursive: true, force: true });
   }
@@ -847,7 +926,7 @@ function selfTest() {
     for (const f of failures) console.error(`  - ${f}`);
     return 1;
   }
-  console.log("check-matrx-imports --self-test OK — RED on a missing export, subpath, runtime-only gap, uninstalled package and a broken package-to-package import; GREEN once shipped.");
+  console.log("check-matrx-imports --self-test OK — RED on a missing export, subpath, wildcard subpath with no shipped file, runtime-only gap, uninstalled package and a broken package-to-package import; GREEN once shipped.");
   return 0;
 }
 
