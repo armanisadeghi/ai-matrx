@@ -22,21 +22,21 @@ jest.mock("@/components/cost/pointsRate", () => ({
 
 describe("appletAdminKpis — unknown must not read as a number", () => {
   it("renders an unknown cost as an em-dash, not $0.0000", () => {
-    expect(appletAdminKpis({ total_cost: null }).cost).toBe("—");
-    expect(appletAdminKpis({}).cost).toBe("—");
+    expect(appletAdminKpis({ total_cost: null }, 20_000).cost).toBe("—");
+    expect(appletAdminKpis({}, 20_000).cost).toBe("—");
   });
 
   it("still renders a REAL zero cost as $0.0000", () => {
-    expect(appletAdminKpis({ total_cost: 0 }).cost).toBe("0 points");
+    expect(appletAdminKpis({ total_cost: 0 }, 20_000).cost).toBe("0 points");
   });
 
   it("renders a real cost unchanged", () => {
-    expect(appletAdminKpis({ total_cost: 1.23456 }).cost).toBe("24,692 points");
-    expect(appletAdminKpis({ total_cost: 1.23456 }, "usd").cost).toBe("$1.23");
+    expect(appletAdminKpis({ total_cost: 1.23456 }, 20_000).cost).toBe("24,692 points");
+    expect(appletAdminKpis({ total_cost: 1.23456 }, 20_000, "usd").cost).toBe("$1.23");
   });
 
   it("renders unknown runs / users / success rate as em-dashes", () => {
-    const kpis = appletAdminKpis({});
+    const kpis = appletAdminKpis({}, 20_000);
     expect(kpis.runs).toBe("—");
     expect(kpis.users).toBe("—");
     expect(kpis.success).toBe("—");
@@ -47,7 +47,7 @@ describe("appletAdminKpis — unknown must not read as a number", () => {
       total_executions: 0,
       unique_users_count: 0,
       success_rate: 0,
-    });
+    }, 20_000);
     expect(kpis.runs).toBe("0");
     expect(kpis.users).toBe("0");
     expect(kpis.success).toBe("0%");
@@ -56,7 +56,7 @@ describe("appletAdminKpis — unknown must not read as a number", () => {
 
 describe("appletKpis — the entity stat strip", () => {
   it("omits cost when unknown and shows a real zero when known", () => {
-    expect(appletKpis({ total_cost: null }).cost).toBeUndefined();
-    expect(appletKpis({ total_cost: 0 }).cost).toBe("0 points");
+    expect(appletKpis({ total_cost: null }, 20_000).cost).toBeUndefined();
+    expect(appletKpis({ total_cost: 0 }, 20_000).cost).toBe("0 points");
   });
 });

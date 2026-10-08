@@ -57,7 +57,7 @@ function StatTile({
 }
 
 function OverviewTiles({ overview }: { overview: OrgAdminOverview }) {
-  const { unit } = useCostDisplay();
+  const { unit, rate: costRate } = useCostDisplay();
   return (
     <div className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-6">
       <StatTile icon={Users} label="Members" value={overview.totalMembers} hint={`${overview.admins} admins`} />
@@ -84,7 +84,7 @@ function OverviewTiles({ overview }: { overview: OrgAdminOverview }) {
       <StatTile
         icon={Activity}
         label="Spend 24h"
-        value={formatMcents(overview.cost24hMcents, unit)}
+        value={formatMcents(overview.cost24hMcents, costRate, unit)}
         hint={`${overview.requests24h} requests`}
       />
     </div>

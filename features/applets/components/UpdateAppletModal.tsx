@@ -41,6 +41,7 @@ import {
 import type { AppletRow, AppStatus, UpdateAppletInput } from "../types";
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { usePointsRate } from "@/components/cost/pointsRate.client";
 
 interface UpdateAppletModalProps {
   open: boolean;
@@ -62,6 +63,7 @@ export function UpdateAppletModal({
   onSubmit,
   kpis,
 }: UpdateAppletModalProps) {
+  const costRate = usePointsRate();
   const isMobile = useIsMobile();
 
   const [name, setName] = useState(app.name);
@@ -157,7 +159,7 @@ export function UpdateAppletModal({
       drafts,
       saving,
       error,
-      kpis: kpis ?? appletAdminKpis(app),
+      kpis: kpis ?? appletAdminKpis(app, costRate),
     };
   };
 

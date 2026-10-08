@@ -90,6 +90,11 @@ if $STRICT; then
         # were all green. ~30s, offline, zero findings at introduction.
         # `pnpm check:matrx-imports:self-test` proves it can still fail.
         "Every @ai-matrx import exists in the installed package|pnpm check:matrx-imports"
+        # THE SYNC SWEEP NEVER COMMITS A FILE THE INSTALLED PACKAGES CANNOT BUILD, AND NEVER
+        # ADOPTS A PACKAGE UPDATE THAT ONLY BREAKS THE BUILD (2026-10-07: 12 failed Vercel builds in
+        # 36h + one green build that crashed manage.aimatrx.com). Proves the hold, the publish-train
+        # wait and the adoption rule can still fail; ~10s, offline (gh and pnpm are doubles).
+        "Sync sweep holds unbuildable files, refuses breaking package updates — self-tests|pnpm check:sweep-resolves:self-test && pnpm test:sync-main-packages"
         # EVERY @ai-matrx VERSION THE LOCKFILE NAMES IS SERVED BY NPM. On
         # 2026-10-05 the lockfile named @ai-matrx/agents 0.45.1 while its
         # tarball still 404'd: `pnpm install --frozen-lockfile` died half-way
@@ -1104,6 +1109,11 @@ else
         # were all green. ~30s, offline, zero findings at introduction.
         # `pnpm check:matrx-imports:self-test` proves it can still fail.
         "Every @ai-matrx import exists in the installed package|pnpm check:matrx-imports"
+        # THE SYNC SWEEP NEVER COMMITS A FILE THE INSTALLED PACKAGES CANNOT BUILD, AND NEVER
+        # ADOPTS A PACKAGE UPDATE THAT ONLY BREAKS THE BUILD (2026-10-07: 12 failed Vercel builds in
+        # 36h + one green build that crashed manage.aimatrx.com). Proves the hold, the publish-train
+        # wait and the adoption rule can still fail; ~10s, offline (gh and pnpm are doubles).
+        "Sync sweep holds unbuildable files, refuses breaking package updates — self-tests|pnpm check:sweep-resolves:self-test && pnpm test:sync-main-packages"
         # EVERY @ai-matrx VERSION THE LOCKFILE NAMES IS SERVED BY NPM. On
         # 2026-10-05 the lockfile named @ai-matrx/agents 0.45.1 while its
         # tarball still 404'd: `pnpm install --frozen-lockfile` died half-way

@@ -26,6 +26,7 @@ import MatrxMiniLoader from "@/components/loaders/MatrxMiniLoader";
 import BasicMarkdownContent from "@ai-matrx/rich-content/display/chat-markdown/BasicMarkdownContent";
 import { safeJsonParse } from "@ai-matrx/rich-content/display/chat-markdown/block-registry/json-parse-utils";
 import { Button } from "@ai-matrx/design-system/controls";
+import { HtmlPreviewChromeProvider } from "@/features/html-pages/components/HtmlPreviewChrome";
 // Lazy load block renderers — only the ones that accept raw content strings
 const CodeBlock = lazy(
   () => import("@ai-matrx/rich-content/code-block/CodeBlock"),
@@ -293,6 +294,39 @@ const ArtifactBlock: React.FC<ArtifactBlockProps> = ({
       </div>
     );
   };
+
+  // A finished html page carries ONE header — the page preview's own (title,
+  // Code, Copy, Download, Open in canvas). This block hands it its title,
+  // its extra actions and its canvas opener instead of stacking a label row
+  // on top of it.
+  if (canvasType === "html" && isComplete) {
+    return (
+      <HtmlPreviewChromeProvider
+        value={{
+          title: artifactTitle,
+          openInCanvas: isCanvasAvailable ? handleOpenCanvas : undefined,
+          canvasOpen: canvasToggle.isVisible,
+          actions: (
+            <>
+              {isMaterializedArtifactId(artifactId) && (
+                <ArtifactVersionHistory
+                  canvasItemId={artifactId}
+                  triggerClassName="rounded p-0.5 text-muted-foreground hover:text-foreground"
+                />
+              )}
+              {canUnbind && (
+                <Button variant="quiet" icon={<Unlink />} onClick={() => void handleUnbind()} disabled={unbindBusy} title="Detach as text" aria-label="Detach as text" />
+              )}
+            </>
+          ),
+        }}
+      >
+        <div className="relative my-2" data-artifact-type="html">
+          {renderContent()}
+        </div>
+      </HtmlPreviewChromeProvider>
+    );
+  }
 
   return (
     <div className="group/artifact relative my-2">

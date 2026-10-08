@@ -13,6 +13,8 @@ import { Copy, Eye, FileText, LayoutTemplate, PenLine, Redo2, Send, Trash2, Undo
 import { Button, EmptyState, Tabs } from "@ai-matrx/design-system/controls";
 import { useIsMobile } from "@ai-matrx/kit/media-query";
 import { RecordPageHeader } from "@/features/shell/components/header/templates/RecordPageHeader";
+import { useRouter } from "next/navigation";
+
 import { toast } from "@/lib/toast";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
@@ -86,6 +88,7 @@ export function toTemplate(d: EnvelopeDraftV1): EnvelopeTemplateV1 {
 }
 
 export function EsignEditor(props: EsignEditorProps) {
+  const router = useRouter();
   const { api, mode, uploader } = props;
   const templateMode = mode === "template";
   const isMobile = useIsMobile();
@@ -135,17 +138,18 @@ export function EsignEditor(props: EsignEditorProps) {
   }, [draft.recipients, activeRecipient]);
 
   // Create the draft on the server the first time there is something to keep.
+  const { onCreated, resolveOrganizationId, organizationId: givenOrganizationId } = props;
   const ensureDraft = useCallback(async () => {
     if (templateMode || boot.id) return;
     if (!creating.current) {
       creating.current = (async () => {
-        const organizationId = props.organizationId ?? (await props.resolveOrganizationId?.());
+        const organizationId = givenOrganizationId ?? (await resolveOrganizationId?.());
         if (!organizationId) throw new DraftRefusal("no_organization", "Choose an organization first.");
         return api.createDraft({ organizationId, title: draft.title || "Untitled" });
       })()
         .then((made) => {
           setBoot({ id: made.envelopeId, revision: made.revision, confirmed: made.composition });
-          props.onCreated?.(made.envelopeId);
+          onCreated?.(made.envelopeId);
           return made.envelopeId;
         })
         .catch((err: unknown) => {
@@ -155,8 +159,8 @@ export function EsignEditor(props: EsignEditorProps) {
         });
     }
     await creating.current;
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [api, boot.id, draft.title, props.organizationId, templateMode]);
+    // Honest deps: a new parent callback only re-creates this; `creating` keeps it to one draft.
+  }, [api, boot.id, draft.title, givenOrganizationId, resolveOrganizationId, onCreated, templateMode]);
 
   useEffect(() => {
     if (!boot.id && (draft.documents.length > 0 || draft.recipients.length > 0)) void ensureDraft().catch(() => undefined);
@@ -287,23 +291,45 @@ export function EsignEditor(props: EsignEditorProps) {
 
   // ── find fields (D4.2) ─────────────────────────────────────────────────────────
 
+  async function detectAll() {
+    const next: Record<string, DetectCandidate[]> = {};
+    for (const doc of draft.documents) next[doc.key] = await api.detectFields(doc.file_id);
+    return next;
+  }
+
   async function findFields() {
     setFinding(true);
+    let next: Record<string, DetectCandidate[]>;
     try {
-      const next: Record<string, DetectCandidate[]> = {};
-      for (const doc of draft.documents) next[doc.key] = await api.detectFields(doc.file_id);
-      setCandidates(next);
-      const n = Object.values(next).reduce((a, l) => a + l.length, 0);
-      toast.success(n === 0 ? "No fields found in this document." : `Found ${n} suggested ${n === 1 ? "field" : "fields"}.`);
+      next = await detectAll();
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Finding fields did not work. Try again.");
-    } finally {
       setFinding(false);
+      return;
     }
+    setFinding(false);
+    setCandidates(next);
+    const n = Object.values(next).reduce((a, l) => a + l.length, 0);
+    toast.success(n === 0 ? "No fields found in this document." : `Found ${n} suggested ${n === 1 ? "field" : "fields"}.`);
   }
+
+  /** A field of this kind already sits where the suggestion points (half their areas overlap): accepting it adds nothing. */
+  const sitsOnField = useCallback((c: DetectCandidate, documentKey: string, fields: readonly DraftField[]) => {
+    return fields.some((f) => {
+      if (f.document_key !== documentKey || f.page !== c.page) return false;
+      const w = Math.min(f.x + f.w, c.x + c.w) - Math.max(f.x, c.x);
+      const h = Math.min(f.y + f.h, c.y + c.h) - Math.max(f.y, c.y);
+      return w > 0 && h > 0 && (w * h) / Math.min(f.w * f.h, c.w * c.h) >= 0.5;
+    });
+  }, []);
 
   const acceptCandidate = useCallback(
     (c: DetectCandidate, documentKey: string, silent = false) => {
+      if (sitsOnField(c, documentKey, draft.fields)) {
+        setCandidates((all) => ({ ...all, [documentKey]: (all[documentKey] ?? []).filter((x) => x.candidate_id !== c.candidate_id) }));
+        toast.info("A field is already there.");
+        return;
+      }
       const who = activeRecipient;
       if (!who) {
         toast.error("Add someone to sign first.");
@@ -317,7 +343,7 @@ export function EsignEditor(props: EsignEditorProps) {
       setCandidates((all) => ({ ...all, [documentKey]: (all[documentKey] ?? []).filter((x) => x.candidate_id !== c.candidate_id) }));
       if (!silent) setSelection(new Set([f.id]));
     },
-    [activeRecipient, draft.fields, edit],
+    [activeRecipient, draft.fields, edit, sitsOnField],
   );
 
   function acceptAll() {
@@ -327,6 +353,7 @@ export function EsignEditor(props: EsignEditorProps) {
     const known = ["signature", "initials", "date_signed", "full_name", "first_name", "last_name", "email", "company", "title", "text", "number", "date", "checkbox", "radio", "dropdown"];
     for (const [documentKey, list] of Object.entries(candidates)) {
       for (const c of list) {
+        if (sitsOnField(c, documentKey, [...draft.fields, ...added])) continue;
         const kind = (known.includes(c.kind) ? c.kind : "text") as FieldKindV2;
         const base = newField(kind, { document_key: documentKey, recipient_key: who, page: c.page, cx: c.x + c.w / 2, cy: c.y + c.h / 2 }, [...draft.fields, ...added]);
         added.push({ ...base, ...clampBox({ x: c.x, y: c.y, w: c.w, h: c.h }), label: c.label || base.label, source: "detected" });
@@ -341,52 +368,76 @@ export function EsignEditor(props: EsignEditorProps) {
 
   // ── send / template ────────────────────────────────────────────────────────────
 
+  // The awaited work sits in plain helpers and the try/catch only wraps the call: the React Compiler
+  // cannot compile a `finally`, nor value blocks inside a try (verify B3).
+  async function sendNow() {
+    await ensureDraft();
+    await sync.flushNow();
+    const id = boot.id ?? (await creating.current);
+    if (!id) throw new DraftRefusal("no_draft", "The draft is not saved yet.");
+    return { id, result: await api.send(id) };
+  }
+
   async function send() {
     setSending(true);
     setSendError(null);
+    let sent: Awaited<ReturnType<typeof sendNow>>;
     try {
-      await ensureDraft();
-      await sync.flushNow();
-      const id = boot.id ?? (await creating.current);
-      if (!id) throw new DraftRefusal("no_draft", "The draft is not saved yet.");
-      const result = await api.send(id);
-      setSendResult(result);
-      props.onSendComplete?.(result);
-      try {
-        localStorage.removeItem(`matrx.esign.draft.${id}`);
-      } catch {
-        /* ignore */
-      }
+      sent = await sendNow();
     } catch (err) {
       setSendError(err instanceof Error ? err.message : "The envelope could not be sent. Try again.");
-    } finally {
       setSending(false);
+      return;
     }
+    setSending(false);
+    const { id, result } = sent;
+    setSendResult(result);
+    props.onSendComplete?.(result);
+    // Land on the envelope (or the signing page when only the sender signs): the editable draft
+    // canvas is never left behind a "Sent" dialog.
+    setSendOpen(false);
+    toast.success(onlyMe ? "Ready for you to sign." : `Sent. ${result.notified} ${result.notified === 1 ? "person has" : "people have"} been told.`);
+    const noBox = result.warnings.filter((w) => w.code === "signer_without_signature_field").length;
+    const noCode = result.warnings.filter((w) => w.code === "access_code_not_set").length;
+    if (noBox > 0) toast.warning(`${noBox} ${noBox === 1 ? "recipient has" : "recipients have"} no signature field.`);
+    if (noCode > 0) toast.warning(`${noCode} ${noCode === 1 ? "recipient gets" : "recipients get"} an emailed code: no access code was set.`);
+    router.replace(onlyMe ? `/sign/e/${result.envelope_id}` : `/esign/${result.envelope_id}`);
+    try {
+      localStorage.removeItem(`matrx.esign.draft.${id}`);
+    } catch {
+      /* ignore */
+    }
+  }
+
+  async function saveTemplateNow(name: string, description: string) {
+    const organizationId = givenOrganizationId ?? (await resolveOrganizationId?.());
+    if (!organizationId) throw new DraftRefusal("no_organization", "Choose an organization first.");
+    return api.saveTemplate({
+      organizationId,
+      templateId: templateState?.id ?? null,
+      name,
+      description,
+      composition: toTemplate(draft),
+      expectedVersion: templateState?.version ?? null,
+    });
   }
 
   async function saveTemplate(name: string, description: string) {
     setTemplateSaving(true);
     setTemplateError(null);
+    let out: Awaited<ReturnType<typeof saveTemplateNow>>;
     try {
-      const organizationId = props.organizationId ?? (await props.resolveOrganizationId?.());
-      if (!organizationId) throw new DraftRefusal("no_organization", "Choose an organization first.");
-      const out = await api.saveTemplate({
-        organizationId,
-        templateId: templateState?.id ?? null,
-        name,
-        description,
-        composition: toTemplate(draft),
-        expectedVersion: templateState?.version ?? null,
-      });
-      setTemplateState({ id: out.templateId, name, version: out.version });
-      setTemplateOpen(false);
-      toast.success("Template saved.");
-      props.onTemplateSaved?.(out.templateId);
+      out = await saveTemplateNow(name, description);
     } catch (err) {
       setTemplateError(err instanceof Error ? err.message : "The template could not be saved.");
-    } finally {
       setTemplateSaving(false);
+      return;
     }
+    setTemplateSaving(false);
+    setTemplateState({ id: out.templateId, name, version: out.version });
+    setTemplateOpen(false);
+    toast.success("Template saved.");
+    props.onTemplateSaved?.(out.templateId);
   }
 
   // ── panels ─────────────────────────────────────────────────────────────────────

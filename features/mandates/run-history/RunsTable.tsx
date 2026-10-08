@@ -12,8 +12,9 @@
 // link reopen the same view. Text is data and labels only: every cell is one
 // line, the full value in its tooltip.
 
-import type { ReactNode } from "react";
+import { useTransition, type ReactNode } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { ArrowUpRight } from "lucide-react";
 import { MatrxDataTable } from "@ai-matrx/design-system/data-table";
 import type {
@@ -30,6 +31,7 @@ import { conversationHref } from "@/features/hindsight/subject-doors";
 import { runHref } from "@/features/workflow-runtime/run-doors";
 import { ADMIN_MANDATES_HOME } from "@/features/mandates/admin-routes";
 import { mandateDisplayName } from "@/features/mandates/mandate-words";
+import { outputPreviewLine } from "@/features/content-ir/surfaces/output-preview-line";
 import {
   RUN_STATUSES,
   fetchRuns,
@@ -129,9 +131,18 @@ export function RunsTable({
   onSelectRun,
   selectedConversationId = null,
 }: RunsTableProps) {
-  const { unit: costUnit } = useCostDisplay();
+  const { unit: costUnit, rate: costRate } = useCostDisplay();
   const scopeKey = "mandateKey" in scope ? `m:${scope.mandateKey}` : `a:${scope.agentId}`;
   const byAgent = "agentId" in scope;
+  const router = useRouter();
+  const [opening, startOpening] = useTransition();
+  // A row opens its run (the conversation or workflow run) like every other
+  // MatrxDataTable row — unless the page selects runs in place (the Runs tab).
+  const openRun = (run: MandateRun) => {
+    const href = outputHrefOf(run, audience);
+    if (!href || opening) return;
+    startOpening(() => router.push(href));
+  };
 
   const table = useServerTable<MandateRun>(
     async (state) => {
@@ -260,16 +271,17 @@ export function RunsTable({
       sortable: true,
       filter: false,
       accessorFn: (run) => run.cost,
-      cell: (run) => <span className="tabular-nums">{costWords(run.cost, costUnit)}</span>,
+      cell: (run) => <span className="tabular-nums">{costWords(run.cost, costRate, costUnit)}</span>,
     },
     {
       id: "output",
       header: "Output",
       sortable: false,
       filter: false,
-      accessorFn: (run) => run.outputPreview ?? run.error ?? "",
+      accessorFn: (run) => outputPreviewLine(run.outputPreview ?? run.error),
       cell: (run) => {
-        const text = run.outputPreview ?? run.error;
+        // One readable line, never raw JSON: a kind reads as "Agent definition: Its name".
+        const text = outputPreviewLine(run.outputPreview ?? run.error);
         return text ? (
           <span className={run.outputPreview ? undefined : "text-destructive"} title={text}>
             {text}
@@ -283,7 +295,7 @@ export function RunsTable({
     },
     {
       id: "open",
-      header: "",
+      header: "Open",
       label: "Open",
       sortable: false,
       filter: false,
@@ -319,13 +331,19 @@ export function RunsTable({
       pageSize={pageSize}
       hidePagination={hidePagination}
       cellLines="one"
+      getRowHref={(run) => outputHrefOf(run, audience) ?? undefined}
       {...(onSelectRun
         ? {
             onRowOpen: onSelectRun,
             rowClassName: (run: MandateRun) =>
               selectedConversationId && run.conversationId === selectedConversationId ? "bg-primary/10" : undefined,
           }
-        : {})}
+        : {
+            // The row IS the door to its run — no raw-field detail window on the way.
+            onRowOpen: openRun,
+            detail: { enabled: false },
+            window: { enabled: false },
+          })}
     />
   );
 }

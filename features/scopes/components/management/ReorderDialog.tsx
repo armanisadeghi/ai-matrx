@@ -10,10 +10,10 @@ import {
   useSensors,
   type DragEndEvent,
 } from "@dnd-kit/core";
+import { POINTER_ACTIVATION_DISTANCE_4, SORTABLE_KEYBOARD_OPTIONS } from "@/lib/dnd/sensor-options";
 import {
   SortableContext,
   arrayMove,
-  sortableKeyboardCoordinates,
   useSortable,
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
@@ -69,10 +69,8 @@ export function ReorderDialog({
   }, [open, items]);
 
   const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 4 } }),
-    useSensor(KeyboardSensor, {
-      coordinateGetter: sortableKeyboardCoordinates,
-    }),
+    useSensor(PointerSensor, POINTER_ACTIVATION_DISTANCE_4),
+    useSensor(KeyboardSensor, SORTABLE_KEYBOARD_OPTIONS),
   );
 
   function handleDragEnd(e: DragEndEvent) {

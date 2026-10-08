@@ -1,7 +1,7 @@
 {
   "version": 1,
   "app": "matrx-frontend",
-  "routeCount": 1347,
+  "routeCount": 1348,
   "routes": [
     {
       "pattern": "/",
@@ -1462,6 +1462,11 @@
       "pattern": "/agents/[id]/run",
       "status": "live",
       "source": "app/(core)/agents/[id]/run/page.tsx"
+    },
+    {
+      "pattern": "/agents/[id]/runs",
+      "status": "live",
+      "source": "app/(core)/agents/[id]/runs/page.tsx"
     },
     {
       "pattern": "/agents/[id]/shortcuts",

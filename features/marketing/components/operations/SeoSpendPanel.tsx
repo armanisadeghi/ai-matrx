@@ -34,7 +34,7 @@ import { useOrgFilterParam } from "@/lib/entity-list/orgFilterUrl";
 import { useUserOrganizations } from "@/features/organizations/hooks";
 
 function ProviderRow({ row }: { row: SeoProviderSpendRow }) {
-  const { unit } = useCostDisplay();
+  const { unit, rate: costRate } = useCostDisplay();
   const pct = Math.max(0, Math.min(100, row.pct_used));
   const over = row.pct_used >= 100;
   const warn = row.pct_used >= 80 && !over;
@@ -44,9 +44,9 @@ function ProviderRow({ row }: { row: SeoProviderSpendRow }) {
         {humanizeIdentifier(row.provider) || row.provider}
       </span>
       <span className="text-right font-mono text-xs font-semibold tabular-nums">
-        {formatRuntimeCost(row.effective_cost, unit)}{" "}
+        {formatRuntimeCost(row.effective_cost, costRate, unit)}{" "}
         <span className="font-normal text-muted-foreground">
-          / {formatRuntimeCost(row.ceiling_usd, unit)}
+          / {formatRuntimeCost(row.ceiling_usd, costRate, unit)}
         </span>
       </span>
       <div className="col-span-2 h-1.5 overflow-hidden rounded-full bg-muted">
@@ -74,7 +74,7 @@ export function SeoSpendPanel() {
     notify: (message, kind) =>
       kind === "error" ? toast.error(message) : toast.success(message),
   });
-  const { unit } = useCostDisplay();
+  const { unit, rate: costRate } = useCostDisplay();
   // THE PAGE'S ORGANIZATION FILTER (`?org_filter=`, default All organizations — never the active
   // organization, which only decides where new things are saved). All organizations sums the
   // person's organizations; one organization shows its own ceilings against its own spend, and
@@ -147,7 +147,7 @@ export function SeoSpendPanel() {
       filter: "number",
       align: "right",
       cell: (row) =>
-        row.spent_usd === null ? "—" : formatRuntimeCost(row.spent_usd, unit),
+        row.spent_usd === null ? "—" : formatRuntimeCost(row.spent_usd, costRate, unit),
     },
     {
       id: "limit_usd",
@@ -156,7 +156,7 @@ export function SeoSpendPanel() {
       filter: "number",
       align: "right",
       cell: (row) =>
-        row.limit_usd === null ? "—" : formatRuntimeCost(row.limit_usd, unit),
+        row.limit_usd === null ? "—" : formatRuntimeCost(row.limit_usd, costRate, unit),
     },
     {
       id: "occurred_at",
@@ -257,9 +257,9 @@ export function SeoSpendPanel() {
         ) : null}
         <p className="mt-2 text-[10px] text-muted-foreground">
           Org·provider monthly ceiling{" "}
-          {formatRuntimeCost(data.org_provider_monthly_ceiling_usd, unit)} ·
+          {formatRuntimeCost(data.org_provider_monthly_ceiling_usd, costRate, unit)} ·
           platform-wide monthly ceiling{" "}
-          {formatRuntimeCost(data.global_provider_monthly_ceiling_usd, unit)} per
+          {formatRuntimeCost(data.global_provider_monthly_ceiling_usd, costRate, unit)} per
           provider (placeholder values, pending final ruling).
         </p>
       </section>

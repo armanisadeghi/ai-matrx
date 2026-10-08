@@ -35,10 +35,16 @@ interface Props {
 }
 
 const ROLE_OPTIONS = (Object.keys(ROLE_LABEL) as RecipientRole[]).map((v) => ({ value: v, label: ROLE_LABEL[v] }));
+/**
+ * The sender-set access code is a new refusal (a person can fail it), so it is offered only once the
+ * owner approves it (law 12; CONTRACT §18 F1). Until then the server keeps it off (`esign._enforce('F1')`)
+ * and the option is not shown — a choice the server would not honour must never be offered.
+ */
+const ACCESS_CODE_OFFERED = false;
 const VERIFY_OPTIONS: { value: RecipientVerification; label: string }[] = [
   { value: "none", label: "Email link" },
   { value: "email_code", label: "Email code" },
-  { value: "access_code", label: "Access code" },
+  ...(ACCESS_CODE_OFFERED ? [{ value: "access_code" as const, label: "Access code" }] : []),
 ];
 const MAX_MATCHES = 6;
 
@@ -158,11 +164,11 @@ export function RecipientsPanel({ draft, edit, people, me, setAccessCode, templa
               <Button variant="quiet" aria-label={expanded ? "Collapse" : "Expand"} icon={expanded ? <ChevronDown /> : <ChevronRight />} onClick={() => setOpen(expanded ? null : r.key)} />
               {sequential && <span className="w-4 shrink-0 text-center type-secondary tabular-nums text-muted-foreground">{i + 1}</span>}
               <div className="min-w-0 flex-1">
-                <div className="truncate type-title">{r.full_name || r.template_role || "Name needed"}</div>
                 <div className="flex min-w-0 items-center gap-1.5">
+                  <span className="truncate type-title">{r.full_name || r.template_role || "Name needed"}</span>
                   {r.user_id ? <Badge tone="info">Member</Badge> : <Badge>Outside</Badge>}
-                  <span className={cn("truncate type-secondary", isEmail(r.email) || templateMode ? "text-muted-foreground" : "text-destructive")}>{r.email || (templateMode ? "Filled in when used" : "Email needed")}</span>
                 </div>
+                <div title={r.email || undefined} className={cn("break-all type-secondary", isEmail(r.email) || templateMode ? "text-muted-foreground" : "text-destructive")}>{r.email || (templateMode ? "Filled in when used" : "Email needed")}</div>
               </div>
               {sequential && recipients.length > 1 && (
                 <div className="flex shrink-0">

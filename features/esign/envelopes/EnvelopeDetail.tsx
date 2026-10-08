@@ -218,7 +218,7 @@ export function EnvelopeDetail({ envelopeId }: { envelopeId: string }) {
       : []),
     ...(isOpen ? [{ label: "Remind", icon: BellRing, disabled: busy !== null, onPress: () => void run("remind", () => remindEnvelope(dispatch, envelopeId), "Reminder sent.") }] : []),
     { label: "Download", icon: Download, onPress: () => setDownloadOpen(true) },
-    { label: "Make a copy", icon: Copy, onPress: () => startNavigation(() => router.push(`/esign/new?copy=${envelopeId}`)) },
+    { label: "Make a copy", icon: Copy, onPress: () => startNavigation(() => router.push(`/esign/new?copy=${envelopeId}&name=${encodeURIComponent(title)}`)) },
     ...(composition ? [{ label: "Save as template", icon: LayoutTemplate, onPress: () => setTemplateOpen(true) }] : []),
     ...(isOpen ? [{ label: "Void", icon: XCircle, destructive: true, disabled: busy !== null, onPress: () => setVoidOpen(true) }] : []),
   ];
@@ -273,7 +273,7 @@ export function EnvelopeDetail({ envelopeId }: { envelopeId: string }) {
                       <div className="truncate type-secondary text-muted-foreground">{text(s, "email")}</div>
                     </div>
                     <div className="shrink-0 text-right type-secondary text-muted-foreground">
-                      <div>{SIGNER_STATUS_LABEL[st] ?? humanize(st)}</div>
+                      <div>{!signed && st !== "declined" && ["voided", "expired"].includes(text(e, "status") ?? "") ? (text(e, "status") === "voided" ? "Voided" : "Expired") : (SIGNER_STATUS_LABEL[st] ?? humanize(st))}</div>
                       {signed ? <div>{when(text(s, "signed_at"))}</div> : prog && prog.required_total > 0 ? <div className="tabular-nums">{prog.required_done} of {prog.required_total} fields</div> : next ? <div>Reminder {when(text(next, "deliver_at"))}</div> : text(s, "viewed_at") ? <div>Viewed {when(text(s, "viewed_at"))}</div> : null}
                     </div>
                     {isOpen && !signed && st !== "declined" && (

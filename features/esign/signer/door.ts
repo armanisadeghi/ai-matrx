@@ -62,6 +62,9 @@ export function serverTakes(arg: string): boolean {
   return SERVER_ARGS.has(arg);
 }
 
+/** Reads only: repeating one changes nothing on the server. */
+const RETRYABLE_READS: ReadonlySet<string> = new Set(["load", "document", "history", "handoff_status"]);
+
 export type SignerTarget = { kind: "envelope"; envelopeId: string } | { kind: "outsider"; session: string };
 
 const SESSION_CODES: Record<string, "taken_over" | "expired"> = {
@@ -130,7 +133,27 @@ export function createSignerDoor(dispatch: AppDispatch, target: SignerTarget): S
     throw new Error("transport"); // never answered: errorText says "could not reach"
   }
 
+  /**
+   * A READ that never got an answer (no response at all — a session still hydrating, a connection
+   * that dropped on the page's first request) is asked again, quietly, twice, before the signer is
+   * told anything: the first load of a signed-in signer used to end on "could not reach AI Matrx"
+   * and open on a reload. A refusal from the server is an answer and is never retried. Acts that
+   * write (consent, sign, adopt…) are never repeated by the door.
+   */
   async function act(name: string, wanted: ActArgs & Record<string, unknown> = {}): Promise<Answer> {
+    const waits = RETRYABLE_READS.has(name) ? [500, 1500] : [];
+    for (let attempt = 0; ; attempt += 1) {
+      try {
+        return await actOnce(name, wanted);
+      } catch (err) {
+        const unanswered = err instanceof Error && err.message === "transport";
+        if (!unanswered || attempt >= waits.length) throw err;
+        await new Promise((resolve) => setTimeout(resolve, waits[attempt]));
+      }
+    }
+  }
+
+  async function actOnce(name: string, wanted: ActArgs & Record<string, unknown> = {}): Promise<Answer> {
     const action = knownAction(name);
     if (!action) throw new DoorRefusal("unknown_action", reasonText("unknown_action"));
     // The server refuses an argument it does not know (extra="forbid"): send only what it takes.

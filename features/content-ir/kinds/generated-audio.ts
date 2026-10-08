@@ -33,6 +33,7 @@ import {
   type MediaUsage,
 } from "./media-io-shared";
 import { KIND_KEY } from "@ai-matrx/content-ir";
+import { currentPointsRate } from "@/components/cost/pointsRate";
 import type { MaterializedKind } from "./kind-payload";
 import type { GeneratedAudio } from "./generated/kinds.generated";
 
@@ -158,7 +159,7 @@ export function generatedAudioMarkdownFromValue(
 ): string {
   const audio = readGeneratedAudio(value);
   const duration = formatDuration(audio.duration_seconds);
-  const cost = formatCost(audio.usage?.cost_usd ?? null);
+  const cost = formatCost(audio.usage?.cost_usd ?? null, currentPointsRate());
 
   return joinBlocks([
     "# Generated audio",

@@ -2,30 +2,25 @@
 
 // features/esign/editor/api/realApi.ts — the editor on the real doors (CONTRACT §6.1, §7).
 // Reads/writes of drafts and templates go browser → Supabase RPC directly; only send and
-// detect-fields (real work) go to aidream. The RPC and route names are not in the generated
-// types until the server lane's wave A/B publish — `loose` is the one place that is bridged, and it
-// narrows to typed calls the moment `types/database.types.ts` and api-types carry them.
+// detect-fields (real work) go to aidream. The RPC names and arguments are not loosened from the generated
+// types: every RPC call is checked against `types/database.types.ts`.
 
 import type { components } from "@ai-matrx/agents/generated/api-types";
 import { callApi, type ApiCallResult } from "@/lib/api/call-api";
 import type { AppDispatch } from "@/lib/redux/store";
 import type { Database } from "@/types/database.types";
+import { isJsonObject } from "@/types/json";
 import { supabase } from "@/utils/supabase/client";
 
 import type { EnvelopeDraftV1, EnvelopeTemplateV1 } from "../../contract/draft";
 import { DraftRefusal, type EditorApi, type SaveResult, type TemplateRow } from "./types";
 
 type Schemas = components["schemas"];
-type RpcAnswer = { data: unknown; error: { message: string } | null };
 type EsignRpcName = keyof Database["esign"]["Functions"];
 const esign = supabase.schema("esign");
-// One typed seam: the name is checked against the generated `esign` functions; arguments are
-// built at each call site from the contract shapes.
-const loose = {
-  rpc(name: EsignRpcName, args?: Record<string, unknown>): Promise<RpcAnswer> {
-    return (esign as unknown as { rpc(n: string, a?: Record<string, unknown>): Promise<RpcAnswer> }).rpc(name, args);
-  },
-};
+type EsignArgs<N extends EsignRpcName> = Database["esign"]["Functions"][N]["Args"];
+// Every call is typed end to end: the name against the generated `esign` functions, the arguments
+// against that function's generated Args (verify B2 — no untyped seam).
 
 const REFUSAL_TEXT: Record<string, string> = {
   not_a_member: "You are not a member of that organization.",
@@ -48,10 +43,10 @@ function refusal(answer: Record<string, unknown>): DraftRefusal {
   return new DraftRefusal(code, REFUSAL_TEXT[code] ?? "That could not be done right now.", answer);
 }
 
-async function door(name: EsignRpcName, args: Record<string, unknown>): Promise<Record<string, unknown>> {
-  const { data, error } = await loose.rpc(name, args);
+async function door<N extends EsignRpcName>(name: N, args: EsignArgs<N>): Promise<Record<string, unknown>> {
+  const { data, error } = await esign.rpc(name, args);
   if (error) throw new DraftRefusal("unreachable", "We could not reach AI Matrx just now. Try again in a moment.", { message: error.message });
-  const answer = (data ?? {}) as Record<string, unknown>;
+  const answer: Record<string, unknown> = isJsonObject(data) ? data : {};
   if (answer.granted === false) throw refusal(answer);
   return answer;
 }
@@ -65,7 +60,7 @@ if (typeof window !== "undefined") {
 
 /** Template doors need no server round trip — the list page and the editor share these. */
 export async function listTemplateRows(input: { lane: "all" | "mine"; orgId: string | null; search: string }): Promise<TemplateRow[]> {
-  const a = await door("esign_template_list", { p_lane: input.lane, p_org_id: input.orgId, p_search: input.search.trim() || null, p_limit: 200 });
+  const a = await door("esign_template_list", { p_lane: input.lane, p_org_id: input.orgId ?? undefined, p_search: input.search.trim() || undefined, p_limit: 200 });
   return (a.templates as TemplateRow[]) ?? [];
 }
 
@@ -88,15 +83,15 @@ export function makeRealEditorApi(dispatch: AppDispatch): EditorApi {
       const a = await door("esign_draft_create", {
         p_organization_id: organizationId,
         p_title: title,
-        p_template_id: templateId ?? null,
-        p_copy_of_envelope_id: copyOfEnvelopeId ?? null,
+        p_template_id: templateId ?? undefined,
+        p_copy_of_envelope_id: copyOfEnvelopeId ?? undefined,
       });
       return { envelopeId: String(a.envelope_id), revision: Number(a.revision), composition: a.composition as EnvelopeDraftV1 };
     },
 
     async loadDraft(envelopeId) {
       // CONTRACT §21: esign_draft_get → {envelope:{id,status,organization_id,title}, draft:{composition,revision,saved_at}}.
-      const { data, error } = await loose.rpc("esign_draft_get", { p_envelope_id: envelopeId });
+      const { data, error } = await esign.rpc("esign_draft_get", { p_envelope_id: envelopeId });
       if (error) throw new DraftRefusal("unreachable", "We could not reach AI Matrx just now. Try again in a moment.");
       const a = (data ?? {}) as Record<string, unknown>;
       if (a.granted === false) return null;
@@ -112,7 +107,7 @@ export function makeRealEditorApi(dispatch: AppDispatch): EditorApi {
     },
 
     async saveDraft(envelopeId, composition, baseRevision): Promise<SaveResult> {
-      const { data, error } = await loose.rpc("esign_draft_save", {
+      const { data, error } = await esign.rpc("esign_draft_save", {
         p_envelope_id: envelopeId,
         p_composition: composition,
         p_base_revision: baseRevision,
@@ -141,7 +136,7 @@ export function makeRealEditorApi(dispatch: AppDispatch): EditorApi {
     },
 
     async setAccessCode(envelopeId, recipientKey, code) {
-      const a = await door("esign_draft_set_access_code", { p_envelope_id: envelopeId, p_recipient_key: recipientKey, p_code: code });
+      const a = await door("esign_draft_set_access_code", { p_envelope_id: envelopeId, p_recipient_key: recipientKey, p_code: code ?? "" }); // "" clears, as null did
       return { hasAccessCode: a.has_access_code === true };
     },
 
@@ -175,17 +170,18 @@ export function makeRealEditorApi(dispatch: AppDispatch): EditorApi {
     async saveTemplate({ organizationId, templateId, name, description, composition, expectedVersion }) {
       const a = await door("esign_template_save", {
         p_organization_id: organizationId,
-        p_template_id: templateId,
+        // A new template's id is minted here; the door creates the row under it (CONTRACT §6.1).
+        p_template_id: templateId ?? crypto.randomUUID(),
         p_name: name,
         p_description: description,
         p_composition: composition,
-        p_expected_version: expectedVersion ?? null,
+        p_expected_version: expectedVersion ?? undefined,
       });
       return { templateId: String(a.template_id), version: Number(a.version) };
     },
 
     async getTemplate(templateId) {
-      const { data } = await loose.rpc("esign_template_get", { p_template_id: templateId });
+      const { data } = await esign.rpc("esign_template_get", { p_template_id: templateId });
       const a = (data ?? {}) as { granted?: boolean; template?: Record<string, unknown> };
       if (a.granted === false || !a.template) return null;
       const t = a.template;

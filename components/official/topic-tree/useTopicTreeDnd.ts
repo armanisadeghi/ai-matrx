@@ -24,6 +24,7 @@ import {
   type DragEndEvent,
   type DragStartEvent,
 } from "@dnd-kit/core";
+import { POINTER_ACTIVATION_DISTANCE_6 } from "@/lib/dnd/sensor-options";
 
 import type { TopicTreeRow } from "./types";
 
@@ -40,7 +41,7 @@ export function useTopicTreeDnd({ rows, onMove }: TopicTreeDndArgs) {
   // 6px before a drag starts: a click on a row must never be swallowed as a
   // one-pixel drag, which is the classic "the tree stopped selecting" bug.
   const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
+    useSensor(PointerSensor, POINTER_ACTIVATION_DISTANCE_6),
   );
 
   const parentOf = new Map<string, string | null>();

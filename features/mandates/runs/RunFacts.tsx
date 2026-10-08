@@ -35,7 +35,7 @@ export function HolderRef({ run }: { run: StoredRun }) {
 }
 
 export function RunFacts({ run, audience }: { run: StoredRun; audience: "admin" | "product" }) {
-  const { unit: costDisplay } = useCostDisplay();
+  const { unit: costDisplay, rate: costRate } = useCostDisplay();
   return (
     <div className="grid grid-cols-2 gap-x-4 gap-y-1">
       <Fact label="Result">
@@ -53,7 +53,7 @@ export function RunFacts({ run, audience }: { run: StoredRun; audience: "admin" 
       <Fact label="Model">{run.modelId ?? "Not recorded"}</Fact>
       <Fact label="Ran by">{run.ranBy ?? "Not recorded"}</Fact>
       <Fact label="When">{run.createdAt ? absoluteWhen(run.createdAt) : "—"}</Fact>
-      <Fact label="Cost">{costWords(run.cost, costDisplay)}</Fact>
+      <Fact label="Cost">{costWords(run.cost, costRate, costDisplay)}</Fact>
       <Fact label="Time">{durationWords(run.durationMs)}</Fact>
       <Fact label="Conversation">
         <Link
@@ -81,7 +81,7 @@ export function StreamedRunBlock({
   original: StoredRun | null;
   audience: "admin" | "product";
 }) {
-  const { unit: costDisplay } = useCostDisplay();
+  const { unit: costDisplay, rate: costRate } = useCostDisplay();
   if (!state.requestId && !state.result) return null;
   const stored = state.stored;
   return (
@@ -103,8 +103,8 @@ export function StreamedRunBlock({
           <span className="text-muted-foreground">This run</span>
           <span className="text-muted-foreground">Original</span>
           <span className="text-muted-foreground">Cost</span>
-          <span className="tabular-nums">{stored ? costWords(stored.cost, costDisplay) : "Reading"}</span>
-          <span className="tabular-nums">{original ? costWords(original.cost, costDisplay) : "—"}</span>
+          <span className="tabular-nums">{stored ? costWords(stored.cost, costRate, costDisplay) : "Reading"}</span>
+          <span className="tabular-nums">{original ? costWords(original.cost, costRate, costDisplay) : "—"}</span>
           <span className="text-muted-foreground">Time</span>
           <span className="tabular-nums">{durationWords(stored?.durationMs ?? state.result.durationMs)}</span>
           <span className="tabular-nums">{original ? durationWords(original.durationMs) : "—"}</span>

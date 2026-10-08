@@ -31,7 +31,7 @@ import { useRetainRequestForViewer } from "@ai-matrx/chat/agents/redux/execution
 import { fetchSurfaceBindingLayers } from "@ai-matrx/chat/surfaces/services/bind-agent-to-surface.service";
 import { mergeValueMappingLayers } from "@ai-matrx/chat/surfaces/utils/merge-value-mappings";
 import { resolveValueMappings } from "@ai-matrx/chat/surfaces/utils/value-mapping-resolver";
-import { stripThinkingStreaming } from "@ai-matrx/kit/text";
+import { stripThinkingStreaming } from "@ai-matrx/content-ir/source";
 import type { ApplicationScope } from "@ai-matrx/chat/agents/types/scope.types";
 import type { InstanceContextEntry } from "@ai-matrx/chat/agents/types/instance.types";
 import type { ValueMappingMap } from "@ai-matrx/chat/surfaces/types";

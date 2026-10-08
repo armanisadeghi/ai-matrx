@@ -23,7 +23,6 @@ import {
   UNKNOWN_DISPLAY,
 } from "@/lib/format/honest";
 import { formatCost, type CostUnit } from "@ai-matrx/kit/format";
-import { currentPointsRate } from "@/components/cost/pointsRate";
 import { currentCostUnit } from "@/components/cost/costUnit";
 
 /**
@@ -151,6 +150,7 @@ export type AppletKpis = Record<string, string | number>;
  */
 export function appletKpis(
   app: AppletKpiLike,
+  rate: number | null,
   unit: CostUnit = currentCostUnit(),
 ): AppletKpis {
   const kpis: AppletKpis = {
@@ -164,7 +164,7 @@ export function appletKpis(
   // UNMEASURED cost is omitted. The old `> 0` test hid a real free run and
   // (with the `?? 0` twin below) turned an unknown one into "$0.00".
   if (isKnownNumber(app.total_cost)) {
-    kpis.cost = formatCost(app.total_cost, { rate: currentPointsRate(), unit });
+    kpis.cost = formatCost(app.total_cost, { rate, unit });
   }
   if (app.status) kpis.status = app.status;
   if (app.published_to_web != null) {
@@ -180,13 +180,14 @@ export function appletKpis(
  */
 export function appletAdminKpis(
   app: AppletKpiLike,
+  rate: number | null,
   unit: CostUnit = currentCostUnit(),
 ): AppletKpis {
   return {
     runs: formatCount(app.total_executions),
     users: formatCount(app.unique_users_count),
     success: formatPercentFromFraction(app.success_rate),
-    cost: formatCost(app.total_cost, { rate: currentPointsRate(), unit }),
+    cost: formatCost(app.total_cost, { rate, unit }),
   };
 }
 
@@ -262,6 +263,8 @@ function draftData(drafts: AppletFieldDraft[]) {
  */
 export interface AppletSettingsView {
   app: AppSummaryLike & AppletKpiLike;
+  /** The SUBSCRIBED points rate (`useCostDisplay().rate`) so the cost KPI fills in when it lands. */
+  rate: number | null;
   /** Which tab is open — the slice of the form the user is actually in. */
   activeTab: string;
   drafts: AppletFieldDraft[];
@@ -275,7 +278,7 @@ export interface AppletSettingsView {
 }
 
 export function appletSettingsHuman(view: AppletSettingsView): string {
-  const kpis = appletKpis(view.app);
+  const kpis = appletKpis(view.app, view.rate);
   const diffs = draftDiffLines(view.drafts);
   const lines: string[] = [
     `${view.app.name} (${view.app.slug}) — Settings › ${view.activeTab}`,
@@ -334,7 +337,7 @@ export function appletSettingsHuman(view: AppletSettingsView): string {
 export function appletSettingsAgentPayload(
   view: AppletSettingsView,
 ): AgentPayloadInput {
-  const kpis = appletKpis(view.app);
+  const kpis = appletKpis(view.app, view.rate);
   const unsaved = view.drafts.filter(draftIsDirty);
   return {
     kind: "applet-settings-form",
@@ -386,6 +389,8 @@ export function appletSettingsAgentPayload(
  */
 export interface AppletAdminEditView {
   app: AppSummaryLike & AppletKpiLike;
+  /** The SUBSCRIBED points rate (`useCostDisplay().rate`) so the cost KPI fills in when it lands. */
+  rate: number | null;
   activeTab: string;
   metadataModalOpen: boolean;
   metadata: Record<string, unknown>;
@@ -394,7 +399,7 @@ export interface AppletAdminEditView {
 }
 
 export function appletAdminEditHuman(view: AppletAdminEditView): string {
-  const kpis = appletAdminKpis(view.app);
+  const kpis = appletAdminKpis(view.app, view.rate);
   const renderEntries = (entries: Record<string, unknown>) =>
     Object.entries(entries).map(([key, value]) => {
       const shown =
@@ -431,7 +436,7 @@ export function appletAdminEditHuman(view: AppletAdminEditView): string {
 export function appletAdminEditAgentPayload(
   view: AppletAdminEditView,
 ): AgentPayloadInput {
-  const kpis = appletAdminKpis(view.app);
+  const kpis = appletAdminKpis(view.app, view.rate);
   return {
     kind: "applet-admin-edit",
     location: "AI Matrx Admin — Applets — Edit",

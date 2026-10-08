@@ -15,7 +15,7 @@ import { setMemberControls } from "../service";
 import type { OrgAdminMember } from "../types";
 import { bytesToGb, gbToBytes, MCENTS_PER_USD, usdToMcents } from "../utils";
 import { pointsToUsd, usdToPoints } from "@ai-matrx/kit/format";
-import { currentPointsRate } from "@/components/cost/pointsRate";
+import { usePointsRate } from "@/components/cost/pointsRate.client";
 import { ProTextarea } from "@/components/official/ProTextarea";
 
 interface Props {
@@ -30,11 +30,16 @@ export function MemberControlsForm({ orgId, member, onSaved }: Props) {
   const [storageCapGb, setStorageCapGb] = useState(bytesToGb(member.storageCapBytes));
   // Shown and typed in POINTS (20,000 = $1) like every cost; stored as
   // millicents (100,000 = $1) exactly as before.
-  const [budgetPoints, setBudgetPoints] = useState(
-    member.monthlyBudgetMcents == null
+  // `budgetDraft` is null until the person types: the shown value is derived
+  // from the SUBSCRIBED rate, so a rate that lands late fills the field in
+  // instead of freezing it empty (and saving that emptiness as "no cap").
+  const rate = usePointsRate();
+  const [budgetDraft, setBudgetPoints] = useState<string | null>(null);
+  const budgetPoints =
+    budgetDraft ??
+    (member.monthlyBudgetMcents == null
       ? ""
-      : String(usdToPoints(member.monthlyBudgetMcents / MCENTS_PER_USD, { rate: currentPointsRate() }) ?? ""),
-  );
+      : String(usdToPoints(member.monthlyBudgetMcents / MCENTS_PER_USD, { rate }) ?? ""));
   const [notes, setNotes] = useState(member.notes ?? "");
   const [saving, setSaving] = useState(false);
 
@@ -48,7 +53,7 @@ export function MemberControlsForm({ orgId, member, onSaved }: Props) {
         monthlyBudgetMcents: usdToMcents(
           budgetPoints.trim() === ""
             ? ""
-            : String(pointsToUsd(Number(budgetPoints), { rate: currentPointsRate() }) ?? ""),
+            : String(pointsToUsd(Number(budgetPoints), { rate }) ?? ""),
         ),
         notes: notes.trim() || null,
       });

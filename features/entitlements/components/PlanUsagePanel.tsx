@@ -28,7 +28,6 @@ import {
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { formatCost, formatFileSize, pointsToUsd, type CostUnit } from "@ai-matrx/kit/format";
-import { currentPointsRate } from "@/components/cost/pointsRate";
 import { useCostDisplay } from "@/components/cost/useCostDisplay";
 import { isMicroUsd, isPoints, MICRO_USD_PER_USD } from "@/features/admin/limits/types";
 import {
@@ -47,12 +46,12 @@ import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
  * plain count. A spend cap printed as its raw micro-dollar integer
  * ("50,000,000 included") told a member nothing.
  */
-function formatValue(capability: string, value: number, unit: CostUnit): string {
+function formatValue(capability: string, value: number, rate: number | null, unit: CostUnit): string {
   if (capability.endsWith("_bytes")) {
     return formatFileSize(value);
   }
-  if (isPoints(capability)) return formatCost(pointsToUsd(value, { rate: currentPointsRate() }), { rate: currentPointsRate(), unit });
-  if (isMicroUsd(capability)) return formatCost(value / MICRO_USD_PER_USD, { rate: currentPointsRate(), unit });
+  if (isPoints(capability)) return formatCost(pointsToUsd(value, { rate }), { rate, unit });
+  if (isMicroUsd(capability)) return formatCost(value / MICRO_USD_PER_USD, { rate, unit });
   return value.toLocaleString();
 }
 
@@ -90,7 +89,7 @@ function DimensionRow({ d }: { d: PlanDimension }) {
   // future change to how "unlimited" or "not measured" is decided.
   // `limit === null` is the single meaning of unlimited (explicit flag OR no
   // ceiling); `used === null` is "billing does not count this", never zero.
-  const { unit } = useCostDisplay();
+  const { unit, rate: costRate } = useCostDisplay();
   const limit = d.unlimited ? null : d.limit;
   const used = d.used;
   const pct =
@@ -137,14 +136,14 @@ function DimensionRow({ d }: { d: PlanDimension }) {
           ) : used !== null ? (
             <>
               <span className="text-foreground">
-                {formatValue(d.capability, used, unit)}
+                {formatValue(d.capability, used, costRate, unit)}
               </span>
               {" of "}
-              {formatValue(d.capability, limit, unit)}
+              {formatValue(d.capability, limit, costRate, unit)}
             </>
           ) : (
             // We know the ceiling but billing does not count the usage. Say so.
-            <>{formatValue(d.capability, limit, unit)} included</>
+            <>{formatValue(d.capability, limit, costRate, unit)} included</>
           )}
         </span>
       </div>
@@ -179,7 +178,7 @@ function DimensionRow({ d }: { d: PlanDimension }) {
         ) : null}
         {d.nextPlanLimit != null && limit != null && d.nextPlanLimit > limit ? (
           <span>
-            Next plan: {formatValue(d.capability, d.nextPlanLimit, unit)}
+            Next plan: {formatValue(d.capability, d.nextPlanLimit, costRate, unit)}
             {periodLabel(d.period) ? ` ${periodLabel(d.period)}` : ""}
           </span>
         ) : null}

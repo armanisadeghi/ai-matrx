@@ -8,7 +8,7 @@
 // the server's copy is merged by item id; the same item changed on both sides is a conflict the
 // sender settles — nothing is silently discarded.
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useEffectEvent, useLayoutEffect, useRef, useState } from "react";
 
 import type { EnvelopeDraftV1 } from "../contract/draft";
 import { mergeDrafts, takeTheirs, type DraftConflict } from "./merge";
@@ -34,6 +34,11 @@ export function readMirror(id: string): Mirror | null {
   } catch {
     return null;
   }
+}
+
+/** True when the composition differs from the last one the server confirmed. */
+function isDirty(latest: EnvelopeDraftV1, base: EnvelopeDraftV1): boolean {
+  return JSON.stringify(latest) !== JSON.stringify(base);
 }
 
 export interface UseDraftSync {
@@ -68,20 +73,25 @@ export function useDraftSync(args: {
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const waiters = useRef<(() => void)[]>([]);
   const onMergedRef = useRef(onMerged);
-  onMergedRef.current = onMerged;
   const conflictList = useRef<DraftConflict[]>([]);
   const idRef = useRef(envelopeId);
-  idRef.current = envelopeId;
+  // The latest callback and envelope id, for saves that finish later (never written during render).
+  useLayoutEffect(() => {
+    onMergedRef.current = onMerged;
+    idRef.current = envelopeId;
+  });
 
   // A new envelope (the draft was just created) restarts the base.
-  const lastId = useRef(envelopeId);
-  if (lastId.current !== envelopeId) {
-    lastId.current = envelopeId;
+  const restartBase = useEffectEvent(() => {
     base.current = args.confirmed;
     revision.current = args.initialRevision;
-  }
-
-  const dirty = () => JSON.stringify(latest.current) !== JSON.stringify(base.current);
+  });
+  const lastId = useRef(envelopeId);
+  useLayoutEffect(() => {
+    if (lastId.current === envelopeId) return;
+    lastId.current = envelopeId;
+    restartBase();
+  }, [envelopeId]);
 
   const settle = useCallback(() => {
     const list = waiters.current;
@@ -89,11 +99,13 @@ export function useDraftSync(args: {
     list.forEach((w) => w());
   }, []);
 
+  // A save re-schedules itself through this ref (a callback cannot name itself before it exists).
+  const saveRef = useRef<() => Promise<void>>(async () => undefined);
   const save = useCallback(async () => {
     const id = idRef.current;
     if (!id || readOnly || conflictList.current.length > 0) return;
     if (inFlight.current) return; // the running save re-checks when it ends
-    if (!dirty()) {
+    if (!isDirty(latest.current, base.current)) {
       setStatus("saved");
       settle();
       return;
@@ -126,8 +138,8 @@ export function useDraftSync(args: {
         }
       }
       inFlight.current = false;
-      if (conflictList.current.length === 0 && dirty()) {
-        timer.current = setTimeout(() => void save(), 0);
+      if (conflictList.current.length === 0 && isDirty(latest.current, base.current)) {
+        timer.current = setTimeout(() => void saveRef.current(), 0);
       } else {
         setStatus(conflictList.current.length ? "dirty" : "saved");
         settle();
@@ -141,16 +153,19 @@ export function useDraftSync(args: {
       }
       console.error("[esign] draft save failed", err);
       setStatus("retrying");
-      timer.current = setTimeout(() => void save(), RETRY_MS);
+      timer.current = setTimeout(() => void saveRef.current(), RETRY_MS);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [api, readOnly, settle]);
+  useLayoutEffect(() => {
+    saveRef.current = save;
+  }, [save]);
 
-  // Every change: mirror locally at once, save after the debounce.
-  useEffect(() => {
+  // Every change: mirror locally at once, save after the debounce. An effect event reads the latest
+  // save/dirty without re-running the effect for them.
+  const onDraftChanged = useEffectEvent(() => {
     latest.current = draft;
     if (readOnly || !envelopeId) return;
-    if (!dirty()) return;
+    if (!isDirty(latest.current, base.current)) return;
     setStatus((s) => (s === "saving" ? s : "dirty"));
     try {
       localStorage.setItem(mirrorKey(envelopeId), JSON.stringify({ draft, revision: revision.current, at: new Date().toISOString() }));
@@ -159,17 +174,20 @@ export function useDraftSync(args: {
     }
     if (timer.current) clearTimeout(timer.current);
     timer.current = setTimeout(() => void save(), DEBOUNCE_MS);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+  });
+  useEffect(() => {
+    onDraftChanged();
   }, [draft, envelopeId, readOnly]);
 
   // Flush when the page is hidden or going away.
+  const saveOnExit = useEffectEvent(() => {
+    const id = idRef.current;
+    if (!id || !isDirty(latest.current, base.current) || conflictList.current.length > 0) return;
+    api.saveDraftOnExit(id, latest.current, revision.current);
+  });
   useEffect(() => {
     if (readOnly) return undefined;
-    const onHide = () => {
-      const id = idRef.current;
-      if (!id || !dirty() || conflictList.current.length > 0) return;
-      api.saveDraftOnExit(id, latest.current, revision.current);
-    };
+    const onHide = () => saveOnExit();
     const onVis = () => document.visibilityState === "hidden" && onHide();
     document.addEventListener("visibilitychange", onVis);
     window.addEventListener("pagehide", onHide);
@@ -178,17 +196,15 @@ export function useDraftSync(args: {
       window.removeEventListener("pagehide", onHide);
       if (timer.current) clearTimeout(timer.current);
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [api, readOnly]);
+  }, [readOnly]);
 
   const flushNow = useCallback(() => {
     if (timer.current) clearTimeout(timer.current);
-    if (!dirty() && !inFlight.current) return Promise.resolve();
+    if (!isDirty(latest.current, base.current) && !inFlight.current) return Promise.resolve();
     return new Promise<void>((resolve) => {
       waiters.current.push(resolve);
       void save();
     });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [save]);
 
   const resolveConflicts = useCallback(

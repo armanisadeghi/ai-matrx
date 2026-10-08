@@ -19,7 +19,14 @@ describe("the installed one-offs list on /make", () => {
     const home = readFileSync(join(__dirname, "../MakeHome.tsx"), "utf8");
     expect(home).toMatch(/<InstalledOneOffs \/>/);
     const gallery = readFileSync(join(__dirname, "../gallery/TemplateGallery.tsx"), "utf8");
-    expect(gallery).toMatch(/<TemplatePreview templateId=\{card\.id\} bare \/>/);
+    expect(gallery).toMatch(/<TemplatePreview templateId=\{card\.id\} bare installedOneOff \/>/);
     expect(home).not.toMatch(/template_uninstall/);
+  });
+  it("shows an installed one-off only what fits it: no stray Install, no Archive template; Save as my template stays", () => {
+    const gallery = readFileSync(join(__dirname, "../gallery/TemplateGallery.tsx"), "utf8");
+    expect(gallery).toMatch(/installedOneOff\?: boolean/);
+    expect(gallery).toMatch(/installedOneOff && !stuck && run\.phase !== "running" \? null/);
+    expect(gallery).toMatch(/card\.scope === "org" && !installedOneOff \? <ArchiveOrgTemplate/);
+    expect(gallery).toMatch(/card\.ephemeral \? <KeepOneOff/);
   });
 });

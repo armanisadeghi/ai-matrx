@@ -16,10 +16,10 @@ import {
   useSensors,
   type DragEndEvent,
 } from "@dnd-kit/core";
+import { POINTER_ACTIVATION_DISTANCE_6, SORTABLE_KEYBOARD_OPTIONS } from "@/lib/dnd/sensor-options";
 import {
   SortableContext,
   arrayMove,
-  sortableKeyboardCoordinates,
   useSortable,
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
@@ -197,8 +197,8 @@ export function OrchestraMemberGrid({
 }) {
   const dispatch = useAppDispatch();
   const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
-    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
+    useSensor(PointerSensor, POINTER_ACTIVATION_DISTANCE_6),
+    useSensor(KeyboardSensor, SORTABLE_KEYBOARD_OPTIONS),
   );
 
   const onDragEnd = (e: DragEndEvent) => {

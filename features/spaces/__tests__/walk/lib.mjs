@@ -74,6 +74,10 @@ export async function open({ next = "/spaces", member = false, width = 2000, hei
   page.on("pageerror", (e) => console.log("[pageerror]", e.message.slice(0, 300)));
   await login(page, next, member);
   await resumeIfPaused(page);
+  // The shared preview pauses an idle tab whenever another session needs its slot: keep resuming for the whole walk.
+  const keepAlive = setInterval(() => resumeIfPaused(page).catch(() => {}), 3000);
+  keepAlive.unref();
+  browser.on("disconnected", () => clearInterval(keepAlive));
   return { browser, context, page };
 }
 

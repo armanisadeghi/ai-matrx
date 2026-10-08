@@ -207,6 +207,11 @@ export function sendBlockers(d: EnvelopeDraftV1): string[] {
   for (const r of d.recipients) {
     if (!r.full_name.trim()) out.push("Every recipient needs a name.");
     if (!isEmail(r.email)) out.push(`${r.full_name || "A recipient"} needs a valid email.`);
+    // verify A3: "Access code" is sent only with a code the sender set (a copy or template never
+    // carries one) — so what is sent always matches what the sender chose.
+    if (!r.user_id && r.verification === "access_code" && !r.has_access_code) {
+      out.push(`Set an access code for ${r.full_name || r.email || "a recipient"}.`);
+    }
   }
   return [...new Set(out)];
 }

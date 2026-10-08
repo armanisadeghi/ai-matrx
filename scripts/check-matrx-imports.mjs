@@ -133,10 +133,35 @@ export function collectImports(file, text) {
       }
     } else if (ts.isExportDeclaration(stmt) && stmt.exportClause && ts.isNamedExports(stmt.exportClause)) {
       for (const el of stmt.exportClause.elements) push((el.propertyName ?? el.name).text, stmt.isTypeOnly || el.isTypeOnly);
+    } else if (ts.isExportDeclaration(stmt) && (!stmt.exportClause || ts.isNamespaceExport(stmt.exportClause))) {
+      // `export * from "@ai-matrx/x/sub"` — a local shim (features/content-ir/kinds/
+      // kind-markdown-utils.ts, v0.4.2989). The SUBPATH must still exist; names are judged where
+      // they are imported.
+      push(WHOLE_MODULE, stmt.isTypeOnly);
     }
   }
+  // `import("@ai-matrx/…")` and `require("@ai-matrx/…")` anywhere in the file: the bundler resolves
+  // them exactly like a static import. v0.4.2984/2985 died on
+  // `require("@ai-matrx/chat/ui/markdown-stream/MarkdownStream")` after chat moved that file.
+  const visit = (node) => {
+    if (
+      ts.isCallExpression(node) &&
+      node.arguments.length >= 1 &&
+      ts.isStringLiteral(node.arguments[0]) &&
+      node.arguments[0].text.startsWith(SCOPE) &&
+      (node.expression.kind === ts.SyntaxKind.ImportKeyword || (ts.isIdentifier(node.expression) && node.expression.text === "require"))
+    ) {
+      const line = sf.getLineAndCharacterOfPosition(node.getStart(sf)).line + 1;
+      found.push({ specifier: node.arguments[0].text, name: WHOLE_MODULE, line, typeOnly: false });
+    }
+    ts.forEachChild(node, visit);
+  };
+  visit(sf);
   return found;
 }
+
+/** The "name" of a whole-module reference (export *, import(), require()): only its subpath is judged. */
+export const WHOLE_MODULE = "*";
 
 // ── installed package resolution ─────────────────────────────────────────────
 
@@ -467,6 +492,7 @@ export function audit(root, { only = null } = {}) {
     valuesOf.set(entry, values);
   }
   for (const imp of imports) {
+    if (imp.name === WHOLE_MODULE) continue;
     const names = exportsOf.get(imp.entry);
     if (!names || names.has("*export=*")) continue;
     if (!names.has(imp.name)) {
@@ -918,6 +944,29 @@ function selfTest() {
     wild("0.4.1", true);
     pkgDirCache.clear();
     if (auditPackageGraph(tmp).findings.length) failures.push("GREEN 2026-10-07 graph: a shipped wildcard file was reported");
+
+    // ── v0.4.2984/2985 and v0.4.2989: the specifier sits in a require(), an import() or an
+    // `export *` shim, none of which name an import — each must still be judged, each on its own.
+    rmSync(join(tmp, "node_modules", "@ai-matrx", "design-system"), { recursive: true, force: true });
+    const whole = {
+      "stored-scope.ts": `export const loadStream = () => require("@ai-matrx/chat/agents/model-registry/modelRegistrySlice");\n`,
+      "lazy-models.ts": `export const lazyModels = () => import("@ai-matrx/chat/agents/model-registry/modelRegistrySlice");\n`,
+      "kind-markdown-utils.ts": `export * from "@ai-matrx/chat/agents/model-registry/modelRegistrySlice";\n`,
+    };
+    for (const [file, text] of Object.entries(whole)) {
+      rmSync(join(tmp, "features"), { recursive: true, force: true });
+      mkdirSync(join(tmp, "features"), { recursive: true });
+      writeFileSync(join(tmp, "features", file), text);
+      wild("0.4.0", false);
+      pkgDirCache.clear();
+      r = audit(tmp, { only: ["features"] });
+      if (!r.findings.some((f) => f.file === `features/${file}` && f.why === "subpath-file" && f.version === "0.4.0"))
+        failures.push(`RED whole-module (${file}): a specifier to a file chat 0.4.0 no longer ships was not reported: ${JSON.stringify(r.findings)}`);
+      wild("0.4.1", true);
+      pkgDirCache.clear();
+      r = audit(tmp, { only: ["features"] });
+      if (r.findings.length) failures.push(`GREEN whole-module (${file}): a shipped file was reported: ${JSON.stringify(r.findings)}`);
+    }
   } finally {
     rmSync(tmp, { recursive: true, force: true });
   }
@@ -926,7 +975,7 @@ function selfTest() {
     for (const f of failures) console.error(`  - ${f}`);
     return 1;
   }
-  console.log("check-matrx-imports --self-test OK — RED on a missing export, subpath, wildcard subpath with no shipped file, runtime-only gap, uninstalled package and a broken package-to-package import; GREEN once shipped.");
+  console.log("check-matrx-imports --self-test OK — RED on a missing export, subpath, wildcard subpath with no shipped file, runtime-only gap, uninstalled package, a broken package-to-package import and a require()/import()/export-* specifier; GREEN once shipped.");
   return 0;
 }
 
