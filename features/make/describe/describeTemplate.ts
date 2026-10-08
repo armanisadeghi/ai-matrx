@@ -21,6 +21,7 @@ import {
   describeCheck,
   describeSpec,
   describeVocabulary,
+  safeReuses,
   templateDeclaration,
   type ExistingTable as PackageExistingTable,
   type TemplateSpec,
@@ -98,6 +99,16 @@ export function checkDescribeTemplate(template: Record<string, unknown>, existin
     spec: r.spec,
     autoFixes: r.autoFixes,
   };
+}
+
+/**
+ * THE BOX NEVER CHANGES A TABLE THE PERSON ALREADY HAS: run BEFORE the check and the bind. A reuse whose table the template
+ * declares with any field the existing table lacks (or a renamed field, a changed kind or choices) becomes a NEW table with
+ * its own name, and a note says so; only link-only reuses remain to bind. The package owns the rule (safeReuses).
+ */
+export function applySafeReuses(answer: DescribeAnswer, existing: ExistingTable[]): { template: Record<string, unknown>; reuses: DescribeAnswer["reuses"]; notes: string[] } {
+  const r = safeReuses(describeSpec(answer.template), answer.reuses, existing as PackageExistingTable[]);
+  return { template: r.spec as unknown as Record<string, unknown>, reuses: r.reuses, notes: r.notes };
 }
 
 /**
