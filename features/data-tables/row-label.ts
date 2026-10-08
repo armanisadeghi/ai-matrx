@@ -13,7 +13,7 @@
  * table's first ordinary column (Airtable's rule too): honest, and never a UUID.
  */
 
-import { evaluateFormula, parseFormula } from "@ai-matrx/design-system/formulas";
+import { evaluateFormula, parseFormula } from "@ai-matrx/kit/formula";
 import { formatFieldValue, resolveFieldFormat } from "@ai-matrx/design-system/field-formats";
 import {
   isRelationFormat,

@@ -40,10 +40,9 @@
  * them and the action editor never offers them.
  */
 
+import { evaluateFormula, parseFormula } from "@ai-matrx/kit/formula";
 import {
-  evaluateFormula,
   isComputedColumn,
-  parseFormula,
   type ComputedColumnField,
   type ResolveCell,
 } from "@ai-matrx/design-system/formulas";
