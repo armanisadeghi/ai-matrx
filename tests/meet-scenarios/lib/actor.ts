@@ -78,7 +78,7 @@ export class Actor {
     this.gate = gate;
   }
 
-  static async create(browser: Browser, opts: ActorOptions, launchLevers: string[] = []): Promise<Actor> {
+  static async create(browser: Browser, opts: ActorOptions, launchLevers: string[] = [], onCreated?: (a: Actor) => void): Promise<Actor> {
     const gate = new NetGate(opts.label);
     const port = await gate.start();
     const browserName = browser.browserType().name();
@@ -100,6 +100,7 @@ export class Actor {
     actor.watch(context);
     const page = await context.newPage();
     actor.track(page);
+    onCreated?.(actor); // the cast holds this person (and their evidence) even if sign-in fails below
     if (opts.blockDevices?.length) await actor.blockInBrowser(page, opts.blockDevices);
     if (opts.seat === "org-member") {
       if (!opts.orgMember) throw new Error("seat org-member needs orgMember");

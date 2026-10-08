@@ -39,9 +39,7 @@ export class Cast {
       args.length ? `launch args: ${args.join(" ")}` : "launch args: none",
       ...(args.some((a) => a.startsWith("--use-fake-device-for-media-stream")) ? ["fake camera + microphone (Chromium --use-fake-device-for-media-stream)"] : []),
     ];
-    const actor = await Actor.create(browser, opts, levers);
-    this.actors.push(actor);
-    return actor;
+    return Actor.create(browser, opts, levers, (a) => this.actors.push(a));
   }
 
   /**
