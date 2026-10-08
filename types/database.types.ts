@@ -101040,6 +101040,7 @@ export type Database = {
           is_version: boolean
           model_id: string
           name: string
+          settings: Json
           skill_count: number
           tool_ids: string[]
           ui_gates: Json

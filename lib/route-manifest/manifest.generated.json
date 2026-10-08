@@ -1,7 +1,7 @@
 {
   "version": 1,
   "app": "matrx-frontend",
-  "routeCount": 1362,
+  "routeCount": 1366,
   "routes": [
     {
       "pattern": "/",
@@ -517,6 +517,11 @@
       "pattern": "/administration/billing",
       "status": "live",
       "source": "app/(admin)/administration/billing/page.tsx"
+    },
+    {
+      "pattern": "/administration/billing/approvals",
+      "status": "live",
+      "source": "app/(admin)/administration/billing/approvals/page.tsx"
     },
     {
       "pattern": "/administration/billing/plans",
@@ -5316,9 +5321,19 @@
       "source": "app/(core)/organizations/[orgId]/admin/automations/[kind]/[id]/page.tsx"
     },
     {
+      "pattern": "/organizations/[orgId]/admin/spend-approvals",
+      "status": "live",
+      "source": "app/(core)/organizations/[orgId]/admin/spend-approvals/page.tsx"
+    },
+    {
       "pattern": "/organizations/[orgId]/admin/triggers",
       "status": "live",
       "source": "app/(core)/organizations/[orgId]/admin/triggers/page.tsx"
+    },
+    {
+      "pattern": "/organizations/[orgId]/admin/triggers/[triggerId]/runs/[runId]",
+      "status": "live",
+      "source": "app/(core)/organizations/[orgId]/admin/triggers/[triggerId]/runs/[runId]/page.tsx"
     },
     {
       "pattern": "/organizations/[orgId]/admin/users/[userId]",
@@ -6824,6 +6839,11 @@
       "pattern": "/x/sign/phone",
       "status": "live",
       "source": "app/(link)/x/sign/phone/page.tsx"
+    },
+    {
+      "pattern": "/zz-pictures-proof",
+      "status": "live",
+      "source": "app/(core)/zz-pictures-proof/page.tsx"
     }
   ]
 }

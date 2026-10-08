@@ -21,39 +21,52 @@ import { escapeHtml } from "@ai-matrx/kit/html-escape";
 
 export const esc = (value: unknown): string => escapeHtml(value == null ? "" : String(value));
 
-/** Scoped under `.mxp` so it holds inside a composed message print and in its own window. */
+/**
+ * Scoped under `.matrx-pl`. A composed print sanitizes block HTML (no `<style>`, no inline
+ * styles, only `matrx-*` classes survive), so the sheet travels as the output's `css` and the
+ * composer puts it in the document head; the block's own window gets it inline.
+ */
 export const PAPER_CSS = `
-.mxp{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','Helvetica Neue',Arial,sans-serif;font-size:10.5pt;line-height:1.5;color:#1a1a1a;-webkit-print-color-adjust:exact;print-color-adjust:exact;margin:0 0 14pt}
-.mxp *{box-sizing:border-box}
-.mxp .mxp-title{font-size:16pt;font-weight:700;margin:0 0 3pt;padding:0;border:0;color:#0f172a;break-after:avoid;page-break-after:avoid}
-.mxp .mxp-sub{color:#475569;margin:0 0 10pt}
-.mxp h3{font-size:12.5pt;font-weight:650;margin:14pt 0 5pt;padding:0 0 2pt;border:0;border-bottom:1px solid #e2e8f0;color:#0f172a;break-after:avoid;page-break-after:avoid}
-.mxp h4{font-size:11pt;font-weight:600;margin:9pt 0 3pt;color:#1e293b;break-after:avoid;page-break-after:avoid}
-.mxp h5{font-size:10pt;font-weight:600;margin:7pt 0 2pt;color:#334155;text-transform:none;break-after:avoid;page-break-after:avoid}
-.mxp p{margin:0 0 6pt}
-.mxp ul,.mxp ol{margin:0 0 7pt;padding-left:16pt}
-.mxp li{margin:1pt 0;break-inside:avoid;page-break-inside:avoid}
-.mxp table{width:100%;border-collapse:collapse;margin:4pt 0 10pt;font-size:9.5pt;page-break-inside:auto}
-.mxp thead{display:table-header-group}
-.mxp tr{break-inside:avoid;page-break-inside:avoid}
-.mxp th{background:#f1f5f9;color:#0f172a;text-align:left;font-weight:600;border:1px solid #cbd5e1;padding:4pt 6pt;vertical-align:bottom}
-.mxp td{border:1px solid #e2e8f0;padding:4pt 6pt;vertical-align:top;background:#fff}
-.mxp tr:nth-child(even) td{background:#fafbfc}
-.mxp .mxp-card{border:1px solid #e2e8f0;border-radius:6px;padding:7pt 10pt;margin:6pt 0;break-inside:avoid;page-break-inside:avoid;background:#fff}
-.mxp .mxp-card.mxp-long{break-inside:auto;page-break-inside:auto}
-.mxp dl.mxp-kv{display:grid;grid-template-columns:minmax(80pt,max-content) 1fr;gap:2pt 12pt;margin:0 0 7pt}
-.mxp dl.mxp-kv dt{font-weight:600;color:#334155}
-.mxp dl.mxp-kv dd{margin:0;min-width:0;overflow-wrap:anywhere}
-.mxp .mxp-muted{color:#64748b}
-.mxp .mxp-small{font-size:9pt}
-.mxp .mxp-tag{display:inline-block;border:1px solid #cbd5e1;border-radius:8pt;padding:0 5pt;font-size:8.5pt;color:#334155;margin:0 3pt 2pt 0;white-space:nowrap}
-.mxp .mxp-check{display:inline-block;width:10pt;font-family:'Segoe UI Symbol','Apple Symbols',sans-serif}
-.mxp .mxp-bar{height:5pt;background:#e2e8f0;border-radius:3pt;overflow:hidden;margin:2pt 0 6pt}
-.mxp .mxp-bar>span{display:block;height:100%;background:#2563eb}
-.mxp a{color:#1d4ed8;text-decoration:underline;overflow-wrap:anywhere}
-.mxp code{font-family:'SF Mono',Menlo,Consolas,monospace;font-size:9pt;background:#f1f5f9;padding:0 2pt;border-radius:2pt}
-.mxp pre{font-family:'SF Mono',Menlo,Consolas,monospace;font-size:8.5pt;background:#f8fafc;border:1px solid #e2e8f0;border-radius:4pt;padding:6pt 8pt;white-space:pre-wrap;overflow-wrap:anywhere;margin:3pt 0 7pt}
-.mxp .mxp-text>:last-child{margin-bottom:0}
+.matrx-pl{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','Helvetica Neue',Arial,sans-serif;font-size:10.5pt;line-height:1.5;color:#1a1a1a;-webkit-print-color-adjust:exact;print-color-adjust:exact;margin:0 0 14pt}
+.matrx-pl *{box-sizing:border-box}
+.matrx-pl .matrx-pl-title{font-size:16pt;font-weight:700;margin:0 0 3pt;padding:0;border:0;color:#0f172a;break-after:avoid;page-break-after:avoid}
+.matrx-pl .matrx-pl-sub{color:#475569;margin:0 0 10pt}
+.matrx-pl h3{font-size:12.5pt;font-weight:650;margin:14pt 0 5pt;padding:0 0 2pt;border:0;border-bottom:1px solid #e2e8f0;color:#0f172a;break-after:avoid;page-break-after:avoid}
+.matrx-pl h4{font-size:11pt;font-weight:600;margin:9pt 0 3pt;color:#1e293b;break-after:avoid;page-break-after:avoid}
+.matrx-pl h5{font-size:10pt;font-weight:600;margin:7pt 0 2pt;color:#334155;text-transform:none;break-after:avoid;page-break-after:avoid}
+.matrx-pl p{margin:0 0 6pt}
+.matrx-pl ul,.matrx-pl ol{margin:0 0 7pt;padding-left:16pt}
+.matrx-pl li{margin:1pt 0;break-inside:avoid;page-break-inside:avoid}
+.matrx-pl table{width:100%;border-collapse:collapse;margin:4pt 0 10pt;font-size:9.5pt;page-break-inside:auto}
+.matrx-pl thead{display:table-header-group}
+.matrx-pl tr{break-inside:avoid;page-break-inside:avoid}
+.matrx-pl th{background:#f1f5f9;color:#0f172a;text-align:left;font-weight:600;border:1px solid #cbd5e1;padding:4pt 6pt;vertical-align:bottom}
+.matrx-pl td{border:1px solid #e2e8f0;padding:4pt 6pt;vertical-align:top;background:#fff}
+.matrx-pl tr:nth-child(even) td{background:#fafbfc}
+.matrx-pl .matrx-pl-card{border:1px solid #e2e8f0;border-radius:6px;padding:7pt 10pt;margin:6pt 0;break-inside:avoid;page-break-inside:avoid;background:#fff}
+.matrx-pl .matrx-pl-card.matrx-pl-long{break-inside:auto;page-break-inside:auto}
+.matrx-pl dl.matrx-pl-kv{display:grid;grid-template-columns:minmax(80pt,max-content) 1fr;gap:2pt 12pt;margin:0 0 7pt}
+.matrx-pl dl.matrx-pl-kv dt{font-weight:600;color:#334155}
+.matrx-pl dl.matrx-pl-kv dd{margin:0;min-width:0;overflow-wrap:anywhere}
+.matrx-pl .matrx-pl-muted{color:#64748b}
+.matrx-pl .matrx-pl-small{font-size:9pt}
+.matrx-pl .matrx-pl-tag{display:inline-block;border:1px solid #cbd5e1;border-radius:8pt;padding:0 5pt;font-size:8.5pt;color:#334155;margin:0 3pt 2pt 0;white-space:nowrap}
+.matrx-pl .matrx-pl-check{display:inline-block;width:10pt;font-family:'Segoe UI Symbol','Apple Symbols',sans-serif}
+.matrx-pl .matrx-pl-bar{height:5pt;background:#e2e8f0;border-radius:3pt;overflow:hidden;margin:2pt 0 6pt}
+.matrx-pl .matrx-pl-bar>span{display:block;height:100%;background:#2563eb}
+.matrx-pl a{color:#1d4ed8;text-decoration:underline;overflow-wrap:anywhere}
+.matrx-pl code{font-family:'SF Mono',Menlo,Consolas,monospace;font-size:9pt;background:#f1f5f9;padding:0 2pt;border-radius:2pt}
+.matrx-pl pre{font-family:'SF Mono',Menlo,Consolas,monospace;font-size:8.5pt;background:#f8fafc;border:1px solid #e2e8f0;border-radius:4pt;padding:6pt 8pt;white-space:pre-wrap;overflow-wrap:anywhere;margin:3pt 0 7pt}
+.matrx-pl .matrx-pl-text>:last-child{margin-bottom:0}
+.matrx-pl .matrx-pl-eyebrow{color:#64748b;font-size:8.5pt;text-transform:uppercase;letter-spacing:.04em}
+.matrx-pl ul.matrx-pl-plain{list-style:none;padding-left:2pt}
+.matrx-pl ul.matrx-pl-plain.matrx-pl-indent{padding-left:14pt}
+.matrx-pl li.matrx-pl-section-li{margin-top:5pt}
+.matrx-pl ul.matrx-pl-cell-list{margin:0;padding-left:11pt}
+.matrx-pl .matrx-pl-big{font-size:13pt;font-weight:700}
+.matrx-pl .matrx-pl-line{border-bottom:1px solid #94a3b8;height:16pt;margin:4pt 0}
+.matrx-pl .matrx-pl-line+.matrx-pl-line{margin-bottom:8pt}
+${Array.from({ length: 21 }, (_, i) => `.matrx-pl .matrx-pl-bar>span.matrx-pl-w${i * 5}{width:${i * 5}%}`).join("\n")}
 `;
 
 const URL_RE = /^https?:\/\/\S+$/i;
@@ -90,7 +103,7 @@ export function textHtml(value: unknown): string {
   if (!text) return "";
   if (isUrl(text)) return `<p>${linkHtml(text)}</p>`;
   if (markdownConverter && MARKDOWN_HINT.test(text)) {
-    return `<div class="mxp-text">${markdownConverter(text)}</div>`;
+    return `<div class="matrx-pl-text">${markdownConverter(text)}</div>`;
   }
   return text
     .split(/\n{2,}/)
@@ -121,7 +134,7 @@ export function listHtml(items: readonly unknown[], ordered = false): string {
 export function kvHtml(rows: ReadonlyArray<readonly [string, string | null | undefined]>): string {
   const kept = rows.filter(([, value]) => value != null && value !== "");
   if (kept.length === 0) return "";
-  return `<dl class="mxp-kv">${kept.map(([label, value]) => `<dt>${esc(label)}</dt><dd>${value}</dd>`).join("")}</dl>`;
+  return `<dl class="matrx-pl-kv">${kept.map(([label, value]) => `<dt>${esc(label)}</dt><dd>${value}</dd>`).join("")}</dl>`;
 }
 
 export function tableHtml(headers: readonly string[], rows: ReadonlyArray<readonly string[]>): string {
@@ -135,18 +148,18 @@ export function tagsHtml(tags: readonly unknown[] | null | undefined): string {
   if (!tags?.length) return "";
   return tags
     .filter((tag) => tag != null && String(tag).trim() !== "")
-    .map((tag) => `<span class="mxp-tag">${esc(tag)}</span>`)
+    .map((tag) => `<span class="matrx-pl-tag">${esc(tag)}</span>`)
     .join("");
 }
 
 export function checkHtml(checked: boolean): string {
-  return `<span class="mxp-check">${checked ? "&#9745;" : "&#9744;"}</span>`;
+  return `<span class="matrx-pl-check">${checked ? "&#9745;" : "&#9744;"}</span>`;
 }
 
 export function paperHtml(title: string | null | undefined, subtitle: string | null | undefined, inner: string): string {
-  const head = title?.trim() ? `<h2 class="mxp-title">${inlineHtml(title)}</h2>` : "";
-  const sub = subtitle?.trim() ? `<div class="mxp-sub">${textHtml(subtitle)}</div>` : "";
-  return `<style>${PAPER_CSS}</style><section class="mxp">${head}${sub}${inner}</section>`;
+  const head = title?.trim() ? `<h2 class="matrx-pl-title">${inlineHtml(title)}</h2>` : "";
+  const sub = subtitle?.trim() ? `<div class="matrx-pl-sub">${textHtml(subtitle)}</div>` : "";
+  return `<section class="matrx-pl">${head}${sub}${inner}</section>`;
 }
 
 /** A string, when the value is one with content. */
@@ -204,20 +217,20 @@ export function makeLayoutPrinter<T>(layout: Layout<T>, fallbackType: string): B
       // Opened inside the click (popup blockers allow it); written once the layout is ready.
       const pending = openPendingPrintWindow(title || "print");
       if (!model) {
-        return pending.write(buildPrintDocument(paperHtml(title, null, "<p>This content has nothing to print.</p>"), title));
+        return pending.write(buildPrintDocument(paperHtml(title, null, "<p>This content has nothing to print.</p>"), title, PAPER_CSS));
       }
       return renderPaper(layout, model, context).then(
-        (html) => pending.write(buildPrintDocument(html, title)),
+        (html) => pending.write(buildPrintDocument(html, title, PAPER_CSS)),
         (error: unknown) => {
           console.error("[print-layouts] layout failed", error);
-          return pending.write(buildPrintDocument(paperHtml(title, null, "<p>This content could not be laid out for print.</p>"), title));
+          return pending.write(buildPrintDocument(paperHtml(title, null, "<p>This content could not be laid out for print.</p>"), title, PAPER_CSS));
         },
       );
     },
     toPrintHtml(data: unknown, context: PrintBlockContext) {
       const model = layout.read(data, context);
       if (!model) return null;
-      return renderPaper(layout, model, context).then((html) => ({ html }));
+      return renderPaper(layout, model, context).then((html) => ({ html, css: PAPER_CSS }));
     },
   };
 }

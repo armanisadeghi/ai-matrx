@@ -39,10 +39,12 @@ export async function openConfidentialAudited(
 ): Promise<R360<{ granted: boolean; reason: string | null }>> {
   const { data, error } = await supabase
     .schema("iam")
-    .rpc("open_confidential_audited" as never, { p_type: type, p_id: id, p_purpose: purpose } as never);
+    .rpc("open_confidential_audited", { p_type: type, p_id: id, p_purpose: purpose });
   if (error) return no(`The open could not be recorded: ${error.message}`);
-  const env = (data ?? {}) as { granted?: unknown; reason?: unknown };
-  return { ok: true, data: { granted: env.granted === true, reason: typeof env.reason === "string" ? env.reason : null } };
+  const field = (k: string): unknown =>
+    data !== null && typeof data === "object" && !Array.isArray(data) ? Reflect.get(data, k) : undefined;
+  const reason = field("reason");
+  return { ok: true, data: { granted: field("granted") === true, reason: typeof reason === "string" ? reason : null } };
 }
 
 export async function openMeetingNotes(client: RecordsClient, notesId: string): Promise<R360<MeetingNotesOpen>> {

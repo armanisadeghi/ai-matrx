@@ -26,6 +26,30 @@ const MESSAGE = [
   `<artifact type="mermaid" title="Flow">\nflowchart LR\n  A[Start] --> B[Done]\n</artifact>`,
 ].join("\n\n");
 
+async function variants() {
+  const { renderElement } = await import("@ai-matrx/alchemy/operate/capture");
+  const flow = document.querySelector("#live-diagram .react-flow") as HTMLElement;
+  const res: Record<string, string> = {};
+  for (const v of ["A-offscreen-wh", "H-offscreen-style", "I-fixed-offscreen-style"]) {
+    const stage = document.createElement("div");
+    const on = v.startsWith("C") || v.startsWith("D");
+    stage.style.cssText = v.startsWith("I") ? "position:fixed;top:-99999px;left:-99999px;width:216px;height:600px;background:#fff" : v.startsWith("E") ? "position:fixed;top:-99999px;left:-99999px;width:216px;height:600px;background:#fff" : v.startsWith("G") ? "position:absolute;top:0;left:0;width:216px;height:600px;background:#fff;z-index:-5" : on ? "position:fixed;left:0;top:0;width:216px;height:600px;z-index:-1;background:#fff" : "position:absolute;top:-99999px;left:-99999px;width:216px;height:600px;background:#fff";
+    const clone = flow.cloneNode(true) as HTMLElement;
+    clone.style.cssText = "width:216px;height:600px;position:relative;overflow:hidden;background:#fff";
+    (clone.querySelector(".react-flow__viewport") as HTMLElement).style.transform = "translate(28px, 28px) scale(1)";
+    stage.appendChild(clone);
+    document.body.appendChild(stage);
+    try {
+      const opts = v.includes("style") ? { pixelRatio: 1, width: 216, height: 600, style: { left: "0px", top: "0px" } } : { pixelRatio: 1, width: 216, height: 600 };
+      const c = await renderElement(stage, { backgroundColor: "#fff", ...opts });
+      res[v] = c.toDataURL("image/png");
+    } catch (e) { res[v] = "ERR " + String(e); }
+    stage.remove();
+  }
+  return res;
+}
+(globalThis as unknown as { __variants: typeof variants }).__variants = variants;
+
 export default function Page() {
   const [doc, setDoc] = useState("");
   const [live, setLive] = useState("");

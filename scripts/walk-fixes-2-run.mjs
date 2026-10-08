@@ -7,14 +7,14 @@ await page.waitForSelector('[role="columnheader"], [role="grid"]', { timeout: 24
 await sleep(3000);
 const AsyncFunction = Object.getPrototypeOf(async function () {}).constructor;
 // Keep this host the most recent walk while a step runs (the cap evicts the least recently used host).
-const keep = setInterval(() => { page.evaluate(() => fetch("/data", { method: "HEAD" }).catch(() => {})).catch(() => {}); }, 15000);
-const paused = async () => page.url().includes("__dev-walk") || (await page.getByText("This preview was paused").count().catch(() => 0)) > 0;
+const keep = setInterval(() => { page.evaluate(() => fetch(location.pathname, { headers: { RSC: "1" } }).catch(() => {})).catch(() => {}); }, 10000);
+const paused = async () => page.url().includes("__dev-walk") || (await page.getByText("This preview was paused").first().isVisible().catch(() => false));
 for (let attempt = 0; attempt < 3; attempt++) {
   try {
     await new AsyncFunction("page", "shot", "sleep", "T", "origin", "errors", "live", readFileSync(process.env.STEP, "utf8"))(page, s.shot, sleep, T, s.origin, s.errors, (u) => live(page, u));
     break;
   } catch (e) {
-    if (await paused()) { console.log("[walk] paused mid-step; Resume and run the step again"); await live(page, s.origin + (process.env.NEXT ?? `/data/${T.tasks}`)); continue; }
+    if (await paused()) { console.log("[walk] paused mid-step; Resume and run the step again", String(e).slice(0, 200)); await live(page, s.origin + (process.env.NEXT ?? `/data/${T.tasks}`)); continue; }
     console.log("STEP FAILED", String(e).slice(0, 800)); await s.shot("failed"); break;
   }
 }

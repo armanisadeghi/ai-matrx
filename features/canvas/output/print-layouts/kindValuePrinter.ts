@@ -214,7 +214,7 @@ function cellHtml(value: unknown, schema: JsonSchema | null, root: JsonSchema | 
     const items = itemSchema(schema, root);
     const kept = value.filter((v) => !isEmpty(v));
     if (kept.some((v) => String(v).length > 30)) {
-      return `<ul style="margin:0;padding-left:11pt">${kept.map((v) => `<li>${scalarHtml(v, items)}</li>`).join("")}</ul>`;
+      return `<ul class="matrx-pl-cell-list">${kept.map((v) => `<li>${scalarHtml(v, items)}</li>`).join("")}</ul>`;
     }
     return kept.map((v) => scalarHtml(v, items)).join(", ");
   }
@@ -282,7 +282,7 @@ function arrayHtml(values: unknown[], schema: JsonSchema | null, depth: number, 
         const rest: Rec = { ...r };
         if (own) delete rest[own.key];
         const body = objectHtml(rest, itemSch, depth + 1, ctx);
-        return `<div class="mxp-card${body.length > 1800 ? " mxp-long" : ""}">${heading(depth + 1, `${own ? `${index + 1}. ` : ""}${label}`)}${body}</div>`;
+        return `<div class="matrx-pl-card${body.length > 1800 ? " matrx-pl-long" : ""}">${heading(depth + 1, `${own ? `${index + 1}. ` : ""}${label}`)}${body}</div>`;
       })
       .join("");
   }
@@ -314,7 +314,7 @@ export function objectHtml(record: Rec, schema: JsonSchema | null, depth: number
       if (body) blocks.push(`${heading(depth, esc(label))}${body}`);
     }
   }
-  const kv = short.length ? `<dl class="mxp-kv">${short.map(([l, v]) => `<dt>${esc(l)}</dt><dd>${v}</dd>`).join("")}</dl>` : "";
+  const kv = short.length ? `<dl class="matrx-pl-kv">${short.map(([l, v]) => `<dt>${esc(l)}</dt><dd>${v}</dd>`).join("")}</dl>` : "";
   return kv + blocks.join("");
 }
 
@@ -339,10 +339,10 @@ export function renderKindValueHtml(value: Rec, schema: JsonSchema | null, kindL
   const rest: Rec = { ...value };
   if (titleKey) delete rest[titleKey];
   if (subtitleKey) delete rest[subtitleKey];
-  const eyebrow = titleKey && label !== title ? `<div class="mxp-muted mxp-small" style="text-transform:uppercase;letter-spacing:.04em">${esc(label)}</div>` : "";
+  const eyebrow = titleKey && label !== title ? `<div class="matrx-pl-eyebrow">${esc(label)}</div>` : "";
   const body = objectHtml(rest, top, 0, ctx);
-  const html = paperHtml(title, subtitleKey ? String(value[subtitleKey]) : null, body || `<p class="mxp-muted">${esc(label)} has no fields filled in.</p>`);
-  return eyebrow ? html.replace('<section class="mxp">', `<section class="mxp">${eyebrow}`) : html;
+  const html = paperHtml(title, subtitleKey ? String(value[subtitleKey]) : null, body || `<p class="matrx-pl-muted">${esc(label)} has no fields filled in.</p>`);
+  return eyebrow ? html.replace('<section class="matrx-pl">', `<section class="matrx-pl">${eyebrow}`) : html;
 }
 
 // ─── the printer ──────────────────────────────────────────────────────────────

@@ -229,7 +229,6 @@ export async function diagramPicture(payload: unknown): Promise<Blob> {
         const signature = boxes.map((b) => `${b.x},${b.y},${b.width},${b.height}`).join("|");
         const settled = boxes.length >= diagram.nodes.length && signature === last;
         last = signature;
-        (window as unknown as { __dbg?: unknown[] }).__dbg = [...(((window as unknown as { __dbg?: unknown[] }).__dbg) ?? []).slice(-6), `${boxes.length}/${diagram.nodes.length} ${signature.slice(0, 80)} flow=${Boolean(flow)}`];
         return settled;
       },
     },

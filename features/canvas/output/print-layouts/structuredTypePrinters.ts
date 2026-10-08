@@ -90,7 +90,7 @@ function cellHtml(value: unknown, type: unknown, scale: number): string {
   if (typeof value === "boolean") return value ? "&#10003; Yes" : "&#10007; No";
   if (type === "rating" && typeof value === "number") {
     const n = Math.max(0, Math.min(5, Math.round((value / scale) * 5)));
-    return `${"&#9733;".repeat(n)}${"&#9734;".repeat(5 - n)} <span class="mxp-muted">${esc(value)}/${scale}</span>`;
+    return `${"&#9733;".repeat(n)}${"&#9734;".repeat(5 - n)} <span class="matrx-pl-muted">${esc(value)}/${scale}</span>`;
   }
   return inlineHtml(value);
 }
@@ -111,7 +111,7 @@ const comparisonLayout: Layout<Rec> = {
       const criterion = obj(raw) ?? {};
       const values = arr(criterion.values);
       const head = `<strong>${inlineHtml(criterion.name)}</strong>${
-        typeof criterion.weight === "number" ? ` <span class="mxp-muted mxp-small">weight ${esc(criterion.weight)}</span>` : ""
+        typeof criterion.weight === "number" ? ` <span class="matrx-pl-muted matrx-pl-small">weight ${esc(criterion.weight)}</span>` : ""
       }`;
       // Ratings are out of 5 unless a value says otherwise (agents also write 1–10).
       const top = Math.max(0, ...values.filter((v): v is number => typeof v === "number"));
@@ -148,7 +148,7 @@ const timelineLayout: Layout<Rec> = {
           return [
             esc(str(event.date) ?? ""),
             `<strong>${inlineHtml(event.title)}</strong>${str(event.description) ? `<div>${inlineHtml(event.description)}</div>` : ""}`,
-            [str(event.category) ? `<span class="mxp-tag">${esc(event.category)}</span>` : "", status ? `<span class="mxp-tag">${esc(status)}</span>` : ""].join(""),
+            [str(event.category) ? `<span class="matrx-pl-tag">${esc(event.category)}</span>` : "", status ? `<span class="matrx-pl-tag">${esc(status)}</span>` : ""].join(""),
           ];
         });
         const hasDates = rows.some((row) => row[0]);
@@ -204,7 +204,7 @@ const researchLayout: Layout<Rec> = {
     const findings = (raw: unknown) => {
       const finding = obj(raw) ?? {};
       const urls = arr(finding.urls).filter((u): u is string => isUrl(u));
-      return `<div class="mxp-card"><h4>${inlineHtml(finding.title)}</h4>${textHtml(finding.keyDetails)}${kvHtml([
+      return `<div class="matrx-pl-card"><h4>${inlineHtml(finding.title)}</h4>${textHtml(finding.keyDetails)}${kvHtml([
         ["Significance", str(finding.significance) ? inlineHtml(finding.significance) : null],
         ["Confidence", str(finding.confidenceLevel) ? esc(finding.confidenceLevel) : null],
         ["Primary source", str(finding.primarySource) ? inlineHtml(finding.primarySource) : null],
@@ -215,7 +215,7 @@ const researchLayout: Layout<Rec> = {
     const sections = arr(m.sections)
       .map((raw) => {
         const sec = obj(raw) ?? {};
-        return `<h3>${inlineHtml(sec.title)}</h3>${str(sec.subtitle) ? `<p class="mxp-muted">${inlineHtml(sec.subtitle)}</p>` : ""}${arr(sec.findings)
+        return `<h3>${inlineHtml(sec.title)}</h3>${str(sec.subtitle) ? `<p class="matrx-pl-muted">${inlineHtml(sec.subtitle)}</p>` : ""}${arr(sec.findings)
           .map(findings)
           .join("")}${str(sec.content) && !arr(sec.findings).length ? textHtml(sec.content) : ""}`;
       })
@@ -227,7 +227,7 @@ const researchLayout: Layout<Rec> = {
       });
     const challenges = arr(m.challenges).map((raw) => {
       const ch = obj(raw) ?? {};
-      return `<div class="mxp-card"><h4>${inlineHtml(ch.title)}</h4>${textHtml(ch.description)}${kvHtml([
+      return `<div class="matrx-pl-card"><h4>${inlineHtml(ch.title)}</h4>${textHtml(ch.description)}${kvHtml([
         ["Category", str(ch.category) ? esc(ch.category) : null],
         ["Research gaps", str(ch.researchGaps) ? inlineHtml(ch.researchGaps) : null],
         ["Current solutions", str(ch.currentSolutions) ? inlineHtml(ch.currentSolutions) : null],
@@ -300,22 +300,22 @@ const troubleshootingLayout: Layout<Rec> = {
                 const links = arr(step.links)
                   .map((l) => obj(l))
                   .filter((l): l is Rec => !!l && isUrl(l.url));
-                return `<li><strong>${inlineHtml(step.title)}</strong>${str(step.estimatedTime) ? ` <span class="mxp-muted mxp-small">(${esc(step.estimatedTime)})</span>` : ""}${
+                return `<li><strong>${inlineHtml(step.title)}</strong>${str(step.estimatedTime) ? ` <span class="matrx-pl-muted matrx-pl-small">(${esc(step.estimatedTime)})</span>` : ""}${
                   str(step.description) ? `<div>${inlineHtml(step.description)}</div>` : ""
                 }${commands.length ? `<pre>${commands.map((cmd) => esc(cmd)).join("\n")}</pre>` : ""}${
-                  links.length ? `<div class="mxp-small">${links.map((l) => linkHtml(String(l.url), str(l.title))).join(" · ")}</div>` : ""
+                  links.length ? `<div class="matrx-pl-small">${links.map((l) => linkHtml(String(l.url), str(l.title))).join(" · ")}</div>` : ""
                 }</li>`;
               })
               .join("");
-            return `<div class="mxp-card mxp-long"><h5>Solution ${sIndex + 1}: ${inlineHtml(solution.title)}${
-              typeof solution.successRate === "number" ? ` <span class="mxp-muted mxp-small">${esc(solution.successRate)}% success</span>` : ""
+            return `<div class="matrx-pl-card matrx-pl-long"><h5>Solution ${sIndex + 1}: ${inlineHtml(solution.title)}${
+              typeof solution.successRate === "number" ? ` <span class="matrx-pl-muted matrx-pl-small">${esc(solution.successRate)}% success</span>` : ""
             }</h5>${str(solution.description) ? `<p>${inlineHtml(solution.description)}</p>` : ""}${steps ? `<ol>${steps}</ol>` : ""}</div>`;
           })
           .join("");
-        return `<h3>${index + 1}. ${inlineHtml(issue.symptom ?? issue.title)}${str(issue.severity) ? ` <span class="mxp-tag">${esc(issue.severity)}</span>` : ""}</h3>${
+        return `<h3>${index + 1}. ${inlineHtml(issue.symptom ?? issue.title)}${str(issue.severity) ? ` <span class="matrx-pl-tag">${esc(issue.severity)}</span>` : ""}</h3>${
           str(issue.description) ? textHtml(issue.description) : ""
         }${arr(issue.causes).length ? `<h5>Likely causes</h5>${stringList(issue.causes)}` : ""}${solutions}${
-          arr(issue.relatedIssues).length ? `<p class="mxp-small mxp-muted">Related: ${arr(issue.relatedIssues).map((r) => inlineHtml(r)).join(", ")}</p>` : ""
+          arr(issue.relatedIssues).length ? `<p class="matrx-pl-small matrx-pl-muted">Related: ${arr(issue.relatedIssues).map((r) => inlineHtml(r)).join(", ")}</p>` : ""
         }`;
       })
       .join("");
@@ -335,12 +335,12 @@ function decisionNodeHtml(raw: unknown, depth: number): string {
     .join(" · ");
   if (!yes && !no) {
     const action = str(node.action) ?? str(node.question) ?? str(node.description);
-    return `<div class="mxp-card"><strong>&#8594; ${inlineHtml(action ?? "")}</strong>${
+    return `<div class="matrx-pl-card"><strong>&#8594; ${inlineHtml(action ?? "")}</strong>${
       str(node.description) && node.description !== action ? `<div>${inlineHtml(node.description)}</div>` : ""
-    }${meta ? `<div class="mxp-muted mxp-small">${meta}</div>` : ""}</div>`;
+    }${meta ? `<div class="matrx-pl-muted matrx-pl-small">${meta}</div>` : ""}</div>`;
   }
-  return `<div class="mxp-card mxp-long"><strong>${inlineHtml(node.question ?? node.action ?? "")}</strong>${
-    str(node.description) ? `<div class="mxp-muted">${inlineHtml(node.description)}</div>` : ""
+  return `<div class="matrx-pl-card matrx-pl-long"><strong>${inlineHtml(node.question ?? node.action ?? "")}</strong>${
+    str(node.description) ? `<div class="matrx-pl-muted">${inlineHtml(node.description)}</div>` : ""
   }<ul>${yes ? `<li><em>Yes</em>${decisionNodeHtml(yes, depth + 1)}</li>` : ""}${no ? `<li><em>No</em>${decisionNodeHtml(no, depth + 1)}</li>` : ""}</ul></div>`;
 }
 
@@ -375,7 +375,7 @@ const recipeLayout: Layout<Rec> = {
         if (typeof raw === "string") return `<li>${inlineHtml(raw)}</li>`;
         const step = obj(raw) ?? {};
         return `<li>${str(step.action) ? `<strong>${inlineHtml(step.action)}</strong> ` : ""}${inlineHtml(step.description ?? "")}${
-          str(step.time) ? ` <span class="mxp-muted mxp-small">(${esc(step.time)})</span>` : ""
+          str(step.time) ? ` <span class="matrx-pl-muted matrx-pl-small">(${esc(step.time)})</span>` : ""
         }</li>`;
       })
       .join("");
@@ -389,7 +389,7 @@ const recipeLayout: Layout<Rec> = {
           ["Cook time", str(m.cookTime) ? inlineHtml(m.cookTime) : null],
           ["Total time", str(m.totalTime) ? inlineHtml(m.totalTime) : null],
         ]),
-        section("Ingredients", ingredients.length ? `<ul style="list-style:none;padding-left:2pt">${ingredients.map((i) => `<li>${checkHtml(false)} ${i[0]}</li>`).join("")}</ul>` : ""),
+        section("Ingredients", ingredients.length ? `<ul class="matrx-pl-plain">${ingredients.map((i) => `<li>${checkHtml(false)} ${i[0]}</li>`).join("")}</ul>` : ""),
         section("Instructions", steps ? `<ol>${steps}</ol>` : ""),
         section("Notes", textHtml(m.notes)),
       ].join(""),
@@ -419,13 +419,13 @@ const resourcesLayout: Layout<Rec> = {
           return [
             `<strong>${url && isUrl(url) ? linkHtml(url, str(item.title)) : inlineHtml(item.title)}</strong>${
               str(item.description) ? `<div>${inlineHtml(item.description)}</div>` : ""
-            }${url && isUrl(url) && str(item.title) ? `<div class="mxp-muted mxp-small">${esc(url)}</div>` : ""}`,
-            [str(item.type), str(item.difficulty), str(item.duration)].filter(Boolean).map((t) => `<span class="mxp-tag">${esc(t)}</span>`).join("") +
+            }${url && isUrl(url) && str(item.title) ? `<div class="matrx-pl-muted matrx-pl-small">${esc(url)}</div>` : ""}`,
+            [str(item.type), str(item.difficulty), str(item.duration)].filter(Boolean).map((t) => `<span class="matrx-pl-tag">${esc(t)}</span>`).join("") +
               tagsHtml(arr(item.tags)) +
-              (typeof item.rating === "number" ? `<div class="mxp-small">${"&#9733;".repeat(Math.max(0, Math.min(5, Math.round(item.rating))))}</div>` : ""),
+              (typeof item.rating === "number" ? `<div class="matrx-pl-small">${"&#9733;".repeat(Math.max(0, Math.min(5, Math.round(item.rating))))}</div>` : ""),
           ];
         });
-        return `<h3>${inlineHtml(cat.name)}</h3>${str(cat.description) ? `<p class="mxp-muted">${inlineHtml(cat.description)}</p>` : ""}${tableHtml(["Resource", "Details"], rows)}`;
+        return `<h3>${inlineHtml(cat.name)}</h3>${str(cat.description) ? `<p class="matrx-pl-muted">${inlineHtml(cat.description)}</p>` : ""}${tableHtml(["Resource", "Details"], rows)}`;
       })
       .join("");
     return paperHtml(resourcesLayout.title(m, c), str(m.description), categories);
@@ -436,7 +436,7 @@ const resourcesLayout: Layout<Rec> = {
 
 function progressBar(percent: number): string {
   const p = Math.max(0, Math.min(100, Math.round(percent)));
-  return `<div class="mxp-bar"><span style="width:${p}%"></span></div>`;
+  return `<div class="matrx-pl-bar"><span class="matrx-pl-w${Math.round(p / 5) * 5}"></span></div>`;
 }
 
 const progressLayout: Layout<Rec> = {
@@ -470,14 +470,14 @@ const progressLayout: Layout<Rec> = {
         total += steps.length;
         done += complete;
         const percent = typeof phase.completion_percentage === "number" ? phase.completion_percentage : steps.length ? (complete / steps.length) * 100 : 0;
-        return `<h3>${inlineHtml(phase.name)} <span class="mxp-muted mxp-small">${complete}/${steps.length} · ${Math.round(percent)}%</span></h3>${progressBar(percent)}${
-          str(phase.description) ? `<p class="mxp-muted">${inlineHtml(phase.description)}</p>` : ""
-        }<ul style="list-style:none;padding-left:2pt">${steps
+        return `<h3>${inlineHtml(phase.name)} <span class="matrx-pl-muted matrx-pl-small">${complete}/${steps.length} · ${Math.round(percent)}%</span></h3>${progressBar(percent)}${
+          str(phase.description) ? `<p class="matrx-pl-muted">${inlineHtml(phase.description)}</p>` : ""
+        }<ul class="matrx-pl-plain">${steps
           .map(
             (step) =>
-              `<li>${checkHtml(step.completed === true)} ${inlineHtml(step.text ?? step.title ?? "")}${step.optional === true ? ` <span class="mxp-muted mxp-small">(optional)</span>` : ""}${
-                str(step.priority) ? ` <span class="mxp-tag">${esc(step.priority)}</span>` : ""
-              }${typeof step.estimated_hours === "number" ? ` <span class="mxp-muted mxp-small">${esc(step.estimated_hours)} h</span>` : ""}</li>`,
+              `<li>${checkHtml(step.completed === true)} ${inlineHtml(step.text ?? step.title ?? "")}${step.optional === true ? ` <span class="matrx-pl-muted matrx-pl-small">(optional)</span>` : ""}${
+                str(step.priority) ? ` <span class="matrx-pl-tag">${esc(step.priority)}</span>` : ""
+              }${typeof step.estimated_hours === "number" ? ` <span class="matrx-pl-muted matrx-pl-small">${esc(step.estimated_hours)} h</span>` : ""}</li>`,
           )
           .join("")}</ul>`;
       })
@@ -510,8 +510,8 @@ const statsLayout: Layout<Rec> = {
       const stat = obj(raw) ?? {};
       const trend = stat.trend === "up" ? "&#9650; " : stat.trend === "down" ? "&#9660; " : "";
       return [
-        `<strong>${inlineHtml(stat.label)}</strong>${str(stat.hint) ? `<div class="mxp-muted mxp-small">${inlineHtml(stat.hint)}</div>` : ""}`,
-        `<span style="font-size:13pt;font-weight:700">${inlineHtml(stat.value)}</span>`,
+        `<strong>${inlineHtml(stat.label)}</strong>${str(stat.hint) ? `<div class="matrx-pl-muted matrx-pl-small">${inlineHtml(stat.hint)}</div>` : ""}`,
+        `<span class="matrx-pl-big">${inlineHtml(stat.value)}</span>`,
         str(stat.change) ? `${trend}${inlineHtml(stat.change)}` : "",
       ];
     });
@@ -539,14 +539,14 @@ const questionnaireLayout: Layout<Rec> = {
         const options = arr(q.options).map((o) => str(obj(o)?.name) ?? str(obj(o)?.label) ?? str(o) ?? "");
         let answer = "";
         if (options.length) {
-          answer = `<ul style="list-style:none;padding-left:4pt">${options.map((o) => `<li><span class="mxp-check">${box}</span> ${inlineHtml(o)}</li>`).join("")}</ul>`;
+          answer = `<ul class="matrx-pl-plain">${options.map((o) => `<li><span class="matrx-pl-check">${box}</span> ${inlineHtml(o)}</li>`).join("")}</ul>`;
         } else if (type === "range" || type === "slider" || typeof q.min === "number") {
-          answer = `<p class="mxp-muted">${esc(q.min ?? 0)} &#8212;&#8212;&#8212;&#8212;&#8212;&#8212;&#8212;&#8212;&#8212;&#8212; ${esc(q.max ?? 10)}</p>`;
+          answer = `<p class="matrx-pl-muted">${esc(q.min ?? 0)} &#8212;&#8212;&#8212;&#8212;&#8212;&#8212;&#8212;&#8212;&#8212;&#8212; ${esc(q.max ?? 10)}</p>`;
         } else {
-          answer = `<div style="border-bottom:1px solid #94a3b8;height:16pt;margin:6pt 0"></div><div style="border-bottom:1px solid #94a3b8;height:16pt;margin:0 0 8pt"></div>`;
+          answer = `<div class="matrx-pl-line"></div><div class="matrx-pl-line"></div>`;
         }
-        return `<div class="mxp-card"><strong>${inlineHtml(q.question ?? q.label ?? "")}</strong>${
-          str(q.description) ? `<div class="mxp-muted mxp-small">${inlineHtml(q.description)}</div>` : ""
+        return `<div class="matrx-pl-card"><strong>${inlineHtml(q.question ?? q.label ?? "")}</strong>${
+          str(q.description) ? `<div class="matrx-pl-muted matrx-pl-small">${inlineHtml(q.description)}</div>` : ""
         }${answer}</div>`;
       })
       .join("");
@@ -565,12 +565,12 @@ const transcriptLayout: Layout<Rec> = {
     const rows = arr(m.segments).map((raw) => {
       const seg = obj(raw) ?? {};
       return [
-        `<span class="mxp-muted mxp-small">${esc(str(seg.timecode) ?? "")}</span>`,
+        `<span class="matrx-pl-muted matrx-pl-small">${esc(str(seg.timecode) ?? "")}</span>`,
         str(seg.speaker) ? `<strong>${inlineHtml(seg.speaker)}</strong>` : "",
         seg.isHighlighted === true ? `<mark>${inlineHtml(seg.text)}</mark>` : inlineHtml(seg.text),
       ];
     });
-    const hasTime = rows.some((r) => r[0] !== `<span class="mxp-muted mxp-small"></span>`);
+    const hasTime = rows.some((r) => r[0] !== `<span class="matrx-pl-muted matrx-pl-small"></span>`);
     const hasSpeaker = rows.some((r) => r[1]);
     const headers = [hasTime ? "Time" : null, hasSpeaker ? "Speaker" : null, "Text"].filter((h): h is string => !!h);
     const cells = rows.map((r) => [hasTime ? r[0] : null, hasSpeaker ? r[1] : null, r[2]].filter((x): x is string => x !== null));
@@ -637,7 +637,7 @@ function treeNodeHtml(raw: unknown, depth: number): string {
   if (!node || depth > 30) return typeof raw === "string" ? `<li>${inlineHtml(raw)}</li>` : "";
   const label = str(node.name) ?? str(node.label) ?? str(node.title) ?? str(node.text) ?? "";
   const kids = arr(node.children);
-  return `<li>${inlineHtml(label)}${str(node.description) ? ` <span class="mxp-muted">— ${inlineHtml(node.description)}</span>` : ""}${
+  return `<li>${inlineHtml(label)}${str(node.description) ? ` <span class="matrx-pl-muted">— ${inlineHtml(node.description)}</span>` : ""}${
     kids.length ? `<ul>${kids.map((k) => treeNodeHtml(k, depth + 1)).join("")}</ul>` : ""
   }</li>`;
 }
@@ -686,10 +686,10 @@ function toTaskNodes(value: unknown): TaskNode[] {
 
 function taskNodesHtml(nodes: readonly TaskNode[], depth: number): string {
   if (!nodes.length || depth > 12) return "";
-  return `<ul style="list-style:none;padding-left:${depth ? 14 : 2}pt">${nodes
+  return `<ul class="matrx-pl-plain${depth ? " matrx-pl-indent" : ""}">${nodes
     .map((n) =>
       n.type === "section"
-        ? `<li style="margin-top:5pt"><strong>${inlineHtml(n.title)}</strong>${taskNodesHtml(n.children ?? [], depth + 1)}</li>`
+        ? `<li class="matrx-pl-section-li"><strong>${inlineHtml(n.title)}</strong>${taskNodesHtml(n.children ?? [], depth + 1)}</li>`
         : `<li>${checkHtml(n.checked === true)} ${inlineHtml(n.title)}${taskNodesHtml(n.children ?? [], depth + 1)}</li>`,
     )
     .join("")}</ul>`;
@@ -761,7 +761,7 @@ const tableLayout: Layout<{ title: string | null; headers: string[]; rows: strin
     paperHtml(
       tableLayout.title(m, c),
       null,
-      `${tableHtml(m.headers, m.rows)}${m.notes.length ? `<p class="mxp-muted mxp-small">${m.notes.map((n) => inlineHtml(n)).join("<br>")}</p>` : ""}`,
+      `${tableHtml(m.headers, m.rows)}${m.notes.length ? `<p class="matrx-pl-muted matrx-pl-small">${m.notes.map((n) => inlineHtml(n)).join("<br>")}</p>` : ""}`,
     ),
 };
 

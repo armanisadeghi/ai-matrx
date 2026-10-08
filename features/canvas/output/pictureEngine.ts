@@ -15,9 +15,10 @@
  *     (an `<img>` runs no script, loads nothing, and prints as vector).
  */
 
-import { createElement, type ReactNode } from "react";
+import { createElement, Suspense, type ReactNode } from "react";
 import { Provider } from "react-redux";
 import { createRoot } from "react-dom/client";
+import { TooltipProvider } from "@/components/ui/tooltip";
 import { getStoreSingleton } from "@/lib/redux/store-singleton";
 
 const MAX_SIDE = 8000;
@@ -82,6 +83,22 @@ function canvasBlob(canvas: HTMLCanvasElement): Promise<Blob> {
   );
 }
 
+/**
+ * An invisible, fully laid-out place to draw from. NOT off screen by negative offsets: the picture
+ * renderer copies the root's computed `left`/`top` into the clone, so a host at -99999px draws
+ * blank. The stage sits at 0,0 inside a 0x0 clipping wrapper — never visible, never shifted.
+ */
+function offscreenStage(css: string): { wrapper: HTMLElement; stage: HTMLElement } {
+  const wrapper = document.createElement("div");
+  wrapper.setAttribute("aria-hidden", "true");
+  wrapper.style.cssText = "position:fixed;left:0;top:0;width:0;height:0;overflow:hidden;pointer-events:none;z-index:-1";
+  const stage = document.createElement("div");
+  stage.style.cssText = `position:relative;${css}`;
+  wrapper.appendChild(stage);
+  document.body.appendChild(wrapper);
+  return { wrapper, stage };
+}
+
 const CHROME = ["react-flow__controls", "react-flow__minimap", "react-flow__panel", "react-flow__attribution"];
 
 /** The whole graph (every node, at 1:1) as a PNG — never just the visible pane. */
@@ -95,15 +112,13 @@ export async function captureFlowGraph(source: HTMLElement | null, options: { pa
   const height = Math.ceil(bounds.height + pad * 2);
   const background = opaqueBackground(flow);
 
-  const stage = document.createElement("div");
-  stage.style.cssText = `position:absolute;top:-99999px;left:-99999px;width:${width}px;height:${height}px;background:${background};pointer-events:none`;
+  const { wrapper, stage } = offscreenStage(`width:${width}px;height:${height}px;background:${background}`);
   const clone = flow.cloneNode(true) as HTMLElement;
   clone.style.cssText = `width:${width}px;height:${height}px;position:relative;overflow:hidden;background:${background}`;
   const viewport = clone.querySelector<HTMLElement>(".react-flow__viewport");
   if (!viewport) throw new Error("the graph has no drawing surface");
   viewport.style.transform = `translate(${pad - bounds.minX}px, ${pad - bounds.minY}px) scale(1)`;
   stage.appendChild(clone);
-  document.body.appendChild(stage);
   try {
     const { renderElement } = await import("@ai-matrx/alchemy/operate/capture");
     const ratio = Math.min(2, MAX_SIDE / Math.max(width, height));
@@ -116,7 +131,7 @@ export async function captureFlowGraph(source: HTMLElement | null, options: { pa
     });
     return await canvasBlob(canvas);
   } finally {
-    stage.remove();
+    wrapper.remove();
   }
 }
 
@@ -140,15 +155,14 @@ export async function withOffscreen<T>(
   options: OffscreenOptions,
   draw: (host: HTMLElement) => Promise<T>,
 ): Promise<T> {
-  const host = document.createElement("div");
-  host.setAttribute("data-matrx-offscreen-picture", "");
   const height = options.height ? `height:${options.height}px;` : "";
-  host.style.cssText = `position:fixed;top:-99999px;left:-99999px;width:${options.width}px;${height}background:${options.background ?? pageBackground()};pointer-events:none;overflow:visible`;
-  document.body.appendChild(host);
+  const { wrapper, stage: host } = offscreenStage(`width:${options.width}px;${height}background:${options.background ?? pageBackground()}`);
+  host.setAttribute("data-matrx-offscreen-picture", "");
   const store = getStoreSingleton();
   const root = createRoot(host);
   try {
-    root.render(store ? createElement(Provider, { store, children: node }) : node);
+    const boundary = createElement(TooltipProvider, { delayDuration: 200, children: createElement(Suspense, { fallback: null }, node) });
+    root.render(store ? createElement(Provider, { store, children: boundary }) : boundary);
     const deadline = Date.now() + (options.timeoutMs ?? 12000);
     let stable = 0;
     while (stable < 3) {
@@ -159,7 +173,7 @@ export async function withOffscreen<T>(
     return await draw(host);
   } finally {
     root.unmount();
-    host.remove();
+    wrapper.remove();
   }
 }
 

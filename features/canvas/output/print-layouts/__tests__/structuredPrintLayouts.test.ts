@@ -242,7 +242,7 @@ describe("the generic kind-value layout", () => {
     const fence = await htmlOf(
       getBlockPrinter("json")!.toPrintHtml!({ __kind: "progress_tracker", title: "T", phases: [{ name: "P", steps: [{ text: "s", completed: true }] }] }, { type: "json", raw: "" }),
     );
-    expect(fence).toContain("mxp-bar"); // the progress layout, not the generic one
+    expect(fence).toContain("matrx-pl-bar"); // the progress layout, not the generic one
     expect(getBlockPrinter("json")!.toPrintHtml!({ plain: "json" }, { type: "json", raw: "" })).toBeNull();
   });
 });
@@ -272,7 +272,7 @@ describe("a message's Print composes each block through its layout", () => {
       if (out && "html" in out) byType.set(type, out.html);
     }
     for (const type of ["comparison", "decision-tree", "recipe", "resources", "structured_info", "tasks", "timeline", "transcript"]) {
-      expect(byType.get(type)).toContain('class="mxp"');
+      expect(byType.get(type)).toContain('class="matrx-pl"');
       expect(RAW_JSON.test(byType.get(type)!)).toBe(false);
     }
   });
