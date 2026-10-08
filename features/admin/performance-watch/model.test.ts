@@ -57,6 +57,7 @@ function sample(over: Partial<PerfSample> = {}): PerfSample {
     release_sha: null,
     state_after: "ok",
     note: null,
+    metadata: {},
     ...over,
   };
 }
@@ -170,12 +171,13 @@ describe("subjectFields (wave 2: readable subject, never raw JSON)", () => {
             p_sort: [{ field: "work_date", direction: "asc" }],
           },
         },
+        metadata: { perf_subject_names: { table_name: "Time Entries", organization_name: "Holloway Creative" } },
       }),
     );
     expect(f).toEqual([
       { label: "Function", value: "custom.read_records_page" },
-      { label: "Table", value: "a312f617 · 25,000 records" },
-      { label: "Organization", value: "344cfaa8" },
+      { label: "Table", value: "Time Entries · 25,000 records", token: "record", id: "a312f617-a388-41f4-b1ed-37a844827684" },
+      { label: "Organization", value: "Holloway Creative", token: "organization", id: "344cfaa8-2b0c-4971-854a-9694614816f2" },
       { label: "Seat", value: "admin@admin.com" },
       { label: "Args", value: 'limit=50, search=retainer, sort=[{"field":"work_date","direction":"asc"}]' },
     ]);
@@ -191,7 +193,8 @@ describe("subjectFields (wave 2: readable subject, never raw JSON)", () => {
         },
       }),
     );
-    expect(f).toContainEqual({ label: "Table", value: "7ea2340a" });
+    // No name recorded yet: the short id still opens the table.
+    expect(f).toContainEqual({ label: "Table", value: "7ea2340a", token: "record", id: "7ea2340a-f0a8-4a4f-a8f6-29c8604d63cd" });
     expect(f).toContainEqual({ label: "Args", value: "record_ids=2 ids" });
   });
 
@@ -203,6 +206,11 @@ describe("subjectFields (wave 2: readable subject, never raw JSON)", () => {
       { label: "Matches", value: '"custom"."data_home"(' },
     ]);
     expect(measuresLine(w)).toBe("Mean, all real callers");
+  });
+
+  it("names the watch's own seat (member twins), not always the admin seat", () => {
+    const f = subjectFields(watch({ perf_subject: { schema: "custom", function: "views", seat_email: "hugo.waelchi.cfd403@fixtures.aimatrx.com", args: {} } }));
+    expect(f).toContainEqual({ label: "Seat", value: "hugo.waelchi.cfd403@fixtures.aimatrx.com" });
   });
 
   it("is empty for a missing subject", () => {
@@ -218,5 +226,15 @@ describe("watchReason / isLargeTwin", () => {
   it("knows a large twin by its slug", () => {
     expect(isLargeTwin(watch({ slug: "door:custom.views@large" }))).toBe(true);
     expect(isLargeTwin(watch())).toBe(false);
+  });
+});
+
+describe("judgedValue p75 (vitals)", () => {
+  it("reads p75 from the sample's metadata", () => {
+    const sample = { id: "s", check_id: "c", measured_at: "2026-10-08T23:00:00Z", source: "vital", n: 40, p50_ms: 1000, p95_ms: 9000,
+      max_ms: 9000, mean_ms: 2000, calls: null, errors: 0, bytes: null, release_sha: null, state_after: "ok", note: null,
+      metadata: { p75_ms: 3100 } } as PerfSample;
+    expect(judgedValue(sample, "p75")).toBe(3100);
+    expect(judgedValue({ ...sample, metadata: {} }, "p75")).toBeNull();
   });
 });

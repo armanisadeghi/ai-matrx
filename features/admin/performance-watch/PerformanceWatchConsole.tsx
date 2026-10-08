@@ -27,6 +27,7 @@ import {
   createAdminReportingScope,
 } from "@/features/surfaces/manifests/admin-reporting.manifest";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import {
   PERF_STATES,
   PERF_STATE_LABELS,
@@ -496,9 +497,18 @@ function WatchDrill({
       ) : null}
       {subjectFields(w).length ? (
         <dl className="grid grid-cols-2 gap-x-4 gap-y-1 rounded-md border border-border bg-card/50 p-2 text-xs sm:grid-cols-4">
-          {subjectFields(w).map((f) => (
-            <Fact key={f.label} label={f.label} value={f.value} />
-          ))}
+          {subjectFields(w).map((f) =>
+            f.token && f.id ? (
+              <div key={f.label} className="min-w-0">
+                <dt className="text-[11px] text-muted-foreground">{f.label}</dt>
+                <dd className="truncate font-medium">
+                  <EntityRef token={f.token} id={f.id} name={f.value} />
+                </dd>
+              </div>
+            ) : (
+              <Fact key={f.label} label={f.label} value={f.value} />
+            ),
+          )}
         </dl>
       ) : null}
       <WatchEditor watch={w} onEdit={onEdit} />
@@ -639,7 +649,7 @@ function SampleTable({
       <table className="w-full text-xs">
         <thead className="bg-muted/40 text-left text-[11px] text-muted-foreground">
           <tr>
-            {["Measured", "Source", "n", "p50", "p95", "Max", "Mean", "Calls", "Errors", "Bytes", "State", "Note", "Release"].map((h) => (
+            {["Measured", "Source", "n", "p50", ...(stat === "p75" ? ["p75"] : []), "p95", "Max", "Mean", "Calls", "Errors", "Bytes", "State", "Note", "Release"].map((h) => (
               <th key={h} className={`px-2 py-1 font-medium ${h === "Measured" || h === "Source" || h === "State" || h === "Note" || h === "Release" ? "" : "text-right"}`}>
                 {h}
               </th>
@@ -658,6 +668,9 @@ function SampleTable({
                 <td className="px-2 py-1 text-muted-foreground">{s.source}</td>
                 <td className="px-2 py-1 text-right tabular-nums">{s.n ?? "—"}</td>
                 <td className={`px-2 py-1 text-right tabular-nums ${over && stat === "p50" ? "font-medium text-warning" : ""}`}>{ms(s.p50_ms)}</td>
+                {stat === "p75" ? (
+                  <td className={`px-2 py-1 text-right tabular-nums ${over ? "font-medium text-warning" : ""}`}>{ms(judged)}</td>
+                ) : null}
                 <td className={`px-2 py-1 text-right tabular-nums ${over && stat === "p95" ? "font-medium text-warning" : ""}`}>{ms(s.p95_ms)}</td>
                 <td className="px-2 py-1 text-right tabular-nums text-muted-foreground">{ms(s.max_ms)}</td>
                 <td className={`px-2 py-1 text-right tabular-nums ${over && stat === "mean" ? "font-medium text-warning" : ""}`}>{ms(s.mean_ms)}</td>

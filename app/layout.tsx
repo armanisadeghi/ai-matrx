@@ -42,6 +42,7 @@ import { syncPolicies } from "@/lib/sync/registry";
 import { ChunkRecoveryBootScript } from "@/components/errors/ChunkRecoveryBootScript";
 import { NewVersionWatcher } from "@/components/errors/NewVersionWatcher";
 import { UserAcquisitionCapture } from "@/lib/product-analytics/UserAcquisitionCapture";
+import { PerfVitalsReporter } from "@/lib/perf/PerfVitalsReporter";
 import { AgentTrafficForwarder } from "@/lib/agent-traffic/AgentTrafficForwarder";
 import { DevWalkMonitor } from "@/components/dev/DevWalkMonitor";
 
@@ -136,6 +137,7 @@ export default async function RootLayout({ children }: RootLayoutProps) {
           {children}
           <AgentTrafficForwarder />
           <UserAcquisitionCapture />
+          <PerfVitalsReporter />
           <Sonner />
           {/* Consent-based new-version prompt + post-boot stale-chunk guard.
                         Bakes THIS deployment's id in server-side so the client can

@@ -73,6 +73,7 @@ export type PerfSample = Pick<
   | "release_sha"
   | "state_after"
   | "note"
+  | "metadata"
 >;
 
 /** The edit door's arguments (ops.perf_watch_update); undefined leaves a value as it is. */
@@ -92,6 +93,11 @@ export function judgedValue(sample: PerfSample, stat: string | null): number | n
       return sample.p95_ms;
     case "mean":
       return sample.mean_ms;
+    case "p75": {
+      // Vitals carry p75 (web.dev's percentile) in the sample's metadata.
+      const m = isRecord(sample.metadata) ? sample.metadata.p75_ms : null;
+      return typeof m === "number" ? m : null;
+    }
     default:
       return null;
   }
@@ -240,6 +246,9 @@ export function measuresLine(watch: Pick<PerfWatch, "perf_kind">): string {
 export interface SubjectField {
   label: string;
   value: string;
+  /** When set, the value names a record that opens (EntityRef token + id). */
+  token?: "record" | "organization";
+  id?: string;
 }
 
 const PROBE_SEAT = "admin@admin.com";
@@ -259,7 +268,7 @@ function argValue(v: unknown): string {
 }
 
 /** The watch's subject as readable fields (function, table, seat, args) instead of raw JSON. */
-export function subjectFields(watch: Pick<PerfWatch, "perf_kind" | "perf_subject">): SubjectField[] {
+export function subjectFields(watch: Pick<PerfWatch, "perf_kind" | "perf_subject" | "metadata">): SubjectField[] {
   const s = isRecord(watch.perf_subject) ? watch.perf_subject : null;
   if (!s) return [];
   const out: SubjectField[] = [];
@@ -268,14 +277,32 @@ export function subjectFields(watch: Pick<PerfWatch, "perf_kind" | "perf_subject
   }
   const args = isRecord(s.args) ? s.args : {};
   const source = isRecord(args.p_source) ? args.p_source : null;
-  const table = shortId(args.p_table_id) ?? shortId(source?.id);
-  if (table) {
+  // Names come from metadata.perf_subject_names (written by ops.perf_watch_declare).
+  const names = isRecord(watch.metadata) && isRecord(watch.metadata.perf_subject_names) ? watch.metadata.perf_subject_names : {};
+  const tableId = typeof args.p_table_id === "string" ? args.p_table_id : typeof source?.id === "string" ? source.id : null;
+  if (tableId) {
     const records = typeof s.table_records === "number" ? ` · ${s.table_records.toLocaleString("en-US")} records` : "";
-    out.push({ label: "Table", value: `${table}${records}` });
+    const name = typeof names.table_name === "string" ? names.table_name : shortId(tableId);
+    out.push({ label: "Table", value: `${name}${records}`, token: "record", id: tableId });
   }
-  const org = shortId(args.p_organization_id);
-  if (org) out.push({ label: "Organization", value: org });
-  if (watch.perf_kind === "door") out.push({ label: "Seat", value: PROBE_SEAT });
+  const orgId = typeof args.p_organization_id === "string" ? args.p_organization_id : null;
+  if (orgId) {
+    const name = typeof names.organization_name === "string" ? names.organization_name : (shortId(orgId) ?? orgId);
+    out.push({ label: "Organization", value: name, token: "organization", id: orgId });
+  }
+  if (watch.perf_kind === "door") {
+    out.push({ label: "Seat", value: typeof s.seat_email === "string" && s.seat_email ? s.seat_email : PROBE_SEAT });
+  }
+  if (watch.perf_kind === "job") {
+    if (typeof s.scheduler === "string") out.push({ label: "Scheduler", value: s.scheduler });
+    if (typeof s.schedule === "string") out.push({ label: "Schedule", value: s.schedule });
+    if (typeof s.budget_basis === "string") out.push({ label: "Budget basis", value: s.budget_basis });
+  }
+  if (watch.perf_kind === "vital") {
+    if (typeof s.route === "string") out.push({ label: "Route", value: s.route });
+    if (typeof s.unit === "string") out.push({ label: "Unit", value: s.unit });
+    out.push({ label: "Callers", value: "Sampled real page loads" });
+  }
   if (watch.perf_kind === "statement") {
     out.push({ label: "Callers", value: "All real callers" });
     if (typeof s.match === "string") out.push({ label: "Matches", value: s.match });

@@ -16,7 +16,7 @@ import type { PerfSample, PerfWatch, PerfWatchEdit } from "./model";
 const WATCH_COLUMNS =
   "id, slug, label, owner, source_feature, is_active, live_every_seconds, perf_kind, perf_subject, budget_ms, budget_stat, perf_state, perf_state_since, perf_baseline_ms, perf_baseline_pinned, perf_last_alert_at, metadata";
 const SAMPLE_COLUMNS =
-  "id, check_id, measured_at, source, n, p50_ms, p95_ms, max_ms, mean_ms, calls, errors, bytes, release_sha, state_after, note";
+  "id, check_id, measured_at, source, n, p50_ms, p95_ms, max_ms, mean_ms, calls, errors, bytes, release_sha, state_after, note, metadata";
 
 export interface PerfSnapshot {
   watches: PerfWatch[];

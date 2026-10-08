@@ -1,6 +1,6 @@
 {
   "note": "Checked-in snapshot of public._schema_migrations for the files under migrations/campaign and migrations/inverse. Written by `pnpm db:apply` on every successful production apply and refreshed whole by the nightly catch-up. Never hand-edited: a self-written checksum is a claim nobody can check. Guard: pnpm check:ledgered-files-unedited.",
-  "generated_at": "2026-10-08T23:13:59.045Z",
+  "generated_at": "2026-10-08T23:27:05.505Z",
   "files": {
     "migrations/campaign/a_chunk_is_the_size_the_client_door_can_actually_carry.sql": {
       "source": "matrx-frontend",
@@ -3752,6 +3752,12 @@
       "checksum": "90612364079192c8b7eb96a4ad2102f6cfc49219179276b48edee589fcac6f67",
       "applied_at": "2026-10-08 23:09:42.86433+00"
     },
+    "migrations/campaign/hotdoors4_c_kernel_batch_on.sql": {
+      "source": "matrx-frontend",
+      "filename": "hotdoors4_c_kernel_batch_on.sql",
+      "checksum": "1cb4b49fceeacc83008dc882391939f3a2d1b47089e0f815eef3fa5ac8511544",
+      "applied_at": "2026-10-08 23:27:04.454698+00"
+    },
     "migrations/campaign/hotdoors_a_the_list_filter_inlines_and_a_page_walks_once.sql": {
       "source": "matrx-frontend",
       "filename": "hotdoors_a_the_list_filter_inlines_and_a_page_walks_once.sql",
@@ -5167,6 +5173,12 @@
       "filename": "perf_watch_w3_g_vitals_and_cli.sql",
       "checksum": "95dcf7ba4ded6da9e829c599d98a861f613af9e8cdefcb0741266fca855ff3a8",
       "applied_at": "2026-10-08 23:13:53.682133+00"
+    },
+    "migrations/campaign/perf_watch_w3_h_subject_names.sql": {
+      "source": "matrx-frontend",
+      "filename": "perf_watch_w3_h_subject_names.sql",
+      "checksum": "3b897fde64014073fe03dac5f8a20bb64bd7d3e99c6e10aeb8a8b98855882825",
+      "applied_at": "2026-10-08 23:21:16.323973+00"
     },
     "migrations/campaign/perffix1_a_the_read_doors_ask_the_ladder_once.sql": {
       "source": "matrx-frontend",
