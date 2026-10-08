@@ -50,11 +50,23 @@ function AiBlockView({ p, ctx }: { p: Record<string, unknown>; ctx: Ctx }) {
   const { byId } = useSpaces();
   const input = useRef<HTMLTextAreaElement>(null);
   useEffect(() => setDraft(prompt), [prompt]);
-  // Keys typed in the prompt are the prompt's (ProseMirror and the page's key handlers listen above it).
+  // Keys typed in the prompt are the prompt's (ProseMirror and the page's key handlers listen above it), so
+  // they stop at the field — which React's own handlers (at the root) then never see: Enter / Escape are here.
+  const keys = useRef<(e: KeyboardEvent) => void>(() => {});
+  keys.current = (e) => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      void generate(input.current?.value ?? draft);
+    }
+    if (e.key === "Escape" && output) setEditing(false);
+  };
   useEffect(() => {
     const el = input.current;
     if (!el) return;
-    const keep = (e: Event) => e.stopPropagation();
+    const keep = (e: Event) => {
+      e.stopPropagation();
+      if (e.type === "keydown") keys.current(e as KeyboardEvent);
+    };
     const types = ["keydown", "keypress", "keyup", "beforeinput", "paste", "mousedown", "pointerdown"] as const;
     types.forEach((t) => el.addEventListener(t, keep));
     return () => types.forEach((t) => el.removeEventListener(t, keep));
@@ -102,13 +114,6 @@ function AiBlockView({ p, ctx }: { p: Record<string, unknown>; ctx: Ctx }) {
               value={draft}
               autoFocus
               onChange={(e) => setDraft(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter" && !e.shiftKey) {
-                  e.preventDefault();
-                  void generate(draft);
-                }
-                if (e.key === "Escape" && output) setEditing(false);
-              }}
             />
             <Button variant="primary" disabled={!ai.wired || !draft.trim()} onClick={() => void generate(draft)}>
               Generate

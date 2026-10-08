@@ -1950,7 +1950,7 @@ button.spaces-page-prop-name:hover { background: var(--spaces-hover); }
 .spaces-ai-block[data-state="empty"], .spaces-ai-block[data-state="running"] { box-shadow: 0 0 0 1px var(--border); padding: 6px 8px; }
 .spaces-ai-block-ask { display: flex; align-items: center; gap: 8px; }
 .spaces-ai-block-icon { flex: 0 0 auto; color: var(--primary); }
-.spaces-ai-block-input { flex: 1 1 auto; resize: none; border: 0; outline: none; background: transparent; font-size: 15px; line-height: 1.5; color: inherit; padding: 4px 0; }
+.spaces-ai-block-input { flex: 1 1 auto; field-sizing: content; min-height: 30px; resize: none; border: 0; outline: none; background: transparent; font-size: 15px; line-height: 1.5; color: inherit; padding: 4px 0; }
 .spaces-ai-block-input::placeholder { color: var(--spaces-ink-faint, var(--muted-foreground)); }
 .spaces-ai-block-body { font-size: 16px; }
 .spaces-ai-block-status { display: flex; align-items: center; gap: 6px; color: var(--spaces-ink-soft); font-size: 14px; }
