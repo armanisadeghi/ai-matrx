@@ -36,10 +36,19 @@ export class EnvelopeRefusal extends Error {
   }
 }
 
+// Every write names its organization (law): the envelope's own, learned when its state is read — a
+// page that opens on an envelope and finishes what completion owes must not wait on a selection.
+const organizationOf = new Map<string, string>();
+function scopeFor(envelopeId: string): { scopeOverrides?: { organization_id: string } } {
+  const organization_id = organizationOf.get(envelopeId);
+  return organization_id ? { scopeOverrides: { organization_id } } : {};
+}
+
 function read<T>(result: ApiCallResult): T {
   if (!result.error && result.data !== undefined) return result.data as T;
   const detail = result.error?.serverDetail as { detail?: { message?: unknown } } | undefined;
   const message = detail?.detail?.message;
+  if (typeof message !== "string" || message === "") console.error("[esign] the server did not answer the sender", result.error);
   throw new EnvelopeRefusal(
     typeof message === "string" && message !== ""
       ? message
@@ -121,6 +130,8 @@ export async function fetchEnvelope(envelopeId: string): Promise<EnvelopeState |
     | ({ granted?: boolean; scheduled_notices?: Record<string, unknown>[] } & Partial<Omit<EnvelopeState, "scheduledNotices">>)
     | null;
   if (!answer?.granted) return null;
+  const organizationId = answer.envelope?.organization_id;
+  if (typeof organizationId === "string") organizationOf.set(envelopeId, organizationId);
   return {
     envelope: answer.envelope ?? {},
     documents: answer.documents ?? [],
@@ -144,23 +155,7 @@ export async function verifyEnvelope(dispatch: AppDispatch, envelopeId: string):
         path: "/esign/envelopes/{envelope_id}/verify",
         method: "POST",
         pathParams: { envelope_id: envelopeId },
-        expectedErrorStatuses: [403, 409],
-      }),
-    ),
-  );
-}
-
-/**
- * The signed copy of each document of a completed envelope. The server makes any copy that is
- * still missing, so this both reads and finishes the job; `not_completed` until the last signature.
- */
-export async function requestSignedCopies(dispatch: AppDispatch, envelopeId: string): Promise<EnvelopeActAnswer> {
-  return read<EnvelopeActAnswer>(
-    await dispatch(
-      callApi({
-        path: "/esign/envelopes/{envelope_id}/signed-copy",
-        method: "POST",
-        pathParams: { envelope_id: envelopeId },
+        ...scopeFor(envelopeId),
         expectedErrorStatuses: [403, 409],
       }),
     ),
@@ -184,6 +179,7 @@ export async function remindEnvelope(dispatch: AppDispatch, envelopeId: string):
         path: "/esign/envelopes/{envelope_id}/remind",
         method: "POST",
         pathParams: { envelope_id: envelopeId },
+        ...scopeFor(envelopeId),
         expectedErrorStatuses: [403, 409],
       }),
     ),
@@ -202,6 +198,7 @@ export async function resendToSigner(
         path: "/esign/envelopes/{envelope_id}/signers/{signer_id}/resend",
         method: "POST",
         pathParams: { envelope_id: envelopeId, signer_id: signerId },
+        ...scopeFor(envelopeId),
         body: { email },
         expectedErrorStatuses: [403, 409, 422],
       }),
@@ -216,6 +213,7 @@ export async function voidEnvelope(dispatch: AppDispatch, envelopeId: string, re
         path: "/esign/envelopes/{envelope_id}/void",
         method: "POST",
         pathParams: { envelope_id: envelopeId },
+        ...scopeFor(envelopeId),
         body: { reason },
         expectedErrorStatuses: [403, 409, 422],
       }),
@@ -237,6 +235,7 @@ async function post<T>(dispatch: AppDispatch, path: string, envelopeId: string, 
       path,
       method: "POST",
       pathParams: { envelope_id: envelopeId },
+      ...scopeFor(envelopeId),
       body,
       expectedErrorStatuses: [403, 404, 409, 422],
     } as unknown as Parameters<typeof callApi>[0]),

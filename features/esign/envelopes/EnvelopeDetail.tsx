@@ -34,7 +34,6 @@ import {
   fetchEnvelope,
   finalizeEnvelope,
   remindEnvelope,
-  requestSignedCopies,
   resendToSigner,
   verifyEnvelope,
   voidEnvelope,
@@ -157,28 +156,12 @@ export function EnvelopeDetail({ envelopeId }: { envelopeId: string }) {
               setSignedCopies(copies);
               setCertificateFile(out.certificate_file_id ?? null);
             })
-            .catch(() =>
-              // The finalize route is the parity server's; the older door still makes copies.
-              requestSignedCopies(dispatch, envelopeId)
-                .then((answer) => {
-                  if (!live) return;
-                  if (!answer.granted) {
-                    setFinalizeError(refusalText(answer.reason));
-                    return;
-                  }
-                  const copies: Record<string, string> = {};
-                  const list: unknown[] = Array.isArray(answer.signed_copies) ? answer.signed_copies : [];
-                  for (const c of list) {
-                    const doc = text(asRecord(c), "document_id");
-                    const file = text(asRecord(c), "file_id");
-                    if (doc && file) copies[doc] = file;
-                  }
-                  setSignedCopies(copies);
-                })
-                .catch((err: unknown) => live && setFinalizeError(err instanceof Error ? err.message : "The signed copy could not be made.")),
-            );
-          void verifyEnvelope(dispatch, envelopeId)
-            .then((v) => live && setVerdict(v))
+            .catch((err: unknown) => {
+              if (live) setFinalizeError(err instanceof Error ? err.message : "The signed copy could not be made.");
+            })
+            // Verify reads what finalize made, so it waits for it (a copy still owed would not check).
+            .then(() => (live ? verifyEnvelope(dispatch, envelopeId) : null))
+            .then((v) => live && v && setVerdict(v))
             .catch(() => live && setVerdict({ granted: false, reason: "unavailable" }));
         }
       })

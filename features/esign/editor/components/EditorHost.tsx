@@ -26,6 +26,10 @@ const FilePickerWindow = dynamic(
   { ssr: false, loading: () => null },
 );
 
+// Staging: the editor lives at /esign/v2/<id> until the production swap (CONTRACT §17); then "/esign".
+const DRAFT_BASE = "/esign/v2";
+const draftHref = (id: string) => `${DRAFT_BASE}/${id}`;
+
 type Source =
   | { kind: "new" }
   | { kind: "draft"; envelopeId: string }
@@ -86,7 +90,7 @@ export function EditorHost({ source }: { source: Source }) {
           templateId: source.kind === "from_template" ? source.templateId : undefined,
           copyOfEnvelopeId: source.kind === "copy" ? source.envelopeId : undefined,
         });
-        window.history.replaceState(null, "", `/esign/${made.envelopeId}`);
+        window.history.replaceState(null, "", draftHref(made.envelopeId));
         return { envelopeId: made.envelopeId, draft: made.composition, confirmed: made.composition, revision: made.revision, restored: false, template: null, organizationId } satisfies Loaded;
       }
       if (source.templateId) {
@@ -148,7 +152,7 @@ export function EditorHost({ source }: { source: Source }) {
         uploader={uploader}
         restoredNotice={loaded.restored}
         backHref={source.kind === "template" ? "/esign/templates" : "/esign"}
-        onCreated={(id) => window.history.replaceState(null, "", `/esign/${id}`)}
+        onCreated={(id) => window.history.replaceState(null, "", draftHref(id))}
         onTemplateSaved={(id) => source.kind === "template" && !source.templateId && router.replace(`/esign/templates/${id}`)}
       />
       <FilePickerWindow
