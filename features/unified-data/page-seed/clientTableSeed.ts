@@ -52,7 +52,7 @@ function racingDataSource(source: RecordsDataSource, server: Promise<TablePageSe
 export async function askClientTableSeed(
   dataSource: RecordsDataSource,
   tableId: string,
-  options: { userId?: string | null; rows?: boolean; server?: Promise<TablePageSeed | null> } = {},
+  options: { userId?: string | null; rows?: boolean; recordId?: string | null; server?: Promise<TablePageSeed | null> } = {},
 ): Promise<TablePageSeed | null> {
   try {
     // `server` is React's streamed thenable: adopt it so it chains as a Promise. Never rejects.
@@ -73,8 +73,10 @@ export async function askClientTableSeed(
       tableId,
       actor: options.userId ? { actor: "user", user_id: options.userId } : { actor: "user" },
       rows: options.rows !== false,
+      recordId: options.recordId ?? null,
     });
     const bundle = records.answers.find((a) => a.door === "table_page_bundle");
+    const recordBundle = options.recordId ? records.answers.find((a) => a.door === "record_page_bundle") : undefined;
     return {
       tableId,
       where: {
@@ -89,6 +91,8 @@ export async function askClientTableSeed(
       },
       organizationId: where.organizationId,
       bundle: bundle ? { data: bundle.data, error: null } : null,
+      recordId: options.recordId ?? null,
+      recordBundle: recordBundle ? { data: recordBundle.data, error: null } : null,
       records,
     };
   } catch (thrown: unknown) {

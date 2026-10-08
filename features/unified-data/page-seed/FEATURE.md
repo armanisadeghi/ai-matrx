@@ -25,7 +25,7 @@ signed-in person, while the browser is still loading the app. With the person's 
 
 | Knob | Default | Meaning |
 |---|---|---|
-| `data/server_rows` | off (ON per person for admin@admin.com, test@test.com) | draw the grid's first page in the server's HTML |
+| `data/server_rows` | ON (platform, 2026-10-08) | draw the grid's first page in the server's HTML when the server's seed wins the race |
 | `data/server_rows_cap_ms` | 1200 | the longest the page waits for the server's reads, counted from the request's start; past it gate = off, seed = null, the browser asks at once |
 | `data/server_rows_budget_ms` | 8000 | retired by SSR-ROWS-3 (no reader); archiving it is a platform-admin act, still to do |
 
@@ -95,4 +95,11 @@ Rule: flip ON only if every ON ≤ its paired OFF + 300 ms. Run 7 cold breaks it
 first one after the deploy went live. The page's first store call came at 5032 ms, and the same
 run's `/data` cold load (no page seed involved) first read at 6487 ms, so it was an app-wide cold
 start. Every other comparison passes, with ON 0.3–0.9 s faster than OFF.
-**Platform default left OFF pending the coordinator's ruling on run 7.**
+**Ruling (coordinator, 2026-10-08):** run 7 was a stall right after a deploy and does not count.
+**`data/server_rows` is ON for the platform**, set through `platform.feature_knob_set`. The knob's
+`basis` records the ruling and these pairs (campaign `ssr_rows_3b_server_rows_on_basis.sql`). The
+test accounts' per-person ON overrides were removed, so the platform default is what applies.
+
+The record page (`PrimedRecordPage`) races the same way: the server's seed for that record against
+the browser's own (`askClientTableSeed` with `recordId`, the record's bundle). Until one lands it
+shows `RecordRouteSkeleton`, the same component its `loading.tsx` draws.
