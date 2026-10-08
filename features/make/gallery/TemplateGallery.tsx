@@ -290,7 +290,7 @@ export function InstalledOneOffs() {
               <span className="truncate text-sm font-medium text-foreground">{card.name}</span>
               {card.footprint?.line ? <span className="truncate text-xs text-muted-foreground">{card.footprint.line}</span> : null}
             </div>
-            <TemplatePreview templateId={card.id} bare />
+            <TemplatePreview templateId={card.id} bare installedOneOff />
           </li>
         ))}
       </ul>
@@ -340,8 +340,11 @@ export function TemplatePreview({
   onInstalled,
   productName,
   installLabel = "Install",
+  installedOneOff = false,
 }: {
   templateId: string;
+  /** A one-off a describe run already installed (/make's "Made from your descriptions"): no Install, no gallery-template actions; Show what it made, Remove, Save as my template stay. */
+  installedOneOff?: boolean;
   /** The install button's name where the host calls the act something else (an Applet template: "Use this template"). */
   installLabel?: string;
   bare?: boolean;
@@ -556,7 +559,7 @@ export function TemplatePreview({
                 </Button>
               ) : null}
             </>
-          ) : (
+          ) : installedOneOff && !stuck && run.phase !== "running" ? null : (
             <Button icon={run.phase === "running" && run.door === "template_install" ? <Loader2 className="animate-spin" /> : null} variant="primary" onClick={install} disabled={run.phase === "running"} data-make-template-install={stuck ? "finish" : ""}>
               {stuck ? "Finish install" : installLabel}
             </Button>
@@ -573,7 +576,7 @@ export function TemplatePreview({
           ) : null}
           <SavesTo />
           {card.scope === "org" && card.ephemeral ? <KeepOneOff templateId={card.id} kept={read.reload} /> : null}
-          {card.scope === "org" ? <ArchiveOrgTemplate templateId={card.id} name={card.name} /> : null}
+          {card.scope === "org" && !installedOneOff ? <ArchiveOrgTemplate templateId={card.id} name={card.name} /> : null}
         </div>
 
         {askOrganization && !organizationId ? (
