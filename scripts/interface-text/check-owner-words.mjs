@@ -11,7 +11,7 @@
  * TYPED (Claude Code transcripts) and his own documents (common-docs inbox + VISION docs).
  *
  * Every unit whose text overlaps his words is marked `owner_words`. Review never fixes such a unit:
- * it decides only whether the overlap is his guidance (→ keep.json + his review page) or text he
+ * it decides only whether the overlap is his guidance (→ keep.json) or text he
  * pasted to complain about (→ normal sweep, citing the message).
  *
  * Usage:
