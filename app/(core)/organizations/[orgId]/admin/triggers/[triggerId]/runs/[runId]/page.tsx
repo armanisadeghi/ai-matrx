@@ -36,7 +36,7 @@ function RunDetail({ orgSlug, triggerId, runId }: { orgSlug: string; triggerId: 
 
   const rows: [string, React.ReactNode][] = run
     ? [
-        ["When", run.run_at],
+        ["When", run.run_at ? new Date(run.run_at).toLocaleString() : "—"],
         ["Status", run.status ?? "unknown"],
         ["Cost", format(run.cost)],
         ["Turns", String(run.turns)],
