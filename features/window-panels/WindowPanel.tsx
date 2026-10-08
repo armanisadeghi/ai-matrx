@@ -122,6 +122,9 @@ interface HandleDef {
   className: string;
 }
 
+/** How long after opening a window places itself without gliding (the entrance is 400ms). */
+const GLIDE_SETTLE_MS = 800;
+
 const HANDLES: HandleDef[] = [
   {
     edge: "e",
@@ -857,6 +860,15 @@ export function WindowPanel({
   // `initialRect` place, and only for an explicit preset (the cascade default
   // is never re-run; it advances a shared counter).
   const fitPlacedRef = useRef(false);
+  // NO GLIDE WHILE THE WINDOW IS STILL BEING PLACED (2026-10-08, owner: windows "appear, then
+  // slide into place"). Opening a window measures its content and re-places it in the frames
+  // after the first paint; with `glide` on, each correction animated across the screen. Glide
+  // only programmatic moves made after the opening settles (snap, arrange, tray, restore).
+  const [glideReady, setGlideReady] = useState(false);
+  useEffect(() => {
+    const timer = window.setTimeout(() => setGlideReady(true), GLIDE_SETTLE_MS);
+    return () => window.clearTimeout(timer);
+  }, []);
   useEffect(() => {
     if (isInteracting) fitPlacedRef.current = true;
   }, [isInteracting]);
@@ -1610,7 +1622,7 @@ export function WindowPanel({
         isMaximized ? "overflow-hidden" : "overflow-visible",
         motionStyles.enter,
         // Programmatic rect changes glide; pointer drag/resize stays 1:1.
-        !isInteracting && motionStyles.glide,
+        glideReady && !isInteracting && motionStyles.glide,
         // Drag-out candidate: ring-2 highlight signals "release here to pop out".
         isPopoutCandidate &&
           "ring-2 ring-primary ring-offset-2 ring-offset-background transition-shadow",
