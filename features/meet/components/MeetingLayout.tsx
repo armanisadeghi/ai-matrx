@@ -21,7 +21,7 @@
 import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import {
   MeetRoot,
-  MeetingRoom,
+  MeetingSkinRoot,
   useMeetSnapshot,
   type MeetingRecord,
   type RoomName,
@@ -155,7 +155,7 @@ export function MeetingLayout({
 
   return (
     <div ref={roomRef} className="relative h-full w-full">
-      <MeetingRoom
+      <MeetingSkinRoot
         roomName={roomName}
         meetingId={meetingId}
         slug={slug}

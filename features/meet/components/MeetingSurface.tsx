@@ -392,7 +392,7 @@ function MemberRoomBody({ meeting }: { meeting: MeetingRecord }) {
           `ended_at` is set, and this prop is how it knows before — or without —
           a durable-feed read. */}
       {/* Room or Board — the viewer's choice while connected; everything
-          before and after the room is still `<MeetingRoom>` (MeetingLayout). */}
+          before and after the room is still `<MeetingSkinRoot>` (MeetingLayout). */}
       <MeetingLayout
         key={claimGeneration}
         roomName={meeting.roomName}

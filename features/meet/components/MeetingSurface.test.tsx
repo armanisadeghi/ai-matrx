@@ -32,7 +32,8 @@ jest.mock("@ai-matrx/meet/react", () => ({
   MeetProvider: ({ children }: { children: React.ReactNode }) => (
     <div data-testid="guest-provider">{children}</div>
   ),
-  MeetingRoom: () => <div data-testid="member-room" />,
+  MeetingSkinRoot: () => <div data-testid="member-room" />,
+  MeetRoot: ({ children }: { children?: React.ReactNode }) => <>{children}</>,
   useMeetHost: () => mockMeetHost,
   useMeetSnapshot: () => null,
   createWebRoomTokenStorage: () => ({

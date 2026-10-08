@@ -18,11 +18,11 @@
 import { useRef, useState } from "react";
 import { ChevronDown, ChevronUp, GripHorizontal, Users } from "lucide-react";
 import {
-  ParticipantTile,
   orderParticipants,
   useMeetSnapshot,
   useRoom,
 } from "@ai-matrx/meet/react";
+import { ParticipantTile } from "@ai-matrx/meet/skins/meet";
 import { cn } from "@/lib/utils";
 
 /** How many faces the strip shows before it counts the rest. */

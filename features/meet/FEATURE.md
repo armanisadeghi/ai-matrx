@@ -26,7 +26,7 @@ chrome, and the routes.
 | Guests (invitees + RSVP), used by the page AND the Invite panel | [`components/manage/MeetingGuests.tsx`](./components/manage/MeetingGuests.tsx), [`GuestPicker.tsx`](./components/manage/GuestPicker.tsx) |
 | RSVP: in-app Going? / pre-join / the emailed-link page `/rsvp/[secret]` | [`components/manage/RsvpControl.tsx`](./components/manage/RsvpControl.tsx), [`PreJoinRsvp.tsx`](./components/manage/PreJoinRsvp.tsx), [`components/rsvp/RsvpLanding.tsx`](./components/rsvp/RsvpLanding.tsx) |
 | The Invite panel (link, invitation, calendar, invite people) | [`components/invite/`](./components/invite/) (`MeetingInviteButton`, `MeetingInviteDialog`); text + calendar event in [`lib/invitation.ts`](./lib/invitation.ts); calendar links/.ics in [`../../lib/calendar/eventLinks.ts`](../../lib/calendar/eventLinks.ts) |
-| The meeting RECORD after `ended_at` | the package's `<MeetingRecordView>`, routed to by `<MeetingRoom>` — nothing here |
+| The meeting RECORD after `ended_at` | the package's `<MeetingRecordView>`, routed to by `<MeetingSkinRoot>` — nothing here |
 | Room ⇄ Board layout choice (connected phase only; per viewer, this browser) | [`components/MeetingLayout.tsx`](./components/MeetingLayout.tsx) |
 | One meeting, one box: the home and the live room in the same place (Board meeting tile) — Join switches to `MeetingSurface chrome="embedded"` (stage contained by `--mx-meet-height: 100%`, @ai-matrx/meet 0.7.78), Leave or Details returns; the home stays mounted so its agent surface keeps answering | [`components/MeetingHomeAndRoom.tsx`](./components/MeetingHomeAndRoom.tsx) |
 | The Board layout — the person's own Board (`UserBoard`) as a saved board linked to the meeting + floating people strip + captions; the "Meeting notes" parts are a registered board item type | [`components/board/`](./components/board/) (`MeetingBoard`, `PeopleStrip`, `MeetingNotesBodies`, `useGuestMeetingBoard`, `LayoutSwitch`), `features/board/items/meeting-items.tsx` |
@@ -74,7 +74,7 @@ deployed. The satellite hosts still hand `/meet/*` back to the main origin.
   meeting's own setting, then the organization's `meet.guest_record_access`
   knob, then the platform default `summary`. This repo changed **nothing** for
   it: `GuestRoom` already mounts the provider with the resolved meeting row and
-  `<MeetingRoom>` already flips to the record when `ended_at` is set. An
+  `<MeetingSkinRoot>` already flips to the record when `ended_at` is set. An
   administrator changes the organization's answer at
   **/administration/users/limits → Feature knobs**; a host changes one meeting's
   from the record view or the People panel.
@@ -88,11 +88,11 @@ belonged (C22, THE SAME-SESSION LAW):
 
 | What 0.2.0 forced | What is here now |
 |---|---|
-| `<PreJoin>` looped on an uncached `getSnapshot` and killed every room | Nothing. `<MeetingRoom>` renders. |
+| `<PreJoin>` looped on an uncached `getSnapshot` and killed every room | Nothing. `<MeetingSkinRoot>` renders. |
 | `lib/meetClient.ts` — one cast, because the public `client` prop sent tsc into TS2589 | Deleted. `<MeetProvider client={supabase}>` and `createMeetRepository({ client: supabase })` take the app's own client directly. |
 | `components/MeetCallSurfaces.tsx` — guards, because `<IncomingCallHost/>` and `<CallButton/>` threw while the provider was inert | Deleted. Both are mounted directly; they render nothing on their own until there is a runtime. |
 | The house rule "import everything from `@ai-matrx/meet/react`", because two declaration files re-declared every branded type | No longer required (one dts pass). Still the tidier habit in a React file, and still what these files do. |
-| `NoteTakerConsentNotice` in `MeetingSurface.tsx` — a documented stand-in, because 0.2.0 shipped a notice for RECORDING only | Deleted. `<MeetingRoom>` renders the package's own consent banner and People-panel row for every participant (D10). |
+| `NoteTakerConsentNotice` in `MeetingSurface.tsx` — a documented stand-in, because 0.2.0 shipped a notice for RECORDING only | Deleted. `<MeetingSkinRoot>` renders the package's own consent banner and People-panel row for every participant (D10). |
 | `lib/meetMandates.ts` + `lib/useMeetIntelligences.ts` — four mandate lookups per meeting surface, to fill `MeetAgents` | Deleted. There is no `agents` prop and no `transport` prop; capabilities are server-owned. |
 
 If a future defect tempts a fifth wrapper, the answer is the same: fix it in the
@@ -223,13 +223,14 @@ opens on a "Meeting notes" frame of live parts (transcript, notes, decisions,
 action items, summary). Rules:
 
 - **Only the connected room is swappable.** Pre-join, lobby, a failed join,
-  leaving and the post-meeting record always render through `<MeetingRoom>`.
+  leaving and the post-meeting record always render through `<MeetingSkinRoot>`.
   The room engine lives in the provider's store, so switching never rejoins.
 - **Composed, not re-implemented.** `ConsentNotice`, `AttendanceNotice` and
   `RecordingIndicator` render in the Board for every participant exactly as the
   package ships them; faces are `ParticipantTile` ordered by the package's
   `orderParticipants`; `Captions` and `ControlBar` (with its chat, people and
-  Meeting-assistant panels) are the package's. The root carries the package's
+  Meeting-assistant panels) are the package's — imported from the Meet skin's
+  parts, `@ai-matrx/meet/skins/meet` (S1); hooks and the record stay `/react`. The root carries the package's
   `mx-meet` class so those pieces sit in their own structure and tokens.
 - **The meeting's board is a SAVED BOARD** (2026-10-02): the viewer's own
   `projects.boards` row with `settings.meeting_id` (`getMeetingBoard`,
@@ -333,7 +334,7 @@ Census: `common-docs/systems/communications/meet/PARITY.md` § Wave 5.
   frame fed by `useMeetAi`, a draggable `ParticipantTile` strip (active speaker
   first, overflow counted), the package's notices, captions and control bar,
   and user-added tiles. `MeetingSurface.tsx` changed only to render
-  `<MeetingLayout>` where it rendered `<MeetingRoom>`. Guard:
+  `<MeetingLayout>` where it rendered `<MeetingSkinRoot>`. Guard:
   `components/MeetingLayout.test.tsx` (default room; switch + remembered; never
   replaces pre-join/lobby/left/failed). Browser-verified against the real
   package components on a seeded provider store (desktop + 390px); a live
