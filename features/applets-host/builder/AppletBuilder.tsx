@@ -14,6 +14,7 @@
 
 import { useEffect, useEffectEvent, useRef, useState, useSyncExternalStore } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
 import { readAppletCatalogue } from "@ai-matrx/applets/catalogue";
 import type { HeldWrite } from "@ai-matrx/applets/preview";
@@ -95,6 +96,7 @@ export function AppletBuilder({ appletId: initialId, routed = false }: { appletI
   const organizationId = active.organizationState === "ready" ? active.organizationId : null;
   const writer = useHeadlessAgentJson();
   const openRunWindow = useOpenLiveRunWindow();
+  const router = useRouter();
   useDeclaredSurfaceMandates(DISCLOSURE);
 
   const [sentence, setSentence] = useState("");
@@ -211,6 +213,9 @@ export function AppletBuilder({ appletId: initialId, routed = false }: { appletI
     await session.settle(id, entry.id, { state: "saved", version: result.content_version, note: answer.note });
     shown.current = `${id}|${entry.id}:saved`;
     setSaved({ ...result, note: answer.note, toMake: tablesToMake(answer.applet), bound: boundTableIds(answer.applet), made: [] });
+    // The page header (and tab title) read the Applet's name on the server when the page opened — the draft's
+    // "Untitled Applet". The first saved answer names it, so the header re-reads (social planner, 2026-10-08).
+    if (initialId && routed) router.refresh();
     setHeld(0);
     setLastError(null);
     setRefused(null);
@@ -460,7 +465,7 @@ export function AppletBuilder({ appletId: initialId, routed = false }: { appletI
           <>
             <div className="flex items-center gap-2 border-b border-border px-3 py-1.5 text-xs text-muted-foreground">
               <span>
-                {previewLine(appletState(saved).label, appletVersionLabel(saved.content_version))}
+                {previewLine(appletVersionLabel(saved.content_version))}
               </span>
               {held ? <Badge tone="warning">{held} not saved</Badge> : null}
               {step ? <BuildStep step={step} inline /> : null}
