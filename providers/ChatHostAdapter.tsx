@@ -452,6 +452,8 @@ export function ChatHostAdapter({ children }: { children: ReactNode }) {
   const host: ChatHost = {
     db: supabase,
     sourceApp: "matrx-frontend",
+    // What this app is called on the conversations it starts (each screen keeps its own feature).
+    app: { sourceApp: "matrx-frontend" },
     identity,
     org,
     server: {

@@ -73,4 +73,13 @@ describe("a table page the server asked", () => {
     expect(answer).toMatchObject({ state: "found", organizationId: PATEL });
     expect(s.asked).toEqual([]);
   });
+
+  it("on a record page, primes the record's bundle beside the table's", async () => {
+    const s = source();
+    const RECORD = "5a1e0000-0000-4000-8000-0000000000b1";
+    primeTablePage(VISITS, Promise.resolve({ ...seed(), recordId: RECORD, recordBundle: { data: { v: 1, parts: [] }, error: null } }), s);
+    await ensureObjectOrganization(s, VISITS);
+    expect(takePrimedTablePageBundle(PATEL, `record:${RECORD}`, null)).not.toBeNull();
+    expect(s.asked).toEqual([]);
+  });
 });

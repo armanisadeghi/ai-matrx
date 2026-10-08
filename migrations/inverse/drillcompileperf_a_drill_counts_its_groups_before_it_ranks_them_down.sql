@@ -1,7 +1,7 @@
--- chair-step: the inverse of migrations/campaign/drillcompileperf_a_drill_counts_its_groups_before_it_ranks_them.sql (lane DRILL-COMPILE-PERF) — puts back platform._drill_compile exactly as it was (the row-by-row answer statement) and drops the two text builders only it called (platform._drill_fine_agg_sql, platform._drill_fine_ratio_sql). No row of anybody's data is touched.
+-- chair-step: the inverse of migrations/campaign/drillcompileperf_a_drill_counts_its_groups_before_it_ranks_them.sql (lane DRILL-COMPILE-PERF) — puts back platform._drill_compile exactly as it was (the row-by-row answer statement, as migrations/campaign/drillprimitive3_blank_and_null_are_one_no_value_group.sql wrote it) and drops the two text builders only it called (platform._drill_fine_agg_sql, platform._drill_fine_ratio_sql). No row of anybody's data is touched.
 -- lane: DRILL-COMPILE-PERF
 -- lock: platform
--- based-on: platform._drill_compile(uuid, jsonb, jsonb, text) 992d6ea05cddaa71f1aed0dd241b11c207bbb37dfacc06fdad5882c3f56cdf38
+-- based-on: platform._drill_compile(uuid, jsonb, jsonb, text) e8842fc8caae44b8c52162a0f055321ddcda6ecbf0f429dbf1a918bc44514651
 -- (based-on hash: the body the up file writes — pg_get_functiondef of it is the up file's text byte for byte)
 
 CREATE OR REPLACE FUNCTION platform._drill_compile(p_organization_id uuid, p_def jsonb, p_question jsonb, p_kind text)
@@ -450,15 +450,18 @@ begin
     end if;
     v_i := jsonb_array_length(v_w);
     if jsonb_typeof(e) = 'null' then
-      v_preds := v_preds || format('%s is null', v_ref);
+      -- BLANK IS NO VALUE (lane DRILL-PRIMITIVE-3): '' and NULL are ONE "No value" group, so its records are both
+      v_preds := v_preds || case when v_col ->> 'type' in ('text', 'character varying', 'varchar', 'citext')
+                                 then format('(%1$s is null or %1$s = '''')', v_ref) else format('%s is null', v_ref) end;
     elsif jsonb_typeof(e) = 'array' then
       if jsonb_array_length(e) > 1000 then
         raise exception 'A filter lists at most 1000 values; this one lists %.', jsonb_array_length(e) using errcode = '22023';
       end if;
       perform platform._drill_assert_values(e, v_col ->> 'type', d ->> 'label');
       v_w := v_w || jsonb_build_array(e);
-      v_preds := v_preds || format('(%1$s = any ((select array_agg(x) from jsonb_array_elements_text($1->''w''->%2$s) x)::%3$s[]) or (%1$s is null and ($1->''w''->%2$s) @> ''[null]''))',
-                                   v_ref, v_i, v_col ->> 'type');
+      v_preds := v_preds || format('(%1$s = any ((select array_agg(x) from jsonb_array_elements_text($1->''w''->%2$s) x)::%3$s[]) or (%4$s and ($1->''w''->%2$s) @> ''[null]''))',
+                                   v_ref, v_i, v_col ->> 'type',
+                                   case when v_col ->> 'type' in ('text', 'character varying', 'varchar', 'citext') then format('(%1$s is null or %1$s = '''')', v_ref) else format('%s is null', v_ref) end);
     elsif jsonb_typeof(e) = 'object' and exists (select 1 from jsonb_object_keys(e) x where x not in ('from', 'to')) then
       -- LANE7-W3A: the one wire grammar's comparisons (eq ne gt gte lt lte from to in empty),
       -- every one of which must hold; each value bound and cast to the column's own type
@@ -1243,7 +1246,9 @@ begin
         v_sel := v_sel || format('%s as d%s', v_x, v_i);
       end if;
     else
-      v_sel := v_sel || format('%s as d%s', v_ref, v_i);
+      -- BLANK IS NO VALUE: a text '' groups with NULL, never as a second identical "No value" row
+      v_sel := v_sel || case when e -> 'col' ->> 'type' in ('text', 'character varying', 'varchar', 'citext')
+                             then format('nullif(%s, '''') as d%s', v_ref, v_i) else format('%s as d%s', v_ref, v_i) end;
     end if;
     v_gk := v_gk || format('s.d%s', v_i);
   end loop;
@@ -1264,7 +1269,8 @@ begin
         v_sel := v_sel || format('%s as ax', v_x);
       end if;
     else
-      v_sel := v_sel || format('%s as ax', v_ref);
+      v_sel := v_sel || case when v_ax -> 'col' ->> 'type' in ('text', 'character varying', 'varchar', 'citext')
+                             then format('nullif(%s, '''') as ax', v_ref) else format('%s as ax', v_ref) end;
     end if;
   end if;
   v_i := 0;

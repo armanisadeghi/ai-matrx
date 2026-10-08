@@ -122,13 +122,21 @@ if (await rowCell.count()) {
   if (!(await item.isVisible().catch(() => false))) archive = "not offered";
   else if ((await item.getAttribute("aria-disabled")) === "true" || (await item.getAttribute("data-disabled")) !== null) archive = "disabled";
   else {
+    const calls = [];
+    const onRes = async (r) => {
+      if (/\/rpc\/|\/rest\/v1\//.test(r.url()) && r.request().method() === "POST") calls.push(`${r.status()} ${r.url().split("?")[0].split("/").pop()} ${(await r.text().catch(() => "")).slice(0, 160)}`);
+    };
+    p2.on("response", onRes);
     await item.click();
-    await p2.waitForTimeout(4000);
-    const confirm = p2.getByRole("button", { name: /^(Archive|Confirm|Yes)/ }).last();
-    if (await confirm.isVisible().catch(() => false)) {
+    await p2.waitForTimeout(2500);
+    const confirm = p2.getByRole("alertdialog").or(p2.getByRole("dialog")).last().getByRole("button", { name: /^(Archive|Confirm|Yes)/ }).last();
+    const asked = await confirm.isVisible().catch(() => false);
+    if (asked) {
       await confirm.click();
-      await p2.waitForTimeout(4000);
+      await p2.waitForTimeout(5000);
     }
+    p2.off("response", onRes);
+    console.log(JSON.stringify({ archiveAsked: asked, calls: calls.slice(0, 8) }));
     const rowsAfter = await rowsIn(frame);
     const said = await p2.locator("[data-sonner-toast]").allInnerTexts().catch(() => []);
     archive = rowsAfter < rowsBefore ? "archived" : said.length ? `said: ${said.join(" | ").slice(0, 160)}` : "nothing happened";

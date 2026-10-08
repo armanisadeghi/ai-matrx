@@ -1,9 +1,11 @@
--- draft: DRILL-COMPILE-PERF equivalence matrix and suites still running on the clone
 -- chair-step: lane DRILL-COMPILE-PERF — A DRILL COUNTS ITS GROUPS BEFORE IT RANKS THEM. platform._drill_compile's answer statement used to rank, fold and re-aggregate the fact's raw rows (each row carried its group key as JSON through a materialized CTE, a hash join and a sort); it now counts the rows into FINE rows first — one per side, group value, across value and every value a distinct count, median or percentile must still see, with how many rows each stands for (cnt) and each Measure's state (sum, count, filled/empty, min, max, an average's sum and count, a run rate's sum and window, a ratio's or span's leaves) — then ranks, cuts to the limit, applies thresholds before the cut, and computes Other, the total, pivot columns and the comparison from those, re-adding each Measure to the same value AND type (a median or percentile repeats each fine row cnt times; a Measure counted once per a grain, or a sum/avg/rate of an inexact number, keeps the row-by-row statement). Same FROM, same lane predicates, same bound values, same catalogue identifiers, same ranking, Other, total, time-first periods and compare windows; the records path (drill_rows), the Table API and every refusal are untouched. Adds two text builders (platform._drill_fine_agg_sql, platform._drill_fine_ratio_sql). No table, policy, grant or row of anybody's data is touched.
 -- lane: DRILL-COMPILE-PERF
 -- lock: platform
--- based-on: platform._drill_compile(uuid, jsonb, jsonb, text) 7e2031f06e8b138413b03471bb669deaae00b586781385c4d69c00d181f77578
--- (based-on hash: pg_get_functiondef on PRODUCTION, read-only, 2026-10-07; the nightly clone carries the same body)
+-- based-on: platform._drill_compile(uuid, jsonb, jsonb, text) b3f9c58d373ab528e769726687b85c2d1bec5ac2e0778c15a845d6fffb6d7d69
+-- (based-on hash: the body migrations/campaign/drillprimitive3_blank_and_null_are_one_no_value_group.sql writes, live on the clone
+--  2026-10-08; production carries 7e2031f0…, the body BOTH files were written from. APPLY drillprimitive3 FIRST: this file carries
+--  its change (blank text is no value) and adds only the aggregate-first statement — the delta is identical to the one proven
+--  against production's own body.)
 --
 -- Proof: scripts/campaign-tests/drillcompileperf_green.sql (every answer of a broad question matrix equals the
 -- row-by-row compiler's, row for row, from every lane's own seat) on the clone.
@@ -518,15 +520,18 @@ begin
     end if;
     v_i := jsonb_array_length(v_w);
     if jsonb_typeof(e) = 'null' then
-      v_preds := v_preds || format('%s is null', v_ref);
+      -- BLANK IS NO VALUE (lane DRILL-PRIMITIVE-3): '' and NULL are ONE "No value" group, so its records are both
+      v_preds := v_preds || case when v_col ->> 'type' in ('text', 'character varying', 'varchar', 'citext')
+                                 then format('(%1$s is null or %1$s = '''')', v_ref) else format('%s is null', v_ref) end;
     elsif jsonb_typeof(e) = 'array' then
       if jsonb_array_length(e) > 1000 then
         raise exception 'A filter lists at most 1000 values; this one lists %.', jsonb_array_length(e) using errcode = '22023';
       end if;
       perform platform._drill_assert_values(e, v_col ->> 'type', d ->> 'label');
       v_w := v_w || jsonb_build_array(e);
-      v_preds := v_preds || format('(%1$s = any ((select array_agg(x) from jsonb_array_elements_text($1->''w''->%2$s) x)::%3$s[]) or (%1$s is null and ($1->''w''->%2$s) @> ''[null]''))',
-                                   v_ref, v_i, v_col ->> 'type');
+      v_preds := v_preds || format('(%1$s = any ((select array_agg(x) from jsonb_array_elements_text($1->''w''->%2$s) x)::%3$s[]) or (%4$s and ($1->''w''->%2$s) @> ''[null]''))',
+                                   v_ref, v_i, v_col ->> 'type',
+                                   case when v_col ->> 'type' in ('text', 'character varying', 'varchar', 'citext') then format('(%1$s is null or %1$s = '''')', v_ref) else format('%s is null', v_ref) end);
     elsif jsonb_typeof(e) = 'object' and exists (select 1 from jsonb_object_keys(e) x where x not in ('from', 'to')) then
       -- LANE7-W3A: the one wire grammar's comparisons (eq ne gt gte lt lte from to in empty),
       -- every one of which must hold; each value bound and cast to the column's own type
@@ -1336,7 +1341,9 @@ begin
         v_sel := v_sel || format('%s as d%s', v_x, v_i);
       end if;
     else
-      v_sel := v_sel || format('%s as d%s', v_ref, v_i);
+      -- BLANK IS NO VALUE: a text '' groups with NULL, never as a second identical "No value" row
+      v_sel := v_sel || case when e -> 'col' ->> 'type' in ('text', 'character varying', 'varchar', 'citext')
+                             then format('nullif(%s, '''') as d%s', v_ref, v_i) else format('%s as d%s', v_ref, v_i) end;
     end if;
     v_gk := v_gk || format('s.d%s', v_i);
   end loop;
@@ -1357,7 +1364,8 @@ begin
         v_sel := v_sel || format('%s as ax', v_x);
       end if;
     else
-      v_sel := v_sel || format('%s as ax', v_ref);
+      v_sel := v_sel || case when v_ax -> 'col' ->> 'type' in ('text', 'character varying', 'varchar', 'citext')
+                             then format('nullif(%s, '''') as ax', v_ref) else format('%s as ax', v_ref) end;
     end if;
   end if;
   v_i := 0;

@@ -173,11 +173,6 @@ registerChatUi({
   ConfirmDialog: Host_ConfirmDialog,
 });
 
-import { ModelListDropdown as Host_ModelListDropdown } from "@ai-matrx/agents/models/react";
-registerChatUi({
-  ModelListDropdown: asSlot(Host_ModelListDropdown),
-});
-
 import { TextWithDoors as Host_TextWithDoors } from "@/components/official/entity-ref/TextWithDoors";
 registerChatUi({
   TextWithDoors: Host_TextWithDoors,

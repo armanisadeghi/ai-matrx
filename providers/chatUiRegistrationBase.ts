@@ -6,7 +6,6 @@
 
 import dynamic from "next/dynamic";
 import { registerChatUi } from "@ai-matrx/chat/host/ui-slots";
-import { RichContent } from "@ai-matrx/rich-content/levels/RichContent";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
 import { InfoHint } from "@/components/official/InfoHint";
 import { AnswerValueView } from "@/components/official/structured-value/AnswerValueView";
@@ -24,19 +23,9 @@ import { useTablesEverywhere } from "@/features/unified-data/hub/useTablesEveryw
 import { FileResourceChip } from "@/features/files/components/preview/FileResourceChip";
 import { ConnectorMark } from "@/features/connectors/ConnectorMark";
 import { connectorDefinitionFromMcp } from "@/features/connectors/live-connectors";
-import { InPlaceEditor } from "@ai-matrx/rich-editor/in-place/InPlaceEditor";
-import {
-  EditInPlace,
-  useInPlaceTrigger,
-} from "@ai-matrx/rich-editor/in-place/EditInPlace";
-import { useTextareaFormatting } from "@ai-matrx/rich-editor/format/useTextareaFormatting";
 import { useClipboardPaste } from "@/components/ui/file-upload/useClipboardPaste";
 import { useCenterControlFit } from "@/features/shell/components/header/useCenterControlFit";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
-import {
-  copyRichContent,
-  copyContent,
-} from "@ai-matrx/rich-content/copy/copy-commands";
 import {
   selectAllSkills,
   selectSkillsStatus,
@@ -71,12 +60,10 @@ import { MessageFilesStrip } from "@/features/code/views/history/MessageFilesStr
 import { RulebookNudge } from "@/features/masterwork/oracle/RulebookNudge";
 import { NegativeVerdictFollowUp } from "@/features/review-walk/components/NegativeVerdictFollowUp";
 import { SpeakerButton } from "@/features/tts/components/SpeakerButton";
-import { TextCopySplit as CopySplit } from "@/components/agent-copy/TextCopySplit";
 import { GmailReviewCard } from "@/features/google-workspace/agent/GmailReviewCard";
 import { ShareButton } from "@/features/sharing/components/ShareButton";
 import { ReviewAnswersLink } from "@/features/agents/decision-review/components/ReviewAnswersLink";
 import { RecordChangeApprovalCard } from "@/features/record-change-approvals/RecordChangeApprovalCard";
-import { RichDocument } from "@ai-matrx/rich-content/rich-document/RichDocument";
 import {
   traceWarRoomRenderPath,
   isWarRoomThreadAgentSurface,
@@ -204,7 +191,6 @@ registerChatUi({
   disposeFullScreenEditorCallbackGroup,
   emitFullScreenEditorSave,
   SystemInstructionModal,
-  RichDocument,
   traceWarRoomRenderPath,
   isWarRoomThreadAgentSurface,
   useOpenCloudBrowserCanvas,
@@ -213,13 +199,11 @@ registerChatUi({
   RulebookNudge,
   NegativeVerdictFollowUp,
   SpeakerButton,
-  CopySplit,
   GmailReviewCard,
   ShareButton,
   ShareModal,
   ReviewAnswersLink,
   RecordChangeApprovalCard,
-  RichContent,
   CopyButtons,
   InfoHint,
   AnswerValueView,
@@ -235,16 +219,10 @@ registerChatUi({
   TableChooser,
   FileResourceChip,
   ConnectorMark,
-  InPlaceEditor,
-  EditInPlace,
   confirm,
-  copyRichContent,
-  copyContent,
   useTablesEverywhere,
-  useTextareaFormatting,
   useClipboardPaste,
   useCenterControlFit,
-  useInPlaceTrigger,
   connectorDefinitionFromMcp,
   useKnowledgeAttachSearch,
   useConversationAttachments,

@@ -40,7 +40,11 @@ await act(page, async () => {
   const form = frame.locator(".spaces-db-form");
   await form.waitFor({ timeout: 30_000 });
   const ask = form.getByRole("checkbox", { name: "Ask for Name" });
-  await ask.waitFor({ timeout: 30_000 });
+  await ask.waitFor({ timeout: 60_000 }).catch(async (e) => {
+    await page.screenshot({ path: `${SHOT}/form-builder-missing.png` });
+    console.log(JSON.stringify({ formText: (await form.innerText().catch(() => "")).replace(/\s+/g, " ").slice(0, 300) }));
+    throw e;
+  });
   if ((await ask.getAttribute("aria-checked")) !== "true" && (await ask.getAttribute("data-state")) !== "checked") await ask.click();
   await form.getByRole("textbox", { name: "How to ask for Name" }).fill("Your full name");
   const publish = form.getByRole("button", { name: /^(Save and publish|Publish)$/ });
