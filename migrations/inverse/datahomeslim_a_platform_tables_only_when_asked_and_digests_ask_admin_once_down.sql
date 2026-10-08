@@ -1,5 +1,7 @@
 -- chair-step: undo datahomeslim_a_platform_tables_only_when_asked_and_digests_ask_admin_once.sql - restores custom.data_home and custom.data_home_items as they were
 -- lane: DATA-HOME-SLIM
+-- based-on: custom.data_home(uuid, text, boolean) 64c82ad70b866cc9702a7da9fb1f5103c1ed952d2c06f6e3b8e2daf866bd6b2c
+-- based-on: custom.data_home_items(uuid) 942a0ab08183b83a0be66491951dafb5a8a28b41209a9406495921238e001eb7
 
 set local statement_timeout = '60s';
 
