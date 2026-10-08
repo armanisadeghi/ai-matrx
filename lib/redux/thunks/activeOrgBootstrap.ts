@@ -26,6 +26,7 @@ import { markOrgBootstrapResolved } from "@/lib/organizations/orgBootstrapGate";
 import { writeLastActiveOrganization } from "@/lib/organizations/accountOrganizationChoices";
 import { announceActiveOrganizationReplaced } from "@/lib/organizations/announceActiveOrganizationReplaced";
 import { toast } from "@/lib/toast";
+import { heldOrganizationForTab } from "@/lib/organizations/tabOrganization";
 
 /**
  * Back-compat imperative bootstrap. Delegates to the shared resolver and
@@ -49,8 +50,9 @@ export const bootstrapActiveOrganization =
       const userId = explicitUserId ?? getUserId();
       if (!userId) return;
       const tab = getState().appContext;
-      const held =
-        tab.orgBootstrapResolved && tab.organization_id ? tab.organization_id : null;
+      // Redux's answered organization, else the one this tab held before it
+      // reloaded — never the account's last active, which other sessions move.
+      const held = heldOrganizationForTab(tab, userId);
       const resolved = await resolveActiveOrgContext(userId, {
         heldOrganizationId: held,
       });
