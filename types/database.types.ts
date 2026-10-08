@@ -12037,6 +12037,13 @@ export type Database = {
           output_type: string | null
           parent_call_id: string | null
           persist_key: string | null
+          refetch_args_hash: string | null
+          refetch_first_id: string | null
+          refetch_out_hash: string | null
+          refetch_prior: number | null
+          refetch_seq: number | null
+          refetch_settled_at: string | null
+          refetch_trimmed: boolean | null
           resolution_source: string | null
           resolved_at: string | null
           retry_count: number | null
@@ -12091,6 +12098,13 @@ export type Database = {
           output_type?: string | null
           parent_call_id?: string | null
           persist_key?: string | null
+          refetch_args_hash?: string | null
+          refetch_first_id?: string | null
+          refetch_out_hash?: string | null
+          refetch_prior?: number | null
+          refetch_seq?: number | null
+          refetch_settled_at?: string | null
+          refetch_trimmed?: boolean | null
           resolution_source?: string | null
           resolved_at?: string | null
           retry_count?: number | null
@@ -12145,6 +12159,13 @@ export type Database = {
           output_type?: string | null
           parent_call_id?: string | null
           persist_key?: string | null
+          refetch_args_hash?: string | null
+          refetch_first_id?: string | null
+          refetch_out_hash?: string | null
+          refetch_prior?: number | null
+          refetch_seq?: number | null
+          refetch_settled_at?: string | null
+          refetch_trimmed?: boolean | null
           resolution_source?: string | null
           resolved_at?: string | null
           retry_count?: number | null
@@ -12233,6 +12254,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "vw_tool_gate_verdict"
             referencedColumns: ["tool_call_id"]
+          },
+          {
+            foreignKeyName: "fk_cx_tool_call_parent"
+            columns: ["parent_call_id"]
+            isOneToOne: false
+            referencedRelation: "vw_tool_refetch"
+            referencedColumns: ["first_tool_call_id"]
           },
           {
             foreignKeyName: "fk_cx_tool_call_parent"
@@ -12954,6 +12982,10 @@ export type Database = {
     }
     Functions: {
       _message_tool_call_ids: { Args: { p_content: Json }; Returns: string[] }
+      _tool_call_refetch_settle: {
+        Args: { p_conversation_id: string }
+        Returns: number
+      }
       admin_explore_conversation_facets: {
         Args: { p_filters?: Json }
         Returns: Json
@@ -13081,6 +13113,14 @@ export type Database = {
       root_conversation_id: {
         Args: { p_conversation_id: string }
         Returns: string
+      }
+      tool_call_refetch_backfill: {
+        Args: { p_conversations?: number }
+        Returns: {
+          remaining_conversations: number
+          rows_written: number
+          settled_conversations: number
+        }[]
       }
       user_request_totals_bump: {
         Args: {
@@ -18562,6 +18602,7 @@ export type Database = {
           sender_identity: string
           sender_name: string
           sender_user_id: string | null
+          session_id: string | null
           updated_at: string
           updated_by: string | null
           version: number
@@ -18580,6 +18621,7 @@ export type Database = {
           sender_identity: string
           sender_name: string
           sender_user_id?: string | null
+          session_id?: string | null
           updated_at?: string
           updated_by?: string | null
           version?: number
@@ -18598,6 +18640,7 @@ export type Database = {
           sender_identity?: string
           sender_name?: string
           sender_user_id?: string | null
+          session_id?: string | null
           updated_at?: string
           updated_by?: string | null
           version?: number
@@ -18608,6 +18651,105 @@ export type Database = {
             columns: ["meeting_id"]
             isOneToOne: false
             referencedRelation: "meet_meetings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "meet_chat_messages_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "meet_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      meet_connections: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          displaced_by: string | null
+          exit_reason: string | null
+          generation: number
+          id: string
+          joined_at: string
+          kind: string
+          left_at: string | null
+          livekit_identity: string
+          meeting_id: string
+          metadata: Json
+          organization_id: string
+          participant_id: string
+          session_id: string
+          updated_at: string
+          updated_by: string | null
+          version: number
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          displaced_by?: string | null
+          exit_reason?: string | null
+          generation?: number
+          id?: string
+          joined_at?: string
+          kind?: string
+          left_at?: string | null
+          livekit_identity: string
+          meeting_id: string
+          metadata?: Json
+          organization_id: string
+          participant_id: string
+          session_id: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          displaced_by?: string | null
+          exit_reason?: string | null
+          generation?: number
+          id?: string
+          joined_at?: string
+          kind?: string
+          left_at?: string | null
+          livekit_identity?: string
+          meeting_id?: string
+          metadata?: Json
+          organization_id?: string
+          participant_id?: string
+          session_id?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "meet_connections_displaced_by_fkey"
+            columns: ["displaced_by"]
+            isOneToOne: false
+            referencedRelation: "meet_connections"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "meet_connections_meeting_id_fkey"
+            columns: ["meeting_id"]
+            isOneToOne: false
+            referencedRelation: "meet_meetings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "meet_connections_participant_id_fkey"
+            columns: ["participant_id"]
+            isOneToOne: false
+            referencedRelation: "meet_participants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "meet_connections_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "meet_sessions"
             referencedColumns: ["id"]
           },
         ]
@@ -18696,6 +18838,7 @@ export type Database = {
         Row: {
           agenda: string | null
           ai_enabled: boolean
+          behavior_profile: string | null
           calendar_sequence: number
           cancellation_reason: string | null
           cancelled_at: string | null
@@ -18736,6 +18879,7 @@ export type Database = {
         Insert: {
           agenda?: string | null
           ai_enabled?: boolean
+          behavior_profile?: string | null
           calendar_sequence?: number
           cancellation_reason?: string | null
           cancelled_at?: string | null
@@ -18776,6 +18920,7 @@ export type Database = {
         Update: {
           agenda?: string | null
           ai_enabled?: boolean
+          behavior_profile?: string | null
           calendar_sequence?: number
           cancellation_reason?: string | null
           cancelled_at?: string | null
@@ -18826,6 +18971,7 @@ export type Database = {
           meeting_id: string
           metadata: Json
           organization_id: string
+          session_id: string | null
           text: string
           updated_at: string
           updated_by: string | null
@@ -18841,6 +18987,7 @@ export type Database = {
           meeting_id: string
           metadata?: Json
           organization_id: string
+          session_id?: string | null
           text: string
           updated_at?: string
           updated_by?: string | null
@@ -18856,6 +19003,7 @@ export type Database = {
           meeting_id?: string
           metadata?: Json
           organization_id?: string
+          session_id?: string | null
           text?: string
           updated_at?: string
           updated_by?: string | null
@@ -18867,6 +19015,13 @@ export type Database = {
             columns: ["meeting_id"]
             isOneToOne: false
             referencedRelation: "meet_meetings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "meet_notes_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "meet_sessions"
             referencedColumns: ["id"]
           },
         ]
@@ -18941,81 +19096,113 @@ export type Database = {
       }
       meet_participants: {
         Row: {
+          admission_session_id: string | null
           admission_state: string
           avatar_url: string | null
           consent_acknowledged_at: string | null
+          consent_session_id: string | null
           created_at: string
           created_by: string | null
           custom_fields: Json
           decided_at: string | null
           decided_by: string | null
           display_name: string
+          hand_raised_at: string | null
           id: string
           identity: string
           is_agent: boolean
           joined_at: string | null
+          knock_expires_at: string | null
           knocked_at: string
           left_at: string | null
           meeting_id: string
           metadata: Json
           organization_id: string
           participant_user_id: string | null
+          presence: string
+          removal_signals: Json
           role: string
           updated_at: string
           updated_by: string | null
           version: number
         }
         Insert: {
+          admission_session_id?: string | null
           admission_state?: string
           avatar_url?: string | null
           consent_acknowledged_at?: string | null
+          consent_session_id?: string | null
           created_at?: string
           created_by?: string | null
           custom_fields?: Json
           decided_at?: string | null
           decided_by?: string | null
           display_name?: string
+          hand_raised_at?: string | null
           id?: string
           identity: string
           is_agent?: boolean
           joined_at?: string | null
+          knock_expires_at?: string | null
           knocked_at?: string
           left_at?: string | null
           meeting_id: string
           metadata?: Json
           organization_id: string
           participant_user_id?: string | null
+          presence?: string
+          removal_signals?: Json
           role?: string
           updated_at?: string
           updated_by?: string | null
           version?: number
         }
         Update: {
+          admission_session_id?: string | null
           admission_state?: string
           avatar_url?: string | null
           consent_acknowledged_at?: string | null
+          consent_session_id?: string | null
           created_at?: string
           created_by?: string | null
           custom_fields?: Json
           decided_at?: string | null
           decided_by?: string | null
           display_name?: string
+          hand_raised_at?: string | null
           id?: string
           identity?: string
           is_agent?: boolean
           joined_at?: string | null
+          knock_expires_at?: string | null
           knocked_at?: string
           left_at?: string | null
           meeting_id?: string
           metadata?: Json
           organization_id?: string
           participant_user_id?: string | null
+          presence?: string
+          removal_signals?: Json
           role?: string
           updated_at?: string
           updated_by?: string | null
           version?: number
         }
         Relationships: [
+          {
+            foreignKeyName: "meet_participants_admission_session_fkey"
+            columns: ["admission_session_id"]
+            isOneToOne: false
+            referencedRelation: "meet_sessions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "meet_participants_consent_session_fkey"
+            columns: ["consent_session_id"]
+            isOneToOne: false
+            referencedRelation: "meet_sessions"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "meet_participants_meeting_id_fkey"
             columns: ["meeting_id"]
@@ -19039,6 +19226,7 @@ export type Database = {
           meeting_id: string
           metadata: Json
           organization_id: string
+          session_id: string | null
           started_at: string | null
           started_by: string | null
           state: string
@@ -19060,6 +19248,7 @@ export type Database = {
           meeting_id: string
           metadata?: Json
           organization_id: string
+          session_id?: string | null
           started_at?: string | null
           started_by?: string | null
           state?: string
@@ -19081,6 +19270,7 @@ export type Database = {
           meeting_id?: string
           metadata?: Json
           organization_id?: string
+          session_id?: string | null
           started_at?: string | null
           started_by?: string | null
           state?: string
@@ -19097,6 +19287,133 @@ export type Database = {
             referencedRelation: "meet_meetings"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "meet_recordings_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "meet_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      meet_sessions: {
+        Row: {
+          acting_host_key: string | null
+          alone_since: string | null
+          av_locks: Json
+          chat_mode: string | null
+          created_at: string
+          created_by: string | null
+          emptied_at: string | null
+          end_trigger: string | null
+          ended_at: string | null
+          hard_end_at: string | null
+          host_absent_since: string | null
+          host_present: boolean | null
+          host_present_checked_at: string | null
+          id: string
+          live_version: number
+          meeting_id: string
+          metadata: Json
+          note_taker: Json | null
+          occurrence_start: string | null
+          organization_id: string
+          outcome: Json | null
+          outcome_state: string | null
+          policy: Json
+          presenter_keys: string[]
+          recording_id: string | null
+          share_who_can: string | null
+          spotlight_keys: string[]
+          started_at: string
+          updated_at: string
+          updated_by: string | null
+          version: number
+          waiting_count: number
+        }
+        Insert: {
+          acting_host_key?: string | null
+          alone_since?: string | null
+          av_locks?: Json
+          chat_mode?: string | null
+          created_at?: string
+          created_by?: string | null
+          emptied_at?: string | null
+          end_trigger?: string | null
+          ended_at?: string | null
+          hard_end_at?: string | null
+          host_absent_since?: string | null
+          host_present?: boolean | null
+          host_present_checked_at?: string | null
+          id?: string
+          live_version?: number
+          meeting_id: string
+          metadata?: Json
+          note_taker?: Json | null
+          occurrence_start?: string | null
+          organization_id: string
+          outcome?: Json | null
+          outcome_state?: string | null
+          policy?: Json
+          presenter_keys?: string[]
+          recording_id?: string | null
+          share_who_can?: string | null
+          spotlight_keys?: string[]
+          started_at?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          waiting_count?: number
+        }
+        Update: {
+          acting_host_key?: string | null
+          alone_since?: string | null
+          av_locks?: Json
+          chat_mode?: string | null
+          created_at?: string
+          created_by?: string | null
+          emptied_at?: string | null
+          end_trigger?: string | null
+          ended_at?: string | null
+          hard_end_at?: string | null
+          host_absent_since?: string | null
+          host_present?: boolean | null
+          host_present_checked_at?: string | null
+          id?: string
+          live_version?: number
+          meeting_id?: string
+          metadata?: Json
+          note_taker?: Json | null
+          occurrence_start?: string | null
+          organization_id?: string
+          outcome?: Json | null
+          outcome_state?: string | null
+          policy?: Json
+          presenter_keys?: string[]
+          recording_id?: string | null
+          share_who_can?: string | null
+          spotlight_keys?: string[]
+          started_at?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          waiting_count?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "meet_sessions_meeting_id_fkey"
+            columns: ["meeting_id"]
+            isOneToOne: false
+            referencedRelation: "meet_meetings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "meet_sessions_recording_id_fkey"
+            columns: ["recording_id"]
+            isOneToOne: false
+            referencedRelation: "meet_recordings"
+            referencedColumns: ["id"]
+          },
         ]
       }
       meet_transcript_segments: {
@@ -19110,6 +19427,7 @@ export type Database = {
           meeting_id: string
           metadata: Json
           organization_id: string
+          session_id: string | null
           speaker: string
           started_at: string
           text: string
@@ -19127,6 +19445,7 @@ export type Database = {
           meeting_id: string
           metadata?: Json
           organization_id: string
+          session_id?: string | null
           speaker?: string
           started_at?: string
           text: string
@@ -19144,6 +19463,7 @@ export type Database = {
           meeting_id?: string
           metadata?: Json
           organization_id?: string
+          session_id?: string | null
           speaker?: string
           started_at?: string
           text?: string
@@ -19157,6 +19477,13 @@ export type Database = {
             columns: ["meeting_id"]
             isOneToOne: false
             referencedRelation: "meet_meetings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "meet_transcript_segments_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "meet_sessions"
             referencedColumns: ["id"]
           },
         ]
@@ -21456,6 +21783,7 @@ export type Database = {
         Returns: {
           agenda: string | null
           ai_enabled: boolean
+          behavior_profile: string | null
           calendar_sequence: number
           cancellation_reason: string | null
           cancelled_at: string | null
@@ -21530,6 +21858,7 @@ export type Database = {
         Returns: {
           agenda: string | null
           ai_enabled: boolean
+          behavior_profile: string | null
           calendar_sequence: number
           cancellation_reason: string | null
           cancelled_at: string | null
@@ -21626,6 +21955,7 @@ export type Database = {
         Returns: {
           agenda: string | null
           ai_enabled: boolean
+          behavior_profile: string | null
           calendar_sequence: number
           cancellation_reason: string | null
           cancelled_at: string | null
@@ -21697,6 +22027,7 @@ export type Database = {
         Returns: {
           agenda: string | null
           ai_enabled: boolean
+          behavior_profile: string | null
           calendar_sequence: number
           cancellation_reason: string | null
           cancelled_at: string | null
@@ -21747,6 +22078,7 @@ export type Database = {
         Returns: {
           agenda: string | null
           ai_enabled: boolean
+          behavior_profile: string | null
           calendar_sequence: number
           cancellation_reason: string | null
           cancelled_at: string | null
@@ -22034,6 +22366,7 @@ export type Database = {
         Returns: {
           agenda: string | null
           ai_enabled: boolean
+          behavior_profile: string | null
           calendar_sequence: number
           cancellation_reason: string | null
           cancelled_at: string | null
@@ -22094,6 +22427,7 @@ export type Database = {
         Returns: {
           agenda: string | null
           ai_enabled: boolean
+          behavior_profile: string | null
           calendar_sequence: number
           cancellation_reason: string | null
           cancelled_at: string | null
@@ -22190,6 +22524,7 @@ export type Database = {
         Returns: {
           agenda: string | null
           ai_enabled: boolean
+          behavior_profile: string | null
           calendar_sequence: number
           cancellation_reason: string | null
           cancelled_at: string | null
@@ -22321,6 +22656,7 @@ export type Database = {
         Returns: {
           agenda: string | null
           ai_enabled: boolean
+          behavior_profile: string | null
           calendar_sequence: number
           cancellation_reason: string | null
           cancelled_at: string | null
@@ -39065,6 +39401,7 @@ export type Database = {
         }
         Returns: Json
       }
+      table_page_server_rows: { Args: { p_table_id: string }; Returns: Json }
       table_placement: {
         Args: {
           p_data: Json
@@ -93537,6 +93874,7 @@ export type Database = {
         Args: { p_as_of?: string; p_organization_id?: string }
         Returns: Json
       }
+      knob_defaults: { Args: { p_known_version?: string }; Returns: Json }
       knob_history: {
         Args: {
           p_feature: string
@@ -93625,6 +93963,15 @@ export type Database = {
       }
       knob_snapshot: {
         Args: { p_organization_id: string; p_scopes?: Json; p_user_id?: string }
+        Returns: Json
+      }
+      knob_snapshot_delta: {
+        Args: {
+          p_etag?: string
+          p_organization_id: string
+          p_scopes?: Json
+          p_user_id?: string
+        }
         Returns: Json
       }
       knob_unarchive: {
@@ -112066,6 +112413,111 @@ export type Database = {
   }
   runtime: {
     Tables: {
+      _ai_usage_execution_facts: {
+        Row: {
+          agent_id: string | null
+          app: string
+          bucket: string
+          bucket_10m: string
+          call_model: string | null
+          calls: number
+          conversation_id: string | null
+          cost: number
+          created_at: string
+          execution_id: string
+          feature: string | null
+          finish_reason: string | null
+          got_nothing_back: boolean
+          has_request: boolean
+          iterations: number
+          model: string | null
+          organization_id: string
+          origin: string
+          paid_calls: number
+          person_id: string | null
+          provider: string | null
+          refreshed_at: string
+          request_id: string | null
+          requests: number
+          session_id: string | null
+          source: string | null
+          tokens_cached: number
+          tokens_in: number
+          tokens_out: number
+          tool_calls: number
+          trigger: string
+          unpriced_calls: number
+        }
+        Insert: {
+          agent_id?: string | null
+          app: string
+          bucket: string
+          bucket_10m: string
+          call_model?: string | null
+          calls: number
+          conversation_id?: string | null
+          cost: number
+          created_at: string
+          execution_id: string
+          feature?: string | null
+          finish_reason?: string | null
+          got_nothing_back: boolean
+          has_request: boolean
+          iterations: number
+          model?: string | null
+          organization_id: string
+          origin: string
+          paid_calls: number
+          person_id?: string | null
+          provider?: string | null
+          refreshed_at?: string
+          request_id?: string | null
+          requests: number
+          session_id?: string | null
+          source?: string | null
+          tokens_cached: number
+          tokens_in: number
+          tokens_out: number
+          tool_calls: number
+          trigger: string
+          unpriced_calls: number
+        }
+        Update: {
+          agent_id?: string | null
+          app?: string
+          bucket?: string
+          bucket_10m?: string
+          call_model?: string | null
+          calls?: number
+          conversation_id?: string | null
+          cost?: number
+          created_at?: string
+          execution_id?: string
+          feature?: string | null
+          finish_reason?: string | null
+          got_nothing_back?: boolean
+          has_request?: boolean
+          iterations?: number
+          model?: string | null
+          organization_id?: string
+          origin?: string
+          paid_calls?: number
+          person_id?: string | null
+          provider?: string | null
+          refreshed_at?: string
+          request_id?: string | null
+          requests?: number
+          session_id?: string | null
+          source?: string | null
+          tokens_cached?: number
+          tokens_in?: number
+          tokens_out?: number
+          tool_calls?: number
+          trigger?: string
+          unpriced_calls?: number
+        }
+        Relationships: []
+      }
       _ai_usage_hourly: {
         Row: {
           agent_id: string | null
@@ -112177,7 +112629,7 @@ export type Database = {
             foreignKeyName: "execution_event_cursor_root_execution_id_fkey"
             columns: ["root_execution_id"]
             isOneToOne: true
-            referencedRelation: "_ai_usage_calls"
+            referencedRelation: "_ai_usage_calls_live"
             referencedColumns: ["execution_id"]
           },
           {
@@ -112270,7 +112722,7 @@ export type Database = {
             foreignKeyName: "global_execution_parent_execution_id_fkey"
             columns: ["parent_execution_id"]
             isOneToOne: false
-            referencedRelation: "_ai_usage_calls"
+            referencedRelation: "_ai_usage_calls_live"
             referencedColumns: ["execution_id"]
           },
           {
@@ -112291,7 +112743,7 @@ export type Database = {
             foreignKeyName: "global_execution_root_execution_id_fkey"
             columns: ["root_execution_id"]
             isOneToOne: false
-            referencedRelation: "_ai_usage_calls"
+            referencedRelation: "_ai_usage_calls_live"
             referencedColumns: ["execution_id"]
           },
           {
@@ -112336,7 +112788,7 @@ export type Database = {
             foreignKeyName: "global_execution_checkpoint_execution_id_fkey"
             columns: ["execution_id"]
             isOneToOne: false
-            referencedRelation: "_ai_usage_calls"
+            referencedRelation: "_ai_usage_calls_live"
             referencedColumns: ["execution_id"]
           },
           {
@@ -112387,7 +112839,7 @@ export type Database = {
             foreignKeyName: "global_execution_control_root_execution_id_fkey"
             columns: ["root_execution_id"]
             isOneToOne: true
-            referencedRelation: "_ai_usage_calls"
+            referencedRelation: "_ai_usage_calls_live"
             referencedColumns: ["execution_id"]
           },
           {
@@ -112441,7 +112893,7 @@ export type Database = {
             foreignKeyName: "global_execution_event_execution_id_fkey"
             columns: ["execution_id"]
             isOneToOne: false
-            referencedRelation: "_ai_usage_calls"
+            referencedRelation: "_ai_usage_calls_live"
             referencedColumns: ["execution_id"]
           },
           {
@@ -112455,7 +112907,7 @@ export type Database = {
             foreignKeyName: "global_execution_event_root_execution_id_fkey"
             columns: ["root_execution_id"]
             isOneToOne: false
-            referencedRelation: "_ai_usage_calls"
+            referencedRelation: "_ai_usage_calls_live"
             referencedColumns: ["execution_id"]
           },
           {
@@ -112509,7 +112961,7 @@ export type Database = {
             foreignKeyName: "global_meter_entry_execution_id_fkey"
             columns: ["execution_id"]
             isOneToOne: false
-            referencedRelation: "_ai_usage_calls"
+            referencedRelation: "_ai_usage_calls_live"
             referencedColumns: ["execution_id"]
           },
           {
@@ -112864,7 +113316,7 @@ export type Database = {
             foreignKeyName: "work_item_execution_id_fkey"
             columns: ["execution_id"]
             isOneToOne: false
-            referencedRelation: "_ai_usage_calls"
+            referencedRelation: "_ai_usage_calls_live"
             referencedColumns: ["execution_id"]
           },
           {
@@ -112911,12 +113363,48 @@ export type Database = {
             foreignKeyName: "cx_request_user_request_id_fkey"
             columns: ["request_id"]
             isOneToOne: false
-            referencedRelation: "_ai_usage_calls"
+            referencedRelation: "_ai_usage_calls_live"
             referencedColumns: ["request_id"]
           },
         ]
       }
       _ai_usage_calls: {
+        Row: {
+          agent_id: string | null
+          app: string | null
+          bucket: string | null
+          bucket_10m: string | null
+          call_model: string | null
+          calls: number | null
+          conversation_id: string | null
+          cost: number | null
+          created_at: string | null
+          execution_id: string | null
+          feature: string | null
+          finish_reason: string | null
+          got_nothing_back: boolean | null
+          has_request: boolean | null
+          iterations: number | null
+          model: string | null
+          organization_id: string | null
+          origin: string | null
+          paid_calls: number | null
+          person_id: string | null
+          provider: string | null
+          request_id: string | null
+          requests: number | null
+          session_id: string | null
+          source: string | null
+          tokens_cached: number | null
+          tokens_in: number | null
+          tokens_out: number | null
+          tool_calls: number | null
+          trigger: string | null
+          unpriced_calls: number | null
+        }
+        Relationships: []
+      }
+      _ai_usage_calls_live: {
         Row: {
           agent_id: string | null
           app: string | null
@@ -112963,6 +113451,10 @@ export type Database = {
           total_cost: number
           total_tokens: number
         }[]
+      }
+      ai_usage_execution_facts_store: {
+        Args: { p_cut: string; p_from: string; p_to: string }
+        Returns: number
       }
       ai_usage_hourly_refresh: {
         Args: { p_from: string; p_to: string }
