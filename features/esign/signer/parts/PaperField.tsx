@@ -257,7 +257,7 @@ function Callout({ field, onMark, onClear, onNext, filled, color }: PaperFieldPr
       )}
       style={{ background: color }}
     >
-      <span className="flex max-w-[14rem] flex-col px-1" title={field.tooltip}>
+      <span className="flex max-w-[14rem] flex-col px-1" title={field.tooltip ?? undefined}>
         <span className="truncate">
           {field.label}
           {field.required ? " *" : ""}
