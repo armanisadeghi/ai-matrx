@@ -32,6 +32,8 @@ export const TASK_DESCRIPTION_MODES = [
 
 /** Below this width of the field's own box, Split shows one pane (two columns would wrap per character). */
 const SPLIT_MIN_WIDTH_PX = 480;
+/** Below this width the mode switch drops its words (the toolbar needs the room). */
+const MODE_LABELS_MIN_WIDTH_PX = 416;
 
 export interface TaskDescriptionFieldProps {
   value: string;
@@ -66,6 +68,8 @@ export function TaskDescriptionField({
   const [measureRef, { width }] = useMeasure<HTMLDivElement>();
   const frameRef = useRef<HTMLDivElement | null>(null);
   const singlePane = width !== null && width > 0 && width < SPLIT_MIN_WIDTH_PX;
+  // A narrow field (a phone) shows the three modes as icons alone.
+  const iconsOnly = width !== null && width > 0 && width < MODE_LABELS_MIN_WIDTH_PX;
 
   return (
     <div
@@ -75,11 +79,11 @@ export function TaskDescriptionField({
       }}
       data-task-description-field=""
       className={cn(
-        "@container overflow-hidden border border-border/60 bg-card/40",
+        "overflow-hidden border border-border/60 bg-card/40",
         compact ? "rounded-none border-x-0" : "rounded-xl",
       )}
     >
-      <div className="matrx-touch-targets flex min-h-9 items-center gap-1.5 border-b border-border/60 px-1.5 py-0.5">
+      <div className="flex min-h-9 items-center gap-1.5 border-b border-border/60 px-1.5 py-0.5">
         <SegmentedControl
           aria-label="Description view"
           value={mode}
@@ -88,10 +92,12 @@ export function TaskDescriptionField({
             value: v,
             title: hint,
             ariaLabel: label,
-            label: (
+            label: iconsOnly ? (
+              <Icon className="h-3.5 w-3.5" />
+            ) : (
               <>
                 <Icon className="h-3.5 w-3.5" />
-                <span className="hidden @[26rem]:inline">{label}</span>
+                <span>{label}</span>
               </>
             ),
           }))}
