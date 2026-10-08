@@ -462,8 +462,8 @@ function Gate4Body({
   edits: Record<string, unknown>;
   setEdits: (next: Record<string, unknown>) => void;
 }) {
-  const { unit } = useCostDisplay();
-  const cost = formatWaveCost(payload.wave_cost_usd, unit);
+  const { unit, rate: costRate } = useCostDisplay();
+  const cost = formatWaveCost(payload.wave_cost_usd, costRate, unit);
   const limitations = editing
     ? arr<string>(edits.limitations)
     : arr<string>(payload.limitations);

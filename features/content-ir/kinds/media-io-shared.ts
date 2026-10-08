@@ -37,7 +37,6 @@ import { currentCostUnit } from "@/components/cost/costUnit";
 import {
   formatCost as formatKitCost,
   type CostUnit, formatDurationSeconds } from "@ai-matrx/kit/format";
-import { currentPointsRate } from "@/components/cost/pointsRate";
 
 export function stringOrEmpty(value: unknown): string {
   return typeof value === "string" ? value : "";
@@ -117,8 +116,9 @@ export function formatDuration(seconds: number | null): string | null {
  *  `null` (untracked) stays `null` so the fact is omitted, never "—". */
 export function formatCost(
   cost: number | null,
+  rate: number | null,
   unit: CostUnit = currentCostUnit(),
 ): string | null {
   if (cost === null) return null;
-  return formatKitCost(cost, { rate: currentPointsRate(), unit });
+  return formatKitCost(cost, { rate, unit });
 }

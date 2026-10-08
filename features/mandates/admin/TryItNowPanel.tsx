@@ -158,7 +158,7 @@ export function TryItNowPanel({
   passesUserInput: boolean | undefined;
   onSavedTestCase: () => void;
 }) {
-  const { unit: costUnit } = useCostDisplay();
+  const { unit: costUnit, rate: costRate } = useCostDisplay();
   const dispatch = useAppDispatch();
   const { launchMandate } = useAgentLauncher();
   const [testMode, setTestMode] = useState<"server" | "display">("server");
@@ -756,7 +756,7 @@ export function TryItNowPanel({
                   />
                 ),
                 duration: formatDurationMs(result.duration_ms ?? 0, { style: "compact" }),
-                cost: costWords(result.accounting?.total_cost_usd ?? null, costUnit),
+                cost: costWords(result.accounting?.total_cost_usd ?? null, costRate, costUnit),
                 tokens:
                   result.accounting && (result.accounting.input_tokens != null || result.accounting.output_tokens != null)
                     ? formatCount((result.accounting.input_tokens ?? 0) + (result.accounting.output_tokens ?? 0))

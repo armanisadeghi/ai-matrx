@@ -139,7 +139,7 @@ function BenchRecordLine({ bench }: { bench: BenchProofState }) {
     const { proof } = bench;
     // Built by the shared `benchFacts` so the live dialog and this banked
     // record can never say the same fact two different ways.
-    const facts = benchFacts(proof, unit, rate);
+    const facts = benchFacts(proof, rate, unit);
     return (
       <div className="mt-2 rounded-md border border-border px-2 py-1.5">
         <p className="flex items-center gap-1.5 text-xs font-medium text-foreground">

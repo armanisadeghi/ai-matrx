@@ -12,7 +12,6 @@
 // pre-registered design reads "Not set up". Neither is ever "0%".
 
 import { formatCost, type CostUnit } from "@ai-matrx/kit/format";
-import { currentPointsRate } from "@/components/cost/pointsRate";
 import { AI_VISIBILITY_ENGINES } from "../types";
 import type {
   DesignPerformer,
@@ -398,10 +397,11 @@ export function formatComparison(comparison: PairedComparison): string {
 
 export function formatWaveCost(
   value: number | null | undefined,
+  rate: number | null,
   unit: CostUnit = currentCostUnit(),
 ): string | null {
   if (value === null || value === undefined || Number.isNaN(value)) return null;
-  return formatCost(value, { rate: currentPointsRate(), unit });
+  return formatCost(value, { rate, unit });
 }
 
 export interface AidedPivotRow {

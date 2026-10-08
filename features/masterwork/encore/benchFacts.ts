@@ -13,18 +13,16 @@
 // the strings are byte-identical to the ones it built inline.
 
 import { formatCost, type CostUnit } from "@ai-matrx/kit/format";
-import { currentPointsRate } from "@/components/cost/pointsRate";
 import { currentCostUnit } from "@/components/cost/costUnit";
 
 /** The trial arm's cost, in the viewer's unit (points for everyone, dollars
  *  only for an admin who flipped the switch). */
 export function money(
   usd: number | null | undefined,
+  // The SUBSCRIBED rate (`useCostDisplay().rate`), so the figure re-renders
+  // when the knob lands.
+  rate: number | null,
   unit: CostUnit = currentCostUnit(),
-  // A render passes the SUBSCRIBED rate (`useCostDisplay().rate`), so the
-  // figure re-renders when the knob lands; `currentPointsRate()` is only the
-  // outside-render read and answers null until something else re-renders.
-  rate: number | null = currentPointsRate(),
 ): string | null {
   if (usd === null || usd === undefined) return null;
   return formatCost(usd, { rate, unit });
@@ -55,8 +53,8 @@ export interface BenchFactsInput {
  */
 export function benchFacts(
   v: BenchFactsInput,
+  rate: number | null,
   unit: CostUnit = currentCostUnit(),
-  rate: number | null = currentPointsRate(),
 ): string[] {
   return [
     v.panel_votes > 0
@@ -68,8 +66,8 @@ export function benchFacts(
             : ""
         }`
       : null,
-    money(v.c_cost_usd, unit, rate)
-      ? `our arm cost ${money(v.c_cost_usd, unit, rate)}`
+    money(v.c_cost_usd, rate, unit)
+      ? `our arm cost ${money(v.c_cost_usd, rate, unit)}`
       : null,
     v.c_seconds ? `${Math.round(v.c_seconds)}s` : null,
   ].filter((f): f is string => f !== null);

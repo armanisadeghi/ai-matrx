@@ -64,6 +64,7 @@ import {
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { ProInput } from "@/components/official/ProInput";
 import { appletState } from "@/features/applets/lib/applet-state";
+import { useCostDisplay } from "@/components/cost/useCostDisplay";
 
 interface AppletSettingsContentProps {
   appId: string;
@@ -106,6 +107,7 @@ export function AppletSettingsContent({
   const dispatch = useAppDispatch();
   const store = useAppStore();
   const pathname = usePathname();
+  const { rate: costRate } = useCostDisplay();
   const app = useAppSelector((state) => selectAppById(state, appId));
 
   // This is an OBJECT page: the app already knows its organization, so a red
@@ -357,6 +359,7 @@ export function AppletSettingsContent({
 
     return {
       app,
+      rate: costRate,
       activeTab,
       drafts,
       savingField,

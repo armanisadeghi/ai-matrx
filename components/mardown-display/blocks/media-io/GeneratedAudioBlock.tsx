@@ -73,13 +73,13 @@ export default function GeneratedAudioBlock({
   hideHeader = false,
   className,
 }: GeneratedAudioBlockProps) {
-  const { unit: costUnit } = useCostDisplay();
+  const { unit: costUnit, rate: costRate } = useCostDisplay();
   const openFilePreview = useOpenFilePreviewWindow();
   const data = readGeneratedAudioData(serverData);
   if (!data) return null;
 
   const duration = formatDuration(data.duration_seconds);
-  const cost = formatCost(data.usage?.cost_usd ?? null, costUnit);
+  const cost = formatCost(data.usage?.cost_usd ?? null, costRate, costUnit);
 
   return (
     <div className={cn("my-2 space-y-2", className)}>

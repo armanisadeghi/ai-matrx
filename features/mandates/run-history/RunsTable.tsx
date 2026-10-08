@@ -129,7 +129,7 @@ export function RunsTable({
   onSelectRun,
   selectedConversationId = null,
 }: RunsTableProps) {
-  const { unit: costUnit } = useCostDisplay();
+  const { unit: costUnit, rate: costRate } = useCostDisplay();
   const scopeKey = "mandateKey" in scope ? `m:${scope.mandateKey}` : `a:${scope.agentId}`;
   const byAgent = "agentId" in scope;
 
@@ -260,7 +260,7 @@ export function RunsTable({
       sortable: true,
       filter: false,
       accessorFn: (run) => run.cost,
-      cell: (run) => <span className="tabular-nums">{costWords(run.cost, costUnit)}</span>,
+      cell: (run) => <span className="tabular-nums">{costWords(run.cost, costRate, costUnit)}</span>,
     },
     {
       id: "output",

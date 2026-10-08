@@ -136,10 +136,12 @@ describe("the words a row prints", () => {
   });
 
   it("prints cost, duration and time compactly", () => {
-    expect(costWords(0.026889)).toBe("538 points");
-    expect(costWords(0.026889, "usd")).toBe("$0.0269");
-    expect(costWords(1.5)).toBe("30,000 points");
-    expect(costWords(null)).toBe("—");
+    expect(costWords(0.026889, 20_000)).toBe("538 points");
+    expect(costWords(0.026889, 20_000, "usd")).toBe("$0.0269");
+    expect(costWords(1.5, 20_000)).toBe("30,000 points");
+    expect(costWords(null, 20_000)).toBe("—");
+    // the rate is the CALLER's: unloaded reads "—", the loaded rate on the next render fills it in
+    expect(costWords(0.026889, null)).toBe("—");
     expect(durationWords(6214)).toBe("6.2s");
     expect(durationWords(850)).toBe("850ms");
     expect(durationWords(11_000)).toBe("11s");

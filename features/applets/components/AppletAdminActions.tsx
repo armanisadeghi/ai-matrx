@@ -41,6 +41,7 @@ import {
   type AppletRateLimitFormView,
 } from "@/features/applets/format";
 import type { AppletAdminView } from "@/lib/services/applets-admin-service";
+import { usePointsRate } from "@/components/cost/pointsRate.client";
 
 export type AppletAdminActionPatch = {
   is_featured?: boolean;
@@ -67,6 +68,7 @@ export function AppletAdminActions({
   variant = "inline",
   showRateLimits = false,
 }: AppletAdminActionsProps) {
+  const costRate = usePointsRate();
   const [busy, setBusy] = useState<string | null>(null);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [confirmSuspend, setConfirmSuspend] = useState(false);
@@ -160,7 +162,7 @@ export function AppletAdminActions({
       drafts: rlEditing
         ? drafts
         : drafts.map((draft) => ({ ...draft, live: draft.saved })),
-      kpis: appletAdminKpis(app),
+      kpis: appletAdminKpis(app, costRate),
     };
   };
 

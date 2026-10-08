@@ -28,7 +28,6 @@ import { callApi } from "@/lib/api/call-api";
 import type { AppDispatch } from "@/lib/redux/store";
 import type { components } from "@ai-matrx/agents/generated/api-types";
 import { formatFileSize, formatCost, type CostUnit } from "@ai-matrx/kit/format";
-import { currentPointsRate } from "@/components/cost/pointsRate";
 import { currentCostUnit } from "@/components/cost/costUnit";
 import type { AnyMandateKey } from "@ai-matrx/agents/mandates";
 
@@ -189,8 +188,12 @@ export const NO_COST_CELL = "no rate set";
  * set", never "$0.00" — plus the sub-cent precision the old body branched for
  * by hand.
  */
-export function costCell(usd: number | null | undefined, unit: CostUnit = currentCostUnit()): string {
-  return formatCost(usd, { rate: currentPointsRate(), unit, unknown: NO_COST_CELL });
+export function costCell(
+  usd: number | null | undefined,
+  rate: number | null,
+  unit: CostUnit = currentCostUnit(),
+): string {
+  return formatCost(usd, { rate, unit, unknown: NO_COST_CELL });
 }
 
 export function formatSeconds(seconds: number | null | undefined): string {

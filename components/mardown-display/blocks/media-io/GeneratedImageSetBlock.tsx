@@ -126,11 +126,11 @@ export default function GeneratedImageSetBlock({
   hideHeader = false,
   className,
 }: GeneratedImageSetBlockProps) {
-  const { unit: costUnit } = useCostDisplay();
+  const { unit: costUnit, rate: costRate } = useCostDisplay();
   const data = readGeneratedImageSetData(serverData);
   if (!data) return null;
 
-  const cost = formatCost(data.usage?.cost_usd ?? null, costUnit);
+  const cost = formatCost(data.usage?.cost_usd ?? null, costRate, costUnit);
 
   return (
     <div className={cn("my-2 space-y-2", className)}>

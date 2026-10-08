@@ -17,7 +17,7 @@ export function SeoSpendChart({
   points: SeoDailySpendPoint[];
   height?: number;
 }) {
-  const { unit } = useCostDisplay();
+  const { unit, rate: costRate } = useCostDisplay();
   if (points.length === 0) {
     return (
       <div
@@ -77,7 +77,7 @@ export function SeoSpendChart({
               opacity={point.effective_cost > 0 ? 0.75 : 0.15}
             >
               <title>
-                {point.date}: {formatRuntimeCost(point.effective_cost, unit)} ({point.run_count} run
+                {point.date}: {formatRuntimeCost(point.effective_cost, costRate, unit)} ({point.run_count} run
                 {point.run_count === 1 ? "" : "s"})
               </title>
             </rect>
@@ -87,7 +87,7 @@ export function SeoSpendChart({
       <div className="mt-1.5 flex items-center justify-between text-[10px] text-muted-foreground">
         <span>{formatCompactDate(first.date)}</span>
         <span>
-          {formatRuntimeCost(total, unit)} total over {points.length} day
+          {formatRuntimeCost(total, costRate, unit)} total over {points.length} day
           {points.length === 1 ? "" : "s"}
         </span>
         <span>{formatCompactDate(last.date)}</span>

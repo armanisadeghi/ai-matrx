@@ -41,6 +41,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { discussFinding, discussReview, getReviewThread } from "../api";
 import type { DiscussResult } from "../types";
 import { ThreadMessageRow } from "./ThreadMessageRow";
+import { currentPointsRate } from "@/components/cost/pointsRate";
 import { fmtCost, fmtElapsed } from "./tokens";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
@@ -97,8 +98,8 @@ export function DiscussPanel({
       setDraft("");
       toast.success(
         result.findings_created
-          ? `The reviewer answered and added ${result.findings_created} new finding(s) — ${fmtCost(result.cost_usd)}`
-          : `The reviewer answered — no new findings, ${fmtCost(result.cost_usd)}`,
+          ? `The reviewer answered and added ${result.findings_created} new finding(s) — ${fmtCost(result.cost_usd, currentPointsRate())}`
+          : `The reviewer answered — no new findings, ${fmtCost(result.cost_usd, currentPointsRate())}`,
       );
       void thread.refetch();
       onResolved();
