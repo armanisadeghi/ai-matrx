@@ -39,8 +39,12 @@ async function archiveFirstRow(p, tag) {
     await p.waitForTimeout(5000);
     const after = await rowsIn(frame);
     const said = (await p.locator("[data-sonner-toast]").allInnerTexts().catch(() => [])).join(" | ").replace(/\s+/g, " ");
-    outcome = after < before ? "archived" : said ? `said: ${said.slice(0, 200)}` : "nothing happened";
-    console.log(JSON.stringify({ tag, asked, before, after }));
+    // Round 38: the grid's own notice names what was archived (with Undo).
+    const notice = await p.getByText(/^Archived .+\.$/).first().isVisible().catch(() => false);
+    // The store's refusal is drawn in the grid itself (its own sentence), not as a toast.
+    const refused = (await frame.getByText(/do not have access|cannot|can.t /i).first().innerText().catch(() => "")).replace(/\s+/g, " ");
+    outcome = after < before ? (notice ? "archived" : "archived, no message") : refused ? `refused: ${refused.slice(0, 200)}` : said ? `said: ${said.slice(0, 200)}` : "nothing happened";
+    console.log(JSON.stringify({ tag, asked, before, after, notice }));
   }
   p.off("response", onRes);
   await p.screenshot({ path: `${SHOT}/archive-row-${tag}.png` });
@@ -100,7 +104,8 @@ await act(page, async () => {
 try {
 if (who !== "member") {
   const outcome = await act(page, () => archiveFirstRow(page, "admin"));
-  check("admin: Archive record (row menu) never fails silently", outcome !== "nothing happened", { outcome });
+  // Round 38: the owner's archive must happen — the confirm stays open, the row goes, the grid says so.
+  check("admin: Archive record (row menu) archives the row and says so", outcome === "archived", { outcome });
   const viaPeek = await act(page, () => archiveFromPeek(page, "admin"));
   check("admin: Archive record (open row) never fails silently", viaPeek !== "nothing happened", { outcome: viaPeek });
 }
@@ -113,7 +118,8 @@ if (who !== "admin") {
   await p2.locator(".bn-editor").first().waitFor({ timeout: 240_000 });
   await p2.waitForTimeout(6000);
   const outcome = await archiveFirstRow(p2, "member");
-  check("content editor: Archive record (row menu) never fails silently", outcome !== "nothing happened", { outcome });
+  // A content editor is not offered it (hiding is fine), it works, or the store refuses with its reason in the grid.
+  check("content editor: Archive record (row menu) is hidden, archives, or says why not", outcome === "not offered" || outcome === "archived" || outcome.startsWith("refused: "), { outcome });
   const viaPeek = await archiveFromPeek(p2, "member");
   check("content editor: Archive record (open row) never fails silently", viaPeek !== "nothing happened", { outcome: viaPeek });
   await b2.close();

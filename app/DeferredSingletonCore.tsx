@@ -40,7 +40,7 @@ import { ensureScopeTree } from "@/features/scopes/redux/thunks/ensureScopeTree"
 import { ensureScopeSkeleton } from "@/features/scopes/redux/thunks/ensureScopeSkeleton";
 import { registerBlobCacheServiceWorker } from "@/features/files/cache/register-service-worker";
 import { resolveBaseUrl } from "@/lib/python-client";
-import { fetchEntitlementSnapshot } from "@/features/entitlements/service";
+import { fetchEntitlementSnapshot, forgetEntitlementSnapshot } from "@/features/entitlements/service";
 import { UsageGateBridge } from "@/features/entitlements/usage-gate/UsageGateBridge";
 import {
   setEntitlementSnapshot,
@@ -134,6 +134,7 @@ export default function DeferredSingletonCore() {
     let cancelled = false;
     void (async () => {
       if (!user?.id) {
+        forgetEntitlementSnapshot();
         dispatch(clearEntitlements());
         return;
       }

@@ -95,9 +95,11 @@ export function useSpaceSeedSettled(): boolean {
 
 /** Suspends until this block's seed answers (a first-pass block inside its own Suspense). */
 export function useAwaitedBlockSeed(blockId: string): BlockSeed | null {
-  const { seeds, landed } = useContext(SpaceSeedContext);
-  if (blockId in landed) return landed[blockId] ?? null;
-  const promise = seeds?.[blockId];
+  const promise = useContext(SpaceSeedContext).seeds?.[blockId];
+  // Always through use() when there is a promise: a render that suspended must call use() again when it
+  // retries, and the "landed" state can arrive while it is suspended (React: "called use() to suspend in a
+  // previous render but did not call use() when it finished"). A settled promise answers synchronously
+  // (React tracks its status; the route's streamed promises are Flight chunks, never wrap them).
   return promise ? use(promise) : null;
 }
 

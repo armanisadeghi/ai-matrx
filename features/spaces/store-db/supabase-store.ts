@@ -588,23 +588,27 @@ export class SupabaseSpacesStore implements SpacesStore {
     return copy;
   }
 
-  private async setDeleted(id: SpaceId, deletedAt: string | null, action: string): Promise<void> {
-    const { data, error } = await this.db
-      .schema("content")
-      .from("document")
-      .update({ deleted_at: deletedAt })
-      .eq("id", id)
-      .select("id");
-    if (error) fail(action, error);
-    if (!data?.length) throw new Error(`We couldn't ${action}: you cannot change this Space, or it no longer exists.`);
+  /**
+   * Trash and restore go through `content.space_set_trashed`: who may is who may update the row (its creator
+   * or editor access). A plain UPDATE of `deleted_at` is refused (42501) for a full-access editor who is not
+   * the page's creator, because the owner-only trash rule hides the trashed row from them and Postgres checks
+   * the new row against the read policy.
+   */
+  private async setTrashed(id: SpaceId, trashed: boolean, action: string): Promise<void> {
+    // Not in the generated types until the next regeneration: a typed local shape for this one door.
+    const content = this.db.schema("content") as unknown as {
+      rpc(fn: "space_set_trashed", args: { p_document_id: string; p_trashed: boolean }): PromiseLike<{ error: { message: string } | null }>;
+    };
+    const { error } = await content.rpc("space_set_trashed", { p_document_id: id, p_trashed: trashed });
+    if (error) throw new Error(`We couldn't ${action}. ${error.message}`);
   }
 
   async archive(id: SpaceId): Promise<void> {
-    await this.setDeleted(id, new Date().toISOString(), "move this Space to Trash");
+    await this.setTrashed(id, true, "move this page to Trash");
   }
 
   async restore(id: SpaceId): Promise<void> {
-    await this.setDeleted(id, null, "restore this Space");
+    await this.setTrashed(id, false, "restore this page");
     // A restored page whose parent is still in Trash comes back at the top level, as in Notion.
     const edge = await this.parentEdge(id);
     if (edge) {
