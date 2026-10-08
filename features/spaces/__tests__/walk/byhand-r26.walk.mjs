@@ -124,9 +124,8 @@ await act(page, async () => {
     await type("Send the report");
     await enter();
     await enter();
-    await page.keyboard.type("/Database - Inline".slice(0, 9), { delay: 40 });
-    await page.locator(".bn-suggestion-menu").getByText("Database - Inline").click();
-    await page.locator(".spaces-db-frame:not([data-layout=chart])").last().waitFor({ timeout: 60_000 });
+    await slash(page, "Database - Inline");
+    await page.locator(".spaces-db-frame:not([data-layout=chart])").last().waitFor({ timeout: 120_000 });
     await page.waitForTimeout(3000);
   });
   await step("database props + rows", async () => {

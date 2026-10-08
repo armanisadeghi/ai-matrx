@@ -27,15 +27,24 @@ if (!(await frame.count())) {
   });
 }
 await frame.waitFor({ timeout: 60_000 });
-await page.waitForTimeout(6000);
+// The grid's header draws once the table has loaded (slow on a loaded shared server).
+await frame.getByRole("button", { name: /^Sort or filter / }).first().waitFor({ timeout: 180_000 }).catch(async () => {
+  await page.screenshot({ path: `${SHOT}/property-edit-nogrid.png` });
+});
+await page.waitForTimeout(3000);
 console.log(JSON.stringify({ headerButtons: await frame.getByRole("button", { name: /^Sort or filter / }).evaluateAll((els) => els.map((e) => e.getAttribute("aria-label"))) }));
 const headers = () => frame.locator("[role=columnheader], th");
 const header = (name) => headers().filter({ has: page.getByRole("button", { name: `Sort or filter ${name}`, exact: true }) }).first();
 const headerNames = async () => frame.getByRole("button", { name: /^Sort or filter / }).evaluateAll((els) => els.map((e) => (e.getAttribute("aria-label") ?? "").replace(/^Sort or filter /, "")));
 const menu = async (name) => {
-  await header(name).hover();
-  await header(name).getByRole("button", { name: `Sort or filter ${name}`, exact: true }).click();
-  await page.waitForTimeout(400);
+  // The grid redraws after a shape change (a duplicate, a retype): retry until the column menu is open.
+  for (let attempt = 0; attempt < 4; attempt++) {
+    await page.keyboard.press("Escape").catch(() => {});
+    await header(name).hover();
+    await header(name).getByRole("button", { name: `Sort or filter ${name}`, exact: true }).click();
+    if (await page.getByRole("menuitem").first().isVisible({ timeout: 4000 }).catch(() => false)) return;
+    await page.waitForTimeout(1500);
+  }
 };
 const item = (label) => page.getByRole("menuitem", { name: label, exact: true }).or(page.getByText(label, { exact: true })).first();
 const dialog = () => page.getByRole("dialog").last();

@@ -5,7 +5,7 @@
 // a row too. Unpublishes and trashes the page. Exit 1 on failure.
 //   SHOT_DIR=<dir> node features/spaces/__tests__/walk/form-answer.walk.mjs [leftover page ids…]
 import { chromium } from "playwright";
-import { open, newPage, act, slash, originOf, trashPage, loginUrl, orgWithoutMember, shareWith } from "./lib.mjs";
+import { open, newPage, act, slash, originOf, trashPage, loginUrl, orgWithoutMember, shareWith, resumeIfPaused } from "./lib.mjs";
 
 const SHOT = process.env.SHOT_DIR ?? "/tmp";
 const org = await orgWithoutMember();
@@ -113,7 +113,11 @@ if (site) try {
     await p2.screenshot({ path: `${SHOT}/form-answer-sent.png` });
   }
   await anon.close();
-  // The editor sees the answer as a row (Table layout).
+  // The editor sees the answer as a row (Table layout). A shared preview can pause an idle tab: resume, reload.
+  await resumeIfPaused(page);
+  await page.reload({ waitUntil: "domcontentloaded", timeout: 240_000 });
+  await page.locator(".spaces-db-frame").first().waitFor({ timeout: 180_000 });
+  await page.waitForTimeout(4000);
   await act(page, async () => {
     const frame = page.locator(".spaces-db-frame").first();
     await frame.hover();

@@ -37,6 +37,9 @@ await act(page, async () => {
     await page.waitForTimeout(500);
   }
 });
+await page.locator(".spaces-db-frame tfoot [data-records-summary]").first().waitFor({ timeout: 180_000 }).catch(async () => {
+  await page.screenshot({ path: `${process.env.SHOT_DIR ?? "/tmp"}/calc-row-nofooter.png` });
+});
 await page.waitForTimeout(2000);
 const before = await footer();
 check("every column has a Calculate cell", before.length >= 2 && before.every((c) => c.text === "Calculate"), { before });
