@@ -335,6 +335,9 @@ export function RunsTable({
       {...(onSelectRun
         ? {
             onRowOpen: onSelectRun,
+            // Selecting a run opens the page's split — never the table's raw-field window.
+            detail: { enabled: false },
+            window: { enabled: false },
             rowClassName: (run: MandateRun) =>
               selectedConversationId && run.conversationId === selectedConversationId ? "bg-primary/10" : undefined,
           }
