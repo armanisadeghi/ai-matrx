@@ -39,6 +39,7 @@ export interface SpaceSnapshot {
   settings: SpaceDoc["settings"];
   icon: SpaceDoc["icon"];
   cover: SpaceDoc["cover"];
+  properties?: SpaceDoc["properties"];
   blocks: SpaceBlock[];
 }
 
@@ -151,12 +152,13 @@ function readSnapshot(raw: Json | null | undefined): SpaceSnapshot {
     settings: { ...DEFAULT_SETTINGS, ...((s.settings as Partial<SpaceDoc["settings"]>) ?? {}) },
     icon: (s.icon as SpaceDoc["icon"]) ?? null,
     cover: (s.cover as SpaceDoc["cover"]) ?? null,
+    ...(Array.isArray(s.properties) && s.properties.length ? { properties: s.properties as SpaceDoc["properties"] } : {}),
     blocks: Array.isArray(s.blocks) ? (s.blocks as SpaceBlock[]) : [],
   };
 }
 
-function toSnapshot(doc: Pick<SpaceDoc, "settings" | "icon" | "cover" | "blocks">): SpaceSnapshot {
-  return { v: 1, settings: doc.settings, icon: doc.icon ?? null, cover: doc.cover ?? null, blocks: doc.blocks };
+function toSnapshot(doc: Pick<SpaceDoc, "settings" | "icon" | "cover" | "blocks" | "properties">): SpaceSnapshot {
+  return { v: 1, settings: doc.settings, icon: doc.icon ?? null, cover: doc.cover ?? null, ...(doc.properties?.length ? { properties: doc.properties } : {}), blocks: doc.blocks };
 }
 
 /** Plain-text copy of the page for search until the server's markdown regenerator exists. */
@@ -263,6 +265,7 @@ export class SupabaseSpacesStore implements SpacesStore {
       title: head.title,
       icon: snapshot.icon,
       cover: snapshot.cover,
+      ...(snapshot.properties ? { properties: snapshot.properties } : {}),
       settings: snapshot.settings,
       blocks: snapshot.blocks,
       isArchived: head.deleted_at != null,

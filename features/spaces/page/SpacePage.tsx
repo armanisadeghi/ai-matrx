@@ -3,7 +3,7 @@
 // features/spaces/page/SpacePage.tsx — one open Space: top bar, cover, icon, title, editor (§A).
 
 import { Button, EmptyState } from "@ai-matrx/design-system/controls";
-import { ChevronsRight, CloudOff, FileInput, FileQuestion, ImageIcon, Lock, Menu, MessageSquare, MessageSquareText, SmilePlus, Star } from "lucide-react";
+import { ChevronsRight, CloudOff, FileInput, FileQuestion, ImageIcon, Lock, Menu, MessageSquare, MessageSquareText, ListPlus, SmilePlus, Star } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 
@@ -46,6 +46,7 @@ import { SpaceEditor } from "../editor/SpaceEditor";
 import { useSpaces } from "../state/SpacesProvider";
 import { Cover, CoverPicker } from "./Cover";
 import { IconPicker } from "./IconPicker";
+import { AddPropertyMenu, PageProperties } from "./PageProperties";
 import { PageMenu } from "./PageMenu";
 import { SpaceIcon } from "./SpaceIcon";
 import { TocRail } from "./TocRail";
@@ -76,7 +77,7 @@ import { copyToClipboard } from "@/lib/clipboard/copy";
 /** The longest the static first paint stays once the editor is built behind it. */
 const REVEAL_CAP_MS = 2500;
 
-type Editable = Pick<SpaceDoc, "title" | "icon" | "cover" | "settings" | "blocks">;
+type Editable = Pick<SpaceDoc, "title" | "icon" | "cover" | "settings" | "blocks" | "properties">;
 
 function Title({
   value,
@@ -407,7 +408,7 @@ function SpacePageScreen({ spaceId, initialDoc }: { spaceId: string; initialDoc?
         editor.replaceBlocks(editor.document, toEngine(copy.doc.blocks) as never);
       }
       keptLocally.current = true;
-      update({ title: copy.doc.title, icon: copy.doc.icon, cover: copy.doc.cover, settings: copy.doc.settings, blocks: fromEngine(editor.document as unknown as EngineBlock[]) });
+      update({ title: copy.doc.title, icon: copy.doc.icon, cover: copy.doc.cover, settings: copy.doc.settings, properties: copy.doc.properties, blocks: fromEngine(editor.document as unknown as EngineBlock[]) });
     },
     offer: (_copy, { restore, discard }) =>
       toast.warning("Unsaved changes from this device", {
@@ -1024,6 +1025,14 @@ function SpacePageScreen({ spaceId, initialDoc }: { spaceId: string; initialDoc?
                     </button>
                   </CoverPicker>
                 ) : null}
+                {editable && !doc.properties?.length ? (
+                  <AddPropertyMenu onAdd={(p) => update({ properties: [p] })}>
+                    <button type="button" className="spaces-header-control">
+                      <ListPlus size={15} />
+                      Add property
+                    </button>
+                  </AddPropertyMenu>
+                ) : null}
                 <button type="button" className="spaces-header-control" onClick={() => setAddingPageComment(true)}>
                   <MessageSquare size={15} />
                   Add comment
@@ -1031,6 +1040,7 @@ function SpacePageScreen({ spaceId, initialDoc }: { spaceId: string; initialDoc?
               </div>
             ) : null}
             <Title value={doc.title} editable={editable} autoFocus={focusTitle} onChange={(title) => update({ title })} onEnter={focusFirstBlock} />
+            <PageProperties spaceId={doc.id} properties={doc.properties ?? []} editable={editable} onChange={(properties) => update({ properties })} />
             <Backlinks key={doc.id} spaceId={doc.id} />
             <PageComments source={commentSource} comments={comments} adding={addingPageComment} onAddingDone={() => setAddingPageComment(false)} />
           </div>

@@ -12,6 +12,7 @@ import {
   RENDERED_BLOCK_TYPES,
   SCHEMA_ONLY_BLOCK_TYPES,
   SPACE_COLORS,
+  PAGE_PROPERTY_TYPES,
   type RichSpan,
   type SpaceBlock,
   type SpaceSnapshot,
@@ -270,6 +271,20 @@ const SPECS: BlockSpec[] = [
     children: "none",
     props: (p) => (str(p?.label) ? null : "props.label must be text"),
   },
+  {
+    type: "ai",
+    parity: "C28",
+    label: "AI block (a prompt and the content it generated, in place)",
+    rendered: true,
+    text: "none",
+    children: "none",
+    props: (p) => {
+      if (typeof p?.prompt !== "string") return "props.prompt must be text";
+      if (p.output !== undefined && typeof p.output !== "string") return "props.output must be text (Markdown)";
+      if (p.ranAt !== undefined && typeof p.ranAt !== "string") return "props.ranAt must be an ISO time";
+      return null;
+    },
+  },
 ];
 
 export const BLOCK_SPECS: ReadonlyMap<string, BlockSpec> = new Map(SPECS.map((s) => [s.type, s]));
@@ -405,6 +420,15 @@ export function validateSnapshot(s: unknown): string[] {
   if (icon) out.push(icon);
   const cover = mediaProblem(s.cover, "cover", true);
   if (cover) out.push(cover);
+  if (s.properties !== undefined) {
+    if (!Array.isArray(s.properties)) out.push("properties must be a list");
+    else
+      for (const [i, prop] of (s.properties as unknown[]).entries()) {
+        if (!isObj(prop) || !nonEmpty(prop.id) || typeof prop.name !== "string") out.push(`properties[${i}] needs an id and a name`);
+        else if (!(PAGE_PROPERTY_TYPES as readonly string[]).includes(String(prop.type))) out.push(`properties[${i}].type must be one of ${PAGE_PROPERTY_TYPES.join(", ")}`);
+        else if (prop.value !== undefined && prop.value !== null && typeof prop.value !== "string" && typeof prop.value !== "number") out.push(`properties[${i}].value must be text, a number or empty`);
+      }
+  }
   out.push(...validateBlocks(s.blocks));
   return out;
 }

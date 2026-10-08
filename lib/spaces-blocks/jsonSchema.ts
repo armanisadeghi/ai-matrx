@@ -11,7 +11,7 @@
 // Regenerate the SQL function: `pnpm exec tsx scripts/spaces-snapshot-schema.mjs --print-sql`.
 
 import { BLOCK_SPECS } from "./schema";
-import { BUTTON_ACTION_KINDS, DATABASE_CHART_OPS, DATABASE_CHART_TYPES, DATABASE_OPEN_AS, DATABASE_VIEW_LAYOUTS, SPACE_COLORS } from "./types";
+import { BUTTON_ACTION_KINDS, DATABASE_CHART_OPS, DATABASE_CHART_TYPES, DATABASE_OPEN_AS, DATABASE_VIEW_LAYOUTS, PAGE_PROPERTY_TYPES, SPACE_COLORS } from "./types";
 
 type J = Record<string, unknown>;
 
@@ -126,6 +126,7 @@ const PROPS_SCHEMAS: Record<string, { required?: boolean; schema: J }> = {
     },
   },
   slot: { required: true, schema: { required: ["label"], properties: { label: { type: "string" } } } },
+  ai: { required: true, schema: { required: ["prompt"], properties: { prompt: { type: "string" }, output: { type: "string" }, ranAt: { type: "string" } } } },
 };
 
 function databaseView(): J {
@@ -225,6 +226,20 @@ export function buildSpaceSnapshotSchema(): J {
       },
       icon: { oneOf: [{ type: "null" }, mediaDef(false)] },
       cover: { oneOf: [{ type: "null" }, mediaDef(true)] },
+      properties: {
+        type: "array",
+        items: {
+          type: "object",
+          required: ["id", "name", "type"],
+          properties: {
+            id: nonEmptyStr,
+            name: { type: "string" },
+            type: { enum: [...PAGE_PROPERTY_TYPES] },
+            value: { type: ["string", "number", "null"] },
+            options: { type: "array", items: { type: "object", required: ["id", "name"], properties: { id: nonEmptyStr, name: { type: "string" }, color: ref("color") } } },
+          },
+        },
+      },
       // a tab sits only inside tabs
       blocks: { type: "array", items: { allOf: [ref("block"), { not: { type: "object", required: ["type"], properties: { type: { const: "tab" } } } }] } },
     },
