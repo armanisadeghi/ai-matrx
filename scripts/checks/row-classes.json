@@ -6,7 +6,7 @@
   },
   "counts": {
     "repo-only": 168,
-    "live-db": 65
+    "live-db": 66
   },
   "rows": {
     "every-ai-matrx-package-is-declared-and-installed-at-npm-late": {
@@ -180,12 +180,25 @@
       "reason": "no database access in 2 file(s) reached",
       "evidence": []
     },
+    "every-ai-matrx-import-resolves-in-the-installed-packages-fas": {
+      "label": "Every @ai-matrx import resolves in the installed packages (fast)",
+      "class": "repo-only",
+      "cmd": "pnpm check:package-imports-resolve",
+      "reason": "no database access in 1 file(s) reached",
+      "evidence": []
+    },
     "code-using-ai-matrx-packages-type-checks-against-the-locked-": {
       "label": "Code using @ai-matrx packages type-checks against the locked versions",
-      "class": "repo-only",
+      "class": "live-db",
       "cmd": "pnpm check:matrx-api-usage",
-      "reason": "no database access in 2 file(s) reached",
-      "evidence": []
+      "reason": "UNCERTAIN — the resolver could not follow everything; classified live-db (safe side)",
+      "evidence": [],
+      "uncertain": [
+        {
+          "file": "(command)",
+          "signal": "unknown binary \"check:matrx-api-usage\" — not followed"
+        }
+      ]
     },
     "sync-sweep-holds-unbuildable-files-refuses-breaking-package-": {
       "label": "Sync sweep holds unbuildable files, refuses breaking package updates — self-tests",

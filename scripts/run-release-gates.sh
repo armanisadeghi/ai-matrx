@@ -90,6 +90,10 @@ if $STRICT; then
         # were all green. ~30s, offline, zero findings at introduction.
         # `pnpm check:matrx-imports:self-test` proves it can still fail.
         "Every @ai-matrx import exists in the installed package|pnpm check:matrx-imports"
+        # THE FAST LAYER OF THE SAME CLASS (5+ outages 2026-10-05..07): subpaths and names in app source AND in
+        # the installed packages' own dist, from the installed exports maps. Seconds of CPU, offline.
+        # `pnpm check:package-imports-resolve:self-test` proves each rule can still fail.
+        "Every @ai-matrx import resolves in the installed packages (fast)|pnpm check:package-imports-resolve"
         # CODE THAT USES AN @ai-matrx PACKAGE TYPE-CHECKS AGAINST THE LOCKED VERSION. 2026-10-07
         # v0.4.2990/2991: WarmupHost.tsx called warmup.currentScope() (agents 0.58.0) while the
         # lockfile pinned 0.57.0 — every page crashed. matrx-imports cannot see a member of a
@@ -1117,6 +1121,10 @@ else
         # were all green. ~30s, offline, zero findings at introduction.
         # `pnpm check:matrx-imports:self-test` proves it can still fail.
         "Every @ai-matrx import exists in the installed package|pnpm check:matrx-imports"
+        # THE FAST LAYER OF THE SAME CLASS (5+ outages 2026-10-05..07): subpaths and names in app source AND in
+        # the installed packages' own dist, from the installed exports maps. Seconds of CPU, offline.
+        # `pnpm check:package-imports-resolve:self-test` proves each rule can still fail.
+        "Every @ai-matrx import resolves in the installed packages (fast)|pnpm check:package-imports-resolve"
         # CODE THAT USES AN @ai-matrx PACKAGE TYPE-CHECKS AGAINST THE LOCKED VERSION. 2026-10-07
         # v0.4.2990/2991: WarmupHost.tsx called warmup.currentScope() (agents 0.58.0) while the
         # lockfile pinned 0.57.0 — every page crashed. matrx-imports cannot see a member of a

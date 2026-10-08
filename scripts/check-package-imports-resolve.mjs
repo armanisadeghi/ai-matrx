@@ -116,25 +116,25 @@ function resolveSub(manifest, sub) {
   return { files, hasTypes: Boolean(types) };
 }
 
-// ── readable export names of a module (null = not fully readable) ──
+// ── the vocabulary of a module (null = not fully readable) ──
+// A name an import wants is only "missing" when it appears NOWHERE in the module's declaration text
+// and its relative `export *` closure — precision over recall: multi-declarator `export declare const a: X, b: Y`,
+// destructured slice actions and re-exports all count as present, so a finding is a name the package
+// genuinely does not mention. (The TypeScript-checker twin, `check:matrx-imports`, owns exact answers.)
 function exportNames(file, seen = new Set()) {
   if (seen.has(file)) return new Set();
   seen.add(file);
   if (!existsSync(file)) return null;
   const text = readFileSync(file, "utf8");
-  const names = new Set();
-  for (const m of text.matchAll(/export\s+(?:declare\s+)?(?:async\s+)?(?:const|let|var|function\*?|class|abstract\s+class|enum|const\s+enum|interface|type|namespace)\s+([\w$]+)/g)) names.add(m[1]);
-  for (const m of text.matchAll(/export\s+(?:declare\s+)?(?:const|let|var)\s*\{([^}]*)\}/g)) for (const part of m[1].split(",")) { const p = part.trim().split("=")[0].trim(); if (!p) continue; const as = p.split(":"); names.add((as[1] ?? as[0]).trim()); }
-  for (const m of text.matchAll(/export\s+(?:type\s+)?\{([^}]*)\}(?!\s*from)/g)) for (const part of m[1].split(",")) { const p = part.trim().replace(/^type\s+/, ""); if (!p) continue; const as = p.split(/\s+as\s+/); names.add((as[1] ?? as[0]).trim()); }
-  for (const m of text.matchAll(/export\s+(?:type\s+)?\{([^}]*)\}\s*from\s*["']([^"']+)["']/g)) for (const part of m[1].split(",")) { const p = part.trim().replace(/^type\s+/, ""); if (!p) continue; const as = p.split(/\s+as\s+/); names.add((as[1] ?? as[0]).trim()); }
-  if (/export\s+default\b/.test(text) || /export\s*\{[^}]*\bas\s+default\b/.test(text)) names.add("default");
-  for (const m of text.matchAll(/export\s+\*\s+as\s+([\w$]+)\s+from/g)) names.add(m[1]);
-  if (/module\.exports|exports\.[\w$]+\s*=|__exportStar|__export\(/.test(text)) return null; // CJS shape: not statically certain
+  if (/module\.exports|__exportStar|__export\(/.test(text)) return null; // CJS shape: not statically certain
+  const names = new Set(text.match(/[A-Za-z_$][\w$]*/g) ?? []);
   for (const m of text.matchAll(/export\s+\*\s+from\s*["']([^"']+)["']/g)) {
     const spec = m[1];
     if (!spec.startsWith(".")) return null; // star from another package: unreadable here
     const base = path.resolve(path.dirname(file), spec);
-    const cands = [base, base.replace(/\.js$/, ".d.ts"), `${base}.d.ts`, `${base}.js`, path.join(base, "index.d.ts"), path.join(base, "index.js")];
+    const dts = [base.replace(/\.[cm]?js$/, ".d.ts"), `${base}.d.ts`, path.join(base, "index.d.ts")];
+    const js = [base, `${base}.js`, path.join(base, "index.js")];
+    const cands = file.endsWith(".d.ts") || file.endsWith(".d.mts") ? [...dts, ...js] : [...js, ...dts];
     const next = cands.find((c) => existsSync(c) && statSync(c).isFile());
     if (!next) return null;
     const sub = exportNames(next, seen);
@@ -151,7 +151,7 @@ function parseImports(text) {
     const names = [];
     if (m[3]) names.push("default");
     if (m[5]) names.push("default");
-    if (m[4] !== undefined) for (const part of m[4].split(",")) { const p = part.trim().replace(/^type\s+/, ""); if (p) names.push(p.split(/\s+as\s+/)[0].trim()); }
+    if (m[4] !== undefined) for (const part of m[4].replace(/\/\*[\s\S]*?\*\//g, "").replace(/\/\/[^\n]*/g, "").split(",")) { const p = part.trim().replace(/^type\s+/, ""); if (p) names.push(p.split(/\s+as\s+/)[0].trim()); }
     out.push({ spec: m[6], names, line: lineOf(m.index) });
   }
   for (const re of [DYN_RE, BARE_RE]) for (const m of text.matchAll(re)) out.push({ spec: m[1], names: [], line: lineOf(m.index) });

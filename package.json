@@ -654,6 +654,8 @@
     "check:matrx-dist-integrity:self-test": "node scripts/check-matrx-dist-integrity.mjs --self-test",
     "check:matrx-imports": "node scripts/check-matrx-imports.mjs",
     "check:matrx-imports:self-test": "node scripts/check-matrx-imports.mjs --self-test",
+    "check:package-imports-resolve": "node scripts/check-package-imports-resolve.mjs",
+    "check:package-imports-resolve:self-test": "node scripts/check-package-imports-resolve.mjs --self-test",
     "check:sweep-resolves": "node scripts/check-sweep-resolves.mjs",
     "check:sweep-resolves:self-test": "node scripts/check-sweep-resolves.mjs --self-test",
     "test:sync-main-packages": "python3 scripts/test_sync_main_sweep_hold.py && python3 scripts/test_sync_main_package_adoption.py",

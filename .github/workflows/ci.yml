@@ -190,6 +190,13 @@ jobs:
         run: pnpm check:matrx-imports:self-test
       - name: Every @ai-matrx import exists in the installed package
         run: pnpm check:matrx-imports
+      # 2026-10-05..07, 5+ outages: the app (or a published package) imported an @ai-matrx subpath or
+      # name the INSTALLED published version lacks. The fast layer: subpath + name resolution from the
+      # installed exports maps, app source AND the installed packages' own dist (seconds of CPU).
+      - name: The package-import guard goes RED per rule (planted in a temp tree)
+        run: pnpm check:package-imports-resolve:self-test
+      - name: Every @ai-matrx import (app source and installed package graph) resolves
+        run: pnpm check:package-imports-resolve
 
   # ---------------------------------------------------------------------------
   # marker-law — the cheapest and most load-bearing gate in the repo. `__kind`
