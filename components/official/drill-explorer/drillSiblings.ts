@@ -17,7 +17,7 @@
 import { useEffect, useState } from "react";
 import type { DrillDefinition, DrillSource } from "@ai-matrx/records";
 import type { RecordsClient } from "@ai-matrx/records/core";
-import { drillQuestionToParams, type MatrxDrillDimension, type MatrxDrillMeasure, type MatrxDrillQuestion } from "@ai-matrx/design-system/data-table";
+import { drillQuestionToParams, parseDimensionRef, type MatrxDrillDimension, type MatrxDrillMeasure, type MatrxDrillQuestion } from "@ai-matrx/design-system/data-table";
 
 import { costColumnLabel } from "./DrillExplorerHeadline";
 import { drillDimensionLabelFor } from "./dimensionWords";
@@ -121,4 +121,52 @@ export function openDrillSibling(sibling: DrillSibling, open: { view?: string; q
     for (const [k, v] of Object.entries(drillQuestionToParams(open.question, new URLSearchParams()))) if (v !== null) params.set(k, v);
   }
   sibling.go({ ...(open.view ? { view: open.view } : {}), ...(params ? { params } : {}) });
+}
+
+/**
+ * The question a sibling is opened with when it is asked by `refs` (ONE rule for the cross-definition
+ * chip and the address that names a sibling's Dimension): grouped as asked where the sibling has the
+ * Dimension, the filters it has kept, the window kept, and the level's Measures (else the ones it
+ * shares with this question, else its first).
+ */
+export function drillSiblingQuestion(sibling: Pick<DrillSiblingDefinition, "def">, q: MatrxDrillQuestion, by?: readonly string[]): MatrxDrillQuestion {
+  const sibDims = sibling.def.dimensions;
+  const has = (r: string) => sibDims.some((d) => d.key === parseDimensionRef(r).key);
+  const groupBy = (by ?? q.by).filter(has);
+  const lead = groupBy[0];
+  const levelShow = lead ? sibDims.find((d) => d.key === parseDimensionRef(lead).key)?.level?.show : undefined;
+  const shared = q.show.filter((k) => sibling.def.measures.some((m) => m.key === k));
+  const show = levelShow && levelShow.length > 0 ? [...levelShow] : shared.length > 0 ? shared : sibling.def.measures.slice(0, 1).map((m) => m.key);
+  return {
+    by: groupBy,
+    ...(!by && q.across && has(q.across) ? { across: q.across } : {}),
+    show,
+    where: q.where.filter((w) => has(w.dim)),
+    window: q.window ?? null,
+  };
+}
+
+/**
+ * AN ADDRESS NAMING A DIMENSION THIS DEFINITION LACKS (lane DRILL-LIVE-FIX-2 #2): `?by=conversation` on
+ * /administration/usage (ai_usage has no conversation; its sibling ai_usage_executions does) goes to the
+ * sibling that has every such Dimension, with the filters kept. One no sibling has is said in words —
+ * never a refused ask. `complete` = every sibling has been described (else nothing is decided yet).
+ */
+export function drillAddressMisfit(
+  def: { label: string; dimensions: ReadonlyArray<{ key: string; level?: { breakouts?: readonly string[] | undefined } | undefined }> },
+  siblings: readonly DrillSiblingDefinition[],
+  q: MatrxDrillQuestion,
+  complete: boolean,
+): { route: DrillSiblingDefinition; question: MatrxDrillQuestion } | { sentence: string } | null {
+  const own = (r: string) => def.dimensions.some((d) => d.key === parseDimensionRef(r).key);
+  const asked = [...q.by, ...(q.across ? [q.across] : []), ...q.where.map((w) => w.dim)];
+  const missing = [...new Set(asked.filter((r) => !own(r)).map((r) => parseDimensionRef(r).key))];
+  if (missing.length === 0) return null;
+  const able = siblings.filter((s) => missing.every((k) => s.def.dimensions.some((d) => d.key === k)));
+  // the sibling this definition's own cross-definition breakouts name ("ai_usage_executions:conversation") first
+  const named = new Set(def.dimensions.flatMap((d) => (d.level?.breakouts ?? []).filter((b) => b.includes(":")).map((b) => b.split(":")[0])));
+  const route = able.find((s) => named.has(s.token)) ?? able[0];
+  if (route) return { route, question: drillSiblingQuestion(route, q) };
+  if (!complete) return null;
+  return { sentence: `${def.label} has no ${missing.map((k) => `“${k}”`).join(" or ")} to ask by.` };
 }

@@ -40,7 +40,7 @@
 // shrink (they wrap to a second line on a phone); the note row is chips with tooltips
 // (`DrillExplorerNotes`), never sentences.
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { MatrxDrillChart } from "@ai-matrx/design-system/data-table/drill-chart";
 import { RefreshCw } from "lucide-react";
 import { formatCount } from "@ai-matrx/kit/format";
@@ -78,7 +78,7 @@ import { drillExplorerScope } from "./drillExplorerScope";
 import { useDrillAttributes } from "./useDrillAttributes";
 import { SurfaceRuntimeProvider } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import { DrillSiblingFindings } from "./DrillSiblingFindings";
-import { drillSiblingDimensions, drillSiblingMeasures, openDrillSibling, useDrillSiblings } from "./drillSiblings";
+import { drillAddressMisfit, drillSiblingDimensions, drillSiblingMeasures, drillSiblingQuestion, openDrillSibling, useDrillSiblings } from "./drillSiblings";
 import { DrillRecords } from "./DrillRecords";
 import { DrillSavedViews, type DrillOpenView } from "./DrillSavedViews";
 import { drillSavedViewSurface, readDrillView } from "./savedViews";
@@ -222,14 +222,22 @@ export function DrillExplorer({
           open: (token, ref, q) => {
             const sibling = siblingDefs.find((s) => s.token === token);
             if (!sibling) return;
-            const sibDims = sibling.def.dimensions;
-            const has = (r: string) => sibDims.some((d) => d.key === parseDimensionRef(r).key);
-            const levelShow = sibDims.find((d) => d.key === parseDimensionRef(ref).key)?.level?.show;
-            const shared = q.show.filter((k) => sibling.def.measures.some((m) => m.key === k));
-            const show = levelShow && levelShow.length > 0 ? [...levelShow] : shared.length > 0 ? shared : sibling.def.measures.slice(0, 1).map((m) => m.key);
-            openDrillSibling(sibling, { question: { by: [ref], show, where: q.where.filter((w) => has(w.dim)), window: q.window ?? null } });
+            openDrillSibling(sibling, { question: drillSiblingQuestion(sibling, q, [ref]) });
           },
         };
+  // AN ADDRESS NAMING A SIBLING'S DIMENSION GOES THERE (lane DRILL-LIVE-FIX-2 #2); one nobody has is said.
+  const misfit = def ? drillAddressMisfit(def, siblingDefs, asked, siblingDefs.length === (siblings?.length ?? 0)) : null;
+  const misfitRoute = misfit && "route" in misfit ? misfit : null;
+  const misfitKey = misfitRoute ? JSON.stringify([misfitRoute.route.token, misfitRoute.question]) : "";
+  const routedFor = useRef("");
+  useEffect(() => {
+    if (!misfitRoute || routedFor.current === misfitKey) return;
+    routedFor.current = misfitKey;
+    openDrillSibling(misfitRoute.route, { question: misfitRoute.question });
+    // keyed by misfitKey
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [misfitKey]);
+  const shownError = misfit && "sentence" in misfit ? misfit.sentence : misfitRoute ? null : error;
   if (def && !levelDims) {
     setLevelDims(def.dimensions.map((d) => ({ key: d.key, label: d.label, kind: d.kind, ...(d.level ? { level: d.level } : {}) })));
   }
@@ -631,7 +639,7 @@ export function DrillExplorer({
                 onQuestionChange={setQuestion}
                 answers={answers}
                 paths={paths}
-                error={error}
+                error={shownError}
                 rowNoun={rowNoun}
                 emptyLabel={emptyLabel}
                 exportTitle={title}
