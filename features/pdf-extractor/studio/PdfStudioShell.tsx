@@ -575,7 +575,6 @@ export function PdfStudioShell({ initialDocumentId }: PdfStudioShellProps) {
 
   // The open doc's server run, reconnected after a refresh / from another tab:
   // live progress resumes and the status comes from the run record.
-  const activeDocId = activeDoc?.id ?? null;
   const docRun = usePdfDocRun({
     docId: activeDocId,
     localStreaming:
