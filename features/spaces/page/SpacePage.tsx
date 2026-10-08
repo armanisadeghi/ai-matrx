@@ -58,7 +58,7 @@ import { editedAgo } from "./time";
 import { mayWrite, roomCanEdit, trashedByList } from "./trash-state";
 import { attemptSave, deviceStorage, forgetUnsaved, keepsChange, keepUnsaved, noteWritten } from "./unsaved";
 import { useRestoreKept } from "./useRestoreKept";
-import { SeedRecords, SpaceSeedProvider, useLandedSpaceSeed, type SpaceTablesSeed } from "./space-seed-context";
+import { SpaceSeedProvider, useSpaceSeedSettled, type SpaceTablesSeed } from "./space-seed-context";
 import { StaticSpaceBody } from "../editor/static-body";
 import { sendOnLeave, trackAccessToken } from "./leave-save";
 import { contentKey } from "./content-key";
@@ -661,7 +661,8 @@ function SpacePageScreen({ spaceId, initialDoc }: { spaceId: string; initialDoc?
   // Round 34 — the first paint is the page's static body (server HTML); the editor is built behind it
   // once the room is joined and takes its place when it paints the same height (so nothing moves), or
   // after REVEAL_CAP_MS whatever it draws.
-  const landedSeed = useLandedSpaceSeed();
+  // The editor's database blocks start from the server's answers: it is built once they have landed.
+  const seedSettled = useSpaceSeedSettled();
   const stackRef = useRef<HTMLDivElement | null>(null);
   const [revealed, setRevealed] = useState(false);
   const revealWhenPainted = () => {
@@ -1006,9 +1007,8 @@ function SpacePageScreen({ spaceId, initialDoc }: { spaceId: string; initialDoc?
           <CommentMargin threads={comments.threads} containerRef={contentRef} tick={String(contentTick)} onOpen={openThread} />
           <div className="spaces-body-stack" ref={stackRef}>
           {!revealed ? <StaticSpaceBody blocks={doc.blocks} /> : null}
-          {collab.session ? (
+          {collab.session && seedSettled ? (
           <div className={revealed ? "contents" : "spaces-editor-behind"} inert={!revealed}>
-          <SeedRecords seed={landedSeed}>
           <StructureProvider value={fullEdit}>
           <SpaceEditor
             key={doc.id}
@@ -1063,7 +1063,6 @@ function SpacePageScreen({ spaceId, initialDoc }: { spaceId: string; initialDoc?
             onComment={startComment}
           />
           </StructureProvider>
-          </SeedRecords>
           </div>
           ) : null}
           </div>

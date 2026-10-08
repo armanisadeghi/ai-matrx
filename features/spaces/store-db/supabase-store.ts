@@ -264,9 +264,9 @@ export class SupabaseSpacesStore implements SpacesStore {
   }
 
   async get(id: SpaceId): Promise<SpaceDoc | null> {
-    const head = await this.head(id);
+    // All three at once (round 34): the page's first paint waits on the slowest, not on their sum.
+    const [head, snapshot, edge] = await Promise.all([this.head(id), this.latestSnapshot(id), this.parentEdge(id)]);
     if (!head || head.format !== "spaces") return null;
-    const [snapshot, edge] = await Promise.all([this.latestSnapshot(id), this.parentEdge(id)]);
     return this.compose(head, snapshot, edge);
   }
 

@@ -25,6 +25,7 @@ import type { RichSpan, SpaceMedia } from "../contract";
 import { useSpaceMediaUrl } from "../page/media";
 import { SpaceIcon } from "../page/SpaceIcon";
 import { useSpaces } from "../state/SpacesProvider";
+import { LateSeedRecords } from "../page/space-seed-context";
 
 const DatabaseBlockView = dynamic(() => import("../data/DatabaseBlock").then((m) => m.DatabaseBlock), {
   ssr: false,
@@ -355,7 +356,9 @@ export const storedBlockSpecs = {
   database: storedSpec("database", (p, ctx) => (
     <DatabaseHost blockId={ctx.blockId} layout={activeLayout(p)} painted={paintedSizesOf(p)}>
       <BlockBoundary>
-        <DatabaseBlockView blockId={ctx.blockId} props={p} onChange={ctx.update} editable={(ctx.editor as unknown as { isEditable: boolean }).isEditable} />
+        <LateSeedRecords>
+          <DatabaseBlockView blockId={ctx.blockId} props={p} onChange={ctx.update} editable={(ctx.editor as unknown as { isEditable: boolean }).isEditable} />
+        </LateSeedRecords>
       </BlockBoundary>
     </DatabaseHost>
    ), [databaseOwnsItsEvents, databasePaintedGeometry]),

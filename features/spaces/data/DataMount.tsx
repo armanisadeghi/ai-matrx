@@ -57,7 +57,8 @@ function LiveMount({ tableId, children, held }: { tableId: string; children: Rea
   // pass, and handed to the kept store so the browser asks nothing.
   const seeded = useSeededWhere(tableId);
   const primed = useRef<string | null>(null);
-  if (seeded && primed.current !== tableId) {
+  // Never on the server: the kept store is module state there, shared by every request.
+  if (seeded && primed.current !== tableId && typeof window !== "undefined") {
     primed.current = tableId;
     primeObjectOrganization(tableId, Promise.resolve(readObjectOrganizationAnswer(seeded, tableId)));
   }

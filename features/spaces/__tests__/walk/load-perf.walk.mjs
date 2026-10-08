@@ -56,7 +56,7 @@ page.on("request", (r) => {
   const u = r.url();
   if (!/\/rest\/v1\//.test(u)) return;
   const name = u.replace(/^.*\/rest\/v1\//, "").split("?")[0];
-  reads.push({ at: Date.now() - navStart, name, schema: r.headers()["content-profile"] ?? r.headers()["accept-profile"] ?? "" });
+  reads.push({ at: Date.now() - navStart, name, schema: r.headers()["content-profile"] ?? r.headers()["accept-profile"] ?? "", body: process.env.BODIES ? (r.postData() ?? "").slice(0, 300) : "" });
 });
 const out = [];
 for (let i = 0; i < loads; i++) {
@@ -90,7 +90,7 @@ for (let i = 0; i < loads; i++) {
   };
   out.push(row);
   console.log(JSON.stringify(row));
-  if (process.env.VERBOSE) for (const x of reads) console.log("   read", x.at, x.schema, x.name);
+  if (process.env.VERBOSE) for (const x of reads) console.log("   read", x.at, x.schema, x.name, x.body);
   else console.log("   rowish", JSON.stringify(rowReads.map((x) => `${x.at}:${x.name}`)));
   for (const w of warnings.slice(0, 3)) console.log("   warn", w);
 }
