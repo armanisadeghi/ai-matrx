@@ -69,4 +69,30 @@ the browser only starts asking at the cap, and its reads then take as long as th
 off. A load whose seed lands is ~0.5–0.8 s faster than OFF. So "a cap that never costs anything" does
 not hold. A miss costs about the cap itself, and misses happen on production.
 
-**Decision: platform default stays OFF.** This was the last design (SSR-ROWS, -2, -3); no fourth attempt.
+**Decision (at that point): platform default stays OFF.**
+
+## Item 3 finished: the browser never waits (SSR-ROWS-3, 2026-10-08)
+
+`PrimedTablePage` asks the browser's own first reads the moment it renders in the browser
+(`clientTableSeed.ts`), outside the boundary the server's rows stream into, and draws the page from
+whichever seed lands first. When the server's seed wins, the page stays drawn from it
+(`settled`). When the browser's wins, the pending server boundary is client-rendered and the
+server's later seed is ignored. Until one lands, the route's own `TableRouteSkeleton` shows. Each
+of the browser's doors is answered by whichever comes first: its own call, or the same door and
+arguments in the server's streamed seed (`racingDataSource`), so a door the server already answered
+is never asked again. The first build of the race skipped that step and knob-off loads got ~1 s
+slower (2.7–3.0 s), from three serial browser reads.
+
+Production, live `814eb7174f`, same harness and table, ON/OFF alternating:
+
+| Run | cold ON | cold OFF | warm ON | warm OFF |
+|---|---|---|---|---|
+| 7 | **7039 (0)** | 2530 (0) | 1608 (532) | 1955 (0) |
+| 8 | 1269 (532) | 2152 (0) | 1142 (532) | 2022 (0) |
+| 9 | 1890 (532) | 2565 (0) | 1229 (532) | 1883 (0) |
+
+Rule: flip ON only if every ON ≤ its paired OFF + 300 ms. Run 7 cold breaks it. That load was the
+first one after the deploy went live. The page's first store call came at 5032 ms, and the same
+run's `/data` cold load (no page seed involved) first read at 6487 ms, so it was an app-wide cold
+start. Every other comparison passes, with ON 0.3–0.9 s faster than OFF.
+**Platform default left OFF pending the coordinator's ruling on run 7.**
