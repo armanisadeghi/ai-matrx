@@ -4,7 +4,7 @@
 // features (pages hold applets; applets hold pages). The choice is one row per person, kept in a typed
 // table the platform keeps for this feature — person scope, so only she sees her row. A person in several
 // organizations may have a row in each; the newest choice wins.
-import { defineAppTable as defineTypedTable, f } from "@ai-matrx/records/app-table";
+import { defineTypedTable, f } from "@ai-matrx/records/typed-table";
 
 export const startPageChoice = defineTypedTable({
   name: "Start page",

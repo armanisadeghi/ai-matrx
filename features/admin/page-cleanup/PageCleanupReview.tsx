@@ -26,7 +26,7 @@ import {
   createRecordsClient,
   type RecordsClient,
 } from "@ai-matrx/records/core";
-import { listAppRows, upsertAppRow } from "@ai-matrx/records/app-table";
+import { listAppRows, upsertAppRow } from "@ai-matrx/records/typed-table";
 import { personActor, recordsDataSource } from "@ai-matrx/records-ui";
 
 import { InfoHint } from "@/components/official/InfoHint";
