@@ -57,15 +57,24 @@ export function pageReminders(spaceId: string, title: string, blocks: SpaceBlock
 }
 
 /** Keeps this person's reminders on the page in step with its date mentions (debounced; unchanged sets send nothing). */
-export function usePageReminders(spaceId: string, title: string, blocks: SpaceBlock[] | undefined, userId: string | null, on: boolean) {
-  const [organizationId, setOrganizationId] = useState<string | null>(null);
+export function usePageReminders(
+  spaceId: string,
+  title: string,
+  blocks: SpaceBlock[] | undefined,
+  userId: string | null,
+  on: boolean,
+  /** The page's organization when the page read carried it (round 40: then nothing is asked here). */
+  knownOrganizationId?: string,
+) {
+  const [readOrganizationId, setOrganizationId] = useState<string | null>(null);
+  const organizationId = knownOrganizationId ?? readOrganizationId;
   const sent = useRef<string | null>(null);
   // A reminder fires at its time in the person's own zone (their saved time zone, not the device's clock).
   const zone = usePersonTimeZone();
 
   // The reminder belongs to the page's own organization (never the active one).
   useEffect(() => {
-    if (!on) return;
+    if (!on || knownOrganizationId) return;
     let live = true;
     void supabase
       .schema("content")
@@ -81,7 +90,7 @@ export function usePageReminders(spaceId: string, title: string, blocks: SpaceBl
     return () => {
       live = false;
     };
-  }, [spaceId, on]);
+  }, [spaceId, on, knownOrganizationId]);
 
   useEffect(() => {
     if (!on || !userId || !organizationId || !blocks) return;

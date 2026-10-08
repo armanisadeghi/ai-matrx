@@ -14,6 +14,7 @@ import { useEffect, useRef } from "react";
 
 import { useSpaces } from "../state/SpacesProvider";
 import { SpaceIcon } from "../page/SpaceIcon";
+import { useSeededLink } from "../page/space-links";
 import { IconPicker } from "../page/IconPicker";
 import { notionCodeBlock } from "./code-block";
 import { equationInline, mentionInline } from "./inline";
@@ -59,12 +60,16 @@ export function PageRow({ spaceId, linked }: { spaceId: string; linked: boolean 
   const { byId, archived, linkTarget, requestLink, ready, open, pageHref, missingPageLabel } = useSpaces();
   // The tree first; a page it does not hold (shared from another organization) is read by id — never
   // "in Trash" unless it is.
-  const page = byId.get(spaceId) ?? linkTarget?.(spaceId) ?? undefined;
-  const trashed = archived.some((a) => a.id === spaceId);
+  // Round 40: the route read every linked page in one call (`useSeededLink`); only a link it did not know
+  // (added after load) asks, batched with every other unknown link of the same moment.
+  const seeded = useSeededLink(spaceId);
+  const page = byId.get(spaceId) ?? (seeded && !seeded.isArchived ? seeded : undefined) ?? linkTarget?.(spaceId) ?? undefined;
+  const trashed = !!seeded?.isArchived || archived.some((a) => a.id === spaceId);
+  const known = seeded !== undefined;
   useEffect(() => {
-    if (!page && !trashed) requestLink?.(spaceId);
-  }, [page, trashed, requestLink, spaceId, ready]);
-  const reading = !page && !trashed && (!ready || (!!requestLink && linkTarget?.(spaceId) === undefined));
+    if (!page && !trashed && !known) requestLink?.(spaceId);
+  }, [page, trashed, known, requestLink, spaceId, ready]);
+  const reading = !page && !trashed && !known && (!ready || (!!requestLink && linkTarget?.(spaceId) === undefined));
   const title = page
     ? page.title || "Untitled"
     : reading

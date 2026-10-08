@@ -3,7 +3,9 @@
 // browser data read (requests to the database's REST doors, by name and start time), CLS, and hydration
 // warnings from the console.
 //   node features/spaces/__tests__/walk/load-perf.walk.mjs <pageId> [loads]
-//   MEMBER=1 signs in as test@test.com. WAIT=ms per load (default 15000). VERBOSE=1 lists every read.
+//   MEMBER=1 signs in as test@test.com. WAIT=ms per load (default 15000). VERBOSE=1 lists every read
+//   (BODIES=1 adds each read's body or query). Every row ends with `spacesReads`: the Spaces reads by name
+//   (content schema + the platform associations a page asks), the round-40 budget being <= 6 per load.
 import { open, originOf } from "./lib.mjs";
 
 const id = process.argv[2] ?? "ba289103-9ef2-433a-ae94-0cd9a963ae29";
@@ -57,7 +59,7 @@ page.on("request", (r) => {
   const u = r.url();
   if (!/\/rest\/v1\//.test(u)) return;
   const name = u.replace(/^.*\/rest\/v1\//, "").split("?")[0];
-  reads.push({ at: Date.now() - navStart, name, schema: r.headers()["content-profile"] ?? r.headers()["accept-profile"] ?? "", body: process.env.BODIES ? (r.postData() ?? "").slice(0, 300) : "" });
+  reads.push({ at: Date.now() - navStart, name, schema: r.headers()["content-profile"] ?? r.headers()["accept-profile"] ?? "", body: process.env.BODIES ? (r.postData() ?? decodeURIComponent(u.split("?")[1] ?? "")).slice(0, 300) : "" });
 });
 const out = [];
 for (let i = 0; i < loads; i++) {
@@ -76,6 +78,13 @@ for (let i = 0; i < loads; i++) {
     ttfb: Math.round(performance.getEntriesByType("navigation")[0]?.responseStart ?? 0),
   }));
   const rowReads = reads.filter((x) => /record|row|drill|table_page|entit|aggregate|view/i.test(x.name));
+  // Round 40: the page's own Spaces reads — anything in `content`, the associations / categories a page
+  // asks in `platform`, and the grid's reverse-link reads. Budget <= 6 per load (was ~125 on the admin sample).
+  const spacesReads = {};
+  for (const x of reads) {
+    const isSpaces = x.schema === "content" || (x.schema === "platform" && /^(associations|categories)$/.test(x.name)) || x.name === "rpc/reverse_links_many";
+    if (isSpaces) spacesReads[x.name] = (spacesReads[x.name] ?? 0) + 1;
+  }
   const row = {
     load: i + 1,
     ttfbMs: r.ttfb,
@@ -88,6 +97,8 @@ for (let i = 0; i < loads; i++) {
     rowishReads: rowReads.length,
     cls: +r.cls.toFixed(4),
     hydrationWarnings: warnings.length,
+    spacesReadCount: Object.values(spacesReads).reduce((a, b) => a + b, 0),
+    spacesReads,
   };
   out.push(row);
   console.log(JSON.stringify(row));

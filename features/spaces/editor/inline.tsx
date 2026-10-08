@@ -17,6 +17,7 @@ import type { SpaceRemindOffset } from "@/lib/spaces-blocks/types";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { SpaceIcon } from "../page/SpaceIcon";
+import { useSeededLink } from "../page/space-links";
 import { useSpaces } from "../state/SpacesProvider";
 import { InlineMath } from "./stored-blocks";
 
@@ -32,10 +33,13 @@ function readSpan(raw: unknown): RichSpan {
 function PageMention({ spaceId, fallback }: { spaceId: string; fallback: string }) {
   const { byId, open, linkTarget, requestLink } = useSpaces();
   // The lazy tree may not hold the linked page: read it once by id (row security decides).
-  const page = byId.get(spaceId) ?? linkTarget?.(spaceId) ?? undefined;
+  // Round 40: the route read every linked page in one call; only a mention it did not know asks (batched).
+  const seeded = useSeededLink(spaceId);
+  const page = byId.get(spaceId) ?? (seeded && !seeded.isArchived ? seeded : undefined) ?? linkTarget?.(spaceId) ?? undefined;
+  const known = seeded !== undefined;
   useEffect(() => {
-    if (!page) requestLink?.(spaceId);
-  }, [page, requestLink, spaceId]);
+    if (!page && !known) requestLink?.(spaceId);
+  }, [page, known, requestLink, spaceId]);
   return (
     <button
       type="button"

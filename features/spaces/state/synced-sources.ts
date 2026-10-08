@@ -47,8 +47,12 @@ export function useSyncedSourcesVersion(): number {
   );
 }
 
-/** Which of `ids` are synced sources (one read per 200 ids). */
-export async function loadSyncedSources(ids: string[]): Promise<void> {
+const checked = new Set<string>();
+/** Which of `ids` are synced sources (one read per 200 ids; an id is asked once per tab — round 40). */
+export async function loadSyncedSources(all: string[]): Promise<void> {
+  const ids = all.filter((id) => !checked.has(id));
+  if (!ids.length) return;
+  for (const id of ids) checked.add(id);
   const found: string[] = [];
   for (let i = 0; i < ids.length; i += 200) {
     const { data, error } = await supabase
@@ -59,7 +63,10 @@ export async function loadSyncedSources(ids: string[]): Promise<void> {
       .eq("label", SYNCED_SOURCE)
       .is("deleted_at", null)
       .in("source_id", ids.slice(i, i + 200));
-    if (error) throw new Error(`We couldn't read the synced blocks: ${error.message}`);
+    if (error) {
+      for (const id of ids) checked.delete(id);
+      throw new Error(`We couldn't read the synced blocks: ${error.message}`);
+    }
     for (const r of data ?? []) found.push(r.source_id);
   }
   markSyncedSources(found);
@@ -138,8 +145,11 @@ export function useSyncedEdges(pageId: string, blocks: SpaceBlock[] | undefined,
   const linked = useRef<{ page: string; ids: Set<string> } | null>(null);
   const busy = useRef(false);
   const want = blocks ? syncedSourcesIn(blocks).sort().join(",") : null;
+  // Round 40: a page opened with no synced block asks nothing on open (one edge read per page load was
+  // most pages' only use of this); its edges are read and reconciled once a synced block is added.
   useEffect(() => {
     if (!on || want === null) return;
+    if (want === "" && linked.current?.page !== pageId) return;
     let live = true;
     const timer = window.setTimeout(async () => {
       if (busy.current) return;

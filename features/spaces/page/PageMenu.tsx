@@ -59,6 +59,7 @@ export function PageMenu({
   onAskAiChange,
   isTemplate,
   onTemplate,
+  onOpen,
   updatedLabel,
   counts,
   suggestPageId,
@@ -79,6 +80,8 @@ export function PageMenu({
   /** I3 — the page carries the template label (null = not known yet). */
   isTemplate: boolean | null;
   onTemplate: (on: boolean) => void;
+  /** The menu opened (round 40: the template label is read then, never on page load). */
+  onOpen?: () => void;
   updatedLabel: string;
   /** A14 — the page's words and characters, Notion's "Word count" line. */
   counts: { words: number; characters: number };
@@ -94,7 +97,13 @@ export function PageMenu({
     fn();
   };
   return (
-    <Popover open={open} onOpenChange={setOpen}>
+    <Popover
+      open={open}
+      onOpenChange={(next) => {
+        setOpen(next);
+        if (next) onOpen?.();
+      }}
+    >
       <PopoverTrigger asChild>
         <Button variant="quiet" icon={<MoreHorizontal size={18} />} aria-label="Page options" />
       </PopoverTrigger>

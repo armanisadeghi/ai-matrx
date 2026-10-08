@@ -45,6 +45,19 @@ Block document: a tree of `SpaceBlock` (`id`, `type`, `text: RichSpan[]`, `color
 
 ## Change log
 
+- 2026-10-08 — builder round 40 (page-level link reads): a page's links resolved one full page read each
+  (`requestLink` -> `store.get` = document + space_payload + associations per page row, link-to-page and page
+  mention): admin sample ~125 Spaces reads per load (39-42 of each + 3 `reverse_links_many`). Now the route reads
+  every linked page in ONE call, `content.space_summaries(uuid[])` (title, icon, trash state, parent; viewer
+  access per id; door row before grant), ids from `page/linked-pages.ts` (row props, nested blocks, mention
+  spans), plus `space_backlinks`, beside the page; `page/space-links.tsx` hands them to `PageRow`,
+  `PageMention` and `Backlinks` (titles in the HTML). A link added after load asks through `requestLink`,
+  batched per tick into one `space_summaries`. Also gone from load: the page's organization (now
+  `SpaceDoc.organizationId`, used by reminders and the collab cadence), the template label (read when the •••
+  menu or gallery opens), the synced-source check re-asking known ids, and the synced-block edge read on a
+  page with no synced block. `load-perf.walk.mjs` prints `spacesReads` per load. Measured: admin sample 5
+  (space_sidebar 1, synced_source 1, the grid's `reverse_links_many` 3 — records-ui, one per link field);
+  member page 1b5eb9af 2. CLS <= 0.0022, no hydration warnings. Test `page/__tests__/linked-pages.test.ts`.
 - 2026-10-08 — fixes round 38: (D1) "Archive record" works: a modal's `aria-hidden` walk (Radix `hideOthers` keeps every
   `[aria-live]`, and the grid's dnd-kit live region sits in the editor) marked the editor's blocks, ProseMirror redrew
   the database block and the grid remounted with its confirm; `editor/aria-hidden-marks.ts` makes the editor ignore
