@@ -58,6 +58,8 @@ try {
   const out = arg("json", null);
   if (out && out !== true) fs.writeFileSync(out, JSON.stringify(report, null, 2));
 } catch (e) {
-  console.log(`perf-data could not finish: ${e.message}`);
+  console.log(`perf-data could not finish: ${e?.stack ?? e}`);
+  process.exitCode = 1;
 }
-process.exit(0);
+process.on("unhandledRejection", (e) => { console.log(`perf-data: unhandled rejection: ${e?.stack ?? e}`); process.exit(1); });
+process.exit(process.exitCode ?? 0);

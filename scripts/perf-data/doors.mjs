@@ -53,21 +53,48 @@ export async function measureDoors({ calls = 30, installs = 3, log = console.log
   // template_install: a multi-step door that resumes until done. Each install is removed again, in the admin workspace.
   if (installs > 0 && ws) {
     const tpl = env.PERF_TEMPLATE_ID ?? "9bce1178-693c-4da4-852d-c4bca7912220"; // T0016
-    const firstMs = [], totalMs = [];
-    for (let i = 0; i < installs; i++) {
-      const t0 = performance.now();
-      let r = await rpc("custom", "template_install", { p_organization_id: ws.organization_id, p_template_id: tpl });
-      firstMs.push(r.ms);
-      let ans = JSON.parse(r.text), guard = 0;
-      while (ans && ans.done === false && guard++ < 30) { r = await rpc("custom", "template_install", { p_organization_id: ws.organization_id, p_template_id: tpl }); ans = JSON.parse(r.text); }
-      totalMs.push(performance.now() - t0);
-      const installId = ans.install_id ?? ans.install?.id ?? ans.id;
-      if (installId) { let u = JSON.parse((await rpc("custom", "template_uninstall", { p_organization_id: ws.organization_id, p_install_id: installId })).text), g = 0; while (u && u.done === false && g++ < 30) u = JSON.parse((await rpc("custom", "template_uninstall", { p_organization_id: ws.organization_id, p_install_id: installId })).text); }
-      else log(`  template_install: no install id in the answer (keys: ${Object.keys(ans).join(",")}); not removed`);
-    }
-    const f = [...firstMs].sort((a, b) => a - b), t = [...totalMs].sort((a, b) => a - b);
-    results.push({ door: "custom.template_install (first call)", calls: installs, p50: Math.round(pct(f, 50)), p95: Math.round(pct(f, 95)), max: Math.round(f.at(-1)), kb: 0, errors: 0, firstError: "", budget: budgets.doors["custom.template_install (first call)"]?.p95_ms });
-    results.push({ door: "custom.template_install (whole install)", calls: installs, p50: Math.round(pct(t, 50)), p95: Math.round(pct(t, 95)), max: Math.round(t.at(-1)), kb: 0, errors: 0, firstError: "", budget: undefined });
+    results.push(...(await measureInstalls({ rpc, orgId: ws.organization_id, templateId: tpl, installs, log, budgets })));
+  } else if (installs > 0) {
+    log("  template_install: SKIPPED - no workspace named \"admin's Workspace\" in the data home");
   }
   return { results, fixtures: { org, tableId, recordId, table: D.table_name } };
+}
+
+const parse = (text) => { try { return JSON.parse(text); } catch { return { _unparsed: String(text).slice(0, 160) }; } };
+
+/**
+ * The template_install rows. Never throws: an install that cannot run (the door refused, answered something that
+ * is not JSON, or threw) becomes ONE named skip row so the report prints, and what was installed is still removed.
+ * Each step logs as it finishes - three installs take ~3 minutes and used to say nothing until the end.
+ */
+export async function measureInstalls({ rpc, orgId, templateId, installs, log = console.log, budgets = {} }) {
+  const firstMs = [], totalMs = [];
+  const skip = (why) => {
+    log(`  template_install: SKIPPED after ${firstMs.length}/${installs} - ${why}`);
+    return [{ door: "custom.template_install", calls: firstMs.length, p50: 0, p95: 0, max: 0, kb: 0, errors: 1, firstError: `skipped: ${why}`, budget: undefined }];
+  };
+  for (let i = 0; i < installs; i++) {
+    let installId;
+    try {
+      const t0 = performance.now();
+      let r = await rpc("custom", "template_install", { p_organization_id: orgId, p_template_id: templateId });
+      let ans = parse(r.text), guard = 0;
+      if (r.status >= 400 || ans?.code || ans?._unparsed) return skip(`install ${i + 1} answered ${r.status} ${ans?.message ?? ans?.code ?? ans?._unparsed ?? ""}`.trim());
+      firstMs.push(r.ms);
+      while (ans && ans.done === false && guard++ < 30) { r = await rpc("custom", "template_install", { p_organization_id: orgId, p_template_id: templateId }); ans = parse(r.text); }
+      totalMs.push(performance.now() - t0);
+      installId = ans?.install_id ?? ans?.install?.id ?? ans?.id;
+      log(`  template_install ${i + 1}/${installs}: first call ${Math.round(firstMs.at(-1))} ms, whole install ${Math.round(totalMs.at(-1))} ms`);
+      if (!installId) return skip(`install ${i + 1} gave no install id (keys: ${Object.keys(ans ?? {}).join(",")}); nothing to remove`);
+      let u = parse((await rpc("custom", "template_uninstall", { p_organization_id: orgId, p_install_id: installId })).text), g = 0;
+      while (u && u.done === false && g++ < 30) u = parse((await rpc("custom", "template_uninstall", { p_organization_id: orgId, p_install_id: installId })).text);
+    } catch (e) {
+      return skip(`install ${i + 1} threw: ${e?.message ?? e}`);
+    }
+  }
+  const f = [...firstMs].sort((a, b) => a - b), t = [...totalMs].sort((a, b) => a - b);
+  return [
+    { door: "custom.template_install (first call)", calls: installs, p50: Math.round(pct(f, 50)), p95: Math.round(pct(f, 95)), max: Math.round(f.at(-1)), kb: 0, errors: 0, firstError: "", budget: budgets.doors?.["custom.template_install (first call)"]?.p95_ms },
+    { door: "custom.template_install (whole install)", calls: installs, p50: Math.round(pct(t, 50)), p95: Math.round(pct(t, 95)), max: Math.round(t.at(-1)), kb: 0, errors: 0, firstError: "", budget: undefined },
+  ];
 }
