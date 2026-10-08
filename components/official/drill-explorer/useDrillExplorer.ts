@@ -11,6 +11,7 @@
 // when the contract carries them — built-in views, findings, records) is `platform.drill_describe`.
 // Id-valued Dimensions read their words from the door's own labels, then the host's name resolvers.
 
+import { drillFailureWords } from "./explorerWords";
 import { useEffect, useRef, useState } from "react";
 import { createRecordsClient, type RecordsClient } from "@ai-matrx/records/core";
 import type { DrillAnswer, DrillDefinition, DrillQuestion, DrillSource } from "@ai-matrx/records";
@@ -195,7 +196,7 @@ export function useDrillExplorer(args: {
     void client.drillDescribe({ source: JSON.parse(sourceKey) as DrillSource }).then((got) => {
       if (cancelled) return;
       if (got.ok) setDef(got.data ?? null);
-      else setError(got.error.message || "The definition could not be read.");
+      else setError(drillFailureWords(got.error.message, "The definition could not be read."));
     });
     return () => {
       cancelled = true;
@@ -260,7 +261,7 @@ export function useDrillExplorer(args: {
       if (cancelled) return;
       const failed = results.find((r) => !r.got.ok);
       if (failed && !failed.got.ok) {
-        setError(failed.got.error.message || "The answer could not be counted.");
+        setError(drillFailureWords(failed.got.error.message, "The answer could not be counted."));
         return;
       }
       const out: Record<string, MatrxDrillAnswerRow[]> = {};

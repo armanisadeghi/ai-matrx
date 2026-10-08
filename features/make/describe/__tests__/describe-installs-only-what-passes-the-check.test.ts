@@ -13,16 +13,16 @@
 // Fixtures are real: the first live answer of the mandate (2026-10-05, refused by the store for real
 // rules) and a published gallery template reduced to what a describe answer carries.
 
-import { CHOICE_COLORS, TEMPLATE_VIEW_KINDS } from "@ai-matrx/records/templates";
+import { CHOICE_COLORS, describeVocabulary as packageVocabulary, TEMPLATE_VIEW_KINDS } from "@ai-matrx/records/templates";
 
-import { bindReuses, checkDescribeSpec, coerceDescribeAnswer, describeDeclaration, describeSpec, describeVariables } from "../describeTemplate";
+import { bindReuses, checkDescribeTemplate, coerceDescribeAnswer, describeDeclaration, describeSpec, describeVariables } from "../describeTemplate";
 import firstAnswer from "./fixtures/first-live-answer-cedar-ridge.json";
 import goldReduced from "./fixtures/gold-reduced-to-describe.json";
 
 describe("the describe box installs only what passes the store's check", () => {
   it("refuses the first live answer in one line, naming the store's own first problem", () => {
     const answer = coerceDescribeAnswer(firstAnswer);
-    const checked = checkDescribeSpec(describeSpec(answer.template));
+    const checked = checkDescribeTemplate(answer.template);
     expect(checked.ok).toBe(false);
     if (checked.ok) return;
     expect(checked.line).toBe(`${checked.problems[0]!.says}${checked.problems.length > 1 ? ` (+${checked.problems.length - 1} more)` : ""}`);
@@ -41,8 +41,8 @@ describe("the describe box installs only what passes the store's check", () => {
       delete table.childDates;
       delete table.statusImplies;
     }
-    const checked = checkDescribeSpec(describeSpec({ ...t, __kind: "describe_template_result" }));
-    expect(checked).toEqual({ ok: true });
+    const checked = checkDescribeTemplate({ ...t, __kind: "describe_template_result" });
+    expect(checked.ok).toBe(true);
   });
 
   it("fills what the mandate leaves out for speed exactly as if it had written it", () => {
@@ -73,7 +73,27 @@ describe("the describe box installs only what passes the store's check", () => {
     }
     expect(dropped).toBeGreaterThan(5);
     expect(describeSpec(lean)).toEqual(full);
-    expect(checkDescribeSpec(describeSpec(lean))).toEqual({ ok: true });
+    expect(checkDescribeTemplate(lean).ok).toBe(true);
+  });
+
+  it("fixes what the package can fix by itself and shows an error only for what remains", () => {
+    // A choice field written with no colours is not a defect the person should see: the package's
+    // automatic fixes colour it, say so in one line, and the fixed spec is what is checked and installed.
+    const t = JSON.parse(JSON.stringify(goldReduced)) as Record<string, unknown>;
+    delete t.dimensions;
+    delete t.sharedBlocks;
+    t.relationships = (t.relationships as Array<{ toTable: string }>).filter((r) => r.toTable !== "team_member");
+    for (const table of t.tables as Array<{ fields: Array<{ relationTarget?: string; choiceColors?: unknown }>; childDates?: unknown; statusImplies?: unknown }>) {
+      table.fields = table.fields.filter((f) => f.relationTarget !== "team_member");
+      for (const f of table.fields) delete f.choiceColors;
+      delete table.childDates;
+      delete table.statusImplies;
+    }
+    const checked = checkDescribeTemplate(t);
+    expect(checked.autoFixes.length).toBeGreaterThan(0);
+    expect(checked.ok).toBe(true);
+    const field = checked.spec.tables.flatMap((x) => x.fields).find((f) => f.key === "how_found")! as unknown as { choiceColors?: Record<string, string> };
+    expect(Object.keys(field.choiceColors ?? {}).length).toBeGreaterThan(0);
   });
 
   it("fills an omitted sensitivity up to the store's floor — an address is confidential, a person's birth date restricted", () => {
@@ -118,6 +138,7 @@ describe("the describe box installs only what passes the store's check", () => {
     const vocab = JSON.parse(v.vocabulary) as Record<string, unknown>;
     expect(vocab.choice_colors).toEqual([...CHOICE_COLORS]);
     expect(vocab.template_view_kinds).toEqual([...TEMPLATE_VIEW_KINDS]);
+    expect(vocab).toEqual(JSON.parse(JSON.stringify(packageVocabulary())));
     expect(v.today).toBe("2026-10-05");
     expect(JSON.parse(v.existing_tables)).toEqual([]);
   });

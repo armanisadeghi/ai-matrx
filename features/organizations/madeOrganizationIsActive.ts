@@ -15,6 +15,7 @@
 import { getStoreSingleton } from "@/lib/redux/store-singleton";
 import { setOrganization } from "@/lib/redux/slices/appContextSlice";
 import { memberOrganizationsInvalidated } from "@/features/agent-context/redux/organizationsSlice";
+import { writeLastActiveOrganization } from "@/lib/organizations/accountOrganizationChoices";
 
 export function makeCreatedOrganizationActive(org: { id: string; name?: string | null }): void {
   const store = getStoreSingleton();
@@ -24,6 +25,10 @@ export function makeCreatedOrganizationActive(org: { id: string; name?: string |
     return;
   }
   store.dispatch(setOrganization({ id: org.id, name: org.name ?? null }));
+  // A switch like any other: the next load opens to it.
+  void writeLastActiveOrganization(org.id).catch((err: unknown) =>
+    console.error("[organizations] saving the made organization as last active failed", err),
+  );
   // Her organization lists (kept per tab, `useUserOrganizations`) now include it.
   store.dispatch(memberOrganizationsInvalidated());
 }

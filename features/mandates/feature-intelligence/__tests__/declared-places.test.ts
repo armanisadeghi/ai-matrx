@@ -74,11 +74,12 @@ function walk(dir: string, out: string[] = [], exts: readonly string[] = [".tsx"
   return out;
 }
 
-// P27 (618a850bf1): the chat package source lives in the aidream checkout. The packages' published
-// place maps still name their sources as `packages/chat/src/...`; resolve those to where the files are.
+// P27 (618a850bf1): the chat package source lives in the aidream checkout. Its place maps name
+// their files by their aidream path (`apps/shared/chat/src/...`); resolve those to the sibling checkout.
+const CHAT_SRC = "apps/shared/chat/src/";
 const resolveSource = (file: string) =>
-  file.startsWith("packages/chat/src/")
-    ? join(ROOT, "..", "aidream", "apps", "shared", "chat", "src", file.slice("packages/chat/src/".length))
+  file.startsWith(CHAT_SRC)
+    ? join(ROOT, "..", "aidream", ...CHAT_SRC.split("/").filter(Boolean), file.slice(CHAT_SRC.length))
     : join(ROOT, file);
 const read = (file: string) => readFileSync(resolveSource(file), "utf8");
 const features = DECLARED_FEATURES.filter((entry) => !OWN_GUARD.has(entry.feature)).map(
@@ -150,7 +151,7 @@ describe("declared intelligence places", () => {
     );
 
     const components = (feature.roots ?? []).flatMap((root) =>
-      walk(join(ROOT, root)).map((file) => relative(ROOT, file)),
+      walk(resolveSource(root)).map((file) => relative(ROOT, file)),
     );
     const running = components
       .map((file) => ({ file, keys: keysNamedIn(read(file), feature) }))

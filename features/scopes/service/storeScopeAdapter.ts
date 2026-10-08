@@ -190,6 +190,7 @@ export function scopeTypeNodeFromStore(row: StoreTypeRow): ScopeTypeNode {
     default_variable_keys: Array.isArray(row.default_variable_keys) ? row.default_variable_keys : [],
     slug: oldTypeSlug(row.slug),
     description: row.description ?? "",
+    created_by: row.created_by ?? null,
     created_at: row.created_at ?? "",
     updated_at: row.updated_at ?? "",
     scopes: [],
@@ -493,6 +494,7 @@ export function archivedTypeFromStore(row: {
   icon?: string | null;
   color?: string | null;
   deleted_at?: string | null;
+  created_by?: string | null;
   archived_scope_count?: number | null;
 }): ArchivedScopeTypeRow {
   const singular = row.label_singular ?? "";
@@ -504,6 +506,7 @@ export function archivedTypeFromStore(row: {
     icon: row.icon ?? "folder",
     color: row.color ?? "",
     deleted_at: row.deleted_at ?? "",
+    created_by: row.created_by ?? null,
     archived_scope_count: row.archived_scope_count ?? 0,
   };
 }

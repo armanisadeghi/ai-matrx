@@ -90,11 +90,16 @@ export function explainDirectiveFailure(
   }
   const reason = PERSON_READY.exec(failure.raw.trim());
   if (reason) {
-    // A remedy a person can carry out from where they are: nobody reading the
-    // card edits its source, but anyone can ask for a corrected one (G10B).
+    // A remedy that holds however the button got here — an AI wrote it or a
+    // person inserted it by hand (G15 review: "Ask for a corrected version"
+    // assumed an AI). The card has no edit-values door, so the words stay
+    // neutral. Details read the same field names the form shows.
+    const titleColumn = directiveTitleColumn(failure.noun);
+    const worded = wordServerFieldNames(reason[0], titleColumn);
     return {
-      what: wordServerFieldNames(reason[0], directiveTitleColumn(failure.noun)),
-      next: "Ask for a corrected version, then apply it.",
+      what: worded,
+      next: "Correct it, then apply again.",
+      details: worded,
     };
   }
   return null;

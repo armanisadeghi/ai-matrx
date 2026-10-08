@@ -113,6 +113,16 @@ export async function GET(request: NextRequest) {
     if (data.length < PER_PAGE) break;
   }
 
+  // THE CAP IS STATE, NEVER SILENT (DRILL-SERVER-2): the list holds at most MAX_PAGES × PER_PAGE guests,
+  // newest first; the response says how many exist so the page says what it left out. The page's
+  // counts come from the drill definition user_acquisition, which counts on the database.
+  const { count: guestTotal, error: guestCountError } = await admin
+    .schema("users")
+    .from("guest_executions")
+    .select("id", { count: "exact", head: true });
+  if (guestCountError) return errorResponse(guestCountError);
+  const accountsCapped = authUsers.length >= MAX_PAGES * PER_PAGE;
+
   const { data: profiles, error: profilesError } = await admin
     .schema("users")
     .from("profiles")
@@ -280,5 +290,9 @@ export async function GET(request: NextRequest) {
   }
 
   rows.sort((a, b) => b.created_at.localeCompare(a.created_at));
-  return NextResponse.json({ rows });
+  return NextResponse.json({
+    rows,
+    guests: { loaded: guests.length, total: guestTotal ?? guests.length },
+    accounts: { loaded: authUsers.length, capped: accountsCapped },
+  });
 }

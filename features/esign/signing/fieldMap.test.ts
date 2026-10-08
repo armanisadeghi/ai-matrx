@@ -1,4 +1,4 @@
-import { initialsOf, readFieldMap, rotateBox } from "./fieldMap";
+import { initialsOf, needsNewSigningPage, readFieldMap, rotateBox } from "./fieldMap";
 
 describe("readFieldMap", () => {
   it("reads the frozen contract shape and orders fields page, then top to bottom", () => {
@@ -54,5 +54,26 @@ describe("rotateBox", () => {
     const r270 = rotateBox(box, 270);
     expect(r270.x).toBeCloseTo(0.2);
     expect(r270.y).toBeCloseTo(0.6);
+  });
+});
+
+describe("needsNewSigningPage", () => {
+  it("refuses a v2 map and any field kind this page cannot draw", () => {
+    expect(needsNewSigningPage({ field_map: { schema_version: 2, fields: [], groups: [] } })).toBe(true);
+    expect(
+      needsNewSigningPage({
+        field_map: { fields: [{ id: "t", signer_id: "s1", kind: "text", page: 1, x: 0, y: 0, w: 0.1, h: 0.1 }] },
+      }),
+    ).toBe(true);
+  });
+
+  it("accepts a v1 map and a document with no fields", () => {
+    expect(needsNewSigningPage({ field_map: {} })).toBe(false);
+    expect(needsNewSigningPage({})).toBe(false);
+    expect(
+      needsNewSigningPage({
+        field_map: { fields: [{ id: "a", signer_id: "s1", kind: "signature", page: 1, x: 0, y: 0, w: 0.1, h: 0.1 }] },
+      }),
+    ).toBe(false);
   });
 });

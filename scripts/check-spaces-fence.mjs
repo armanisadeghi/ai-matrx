@@ -42,7 +42,9 @@ const SELF = "scripts/check-spaces-fence.mjs";
 // The stored block format and its live schema (lib/spaces-blocks/**): a `spaces:` commit may change it by owner
 // brief (rounds 31-32, 2026-10-07: "Changes to lib/spaces-blocks ... are allowed this round"), so the format and the
 // editor that writes it land in step. Nothing else outside the fence is opened.
-const OWNER_OPENED = [/^lib\/spaces-blocks\//];
+// Adopting a package the Spaces change uses (owner, 2026-10-07): package.json + pnpm-lock.yaml may ride a
+// `spaces:` commit, so the import and the version that carries it land together (never import before install).
+const OWNER_OPENED = [/^lib\/spaces-blocks\//, /^package\.json$/, /^pnpm-lock\.yaml$/];
 const SCRATCH = /(?:^|\/)[^/]*\.tmp\.[^/]+$/;
 
 /** Tracked paths → violations for scratch (`*.tmp.*`) files inside the fence. */

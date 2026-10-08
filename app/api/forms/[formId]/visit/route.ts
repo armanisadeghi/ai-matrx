@@ -8,7 +8,7 @@
 
 import { NextResponse } from "next/server";
 
-import { markFormVisit } from "@/features/forms/service";
+import { admitFormVisit, markFormVisit } from "@/features/forms/service";
 
 export const dynamic = "force-dynamic";
 
@@ -25,7 +25,14 @@ export async function POST(request: Request, { params }: { params: Promise<{ for
   const visit = typeof body.visit === "string" ? body.visit : "";
   const event = typeof body.event === "string" && EVENTS.has(body.event) ? (body.event as "view" | "start" | "reach") : null;
   if (!event || !/^[A-Za-z0-9_-]{16,128}$/.test(visit)) return NextResponse.json({ ok: false }, { status: 400 });
+  // TYPEFORM-2: AT MOST forms/visit_rate_per_minute COUNTS PER ADDRESS PER MINUTE. The bucket is the
+  // server's (the forwarded address, else the origin) — a browser choosing its own would count itself.
+  const forwarded = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim();
+  const bucket = forwarded && forwarded.length > 0 ? forwarded : (request.headers.get("origin") ?? "unknown");
   try {
+    if (!(await admitFormVisit(formId, bucket))) {
+      return NextResponse.json({ ok: false, state: "rate_limited" }, { status: 429 });
+    }
     const state = await markFormVisit({ formId, visit, event, field: typeof body.field === "string" ? body.field : null });
     return NextResponse.json({ ok: true, state });
   } catch (thrown) {

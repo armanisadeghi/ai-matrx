@@ -10,6 +10,7 @@
 // the bars always add up to the total. Every ask carries the same lane, window and open view's
 // filters as the answer table's, so the chart and the table never disagree.
 
+import { drillFailureWords } from "./explorerWords";
 import { useEffect, useState } from "react";
 import type { DrillSource } from "@ai-matrx/records";
 import type { RecordsClient } from "@ai-matrx/records/core";
@@ -87,7 +88,7 @@ export function useDrillChart(args: {
           ...(request.limit !== null ? { limit: request.limit } : {}),
         },
       });
-      if (!got.ok) return { ok: false, message: got.error.message || "The chart could not be counted." };
+      if (!got.ok) return { ok: false, message: drillFailureWords(got.error.message, "The chart could not be counted.") };
       // a series the answer does not list (a period's own top N) is named by the same book
       void book?.readRows(got.data!.rows.filter((row) => row.kind === "group"));
       return { ok: true, rows: got.data!.rows.map((row) => drillRowOf(row, countMeasure)) };

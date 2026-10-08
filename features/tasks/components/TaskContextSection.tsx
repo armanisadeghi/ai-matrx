@@ -126,7 +126,7 @@ function useTaskContextField(taskId: string, taskTitle?: string) {
       icon: ListTodo,
     },
     dimensions: TASK_CONTEXT_DIMENSIONS,
-    defaultOrganizationId: task?.organization_id || undefined,
+    initialOrganizationId: task?.organization_id || undefined,
     initialSelection: { projectIds: initialProjectIds },
     hideSubject: true,
     onSaved,

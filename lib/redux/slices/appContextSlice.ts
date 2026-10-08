@@ -47,8 +47,6 @@
 
 import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
 import { definePolicy } from "@/lib/sync/policies/define";
-import { getIdentity } from "@/lib/sync/identity";
-import { activeOrgCookie } from "@/lib/organizations/activeOrgCookie";
 import { selectOrgBootstrapFailure } from "@/lib/organizations/orgBootstrapFailure";
 import { selectShouldPromptForOrganization } from "@/lib/organizations/shouldPromptForOrganization";
 import { markOrgBootstrapResolved } from "@/lib/organizations/orgBootstrapGate";
@@ -182,8 +180,10 @@ const appContextSlice = createSlice({
       state.task_id = null;
       state.task_name = null;
       state.conversation_id = null;
-      // A selection IS an answer — the read that failed no longer matters.
+      // A selection IS an answer — the read that failed no longer matters, and
+      // this tab now HOLDS it: the load ladder's later answer never moves it.
       state.orgBootstrapFailure = null;
+      if (action.payload.id) state.orgBootstrapResolved = true;
     },
     /**
      * FIRST organization choice, made to unblock an action already in flight.
@@ -348,31 +348,40 @@ const appContextSlice = createSlice({
         | Partial<AppContextState>
         | undefined;
       if (!loaded) return;
-      // A hollow local cache is not an authoritative "no organization"
-      // answer. Cold boot reconciles insufficient cache records remotely, so
-      // keep the reminder suppressed until that resolver returns. A cached
-      // active org is immediately sufficient; an authoritative remote result
-      // carries orgBootstrapResolved even when it intentionally resolves to
-      // no explicit org (multiple memberships and no default).
-      state.orgBootstrapResolved =
-        loaded.orgBootstrapResolved === true || loaded.organization_id != null;
-      // THE FOURTH STATE rides the same rehydrate. A remote result always
-      // carries it (null on success), so a later success clears an earlier
-      // failure; a local cache record never does, and leaves it alone.
+      // TWO KINDS OF REHYDRATE (active-organization plan, 2026-10-07):
+      //   • the browser CACHE (no `orgBootstrapResolved` in it) only PAINTS —
+      //     it fills an empty tab so the sidebar shows something at once, and
+      //     never marks the question answered, so no request leaves on it;
+      //   • the LOAD LADDER's answer (`orgBootstrapResolved: true`) is the
+      //     account's, and it WINS over the painted cache — unless this tab
+      //     already holds an organization the person chose here.
+      const fromLadder = loaded.orgBootstrapResolved === true;
+      if (!fromLadder) {
+        if (state.organization_id == null && loaded.organization_id) {
+          state.organization_id = loaded.organization_id;
+          state.organization_name = loaded.organization_name ?? null;
+        }
+        return;
+      }
+      const heldHere = state.orgBootstrapResolved && state.organization_id != null;
+      state.orgBootstrapResolved = true;
+      // THE FOURTH STATE rides the same rehydrate: a ladder result always
+      // carries it (null on success), so a later success clears a failure.
       if (loaded.orgBootstrapFailure !== undefined) {
         state.orgBootstrapFailure =
           loaded.organization_id != null ? null : loaded.orgBootstrapFailure;
       }
-      // Respect an org the user has already actively selected this session
-      // (deep-link / restored context beat the async refresh here).
-      if (state.organization_id == null) {
-        if (loaded.organization_id !== undefined) {
-          state.organization_id = loaded.organization_id;
-        }
-        if (loaded.organization_name !== undefined) {
-          state.organization_name = loaded.organization_name;
-        }
+      if (loaded.organization_id === undefined) return; // a failed read changes nothing
+      if (heldHere && loaded.organization_id === state.organization_id) {
+        state.organization_name = loaded.organization_name ?? state.organization_name;
+        return;
       }
+      // A tab that holds an organization keeps it; a removed membership is
+      // replaced by the fetch itself, through `setOrganization`, with an
+      // announcement — never silently here.
+      if (heldHere) return;
+      state.organization_id = loaded.organization_id;
+      state.organization_name = loaded.organization_name ?? null;
     });
   },
 });
@@ -497,42 +506,28 @@ export const selectAppContext = (state: StateWithAppContext): AppContextState =>
 
 // ---- Sync engine policy --------------------------------------------------
 //
-// `appContextPolicy` makes the ACTIVE ORGANIZATION a first-class, always-present
-// citizen of the unified sync engine — the same machinery behind userPreferences
-// / userProfile. This REPLACES the old ActiveOrgBootstrap island + per-launch
-// multi-round-trip bootstrap. It:
-//   - persists the org IDENTITY fields (organization_id / _name) to
-//     IDB→localStorage, keyed by identity, so on a
-//     hard refresh the active org rehydrates BEFORE any service/selector runs —
-//     impossible to be missing;
-//   - on cold-boot (and after `staleAfter`) runs `remote.fetch` →
-//     resolveActiveOrgContext to reconcile against the durable default-org
-//     preference + current memberships;
-//   - broadcasts org switches across tabs in <20ms.
-//
-// `partialize` deliberately persists ONLY the org identity fields. Working
-// context (scope/project/task/conversation) and the transient
-// `orgBootstrapResolved` flag is not persisted by normal Redux writes. Remote
-// reconciliation includes it in its result so a genuine "no active org"
-// answer can be distinguished from a hollow local cache record.
-//
-// NOTE: there is no `remote.write` — the durable cross-device "which org" truth
-// is the default-org PREFERENCE (owned by userPreferences), not a column here.
-// The local cache restores the last active org instantly; `remote.fetch`
-// reconciles. Switching orgs durably = set your default.
+// `appContextPolicy` carries the ACTIVE ORGANIZATION (active-organization plan,
+// 2026-10-07 — "set ONCE at the top of the app, never none"):
+//   - the browser cache (IDB→localStorage, identity-keyed) PAINTS the last
+//     organization this browser held, so the sidebar is never blank — and
+//     nothing else: it never marks the question answered;
+//   - every load runs `remote.fetch` → the load ladder
+//     (`resolveActiveOrgContext`: link → last active → start-up organization →
+//     first organization, each a current membership) and the account's answer
+//     wins before any request leaves (`ensureOrgId` waits for it);
+//   - PER TAB: nothing is broadcast. A tab keeps the organization it loaded
+//     with until the person switches in that tab; a switch saves
+//     `last_active_organization_id` (`chooseActiveOrganization`) for the next
+//     load and never moves another open tab;
+//   - the refresh (`staleAfter`) re-confirms the held organization is still a
+//     membership; a removed one is replaced through the ladder and announced.
 
 export const appContextPolicy = definePolicy<AppContextState>({
   sliceName: "appContext",
   preset: "warm-cache",
   version: 1, // Bump destroys client caches; Phase 6 adds migration hooks.
-  broadcast: {
-    actions: [
-      "appContext/setOrganization",
-      "appContext/resolveOrganizationForBlockedAction",
-      "appContext/setFullContext",
-      "appContext/clearContext",
-    ],
-  },
+  // Per tab: nothing is broadcast (see the header above).
+  perTab: true,
   storageKey: "matrx:appContext",
   partialize: [
     "organization_id",
@@ -547,28 +542,14 @@ export const appContextPolicy = definePolicy<AppContextState>({
     const r = raw as Record<string, unknown>;
     const str = (v: unknown): string | null =>
       typeof v === "string" && v.length > 0 ? v : null;
-    let organization_id = str(r.organization_id);
-    let organization_name = str(r.organization_name);
-    // THE SHARED COOKIE BEATS THIS ORIGIN'S CACHE. The record above is what
-    // THIS app last held; the cookie (`lib/organizations/activeOrgCookie.ts`,
-    // Domain=.aimatrx.com) is what the person last chose on ANY Matrx surface
-    // — Workflow Studio included. When they disagree, the cookie is the newer
-    // fact. The name is unknown here (the cookie carries ids only), so it is
-    // left null and `cacheSatisfies` below treats the record as incomplete,
-    // which makes the boot reconcile (`resolveActiveOrgContext`, whose rung 0
-    // is this same cookie) and fill the name in. Identity-keyed: the cookie
-    // answers only for the signed-in person, so a mismatch can never import
-    // somebody else's workspace.
-    const identity = getIdentity();
-    const stored =
-      identity.type === "auth" ? activeOrgCookie.read(identity.userId) : null;
-    if (stored && stored !== organization_id) {
-      organization_id = stored;
-      organization_name = null;
-    }
+    // A field the record does not carry stays absent, so a failed ladder read
+    // (flags only) changes no organization. The ladder's answer carries
+    // `orgBootstrapResolved: true`; a cached record never does (a fetch result
+    // is never written to the cache — see `cacheSatisfies`), so the reducer
+    // can tell paint from answer.
     return {
-      organization_id,
-      organization_name,
+      ...("organization_id" in r ? { organization_id: str(r.organization_id) } : {}),
+      ...("organization_name" in r ? { organization_name: str(r.organization_name) } : {}),
       orgBootstrapResolved: r.orgBootstrapResolved === true,
       // The fourth state rides the remote result through `deserialize` (the
       // engine runs it over BOTH the cached record and the fetch body). A
@@ -578,7 +559,7 @@ export const appContextPolicy = definePolicy<AppContextState>({
         typeof r.orgBootstrapFailure === "string" ? r.orgBootstrapFailure : null,
     };
   },
-  staleAfter: 5 * 60_000, // reconcile against default-pref / membership after 5 min idle
+  staleAfter: 5 * 60_000, // re-confirm the held organization is still a membership
   remote: {
     fetch: async ({ identity, signal }) => {
       // 🚨 EVERY EXIT ANSWERS THE QUESTION. Three of the four ways out of this
@@ -611,16 +592,8 @@ export const appContextPolicy = definePolicy<AppContextState>({
           orgBootstrapFailure: null,
         } satisfies Partial<AppContextState>);
       }
-      // Cold reconciliation is useful but not render-critical. Let the page
-      // load and paint before spending network/CPU on memberships and the
-      // default-org preference. Stale/manual refreshes pass through instantly
-      // once the session's one-time idle gate has completed.
-      const { whenPageIdle } = await import("@ai-matrx/kit/idle-scheduler");
-      // `whenPageIdle` answers false only when the signal aborted — we never
-      // asked, so we know nothing about this person's memberships.
-      if (!(await whenPageIdle(signal))) {
-        return unreadable("the organization read was cancelled before it ran");
-      }
+      // RENDER-CRITICAL: no request leaves before this answers, so it runs at
+      // once — never behind an idle gate.
       const { resolveActiveOrgContext } = await import(
         "@/lib/organizations/resolveActiveOrgContext"
       );
@@ -643,12 +616,21 @@ export const appContextPolicy = definePolicy<AppContextState>({
       // the same link a second time.
       const linkOrganizationId = readLinkOrganizationFromLocation();
       const ourLink = claimLinkOrganizationDecision(linkOrganizationId);
+      // THIS TAB'S HELD ORGANIZATION: only once the ladder (or the person)
+      // has answered in this tab — a painted cache value is never held.
+      const tab = (getStoreSingleton()?.getState() as
+        | { appContext?: AppContextState }
+        | undefined)?.appContext;
+      const heldOrganizationId =
+        tab?.orgBootstrapResolved && tab.organization_id ? tab.organization_id : null;
+      const heldOrganizationName = tab?.organization_name ?? null;
       let resolved: Awaited<ReturnType<typeof resolveActiveOrgContext>>;
       try {
         resolved = await resolveActiveOrgContext(identity.userId, {
           linkOrganizationId,
           switchWhenALinkAsks: readSwitchWhenALinkAsks(),
           signedInAs: readSignedInAs(),
+          heldOrganizationId,
         });
       } catch (error) {
         // The membership read threw — `getUserOrganizations` fails closed, and
@@ -663,8 +645,10 @@ export const appContextPolicy = definePolicy<AppContextState>({
         return unreadable("the organization read was cancelled before it ran");
       }
       if (!resolved) {
-        // A genuine empty answer: no memberships.
+        // A genuine empty answer: no memberships. The shell offers to create one.
         return answered({
+          organization_id: null,
+          organization_name: null,
           orgBootstrapResolved: true,
           orgBootstrapFailure: null,
         } satisfies Partial<AppContextState>);
@@ -683,30 +667,32 @@ export const appContextPolicy = definePolicy<AppContextState>({
       if (unreadableReason && context.organization_id == null) {
         return unreadable(unreadableReason);
       }
+      // THE HELD ORGANIZATION WAS TAKEN AWAY (removed, or archived): the
+      // ladder chose again — switch, and say so.
+      if (
+        heldOrganizationId &&
+        context.organization_id &&
+        context.organization_id !== heldOrganizationId &&
+        link?.kind !== "honoured"
+      ) {
+        const { announceActiveOrganizationReplaced } = await import(
+          "@/lib/organizations/announceActiveOrganizationReplaced"
+        );
+        getStoreSingleton()?.dispatch(
+          setOrganization({ id: context.organization_id, name: context.organization_name }),
+        );
+        announceActiveOrganizationReplaced(heldOrganizationName, context.organization_name);
+      }
       return answered({
         ...context,
         orgBootstrapResolved: true,
         orgBootstrapFailure: null,
       } satisfies Partial<AppContextState>);
     },
-    // A cached appContext record with NO org in it is not an answer — it is
-    // the absence of one, and `ensureOrgId` holds and asks on every org-scoped write until it is filled. The engine persists
-    // post-reducer state on every mutation, so any appContext change made
-    // before the first fetch landed writes exactly such a hollow record; left
-    // to the default "a cache hit suppresses the cold-boot fetch" rule, that
-    // record then poisons every subsequent boot until `staleAfter` (5 min).
-    // Declaring sufficiency makes the boot reconcile instead.
-    //
-    // Sufficiency is the ACTIVE org. A record without one is still hollow.
-    // That is the shape every "I have no org selected" boot
-    // writes, so accepting it suppressed the one fetch that reads the user's
-    // durable default-org preference: the user starred a default, and every
-    // subsequent boot restored the org-less cache and nudged them to pick one
-    // again (until `staleAfter` finally reconciled, minutes later).
-    //
-    // And a record carrying an id but NO name is a cookie override (see
-    // `deserialize`) — half an answer. Reconcile so the name lands.
-    cacheSatisfies: (state) =>
-      Boolean(state?.organization_id) && Boolean(state?.organization_name),
+    // EVERY LOAD ASKS THE ACCOUNT. A cached record only paints, so it never
+    // satisfies the boot (the fetch fires at once), and a ladder result is
+    // never written into the cache — a cached record must never carry
+    // `orgBootstrapResolved`, or the reducer would take paint for an answer.
+    cacheSatisfies: () => false,
   },
 });

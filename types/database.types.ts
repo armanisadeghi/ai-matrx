@@ -35502,6 +35502,10 @@ export type Database = {
           label: string
         }[]
       }
+      field_duplicate: {
+        Args: { p_field_id: string; p_organization_id: string }
+        Returns: Json
+      }
       field_history: {
         Args: {
           p_field_key: string
@@ -35756,6 +35760,7 @@ export type Database = {
           said: string
         }[]
       }
+      form_public_options: { Args: { p_form_id: string }; Returns: Json }
       form_public_route: {
         Args: { p_form_id: string; p_values: Json }
         Returns: Json
@@ -35805,6 +35810,10 @@ export type Database = {
           p_visit: string
         }
         Returns: string
+      }
+      form_visit_admit: {
+        Args: { p_bucket: string; p_form_id: string }
+        Returns: boolean
       }
       forms: {
         Args: { p_organization_id: string; p_table_id?: string }
@@ -45586,12 +45595,14 @@ export type Database = {
           completed_at: string | null
           config_snapshot: Json
           consumer_key: string
+          copied_from_envelope_id: string | null
           created_at: string
           created_by: string | null
           custom_fields: Json
           decline_summary: string | null
           declined_at: string | null
           deleted_at: string | null
+          email_subject: string | null
           expires_at: string
           id: string
           message: string | null
@@ -45611,6 +45622,7 @@ export type Database = {
           source_type: string | null
           status: string
           superseded_by_envelope_id: string | null
+          template_id: string | null
           title: string
           updated_at: string
           updated_by: string | null
@@ -45626,12 +45638,14 @@ export type Database = {
           completed_at?: string | null
           config_snapshot?: Json
           consumer_key: string
+          copied_from_envelope_id?: string | null
           created_at?: string
           created_by?: string | null
           custom_fields?: Json
           decline_summary?: string | null
           declined_at?: string | null
           deleted_at?: string | null
+          email_subject?: string | null
           expires_at: string
           id?: string
           message?: string | null
@@ -45651,6 +45665,7 @@ export type Database = {
           source_type?: string | null
           status?: string
           superseded_by_envelope_id?: string | null
+          template_id?: string | null
           title: string
           updated_at?: string
           updated_by?: string | null
@@ -45666,12 +45681,14 @@ export type Database = {
           completed_at?: string | null
           config_snapshot?: Json
           consumer_key?: string
+          copied_from_envelope_id?: string | null
           created_at?: string
           created_by?: string | null
           custom_fields?: Json
           decline_summary?: string | null
           declined_at?: string | null
           deleted_at?: string | null
+          email_subject?: string | null
           expires_at?: string
           id?: string
           message?: string | null
@@ -45691,6 +45708,7 @@ export type Database = {
           source_type?: string | null
           status?: string
           superseded_by_envelope_id?: string | null
+          template_id?: string | null
           title?: string
           updated_at?: string
           updated_by?: string | null
@@ -45886,6 +45904,62 @@ export type Database = {
           },
         ]
       }
+      envelope_draft: {
+        Row: {
+          access_code_hashes: Json
+          composition: Json
+          created_at: string
+          created_by: string | null
+          envelope_id: string
+          id: string
+          metadata: Json
+          organization_id: string
+          revision: number
+          saved_at: string | null
+          updated_at: string
+          updated_by: string | null
+          version: number
+        }
+        Insert: {
+          access_code_hashes?: Json
+          composition?: Json
+          created_at?: string
+          created_by?: string | null
+          envelope_id: string
+          id?: string
+          metadata?: Json
+          organization_id: string
+          revision?: number
+          saved_at?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Update: {
+          access_code_hashes?: Json
+          composition?: Json
+          created_at?: string
+          created_by?: string | null
+          envelope_id?: string
+          id?: string
+          metadata?: Json
+          organization_id?: string
+          revision?: number
+          saved_at?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "envelope_draft_envelope_id_fkey"
+            columns: ["envelope_id"]
+            isOneToOne: true
+            referencedRelation: "envelope"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       envelope_event: {
         Row: {
           actor_label: string | null
@@ -46039,6 +46113,8 @@ export type Database = {
           actor_token_id: string | null
           actor_type: string
           auth_method: string
+          color_index: number | null
+          company: string | null
           consent_disclosure_id: string | null
           consented_at: string | null
           created_at: string
@@ -46046,27 +46122,38 @@ export type Database = {
           custom_fields: Json
           decline_reason: string | null
           declined_at: string | null
+          delegated_from_signer_id: string | null
           delegated_to_signer_id: string | null
           delegation_reason: string | null
           delivery_error: string | null
           document_previewed_at: string | null
           email: string
           envelope_id: string
+          field_values: Json
           full_name: string
           id: string
+          initials_adopted_at: string | null
+          initials_image_file_id: string | null
+          initials_kind: string | null
+          initials_style: string | null
+          initials_text: string | null
           is_required: boolean
+          job_title: string | null
           last_notified_at: string | null
+          message_to_sender: string | null
           metadata: Json
           notify_attempts: number
           organization_id: string
           phone: string | null
           position: number
+          private_message: string | null
           reminder_count: number
           role: string
           signature_adopted_at: string | null
           signature_image_file_id: string | null
           signature_kind: string | null
           signature_payload_hash: string | null
+          signature_source: string | null
           signed_at: string | null
           signed_content_hash: string | null
           signer_user_id: string | null
@@ -46077,6 +46164,7 @@ export type Database = {
           typed_style: string | null
           updated_at: string
           updated_by: string | null
+          values_saved_at: string | null
           verification_factor: string | null
           verification_passed: boolean | null
           version: number
@@ -46085,6 +46173,8 @@ export type Database = {
           actor_token_id?: string | null
           actor_type: string
           auth_method?: string
+          color_index?: number | null
+          company?: string | null
           consent_disclosure_id?: string | null
           consented_at?: string | null
           created_at?: string
@@ -46092,27 +46182,38 @@ export type Database = {
           custom_fields?: Json
           decline_reason?: string | null
           declined_at?: string | null
+          delegated_from_signer_id?: string | null
           delegated_to_signer_id?: string | null
           delegation_reason?: string | null
           delivery_error?: string | null
           document_previewed_at?: string | null
           email: string
           envelope_id: string
+          field_values?: Json
           full_name: string
           id?: string
+          initials_adopted_at?: string | null
+          initials_image_file_id?: string | null
+          initials_kind?: string | null
+          initials_style?: string | null
+          initials_text?: string | null
           is_required?: boolean
+          job_title?: string | null
           last_notified_at?: string | null
+          message_to_sender?: string | null
           metadata?: Json
           notify_attempts?: number
           organization_id: string
           phone?: string | null
           position: number
+          private_message?: string | null
           reminder_count?: number
           role?: string
           signature_adopted_at?: string | null
           signature_image_file_id?: string | null
           signature_kind?: string | null
           signature_payload_hash?: string | null
+          signature_source?: string | null
           signed_at?: string | null
           signed_content_hash?: string | null
           signer_user_id?: string | null
@@ -46123,6 +46224,7 @@ export type Database = {
           typed_style?: string | null
           updated_at?: string
           updated_by?: string | null
+          values_saved_at?: string | null
           verification_factor?: string | null
           verification_passed?: boolean | null
           version?: number
@@ -46131,6 +46233,8 @@ export type Database = {
           actor_token_id?: string | null
           actor_type?: string
           auth_method?: string
+          color_index?: number | null
+          company?: string | null
           consent_disclosure_id?: string | null
           consented_at?: string | null
           created_at?: string
@@ -46138,27 +46242,38 @@ export type Database = {
           custom_fields?: Json
           decline_reason?: string | null
           declined_at?: string | null
+          delegated_from_signer_id?: string | null
           delegated_to_signer_id?: string | null
           delegation_reason?: string | null
           delivery_error?: string | null
           document_previewed_at?: string | null
           email?: string
           envelope_id?: string
+          field_values?: Json
           full_name?: string
           id?: string
+          initials_adopted_at?: string | null
+          initials_image_file_id?: string | null
+          initials_kind?: string | null
+          initials_style?: string | null
+          initials_text?: string | null
           is_required?: boolean
+          job_title?: string | null
           last_notified_at?: string | null
+          message_to_sender?: string | null
           metadata?: Json
           notify_attempts?: number
           organization_id?: string
           phone?: string | null
           position?: number
+          private_message?: string | null
           reminder_count?: number
           role?: string
           signature_adopted_at?: string | null
           signature_image_file_id?: string | null
           signature_kind?: string | null
           signature_payload_hash?: string | null
+          signature_source?: string | null
           signed_at?: string | null
           signed_content_hash?: string | null
           signer_user_id?: string | null
@@ -46169,11 +46284,19 @@ export type Database = {
           typed_style?: string | null
           updated_at?: string
           updated_by?: string | null
+          values_saved_at?: string | null
           verification_factor?: string | null
           verification_passed?: boolean | null
           version?: number
         }
         Relationships: [
+          {
+            foreignKeyName: "envelope_signer_delegated_from_signer_id_fkey"
+            columns: ["delegated_from_signer_id"]
+            isOneToOne: false
+            referencedRelation: "envelope_signer"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "envelope_signer_delegated_to_fk"
             columns: ["delegated_to_signer_id"]
@@ -46328,6 +46451,78 @@ export type Database = {
           },
         ]
       }
+      saved_signature: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          id: string
+          image_file_id: string
+          is_default: boolean
+          kind: string
+          label: string | null
+          metadata: Json
+          organization_id: string
+          published_to_web: boolean
+          published_to_web_at: string | null
+          published_to_web_by: string | null
+          shown_to: Database["platform"]["Enums"]["shown_to"] | null
+          target: string
+          typed_style: string | null
+          typed_text: string | null
+          updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          id?: string
+          image_file_id: string
+          is_default?: boolean
+          kind: string
+          label?: string | null
+          metadata?: Json
+          organization_id: string
+          published_to_web?: boolean
+          published_to_web_at?: string | null
+          published_to_web_by?: string | null
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
+          target: string
+          typed_style?: string | null
+          typed_text?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          id?: string
+          image_file_id?: string
+          is_default?: boolean
+          kind?: string
+          label?: string | null
+          metadata?: Json
+          organization_id?: string
+          published_to_web?: boolean
+          published_to_web_at?: string | null
+          published_to_web_by?: string | null
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
+          target?: string
+          typed_style?: string | null
+          typed_text?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Relationships: []
+      }
       signing_key: {
         Row: {
           activated_at: string
@@ -46385,17 +46580,83 @@ export type Database = {
         }
         Relationships: []
       }
+      template: {
+        Row: {
+          composition: Json
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          description: string | null
+          id: string
+          metadata: Json
+          name: string
+          organization_id: string
+          published_to_web: boolean
+          published_to_web_at: string | null
+          published_to_web_by: string | null
+          shown_to: Database["platform"]["Enums"]["shown_to"] | null
+          source_envelope_id: string | null
+          updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        Insert: {
+          composition?: Json
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          description?: string | null
+          id?: string
+          metadata?: Json
+          name: string
+          organization_id: string
+          published_to_web?: boolean
+          published_to_web_at?: string | null
+          published_to_web_by?: string | null
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
+          source_envelope_id?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Update: {
+          composition?: Json
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          description?: string | null
+          id?: string
+          metadata?: Json
+          name?: string
+          organization_id?: string
+          published_to_web?: boolean
+          published_to_web_at?: string | null
+          published_to_web_by?: string | null
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
+          source_envelope_id?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
+      _act_acknowledge: { Args: { p_ctx: Json }; Returns: Json }
       _act_adopt: {
         Args: {
           p_ctx: Json
           p_image_file_id: string
           p_kind: string
+          p_source?: string
           p_strokes: Json
+          p_target?: string
           p_typed_name: string
           p_typed_style: string
         }
@@ -46416,20 +46677,55 @@ export type Database = {
         Returns: Json
       }
       _act_download: {
-        Args: { p_ctx: Json; p_document_id: string }
+        Args: { p_ctx: Json; p_document_id: string; p_purpose?: string }
         Returns: Json
       }
+      _act_handoff_cancel: {
+        Args: { p_ctx: Json; p_handoff_id: string }
+        Returns: Json
+      }
+      _act_handoff_start: {
+        Args: { p_ctx: Json; p_target: string }
+        Returns: Json
+      }
+      _act_handoff_status: {
+        Args: { p_ctx: Json; p_handoff_id: string }
+        Returns: Json
+      }
+      _act_handoff_text: {
+        Args: {
+          p_ctx: Json
+          p_handoff_id: string
+          p_phone: string
+          p_secret: string
+        }
+        Returns: Json
+      }
+      _act_history: { Args: { p_ctx: Json }; Returns: Json }
       _act_load: { Args: { p_ctx: Json }; Returns: Json }
       _act_preview_ack: {
         Args: { p_ctx: Json; p_document_id: string }
         Returns: Json
       }
+      _act_save_values: { Args: { p_ctx: Json; p_values: Json }; Returns: Json }
       _act_sign: {
-        Args: { p_action_id: string; p_ctx: Json; p_observed: Json }
+        Args: {
+          p_action_id: string
+          p_ctx: Json
+          p_message_to_sender?: string
+          p_observed: Json
+          p_time_zone?: string
+          p_values?: Json
+        }
         Returns: Json
       }
+      _acts_for: { Args: { p_signer_id: string }; Returns: string[] }
       _arm: { Args: never; Returns: undefined }
       _can_act: { Args: { p_signer_id: string }; Returns: Json }
+      _cancel_scheduled_notices: {
+        Args: { p_envelope_id: string; p_signer_id?: string }
+        Returns: number
+      }
       _certificate_payload: { Args: { p_envelope_id: string }; Returns: Json }
       _ctx_internal: {
         Args: { p_ip: unknown; p_signer_id: string; p_ua: string }
@@ -46444,7 +46740,16 @@ export type Database = {
         }
         Returns: Json
       }
+      _default_composition: {
+        Args: { p_organization_id: string; p_title: string }
+        Returns: Json
+      }
       _disarm: { Args: never; Returns: undefined }
+      _draft_problem: {
+        Args: { p_c: Json; p_template?: boolean }
+        Returns: string
+      }
+      _enforce: { Args: { p_flag: string }; Returns: boolean }
       _event: {
         Args: {
           p_actor_label?: string
@@ -46464,6 +46769,10 @@ export type Database = {
         }
         Returns: string
       }
+      _format_date: {
+        Args: { p_date: string; p_format: string }
+        Returns: string
+      }
       _may_manage: {
         Args: { p_envelope_id: string; p_level?: string }
         Returns: boolean
@@ -46473,15 +46782,27 @@ export type Database = {
         Returns: boolean
       }
       _maybe_complete: { Args: { p_envelope_id: string }; Returns: Json }
+      _missing_required: {
+        Args: { p_resolved: Json; p_signer_id: string }
+        Returns: Json
+      }
+      _my_fields: { Args: { p_signer_id: string }; Returns: Json }
+      _my_groups: { Args: { p_signer_id: string }; Returns: Json }
+      _notice_facts: {
+        Args: { p_envelope_id: string; p_signer_id: string }
+        Returns: Json
+      }
       _notify: {
         Args: {
           p_actor_token_id?: string
           p_body?: string
           p_channel?: string
           p_deep_link?: string
+          p_deliver_at?: string
           p_envelope_id: string
           p_event_key: string
           p_payload?: Json
+          p_schedule_id?: string
           p_signer_id?: string
           p_subject?: string
           p_to_address?: string
@@ -46497,16 +46818,31 @@ export type Database = {
         Args: { p_envelope_id: string; p_max: number }
         Returns: number
       }
+      _outside_quiet_hours: {
+        Args: { p_at: string; p_quiet: Json; p_zone: string }
+        Returns: string
+      }
+      _plain_values: { Args: { p_entries: Json }; Returns: Json }
       _privileged: { Args: never; Returns: boolean }
       _project: { Args: { p_resource: string; p_row: Json }; Returns: Json }
       _requester_actor_type: {
         Args: { p_consumer_key: string }
         Returns: string
       }
+      _resolve_values: {
+        Args: { p_signer_id: string; p_time_zone: string; p_values: Json }
+        Returns: Json
+      }
       _revoke_open_tokens: {
         Args: { p_envelope_id: string; p_reason: string }
         Returns: number
       }
+      _schedule_signer_notices: {
+        Args: { p_deep_link: string; p_signer_id: string }
+        Returns: number
+      }
+      _session_end_reason: { Args: { p_session: string }; Returns: string }
+      _value_problem: { Args: { p_field: Json; p_v: Json }; Returns: string }
       attach_field_map: {
         Args: { p_envelope_id: string; p_fields: Json }
         Returns: number
@@ -46530,21 +46866,298 @@ export type Database = {
       }
       envelope_document_ids: { Args: { p_envelope_id: string }; Returns: Json }
       envelope_sender: { Args: { p_envelope_id: string }; Returns: Json }
+      esign_draft_create: {
+        Args: {
+          p_copy_of_envelope_id?: string
+          p_organization_id: string
+          p_template_id?: string
+          p_title: string
+        }
+        Returns: Json
+      }
+      esign_draft_delete: { Args: { p_envelope_id: string }; Returns: Json }
+      esign_draft_get: { Args: { p_envelope_id: string }; Returns: Json }
+      esign_draft_save: {
+        Args: {
+          p_base_revision: number
+          p_composition: Json
+          p_envelope_id: string
+        }
+        Returns: Json
+      }
+      esign_draft_set_access_code: {
+        Args: { p_code: string; p_envelope_id: string; p_recipient_key: string }
+        Returns: Json
+      }
+      esign_saved_signature_delete: { Args: { p_id: string }; Returns: Json }
+      esign_saved_signature_set_default: {
+        Args: { p_id: string }
+        Returns: Json
+      }
+      esign_saved_signatures: { Args: never; Returns: Json }
+      esign_sign: {
+        Args: {
+          p_action_id: string
+          p_ip?: unknown
+          p_message_to_sender?: string
+          p_observed: Json
+          p_signer_id: string
+          p_time_zone?: string
+          p_ua?: string
+          p_values?: Json
+        }
+        Returns: Json
+      }
+      esign_sign_acknowledge: {
+        Args: { p_ip?: unknown; p_signer_id: string; p_ua?: string }
+        Returns: Json
+      }
+      esign_sign_adopt_signature: {
+        Args: {
+          p_image_file_id: string
+          p_ip?: unknown
+          p_kind: string
+          p_signer_id: string
+          p_source?: string
+          p_strokes: Json
+          p_target?: string
+          p_typed_name: string
+          p_typed_style: string
+          p_ua?: string
+        }
+        Returns: Json
+      }
+      esign_sign_delegate: {
+        Args: {
+          p_email: string
+          p_full_name: string
+          p_ip?: unknown
+          p_reason: string
+          p_signer_id: string
+          p_ua?: string
+        }
+        Returns: Json
+      }
+      esign_sign_download: {
+        Args: {
+          p_document_id: string
+          p_ip?: unknown
+          p_purpose?: string
+          p_signer_id: string
+          p_ua?: string
+        }
+        Returns: Json
+      }
+      esign_sign_handoff_cancel: {
+        Args: {
+          p_handoff_id: string
+          p_ip?: unknown
+          p_signer_id: string
+          p_ua?: string
+        }
+        Returns: Json
+      }
+      esign_sign_handoff_start: {
+        Args: {
+          p_ip?: unknown
+          p_signer_id: string
+          p_target: string
+          p_ua?: string
+        }
+        Returns: Json
+      }
+      esign_sign_handoff_status: {
+        Args: {
+          p_handoff_id: string
+          p_ip?: unknown
+          p_signer_id: string
+          p_ua?: string
+        }
+        Returns: Json
+      }
+      esign_sign_handoff_text: {
+        Args: {
+          p_handoff_id: string
+          p_ip?: unknown
+          p_phone: string
+          p_secret: string
+          p_signer_id: string
+          p_ua?: string
+        }
+        Returns: Json
+      }
+      esign_sign_history: {
+        Args: { p_ip?: unknown; p_signer_id: string; p_ua?: string }
+        Returns: Json
+      }
+      esign_sign_save_values: {
+        Args: {
+          p_ip?: unknown
+          p_signer_id: string
+          p_ua?: string
+          p_values: Json
+        }
+        Returns: Json
+      }
+      esign_signer_acknowledge: {
+        Args: { p_ip?: unknown; p_session: string; p_ua?: string }
+        Returns: Json
+      }
+      esign_signer_adopt_signature: {
+        Args: {
+          p_image_file_id: string
+          p_ip?: unknown
+          p_kind: string
+          p_session: string
+          p_source?: string
+          p_strokes: Json
+          p_target?: string
+          p_typed_name: string
+          p_typed_style: string
+          p_ua?: string
+        }
+        Returns: Json
+      }
+      esign_signer_download_url: {
+        Args: {
+          p_document_id: string
+          p_ip?: unknown
+          p_purpose?: string
+          p_session: string
+          p_ua?: string
+        }
+        Returns: Json
+      }
+      esign_signer_handoff_cancel: {
+        Args: {
+          p_handoff_id: string
+          p_ip?: unknown
+          p_session: string
+          p_ua?: string
+        }
+        Returns: Json
+      }
+      esign_signer_handoff_start: {
+        Args: {
+          p_ip?: unknown
+          p_session: string
+          p_target: string
+          p_ua?: string
+        }
+        Returns: Json
+      }
+      esign_signer_handoff_status: {
+        Args: {
+          p_handoff_id: string
+          p_ip?: unknown
+          p_session: string
+          p_ua?: string
+        }
+        Returns: Json
+      }
+      esign_signer_handoff_text: {
+        Args: {
+          p_handoff_id: string
+          p_ip?: unknown
+          p_phone: string
+          p_secret: string
+          p_session: string
+          p_ua?: string
+        }
+        Returns: Json
+      }
+      esign_signer_history: {
+        Args: { p_ip?: unknown; p_session: string; p_ua?: string }
+        Returns: Json
+      }
+      esign_signer_save_values: {
+        Args: {
+          p_ip?: unknown
+          p_session: string
+          p_ua?: string
+          p_values: Json
+        }
+        Returns: Json
+      }
+      esign_signer_sign: {
+        Args: {
+          p_action_id: string
+          p_ip?: unknown
+          p_message_to_sender?: string
+          p_observed: Json
+          p_session: string
+          p_time_zone?: string
+          p_ua?: string
+          p_values?: Json
+        }
+        Returns: Json
+      }
+      esign_template_delete: { Args: { p_template_id: string }; Returns: Json }
+      esign_template_get: { Args: { p_template_id: string }; Returns: Json }
+      esign_template_list: {
+        Args: {
+          p_lane?: string
+          p_limit?: number
+          p_org_id?: string
+          p_search?: string
+        }
+        Returns: Json
+      }
+      esign_template_save: {
+        Args: {
+          p_composition: Json
+          p_description: string
+          p_expected_version?: number
+          p_name: string
+          p_organization_id: string
+          p_template_id: string
+        }
+        Returns: Json
+      }
+      finalize_inputs: { Args: { p_envelope_id: string }; Returns: Json }
       generate_certificate: { Args: { p_envelope_id: string }; Returns: Json }
+      handoff_phone_complete: {
+        Args: {
+          p_image_file_id: string
+          p_ip: unknown
+          p_method: string
+          p_secret: string
+          p_strokes: Json
+          p_ua: string
+        }
+        Returns: Json
+      }
+      handoff_phone_open: {
+        Args: { p_ip: unknown; p_secret: string; p_ua: string }
+        Returns: Json
+      }
+      materialize_draft: {
+        Args: { p_envelope_id: string; p_payload: Json }
+        Returns: Json
+      }
       may_send_in: { Args: { p_organization_id: string }; Returns: boolean }
       mint_signup_hint: { Args: { p_signer_id: string }; Returns: string }
       org_member_by_email: {
         Args: { p_email: string; p_organization_id: string }
         Returns: string
       }
+      outsider_landing: { Args: { p_secret: string }; Returns: Json }
       outsider_token_organization: {
         Args: { p_secret: string }
         Returns: string
       }
       outsider_token_sender: { Args: { p_secret: string }; Returns: Json }
+      record_certificate_file: {
+        Args: { p_certificate_id: string; p_file_id: string }
+        Returns: Json
+      }
       record_signed_copy: {
         Args: { p_document_id: string; p_file_id: string }
         Returns: boolean
+      }
+      record_signed_copy_made: {
+        Args: { p_document_id: string; p_file_id: string; p_sha256: string }
+        Returns: Json
       }
       record_signer_time_zone: {
         Args: { p_signer_id: string; p_time_zone: string }
@@ -46555,6 +47168,19 @@ export type Database = {
         Returns: Json
       }
       retire_signer_link: { Args: { p_signer_id: string }; Returns: boolean }
+      saved_signature_create: {
+        Args: {
+          p_image_file_id: string
+          p_kind: string
+          p_make_default: boolean
+          p_organization_id: string
+          p_target: string
+          p_typed_style: string
+          p_typed_text: string
+          p_user_id: string
+        }
+        Returns: Json
+      }
       sendable_file: { Args: { p_file_id: string }; Returns: Json }
       signature_owner: {
         Args: { p_envelope_id: string; p_session: string }
@@ -72610,6 +73236,48 @@ export type Database = {
           },
         ]
       }
+      access_shadow_log: {
+        Row: {
+          at: string
+          caller: string
+          compared: number | null
+          disagreed: number | null
+          error: string | null
+          id: string
+          level: string
+          new_answer: boolean | null
+          old_answer: boolean | null
+          person: string
+          target: string | null
+        }
+        Insert: {
+          at?: string
+          caller: string
+          compared?: number | null
+          disagreed?: number | null
+          error?: string | null
+          id?: string
+          level: string
+          new_answer?: boolean | null
+          old_answer?: boolean | null
+          person: string
+          target?: string | null
+        }
+        Update: {
+          at?: string
+          caller?: string
+          compared?: number | null
+          disagreed?: number | null
+          error?: string | null
+          id?: string
+          level?: string
+          new_answer?: boolean | null
+          old_answer?: boolean | null
+          person?: string
+          target?: string | null
+        }
+        Relationships: []
+      }
       account_closure: {
         Row: {
           closed_at: string
@@ -74897,7 +75565,6 @@ export type Database = {
         }
         Returns: string
       }
-      default_organization_id: { Args: { p_user_id: string }; Returns: string }
       derive_organization_abbreviation: {
         Args: { p_name: string }
         Returns: string
@@ -75145,6 +75812,31 @@ export type Database = {
             }
             Returns: boolean
           }
+      has_access_for_many: {
+        Args: {
+          p_level: string
+          p_person: string
+          p_targets: string[]
+          p_type?: string
+        }
+        Returns: {
+          allowed: boolean
+          target: string
+        }[]
+      }
+      has_access_for_shadow: {
+        Args: {
+          p_caller?: string
+          p_level: string
+          p_person: string
+          p_targets: string[]
+          p_type?: string
+        }
+        Returns: {
+          allowed: boolean
+          target: string
+        }[]
+      }
       has_org_access: { Args: { p_org: string }; Returns: boolean }
       has_org_access_for: {
         Args: { p_org: string; p_user_id: string }
@@ -75215,6 +75907,7 @@ export type Database = {
         Returns: boolean
       }
       is_trusted_backend: { Args: never; Returns: boolean }
+      kernel_shadow_on: { Args: { p_person: string }; Returns: boolean }
       lane_of: {
         Args: { p_resource_id: string; p_resource_type: string }
         Returns: string
@@ -85269,6 +85962,108 @@ export type Database = {
         }
         Relationships: []
       }
+      device_handoff: {
+        Row: {
+          completed_at: string | null
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          envelope_id: string | null
+          expires_at: string
+          id: string
+          ip: unknown
+          metadata: Json
+          method: string | null
+          opened_at: string | null
+          organization_id: string
+          phone_last4: string | null
+          published_to_web: boolean
+          published_to_web_at: string | null
+          published_to_web_by: string | null
+          purpose: string
+          result_file_id: string | null
+          secret_hash: string
+          shown_to: Database["platform"]["Enums"]["shown_to"] | null
+          status: string
+          strokes: Json | null
+          subject_id: string | null
+          subject_type: string | null
+          target: string | null
+          texts_sent: number
+          updated_at: string
+          updated_by: string | null
+          user_agent: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          envelope_id?: string | null
+          expires_at: string
+          id?: string
+          ip?: unknown
+          metadata?: Json
+          method?: string | null
+          opened_at?: string | null
+          organization_id: string
+          phone_last4?: string | null
+          published_to_web?: boolean
+          published_to_web_at?: string | null
+          published_to_web_by?: string | null
+          purpose: string
+          result_file_id?: string | null
+          secret_hash: string
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
+          status?: string
+          strokes?: Json | null
+          subject_id?: string | null
+          subject_type?: string | null
+          target?: string | null
+          texts_sent?: number
+          updated_at?: string
+          updated_by?: string | null
+          user_agent?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          envelope_id?: string | null
+          expires_at?: string
+          id?: string
+          ip?: unknown
+          metadata?: Json
+          method?: string | null
+          opened_at?: string | null
+          organization_id?: string
+          phone_last4?: string | null
+          published_to_web?: boolean
+          published_to_web_at?: string | null
+          published_to_web_by?: string | null
+          purpose?: string
+          result_file_id?: string | null
+          secret_hash?: string
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
+          status?: string
+          strokes?: Json | null
+          subject_id?: string | null
+          subject_type?: string | null
+          target?: string | null
+          texts_sent?: number
+          updated_at?: string
+          updated_by?: string | null
+          user_agent?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Relationships: []
+      }
       domain_classification: {
         Row: {
           authority: number | null
@@ -88064,6 +88859,7 @@ export type Database = {
           published_to_web_by: string | null
           readable_columns: string[]
           resource: string
+          session_sliding: boolean
           session_ttl_minutes: number
           shown_to: Database["platform"]["Enums"]["shown_to"] | null
           updated_at: string
@@ -88097,6 +88893,7 @@ export type Database = {
           published_to_web_by?: string | null
           readable_columns?: string[]
           resource: string
+          session_sliding?: boolean
           session_ttl_minutes?: number
           shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           updated_at?: string
@@ -88130,6 +88927,7 @@ export type Database = {
           published_to_web_by?: string | null
           readable_columns?: string[]
           resource?: string
+          session_sliding?: boolean
           session_ttl_minutes?: number
           shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           updated_at?: string
@@ -90744,6 +91542,10 @@ export type Database = {
         Args: { p_decorations: Json; p_style: Json; p_table: string }
         Returns: Json
       }
+      _device_handoff_live: {
+        Args: { p_expires_at: string; p_status: string }
+        Returns: boolean
+      }
       _door_follows_its_function_impl: {
         Args: { p_schemas: string[] }
         Returns: undefined
@@ -92194,6 +92996,54 @@ export type Database = {
           type_value: string
         }[]
       }
+      device_handoff_cancel: {
+        Args: { p_handoff_id: string; p_subject_id: string }
+        Returns: Json
+      }
+      device_handoff_complete: {
+        Args: {
+          p_image_file_id: string
+          p_ip: unknown
+          p_method: string
+          p_secret: string
+          p_strokes: Json
+          p_ua: string
+        }
+        Returns: Json
+      }
+      device_handoff_open: {
+        Args: { p_ip: unknown; p_secret: string; p_ua: string }
+        Returns: Json
+      }
+      device_handoff_start: {
+        Args: {
+          p_envelope_id: string
+          p_organization_id: string
+          p_path: string
+          p_purpose: string
+          p_subject_id: string
+          p_subject_type: string
+          p_target: string
+          p_ttl_minutes: number
+        }
+        Returns: Json
+      }
+      device_handoff_status: {
+        Args: { p_handoff_id: string; p_subject_id: string }
+        Returns: Json
+      }
+      device_handoff_text: {
+        Args: {
+          p_handoff_id: string
+          p_ip: unknown
+          p_per_ip_per_day: number
+          p_per_subject: number
+          p_phone: string
+          p_secret: string
+          p_subject_id: string
+        }
+        Returns: Json
+      }
       doctrine_shape_vocabulary: {
         Args: never
         Returns: {
@@ -92459,7 +93309,9 @@ export type Database = {
       kernel_equivalence_answers: { Args: never; Returns: Json }
       kernel_equivalence_check: { Args: never; Returns: Json }
       kernel_equivalence_expected: { Args: never; Returns: Json }
+      kernel_fingerprint_status: { Args: never; Returns: Json }
       kernel_fixture_tokens: { Args: never; Returns: string[] }
+      kernel_follow_now: { Args: never; Returns: Json }
       knob_archive: {
         Args: {
           p_feature: string
@@ -129829,12 +130681,13 @@ export type Database = {
           created_at: string
           created_by: string | null
           custom_fields: Json
-          default_organization_id: string | null
           deleted_at: string | null
           id: string
+          last_active_organization_id: string | null
           metadata: Json
           organization_id: string
           preferences: Json
+          startup_organization_id: string | null
           updated_at: string
           updated_by: string | null
           user_id: string
@@ -129845,12 +130698,13 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           custom_fields?: Json
-          default_organization_id?: string | null
           deleted_at?: string | null
           id?: string
+          last_active_organization_id?: string | null
           metadata?: Json
           organization_id: string
           preferences: Json
+          startup_organization_id?: string | null
           updated_at?: string
           updated_by?: string | null
           user_id: string
@@ -129861,12 +130715,13 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           custom_fields?: Json
-          default_organization_id?: string | null
           deleted_at?: string | null
           id?: string
+          last_active_organization_id?: string | null
           metadata?: Json
           organization_id?: string
           preferences?: Json
+          startup_organization_id?: string | null
           updated_at?: string
           updated_by?: string | null
           user_id?: string
@@ -130202,6 +131057,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      _set_own_organization_choice: {
+        Args: { p_column: string; p_organization_id: string }
+        Returns: string
+      }
       admin_account_facts: {
         Args: never
         Returns: {
@@ -130282,6 +131141,10 @@ export type Database = {
           vault_access: string
         }[]
       }
+      set_last_active_organization: {
+        Args: { p_organization_id: string }
+        Returns: string
+      }
       set_organization_vault_access: {
         Args: {
           p_access: string
@@ -130289,6 +131152,10 @@ export type Database = {
           p_organization_id: string
           p_user_id: string
         }
+        Returns: string
+      }
+      set_startup_organization: {
+        Args: { p_organization_id: string }
         Returns: string
       }
       user_preferences_drift_report: {

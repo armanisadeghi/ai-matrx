@@ -74,12 +74,19 @@ await frame.waitFor({ timeout: 60_000 }).catch(() => {});
 await p2.waitForTimeout(4000);
 // The page's own inline database is part of the page (association page_database): its share reaches the table.
 check("the page's inline database opens for the content editor", !(await frame.getByText(/isn.t shared with you/).count()));
-const before = await frame.locator("[role=row]").count();
+const rowsIn = (f) => f.locator("tbody tr, [role=row]").count();
+const before = await rowsIn(frame);
 await frame.getByRole("button", { name: /New( page)?$/ }).first().click().catch(() => {});
 await p2.waitForTimeout(5000);
-const after = await frame.locator("[role=row]").count();
-check("a content editor can add a row", after > before, { before, after });
+const after = await rowsIn(frame);
+// A new row opens in the side peek at once (the grid may still be redrawing its rows).
+const peeked = (await p2.locator(".spaces-peek-bar").count()) > 0;
+check("a content editor can add a row", after > before || peeked, { before, after, peeked });
 await p2.screenshot({ path: `${SHOT}/edit-content-member.png` });
+// The new row opens in the side peek; close it so the page's own controls are reachable.
+await p2.keyboard.press("Escape");
+if (await p2.locator(".spaces-peek-bar").count()) await p2.locator(".spaces-peek-bar button").first().click().catch(() => {});
+await p2.waitForTimeout(800);
 await p2.getByRole("button", { name: "Page options", exact: true }).first().click();
 await p2.waitForTimeout(800);
 const menu = await p2.locator("[data-radix-popper-content-wrapper]").last().innerText().catch(() => "");

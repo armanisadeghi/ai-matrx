@@ -71,10 +71,12 @@
 
 import {
   kindSchemaFromJsonSchema,
-  normalizeJsonRegion,
   validateStructuralLeg,
   type KindSchema,
 } from "@ai-matrx/content-ir";
+// The CORRECTED constructor — the same door every render path takes, so the
+// doctor's "does the parser resolve it" asks exactly what the browser asks.
+import { normalizeJsonRegion } from "@ai-matrx/rich-content/kinds/registry/kind-correctors";
 
 // ─── Asset columns (v1) ─────────────────────────────────────────────────────
 
@@ -254,7 +256,7 @@ export interface DoctorCodeRenderPaths {
   artifactKinds: string[];
   /**
    * Every block type `resolveBlockDispatch` can answer (block-dispatch.tsx,
-   * via `extractDispatchKeysFromText`). When provided, every ACTIVE
+   * via `extractDispatchKeysFromTexts`). When provided, every ACTIVE
    * `source='bundled'` web/output `kind_component` row's key MUST appear here
    * — a miss is a RED `dangling-component-key`. Omit only when the source is
    * unreadable; the caller then loses the check and must say so.

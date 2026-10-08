@@ -107,8 +107,10 @@ export function definePolicy<TState>(config: PolicyConfig<TState>): Policy<TStat
     if (!caps.allowsBroadcast && hasBroadcast) {
         fail(`"${sliceName}": preset "${preset}" does not allow broadcast actions`);
     }
-    // Rule: ui-broadcast / boot-critical MUST declare at least one broadcast action.
-    if (caps.requiresBroadcast && !hasBroadcast) {
+    // Rule: ui-broadcast / boot-critical MUST declare at least one broadcast
+    // action — unless the slice is declared per tab (`perTab`), which broadcasts
+    // nothing on purpose.
+    if (caps.requiresBroadcast && !hasBroadcast && config.perTab !== true) {
         fail(`"${sliceName}": preset "${preset}" requires at least one broadcast action`);
     }
 

@@ -17,6 +17,9 @@ import {
 } from "../lib/guestAccess";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Tabs } from "@ai-matrx/design-system/controls";
+import { KpiTile } from "@/components/official/kpi/KpiTile";
+import { UserAcquisitionExplorer, useAcquisitionTotals } from "./UserAcquisitionExplorer";
 import { MatrxDataTable } from "@ai-matrx/design-system/data-table";
 import type { MatrxColumnDef } from "@ai-matrx/design-system/data-table/types";
 import { useOptionalCanvas } from "@ai-matrx/canvas/react";
@@ -96,6 +99,9 @@ export function UserAcquisitionTableClient() {
   const searchParams = useSearchParams();
   const focusUser = searchParams.get("user");
   const [rows, setRows] = useState<AdminUserAcquisitionRow[]>([]);
+  // the list reads rows into the browser and stops at the API's cap; it says so (DRILL-SERVER-2)
+  const [listCap, setListCap] = useState<{ loaded: number; total: number } | null>(null);
+  const [view, setView] = useState<"explore" | "list">("explore");
   const [timeframe, setTimeframe] = useState<Timeframe>("30d");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -217,6 +223,10 @@ export function UserAcquisitionTableClient() {
         throw new Error("Acquisition response contained an invalid row");
       }
       setRows(parsed.data);
+      const guests = "guests" in body ? (body as { guests?: { loaded?: unknown; total?: unknown } }).guests : undefined;
+      const loaded = typeof guests?.loaded === "number" ? guests.loaded : null;
+      const total = typeof guests?.total === "number" ? guests.total : null;
+      setListCap(loaded !== null && total !== null && loaded < total ? { loaded, total } : null);
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : "Failed to load");
     } finally {
@@ -234,36 +244,10 @@ export function UserAcquisitionTableClient() {
     [focusUser, rows],
   );
 
-  const totals = useMemo(
-    () =>
-      focused.reduce(
-        (result, row) => {
-          if (row.traffic_kind === "local_test") {
-            result.localTests += 1;
-          } else if (row.traffic_kind === "bot") {
-            result.bots += 1;
-          } else {
-            result.people += 1;
-            result.peopleCost += row.total_cost;
-            result[row.identity_state] += 1;
-          }
-          if (row.guest_access?.block_active) result.blocked += 1;
-          return result;
-        },
-        {
-          visitor: 0,
-          guest: 0,
-          account: 0,
-          converted: 0,
-          people: 0,
-          localTests: 0,
-          bots: 0,
-          blocked: 0,
-          peopleCost: 0,
-        },
-      ),
-    [focused],
-  );
+  // THE TILES ARE COUNTED ON THE DATABASE (user_acquisition, DRILL-SERVER-2): the rows below stop at
+  // the API's cap, so a tile summed from them undercounted in silence.
+  const counted = useAcquisitionTotals(timeframe, focusUser);
+  const totals = counted.totals;
 
   const columns = useMemo(
     (): MatrxColumnDef<AdminUserAcquisitionRow>[] => [
@@ -577,22 +561,48 @@ export function UserAcquisitionTableClient() {
         </div>
       ) : null}
       <div className="grid grid-cols-2 gap-3 md:grid-cols-8">
-        {[
-          ["Likely people", totals.people],
-          ["Guests", totals.guest],
-          ["Accounts", totals.account],
-          ["Converted", totals.converted],
-          ["Local / agent", totals.localTests],
-          ["Bots", totals.bots],
-          ["Blocked guests", totals.blocked],
-          ["People LLM cost", fmtCost(totals.peopleCost)],
-        ].map(([label, value]) => (
-          <div key={label} className="rounded-lg border bg-card p-3">
-            <div className="text-[11px] text-muted-foreground">{label}</div>
-            <div className="text-lg font-semibold tabular-nums">{value}</div>
-          </div>
+        {(
+          [
+            ["Likely people", totals?.people],
+            ["Guests", totals?.guest],
+            ["Accounts", totals?.account],
+            ["Converted", totals?.converted],
+            ["Local / agent", totals?.localTests],
+            ["Bots", totals?.bots],
+            ["Blocked guests", totals?.blocked],
+            ["People LLM cost", totals ? fmtCost(totals.peopleCost) : null],
+          ] as const
+        ).map(([label, value]) => (
+          <KpiTile
+            key={label}
+            label={label}
+            value={value ?? null}
+            loading={counted.loading}
+            title={counted.error ?? undefined}
+          />
         ))}
       </div>
+      <div className="flex items-center gap-3">
+        <Tabs
+          value={view}
+          onValueChange={setView}
+          aria-label="Acquisition view"
+          data={[
+            { value: "explore", label: "Explore" },
+            { value: "list", label: "Identities" },
+          ]}
+        />
+        {view === "list" && listCap ? (
+          <span className="text-xs text-muted-foreground">
+            Newest {listCap.loaded.toLocaleString()} of {listCap.total.toLocaleString()} guests listed
+          </span>
+        ) : null}
+      </div>
+      {view === "explore" ? (
+        <div className="min-h-0 flex-1 overflow-auto">
+          <UserAcquisitionExplorer focusUser={focusUser} />
+        </div>
+      ) : (
       <div className="min-h-0 flex-1">
         <NonEditableContextMenu
           sourceFeature="admin"
@@ -655,6 +665,36 @@ export function UserAcquisitionTableClient() {
           getRowId={(row) => row.row_id}
           isLoading={loading}
           pageSize={50}
+          drill={{
+            local: true,
+            countLabel: "People",
+            dimensions: [
+              "campaign",
+              "referrer",
+              "traffic_kind",
+              "identity_state",
+              "created_at",
+            ],
+            measures: ["count", "sum_total_cost", "sum_total_requests"],
+            levels: {
+              campaign: {
+                breakouts: ["referrer", "traffic_kind", "identity_state", "created_at:week"],
+                show: ["count", "sum_total_cost", "sum_total_requests"],
+              },
+              referrer: {
+                breakouts: ["campaign", "traffic_kind", "identity_state", "created_at:week"],
+                show: ["count", "sum_total_cost", "sum_total_requests"],
+              },
+              traffic_kind: {
+                breakouts: ["identity_state", "campaign", "referrer", "created_at:week"],
+                show: ["count", "sum_total_cost", "sum_total_requests"],
+              },
+              identity_state: {
+                breakouts: ["traffic_kind", "campaign", "referrer", "created_at:week"],
+                show: ["count", "sum_total_cost", "sum_total_requests"],
+              },
+            },
+          }}
           read={readOf({ loading, error }, { what: "acquired identities", onRetry: () => void load(timeframe) })}
           emptyState={{
             title: "No acquired identities",
@@ -710,6 +750,7 @@ export function UserAcquisitionTableClient() {
         />
         </NonEditableContextMenu>
       </div>
+      )}
       {blockTarget ? (
         <GuestBlockDialog
           open

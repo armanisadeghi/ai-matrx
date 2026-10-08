@@ -9,6 +9,10 @@
  *   - `variant="field"` full-width form field (the full task editor)
  *
  * Value is the DB shape directly: a `yyyy-mm-dd` string, or `null`.
+ *
+ * Forms outside the task editor use the package's `DateField`
+ * (`@ai-matrx/design-system/controls`); `id` / `emptyLabel` remain for a
+ * labelled field-variant trigger.
  */
 
 import React from "react";
@@ -29,6 +33,9 @@ export function TaskDueDatePicker({
   overdue = false,
   triggerRef,
   onTriggerKeyDown,
+  id,
+  emptyLabel = "Set due date",
+  clearLabel = "Clear due date",
 }: {
   value: string | null;
   onChange: (value: string | null) => void;
@@ -37,6 +44,11 @@ export function TaskDueDatePicker({
   /** Pill variant only — focus target for keyboard field chains. */
   triggerRef?: React.Ref<HTMLButtonElement>;
   onTriggerKeyDown?: React.KeyboardEventHandler<HTMLButtonElement>;
+  /** Field variant: the trigger's id, for a `<label htmlFor>`. */
+  id?: string;
+  /** Field variant: what the empty trigger says. */
+  emptyLabel?: string;
+  clearLabel?: string;
 }) {
   const [open, setOpen] = React.useState(false);
   const selected = parseDateOnly(value);
@@ -44,6 +56,7 @@ export function TaskDueDatePicker({
   const trigger =
     variant === "field" ? (
       <button
+        id={id}
         type="button"
         className={cn(
           "h-8 max-lg:h-11 w-full inline-flex items-center gap-1.5 bg-card border border-border rounded-md px-2 text-xs outline-none transition-colors hover:border-foreground/30 focus:border-primary/60",
@@ -53,7 +66,7 @@ export function TaskDueDatePicker({
               : "text-foreground"
             : "text-muted-foreground",
         )}
-        title="Set due date"
+        title={emptyLabel}
       >
         <CalendarIcon className="h-3.5 w-3.5 shrink-0" />
         {value
@@ -62,7 +75,7 @@ export function TaskDueDatePicker({
               day: "numeric",
               year: "numeric",
             })
-          : "Set due date"}
+          : emptyLabel}
       </button>
     ) : (
       <button
@@ -109,7 +122,7 @@ export function TaskDueDatePicker({
               className="flex w-full items-center justify-center gap-1.5 rounded px-2 py-1.5 text-xs text-muted-foreground hover:bg-accent hover:text-foreground"
             >
               <X className="h-3 w-3" />
-              Clear due date
+              {clearLabel}
             </button>
           </div>
         )}

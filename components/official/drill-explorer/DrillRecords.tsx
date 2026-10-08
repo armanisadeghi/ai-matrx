@@ -40,7 +40,7 @@ import { asOfPage, doorWhere, type DrillNameResolver, type DrillRecordOpener, ty
 import type { DrillCarried } from "./questionParts";
 import { recordsColumnDimension, recordsColumnHeader } from "./recordsColumns";
 import { plainWords } from "./dimensionWords";
-import { grainNoun, isMoment, measureFactWords, momentWords, pluralNoun, shortId } from "./explorerWords";
+import { grainNoun, isMoment, measureFactWords, momentWords, pluralNoun, shortId, drillFailureWords } from "./explorerWords";
 import { formatCount } from "@ai-matrx/kit/format";
 
 import { Button } from "@ai-matrx/design-system/controls";
@@ -172,7 +172,7 @@ export function DrillRecords({
         if (cancelled) return;
         setLoading(false);
         if (!got.ok) {
-          setError(got.error.message || `The ${rowNoun}s could not be read.`);
+          setError(drillFailureWords(got.error.message, `The ${rowNoun}s could not be read.`));
           return;
         }
         const page = got.data!;

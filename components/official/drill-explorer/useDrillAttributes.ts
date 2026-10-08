@@ -22,6 +22,7 @@ import type { DrillCarried } from "./questionParts";
 import { doorWhere, type DrillNameResolver } from "./types";
 import { useDrillNameBookOr, useDrillNames, type DrillNameBook } from "./drillNames";
 import { doorWindow } from "./useDrillExplorer";
+import { drillFailureWords } from "./explorerWords";
 
 /** group value → attribute key → the values it holds */
 type Held = Record<string, Record<string, Set<string | null>>>;
@@ -48,7 +49,8 @@ export function useDrillAttributes(args: {
   const wanted = outer && !question.across ? (attributes ?? []).filter((a) => a !== outer && dimensions.some((d) => d.key === a)) : [];
   const groups = outer ? (answers[drillRequestKey([outer])] ?? []).map((r) => r.groups[outer] ?? null).filter((v): v is string => typeof v === "string") : [];
   const key = JSON.stringify({ outer, wanted, groups, where: question.where, window: question.window ?? null, carried: carried ?? null, lane, source });
-  const [held, setHeld] = useState<{ key: string; values: Held }>({ key: "", values: {} });
+  // A FAILED READ IS SAID (lane DRILL-PRIMITIVE-2): per attribute, why it was not read — never an empty "—".
+  const [held, setHeld] = useState<{ key: string; values: Held; failed: Record<string, string> }>({ key: "", values: {}, failed: {} });
 
   useEffect(() => {
     if (!client || !outer || wanted.length === 0 || groups.length === 0) return;
@@ -57,7 +59,8 @@ export function useDrillAttributes(args: {
     if (windowPart.window && carried?.windowKey) windowPart.window = { ...windowPart.window, key: carried.windowKey };
     void Promise.all(
       wanted.map(async (attr) => {
-        const got = await client.drillAsk({
+        const got = await client
+          .drillAsk({
           source,
           question: {
             by: [outer, attr],
@@ -66,13 +69,16 @@ export function useDrillAttributes(args: {
             limit: groups.length,
             ...windowPart,
           },
-        });
-        return { attr, rows: got.ok ? got.data!.rows : [] };
+        })
+          .catch((e: unknown) => ({ ok: false as const, error: { message: e instanceof Error ? e.message : "" } }));
+        return { attr, rows: got.ok ? got.data!.rows : [], failed: got.ok ? null : drillFailureWords(got.error?.message, "Not read") };
       }),
     ).then((results) => {
       if (cancelled) return;
       const values: Held = {};
-      for (const { attr, rows } of results) {
+      const failed: Record<string, string> = {};
+      for (const { attr, rows, failed: why } of results) {
+        if (why) failed[attr] = why;
         for (const row of rows) {
           if (row.kind !== "group" || !row.groups) continue;
           const g = row.groups[outer];
@@ -84,7 +90,7 @@ export function useDrillAttributes(args: {
       }
       // a person's name is the host resolver's (the door carries none for people), through the ONE book
       for (const attr of wanted) void book.want(attr, Object.values(values).flatMap((v) => [...(v[attr] ?? [])]));
-      if (!cancelled) setHeld({ key, values });
+      if (!cancelled) setHeld({ key, values, failed });
     });
     return () => {
       cancelled = true;
@@ -101,6 +107,7 @@ export function useDrillAttributes(args: {
       key: attr,
       label: dim.label,
       ...(dim.description ? { description: dim.description } : {}),
+      ...(ready && held.failed[attr] ? { error: held.failed[attr] } : {}),
       read: (g: Record<string, string | null>) => {
         if (!ready) return undefined;
         const id = g[outer];

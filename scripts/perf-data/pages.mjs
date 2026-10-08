@@ -4,11 +4,21 @@ import { env, budgets } from "./lib.mjs";
 
 const needleScript = `
   window.__perf = { lcp: 0, needleAt: null, needle: null };
+  // Every store call of the load is timed (the default buffer of 250 entries is spent on scripts).
+  try { performance.setResourceTimingBufferSize(5000); } catch {}
   new PerformanceObserver((l) => { for (const e of l.getEntries()) window.__perf.lcp = e.startTime; }).observe({ type: "largest-contentful-paint", buffered: true });
   setInterval(() => {
     const p = window.__perf;
     if (p.needleAt !== null || !document.body) return;
-    if (p.needle ? document.body.innerText.includes(p.needle) : document.querySelectorAll('[role="row"], tbody tr, [data-row]').length > 2) p.needleAt = performance.now();
+    // The page's needle arrives by init script (window.__needle) BEFORE the document's first frame;
+    // reading only __perf.needle (set after commit) let a skeleton's rows count as rows.
+    if (p.needle === null && typeof window.__needle === "string") p.needle = window.__needle;
+    // A needle starting "css:" is a selector that must match more than two elements (the grid's
+    // own cells: "css:td[data-matrx-cell-row]"); anything else is text that must appear.
+    const hit = p.needle && p.needle.startsWith("css:")
+      ? document.querySelectorAll(p.needle.slice(4)).length > 2
+      : p.needle ? document.body.innerText.includes(p.needle) : document.querySelectorAll('[role="row"], tbody tr, [data-row]').length > 2;
+    if (hit) p.needleAt = performance.now();
   }, 25);
 `;
 
@@ -48,10 +58,10 @@ export async function measurePages({ base, fixtures: fixtures0, log = console.lo
   fixtures = { ...fixtures, spacePath };
   const plan = [
     { name: "/data", path: "/data", needle: fixtures.homeNeedle },
-    { name: "/data/<table> grid", path: `/data/${tableId}`, needle: recordTitle },
+    { name: "/data/<table> grid", path: `/data/${tableId}`, needle: "css:td[data-matrx-cell-row]" },
     { name: "/data/<table> board", path: `/data/${fixtures.boardTableId}?view=${fixtures.boardViewId ?? ""}`, needle: fixtures.boardNeedle, skip: !fixtures.boardViewId },
     { name: "record page", path: `/data/${tableId}/r/${recordId}`, needle: recordTitle },
-    { name: "space with table", path: spacePath, needle: null, path: spacePath, skip: !spacePath },
+    { name: "space with table", path: spacePath, needle: "css:td[data-matrx-cell-row]", skip: !spacePath },
   ];
 
   const out = [];
@@ -71,12 +81,17 @@ export async function measurePages({ base, fixtures: fixtures0, log = console.lo
       await page.waitForTimeout(settleMs);
       const m = await page.evaluate(() => {
         const nav = performance.getEntriesByType("navigation")[0];
-        return { ttfb: nav ? nav.responseStart : null, lcp: window.__perf.lcp, rows: window.__perf.needleAt, url: location.pathname };
+        // HYDRATION START = the first store call of the load: nothing asks the store before the
+        // app's script has booted. CALLS BEFORE ROWS = every store call (any schema) begun before
+        // the rows were visible.
+        const rows = window.__perf.needleAt;
+        const store = performance.getEntriesByType("resource").filter((r) => r.name.includes("/rest/v1/")).map((r) => r.startTime);
+        return { ttfb: nav ? nav.responseStart : null, lcp: window.__perf.lcp, rows, url: location.pathname, firstStore: store.length ? Math.min(...store) : null, allStore: store.length, beforeRows: rows == null ? store.length : store.filter((t) => t < rows).length };
       }).catch(() => ({}));
       page.off("request", onReq);
       const b = budgets.pages[p.name] ?? {};
-      out.push({ page: p.name, pass, ttfb_ms: m.ttfb == null ? "" : Math.round(m.ttfb), lcp_ms: Math.round(m.lcp ?? 0), rows_visible_ms: m.rows == null ? "never" : Math.round(m.rows), store_calls: calls.length, calls: [...new Set(calls)].join(" "), landed: m.url, budget: b, wallMs: Date.now() - t0 });
-      log(`  ${p.name} ${pass}: rows ${m.rows == null ? "never" : Math.round(m.rows)} ms, ${calls.length} store calls`);
+      out.push({ page: p.name, pass, ttfb_ms: m.ttfb == null ? "" : Math.round(m.ttfb), lcp_ms: Math.round(m.lcp ?? 0), rows_visible_ms: m.rows == null ? "never" : Math.round(m.rows), hydration_start_ms: m.firstStore == null ? "" : Math.round(m.firstStore), calls_before_rows: m.beforeRows ?? "", all_store_calls: m.allStore ?? "", store_calls: calls.length, calls: [...new Set(calls)].join(" "), landed: m.url, budget: b, wallMs: Date.now() - t0 });
+      log(`  ${p.name} ${pass}: rows ${m.rows == null ? "never" : Math.round(m.rows)} ms, first store call ${m.firstStore == null ? "none" : Math.round(m.firstStore)} ms, ${m.beforeRows} calls before rows, ${m.allStore} store calls (${calls.length} custom/platform)`);
     }
   }
   await browser.close();

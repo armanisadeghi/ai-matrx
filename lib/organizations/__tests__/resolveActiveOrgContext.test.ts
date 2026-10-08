@@ -1,33 +1,19 @@
 /**
- * resolveActiveOrgContext.test.ts — BOOT NEVER PICKS AN ORGANIZATION FOR
- * ANYONE (Arman, 2026-09-19).
+ * resolveActiveOrgContext.test.ts — THE LOAD LADDER (Arman, 2026-10-07):
+ * "Active Org is set ONCE at the top of the app. Active Org can never be none."
  *
- * A "default organization" is at most a per-client DISPLAY preference that
- * only the org picker may read. NOTHING — no boot ladder, no resolver, no
- * transport — may pick an organization for a person from a cookie the server
- * trusts, a saved preference, or "their first/oldest" organization:
+ * The rungs, each kept only while it is a CURRENT membership:
+ *   0. this tab's held organization (refreshes only);
+ *   1. the link's own organization (`?org=`);
+ *   2. the account's last active organization;
+ *   3. the account's start-up organization;
+ *   4. the first organization — the OLDEST active membership (not the first
+ *      by name, not the one the person created).
+ * Zero memberships → null. A failed account read throws (honest retry state).
  *
- *   "one missed org check that should have just failed turns into 50 in a
- *    month and 5,000 in a year, and suddenly we don't have orgs any more, we
- *    have a user and a default org, which means we just have user now."
- *
- * WHAT IT ASSERTS — the surviving rungs, and the absence of the rest:
- *
- *   0. this device's REMEMBERED CHOICE (the shared apex cookie), used only
- *      while it still names a live membership, cleared when it does not;
- *   c. exactly ONE membership → that org (nothing to choose);
- *   d. otherwise null, DELIBERATELY, with `unreadableReason: null` so the UI
- *      spells the honest question rather than "we could not check".
- *
- * THE ANTI-REGRESSION HALF. The Supabase double THROWS and counts its calls,
- * so a restored default-org read (or any other database-backed rung) fails
- * this suite even if the resolver swallows the error. The first membership in
- * every many-membership fixture is the one the person CREATED — the exact
- * shape a "first/own org" rung would select.
- *
- * SUT: the real `resolveActiveOrgContext` and its real rung order. The doubles
- * are only the things outside the resolver: the membership read, the shared
- * apex cookie, and the Supabase client.
+ * SUT: the real resolver and rung order. Doubles: the membership reads and the
+ * account's two choices (`accountOrganizationChoices`). The Supabase client
+ * double THROWS — the resolver reaches the database only through those doors.
  */
 
 import { jest } from "@jest/globals";
@@ -45,7 +31,11 @@ type Org = {
 };
 
 let orgs: Org[] = [];
-let cookieOrgId: string | null = null;
+let lastActive: string | null = null;
+let startup: string | null = null;
+let accountReadFails = false;
+/** Membership join order (oldest first); defaults to the order of `orgs`. */
+let joinOrder: string[] | null = null;
 
 /**
  * Every touch of the Supabase client from inside the resolver. ONE entry here
@@ -59,12 +49,28 @@ jest.mock("@/features/organizations/service", () => ({
   getUserOrganizations: async () => orgs,
 }));
 
-const cookieClear = jest.fn<() => void>();
-jest.mock("@/lib/organizations/activeOrgCookie", () => ({
-  activeOrgCookie: {
-    read: () => cookieOrgId,
-    clear: () => cookieClear(),
-    write: () => {},
+jest.mock("@/lib/organizations/accountOrganizationChoices", () => ({
+  readAccountOrganizationChoices: async () => {
+    if (accountReadFails) throw new Error("the account's organization read failed: offline");
+    return { lastActiveOrganizationId: lastActive, startupOrganizationId: startup };
+  },
+}));
+
+jest.mock("@/features/organizations/service/membershipsService", () => ({
+  membershipsService: {
+    forUser: async () => ({
+      data: {
+        memberships: (joinOrder ?? orgs.map((o) => o.id)).map((id, i) => ({
+          id: `m-${i}`,
+          organizationId: id,
+          containerId: id,
+          userId: USER,
+          role: "member",
+          status: "active",
+          createdAt: `2026-0${(i % 9) + 1}-01T00:00:00Z`,
+        })),
+      },
+    }),
   },
 }));
 
@@ -107,9 +113,11 @@ const manyMemberships = (): Org[] => [
 
 beforeEach(() => {
   orgs = [];
-  cookieOrgId = null;
+  lastActive = null;
+  startup = null;
+  accountReadFails = false;
+  joinOrder = null;
   supabaseTouches.length = 0;
-  cookieClear.mockClear();
 });
 
 afterEach(() => {
@@ -118,83 +126,64 @@ afterEach(() => {
   expect(supabaseTouches).toEqual([]);
 });
 
-describe("resolveActiveOrgContext — boot selects only what is not a choice", () => {
-  it("a member of MANY organizations with nothing remembered on this device ends boot with NO selection", async () => {
+describe("resolveActiveOrgContext — the load ladder never ends with none", () => {
+  it("rung 2: the account's LAST ACTIVE organization opens, on any device", async () => {
     orgs = manyMemberships();
-
+    lastActive = OTHER_B;
+    startup = OTHER_A;
     const resolved = await resolveActiveOrgContext(USER);
-
-    expect(resolved).not.toBeNull();
-    expect(resolved!.organization_id).toBeNull();
-    expect(resolved!.organization_name).toBeNull();
-    // A real answer, not a degraded one: the memberships were read.
-    // `unreadableReason` here would hide the one question only they can answer
-    // behind a "Try again" button (R37).
-    expect(resolved!.unreadableReason ?? null).toBeNull();
-  });
-
-  it("NEVER consults a stored default-organization preference — it does not read the database at all", async () => {
-    orgs = manyMemberships();
-
-    const resolved = await resolveActiveOrgContext(USER);
-
-    expect(supabaseTouches).toEqual([]);
-    expect(resolved!.organization_id).toBeNull();
-  });
-
-  it("never selects the organization the user created, even when it is the only one they created", async () => {
-    orgs = [membership(OWN, "Armani's organization", true), membership(OTHER_A, "Client A")];
-
-    const resolved = await resolveActiveOrgContext(USER);
-
-    expect(resolved!.organization_id).toBeNull();
-  });
-
-  it("rung 0: this device's remembered choice is restored when it still names a membership", async () => {
-    orgs = manyMemberships();
-    cookieOrgId = OTHER_B;
-
-    const resolved = await resolveActiveOrgContext(USER);
-
     expect(resolved!.organization_id).toBe(OTHER_B);
     expect(resolved!.organization_name).toBe("Client B");
-    expect(cookieClear).not.toHaveBeenCalled();
   });
 
-  it("rung 0: a STALE remembered choice is dropped, not used — and does not become a selection", async () => {
+  it("rung 3: with no last active, the START-UP organization opens", async () => {
     orgs = manyMemberships();
-    cookieOrgId = "cccccccc-cccc-4ccc-8ccc-cccccccccccc"; // left an org since
-
+    startup = OTHER_A;
     const resolved = await resolveActiveOrgContext(USER);
-
-    expect(cookieClear).toHaveBeenCalledTimes(1);
-    // And it does not fall through to a substitute.
-    expect(resolved!.organization_id).toBeNull();
-  });
-
-  it("rung c: exactly ONE membership is still selected — there was never a choice", async () => {
-    orgs = [membership(OTHER_A, "Client A")];
-
-    const resolved = await resolveActiveOrgContext(USER);
-
     expect(resolved!.organization_id).toBe(OTHER_A);
-    expect(resolved!.organization_name).toBe("Client A");
   });
 
-  it("several memberships: no selection, and an ANSWER not an outage", async () => {
-    orgs = [membership(OTHER_A, "Client A"), membership(OTHER_B, "Client B")];
-
+  it("rung 4: with neither, the OLDEST membership opens — not the first by name", async () => {
+    orgs = manyMemberships();
+    joinOrder = [OTHER_B, OWN, OTHER_A];
     const resolved = await resolveActiveOrgContext(USER);
-
-    expect(resolved!.organization_id).toBeNull();
+    expect(resolved!.organization_id).toBe(OTHER_B);
     expect(resolved!.unreadableReason ?? null).toBeNull();
   });
 
-  it("no memberships at all resolves to null — nothing to select, nothing to ask", async () => {
-    orgs = [];
-
+  it("a last active organization she was REMOVED from is skipped, never used", async () => {
+    orgs = manyMemberships();
+    lastActive = "dddddddd-dddd-4ddd-8ddd-dddddddddddd";
+    startup = OTHER_A;
     const resolved = await resolveActiveOrgContext(USER);
+    expect(resolved!.organization_id).toBe(OTHER_A);
+  });
 
+  it("rung 0: a tab's HELD organization stays — another tab moving last active never pulls it", async () => {
+    orgs = manyMemberships();
+    lastActive = OTHER_B;
+    const resolved = await resolveActiveOrgContext(USER, { heldOrganizationId: OTHER_A });
+    expect(resolved!.organization_id).toBe(OTHER_A);
+  });
+
+  it("a held organization that is no longer hers is replaced by the ladder", async () => {
+    orgs = manyMemberships();
+    lastActive = OTHER_B;
+    const resolved = await resolveActiveOrgContext(USER, {
+      heldOrganizationId: "dddddddd-dddd-4ddd-8ddd-dddddddddddd",
+    });
+    expect(resolved!.organization_id).toBe(OTHER_B);
+  });
+
+  it("a FAILED account read throws — the caller shows retry, never a guess", async () => {
+    orgs = manyMemberships();
+    accountReadFails = true;
+    await expect(resolveActiveOrgContext(USER)).rejects.toThrow("offline");
+  });
+
+  it("no memberships at all resolves to null — the shell offers to create one", async () => {
+    orgs = [];
+    const resolved = await resolveActiveOrgContext(USER);
     expect(resolved).toBeNull();
   });
 });
@@ -232,17 +221,17 @@ describe("resolveActiveOrgContext — a link that names an organization", () => 
     orgs = twoBusinesses();
 
     const resolved = await resolveActiveOrgContext(USER, {
-      linkOrganizationId: FOOD_BANK,
+      linkOrganizationId: PLUMBING,
     });
 
-    expect(resolved!.organization_id).toBe(FOOD_BANK);
-    expect(resolved!.organization_name).toBe("Second Harvest Valley Food Bank");
+    expect(resolved!.organization_id).toBe(PLUMBING);
+    expect(resolved!.organization_name).toBe("Bluejacket Plumbing & Drain");
     expect(resolved!.link?.kind).toBe("honoured");
   });
 
   it("outranks this device's remembered choice — the link is the newer, more specific fact", async () => {
     orgs = twoBusinesses();
-    cookieOrgId = FOOD_BANK;
+    lastActive = FOOD_BANK;
 
     const resolved = await resolveActiveOrgContext(USER, {
       linkOrganizationId: PLUMBING,
@@ -259,7 +248,7 @@ describe("resolveActiveOrgContext — a link that names an organization", () => 
 
   it("is a silent no-op when it names the organization she is already working in", async () => {
     orgs = twoBusinesses();
-    cookieOrgId = FOOD_BANK;
+    lastActive = FOOD_BANK;
 
     const resolved = await resolveActiveOrgContext(USER, {
       linkOrganizationId: FOOD_BANK,
@@ -271,7 +260,7 @@ describe("resolveActiveOrgContext — a link that names an organization", () => 
 
   it("names an organization she is NOT a member of: refused in words, and she is moved NOWHERE", async () => {
     orgs = twoBusinesses();
-    cookieOrgId = FOOD_BANK;
+    lastActive = FOOD_BANK;
 
     const resolved = await resolveActiveOrgContext(USER, {
       linkOrganizationId: LAB,
@@ -298,7 +287,8 @@ describe("resolveActiveOrgContext — a link that names an organization", () => 
 
     // The ladder ran exactly as if no link existed: two memberships, nothing
     // remembered, so no selection — the honest answer, not a guess.
-    expect(resolved!.organization_id).toBeNull();
+    // The ladder still answers: the oldest membership.
+    expect(resolved!.organization_id).toBe(FOOD_BANK);
     expect(resolved!.link?.kind).toBe("refused");
     if (resolved!.link?.kind === "refused") {
       expect(resolved!.link.reason).toBe("malformed");
@@ -310,7 +300,7 @@ describe("resolveActiveOrgContext — a link that names an organization", () => 
       { ...membership(FOOD_BANK, "Second Harvest Valley Food Bank"), slug: "second-harvest" },
       { ...membership(PLUMBING, "Bluejacket Plumbing & Drain"), slug: "bluejacket" },
     ];
-    cookieOrgId = PLUMBING;
+    lastActive = PLUMBING;
 
     const resolved = await resolveActiveOrgContext(USER, {
       linkOrganizationId: "second-harvest",
@@ -322,7 +312,7 @@ describe("resolveActiveOrgContext — a link that names an organization", () => 
 
   it("with the knob OFF, a differing-organization link does not switch her — it offers the switch", async () => {
     orgs = twoBusinesses();
-    cookieOrgId = FOOD_BANK;
+    lastActive = FOOD_BANK;
 
     const resolved = await resolveActiveOrgContext(USER, {
       linkOrganizationId: PLUMBING,
@@ -342,7 +332,7 @@ describe("resolveActiveOrgContext — a link that names an organization", () => 
 
     const resolved = await resolveActiveOrgContext(USER, {});
 
-    expect(resolved!.organization_id).toBeNull();
+    expect(resolved!.organization_id).toBe(OWN);
     expect(resolved!.link).toBeUndefined();
   });
 });

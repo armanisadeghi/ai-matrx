@@ -1,7 +1,7 @@
 {
   "version": 1,
   "app": "matrx-frontend",
-  "routeCount": 1343,
+  "routeCount": 1347,
   "routes": [
     {
       "pattern": "/",
@@ -1769,6 +1769,11 @@
       "source": "app/(core)/applets/build/page.tsx"
     },
     {
+      "pattern": "/applets/build/[id]",
+      "status": "live",
+      "source": "app/(core)/applets/build/[id]/page.tsx"
+    },
+    {
       "pattern": "/applets/manage/[id]",
       "status": "live",
       "source": "app/(core)/applets/manage/[id]/page.tsx"
@@ -2937,6 +2942,16 @@
       "pattern": "/esign/new",
       "status": "live",
       "source": "app/(core)/esign/new/page.tsx"
+    },
+    {
+      "pattern": "/esign/templates",
+      "status": "live",
+      "source": "app/(core)/esign/templates/page.tsx"
+    },
+    {
+      "pattern": "/esign/templates/[templateId]",
+      "status": "live",
+      "source": "app/(core)/esign/templates/[templateId]/page.tsx"
     },
     {
       "pattern": "/exports",
@@ -6730,6 +6745,11 @@
       "pattern": "/x/sign",
       "status": "live",
       "source": "app/(link)/x/sign/page.tsx"
+    },
+    {
+      "pattern": "/x/sign/phone",
+      "status": "live",
+      "source": "app/(link)/x/sign/phone/page.tsx"
     }
   ]
 }
