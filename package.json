@@ -658,6 +658,8 @@
     "check:matrx-dist-integrity:self-test": "node scripts/check-matrx-dist-integrity.mjs --self-test",
     "check:matrx-imports": "node scripts/check-matrx-imports.mjs",
     "check:matrx-imports:self-test": "node scripts/check-matrx-imports.mjs --self-test",
+    "check:matrx-api-usage": "node scripts/check-matrx-api-usage.mjs",
+    "check:matrx-api-usage:self-test": "node scripts/check-matrx-api-usage.mjs --self-test",
     "check:matrx-pending:self-test": "node scripts/lib/matrx-pending-imports.mjs --self-test",
     "check:package-imports-resolve": "node scripts/check-package-imports-resolve.mjs",
     "check:package-imports-resolve:self-test": "node scripts/check-package-imports-resolve.mjs --self-test",
