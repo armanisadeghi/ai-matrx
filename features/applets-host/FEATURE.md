@@ -106,6 +106,13 @@ record's own `scope` (`{ entries, shadowDangerousGlobals }`); app-owned modules 
 
 ## Change Log
 
+- 2026-10-08 — Lane AO: the builder card shows the Applet's description (what it IS, `SAVED_APPLET_COLUMNS` carries
+  it) and a run's note only when that run was not a repair — a fix note ("Fixed import locations…") never stands
+  in for the description; a repair answered without a description keeps the one the Applet had
+  (`build-applet.description.test.ts`). The /applets list's About falls back to the description when no tagline
+  was written. Adopts `@ai-matrx/applets` 0.13.0 (a refused save throws, so a generated form stays open) and
+  `@ai-matrx/records` 0.87.14 (a blank email/url/phone saves as empty); the host's unhandled-rejection capture
+  skips an already-announced refusal.
 - 2026-10-08 — Lane AM: the build page's header re-reads the Applet's name after the first save (`router.refresh()`,
   was "Untitled Applet" until a reload); the preview line is one story — `previewLine(version)` "Preview of v2 · what
   you add here is held, never saved" (Draft/Published is the card's word only); `confirm()` waits up to 30 s for a
