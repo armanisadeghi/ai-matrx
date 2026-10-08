@@ -16,21 +16,39 @@ import {
   tokenProbe,
   walkIn,
 } from "../lib/meeting";
+import { observe, summarize } from "../lib/observe";
+import { skin } from "../lib/skins";
 import { scenario } from "../lib/scenario";
 import { GUEST, GUEST_2, admitWaiting, callWithGuest, hostWithMeeting } from "../lib/stories";
 
 scenario("link-code-invalid", async ({ cast }) => {
   const guest = await cast.add({ label: "guest", seat: "guest", displayName: GUEST });
   // A code in the product's own shape that names no meeting (a typo of a real one).
-  await guest.page.goto("/meet/qwz-4k7p-mxr", { waitUntil: "domcontentloaded" });
+  await guest.page.goto(skin().invalidCodePath, { waitUntil: "domcontentloaded" });
   await seePhase(guest, ["not-found"], 60_000);
-  // Never a blank page: a way to retype the code or go home.
+  // The person is TOLD the link opens no meeting…
   await seeUntil(
     guest,
-    "a way to retype the code or go home",
-    (o) => /enter (a|another|the) (meeting )?code|try another|go home|back to (meetings|home)|home/i.test(o.text),
+    "the screen saying this link opens no meeting",
+    (o) => /no meeting (for|found)|did not open|couldn.t find (a|that|the) meeting|meeting (does not|doesn.t) exist|not found|check (your|the) (meeting )?(code|link)/i.test(o.text),
     5000,
   );
+  // …and is offered a real way out: a link or button to retype a code or go back, that WORKS when clicked.
+  const wayOut = await seeControl(
+    guest,
+    "a link or button to retype the code or go back to meetings",
+    guest.page.getByRole("link", { name: /enter (a|another|the) (meeting )?code|retype|try (another|again)|back to (meetings|home)|go (back )?home|(my )?meetings/i })
+      .or(guest.page.getByRole("button", { name: /enter (a|another|the) (meeting )?code|retype|try (another|again)|back to (meetings|home)|go (back )?home/i })),
+    5000,
+  );
+  const stuckAt = new URL(guest.page.url()).pathname;
+  await wayOut.click();
+  await guest.page.waitForURL((u) => u.pathname !== stuckAt, { timeout: 30_000 }).catch(() => undefined);
+  const after = await observe(guest.page);
+  guest.saw(after);
+  expect(new URL(guest.page.url()).pathname, `clicking the way out should leave the dead link ${stuckAt}; still there, saw ${summarize(after)}`).not.toBe(stuckAt);
+  expect(after.phase, `the way out must lead somewhere that works, not another no-meeting screen; saw ${summarize(after)}`).not.toBe("not-found");
+  expect(/Application error|Internal Server Error|This page could not be found|404/i.test(after.text), `the way out landed on an error page: ${summarize(after)}`).toBe(false);
 });
 
 scenario("join-ended-meeting", async ({ cast }) => {

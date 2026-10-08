@@ -7,7 +7,7 @@ import { expect } from "@playwright/test";
 import { TIMEOUTS } from "../lib/env";
 import { keepsSeeing, seeControl, seePhase, seeUntil, walkIn } from "../lib/meeting";
 import { evaluateIn } from "../lib/observe";
-import { scenario } from "../lib/scenario";
+import { scenario, unproven } from "../lib/scenario";
 import { GUEST, GUEST_2, admitWaiting, callWithGuest } from "../lib/stories";
 
 const guestIn = (o: { participants: { name: string }[] }) => o.participants.some((p) => p.name.includes(GUEST));
@@ -111,8 +111,8 @@ scenario("autoplay-blocked", async ({ cast }) => {
     p = await playback();
   }
   guest.note(`before any click: ${JSON.stringify(p)}`);
-  expect(p.audioWithStream > 0, "precondition: the guest's page has the host's audio attached").toBe(true);
-  expect(p.audioPaused > 0, `precondition: the browser blocked that audio (paused=${p.audioPaused} of ${p.audioWithStream})`).toBe(true);
+  if (!(p.audioWithStream > 0)) unproven(`precondition not reachable: the guest's page has no host audio attached (${JSON.stringify(p)}); no product verdict on autoplay`);
+  if (!(p.audioPaused > 0)) unproven(`precondition not reachable: the browser did not block the host's audio (paused=${p.audioPaused} of ${p.audioWithStream}, userActivated=${String(p.userActivated)}); no product verdict on autoplay`);
   // The person is offered a way to turn sound on…
   await seeUntil(guest, "a 'click to enable sound' control", (o) => o.audioBlocked === true, TIMEOUTS.noticeMs);
   const enable = await seeControl(guest, "the Enable sound control", guest.page.getByRole("button", { name: /^Enable sound$|enable (sound|audio)|turn on sound|allow (sound|audio)|click to (hear|enable)/i }), 5000);

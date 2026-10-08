@@ -106,3 +106,6 @@ export function runDir(): string {
 
 /** aidream checkout whose environment runs lib/fixtures.py (persona factory, server truth). */
 export const AIDREAM_ROOT = process.env.MEET_AIDREAM_ROOT ?? path.resolve(REPO_ROOT, "..", "aidream");
+
+/** The message prefix a scenario throws when its product verdict cannot be produced (see scenario.ts `unproven`). */
+export const UNPROVEN_PREFIX = "UNPROVEN:";

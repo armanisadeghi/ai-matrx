@@ -2,6 +2,7 @@
  * MEETING — the moves every scenario repeats, done the way a person does them
  * (through the UI), plus a cleanup that guarantees the meeting ends.
  */
+import { skin } from "./skins";
 import { expect, type Locator, type Page } from "@playwright/test";
 import { formatDurationMs } from "@ai-matrx/kit/format";
 import type { Actor } from "./actor";
@@ -165,13 +166,13 @@ export async function startInstantMeeting(host: Actor): Promise<Meeting> {
 async function startOnce(host: Actor): Promise<Meeting> {
   const page = host.page;
   await resumeIfParked(host, page);
-  if (!new URL(page.url()).pathname.startsWith("/meetings")) await page.goto("/meetings");
+  if (!new URL(page.url()).pathname.startsWith(skin().startPath)) await page.goto(skin().startPath);
   await resumeIfParked(host, page);
   const start = page.getByRole("button", { name: /Start an instant meeting now|Start now/ });
   await start.first().waitFor({ state: "visible", timeout: 90_000 });
   await start.first().click();
   const deadline = Date.now() + 60_000;
-  while (Date.now() < deadline && !/\/meet\//.test(page.url())) {
+  while (Date.now() < deadline && !skin().meetingUrl.test(page.url())) {
     if (/__dev-walk/.test(page.url())) break;
     // The organization picker ("Which organization is this for?") — choose the first.
     const picker = page.getByText(/Which organization is this for/i);
@@ -183,10 +184,10 @@ async function startOnce(host: Actor): Promise<Meeting> {
     }
     await page.waitForTimeout(500);
   }
-  const m = page.url().match(/\/meet\/([^/?#]+)/);
+  const m = page.url().match(skin().meetingUrl);
   if (!m) throw new Error(`Start now did not open a meeting; at ${page.url()}`);
-  host.note(`meeting started: /meet/${m[1]}`);
-  return { slug: m[1], path: `/meet/${m[1]}`, host };
+  host.note(`meeting started: ${skin().meetingPath(m[1])}`);
+  return { slug: m[1], path: skin().meetingPath(m[1]), host };
 }
 
 export interface WalkOptions {

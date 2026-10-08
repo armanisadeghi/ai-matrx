@@ -14,6 +14,8 @@ import { chromium, webkit } from "@playwright/test";
 import { Actor, type ActorOptions } from "./actor";
 import { catalogStates } from "./catalog";
 import { createOrgMember, deleteOrgMember, meetingTruth, type OrgMember } from "./fixtures";
+import { UNPROVEN_PREFIX } from "./env";
+import { activeSkinName, setActiveSkin } from "./skins";
 import { ensureEnded, type Meeting } from "./meeting";
 
 export class Cast {
@@ -89,6 +91,7 @@ export const CHROMIUM_ARGS_BASE = [
 
 const test = base.extend<{ cast: Cast }>({
   cast: async ({ browser }, use, testInfo) => {
+    setActiveSkin(((testInfo.project.metadata as { skin?: string } | undefined)?.skin) ?? "meet");
     const launch = (testInfo.project.use as { launchOptions?: { args?: string[] } }).launchOptions;
     const cast = new Cast(browser, launch?.args ?? []);
     // Keep this run's ONE preview host active for the walk cap (utils/supabase/walkCap.ts):
@@ -114,6 +117,15 @@ const test = base.extend<{ cast: Cast }>({
           envEvents: cast.actors.flatMap((a) => a.envEvents.map((e) => ({ ...e, who: a.opts.label }))),
           levers: cast.actors.map((a) => ({ who: a.opts.label, seat: a.opts.seat, levers: a.levers })),
           sources,
+          skin: activeSkinName(),
+          loaded: cast.actors.map((a) => ({
+            who: a.opts.label,
+            scripts: a.loaded.scripts.size,
+            driverLike: [...a.loaded.driverLike],
+            dev: a.loaded.devSignals.size > 0,
+            prod: a.loaded.prodSignals.size > 0,
+            queryDocs: [...a.loaded.queryDocs],
+          })),
           progressAt: Math.max(0, ...cast.actors.map((a) => a.progressAt)),
         }),
         contentType: "application/json",
@@ -121,6 +133,14 @@ const test = base.extend<{ cast: Cast }>({
     }
   },
 });
+
+/**
+ * A scenario whose product verdict cannot be produced right now (its precondition is not
+ * reachable) calls this: the row is reported UNPROVEN with the reason — never FAIL, never PASS.
+ */
+export function unproven(reason: string): never {
+  throw new Error(`${UNPROVEN_PREFIX} ${reason}`);
+}
 
 export function scenario(id: string, body: (args: { cast: Cast }) => Promise<void>, opts: { timeoutMs?: number } = {}): void {
   const state = catalogStates().find((s) => s.id === id);

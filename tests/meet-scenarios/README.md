@@ -31,10 +31,14 @@ copy of the scenarios (mutation proofs) — never edit the real ones to prove a 
 - **member** (`seat: "member"`) — test@test.com, an OUTSIDER to the host's organization.
 - **guests** — signed out ("Priya Shah", "Daniel Okafor").
 
-## Results: PASS, FAIL, ENV
+## Results: PASS, FAIL, UNPROVEN, ENV
 
 - **FAIL** is the default for any failure: a product timeout, a hung page, a crashed page, the
   app's error page.
+- **UNPROVEN** is a scenario saying its own product verdict cannot be produced right now (its
+  precondition is unreachable, e.g. autoplay-blocked when the browser never blocked the audio). It
+  is neither pass nor fail, carries the reason, and the summary counts it separately. A scenario
+  declares it with `unproven(reason)` from `lib/scenario.ts`.
 - **ENV** only when the run's own evidence proves the environment within 3 minutes of the failure:
   a walk-cap park ("Resume this preview"), or the dev server answering 5xx for a page, a chunk or
   the sign-in door, or a compile error on screen. Those lines start with `ENV:` in the timeline.
@@ -46,7 +50,19 @@ The report header is computed per run from each person's recorded levers: browse
 launch args, fake devices (Chromium's fake camera/microphone), any init script (the media-fault
 script is installed ONLY for a scenario that asks for faults), permission grants or blocks (the
 browser's own store), the per-person proxy, and the observation source per row (`contract` or the
-visible-text `fallback`). No fake meeting driver, jsdom, test-only build or product flag is used.
+visible-text `fallback`). It also reports what the pages actually loaded: script count, any script
+whose name looks like a test driver / jsdom / mock, the build mode the served scripts reveal
+(dev-server HMR client and React development build, or production), and any query string on a page
+load. Nothing is asserted that was not recorded; with no pages loaded the line says so.
+
+## Skins (per-brand coverage)
+
+Every scenario runs once per registered skin: one Playwright project per browser x skin, and the
+report has a Skin column. `lib/skins.ts` holds the registry; only `meet` exists today. Choose with
+`MEET_SKINS=meet` (comma list; the default). A name that is not registered is an error. When
+zoom, teams or ours ship their routes, add ONE entry to `SKINS` (start path, meeting path, meeting
+URL pattern, invalid-code path) and `MEET_SKINS=meet,zoom bash tests/meet-scenarios/run.sh` runs
+every scenario for both. Project names: `chromium` for `meet`, `chromium-<skin>` otherwise.
 
 ## Environment, never product
 

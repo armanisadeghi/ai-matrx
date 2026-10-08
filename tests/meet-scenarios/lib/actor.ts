@@ -73,6 +73,8 @@ export class Actor {
   readonly levers: string[] = [];
   /** Observation sources seen (contract vs visible-text fallback), with counts. */
   readonly sources: Record<string, number> = {};
+  /** What this person's pages actually loaded (feeds the computed "not used" line). */
+  readonly loaded = { scripts: new Set<string>(), driverLike: new Set<string>(), devSignals: new Set<string>(), prodSignals: new Set<string>(), queryDocs: new Set<string>() };
   private constructor(
     readonly opts: ActorOptions,
     readonly context: BrowserContext,
@@ -135,6 +137,7 @@ export class Actor {
     });
     context.on("response", (res) => {
       const url = res.url();
+      this.recordLoaded(res.request().resourceType(), url, origin);
       if (res.request().method() === "POST" && TOKEN_DOOR.test(url)) {
         const call = [...this.tokenCalls].reverse().find((c) => c.url === url && c.status === null);
         if (call) call.status = res.status();
@@ -154,6 +157,19 @@ export class Actor {
         }
       }
     });
+  }
+
+  /** Evidence for the report header: scripts loaded, test-driver-looking names, dev/prod build signals, query strings on pages. */
+  private recordLoaded(type: string, url: string, origin: string): void {
+    if (!url.startsWith(origin)) return;
+    const u = new URL(url);
+    if (type === "document" && u.search) this.loaded.queryDocs.add(`${u.pathname}${u.search.replace(/=[^&]*/g, "=…")}`);
+    if (type !== "script") return;
+    this.loaded.scripts.add(u.pathname);
+    const name = decodeURIComponent(u.pathname);
+    if (/jsdom|testing-library|test-?driver|meet[-_]?driver|fake-?meet|mock-?meet|msw|playwright/i.test(name)) this.loaded.driverLike.add(name);
+    if (/hmr-client|react-dom-client_development|react-dom_development|next-devtools/.test(name)) this.loaded.devSignals.add("dev");
+    if (/\/_next\/static\/[^/]+\/_buildManifest\.js$/.test(name) && !name.includes("/development/")) this.loaded.prodSignals.add("prod");
   }
 
   env(what: string): void {

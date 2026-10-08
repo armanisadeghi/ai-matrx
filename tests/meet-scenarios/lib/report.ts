@@ -6,6 +6,8 @@
  *
  * Classification (one rule, no regex over error text):
  *   PASS — the scenario's expectations held.
+ *   UNPROVEN — the scenario itself declared its product verdict cannot be produced (its precondition
+ *          is unreachable; thrown with the "UNPROVEN:" prefix). Neither pass nor fail; the reason is the evidence.
  *   ENV  — it failed AND this run's evidence proves the environment struck after the scenario's
  *          last progress and within ENV_WINDOW_MS of the failure: a walk-cap park, or the dev server failing to serve (HTTP 5xx on a page, chunk
  *          or the sign-in door) or showing a compile error. Recorded by lib/actor.ts as it happens.
@@ -19,7 +21,8 @@ import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { formatDurationMs } from "@ai-matrx/kit/format";
 import { P0_IDS } from "./catalog";
-import { baseURL, REPO_ROOT, runDir, runId } from "./env";
+import { SKINS } from "./skins";
+import { baseURL, REPO_ROOT, runDir, runId, UNPROVEN_PREFIX } from "./env";
 
 const ENV_WINDOW_MS = 3 * 60_000;
 
@@ -31,7 +34,11 @@ function meetVersion(): string {
   }
 }
 
+interface Loaded { who: string; scripts: number; driverLike: string[]; dev: boolean; prod: boolean; queryDocs: string[] }
+
 interface Evidence {
+  skin?: string;
+  loaded?: Loaded[];
   envEvents: { at: number; what: string; who: string }[];
   levers: { who: string; seat: string; levers: string[] }[];
   sources: Record<string, number>;
@@ -44,6 +51,8 @@ interface Row {
   status: string;
   durationMs: number;
   evidence: string;
+  skin: string;
+  loaded: Loaded[];
   envProof: string;
   sources: string;
   levers: string[];
@@ -57,6 +66,23 @@ function firstEvidence(result: TestResult): string {
   const msg = (err.message ?? String(err.value ?? "")).replace(/\u001b\[[0-9;]*m/g, "");
   const lines = msg.split("\n").map((l) => l.trim()).filter(Boolean);
   return (lines[0] ?? "").replace(/\|/g, "/").slice(0, 400);
+}
+
+/**
+ * What the pages actually loaded, per run — never an asserted absence. Reports only what the
+ * recorded evidence shows: script files loaded, any whose name looks like a test driver / jsdom /
+ * mock, the build mode the served scripts reveal, and query strings on page loads.
+ */
+function loadedLine(rows: Row[]): string {
+  const all = rows.flatMap((r) => r.loaded);
+  if (all.length === 0) return "Page-load evidence: none recorded (no page was loaded), so nothing is claimed about drivers, build mode or flags.";
+  const scripts = all.reduce((n, l) => n + l.scripts, 0);
+  const driver = [...new Set(all.flatMap((l) => l.driverLike))];
+  const dev = all.filter((l) => l.dev).length;
+  const prod = all.filter((l) => l.prod).length;
+  const queries = [...new Set(all.flatMap((l) => l.queryDocs))];
+  const build = dev && !prod ? "development (dev-server scripts: HMR client / React development build)" : prod && !dev ? "production" : dev && prod ? "mixed signals" : "undetermined from the scripts served";
+  return `Page-load evidence (${all.length} browser sessions, ${scripts} script loads from the app): test-driver/jsdom/mock-named scripts: ${driver.length ? driver.join(", ") : "none seen"}; build mode seen: ${build}; page loads carrying a query string: ${queries.length ? queries.join(", ") : "none"}. A real browser engine drove every page (browsers above); anything not listed here was not checked.`;
 }
 
 export default class MeetReport implements Reporter {
@@ -82,8 +108,9 @@ export default class MeetReport implements Reporter {
     // The environment explains a failure only if it struck AFTER the scenario's last progress
     // (it stopped the walk); a park the run recovered from and moved past proves nothing.
     const proof = ev.envEvents.filter((e) => end - e.at <= ENV_WINDOW_MS && e.at <= end + 5000 && e.at >= (ev.progressAt ?? 0));
+    const unprovenReason = firstEvidence(result).startsWith(UNPROVEN_PREFIX);
     const status =
-      result.status === "passed" ? "PASS" : result.status === "skipped" ? "SKIP" : proof.length > 0 ? "ENV" : "FAIL";
+      result.status === "passed" ? "PASS" : result.status === "skipped" ? "SKIP" : proof.length > 0 ? "ENV" : unprovenReason ? "UNPROVEN" : "FAIL";
     const annotations = [...test.annotations, ...((result as { annotations?: { type: string; description?: string }[] }).annotations ?? [])]
       .filter((a) => a.type === "cleanup" || a.type === "persona")
       .map((a) => `${a.type}: ${a.description ?? ""}`);
@@ -93,6 +120,8 @@ export default class MeetReport implements Reporter {
       status,
       durationMs: result.duration,
       evidence: firstEvidence(result),
+      skin: ev.skin ?? (test.parent.project()?.metadata as { skin?: string } | undefined)?.skin ?? "meet",
+      loaded: ev.loaded ?? [],
       envProof: proof.map((e) => `${new Date(e.at).toISOString().slice(11, 19)} [${e.who}] ${e.what}`).join("; "),
       sources: Object.entries(ev.sources).map(([k, v]) => `${k}:${v}`).join(" ") || "none",
       levers: [...new Set(ev.levers.flatMap((l) => l.levers.map((x) => `${l.who}: ${x}`)))],
@@ -116,18 +145,18 @@ export default class MeetReport implements Reporter {
       `Run \`${runId()}\` — real browsers (${browsers.join("; ") || "none launched"}), the shared dev server ${baseURL()}, real LiveKit Cloud, @ai-matrx/meet ${meetVersion()}.`,
       `Observation source: contract in ${sourceRows("contract")} of ${this.rows.length} rows, visible-text fallback in ${sourceRows("fallback")} (per row below).`,
       `Fake devices: ${fakes.join("; ") || "none"}. Init scripts: ${initScripts.length ? initScripts.join("; ") : "none"}. Permission overrides: ${perms.join("; ") || "none"}.`,
-      "Not used by the harness: a fake meeting driver, jsdom, a test-only build, a harness-only product flag (it sets none: no product env, cookie or query flag).",
+      loadedLine(this.rows),
     ];
     const table = [
-      `# Meet state scenarios — ${new Date().toISOString()} — ${count("PASS")} pass, ${count("FAIL")} fail, ${count("ENV")} environment (${result.status})`,
+      `# Meet state scenarios — ${new Date().toISOString()} — ${count("PASS")} pass, ${count("FAIL")} fail, ${count("UNPROVEN")} unproven (no product verdict), ${count("ENV")} environment (${result.status})`,
       "",
-      `P0 states in catalog: ${P0_IDS.length}; with no scenario in this run: ${this.missing.length ? this.missing.join(", ") : "none"}`,
+      `P0 states in catalog: ${P0_IDS.length}; with no scenario in this run: ${this.missing.length ? this.missing.join(", ") : "none"}; skins run: ${[...new Set(this.rows.map((r) => r.skin))].join(", ") || "none"} (registered: ${Object.keys(SKINS).join(", ")})`,
       "",
       ...oracle.map((l) => `- ${l}`),
       "",
-      "| State | Browser | Result | Took | Source | Evidence |",
-      "|---|---|---|---|---|---|",
-      ...this.rows.map((r) => `| ${r.id} | ${r.project} | ${r.status} | ${formatDurationMs(r.durationMs, { style: "compact" })} | ${r.sources} | ${r.status === "ENV" ? `ENV proof: ${r.envProof}. ` : ""}${r.evidence || "-"} |`),
+      "| State | Skin | Browser | Result | Took | Source | Evidence |",
+      "|---|---|---|---|---|---|---|",
+      ...this.rows.map((r) => `| ${r.id} | ${r.skin} | ${r.project} | ${r.status} | ${formatDurationMs(r.durationMs, { style: "compact" })} | ${r.sources} | ${r.status === "ENV" ? `ENV proof: ${r.envProof}. ` : ""}${r.evidence || "-"} |`),
       "",
       "## Timelines",
       ...this.rows.flatMap((r) => [
