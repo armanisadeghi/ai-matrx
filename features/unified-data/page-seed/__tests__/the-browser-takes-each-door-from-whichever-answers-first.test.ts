@@ -73,3 +73,13 @@ it("a slow server is never waited for: every door is answered by the browser's o
   expect(net.asked).toEqual(["where_id_opens", "table_page_bundle", "read_records_page"]);
   expect(Date.now() - t0).toBeLessThan(1200);
 });
+
+it("THE OPENING: the server's where + bundle land while its rows miss the cap — the browser asks only the page", async () => {
+  const net = network(200);
+  const opening = Promise.resolve(serverSeed());
+  const asked = askClientTableSeed(net.source, VISITS, { opening, server: Promise.resolve(null) });
+  await jest.advanceTimersByTimeAsync(500);
+  await asked;
+  expect(net.asked).not.toContain("table_page_bundle");
+  expect(net.asked).toContain("read_records_page");
+});

@@ -26,5 +26,5 @@ export default async function UnifiedDataTableRoute({
     rows,
     forceOn: process.env.NODE_ENV !== "production" && address["server_rows"] === "1",
   });
-  return <PrimedTablePage tableId={tableId} gate={reads.gate} seed={reads.seed} rows={rows} />;
+  return <PrimedTablePage tableId={tableId} gate={reads.gate} seed={reads.seed} opening={reads.opening} rows={rows} />;
 }

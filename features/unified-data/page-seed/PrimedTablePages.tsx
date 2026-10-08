@@ -157,6 +157,7 @@ function useOwnSeed(
   tableId: string,
   recordId: string | null,
   seed: Promise<TablePageSeed | null>,
+  opening: Promise<TablePageSeed | null> | undefined,
   rows: boolean,
 ): OwnSeed | null {
   const dataSource = useRecordsDataSource();
@@ -164,7 +165,7 @@ function useOwnSeed(
   const key = pageKey(tableId, recordId);
   const asking = useRef<{ key: string; answer: Promise<TablePageSeed | null> } | null>(null);
   if (typeof window !== "undefined" && asking.current?.key !== key) {
-    asking.current = { key, answer: askClientTableSeed(dataSource, tableId, { userId, rows, recordId, server: seed }) };
+    asking.current = { key, answer: askClientTableSeed(dataSource, tableId, { userId, rows, recordId, server: seed, opening }) };
   }
   const [own, setOwn] = useState<OwnSeed | null>(null);
   useEffect(() => {
@@ -185,16 +186,19 @@ export function PrimedTablePage({
   tableId,
   seed,
   gate,
+  opening,
   rows = true,
 }: {
   tableId: string;
   seed: Promise<TablePageSeed | null>;
   gate: Promise<ServerRowsGate>;
+  /** The server's where + bundle, uncapped (`readTablePage`): the browser's reads take their doors from it. */
+  opening?: Promise<TablePageSeed | null>;
   /** The address opens the plain table (`addressAsksThePlainOpening`): the grid's first page is asked. */
   rows?: boolean;
 }) {
   useHoldShellUntilRows(tableId);
-  const own = useOwnSeed(tableId, null, seed, rows);
+  const own = useOwnSeed(tableId, null, seed, opening, rows);
   const settled = useRef<string | null>(null);
   const skeleton = <TableRouteSkeleton tableId={tableId} />;
   return (
@@ -212,13 +216,15 @@ export function PrimedRecordPage({
   recordId,
   seed,
   gate,
+  opening,
 }: {
   tableId: string;
   recordId: string;
   seed: Promise<TablePageSeed | null>;
   gate: Promise<ServerRowsGate>;
+  opening?: Promise<TablePageSeed | null>;
 }) {
-  const own = useOwnSeed(tableId, recordId, seed, false);
+  const own = useOwnSeed(tableId, recordId, seed, opening, false);
   const settled = useRef<string | null>(null);
   const skeleton = <RecordRouteSkeleton />;
   return (
