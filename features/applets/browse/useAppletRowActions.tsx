@@ -21,7 +21,7 @@ import { archiveConfirmSentence } from "@/features/trash/archiveCopy";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { deleteApp } from "@/features/agents/redux/applets/thunks";
 import type { EntityListController, EntityRowActionsResult } from "@/lib/entity-list/config";
-import { appletRowHref, restoreApplet, type AppletListRow } from "./service";
+import { appletRowHref, forgetAppletListReads, restoreApplet, type AppletListRow } from "./service";
 
 function message(error: unknown, fallback: string): string {
   return error instanceof Error && error.message ? error.message : fallback;
@@ -70,6 +70,7 @@ export function useAppletRowActions(list: EntityListController<AppletListRow>): 
     try {
       await dispatch(deleteApp(row.id)).unwrap();
       list.removeRow(row.id);
+      forgetAppletListReads();
       list.refresh();
       toast.success(`Archived "${row.name}"`);
     } catch (error) {
@@ -80,6 +81,7 @@ export function useAppletRowActions(list: EntityListController<AppletListRow>): 
   const restore = async (row: AppletListRow) => {
     try {
       await restoreApplet(row.id);
+      forgetAppletListReads();
       list.refresh();
       toast.success(`Restored "${row.name}"`);
     } catch (error) {
@@ -133,6 +135,7 @@ export function useAppletRowActions(list: EntityListController<AppletListRow>): 
               onSelect: async () => {
                 try {
                   await duplicateApplet(row.id);
+                  forgetAppletListReads();
                   list.refresh();
                 } catch (error) {
                   throw new Error(message(error, "The copy failed. Try again."));

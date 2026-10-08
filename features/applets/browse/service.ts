@@ -147,21 +147,34 @@ function inLane(row: AppletListRow, lane: AppletLane): boolean {
   return true;
 }
 
+/** How long one settled list read answers the page's other askers (counts, facets, probe). */
+const SHARE_MS = 3000;
+const sharedReads = new Set<Map<ArchivedFilter, Promise<AppletListRow[]>>>();
+
+/** A write on this page (archive, restore) makes the next list read fresh. */
+export function forgetAppletListReads(): void {
+  for (const reads of sharedReads) reads.clear();
+}
+
 export function createAppletListService(
   load: (archived: ArchivedFilter) => Promise<AppletListRow[]> = listApplets,
 ): EntityListService<AppletListRow> {
-  // One read per Archived value per tick: page, counts, facets and the shell's
-  // all-archived probe share it; the next refresh reads again.
+  // ONE read per Archived value per page load: page, counts, facets and the shell's all-archived probe
+  // ask at different moments (live 2026-10-08: the same app.definition read ran 3× within 2 s, because the
+  // answer was forgotten one microtask after it settled). A settled answer is shared for SHARE_MS; a write
+  // from this page forgets it first (`forgetAppletListReads`), so a refresh after archive/restore reads again.
   const inFlight = new Map<ArchivedFilter, Promise<AppletListRow[]>>();
+  sharedReads.add(inFlight);
   const shared = (archived: ArchivedFilter) => {
     let read = inFlight.get(archived);
     if (!read) {
-      read = load(archived);
-      inFlight.set(archived, read);
-      read.then(
-        () => queueMicrotask(() => inFlight.delete(archived)),
-        () => inFlight.delete(archived),
-      );
+      const mine = load(archived);
+      read = mine;
+      inFlight.set(archived, mine);
+      const drop = () => {
+        if (inFlight.get(archived) === mine) inFlight.delete(archived);
+      };
+      mine.then(() => setTimeout(drop, SHARE_MS), drop);
     }
     return read;
   };
