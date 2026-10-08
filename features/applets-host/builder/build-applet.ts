@@ -159,6 +159,108 @@ function namesIn(files: BuilderFile[], pattern: RegExp): Set<string> {
   return out;
 }
 
+/** A useState pair: `const [title, setTitle] = useState(`. */
+const STATE_PAIR = /const\s*\[\s*([A-Za-z_$][\w$]*)\s*,\s*(set[A-Za-z_$][\w$]*)\s*\]\s*=\s*(?:React\.)?useState\b/g;
+
+function escapeRe(s: string): string {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+/**
+ * EVERY FIELD SHE ASKED FOR HAS ITS OWN INPUT. A form keeps `requirements` in state and saves it, but
+ * no input ever calls `setRequirements` — the box labelled "Brand Requirements & Guidance" wrote
+ * `guidance`, so what she typed there landed in the wrong field and Requirements stayed empty
+ * (social planner, 2026-10-08). A state value that is saved but never set is a field with no input.
+ */
+export function fieldsWithNoInput(file: BuilderFile): string[] {
+  const out: string[] = [];
+  for (const m of file.source.matchAll(STATE_PAIR)) {
+    const [, value, setter] = m;
+    if (!value || !setter) continue;
+    const calls = file.source.match(new RegExp(`\\b${escapeRe(setter)}\\b`, "g"))?.length ?? 0;
+    if (calls > 1) continue;
+    // Saved: it is a property's value (`requirements: requirements.trim()`, `{ requirements }` is too rare to chase).
+    if (new RegExp(`:\\s*${escapeRe(value)}\\b`).test(file.source)) out.push(value);
+  }
+  return out;
+}
+
+/** The opening tag starting at `start` (`<Button …>`), braces and quotes respected. */
+function openingTag(source: string, start: number): string {
+  let depth = 0;
+  let quote: string | null = null;
+  for (let i = start + 1; i < source.length; i++) {
+    const ch = source[i];
+    if (quote) {
+      if (ch === quote && source[i - 1] !== "\\") quote = null;
+      continue;
+    }
+    if (ch === '"' || ch === "'" || ch === "`") quote = ch;
+    else if (ch === "{") depth++;
+    else if (ch === "}") depth--;
+    else if (ch === ">" && depth === 0) return source.slice(start, i + 1);
+  }
+  return source.slice(start);
+}
+
+/**
+ * NO BUTTON THAT DOES NOTHING. "New Post" rendered with no handler: the person presses it and nothing
+ * happens (2026-10-08). A button has an onClick, submits its form, or wraps a link (asChild).
+ */
+export function deadButtons(file: BuilderFile): string[] {
+  const out: string[] = [];
+  for (const m of file.source.matchAll(/<(Button|button)\b/g)) {
+    const tag = openingTag(file.source, m.index ?? 0);
+    if (/\b(onClick|onPointerDown|onMouseDown|form)\s*=|\basChild\b|\btype\s*=\s*["'{]\s*["']?submit|\{\s*\.\.\./.test(tag)) continue;
+    // Inside a <Link> or <a>, the link does the work (<Link to="/add"><Button>Add</Button></Link>).
+    const before = file.source.slice(Math.max(0, (m.index ?? 0) - 400), m.index ?? 0);
+    const opened = Math.max(before.lastIndexOf("<Link"), before.lastIndexOf("<a "));
+    const closed = Math.max(before.lastIndexOf("</Link>"), before.lastIndexOf("</a>"));
+    if (opened > closed) continue;
+    const rest = file.source.slice((m.index ?? 0) + tag.length);
+    const inner = rest.slice(0, Math.max(0, rest.search(/<\/(Button|button)>/)));
+    const label = inner.replace(/<[^>]*>/g, " ").replace(/\{[^}]*\}/g, " ").replace(/\s+/g, " ").trim().slice(0, 30);
+    out.push(label || m[1] || "button");
+  }
+  return out;
+}
+
+/** The code names `key` — literally, or built in a template (`${p}_views` names `tt_views`). */
+function namesField(all: string, key: string): boolean {
+  if (new RegExp(`\\b${escapeRe(key)}\\b`).test(all)) return true;
+  const parts = key.split("_");
+  for (let i = 1; i < parts.length; i++) {
+    const head = escapeRe(parts.slice(0, i).join("_"));
+    const tail = escapeRe(parts.slice(i).join("_"));
+    if (new RegExp(`\\}_${tail}\\b`).test(all) || new RegExp(`\\b${head}_\\$\\{`).test(all)) return true;
+  }
+  return false;
+}
+
+/**
+ * EVERY TABLE THE APP MAKES CAN BE FILLED, AND EVERY FIELD IT DECLARES IS ON SCREEN. A new table with
+ * no create path leaves her an app she can never add a row to; a declared field the code never names
+ * is a thing she asked to track that the app does not show.
+ */
+export function newTableGaps(applet: Pick<BuilderApplet, "files" | "sources">): string[] {
+  const out: string[] = [];
+  const all = applet.files.map((f) => f.source).join("\n");
+  for (const s of applet.sources) {
+    if (!("new_table" in s)) continue;
+    const fields = Array.isArray(s.new_table.fields) ? s.new_table.fields : [];
+    const unseen = fields.map((f) => f.key).filter((key) => key && !namesField(all, key));
+    if (unseen.length) out.push(`the table "${s.alias}" declares ${unseen.map((k) => `"${k}"`).join(", ")} but no page shows or edits ${unseen.length === 1 ? "it" : "them"}`);
+    const vars = [...all.matchAll(new RegExp(`(?:const|let)\\s+([A-Za-z_$][\\w$]*)\\s*=\\s*useRows\\(\\s*["'\`]${escapeRe(s.alias)}["'\`]`, "g"))].map((m) => m[1]!);
+    const reads = vars.length > 0 || new RegExp(`useRows\\(\\s*["'\`]${escapeRe(s.alias)}["'\`]`).test(all);
+    if (!reads) continue;
+    const creates =
+      vars.some((v) => new RegExp(`\\b${escapeRe(v)}\\.create\\(`).test(all)) ||
+      (vars.some((v) => new RegExp(`=\\{\\s*${escapeRe(v)}\\s*\\}`).test(all)) && /\.create\(/.test(all));
+    if (!creates) out.push(`nothing in the app adds a row to "${s.alias}" — give her a way to create one`);
+  }
+  return out;
+}
+
 /**
  * NOTHING THE BUILDER WROTE IS DROPPED SILENTLY. A source or job the coercion could not
  * read, a table source without its ids, or code that reads an alias the record never
@@ -205,6 +307,15 @@ export function checkBuildAnswer(
       );
     }
   }
+  for (const f of applet.files) {
+    for (const value of fieldsWithNoInput(f)) {
+      problems.push(`${f.name} saves "${value}" but no input ever sets it — every field she asked for needs its own input, labelled for that field alone`);
+    }
+    for (const label of deadButtons(f)) {
+      problems.push(`${f.name} has a button "${label}" that does nothing — give it an onClick (or type="submit" inside its form)`);
+    }
+  }
+  problems.push(...newTableGaps(applet));
   if (problems.length > 0) {
     throw new BuildRefused(`Not saved: ${problems.join("; ")}.`, applet);
   }

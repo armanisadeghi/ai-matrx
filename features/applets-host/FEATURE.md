@@ -104,6 +104,12 @@ record's own `scope` (`{ entries, shadowDangerousGlobals }`); app-owned modules 
 
 ## Change Log
 
+- 2026-10-08 — Lane AA: `checkBuildAnswer` also refuses a saved field no input sets (`fieldsWithNoInput` — the
+  social planner's "Brand Requirements & Guidance" box wrote Guidance and Requirements stayed empty), a button that
+  does nothing (`deadButtons`; inside a `<Link>` is fine), a declared new-table field no page shows and a new table
+  nothing adds a row to (`newTableGaps`). A refused Build/Change gets ONE automatic `applets.fix` round before it is
+  shown; a refused fix keeps "Fix it". The preview names the build's step and its seconds (`BuildStep`) from the
+  moment Build is pressed — reading her tables and starting the run sat ~45 s on a bare placeholder.
 - 2026-10-07 — Lane P: a claim whose tab died while saving is released after `STALE_CLAIM_MS` (90 s) and the next opener
   rejoins and saves (`claimed_at`, `isStaleClaim`, `releaseStaleClaim`); an unbuilt draft opens as its build from EVERY
   owner page (`manage/[id]/layout.tsx`, one redirect; `getApplet` is `cache`d per request); `appletSources` keeps
