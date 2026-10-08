@@ -37,18 +37,6 @@ jest.mock("../controls/SettingControlInput", () => ({
 
 let mockNextModelId = "";
 
-jest.mock("@ai-matrx/chat/agents/model-registry/modelRegistrySlice", () => {
-  const actual = jest.requireActual(
-    "@ai-matrx/chat/agents/model-registry/modelRegistrySlice",
-  );
-  return {
-    __esModule: true,
-    ...actual,
-    default: actual.default,
-    fetchModelOptions: () => ({ type: "test/noop" }),
-    fetchModelById: () => ({ type: "test/noop" }),
-  };
-});
 jest.mock("@/lib/scoped-config/sessionKnob", () => ({
   useSessionKnob: () => undefined,
 }));
@@ -86,7 +74,7 @@ import agentDefinitionReducer, {
   mergePartialAgent,
 } from "@ai-matrx/chat/agents/redux/agent-definition/slice";
 import { agentDefinitionToUpdate } from "@ai-matrx/chat/agents/redux/agent-definition/converters";
-import modelRegistryReducer from "@ai-matrx/chat/agents/model-registry/modelRegistrySlice";
+import { getModelRecords } from "@ai-matrx/chat/agents/identity/model-catalog";
 import { normalizeModel } from "@ai-matrx/agents/models";
 import { AgentSettingsCore } from "../AgentSettingsCore";
 
@@ -133,20 +121,16 @@ const MODELS = {
 };
 
 function makeStore(settings: Record<string, unknown>) {
-  const registryInit = modelRegistryReducer(undefined, { type: "@@INIT" });
+  // The model catalog's records (B3) hold the models the settings read.
+  getModelRecords().hydrate({
+    models: Object.values(MODELS).map((m) => normalizeModel(m)) as never,
+    fetchType: "full",
+    fetchScope: "active",
+    lastFetched: Date.now(),
+  });
   const store = configureStore({
     reducer: {
       agentDefinition: agentDefinitionWithBuilderReducer,
-      modelRegistry: modelRegistryReducer,
-    },
-    preloadedState: {
-      modelRegistry: {
-        ...registryInit,
-        entities: Object.fromEntries(
-          Object.entries(MODELS).map(([id, m]) => [id, normalizeModel(m)]),
-        ) as unknown as typeof registryInit.entities,
-        activeIds: Object.keys(MODELS),
-      },
     },
     middleware: (gdm) =>
       gdm({ serializableCheck: false, immutableCheck: false }),
