@@ -13,7 +13,10 @@
 
 import { useEffect, useRef, useState, type ComponentType } from "react";
 import { usePathname, useSearchParams } from "next/navigation";
-import { createPlatformHost, type PlatformHost } from "@ai-matrx/applets/platform";
+import {
+  createPlatformHost,
+  type PlatformHost,
+} from "@ai-matrx/applets/platform";
 import { holdWrites, type HeldWrite } from "@ai-matrx/applets/preview";
 import { mountAppletAsync } from "@ai-matrx/applets/frame";
 import { createIntelligencePort } from "@ai-matrx/agents/intelligence";
@@ -21,8 +24,8 @@ import { liveValues } from "@ai-matrx/alchemy/surface";
 import type { MatrxTransport } from "@ai-matrx/agents/matrx";
 import type { JobRunView } from "@ai-matrx/applets";
 import { adoptForeignStream } from "@ai-matrx/chat/agents/redux/execution-system/thunks/adopt-foreign-stream";
-import { EmptyState, RegionSkeleton } from "@ai-matrx/design-system/controls";
-import { AppWindow } from "lucide-react";
+import { Button, RegionSkeleton } from "@ai-matrx/design-system/controls";
+import { RotateCw } from "lucide-react";
 
 import { supabase } from "@/utils/supabase/client";
 import { useAppStore } from "@/lib/redux/hooks";
@@ -31,32 +34,59 @@ import { openLiveRunWindowAction } from "@/features/overlays/openers/liveRunWind
 import { AppletRunOutput } from "@/features/applets-host/AppletRunOutput";
 import { AppletWritingBox } from "@/features/applets-host/AppletWritingBox";
 import { selectActiveOrganizationId } from "@/features/scopes/redux/selectors/active-context";
-import { AUTH_READY_WAIT_MS, createMatrxTransport } from "@/lib/api/matrx-transport";
+import {
+  AUTH_READY_WAIT_MS,
+  createMatrxTransport,
+} from "@/lib/api/matrx-transport";
 import { waitForAuthReady } from "@/lib/api/call-api";
 import { selectAccessToken } from "@/lib/redux/selectors/userSelectors";
 import { captureError } from "@/lib/diagnostics/errorCaptureStore";
 import { provideStoredComponentScopeModules } from "@/lib/code-runtime/stored-scope";
 import { AppletKind } from "@/features/applets-host/AppletForeignKind";
 import { DataPage } from "@/features/applets/embed/DataPage";
-import { useDeclaredSurfaceMandates, type SurfaceMandateRef } from "@ai-matrx/chat/surfaces/runtime/surface-mandates";
+import {
+  useDeclaredSurfaceMandates,
+  type SurfaceMandateRef,
+} from "@ai-matrx/chat/surfaces/runtime/surface-mandates";
 import { storedMandateKey } from "@ai-matrx/agents/mandates";
 import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
+import { pushAddressWithoutNavigating } from "@/lib/url-state/addressWithoutNavigating";
+import { ErrorNotice } from "@/components/errors/ErrorNotice";
 
 /** What every Applet may import beside its own files (the record adds its own entries). */
 const HOST_SCOPE = {
-  entries: ["react", "lucide-react", "@ai-matrx/design-system/controls", "@ai-matrx/applets/react"],
+  entries: [
+    "react",
+    "lucide-react",
+    "@ai-matrx/design-system/controls",
+    "@ai-matrx/applets/react",
+  ],
   shadowDangerousGlobals: true,
 };
 
+/**
+ * How long the skeleton may stand before the page says the Applet is slow to open. A read the network
+ * never answers (a gateway that holds the socket) otherwise leaves the skeleton up forever; the late
+ * answer still mounts when it lands, and "Try again" starts a fresh open.
+ */
+const OPENING_SLOW_MS = 20_000;
+
 type NavLocation = { path: string[]; params: Record<string, string> };
 
-function locationOf(root: string, pathname: string, search: string): NavLocation {
+function locationOf(
+  root: string,
+  pathname: string,
+  search: string,
+): NavLocation {
   const rest = pathname.startsWith(root) ? pathname.slice(root.length) : "";
   const params: Record<string, string> = {};
   new URLSearchParams(search).forEach((v, k) => {
     params[k] = v;
   });
-  return { path: rest.split("/").filter(Boolean).map(decodeURIComponent), params };
+  return {
+    path: rest.split("/").filter(Boolean).map(decodeURIComponent),
+    params,
+  };
 }
 
 function renderRun(run: JobRunView) {
@@ -69,19 +99,41 @@ function renderRun(run: JobRunView) {
  * `X-Request-ID` — the RunRef's requestId), so `<JobOutput>` renders it through the one live-run pipeline.
  * One wire, two readers; nothing is parsed here.
  */
-function adoptAppletRunStreams(base: MatrxTransport, store: AppStore): MatrxTransport {
+function adoptAppletRunStreams(
+  base: MatrxTransport,
+  store: AppStore,
+): MatrxTransport {
   return {
     async fetch(path, init) {
       const response = await base.fetch(path, init);
       // A job's start (`/ai/mandates/<key>`) and every later turn of its conversation (`/ai/conversations/<id>`,
       // `useConversation`) render through the same pipeline; `/resume` and other sub-paths are not turns.
-      const turn = path.startsWith("/ai/mandates/") || /^\/ai\/conversations\/[^/]+$/.test(path);
-      if (init.method !== "POST" || !turn || !response.ok || !response.body) return response;
+      const turn =
+        path.startsWith("/ai/mandates/") ||
+        /^\/ai\/conversations\/[^/]+$/.test(path);
+      if (init.method !== "POST" || !turn || !response.ok || !response.body)
+        return response;
       const [forJob, forPipeline] = response.body.tee();
-      const consume = store.dispatch(adoptForeignStream({ preferServerIds: true }));
-      const ids = { requestId: response.headers.get("X-Request-ID"), conversationId: response.headers.get("X-Conversation-ID") };
-      void consume(new Response(forPipeline, { status: response.status, statusText: response.statusText, headers: response.headers }), ids);
-      return new Response(forJob, { status: response.status, statusText: response.statusText, headers: response.headers });
+      const consume = store.dispatch(
+        adoptForeignStream({ preferServerIds: true }),
+      );
+      const ids = {
+        requestId: response.headers.get("X-Request-ID"),
+        conversationId: response.headers.get("X-Conversation-ID"),
+      };
+      void consume(
+        new Response(forPipeline, {
+          status: response.status,
+          statusText: response.statusText,
+          headers: response.headers,
+        }),
+        ids,
+      );
+      return new Response(forJob, {
+        status: response.status,
+        statusText: response.statusText,
+        headers: response.headers,
+      });
     },
   };
 }
@@ -89,7 +141,7 @@ function adoptAppletRunStreams(base: MatrxTransport, store: AppStore): MatrxTran
 /** Same URL inside the Applet, without a server round trip or a remount (Next syncs usePathname). */
 function pushAppletUrl(url: string) {
   if (`${window.location.pathname}${window.location.search}` === url) return;
-  window.history.pushState(null, "", url);
+  pushAddressWithoutNavigating(url);
 }
 
 type Mounted = { Component: ComponentType } | { error: string };
@@ -138,18 +190,36 @@ export function AppletHostMount({
   // Recompile only when the buffer's CONTENT changes, not its object identity.
   const filesKey = files ? JSON.stringify(files) : "";
   const [jobs, setJobs] = useState<SurfaceMandateRef[]>([]);
+  // Bumped by "Try again": a fresh host, a fresh read, a fresh compile.
+  const [attempt, setAttempt] = useState(0);
+  const [slow, setSlow] = useState(false);
 
   // One host per Applet, kept for the page's life: switching organization must not remount the Applet
   // (a running job would die with it). Jobs read the organization at the moment they start (below).
   useEffect(() => {
     let cancelled = false;
+    const slowTimer = window.setTimeout(() => {
+      if (cancelled) return;
+      setSlow(true);
+      captureError({
+        source: "applet",
+        code: "applet_open_slow",
+        message: `Applet ${appletId} has not opened after ${OPENING_SLOW_MS / 1000}s`,
+        callSite: "AppletHostMount",
+      });
+    }, OPENING_SLOW_MS);
     const listeners = navListeners.current;
     const transportOptions = { source: "applets" };
     let previewLocation: NavLocation = { path: [], params: {} };
     const host: PlatformHost = createPlatformHost({
       appletId,
       supabase,
-      agents: createIntelligencePort({ transport: adoptAppletRunStreams(createMatrxTransport(store.getState, transportOptions), store) }),
+      agents: createIntelligencePort({
+        transport: adoptAppletRunStreams(
+          createMatrxTransport(store.getState, transportOptions),
+          store,
+        ),
+      }),
       activeOrganizationId: selectActiveOrganizationId(store.getState()),
       // A member of the Applet's organization runs jobs there (the package decides); anyone else is
       // asked by the organization gate, and the run continues with their choice — never a guess.
@@ -162,9 +232,14 @@ export function AppletHostMount({
       },
       nav: {
         async go(to) {
-          const tail = to === "/" || to === "" ? "" : to.startsWith("/") ? to : `/${to}`;
+          const tail =
+            to === "/" || to === "" ? "" : to.startsWith("/") ? to : `/${to}`;
           if (inPlace) {
-            previewLocation = locationOf(basePath, `${basePath}${tail.split("?")[0] ?? ""}`, tail.split("?")[1] ?? "");
+            previewLocation = locationOf(
+              basePath,
+              `${basePath}${tail.split("?")[0] ?? ""}`,
+              tail.split("?")[1] ?? "",
+            );
             for (const listener of listeners) listener(previewLocation);
             return;
           }
@@ -172,7 +247,11 @@ export function AppletHostMount({
         },
         async current() {
           if (inPlace) return previewLocation;
-          return locationOf(basePath, window.location.pathname, window.location.search);
+          return locationOf(
+            basePath,
+            window.location.pathname,
+            window.location.search,
+          );
         },
         subscribe(listener) {
           listeners.add(listener);
@@ -182,14 +261,25 @@ export function AppletHostMount({
       // The page's live values (ALC-18): the Applet's surface answers an unset value from them.
       surfaces: { live: liveValues },
       reportError(err) {
-        previewRef.current?.onError?.({ where: err.where, message: err.message });
-        captureError({ source: "applet", code: err.code, message: err.message, callSite: err.where, raw: { appletId, basePath, diagnostic: err.diagnostic } });
+        previewRef.current?.onError?.({
+          where: err.where,
+          message: err.message,
+        });
+        captureError({
+          source: "applet",
+          code: err.code,
+          message: err.message,
+          callSite: err.where,
+          raw: { appletId, basePath, diagnostic: err.diagnostic },
+        });
       },
     });
     provideStoredComponentScopeModules();
     // Preview: the same host with its data port wrapped — reads stay live, writes are held in memory.
     const held = isPreview ? holdWrites(host.data) : null;
-    const stopHeld = held ? held.onHeld((writes) => previewRef.current?.onHeld?.(writes)) : null;
+    const stopHeld = held
+      ? held.onHeld((writes) => previewRef.current?.onHeld?.(writes))
+      : null;
     const channel: PlatformHost = held ? { ...host, data: held } : host;
     void host
       .record()
@@ -202,58 +292,94 @@ export function AppletHostMount({
           record.mandates.map(async (m): Promise<SurfaceMandateRef> => {
             await waitForAuthReady(store.getState, AUTH_READY_WAIT_MS);
             if (!selectAccessToken(store.getState())) {
-              return { mandateKey: storedMandateKey(m.key), does: m.alias, surfaceName: record.surfaceName };
+              return {
+                mandateKey: storedMandateKey(m.key),
+                does: m.alias,
+                surfaceName: record.surfaceName,
+              };
             }
             const d = await host.intelligence.describe(m.key);
-            return { mandateKey: storedMandateKey(m.key), does: d.ok ? d.data.goal || d.data.label : m.alias, surfaceName: record.surfaceName };
+            return {
+              mandateKey: storedMandateKey(m.key),
+              does: d.ok ? d.data.goal || d.data.label : m.alias,
+              surfaceName: record.surfaceName,
+            };
           }),
         ).then((refs) => {
           if (!cancelled) setJobs(refs);
         });
-        const buffer = filesKey ? (JSON.parse(filesKey) as Record<string, string>) : null;
-        return mountAppletAsync(buffer ? { ...record, files: { ...record.files, ...buffer } } : record, channel, HOST_SCOPE, {
-          // A page built from tables placed inside the Applet (`<DataPage id>`).
-          renderDataPage: (id: string) => <DataPage id={id} />,
-          // The app's kind registry, or — for a kind the Applet's organization owns — the Applet's own read.
-          renderKind: (kind: string, value: unknown) => <AppletKind host={host} kind={kind} value={value} />,
-          renderRun,
-          // Every box a person writes in (`<WritingBox>`, `<ConversationComposer>`): the platform's ProTextarea —
-          // dictation and read-aloud — on the Applet's own surface.
-          renderWritingBox: (props) => <AppletWritingBox {...props} surfaceName={record.surfaceName} />,
-          // Every <Link> carries its real URL (open in new tab, middle-click). /p/<slug> has no sub-paths, so the
-          // Applet's pages are addressed at the base path (`/applets/<slug>` by default) there, embedded and in preview.
-          hrefFor: (to: string) => `${basePath}${to === "/" || to === "" ? "" : to.startsWith("/") ? to : `/${to}`}`,
-          // Where an Applet has no room to stream inline: the floating run window, one per job.
-          openRun(run) {
-            if (!run.ref) return;
-            store.dispatch(
-              openLiveRunWindowAction({
-                instanceId: `applet:${appletId}:${run.ref.mandateKey}`,
-                requestId: run.ref.requestId,
-                label: run.label ?? null,
-              }),
-            );
+        const buffer = filesKey
+          ? (JSON.parse(filesKey) as Record<string, string>)
+          : null;
+        return mountAppletAsync(
+          buffer
+            ? { ...record, files: { ...record.files, ...buffer } }
+            : record,
+          channel,
+          HOST_SCOPE,
+          {
+            // A page built from tables placed inside the Applet (`<DataPage id>`).
+            renderDataPage: (id: string) => <DataPage id={id} />,
+            // The app's kind registry, or — for a kind the Applet's organization owns — the Applet's own read.
+            renderKind: (kind: string, value: unknown) => (
+              <AppletKind host={host} kind={kind} value={value} />
+            ),
+            renderRun,
+            // Every box a person writes in (`<WritingBox>`, `<ConversationComposer>`): the platform's ProTextarea —
+            // dictation and read-aloud — on the Applet's own surface.
+            renderWritingBox: (props) => (
+              <AppletWritingBox {...props} surfaceName={record.surfaceName} />
+            ),
+            // Every <Link> carries its real URL (open in new tab, middle-click). /p/<slug> has no sub-paths, so the
+            // Applet's pages are addressed at the base path (`/applets/<slug>` by default) there, embedded and in preview.
+            hrefFor: (to: string) =>
+              `${basePath}${to === "/" || to === "" ? "" : to.startsWith("/") ? to : `/${to}`}`,
+            // Where an Applet has no room to stream inline: the floating run window, one per job.
+            openRun(run) {
+              if (!run.ref) return;
+              store.dispatch(
+                openLiveRunWindowAction({
+                  instanceId: `applet:${appletId}:${run.ref.mandateKey}`,
+                  requestId: run.ref.requestId,
+                  label: run.label ?? null,
+                }),
+              );
+            },
           },
-        });
+        );
       })
       .then(
         (result) => {
+          window.clearTimeout(slowTimer);
           if (cancelled) return;
-          if (!result.ok) previewRef.current?.onError?.({ where: "compile", message: result.error.message });
-          setMounted(result.ok ? { Component: result.Component } : { error: result.error.message });
+          if (!result.ok)
+            previewRef.current?.onError?.({
+              where: "compile",
+              message: result.error.message,
+            });
+          setMounted(
+            result.ok
+              ? { Component: result.Component }
+              : { error: result.error.message },
+          );
         },
         (err: unknown) => {
+          window.clearTimeout(slowTimer);
           if (cancelled) return;
-          const message = err && typeof err === "object" && "message" in err ? String(err.message) : "This Applet could not be opened.";
+          const message =
+            err && typeof err === "object" && "message" in err
+              ? String(err.message)
+              : "This Applet could not be opened.";
           setMounted({ error: message });
         },
       );
     return () => {
       cancelled = true;
+      window.clearTimeout(slowTimer);
       stopHeld?.();
       host.dispose();
     };
-  }, [appletId, basePath, store, isPreview, inPlace, filesKey]);
+  }, [appletId, basePath, store, isPreview, inPlace, filesKey, attempt]);
 
   // Route changes the browser makes (back, forward, a link) reach the Applet's pages.
   useEffect(() => {
@@ -264,6 +390,34 @@ export function AppletHostMount({
 
   useDeclaredSurfaceMandates(jobs);
 
+  const tryAgain = (
+    <Button
+      variant="outline"
+      icon={<RotateCw />}
+      onClick={() => {
+        setMounted(null);
+        setSlow(false);
+        setAttempt((n) => n + 1);
+      }}
+    >
+      Try again
+    </Button>
+  );
+
+  if (!mounted && slow) {
+    return (
+      <div className="mx-auto max-w-5xl p-6">
+        <ErrorNotice
+          title="This Applet is slow to open"
+          message="The connection has not answered yet."
+          code="applet_open_slow"
+          operation="Open Applet"
+          calls={["app.definition"]}
+          actions={tryAgain}
+        />
+      </div>
+    );
+  }
   if (!mounted) {
     return (
       <div className="mx-auto max-w-5xl p-4">
@@ -274,7 +428,13 @@ export function AppletHostMount({
   if ("error" in mounted) {
     return (
       <div className="mx-auto max-w-5xl p-6">
-        <EmptyState icon={<AppWindow />} title="This Applet could not open" line={mounted.error} />
+        <ErrorNotice
+          title="This Applet could not open"
+          message={mounted.error}
+          operation="Open Applet"
+          calls={["app.definition"]}
+          actions={tryAgain}
+        />
       </div>
     );
   }
