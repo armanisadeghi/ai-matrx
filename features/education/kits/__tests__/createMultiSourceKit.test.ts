@@ -66,6 +66,22 @@ describe("createMultiSourceKit", () => {
     expect(filed.every((c) => c.targetType === "scope" && c.targetId === KIT)).toBe(true);
   });
 
+  it("adds the chosen saved aids to the brand-new kit (an empty kit's membership revision is empty, not missing)", async () => {
+    // Live 2026-10-07: every new kit made with saved aids failed with "This kit is still
+    // loading" because the new kit's fingerprint is "" and the guard read "" as absent.
+    const deck = { kind: "fc_set", id: "deck-1", title: "Photosynthesis deck", subtype: "flashcards" };
+    mockFetchEducationLibraryPage.mockResolvedValue({ rows: [deck], total: 1 });
+    const id = await createMultiSourceKit({
+      orgId: ORG,
+      title: "Photosynthesis",
+      sources: [{ type: "file", id: "f-1", title: "Notes" }],
+      artifacts: [deck as never],
+    });
+    expect(id).toBe(KIT);
+    const member = mockAdd.mock.calls.map(([c]) => c as Record<string, unknown>).find((c) => c.role === "member");
+    expect(member).toMatchObject({ sourceType: "fc_set", sourceId: "deck-1", targetType: "scope", targetId: KIT });
+  });
+
   it("refuses a kit with no material", async () => {
     await expect(createMultiSourceKit({ orgId: ORG, title: "Empty", sources: [], artifacts: [] })).rejects.toThrow(/material/);
     expect(mockCreateScope).not.toHaveBeenCalled();

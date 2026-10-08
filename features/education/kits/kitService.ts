@@ -770,7 +770,8 @@ export async function createManualKit(input: {
   if (existing && !input.allowExisting) throw new Error(`This source already has a study kit. Open ${kitHref(sourceType, input.sourceId)} to add or manage its aids.`);
   if (input.allowExisting) {
     if (!existing) throw new Error("This kit is no longer available. Reload before adding saved aids.");
-    if (!input.expectedFingerprint) throw new Error("This kit is still loading. Wait for its membership revision before adding aids.");
+    // A kit with no aids yet has an EMPTY revision (""), which is a real one — only a missing one means "still loading".
+    if (input.expectedFingerprint === undefined) throw new Error("This kit is still loading. Wait for its membership revision before adding aids.");
     requireFreshKitMembership(existing, input.expectedFingerprint);
     sourceTitle = existing.title;
   }
