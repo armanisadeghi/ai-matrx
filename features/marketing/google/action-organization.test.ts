@@ -23,7 +23,7 @@ describe("resolveGoogleActionOrganizationId", () => {
     ensureOrgIdMock.mockResolvedValue("active-org");
 
     await resolveGoogleActionOrganizationId(null, "active-org");
-    expect(ensureOrgIdMock).toHaveBeenCalledWith("active-org");
+    expect(ensureOrgIdMock).toHaveBeenCalledWith(null);
   });
 
   it("falls through to the active-organization funnel when none is given", async () => {

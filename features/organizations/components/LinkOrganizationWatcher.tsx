@@ -33,7 +33,7 @@
 import { Suspense, useEffect, useRef } from "react";
 import { useSearchParams } from "next/navigation";
 import { useAppDispatch, useAppStore } from "@/lib/redux/hooks";
-import { setOrganization } from "@/lib/redux/slices/appContextSlice";
+import { chooseActiveOrganization } from "@/lib/redux/thunks/activeOrgBootstrap";
 import {
   LINK_ORGANIZATION_QUERY_KEY,
   decideLinkOrganization,
@@ -126,8 +126,10 @@ function LinkOrganizationWatcherInner(): null {
       }
 
       if (decision.kind === "honoured") {
+        // An in-session link switch is a VISIBLE switch: it is saved as the
+        // account's last active organization like any other choice.
         dispatch(
-          setOrganization({
+          chooseActiveOrganization({
             id: decision.organizationId,
             name: decision.organizationName,
           }),
@@ -136,7 +138,7 @@ function LinkOrganizationWatcherInner(): null {
       void announceLinkOrganizationDecision(
         decision,
         (organizationId, organizationName) => {
-          dispatch(setOrganization({ id: organizationId, name: organizationName }));
+          dispatch(chooseActiveOrganization({ id: organizationId, name: organizationName }));
         },
       );
     })();

@@ -19,6 +19,19 @@ import {
   getSnapshot,
 } from "@/lib/diagnostics/errorCaptureStore";
 
+// A write waits for the load ladder, then carries the active organization.
+const mockLadder: { org: string | null } = { org: "5dc930e9-bd65-44a1-8369-af773f6e1a5b" };
+jest.mock("@/lib/organizations/ensureOrgId", () => ({
+  ensureOrgId: async () => {
+    if (!mockLadder.org) {
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
+      const { OrganizationContextError } = require("@ai-matrx/agents/matrx");
+      throw new OrganizationContextError("organization_context_required", "no organization after the ladder");
+    }
+    return mockLadder.org;
+  },
+}));
+
 const ORGANIZATION_ID = "5dc930e9-bd65-44a1-8369-af773f6e1a5b";
 const OTHER_ORGANIZATION_ID = "39c38960-d30c-4840-b0c1-c9960de95582";
 
@@ -45,6 +58,9 @@ function requestState(organizationId: string | null): RootState {
 }
 
 describe("callApi organization context", () => {
+  beforeEach(() => {
+    mockLadder.org = "5dc930e9-bd65-44a1-8369-af773f6e1a5b";
+  });
   const originalFetch = global.fetch;
 
   afterEach(() => {
@@ -155,6 +171,7 @@ describe("callApi organization context", () => {
   it("refuses a write with no organization selected before the network", async () => {
     const fetchMock = jest.fn();
     global.fetch = fetchMock;
+    mockLadder.org = null;
     const state = requestState(null);
 
     const result = await callApi({
@@ -257,6 +274,7 @@ describe("callApi organization context", () => {
   it("does not start a stream without explicit organization context", async () => {
     const fetchMock = jest.fn();
     global.fetch = fetchMock;
+    mockLadder.org = null;
     const state = requestState(null);
 
     const result = await callApi({

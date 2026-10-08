@@ -42,6 +42,10 @@ jest.mock("@/lib/redux/slices/appContextSlice", () => ({
   selectTaskId: () => null,
   selectConversationId: () => null,
 }));
+// A write waits for the load ladder, then carries the active organization (the default state's).
+jest.mock("@/lib/organizations/ensureOrgId", () => ({
+  ensureOrgId: async () => "11111111-1111-4111-8111-111111111111",
+}));
 jest.mock("@/lib/redux/selectors/userSelectors", () => ({
   selectUserId: () => "user-1",
 }));

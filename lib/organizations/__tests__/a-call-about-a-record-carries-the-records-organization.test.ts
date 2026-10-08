@@ -7,6 +7,8 @@ const ACTIVE = "884d1ce8-7b49-4fba-a2f3-0f7dd7c83d4f";
 const RECORDS = "57f2a22b-5875-46c6-80df-437076421c28";
 
 jest.mock("@/lib/organizations/activeOrg", () => ({ getActiveOrgId: () => ACTIVE }));
+// A write waits for the load ladder, then carries the active organization.
+jest.mock("@/lib/organizations/ensureOrgId", () => ({ ensureOrgId: async () => ACTIVE }));
 
 import { fetchWithOrganization } from "../fetchWithOrganization";
 
