@@ -10,6 +10,7 @@ import { ProTextarea } from "@/components/official/ProTextarea";
 
 import type { DraftField, DraftGroup, EnvelopeDraftV1 } from "../../contract/draft";
 import { DATE_FORMATS, kindSpec, newId } from "../model";
+import { ProInput } from "@/components/official/ProInput";
 
 interface Props {
   draft: EnvelopeDraftV1;
@@ -124,7 +125,7 @@ export function PropertiesPanel({ draft, selected, edit, onDuplicate, onDelete, 
 
       {!multi && (
         <Row label="Label">
-          <Field aria-label="Label" maxLength={60} value={f.label} onChange={(e) => patch({ label: e.target.value }, `label-${f.id}`)} />
+          <ProInput aria-label="Label" maxLength={60} value={f.label} onChange={(e) => patch({ label: e.target.value }, `label-${f.id}`)} />
         </Row>
       )}
 
@@ -137,7 +138,7 @@ export function PropertiesPanel({ draft, selected, edit, onDuplicate, onDelete, 
           {f.kind === "text" && (
             <>
               <Row label="Placeholder">
-                <Field aria-label="Placeholder" value={f.placeholder ?? ""} onChange={(e) => patch({ placeholder: e.target.value || null }, `ph-${f.id}`)} />
+                <ProInput aria-label="Placeholder" value={f.placeholder ?? ""} onChange={(e) => patch({ placeholder: e.target.value || null }, `ph-${f.id}`)} />
               </Row>
               <Row label="Maximum length">
                 <Field aria-label="Maximum length" type="number" min={1} max={4000} value={f.max_length ?? ""} onChange={(e) => patch({ max_length: e.target.value ? Math.min(4000, Math.max(1, Number(e.target.value))) : null }, `ml-${f.id}`)} />
@@ -196,9 +197,10 @@ export function PropertiesPanel({ draft, selected, edit, onDuplicate, onDelete, 
               {group && (
                 <>
                   <Row label="Group name">
-                    <Field aria-label="Group name" value={group.label} onChange={(e) => patchGroup({ label: e.target.value })} />
+                    <ProInput aria-label="Group name" value={group.label} onChange={(e) => patchGroup({ label: e.target.value })} />
                   </Row>
                   <Row label="This option's value">
+                    {/* ui-exception: an option value is the raw value the form submits, not prose */}
                     <Field aria-label="Option value" value={f.option_value ?? ""} onChange={(e) => patch({ option_value: e.target.value }, `ov-${f.id}`)} />
                   </Row>
                   <ToggleRow label={group.kind === "radio" ? "One must be chosen" : "Required"} checked={group.required} onChange={(v) => patchGroup({ required: v })} />
@@ -219,7 +221,7 @@ export function PropertiesPanel({ draft, selected, edit, onDuplicate, onDelete, 
           {["full_name", "first_name", "last_name", "email", "company", "title", "text", "number", "date"].includes(f.kind) && (
             <>
               <Row label="Pre-filled value">
-                <Field aria-label="Pre-filled value" value={typeof f.prefill === "string" ? f.prefill : ""} onChange={(e) => patch({ prefill: e.target.value || null, read_only: e.target.value ? f.read_only : false }, `pf-${f.id}`)} />
+                <ProInput aria-label="Pre-filled value" value={typeof f.prefill === "string" ? f.prefill : ""} onChange={(e) => patch({ prefill: e.target.value || null, read_only: e.target.value ? f.read_only : false }, `pf-${f.id}`)} />
               </Row>
               {typeof f.prefill === "string" && f.prefill !== "" && (
                 <ToggleRow label="Locked for the signer" checked={!!f.read_only} onChange={(v) => patch({ read_only: v })} />
@@ -227,7 +229,7 @@ export function PropertiesPanel({ draft, selected, edit, onDuplicate, onDelete, 
             </>
           )}
           <Row label="Hint for the signer">
-            <Field aria-label="Hint" maxLength={140} value={f.tooltip ?? ""} onChange={(e) => patch({ tooltip: e.target.value || null }, `tt-${f.id}`)} />
+            <ProInput aria-label="Hint" maxLength={140} value={f.tooltip ?? ""} onChange={(e) => patch({ tooltip: e.target.value || null }, `tt-${f.id}`)} />
           </Row>
         </>
       )}

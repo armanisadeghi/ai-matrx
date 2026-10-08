@@ -16,6 +16,7 @@ import { cn } from "@/lib/utils";
 import type { DraftRecipient, EnvelopeDraftV1, RecipientRole, RecipientVerification } from "../../contract/draft";
 import { recipientColor } from "../../contract/paper";
 import { isEmail, newRecipient, ROLE_LABEL } from "../model";
+import { ProInput } from "@/components/official/ProInput";
 
 export interface Person {
   user_id: string;
@@ -173,12 +174,12 @@ export function RecipientsPanel({ draft, edit, people, me, setAccessCode, templa
             </div>
             {expanded && (
               <div className="flex flex-col gap-2 border-t border-border px-3 py-2">
-                <Field aria-label="Legal full name" placeholder="Legal full name" value={r.full_name} onChange={(e) => patch(r.key, { full_name: e.target.value }, `rn-${r.key}`)} />
+                <ProInput aria-label="Legal full name" placeholder="Legal full name" value={r.full_name} onChange={(e) => patch(r.key, { full_name: e.target.value }, `rn-${r.key}`)} />
                 <Field aria-label="Email" type="email" placeholder="Email" value={r.email} disabled={!!r.user_id} onChange={(e) => patch(r.key, { email: e.target.value }, `re-${r.key}`)} />
                 <Select aria-label="Role" value={r.role} options={ROLE_OPTIONS} onValueChange={(v) => patch(r.key, { role: v })} />
                 <div className="grid grid-cols-2 gap-2">
-                  <Field aria-label="Company" placeholder="Company" value={r.company ?? ""} onChange={(e) => patch(r.key, { company: e.target.value || null }, `rc-${r.key}`)} />
-                  <Field aria-label="Job title" placeholder="Job title" value={r.job_title ?? ""} onChange={(e) => patch(r.key, { job_title: e.target.value || null }, `rt-${r.key}`)} />
+                  <ProInput aria-label="Company" placeholder="Company" value={r.company ?? ""} onChange={(e) => patch(r.key, { company: e.target.value || null }, `rc-${r.key}`)} />
+                  <ProInput aria-label="Job title" placeholder="Job title" value={r.job_title ?? ""} onChange={(e) => patch(r.key, { job_title: e.target.value || null }, `rt-${r.key}`)} />
                 </div>
                 <ProTextarea
                   aria-label={`Private message to ${r.full_name || "this person"}`}
@@ -202,7 +203,7 @@ export function RecipientsPanel({ draft, edit, people, me, setAccessCode, templa
 
       {templateMode ? (
         <div className="flex gap-1.5">
-          <Field aria-label="Role name" placeholder="Add a role, such as Client" value={roleName} onChange={(e) => setRoleName(e.target.value)} />
+          <ProInput aria-label="Role name" placeholder="Add a role, such as Client" value={roleName} onChange={(e) => setRoleName(e.target.value)} />
           <Button
             variant="primary"
             disabled={!roleName.trim()}
@@ -220,6 +221,7 @@ export function RecipientsPanel({ draft, edit, people, me, setAccessCode, templa
         </div>
       ) : (
       <div className="flex flex-col gap-1.5">
+        {/* ui-exception: a search for a colleague or an email address, not writing */}
         <Field
           aria-label="Add a person"
           placeholder="Add a colleague or an email address"
@@ -253,7 +255,7 @@ export function RecipientsPanel({ draft, edit, people, me, setAccessCode, templa
         )}
         {guest && (
           <div className="flex flex-col gap-1.5 rounded-md border border-border p-2">
-            <Field
+            <ProInput
               aria-label="Their legal full name"
               placeholder="Their legal full name"
               value={guest.name}

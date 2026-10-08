@@ -51,6 +51,7 @@ import {
   type SchemaFieldWarning,
   type SchemaFormMode,
 } from "@/features/directive-catalog/schemaFields";
+import { ProInput } from "@/components/official/ProInput";
 
 export interface SchemaFieldsFormProps {
   fields: readonly SchemaField[];
@@ -299,7 +300,7 @@ function FieldControl({
       // taller than every date and pick-list beside it. JSON above stays the
       // multi-line Textarea — a structure is written over lines.
       return (
-        <Field
+        <ProInput
           id={id}
           type="text"
           value={text}

@@ -31,16 +31,19 @@ export function TypeTab({
           <>
             <label className="flex min-w-0 flex-col gap-1 text-xs text-muted-foreground">
               Full name
+              {/* ui-exception: the signer types their own name to draw a signature — never dictated or rewritten */}
               <Field value={name} autoComplete="name" onChange={(e) => onName(e.target.value)} />
             </label>
             <label className="flex min-w-0 flex-col gap-1 text-xs text-muted-foreground">
               Initials
+              {/* ui-exception: initials drawn as a signature mark, never dictated or rewritten */}
               <Field value={initials} maxLength={5} onChange={(e) => onInitials(e.target.value)} />
             </label>
           </>
         ) : (
           <label className="col-span-2 flex flex-col gap-1 text-xs text-muted-foreground">
             Initials
+            {/* ui-exception: initials drawn as a signature mark, never dictated or rewritten */}
             <Field value={initials} maxLength={5} onChange={(e) => onInitials(e.target.value)} />
           </label>
         )}
