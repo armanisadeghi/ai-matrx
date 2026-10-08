@@ -1,6 +1,6 @@
 {
   "note": "Checked-in snapshot of public._schema_migrations for the files under migrations/campaign and migrations/inverse. Written by `pnpm db:apply` on every successful production apply and refreshed whole by the nightly catch-up. Never hand-edited: a self-written checksum is a claim nobody can check. Guard: pnpm check:ledgered-files-unedited.",
-  "generated_at": "2026-10-08T10:40:37.064Z",
+  "generated_at": "2026-10-08T11:38:43.110Z",
   "files": {
     "migrations/campaign/a_chunk_is_the_size_the_client_door_can_actually_carry.sql": {
       "source": "matrx-frontend",
@@ -3811,6 +3811,18 @@
       "filename": "inspectortails_the_context_door_reads_the_triple_from_the_record_it_opened.sql",
       "checksum": "364ccadbad6213d80e0566fc33c8358c4598dc7f16437f19ec6048655a7c235f",
       "applied_at": "2026-09-25 13:51:33.271074+00"
+    },
+    "migrations/campaign/installspeed_a_realtime_readback_and_non_formula_fields.sql": {
+      "source": "matrx-frontend",
+      "filename": "installspeed_a_realtime_readback_and_non_formula_fields.sql",
+      "checksum": "c70cf6f421437c922564e1b4520a2914f4c7a923a0c705e141d68093437c8829",
+      "applied_at": "2026-10-08 11:33:20.074253+00"
+    },
+    "migrations/campaign/installspeed_b_a_dropdown_list_is_one_insert.sql": {
+      "source": "matrx-frontend",
+      "filename": "installspeed_b_a_dropdown_list_is_one_insert.sql",
+      "checksum": "637fea47b6ba412a57c751ad3ef809122755b8738378bf9a594eb2fe790677e9",
+      "applied_at": "2026-10-08 11:38:41.841127+00"
     },
     "migrations/campaign/integration_w15_a_list_narrows_to_one_dimension_value.sql": {
       "source": "matrx-frontend",
