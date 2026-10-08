@@ -1,5 +1,7 @@
 "use client";
 
+import { FormatButtons } from "@ai-matrx/rich-editor/format/FormatButtons";
+import { formatTargetWithin } from "@ai-matrx/rich-editor/format/format-target";
 import React, { useState, useRef } from "react";
 import FullScreenOverlay, {
   TabDefinition,
@@ -122,12 +124,14 @@ export default function HtmlPreviewFullScreenEditor({
       id: "markdown",
       label: "Source",
       content: (
+        <div data-format-scope="html-pages" className="contents">
         <MarkdownSplitViewTab
           state={htmlPreviewState}
           actions={htmlPreviewState}
           activeTab={activeTab}
           controllerRef={richEditorRef}
         />
+        </div>
       ),
       className: "overflow-hidden p-0 bg-background",
     },
@@ -136,12 +140,14 @@ export default function HtmlPreviewFullScreenEditor({
       id: "wysiwyg",
       label: "Write",
       content: (
+        <div data-format-scope="html-pages" className="contents">
         <MarkdownWysiwygTab
           state={htmlPreviewState}
           actions={htmlPreviewState}
           activeTab={activeTab}
           controllerRef={richEditorRef}
         />
+        </div>
       ),
       className: "overflow-hidden p-0 bg-background",
     },
@@ -150,12 +156,14 @@ export default function HtmlPreviewFullScreenEditor({
       id: "write",
       label: "Plain",
       content: (
+        <div data-format-scope="html-pages" className="contents">
         <MarkdownPlainTextTab
           state={htmlPreviewState}
           actions={htmlPreviewState}
           analysisData={analysisData}
           messageId={messageId}
         />
+        </div>
       ),
       className: "p-0",
     },
@@ -164,7 +172,9 @@ export default function HtmlPreviewFullScreenEditor({
       id: "matrx-split",
       label: "Split",
       content: (
+        <div data-format-scope="html-pages" className="contents">
         <MatrxSplitTab state={htmlPreviewState} actions={htmlPreviewState} />
+        </div>
       ),
       className: "p-0 overflow-hidden",
     },
@@ -264,6 +274,12 @@ export default function HtmlPreviewFullScreenEditor({
       onSave={handleSave}
       showCancelButton={true}
       onCancel={onClose}
+      footerLeading={
+        // THE formatting toolbar in every editable tab (Source, Write, Plain, Split) — the footer row.
+        activeTab !== "preview" ? (
+          <FormatButtons className="flex-1" resolve={() => visibleScopeTarget("html-pages")} />
+        ) : null
+      }
       hideTitle={true}
       isPending={isSaving}
       pendingMessage="Saving changes…"
@@ -274,4 +290,15 @@ export default function HtmlPreviewFullScreenEditor({
       } : undefined}
     />
   );
+}
+
+/** The editor inside the visible tab carrying this format scope (tabs may stay mounted while hidden). */
+function visibleScopeTarget(scope: string) {
+  if (typeof document === "undefined") return null;
+  const scopes = Array.from(document.querySelectorAll<HTMLElement>(`[data-format-scope="${scope}"]`));
+  for (const el of scopes) {
+    const host = el.querySelector<HTMLElement>("[data-format-host]");
+    if (host && host.getClientRects().length > 0) return formatTargetWithin(el);
+  }
+  return null;
 }
