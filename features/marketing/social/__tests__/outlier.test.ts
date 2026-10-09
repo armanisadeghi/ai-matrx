@@ -133,3 +133,27 @@ describe("profileBaseline (the one median / engagement source)", () => {
     expect(b.engagementRate).toBeCloseTo(40 / 400, 9);
   });
 });
+
+import { countLabel, explainOutlier, formatMultiplierLong } from "../outlier";
+import { accountLabels, openPostLabel } from "../mappers";
+
+describe("polish helpers", () => {
+  it("writes the multiple as a sentence and explains the percentile and median in words", () => {
+    expect(formatMultiplierLong(2.4)).toBe("2.4× usual views");
+    expect(explainOutlier({ score: 2.4, baselineViews: 415, percentile: 86, baselineWindow: 30 })).toBe(
+      "Gets more views than 86% of this creator's last 30 posts. A usual post from them gets about 415 views.",
+    );
+  });
+  it("pluralizes counts and hides null ones", () => {
+    expect(countLabel(1, "like")).toBe("1 like");
+    expect(countLabel(2400, "like")).toBe("2.4K likes");
+    expect(countLabel(null, "like")).toBeNull();
+  });
+  it("names an account once and keeps the open-post name short", () => {
+    expect(accountLabels("melrobbins", "melrobbins")).toEqual({ primary: "@melrobbins", secondary: null });
+    expect(accountLabels("Mel Robbins", "melrobbins")).toEqual({ primary: "Mel Robbins", secondary: "@melrobbins" });
+    const l = openPostLabel("melrobbins", "x".repeat(200));
+    expect(l.startsWith("Open post by @melrobbins: ")).toBe(true);
+    expect(l.length).toBeLessThanOrEqual("Open post by @melrobbins: ".length + 60);
+  });
+});

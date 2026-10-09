@@ -64,8 +64,11 @@ export function PersonOwnerChip({
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
-        <button type="button" className="rounded-full">
-          <Badge tone="warning">Link person</Badge>
+        <button
+          type="button"
+          className="rounded-full text-xs text-muted-foreground underline-offset-2 hover:text-foreground hover:underline"
+        >
+          Link person
         </button>
       </PopoverTrigger>
       <PopoverContent align="start" className="w-64 p-2">

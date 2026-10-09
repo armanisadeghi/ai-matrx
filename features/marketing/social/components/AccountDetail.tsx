@@ -459,7 +459,7 @@ export function AccountDetail({ platform, profileId }: { platform: string; profi
             target: p.platform === "linkedin" ? "activity" : "profile",
             profileId: p.id,
             trackedAccountId: tracked.data?.id ?? null,
-            brandId: brand.brandId,
+            brandId: brand.id,
           }}
           onCaptured={() => void queryClient.invalidateQueries({ queryKey: ["social", "browser-captures"] })}
         />

@@ -55,6 +55,9 @@ export function SocialsShell({ children }: { children: ReactNode }) {
   const activeTab = SOCIALS_TABS.find((t) => t.id === segment)?.id ?? "accounts";
 
   const fullBleed = activeTab === "studio";
+  // An account's own page shows its tracked state + Refresh; a second "Track account" there reads as if
+  // this account were not tracked yet.
+  const onAccountPage = segment !== "" && !SOCIALS_TABS.some((t) => t.id === segment) && segment !== "post";
 
   return (
     <SocialsContext.Provider
@@ -73,9 +76,11 @@ export function SocialsShell({ children }: { children: ReactNode }) {
         record={{ name: "Socials" }}
         modes={modes}
         activeModeHref={`${base}/${activeTab}`}
-        actions={[
-          { label: "Track account", icon: Plus, primary: true, showLabel: true, onPress: () => setTrackOpen(true) },
-        ]}
+        actions={
+          onAccountPage
+            ? []
+            : [{ label: "Track account", icon: Plus, primary: true, showLabel: true, onPress: () => setTrackOpen(true) }]
+        }
       />}
       {fullBleed ? (
         // The Studio is the Board, exactly as /board/<id>: its workspace header is the page top, full-bleed.
