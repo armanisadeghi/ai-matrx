@@ -138,7 +138,6 @@
     "features/organizations/components/OrgModuleSettings.tsx",
     "features/organizations/peek/kinds/TablePeek.tsx",
     "features/projects/components/ProjectTaskList.tsx",
-    "features/projects/components/ProjectsHub.tsx",
     "features/rag/components/library/TableRowsViewer.tsx",
     "features/rag/components/search/RagPageReferences.tsx",
     "features/research/components/curation/CurationTable.tsx",
