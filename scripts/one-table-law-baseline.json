@@ -29,7 +29,6 @@
     "features/approvals/kinds/sheet-write.tsx": "approval kind preview (before/after cells)",
     "features/approvals/kinds/spreadsheet-create.tsx": "approval kind preview (sheet rows)",
     "features/bindings/batch/PlacesBatchGrid.tsx": "editable batch grid (places by inputs)",
-    "features/code/views/sandboxes/SandboxDiagnosticsPanel.tsx": "diagnostic key-value pairs",
     "features/crm/components/import/ImportWizard.tsx": "import column-mapping editor",
     "features/file-analysis/content/MetadataContent.tsx": "key-value metadata card",
     "features/file-analysis/content/TablesContent.tsx": "preview of tables extracted from a document",
@@ -58,8 +57,6 @@
     "features/settings/universal/ConfigurationExport.tsx": "settings side-by-side diff"
   },
   "toConvert": {
-    "components/official/processor-extractor/path-management/BookmarkManager.tsx": "bookmarks list (name/type/path/actions)",
-    "components/official/processor-extractor/path-management/UnifiedBookmarkManager.tsx": "bookmarks list (name/type/path/actions)",
     "features/admin/limits/components/KnobOverridesAdmin.tsx": "overrides list (level/for/org/value/set by/when) with per-row actions",
     "features/admin/performance-watch/PerformanceWatchConsole.tsx": "collector list; partly MatrxDataTable already, remaining hand table",
     "features/files/components/surfaces/desktop/FileTable.tsx": "desktop file list (sort/select/filters)",
@@ -81,8 +78,6 @@
     "components/admin/state-analyzer/sliceViewers/agent-definitions/AgentDefinitionSliceViewerShadcn.tsx",
     "components/brokers/output/TableRenderer.tsx",
     "components/matrx/LoadingComponents.tsx",
-    "components/official/processor-extractor/path-management/BookmarkManager.tsx",
-    "components/official/processor-extractor/path-management/UnifiedBookmarkManager.tsx",
     "features/admin/limits/components/KnobOverridesAdmin.tsx",
     "features/admin/limits/components/PlanAllowancesPanel.tsx",
     "features/admin/limits/components/PlanDetailsPanel.tsx",
@@ -101,7 +96,6 @@
     "features/approvals/kinds/sheet-write.tsx",
     "features/approvals/kinds/spreadsheet-create.tsx",
     "features/bindings/batch/PlacesBatchGrid.tsx",
-    "features/code/views/sandboxes/SandboxDiagnosticsPanel.tsx",
     "features/crm/components/import/ImportWizard.tsx",
     "features/file-analysis/content/MetadataContent.tsx",
     "features/file-analysis/content/TablesContent.tsx",

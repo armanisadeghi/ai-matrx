@@ -4,7 +4,7 @@ import { Button } from "@ai-matrx/design-system";
 import { Input } from "@ai-matrx/design-system/controls";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { MatrxDataTable } from "@ai-matrx/design-system/data-table";
 import { 
   BookmarkIcon,
   TrashIcon,
@@ -295,24 +295,19 @@ const UnifiedBookmarkManager: React.FC<UnifiedBookmarkManagerProps> = ({
                   </div>
                 </div>
                 
-                <Table wrapperClassName="phone-stack">
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead className="w-[280px]">Name</TableHead>
-                      <TableHead className="w-[160px]">Type</TableHead>
-                      <TableHead>Path</TableHead>
-                      <TableHead className="w-[140px] text-right">Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {filteredBookmarks.map((bookmark) => (
-                      <React.Fragment key={bookmark.id}>
-                        <TableRow 
-                          className="cursor-pointer hover:bg-zinc-100 dark:hover:bg-zinc-800"
-                          onClick={() => toggleExpand(bookmark.id)}
-                        >
-                          <TableCell data-phone="lead">
-                            <div className="flex items-start gap-2">
+                <MatrxDataTable<Bookmark>
+                  tableId="path-bookmarks"
+                  data={filteredBookmarks}
+                  getRowId={(bookmark) => bookmark.id}
+                  frameHeight="content"
+                  columns={[
+                    {
+                      id: "name",
+                      accessorKey: "name",
+                      header: "Name",
+                      label: "Name",
+                      cell: (bookmark) => (
+                        <div className="flex items-start gap-2">
                               <BookmarkIcon className="h-4 w-4 text-blue-500 mt-1" />
                               <div>
                                 <div className="font-medium">{bookmark.name}</div>
@@ -326,20 +321,36 @@ const UnifiedBookmarkManager: React.FC<UnifiedBookmarkManagerProps> = ({
                                 </div>
                               </div>
                             </div>
-                          </TableCell>
-                          <TableCell data-label="Type" data-phone="inline">
-                            <div className="px-2 py-1 type-secondary rounded bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 inline-block">
+                      ),
+                    },
+                    {
+                      id: "type",
+                      accessorKey: "readibleType",
+                      header: "Type",
+                      label: "Type",
+                      cell: (bookmark) => (
+                        <div className="px-2 py-1 type-secondary rounded bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 inline-block">
                               {bookmark.readibleType || bookmark.type}
                             </div>
-                          </TableCell>
-                          <TableCell
-                            className="font-mono type-secondary truncate max-w-[300px]"
-                            data-label="Path"
-                          >
-                            {bookmark.path}
-                          </TableCell>
-                          <TableCell className="text-right" data-phone="actions">
-                            <div className="flex justify-end space-x-1">
+                      ),
+                    },
+                    {
+                      id: "path",
+                      accessorKey: "path",
+                      header: "Path",
+                      label: "Path",
+                      cell: (bookmark) => (
+                        <span className="font-mono type-secondary">{bookmark.path}</span>
+                      ),
+                    },
+                    {
+                      id: "bookmark-actions",
+                      header: "Actions",
+                      label: "Actions",
+                      sortable: false,
+                      filter: false,
+                      customActions: (bookmark) => (
+                        <div className="flex justify-end space-x-1">
                               {onJumpToBookmark && (
                                 <Button
                                   size="icon"
@@ -387,12 +398,17 @@ const UnifiedBookmarkManager: React.FC<UnifiedBookmarkManagerProps> = ({
                                 <TrashIcon className="h-4 w-4" />
                               </Button>
                             </div>
-                          </TableCell>
-                        </TableRow>
-                        {expandedBookmarkId === bookmark.id && (
-                          <TableRow>
-                            <TableCell colSpan={4} className="bg-gray-50 dark:bg-gray-800 p-0">
-                              <div className="p-4 type-body">
+                      ),
+                    },
+                  ]}
+                  expandedDetail={{
+                    expandedIds: new Set(expandedBookmarkId ? [expandedBookmarkId] : []),
+                    onExpandedIdsChange: (ids) => {
+                      const next = [...ids].find((id) => id !== expandedBookmarkId) ?? null;
+                      setExpandedBookmarkId(next);
+                    },
+                    render: (bookmark) => (
+                      <div className="p-4 type-body">
                                 {bookmark.description && (
                                   <div className="mb-4 text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 p-3 rounded-md border-border">
                                     <div className="font-semibold mb-1">Description:</div>
@@ -473,13 +489,17 @@ const UnifiedBookmarkManager: React.FC<UnifiedBookmarkManagerProps> = ({
                                   </code>
                                 </div>
                               </div>
-                            </TableCell>
-                          </TableRow>
-                        )}
-                      </React.Fragment>
-                    ))}
-                  </TableBody>
-                </Table>
+                    ),
+                  }}
+                  copy={{
+                    label: "Bookmark",
+                    listLabel: "Path bookmarks",
+                    location: "Path bookmarks",
+                    rowKind: "path_bookmark",
+                    listKind: "path_bookmark_list",
+                    humanRow: (bookmark) => `${bookmark.name} — ${bookmark.path}`,
+                  }}
+                />
               </div>
             )}
           </div>
