@@ -27,6 +27,7 @@ import Link from "next/link";
 import { CheckCircle2, PencilLine, Undo2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { MatrxDataTable, type MatrxColumnDef, type MatrxDataTableCopyConfig } from "@ai-matrx/design-system/data-table";
 import {
   Dialog,
   DialogContent,
@@ -418,6 +419,77 @@ function DecisionBar({
   );
 }
 
+type EditHistoryEntry = Timesheet["editHistory"][number];
+
+const EDIT_HISTORY_COLUMNS: MatrxColumnDef<EditHistoryEntry>[] = [
+  {
+    id: "when",
+    header: "When",
+    accessorFn: (entry) => entry.at,
+    filter: "date",
+    defaultSortDirection: "desc",
+    width: 170,
+    cell: (entry) => formatDateTimeInTz(entry.at, viewerTimeZone()),
+  },
+  { id: "who", header: "Who", accessorFn: (entry) => entry.byName, filter: "text", width: 150 },
+  {
+    id: "what",
+    header: "What",
+    accessorFn: (entry) => humanizeIdentifier(entry.field) || entry.field,
+    filter: "text",
+    width: 140,
+  },
+  {
+    id: "was",
+    header: "Was",
+    accessorFn: (entry) => entry.originalValue ?? "",
+    filter: "text",
+    width: 130,
+    cell: (entry) => (
+      <span className="line-through decoration-2">{entry.originalValue ?? "—"}</span>
+    ),
+  },
+  {
+    id: "became",
+    header: "Became",
+    accessorFn: (entry) => entry.newValue ?? "",
+    filter: "text",
+    width: 130,
+    cell: (entry) => entry.newValue ?? "—",
+  },
+  {
+    id: "rate",
+    header: "Rate at the time",
+    accessorFn: (entry) => entry.rateAtTime ?? null,
+    filter: "number",
+    width: 140,
+    align: "right",
+    // The rate AT THE TIME — not today's rate, which is a different number.
+    cell: (entry) => <span className="tabular-nums">{formatRate(entry.rateAtTime)}</span>,
+  },
+  { id: "why", header: "Why", accessorFn: (entry) => entry.reason, filter: "text", width: 280 },
+];
+
+const EDIT_HISTORY_COPY: MatrxDataTableCopyConfig<EditHistoryEntry> = {
+  label: "Timecard change",
+  listLabel: "Timecard changes (this view)",
+  location: "Timesheet — what has been changed",
+  rowKind: "timesheet-edit",
+  listKind: "timesheet-edit-history",
+  rowDescription: "One change a person made to a timecard, with the reason.",
+  listDescription: "The changes people made to one timecard, as currently shown.",
+  humanRow: (entry) =>
+    [
+      `When: ${formatDateTimeInTz(entry.at, viewerTimeZone())}`,
+      `Who: ${entry.byName}`,
+      `What: ${humanizeIdentifier(entry.field) || entry.field}`,
+      `Was: ${entry.originalValue ?? "—"}`,
+      `Became: ${entry.newValue ?? "—"}`,
+      `Rate at the time: ${formatRate(entry.rateAtTime)}`,
+      `Why: ${entry.reason}`,
+    ].join("\n"),
+};
+
 /** L3-54 — edit history with the reason, the original value, and the rate at the time. */
 function EditHistoryPanel({ timesheet }: { timesheet: Timesheet }) {
   return (
@@ -428,38 +500,20 @@ function EditHistoryPanel({ timesheet }: { timesheet: Timesheet }) {
           Nothing on this timecard has been changed by a person.
         </p>
       ) : (
-        <div className="mt-2 overflow-x-auto">
-          <table className="w-full min-w-[40rem] text-xs">
-            <thead>
-              <tr className="border-b border-border text-left text-muted-foreground">
-                <th className="py-1.5 pr-3 font-medium">When</th>
-                <th className="py-1.5 pr-3 font-medium">Who</th>
-                <th className="py-1.5 pr-3 font-medium">What</th>
-                <th className="py-1.5 pr-3 font-medium">Was</th>
-                <th className="py-1.5 pr-3 font-medium">Became</th>
-                <th className="py-1.5 pr-3 font-medium">Rate at the time</th>
-                <th className="py-1.5 font-medium">Why</th>
-              </tr>
-            </thead>
-            <tbody>
-              {timesheet.editHistory.map((entry, index) => (
-                <tr key={`${entry.at}-${index}`} className="border-b border-border/60 align-top">
-                  <td className="py-1.5 pr-3">
-                    {formatDateTimeInTz(entry.at, viewerTimeZone())}
-                  </td>
-                  <td className="py-1.5 pr-3">{entry.byName}</td>
-                  <td className="py-1.5 pr-3">{humanizeIdentifier(entry.field) || entry.field}</td>
-                  <td className="py-1.5 pr-3 line-through decoration-2">
-                    {entry.originalValue ?? "—"}
-                  </td>
-                  <td className="py-1.5 pr-3">{entry.newValue ?? "—"}</td>
-                  {/* The rate AT THE TIME — not today's rate, which is a different number. */}
-                  <td className="py-1.5 pr-3 tabular-nums">{formatRate(entry.rateAtTime)}</td>
-                  <td className="py-1.5">{entry.reason}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+        <div className="mt-2">
+          <MatrxDataTable<EditHistoryEntry>
+            tableId="hr/time/timesheet/edit-history"
+            data={timesheet.editHistory}
+            columns={EDIT_HISTORY_COLUMNS}
+            getRowId={(entry) => `${entry.at}-${entry.field}-${entry.byName}`}
+            pageSize={0}
+            density="condensed"
+            viewTabs={false}
+            toolbar={{ searchPlaceholder: "Search the changes" }}
+            detail={{ enabled: false }}
+            copy={EDIT_HISTORY_COPY}
+            emptyState={{ title: "Nothing has been changed" }}
+          />
         </div>
       )}
       <p className="mt-2 text-[11px] text-muted-foreground">

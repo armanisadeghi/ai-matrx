@@ -9,6 +9,7 @@ import { useSearchParams } from "next/navigation";
 import { CalendarPlus, ClipboardCheck, Send, Share2 } from "lucide-react";
 import { Badge, Button, EmptyState } from "@ai-matrx/design-system/controls";
 import { useRecordsClient } from "@ai-matrx/records/react";
+import { MatrxDataTable, type MatrxColumnDef, type MatrxDataTableCopyConfig } from "@ai-matrx/design-system/data-table";
 
 import PerformanceReviewApp from "@/features/employee-performance-reviews/components/PerformanceReviewApp";
 import { createBlankReview, type Review } from "@/features/employee-performance-reviews/schema";
@@ -60,6 +61,73 @@ export function Review360ListPage() {
   );
 }
 
+const reviewState = (r: Review360ListRow) =>
+  r.status === "shared" ? "shared" : r.selfIn && r.managerIn ? "ready" : "collecting";
+
+const REVIEW_LIST_COLUMNS: MatrxColumnDef<Review360ListRow>[] = [
+  {
+    id: "employee",
+    header: "Employee",
+    accessorFn: (r) => r.employee_name ?? "360 review",
+    filter: "text",
+    width: 260,
+    frozen: true,
+    cell: (r) => (
+      <Link className="hover:underline" href={`/hr/performance/${r._id}?org=${r._organizationId}`}>
+        {r.employee_name ?? "360 review"}
+      </Link>
+    ),
+  },
+  {
+    id: "status",
+    header: "Status",
+    accessorFn: reviewState,
+    filter: "select",
+    filterOptions: [
+      { value: "collecting", label: "Collecting" },
+      { value: "ready", label: "Ready" },
+      { value: "shared", label: "Shared" },
+    ],
+    width: 130,
+    cell: (r) => <Badge>{reviewState(r)}</Badge>,
+  },
+  { id: "due", header: "Due", accessorFn: (r) => r.due_on ?? null, filter: "date", width: 130, cell: (r) => day(r.due_on) },
+  {
+    id: "self",
+    header: "Self",
+    accessorFn: (r) => r.selfIn ?? null,
+    filter: "date",
+    width: 130,
+    cell: (r) => (r.selfIn ? day(r.selfIn) : "Waiting"),
+  },
+  {
+    id: "manager",
+    header: "Manager",
+    accessorFn: (r) => r.managerIn ?? null,
+    filter: "date",
+    width: 130,
+    cell: (r) => (r.managerIn ? day(r.managerIn) : "Waiting"),
+  },
+];
+
+const REVIEW_LIST_COPY: MatrxDataTableCopyConfig<Review360ListRow> = {
+  label: "360 review",
+  listLabel: "360 reviews (this view)",
+  location: "Performance — 360 reviews",
+  rowKind: "review-360",
+  listKind: "review-360-list",
+  rowDescription: "One 360 review: employee, status, due date and whether the self and manager halves are in.",
+  listDescription: "The 360 reviews of the selected employer, as currently shown.",
+  humanRow: (r) =>
+    [
+      `Employee: ${r.employee_name ?? "360 review"}`,
+      `Status: ${reviewState(r)}`,
+      `Due: ${day(r.due_on)}`,
+      `Self: ${r.selfIn ? day(r.selfIn) : "Waiting"}`,
+      `Manager: ${r.managerIn ? day(r.managerIn) : "Waiting"}`,
+    ].join("\n"),
+};
+
 function ReviewList({ org }: { org: string }) {
   const client = useRecordsClient();
   const [rows, setRows] = useState<Review360ListRow[] | null>(null);
@@ -79,32 +147,21 @@ function ReviewList({ org }: { org: string }) {
   if (!rows) return <div className="m-4 h-24 animate-pulse rounded-md bg-card/40" aria-label="Loading 360 reviews" />;
   if (rows.length === 0) return <EmptyState icon={<ClipboardCheck />} title="No 360 reviews yet" line="Start one from an employee profile" />;
   return (
-    <table className="m-3 w-[calc(100%-1.5rem)] text-sm">
-      <thead className="text-left text-xs text-muted-foreground">
-        <tr>
-          <th className="px-2 py-1.5 font-medium">Employee</th>
-          <th className="px-2 py-1.5 font-medium">Status</th>
-          <th className="px-2 py-1.5 font-medium">Due</th>
-          <th className="px-2 py-1.5 font-medium">Self</th>
-          <th className="px-2 py-1.5 font-medium">Manager</th>
-        </tr>
-      </thead>
-      <tbody>
-        {rows.map((r) => (
-          <tr key={r._id} className="border-t border-border">
-            <td className="px-2 py-1.5">
-              <Link className="hover:underline" href={`/hr/performance/${r._id}?org=${r._organizationId}`}>
-                {r.employee_name ?? "360 review"}
-              </Link>
-            </td>
-            <td className="px-2 py-1.5"><Badge>{r.status === "shared" ? "shared" : r.selfIn && r.managerIn ? "ready" : "collecting"}</Badge></td>
-            <td className="px-2 py-1.5">{day(r.due_on)}</td>
-            <td className="px-2 py-1.5">{r.selfIn ? day(r.selfIn) : "Waiting"}</td>
-            <td className="px-2 py-1.5">{r.managerIn ? day(r.managerIn) : "Waiting"}</td>
-          </tr>
-        ))}
-      </tbody>
-    </table>
+    <div className="m-3">
+      <MatrxDataTable<Review360ListRow>
+        tableId="hr/performance/360-reviews"
+        data={rows}
+        columns={REVIEW_LIST_COLUMNS}
+        getRowId={(r) => r._id}
+        pageSize={0}
+        density="condensed"
+        viewTabs={false}
+        toolbar={{ title: "360 reviews", searchPlaceholder: "Search 360 reviews" }}
+        detail={{ enabled: false }}
+        copy={REVIEW_LIST_COPY}
+        emptyState={{ title: "No 360 reviews yet" }}
+      />
+    </div>
   );
 }
 

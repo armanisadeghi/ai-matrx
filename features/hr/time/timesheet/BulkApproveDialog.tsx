@@ -31,6 +31,7 @@ import { useState } from "react";
 import { AlertTriangle, CheckCircle2, XCircle } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { MatrxDataTable, type MatrxColumnDef, type MatrxDataTableCopyConfig } from "@ai-matrx/design-system/data-table";
 import {
   Dialog,
   DialogContent,
@@ -72,6 +73,80 @@ export function splitForBulk(rows: PeriodGridRow[]): BulkApproveSelection {
   }
   return { eligible, excludedForExceptions };
 }
+
+const BULK_APPROVE_COLUMNS: MatrxColumnDef<PeriodGridRow>[] = [
+  {
+    id: "employee",
+    header: "Employee",
+    accessorFn: (row) => row.employeeDisplayName,
+    filter: "text",
+    width: 200,
+    frozen: true,
+  },
+  {
+    id: "hours",
+    header: "Hours",
+    accessorFn: (row) => row.totalHours ?? null,
+    filter: "number",
+    width: 90,
+    align: "right",
+    cell: (row) => <span className="tabular-nums">{formatHours(row.totalHours)}</span>,
+  },
+  {
+    id: "overtime",
+    header: "Overtime",
+    accessorFn: (row) => row.hoursOvertime ?? null,
+    filter: "number",
+    width: 100,
+    align: "right",
+    cell: (row) => <span className="tabular-nums">{formatHours(row.hoursOvertime)}</span>,
+  },
+  {
+    id: "doubletime",
+    header: "Double time",
+    accessorFn: (row) => row.hoursDoubletime ?? null,
+    filter: "number",
+    width: 110,
+    align: "right",
+    cell: (row) => <span className="tabular-nums">{formatHours(row.hoursDoubletime)}</span>,
+  },
+  {
+    id: "premium",
+    header: "Premium lines",
+    accessorFn: (row) => row.premiumLineCount,
+    filter: "number",
+    width: 120,
+    align: "right",
+    cell: (row) => <span className="tabular-nums">{row.premiumLineCount}</span>,
+  },
+  {
+    id: "state",
+    header: "State",
+    accessorFn: (row) => row.state,
+    filter: "text",
+    width: 140,
+    cell: (row) => <RowStateChip state={row.state} />,
+  },
+];
+
+const BULK_APPROVE_COPY: MatrxDataTableCopyConfig<PeriodGridRow> = {
+  label: "Timecard",
+  listLabel: "Timecards to approve (this view)",
+  location: "Timesheet — approve together",
+  rowKind: "timesheet-bulk-approve-row",
+  listKind: "timesheet-bulk-approve",
+  rowDescription: "One timecard in the approve-together list, with its own figures.",
+  listDescription: "The timecards selected for approval, as currently shown.",
+  humanRow: (row) =>
+    [
+      `Employee: ${row.employeeDisplayName}`,
+      `Hours: ${formatHours(row.totalHours)}`,
+      `Overtime: ${formatHours(row.hoursOvertime)}`,
+      `Double time: ${formatHours(row.hoursDoubletime)}`,
+      `Premium lines: ${row.premiumLineCount}`,
+      `State: ${row.state}`,
+    ].join("\n"),
+};
 
 export function BulkApproveDialog({
   open,
@@ -191,42 +266,19 @@ export function BulkApproveDialog({
             ) : null}
 
             {/* THE MANIFEST ITSELF — exactly which employments, and their own figures. */}
-            <div className="overflow-x-auto rounded-md border border-border">
-              <table className="w-full min-w-[32rem] text-xs">
-                <thead>
-                  <tr className="border-b border-border bg-muted/40 text-left">
-                    <th className="px-3 py-2 font-medium">Employee</th>
-                    <th className="px-3 py-2 text-right font-medium">Hours</th>
-                    <th className="px-3 py-2 text-right font-medium">Overtime</th>
-                    <th className="px-3 py-2 text-right font-medium">Double time</th>
-                    <th className="px-3 py-2 text-right font-medium">Premium lines</th>
-                    <th className="px-3 py-2 font-medium">State</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {eligible.map((row) => (
-                    <tr key={row.employmentId} className="border-b border-border/60">
-                      <td className="px-3 py-1.5">{row.employeeDisplayName}</td>
-                      <td className="px-3 py-1.5 text-right tabular-nums">
-                        {formatHours(row.totalHours)}
-                      </td>
-                      <td className="px-3 py-1.5 text-right tabular-nums">
-                        {formatHours(row.hoursOvertime)}
-                      </td>
-                      <td className="px-3 py-1.5 text-right tabular-nums">
-                        {formatHours(row.hoursDoubletime)}
-                      </td>
-                      <td className="px-3 py-1.5 text-right tabular-nums">
-                        {row.premiumLineCount}
-                      </td>
-                      <td className="px-3 py-1.5">
-                        <RowStateChip state={row.state} />
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+            <MatrxDataTable<PeriodGridRow>
+              tableId="hr/time/timesheet/bulk-approve"
+              data={eligible}
+              columns={BULK_APPROVE_COLUMNS}
+              getRowId={(row) => row.employmentId}
+              pageSize={0}
+              density="condensed"
+              viewTabs={false}
+              toolbar={{ searchPlaceholder: "Search these timecards" }}
+              detail={{ enabled: false }}
+              copy={BULK_APPROVE_COPY}
+              emptyState={{ title: "No timecards to approve" }}
+            />
 
             <p className="text-[11px] text-muted-foreground">
               Figures are per timecard, exactly as the payroll engine calculated them. This page does

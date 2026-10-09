@@ -117,7 +117,8 @@ export function checkDescribeTemplate(template: Record<string, unknown>, existin
  * its own name, and a note says so; only link-only reuses remain to bind. The package owns the rule (safeReuses).
  */
 export function applySafeReuses(answer: DescribeAnswer, existing: ExistingTable[]): { template: Record<string, unknown>; reuses: DescribeAnswer["reuses"]; notes: string[] } {
-  const r = safeReuses(describeSpec(answer.template), answer.reuses, existing as PackageExistingTable[]);
+  const spec0 = describeSpec(answer.template);
+  const r = safeReuses(spec0, repairReuseIds(spec0, answer.reuses, existing), existing as PackageExistingTable[]);
   return { template: r.spec as unknown as Record<string, unknown>, reuses: r.reuses, notes: r.notes };
 }
 
@@ -162,6 +163,56 @@ export function readDesign(value: unknown, existing: ExistingTable[]): ReadDesig
     throw new DesignRefused(checked.line);
   }
   return { answer, safe, checked };
+}
+
+/**
+ * A reuse whose table id is not one of the organization's (a model copying a 36-character id can slip a character) is
+ * pointed at the one existing table whose name is exactly the template table's name; no such single table leaves it as said.
+ * Live 2026-10-09: "Posts" reused with an id one block off, so the install built a second Posts and refused its sample rows.
+ */
+export function repairReuseIds(spec: TemplateSpec, reuses: DescribeAnswer["reuses"], existing: ExistingTable[]): DescribeAnswer["reuses"] {
+  const ids = new Set(existing.map((t) => t.id));
+  const nameOf = new Map(spec.tables.map((t) => [t.token, String((t as { name?: string }).name ?? "").trim().toLowerCase()]));
+  return reuses.map((r) => {
+    if (ids.has(r.existing_table_id)) return r;
+    const name = nameOf.get(r.token);
+    const same = name ? existing.filter((t) => t.name.trim().toLowerCase() === name) : [];
+    return same.length === 1 ? { ...r, existing_table_id: same[0]!.id } : r;
+  });
+}
+
+/**
+ * ROWS THAT CANNOT LAND ARE LEFT OUT, NEVER INSTALLED TO FAIL: a table bound to one the person already has seeds none of its
+ * rows, so a new table whose example rows point at a bound table's rows (a post "for" a client) would be refused by the store
+ * ("Client is required") and the whole install would stop. Its example rows are dropped, one line says so, and the tables,
+ * views, forms and reminders still install. Run after bindReuses.
+ */
+export function dropOrphanRows(spec: TemplateSpec): { spec: TemplateSpec; notes: string[] } {
+  type Row = { key?: string; values?: Record<string, unknown> };
+  const tables = spec.tables as unknown as Array<{ token: string; name?: string; bindsTo?: unknown; rows?: Row[]; fields: Array<{ key: string; parityType?: string; relationTarget?: string }> }>;
+  const dropped = new Map<string, true>();
+  const holdsRows = (token: string) => {
+    const t = tables.find((x) => x.token === token);
+    return !!t && !t.bindsTo && (t.rows?.length ?? 0) > 0 && !dropped.has(token);
+  };
+  for (let changed = true; changed; ) {
+    changed = false;
+    for (const t of tables) {
+      if (t.bindsTo || !t.rows?.length || dropped.has(t.token)) continue;
+      const orphan = t.fields.some(
+        (f) => f.parityType === "relation" && f.relationTarget && f.relationTarget !== t.token && !holdsRows(f.relationTarget) && t.rows!.some((r) => r.values?.[f.key] != null && r.values[f.key] !== ""),
+      );
+      if (orphan) {
+        dropped.set(t.token, true);
+        changed = true;
+      }
+    }
+  }
+  if (!dropped.size) return { spec, notes: [] };
+  return {
+    spec: { ...spec, tables: spec.tables.map((t) => (dropped.has(t.token) ? ({ ...t, rows: [] } as typeof t) : t)) },
+    notes: tables.filter((t) => dropped.has(t.token)).map((t) => `${t.name ?? t.token}: example rows left out (they point at rows of a table you already have).`),
+  };
 }
 
 /**

@@ -5,6 +5,7 @@ import { ArrowLeft, Star } from "lucide-react";
 import Link from "next/link";
 import { createClient } from "@/utils/supabase/server";
 import { AccessGate } from "@/features/access-gate/components/AccessGate";
+import { TemplateArchiveButton } from "@/features/agents/agent-creators/templates/TemplateArchiveButton";
 import { UseTemplateButton } from "@/features/agents/agent-creators/templates/UseTemplateButton";
 
 export default async function AgentTemplateDetailPage({
@@ -70,6 +71,11 @@ export default async function AgentTemplateDetailPage({
               <h1 className="text-3xl font-bold text-foreground">
                 {template.name}
               </h1>
+              {template.is_archived && (
+                <Badge variant="outline" className="text-muted-foreground border-border">
+                  Archived
+                </Badge>
+              )}
               {template.is_featured && (
                 <Star className="h-6 w-6 text-warning" />
               )}
@@ -78,6 +84,12 @@ export default async function AgentTemplateDetailPage({
               <p className="text-muted-foreground">{template.description}</p>
             )}
           </div>
+          <TemplateArchiveButton
+            templateId={id}
+            name={template.name}
+            createdBy={template.created_by}
+            isArchived={template.is_archived}
+          />
           <UseTemplateButton templateId={id} />
         </div>
 

@@ -7,6 +7,8 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { createAgentFromTemplate } from "./templateService";
 import { toast } from "@/lib/toast-service";
 import { ArchivedDisclosure } from "@ai-matrx/design-system";
+import { useTemplateEditAccess } from "./templateArchive";
+import { useTemplateArchive } from "./useTemplateArchive";
 
 interface Template {
   id: string;
@@ -16,6 +18,7 @@ interface Template {
   is_featured: boolean;
   use_count: number;
   is_archived: boolean;
+  created_by?: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -33,6 +36,9 @@ export function TemplatesGrid({ templates }: TemplatesGridProps) {
   // THE ARCHIVED-ITEMS LAW: archived templates are hidden by default and are
   // exactly one click away — never a separate page, never impossible.
   const [showArchived, setShowArchived] = useState(false);
+
+  const editable = useTemplateEditAccess(templates);
+  const { busyId: archivingId, archive, restore } = useTemplateArchive();
 
   const handleNavigate = (id: string, path: string) => {
     // Prevent navigation if already navigating or using a template
@@ -126,6 +132,9 @@ export function TemplatesGrid({ templates }: TemplatesGridProps) {
             useCount={template.use_count}
             isArchived={template.is_archived}
             onUseTemplate={handleUseTemplate}
+            onArchive={editable.has(template.id) ? archive : undefined}
+            onRestore={editable.has(template.id) ? restore : undefined}
+            isArchiving={archivingId === template.id}
             onNavigate={handleNavigate}
             isNavigating={navigatingId === template.id}
             isUsingTemplate={usingTemplateId === template.id}
@@ -160,6 +169,9 @@ export function TemplatesGrid({ templates }: TemplatesGridProps) {
             useCount={template.use_count}
             isArchived
             onUseTemplate={handleUseTemplate}
+            onArchive={editable.has(template.id) ? archive : undefined}
+            onRestore={editable.has(template.id) ? restore : undefined}
+            isArchiving={archivingId === template.id}
             onNavigate={handleNavigate}
             isNavigating={navigatingId === template.id}
             isUsingTemplate={usingTemplateId === template.id}

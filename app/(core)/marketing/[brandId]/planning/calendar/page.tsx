@@ -6,18 +6,11 @@
 // promise (content, social, email and paid publishes on the same timeline) is still
 // tracked as `marketing.calendar` in lib/coming-soon/registry.ts and is shown on the page.
 
-import type { Metadata } from "next";
 import { Suspense } from "react";
 
 import { RecordPageHeader } from "@/features/shell/components/header/templates/RecordPageHeader";
 import { LoadingSurface } from "@/features/marketing/components/shared/MarketingUi";
 import { PrCalendarPage } from "@/features/marketing/pr/calendar/PrCalendarPage";
-
-export const metadata: Metadata = {
-  title: "PR Calendar",
-  description:
-    "The sourced moments worth pitching over the next six months, with pitch windows for every kind of outlet.",
-};
 
 export default function BrandCalendarPage() {
   return (

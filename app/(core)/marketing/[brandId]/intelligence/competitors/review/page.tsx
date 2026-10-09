@@ -5,17 +5,10 @@
 // from the route; the bare `…/competitors` URL is still Run, and a
 // pre-restructure `?view=review` link still lands on this same screen.
 
-import type { Metadata } from "next";
 import { Suspense } from "react";
 
 import { LoadingSurface } from "@/features/marketing/components/shared/MarketingUi";
 import { BrandScopedCompetitors } from "@/features/marketing/competitors/BrandScopedCompetitors";
-
-export const metadata: Metadata = {
-  title: "Competitor review",
-  description:
-    "Rule on the rivals the search found — which of them actually compete with this brand.",
-};
 
 export default function BrandCompetitorReviewPage() {
   return (

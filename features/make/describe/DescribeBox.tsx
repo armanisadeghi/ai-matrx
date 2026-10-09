@@ -52,6 +52,7 @@ import {
   declareDescribeSpec,
   DesignRefused,
   describeVariables,
+  dropOrphanRows,
   findBuiltSpace,
   readExistingTables,
   readDesign,
@@ -201,8 +202,9 @@ export function DescribeBox() {
             mark("check", "doing");
             const { answer, safe, checked } = design;
             // The request key names the template: a second declare for this press updates the same one, never a second.
-            const templateId = await declareDescribeSpec(client, r.organizationId, bindReuses(checked.spec, safe.reuses, tables), stampOf(r.key));
-            commit({ ...r, templateId, notes: [...answer.notes, ...safe.notes, ...checked.autoFixes] });
+            const landed = dropOrphanRows(bindReuses(checked.spec, safe.reuses, tables));
+            const templateId = await declareDescribeSpec(client, r.organizationId, landed.spec, stampOf(r.key));
+            commit({ ...r, templateId, notes: [...answer.notes, ...safe.notes, ...checked.autoFixes, ...landed.notes] });
             mark("check", "done");
             break;
           }

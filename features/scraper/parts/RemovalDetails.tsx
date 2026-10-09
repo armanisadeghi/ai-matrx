@@ -1,17 +1,12 @@
 "use client";
 import { detailsMap, typeMap } from "@/features/scraper/constants";
 import { Checkbox } from "@/features/scraper/reusable/checkbox";
-import { Button } from "@/components/ui/button";
-import React, { useState, useMemo } from "react";
-import { cn } from "@/lib/utils";
+import React, { useState } from "react";
 import {
-  MOBILE_TABLE,
-  MOBILE_TABLE_FROZEN_CELL,
-  MOBILE_TABLE_FROZEN_HEAD,
-} from "@/components/official/mobile-table/mobileTable";
-
-type FilterColumn = "type" | "details" | "remover";
-type SortColumn = "text" | FilterColumn;
+  MatrxDataTable,
+  type MatrxColumnDef,
+  type MatrxDataTableCopyConfig,
+} from "@ai-matrx/design-system/data-table";
 
 type RemovalItem = {
   text: string;
@@ -20,9 +15,67 @@ type RemovalItem = {
   remover: string;
 };
 
+type RemovalRow = RemovalItem & { id: string };
+
 interface RemovalDetailsProps {
   allRemovals: RemovalItem[];
 }
+
+const cleanText = (text: string) => text.replace(/\n+/g, " ").trim();
+
+const display = (value: string, map: Record<string, string>) => map[value] || value;
+const typeLabel = (row: RemovalItem) => display(row.type, typeMap);
+const detailsLabel = (row: RemovalItem) => display(row.details, detailsMap);
+
+const REMOVAL_COLUMNS: MatrxColumnDef<RemovalRow>[] = [
+  {
+    id: "text",
+    header: "Text",
+    accessorFn: (row) => cleanText(row.text),
+    filter: "text",
+    width: 520,
+    frozen: true,
+    cell: (row) => <span className="block truncate">{cleanText(row.text)}</span>,
+  },
+  {
+    id: "type",
+    header: "Type",
+    accessorFn: typeLabel,
+    filter: "select",
+    width: 160,
+  },
+  {
+    id: "details",
+    header: "Details",
+    accessorFn: detailsLabel,
+    filter: "select",
+    width: 160,
+  },
+  {
+    id: "remover",
+    header: "Remover",
+    accessorFn: (row) => row.remover,
+    filter: "select",
+    width: 160,
+  },
+];
+
+const REMOVAL_COPY: MatrxDataTableCopyConfig<RemovalRow> = {
+  label: "Removal",
+  listLabel: "Removals (this view)",
+  location: "Scraper — removal details",
+  rowKind: "scraper-removal",
+  listKind: "scraper-removals",
+  rowDescription: "One piece of text the scraper removed, with why and by what.",
+  listDescription: "The text the scraper removed from a page, as currently shown.",
+  humanRow: (row) =>
+    [
+      `Type: ${typeLabel(row)}`,
+      `Details: ${detailsLabel(row)}`,
+      `Remover: ${row.remover}`,
+      `Text: ${row.text}`,
+    ].join("\n"),
+};
 
 /**
  * Empty-input guard as its OWN component, above the hooked body.
@@ -43,310 +96,34 @@ const RemovalDetails = ({ allRemovals }: RemovalDetailsProps) => {
 };
 
 const RemovalDetailsBody = ({ allRemovals }: RemovalDetailsProps) => {
-  const [selectedItem, setSelectedItem] = useState<RemovalItem | null>(null);
-  const [sortColumn, setSortColumn] = useState<SortColumn>("text");
-  const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
   const [filterBlankText, setFilterBlankText] = useState(true);
-  const [textFilter, setTextFilter] = useState("");
-  const [filterModal, setFilterModal] = useState<FilterColumn | null>(null);
-  const [filters, setFilters] = useState<Record<FilterColumn, Set<string>>>({
-    type: new Set(),
-    details: new Set(),
-    remover: new Set(),
-  });
 
-
-  const cleanText = (text: string) => text.replace(/\n+/g, " ").trim();
-
-  const truncateText = (text: string, maxLength: number) => {
-    if (text.length <= maxLength) return text;
-    return text.slice(0, maxLength) + "...";
-  };
-
-  const handleSort = (column: SortColumn) => {
-    if (sortColumn === column) {
-      setSortDirection(sortDirection === "asc" ? "desc" : "asc");
-    } else {
-      setSortColumn(column);
-      setSortDirection("asc");
-    }
-  };
-
-  const getDisplayValue = (value: string, map: Record<string, string>) =>
-    map[value] || value;
-
-  const uniqueValues = (column: FilterColumn) => {
-    const values = new Set(
-      allRemovals.map((item) =>
-        getDisplayValue(item[column], column === "type" ? typeMap : detailsMap),
-      ),
-    );
-    return Array.from(values);
-  };
-
-  const handleFilterChange = (column: FilterColumn, value: string) => {
-    const newFilters = { ...filters };
-    if (newFilters[column].has(value)) {
-      newFilters[column].delete(value);
-    } else {
-      newFilters[column].add(value);
-    }
-    setFilters(newFilters);
-  };
-
-  const filteredDetails = useMemo(() => {
-    let data = [...allRemovals];
-
-    if (filterBlankText) {
-      data = data.filter((item) => cleanText(item.text).trim() !== "");
-    }
-
-    if (textFilter) {
-      data = data.filter((item) =>
-        cleanText(item.text).toLowerCase().includes(textFilter.toLowerCase()),
-      );
-    }
-
-    if (filters.type.size > 0) {
-      data = data.filter((item) =>
-        filters.type.has(getDisplayValue(item.type, typeMap)),
-      );
-    }
-
-    if (filters.details.size > 0) {
-      data = data.filter((item) =>
-        filters.details.has(getDisplayValue(item.details, detailsMap)),
-      );
-    }
-
-    if (filters.remover.size > 0) {
-      data = data.filter((item) => filters.remover.has(item.remover));
-    }
-
-    return data.sort((a, b) => {
-      const getValue = (item: RemovalItem, col: SortColumn) => {
-        if (col === "text") return cleanText(item.text).toLowerCase();
-        if (col === "remover") return item.remover.toLowerCase();
-        return getDisplayValue(
-          item[col],
-          col === "type" ? typeMap : detailsMap,
-        ).toLowerCase();
-      };
-
-      const valueA = getValue(a, sortColumn);
-      const valueB = getValue(b, sortColumn);
-
-      return sortDirection === "asc"
-        ? valueA.localeCompare(valueB)
-        : valueB.localeCompare(valueA);
-    });
-  }, [
-    allRemovals,
-    filterBlankText,
-    textFilter,
-    filters,
-    sortColumn,
-    sortDirection,
-  ]);
+  const rows: RemovalRow[] = allRemovals
+    .map((item, index) => ({ ...item, id: String(index) }))
+    .filter((item) => !filterBlankText || cleanText(item.text) !== "");
 
   return (
     <div className="h-full w-full flex flex-col p-4">
-      <h3 className="text-lg font-medium mb-4 text-gray-800 dark:text-gray-200">
-        Removal Details
-      </h3>
-
       <div className="mb-4 flex flex-wrap items-center gap-4">
         <Checkbox
           checked={filterBlankText}
           onChange={() => setFilterBlankText(!filterBlankText)}
           label="Filter out blank text"
         />
-        <div className="flex items-center">
-          <label
-            htmlFor="textFilter"
-            className="mr-2 text-gray-800 dark:text-gray-200"
-          >
-            Search text:
-          </label>
-          <input
-            id="textFilter"
-            type="text"
-            value={textFilter}
-            onChange={(e) => setTextFilter(e.target.value)}
-            className="p-1 border border-gray-300 dark:border-gray-600 rounded bg-textured text-gray-800 dark:text-gray-200"
-          />
-        </div>
       </div>
 
-      <div className="w-full overflow-x-auto">
-        <table className={cn("border-collapse sm:table-fixed", MOBILE_TABLE)}>
-          <thead>
-            <tr>
-              <th
-                className={cn("sm:w-9/12 border p-2 text-left cursor-pointer bg-gray-100 dark:bg-gray-700", MOBILE_TABLE_FROZEN_HEAD, "max-sm:min-w-[11rem] max-sm:bg-gray-100 max-sm:dark:bg-gray-700")}
-                onClick={() => handleSort("text")}
-              >
-                Text{" "}
-                {sortColumn === "text" && (
-                  <span className="text-sm">
-                    {sortDirection === "asc" ? "↑" : "↓"}
-                  </span>
-                )}
-              </th>
-              <th
-                className="sm:w-1/12 border p-2 text-left cursor-pointer bg-gray-100 dark:bg-gray-700"
-                onClick={() => handleSort("type")}
-              >
-                Type{" "}
-                {sortColumn === "type" && (
-                  <span className="text-sm">
-                    {sortDirection === "asc" ? "↑" : "↓"}
-                  </span>
-                )}
-                <button
-                  className="ml-2 text-blue-500"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setFilterModal("type");
-                  }}
-                >
-                  Filter
-                </button>
-              </th>
-              <th
-                className="sm:w-1/12 border p-2 text-left cursor-pointer bg-gray-100 dark:bg-gray-700"
-                onClick={() => handleSort("details")}
-              >
-                Details{" "}
-                {sortColumn === "details" && (
-                  <span className="text-sm">
-                    {sortDirection === "asc" ? "↓" : "↑"}
-                  </span>
-                )}
-                <button
-                  className="ml-2 text-blue-500"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setFilterModal("details");
-                  }}
-                >
-                  Filter
-                </button>
-              </th>
-              <th
-                className="sm:w-1/12 border p-2 text-left cursor-pointer bg-gray-100 dark:bg-gray-700"
-                onClick={() => handleSort("remover")}
-              >
-                Remover{" "}
-                {sortColumn === "remover" && (
-                  <span className="text-sm">
-                    {sortDirection === "asc" ? "↑" : "↓"}
-                  </span>
-                )}
-                <button
-                  className="ml-2 text-blue-500"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setFilterModal("remover");
-                  }}
-                >
-                  Filter
-                </button>
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            {filteredDetails.map((item, index) => (
-              <tr
-                key={index}
-                className={`${index % 2 === 0 ? "bg-gray-50 dark:bg-gray-800" : "bg-textured"} hover:bg-gray-100 dark:hover:bg-gray-700`}
-              >
-                <td
-                  className={cn("border p-2 cursor-pointer sm:overflow-hidden sm:text-ellipsis", MOBILE_TABLE_FROZEN_CELL, "max-sm:min-w-[11rem]")}
-                  onClick={() => setSelectedItem(item)}
-                  style={{ whiteSpace: "normal" }}
-                >
-                  {truncateText(cleanText(item.text), 200)}
-                </td>
-                <td className="border p-2 sm:truncate">
-                  {getDisplayValue(item.type, typeMap)}
-                </td>
-                <td className="border p-2 sm:truncate">
-                  {getDisplayValue(item.details, detailsMap)}
-                </td>
-                <td className="border p-2 sm:truncate">{item.remover}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-
-      {selectedItem && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-textured p-4 rounded-md max-w-3xl w-full max-h-[80dvh] overflow-auto">
-            <h2 className="text-xl font-bold mb-2">Full Text</h2>
-            <p>
-              <strong>Type:</strong>{" "}
-              {getDisplayValue(selectedItem.type, typeMap)}
-            </p>
-            <p>
-              <strong>Details:</strong>{" "}
-              {getDisplayValue(selectedItem.details, detailsMap)}
-            </p>
-            <p>
-              <strong>Remover:</strong> {selectedItem.remover}
-            </p>
-            <p>
-              <strong>Text:</strong>
-            </p>
-            <div className="mt-2 p-2 bg-gray-100 dark:bg-gray-700 rounded-md whitespace-pre-wrap">
-              {selectedItem.text}
-            </div>
-            <button
-              className="mt-4 px-4 py-2 bg-blue-500 text-white rounded-md"
-              onClick={() => setSelectedItem(null)}
-            >
-              Close
-            </button>
-          </div>
-        </div>
-      )}
-
-      {filterModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-textured p-4 rounded-md max-w-md w-full">
-            <h2 className="text-xl font-bold mb-2">Filter {filterModal}</h2>
-            <div className="space-y-2 max-h-60 overflow-y-auto">
-              {uniqueValues(filterModal).map((value) => (
-                <Checkbox
-                  key={String(value)}
-                  checked={filters[filterModal].has(value)}
-                  onChange={() => handleFilterChange(filterModal, value)}
-                  label={String(value)}
-                />
-              ))}
-            </div>
-            <div className="mt-4 flex justify-end space-x-2">
-              <Button
-                variant="outline"
-                onClick={() => setFilterModal(null)}
-              >
-                Close
-              </Button>
-              <Button
-                variant="outline"
-                onClick={() => {
-                  const newFilters = { ...filters, [filterModal]: new Set() };
-                  setFilters(newFilters);
-                  setFilterModal(null);
-                }}
-              >
-                Clear
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
+      <MatrxDataTable<RemovalRow>
+        tableId="scraper/removal-details"
+        data={rows}
+        columns={REMOVAL_COLUMNS}
+        getRowId={(row) => row.id}
+        pageSize={0}
+        density="condensed"
+        viewTabs={false}
+        toolbar={{ title: "Removal Details", searchPlaceholder: "Search text" }}
+        copy={REMOVAL_COPY}
+        emptyState={{ title: "No removals match" }}
+      />
     </div>
   );
 };
