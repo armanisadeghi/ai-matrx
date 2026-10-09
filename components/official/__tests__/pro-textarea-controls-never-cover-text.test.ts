@@ -37,7 +37,7 @@ describe("ProTextarea's control cluster sits in a reserved row", () => {
     // Feedback window (page-pass 2026-09-27): className "py-2" came last and
     // tailwind-merge dropped pb-10 — the cluster sat on the last line again.
     const source = readFileSync(path.join(__dirname, "..", "ProTextarea.tsx"), "utf8");
-    const reserve = source.indexOf('"pb-12"');
+    const reserve = source.indexOf('"pb-11"');
     const callerClass = source.lastIndexOf("      className,\n", reserve);
     expect(reserve).toBeGreaterThan(0);
     expect(callerClass).toBeGreaterThan(0);

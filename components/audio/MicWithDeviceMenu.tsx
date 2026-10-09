@@ -22,6 +22,8 @@ import {
 // ~40px pill, where the old pair took two full 44px touch boxes (~90px). The
 // outer padding is equal on both ends so the ink sits centred in the pill
 // (tap-target guard); on a touch screen both ends pad out a little more.
+// The glyphs match the tap buttons beside them (16px mic, 14px chevron at full
+// ink): at 14px/12px-and-70% the row read as three grey dots (Arman, 2026-10-09).
 const SEGMENT =
   "relative z-[1] inline-flex h-full touch-manipulation items-center justify-center transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 disabled:opacity-40 " +
   // Touch: an invisible strip grows each segment's hit area to 44px tall
@@ -81,7 +83,7 @@ export function MicWithDeviceMenu({
     // tap button, so the row is all non-glass (tap-target placement rule 2)
     // and reads as two quiet icons, not a stack of pills.
     <div className="relative mx-[3px] inline-flex h-7 shrink-0 items-center pointer-coarse:h-10">
-      <div className="relative flex h-6 items-stretch rounded-full pointer-coarse:h-9">
+      <div className="relative flex h-7 items-stretch rounded-full pointer-coarse:h-9">
         {isRecording && (
           <>
             <span
@@ -116,9 +118,9 @@ export function MicWithDeviceMenu({
           )}
         >
           {isTranscribing && !isRecording ? (
-            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            <Loader2 className="h-4 w-4 animate-spin" />
           ) : (
-            <Mic className="h-3.5 w-3.5" />
+            <Mic className="h-4 w-4" />
           )}
         </button>
 
@@ -137,7 +139,7 @@ export function MicWithDeviceMenu({
                   "rounded-r-full text-muted-foreground hover:bg-muted/60 hover:text-foreground active:bg-muted-foreground/15",
                 )}
               >
-                <ChevronDown className="h-3 w-3 opacity-70" />
+                <ChevronDown className="h-3.5 w-3.5" />
               </button>
             </PopoverTrigger>
             <PopoverContent

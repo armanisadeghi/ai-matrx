@@ -1283,7 +1283,8 @@ export const ProTextarea = React.forwardRef<
       autoGrow && "resize-none overflow-y-auto",
       // The controls sit in a RESERVED bottom row on every pointer,
       // never over text (proTextareaControlPlacement.ts): one 38px tap
-      // row inset 6px from the corner, so 48px (pb-12) clears it.
+      // row inset 4px from the corner, so 44px (pb-11) clears it — no more
+      // (a 48px blank band under three lines read as wasted space, 2026-10-09).
       "pr-3",
       className,
       // AFTER the consumer's className: a caller's own padding (`py-2`) used
@@ -1294,7 +1295,7 @@ export const ProTextarea = React.forwardRef<
       (hasCoarseControls || onSubmit) &&
         (editor?.singleLine && !onSubmit
           ? "pr-24 pointer-coarse:pr-32"
-          : "pb-12"),
+          : "pb-11"),
     );
     const fieldStyle: React.CSSProperties = {
       ...style,

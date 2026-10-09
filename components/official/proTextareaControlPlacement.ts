@@ -3,8 +3,8 @@
  * text (the ProTextarea twin of `proInputReservedPadding.ts`, page-pass 2026-09-27).
  *
  * A textarea's lines run the full width, so the cluster cannot take a right
- * gutter; it sits in a bottom ROW the field reserves (`pb-12`) on every
- * pointer. Mic, "…" and the submit button share ONE flex row inset 6px from
+ * gutter; it sits in a bottom ROW the field reserves (`pb-11`) on every
+ * pointer. Mic, "…" and the submit button share ONE flex row inset 4px from
  * the corner, so they sit as adjacent tap boxes — no hand-typed offset between
  * them (a 48px offset beside a 38px box left a 10px hole, 2026-10-05).
  */
@@ -26,15 +26,15 @@ export interface ClusterPlacement {
 export const SUBMIT_BUTTON_WIDTH_PX = 38;
 
 export function proTextareaClusterPlacement(hasSubmit: boolean): ClusterPlacement {
-  // One flex row inset 6px from the bottom-right corner: the hover part, then
+  // One flex row inset 4px from the bottom-right corner: the hover part, then
   // the submit button. They are adjacent tap boxes in the SAME row, so the
   // cluster sits exactly one submit box (plus the inset) from the edge.
   return {
     row: "bottom",
-    rightPx: hasSubmit ? SUBMIT_BUTTON_WIDTH_PX + 6 : 6,
+    rightPx: hasSubmit ? SUBMIT_BUTTON_WIDTH_PX + 4 : 4,
     reserved: { fine: ["bottom"], coarse: ["bottom"] },
     submit: hasSubmit ? { row: "bottom", widthPx: SUBMIT_BUTTON_WIDTH_PX } : null,
-    className: "bottom-1.5 right-1.5",
+    className: "bottom-1 right-1",
   };
 }
 
