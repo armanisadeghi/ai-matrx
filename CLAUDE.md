@@ -1,6 +1,6 @@
 # CLAUDE.md — AI Matrx frontend
 
-> **Chat source lives in `aidream/apps/shared/chat` — edit it there.** This app installs `@ai-matrx/chat` from npm (`latest`); there is no in-repo copy (P27, 2026-10-06). Publish a chat fix, then `pnpm up @ai-matrx/chat@latest` here.
+> **Chat source lives in `aidream/apps/shared/chat` — edit it there.** This app installs `@ai-matrx/chat` from npm (`latest`); there is no in-repo copy (P27, 2026-10-06). Publish a chat fix, then `pnpm sync:matrx-packages` here — never a one-package `pnpm up @ai-matrx/<pkg>`: it moves that package's `latest` siblings and leaves the app's copies behind, two versions in one graph (`check:matrx-packages` DUPLICATE).
 
 <!-- nine-laws:start -->
 ## The laws (synced from `common-docs/policies/the-nine-laws.md` — edit there, never here)
