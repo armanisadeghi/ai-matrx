@@ -32,6 +32,7 @@ const ROUTES = [
   ["/marketing/monitoring/tracker-1", "Nt"],
   ["/marketing/operations/capabilities", "Cb"],
   ["/marketing/operations/data-quality", "Dq"],
+  ["/marketing/social", "Sy"],
   ["/marketing/tools", "Tl"],
   ["/marketing/tools/youtube", "Yt"],
   ["/marketing/tools/youtube/videos/video-1", "Yv"],
@@ -48,6 +49,11 @@ const ROUTES = [
   [`${B}/inbox`, "In"],
   [`${B}/settings`, "St"],
   [`${B}/socials`, "Sa"],
+  [`${B}/socials/studio`, "Sk"],
+  [`${B}/socials/outliers`, "Ot"],
+  [`${B}/socials/swipe`, "Sf"],
+  [`${B}/socials/ads`, "Sj"],
+  [`${B}/socials/kpis`, "Kp"],
   // The Content section's home IS the topical map (2026-09-16).
   [`${B}/content`, "Tm"],
   [`${B}/content/map/map-1`, "Mv"],
@@ -150,6 +156,13 @@ describe("getMarketingRouteMetadata", () => {
     expect(
       new Set(canonical.map(([pathname]) => faviconDataUri(pathname))).size,
     ).toBe(canonical.length);
+  });
+
+  it("gives a brand's social account and post detail pages the Accounts identity", () => {
+    const accounts = faviconDataUri(`${B}/socials/accounts`);
+    expect(accounts).toBe(faviconDataUri(`${B}/socials`));
+    expect(faviconDataUri(`${B}/socials/instagram/acct-1`)).toBe(accounts);
+    expect(faviconDataUri(`${B}/socials/post/post-1`)).toBe(accounts);
   });
 
   it("titles competitor sub-pages with the section, not a bare page title", () => {

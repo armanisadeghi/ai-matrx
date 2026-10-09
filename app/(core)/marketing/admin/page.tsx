@@ -246,7 +246,7 @@ const MARKETING_ADMIN_MAP: FeatureAdminMap = {
     },
     {
       url: "/marketing/[brandId]/identity",
-      label: "Brand Home",
+      label: "Brand Identity",
       description:
         "Index of the brand-truth rooms — media, knowledge, offerings, guidelines, audience — each a real route.",
       filePath: "app/(core)/marketing/[brandId]/identity/page.tsx",
@@ -1241,11 +1241,11 @@ const MARKETING_ADMIN_MAP: FeatureAdminMap = {
     },
     {
       url: "/marketing/social",
-      label: "Legacy social",
+      label: "Social roll-up",
       description:
-        "308s to the client roster; Socials is a reserved brand section.",
+        "Agency-plane roll-up: every client's tracked accounts and recent outliers. A brand's own social work is at /marketing/[brandId]/socials.",
       filePath: "app/(core)/marketing/social/page.tsx",
-      status: "Deprecated",
+      status: "Live",
     },
     {
       url: "/marketing/calendar",

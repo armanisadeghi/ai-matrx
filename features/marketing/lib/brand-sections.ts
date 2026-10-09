@@ -22,6 +22,7 @@ export const MARKETING_BRAND_SECTION_GROUPS = [
   "Start",
   "Identity",
   "Properties",
+  "Social",
   "Marketing",
   "Insight",
   "Manage",
@@ -48,6 +49,12 @@ export interface MarketingBrandSection {
    * owns the filesystem directory; `href` completes the address.
    */
   subPath?: string;
+  /**
+   * This sub-routed row also names the section's BARE route and any child path
+   * no sibling row claims (Socials → Accounts owns `/socials` and the account
+   * and post detail pages), for route metadata.
+   */
+  bareRoute?: boolean;
 }
 
 export const MARKETING_BRAND_SECTIONS = [
@@ -63,8 +70,10 @@ export const MARKETING_BRAND_SECTIONS = [
   },
   {
     slug: "identity",
-    name: "Brand Home",
-    titlePrefix: "Brand Home",
+    // Ruling 2026-10-09: the brand's HOME is Overview (the root row, labelled with
+    // the brand's name). This room is the brand's Identity — never a second "home".
+    name: "Identity",
+    titlePrefix: "Brand Identity",
     description:
       "Who this brand is: media and assets today; guides, kit, offerings, and audience as they come home.",
     letter: "Id",
@@ -92,16 +101,70 @@ export const MARKETING_BRAND_SECTIONS = [
   },
   {
     slug: "socials",
-    name: "Socials",
+    name: "Accounts",
     titlePrefix: "Social Accounts",
     description:
-      "Tracked and own social accounts — outliers, swipe file, ads, and KPIs.",
+      "Tracked and own social accounts for this brand — track, compare, and open any account.",
     letter: "Sa",
-    iconName: "Share2",
-    group: "Properties",
-    // The section is live (features/marketing/social); its unbuilt tabs carry
-    // their own registry rows, declared in MARKETING_BRAND_SUBROUTE_PROMISES.
+    iconName: "Users",
+    group: "Social",
     subPath: "accounts",
+    bareRoute: true,
+  },
+  {
+    slug: "socials",
+    name: "Studio",
+    titlePrefix: "Social Studio",
+    description:
+      "The social board — ideas, drafts, and references laid out for this brand.",
+    letter: "Sk",
+    iconName: "LayoutDashboard",
+    group: "Social",
+    subPath: "studio",
+  },
+  {
+    slug: "socials",
+    name: "Outliers",
+    titlePrefix: "Outliers",
+    description:
+      "Posts that beat their account's normal — what is working right now.",
+    letter: "Ot",
+    iconName: "TrendingUp",
+    group: "Social",
+    subPath: "outliers",
+  },
+  {
+    slug: "socials",
+    name: "Swipe file",
+    titlePrefix: "Swipe File",
+    description:
+      "Saved posts and ads worth learning from, with notes and tags.",
+    letter: "Sf",
+    iconName: "BookmarkCheck",
+    group: "Social",
+    subPath: "swipe",
+  },
+  {
+    slug: "socials",
+    name: "Ads",
+    titlePrefix: "Social Ads",
+    description:
+      "Ads the tracked accounts are running, from the platforms' ad libraries.",
+    letter: "Sj",
+    iconName: "Megaphone",
+    group: "Social",
+    subPath: "ads",
+  },
+  {
+    slug: "socials",
+    name: "KPIs",
+    titlePrefix: "Social KPIs",
+    description:
+      "Followers, growth, and goals for the brand's own accounts.",
+    letter: "Kp",
+    iconName: "Target",
+    group: "Social",
+    subPath: "kpis",
   },
   {
     slug: "seo",

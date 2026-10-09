@@ -41,7 +41,7 @@ const LEGACY_SHIM_TOP_LEVEL = new Set([
   "ranks",
   "search-console",
   "sites",
-  "social",
+  // "social" is NOT a shim any more: it is the agency social roll-up (a pillar entry).
 ]);
 
 function topLevelRouteDirs(): string[] {

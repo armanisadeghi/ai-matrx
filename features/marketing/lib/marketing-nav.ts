@@ -377,6 +377,7 @@ export const MARKETING_PILLARS: readonly MarketingNavPillar[] = [
       "Cross-client rank roll-up",
       "Provider cost against ceilings",
       "Cross-channel analytics",
+      "Cross-client social roll-up",
     ],
     entries: [
       {
@@ -399,6 +400,13 @@ export const MARKETING_PILLARS: readonly MarketingNavPillar[] = [
         description:
           "The full Search Console dataset across every client — pick a property and drill in.",
         iconName: "SearchCheck",
+      },
+      {
+        label: "Social",
+        href: marketingRoutes.social(),
+        description:
+          "Every tracked social account and recent outlier across all your clients, in one place.",
+        iconName: "Share2",
       },
       {
         label: "Cost",

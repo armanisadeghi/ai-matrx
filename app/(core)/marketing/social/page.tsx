@@ -1,11 +1,16 @@
-import { permanentRedirect } from "next/navigation";
-import { marketingRoutes } from "@/features/marketing/lib/routes";
+import { SocialReportsSection } from "@/features/marketing/social/components/SocialReportsSection";
 
 /**
- * Legacy flat pillar. Social now lives on the brand, at /marketing/[brand]/socials.
- * Which client's work this is can only be answered by a person, so the shim
- * lands on the client roster rather than guessing a brand.
+ * The agency-plane social roll-up: every client's tracked accounts and recent
+ * outliers. The ONE cross-brand social place (it used to be a card at the foot
+ * of Reports); a brand's own social work lives at /marketing/[brand]/socials.
  */
-export default function MarketingSocialShim() {
-  permanentRedirect(marketingRoutes.brands());
+export default function MarketingSocialPage() {
+  return (
+    <main className="h-full overflow-y-auto bg-textured px-3 pb-6 pt-[calc(var(--shell-header-h)+0.5rem)] sm:px-4">
+      <div className="mx-auto w-full max-w-[1600px]">
+        <SocialReportsSection />
+      </div>
+    </main>
+  );
 }

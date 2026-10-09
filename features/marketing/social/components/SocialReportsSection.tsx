@@ -140,7 +140,7 @@ export function SocialReportsSection() {
   const agency = useAgencySocial();
   const [view, setView] = useState<"accounts" | "outliers">("accounts");
   return (
-    <SectionCard title="Social" action={{ label: "Brands", href: marketingRoutes.home() }}>
+    <SectionCard title="Social" action={{ label: "Brands", href: marketingRoutes.brands() }}>
       <div className="flex flex-col gap-2 p-3">
         <SegmentedControl
           aria-label="Social view"

@@ -24,7 +24,7 @@ import { researchThisHref } from "@/features/research/utils/init-route";
 import { subjectFromBrandProperties } from "@/features/research/utils/subject";
 
 /**
- * Brand Home — who this client IS, as opposed to what it owns or what the
+ * Brand Identity — who this client IS, as opposed to what it owns or what the
  * agency does for it. One room per kind of brand truth; each is a real route,
  * so a room can be linked, shared, and opened by an agent.
  */
@@ -145,7 +145,7 @@ export default async function BrandIdentityPage({
             className="text-base font-semibold text-foreground"
             title="What every website, campaign and agent draws on"
           >
-            {brand.name} · Brand Home
+            {brand.name} · Identity
           </h1>
         </header>
         <div className="grid gap-3 sm:grid-cols-2">
