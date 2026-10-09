@@ -53,24 +53,36 @@ export const SUBJECT_KIND_LABEL: Record<ApprovalSubjectKind, string> = {
   workflow_trigger: "Workflow trigger",
 };
 
-/** chat.user_request.origin_class of the first over-threshold run -> the label people read. */
-export const RUN_ORIGIN_LABEL: Record<string, string> = {
-  human: "Person",
-  child_agent: "Sub-agent",
-  workflow: "Workflow",
+/**
+ * Who started a subject's AGENT-DRIVEN runs (billing.run_approval_drivers, classified by the one
+ * database rule platform.run_driver — Arman 2026-10-08). People's own chats are never counted here.
+ */
+export type RunDriver = "scheduled" | "workflow" | "sub_agent" | "api_mcp" | "test_account" | "system";
+export const RUN_DRIVER_LABEL: Record<RunDriver, string> = {
   scheduled: "Scheduled",
-  api: "API",
+  workflow: "Workflow",
+  sub_agent: "Sub-agent",
+  api_mcp: "API-MCP",
+  test_account: "Test account",
   system: "System",
-  client_auto: "Automatic",
-  unknown: "Unknown",
 };
-export const runOriginLabel = (origin: string | null | undefined): string =>
-  RUN_ORIGIN_LABEL[origin ?? "unknown"] ?? "Unknown";
+export const RUN_DRIVERS = Object.keys(RUN_DRIVER_LABEL) as RunDriver[];
+/** "Test account 834 · Sub-agent 42" — largest first; "—" when no agent-driven run in 30 days. */
+export function startedByLabel(by: Record<RunDriver, number>): string {
+  const parts = RUN_DRIVERS.filter((d) => by[d] > 0)
+    .sort((a, b) => by[b] - by[a])
+    .map((d) => `${RUN_DRIVER_LABEL[d]} ${by[d]}`);
+  return parts.length ? parts.join(" · ") : "—";
+}
 
 export interface SpendApprovalRow {
   id: string;
-  /** How the first over-threshold run was started (raw origin_class; label via runOriginLabel). */
-  first_run_origin: string;
+  /** Agent-driven runs of the last 30 days (never a person's own chat) and their cost. */
+  automated_runs_30d: number;
+  automated_cost_30d: number;
+  /** automated_cost_30d / automated_runs_30d; null with no automated run. */
+  automated_cost_per_run: number | null;
+  started_by: Record<RunDriver, number>;
   subject_kind: ApprovalSubjectKind;
   subject_id: string;
   subject_name: string | null;
@@ -140,18 +152,23 @@ const asStatus = (v: string): ApprovalStatus => (v === "approved" || v === "reje
 const asKind = (v: string): ApprovalSubjectKind => (v in SUBJECT_KIND_LABEL ? (v as ApprovalSubjectKind) : "agent");
 
 export async function fetchSpendApprovals(orgId: string | null): Promise<SpendApprovalRow[]> {
-  const [{ data, error }, origins] = await Promise.all([
+  const [{ data, error }, { data: drivers, error: driversError }] = await Promise.all([
     supabase.schema("billing").rpc("run_approval_list", { p_org_id: orgId ?? undefined }),
-    // The origin column is secondary; a failure leaves it "Unknown" instead of hiding the register.
-    supabase
-      .schema("billing")
-      .rpc("run_approval_origin", { p_org_id: orgId ?? undefined })
-      .then(({ data: o, error: e }) => new Map((e ? [] : (o ?? [])).map((x) => [x.id, x.origin_class]))),
+    supabase.schema("billing").rpc("run_approval_drivers", { p_org_id: orgId ?? undefined }),
   ]);
   if (error) throw pgErrorToError(error);
-  return (data ?? []).map((r) => ({
+  if (driversError) throw pgErrorToError(driversError);
+  const byId = new Map((drivers ?? []).map((d) => [d.id, d]));
+  return (data ?? []).map((r) => {
+    const d = byId.get(r.id);
+    const autoRuns = num(d?.automated_runs_30d);
+    const autoCost = num(d?.automated_cost_30d);
+    return {
     id: r.id,
-    first_run_origin: origins.get(r.id) ?? "unknown",
+    automated_runs_30d: autoRuns,
+    automated_cost_30d: autoCost,
+    automated_cost_per_run: autoRuns > 0 ? autoCost / autoRuns : null,
+    started_by: Object.fromEntries(RUN_DRIVERS.map((k) => [k, num(d?.[k])])) as Record<RunDriver, number>,
     subject_kind: asKind(r.subject_kind),
     subject_id: r.subject_id,
     subject_name: r.subject_name,
@@ -187,7 +204,8 @@ export async function fetchSpendApprovals(orgId: string | null): Promise<SpendAp
     organization_name: r.organization_name,
     organization_is_system: r.organization_is_system === true,
     can_decide: r.can_decide === true,
-  }));
+    };
+  });
 }
 
 export async function decideSpendApproval(

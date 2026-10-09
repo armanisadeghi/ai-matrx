@@ -95,3 +95,18 @@ test("the waiting-count slot has the same width class before and after the count
   expect(slot().textContent).toBe("3");
   expect(width(slot())).toBe(before);
 });
+
+test("the list carries only agent-driven runs: counts, cost, cost per run and who started them", async () => {
+  const { fetchSpendApprovals, startedByLabel } = await import("../spendApprovals");
+  rpc.mockImplementation(async (fn: string) => {
+    if (fn === "run_approval_list") return { data: [{ id: "ap1", subject_kind: "agent", subject_id: "gc", status: "waiting" }], error: null };
+    if (fn === "run_approval_drivers")
+      return { data: [{ id: "ap1", automated_runs_30d: 10, automated_cost_30d: 5, test_account: 8, sub_agent: 2, scheduled: 0, workflow: 0, api_mcp: 0, system: 0 }], error: null };
+    return { data: null, error: null };
+  });
+  const [row] = await fetchSpendApprovals(null);
+  expect(row.automated_runs_30d).toBe(10);
+  expect(row.automated_cost_per_run).toBe(0.5);
+  expect(startedByLabel(row.started_by)).toBe("Test account 8 · Sub-agent 2");
+  expect(rpc.mock.calls.some((c) => c[0] === "run_approval_origin")).toBe(false);
+});

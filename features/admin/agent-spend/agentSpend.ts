@@ -326,7 +326,7 @@ export function agentSpendFlags(row: AgentSpendRow, money: (usd: number) => stri
     flags.push({ id: "huge_context", label: "Huge context", detail: `${formatCount(Math.round(row.avg_input_per_call))} input tokens per call on average`, severity: "warning" });
   }
   if (row.automated_runs > 0) {
-    flags.unshift({ id: "automated", label: "Automated", detail: `${row.automated_runs} of ${row.runs} runs started with nobody pressing a button`, severity: "info" });
+    flags.unshift({ id: "automated", label: "Automated", detail: `${row.automated_runs} of ${row.runs} runs were agent-driven, not a person's own chat`, severity: "info" });
   }
   if (row.unattributed_source) {
     flags.unshift({ id: "unattributed", label: "Unattributed", detail: `Recorded by "${row.unattributed_source}" with no agent or mandate named`, severity: "warning" });

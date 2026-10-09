@@ -7790,6 +7790,21 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      run_approval_drivers: {
+        Args: { p_org_id?: string }
+        Returns: {
+          api_mcp: number
+          automated_cost_30d: number
+          automated_runs_30d: number
+          id: string
+          max_automated_run_cost: number
+          scheduled: number
+          sub_agent: number
+          system: number
+          test_account: number
+          workflow: number
+        }[]
+      }
       run_approval_history: {
         Args: { p_id: string }
         Returns: {

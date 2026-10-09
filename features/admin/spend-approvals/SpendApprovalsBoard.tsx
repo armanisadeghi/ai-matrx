@@ -29,7 +29,7 @@ import {
   SUBJECT_KIND_LABEL,
   decideSpendApproval,
   decideSpendApprovalsBatch,
-  runOriginLabel,
+  startedByLabel,
   fetchSpendApprovalHistory,
   fetchSpendApprovals,
   firstRunHref,
@@ -392,6 +392,17 @@ export function SpendApprovalsBoard({
     },
     ...adminCostColumns<SpendApprovalRow>({ id: "avg_cost_since", label: "Avg cost since", value: (r) => r.avg_cost_since }),
     ...adminCostColumns<SpendApprovalRow>({ id: "max_cost_since", label: "Max cost since", value: (r) => r.max_cost_since }),
+    {
+      id: "automated_runs_30d",
+      accessorKey: "automated_runs_30d",
+      header: "Automated runs (30d)",
+      filter: "number",
+      align: "right",
+      width: 110,
+      cell: (r) => <span className="tabular-nums text-xs">{r.automated_runs_30d}</span>,
+    },
+    ...adminCostColumns<SpendApprovalRow>({ id: "automated_cost_30d", label: "Automated cost (30d)", value: (r) => r.automated_cost_30d }),
+    ...adminCostColumns<SpendApprovalRow>({ id: "automated_cost_per_run", label: "Cost / automated run", value: (r) => r.automated_cost_per_run }),
     ...adminCostColumns<SpendApprovalRow>({ id: "est_monthly_cost", label: "Est./month", value: (r) => r.est_monthly_cost }),
     {
       id: "blocked_runs",
@@ -409,10 +420,10 @@ export function SpendApprovalsBoard({
     {
       id: "started_by",
       header: "Started by",
-      accessorFn: (r) => runOriginLabel(r.first_run_origin),
-      filter: "select",
-      width: 110,
-      cell: (r) => <span className="whitespace-nowrap text-xs">{runOriginLabel(r.first_run_origin)}</span>,
+      accessorFn: (r) => startedByLabel(r.started_by),
+      filter: "text",
+      width: 200,
+      cell: (r) => <span className="block truncate text-xs" title={startedByLabel(r.started_by)}>{startedByLabel(r.started_by)}</span>,
     },
     {
       id: "who",
@@ -526,7 +537,7 @@ export function SpendApprovalsBoard({
             ),
           }}
           toolbar={{
-            title: "Only automated runs are held — people's own chats never are.",
+            title: "People's own chats are never held. Agent and automated runs are.",
             search: true,
             searchPlaceholder: "Search agents, mandates, automations…",
             actions: (
