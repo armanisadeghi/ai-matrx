@@ -29,6 +29,7 @@ import {
 } from "@ai-matrx/rich-content/rich-document/review/applyTargets";
 import {
   chatIds,
+  chatStateOf,
   contentForDestination,
   deriveContentTitle,
   requireAuth,
@@ -157,8 +158,7 @@ function runMapping(ctx: RichDocumentActionContext) {
   }
   const { conversationId } = chatIds(ctx);
   if (!conversationId) return null;
-  const conversation =
-    ctx.getState().conversations?.byConversationId?.[conversationId];
+  const conversation = chatStateOf(ctx, ["conversations"])?.conversations.byConversationId[conversationId];
   if (!conversation?.agentId || !conversation.launchMapping) return null;
   return { agentId: conversation.agentId, ...conversation.launchMapping };
 }

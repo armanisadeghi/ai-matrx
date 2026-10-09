@@ -13,15 +13,15 @@ import {
   resolveContinueInChatConversationId,
 } from "@ai-matrx/chat/agents/components/messages-display/assistant/continue-in-chat";
 import { getEntityInfo } from "@/features/scopes/registry/entityRegistry";
+import { chatStateOf } from "../utils";
 import { getAction, registerAction } from "@ai-matrx/rich-content/rich-document/actions/provider";
 import type { RichDocumentActionContext } from "@ai-matrx/rich-content/rich-document/types";
 
 function continueHref(ctx: RichDocumentActionContext): string | null {
   if (ctx.source.type !== "chat-message") return null;
   const requestId = ctx.source.streamRequestId ?? null;
-  const reserved = requestId
-    ? selectReservedConversationId(requestId)(ctx.getState())
-    : null;
+  const state = chatStateOf(ctx, ["activeRequests"]);
+  const reserved = requestId && state ? selectReservedConversationId(requestId)(state) : null;
   const id = resolveContinueInChatConversationId(
     ctx.source.conversationId,
     reserved,
@@ -65,7 +65,8 @@ registerAction({
       return false;
     }
     const { conversationId, messageId } = ctx.source;
-    const state = ctx.getState();
+    const state = chatStateOf(ctx, ["messages"]);
+    if (!state) return false;
     return (
       selectIsLatestAssistantMessage(conversationId, messageId)(state) &&
       selectRegenerateAnchor(state, conversationId, messageId) !== null

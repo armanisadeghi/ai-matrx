@@ -23,7 +23,7 @@
 
 import { Copy, Link as LinkIcon, Pencil, Pin, Search, Share2 } from "lucide-react";
 import { registerAction } from "@ai-matrx/rich-content/rich-document/actions/provider";
-import { chatIds } from "../utils";
+import { chatIds, chatStateOf } from "../utils";
 import type { RichDocumentActionContext } from "@ai-matrx/rich-content/rich-document/types";
 import {
   canonicalConversationHref,
@@ -50,10 +50,18 @@ function conversationOf(ctx: RichDocumentActionContext): string | null {
   return chatIds(ctx).conversationId;
 }
 
+/** The conversation's title when the host store carries it; the verbs fall back to their own words. */
+function conversationTitle(ctx: RichDocumentActionContext, id: string): string | null {
+  const state = chatStateOf(ctx, ["conversations", "conversationList"]);
+  return state ? conversationTitleFromState(state, id) : null;
+}
+
 const hasConversation = (ctx: RichDocumentActionContext) => Boolean(conversationOf(ctx));
 
 function pinnedCount(ctx: RichDocumentActionContext, conversationId: string): number {
-  return selectConversationMessages(conversationId)(ctx.getState()).filter((m) =>
+  const state = chatStateOf(ctx, ["messages"]);
+  if (!state) return 0;
+  return selectConversationMessages(conversationId)(state).filter((m) =>
     isMessagePinned(m.id),
   ).length;
 }
@@ -127,7 +135,7 @@ registerAction({
   run: (ctx) => {
     ctx.onClose();
     const id = conversationOf(ctx);
-    if (id) shareConversation(ctx.dispatch, id, conversationTitleFromState(ctx.getState(), id));
+    if (id) shareConversation(ctx.dispatch, id, conversationTitle(ctx, id));
   },
 });
 
@@ -162,7 +170,7 @@ registerAction({
   run: (ctx) => {
     ctx.onClose();
     const id = conversationOf(ctx);
-    if (id) openConversationRename(id, conversationTitleFromState(ctx.getState(), id));
+    if (id) openConversationRename(id, conversationTitle(ctx, id));
   },
 });
 

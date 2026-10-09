@@ -50,9 +50,9 @@ describe("appletState — the one answer", () => {
     expect(appletVersionLabel(0)).toBeNull();
   });
 
-  it("Publish / Use it names the public link and every table it creates, before acting", () => {
+  it("Put on the web names the public link and every table it creates, before acting", () => {
     const { title, description } = publishConsequence({ name: "Guest Tracker", slug: "guest-tracker", tablesToMake: ["Podcast Guests"] });
-    expect(title).toBe("Publish Guest Tracker?");
+    expect(title).toBe("Put Guest Tracker on the web?");
     expect(description).toContain("aimatrx.com/applets/guest-tracker");
     expect(description).toContain("Podcast Guests");
   });

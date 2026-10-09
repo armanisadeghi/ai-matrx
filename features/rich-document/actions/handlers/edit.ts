@@ -23,6 +23,7 @@ import { createFullScreenEditorCallbackGroup } from "@/features/overlays/callbac
 import { registerAction } from "@ai-matrx/rich-content/rich-document/actions/provider";
 import {
   chatExtensions,
+  chatStateOf,
   getErrorMessage,
   isChatUserMessage,
   serializeError,
@@ -61,7 +62,7 @@ registerAction({
     const loaded =
       !!target &&
       !!conversationId &&
-      !!ctx.getState().messages?.byConversationId?.[conversationId]?.byId?.[target.messageId];
+      !!chatStateOf(ctx, ["messages"])?.messages.byConversationId[conversationId]?.byId?.[target.messageId];
     return (
       ext.role === "assistant" &&
       !!target &&

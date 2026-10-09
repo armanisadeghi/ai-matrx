@@ -106,6 +106,15 @@ record's own `scope` (`{ entries, shadowDangerousGlobals }`); app-owned modules 
 
 ## Change Log
 
+- 2026-10-09 (lane F2, Applet audit): a failed run shows `run.error.message` — the visitor sentence `@ai-matrx/applets` 0.16 `forVisitor` gives it — never the stream's engineering line; a deleted or misconfigured job offers members of the Applet's organization "Fix this job" (→ Manage). A refused data READ (`announceRefusal(…, "read(<source>)")`) raises `AppletDataRefusedNotice` above the Applet — sign-in that returns here for a visitor, a plain sentence for a member — instead of a toast or a confident empty list. `/api/agent-context-menu` answers a request with no session an empty menu (was a 401 on every guest page). The kind fix-it bar no longer tells a signed-out visitor an `internal` kind is "not registered" (`unreadable` state, captured to the error inspector).
+
+- 2026-10-09 — Lane F1 (typed input never reached the job): a FORM FILLS ITS OWN JOB. `jobRunNames` /
+  `jobValuesNotTaken` (`builder/applet-code-checks.ts`) follow `useJob(alias).run(values)` through a literal, a
+  `useState` state, a stock `FIELDS` list or an `onExecute` helper; `checkBuildAnswer` refuses any name the job
+  does not take, with the job's input names read by `readJobInputs` (`@ai-matrx/applets/catalogue`, ≥0.15) for
+  the catalogue's jobs and the Applet's own. Runtime twin: the package's `useJob` sends an extra box with her
+  message and refuses a form none of whose names the job takes (applets 0.15.0).
+
 - 2026-10-09 — Lane F3 (live UI audit, build page): "Use it" asks WHO can open it — My organization (default:
   `status` published, web switch off → `appletState` "In use") or Anyone with the link (the publication) — through
   `builder/UseAppletDialog.tsx` + `appletAudiencePatch`; Settings › Sharing carries the same choice plus People (the
@@ -120,7 +129,6 @@ record's own `scope` (`{ entries, shadowDangerousGlobals }`); app-owned modules 
   `appletAddressFate` — one word, asked with the server key) instead of a sign-in wall; the maker of a running Applet
   gets `AppletOwnerBar` (Back to AI Matrx · Manage · Change with AI). Pairs with `@ai-matrx/applets` Unreleased
   (a ":id" page is never a tab; the reference stops promising a restore an Applet cannot offer).
-
 
 - 2026-10-08 — Lane AQ: `checkBuildAnswer` refuses a form copied from a `useRow` row on every change
   (`useEffect(…set…, [row])` — a failed save rolled her typing back) and a confirm that says Delete / remove before

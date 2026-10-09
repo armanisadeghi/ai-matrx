@@ -11,7 +11,7 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { inLane, shownToViewer, type AppletListRow } from "../browse/service";
 import { APPLET_COLUMNS } from "../browse/columns";
-import { archiveAppletFromPageSentence, appletState } from "../lib/applet-state";
+import { appletHeaderTransitions, archiveAppletFromPageSentence, appletState } from "../lib/applet-state";
 
 jest.mock("@/utils/supabase/client", () => ({ supabase: {} }));
 const toastSuccess = jest.fn();
@@ -72,6 +72,27 @@ describe("L7 — the row menu opens the Applet's own page", () => {
     expect(src).toContain("href: appletManageHref(row)");
     expect(src).toContain('label: "Continue building"');
     expect(src).not.toContain('label: "Open", icon');
+  });
+});
+
+describe("M1 — the manage header's publication presses follow the audience model", () => {
+  const input = { name: "Reading List", slug: "reading-list" };
+  const targets = (status: string, web: boolean) =>
+    appletHeaderTransitions(appletState({ status, published_to_web: web }), input).map((t) => `${t.target}:${t.label}`);
+  it("on the web: Take off the web leaves it In use; Stop using is the only way back to Draft", () => {
+    expect(targets("published", true)).toEqual(["organization:Take off the web", "draft:Stop using"]);
+    const [off, stop] = appletHeaderTransitions(appletState({ status: "published", published_to_web: true }), input);
+    expect(off?.confirm.description).toContain("Your organization keeps using it");
+    expect(stop?.confirm.description).toContain("goes back to a draft");
+  });
+  it("in use: Put on the web or Stop using; a draft: Put on the web", () => {
+    expect(targets("published", false)).toEqual(["web:Put on the web", "draft:Stop using"]);
+    expect(targets("draft", false)).toEqual(["web:Put on the web"]);
+  });
+  it("every non-primary press shows its name (never an unlabeled glyph)", () => {
+    const src = readFileSync(join(__dirname, "../components/route-header/AppletHeader.tsx"), "utf8");
+    expect(src).toContain("showLabel: !transition.primary");
+    expect(src).not.toContain('"Unpublish"');
   });
 });
 

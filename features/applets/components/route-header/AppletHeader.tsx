@@ -4,6 +4,7 @@ import {
   AppWindow,
   AtSign,
   MessageSquare,
+  CircleStop,
   EyeOff,
   History,
   Play,
@@ -18,13 +19,19 @@ import type { RouteNavItem } from "@/features/shell/components/header/RouteModeN
 import { useState } from "react";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { selectAppById } from "@/features/agents/redux/applets/selectors";
-import { setAppletPublication } from "@/features/agents/redux/applets/thunks";
+import { setAppletAudience, setAppletPublication } from "@/features/agents/redux/applets/thunks";
 import { toast } from "@/lib/toast";
 import { buildRecordReferenceFence } from "@/features/matrx-envelope/recordReference";
 import { copyReferenceFence } from "@/features/matrx-envelope/referenceClipboard";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import type { AppStatus } from "@/features/applets/types";
-import { appletState, publishConsequence } from "@/features/applets/lib/applet-state";
+import { appletHeaderTransitions, appletState, type AppletTransitionTarget } from "@/features/applets/lib/applet-state";
+
+const TRANSITION_ICONS: Record<AppletTransitionTarget, typeof Rocket> = {
+  web: Rocket,
+  organization: EyeOff,
+  draft: CircleStop,
+};
 
 export type AppletHeaderTab =
   "overview" | "run" | "code" | "versions" | "settings";
@@ -67,7 +74,6 @@ export function AppletHeader({
     status: app?.status ?? initialStatus,
     published_to_web: app?.published_to_web ?? initialPublishedToWeb,
   });
-  const isPublished = state.live;
 
   const modes: RouteNavItem[] = [
     { name: "Overview", href: `${basePath}/${appId}`, icon: AppWindow },
@@ -95,45 +101,35 @@ export function AppletHeader({
       }
     },
   });
-  actions.push({
-    label: isPublished ? "Unpublish" : "Publish",
-    icon: isPublished ? EyeOff : Rocket,
-    primary: !isPublished,
-    // Taking an Applet off the web is never an unlabeled glyph (audit M1): the name rides beside it.
-    showLabel: isPublished,
-    disabled: publicationBusy,
-    onPress: async () => {
-      // A publication change reaches strangers, so the click says what it
-      // will do before it happens (the destructive-click rule).
-      const publicUrl = app?.slug ? `aimatrx.com/applets/${app.slug}` : "its public link";
-      const ok = await confirm(
-        isPublished
-          ? {
-              title: `Unpublish ${appName}?`,
-              description: `${publicUrl} stops working for everyone who has it. You can publish it again later.`,
-              confirmLabel: "Unpublish",
-              variant: "destructive",
-            }
-          : { ...publishConsequence({ name: appName, slug: app?.slug }), confirmLabel: "Publish" },
-      );
-      if (!ok) return;
-      setPublicationBusy(true);
-      try {
-        await dispatch(
-          setAppletPublication({ appId, published: !isPublished }),
-        ).unwrap();
-        toast.success(isPublished ? "Applet unpublished." : "Applet published.");
-      } catch (error) {
-        toast.error(
-          error instanceof Error
-            ? `Publication failed: ${error.message}`
-            : "Publication failed.",
-        );
-      } finally {
-        setPublicationBusy(false);
-      }
-    },
-  });
+  // Publication on the audience model (Draft → In use → on the web): taking it off the web leaves it in
+  // use for her organization; only "Stop using" returns it to a draft. Each press is labelled and names
+  // its consequence before it acts (audit M1; `appletHeaderTransitions`).
+  for (const transition of appletHeaderTransitions(state, { name: appName, slug: app?.slug })) {
+    actions.push({
+      label: transition.label,
+      icon: TRANSITION_ICONS[transition.target],
+      primary: transition.primary,
+      showLabel: !transition.primary,
+      disabled: publicationBusy,
+      onPress: async () => {
+        const ok = await confirm(transition.confirm);
+        if (!ok) return;
+        setPublicationBusy(true);
+        try {
+          if (transition.target === "draft") {
+            await dispatch(setAppletPublication({ appId, published: false })).unwrap();
+          } else {
+            await dispatch(setAppletAudience({ appId, audience: transition.target })).unwrap();
+          }
+          toast.success(transition.done);
+        } catch (error) {
+          toast.error(error instanceof Error ? `Not changed: ${error.message}` : "Not changed.");
+        } finally {
+          setPublicationBusy(false);
+        }
+      },
+    });
+  }
 
   return (
     <RecordPageHeader

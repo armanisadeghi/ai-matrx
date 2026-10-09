@@ -130,7 +130,70 @@ export function publishConsequence(input: { name: string; slug: string | null | 
       ? ""
       : ` It first creates ${tables.length === 1 ? "the table" : `${tables.length} tables:`} ${tables.join(", ")}.`;
   return {
-    title: `Publish ${input.name}?`,
+    title: `Put ${input.name} on the web?`,
     description: `Anyone with the link can open it at ${where}, without signing in.${made}`,
   };
+}
+
+/** Where a manage-header press takes the Applet: the web, in use by her organization, or back to a draft. */
+export type AppletTransitionTarget = "web" | "organization" | "draft";
+
+export interface AppletTransition {
+  target: AppletTransitionTarget;
+  label: string;
+  primary: boolean;
+  confirm: { title: string; description: string; confirmLabel: string; variant: "default" | "destructive" };
+  /** What the toast says once it is done. */
+  done: string;
+}
+
+/**
+ * The manage header's publication presses for THIS state, on the audience model (Draft → In use → on the
+ * web). Taking it off the web leaves it IN USE for her organization; only "Stop using" returns it to a
+ * draft — each press names its consequence first (audit M1 + lane F3's audience model).
+ */
+export function appletHeaderTransitions(state: AppletState, input: { name: string; slug: string | null | undefined }): AppletTransition[] {
+  if (state.kind === "archived" || state.kind === "suspended") return [];
+  const url = input.slug ? `aimatrx.com/applets/${input.slug}` : "Its public link";
+  const putOnWeb: AppletTransition = {
+    target: "web",
+    label: "Put on the web",
+    primary: true,
+    confirm: { ...publishConsequence(input), confirmLabel: "Put on the web", variant: "default" },
+    done: "Anyone with the link can open it.",
+  };
+  const stopUsing: AppletTransition = {
+    target: "draft",
+    label: "Stop using",
+    primary: false,
+    confirm: {
+      title: `Stop using ${input.name}?`,
+      description:
+        state.kind === "published"
+          ? `${url} stops working, and it goes back to a draft. Nothing is deleted.`
+          : "It goes back to a draft. Nothing is deleted.",
+      confirmLabel: "Stop using",
+      variant: "destructive",
+    },
+    done: "It is a draft again.",
+  };
+  if (state.kind === "published") {
+    return [
+      {
+        target: "organization",
+        label: "Take off the web",
+        primary: false,
+        confirm: {
+          title: `Take ${input.name} off the web?`,
+          description: `${url} stops working for people outside your organization. Your organization keeps using it.`,
+          confirmLabel: "Take off the web",
+          variant: "destructive",
+        },
+        done: "Only your organization can open it.",
+      },
+      stopUsing,
+    ];
+  }
+  if (state.kind === "in_use") return [putOnWeb, stopUsing];
+  return [putOnWeb];
 }

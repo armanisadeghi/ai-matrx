@@ -28,7 +28,7 @@ import {
 import { toast } from "@/lib/toast";
 import { openOverlay } from "@/lib/redux/slices/overlaySlice";
 import { registerAction } from "@ai-matrx/rich-content/rich-document/actions/provider";
-import { chatIds, getErrorMessage } from "../utils";
+import { chatIds, chatStateOf, getErrorMessage } from "../utils";
 import type { RichDocumentActionContext } from "@ai-matrx/rich-content/rich-document/types";
 import {
   isMessagePinPending,
@@ -130,7 +130,8 @@ registerAction({
     if (!isAssistant(ctx)) return false;
     const { conversationId, messageId } = chatIds(ctx);
     if (!conversationId || !messageId) return false;
-    return selectRegenerateAnchor(ctx.getState(), conversationId, messageId) !== null;
+    const state = chatStateOf(ctx, ["messages"]);
+    return state !== null && selectRegenerateAnchor(state, conversationId, messageId) !== null;
   },
   run: async (ctx) => {
     ctx.onClose();
