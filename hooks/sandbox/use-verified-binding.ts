@@ -104,7 +104,9 @@ export function useVerifiedSandboxBinding(
     (s) => getEffectiveSandboxRef(s, conversationId)?.source ?? null,
   );
 
-  const { data, loading, refetch } = useComputeTargets();
+  // The liveness list is read only when something IS bound: with no box there
+  // is nothing to verify, and an at-rest composer must not ask the server.
+  const { data, loading, refetch } = useComputeTargets({ enabled: rowId !== null });
 
   const ref: VerifiedSandboxRef | null = rowId
     ? {

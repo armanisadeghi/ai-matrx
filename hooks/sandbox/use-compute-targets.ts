@@ -74,11 +74,18 @@ async function loadComputeTargets(): Promise<ComputeTargetListResponse> {
   return (await resp.json()) as ComputeTargetListResponse;
 }
 
-export function useComputeTargets(): UseComputeTargetsResult {
+/**
+ * `enabled: false` reads nothing and listens to nothing — a caller that only
+ * needs the list once something is bound (`useVerifiedSandboxBinding`) passes
+ * it, so an idle composer with no box never asks `/api/compute-targets`.
+ */
+export function useComputeTargets(options?: { enabled?: boolean }): UseComputeTargetsResult {
+  const enabled = options?.enabled !== false;
   const dispatch = useAppDispatch();
-  const read = useStoreRead<ComputeTargetListResponse>(COMPUTE_TARGETS_KEY, loadComputeTargets);
+  const read = useStoreRead<ComputeTargetListResponse>(COMPUTE_TARGETS_KEY, loadComputeTargets, { enabled });
 
   useEffect(() => {
+    if (!enabled) return undefined;
     const onChange = () => {
       void dispatch(ensureStoreRead(COMPUTE_TARGETS_KEY, loadComputeTargets, { force: true }));
     };
@@ -91,7 +98,7 @@ export function useComputeTargets(): UseComputeTargetsResult {
       window.removeEventListener(COMPUTE_TARGETS_CHANGED, onChange);
       window.removeEventListener("focus", onFocus);
     };
-  }, [dispatch]);
+  }, [dispatch, enabled]);
 
   return {
     data: read.data ?? null,
