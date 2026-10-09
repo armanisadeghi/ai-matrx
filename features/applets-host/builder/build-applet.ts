@@ -61,8 +61,13 @@ export function boundTableIds(applet: Pick<BuilderApplet, "sources">): string[] 
 }
 
 /** The tables an answer will make, for the person to see before she presses "Use it". */
-export function tablesToMake(applet: Pick<BuilderApplet, "sources">): { alias: string; name: string; fields: string[] }[] {
-  return applet.sources.flatMap((s) => ("new_table" in s ? [{ alias: s.alias, name: s.new_table.name, fields: s.new_table.fields.map((f) => f.label) }] : []));
+export function tablesToMake(applet: Pick<BuilderApplet, "sources">): { alias: string; name: string; fields: string[]; examples: number }[] {
+  // `examples`: the sample rows she gave in her message, written once when the table is made (F7).
+  return applet.sources.flatMap((s) =>
+    "new_table" in s
+      ? [{ alias: s.alias, name: s.new_table.name, fields: s.new_table.fields.map((f) => f.label), examples: Array.isArray(s.new_table.rows) ? s.new_table.rows.length : 0 }]
+      : [],
+  );
 }
 
 export interface BuildAnswer {

@@ -16,7 +16,7 @@ import { useEffect, useEffectEvent, useRef, useState, useSyncExternalStore } fro
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
-import { readAppletCatalogue } from "@ai-matrx/applets/catalogue";
+import { readAppletCatalogue, readJobInputs } from "@ai-matrx/applets/catalogue";
 import type { HeldWrite } from "@ai-matrx/applets/preview";
 import { storedMandateKey } from "@ai-matrx/agents/mandates";
 import { useHeadlessAgentJson } from "@ai-matrx/chat/agents/hooks/useHeadlessAgentJson";
@@ -181,7 +181,9 @@ export function AppletBuilder({
         const org = current?.organizationId ?? record.organizationId;
         const catalogue = await readAppletCatalogue(client, { organizationId: org, request: entry.text });
         const [{ appletImportProblems }, { checkBuildAnswer }] = await Promise.all([import("@ai-matrx/applets/frame"), import("./check-build-answer")]);
-        const answer = checkBuildAnswer(value, coerceBuildAnswer(value), { organizationId: org, tables: catalogue.tables, importProblems: appletImportProblems });
+        // What each job really takes (F1): a form that fills a job with names it does not declare is refused.
+        const jobInputs = await readJobInputs(client, jobKeysOf(catalogue, current?.applet ?? null, value));
+        const answer = checkBuildAnswer(value, coerceBuildAnswer(value), { organizationId: org, tables: catalogue.tables, importProblems: appletImportProblems, jobInputs });
         await finish(id, entry, answer, current?.applet ?? null, org);
       } catch (err) {
         await failed(id, entry, err);
@@ -344,7 +346,8 @@ export function AppletBuilder({
       const [{ appletImportProblems }, { checkBuildAnswer }] = await Promise.all([import("@ai-matrx/applets/frame"), import("./check-build-answer")]);
       stepTo("Starting the builder");
       let attached: Promise<void> = Promise.resolve();
-      const check = (v: unknown) => checkBuildAnswer(v, coerceBuildAnswer(v), { organizationId: runOrg, tables: catalogue.tables, importProblems: appletImportProblems });
+      const jobInputs = await readJobInputs(client, jobKeysOf(catalogue, current?.applet ?? null, null));
+      const check = (v: unknown) => checkBuildAnswer(v, coerceBuildAnswer(v), { organizationId: runOrg, tables: catalogue.tables, importProblems: appletImportProblems, jobInputs });
       const onConversation = (cid: string) => {
         entry.conversation_id = cid;
         attached = session.running(record.id, entry.id, cid).catch((err) => console.error("[applet-build] could not record the run", err));
@@ -566,6 +569,11 @@ export function AppletBuilder({
                     <span className="truncate text-muted-foreground" title={t.fields.join(", ")}>
                       {t.fields.join(", ")}
                     </span>
+                    {t.examples ? (
+                      <span className="shrink-0 text-muted-foreground" data-applet-example-rows="">
+                        {t.examples === 1 ? "+ 1 from your example" : `+ ${t.examples} from your example`}
+                      </span>
+                    ) : null}
                   </div>
                 ))}
               </div>
