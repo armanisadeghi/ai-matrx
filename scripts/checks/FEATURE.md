@@ -22,6 +22,16 @@ commit (WARNING); anything else (blocks that differ under one key, a conflict
 marker, JSON that does not parse) stops the release before the push (ERROR).
 `scripts/sync-main.py` runs the same guard before every push to `main`.
 
+**Its twin: a lockfile Vercel's postinstall refuses** (2026-10-09, v0.4.3061). A
+lockfile that parses but holds two versions of one `@ai-matrx` package fails the
+postinstall `check-matrx-packages.mjs --duplicates` on every project. Step 7 runs
+that exact check on the release tree with no `node_modules`
+(`scripts/lockfile-twins.sh`, ~1 s clean): twins are remedied lockfile-only
+(`pnpm update -r "@ai-matrx/*" --depth Infinity`, ~15 s) inside the release commit
+(WARNING, naming every version moved); twins it cannot collapse stop the release
+(ERROR). `sync-main.py` `guard_twins()` remedies + commits before every push, and
+refuses only a push that newly adds unremediable twins.
+
 ## The ship path (`scripts/release.sh`, `RELEASE_PHASE=ship`)
 
 Does ONLY what makes the build, in this order:
@@ -231,6 +241,13 @@ Shrink-only census (ALC-20) of raw clipboard, hand-built downloads, direct forma
   replays the incident: RED on 349d36738d, GREEN on af5b5a1e62; it also catches the v0.4.2990 build
   failure (`@ai-matrx/kit/json-extract` absent from the locked kit). ~2 min. Never blocks. Same day:
   the after phase now runs in its own session (see "The after phase").
+- 2026-10-09 — THE TWINS GUARD. v0.4.3061 (dpl_DGstANHmCe1CyWUAAVpjFPynxQik) failed at install:
+  commit 31b02bc6b3 adopted `@ai-matrx/meet` 0.11.29 by hand and reached main by plain pull + push with
+  design-system 0.86.26 + 0.86.27 locked; release.sh only checked the lockfile parses. New
+  `scripts/lockfile-twins.sh` (judge the committed lockfile as Vercel does, remedy lockfile-only), wired
+  into `release.sh` `ship_guard_twins` and `sync-main.py` `guard_twins()`. Tests:
+  `test-release-ship-path.sh` releases 7–8 (red against the previous release.sh, green now) and
+  `test_sync_main_twins_guard.py` (in `check:lockfile-keys:self-test`).
 - 2026-10-08 — THE LOCKFILE GUARD. v0.4.3013 failed on all four Vercel projects with
   `ERR_PNPM_BROKEN_LOCKFILE ... duplicated mapping key (1372:3)`: merge 406bfce877 kept two identical
   `'@ai-matrx/records@0.84.4':` blocks. `scripts/check-lockfile-keys.py` (`pnpm check:lockfile-keys`,

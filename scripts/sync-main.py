@@ -58,6 +58,7 @@ import glob
 import json
 import os
 import re
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -1797,6 +1798,61 @@ def guard_lockfiles():
     return repaired
 
 
+# ── THE TWINS GUARD (2026-10-09) ────────────────────────────────────────────────────────────
+# v0.4.3061 failed on every Vercel project: the lockfile on main held @ai-matrx/design-system
+# 0.86.26 AND 0.86.27 (commit 31b02bc6b3 adopted meet 0.11.29 by hand), and the postinstall
+# `check-matrx-packages.mjs --duplicates` refuses two versions of one package. A lockfile like that
+# also fails `pnpm install` for every agent who pulls it. Right before every push, HEAD's
+# pnpm-lock.yaml is judged exactly as a fresh install sees it (scripts/lockfile-twins.sh: no
+# node_modules), twins are remedied lockfile-only and committed, and a lockfile this push would
+# newly break is not pushed. Twins already on origin/main are announced, never a stop: refusing
+# this push would not remove them, and release.sh's own twins guard keeps them out of a release.
+def guard_twins():
+    """Remedy @ai-matrx twins in HEAD's root pnpm-lock.yaml; die only when this push adds them."""
+    helper = os.path.join(os.path.dirname(os.path.abspath(__file__)), "lockfile-twins.sh")
+    if not os.path.isfile(helper) or not blob_at("HEAD", "pnpm-lock.yaml"):
+        return False
+    out = os.path.join(tempfile.mkdtemp(), "pnpm-lock.yaml")
+
+    def judge(rev):
+        try:
+            r = subprocess.run(["bash", helper, rev, "--out", out], capture_output=True, text=True, timeout=900)
+            return r.returncode, r.stdout.strip(), r.stderr.strip()
+        except (OSError, subprocess.TimeoutExpired) as e:
+            return 2, "", str(e)
+
+    rc, moved, err = judge("HEAD")
+    if rc == 0:
+        return False
+    if rc == 2:
+        say("TWINS GUARD could not judge pnpm-lock.yaml (%s) — not checked before push." % (err.splitlines() or ["?"])[-1])
+        return False
+    if rc == 3:
+        _, head_text, _ = git("show", "HEAD:pnpm-lock.yaml", check=False)
+        try:
+            with open("pnpm-lock.yaml", encoding="utf-8", newline="") as f:
+                on_disk = f.read()
+        except OSError:
+            on_disk = None
+        if on_disk == head_text:
+            shutil.copyfile(out, "pnpm-lock.yaml")
+            git("commit", "--no-verify", "-q", "-m",
+                "deps: one version of every @ai-matrx package in pnpm-lock.yaml (sync-main twins guard)",
+                "--only", "--", "pnpm-lock.yaml")
+            say("LOCKFILE TWINS REMEDIED and committed (%s). Run `pnpm install` here to match node_modules." % moved)
+            return True
+        err = "remediable, but another writer changed pnpm-lock.yaml on disk mid-sync"
+    rc_remote, _, _ = judge("%s/%s" % (REMOTE, BRANCH))
+    if rc_remote in (1, 3):
+        say("LOCKFILE TWINS already on %s/%s, not remedied here (%s). release.sh remedies them inside the "
+            "release; fix main with `pnpm sync:matrx-packages` and commit the lockfile." % (REMOTE, BRANCH, err.splitlines()[-1] if err else "?"))
+        return False
+    die("NOT PUSHED — pnpm-lock.yaml in HEAD holds two versions of one @ai-matrx package, which fails "
+        "`pnpm install` everywhere (the postinstall check-matrx-packages.mjs --duplicates) and every "
+        "Vercel build, and it could not be remedied:\n%s\nRun `pnpm sync:matrx-packages`, commit the "
+        "lockfile, and sync again. Everything else is committed locally; nothing is lost." % err)
+
+
 def report(fixed, docs, held, headline):
     say(headline + ": %d auto-fixed, %d docs/comments flagged, %d held" % (len(fixed), len(docs), len(held)))
     for p in fixed:
@@ -1919,6 +1975,7 @@ def main():
                 say("re-sweeping the %d held file(s) against the packages just installed..." % len(SWEEP_HELD))
                 total_local += commit_all()
         guard_lockfiles()   # after the sweep, the merge and the package update: what is about to be pushed
+        guard_twins()       # the same lockfile, judged as Vercel's postinstall judges it
         if not push:
             break
         rc, _, err = git("push", "-q", REMOTE, "HEAD:%s" % BRANCH, check=False)

@@ -236,10 +236,10 @@ git fetch -q origin
 echo "release ship path — the twins guard"
 check "remediable twins still ship a release"     '[[ $STATUS7 -eq 0 ]] && [[ "$(git log -1 --format=%s origin/main)" == release:* ]]'
 check "the released lockfile passes the postinstall check" 'mkdir -p "$SANDBOX/rel" && git show origin/main:pnpm-lock.yaml > "$SANDBOX/rel/pnpm-lock.yaml" && node scripts/check-matrx-packages.mjs --duplicates --root "$SANDBOX/rel" >/dev/null 2>&1'
-check "the remedy ran lockfile-only over @ai-matrx/*" 'grep -q "update -r @ai-matrx/\* --depth Infinity --lockfile-only" "$SANDBOX/pnpm-calls"'
+check "the remedy ran lockfile-only over @ai-matrx/*" 'grep -q "update -r @ai-matrx/\* --depth Infinity --lockfile-only" "$SANDBOX/pnpm-calls" 2>/dev/null'
 check "the remedy is a Lockfile WARNING"          'grep -q "WARNING.*Lockfile.*two versions of one @ai-matrx package.*remedied" "$SANDBOX/out7"'
 rm -f "$SANDBOX/pnpm-can-remedy"
-( cd "$SANDBOX/other" && git pull -q origin main && twin_lock 0.86.26 0.86.27 > pnpm-lock.yaml \
+( cd "$SANDBOX/other" && git pull -q origin main && twin_lock 0.86.28 0.86.29 > pnpm-lock.yaml \
     && git add -A && git -c user.name=t -c user.email=t@t commit -qm "twins again" && git push -q origin main )
 BEFORE8=$(git ls-remote origin refs/heads/main | cut -f1)
 set +e

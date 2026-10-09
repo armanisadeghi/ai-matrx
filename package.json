@@ -674,7 +674,7 @@
     "test:sync-main-packages": "python3 scripts/test_sync_main_sweep_hold.py && python3 scripts/test_sync_main_package_adoption.py",
     "check:matrx-lockfile": "node scripts/check-matrx-lockfile.mjs",
     "check:lockfile-keys": "python3 scripts/check-lockfile-keys.py",
-    "check:lockfile-keys:self-test": "python3 scripts/check-lockfile-keys.py --self-test && python3 scripts/test_sync_main_lockfile_guard.py",
+    "check:lockfile-keys:self-test": "python3 scripts/check-lockfile-keys.py --self-test && python3 scripts/test_sync_main_lockfile_guard.py && python3 scripts/test_sync_main_twins_guard.py",
     "check:matrx-lockfile:self-test": "node scripts/check-matrx-lockfile.mjs --self-test",
     "check:package-twins": "node scripts/check-package-twins.mjs",
     "check:client-door-reexports": "node scripts/client-door-reexports/check.mjs",
