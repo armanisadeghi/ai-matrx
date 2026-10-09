@@ -46,6 +46,7 @@ import {
   PenLine,
   UserCheck,
   Server,
+  CalendarClock,
 } from "lucide-react";
 import { Chrome } from "@/components/icons/brand-icons";
 import Placeholder from "./tabs/PlaceholderTab";
@@ -96,6 +97,7 @@ import VoiceMicTab from "./tabs/VoiceMicTab";
 import MemoryTab from "./tabs/MemoryTab";
 import ConversationFiltersTab from "./tabs/ConversationFiltersTab";
 import ListsTab from "./tabs/ListsTab";
+import CalendarLinksTab from "./tabs/CalendarLinksTab";
 import NotesTab from "./tabs/NotesTab";
 import SourceLibrarySettingsTab from "@/features/source-library/settings/SourceLibrarySettingsTab";
 import type { SettingsTabDef, ResolvedSettingsTab } from "./types";
@@ -207,6 +209,16 @@ export const settingsRegistry: SettingsTabDef[] = [
     ],
     component: ListsTab,
     persistence: "synced",
+  },
+  {
+    id: "general.calendarLinks",
+    label: "Calendar links",
+    icon: CalendarClock,
+    parentId: "general",
+    description: "Views you subscribed to in Apple or Google Calendar.",
+    searchKeywords: ["calendar", "ics", "subscribe", "webcal", "google calendar", "apple calendar", "feed", "link"],
+    component: CalendarLinksTab,
+    persistence: "server",
   },
   {
     id: "general.system",

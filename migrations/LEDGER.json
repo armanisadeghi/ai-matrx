@@ -1,6 +1,6 @@
 {
   "note": "Checked-in snapshot of public._schema_migrations for the files under migrations/campaign and migrations/inverse. Written by `pnpm db:apply` on every successful production apply and refreshed whole by the nightly catch-up. Never hand-edited: a self-written checksum is a claim nobody can check. Guard: pnpm check:ledgered-files-unedited.",
-  "generated_at": "2026-10-09T05:42:56.639Z",
+  "generated_at": "2026-10-09T05:51:19.879Z",
   "files": {
     "migrations/campaign/a_chunk_is_the_size_the_client_door_can_actually_carry.sql": {
       "source": "matrx-frontend",
@@ -3914,6 +3914,18 @@
       "checksum": "1c79a9a919063403780a9e98ee77fe58a99cc16289207ef5df2b91b039cc1c93",
       "applied_at": "2026-10-09 05:26:37.621332+00"
     },
+    "migrations/campaign/hotdoors7_e_own_off_switch_and_no_silent_hide.sql": {
+      "source": "matrx-frontend",
+      "filename": "hotdoors7_e_own_off_switch_and_no_silent_hide.sql",
+      "checksum": "f9137eabfca3f6528dfce17cffd89713fe14c0537172d80f4ffc45813ca27392",
+      "applied_at": "2026-10-09 05:51:18.31499+00"
+    },
+    "migrations/campaign/hotdoors7_f_the_memo_sweep_asks_the_template_shortcut.sql": {
+      "source": "matrx-frontend",
+      "filename": "hotdoors7_f_the_memo_sweep_asks_the_template_shortcut.sql",
+      "checksum": "b2ea87fd0c58ab159eafa12fd1a90baf2a5502200f993770a117385e8a9e2a8c",
+      "applied_at": "2026-10-09 05:49:26.481289+00"
+    },
     "migrations/campaign/hotdoors_a_the_list_filter_inlines_and_a_page_walks_once.sql": {
       "source": "matrx-frontend",
       "filename": "hotdoors_a_the_list_filter_inlines_and_a_page_walks_once.sql",
@@ -5095,6 +5107,12 @@
       "filename": "notionsmall2_c_in_days_must_be_a_number.sql",
       "checksum": "d7ebe367eec7b7cbd065aa8fafd1c5ad5c1213611e7a3414b41f1d31294c7b4a",
       "applied_at": "2026-10-09 05:42:55.442549+00"
+    },
+    "migrations/campaign/notionsmall2_d_a_reminder_opens_its_row.sql": {
+      "source": "matrx-frontend",
+      "filename": "notionsmall2_d_a_reminder_opens_its_row.sql",
+      "checksum": "215b953ea14e884e64d00a5115c2d6f91fe10ba8e239f122e959e936612460ea",
+      "applied_at": "2026-10-09 05:45:07.886474+00"
     },
     "migrations/campaign/olderdoors_a_moved_older_table_reads_marked_and_refuses_writes.sql": {
       "source": "matrx-frontend",
