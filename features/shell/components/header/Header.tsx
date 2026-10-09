@@ -2,7 +2,7 @@ import HamburgerButton from "./header-left-menu/HamburgerButton";
 import { HeaderControlSet } from "./HeaderControlSet";
 import { HeaderCrowdingGuard } from "./HeaderCrowdingGuard";
 import ShellChatToggle from "./ShellChatToggle";
-import { GuestPhoneBrand, GuestPhoneSignIn } from "./GuestPhoneHeader";
+import { GuestPhoneBrand, GuestPhoneSignIn } from "./GuestHeader";
 
 interface HeaderProps {
   isAuthenticated: boolean;
