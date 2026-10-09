@@ -64,6 +64,7 @@ function makeQuery(withCount: boolean) {
   const query: Record<string, unknown> = {
     order: () => query,
     is: () => query,
+    eq: () => query,
     range: (f: number, t: number) => {
       requestedRanges.push({ from: f, to: t });
       from = f;

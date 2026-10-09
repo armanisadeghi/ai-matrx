@@ -65,6 +65,7 @@ import { scopesActions } from "@/features/scopes/redux/scopesSlice";
 import { contextValuesActions } from "@/features/scopes/redux/contextValuesSlice";
 import { clearUserAuth } from "@/lib/redux/slices/userAuthSlice";
 import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
+import { whenLateIdle } from "@/lib/boot/lateIdle";
 import { mediaFilesClient } from "@/features/files/media-client/client";
 import {
   ACTIVITY_RECHECK_THROTTLE_MS,
@@ -231,15 +232,28 @@ export default function AuthSessionWatcher() {
   // when the selection arrives (or changes) covers a bootstrap slower than
   // that wait and an in-session organization switch.
   const organizationId = useAppSelector(selectOrganizationId);
+  const filesSessionLateRef = useRef(false);
   useEffect(() => {
     if (!bootedIdRef.current && userAuthId) {
       bootedIdRef.current = userAuthId;
     }
     if (!userAuthId) return;
-    // Establish the durable-file-URL session cookie as soon as this tab has
-    // an authenticated identity (app load with an existing session). Fire
-    // and forget — private media renders retry via force on error.
-    void mediaFilesClient.ensureSession();
+    // Establish the durable-file-URL session cookie (POST /files/session on both hosts) once
+    // this tab has an authenticated identity. At app load it waits for the late idle tier —
+    // nothing at first paint needs it: a private media render that loads before it recovers
+    // through `recoverLoadError` → `ensureSession({ force: true })`. A later identity or
+    // organization change mints at once. Fire and forget.
+    if (filesSessionLateRef.current) {
+      void mediaFilesClient.ensureSession();
+      return;
+    }
+    const controller = new AbortController();
+    void whenLateIdle(undefined, controller.signal).then((ok) => {
+      if (!ok) return;
+      filesSessionLateRef.current = true;
+      void mediaFilesClient.ensureSession();
+    });
+    return () => controller.abort();
   }, [userAuthId, organizationId]);
 
   // Mirrors of the overlay state for callbacks that must not re-subscribe.

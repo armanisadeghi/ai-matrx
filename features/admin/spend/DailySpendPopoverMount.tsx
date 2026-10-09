@@ -39,7 +39,7 @@ const OVERLAY_ID = "dailySpendWindow";
 
 export function DailySpendPopoverMount(): null {
   const isSuperAdmin = useAppSelector(selectIsSuperAdmin);
-  const { knobs, loading, error } = useSpendPopoverKnobs();
+  const { knobs, loading, error } = useSpendPopoverKnobs({ enabled: isSuperAdmin });
   const openWindow = useOpenDailySpendWindow();
   const pathname = usePathname();
   const raised = useRef(false);

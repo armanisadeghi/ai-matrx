@@ -28,6 +28,7 @@ import {
   selectOrganizationName,
 } from "@/lib/redux/slices/appContextSlice";
 import { useNeedsYou } from "@/features/capture-ladder/useNeedsYou";
+import { useLateIdleReady } from "@/lib/boot/lateIdle";
 import { produceNeedsYouAssist } from "@/features/capture-ladder/needsYouAssist";
 
 export function NeedsYouAssistProducer(): null {
@@ -35,7 +36,9 @@ export function NeedsYouAssistProducer(): null {
   const userId = useAppSelector(selectUserId);
   const organizationId = useAppSelector(selectOrganizationId);
   const organizationName = useAppSelector(selectOrganizationName);
-  const { state, handoffs } = useNeedsYou();
+  // An assist nobody is waiting for: the queue is read in the late tier, never at startup.
+  const late = useLateIdleReady();
+  const { state, handoffs } = useNeedsYou({ enabled: late });
 
   // One sweep in flight at a time, and only when the queue actually changed.
   // Without this the poll floor would re-emit the same row every minute,

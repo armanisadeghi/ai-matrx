@@ -25,7 +25,7 @@
  * which is in the sidebar (THE DOOR LAW).
  */
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import {
   BellOff,
@@ -56,6 +56,7 @@ import {
 import { useIsMobile } from "@ai-matrx/kit/media-query";
 import { toast } from "@/lib/toast";
 import { cn } from "@/lib/utils";
+import { useLateIdleReady } from "@/lib/boot/lateIdle";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import {
   selectAccessToken,
@@ -82,6 +83,9 @@ import {
   QUIET_WINDOWS,
   type QuietWindowKey,
 } from "../quiet";
+
+/** A window-focus re-read of the person's assists happens at most this often. */
+const ASSISTS_FOCUS_REFETCH_MS = 5 * 60_000;
 
 export default function AssistsDock() {
   const dispatch = useAppDispatch();
@@ -111,15 +115,24 @@ export default function AssistsDock() {
     !isMobile,
   );
 
+  // Assists are informational: the first read waits for the late tier (well after paint), and a
+  // window-focus re-read happens at most once per ASSISTS_FOCUS_REFETCH_MS.
+  const lateReady = useLateIdleReady();
+  const lastReadAt = useRef(0);
   useEffect(() => {
-    if (!authReady || !userId || !accessToken) return;
+    if (!authReady || !userId || !accessToken || !lateReady) return;
     if (!loaded) {
+      lastReadAt.current = Date.now();
       void dispatch(fetchMyAssists({ userId }));
     }
-    const onFocus = () => void dispatch(fetchMyAssists({ userId }));
+    const onFocus = () => {
+      if (Date.now() - lastReadAt.current < ASSISTS_FOCUS_REFETCH_MS) return;
+      lastReadAt.current = Date.now();
+      void dispatch(fetchMyAssists({ userId }));
+    };
     window.addEventListener("focus", onFocus);
     return () => window.removeEventListener("focus", onFocus);
-  }, [dispatch, authReady, userId, accessToken, loaded]);
+  }, [dispatch, authReady, userId, accessToken, loaded, lateReady]);
 
   useEffect(() => {
     if (!loaded || !preferencesReady) return;

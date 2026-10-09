@@ -20,7 +20,8 @@ export function LinkMenuItem({
   const Icon = getMenuIcon(icon);
   return (
     <MenuItemCloseLabel>
-      <AppLink href={href} className={cn(MENU_ITEM_CLASS, className)}>
+      {/* A menu item sits in a menu that is mounted (hidden) on every page: never prefetch it. */}
+      <AppLink prefetch={false} href={href} className={cn(MENU_ITEM_CLASS, className)}>
         <Icon />
         {label}
       </AppLink>

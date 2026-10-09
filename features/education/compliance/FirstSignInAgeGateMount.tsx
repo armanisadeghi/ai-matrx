@@ -48,7 +48,7 @@
 
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
 import { coppaService } from "./coppaService";
 import { useAiComplianceGate } from "./useAiComplianceGate";
@@ -75,21 +75,31 @@ function markAskedThisSession(): void {
 }
 
 export function FirstSignInAgeGateMount() {
-  const gate = useAiComplianceGate({ declarationVariant: "first_run" });
-  const { loading, gate: verdict, promptDeclarationIfNeeded, reload } = gate;
   const pathname = usePathname();
   // The departed-member portal — see the header block. Deferred, never waived.
   const onPortal = pathname === "/portal" || pathname?.startsWith("/portal/");
+  // Asked already this tab session (or on the portal): the `edu_coppa_gate` read is never made.
+  const [askedAtMount] = useState(alreadyAskedThisSession);
+  const gate = useAiComplianceGate({
+    declarationVariant: "first_run",
+    enabled: !onPortal && !askedAtMount,
+  });
+  const { loading, gate: verdict, promptDeclarationIfNeeded, reload } = gate;
   // The silent signup-metadata apply is tried at most once per mount.
   const triedMetaApply = useRef(false);
 
   useEffect(() => {
     if (onPortal) return;
     if (loading) return;
-    // Signed-in AND undeclared is the only case this mount owns. A declared
-    // account, a guest, or a still-loading gate is a no-op.
-    if (!verdict || verdict.ageBand !== null || verdict.reason !== "age_undeclared")
+    // A declared band never goes back to undeclared: nothing is left to ask this session, so a
+    // reload in this tab does not read the gate again.
+    if (verdict && verdict.ageBand !== null) {
+      markAskedThisSession();
       return;
+    }
+    // Signed-in AND undeclared is the only case this mount owns. A guest or a
+    // still-loading gate is a no-op.
+    if (!verdict || verdict.reason !== "age_undeclared") return;
     if (alreadyAskedThisSession()) return;
 
     let cancelled = false;

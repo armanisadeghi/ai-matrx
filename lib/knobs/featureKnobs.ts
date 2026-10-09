@@ -12,8 +12,9 @@
 //   - Reads are cached for 60s, TTL-only. An admin writes straight to Postgres
 //     from the browser, so there is no invalidation channel to build (or forget
 //     to fire) and the value is live within a minute, everywhere.
-//   - One fetch per window, shared: concurrent callers await the same promise,
-//     so a kit fan-out asking eight generators for their knobs costs ONE query.
+//   - One fetch per FEATURE per window, shared: concurrent callers await the same
+//     promise, so a kit fan-out asking eight generators for their knobs costs ONE
+//     query — and never the whole catalogue.
 
 import { readAllRows } from "@ai-matrx/data/db";
 
@@ -38,25 +39,28 @@ export function __setFeatureKnobPageSizeForTests(rows: number): void {
 
 type KnobValue = unknown;
 
-let cache: Map<string, KnobValue> | null = null;
-let cachedAt = 0;
-let inFlight: Promise<Map<string, KnobValue>> | null = null;
+/**
+ * ONE FEATURE AT A TIME (2026-10-09, startup reads). Every knob read used to page the WHOLE
+ * catalogue (~3,500 rows, four requests) — on every signed-in page load, because a single
+ * startup read (the workspace wait, the spend popover) asked for one knob. A read now fetches only
+ * its own feature's rows: one small request, cached per feature for the same 60 s window, shared by
+ * concurrent callers of that feature. Still paged through `readAllRows` — a feature is a list we
+ * treat as complete, and a miss RAISES.
+ */
+type FeatureWindow = { at: number; map: Map<string, KnobValue> };
 
-function addr(feature: string, key: string): string {
-  return `${feature} ${key}`;
-}
+const windows = new Map<string, FeatureWindow>();
+const inFlight = new Map<string, Promise<Map<string, KnobValue>>>();
 
-async function loadAll(): Promise<Map<string, KnobValue>> {
+async function loadFeature(feature: string): Promise<Map<string, KnobValue>> {
   const supabase = createClient();
-  // THE CATALOGUE IS A LIST WE TREAT AS COMPLETE. Every read here is an
-  // existence check whose miss RAISES, and `platform.feature_knob` is already
-  // ~870 rows against PostgREST's 1000-row cap. A bare `.select()` would not
-  // error at the cap — it returns a successful-looking short array — so the
-  // 1001st knob would make its readers report `Missing feature knob` for a row
-  // sitting in the table. `(feature, key)` is the primary key, so ordering on
-  // the pair is the stable total order paging requires.
+  // THE FEATURE'S ROWS ARE A LIST WE TREAT AS COMPLETE. Every read here is an
+  // existence check whose miss RAISES. A bare `.select()` would not error at
+  // PostgREST's cap — it returns a successful-looking short array — so the
+  // knob past it would report `Missing feature knob` for a row sitting in the
+  // table. `(feature, key)` is the primary key, so ordering on key within one
+  // feature is the stable total order paging requires.
   const rows = await readAllRows<{
-    feature: string;
     key: string;
     value: KnobValue;
   }>(
@@ -64,7 +68,8 @@ async function loadAll(): Promise<Map<string, KnobValue>> {
       supabase
         .schema("platform")
         .from("feature_knob")
-        .select("feature, key, value", { count: "exact" })
+        .select("key, value", { count: "exact" })
+        .eq("feature", feature)
         // archived-items-law-exempt: this is the VALUE RESOLVER, not a list —
         // nothing is rendered from it, so there is no screen on which archived
         // rows could be revealed.
@@ -75,30 +80,26 @@ async function loadAll(): Promise<Map<string, KnobValue>> {
         // A retired knob is absent, and its readers RAISE, which is the visible
         // failure the register is designed to produce.
         .is("archived_at", null)
-        .order("feature", { ascending: true })
         .order("key", { ascending: true })
         .range(from, to),
-    { label: "platform.feature_knob", pageSize },
+    { label: `platform.feature_knob[${feature}]`, pageSize },
   );
   const next = new Map<string, KnobValue>();
-  for (const row of rows) {
-    next.set(addr(row.feature, row.key), row.value);
-  }
+  for (const row of rows) next.set(row.key, row.value);
   return next;
 }
 
 /**
- * THE SAME 60 s WINDOW SURVIVES A RELOAD (lane PAGE-BUNDLE-2). The catalogue is ~3,500 rows read in
- * four pages, and every hard load of any page read it again — even a reload a second after the last.
- * The window is kept in this tab's sessionStorage with the moment it was read, so the contract
- * ("live within a minute, everywhere") is unchanged: a stored window older than TTL_MS is never used.
+ * THE SAME 60 s WINDOW SURVIVES A RELOAD (lane PAGE-BUNDLE-2). Each feature's window is kept in
+ * this tab's sessionStorage with the moment it was read, so the contract ("live within a minute,
+ * everywhere") is unchanged: a stored window older than TTL_MS is never used.
  */
-const STORED_KEY = "matrx.featureKnobs.v1";
+const STORED_PREFIX = "matrx.featureKnobs.v2:";
 
-function readStoredWindow(): { at: number; map: Map<string, KnobValue> } | null {
+function readStoredWindow(feature: string): FeatureWindow | null {
   if (typeof window === "undefined") return null;
   try {
-    const raw = window.sessionStorage.getItem(STORED_KEY);
+    const raw = window.sessionStorage.getItem(STORED_PREFIX + feature);
     if (!raw) return null;
     const stored = JSON.parse(raw) as { at?: unknown; rows?: unknown };
     if (typeof stored.at !== "number" || !Array.isArray(stored.rows)) return null;
@@ -109,47 +110,53 @@ function readStoredWindow(): { at: number; map: Map<string, KnobValue> } | null 
   }
 }
 
-function storeWindow(at: number, map: Map<string, KnobValue>): void {
+function storeWindow(feature: string, at: number, map: Map<string, KnobValue>): void {
   if (typeof window === "undefined") return;
   try {
-    window.sessionStorage.setItem(STORED_KEY, JSON.stringify({ at, rows: [...map.entries()] }));
+    window.sessionStorage.setItem(STORED_PREFIX + feature, JSON.stringify({ at, rows: [...map.entries()] }));
   } catch {
-    // A full or blocked sessionStorage only means the next reload reads the catalogue again.
+    // A full or blocked sessionStorage only means the next reload reads this feature again.
   }
 }
 
-async function ensureLoaded(): Promise<Map<string, KnobValue>> {
-  if (cache && Date.now() - cachedAt < TTL_MS) return cache;
-  if (!cache) {
-    const stored = readStoredWindow();
+async function ensureFeature(feature: string): Promise<Map<string, KnobValue>> {
+  const held = windows.get(feature);
+  if (held && Date.now() - held.at < TTL_MS) return held.map;
+  if (!held) {
+    const stored = readStoredWindow(feature);
     if (stored) {
-      cache = stored.map;
-      cachedAt = stored.at;
-      return cache;
+      windows.set(feature, stored);
+      return stored.map;
     }
   }
-  if (!inFlight) {
-    inFlight = loadAll()
+  let pending = inFlight.get(feature);
+  if (!pending) {
+    pending = loadFeature(feature)
       .then((next) => {
-        cache = next;
-        cachedAt = Date.now();
-        storeWindow(cachedAt, next);
+        const at = Date.now();
+        windows.set(feature, { at, map: next });
+        storeWindow(feature, at, next);
         return next;
       })
       .finally(() => {
-        inFlight = null;
+        inFlight.delete(feature);
       });
+    inFlight.set(feature, pending);
   }
-  return inFlight;
+  return pending;
 }
 
-/** Drop the cached window (tests, and after an admin write in the same tab). */
+/** Drop every cached window (tests, and after an admin write in the same tab). */
 export function invalidateFeatureKnobs(): void {
-  cache = null;
-  cachedAt = 0;
+  windows.clear();
   if (typeof window !== "undefined") {
     try {
-      window.sessionStorage.removeItem(STORED_KEY);
+      const doomed: string[] = [];
+      for (let i = 0; i < window.sessionStorage.length; i += 1) {
+        const k = window.sessionStorage.key(i);
+        if (k && k.startsWith(STORED_PREFIX)) doomed.push(k);
+      }
+      for (const k of doomed) window.sessionStorage.removeItem(k);
     } catch {
       // nothing stored to forget
     }
@@ -157,8 +164,8 @@ export function invalidateFeatureKnobs(): void {
 }
 
 async function readKnob(feature: string, key: string): Promise<KnobValue> {
-  const all = await ensureLoaded();
-  const hit = all.get(addr(feature, key));
+  const all = await ensureFeature(feature);
+  const hit = all.get(key);
   if (hit === undefined) {
     throw new Error(
       `Missing feature knob "${feature}.${key}". Knobs have no code fallback by ` +
@@ -222,14 +229,14 @@ export async function knobStringList(
 
 /**
  * Read several integer knobs of one feature in a single awaited step. The whole
- * table is one cached fetch, so this is purely ergonomic: it keeps a caller from
+ * feature is one cached fetch, so this is purely ergonomic: it keeps a caller from
  * writing six sequential awaits that read as six round-trips.
  */
 export async function knobInts<K extends string>(
   feature: string,
   keys: readonly K[],
 ): Promise<Record<K, number>> {
-  await ensureLoaded();
+  await ensureFeature(feature);
   const out = {} as Record<K, number>;
   for (const k of keys) out[k] = await knobInt(feature, k);
   return out;
