@@ -20,7 +20,7 @@ import { signIn, setOrganization, until, sleep } from "./lib/seat-browser.mjs";
 const ORIGIN = process.env.ORIGIN ?? "http://data-v2-views-1.localhost:3001";
 const PHASE = process.env.PHASE ?? "make";
 const SHOTS =
-  process.env.SHOTS ?? "/Users/armanisadeghi/code/common-docs/operations/for-arman/2026-09-28/data-v2-views-1";
+  process.env.SHOTS ?? "/tmp/matrx-evidence/2026-09-28/data-v2-views-1";
 const ORG = process.env.ORG ?? "Cedar Ridge Physical Therapy";
 mkdirSync(SHOTS, { recursive: true });
 const env = Object.fromEntries(

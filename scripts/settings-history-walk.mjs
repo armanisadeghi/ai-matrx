@@ -7,7 +7,7 @@
 //   4. "Copy configuration" → the clipboard holds the effective configuration JSON
 //   5. "Compare" against 15 minutes ago → the changed setting is listed
 //   6. put the row back ("Inherit this value") so the organization is left as found
-// Screenshots go to WALK_OUT (default: common-docs for-arman/2026-09-26/settings-history).
+// Screenshots go to WALK_OUT (default: /tmp/matrx-evidence/2026-09-26/settings-history).
 //
 //   WALK_ORIGIN=http://settingshist.localhost:3001 node scripts/settings-history-walk.mjs
 
@@ -19,7 +19,7 @@ const ORIGIN = process.env.WALK_ORIGIN ?? "http://settingshist.localhost:3001";
 const ORG = process.env.WALK_ORG ?? "884d1ce8-7b49-4fba-a2f3-0f7dd7c83d4f";
 const OUT =
   process.env.WALK_OUT ??
-  new URL("../../common-docs/operations/for-arman/2026-09-26/settings-history/", import.meta.url).pathname;
+  "/tmp/matrx-evidence/2026-09-26/settings-history/";
 const LABEL = "How long a repeated agent run waits for the first one's answer";
 
 const env = Object.fromEntries(

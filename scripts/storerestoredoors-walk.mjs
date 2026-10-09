@@ -8,7 +8,7 @@
  * back with Restore; the dashboard goes once more and comes back through Organization settings -> Trash.
  * Every item is made here through the store's own doors as admin, and archived again at the end
  * (archive, never delete). Credentials come from .env.local and are never printed. Screenshots:
- *   common-docs/operations/for-arman/2026-09-26/store-restore-doors/
+ *   /tmp/matrx-evidence/2026-09-26/store-restore-doors/
  *
  *   node scripts/storerestoredoors-walk.mjs
  */

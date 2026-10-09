@@ -1,7 +1,7 @@
 // scripts/drill-gaps-walk.mjs — lane DRILL-GAPS (program DRILL-FINISH, 2026-09-30).
 //
 // A headless, read-only walk as admin@admin.com through the login form (screenshots + walk-<label>.json
-// into the for-arman folder) of what the lane changed on screen:
+// into the evidence folder (/tmp/matrx-evidence)) of what the lane changed on screen:
 //   /administration/knowledge/kg-cost            the unit-economics section IS the explorer mount now:
 //                                                header total + projection facts, source kinds in words,
 //                                                cache-hit rate in %, the enrichment multiplier in ×

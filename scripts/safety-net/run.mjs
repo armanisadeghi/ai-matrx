@@ -2,7 +2,7 @@
 // scripts/safety-net/run.mjs — LANE SAFETY-NET (2026-10-01): THE ONE COMMAND.
 //
 // Runs every safety-net check against LIVE or the CLONE and writes one pass/fail table, the logs
-// and the screenshots under common-docs/operations/for-arman/2026-10-01/safety-net/<run>/.
+// and the screenshots under /tmp/matrx-evidence/2026-10-01/safety-net/<run>/.
 //
 //   node scripts/safety-net/run.mjs --target live            # the before / after run (read-mostly)
 //   node scripts/safety-net/run.mjs --target clone           # everything, incl. SQL suites

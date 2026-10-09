@@ -1,6 +1,6 @@
 // scripts/drill-wave1-fixes-walk.mjs — lane DRILL-WAVE1-FIXES (2026-09-30).
 //
-// Headless walks of the VERIFY-DRILL-WAVE1 fixes; screenshots + walk-<part>.json into the for-arman folder.
+// Headless walks of the VERIFY-DRILL-WAVE1 fixes; screenshots + walk-<part>.json into the evidence folder (/tmp/matrx-evidence).
 //
 //   PART=package  the design-system demo `drill-wave1-proof.html` (package SOURCE): a pivot across
 //                 days in calendar order, capped by the host prop (`?cap=`), the rest column first and

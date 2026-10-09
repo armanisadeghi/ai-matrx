@@ -12,7 +12,7 @@
  * admin's Workspace) opened while admin works in AI Matrx: the shell's organization indicator lights,
  * the switcher moves to another table, and pressing the indicator switches the organization.
  * Credentials come from the environment and are never printed. Out: common-docs/operations/
- * for-arman/2026-09-25/table-chrome/preview-*.png and preview-walk.json.
+ * /tmp/matrx-evidence/2026-09-25/table-chrome/preview-*.png and preview-walk.json.
  */
 import { chromium } from "playwright";
 import { mkdirSync, writeFileSync } from "node:fs";

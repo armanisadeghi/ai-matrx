@@ -28,7 +28,7 @@ const ORIGIN = process.env.ORIGIN ?? "http://data-v2-basics-2.localhost:3001";
 const PHASE = process.env.PHASE ?? "owner";
 const SHOTS =
   process.env.SHOTS ??
-  "/Users/armanisadeghi/code/common-docs/operations/for-arman/2026-09-27/data-v2-basics-2/certification";
+  "/tmp/matrx-evidence/2026-09-27/data-v2-basics-2/certification";
 mkdirSync(SHOTS, { recursive: true });
 const T = {
   plans: "377b783a-f18a-40c3-bf2b-7617691d0091",

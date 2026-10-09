@@ -1,7 +1,7 @@
 // scripts/drill-conversions-walk.mjs — lane DRILL-CONVERSIONS (program DRILL-FINISH, 2026-09-30).
 //
 // A headless, read-only walk of the three mounts of the one explorer, as admin@admin.com through the
-// login form (screenshots + walk-<label>.json into the for-arman folder):
+// login form (screenshots + walk-<label>.json into the evidence folder (/tmp/matrx-evidence)):
 //   /administration/knowledge/kg-cost/explore   kg_cost, platform lane (+ the dashboard's Explore link)
 //   /administration/automation/workflow-runs    workflow_runs, platform lane
 //   /workflows/runs → Analyze → /workflows/runs/analyze   workflow_runs, mine lane (admin as a person)

@@ -4,7 +4,7 @@
 // the page's own recount of the last hours (a derived rollup) and ONE Saved view it saves and
 // archives again.
 //
-// Each of the old usage screens is ONE URL of the new page (the table in the for-arman note):
+// Each of the old usage screens is ONE URL of the new page (the table in the walk note):
 // every URL is opened, its total and groups read off the screen, and screenshotted; then the
 // interactions — a click drills, the trail zooms out, Back undoes, the pivot, Copy CSV, the $
 // switch, a Saved view saved/opened/archived, 390 px, dark.
