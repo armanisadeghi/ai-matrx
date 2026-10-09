@@ -158,7 +158,7 @@ function runMapping(ctx: RichDocumentActionContext) {
   const { conversationId } = chatIds(ctx);
   if (!conversationId) return null;
   const conversation =
-    ctx.getState().conversations.byConversationId[conversationId];
+    ctx.getState().conversations?.byConversationId?.[conversationId];
   if (!conversation?.agentId || !conversation.launchMapping) return null;
   return { agentId: conversation.agentId, ...conversation.launchMapping };
 }

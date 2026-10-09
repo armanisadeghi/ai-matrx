@@ -191,6 +191,11 @@ and admin/user route families are live. Remaining migration work is tracked in:
 
 ## Change log
 
+- 2026-10-09 — Lane F3 (live UI audit B8): an Applet has a fourth state, **In use** (`appletState` kind `in_use`:
+  status published, not on the web) — "Use it" for My organization. `appletAudience` / `APPLET_AUDIENCE_LABELS` /
+  `appletUseConsequence` (`lib/applet-state.ts`) and `appletAudiencePatch` (`lib/publication.ts`) are the one answer
+  and the one write; the list, manage header, overview, Settings › Sharing (now "Who can open it" + People through
+  `ShareButton`) and the builder card read it. Thunk `setAppletAudience`.
 - 2026-10-09 — Lane F4 (live UI audit): /applets' All lane is Mine ∪ My Orgs ∪ Shared (`inLane`), never strangers'
   public Applets — they live in Public; the maker's `shown_to` hides a row from other people's lists (the "Surface
   Submit Scope Probe" regression fixture is `only_me`). The first run offers "Build your first Applet" + "Start from a
@@ -199,7 +204,6 @@ and admin/user route families are live. Remaining migration work is tracked in:
   reference wears AtSign, the Code mode is "Change with AI", Jobs/Sources read "AI jobs"/"Data", Slug reads "Link
   name", the Pages editor drops the stale "/clients/:id" hint and accepts the builder's relative addresses, and every
   archive ends in a toast with Undo (`lib/archive-undo.ts`).
-
 
 - `2026-10-09` — claude (lane R1 follow-up, admin-seat rule): the Applets admin dashboard and `/administration/applets/all` now show only system Applets (`created_by IS NULL`); moderating customers' Applets moved to `/administration/applets/support` (Admin › Applets › Support). Both render ONE table, `app/(admin)/administration/applets/AppletsAdminList.tsx` (`lane="system" | "support"`). `/administration/agents/system-agents/apps` (a second system-Applets list) now redirects to `all`; the edit page returns to the list that matches the Applet's owner.
 

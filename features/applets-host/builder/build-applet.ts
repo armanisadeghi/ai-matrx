@@ -18,7 +18,7 @@ import type { AppletSource, NewTableDeclaration } from "@ai-matrx/applets";
 
 import type { Database, Json } from "@/types/database.types";
 import { isReservedAppletSlug } from "@/features/applets/reserved-slugs";
-import { appletPublicationPatch } from "@/features/applets/lib/publication";
+import { appletAudiencePatch } from "@/features/applets/lib/publication";
 
 
 type Client = SupabaseClient<Database>;
@@ -301,6 +301,28 @@ function slugOf(raw: string): string {
   return isReservedAppletSlug(s) ? `${s}-applet` : s;
 }
 
+/**
+ * The addresses near `base` she can already see. Checked BEFORE the write so a taken address is skipped
+ * instead of answered with a 409 the console reports as an error (audit9 B14: every first build of a
+ * common name logged one). Row security can hide another organization's row; the write's unique-violation
+ * retry still covers that.
+ */
+async function takenSlugs(client: Client, base: string, selfId: string | null): Promise<Set<string>> {
+  const { data, error } = await client.schema("app").from("definition").select("id, slug").like("slug", `${base}%`).limit(200);
+  if (error || !data) return new Set();
+  return new Set(data.filter((r) => r.id !== selfId).map((r) => r.slug));
+}
+
+/** The address to try on `attempt`: `base` when it is free, else `base-xxxx` not already taken. */
+export function slugCandidate(base: string, attempt: number, taken: ReadonlySet<string>): string {
+  if (attempt === 0 && !taken.has(base)) return base;
+  for (let i = 0; i < 8; i++) {
+    const next = `${base.slice(0, 42)}-${Math.random().toString(36).slice(2, 6)}`;
+    if (!taken.has(next)) return next;
+  }
+  return `${base.slice(0, 42)}-${Date.now().toString(36).slice(-4)}`;
+}
+
 /** Write the answer as her: a new draft Applet, or a new version of the one she is changing. */
 export async function saveBuiltApplet(
   client: Client,
@@ -322,8 +344,9 @@ export async function saveBuiltApplet(
   // yet, so no `current`) takes the address the builder chose on its first save.
   if (input.appletId && !input.current) {
     const base = slugOf(applet.slug || applet.name);
+    const taken = await takenSlugs(client, base, input.appletId);
     for (let attempt = 0; attempt < 4; attempt++) {
-      const slug = attempt === 0 ? base : `${base.slice(0, 42)}-${Math.random().toString(36).slice(2, 6)}`;
+      const slug = slugCandidate(base, attempt, taken);
       const { data, error } = await client
         .schema("app")
         .from("definition")
@@ -348,8 +371,9 @@ export async function saveBuiltApplet(
     return data;
   }
   const base = slugOf(applet.slug || applet.name);
+  const taken = await takenSlugs(client, base, null);
   for (let attempt = 0; attempt < 4; attempt++) {
-    const slug = attempt === 0 ? base : `${base.slice(0, 42)}-${Math.random().toString(36).slice(2, 6)}`;
+    const slug = slugCandidate(base, attempt, taken);
     const { data, error } = await client
       .schema("app")
       .from("definition")
@@ -364,10 +388,16 @@ export async function saveBuiltApplet(
 
 /**
  * "Use it": first the tables the app asked for are made (as her, in the Applet's organization) and the
- * record is bound to them; then the draft goes live at /applets/<slug>. A refusal while making tables
- * publishes nothing and names the table; what was made stays, and the next "Use it" finds it.
+ * record is bound to them; then the draft is put in use for the audience she chose — her organization
+ * (the default) or anyone with the link at /applets/<slug>. A refusal while making tables changes nothing
+ * and names the table; what was made stays, and the next "Use it" finds it.
  */
-export async function publishApplet(client: Client, appletId: string, userId: string): Promise<{ made: MadeTable[] }> {
+export async function publishApplet(
+  client: Client,
+  appletId: string,
+  userId: string,
+  audience: "organization" | "web" = "organization",
+): Promise<{ made: MadeTable[] }> {
   const { data, error: readError } = await client.schema("app").from("definition").select("organization_id, sources").eq("id", appletId).maybeSingle();
   if (readError) throw new Error(readError.message);
   if (!data) throw new Error("That app is not there, or it has not been shared with you.");
@@ -380,9 +410,9 @@ export async function publishApplet(client: Client, appletId: string, userId: st
     const bound = await client.schema("app").from("definition").update({ sources: answer.sources as unknown as Json }).eq("id", appletId);
     if (bound.error) throw new Error(bound.error.message);
   }
-  // THE publication transition — status AND published_to_web together, the same write the manage
-  // header's Publish makes, so every surface reads the Applet as Published (never half of it).
-  const { error } = await client.schema("app").from("definition").update(appletPublicationPatch(true, new Date().toISOString(), userId)).eq("id", appletId);
+  // ONE write for status AND the web switch (`appletAudiencePatch`), so every surface reads the same
+  // state through `appletState` — "In use" for her organization, "Published" on the web.
+  const { error } = await client.schema("app").from("definition").update(appletAudiencePatch(audience, new Date().toISOString(), userId)).eq("id", appletId);
   if (error) throw new Error(error.message);
   return { made };
 }

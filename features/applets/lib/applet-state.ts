@@ -11,15 +11,18 @@
 //   suspended — an admin stopped it (status 'suspended').
 //   published — live at its public link: status 'published' AND `published_to_web`, written together by
 //               the one publication transition (`appletPublicationPatch`). A guest can run it only then
-//               (`get_aga_public_data` needs both), so a half-written pair is NOT published.
-//   draft      — everything else.
+//               (`get_aga_public_data` needs both).
+//   in_use    — "Use it" for My organization: status 'published' and NOT on the web. Using an Applet and
+//               putting it on the web are separate choices (audit9 B8): her organization opens it (row
+//               security, the access ladder's Organization level); strangers do not.
+//   draft      — everything else (a draft still opens for her organization; it is just not in use yet).
 //
 // The version a person sees is `content_version` (the saved content version), never `version` (the
 // row's revision token, which moves on every write — opening the builder, publishing, a setting).
 
 import type { BadgeTone } from "@ai-matrx/design-system/controls";
 
-export type AppletStateKind = "archived" | "suspended" | "published" | "draft";
+export type AppletStateKind = "archived" | "suspended" | "published" | "in_use" | "draft";
 
 export interface AppletStateFields {
   status: string | null | undefined;
@@ -30,7 +33,7 @@ export interface AppletStateFields {
 export interface AppletState {
   kind: AppletStateKind;
   /** The one word every surface shows. */
-  label: "Archived" | "Suspended" | "Published" | "Draft";
+  label: "Archived" | "Suspended" | "Published" | "In use" | "Draft";
   tone: BadgeTone;
   /** Live at its public link — the Publish/Unpublish toggle reads this. */
   live: boolean;
@@ -40,14 +43,49 @@ const STATES: Record<AppletStateKind, AppletState> = {
   archived: { kind: "archived", label: "Archived", tone: "neutral", live: false },
   suspended: { kind: "suspended", label: "Suspended", tone: "destructive", live: false },
   published: { kind: "published", label: "Published", tone: "success", live: true },
+  in_use: { kind: "in_use", label: "In use", tone: "success", live: false },
   draft: { kind: "draft", label: "Draft", tone: "neutral", live: false },
 };
 
 export function appletState(row: AppletStateFields): AppletState {
   if (row.deleted_at) return STATES.archived;
   if (row.status === "suspended") return STATES.suspended;
-  if (row.status === "published" && row.published_to_web === true) return STATES.published;
+  if (row.status === "published") return row.published_to_web === true ? STATES.published : STATES.in_use;
   return STATES.draft;
+}
+
+/** Who opens an Applet that is in use: her organization, or anyone with the link (the web). */
+export type AppletAudience = "organization" | "web";
+
+/** The two choices, in the order "Use it" and Sharing offer them — My organization first, the default. */
+export const APPLET_AUDIENCES: readonly AppletAudience[] = ["organization", "web"] as const;
+
+export const APPLET_AUDIENCE_LABELS: Record<AppletAudience, string> = {
+  organization: "My organization",
+  web: "Anyone with the link",
+};
+
+/** Who opens it today: the web when published to it, else her organization (row security). */
+export function appletAudience(row: AppletStateFields): AppletAudience {
+  return appletState(row).live ? "web" : "organization";
+}
+
+/**
+ * What "Use it" says BEFORE it acts, for the audience she picked. It always names the tables it creates;
+ * only the web choice says strangers can open it.
+ */
+export function appletUseConsequence(input: { name: string; slug: string | null | undefined; audience: AppletAudience; tablesToMake?: readonly string[] }): {
+  title: string;
+  description: string;
+} {
+  const tables = input.tablesToMake ?? [];
+  const made =
+    tables.length === 0 ? "" : ` First it adds ${tables.length === 1 ? "the table" : `${tables.length} tables:`} ${tables.join(", ")}.`;
+  const who =
+    input.audience === "web"
+      ? `Anyone with the link can open it${input.slug ? ` at aimatrx.com/applets/${input.slug}` : ""}, without signing in.`
+      : "People in your organization can open it. Nobody else can.";
+  return { title: `Use ${input.name}?`, description: `${who}${made}` };
 }
 
 /**

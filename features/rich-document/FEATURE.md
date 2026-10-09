@@ -206,6 +206,7 @@ assertions in addition to the Content IR route matrix.
 
 ## Change log
 
+- `2026-10-09` — claude (F3, audit9 B14): the `edit` and `save-run-as-shortcut` predicates (and the copy-with-thinking / full-screen editor runs) read the chat slices with optional chaining, so a host state without them hides the action instead of throwing `reading 'byConversationId'` out of every menu. Guard: `actions/__tests__/visible-on-empty-host-state.test.ts` (red before, green after).
 - `2026-10-06` — claude: ALC-16: transfer imports moved off the retired `@ai-matrx/alchemy/core` / `@ai-matrx/kit/content-transfer` onto `@ai-matrx/alchemy/operate` (same functions, same bytes).
 - `2026-10-06` — claude: ALC-16: the copy/transform/export menu imports moved from `@ai-matrx/design-system/content-transfer` (removed in 0.69.0) to `@ai-matrx/alchemy/react/workspace` (0.13.0); same menu, same bytes.
 - `2026-09-28` — claude: **"Convert to broker" is deleted** (Arman: meaningless now). `actions/handlers/stubs.ts` (its only action) is gone, with its id in `types.ts`, `menuStructure.ts`, the Coming-Soon entry `rich-document.convert-to-broker` and the content-manager menu row. Guard: `features/context-menu-v3/regroup/__tests__/inventory-coverage.test.ts`.

@@ -16,7 +16,7 @@ import { useEffect, useEffectEvent, useRef, useState, useSyncExternalStore } fro
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
-import { readAppletCatalogue } from "@ai-matrx/applets/catalogue";
+import { readAppletCatalogue, readJobInputs } from "@ai-matrx/applets/catalogue";
 import type { HeldWrite } from "@ai-matrx/applets/preview";
 import { storedMandateKey } from "@ai-matrx/agents/mandates";
 import { useHeadlessAgentJson } from "@ai-matrx/chat/agents/hooks/useHeadlessAgentJson";
@@ -30,12 +30,12 @@ import { ProTextarea } from "@/components/official/ProTextarea";
 import { APPLETS_SURFACE_NAME, createAppletsScope } from "@/features/surfaces/manifests/applets.manifest";
 import { useOrganizationRequired } from "@/features/organizations/useOrganizationRequired";
 import { useOpenLiveRunWindow, type LiveRunWindowHandle } from "@/features/overlays/openers/liveRunWindow";
-import { useAppSelector } from "@/lib/redux/hooks";
+import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { tableHref } from "@/features/records-tool-display/readRecordsAnswer";
 import { useSourceTableNames } from "@/features/applets/hooks/useSourceTableNames";
-import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
-import { appletState, appletVersionLabel, publishConsequence } from "@/features/applets/lib/applet-state";
+import { APPLET_AUDIENCE_LABELS, appletAudience, appletState, appletVersionLabel, type AppletAudience } from "@/features/applets/lib/applet-state";
+import { destroyInstanceIfAllowed } from "@ai-matrx/chat/agents/redux/execution-system/conversations/conversations.thunks";
 import {
   BuildRefused,
   coerceBuildAnswer,
@@ -52,7 +52,8 @@ import {
   type BuilderSource,
   type SavedApplet,
 } from "./build-applet";
-import { fixLabel, previewLine, readBuildRecord, reopenOutcome, type BuildEntry, type BuildRecord } from "./build-session";
+import { buildingStep, fixLabel, previewLine, readBuildRecord, reopenOutcome, type BuildEntry, type BuildRecord } from "./build-session";
+import { UseAppletDialog } from "./UseAppletDialog";
 import { useAppletBuildSession } from "./useAppletBuildSession";
 import { BuildHistory } from "./BuildHistory";
 import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
@@ -91,13 +92,32 @@ type SavedCard = SavedApplet & {
 
 type Fix = { where: string; message: string };
 
-export function AppletBuilder({ appletId: initialId, routed = false }: { appletId: string | null; routed?: boolean }) {
+
+/** Every job key the check may meet: the catalogue's, the Applet's own, and (for a stored answer) the answer's. */
+function jobKeysOf(catalogue: { jobs: { key: string }[] }, applet: { mandates: { key: string }[] } | null, answer: unknown): string[] {
+  const keys = new Set<string>([...catalogue.jobs.map((j) => j.key), ...(applet?.mandates ?? []).map((m) => m.key)]);
+  const raw = typeof answer === "object" && answer !== null ? (answer as { applet?: { mandates?: unknown } }).applet?.mandates : undefined;
+  if (Array.isArray(raw)) for (const m of raw) if (typeof m === "object" && m !== null && typeof (m as { key?: unknown }).key === "string") keys.add((m as { key: string }).key);
+  return [...keys];
+}
+
+export function AppletBuilder({
+  appletId: initialId,
+  routed = false,
+  initialRecord = null,
+}: {
+  appletId: string | null;
+  routed?: boolean;
+  /** The build's record as the server render read it, so a refresh mid-build opens on the build (B1). */
+  initialRecord?: BuildRecord | null;
+}) {
   // org-filter: write-target the Applet is saved in the organization new things go to; reads are her own
   const active = useOrganizationRequired();
   const organizationId = active.organizationState === "ready" ? active.organizationId : null;
   const writer = useHeadlessAgentJson();
   const openRunWindow = useOpenLiveRunWindow();
   const router = useRouter();
+  const dispatch = useAppDispatch();
   useDeclaredSurfaceMandates(DISCLOSURE);
 
   const [sentence, setSentence] = useState("");
@@ -113,16 +133,34 @@ export function AppletBuilder({ appletId: initialId, routed = false }: { appletI
   // The record a request belongs to, readable inside the automatic fix round (state lags a render).
   const appletIdRef = useRef<string | null>(initialId);
   // What the build is doing right now — the preview never sits on a bare placeholder while it works.
+  // ONE clock per request: a new step changes the words, never the start time (audit9 B3 — it reset at each step).
   const [step, setStep] = useState<{ label: string; since: number } | null>(null);
+  const stepTo = (label: string) => setStep((prev) => ({ label, since: prev?.since ?? Date.now() }));
+  // The live window of the run in flight (a live one or a rejoined one). When its answer is saved the result
+  // is on the card and in the preview, so the window closes and its kept instance is let go (audit9 B13).
+  const runWindow = useRef<{ handle: LiveRunWindowHandle; conversationId: string | null } | null>(null);
+  const closeRunWindow = () => {
+    const open = runWindow.current;
+    runWindow.current = null;
+    if (!open) return;
+    // A closed window is never re-opened by a late "stop waiting" update (that re-dispatches the overlay).
+    if (rejoinWindow.current === open.handle) rejoinWindow.current = null;
+    open.handle.close();
+    if (open.conversationId) dispatch(destroyInstanceIfAllowed(open.conversationId));
+  };
+  // "Use it" asks who can open it first (B8): the dialog is open while this holds the choice.
+  const [useItOpen, setUseItOpen] = useState(false);
 
   // The build's record (the draft Applet + its request history) — the truth a refresh reopens.
   const session = useAppletBuildSession({
     appletId: initialId,
+    initialRecord,
     routed,
     onRejoin: (entry) => {
       setPhase({ kind: "building" });
       setStep({ label: entry.fix ? "Fixing your Applet" : "Writing your Applet", since: Date.parse(entry.started_at) || Date.now() });
       rejoinWindow.current = openRunWindow({ conversationId: entry.conversation_id, label: entry.fix ? "Fixing your Applet" : "Building your Applet" });
+      runWindow.current = { handle: rejoinWindow.current, conversationId: null };
     },
     onReopenedAnswer: async ({ entry, value }) => {
       const id = initialId;
@@ -133,8 +171,9 @@ export function AppletBuilder({ appletId: initialId, routed = false }: { appletI
         const current = record.hasContent ? await readBuilderApplet(client, id) : null;
         const org = current?.organizationId ?? record.organizationId;
         const catalogue = await readAppletCatalogue(client, { organizationId: org, request: entry.text });
+        const jobInputs = await readJobInputs(client, jobKeysOf(catalogue, current?.applet ?? null, value));
         const [{ appletImportProblems }, { checkBuildAnswer }] = await Promise.all([import("@ai-matrx/applets/frame"), import("./check-build-answer")]);
-        const answer = checkBuildAnswer(value, coerceBuildAnswer(value), { organizationId: org, tables: catalogue.tables, importProblems: appletImportProblems });
+        const answer = checkBuildAnswer(value, coerceBuildAnswer(value), { organizationId: org, tables: catalogue.tables, importProblems: appletImportProblems, jobInputs });
         await finish(id, entry, answer, current?.applet ?? null, org);
       } catch (err) {
         await failed(id, entry, err);
@@ -214,6 +253,7 @@ export function AppletBuilder({ appletId: initialId, routed = false }: { appletI
     const result = await saveBuiltApplet(client, { organizationId: org, appletId: id, current, answer, request: entry.text, conversationId: entry.conversation_id });
     await session.settle(id, entry.id, { state: "saved", version: result.content_version, note: answer.note });
     shown.current = `${id}|${entry.id}:saved`;
+    closeRunWindow();
     setSaved({ ...result, note: entry.fix ? "" : answer.note, toMake: tablesToMake(answer.applet), bound: boundTableIds(answer.applet), made: [] });
     // The page header (and tab title) read the Applet's name on the server when the page opened — the draft's
     // "Untitled Applet". The first saved answer names it, so the header re-reads (social planner, 2026-10-08).
@@ -258,6 +298,7 @@ export function AppletBuilder({ appletId: initialId, routed = false }: { appletI
    */
   const run = async (request: string, fix: Fix | null, retry: { refusedApplet: BuilderApplet; refusedEntryId: string } | null = null) => {
     setPhase({ kind: "building" });
+    // The clock starts once, here; every later step keeps it (B3).
     setStep({ label: retry ? "Fixing what the check found" : "Saving your request", since: Date.now() });
     const client = createClient();
     const live: { handle: LiveRunWindowHandle | null } = { handle: null };
@@ -285,14 +326,16 @@ export function AppletBuilder({ appletId: initialId, routed = false }: { appletI
       setAppletId(record.id);
       setSentence("");
       appletIdRef.current = record.id;
-      setStep({ label: "Reading your tables", since: Date.now() });
+      stepTo("Reading your tables");
       const current = record.hasContent ? await readBuilderApplet(client, record.id) : null;
       const runOrg = current?.organizationId ?? record.organizationId;
       const catalogue = await readAppletCatalogue(client, { organizationId: runOrg, request });
+      // The input names of every job the builder may use — its answer's job.run names are checked against them.
+      const jobInputs = await readJobInputs(client, jobKeysOf(catalogue, current?.applet ?? null, null));
       // The frame (already the preview's) answers which names each module really exports; the checks read
       // the code's syntax tree, so both load here, on demand — never with the builder's first screen.
       const [{ appletImportProblems }, { checkBuildAnswer }] = await Promise.all([import("@ai-matrx/applets/frame"), import("./check-build-answer")]);
-      setStep({ label: "Starting the builder", since: Date.now() });
+      stepTo("Starting the builder");
       let attached: Promise<void> = Promise.resolve();
       const answer = await writer.run<BuildAnswer>({
         mandateKey: fix ? FIX : BUILD,
@@ -300,6 +343,10 @@ export function AppletBuilder({ appletId: initialId, routed = false }: { appletI
         sourceFeature: "agent-app",
         expect: "json",
         initiation: "user",
+        // The window renders the stream and keeps it after the run ends, so it never goes blank between
+        // "Done" and the save (B13); this builder lets the instance go when it closes the window.
+        displayMode: "direct",
+        keepInstance: true,
         organizationId: runOrg,
         variables: {
           request,
@@ -311,9 +358,10 @@ export function AppletBuilder({ appletId: initialId, routed = false }: { appletI
           entry.conversation_id = cid;
           attached = session.running(record.id, entry.id, cid).catch((err) => console.error("[applet-build] could not record the run", err));
           live.handle = openRunWindow({ conversationId: cid, label: fix ? "Fixing your Applet" : appletId ? "Changing your Applet" : "Building your Applet" });
-          setStep({ label: fix ? "Fixing your Applet" : "Writing your Applet", since: Date.now() });
+          runWindow.current = { handle: live.handle, conversationId: cid };
+          stepTo(fix ? "Fixing your Applet" : "Writing your Applet");
         },
-        coerce: (v) => checkBuildAnswer(v, coerceBuildAnswer(v), { organizationId: runOrg, tables: catalogue.tables, importProblems: appletImportProblems }),
+        coerce: (v) => checkBuildAnswer(v, coerceBuildAnswer(v), { organizationId: runOrg, tables: catalogue.tables, importProblems: appletImportProblems, jobInputs }),
       });
       await attached;
       await finish(record.id, entry, answer, current?.applet ?? null, runOrg);
@@ -327,24 +375,24 @@ export function AppletBuilder({ appletId: initialId, routed = false }: { appletI
         return;
       }
     } finally {
-      live.handle?.update({ pending: false });
+      // Still this run's open window (not closed on save, not replaced by a fix round's): stop waiting.
+      if (live.handle && runWindow.current?.handle === live.handle) live.handle.update({ pending: false });
       setStep(null);
     }
   };
 
-  // "Use it" never publishes a broken Applet: while the preview reports an error, Fix it is the action.
+  // "Use it" never puts a broken Applet in use: while the preview reports an error, Fix it is the action.
   const blockedBy = publishBlockedBy(lastError);
-  const publishAndUse = async () => {
+  /** "Use it" for the audience she chose in the dialog — her organization unless she picked the web. */
+  const putInUse = async (audience: AppletAudience) => {
     if (!saved || !userId || blockedBy) return;
-    // "Use it" publishes AND creates tables: the click names both before it does either.
-    const ok = await confirm({ ...publishConsequence({ name: saved.name, slug: saved.slug, tablesToMake: saved.toMake.map((t) => t.name) }), confirmLabel: "Publish" });
-    if (!ok) return;
+    setUseItOpen(false);
     setPhase({ kind: "publishing" });
     try {
-      const { made } = await publishApplet(createClient(), saved.id, userId);
+      const { made } = await publishApplet(createClient(), saved.id, userId, audience);
       // The record now reads the made tables by id (a new content version): the preview remounts on it.
       const { data } = await createClient().schema("app").from("definition").select(SAVED_APPLET_COLUMNS).eq("id", saved.id).maybeSingle();
-      setSaved({ ...saved, ...(data ?? { status: "published", published_to_web: true }), toMake: [], made });
+      setSaved({ ...saved, ...(data ?? { status: "published", published_to_web: audience === "web" }), toMake: [], made });
       setPhase({ kind: "idle" });
     } catch (err) {
       setPhase({ kind: "failed", why: err instanceof Error ? err.message : String(err) });
@@ -353,12 +401,19 @@ export function AppletBuilder({ appletId: initialId, routed = false }: { appletI
 
   // The held "Fix it to use it" on the draft's card is THE fix button; the toolbar's shows only without it.
   const heldOnCard = Boolean(saved && appletState(saved).kind === "draft" && blockedBy);
-  const busy = phase.kind === "building" || phase.kind === "publishing" || session.rejoining;
+  const busy = phase.kind === "building" || phase.kind === "publishing" || session.rejoining || buildingStep(session.record?.requests) !== null;
   // Until the page is interactive the button says so, instead of sitting silently disabled.
   const hydrated = useHydrated();
   const boundNames = useSourceTableNames(saved?.bound ?? []);
+  // A request still open on the record is a build in progress even before this tab rejoins it (B1).
+  const shownStep = step ?? buildingStep(session.record?.requests);
   return (
-    <div className="grid h-full min-h-0 grid-cols-1 gap-3 p-3 lg:grid-cols-[minmax(320px,2fr)_5fr]">
+    // Phone: ONE scrolling column — the card (Use it, Open) then the preview below it, never layered over
+    // it (audit9 B2). Desktop: two columns, each owning its own height.
+    <div
+      className="grid h-full min-h-0 grid-cols-1 content-start gap-3 overflow-y-auto p-3 lg:grid-cols-[minmax(320px,2fr)_5fr] lg:content-stretch lg:overflow-hidden"
+      data-matrx-page-scroll=""
+    >
       <div className="flex min-h-0 flex-col gap-3">
         <ProTextarea
           aria-label="What you want"
@@ -404,9 +459,14 @@ export function AppletBuilder({ appletId: initialId, routed = false }: { appletI
         {saved ? (
           <div className="flex flex-col gap-2 rounded-lg border border-border bg-card p-3 text-sm">
             <div className="flex flex-wrap items-center gap-2">
-              <span className="font-medium">/applets/{saved.slug}</span>
+              <span className="min-w-0 truncate font-medium" data-applet-card-name="">{saved.name}</span>
               {appletVersionLabel(saved.content_version) ? <Badge>{appletVersionLabel(saved.content_version)}</Badge> : null}
               <Badge tone={appletState(saved).tone}>{appletState(saved).label}</Badge>
+              {appletState(saved).kind === "published" || appletState(saved).kind === "in_use" ? (
+                <span className="text-xs text-muted-foreground" data-applet-audience="">
+                  {APPLET_AUDIENCE_LABELS[appletAudience(saved)]}
+                </span>
+              ) : null}
             </div>
             {saved.description ? <p className="text-muted-foreground">{saved.description}</p> : null}
             {saved.note && saved.note !== saved.description ? <p>{saved.note}</p> : null}
@@ -452,7 +512,7 @@ export function AppletBuilder({ appletId: initialId, routed = false }: { appletI
                   <Wrench className="h-4 w-4" /> Fix it to use it
                 </Button>
               ) : appletState(saved).kind === "draft" ? (
-                <Button variant="primary" disabled={busy || !userId} onClick={() => void publishAndUse()}>
+                <Button variant="primary" disabled={busy || !userId} onClick={() => setUseItOpen(true)}>
                   Use it
                 </Button>
               ) : null}
@@ -463,7 +523,7 @@ export function AppletBuilder({ appletId: initialId, routed = false }: { appletI
           </div>
         ) : null}
       </div>
-      <div className="flex min-h-0 flex-col overflow-hidden rounded-lg border border-border bg-card">
+      <div className="flex min-h-[70dvh] flex-col overflow-hidden rounded-lg border border-border bg-card lg:min-h-0">
         {appletId && saved ? (
           <>
             <div className="flex items-center gap-2 border-b border-border px-3 py-1.5 text-xs text-muted-foreground">
@@ -471,7 +531,7 @@ export function AppletBuilder({ appletId: initialId, routed = false }: { appletI
                 {previewLine(appletVersionLabel(saved.content_version))}
               </span>
               {held ? <Badge tone="warning">{held} not saved</Badge> : null}
-              {step ? <BuildStep step={step} inline /> : null}
+              {shownStep ? <BuildStep step={shownStep} inline /> : null}
             </div>
             <div className="min-h-0 flex-1 overflow-y-auto">
               <AppletHostMount
@@ -485,12 +545,23 @@ export function AppletBuilder({ appletId: initialId, routed = false }: { appletI
               />
             </div>
           </>
-        ) : step ? (
-          <BuildStep step={step} />
+        ) : shownStep ? (
+          <BuildStep step={shownStep} />
         ) : (
           <EmptyState icon={<AppWindow />} title="Your Applet shows here" line="Say what you want, then Build." />
         )}
       </div>
+      {saved ? (
+        <UseAppletDialog
+          open={useItOpen}
+          onOpenChange={setUseItOpen}
+          name={saved.name}
+          slug={saved.slug}
+          tablesToMake={saved.toMake.map((t) => t.name)}
+          busy={phase.kind === "publishing"}
+          onConfirm={(audience) => void putInUse(audience)}
+        />
+      ) : null}
     </div>
   );
 }
@@ -501,16 +572,18 @@ export function AppletBuilder({ appletId: initialId, routed = false }: { appletI
  * ~45 s with nothing said, 2026-10-08).
  */
 function BuildStep({ step, inline = false }: { step: { label: string; since: number }; inline?: boolean }) {
+  // The server render has no clock of the reader's: the time joins once the page is live (no mismatch).
+  const hydrated = useHydrated();
   const [now, setNow] = useState(() => Date.now());
   useEffect(() => {
     const t = setInterval(() => setNow(Date.now()), 1000);
     return () => clearInterval(t);
   }, []);
-  const elapsed = formatDurationMs(Math.max(0, now - step.since));
-  if (inline) return <Badge tone="info" data-applet-build-step="">{`${step.label} · ${elapsed}`}</Badge>;
+  const elapsed = hydrated ? formatDurationMs(Math.max(0, now - step.since)) : null;
+  if (inline) return <Badge tone="info" data-applet-build-step="">{elapsed ? `${step.label} · ${elapsed}` : step.label}</Badge>;
   return (
     <div className="flex h-full min-h-0 items-center justify-center" data-applet-build-step="" aria-live="polite">
-      <EmptyState icon={<AppWindow />} title={step.label} line={`${elapsed} so far`} />
+      <EmptyState icon={<AppWindow />} title={step.label} line={elapsed ? `${elapsed} so far` : "Working"} />
     </div>
   );
 }

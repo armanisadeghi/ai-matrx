@@ -61,7 +61,7 @@ registerAction({
     const loaded =
       !!target &&
       !!conversationId &&
-      !!ctx.getState().messages.byConversationId[conversationId]?.byId?.[target.messageId];
+      !!ctx.getState().messages?.byConversationId?.[conversationId]?.byId?.[target.messageId];
     return (
       ext.role === "assistant" &&
       !!target &&

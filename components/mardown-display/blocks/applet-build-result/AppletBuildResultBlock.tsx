@@ -11,9 +11,9 @@
 import { useState } from "react";
 import CodeBlock from "@ai-matrx/rich-content/code-block/CodeBlock";
 import { Badge, DisclosureHeader } from "@ai-matrx/design-system/controls";
-import { AppWindow, Code2, Database, FileCode2, FileText, Table2, Workflow } from "lucide-react";
+import { AppWindow, Check, Code2, Database, FileText, Loader2, Table2, Workflow } from "lucide-react";
 
-import type { AppletBuildResultData } from "@/features/content-ir/kinds/applet-build-result";
+import { plainFileLabel, type AppletBuildResultData } from "@/features/content-ir/kinds/applet-build-result";
 import { useSourceTableNames } from "@/features/applets/hooks/useSourceTableNames";
 
 function languageOf(fileName: string): string {
@@ -41,7 +41,7 @@ export default function AppletBuildResultBlock({ serverData }: { serverData?: un
         <AppWindow className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-2">
-            <h3 className="truncate font-semibold">{data.name || "Your app"}</h3>
+            <h3 className="truncate font-semibold">{data.name || "Your Applet"}</h3>
             {building ? <Badge tone="info">Building</Badge> : null}
           </div>
           {data.description ? <p className="text-sm text-muted-foreground">{data.description}</p> : null}
@@ -94,19 +94,25 @@ export default function AppletBuildResultBlock({ serverData }: { serverData?: un
       {data.note ? <p className="text-sm">{data.note}</p> : null}
 
       {building && data.files.length > 0 ? (
-        // The files as they are written — the window moves the whole build, never a spinner.
+        // What is being written, in her words — the window moves the whole build, never a spinner, and
+        // never a code file name (audit9 B4).
         <div className="flex flex-col gap-1" data-applet-build-writing="">
-          <span className="text-xs font-medium text-muted-foreground">Writing</span>
           <ul className="flex flex-col gap-1">
-            {data.files.map((file, i) => (
-              <li key={file.name} className="flex min-w-0 items-center gap-2 text-sm">
-                <FileCode2 className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
-                <span className="truncate">{file.name}</span>
-                <span className="shrink-0 text-xs text-muted-foreground">
-                  {file.source.split("\n").length} lines{i === data.files.length - 1 ? " so far" : ""}
-                </span>
-              </li>
-            ))}
+            {data.files.map((file, i) => {
+              const writing = i === data.files.length - 1;
+              return (
+                <li key={file.name} className="flex min-w-0 items-center gap-2 text-sm" title={file.name}>
+                  {writing ? (
+                    <Loader2 className="h-3.5 w-3.5 shrink-0 animate-spin text-primary" />
+                  ) : (
+                    <Check className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+                  )}
+                  <span className="truncate">
+                    {writing ? "Writing" : "Wrote"} {plainFileLabel(file.name, data.pages)}
+                  </span>
+                </li>
+              );
+            })}
           </ul>
         </div>
       ) : null}

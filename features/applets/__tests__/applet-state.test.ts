@@ -22,9 +22,11 @@ const ROOT = path.resolve(__dirname, "../../..");
 const read = (rel: string) => readFileSync(path.join(ROOT, rel), "utf8");
 
 describe("appletState — the one answer", () => {
-  it("published only when status AND published_to_web say so", () => {
+  it("published only when status AND published_to_web say so; in use when only status does", () => {
     expect(appletState({ status: "published", published_to_web: true, deleted_at: null }).label).toBe("Published");
-    expect(appletState({ status: "published", published_to_web: false, deleted_at: null }).label).toBe("Draft");
+    // "Use it" for My organization (audit9 B8): in use, not on the web.
+    expect(appletState({ status: "published", published_to_web: false, deleted_at: null }).label).toBe("In use");
+    expect(appletState({ status: "published", published_to_web: false, deleted_at: null }).live).toBe(false);
     expect(appletState({ status: "draft", published_to_web: true, deleted_at: null }).label).toBe("Draft");
     expect(appletState({ status: "draft", published_to_web: false }).live).toBe(false);
   });

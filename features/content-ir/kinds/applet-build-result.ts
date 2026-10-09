@@ -153,7 +153,7 @@ export function appletBuildResultMarkdownFromValue(
   const data = readAppletBuildResult(value, true);
   void KIND_KEY;
   return joinBlocks([
-    `# ${data.name || "Your app"}`,
+    `# ${data.name || "Your Applet"}`,
     data.description || null,
     data.pages.length
       ? `## Pages\n\n${data.pages.map((p) => `- ${p.title} (${p.path})`).join("\n")}`
@@ -178,3 +178,28 @@ export const APPLET_BUILD_RESULT_KIND_DEFINITIONS: KindDefinition[] = [
     schema: appletBuildResultKindSchema,
   },
 ];
+
+/**
+ * A file the builder is writing, said in her words — never a code file name (audit9 B4: the window read
+ * "Writing entry.tsx · 7 lines so far"). A file named after one of the Applet's pages is that page; the
+ * entry file is the main screen; anything else is said from its name ("BookCard.tsx" → "the book card").
+ */
+export function plainFileLabel(fileName: string, pages: readonly AppletBuildPage[]): string {
+  const base = (fileName.split("/").pop() ?? fileName).replace(/\.[a-z0-9]+$/i, "");
+  const squash = (s: string) => s.toLowerCase().replace(/[^a-z0-9]/g, "");
+  const key = squash(base);
+  if (/\.css$/i.test(fileName)) return "the look";
+  if (["entry", "index", "app", "main", "root"].includes(key)) return "the main screen";
+  const page = pages.find((p) => {
+    const t = squash(p.title);
+    return t.length > 0 && (key === t || key === `${t}page` || key === `${t}view` || key === `${t}screen`);
+  });
+  if (page) return `the ${page.title} page`;
+  if (/^use[A-Z]/.test(base) || ["lib", "utils", "util", "helpers", "data", "api", "types", "store"].includes(key)) return "the parts behind the pages";
+  const words = base
+    .replace(/[-_]+/g, " ")
+    .replace(/([a-z0-9])([A-Z])/g, "$1 $2")
+    .trim()
+    .toLowerCase();
+  return words ? `the ${words}` : "the Applet";
+}
