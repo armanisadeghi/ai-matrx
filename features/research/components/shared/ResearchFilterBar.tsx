@@ -289,7 +289,8 @@ export function ResearchFilterBar({
     <>
       <div
         className={cn(
-          "flex items-center gap-1.5 p-1 rounded-full matrx-glass-thin-border",
+          // Wraps (never clips): at tablet widths the facets + actions need a second line.
+          "flex flex-wrap items-center gap-1.5 p-1 rounded-[1.25rem] matrx-glass-thin-border",
           className,
         )}
       >
@@ -317,7 +318,7 @@ export function ResearchFilterBar({
         {showSearch && (
           <>
             <div className="w-px h-4 bg-border/30 mx-0.5 hidden sm:block" />
-            <div className="flex-1 flex items-center gap-1.5 min-w-0 h-6 px-2 rounded-full matrx-glass-card">
+            <div className="flex-1 flex items-center gap-1.5 min-w-[9rem] h-6 px-2 rounded-full matrx-glass-card">
               <Search className="h-3 w-3 text-muted-foreground shrink-0" />
               <input
                 type="text"

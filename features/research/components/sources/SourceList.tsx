@@ -1612,7 +1612,7 @@ export default function SourceList() {
         hostnames={hostnames}
         count={formatSourceScoreCoverage(sourceList)}
         trailing={
-          <div className="flex items-center gap-2">
+          <div className="ml-auto flex flex-wrap items-center gap-2">
             {/* Finding this topic's captured pages across everything else you know is the
                 Knowledge hub's job (KNOWLEDGE-HUB §6, H6b); triage, ranking and export stay here. */}
             <Link
