@@ -18,6 +18,9 @@ jest.mock("@/features/board/templates/board-templates", () => ({
   makeBoardFromTemplate: (...a: unknown[]) => makeBoardFromTemplate(...a),
 }));
 
+const readAccountRows = jest.fn();
+jest.mock("../service", () => ({ readAccountRows: (...a: unknown[]) => readAccountRows(...a) }));
+
 import { BoardError } from "@/features/board/persistence/boardsService";
 import { getOrCreateStudioBoard, orderStudioBoards } from "../studio/studio-boards";
 
@@ -28,6 +31,7 @@ describe("the Studio board of a brand", () => {
     jest.clearAllMocks();
     rows.length = 0;
     readResult = { data: [], error: null };
+    readAccountRows.mockResolvedValue([]);
   });
 
   it("lists the Studio board first, whatever else was opened or made after it", () => {
@@ -45,10 +49,29 @@ describe("the Studio board of a brand", () => {
     makeBoardFromTemplate.mockResolvedValue({ id: "new", title: "Brand Studio" });
     const board = await getOrCreateStudioBoard(ARGS);
     expect(board).toMatchObject({ id: "new", canonical: true });
-    expect(makeBoardFromTemplate).toHaveBeenCalledWith("builtin:viral-breakdown", "org", "Brand Studio", {
-      brand_id: "brand",
-      studio_brand_id: "brand",
-    });
+    expect(makeBoardFromTemplate).toHaveBeenCalledWith(
+      "builtin:viral-breakdown",
+      "org",
+      "Brand Studio",
+      { brand_id: "brand", studio_brand_id: "brand" },
+      expect.any(Function),
+    );
+  });
+
+  it("starts with the brand's own stored accounts as profile tiles, and still makes the board when they cannot be read", async () => {
+    readAccountRows.mockResolvedValue([
+      { rowId: "a", platform: "tiktok", handle: "melrobbins", role: "own", followers: 12, profileId: "p1", profileUrl: null },
+      { rowId: "b", platform: "instagram", handle: "rival", role: "competitor", followers: 90, profileId: "p2", profileUrl: null },
+    ]);
+    makeBoardFromTemplate.mockResolvedValue({ id: "new", title: "Brand Studio" });
+    await getOrCreateStudioBoard(ARGS);
+    const extend = makeBoardFromTemplate.mock.calls[0][4] as (d: unknown) => { nodes: { title: string }[] };
+    expect(extend({ camera: { x: 0, y: 0, z: 1 }, nodes: [], groups: [], edges: [], shapes: [] }).nodes.map((n) => n.title)).toEqual(["@melrobbins"]);
+
+    jest.clearAllMocks();
+    readAccountRows.mockRejectedValue(new Error("down"));
+    makeBoardFromTemplate.mockResolvedValue({ id: "new2", title: "Brand Studio" });
+    await expect(getOrCreateStudioBoard(ARGS)).resolves.toMatchObject({ id: "new2" });
   });
 
   it("two opens at once make one board (one in-flight create per brand)", async () => {
