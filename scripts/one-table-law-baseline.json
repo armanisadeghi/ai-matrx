@@ -93,7 +93,6 @@
     "features/masterwork/components/masterworks/RuleFidelityTable.tsx",
     "features/masterwork/components/masterworks/UnfoldingAuditionPanel.tsx",
     "features/media-capture/components/CameraAdminDiagnostics.tsx",
-    "features/meet/components/record/AttendancePanel.tsx",
     "features/notes/components/cleanup/CleanupDebugPanel.tsx",
     "features/notes/components/diff/NoteVersionHistoryPanel.tsx",
     "features/organizations/components/OrgModuleSettings.tsx",
