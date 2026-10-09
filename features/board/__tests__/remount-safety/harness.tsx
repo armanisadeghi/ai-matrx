@@ -261,7 +261,7 @@ export function captureConsoleErrors(): { errors: string[]; restore: () => void 
     // act() scopes (a promise settling while the harness polls) — a property of
     // the harness's clock, never something a person sees.
     if (typeof args[0] === "string" && args[0].startsWith("An update to %s inside a test was not wrapped in act")) return;
-    if (process.env.REMOUNT_DEBUG) process.stderr.write(`[console.error] ${String(new Error().stack).split("\n").slice(2, 12).join("\n")}\n`);
+    if (process.env.REMOUNT_DEBUG) process.stderr.write(`[console.error] ${require("util").inspect(args, { depth: 6 }).slice(0, 2500)}\n`);
     errors.push(args.map((a) => (a instanceof Error ? a.message : typeof a === "string" ? a : JSON.stringify(a))).join(" ").slice(0, 400));
   });
   return { errors, restore: () => spy.mockRestore() };
@@ -339,41 +339,14 @@ export async function typeIntoRich(rich: RichEditorHandle, lines: readonly strin
   });
 }
 
-/** Put the selection back at a range (the probe leaving the person's selection as it found it). */
-export function setRichSelection(rich: RichEditorHandle, from: number, to: number): void {
-  act(() => {
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    const { TextSelection } = require("@tiptap/pm/state") as typeof import("@tiptap/pm/state");
-    rich.view.dispatch(rich.view.state.tr.setSelection(TextSelection.create(rich.view.state.doc, from, to)));
-  });
-}
-
-/** Select the first occurrence of `text` in the rich editor (a person's drag across the words). */
-export function selectInRich(rich: RichEditorHandle, text: string): void {
-  act(() => {
-    const { view } = rich;
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    const { TextSelection } = require("@tiptap/pm/state") as typeof import("@tiptap/pm/state");
-    let found: number | null = null;
-    view.state.doc.descendants((node: { isText: boolean; text?: string }, pos: number) => {
-      if (found === null && node.isText && node.text!.includes(text)) found = pos + node.text!.indexOf(text);
-      return found === null;
-    });
-    if (found === null) throw new Error(`"${text}" is not in the rich editor`);
-    view.focus();
-    view.dispatch(view.state.tr.setSelection(TextSelection.create(view.state.doc, found, found + text.length)));
-  });
-}
-
-/** What the rich editor has selected: the words and where they sit. */
-export function richSelectionOf(rich: RichEditorHandle): { text: string; from: number; to: number } {
-  const { from, to } = rich.view.state.selection;
-  return { text: rich.view.state.doc.textBetween(from, to, "\n"), from, to };
-}
-
-/** Undo once (or redo) with the keyboard shortcut a person uses. */
-export function pressUndo(rich: RichEditorHandle, redo = false): void {
-  act(() => pressKey(rich, { key: "z", code: "KeyZ", ctrlKey: true, metaKey: true, shiftKey: redo }));
+/** Switch the open note to its Split view with the mode switch, the way a person does. */
+export async function showSplitView(tile: { container: Element }): Promise<void> {
+  const button = [...tile.container.querySelectorAll<HTMLElement>("button, [role=radio], [role=tab]")].find(
+    (b) => b.getAttribute("aria-label") === "Split" || b.textContent?.trim() === "Split",
+  );
+  if (!button) throw new Error("the note's Split view switch never rendered");
+  await act(async () => void button.click());
+  await settle(300);
 }
 
 export interface CycleResult {

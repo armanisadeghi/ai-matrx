@@ -56,5 +56,9 @@ export function installBrowserGaps(): void {
     })) as unknown as typeof window.matchMedia;
     Element.prototype.scrollIntoView ??= function scrollIntoView() {};
     Element.prototype.scrollTo ??= function scrollTo() {};
+    // A selection's geometry (the selection toolbar measures it): an unmeasured box, as for the observers.
+    const emptyRect = { x: 0, y: 0, width: 0, height: 0, top: 0, right: 0, bottom: 0, left: 0, toJSON: () => ({}) };
+    Range.prototype.getBoundingClientRect ??= () => emptyRect as DOMRect;
+    Range.prototype.getClientRects ??= () => [] as unknown as DOMRectList;
   }
 }
