@@ -21,7 +21,11 @@ Package mechanics: `aidream/apps/shared/applets/FEATURE.md`.
 **Routes**
 - `app/(link)/applets/[slug]/layout.tsx` — MOUNTS the Applet whenever `resolveAppletView` says run, so it is never
   remounted when its page changes (a page under `[[...path]]` remounts per path; that rebuilt the host and
-  re-read everything on every page change and on browser Back).
+  re-read everything on every page change and on browser Back). Every view at the address renders inside
+  `AppletProviders.tsx` — the SHORT provider list a running Applet reaches, never the whole app's `Providers`
+  (the `(link)` group layout carries none; each other link route takes `components/public-link/LinkProviders.tsx`).
+  It reads the Applet's `app.definition` row on the server (`readAppletDefinition`, the viewer's own client) and
+  hands it to the host as `definition`, so the first `record()` never waits for hydration to read again.
 - `app/(link)/applets/[slug]/[[...path]]/page.tsx` — the Applet's ONE address. `resolveAppletView`
   (`resolve-applet-route.ts`, shared with the layout): a template → its introductory page; signed in → the running
   Applet; signed out + published public Applet (`get_aga_public_data`) → the running Applet on the guest lane plus
@@ -106,7 +110,16 @@ record's own `scope` (`{ entries, shadowDangerousGlobals }`); app-owned modules 
 
 ## Change Log
 
+- 2026-10-09 (lane F6b): A BUILD IS ONE CONVERSATION. The first run starts it on `applets.build`; the automatic fix round is a HOST turn on it (`fixHostTurn` → `host_turn`, never her words), and "Change it", "Fix it" and her replies are its next turns (`continueAgentJson`, @ai-matrx/chat; the record and `last_check` ride `context`). `applets.fix` is no longer used. The conversation is the first request's run (`buildConversationId` over `metadata.build.requests`); the left panel shows it through `AgentConversationDisplay` (read once per tab with `loadConversation`; closing a run window no longer destroys it). A reply sent while a round runs ("Send next") waits and is sent the moment the round ends. The agent (v5) takes her sentence as its user turn (catalogue/record/last_check in its system values), has `ask_person`, and its schema carries `new_table.rows`. Tests: `builder/build-conversation-f6b.test.ts`; chat `a-host-turn-continues-the-conversation.test.ts`.
+
 - **2026-10-09 (lane F8)** — A finished run with no answer anywhere reads "This run finished without an answer." with **Run again** (`run-answer.ts`, `JobRunView.retry` from `@ai-matrx/applets` 0.17.3 when installed); the builder refuses an example seeded as a value (`examplesSeededAsValues`: a `useState` string its own placeholder offers). Stored Applets still seeded this way are listed in the lane F8 handoff (repair pending).
+- 2026-10-09 (lane P1, open speed): measured on live, the open was all script loading — the page named 270 scripts
+  (7.2 MB on the wire), 257 of them the whole app's `Providers`; hydration landed at 9–36 s, then the definition read
+  (0.5–1.5 s) and the compile + first paint (< 0.5 s). `/applets/<slug>` now renders inside `AppletProviders`
+  (meetings, messaging, sandboxes, cloud-file realtime/pickers, upload guard, task shortcuts, extension bridge,
+  recovery, model catalog left out), and the row is read on the server and passed as `definition`
+  (`@ai-matrx/applets` 0.17.2) — the client read that a held socket left on a skeleton is gone from the open.
+
 - 2026-10-09 (lane F6, "Client Offer Breakdowns"): ONE live window per build — every run window of a build opens with `instanceId: applet-build:<id>` and a refused run's window closes before its fix round opens (two windows had overlapped). The fix round narrates in her words (`fixNarration`: "I found a problem with the created date field and I'm fixing it"); its history row reads "Fix the created date field" and the refused row "Problem found" (both read "Fixing"). The card says it is done and what each button does (`doneLine`, button titles) and shows the full link `https://<site>/applets/<slug>` with Copy through `@ai-matrx/kit/clipboard` (`appletLink`). The preview's held badge reads "N held in preview" with `heldHint`. `bannedIcons` refuses a generated Applet that imports lucide `Sparkles`/`Sparkle`/`WandSparkles` (emoji in her own data untouched). Server side (aidream `ac9a396f9f`): an out-of-range numeric tool argument is CLAMPED, never refused, and strict schemas carry stripped bounds in the description — the `ask_person timeout_seconds` refusal. Tests: `builder/build-page-f6.test.ts`.
 
 - 2026-10-09 (lane F2, Applet audit): a failed run shows `run.error.message` — the visitor sentence `@ai-matrx/applets` 0.16 `forVisitor` gives it — never the stream's engineering line; a deleted or misconfigured job offers members of the Applet's organization "Fix this job" (→ Manage). A refused data READ (`announceRefusal(…, "read(<source>)")`) raises `AppletDataRefusedNotice` above the Applet — sign-in that returns here for a visitor, a plain sentence for a member — instead of a toast or a confident empty list. `/api/agent-context-menu` answers a request with no session an empty menu (was a 401 on every guest page). The kind fix-it bar no longer tells a signed-out visitor an `internal` kind is "not registered" (`unreadable` state, captured to the error inspector).
