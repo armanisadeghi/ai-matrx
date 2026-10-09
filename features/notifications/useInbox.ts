@@ -23,13 +23,14 @@
  * The broadcast on insert is the named follow-up in ./FEATURE.md.
  */
 
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import {
   useInfiniteQuery,
   useQuery,
   useQueryClient,
   type InfiniteData,
 } from "@tanstack/react-query";
+import { useIdleReady } from "@ai-matrx/kit/idle-scheduler";
 import { toast } from "@/lib/toast";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
@@ -65,23 +66,9 @@ const summaryKey = (userId: string | null) => [...INBOX_QUERY_KEY, "summary", us
 const feedPrefix = (userId: string | null) => [...INBOX_QUERY_KEY, "feed", userId] as const;
 const workKey = (userId: string | null) => [...INBOX_QUERY_KEY, "work-waiting", userId] as const;
 
-/**
- * `custom.inbox_counts` is real but not free; the header mounts this on EVERY
- * page, so the read waits for idle rather than competing with first paint.
- */
-function useIdleReady(): boolean {
-  const [ready, setReady] = useState(false);
-  useEffect(() => {
-    const ric = typeof window !== "undefined" ? window.requestIdleCallback : undefined;
-    if (ric) {
-      const handle = ric(() => setReady(true), { timeout: 2000 });
-      return () => window.cancelIdleCallback?.(handle);
-    }
-    const handle = window.setTimeout(() => setReady(true), 500);
-    return () => window.clearTimeout(handle);
-  }, []);
-  return ready;
-}
+// `custom.inbox_counts` and `my_inbox_summary` are real but not free; the header mounts this on
+// EVERY page, so the badge reads wait for the shared idle flush (`@ai-matrx/kit/idle-scheduler`)
+// rather than competing with first paint.
 
 /** What waits on this person in the record store, every organization (`custom.inbox_counts`). */
 export function useWorkWaiting(enabled: boolean) {
@@ -129,7 +116,7 @@ export function useInboxCounts(): InboxCounts {
   const summary = useQuery({
     queryKey: summaryKey(userId),
     queryFn: fetchInboxSummary,
-    enabled: userId !== null,
+    enabled: userId !== null && idleReady,
     refetchInterval: INBOX_POLL_INTERVAL_MS,
     refetchOnWindowFocus: true,
     staleTime: 15_000,
