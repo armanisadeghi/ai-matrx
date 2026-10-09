@@ -31,6 +31,7 @@ import { toast } from "@/lib/toast";
 import { cn } from "@/lib/utils";
 
 import { useAllSwipeCollections, useInvalidateSocial, useSwipeItems } from "../hooks";
+import { useSocialSpend } from "../cost";
 import { createCollection, getTranscript, socialErrorMessage } from "../server";
 import { readTranscribedPostIds, renameCollection, setCollectionArchived } from "../service";
 import {
@@ -82,6 +83,7 @@ function chip(active: boolean) {
 
 export function SwipeFileTab() {
   const { brandId, organizationId } = useSocials();
+  const { costText } = useSocialSpend(organizationId);
   const invalidate = useInvalidateSocial();
   const collections = useAllSwipeCollections();
   const [showArchived, setShowArchived] = useState(false);
@@ -178,7 +180,7 @@ export function SwipeFileTab() {
       }
       const ok = await confirm({
         title: `Transcribe ${todo.length} ${todo.length === 1 ? "post" : "posts"}?`,
-        description: `About ${todo.length} ${todo.length === 1 ? "credit" : "credits"}, billed to this organization.${done.size ? ` ${done.size} already transcribed ${done.size === 1 ? "is" : "are"} skipped.` : ""}`,
+        description: [costText("transcript", todo.length), done.size ? `${done.size} already transcribed ${done.size === 1 ? "is" : "are"} skipped.` : null].filter(Boolean).join(" · ") || undefined,
         confirmLabel: "Transcribe",
         variant: "destructive",
       });

@@ -82,3 +82,46 @@ export function useSocialSpend(organizationId: string | null | undefined) {
 
   return { costText, confirmSpend };
 }
+
+// ---------------------------------------------------------------------------
+// Outside render (an awaited seam such as postSpend.ts): same rule, read at the moment it runs.
+// ---------------------------------------------------------------------------
+
+let costsOnce: Promise<SocialCosts | null> | null = null;
+
+async function costsNow(): Promise<SocialCosts | null> {
+  if (!costsOnce) {
+    costsOnce = (async () => {
+      const { ensureOrgId } = await import("@/lib/organizations/ensureOrgId");
+      const organizationId = await ensureOrgId(null);
+      return getCosts({ organizationId });
+    })().catch(() => {
+      costsOnce = null; // unknown stays unknown; the next call asks again
+      return null;
+    });
+  }
+  return costsOnce;
+}
+
+/** `confirmSpend` for code outside render: true when trivial or unknown, else the confirm dialog. */
+export async function confirmSocialSpendNow(
+  action: SocialSpendAction,
+  count: number,
+  dialog: { title: string; confirmLabel: string; description?: string },
+): Promise<boolean> {
+  const { formatCost, usdToPoints } = await import("@ai-matrx/kit/format");
+  const { currentPointsRate } = await import("@/components/cost/pointsRate");
+  const { currentCostUnit } = await import("@/components/cost/costUnit");
+  const rate = currentPointsRate();
+  const unit = currentCostUnit();
+  const words = formatPointsCost(actionUsd(await costsNow(), action, count), {
+    format: (usd) => formatCost(usd, { unit, rate }),
+    toPoints: (usd) => usdToPoints(usd, { rate }),
+  });
+  if (!words) return true;
+  return confirm({
+    title: dialog.title,
+    description: [dialog.description, `Uses ${words.replace(/^≈ /, "about ")}.`].filter(Boolean).join(" "),
+    confirmLabel: dialog.confirmLabel,
+  });
+}
