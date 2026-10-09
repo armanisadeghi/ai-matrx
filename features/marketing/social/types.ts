@@ -336,6 +336,22 @@ export interface SocialSpend {
   platform: SocialSpendFigure | null;
 }
 
+/** `GET /social/costs`: what each action costs us in USD (the ledger's own price). Shown only as
+ * points, through `useSocialSpend` (`cost.ts`) — never dollars to a member, never vendor credits. */
+export type SocialSpendAction =
+  | "post"
+  | "transcript"
+  | "comments"
+  | "profile_page"
+  | "track"
+  | "save_link"
+  | "ads_search";
+
+export interface SocialCosts {
+  call_usd: number | null;
+  operations: Partial<Record<SocialSpendAction, number | null>>;
+}
+
 export interface SocialCredits {
   balances: Record<string, number | null>;
   spend: SocialSpend | null;

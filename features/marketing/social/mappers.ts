@@ -420,20 +420,19 @@ function plural(n: number, word: string): string {
 }
 
 /**
- * What a profile refresh did, in one line: "3 new posts, 27 updated · 2 credits",
- * the reuse-window answer, or "no posts returned". Never a silent zero.
+ * What a profile refresh did, in one line: "3 new posts, 27 updated", the
+ * reuse-window answer, or "no posts returned". Never a silent zero. The cost is
+ * not named: a provider charge is a hard cost charged in points, shown only when
+ * worth a warning (cost.ts).
  */
 export function refreshSummary(r: IngestProfileResult): string {
   if (r.trace?.reused) {
     return r.notes?.[0] ?? "Refreshed recently; served from the shared cache, no new fetch";
   }
-  const credits =
-    (r.trace?.cost_credits ?? 0) + (r.list_trace ?? []).reduce((sum, t) => sum + (t.cost_credits ?? 0), 0);
-  const cost = credits > 0 ? ` · ${plural(credits, "credit")}` : "";
-  if (r.pages_walked > 0 && r.posts_upserted === 0) return `No posts returned${cost}`;
+  if (r.pages_walked > 0 && r.posts_upserted === 0) return "No posts returned";
   if (typeof r.posts_new === "number") {
     const updated = r.posts_updated ?? Math.max(0, r.posts_upserted - r.posts_new);
-    return `${plural(r.posts_new, "new post")}, ${updated} updated${cost}`;
+    return `${plural(r.posts_new, "new post")}, ${updated} updated`;
   }
-  return `${plural(r.posts_upserted, "post")} updated${cost}`;
+  return `${plural(r.posts_upserted, "post")} updated`;
 }

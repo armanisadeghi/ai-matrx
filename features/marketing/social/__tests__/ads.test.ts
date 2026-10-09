@@ -1,6 +1,6 @@
 
 import {
-  adThumbnail, creditsLabel, daysLive, isLikelyWinner, newSinceLook, parseAdvertiserDefinition, runLabel, sortAds,
+  adThumbnail, daysLive, isLikelyWinner, newSinceLook, parseAdvertiserDefinition, runLabel, sortAds,
   toAdCardModel,
 } from "../ads";
 import type { AdCardModel, SocialAdRow } from "../types";
@@ -79,11 +79,6 @@ describe("advertiser definition", () => {
     expect(parseAdvertiserDefinition({ library: "bing", advertiser: "x", lastLookAt: "2026-10-01T00:00:00Z" })).toBeNull();
     expect(parseAdvertiserDefinition({ library: "meta", advertiser: "", lastLookAt: "2026-10-01T00:00:00Z" })).toBeNull();
     expect(parseAdvertiserDefinition({ library: "meta", advertiser: "x", lastLookAt: "nope" })).toBeNull();
-  });
-  it("says what a search costs", () => {
-    expect(creditsLabel(1)).toBe("1 credit");
-    expect(creditsLabel(3)).toBe("3 credits");
-    expect(creditsLabel(null)).toBe("Cost not reported");
   });
 });
 

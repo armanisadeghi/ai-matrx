@@ -248,12 +248,12 @@ describe("refreshSummary", () => {
     list_trace: [{ provider: "scrapecreators", fallback_reason: null, cost_credits: 1, reused: false }],
     notes: [],
   };
-  it("says new vs updated and the cost", () => {
-    expect(refreshSummary({ ...base, posts_new: 3, posts_updated: 27 })).toBe("3 new posts, 27 updated · 2 credits");
-    expect(refreshSummary({ ...base, posts_new: 1, posts_updated: 29 })).toBe("1 new post, 29 updated · 2 credits");
+  it("says new vs updated, never vendor credits", () => {
+    expect(refreshSummary({ ...base, posts_new: 3, posts_updated: 27 })).toBe("3 new posts, 27 updated");
+    expect(refreshSummary({ ...base, posts_new: 1, posts_updated: 29 })).toBe("1 new post, 29 updated");
   });
   it("never answers a silent zero", () => {
-    expect(refreshSummary({ ...base, posts_upserted: 0, posts_new: 0, posts_updated: 0 })).toBe("No posts returned · 2 credits");
+    expect(refreshSummary({ ...base, posts_upserted: 0, posts_new: 0, posts_updated: 0 })).toBe("No posts returned");
   });
   it("names the reuse window when nothing was fetched", () => {
     const reused = { ...base, trace: { ...base.trace, reused: true, cost_credits: 0 }, list_trace: [], pages_walked: 0, posts_upserted: 0, notes: ["Refreshed within the last 12h; served from the shared cache."] };

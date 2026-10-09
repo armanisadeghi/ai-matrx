@@ -21,6 +21,7 @@ import { toast } from "@/lib/toast";
 
 import { useAllSwipeCollections, useInvalidateSocial } from "../hooks";
 import { looksLikePostUrl } from "../link";
+import { useSocialSpend } from "../cost";
 import { addToCollection, createCollection, ingestPost, socialErrorMessage } from "../server";
 import { parseTagInput, visibleCollections } from "../swipe";
 import { NoteTagsFields } from "./NoteTagsFields";
@@ -243,6 +244,7 @@ export function SaveLinkDialog({
   defaultCollectionId: string | null;
 }) {
   const invalidate = useInvalidateSocial();
+  const { costText } = useSocialSpend(organizationId);
   const { options, choice, setChoice, loading } = useCollectionChoice(open, defaultCollectionId);
   const [url, setUrl] = useState("");
   const [newName, setNewName] = useState("Saved");
@@ -322,7 +324,7 @@ export function SaveLinkDialog({
                 <ErrorAlchemyMenu error={failure} operation="save social link" />
               </span>
             ) : (
-              status || (url.trim() && !valid ? "Not a post link" : "~2 credits")
+              status || (url.trim() && !valid ? "Not a post link" : costText("save_link"))
             )}
           </p>
         </div>

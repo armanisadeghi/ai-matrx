@@ -24,10 +24,10 @@ import { toast } from "@/lib/toast";
 
 import { useInvalidateSocial } from "../hooks";
 import { detectPlatform, handleFromInput, looksLikePostUrl } from "../link";
+import { useSocialSpend } from "../cost";
 import {
   ingestPost,
   socialErrorCode,
-  socialErrorCredits,
   socialErrorMessage,
   trackAccount,
 } from "../server";
@@ -70,6 +70,7 @@ export function TrackAccountDialog({
 }) {
   const router = useRouter();
   const invalidate = useInvalidateSocial();
+  const { costText } = useSocialSpend(organizationId);
   const [text, setText] = useState(initialText ?? "");
   const [platform, setPlatform] = useState<string>("auto");
   const [role, setRole] = useState<TrackedRole>(defaultRole);
@@ -121,9 +122,7 @@ export function TrackAccountDialog({
       setText("");
     } catch (err) {
       setFailure(err);
-      const credits = socialErrorCredits(err);
-      const cost = credits ? ` · ${credits} credit${credits === 1 ? "" : "s"} charged` : "";
-      setError(`${socialErrorMessage(err, "Couldn't track that account")}${cost}`);
+      setError(socialErrorMessage(err, "Couldn't track that account"));
     } finally {
       setBusy(false);
       setStatus("");
@@ -178,7 +177,7 @@ export function TrackAccountDialog({
             ) : text.trim() && !effectivePlatform ? (
               "Pick a platform"
             ) : handle ? (
-              `@${handle}${effectivePlatform ? ` on ${SOCIAL_PLATFORM_LABELS[effectivePlatform]}` : ""} · ~4 credits`
+              [`@${handle}${effectivePlatform ? ` on ${SOCIAL_PLATFORM_LABELS[effectivePlatform]}` : ""}`, costText("track")].filter(Boolean).join(" · ")
             ) : (
               ""
             )}
