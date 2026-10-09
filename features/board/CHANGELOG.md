@@ -1,5 +1,12 @@
 # CHANGELOG — Board (`features/board`)
 
+## 2026-10-09 — Real sticky notes and plain canvas text
+
+- The toolbar's notepad tool made a full Note tile; it is now the **Sticky note** tool (S): a square coloured card, no header, type straight on it, words shrink to fit, six colours (light + dark), Tab makes the next sticky beside it. Its words are a real Note in the person's "Sticky notes" folder (created on the first typed character, in the board's organization); colour, size and place live in the board. Full Notes stay in the Add menu ("Note").
+- **Text** (T, or double-click empty board) is plain text on the canvas: no box, grows with its words, wraps once resized; toolbar size S/M/L/XL, bold, colour, alignment. Saved label tiles migrate to text on load (same id, words, place).
+- Both are shapes (`sticky` / `text`): selection, move, resize, delete, undo, snap, marquee as drawings. Agent: `board_shape` kinds sticky / text, `board_add_tile` text makes canvas text, `board_read` gives a sticky's `note_id`. Manifest synced.
+- Guard: `__tests__/sticky-notes-and-text.test.tsx` (8 cases, each proven red by a mutation).
+
 ## 2026-10-09 — Add menu: sections, search, recents; instant adds
 
 - Add menu, Start panel and Board menu rows are grouped under nine sections (Canvas · Notes & docs · Files & media · Data · AI · Work · Meetings · Research & learning · Web & social); every catalog type declares a `section` (guard `add-sections.test.ts`). One row per thing with "bring in" as its second door; search box with keyboard navigation (Enter adds, Shift+Enter brings in); Recent = last 5 adds per person (`matrx.board.recentAdds:<userId>`). Canvas rows activate the toolbar tool.

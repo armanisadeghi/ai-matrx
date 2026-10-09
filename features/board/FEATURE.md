@@ -253,6 +253,15 @@ interface SelectionToolbarSection {
 
 Building blocks for a section: `SelectionToolbarButton` (icon + `label` tooltip + `shortcut`), `SelectionToolbarMenu` (button → popover, `data-board-chrome`), `SelectionToolbarDivider`, `ColorSwatches` (the palette; `withNone`, `alpha` for fill tints), `ChoiceRow` (labelled options). The shape sections live in `components/ShapeToolbarSections.tsx`. A later lane (sticky notes, text, frames) adds a section to `/board`'s `toolbarSections` in `UserBoard` — never a second toolbar.
 
+## Sticky notes and plain text — words on the canvas (2026-10-09; FigJam / Miro / tldraw)
+
+- **Both are shapes** (`engine/shapes.ts` kinds `sticky` / `text`; pure helpers `engine/canvas-text.ts`): the drawings' selection, move, resize, delete, undo, snap, marquee and toolbar. Views and editors: `components/CanvasTextViews.tsx`; toolbar sections `components/CanvasTextToolbarSections.tsx` (in `UserBoard`'s `toolbarSections`; the drawing section skips them). Create through `home/canvas-text-create.ts` (`createStickyOnBoard` / `createTextOnBoard`, no position = view centre) — the toolbar tools, double-click on empty board and the Add menu's Canvas rows all end there.
+- **Sticky (S):** square card (220), no chrome; click once selects, again (or double-click / Enter) types; Esc / ⌘Enter / clicking away keeps the words (one undo step); words shrink to fit (`fitFont`); `style.sticky` = yellow · orange · pink · violet · blue · green (`--board-sticky-*` in `board-accents.css`, light + dark); Tab makes the next sticky to the right, same size and colour, typing. Author initials are not built.
+- **Sticky storage:** colour/size/place in the board document; the words in a Note (`shape.note` = its id; `shape.text` is the board's copy for painting and agents). `board/sticky-notes.ts` `startStickyNoteSync` watches the shapes (typing, Tab, undo, agent, duplicate all reach the Note one way): no Note until the first non-blank character; then `createNote` with `folder_name: "Sticky notes"` (get-or-create per person + organization) in the BOARD's organization (`ensureOrgId(boardOrg)`; `persistence/sticky-note-store.ts`); later words update that Note (debounced 700 ms); on open the Notes' own words win. The Note id is stamped into every undo snapshot (`BoardStore.stampShape`, no history step). A copy (⌘D) drops the id, so it files its own Note. Removing a sticky leaves its Note in Notes (like taking a tile off). Mounted only on a saved board for a signed-in person.
+- **Plain text (T, double-click on empty board):** no box; `wrap` absent = as wide as its longest line, set once a side is dragged (then wraps); its box is measured after each change and stamped (no undo step); empty text is removed on leaving; style `textSize` S/M/L/XL, `textWeight`, `stroke` (colour), `textAlign`.
+- **Label tiles are retired:** `parseBoardDocument` turns a stored `label` node into text (same id, words, rect; L bold), so the next save writes text. The catalog's "Label" item still exists in `items/content-items.tsx` (Add lane) — what it places migrates on the next load.
+- Guard: `__tests__/sticky-notes-and-text.test.tsx`.
+
 ## Agent tools — the board is a surface
 
 Every host wraps its board in **`components/BoardSurface.tsx`**: it mounts the
@@ -319,7 +328,7 @@ dormant; the host keeps them in an `ItemSurfaceIndex` (`BoardToolHost.itemSurfac
 
 | Piece | File |
 |---|---|
-| Tool declarations: `board_read` (now lists shapes: id, kind, rect, style, text, bound ends; ≤200), `board_add_tile` (note / markdown / text / html / image), `board_update_tile`, `board_remove_tile`, `board_move_tiles`, `board_arrange` (grid / tidy / row / column / align / distribute), `board_group` (named frame), `board_connect`, `board_shape` (create / update / delete drawings in one step; `from_id`/`to_id` bind line/arrow ends to tiles or shapes, `ref` names a shape for later entries in the same call; an arrow between two tiles is a connection), `board_focus`, `board_open_item`, `board_item_act`, `board_park`, `board_undo` | `tools/board-tools.ts` (carried by `features/surfaces/manifests/board.manifest.ts`) |
+| Tool declarations: `board_read` (now lists shapes: id, kind, rect, style, text, bound ends, a sticky's note_id; ≤200), `board_add_tile` (note / markdown / text — plain canvas text, not a tile / html / image), `board_update_tile`, `board_remove_tile`, `board_move_tiles`, `board_arrange` (grid / tidy / row / column / align / distribute), `board_group` (named frame), `board_connect`, `board_shape` (create / update / delete drawings, sticky notes and plain text in one step; `from_id`/`to_id` bind line/arrow ends to tiles or shapes, `ref` names a shape for later entries in the same call; an arrow between two tiles is a connection), `board_focus`, `board_open_item`, `board_item_act`, `board_park`, `board_undo` | `tools/board-tools.ts` (carried by `features/surfaces/manifests/board.manifest.ts`) |
 | Handlers — host-agnostic, drive `useBoard` + the store; errors come back as `{ok:false, error}` with a remedy; remove toasts an Undo; adding never moves the camera | `tools/useBoardAgentTools.ts` |
 | The bridge: per-tile capture index, `board_items` overview, open / act on any item | `tools/item-surfaces.ts` |
 | Pure layout math | `engine/arrange.ts` |
@@ -410,7 +419,7 @@ and is kept. Tile bodies are STATIC imports inside the page's one `ssr:false` ed
   first words; the tile saves `meta.draft` and restarts the draft under the same id after a reload);
   text from a paste or `board_add_tile` becomes a note at once through `NotesAPI.create`. The demo
   board and the workflow run board render the same body inside `SurfaceActivity`. The board's Text
-  tool label is `tiles/TextTileBody.tsx`.
+  tool makes plain canvas text (see Sticky notes and plain text).
 - **Feature tiles are the feature's page body, with its surface** (`items/feature-items.tsx`). Each body
   mounts its surface through the SAME host the feature's page uses, so no feature item declares a
   `Host`: Task → `TaskEditor` (`TaskEditorBody` mounts `matrx-user/tasks`); War Room → the room's
