@@ -1,0 +1,182 @@
+import type { SupabaseClient } from "@supabase/supabase-js";
+import type { Database, Tables } from "@/types/database.types";
+import { uesGetBulk } from "@/features/scopes/service/favoritesCore";
+import {
+  normalizeProviderMessage,
+  PROVIDER_MESSAGE_COLUMNS,
+  PROVIDER_TRANSCRIPT_PAGE_SIZE,
+  type ProviderConversationMessage,
+} from "../lib/providerConversationMessage";
+import { isCodePluginSourceApp } from "../lib/providerSource";
+
+export { PROVIDER_TRANSCRIPT_PAGE_SIZE };
+
+export type ProviderConversationRow = Pick<
+  Tables<{ schema: "chat" }, "conversation">,
+  | "id"
+  | "title"
+  | "description"
+  | "source_app"
+  | "source_feature"
+  | "status"
+  | "message_count"
+  | "initial_agent_id"
+  | "exclude_from_kg"
+  | "created_at"
+  | "updated_at"
+  // Provenance columns. Read here because the detail view has to SAY where
+  // every field came from — a gap analysis is impossible while "AI Matrx
+  // derived this" and "Claude Code reported this" look identical.
+  | "conversation_type"
+  | "origin_class"
+  | "created_by"
+  | "organization_id"
+  | "task_id"
+>;
+
+export type ProviderConversation = ProviderConversationRow & {
+  /**
+   * The caller's favorite flag, from `platform.user_entity_state` via
+   * `ues_get_bulk` — NOT the retired `chat.conversation.is_favorite` column.
+   *
+   * A favorite is per-USER state, so it never belonged on the shared row. Every
+   * star in the app writes user_entity_state through the `ues_set` chokepoint;
+   * this panel used to project the column, which nothing has written since the
+   * cutover, and so reported the opposite of what the user had just clicked.
+   */
+  is_favorite: boolean;
+};
+
+// One literal, not a concatenation: supabase-js infers the row type from the
+// select STRING, and a `+`-built value degrades it to GenericStringError.
+const CONVERSATION_COLUMNS =
+  "id, title, description, source_app, source_feature, status, message_count, initial_agent_id, exclude_from_kg, created_at, updated_at, conversation_type, origin_class, created_by, organization_id, task_id" as const;
+
+export type { ProviderConversationMessage };
+
+export interface ProviderConversationDetail {
+  conversation: ProviderConversation;
+  messages: ProviderConversationMessage[];
+  visibleMessageCount: number;
+  hasEarlierMessages: boolean;
+}
+
+export type ProviderConversationRead =
+  | {
+      state: "ready";
+      detail: ProviderConversationDetail;
+      error: null;
+    }
+  | {
+      /**
+       * A real, readable AI Matrx conversation that is NOT a provider mirror.
+       *
+       * It used to REDIRECT to /chat, which meant the one surface that explains
+       * where a conversation's data comes from was unreachable for the majority
+       * of conversations. It now renders the provenance view with a door to
+       * runnable chat — the transcript stays provider-only because a mirror is
+       * the only kind that has no chat home.
+       */
+      state: "not-provider";
+      detail: null;
+      error: null;
+      conversation: ProviderConversation;
+      initialAgentId: string | null;
+    }
+  | {
+      state: "unavailable";
+      detail: null;
+      error: unknown;
+    };
+
+/**
+ * The ONE read of a provider conversation, for any Supabase client: the
+ * server page passes its request client, the /work Live hub the browser one.
+ */
+export async function readProviderConversationWith(
+  supabase: SupabaseClient<Database>,
+  conversationId: string,
+): Promise<ProviderConversationRead> {
+  const conversationResult = await supabase
+    .schema("chat")
+    .from("conversation")
+    .select(CONVERSATION_COLUMNS)
+    .eq("id", conversationId)
+    .is("deleted_at", null)
+    .maybeSingle();
+
+  if (conversationResult.error || !conversationResult.data) {
+    return {
+      state: "unavailable",
+      detail: null,
+      error: conversationResult.error,
+    };
+  }
+
+  // The favorite comes from the store that is written, not from the row. A
+  // failed read renders "No" rather than blocking the page — the same loud
+  // degrade `applyFavoritesFromUes` uses on the list side. Read through the
+  // favorites chokepoint's injectable core (`ues_*` RPCs are never called
+  // bare outside features/scopes/service/ — W0-P3).
+  const favoriteResult = await uesGetBulk(supabase, "conversation", [
+    conversationId,
+  ]);
+  if (!favoriteResult.ok) {
+    console.error(
+      "[providerConversation] favorite read failed — rendering favorite unset",
+      favoriteResult.error,
+    );
+  }
+  const conversation: ProviderConversation = {
+    ...conversationResult.data,
+    is_favorite: favoriteResult.ok
+      ? favoriteResult.data.items.some((item) => item.isFavorite)
+      : false,
+  };
+
+  if (!isCodePluginSourceApp(conversation.source_app)) {
+    return {
+      state: "not-provider",
+      detail: null,
+      error: null,
+      conversation,
+      initialAgentId: conversation.initial_agent_id,
+    };
+  }
+
+  const messagesResult = await supabase
+    .schema("chat")
+    .from("message")
+    .select(PROVIDER_MESSAGE_COLUMNS, {
+      count: "exact",
+    })
+    .eq("conversation_id", conversationId)
+    .is("deleted_at", null)
+    .eq("is_visible_to_user", true)
+    .order("position", { ascending: false })
+    .order("created_at", { ascending: false })
+    .limit(PROVIDER_TRANSCRIPT_PAGE_SIZE);
+
+  if (messagesResult.error) {
+    return {
+      state: "unavailable",
+      detail: null,
+      error: messagesResult.error,
+    };
+  }
+
+  return {
+    state: "ready",
+    detail: {
+      conversation,
+      messages: [...messagesResult.data]
+        .reverse()
+        .map(normalizeProviderMessage),
+      visibleMessageCount: messagesResult.count ?? messagesResult.data.length,
+      hasEarlierMessages:
+        (messagesResult.count ?? messagesResult.data.length) >
+        messagesResult.data.length,
+    },
+    error: null,
+  };
+}
