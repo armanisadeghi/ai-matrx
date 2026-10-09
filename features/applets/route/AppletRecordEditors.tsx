@@ -163,6 +163,11 @@ function CatalogueGaps({ catalogue, error }: { catalogue: AppletCatalogue | null
 
 // ── Pages ────────────────────────────────────────────────────────────────────
 
+/** One page address however it is written: "" and "/" are the home page, "add" and "/add" one page. Exported for tests. */
+export function pageAddressKey(path: string): string {
+  return path.trim().replace(/^\/+/, "").replace(/\/+$/, "");
+}
+
 export function AppletPagesEditor({ app }: { app: AppletDefinition }) {
   const saved = appletPages(app);
   const [pages, setPages] = useState<AppletPage[]>(saved);
@@ -187,7 +192,7 @@ export function AppletPagesEditor({ app }: { app: AppletDefinition }) {
               <Field
                 aria-label="Path"
                 value={page.path}
-                placeholder="/clients/:id"
+                placeholder="Home page"
                 onChange={(e) => set(i, { path: e.target.value })}
                 className="w-40"
               />
@@ -235,11 +240,9 @@ export function AppletPagesEditor({ app }: { app: AppletDefinition }) {
           busy={busy}
           onReset={() => setPages(saved)}
           onSave={() => {
-            const paths = pages.map((p) => p.path.trim());
-            if (paths.some((p) => !p.startsWith("/"))) {
-              toast.error("Every path starts with /.");
-              return;
-            }
+            // The builder writes paths relative to the Applet ("" is its home page, "add", "books/:id"),
+            // so a missing leading "/" is the normal shape, never an error — two pages at one address is.
+            const paths = pages.map((p) => pageAddressKey(p.path));
             if (new Set(paths).size !== paths.length) {
               toast.error("Two pages share a path.");
               return;
@@ -282,9 +285,9 @@ export function AppletJobsEditor({ app }: { app: AppletDefinition }) {
     <div className="space-y-3">
       <CatalogueGaps catalogue={catalogue} error={error} />
       {jobs.length === 0 ? (
-        <EmptyState icon={<Plus />} title="No jobs" line="Add a job for the Applet to run with useJob." />
+        <EmptyState icon={<Plus />} title="No AI jobs" line="Add an AI job this Applet can run." />
       ) : (
-        <RowGroup title="Jobs">
+        <RowGroup title="AI jobs">
           {jobs.map((job, i) => (
             <div key={i} className="flex flex-wrap items-center gap-2 px-3 py-2">
               <Field
@@ -393,9 +396,9 @@ export function AppletSourcesEditor({ app }: { app: AppletDefinition }) {
     <div className="space-y-3">
       <CatalogueGaps catalogue={catalogue} error={error} />
       {sources.length === 0 ? (
-        <EmptyState icon={<Plus />} title="No sources" line="Add a table or record type for useRows." />
+        <EmptyState icon={<Plus />} title="No data" line="Add a table this Applet reads and writes." />
       ) : (
-        <RowGroup title="Sources">
+        <RowGroup title="Data">
           {sources.map((source, i) => (
             <div key={i} className="flex flex-wrap items-center gap-2 px-3 py-2">
               <Field

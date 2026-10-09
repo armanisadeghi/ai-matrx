@@ -8,7 +8,7 @@
 // twice and ten icon buttons per card.
 
 import Link from "next/link";
-import { Plus } from "lucide-react";
+import { LayoutTemplate, Plus } from "lucide-react";
 import { Button as ControlButton } from "@ai-matrx/design-system/controls";
 import { RecordPageHeader } from "@/features/shell/components/header/templates/RecordPageHeader";
 import { EntityListPage } from "@/lib/entity-list/components/EntityListPage";
@@ -25,6 +25,22 @@ function NewAppletButton() {
   );
 }
 
+/** The first-run doors: build one by talking, or start from a template (audit L1). */
+function FirstAppletActions() {
+  return (
+    <div className="flex flex-wrap items-center justify-center gap-2">
+      <ControlButton variant="primary" asChild icon={<Plus className="h-4 w-4" />}>
+        <Link href="/applets/build">Build your first Applet</Link>
+      </ControlButton>
+      <ControlButton variant="outline" asChild icon={<LayoutTemplate className="h-4 w-4" />}>
+        <Link href={APPLET_TEMPLATES_HREF}>Start from a template</Link>
+      </ControlButton>
+    </div>
+  );
+}
+
+export const APPLET_TEMPLATES_HREF = "/templates/applets";
+
 export function AppletsListPage() {
   return (
     <>
@@ -33,7 +49,7 @@ export function AppletsListPage() {
         config={appletListConfig}
         surface={APPLET_LIST_SURFACE}
         headerActions={<NewAppletButton />}
-        emptyAction={<NewAppletButton />}
+        emptyAction={<FirstAppletActions />}
       />
     </>
   );

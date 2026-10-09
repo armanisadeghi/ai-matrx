@@ -50,6 +50,14 @@ export function appletState(row: AppletStateFields): AppletState {
   return STATES.draft;
 }
 
+/**
+ * The archive confirm on a page that holds no list (Settings › Danger): it names where the Applet
+ * comes back from, never "this list" (audit A1).
+ */
+export function archiveAppletFromPageSentence(name: string): string {
+  return `This archives "${name}" and stops it for everyone. Restore it from Applets → Filters → Archived.`;
+}
+
 /** "v3" — the saved content version; null while nothing has been built yet. */
 export function appletVersionLabel(contentVersion: number | null | undefined): string | null {
   return typeof contentVersion === "number" && contentVersion > 0 ? `v${contentVersion}` : null;

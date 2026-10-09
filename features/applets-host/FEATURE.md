@@ -106,6 +106,13 @@ record's own `scope` (`{ entries, shadowDangerousGlobals }`); app-owned modules 
 
 ## Change Log
 
+- 2026-10-09 — Lane F4 (live UI audit): a signed-out visitor at an archived Applet's address sees "This Applet is no
+  longer available" and at an address naming none "There is no Applet at this address" (`AppletUnavailablePage`,
+  `appletAddressFate` — one word, asked with the server key) instead of a sign-in wall; the maker of a running Applet
+  gets `AppletOwnerBar` (Back to AI Matrx · Manage · Change with AI). Pairs with `@ai-matrx/applets` Unreleased
+  (a ":id" page is never a tab; the reference stops promising a restore an Applet cannot offer).
+
+
 - 2026-10-08 — Lane AQ: `checkBuildAnswer` refuses a form copied from a `useRow` row on every change
   (`useEffect(…set…, [row])` — a failed save rolled her typing back) and a confirm that says Delete / remove before
   `archive()` (an archive can be restored); both read the syntax tree (`formsReseededFromRow`, `archiveCalledDelete`),

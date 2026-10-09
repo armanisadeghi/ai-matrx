@@ -12,7 +12,7 @@ export async function generateMetadata({
   const app = await getApplet(id).catch(() => null);
   const name = app?.name?.trim() || "Applet";
   return createDynamicRouteMetadata("/applets", {
-    titlePrefix: "Code",
+    titlePrefix: "Change with AI",
     title: name,
     description: `Edit code for ${name}`,
     letter: "CO",

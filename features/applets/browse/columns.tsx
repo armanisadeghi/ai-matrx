@@ -2,10 +2,11 @@
 
 // features/applets/browse/columns.tsx — the /applets column registry.
 // Status is THE state (`appletState`): Draft / Published / Suspended / Archived — the same word the
-// manage header and the builder show for the row.
+// manage header and the builder show for the row. It is the ONLY publication column: a second "On the
+// web" column read the raw flag and said "Yes" beside "Draft" (live audit 2026-10-09, L6).
 
 import { Badge } from "@ai-matrx/design-system/controls";
-import { DATE_SORT_WORDS, Muted, timeCell, type EntityColumnSpec } from "@/lib/entity-list/columns";
+import { DATE_SORT_WORDS, Muted, TextCell, timeCell, type EntityColumnSpec } from "@/lib/entity-list/columns";
 import { appletRowHref, type AppletListRow } from "./service";
 
 export const APPLET_COLUMNS: EntityColumnSpec<AppletListRow>[] = [
@@ -36,8 +37,14 @@ export const APPLET_COLUMNS: EntityColumnSpec<AppletListRow>[] = [
       accessorKey: "tagline",
       header: "About",
       filter: "text",
-      cell: (row) => (row.tagline ? <span className="truncate">{row.tagline}</span> : <Muted>—</Muted>),
+      // A fixed, truncating column (audit L2): an unbounded About took ~65% of the table at 1280, pushed
+      // Status, Runs and the dates off-screen, and its text bled through the pinned Actions column. The
+      // whole sentence rides in the cell's title; About leaves first when the list is too narrow.
+      width: 320,
+      maxWidth: 360,
+      cell: (row) => <TextCell value={row.tagline} muted />,
     },
+    priority: 3,
   },
   {
     id: "status",
@@ -52,19 +59,9 @@ export const APPLET_COLUMNS: EntityColumnSpec<AppletListRow>[] = [
     },
   },
   {
-    id: "published_to_web",
-    label: "On the web",
-    column: {
-      id: "published_to_web",
-      accessorKey: "published_to_web",
-      header: "On the web",
-      filter: "boolean",
-      cell: (row) => (row.published_to_web ? <span>Yes</span> : <Muted>No</Muted>),
-    },
-  },
-  {
     id: "total_executions",
     label: "Runs",
+    priority: 2,
     sortWords: { asc: "fewest first", desc: "most first" },
     column: {
       id: "total_executions",
@@ -77,6 +74,7 @@ export const APPLET_COLUMNS: EntityColumnSpec<AppletListRow>[] = [
   {
     id: "last_execution_at",
     label: "Last run",
+    priority: 2,
     sortWords: DATE_SORT_WORDS,
     column: {
       id: "last_execution_at",

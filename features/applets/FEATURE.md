@@ -191,6 +191,16 @@ and admin/user route families are live. Remaining migration work is tracked in:
 
 ## Change log
 
+- 2026-10-09 — Lane F4 (live UI audit): /applets' All lane is Mine ∪ My Orgs ∪ Shared (`inLane`), never strangers'
+  public Applets — they live in Public; the maker's `shown_to` hides a row from other people's lists (the "Surface
+  Submit Scope Probe" regression fixture is `only_me`). The first run offers "Build your first Applet" + "Start from a
+  template". About is a fixed 320px truncating `TextCell` that leaves first; the "On the web" column is gone (Status
+  is the one state). The row menu says Manage / Details / Continue building. Manage: Unpublish shows its label, Copy
+  reference wears AtSign, the Code mode is "Change with AI", Jobs/Sources read "AI jobs"/"Data", Slug reads "Link
+  name", the Pages editor drops the stale "/clients/:id" hint and accepts the builder's relative addresses, and every
+  archive ends in a toast with Undo (`lib/archive-undo.ts`).
+
+
 - `2026-10-09` — claude (lane R1 follow-up, admin-seat rule): the Applets admin dashboard and `/administration/applets/all` now show only system Applets (`created_by IS NULL`); moderating customers' Applets moved to `/administration/applets/support` (Admin › Applets › Support). Both render ONE table, `app/(admin)/administration/applets/AppletsAdminList.tsx` (`lane="system" | "support"`). `/administration/agents/system-agents/apps` (a second system-Applets list) now redirects to `all`; the edit page returns to the list that matches the Applet's owner.
 
 - `2026-10-09` — claude (lane R1, route + menu map): sidebar Applets gains "Build an Applet" (`/applets/build` was reachable only from the list's button); Admin menu: the Applets pages became their own domain "Applets" (they sat under Agents and failed the registry's own path rule), "Agents Apps" → "System Applets", "New App" → "Build an Applet"; every admin "Apps"/"apps" label on the Applets dashboard, All Applets tab, analytics and System Agents › Applets now says Applet; new admin map `/applets/admin` (Tier 1 contract) with `admin` added to the reserved slugs in code AND the `definition_slug_not_reserved_check` constraint (applied through the MCP).

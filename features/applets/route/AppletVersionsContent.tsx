@@ -65,7 +65,7 @@ function changeSummary(v: AppletVersionRow, prev: AppletVersionRow | undefined):
   const same = (a: unknown, b: unknown) => JSON.stringify(a) === JSON.stringify(b);
   if (!same(appletPages(prev), appletPages(v))) parts.push("pages changed");
   if (!same(appletJobs(prev), appletJobs(v))) parts.push("jobs changed");
-  if (!same(appletSources(prev), appletSources(v))) parts.push("sources changed");
+  if (!same(appletSources(prev), appletSources(v))) parts.push("data changed");
   if (prev.name !== v.name) parts.push("renamed");
   return parts.length ? parts.join(", ") : "No content change";
 }

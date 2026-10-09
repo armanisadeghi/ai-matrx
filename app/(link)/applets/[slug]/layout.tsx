@@ -9,17 +9,22 @@
 import type { ReactNode } from "react";
 
 import { AppletHostMount } from "@/features/applets-host/AppletHostMount";
-import { resolveAppletView } from "@/features/applets-host/resolve-applet-route";
+import { AppletOwnerBar } from "@/features/applets-host/AppletOwnerBar";
+import { resolveAppletRoute, resolveAppletView } from "@/features/applets-host/resolve-applet-route";
 import { getSessionVerdict } from "@/utils/supabase/sessionVerdict";
 
 export default async function AppletLayout({ children, params }: { children: ReactNode; params: Promise<{ slug: string }> }) {
   const { slug } = await params;
-  const { isAuthenticated } = await getSessionVerdict();
+  const { isAuthenticated, user } = await getSessionVerdict();
   const view = await resolveAppletView(decodeURIComponent(slug), isAuthenticated);
   // An id-shaped address is redirected to the Applet's slug by the page; mount only at the canonical one.
   if (view.kind !== "run" || view.slug !== decodeURIComponent(slug)) return <>{children}</>;
+  // Its maker gets a way back (audit R4); `resolveAppletRoute` is the same cached read the view used.
+  const own = isAuthenticated && view.guest === null ? await resolveAppletRoute(view.slug) : null;
+  const isMaker = Boolean(own && user && own.created_by === user.id);
   return (
     <main className="min-h-dvh bg-background text-foreground">
+      {isMaker ? <AppletOwnerBar appletId={view.id} /> : null}
       <AppletHostMount appletId={view.id} slug={view.slug} />
       {children}
     </main>

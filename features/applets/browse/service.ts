@@ -5,10 +5,22 @@
 // sort, lanes, the organization filter and paging run over all of it
 // (`createMemoryListService`), the same shape as /board.
 //
-// Lanes (each an honest predicate over the row, never the active org):
-//   all    — every Applet row security lets the person read (the default)
+// Lanes (each an honest predicate over the row, never the active org — common-docs/policies/access-ladder.md §6):
+//   all    — All = Mine ∪ My Orgs ∪ Shared, THE default (knob `lists.landing_tab/app` = all). It is never
+//            "every row security lets her read": a Public Applet is readable by everyone on AI Matrx, so
+//            that reading opened a brand-new person's list on 86 strangers' items (live audit 2026-10-09, L1).
+//            Shared = a row she can read that is neither hers, her organizations', nor public — row
+//            security can only have let her in by a share.
 //   mine   — Applets the person made
-//   public — Applets published to the web
+//   public — the discovery lane: Applets anyone on AI Matrx can open (`is_public`: published to the web
+//            or public visibility — the two facts row security reads). Whether one is LIVE at its link is
+//            the Status column's one word (`appletState`); the separate "On the web" column that said
+//            "Yes" beside "Draft" is gone (audit L6).
+//
+// SHOWN TO (the per-item "hide from lists" choice, `shown_to`, null follows the type's knob
+// `access.shown_to_default/app` = everyone_on_ai_matrx): it hides a row from OTHER people's lists and
+// never locks it (the link still opens). only_me → the maker's lists only; my_team / everyone → people
+// in its organization; everyone_on_ai_matrx → everyone. A regression fixture is marked only_me.
 //
 // THE ARCHIVED-ITEMS LAW: an archived Applet is a row with `deleted_at`. The
 // shell's Archived filter is passed to the read, so the default hides them and
@@ -26,6 +38,7 @@ import { pgErrorToError } from "@ai-matrx/data";
 import type { Database } from "@/types/database.types";
 import { isOpenEntry, readBuildRequests } from "@/features/applets-host/builder/build-session";
 import { appletState, type AppletState } from "@/features/applets/lib/applet-state";
+import { readMemberOrganizationRows } from "@/features/organizations/service/memberOrganizationRows";
 
 type DefinitionRow = Database["app"]["Tables"]["definition"]["Row"];
 
@@ -43,6 +56,12 @@ export interface AppletListRow {
   organization_id: string | null;
   created_by: string | null;
   is_mine: boolean;
+  /** Made in one of the person's organizations. */
+  in_my_orgs: boolean;
+  /** Anyone on AI Matrx can open it (published to the web, or public visibility) — the Public lane. */
+  is_public: boolean;
+  /** The maker's "Shown to" choice (null follows the type's knob). Hides from lists, never locks. */
+  shown_to: string | null;
   total_executions: number;
   last_execution_at: string | null;
   created_at: string;
@@ -58,7 +77,7 @@ export interface AppletListRow {
 }
 
 const COLUMNS =
-  "id, slug, name, tagline, description, status, published_to_web, organization_id, created_by, total_executions, last_execution_at, created_at, updated_at, deleted_at, metadata, entry";
+  "id, slug, name, tagline, description, status, published_to_web, visibility, shown_to, organization_id, created_by, total_executions, last_execution_at, created_at, updated_at, deleted_at, metadata, entry";
 
 /** Where a row opens: its build while one runs or no app is saved yet, else the Applet's own page. */
 export function appletRowHref(row: Pick<AppletListRow, "id" | "build_open" | "unbuilt">): string {
@@ -73,8 +92,22 @@ async function currentUserId(): Promise<string | null> {
   return data?.user?.id ?? null;
 }
 
+/** The Applet's own page — its Overview, Run, Change, Versions and Settings. */
+export function appletManageHref(row: Pick<AppletListRow, "id">): string {
+  return `/applets/manage/${row.id}`;
+}
+
+/** The organizations the person belongs to — the "My Orgs" half of the All lane. A failed read fails the list. */
+async function myOrganizationIds(): Promise<Set<string>> {
+  const answer = await readMemberOrganizationRows();
+  if (!answer.ok) {
+    throw new Error(`We could not read your organizations just now (${answer.error.message}), so this list cannot tell yours from others'. Try again.`);
+  }
+  return new Set(answer.roleByOrgId.keys());
+}
+
 export async function listApplets(archived: ArchivedFilter): Promise<AppletListRow[]> {
-  const userId = await currentUserId();
+  const [userId, myOrgs] = await Promise.all([currentUserId(), myOrganizationIds()]);
   const rows = await readAllRows<DefinitionRow>(
     ({ from, to }) => {
       let q = supabase.schema("app").from("definition").select(COLUMNS).order("updated_at", { ascending: false });
@@ -96,6 +129,9 @@ export async function listApplets(archived: ArchivedFilter): Promise<AppletListR
     organization_id: r.organization_id,
     created_by: r.created_by,
     is_mine: userId != null && r.created_by === userId,
+    in_my_orgs: r.organization_id != null && myOrgs.has(r.organization_id),
+    shown_to: r.shown_to ?? null,
+    is_public: Boolean(r.published_to_web) || r.visibility === "public",
     total_executions: r.total_executions ?? 0,
     last_execution_at: r.last_execution_at,
     created_at: r.created_at,
@@ -136,17 +172,28 @@ const FIELDS: MemoryServiceOptions<AppletListRow>["fields"] = {
   name: { value: (r) => r.name, search: true },
   tagline: { value: (r) => r.tagline, search: true },
   status: { value: (r) => r.state.label, facet: true },
-  published_to_web: { value: (r) => r.published_to_web },
   total_executions: { value: (r) => r.total_executions },
   last_execution_at: { value: (r) => r.last_execution_at },
   updated_at: { value: (r) => r.updated_at },
   created_at: { value: (r) => r.created_at },
 };
 
-function inLane(row: AppletListRow, lane: AppletLane): boolean {
-  if (lane === "mine") return row.is_mine;
-  if (lane === "public") return row.published_to_web;
+/** The maker's "Shown to" choice, for someone else's list. Exported for tests. */
+export function shownToViewer(row: Pick<AppletListRow, "is_mine" | "in_my_orgs" | "shown_to">): boolean {
+  if (row.is_mine) return true;
+  if (row.shown_to === "only_me") return false;
+  if (row.shown_to === "my_team" || row.shown_to === "everyone") return row.in_my_orgs;
   return true;
+}
+
+/** Exported for tests. */
+export function inLane(row: AppletListRow, lane: AppletLane): boolean {
+  if (!shownToViewer(row)) return false;
+  if (lane === "mine") return row.is_mine;
+  if (lane === "public") return row.is_public;
+  // All = Mine ∪ My Orgs ∪ Shared. A row that is someone else's, outside her organizations and public is
+  // in Public only; one that is not public can only be readable because it was shared with her.
+  return row.is_mine || row.in_my_orgs || !row.is_public;
 }
 
 /** How long one settled list read answers the page's other askers (counts, facets, probe). */

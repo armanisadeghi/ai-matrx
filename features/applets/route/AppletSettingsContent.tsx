@@ -12,9 +12,9 @@
 import { useClipboard } from "@ai-matrx/kit/clipboard";
 import { PUBLISHED_TO_WEB_LABEL } from "@/lib/row-access";
 import { useCallback, useEffect, useState } from "react";
-import { Copy, Loader2, Save, Trash2 } from "lucide-react";
+import { Copy, Loader2, Save, Archive } from "lucide-react";
 import { useAppDispatch, useAppSelector, useAppStore } from "@/lib/redux/hooks";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { buildAppletsWorkspaceScope } from "./AppletSurfaceRuntime";
 import { Button } from "@/components/ui/button";
 import { Input } from "@ai-matrx/design-system/controls";
@@ -23,7 +23,8 @@ import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { toast } from "@/lib/toast-service";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
-import { archiveConfirmSentence } from "@/features/trash/archiveCopy";
+import { toastAppletArchived } from "@/features/applets/lib/archive-undo";
+import { archiveAppletFromPageSentence } from "@/features/applets/lib/applet-state";
 import { useChangeByTalkingDisclosure } from "@/features/applets/route/useChangeByTalkingDisclosure";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
 import { appletJobs, appletPages, appletSources } from "@/features/applets/types";
@@ -107,6 +108,7 @@ export function AppletSettingsContent({
   const dispatch = useAppDispatch();
   const store = useAppStore();
   const pathname = usePathname();
+  const router = useRouter();
   const { rate: costRate } = useCostDisplay();
   const app = useAppSelector((state) => selectAppById(state, appId));
 
@@ -244,8 +246,9 @@ export function AppletSettingsContent({
     if (!app) return;
     const ok = await confirm({
       title: `Archive "${app.name}"?`,
-      // The owner restores it from the Applets list (Filters → Archived) or Trash.
-      description: `${archiveConfirmSentence(`"${app.name}"`, { restoreFrom: "list_filters" })} It stops running for everyone.`,
+      // This page holds no list (audit A1): the sentence names where it comes back from — the Applets
+      // list — and the toast after it carries Undo.
+      description: archiveAppletFromPageSentence(app.name),
       confirmLabel: "Archive",
       variant: "destructive",
     });
@@ -253,8 +256,11 @@ export function AppletSettingsContent({
     setIsDeleting(true);
     try {
       await dispatch(deleteApp(app.id)).unwrap();
-      toast.success("Applet archived.");
-      window.location.href = "/applets";
+      const archivedId = app.id;
+      toastAppletArchived(archivedId, app.name, {
+        onRestored: () => router.push(`/applets/manage/${archivedId}`),
+      });
+      router.push("/applets");
     } catch (err) {
       toast.error(
         err instanceof Error
@@ -274,7 +280,7 @@ export function AppletSettingsContent({
     setSavingField("publication");
     try {
       await dispatch(setAppletPublication({ appId, published })).unwrap();
-      toast.success(published ? "App published." : "App unpublished.");
+      toast.success(published ? "Applet published." : "Applet unpublished.");
     } catch (error) {
       toast.error(
         error instanceof Error
@@ -308,7 +314,7 @@ export function AppletSettingsContent({
     // unsaved diff matches the Save buttons the user can see.
     const drafts: AppletFieldDraft[] = [
       { field: "name", label: "Name", live: name, saved: app.name },
-      { field: "slug", label: "Slug", live: slug, saved: app.slug },
+      { field: "slug", label: "Link name", live: slug, saved: app.slug },
       {
         field: "tagline",
         label: "Tagline",
@@ -323,7 +329,7 @@ export function AppletSettingsContent({
       },
       {
         field: "rate_limit_per_ip",
-        label: "Runs per visitor",
+        label: "Uses per visitor",
         live: rateIp.trim(),
         saved: String(app.rate_limit_per_ip ?? ""),
       },
@@ -335,7 +341,7 @@ export function AppletSettingsContent({
       },
       {
         field: "rate_limit_authenticated",
-        label: "Runs per signed-in person",
+        label: "Uses per signed-in person",
         live: rateAuth.trim(),
         saved: String(app.rate_limit_authenticated ?? ""),
       },
@@ -397,8 +403,8 @@ export function AppletSettingsContent({
             <TabsList>
               <TabsTrigger value="details">Details</TabsTrigger>
               <TabsTrigger value="pages">Pages</TabsTrigger>
-              <TabsTrigger value="jobs">Jobs</TabsTrigger>
-              <TabsTrigger value="sources">Sources</TabsTrigger>
+              <TabsTrigger value="jobs">AI jobs</TabsTrigger>
+              <TabsTrigger value="sources">Data</TabsTrigger>
               <TabsTrigger value="sharing">Sharing</TabsTrigger>
               <TabsTrigger value="danger">Danger</TabsTrigger>
             </TabsList>
@@ -448,7 +454,7 @@ export function AppletSettingsContent({
               />
             </FieldRow>
             <FieldRow
-              label="Slug"
+              label="Link name"
               busy={savingField === "slug"}
               dirty={slug !== app.slug}
               onSave={() => {
@@ -594,7 +600,7 @@ export function AppletSettingsContent({
 
             <div className="border-t border-border/60 pt-4 space-y-1.5">
               <div className="text-sm font-medium text-foreground">
-                Organization, project, task and scope tags
+                Filed under
               </div>
               <EntityEngagementPicker
                 // Applets live in app.definition (registry token `app`).
@@ -618,7 +624,7 @@ export function AppletSettingsContent({
 
             <div className="border-t border-border/60 pt-4 space-y-3">
               <FieldRow
-                label="Runs per visitor"
+                label="Uses per visitor"
                 busy={savingField === "rate_limit_per_ip"}
                 dirty={rateIp.trim() !== String(app.rate_limit_per_ip ?? "")}
                 onSave={() => {
@@ -664,7 +670,7 @@ export function AppletSettingsContent({
                 />
               </FieldRow>
               <FieldRow
-                label="Runs per signed-in person"
+                label="Uses per signed-in person"
                 busy={savingField === "rate_limit_authenticated"}
                 dirty={
                   rateAuth.trim() !== String(app.rate_limit_authenticated ?? "")
@@ -697,7 +703,7 @@ export function AppletSettingsContent({
                 icon={isDeleting ? (
                   <Loader2 className="animate-spin" />
                 ) : (
-                  <Trash2 />
+                  <Archive />
                 )}
                 variant="danger"
                 onClick={handleDelete}
