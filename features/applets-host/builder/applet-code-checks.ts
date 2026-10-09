@@ -615,14 +615,16 @@ function confirmWords(arg: t.Node | undefined): string {
   return words.join(" ");
 }
 
-const DELETE_WORDS = /\b(?:delete|deleted|deleting|deletes|remove|removed|removes|permanently)\b/i;
+// remove/removed are NOT here: "removed from your active schedule view" is true of an archive (F17, 2026-10-09 —
+// it refused a correct Archive confirm twice and the pet-grooming build was never saved).
+const DELETE_WORDS = /\b(?:delete|deleted|deleting|deletes|permanently|forever)\b/i;
 const FUNCTIONS: ReadonlySet<string> = new Set(["FunctionDeclaration", "FunctionExpression", "ArrowFunctionExpression", "ObjectMethod", "ClassMethod"]);
 
 /**
  * AN ARCHIVE IS NEVER CALLED A DELETE. A button labelled "Archive" asked "Delete this post? This will remove the
  * post and associated metrics." — but the store's archive can be restored (social planner, live v0.4.3031,
  * 2026-10-08). Named only when a `confirmAction({ … })` whose title, description or confirmLabel says delete /
- * remove / permanently sits in the same function as an `archive(…)` / `x.archive(…)` call.
+ * permanently sits in the same function as an `archive(…)` / `x.archive(…)` call.
  */
 export function archiveCalledDelete(file: BuilderFile): string[] {
   const ast = treeOf(file);

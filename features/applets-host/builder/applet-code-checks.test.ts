@@ -167,9 +167,25 @@ describe("B-6 archiveCalledDelete names a confirm that calls an archive a delete
     expect(archiveCalledDelete(file(`async function a() { if (await confirmAction({ title: "Archive this post?", description: "It leaves every list; you can restore it.", confirmLabel: "Archive" })) posts.archive(row._id); }`))).toEqual([]);
     expect(archiveCalledDelete(file(`async function d() { if (await confirmAction({ title: "Delete this draft?" })) clearDraft(); }`))).toEqual([]);
   });
+  it("passes the REAL refused pet-grooming confirm: 'removed from your active schedule view' is true of an archive (F17)", () => {
+    const real = `const handleArchive = async () => {
+    const confirmed = await confirmAction({
+      title: "Archive this appointment?",
+      description: "It will be removed from your active schedule view.",
+      confirmLabel: "Archive",
+      variant: "destructive",
+    });
+    if (confirmed) {
+      await archive();
+      navigate("/");
+    }
+  };`;
+    expect(archiveCalledDelete(file(real, "appointment_detail_page.tsx"))).toEqual([]);
+    expect(archiveCalledDelete(file(real.replace("It will be removed from", "It will be permanently gone from"), "x.tsx"))).toEqual(["permanently"]);
+  });
   it("checkBuildAnswer refuses the live page by name, both ways", () => {
     const raw = { applet: { name: "X", entry: "post_detail.tsx", files: [file(LIVE_POST_DETAIL, "post_detail.tsx")], pages: [{ path: "/", title: "X", file: "post_detail.tsx" }], sources: [{ alias: "posts", table_id: "t", organization_id: "o" }], mandates: [] }, note: "" };
-    expect(() => checkBuildAnswer(raw, coerceBuildAnswer(raw))).toThrow(/copies row into its form on every change.*asks "Delete" before archive\(\)/);
+    expect(() => checkBuildAnswer(raw, coerceBuildAnswer(raw))).toThrow(/copies row into its form on every change.*says "Delete" next to archive\(\).*reword that confirm/);
   });
 });
 

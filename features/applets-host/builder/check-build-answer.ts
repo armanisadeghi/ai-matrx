@@ -135,7 +135,7 @@ export function checkBuildAnswer(
       );
     }
     for (const word of archiveCalledDelete(f)) {
-      problems.push(`${f.name} asks "${word}" before archive() — an archived row can be restored: the button, title and confirmLabel say Archive and the line says she can restore it`);
+      problems.push(`${f.name} has a confirm that says "${word}" next to archive() — an archived row can be restored, so reword that confirm's title / description / confirmLabel without the word "${word}": title "Archive this …?", description "It is hidden from the list; you can restore it.", confirmLabel "Archive"`);
     }
     if (handBuiltTables(f)) {
       problems.push(`${f.name} draws its own <table> of rows — use <RecordTable source rows columns /> from "@ai-matrx/applets/react", whose every header sorts and filters (a link by its labels)`);
