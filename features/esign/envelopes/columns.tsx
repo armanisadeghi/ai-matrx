@@ -87,7 +87,14 @@ export const ENVELOPE_COLUMNS: EntityColumnSpec<EnvelopeListRow>[] = [
     label: "Each recipient",
     column: {
       id: "recipients",
-      accessorKey: "signers",
+      // The value IS the text the cell shows ("Ada: Signed, Bo: Pending"): copy, export
+      // and search read what the person reads, never the signers array as JSON.
+      accessorFn: (row) =>
+        row.signers && row.signers.length > 0
+          ? row.signers.map((s) => `${s.name}: ${SIGNER_STATUS_LABEL[s.status] ?? s.status}`).join(", ")
+          : row.status === "draft"
+            ? "Not sent"
+            : "",
       header: "Each recipient",
       filter: false,
       cell: (row) =>
