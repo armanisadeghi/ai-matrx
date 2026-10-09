@@ -1,6 +1,6 @@
 {
   "note": "Checked-in snapshot of public._schema_migrations for the files under migrations/campaign and migrations/inverse. Written by `pnpm db:apply` on every successful production apply and refreshed whole by the nightly catch-up. Never hand-edited: a self-written checksum is a claim nobody can check. Guard: pnpm check:ledgered-files-unedited.",
-  "generated_at": "2026-10-09T05:13:29.890Z",
+  "generated_at": "2026-10-09T05:23:49.566Z",
   "files": {
     "migrations/campaign/a_chunk_is_the_size_the_client_door_can_actually_carry.sql": {
       "source": "matrx-frontend",
@@ -487,6 +487,36 @@
       "filename": "calfeed_b1_a_calendar_subscription_table.sql",
       "checksum": "3a8ec75e215caf230af947f2516c0845954887091148a24e826cf04c54c6009d",
       "applied_at": "2026-10-09 05:13:26.872057+00"
+    },
+    "migrations/campaign/calfeed_b2_a_calendar_subscription_mints_and_ends_a_link.sql": {
+      "source": "matrx-frontend",
+      "filename": "calfeed_b2_a_calendar_subscription_mints_and_ends_a_link.sql",
+      "checksum": "13aed079b2d1f92c054194ce429576be2018a7b71ece959136e85aa353d2f342",
+      "applied_at": "2026-10-09 05:15:32.700622+00"
+    },
+    "migrations/campaign/calfeed_b3_a_calendar_subscription_lists_and_reads_as_its_owner.sql": {
+      "source": "matrx-frontend",
+      "filename": "calfeed_b3_a_calendar_subscription_lists_and_reads_as_its_owner.sql",
+      "checksum": "9ce33509923608b2dc2acd8ba8365695c64b8156ee7c59639351c133b77dfc1f",
+      "applied_at": "2026-10-09 05:15:41.500478+00"
+    },
+    "migrations/campaign/calfeed_b4_a_calendar_subscription_reads_with_the_owners_identity.sql": {
+      "source": "matrx-frontend",
+      "filename": "calfeed_b4_a_calendar_subscription_reads_with_the_owners_identity.sql",
+      "checksum": "59d11c8f2971f5979415f274c2c7af3179977be99e3a5c4a5686d69b4d18c86f",
+      "applied_at": "2026-10-09 05:20:30.506691+00"
+    },
+    "migrations/campaign/calfeed_b5_a_calendar_subscription_honors_the_views_filters.sql": {
+      "source": "matrx-frontend",
+      "filename": "calfeed_b5_a_calendar_subscription_honors_the_views_filters.sql",
+      "checksum": "517bbe5795a1688cb5d2894605841d048a96a91efd7da7ba2249d90b565504f0",
+      "applied_at": "2026-10-09 05:21:57.349968+00"
+    },
+    "migrations/campaign/calfeed_b6_a_long_calendar_is_read_in_pages.sql": {
+      "source": "matrx-frontend",
+      "filename": "calfeed_b6_a_long_calendar_is_read_in_pages.sql",
+      "checksum": "fd7e07024f1e1242695a6ba5d70eb01bce5b4a8ba10dec29da9f1fdb99f22840",
+      "applied_at": "2026-10-09 05:23:48.415194+00"
     },
     "migrations/campaign/capture_a_field_says_how_many_answers_it_holds.sql": {
       "source": "matrx-frontend",
@@ -3859,6 +3889,24 @@
       "filename": "hotdoors6_e_the_booking_arm_skips_a_table_she_cannot_see.sql",
       "checksum": "25bd07f43176609d142c5658e23031cabef1a257911beb8cf3dd1f5070fc852a",
       "applied_at": "2026-10-09 01:34:59.269784+00"
+    },
+    "migrations/campaign/hotdoors7_a_every_organizations_table_list_answer_asked_once.sql": {
+      "source": "matrx-frontend",
+      "filename": "hotdoors7_a_every_organizations_table_list_answer_asked_once.sql",
+      "checksum": "36a8c00eebb71f1d4d0a740e8077dd9e22d5163ee861909f1f1ba4251480d035",
+      "applied_at": "2026-10-09 05:14:36.059486+00"
+    },
+    "migrations/campaign/hotdoors7_b_who_changed_what_asked_once_for_every_organization.sql": {
+      "source": "matrx-frontend",
+      "filename": "hotdoors7_b_who_changed_what_asked_once_for_every_organization.sql",
+      "checksum": "acb26f56efc9e284654c50b7711813f877747816c9423641742797a9fa1835fc",
+      "applied_at": "2026-10-09 05:15:40.669717+00"
+    },
+    "migrations/campaign/hotdoors7_c_the_memo_sweep_compares_the_new_set_paths.sql": {
+      "source": "matrx-frontend",
+      "filename": "hotdoors7_c_the_memo_sweep_compares_the_new_set_paths.sql",
+      "checksum": "7471d53107fd500c55e954d33fc3b613bb06cd368d7fd16e4db805df5e78ab55",
+      "applied_at": "2026-10-09 05:19:09.331871+00"
     },
     "migrations/campaign/hotdoors_a_the_list_filter_inlines_and_a_page_walks_once.sql": {
       "source": "matrx-frontend",
