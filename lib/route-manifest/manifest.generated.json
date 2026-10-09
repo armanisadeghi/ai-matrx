@@ -1,7 +1,7 @@
 {
   "version": 1,
   "app": "matrx-frontend",
-  "routeCount": 1368,
+  "routeCount": 1374,
   "routes": [
     {
       "pattern": "/",
@@ -514,6 +514,31 @@
       "source": "app/(admin)/administration/automation/workflows/page.tsx"
     },
     {
+      "pattern": "/administration/automation/workflows/[id]",
+      "status": "live",
+      "source": "app/(admin)/administration/automation/workflows/[id]/page.tsx"
+    },
+    {
+      "pattern": "/administration/automation/workflows/[id]/design",
+      "status": "live",
+      "source": "app/(admin)/administration/automation/workflows/[id]/design/page.tsx"
+    },
+    {
+      "pattern": "/administration/automation/workflows/[id]/runs",
+      "status": "live",
+      "source": "app/(admin)/administration/automation/workflows/[id]/runs/page.tsx"
+    },
+    {
+      "pattern": "/administration/automation/workflows/[id]/triggers",
+      "status": "live",
+      "source": "app/(admin)/administration/automation/workflows/[id]/triggers/page.tsx"
+    },
+    {
+      "pattern": "/administration/automation/workflows/runs/[runId]",
+      "status": "live",
+      "source": "app/(admin)/administration/automation/workflows/runs/[runId]/page.tsx"
+    },
+    {
       "pattern": "/administration/billing",
       "status": "live",
       "source": "app/(admin)/administration/billing/page.tsx"
@@ -597,6 +622,11 @@
       "pattern": "/administration/compute/sandbox-infra",
       "status": "live",
       "source": "app/(admin)/administration/compute/sandbox-infra/page.tsx"
+    },
+    {
+      "pattern": "/administration/compute/sandbox/[id]",
+      "status": "live",
+      "source": "app/(admin)/administration/compute/sandbox/[id]/page.tsx"
     },
     {
       "pattern": "/administration/compute/server-logs",

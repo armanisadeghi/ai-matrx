@@ -52,7 +52,6 @@
 @source "../node_modules/@ai-matrx/canvas/dist";
 @source "../node_modules/@ai-matrx/code-runtime/dist";
 @source "../node_modules/@ai-matrx/browser-audio/dist";
-@import "tw-animate-css";
 
 /* THE DATABASE-CLASS SAFELIST (DD-123 §1.8). Tailwind emits a utility only for
    a class it SCANS in a source file — and the 162 organization-authored kind
@@ -62,68 +61,21 @@
    frame (which compiles from this same file, so the two must never diverge).
    GENERATED: pnpm gen:kind-sandbox-safelist · VERIFIED: pnpm check:kind-sandbox-safelist */
 @import "../features/content-ir/sandbox/generated/db-class-safelist.css";
-@plugin "@tailwindcss/typography";
 
-/* Enable dark mode variant for Tailwind v4 */
-@custom-variant dark (&:where(.dark, .dark *));
+/* THE ONE THEME: tokens, the Tailwind colour/glass/radius/font mapping, tw-animate-css, the
+   typography plugin, dark variant and every class package source wears that no package CSS
+   defined (glass, textured background, scrollbar-hide, phone-stack, touch-target floor, KaTeX).
+   Defined ONCE in @ai-matrx/design-system; every host imports it. */
+@import "@ai-matrx/design-system/web-theme.css";
 
 @theme inline {
   /* Custom color shades (extending Tailwind's default palette) */
-  --color-zinc-750: hsl(240, 4%, 21%);
-  --color-zinc-850: hsl(240, 4%, 12%);
-  --color-gray-750: hsl(220, 9%, 23%);
-  --color-gray-850: hsl(220, 13%, 13%);
-  --color-slate-750: hsl(217, 19%, 23%);
-  --color-slate-850: hsl(215, 21%, 13%);
 
   /* Theme colors - Using CSS variable references so they work with light/dark mode */
-  --color-background: hsl(var(--background));
-  --color-foreground: hsl(var(--foreground));
-  --color-card: hsl(var(--card));
-  --color-card-foreground: hsl(var(--card-foreground));
-  --color-popover: hsl(var(--popover));
-  --color-popover-foreground: hsl(var(--popover-foreground));
-  --color-primary: hsl(var(--primary));
-  --color-primary-foreground: hsl(var(--primary-foreground));
-  --color-secondary: hsl(var(--secondary));
-  --color-secondary-foreground: hsl(var(--secondary-foreground));
-  --color-muted: hsl(var(--muted));
-  --color-muted-foreground: hsl(var(--muted-foreground));
-  --color-accent: hsl(var(--accent));
-  --color-accent-foreground: hsl(var(--accent-foreground));
-  --color-destructive: hsl(var(--destructive));
-  --color-destructive-foreground: hsl(var(--destructive-foreground));
-  --color-success: hsl(var(--success));
-  --color-success-foreground: hsl(var(--success-foreground));
-  --color-warning: hsl(var(--warning));
-  --color-warning-foreground: hsl(var(--warning-foreground));
-  --color-info: hsl(var(--info));
-  --color-border: hsl(var(--border));
-  --color-input: hsl(var(--input));
-  --color-ring: hsl(var(--ring));
-  --color-chart-1: hsl(var(--chart-1));
-  --color-chart-2: hsl(var(--chart-2));
-  --color-chart-3: hsl(var(--chart-3));
-  --color-chart-4: hsl(var(--chart-4));
-  --color-chart-5: hsl(var(--chart-5));
-  --color-chart-6: hsl(var(--chart-6));
-  --color-accent-2: hsl(var(--accent-2));
-  --color-accent-3: hsl(var(--accent-3));
 
   /* Sidebar colors */
-  --color-sidebar-background: hsl(var(--sidebar-background));
-  --color-sidebar-foreground: hsl(var(--sidebar-foreground));
-  --color-sidebar-primary: hsl(var(--sidebar-primary));
-  --color-sidebar-primary-foreground: hsl(var(--sidebar-primary-foreground));
-  --color-sidebar-accent: hsl(var(--sidebar-accent));
-  --color-sidebar-accent-foreground: hsl(var(--sidebar-accent-foreground));
-  --color-sidebar-border: hsl(var(--sidebar-border));
-  --color-sidebar-ring: hsl(var(--sidebar-ring));
 
   /* Elevation colors */
-  --color-elevation-1: hsl(var(--elevation-1));
-  --color-elevation-2: hsl(var(--elevation-2));
-  --color-elevation-3: hsl(var(--elevation-3));
 
   /* Custom grid templates */
   --grid-template-columns-12: repeat(12, minmax(0, 1fr));
@@ -132,21 +84,8 @@
   --grid-template-rows-24: repeat(24, minmax(0, 1fr));
 
   /* Font families */
-  --font-sans:
-    var(--typography-fontFamily-sans), ui-sans-serif, system-ui, -apple-system,
-    BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial,
-    "Noto Sans", sans-serif;
-  --font-heading:
-    var(--typography-fontFamily-heading), ui-sans-serif, system-ui, sans-serif;
-  --font-mono:
-    ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono",
-    "Courier New", monospace;
 
   /* Border radius */
-  --radius-sm: calc(var(--radius) - 4px);
-  --radius-md: calc(var(--radius) - 2px);
-  --radius-lg: var(--radius);
-  --radius-xl: calc(var(--radius) + 4px);
 
   /* Font sizes with line heights */
   --font-size-2xs: 0.6rem;
@@ -182,14 +121,6 @@
        shadow-glass / shadow-glass-lg                              (elevation)
      Dark mode flows through automatically — the leaf --matrx-glass-* token is
      what gets re-declared in `.dark`. */
-  --color-glass: var(--matrx-glass-bg);
-  --color-glass-hover: var(--matrx-glass-bg-hover);
-  --color-glass-active: var(--matrx-glass-bg-active);
-  --color-glass-edge: var(--matrx-glass-border-color);
-  --shadow-glass: var(--matrx-glass-shadow);
-  --shadow-glass-lg: var(--matrx-glass-shadow-lg);
-  --backdrop-blur-glass: var(--matrx-glass-blur);
-  --backdrop-saturate-glass: var(--matrx-glass-saturate);
 
   /* Background images
      gradient-1/2/3 aliases were removed — they had zero consumers
@@ -198,7 +129,6 @@
      untouched. Kept here: checkerboard (used by .bg-checkerboard utility
      below + enables Tailwind v4 modifier variants) and matrx-card-background
      (used by `bg-matrx-card-background` className in VoicesList.tsx). */
-  --background-image-checkerboard: var(--checkerboard);
   --background-image-matrx-card-background: var(--matrx-card-background);
 
   /* Keyframes */
@@ -274,15 +204,6 @@
     to {
       transform: translateX(0);
       opacity: 1;
-    }
-  }
-
-  @keyframes shimmer {
-    from {
-      background-position: 0 0;
-    }
-    to {
-      background-position: -200% 0;
     }
   }
 
@@ -603,7 +524,6 @@
 
   /* Animations */
   --animate-caret-blink: caret-blink 1.25s ease-out infinite;
-  --animate-shimmer: shimmer 2s linear infinite;
   --animate-hover-bounce: hover-bounce 0.3s var(--animated-menu-bounce);
   --animate-fade-in: fade-in 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   --animate-fade-out: fade-out 0.3s cubic-bezier(0.4, 0, 0.2, 1);
@@ -1317,208 +1237,9 @@
      `@ai-matrx/tap-target/styles.css` (C9 swap, 2026-08-29). To resize or
      retune EVERY tap button, edit the package stylesheet — nowhere else.
      The glass decoration classes (matrx-glass-*) stay host-theme, above. */
-
-  /* =========================================================================
-     .matrx-touch-targets — SUBTREE touch-target floor (iOS 44px).
-
-     WHY THIS EXISTS: a data-dense surface is built desktop-first out of
-     h-6/h-7/h-8 controls (24/28/32px). Every one of them is a review failure
-     on a phone, and fixing them one `h-10 md:h-7` at a time does not hold —
-     the next component added to the feature re-breaks the rule, which is
-     exactly how the content-plan review queue accumulated seven "controls
-     under 40-44px" rejections. Put this class on a feature/section root and
-     the floor applies to everything inside it, including files written later.
-
-     Applies under `pointer: coarse` (a real touch device) OR below the `lg`
-     breakpoint (the responsive tablet/mobile contract), so wide desktop
-     density is completely untouched and viewport-only QA measures reality.
-
-     Deliberately NOT covered:
-       - checkbox / radio / switch inputs — a min-height would distort the
-         control itself; their LABEL is the tap target and it is a <label>.
-         The exclusion must name `[role="checkbox"|"radio"|"switch"]` and not
-         just `input[type=…]`: Radix renders all three as a <button> carrying
-         the role, so the button branch of this selector caught them and blew
-         a 14px checkbox up to a 44×44 bordered empty box (measured
-         2026-08-25). Give such a control an invisible ::before hit area at
-         the callsite instead — see CHECKBOX_TAP_AREA in MatrxDataTable.
-       - inline anchors — prose links must not become 44px blocks. An anchor
-         that IS a control opts in with `data-tap-target`.
-     A control that must stay small inside an opted-in subtree sets
-     `data-touch-exempt` and states why at the callsite.
-     ========================================================================= */
-  @media (pointer: coarse), (max-width: 1023px) {
-    .matrx-touch-targets
-      :is(
-        button,
-        summary,
-        select,
-        [role="button"],
-        [role="combobox"],
-        [role="tab"],
-        [role="menuitem"],
-        [role="option"],
-        a[data-tap-target]
-      ):not([data-touch-exempt]):not([role="checkbox"]):not([role="radio"]):not(
-        [role="switch"]
-      ):not(.matrx-tap-ring *):not(thead *) {
-      min-height: 2.75rem; /* 44px */
-    }
-
-    /* Width is the DANGEROUS half: a blanket `min-width: 44px` squeezes a
-       narrow TEXT button inside a flex row down to 44px and wraps its label
-       one word per line (measured on the plan-vs-reality bar). So width is
-       raised only for icon-only controls, whose convention in this codebase
-       is an `aria-label` or tooltip `title` carrying the name the icon can't
-       say. A text button that also has one is already wider than 44px, so this
-       is a no-op there. */
-    .matrx-touch-targets
-      :is(button, [role="button"], a[data-tap-target]):is(
-        [aria-label],
-        [title]
-      ):not([data-touch-exempt]):not([role="checkbox"]):not([role="radio"]):not(
-        [role="switch"]
-      ):not(.matrx-tap-ring *):not(thead *) {
-      min-width: 2.75rem;
-    }
-
-    /* Text fields: 44px tall. The >=16px anti-iOS-zoom floor is NOT set here
-       — this block lives in `@layer components`, which loses to Tailwind's
-       `text-sm` utility no matter how specific the selector is. It is now
-       global and unlayered: see THE iOS ZOOM FLOOR at the end of this file. */
-    .matrx-touch-targets
-      :is(
-        input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not(
-            [type="file"]
-          ):not([type="hidden"]),
-        textarea
-      ):not([data-touch-exempt]):not(.matrx-tap-ring *) {
-      min-height: 2.75rem;
-    }
-  }
-
-  /* =========================================================================
-     .matrx-tap-area — THE ONE HIT-AREA RING, for a control that must STAY
-     SMALL.
-
-     The subtree floor above GROWS a control, which is right for a button and
-     wrong for the handful of controls whose size is the control: a bare
-     `<input type="checkbox">`, a radio, a 14px switch. Blowing one up to 44px
-     turns a tick box into an empty bordered square (measured 2026-08-25), so
-     the floor excludes them by name and the note there promised a call-site
-     hit area. It never existed — every such control was left at 16px, which is
-     how ten rule checkboxes on `/masterwork/<id>` measured 16x16 at 390px on
-     2026-09-17, beside rows whose every button had been lifted to 44.
-
-     So: an INVISIBLE 44x44 ring, centred on the control, that leaves the
-     painted box exactly where it was. Same media query as the floor, so
-     desktop density is untouched.
-
-     🚨 IT GOES ON THE CONTROL'S `<label>`, NOT ON THE CONTROL. An `<input>` is
-     a replaced element and renders NO `::before` at all, so a ring drawn on the
-     checkbox itself does not exist — and a ring on a plain wrapper `<div>`
-     would swallow the tap without toggling anything, which is worse than a
-     small target. A `<label>` wrapping (or `htmlFor`-bound to) the input is
-     already the accessible tap target; this only makes it finger-sized.
-
-     🚨 OPT-IN PER CONTROL, NEVER SPRAYED ON A CONTAINER. The ring extends past
-     the control's own box, so on a TOOLBAR of adjacent controls the rings
-     overlap in the gaps and one control eats taps aimed at its neighbour —
-     unacceptable where a neighbour is destructive, and the reason
-     `@ai-matrx/design-system` 0.21.0 grew its Buttons instead of ringing them.
-     Use it only where the control stands alone with real space around it.
-     ========================================================================= */
-  @media (pointer: coarse), (max-width: 1023px) {
-    .matrx-tap-area {
-      position: relative;
-      touch-action: manipulation;
-    }
-    .matrx-tap-area::before {
-      content: "";
-      position: absolute;
-      top: 50%;
-      left: 50%;
-      width: 2.75rem;
-      height: 2.75rem;
-      transform: translate(-50%, -50%);
-      /* Behind nothing and painted with nothing: this only catches pointers. */
-      background: transparent;
-    }
-  }
-
-  /* =========================================================================
-     .matrx-tap-ring — THE TAP MODEL FOR A SUBTREE OF DENSE CONTROLS.
-
-     The floor above GROWS every control to 44px below `lg` or on any touch
-     device. On a list header that turned every 28px lane, filter and "New"
-     button into a 44px slab on an iPad (owner, /board/all, 2026-10-02), and a
-     table's column headers into 44px rows. The tap model (docs/ui-unification
-     -plan.md §1b, the `@ai-matrx/tap-target` geometry) keeps the painted
-     control at its dense height and adds an INVISIBLE hit area instead:
-       - on a coarse pointer only (a mouse needs nothing),
-       - 44px tall,
-       - widened by exactly one tap gap (half on each side), so it reaches the
-         midpoint of a gap and never a neighbour's pill.
-     Put the class on a container (a toolbar, a header row): it exempts that
-     subtree from the floor above and rings every control in it. Column
-     headers inside a floor subtree get the same ring (`thead`).
-     ========================================================================= */
-  @media (pointer: coarse) {
-    :is(.matrx-tap-ring, .matrx-touch-targets thead)
-      :is(button, [role="button"], [role="combobox"], a[data-tap-target], a[data-matrx-button]):not(
-        [role="checkbox"]
-      ):not([role="radio"]):not([role="switch"]) {
-      position: relative;
-      touch-action: manipulation;
-    }
-    :is(.matrx-tap-ring, .matrx-touch-targets thead)
-      :is(button, [role="button"], [role="combobox"], a[data-tap-target], a[data-matrx-button]):not(
-        [role="checkbox"]
-      ):not([role="radio"]):not([role="switch"])::before {
-      content: "";
-      position: absolute;
-      top: 50%;
-      left: 50%;
-      width: calc(100% + var(--matrx-tap-gap, 0.375rem));
-      height: max(100%, 2.75rem);
-      transform: translate(-50%, -50%);
-      background: transparent;
-    }
-    /* A tab strip scrolls sideways: a ring wider than its tab would widen
-       the strip's scroll area, so inside a tablist the ring keeps the tab's
-       width (the strip pads itself vertically to hold the 44px height). */
-    .matrx-tap-ring [role="tablist"] :is(button, [role="tab"]):not([role="checkbox"]):not(
-        [role="radio"]
-      ):not([role="switch"])::before {
-      width: 100%;
-    }
-  }
 }
 
 @layer utilities {
-  .bg-card-textured {
-    background-color: hsl(var(--card));
-    background-image: var(--card-texture);
-  }
-
-  .bg-popover-textured {
-    background-color: hsl(var(--popover));
-    background-image: var(--card-texture);
-  }
-
-  .bg-muted-textured {
-    background-color: hsl(var(--muted));
-    background-image: var(--background-texture);
-  }
-
-  /* Hide scrollbar utility */
-  .scrollbar-hide {
-    -ms-overflow-style: none; /* Internet Explorer 10+ */
-    scrollbar-width: none; /* Firefox */
-  }
-  .scrollbar-hide::-webkit-scrollbar {
-    display: none; /* Safari and Chrome */
-  }
 
   /* GLOBAL THIN SCROLLBAR WITH PROPER LIGHT/DARK MODE SUPPORT */
   * {
@@ -1559,12 +1280,6 @@
 
   .hide-scrollbar::-webkit-scrollbar {
     display: none; /* WebKit */
-  }
-
-  /* Custom checkerboard utility class */
-  .bg-checkerboard {
-    background-image: var(--checkerboard);
-    background-size: 20px 20px;
   }
 
   /* Custom Scrollbar Styles */
@@ -1664,15 +1379,6 @@
     background-color: hsl(var(--scrollbar-thumb) / 0.8);
   }
 
-  .scrollbar-none {
-    -ms-overflow-style: none; /* IE and Edge */
-    scrollbar-width: none; /* Firefox */
-  }
-
-  .scrollbar-none::-webkit-scrollbar {
-    display: none; /* Chrome, Safari and Opera */
-  }
-
   /* Dynamic Viewport Height utilities - adjusts when keyboard appears */
   /* Use these instead of h-screen, min-h-screen when you need keyboard-aware heights */
   .h-dvh {
@@ -1723,18 +1429,6 @@
 
   .max-h-page {
     max-height: calc(100dvh - var(--header-height));
-  }
-
-  .bg-textured {
-    background-color: rgb(244 244 245);
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='2' height='2' viewBox='0 0 2 2'%3E%3Cpath fill='%23999' fill-opacity='0.07' d='M1 1h0.5v0.5H1V1z'%3E%3C/path%3E%3C/svg%3E");
-    color: rgb(39 39 42);
-  }
-
-  .dark .bg-textured {
-    background-color: rgb(39 39 42);
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='2' height='2' viewBox='0 0 2 2'%3E%3Cpath fill='%23999' fill-opacity='0.07' d='M1 1h0.5v0.5H1V1z'%3E%3C/path%3E%3C/svg%3E");
-    color: rgb(229 229 229);
   }
 
   /* Glow utilities */
@@ -2212,7 +1906,6 @@
    geometry now travels with it, so a consumer that is not this app gets the
    cue too. Shipped UNLAYERED, exactly as it was authored here. */
 
-
 /* Radix/Vaul modal layers temporarily put `pointer-events: none` on <body>.
    Sonner portals beside those layers, so its very high z-index can paint a
    toast above a drawer while the toast still inherits body's disabled hit
@@ -2302,7 +1995,6 @@
    travels with the component (C26 CSS extraction, 2026-08-30). Still
    UNLAYERED there, for the same reason it was unlayered here: it must beat
    @layer utilities to re-scale utility-set font sizes. */
-
 
 /* The sheet body owns scrolling. A hidden-overflow drawer is still a scroll
    container: focusing a lower menu row can scroll its fixed header away.
@@ -2395,135 +2087,6 @@
   overflow: hidden;
 }
 
-/* ────────────────────────────────────────────────────────────────────────
-   THE PHONE-STACK TABLE — a hand-rolled data table reflowed into a card
-   list below the mobile breakpoint, from the SAME markup.
-
-   THE DEFECT CLASS (live, 2026-09-12, /administration/users/feedback): an
-   admin table authored desktop-first — eleven `TableHead className="w-[90px]"`
-   columns — is a 1,200px-wide sideways scroller on a 390px phone. Every value
-   an admin needs (status, decision, who, when, the actions) sits off-screen,
-   the row is un-tappable without pinch-zoom, and nothing anywhere throws.
-   Twenty-two sibling tables in this repo were built the same way.
-
-   THE FIX IS A PRIMITIVE, NOT 22 CARD RENDERERS: the design-system `<Table>`
-   exposes `wrapperClassName`; passing `phone-stack` there opts a table into
-   this reflow. Below 480px of the wrapper's width the <thead> is hidden, every <tr> becomes a
-   flex-wrapped card, and every <td> becomes a block. Per-cell hints, all
-   optional, all plain HTML attributes on `<TableCell>`:
-
-     data-label="Status"     prints a small caps label above the value —
-                             every cell whose value is not self-evident
-                             carries one (a date alone is not).
-     data-phone="lead"       the card's headline: first, full width.
-     data-phone="inline"     a short chip/value that sits beside its
-                             siblings instead of taking a whole line.
-     data-phone="hidden"     desktop-only detail (a redundant id, a column
-                             the card's lead already carries).
-     data-phone="actions"    the row's action cluster: last, right-aligned.
-
-   Wide containers are untouched: nothing here applies at ≥480px of wrapper width. The
-   header-borne sort controls are not reachable on the phone card list — a
-   table whose ordering matters on a phone puts its sort in a toolbar.
-
-   Deliberately UNLAYERED (same reason as THE iOS ZOOM FLOOR above): the
-   design-system cell utilities (`p-2`, `align-middle`, `h-10`) live in
-   `@layer utilities`, and only unlayered CSS out-ranks them.
-
-   Guard: `pnpm check:phone-layout` fails any fixed-width hand-rolled table
-   that has no phone reflow (this class, `useIsMobile`, or `mobileCards`).
-   ──────────────────────────────────────────────────────────────────────── */
-/* ONE definition, keyed on the wrapper's OWN width (a container query), so a
-   375px phone and a 360px canvas pane on a 1,600px desktop get the same cards.
-   The wrapper is the container; the query styles its table. 480px = the canvas
-   "narrow" threshold (CANVAS_NARROW_WIDTH). Guard: phone-stack-single-definition.test.ts. */
-.phone-stack {
-  container-type: inline-size;
-  /* A size container contributes ZERO intrinsic width, so a wrapper that sizes
-     to its content (flex item, inline-block, absolute) would collapse to 0.
-     Width-define it; probed live in 8 parent contexts. */
-  width: 100%;
-  min-width: 0;
-}
-@container (width < 480px) {
-  .phone-stack > table,
-  .phone-stack > table > tbody {
-    display: block;
-    width: 100%;
-    max-width: 100%;
-  }
-  .phone-stack > table > thead {
-    display: none;
-  }
-  .phone-stack > table > tbody > tr {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 0.375rem 0.75rem;
-    box-sizing: border-box;
-    width: 100%;
-    padding: 0.75rem 1rem;
-    border-bottom: 1px solid var(--color-border);
-  }
-  .phone-stack > table > tbody > tr:last-child {
-    border-bottom: 0;
-  }
-  .phone-stack > table > tbody > tr > td {
-    display: block;
-    flex: 1 1 100%;
-    min-width: 0;
-    height: auto;
-    padding: 0;
-    border: 0;
-    text-align: left;
-  }
-  .phone-stack > table > tbody > tr > td[data-label]::before {
-    content: attr(data-label);
-    display: block;
-    margin-bottom: 0.125rem;
-    font-size: 0.625rem;
-    font-weight: 500;
-    line-height: 1;
-    letter-spacing: 0.04em;
-    text-transform: uppercase;
-    color: var(--color-muted-foreground);
-  }
-  .phone-stack > table > tbody > tr > td[data-phone="lead"] {
-    order: -1;
-    font-size: 0.875rem;
-  }
-  .phone-stack > table > tbody > tr > td[data-phone="inline"] {
-    flex: 0 1 auto;
-  }
-  .phone-stack > table > tbody > tr > td[data-phone="hidden"] {
-    display: none;
-  }
-  .phone-stack > table > tbody > tr > td[data-phone="actions"] {
-    order: 1;
-    flex: 0 0 auto;
-    margin-left: auto;
-  }
-  /* The "no rows" / loading placeholder row stays a centered block. */
-  .phone-stack > table > tbody > tr > td[colspan] {
-    flex: 1 1 100%;
-    text-align: center;
-  }
-}
-
-/* Print-system page break (remarkMatrxPageBreak ← @ai-matrx/print/directives).
- * On screen it is a dashed "Page break" divider; when the app page itself is
- * printed it becomes a real break and the divider disappears. Unlayered on
- * purpose so it beats the divider's Tailwind utilities. */
-@media print {
-  .matrx-page-break {
-    height: 0;
-    margin: 0;
-    overflow: hidden;
-    break-after: page;
-    page-break-after: always;
-  }
-}
-
 /* ── An Alert's Alchemy Menu sits in its top-right corner (RC-B12).
    The package's error slot (ErrorActionsProvider → components/errors/
    PackageErrorActions.tsx) appends the menu as the Alert's last child. It
@@ -2569,18 +2132,6 @@
   padding-left: 0;
 }
 
-/* A RENDERED DOCUMENT STARTS FLUSH WITH ITS CONTAINER (page-pass /notes,
-   2026-09-28). The first block's top margin (the block wrapper's my-2 and a
-   leading heading's mt-4) pushed a note's Read view 24px below its Write and
-   Plain views; GitHub, Notion and every prose reader zero the first child's top
-   margin. "First" = the first block wrapper no earlier block precedes (empty
-   `contents` slots come first); its first child skips the scoped <style> a
-   block may carry. Unlayered, so it out-ranks the utilities. */
-.markdown-flush-start > .contents:not(.contents:has(> .math-content-wrapper) ~ .contents) > .math-content-wrapper,
-.markdown-flush-start > .contents:not(.contents:has(> .math-content-wrapper) ~ .contents) > .math-content-wrapper > :nth-child(1 of :not(style)) {
-  margin-top: 0;
-}
-
 /* FULL-SCREEN TOAST CLEARANCE (2026-09-30). Nothing may cover a full-screen
    layer's exit bar (a board tile's full screen, the chat workspace's full
    screen). While any is open (`pushFullScreenLayer` marks <html>), toasts at
@@ -2615,26 +2166,6 @@ html[data-full-screen-layer] [data-sonner-toaster][data-y-position="top"] {
    re-checked the whole page on every DOM insertion (D349). */
 .matrx-alchemy-menu.matrx-alchemy-palette {
   z-index: 1000000000 !important;
-}
-
-/* A formula is one unit (2026-10-01): KaTeX inherited `overflow-wrap:
-   anywhere` from rich-content's inline wrapper and, in a narrow cell (the
-   flashcard deck's table view), broke NH₄⁺ into one glyph per line. Text
-   around it still wraps; the formula itself never splits internally. */
-.katex {
-  overflow-wrap: normal;
-  word-break: normal;
-}
-/* …and a container that forces wrapping onto EVERY descendant (the data
-   table's cell sets `* { white-space: normal; overflow-wrap: anywhere }`)
-   must not reach inside a formula's line box: H⁺ put the + on its own line. */
-.katex .base,
-.katex .base *,
-.katex .katex-base,
-.katex .katex-base * {
-  white-space: nowrap;
-  overflow-wrap: normal;
-  word-break: normal;
 }
 
 /* THE TAP MODEL OUTRANKS THE BUTTON FLOOR inside `.matrx-tap-ring`
