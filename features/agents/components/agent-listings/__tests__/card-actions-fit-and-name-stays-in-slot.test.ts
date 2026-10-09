@@ -28,8 +28,12 @@ describe("AgentCard action bar and name", () => {
 
   it("hides View, Sneak Peek, Share, Orchestra and Delete inline on narrow cards, with menu twins", () => {
     expect(source.match(/hidden @\[340px\]:contents/g)?.length).toBe(3);
-    // View, Sneak Peek, Share, Delete + the Add to Orchestra submenu
-    expect(source.match(/@\[340px\]:hidden/g)?.length).toBe(5);
+    // The menu renders in a portal outside the card's container, so a container
+    // query can never hide its twins: they are driven by the measured card width.
+    const menu = source.slice(source.indexOf("<DropdownMenu>"), source.indexOf("</DropdownMenu>"));
+    expect(menu).not.toContain("@[340px]");
+    expect(source).toContain("new ResizeObserver");
+    expect(menu.match(/isNarrow && \(/g)?.length).toBe(5);
   });
 
   it("keeps Add to Orchestra reachable on narrow cards as a submenu of the ⋯ menu", () => {
@@ -56,5 +60,10 @@ describe("AgentCard action bar and name", () => {
     expect(source).toMatch(/<h3\s+title=\{name\}/);
     expect(source).toMatch(/min-w-0 max-w-full/);
     expect(source).toContain("[overflow-wrap:anywhere]");
+  });
+
+  it("ignores clicks that bubble from a portal (modal/menu) instead of the card body", () => {
+    const fn = source.slice(source.indexOf("const handleCardClick"), source.indexOf("const isDisabled"));
+    expect(fn).toContain("e.currentTarget.contains(e.target as Node)");
   });
 });
