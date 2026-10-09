@@ -235,3 +235,5 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 <!-- END:nextjs-agent-rules -->
 
 - 🚨 **NO LOCAL WORKTREES, NO LOCAL BRANCHES — EVER** (Arman, 2026-09-20: *"there is no reason for ever having a worktree… Branches are ok for remote but not for local. They're forbidden."*). The shared checkout on `main` is the one source of truth; to protect a live feature, build the replacement beside it in the same tree and swap when ready. Never `git worktree add`, never `git checkout -b`; both release scripts build the version commit with git plumbing for this reason.
+
+Cross-repo system-of-record: /Users/armanisadeghi/code/common-docs/policies/ai-model-and-spend-rules.md — read it before picking a model or running work that spends; system-agent links use `https://manage.aimatrx.com/administration/agents/system-agents/agents/<id>/build`.
