@@ -8,10 +8,11 @@ import { GUEST, callWithGuest } from "../lib/stories";
 import type { Actor } from "../lib/actor";
 
 async function openRoomFor(host: Actor, guest: Actor): Promise<void> {
-  await press(host, "Breakout rooms", host.page.getByRole("button", { name: /breakout rooms?/i }), 10_000);
-  await press(host, "Create rooms", host.page.getByRole("button", { name: /create (breakout )?rooms?|add room/i }), 8000);
-  await press(host, `assign ${GUEST}`, host.page.getByRole("button", { name: new RegExp(`assign[^]*${GUEST}|${GUEST}[^]*assign`, "i") }), 8000);
-  await press(host, "Open rooms", host.page.getByRole("button", { name: /open (all )?rooms?|start (breakout )?rooms?/i }), 8000);
+  // Google Meet: breakout rooms live under Activities. The setup places people automatically,
+  // so the guest already has a room when the host opens them.
+  await press(host, "Activities", host.page.getByRole("button", { name: /^activities\b/i }), 10_000);
+  await press(host, "Breakout rooms", host.page.getByRole("menuitem", { name: /breakout rooms?/i }), 8000);
+  await press(host, "Open rooms", host.page.getByRole("button", { name: /^open (all )?\d* ?rooms?|^start (breakout )?rooms?/i }), 8000);
   void guest;
 }
 
