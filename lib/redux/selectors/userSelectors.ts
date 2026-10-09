@@ -183,6 +183,11 @@ export const selectUserAppMetadata = createSelector(
   [selectUserAuth],
   (auth) => auth.appMetadata,
 );
+/** Top-tier models (cost rating 6) — the per-person permission a super admin turns on. Default off. */
+export const selectCanUseTopTierModels = createSelector(
+  [selectUserAppMetadata],
+  (appMetadata) => (appMetadata.permissions ?? []).includes("models.top_tier"),
+);
 export const selectUserProvider = createSelector(
   [selectUserAppMetadata],
   (appMetadata) => appMetadata.provider,

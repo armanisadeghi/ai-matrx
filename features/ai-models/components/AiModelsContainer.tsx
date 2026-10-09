@@ -26,6 +26,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { AlertTriangle, BookOpen, Maximize2, Minimize2 } from "lucide-react";
 import ProviderReferenceModal from "./ProviderReferenceModal";
+import TopTierAccessButton from "./TopTierAccessButton";
 import {
   ResizableHandle,
   ResizablePanel,
@@ -378,6 +379,7 @@ export default function AiModelsContainer() {
                 title: TIER_VIEW_TITLES[view],
               }))}
             />
+            <TopTierAccessButton />
             <Button
               icon={<BookOpen />}
               variant={referenceOpen ? "outline" : "quiet"}

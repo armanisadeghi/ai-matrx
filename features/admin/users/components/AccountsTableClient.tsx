@@ -17,6 +17,7 @@ import {
   Gauge,
   Gift,
   GraduationCap,
+  Gem,
   KeyRound,
   Loader2,
   Mail,
@@ -33,6 +34,7 @@ import {
   X,
 } from "lucide-react";
 import { createClient } from "@/utils/supabase/client";
+import { setTopTierAccess } from "@/features/ai-models/topTierAccess";
 import { formatCount } from "@ai-matrx/kit/format";
 import { Cost } from "@/components/cost/Cost";
 import { useCostDisplay } from "@/components/cost/useCostDisplay";
@@ -372,6 +374,28 @@ function AccountsRoster() {
           ? `Granted full MCP access to ${row.email ?? row.id}`
           : `Revoked full MCP access from ${row.email ?? row.id}`,
       );
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Failed");
+    }
+  }, []);
+
+  // Top-tier models (cost rating 6): off for everyone; a super admin turns one person on.
+  // The RPC refuses anyone else and records who changed it and when.
+  const toggleTopTierModels = useCallback(async (row: AdminUserRow) => {
+    const next = !row.top_tier_models;
+    const who = row.email ?? row.id;
+    if (next) {
+      const ok = await confirm({
+        title: "Allow top-tier models?",
+        description: `${who} will be able to run Mythos, Fable, GPT-6 Astra and every -max model, billed at top-tier prices. Recorded under your name.`,
+        confirmLabel: "Allow",
+      });
+      if (!ok) return;
+    }
+    try {
+      await setTopTierAccess(row.id, next);
+      setRows((prev) => prev.map((r) => (r.id === row.id ? { ...r, top_tier_models: next } : r)));
+      toast.success(next ? `Top-tier models on for ${who}` : `Top-tier models off for ${who}`);
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Failed");
     }
@@ -759,6 +783,19 @@ function AccountsRoster() {
         width: 120,
       },
       {
+        id: "top_tier_models",
+        header: "Top tier",
+        accessorFn: (row) => row.top_tier_models,
+        filter: "boolean",
+        cell: (row) =>
+          row.top_tier_models ? (
+            <Badge variant="default">On</Badge>
+          ) : (
+            <span className="text-xs text-muted-foreground">Off</span>
+          ),
+        width: 96,
+      },
+      {
         id: "providers",
         header: "Providers",
         accessorFn: (r) => r.providers.join(", "),
@@ -1131,6 +1168,13 @@ function AccountsRoster() {
                     : row.mcp_full_access
                       ? "Revoke full MCP access"
                       : "Grant full MCP access"}
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  disabled={row.is_anonymous}
+                  onClick={() => void toggleTopTierModels(row)}
+                >
+                  <Gem className="mr-2 h-4 w-4" />
+                  {row.top_tier_models ? "Turn off top-tier models" : "Allow top-tier models"}
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => void toggleOnboarding(row)}>
                   <UserCog className="mr-2 h-4 w-4" />

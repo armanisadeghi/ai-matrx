@@ -26,6 +26,8 @@ export interface AdminUserRow {
   admin_level: string | null;
   /** Explicit non-role grant stored in protected Supabase app_metadata. */
   mcp_full_access: boolean;
+  /** Top-tier models (cost rating 6): app_metadata.permissions has "models.top_tier". Super admins change it. */
+  top_tier_models: boolean;
   onboarding_completed: boolean;
   created_at: string | null;
   last_sign_in_at: string | null;

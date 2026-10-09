@@ -21,6 +21,14 @@ type RecordOnlyFields = Partial<
 export interface AppMetadata {
   provider: string | null;
   providers: string[];
+  /** Per-person platform permissions (auth app_metadata.permissions), e.g. "models.top_tier". */
+  permissions?: string[];
+}
+
+/** The string entries of auth app_metadata.permissions (anything else is ignored). */
+export function readAppPermissions(appMetadata: unknown): string[] {
+  const raw = (appMetadata as { permissions?: unknown } | null | undefined)?.permissions;
+  return Array.isArray(raw) ? raw.filter((p): p is string => typeof p === "string") : [];
 }
 
 export interface UserMetadata {
@@ -90,6 +98,7 @@ export function mapUserData(
     appMetadata: {
       provider: user?.app_metadata?.provider || null,
       providers: user?.app_metadata?.providers || [],
+      permissions: readAppPermissions(user?.app_metadata),
     },
     userMetadata: {
       avatarUrl: user?.user_metadata?.avatar_url || null,

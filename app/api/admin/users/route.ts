@@ -9,6 +9,8 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { requireSuperAdmin } from "@/utils/auth/adminUtils";
+import { readAppPermissions } from "@/utils/userDataMapper";
+import { TOP_TIER_MODELS_PERMISSION } from "@/features/ai-models/topTierAccess";
 import { createAdminClient } from "@/utils/supabase/adminClient";
 import { createClient } from "@/utils/supabase/server";
 import { ONBOARDING_METADATA_KEY } from "@/utils/onboarding";
@@ -356,6 +358,7 @@ export async function GET() {
       erased: erasedIds.has(u.id),
       admin_level: adminLevel,
       mcp_full_access: hasMcpFullAccessPermission(appMeta),
+      top_tier_models: readAppPermissions(appMeta).includes(TOP_TIER_MODELS_PERMISSION),
       onboarding_completed: meta[ONBOARDING_METADATA_KEY] === true,
       created_at: u.created_at ?? null,
       last_sign_in_at: u.last_sign_in_at ?? null,

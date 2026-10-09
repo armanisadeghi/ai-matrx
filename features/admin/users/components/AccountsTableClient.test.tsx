@@ -172,6 +172,7 @@ describe("AccountsTableClient", () => {
       erased: false,
       admin_level: null,
       mcp_full_access: true,
+      top_tier_models: false,
       onboarding_completed: true,
       created_at: null,
       last_sign_in_at: null,
