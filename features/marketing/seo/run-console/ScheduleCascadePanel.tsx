@@ -28,6 +28,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { CalendarClock, Info, Loader2, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Chip, Input } from "@ai-matrx/design-system/controls";
+import { MatrxDataTable, type MatrxColumnDef } from "@ai-matrx/design-system/data-table";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import {
@@ -146,6 +147,54 @@ export function ScheduleCascadePanel({
     queryFn: () => resolveSchedulesForSites(engine.slug, siteIds),
     enabled: siteIds.length > 0,
   });
+
+  const cascadeGoverning = (site: ConsoleSiteRow) => governingBySite.get(site.id) ?? null;
+  const cascadeColumns: MatrxColumnDef<ConsoleSiteRow>[] = [
+    { id: "brand", header: "Brand", accessorFn: (site) => site.name, width: 220 },
+    {
+      id: "governed_by",
+      header: "Governed by",
+      accessorFn: (site) => {
+        const governing = cascadeGoverning(site);
+        return governing ? tierLabel(governing.scope_tier) : "Nothing";
+      },
+      filter: "select",
+      width: 160,
+      cell: (site) => {
+        const governing = cascadeGoverning(site);
+        return (
+          <Chip
+            tone={governing ? "primary" : "neutral"}
+            label={governing ? tierLabel(governing.scope_tier) : "Nothing"}
+          />
+        );
+      },
+    },
+    {
+      id: "says",
+      header: "What it says",
+      accessorFn: (site) => {
+        const governing = cascadeGoverning(site);
+        return governing ? describe(governing) : "Manual runs only.";
+      },
+      width: 420,
+      cell: (site) => {
+        const governing = cascadeGoverning(site);
+        return (
+          <span className="text-muted-foreground">
+            {governing ? (
+              <>
+                {describe(governing)}
+                {governing.enabled ? null : <span className="ml-1 text-warning">(switched off)</span>}
+              </>
+            ) : (
+              "Manual runs only."
+            )}
+          </span>
+        );
+      },
+    },
+  ];
 
   const [cadence, setCadence] = useState<string>(own?.cadence ?? "daily");
   const [runAt, setRunAt] = useState<string>(
@@ -436,49 +485,30 @@ export function ScheduleCascadePanel({
             Nearest wins: brand, then organization, then the system default.
           </span>
         </div>
-        <div className="min-h-0 flex-1 overflow-y-auto">
-          <table className="w-full text-left text-xs">
-            <thead className="sticky top-0 bg-muted/60 text-[10px] uppercase tracking-wide text-muted-foreground">
-              <tr>
-                <th className="px-2.5 py-1 font-medium">Brand</th>
-                <th className="px-2.5 py-1 font-medium">Governed by</th>
-                <th className="px-2.5 py-1 font-medium">What it says</th>
-              </tr>
-            </thead>
-            <tbody>
-              {sites.map((site) => {
-                const governing = governingBySite.get(site.id) ?? null;
-                return (
-                  <tr
-                    key={site.id}
-                    className="border-t border-border/60 align-top"
-                  >
-                    <td className="px-2.5 py-1 text-foreground">{site.name}</td>
-                    <td className="px-2.5 py-1">
-                      <Chip
-                        tone={governing ? "primary" : "neutral"}
-                        label={governing ? tierLabel(governing.scope_tier) : "Nothing"}
-                      />
-                    </td>
-                    <td className="px-2.5 py-1 text-[11px] text-muted-foreground">
-                      {governing ? (
-                        <>
-                          {describe(governing)}
-                          {governing.enabled ? null : (
-                            <span className="ml-1 text-warning">
-                              (switched off)
-                            </span>
-                          )}
-                        </>
-                      ) : (
-                        "Manual runs only."
-                      )}
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
+        <div className="min-h-0 flex-1">
+          <MatrxDataTable<ConsoleSiteRow>
+            tableId="seo-schedule-cascade"
+            data={[...sites]}
+            columns={cascadeColumns}
+            getRowId={(site) => site.id}
+            rowVersion={(site) => { const g = cascadeGoverning(site); return g ? `${g.scope_tier}|${g.enabled}|${describe(g)}` : "none"; }}
+            emptyState={{ title: "No brands in this console" }}
+            detail={{ enabled: false }}
+            copy={{
+              label: "SEO schedule cascade",
+              location: "SEO Run Console, Schedule Cascade",
+              rowKind: "seo-schedule-cascade-brand",
+              listKind: "seo-schedule-cascade",
+              humanRow: (site) => {
+                const governing = cascadeGoverning(site);
+                return `${site.name}: ${governing ? `${tierLabel(governing.scope_tier)} - ${describe(governing)}` : "Nothing, manual runs only"}`;
+              },
+              agentRow: (site) => {
+                const governing = cascadeGoverning(site);
+                return { site_id: site.id, name: site.name, governed_by: governing?.scope_tier ?? null, schedule: governing ? describe(governing) : null, enabled: governing?.enabled ?? null };
+              },
+            }}
+          />
         </div>
       </section>
     </div>
