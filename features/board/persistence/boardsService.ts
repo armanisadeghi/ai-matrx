@@ -572,7 +572,18 @@ export async function renameBoard(id: string, title: string): Promise<{ title: s
  * A copy of the board (camera, tiles, groups, arrows) in the same organization. `title` names the
  * copy (default "<title> (copy)"); "Use template" passes the template's own title.
  */
-export async function duplicateBoard(id: string, options: { title?: string } = {}): Promise<LoadedBoard> {
+export async function duplicateBoard(
+  id: string,
+  options: {
+    title?: string;
+    /**
+     * Gives the copy its OWN content: receives the source board's document and returns the document to
+     * store (a template use clones the notes/documents behind the tiles here). Omitted = a plain
+     * Duplicate: the copy's tiles point at the same records as the original's.
+     */
+    cloneContent?: (doc: BoardDocument) => Promise<BoardDocument>;
+  } = {},
+): Promise<LoadedBoard> {
   const { data: source, error } = await db
     .from(TABLE)
     .select(BOARD_COLUMNS)
@@ -586,13 +597,18 @@ export async function duplicateBoard(id: string, options: { title?: string } = {
   // The copy lives where its original lives: the record's own organization is
   // the explicit answer, so the gate never has to ask.
   const orgId = await resolveOrganization(source.organization_id);
+  let columns: { camera: Json; nodes: Json; edges: Json } = { camera: source.camera, nodes: source.nodes, edges: source.edges };
+  if (options.cloneContent) {
+    const { doc } = parseBoardDocument({ camera: source.camera, nodes: source.nodes, edges: source.edges });
+    columns = documentColumns(await options.cloneContent(doc));
+  }
   return insertBoard({
     organizationId: orgId,
     userId: requireUserId(),
     title: options.title ? normalizeTitle(options.title) : copyTitle(source.title),
     description: source.description,
     settings: settingsForCopy(source.settings),
-    columns: { camera: source.camera, nodes: source.nodes, edges: source.edges },
+    columns,
   });
 }
 

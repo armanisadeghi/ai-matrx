@@ -44,7 +44,7 @@ describe("board templates", () => {
 
   it("Use: a saved template is duplicated under its own title; a built-in makes a fresh board", async () => {
     await makeBoardFromTemplate("b1", "org", "Mine");
-    expect(duplicateBoard).toHaveBeenCalledWith("b1", { title: "Mine" });
+    expect(duplicateBoard).toHaveBeenCalledWith("b1", { title: "Mine", cloneContent: expect.any(Function) });
     await makeBoardFromTemplate("builtin:viral-breakdown", "org", "Viral breakdown");
     expect(createBoardFromDocument).toHaveBeenCalledTimes(1);
   });

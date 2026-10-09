@@ -11,6 +11,7 @@ import {
   getBoardsByIds,
   type LoadedBoard,
 } from "../persistence/boardsService";
+import { cloneBoardContent } from "./clone-content";
 import { BUILTIN_BOARD_TEMPLATES, builtinTemplateByKey } from "./builtin";
 import type { BoardDocument } from "../board/document";
 
@@ -41,5 +42,7 @@ export const saveBoardAsTemplate = (boardId: string, on: boolean) => setTemplate
 export async function makeBoardFromTemplate(key: string, organizationId: string | null, title: string): Promise<LoadedBoard> {
   const builtin = builtinTemplateByKey(key);
   if (builtin) return createBoardFromDocument({ organizationId, title, doc: builtin.build() });
-  return duplicateBoard(key, { title });
+  // A saved template is a board: its notes and documents are the AUTHOR'S records, so the copy gets clones of them
+  // (`clone-content.ts` holds the per-type ruling), never the same records.
+  return duplicateBoard(key, { title, cloneContent: (doc) => cloneBoardContent(doc) });
 }

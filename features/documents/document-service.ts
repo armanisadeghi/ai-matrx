@@ -317,6 +317,38 @@ export async function saveDocumentSnapshot(
   return { success: true, data: data as DocumentSnapshot };
 }
 
+/**
+ * An independent copy of a document: its own row, with the latest snapshot copied over, so editing the copy never
+ * touches the original. The copy lives in the original's organization and project. Used by a board-template use.
+ */
+export async function copyDocument(
+  documentId: string,
+): Promise<ServiceResult<DocumentRow>> {
+  const original = await getDocument(documentId);
+  if (!original.success) return original;
+  const row = original.data;
+  const created = await createDocument({
+    name: row.document_name,
+    description: row.description ?? null,
+    organizationId: row.organization_id,
+    projectId: row.project_id ?? null,
+    isPublic: row.visibility === "public",
+  });
+  if (!created.success) return created;
+  const latest = await getLatestDocumentSnapshot(documentId);
+  if (!latest.success) return latest;
+  if (latest.data) {
+    const saved = await saveDocumentSnapshot({
+      documentId: created.data.id,
+      snapshot: latest.data.snapshot,
+      label: latest.data.label,
+      origin: "autosave",
+    });
+    if (!saved.success) return saved;
+  }
+  return created;
+}
+
 export async function listDocumentSnapshots(
   documentId: string,
   limit = 50,
