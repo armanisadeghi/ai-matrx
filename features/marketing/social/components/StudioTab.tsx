@@ -13,6 +13,7 @@ import { Plus } from "lucide-react";
 import { Button, Select } from "@ai-matrx/design-system/controls";
 import { PresetBoard } from "@/features/board/components/PresetBoard";
 import { RegionSkeleton } from "@ai-matrx/design-system/controls";
+import { useMarketingBrand } from "@/features/marketing/lib/brand-context";
 import { toast } from "@/lib/toast";
 
 import { createStudioBoard, listStudioBoards } from "../studio/studio-boards";
@@ -21,7 +22,8 @@ import { useSocials } from "./SocialsContext";
 const LAYOUT = { propertiesOpen: false, widths: { properties: 250 } } as const;
 
 export function StudioTab() {
-  const { brandId, organizationId, brandSeg } = useSocials();
+  const { brandId, organizationId } = useSocials();
+  const brandName = useMarketingBrand().name;
   const client = useQueryClient();
   const key = ["marketing", "social", "studio-boards", organizationId, brandId] as const;
   const boards = useQuery({ queryKey: key, queryFn: () => listStudioBoards({ organizationId, brandId }), staleTime: 15_000 });
@@ -50,7 +52,7 @@ export function StudioTab() {
   useEffect(() => {
     if (boards.data && boards.data.length === 0 && !started.current) {
       started.current = true;
-      void add(`${brandSeg} Studio`);
+      void add(`${brandName} Studio`);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [boards.data]);
@@ -86,7 +88,7 @@ export function StudioTab() {
           options={list.map((b) => ({ value: b.id, label: b.title }))}
           onValueChange={setPicked}
         />
-        <Button variant="quiet" icon={<Plus />} disabled={busy} onClick={() => void add(`${brandSeg} Studio ${list.length + 1}`)}>
+        <Button variant="quiet" icon={<Plus />} disabled={busy} onClick={() => void add(`${brandName} Studio ${list.length + 1}`)}>
           New board
         </Button>
       </div>

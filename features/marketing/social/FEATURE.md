@@ -96,6 +96,12 @@ Standards components (`@/features/marketing/social/components/…`)
   view, Compare = Competitors overlay lines, Share snapshot link, CSV export on KPIs, `account_insight_daily` for
   non-YouTube platforms (no writer yet), saved-view editing (a watchlist is created and removed, not edited in place).
 
+## Kinds, tiles, Studio (SI-07c)
+
+- `kind-models.ts`: rows -> the registered kinds (`socialPostKind`, `socialProfileKind`, `outlierRowKind`, `adCreativeKind`, `swipeCollectionKind`, `postTranscriptKind`) and kind -> card (`postCardModelFromKind`). `tile-data.ts`: ad, swipe collection and brand-outlier reads for the Board tiles. `link.ts` `classifySocialLink`: post vs profile for a pasted line.
+- The six distilled kinds have one canonical component each (`components/mardown-display/blocks/social-kinds/social-kind-blocks.tsx`, reusing `SocialPostCard`, `OutlierBadge`, `PlatformMark`); compiled mirrors in `features/content-ir/kinds/social-kinds.ts`; `kind_component` rows landed and the kinds activated through `content_ir.set_kind_activation`. Placeholders (`post_breakdown`, `hook_set`, ...) stay inactive.
+- Board tiles and their surfaces: `features/board/FEATURE.md` § Social tiles. Studio boards: `studio/studio-boards.ts` (`settings.brand_id`), `components/StudioTab.tsx`.
+
 ## Decisions and edges
 
 - **Reads direct, compute through the server.** No Next.js API routes. Plain edits (role) are Layer B row updates under RLS.
@@ -117,7 +123,7 @@ Standards components (`@/features/marketing/social/components/…`)
 ## Tests
 
 `__tests__/outliers.feed.test.ts` (filter, watchlist serialization, hits), `kpi.test.ts` (current-vs-target math, pace,
-benchmark), `__tests__/outlier.test.ts` (tiers, text, badge states), `mappers.test.ts` (growth judge, account roll-ups, filters,
+benchmark), `__tests__/classify-social-link.test.ts` (pasted-line classification), `__tests__/outlier.test.ts` (tiers, text, badge states), `mappers.test.ts` (growth judge, account roll-ups, filters,
 series), `link.test.ts`, `stream.test.ts` (the NDJSON contract). Run: `pnpm test features/marketing/social`.
 
 ## Swipe file and Ads (SI-07b2)
