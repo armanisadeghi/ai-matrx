@@ -1,7 +1,7 @@
 ---
 type: Feature
 title: "Social Intelligence UI (marketing/social)"
-description: "The Socials section at /marketing/[brandId]/socials: data layer, standards components (outlier badge, post card, metric chart, provider notice), Accounts, account detail, post detail. Lane SI-07a."
+description: "The Socials section at /marketing/[brandId]/socials: data layer, standards components, Accounts, account detail, post detail (SI-07a), Outliers + watchlists, KPIs + goals + benchmark, the Analytics social panel and the agency roll-up (SI-07b1 / SI-08)."
 tags: [marketing, social, ui]
 timestamp: 2026-10-09
 ---
@@ -18,7 +18,9 @@ and SI-07c (Ads, KPIs) fill the other tabs and **build on the modules listed her
 |---|---|
 | `/socials` | redirect to `/socials/accounts` (temporary redirect, never a cached 308) |
 | `/socials/accounts` | `AccountsTab` (live) |
-| `/socials/{studio,outliers,swipe,ads,kpis}` | `SocialsTabPlaceholder` — a registry row each (`marketing.social.<tab>`), announced through `announceComingSoon`; replace the page body, keep the route |
+| `/socials/outliers` | `OutliersTab` (live, SI-07b1) |
+| `/socials/kpis` | `KpisTab` (live, SI-08) |
+| `/socials/{studio,swipe,ads}` | `SocialsTabPlaceholder` — a registry row each (`marketing.social.<tab>`), announced through `announceComingSoon`; replace the page body, keep the route |
 | `/socials/[platform]/[accountId]` | `AccountDetail`. `accountId` is the **shared profile id** (`social.social_profile.id`), not the tracked-account id, so an untracked profile also opens |
 | `/socials/post/[postId]` | `PostDetailPage` (same body as the drawer) |
 
@@ -64,6 +66,36 @@ Standards components (`@/features/marketing/social/components/…`)
 - `SocialsContext` / `useSocials()` — `{brandId, brandSeg, organizationId, openTrack}` for any tab body.
 - `TrackAccountDialog`, `AccountsTab`, `AccountDetail`, `SocialsShell`, `SocialsTabPlaceholder`.
 
+## Outliers, KPIs, roll-ups (SI-07b1 / SI-08)
+
+- `outliers.ts` (pure, tested) — `OutlierFilter`, `applyOutlierFilter`, `sortOutliers`, watchlist (de)serialization, hit resolution.
+  A watchlist = `platform.saved_view` (surface `social.outliers`, `subject_id` = brand, written ONLY through the
+  `saved_view_save` / `saved_view_archive` doors, read through `saved_view_list_lanes`). Its hits are **computed on view**:
+  the filter applied to the brand's posts; a match with no `social.watchlist_hit` row is implicitly `new`; Mark seen /
+  Dismiss / Restore upsert the row (`setHitStates`). Opening a post marks it seen. Dismissed hide behind a switch.
+  **Alerts are a disabled control** (`OUTLIER_ALERTS_ENABLED = false`): no schedule, no auto-notification until approved.
+- `OutliersTab` — one filter row (watchlist, platform, role, window 7/30/90d, min multiple, format, sort), Cards
+  (`SocialPostCard`, with `extraActions` Why it worked / Dismiss and a new dot) or Table (`MatrxDataTable`), `PostDrawer`.
+  "Why it worked" opens the drawer on its Breakdown tab (`initialTab`), which answers honestly while the agent is unbuilt.
+  Platform and role pickers choose one or all (a stored multi-value watchlist shows "Several").
+- `kpi.ts` (pure, tested) — goals in `social.kpi_goal`. UI metrics: followers, avg views (`views`), posts per week (`posts`),
+  engagement rate (percent), outlier count (`custom` + label `Outlier count`; the table's CHECK has no such metric).
+  `measureGoal` states each metric's rule; scope = the goal's account, else platform, else every `own` account.
+  `goalProgress`: achieved / on track / behind / no data / paused; cumulative goals (followers from the stored baseline,
+  outlier count) pace against time elapsed with `KPI_PACE_TOLERANCE`; level metrics are on track from 80% of target.
+- `KpisTab` — goal tiles with progress + pace marker and pause/remove, Trend (a `MetricChart` per own account with the
+  follower-growth judge), Benchmark (`MatrxDataTable`: followers, 30d growth, posts/week, median views, engagement,
+  outlier rate; own rows first), Own channel (`BrandChannelPanel` for the owned YouTube channel; other platforms show
+  "Coming with platform approvals").
+- `readBrandSocialData` (service) — ONE direct read of the brand's accounts, 400 days of posts with stats (role attached)
+  and follower snapshots; `useBrandSocialData` feeds Outliers, KPIs and the Analytics panel.
+- `SocialAnalyticsPanel` — on the brand Analytics page beside `BrandChannelPanel` (tiles: tracked accounts, own
+  followers, outliers 30d, goals on track; link to KPIs). `SocialReportsSection` — on `/marketing/reports`: cross-brand
+  table of tracked accounts and recent (30d, 3x+) outliers; never filtered by the active organization.
+- Not built: AI actions (Explain change, Suggest goals, Summarize feed), Patterns right rail, Content (by hook type)
+  view, Compare = Competitors overlay lines, Share snapshot link, CSV export on KPIs, `account_insight_daily` for
+  non-YouTube platforms (no writer yet), saved-view editing (a watchlist is created and removed, not edited in place).
+
 ## Decisions and edges
 
 - **Reads direct, compute through the server.** No Next.js API routes. Plain edits (role) are Layer B row updates under RLS.
@@ -84,5 +116,6 @@ Standards components (`@/features/marketing/social/components/…`)
 
 ## Tests
 
-`__tests__/outlier.test.ts` (tiers, text, badge states), `mappers.test.ts` (growth judge, account roll-ups, filters,
+`__tests__/outliers.feed.test.ts` (filter, watchlist serialization, hits), `kpi.test.ts` (current-vs-target math, pace,
+benchmark), `__tests__/outlier.test.ts` (tiers, text, badge states), `mappers.test.ts` (growth judge, account roll-ups, filters,
 series), `link.test.ts`, `stream.test.ts` (the NDJSON contract). Run: `pnpm test features/marketing/social`.
