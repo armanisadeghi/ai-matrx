@@ -17,7 +17,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
-import { toast } from "@/lib/toast";
+import { recordToast } from "@/lib/toast";
 import type { ClassPart } from "../classParts";
 import type { ClassTest } from "../classTests";
 import type { UseClassTestsReturn } from "../hooks/useClassTests";
@@ -55,7 +55,10 @@ export function ClassTestsSection({
     try {
       await tests.removeTest(test.id);
     } catch (err) {
-      toast.error(`Could not remove ${test.name}: ${err instanceof Error ? err.message : String(err)}`);
+      recordToast.error(
+        { type: "scope", id: test.id, title: test.name },
+        `Could not remove ${test.name}: ${err instanceof Error ? err.message : String(err)}`,
+      );
     }
   }
 

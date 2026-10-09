@@ -88,6 +88,7 @@ RLS via `iam.apply_rls` (entity/component/entity). Registered in `entity_types`,
   spine as `response_kind:'handwritten'` with `response_image_file_id` + the steps in `score`
   (assessment item, or standalone `item_type:'handwritten_work'`). `StepBreakdown` renders the steps.
 
+- **Practice test for a class test (living-kit W5).** `classes/components/MakePracticeTestButton.tsx` on a class test's page: the sources are the files, source documents and notes filed in the units the test covers (deduped), run through the same `generateQuestionsFromSources` as every quiz, saved with `createWithItems` as a `practice_test` (metadata `class_id`, `test_id`, `unit_ids`), then filed (plain edges) under the test scope and the class. Run key `class-test:practice-test:<testId>` (`useTabBoundRun`); entitlement `education.practice_test_generate` + COPPA gate.
 - **Add more questions (living-kit W2).** `components/AddMoreQuestionsButton.tsx` (detail page, beside
   Duplicate; editors only): the Source input seeded from the assessment's `source` lineage, a count
   (`kindConfig.defaultCount`/`countMax` — no per-run knob exists for questions), question-type chips
