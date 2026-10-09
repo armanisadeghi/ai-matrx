@@ -88,6 +88,18 @@ RLS via `iam.apply_rls` (entity/component/entity). Registered in `entity_types`,
   spine as `response_kind:'handwritten'` with `response_image_file_id` + the steps in `score`
   (assessment item, or standalone `item_type:'handwritten_work'`). `StepBreakdown` renders the steps.
 
+- **Add more questions (living-kit W2).** `components/AddMoreQuestionsButton.tsx` (detail page, beside
+  Duplicate; editors only): the Source input seeded from the assessment's `source` lineage, a count
+  (`kindConfig.defaultCount`/`countMax` — no per-run knob exists for questions), question-type chips
+  (none = any), a `ProTextarea` focus, tab-bound run (`useTabBoundRun`, request shape in
+  `data/questionRunRequest.ts`), COPPA + entitlement gate. Generation is `data/generateQuestionsFromSources.ts`
+  — THE one question generator, shared with `quizGenerator.ts` (new quiz/practice test): segmented over the
+  Sources, steering folded into `user_request`/`question_types` (`convert/steering.ts`), questions already on
+  the assessment (same prompt or near-duplicate) and non-requested types dropped (`data/newQuestions.ts`), each
+  kept question stamped `metadata.batch_id` (+ `outline_section_id`/`topic` for a one-section run). Saved with
+  `assessmentService.addItems(id, items, {startPosition: itemCount})`; the success toast's **Undo**
+  soft-deletes (`deleteItem`) exactly the item ids that save returned.
+
 ## Invariants & gotchas
 
 - **Route pages are Server Components** — pass the `kind` STRING to client components, never the
@@ -151,6 +163,7 @@ RLS via `iam.apply_rls` (entity/component/entity). Registered in `entity_types`,
 
 ## Change log
 
+- `2026-10-09` — Living-kit W2: "Add questions" top-up on the quiz/practice-test detail page and the ONE question generator (`generateQuestionsFromSources`, now behind `quizGenerator` too). `NewAssessmentItemInput` gained `metadata`. Open: `assessmentService.addItems` does not yet write item `metadata` (batch/section stamps are generated but not persisted).
 - `2026-09-28` — The assessment editor now mounts the shared assessment surface for both quiz and practice-test edit routes. Agents can propose a title update, add questions, update questions, or delete questions through the same `assessmentService` paths as the editor; every write asks the learner first. The surface emits assessment and question revisions, and agent item mutations use `guardedUpdate` compare-and-swap so stale approval cannot overwrite a newer edit.
 - `2026-09-27` — page-pass round 3: a taking is filed under the quiz's own organization when the person belongs to it (no org prompt for your own quiz); "attempts" means COMPLETED everywhere (list column, detail header, agent values) and `listResults` is mine-scoped; `assessment_list_scoped` returns `my_can_edit` (via MCP) and Edit/Archive show only with edit rights; lane-aware empty states (New only in Mine); compact phone card with one-tap Take; Title gets the width; results use the shell header.
 - `2026-09-27` — page-pass iteration: `generate_quizzes` / `generate_practice_tests` agent targets run THE one generation path (`data/useAssessmentGeneration.tsx`, now also behind the New form: COPPA gate → plan check → generator → save → usage on success), metered and stated on the approval card, streaming into the floating live-run window; list rows carry the person's attempts / best score / latest result (`assessment_list_scoped` v2, applied via MCP), so **Results** opens the latest result and is absent before a first attempt; Depth/Exam hidden by default, Topic wider, Take is a labelled one-tap button on the phone card; an empty Mine lane names and opens My Orgs; tool homes keep the Education section nav + intelligence mark (`EducationToolHeader`).

@@ -26,26 +26,55 @@
 // sources get openable citations backfilled.
 
 import { assessmentService } from "./assessmentService";
-import { ASSESSMENT_MANDATES } from "./mandates";
-import { coerceGeneratedQuiz } from "./useGenerateQuiz";
-import { attachSourceRefs } from "@/features/education/trust/grounding";
+import { generateQuestionsFromSources } from "./generateQuestionsFromSources";
 import { recordSourceLineage } from "@/features/education/convert/recordSourceLineage";
-import {
-  looseKey,
-  segmentedGenerate,
-} from "@/features/education/convert/segmentedGenerate";
 import type {
   ConvertContext,
   ConvertGenerator,
   ConvertRequest,
   ConvertResult,
 } from "@/features/education/convert/types";
-import type {
-  AssessmentKind,
-  Depth,
-  NewAssessmentItemInput,
-} from "./types";
-import { sectionRunTitle } from "@/features/education/convert/coverage";
+import type { AssessmentKind, Depth } from "./types";
+import {
+  RESOLVED_SOURCE_SET_KIND,
+  createSourceRef,
+  type ResolvedSourceSet,
+} from "@ai-matrx/agents/sources";
+import type { ConvertSource } from "@/features/education/convert/types";
+
+/**
+ * The converter's one pasted/ingested source as the resolved shape the ONE
+ * question generator reads. Its anchor (file / document / entity) rides the
+ * ref so citations open the real material, exactly as before.
+ */
+function resolvedFromConvertSource(source: ConvertSource): ResolvedSourceSet {
+  const ref = source.ref;
+  const type = ref?.fileId
+    ? "file"
+    : ref?.processedDocumentId
+      ? "processed_document"
+      : (ref?.entityType ?? "text");
+  const id = ref?.fileId ?? ref?.processedDocumentId ?? ref?.entityId ?? "source";
+  return {
+    __kind: RESOLVED_SOURCE_SET_KIND,
+    sources: [
+      {
+        ref: createSourceRef(type, id),
+        label: source.title ?? "Study material",
+        form_used: "text",
+        text: source.text,
+        segments: [],
+        ...(ref?.fileId ? { file_id: ref.fileId } : {}),
+        ...(ref?.processedDocumentId ? { processed_document_id: ref.processedDocumentId } : {}),
+        state: "ready",
+        truncated: false,
+        notes: [],
+      },
+    ],
+    dropped: [],
+    total_chars: source.text.length,
+  };
+}
 
 /** Per-kind defaults: practice tests are longer, deeper, and timed. */
 const KIND_DEFAULTS: Record<
@@ -73,60 +102,22 @@ function makeRun(kind: "quiz" | "practice_test") {
       throw new Error("The source has no text to build questions from");
     }
 
-    const baseLabel = source.title ?? "Study material";
-    const anchorFileId = source.ref?.fileId;
-    let agentTitle = "";
-    let agentDescription: string | null = null;
-
-    const covered = await segmentedGenerate<NewAssessmentItemInput>({
-      ctx,
-      source,
+    const covered = await generateQuestionsFromSources({
+      resolved: resolvedFromConvertSource(source),
+      count: options?.count,
+      difficulty: options?.difficulty ?? "Medium",
+      depth: defaults.depth,
+      title: source.title ?? "Study material",
+      steer: { instruction: options?.focus },
+      coverageDepth: options?.depth,
       targetKind: kind,
-      options,
-      mandateKey: ASSESSMENT_MANDATES.generateQuizFromSource,
       surfaceKey: `education-convert-${defaults.base}`,
-      sourceFeature: "education-ingest",
-      variables: (segment, plan) => ({
-        source_content: segment.text,
-        // The section rides in the label the agent already declares, so a
-        // multi-section run needs no new agent variable.
-        source_label:
-          plan.segments.length > 1
-            ? sectionRunTitle(baseLabel, segment)
-            : baseLabel,
-        count: String(segment.items),
-        difficulty: options?.difficulty ?? "Medium",
-        depth: defaults.depth,
-        question_types: "",
-        exam_type: "",
-        user_request: options?.focus ?? "",
-      }),
-      extract: (value) => {
-        const generated = coerceGeneratedQuiz(value);
-        if (!agentTitle && generated.title) agentTitle = generated.title;
-        if (agentDescription === null && generated.description) {
-          agentDescription = generated.description;
-        }
-        // Backfill openable citations for a document/file-anchored source so
-        // each item's TrustEnvelope points at the passage it came from (TRUST
-        // mandate).
-        return anchorFileId
-          ? generated.questions.map((q) => ({
-              ...q,
-              trust: attachSourceRefs(q.trust, {
-                documentId: anchorFileId,
-                // The Source's real name — never the quiz's own title.
-                title: source.title,
-              }),
-            }))
-          : generated.questions;
-      },
-      // Two sections that cover the same fact ask the same question; ask once.
-      identity: (item) => looseKey(item.prompt ?? ""),
-      timeoutMs: 240_000,
+      ctx,
     });
+    const agentTitle = covered.agentTitle;
+    const agentDescription = covered.agentDescription;
 
-    const items = covered.items;
+    const items = covered.questions;
     if (items.length === 0) {
       throw new Error(
         `The ${defaults.label.toLowerCase()} generator returned no usable questions`,
@@ -136,7 +127,7 @@ function makeRun(kind: "quiz" | "practice_test") {
 
     // On a multi-section run the agent's title names a section, not the whole
     // assessment, so the source's own title wins.
-    const finalTitle = covered.plan.singlePass
+    const finalTitle = covered.singlePass
       ? agentTitle || source.title || `${defaults.label} from source`
       : source.title || agentTitle || `${defaults.label} from source`;
 

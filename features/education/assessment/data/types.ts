@@ -146,6 +146,11 @@ export interface NewAssessmentItemInput {
   topic?: string | null;
   trust?: TrustEnvelope | null;
   position?: number;
+  /**
+   * Generation bookkeeping (`batch_id`, `outline_section_id`). Persisted by
+   * `assessmentService.addItems` into `assessment_item.metadata`.
+   */
+  metadata?: Record<string, unknown>;
 }
 
 export type AssessmentPatch = Partial<

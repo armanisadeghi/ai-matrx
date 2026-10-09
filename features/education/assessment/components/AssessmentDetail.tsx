@@ -39,6 +39,7 @@ import { MadeFromSource } from "@/features/education/convert/MadeFromSource";
 import type { TargetKind } from "@/features/education/convert/types";
 import { SurfaceRuntimeProvider } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import { createEducationAssessmentScope } from "@/features/surfaces/manifests/education-assessment.manifest";
+import { AddMoreQuestionsButton } from "./AddMoreQuestionsButton";
 import { assessmentService } from "../data/assessmentService";
 import { serializeAssessment } from "../data/serializeAssessment";
 import { newGainGroupId } from "../data/learningGain";
@@ -375,6 +376,14 @@ export function AssessmentDetail({
                 >
                   Duplicate
                 </Button>
+                <AddMoreQuestionsButton
+                  assessment={assessment}
+                  items={items}
+                  onAdded={() => {
+                    setReloadKey((k) => k + 1);
+                    setLineageKey((k) => k + 1);
+                  }}
+                />
                 <Button
                   icon={<Trash2 />}
                   variant="outline"
