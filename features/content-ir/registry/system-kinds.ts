@@ -114,6 +114,7 @@ import { SEARCH_RESULTS_KIND_DEFINITIONS } from "../kinds/search-results";
 import { RANK_KINDS_KIND_DEFINITIONS } from "../kinds/rank-kinds";
 import { RAG_KINDS_KIND_DEFINITIONS } from "../kinds/rag-kinds";
 import { TABLE_KINDS_KIND_DEFINITIONS } from "../kinds/table-kinds";
+import { SOCIAL_KINDS_KIND_DEFINITIONS } from "../kinds/social-kinds";
 import { TRUST_ENVELOPE_KIND_DEFINITIONS } from "../kinds/trust-envelope";
 import { COMMERCE_KINDS_KIND_DEFINITIONS } from "../kinds/commerce-kinds";
 import { PRINT_LULU_KIND_DEFINITIONS } from "../kinds/print-kinds";
@@ -228,6 +229,9 @@ export const SYSTEM_KIND_DEFINITIONS: KindDefinition[] = [
   // convergence family that mints no second copy of a search result.
   // Python-owned models: aidream/aidream/services/rank_kinds/models.py.
   ...RANK_KINDS_KIND_DEFINITIONS,
+  // Social-intelligence family (SI-07c, 2026-10-09): posts, profiles, transcripts,
+  // outlier rows, ads, swipe collections. Python-owned: aidream services/social.
+  ...SOCIAL_KINDS_KIND_DEFINITIONS,
   // RAG retrieval + citation family (RAG Kinds Run, 2026-08-24). `source_ref`
   // is a SYSTEM-WIDE primitive, not a RAG kind — "here is a fact, and here is
   // where it came from" had been built four times in four vocabularies, and

@@ -96,6 +96,15 @@ import SerpPlacementBlockImpl from "@/components/mardown-display/blocks/rank-kin
 // re-run (A-9 / LAW 3). The host defers to any page-level provider and
 // renders the same canonical DataTableBlock.
 import DataTableBlockImpl from "@/components/mardown-display/blocks/table-kinds/DataTableBlockWithMore";
+// Social-intelligence kind family (SI-07c): one canonical component per kind.
+import {
+  AdCreativeBlock as AdCreativeBlockImpl,
+  OutlierRowBlock as OutlierRowBlockImpl,
+  PostTranscriptBlock as PostTranscriptBlockImpl,
+  SocialPostBlock as SocialPostBlockImpl,
+  SocialProfileBlock as SocialProfileBlockImpl,
+  SwipeCollectionBlock as SwipeCollectionBlockImpl,
+} from "@/components/mardown-display/blocks/social-kinds/social-kind-blocks";
 import {
   ProviderRunReceiptBlock as ProviderRunReceiptBlockImpl,
   SeoRankReadingBlock as SeoRankReadingBlockImpl,
@@ -773,6 +782,37 @@ const DOMAIN_BLOCK_COMPONENTS = {
   DataTableBlock: (props: React.ComponentProps<typeof DataTableBlockImpl>) => (
     <LazyBlockWrapper>
       <DataTableBlockImpl {...props} />
+    </LazyBlockWrapper>
+  ),
+  // Social-intelligence kind family (SI-07c).
+  SocialPostBlock: (props: React.ComponentProps<typeof SocialPostBlockImpl>) => (
+    <LazyBlockWrapper>
+      <SocialPostBlockImpl {...props} />
+    </LazyBlockWrapper>
+  ),
+  SocialProfileBlock: (props: React.ComponentProps<typeof SocialProfileBlockImpl>) => (
+    <LazyBlockWrapper>
+      <SocialProfileBlockImpl {...props} />
+    </LazyBlockWrapper>
+  ),
+  PostTranscriptBlock: (props: React.ComponentProps<typeof PostTranscriptBlockImpl>) => (
+    <LazyBlockWrapper>
+      <PostTranscriptBlockImpl {...props} />
+    </LazyBlockWrapper>
+  ),
+  OutlierRowBlock: (props: React.ComponentProps<typeof OutlierRowBlockImpl>) => (
+    <LazyBlockWrapper>
+      <OutlierRowBlockImpl {...props} />
+    </LazyBlockWrapper>
+  ),
+  AdCreativeBlock: (props: React.ComponentProps<typeof AdCreativeBlockImpl>) => (
+    <LazyBlockWrapper>
+      <AdCreativeBlockImpl {...props} />
+    </LazyBlockWrapper>
+  ),
+  SwipeCollectionBlock: (props: React.ComponentProps<typeof SwipeCollectionBlockImpl>) => (
+    <LazyBlockWrapper>
+      <SwipeCollectionBlockImpl {...props} />
     </LazyBlockWrapper>
   ),
   // Rank / SERP-landscape kind family (Rank Kinds Run).

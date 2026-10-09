@@ -1568,6 +1568,14 @@ const SHAPE_BLOCK_DISPATCH = {
   // `{ value, isComplete }` bridge, so the SAME three-branch entry serves it.
   data_table: searchKindEntry(BlockComponents.DataTableBlock),
 
+  // Kind-routed social-intelligence family (SI-07c): same uniform bridge.
+  social_post: searchKindEntry(BlockComponents.SocialPostBlock),
+  social_profile: searchKindEntry(BlockComponents.SocialProfileBlock),
+  post_transcript: searchKindEntry(BlockComponents.PostTranscriptBlock),
+  outlier_row: searchKindEntry(BlockComponents.OutlierRowBlock),
+  ad_creative: searchKindEntry(BlockComponents.AdCreativeBlock),
+  swipe_collection: searchKindEntry(BlockComponents.SwipeCollectionBlock),
+
   // Kind-routed RAG retrieval + citation family (RAG Kinds Run): identical
   // uniform `{ value, isComplete }` bridge, so the SAME three-branch entry
   // serves it too. `source_ref` dispatched standalone renders its CARD

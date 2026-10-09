@@ -7,7 +7,7 @@
 // Verify:      pnpm check:kind-types   (CI-blocking freshness gate)
 // Twin guard:  pnpm check:kind-type-twins
 //
-// 592 active kinds. THESE ARE THE ONLY KIND PAYLOAD TYPES IN THE REPO.
+// 598 active kinds. THESE ARE THE ONLY KIND PAYLOAD TYPES IN THE REPO.
 // A hand-written interface mirroring a registered kind is a defect — derive
 // (Pick/Omit) from the type here instead, and never re-declare it.
 //
@@ -21,7 +21,7 @@
 // ─────────────────────────────────────────────────────────────────────────
 
 /** Structural fingerprint of the registry rows this artifact was generated from. */
-export const KIND_REGISTRY_FINGERPRINT = "be5218682fcb";
+export const KIND_REGISTRY_FINGERPRINT = "51a327eb9665";
 
 // ─────────────────────────────────────────────────────────────────────────
 // Shared nested structures. Deduped by structure across the registry — an
@@ -3408,7 +3408,7 @@ export interface JournalistShape {
 }
 
 /**
- * * Shared by 72 kinds (agent_assignment_batch_result, agent_react_result, agent_result, aggregate_group, …).
+ * * Shared by 73 kinds (ad_creative, agent_assignment_batch_result, agent_react_result, agent_result, …).
  */
 export type JsonValue = unknown;
 
@@ -5202,6 +5202,19 @@ export interface PositiveFlag {
   __kind?: string;
   flag_type: string;
   description: string;
+}
+
+/**
+ * * Shared by 2 kinds (post_transcript, social_post).
+ */
+export interface PostTranscriptSegment {
+  end?: number | null;
+  text: string;
+  start?: number | null;
+  /**
+   * The registered kind this payload is an instance of, when it is one.
+   */
+  __kind?: string;
 }
 
 /**
@@ -7620,6 +7633,64 @@ export interface SlideSpec {
 }
 
 /**
+ * One stored media file of a post. ``door`` is the signed-in server path that streams the bytes.
+ *  *
+ *  * From kind `social_post`.
+ */
+export interface SocialPostMedia {
+  door: string;
+  role: string;
+  /**
+   * The registered kind this payload is an instance of, when it is one.
+   */
+  __kind?: string;
+  file_id: string;
+  mime_type?: string | null;
+  size_bytes?: number | null;
+}
+
+/**
+ * Latest metrics plus the outlier score against the author's own previous posts.
+ *  *
+ *  * From kind `social_post`.
+ */
+export interface SocialPostStat {
+  likes?: number | null;
+  saves?: number | null;
+  views?: number | null;
+  /**
+   * The registered kind this payload is an instance of, when it is one.
+   */
+  __kind?: string;
+  shares?: number | null;
+  comments?: number | null;
+  percentile?: number | null;
+  velocity_24h?: number | null;
+  outlier_score?: number | null;
+  baseline_views?: number | null;
+  baseline_window?: number | null;
+  engagement_rate?: number | null;
+  metrics_observed_at?: string | null;
+  baseline_unavailable_reason?: string | null;
+}
+
+/**
+ * Which provider answered, what fell back, what it cost; ``reused`` = served from the shared cache.
+ *  *
+ *  * Shared by 2 kinds (social_post, social_profile).
+ */
+export interface SocialProviderTrace {
+  /**
+   * The registered kind this payload is an instance of, when it is one.
+   */
+  __kind?: string;
+  reused?: boolean;
+  provider?: string | null;
+  cost_credits?: number | null;
+  fallback_reason?: string | null;
+}
+
+/**
  * WHERE in the source the citation points.
  *
  * One locator rather than a page field here and a timecode field there: a PDF
@@ -8536,6 +8607,41 @@ export interface YouTubeMediaPart {
 // row. A nested registered kind is a REFERENCE to its own interface, never
 // an inlined duplicate.
 // ─────────────────────────────────────────────────────────────────────────
+
+/**
+ * One ad from an ad library (Meta, TikTok, Google, LinkedIn): copy, call to action, landing page,
+ * how long it ran, and its media. ``library`` is the source.
+ *  *
+ *  * Kind `ad_creative` (registry v2).
+ */
+export interface AdCreative {
+  cta?: string | null;
+  url?: string | null;
+  body?: string | null;
+  ad_id?: string | null;
+  media?: ({
+    /**
+     * The registered kind this payload is an instance of, when it is one.
+     */
+    __kind?: string;
+    [key: string]: JsonValue | string | undefined;
+  })[];
+  /**
+   * The registered kind this payload is an instance of.
+   */
+  __kind?: "ad_creative";
+  format?: string | null;
+  library: string;
+  ended_at?: string | null;
+  headline?: string | null;
+  is_active?: boolean | null;
+  started_at?: string | null;
+  impressions?: number | null;
+  landing_url?: string | null;
+  advertiser_id?: string | null;
+  platform_ad_id: string;
+  advertiser_name?: string | null;
+}
 
 /**
  * Output of ``ai.agent.assignment_batch`` — the durable session + item results.
@@ -15136,6 +15242,34 @@ export interface OperationResult {
 }
 
 /**
+ * One post of a tracked account that beat that account's own baseline (the outlier feed row).
+ *  *
+ *  * Kind `outlier_row` (registry v2).
+ */
+export interface OutlierRow {
+  url?: string | null;
+  role?: string | null;
+  views?: number | null;
+  /**
+   * The registered kind this payload is an instance of.
+   */
+  __kind?: "outlier_row";
+  format?: string | null;
+  handle?: string | null;
+  caption?: string | null;
+  post_id: string;
+  platform: string;
+  posted_at?: string | null;
+  percentile?: number | null;
+  profile_id: string;
+  velocity_24h?: number | null;
+  outlier_score: number;
+  thumbnail_url?: string | null;
+  baseline_views?: number | null;
+  engagement_rate?: number | null;
+}
+
+/**
  * Kind `outreach_reply_draft` (registry v4).
  */
 export interface OutreachReplyDraft {
@@ -16510,6 +16644,29 @@ export interface PodcastVideoComposeResult {
    */
   __kind?: "podcast_video_compose_result";
   official_video_url?: string;
+}
+
+/**
+ * The shared transcript of a post — bought or transcribed once for every organization. ``text`` and
+ * ``segments`` are present only when asked for (a 20-minute video is ~11k words).
+ *  *
+ *  * Kind `post_transcript` (registry v2).
+ */
+export interface PostTranscript {
+  text?: string | null;
+  notes?: string[];
+  /**
+   * The registered kind this payload is an instance of.
+   */
+  __kind?: "post_transcript";
+  reused?: boolean;
+  source?: string | null;
+  status: "available" | "none";
+  post_id?: string | null;
+  language?: string | null;
+  provider?: string | null;
+  segments?: PostTranscriptSegment[] | null;
+  word_count?: number | null;
 }
 
 /**
@@ -20862,6 +21019,76 @@ export interface SlugResult {
 }
 
 /**
+ * One public post (TikTok, Instagram, YouTube, LinkedIn, Facebook, X, Threads) as stored in the shared
+ * cache, with its stored media, transcript status and outlier stat. Provider is a field, never a slug.
+ *  *
+ *  * Kind `social_post` (registry v2).
+ */
+export interface SocialPost {
+  url?: string | null;
+  stat?: SocialPostStat | null;
+  is_ad?: boolean | null;
+  media?: SocialPostMedia[];
+  title?: string | null;
+  trace: SocialProviderTrace;
+  /**
+   * The registered kind this payload is an instance of.
+   */
+  __kind?: "social_post";
+  format?: string | null;
+  handle?: string | null;
+  caption?: string | null;
+  post_id: string;
+  hashtags?: string[];
+  language?: string | null;
+  mentions?: string[];
+  platform: string;
+  posted_at?: string | null;
+  profile_id?: string | null;
+  transcript?: PostTranscript | null;
+  media_notes?: string[];
+  thumbnail_url?: string | null;
+  comments_stored?: number | null;
+  duration_seconds?: number | null;
+  platform_post_id: string;
+}
+
+/**
+ * A public account with its audience numbers, plus what this fetch walked (posts pages, ids).
+ *  *
+ *  * Kind `social_profile` (registry v2).
+ */
+export interface SocialProfile {
+  bio?: string | null;
+  notes?: string[];
+  trace: SocialProviderTrace;
+  /**
+   * The registered kind this payload is an instance of.
+   */
+  __kind?: "social_profile";
+  handle: string;
+  category?: string | null;
+  has_more?: boolean;
+  platform: string;
+  post_ids?: string[];
+  avatar_url?: string | null;
+  list_trace?: SocialProviderTrace[];
+  post_count?: number | null;
+  profile_id: string;
+  is_business?: boolean | null;
+  is_verified?: boolean | null;
+  profile_url?: string | null;
+  total_likes?: number | null;
+  display_name?: string | null;
+  external_url?: string | null;
+  pages_walked?: number;
+  follower_count?: number | null;
+  posts_upserted?: number;
+  following_count?: number | null;
+  cost_split_organizations?: number | null;
+}
+
+/**
  * Kind `sorted_list_result` (registry v8).
  */
 export interface SortedListResult {
@@ -21612,6 +21839,22 @@ export interface SupportEmailTriageResult {
    * The order number exactly as it appears in the email, without a leading '#'; null when none appears.
    */
   order_number: string | null;
+}
+
+/**
+ * A saved group of posts, ads and profiles an organization keeps for reference.
+ *  *
+ *  * Kind `swipe_collection` (registry v2).
+ */
+export interface SwipeCollection {
+  name: string;
+  /**
+   * The registered kind this payload is an instance of.
+   */
+  __kind?: "swipe_collection";
+  brand_id?: string | null;
+  description?: string | null;
+  collection_id: string;
 }
 
 /**
@@ -26332,6 +26575,7 @@ export interface WorkflowRunResult {
 
 /** Every active kind slug. An unregistered slug is a COMPILE error. */
 export type GeneratedKindSlug =
+  | "ad_creative"
   | "agent_assignment_batch_result"
   | "agent_definition"
   | "agent_factory_build"
@@ -26562,6 +26806,7 @@ export type GeneratedKindSlug =
   | "office_spreadsheet"
   | "opening_hours"
   | "operation_result"
+  | "outlier_row"
   | "outreach_reply_draft"
   | "page"
   | "page_audio"
@@ -26609,6 +26854,7 @@ export type GeneratedKindSlug =
   | "podcast_cast_preview_result"
   | "podcast_episode"
   | "podcast_video_compose_result"
+  | "post_transcript"
   | "postal_address"
   | "pr_play_menu"
   | "practice_prompt"
@@ -26762,6 +27008,8 @@ export type GeneratedKindSlug =
   | "site_strategy_result"
   | "site_url_verification_result"
   | "slug_result"
+  | "social_post"
+  | "social_profile"
   | "sorted_list_result"
   | "source_authority_rankings"
   | "source_manifest"
@@ -26786,6 +27034,7 @@ export type GeneratedKindSlug =
   | "study_summary"
   | "study_tip"
   | "support_email_triage_result"
+  | "swipe_collection"
   | "table_rows"
   | "task_list"
   | "tasting_note"
@@ -26927,6 +27176,7 @@ export type GeneratedKindSlug =
 
 /** Slug → the complete-instance payload type for that kind. */
 export interface KindPayloadBySlug {
+  "ad_creative": AdCreative;
   "agent_assignment_batch_result": AgentAssignmentBatchResult;
   "agent_definition": AgentDefinition;
   "agent_factory_build": AgentFactoryBuild;
@@ -27157,6 +27407,7 @@ export interface KindPayloadBySlug {
   "office_spreadsheet": OfficeSpreadsheet;
   "opening_hours": OpeningHours;
   "operation_result": OperationResult;
+  "outlier_row": OutlierRow;
   "outreach_reply_draft": OutreachReplyDraft;
   "page": Page;
   "page_audio": PageAudio;
@@ -27204,6 +27455,7 @@ export interface KindPayloadBySlug {
   "podcast_cast_preview_result": PodcastCastPreviewResult;
   "podcast_episode": PodcastEpisode;
   "podcast_video_compose_result": PodcastVideoComposeResult;
+  "post_transcript": PostTranscript;
   "postal_address": PostalAddress;
   "pr_play_menu": PrPlayMenu;
   "practice_prompt": PracticePrompt;
@@ -27357,6 +27609,8 @@ export interface KindPayloadBySlug {
   "site_strategy_result": SiteStrategyResult;
   "site_url_verification_result": SiteUrlVerificationResult;
   "slug_result": SlugResult;
+  "social_post": SocialPost;
+  "social_profile": SocialProfile;
   "sorted_list_result": SortedListResult;
   "source_authority_rankings": SourceAuthorityRankings;
   "source_manifest": SourceManifest;
@@ -27381,6 +27635,7 @@ export interface KindPayloadBySlug {
   "study_summary": StudySummary;
   "study_tip": StudyTip;
   "support_email_triage_result": SupportEmailTriageResult;
+  "swipe_collection": SwipeCollection;
   "table_rows": TableRows;
   "task_list": TaskList;
   "tasting_note": TastingNote;
@@ -27526,6 +27781,7 @@ export type KindPayload<S extends GeneratedKindSlug> = KindPayloadBySlug[S];
 
 /** Every active slug, sorted — the iteration/validation source. */
 export const GENERATED_KIND_SLUGS: readonly GeneratedKindSlug[] = [
+  "ad_creative",
   "agent_assignment_batch_result",
   "agent_definition",
   "agent_factory_build",
@@ -27756,6 +28012,7 @@ export const GENERATED_KIND_SLUGS: readonly GeneratedKindSlug[] = [
   "office_spreadsheet",
   "opening_hours",
   "operation_result",
+  "outlier_row",
   "outreach_reply_draft",
   "page",
   "page_audio",
@@ -27803,6 +28060,7 @@ export const GENERATED_KIND_SLUGS: readonly GeneratedKindSlug[] = [
   "podcast_cast_preview_result",
   "podcast_episode",
   "podcast_video_compose_result",
+  "post_transcript",
   "postal_address",
   "pr_play_menu",
   "practice_prompt",
@@ -27956,6 +28214,8 @@ export const GENERATED_KIND_SLUGS: readonly GeneratedKindSlug[] = [
   "site_strategy_result",
   "site_url_verification_result",
   "slug_result",
+  "social_post",
+  "social_profile",
   "sorted_list_result",
   "source_authority_rankings",
   "source_manifest",
@@ -27980,6 +28240,7 @@ export const GENERATED_KIND_SLUGS: readonly GeneratedKindSlug[] = [
   "study_summary",
   "study_tip",
   "support_email_triage_result",
+  "swipe_collection",
   "table_rows",
   "task_list",
   "tasting_note",

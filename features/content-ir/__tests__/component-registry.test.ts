@@ -182,6 +182,13 @@ describe("compiled bootstrap (system-components)", () => {
         publish_preflight: "publish_preflight",
         // Tabular primitive (Table Kinds Run)
         data_table: "data_table",
+        // Social-intelligence family (SI-07c)
+        social_post: "social_post",
+        social_profile: "social_profile",
+        post_transcript: "post_transcript",
+        outlier_row: "outlier_row",
+        ad_creative: "ad_creative",
+        swipe_collection: "swipe_collection",
         // RAG retrieval + citation family (RAG Kinds Run). `source_ref` is a
         // SYSTEM-WIDE primitive, not a RAG kind — the platform's cited-source
         // shape, nested by every family that says where something came from.
