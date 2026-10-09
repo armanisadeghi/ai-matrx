@@ -3,12 +3,13 @@
   "updated": "2026-10-07",
   "sha": "e389e62b291c8f8958b40ae46c3c3cb67335a4b2",
   "sites": 33659,
-  "count": 12,
+  "count": 13,
   "ids": [
     "arbitrary-text-size|features/esign/signer/parts/PaperField.tsx",
     "primitive-visual-class|features/education/classes/components/ClassTestDialog.tsx",
     "primitive-visual-class|features/education/classes/components/ClassTestView.tsx",
     "primitive-visual-class|features/education/classes/components/ClassTestsSection.tsx",
+    "primitive-visual-class|features/education/classes/components/MakePracticeTestButton.tsx",
     "raw-color|features/esign/signer/parts/ControlInput.tsx",
     "raw-color|features/esign/signer/parts/Dialogs.tsx",
     "raw-color|features/esign/signer/parts/DocumentStack.tsx",
@@ -10528,6 +10529,11 @@
       "date": "2026-10-09"
     },
     "primitive-visual-class|features/education/classes/components/ClassTestsSection.tsx": {
+      "reason": "Same sizing/skeleton placement classes as the existing AddMoreQuestionsButton dialog and ClassStudyContent rows; no design-system variant exists for them yet.",
+      "accepted_by": "Armani Sadeghi",
+      "date": "2026-10-09"
+    },
+    "primitive-visual-class|features/education/classes/components/MakePracticeTestButton.tsx": {
       "reason": "Same sizing/skeleton placement classes as the existing AddMoreQuestionsButton dialog and ClassStudyContent rows; no design-system variant exists for them yet.",
       "accepted_by": "Armani Sadeghi",
       "date": "2026-10-09"
