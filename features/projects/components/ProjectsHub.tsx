@@ -802,7 +802,7 @@ export function ProjectsHub({
                 message={scopeReadError ?? "The read failed."}
                 operation="Read the projects for this scope"
                 actions={
-                  <Button variant="outline" size="sm" onClick={retryScopeProjects}>
+                  <Button variant="outline" onClick={retryScopeProjects}>
                     Try again
                   </Button>
                 }
