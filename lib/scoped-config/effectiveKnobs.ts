@@ -368,6 +368,10 @@ async function fetchKnobSnapshot(
   // Start the defaults read beside the delta on a cold browser; it is skipped when the cache is warm.
   const warmDefaults = defaultsCache ?? readStoredDefaults();
   const defaultsEarly = warmDefaults ? null : ensureDefaults(rpc, null);
+  // Started beside the delta and awaited only on the path that needs it. When the delta throws first (no
+  // session yet: both calls ride the anon role and answer 42501) nothing awaits this one, and its rejection
+  // surfaced as an uncaught page error on every Applet page. The delta's own error is the one reported.
+  defaultsEarly?.catch(() => undefined);
   const { data, error } = await rpc("knob_snapshot_delta", {
     // NULL, sent explicitly: `p_organization_id` has NO default in the SQL
     // signature, so OMITTING it makes PostgREST answer 404 (no function matches).
