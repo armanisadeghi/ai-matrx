@@ -1,0 +1,27 @@
+{
+  "_doc": "The ONE profile-link rule. Mirrored byte-for-byte in matrx-frontend features/marketing/social/__tests__/profile_handle_cases.json; both suites run it. [url, platform|null, handle|null, personal]",
+  "cases": [
+    ["https://www.instagram.com/allgreen_itad/?hl=en", "instagram", "allgreen_itad", false],
+    ["https://www.instagram.com/datadestruction/", "instagram", "datadestruction", false],
+    ["https://www.instagram.com/p/C1abcDEF/", null, null, false],
+    ["https://www.tiktok.com/@cic_medspa", "tiktok", "cic_medspa", false],
+    ["https://www.tiktok.com/@cic_medspa/video/7300000000000000000", null, null, false],
+    ["https://www.youtube.com/channel/UCF4Ku_RBslqV3A36j6KddZQ?view_as=subscriber", "youtube", "UCF4Ku_RBslqV3A36j6KddZQ", false],
+    ["https://www.youtube.com/c/armansadeghi", "youtube", "armansadeghi", false],
+    ["https://www.youtube.com/@vasarostyle", "youtube", "vasarostyle", false],
+    ["https://www.youtube.com/watch?v=VdmZoNmRlm0&t=1s", null, null, false],
+    ["https://www.linkedin.com/in/arman-sadeghi-8b176627/", "linkedin", "arman-sadeghi-8b176627", true],
+    ["https://www.linkedin.com/company/titanium-marketing/", "linkedin", "titanium-marketing", false],
+    ["https://twitter.com/armantitanium", "x", "armantitanium", false],
+    ["https://x.com/datadestructio2", "x", "datadestructio2", false],
+    ["https://twitter.com/https://twitter.com/titaniumsuccess", "x", "titaniumsuccess", false],
+    ["https://x.com/someone/status/1234567890", null, null, false],
+    ["https://www.facebook.com/DataDestructioninc/", "facebook", "DataDestructioninc", false],
+    ["https://www.threads.com/@datadestruction", "threads", "datadestruction", false],
+    ["https://www.pinterest.com/datadestruction/", "pinterest", "datadestruction", false],
+    ["https://www.reddit.com/user/AllGreenRecycling", "reddit", "AllGreenRecycling", false],
+    ["https://www.datadestruction.com/about", null, null, false],
+    ["@datadestruction", null, null, false],
+    ["https://www.instagram.com/", null, null, false]
+  ]
+}
