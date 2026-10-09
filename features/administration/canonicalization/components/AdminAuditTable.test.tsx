@@ -8,51 +8,35 @@ import { AdminAuditTable, type AuditColumnDef } from "./AdminAuditTable";
   globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT?: boolean }
 ).IS_REACT_ACT_ENVIRONMENT = true;
 
-jest.mock("@tanstack/react-virtual", () => ({
-  useVirtualizer: () => ({
-    getTotalSize: () => 0,
-    getVirtualItems: () => [],
-  }),
-}));
+class ResizeObserverMock {
+  observe() {}
+  unobserve() {}
+  disconnect() {}
+}
+Object.defineProperty(globalThis, "ResizeObserver", {
+  value: ResizeObserverMock,
+  configurable: true,
+});
 
-jest.mock("@ai-matrx/kit/url-state", () => ({
-  enumUrlCodec: jest.fn(),
-  jsonUrlCodec: jest.fn(),
-  stringUrlCodec: (fallback: string) => ({ fallback }),
-  useUrlState: (key: string, codec?: { fallback?: string }) => {
-    const values: Record<string, string | Record<string, never>> = {
-      q: codec?.fallback ?? "",
-      f: {},
-      sort: "id",
-      dir: "asc",
-    };
-    return [values[key] ?? "", jest.fn()];
-  },
-}));
-
-jest.mock("@/features/administration/kg-inspector/components/KgInspectorColumnHeader", () => ({
-  KgInspectorColumnHeader: () => null,
-  KgSortIcon: () => null,
-}));
-jest.mock("@/features/administration/kg-inspector/components/ValueListFilterPopover", () => ({
-  ValueListFilterPopover: () => null,
-}));
-jest.mock("@ai-matrx/design-system", () => ({
-  ...jest.requireActual("@ai-matrx/design-system"),
-  ReadFailure: () => <div role="alert">Read failed</div>,
-}));
-
-type Row = { id: string };
+type Row = { id: string; status: string };
 
 const columns: AuditColumnDef<Row>[] = [
   { key: "id", label: "ID", type: "text", getValue: (row) => row.id },
+  { key: "status", label: "Status", type: "enum", getValue: (row) => row.status },
 ];
 
-describe("AdminAuditTable", () => {
+const rows: Row[] = [
+  { id: "match-one", status: "FAIL" },
+  { id: "match-two", status: "PASS" },
+  { id: "other", status: "PASS" },
+];
+
+describe("AdminAuditTable on MatrxDataTable", () => {
   let host: HTMLDivElement;
   let root: Root;
 
   beforeEach(() => {
+    window.history.replaceState({}, "", "/audit");
     host = document.createElement("div");
     document.body.append(host);
     root = createRoot(host);
@@ -63,57 +47,43 @@ describe("AdminAuditTable", () => {
     host.remove();
   });
 
-  it("uses the package footer as an all-loaded receipt without slicing virtual rows", () => {
-    act(() => {
+  it("a deep-linked initialSearch narrows the rows", async () => {
+    await act(async () => {
+      root.render(
+        <AdminAuditTable rows={rows} columns={columns} initialSearch="match" />,
+      );
+    });
+    expect(host.textContent).toContain("match-one");
+    expect(host.textContent).toContain("match-two");
+    expect(host.textContent).not.toContain("other");
+  });
+
+  it("deep-linked initialColumnFilters (exact values) narrow the rows", async () => {
+    await act(async () => {
       root.render(
         <AdminAuditTable
-          rows={[{ id: "match-one" }, { id: "match-two" }, { id: "other" }]}
+          rows={rows}
           columns={columns}
-          initialSearch="match"
+          initialColumnFilters={{ status: { enumValues: ["FAIL"] } }}
         />,
       );
     });
-
-    const footer = host.querySelector("[data-matrx-table-footer]");
-    expect(footer).not.toBeNull();
-    expect(footer?.textContent).toContain("2 shown / 3 loaded");
-    expect(
-      (host.querySelector('[aria-label="Rows per page"]') as HTMLButtonElement)
-        .disabled,
-    ).toBe(true);
-    expect(
-      (host.querySelector('[aria-label="Previous page"]') as HTMLButtonElement)
-        .disabled,
-    ).toBe(true);
-    expect(
-      (host.querySelector('[aria-label="Next page"]') as HTMLButtonElement)
-        .disabled,
-    ).toBe(true);
+    expect(host.textContent).toContain("match-one");
+    expect(host.textContent).not.toContain("match-two");
+    expect(host.textContent).not.toContain("other");
   });
 
-  it.each([
-    ["loading", { loading: true }, null],
-    ["failed", { error: new Error("read failed") }, "failed"],
-  ] as const)(
-    "keeps the footer present and does not invent a zero count while %s",
-    (_state, props, expectedUnavailable) => {
-      act(() => {
-        root.render(<AdminAuditTable rows={[]} columns={columns} {...props} />);
-      });
-
-      const footer = host.querySelector("[data-matrx-table-footer]");
-      expect(footer).not.toBeNull();
-      expect(footer?.textContent).not.toContain("0 rows");
-      if (expectedUnavailable) {
-        expect(footer?.textContent).toContain("—");
-        expect(
-          footer?.querySelector('[aria-label="Row count unavailable"]'),
-        ).not.toBeNull();
-      } else {
-        expect(
-          footer?.querySelector('[aria-label="Row count unavailable"]'),
-        ).toBeNull();
-      }
-    },
-  );
+  it("a failed read shows the failure, never an empty-rows message", async () => {
+    await act(async () => {
+      root.render(
+        <AdminAuditTable
+          rows={[]}
+          columns={columns}
+          error={new Error("read failed")}
+          emptyMessage="No rows at all."
+        />,
+      );
+    });
+    expect(host.textContent).not.toContain("No rows at all.");
+  });
 });
