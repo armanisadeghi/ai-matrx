@@ -75,6 +75,7 @@ import {
   type AppletAudience,
 } from "@/features/applets/lib/applet-state";
 import { ShareButton } from "@/features/sharing/components/ShareButton";
+import { AppletWebDataNotice } from "@/features/applets/components/AppletWebDataNotice";
 import { useCostDisplay } from "@/components/cost/useCostDisplay";
 
 interface AppletSettingsContentProps {
@@ -580,6 +581,7 @@ export function AppletSettingsContent({ appId }: AppletSettingsContentProps) {
           {/* ── Sharing (publication + URL + scope + limits) ─────────── */}
           {activeTab === "sharing" && (
             <div className="space-y-5">
+              <AppletWebDataNotice appId={app.id} />
               {/* The current choice, and the change, in one control (audit M4 / B8): the same two choices
                 "Use it" offers; specific people through the platform's one share dialog. */}
               <Row label="Who can open it">

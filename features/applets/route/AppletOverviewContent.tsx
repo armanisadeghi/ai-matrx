@@ -23,6 +23,7 @@ import { storedMandateKey } from "@ai-matrx/agents/mandates";
 import { appletJobs, appletPages, appletSources } from "@/features/applets/types";
 import { useSourceTableNames } from "@/features/applets/hooks/useSourceTableNames";
 import { appletState, appletVersionLabel } from "@/features/applets/lib/applet-state";
+import { AppletWebDataNotice } from "@/features/applets/components/AppletWebDataNotice";
 
 /** "summarize_book" → "Summarize book": the code's name for a job, as words. */
 function humanizeAlias(alias: string): string {
@@ -60,6 +61,7 @@ export function AppletOverviewContent({ appId }: AppletOverviewContentProps) {
   return (
     <div className="h-full overflow-y-auto pt-[var(--shell-header-h)]">
       <div className="mx-auto max-w-3xl space-y-4 px-4 pb-10 pt-4">
+        <AppletWebDataNotice appId={app.id} />
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div className="flex flex-wrap items-center gap-1.5">
             {/* Published / Draft is the header's; one fact, once. */}
