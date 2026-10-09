@@ -26,6 +26,8 @@ scenario("net-blip", async ({ cast }) => {
 scenario("net-full-reconnect-identity", async ({ cast }) => {
   const { guest } = await callWithGuest(cast);
   await press(guest, "Raise hand", guest.page.getByRole("button", { name: /^Raise hand\b/ }), 8000);
+  // The hand is the server's: cut only once the raise has landed (Lower hand shows), or the cut kills the raise itself.
+  await expect.poll(() => hasButton(guest.page, /^Lower hand\b/), { timeout: 10_000, message: "the hand is up before the cut" }).toBe(true);
   await guest.dropFor(60_000);
   // Past the SDK's give-up: the guest is back through the supported route, with their state, never as a stranger.
   let o = await seeUntil(guest, "the call, or a Rejoin offer", (x) => x.phase === "in-call" || x.phase === "disconnected", TIMEOUTS.reconnectGiveUpMs);
