@@ -1,6 +1,6 @@
 {
   "note": "Checked-in snapshot of public._schema_migrations for the files under migrations/campaign and migrations/inverse. Written by `pnpm db:apply` on every successful production apply and refreshed whole by the nightly catch-up. Never hand-edited: a self-written checksum is a claim nobody can check. Guard: pnpm check:ledgered-files-unedited.",
-  "generated_at": "2026-10-09T09:51:19.261Z",
+  "generated_at": "2026-10-09T10:08:26.093Z",
   "files": {
     "migrations/campaign/a_chunk_is_the_size_the_client_door_can_actually_carry.sql": {
       "source": "matrx-frontend",
@@ -4045,6 +4045,12 @@
       "filename": "hr360_w2_meet_app_panel_and_observer.sql",
       "checksum": "36497d561fb7a1073b35887c25827d20b4a88503b441b130430c3127588e2507",
       "applied_at": "2026-10-08 16:28:43.506718+00"
+    },
+    "migrations/campaign/hr360rec_a_a_confidential_meetings_files_live_under_the_notes_row.sql": {
+      "source": "matrx-frontend",
+      "filename": "hr360rec_a_a_confidential_meetings_files_live_under_the_notes_row.sql",
+      "checksum": "f4ab8d579acdfbbfc1f3ee478c4c5473139e84e5c272272f321fa969af952e2b",
+      "applied_at": "2026-10-09 10:08:24.183717+00"
     },
     "migrations/campaign/hr360w3_a_confidential_meetings_capture_nothing_and_opens_are_logged.sql": {
       "source": "matrx-frontend",
