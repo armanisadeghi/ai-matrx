@@ -9,8 +9,9 @@
  *                                              bottom-left duration / format
  *   hook line (1 line) · @handle · age · views first, likes second
  *
- * Missing/expired thumbnail -> the platform mark on a neutral tile (never a
- * broken image). Null metrics render "—", never 0. The card's `⋯` holds
+ * Stored thumbnail (small JPEG behind the signed-in door) -> else a provider URL a browser can
+ * draw -> else the platform mark on a neutral tile (never a broken image); a skeleton fills the
+ * reserved box while it loads. Null metrics render "—", never 0. The card's `⋯` holds
  * Open original / Copy link / Save to swipe file.
  *
  * Built from semantic tokens directly: `components/official/card-and-grid`'s
@@ -18,7 +19,6 @@
  * card, so there is nothing in it to reuse for a thumbnail card.
  */
 
-import { useState } from "react";
 import { Bookmark, Copy, ExternalLink, MoreHorizontal } from "lucide-react";
 
 import {
@@ -34,7 +34,9 @@ import { formatDuration, relativeAge } from "../mappers";
 import { formatCompact, outlierBadgeModel } from "../outlier";
 import type { PostCardModel } from "../types";
 import { OutlierBadge } from "./OutlierBadge";
+import { postThumbnailDoor } from "../server";
 import { PlatformMark } from "./PlatformMark";
+import { SocialImage } from "./SocialImage";
 
 /** Reserved thumbnail shape per platform/format, so nothing shifts on load. */
 export function thumbAspect(platform: string, format: string): string {
@@ -59,10 +61,8 @@ export interface SocialPostCardProps {
 }
 
 export function SocialPostCard({ post, onOpen, onSave, extraActions, isNew, compact, className }: SocialPostCardProps) {
-  const [thumbFailed, setThumbFailed] = useState(false);
   const badge = outlierBadgeModel(post.outlier);
   const duration = formatDuration(post.durationSeconds);
-  const showThumb = Boolean(post.thumbnailUrl) && !thumbFailed;
   const absolute = post.postedAt ? new Date(post.postedAt).toLocaleString() : "";
 
   return (
@@ -80,20 +80,15 @@ export function SocialPostCard({ post, onOpen, onSave, extraActions, isNew, comp
         aria-label={`Open post ${post.hookLine || post.handle || ""}`.trim()}
         className={cn("relative block w-full bg-muted", thumbAspect(post.platform, post.format))}
       >
-        {showThumb ? (
-          <img
-            src={post.thumbnailUrl ?? undefined}
-            alt=""
-            loading="lazy"
-            referrerPolicy="no-referrer"
-            onError={() => setThumbFailed(true)}
-            className="absolute inset-0 h-full w-full object-cover"
-          />
-        ) : (
-          <span className="absolute inset-0 flex items-center justify-center">
-            <PlatformMark platform={post.platform} size={36} />
-          </span>
-        )}
+        <SocialImage
+          door={post.thumbnailFileId ? postThumbnailDoor(post.postId) : null}
+          url={post.thumbnailUrl}
+          fallback={
+            <span className="absolute inset-0 flex items-center justify-center">
+              <PlatformMark platform={post.platform} size={36} />
+            </span>
+          }
+        />
         <span className="absolute left-1.5 top-1.5">
           <PlatformMark platform={post.platform} size={20} />
         </span>

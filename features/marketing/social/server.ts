@@ -15,6 +15,7 @@
 import {
   del,
   downloadBlob,
+  downloadBlobWithProgress,
   getJson,
   postJson,
   putJson,
@@ -286,15 +287,22 @@ export async function listPostMedia(postId: string, opts: CallOptions): Promise<
  */
 export async function fetchPlaybackUrl(
   door: string,
-  opts: CallOptions,
+  opts: CallOptions & { onBytes?: (loaded: number, total: number | null) => void },
 ): Promise<string> {
   const path = door.startsWith("/") ? door : `/${door}`;
-  const { blob } = await downloadBlob(path.startsWith(BASE) ? path : `${BASE}${path}`, {
-    organizationId: org(opts.organizationId),
-    signal: opts.signal,
-  });
+  const target = path.startsWith(BASE) ? path : `${BASE}${path}`;
+  const requestOptions = { organizationId: org(opts.organizationId), signal: opts.signal };
+  const { blob } = opts.onBytes
+    ? await downloadBlobWithProgress(target, (e) => opts.onBytes?.(e.loaded, e.total), requestOptions)
+    : await downloadBlob(target, requestOptions);
   return URL.createObjectURL(blob);
 }
+
+/** The stored thumbnail door of a post (small JPEG; 404 when none was stored). */
+export const postThumbnailDoor = (postId: string): string => `${BASE}/posts/${postId}/thumbnail`;
+
+/** The stored avatar door of an account (small JPEG; 404 when none was stored). */
+export const profileAvatarDoor = (profileId: string): string => `${BASE}/profiles/${profileId}/avatar`;
 
 // ---------------------------------------------------------------------------
 // Swipe file

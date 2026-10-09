@@ -56,9 +56,11 @@ import { TRACKED_ROLE_LABELS, isTrackedRole, type PostCardModel } from "../types
 import { MetricChart, seriesToCsv } from "./MetricChart";
 import { OutlierBadge } from "./OutlierBadge";
 import { PlatformMark, platformLabel } from "./PlatformMark";
-import { PostDrawer } from "./PostDetail";
+import { useOpenPost } from "../useOpenPost";
 import { SocialPostCard } from "./SocialPostCard";
 import { formatSocialHandle } from "@/features/marketing/lib/social-handle";
+import { profileAvatarDoor } from "../server";
+import { SocialImage } from "./SocialImage";
 
 type InnerTab = "posts" | "outliers" | "growth";
 const INNER_TABS = [
@@ -278,7 +280,7 @@ export function AccountDetail({ platform, profileId }: { platform: string; profi
   const posts = useProfilePosts(profileId, handle);
   const snapshots = useProfileSnapshots(profileId);
   const [tab, setTab] = useState<InnerTab>("posts");
-  const [open, setOpen] = useState<PostCardModel | null>(null);
+  const openInPanel = useOpenPost();
   const [busy, setBusy] = useState(false);
   // The refresh's inline home: its live stage while running, then what it did
   // (or why it failed), beside the button that started it.
@@ -339,8 +341,14 @@ export function AccountDetail({ platform, profileId }: { platform: string; profi
     <div className="flex flex-col gap-3">
       <div className="flex min-h-9 flex-wrap items-center gap-2">
         <Button variant="quiet" icon={<ArrowLeft />} aria-label="Back" onClick={() => router.back()} />
-        {p.avatar_url ? (
-          <img src={p.avatar_url} alt="" referrerPolicy="no-referrer" className="h-8 w-8 rounded-full object-cover" />
+        {p.avatar_url || p.avatar_file_id ? (
+          <span className="relative block h-8 w-8 shrink-0 overflow-hidden rounded-full bg-muted">
+            <SocialImage
+              door={p.avatar_file_id ? profileAvatarDoor(p.id) : null}
+              url={p.avatar_url}
+              fallback={null}
+            />
+          </span>
         ) : null}
         <div className="flex min-w-0 flex-col leading-tight">
           <span className="truncate text-sm font-semibold text-foreground">{p.display_name || p.handle}</span>
@@ -404,9 +412,8 @@ export function AccountDetail({ platform, profileId }: { platform: string; profi
       ) : tab === "growth" ? (
         <GrowthPanel profileId={profileId} />
       ) : (
-        <PostsPanel key={tab} posts={list} mode={tab} onOpen={setOpen} />
+        <PostsPanel key={tab} posts={list} mode={tab} onOpen={openInPanel} />
       )}
-      <PostDrawer post={open} onClose={() => setOpen(null)} />
     </div>
   );
 }

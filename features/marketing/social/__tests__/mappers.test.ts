@@ -208,6 +208,11 @@ describe("post card model", () => {
   it("prefers the analysed hook", () => {
     expect(hookLineOf({ caption: "cap", title: null }, "  Real hook ")).toBe("Real hook");
   });
+  it("carries the stored thumbnail id (the stable field), null when none was stored", () => {
+    const stored = { ...row, thumbnail_file_id: "f1c6e7a0-0000-4000-8000-000000000001" } as unknown as SocialPostRow;
+    expect(toPostCardModel({ post: stored, stat: null, handle: null, now: NOW }).thumbnailFileId).toBe("f1c6e7a0-0000-4000-8000-000000000001");
+    expect(toPostCardModel({ post: row, stat: null, handle: null, now: NOW }).thumbnailFileId).toBeNull();
+  });
   it("a removed post is flagged", () => {
     expect(toPostCardModel({ post: { ...row, status: "removed" }, stat: null, handle: null, now: NOW }).removed).toBe(true);
   });

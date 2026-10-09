@@ -229,6 +229,8 @@ export interface AccountRow {
   handle: string;
   displayName: string;
   avatarUrl: string | null;
+  /** Stored avatar (small JPEG); drawn through `profileAvatarDoor(profileId)`. */
+  avatarFileId?: string | null;
   role: TrackedRole;
   status: string;
   followers: number | null;
@@ -252,7 +254,10 @@ export interface PostCardModel {
   handle: string | null;
   format: string;
   url: string;
+  /** Provider hint URL; expires, and TikTok's is HEIC. Drawn only when there is no stored copy. */
   thumbnailUrl: string | null;
+  /** The stored small JPEG (files.id) — the stable thumbnail, drawn through `postThumbnailDoor(postId)`. */
+  thumbnailFileId?: string | null;
   hookLine: string;
   postedAt: string | null;
   durationSeconds: number | null;
