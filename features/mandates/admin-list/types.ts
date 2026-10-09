@@ -133,4 +133,11 @@ export interface MandateAdminRow extends MandateRow {
    */
   spendUsd: number | null;
   spendPending: boolean;
+  /**
+   * Runs over the list's period (./runs.ts). `null` = not read — still reading
+   * (`runsPending`) or the read failed.
+   */
+  runs: number | null;
+  lastRunMs: number | null;
+  runsPending: boolean;
 }

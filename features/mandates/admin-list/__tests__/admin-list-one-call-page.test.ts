@@ -19,6 +19,8 @@ const listState = {
   sourceChecked: new Set(["podcast.script"]),
   // The period's spend, read: podcast.script ran, seo.audit never did.
   spend: { period: "30d", byKey: { "podcast.script": 12.5 } as Record<string, number> | null, folded: false, settled: true, total: null },
+  // The period's runs, read: podcast.script ran twice, seo.audit never did.
+  runs: { period: "30d", byKey: { "podcast.script": { runs: 2, lastMs: 1_700_000_000_000 } } as Record<string, { runs: number; lastMs: number | null }> | null, settled: true },
 };
 
 const ensureMandateSourceFacts = jest.fn();
@@ -143,5 +145,11 @@ describe("the admin list page read", () => {
     expect(page.rows[0].spendUsd).toBe(12.5);
     expect(page.rows[1].spendUsd).toBe(0);
     expect(page.rows[0].spendPending).toBe(false);
+    // The runs ride the rows; the sort facts are NOT sent for a name sort.
+    expect(page.rows[0].runs).toBe(2);
+    expect(page.rows[0].lastRunMs).toBe(1_700_000_000_000);
+    expect(page.rows[1].runs).toBe(0);
+    expect(page.rows[1].lastRunMs).toBeNull();
+    expect(callMandateAdminList.mock.calls[0][0].p_facts).not.toHaveProperty("runs");
   });
 });

@@ -66,7 +66,9 @@ import {
 import { useAgentLineageIndex } from "@ai-matrx/chat/agents/identity/agent-catalog-lists";
 import { AdminPoints } from "@/components/cost/AdminCost";
 import { formatAdminUsd } from "@/components/cost/formatAdminCost";
+import Link from "next/link";
 import { modelCellOf } from "./spend";
+import { runsTabHref } from "./runs";
 
 type Spec = EntityColumnSpec<MandateAdminRow>;
 
@@ -177,6 +179,37 @@ function SpendCell({ row, unit }: { row: MandateAdminRow; unit: "usd" | "points"
   );
 }
 
+/** Runs over the period; the count opens that mandate's Test tab on its runs. */
+function RunsCell({ row }: { row: MandateAdminRow }) {
+  if (row.runsPending) return <Checking what="the runs" />;
+  if (row.runs === null) return <Muted>—</Muted>;
+  if (row.runs === 0) return <span className="block text-right type-secondary tabular-nums">0</span>;
+  const base = row.isSystem
+    ? adminMandateRecordHref(row.mandateKey)
+    : adminMandateSupportRecordHref(row.id);
+  return (
+    <Link
+      href={runsTabHref(base)}
+      className="block text-right type-secondary tabular-nums underline-offset-2 hover:underline"
+    >
+      {row.runs.toLocaleString("en-US")}
+    </Link>
+  );
+}
+
+function LastRunCell({ row }: { row: MandateAdminRow }) {
+  if (row.runsPending) return <Checking what="the last run" />;
+  if (row.runs === null) return <Muted>—</Muted>;
+  if (row.lastRunMs === null) return <Muted>None</Muted>;
+  return (
+    <span className="block type-secondary tabular-nums">
+      {new Date(row.lastRunMs).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
+    </span>
+  );
+}
+
+const RUNS_SORT_WORDS = { asc: "fewest first", desc: "most first" };
+const LAST_RUN_SORT_WORDS = { asc: "oldest first", desc: "newest first" };
 const SPEND_SORT_WORDS = { asc: "cheapest first", desc: "costliest first" };
 
 function BlockerCell({ row }: { row: MandateAdminRow }) {
@@ -493,6 +526,35 @@ export const ADMIN_MANDATE_COLUMNS: Spec[] = [
       cell: (row) => <SpendCell row={row} unit="points" />,
     },
   },
+  // RUNS over the header's period (./runs.ts) — the same definition of a run as
+  // the Test tab's runs list. Sorted by the database across every page.
+  {
+    id: "runs",
+    label: "Runs",
+    sortWords: RUNS_SORT_WORDS,
+    column: {
+      id: "runs",
+      header: "Runs",
+      filter: false,
+      align: "right",
+      defaultSortDirection: "desc",
+      width: 80,
+      cell: (row) => <RunsCell row={row} />,
+    },
+  },
+  {
+    id: "lastRun",
+    label: "Last run",
+    sortWords: LAST_RUN_SORT_WORDS,
+    column: {
+      id: "lastRun",
+      header: "Last run",
+      filter: false,
+      defaultSortDirection: "desc",
+      width: 110,
+      cell: (row) => <LastRunCell row={row} />,
+    },
+  },
   facetColumn("coverage", "Coverage", 110, (row) => {
     if (!row.coverage) {
       return row.factsPending.coverage ? (
@@ -756,6 +818,8 @@ export const SYSTEM_ONLY_REPORT_COLUMNS: readonly string[] = [
   // A tenant's mandate can share a system key, and the ledger tags runs by key.
   "spendUsd",
   "spendPoints",
+  "runs",
+  "lastRun",
   "impactGrade",
   "impactBlocker",
   "health",

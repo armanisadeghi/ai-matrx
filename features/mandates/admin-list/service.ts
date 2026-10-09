@@ -28,6 +28,7 @@
 //              platform_users  homed in any person's personal organization (narrowable to one person)
 //              platform_all    everything
 
+import { runsFactsOf, runsOfKey } from "./runs";
 import type { AppDispatch } from "@/lib/redux/store";
 import type { Json } from "@/types/database.types";
 import type { EntityListService } from "@/lib/entity-list/config";
@@ -251,6 +252,9 @@ function buildPageRows(
       models: answer.models ?? null,
       spendUsd: spendOfKey(listState.spend, answer.mandate_key),
       spendPending: !listState.spend.settled,
+      runs: runsOfKey(listState.runs.byKey, answer.mandate_key)?.runs ?? null,
+      lastRunMs: runsOfKey(listState.runs.byKey, answer.mandate_key)?.lastMs ?? null,
+      runsPending: !listState.runs.settled,
       sources: listState.sourceFacts.get(answer.mandate_key) ?? null,
       sourcesPending: !checked,
       sourcesFailed: checked && Boolean(listState.failures.sources),
@@ -354,6 +358,12 @@ export function createMandateAdminService(
           // The period's spend, once read: the database sorts by it and sums
           // it over every matching row (spend_total).
           ...spendFactsOf(getMandateAdminListState().spend.byKey),
+          // The period's runs, once read and ONLY when the list is sorted by
+          // them: the figures are already on the rows, so any other page keeps
+          // its one database call.
+          ...(sort.sort === "runs" || sort.sort === "lastRun"
+            ? runsFactsOf(getMandateAdminListState().runs.byKey)
+            : {}),
         } as Json,
       };
       // ONE database call: the page answer carries its own rows (`console`).

@@ -189,8 +189,6 @@ export const adminMandateListConfig: EntityListConfig<MandateAdminRow> = {
     listKind: "mandate-list",
     humanRow: (row) =>
       `${row.name} (${row.mandateKey}) — ${row.featureLabel}; Mandate Holder ${row.agentName}, ${row.pinText}`,
-    showRow: false,
-    showToolbar: false,
   },
   emptyState: {
     title: "No mandates here",

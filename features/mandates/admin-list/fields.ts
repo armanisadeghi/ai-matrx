@@ -171,6 +171,9 @@ export const FIELDS: Record<string, FieldReader> = {
   // THE COST COLUMNS — points are dollars at one rate, so both sort alike.
   spendUsd: { values: () => [], sort: (r) => r.spendUsd ?? -1 },
   spendPoints: { values: () => [], sort: (r) => r.spendUsd ?? -1 },
+  // THE RUNS COLUMNS — the count, and the last run (0 = none in the period).
+  runs: { values: () => [], sort: (r) => r.runs ?? -1 },
+  lastRun: { values: () => [], sort: (r) => (r.runs === null ? -1 : (r.lastRunMs ?? 0)) },
 };
 
 /** A multi-valued scan fact; no value reads "None found", never blank. */

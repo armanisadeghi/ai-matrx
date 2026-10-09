@@ -38,6 +38,7 @@ import { callMandateAdminList } from "./rpc";
 import { SYSTEM_ORGANIZATION_ID } from "@/constants/platform-orgs";
 import { drillClientFor } from "@/components/official/drill-explorer/useDrillExplorer";
 import { mandateSpendFromAnswer, spendQuestion } from "./spend";
+import { fetchMandateRuns, type MandateRunsCell } from "./runs";
 
 export type MandateAdminReportName = "codeTruth" | "coverage" | "impact" | "workflowImpact";
 
@@ -77,6 +78,11 @@ export interface MandateAdminListState {
     settled: boolean;
     total: number | null;
   };
+  /**
+   * THE RUNS COLUMNS (./runs.ts): each mandate's run count and last run over
+   * the period, read once per period. `byKey` null = not read yet (or failed).
+   */
+  runs: { period: string | null; byKey: Record<string, MandateRunsCell> | null; settled: boolean };
   /** Source name → its own error sentence. */
   failures: Record<string, string>;
   error: Error | null;
@@ -99,6 +105,7 @@ let state: MandateAdminListState = {
   sourceFacts: new Map(),
   sourceChecked: new Set(),
   spend: { period: null, byKey: null, folded: false, settled: false, total: null },
+  runs: { period: null, byKey: null, settled: false },
   failures: {},
   error: null,
   version: 0,
@@ -222,6 +229,33 @@ export function ensureMandateSpend(period: string, viewerId: string | null, forc
     );
 }
 
+let runsAsk = 0;
+
+/**
+ * Every mandate's runs over the period — one database read, asked once per
+ * period (`force` asks again). Never awaited by the list: the rows paint first
+ * and the Runs cells say "Checking…" until it lands.
+ */
+export function ensureMandateRuns(period: string, force = false): void {
+  if (!force && state.runs.period === period) return;
+  const myAsk = ++runsAsk;
+  const { runs: _dropped, ...failures } = state.failures;
+  publish({ runs: { period, byKey: null, settled: false }, failures });
+  fetchMandateRuns(period).then(
+    (read) => {
+      if (myAsk !== runsAsk) return;
+      publish({ runs: { period, byKey: read.byKey, settled: true } });
+    },
+    (error: unknown) => {
+      if (myAsk !== runsAsk) return;
+      publish({
+        runs: { period, byKey: null, settled: true },
+        failures: { ...state.failures, runs: describe(error) },
+      });
+    },
+  );
+}
+
 /** The database's spend total for the current filters — never a re-ask. */
 export function setMandateSpendTotal(total: number | null): void {
   if (state.spend.total === total) return;
@@ -238,6 +272,9 @@ export function retryMandateAdminFailures(): void {
   if (failed.length === 0) return;
   if (failed.includes("spend") && state.spend.period) {
     ensureMandateSpend(state.spend.period, spendViewer, true);
+  }
+  if (failed.includes("runs") && state.runs.period) {
+    ensureMandateRuns(state.runs.period, true);
   }
   const reports: readonly string[] = ["codeTruth", "coverage", "impact", "workflowImpact"];
   const reloadReports = failed.some((source) => reports.includes(source));

@@ -360,6 +360,9 @@ export function buildAdminRows(sources: MandateAdminSources): MandateAdminRow[] 
       models: null,
       spendUsd: null,
       spendPending: false,
+      runs: null,
+      lastRunMs: null,
+      runsPending: false,
     };
   });
 }

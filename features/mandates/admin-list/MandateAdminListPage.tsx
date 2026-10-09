@@ -77,6 +77,7 @@ import {
   useMandateAdminListState,
 } from "./context";
 import {
+  ensureMandateRuns,
   ensureMandateSpend,
   invalidateMandateAdminList,
   retryMandateAdminFailures,
@@ -105,6 +106,7 @@ const SOURCE_LABEL: Record<string, string> = {
   inputs: "Inputs",
   sources: "Where each mandate is declared and called",
   spend: "Cost",
+  runs: "Runs",
 };
 
 export function MandateAdminListPage({
@@ -139,6 +141,7 @@ export function MandateAdminListPage({
   useEffect(() => {
     if (support || !userId) return;
     ensureMandateSpend(period, userId);
+    ensureMandateRuns(period);
   }, [support, period, userId]);
 
   // Any mandate write anywhere (the Enabled switch included) re-asks the list.
