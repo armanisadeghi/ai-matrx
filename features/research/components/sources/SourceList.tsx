@@ -1707,7 +1707,7 @@ export default function SourceList() {
           ),
         }}
         mobileCards={(s, _index, controls) => renderMobileCard(s, controls)}
-        mobileCardsBreakpoint="sm"
+        mobileCardsBreakpoint="md"
         emptyState={{
           title: "No sources found. Run a search to discover sources.",
         }}
