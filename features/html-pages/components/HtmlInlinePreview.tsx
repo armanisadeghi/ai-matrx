@@ -10,8 +10,15 @@ import {
   Maximize2,
   AlertTriangle,
   Globe,
+  MoreHorizontal,
   Printer,
 } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { printPublishedPage } from "@/features/canvas/output/printPage";
 import { copyHtmlSource, downloadHtmlSource } from "@/features/html-pages/output/htmlSourceOutput";
 import { Button } from "@ai-matrx/design-system/controls";
@@ -40,7 +47,10 @@ import {
   readPageHeight,
   type PageRuntimeError,
 } from "@/features/html-pages/components/html-page-frame";
-import { WIDE_FIGURE_CLASS } from "@ai-matrx/chat/agents/components/shared/assistant-message-layout";
+import {
+  WIDE_FIGURE_ATTRIBUTE,
+  WIDE_FIGURE_CLASS,
+} from "@ai-matrx/chat/agents/components/shared/assistant-message-layout";
 
 /**
  * HtmlInlinePreview — auto-renders previewable HTML as a live, inline webpage
@@ -299,9 +309,13 @@ const HtmlInlinePreview: React.FC<HtmlInlinePreviewProps> = ({
     );
   };
 
+  const printPage = () => {
+    if (url) printPublishedPage({ canvasItemId: artifactId, version: fill ? "latest" : "self", pageUrl: url });
+  };
+
   const header = (
     <div
-      className="flex min-w-0 items-center gap-1.5 border-b border-border bg-muted/40 py-0.5 pl-3 pr-1"
+      className="@container flex min-w-0 items-center gap-1.5 border-b border-border bg-muted/40 py-0.5 pl-3 pr-1"
       data-html-preview-header=""
     >
       <Globe className="h-3.5 w-3.5 shrink-0 text-primary" />
@@ -320,18 +334,21 @@ const HtmlInlinePreview: React.FC<HtmlInlinePreviewProps> = ({
           {pageErrors.length === 1 ? "Page error" : `${pageErrors.length} page errors`}
         </Button>
       ) : null}
-      {newerVersion !== null ? (
-        <Button
-          variant="quiet"
-          onClick={handleOpenCanvas}
-          title={`A newer version (v${newerVersion}) exists — open it`}
-          data-html-newer-version={newerVersion}
-        >
-          {`v${newerVersion} available`}
-        </Button>
-      ) : null}
       <div className="flex shrink-0 items-center">
-        {chrome?.actions}
+        {/* The version controls sit on the row when the card has room, behind "More" on a phone. */}
+        <span className="hidden @min-[32rem]:contents" data-html-header-version-actions="">
+          {newerVersion !== null ? (
+            <Button
+              variant="quiet"
+              onClick={handleOpenCanvas}
+              title={`A newer version (v${newerVersion}) exists — open it`}
+              data-html-newer-version={newerVersion}
+            >
+              {`v${newerVersion} available`}
+            </Button>
+          ) : null}
+          {chrome?.actions}
+        </span>
         <HtmlAttachToChat
           conversationId={conversationId}
           canvasItemId={artifactId}
@@ -347,29 +364,70 @@ const HtmlInlinePreview: React.FC<HtmlInlinePreviewProps> = ({
           title={showCode ? "Show page" : "Show code"}
           aria-label={showCode ? "Show page" : "Show code"}
         />
-        <Button
-          variant="quiet"
-          icon={<Copy />}
-          onClick={() => void copyHtmlSource(shownHtml ?? code)}
-          title="Copy HTML"
-          aria-label="Copy HTML"
-        />
-        <Button
-          variant="quiet"
-          icon={<Download />}
-          onClick={() => downloadHtmlSource(title, shownHtml ?? code)}
-          title="Download .html"
-          aria-label="Download .html"
-        />
-        {url ? (
+        {/* Copy / Download / Print sit on the row when the card has room, and
+            behind "More" when it does not (a phone) — never clipped off the end. */}
+        <span className="hidden @min-[32rem]:contents" data-html-header-wide-actions="">
           <Button
             variant="quiet"
-            icon={<Printer />}
-            onClick={() => printPublishedPage({ canvasItemId: artifactId, version: fill ? "latest" : "self", pageUrl: url })}
-            title="Print page"
-            aria-label="Print page"
+            icon={<Copy />}
+            onClick={() => void copyHtmlSource(shownHtml ?? code)}
+            title="Copy HTML"
+            aria-label="Copy HTML"
           />
-        ) : null}
+          <Button
+            variant="quiet"
+            icon={<Download />}
+            onClick={() => downloadHtmlSource(title, shownHtml ?? code)}
+            title="Download .html"
+            aria-label="Download .html"
+          />
+          {url ? (
+            <Button
+              variant="quiet"
+              icon={<Printer />}
+              onClick={printPage}
+              title="Print page"
+              aria-label="Print page"
+            />
+          ) : null}
+        </span>
+        <span className="contents @min-[32rem]:hidden">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="quiet"
+                icon={<MoreHorizontal />}
+                title="More actions"
+                aria-label="More actions"
+                data-html-header-more=""
+              />
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              {newerVersion !== null ? (
+                <DropdownMenuItem onSelect={handleOpenCanvas}>
+                  <Maximize2 /> {`Open v${newerVersion} (newer)`}
+                </DropdownMenuItem>
+              ) : null}
+              {chrome?.menuItems?.map((item) => (
+                <DropdownMenuItem key={item.key} onSelect={item.onSelect} disabled={item.disabled}>
+                  {item.icon} {item.label}
+                </DropdownMenuItem>
+              ))}
+              <DropdownMenuItem onSelect={() => void copyHtmlSource(shownHtml ?? code)}>
+                <Copy /> Copy HTML
+              </DropdownMenuItem>
+              <DropdownMenuItem onSelect={() => downloadHtmlSource(title, shownHtml ?? code)}>
+                <Download /> Download .html
+              </DropdownMenuItem>
+              {url ? (
+                <DropdownMenuItem onSelect={printPage}>
+                  <Printer /> Print page
+                </DropdownMenuItem>
+              ) : null}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </span>
+        <span className="contents @min-[32rem]:hidden">{chrome?.menuAnchors}</span>
         <Button
           variant="quiet"
           icon={<Maximize2 />}
@@ -568,6 +626,7 @@ const HtmlInlinePreview: React.FC<HtmlInlinePreviewProps> = ({
   return (
     <div
       data-html-figure=""
+      {...{ [WIDE_FIGURE_ATTRIBUTE]: "" }}
       className={cn(
         "my-3 overflow-hidden rounded-lg border border-border bg-card",
         WIDE_FIGURE_CLASS,
