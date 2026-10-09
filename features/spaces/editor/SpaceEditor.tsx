@@ -45,6 +45,7 @@ import { currentBlockId, duplicateBlocks, selectedOrCurrent } from "./block-acti
 import { fromEngine, toEngine, type EngineBlock } from "./convert";
 import { PasteUrlMenu, pastedAnchor, pastedUrl, type PastedUrl } from "./PasteUrlMenu";
 import { MediaPickerHost } from "./media-insert";
+import { AppletPickerHost } from "./applet-picker";
 import { notionNumbering } from "./numbering";
 import { codeHighlighting } from "./code-highlight";
 import { spacePanel, spaceSelectionActions } from "./selection-format";
@@ -484,6 +485,7 @@ export function SpaceEditor({ spaceId, initialBlocks, editable, onChange, slash,
     </BlockNoteView>
     {pasted ? <PasteUrlMenu editor={editor} pasted={pasted} onClose={() => setPasted(null)} /> : null}
     {editable ? <MediaPickerHost /> : null}
+    {editable ? <AppletPickerHost /> : null}
     <SuggestionCard getView={() => editor.prosemirrorView ?? null} canResolve={editable} />
     </div>
   );

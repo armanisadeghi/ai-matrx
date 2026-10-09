@@ -136,6 +136,7 @@ export const RENDERED_BLOCK_TYPES = [
   "synced",
   "button",
   "ai",
+  "applet",
 ] as const;
 
 export const SCHEMA_ONLY_BLOCK_TYPES = [
@@ -268,3 +269,13 @@ export interface ButtonProps extends Record<string, unknown> {
   icon?: string;
   actions: ButtonAction[];
 }
+
+/** An Applet drawn live in the page (Embeds). `height` = the reserved frame height in px; absent = the default. */
+export interface AppletBlockProps extends Record<string, unknown> {
+  appletId: string;
+  height?: number;
+}
+
+/** The frame height an Applet block reserves when it carries none, and the smallest it may be resized to. */
+export const APPLET_BLOCK_DEFAULT_HEIGHT = 480;
+export const APPLET_BLOCK_MIN_HEIGHT = 160;

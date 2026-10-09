@@ -82,6 +82,12 @@ ladder, a guest takes the system-default columns the public RPC
   - Inside the Quiz App, missed questions can fire "Make Flashcards" → back to the Flashcard Generator agent.
   - Three agents, two apps, composed via shortcuts — user never types a prompt.
 
+### An Applet inside a page (`features/applets/embed/`)
+
+- **One port, two hosts.** `appletsPort.tsx` serves records-ui's "page built from tables" (`APPLETS_PORT`, `RecordsUiHost.applets` — a dashboard record, NOT a Space) and a Space page's `applet` block (`features/spaces/editor/applet-block.tsx`): `listPlaceableApplets`, `readAppletCards`, `readAppletBySlug`, `appletWebUrl` (full `https://www.aimatrx.com/applets/<slug>`), `appletManageHref` / `appletBuilderHref`.
+- **Editor-live:** `AppletInPage {appId, height?, pagePublished?}` mounts the ONE host `embedded` in a reserved-height frame; on a published page with an Applet not on the web it adds one line, "Visitors cannot see this Applet." + Publish (the Applet's own page).
+- **Public-static:** `AppletCard {appId}` — name, description, "Open this Applet" when the Applet is on the web; the one Publish line for a viewer who can read it otherwise; nothing for anyone else. A published Site never runs an Applet live until G1 guest data ships (the switch point is commented in `AppletCard.tsx` and the Space block).
+
 ---
 
 ## Public applets
@@ -190,6 +196,8 @@ and admin/user route families are live. Remaining migration work is tracked in:
 ---
 
 ## Change log
+
+- 2026-10-09 (lane B1, "one roof" first piece): `embed/` grows the Space `applet` block's half — `AppletInPage` takes `height` + `pagePublished` (Publish notice), new `AppletCard` (the static card a published Site draws), and the reads `listPlaceableApplets` / `readAppletCards` / `readAppletBySlug`; comments that called a records-ui page "a Space" corrected.
 
 - 2026-10-09 (lane F2): Manage (Overview and Sharing) shows one line when an Applet is on the web but reads stored data a signed-out visitor cannot read — `webVisitorsMissData` (`lib/applet-state.ts`), `components/AppletWebDataNotice.tsx` — with the one-click fix "Make organization-only". Sharing the data with visitors is not offered: no visitor read door exists for custom tables or entities, and opening one is an access decision. post-approvals' "empty" admin view was the data-loading skeleton (live read 2026-10-09: clients render at ~35s; 54 posts / 8 clients readable as admin).
 

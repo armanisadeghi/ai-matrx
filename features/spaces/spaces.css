@@ -1946,6 +1946,17 @@ button.spaces-page-prop-name:hover { background: var(--spaces-hover); }
 .spaces-page-prop-add:hover { background: var(--spaces-hover); }
 
 /* C28 — the AI block (editor/ai-block.tsx). */
+/* Applet block (Embeds › Applet): the live Applet in a reserved-height frame; hover bar + bottom resize edge. */
+.spaces-applet { position: relative; width: 100%; max-width: 100%; margin: 4px 0; }
+.spaces-applet-frame { width: 100%; border-radius: 6px; background: var(--spaces-hover, transparent); }
+.spaces-applet-tools { position: absolute; top: 6px; right: 6px; z-index: 3; display: flex; align-items: center; gap: 1px; padding: 2px; border-radius: 6px; background: var(--popover); color: var(--popover-foreground); border: 1px solid var(--border); box-shadow: 0 2px 6px rgba(15, 15, 15, 0.12); opacity: 0; pointer-events: none; transition: opacity 120ms; }
+.spaces-applet:hover .spaces-applet-tools, .spaces-applet-tools:focus-within { opacity: 1; pointer-events: auto; }
+.spaces-applet-tools a, .spaces-applet-tools button { display: inline-flex; align-items: center; gap: 4px; height: 24px; padding: 0 6px; border-radius: 4px; font-size: 12px; color: var(--spaces-ink-soft); text-decoration: none; }
+.spaces-applet-tools a:hover, .spaces-applet-tools button:hover { background: var(--spaces-hover-strong); color: var(--foreground); }
+.spaces-applet-handle { position: absolute; left: 0; right: 0; bottom: -6px; height: 12px; z-index: 2; cursor: row-resize; opacity: 0; transition: opacity 120ms; touch-action: none; }
+.spaces-applet-handle::after { content: ""; position: absolute; left: 50%; top: 3px; width: 48px; height: 6px; margin-left: -24px; border-radius: 20px; background: rgba(15, 15, 15, 0.6); border: 1px solid rgba(255, 255, 255, 0.9); }
+.spaces-applet:hover .spaces-applet-handle { opacity: 1; }
+@media (hover: none) { .spaces-applet-tools, .spaces-applet-handle { opacity: 1; pointer-events: auto; } }
 .spaces-ai-block { width: 100%; margin: 4px 0; border-radius: 6px; }
 .spaces-ai-block[data-state="empty"], .spaces-ai-block[data-state="running"] { box-shadow: 0 0 0 1px var(--border); padding: 6px 8px; }
 .spaces-ai-block-ask { display: flex; align-items: center; gap: 8px; }

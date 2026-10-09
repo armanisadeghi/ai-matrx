@@ -13,7 +13,7 @@
 // height match are the guard that this layer and the editor draw the same page.
 //
 // Only what a first paint needs is drawn here: text blocks, headings, lists, to-dos, toggles, quotes,
-// dividers, callouts, columns, page links and databases. Anything else holds an empty block (the editor
+// dividers, callouts, columns, page links, databases and Applet frames. Anything else holds an empty block (the editor
 // draws it on reveal).
 
 import dynamic from "next/dynamic";
@@ -23,6 +23,7 @@ import { listMarker } from "./list-marker";
 import type { SpaceBlock } from "../contract";
 import { ResolvedBlockSeed, useAwaitedBlockSeed } from "../page/space-seed-context";
 import { CalloutGlyph } from "./callout-block";
+import { AppletFrame, appletBlockHeight } from "./applet-frame";
 import { toEngine, type EngineBlock } from "./convert";
 import { DatabaseHost, PAINTED_WIDTH_SLACK, activeLayout, paintedSizesOf } from "./database-host";
 import { columnCss, useDarkMode } from "./SpaceEditor";
@@ -188,7 +189,7 @@ function Plain({ b, index, depth = 0 }: { b: EngineBlock; index?: number; depth?
   );
 }
 
-const REACT_BLOCKS = new Set(["page", "linkToPage", "columnList", "column", "database"]);
+const REACT_BLOCKS = new Set(["page", "linkToPage", "columnList", "column", "database", "applet"]);
 const PLAIN_BLOCKS = new Set(["paragraph", "heading", "bulletListItem", "numberedListItem", "checkListItem", "toggleListItem", "quote", "divider", "callout"]);
 
 /** The server's answers for this block (its own seed, awaited inside the block's own Suspense). */
@@ -211,6 +212,13 @@ function ReactBlock({ b }: { b: EngineBlock }) {
     inner = (
       <div className="spaces-column">
         <div className="spaces-column-resizer" contentEditable={false} />
+      </div>
+    );
+  else if (b.type === "applet")
+    // The reserved frame only: the Applet itself mounts in the editor once the block scrolls into view.
+    inner = (
+      <div className="spaces-applet" data-applet-block={String(readData(props.data).appletId ?? "")} data-mode="frame">
+        <AppletFrame height={appletBlockHeight(readData(props.data))} />
       </div>
     );
   else if (b.type === "database") {
