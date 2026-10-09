@@ -135,7 +135,9 @@ describe("what reaches run()", () => {
   it("prefills the workspace's own topic filter and sends it", async () => {
     mockPageFilters.topicSlug = "roof-repair";
     const screen = await render(control());
-    expect(screen.text()).toContain("roof-repair");
+    // The chip reads the topic's name, not its slug (the slug stays the
+    // remove button's accessible name and the value sent).
+    expect(screen.text()).toContain("Roof Repair");
     expect(screen.text()).toContain("under 1 topic(s)");
 
     const button = start(screen);
