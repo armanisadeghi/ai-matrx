@@ -5,12 +5,10 @@
 // picking one shows its page in the preview pane, "Use template" copies it (with its sub-pages) to the
 // top level of the active organization and opens the copy.
 
-import { Button, RegionSkeleton } from "@ai-matrx/design-system/controls";
 import { LayoutTemplate, TreePalm } from "lucide-react";
 import { useEffect, useState } from "react";
 
-import { ErrorNotice } from "@ai-matrx/design-system";
-import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
+import { TemplateGalleryShell, type TemplateEntry, type TemplateGalleryClasses } from "./TemplateGalleryShell";
 
 import type { SpaceDoc } from "../contract";
 import { Preview } from "../page/PageHistory";
@@ -74,70 +72,51 @@ export function TemplateGallery({ open, onOpenChange }: { open: boolean; onOpenC
     }
   };
 
+  const entries: TemplateEntry[] = [
+    { key: SAMPLE_KEY, title: SAMPLE_TITLE, icon: <TreePalm size={16} /> },
+    ...listed.map((id) => ({
+      key: id,
+      title: docs[id]?.title || "Untitled",
+      icon: docs[id]?.icon ? <SpaceIcon media={docs[id]!.icon} size={16} /> : <LayoutTemplate size={16} />,
+    })),
+  ];
+
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="spaces-history spaces-templates max-w-[min(1100px,96vw)] h-[82dvh] gap-0 p-0 overflow-hidden">
-        <DialogTitle className="sr-only">Templates</DialogTitle>
-        <div className="spaces-templates-body">
-          <aside className="spaces-templates-list">
-            <div className="spaces-history-head type-secondary text-muted-foreground">Templates</div>
-            <div className="spaces-history-rows">
-              <TemplateRow active={picked === SAMPLE_KEY} onPick={() => setPicked(SAMPLE_KEY)} icon={<TreePalm size={16} />} title={SAMPLE_TITLE} />
-              {listed.map((id) => (
-                <TemplateRow
-                  key={id}
-                  active={picked === id}
-                  onPick={() => setPicked(id)}
-                  icon={docs[id]?.icon ? <SpaceIcon media={docs[id]!.icon} size={16} /> : <LayoutTemplate size={16} />}
-                  title={docs[id]?.title || "Untitled"}
-                />
-              ))}
-              {templates.ids === null && !templates.error ? <RegionSkeleton shape="rows" count={3} aria-label="Loading templates" /> : null}
-              {templates.error ? <ErrorNotice title="Templates could not be listed" message={templates.error} size="compact" /> : null}
-            </div>
-          </aside>
-          <div className="spaces-templates-preview">
-            <div className="spaces-templates-bar">
-              <span className="min-w-0 flex-1 truncate type-title">{current?.title || "Untitled"}</span>
-              <Button variant="primary" disabled={!current || using || sample.adding} onClick={() => void use()}>
-                {using || sample.adding ? "Adding…" : "Use template"}
-              </Button>
-            </div>
-            <div className="spaces-templates-page">
-              {current ? (
-                <>
-                  <h1 className="spaces-templates-title">{current.title || "Untitled"}</h1>
-                  <Preview blocks={current.blocks} titleOf={(id) => sampleTitles.get(id) ?? spaces.byId.get(id)?.title ?? null} />
-                </>
-              ) : picked !== SAMPLE_KEY && !(picked in docs) ? (
-                <RegionSkeleton shape="rows" count={8} aria-label="Loading the template" />
-              ) : null}
-            </div>
-          </div>
-        </div>
-      </DialogContent>
-    </Dialog>
+    <TemplateGalleryShell
+      open={open}
+      onOpenChange={onOpenChange}
+      entries={entries}
+      loading={templates.ids === null && !templates.error}
+      error={templates.error}
+      picked={picked}
+      onPick={setPicked}
+      previewTitle={current?.title ?? null}
+      previewLoading={!current && picked !== SAMPLE_KEY && !(picked in docs)}
+      preview={
+        current ? (
+          <>
+            <h1 className="spaces-templates-title">{current.title || "Untitled"}</h1>
+            <Preview blocks={current.blocks} titleOf={(id) => sampleTitles.get(id) ?? spaces.byId.get(id)?.title ?? null} />
+          </>
+        ) : null
+      }
+      usable={!!current && !sample.adding}
+      using={using || sample.adding}
+      onUse={() => void use()}
+      extraClassName="spaces-history spaces-templates"
+      classes={SPACES_GALLERY_CLASSES}
+    />
   );
 }
 
-function TemplateRow({ active, onPick, icon, title }: { active: boolean; onPick: () => void; icon: React.ReactNode; title: string }) {
-  return (
-    <div
-      role="button"
-      tabIndex={0}
-      data-clickable=""
-      className="spaces-db-menurow"
-      data-active={active ? "true" : undefined}
-      onClick={onPick}
-      onKeyDown={(e) => {
-        if (e.key === "Enter" || e.key === " ") {
-          e.preventDefault();
-          onPick();
-        }
-      }}
-    >
-      <span className="spaces-menu-row-icon">{icon}</span>
-      <span className="min-w-0 flex-1 truncate text-left">{title}</span>
-    </div>
-  );
-}
+const SPACES_GALLERY_CLASSES: TemplateGalleryClasses = {
+  content: "max-w-[min(1100px,96vw)] h-[82dvh] gap-0 p-0 overflow-hidden",
+  body: "spaces-templates-body",
+  list: "spaces-templates-list",
+  head: "spaces-history-head type-secondary text-muted-foreground",
+  rows: "spaces-history-rows",
+  preview: "spaces-templates-preview",
+  bar: "spaces-templates-bar",
+  page: "spaces-templates-page",
+  row: "spaces-db-menurow",
+};
