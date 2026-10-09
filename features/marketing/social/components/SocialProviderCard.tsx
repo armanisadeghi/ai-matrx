@@ -18,7 +18,7 @@ import { useAppSelector } from "@/lib/redux/hooks";
 import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
 
 import { getCapabilities, getCredits } from "../server";
-import type { SocialSpend, SocialSpendFigure } from "../types";
+import { SOCIAL_PLATFORMS, type SocialSpend, type SocialSpendFigure } from "../types";
 import { providerName } from "./ProviderFallbackNotice";
 import { platformLabel } from "./PlatformMark";
 
@@ -31,6 +31,15 @@ export function coverageOf(
     .filter(([, byProvider]) => Array.isArray(byProvider[provider]) && (byProvider[provider] as string[]).length > 0)
     .map(([platform]) => platform)
     .sort();
+}
+
+/** Platforms the app knows that no provider serves yet, per `GET /social/capabilities`. */
+export function unsupportedPlatforms(
+  platforms: Record<string, Record<string, string[] | string>>,
+  providers: string[],
+): string[] {
+  const served = new Set(providers.flatMap((provider) => coverageOf(platforms, provider)));
+  return SOCIAL_PLATFORMS.filter((platform) => !served.has(platform));
 }
 
 function formatCredits(n: number | null | undefined): string {
@@ -74,6 +83,9 @@ export function SocialProviderCard() {
   const balances = Object.entries(credits.data?.balances ?? {});
   const primary = ready[0]?.[0] ?? "scrapecreators";
   const covered = caps.data ? coverageOf(caps.data.platforms, primary) : [];
+  const unsupported = caps.data
+    ? unsupportedPlatforms(caps.data.platforms, Object.keys(caps.data.providers))
+    : [];
 
   return (
     <section className="rounded-xl border border-border bg-card p-4" aria-label="Social data provider">
@@ -122,6 +134,11 @@ export function SocialProviderCard() {
       </div>
       {covered.length ? (
         <p className="mt-3 text-[11px] text-muted-foreground">{covered.map(platformLabel).join(" · ")}</p>
+      ) : null}
+      {unsupported.length ? (
+        <p className="mt-1 text-[11px] text-muted-foreground">
+          Not supported yet: {unsupported.map(platformLabel).join(" · ")}
+        </p>
       ) : null}
     </section>
   );

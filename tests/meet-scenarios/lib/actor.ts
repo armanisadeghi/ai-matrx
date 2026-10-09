@@ -7,7 +7,7 @@
  * sleep/wake · deny camera/mic/screen · unplug a device · real-time waits.
  */
 import type { Browser, BrowserContext, CDPSession, Page } from "@playwright/test";
-import { baseURL, devLoginURL, type SignedInAs } from "./env";
+import { baseURL, devLoginURL, meetServer, PROD_API_ORIGIN, type SignedInAs } from "./env";
 import { skin } from "./skins";
 import { NetGate, type Throttle } from "./net-gate";
 import { mediaFaultsInit, type MediaFaults } from "./media-faults";
@@ -74,6 +74,8 @@ export class Actor {
   readonly envEvents: EnvEvent[] = [];
   /** Every test lever this person ran with — the computed "no fakes" record. */
   readonly levers: string[] = [];
+  localAnswered = 0;
+  localFailed = 0;
   /** Observation sources seen (contract vs visible-text fallback), with counts. */
   readonly sources: Record<string, number> = {};
   /** What this person's pages actually loaded (feeds the computed "not used" line). */
@@ -102,6 +104,29 @@ export class Actor {
     });
     const actor = new Actor(opts, context, gate, browserName);
     actor.levers.push(`browser ${browserName} ${browser.version()}`, ...launchLevers, process.env.MEET_NO_PROXY ? "network: NO proxy (MEET_NO_PROXY)" : `network: own proxy (NetGate :${port})`);
+    const server = meetServer();
+    if (server.mode === "local") {
+      // MEET_SERVER=local: the browser still calls the production origin (frontend unchanged); the harness answers
+      // it from the local aidream. LiveKit webhooks and deadline jobs still fire against PRODUCTION, never here.
+      await context.route(`${PROD_API_ORIGIN}/**`, async (route) => {
+        const req = route.request();
+        const url = new URL(req.url());
+        try {
+          const res = await route.fetch({ url: `${server.origin}${url.pathname}${url.search}` });
+          actor.localAnswered++;
+          // Every state-changing call is on the timeline with the status the local server gave (evidence of what reached it).
+          if (req.method() !== "GET" && req.method() !== "OPTIONS") actor.note(`local API ${req.method()} ${url.pathname} -> HTTP ${res.status()}`);
+          await route.fulfill({ response: res });
+        } catch (e) {
+          actor.localFailed++;
+          await route.abort("connectionrefused");
+          actor.note(`local API routing failed for ${req.method()} ${url.pathname}: ${String(e).slice(0, 120)}`);
+        }
+      });
+      actor.levers.push(`api: LOCAL aidream ${server.origin} @ ${server.sha} (browser requests to ${PROD_API_ORIGIN} routed here; webhooks/deadline jobs still production)`);
+    } else {
+      actor.levers.push(`api: PRODUCTION ${PROD_API_ORIGIN} (nothing routed)`);
+    }
     if (grant.length) actor.levers.push(`permission grant: ${grant.join(",")}`);
     if (opts.faults && Object.keys(opts.faults).length) {
       await context.addInitScript(mediaFaultsInit, opts.faults);

@@ -13,7 +13,7 @@ jest.mock("../persistence/boardsService", () => ({
 }));
 
 import { BUILTIN_BOARD_TEMPLATES } from "../templates/builtin";
-import { isBoardTemplate, listBoardTemplates, saveBoardAsTemplate, makeBoardFromTemplate } from "../templates/board-templates";
+import { isBoardTemplate, listBoardTemplates, saveBoardAsTemplate, makeBoardFromTemplate, templateBoardTitle } from "../templates/board-templates";
 import { BOARD_ITEM_TYPES } from "../items/catalog";
 import { BOARD_PRESETS } from "../presets/registry";
 
@@ -44,9 +44,19 @@ describe("board templates", () => {
 
   it("Use: a saved template is duplicated under its own title; a built-in makes a fresh board", async () => {
     await makeBoardFromTemplate("b1", "org", "Mine");
-    expect(duplicateBoard).toHaveBeenCalledWith("b1", { title: "Mine", cloneContent: expect.any(Function) });
+    expect(duplicateBoard).toHaveBeenCalledWith("b1", { title: "Mine", dropBrand: true, cloneContent: expect.any(Function) });
     await makeBoardFromTemplate("builtin:viral-breakdown", "org", "Viral breakdown");
     expect(createBoardFromDocument).toHaveBeenCalledTimes(1);
+  });
+
+  it("a built-in's links are stored with the first write (the Studio's brand link), never after", async () => {
+    await makeBoardFromTemplate("builtin:viral-breakdown", "org", "Acme Studio", { brand_id: "b", studio_brand_id: "b" });
+    expect(createBoardFromDocument).toHaveBeenCalledWith(expect.objectContaining({ settings: { brand_id: "b", studio_brand_id: "b" } }));
+  });
+
+  it("a board made from a template is named '<template> — <date>', never the bare template name", () => {
+    expect(templateBoardTitle("Viral breakdown", new Date(2026, 9, 9))).toBe("Viral breakdown — Oct 9");
+    expect(templateBoardTitle("  ", new Date(2026, 9, 9))).toBe("Board — Oct 9");
   });
 
   it("built-ins use only real tile types, wire lines between real tiles, and mint new ids each use", () => {

@@ -467,3 +467,116 @@ export async function setBrandOfferingPrice(offeringId: string, price: OfferingP
     .select("id");
   assertGoverned(response.data, response.error, "save that offering's price");
 }
+
+// ── Brand-level catalog (no website required) ───────────────────────────────
+// A brand offering belongs to its brand, so the catalog and its prices are
+// readable and writable with no website at all. These go straight to
+// `web.brand_offering` under RLS (brand editor) — the same door the price
+// writer above already uses. Site availability, worth and keyword placement
+// stay site-scoped and live in the site view.
+
+function slugOf(name: string): string {
+  return name.trim().toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "") || "offering";
+}
+
+/** Every live offering the brand owns, with no site-specific state. */
+export async function listBrandCatalogForBrand(
+  brandId: string,
+  signal?: AbortSignal,
+): Promise<CatalogOffering[]> {
+  const response = await (await webDb())
+    .from("brand_offering")
+    .select("id, parent_id, name, kind, description, sort, template_id")
+    .eq("brand_id", brandId)
+    .eq("status", "active")
+    .is("deleted_at", null)
+    .order("sort")
+    .order("name")
+    .abortSignal(signal ?? new AbortController().signal);
+  const rows = assertGoverned(response.data, response.error, "read this brand's offerings");
+  return (rows ?? []).map((row) => ({
+    id: row.id,
+    parentId: row.parent_id,
+    name: row.name,
+    kind: row.kind === "product" ? "product" : "service",
+    description: row.description,
+    sort: row.sort,
+    templateId: row.template_id,
+    templateName: null,
+    changedFromTemplate: false,
+    available: false,
+    availabilityReason: null,
+    otherSiteCount: 0,
+    worthPoints: null,
+    leadQuality: null,
+    offeringMatch: null,
+    worthNotes: null,
+  }));
+}
+
+/** Create or change a brand offering directly on the brand. Returns its id. */
+export async function saveBrandOfferingForBrand(input: {
+  organizationId: string;
+  brandId: string;
+  offeringId?: string | null;
+  name: string;
+  kind: OfferingKind;
+  description?: string | null;
+  parentId?: string | null;
+}): Promise<string> {
+  const name = input.name.trim();
+  if (!name) throw new Error("Give the offering a name.");
+  const fields = {
+    name,
+    slug: slugOf(name),
+    kind: input.kind,
+    description: input.description?.trim() || null,
+    parent_id: input.parentId ?? null,
+  };
+  const db = await webDb();
+  if (input.offeringId) {
+    const response = await db
+      .from("brand_offering")
+      .update(fields)
+      .eq("id", input.offeringId)
+      .eq("brand_id", input.brandId)
+      .select("id");
+    const rows = assertGoverned(response.data, response.error, "save that offering");
+    if (!rows?.[0]) throw new Error("That offering is no longer in this brand.");
+    return rows[0].id;
+  }
+  const response = await db
+    .from("brand_offering")
+    .insert({
+      ...fields,
+      organization_id: input.organizationId,
+      brand_id: input.brandId,
+      status: "active",
+    })
+    .select("id");
+  const rows = assertGoverned(response.data, response.error, "add that offering");
+  return rows[0].id;
+}
+
+/** Retire a brand offering (soft delete); its children move up to its parent. */
+export async function retireBrandOfferingForBrand(input: {
+  brandId: string;
+  offeringId: string;
+  parentId: string | null;
+}): Promise<void> {
+  const db = await webDb();
+  const moved = await db
+    .from("brand_offering")
+    .update({ parent_id: input.parentId })
+    .eq("brand_id", input.brandId)
+    .eq("parent_id", input.offeringId)
+    .select("id");
+  assertGoverned(moved.data, moved.error, "keep its sub-offerings");
+  const response = await db
+    .from("brand_offering")
+    .update({ deleted_at: new Date().toISOString(), status: "retired" })
+    .eq("id", input.offeringId)
+    .eq("brand_id", input.brandId)
+    .select("id");
+  assertGoverned(response.data, response.error, "remove that offering");
+}

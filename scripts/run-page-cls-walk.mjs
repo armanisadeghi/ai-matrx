@@ -30,7 +30,7 @@ for (const width of [1280, 1440, 1920]) {
       window.__cls = 0; window.__shifts = [];
       new PerformanceObserver((l) => { for (const e of l.getEntries()) if (!e.hadRecentInput) {
         window.__cls += e.value;
-        window.__shifts.push({ v: +e.value.toFixed(4), t: Math.round(e.startTime), n: e.sources.map((s) => `${s.node?.nodeName}.${(s.node?.className?.toString?.() ?? "").slice(0, 60)} ${Math.round(s.previousRect.y)}->${Math.round(s.currentRect.y)} h${Math.round(s.previousRect.height)}->${Math.round(s.currentRect.height)}`) });
+        window.__shifts.push({ v: +e.value.toFixed(4), t: Math.round(e.startTime), n: e.sources.map((s) => { const chain = []; let el = s.node; for (let i = 0; i < 3 && el; i++) { chain.push(`${el.nodeName}.${(el.className?.toString?.() ?? "").slice(0, 40)}`); el = el.parentElement; } return `${chain.join(" < ")} y${Math.round(s.previousRect.y)}->${Math.round(s.currentRect.y)} h${Math.round(s.previousRect.height)}->${Math.round(s.currentRect.height)} "${(s.node?.textContent ?? "").slice(0, 30).replace(/\n/g, " ")}"`; }) });
       } }).observe({ type: "layout-shift", buffered: true });
     });
     await page.goto(`${origin}${PATH}`, { timeout: 180_000 });

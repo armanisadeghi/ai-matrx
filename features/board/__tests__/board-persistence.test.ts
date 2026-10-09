@@ -98,6 +98,10 @@ describe("board copies and names", () => {
   it("a copy never inherits the retired home flag but keeps other settings", () => {
     expect(settingsForCopy({ home: true, wheel: "zoom" })).toEqual({ wheel: "zoom" });
     expect(settingsForCopy(null)).toEqual({});
+    // A copy is never a brand's Studio board (that link is unique per brand); a template use drops the brand link too.
+    const studio = { brand_id: "b", studio_brand_id: "b", wheel: "zoom" };
+    expect(settingsForCopy(studio)).toEqual({ brand_id: "b", wheel: "zoom" });
+    expect(settingsForCopy(studio, { dropBrand: true })).toEqual({ wheel: "zoom" });
     expect(copyTitle("Plans")).toBe("Plans (copy)");
   });
 

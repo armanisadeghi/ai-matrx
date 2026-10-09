@@ -10,7 +10,7 @@
  * "Find their socials" reads the competitor's site for its social links.
  */
 
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import Link from "next/link";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Loader2, Plus, Search, Swords } from "lucide-react";
@@ -25,6 +25,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@ai-matrx/design-system/controls";
+import { ErrorNotice } from "@ai-matrx/design-system";
 import { Label } from "@/components/ui/label";
 import { MatrxDataTable } from "@ai-matrx/design-system/data-table";
 import type { MatrxColumnDef } from "@ai-matrx/design-system/data-table/types";
@@ -48,7 +49,6 @@ import {
   trackSocialAccount,
   type BrandCompetitor,
   type CompetitorAccount,
-  type TrackSocialResult,
 } from "./brand-competitors";
 import { COMPETITOR_SOCIAL_PLATFORMS } from "./social-links";
 
@@ -95,6 +95,12 @@ export function BrandCompetitorDirectory() {
   const sites = useBrandSites(brand.id);
   const siteIds = useMemo(() => (sites.data ?? []).map((s) => s.id), [sites.data]);
   const [addOpen, setAddOpen] = useState(false);
+  const dispatch = useAppDispatch();
+  const queryClient = useQueryClient();
+  const [jobs, setJobs] = useState<BrandCompetitor[]>([]);
+  const patchJob = useCallback((key: string, fn: (job: BrandCompetitor) => BrandCompetitor) => {
+    setJobs((current) => current.map((job) => (job.key === key ? fn(job) : job)));
+  }, []);
 
   const list = useQuery({
     queryKey: ["marketing", "brand", brand.id, "competitor-directory", siteIds],
@@ -102,12 +108,95 @@ export function BrandCompetitorDirectory() {
     enabled: !sites.isPending && !sites.isError,
   });
 
-  const rows = list.data ?? [];
+  /**
+   * "Add competitor" returns at once: the row appears in the list now and each handle reports its
+   * own progress (tracking → ok / failed with the reason). Handles are tracked in parallel and a
+   * failure on one never blocks the others.
+   */
+  const startAdd = useCallback(
+    (input: { name: string; domain: string | null; handles: [string, string][] }) => {
+      const key = `pending:${Date.now()}:${Math.random().toString(36).slice(2, 8)}`;
+      setJobs((current) => [
+        {
+          key,
+          name: input.name,
+          domain: input.domain,
+          seoCompetitorId: null,
+          siteId: null,
+          websiteTracking: "Adding…",
+          accounts: [],
+          progress: input.handles.map(([platform]) => ({ platform, state: "tracking", message: null })),
+        },
+        ...current,
+      ]);
+      void (async () => {
+        let seoId: string | null = null;
+        try {
+          if (input.domain && siteIds[0]) {
+            seoId = await ensureWebsiteCompetitor({
+              siteId: siteIds[0],
+              organizationId: brand.organizationId,
+              domain: input.domain,
+              name: input.name,
+            });
+          }
+        } catch (e) {
+          toast.error(e instanceof Error ? e.message : "The website competitor could not be saved.");
+        }
+        await queryClient.invalidateQueries({ queryKey: ["marketing", "brand", brand.id, "competitor-directory"] });
+        await Promise.all(
+          input.handles.map(async ([platform, value]) => {
+            const result = await trackSocialAccount(
+              { platform, handle_or_url: value.trim(), role: "competitor", brand_id: brand.id, label: input.name },
+              dispatch,
+            );
+            let message: string | null = result.ok
+              ? null
+              : result.unavailable
+                ? "the social intake service is not reachable"
+                : (result.message ?? "rejected");
+            if (result.ok && seoId && result.trackedAccountId) {
+              try {
+                await linkAccountToWebsiteCompetitor(result.trackedAccountId, seoId, brand.organizationId);
+              } catch (e) {
+                message = `tracked, but not linked to the website: ${e instanceof Error ? e.message : "link failed"}`;
+              }
+            }
+            patchJob(key, (job) => ({
+              ...job,
+              progress: job.progress?.map((p) =>
+                p.platform === platform ? { ...p, state: result.ok ? "ok" : "failed", message } : p,
+              ),
+            }));
+            await queryClient.invalidateQueries({ queryKey: ["marketing", "brand", brand.id, "competitor-directory"] });
+          }),
+        );
+        // Done: a fully successful job hands over to the real row; a partly failed one stays
+        // visible so its reasons are not lost.
+        let allOk = false;
+        setJobs((current) => {
+          const job = current.find((j) => j.key === key);
+          allOk = !!job?.progress?.every((p) => p.state === "ok" && !p.message);
+          return allOk
+            ? current.filter((j) => j.key !== key)
+            : current.map((j) => (j.key === key ? { ...j, websiteTracking: "Needs attention" } : j));
+        });
+      })();
+    },
+    [brand.id, brand.organizationId, siteIds, dispatch, queryClient, patchJob],
+  );
+
+  const dismissJob = (key: string) => setJobs((current) => current.filter((j) => j.key !== key));
+  const realRows = list.data ?? [];
+  const rows = useMemo(() => {
+    const pendingNames = new Set(jobs.map((j) => j.name.trim().toLowerCase()));
+    return [...jobs, ...realRows.filter((r) => !pendingNames.has(r.name.trim().toLowerCase()))];
+  }, [jobs, realRows]);
   const platforms = useMemo(() => {
-    const present = new Set(rows.flatMap((r) => r.accounts.map((a) => a.platform)));
+    const present = new Set(realRows.flatMap((r) => r.accounts.map((a) => a.platform)));
     const ordered = [...CORE_PLATFORMS, ...[...present].filter((p) => !CORE_PLATFORMS.includes(p)).sort()];
     return ordered;
-  }, [rows]);
+  }, [realRows]);
 
   const columns = useMemo<MatrxColumnDef<BrandCompetitor>[]>(() => {
     const cols: MatrxColumnDef<BrandCompetitor>[] = [
@@ -193,12 +282,33 @@ export function BrandCompetitorDirectory() {
         id: "status",
         header: "Status",
         accessorFn: (row) => row.websiteTracking ?? (row.accounts.length ? "social only" : ""),
-        cell: (row) => (
-          <span className="text-muted-foreground">
-            {row.websiteTracking ?? "Social only"}
-          </span>
-        ),
-        width: 120,
+        cell: (row) =>
+          row.progress ? (
+            <span className="flex flex-col text-xs">
+              <span className="text-muted-foreground">{row.websiteTracking}</span>
+              {row.progress.map((p) =>
+                p.state === "failed" || p.message ? (
+                  <ErrorNotice
+                    key={p.platform}
+                    error={`${PLATFORM_LABEL[p.platform] ?? p.platform} was not saved — ${p.message ?? "rejected"}`}
+                    operation={`Track ${PLATFORM_LABEL[p.platform] ?? p.platform}`}
+                  />
+                ) : (
+                  <span key={p.platform} className="text-muted-foreground">
+                    {PLATFORM_LABEL[p.platform] ?? p.platform}: {p.state === "tracking" ? "tracking…" : "tracking"}
+                  </span>
+                ),
+              )}
+              {row.websiteTracking === "Needs attention" ? (
+                <Button variant="quiet" onClick={() => dismissJob(row.key)}>
+                  Dismiss
+                </Button>
+              ) : null}
+            </span>
+          ) : (
+            <span className="text-muted-foreground">{row.websiteTracking ?? "Social only"}</span>
+          ),
+        width: 220,
       },
     );
     return cols;
@@ -217,9 +327,9 @@ export function BrandCompetitorDirectory() {
           </Button>
         }
       >
-        {list.isError ? (
+        {list.isError && jobs.length === 0 ? (
           <QueryError error={list.error} onRetry={() => void list.refetch()} />
-        ) : list.isPending ? (
+        ) : list.isPending && jobs.length === 0 ? (
           <LoadingSurface label="Loading competitors…" />
         ) : (
           <MatrxDataTable
@@ -264,10 +374,8 @@ export function BrandCompetitorDirectory() {
         <AddCompetitorDialog
           open
           onOpenChange={setAddOpen}
-          brandId={brand.id}
-          organizationId={brand.organizationId}
-          firstSiteId={siteIds[0] ?? null}
-          onAdded={() => void list.refetch()}
+          hasSite={siteIds.length > 0}
+          onSubmit={startAdd}
         />
       ) : null}
     </div>
@@ -277,30 +385,24 @@ export function BrandCompetitorDirectory() {
 function AddCompetitorDialog({
   open,
   onOpenChange,
-  brandId,
-  organizationId,
-  firstSiteId,
-  onAdded,
+  hasSite,
+  onSubmit,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  brandId: string;
-  organizationId: string;
-  firstSiteId: string | null;
-  onAdded: () => void;
+  hasSite: boolean;
+  onSubmit: (input: { name: string; domain: string | null; handles: [string, string][] }) => void;
 }) {
   const dispatch = useAppDispatch();
-  const queryClient = useQueryClient();
   const [name, setName] = useState("");
   const [domain, setDomain] = useState("");
   const [handles, setHandles] = useState<Record<string, string>>({});
   const [finding, setFinding] = useState(false);
-  const [saving, setSaving] = useState(false);
   const [findNote, setFindNote] = useState<string | null>(null);
-  const [outcomes, setOutcomes] = useState<TrackSocialResult[]>([]);
 
   const cleanDomain = normalizeDomain(domain);
   const entered = Object.entries(handles).filter(([, v]) => v.trim());
+  const firstSiteId = hasSite ? "yes" : null;
 
   async function findSocials() {
     if (!cleanDomain) return;
@@ -325,51 +427,12 @@ function AddCompetitorDialog({
     }
   }
 
-  async function save() {
+  function save() {
     const label = name.trim();
     if (!label) return;
-    setSaving(true);
-    setOutcomes([]);
-    try {
-      let seoId: string | null = null;
-      if (cleanDomain && firstSiteId) {
-        seoId = await ensureWebsiteCompetitor({
-          siteId: firstSiteId,
-          organizationId,
-          domain: cleanDomain,
-          name: label,
-        });
-      }
-      const results: TrackSocialResult[] = [];
-      for (const [platform, value] of entered) {
-        const result = await trackSocialAccount(
-          { platform, handle_or_url: value.trim(), role: "competitor", brand_id: brandId, label },
-          dispatch,
-        );
-        if (result.ok && seoId && result.trackedAccountId) {
-          try {
-            await linkAccountToWebsiteCompetitor(result.trackedAccountId, seoId, organizationId);
-          } catch (e) {
-            result.message = `Tracked, but not linked to the website: ${e instanceof Error ? e.message : "link failed"}`;
-          }
-        }
-        results.push(result);
-      }
-      setOutcomes(results);
-      await queryClient.invalidateQueries({ queryKey: ["marketing", "brand", brandId, "competitor-directory"] });
-      onAdded();
-      if (results.every((r) => r.ok)) {
-        toast.success(`${label} added`);
-        onOpenChange(false);
-      }
-    } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Could not add the competitor.");
-    } finally {
-      setSaving(false);
-    }
+    onSubmit({ name: label, domain: cleanDomain, handles: entered.map(([p, v]) => [p, v.trim()]) });
+    onOpenChange(false);
   }
-
-  const anyUnavailable = outcomes.some((o) => o.unavailable);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -416,28 +479,13 @@ function AddCompetitorDialog({
               </div>
             ))}
           </div>
-          {outcomes.length > 0 ? (
-            <ul className="space-y-1 rounded-md border border-border p-2 text-xs">
-              {outcomes.map((o) => (
-                <li key={o.platform} className={o.ok ? "" : "text-destructive"}>
-                  {PLATFORM_LABEL[o.platform] ?? o.platform}: {o.ok ? "tracking" : o.unavailable ? "not saved — intake service unavailable" : `not saved — ${o.message ?? "rejected"}`}
-                </li>
-              ))}
-              {anyUnavailable ? (
-                <li className="text-muted-foreground">
-                  The social intake service is not reachable yet, so no handle was tracked. The website
-                  competitor, if any, was saved.
-                </li>
-              ) : null}
-            </ul>
-          ) : null}
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             Close
           </Button>
-          <Button variant="primary" disabled={!name.trim() || saving || (!cleanDomain && entered.length === 0)} onClick={() => void save()}>
-            {saving ? "Adding…" : "Add"}
+          <Button variant="primary" disabled={!name.trim() || (!cleanDomain && entered.length === 0)} onClick={save}>
+            Add
           </Button>
         </DialogFooter>
       </DialogContent>

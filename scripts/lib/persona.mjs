@@ -34,6 +34,8 @@ const run = promisify(execFile);
 
 export const FIXTURE_EMAIL_DOMAIN = "fixtures.aimatrx.com";
 export const DEFAULT_TTL_HOURS = 24;
+/** The app's auth cookie (utils/supabase/authCookie.ts AUTH_COOKIE_NAME; its test pins the same string). */
+export const AUTH_COOKIE_NAME = "sb-matrx-auth-v2";
 
 /** The refusal every misuse raises; the message is the remedy. */
 export class PersonaFactoryRefusal extends Error {}
@@ -206,4 +208,85 @@ export async function withFixtureUser(target, options, fn) {
   } finally {
     await deleteFixtureUser(target, user.id);
   }
+}
+
+// ---------------------------------------------------------------------------------------------
+// The organization-admin seat (plain admin: not the org's owner, not a platform super admin).
+// Twin of aidream/aidream/testing/persona_org_admin.py. The Python side owns the database writes
+// (membership + optional workflow/trigger rows), so this shells out to
+// aidream/scripts/fixture_org_admin.py exactly like teardown shells out to the sweeper.
+// ---------------------------------------------------------------------------------------------
+
+/**
+ * Create an owner persona (its organization is renamed to a real use-case business), an ADMIN persona
+ * with `role = admin` on it, and optionally one workflow + one PAUSED cron trigger in that organization.
+ * Everything is tagged and expires; tear down with `deleteOrgAdminFixture`.
+ * @param {FixtureTarget} _target
+ * @param {{ suite: string, purpose: string, ttlHours?: number, useCase?: string, withWorkflowTrigger?: boolean }} options
+ */
+export async function createOrgAdminFixture(_target, { suite, purpose, ttlHours = DEFAULT_TTL_HOURS, useCase, withWorkflowTrigger = false }) {
+  buildTag({ suite, purpose, ttlHours }); // same refusals as every other persona
+  const args = ["run", "python", "scripts/fixture_org_admin.py", "create", "--suite", suite, "--purpose", purpose, "--ttl-hours", String(ttlHours)];
+  if (useCase) args.push("--use-case", useCase);
+  if (withWorkflowTrigger) args.push("--with-workflow-trigger");
+  try {
+    const { stdout } = await run("uv", args, { cwd: aidreamDir(), maxBuffer: 10_000_000, timeout: 600_000 });
+    return JSON.parse(stdout.trim().split("\n").at(-1));
+  } catch (error) {
+    throw new PersonaFactoryRefusal(`org-admin persona creation failed: ${String(error.stderr || error.message).slice(0, 400)}`);
+  }
+}
+
+/** Remove everything `createOrgAdminFixture` made (rows first, then both accounts through the sweeper's one delete). */
+export async function deleteOrgAdminFixture(_target, fixture) {
+  const args = ["run", "python", "scripts/fixture_org_admin.py", "delete", "--json", JSON.stringify(fixture)];
+  try {
+    await run("uv", args, { cwd: aidreamDir(), maxBuffer: 10_000_000, timeout: 600_000 });
+  } catch (error) {
+    throw new PersonaFactoryRefusal(
+      `teardown of org-admin fixture ${fixture.organizationSlug} failed: ${String(error.stderr || error.message).slice(0, 400)}. ` +
+        "Both accounts are tagged and expire on their own; the sweeper removes them.",
+    );
+  }
+}
+
+export async function withOrgAdminFixture(target, options, fn) {
+  const fixture = await createOrgAdminFixture(target, options);
+  try {
+    return await fn(fixture);
+  } finally {
+    await deleteOrgAdminFixture(target, fixture);
+  }
+}
+
+/**
+ * Browser cookies that sign a fixture persona in (for a headless walk). Redeems a one-time code the
+ * GoTrue admin API mints for that persona, then writes the session in @supabase/ssr's cookie format.
+ * Refuses any account without the `test_fixture` tag, so it can never sign anyone real in.
+ * @param {FixtureTarget} target
+ * @param {{ id: string, email: string }} user
+ * @param {{ host: string, publishableKey?: string, env?: NodeJS.ProcessEnv }} options host = the preview hostname the cookies are for
+ */
+export async function fixtureSessionCookies(target, user, { host, env = process.env }) {
+  const publishableKey = env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ?? env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  if (!publishableKey) throw new PersonaFactoryRefusal("NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY is not set.");
+  const account = await gotrue(target, "GET", `users/${user.id}`);
+  if (!account.app_metadata?.test_fixture) {
+    throw new PersonaFactoryRefusal(`${user.email} carries no test_fixture tag; the persona factory only signs in its own accounts.`);
+  }
+  const link = await gotrue(target, "POST", "generate_link", { type: "magiclink", email: user.email });
+  const otp = link.email_otp ?? link.properties?.email_otp;
+  if (!otp) throw new PersonaFactoryRefusal("GoTrue minted no one-time code for the persona.");
+  const response = await fetch(`${target.url}/auth/v1/verify`, {
+    method: "POST",
+    headers: { apikey: publishableKey, "Content-Type": "application/json" },
+    body: JSON.stringify({ type: "email", email: user.email, token: otp }),
+  });
+  const session = await response.json();
+  if (!response.ok || !session.access_token) throw new PersonaFactoryRefusal(`GoTrue refused the persona's code (HTTP ${response.status}).`);
+  const name = AUTH_COOKIE_NAME;
+  const value = `base64-${Buffer.from(JSON.stringify(session)).toString("base64url")}`;
+  const CHUNK = 3180;
+  const parts = value.length <= CHUNK ? [[name, value]] : Array.from({ length: Math.ceil(value.length / CHUNK) }, (_, i) => [`${name}.${i}`, value.slice(i * CHUNK, (i + 1) * CHUNK)]);
+  return parts.map(([n, v]) => ({ name: n, value: v, domain: host, path: "/", httpOnly: false, secure: false, sameSite: "Lax" }));
 }

@@ -29,7 +29,6 @@ import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
 import { withOrganizationRefusalShown } from "@ai-matrx/chat/host/org";
 import { associationsErrorSink } from "./errorSink";
 import { getAssociationsEntityOverlay } from "@/features/scopes/registry/entityRegistry";
-import { readAssociationPages } from "./readAssociationPages";
 
 // D311 (2026-09-12): NOTHING here probes RPC existence, and nothing hides a
 // probe's errors. @ai-matrx/associations 0.9.0 DELETED the boot probe and its
@@ -43,20 +42,11 @@ import { readAssociationPages } from "./readAssociationPages";
 // went with the probe: every error reaching it now is a real one, and must be
 // captured.
 
-// `from` and `schema` are GONE from this port since @ai-matrx/associations 0.10.0, and
-// deliberately: entity-row create/rename was their only reader, and it now goes through
-// `public.entity_row_create` / `entity_row_rename` like every other write — so a table
-// surface on this data source was a seam a future write would quietly reach for, on a
-// schema that is no longer client-writable at all (chair ruling, VERIFIER-8 HIGH-3). This
-// seam declares `rpc` and nothing else, which is now the whole port.
-export const associationsDataSource: AssociationsDataSource = {
-  rpc: (fn, args) => {
-    if (fn === "assoc_for_entity" || fn === "assoc_for_sources" || fn === "assoc_for_targets" || fn === "assoc_members_visible") {
-      return readAssociationPages(fn, args);
-    }
-    return supabase.rpc(fn, args);
-  },
-};
+// Since @ai-matrx/associations 0.14.0 the port IS the supabase client: the package reaches
+// every function through @ai-matrx/data's generated doors (`schema("public").rpc(...)`) and
+// reads the four edge lists (assoc_for_entity / _sources / _targets / assoc_members_visible)
+// COMPLETE itself — the host-side paging adapter (readAssociationPages) retired with it.
+export const associationsDataSource: AssociationsDataSource = supabase;
 
 let store: AssociationsStore | null = null;
 
@@ -64,7 +54,7 @@ let store: AssociationsStore | null = null;
 export function getAssociationsStore(): AssociationsStore {
   if (!store) {
     store = createAssociationsStore({
-      // Structural subset — the supabase client behind a depth-safe wrapper.
+      // The supabase client itself (the package pages its own edge lists).
       dataSource: associationsDataSource,
       identity: {
         requireUserId,

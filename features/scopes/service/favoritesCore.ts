@@ -24,13 +24,8 @@ import type {
 } from "@ai-matrx/associations";
 import type { ScopesRpcResult, UserEntityState } from "@/features/scopes/types";
 
-/** Structural client contract — satisfied by both supabase singletons. */
-export interface UesGetBulkClient {
-  rpc(
-    fn: "ues_get_bulk",
-    args: { p_entity_type: string; p_entity_ids: string[] },
-  ): PromiseLike<{ data: unknown; error: unknown }>;
-}
+/** The supabase client (either singleton) — @ai-matrx/associations reaches it through data's doors. */
+export type UesGetBulkClient = AssociationsDataSource;
 
 // Server-safe scream seam: console only (the Error Inspector store is a
 // browser buffer; server callers read their own logs).
@@ -49,7 +44,7 @@ export async function uesGetBulk(
   entityIds: string[],
 ): Promise<ScopesRpcResult<{ items: UserEntityState[] }>> {
   const favorites = createFavoritesService({
-    dataSource: client as AssociationsDataSource,
+    dataSource: client,
     // Vacuous by design — see the header. The RPC's auth.uid() is the gate.
     identity: { requireUserId: () => "" },
     errorSink: sink,

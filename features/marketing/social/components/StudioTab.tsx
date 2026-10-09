@@ -1,8 +1,8 @@
 "use client";
 
 /**
- * Studio (UI-SPEC §9): the Board with the `marketing-social` preset, for this brand. One board per brand
- * is made on the first open (from the Viral breakdown template); the picker switches to any other board
+ * Studio (UI-SPEC §9): the Board with the `marketing-social` preset, for this brand. One Studio board per brand
+ * (database-unique) is made on the first open (from the Viral breakdown template); the picker switches to any other board
  * linked to the brand, "New board" adds one. The tab adds only that one row over the board's own chrome.
  */
 
@@ -16,7 +16,7 @@ import { RegionSkeleton } from "@ai-matrx/design-system/controls";
 import { useMarketingBrand } from "@/features/marketing/lib/brand-context";
 import { toast } from "@/lib/toast";
 
-import { createStudioBoard, listStudioBoards } from "../studio/studio-boards";
+import { createLinkedBoard, getOrCreateStudioBoard, listStudioBoards } from "../studio/studio-boards";
 import { useSocials } from "./SocialsContext";
 
 const LAYOUT = { propertiesOpen: false, widths: { properties: 250 } } as const;
@@ -32,11 +32,13 @@ export function StudioTab() {
   const [busy, setBusy] = useState(false);
   const started = useRef(false);
 
-  async function add(title: string) {
+  async function add(title: string, studio: boolean) {
     setBusy(true);
     setError(null);
     try {
-      const board = await createStudioBoard({ organizationId, brandId, title });
+      const board = studio
+        ? await getOrCreateStudioBoard({ organizationId, brandId, title })
+        : await createLinkedBoard({ organizationId, brandId, title });
       await client.invalidateQueries({ queryKey: key });
       setPicked(board.id);
     } catch (e) {
@@ -48,17 +50,18 @@ export function StudioTab() {
     }
   }
 
-  // First open: a brand with no Studio board gets one.
+  // First open: a brand with no Studio board gets one (the database holds it to one).
   useEffect(() => {
-    if (boards.data && boards.data.length === 0 && !started.current) {
+    if (boards.data && !boards.data.some((b) => b.canonical) && !started.current) {
       started.current = true;
-      void add(`${brandName} Studio`);
+      void add(`${brandName} Studio`, true);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [boards.data]);
 
   const list = boards.data ?? [];
-  const current = list.find((b) => b.id === picked) ?? list[0] ?? null;
+  // Opens on the brand's Studio board (listed first), whatever else was opened last.
+  const current = list.find((b) => b.id === picked) ?? list.find((b) => b.canonical) ?? null;
 
   if (boards.isError || error) {
     return (
@@ -88,7 +91,7 @@ export function StudioTab() {
           options={list.map((b) => ({ value: b.id, label: b.title }))}
           onValueChange={setPicked}
         />
-        <Button variant="quiet" icon={<Plus />} disabled={busy} onClick={() => void add(`${brandName} Studio ${list.length + 1}`)}>
+        <Button variant="quiet" icon={<Plus />} disabled={busy} onClick={() => void add(`${brandName} board ${list.length + 1}`, false)}>
           New board
         </Button>
       </div>

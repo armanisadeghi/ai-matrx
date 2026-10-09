@@ -13,7 +13,7 @@ import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import { toast } from "@/lib/toast";
 import { boardHref, isBoardError } from "../persistence/boardsService";
 import { BoardTemplateGallery } from "./BoardTemplateGallery";
-import { makeBoardFromTemplate } from "./board-templates";
+import { makeBoardFromTemplate, templateBoardTitle } from "./board-templates";
 import { BUILTIN_BOARD_TEMPLATES } from "./builtin";
 
 /** Built-ins with the starter (when it names one) first. Exported for the test. */
@@ -30,7 +30,7 @@ export function StartTemplates({ starterKey }: { starterKey?: string }) {
   const use = async (key: string, title: string) => {
     setBusy(key);
     try {
-      const board = await makeBoardFromTemplate(key, organizationId, title);
+      const board = await makeBoardFromTemplate(key, organizationId, templateBoardTitle(title));
       router.push(boardHref(board));
     } catch (e) {
       toast.error(isBoardError(e) ? e.message : e instanceof Error ? e.message : "The template could not be used. Try again.");

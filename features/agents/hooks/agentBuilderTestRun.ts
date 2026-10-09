@@ -11,7 +11,7 @@
  * Absent until the panel has a conversation with at least one message.
  */
 
-import { selectResolvedVariables } from "@ai-matrx/chat/agents/redux/execution-system/instance-variable-values/instance-variable-values.selectors";
+import { selectVariablesTheRunUsed } from "@ai-matrx/chat/agents/redux/execution-system/instance-variable-values/instance-variable-values.selectors";
 import {
   extractFlatText,
   selectConversationMessages,
@@ -45,7 +45,8 @@ export function agentBuilderTestRun(state: ChatRootState, agentId: string): Agen
     if (transcript.length === 0) continue;
     const lastUser = [...transcript].reverse().find((m) => m.role === "user");
     const last = transcript[transcript.length - 1];
-    const variables = selectResolvedVariables(conversationId)(state);
+    // What the run was SENT with (frozen at send), never the field as edited since.
+    const variables = selectVariablesTheRunUsed(conversationId)(state);
     return {
       test_run_conversation_id: conversationId,
       ...(variables && Object.keys(variables).length > 0 ? { test_run_variables: variables } : {}),

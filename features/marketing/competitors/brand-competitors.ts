@@ -47,6 +47,8 @@ export interface BrandCompetitor {
   siteId: string | null;
   websiteTracking: string | null;
   accounts: CompetitorAccount[];
+  /** Present only on a row that is still being added: one entry per social handle. */
+  progress?: { platform: string; state: "tracking" | "ok" | "failed"; message: string | null }[];
 }
 
 type SeoCompetitorRow = Pick<
@@ -380,6 +382,9 @@ export async function findSocialsOnWebsite(
         get_organized_data: false,
         get_structured_data: true,
         use_cache: true,
+        // A discovery read, not the person's own research: never land the page as one of
+        // their knowledge Sources.
+        save_as_source: false,
       },
       onStreamEvent: (event) => events.push(event),
     }),

@@ -68,6 +68,9 @@ export function planFor(sentence: string): MakePlan {
   return { route, steps };
 }
 
+/** Things that happen on a date — a reminder before them is the follow-up people ask for. */
+const DATED = /\b(posts?|calendar|appointments?|visits?|bookings?|calls?|meetings?|events?|deadlines?|due|pto|time off|leave|shifts?|sessions?|classes|renewals?|follow[- ]?ups?)\b/i;
+
 /** One made thing, as much of it as the follow-ups read. */
 export interface MadeLike {
   kind: string;
@@ -85,6 +88,13 @@ export function followUpsFor(sentence: string, route: MakeRoute, made: MadeLike[
   const kinds = new Set(made.map((m) => m.kind));
   const titles = made.map((m) => (m.title ?? m.ref ?? "").toLowerCase()).join(" | ");
   const out: string[] = [];
+  // A dated thing (a post, a visit, time off, a deadline) gets the one reminder people ask for next: the template builder
+  // installs it as a store automation (date arrives, N days before → tell me).
+  const dated = made.find((m) => m.kind === "table" && DATED.test(`${m.title ?? ""}`));
+  if (route !== "page" && dated && !/\bremind/.test(text)) {
+    const thing = (dated.title ?? "item").toLowerCase().replace(/ies$/, "y").replace(/s$/, "");
+    out.push(`Remind me 2 days before each ${thing}`);
+  }
   const people = /\bclients?\b|\bcustomers?\b|\bpatients?\b|\bmembers?\b/.exec(`${text} ${titles}`)?.[0]?.replace(/s$/, "");
   if (people && !kinds.has("portal")) out.push(`Add a ${people} portal`);
   if (!kinds.has("form") && !/\bforms?\b/.test(text)) out.push(people ? `Add an intake form for new ${people}s` : "Add a form to add new entries");

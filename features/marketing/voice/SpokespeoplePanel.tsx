@@ -13,7 +13,15 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { toast } from "@/lib/toast";
 import { useAppSelector } from "@/lib/redux/hooks";
-import { selectUserId } from "@/lib/redux/selectors/userSelectors";
+import {
+  selectActiveUserAvatarUrl,
+  selectDisplayName,
+  selectUserId,
+} from "@/lib/redux/selectors/userSelectors";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+
+/** A voice label made by the system ("person-87a6e699") is an id, never a name. */
+const RAW_ID_LABEL = /^(person|brand|org)-[0-9a-f]{6,}$/i;
 import {
   listBrandSpokespeople,
   listFingerprints,
@@ -35,6 +43,8 @@ export function SpokespeoplePanel({
   organizationId: string | null;
 }) {
   const userId = useAppSelector(selectUserId);
+  const myName = useAppSelector(selectDisplayName);
+  const myAvatar = useAppSelector(selectActiveUserAvatarUrl);
   const [linked, setLinked] = useState<FingerprintRow[] | null>(null);
   const [mine, setMine] = useState<FingerprintRow[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -72,6 +82,13 @@ export function SpokespeoplePanel({
     }
   };
 
+  const alreadyLinked = (linked ?? []).some((row) => row.person_user_id === userId);
+  const nameOf = (row: FingerprintRow): string =>
+    row.person_user_id === userId && userId
+      ? myName
+      : RAW_ID_LABEL.test(row.label)
+        ? "Teammate"
+        : row.label;
   const eligible = mine.filter((row) => !organizationId || row.organization_id === organizationId);
 
   return (
@@ -90,7 +107,11 @@ export function SpokespeoplePanel({
       <ul className="mt-2 divide-y divide-border">
         {(linked ?? []).map((row) => (
           <li key={row.id} className="flex items-center gap-2 py-2 text-sm">
-            <span className="min-w-0 flex-1 truncate text-foreground">{row.label}</span>
+            <Avatar className="h-6 w-6">
+              {row.person_user_id === userId && myAvatar ? <AvatarImage src={myAvatar} alt="" /> : null}
+              <AvatarFallback className="text-[10px]">{nameOf(row).slice(0, 1).toUpperCase()}</AvatarFallback>
+            </Avatar>
+            <span className="min-w-0 flex-1 truncate text-foreground">{nameOf(row)}</span>
             <Badge variant={row.status === "confirmed" ? "default" : "secondary"}>
               {row.status === "confirmed" ? "Confirmed" : "Draft"}
             </Badge>
@@ -110,7 +131,7 @@ export function SpokespeoplePanel({
       {onMeasureMine && userId ? (
         <div className="mt-3">
           <Button variant="primary" icon={<Link2 />} onClick={onMeasureMine}>
-            Measure my voice for {brandName}
+            {alreadyLinked ? "Re-measure" : `Measure my voice for ${brandName}`}
           </Button>
         </div>
       ) : null}

@@ -220,3 +220,27 @@ export async function declareDescribeSpec(client: SupabaseClient, organizationId
   if (declared.error) throw new Error(declared.error.message);
   return (declared.data as unknown as { template_id: string }).template_id;
 }
+
+/**
+ * REATTACH, NEVER REBUILD: the Space the Space Builder made for this run, when its step was started before (a reload, a
+ * paused tab, a stream that dropped while the server kept building). The first page the agent created in this organization,
+ * by this person, since the step started. Null when none landed yet.
+ */
+export async function findBuiltSpace(client: SupabaseClient, organizationId: string, sinceMs: number): Promise<{ id: string; title: string } | null> {
+  const { data: session } = await client.auth.getSession();
+  const me = session.session?.user.id;
+  if (!me) return null;
+  const { data } = await client
+    .schema("content")
+    .from("document")
+    .select("id, title")
+    .eq("organization_id", organizationId)
+    .eq("created_by", me)
+    .eq("last_origin", "agent")
+    .is("deleted_at", null)
+    .gte("created_at", new Date(sinceMs - 5_000).toISOString())
+    .order("created_at", { ascending: true })
+    .limit(1);
+  const row = (data ?? [])[0] as { id: string; title: string | null } | undefined;
+  return row ? { id: row.id, title: row.title ?? "" } : null;
+}

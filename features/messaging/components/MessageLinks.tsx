@@ -15,7 +15,7 @@
  */
 
 import { useEffect, useState } from "react";
-import { associationsDataSource, getAssociationsStore } from "@/features/scopes/host/associationsStore";
+import { getAssociationsStore } from "@/features/scopes/host/associationsStore";
 import {
   ANCHORED_TO,
   LinkedRecordsSection,
@@ -25,7 +25,6 @@ import {
 const MESSAGE = "dm_message";
 const STORE_RECORD = "record";
 
-type Row = { source_id?: string; source_type?: string; target_id?: string; target_type?: string; role?: string };
 
 const known = new Map<string, boolean>();
 const waiting = new Map<string, Array<(linked: boolean) => void>>();
@@ -34,17 +33,19 @@ let flushTimer: ReturnType<typeof setTimeout> | null = null;
 /** Which of these messages have at least one link — the two batched reads. */
 export async function messagesWithLinks(ids: string[]): Promise<Set<string>> {
   const linked = new Set<string>();
+  const { associations } = getAssociationsStore().services;
+  // The package reads both edge lists COMPLETE (paged past the 1,000-row cap) through its doors.
   const [out, inc] = await Promise.all([
-    associationsDataSource.rpc("assoc_for_sources", { p_source_type: MESSAGE, p_source_ids: ids }),
-    associationsDataSource.rpc("assoc_for_targets", { p_target_type: MESSAGE, p_target_ids: ids }),
+    associations.listForSources(MESSAGE, ids),
+    associations.listForTargets(MESSAGE, ids),
   ]);
-  for (const row of ((out as { data?: Row[] | null }).data ?? [])) {
-    const edge = { direction: "outgoing" as const, otherType: row.target_type ?? "", otherId: row.target_id ?? "", role: row.role ?? null };
-    if (row.source_id && isLinkEdge(MESSAGE, edge)) linked.add(row.source_id);
+  for (const row of out.ok ? out.data.edges : []) {
+    const edge = { direction: "outgoing" as const, otherType: row.targetType, otherId: row.targetId, role: row.role };
+    if (row.sourceId && isLinkEdge(MESSAGE, edge)) linked.add(row.sourceId);
   }
-  for (const row of ((inc as { data?: Row[] | null }).data ?? [])) {
-    const edge = { direction: "incoming" as const, otherType: row.source_type ?? STORE_RECORD, otherId: row.source_id ?? "", role: row.role ?? null };
-    if (row.target_id && isLinkEdge(MESSAGE, edge)) linked.add(row.target_id);
+  for (const row of inc.ok ? inc.data.edges : []) {
+    const edge = { direction: "incoming" as const, otherType: row.sourceType || STORE_RECORD, otherId: row.sourceId, role: row.role };
+    if (row.targetId && isLinkEdge(MESSAGE, edge)) linked.add(row.targetId);
   }
   return linked;
 }

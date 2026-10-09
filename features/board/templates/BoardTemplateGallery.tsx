@@ -14,7 +14,7 @@ import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import { toast } from "@/lib/toast";
 import { boardHref, isBoardError } from "../persistence/boardsService";
 import { BoardSketch } from "./BoardSketch";
-import { listBoardTemplates, makeBoardFromTemplate, type BoardTemplateEntry } from "./board-templates";
+import { listBoardTemplates, makeBoardFromTemplate, templateBoardTitle, type BoardTemplateEntry } from "./board-templates";
 import { BUILTIN_BOARD_TEMPLATES } from "./builtin";
 
 export function BoardTemplateGallery({
@@ -59,9 +59,14 @@ export function BoardTemplateGallery({
     if (!current) return;
     setUsing(true);
     try {
-      const board = await makeBoardFromTemplate(current.key, organizationId, current.title);
+      const board = await makeBoardFromTemplate(current.key, organizationId, templateBoardTitle(current.title));
+      // A stale toast ("Saved as a template") must not sit over the new board; the new one carries Open
+      // in case the navigation is slow or blocked.
+      toast.dismiss();
       onOpenChange(false);
-      router.push(boardHref(board));
+      const href = boardHref(board);
+      toast.success(`Made "${board.title}"`, { action: { label: "Open", onClick: () => router.push(href) } });
+      router.push(href);
     } catch (e) {
       toast.error(isBoardError(e) ? e.message : e instanceof Error ? e.message : "The template could not be used. Try again.");
     } finally {

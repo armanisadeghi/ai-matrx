@@ -43,4 +43,14 @@ describe("a sentence goes to the door that can build it", () => {
     expect(ups.some((u) => /form/i.test(u))).toBe(false);
     expect(followUpsFor("a booking page for discovery calls", "data", [{ kind: "booking", title: "Discovery call" }]).some((u) => /booking/i.test(u))).toBe(false);
   });
+
+  it("offers 'remind me 2 days before' for a dated table it made, and never when a reminder was already asked for", () => {
+    const made = [
+      { kind: "table", title: "Clients" },
+      { kind: "table", title: "Posts" },
+    ];
+    expect(followUpsFor("a content calendar for my agency clients", "data", made)[0]).toBe("Remind me 2 days before each post");
+    expect(followUpsFor("a content calendar - remind me the day before", "data", made).some((u) => /remind/i.test(u))).toBe(false);
+    expect(followUpsFor("a client list", "data", [{ kind: "table", title: "Clients" }]).some((u) => /remind/i.test(u))).toBe(false);
+  });
 });

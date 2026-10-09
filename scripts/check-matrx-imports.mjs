@@ -55,7 +55,7 @@
 // package (aidream's npm train), then `pnpm update "@ai-matrx/<pkg>" --latest`
 // and commit the lockfile. Never pin; never delete the import to go green.
 
-import { execFileSync } from "node:child_process";
+import { execFileSync, spawnSync } from "node:child_process";
 import {
   existsSync,
   lstatSync,
@@ -256,6 +256,24 @@ function indexText(root, rel) {
   }
 }
 
+/** Index blobs for many paths through ONE git process (a process per file takes minutes). */
+function indexBlobs(root, rels) {
+  const out = spawnSync("git", ["cat-file", "--batch"], { cwd: root, input: rels.map((r) => `:${r}\n`).join(""), maxBuffer: 1024 * 1024 * 1024 }).stdout;
+  const map = new Map();
+  let pos = 0;
+  for (const rel of rels) {
+    const nl = out.indexOf(10, pos);
+    if (nl === -1) break;
+    const head = out.toString("utf8", pos, nl);
+    pos = nl + 1;
+    if (head.endsWith(" missing")) continue;
+    const size = Number(head.split(" ")[2]);
+    map.set(rel, out.toString("utf8", pos, pos + size));
+    pos += size + 1;
+  }
+  return map;
+}
+
 /**
  * COMMIT-HOOK MODE. The commit hook guards what the COMMIT contains, not what else sits in a
  * shared working tree: another lane's untracked or unstaged file must never block an unrelated
@@ -268,7 +286,8 @@ export function stagedAudit(root, staged) {
   const widen = staged.some((o) => /(^|\/)(package\.json|pnpm-lock\.yaml)$/.test(o));
   const rels = widen ? gitLines(root, ["ls-files", "-z", "--cached"]) : staged;
   const files = rels.filter((f) => SOURCE_EXT.test(f)).map((f) => join(root, f));
-  return audit(root, { files, readText: (file) => indexText(root, relative(root, file).split(sep).join("/")), graph: widen, narrowed: !widen });
+  const blobs = indexBlobs(root, files.map((f) => relative(root, f).split(sep).join("/")));
+  return audit(root, { files, readText: (file) => blobs.get(relative(root, file).split(sep).join("/")) ?? null, graph: widen, narrowed: !widen });
 }
 
 export function audit(root, { only = null, files: given = null, readText = null, graph: wantGraph = null, narrowed = null } = {}) {
@@ -933,7 +952,7 @@ if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.ur
       if (!only.length && process.env.MATRX_FINDINGS_PATHS) only = JSON.parse(process.env.MATRX_FINDINGS_PATHS);
       only = only.map((o) => relative(resolve(root), resolve(o)).split(sep).join("/").replace(/\/+$/, ""));
       // A changed manifest or lockfile changes what EVERY import resolves to: scan everything.
-      if (only.some((o) => /(^|\/)(package\.json|pnpm-lock\.yaml)$/.test(o))) only = [];
+      if (!stagedMode && only.some((o) => /(^|\/)(package\.json|pnpm-lock\.yaml)$/.test(o))) only = [];
       code = stagedMode ? report(stagedAudit(root, only)) : report(audit(root, { only: only.length ? only : null }));
     }
   } catch (err) {

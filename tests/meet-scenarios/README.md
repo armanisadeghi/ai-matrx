@@ -21,6 +21,36 @@ Knobs (real-time waits): `MEET_KNOCK_EXPIRY_S`, `MEET_HOST_TRANSFER_S`, `MEET_EM
 `MEET_GIVE_UP_S`, `MEET_NOTICE_S`, `MEET_WORKERS`. `MEET_SCENARIOS_DIR` points a run at a scratch
 copy of the scenarios (mutation proofs) — never edit the real ones to prove a guard.
 
+## Proving SERVER changes before a release: `MEET_SERVER=local`
+
+The shared frontend (port 3001) calls the production API, so by default a run proves whatever is
+DEPLOYED. To prove the current aidream `main` code without waiting for a release:
+
+    bash tests/meet-scenarios/local-api.sh start     # reuses the matrx-dev API on :8000 if it answers; else starts one on :8123 (boot 4-8 min)
+    MEET_SERVER=local bash tests/meet-scenarios/run.sh rec-start-notice
+    bash tests/meet-scenarios/local-api.sh stop      # stops only the process the script started (exact PID)
+
+Each person's browser context routes every request for `https://server.app.matrxserver.com/**` to the
+local server (Playwright `context.route`); the frontend code is unchanged, and no second frontend is started.
+The end-meeting backstop uses the same server. The API uses aidream's `.env`: **same database and LiveKit Cloud
+as production, on purpose**. State and log: `.cache/meet-scenarios/local-api/`. Knobs: `MEET_LOCAL_API_URL`,
+`MEET_LOCAL_API_SHA`, `MEET_LOCAL_API_PORT`.
+
+Every report's header says `API SERVER: LOCAL aidream <url> running git <sha> ... Not production proof.`
+(or `PRODUCTION`), and each person's levers show how many requests the local server answered. A
+`MEET_SERVER=local` run is never production proof; re-run on production after the release for that.
+
+**Limits.**
+- LiveKit webhooks (participant joined/left, room finished) and every deadline job (host-transfer, empty-end,
+  knock expiry, give-up) fire against PRODUCTION: LiveKit Cloud's webhook URL and the production worker/queues
+  are fixed, and the local stack must never run the workflow or LiveKit workers (they would claim production jobs).
+  A scenario whose verdict depends on a webhook or a deadline job is therefore judged by production code for that
+  part; the report says so and the scenario must name it. Only the HTTP doors (token, join, leave, end, policy,
+  recording start) are answered by the local code.
+- The routed response is buffered (no streaming), so a streamed endpoint behaves as a plain response.
+- Server code that is not on aidream `main` HEAD is not tested; the SHA in the report is the checkout HEAD
+  recorded at start (a reused :8000 process may be older: restart it first).
+
 ## People
 
 - **host** — admin@admin.com through `pnpm dev-login`.

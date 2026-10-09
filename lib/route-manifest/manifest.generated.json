@@ -1,7 +1,7 @@
 {
   "version": 1,
   "app": "matrx-frontend",
-  "routeCount": 1389,
+  "routeCount": 1390,
   "routes": [
     {
       "pattern": "/",
@@ -6174,6 +6174,11 @@
       "pattern": "/research/topics/[topicId]/settings",
       "status": "live",
       "source": "app/(core)/research/topics/[topicId]/settings/page.tsx"
+    },
+    {
+      "pattern": "/research/topics/[topicId]/social",
+      "status": "live",
+      "source": "app/(core)/research/topics/[topicId]/social/page.tsx"
     },
     {
       "pattern": "/research/topics/[topicId]/sources",

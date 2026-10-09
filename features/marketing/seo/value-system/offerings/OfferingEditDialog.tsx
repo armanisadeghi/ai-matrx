@@ -48,6 +48,7 @@ export function OfferingEditDialog({
   busy,
   onCancel,
   onSave,
+  brandOnly = false,
 }: {
   draft: OfferingEditDraft;
   catalog: CatalogOffering[];
@@ -56,6 +57,8 @@ export function OfferingEditDialog({
   busy: boolean;
   onCancel: () => void;
   onSave: (values: OfferingEditDraft) => void;
+  /** The brand has no website: creating adds to the brand only. */
+  brandOnly?: boolean;
 }) {
   const [name, setName] = useState(draft.name);
   const [kind, setKind] = useState<OfferingKindValue>(draft.kind);
@@ -87,7 +90,9 @@ export function OfferingEditDialog({
           </DialogTitle>
           <DialogDescription>
             {creating
-              ? "It joins this brand's offerings and this site offers it straight away."
+              ? brandOnly
+                ? "It joins this brand's offerings."
+                : "It joins this brand's offerings and this site offers it straight away."
               : "Changes apply to this brand's offering on every site that offers it. Worth stays each site's own."}
           </DialogDescription>
         </DialogHeader>
@@ -216,7 +221,7 @@ export function OfferingEditDialog({
               })
             }
           >
-            {creating ? "Create and offer it here" : "Save"}
+            {creating ? (brandOnly ? "Add offering" : "Create and offer it here") : "Save"}
           </Button>
         </DialogFooter>
       </DialogContent>

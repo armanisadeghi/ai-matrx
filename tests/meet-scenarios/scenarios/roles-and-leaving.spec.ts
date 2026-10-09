@@ -81,9 +81,9 @@ scenario("host-leave-assign", async ({ cast }) => {
   await admitWaiting(host, guest, GUEST);
   await host.page.getByRole("button", { name: /^Leave( call| meeting)?$/ }).first().click();
   // Leaving offers to hand the meeting to someone first, then to pick who.
-  const assign = await seeControl(host, "an assign-a-new-host choice on Leave", host.page.getByRole("button", { name: /assign|make .* host|hand (over|off)|new host/i }), 5000);
+  const assign = await seeControl(host, "an assign-a-new-host choice on Leave", host.page.locator("[data-meet-leave-menu]").getByRole("button", { name: /assign|make .* host|hand (over|off)|new host/i }), 5000);
   await assign.click();
-  const pick = await seeControl(host, `${GUEST} offered as the new host`, host.page.getByRole("button", { name: new RegExp(GUEST) }).or(host.page.getByRole("option", { name: new RegExp(GUEST) })), 5000);
+  const pick = await seeControl(host, `${GUEST} offered as the new host`, host.page.locator("[data-meet-leave-menu]").getByRole("button", { name: new RegExp(GUEST) }), 5000);
   await pick.click();
   await seeUntil(guest, "they are the host now", isHost, TIMEOUTS.noticeMs);
 });
@@ -130,8 +130,12 @@ scenario("leave-or-end-choice", async ({ cast }) => {
   await host.page.getByRole("button", { name: /^Leave( call| meeting)?$/ }).first().click();
   // Default (Meet) profile words: "Leave call" / "End call for everyone" (CORE-DESIGN §4.2);
   // Zoom's "Leave meeting" / "End meeting for all" are accepted too.
-  await seeControl(host, 'a plain "Leave" choice on Leave', host.page.getByRole("button", { name: /^Leave (the )?(meeting|call)$|^Just leave$/i }), 5000);
-  const endAll = await seeControl(host, 'an "End for all" choice on Leave', host.page.getByRole("button", { name: /end (meeting |call )?for (all|everyone)/i }), 5000);
+  // SCOPED TO THE LEAVE MENU: the top bar carries its own "End meeting for everyone" button (a
+  // separate control with its own "End it / Keep it running" confirmation). An unscoped name match
+  // clicked THAT one, nothing was sent, and the scenario read it as "End does nothing".
+  const menu = host.page.locator("[data-meet-leave-menu]");
+  await seeControl(host, 'a plain "Leave" choice on Leave', menu.getByRole("button", { name: /^Leave (the )?(meeting|call)$|^Just leave$/i }), 5000);
+  const endAll = await seeControl(host, 'an "End for all" choice on Leave', menu.getByRole("button", { name: /end (meeting |call )?for (all|everyone)/i }), 5000);
   await endAll.click();
   await seePhase(guest, ["ended"], TIMEOUTS.noticeMs);
 });

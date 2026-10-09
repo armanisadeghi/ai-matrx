@@ -12,18 +12,24 @@ import { createRoot } from "react-dom/client";
 
 const calls: string[] = [];
 jest.mock("@/features/scopes/host/associationsStore", () => ({
-  associationsDataSource: {
-    rpc: async (fn: string) => {
-      calls.push(fn);
-      if (fn === "assoc_for_targets") {
-        return { data: [{ source_id: "rec-1", source_type: "record", target_id: "m-2", target_type: "dm_message", role: "anchored_to" }], error: null };
-      }
-      return { data: [], error: null };
-    },
-  },
   getAssociationsStore: () => ({
     subscribe: () => () => undefined,
     getEdges: () => ({ status: "idle", edges: [], fetchedAt: null, error: null }),
+    services: {
+      associations: {
+        listForSources: async () => {
+          calls.push("assoc_for_sources");
+          return { ok: true, data: { edges: [] } };
+        },
+        listForTargets: async () => {
+          calls.push("assoc_for_targets");
+          return {
+            ok: true,
+            data: { edges: [{ id: "e-1", sourceId: "rec-1", sourceType: "record", targetId: "m-2", role: "anchored_to" }] },
+          };
+        },
+      },
+    },
   }),
 }));
 jest.mock("@/features/scopes/components/linked-records/LinkedRecordsSection", () => ({

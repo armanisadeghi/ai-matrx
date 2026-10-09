@@ -91,4 +91,15 @@ describe("agentBuilderTestRun", () => {
       ],
     });
   });
+
+  it("reports the values the run was SENT with, not the field as edited afterwards", () => {
+    const state = stateWith({ display: CONV }) as unknown as {
+      instanceVariableValues: { byConversationId: Record<string, Record<string, unknown>> };
+    };
+    const entry = state.instanceVariableValues.byConversationId[CONV];
+    entry.submittedFirstTurnValues = { listing_text: "Studio in Reno, $1,100, no pets" };
+    entry.userValues = { listing_text: "an edit made after the run" };
+    const run = agentBuilderTestRun(state as never, AGENT);
+    expect(run?.test_run_variables).toEqual({ listing_text: "Studio in Reno, $1,100, no pets" });
+  });
 });

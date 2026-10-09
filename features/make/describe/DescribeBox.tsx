@@ -20,7 +20,7 @@
 // describeCheck → custom.template_declare('org') → the gallery's runTemplateDoor) and the Spaces door
 // `useSpaceBuild` (mandate `spaces.build`). Mandates are launched by key; this file writes no instruction.
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Check, CircleDashed, CircleX } from "lucide-react";
@@ -54,12 +54,14 @@ import {
   coerceDescribeAnswer,
   declareDescribeSpec,
   describeVariables,
+  findBuiltSpace,
   readExistingTables,
   readOrganizationFacts,
   type DescribeAnswer,
 } from "./describeTemplate";
 
 import { ProTextarea } from "@/components/official/ProTextarea";
+import { keepRun, keptRun, newRequestKey, stampOf } from "./runStore";
 // What the person reads when a step fails — plain, no internal words; the reason is in the console.
 const WRITTEN_WRONG = "That did not come out right. Try again, or say it a little differently.";
 const STOPPED = "That stopped before it finished. Try again.";
@@ -72,8 +74,18 @@ const DESCRIBE_DISCLOSURE = [{ mandateKey: DESCRIBE, does: "turns your sentence 
 
 type StepState = "waiting" | "doing" | "done" | "failed";
 
-/** One guided run. What each finished step produced is kept, so Try again resumes where it stopped. */
+/** A Space step started earlier is looked for this long before a second build is allowed to start. */
+const SPACE_WAIT_MS = 3 * 60_000;
+const SPACE_LOOK_EVERY_MS = 10_000;
+const SPACE_RUN_MS = 12 * 60_000;
+
+/**
+ * One guided run. What each finished step produced is kept — in state and in this browser (runStore) — so Try again,
+ * a reload or a paused tab resumes where it stopped and never starts a second build for the same press.
+ */
 interface Run {
+  /** The request key: one per press of Make it. The one-off template is declared under it. */
+  key: string;
   sentence: string;
   organizationId: string;
   plan: MakePlan;
@@ -111,6 +123,8 @@ export function DescribeBox() {
 
   // A press before the organization has loaded is KEPT, not dropped: it runs the moment the organization is ready.
   const [kept, setKept] = useState<string | null>(null);
+  // The request key being driven right now: a second drive of the same run in this page is refused.
+  const driving = useRef<string | null>(null);
   const phase = phaseOf(run);
   const busy = phase === "running";
   useEffect(() => {
@@ -121,10 +135,13 @@ export function DescribeBox() {
 
   /** Drive the run from its first unfinished step. `from` is a new run or a failed one being resumed. */
   const drive = async (from: Run) => {
+    if (driving.current === from.key) return;
+    driving.current = from.key;
     let r: Run = { ...from, failed: null, endedAt: null };
     const commit = (next: Run) => {
       r = next;
       setRun(next);
+      keepRun(next);
     };
     const mark = (id: MakeStepId, state: StepState) => {
       const was = r.step[id];
@@ -138,9 +155,14 @@ export function DescribeBox() {
       for (const id of r.plan.steps) {
         current = id;
         if (r.step[id]?.state === "done") continue;
+        // When this step was started before (a reload, a paused tab, Try again), the server may have finished it already.
+        const startedBefore = r.step[id]?.at ?? null;
         mark(id, "doing");
         if (id === "space") {
-          const built = await spaces.build({ request: r.sentence, organizationId: r.organizationId, label: "Building your workspace" });
+          const adopted = startedBefore ? await awaitBuiltSpace(client, r.organizationId, startedBefore) : null;
+          const built =
+            adopted ??
+            (await spaces.build({ request: r.sentence, organizationId: r.organizationId, label: "Building your workspace" }));
           commit({ ...r, space: built });
         } else if (id === "design") {
           const [facts, listed] = await Promise.all([readOrganizationFacts(client, r.organizationId), doors.dataHomeTables(source, r.organizationId)]);
@@ -187,8 +209,8 @@ export function DescribeBox() {
               mark("design", "doing");
               continue;
             }
-            const stamp = `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`.toUpperCase();
-            const templateId = await declareDescribeSpec(client, r.organizationId, bindReuses(checked.spec, safe.reuses, tables), stamp);
+            // The request key names the template: a second declare for this press updates the same one, never a second.
+            const templateId = await declareDescribeSpec(client, r.organizationId, bindReuses(checked.spec, safe.reuses, tables), stampOf(r.key));
             commit({ ...r, templateId, notes: [...answer.notes, ...safe.notes, ...checked.autoFixes] });
             mark("check", "done");
             break;
@@ -227,6 +249,8 @@ export function DescribeBox() {
             : STOPPED;
       mark(current, "failed");
       commit({ ...r, failed: { at: current, why } });
+    } finally {
+      if (driving.current === from.key) driving.current = null;
     }
   };
 
@@ -242,6 +266,7 @@ export function DescribeBox() {
     const startedAt = Date.now();
     setNow(startedAt);
     void drive({
+      key: newRequestKey(),
       sentence: said,
       organizationId,
       plan: planFor(said),
@@ -255,6 +280,20 @@ export function DescribeBox() {
       failed: null,
     });
   };
+
+  // REATTACH: a run this browser was driving when the page went away is picked up where it stopped (never started
+  // again); a finished or failed one from the last half hour is shown as it ended.
+  const reattached = useRef<string | null>(null);
+  useEffect(() => {
+    if (!organizationId || reattached.current === organizationId) return;
+    reattached.current = organizationId;
+    const found = keptRun<Run>(organizationId);
+    if (!found) return;
+    if (found.inFlight) void drive(found.run);
+    else setRun(found.run);
+    // drive is recreated each render; the run is reattached once per organization.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [organizationId]);
 
   useEffect(() => {
     if (kept && organizationId) {
@@ -407,4 +446,18 @@ function Notes({ notes }: { notes: string[] }) {
       ))}
     </ul>
   );
+}
+
+/**
+ * The Space a step started at `since` built, waited for: looked for at once, then every 10 s for up to three minutes while
+ * that build could still be running on the server. Null when none landed — only then may a new build start.
+ */
+async function awaitBuiltSpace(client: ReturnType<typeof createClient>, organizationId: string, since: number): Promise<SpaceBuildOutcome | null> {
+  const until = Math.min(Date.now() + SPACE_WAIT_MS, since + SPACE_RUN_MS);
+  for (;;) {
+    const found = await findBuiltSpace(client, organizationId, since);
+    if (found) return { summary: found.title, rootSpaceId: found.id, url: `/spaces/${found.id}`, spaceIds: [found.id], tableIds: [] };
+    if (Date.now() + SPACE_LOOK_EVERY_MS > until) return null;
+    await new Promise((resolve) => setTimeout(resolve, SPACE_LOOK_EVERY_MS));
+  }
 }

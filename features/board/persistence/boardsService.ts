@@ -189,13 +189,24 @@ export function meetingIdOfSettings(settings: Json): string | null {
   return typeof id === "string" && id ? id : null;
 }
 
-/** Settings for a copy: everything except the retired `home` flag and the meeting link
- * (a copy is an ordinary board — never the meeting's board). */
-export function settingsForCopy(settings: Json): JsonObject {
+/**
+ * `settings.brand_id`: the marketing brand a board is linked to (the Studio picker lists these), and
+ * `settings.studio_brand_id`: the brand this board IS the Studio of. The second is unique per
+ * (organization, brand) among live boards (index `boards_one_studio_per_brand`), so a double mount or a
+ * reload can never make two. A copy never inherits it.
+ */
+export const BRAND_BOARD_SETTING = "brand_id";
+export const STUDIO_BOARD_SETTING = "studio_brand_id";
+
+/** Settings for a copy: everything except the retired `home` flag, the meeting link and the Studio
+ * link (a copy is an ordinary board — never the meeting's board, never the brand's Studio).
+ * `dropBrand` also drops the brand link (a board made from a template belongs to nobody's brand). */
+export function settingsForCopy(settings: Json, options: { dropBrand?: boolean } = {}): JsonObject {
   if (!isJsonObject(settings)) return {};
   const out: JsonObject = {};
   for (const [k, v] of Object.entries(settings)) {
-    if (k === "home" || k === MEETING_BOARD_SETTING || v === undefined) continue;
+    if (k === "home" || k === MEETING_BOARD_SETTING || k === STUDIO_BOARD_SETTING || v === undefined) continue;
+    if (options.dropBrand && k === BRAND_BOARD_SETTING) continue;
     out[k] = v;
   }
   return out;
@@ -469,7 +480,13 @@ async function insertBoard(input: {
     })
     .select(BOARD_COLUMNS)
     .single();
-  if (error) throw writeFailed("create the board", error);
+  if (error) {
+    // 23505: a unique link already exists (the brand's Studio board): the caller re-reads the winner.
+    if (error.code === "23505") {
+      throw new BoardError("conflict", "That board already exists.", "Open the existing one.", error);
+    }
+    throw writeFailed("create the board", error);
+  }
   return toLoadedBoard(data);
 }
 
@@ -582,6 +599,8 @@ export async function duplicateBoard(
      * Duplicate: the copy's tiles point at the same records as the original's.
      */
     cloneContent?: (doc: BoardDocument) => Promise<BoardDocument>;
+    /** The copy belongs to no brand (a template use): the brand link is not copied. */
+    dropBrand?: boolean;
   } = {},
 ): Promise<LoadedBoard> {
   const { data: source, error } = await db
@@ -607,7 +626,7 @@ export async function duplicateBoard(
     userId: requireUserId(),
     title: options.title ? normalizeTitle(options.title) : copyTitle(source.title),
     description: source.description,
-    settings: settingsForCopy(source.settings),
+    settings: settingsForCopy(source.settings, { dropBrand: options.dropBrand }),
     columns,
   });
 }
@@ -617,12 +636,15 @@ export async function createBoardFromDocument(input: {
   organizationId: string | null;
   title: string;
   doc: BoardDocument;
+  /** Links stored with the first write (the Studio's brand links): the row never exists without them. */
+  settings?: JsonObject;
 }): Promise<LoadedBoard> {
   const orgId = await resolveOrganization(input.organizationId);
   return insertBoard({
     organizationId: orgId,
     userId: requireUserId(),
     title: normalizeTitle(input.title),
+    settings: input.settings ?? {},
     columns: documentColumns(input.doc),
   });
 }
