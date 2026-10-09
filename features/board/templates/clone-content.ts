@@ -15,10 +15,32 @@
  *                         records the board only points at
  *   task, war room, meeting (+ parts), workflow run  KEEP  one real piece of work with its own people, status and
  *                         history; a silent duplicate would create real work in someone's lists
- * Tile ids are minted fresh and every line is re-pointed at them. A failed clone throws BEFORE any board is written.
+ *   sticky note (a canvas shape)  its Note id is CLEARED, the words stay: the board's sticky sync files the copy's own
+ *                         Note when the copy opens (never a Note shared by two boards, never an empty Note). A plain
+ *                         "Duplicate board" clears it too (`detachStickyNotes`).
+ * Tile ids are minted fresh and every line / bound arrow is re-pointed at them. A failed clone throws BEFORE any board is written.
  */
 
 import type { BoardDocument, BoardNode, NodeSource } from "../board/document";
+import type { BoardShape } from "../engine/shapes";
+
+/**
+ * A copy of a board must not share a sticky note's Note with the original (two boards editing one Note).
+ * Clearing `note` keeps the words on the sticky; `startStickyNoteSync` creates the copy's own Note once the
+ * copy opens, so there is no shared Note and no empty Note. Pure; returns `doc` itself when no sticky has one.
+ */
+export function detachStickyNotes(doc: BoardDocument): BoardDocument {
+  if (!doc.shapes.some((s) => s.kind === "sticky" && s.note)) return doc;
+  return {
+    ...doc,
+    shapes: doc.shapes.map((s): BoardShape => {
+      if (s.kind !== "sticky" || !s.note) return s;
+      const { note: _note, ...rest } = s;
+      void _note;
+      return rest;
+    }),
+  };
+}
 
 export interface CloneServices {
   /** An independent copy of the note; `label` is the copy's name. */
@@ -110,5 +132,13 @@ export async function cloneBoardContent(
     const to = idMap.get(e.to);
     return from && to ? [{ ...e, id: newId(), from, to }] : [];
   });
-  return { ...doc, nodes, groups, edges, shapes: doc.shapes.map((s) => ({ ...s, id: newId() })) };
+  // Shapes get fresh ids too, and a connector's bound ends follow the NEW ids (tiles and shapes alike).
+  for (const s of doc.shapes) idMap.set(s.id, newId());
+  const shapes = detachStickyNotes({ ...doc, shapes: doc.shapes }).shapes.map((s): BoardShape => {
+    const { bind, ...rest } = s;
+    const start = bind?.start ? idMap.get(bind.start) : undefined;
+    const end = bind?.end ? idMap.get(bind.end) : undefined;
+    return { ...rest, id: idMap.get(s.id)!, ...(start || end ? { bind: { ...(start ? { start } : {}), ...(end ? { end } : {}) } } : {}) };
+  });
+  return { ...doc, nodes, groups, edges, shapes };
 }

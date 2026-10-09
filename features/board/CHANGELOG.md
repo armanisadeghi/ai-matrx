@@ -1,5 +1,13 @@
 # CHANGELOG — Board (`features/board`)
 
+## 2026-10-09 — Follow-ups: one connector model, tile duplicate and order, no shared sticky Notes, Add → Text
+
+- **Add menu:** the Canvas section is Sticky note, Text, Frame, Draw, Shapes. Sticky note and Text now make the object at the view centre (same creator as the toolbar); the old "Label" row (which placed a label tile that turned into text on reload) is gone, with its Board-menu row.
+- **Copies share no Notes:** a template use and "Duplicate board" clear every sticky's Note id (words stay); the copy files its own Note when it opens. Bound arrows in a template copy now follow the copy's new ids.
+- **One connector model:** a line from one tile onto another is a bound arrow shape: selectable, restylable from the toolbar, follows its tiles. `board.connections` is derived from those arrows (chat context, chips, `board_read`, `board_connect` unchanged in meaning; `board_connect` returns the arrow's id). Old `edges` migrate on load with the same ids; the column is written empty. Manifest synced.
+- **Tiles:** the selection toolbar shows Bring to front, Send to back, Duplicate and Delete for tiles (⌘D, ⌘] / ⌘[). Duplicate copies board-only content, chats (fresh conversation) and notes / documents (their own copy action); other records say "Already on this board".
+- Guard: `__tests__/board-followups-fu37.test.tsx`.
+
 ## 2026-10-09 — Real sticky notes and plain canvas text
 
 - The toolbar's notepad tool made a full Note tile; it is now the **Sticky note** tool (S): a square coloured card, no header, type straight on it, words shrink to fit, six colours (light + dark), Tab makes the next sticky beside it. Its words are a real Note in the person's "Sticky notes" folder (created on the first typed character, in the board's organization); colour, size and place live in the board. Full Notes stay in the Add menu ("Note").

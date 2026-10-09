@@ -269,10 +269,12 @@ describe("saved board document", () => {
     expect(back.problems).toEqual([]);
     expect(back.doc.groups).toEqual(doc.groups);
     expect(back.doc.nodes[1]).toMatchObject({ id: "n2", parked: true });
-    expect(back.doc.edges).toEqual(doc.edges);
+    // The stored edge is one connector model with every other line: a bound arrow, same id (board-followups-fu37.test.tsx).
+    expect(back.doc.edges).toEqual([]);
+    expect(back.doc.shapes[1]).toMatchObject({ id: "e1", kind: "arrow", bind: { start: "n1", end: "n2" } });
     // A label tile (the retired Text tool tile) loads as plain canvas text (sticky-notes-and-text.test.tsx).
     expect(back.doc.shapes[0]).toEqual(doc.shapes[0]);
-    expect(back.doc.shapes[1]).toMatchObject({ id: "n4", kind: "text", text: "Q3" });
+    expect(back.doc.shapes[2]).toMatchObject({ id: "n4", kind: "text", text: "Q3" });
     expect(back.doc.nodes).toHaveLength(3);
     expect(back.doc.nodes[2].source).toEqual({ kind: "entity", entity: "note", id: null, meta: { seed: "hi" } });
 

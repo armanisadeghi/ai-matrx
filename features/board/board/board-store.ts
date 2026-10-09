@@ -773,6 +773,36 @@ export class BoardStore<T extends BoardTileBase> {
     });
 
   /**
+   * Layer order of TILES (⌘] / ⌘[, "Bring to front"): a tile later in the board's order is drawn over
+   * the ones before it. One undo step; the shelf is left out (a parked tile is not drawn). Shapes have
+   * their own order (`reorderShapes`) and always draw above tiles; frames below.
+   */
+  reorderTiles = (ids: readonly string[], dir: "forward" | "backward" | "front" | "back"): void =>
+    this.change((s) => {
+      const set = new Set(ids);
+      const parked = new Set(s.parked);
+      const shown = s.order.filter((id) => s.byId[id] && !parked.has(id));
+      const rest = s.order.filter((id) => !shown.includes(id));
+      const picked = shown.filter((id) => set.has(id));
+      if (picked.length === 0) return s;
+      let next: string[];
+      if (dir === "front") next = [...shown.filter((id) => !set.has(id)), ...picked];
+      else if (dir === "back") next = [...picked, ...shown.filter((id) => !set.has(id))];
+      else {
+        next = [...shown];
+        const step = dir === "forward" ? 1 : -1;
+        const walk = dir === "forward" ? [...next.keys()].reverse() : [...next.keys()];
+        for (const i of walk) {
+          const j = i + step;
+          if (!set.has(next[i]) || j < 0 || j >= next.length || set.has(next[j])) continue;
+          [next[i], next[j]] = [next[j], next[i]];
+        }
+      }
+      if (next.every((id, i) => id === shown[i])) return s;
+      return { ...s, order: [...next, ...rest] };
+    });
+
+  /**
    * Copies of these shapes, offset down-right, as ONE step (⌘D). A binding
    * to another copied shape follows to its copy; other bindings let go.
    * Returns the new ids in the same order.

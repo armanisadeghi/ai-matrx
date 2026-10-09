@@ -52,6 +52,7 @@ import { selectionActionsSection, shapeStyleSection } from "../components/ShapeT
 import { hitShape, isBoxed } from "../engine/shapes";
 import { CreationLayer, type Creation } from "../components/CreationLayer";
 import { stickyStyleSection, textStyleSection } from "../components/CanvasTextToolbarSections";
+import { copyTileContent } from "../items/tile-copy";
 import { createStickyOnBoard, createTextOnBoard } from "./canvas-text-create";
 import { startStickyNoteSync } from "../board/sticky-notes";
 import { stickyNoteStore } from "../persistence/sticky-note-store";
@@ -639,16 +640,49 @@ export function UserBoard({
   // Group gestures (a multi-selection drag, a frame carrying its tiles, arrow nudges) move
   // through the board model as one undo step.
   useEffect(() => store?.registerMover({ dragMany: board.dragMany }), [store, board]);
-  // ⌘D: copies of the selected drawings, selected (tiles are live records — not duplicated here).
+  // ⌘D / the toolbar's Duplicate: copies of the selected drawings, sticky notes and text (selected after),
+  // and of the selected TILES where the content can be copied (`items/tile-copy.ts`): board-only content
+  // and chats copy, a note or document copies through its own copy action, any other record is already
+  // on the board ("Already on this board") and is skipped. Returns false when nothing was selectable.
+  const duplicateTiles = async (ids: string[]) => {
+    const skipped: string[] = [];
+    try {
+      for (const id of ids) {
+        const tile = tileOf(id);
+        if (!tile) continue;
+        const copy = await copyTileContent({ title: tile.title, source: tile.source });
+        if (!copy) {
+          skipped.push(id);
+          continue;
+        }
+        const { x, y, w, h } = tile.rect;
+        place([{ title: copy.title, source: copy.source, size: { w, h } }], { x: x + w + 24 + w / 2, y: y + h / 2 });
+      }
+    } catch (e) {
+      toast.error("Couldn't duplicate that tile", { description: e instanceof Error ? e.message : undefined });
+    }
+    if (skipped.length > 0) toast(skipped.length === 1 ? "Already on this board" : `${skipped.length} were already on this board`);
+  };
   const duplicateSelected = (): boolean => {
-    const ids = (store?.getSelection() ?? []).filter((id) => board.getShape(id));
-    if (ids.length === 0) return false;
-    const copies = board.duplicateShapes(ids);
-    requestAnimationFrame(() => store?.setSelection(copies));
+    const selection = store?.getSelection() ?? [];
+    const shapeIds = selection.filter((id) => board.getShape(id));
+    const tileIds = selection.filter((id) => tileOf(id));
+    if (shapeIds.length === 0 && tileIds.length === 0) return false;
+    if (shapeIds.length > 0) {
+      const copies = board.duplicateShapes(shapeIds);
+      requestAnimationFrame(() => store?.setSelection(copies));
+    }
+    if (tileIds.length > 0) void duplicateTiles(tileIds);
     return true;
   };
-  const reorderSelected = (dir: "forward" | "backward" | "front" | "back") =>
-    board.reorderShapes((store?.getSelection() ?? []).filter((id) => board.getShape(id)), dir);
+  // ⌘] / ⌘[: layer order of the selected drawings and tiles (each among its own kind).
+  const reorderSelected = (dir: "forward" | "backward" | "front" | "back") => {
+    const selection = store?.getSelection() ?? [];
+    board.batch(() => {
+      board.reorderShapes(selection.filter((id) => board.getShape(id)), dir);
+      board.reorderTiles(selection.filter((id) => tileOf(id)), dir);
+    });
+  };
   useBoardKeys({
     undo: board.undo,
     redo: board.redo,
@@ -952,6 +986,9 @@ function BoardLayers({ board, onClose }: { board: BoardStore<UserBoardTile>; onC
   );
 }
 
+/** A source that names nothing yet: an entity with no id and no meta. */
+const isEmptyEntity = (s: NodeSource): boolean => s.kind === "entity" && s.id === null && !s.meta;
+
 /**
  * One tile, subscribed to ITS record only: a drag or resize re-renders this
  * frame and nothing else. The body depends on the tile's source and title, not
@@ -985,8 +1022,14 @@ function BoardItemTile({
   const title = tile.title;
   const type = itemTypeFor(source);
   const href = type?.href?.(source) ?? null;
-  const onSource = (next: NodeSource, nextTitle?: string) =>
+  const onSource = (next: NodeSource, nextTitle?: string) => {
     board.updateTile(id, nextTitle ? { source: next, title: nextTitle } : { source: next }, { history: false });
+    // A compact empty tile (a template's "paste a link" tile) grows to its type's size once it has something to show.
+    const size = type?.defaultSize;
+    if (type?.growOnFill && size && isEmptyEntity(source) && !isEmptyEntity(next) && (tile.rect.w < size.w || tile.rect.h < size.h)) {
+      board.resizeTile(id, { ...tile.rect, w: Math.max(tile.rect.w, size.w), h: Math.max(tile.rect.h, size.h) });
+    }
+  };
   const Keep = type?.Keep;
   return (
     <>

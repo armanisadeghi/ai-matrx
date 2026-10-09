@@ -60,7 +60,8 @@ describe("board document columns", () => {
     // The camera is each viewer's own view: a pan in another tab must never
     // make this tab's next edit a conflict.
     expect(documentFingerprint({ ...a, camera: { x: 11, y: 20, z: 0.8 } })).toBe(documentFingerprint(a));
-    expect(documentFingerprint({ ...a, edges: [] })).not.toBe(documentFingerprint(a));
+    // Connections are arrows inside `nodes` now (edges is always empty): taking one away changes the fingerprint.
+    expect(documentFingerprint({ ...a, nodes: (a.nodes as unknown[]).filter((n) => (n as { id?: string }).id !== "e1") })).not.toBe(documentFingerprint(a));
     expect(stableStringify({ b: 1, a: [2, { d: 3, c: 4 }] })).toBe('{"a":[2,{"c":4,"d":3}],"b":1}');
   });
 

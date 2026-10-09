@@ -41,7 +41,6 @@ export const BOARD_ADDABLE_ITEM_KEYS = [
   "fc_set",
   "study-kit",
   "scope",
-  "label",
   "social-post",
   "social-profile",
   "social-outlier-feed",
@@ -84,7 +83,7 @@ export const BOARD_CLIENT_TOOLS: SurfaceClientTool[] = [
     name: "board_read",
     label: "Read board",
     description:
-      "Returns what is on the Board right now: every tile (id, title, kind, status, rect {x,y,w,h} in board pixels, parked or not, and a text excerpt of its content), every frame (named region: id, title, rect), connections between tiles, every drawn shape (id, kind, rect, style, text, the ids its line/arrow ends are bound to), the selected and focused tile, which tiles are in the person's view, and `live_tile_id` — the tile whose feature is live for you. A tile with a `surface` is a real feature record: read and change it with board_open_item and board_item_act. Call this before arranging so you act on real ids and positions. Excerpts are capped; the result says how many tiles were left out.",
+      "Returns what is on the Board right now: every tile (id, title, kind, status, rect {x,y,w,h} in board pixels, parked or not, and a text excerpt of its content), every frame (named region: id, title, rect), connections between tiles (each is also an arrow in the shape list, same id), every drawn shape (id, kind, rect, style, text, the ids its line/arrow ends are bound to), the selected and focused tile, which tiles are in the person's view, and `live_tile_id` — the tile whose feature is live for you. A tile with a `surface` is a real feature record: read and change it with board_open_item and board_item_act. Call this before arranging so you act on real ids and positions. Excerpts are capped; the result says how many tiles were left out.",
     inputSchema: {
       type: "object",
       properties: {
@@ -260,7 +259,7 @@ export const BOARD_CLIENT_TOOLS: SurfaceClientTool[] = [
     name: "board_connect",
     label: "Connect tiles",
     description:
-      "Draws a connection from one tile to another — a hand-off, a dependency, a 'see also'. Returns the connection id. Connections follow their tiles when they move.",
+      "Draws a connection from one tile to another — a hand-off, a dependency, a 'see also'. Returns the connection id, which is the id of a bound ARROW shape: it follows its tiles when they move, a person can select and restyle it, and board_shape can restyle or delete it by that id.",
     inputSchema: {
       type: "object",
       properties: {

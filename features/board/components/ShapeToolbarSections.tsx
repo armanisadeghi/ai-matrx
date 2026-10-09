@@ -183,7 +183,11 @@ function DashIcon({ dash }: { dash: ShapeStyle["dash"] }) {
   );
 }
 
-/** Layer order, duplicate and delete for whatever is selected. */
+/**
+ * Layer order, duplicate and delete for whatever is selected: drawings, sticky notes and text, and
+ * TILES (actions only — a tile has no style section). Order applies within a kind (tiles among tiles,
+ * shapes among shapes; shapes always draw above tiles).
+ */
 export function selectionActionsSection<T extends BoardTileBase>({
   board,
   duplicate,
@@ -199,12 +203,17 @@ export function selectionActionsSection<T extends BoardTileBase>({
     applies: (ids) => ids.length > 0,
     render: (ids) => {
       const shapes = ids.filter((id) => b.getShape(id));
+      const tiles = ids.filter((id) => b.getTile(id));
+      const order = (dir: "front" | "back") => {
+        if (shapes.length) b.reorderShapes(shapes, dir);
+        if (tiles.length) b.reorderTiles(tiles, dir);
+      };
       return (
         <>
-          {shapes.length > 0 && (
+          {shapes.length + tiles.length > 0 && (
             <>
-              <SelectionToolbarButton label="Bring to front" shortcut="⌥⌘]" icon={BringToFront} onClick={() => b.reorderShapes(shapes, "front")} />
-              <SelectionToolbarButton label="Send to back" shortcut="⌥⌘[" icon={SendToBack} onClick={() => b.reorderShapes(shapes, "back")} />
+              <SelectionToolbarButton label="Bring to front" shortcut="⌥⌘]" icon={BringToFront} onClick={() => order("front")} />
+              <SelectionToolbarButton label="Send to back" shortcut="⌥⌘[" icon={SendToBack} onClick={() => order("back")} />
               <SelectionToolbarButton label="Duplicate" shortcut="⌘D" icon={Copy} onClick={() => duplicate()} />
             </>
           )}

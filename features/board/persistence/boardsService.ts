@@ -47,6 +47,7 @@ import {
   type BoardDocument,
 } from "../board/document";
 import { mergeBoardDocuments } from "../board/merge";
+import { detachStickyNotes } from "../templates/clone-content";
 import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
 
 type BoardRow = Database["projects"]["Tables"]["boards"]["Row"];
@@ -616,10 +617,14 @@ export async function duplicateBoard(
   // The copy lives where its original lives: the record's own organization is
   // the explicit answer, so the gate never has to ask.
   const orgId = await resolveOrganization(source.organization_id);
+  // A copy never shares a sticky note's Note with the original: a board with filed stickies (or a
+  // content clone) goes through the document, which clears each sticky's Note id (words stay).
   let columns: { camera: Json; nodes: Json; edges: Json } = { camera: source.camera, nodes: source.nodes, edges: source.edges };
-  if (options.cloneContent) {
+  const hasFiledSticky =
+    Array.isArray(source.nodes) && source.nodes.some((n) => isJsonObject(n) && n.shape === true && n.kind === "sticky" && !!n.note);
+  if (options.cloneContent || hasFiledSticky) {
     const { doc } = parseBoardDocument({ camera: source.camera, nodes: source.nodes, edges: source.edges });
-    columns = documentColumns(await options.cloneContent(doc));
+    columns = documentColumns(detachStickyNotes(options.cloneContent ? await options.cloneContent(doc) : doc));
   }
   return insertBoard({
     organizationId: orgId,
