@@ -222,6 +222,13 @@ import { podcastStudioManifest } from "./podcast-studio.manifest";
 import { podcastRunManifest } from "./podcast-run.manifest";
 import { scopesManifest } from "./scopes.manifest";
 import { scopeDetailManifest } from "./scope-detail.manifest";
+import {
+  socialAdManifest,
+  socialOutlierFeedManifest,
+  socialPostManifest,
+  socialProfileManifest,
+  socialSwipeCollectionManifest,
+} from "./social-tiles.manifest";
 import { contextItemsManifest } from "./context-items.manifest";
 import { chatVoiceManifest } from "@ai-matrx/chat/surfaces/manifests/chat-voice.manifest";
 import { staffManifest } from "./staff.manifest";
@@ -493,6 +500,11 @@ export const RAW_MANIFESTS: readonly SurfaceManifest[] = [
   podcastRunManifest,
   scopesManifest,
   scopeDetailManifest,
+  socialPostManifest,
+  socialProfileManifest,
+  socialOutlierFeedManifest,
+  socialAdManifest,
+  socialSwipeCollectionManifest,
   contextItemsManifest,
   chatVoiceManifest,
   staffManifest,
