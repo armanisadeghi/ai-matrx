@@ -228,6 +228,15 @@ export const componentList: ComponentEntry[] = [
     tags: ["dropdown", "menu", "icon", "ios", "selector", "sort", "filter"],
   },
   {
+    id: "carousel",
+    name: "Carousel",
+    path: "@ai-matrx/design-system/carousel (npm package)",
+    description:
+      "Slide strip with a viewer and an editor mode for images, social slides and presentations",
+    categories: ["interactive"],
+    tags: ["carousel", "slides", "gallery", "social", "reorder", "swipe"],
+  },
+  {
     id: "icon-button",
     name: "Icon Button with Tooltip",
     path: "@ai-matrx/design-system (npm package)",
