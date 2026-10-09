@@ -668,6 +668,8 @@
     "check:matrx-dist-integrity:self-test": "node scripts/check-matrx-dist-integrity.mjs --self-test",
     "check:matrx-imports": "node scripts/check-matrx-imports.mjs",
     "check:db-doors": "node ../aidream/apps/shared/scripts/check-db-doors.mjs --repo matrx-frontend --strict",
+    "db:generate": "matrx-data generate --out lib/db/generated --schemas social",
+    "db:generate:check": "matrx-data generate --out lib/db/generated --schemas social --check",
     "check:db-doors:self-test": "node ../aidream/apps/shared/scripts/check-db-doors.mjs --self-test",
     "check:matrx-imports:self-test": "node scripts/check-matrx-imports.mjs --self-test",
     "check:matrx-api-usage": "node scripts/check-matrx-api-usage.mjs",
