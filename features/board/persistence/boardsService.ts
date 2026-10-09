@@ -568,8 +568,11 @@ export async function renameBoard(id: string, title: string): Promise<{ title: s
   }
 }
 
-/** A copy of the board (camera, tiles, groups, arrows) in the same organization. */
-export async function duplicateBoard(id: string): Promise<LoadedBoard> {
+/**
+ * A copy of the board (camera, tiles, groups, arrows) in the same organization. `title` names the
+ * copy (default "<title> (copy)"); "Use template" passes the template's own title.
+ */
+export async function duplicateBoard(id: string, options: { title?: string } = {}): Promise<LoadedBoard> {
   const { data: source, error } = await db
     .from(TABLE)
     .select(BOARD_COLUMNS)
@@ -586,11 +589,65 @@ export async function duplicateBoard(id: string): Promise<LoadedBoard> {
   return insertBoard({
     organizationId: orgId,
     userId: requireUserId(),
-    title: copyTitle(source.title),
+    title: options.title ? normalizeTitle(options.title) : copyTitle(source.title),
     description: source.description,
     settings: settingsForCopy(source.settings),
     columns: { camera: source.camera, nodes: source.nodes, edges: source.edges },
   });
+}
+
+/** A new board that starts from `doc` (a built-in template). `organizationId` null → the gate asks. */
+export async function createBoardFromDocument(input: {
+  organizationId: string | null;
+  title: string;
+  doc: BoardDocument;
+}): Promise<LoadedBoard> {
+  const orgId = await resolveOrganization(input.organizationId);
+  return insertBoard({
+    organizationId: orgId,
+    userId: requireUserId(),
+    title: normalizeTitle(input.title),
+    columns: documentColumns(input.doc),
+  });
+}
+
+/** The boards of these ids that the caller can read (template listing: one query, not one per template). */
+export async function getBoardsByIds(ids: readonly string[]): Promise<LoadedBoard[]> {
+  if (ids.length === 0) return [];
+  const { data, error } = await db.from(TABLE).select(BOARD_COLUMNS).in("id", [...ids]).is("deleted_at", null);
+  if (error) throw readFailed("the board templates", error);
+  return (data ?? []).map(toLoadedBoard);
+}
+
+/** What the reuse indicator needs of a board: its id, name and stored tiles. */
+export interface BoardRefs {
+  id: string;
+  title: string;
+  nodes: Json;
+}
+
+/**
+ * Every live board you made, with its stored tiles, in ONE paginated read (never one per tile or per
+ * board): the source of "on N boards" (`board/reuse.ts`).
+ */
+export async function listBoardRefs(): Promise<BoardRefs[]> {
+  const userId = requireUserId();
+  try {
+    const rows = await readAllRows(
+      ({ from, to }) =>
+        db
+          .from(TABLE)
+          .select("id, title, nodes", { count: "exact" })
+          .eq("created_by", userId)
+          .is("deleted_at", null)
+          .order("id", { ascending: true })
+          .range(from, to),
+      { label: "projects.boards" },
+    );
+    return rows.map((r) => ({ id: r.id, title: r.title, nodes: r.nodes }));
+  } catch (error) {
+    throw readFailed("your boards", error);
+  }
 }
 
 /** Soft delete. */

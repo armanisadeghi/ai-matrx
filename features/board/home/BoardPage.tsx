@@ -13,8 +13,8 @@
 
 import dynamic from "next/dynamic";
 import Link from "next/link";
-import { type ReactNode, useState } from "react";
-import { LayoutGrid, Pencil, Plus } from "lucide-react";
+import { type ReactNode, useEffect, useState } from "react";
+import { LayoutGrid, LayoutTemplate, Pencil, Plus } from "lucide-react";
 import { ChatCanvasWorkspace } from "@ai-matrx/chat/canvas/workspace/ChatCanvasWorkspace";
 import type { CanvasWorkspaceLayout } from "@ai-matrx/chat/canvas/workspace/workspace-cookies";
 import { DropdownMenuItem } from "@/components/ui/dropdown-menu";
@@ -28,6 +28,10 @@ import { type SavedBoardTarget, useSavedBoard } from "../persistence/useSavedBoa
 import { BOARD_TOKEN } from "../persistence/boardsService";
 import type { BoardPreset } from "../presets/board-preset";
 import { useCreateBoard } from "../persistence/useCreateBoard";
+import { listTemplateIds } from "@/features/spaces/state/templates";
+import { toast } from "@/lib/toast";
+import { BoardTemplateGallery } from "../templates/BoardTemplateGallery";
+import { isBoardTemplate, saveBoardAsTemplate } from "../templates/board-templates";
 
 const OPENING = "Opening your board…";
 
@@ -52,9 +56,36 @@ export function BoardPage({
   const saved = useSavedBoard(target);
   const [renaming, setRenaming] = useState(false);
   const { creating, newBoard } = useCreateBoard();
+  const [templatesOpen, setTemplatesOpen] = useState(false);
+  // The board templates the person can open (null = not read yet): says whether THIS board is one.
+  const [templateIds, setTemplateIds] = useState<string[] | null>(null);
 
   const ready = saved.state === "ready" ? saved : null;
   const title = ready?.board.title ?? "Board";
+  const readyId = ready?.board.id ?? null;
+  useEffect(() => {
+    if (!readyId) return;
+    let live = true;
+    listTemplateIds("board").then(
+      (ids) => live && setTemplateIds(ids),
+      () => live && setTemplateIds([]),
+    );
+    return () => {
+      live = false;
+    };
+  }, [readyId]);
+  const isTemplate = readyId ? isBoardTemplate(templateIds, readyId) : false;
+  const toggleTemplate = () => {
+    if (!readyId) return;
+    const on = !isTemplate;
+    saveBoardAsTemplate(readyId, on).then(
+      () => {
+        setTemplateIds((ids) => (on ? [...(ids ?? []), readyId] : (ids ?? []).filter((x) => x !== readyId)));
+        toast.success(on ? "Saved as a template" : "Template label removed");
+      },
+      (e: unknown) => toast.error(e instanceof Error ? e.message : "The template label could not be changed. Try again."),
+    );
+  };
 
   const byline = !ready
     ? undefined
@@ -87,6 +118,16 @@ export function BoardPage({
               <Plus className="mr-2 h-4 w-4" />
               New board
             </DropdownMenuItem>
+            <DropdownMenuItem onSelect={() => setTemplatesOpen(true)}>
+              <LayoutTemplate className="mr-2 h-4 w-4" />
+              New board from template…
+            </DropdownMenuItem>
+            {ready && (
+              <DropdownMenuItem onSelect={toggleTemplate}>
+                <LayoutTemplate className="mr-2 h-4 w-4" />
+                {isTemplate ? "Remove template label" : "Save as template"}
+              </DropdownMenuItem>
+            )}
             <DropdownMenuItem asChild>
               <Link href="/board">
                 <LayoutGrid className="mr-2 h-4 w-4" />
@@ -146,6 +187,7 @@ export function BoardPage({
           </div>
         }
       />
+      <BoardTemplateGallery open={templatesOpen} onOpenChange={setTemplatesOpen} initialKey={preset && typeof preset.starter === "string" ? preset.starter : undefined} />
       {ready && (
         <TextInputDialog
           open={renaming}

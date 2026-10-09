@@ -8,7 +8,7 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { ArchiveRestore, Copy, ExternalLink, Eye, Pencil, Trash2 } from "lucide-react";
+import { ArchiveRestore, Copy, ExternalLink, Eye, LayoutTemplate, Pencil, Trash2 } from "lucide-react";
 import type { ItemMenuConfig } from "@ai-matrx/chat/ui/item-types";
 import { TextInputDialog } from "@ai-matrx/design-system";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
@@ -24,6 +24,7 @@ import {
   restoreBoard,
   type BoardListRow,
 } from "../persistence/boardsService";
+import { saveBoardAsTemplate } from "../templates/board-templates";
 
 function failure(error: unknown, fallback: string): string {
   return isBoardError(error) ? error.message : error instanceof Error && error.message ? error.message : fallback;
@@ -119,6 +120,13 @@ export function useBoardRowActions(list: EntityListController<BoardListRow>): En
           label: "Manage",
           items: [
             { id: "rename", label: "Rename", icon: Pencil, intent: "rename", onSelect: () => setRenaming(row) },
+            {
+              id: "save-template",
+              label: "Save as template",
+              icon: LayoutTemplate,
+              onSelect: () => saveBoardAsTemplate(row.id, true),
+              toast: { loading: "Saving…", success: "Saved as a template", error: (e) => failure(e, "Could not save the template") },
+            },
             {
               id: "duplicate",
               label: "Make a copy",

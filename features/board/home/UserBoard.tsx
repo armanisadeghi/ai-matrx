@@ -18,7 +18,7 @@
  * reported through `onChange` as a `BoardDocument` (the saved form).
  */
 
-import { type ComponentType, type DragEvent, useEffect, useRef, useState } from "react";
+import { type ComponentType, type DragEvent, useEffect, useMemo, useRef, useState } from "react";
 import { ExternalLink, PanelRight, Plus } from "lucide-react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { EntityCommentPopover } from "@/components/comments/EntityCommentPopover";
@@ -69,6 +69,8 @@ import { intakeText } from "./board-intake";
 import { type PlacementRun, placeTiles } from "./place-run";
 import { planPlacement } from "../board/plan-placement";
 import { AddMenu, StartPanel } from "./AddMenu";
+import { StartTemplates } from "../templates/StartTemplates";
+import { ReusedMarker, ReuseContext, useReuseIndex } from "../components/ReusedMarker";
 import { resolvePresetTypes, type BoardPreset } from "../presets/board-preset";
 import { UnavailableItemBody } from "./UnavailableItemBody";
 import { createTileLinks, TileLinksProvider } from "../items/connected-sources";
@@ -151,6 +153,9 @@ export function UserBoard({
     connections: doc.edges,
   }));
   const layout = useBoardLayout(board);
+  // "On N boards": one read of every saved board's tiles (not for a meeting guest or an unsaved board).
+  const reuseIndex = useReuseIndex(boardId, !guest);
+  const reuseValue = useMemo(() => (reuseIndex ? { index: reuseIndex, boardId } : null), [reuseIndex, boardId]);
   const [store, setStore] = useState<BoardCameraStore | null>(null);
   const [wheelMode, setWheelMode] = useWheelModePreference();
   const [layersOpen, setLayersOpen] = useState(false);
@@ -677,6 +682,7 @@ export function UserBoard({
           }}
           onDrop={onDrop}
         >
+          <ReuseContext.Provider value={reuseValue}>
           <BoardNavigationContext.Provider value={boardNavigation}>
           <BoardViewport
             initialCamera={viewerCamera ?? doc.camera}
@@ -720,7 +726,15 @@ export function UserBoard({
                   }))}
                   onRestore={unpark}
                 />
-                {empty && <StartPanel types={addableTypes} more={moreTypes} onStartNew={startNew} onBringIn={bringIn} />}
+                {empty && (
+                  <StartPanel
+                    types={addableTypes}
+                    more={moreTypes}
+                    onStartNew={startNew}
+                    onBringIn={bringIn}
+                    templates={boardId && !guest ? <StartTemplates starterKey={typeof preset?.starter === "string" ? preset.starter : undefined} /> : undefined}
+                  />
+                )}
                 {dropping && (
                   <div className="pointer-events-none absolute inset-3 z-40 flex items-center justify-center rounded-2xl border-2 border-dashed border-primary bg-primary/5">
                     <span className="rounded-full bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground shadow-lg">
@@ -754,6 +768,7 @@ export function UserBoard({
             ))}
           </BoardViewport>
           </BoardNavigationContext.Provider>
+          </ReuseContext.Provider>
         </div>
       </BoardMenu>
       <Dialog open={picking !== null} onOpenChange={(open) => !open && setPicking(null)}>
@@ -930,6 +945,7 @@ function BoardItemTile({
         actions={
           <>
             {type?.HeaderAction && <type.HeaderAction tileId={id} source={source} width={tile.rect.w} onSource={onSource} />}
+            <ReusedMarker source={source} />
             <TileCommentDoor tileId={id} type={type} source={source} title={title} boardRecord={boardRecord} />
             {href ? (
             <a

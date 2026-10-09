@@ -8,7 +8,7 @@
  *   StartPanel  what an empty board shows: one click and you are working.
  */
 
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import { ChevronDown, Ellipsis, Plus, Upload } from "lucide-react";
 import {
   DropdownMenu,
@@ -104,7 +104,7 @@ export function AddMenu({ types, more = [], onStartNew, onBringIn }: AddProps) {
   );
 }
 
-export function StartPanel({ types, more = [], onStartNew, onBringIn }: AddProps) {
+export function StartPanel({ types, more = [], onStartNew, onBringIn, templates }: AddProps & { templates?: ReactNode }) {
   const [showMore, setShowMore] = useState(false);
   const shown = showMore ? [...types, ...more] : types;
   const news = shown.flatMap((t) => startNewEntries(t).map((entry, i) => ({ t, entry, key: `new:${t.key}:${i}` })));
@@ -178,6 +178,7 @@ export function StartPanel({ types, more = [], onStartNew, onBringIn }: AddProps
             <Ellipsis className="h-4 w-4" />
           </button>
         )}
+        {templates}
         <p className="mt-5 flex items-center gap-2 text-xs text-muted-foreground">
           <Upload className="h-3.5 w-3.5" />
           Or drop files anywhere on the board, or paste a link or some text.

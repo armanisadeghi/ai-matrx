@@ -9,6 +9,8 @@ export const BOARD_PRESETS = {
     // The social tiles are added to `featured` by their own lane.
     featured: ["chat", "note", "web-page", "image", "file", "research", "udt_document", "data-table"],
     more: "rest",
+    // The empty board offers this template first (a built-in board template key).
+    starter: "builtin:viral-breakdown",
   },
 } as const satisfies Record<string, BoardPreset>;
 

@@ -27,7 +27,7 @@ export interface BoardPreset {
   more: readonly PresetEntry[] | "rest";
   /** Not offered at all (menus and agent). */
   hidden?: readonly PresetEntry[];
-  /** Seam for starter boards / templates: a template id or a factory. None ship yet. */
+  /** The template an empty board of this preset offers first: a board-template key (`builtin:<id>` or a saved template's board id) or a factory. Consumed by the Start panel (`home/UserBoard.tsx`). */
   starter?: string | (() => BoardDocument);
   /** The default agent for this board's chat. Seam: the chat workspace has no agent prop yet. */
   agentId?: string;
