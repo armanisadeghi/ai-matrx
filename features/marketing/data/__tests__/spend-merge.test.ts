@@ -35,6 +35,8 @@ function summary(orgId: string, cost: number, ceiling: number, day: string): Seo
     global_provider_monthly_ceiling_usd: 1000,
     unpriced_run_assumed_cost_usd: 1,
     recent_budget_rejections: [],
+    social_this_month_usd: 2,
+    social_this_month_calls: 5,
   } as SeoSpendSummary;
 }
 
@@ -45,6 +47,8 @@ describe("mergeSeoSpendSummaries", () => {
       ["c"],
     );
     expect(merged.organizationCount).toBe(2);
+    expect(merged.social_this_month_usd).toBe(4);
+    expect(merged.social_this_month_calls).toBe(10);
     expect(merged.unreadOrganizationIds).toEqual(["c"]);
     expect(merged.this_month).toHaveLength(1);
     expect(merged.this_month[0].effective_cost).toBe(40);
