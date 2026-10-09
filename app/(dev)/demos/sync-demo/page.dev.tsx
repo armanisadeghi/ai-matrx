@@ -1,7 +1,7 @@
-import { join } from "path";
 import { RefreshCw } from "lucide-react";
 import { RouteIndexPage } from "@/components/ssr/RouteIndexPage";
 import { createRouteMetadata } from "@/utils/route-metadata";
+import { appDir } from "@/utils/route-discovery/app-tree";
 
 export const metadata = createRouteMetadata("/demos/sync-demo", {
   title: "Sync demos",
@@ -11,7 +11,7 @@ export const metadata = createRouteMetadata("/demos/sync-demo", {
 export default async function SyncDemoIndexPage() {
   return (
     <RouteIndexPage
-      directory={join(process.cwd(), "app", "(dev)", "demos", "sync-demo")}
+      directory={appDir("(dev)", "demos", "sync-demo")}
       basePath="/demos/sync-demo"
       title="Sync demos"
       description="Cross-surface theme and preference synchronization."

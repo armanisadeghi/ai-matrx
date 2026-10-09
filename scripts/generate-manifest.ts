@@ -3,6 +3,8 @@ import path from 'path';
 
 import fs from 'fs/promises';
 import { discoverRoutesFromPageFiles } from '../utils/route-discovery/scan-fs';
+import { buildAppTree } from '../utils/route-discovery/app-tree';
+import { writeFileSync } from 'fs';
 import { assertNoPublicDiagnostics, writeLocalDiagnostic } from './lib/local-diagnostics';
 
 async function findProjectRoot(startPath: string) {
@@ -54,6 +56,12 @@ export async function generateManifest(projectRootOverride?: string) {
                 // Directory doesn't exist yet — skip it.
             }
         }
+
+        // THE TRACE LAW: production route discovery reads this tree instead of the disk, so no
+        // route's server function ships a source folder (utils/route-discovery/app-tree.ts).
+        const treePath = path.join(projectRoot, 'utils', 'route-discovery', 'app-tree.generated.json');
+        writeFileSync(treePath, JSON.stringify(buildAppTree(path.join(projectRoot, 'app'))) + '\n');
+        console.log(`✅ Wrote the app route tree for production route discovery`);
 
         const manifestPath = writeLocalDiagnostic(projectRoot, 'test-directories.json', directories);
 

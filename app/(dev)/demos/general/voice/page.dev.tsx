@@ -1,7 +1,7 @@
-import { join } from "path";
 import { RouteIndexPage } from "@/components/ssr/RouteIndexPage";
 
 import { createRouteMetadata } from "@/utils/route-metadata";
+import { appDir } from "@/utils/route-discovery/app-tree";
 
 export const metadata = createRouteMetadata("/demo/voice", {
   title: "Voice",
@@ -11,7 +11,7 @@ export const metadata = createRouteMetadata("/demo/voice", {
 export default async function VoicePage() {
   return (
     <RouteIndexPage
-      directory={join(process.cwd(), "app", "(dev)", "demos", "general", "voice")}
+      directory={appDir("(dev)", "demos", "general", "voice")}
       basePath="/legacy/demo/voice"
       title="Voice"
     />

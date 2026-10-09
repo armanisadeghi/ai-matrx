@@ -1,10 +1,10 @@
-import { join } from "path";
 import { RouteIndexPage } from "@/components/ssr/RouteIndexPage";
+import { appDir } from "@/utils/route-discovery/app-tree";
 
 export default async function QrLabelsPage() {
   return (
     <RouteIndexPage
-      directory={join(process.cwd(), "app", "(dev)", "demos", "tests", "qr-labels")}
+      directory={appDir("(dev)", "demos", "tests", "qr-labels")}
 basePath="/demos/tests/qr-labels"
       title="QR Labels"
     />

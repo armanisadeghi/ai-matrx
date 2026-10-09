@@ -1,6 +1,6 @@
-import { join } from "path";
 import { RouteHeaderData } from "@/components/ssr/RouteHeaderData";
 import { createRouteMetadata } from "@/utils/route-metadata";
+import { appDir } from "@/utils/route-discovery/app-tree";
 
 export const metadata = createRouteMetadata("/demos/sync-demo", {
   titlePrefix: "Sync",
@@ -16,7 +16,7 @@ export default function SyncDemoLayout({
 }) {
   return (
     <RouteHeaderData
-      directory={join(process.cwd(), "app", "(dev)", "demos", "sync-demo")}
+      directory={appDir("(dev)", "demos", "sync-demo")}
       moduleHome="/demos/sync-demo"
       moduleName="Sync demos"
     >

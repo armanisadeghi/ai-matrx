@@ -1,8 +1,8 @@
-import { join } from "path";
 import { TestTube } from "lucide-react";
 import { RouteIndexPage } from "@/components/ssr/RouteIndexPage";
 
 import { createRouteMetadata } from "@/utils/route-metadata";
+import { appDir } from "@/utils/route-discovery/app-tree";
 
 export const metadata = createRouteMetadata("/demos/api-tests", {
   title: "Api Tests",
@@ -12,7 +12,7 @@ export const metadata = createRouteMetadata("/demos/api-tests", {
 export default async function ApiTestsIndexPage() {
   return (
     <RouteIndexPage
-      directory={join(process.cwd(), "app", "(dev)", "demos", "api-tests")}
+      directory={appDir("(dev)", "demos", "api-tests")}
       basePath="/demos/api-tests"
       title="API tests"
       description="Public demo routes for agents, chat, health, PDF, tools, and Matrx AI subsets."

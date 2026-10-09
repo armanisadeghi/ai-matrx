@@ -8,9 +8,10 @@
  * Do not import from client components — use `@/utils/route-discovery` (server-only barrel).
  */
 
-import { readdir } from "fs/promises";
-import { readdirSync, statSync } from "fs";
+
 import { join, relative, sep } from "path";
+
+import { listAppDir, listAppDirSync } from "./app-tree";
 
 const PAGE_FILE = /^page(\.(tsx|ts|jsx|js|mdx)|\.dev\.(tsx|ts|jsx|js|mdx))$/;
 
@@ -35,7 +36,7 @@ export async function scanRoutesFs(
   const routes: string[] = [];
 
   try {
-    const entries = await readdir(dir, { withFileTypes: true });
+    const entries = await listAppDir(dir);
 
     for (const entry of entries) {
       if (shouldSkipDir(entry.name)) continue;
@@ -64,7 +65,7 @@ export function scanRoutesFsSync(dir: string, baseRoute = ""): string[] {
 
   let entries;
   try {
-    entries = readdirSync(dir, { withFileTypes: true });
+    entries = listAppDirSync(dir);
   } catch (error) {
     const err = error as NodeJS.ErrnoException;
     if (err.code === "ENOENT") return routes;
@@ -98,7 +99,7 @@ export function discoverRoutesFromPageFiles(dir: string): string[] {
   function walk(current: string) {
     let entries;
     try {
-      entries = readdirSync(current, { withFileTypes: true });
+      entries = listAppDirSync(current);
     } catch {
       return;
     }

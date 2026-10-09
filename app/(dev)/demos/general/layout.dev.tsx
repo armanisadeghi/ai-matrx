@@ -1,6 +1,6 @@
-import { join } from "path";
 import { RouteHeaderData } from "@/components/ssr/RouteHeaderData";
 import { createRouteMetadata } from "@/utils/route-metadata";
+import { appDir } from "@/utils/route-discovery/app-tree";
 
 export const dynamic = "force-dynamic";
 
@@ -16,7 +16,7 @@ export const metadata = createRouteMetadata("/demo", {
 export default function Layout({ children }: { children: React.ReactNode }) {
   return (
     <RouteHeaderData
-      directory={join(process.cwd(), "app", "(dev)", "demos", "general")}
+      directory={appDir("(dev)", "demos", "general")}
       moduleHome="/demo"
       moduleName="Demo"
     >

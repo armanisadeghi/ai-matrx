@@ -1,10 +1,10 @@
-import { join } from "path";
 import { RouteIndexPage } from "@/components/ssr/RouteIndexPage";
+import { appDir } from "@/utils/route-discovery/app-tree";
 
 export default async function ModalsPage() {
     return (
         <RouteIndexPage
-            directory={join(process.cwd(), "app", "(dev)", "demos", "tests", "modals")}
+            directory={appDir("(dev)", "demos", "tests", "modals")}
 basePath="/demos/tests/modals"
             title="Modals"
         />

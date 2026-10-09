@@ -1,7 +1,7 @@
-import { join } from "path";
 import { LayoutGrid } from "lucide-react";
 import { RouteIndexPage } from "@/components/ssr/RouteIndexPage";
 import { createRouteMetadata } from "@/utils/route-metadata";
+import { appDir } from "@/utils/route-discovery/app-tree";
 
 export const metadata = createRouteMetadata("/demos", {
   title: "Demos",
@@ -12,7 +12,7 @@ export const metadata = createRouteMetadata("/demos", {
 export default async function DemosLandingPage() {
   return (
     <RouteIndexPage
-      directory={join(process.cwd(), "app", "(dev)", "demos")}
+      directory={appDir("(dev)", "demos")}
       basePath="/demos"
       title="Demos & tests"
       description="Internal demos, test pages, and experimental surfaces. Add a route under app/(dev)/demos and it appears here automatically."

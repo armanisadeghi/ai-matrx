@@ -1,6 +1,6 @@
-import { join } from "path";
 import { RouteHeaderData } from "@/components/ssr/RouteHeaderData";
 import { createRouteMetadata } from "@/utils/route-metadata";
+import { appDir } from "@/utils/route-discovery/app-tree";
 
 export const metadata = createRouteMetadata("/demos/tests", {
   titlePrefix: "Slack",
@@ -12,7 +12,7 @@ export const metadata = createRouteMetadata("/demos/tests", {
 export default function Layout({ children }: { children: React.ReactNode }) {
   return (
     <RouteHeaderData
-      directory={join(process.cwd(), "app", "(dev)", "demos", "tests", "slack")}
+      directory={appDir("(dev)", "demos", "tests", "slack")}
       moduleHome="/demos/tests/slack"
       moduleName="Slack"
     >

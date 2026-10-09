@@ -1,7 +1,7 @@
 import "server-only";
 
-import { readdir } from "fs/promises";
 import { join } from "path";
+import { listAppDir } from "./app-tree";
 import { isPageFile } from "./scan-fs";
 
 export {
@@ -10,6 +10,8 @@ export {
   discoverRoutesFromPageFiles,
   isPageFile,
 } from "./scan-fs";
+
+export { appDir, listAppDir } from "./app-tree";
 
 export {
   groupRoutes,
@@ -29,14 +31,14 @@ export async function scanRoutesShallow(dir: string): Promise<string[]> {
   const routes: string[] = [];
 
   try {
-    const entries = await readdir(dir, { withFileTypes: true });
+    const entries = await listAppDir(dir);
 
     for (const entry of entries) {
       if (!entry.isDirectory() || entry.name.startsWith("_")) continue;
 
       const subDir = join(dir, entry.name);
       try {
-        const subEntries = await readdir(subDir);
+        const subEntries = (await listAppDir(subDir)).map((e) => e.name);
         if (subEntries.some((name) => isPageFile(name))) {
           routes.push(entry.name);
         }

@@ -1,7 +1,7 @@
-import { join } from "path";
 import { SlidersHorizontal } from "lucide-react";
 import { RouteIndexPage } from "@/components/ssr/RouteIndexPage";
 import { createRouteMetadata } from "@/utils/route-metadata";
+import { appDir } from "@/utils/route-discovery/app-tree";
 
 export const metadata = createRouteMetadata("/demos/run-settings", {
   title: "Run settings demos",
@@ -12,7 +12,7 @@ export const metadata = createRouteMetadata("/demos/run-settings", {
 export default async function RunSettingsDemosIndexPage() {
   return (
     <RouteIndexPage
-      directory={join(process.cwd(), "app", "(dev)", "demos", "run-settings")}
+      directory={appDir("(dev)", "demos", "run-settings")}
       basePath="/demos/run-settings"
       title="Run settings demos"
       description="Simple capability-first runner settings, plus the full advanced panel with live algorithm trace (points, constraints, band)."

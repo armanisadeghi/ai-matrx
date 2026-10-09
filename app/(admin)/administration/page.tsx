@@ -1,4 +1,3 @@
-import { join } from "path";
 import { permanentRedirect } from "next/navigation";
 import { scanRoutes } from "@/utils/route-discovery";
 import {
@@ -6,6 +5,7 @@ import {
   adminNavigationRegistry,
 } from "@/features/admin/constants/admin-navigation";
 import AdminDashboardClient from "./AdminDashboardClient";
+import { appDir } from "@/utils/route-discovery/app-tree";
 
 interface AdminPageProps {
   searchParams: Promise<{ domain?: string | string[] }>;
@@ -21,7 +21,7 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
   }
 
   const filesystemRoutes = (
-    await scanRoutes(join(process.cwd(), "app", "(admin)", "administration"))
+    await scanRoutes(appDir("(admin)", "administration"))
   ).sort();
 
   return <AdminDashboardClient filesystemRoutes={filesystemRoutes} />;

@@ -1,7 +1,7 @@
-import { join } from "path";
 import { Blocks } from "lucide-react";
 import { RouteIndexPage } from "@/components/ssr/RouteIndexPage";
 import { createRouteMetadata } from "@/utils/route-metadata";
+import { appDir } from "@/utils/route-discovery/app-tree";
 
 export const metadata = createRouteMetadata("/demos/blocks", {
   title: "Render blocks",
@@ -12,7 +12,7 @@ export const metadata = createRouteMetadata("/demos/blocks", {
 export default async function BlocksDemosIndexPage() {
   return (
     <RouteIndexPage
-      directory={join(process.cwd(), "app", "(dev)", "demos", "blocks")}
+      directory={appDir("(dev)", "demos", "blocks")}
       basePath="/demos/blocks"
       title="Render block demos"
       description="Visual block playgrounds — maps, KPI stats, diffs, and item presentation."

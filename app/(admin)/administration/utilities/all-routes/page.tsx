@@ -1,12 +1,12 @@
-import { join } from "path";
 import { scanRoutes } from "@/utils/route-discovery";
 import { AdminRoutesDirectory } from "@/features/admin/components/AdminRoutesDirectory";
 import { StaticSurfaceRuntimeProvider } from "@ai-matrx/chat/surfaces/runtime/StaticSurfaceRuntimeProvider";
 import { ADMIN_UTILITIES_SURFACE_NAME, createAdminUtilitiesScope } from "@/features/surfaces/manifests/admin-utilities.manifest";
+import { appDir } from "@/utils/route-discovery/app-tree";
 
 export default async function AllRoutesPage() {
   const routes = await scanRoutes(
-    join(process.cwd(), "app", "(admin)", "administration"),
+    appDir("(admin)", "administration"),
   );
 
   const sortedRoutes = routes.sort();

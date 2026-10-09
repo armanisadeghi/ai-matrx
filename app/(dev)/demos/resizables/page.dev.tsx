@@ -1,7 +1,7 @@
-import { join } from "path";
 import { Columns3 } from "lucide-react";
 import { RouteIndexPage } from "@/components/ssr/RouteIndexPage";
 import { createRouteMetadata } from "@/utils/route-metadata";
+import { appDir } from "@/utils/route-discovery/app-tree";
 
 export const metadata = createRouteMetadata("/demos/resizables", {
   title: "Resizable panel demos",
@@ -12,7 +12,7 @@ export const metadata = createRouteMetadata("/demos/resizables", {
 export default async function ResizableDemosIndexPage() {
   return (
     <RouteIndexPage
-      directory={join(process.cwd(), "app", "(dev)", "demos", "resizables")}
+      directory={appDir("(dev)", "demos", "resizables")}
       basePath="/demos/resizables"
       title="Resizable panel demos"
       description="Each route is the simplest possible example of one new concept on top of the previous one. Read in order. The full pattern reference is in .claude/skills/react-resizable-panels-v4/SKILL.md."

@@ -1,8 +1,8 @@
 import React from "react";
-import { join } from "path";
 import { createRouteMetadata } from "@/utils/route-metadata";
 import { scanRoutes } from "@/utils/route-discovery";
 import { ClientAdminLayout } from "./ClientAdminLayout";
+import { appDir } from "@/utils/route-discovery/app-tree";
 
 export const metadata = createRouteMetadata("/administration", {
   title: "Administration",
@@ -27,7 +27,7 @@ export default async function Layout({
   // Full filesystem route hierarchy under /administration — powers the
   // breadcrumb "drill one level deeper" dropdowns.
   const routes = await scanRoutes(
-    join(process.cwd(), "app", "(admin)", "administration"),
+    appDir("(admin)", "administration"),
     "administration",
   );
 

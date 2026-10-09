@@ -1,7 +1,7 @@
-import { join } from "path";
 import { RouteHeaderData } from "@/components/ssr/RouteHeaderData";
 import { DemosChatUiRegistrations } from "@/providers/DemosChatUiRegistrations";
 import { createRouteMetadata } from "@/utils/route-metadata";
+import { appDir } from "@/utils/route-discovery/app-tree";
 
 export const metadata = createRouteMetadata("/demos/agents", {
   titlePrefix: "Agents",
@@ -19,7 +19,7 @@ export default function AgentsDemosLayout({
     <>
       <DemosChatUiRegistrations />
       <RouteHeaderData
-        directory={join(process.cwd(), "app", "(dev)", "demos", "agents")}
+        directory={appDir("(dev)", "demos", "agents")}
         moduleHome="/demos/agents"
         moduleName="Agent demos"
       >

@@ -1,6 +1,6 @@
-import { join } from "path";
 import { scanRoutes } from "@/utils/route-discovery";
 import { DemosRouteHeader } from "./DemosRouteHeader";
+import { appDir } from "@/utils/route-discovery/app-tree";
 
 /**
  * One fallback header and one header-cleared content box for the complete demo
@@ -14,7 +14,7 @@ export default async function DemosLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const routes = await scanRoutes(join(process.cwd(), "app", "(dev)", "demos"));
+  const routes = await scanRoutes(appDir("(dev)", "demos"));
 
   return (
     <>

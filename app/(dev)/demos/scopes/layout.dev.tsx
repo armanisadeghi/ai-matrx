@@ -1,6 +1,6 @@
-import { join } from "path";
 import { RouteHeaderData } from "@/components/ssr/RouteHeaderData";
 import { createRouteMetadata } from "@/utils/route-metadata";
+import { appDir } from "@/utils/route-discovery/app-tree";
 
 export const metadata = createRouteMetadata("/demos/scopes", {
   titlePrefix: "Scopes",
@@ -16,7 +16,7 @@ export default function ScopesDemosLayout({
 }) {
   return (
     <RouteHeaderData
-      directory={join(process.cwd(), "app", "(dev)", "demos", "scopes")}
+      directory={appDir("(dev)", "demos", "scopes")}
       moduleHome="/demos/scopes"
       moduleName="Scope demos"
     >

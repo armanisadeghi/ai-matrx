@@ -15,13 +15,10 @@ import "server-only";
 // and `null` is a THIRD answer: we could not read the tree, which is said out
 // loud rather than reported as absence.
 //
-// The same filesystem read already runs in production for the route index pages
-// (`utils/route-discovery`, mounted by `app/(transitional)/registered-results`),
-// so this is the deployment's own established way of asking.
+// It asks `utils/route-discovery/app-tree` — the build-time tree of app/ in production (reading
+// the disk here shipped 3,451 source files inside this page's function, 2026-10-09).
 
-import { readdir } from "node:fs/promises";
-import { join } from "node:path";
-
+import { appDir, listAppDir } from "@/utils/route-discovery/app-tree";
 import { isPageFile } from "@/utils/route-discovery/scan-fs";
 
 // The SHAPE lives next door, in a file with no `server-only` in it, so the
@@ -31,8 +28,9 @@ import type { RoutesInThisBuild } from "./routeFacts";
 
 async function hasPage(segments: readonly string[]): Promise<boolean | null> {
   try {
-    const entries = await readdir(join(process.cwd(), "app", ...segments));
-    return entries.some((name) => isPageFile(name));
+    // The build-time route tree in production (no source folder traced into this function).
+    const entries = await listAppDir(appDir(...segments));
+    return entries.some((e) => !e.isDirectory() && isPageFile(e.name));
   } catch {
     // Unreadable is NOT absent. A missing directory and a sandbox that will not
     // let us look are different facts and a person is told which one this is.
