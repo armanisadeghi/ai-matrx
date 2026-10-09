@@ -50,6 +50,7 @@ import type { NodeSource } from "../board/document";
 import { useBoardCameraStore } from "../engine/react";
 import { entityComments, type BoardItemType, type HeaderActionProps, type ItemBodyProps, type PickerProps, type PlacedItem } from "./types";
 import { useBoardChats } from "./board-chats";
+import { ConnectedSourceChips, useConnectedChatContext } from "./connected-sources";
 import {
   AGENT_FORM_ENTITY,
   agentFormSource,
@@ -159,11 +160,16 @@ function ChatBody({ tileId, source, title, tier, onSource }: ItemBodyProps) {
     if (narrow) setOpen(false);
   };
 
+  // Lines are context: the full values of every tile joined to this chat by a line ride in THIS chat's
+  // own context (tools/tile-context.ts), through the chat column's one named context entry.
+  const getCanvasContext = useConnectedChatContext(tileId, conversationId);
+
   if (!isEntity(source, "chat")) return null;
   const column = (
     <CanvasChatColumn
       conversation={chat.conversation}
       surfaceKey={surfaceKey}
+      getCanvasContext={getCanvasContext}
       onSelectAgent={chat.startWith}
       className="bg-card"
     />
@@ -263,6 +269,16 @@ function BoardChatList({
 }
 
 /** The header toggle: show or hide the tile's conversation list (no new row). */
+function ChatHeaderAction(props: HeaderActionProps) {
+  if (!isEntity(props.source, "chat")) return null;
+  return (
+    <>
+      <ConnectedSourceChips tileId={props.tileId} width={props.width} />
+      <ChatListToggle {...props} />
+    </>
+  );
+}
+
 function ChatListToggle({ source, width, onSource }: HeaderActionProps) {
   const boardChats = useBoardChats();
   if (!boardChats || !isEntity(source, "chat")) return null;
@@ -503,7 +519,7 @@ export const WORK_ITEMS: BoardItemType[] = [
     defaultSize: { w: 520, h: 760 },
     matches: (s) => isEntity(s, "chat"),
     Body: ChatBody,
-    HeaderAction: ChatListToggle,
+    HeaderAction: ChatHeaderAction,
     usesTier: true,
     Keep: ChatKeep,
     // Two ways to start: the default chat (the `chat.default_new_chat` job,

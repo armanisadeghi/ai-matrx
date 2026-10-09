@@ -76,6 +76,14 @@ export const SELECTED_FULL_MAX_CHARS = 12_000;
  * big for it sheds the tail first, then detail (`boardItemsOverview`).
  */
 export const BOARD_ITEMS_INLINE_CHARS = 24_000;
+/**
+ * CONNECTED SOURCES (a chat tile's lines): every tile joined to a chat tile by a line carries its FULL
+ * declared values in that chat's own context — one fair share of this total, between the floor and
+ * `ITEM_VALUE_MAX_CHARS`. It rides outside the basics budget and the inline cap above, which keep
+ * governing everything else.
+ */
+export const CONNECTED_FULL_TOTAL_CHARS = 60_000;
+export const CONNECTED_FULL_FLOOR_CHARS = 2_000;
 /** An item whose scope cannot be read in this long is listed without basics. */
 export const ITEM_SCOPE_READ_TIMEOUT_MS = 1500;
 /** How long `board_open_item` waits for a tile brought back onto the board to mount its surface. */
@@ -170,6 +178,8 @@ export interface BoardItemRow {
   removed?: boolean;
   /** The item's last-known basics from the saved board, for when its tile is asleep or never woke. */
   stored_basics?: StoredBasics | null;
+  /** Joined to the asking chat tile by a line: carries its full values, live or not (`CONNECTED_FULL_TOTAL_CHARS`). */
+  connected?: boolean;
 }
 
 /**
@@ -204,8 +214,10 @@ export interface BoardItemsOverview {
     basics_at?: string;
     /** The basics are only what the add knew (type and name): the tile has not been awake since. */
     basics_stale?: true;
-    /** The selected tile's declared values in full, when its surface is not the live one. */
+    /** The selected tile's declared values in full, when its surface is not the live one; a connected source's, always. */
     full_values?: Record<string, unknown>;
+    /** A line joins this item to the chat asking: `full_values` are its whole surface. */
+    connected?: true;
     /** Why this item carries no basics. */
     basics_note?: string;
   }>;
@@ -281,9 +293,14 @@ export async function boardItemsOverview(
   index: ItemSurfaceIndex | null,
 ): Promise<BoardItemsOverview> {
   const listedAll = rows.slice(0, BOARD_ITEMS_MAX);
+  const connectedCount = listedAll.filter((row) => row.connected).length;
+  const connectedChars = Math.min(
+    ITEM_VALUE_MAX_CHARS,
+    Math.max(CONNECTED_FULL_FLOOR_CHARS, Math.floor(CONNECTED_FULL_TOTAL_CHARS / Math.max(1, connectedCount))),
+  );
   const reads = await Promise.all(
     listedAll.map(async (row) => {
-      if (row.live || row.parked || row.removed || !row.surface) return null;
+      if ((row.live && !row.connected) || row.parked || row.removed || !row.surface) return null;
       const runtime = index?.get(row.id)?.primary() ?? null;
       if (!runtime) return null;
       const scope = await readScope(runtime, ITEM_SCOPE_READ_TIMEOUT_MS);
@@ -301,10 +318,14 @@ export async function boardItemsOverview(
     { listed: 40, tail: 0, full: 3000, budget: 3000 },
     { listed: 20, tail: 0, full: 2000, budget: 2000 },
   ];
-  let overview = buildOverview(rows, index, reads, steps[0]);
+  // Connected sources ride outside the inline cap: only the rest of the board is measured against it.
+  const restChars = (o: BoardItemsOverview) =>
+    JSON.stringify(o).length -
+    o.items.reduce((sum, item) => sum + (item.connected ? JSON.stringify(item.full_values ?? {}).length : 0), 0);
+  let overview = buildOverview(rows, index, reads, steps[0], connectedChars);
   for (const step of steps.slice(1)) {
-    if (JSON.stringify(overview).length <= BOARD_ITEMS_INLINE_CHARS) break;
-    overview = buildOverview(rows, index, reads, step);
+    if (restChars(overview) <= BOARD_ITEMS_INLINE_CHARS) break;
+    overview = buildOverview(rows, index, reads, step, connectedChars);
   }
   return overview;
 }
@@ -328,13 +349,15 @@ function buildOverview(
   index: ItemSurfaceIndex | null,
   reads: readonly ScopeRead[],
   limits: OverviewLimits,
+  connectedChars: number,
 ): BoardItemsOverview {
   const listed = rows.slice(0, limits.listed);
   const tail = rows.slice(limits.listed, limits.listed + limits.tail);
   // Selected but not live: its FULL values travel here (its surface is dormant, so nothing else carries them).
   // Only a LONE selection: with several selected each is just marked `selected` and keeps its basics.
   const fullFor = (row: BoardItemRow) => !!row.selected && rows.filter((r) => r.selected).length === 1;
-  const sharing = listed.filter((row, i) => !row.live && row.surface && index && !(reads[i] && fullFor(row))).length;
+  const hasFull = (row: BoardItemRow, i: number) => !!reads[i] && (!!row.connected || fullFor(row));
+  const sharing = listed.filter((row, i) => !row.live && row.surface && index && !hasFull(row, i)).length;
   const allowance = Math.max(
     ITEM_BASICS_FLOOR_CHARS,
     Math.min(ITEM_BASICS_CEILING_CHARS, Math.floor(limits.budget / Math.max(1, sharing))),
@@ -358,9 +381,25 @@ function buildOverview(
       ...(row.selected ? { selected: true as const } : {}),
       ...(row.parked ? { parked: true as const } : {}),
       ...(row.removed ? { removed: true as const } : {}),
+      ...(row.connected ? { connected: true as const } : {}),
     };
     // A board that keeps no captures (its tiles open nothing) lists identity only.
     if (!row.surface || !index) return base;
+    // A connected source: its WHOLE surface, even when it is the live tile (this chat's context is its own).
+    const connectedRead = row.connected ? reads[i] : null;
+    if (connectedRead) {
+      const full = declaredValues(connectedRead.manifest, connectedRead.scope, connectedChars);
+      if (Object.keys(full).length > 0) {
+        return {
+          ...base,
+          connected: true as const,
+          full_values: full,
+          ...(connectedRead.scope[SURFACE_NOT_LOADED_KEY] === true
+            ? { basics_note: "Connected, but not loaded yet: what it holds (counts, rows) is unknown, not zero." }
+            : {}),
+        };
+      }
+    }
     if (row.live) {
       return { ...base, basics_note: "Live: its full surface is in your context as that surface." };
     }

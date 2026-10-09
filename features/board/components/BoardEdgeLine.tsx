@@ -8,7 +8,8 @@
 
 import type { Rect } from "../engine/camera";
 
-export function BoardEdgeLine({ from, to }: { from: Rect; to: Rect }) {
+/** `feedsChat`: the line touches a chat tile, so it is context for that chat: drawn firmer, in the primary tone. */
+export function BoardEdgeLine({ from, to, feedsChat = false }: { from: Rect; to: Rect; feedsChat?: boolean }) {
   const stacked = to.x < from.x + from.w && to.x + to.w > from.x;
   const a = stacked
     ? { x: from.x + from.w / 2, y: from.y + from.h }
@@ -30,10 +31,10 @@ export function BoardEdgeLine({ from, to }: { from: Rect; to: Rect }) {
   return (
     <svg
       aria-hidden
-      className="pointer-events-none absolute max-w-none overflow-visible text-muted-foreground/60"
+      className={`pointer-events-none absolute max-w-none overflow-visible ${feedsChat ? "text-primary/70" : "text-muted-foreground/60"}`}
       style={{ left: minX, top: minY, width: w, height: h }}
     >
-      <path d={d} fill="none" stroke="currentColor" strokeWidth={2.5} strokeDasharray="8 8" />
+      <path d={d} fill="none" stroke="currentColor" strokeWidth={2.5} strokeDasharray={feedsChat ? "14 6" : "8 8"} />
       <circle cx={bx} cy={by} r={5} fill="currentColor" />
     </svg>
   );
