@@ -697,7 +697,7 @@ export function PipelineGraph() {
   return (
     <div className="p-2 space-y-3 min-w-0">
       {/* ── Control strip ──────────────────────────────────────────────── */}
-      <div className="flex items-center gap-2 p-1.5 pl-3 rounded-full matrx-glass-thin-border">
+      <div className="flex items-center gap-2 p-1.5 pl-3 rounded-xl matrx-glass-thin-border">
         {/* status dot */}
         <span
           className={cn(

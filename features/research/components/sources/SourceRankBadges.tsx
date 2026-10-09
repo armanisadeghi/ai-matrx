@@ -48,7 +48,7 @@ export function SourceRankBadges({
           <span
             key={k.keyword_id}
             title={`Rank ${k.rank ?? "—"} for "${k.keyword}"`}
-            className="inline-flex items-center gap-1 rounded-full border border-border/60 bg-muted/30 px-1.5 py-0.5 type-meta"
+            className="inline-flex max-w-full items-center gap-1 rounded-full border border-border/60 bg-muted/30 px-1.5 py-0.5 type-meta"
           >
             <span className="font-mono tabular-nums text-foreground/80">
               #{k.rank ?? "—"}

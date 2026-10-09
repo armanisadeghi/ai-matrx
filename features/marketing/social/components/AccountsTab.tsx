@@ -21,7 +21,7 @@ import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { toast } from "@/lib/toast";
 
 import { useAccountRows, useInvalidateSocial } from "../hooks";
-import { formatGrowth, refreshSummary, relativeAge } from "../mappers";
+import { formatGrowth, lastPostLabel, refreshSummary, relativeAge } from "../mappers";
 import { formatCompact, formatPercentile, outlierBadgeModel } from "../outlier";
 import {
   refreshProfile,
@@ -243,7 +243,12 @@ export function AccountsTab() {
         header: "Last post",
         accessorFn: (r) => r.lastPostAt,
         filter: "date",
-        cell: (r) => relativeAge(r.lastPostAt),
+        copyValue: (r) => lastPostLabel(r.lastPostAt, r.postsTracked),
+        cell: (r) => (
+          <span className="tabular-nums" title={r.lastPostAt ?? "No post date stored"}>
+            {lastPostLabel(r.lastPostAt, r.postsTracked)}
+          </span>
+        ),
       },
       {
         id: "refreshed",

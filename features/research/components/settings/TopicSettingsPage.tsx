@@ -22,7 +22,7 @@ export default function TopicSettingsPage() {
 
   return (
     <div className="max-w-2xl mx-auto px-3 sm:px-4 py-4 space-y-6">
-      <div className="flex items-center gap-2 rounded-full matrx-glass-thin-border px-3 py-1.5">
+      <div className="flex items-center gap-2 rounded-xl matrx-glass-thin-border px-3 py-1.5">
         <span className="type-secondary font-medium text-foreground/80">Settings</span>
       </div>
       <TopicSettingsForm topic={topic} onSaved={refresh} />

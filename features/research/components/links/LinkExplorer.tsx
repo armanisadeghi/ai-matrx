@@ -70,7 +70,7 @@ export default function LinkExplorer() {
 
     return (
         <div className="p-3 sm:p-4 space-y-3">
-            <div className="flex items-center gap-2 rounded-full matrx-glass-thin-border px-3 py-1.5">
+            <div className="flex items-center gap-2 rounded-xl matrx-glass-thin-border px-3 py-1.5">
                 <span className="type-secondary font-medium text-foreground/80">Links</span>
                 <span className="type-meta text-muted-foreground tabular-nums">
                     <UntrustedCount read={linksRead} value={`${filtered.length}/${linkList.length}`} label="Links" />

@@ -175,6 +175,13 @@ export function relativeAge(iso: string | null, now = Date.now()): string {
   return `${Math.floor(days / 365)}y`;
 }
 
+/** LAST POST cell text: how long ago the newest post went out; "No posts" when none are stored. Never the outlier no-baseline text. */
+export function lastPostLabel(lastPostAt: string | null, postsTracked: number, now = Date.now()): string {
+  if (!lastPostAt || !Number.isFinite(Date.parse(lastPostAt))) return postsTracked > 0 ? "—" : "No posts";
+  const age = relativeAge(lastPostAt, now);
+  return age === "now" ? "just now" : `${age} ago`;
+}
+
 export function formatDuration(seconds: number | null): string | null {
   if (seconds === null) return null;
   const s = Math.round(seconds);

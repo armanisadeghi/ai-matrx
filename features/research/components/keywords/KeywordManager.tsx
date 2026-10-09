@@ -409,7 +409,7 @@ export default function KeywordManager() {
       )}
 
       {/* Add keyword — matrx-glass-thin-border toolbar (renders instantly) */}
-      <div className="flex items-center gap-1.5 p-1 rounded-full matrx-glass-thin-border">
+      <div className="flex items-center gap-1.5 p-1 rounded-xl matrx-glass-thin-border">
         <div className="flex-1 flex items-center gap-1.5 min-w-0 h-6 px-2 rounded-full matrx-glass-card">
           <Search className="h-3 w-3 text-muted-foreground shrink-0" />
           <input
@@ -457,7 +457,7 @@ export default function KeywordManager() {
       {/* Focused lens — optional goal for the keyword being added. Appears only
           while a keyword is typed so the toolbar stays one quiet row at rest. */}
       {newKeyword.trim() && (
-        <div className="flex items-center gap-1.5 h-7 px-2.5 rounded-full matrx-glass-card">
+        <div className="flex items-center gap-1.5 h-7 px-2.5 rounded-xl matrx-glass-card">
           <Target className="h-3 w-3 text-muted-foreground shrink-0" />
           <input
             value={newGoal}
