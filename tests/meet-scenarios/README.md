@@ -66,6 +66,16 @@ zoom, teams or ours ship their routes, add ONE entry to `SKINS` (start path, mee
 URL pattern, invalid-code path) and `MEET_SKINS=meet,zoom bash tests/meet-scenarios/run.sh` runs
 every scenario for both. Project names: `chromium` for `meet`, `chromium-<skin>` otherwise.
 
+## Behavior profiles (Zoom/Teams rules) are per meeting, never per account
+
+A scenario that needs non-default rules creates its meeting with `createMeetingWithProfile(host, "zoom")`
+(`lib/meeting.ts`): the product's scheduling door `meet_schedule_meeting` with `behavior_profile` in its
+settings, which sets the meeting's OWN `behavior_profile` column. Never write a user-level
+`meet.behavior_profile` override on admin@admin.com: it applies to every meeting that account starts, so
+any other lane's run starting meanwhile runs under those rules too. The run-start check reads admin's
+user-level overrides; if one is held it clears it through `meet_policy_set` (NULL value) and fails ENV
+setup only if it will not clear.
+
 ## Environment, never product
 
 The shared dev server caps concurrent signed-in preview hosts (`utils/supabase/walkCap.ts`,
