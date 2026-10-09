@@ -236,9 +236,20 @@ export function UsageLimitsClient() {
       setLoading(true);
       setError(null);
       try {
-        const res = await fetch("/api/admin/users", { cache: "no-store" });
-        const json = await res.json();
+        let res = await fetch("/api/admin/users", { cache: "no-store" });
+        let json = await res.json();
         if (!res.ok) throw new Error(json.error ?? "Failed to load accounts");
+        if (typeof json.plans_error === "string") {
+          // The plans read is heavy; a transient failure usually clears. Retry once before showing the banner.
+          await new Promise((r) => setTimeout(r, 1500));
+          if (cancelled) return;
+          const again = await fetch("/api/admin/users", { cache: "no-store" });
+          const againJson = await again.json();
+          if (again.ok) {
+            res = again;
+            json = againJson;
+          }
+        }
         if (!cancelled) {
           setRows(json.users as AdminUserRow[]);
           setPlansError(typeof json.plans_error === "string" ? json.plans_error : null);
