@@ -264,6 +264,7 @@ value metadata mirror the manifests.
 
 **Frontend gotchas (paid for once):**
 
+- **The activity composer always offers Other; `offerNoteChannel` controls only Note.** Saves use the party organization and selected channel/direction.
 - **Self-join embeds MUST target the FK column** — `employer:primary_employer_party_id(...)`. `party!<fk-name>` and `party!<column>` resolve REVERSE (an array) at runtime; postgrest-js can't infer the column-target form, so the service pins it with `.returns<PartyListRow>()`.
 - List scopes are `mine` / `orgs` / `public` client-side predicates (`created_by` / `organization_id in my orgs` / `visibility='public'`). **`shared` needs a grant reader RPC** — do not fake it with a bare RLS read.
 - **Classification (record page):** stage + rating are FK columns

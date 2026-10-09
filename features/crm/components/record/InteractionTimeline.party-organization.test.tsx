@@ -100,6 +100,8 @@ describe("InteractionTimeline files an interaction in its party's organization",
   it.each([
     { label: "Other", channel: "other", direction: "Outbound", code: "outbound", subject: "Warranty API web inquiry", body: "Contact form attempted; delivery unconfirmed." },
     { label: "Email", channel: "email", direction: "Inbound", code: "inbound", subject: "Warranty API eligibility reply", body: "Provider requests a customer sponsor." },
+    { label: "Call", channel: "call", direction: "Outbound", code: "outbound", subject: "Warranty API onboarding call", body: "Reviewed implementation milestones with the provider." },
+    { label: "Meeting", channel: "meeting", direction: "Inbound", code: "inbound", subject: "Warranty API discovery meeting", body: "Provider requested a technical requirements session." },
   ])("logs $label activity through the visible composer", async ({ label, channel, direction, code, subject, body }) => {
     jest.clearAllMocks();
     const changed = jest.fn(async () => undefined);
