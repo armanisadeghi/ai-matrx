@@ -48,6 +48,12 @@ import { FC_MANDATES } from "./mandates";
 import type { NewCardInput } from "./types";
 import { resolveKitTitle, NAMER_SAMPLE_CHARS } from "@/features/education/onboard/kitTitle";
 import { sectionRunTitle } from "@/features/education/convert/coverage";
+import { foldSteer, type GenerationSteer } from "@/features/education/convert/steering";
+import {
+  BATCH_KEY,
+  OUTLINE_SECTION_KEY,
+  type OutlineSection,
+} from "@/features/education/kits/outline/types";
 
 /**
  * How flashcards can use a Source: its TEXT, handed over up front. The
@@ -277,6 +283,54 @@ export interface CardsFromSourcesInput
   title: string;
   /** Cards the deck already has — never made again (the top-up). */
   existingCards?: { front: string; back: string }[];
+  /**
+   * How the person steers this run (living-kit W2): their words, the card types
+   * wanted, the outline sections to cover. `steer.existing` is ignored — the
+   * fronts of `existingCards` are folded in instead.
+   */
+  steer?: Omit<GenerationSteer, "sections"> & {
+    sections?: Pick<OutlineSection, "id" | "title" | "facts">[];
+  };
+  /** Groups the cards this run makes, so "Undo last add" can find exactly them. */
+  batchId?: string;
+}
+
+/**
+ * Stamp what a run knows onto every card it made: its batch id, and — when the
+ * run covered exactly one outline section — that section's title as `topic` and
+ * its id as `metadata.outline_section_id` (coverage counts by id).
+ */
+export function stampRunCards(
+  cards: NewCardInput[],
+  run: {
+    batchId?: string;
+    sections?: Pick<OutlineSection, "id" | "title">[];
+  },
+): NewCardInput[] {
+  const only = run.sections?.length === 1 ? run.sections[0] : null;
+  if (!run.batchId && !only) return cards;
+  return cards.map((c) => ({
+    ...c,
+    ...(only ? { topic: only.title } : {}),
+    metadata: {
+      ...(c.metadata ?? {}),
+      ...(run.batchId ? { [BATCH_KEY]: run.batchId } : {}),
+      ...(only ? { [OUTLINE_SECTION_KEY]: only.id } : {}),
+    },
+  }));
+}
+
+/** The free-text `focus` the from-source agent reads: level, focus, steering, what exists. */
+export function cardsFocusText(
+  gradeLevel: string | undefined,
+  focus: string | undefined,
+  steer: CardsFromSourcesInput["steer"],
+  existingCards: { front: string }[],
+): string {
+  const base = [gradeLevel?.trim() ? `Write for this level: ${gradeLevel.trim()}.` : "", focus?.trim() ?? ""]
+    .filter(Boolean)
+    .join("\n\n");
+  return foldSteer({ ...steer, existing: existingCards.map((c) => c.front) }, "cards", base);
 }
 
 export interface CardsFromSourcesOutcome {
@@ -341,6 +395,8 @@ export async function generateCardsFromSources({
   focus,
   title,
   existingCards = [],
+  steer,
+  batchId,
   ctx,
 }: CardsFromSourcesInput): Promise<CardsFromSourcesOutcome> {
   const sources = resolved.sources.filter((s) => s.text.trim().length > 0);
@@ -360,18 +416,7 @@ export async function generateCardsFromSources({
   const fallback = sources.length === 1 ? sources[0] : null;
   const have = existingCards.map((c) => ({ question: c.front, answer: c.back }));
   const haveKeys = new Set(existingCards.map((c) => looseKey(c.front)));
-  const focusText = [
-    gradeLevel?.trim() ? `Write for this level: ${gradeLevel.trim()}.` : "",
-    focus?.trim() ?? "",
-    existingCards.length > 0
-      ? `This deck already has these cards — write different ones:\n${existingCards
-          .slice(0, 80)
-          .map((c) => `- ${c.front}`)
-          .join("\n")}`
-      : "",
-  ]
-    .filter(Boolean)
-    .join("\n\n");
+  const focusText = cardsFocusText(gradeLevel, focus, steer, existingCards);
 
   const covered = await segmentedGenerate<NewCardInput>({
     ctx,
@@ -429,7 +474,10 @@ export async function generateCardsFromSources({
       : []),
   ];
   return {
-    cards: covered.items.map((c) => groundCard(c, owners, fallback)),
+    cards: stampRunCards(
+      covered.items.map((c) => groundCard(c, owners, fallback)),
+      { batchId, sections: steer?.sections },
+    ),
     sources,
     unusedSources,
     gapNote: coverageNote(covered.gapNote, unusedSources, count, sources.length),

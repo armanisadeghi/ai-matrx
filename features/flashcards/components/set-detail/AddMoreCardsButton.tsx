@@ -29,6 +29,12 @@ import { createSourceRef } from "@ai-matrx/agents/sources";
 import { ClampedNumberInput } from "@/components/official/ClampedNumberInput";
 import { Button } from "@/components/ui/button";
 import { Button as SurfaceButton } from "@ai-matrx/design-system";
+import { Chip, ChipSet } from "@ai-matrx/design-system/controls";
+import { ProTextarea } from "@/components/official/ProTextarea";
+import { buildApplicationScopeFromMenuContext } from "@/features/context-menu-v3/utils/build-application-scope";
+import { newBatchId } from "@/features/education/convert/steering";
+import { CARD_KIND, type CardKind } from "@/features/flashcards/utils/cardVariants";
+import { undoCardBatch } from "@/features/flashcards/data/undoCardBatch";
 import { Label } from "@/components/ui/label";
 import {
   Dialog,
@@ -80,6 +86,17 @@ import { useTabBoundRun, type TabBoundRun } from "@/lib/wizard-draft/useTabBound
 
 /** The top-up never offers "Just a topic": the cards come from material. */
 const TOPUP_KINDS: readonly SourceKindId[] = ALL_SOURCE_KIND_IDS.filter((k) => k !== "topic");
+
+/** The card types a top-up can ask for; none picked = the writer's own mix. */
+const KIND_CHOICES: { kind: CardKind; label: string }[] = [
+  { kind: CARD_KIND.basic, label: "Basic" },
+  { kind: CARD_KIND.cloze, label: "Cloze" },
+  { kind: CARD_KIND.matching, label: "Matching" },
+  { kind: CARD_KIND.formula, label: "Formula" },
+];
+
+/** The agent surface the focus box is bound to. */
+const FOCUS_SURFACE = "flashcards-add-more";
 
 /** The Source input key for one deck's top-up — picks survive a reload. */
 export function addMoreSurfaceKey(setId: string): string {
@@ -253,6 +270,9 @@ function AddMoreCardsDialog({
   // null = still reading which material the deck came from.
   const [origins, setOrigins] = useState<ArtifactOrigin[] | null>(null);
   const [count, setCount] = useState(10);
+  const [cardKinds, setCardKinds] = useState<CardKind[]>([]);
+  const [instruction, setInstruction] = useState("");
+  const focusRef = useRef<HTMLTextAreaElement | null>(null);
   // What the count field shows (null while empty or out of range) — the button repeats it.
   const [shownCount, setShownCount] = useState<number | null>(10);
   const [busy, setBusy] = useState(false);
@@ -274,6 +294,8 @@ function AddMoreCardsDialog({
       for (const s of set.sources) set.remove(s.id);
       for (const draft of redo.request.drafts) set.addReady(draft);
       setCount(redo.request.count);
+      setCardKinds(redo.request.cardKinds);
+      setInstruction(redo.request.instruction);
       return;
     }
     const lineage = found.map(originToDraft).filter((d): d is SourceDraft => !!d?.ref);
@@ -319,7 +341,8 @@ function AddMoreCardsDialog({
       const chosenNames = sourceNamesOf(set.sources);
       // The run lives in this tab: its request is kept until the cards are in
       // the deck, so a reload mid-run is reported and can be repeated.
-      await tabRun.track(cardRunRequest(plannedCount, chosen, chosenNames), async (settle, saving) => {
+      const batchId = newBatchId();
+      await tabRun.track(cardRunRequest(plannedCount, chosen, chosenNames, "", { cardKinds, instruction }), async (settle, saving) => {
         const resolved = await backfillFileIds(await set.resolve());
         if (resolved.dropped.length) {
           toast.info(
@@ -336,6 +359,8 @@ function AddMoreCardsDialog({
           depth: "recall",
           title: deckName?.trim() || "Your deck",
           existingCards,
+          steer: { instruction, cardKinds },
+          batchId,
           ctx: {
             dispatch,
             store,
@@ -380,6 +405,19 @@ function AddMoreCardsDialog({
           `Added ${made.cards.length} new card${made.cards.length === 1 ? "" : "s"}${
             made.gapNote ? ` — ${made.gapNote}` : ""
           }.`,
+          {
+            duration: 20_000,
+            action: {
+              label: "Undo",
+              onClick: () => {
+                void undoCardBatch(setId, batchId).then(({ removed, error: undoError }) => {
+                  if (undoError) toast.error(undoError);
+                  else toast.info(`Removed ${removed} ${removed === 1 ? "card" : "cards"}.`);
+                  onAdded?.();
+                });
+              },
+            },
+          },
         );
         for (const s of set.sources) set.remove(s.id);
         onAdded?.();
@@ -459,6 +497,51 @@ function AddMoreCardsDialog({
         ) : plannedShown !== null && shownCount !== null && plannedShown > shownCount ? (
           <p className="text-xs text-muted-foreground">{`One card per source: ${cardCount(plannedShown)}`}</p>
         ) : null}
+      </div>
+      <div className="flex flex-col gap-1.5">
+        <Label>Card types</Label>
+        <ChipSet aria-label="Card types">
+          {KIND_CHOICES.map(({ kind, label }) => (
+            <Chip key={kind} label={label} pressed={cardKinds.includes(kind)} asChild>
+              <button
+                type="button"
+                disabled={busy}
+                onClick={() =>
+                  setCardKinds((cur) =>
+                    cur.includes(kind) ? cur.filter((k) => k !== kind) : [...cur, kind],
+                  )
+                }
+              />
+            </Chip>
+          ))}
+        </ChipSet>
+        {cardKinds.length === 0 ? <p className="text-xs text-muted-foreground">Any</p> : null}
+      </div>
+      <div className="flex flex-col gap-1.5">
+        <Label htmlFor="fc-add-focus">What should the new cards focus on?</Label>
+        <ProTextarea
+          id="fc-add-focus"
+          ref={focusRef}
+          surfaceName={FOCUS_SURFACE}
+          getApplicationScope={() => {
+            const el = focusRef.current;
+            const start = el?.selectionStart ?? 0;
+            const end = el?.selectionEnd ?? 0;
+            return buildApplicationScopeFromMenuContext({
+              selectedText:
+                el && start !== end ? el.value.slice(Math.min(start, end), Math.max(start, end)) : "",
+              selectionRange: el ? { type: "editable", element: el, start, end } : null,
+              contextData: { deckName: deckName ?? "", focus: instruction },
+            });
+          }}
+          value={instruction}
+          onChange={(e) => setInstruction(e.target.value)}
+          placeholder="e.g. the Krebs cycle, harder questions"
+          rows={2}
+          autoGrow
+          disabled={busy}
+          className="text-base"
+        />
       </div>
       {error ? (
         <p role="alert" className="text-sm text-destructive">

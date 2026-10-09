@@ -8,12 +8,17 @@
 
 import type { SourceSet } from "@ai-matrx/agents/sources";
 import type { SourceDraft } from "@ai-matrx/agents/sources/runtime";
+import { asCardKind, type CardKind } from "@/features/flashcards/utils/cardVariants";
 import { deckDraftsFromMetadata, deckSourceSetPatch, type DeckSourceName } from "./deckSourceSet";
 
 export interface CardRunRequest {
   count: number;
   topic: string;
   drafts: SourceDraft[];
+  /** Card types the person asked for (empty = any). */
+  cardKinds: CardKind[];
+  /** What the new cards should focus on, in the person's words. */
+  instruction: string;
 }
 
 /** The tab-bound run key for one deck's "Add more cards". */
@@ -29,8 +34,15 @@ export function cardRunRequest(
   sourceSet: SourceSet,
   names: Record<string, DeckSourceName>,
   topic = "",
+  steer: { cardKinds?: readonly CardKind[]; instruction?: string } = {},
 ): Record<string, unknown> {
-  return { count, topic, ...deckSourceSetPatch(sourceSet, names) };
+  return {
+    count,
+    topic,
+    ...(steer.cardKinds?.length ? { cardKinds: [...steer.cardKinds] } : {}),
+    ...(steer.instruction?.trim() ? { instruction: steer.instruction.trim() } : {}),
+    ...deckSourceSetPatch(sourceSet, names),
+  };
 }
 
 /** The stored request back, or null when it is not one we can repeat. */
@@ -40,5 +52,9 @@ export function restoreCardRunRequest(data: Record<string, unknown>): CardRunReq
   const topic = typeof data.topic === "string" ? data.topic : "";
   const drafts = deckDraftsFromMetadata(data) ?? [];
   if (drafts.length === 0 && !topic.trim()) return null;
-  return { count, topic, drafts };
+  const cardKinds = Array.isArray(data.cardKinds)
+    ? [...new Set(data.cardKinds.filter((k): k is string => typeof k === "string").map(asCardKind))]
+    : [];
+  const instruction = typeof data.instruction === "string" ? data.instruction : "";
+  return { count, topic, drafts, cardKinds, instruction };
 }

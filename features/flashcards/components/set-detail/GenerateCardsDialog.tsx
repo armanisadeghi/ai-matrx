@@ -36,6 +36,9 @@ import { FC_MANDATES } from "../../data/mandates";
 import { useGenerateCards } from "../../data/useGenerateCards";
 import { useFlashcardMandates } from "../../data/mandate-disclosure";
 import { LiveGenerationPreview } from "../create/LiveGenerationPreview";
+import { isNearDuplicateQA, looseKey } from "@/features/education/convert/segmentedGenerate";
+import { newBatchId } from "@/features/education/convert/steering";
+import { BATCH_KEY } from "@/features/education/kits/outline/types";
 
 const COUNTS = [5, 10, 20, 30] as const;
 
@@ -45,6 +48,7 @@ export function GenerateCardsDialog({
   setId,
   defaultTopic,
   difficulty,
+  existingCards = [],
   onAdded,
 }: {
   open: boolean;
@@ -53,6 +57,8 @@ export function GenerateCardsDialog({
   /** The deck's topic, else its name — what the cards are about. */
   defaultTopic: string;
   difficulty: string | null;
+  /** Cards the deck already has — a new card never repeats one, and lands after them. */
+  existingCards?: { front: string; back: string }[];
   onAdded: (count: number) => void;
 }) {
   useFlashcardMandates(["generateCards"]);
@@ -94,7 +100,27 @@ export function GenerateCardsDialog({
             },
           },
         );
-        const saved = await fcService.addCards(setId, result.cards);
+        // Never repeat a card the deck already has; the person still sees what was added.
+        const haveKeys = new Set(existingCards.map((c) => looseKey(c.front)));
+        const batchId = newBatchId();
+        const fresh = result.cards
+          .filter(
+            (c) =>
+              !haveKeys.has(looseKey(c.front)) &&
+              !existingCards.some((h) =>
+                isNearDuplicateQA(
+                  { question: h.front, answer: h.back },
+                  { question: c.front, answer: c.back },
+                ),
+              ),
+          )
+          .map((c) => ({ ...c, metadata: { ...(c.metadata ?? {}), [BATCH_KEY]: batchId } }));
+        if (fresh.length === 0) {
+          throw new Error("Nothing new came out — the deck already has these. Try another topic.");
+        }
+        const saved = await fcService.addCards(setId, fresh, {
+          startPosition: existingCards.length,
+        });
         if (saved.error || !saved.data) {
           throw new Error(
             saved.error ?? "The cards were made but could not be saved. Try again.",

@@ -2181,6 +2181,7 @@ export function SetDetailView({
                 setId={setId}
                 defaultTopic={data.set.topic?.trim() || data.set.name}
                 difficulty={data.set.difficulty}
+                existingCards={data.cards.map((c) => ({ front: c.front, back: c.back }))}
                 onAdded={() => {
                   reload();
                   setLineageKey((k) => k + 1);
