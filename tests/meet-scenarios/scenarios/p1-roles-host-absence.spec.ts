@@ -18,7 +18,7 @@ scenario("host-reclaim", async ({ cast }) => {
   // The host hands the meeting over and leaves.
   await press(host, "Leave", host.page.getByRole("button", { name: /^Leave$/ }), 8000);
   await press(host, "Assign a new host", host.page.getByRole("button", { name: /^Assign a new host$/ }), 8000);
-  await press(host, `the choice ${GUEST}`, host.page.getByRole("option", { name: new RegExp(GUEST) }).or(host.page.getByRole("button", { name: new RegExp(GUEST) })), 8000);
+  await press(host, `the choice ${GUEST}`, host.page.locator("[data-meet-leave-menu]").getByRole("button", { name: new RegExp(GUEST) }), 8000);
   await seeUntil(guest, "the guest now holds host", (o) => o.role === "host", 30_000);
   // The original host comes back.
   await host.page.goto(cast.meeting!.path, { waitUntil: "domcontentloaded" });
