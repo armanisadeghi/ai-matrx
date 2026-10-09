@@ -1,6 +1,6 @@
 {
   "note": "Checked-in snapshot of public._schema_migrations for the files under migrations/campaign and migrations/inverse. Written by `pnpm db:apply` on every successful production apply and refreshed whole by the nightly catch-up. Never hand-edited: a self-written checksum is a claim nobody can check. Guard: pnpm check:ledgered-files-unedited.",
-  "generated_at": "2026-10-09T10:08:26.093Z",
+  "generated_at": "2026-10-09T11:30:42.592Z",
   "files": {
     "migrations/campaign/a_chunk_is_the_size_the_client_door_can_actually_carry.sql": {
       "source": "matrx-frontend",
@@ -4951,6 +4951,12 @@
       "filename": "makehome_w5b_the_form_look_door_can_be_reached.sql",
       "checksum": "4fbf6d2d9e09053ce2f07a408adf6f0c948ca207cb0245cf852e830a84c550a0",
       "applied_at": "2026-10-03 03:43:24.967389+00"
+    },
+    "migrations/campaign/makepin_describe_template_holder_follows_v9.sql": {
+      "source": "matrx-frontend",
+      "filename": "makepin_describe_template_holder_follows_v9.sql",
+      "checksum": "cb39ce7816841043b6cc6f637f4789fc0f91bda3d233560b4875d750455d9d99",
+      "applied_at": "2026-10-09 11:30:41.638129+00"
     },
     "migrations/campaign/memosweep_a_the_memo_path_is_compared_with_the_plain_path_every_half_hour.sql": {
       "source": "matrx-frontend",
