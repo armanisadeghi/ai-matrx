@@ -137,7 +137,8 @@ export function capturedPostsMissingFrom(
   const out = new Map<string, CapturedPostModel>();
   for (const c of captures) {
     for (const p of c.posts) {
-      if (knownPlatformPostIds.has(p.platformPostId) || out.has(p.platformPostId)) continue;
+      const urlKey = p.url?.replace(/\/+$/, "").split("/").pop() ?? "";
+      if (knownPlatformPostIds.has(p.platformPostId) || knownPlatformPostIds.has(urlKey) || out.has(p.platformPostId)) continue;
       out.set(p.platformPostId, p);
     }
   }

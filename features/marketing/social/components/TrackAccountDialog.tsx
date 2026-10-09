@@ -23,6 +23,7 @@ import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { toast } from "@/lib/toast";
 
 import { useInvalidateSocial } from "../hooks";
+import { GatedCaptureOffer } from "../gated/GatedCaptureOffer";
 import { detectPlatform, handleFromInput, looksLikePostUrl } from "../link";
 import { useSocialSpend } from "../cost";
 import {
@@ -81,8 +82,14 @@ export function TrackAccountDialog({
   // The server refused an account with no posts (almost always the wrong
   // handle); the person may still track it on purpose (a brand-new own account).
   const emptyRefused = socialErrorCode(failure) === "social_profile_empty";
+  // The provider could not read it (private, restricted, blocked): the person's own browser still can.
+  const failCode = socialErrorCode(failure);
+  const gated = !isPostLink(text) && (failCode === "social_not_found" || failCode === "social_provider_failed");
 
   const isPost = looksLikePostUrl(text);
+  function isPostLink(value: string) {
+    return looksLikePostUrl(value);
+  }
   const detected = detectPlatform(text);
   const effectivePlatform: SocialPlatform | null =
     platform !== "auto" && isSocialPlatform(platform) ? platform : detected;
@@ -182,6 +189,14 @@ export function TrackAccountDialog({
               ""
             )}
           </p>
+          {gated && !busy && effectivePlatform ? (
+            <GatedCaptureOffer
+              organizationId={organizationId}
+              target={{ platform: effectivePlatform, handleOrUrl: text.trim(), brandId }}
+              platformLabel={SOCIAL_PLATFORM_LABELS[effectivePlatform]}
+              onCaptured={() => void invalidate()}
+            />
+          ) : null}
         </div>
         <DialogFooter>
           <Button variant="quiet" onClick={() => onOpenChange(false)} disabled={busy}>
