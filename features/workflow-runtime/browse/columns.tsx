@@ -195,8 +195,9 @@ export const WORKFLOW_BROWSE_COLUMNS: EntityColumnSpec<WorkflowBrowseRow>[] = [
         ),
     },
   },
-  // Runs, Last used, Success rate, Failures, Cost — THE shared usage columns
-  // (lib/entity-list/usageColumns), the same five the agents list shows.
+  // Runs, Last used, Success rate, Failures, Warnings, Cost — THE shared usage
+  // columns (lib/entity-list/usageColumns); the agents list shows the same five
+  // without Warnings.
   // THE DOOR LAW: the run count opens `/workflows/[id]/runs` (exactly what it
   // counts) and the last-used time opens that run's own page.
   ...usageColumns<WorkflowBrowseRow>({
@@ -222,6 +223,15 @@ export const WORKFLOW_BROWSE_COLUMNS: EntityColumnSpec<WorkflowBrowseRow>[] = [
             title: `Open the run from ${new Date(row.last_run_at).toLocaleString()}`,
           }
         : null,
+     // Check warnings since the last edit (workflow.run_log via entity_usage);
+    // the count opens the runs that raised them.
+    warnings: {
+      read: (row) => Number(row.warning_count ?? 0),
+      door: (row) => ({
+        href: `/workflows/${row.id}/runs`,
+        title: "See the runs behind these warnings",
+      }),
+    },
   }),
   {
     id: "workflow_type",
