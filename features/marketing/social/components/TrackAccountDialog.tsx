@@ -24,7 +24,13 @@ import { toast } from "@/lib/toast";
 
 import { useInvalidateSocial } from "../hooks";
 import { detectPlatform, handleFromInput, looksLikePostUrl } from "../link";
-import { ingestPost, socialErrorMessage, trackAccount } from "../server";
+import {
+  ingestPost,
+  socialErrorCode,
+  socialErrorCredits,
+  socialErrorMessage,
+  trackAccount,
+} from "../server";
 import {
   SOCIAL_PLATFORMS,
   SOCIAL_PLATFORM_LABELS,
@@ -68,6 +74,9 @@ export function TrackAccountDialog({
   const [status, setStatus] = useState("");
   const [error, setError] = useState("");
   const [failure, setFailure] = useState<unknown>(null);
+  // The server refused an account with no posts (almost always the wrong
+  // handle); the person may still track it on purpose (a brand-new own account).
+  const emptyRefused = socialErrorCode(failure) === "social_profile_empty";
 
   const isPost = looksLikePostUrl(text);
   const detected = detectPlatform(text);
@@ -76,7 +85,7 @@ export function TrackAccountDialog({
   const handle = handleFromInput(text);
   const canSubmit = text.trim().length > 2 && (isPost || effectivePlatform !== null) && !busy;
 
-  async function submit() {
+  async function submit(allowEmpty = false) {
     setBusy(true);
     setError("");
     setFailure(null);
@@ -98,6 +107,7 @@ export function TrackAccountDialog({
             role,
             brandId,
             pages: 1,
+            allowEmpty,
           },
           opts,
         );
@@ -108,7 +118,9 @@ export function TrackAccountDialog({
       setText("");
     } catch (err) {
       setFailure(err);
-      setError(socialErrorMessage(err, "Couldn't track that account"));
+      const credits = socialErrorCredits(err);
+      const cost = credits ? ` · ${credits} credit${credits === 1 ? "" : "s"} charged` : "";
+      setError(`${socialErrorMessage(err, "Couldn't track that account")}${cost}`);
     } finally {
       setBusy(false);
       setStatus("");
@@ -126,7 +138,11 @@ export function TrackAccountDialog({
             aria-label="Handle or link"
             placeholder="Handle or profile link"
             value={text}
-            onChange={(e) => setText(e.target.value)}
+            onChange={(e) => {
+              setText(e.target.value);
+              setError("");
+              setFailure(null);
+            }}
             autoFocus
           />
           <div className="flex gap-2">
@@ -146,7 +162,7 @@ export function TrackAccountDialog({
               className="flex-1"
             />
           </div>
-          <p className="h-4 text-xs text-muted-foreground" aria-live="polite">
+          <p className="h-8 overflow-hidden text-xs text-muted-foreground" aria-live="polite">
             {error ? (
               <span className="text-destructive">
                 {error}
@@ -169,6 +185,11 @@ export function TrackAccountDialog({
           <Button variant="quiet" onClick={() => onOpenChange(false)} disabled={busy}>
             Cancel
           </Button>
+          {emptyRefused && !busy ? (
+            <Button variant="quiet" onClick={() => void submit(true)}>
+              Track anyway
+            </Button>
+          ) : null}
           <Button variant="primary" onClick={() => void submit()} disabled={!canSubmit}>
             {busy ? "Working…" : isPost ? "Save post" : "Track"}
           </Button>

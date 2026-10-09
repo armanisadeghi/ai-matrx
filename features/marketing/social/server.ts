@@ -65,6 +65,8 @@ const KNOWN_CODES: readonly SocialErrorCode[] = [
   "social_forbidden",
   "social_agent_not_built",
   "social_provider_failed",
+  "social_profile_empty",
+  "social_profile_mismatch",
   "organization_required",
 ];
 
@@ -91,13 +93,51 @@ export function socialErrorCode(error: unknown): SocialErrorCode | null {
 export function socialErrorMessage(error: unknown, fallback: string): string {
   const code = socialErrorCode(error);
   if (code === "social_agent_not_built") return "Breakdown agent not built yet";
-  if (code === "social_provider_failed") return "The data provider failed. Retry in a moment.";
-  if (code === "social_not_found") return "That account or post was not found.";
+  // The server's sentence names the account and the real cause (private, empty,
+  // a different handle); a generic line per code only fills in when it is absent.
+  const specific =
+    error instanceof SocialStreamError
+      ? error.userMessage
+      : error instanceof BackendApiError
+        ? error.userMessage
+        : undefined;
+  if (code === "social_not_found") {
+    return specific ? `Not found or private: ${notFoundReason(specific)}` : "That account or post was not found, or is private.";
+  }
+  if (code === "social_provider_failed") {
+    return specific ? `The data provider failed (${trimTech(specific)}). Retry in a moment.` : "The data provider failed. Retry in a moment.";
+  }
+  if (specific) return specific;
   if (code === "social_unsupported") return "That platform or link is not supported yet.";
   if (code === "social_not_configured") return "That provider is not set up.";
-  if (error instanceof SocialStreamError && error.userMessage) return error.userMessage;
-  if (error instanceof BackendApiError && error.userMessage) return error.userMessage;
   return error instanceof Error && error.message ? error.message : fallback;
+}
+
+/** Whether retrying the same call can help (only a transient provider failure). */
+export function socialErrorIsRetryable(error: unknown): boolean {
+  return socialErrorCode(error) === "social_provider_failed";
+}
+
+/** Credits a refused call still cost (a provider bills a missing account). */
+export function socialErrorCredits(error: unknown): number | null {
+  const details =
+    error instanceof SocialStreamError
+      ? error.details
+      : error instanceof BackendApiError
+        ? (error.details as Record<string, unknown> | undefined)
+        : undefined;
+  const raw = details && typeof details === "object" ? (details as Record<string, unknown>).credits_charged : null;
+  return typeof raw === "number" ? raw : null;
+}
+
+/** "get_profile: /v1/instagram/profile: not found or private (Profile is private)" -> "Profile is private". */
+function notFoundReason(text: string): string {
+  const m = text.match(/\(([^()]+)\)\s*$/);
+  return m ? m[1] : trimTech(text);
+}
+
+function trimTech(text: string): string {
+  return text.replace(/^[a-z_]+: /, "").replace(/\/v\d\/[\w/-]+: /g, "").slice(0, 160);
 }
 
 /**
@@ -176,6 +216,7 @@ export function trackAccount(
       label: input.label,
       notes: input.notes,
       pages: input.pages ?? 1,
+      allow_empty: input.allowEmpty ?? false,
     },
     opts,
   );

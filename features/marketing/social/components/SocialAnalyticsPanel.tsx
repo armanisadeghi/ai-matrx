@@ -73,7 +73,7 @@ export function SocialAnalyticsPanel({
   const onTrack = statuses.filter((s) => s === "achieved" || s === "on_track").length;
 
   return (
-    <SectionCard title="Social" action={{ label: "KPIs", href: kpisHref }}>
+    <SectionCard title="Social" action={{ label: "Open Socials", href: marketingRoutes.brandSocials(brandSeg) }}>
       <div className="grid grid-cols-2 gap-2 p-3 lg:grid-cols-4">
         <KpiTile
           label="Tracked accounts"

@@ -10,15 +10,35 @@
 
 import { useState, type ReactNode } from "react";
 import { usePathname } from "next/navigation";
-import { Plus } from "lucide-react";
+import {
+  Bookmark,
+  Clapperboard,
+  Megaphone,
+  Plus,
+  Target,
+  TrendingUp,
+  Users,
+  type LucideIcon,
+} from "lucide-react";
 
 import { RecordPageHeader } from "@/features/shell/components/header/templates/RecordPageHeader";
 import { useMarketingBrand } from "@/features/marketing/lib/brand-context";
 import { marketingRoutes } from "@/features/marketing/lib/routes";
 
-import { SOCIALS_TABS } from "../types";
+import { SOCIALS_TABS, type SocialsTabId } from "../types";
 import { SocialsContext } from "./SocialsContext";
 import { TrackAccountDialog } from "./TrackAccountDialog";
+
+// Every tab carries an icon so the header's mode nav can narrow to an icon pill
+// (still one click per tab) before it ever folds the tabs into a dropdown.
+const TAB_ICONS: Record<SocialsTabId, LucideIcon> = {
+  accounts: Users,
+  studio: Clapperboard,
+  outliers: TrendingUp,
+  swipe: Bookmark,
+  ads: Megaphone,
+  kpis: Target,
+};
 
 export function SocialsShell({ children }: { children: ReactNode }) {
   const brand = useMarketingBrand();
@@ -26,7 +46,7 @@ export function SocialsShell({ children }: { children: ReactNode }) {
   const [trackOpen, setTrackOpen] = useState(false);
 
   const base = marketingRoutes.brandSocials(brand.seg);
-  const modes = SOCIALS_TABS.map((tab) => ({ name: tab.label, href: `${base}/${tab.id}` }));
+  const modes = SOCIALS_TABS.map((tab) => ({ name: tab.label, href: `${base}/${tab.id}`, icon: TAB_ICONS[tab.id] }));
   // Account / post detail belong to the Accounts tab.
   const segment = pathname.startsWith(`${base}/`) ? pathname.slice(base.length + 1).split("/")[0] : "";
   const activeTab = SOCIALS_TABS.find((t) => t.id === segment)?.id ?? "accounts";
