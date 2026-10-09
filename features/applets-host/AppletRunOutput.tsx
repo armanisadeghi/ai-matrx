@@ -15,21 +15,44 @@
 // plain sentence (`@ai-matrx/applets` forVisitor) and the server's own words went to the error inspector. The
 // stream's own error line (engineering words) is never drawn here; a job only its owner can fix offers the
 // owner the way to it.
+//
+// A RUN THAT FINISHED WITH NO ANSWER SAYS SO (lane F8, Applet audit 2026-10-09): a "Done" with an empty body
+// reads as a broken page. When the run is done and neither the stream, the run nor a kind carries any answer
+// text, the visitor reads one plain line and can run it again with the same values.
 
 import type { JobRunView } from "@ai-matrx/applets";
 import { LiveRunDisplay } from "@ai-matrx/chat/agents/components/live-run/LiveRunDisplay";
-import { selectRequest } from "@ai-matrx/chat/agents/redux/execution-system/active-requests/active-requests.selectors";
+import {
+  selectAnswerText,
+  selectRequest,
+} from "@ai-matrx/chat/agents/redux/execution-system/active-requests/active-requests.selectors";
+import { Button } from "@ai-matrx/design-system/controls";
 import type { KindInstanceRenderProps } from "@ai-matrx/content-ir-react";
 
 import Link from "next/link";
-import { TriangleAlert, Wrench } from "lucide-react";
+import { RotateCcw, TriangleAlert, Wrench } from "lucide-react";
 
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectOrganizationIds } from "@/features/scopes/redux/selectors/tree";
 import KindInstanceRender from "@/features/content-ir/studio/components/KindInstanceRender";
+import { finishedWithoutAnswer, retryOf } from "@/features/applets-host/run-answer";
 
 /** Failures only the Applet's owner can fix (the job was deleted, or is set up wrong). */
 const OWNER_FIXES = new Set(["job_unavailable", "job_misconfigured"]);
+
+function NoAnswer({ run }: { run: JobRunView }) {
+  const retry = retryOf(run);
+  return (
+    <div role="status" className="flex items-center gap-2 py-1 text-sm text-muted-foreground">
+      <span className="min-w-0">This run finished without an answer.</span>
+      {retry ? (
+        <Button variant="quiet" icon={<RotateCcw />} onClick={retry}>
+          Run again
+        </Button>
+      ) : null}
+    </div>
+  );
+}
 
 export function AppletRunOutput({
   run,
@@ -44,6 +67,7 @@ export function AppletRunOutput({
   const requestId = run.ref?.requestId ?? null;
   const adopted = useAppSelector((state) => requestId !== null && selectRequest(requestId)(state) !== undefined);
   const memberOrgs = useAppSelector(selectOrganizationIds);
+  const streamedAnswer = useAppSelector((state) => (requestId !== null ? selectAnswerText(requestId)(state) : ""));
   const label = run.label ?? "Working";
 
   if (run.status === "error" && run.error) {
@@ -64,7 +88,15 @@ export function AppletRunOutput({
       </div>
     );
   }
-  if (adopted) return <LiveRunDisplay requestId={requestId} label={label} />;
+  const empty = finishedWithoutAnswer(run, streamedAnswer);
+  if (adopted) {
+    return (
+      <>
+        <LiveRunDisplay requestId={requestId} label={label} />
+        {empty ? <NoAnswer run={run} /> : null}
+      </>
+    );
+  }
   if (run.status === "resolving" || (run.status === "running" && !run.result)) return <LiveRunDisplay pending label={label} />;
   if (run.result) {
     return (
@@ -76,5 +108,6 @@ export function AppletRunOutput({
       />
     );
   }
+  if (empty) return <NoAnswer run={run} />;
   return null;
 }

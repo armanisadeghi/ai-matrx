@@ -3,7 +3,7 @@
  * proved the old regex checks refused, beside the true violation the check must still refuse. Every
  * check reads the syntax tree, so a word in a string, JSX text or a comment is never code.
  */
-import { archiveCalledDelete, browserDialogs, deadButtons, fieldsWithNoInput, formsReseededFromRow, handBuiltTables, jobValuesNotTaken, misspelledChoices, parseProblem, writesFromEffects } from "./applet-code-checks";
+import { archiveCalledDelete, browserDialogs, deadButtons, examplesSeededAsValues, fieldsWithNoInput, formsReseededFromRow, handBuiltTables, jobValuesNotTaken, misspelledChoices, parseProblem, writesFromEffects } from "./applet-code-checks";
 import { coerceBuildAnswer } from "./build-applet";
 import { checkBuildAnswer } from "./check-build-answer";
 
@@ -216,5 +216,36 @@ describe("writesFromEffects names a row written from an effect", () => {
     expect(writesFromEffects(file(live, "breakdowns_list.tsx"))).toEqual(["create"]);
     expect(writesFromEffects(file(`React.useEffect(() => { void posts.create({ title: "x" }); }, []);`))).toEqual(["create"]);
     expect(writesFromEffects(file(`const save = () => posts.create(values);\nuseEffect(() => { document.title = "x"; }, []);`))).toEqual([]);
+  });
+});
+
+describe("F8 examplesSeededAsValues: an example is a placeholder, never a value", () => {
+  it("names a form that starts with the example its placeholder offers (live: 34 Applets, 2026-10-09)", () => {
+    const src = `import { useState } from "react";
+export default function App() {
+  const [form, setForm] = useState({ city: 'New York City', interest: '' });
+  const [destination, setDestination] = useState(() => "Syria");
+  return <div>
+    <input value={form.city} placeholder="e.g. Paris, Tokyo, New York City..." onChange={(e) => setForm({ ...form, city: e.target.value })} />
+    <input value={destination} placeholder="e.g. Syria, North Korea" onChange={(e) => setDestination(e.target.value)} />
+  </div>;
+}`;
+    expect(examplesSeededAsValues(file(src))).toEqual([
+      { name: "city", value: "New York City" },
+      { name: "destination", value: "Syria" },
+    ]);
+  });
+
+  it("passes an empty start, and a choice default no placeholder offers", () => {
+    const src = `import { useState } from "react";
+export default function App() {
+  const [form, setForm] = useState({ city: "", tone: "Friendly" });
+  const [kind, setKind] = useState("all");
+  return <div>
+    <input value={form.city} placeholder="e.g. Paris" onChange={() => undefined} />
+    <select value={kind} onChange={() => undefined}><option value="all">All</option></select>
+  </div>;
+}`;
+    expect(examplesSeededAsValues(file(src))).toEqual([]);
   });
 });

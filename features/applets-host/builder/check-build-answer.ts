@@ -7,7 +7,7 @@
 import { checkAppletSources } from "@ai-matrx/applets/platform";
 import type { AppletSource } from "@ai-matrx/applets";
 
-import { archiveCalledDelete, bannedIcons, browserDialogs, deadButtons, fieldsWithNoInput, formsReseededFromRow, handBuiltTables, jobValuesNotTaken, misspelledChoices, parseProblem, writesFromEffects } from "./applet-code-checks";
+import { archiveCalledDelete, bannedIcons, browserDialogs, deadButtons, examplesSeededAsValues, fieldsWithNoInput, formsReseededFromRow, handBuiltTables, jobValuesNotTaken, misspelledChoices, parseProblem, writesFromEffects } from "./applet-code-checks";
 import { BuildRefused, dateFieldsAsText, literalNewlineAttributes, newTableGaps, type BuildAnswer, type BuilderFile } from "./build-applet";
 
 const READS_SOURCE = /\buse(?:Rows|Row|Columns)\(\s*["'`]([^"'`$]+)["'`]/g;
@@ -100,6 +100,11 @@ export function checkBuildAnswer(
     }
     for (const icon of bannedIcons(f)) {
       problems.push(`${f.name} uses the ${icon} icon — it means "AI" and our interfaces never use it; pick an icon for what the page is about (FileText, Building2, ListChecks)`);
+    }
+    for (const seeded of examplesSeededAsValues(f)) {
+      problems.push(
+        `${f.name} starts ${seeded.name} as "${seeded.value}", which its placeholder offers as an example — an example is the placeholder of an EMPTY box, never a value: start it as ""`,
+      );
     }
     for (const attr of literalNewlineAttributes(f)) {
       problems.push(`${f.name} has ${attr}="…\\n…", which shows a literal "\\n" — keep it one line of plain text`);

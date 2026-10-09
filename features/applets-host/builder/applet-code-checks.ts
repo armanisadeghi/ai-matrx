@@ -760,3 +760,67 @@ export function jobValuesNotTaken(file: BuilderFile, inputs: ReadonlyMap<string,
   }
   return out;
 }
+
+/**
+ * AN EXAMPLE IS A PLACEHOLDER, NEVER A VALUE (lane F8, Applet audit 2026-10-09). Thirty-four stored Applets
+ * started their form as `useState({ city: 'New York City' })` beside `placeholder="e.g. Paris, Tokyo, New York
+ * City…"`: the visitor's run answered "New York City" when she left it, and typing into the box added to the
+ * example ("Dallas-Fort WorthDallas-Fort Worth"). Named: a non-blank string a `useState` starts with — as the
+ * whole value, one property of an object, or what a lazy initializer returns — that a `placeholder` in the same
+ * file also offers. A choice's default (`useState("all")` for a select) has no placeholder and is never named.
+ */
+export function examplesSeededAsValues(file: BuilderFile): { name: string; value: string }[] {
+  const ast = treeOf(file);
+  if (!ast) return [];
+  const placeholders: string[] = [];
+  walk(ast, (node) => {
+    if (node.type !== "JSXAttribute" || node.name.type !== "JSXIdentifier" || node.name.name !== "placeholder") return;
+    const text = attributeString(node);
+    if (text) placeholders.push(text.toLowerCase());
+  });
+  if (!placeholders.length) return [];
+  const offered = (value: string): boolean => {
+    const v = value.trim().toLowerCase();
+    return v.length >= 2 && placeholders.some((p) => p.includes(v));
+  };
+  const out: { name: string; value: string }[] = [];
+  const seen = new Set<string>();
+  const add = (name: string, value: string) => {
+    const key = `${name}\u0000${value}`;
+    if (seen.has(key) || !offered(value)) return;
+    seen.add(key);
+    out.push({ name, value });
+  };
+  const initial = (node: t.Node): t.Node => {
+    if (node.type === "ArrowFunctionExpression") {
+      if (node.body.type !== "BlockStatement") return node.body.type === "ParenthesizedExpression" ? node.body.expression : node.body;
+      const ret = node.body.body.find((s): s is t.ReturnStatement => s.type === "ReturnStatement");
+      return ret?.argument ?? node;
+    }
+    return node.type === "ParenthesizedExpression" ? node.expression : node;
+  };
+  walk(ast, (node, ancestors) => {
+    if (node.type !== "CallExpression" || node.callee.type !== "Identifier" || node.callee.name !== "useState") return;
+    const arg = node.arguments[0];
+    if (!arg) return;
+    const value = initial(arg);
+    const parent = ancestors[ancestors.length - 1];
+    const stateName =
+      parent && parent.type === "VariableDeclarator" && parent.id.type === "ArrayPattern" && parent.id.elements[0]?.type === "Identifier"
+        ? parent.id.elements[0].name
+        : "state";
+    const text = literalText(value);
+    if (text !== null) {
+      add(stateName, text);
+      return;
+    }
+    if (value.type !== "ObjectExpression") return;
+    for (const prop of value.properties) {
+      if (prop.type !== "ObjectProperty") continue;
+      const name = propertyName(prop.key, prop.computed);
+      const propText = literalText(prop.value);
+      if (name && propText !== null) add(name, propText);
+    }
+  });
+  return out;
+}
