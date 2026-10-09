@@ -15,8 +15,10 @@ import { ad, swipeCollection, trackedAccount } from "@/lib/db/generated/social";
 import { supabase } from "@/utils/supabase/client";
 
 import { outlierRowKind, type OutlierRowKind } from "./kind-models";
+import { toPostCardModel } from "./mappers";
 import { readProfiles } from "./service";
 import type {
+  PostCardModel,
   PostStatRow,
   SocialAdRow,
   SocialPostRow,
@@ -98,4 +100,39 @@ export async function readBrandOutliers(args: {
     });
     return row ? [row] : [];
   });
+}
+
+/**
+ * The same accounts' best posts by views, for a feed whose accounts have no multiples yet (a multiple
+ * needs 10+ posts of the account to compare against). Stored posts are shown rather than an empty feed.
+ */
+export async function readBrandTopPosts(args: {
+  organizationId: string;
+  brandId: string;
+  limit?: number;
+}): Promise<PostCardModel[]> {
+  const accounts = (await listAll(
+    browserDb,
+    trackedAccount,
+    (q) => q.eq("organization_id", args.organizationId).or(`brand_id.eq.${args.brandId},brand_id.is.null`),
+    { columns: ["profile_id", "role", "brand_id"] },
+  ).catch((e: unknown) => fail("social.tracked_account list", errorText(e)))) as Pick<TrackedAccountRow, "profile_id">[];
+  if (accounts.length === 0) return [];
+  const ids = [...new Set(accounts.map((a) => a.profile_id))];
+  const stats = await supabase
+    .schema("social")
+    .from("post_stat")
+    .select("*, post:post!inner(*)")
+    .in("post.profile_id", ids)
+    .is("post.deleted_at", null)
+    .not("views", "is", null)
+    .order("views", { ascending: false })
+    .limit(args.limit ?? OUTLIER_FEED_LIMIT);
+  if (stats.error) fail("social.post_stat top posts", stats.error.message);
+  const rows = (stats.data ?? []) as unknown as StatWithPost[];
+  const profiles = await readProfiles([...new Set(rows.map((r) => r.post.profile_id).filter((x): x is string => !!x))]);
+  const handleOf = new Map(profiles.map((p) => [p.id, p.handle]));
+  return rows.map((r) =>
+    toPostCardModel({ post: r.post, stat: r, handle: r.post.profile_id ? (handleOf.get(r.post.profile_id) ?? null) : null }),
+  );
 }

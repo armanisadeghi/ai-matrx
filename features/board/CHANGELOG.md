@@ -1,5 +1,9 @@
 # CHANGELOG — Board (`features/board`)
 
+## 2026-10-09 — Social tiles look like products (SOC-TILES)
+
+- Profile tile showed a bare header and "No outlier posts yet" even when the account had stored posts (multiples need 10+ posts). It now shows the stored posts as thumbnails ranked by multiple then views, responsive to the tile size, with Track / Open account. Post, outlier feed, ad and swipe tiles got real images and dense info; no vendor or credit wording in the chrome. Layout rules + guard: `items/social-tile-model.ts`, `items/__tests__/social-tile-model.test.ts`.
+
 ## 2026-10-09 — Note tile: the Write editor keeps the caret across sleep and remount
 
 - Root cause: the Split textarea's caret was kept per note (`useKeptTextSelection`), the one editor's (Write / Source) was not — a tile waking or remounting put the caret at the document start (work was kept). `@ai-matrx/rich-editor` 0.5.43 adds `getCaret` / `restoreCaret(carry, { focus })` to its controller; `lib/working-copy/useKeptRichCaret.ts` tracks the caret while the editor is up, keeps it per note under the working-copy key (`workingCopies.richCarets`), and puts it back on wake/mount without taking focus (never over a field the person types in elsewhere).

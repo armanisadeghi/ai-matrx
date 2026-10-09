@@ -52,6 +52,7 @@ import {
   type OutlierRowKind,
 } from "@/features/marketing/social/kind-models";
 import { toAdCardModel } from "@/features/marketing/social/ads";
+import { PostMedia } from "@/features/marketing/social/components/PostMedia";
 import { toPostCardModel } from "@/features/marketing/social/mappers";
 import {
   addToCollection,
@@ -110,12 +111,9 @@ import {
 import {
   AdTileView,
   OutlierFeedView,
-  PostPlayer,
   PostTileView,
   ProfileTileView,
   SwipeTileView,
-  useRevokeOnChange,
-  type PlayerSource,
 } from "./social-tile-views";
 import type { BoardItemType, ItemBodyProps, PickerProps } from "./types";
 
@@ -393,37 +391,6 @@ function OpenPostPanel({ postId, organizationId, onClose }: { postId: string | n
   return null;
 }
 
-/** The poster and, on Play, the video in the same box: a YouTube embed or the stored file through the playback door. */
-function PostTilePlayer({ card, organizationId }: { card: PostCardModel & { platformPostId: string }; organizationId: string }) {
-  const youtube = card.platform === "youtube";
-  const media = useQuery({
-    queryKey: ["marketing", "social", "media", card.postId],
-    queryFn: ({ signal }) => listPostMedia(card.postId, { organizationId, signal }),
-    staleTime: 60_000,
-    enabled: !youtube,
-  });
-  const stored = youtube ? undefined : media.data?.find((m) => m.role === "video");
-  const [source, setSource] = useState<PlayerSource>({ kind: "none" });
-  const [loading, setLoading] = useState(false);
-  useRevokeOnChange(source.kind === "stored" ? source.url : null);
-
-  async function loadStored() {
-    if (!stored) return;
-    setLoading(true);
-    try {
-      const url = await fetchPlaybackUrl(stored.door, { organizationId });
-      setSource({ kind: "stored", url, mime: stored.mime_type });
-    } catch (e) {
-      toast.error(socialErrorMessage(e, "Could not load the video."));
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  const onPlay = youtube ? () => setSource({ kind: "youtube", videoId: card.platformPostId }) : stored ? () => void loadStored() : null;
-  return <PostPlayer post={card} source={source} loading={loading} onPlay={onPlay} className="h-full w-full" />;
-}
-
 function PostRecordBody({ id, source, title, onSource, organizationId }: ItemBodyProps & { id: string; organizationId: string }) {
   const detail = usePostDetail(id);
   const transcript = usePostTranscript(id);
@@ -477,7 +444,19 @@ function PostRecordBody({ id, source, title, onSource, organizationId }: ItemBod
         engagementRate={stat?.engagement_rate ?? null}
         platform={post.platform}
         format={post.format}
-        player={<PostTilePlayer card={card} organizationId={organizationId} />}
+        player={
+          <PostMedia
+            fill
+            postId={card.postId}
+            organizationId={organizationId}
+            thumbnailUrl={card.thumbnailUrl}
+            postUrl={card.url}
+            platform={card.platform}
+            platformPostId={card.platformPostId}
+            format={card.format}
+            durationSeconds={card.durationSeconds}
+          />
+        }
         hasTranscript={hasTranscript}
         transcriptNode={kind.transcript ? <PostTranscriptBlock serverData={kind.transcript} className="my-1" /> : null}
         actions={<PostActionBar actions={actions} hasTranscript={hasTranscript} />}

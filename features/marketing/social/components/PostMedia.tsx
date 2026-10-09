@@ -60,6 +60,7 @@ export function PostMedia({
   format,
   durationSeconds,
   onRatio,
+  fill,
 }: {
   postId: string;
   organizationId: string;
@@ -71,6 +72,8 @@ export function PostMedia({
   durationSeconds: number | null;
   /** Reports the media's true aspect ratio once known, so the host can lay out around it. */
   onRatio?: (ratio: number) => void;
+  /** The host sizes the box (a board tile): the frame fills it instead of following the media's ratio. */
+  fill?: boolean;
 }) {
   const client = useQueryClient();
   const embed = platform === "youtube";
@@ -195,7 +198,7 @@ export function PostMedia({
 
   if (embed && embedding) {
     return (
-      <Frame ratio={ratio}>
+      <Frame ratio={ratio} fill={fill}>
         <iframe
           title="YouTube player"
           src={`https://www.youtube-nocookie.com/embed/${encodeURIComponent(platformPostId)}?autoplay=1&rel=0&playsinline=1`}
@@ -209,7 +212,7 @@ export function PostMedia({
   }
   if (src) {
     return (
-      <Frame ratio={ratio}>
+      <Frame ratio={ratio} fill={fill}>
         <video
           src={src}
           poster={poster ?? undefined}
@@ -232,7 +235,7 @@ export function PostMedia({
   const canPlay = embed || wantsVideo;
 
   return (
-    <Frame ratio={ratio}>
+    <Frame ratio={ratio} fill={fill}>
       {poster ? (
         <img
           src={poster}
@@ -290,9 +293,9 @@ export function PostMedia({
   );
 }
 
-function Frame({ ratio, children }: { ratio: number; children: React.ReactNode }) {
+function Frame({ ratio, fill, children }: { ratio: number; fill?: boolean; children: React.ReactNode }) {
   return (
-    <div className="relative w-full overflow-hidden rounded-lg bg-black" style={{ aspectRatio: String(ratio) }}>
+    <div className="relative w-full overflow-hidden rounded-lg bg-black" style={fill ? { height: "100%" } : { aspectRatio: String(ratio) }}>
       {children}
     </div>
   );
