@@ -119,3 +119,24 @@ Standards components (`@/features/marketing/social/components/…`)
 `__tests__/outliers.feed.test.ts` (filter, watchlist serialization, hits), `kpi.test.ts` (current-vs-target math, pace,
 benchmark), `__tests__/outlier.test.ts` (tiers, text, badge states), `mappers.test.ts` (growth judge, account roll-ups, filters,
 series), `link.test.ts`, `stream.test.ts` (the NDJSON contract). Run: `pnpm test features/marketing/social`.
+
+## Swipe file and Ads (SI-07b2)
+
+- **Swipe file** (`SwipeFileTab`): collections rail (create, rename, archive = `deleted_at`, "Show archived" + Restore), masonry of
+  saved posts (`SocialPostCard`) and ads (`AdCard`), filters (type, platform, format, tag, date saved, search), `SwipeItemSheet`
+  (note, tags, copy/remove per collection, move, `Open post details` -> `PostDrawer`), `Save link` (ingest stream, then add), bulk
+  add-to-collection and bulk transcribe (estimate + confirm first). Pure rules: `swipe.ts`.
+- **Where note and tags live:** on the membership edge (`platform.associations.metadata = {note, tags[]}`), written by the server's
+  `PUT /social/collections/{id}/items/{type}/{id}`. Not `platform.tag`: a post/ad is shared Layer A, so a person cannot file a tag
+  under it (`file_under_tag` needs editor on the item). Per collection, so a many-collection item has one pair each.
+- **Ads** (`AdsTab`): Search (Meta/TikTok/Google/LinkedIn by keyword or advertiser; shows the provider's effective country from
+  `effective_params`, cost, fallback chip; save to swipe file; track advertiser) and Tracked (a `platform.saved_view`, surface
+  `social.advertisers`, definition `{library, advertiser, advertiserPlatformId, lastLookAt}`; ads first seen after `lastLookAt`
+  are marked New, `Mark seen` moves the look; `Look again` = one confirmed search; format mix + landing-page ranking). No schedules.
+  Pure rules: `ads.ts`.
+- **Operations:** `SocialProviderCard` on `/marketing/operations/connections` (status + platform coverage from `GET /social/capabilities`,
+  credits from the new `GET /social/credits`). Spend this month reads "Not recorded by the server yet": the social server writes no
+  provider spend to a ledger. No Capabilities entry: that page is the SEO capabilities catalogue.
+- **Open:** `Add to board` (the board has no tile that holds a specific saved post/ad; add to the bulk bar when board-tiles lands);
+  Meta video ads show a label tile (the normalizer keeps only the video file, no poster); Share link, Table view, Suggest tags/Brief.
+- Tests: `swipe.test.ts`, `ads.test.ts`, `providerCard.test.ts` (jest).
