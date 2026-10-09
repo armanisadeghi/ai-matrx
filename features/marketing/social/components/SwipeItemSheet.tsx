@@ -11,7 +11,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { ExternalLink } from "lucide-react";
 
-import { Button, Chip, ChipSet, Field, Select, Textarea, type SelectOption } from "@ai-matrx/design-system/controls";
+import { Button, Field, Select, Textarea, type SelectOption } from "@ai-matrx/design-system/controls";
 import { Drawer, DrawerBody, DrawerContent, DrawerHeader, DrawerTitle } from "@/components/ui/drawer";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
@@ -81,9 +81,10 @@ export function SwipeItemSheet({
 
   const nameOf = (id: string) => collections.find((c) => c.id === id)?.name ?? "Archived collection";
   const holdOptions: SelectOption[] = item.edges.map((e) => ({ value: e.collectionId, label: nameOf(e.collectionId) }));
-  const moveOptions: SelectOption[] = collections
-    .filter((c) => !heldIds.includes(c.id))
-    .map((c) => ({ value: c.id, label: c.name }));
+  const moveOptions: SelectOption[] = [
+    { value: "", label: "Move to…" },
+    ...collections.filter((c) => !heldIds.includes(c.id)).map((c) => ({ value: c.id, label: c.name })),
+  ];
   const tags = parseTagInput(tagText);
   const dirty = edge ? note.trim() !== edge.note.trim() || tags.join("|") !== edge.tags.join("|") : false;
   const opts = { organizationId };
@@ -164,13 +165,6 @@ export function SwipeItemSheet({
               onChange={(e) => setTagText(e.target.value)}
               disabled={!edge}
             />
-            {tags.length ? (
-              <ChipSet>
-                {tags.map((t) => (
-                  <Chip key={t} label={t} />
-                ))}
-              </ChipSet>
-            ) : null}
             <div>
               <Button
                 variant="primary"
@@ -199,13 +193,13 @@ export function SwipeItemSheet({
                 </label>
               );
             })}
-            {moveOptions.length ? (
+            {moveOptions.length > 1 ? (
               <div className="pt-1">
                 <Select
                   aria-label="Move to"
                   value=""
                   options={moveOptions}
-                  onValueChange={(v) => void moveTo(v)}
+                  onValueChange={(v) => (v ? void moveTo(v) : undefined)}
                   disabled={busy || !edge}
                 />
               </div>

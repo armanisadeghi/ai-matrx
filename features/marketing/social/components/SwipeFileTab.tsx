@@ -398,7 +398,11 @@ export function SwipeFileTab() {
         initialCollectionId={scope}
         organizationId={organizationId}
         onClose={() => setSheetKey(null)}
-        onOpenPost={(i) => i.post && setDrawerPost(i.post)}
+        onOpenPost={(i) => {
+          if (!i.post) return;
+          setSheetKey(null);
+          setDrawerPost(i.post);
+        }}
       />
       <PostDrawer post={drawerPost} onClose={() => setDrawerPost(null)} />
 

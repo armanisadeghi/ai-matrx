@@ -202,8 +202,8 @@ function AdsSearch({ onTracked }: { onTracked: () => void }) {
           onChange={(e) => setText(e.target.value)}
           className="min-w-48 flex-1"
         />
-        <Button variant="primary" icon={<Search />} type="submit" disabled={!canSearch} title={`About ${creditsLabel(1)}`}>
-          {busy ? "Searching…" : "Search"}
+        <Button variant="primary" icon={<Search />} type="submit" disabled={!canSearch} title={`About ${creditsLabel(1)}`} aria-busy={busy}>
+          Search
         </Button>
       </form>
 
@@ -438,8 +438,8 @@ function AdvertiserView({ advertiser, onBack }: { advertiser: TrackedAdvertiser;
             Mark {fresh.size} seen
           </Button>
         ) : null}
-        <Button variant="outline" icon={<RefreshCw />} disabled={busy} title={`About ${creditsLabel(1)}`} onClick={() => void lookAgain()}>
-          {busy ? "Looking…" : "Look again"}
+        <Button variant="outline" icon={<RefreshCw />} disabled={busy} title={`About ${creditsLabel(1)}`} aria-busy={busy} onClick={() => void lookAgain()}>
+          Look again
         </Button>
         <Button variant="quiet" onClick={() => void stop()}>
           Stop tracking
