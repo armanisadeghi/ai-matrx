@@ -60,6 +60,7 @@ import { GuidelinesDraftButton } from "./GuidelinesDraft";
 import { GUIDELINES_STALE_AFTER_DAYS } from "./GuidelinesGapPrompt";
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { ReadFailure } from "@ai-matrx/design-system";
+import { useFocusEditTarget } from "@/features/marketing/lib/useEditTarget";
 
 /** After this long without an edit the document is called out as possibly
  *  stale — "we keep these things up to date" is half the ruling. ONE line,
@@ -113,6 +114,8 @@ export function KwGuidelinesPanel({
     queryKey: kwGuidelinesQueryKey(siteId),
     queryFn: ({ signal }) => getKwGuidelines(siteId, signal),
   });
+
+  useFocusEditTarget("guidelines", !stored.isLoading);
 
   const savedText = stored.data?.guidelines ?? "";
   // Adopt server truth until the expert starts typing; a save clears the draft
@@ -274,6 +277,7 @@ export function KwGuidelinesPanel({
 
       <ProTextarea
         wrapperClassName="min-h-0 flex-1"
+        data-edit-target="guidelines"
         value={value}
         onChange={(event) => setDraft(event.target.value)}
         disabled={stored.isLoading || save.isPending}

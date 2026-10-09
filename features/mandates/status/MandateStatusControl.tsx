@@ -131,16 +131,26 @@ export function MandateStatusControl({
           disabled={busy}
           aria-label={`Status: ${MANDATE_STATUS_META[status].label}. Change status`}
           className={cn(
-            "group inline-flex items-center gap-0.5 rounded-full outline-none focus-visible:ring-2 focus-visible:ring-ring",
+            // Not a capsule itself: the ONE capsule is the badge inside (the pill
+            // guard read a rounded wrapper as a stretched pill). The focus ring
+            // is drawn on that capsule.
+            "group inline-flex items-center outline-none",
             busy && "opacity-60",
             className,
           )}
           onClick={(e) => e.stopPropagation()}
         >
-          <MandateStatusBadge status={status} size={size} />
-          <ChevronDown
-            className="h-3.5 w-3.5 text-muted-foreground group-hover:text-foreground"
-            aria-hidden
+          {/* The chevron rides INSIDE the one capsule (StatusBadge `trailing`). */}
+          <MandateStatusBadge
+            status={status}
+            size={size}
+            className="group-focus-visible:ring-2 group-focus-visible:ring-ring"
+            trailing={
+              <ChevronDown
+                className="h-3.5 w-3.5 shrink-0 opacity-70 group-hover:opacity-100"
+                aria-hidden
+              />
+            }
           />
         </button>
       </DropdownMenuTrigger>

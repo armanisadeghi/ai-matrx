@@ -8,6 +8,8 @@
 
 import type { ReactNode } from "react";
 import Link from "next/link";
+import { useRouter, useSearchParams } from "next/navigation";
+import { useEffect } from "react";
 import {
   BookText,
   Building2,
@@ -91,7 +93,13 @@ function Body({ tracker }: { tracker: NewsTrackerInputs }) {
   const editorHref = tracker.brandId
     ? marketingRoutes.brandMonitorSetup(tracker.brandId, { trackerId: tracker.id })
     : null;
-  const brandHref = tracker.brandId ? marketingRoutes.brandIdentity(tracker.brandId) : null;
+  const withEdit = (href: string | null, field: string) =>
+    href ? `${href}${href.includes("?") ? "&" : "?"}edit=${field}` : null;
+  const topicsHref = withEdit(editorHref, "topics");
+  const briefHref = withEdit(editorHref, "brief");
+  const brandHref = tracker.brandId
+    ? withEdit(marketingRoutes.brand(tracker.brandId), "description")
+    : null;
   const competitorsHref = tracker.brandId
     ? marketingRoutes.brandCompetitors(tracker.brandId)
     : null;
@@ -131,7 +139,7 @@ function Body({ tracker }: { tracker: NewsTrackerInputs }) {
       <Section
         title="Topics"
         count={tracker.topics.length}
-        action={tracker.topics.length ? <EditLink href={editorHref} label="Edit topics" /> : null}
+        action={tracker.topics.length ? <EditLink href={topicsHref} label="Edit topics" /> : null}
       >
         {tracker.topics.length ? (
           <Chips items={tracker.topics} />
@@ -140,14 +148,14 @@ function Body({ tracker }: { tracker: NewsTrackerInputs }) {
             icon={<Tags />}
             title="No topics"
             line="Without topics every story is judged against the brand name alone."
-            action={<EditLink href={editorHref} label="Add topics" />}
+            action={<EditLink href={topicsHref} label="Add topics" />}
           />
         )}
       </Section>
 
       <Section
         title="Brief"
-        action={brief && !tracker.briefIsEmpty ? <EditLink href={editorHref} label="Edit brief" /> : null}
+        action={brief && !tracker.briefIsEmpty ? <EditLink href={briefHref} label="Edit brief" /> : null}
       >
         {brief && !tracker.briefIsEmpty ? (
           <div className="whitespace-pre-wrap rounded-md border border-border bg-card p-3 text-sm">
@@ -158,7 +166,7 @@ function Body({ tracker }: { tracker: NewsTrackerInputs }) {
             icon={<BookText />}
             title="No brief"
             line="Write who you serve and which stories matter."
-            action={<EditLink href={editorHref} label="Write the brief" />}
+            action={<EditLink href={briefHref} label="Write the brief" />}
           />
         )}
       </Section>
@@ -271,6 +279,14 @@ export function NewsTrackerInputsView({ trackerId }: { trackerId: string }) {
   const editorHref = tracker?.brandId
     ? marketingRoutes.brandMonitorSetup(tracker.brandId, { trackerId: tracker.id })
     : null;
+  // `/marketing/monitoring/<tracker>?edit=topics|brief` (the readiness link) lands ON that field in the editor.
+  const router = useRouter();
+  const edit = useSearchParams().get("edit");
+  useEffect(() => {
+    if (editorHref && (edit === "topics" || edit === "brief")) {
+      router.replace(`${editorHref}&edit=${edit}`);
+    }
+  }, [editorHref, edit, router]);
 
   return (
     <>

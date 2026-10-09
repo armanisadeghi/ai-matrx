@@ -107,6 +107,7 @@ import type {
   MarketingSite,
 } from "@/features/marketing/types";
 import { extractErrorMessage } from "@/utils/errors";
+import { useFocusEditTarget, useIsEditTarget } from "@/features/marketing/lib/useEditTarget";
 import { AccessGate } from "@/features/access-gate/components/AccessGate";
 import { ShareButton } from "@/features/sharing/components/ShareButton";
 
@@ -356,7 +357,9 @@ export function BrandWorkspace({ brandId }: { brandId: string }) {
   const deletePropertyMutation = useDeleteProperty();
   const deleteAssetMutation = useDeleteBrandAsset();
   const deleteFactMutation = useDeleteBusinessFact();
-  const [editorOpen, setEditorOpen] = useState(false);
+  const openForEdit = useIsEditTarget("description");
+  const [editorOpen, setEditorOpen] = useState(openForEdit);
+  useFocusEditTarget("description", editorOpen);
   const [confirmingDelete, setConfirmingDelete] = useState(false);
   const [editingSite, setEditingSite] = useState<MarketingSite | null>(null);
   const [deletingSite, setDeletingSite] = useState<MarketingSite | null>(null);

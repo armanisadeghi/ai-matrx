@@ -138,9 +138,10 @@ function outputHrefOf(run: MandateRun, audience: "admin" | "product"): string | 
 }
 
 // Below this table width the two "who ran it / which level" columns start
-// hidden (still one click away in the Columns menu), so Date, Result, Cost,
-// Output and Open fit with no sideways scroll beside the open chat pane.
-const NARROW_TABLE_PX = 1100;
+// hidden (still one click away in the Columns menu), so Date, Agent, Result,
+// Cost, Output and Open fit whole with no sideways scroll — at 1280 px the
+// Runs tab's table is ~1190 px wide (2026-10-09: Cost read "5,414 poi…").
+const NARROW_TABLE_PX = 1320;
 
 /** The table's own width (not the window's: a side pane narrows the table, not the screen). */
 function useContainerWidth() {
@@ -271,7 +272,8 @@ export function RunsTable({
           {
             id: "holder",
             header: "Agent or workflow",
-            width: 150,
+            // Name + the Unattributed/Direct run label side by side.
+            width: 240,
             mobileHidden: true,
             sortable: false,
             filter: false,
@@ -323,7 +325,8 @@ export function RunsTable({
     {
       id: "cost",
       header: "Cost",
-      width: 72,
+      // "12,345 points" whole, never "5,414 poi…".
+      width: 112,
       sortable: true,
       filter: false,
       accessorFn: (run) => run.cost,

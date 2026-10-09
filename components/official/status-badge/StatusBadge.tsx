@@ -12,6 +12,7 @@
 // every entity's status reads the same way everywhere it appears. Example:
 // features/mandates/status/MandateStatusBadge.tsx.
 
+import type { ReactNode } from "react";
 import type { LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -43,6 +44,12 @@ export interface StatusBadgeProps {
   size?: StatusBadgeSize;
   /** One sentence saying what the status means — the hover text. */
   title?: string;
+  /**
+   * A glyph drawn INSIDE the capsule after the label — the chevron of a status
+   * that opens a menu. One capsule, never a pill wrapped in another rounded box
+   * (the pill guard read that as a stretched, off-centre pill, 2026-10-09).
+   */
+  trailing?: ReactNode;
   className?: string;
 }
 
@@ -52,6 +59,7 @@ export function StatusBadge({
   icon: Icon,
   size = "md",
   title,
+  trailing,
   className,
 }: StatusBadgeProps) {
   const s = SIZE_CLASS[size];
@@ -62,7 +70,9 @@ export function StatusBadge({
       title={title}
       data-status-tone={tone}
       className={cn(
-        "inline-flex shrink-0 items-center whitespace-nowrap rounded-full border font-semibold leading-none",
+        // matrx-glyph-trim: the icon's and chevron's own air is removed on both
+        // sides, so the INK sits the same distance from either edge.
+        "matrx-glyph-trim inline-flex shrink-0 items-center whitespace-nowrap rounded-full border font-semibold leading-none",
         TONE_CLASS[tone],
         s.root,
         className,
@@ -70,6 +80,7 @@ export function StatusBadge({
     >
       {Icon ? <Icon className={cn("shrink-0", s.icon)} aria-hidden /> : null}
       {label}
+      {trailing}
     </span>
   );
 }

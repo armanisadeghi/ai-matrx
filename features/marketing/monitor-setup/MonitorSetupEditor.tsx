@@ -120,6 +120,7 @@ import {
 } from "./model";
 
 import { ProTextarea } from "@/components/official/ProTextarea";
+import { useFocusEditTarget, useIsEditTarget } from "@/features/marketing/lib/useEditTarget";
 const NO_PROOF_SENTENCE =
   "Without a spokesperson or proof on file, pitch-ready stories will be marked 'needs a spokesperson'.";
 
@@ -215,7 +216,9 @@ function ItemList({
   refs,
   placeholder,
   warning,
+  editTarget,
 }: {
+  editTarget?: string;
   label: string;
   items: DraftItem[];
   onChange: (next: DraftItem[]) => void;
@@ -261,6 +264,7 @@ function ItemList({
       <div className="mt-1 flex items-center gap-2">
         <Input
           value={adding}
+          data-edit-target={editTarget}
           placeholder={placeholder}
           onChange={(e) => setAdding(e.target.value)}
           onKeyDown={(e) => {
@@ -423,6 +427,17 @@ function MonitorSetupEditorBody({
   const [setupError, setSetupError] = useState<unknown>(null);
   const [setupAttempt, setSetupAttempt] = useState(0);
   const [draft, setDraft] = useState<MonitorDraft | null>(null);
+  // The readiness link `?edit=topics|brief` names fields that exist only with the opportunity lens. On a
+  // coverage-only monitor that lens is switched on in the (unsaved, visible) form so the field is there.
+  const wantsOpportunityField = useIsEditTarget("topics") || useIsEditTarget("brief");
+  const switchedLens = useRef(false);
+  useEffect(() => {
+    if (!wantsOpportunityField || !draft || switchedLens.current) return;
+    switchedLens.current = true;
+    if (!draft.opportunity) setDraft({ ...draft, opportunity: true });
+  }, [wantsOpportunityField, draft]);
+  useFocusEditTarget("topics", draft !== null);
+  useFocusEditTarget("brief", draft !== null);
   // NEVER LOSE THE FORM (defect 3, 2026-10-05): the unsaved draft is kept per
   // brand + monitor in the shared wizard-draft store, so a remount (a reload, a
   // dev refresh, an error boundary retry, a session re-key) puts it back — and
@@ -1256,6 +1271,7 @@ function MonitorSetupEditorBody({
               <>
                 <ItemList
                   label="Beats"
+                  editTarget="topics"
                   items={draft.topics}
                   onChange={(topics) => update({ topics })}
                   refs={refs}
@@ -1500,6 +1516,7 @@ function MonitorSetupEditorBody({
                 <div key={key}>
                   <p className="text-xs font-medium text-foreground">{label}</p>
                   <ProTextarea minHeight={64}
+                    data-edit-target={key === "audience" ? "brief" : undefined}
                     value={draft.brief[key]}
                     placeholder={placeholder}
                     onChange={(e) =>

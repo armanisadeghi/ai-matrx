@@ -1,0 +1,13 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": { "incremental": false, "noEmit": true, "skipLibCheck": true },
+  "include": [
+    "next-env.d.ts",
+    "features/marketing/social/**/*.ts",
+    "features/marketing/social/**/*.tsx",
+    "features/marketing/competitors/BrandCompetitorDirectory.tsx",
+    "app/(core)/marketing/[brandId]/socials/swipe/page.tsx",
+    "app/(core)/marketing/[brandId]/socials/ads/page.tsx"
+  ],
+  "exclude": ["node_modules"]
+}

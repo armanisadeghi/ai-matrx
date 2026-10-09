@@ -350,6 +350,7 @@ function BrandEditorDialogBody({
             </Label>
             <ProTextarea
               id="brand-description"
+              data-edit-target="description"
               value={draft.description}
               onChange={(event) => set("description")(event.target.value)}
               minHeight={64}

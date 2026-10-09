@@ -313,8 +313,6 @@ export const MARKETING_BRAND_SUBROUTE_PROMISES: readonly {
   { comingSoonId: "marketing.social", subRoute: "socials" },
   { comingSoonId: "marketing.social.studio", subRoute: "socials/studio" },
   { comingSoonId: "marketing.social.outliers", subRoute: "socials/outliers" },
-  { comingSoonId: "marketing.social.swipe", subRoute: "socials/swipe" },
-  { comingSoonId: "marketing.social.ads", subRoute: "socials/ads" },
   { comingSoonId: "marketing.social.kpis", subRoute: "socials/kpis" },
 ];
 

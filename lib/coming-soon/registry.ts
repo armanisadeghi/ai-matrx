@@ -211,24 +211,6 @@ export const COMING_SOON: Record<string, ComingSoonEntry> = {
     stage: "building",
     surfaces: ["/marketing/[brand]/socials/studio"],
   },
-  "marketing.social.swipe": {
-    id: "marketing.social.swipe",
-    label: "Swipe file",
-    owner: "marketing",
-    promise:
-      "Save posts and ads into collections with tags and notes, from the app or the browser extension.",
-    stage: "building",
-    surfaces: ["/marketing/[brand]/socials/swipe"],
-  },
-  "marketing.social.ads": {
-    id: "marketing.social.ads",
-    label: "Competitor ads",
-    owner: "marketing",
-    promise:
-      "Search ad libraries and follow rival advertisers: what is live, for how long, and where it lands.",
-    stage: "building",
-    surfaces: ["/marketing/[brand]/socials/ads"],
-  },
   // Lane B email — the mailbox, the templates, the sequences — SHIPPED, and
   // /marketing/email is now its front door. What remains is LANE A: opt-in
   // marketing we send on the customer's behalf, which is committed vision and
