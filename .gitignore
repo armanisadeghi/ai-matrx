@@ -209,3 +209,6 @@ work/
 
 # applet render sweep report (scripts/applets/applet-render-sweep.ts output)
 .applet-render-sweep.json
+
+# Private generated diagnostics; never website assets or committed reports.
+/.matrx/diagnostics/

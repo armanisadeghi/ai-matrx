@@ -3,6 +3,7 @@ import path from 'path';
 
 import fs from 'fs/promises';
 import { discoverRoutesFromPageFiles } from '../utils/route-discovery/scan-fs';
+import { assertNoPublicDiagnostics, writeLocalDiagnostic } from './lib/local-diagnostics';
 
 async function findProjectRoot(startPath: string) {
     let currentPath = startPath;
@@ -21,11 +22,12 @@ async function findProjectRoot(startPath: string) {
     throw new Error('Could not find project root');
 }
 
-async function generateManifest() {
+export async function generateManifest(projectRootOverride?: string) {
     try {
         console.log('🚀 Starting manifest generation...');
 
-        const projectRoot = await findProjectRoot(__dirname);
+        const projectRoot = projectRootOverride ?? await findProjectRoot(__dirname);
+        assertNoPublicDiagnostics(projectRoot);
 
         // Test and experimental routes are consolidated under /demos/tests.
         // Keep this manifest aligned with the only supported route tree.
@@ -53,21 +55,16 @@ async function generateManifest() {
             }
         }
 
-        const publicDir = path.join(projectRoot, 'public');
-        await fs.mkdir(publicDir, { recursive: true });
-
-        const manifestPath = path.join(publicDir, 'test-directories.json');
-        await fs.writeFile(
-            manifestPath,
-            JSON.stringify(directories, null, 2)
-        );
+        const manifestPath = writeLocalDiagnostic(projectRoot, 'test-directories.json', directories);
 
         console.log(`✅ Generated manifest with ${directories.length} directories`);
-        process.exit(0);
+        return { manifestPath, directories };
     } catch (error) {
         console.error('❌ Error generating manifest:', error);
-        process.exit(1);
+        throw error;
     }
 }
 
-generateManifest();
+if (require.main === module) {
+    void generateManifest().catch(() => { process.exitCode = 1; });
+}

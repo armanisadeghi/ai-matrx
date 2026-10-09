@@ -163,6 +163,15 @@ v0.4.2991 lost theirs. Output is appended to the same dated log; it holds its ow
   `common-docs/systems/architecture/observability/projects/checks-run-in-the-app/PLAN.md`;
   `test:release-fail-forward` fails if a release calls the dispatcher again.
 
+## Private diagnostic build inputs
+
+`check:private-diagnostics` runs before every build variant and Next compilation.
+The two diagnostic producers also call the shared guard before writing: reports
+live only in ignored `.matrx/diagnostics/`, never `public/`. Type-error capture
+uses the existing compiler queue and retains compiler failure/unavailability in
+its atomic report and exit code; it never constructs a second compiler program.
+Keep the producer/refusal checks in `scripts/lib/__tests__/private-diagnostics.test.ts`.
+
 ## Commands
 
 | Command | What |
