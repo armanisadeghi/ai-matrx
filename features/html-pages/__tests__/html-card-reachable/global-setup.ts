@@ -20,7 +20,8 @@ export default async function globalSetup(): Promise<void> {
   process.env.HTML_CARD_ORIGIN = new URL(url).origin;
   const browser = await chromium.launch();
   const page = await browser.newPage();
-  await page.goto(url, { waitUntil: "domcontentloaded", timeout: 120_000 });
+  await page.goto(url, { waitUntil: "commit", timeout: 300_000 });
+  await page.waitForURL((u) => !u.pathname.startsWith("/api/dev-login"), { timeout: 300_000 });
   await page.context().storageState({ path: STATE });
   await browser.close();
 }

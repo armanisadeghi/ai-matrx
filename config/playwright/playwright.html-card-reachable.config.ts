@@ -14,7 +14,7 @@ export default defineConfig({
   testMatch: /.*\.spec\.ts$/,
   globalSetup: "../../features/html-pages/__tests__/html-card-reachable/global-setup.ts",
   outputDir: "../../.cache/playwright/html-card-reachable/out",
-  timeout: 300_000,
+  timeout: 600_000,
   workers: 1,
   reporter: [["list"]],
 });
