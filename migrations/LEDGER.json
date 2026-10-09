@@ -1,6 +1,6 @@
 {
   "note": "Checked-in snapshot of public._schema_migrations for the files under migrations/campaign and migrations/inverse. Written by `pnpm db:apply` on every successful production apply and refreshed whole by the nightly catch-up. Never hand-edited: a self-written checksum is a claim nobody can check. Guard: pnpm check:ledgered-files-unedited.",
-  "generated_at": "2026-10-09T07:43:54.384Z",
+  "generated_at": "2026-10-09T07:46:31.912Z",
   "files": {
     "migrations/campaign/a_chunk_is_the_size_the_client_door_can_actually_carry.sql": {
       "source": "matrx-frontend",
@@ -5167,6 +5167,18 @@
       "filename": "notionsmall3_b_me_is_the_readers_person.sql",
       "checksum": "e59bca7e2e5acfe29a9ae638d2344645f4f5d2747c53fa497b8f0572f3c30ef8",
       "applied_at": "2026-10-09 07:04:32.71104+00"
+    },
+    "migrations/campaign/notionsmall4_a_a_view_asked_for_by_a_stray_key_is_refused.sql": {
+      "source": "matrx-frontend",
+      "filename": "notionsmall4_a_a_view_asked_for_by_a_stray_key_is_refused.sql",
+      "checksum": "39938b6a390706a83a502937950dbae593301e7e46fbc6e772f3415864c7f070",
+      "applied_at": "2026-10-09 07:46:16.907486+00"
+    },
+    "migrations/campaign/notionsmall4_b_the_calendar_reads_the_organizations_week.sql": {
+      "source": "matrx-frontend",
+      "filename": "notionsmall4_b_the_calendar_reads_the_organizations_week.sql",
+      "checksum": "fdbf6c0f4b1567ad8fc140539355eecb5ca954fb36d7b1c2f65d5a3ae254ce2e",
+      "applied_at": "2026-10-09 07:46:30.610256+00"
     },
     "migrations/campaign/olderdoors_a_moved_older_table_reads_marked_and_refuses_writes.sql": {
       "source": "matrx-frontend",
