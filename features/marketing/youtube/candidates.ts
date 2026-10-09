@@ -119,3 +119,32 @@ export function channelBindCandidates(
 export function candidateIdentity(candidate: ChannelBindCandidate): string {
   return candidate.handle ?? candidate.channelId;
 }
+
+/** One bind row: the channel, plus the OTHER brands it is already bound to. */
+export interface ChannelBindRow {
+  candidate: ChannelBindCandidate;
+  /** Other brands' names; empty means no other brand holds this channel. */
+  boundTo: readonly string[];
+}
+
+/**
+ * Pairs each candidate with the other brands already bound to that channel and
+ * puts the UNBOUND channels first (title order within each group), so a press
+ * on the first row never silently moves a channel another client reads.
+ */
+export function orderBindRows(
+  candidates: readonly ChannelBindCandidate[],
+  elsewhere: ReadonlyArray<{ brandName: string; channelId: string }>,
+): ChannelBindRow[] {
+  const rows = candidates.map((candidate) => ({
+    candidate,
+    boundTo: [
+      ...new Set(
+        elsewhere
+          .filter((binding) => binding.channelId === candidate.channelId)
+          .map((binding) => binding.brandName.trim() || "another client"),
+      ),
+    ],
+  }));
+  return rows.sort((a, b) => Number(a.boundTo.length > 0) - Number(b.boundTo.length > 0));
+}

@@ -37,6 +37,7 @@ import type { LucideIcon } from "lucide-react";
 import { toast } from "@/lib/toast";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
 import { webCopy } from "@/features/marketing/lib/copy-payloads";
+import { businessFactValueText } from "@/features/marketing/lib/business-fact-value";
 import { marketingSeg } from "@/features/marketing/lib/keys";
 import { BrandTopicalMapCard } from "@/features/marketing/seo/topical-map/components/BrandTopicalMapCard";
 import { Badge } from "@/components/ui/badge";
@@ -144,12 +145,7 @@ function RowActionButton({
 }
 
 function factValueText(fact: BusinessFact): string {
-  if (isJsonRecord(fact.value)) {
-    const candidate = fact.value.url ?? fact.value.text ?? fact.value.value;
-    if (typeof candidate === "string" && candidate) return candidate;
-    return JSON.stringify(fact.value);
-  }
-  return String(fact.value ?? "");
+  return businessFactValueText(fact.value);
 }
 
 function assetPreviewUrl(asset: BrandAsset): string | null {

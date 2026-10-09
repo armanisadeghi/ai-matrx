@@ -50,11 +50,13 @@ const world = {
   videos: [] as Record<string, unknown>[],
   days: [] as Record<string, unknown>[],
   capabilities: [] as Record<string, unknown>[],
+  elsewhere: [] as Array<{ brandId: string; brandName: string; channelId: string }>,
 };
 
 jest.mock("../binding", () => ({
   BINDING_COLUMN_ABSENT_SENTENCE: "COLUMN ABSENT SENTENCE",
   readBrandChannelBinding: async () => world.binding,
+  readChannelBindingsElsewhere: async () => world.elsewhere,
   channelBindingDraft: () => ({
     enabled: true,
     credentialAuthority: "external_connection",
@@ -243,6 +245,7 @@ beforeEach(() => {
   confirmCalls.length = 0;
   confirmAnswer.value = false;
   world.binding = { state: "unbound", brandVersion: 1 };
+  world.elsewhere = [];
   world.connections = [];
   world.resources = [];
   world.videos = [];
@@ -384,6 +387,40 @@ describe("no channel is bound", () => {
       ).toHaveLength(1);
       expect(m.text).toContain("also visible through second@example.com");
       expect(m.text).toContain("first@example.com");
+    } finally {
+      m.unmount();
+    }
+  });
+
+  it("says which channel another client already holds, and lists the free ones first", async () => {
+    world.connections = [connection(CONNECTION_ID, "owner@allgreen.com")];
+    world.resources = [
+      channelResource({
+        id: RESOURCE_ID,
+        connectionId: CONNECTION_ID,
+        channelId: CHANNEL_ID,
+        displayName: "All Green Recycling",
+        discoveredAt: "2026-09-01T00:00:00Z",
+      }),
+      channelResource({
+        id: SECOND_RESOURCE_ID,
+        connectionId: CONNECTION_ID,
+        channelId: OTHER_CHANNEL_ID,
+        displayName: "Harbor Records",
+        discoveredAt: "2026-09-02T00:00:00Z",
+      }),
+    ];
+    world.elsewhere = [
+      { brandId: "eeeeeeee-1111-2222-3333-444444444444", brandName: "Sunrise Dental", channelId: CHANNEL_ID },
+    ];
+    const m = await mount();
+    try {
+      const binds = [...m.container.querySelectorAll<HTMLElement>("[aria-label^='Bind ']")];
+      expect(binds).toHaveLength(2);
+      // The free channel sorts first even though its title sorts after the bound one.
+      expect(binds[0].getAttribute("aria-label")).toContain("Harbor Records");
+      expect(binds[1].getAttribute("aria-label")).toContain("already bound to Sunrise Dental");
+      expect(m.text).toContain("Bound to Sunrise Dental");
     } finally {
       m.unmount();
     }

@@ -289,7 +289,7 @@ export function BrandsPortfolio({
       cell: (row) => (
         <div className="flex flex-wrap items-center gap-1">
           {row.sites.length === 0 ? (
-            <span className="text-xs text-muted-foreground/60">None</span>
+            <span className="text-xs text-muted-foreground/60">No website</span>
           ) : (
             // Every site named here has an id AND a canonical route — the
             // chips were inert text listing records the user could not reach.

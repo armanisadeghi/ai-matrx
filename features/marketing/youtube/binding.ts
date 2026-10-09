@@ -30,10 +30,11 @@
 
 "use client";
 
-import { guardedUpdate } from "@ai-matrx/data/db";
+import { guardedUpdate, readAllRows } from "@ai-matrx/data/db";
 import type { PostgrestError } from "@supabase/supabase-js";
 
 import { supabase } from "@/utils/supabase/client";
+import { authenticatedWebDb } from "@/utils/supabase/webDb";
 import {
   buildSiteIntegrationsWithProviderChange,
   emptyProviderIntegration,
@@ -231,4 +232,43 @@ async function readBrandChannelBindingDocument(
     );
   }
   return { state: "read", document: asDocument(row.integrations) };
+}
+
+/**
+ * Which owned channel each OTHER brand in the workspace is bound to — so the
+ * bind list can say "Bound to <brand>" instead of offering a channel as if it
+ * belonged to nobody. Reads only the brands RLS already lets this person see;
+ * it grants nothing. Complete-list read (`readAllRows`), never a bare select.
+ */
+export interface BrandChannelBindingElsewhere {
+  brandId: string;
+  brandName: string;
+  channelId: string;
+}
+
+export async function readChannelBindingsElsewhere(
+  exceptBrandId: string,
+  signal?: AbortSignal,
+): Promise<BrandChannelBindingElsewhere[]> {
+  const db = await authenticatedWebDb(supabase);
+  const rows = await readAllRows<{ id: string; name: string; integrations: unknown }>(
+    ({ from, to }) =>
+      db
+        .from("brand")
+        .select("id, name, integrations", { count: "exact" })
+        .is("deleted_at", null)
+        .order("id", { ascending: true })
+        .range(from, to)
+        .abortSignal(signal ?? new AbortController().signal),
+    { label: "web.brand channel bindings" },
+  );
+  const bindings: BrandChannelBindingElsewhere[] = [];
+  for (const row of rows) {
+    if (row.id === exceptBrandId) continue;
+    const draft = parseSiteIntegrations(asDocument(row.integrations)).youtubeChannel;
+    const channelId = draft.resourceRef.trim();
+    if (!draft.enabled || !channelId) continue;
+    bindings.push({ brandId: row.id, brandName: row.name, channelId });
+  }
+  return bindings;
 }
