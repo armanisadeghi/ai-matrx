@@ -31,4 +31,3 @@ Its files stay as they are.
 ## Docs and comments — both versions kept
 
 ## Held files
-- _conflicts/2026-10-09-091146/features/applets-host/AppletHostMount.tsx.held — LOCAL latest 2026-10-09 08:55; GITHUB latest 2026-10-09 08:53; LOCAL lacks 5 of GITHUB's 9 new lines; GITHUB lacks 6 of LOCAL's 10 new lines; recover: git show 8bb200607f:'features/applets-host/AppletHostMount.tsx' / 351d7f5a11:'features/applets-host/AppletHostMount.tsx'
