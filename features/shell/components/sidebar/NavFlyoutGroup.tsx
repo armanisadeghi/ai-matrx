@@ -561,7 +561,7 @@ export default function NavFlyoutGroup({
       );
     }
     return (
-      <AppLink
+      <AppLink prefetch={false}
         key={childKey(child)}
         href={child.href}
         role="menuitem"
@@ -595,7 +595,7 @@ export default function NavFlyoutGroup({
         onMouseEnter={() => scheduleSubOpen(key)}
         onMouseLeave={scheduleSubLeave}
       >
-        <AppLink
+        <AppLink prefetch={false}
           href={child.href}
           role="menuitem"
           aria-haspopup="menu"
@@ -696,7 +696,7 @@ export default function NavFlyoutGroup({
       onMouseLeave={scheduleClose}
       onKeyDown={onTriggerKeyDown}
     >
-      <AppLink
+      <AppLink prefetch={false}
         ref={triggerLinkRef}
         href={item.href}
         data-nav-href={suppressActive ? undefined : item.href}

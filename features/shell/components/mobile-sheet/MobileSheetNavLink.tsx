@@ -80,7 +80,7 @@ export default function MobileSheetNavLink({
   }
 
   return (
-    <AppLink
+    <AppLink prefetch={false}
       href={href}
       data-nav-href={href}
       data-active={isActive ? "true" : undefined}
