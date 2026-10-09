@@ -84,7 +84,7 @@ jest.mock("@/features/unified-data/hub/capabilities", () => ({ HUB_CAPABILITIES:
 jest.mock("@/features/unified-data/home/dataHomeColumns", () => ({ KindIcon: () => <i /> }));
 // The template gallery is its own unit (gallery/TemplateGallery.tsx, guard G3); here it is a stand-in.
 jest.mock("../describe/DescribeBox", () => ({ DescribeBox: () => null }));
-jest.mock("../gallery/TemplateGallery", () => ({ TemplateGallerySection: () => <div data-make-gallery="" /> }));
+jest.mock("../gallery/TemplateGallery", () => ({ TemplateGallerySection: () => <div data-make-gallery="" />, InstalledOneOffs: () => null }));
 jest.mock("@/utils/supabase/client", () => ({ createClient: () => ({}) }));
 jest.mock("@/lib/toast", () => ({ toast: { success: jest.fn(), error: jest.fn() } }));
 
