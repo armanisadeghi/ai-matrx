@@ -65,9 +65,11 @@ jest.mock("@ai-matrx/chat/ui/markdown-stream/MarkdownStream", () => ({
 }));
 
 const copyProps: { human?: unknown; agent?: unknown } = {};
-jest.mock("@/components/agent-copy/CopyButtons", () => ({
+// TextView's copy control is the package's RichCopySplit (the markdown host's one
+// Copy), which takes the same `human` / `agent` producers.
+jest.mock("@ai-matrx/chat/agent-copy/RichCopySplit", () => ({
   __esModule: true,
-  CopyButtons: (props: { human?: unknown; agent?: unknown }) => {
+  RichCopySplit: (props: { human?: unknown; agent?: unknown }) => {
     copyProps.human = props.human;
     copyProps.agent = props.agent;
     return <span data-copy-buttons />;
