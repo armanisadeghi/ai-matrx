@@ -19,6 +19,8 @@ const mockEdges = jest.fn();
 jest.mock("@/features/scopes/service/associationsService", () => ({
   associationsService: {
     listForTargets: (...a: unknown[]) => mockEdges(...a),
+    // The chat column's context chip reads the conversation's own scopes through this.
+    listForEntity: jest.fn().mockResolvedValue({ ok: true, data: { edges: [] } }),
     add: jest.fn().mockResolvedValue({ ok: true, data: { id: "e" } }),
     remove: jest.fn().mockResolvedValue({ ok: true, data: null }),
   },
@@ -31,6 +33,15 @@ import { installBrowserGaps } from "./remount-safety/browser-gaps";
 import { CONVERSATION_ID, seedChat } from "./remount-safety/fixtures-work";
 import { backendCalls } from "./remount-safety/fake-backend";
 
+// The conversation list reads only once it is in view (@ai-matrx/kit useInView); a tile on screen is in view.
+(globalThis as Record<string, unknown>).IntersectionObserver = class {
+  constructor(private readonly callback: (entries: { isIntersecting: boolean }[]) => void) {}
+  observe() {
+    this.callback([{ isIntersecting: true }]);
+  }
+  unobserve() {}
+  disconnect() {}
+};
 installBrowserGaps();
 
 const BOARD = "9a1c2a9e-4b0f-4c1e-9a55-2f3e8b6d1b01";

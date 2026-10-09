@@ -53,6 +53,8 @@ import {
 import { OUTLIER_TIER_THRESHOLDS, formatCompact, formatPercentile, profileBaseline } from "../outlier";
 import { useSocialSpend } from "../cost";
 import { refreshProfile, socialErrorMessage } from "../server";
+import { GuidedCaptureButton } from "../gated/GuidedCaptureButton";
+import { GUIDED_CAPTURE_PLATFORMS } from "../gated/guidedJob";
 import { TRACKED_ROLE_LABELS, isTrackedRole, type PostCardModel } from "../types";
 import { MetricChart, seriesToCsv } from "./MetricChart";
 import { OutlierBadge } from "./OutlierBadge";
@@ -113,7 +115,7 @@ const POST_COLUMNS: MatrxColumnDef<PostCardModel>[] = [
     accessorFn: (r) => r.outlierScore,
     align: "right",
     filter: "number",
-    cell: (r) => <OutlierBadge input={r.outlier} />,
+    cell: (r) => <OutlierBadge inTable input={r.outlier} />,
   },
   {
     id: "percentile",
@@ -372,6 +374,19 @@ export function AccountDetail({ platform, profileId }: { platform: string; profi
             <Button variant="outline" icon={<RefreshCw />} onClick={() => void refresh()} disabled={busy} title={["Refresh", costText("profile_page")].filter(Boolean).join(" · ")}>
               {busy ? "Refreshing…" : "Refresh"}
             </Button>
+          ) : null}
+          {GUIDED_CAPTURE_PLATFORMS.has(p.platform) ? (
+            <GuidedCaptureButton
+              organizationId={brand.organizationId}
+              platformLabel={platformLabel(platform)}
+              target={{
+                platform: p.platform,
+                handleOrUrl: p.profile_url || p.handle,
+                profileId: p.id,
+                brandId: brand.id,
+              }}
+              onCaptured={() => void invalidate()}
+            />
           ) : null}
           {p.profile_url ? (
             <Button variant="quiet" icon={<ExternalLink />} asChild>

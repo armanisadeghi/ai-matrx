@@ -231,9 +231,11 @@ function SocialRow({
         <span className="flex shrink-0 items-start gap-4">
           <Stat label="Followers" className="w-[88px]">
             {formatCompact(row.followers)}
-            <span className="ml-1 text-muted-foreground" title={row.growthNote}>
-              {formatGrowth(row.growth)}
-            </span>
+            {row.growth === null ? null : (
+              <span className="ml-1.5 text-muted-foreground" title={row.growthNote}>
+                {formatGrowth(row.growth)}
+              </span>
+            )}
           </Stat>
           <Stat label="Posts" className="w-[44px]">
             {row.postsTracked}
@@ -242,7 +244,13 @@ function SocialRow({
             {lastPostLabel(row.lastPostAt, row.postsTracked)}
           </Stat>
           <Stat label="Best 30d" className="w-[72px]">
-            <OutlierBadge input={best} />
+            {row.bestScore === null ? (
+              <span className="text-muted-foreground" title={outlierBadgeModel(best).tooltip}>
+                —
+              </span>
+            ) : (
+              <OutlierBadge input={best} />
+            )}
           </Stat>
         </span>
       ) : null}

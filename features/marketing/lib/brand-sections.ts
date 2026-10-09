@@ -146,8 +146,10 @@ export const MARKETING_BRAND_SECTIONS = [
   },
   {
     slug: "socials",
-    name: "Ads",
-    titlePrefix: "Social Ads",
+    // "Ad library" — competitor ad research; never "Ads" beside the Advertising
+    // section (the brand's own ad accounts), which read as the same thing.
+    name: "Ad library",
+    titlePrefix: "Ad Library",
     description:
       "Ads the tracked accounts are running, from the platforms' ad libraries.",
     letter: "Sj",
@@ -371,7 +373,7 @@ export const MARKETING_BRAND_SUBROUTE_PROMISES: readonly {
   // The ad CENTER (campaigns, creative, budgets across providers) is still a
   // promise; the live Google Ads workspace is its first room at `ads`.
   { comingSoonId: "marketing.ads", subRoute: "ads" },
-  // Socials: Accounts, Outliers, Swipe file, Ads, KPIs and the detail pages are live; the umbrella
+  // Socials: Accounts, Outliers, Swipe file, Ad library, KPIs and the detail pages are live; the umbrella
   // row is still being built.
   { comingSoonId: "marketing.social", subRoute: "socials" },
 ];

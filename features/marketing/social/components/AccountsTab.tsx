@@ -223,6 +223,7 @@ export function AccountsTab() {
         filter: "number",
         cell: (r) => (
           <OutlierBadge
+            inTable
             input={{ score: r.bestScore, baselineViews: null, percentile: null, baselineWindow: null, ageHours: null, accountPosts: r.postsTracked }}
           />
         ),

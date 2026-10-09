@@ -322,7 +322,7 @@ export function OutliersTab() {
       accessorFn: (r) => r.post.outlierScore,
       align: "right",
       filter: "number",
-      cell: (r) => <OutlierBadge input={r.post.outlier} />,
+      cell: (r) => <OutlierBadge inTable input={r.post.outlier} />,
     },
     {
       id: "percentile",

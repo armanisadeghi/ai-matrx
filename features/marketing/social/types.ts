@@ -88,7 +88,7 @@ export const SOCIALS_TABS = [
   { id: "studio", label: "Studio" },
   { id: "outliers", label: "Outliers" },
   { id: "swipe", label: "Swipe file" },
-  { id: "ads", label: "Ads" },
+  { id: "ads", label: "Ad library" },
   { id: "kpis", label: "KPIs" },
 ] as const;
 export type SocialsTabId = (typeof SOCIALS_TABS)[number]["id"];

@@ -32,6 +32,7 @@
  */
 
 import type { Rect } from "../engine/camera";
+import { connectionToArrow, connectionsOf, sameConnections } from "./connections";
 import { findFreeSpot, placeInFlow, type PlacementFlow } from "../engine/placement";
 import {
   type BindTarget,
@@ -111,7 +112,6 @@ interface Snapshot<T> {
   parked: string[];
   frames: BoardFrame[];
   shapes: BoardShape[];
-  connections: BoardConnection[];
 }
 
 interface History<T> {
@@ -154,14 +154,18 @@ function seedHistory<T extends BoardTileBase>(start: T[] | BoardSeed<T>): Histor
     connections = [],
   }: BoardSeed<T> = Array.isArray(start) ? { tiles: start } : start;
   const ids = new Set(tiles.map((t) => t.id));
+  // A seeded connection is a bound arrow (one connector model; `board/connections.ts`).
+  const rects = new Map(tiles.map((t) => [t.id, t.rect]));
+  const seeded = connections
+    .filter((c) => ids.has(c.from) && ids.has(c.to) && !shapes.some((sh) => sh.id === c.id))
+    .flatMap((c) => connectionToArrow(c, (id) => rects.get(id)) ?? []);
   return {
     now: {
       order: tiles.map((t) => t.id),
       byId: Object.fromEntries(tiles.map((t) => [t.id, t])),
       parked: parked.filter((id) => ids.has(id)),
       frames,
-      shapes,
-      connections: connections.filter((c) => ids.has(c.from) && ids.has(c.to)),
+      shapes: seeded.length ? [...shapes, ...seeded] : shapes,
     },
     past: [],
     future: [],
@@ -181,6 +185,7 @@ export class BoardStore<T extends BoardTileBase> {
   private tileListeners = new Map<string, Set<Listener>>();
   private shapeListeners = new Set<Listener>();
   private viewCache: { now: Snapshot<T>; view: BoardView<T> } | null = null;
+  private connCache: { shapes: BoardShape[]; byId: Record<string, T>; list: BoardConnection[] } | null = null;
   private layoutCache: BoardLayout<T> | null = null;
   private actor: BoardActor = "person";
   private agentSteps: ActorStep<T>[] = [];
@@ -203,7 +208,7 @@ export class BoardStore<T extends BoardTileBase> {
       tiles: now.order.filter((id) => !parkedSet.has(id) && now.byId[id]).map((id) => now.byId[id]),
       parked: now.parked.filter((id) => now.byId[id]).map((id) => now.byId[id]),
       frames: now.frames,
-      connections: now.connections,
+      connections: this.connectionsIn(now),
     };
     this.viewCache = { now, view };
     return view;
@@ -220,7 +225,7 @@ export class BoardStore<T extends BoardTileBase> {
     if (
       c &&
       c.frames === now.frames &&
-      c.connections === now.connections &&
+      c.connections === this.connectionsIn(now) &&
       c.canUndo === canUndo &&
       c.canRedo === canRedo &&
       sameIds(c, now)
@@ -234,7 +239,7 @@ export class BoardStore<T extends BoardTileBase> {
       parkedIds,
       parked: parkedIds.map((id) => now.byId[id]),
       frames: now.frames,
-      connections: now.connections,
+      connections: this.connectionsIn(now),
       canUndo,
       canRedo,
     };
@@ -264,7 +269,19 @@ export class BoardStore<T extends BoardTileBase> {
     return this.h.now.frames;
   }
   get connections(): BoardConnection[] {
-    return this.h.now.connections;
+    return this.connectionsIn(this.h.now);
+  }
+  /**
+   * The lines between two tiles: the arrow shapes bound to a tile at both ends (`board/connections.ts`).
+   * A stable array while the set is unchanged, so a drag of anything never wakes layout subscribers.
+   */
+  private connectionsIn(now: Snapshot<T>): BoardConnection[] {
+    const c = this.connCache;
+    if (c && c.shapes === now.shapes && c.byId === now.byId) return c.list;
+    const next = connectionsOf(now.shapes, (id) => !!now.byId[id]);
+    const list = c && sameConnections(c.list, next) ? c.list : next;
+    this.connCache = { shapes: now.shapes, byId: now.byId, list };
+    return list;
   }
   get canUndo(): boolean {
     return this.h.past.length > 0;
@@ -474,13 +491,22 @@ export class BoardStore<T extends BoardTileBase> {
     });
   };
 
+  /** Join two tiles with a bound arrow (one undo step; a pair already joined, or a missing tile, is a no-op). */
   connect = (c: BoardConnection): void =>
-    this.change((s) =>
-      s.connections.some((x) => x.from === c.from && x.to === c.to) ? s : { ...s, connections: [...s.connections, c] },
-    );
+    this.change((s) => {
+      if (this.connectionsIn(s).some((x) => x.from === c.from && x.to === c.to)) return s;
+      const arrow = connectionToArrow(c, (id) => s.byId[id]?.rect);
+      return arrow ? { ...s, shapes: [...s.shapes, arrow] } : s;
+    });
 
+  /** Take a connection away: it is a shape, so this is deleting that arrow. */
   disconnect = (id: string): void =>
-    this.change((s) => ({ ...s, connections: s.connections.filter((c) => c.id !== id) }));
+    this.change((s) => (this.connectionsIn(s).some((c) => c.id === id) ? { ...s, shapes: s.shapes.filter((x) => x.id !== id) } : s));
+
+  /** The ids of connections that touch any of these tiles (they go with the tile). */
+  private connectionIdsTouching(s: Snapshot<T>, tileIds: ReadonlySet<string>): Set<string> {
+    return new Set(this.connectionsIn(s).filter((c) => tileIds.has(c.from) || tileIds.has(c.to)).map((c) => c.id));
+  }
 
   /** Add a tile. With `near`, it lands in the nearest free space to that world
    * point, clear of tiles AND frames (a group is not free space) — except the
@@ -557,7 +583,8 @@ export class BoardStore<T extends BoardTileBase> {
     const removed = cur.byId[id];
     const index = cur.order.indexOf(id);
     const wasParked = cur.parked.includes(id);
-    const itsConnections = cur.connections.filter((c) => c.from === id || c.to === id);
+    const goneConnections = this.connectionIdsTouching(cur, new Set([id]));
+    const itsConnections = cur.shapes.filter((sh) => goneConnections.has(sh.id));
     this.change((s) => {
       if (!s.byId[id]) return s;
       const byId = { ...s.byId };
@@ -567,8 +594,7 @@ export class BoardStore<T extends BoardTileBase> {
         order: s.order.filter((x) => x !== id),
         byId,
         parked: s.parked.filter((x) => x !== id),
-        shapes: this.releaseBindings(s, new Set([id]), s.shapes),
-        connections: s.connections.filter((c) => c.from !== id && c.to !== id),
+        shapes: this.releaseBindings(s, new Set([id]), s.shapes.filter((sh) => !goneConnections.has(sh.id))),
       };
     });
     return () =>
@@ -580,7 +606,7 @@ export class BoardStore<T extends BoardTileBase> {
               order: insertAt(s.order, id, index),
               byId: { ...s.byId, [id]: removed },
               parked: wasParked ? [...s.parked, id] : s.parked,
-              connections: [...s.connections, ...itsConnections],
+              shapes: [...s.shapes, ...itsConnections.filter((c) => !s.shapes.some((x) => x.id === c.id))],
             },
       );
   };
@@ -595,7 +621,9 @@ export class BoardStore<T extends BoardTileBase> {
       const drop = new Set(ids);
       const tiles = ids.filter((id) => s.byId[id]);
       const frames = s.frames.filter((f) => !drop.has(f.id));
-      const kept = s.shapes.filter((x) => !drop.has(x.id));
+      // A line between tiles goes with either tile.
+      const lines = this.connectionIdsTouching(s, drop);
+      const kept = s.shapes.filter((x) => !drop.has(x.id) && !lines.has(x.id));
       if (tiles.length === 0 && frames.length === s.frames.length && kept.length === s.shapes.length) return s;
       const shapes = this.releaseBindings(s, drop, kept);
       const byId = { ...s.byId };
@@ -607,7 +635,6 @@ export class BoardStore<T extends BoardTileBase> {
         parked: s.parked.filter((id) => !drop.has(id)),
         frames,
         shapes,
-        connections: s.connections.filter((c) => !drop.has(c.from) && !drop.has(c.to)),
       };
     });
 
@@ -918,11 +945,10 @@ function revertStep<T extends BoardTileBase>(step: ActorStep<T>, now: Snapshot<T
   }
   next = revertList(next, "frames", before.frames, after.frames, kept);
   next = revertList(next, "shapes", before.shapes, after.shapes, kept);
-  next = revertList(next, "connections", before.connections, after.connections, kept);
   return next;
 }
 
-function revertList<T, K extends "frames" | "shapes" | "connections">(
+function revertList<T, K extends "frames" | "shapes">(
   now: Snapshot<T>,
   key: K,
   before: Snapshot<T>[K],

@@ -14,6 +14,7 @@ import { toast } from "@/lib/toast";
 import { useInvalidateSocial } from "../hooks";
 import { useSocialSpend } from "../cost";
 import { socialErrorCode, socialErrorMessage, trackAccount } from "../server";
+import { platformLabel } from "./PlatformMark";
 import { TRACKABLE_PLATFORMS, isSocialPlatform, type AccountRow } from "../types";
 
 /** Own property rows the server can track now (its platform is wired). */
@@ -64,7 +65,7 @@ export function useTrackOwn(organizationId: string, brandId: string) {
   }
 
   async function trackOwn(row: AccountRow) {
-    const ok = await confirmSpend("track", 1, { title: `Track @${row.handle} as Own?`, confirmLabel: "Track" });
+    const ok = await confirmSpend("track", 1, { title: `Track ${platformLabel(row.platform)} @${row.handle} as Own?`, confirmLabel: "Track" });
     if (!ok) return;
     setBusyRow(row.rowId);
     try {
@@ -81,7 +82,7 @@ export function useTrackOwn(organizationId: string, brandId: string) {
   async function trackAllOwn(list: AccountRow[]) {
     const ok = await confirm({
       title: `Track ${list.length} own account${list.length === 1 ? "" : "s"}?`,
-      description: [list.map((r) => `@${r.handle}`).join(", "), costText("track", list.length)].filter(Boolean).join(" · "),
+      description: [list.map((r) => `${platformLabel(r.platform)} @${r.handle}`).join(", "), costText("track", list.length)].filter(Boolean).join(" · "),
       confirmLabel: "Track all",
     });
     if (!ok) return;

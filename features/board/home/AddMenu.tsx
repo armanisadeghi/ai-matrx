@@ -39,6 +39,8 @@ interface AddProps {
   onBringIn: (type: BoardItemType) => void;
   /** The canvas tools the board offers (a preset's toolbar); omitted = all. */
   canvasTools?: readonly BoardTool[];
+  /** Sticky note / Text rows make the object at the view centre (the one creator) instead of arming the tool. */
+  onCanvasText?: (kind: "sticky" | "text") => void;
 }
 
 /** This person's recent adds: read after mount (storage is the browser's), written on every add. */
@@ -58,11 +60,15 @@ function useRecentAdds() {
 }
 
 /** Run a row's click: a tool activates, a type starts new (or opens its picker). */
-function useRowActions({ onStartNew, onBringIn }: Pick<AddProps, "onStartNew" | "onBringIn">, remember: (id: string) => void) {
+function useRowActions({ onStartNew, onBringIn, onCanvasText }: Pick<AddProps, "onStartNew" | "onBringIn" | "onCanvasText">, remember: (id: string) => void) {
   const store = useContext(BoardCameraStoreContext);
   return {
     run: (row: AddRow) => {
-      if (row.primary.kind === "tool") store?.setTool(row.primary.tool);
+      if (row.primary.kind === "tool") {
+        const tool = row.primary.tool;
+        if ((tool === "sticky" || tool === "text") && onCanvasText) onCanvasText(tool);
+        else store?.setTool(tool);
+      }
       else if (row.type) {
         remember(row.id);
         if (row.primary.kind === "new") onStartNew(row.type, row.primary.entry);
@@ -77,12 +83,12 @@ function useRowActions({ onStartNew, onBringIn }: Pick<AddProps, "onStartNew" | 
   };
 }
 
-export function AddMenu({ types, more = [], onStartNew, onBringIn, canvasTools }: AddProps) {
+export function AddMenu({ types, more = [], onStartNew, onBringIn, canvasTools, onCanvasText }: AddProps) {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [active, setActive] = useState("");
   const { ids, remember } = useRecentAdds();
-  const { run, bringIn } = useRowActions({ onStartNew, onBringIn }, remember);
+  const { run, bringIn } = useRowActions({ onStartNew, onBringIn, onCanvasText }, remember);
   const rows = useMemo(() => buildAddRows(types, canvasTools), [types, canvasTools]);
   const moreRows = useMemo(() => buildAddRows(more, []), [more]);
   const searching = query.trim().length > 0;
@@ -215,10 +221,10 @@ function AddRowItem({
   );
 }
 
-export function StartPanel({ types, more = [], onStartNew, onBringIn, templates }: AddProps & { templates?: ReactNode }) {
+export function StartPanel({ types, more = [], onStartNew, onBringIn, onCanvasText, templates }: AddProps & { templates?: ReactNode }) {
   const [showMore, setShowMore] = useState(false);
   const { ids, remember } = useRecentAdds();
-  const { run, bringIn } = useRowActions({ onStartNew, onBringIn }, remember);
+  const { run, bringIn } = useRowActions({ onStartNew, onBringIn, onCanvasText }, remember);
   // The board's tools are on its toolbar, one glance away: the panel offers what you can make.
   const rows = useMemo(
     () => buildAddRows(showMore ? [...types, ...more] : types, []),

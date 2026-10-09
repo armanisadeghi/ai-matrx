@@ -11,7 +11,9 @@ const stage = (label: string, current = 0, total = 0) => ({
 
 describe("social stream contract", () => {
   it("reads stage labels with counts, and no count when 0", () => {
-    expect(progressOf(stage("Fetching posts", 2, 5))).toEqual({ message: "Fetching posts", step: 2, total: 5 });
+    expect(progressOf(stage("Fetching posts", 2, 5))).toEqual({ message: "Getting posts", step: 2, total: 5 });
+    expect(progressOf(stage("Fetching posts, page 1 of up to 1", 1, 1))).toEqual({ message: "Getting posts", step: undefined, total: undefined });
+    expect(progressOf(stage("Fetching posts, page 2 of up to 3", 2, 3))).toEqual({ message: "Getting posts", step: 2, total: 3 });
     expect(progressOf(stage("Scoring"))).toEqual({ message: "Scoring", step: undefined, total: undefined });
     expect(progressOf({ event: "phase", data: {} })).toBeNull();
     expect(progressOf({ event: "data", data: { type: "social_result", result: {} } })).toBeNull();
@@ -30,7 +32,7 @@ describe("social stream contract", () => {
       (p) => seen.push(p.message),
     );
     expect(result.profile_id).toBe("p1");
-    expect(seen).toEqual(["Fetching profile", "Fetching posts"]);
+    expect(seen).toEqual(["Getting profile", "Getting posts"]);
   });
 
   it("an in-stream error becomes a SocialStreamError carrying the code, even though end follows", async () => {

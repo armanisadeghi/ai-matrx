@@ -874,6 +874,18 @@ export async function renameCollection(id: string, name: string): Promise<void> 
   if (!data?.length) fail("social.swipe_collection rename", "You cannot rename this collection.");
 }
 
+/** Link a collection to a brand (or unlink with null). The collection stays in the organization either way. */
+export async function setCollectionBrand(id: string, brandId: string | null): Promise<void> {
+  const { data, error } = await supabase
+    .schema("social")
+    .from("swipe_collection")
+    .update({ brand_id: brandId })
+    .eq("id", id)
+    .select("id");
+  if (error) fail("social.swipe_collection brand", error.message);
+  if (!data?.length) fail("social.swipe_collection brand", "You cannot change this collection.");
+}
+
 /** Archive (soft delete) or restore a collection. Its saved items stay put. */
 export async function setCollectionArchived(id: string, archived: boolean): Promise<void> {
   const { data, error } = await supabase

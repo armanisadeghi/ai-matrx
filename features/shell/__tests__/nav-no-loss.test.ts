@@ -574,12 +574,17 @@ const GUEST_OK_SINCE_DOMAIN_TREE: readonly string[] = [
   "/legal/ca-wc",
   "/legal/ca-wc/pd-ratings-calculator",
   "/legal/ca-wc/utilities",
+  // Marketing's layout shows a guest the full marketing landing on ANY /marketing/* URL.
+  "/marketing/social",
+  "/marketing/tools/domain",
   "/medical",
   "/print/branded-qr",
   "/print/zpl",
   "/search",
   "/templates",
   "/voice",
+  // /work's layout shows a guest the AI Work sign-in gate for every /work/* URL (like /work/conversations).
+  "/work/live",
 ];
 
 type GuestNode = Pick<ShellNavChild, "href" | "panelAction" | "action" | "guestHidden"> & {

@@ -106,10 +106,13 @@ export function SocialImage({ door, url, fallback, className, alt = "" }: Social
     return () => { alive = false; };
   }, [door, url, organizationId]);
 
+  // The designed fallback is ALWAYS the bottom layer: whatever the image does (slow, refused, blank),
+  // the box is never empty. The picture covers it only once it has really loaded.
   if (state === "failed") return <>{fallback}</>;
   return (
     <>
-      {state === "loading" ? <span aria-hidden className="absolute inset-0 animate-pulse bg-muted" /> : null}
+      {fallback}
+      {state === "loading" ? <span aria-hidden className="absolute inset-0 animate-pulse bg-muted/60" /> : null}
       {src ? (
         <img
           src={src}
@@ -118,7 +121,7 @@ export function SocialImage({ door, url, fallback, className, alt = "" }: Social
           referrerPolicy="no-referrer"
           onLoad={() => setState("ready")}
           onError={() => setState("failed")}
-          className={cn("absolute inset-0 h-full w-full object-cover", className)}
+          className={cn("absolute inset-0 h-full w-full object-cover", state === "ready" ? "bg-muted" : "opacity-0", className)}
         />
       ) : null}
     </>

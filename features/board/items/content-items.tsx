@@ -180,7 +180,8 @@ export const CONTENT_ITEMS: BoardItemType[] = [
     defaultSize: { w: 520, h: 120 },
     matches: (s) => s.kind === "label",
     Body: LabelBody,
-    startNew: { label: "Label", create: () => ({ title: "Label", source: { kind: "label", text: "" } }) },
+    // No startNew: the Add menu's "Text" row makes plain canvas text (a text object, not a label
+    // tile). This type stays so a tile already on a board still draws until it loads as text.
     kindLabel: "text",
   },
 ];

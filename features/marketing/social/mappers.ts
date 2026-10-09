@@ -7,6 +7,7 @@
  */
 
 import { median, profileBaseline } from "./outlier";
+import { canonicalPostUrl } from "./link";
 import type {
   AccountRow,
   IngestProfileResult,
@@ -35,6 +36,9 @@ const DAY_MS = 86_400_000;
 /** Fewest days between two snapshots before a growth percentage is honest. */
 export const GROWTH_MIN_SPAN_DAYS = 7;
 
+/** The designed new-account state: not an error, just not enough history yet. */
+export const GROWTH_PENDING_NOTE = "Growth appears after a few days";
+
 export interface GrowthJudgement {
   /** Fraction (0.031 = +3.1%); null when the comparison is refused. */
   fraction: number | null;
@@ -58,7 +62,7 @@ export function judgeFollowerGrowth(
     .filter((p): p is { t: number; v: number } => Number.isFinite(p.t) && p.v !== null)
     .sort((a, b) => a.t - b.t);
   if (points.length < 2) {
-    return { fraction: null, note: "Tracking since first snapshot" };
+    return { fraction: null, note: GROWTH_PENDING_NOTE };
   }
   const latest = points[points.length - 1]!;
   const cutoff = latest.t - windowDays * DAY_MS;
@@ -66,7 +70,7 @@ export function judgeFollowerGrowth(
     [...points].reverse().find((p) => p.t <= cutoff) ?? points[0]!;
   const spanDays = Math.round((latest.t - base.t) / DAY_MS);
   if (spanDays < GROWTH_MIN_SPAN_DAYS) {
-    return { fraction: null, note: `Only ${spanDays} days of snapshots` };
+    return { fraction: null, note: GROWTH_PENDING_NOTE };
   }
   if (base.v === 0) return { fraction: null, note: "No baseline followers" };
   return {
@@ -130,6 +134,11 @@ export function hookLineOf(
   return first.trim();
 }
 
+/** The stored post's address from the stored post and its author (see `canonicalPostUrl`). */
+export function postAddress(post: Pick<SocialPostRow, "platform" | "platform_post_id" | "url">, handle: string | null): string {
+  return canonicalPostUrl({ platform: post.platform, platformPostId: post.platform_post_id, handle, url: post.url }) ?? post.url;
+}
+
 export function toPostCardModel(args: {
   post: SocialPostRow;
   stat: PostStatRow | null;
@@ -145,7 +154,7 @@ export function toPostCardModel(args: {
     profileId: post.profile_id,
     handle,
     format: post.format,
-    url: post.url,
+    url: postAddress(post, handle),
     thumbnailUrl: post.thumbnail_url,
     thumbnailFileId: post.thumbnail_file_id ?? null,
     hookLine: hookLineOf(post, analysisHook),
@@ -161,6 +170,15 @@ export function toPostCardModel(args: {
     outlierScore: outlier.score,
     percentile: outlier.percentile,
   };
+}
+
+/** Accessible name of a post's open control: who posted it plus a short caption excerpt (never the whole caption). */
+export function openPostLabel(handle: string | null | undefined, hookLine: string | null | undefined, max = 60): string {
+  const who = handle ? `Open post by @${handle.replace(/^@/, "")}` : "Open post";
+  const text = (hookLine ?? "").replace(/\s+/g, " ").trim();
+  if (!text) return who;
+  const excerpt = text.length > max ? `${text.slice(0, max - 1).trimEnd()}…` : text;
+  return `${who}: ${excerpt}`;
 }
 
 /** `3d`, `5h`, `2mo` — relative posted age; absolute date goes in the tooltip. */

@@ -16,7 +16,8 @@
 
 import type { Camera, Rect } from "../engine/camera";
 import type { BoardShape } from "./useBoard";
-import { boundsOfPoints, parseShape, serializeShape } from "../engine/shapes";
+import { boundsOfPoints, isBoxed, parseShape, serializeShape } from "../engine/shapes";
+import { connectionToArrow, connectionsOf } from "./connections";
 import { labelToText } from "../engine/canvas-text";
 
 export type NodeSource =
@@ -167,12 +168,29 @@ export function parseBoardDocument(raw: {
       edges.push({ id: e.id, from: e.from, to: e.to });
     } else problems.push("an edge is missing id, from or to");
   }
-  return { doc: { camera, nodes, groups, edges, shapes }, problems };
+  // ONE connector model: a stored edge is a bound arrow (same id, same ends) — migrated here, once;
+  // the next save writes the arrow and an empty `edges`. An edge to something that is gone is reported.
+  const rectOf = rectLookup(nodes, shapes);
+  for (const e of edges) {
+    const arrow = shapes.some((x) => x.id === e.id) ? null : connectionToArrow(e, rectOf);
+    if (arrow) shapes.push(arrow);
+    else if (!shapes.some((x) => x.id === e.id)) problems.push(`edge "${e.id}" joins a tile that is not on the board; dropped it`);
+  }
+  return { doc: { camera, nodes, groups, edges: [], shapes }, problems };
+}
+
+/** Rects of what an edge can name: tiles, and boxed shapes (a label tile that became text keeps its id). */
+function rectLookup(nodes: readonly BoardNode[], shapes: readonly BoardShape[]) {
+  const byId = new Map<string, Rect>(nodes.map((n) => [n.id, n.rect]));
+  for (const sh of shapes) if (isBoxed(sh.kind)) byId.set(sh.id, boundsOfPoints(sh.points));
+  return (id: string) => byId.get(id);
 }
 
 /** The column values to store. Groups and shapes ride in `nodes`, flagged
  * `group: true` / `shape: true`. */
-export function serializeBoardDocument(doc: BoardDocument) {
+export function serializeBoardDocument(rawDoc: BoardDocument) {
+  // A document built in code (a built-in template) may still carry `edges`: they are stored as bound arrows.
+  const doc = withEdgesAsArrows(rawDoc);
   return {
     camera: doc.camera,
     nodes: [
@@ -180,8 +198,20 @@ export function serializeBoardDocument(doc: BoardDocument) {
       ...doc.shapes.map((sh) => ({ ...serializeShape(sh), shape: true })),
       ...doc.nodes,
     ],
-    edges: doc.edges,
+    edges: [] as BoardEdge[],
   };
+}
+
+/** `doc` with any `edges` turned into bound arrows (a no-op for a parsed document, whose edges are always empty). */
+export function withEdgesAsArrows(doc: BoardDocument): BoardDocument {
+  if (doc.edges.length === 0) return doc;
+  const rectOf = rectLookup(doc.nodes, doc.shapes);
+  const shapes = [...doc.shapes];
+  for (const e of doc.edges) {
+    const arrow = shapes.some((x) => x.id === e.id) ? null : connectionToArrow(e, rectOf);
+    if (arrow) shapes.push(arrow);
+  }
+  return { ...doc, edges: [], shapes };
 }
 
 // ── JSON Canvas 1.0 export ───────────────────────────────────────────────────
@@ -232,7 +262,13 @@ export function toJsonCanvas(doc: BoardDocument, origin: string) {
     const r = boundsOfPoints(sh.points);
     nodes.push({ id: sh.id, type: "text", ...box(r), text: sh.text ?? "" });
   }
-  const edges = doc.edges.map((e) => ({ id: e.id, fromNode: e.from, toNode: e.to }));
+  // Tile-to-tile connectors are JSON Canvas edges (any edges still on the document count too).
+  const nodeIds = new Set(nodes.map((n) => n.id));
+  const lines = [
+    ...doc.edges,
+    ...connectionsOf(doc.shapes, (id) => nodeIds.has(id)),
+  ];
+  const edges = lines.map((e) => ({ id: e.id, fromNode: e.from, toNode: e.to }));
   return { nodes, edges };
 }
 

@@ -46,7 +46,6 @@ import { BoardSurface } from "../components/BoardSurface";
 import { BoardViewport } from "../components/BoardViewport";
 import { BoardTile } from "../components/BoardTile";
 import { BoardFrameView } from "../components/BoardFrameView";
-import { BoardEdgeLine } from "../components/BoardEdgeLine";
 import { ShapesLayer } from "../components/ShapesLayer";
 import { SelectionToolbar } from "../components/SelectionToolbar";
 import { selectionActionsSection, shapeStyleSection } from "../components/ShapeToolbarSections";
@@ -159,7 +158,6 @@ export function UserBoard({
     parked: doc.nodes.filter((n) => n.parked).map((n) => n.id),
     frames: doc.groups,
     shapes: doc.shapes,
-    connections: doc.edges,
   }));
   const layout = useBoardLayout(board);
   // "On N boards": one read of every saved board's tiles (not for a meeting guest or an unsaved board).
@@ -209,7 +207,7 @@ export function UserBoard({
         ...(t.basics ? { basics: t.basics } : {}),
       })),
       groups: now.frames,
-      edges: now.connections,
+      edges: [],
       shapes: board.shapes,
     };
   };
@@ -304,6 +302,13 @@ export function UserBoard({
     if (!store) return { x: 0, y: 0 };
     const { w, h } = store.getSize();
     return screenToWorld(store.getCamera(), w / 2, h / 2);
+  };
+
+  /** The Add menu's Sticky note / Text rows: the same creator as the toolbar tools, at the view centre. */
+  const addCanvasText = (kind: "sticky" | "text") => {
+    if (!store) return;
+    if (kind === "sticky") createStickyOnBoard(board, store);
+    else createTextOnBoard(board, store);
   };
 
   // Successive adds fill the view in reading order while the view stays where
@@ -435,17 +440,19 @@ export function UserBoard({
         break;
       case "arrow":
       case "line": {
-        // An arrow drawn from one tile onto another is a LINE between them (a connection): the
-        // second tile becomes context for a chat tile, in either direction. Anywhere else it is a mark.
-        // Drawings sit above tiles, so a box shape under an end is the nearer target.
+        // An arrow drawn from one tile onto another is a connection (a chat tile reads the other tile as
+        // context, in either direction) — and it is a bound arrow shape like every other connector
+        // (`board/connections.ts`). Drawings sit above tiles, so a box shape under an end is the nearer target.
         const fromShape = boxShapeAtPoint(c.from);
         const toShape = boxShapeAtPoint(c.to);
         const from = fromShape ? undefined : tileAtPoint(c.from);
         const to = toShape ? undefined : tileAtPoint(c.to);
         if (c.tool === "arrow" && from && to && from.id !== to.id) {
-          board.connect({ id: `link:${crypto.randomUUID().slice(0, 8)}`, from: from.id, to: to.id });
+          if (board.connections.some((x) => x.from === from.id && x.to === to.id)) {
+            toast(`"${from.title}" is already connected to "${to.title}"`);
+            return;
+          }
           toast(`Connected "${from.title}" to "${to.title}"`);
-          return;
         }
         // An end dropped on a tile or a rectangle / oval BINDS to it and follows it (tldraw).
         const start = fromShape?.id ?? from?.id;
@@ -700,7 +707,6 @@ export function UserBoard({
     }),
   );
 
-  const onBoard = new Set(layout.tileIds);
   // A page a tile opens lands on THIS board as a page tile (engine/tile-navigation.tsx);
   // a record already here is shown instead (place → recordKeyOf).
   const boardNavigation = {
@@ -758,7 +764,7 @@ export function UserBoard({
               <>
                 <CreationLayer onCreate={onCreate} />
                 <SelectionToolbar sections={toolbarSections} />
-                <ToolBar tools={preset?.toolbar} leading={<AddMenu types={addableTypes} more={moreTypes} onStartNew={startNew} onBringIn={bringIn} />} />
+                <ToolBar tools={preset?.toolbar} leading={<AddMenu types={addableTypes} more={moreTypes} onStartNew={startNew} onBringIn={bringIn} onCanvasText={addCanvasText} />} />
                 <div
                   data-board-chrome
                   className="absolute right-4 top-4 z-30 flex items-center gap-0.5 rounded-lg border border-border bg-card/95 p-1 shadow-md backdrop-blur"
@@ -821,11 +827,6 @@ export function UserBoard({
                 onRename={(id, next) => board.updateFrame(id, { title: next })}
               />
             ))}
-            {layout.connections.map((c) =>
-              onBoard.has(c.from) && onBoard.has(c.to) ? (
-                <BoardEdge key={c.id} board={board} from={c.from} to={c.to} />
-              ) : null,
-            )}
             {layout.tileIds.map((id) => (
               <BoardItemTile
                 key={id}
@@ -927,16 +928,6 @@ function ItemStatusLeaf({
 function newLabel(type: BoardItemType, entry: StartNewEntry): string {
   if (/^(new|start|run|chat with)\b/i.test(entry.label)) return entry.label;
   return entry.label === type.label ? `New ${type.label.toLowerCase()}` : entry.label;
-}
-
-/** The edge between two tiles; follows both as they move, without waking the board. */
-function BoardEdge({ board, from, to }: { board: BoardStore<UserBoardTile>; from: string; to: string }) {
-  const a = useBoardTile(board, from);
-  const b = useBoardTile(board, to);
-  if (!a || !b) return null;
-  // A line that touches a chat tile hands that chat the other tile's content: drawn a little firmer.
-  const feedsChat = itemTypeFor(a.source)?.key === "chat" || itemTypeFor(b.source)?.key === "chat";
-  return <BoardEdgeLine from={a.rect} to={b.rect} feedsChat={feedsChat} />;
 }
 
 /** The layers list reads every tile, so it alone re-renders on every change — only while open. */

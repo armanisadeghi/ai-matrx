@@ -877,7 +877,6 @@ export const primaryNavItems: ShellNavItem[] = [
             dashboard: true,
             guestHidden: true,
           },
-          { label: "Label", href: "/board?add=label", iconName: "Type", group: "Canvas", actionItem: true, guestHidden: true },
           { label: "Note", href: "/board?add=note", iconName: "StickyNote", group: "Notes & docs", actionItem: true, guestHidden: true },
           { label: "Document", href: "/board?add=udt_document", iconName: "FileText", group: "Notes & docs", actionItem: true, guestHidden: true },
           { label: "File", href: "/board?add=file", iconName: "File", group: "Files & media", actionItem: true, guestHidden: true },

@@ -144,3 +144,39 @@ export function propertyIdentity(
   const id = raw.replace(/^[\s/@]+|[\s/@]+$/g, "").toLowerCase();
   return id || null;
 }
+
+/**
+ * The address a stored post lives at. A pasted link is only a way in: its handle can be wrong while
+ * the post id is right, and the provider answers with the real author. So the address shown and
+ * linked comes from the stored post and its author, never from what was pasted: where the stored
+ * address names another account than the post's author (TikTok, X), it is rebuilt from the author
+ * and the post id. Anywhere else the stored address stands. Pure.
+ */
+export function canonicalPostUrl(args: {
+  platform: string;
+  platformPostId: string | null | undefined;
+  handle: string | null | undefined;
+  url: string | null | undefined;
+}): string | null {
+  const stored = args.url?.trim() || null;
+  const handle = args.handle?.trim().replace(/^@/, "") || null;
+  const id = args.platformPostId?.trim() || null;
+  const build = (): string | null => {
+    if (!handle || !id) return null;
+    if (args.platform === "tiktok") return `https://www.tiktok.com/@${handle}/video/${id}`;
+    if (args.platform === "x") return `https://x.com/${handle}/status/${id}`;
+    return null;
+  };
+  if (!stored) return build();
+  const url = parseUrl(stored);
+  if (!url || !handle || !id) return stored;
+  const segments = url.pathname.split("/").filter(Boolean);
+  const named =
+    args.platform === "tiktok"
+      ? segments[0]?.startsWith("@") ? segments[0].slice(1) : null
+      : args.platform === "x" && /^(status|statuses)$/.test(segments[1] ?? "")
+        ? segments[0]
+        : null;
+  if (named && named.toLowerCase() !== handle.toLowerCase()) return build() ?? stored;
+  return stored;
+}

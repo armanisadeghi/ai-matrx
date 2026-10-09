@@ -33,6 +33,7 @@ import { replaceAddressWithoutNavigating } from "@/lib/url-state/addressWithoutN
 import {
   type Camera,
   cameraFromHash,
+  cameraShowsContent,
   cameraToHash,
   panBy,
   screenToWorld,
@@ -182,16 +183,55 @@ export function BoardViewport({
     const fromUrl = cameraFromHash(window.location.hash);
     let fitted = !!fromUrl || !fitOnMount;
     if (fromUrl) store.setCamera(fromUrl);
-    const ro = new ResizeObserver(([entry]) => {
-      const { width, height } = entry.contentRect;
-      store.setSize({ w: width, h: height });
-      if (!fitted && store.getItems().size > 0) {
+    const tryFit = () => {
+      if (!fitted && store.getSize().w > 1 && store.getItems().size > 0) {
         fitted = true;
         store.fitAll();
       }
+    };
+    const ro = new ResizeObserver(([entry]) => {
+      const { width, height } = entry.contentRect;
+      store.setSize({ w: width, h: height });
+      tryFit();
     });
     ro.observe(root);
-    return () => ro.disconnect();
+    // Tiles register after the first layout: fit when the first ones arrive, not only on a resize.
+    // Deferred one tick so every tile of the same commit has registered before the fit measures them.
+    let tick: ReturnType<typeof setTimeout> | null = null;
+    const offItems = store.subscribeItems(() => {
+      if (fitted || tick) return;
+      tick = setTimeout(() => {
+        tick = null;
+        tryFit();
+      }, 0);
+    });
+
+    // A restored or linked camera that shows none of the content (a view saved before the tiles
+    // moved, a stale link) is "lost in space": once the tiles have settled, fit to content instead.
+    // Skipped when the person has already moved the camera themselves.
+    const restored = fitted;
+    const applied = store.getCamera();
+    let settle: ReturnType<typeof setTimeout> | null = null;
+    let checked = false;
+    const checkLost = () => {
+      const items = [...store.getItems().values()];
+      if (checked || items.length === 0 || store.getSize().w <= 1) return;
+      checked = true;
+      if (store.getCamera() === applied && !cameraShowsContent(applied, store.getSize(), items)) store.fitAll();
+    };
+    const offLost = restored
+      ? store.subscribeItems(() => {
+          if (settle) clearTimeout(settle);
+          settle = setTimeout(checkLost, 350);
+        })
+      : () => undefined;
+    return () => {
+      ro.disconnect();
+      offItems();
+      offLost();
+      if (tick) clearTimeout(tick);
+      if (settle) clearTimeout(settle);
+    };
   }, [store, fitOnMount]);
 
   // ── camera → URL hash ────────────────────────────────────────────────────

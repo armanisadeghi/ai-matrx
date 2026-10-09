@@ -11,7 +11,7 @@
 
 import type { KindPayload, PartialKind } from "@/features/content-ir/kinds/kind-payload";
 
-import { hookLineOf, num, outlierInputFrom } from "./mappers";
+import { hookLineOf, num, outlierInputFrom, postAddress } from "./mappers";
 import type {
   PostCardModel,
   PostStatRow,
@@ -85,7 +85,7 @@ export function socialPostKind(args: {
     trace: { ...STORED_TRACE },
     profile_id: post.profile_id,
     handle: args.handle,
-    url: post.url,
+    url: postAddress(post, args.handle),
     format: post.format,
     title: post.title,
     caption: post.caption,
@@ -161,7 +161,7 @@ export function outlierRowKind(args: {
     outlier_score: score,
     handle: args.handle,
     role: args.role ?? null,
-    url: args.post.url,
+    url: postAddress(args.post, args.handle),
     format: args.post.format,
     caption: args.post.caption,
     posted_at: args.post.posted_at,

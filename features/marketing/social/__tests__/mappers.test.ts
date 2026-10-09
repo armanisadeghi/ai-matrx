@@ -4,6 +4,7 @@ import {
   buildAccountRows,
   filterAndSortPosts,
   formatGrowth,
+  GROWTH_PENDING_NOTE,
   hookLineOf,
   judgeFollowerGrowth,
   lastPostLabel,
@@ -52,7 +53,7 @@ describe("follower growth judge", () => {
       { observed_at: iso(0), follower_count: 1100 },
     ]);
     expect(g.fraction).toBeNull();
-    expect(g.note).toBe("Only 3 days of snapshots");
+    expect(g.note).toBe(GROWTH_PENDING_NOTE);
     expect(formatGrowth(g.fraction)).toBe("—");
   });
   it("one snapshot is not a growth", () => {

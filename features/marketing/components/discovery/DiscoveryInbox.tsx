@@ -106,6 +106,7 @@ import { cn } from "@/lib/utils";
 import { describeDiscoveredSocialProfile } from "@/features/marketing/lib/discovery-promotion";
 import { buildBrandContextXml } from "@/features/marketing/lib/surface-context";
 import { marketingRoutes } from "@/features/marketing/lib/routes";
+import { NoWebsiteState } from "@/features/marketing/components/shared/NoWebsiteState";
 
 const STATUS_TABS: Array<{ value: DiscoveredItemStatus; label: string }> = [
   { value: "pending", label: "Pending" },
@@ -799,7 +800,19 @@ export function DiscoveryInbox({ brandId }: { brandId: string }) {
             </div>
           ) : null}
 
-          {grouped.length === 0 ? (
+          {grouped.length === 0 && status === "pending" && brandSites.isSuccess && (brandSites.data ?? []).length === 0 ? (
+            <div className="flex min-h-56 items-center justify-center p-6">
+              <NoWebsiteState
+                brandId={brandId}
+                brandName={currentBrand.name}
+                needs="sweeping a homepage for logos, imagery, social profiles, and contact details"
+                alternatives={[
+                  { label: "Open Socials", href: marketingRoutes.brandSocials(brandId) },
+                  { label: "Identity", href: marketingRoutes.brandIdentity(brandId) },
+                ]}
+              />
+            </div>
+          ) : grouped.length === 0 ? (
             <div className="flex min-h-56 flex-col items-center justify-center gap-2 rounded-lg border border-dashed border-border bg-card/50 p-6 text-center">
               <FileQuestion className="h-8 w-8 text-muted-foreground" />
               <p className="text-sm font-medium text-foreground">

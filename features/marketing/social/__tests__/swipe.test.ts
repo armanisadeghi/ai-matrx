@@ -4,6 +4,8 @@ import {
   ALL_SAVED,
   DEFAULT_SWIPE_FILTERS,
   buildSwipeItems,
+  collectionsForBrandScope,
+  otherCollectionCount,
   collectionCounts,
   filterSwipeItems,
   itemNote,
@@ -147,5 +149,25 @@ describe("archive law", () => {
   it("hides archived unless asked, and then shows only them", () => {
     expect(visibleCollections(rows, false).map((r) => r.id)).toEqual(["1"]);
     expect(visibleCollections(rows, true).map((r) => r.id)).toEqual(["2"]);
+  });
+});
+
+describe("brand-scoped collections", () => {
+  const rows = [
+    { id: "a", brand_id: "dd", deleted_at: null },
+    { id: "b", brand_id: "hl", deleted_at: null },
+    { id: "c", brand_id: null, deleted_at: null },
+    { id: "d", brand_id: "dd", deleted_at: "2026-10-01T00:00:00Z" },
+  ] as unknown as SwipeCollectionRow[];
+  it("the brand scope keeps only collections linked to that brand", () => {
+    expect(collectionsForBrandScope(rows, "dd", "brand").map((r) => r.id)).toEqual(["a", "d"]);
+    expect(collectionsForBrandScope(rows, "hl", "brand").map((r) => r.id)).toEqual(["b"]);
+  });
+  it("unlinked collections appear only under All", () => {
+    expect(collectionsForBrandScope(rows, "dd", "brand").some((r) => r.id === "c")).toBe(false);
+    expect(collectionsForBrandScope(rows, "dd", "all").map((r) => r.id)).toEqual(["a", "b", "c", "d"]);
+  });
+  it("counts live collections outside the brand", () => {
+    expect(otherCollectionCount(rows, "dd")).toBe(2);
   });
 });

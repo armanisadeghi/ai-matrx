@@ -20,7 +20,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { ArrowLeft, Bookmark, ExternalLink, PanelRightClose, RefreshCw } from "lucide-react";
 
@@ -55,7 +55,8 @@ import {
   relativeAge,
   type PostMetricKey,
 } from "../mappers";
-import { OUTLIER_MIN_POSTS, formatCompact, formatPercentile } from "../outlier";
+import { formatTimestamp, languageName, parseTranscript, plainTranscript, wordCountOf } from "../transcript";
+import { OUTLIER_MIN_POSTS, formatCompact } from "../outlier";
 import { confirmPostSpend } from "../postSpend";
 import {
   addToCollection,
@@ -128,22 +129,45 @@ function TranscriptTab({ postId, organizationId }: { postId: string; organizatio
       </div>
     );
   }
-  const first = row.text.split(/(?<=[.!?])\s+/)[0] ?? "";
+  return <TranscriptBody text={row.text} language={row.language} wordCount={row.word_count} />;
+}
+
+function TranscriptBody({ text, language, wordCount }: { text: string; language: string; wordCount: number | null }) {
+  const [showTimes, setShowTimes] = useState(false);
+  const paragraphs = useMemo(() => parseTranscript(text), [text]);
+  const hasTimes = paragraphs.some((p) => p.start !== null);
+  const words = wordCount && wordCount > 0 ? wordCount : wordCountOf(paragraphs);
+  const meta = [languageName(language), words > 0 ? `${words.toLocaleString()} words` : null].filter(Boolean).join(" · ");
   return (
     <div className="flex flex-col gap-2">
-      <div className="flex items-center justify-between text-[11px] text-muted-foreground">
-        <span>{`${row.language}${row.word_count ? ` · ${row.word_count} words` : ""}`}</span>
-        <Button
-          variant="quiet"
-          onClick={() => void navigator.clipboard.writeText(row.text).then(() => toast.success("Copied"))}
-        >
-          Copy
-        </Button>
+      <div className="flex min-h-7 items-center justify-between gap-2 text-[11px] text-muted-foreground">
+        <span>{meta}</span>
+        <span className="flex items-center gap-1">
+          {hasTimes ? (
+            <Button variant="quiet" aria-pressed={showTimes} onClick={() => setShowTimes((v) => !v)}>
+              {showTimes ? "Hide times" : "Show times"}
+            </Button>
+          ) : null}
+          <Button
+            variant="quiet"
+            onClick={() => void navigator.clipboard.writeText(plainTranscript(paragraphs)).then(() => toast.success("Copied"))}
+          >
+            Copy
+          </Button>
+        </span>
       </div>
-      <p className="whitespace-pre-wrap text-sm leading-relaxed text-foreground">
-        <mark className="rounded bg-primary/15 px-0.5 text-foreground">{first}</mark>
-        {row.text.slice(first.length)}
-      </p>
+      <div className="flex flex-col gap-2.5">
+        {paragraphs.map((p, i) => (
+          <div key={`${p.start ?? "p"}-${i}`} className="flex gap-3">
+            {showTimes && hasTimes ? (
+              <span className="w-10 shrink-0 pt-0.5 text-right text-[11px] tabular-nums text-muted-foreground">
+                {p.start === null ? "" : formatTimestamp(p.start)}
+              </span>
+            ) : null}
+            <p className="min-w-0 flex-1 text-sm leading-relaxed text-foreground">{p.text}</p>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
@@ -481,17 +505,16 @@ export function PostDetailBody({
                 <span className="text-muted-foreground">{`Needs ${OUTLIER_MIN_POSTS + 1}+ posts for a multiple`}</span>
               ) : (
                 <>
-                  <OutlierBadge input={outlier} />
-                  <span className="tabular-nums text-muted-foreground">{`${formatPercentile(outlier.percentile)} · median ${formatCompact(outlier.baselineViews)}`}</span>
+                  <OutlierBadge input={outlier} verbose />
                 </>
               )}
             </span>
           </div>
 
           <div className="grid grid-cols-3 gap-1.5 @[34rem]/info:grid-cols-5">
-            <Stat label="Views" value={formatCompact(stat?.views ?? null)} />
-            <Stat label="Likes" value={formatCompact(stat?.likes ?? null)} />
-            <Stat label="Comments" value={formatCompact(stat?.comments ?? null)} />
+            {stat?.views != null ? <Stat label="Views" value={formatCompact(stat.views)} /> : null}
+            {stat?.likes != null ? <Stat label="Likes" value={formatCompact(stat.likes)} /> : null}
+            {stat?.comments != null ? <Stat label="Comments" value={formatCompact(stat.comments)} /> : null}
             {stat?.shares != null ? <Stat label="Shares" value={formatCompact(stat.shares)} /> : null}
             {stat?.saves != null ? <Stat label="Saves" value={formatCompact(stat.saves)} /> : null}
           </div>

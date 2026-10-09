@@ -53,7 +53,7 @@ import {
 } from "@/features/marketing/social/kind-models";
 import { toAdCardModel } from "@/features/marketing/social/ads";
 import { PostMedia } from "@/features/marketing/social/components/PostMedia";
-import { toPostCardModel } from "@/features/marketing/social/mappers";
+import { postAddress, toPostCardModel } from "@/features/marketing/social/mappers";
 import {
   addToCollection,
   analyzePost,
@@ -410,9 +410,15 @@ function PostRecordBody({ id, source, title, onSource, organizationId }: ItemBod
   const hasTranscript = Boolean(transcript.data?.text);
   const actions = usePostActions({ postId: id, organizationId, hasTranscript, openDetail: () => openPanel({ postId: id, organizationId, brandSeg: brand?.seg ?? "" }) });
   const wanted = post ? (handle ? `@${handle}` : `${SOCIAL_PLATFORM_LABELS[isSocialPlatform(post.platform) ? post.platform : "tiktok"]} post`) : null;
+  // The tile's address and name come from the stored post and its real author, never from the pasted
+  // link (its handle can be wrong while the post id is right): a stale pasted address is corrected here.
+  const address = post ? postAddress(post, handle) : null;
+  const pastedAddress = metaOf(source).url ?? null;
   useEffect(() => {
-    if (wanted && wanted !== title) onSource(source, wanted);
-  }, [wanted, title, source, onSource]);
+    if (!post || !wanted) return;
+    const nextSource = address && address !== pastedAddress ? entity(SOCIAL_POST_KEY, id, { url: address, platform: post.platform }) : source;
+    if (wanted !== title || nextSource !== source) onSource(nextSource, wanted !== title ? wanted : undefined);
+  }, [post, wanted, title, source, onSource, address, pastedAddress, id]);
 
   const values = createSocialPostScope(
     kind
